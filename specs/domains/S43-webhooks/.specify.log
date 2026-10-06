@@ -1,0 +1,34 @@
+The S43 spec is written and passes the quality checklist on the first pass. It has 71 acceptance scenarios (AS-01 to AS-71) and 55 functional requirements. The test plan has exactly one row per scenario, and the two ID sets match. All eight S43 patterns (P0112, P0413, P0418, P0507, P0518, P0604, P0608, P0617) appear as requirements and scenarios, and no `[NEEDS CLARIFICATION]` markers remain. No code was changed.
+
+- **Not run:** `pnpm check:table-ownership` needed an approval I didn't have, and `pnpm` also tried to reinstall dependencies and failed. Section 3 of `gaps.md` is therefore built from reading the code. The implementation agent should run the command first and reconcile.
+- **Cross-domain reads:** S43 reads no other domain's table. Order and product facts come from the events themselves (R3). The shop's pinned API version comes from S42's `ApiVersionService` (R1). Owner alerts go out as an event that S28 consumes.
+- **Contracts honoured:**
+  - S28's `webhook_endpoint_disabled` event, exactly as it asked.
+  - S42's `ApiVersionService`.
+  - S03's `webhooks.manage` permission.
+  - The `tenancy.shop_deleted` event.
+  - S10's, S05's and S15's events.
+- **New asks of other capabilities (`[CONTRACT]` in `questions.md`):**
+  - S10 adds `shopIds` to `order.cancelled` and `order.refunded`. This is needed to drop the `ShopOrder` join.
+  - S42 exports a pure `transformResource` function, so webhook and REST payloads share one version transformer.
+  - S54 provides an SSRF-safe POST client.
+  - S53 provides the FIFO queue and idempotency pieces.
+- **Biggest `[BREAKING]` choices:**
+  - Every route now needs `webhooks.manage`, and cross-tenant access returns `404`.
+  - URLs must be https on port 443, with no IP literals.
+  - Enable and disable become their own routes.
+  - Replay becomes an async `202` that needs an `Idempotency-Key` and doesn't affect endpoint health.
+  - Rotation refuses a second rotation during the overlap.
+  - The event catalogue grows to 11 types, with payloads that carry only the shop's own slice and a `resource_version`.
+  - The barrel stops exporting the deliverer and router.
+
+Everything is in `specs/domains/S43-webhooks/`:
+- `spec.md`
+- `questions.md`
+- `test-plan.md`
+- `gaps.md`
+- `checklists/requirements.md`
+
+I also set `.specify/feature.json` to this directory.
+
+The spec is ready for `/speckit-plan`.
