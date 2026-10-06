@@ -1,0 +1,30 @@
+The S20 spec is written, but the quality checklist has 3 of its 15 items unchecked. I didn't run `pnpm check:table-ownership`: it needs an approval this unattended run didn't have, so section C of `gaps.md` is a manual read and still has to be confirmed. No code was modified, and no extension hooks exist (`.specify/extensions.yml` is absent).
+
+The three unchecked items are "No implementation details", "Written for non-technical stakeholders" and "No implementation details leak". Redis GEO, DynamoDB, SQS and Kafka are named in the scope, AS-54, the contracts section and the assumptions. The pattern map and domain map fix those stores, and the contracts need exact names; S19 did the same. The acceptance scenarios are also written for reviewers rather than business readers. I left the boxes unchecked rather than claim a pass. No `[NEEDS CLARIFICATION]` markers remain.
+
+`spec.md` has 9 user stories, 58 acceptance scenarios (AS-01 to AS-58) and 51 functional requirements. All four pattern-map rows naming S20 are covered: P0110, P0323, P0328 and P1105.
+
+Intended behaviour the spec sets, which differs from the draft code:
+- **Order link:** the buyer comes from an order event (`order.paid`, kept as a read model), not the request body, and `orderId` is required. `order.paid` carries no address, so the shop still supplies coordinates and dispatch is not automatic.
+- **Offers and assignments:** the database enforces one live offer and one active assignment per courier, using new offer records and unique indexes. Redis stays only a guard and index. Timers are stored on the delivery with a recovery job, so a lost queue message cannot strand one.
+- **Courier privacy and tracking:** off-shift GPS is discarded and stale couriers are not offered. The buyer sees courier position only while assigned or picked up. Non-parties get 404 instead of 403.
+- **New pieces:** a shop cancel endpoint, consumers for `order.cancelled` and `tenancy.shop_deleted`, and a write-back to the order through `OrderFulfilmentService`, for single-shop orders only.
+- **City ownership:** consistent hashing over dispatcher instances (virtual nodes, hand-backs), with correctness never depending on it.
+
+`questions.md` has 17 `[BREAKING]`, 10 `[CONTRACT]` and 12 `[LOCAL]` lines. Three `[CONTRACT]` items need a decision elsewhere:
+- S10 should list S20, not S19, as the `order.paid` consumer.
+- No web capability owns a courier, tracking or seller delivery screen, so `test-plan.md` has no UI journey.
+- S01 has no account-deletion event, so courier rows keep plain user IDs.
+
+`gaps.md` lists 34 gaps and the debt rows D-6, D-7, D-8 and D-12. The three cross-domain foreign keys to `User` and `Shop` are mapped to R3 events and an R1 service call.
+
+Next step is `/speckit-plan`; `/speckit-clarify` is optional.
+
+Files are in `specs/domains/S20-courier-delivery/`:
+- spec.md
+- questions.md
+- test-plan.md
+- gaps.md
+- checklists/requirements.md
+
+I also wrote `.specify/feature.json`.

@@ -1,0 +1,9 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "declaration": false,
+    "outDir": "../../dist/apps/local-monolith"
+  },
+  "include": ["src/**/*", "../../libs/common/**/*.ts", "../../libs/infrastructure/**/*.ts", "../../libs/composition/**/*.ts", "../../libs/domains/**/*.ts"],
+  "exclude": ["node_modules", "dist", "test", "**/*spec.ts"]
+}

@@ -1,0 +1,27 @@
+{
+  "eslint.alwaysShowStatus": true,
+  "editor.formatOnSave": true,
+  // "editor.defaultFormatter": "dbaeumer.vscode-eslint",
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.codeActionsOnSave": {
+    "source.fixAll": "explicit"
+  },
+  "eslint.codeActionsOnSave.mode": "all",
+  "eslint.workingDirectories": [
+    "backend"
+  ],
+  "files.associations": {
+    "Dockerfile-prod": "dockerfile",
+    ".env.prod": "properties",
+    "wrangler.json": "jsonc"
+  },
+  "debug.javascript.terminalOptions": {
+    "skipFiles": [
+      "./node_modules/**/*.js",
+      "./backend/node_modules/**/*.js",
+      "<node_internals>/**/*.js",
+      "<node_internals>/**",
+    ]
+  },
+  "typescript.tsdk": "./backend/node_modules/typescript/lib",
+}

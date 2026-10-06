@@ -1,0 +1,102 @@
+# O-02 CI: fast checks on every PR, e2e against the docker-compose test stores. Target < 10 min.
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      observability: ${{ steps.filter.outputs.observability }}
+    steps:
+      - uses: actions/checkout@v4
+      # Affected-only: the Go/Rust services and the web app have their own pipelines.
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            backend:
+              - 'packages/backend/**'
+              - 'packages/contracts/**'
+              - 'pnpm-lock.yaml'
+              - 'docker-compose.test.yaml'
+              - 'infra/docker/node/**'
+            observability:
+              - 'infra/observability/**'
+              - 'docs/slo/**'
+
+  checks:
+    needs: changes
+    if: needs.changes.outputs.backend == 'true' || needs.changes.outputs.observability == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile --filter api...
+      - name: Typecheck
+        run: pnpm --filter api exec tsc --noEmit -p tsconfig.json
+      - name: Lint (no autofix in CI)
+        run: pnpm --filter api exec eslint "{apps,libs}/**/*.ts" --max-warnings=0
+      - name: Unit tests
+        run: pnpm --filter api exec jest --ci
+      - name: Generated SLO rules / k6 thresholds are up to date
+        run: pnpm --filter api slo:generate && git diff --exit-code -- infra/observability docs packages/backend/scripts/load-tests
+      - name: Validate observability configs
+        run: |
+          docker run --rm -v "$PWD/infra/observability/prometheus:/p" --entrypoint promtool prom/prometheus:v3.6.0 check config /p/prometheus.yml
+          docker run --rm -v "$PWD/infra/observability/prometheus/rules:/r" --entrypoint promtool prom/prometheus:v3.6.0 check rules /r/causes.yml /r/slo.generated.yml
+          docker run --rm -v "$PWD/infra/observability/alertmanager:/a" --entrypoint amtool prom/alertmanager:v0.28.1 check-config /a/alertmanager.yml
+          docker run --rm -v "$PWD/infra/observability:/o" otel/opentelemetry-collector-contrib:0.137.0 validate --config=/o/otel-collector.yaml
+      - name: Dockerfile lint
+        run: docker run --rm -i hadolint/hadolint < infra/docker/node/Dockerfile
+
+  e2e:
+    needs: [changes, checks]
+    if: needs.changes.outputs.backend == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile --filter api...
+      # The same stores the specs are written against (D5): one compose file, not 12 hand-maintained service containers.
+      - name: Start test stores
+        run: docker compose -f docker-compose.test.yaml -p marketplace_test up -d --wait
+      - name: Migrate (Postgres, Scylla, Dynamo, ClickHouse)
+        working-directory: packages/backend
+        run: |
+          cp env/test.env.example .env.test
+          pnpm run db:jest:migrate:up
+          NODE_ENV=test pnpm run cql:migrate
+          NODE_ENV=test pnpm run dynamo:create-tables
+      - name: API e2e (deep layer of the test pyramid, D27)
+        working-directory: packages/backend
+        run: pnpm test:e2e --ci
+      - name: Store logs on failure
+        if: failure()
+        run: docker compose -f docker-compose.test.yaml -p marketplace_test logs --no-color > compose.log
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: compose-logs
+          path: compose.log

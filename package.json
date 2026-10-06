@@ -1,0 +1,29 @@
+{
+  "name": "marketplace-sandbox",
+  "private": true,
+  "packageManager": "pnpm@12.5.1",
+  "engines": {
+    "node": ">=24.13.0"
+  },
+  "scripts": {
+    "infra-clean": "docker stop $(docker ps -a -q) || true && docker rm $(docker ps -a -q) || true && docker volume prune -f && docker network prune -f",
+    "docs:extract": "node scripts/docs/cli.ts extract",
+    "docs:plan": "node scripts/docs/cli.ts plan",
+    "docs:generate": "node scripts/docs/cli.ts generate",
+    "docs:render": "node scripts/docs/cli.ts render",
+    "docs:check": "node scripts/docs/cli.ts check",
+    "docs:test": "node --test scripts/docs/test/*.test.ts",
+    "docs:theory": "node scripts/docs/cli.ts theory"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@tree-sitter-grammars/tree-sitter-yaml",
+      "core-js-pure",
+      "tree-sitter-json",
+      "tree-sitter"
+    ]
+  }
+}

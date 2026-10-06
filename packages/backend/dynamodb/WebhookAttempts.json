@@ -1,0 +1,24 @@
+{
+  "TableName": "WebhookAttempts",
+  "AttributeDefinitions": [
+    { "AttributeName": "PK", "AttributeType": "S" },
+    { "AttributeName": "SK", "AttributeType": "S" }
+  ],
+  "KeySchema": [
+    { "AttributeName": "PK", "KeyType": "HASH" },
+    { "AttributeName": "SK", "KeyType": "RANGE" }
+  ],
+  "TimeToLiveAttribute": "expiresAtEpoch",
+  "_design": {
+    "pattern": "per-endpoint delivery log + replayable bodies (SD-30)",
+    "items": {
+      "body": "PK=EP#<endpointId> SK=EVT#<eventId> | type, body (exact signed JSON), createdAt, expiresAtEpoch",
+      "attempt": "PK=EP#<endpointId> SK=ATT#<isoTs>#<eventId>#<attempt> | eventId, status (http code or 0), ok, durationMs, error, responseSnippet (≤ 1 KB), expiresAtEpoch"
+    },
+    "accessPatterns": [
+      "dashboard log: Query PK=EP#e AND begins_with(SK, 'ATT#') ScanIndexForward=false",
+      "replay: GetItem PK=EP#e SK=EVT#<eventId>, re-enqueue the stored body"
+    ],
+    "why": "write-heavy append log (every attempt), read by endpoint, expiring after 30 days - no reason to bloat Postgres with it"
+  }
+}

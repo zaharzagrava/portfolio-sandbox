@@ -1,0 +1,38 @@
+name: launch-event-holds
+journey: Launch events (seat holds)
+owner: commerce
+description: Hold requests on launch events succeed under contention.
+objective: 99.9
+window: 30d
+sli:
+  type: availability
+  metric: http_server_request_duration_seconds
+  selector: 'service="core", http_route=~"/api/launch-events/.*/holds"'
+runbook: docs/runbooks/APIErrorBudgetFastBurn.md
+k6:
+  threshold: 'http_req_failed{journey:launch}: rate<0.001'
+---
+name: read-model-freshness
+journey: Notifications & realtime
+owner: platform
+description: Notifications, feeds and realtime read models are updated within 60 s of the event.
+objective: 99.0
+window: 30d
+sli:
+  type: latency
+  thresholdSeconds: 60
+  metric: projection_lag_seconds
+  selector: 'projector!=""'
+runbook: docs/runbooks/ProjectionLagHigh.md
+---
+name: realtime-gateway
+journey: Notifications & realtime
+owner: platform
+description: SSE stream connects succeed.
+objective: 99.9
+window: 30d
+sli:
+  type: availability
+  metric: http_server_request_duration_seconds
+  selector: 'service="sse-gateway"'
+runbook: docs/runbooks/APIErrorBudgetFastBurn.md

@@ -1,0 +1,28 @@
+The S27 spec is written and the quality checklist passes on the first iteration. I changed no code and ran no tests.
+
+I wrote these files in `specs/domains/S27-brand-stories/`:
+- `spec.md`: eight user stories with 67 acceptance scenarios (AS-01 to AS-99), FR-001 to FR-066, SC-001 to SC-009, and the Cross-capability contracts section.
+- `questions.md`: 15 `[BREAKING]` lines, 12 `[CONTRACT]` lines and 13 `[LOCAL]` lines, in that order.
+- `test-plan.md`: 67 rows, each scenario mapped to one e2e file and, where the rule is pure logic, to a unit spec.
+- `gaps.md`: gaps in the current code with file and line references, the applicable debt rows (D-6, D-7, D-8, D-12) and the one `content` line from `check:table-ownership`, with the R1/R3 mechanism that replaces each.
+- `checklists/requirements.md`: the quality checklist, all items ticked.
+
+I also updated `.specify/feature.json`.
+
+- **Pattern-map rows:** the four rows naming S27 (P0207, P0410, P0501, P0904) each appear as functional requirements and acceptance scenarios.
+- **Cross-domain data:** it uses R1 for shop and product lookups (S03 `getShopsByIds`, S05 `getProductsByIds`), and R3 for a shop-identity copy built from tenancy events. This replaces the three `SELECT/JOIN "Shop"` statements. The cross-domain foreign key `Story.shopId → Shop` also goes.
+- **Biggest behaviour changes, all tagged `[BREAKING]`:**
+  - The locale moves into the URL path, and `Vary: Accept-Language` and `max-age` are dropped, following the notes.
+  - Drafts need `expectedRevision`; publish needs `expectedVersion` and an `Idempotency-Key`.
+  - `SCHEDULED` stops being a status. Today, scheduling a republish of a live story makes it return 404.
+  - Scheduling in the past returns 422 instead of publishing immediately.
+  - A one-minute sweep publishes any due schedule whose job was lost.
+  - Preview tokens get their own signing key and travel in a header.
+  - Sitemap pages hold at most 2,500 stories and use stable positions. Today a file can hold 1,000,000 URLs against a 50,000 limit, and it pages by offset.
+  - The revalidation webhook signs `timestamp.rawBody`.
+- **UI column:** no web capability owns the story pages, the revalidation route or the editor, so it is empty for every row of `test-plan.md`. That is recorded as a `[CONTRACT]` question rather than invented.
+- **Unwritten capabilities:** S49, S50, S52, S53 and S54 have no spec yet, so the `Requires` entries for them are my assumptions of their shape. I flagged each in `questions.md`.
+- **Debt register:** it names neither `content` nor S27, so `gaps.md` lists the generic rows that apply to this domain's code.
+- **Table-ownership run:** it reported 87 findings repo-wide and one for `content`.
+
+The next step is `/speckit-plan`.

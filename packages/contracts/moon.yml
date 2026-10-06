@@ -1,0 +1,18 @@
+project:
+  type: "library"
+language: "typescript"
+
+tasks:
+  build:
+    command: "tsc -p tsconfig.build.json"
+    inputs:
+      - "src/**/*"
+      - "tsconfig*.json"
+    outputs:
+      - "dist"
+
+  typecheck:
+    command: "tsc --noEmit"
+    inputs:
+      - "src/**/*"
+      - "tsconfig*.json"

@@ -1,0 +1,27 @@
+{
+  "moduleFileExtensions": [
+    "js",
+    "json",
+    "ts"
+  ],
+  "rootDir": ".",
+  "roots": [
+    "<rootDir>/apps/",
+    "<rootDir>/libs/"
+  ],
+  "testEnvironment": "node",
+  "testRegex": ".*\\.e2e-spec\\.ts$",
+  "transform": {
+    "^.+\\.(t|j)s$": "ts-jest"
+  },
+  "moduleNameMapper": {
+    "^@app/(infrastructure|composition|domains)/(.*)$": "<rootDir>/libs/$1/$2",
+    "^@app/test/(.*)$": "<rootDir>/test/$1",
+    "^@app/common/(.*)$": "<rootDir>/libs/common/$1",
+    "^@app/(core|bff|sse-gateway|worker|projector|collab|public-api|payment-processor)/(.*)$": "<rootDir>/apps/$1/src/$2"
+  },
+  "testTimeout": 60000,
+  "setupFiles": [
+    "<rootDir>/test/e2e-env.setup.ts"
+  ]
+}

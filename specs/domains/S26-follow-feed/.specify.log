@@ -1,0 +1,29 @@
+The S26 spec is written and the quality checklist passes on the first iteration. I did not run `pnpm check:table-ownership`, because it needs approval in an unattended run. The community lines in `gaps.md` §3 come from reading the source, so re-run the command before implementation.
+
+**Files** (all in `specs/domains/S26-follow-feed/`):
+- **`spec.md`:**
+  - **User stories:** six, with 51 Given/When/Then scenarios (AS-01 to AS-51) covering the follow graph, the home feed, celebrity merge, rebuild on return, hydration and fan-out operations.
+  - **Requirements:** FR-001 to FR-052, plus a "Cross-capability contracts" section (Provides and Requires).
+  - **Patterns:** the three pattern-map rows naming S26 are covered: P0101 (bounded concurrency, partial responses), P0609 (consumer backpressure) and P1112 (k-way merge).
+- **`questions.md`:** the defaults I chose, tagged and sorted with BREAKING first.
+- **`test-plan.md`:** one row per scenario, naming six e2e spec files and four unit specs. The UI column points only at journey J05, because no web capability owns the home-feed page or follow button.
+- **`gaps.md`:** the code-versus-spec to-do list with file:line references, plus the open debt rows D-6, D-7, D-8 and D-12 and the IX.7 mechanism that replaces each.
+- **`checklists/requirements.md`:** all items pass, with no `[NEEDS CLARIFICATION]` markers.
+
+I also pointed `.specify/feature.json` at the S26 directory. No code was changed.
+
+**Breaking decisions to review first:**
+- **Paging and shape:** the feed uses opaque `(time, itemId)` cursors and a `{items, nextCursor, degraded?}` envelope. Items get typed payloads with money in integer minor units. `/me/following` becomes paged.
+- **Feed items from events:** items are created only from events (S05 product events, S25 post events, S21 auction events). The global `FeedPublisher` goes away, and "once per product" is enforced by the store rather than a 30-day Redis key.
+- **Celebrity status:** it is derived from the durable follower count and never demoted. A Redis flush today turns every celebrity into a normal account.
+- **Hydration:** one batch read per source (S25 posts, S03 shops, own product copy). Content that cannot be verified is omitted and the page is marked `degraded: true`.
+- **Fallbacks:** the feed is served by pull when Redis is down.
+- **Follow rules:** following checks that the account exists through S03 and S01, with a 2,000-follow limit.
+- **Rate limits:** the `follow.write` and `feed.read` rate-limit profiles are new.
+
+**Contracts that need action elsewhere:**
+- S05 must keep `changedFields` precise and `productVersion` monotonic.
+- S21 must keep `shopId`, `productId` and `startsAt`/`endsAt` in `auction.created` and `auction.opened`.
+- S50 must register the two new profiles.
+- S53 and S49 must work without a SQL transaction, because community owns no Postgres table.
+- A web capability still has to be assigned the home-feed page and follow button.

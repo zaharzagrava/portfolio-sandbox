@@ -1,0 +1,145 @@
+# Phase 2 (batch 3) move map: billing, statements, auctions, launch-events, shop-functions,
+# asset-library, media, catalog-sync, plus utils/bis-utils → orders (missed in batch 2)
+# batch-dirs: billing statements auctions launch-events live shop-functions assets media video catalog-import integrations offline-sync utils/bis-utils
+# <source under libs/common/src>	<destination under libs/>
+# Layer rules (as batches 1–2): controllers + request/response DTOs → api/; use-case services and
+# published `*-events.ts` → application/ (events/ subfolder, I.3); pure algorithms, state, schemas,
+# ports with no framework imports → domain/; models, Redis/Dynamo/ES/pg/ffmpeg/sharp/isolated-vm
+# adapters, projectors, consumers, tickers, job handlers → infra/; Nest modules + e2e specs → root.
+# Unit specs sit next to the file they test.
+#
+# billing  (+ models plan, price, subscription, invoice, invoice-line)
+billing/billing.module.ts	domains/billing/billing.module.ts
+billing/billing-worker.module.ts	domains/billing/billing-worker.module.ts
+billing/billing.e2e-spec.ts	domains/billing/billing.e2e-spec.ts
+billing/billing.controller.ts	domains/billing/api/billing.controller.ts
+billing/types.ts	domains/billing/api/billing.dto.ts
+billing/billing.service.ts	domains/billing/application/billing.service.ts
+billing/entitlements.service.ts	domains/billing/application/entitlements.service.ts
+billing/usage.service.ts	domains/billing/application/usage.service.ts
+billing/billing-events.ts	domains/billing/application/events/billing-events.ts
+billing/periods.ts	domains/billing/domain/periods.ts
+billing/proration.ts	domains/billing/domain/proration.ts
+billing/billing-math.spec.ts	domains/billing/domain/billing-math.spec.ts
+billing/billing-gateway.port.ts	domains/billing/infra/billing-gateway.port.ts
+billing/billing.jobs.ts	domains/billing/infra/billing.jobs.ts
+billing/usage.projector.ts	domains/billing/infra/usage.projector.ts
+models/plan.model.ts	domains/billing/infra/models/plan.model.ts
+models/price.model.ts	domains/billing/infra/models/price.model.ts
+models/subscription.model.ts	domains/billing/infra/models/subscription.model.ts
+models/invoice.model.ts	domains/billing/infra/models/invoice.model.ts
+models/invoice-line.model.ts	domains/billing/infra/models/invoice-line.model.ts
+#
+# statements
+statements/statements.module.ts	domains/statements/statements.module.ts
+statements/statements-worker.module.ts	domains/statements/statements-worker.module.ts
+statements/statements.e2e-spec.ts	domains/statements/statements.e2e-spec.ts
+statements/statements.controller.ts	domains/statements/api/statements.controller.ts
+statements/types.ts	domains/statements/api/statements.dto.ts
+statements/statement.service.ts	domains/statements/application/statement.service.ts
+statements/commission-rate.service.ts	domains/statements/application/commission-rate.service.ts
+statements/reporting-pool.ts	domains/statements/infra/reporting-pool.ts
+statements/statement-export.ts	domains/statements/infra/statement-export.ts
+statements/statements.jobs.ts	domains/statements/infra/statements.jobs.ts
+#
+# auctions  (+ model auction)
+auctions/auctions.module.ts	domains/auctions/auctions.module.ts
+auctions/auctions-worker.module.ts	domains/auctions/auctions-worker.module.ts
+auctions/auctions.e2e-spec.ts	domains/auctions/auctions.e2e-spec.ts
+auctions/auctions.controller.ts	domains/auctions/api/auctions.controller.ts
+auctions/types.ts	domains/auctions/api/auctions.dto.ts
+auctions/auction.service.ts	domains/auctions/application/auction.service.ts
+auctions/auction-events.ts	domains/auctions/application/events/auction-events.ts
+auctions/bid-relay.service.ts	domains/auctions/infra/bid-relay.service.ts
+auctions/place-bid.lua.ts	domains/auctions/infra/place-bid.lua.ts
+auctions/auction.jobs.ts	domains/auctions/infra/auction.jobs.ts
+models/auction.model.ts	domains/auctions/infra/models/auction.model.ts
+#
+# launch-events  (launch-events + live + models launch-event, booking)
+launch-events/launch-events.module.ts	domains/launch-events/launch-events.module.ts
+launch-events/launch-events-worker.module.ts	domains/launch-events/launch-events-worker.module.ts
+launch-events/launch-events.e2e-spec.ts	domains/launch-events/launch-events.e2e-spec.ts
+launch-events/launch-events.controller.ts	domains/launch-events/api/launch-events.controller.ts
+launch-events/types.ts	domains/launch-events/api/launch-events.dto.ts
+launch-events/waiting-room.service.ts	domains/launch-events/application/waiting-room.service.ts
+launch-events/seat-hold.service.ts	domains/launch-events/application/seat-hold.service.ts
+launch-events/admission-ticker.service.ts	domains/launch-events/infra/admission-ticker.service.ts
+live/live.module.ts	domains/launch-events/live.module.ts
+live/live-core.module.ts	domains/launch-events/live-core.module.ts
+live/live-worker.module.ts	domains/launch-events/live-worker.module.ts
+live/live.controller.ts	domains/launch-events/api/live.controller.ts
+live/live.service.ts	domains/launch-events/application/live.service.ts
+live/live-events.ts	domains/launch-events/application/events/live-events.ts
+live/moderation.ts	domains/launch-events/domain/moderation.ts
+live/reservoir.ts	domains/launch-events/domain/reservoir.ts
+live/reservoir.spec.ts	domains/launch-events/domain/reservoir.spec.ts
+live/live-keys.ts	domains/launch-events/infra/live-keys.ts
+live/live-comments.projector.ts	domains/launch-events/infra/live-comments.projector.ts
+live/live-moderation.consumer.ts	domains/launch-events/infra/live-moderation.consumer.ts
+live/live-ticker.service.ts	domains/launch-events/infra/live-ticker.service.ts
+models/launch-event.model.ts	domains/launch-events/infra/models/launch-event.model.ts
+models/booking.model.ts	domains/launch-events/infra/models/booking.model.ts
+#
+# shop-functions
+shop-functions/shop-functions.module.ts	domains/shop-functions/shop-functions.module.ts
+shop-functions/shop-functions.e2e-spec.ts	domains/shop-functions/shop-functions.e2e-spec.ts
+shop-functions/shop-functions.service.ts	domains/shop-functions/application/shop-functions.service.ts
+shop-functions/contract.ts	domains/shop-functions/domain/contract.ts
+shop-functions/sandbox.ts	domains/shop-functions/infra/sandbox.ts
+shop-functions/sandbox.spec.ts	domains/shop-functions/infra/sandbox.spec.ts
+#
+# asset-library  (assets)
+assets/assets.module.ts	domains/asset-library/assets.module.ts
+assets/assets.e2e-spec.ts	domains/asset-library/assets.e2e-spec.ts
+assets/assets.controller.ts	domains/asset-library/api/assets.controller.ts
+assets/assets.service.ts	domains/asset-library/application/assets.service.ts
+assets/fastcdc.ts	domains/asset-library/domain/fastcdc.ts
+assets/fastcdc.spec.ts	domains/asset-library/domain/fastcdc.spec.ts
+#
+# media  (media + video)
+media/media.module.ts	domains/media/media.module.ts
+media/media.e2e-spec.ts	domains/media/media.e2e-spec.ts
+media/media.controller.ts	domains/media/api/media.controller.ts
+media/media.service.ts	domains/media/application/media.service.ts
+media/media-events.ts	domains/media/application/events/media-events.ts
+media/image-pipeline.ts	domains/media/infra/image-pipeline.ts
+media/image-pipeline.spec.ts	domains/media/infra/image-pipeline.spec.ts
+media/media-processor.ts	domains/media/infra/media-processor.ts
+video/video.module.ts	domains/media/video.module.ts
+video/video.e2e-spec.ts	domains/media/video.e2e-spec.ts
+video/video.controller.ts	domains/media/api/video.controller.ts
+video/video.service.ts	domains/media/application/video.service.ts
+video/dag.ts	domains/media/domain/dag.ts
+video/hls.ts	domains/media/domain/hls.ts
+video/video.spec.ts	domains/media/domain/video.spec.ts
+video/ffmpeg.ts	domains/media/infra/ffmpeg.ts
+#
+# catalog-sync  (catalog-import import half + integrations + offline-sync; order export is already in orders, D-10)
+catalog-import/catalog-import.module.ts	domains/catalog-sync/catalog-import.module.ts
+catalog-import/catalog-import.e2e-spec.ts	domains/catalog-sync/catalog-import.e2e-spec.ts
+catalog-import/catalog-import.controller.ts	domains/catalog-sync/api/catalog-import.controller.ts
+catalog-import/catalog-import.service.ts	domains/catalog-sync/application/catalog-import.service.ts
+catalog-import/rows.ts	domains/catalog-sync/domain/rows.ts
+catalog-import/rows.spec.ts	domains/catalog-sync/domain/rows.spec.ts
+catalog-import/catalog-import.worker.ts	domains/catalog-sync/infra/catalog-import.worker.ts
+catalog-import/clamav.ts	domains/catalog-sync/infra/clamav.ts
+catalog-import/clamav.spec.ts	domains/catalog-sync/infra/clamav.spec.ts
+integrations/integrations.module.ts	domains/catalog-sync/integrations.module.ts
+integrations/integrations.e2e-spec.ts	domains/catalog-sync/integrations.e2e-spec.ts
+integrations/integrations.controller.ts	domains/catalog-sync/api/integrations.controller.ts
+integrations/integration-sync.service.ts	domains/catalog-sync/application/integration-sync.service.ts
+integrations/provider.port.ts	domains/catalog-sync/domain/provider.port.ts
+integrations/fake.provider.ts	domains/catalog-sync/infra/fake.provider.ts
+integrations/shopify.provider.ts	domains/catalog-sync/infra/shopify.provider.ts
+integrations/integrations.workers.ts	domains/catalog-sync/infra/integrations.workers.ts
+offline-sync/sync.module.ts	domains/catalog-sync/sync.module.ts
+offline-sync/sync.e2e-spec.ts	domains/catalog-sync/sync.e2e-spec.ts
+offline-sync/sync.controller.ts	domains/catalog-sync/api/sync.controller.ts
+offline-sync/sync.service.ts	domains/catalog-sync/application/sync.service.ts
+offline-sync/hlc.ts	domains/catalog-sync/domain/hlc.ts
+offline-sync/merge.ts	domains/catalog-sync/domain/merge.ts
+offline-sync/merge.spec.ts	domains/catalog-sync/domain/merge.spec.ts
+#
+# orders (existing): utils/bis-utils, missed in batch 2
+utils/bis-utils/bis-utils.module.ts	domains/orders/bis-utils.module.ts
+utils/bis-utils/bis-utils.service.ts	domains/orders/application/bis-utils.service.ts

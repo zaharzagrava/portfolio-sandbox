@@ -1,0 +1,325 @@
+# DEVELOPMENT
+version: '3'
+services:
+  db:
+    container_name: payment_system_db
+    # F-02: Postgres 18 + PostGIS + pgvector (D20)
+    build: ./infra/docker/postgres
+    image: marketplace/postgres:18-postgis-pgvector
+    # wal_level=logical for Debezium CDC (F-05); pg_stat_statements for query insights (SD-33)
+    command:
+      - postgres
+      - -c
+      - wal_level=logical
+      - -c
+      - max_replication_slots=10
+      - -c
+      - max_wal_senders=10
+      - -c
+      - shared_preload_libraries=pg_stat_statements
+    volumes:
+      # Postgres 18+ expects the mount at /var/lib/postgresql (not .../data)
+      - pgdata:/var/lib/postgresql
+    environment:
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_DB: ${DB_NAME}
+    ports:
+      - '5300:5432'
+  redis:
+    image: redis:alpine
+    container_name: payment_system_redis
+    ports:
+      - '6300:6379'
+  serverless-redis-http:
+    ports:
+      - '8079:80'
+    image: hiett/serverless-redis-http:latest
+    container_name: payment_system_serverless_redis_http
+    environment:
+      SRH_MODE: env
+      SRH_TOKEN: example_token
+      SRH_CONNECTION_STRING: 'redis://redis:6379' # Using `redis` hostname since they're in the same Docker network.
+  kafka:
+    image: docker.redpanda.com/redpandadata/redpanda:v25.3.10
+    container_name: payment_system_kafka
+    command:
+      - redpanda start
+      - --smp 1
+      - --overprovisioned
+      - --kafka-addr PLAINTEXT://0.0.0.0:29092,OUTSIDE://0.0.0.0:9092
+      - --advertise-kafka-addr PLAINTEXT://kafka:29092,OUTSIDE://localhost:9092
+      # NEW: Turn on the HTTP Proxy (Pandaproxy)
+      - --pandaproxy-addr internal://0.0.0.0:28082,external://0.0.0.0:8082
+      - --advertise-pandaproxy-addr internal://kafka:28082,external://localhost:8082
+    ports:
+      - '9092:9092' # Used by NestJS/Worker on Host
+      - '29092:29092' # Used by containers inside Docker network
+      - '8082:8082'
+  kafka-console:
+    image: docker.redpanda.com/redpandadata/console:v3.6.0
+    container_name: payment_system_kafka_ui
+    entrypoint: /bin/sh -c "echo \"$$CONSOLE_CONFIG_FILE\" > /tmp/config.yml; /app/console"
+    environment:
+      CONFIG_FILEPATH: /tmp/config.yml
+      CONSOLE_CONFIG_FILE: |
+        kafka:
+          brokers: ["kafka:29092"]
+    ports:
+      - '8080:8080'
+    depends_on:
+      - kafka
+  pgbouncer:
+    image: edoburu/pgbouncer:latest
+    container_name: payment_system_pgbouncer
+    environment:
+      - DB_USER=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_HOST=db # Points to your postgres container name
+      - DB_NAME=${DB_NAME}
+      # Transaction mode is REQUIRED for Node.js/NestJS apps
+      - POOL_MODE=transaction
+      # Allow up to 10,000 incoming connections from your load tester
+      - MAX_CLIENT_CONN=10000
+      # Multiplex them down to 100 actual connections to Postgres
+      - DEFAULT_POOL_SIZE=100
+      # Ignore startup parameters that ORMs like TypeORM/Prisma try to send
+      - IGNORE_STARTUP_PARAMETERS=extra_float_digits
+      - AUTH_TYPE=scram-sha-256
+    ports:
+      - '6432:5432' # Expose PgBouncer on 6432
+    depends_on:
+      - db
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: payment_system_jaeger
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+    ports:
+      - '16686:16686' # The Web UI
+    # SD-33: apps no longer talk to Jaeger directly - OTLP goes to otel-collector (tail sampling, PII scrub), which forwards here.
+
+  # --- SD-33 observability stack (configs in infra/observability) ---
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.137.0
+    container_name: marketplace_otel_collector
+    command: ['--config=/etc/otelcol/config.yaml']
+    volumes:
+      - ./infra/observability/otel-collector.yaml:/etc/otelcol/config.yaml:ro
+    ports:
+      - '4317:4317' # OTLP gRPC (apps)
+      - '4318:4318' # OTLP HTTP (apps; OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318)
+      - '13133:13133' # health
+    depends_on:
+      - jaeger
+
+  prometheus:
+    image: prom/prometheus:v3.6.0
+    container_name: marketplace_prometheus
+    command: ['--config.file=/etc/prometheus/prometheus.yml', '--storage.tsdb.retention.time=7d', '--web.enable-lifecycle']
+    volumes:
+      - ./infra/observability/prometheus:/etc/prometheus:ro
+      - promdata:/prometheus
+    extra_hosts:
+      - 'host.docker.internal:host-gateway' # apps run on the host (pnpm start:dev:*)
+    ports:
+      - '9090:9090'
+
+  alertmanager:
+    image: prom/alertmanager:v0.28.1
+    container_name: marketplace_alertmanager
+    command: ['--config.file=/etc/alertmanager/alertmanager.yml']
+    volumes:
+      - ./infra/observability/alertmanager:/etc/alertmanager:ro
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+    ports:
+      - '9093:9093'
+
+  loki:
+    image: grafana/loki:3.5.0
+    container_name: marketplace_loki
+    command: ['-config.file=/etc/loki/loki.yaml']
+    volumes:
+      - ./infra/observability/loki/loki.yaml:/etc/loki/loki.yaml:ro
+      - lokidata:/loki
+    ports:
+      - '3100:3100'
+
+  alloy:
+    image: grafana/alloy:v1.10.0
+    container_name: marketplace_alloy
+    command: ['run', '/etc/alloy/config.alloy', '--server.http.listen-addr=0.0.0.0:12345']
+    volumes:
+      - ./infra/observability/alloy/config.alloy:/etc/alloy/config.alloy:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./packages/backend/logs:/host-logs:ro # LOG_FILE=./logs/<app>.log for host-run apps
+    depends_on:
+      - loki
+
+  grafana:
+    image: grafana/grafana:12.1.0
+    container_name: marketplace_grafana
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: 'true'
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+      GF_INSTALL_PLUGINS: grafana-clickhouse-datasource
+    volumes:
+      - ./infra/observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./infra/observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    ports:
+      - '3001:3000' # 3000 is the Next.js app
+    depends_on:
+      - prometheus
+      - loki
+      - jaeger
+
+  postgres-exporter:
+    image: quay.io/prometheuscommunity/postgres-exporter:v0.17.1
+    container_name: marketplace_postgres_exporter
+    environment:
+      DATA_SOURCE_NAME: postgresql://${DB_USERNAME}:${DB_PASSWORD}@db:5432/${DB_NAME}?sslmode=disable
+    depends_on:
+      - db
+
+  redis-exporter:
+    image: oliver006/redis_exporter:v1.74.0
+    container_name: marketplace_redis_exporter
+    environment:
+      REDIS_ADDR: redis://redis:6379
+    depends_on:
+      - redis
+
+  kafka-exporter:
+    image: danielqsj/kafka-exporter:v1.9.0
+    container_name: marketplace_kafka_exporter
+    command: ['--kafka.server=kafka:29092']
+    depends_on:
+      - kafka
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.15.3
+    container_name: payment_system_elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - xpack.security.http.ssl.enabled=false
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+    ports:
+      - '9200:9200'
+    volumes:
+      - esdata:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ['CMD-SHELL', 'curl -s http://localhost:9200 >/dev/null || exit 1']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+  clickhouse:
+    image: clickhouse/clickhouse-server:24.8
+    container_name: payment_system_clickhouse
+    ports:
+      - '8123:8123' # HTTP
+      - '9000:9000' # Native
+    volumes:
+      - chdata:/var/lib/clickhouse
+      - ./infra/docker/clickhouse/kafka.xml:/etc/clickhouse-server/config.d/kafka.xml:ro
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+    environment:
+      CLICKHOUSE_DB: payments_analytics
+      CLICKHOUSE_USER: default
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
+
+  # ---------------------------------------------------------------------------
+  # Showcase program (docs/showcase) — F-02 local stand-ins for AWS (D19, D24)
+  # ---------------------------------------------------------------------------
+  minio:
+    image: elestio/minio:latest
+    container_name: payment_system_minio
+    command: server /data --console-address ':9001'
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports:
+      - '9100:9000' # S3 API
+      - '9101:9001' # console
+    volumes:
+      - miniodata:/data
+  minio-init:
+    image: elestio/minio:latest
+    container_name: payment_system_minio_init
+    depends_on:
+      - minio
+    entrypoint: >
+      /bin/sh -c "
+      until /usr/bin/mc alias set local http://minio:9000 minioadmin minioadmin; do sleep 1; done;
+      /usr/bin/mc mb --ignore-existing local/marketplace-media;
+      /usr/bin/mc ilm rule add --expire-delete-marker --noncurrent-expire-days 7 local/marketplace-media || true;
+      exit 0;
+      "
+  elasticmq:
+    image: softwaremill/elasticmq-native:latest
+    container_name: payment_system_elasticmq
+    ports:
+      - '9324:9324' # SQS API
+      - '9325:9325' # UI
+    volumes:
+      - ./infra/docker/elasticmq/elasticmq.conf:/opt/elasticmq.conf:ro
+
+  scylla:
+    image: scylladb/scylla:6.2
+    container_name: payment_system_scylla
+    # Single small node for laptops; Amazon Keyspaces in AWS (D24)
+    command: --smp 1 --memory 1G --overprovisioned 1 --developer-mode 1 --alternator-port 8000 --alternator-write-isolation only_rmw_uses_lwt
+    ports:
+      - '9042:9042'
+      - '8100:8000' # host 8100: the Nest API owns 8000
+    volumes:
+      - scylladata:/var/lib/scylla
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: payment_system_mailpit
+    ports:
+      - '1025:1025' # SMTP
+      - '8025:8025' # web UI
+  clamav:
+    image: clamav/clamav:stable
+    container_name: payment_system_clamav
+    ports:
+      - '3310:3310'
+
+  debezium:
+    # F-05: log-based CDC alternative to the outbox poller (infra/debezium/README.md)
+    image: quay.io/debezium/connect:3.0
+    container_name: payment_system_debezium
+    profiles: ['cdc']
+    depends_on:
+      - db
+      - kafka
+    environment:
+      BOOTSTRAP_SERVERS: kafka:29092
+      GROUP_ID: marketplace-connect
+      CONFIG_STORAGE_TOPIC: connect.configs
+      OFFSET_STORAGE_TOPIC: connect.offsets
+      STATUS_STORAGE_TOPIC: connect.status
+      CONFIG_STORAGE_REPLICATION_FACTOR: 1
+      OFFSET_STORAGE_REPLICATION_FACTOR: 1
+      STATUS_STORAGE_REPLICATION_FACTOR: 1
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
+      CONNECT_CONFIG_PROVIDERS: env
+      CONNECT_CONFIG_PROVIDERS_ENV_CLASS: org.apache.kafka.common.config.provider.EnvVarConfigProvider
+    ports:
+      - '8083:8083'
+
+volumes:
+  pgdata:
+  esdata:
+  chdata:
+  miniodata:
+  dynamodata:
+  scylladata:
+  promdata:
+  lokidata:

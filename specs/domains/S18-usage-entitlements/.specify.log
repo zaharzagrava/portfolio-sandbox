@@ -1,0 +1,27 @@
+The S18 spec is written and passes the quality checklist; no hooks apply because `.specify/extensions.yml` doesn't exist. I couldn't run `pnpm check:table-ownership` because it needs approval in this session. I derived the table-ownership section of `gaps.md` from code search and S17's recorded run instead, so rerun it with `--strict` before relying on it.
+
+**Files** (in `specs/domains/S18-usage-entitlements/`):
+- `spec.md`: 6 user stories, 57 acceptance scenarios (AS-01 to AS-57), 43 functional requirements, 9 success criteria, and the `## Cross-capability contracts` section.
+- `questions.md`: 12 `[BREAKING]`, 11 `[CONTRACT]` and 13 `[LOCAL]` lines, sorted by impact.
+- `test-plan.md`: 57 rows, one per scenario, naming the e2e or unit file for each.
+- `gaps.md`: 25 code gaps with file:line references, the open debt rows (D-14, D-6, D-7, D-8) with the replacing mechanism, and a work order.
+- `checklists/requirements.md`: every item passes on the first iteration. I fixed one real inconsistency, in cache versioning across re-subscriptions.
+- `.specify/feature.json` now points at the S18 directory. No code was modified.
+
+**Pattern P0614** (the only S18 row in the pattern map, late usage as adjustment lines) became a settlement ledger kept per subscription, period and metric. Each unit is billed exactly once, however late it arrives. Adjustments price only the increase in the period's overage amount, using the period's own allowance and rate, and issued invoices are never touched. A daily reconciliation job checks the invariant.
+
+**The current code gets four things wrong:**
+- **Lost late events:** an event arriving after the next invoice has been measured is never billed.
+- **Wrong adjustment price:** late units are priced at the full overage rate, ignoring the allowance.
+- **Silent usage loss:** `UsageService.record` drops usage when the send fails.
+- **Stale cache:** the entitlement cache can be overwritten by a slow load that started before an invalidation.
+
+**Needs another capability** (all marked `[CONTRACT]`):
+- **S17:** `linesFor` also returns a `settlement` plan, and S17's renewal must call `settle` inside its invoice transaction. Late usage can't be billed exactly once otherwise.
+- **S46:** `llm.call_completed` needs three additive fields (`subjectId`, `metric`, `billableTokens`). Today's event can't say who to bill.
+- **Domain map:** `hasEntitlement` gains a `subjectType` parameter, because shop and user ids are both UUIDs.
+- **Unbilled last period:** a cancelled subscription's last period of usage stays unbilled, because S17 issues no invoice on cancel.
+
+The SD-24 showcase note is not in this checkout, same as S17 found, so I used design 24 and `06/02` §5 from the Interview-Prep notes.
+
+The spec is ready for `/speckit-clarify` or `/speckit-plan`.

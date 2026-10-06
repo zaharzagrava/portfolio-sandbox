@@ -1,0 +1,34 @@
+The S13 spec, `questions.md`, `test-plan.md`, `gaps.md` and the quality checklist are written. I changed no code. The one thing I couldn't do is run `check:table-ownership`, so section C of `gaps.md` is built by reading the code instead.
+
+The spec has 66 acceptance scenarios, `AS-01` to `AS-66`, and 46 functional requirements. The five pattern-map rows for S13 (P0311, P0407, P0414, P0611, P0617) and the outbox each map to named scenarios. The checklist passes on the first iteration, and there are no `[NEEDS CLARIFICATION]` markers.
+
+## Decisions to review first (`questions.md`)
+
+`questions.md` has 13 BREAKING, 15 CONTRACT and 13 LOCAL lines. The ones most worth your attention:
+
+- **Entry point:** payments is requested with `POST /payments/intents`, answered `202`, with a mandatory `Idempotency-Key`. The edge gateway no longer writes payment requests straight to the broker, and the client no longer sends amount, currency or idempotency key.
+- **No cycle with orders:** S13 does not call S10's `getPayableOrder`, because S10 and S13 calling each other is an `orders ↔ payments` module cycle (IV.2, D-11). S13 keeps its own copy of order facts from `order.reserved`, `order.paid` and `order.cancelled`. This differs from S10's spec and is recorded as a `[CONTRACT]` question. S10 must keep `userId`, `totalMinor`, `currency`, `reservedUntil` and a rising `orderVersion` in those events.
+- **No blind resend:** a provider timeout makes the payment `UNKNOWN`. It is settled by looking up the order ID on the provider with backoff, never by sending the charge again.
+- **Refund saga:** a new status `REFUND_PENDING` makes refunds a two-step saga. Only full refunds are executed.
+- **Stock:** payments no longer touches stock.
+- **Circuit breaker:** one per provider operation. Card declines don't trip it, and a call refused by an open breaker is "not sent", never `UNKNOWN`.
+
+## Contract points other specs must honour
+
+- S10's `getPaymentStatus` maps `UNKNOWN`→`PENDING`, `REFUND_PENDING`→`COMPLETED` and `CANCELLED`→`FAILED`, and refreshes from the provider.
+- `payments.payment_failed` may carry `paymentRef: null`.
+- S14 must export `recordPaymentCaptured` and `recordPaymentRefunded`.
+
+## Files written
+
+`spec.md`, `questions.md`, `test-plan.md` (66 rows, one per scenario) and `gaps.md` are in `specs/domains/S13-payment-intents/`, with the checklist in its `checklists/` folder. I also overwrote `.specify/feature.json` to point at this directory.
+
+## Things to check
+
+- **`check:table-ownership` not run.** The command wasn't approved. Section C of `gaps.md` is a static reading of the code and says so at the top. The first implementation task is to run the real check and diff it against that section.
+- **Code issues found while reading:**
+  - The breaker can report a call that was already sent as "breaker open", so a possible charge is not marked `UNKNOWN` (`stripe.service.ts:69-74`).
+  - The outbox stores the provider's whole intent, including its client secret, on failure (`payment.service.ts:289-293`).
+  - The payment SSE stream skips the ownership check when the payment doesn't exist yet (`payment-stream.controller.ts:38-66`).
+
+Ready for `/speckit-clarify` or `/speckit-plan`.

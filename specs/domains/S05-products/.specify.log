@@ -1,0 +1,32 @@
+The S05 spec package is written, and the quality checklist passes all items. No hooks were registered (`.specify/extensions.yml` doesn't exist), and I changed no code.
+
+I could not run `pnpm check:table-ownership`, because it needs approval an unattended run can't get. Section C of `gaps.md` is rebuilt from code search instead, and it says so. Please run the real check first and reconcile.
+
+## What's in `specs/domains/S05-products/`
+| File | Contents |
+|---|---|
+| `spec.md` | 7 user stories, 87 acceptance scenarios (AS-01 to AS-87), 44 functional requirements, 10 success criteria, assumptions, and the `## Cross-capability contracts` section (Provides and Requires with exact names). |
+| `questions.md` | 20 `[BREAKING]`, 14 `[CONTRACT]` and 13 `[LOCAL]` decisions. |
+| `test-plan.md` | 87 rows, exactly matching the scenarios in `spec.md`, each naming its e2e file, UI journey or unit spec. |
+| `gaps.md` | 26 code-versus-spec gaps, the open debt rows (D-6, D-7, D-8, D-12, D-15, D-16), and a per-file table of other domains' `Product` queries with the replacement mechanism (R1, R2 or R3). |
+| `checklists/requirements.md` | The quality checklist. |
+
+I also pointed `.specify/feature.json` at this directory.
+
+## Main decisions to review
+- **Pattern P0324:** every pattern is covered: cache-aside, stale-while-revalidate, stampede, avalanche, negative caching, hot keys, big keys and write-behind views.
+- **Today's gaps:** the code has only create and read, so the spec adds update, archive/restore and a cursor list. Each change must pass the version it last read, and a stale version returns 409.
+- **Public API:** the public product view drops `sellerId` and exact `quantity`.
+- **Money:** price becomes `priceMinor` plus a currency, and zero is refused.
+- **Boundaries:**
+  - Other domains change stock only through `applyStockDelta`, which takes an `operationId` and never goes below zero.
+  - They read prices and stock through `getProductsByIds`, which reads the database rather than the cache.
+  - Product events become full snapshots.
+- **Stale-cache race:** invalidation is version-guarded. This needs S52 to add versioned entries, per-call timeouts and non-blocking delete; it is a `[CONTRACT]` line.
+- **Search:** the search routes and the search projector move to S32.
+- **Shop events:** the catalog hides products of suspended shops and deletes a deleted shop's products. It also takes over the shop-id backfill from tenancy, as S03 asked.
+
+## Open items
+- The checklist caught and I fixed two wrong cross-references and one dangling sentence; no other failures.
+- The spec is ready for `/speckit-clarify` (optional) or `/speckit-plan`.
+- **Offboarding export:** `GET /shops/:id/products` is blocked while a shop is closing, so S05 provides no product export. I recorded this as a `[CONTRACT]` question for S03 rather than specifying it.

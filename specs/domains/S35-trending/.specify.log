@@ -1,0 +1,22 @@
+I wrote the S35 spec, test plan, gaps list, questions file and quality checklist. All 16 checklist items pass on the first iteration. I changed no code and ran no tests; the only other write is `.specify/feature.json`, now pointing at this spec. No `before_specify` or `after_specify` hooks exist (`.specify/extensions.yml` is absent).
+
+- **Spec**: `specs/domains/S35-trending/spec.md` has 7 user stories, 42 acceptance scenarios (AS-01 to AS-42), 28 functional requirements and 9 success criteria. There is no `[NEEDS CLARIFICATION]` marker. The cross-capability contracts section lists what S35 provides and requires, with exact names.
+- **Pattern P1102** (Count-Min Sketch plus min-heap top-K, the only S35 row in the pattern map) is covered by FR-016 and FR-018 and by AS-23 to AS-28. The notes' windowing rules (event-time windows, watermark, correction path for late events, multi-level merge) are covered by FR-012 to FR-014 and AS-17 to AS-21.
+- **Test plan**: it has 42 rows, one per scenario, each naming its e2e file.
+- **Questions**: 17 `[BREAKING]`, 7 `[CONTRACT]` and 8 `[LOCAL]` lines, breaking ones first.
+- **Gaps**: it lists 40+ code gaps with file and line references, plus the debt rows D-6, D-7, D-8 and D-12. The check output has one S35 line, `SQL Product` in `application/trending.service.ts` (D-12). The replacement is R1 `getProductsByIds` (S05) plus R1 `getShopsByIds` (S03).
+
+The most consequential default choices, all tagged `[BREAKING]`, are:
+
+- **Response shape**: the endpoint returns an envelope with `productId`, `priceMinor` and `currency` instead of the bare array with float `price`. This changes callers in the web home page and the BFF.
+- **Delivery**: counting becomes at-least-once with an idempotent window merge. Today a crash silently loses up to 3 minutes of counts.
+- **Late events**: they go to a correction path instead of being dropped, as the notes say.
+- **Anti-manipulation**: one visitor counts at most once per event name, product and window. Anyone can post anonymous `product_view` events, so one script could otherwise make any product trend.
+- **Category**: the catalog's category is authoritative at read time and event categories are capped. Event categories are client claims.
+- **Visibility and errors**: they now follow the S34 rules, with a rate limit and a `503` instead of a `500`.
+
+Two other things to know:
+- Nothing in the web app or edge worker emits `product_view` or `add_to_cart` with `product_id` and `category`, so trending never fills outside tests. I recorded this as a `[CONTRACT]` need for W02, W03 and S39.
+- The only existing trending test lives in `marketing/ads.e2e-spec.ts`. It calls consumer internals directly, and the gaps list moves it into this capability.
+
+The next step is `/speckit-plan`, or `/speckit-clarify` if you want to review the `[BREAKING]` and `[CONTRACT]` lines in `questions.md` first.

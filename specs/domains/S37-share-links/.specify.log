@@ -1,0 +1,30 @@
+The S37 specification is written and passes the quality checklist, with 0 `[NEEDS CLARIFICATION]` markers. No code was changed. I only checked traceability: each of the 66 scenarios in `spec.md` has exactly one row in `test-plan.md`. No tests or type checks were run.
+
+**Files** (in `specs/domains/S37-share-links/`; `.specify/feature.json` now points here):
+- `spec.md`: 7 user stories, scenarios AS-01 to AS-66, requirements FR-001 to FR-105, success criteria, assumptions, and the Cross-capability contracts section. The two pattern-map rows for S37 (P0320 ID leases, P1109 Base62 + Feistel) map to requirements and scenarios.
+- `test-plan.md`: one row per scenario, with the e2e file named. It uses five backend e2e files, an edge-worker spec, a W02 UI journey and five unit files.
+- `questions.md`: 17 `[BREAKING]`, 7 `[CONTRACT]` and 12 `[LOCAL]` lines.
+- `gaps.md`: 25 behaviour gaps (G1–G25), 7 layering gaps (L1–L7), the debt rows that apply, and the `check:table-ownership` output.
+- `checklists/requirements.md`: the quality checklist, all items passing.
+
+**Contracts:**
+- **Honoured:** S25 (share links get their own rate-limit profile, `share-link.create`) and S36 (separate module, own secret).
+- **Provides:** the link endpoints, the `link.clicked` event, and an R1 export `resolveAttributions(codes)`.
+- **Open:** S10 and W02 don't yet say how they consume `ref` or the attribution lookup. I raised both as `[CONTRACT]` questions.
+
+**Main behaviour decisions** (all tagged `[BREAKING]`):
+- Create requires an `Idempotency-Key`.
+- Destinations must be `https`, and are re-checked at redirect time.
+- Aliases are lowercase only, and codes are never reused within 13 months.
+- Expired and disabled links answer `410`.
+- The existence filter is bypassed when it may be incomplete, since today an empty filter makes every real link answer 404.
+- The edge's "already counted" header is only honoured with a shared secret.
+- Clicks are deduplicated exactly and the referrer is reduced to its origin.
+- New routes `PATCH /links/:code` and `POST /links/:code/disable`.
+
+**Check results:**
+- **Table ownership:** the only `marketing` finding is the ads query on `Product` (S36's); none belong to share links. Share links need no other domain's data.
+- **Interview-Prep notes:** the original `~/workspace/notes/Interview-Prep/` is outside this session's allowed directories. I used the copy at `.specify/memory/Interview-Prep/` plus `docs/showcase/sections/SD-08-share-links.md`.
+- **Code width:** the notes' "Feistel on 42 bits" can't fit 7 base62 characters, since 2^42 > 62^7. I kept 40 bits and recorded it in `questions.md`.
+
+The spec is ready for `/speckit-plan`. A `/speckit-clarify` pass isn't needed.

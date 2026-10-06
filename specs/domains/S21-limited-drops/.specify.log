@@ -1,0 +1,17 @@
+I wrote the S21 specification, `questions.md`, `test-plan.md`, `gaps.md` and the quality checklist in `specs/domains/S21-limited-drops/`. The checklist passes with no `[NEEDS CLARIFICATION]` markers, and no code was changed.
+
+`spec.md` has 9 user stories, 54 acceptance scenarios (AS-01 to AS-54), 40 functional requirements and 11 success criteria. All six pattern-map rows that name S21 (P0110, P0311, P0318, P0414, P0607, P0615) appear as requirements and scenarios.
+
+`.specify/feature.json` now points at `specs/domains/S21-limited-drops`. It was pointing at S20.
+
+The scenarios and the test plan are consistent: all 54 scenarios have a row in `test-plan.md`, with UI journey and unit-test mappings included. Everything else in this report is also checked against the files.
+
+- **Missing source:** `docs/showcase/sections/SD-22-limited-drop-auctions.md` does not exist under the notes tree. I used note §22 of `07-commerce-and-transactions.md`, the constitution and the current code instead. Please confirm that no extra rule lives in the missing file.
+- **No debt row names `auctions` or S21.** In `gaps.md` I mapped debt rows D-6, D-7, D-8 and D-12 and the 5 ownership-check findings to R1 services or events. Two further cross-domain edges the ownership check does not list are the foreign key from `Auction` to `Shop` and the `MembershipService` import.
+- **Biggest breaking change:** the Redis Lua script plus write-behind relay is replaced by a durable bid step, serialized per auction. Today an acknowledged bid can be lost on a Redis failover. This follows note §22 and rules III.6 and III.9.
+- **`questions.md`:** it has 21 BREAKING, 11 CONTRACT and 16 LOCAL lines.
+- **Read the S10 CONTRACT lines first.** The spec asks S10 for a new `OrderCommandService.createFixedPriceOrder` (idempotent, with `EXTERNALLY_HELD` stock handling) and for stable `order.paid` and `order.cancelled` events. S10's own `questions.md` said S21 would state what it needs.
+- **Other CONTRACT lines:** the `leader_changed` field `price` becomes `priceMinor`, and `GET /auctions?productIds=` is the BFF's R2 target. The notification test (`libs/domains/notifications/notifications.e2e-spec.ts:120`) needs the rename.
+- **Rules I added that go beyond the notes:** the price rises to the reserve once a leader's maximum covers it, and the second-chance runner-up must meet the reserve and must not be a shop member.
+
+Next step is `/speckit-plan` for S21.

@@ -1,0 +1,133 @@
+# Phase 2 (batch 4) move map: community, content, notifications, discovery, seller-insights
+# batch-dirs: discussions feed stories notifications search-admin autocomplete recommendations trending leaderboards seller-stats crawler
+# <source under libs/common/src>	<destination under libs/>
+# Layer rules as batches 1–3. Unit specs sit next to the files they test. Two `search-events.ts`
+# files merge into discovery, so they're renamed after the event each defines.
+#
+# community  (discussions + feed; D5: no Postgres tables)
+discussions/discussions.module.ts	domains/community/discussions.module.ts
+discussions/discussions-worker.module.ts	domains/community/discussions-worker.module.ts
+discussions/discussions.e2e-spec.ts	domains/community/discussions.e2e-spec.ts
+discussions/discussions.controller.ts	domains/community/api/discussions.controller.ts
+discussions/types.ts	domains/community/api/discussions.dto.ts
+discussions/discussion.service.ts	domains/community/application/discussion.service.ts
+discussions/vote.service.ts	domains/community/application/vote.service.ts
+discussions/content.ts	domains/community/domain/content.ts
+discussions/paths.ts	domains/community/domain/paths.ts
+discussions/ranking.ts	domains/community/domain/ranking.ts
+discussions/ranking.spec.ts	domains/community/domain/ranking.spec.ts
+discussions/discussions.jobs.ts	domains/community/infra/discussions.jobs.ts
+feed/feed.module.ts	domains/community/feed.module.ts
+feed/feed-publisher.module.ts	domains/community/feed-publisher.module.ts
+feed/feed.e2e-spec.ts	domains/community/feed.e2e-spec.ts
+feed/feed.controller.ts	domains/community/api/feed.controller.ts
+feed/feed.service.ts	domains/community/application/feed.service.ts
+feed/feed-publisher.service.ts	domains/community/application/feed-publisher.service.ts
+feed/merge.ts	domains/community/domain/merge.ts
+feed/merge.spec.ts	domains/community/domain/merge.spec.ts
+feed/fanout.consumer.ts	domains/community/infra/fanout.consumer.ts
+feed/product-feed.projector.ts	domains/community/infra/product-feed.projector.ts
+#
+# content  (stories)
+stories/stories.module.ts	domains/content/stories.module.ts
+stories/stories.e2e-spec.ts	domains/content/stories.e2e-spec.ts
+stories/stories.controller.ts	domains/content/api/stories.controller.ts
+stories/stories.service.ts	domains/content/application/stories.service.ts
+stories/story-events.ts	domains/content/application/events/story-events.ts
+stories/blocks.ts	domains/content/domain/blocks.ts
+stories/cache-invalidation.ts	domains/content/infra/cache-invalidation.ts
+#
+# notifications
+notifications/notifications.module.ts	domains/notifications/notifications.module.ts
+notifications/notifications-core.module.ts	domains/notifications/notifications-core.module.ts
+notifications/notifications-worker.module.ts	domains/notifications/notifications-worker.module.ts
+notifications/notifications.e2e-spec.ts	domains/notifications/notifications.e2e-spec.ts
+notifications/notifications.controller.ts	domains/notifications/api/notifications.controller.ts
+notifications/notification-webhooks.controller.ts	domains/notifications/api/notification-webhooks.controller.ts
+notifications/sns-verifier.ts	domains/notifications/api/sns-verifier.ts
+notifications/notification-router.service.ts	domains/notifications/application/notification-router.service.ts
+notifications/preferences.service.ts	domains/notifications/application/preferences.service.ts
+notifications/inbox.service.ts	domains/notifications/application/inbox.service.ts
+notifications/suppression.service.ts	domains/notifications/application/suppression.service.ts
+notifications/catalog.ts	domains/notifications/domain/catalog.ts
+notifications/templates.ts	domains/notifications/domain/templates.ts
+notifications/types.ts	domains/notifications/domain/types.ts
+notifications/quiet-hours.ts	domains/notifications/domain/quiet-hours.ts
+notifications/quiet-hours.spec.ts	domains/notifications/domain/quiet-hours.spec.ts
+notifications/unsubscribe-token.ts	domains/notifications/domain/unsubscribe-token.ts
+notifications/providers/ports.ts	domains/notifications/domain/provider-ports.ts
+notifications/delivery-log.service.ts	domains/notifications/infra/delivery-log.service.ts
+notifications/notification-router.projector.ts	domains/notifications/infra/notification-router.projector.ts
+notifications/notification-workers.service.ts	domains/notifications/infra/notification-workers.service.ts
+notifications/notification-providers.ts	domains/notifications/infra/notification-providers.ts
+notifications/providers/channel-sender.ts	domains/notifications/infra/providers/channel-sender.ts
+notifications/providers/fcm-push.provider.ts	domains/notifications/infra/providers/fcm-push.provider.ts
+notifications/providers/log.providers.ts	domains/notifications/infra/providers/log.providers.ts
+notifications/providers/ses-email.provider.ts	domains/notifications/infra/providers/ses-email.provider.ts
+notifications/providers/smtp-email.provider.ts	domains/notifications/infra/providers/smtp-email.provider.ts
+notifications/providers/twilio-sms.provider.ts	domains/notifications/infra/providers/twilio-sms.provider.ts
+#
+# discovery  (search-admin + autocomplete + recommendations + trending; read models only)
+search-admin/search-admin.module.ts	domains/discovery/search-admin.module.ts
+search-admin/search-reindex-worker.module.ts	domains/discovery/search-reindex-worker.module.ts
+search-admin/search-reindex.e2e-spec.ts	domains/discovery/search-reindex.e2e-spec.ts
+search-admin/search-admin.controller.ts	domains/discovery/api/search-admin.controller.ts
+search-admin/search-quality.service.ts	domains/discovery/application/search-quality.service.ts
+search-admin/search-reindex.service.ts	domains/discovery/application/search-reindex.service.ts
+search-admin/shop-product-search.service.ts	domains/discovery/application/shop-product-search.service.ts
+search-admin/search-events.ts	domains/discovery/application/events/search-click-events.ts
+search-admin/search-clicks.projector.ts	domains/discovery/infra/search-clicks.projector.ts
+autocomplete/autocomplete.module.ts	domains/discovery/autocomplete.module.ts
+autocomplete/autocomplete-worker.module.ts	domains/discovery/autocomplete-worker.module.ts
+autocomplete/autocomplete.e2e-spec.ts	domains/discovery/autocomplete.e2e-spec.ts
+autocomplete/autocomplete.controller.ts	domains/discovery/api/autocomplete.controller.ts
+autocomplete/autocomplete.service.ts	domains/discovery/application/autocomplete.service.ts
+autocomplete/search-events.ts	domains/discovery/application/events/search-query-events.ts
+autocomplete/top-k-trie.ts	domains/discovery/domain/top-k-trie.ts
+autocomplete/top-k-trie.spec.ts	domains/discovery/domain/top-k-trie.spec.ts
+autocomplete/search-query-logger.ts	domains/discovery/infra/search-query-logger.ts
+autocomplete/search-queries.projector.ts	domains/discovery/infra/search-queries.projector.ts
+autocomplete/autocomplete-builder.jobs.ts	domains/discovery/infra/autocomplete-builder.jobs.ts
+recommendations/recommendations.module.ts	domains/discovery/recommendations.module.ts
+recommendations/recommendations-worker.module.ts	domains/discovery/recommendations-worker.module.ts
+recommendations/recommendations.e2e-spec.ts	domains/discovery/recommendations.e2e-spec.ts
+recommendations/recommendations.controller.ts	domains/discovery/api/recommendations.controller.ts
+recommendations/recommendations.service.ts	domains/discovery/application/recommendations.service.ts
+recommendations/keys.ts	domains/discovery/infra/recommendation-keys.ts
+recommendations/order-baskets.projector.ts	domains/discovery/infra/order-baskets.projector.ts
+recommendations/co-occurrence.jobs.ts	domains/discovery/infra/co-occurrence.jobs.ts
+trending/trending.module.ts	domains/discovery/trending.module.ts
+trending/trending.controller.ts	domains/discovery/api/trending.controller.ts
+trending/trending.service.ts	domains/discovery/application/trending.service.ts
+trending/count-min-sketch.ts	domains/discovery/domain/count-min-sketch.ts
+trending/count-min-sketch.spec.ts	domains/discovery/domain/count-min-sketch.spec.ts
+trending/trending.consumer.ts	domains/discovery/infra/trending.consumer.ts
+#
+# seller-insights  (leaderboards + seller-stats + crawler)
+leaderboards/leaderboards.module.ts	domains/seller-insights/leaderboards.module.ts
+leaderboards/leaderboards-worker.module.ts	domains/seller-insights/leaderboards-worker.module.ts
+leaderboards/leaderboards.e2e-spec.ts	domains/seller-insights/leaderboards.e2e-spec.ts
+leaderboards/leaderboards.controller.ts	domains/seller-insights/api/leaderboards.controller.ts
+leaderboards/leaderboard.service.ts	domains/seller-insights/application/leaderboard.service.ts
+leaderboards/shop-dashboard.service.ts	domains/seller-insights/application/shop-dashboard.service.ts
+leaderboards/periods.ts	domains/seller-insights/domain/periods.ts
+leaderboards/keys.ts	domains/seller-insights/infra/leaderboard-keys.ts
+leaderboards/leaderboard.lua.ts	domains/seller-insights/infra/leaderboard.lua.ts
+leaderboards/dashboard-ticker.service.ts	domains/seller-insights/infra/dashboard-ticker.service.ts
+leaderboards/leaderboard.projector.ts	domains/seller-insights/infra/leaderboard.projector.ts
+leaderboards/shop-live.projector.ts	domains/seller-insights/infra/shop-live.projector.ts
+leaderboards/shop-sales.projector.ts	domains/seller-insights/infra/shop-sales.projector.ts
+leaderboards/leaderboard-snapshot.jobs.ts	domains/seller-insights/infra/leaderboard-snapshot.jobs.ts
+seller-stats/seller-stats.module.ts	domains/seller-insights/seller-stats.module.ts
+seller-stats/seller-stats.controller.ts	domains/seller-insights/api/seller-stats.controller.ts
+seller-stats/types.ts	domains/seller-insights/api/seller-stats.dto.ts
+seller-stats/seller-stats.service.ts	domains/seller-insights/application/seller-stats.service.ts
+crawler/crawler.module.ts	domains/seller-insights/crawler.module.ts
+crawler/crawler.e2e-spec.ts	domains/seller-insights/crawler.e2e-spec.ts
+crawler/crawler.service.ts	domains/seller-insights/application/crawler.service.ts
+crawler/extract-price.ts	domains/seller-insights/domain/extract-price.ts
+crawler/robots.ts	domains/seller-insights/domain/robots.ts
+crawler/simhash.ts	domains/seller-insights/domain/simhash.ts
+crawler/url.ts	domains/seller-insights/domain/url.ts
+crawler/crawler.spec.ts	domains/seller-insights/domain/crawler.spec.ts
+crawler/frontier.ts	domains/seller-insights/infra/frontier.ts

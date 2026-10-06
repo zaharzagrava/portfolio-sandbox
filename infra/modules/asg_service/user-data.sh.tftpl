@@ -1,0 +1,80 @@
+#!/bin/bash
+# Boot: Docker + CodeDeploy agent + ADOT collector, then start the currently deployed image.
+set -euxo pipefail
+dnf install -y docker ruby wget jq
+systemctl enable --now docker
+
+# CodeDeploy agent (APIs use it for blue/green; harmless on workers).
+cd /tmp && wget -q "https://aws-codedeploy-${region}.s3.${region}.amazonaws.com/latest/install" && chmod +x install && ./install auto
+
+# ADOT collector: receives OTLP from the app on localhost:4318, scrapes :9464/metrics,
+# ships traces to X-Ray, metrics to Amazon Managed Prometheus, via the instance role (SD-33 AWS mapping).
+# Per-instance agents can't tail-sample (spans of one trace land on many instances), so they head-sample;
+# errors-first tail sampling needs the gateway tier (loadbalancing exporter → gateway), the SD-33 scale step.
+mkdir -p /opt/adot
+cat >/opt/adot/config.yaml <<'YAML'
+receivers:
+  otlp:
+    protocols:
+      grpc: { endpoint: 127.0.0.1:4317 }
+      http: { endpoint: 127.0.0.1:4318 }
+  prometheus:
+    config:
+      scrape_configs:
+        - job_name: app
+          scrape_interval: 15s
+          static_configs:
+            - targets: ['127.0.0.1:9464']
+              labels: { service: ${app}, env: ${env} }
+processors:
+  memory_limiter: { check_interval: 1s, limit_percentage: 80, spike_limit_percentage: 20 }
+  probabilistic_sampler: { sampling_percentage: ${trace_sampling_percent} }
+  batch: {}
+exporters:
+  awsxray: {}
+%{ if amp_remote_write_url != "" ~}
+  prometheusremotewrite:
+    endpoint: ${amp_remote_write_url}
+    auth: { authenticator: sigv4auth }
+extensions:
+  sigv4auth: { region: ${region}, service: aps }
+%{ endif ~}
+service:
+%{ if amp_remote_write_url != "" ~}
+  extensions: [sigv4auth]
+%{ endif ~}
+  pipelines:
+    traces: { receivers: [otlp], processors: [memory_limiter, probabilistic_sampler, batch], exporters: [awsxray] }
+%{ if amp_remote_write_url != "" ~}
+    metrics: { receivers: [prometheus], processors: [memory_limiter, batch], exporters: [prometheusremotewrite] }
+%{ endif ~}
+YAML
+docker run -d --name adot --restart unless-stopped --network host \
+  -e AWS_REGION=${region} \
+  -v /opt/adot/config.yaml:/etc/otel/config.yaml:ro \
+  public.ecr.aws/aws-observability/aws-otel-collector:latest --config /etc/otel/config.yaml || true
+
+# Render release.env for the deployed version, reuse the CodeDeploy hooks to start it.
+mkdir -p /opt/marketplace/release
+tag=$(aws ssm get-parameter --region ${region} --name "/marketplace/${env}/${app}/image_tag" --query Parameter.Value --output text)
+aws s3 cp --region ${region} "s3://${artifacts_bucket}/codedeploy/${env}/${app}-$tag.zip" /tmp/release.zip && unzip -o /tmp/release.zip -d /opt/marketplace/release
+printf 'APP=%s\nIMAGE=%s:%s\nENV=%s\n' "${app}" "${repository_url}" "$tag" "${env}" > /opt/marketplace/release/release.env
+bash /opt/marketplace/release/hooks/pull.sh && bash /opt/marketplace/release/hooks/start.sh
+
+# Termination watcher: on scale-in the ASG puts us in Terminating:Wait; drain the app, then let the ASG continue.
+cat >/usr/local/bin/drain-on-terminate.sh <<'SH'
+#!/bin/bash
+while sleep 15; do
+  token=$(curl -s -X PUT http://169.254.169.254/latest/api/token -H 'X-aws-ec2-metadata-token-ttl-seconds: 60')
+  state=$(curl -s -H "X-aws-ec2-metadata-token: $token" http://169.254.169.254/latest/meta-data/autoscaling/target-lifecycle-state || true)
+  if [ "$state" = "Terminated" ]; then
+    id=$(curl -s -H "X-aws-ec2-metadata-token: $token" http://169.254.169.254/latest/meta-data/instance-id)
+    bash /opt/marketplace/release/hooks/stop.sh
+    aws autoscaling complete-lifecycle-action --region REGION --auto-scaling-group-name ASG --lifecycle-hook-name drain --instance-id "$id" --lifecycle-action-result CONTINUE
+    exit 0
+  fi
+done
+SH
+sed -i "s/REGION/${region}/; s/ASG/${asg_name}/" /usr/local/bin/drain-on-terminate.sh
+chmod +x /usr/local/bin/drain-on-terminate.sh
+nohup /usr/local/bin/drain-on-terminate.sh >/var/log/drain.log 2>&1 &

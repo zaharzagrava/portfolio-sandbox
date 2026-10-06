@@ -1,0 +1,29 @@
+I've written the S19 spec (`spec.md`), `test-plan.md`, `gaps.md`, `questions.md` and the quality checklist. All checklist items pass on the first review, and there are no clarification markers. I didn't touch any code, but I did point `.specify/feature.json` at the S19 directory, since it still pointed at S18.
+
+Two things couldn't be done as asked:
+- **Table-ownership check:** I couldn't run `pnpm check:table-ownership` because it needed an approval the unattended run didn't have. Section C of `gaps.md` is derived by hand from model imports, raw SQL and migrations, and says so. Re-run the check with `--strict` before the first code change.
+- **Pattern map:** only one row, P0328, names S19, and the spec covers it. Redis GEO for live courier positions belongs to S20.
+
+Results:
+- **Spec:** 7 user stories, 45 acceptance scenarios (AS-01 to AS-45), and FR-001 to FR-053. It includes a Cross-capability contracts section with Provides and Requires lists.
+- **Test plan:** one row per scenario, 5 e2e files in `packages/backend/libs/domains/fulfilment/`, plus the unit specs and the W02 Playwright step.
+- **Gaps:** 27 code gaps. They cover the debt rows D-6, D-7, D-8, D-12 and D-16, each with the IX.7 mechanism that replaces it.
+- **Questions:** 15 `[BREAKING]` (the review list at the top of the file), 9 `[CONTRACT]` and 12 `[LOCAL]` lines.
+
+Changes you should look at first:
+- **Cross-shop stock write (security):** today a member of shop A can set stock for shop B's product. The spec makes that a 404 via the catalog's shop-filtered batch read.
+- **Foreign keys:** the migration has FKs from the pickup tables to `Shop` and `Product`. The spec drops them; product and shop deletion are handled by events instead.
+- **Projector:** it reads the catalog's `Product` table today. The spec has it build its own copy from `catalog.product_*` events.
+- **Response shapes:** search and browse become `{items, nextCursor}` envelopes with `priceMinor` and `currency`.
+- **Parameter validation:** bad parameters now return a 400 instead of being clamped silently.
+- **Rate limits:** dedicated policies replace the shared `search.query`, and clusters are no longer unthrottled.
+- **Search outage:** it answers 503 with no fallback to the primary database.
+
+Differences from earlier specs, recorded as `[CONTRACT]` lines:
+- S10 lists S19 as a consumer of `order.paid` and `OrderFulfilmentService`. S19 uses neither, because dispatch is S20's and orders carry no pickup choice.
+- S09 and J04 say an offline sale reaches pickup through the catalog event. Pickup stock is per point and independent of the catalog's `quantity`, so J04 must go through S19's HTTP endpoints.
+- S05 must add the `{shopId}` filter and `version` to its batch read DTO.
+
+The SD-13 note under `~/workspace/notes` wasn't readable, so I used the repo copy at `docs/showcase/sections/SD-13-pickup-near-me.md`. The notes disagree with themselves on clustering (geohash grid versus tile grid); I followed the implementation record.
+
+Everything is in `specs/domains/S19-pickup-near-me/`, and the spec is ready for `/speckit-plan`.

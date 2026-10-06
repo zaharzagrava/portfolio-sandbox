@@ -1,0 +1,14 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "pw-play /usr/share/sounds/freedesktop/stereo/complete.oga >/dev/null 2>&1 &"
+          }
+        ]
+      }
+    ]
+  }
+}

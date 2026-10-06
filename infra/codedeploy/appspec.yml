@@ -1,0 +1,22 @@
+# O-02 CodeDeploy revision for EC2/ASG blue-green. The bundle = this file + hooks/ + release.env (APP, IMAGE, ENV).
+# Traffic handling (BlockTraffic/AllowTraffic, target-group deregistration delay) is CodeDeploy's job;
+# the hooks only pull, start, stop and validate the container.
+version: 0.0
+os: linux
+files:
+  - source: /
+    destination: /opt/marketplace/release
+file_exists_behavior: OVERWRITE
+hooks:
+  ApplicationStop:
+    - location: hooks/stop.sh
+      timeout: 60
+  BeforeInstall:
+    - location: hooks/pull.sh
+      timeout: 300
+  ApplicationStart:
+    - location: hooks/start.sh
+      timeout: 120
+  ValidateService:
+    - location: hooks/validate.sh
+      timeout: 180

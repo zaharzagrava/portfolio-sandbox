@@ -1,0 +1,12 @@
+# Copy to terraform.tfvars (git-ignored). No secrets here: provider credentials come from env vars,
+# app secrets go into Secrets Manager out-of-band.
+github_repo               = "your-org/portfolio-project-marketplace"
+cloudflare_zone_id        = "0123456789abcdef0123456789abcdef"
+domain                    = "example.com"
+cloudfront_public_key_pem = <<-PEM
+  -----BEGIN PUBLIC KEY-----
+  ...
+  -----END PUBLIC KEY-----
+PEM
+pager_email   = "oncall@example.com"
+budget_emails = ["owner@example.com"]

@@ -1,0 +1,24 @@
+name: payments-processing
+journey: Payments
+owner: payments
+description: Payment requests are processed without server errors (no-loss is enforced by the ledger invariant alert, not a ratio).
+objective: 99.99
+window: 30d
+sli:
+  type: availability
+  metric: http_server_request_duration_seconds
+  selector: 'service="payment-processor"'
+runbook: docs/runbooks/StripeCircuitOpen.md
+---
+name: payments-end-to-end
+journey: Payments
+owner: payments
+description: A payment result reaches the read model within 5 s of the event.
+objective: 99.9
+window: 30d
+sli:
+  type: latency
+  thresholdSeconds: 5
+  metric: projection_lag_seconds
+  selector: 'projector=~".*balance.*|.*payment.*"'
+runbook: docs/runbooks/ProjectionLagHigh.md

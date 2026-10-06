@@ -1,0 +1,30 @@
+The S33 spec, test plan, gaps list, questions file and quality checklist are written. All 16 checklist items pass. I did not modify code.
+
+`pnpm check:table-ownership` could not be run unattended because it needed an approval. The domain lines in `gaps.md` §C come from reading the autocomplete files, and the file says so. The autocomplete files touch no cross-domain tables. The implementation agent needs to run the command and add any extra `discovery` lines.
+
+Files are in `specs/domains/S33-autocomplete/`. I also pointed `.specify/feature.json` at that directory.
+
+- **`spec.md`**:
+  - Seven user stories and 56 acceptance scenarios (AS-01 to AS-56) with exact outcomes.
+  - 42 functional requirements and 9 success criteria.
+  - A `## Cross-capability contracts` section with the Provides and Requires lists.
+  - Pattern P1101 (trie with per-node top-K) is covered; it is the only pattern-map row naming S33.
+- **`test-plan.md`**: 56 rows, one per scenario, with four named e2e files plus the unit files.
+- **`gaps.md`**: 23 gaps with file and line references, the open debt-register rows (D-6, D-8, D-15, D-16) with the mechanism that replaces each, and an ordered work list.
+- **`questions.md`**: 35 tagged lines, sorted by impact: 11 BREAKING, 8 CONTRACT and 16 LOCAL.
+- **`checklists/requirements.md`**: no `[NEEDS CLARIFICATION]` markers remain. One caveat is recorded there: the spec names the route, headers and port methods because the contract is those.
+
+The BREAKING choices that most affect existing code:
+- **Response shape:** it becomes `{prefix, suggestions[{text, source}], degraded[]}`, and the merge moves from the web client to the backend.
+- **Validation and rate limit:** a missing or over-long `q` now returns 400 instead of an empty list or silent truncation, and the route gets a rate limit instead of skipping throttling.
+- **Caching:** degraded answers and errors are `no-store`.
+- **Visibility:** catalog completions go through S32's `ProductTitleSuggester`, so non-visible products never appear.
+- **Blocklist:** it applies to every source at serve time, not only at build.
+- **Snapshots:** they get a checksum, an empty or unchanged build is not published, and the pointer only moves forward.
+- **Module exports:** the module stops being global and stops exporting `SearchQueryLogger`.
+
+Decisions other specs must honour:
+- **S32:** it must add `ProductTitleSuggester.suggestTitlesFuzzy` and a `surface` column in the query log.
+- **S50:** it must declare the `discovery.suggest` rate-limit policy (600 per minute per address).
+- **W02:** it must debounce at 150 ms, cancel superseded requests, drop stale answers and cache a prefix for 60 s.
+- **S35:** the trending-terms blend is deferred to S35.

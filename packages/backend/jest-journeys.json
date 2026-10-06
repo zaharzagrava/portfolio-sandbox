@@ -1,0 +1,25 @@
+{
+  "moduleFileExtensions": [
+    "js",
+    "json",
+    "ts"
+  ],
+  "rootDir": ".",
+  "roots": [
+    "<rootDir>/test/journeys/"
+  ],
+  "testEnvironment": "node",
+  "testRegex": ".*\\.journey-spec\\.ts$",
+  "transform": {
+    "^.+\\.(t|j)s$": "ts-jest"
+  },
+  "moduleNameMapper": {
+    "^@app/(infrastructure|composition|domains)/(.*)$": "<rootDir>/libs/$1/$2",
+    "^@app/test/(.*)$": "<rootDir>/test/$1",
+    "^@app/common/(.*)$": "<rootDir>/libs/common/$1",
+    "^@app/(core|bff|sse-gateway|worker|projector|collab|public-api|payment-processor)/(.*)$": "<rootDir>/apps/$1/src/$2"
+  },
+  "testTimeout": 180000,
+  "maxWorkers": 1,
+  "passWithNoTests": true
+}

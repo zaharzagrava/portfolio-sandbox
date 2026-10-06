@@ -1,0 +1,23 @@
+The S16 specification is written: `spec.md`, `questions.md`, `test-plan.md`, `gaps.md` and the quality checklist are in `specs/domains/S16-seller-statements/`. All checklist items pass on the first pass. I changed no code, only `.specify/feature.json` (now points at the S16 directory). No `.specify/extensions.yml` exists, so no hooks ran.
+
+**What the spec covers**
+- **Scenarios:** `spec.md` has 83 acceptance scenarios in 8 user stories, 54 functional requirements and 10 success criteria. Every S16 row of the pattern map (P0207, P0321, P0614) is covered. Concurrency, idempotent replay, illegal state transitions, cross-tenant access, limits, timeouts and out-of-order or duplicate events each have a scenario with exact expected values.
+- **Cross-capability contracts:** the section follows your Provides/Requires format. It honours what S10, S14, S15 and S03 already require of S16.
+- **Test plan:** `test-plan.md` maps all 83 scenarios to exactly one row each, naming the e2e spec file for each.
+
+**Decisions to review first**
+`questions.md` has 16 BREAKING, 10 CONTRACT and 14 LOCAL lines. The big ones:
+- **Facts via events:** statements stop reading orders and catalog tables. They copy sale lines from `order.paid` events into a store they own (R3), and the same for `payout.paid` and `ledger.journal_posted`.
+- **ClickHouse dropped:** this contradicts the domain map and the S10/S14 specs, which say statements read via ClickHouse CDC. The ClickHouse-via-CDC wording needs updating in the same PR (listed in `gaps.md`).
+- **Two new fields asked of S10:** `order.paid` lines need `lineId` and `category`. S14's flat 50-unit fee gets an R1 hook to adopt S16's rates later. Until then, differences show as fee-mismatch findings.
+- **Bugs the notes expose in the current code:**
+  - Sales with no resolving rate silently vanish from statements.
+  - A second rate change with the same reason text is dropped.
+  - `month=2026-13` returns a 500.
+  - CSV turns `-900` into `'-900`.
+  - The close job accepts any month, including the current one.
+  - A closed month's CSV changes after a rate change.
+- **Refunds out of scope:** refunds don't change statements in this version, because no event carries a per-shop refund allocation. Sellers are charged commission on refunded sales until S10/S13 emit one.
+
+**Known limitation**
+`pnpm check:table-ownership` needed an approval that an unattended run can't give, so the `statements` findings in `gaps.md` section C are derived by reading the code. D-12 is the only debt row naming statements, and D-7 appears only in the old e2e spec. The implementation agent should run the check first.

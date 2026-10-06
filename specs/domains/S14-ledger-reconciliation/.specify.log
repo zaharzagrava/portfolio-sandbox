@@ -1,0 +1,34 @@
+The S14 spec is written and the quality checklist passes on the first iteration. No code was changed. The only file outside the S14 folder is `.specify/feature.json`, which now points at the feature directory. Nothing was run beyond `pnpm check:table-ownership`.
+
+There are 69 acceptance scenarios, 50 functional requirements and 0 `[NEEDS CLARIFICATION]` markers. The test plan has 69 rows, one per scenario. No `before_specify` or `after_specify` hooks apply, because `.specify/extensions.yml` doesn't exist.
+
+**Where I departed from the sources**
+- **Hot-account sharding**: SD-20 says sharding is "not needed (D6)", but note 10/02 and the pattern map require it. I specified a transactional running balance per account, 32 shards on the three accounts every sale touches, a sweep, and a sorted lock order. Without a balance row there is nothing to lock, so the deadlock-avoidance pattern would have nothing to prove.
+- **Balances**: reads use the running balance, never `SUM()` over entries.
+- **Buyer account**: the buyer is no longer a ledger account; a sale debits a new `PROVIDER_CLEARING` account instead.
+- **Reconciliation**: it now compares the provider's balance-transaction statement with journals, by provider reference, instead of payment intents with `Payment` rows.
+- **Operator API**: new admin endpoints list reconciliation runs and issues, and resolve an issue, optionally with a balanced adjustment.
+- **Settlement**: it uses the sale's clearing credit, split by `shopOrders[].subtotalMinor`, and is serialized against refunds.
+
+All 17 BREAKING lines in `questions.md` are real changes to today's behaviour, so the implementation will have to update existing tests and callers.
+
+**Please review first**
+- **S13**: I needed three extra fields, `orderId`, `paymentRef` and `refundRef`. They are additive, and I flagged them as `[CONTRACT]`.
+- **S10**: settlement depends on S10's `order.paid` carrying `shopOrders[].subtotalMinor`.
+- **S15 and S36**: both must switch to `postJournal`, `getBalances` and `listSellerBalances`.
+- **Payouts endpoint**: `GET /shops/:shopId/payouts` leaves this capability and moves to S15.
+
+`gaps.md` includes the real `check:table-ownership` output for `payments`: seven lines, three of which are S14's (`UserModel` ×2 and `BisOrderModel` in `ledger.module.ts`). Each row names its replacement mechanism, and the file ends with a 10-step work order.
+
+**Open points**
+- I couldn't check the exact path for the J01 journey's Playwright spec, so the AS-32 row in the test plan refers to J01 rather than a file.
+- The test plan treats AS-67 (boundaries) as a static gate rather than an e2e test.
+
+Ready for `/speckit-clarify` or `/speckit-plan`.
+
+Files are in `specs/domains/S14-ledger-reconciliation/`:
+- `spec.md`
+- `questions.md`
+- `test-plan.md`
+- `gaps.md`
+- `checklists/requirements.md`

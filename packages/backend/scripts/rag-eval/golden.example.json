@@ -1,0 +1,17 @@
+[
+  {
+    "question": "Does the Pixel 10 support eSIM?",
+    "scope": { "kind": "product", "productId": "<pixel-10 product id>", "shopId": "<phones shop id>" },
+    "expectedDocuments": ["Pixel 10 manual"]
+  },
+  {
+    "question": "How long do customers have to return an item?",
+    "scope": { "kind": "shop", "shopId": "<phones shop id>" },
+    "expectedDocuments": ["Returns policy"]
+  },
+  {
+    "question": "When are payouts sent?",
+    "scope": { "kind": "shop", "shopId": "<phones shop id>" },
+    "expectedDocuments": ["Seller guide"]
+  }
+]

@@ -1,0 +1,32 @@
+The S29 spec, `questions.md`, `test-plan.md` and `gaps.md` are written, and the quality checklist passes with no `[NEEDS CLARIFICATION]` markers. I changed no code.
+
+**Spec**
+- It has 7 user stories, 61 acceptance scenarios (AS-01 to AS-61), 9 success criteria, and a `## Cross-capability contracts` section with Provides and Requires.
+- The only pattern-map row naming S29 is P0509 (upload security). It is covered by FR-011 to FR-013, FR-070 and AS-16 to AS-19, AS-55, AS-60.
+- The checklist is at `specs/domains/S29-photos/checklists/requirements.md`. The spec and `test-plan.md` both have 61 scenarios and rows. There were no extension hooks.
+- Not run: the e2e, unit and load suites named in `test-plan.md`, since there is no new code yet. `check:boundaries` was not run either.
+- `pnpm check:table-ownership` was run: `media` has 2 findings (`Product` and `ProductMedia`), both listed in `gaps.md`.
+
+**Decisions for you to review** (full list in `questions.md`, BREAKING first)
+- **`ProductMedia` ownership:** `db/ownership.ts` and the domain map give it to `catalog`, but S05's spec says gallery links belong to S29. I moved it to `media` and added a `ProductGallery` version table.
+- **`post` purpose removed:** S25 specifies text-only posts, so uploads are now `review` or `product` only. Media also gets its own rate-limit policies instead of borrowing `discussion.write`.
+- **`GET /media/:id`:** it is public only for `READY` photos. Everything else is visible to the uploader and shop members only, and everyone else gets one identical `404`.
+- **Status machine and processing:**
+  - New statuses are `UPLOADED`, `EXPIRED` and `DELETED`, with a history table and a closed set of rejection codes instead of decoder messages.
+  - Workers take a 5-minute lease and a 5-attempt cap.
+- **Duplicate detection:**
+  - It runs for product photos only, and the nearest match wins.
+  - The scan is serialised so two simultaneous copies cannot both miss each other.
+  - The match is no longer published on `media.ready`, because it leaked another shop's photo ID. It goes only to a new `media.duplicate_suspected` event.
+- **Other changes:**
+  - Malware scan before any variant is written, with the scanner extracted to `libs/infrastructure/antivirus` (an S07 follow-up).
+  - Mandatory media origin that must be a different site from the web app.
+  - sRGB conversion, and AVIF/JPEG/PNG/WebP only (no HEIC).
+  - Gallery writes need `expectedVersion`.
+  - The Outbox is written through its exported append function instead of raw SQL.
+  - The barrel exports a `createMediaProcessor` factory instead of `MediaProcessor`.
+
+**Gaps and debt**
+`gaps.md` lists the code-versus-spec gaps with file and line references. It also covers debt rows D-6, D-7, D-8 and D-12 and the Outbox row from domain-map §4, each with its replacement mechanism (R1 for the `Product` join, an ownership move for `ProductMedia`). It ends with a suggested order of work.
+
+Nothing in `packages/web` touches photo upload or galleries today, so the UI journey rows depend on W04 building that screen. The spec is ready for `/speckit-plan`.

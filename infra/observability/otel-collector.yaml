@@ -1,0 +1,90 @@
+# SD-33 OpenTelemetry Collector (contrib image: tail_sampling, transform).
+# Apps → OTLP (4317 gRPC / 4318 HTTP) → scrub PII → tail-sample → Jaeger.
+#
+# Tail sampling needs every span of a trace on ONE collector. Locally there is
+# one. In AWS it's two tiers: an agent tier (ADOT sidecar/daemon) with the
+# `loadbalancing` exporter routing by trace ID → a gateway tier running this
+# config (O-03).
+receivers:
+  otlp:
+    protocols:
+      grpc: { endpoint: 0.0.0.0:4317 }
+      http: { endpoint: 0.0.0.0:4318 }
+
+processors:
+  # First in every pipeline: refuse data instead of OOM-ing under a spike.
+  memory_limiter:
+    check_interval: 1s
+    limit_percentage: 80
+    spike_limit_percentage: 20
+
+  # PII never reaches storage, whatever an instrumentation decided to record.
+  attributes/scrub:
+    actions:
+      - { key: enduser.id, action: delete }
+      - { key: user.id, action: delete }
+      - { key: user.email, action: delete }
+      - { key: http.request.header.authorization, action: delete }
+      - { key: http.request.header.cookie, action: delete }
+      - { key: http.response.header.set-cookie, action: delete }
+      - { key: url.query, action: delete }
+      - { key: client.address, action: hash }
+
+  transform/redact:
+    error_mode: ignore
+    trace_statements:
+      - context: span
+        statements:
+          # Tokens / signatures that end up in URLs (presigned links, unsubscribe tokens).
+          - replace_pattern(attributes["url.full"], "([?&](token|signature|X-Amz-Signature|key)=)[^&]*", "$$1REDACTED")
+          - replace_pattern(attributes["db.query.text"], "'[^']*'", "'?'")
+
+  # Keep what matters, sample the rest: ~10x fewer spans stored.
+  tail_sampling:
+    decision_wait: 10s
+    num_traces: 200000
+    expected_new_traces_per_sec: 5000
+    policies:
+      - name: errors
+        type: status_code
+        status_code: { status_codes: [ERROR] }
+      - name: slow
+        type: latency
+        latency: { threshold_ms: 1000 }
+      - name: money-paths
+        type: string_attribute
+        string_attribute: { key: service.name, values: [payment-processor] }
+      - name: baseline
+        type: probabilistic
+        probabilistic: { sampling_percentage: 5 }
+
+  batch:
+    send_batch_size: 8192
+    timeout: 2s
+
+exporters:
+  otlp/jaeger:
+    endpoint: jaeger:4317
+    tls: { insecure: true }
+  # Metrics pushed over OTLP (Lambdas, batch jobs without a scrape endpoint) re-exposed for Prometheus.
+  prometheus:
+    endpoint: 0.0.0.0:8889
+    resource_to_telemetry_conversion: { enabled: false }
+
+extensions:
+  health_check: { endpoint: 0.0.0.0:13133 }
+
+service:
+  extensions: [health_check]
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, attributes/scrub, transform/redact, tail_sampling, batch]
+      exporters: [otlp/jaeger]
+    metrics:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [prometheus]
+  telemetry:
+    metrics:
+      level: normal

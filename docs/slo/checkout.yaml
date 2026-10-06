@@ -1,0 +1,28 @@
+name: checkout-availability
+journey: Checkout
+owner: commerce
+description: Checkout requests succeed (4xx such as out-of-stock are correct answers, not failures).
+objective: 99.95
+window: 30d
+sli:
+  type: availability
+  metric: http_server_request_duration_seconds
+  selector: 'service="core", http_route=~"/api/(orders/)?checkout.*"'
+runbook: docs/runbooks/APIErrorBudgetFastBurn.md
+k6:
+  threshold: 'http_req_failed{journey:checkout}: rate<0.0005'
+---
+name: checkout-latency
+journey: Checkout
+owner: commerce
+description: Checkout answers within 800 ms (stock reservation + order write).
+objective: 99.0
+window: 30d
+sli:
+  type: latency
+  thresholdSeconds: 0.75
+  metric: http_server_request_duration_seconds
+  selector: 'service="core", http_route=~"/api/(orders/)?checkout.*"'
+runbook: docs/runbooks/APIErrorBudgetFastBurn.md
+k6:
+  threshold: 'http_req_duration{journey:checkout}: p(99)<750'

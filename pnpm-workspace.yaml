@@ -1,0 +1,45 @@
+packages:
+  # Include everything in packages/ by default
+  - "packages/*"
+
+  # Explicitly exclude your Go and Rust services from pnpm's tree
+  - "!packages/payments"
+  - "!packages/hft-platform"
+allowBuilds:
+  '@apollo/protobufjs': true
+  '@firebase/util': true
+  '@parcel/watcher': true
+  '@scarf/scarf': true
+  '@sentry/node-cpu-profiler': true
+  '@swc/core': true
+  '@tree-sitter-grammars/tree-sitter-yaml': true
+  argon2: true
+  bcrypt: true
+  core-js-pure: true
+  esbuild: true
+  isolated-vm: true
+  protobufjs: true
+  sharp: true
+  tree-sitter: true
+  tree-sitter-json: true
+  unrs-resolver: true
+  workerd: true
+minimumReleaseAgeExclude:
+  - '@next/env@16.3.8'
+  - '@next/eslint-plugin-next@16.3.8'
+  - '@next/swc-darwin-arm64@16.3.8'
+  - '@next/swc-darwin-x64@16.3.8'
+  - '@next/swc-linux-arm64-gnu@16.3.8'
+  - '@next/swc-linux-arm64-musl@16.3.8'
+  - '@next/swc-linux-x64-gnu@16.3.8'
+  - '@next/swc-linux-x64-musl@16.3.8'
+  - '@next/swc-win32-arm64-msvc@16.3.8'
+  - '@next/swc-win32-x64-msvc@16.3.8'
+  - eslint-config-next@16.3.8
+  - next@16.3.8
+packageExtensions:
+  # dependency-cruiser parses with the TypeScript compiler but doesn't declare it as a peer, so pnpm resolved the
+  # workspace-root TypeScript 7 (unsupported by it). Declaring the peer links packages/backend's TypeScript 5.
+  'dependency-cruiser@18':
+    peerDependencies:
+      typescript: '>=5 <7'

@@ -1,0 +1,24 @@
+project:
+  type: "application"
+language: "go"
+
+tasks:
+  dev:
+    command: "go run ./cmd/main.go"
+
+  build:
+    command: "go build -o bin/server ./cmd/main.go"
+    inputs:
+      - "**/*.go"
+      - "go.mod"
+      - "go.sum"
+    outputs:
+      - "bin/server"
+
+  test:
+    command: "go test -v ./..."
+    inputs:
+      - "**/*.go"
+
+  lint:
+    command: "golangci-lint run"

@@ -1,0 +1,28 @@
+The S15 spec, questions, test plan, gaps and quality checklist are written, with no `[NEEDS CLARIFICATION]` markers. I changed no code. The checklist passed on the first iteration.
+
+I could not run `pnpm check:table-ownership`; it needs an approval an unattended run can't give. `gaps.md` §D is derived by reading the code instead, and its first step tells the implementation agent to run the checker and confirm. There is no `.specify/extensions.yml`, so no hooks ran.
+
+- **Scenarios:** 55 acceptance scenarios (AS-01 to AS-55) and 52 requirements. The `test-plan.md` has exactly 55 rows, one per scenario.
+- **Pattern P0414:** idempotency keys appear as the provider transfer keyed by payout ID (FR-014, AS-17 to AS-19). Replay, in-flight 409, different-body 422 and 24 h retention are covered for operator writes in AS-41.
+- **Where the notes override the code:** 10/02 Example 1 requires a timeout to become `UNKNOWN` and be queried by reference. The code retries and has no such state.
+- **Reserve:** SD-20 requires "payout = balance after reserve". The code pays the whole balance, so I specified a 10% default with a per-shop override.
+- **Cross-capability contracts:** S14's `postJournal`, `getBalances` and `listSellerBalances` are used as published. The `GET /shops/:shopId/payouts` route moves here from S14. The shop's payment-provider account ID becomes an S15-owned destination (S03 and S14 both asked for this). S04 needs nothing from S15, and S28 and S16 consume `payouts.events`.
+
+Beyond the brief, I added an operator surface (set destination, set reserve, cancel a pending payout) and a daily payout audit against the provider. The cancel endpoint gives the illegal-transition 409 that VII.3 calls for. A 48 h cooling period after a destination change protects against redirecting a seller's money.
+
+`questions.md` has 15 BREAKING and 14 CONTRACT lines for you to review first. The main BREAKING ones:
+- Ineligible shops are skipped before any money moves.
+- Payout states grow from 3 to 6.
+- The reserve changes amounts paid, so the old test's `5000` expectation must become `4500`.
+- The payouts list route gets a new paged body.
+
+`gaps.md` has 23 behaviour gaps (A), 10 boundary gaps (B), the open debt rows D-6, D-7, D-8, D-11, D-12, D-15 and D-17, and a work order for the implementation agent. It names the IX.7 mechanism that replaces each cross-domain access. The main ones are `Shop` model injection, the `Payout.shopId → Shop` foreign key, and raw `LedgerEntry` SQL.
+
+Everything is in `specs/domains/S15-payouts/`:
+- spec.md
+- questions.md
+- test-plan.md
+- gaps.md
+- checklists/requirements.md
+
+I also updated `.specify/feature.json` to point at this directory. The spec is ready for `/speckit-clarify` or `/speckit-plan`.

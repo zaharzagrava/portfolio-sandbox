@@ -1,0 +1,23 @@
+{
+  "TableName": "DocUpdates",
+  "AttributeDefinitions": [
+    { "AttributeName": "PK", "AttributeType": "S" },
+    { "AttributeName": "SK", "AttributeType": "N" }
+  ],
+  "KeySchema": [
+    { "AttributeName": "PK", "KeyType": "HASH" },
+    { "AttributeName": "SK", "KeyType": "RANGE" }
+  ],
+  "_design": {
+    "pattern": "append-only CRDT update log per document (SD-16)",
+    "items": {
+      "update": "PK=DOC#<draftId> SK=<seq> | update (binary, merged Yjs update of one ~100 ms flush), at"
+    },
+    "accessPatterns": [
+      "append: PutItem IF attribute_not_exists(SK) - a second writer for the same doc (split brain during a ring change) fails instead of interleaving",
+      "load: Query PK=DOC#d AND SK > snapshotSeq (the tail after the S3 snapshot)",
+      "compaction: BatchWriteItem deletes of SK <= snapshotSeq"
+    ],
+    "why": "20k updates/s across 100k docs is append-heavy and key-addressed; partitions are per document and stay small because compaction trims them"
+  }
+}

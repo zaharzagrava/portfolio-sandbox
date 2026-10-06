@@ -1,0 +1,145 @@
+# O-02 deploy. Demo: automatically after a green build on master. Prod: manual dispatch,
+# gated by the `prod` GitHub environment (required reviewers = manual approval).
+# Order matters: migrations (expand) → APIs (blue/green) → workers (instance refresh) → Lambdas (canary).
+# Every step rolls back automatically on its CloudWatch alarms (configured in O-03).
+name: deploy
+
+on:
+  workflow_run:
+    workflows: [build]
+    branches: [master]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      environment:
+        type: choice
+        options: [demo, prod]
+        default: demo
+      sha:
+        description: Commit SHA whose images to deploy (default = this commit)
+        required: false
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  AWS_REGION: eu-central-1
+  ENV: ${{ inputs.environment || 'demo' }}
+  SHA: ${{ inputs.sha || github.event.workflow_run.head_sha || github.sha }}
+
+concurrency:
+  group: deploy-${{ inputs.environment || 'demo' }}
+  cancel-in-progress: false # never interrupt a half-finished deployment
+
+jobs:
+  migrate:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment || 'demo' }}
+    timeout-minutes: 20
+    steps:
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+      # Runs the `migrator` image inside the VPC (CodeBuild project from infra/modules/db_migrate).
+      # Migrations are expand/contract: the running (old) code must keep working against the new schema.
+      - name: Run migrations
+        run: |
+          id=$(aws codebuild start-build --project-name "marketplace-$ENV-db-migrate" \
+                --image-override "${{ vars.ECR_REGISTRY }}/marketplace/migrator:$SHA" --query 'build.id' --output text)
+          while true; do
+            status=$(aws codebuild batch-get-builds --ids "$id" --query 'builds[0].buildStatus' --output text)
+            case "$status" in SUCCEEDED) exit 0;; IN_PROGRESS) sleep 10;; *) echo "migration $status"; exit 1;; esac
+          done
+
+  api:
+    needs: migrate
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment || 'demo' }}
+    timeout-minutes: 40
+    strategy:
+      max-parallel: 2
+      matrix:
+        app: [core, sse-gateway, public-api, bff, collab, payment-processor]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+      - name: Bundle revision (appspec + hooks + release.env)
+        run: |
+          mkdir -p rev && cp -r infra/codedeploy/* rev/
+          registry="${{ vars.ECR_REGISTRY }}"
+          printf 'APP=%s\nIMAGE=%s/marketplace/%s:%s\nENV=%s\n' "${{ matrix.app }}" "$registry" "${{ matrix.app }}" "$SHA" "$ENV" > rev/release.env
+          (cd rev && zip -qr "../${{ matrix.app }}-$SHA.zip" .)
+          aws s3 cp "${{ matrix.app }}-$SHA.zip" "s3://${{ vars.ARTIFACTS_BUCKET }}/codedeploy/$ENV/${{ matrix.app }}-$SHA.zip"
+      # Blue/green on the ASG: new instances boot the new image, pass /readyz, take traffic; old ones drain and terminate.
+      # Rollback: automatic on deployment failure or on the group's alarms (5xx, p99, SLO fast burn).
+      - name: CodeDeploy blue/green
+        run: |
+          id=$(aws deploy create-deployment --application-name "marketplace-$ENV" --deployment-group-name "${{ matrix.app }}" \
+                --s3-location "bucket=${{ vars.ARTIFACTS_BUCKET }},key=codedeploy/$ENV/${{ matrix.app }}-$SHA.zip,bundleType=zip" \
+                --description "$SHA" --query deploymentId --output text)
+          aws deploy wait deployment-successful --deployment-id "$id"
+      - name: Record the running version (instance user-data reads it on scale-out)
+        run: aws ssm put-parameter --name "/marketplace/$ENV/${{ matrix.app }}/image_tag" --value "$SHA" --type String --overwrite
+
+  workers:
+    needs: api
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment || 'demo' }}
+    timeout-minutes: 40
+    strategy:
+      matrix:
+        app: [worker, projector]
+    steps:
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+      # No traffic to shift: rolling instance refresh. New instances read the tag at boot; old ones get SIGTERM via the
+      # termination lifecycle hook and finish in-flight jobs/batches first (F-01 shutdown order).
+      - name: Instance refresh
+        run: |
+          aws ssm put-parameter --name "/marketplace/$ENV/${{ matrix.app }}/image_tag" --value "$SHA" --type String --overwrite
+          asg="marketplace-$ENV-${{ matrix.app }}"
+          aws autoscaling start-instance-refresh --auto-scaling-group-name "$asg" \
+            --preferences '{"MinHealthyPercentage":90,"InstanceWarmup":60,"AutoRollback":true,"AlarmSpecification":{"Alarms":["marketplace-'"$ENV"'-'"${{ matrix.app }}"'-errors"]}}'
+          while true; do
+            status=$(aws autoscaling describe-instance-refreshes --auto-scaling-group-name "$asg" --max-records 1 --query 'InstanceRefreshes[0].Status' --output text)
+            case "$status" in Successful) exit 0;; Pending|InProgress) sleep 20;; *) echo "refresh $status"; exit 1;; esac
+          done
+
+  lambdas:
+    needs: api
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment || 'demo' }}
+    timeout-minutes: 30
+    steps:
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+      # Each function: new code → new version → CodeDeploy shifts the `live` alias 10% for 5 min, then 100%,
+      # rolling back if the function's error/throttle alarms fire. The SQS event source mapping points at `live`.
+      - name: Canary deploy
+        run: |
+          aws s3 cp "s3://${{ vars.ARTIFACTS_BUCKET }}/lambdas/$SHA/manifest.json" manifest.json
+          for name in $(jq -r '.[].name' manifest.json); do
+            fn="marketplace-$ENV-$name"
+            aws s3 cp --recursive "s3://${{ vars.ARTIFACTS_BUCKET }}/lambdas/$SHA/$name" "bundle/$name" >/dev/null
+            (cd "bundle/$name" && zip -qr "../../$name.zip" .)
+            aws lambda update-function-code --function-name "$fn" --zip-file "fileb://$name.zip" >/dev/null
+            aws lambda wait function-updated-v2 --function-name "$fn"
+            target=$(aws lambda publish-version --function-name "$fn" --description "$SHA" --query Version --output text)
+            current=$(aws lambda get-alias --function-name "$fn" --name live --query FunctionVersion --output text)
+            [ "$current" = "$target" ] && continue
+            spec=$(jq -nc --arg fn "$fn" --arg c "$current" --arg t "$target" \
+              '{version:0.0,Resources:[{fn:{Type:"AWS::Lambda::Function",Properties:{Name:$fn,Alias:"live",CurrentVersion:$c,TargetVersion:$t}}}]}')
+            id=$(aws deploy create-deployment --application-name "marketplace-$ENV-lambda" --deployment-group-name "$name" \
+                  --revision "revisionType=AppSpecContent,appSpecContent={content='$spec'}" --query deploymentId --output text)
+            aws deploy wait deployment-successful --deployment-id "$id"
+          done

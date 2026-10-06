@@ -1,0 +1,27 @@
+The S34 spec, test plan, gaps list, questions file and quality checklist are written. All 16 checklist items pass. I did not run any tests or change any code.
+
+- **Interview-Prep notes:** `~/workspace/notes/Interview-Prep/` doesn't exist in this environment. I used the in-repo copy, `docs/showcase/sections/X-01-graph-recommendations.md`, and followed it where it disagrees with the code.
+- **Pattern map:** the only row naming S34 is P1111 (2-hop BFS with decay). It appears as FR-006 and AS-13 to AS-20.
+- **Spec:** it has 8 user stories, 51 scenarios, 30 requirements and 9 success criteria. Dataset D gives exact scores, for example the Charging Stand's rail is `[Cable 0.2046 (1 hop), iPhone 17 0.0673 (2 hops)]`.
+- **Cross-capability contracts:** the Provides and Requires lists are in `spec.md`. They cover S10 (`order.paid`), S05 (`getProductsByIds`), S03 (`getShopsByIds`), S49, S50 and S54. No earlier spec asked anything of S34 that I contradict.
+- **Table ownership:** I ran `check:table-ownership`. Seven `discovery` lines appear; two belong to S34, both `ProductModel` (the service and the module). `gaps.md` §C lists them with the R1 replacement, plus debt rows D-6, D-7, D-8 and D-12.
+- **Questions:** `questions.md` has 28 lines, 16 of them `[BREAKING]`. The main ones:
+  - Responses become `{type, items[{…priceMinor, currency…}]}` instead of a float `price`.
+  - `limit` is rejected with 400 instead of clamped.
+  - Hidden or unknown products return 404 instead of an empty 200.
+  - A pair needs at least 3 distinct buyers, not just 3 orders, so one account can't manufacture a recommendation. This needs `buyer_id` and `order_version` added to the basket table and a replay of the orders topic.
+  - Direct neighbours always rank before 2-hop ones.
+  - Products that lose all edges lose their list after a complete build.
+  - A build with an empty source is skipped rather than reported as success.
+  - Redis or lookup failure returns 503 instead of 500.
+  - The rate-limit policy is `discovery.recommendations` instead of the shared `search.query`.
+- **Consumers to update:** the web product page, the BFF product-page service, the GraphQL resolver, and their tests must adopt the new response shape. `gaps.md` §A (A23) names the files.
+
+Files are in `specs/domains/S34-recommendations/`; I also pointed `.specify/feature.json` there:
+- `spec.md`
+- `test-plan.md`
+- `gaps.md`
+- `questions.md`
+- `checklists/requirements.md`
+
+The spec is ready for `/speckit-plan`.

@@ -1,0 +1,75 @@
+# /moon.yml (Root)
+#
+# Every task here has side effects (Docker, DB schemas, dev servers), so none may be cached:
+# a cached task only replays its old log ("(cached, …)") without running anything.
+#  - long-running ones use `preset: server` (no cache, persistent, stream output until Ctrl+C),
+#  - one-shot ones set `options.cache: false`.
+
+tasks:
+  # Spin up the databases and Kafka (runs in foreground, use Ctrl+C to stop)
+  infra-up:
+    command: "docker compose --env-file packages/backend/.env up --build"
+    preset: server
+
+  # Tear down the infrastructure
+  infra-down:
+    command: "docker compose --env-file packages/backend/.env down"
+    options:
+      cache: false
+
+  # Setup DB schemas and Kafka topics
+  infra-setup:
+    command: "pnpm --filter api run infra:setup"
+    options:
+      cache: false
+
+  # Run the backend core API (:8000)
+  dev-api:
+    command: "pnpm --filter api run start:dev"
+    preset: server
+
+  # Run the backend GraphQL BFF (:8006)
+  dev-bff:
+    command: "pnpm --filter api run start:dev:bff"
+    preset: server
+
+  # Run the frontend web app (:3000)
+  dev-web:
+    command: "pnpm --filter web dev"
+    preset: server
+
+  # Run the SSE gateway (:8001 - live streams, assistant, payment status)
+  dev-sse:
+    command: "pnpm --filter api run start:dev:sse-gateway"
+    preset: server
+
+  # Run the background worker (:8003 - SQS consumers, scheduled jobs)
+  dev-worker:
+    command: "pnpm --filter api run start:dev:worker"
+    preset: server
+
+  # Run the Kafka projector (:8002 - read models: search, feeds, notifications, analytics)
+  dev-projector:
+    command: "pnpm --filter api run start:dev:projector"
+    preset: server
+
+  # Run the collaborative editor WebSocket server (:8004)
+  dev-collab:
+    command: "pnpm --filter api run start:dev:collab"
+    preset: server
+
+  # Run the seller public API (:8005 - /v1)
+  dev-public-api:
+    command: "pnpm --filter api run start:dev:public-api"
+    preset: server
+
+  # Run ALL backend apps in one Node process for low RAM usage
+  dev-monolith:
+    command: "pnpm --filter api run start:dev:monolith"
+    preset: server
+
+  # Wipe Docker containers, volumes and networks (destructive: all local data)
+  cleanup:
+    command: "pnpm --filter api run cleanup"
+    options:
+      cache: false

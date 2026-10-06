@@ -1,0 +1,25 @@
+project:
+  type: "application"
+language: "rust"
+
+tasks:
+  dev:
+    command: "cargo run"
+
+  build:
+    command: "cargo build --release"
+    inputs:
+      - "src/**/*"
+      - "Cargo.toml"
+      - "Cargo.lock"
+    outputs:
+      - "target/release/hft-platform"
+
+  test:
+    command: "cargo test"
+    inputs:
+      - "src/**/*"
+      - "tests/**/*"
+
+  lint:
+    command: "cargo clippy -- -D warnings"

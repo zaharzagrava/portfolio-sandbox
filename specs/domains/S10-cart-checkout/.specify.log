@@ -1,0 +1,19 @@
+The S10 spec is written and passes the quality checklist, with no `[NEEDS CLARIFICATION]` markers. I changed no code and ran no tests. The only command I ran besides reads was `pnpm --dir packages/backend check:table-ownership`.
+
+- **Spec:** `spec.md` has 7 user stories, 68 acceptance scenarios (AS-01 to AS-68) and 59 functional requirements, each citing at least one scenario. The two other mandatory sections are covered by the `## Cross-capability contracts` section with Provides and Requires lists, and Assumptions with the pattern coverage for P0103, P0110, P0303, P0311, P0313, P0407, P0414, P0419, P0611 and P1110.
+- **Test plan:** `test-plan.md` has one row per scenario, 68 rows with the same IDs as the spec. It names eight e2e spec files, six unit specs and the W03 Playwright journey.
+- **Gaps:** `gaps.md` lists 43 code gaps with file:line references and the open debt rows D-6, D-7, D-8, D-10, D-11, D-12, D-15 and D-17. It also lists the 12 `orders` lines from `check:table-ownership` (87 findings repo-wide), each with its replacement mechanism (R1, R2 or R3), plus the other domains' findings on orders tables. Migration notes and a suggested work order are at the end.
+- **Questions:** `questions.md` has 25 `[BREAKING]`, 15 `[CONTRACT]` and 14 `[LOCAL]` lines. Where the code and the notes disagreed, I followed the notes.
+- **Checklist:** `checklists/requirements.md` has every item ticked.
+
+Decisions to review first in `questions.md`:
+
+- **Checkout:** answers `202` with `Location`. A duplicate request with the same key while the first is still running gets `409`, and a reused key with a different body gets `422`.
+- **Stock:** reserved only through the catalog's `applyStockDelta` as a saga. The order is written `PENDING`, stock is reserved, then it becomes `RESERVED`, with a recovery job for crashes in between.
+- **Webhook:** acknowledged after the event is stored and queued, then processed by a retrying job. A payment that arrives after the hold expired produces exactly one `orders.refund_requested` command.
+- **Dependencies on specs not written yet (S13, S45):** I assumed shapes that those specs must confirm or amend: S13's `getPaymentStatus` and `payments.events`, and S45's `evaluateDiscounts` returning per-shop amounts. Both are `[CONTRACT]` lines.
+- **Flash sales (S11):** checkout now handles regular stock only, behind a `ReservationSource` seam that S11 has to restore.
+
+I also updated `.specify/feature.json` to point at `specs/domains/S10-cart-checkout`.
+
+The spec is ready for `/speckit-clarify` or `/speckit-plan`.

@@ -1,0 +1,33 @@
+The S04 spec is written and passes the quality checklist on the first run. No source code was changed. The only file outside the spec directory I touched is `.specify/feature.json`, which now points at `specs/domains/S04-kyc-onboarding`. No `.specify/extensions.yml` exists, so there were no hooks to run.
+
+All files are in `specs/domains/S04-kyc-onboarding/`:
+- `spec.md`, with 9 user stories, 72 acceptance scenarios (AS-01 to AS-72), the functional requirements, success criteria and the `## Cross-capability contracts` section.
+- `questions.md`, with 20 BREAKING, 15 CONTRACT and 10 LOCAL decisions.
+- `test-plan.md`, with exactly one row per scenario (72 of 72) and the e2e, UI and unit file names.
+- `gaps.md`, with 40 code gaps, the open debt rows (D-6, D-7, D-8, D-12, D-14) and the 3 `check:table-ownership` lines for `seller-onboarding`, each with the IX.7 mechanism that replaces it. All 3 are raw SQL on `Shop`, replaced by events and an R1 call.
+- `checklists/requirements.md`, with every item checked.
+
+I did run `pnpm --dir packages/backend check:table-ownership`; the 3 findings above come from that run.
+
+**Cross-capability contracts:** S03 already expected `shop.onboarding_submitted`, `shop.verified` and `shop.rejected`, so those are provided. S04 stops writing the `Shop` table, and tenancy applies the verification status from our events. Every payload keeps `{shopId}` and adds fields rather than removing any. The spec also provides a new `shop.onboarding_document_rejected` event.
+
+**Decisions to review first:**
+- **Verification:** the shop is verified inside the same transaction as the approval, so the last approval can't be left without a verification.
+- **Extraction message:** it goes through the outbox instead of being sent after commit.
+- **Concurrency and dead-letter routing:** extraction uses a lease so two workers can't both call the model, and a message parked in the dead-letter queue now routes the document to human review.
+- **Review endpoints:** they are sensitive routes, and a reviewer who belongs to the shop under review is refused.
+- **Rejection and retries:** the application can be rejected, and the seller can resubmit as a new round (`submissionNo`).
+- **Retention:** raw files are purged after verification or rejection and on `tenancy.shop_deleted`, with records erased after 1825 days.
+- **Event topic:** the events move to a new topic, `shop-onboarding`.
+
+**Contracts assumed from specs that don't exist yet:**
+- S46, the LLM port and metering by event.
+- S50, two policy names.
+- S53, outbox-to-queue commands.
+- S55, the dead-letter handler wiring.
+
+All of these are tagged `[CONTRACT]` in `questions.md`.
+
+**UI journeys:** `specs/web` is empty, so the Playwright file `packages/web/tests/seller-onboarding.spec.ts` is named in the test plan for whichever web capability builds the seller wizard and moderator queue.
+
+Next step: `/speckit-plan` for S04.

@@ -1,0 +1,30 @@
+# O-01 SLOs are the single source of truth: Prometheus burn-rate alerts and k6
+# thresholds are GENERATED from these files (pnpm slo:generate), never hand-edited.
+name: browse-search-latency
+journey: Browse & search
+owner: discovery
+description: Product search and product pages are fast.
+objective: 99.9          # % of requests
+window: 30d
+sli:
+  type: latency
+  thresholdSeconds: 0.3
+  metric: http_server_request_duration_seconds
+  selector: 'service="core", http_route=~"/api/products(/search|/:id)?"'
+runbook: docs/runbooks/APIErrorBudgetFastBurn.md
+k6:
+  threshold: 'http_req_duration{journey:browse}: p(99)<300'
+---
+name: browse-search-availability
+journey: Browse & search
+owner: discovery
+description: Product search and product pages succeed.
+objective: 99.9
+window: 30d
+sli:
+  type: availability
+  metric: http_server_request_duration_seconds
+  selector: 'service="core", http_route=~"/api/products(/search|/:id)?"'
+runbook: docs/runbooks/APIErrorBudgetFastBurn.md
+k6:
+  threshold: 'http_req_failed{journey:browse}: rate<0.001'

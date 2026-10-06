@@ -1,0 +1,24 @@
+{
+  "TableName": "Holds",
+  "AttributeDefinitions": [
+    { "AttributeName": "PK", "AttributeType": "S" },
+    { "AttributeName": "SK", "AttributeType": "S" }
+  ],
+  "KeySchema": [
+    { "AttributeName": "PK", "KeyType": "HASH" },
+    { "AttributeName": "SK", "KeyType": "RANGE" }
+  ],
+  "TimeToLiveAttribute": "expiresAtEpoch",
+  "_design": {
+    "pattern": "authoritative seat-hold ledger (SD-21)",
+    "items": {
+      "seatHold": "PK=EVENT#<eventId> SK=SEAT#<n> | holdId, userId, expiresAtMs, expiresAtEpoch",
+      "hold": "PK=HOLD#<holdId> SK=META | eventId, userId, seats[], expiresAtMs, expiresAtEpoch"
+    },
+    "accessPatterns": [
+      "hold a seat: PutItem EVENT#e/SEAT#n IF attribute_not_exists(PK) OR expiresAtMs < now",
+      "confirm/release: GetItem HOLD#h, then conditional updates per seat (holdId match)"
+    ],
+    "why": "conditional writes give exactly-one-winner per seat without Postgres row locks; TTL cleans up abandoned holds; the expiry check in the condition doesn't wait for TTL's lazy deletion"
+  }
+}

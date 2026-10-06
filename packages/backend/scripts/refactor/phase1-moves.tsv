@@ -1,0 +1,53 @@
+# Phase 1 move map (constitution X, docs/architecture/domain-map.md §1.2, §1.3, §5 D1).
+# <source under libs/common/src>	<destination under libs/>
+# Files listed before their parent directory win (longest prefix match).
+# Infrastructure (§1.2)
+database	infrastructure/database
+utils/db-utils	infrastructure/database/db-utils
+models/migration.model.ts	infrastructure/database/migration.model.ts
+context	infrastructure/context
+redis	infrastructure/redis
+redis-pubsub	infrastructure/redis-pubsub
+kafka	infrastructure/kafka
+sqs	infrastructure/sqs
+dynamo	infrastructure/dynamo
+cassandra	infrastructure/cassandra
+clickhouse	infrastructure/clickhouse
+elasticsearch	infrastructure/elasticsearch
+storage	infrastructure/storage
+aws-api	infrastructure/aws
+firebase	infrastructure/firebase
+stripe	infrastructure/stripe
+http-client	infrastructure/http-client
+request	infrastructure/http-client/request
+net	infrastructure/net
+outbox	infrastructure/outbox
+outbox-dto	infrastructure/outbox/dto
+models/outbox.model.ts	infrastructure/outbox/outbox.model.ts
+events	infrastructure/events
+projections	infrastructure/projections
+jobs	infrastructure/jobs
+cron	infrastructure/jobs/cron-module
+realtime	infrastructure/realtime
+cache	infrastructure/cache
+rate-limit	infrastructure/rate-limit
+idempotency	infrastructure/idempotency
+health	infrastructure/health
+# Common (§1.3)
+api-config	common/config
+utils/config-utils	common/config/config-utils
+logging	common/logging
+telemetry	common/telemetry
+error.types.ts	common/errors/error.types.ts
+utils/error-utils	common/errors/error-utils
+exceptions-filter	common/exceptions-filter
+lifecycle	common/lifecycle
+load-shedding	common/load-shedding
+platform	common/platform
+utils/core	common/core
+utils/money	common/money
+utils/ts-node-utils	common/scripts
+# Composition (constitution X.8, D1). batch-read.controller.ts is a core-side
+# data endpoint, not composition: it stays until Phase 2 splits it into tenancy/catalog api/.
+bff/batch-read.controller.ts	common/src/bff/batch-read.controller.ts
+bff	composition/bff

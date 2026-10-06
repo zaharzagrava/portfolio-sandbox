@@ -1,0 +1,13 @@
+{
+  "Browse & search": [
+    "http_req_duration{journey:browse}: p(99)<300",
+    "http_req_failed{journey:browse}: rate<0.001"
+  ],
+  "Checkout": [
+    "http_req_failed{journey:checkout}: rate<0.0005",
+    "http_req_duration{journey:checkout}: p(99)<750"
+  ],
+  "Launch events (seat holds)": [
+    "http_req_failed{journey:launch}: rate<0.001"
+  ]
+}

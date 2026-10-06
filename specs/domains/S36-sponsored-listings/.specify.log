@@ -1,0 +1,33 @@
+I've written the S36 spec, test plan, gaps list and open-decision list, and the quality checklist passes. The spec has 83 acceptance scenarios, each with a row in the test plan.
+
+Before this goes to planning:
+
+- **Ownership report not run.** `pnpm check:table-ownership` needed an approval this session didn't have. The `marketing` lines in `gaps.md` §3 come from reading the code. The implementation agent should run the command first and reconcile.
+- **Notes path.** `~/workspace/notes/Interview-Prep` doesn't exist here. I used the copy at `.specify/memory/Interview-Prep` and `docs/showcase/sections/SD-32-trending-sponsored-clicks.md`.
+- **Checklist notes.** The checklist ticks "no implementation details" and "non-technical readers" with notes: topic and header names appear only in the contracts section and in FR-030 to FR-033, which the pattern map (P0603) requires.
+- **Hooks.** There is no `.specify/extensions.yml`, so no hooks ran.
+
+Both pattern-map rows for S36 are covered, with requirements and scenarios for each:
+- **P0603** (idempotent producer, Kafka transactions): FR-030 to FR-039; AS-26 to AS-28, AS-34, AS-37, AS-42 to AS-47.
+- **P0614** (reconciliation and period close, ad billing): FR-040 to FR-059; AS-50 to AS-67 and AS-69.
+
+**BREAKING and CONTRACT decisions to review first** (all in `questions.md`):
+- **Click redirect.** `GET /ads/click/:token` stays a state-changing GET redirect, as the notes describe. That breaks constitution V.5 ("GET never changes state"), so it needs a Complexity Tracking entry in `plan.md`. I added mitigations: HEAD and prefetch requests don't count, responses are no-store, and each impression is counted once.
+- **Ledger posting.** Posting no longer shares a Postgres transaction with the billing run (IX.4). A `PENDING` → `CHARGED` run plus a stable ledger reference per campaign-hour makes it safe after a crash.
+- **S14 reference formats.** The references (`ad:<campaign>:<hour>`, `ad-adj:<campaign>:<hour>:<sequence>`) differ from S14's example `campaignId:hour`. This is a `[CONTRACT]` line.
+- **Whole-click billing.** A capped hour charges only whole clicks, never a leftover fraction.
+- **Reconciliation.** It covers the last 3 closed days with numbered adjustments, and late clicks become adjustments dated in the current period.
+- **Permissions.** Spending now needs `shop.manage` instead of `products.write`.
+- **Secrets and client address.** The click token uses its own secret with rotation. `cf-connecting-ip` is no longer trusted.
+- **Click endpoint behaviour.** It never returns an error: if Redis or the stream is down it still redirects.
+- **Sponsorship event.** `marketing.product_sponsorship_changed` on topic `marketing.events` honours S32's proposal; the topic was S32's open choice.
+- **No web owner.** No web capability owns the sponsored card or the campaign screens yet; the UI journeys in the test plan are proposals.
+
+Files are in `specs/domains/S36-sponsored-listings/`:
+- `spec.md`
+- `questions.md`
+- `test-plan.md`
+- `gaps.md`
+- `checklists/requirements.md`
+
+`.specify/feature.json` now points at this directory. I didn't modify any code. This is ready for `/speckit-plan`.

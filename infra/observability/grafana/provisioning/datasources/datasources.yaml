@@ -1,0 +1,55 @@
+# SD-33 Grafana datasources as code. Logs ↔ traces ↔ metrics are linked:
+# a Loki line's traceId opens the Jaeger trace; a Jaeger span opens its logs.
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    uid: prometheus
+    type: prometheus
+    url: http://prometheus:9090
+    isDefault: true
+    jsonData:
+      timeInterval: 15s
+
+  - name: Loki
+    uid: loki
+    type: loki
+    url: http://loki:3100
+    jsonData:
+      derivedFields:
+        - name: traceId
+          matcherType: label
+          matcherRegex: traceId
+          datasourceUid: jaeger
+          url: '$${__value.raw}'
+
+  - name: Jaeger
+    uid: jaeger
+    type: jaeger
+    url: http://jaeger:16686
+    jsonData:
+      tracesToLogsV2:
+        datasourceUid: loki
+        spanStartTimeShift: -5m
+        spanEndTimeShift: 5m
+        filterByTraceID: true
+        customQuery: true
+        query: '{service="$${__span.tags["service.name"]}"} | traceId = "$${__trace.traceId}"'
+
+  - name: Alertmanager
+    uid: alertmanager
+    type: alertmanager
+    url: http://alertmanager:9093
+    jsonData:
+      implementation: prometheus
+
+  # LLM cost / TTFT and business analytics live in ClickHouse (SD-31, SD-42).
+  - name: ClickHouse
+    uid: clickhouse
+    type: grafana-clickhouse-datasource
+    jsonData:
+      host: clickhouse
+      port: 9000
+      protocol: native
+      defaultDatabase: marketplace
+      username: default

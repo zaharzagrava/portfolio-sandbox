@@ -1,0 +1,7 @@
+# Phase 3 step 8: common libs that depend on infrastructure move to infrastructure; the pure request-context
+# contract moves to common (constitution X.5 / X.7 placement test). Sources are relative to the former
+# libs/common/src, so `../` means libs/common/ and `../../infrastructure/` means libs/infrastructure/.
+# <source>	<destination under libs/>
+../platform	infrastructure/platform
+../lifecycle	infrastructure/lifecycle
+../../infrastructure/context/types.ts	common/request-context/types.ts

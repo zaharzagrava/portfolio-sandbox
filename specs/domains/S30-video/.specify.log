@@ -1,0 +1,38 @@
+The S30 spec, `questions.md`, `test-plan.md` and `gaps.md` are written, and the quality checklist passes with no `[NEEDS CLARIFICATION]` markers. I changed no code; the only file outside the S30 folder is `.specify/feature.json`, now pointing at `specs/domains/S30-video`. No extension hooks ran, because `.specify/extensions.yml` doesn't exist.
+
+I did not run the suites or any code, so nothing here has a recorded green run. `pnpm check:table-ownership` was run: the video files have 0 findings, and the 2 `media` findings are S29's.
+
+**`spec.md`**
+- It has 6 user stories, 62 acceptance scenarios (AS-01 to AS-62), FRs, 10 success criteria, a `## Cross-capability contracts` section with Provides and Requires, and Assumptions.
+- Both pattern-map rows for S30 are covered. P0203 (spawn, timeouts, kill on abort) is in FR-028, AS-25 and AS-62. P1107 (topological sort) is in FR-020–FR-023, AS-16 and AS-22.
+- Cross-domain data uses only IX.7 mechanisms:
+  - R1: `getProductsByIds` for the product link.
+  - R2: the product page, composed by S48 from `GET /products/:id/videos` and `GET /videos/:id/playback`.
+  - R3: consumers for `catalog.product_deleted`, `tenancy.shop_deleted` and `tenancy.shop_status_changed`. The last keeps a copy of shop status so playback never calls tenancy.
+
+**Contracts honoured from earlier specs**
+- S27 allows the host `stream.marketplace.dev` for marketplace videos, so that is the public video delivery host.
+- S29 said S30 must keep separate statuses, tables and events, so S30 uses its own `video.*` events and its own tables and module names.
+
+**Decisions to review first (details in `questions.md`)**
+- **Unlisted playback:** a random share token is now required. Today any leaked ID plays.
+- **Signing key:** a missing key gives 503 and fails startup in production. Today it silently returns the unsigned URL.
+- **Cookie domain:** the cookie domain becomes the shared parent domain. Today it is the CDN host, which browsers reject when the API host sets it.
+- **Originals:** the source moves out of the delivery paths and is never served.
+- **Start and complete:** both are rewritten to be race-safe with conditional state transitions. Start no longer leaks the source key or upload ID.
+- **Foreign keys:** the foreign keys from `Video` to `Shop` and `User` are dropped, since IX.4 forbids them and the ownership check can't see them.
+- **HLS output:** it is made accurate. Segments align across frame rates, the master playlist uses measured values, and sources below 240p are no longer enlarged.
+- **Sprite task:** an optional `thumbnails` task is added, because the notes list a sprite.
+- **e2e suite:** the existing e2e suite is replaced, and a missing ffmpeg now fails CI instead of skipping.
+- **Domain map:** it needs updating, since `media` now emits `video.*` and depends on tenancy and catalog.
+
+Two departures from the notes are recorded as LOCAL: parallelism is per rendition with no time-chunk split, and videos get no antivirus scan because the source is private and never served.
+
+**Files** are in `specs/domains/S30-video/`:
+- `spec.md`
+- `questions.md` (sorted BREAKING, CONTRACT, LOCAL)
+- `test-plan.md` (62 scenarios, 62 rows; 6 e2e files, 6 unit files, 1 UI journey file)
+- `gaps.md` (code gaps with file:line, debt rows D-6, D-7, D-8 and D-12 with the replacing mechanism, the `media` lines from `check:table-ownership`, and a work order)
+- `checklists/requirements.md`
+
+The spec is ready for `/speckit-plan`.

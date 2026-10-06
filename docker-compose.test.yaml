@@ -1,0 +1,100 @@
+# TEST stack for e2e specs (D5). Run with:
+#   docker compose -f docker-compose.test.yaml -p marketplace_test up -d
+# Ports are shifted (+100 or so) so it can run next to the dev stack.
+# tmpfs volumes: fast, and every `up` starts from a clean slate.
+services:
+  test_db:
+    container_name: marketplace_test_db
+    build: ./infra/docker/postgres
+    image: marketplace/postgres:18-postgis-pgvector
+    command: ['postgres', '-c', 'fsync=off', '-c', 'synchronous_commit=off', '-c', 'full_page_writes=off', '-c', 'wal_level=logical', '-c', 'shared_preload_libraries=pg_stat_statements']
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_DB: marketplace_test
+    ports:
+      - '5400:5432'
+    tmpfs:
+      - /var/lib/postgresql
+  test_redis:
+    image: redis:alpine
+    container_name: marketplace_test_redis
+    ports:
+      - '6400:6379'
+  test_kafka:
+    image: docker.redpanda.com/redpandadata/redpanda:v25.3.10
+    container_name: marketplace_test_kafka
+    command:
+      - redpanda start
+      - --smp 1
+      - --overprovisioned
+      - --kafka-addr PLAINTEXT://0.0.0.0:29192,OUTSIDE://0.0.0.0:9192
+      - --advertise-kafka-addr PLAINTEXT://test_kafka:29192,OUTSIDE://localhost:9192
+      - --pandaproxy-addr internal://0.0.0.0:28182,external://0.0.0.0:8182
+      - --advertise-pandaproxy-addr internal://test_kafka:28182,external://localhost:8182
+    ports:
+      - '9192:9192'
+      - '8182:8182'
+  test_elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.15.3
+    container_name: marketplace_test_elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+    ports:
+      - '9300:9200'
+  test_clickhouse:
+    image: clickhouse/clickhouse-server:24.8
+    container_name: marketplace_test_clickhouse
+    environment:
+      CLICKHOUSE_DB: marketplace_test
+      CLICKHOUSE_USER: default
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
+    ports:
+      - '8223:8123'
+    ulimits:
+      nofile: { soft: 262144, hard: 262144 }
+  test_scylla:
+    image: scylladb/scylla:6.2
+    container_name: marketplace_test_scylla
+    # epoll reactor: a second Scylla next to the dev one would exhaust the kernel fs.aio-max-nr budget.
+    command: --smp 1 --memory 750M --overprovisioned 1 --developer-mode 1 --reactor-backend=epoll
+    ports:
+      - '9142:9042'
+  test_dynamodb:
+    image: amazon/dynamodb-local:latest
+    container_name: marketplace_test_dynamodb
+    command: -jar DynamoDBLocal.jar -inMemory -sharedDb
+    ports:
+      - '8101:8000'
+  test_minio:
+    image: elestio/minio:latest
+    container_name: marketplace_test_minio
+    command: server /data
+    hostname: marketplace-test-minio
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports:
+      - '9210:9000'
+    tmpfs:
+      - /data
+  test_minio_init:
+    image: elestio/minio:latest
+    container_name: marketplace_test_minio_init
+    depends_on:
+      - test_minio
+    entrypoint: >
+      /bin/sh -c "
+      until /usr/bin/mc alias set local http://marketplace-test-minio:9000 minioadmin minioadmin; do sleep 1; done;
+      /usr/bin/mc mb --ignore-existing local/marketplace-media-test;
+      exit 0;
+      "
+  test_elasticmq:
+    image: softwaremill/elasticmq-native:latest
+    container_name: marketplace_test_elasticmq
+    ports:
+      - '9424:9324'
+    volumes:
+      - ./infra/docker/elasticmq/elasticmq.conf:/opt/elasticmq.conf:ro

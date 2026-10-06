@@ -1,0 +1,193 @@
+{
+  "uid": "llm",
+  "title": "LLM \u2014 cost, latency, outcomes (ClickHouse)",
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": false,
+  "refresh": "30s",
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "tags": [
+    "marketplace",
+    "sd-33"
+  ],
+  "templating": {
+    "list": []
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "Cost per day by purpose (USD)",
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "clickhouse"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyUSD"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawSql": "SELECT day AS time, purpose, sum(cost_micros) / 1e6 AS usd FROM llm_daily WHERE day >= today() - 30 GROUP BY day, purpose ORDER BY day",
+          "format": 1,
+          "queryType": "sql"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Time to first token p50 / p95 (chat)",
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "clickhouse"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawSql": "SELECT toStartOfFiveMinutes(ts) AS time, quantile(0.5)(ttft_ms) AS p50, quantile(0.95)(ttft_ms) AS p95 FROM llm_requests WHERE purpose = 'chat' AND ts > now() - INTERVAL 6 HOUR AND ttft_ms IS NOT NULL GROUP BY time ORDER BY time",
+          "format": 1,
+          "queryType": "sql"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "Prompt cache hit ratio by model",
+      "gridPos": {
+        "x": 0,
+        "y": 8,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "clickhouse"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawSql": "SELECT toStartOfHour(ts) AS time, model, sum(cache_read_tokens) / greatest(1, sum(cache_read_tokens + input_tokens + cache_write_tokens)) AS ratio FROM llm_requests WHERE ts > now() - INTERVAL 1 DAY GROUP BY time, model ORDER BY time",
+          "format": 1,
+          "queryType": "sql"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "Refusals / fallbacks per day",
+      "gridPos": {
+        "x": 12,
+        "y": 8,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "clickhouse"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawSql": "SELECT day AS time, model, sum(refusals) AS refusals FROM llm_daily WHERE day >= today() - 30 GROUP BY day, model ORDER BY day",
+          "format": 1,
+          "queryType": "sql"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "KYC extraction outcomes",
+      "gridPos": {
+        "x": 0,
+        "y": 16,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (kind, attempt, outcome) (increase(kyc_extraction_outcomes_total[1h]))",
+          "legendFormat": "{{kind}} #{{attempt}} {{outcome}}"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "KYC field corrections by reviewers",
+      "gridPos": {
+        "x": 12,
+        "y": 16,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (kind, field) (increase(kyc_field_corrections_total[24h]))",
+          "legendFormat": "{{kind}}.{{field}}"
+        }
+      ]
+    }
+  ]
+}

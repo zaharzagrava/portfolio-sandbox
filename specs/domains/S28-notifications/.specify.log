@@ -1,0 +1,24 @@
+The S28 spec, test plan, questions, gaps and quality checklist are written in `specs/domains/S28-notifications/`. The spec has 87 acceptance scenarios, and the test plan has 87 matching rows. There are no `[NEEDS CLARIFICATION]` markers. The checklist passed on the first iteration, but the table-ownership gate could not be run here (see below). No code was changed.
+
+I set `.specify/feature.json` to point at the S28 directory. `.specify/extensions.yml` doesn't exist, so no hooks ran.
+
+- **`spec.md`** has 8 user stories, 52 functional requirements, a catalog of the notification types and the events that trigger them, defaults, and the `## Cross-capability contracts` section (Provides and Requires). All four pattern-map rows for S28 are covered: P0104, P0419, P0601 and P0618.
+- **`test-plan.md`** has one row per scenario in the `Scenario | API e2e | UI journey | Unit` format. It names the e2e spec file for each row, and the UI column points at web capability W03. There is also a per-endpoint table of mandatory API cases.
+- **`questions.md`** has 20 `[BREAKING]`, 15 `[CONTRACT]` and 16 `[LOCAL]` lines.
+- **`gaps.md`** has 42 gaps with file and line references, debt rows D-6, D-7, D-8 and D-12 with the replacement mechanism for each, and a to-do order.
+
+**Open items**
+- **Table-ownership gate not run.** I could not run `pnpm check:table-ownership` because the command needs an approval I don't have in an unattended session. `gaps.md` section 3 is built from reading the code and says so. The implementation agent should run it first.
+- **Existing contracts changed.** The spec departs from existing specs in four places, each logged as `[CONTRACT]`:
+  - S10's `order.fulfilment_changed` has no `userId`, so the buyer can't be found; S28 requires it as an additive field.
+  - S26 exports nothing, but the marketing notice needs a follower list; S28 requires an exported follower-listing service from S26.
+  - S41 and S43 must emit events instead of calling `NotificationRouter.dispatch`.
+  - The chat, seller-insights and developer-platform domains lose the router export they call today.
+- **If a requirement is refused**, the matching catalog row is dropped, and the checklist notes this.
+- **Most visible behaviour changes** (all in `questions.md`):
+  - Marketing becomes opt-in on every external channel.
+  - SMS requires a phone verified by a one-time code.
+  - Devices are removed by id and only by their owner.
+  - Provider callbacks get a 5-minute tolerance and are acknowledged before they are processed.
+  - Stale events are dropped instead of sent late.
+  - Production startup fails when a channel has no real provider credentials.

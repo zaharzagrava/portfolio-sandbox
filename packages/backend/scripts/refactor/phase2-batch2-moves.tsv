@@ -1,0 +1,122 @@
+# Phase 2 (batch 2) move map: orders, payments, chat, fulfilment, seller-onboarding
+# batch-dirs: orders bis-order payment payment-dto ledger finance chat chat-dto chat-sync pickup delivery onboarding
+# <source under libs/common/src>	<destination under libs/>
+# Layer rules (as batch 1): controllers, request/response DTOs, cookie/ticket transport → api/;
+# use-case services and published event contracts (`*-events.ts`, which import the infrastructure
+# event helper and so can't live in domain/, I.3) → application/; pure state machines, ports,
+# constants, schemas, validators → domain/; models, repositories, Redis/ES adapters, projectors,
+# listeners, job handlers → infra/; Nest modules and e2e specs → domain root.
+#
+# orders  (orders + bis-order + order export from catalog-import, decision D2 + 5 models)
+orders/orders.module.ts	domains/orders/orders.module.ts
+orders/orders-worker.module.ts	domains/orders/orders-worker.module.ts
+orders/cart.e2e-spec.ts	domains/orders/cart.e2e-spec.ts
+orders/checkout.e2e-spec.ts	domains/orders/checkout.e2e-spec.ts
+orders/cart.controller.ts	domains/orders/api/cart.controller.ts
+orders/orders.controller.ts	domains/orders/api/orders.controller.ts
+orders/stripe-webhook.controller.ts	domains/orders/api/stripe-webhook.controller.ts
+orders/cart-identity.ts	domains/orders/api/cart-identity.ts
+orders/types.ts	domains/orders/api/orders.dto.ts
+bis-order/types.ts	domains/orders/api/bis-order.dto.ts
+orders/checkout.service.ts	domains/orders/application/checkout.service.ts
+orders/order.service.ts	domains/orders/application/order.service.ts
+orders/order-events.ts	domains/orders/application/events/order-events.ts
+catalog-import/order-export.service.ts	domains/orders/application/order-export.service.ts
+orders/order-state.ts	domains/orders/domain/order-state.ts
+orders/checkout-discounts.port.ts	domains/orders/domain/checkout-discounts.port.ts
+orders/cart.repository.ts	domains/orders/infra/cart.repository.ts
+orders/flash-stock.service.ts	domains/orders/infra/flash-stock.service.ts
+orders/flash-stock.service.spec.ts	domains/orders/infra/flash-stock.service.spec.ts
+orders/order.jobs.ts	domains/orders/infra/order.jobs.ts
+orders/order-payment.listener.ts	domains/orders/infra/order-payment.listener.ts
+models/bis-order.model.ts	domains/orders/infra/models/bis-order.model.ts
+models/bis-order-item.model.ts	domains/orders/infra/models/bis-order-item.model.ts
+models/shop-order.model.ts	domains/orders/infra/models/shop-order.model.ts
+models/stock-reservation.model.ts	domains/orders/infra/models/stock-reservation.model.ts
+models/flash-sale.model.ts	domains/orders/infra/models/flash-sale.model.ts
+#
+# payments  (payment + payment-dto + ledger + finance, one ACID boundary: decision D4 + 3 models)
+payment/payment.module.ts	domains/payments/payment.module.ts
+payment/payment.e2e-spec.ts	domains/payments/payment.e2e-spec.ts
+payment/payment.controller.ts	domains/payments/api/payment.controller.ts
+payment/types.ts	domains/payments/api/payment.dto.ts
+payment/payment.service.ts	domains/payments/application/payment.service.ts
+payment/tracing.utils.ts	domains/payments/infra/tracing.utils.ts
+payment-dto/payment-dto.module.ts	domains/payments/payment-dto.module.ts
+payment-dto/payment-dto.service.ts	domains/payments/infra/payment-dto.service.ts
+ledger/ledger.module.ts	domains/payments/ledger.module.ts
+ledger/types.ts	domains/payments/api/ledger.dto.ts
+ledger/ledger.service.ts	domains/payments/application/ledger.service.ts
+ledger/ledger-events.ts	domains/payments/application/events/ledger-events.ts
+ledger/accounts.ts	domains/payments/domain/accounts.ts
+finance/finance.module.ts	domains/payments/finance.module.ts
+finance/finance-worker.module.ts	domains/payments/finance-worker.module.ts
+finance/finance.e2e-spec.ts	domains/payments/finance.e2e-spec.ts
+finance/finance.controller.ts	domains/payments/api/finance.controller.ts
+finance/payout-provider.port.ts	domains/payments/infra/payout-provider.port.ts
+finance/balance.projector.ts	domains/payments/infra/balance.projector.ts
+finance/settlement.listener.ts	domains/payments/infra/settlement.listener.ts
+finance/ledger-maintenance.jobs.ts	domains/payments/infra/ledger-maintenance.jobs.ts
+finance/payment-resolution.jobs.ts	domains/payments/infra/payment-resolution.jobs.ts
+finance/payout.jobs.ts	domains/payments/infra/payout.jobs.ts
+finance/reconciliation.jobs.ts	domains/payments/infra/reconciliation.jobs.ts
+models/payment.model.ts	domains/payments/infra/models/payment.model.ts
+models/ledger-entry.model.ts	domains/payments/infra/models/ledger-entry.model.ts
+models/payout.model.ts	domains/payments/infra/models/payout.model.ts
+#
+# chat  (chat + chat-dto + chat-sync + 3 models)
+chat/chat.module.ts	domains/chat/chat.module.ts
+chat/chat.e2e-spec.ts	domains/chat/chat.e2e-spec.ts
+chat/chat.controller.ts	domains/chat/api/chat.controller.ts
+chat/types.ts	domains/chat/api/chat.dto.ts
+chat/chat.service.ts	domains/chat/application/chat.service.ts
+chat/chat.constants.ts	domains/chat/domain/chat.constants.ts
+chat-dto/chat-dto.module.ts	domains/chat/chat-dto.module.ts
+chat-dto/chat-dto.service.ts	domains/chat/infra/chat-dto.service.ts
+chat-sync/chat-sync.module.ts	domains/chat/chat-sync.module.ts
+chat-sync/chat-offline-worker.module.ts	domains/chat/chat-offline-worker.module.ts
+chat-sync/chat-sync.e2e-spec.ts	domains/chat/chat-sync.e2e-spec.ts
+chat-sync/chat-sync.controller.ts	domains/chat/api/chat-sync.controller.ts
+chat-sync/chat-sync.service.ts	domains/chat/application/chat-sync.service.ts
+chat-sync/chat-events.ts	domains/chat/application/events/chat-events.ts
+chat-sync/chat-offline.ts	domains/chat/infra/chat-offline.ts
+models/chat-channel.model.ts	domains/chat/infra/models/chat-channel.model.ts
+models/chat-channel-member.model.ts	domains/chat/infra/models/chat-channel-member.model.ts
+models/chat-message.model.ts	domains/chat/infra/models/chat-message.model.ts
+#
+# fulfilment  (pickup + delivery)
+pickup/pickup.module.ts	domains/fulfilment/pickup.module.ts
+pickup/pickup.e2e-spec.ts	domains/fulfilment/pickup.e2e-spec.ts
+pickup/pickup.controller.ts	domains/fulfilment/api/pickup.controller.ts
+pickup/pickup.service.ts	domains/fulfilment/application/pickup.service.ts
+pickup/pickup-events.ts	domains/fulfilment/application/events/pickup-events.ts
+pickup/availability-index.ts	domains/fulfilment/infra/availability-index.ts
+pickup/pickup-availability.projector.ts	domains/fulfilment/infra/pickup-availability.projector.ts
+delivery/delivery.module.ts	domains/fulfilment/delivery.module.ts
+delivery/delivery-core.module.ts	domains/fulfilment/delivery-core.module.ts
+delivery/delivery-worker.module.ts	domains/fulfilment/delivery-worker.module.ts
+delivery/delivery.e2e-spec.ts	domains/fulfilment/delivery.e2e-spec.ts
+delivery/delivery.controller.ts	domains/fulfilment/api/delivery.controller.ts
+delivery/courier.service.ts	domains/fulfilment/application/courier.service.ts
+delivery/dispatch.service.ts	domains/fulfilment/application/dispatch.service.ts
+delivery/courier-events.ts	domains/fulfilment/application/events/courier-events.ts
+delivery/delivery-state.ts	domains/fulfilment/domain/delivery-state.ts
+delivery/geohash.ts	domains/fulfilment/domain/geohash.ts
+delivery/courier-keys.ts	domains/fulfilment/infra/courier-keys.ts
+delivery/delivery-workers.ts	domains/fulfilment/infra/delivery-workers.ts
+#
+# seller-onboarding  (onboarding)
+onboarding/onboarding.module.ts	domains/seller-onboarding/onboarding.module.ts
+onboarding/onboarding.e2e-spec.ts	domains/seller-onboarding/onboarding.e2e-spec.ts
+onboarding/onboarding.controller.ts	domains/seller-onboarding/api/onboarding.controller.ts
+onboarding/onboarding-session.service.ts	domains/seller-onboarding/application/onboarding-session.service.ts
+onboarding/onboarding-documents.service.ts	domains/seller-onboarding/application/onboarding-documents.service.ts
+onboarding/extraction.service.ts	domains/seller-onboarding/application/extraction.service.ts
+onboarding/review.service.ts	domains/seller-onboarding/application/review.service.ts
+onboarding/verification.service.ts	domains/seller-onboarding/application/verification.service.ts
+onboarding/onboarding-events.ts	domains/seller-onboarding/application/events/onboarding-events.ts
+onboarding/questionnaire.ts	domains/seller-onboarding/domain/questionnaire.ts
+onboarding/extraction-schema.ts	domains/seller-onboarding/domain/extraction-schema.ts
+onboarding/validators.ts	domains/seller-onboarding/domain/validators.ts
+onboarding/validators.spec.ts	domains/seller-onboarding/domain/validators.spec.ts
+onboarding/onboarding.jobs.ts	domains/seller-onboarding/infra/onboarding.jobs.ts

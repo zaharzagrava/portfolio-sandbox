@@ -1,0 +1,28 @@
+The S08 spec, test plan, gaps list, open decisions and quality checklist are written in `specs/domains/S08-integrations/`. All checklist items pass on the first iteration, and no code was changed.
+
+- **Spec**: 8 user stories, 80 Given/When/Then scenarios and 13 success criteria, with the required `## Cross-capability contracts` section (**Provides** and **Requires**).
+  - **Patterns**: all 7 pattern-map rows for S08 appear as requirements and scenarios: P0112, P0417, P0419, P0518, P0612, P0613, P0614.
+  - **Product writes**: they go only through S05's `upsertFromExternal` and `applyStockDelta`. Reads use `getProductsByIds`, and local stock comes from S05's product events.
+  - **Permission**: routes use `integrations.manage`, as S03 defines (the current code checks `shop.manage`).
+  - **Shared topic**: S08's events go on the topic S07 registered, `catalog-sync.events`.
+- **Open decisions**: `questions.md` has 18 BREAKING, 17 CONTRACT and 20 LOCAL lines, in that order.
+- **Test plan**: 80 rows for 80 scenarios, each naming its e2e file, with one UI journey and unit specs only for pure rules.
+- **Gaps list**: 45 gaps with file:line, debt rows D-6, D-7, D-8, D-10 and D-12, the ownership-check lines with their IX.7 replacement, and an ordered work list.
+- **Checklist**: `checklists/requirements.md`. `.specify/feature.json` now points at this directory.
+
+Things to check:
+- I couldn't run `pnpm check:table-ownership` (it needed approval), so the ownership lines in `gaps.md` are reconstructed by reading the code. The file says so; run the real check first.
+- The Interview-Prep notes are not at `~/workspace/notes/…` here. I read them from `.specify/memory/Interview-Prep/`, plus `SD-36` from the repo's `docs/showcase/sections/`.
+- Decisions with the widest reach:
+  - Shopify connects through OAuth rather than pasted tokens.
+  - WooCommerce gets a real adapter, since today it throws "not implemented".
+  - One provider variant becomes one product; today only the first variant is mapped.
+  - Stock merges on a recorded common base, with a conflict queue for oversells, instead of overwriting.
+  - The old `fake` provider leaves the public contract and production wiring.
+- S08 asks other capabilities for new things, listed as CONTRACT lines:
+  - **S05**: whether `quantity` on an existing product sets stock absolutely.
+  - **S50**: a `penalize` call so one worker's `Retry-After` pauses a credential for every worker.
+  - **S53**: a delay option on queue sends.
+  - **S54**: an SSRF-safe HTTP client mode.
+
+The next step is `/speckit-clarify` on the BREAKING and CONTRACT lines, or `/speckit-plan` directly.

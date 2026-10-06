@@ -1,0 +1,24 @@
+{
+  "TableName": "LiveComments",
+  "AttributeDefinitions": [
+    { "AttributeName": "PK", "AttributeType": "S" },
+    { "AttributeName": "SK", "AttributeType": "S" }
+  ],
+  "KeySchema": [
+    { "AttributeName": "PK", "KeyType": "HASH" },
+    { "AttributeName": "SK", "KeyType": "RANGE" }
+  ],
+  "TimeToLiveAttribute": "expiresAtEpoch",
+  "_design": {
+    "pattern": "time-bucketed comment history (SD-15)",
+    "items": {
+      "comment": "PK=STREAM#<streamId>#<yyyyMMddHHmm> SK=<commentId uuidv7> | authorId, authorName, text, removed, expiresAtEpoch"
+    },
+    "accessPatterns": [
+      "persist: BatchWriteItem (25/request) from the live.events consumer",
+      "replay a VOD minute: Query PK=STREAM#s#<minute> (SK = uuidv7 → time-ordered)",
+      "moderation removal: UpdateItem SET removed = true"
+    ],
+    "why": "5k comments/s on ONE stream would be a single hot partition (DynamoDB partitions cap ~1k WCU); a minute bucket spreads writes over a new partition every minute and keeps each partition small; uuidv7 sort keys keep the order"
+  }
+}

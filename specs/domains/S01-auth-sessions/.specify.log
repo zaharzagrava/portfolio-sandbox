@@ -1,0 +1,29 @@
+I've written the S01 spec, `questions.md`, `test-plan.md`, `gaps.md` and the quality checklist. The ownership section of `gaps.md` is reconstructed by grep, because `pnpm check:table-ownership` needed approval and I couldn't run it. Reconcile that section against the tool's real `MODEL`/`SQL` rows for identity before starting work.
+
+I changed no code. The checklist passed on the first of the three allowed iterations. There are no `[NEEDS CLARIFICATION]` markers, and no `.specify/extensions.yml`, so no hooks ran.
+
+All files are in `specs/domains/S01-auth-sessions/`:
+- `spec.md`
+- `questions.md`
+- `test-plan.md`
+- `gaps.md`
+- `checklists/requirements.md`
+
+The spec has 86 acceptance scenarios (AS-01 to AS-86) in 11 user stories. `test-plan.md` has one row for each, and every functional requirement is covered by at least one scenario. Every pattern-map row that names S01 (P0202, P0214, P0305, P0504, P0506, P0511, P0512, P0514, P0517, P0518) appears as requirements and scenarios.
+
+`questions.md` has 16 `[BREAKING]`, 11 `[CONTRACT]` and 12 `[LOCAL]` lines. The BREAKING ones the reviewer should read first:
+- **Registration:** it returns an identical `202` for new and taken addresses, with no session. Today's `409` lets anyone enumerate accounts, which constitution V.4 forbids.
+- **Refresh tokens:** there is no reuse grace window any more, so replaying a spent token revokes the session. A BFF that refreshes in parallel must serialize its refreshes, and I recorded that as a `[CONTRACT]` line for S48.
+- **Credentials:** the legacy `x-auth-token` header and cookie and the no-`kid` RS256 tokens are removed. Access tokens gain `aud`, `typ`, `jti` and `amr`, last 300 s, and carry no email.
+- **Cookies and CSRF:** cookie delivery is opt-in, with HttpOnly access and refresh cookies. CSRF uses a double-submit token bound to the session, plus an Origin/Sec-Fetch-Site check.
+- **Client IP:** it comes only from the trusted proxy chain. Today's `cf-connecting-ip` trust is a trivial rate-limit bypass.
+- **Public barrel:** the identity models, `AuthService.issueTokensFor` and `KeyStore` are removed from the barrel. In their place, other domains get `UserDirectoryService`, `SessionRevocationService`, `SessionIssuer` and `ServiceTokenService` (R1).
+
+- **Scope additions:** I added password reset and service-to-service tokens to scope. The reset endpoints are there because P0506 names "identity (login, reset)". S01's service-to-service tokens are new and signed with the identity keys; nothing in the code does this today.
+- **Earlier specs:** `specs/domains` held no other spec, so the Cross-capability contracts section defines the contracts rather than honouring existing ones.
+- **Spec wording:** `spec.md` names standards (Argon2id, ES256, JWKS, `__Host-` cookies) and exact export names where contracts need them, but no storage or framework names.
+- **MFA and OIDC:** that code stays in S02. S01 only provides the seam they plug into (`SessionIssuer`, the MFA challenge).
+
+`gaps.md` lists about 50 numbered gaps with file:line references. It also has the open debt rows D-6, D-7, D-8, D-12 and D-17, and a table of each cross-domain `User` access with its R1 replacement.
+
+Next step is `/speckit-clarify` or `/speckit-plan`.

@@ -1,0 +1,26 @@
+The S07 spec set is written in `specs/domains/S07-bulk-import/`, and the quality checklist passes after one fix round. One check could not run: `pnpm check:table-ownership` needed an approval this unattended session couldn't get. So section C of `gaps.md` is rebuilt from code searches and says so. Run the real check before implementation and reconcile.
+
+I didn't modify any code. There is no `.specify/extensions.yml`, so no hooks ran. I did point `.specify/feature.json` at the S07 directory.
+
+- **`spec.md`** has 7 user stories, 71 acceptance scenarios (AS-01 to AS-71) and 46 functional requirements. Every requirement cites at least one scenario. It also has the cross-capability contracts section.
+- **Pattern rows:** P0207 (streams and backpressure), P0407 (async request-reply) and P0509 (upload security) are each covered by requirements and scenarios.
+- **`questions.md`** lists about 22 BREAKING lines first, then 15 CONTRACT and 15 LOCAL, no clarification questions.
+- **`test-plan.md`** has 71 rows, one per scenario, and names nine e2e spec files, the unit specs and the single Playwright journey.
+- **`gaps.md`** lists 32 code gaps with file:line, the five open debt-register rows that apply (D-6, D-7, D-8, D-10, D-12), the replacement mechanism per ownership finding, and a 12-step work list.
+- **`checklists/requirements.md`** has every item ticked, with the iteration-1 fixes noted.
+
+The decisions you should look at first are in `questions.md`:
+
+- **No raw product SQL:** this domain stops writing the product table and its events and calls S05's `upsertFromExternal` instead. Batches drop from 1,000 to 500 rows to match S05's limit.
+- **Today's duplicate-SKU bug:** two rows with the same SKU in one batch make Postgres reject the whole job. The spec sends the pending batch first so file order wins.
+- **Malware scanner:** mandatory in production and fail-closed on any scanner trouble.
+- **State machine:** two new states (`CANCELLED`, `EXPIRED`), a cancel route, a per-job lease so a stalled worker can't overwrite a newer one, and a recovery job for lost queue messages.
+- **Error report:** it is complete across a crash-resume, which fixes the documented caveat where it only held post-checkpoint failures.
+- **Realtime channel:** the topic changes from `job:{id}` to `import:{id}`, open to current shop members instead of only the creator.
+- **Order export:** its routes leave this domain for S12 (debt D-10).
+
+Counters after a crash can move at most one 500-row batch from created/updated to unchanged. The product write and the checkpoint can't share a transaction under IX.4, and this is stated in AS-35 and the assumptions.
+
+AS-71 (source file missing) sits at the end of Story 3, out of numeric order, so the IDs in the other two files stay stable.
+
+Next step is `/speckit-plan` for S07, or a read of the BREAKING and CONTRACT lines in `questions.md` first.

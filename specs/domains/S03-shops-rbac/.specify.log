@@ -1,0 +1,26 @@
+The S03 spec is written and the quality checklist passes on the first run. I changed no code. The only file touched outside the spec directory is `.specify/feature.json`, which now points at `specs/domains/S03-shops-rbac`.
+
+- **`pnpm check:table-ownership` not run:** it needs approval an unattended session can't get. Section C of `gaps.md` is rebuilt from searches over `libs/`, so run the real check and reconcile before relying on it.
+- **Pattern coverage:** the spec covers all nine pattern-map rows that name S03 (P0302, P0310, P0315, P0316, P0319, P0513, P0515, P0516, P0618), each mapped to scenarios. It has 83 acceptance scenarios (AS-01 to AS-83), and `test-plan.md` has exactly one row for each.
+- **Question counts:** `questions.md` has 23 BREAKING, 22 CONTRACT and 14 LOCAL lines. The first S03 contract reading that would otherwise block: S01 has no consumer for `tenancy.shop_created`, so the owner's promotion to `SELLER` needs one added.
+
+The main behaviour changes (all tagged BREAKING; most need other capabilities to follow):
+
+- **Invites:** the link no longer reaches the inviter. Registration never proves e-mail ownership, so the inviter could register the invitee's address and accept as them. The token goes only to S28 in a single-consumer message. Acceptance checks the account's address through S01's directory service, and accepting as an existing member keeps their role.
+- **Escalation:** only an owner can create, change or remove owners and admins; today an admin can make anyone an owner. A last-owner violation is now `409` instead of `422`.
+- **Permission matrix:** a viewer loses `payouts.read` and an admin loses `sso.manage`. `orders.read` and `shop.export` are added.
+- **Guard:** it now enforces shop status (suspended is read-only, closing allows only read, export and cancel). The cache is shared-store only with a 15 s lifetime, and sensitive permissions always read the database.
+- **Boundaries:** tenancy no longer writes identity's `User` table, which is why S01 needs the new consumer. Verification status and sandbox shops move to events and exported services instead of other domains writing `Shop`. The backfill job leaves tenancy, and each owning domain backfills its own `shopId` through the exported `ensureShopsForLegacySellers` service.
+- **Cells and SSO:** an unknown cell now fails with `503` instead of silently using the pooled database. SSO is owner-only with issuer validation, and shop-IdP users get a membership.
+- **New:** offboarding with export and a 30-day grace period, admin suspend/reinstate, plan-based seat limits (5/25/250), and a 10-shop limit per user.
+
+Two contracts are assumed from specs that don't exist yet. One is S04's `shop.rejected` event and the other is S17's `billing.subscription_plan_changed` event. Both are marked in `questions.md`.
+
+`gaps.md` has 29 code gaps with file and line references. It also covers debt rows D-6, D-7, D-8 and D-12 and the cross-domain access lines, each with its replacement mechanism (R1 exported service, R3 read model, or an event). The D-4 regression (raw SQL in the batch-read controller) is flagged there too. Next step is `/speckit-plan`.
+
+Files are in `specs/domains/S03-shops-rbac/`:
+- `spec.md`
+- `questions.md`
+- `test-plan.md`
+- `gaps.md`
+- `checklists/requirements.md`

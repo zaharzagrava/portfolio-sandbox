@@ -1,0 +1,23 @@
+The S09 spec set is written in `specs/domains/S09-offline-sync/`, and the quality checklist passes after one fix round. I couldn't run `pnpm check:table-ownership`, because it needs an approval this unattended session can't get. The `check:table-ownership` section of `gaps.md` (section C) is reconstructed from code searches and says so. Run the real check before implementation and reconcile.
+
+I also couldn't read `~/workspace/notes/Interview-Prep` (outside the allowed directories). I used the copies under `.specify/memory/Interview-Prep/` and `docs/showcase/sections/SD-06-offline-inventory-sync.md` instead. I changed no code. There is no `.specify/extensions.yml`, so no hooks ran. `.specify/feature.json` now points at the S09 directory (it pointed at S08).
+
+- **`spec.md`**: 7 user stories, 55 acceptance scenarios (AS-01 to AS-55) and 40 functional requirements. Every requirement cites at least one scenario. It has no `[NEEDS CLARIFICATION]` markers and includes the Cross-capability contracts section. The scenarios cover the three pattern-map rows:
+  - **Push (P0612, P0905):** idempotent push, stock as deltas, oversold conflicts.
+  - **Clocks (P0615):** per-field last-writer-wins by hybrid logical clock, server time authority.
+  - **Pull (P0905):** gap-free change feed, resync after a rebuild or compaction.
+  - **Review and access:** conflict review, tenancy and roles.
+- **`questions.md`**: 17 `[BREAKING]`, 14 `[CONTRACT]` and 14 `[LOCAL]` lines.
+- **`test-plan.md`**: 55 rows across 7 named e2e spec files plus 4 unit files. The UI column is empty because the device app is phase 2 and the dashboard's conflict screen belongs to W04.
+- **`gaps.md`**: 29 code gaps with file and line references, the debt rows D-6, D-7, D-8, D-10, D-12 and D-15 each mapped to an R1 or R3 mechanism, and an ordered work list.
+
+The decisions you should review first:
+- **Stock writes:** stock goes only through S05's `applyStockDelta`, and field edits only through `ProductCommandService.update` (R1). The raw `UPDATE "Product"` calls and the raw product events are removed.
+- **Change feed:** the database trigger and the foreign key on `Product` are replaced by a projector that consumes `catalog.product_*` events (R3). That costs a few seconds of feed lag (5 s at p99).
+- **Negative stock:** stock never goes below zero now. An oversold sale applies up to the available quantity, and the shortfall becomes an `oversold` conflict. Today the code lets stock go negative.
+- **Operation IDs:** they are unique per `(shopId, opId)`. A replay returns the original outcome with `replayed: true`, and the same ID with different content is `op_id_reused`. Today it's a global key, which lets one shop probe another's IDs.
+- **Bad operations:** one bad operation no longer fails the whole push with `400`. It is rejected individually, so a malformed operation can't strand the rest of a device's queue.
+- **Clock skew:** a device clock more than 60 s ahead now rejects only product edits. Today it rejects stock operations too, which would lose real sales.
+- **Contract difference with S05:** S05 names `upsertFromExternal(..., 'offline')` as S09's write path. I didn't use it, because it needs an external SKU and a full product item, while a device edits single fields of a known product. This is a `[CONTRACT]` line, and S05 should add S09 as a consumer of `update` and `listByShop`.
+
+The feature is ready for `/speckit-plan`.

@@ -1,0 +1,81 @@
+{
+  "outDir": "docs/humans",
+  "sourceExtensions": [
+    ".ts",
+    ".tsx",
+    ".js",
+    ".mjs",
+    ".cjs",
+    ".rs",
+    ".go",
+    ".py"
+  ],
+  "ignore": [
+    "**/node_modules/**",
+    "**/*.d.ts",
+    "**/*.spec.ts",
+    "**/*.test.ts",
+    "**/*.spec.tsx",
+    "**/*.test.tsx",
+    "**/*.e2e-spec.ts",
+    "**/dist/**",
+    "**/.next/**",
+    "**/migrations/**",
+    "packages/backend/test/**",
+    "packages/web/components/ui/**",
+    "packages/web/tests/**",
+    "packages/web/playwright-report/**",
+    "packages/web/test-results/**",
+    ".agents/**",
+    ".specify/**"
+  ],
+  "units": [
+    {
+      "match": "packages/backend/libs/domains/*",
+      "group": "domain"
+    },
+    {
+      "match": "packages/backend/libs/infrastructure/*",
+      "group": "platform"
+    },
+    {
+      "match": "packages/backend/libs/common/*",
+      "group": "common"
+    },
+    {
+      "match": "packages/backend/libs/composition/*",
+      "group": "composition"
+    },
+    {
+      "match": "packages/backend/apps/*",
+      "group": "app",
+      "moduleDepth": 2
+    },
+    {
+      "match": "packages/web",
+      "group": "package",
+      "moduleDepth": 2
+    },
+    {
+      "match": "packages/*",
+      "group": "package"
+    }
+  ],
+  "models": {
+    "file": "claude-haiku-4-5-20251001",
+    "module": "claude-sonnet-5-5",
+    "unit": "claude-sonnet-5-5",
+    "flow": "claude-sonnet-5-5",
+    "system": "claude-sonnet-5-5"
+  },
+  "contextFiles": [
+    "docs/architecture/domain-map.md",
+    "docs/architecture/pattern-map.md"
+  ],
+  "conventions": {
+    "eventDefiner": "defineEvent",
+    "jobHandlerDecorator": "JobHandler",
+    "enqueueMethod": "enqueue",
+    "scheduleMethod": "upsertSchedule"
+  }
+}

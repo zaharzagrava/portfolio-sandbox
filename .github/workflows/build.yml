@@ -1,0 +1,89 @@
+# O-02 build: images per app → ECR (OIDC, no static keys), SBOM + vulnerability gate, tagged by commit SHA.
+name: build
+
+on:
+  push:
+    branches: [master]
+    paths: ['packages/backend/**', 'packages/contracts/**', 'pnpm-lock.yaml', 'infra/docker/node/**']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write # OIDC → AWS role (infra/modules/github_oidc)
+
+env:
+  AWS_REGION: eu-central-1
+
+jobs:
+  images:
+    # arm64 end to end (Graviton ASGs, ARM CodeBuild, arm64 Lambdas): native modules (argon2, isolated-vm, sharp)
+    # must be built for the target arch - a native runner instead of slow QEMU emulation.
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        app: [core, worker, projector, sse-gateway, payment-processor, collab, public-api, bff]
+        include:
+          - app: migrator
+            target: migrator
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_BUILD_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+      - id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+      - uses: docker/setup-buildx-action@v3
+      - name: Build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: infra/docker/node/Dockerfile
+          target: ${{ matrix.target || 'runtime' }}
+          platforms: linux/arm64
+          build-args: APP=${{ matrix.app == 'migrator' && 'core' || matrix.app }}
+          load: true
+          tags: ${{ steps.ecr.outputs.registry }}/marketplace/${{ matrix.app }}:${{ github.sha }}
+          cache-from: type=gha,scope=${{ matrix.app }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.app }}
+      - name: SBOM
+        uses: anchore/sbom-action@v0
+        with:
+          image: ${{ steps.ecr.outputs.registry }}/marketplace/${{ matrix.app }}:${{ github.sha }}
+          artifact-name: sbom-${{ matrix.app }}.spdx.json
+      - name: Vulnerability gate (fixable CRITICAL/HIGH fail the build)
+        uses: aquasecurity/trivy-action@0.33.1
+        with:
+          image-ref: ${{ steps.ecr.outputs.registry }}/marketplace/${{ matrix.app }}:${{ github.sha }}
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          exit-code: '1'
+      - name: Image size budget (< 400 MB uncompressed, ~200 MB pulled)
+        run: |
+          size=$(docker image inspect ${{ steps.ecr.outputs.registry }}/marketplace/${{ matrix.app }}:${{ github.sha }} --format '{{.Size}}')
+          echo "size=$((size / 1024 / 1024)) MB"; test "$size" -lt 419430400
+      - name: Push
+        run: docker push ${{ steps.ecr.outputs.registry }}/marketplace/${{ matrix.app }}:${{ github.sha }}
+
+  lambdas:
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile --filter api...
+      - name: Bundle (tsc → esbuild, one dir per handler + manifest.json; Terraform zips them)
+        working-directory: packages/backend
+        run: pnpm build:lambdas
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_BUILD_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+      - name: Upload artifacts
+        run: aws s3 sync packages/backend/dist/lambda-bundles "s3://${{ vars.ARTIFACTS_BUCKET }}/lambdas/${{ github.sha }}/"

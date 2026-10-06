@@ -1,0 +1,35 @@
+I wrote the S11 spec package and the quality checklist passes on the first iteration. I didn't modify any code, but I did point `.specify/feature.json` at the S11 directory.
+
+- **No hooks:** `.specify/extensions.yml` doesn't exist, so no before or after hooks ran.
+- **Sources:** The SD-19 and SD-21 notes were under `docs/showcase/sections/` in the repo, not in `~/workspace/notes`. The Redis note was in `~/workspace/notes`.
+- **Checklist result:** The spec has 37 functional requirements and 46 acceptance scenarios, and every scenario has a row in `test-plan.md`. There are no `[NEEDS CLARIFICATION]` markers. Both pattern-map rows naming S11 are covered: P0324 (hot-key splitting, stampede protection, TTL jitter) and P0619 (admission control).
+- **Decisions:** `questions.md` has 19 `[BREAKING]`, 13 `[CONTRACT]` and 13 `[LOCAL]` lines.
+
+## S10 contracts the spec asks for
+
+Read the `[CONTRACT]` lines about S10 first. S10's saga writes the order before it reserves stock, but S11 needs a refused buyer to create nothing. The spec therefore asks S10 for three changes to its reservation seam:
+
+- **Reserve before the order:** drop lines reserve before the order is written, with a commit step after it and a release step on failure.
+- **Buyer and price in the seam:** the seam carries the buyer ID, a claim reference, and the drop unit price.
+- **No discounts on drop lines:** S10 must not discount flash lines.
+
+## Largest gaps found in the current code
+
+The full list is in `gaps.md`, with file and line references.
+
+- **Oversell risk:** A redelivered start job refills buckets that have already sold. Release is a bare increment, so it creates stock if it runs twice.
+- **Early selling:** The sale opens at the load time, a minute before `startsAt`.
+- **No admission control:** Nothing limits attempts per sale.
+- **Redis failure:** A Redis error during a flash checkout returns a 500.
+- **Post-sale reconciliation only:** Drift is checked only after the sale ends.
+
+For the table-ownership gaps, the flash-sale code has one raw `Product` SQL write in the load job and one in the reconcile job. The flash route also injects `ProductModel`.
+
+Files are in `specs/domains/S11-flash-sales/`:
+- `spec.md`
+- `questions.md`
+- `test-plan.md`
+- `gaps.md`
+- `checklists/requirements.md`
+
+The spec is ready for `/speckit-clarify` or `/speckit-plan`.

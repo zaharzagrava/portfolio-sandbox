@@ -1,0 +1,33 @@
+The S17 specification is written, and it passes all 12 quality-checklist items on the first pass. There are no `[NEEDS CLARIFICATION]` markers. I changed no code, only `.specify/feature.json` (now pointing at the S17 directory). No `.specify/extensions.yml` exists, so no hooks ran.
+
+The source note `SD-24-subscriptions-billing.md` is not in this checkout. I used design 24 in `10-System-Design/07-commerce-and-transactions.md` and the existing code instead. This is recorded at the top of `questions.md`.
+
+**Spec contents**
+- **Scenarios:** 85 acceptance scenarios (AS-01–AS-85) in 9 user stories, with 60 functional requirements and 10 success criteria. All four S17 pattern-map rows are covered:
+  - P0103 (integer money, explicit rounding) and P1110 (largest-remainder allocation): AS-64 and AS-70.
+  - P0104 (UTC dates, month-end anchors): AS-30 and AS-63.
+  - P0110 (state machines with `assertNever`): AS-21, AS-23 and AS-24.
+- **Edge cases:** concurrency, replay, illegal transitions, cross-tenant access, unknown provider outcomes, out-of-order events and crashes each have a scenario with exact values.
+- **Test plan:** `test-plan.md` maps all 85 scenarios to one row each. There are 8 e2e files and 5 unit specs; the UI column is empty because no web capability owns a billing screen.
+- **Gaps:** `gaps.md` has 28 behaviour gaps with `file:line` references. The ownership check shows 0 findings for billing and none against billing's tables. D-14 is the only open debt row that names billing; D-6, D-7 and D-8 apply to every domain and are listed because billing shows them.
+- **Questions:** `questions.md` has 23 BREAKING, 10 CONTRACT and 14 LOCAL lines.
+
+**Decisions to review first**
+- **Dunning timing:** the code schedules retries about 1, 4 and 11 days after the first failure. The note says day 1, 3 and 7, so the spec follows the note.
+- **Credit loss:** a renewal marks all negative proration invoices paid wholesale, so any credit above the renewal total vanishes. The spec replaces them with a credit balance that is applied up to the renewal's subtotal and is never negative.
+- **Proration:** rounding happens once on the net amount, using whole UTC dates. For 1000→2000 at 10 of 30 days this gives 333, where the code gives 334.
+- **Client-chosen trial:** the client can currently pick its own trial length (`trialDays`). The spec moves it onto the price and allows one trial per subject.
+- **Payment data in responses:** the API serializes models, including `paymentMethodRef`. The spec uses explicit DTOs and exposes only `hasPaymentMethod`.
+- **Charge currency:** the shared Stripe client hard-codes `usd`, and a load-test flag makes it report success without calling the provider. Billing invoices are EUR, so the charge must take the invoice currency.
+- **Contradicts S13:** S13 says billing sends it a charge command, but S13 has none because its intents are bound to orders. The spec has billing charge through its own port instead; this is flagged as `[CONTRACT]`, and the domain map line needs updating.
+- **Matches S03:** `billing.subscription_plan_changed {shopId, plan, version}` is emitted exactly as S03 expects, with a per-shop counter that survives across subscriptions.
+- **Asked of other capabilities:** S10's order webhook must ignore intents tagged `kind: "subscription_invoice"`, and S18 must provide the renewal's usage lines and entitlement invalidation. Both are listed under Requires.
+
+Files are in `specs/domains/S17-subscriptions/`:
+- `spec.md`
+- `questions.md`
+- `test-plan.md`
+- `gaps.md`
+- `checklists/requirements.md`
+
+The spec is ready for `/speckit-clarify` or `/speckit-plan`.

@@ -1,0 +1,25 @@
+{
+  "TableName": "Links",
+  "AttributeDefinitions": [
+    { "AttributeName": "code", "AttributeType": "S" },
+    { "AttributeName": "ownerId", "AttributeType": "S" },
+    { "AttributeName": "createdAt", "AttributeType": "S" }
+  ],
+  "KeySchema": [{ "AttributeName": "code", "KeyType": "HASH" }],
+  "GlobalSecondaryIndexes": [
+    {
+      "IndexName": "byOwner",
+      "KeySchema": [
+        { "AttributeName": "ownerId", "KeyType": "HASH" },
+        { "AttributeName": "createdAt", "KeyType": "RANGE" }
+      ],
+      "Projection": { "ProjectionType": "ALL" }
+    }
+  ],
+  "TimeToLiveAttribute": "expiresAtEpoch",
+  "_design": {
+    "pattern": "pure key-value (SD-08)",
+    "accessPatterns": ["redirect: GetItem code", "create alias: PutItem IF attribute_not_exists(code)", "my links: Query byOwner"],
+    "why": "100:1 reads, pure key lookups, billions of rows over years: no joins, uniform hash keys, on-demand capacity"
+  }
+}

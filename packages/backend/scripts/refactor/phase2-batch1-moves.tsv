@@ -1,0 +1,88 @@
+# Phase 2 (batch 1) move map: identity, tenancy, catalog (domain-map §1.1, constitution I.1, X.2).
+# batch-dirs: auth users users-dto utils/user-utils admin tenancy product product-dto collab
+# <source under libs/common/src>	<destination under libs/>
+# Layer rules: controllers, guards, decorators, request/response DTOs, WS servers → api/;
+# use-case services → application/; pure logic → domain/; models, repositories, adapters,
+# projectors, job handlers → infra/; Nest modules and e2e specs → domain root.
+#
+# identity  (auth + users + users-dto + admin + utils/user-utils + 3 models)
+auth/auth.module.ts	domains/identity/auth.module.ts
+auth/auth-api.module.ts	domains/identity/auth-api.module.ts
+auth/auth-worker.module.ts	domains/identity/auth-worker.module.ts
+auth/auth.e2e-spec.ts	domains/identity/auth.e2e-spec.ts
+auth/auth.controller.ts	domains/identity/api/auth.controller.ts
+auth/well-known.controller.ts	domains/identity/api/well-known.controller.ts
+auth/types.ts	domains/identity/api/auth.dto.ts
+auth/decorators	domains/identity/api/decorators
+auth/guards	domains/identity/api/guards
+auth/auth.service.ts	domains/identity/application/auth.service.ts
+auth/auth-session.service.ts	domains/identity/application/auth-session.service.ts
+auth/mfa	domains/identity/application/mfa
+auth/crypto	domains/identity/infra/crypto
+auth/keys	domains/identity/infra/keys
+auth/oidc	domains/identity/infra/oidc
+auth/sessions	domains/identity/infra/sessions
+users/users.module.ts	domains/identity/users.module.ts
+users/users.controller.ts	domains/identity/api/users.controller.ts
+users/types.ts	domains/identity/api/users.dto.ts
+users/users.service.ts	domains/identity/application/users.service.ts
+users-dto/users-dto.module.ts	domains/identity/users-dto.module.ts
+users-dto/users-dto.service.ts	domains/identity/infra/users-dto.service.ts
+utils/user-utils/user-utils.module.ts	domains/identity/user-utils.module.ts
+utils/user-utils/user-utils.service.ts	domains/identity/application/user-utils.service.ts
+admin/admin.module.ts	domains/identity/admin.module.ts
+admin/admin.controller.ts	domains/identity/api/admin.controller.ts
+admin/types.ts	domains/identity/api/admin.dto.ts
+admin/admin.service.ts	domains/identity/application/admin.service.ts
+models/user.model.ts	domains/identity/infra/models/user.model.ts
+models/federated-identity.model.ts	domains/identity/infra/models/federated-identity.model.ts
+models/signing-key.model.ts	domains/identity/infra/models/signing-key.model.ts
+#
+# tenancy  (tenancy + 5 models)
+tenancy/tenancy.module.ts	domains/tenancy/tenancy.module.ts
+tenancy/tenancy-worker.module.ts	domains/tenancy/tenancy-worker.module.ts
+tenancy/tenancy.e2e-spec.ts	domains/tenancy/tenancy.e2e-spec.ts
+tenancy/shop.controller.ts	domains/tenancy/api/shop.controller.ts
+tenancy/shop.guard.ts	domains/tenancy/api/shop.guard.ts
+tenancy/types.ts	domains/tenancy/api/tenancy.dto.ts
+tenancy/membership.service.ts	domains/tenancy/application/membership.service.ts
+tenancy/shop.service.ts	domains/tenancy/application/shop.service.ts
+tenancy/shop-sso.service.ts	domains/tenancy/application/shop-sso.service.ts
+tenancy/permissions.ts	domains/tenancy/domain/permissions.ts
+tenancy/shop-transaction.ts	domains/tenancy/infra/shop-transaction.ts
+tenancy/tenant-connection.resolver.ts	domains/tenancy/infra/tenant-connection.resolver.ts
+tenancy/tenancy-backfill.jobs.ts	domains/tenancy/infra/tenancy-backfill.jobs.ts
+models/shop.model.ts	domains/tenancy/infra/models/shop.model.ts
+models/shop-membership.model.ts	domains/tenancy/infra/models/shop-membership.model.ts
+models/shop-invite.model.ts	domains/tenancy/infra/models/shop-invite.model.ts
+models/shop-directory.model.ts	domains/tenancy/infra/models/shop-directory.model.ts
+models/shop-sso-config.model.ts	domains/tenancy/infra/models/shop-sso-config.model.ts
+#
+# catalog  (product + product-dto + collab + 1 model)
+product/product.module.ts	domains/catalog/product.module.ts
+product/product-worker.module.ts	domains/catalog/product-worker.module.ts
+product/product.e2e-spec.ts	domains/catalog/product.e2e-spec.ts
+product/product.controller.ts	domains/catalog/api/product.controller.ts
+product/types.ts	domains/catalog/api/product.dto.ts
+product/product.service.ts	domains/catalog/application/product.service.ts
+product/product-cache.ts	domains/catalog/infra/product-cache.ts
+product/product-cache-invalidator.projector.ts	domains/catalog/infra/product-cache-invalidator.projector.ts
+product/product-search.projector.ts	domains/catalog/infra/product-search.projector.ts
+product/product-views.jobs.ts	domains/catalog/infra/product-views.jobs.ts
+product-dto/product-dto.module.ts	domains/catalog/product-dto.module.ts
+product-dto/product-dto.service.ts	domains/catalog/infra/product-dto.service.ts
+collab/collab.module.ts	domains/catalog/collab.module.ts
+collab/drafts.module.ts	domains/catalog/drafts.module.ts
+collab/collab.e2e-spec.ts	domains/catalog/collab.e2e-spec.ts
+collab/drafts.controller.ts	domains/catalog/api/drafts.controller.ts
+collab/collab-server.service.ts	domains/catalog/api/collab-server.service.ts
+collab/drafts.service.ts	domains/catalog/application/drafts.service.ts
+collab/room-manager.service.ts	domains/catalog/application/room-manager.service.ts
+collab/room.ts	domains/catalog/application/room.ts
+collab/listing-doc.ts	domains/catalog/domain/listing-doc.ts
+collab/hash-ring.ts	domains/catalog/domain/hash-ring.ts
+collab/hash-ring.spec.ts	domains/catalog/domain/hash-ring.spec.ts
+collab/collab-ticket.ts	domains/catalog/infra/collab-ticket.ts
+collab/draft-store.ts	domains/catalog/infra/draft-store.ts
+collab/instance-registry.ts	domains/catalog/infra/instance-registry.ts
+models/product.model.ts	domains/catalog/infra/models/product.model.ts

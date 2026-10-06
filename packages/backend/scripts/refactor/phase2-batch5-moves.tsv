@@ -1,0 +1,105 @@
+# Phase 2 (batch 5, last) move map: developer-platform, marketing, experimentation, assistant,
+# plus flags/murmur3.ts → libs/common/core (debt D-13: a generic hash, not experimentation-owned)
+# batch-dirs: public-api webhooks widget ads share-links flags analytics assistant knowledge
+# <source under libs/common/src>	<destination under libs/>
+# Layer rules as batches 1–4. Unit specs sit next to the files they test.
+#
+# developer-platform  (public-api + webhooks + widget)
+public-api/public-api.module.ts	domains/developer-platform/public-api.module.ts
+public-api/public-api-worker.module.ts	domains/developer-platform/public-api-worker.module.ts
+public-api/developers.module.ts	domains/developer-platform/developers.module.ts
+public-api/public-api.e2e-spec.ts	domains/developer-platform/public-api.e2e-spec.ts
+public-api/v1.controller.ts	domains/developer-platform/api/v1.controller.ts
+public-api/api-keys.controller.ts	domains/developer-platform/api/api-keys.controller.ts
+public-api/api-key.guard.ts	domains/developer-platform/api/api-key.guard.ts
+public-api/public-api.interceptor.ts	domains/developer-platform/api/public-api.interceptor.ts
+public-api/api-keys.service.ts	domains/developer-platform/application/api-keys.service.ts
+public-api/public-catalog.service.ts	domains/developer-platform/application/public-catalog.service.ts
+public-api/public-orders.service.ts	domains/developer-platform/application/public-orders.service.ts
+public-api/api-events.ts	domains/developer-platform/application/events/api-events.ts
+public-api/versioning.ts	domains/developer-platform/domain/versioning.ts
+public-api/api-key-format.ts	domains/developer-platform/domain/api-key-format.ts
+public-api/api-key-format.spec.ts	domains/developer-platform/domain/api-key-format.spec.ts
+public-api/api-requests.projector.ts	domains/developer-platform/infra/api-requests.projector.ts
+webhooks/webhooks.module.ts	domains/developer-platform/webhooks.module.ts
+webhooks/webhooks-core.module.ts	domains/developer-platform/webhooks-core.module.ts
+webhooks/webhooks-worker.module.ts	domains/developer-platform/webhooks-worker.module.ts
+webhooks/webhooks.e2e-spec.ts	domains/developer-platform/webhooks.e2e-spec.ts
+webhooks/webhooks.controller.ts	domains/developer-platform/api/webhooks.controller.ts
+webhooks/webhook-endpoints.service.ts	domains/developer-platform/application/webhook-endpoints.service.ts
+webhooks/webhook-deliverer.service.ts	domains/developer-platform/application/webhook-deliverer.service.ts
+webhooks/webhook-events.ts	domains/developer-platform/domain/webhook-events.ts
+webhooks/signature.ts	domains/developer-platform/domain/signature.ts
+webhooks/signature.spec.ts	domains/developer-platform/domain/signature.spec.ts
+webhooks/http-sender.ts	domains/developer-platform/infra/http-sender.ts
+webhooks/webhook-router.projector.ts	domains/developer-platform/infra/webhook-router.projector.ts
+webhooks/webhook-workers.ts	domains/developer-platform/infra/webhook-workers.ts
+widget/widget.module.ts	domains/developer-platform/widget.module.ts
+widget/widget.e2e-spec.ts	domains/developer-platform/widget.e2e-spec.ts
+widget/widget.controller.ts	domains/developer-platform/api/widget.controller.ts
+widget/widget.service.ts	domains/developer-platform/application/widget.service.ts
+#
+# marketing  (ads + share-links)
+ads/ads.module.ts	domains/marketing/ads.module.ts
+ads/ads.e2e-spec.ts	domains/marketing/ads.e2e-spec.ts
+ads/ads.controller.ts	domains/marketing/api/ads.controller.ts
+ads/ads.service.ts	domains/marketing/application/ads.service.ts
+ads/click-token.ts	domains/marketing/domain/click-token.ts
+ads/click-aggregator.service.ts	domains/marketing/infra/click-aggregator.service.ts
+ads/ad-billing.jobs.ts	domains/marketing/infra/ad-billing.jobs.ts
+share-links/share-links.module.ts	domains/marketing/share-links.module.ts
+share-links/share-links.e2e-spec.ts	domains/marketing/share-links.e2e-spec.ts
+share-links/share-links.controller.ts	domains/marketing/api/share-links.controller.ts
+share-links/share-link.service.ts	domains/marketing/application/share-link.service.ts
+share-links/codes.ts	domains/marketing/domain/codes.ts
+share-links/codes.spec.ts	domains/marketing/domain/codes.spec.ts
+share-links/id-lease.ts	domains/marketing/infra/id-lease.ts
+share-links/link-clicks.projector.ts	domains/marketing/infra/link-clicks.projector.ts
+#
+# experimentation  (flags + analytics; murmur3 goes to common/core, D-13)
+flags/murmur3.ts	common/core/murmur3.ts
+flags/flags.module.ts	domains/experimentation/flags.module.ts
+flags/flags-admin.module.ts	domains/experimentation/flags-admin.module.ts
+flags/flags.e2e-spec.ts	domains/experimentation/flags.e2e-spec.ts
+flags/flags.controller.ts	domains/experimentation/api/flags.controller.ts
+flags/flags.guard.ts	domains/experimentation/api/flags.guard.ts
+flags/flags-admin.service.ts	domains/experimentation/application/flags-admin.service.ts
+flags/evaluator.ts	domains/experimentation/domain/evaluator.ts
+flags/evaluator.spec.ts	domains/experimentation/domain/evaluator.spec.ts
+flags/flags-context.ts	domains/experimentation/domain/flags-context.ts
+flags/flags.client.ts	domains/experimentation/infra/flags.client.ts
+analytics/analytics.module.ts	domains/experimentation/analytics.module.ts
+analytics/analytics.e2e-spec.ts	domains/experimentation/analytics.e2e-spec.ts
+analytics/analytics.controller.ts	domains/experimentation/api/analytics.controller.ts
+analytics/analytics.service.ts	domains/experimentation/application/analytics.service.ts
+analytics/event-schema.ts	domains/experimentation/domain/event-schema.ts
+analytics/experiments.ts	domains/experimentation/domain/experiments.ts
+analytics/stats.ts	domains/experimentation/domain/stats.ts
+analytics/stats.spec.ts	domains/experimentation/domain/stats.spec.ts
+analytics/purchase-events.projector.ts	domains/experimentation/infra/purchase-events.projector.ts
+#
+# assistant  (assistant + knowledge; llm/ stays a domain adapter until metering is decoupled, D-14)
+assistant/assistant.module.ts	domains/assistant/assistant.module.ts
+assistant/assistant.e2e-spec.ts	domains/assistant/assistant.e2e-spec.ts
+assistant/assistant.controller.ts	domains/assistant/api/assistant.controller.ts
+assistant/assistant-stream.ts	domains/assistant/api/assistant-stream.ts
+assistant/assistant.service.ts	domains/assistant/application/assistant.service.ts
+assistant/assistant-quota.service.ts	domains/assistant/application/assistant-quota.service.ts
+assistant/assistant-tools.ts	domains/assistant/application/assistant-tools.ts
+assistant/assistant.prompt.ts	domains/assistant/application/assistant.prompt.ts
+assistant/assistant-errors.ts	domains/assistant/application/assistant-errors.ts
+assistant/assistant-events.ts	domains/assistant/application/events/assistant-events.ts
+assistant/conversation.store.ts	domains/assistant/infra/conversation.store.ts
+assistant/generation-buffer.ts	domains/assistant/infra/generation-buffer.ts
+assistant/llm-calls.projector.ts	domains/assistant/infra/llm-calls.projector.ts
+assistant/llm	domains/assistant/infra/llm
+knowledge/knowledge.module.ts	domains/assistant/knowledge.module.ts
+knowledge/knowledge.e2e-spec.ts	domains/assistant/knowledge.e2e-spec.ts
+knowledge/knowledge.controller.ts	domains/assistant/api/knowledge.controller.ts
+knowledge/knowledge.service.ts	domains/assistant/application/knowledge.service.ts
+knowledge/answer.service.ts	domains/assistant/application/answer.service.ts
+knowledge/chunker.ts	domains/assistant/domain/chunker.ts
+knowledge/chunker.spec.ts	domains/assistant/domain/chunker.spec.ts
+knowledge/rrf.ts	domains/assistant/domain/rrf.ts
+knowledge/embedder.ts	domains/assistant/infra/embedder.ts
+knowledge/retriever.ts	domains/assistant/infra/retriever.ts

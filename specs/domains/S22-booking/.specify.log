@@ -1,0 +1,28 @@
+I wrote the S22 spec, `questions.md`, `test-plan.md`, `gaps.md` and the quality checklist. No code was changed, and the checklist passed on the first iteration.
+
+**Check that did not run:** `pnpm check:table-ownership` was refused by the sandbox with no approval available. I derived the `launch-events` findings by hand in `gaps.md` §3. The implementer must re-run the command before and after the work. By hand I found no cross-domain model or SQL use in the S22 files, only the `ShopMembership` use in S23's live code.
+
+**Where to find it:** all files are in `specs/domains/S22-booking/`, and `.specify/feature.json` now points there.
+- `spec.md` has 6 user stories, 62 acceptance scenarios (AS-01 to AS-62), 51 functional requirements, 10 success criteria and the Cross-capability contracts section.
+- `test-plan.md` has 62 rows, one per scenario. No UI journey is planned because no web capability covers launch events and `packages/web` has no launch screen. The happy path belongs to J03.
+- `gaps.md` has 44 code gaps with `file:line` references. No debt-register row names `launch-events` or S22; D-6, D-7, D-8 and the `Shop` foreign key apply generically.
+- `questions.md` lists 21 BREAKING, 9 CONTRACT and 13 LOCAL decisions, with no `[NEEDS CLARIFICATION]` markers.
+
+**What the spec requires beyond today's code:**
+- Tickets and the seat-hold endpoint use an owner-only check, and cross-user access answers `404`.
+- Hold and confirm require an `Idempotency-Key`.
+- Admission is exactly `min(N, waiting)` per second, with a fencing epoch on the leader so a stale one cannot admit.
+- Each seat carries a fencing number, so a stale holder can't confirm a re-held seat.
+- The ticket quota is credited only by whichever of release or expiry wins. The counter is rebuilt from bookings if lost.
+- Confirm is one transaction (bookings, history, outbox, voucher command), with a 60-second reconciler for drift.
+- The event status machine is real (`SCHEDULED → ON_SALE → SOLD_OUT`, or `CLOSED`).
+- Best-available seating for general-admission events.
+- The foreign key from the event table to `Shop` is dropped.
+
+**Needs your review:**
+- **S01:** needs an R1 `PurposeTokenService` (`sign`/`verify`) for admission tokens. Today the code imports `KeyStore`, which S01 doesn't export.
+- **S10:** must consume the new command `orders.booking_voucher_requested`. The domain map says launch-events depends on orders "via command", but S10's Provides has no such consumer.
+- **S51:** needs an async, principal-aware topic policy so `queue:<ticket>` is owner-only.
+- **Domain map:** `docs/architecture/domain-map.md` "Emits" for `launch-events` lists only `live.*`. The implementer must add the four booking events.
+
+Ready for `/speckit-clarify` or `/speckit-plan`.

@@ -1,0 +1,22 @@
+I've written the S06 spec, `questions.md`, `test-plan.md`, `gaps.md` and the quality checklist, and the checklist passes on the first iteration. I couldn't run `pnpm check:table-ownership` or any test suite, because those commands need approval an unattended session can't get. No `[NEEDS CLARIFICATION]` markers remain, and I changed no code.
+
+Everything is in `specs/domains/S06-collab-editor/`; `spec.md` is the spec file. The checklist is in `checklists/requirements.md`. I also set `.specify/feature.json` to this directory.
+
+- **Scenarios:** `spec.md` has 7 user stories, 56 acceptance scenarios (AS-01 to AS-56) and 41 functional requirements. `test-plan.md` has exactly 56 rows, one per scenario, each naming its e2e spec file. The only UI journey is one Playwright spec owned by W04.
+- **Pattern P1105:** this was the only S06 row in `pattern-map.md` (consistent hashing with virtual nodes). It is covered by AS-45, AS-46, AS-48 and AS-49.
+- **Cross-capability contracts:** the spec honours what S05 and S03 already require from S06 (publish goes through `ProductCommandService.update`; membership comes from `ShopAccessService`). Its Provides and Requires lists use the exact names.
+- **Decisions:** `questions.md` has 41 lines, 16 BREAKING, 11 CONTRACT and 14 LOCAL. The main BREAKING ones:
+  - Cross-shop access answers 404 instead of 403.
+  - Publish is idempotent, claims the draft with a 60-second lease, goes through S05's update path in one transaction, and refuses to overwrite a product that changed since the draft started unless the publisher acknowledges the new version.
+  - Tickets are single-use with their own key and an origin check.
+  - A write from a read-only member gets an explicit denied reply instead of being silently dropped.
+  - A failed log write no longer drops the pending edits.
+  - The draft tables lose their foreign keys to `Shop`, `Product` and `User`.
+- **`gaps.md`:** 34 code-versus-spec gaps with file:line references, the open debt rows (D-6, D-7, D-8, D-12) each with its replacement mechanism, and a list of things that don't exist yet. For example, nothing ever triggers `DraftsService.revoke`, and publish is three separate commits.
+
+Things to check:
+- **Table-ownership output:** the table-ownership section of `gaps.md` is reconstructed from grepping the draft code and the migration. Run the real check and reconcile before the implementation agent starts.
+- **Missing source note:** the SD-16 note does not exist under `~/workspace/notes/Interview-Prep/`. I used the repo copy at `docs/showcase/sections/SD-16-collaborative-listing-editor.md` plus `10-System-Design/06-realtime-and-collaboration.md` §16, and logged this as a CONTRACT line.
+- **Spec asks of other capabilities:** I assumed S54 owns the idempotency facility and S51 the Redis pub/sub backplane, because `capabilities.tsv` assigns neither. I also asked S05 for three additions: `create`/`update` join the caller's transaction, throw `ProductValidationError`, and report an unchanged update. Finally, I asked S03 for an exported `roleHasPermission`.
+
+Ready for `/speckit-plan` (or `/speckit-clarify` if you want to review the BREAKING and CONTRACT lines first).

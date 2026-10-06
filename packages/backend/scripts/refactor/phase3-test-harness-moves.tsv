@@ -1,0 +1,5 @@
+# Phase 3 step 2: the e2e test harness leaves libs/ (constitution X.6 allows tests/ at the backend root).
+# batch-dirs: seeds utils/test-utils
+# <source under libs/common/src>	<destination under libs/> (../ leaves libs/)
+seeds	../test/seeds
+utils/test-utils	../test/utils

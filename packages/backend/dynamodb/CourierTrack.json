@@ -1,0 +1,23 @@
+{
+  "TableName": "CourierTrack",
+  "AttributeDefinitions": [
+    { "AttributeName": "PK", "AttributeType": "S" },
+    { "AttributeName": "SK", "AttributeType": "N" }
+  ],
+  "KeySchema": [
+    { "AttributeName": "PK", "KeyType": "HASH" },
+    { "AttributeName": "SK", "KeyType": "RANGE" }
+  ],
+  "TimeToLiveAttribute": "expiresAtEpoch",
+  "_design": {
+    "pattern": "per-courier per-day GPS track (SD-23)",
+    "items": {
+      "point": "PK=COURIER#<courierId>#<yyyyMMdd> SK=<ts ms> | lat, lng, accuracy, deliveryId?, expiresAtEpoch (90 days)"
+    },
+    "accessPatterns": [
+      "persist: BatchWriteItem from the courier.events consumer",
+      "dispute / replay a delivery route: Query PK=COURIER#c#day AND SK BETWEEN assignedAt AND deliveredAt"
+    ],
+    "why": "50k points/s is pure append, read rarely and by key; courier+day partitions stay small and evenly spread; TTL expires history without a cleanup job"
+  }
+}

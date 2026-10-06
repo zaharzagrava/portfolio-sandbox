@@ -1,0 +1,26 @@
+The S31 spec is written, and the quality checklist passes on every item (one wording fix, no clarification markers left). Nothing was run or tested. I changed no code; the only file outside the feature directory is `.specify/feature.json`, which now points at it. The Interview-Prep copy of SD-25 doesn't exist, so I used `docs/showcase/sections/SD-25-seller-media-library.md` and design 25/27 of the media note. I recorded that in Assumptions.
+
+## What's in `specs/domains/S31-assets-digital-delivery/`
+- **`spec.md`**: six user stories with 79 acceptance scenarios (AS-01 to AS-79) and 55 functional requirements.
+  - **Coverage**: delta upload, conflicts and the change journal, versions and cleanup, share links, digital delivery, operations.
+  - **Contracts**: the `## Cross-capability contracts` section has Provides and Requires.
+  - **Pattern-map**: the only S31 row, P1113 (FastCDC), is covered by FR-016 and FR-055 with scenarios AS-08 and AS-77.
+- **`questions.md`**: 23 BREAKING, 13 CONTRACT and 16 LOCAL decisions, no clarification questions.
+- **`test-plan.md`**: 79 rows, one per scenario, with named e2e spec files and unit specs.
+- **`gaps.md`**: 35 code gaps with file:line, schema gaps, and the three `check:table-ownership` findings for `asset-library` with their replacements. It also lists the debt rows that apply to this domain (D-6, D-7, D-12).
+- **`checklists/requirements.md`**: all items checked.
+
+## Decisions to review first
+- **Share link GET**: it now only previews. A new `POST …/redeem` counts the download and returns a 120-second download URL, so link scanners can't burn a capped link and GET stays state-free (V.5).
+- **Buyer downloads**: the JWT signed with `jwt_secret` is replaced by an opaque, version-pinned 600-second grant. It re-checks the purchase on every fetch, so a refund ends access. Non-buyers now get a uniform 404 instead of 403.
+- **Entitlements**: they come from `order.paid` and `order.refunded` events into an own table (R3). The `BisOrder` joins are gone, and the product check uses `getProductsByIds` (R1).
+- **S10 divergence**: S10 lists S31 as a consumer of `getOrderLines`. I don't call it, and that is flagged as a CONTRACT question.
+- **Commit**: it requires an `Idempotency-Key`, because today a retried commit becomes a conflicted copy of itself.
+- **Chunk checks**: storage is checked outside the transaction, and "already stored" now means confirmed in storage.
+- **Quota and limits**: per-shop quota, plus new limits sized so 50 GiB files fit.
+- **Journal**: the cursor is opaque, with 90-day retention.
+- **Soft delete**: delete, undelete and restore routes, with the current version protected from deletion.
+
+## Open items
+- No web capability owns the library, share, or "My purchases" screens. The UI column in the test plan lists proposed journeys, and a CONTRACT question asks for owners.
+- Beyond what you asked for, these decisions also need the human's eye: the 100 GiB default quota, any `order.refunded` revoking all of an order's entitlements, and no retroactive entitlements for orders paid before a product is linked.

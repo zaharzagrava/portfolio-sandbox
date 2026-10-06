@@ -1,0 +1,28 @@
+All five S38 files are written, and every item on the spec quality checklist passed on the first iteration. There are no `[NEEDS CLARIFICATION]` markers. No hooks were registered (`.specify/extensions.yml` doesn't exist) and I changed no code. I didn't run the `/speckit-clarify` or `/speckit-plan` steps.
+
+`SPECIFY_FEATURE_DIRECTORY` is `specs/domains/S38-feature-flags` and `SPEC_FILE` is `specs/domains/S38-feature-flags/spec.md`. I pointed `.specify/feature.json` at that directory.
+
+**Files**
+- **`spec.md`** has 8 user stories, 58 acceptance scenarios (AS-01 to AS-58) and FR-001 to FR-064. It also has success criteria, assumptions, and a `## Cross-capability contracts` section with Provides and Requires lists.
+- **`test-plan.md`** has one row per scenario, with the e2e file named in each row.
+- **`gaps.md`** has 24 behaviour gaps and 8 layering gaps with file and line references, plus the debt-register rows and a migration note.
+- **`questions.md`** has 17 BREAKING, 7 CONTRACT and 11 LOCAL lines, sorted by impact.
+- **`checklists/requirements.md`** is the quality checklist, all items checked.
+
+**Pattern coverage**
+- P0802 (ship dark, ramp, kill) is covered by user stories 1 and 7.
+- P0811 (the shared assignment hash) is FR-024 and AS-15. S39 must reuse `bucketOf(salt, unit)` with the experiment id as `salt`.
+
+**Main decisions (all tagged BREAKING in `questions.md`)**
+- Saves need an `expectedVersion`, and a stale one returns 409.
+- A flag now has a status: enabled, disabled, killed or archived. Kill is a state that a later save cannot undo, and restore only goes back to disabled.
+- Shape errors return 400 and semantic errors return 422 with a list of `{path, code}`.
+- `GET /api/flags` now returns the variant as well as the value, and it ignores client-sent shop, role and country context.
+- The ruleset version is allocated in the database. Publishing to the cache can fail without failing the write, a repair job fixes it, and SDKs fall back to the database.
+
+**Things to know**
+- The Interview-Prep path in your prompt was outside this session's allowed directories. I read the copy at `.specify/memory/Interview-Prep/` and the repo's own `docs/showcase/sections/SD-38-feature-flags.md` instead.
+- No earlier spec requires anything from S38. The only mentions are D-15 in the S10–S15 gaps and S35's reference to S39.
+- `check:table-ownership` reports no lines for `experimentation`, so there is no cross-domain SQL or model access to replace. D-6 (the domain's api and application layers import `infra/` directly) is open.
+- D-15 is open, but S38 adds no domain edge. The `experimentation → orders` edge comes from S39's purchase projector.
+- S39 and W06 specs don't exist yet. The contracts they must follow are listed as `[CONTRACT]` questions.

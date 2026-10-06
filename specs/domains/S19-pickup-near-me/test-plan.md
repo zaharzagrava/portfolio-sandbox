@@ -1,0 +1,66 @@
+# Test Plan: S19 — Pickup Points, Local Stock, "Available Near Me", Map Clustering (domain `fulfilment`)
+
+Constitution VII.8 table: one row per acceptance scenario in [`spec.md`](spec.md) (45 rows), each proven at the lowest layer that can prove it. A dash means the layer does not test that scenario.
+
+- API e2e files live in `packages/backend/libs/domains/fulfilment/`. Each file's top-level `describe` names its feature (VII.8). They boot the real `PickupModule` and `PickupProjectorModule` (consumers are invoked through their handlers over the outbox rows the transaction wrote, as other specs do) with the production prefix, `ValidationPipe`, problem+json filter and interceptors, against real Postgres with PostGIS, Elasticsearch, Redis and the outbox, with real migrations, and call HTTP through `supertest`:
+  - `pickup-points.e2e-spec.ts` — describe "Pickup points: seller management, limits, tenant isolation and domain isolation"
+  - `pickup-stock.e2e-spec.ts` — describe "Pickup stock: set, adjust, idempotency, concurrency and exact check"
+  - `pickup-search.e2e-spec.ts` — describe "Available near me: search, browse, pagination, limits and degradation"
+  - `pickup-clusters.e2e-spec.ts` — describe "Pickup map clusters"
+  - `pickup-availability-projector.e2e-spec.ts` — describe "Pickup availability: index consumers, ordering, replay and observability"
+- Products and shops are seeded and read in tests only through the shared fixture helpers and the catalog's and tenancy's exported services (`ProductQueryService`); no spec injects `ProductModel` or `ShopModel` (D-7). Product and shop events are produced with contract-valid fixtures of S05 and S03 (the owners' event schemas). Every test asserts the response body **and** persisted state (point and stock rows, outbox rows, index documents, idempotency records, copies) and parses responses with the `packages/contracts` schema (VII.6). Users are created through the S01 fixture.
+- Only system edges are faked: identity token verification, the clock (frozen and advanced). Faults use real mechanisms: an index client pointed at a closed port or behind a delaying proxy (AS-09, AS-39), the limiter's store switched off (AS-08), an outbox append that throws once (AS-22), a statement-timeout-exceeding `pg_sleep` view of the exact store through a lowered limit (AS-43), a gate latch inside a request for the in-flight idempotency case (AS-20).
+- Consumers have the duplicate-delivery and invalid-payload tests of VII.4 (AS-26) for each of the stock, point, product and shop handlers.
+- Unit specs sit beside the code under `domain/`, are table-driven (`it.each`), and exist only for pure logic (VII.5): `opening-hours.spec.ts`, `offer-visibility.spec.ts`, `stock-rules.spec.ts` (adjust and version rules, with `fast-check` for "quantity never leaves `0…max`" under any delta sequence), `search-cursor.spec.ts`, `geo-input.spec.ts` (coordinates, radius, bbox, zoom), `cluster-cap.spec.ts`. Controllers, repositories, consumers and glue get no unit tests.
+- UI journey (Playwright): owned by W02, `packages/web/e2e/storefront-discovery.spec.ts` — one happy path: on a product page the shopper allows location, sees nearby pickup points that hold the product with distances, opens the map and sees clusters; it never repeats an edge case. Rows below mark the steps it covers; the API column still holds the deep proof.
+- Static gates (VII.1): `tsc --noEmit` and ESLint for `packages/backend` and `packages/contracts`; `pnpm check:boundaries`; `pnpm --dir packages/backend check:table-ownership --strict` (AS-44).
+- Gate 9 (VII.9): AS-08 (limiter store down), AS-09 (index down or slow), AS-22 (outbox failure), AS-26 (poison message), AS-39 (index failure on clusters), AS-43 (statement timeout) each force their fault.
+- Concurrency tests use `Promise.all` and assert that exactly one succeeds (or exactly N) and the invariant holds (VII.3): AS-13, AS-19, AS-21; AS-20's in-flight case uses a latch.
+
+| Scenario | API e2e (deep layer) | UI journey (happy path only) | Unit (pure logic only) |
+|---|---|---|---|
+| AS-01 radius and stock | `pickup-search.e2e-spec.ts`: A at KREUZBERG (4) and SPANDAU (0); radius 5 → one item with nearest and `distanceM > 2000`; radius 2 → none; radius 20 → one | W02 step "pickup near me" | — |
+| AS-02 one hit per product, ranking | `pickup-search.e2e-spec.ts`: two points for A, nearest wins; relevance then distance; typo match; no `q` → distance then `productId` | — | — |
+| AS-03 radius across cell boundaries | `pickup-search.e2e-spec.ts`: two points 120 m apart on both sides of a cell edge, radius 1 km finds both; 0.1 km finds one | — | — |
+| AS-04 validation classes | `pickup-search.e2e-spec.ts`: `it.each` over every invalid parameter class, 400 `validation_failed` with field, index not called; blank `q`; defaults | — | `geo-input.spec.ts`: coordinate, radius, limit and blank-`q` rules, table-driven |
+| AS-05 cursor pagination | `pickup-search.e2e-spec.ts`: 45 products, pages 20/20/5, equal distances, same order as unpaged, cursor with another `q` → 400 | — | `search-cursor.spec.ts`: encode/decode round trip, tamper and query-hash mismatch |
+| AS-06 visibility rules | `pickup-search.e2e-spec.ts`: archived, sandbox, inactive point, suspended shop invisible in search, browse and clusters; reappear after restore/reactivate/reinstate (events then catch-up) | — | `offer-visibility.spec.ts`: the visibility function over every combination (stock, point active, shop status, product status, sandbox) |
+| AS-07 anonymous access and contract | `pickup-search.e2e-spec.ts`: no credentials → 200 on all three reads; schema parse; `priceMinor`/`currency`; no extra fields | — | — |
+| AS-08 rate limit | `pickup-search.e2e-spec.ts`: 121st request → 429 + `Retry-After`; limiter store off → allowed and fallback counted | — | — |
+| AS-09 index unavailable or slow | `pickup-search.e2e-spec.ts`: closed port and 1 s delay → 503 `search_unavailable`, generic detail, metric, exact store not queried (query counter) | — | — |
+| AS-10 create point | `pickup-points.e2e-spec.ts`: 201 body, row location round trip ≤ 1 m, one `pickup.point_changed` row `pointVersion: 1` | seller screens: W-seller journey (not owned here) | — |
+| AS-11 create validation classes | `pickup-points.e2e-spec.ts`: `it.each` over each class (name, address, coordinates, hours, unknown field, bad `shopId`), no row, no outbox; trimming; default `{}` | — | `opening-hours.spec.ts`: timezone, day names, `HH:mm`, order, overlap, ≤ 3 intervals |
+| AS-12 access control and cross-tenant | `pickup-points.e2e-spec.ts`: `it.each` over the six shop-scoped endpoints × (no token 401, other-shop member 404, viewer write 403, viewer read 200, suspended 403, cross-shop point 404) | — | — |
+| AS-13 point limit | `pickup-points.e2e-spec.ts`: 99 points, two parallel creates → one 201, one 409; exactly 100 rows; inactive counted | — | — |
+| AS-14 update point | `pickup-points.e2e-spec.ts`: PATCH name/address/hours → version +1, event; `lat`/`lng`/`shopId`/empty body → 400 | — | — |
+| AS-15 active ↔ inactive | `pickup-points.e2e-spec.ts`: deactivate → hidden after catch-up, repeat is no-op (no version, no event), stock write → 409 `pickup_point_inactive`, reactivate → visible with old stock | — | — |
+| AS-16 set stock | `pickup-stock.e2e-spec.ts`: 200 body, row, one `pickup.stock_changed` with `stockVersion`, second set → version 2 | — | — |
+| AS-17 idempotent set | `pickup-stock.e2e-spec.ts`: same quantity twice → version unchanged, no new event | — | `stock-rules.spec.ts`: "changed?" decision |
+| AS-18 stock validation and ownership | `pickup-stock.e2e-spec.ts`: quantity classes → 400; product of S2 and unknown → 404 `product_not_found` with no row; foreign point 404; archived product accepted | — | — |
+| AS-19 optimistic version | `pickup-stock.e2e-spec.ts`: stale `expectedVersion` → 409 with `currentVersion`; two parallel PUTs with the same version → one 200 and one 409; `expectedVersion: 0` creates; unique increasing versions without it | — | `stock-rules.spec.ts`: version-guard table |
+| AS-20 adjustments and retry safety | `pickup-stock.e2e-spec.ts`: first call applies, replay returns stored body + `Idempotency-Replayed`, different body 422, in-flight 409 (latch), missing key 422, TTL after clock advance, delta classes → 400 | — | — |
+| AS-21 never below zero, concurrent | `pickup-stock.e2e-spec.ts`: stock 5, ten parallel −1 with distinct keys → five 200, five 409, final 0, versions 2…6, five events; overflow → 409 `stock_limit_exceeded` | — | `stock-rules.spec.ts`: `fast-check` property, quantity stays in `0…max` for any delta sequence |
+| AS-22 atomic with its event | `pickup-stock.e2e-spec.ts`: forced outbox failure → row unchanged, no event, 503 generic, retry with same key succeeds once | — | — |
+| AS-23 seller listings | `pickup-points.e2e-spec.ts`: 45 + 3 points, paging by `createdAt desc, id desc`, inactive included, only own shop; stock listing paged | seller screens (not owned here) | — |
+| AS-24 stock reaches the index | `pickup-availability-projector.e2e-spec.ts`: set 4 → offer with current product fields; 0 → gone; 2 → back | W02 step "pickup near me" (indirect) | — |
+| AS-25 out-of-order stock events | `pickup-availability-projector.e2e-spec.ts`: v2 then v1 late; both orders, repeated → equals exact store | — | — |
+| AS-26 duplicate and invalid messages | `pickup-availability-projector.e2e-spec.ts`: per handler (stock, point, product, shop) deliver twice → one effect; invalid payload, unknown type, unsupported version → dead-lettered, no side effect | — | — |
+| AS-27 burst coalescing | `pickup-availability-projector.e2e-spec.ts`: 30 edits in one batch → one index write (bulk-call spy at the client edge), final = last | — | — |
+| AS-28 point changes | `pickup-availability-projector.e2e-spec.ts`: name/address/inactive propagate; lower `pointVersion` ignored; late stock event for an inactive point stays hidden | — | — |
+| AS-29 product changes | `pickup-availability-projector.e2e-spec.ts`: title/price update, older `productVersion` ignored, archive/sandbox/restore, delete removes rows and emits quantity-0 events, untracked product ignored with no write | — | — |
+| AS-30 shop changes | `pickup-availability-projector.e2e-spec.ts`: suspend hides, reinstate shows, old `shopVersion` ignored, `shop_deleted` deactivates every point with one event each, repeat changes nothing | — | — |
+| AS-31 replay rebuilds the index | `pickup-availability-projector.e2e-spec.ts`: empty the index, replay all events shuffled and twice → documents equal the live ones | — | — |
+| AS-32 stale search, exact check | `pickup-stock.e2e-spec.ts`: change to 0 committed, consumers not run → search still shows the offer, `checkAvailability` reports the shortage | — | — |
+| AS-33 exact batch check (R1) | `pickup-stock.e2e-spec.ts`: shortage shapes, inactive point, unknown point error, one statement (query counter), 51 lines / bad quantity / duplicates → `InvalidAvailabilityRequestError` | — | — |
+| AS-34 viewport clusters | `pickup-clusters.e2e-spec.ts`: three in-stock points, out-of-stock ignored, `offers`, `pickupPoints`, centroid, outside the box excluded | W02 step "map clusters" | — |
+| AS-35 zoom | `pickup-clusters.e2e-spec.ts`: zoom 3, 8, 14 → cell count non-decreasing, total offers constant, nesting; zoom outside 0–20 → 400 | — | `geo-input.spec.ts`: zoom range |
+| AS-36 product filter and drill-in | `pickup-clusters.e2e-spec.ts`: `productId` filter; single-point cell has `pickupPointId`, multi-point cell has none | — | — |
+| AS-37 bbox validation | `pickup-clusters.e2e-spec.ts`: invalid classes → 400; antimeridian box counts both sides | — | `geo-input.spec.ts`: bbox rules (count, ranges, `top ≤ bottom`, `left > right` allowed) |
+| AS-38 cell cap | `pickup-clusters.e2e-spec.ts`: > 500 cells → 500 highest, ties by `cellId`, `truncated: true` | — | `cluster-cap.spec.ts`: sort and cap rule |
+| AS-39 caching, limits, failure | `pickup-clusters.e2e-spec.ts`: `Cache-Control` and no cookies on 200; 429 and 503 carry `no-store`; limiter off → fail open | — | — |
+| AS-40 exact distance and order | `pickup-search.e2e-spec.ts`: points at 0.5/3/4.95/5.05/12 km, order, `distanceM` within 1 m, boundary exclusion, tie on `id`, inactive and suspended shop excluded | — | — |
+| AS-41 product filter (browse) | `pickup-search.e2e-spec.ts`: `productId` returns only stocked points with `quantity`; no `quantity` without it; bad UUID → 400 | W02 step "pickup near me" | — |
+| AS-42 limits, pagination, validation (browse) | `pickup-search.e2e-spec.ts`: 60 points, pages 50 and 10, validation classes, anonymous, rate limit | — | — |
+| AS-43 bounded work | `pickup-search.e2e-spec.ts`: statement beyond 2 s → 503 generic, statement cancelled in the store (activity view empty) | — | — |
+| AS-44 no cross-domain coupling | `pickup-points.e2e-spec.ts`: catalog query of `pg_constraint` shows no foreign key from the pickup tables to other tables; static `check:table-ownership --strict` is the gate | — | — |
+| AS-45 observability | `pickup-availability-projector.e2e-spec.ts`: after traffic, the metrics registry holds the named series, index lag measured against the frozen clock, log lines carry `requestId`, none holds coordinates, address or body | — | — |

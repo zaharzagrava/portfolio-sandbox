@@ -1,0 +1,33 @@
+The S25 spec, test plan, gaps list and questions file are written, and the quality checklist passes. One thing was not done: `pnpm check:table-ownership` needed approval, so I didn't run it. The community lines in `gaps.md` §3 come from reading the source. Re-run the command before implementation.
+
+**Files** (all in `specs/domains/S25-discussions/`):
+- `spec.md`
+  - Eight user stories with 55 Given/When/Then scenarios (AS-01 to AS-55).
+  - Functional requirements FR-001 to FR-074, with a cross-reference table of edge cases to scenarios.
+  - Cross-capability contracts, Provides and Requires, with exact names.
+  - The four patterns that name S25 in the pattern map (P0320, P0323, P0501, P1108) are covered; the checklist maps each to its requirements and scenarios.
+- `questions.md`: 17 `[BREAKING]`, 13 `[CONTRACT]` and 15 `[LOCAL]` lines, each tagged and sorted by impact.
+- `test-plan.md`: the VII.8 table with 55 rows, seven named e2e spec files and the unit specs. The UI journey is a single happy path in W02.
+- `gaps.md`: 39 gaps with file:line references, the debt rows D-6, D-7, D-8 and D-12, and the IX.7 mechanism for each.
+- `checklists/requirements.md`: all items pass on the first iteration, with no `[NEEDS CLARIFICATION]` markers.
+
+I also pointed `.specify/feature.json` at the S25 directory, as the command requires. No code was changed.
+
+**The breaking decisions to review first:**
+- **Boards:** the board ID becomes the product UUID, and writes check the product through catalog. Brand boards and free-form boards are removed.
+- **Idempotency:** `Idempotency-Key` is required on post and comment creation.
+- **Votes:** the vote body is `{value}` only, and the server works out the target type. Self-votes are refused.
+- **Cursors and sorts:** list responses become `{items, nextCursor}` with opaque keyset cursors, and invalid sort or limit values return 400.
+- **Comment reads:** comments are paged by top-level comment, each carrying its first 5 replies, plus a "load more replies" endpoint. The current flat 200-comment thread read is removed.
+- **Markdown:** the raw markdown is kept, the rendered HTML carries a policy version, and old renditions are re-rendered on read. The web must also sanitize before inserting.
+- **Ranking and abuse:** votes from accounts younger than 24 hours or from shadow-banned users get ranking weight zero. A moderator-set shadow ban applies only to content created afterwards.
+- **Cache:** the Redis score hashes and ranking sets get TTLs and rebuild on a miss, with the vote store as the source of truth.
+- **Events:** the feed link becomes durable events. The current in-process call never ran and swallows errors.
+
+**Contract points for other specs:**
+- **S26:** needs `discussion.post_created` and `discussion.post_deleted`, plus `DiscussionQueryService.getPostsByIds`.
+- **S28:** consumes `discussion.comment_created` for reply notifications.
+- **S50:** the rate-limit profiles `discussion.write` and `discussion.vote` become S25-only. Media uploads and share links borrow `discussion.write` today.
+- **S53:** community records its events in its own store, because it owns no Postgres table and the outbox would be a dual write.
+
+Two source notes. `SD-11-product-discussions.md` is in the repo's `docs/showcase/sections/`, not under `~/workspace/notes/Interview-Prep/docs/`. The other two notes were read from the Interview-Prep folder.

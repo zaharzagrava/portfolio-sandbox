@@ -1,0 +1,19 @@
+I wrote the S24 spec, `questions.md`, `test-plan.md`, `gaps.md` and the quality checklist. I did not modify any code. I could not run `pnpm --dir packages/backend check:table-ownership`: it needs an approval that wasn't available here. The `chat` ownership lines in `gaps.md` section 3 come from reading the code, and `gaps.md` tells the implementation agent to run the command and reconcile them. No hooks ran (no `.specify/extensions.yml`).
+
+- **Directory:** `specs/domains/S24-product-chat` (also written to `.specify/feature.json`)
+- **Spec file:** `specs/domains/S24-product-chat/spec.md`
+- **Scenarios and traceability:** 58 acceptance scenarios, 8 user stories, FR-001…FR-052 and SC-001…SC-010. Each scenario has exactly one row in `test-plan.md`, which names the e2e spec files.
+- **Pattern-map rows:** P0318 (monthly partitioning) is covered by AS-28 and AS-29, and P0607 (per-key ordering) by AS-20 and AS-46.
+- **Checklist:** all items pass, there are no `[NEEDS CLARIFICATION]` markers, and every default is recorded in the spec's Assumptions and in `questions.md`.
+- **Readiness:** ready for `/speckit-plan`.
+
+Decisions worth reviewing (BREAKING and CONTRACT lines are in `questions.md`):
+- **Non-member reads:** today any signed-in user can read any channel's history and metadata. The spec returns `404` for non-members, except the public by-product discovery route.
+- **Idempotency:** the key is `(channel, author, clientMessageId)`. A replay with the same content returns `200`, a replay with different content is `422`, and another author reusing the ID creates their own message.
+- **Own messages:** a member's own messages no longer count as their unread. This changes the existing e2e assertion at `chat-sync.e2e-spec.ts:102`.
+- **Offline push:** chat emits `chat.message_escalated` for S28 to consume instead of calling `NotificationRouter`. The sender's e-mail fragment is removed from pushes.
+- **Event emission:** `chat.message_posted` should come from change-data-capture on the message table. The migration's trigger writes to the Outbox table, which IX.4/IX.6 forbid. If CDC isn't deployed, keep the trigger as a dated exception.
+- **Moderation authority:** it comes from live shop membership with `products.write` (via tenancy's `assertMember`), not from the stored `OWNER` role.
+- **S01 contract difference:** S01 lists S24 as a consumer of `UserDirectoryService` for user display. S24 doesn't need it, and I recorded that as a `[CONTRACT]` difference.
+- **Gateway:** the Rust gateway stays untouched, and its three SQL statements must stay valid.
+- **Partitioning:** the pattern map marks P0318 "implemented" for chat, but SD-14 says it wasn't done. A partitioned table can't enforce uniqueness across months, so AS-28 requires the guarantee and leaves the mechanism to the plan.

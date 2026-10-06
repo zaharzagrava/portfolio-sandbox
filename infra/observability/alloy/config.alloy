@@ -1,0 +1,59 @@
+// SD-33 log shipping with Grafana Alloy (Promtail's successor; Promtail is EOL).
+// Docker containers' stdout → parse pino JSON → labels: service, level, env → Loki.
+// traceId stays in the line (structured metadata), never a label: Grafana links it to Jaeger.
+
+discovery.docker "containers" {
+  host = "unix:///var/run/docker.sock"
+}
+
+discovery.relabel "containers" {
+  targets = discovery.docker.containers.targets
+
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
+    target_label  = "service"
+  }
+}
+
+loki.source.docker "containers" {
+  host          = "unix:///var/run/docker.sock"
+  targets       = discovery.relabel.containers.output
+  relabel_rules = discovery.relabel.containers.rules
+  forward_to    = [loki.process.json.receiver]
+}
+
+// Nest apps on the host (pnpm start:dev) write JSON logs to ./logs/*.log when LOG_FILE is set.
+local.file_match "host_apps" {
+  path_targets = [{"__path__" = "/host-logs/*.log", "env" = "local"}]
+}
+
+loki.source.file "host_apps" {
+  targets    = local.file_match.host_apps.targets
+  forward_to = [loki.process.json.receiver]
+}
+
+loki.process "json" {
+  stage.json {
+    expressions = { level = "level", traceId = "traceId", service = "service" }
+  }
+
+  stage.labels {
+    values = { level = "", service = "" }
+  }
+
+  stage.structured_metadata {
+    values = { traceId = "" }
+  }
+
+  stage.static_labels {
+    values = { env = "local" }
+  }
+
+  forward_to = [loki.write.default.receiver]
+}
+
+loki.write "default" {
+  endpoint {
+    url = "http://loki:3100/loki/api/v1/push"
+  }
+}

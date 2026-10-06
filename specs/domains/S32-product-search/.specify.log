@@ -1,0 +1,33 @@
+The S32 spec is written, and the spec quality checklist passes on every item. `pnpm check:table-ownership` was not run, so section C of `gaps.md` comes from reading the code. The sandbox needed an approval I couldn't get unattended.
+
+**Files**
+- Feature directory: `specs/domains/S32-product-search`
+- Spec file: `specs/domains/S32-product-search/spec.md`
+- Also written: `test-plan.md`, `gaps.md`, `questions.md` and `checklists/requirements.md`.
+- `.specify/feature.json` now points at the S32 directory.
+- No code was modified.
+
+**What the spec contains**
+- Nine user stories with 86 Given/When/Then scenarios, AS-01 to AS-86.
+- 61 functional requirements, each pointing at the scenarios that prove it.
+- Ten success criteria.
+- A `## Cross-capability contracts` section with **Provides** and **Requires** lists.
+- Pattern-map rows **P0308** and **P0408** are covered as requirements and scenarios.
+
+**Checklist and traceability**
+- The test plan has 86 rows, one per scenario, matching the spec by count. It names the e2e files, the unit files, and the UI rows for `search.spec.ts` and `seller.spec.ts`.
+- `questions.md` has 21 `[BREAKING]`, 15 `[CONTRACT]` and 17 `[LOCAL]` lines.
+
+**Decisions to review first**
+- **Public search moves out of the catalog.** It becomes a read model of the product events, and the response is a new explicit shape with cursor paging. Archived and suspended-shop products are hidden. The raw index document, which includes the embedding vector, is no longer returned.
+- **Reindex is rebuilt from the event history, not the `Product` table.** It is a run with a state machine, writes to both indexes while building, verifies the count, switches atomically, and keeps the previous index for 24 hours so rollback loses nothing.
+- **Discovery now owns four small tables.** They hold shop product search, shop state, reindex runs and synonym sets. `docs/architecture/domain-map.md` still says discovery owns no Postgres, so that and the ownership registry need updating.
+- **Replay needs `products.events` to keep the latest event per product, including deletes.** I assumed S05 and S53 provide this.
+- **Three contracts are my proposals, not existing specs:**
+  - the sponsorship event `marketing.product_sponsorship_changed`, for S36 to provide;
+  - `shopVersion` on S03's offboarding events, which S03 currently omits;
+  - popularity taken from click data rather than S05's view counts.
+
+**Next step**
+- The spec is ready for `/speckit-clarify` or `/speckit-plan`.
+- The implementation agent must run `pnpm check:table-ownership` and replace section C of `gaps.md` with its real output.

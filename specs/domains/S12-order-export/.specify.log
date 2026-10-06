@@ -1,0 +1,28 @@
+The S12 spec is written, and all items on the quality checklist pass. No code was changed.
+
+I couldn't run `pnpm check:table-ownership` because the command needs an approval that isn't available when unattended. The `orders` lines in `gaps.md` §C come from a static search of the code instead, and the file says so. Whoever implements this should run the real check first and reconcile.
+
+`specs/domains/S12-order-export/` now holds:
+
+- **`spec.md`**: 7 user stories, 61 acceptance scenarios, 40 functional requirements, 9 success criteria, assumptions, and the `## Cross-capability contracts` section with Provides and Requires lists.
+- **`test-plan.md`**: 61 rows, one per scenario, each naming its e2e spec file and the five e2e files. Unit specs cover only the pure rules.
+- **`gaps.md`**: code gaps A1–A24 with file:line references, the debt rows that name `orders` or S12 with the mechanism that replaces each, and an ordered to-do list.
+- **`questions.md`**: 13 BREAKING, 13 CONTRACT and 15 LOCAL lines.
+- **`checklists/requirements.md`**: the checklist, with one fix pass recorded.
+
+**What the spec decides**
+- **Routes:** order export moves to `POST/GET /shops/:shopId/order-exports`, plus `/cancel` and `/download`. The old paths return 404 with no alias.
+- **Queue:** it uses its own `order-exports` queue with message `{exportId}`, and `catalog-sync` no longer imports `orders`. Debt D-10 is paid.
+- **Streaming:** the export reads in keyset batches of 1,000 lines instead of holding one long cursor. This replaces the notes' cursor example. The cost is that each row shows its status as of its batch, not at one instant; this is stated in Assumptions and `questions.md`.
+- **Starting an export:** it needs an `Idempotency-Key`, allows one active export per shop, and is limited to 5 starts per shop per hour.
+- **Existing bug:** the old CSV put the shop-order ID in the `order_id` column. The new file has both IDs, exact money, a deterministic order, and a guard against spreadsheet formula injection.
+- **Pattern rows:** P0102 and P0207 are covered by FR-014–FR-017 and AS-09–AS-12.
+
+**Open points for you to review**
+- **S05:** it must add `externalSku` to its product lookup; without it the SKU column is dropped.
+- **S10:** it must backfill the order-item snapshot columns for old rows.
+- **S07:** its wording "served by S12" is read as "no longer served by catalog-sync".
+- **S03:** this capability does not build an offboarding order bundle. Its gate also blocks export routes while a shop is `DELETING`, so a seller who wants their history must export it while the shop is still `ACTIVE`.
+- **Migration:** the `ExportJob` table needs a migration that drops its foreign keys to `Shop` and `User`.
+
+`.specify/feature.json` now points at this directory. The hooks file `.specify/extensions.yml` doesn't exist, so no before or after hooks ran.

@@ -1,0 +1,24 @@
+The S02 spec, test plan, gaps list, decision log and quality checklist are written, and the checklist passes on the first validation run. Nothing was run or tested. I changed no code; the only file touched outside the spec directory is `.specify/feature.json`, now pointing at `specs/domains/S02-mfa-oidc`.
+
+**Check not run:** `pnpm check:table-ownership` needs approval that an unattended session can't get. Section C of `gaps.md` is reconstructed by search instead. It finds no other domain touching `FederatedIdentity` or the second-factor data, and one barrel-level coupling: tenancy calling `OidcService`. Run the real check first and reconcile.
+
+The spec has 66 acceptance scenarios, and `test-plan.md` has one row for each. `spec.md` also has the contracts section, 100-odd functional requirements and the success criteria. I read the one pattern row naming S02 (P0513, OIDC with PKCE) and the S01 spec before writing. All of S01's requirements on S02 are honoured.
+
+`questions.md` has 37 lines: 16 BREAKING, 9 CONTRACT, 12 LOCAL. The ones to review first:
+
+- **Enrolling over an enabled factor:** today `mfa/enroll` clears the enabled flag, so an access token alone turns MFA off. It now returns `409`.
+- **Pre-hijack on account linking:** a Google login that matches a password-registered account now clears the password, resets MFA and revokes all sessions, in one transaction.
+- **Per-shop providers:** `shop:<uuid>` providers are trusted for the subject only, never for e-mail, so a shop admin's IdP can't take over a victim's account. Tenancy (S03) registers them through a new `OidcProviderRegistry`, replacing `OidcService.setResolver`.
+- **Google login with MFA enabled:** it now requires the second factor.
+- **OIDC start:** it becomes `POST` with a browser-bound flow cookie, to stop login CSRF. Callback failures become a `302` to `/login?error=<code>`.
+- **S01 contract change:** S01's `createChallenge` / `verifyChallenge` need a `firstFactor` and a `jti` so S02 can enforce single use.
+- **Same-origin requirement:** the Google callback sets host-only cookies, so the web app and API must share one origin, or W01 uses the BFF session instead.
+
+`gaps.md` lists 31 numbered gaps (A1–A12, B1–B18, C0–C2) with file and line references. I found the existing web code puts the MFA challenge token in the URL (`login-form.tsx:53`) and flagged it as a W01 change. Debt rows D-6, D-7 and D-8 are covered with their R1 replacements.
+
+**Next:** `/speckit-plan`. Files are in `specs/domains/S02-mfa-oidc/`:
+- `spec.md`
+- `questions.md`
+- `test-plan.md`
+- `gaps.md`
+- `checklists/requirements.md`

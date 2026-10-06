@@ -1,0 +1,30 @@
+The S23 spec package is written in `specs/domains/S23-live-stream/`. No code was modified and no tests were run. The quality checklist passed on the first pass, and there are no `[NEEDS CLARIFICATION]` markers.
+
+`.specify/feature.json` pointed at S22, so I repointed it to `specs/domains/S23-live-stream`. There is no `.specify/extensions.yml`, so no hooks ran.
+
+## Files
+
+- `spec.md` has 6 user stories, 54 acceptance scenarios (AS-01 to AS-54), 47 functional requirements and 14 success criteria.
+  - It includes the `## Cross-capability contracts` section with Provides and Requires.
+  - Cross-domain data uses R1 only: S03 `ShopScoped` and `ShopAccessService`, and S05 `ProductQueryService`. There is no R2 or R3.
+- `questions.md` has 15 `[BREAKING]` lines, 10 `[CONTRACT]` lines and 15 `[LOCAL]` lines.
+- `test-plan.md` has 54 rows, one per scenario, mapped to six e2e files and the unit specs. There is no UI journey, because no web capability covers live pages; J03 holds the cross-domain happy path.
+- `gaps.md` has 27 code gaps. It maps each debt-register row (D-6, D-7, D-8, D-12) and each `check:table-ownership` line to the R1 mechanism that replaces it.
+- `checklists/requirements.md` is the quality checklist, all items passed.
+
+## What to review first
+
+- **Pattern coverage:** only P1106 (reservoir sampling) names S23 in the pattern map. I also turned the other patterns in the SD-15 and 10/06 notes into requirements: sampling, batching, reaction aggregation, late joiners, async moderation, pinned commerce and time-bucketed history.
+- **Staff routes move.** Pin, unpin, remove, mute and unmute move under `/shops/:shopId/live/:streamId/...` with the shop guard. Outsiders now get `404` instead of `403`, and I added an unmute route.
+- **Priority:** only members who hold `products.write` get priority comments. Today every member does, including read-only ones.
+- **PII:** `authorName` becomes a per-user, per-stream handle. Today it is the e-mail local part and goes to every viewer.
+- **Lost removals:** the history writer currently drops a removal that arrives before its comment. History writes become upserts so posts and removals can arrive in either order.
+- **Dropped priority comments:** priority comments beyond 10 per window are silently dropped today; the spec says never dropped.
+- **Snapshot race:** the late-joiner snapshot is sent before delivery starts, so events in between are lost. The spec subscribes first, snapshots second, and adds `pin.version`.
+- **Hot path:** every comment currently triggers Postgres reads, and a Redis wipe makes every live stream answer `409`. The spec requires zero relational reads on a warm stream, with a reconcile job.
+- **Durability:** the pin moves from Redis to the stream record, and mutes move to a new durable `LiveMute` table.
+- **Events:** `live.comment_removed` goes to v2. New events are `live.stream_started`, `live.stream_ended` (via the outbox) and `live.reactions_aggregated`.
+- **S51 ask:** the gateway needs a `TopicSubscriber.subscribe(topic, handler)` export from the infrastructure realtime lib. Today the hub is app code and the domain cannot import apps. S51's spec isn't written yet, so I recorded it as a `[CONTRACT]` ask.
+- **S22 coordination:** the `stream` prefix leaves the shared `LaunchEventTopics` file for its own `LiveTopicsModule`. `launchEventId` stays an unvalidated plain ID so S23 reads nothing of S22.
+
+`pnpm check:table-ownership` shows 2 findings for `launch-events`, both `ShopMembershipModel` in the live code. R1 replaces both, and no SQL findings exist today. The spec package is ready for `/speckit-plan`.

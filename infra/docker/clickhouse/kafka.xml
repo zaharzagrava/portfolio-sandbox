@@ -1,0 +1,8 @@
+<!-- SD-32 / DOUBTS Q58: Kafka engine tables read only COMMITTED transactional messages
+     (exactly-once ad-click aggregates). ClickHouse 24.8 has no per-table kafka_isolation_level,
+     so the librdkafka consumer property is set server-wide here. -->
+<clickhouse>
+    <kafka>
+        <isolation_level>read_committed</isolation_level>
+    </kafka>
+</clickhouse>

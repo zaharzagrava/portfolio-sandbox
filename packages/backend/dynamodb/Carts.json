@@ -1,0 +1,19 @@
+{
+  "TableName": "Carts",
+  "AttributeDefinitions": [
+    { "AttributeName": "PK", "AttributeType": "S" },
+    { "AttributeName": "SK", "AttributeType": "S" }
+  ],
+  "KeySchema": [
+    { "AttributeName": "PK", "KeyType": "HASH" },
+    { "AttributeName": "SK", "KeyType": "RANGE" }
+  ],
+  "TimeToLiveAttribute": "expiresAtEpoch",
+  "_design": {
+    "pattern": "item collection per cart (SD-19)",
+    "items": { "line": "PK=CART#<cartId> SK=ITEM#<productId> | quantity, addedAt, expiresAtEpoch" },
+    "cartIds": "guest: random id in a signed cookie; logged-in: user:<userId>",
+    "accessPatterns": ["view cart: Query PK", "add/update line: PutItem", "remove line: DeleteItem", "merge on login: Query guest + BatchWrite into user cart"],
+    "why": "add-to-cart is the highest-write user action during sales; per-cart partitions spread evenly, TTL expires abandoned carts, Postgres never sees browsing traffic"
+  }
+}
