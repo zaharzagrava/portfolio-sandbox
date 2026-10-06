@@ -1,0 +1,24 @@
+The W02 spec and its four companion files are written, and the quality checklist passes 16 of 16. I changed no code, committed nothing, and created no branch. There was no `.specify/extensions.yml`, so no hooks ran. I pointed `.specify/feature.json` at `specs/web/W02-storefront-discovery`. I couldn't run `git status` to confirm the working tree is otherwise clean (the command needed approval).
+
+- **Spec**: `spec.md` has 77 acceptance scenarios (AS-01 to AS-77) in 12 stories, about 120 functional requirements, and the `## Cross-capability contracts` section. All three pattern-map rows for W02 (P0402, P0901, P0902) map to requirements and scenarios.
+- **Test plan**: `test-plan.md` has 77 rows, one per scenario, and names the test file for each.
+- **Questions**: `questions.md` has 18 `[BREAKING]`, 21 `[CONTRACT]` and 23 `[LOCAL]` lines.
+- **Gaps**: `gaps.md` lists the current code's problems with file and line references, the missing backend endpoints, and the test-tooling gaps.
+- **Checklist**: the spec names TanStack Query, `lib/api/*` and the cookie and parameter names on purpose, because your brief and constitution VI require it. The checklist notes this. There are no `[NEEDS CLARIFICATION]` markers anywhere.
+
+Decisions to review first:
+- **Search and URL state**: the page switches to the S32 parameter names, with single-choice category and brand and cursor paging in the URL. Facets, sort and filters are now real, replacing the dead "Load More" button and the invented counts.
+- **Product page data**: it reads the S48 aggregate anonymously on the server and caches it for 15 seconds, so each optional section fails on its own without breaking the page. S48 would need a new `gallery` section (S29's `GET /products/:id/gallery`) for images.
+- **Rails**: trending and recommendation items carry no image, so rails are text-only cards until S34 and S35 add an optional `imageUrl`.
+- **Routes**: `[slug]` becomes `[productId]`, and a new `/p/[productId]` redirect keeps S36's click redirect and S37's examples valid.
+- **Product tabs**: Details, Pickup near me, Ask and Discussions, with the selected tab in the URL.
+- **Referral cookie**: a same-origin web endpoint sets `__Host-ref` as HttpOnly for 30 days, and W03 reads it on the server at checkout.
+- **Contradiction with S19**: its test plan puts W02's journey at `packages/web/e2e/…`, but this repository's Playwright directory is `tests`, so S19's plan needs updating.
+- **Test data**: journeys for pickup, rails, ask and video need seeded data from S19, S34, S35, S47 and S30, listed in `gaps.md` section H.
+
+Files are in `specs/web/W02-storefront-discovery/`:
+- `spec.md`
+- `test-plan.md`
+- `questions.md`
+- `gaps.md`
+- `checklists/requirements.md`
