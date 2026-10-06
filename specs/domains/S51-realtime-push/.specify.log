@@ -1,0 +1,36 @@
+I wrote the S51 spec, `questions.md`, `test-plan.md`, `gaps.md` and the quality checklist. Nothing in the code was modified. The checklist passes on every item. Two things were not done: `pnpm check:table-ownership` was not run, and `.specify/extensions.yml` doesn't exist, so no hooks ran.
+
+`pnpm check:table-ownership` needed approval, which an unattended run can't get. By inspection the realtime lib has no model or SQL, so I expect 0 findings. `gaps.md` tells the implementation agent to run it and confirm. I also pointed `.specify/feature.json` at `specs/domains/S51-realtime-push`; it previously pointed at S50.
+
+- **Spec**: 12 user stories with 70 Given/When/Then scenarios and 55 functional requirements, including cross-capability contracts and a pattern-coverage table for P0105, P0111, P0209, P0323 and P0406. There are no clarification markers.
+- **`test-plan.md`**: 70 rows, each scenario once, with e2e file names under `libs/infrastructure/realtime/`. The UI column is a dash throughout, because S51 has no screen; the happy-path journeys belong to W03, W04 and W05.
+- **`gaps.md`**: 36 gaps with file and line references, plus the debt-register rows (D-1, D-2, D-3, D-6, D-7, D-8, D-12, D-14, D-16, D-17) with the IX.7 mechanism for each. The cross-domain model and SQL access (D-7, D-12) is replaced by R1 exported services; none of it needs R2 or R3. The gaps include several real bugs in the current code:
+  - **Live-only events:** the stream controller drops them once a replayable event has gone out on that topic.
+  - **Long gaps:** replay is cut at 500 events with no notice.
+  - **Leaks:** a client that leaves during connect leaks its listeners and heartbeat timer.
+  - **Subscribe race:** two concurrent first subscribers can leave a topic dead.
+  - **Frame injection:** an event type containing a newline injects frames.
+  - **Publisher:** it is not atomic and has no timeout.
+
+Decisions for you to review first in `questions.md`:
+
+- **Breaking, new behaviour:** I added a `resync` event for replay gaps, a baseline frame on first connect, connection caps, a connection lifetime and a jittered `retry:`.
+- **Breaking, changed behaviour:**
+  - Anonymous refusals become 401; authenticated refusals stay 403 with a generic body.
+  - Topic rules become one per prefix-and-suffix route instead of OR-combined.
+  - `publish` returns `{ published, id }` and never throws on store faults.
+  - The raw `redis-pubsub` libs and the gateway's payment SSE modules are removed once S13 and S24 have moved off them.
+- **Contract deviations:**
+  - S03 asked that S51 close subscriptions on `member_removed`. I made S51 offer `revoke`, and tenancy's own topics module consumes the event and calls it.
+  - S06 assumed S51 owns the raw backplane lib. I removed that lib; S06 uses topics instead.
+  - S28's `user:` topic registration is owned by identity (S01).
+- **Honoured asks:** S23's `TopicSubscriber.subscribe`, S40's `topicsWithSubscribers`, S12's hyphenated `order-export` prefix, and S31's `shop:<id>:assets` coexisting with S03's `shop:<id>:live`.
+
+Files are in `specs/domains/S51-realtime-push/`:
+- `spec.md`
+- `questions.md`
+- `test-plan.md`
+- `gaps.md`
+- `checklists/requirements.md`
+
+The spec is ready for `/speckit-plan`; `/speckit-clarify` is optional.
