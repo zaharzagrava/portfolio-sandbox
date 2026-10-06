@@ -1,0 +1,36 @@
+The S50 spec is written, and the quality checklist passes on its first iteration. `pnpm check:table-ownership` and `pnpm check:boundaries` need approval that wasn't available unattended, so I didn't run them. By grep, `rate-limit/` has no model, SQL or production domain import, so I expect 0 findings. The implementation agent has to run both.
+
+No `extensions.yml` exists, so no hooks ran. I changed no code and created no branch.
+
+**What's in the spec**
+- `spec.md` has 13 user stories and 83 acceptance scenarios (AS-01 to AS-83).
+- It has 58 functional requirements and 9 success criteria.
+- It has a Cross-capability contracts section with Provides and Requires, and a coverage table for the pattern-map rows P0113, P0214, P0327 and P0416.
+- The scenarios cover token bucket, sliding window, concurrency leases, local leased budgets, fail modes, the HTTP contract, subject isolation, failure-only counting, penalties, defaults and the policy registry, observability, the edge worker and fleet-wide exactness.
+- Out-of-order or duplicate events are marked not applicable, since the limiter consumes no messages.
+
+**Test plan and gaps**
+- `test-plan.md` has 83 rows, one per scenario. I checked that its ids match the spec's exactly.
+- Time-dependent scenarios run through an injectable store clock rather than sleeps.
+- `gaps.md` has 40 gaps with file:line references. It includes the debt-register and ownership section and a table of the policy names other specs require from S50.
+
+**Decisions to review first in `questions.md`** (17 BREAKING, 11 CONTRACT, 12 LOCAL)
+- **`503` on closed outage:** a fail-closed policy with the store down answers `503` `rate_limiter_unavailable`, not `429`. S07, S15 and S30 already assume `503`.
+- **Header format:** I used the IETF structured `RateLimit` and `RateLimit-Policy` headers from the notes and dropped `RateLimit-Limit`, `RateLimit-Remaining` and `RateLimit-Reset`.
+- **Policy registry:** the central `RATE_LIMIT_POLICIES` table is removed, because domain names inside infrastructure break constitution X.3. Each capability declares its own policies through `definePolicies` and `forFeature`. Names and numbers stay exactly as the other specs state them, but the file changes from the "S50's registry file" they reference. That is a `[CONTRACT]` deviation for the S01–S48 specs.
+- **One engine:** `@nestjs/throttler`, `RedisThrottlerStorage`, the `throttle_api_*` config keys and `Firewall({ skipThrottle, throttle })` are deleted. A default interceptor applies `default.read` (300/min) and `default.write` (60/min), and routes opt out with `@RateLimitExempt(reason)`.
+- **Failure-only counting:** it reserves a slot when the request is admitted, so 20 parallel wrong passwords against a limit of 5 admit exactly 5. Plain count-after-the-fact would let all 20 through.
+- **Other fixes:**
+  - The sliding window now uses the store's clock instead of each instance's `Date.now()`.
+  - The client address no longer comes from a raw `cf-connecting-ip` header.
+  - A request denied by a later policy refunds the earlier ones.
+  - Every store call gets a timeout.
+
+The next step is `/speckit-clarify` or `/speckit-plan`.
+
+Files are in `specs/domains/S50-rate-limiter/`:
+- `spec.md`
+- `test-plan.md`
+- `gaps.md`
+- `questions.md`
+- `checklists/requirements.md`
