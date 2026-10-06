@@ -1,0 +1,39 @@
+I wrote the S44 specification, test plan, gaps list, questions file and quality checklist. The checklist passed on the first iteration. I changed no code. No `.specify/extensions.yml` exists, so no hooks ran.
+
+`pnpm check:table-ownership` needs an approval that wasn't available unattended, so I couldn't run it. S42 and S43 hit the same limit. The domain lines in `gaps.md` §3 come from reading the code. Running that command first is the implementation agent's first task.
+
+- **Feature directory:** `specs/domains/S44-storefront-widget`
+- **Spec file:** `specs/domains/S44-storefront-widget/spec.md`
+- **Pointer:** `.specify/feature.json` now points at the S44 directory.
+
+**What the spec contains**
+- **Scenarios:** 54 acceptance scenarios (AS-01 to AS-54) across 8 user stories, plus FR-001 to FR-040 and SC-001 to SC-009. There are no clarification markers.
+- **Pattern coverage:** P0502 is covered by FR-024 to FR-026 and AS-34 to AS-38, and P0504 by FR-030, FR-031, AS-13 and AS-31.
+- **Cross-domain data:**
+  - Products come from catalog's exported batch lookup (R1).
+  - Shop name and status are a copy kept on the site record, fed by tenancy events (R3) and seeded once through R1.
+  - Shop deletion arrives as an event, with no cross-domain table access.
+- **Contracts:** a `## Cross-capability contracts` section with Provides and Requires lists that honour what S03, S05, S42 and S43 already ask of this capability.
+
+**Where the notes override the current code** (all tagged `[BREAKING]` in `questions.md`)
+- Exact-origin binding with `422` for malformed input, and no IP literals or localhost.
+- Nonce-based CSP with `frame-ancestors 'none'` on every route except the embed document.
+- A dedicated widget-token key instead of the general JWT secret.
+- An idempotent kill switch with history and events, effective on the next request on every instance.
+- Prices as integer minor units.
+- A dedicated permission, `widget.manage`.
+- Sites follow their shop: a suspended shop disables them and a deleted shop removes them.
+
+**Reviewer attention (`[CONTRACT]` lines)**
+- **S03:** it needs to add the new `widget.manage` permission.
+- **S50 to S54:** none are written yet, so I recorded the facilities S44 needs from them. These include a single-use marker store, cross-instance cache invalidation, and exempting the widget routes from the global CORS policy.
+- **Session verifier:** `WidgetSessionService.verify` is offered to S10 and S13, but nothing consumes it yet.
+
+Files are in `specs/domains/S44-storefront-widget/`:
+- `spec.md`
+- `questions.md`
+- `test-plan.md`
+- `gaps.md`
+- `checklists/requirements.md`
+
+The next step is `/speckit-plan`.
