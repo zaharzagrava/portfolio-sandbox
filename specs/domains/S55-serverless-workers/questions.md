@@ -1,0 +1,44 @@
+# Questions and defaults: S55 — Lambda workers (domain `infrastructure`)
+
+Answered unattended. BREAKING first, then CONTRACT, then LOCAL. Format: `question → default → why`.
+
+## BREAKING
+
+- [BREAKING] Where does the toolkit live (today `apps/lambdas/src/shared/*`, and `apps/lambda-local` imports `../../lambdas/src/...`) → move batch, idempotency, nest-context, telemetry, manifest types and the runner engine to `libs/infrastructure/serverless`; `apps/lambdas` keeps one wiring entry file per function; `apps/lambda-local` is a launcher; delete `handlers/index.ts` (`HANDLERS`) → X.1 ("nothing imports from `apps/`", apps hold bootstrap only) and X.3. Existing specs under `apps/lambdas/src/shared/` move with the code.
+- [BREAKING] How does the runner find handlers → it starts functions from the built `dist/lambda-bundles/manifest.json` and bundles → removes the app-to-app import, and what runs locally is what is deployed (also catches bundling mistakes). Local dev needs `pnpm build:lambdas` first.
+- [BREAKING] `Idempotency.run(key, inProgressTtlMs, work)` → `run(key, work, { leaseMs, fingerprint?, retentionSec? })`; completion and release conditional on an owner token; expired `COMPLETED` records count as absent (TTL deletion lags up to 48 h); a failed completion write does not release the claim; same key with a different fingerprint throws → today's late finisher can overwrite or delete a newer attempt's record, and a failed completion write re-runs finished work. `media-processing.ts` is the only caller to update.
+- [BREAKING] Handler signature → handlers receive a task message `{ id, body, receiveCount, attributes }` through `defineSqsHandler`, with body validation; raw `SqsRecord` stays available to `processBatch` → one consumer implementation for worker and Lambda (S53 contract), and invalid bodies never reach domain code (VII.4). `webhook-delivery.ts`, `document-extractor.ts`, `media-processing.ts` change.
+- [BREAKING] FIFO batch processing → groups run concurrently, each group sequentially (today: whole batch sequential, no concurrency across groups) → the notes: different groups are independent. Order within a group and the "fail the rest of the group" rule are unchanged.
+- [BREAKING] `processBatch` swallows errors silently (empty `catch`) → every failure is logged (no body), counted by class, and the last-attempt case emits `DeadLettered` / `FifoGroupOrderBroken` → a silent failure plus a DLQ is not operable; the notes say to alert when FIFO order breaks.
+- [BREAKING] Local runner visibility → the runner no longer passes `VisibilityTimeout = 6 × timeout` on receive and no longer heartbeats `ChangeMessageVisibility`; it reads the queue's own setting and refuses to start if it is below 6 × timeout → Lambda does not extend visibility; the override hid that `elasticmq.conf` has `webhook-deliveries.fifo` at 30 s (needs 180 s) and `media-processing` at 180 s (needs 360 s). Both values are corrected in the queue file.
+- [BREAKING] Local runner concurrency and event shape → honours `maxConcurrency` (capped by `LAMBDA_LOCAL_MAX_CONCURRENCY`, default 2; today one invocation at a time per function) and passes the complete record (`messageAttributes`, `eventSource`, `awsRegion`, `md5OfBody`, dedupe ID, sequence number; today `traceparent` is lost because `MessageAttributeNames` is not requested) → trace propagation (P0706) cannot work without attributes.
+- [BREAKING] Manifest content → add `fifo`, `visibilityTimeoutSec`, `maxReceiveCount`, `dbPoolMax`, optional `deadLetter`; it becomes the single source and `elasticmq.conf` and `infra/stack/main.tf` are checked against it → three hand-kept copies of the same numbers have already drifted.
+- [BREAKING] Terraform `lambda_sqs_worker` → one execution role per function (today one shared role over all queues), DLQ-depth and queue-age alarms (today only an `Errors` alarm), idempotency table access in the module instead of `extra_policy_json` → least privilege and the alert the notes require. This is an O-03 artifact edited by this capability's implementation.
+- [BREAKING] `metric()` and `log()` → validate (≤ 3 dimensions, finite value, known unit), add trace ID, take time from the injectable clock, drop invalid calls with a warning → a bad metric call must not fail a record; `Date.now()` blocks frozen-time tests.
+- [BREAKING] Nest-based handlers open at most `dbPoolMax` (2) connections per container, like the plain handler → connection budget = concurrency × pool; today the pool size is whatever the shared database module configures.
+
+## CONTRACT
+
+- [CONTRACT] S04 dead-letter handler for `onboarding-documents` (promised by S04's questions: max receives 5, visibility ≥ 6 × timeout) → new manifest entry `document-extractor-dead-letter` on `onboarding-documents-dlq` calling `ExtractionService.routeToReview(documentId, 'retries_exhausted')`; function timeout stays 120 s, visibility 720 s, receive limit 5 (already satisfies 6 × 45 s and 6 × 120 s) → S04 needs `routeToReview(documentId: string, reason: string)` idempotent per document and a body of `{ documentId }`; if S04's reason is an enum, S55 passes the matching value.
+- [CONTRACT] S04 error classes → `ExtractionService.process` throws `TransientError` (provider outage) or `PermanentError` (unprocessable), so `document-extractor.ts` stops importing `LlmUnavailableError` from the assistant barrel → removes a domain-to-domain import from a bootstrap file (X.1, D-14).
+- [CONTRACT] S43 Lambda hosting → S43 exports `WebhooksLambdaModule` providing `WebhookDeliveryHandler.handle(message)` (S43 says only "a Lambda-hosting module" and stops exporting `WebhookDeliverer`); retry by throwing `TransientError`; today the handler throws a generic `Error('redeliver')` for `retry-fifo`. If S43 prefers another shape, only `webhook-delivery.ts` changes.
+- [CONTRACT] S43 AS-45 (batch of three endpoints, one answers 500, only that message fails) → covered by AS-01/AS-03 plus S43's own wiring test; S55 provides the helper, S43 proves its function.
+- [CONTRACT] S29 → `createMediaProcessor(deps)` replaces the barrel exports `MediaProcessor` and `Sql`; the Lambda passes raw database, transaction and object-store adapters built by infrastructure libs; events through `appendWithExecutor` (S53) → S29's own BREAKING lines; this removes adapter code from `media-processing.ts` (FR-074).
+- [CONTRACT] S53 `TaskQueue` → `TaskMessage<T>`, `dedupeId`, `traceparent` attribute, `PermanentError` and `TransientError` are used as S53 names them; S53 must export the two error classes from a library that `serverless` may import without importing projections internals (X.5) → one place for error classification. If S53 keeps them inside `projections`, S55 defines the same names in `serverless` and S53 re-exports them.
+- [CONTRACT] S53 DLQ and redrive → "redrive for queues is the queue service's own" (S53 questions) → S55 adds only the local equivalent (`--redrive`) and the Terraform redrive allow policy check.
+- [CONTRACT] S54 → clock `now()` and config validation at start-up; the log field names of `log()` follow S54's logger (`level`, `message`, `time`, `traceId`) so one query covers worker and Lambda logs → if S54 renames fields, `log()` follows.
+- [CONTRACT] O-03 / ops → Terraform reads the manifest fields listed in the spec (including `visibilityTimeoutSec`, `maxReceiveCount`, `fifo`, `deadLetter`) → the stack's queue map stops being hand-written for Lambda-consumed queues (checked, not yet generated).
+- [CONTRACT] Cross-spec searches: S01 names S55 only as a possible consumer of `ServiceTokenService` (no Lambda needs it today; S55 adds no internal endpoint and requires nothing from S01).
+
+## LOCAL
+
+- [LOCAL] Result and key limits → 64 KiB result, 512-character key, retention 24 h → DynamoDB item and key limits with margin.
+- [LOCAL] Deadline margin → 5 s default, per-function override → enough to return a response before the platform timeout.
+- [LOCAL] FIFO record with no group ID → one shared group → conservative; real SQS never sends one.
+- [LOCAL] `Idempotency` table name → keep `Idempotency` (a DynamoDB table; the Postgres inbox/idempotency allowlist entry is a different store) → rename costs Terraform and local init for no gain.
+- [LOCAL] DB connection budget constant → 1,000 → a placeholder for the RDS Proxy capacity; changing it is one line.
+- [LOCAL] Timed-out local handler cannot be killed → logged as `abandoned_invocation` → in-process runner limit.
+- [LOCAL] Per-batch deadline for standard queues → same helper as FIFO.
+- [LOCAL] Metrics namespace → `Marketplace/Lambda` for the toolkit; domain functions keep their own namespaces (`Marketplace/Webhooks`, `Marketplace/Media`, `Marketplace/KYC`) for business metrics.
+- [LOCAL] Maximum batching window → stays at 1 s in Terraform and is not emulated locally.
+- [LOCAL] No UI journey → none of the scenarios has a screen.
