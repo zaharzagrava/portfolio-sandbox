@@ -1,0 +1,23 @@
+I wrote the S54 specification and its supporting files, and no code was changed. The quality checklist passes on the first iteration, with 0 `[NEEDS CLARIFICATION]` markers. I couldn't run `pnpm check:table-ownership` or `check:boundaries` (both need approval in this session), so the ownership lines in `gaps.md` come from a static search instead. The implementer's first task is to run both.
+
+**Directory:** `specs/domains/S54-platform-toolkit`. Spec file: `specs/domains/S54-platform-toolkit/spec.md`. `.specify/feature.json` now points at this directory. There are no `.specify/extensions.yml` hooks.
+
+- **`spec.md`**: 10 user stories, 152 Given/When/Then scenarios (AS-01 to AS-152) and 80 functional requirements. All 21 pattern-map rows that name S54 are covered in a closing table. It ends with the `## Cross-capability contracts` section (Provides and Requires with exact names). It reads no other domain's data, so none of R1, R2 or R3 applies.
+- **`test-plan.md`**: 152 rows, one layer per row, with the e2e file named. There is no UI journey because S54 has no UI. The pure-logic unit specs and the six static checks (e.g. no request-scoped providers, no migrations at startup) are listed in the Unit column.
+- **`gaps.md`**: about 75 gaps with file:line references, the debt-register rows that name `infrastructure` (D-14, D-16) and the IX.7 mechanism for each, and a suggested order of work.
+- **`questions.md`**: 21 `[BREAKING]`, 17 `[CONTRACT]` and 17 `[LOCAL]` lines, in that order.
+
+The code gaps that matter most:
+- **Shutdown order:** the shutdown tasks, including pool closing, run before the HTTP server drains in-flight requests.
+- **Second SIGTERM:** a second SIGTERM kills the process outright, because the signal listeners are registered with `process.once`.
+- **Readiness:** `/readyz` fails whenever Postgres is down, which empties the whole fleet.
+- **Error body:** the problem+json body has no `code`, and outside production it leaks `data` and stack lines.
+- **Retries:** the outbound client makes 4 attempts, retries `500`, and sleeps for whatever `Retry-After` says.
+- **Idempotency:** the interceptor uses the wrong header name and wrong status codes, and keeps its state in Redis.
+
+Decisions to review first:
+- **Idempotency facility** is owned by S54, because about 13 sibling specs assume it. It moves to an `IdempotencyKey` Postgres table, which is on the IX.3 allowlist.
+- **S50** asks for the replay header `Idempotent-Replayed`. I chose `Idempotency-Replayed` (the name S10, S12 and S13 use), so S50 needs a small edit.
+- **SSRF failure kinds:** one vocabulary covers S41 and S43. S43's `network` becomes `network_error`.
+- **Readiness** no longer fails on shared dependencies (Postgres, cache, broker) unless promoted explicitly.
+- **Network calls inside a transaction** are refused outright, which may break existing transactional code that calls out.
