@@ -1,0 +1,29 @@
+The spec for S49 is written. The only `[NEEDS CLARIFICATION]` match left is the checklist line stating there are none. I changed no code.
+
+**Not run:** `pnpm check:table-ownership` needed approval, which this session couldn't get. `gaps.md` says so and lists the static findings instead. Please run it, and `--strict`, before implementation starts.
+
+Files are in `specs/domains/S49-job-scheduler/`:
+- **`spec.md`** has 11 user stories, 95 acceptance scenarios (AS-01 to AS-95), 60 functional requirements, success criteria, assumptions, and a cross-capability contracts section. It also maps each of the eight pattern-map rows naming S49 (P0104, P0110, P0114, P0217, P0304, P0309, P0312, P0318) to requirements and scenarios.
+- **`questions.md`** has 16 `[BREAKING]` lines, 11 `[CONTRACT]` lines and 19 `[LOCAL]` lines.
+- **`test-plan.md`** has one row per scenario, naming 9 e2e files and 7 unit files. The UI column is empty on purpose, because S49 has no UI.
+- **`gaps.md`** has 48 gap items with file and line references, plus the debt-register and table-ownership findings.
+- **`checklists/requirements.md`** has every item ticked on the first pass.
+
+Defects the spec fixes, all in the current code:
+- The per-shop cap can be exceeded: one claim batch can take 50 jobs of one shop, and concurrent claimers can each pass the check.
+- The reaper re-queues a job that keeps killing workers forever, with no backoff.
+- A worker whose lease expired can complete a job that the same worker process has since re-claimed.
+- One failing schedule rolls back the whole cron tick, every second.
+- `JobKey` rows are never purged.
+- `DROP TABLE` is built from a string, which IX.5 forbids.
+
+Things to review first:
+- **S01 gets new work.** Infrastructure libs can't import identity, so S49 provides `JobsAdminService` and S01 must host the operator routes (list, stats, retry, cancel, schedules). This is the main `[CONTRACT]` line.
+- **III.7 deviation.** There is no per-transition history table, because the technical-table allowlist is closed and a history row would double writes. The job row, metrics and logs carry the history instead. It is recorded in the Assumptions and `questions.md`, and `plan.md` Complexity Tracking will need it.
+- **Cron edge cases are a policy choice.** I fixed the behaviour for DST gaps, DST overlaps and wildcard hours. Whether the current `cron` library matches is unverified, so `gaps.md` marks it for the implementer to check.
+- **Other specs asked for different things.** S23 assumes schedule granularity is minutes, but S05, S11 and S21 need 10–30 s. I added a seconds field and flagged the difference.
+- **Three other domains' specs query `"Job"` directly.** The onboarding, webhooks and notifications e2e specs do. They should switch to the R1 `JobsAdminService`.
+
+The spec names the exported service surface and the constitution's pattern titles. It contains no SQL or framework text. The checklist records that choice.
+
+I wrote `.specify/feature.json` with the feature directory, and created no git branch.
