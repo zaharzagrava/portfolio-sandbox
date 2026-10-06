@@ -1,0 +1,26 @@
+The spec for S46 is written, with `questions.md`, `test-plan.md`, `gaps.md` and the quality checklist next to it. No code was modified. I did not run `pnpm check:table-ownership` because it needs approval here, so the cross-domain findings in `gaps.md` come from searching the code. Re-check them against the live report before closing D-7/D-12.
+
+- **Spec**: 77 acceptance scenarios (AS-01 to AS-77) in 10 stories, and 43 functional requirements. `spec.md` has the `## Cross-capability contracts` section with Provides and Requires lists. Every S46 pattern (P0102, P0208, P0209, P0417, P0617, P0620) is covered.
+- **Test plan**: one row per scenario, each naming its e2e spec file and any UI or unit layer. The unit layer is pure logic only.
+- **Gaps**: 59 gaps with file:line references, the open debt rows D-6, D-7, D-8, D-12 and D-14 with the replacing mechanism for each, and a suggested order of work.
+- **Questions**: 25 BREAKING, 11 CONTRACT and 13 LOCAL defaults.
+- **Checklist**: all items pass. It needed one pass to fix four wrong scenario cross-references.
+
+The BREAKING and CONTRACT lines to review first:
+- **Hidden existence**: another user's stream or cancel now returns `404` instead of `403`, which follows constitution V.4.
+- **Atomic turns**: a turn is stored only when it ends `done`. Today a refusal, cancel or crash leaves a half-written turn that corrupts the next one.
+- **Idempotency**: sending a message requires an `Idempotency-Key`, so the web client (W05) must send one per message.
+- **Metering**: usage is published as `llm.call_completed` through the outbox only, with a unique `callId` per model call. Today every call in a turn shares one id, which would make S18 count a whole turn as one call.
+- **Fail closed**: the monthly limit comes only from S18, and the app refuses to start without a provider key.
+- **New protections**: moderation, a circuit breaker per model, a cap of 3 concurrent replies per user, and the shutdown drain are new and not in the code today.
+- **S19 must add a service**: S19 exports only `PickupAvailabilityService`, so it has to add `PickupNearMeService.searchNear` for the `pickup_near_me` tool.
+- **LLM port moves**: it moves to `libs/infrastructure/llm`, and the domain map's "assistant emits `llm.call_completed`" line should be updated.
+
+I rejected per-turn model routing, because switching models mid-conversation breaks the prompt cache and the thinking-block prefix. The summary model carries the cheap-routing role instead. Once S19 exposes a near-me service, the spec is ready for `/speckit-plan`.
+
+Files are in `specs/domains/S46-shopping-assistant`:
+- `spec.md`
+- `questions.md`
+- `test-plan.md`
+- `gaps.md`
+- `checklists/requirements.md`
