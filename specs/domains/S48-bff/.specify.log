@@ -1,0 +1,21 @@
+I wrote the S48 spec, `questions.md`, `test-plan.md`, `gaps.md` and the quality checklist, which passes every item. I did not run `pnpm check:table-ownership`, because the command needed approval in this unattended session. A grep of `libs/composition` for models, SQL and cross-domain imports found nothing, so I expect no `composition` rows. `gaps.md` tells the implementation agent to run it, plus `check:boundaries` and the `--strict` variant. The spec has no `[NEEDS CLARIFICATION]` markers, and I changed no code.
+
+- **Spec:** `specs/domains/S48-bff/spec.md` has 5 user stories, 64 acceptance scenarios (AS-01 to AS-64), 52 functional requirements, success criteria, assumptions and the `## Cross-capability contracts` section (Provides and Requires). A table maps all nine S48 pattern-map rows (P0101, P0215, P0307, P0401, P0402, P0405, P0504, P0512, P0620) to requirements and scenarios.
+- **Questions:** `questions.md` has 16 `[BREAKING]` lines, 8 `[CONTRACT]` lines and 9 `[LOCAL]` lines.
+- **Test plan:** `test-plan.md` has one row per scenario across four e2e files (`bff.e2e-spec.ts`, `bff-graphql.e2e-spec.ts`, `bff-session.e2e-spec.ts`, `bff-boundary.e2e-spec.ts`). The first keeps the file name and describe name (`BFF product page composition`) that the S34 and S35 test plans already point at. It also names 7 unit specs and 2 UI journeys.
+- **Gaps:** `gaps.md` lists the code gaps with file and line references. No open debt row names `composition` or `S48`: D-2 and D-4 are already resolved. Nothing needs an IX.7 replacement beyond staying clean (AS-64).
+
+Where the existing code differs from the spec:
+- **Session handling:** none exists today. The spec makes the BFF the token handler: an opaque HttpOnly cookie, server-side encrypted tokens, CSRF and origin checks, and refresh serialized per session across instances. S01 requires that last part.
+- **GraphQL cost limit:** the current cost rule ignores variable values, so `products(ids: $ids)` is priced as 1 and bypasses the 2,000 limit (`graphql/limits.ts:45-51`).
+- **Silent truncation:** `products(ids)` silently truncates to 50 IDs (`graphql/product.resolver.ts:26`).
+- **Recommendations:** the GraphQL `recommendations` field swallows every error (`graphql/product.resolver.ts:35-44`).
+- **Product-page errors:** the `errors` entries leak raw error messages (`product-page.service.ts:57`).
+- **Persisted queries:** enforcement is production-only and trusts a supplied hash without checking the query text.
+- **e2e test:** the existing e2e boots `BffModule` without the production pipeline, filter and prefix.
+
+Two choices to review first:
+- **p99 target:** SD-04 says p99 under 150 ms with one dependency slowed to 2 s. That is unreachable with the 200–300 ms section budgets that S34 and S35 already fix. SC-008 restates it as completing within the 1 s page deadline (`[LOCAL]` in `questions.md`).
+- **OIDC:** the S02 OIDC redirect login keeps its own cookies and is not wrapped by the BFF session in this version (`[CONTRACT]` in `questions.md`).
+
+Next step is `/speckit-clarify` or `/speckit-plan`. I also wrote `.specify/feature.json` pointing at `specs/domains/S48-bff`. No branch was created.
