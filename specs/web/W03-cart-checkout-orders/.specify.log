@@ -1,0 +1,21 @@
+I wrote the W03 spec, questions, test plan, gaps list and quality checklist. All of them are under `specs/web/W03-cart-checkout-orders/`. The checklist passes except two items I left unchecked on purpose. I changed no code; the only other edit is `.specify/feature.json`, which now points at this directory. There's no `.specify/extensions.yml`, so no hooks ran, and I didn't create a branch.
+
+**What's in the spec**
+- **Scope:** 75 acceptance scenarios (AS-01 to AS-75) cover the cart, checkout, pay step, success page, order history and detail, and the notification popover.
+- **Pay step:** There's currently no way to pay in the UI, so the spec adds `/checkout/pay/{orderId}` with hosted card fields, 3-D Secure and live payment status. The success page says "Order confirmed" only when the order is `PAID`.
+- **Problem forms:** The spec maps every backend error code the W03 flows can meet to a visible form.
+- **Other sections:** Layout at mobile and desktop widths, accessibility, `## Cross-capability contracts` (Provides and Requires), and pattern coverage for P0414 and P0901.
+- **Existing contracts:** I checked the specs already written and honoured their contracts. S28's notification links go to `/orders/<id>`, so that route exists. W02's `AddToCartButton`, `track`, `newIdempotencyKey` and `getRefCode` are used as specified.
+
+**Things worth reviewing first (all in `questions.md`)**
+- **Cart cookie:** W01's forwarding strips cookies, which would empty every guest cart. S48 has to pass the guest cart cookie through, and forward the event stream unbuffered.
+- **S48 endpoints:** Two new BFF endpoints are needed: `GET /api/bff/cart` and `GET /api/bff/orders/{orderId}`. Today the cart makes one product request per line.
+- **Card decline:** A decline cancels the order (S10 AS-48), so the buyer retries through "Buy these items again". I kept S10's rule and logged a softer one as a question.
+- **Estimated total:** The review screen shows a catalogue-price estimate, because S10 has no priced preview. When a seller discount applies, the buyer sees a "prices changed" confirmation first.
+- **Payment timing:** Right after checkout, the first payment request can get `404 order_not_found` while the payments side catches up (S13 AS-12). The UI retries it before showing an error.
+- **Breaking changes:** There are 15, tagged first in `questions.md`. They include the new order-history route (`/dashboard/orders` redirects to `/orders`), the idempotency-key lifecycle and order creation moving to a server-side function.
+
+**Checklist results**
+- The two unchecked items are "no implementation details" and "no implementation details leak", on purpose. Your constitution VI data-flow rules and the exact contract names are required content. They appear only in the requirements and contracts sections, not in the stories or success criteria.
+- No `[NEEDS CLARIFICATION]` markers remain, and every pattern-map row naming W03 is covered. There are 75 scenarios in the spec and 75 matching rows in the test plan.
+- The spec is ready for `/speckit-clarify` or `/speckit-plan`. `gaps.md` also lists the missing backend endpoints, the test-tooling gaps and a suggested order of work.
