@@ -99,8 +99,15 @@ recreate its settings. Obsidian only indexes markdown, so keep it away from `nod
      "userIgnoreFilters": [
        "/(^|\\/)node_modules\\//",
        "/(^|\\/)\\.git\\//",
-       ".agents/", ".specify/", ".claude/", ".moon/", ".github/", ".aider",
-       "infra/", "packages/", "scripts/"
+       ".agents/",
+       ".specify/",
+       ".claude/",
+       ".moon/",
+       ".github/",
+       ".aider",
+       "infra/",
+       "packages/",
+       "scripts/"
      ],
      "useMarkdownLinks": true,
      "newLinkFormat": "relative",
@@ -118,7 +125,9 @@ recreate its settings. Obsidian only indexes markdown, so keep it away from `nod
    .nav-folder:has(> .nav-folder-title[data-path$="node_modules"]),
    .nav-folder:has(> .nav-folder-title[data-path="infra"]),
    .nav-folder:has(> .nav-folder-title[data-path="packages"]),
-   .nav-folder:has(> .nav-folder-title[data-path="scripts"]) { display: none; }
+   .nav-folder:has(> .nav-folder-title[data-path="scripts"]) {
+     display: none;
+   }
    ```
 
    The code stays on disk and in git; it is only out of the vault's index, graph and sidebar.
@@ -132,11 +141,11 @@ recreate its settings. Obsidian only indexes markdown, so keep it away from `nod
 
 Folders in the vault:
 
-| Folder | Owner | Notes |
-|---|---|---|
-| `docs/humans/` | the docs generator | Rewritten on every run. Do not hand-edit; any other `.md` file in it is deleted. |
-| `interview-prep/` | you | Hand-written theory notes. `interview-prep/my-practice/` is gitignored (private exercises). |
-| `docs/architecture/`, `docs/runbooks/`, `specs/` | you / the SDD scripts | Hand-written or agent-written, committed. |
+| Folder                                           | Owner                 | Notes                                                                                       |
+| ------------------------------------------------ | --------------------- | ------------------------------------------------------------------------------------------- |
+| `docs/humans/`                                   | the docs generator    | Rewritten on every run. Do not hand-edit; any other `.md` file in it is deleted.            |
+| `interview-prep/`                                | you                   | Hand-written theory notes. `interview-prep/my-practice/` is gitignored (private exercises). |
+| `docs/architecture/`, `docs/runbooks/`, `specs/` | you / the SDD scripts | Hand-written or agent-written, committed.                                                   |
 
 ### Codebase map (`scripts/docs`)
 
@@ -178,6 +187,7 @@ pnpm docs:theory                            # link interview-prep sections to th
   ```
 
   After a reimplementation, run the same two commands again: only changed files and only notes whose candidates changed are redone. Generate topic pages later (`pnpm docs:generate --unit ...`) for the units you want to study; the next `pnpm docs:theory` then adds the topic links next to the code links.
+
 - **Depth:** a topic page splits itself into sub-topics until pieces are self-explanatory. Tune `maxConceptDepth`
   (default 4) and `maxConceptsPerUnit` (default 40) in `scripts/docs/docs.config.json`.
 

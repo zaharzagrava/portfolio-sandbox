@@ -40,10 +40,26 @@ Practical framing: *"Which invariants need strong consistency (money balance, un
 
 ### Two-phase commit (2PC)
 A coordinator asks every participant to **prepare** (vote), then **commit** or abort.
-- ❌ Blocking: if the coordinator fails after prepare, participants hold locks indefinitely.
-- ❌ Latency, and a hard availability coupling between all participants.
-- ❌ Most modern services (SaaS APIs, SQS, many NoSQL stores) don't support XA anyway.
-- Postgres supports `PREPARE TRANSACTION`, but it's rarely used in microservices.
+- ❌ **Blocking (The fatal flaw):** If the central coordinator crashes after participants have voted "yes" (Prepared), the participants must wait indefinitely, holding their database locks, until the coordinator recovers. This can bring down all participant systems.
+- ❌ **Scalability & Latency:** 2PC requires multiple network round-trips. Holding locks across distributed systems during network calls destroys throughput.
+- ❌ **Availability (CAP theorem):** Your availability becomes the product of all participants. If any one service is down, the entire transaction fails.
+- ❌ **Atomicity vs Data Modeling:** 2PC exists to guarantee **Atomicity** across multiple nodes or partitions. To avoid the massive performance penalty of 2PC, NoSQL systems (Elasticsearch, Cassandra, MongoDB) force you to **denormalize** your data into single documents. Because updating a single document is inherently atomic on a single node, you don't need cross-node atomicity, allowing these systems to drop 2PC entirely. *(Note: This is a data-modeling choice, not a storage-engine limitation. LSM-trees don't prevent 2PC—for example, Google Spanner uses LSM-trees under the hood but still supports massive distributed 2PC transactions!)*
+
+**Why was it introduced?**
+Historically, architectures featured a few massive, on-premise components on a fast local network (e.g., an Oracle DB and an IBM MQ broker). 2PC was introduced to guarantee strict ACID properties across these *different technologies*. If money left the DB, the shipment request *had* to hit the MQ.
+
+**Why is it abandoned in modern microservices?**
+Microservices are distributed across networks where latency is higher. Cloud-native architectures prioritize **Scalability and Availability** over strict immediate consistency. 
+- **The MVCC write-lock problem:** You might think MVCC solves this because "readers don't block writers." But **writers always block writers**. During the 2PC "Prepare" phase, the DB must take an exclusive write-lock on the row. Because 2PC waits for the network, this lock is held for milliseconds or seconds (an eternity). Any other transaction trying to update that row halts.
+- **Connection Exhaustion:** Every waiting 2PC transaction holds an open DB connection. If the network or coordinator slows down, your connection pool fills up instantly, bringing down the entire database even for unrelated queries.
+- **The "In-Doubt" Bloat:** If the coordinator crashes, the DB is stuck with "in-doubt" prepared transactions. The DB cannot clean up (vacuum) older row versions because it doesn't know if the prepared transaction will eventually commit or abort. This causes catastrophic database bloat.
+- **The solution:** Instead of holding brittle distributed locks, modern systems accept eventual consistency and use **Sagas** or the **Outbox Pattern** to achieve atomicity asynchronously.
+
+**Where is 2PC actually used?**
+- **Almost never across microservices.** Modern architectures accept some delays/eventual consistency or use Sagas instead.
+- **Legacy Enterprise Apps:** e.g., Java EE (JTA) coordinating a legacy RDBMS and a message queue (like IBM MQ) in a single transaction.
+- **Internally within Distributed DBs:** Databases like Google Spanner or CockroachDB use variants of 2PC *internally* to commit transactions across their own internal shards. However, they augment it with strict consensus (Raft) and synchronized clocks (TrueTime) to fix the blocking coordinator problem. 
+- *(Note: Document stores like Elasticsearch or NoSQL like DynamoDB generally do NOT use 2PC; they either don't support cross-document transactions or use other patterns like conditional writes.)*
 
 <!-- theory-links:start -->
 > [!TIP] In this codebase

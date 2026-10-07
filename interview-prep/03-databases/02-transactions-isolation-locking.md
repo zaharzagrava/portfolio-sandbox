@@ -52,7 +52,13 @@ T3 (new snapshot): SELECT balance ... → sees V2 = 50  (V1 is now replaced)
 V1 is now dead: no new snapshot will ever see it. It still occupies space in the table and in the index.
 ```
 
-Two writers updating the **same** row do wait for each other: the second waits on the first's row lock (§5). MVCC removes reader/writer blocking, not writer/writer blocking.
+**CRITICAL RULE: Writers block writers.**
+MVCC removes reader/writer blocking (readers don't block writers, and writers don't block readers). But **writers always block writers** updating the *same* row.
+Example:
+- Transaction 1 (T1) runs: `UPDATE orders SET status = 'PROCESSING' WHERE id = 1;`
+- Transaction 2 (T2) runs: `UPDATE orders SET status = 'CANCELLED' WHERE id = 1;`
+Even under the default, less-strict **Read Committed** isolation, T2 will instantly **block and wait** until T1 either `COMMIT`s or `ROLLBACK`s. 
+If T1 commits, T2 wakes up, re-evaluates its `WHERE` clause against T1's newly committed row version, and applies its update (if the WHERE clause still matches). This is why long-running transactions (or Two-Phase Commit) that hold write-locks are so dangerous for database concurrency.
 
 ### 1.3 Dead tuples and why they're a problem
 A version is **dead** when no current or future snapshot can see it: replaced by a committed UPDATE, deleted by a committed DELETE, or created by a rolled-back transaction. Dead tuples:
