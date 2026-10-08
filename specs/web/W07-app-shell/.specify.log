@@ -1,0 +1,35 @@
+The W07 spec is written, along with its questions, test plan, gaps list and quality checklist. I changed no code. The only thing I touched outside the spec folder is `.specify/feature.json`, which now points at `specs/web/W07-app-shell`. The checklist passes on every item in the first iteration; the one remaining "NEEDS CLARIFICATION" hit is the checklist's own item text. `.specify/extensions.yml` does not exist, so no hooks ran.
+
+**What `spec.md` covers**
+- **Scenarios:** 41 acceptance scenarios (AS-01 to AS-41) in nine user stories, with requirements FR-001 to FR-081. Each pattern-map row for W07 (P0502, P0902, P0903) is mapped to requirements and scenarios in the last section.
+- **Frame:** navbar, mobile menu, footer, skip link, a single `main`, and header slots owned by W01, W02, W03, W05 and W06.
+- **System states:** not-found, error, root error, loading, access denied, offline and toasts, plus a status-by-status table of how API failures are shown.
+- **Security:** a nonce-based CSP with `strict-dynamic`, security headers, `no-referrer` on `/reset-password` and `/invites/*`, `no-store` on private pages, and violation reporting.
+- **Other pages and rules:** legal pages, a read-only developer docs page, the document title and `robots.txt` rules, `page_view` using route templates, query-client defaults, the iframe side of the widget checkout app, and `/healthz`.
+- **Contracts:** the Cross-capability contracts section has Provides and Requires lists. They honour what W01 to W06, S39 and S44 asked of W07.
+
+**Decisions to review first** (all in `questions.md`, BREAKING first)
+- **CSP versus prerendering:** the Next.js guide says a nonce policy cannot be served from a prerendered shell. The spec therefore renders every document per request and keeps caching for data only. This contradicts W01 AS-62, which says its pages prerender a static shell, so I raised it as a `[CONTRACT]` question.
+- **Developer docs:** the page becomes read-only (no "Try it out"), fetches the OpenAPI description from a same-origin route, and no longer carries its own header and `main`. Today it hard-codes `localhost:3000/docs-json`.
+- **Navbar:** several controls that do nothing today are removed or fixed:
+  - the cart badge that is always `0`;
+  - the search button and ⌘K hint that do nothing;
+  - the `toggle-assistant` window event.
+- **Image hosts and legal text:** wildcard image hosts are replaced by exact hosts from configuration, and the legal pages get real content with a test that checks the cookie list.
+- **Contracts with other capabilities:** W01 renders the Admin entry using W06's `isAdmin`. S54 provides `POST /api/csp-reports`. S42 serves the OpenAPI description same-origin.
+
+**Gaps worth knowing** (in `gaps.md`)
+- Vitest only collects `lib/` and `hooks/` `.test.ts` files today, so component tests would not run.
+- React Testing Library, MSW and `@axe-core/playwright` are not installed.
+- Playwright has no mobile project, and its `webServer` runs the dev server, whose CSP differs from production, so the CSP journeys need a production build.
+- `lib/api/client.ts` keeps an access token in browser memory and uses an absolute API origin. That is W01's fix, but the new `connect-src 'self'` would block it.
+- The pattern map marks P0502 and P0903 as "implemented", but the code has neither a CSP nor a `proxy.ts`.
+
+**Files are in `specs/web/W07-app-shell/`:**
+- `spec.md`
+- `questions.md`
+- `test-plan.md`
+- `gaps.md`
+- `checklists/requirements.md`
+
+The spec is ready for `/speckit-clarify` or `/speckit-plan`, after W01 rewords AS-62.

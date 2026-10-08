@@ -1,0 +1,29 @@
+I wrote the S53 spec, `questions.md`, `test-plan.md` and `gaps.md`, and ran the quality checklist, which passes. I couldn't run `pnpm check:table-ownership` because the sandbox needed approval, so the ownership lines in `gaps.md` come from reading the script. That script only scans `libs/domains` and only flags domain-owned tables, so it never reports accesses to the outbox or inbox tables from domains.
+
+All files are in `specs/domains/S53-events-projections/`. I also updated `.specify/feature.json`. There is no `.specify/extensions.yml`, so no hooks ran, and no code was changed.
+
+- **Spec:** The spec has 108 acceptance scenarios (AS-01 to AS-108) and 64 functional requirements. It also has a table mapping each of the 14 pattern-map rows that name S53 to its requirements and scenarios, plus a Cross-capability contracts section listing what S53 Provides and Requires.
+- **Test plan:** The test plan has 108 rows, one per scenario. No UI journeys are listed, because the capability has no screen.
+- **Checklist:** It reports no clarification markers. One caveat: store names such as Redis and ClickHouse appear in the spec because each sink is a deliverable.
+
+**Defects found in the current code** (all listed in `gaps.md`):
+- The poller publishes `{payload: envelope, extra, error}`, while Debezium publishes the bare envelope. So every relayed event is mis-read as a legacy `<x>.legacy` message at version 0.
+- A store outage dead-letters every event after three failed attempts, instead of pausing the partition.
+- Offsets are auto-committed, which can commit work still in flight.
+- Outbox rows retry forever, a later row of the same aggregate can overtake a failed earlier one, and published rows are never purged.
+- Domains write the outbox table with raw SQL in `media-processor.ts:70` and `catalog-import.service.ts:217`.
+- The Stripe webhook controller runs raw SQL on `ProcessedWebhookEvent`.
+
+**Decisions to review first** (`questions.md`):
+- **BREAKING:**
+  - The envelope fields are renamed to `type`, `version` (contract) and `aggregateVersion`. The constitution and about ten sibling specs already assume `type`.
+  - The relay sends the envelope unwrapped.
+  - The `KafkaTopicGroup` enum is removed in favour of a topic registry.
+  - `append` rejects calls with no transaction, and `notify` is removed.
+  - The version guard is strictly greater, so equal versions count as duplicates.
+- **CONTRACT:**
+  - S53 will not provide the shared idempotency-key store that S42 and S43 asked for. That belongs to S10/S54.
+  - S24's Rust gateway must write outbox rows itself, because the constitution forbids CDC on tables other than the outbox.
+  - S53 provides an event publisher with no SQL transaction for S23, S25 and S26, an inbox service whose shape S10 asked for, and a task queue and outbox-to-queue path for S01, S04, S13 and S45.
+
+**Next:** Run `/speckit-plan` for S53. The first gap to close is the missing Debezium service in `docker-compose.test.yaml` (G-14), without which the CDC end-to-end scenario AS-21 can't run.

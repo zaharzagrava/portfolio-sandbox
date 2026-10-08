@@ -1,0 +1,27 @@
+The J02 spec is written, with `questions.md`, `test-plan.md`, `gaps.md` and the quality checklist next to it. I changed no code, and I didn't run anything: the code facts come from two research passes that read the specs and code.
+
+- **Feature directory**: `specs/journeys/J02-seller-to-first-sale`
+- **Spec file**: `specs/journeys/J02-seller-to-first-sale/spec.md`
+- **Checklist**: `checklists/requirements.md` — all 16 items pass, with no `[NEEDS CLARIFICATION]` markers. The "no implementation details" item passes only because a journey spec has to name the routes and events it checks, as J01 does.
+- **Hooks**: there is no `.specify/extensions.yml`, so no hooks ran. I wrote `.specify/feature.json` to point at this directory.
+
+**What's in the spec**
+- **Stories**: five user stories and 33 acceptance scenarios. `test-plan.md` has 33 rows, one per scenario.
+- **Consistency contract**: 17 asynchronous hops, each with a maximum time on the local stack and the public read or receiver that shows it. Tests poll these with a deadline of twice the maximum and use no fixed sleeps. I added canonical consumer-group names that tests use to pause, resume and replay consumers.
+- **Failure modes**: duplicate and out-of-order events, a consumer that is down and catches up, same-key retries, and the compensation paths (rejected application, declined first charge, suspended shop).
+- **UI**: no UI scenario, because no capability owns a billing screen.
+- **Questions**: `questions.md` has 20 BREAKING, 14 CONTRACT and 6 LOCAL lines.
+- **Gaps**: `gaps.md` has 40 hand-off gaps, each with an owner and a suggested order of work. J01's gaps are referenced rather than repeated.
+
+**Worth reviewing first**
+- Paid entitlements are granted only after the first charge succeeds. Today they apply at subscribe.
+- Subscribing and listing a product are not gated on KYC. Payout is the money gate.
+- Webhook payloads are sliced per shop from the order's shop split.
+- Register returns `202` with no tokens.
+- The test file is named `seller-to-first-sale.journey-spec.ts`, as you specified. S17's test plan says `seller-to-first-sale.spec.ts`, so I logged that as a CONTRACT question.
+
+**Known gaps in the spec itself**
+- **Test-plan cross-references**: some "already proven by" cells name a capability without a scenario number, because that capability has no stable id for the rule yet.
+- **Code facts**: they come from reading, not running, so line numbers in `gaps.md` may have drifted.
+
+The spec is ready for `/speckit-clarify` or `/speckit-plan`.

@@ -1,0 +1,30 @@
+I've written the S55 spec and its supporting files and run the quality checklist, and every item passes on the first iteration. No hooks were registered, since `.specify/extensions.yml` doesn't exist. No code was modified.
+
+I could not run `pnpm check:table-ownership`, because the sandbox blocked it. In `gaps.md`, G-07 records a static inspection instead: no models or SQL in the SQS, idempotency or AWS libs, and the only raw SQL is `pool.query` in `media-processing.ts`. It tells the implementation to re-run the command.
+
+- **Feature directory:** `specs/domains/S55-serverless-workers`
+- **Spec:** 52 acceptance scenarios (AS-01 to AS-52), every one mapped to exactly one row of `test-plan.md`. They cover five stories: partial batch failures, idempotency records, FIFO/DLQ/redrive, the local runner, and handler styles/bundles/telemetry.
+- **Pattern rows:** P0107, P0604, P0706 and P0809 each map to functional requirements and scenarios in the spec's "Pattern coverage" table.
+- **No UI journeys:** the capability has no screen, so the UI column in `test-plan.md` is all dashes. Wiring of the real functions is tested by invoking the built bundles.
+
+The main BREAKING defaults (the full list is in `questions.md`):
+- **Moved out of the apps:** the toolkit moves to `libs/infrastructure/serverless`, because the constitution says nothing imports from `apps/`. The local runner then starts from the built bundles and `manifest.json`.
+- **Idempotency:** the idempotency call takes an owner token on completion and release, treats expired completed records as absent, and no longer releases the claim after a finished job's completion write fails.
+- **Runner:** the local runner no longer overrides or extends visibility, and refuses to start if visibility is under 6× the function timeout. Today's queue file already violates that for `webhook-deliveries.fifo` and `media-processing`.
+- **Config and infra:** the manifest becomes the single source for queue settings, each Lambda gets its own Terraform role, and DLQ-depth and queue-age alarms are added.
+- **Batch handling:** FIFO groups run in parallel, and failures are logged and counted rather than swallowed.
+
+The CONTRACT lines are the assumptions to confirm against other specs:
+- **S04:** a dead-letter handler calling `routeToReview(documentId, 'retries_exhausted')`.
+- **S43:** `WebhooksLambdaModule` and `WebhookDeliveryHandler`, names I chose since S43 only says "a Lambda-hosting module".
+- **S29:** `createMediaProcessor(deps)`.
+- **S53:** `PermanentError` and `TransientError`, `dedupeId`, and `traceparent`.
+
+The spec is ready for `/speckit-plan`.
+
+Files are in `specs/domains/S55-serverless-workers`:
+- `spec.md`
+- `questions.md`
+- `test-plan.md`
+- `gaps.md`
+- `checklists/requirements.md`

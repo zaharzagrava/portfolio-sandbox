@@ -1,0 +1,88 @@
+# Gaps: current code vs S51 spec
+
+Files in scope: `packages/backend/libs/infrastructure/realtime/` (`realtime-publisher.service.ts`, `realtime.module.ts`, `topic-registry.ts`, `topic-registry.spec.ts`, `topics.ts`); `packages/backend/libs/infrastructure/redis-pubsub/`; the gateway app `packages/backend/apps/sse-gateway/src/` (`topic-stream/`, `redis-pubsub/`, `payment-stream/`, `realtime-notifier/`, `sse-gateway.module.ts`, `main.ts`); the `*TopicsModule` files of nine domains (`libs/domains/*/api/realtime-topics.ts`); `packages/backend/test/utils/sse-client.ts`; `packages/web/lib/api/sse.ts`, `packages/web/hooks/use-event-stream.ts`; `packages/backend/scripts/load-tests/sse.test.js`.
+
+The code is a good draft of the happy path: subscribe-first, buffer, replay, flush-with-dedupe; one subscriber connection with ref-counted channels; a registry that keeps domain topic names out of the lib; heartbeats and a slow-consumer drop. The gaps are the engine living in an app, correctness holes in the details (live-only events dropped, a replay cut at 500, subscribe races, a connection that leaks if the client leaves during connect), the missing protections (caps, lifetime, stall, bounded replay buffer), the registry's OR-combination, an unvalidated and non-atomic publisher, and the missing metrics, revocation, discovery and contracts schemas.
+
+## Debt register and ownership check
+
+| Source | State | What S51 does |
+|---|---|---|
+| **D-3** (X.3): `topics.ts` hard-coded domain topic names | resolved (Phase 3) | `TopicRegistry` exists and the lib names no domain. Remaining work is in G-25 and G-26 (the registry's rules), not in the debt. |
+| D-1, D-2 (infrastructure imports domain or legacy code; generic types) | resolved (Phase 3) | Production code of `realtime/` and `redis-pubsub/` has 0 `@app/domains/*` imports (grep). The gateway **app** imports domains only to load their topics modules, which is composition (X.1). The e2e spec moved into the lib must not import domains (G-28). |
+| D-6 (layering inside domains) | open, applies to domains | The domain topics modules inject `@InjectModel(...)` in `api/` files (`tenancy/api/realtime-topics.ts:20`): their owning capabilities (S03, S07, S12, S20, S22, S24, S31) fix this by moving the rule to an R1 service; not S51's code. |
+| D-7 (domains import other domains' `*Model`) | open, applies to domains | The lib registers no model and imports none. `ShopTopics` reads `ShopMembership` through its own domain's model (tenancy-internal, allowed); S31, S07, S12 must use **R1** (`tenancy.assertMember` or its `products.read` variant) in their rules, never the model. S51 documents R1 in FR-011 and requires nothing else. |
+| D-8 (barrels export infrastructure internals because apps wire them) | open | `SubscriptionHub` is exported from an **app** module (`topic-stream.module.ts:8`) so `live-batcher.service.ts:64` can import it by relative path. Replaced by the lib's exported `TopicSubscriber` (G-01, G-02). |
+| D-12 (cross-domain raw SQL) | open, applies to domains | The lib issues no SQL. Rule code that today reads another domain's table is replaced by **R1** calls (S03: membership; S22: its own ticket store; S24: chat's own members). No R2/R3 is needed: a rule is a yes/no lookup, not a list. |
+| D-14 (LLM port in `assistant`), D-16 (Elasticsearch product adapter) | open, name `infrastructure` | belong to S46 and S32. Nothing here. |
+| D-17 (file cycles: payment ↔ ledger-entry, bis-order, rate-limit decorator ↔ interceptor) | open, names `infrastructure` | the cycle is inside S50's lib. Nothing here. |
+| `pnpm --dir packages/backend check:table-ownership` | **not run**: the command needed approval in this unattended session. By grep, `libs/infrastructure/realtime/` and `redis-pubsub/` have no `sequelize`, `InjectModel`, `.query(`, `literal(` or model import, and the lib owns no table, so no `db/ownership.ts` entry is needed: its state is under the store prefix `rt:`. Expected output for this domain: **0 findings**. | The implementation agent runs it, confirms 0 lines for `infrastructure/realtime` and `infrastructure/redis-pubsub`, and pastes the result in the PR. The `MODEL`/`SQL` lines of other domains' topics modules belong to those domains. |
+
+## Gaps by area
+
+### Placement and module surface (FR-051, FR-052; X.1, I.5)
+
+- **G-01** `apps/sse-gateway/src/topic-stream/subscription-hub.service.ts`, `topic-stream.controller.ts`, `topic-stream.module.ts`: the whole engine is app code (X.1: no logic in apps). Move to `libs/infrastructure/realtime` (`hub/`, `stream/`), export a `RealtimeStreamModule` that the gateway app imports. The app keeps `main.ts`, `instrument.ts` and the composition module.
+- **G-02** `realtime.module.ts:6-11` exports only `RealtimePublisher` and `TopicRegistry`. Add `TopicSubscriber` (the moved hub, G-05), `RealtimeSubscriptions` (`topicsWithSubscribers`, `revoke`), the typed errors and an `index.ts` so domains stop deep-importing (`@app/infrastructure/realtime/topic-registry`). Switch `apps/sse-gateway/src/live/live-batcher.service.ts:64,171` (S23) to `TopicSubscriber`.
+- **G-03** `redis-pubsub/` (lib) is publish-only and used by `libs/domains/chat/chat.module.ts:6` and `chat.service.ts:13`; `apps/sse-gateway/src/redis-pubsub/` (app copy, with `subscribe`) is used by `payment-stream/payment-stream.controller.ts:7` and `realtime-notifier/realtime-notifier.controller.ts:3`. All three belong to the per-viewer relay that the notes call a bug (the second viewer stops receiving when the first leaves, `payment-stream.controller.ts:310-322` plus the app service). Plan: S24 moves chat to `publish` (`chat:<id>`); S13 deletes `payment-stream` and `realtime-notifier` (its own gap list); then delete both `redis-pubsub` directories and the `RedisPubSubModule` imports. Check: `grep -rn redis-pubsub packages/backend` returns nothing.
+- **G-04** `sse-gateway.module.ts:55-121,211-222`: the gateway still wires `ThrottlerModule`/`ThrottlerGuard` (S50 removes it) and `SequelizeModule.forRootAsync` with `autoLoadModels` (needed only because rules query the database today; after the R1 move the gateway needs only the domains' services). Keep it loading the topics modules; drop what S50/S13 make dead.
+
+### Hub (FR-025 to FR-029, FR-046)
+
+- **G-05** `subscription-hub.service.ts:33-41`: the listener set is stored **before** `SUBSCRIBE` is awaited, so a second concurrent subscriber returns before Redis confirmed (it can then replay and go live with no subscription: AS-37), and a failed `SUBSCRIBE` leaves a set in the map for a channel that is not subscribed, so the topic is dead until restart (AS-38). Store a pending promise per channel, share it, remove the entry on failure.
+- **G-06** `:69`: `for (const listener of set) listener(message)` has no `try/catch`; one throwing listener stops delivery to the rest and throws inside the Redis `message` handler (AS-41). Wrap, log, count (`realtime_listener_errors_total`).
+- **G-07** `:28-29`: the comment trusts clients to reconnect after a backplane loss. A healthy client connection never does, so events published during a subscriber reconnect are silently lost for open viewers. Add gap-fill on resubscribe (FR-046, AS-66): on `ready` after a reconnect, each connection reruns replay from its cursor.
+- **G-08** `:27`: `new Redis(url, { maxRetriesPerRequest: null })` has no command timeout (IV.6), and `:74` `disconnect()` drops in-flight commands: use a graceful quit after the drain (FR-038). `:54-58` `listenerCount` is the only introspection: add gauges (G-33).
+- **G-09** No `topicsWithSubscribers`, no `revoke` (S03, S40 contracts), no control channel.
+
+### Stream endpoint (FR-001 to FR-020, FR-030 to FR-038)
+
+- **G-10** `topic-stream.controller.ts:164-171` and `:160`: `req.on('close', close)` is registered **after** `await Promise.all(topics.map(subscribe))` and after the heartbeat starts; a client that leaves during subscribe never triggers `close`, so its listeners and heartbeat timer leak forever (AS-42). Register the close handler first and make `close` idempotent and total (clears heartbeat, lifetime and stall timers, releases subscriptions). `:173-183` replay keeps writing after a close (AS-43): check `closed` per page.
+- **G-11** `:148-149`: `compareStreamIds(message.id, last) <= 0` drops every live-only message (`id: '0-0'`, `realtime-publisher.service.ts:21`) once a replayable event was delivered on the topic, and a live-only message first on a topic sets the cursor to `0-0`, then `:150` writes `id: …0-0` into the SSE `id:` (AS-07). Live-only messages bypass the cursor and carry no `id:`.
+- **G-12** `:96,177`: one `XRANGE … COUNT 500` and no loop: a gap longer than 500 is truncated without notice (AS-10). Page until the end of the buffer. No trimmed-gap detection (compare cursor with the stream's oldest and highest trimmed id) and no `resync` event (AS-16, AS-17). The stored fields are parsed with `JSON.parse` at `:180` without `try/catch` and after `writeHead`, so a corrupt entry rejects an already-started response (FR-014).
+- **G-13** `:122-125`: the `topics` query is a raw string, not a validated DTO, other query parameters are ignored (AS-04), there is no contracts schema (G-29), and the error is a plain message (`BadRequestException`) rather than the codes of FR-007. Unknown-prefix and malformed-shape errors are indistinguishable from an over-long list.
+- **G-14** `:114`: `@Firewall({ anonymous: true, skipThrottle: true })`: no rate limit and no way to tell "anonymous" from "bad credential" (AS-28). Replace with S01's anonymous-allowed marker and `@RateLimit('realtime.connect')` (S50).
+- **G-15** `:127-130`: the rule runs sequentially with no timeout, no fault handling (an exception becomes a `500`), the viewer's `roles` is `[req.user.role]`, anonymous and authenticated refusals are both `403`, and the message names the topic (`not allowed: <topic>`). Needs parallel evaluation with a 2 s timeout, `503 realtime_policy_unavailable`, `401` vs `403`, the generic `detail` (AS-21, AS-24, AS-26).
+- **G-16** `:139`: `retry: 3000` fixed (AS-51). `:132-138`: no `Content-Encoding` guard (the app's compression middleware, if any, must skip event streams: S54).
+- **G-17** `:144,156`: the buffer of live messages while replaying is an unbounded array (AS-46). `:151`: the only drop rule is `writableLength > 1 MiB` after a failed write; no stall timeout (AS-45), no per-connection lifetime (AS-52), no credential-expiry end, no per-user, per-address or per-instance cap (AS-47, AS-48), no drain on shutdown (AS-53).
+- **G-18** `:150`: `event: ${message.type}` is written raw; a type containing a newline injects frames (AS-06, AS-31). Serialize through one `formatFrame` (pure, unit-tested) and validate types at publish.
+- **G-19** No baseline frame (AS-13): `:141-183` replays only topics that have a cursor entry, so a topic that had delivered nothing before the disconnect loses its events published during the gap.
+- **G-20** `topics.ts:37`: the cursor regex accepts `0-0`, any size, no future check, no duplicate handling, no length cap (AS-15); `:30-40` `decodeCursor` is otherwise fine as a pure function (keep, extend, unit-test).
+
+### Publisher (FR-021 to FR-024, FR-020)
+
+- **G-21** `realtime-publisher.service.ts:19-35`: XADD then PUBLISH are two commands, and the comment at `:9-11` claims one `MULTI` (it cannot be: the id comes from XADD). Make it one atomic step (a script that appends and announces, returning the id) (AS-29, AS-30).
+- **G-22** No validation of topic, type or payload size (AS-31); `RealtimeTopic = string` (`topics.ts:5`) so P0111 is "implemented" in the pattern map but the template-literal types are gone: restore an augmentable prefix type, `topicOf` builders and a compile-time test (AS-34).
+- **G-23** `:19`: any Redis error propagates to the domain caller, no timeout (IV.6), return type `Promise<string>`. Return `{ published, id }`, resolve on fault, one attempt, 1 s (AS-32). Re-check the callers: `orders/application/order.service.ts`, `order-export.service.ts`, `auctions/application/auction.service.ts`, `auctions/infra/auction.jobs.ts`, `chat/application/chat.service.ts`, `chat-sync.service.ts`, `fulfilment/application/dispatch.service.ts`, `courier.service.ts`, `launch-events/application/live.service.ts`, `seat-hold.service.ts`, `waiting-room.service.ts`, `catalog-sync/application/catalog-import.service.ts`, `notifications/application/inbox.service.ts`, `seller-insights/infra/dashboard-ticker.service.ts`, `launch-events/infra/live-ticker.service.ts`.
+- **G-24** `topics.ts:10`, `:12-13`: replay buffer is count-capped (`MAXLEN ~ 1000`) with no key expiry and no age bound (AS-20; III.9). Add a refreshed expiry and an age floor.
+
+### Registry (FR-043 to FR-045)
+
+- **G-25** `topic-registry.ts:22`: prefix grammar `[a-z]+` rejects `order-export` (S12). `:38` `define` appends policies to a list and `canSubscribe` ORs them (`:49-53`), asserted by `topic-registry.spec.ts:50`. `:40,42` the suffix set is global across prefixes, so `shop:x:seatmap` is valid. No duplicate-route detection, no definition validation (AS-62 to AS-64), no freeze (AS-65), no `owner`. Rewrite as route-keyed (prefix, suffix) with boot-time validation, and rewrite `topic-registry.spec.ts` (`:7` former pattern parity is replaced by the route table; the file moves its grammar cases into `topics.spec.ts`).
+- **G-26** Domain topics modules to adapt (owned by their capabilities, listed so nothing is forgotten): `tenancy/api/realtime-topics.ts` (`shop` + `live`; its rule must admit `ACTIVE`/`SUSPENDED` members only and use R1; add `revoke` on `member_removed`), `identity/api/realtime-topics.ts` (`user`, keep), `auctions` (`auction`, keep public), `launch-events` (`event`+`seatmap`, `queue`, `stream`; S22's `queue:` owner-only), `experimentation` (`flags` singleton, S38), `chat` (`chat`), `fulfilment` (`delivery`; S20 adds `user:<courierId>` events, no new route), `catalog-sync` (`job` → `import`, S07), `orders` (`job` → `order-export`, S12), and a new assets topics module (`shop`+`assets`, S31). No `job:` prefix may remain (`grep -rn "prefix: 'job'"`).
+
+### Tests (VII)
+
+- **G-27** `apps/sse-gateway/src/topic-stream/topic-stream.e2e-spec.ts`: 3 scenarios (AS-08 shape, AS-01 shape, AS-21 with `403` for anonymous: to be `401`). Fixed sleeps at `:64` and `:93` (`setTimeout(300)`) violate the no-fixed-sleep rule; the same in `live/live.e2e-spec.ts:57,79,93,109,111` (S23's file). Rewrite the suite into the 12 files of `test-plan.md`, with polling helpers.
+- **G-28** The spec imports `@app/domains/identity`, `auctions`, `launch-events`, `SeedsModule` (`:10-12`): once the engine is in the lib, the specs use a **test topics module** (no domain imports, D-1 spirit) and the shared fixture helpers; the system-edge fake is token verification only.
+- **G-29** `test/utils/sse-client.ts`: the reader drops comment lines and `retry:`; extend it to return `comments`, `retry` and raw frames so heartbeat (AS-50) and jitter (AS-51) are assertable, and to read from a raw socket that stops reading (AS-44).
+- **G-30** `topic-registry.spec.ts` mixes parity with the removed global pattern; replace with the unit files of `test-plan.md`. No test exists for any of: resync, caps, lifetime, stall, replay overflow, revoke, discovery, recovery, observability.
+
+### Contracts, web, operations
+
+- **G-31** `packages/contracts` has no `src` (only `moon.yml`, `package.json`): add zod schemas for the `topics` query, the event envelope `{topic, data}`, `resync` and `revoked` payloads and the cursor (FR-053, V.2); the e2e specs parse frames with them (VII.6).
+- **G-32** `packages/web/lib/api/sse.ts:5-30`: no handler for `resync` or `revoked`; `es.onerror` only logs; the closed-permanently branch has no recovery; `types` must list every type the page wants (a `resync` or `revoked` the page did not list is dropped). `hooks/use-event-stream.ts` keys its effect on `topics.join(',')`. Coordinate with W03, W04, W05: refetch on `resync`, drop the topic on `revoked`, recreate with refreshed credentials after a permanent close.
+- **G-33** No metrics and almost no logs in the realtime code (`subscription-hub.service.ts:49` only). Add the metrics and logs of FR-054, FR-055 (AS-69, AS-70).
+- **G-34** Limits are constants in the controller and `topics.ts` (`HEARTBEAT_MS`, `MAX_BUFFERED_BYTES`, `REPLAY_LIMIT`, `MAX_TOPICS_PER_CONNECTION`, `REPLAY_MAXLEN`): make them validated configuration (FR-050) so tests can set milliseconds.
+- **G-35** `scripts/load-tests/sse.test.js` (`pnpm loadtest:sse`) exists and is "written, not run" per the notes; run it after the move at 5,000 connections × 10 events per second and record p99 delivery and drops (SC-001); add a reconnect-storm case for SC-007. Operations artifact, not an e2e row.
+- **G-36** `README` showcase text for #24 and #30 (SSE, ref-counted fan-out) and the F-03 section: update the file paths after the move. Docs only.
+
+## Order of work (suggested)
+
+1. G-01, G-02, G-05 to G-09 (move the hub into the lib, fix subscribe races, add `TopicSubscriber`).
+2. G-25, G-26 (registry rules; adapt the topics modules, in step with S03, S07, S12, S31).
+3. G-21 to G-24 (publisher: atomic, validated, best effort, typed topics, retention expiry).
+4. G-10 to G-20 (the stream: lifecycle leaks, live-only events, paged replay, resync, baseline, limits, lifetime, drain).
+5. G-14, G-31, G-33, G-34 (S50 policy, contracts, metrics, configuration).
+6. G-27 to G-30 (tests; the suite grows with each step), then G-03 and G-04 once S13 and S24 have landed.
+7. G-32, G-35, G-36 (web coordination, load proof, docs).

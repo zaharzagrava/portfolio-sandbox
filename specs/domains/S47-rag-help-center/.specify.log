@@ -1,0 +1,22 @@
+The S47 spec, `questions.md`, `test-plan.md`, `gaps.md` and the quality checklist are written in `specs/domains/S47-rag-help-center/`. I changed no code. There is no `.specify/extensions.yml`, so no hooks ran.
+
+- **Checklist:** all items pass on the first iteration, with no `[NEEDS CLARIFICATION]` markers. All 55 acceptance scenarios (AS-01 to AS-55) in `spec.md` have exactly one matching row in `test-plan.md`. During validation I rewrote one placeholder scenario, AS-14, into the admission-order table.
+- **Patterns:** P0308 (keyword search beside the vector search) and P1114 (reciprocal rank fusion) are both covered by requirements and scenarios.
+- **Not run:** `pnpm check:table-ownership` was blocked pending your approval. The ownership findings in `gaps.md` come from code search and need confirming against the live report. This is the same compromise S46 made.
+- **Spec content:** `spec.md` has 8 user stories, FR-001 to FR-044 and SC-001 to SC-010. Its `## Cross-capability contracts` section lists what S47 provides and requires.
+- **`questions.md`:** it has 24 `[BREAKING]` lines. The notable ones:
+  - Another shop's product on document create now returns `404` instead of `403`.
+  - The Product lookup moves to S05's exported `getProductsByIds`.
+  - The foreign keys to Shop and Product are dropped, and S47 now consumes `catalog.product_deleted` and `tenancy.shop_deleted` instead.
+  - Document responses become DTOs with a stable `failureCode`, and lists are cursor-paginated.
+  - Stream errors and budget rejection are returned before the stream opens.
+  - Production refuses the test embedder.
+  - The `sources` event becomes `{mode, items}`, so W02's `AskProduct` must read `items`.
+- **Other contract asks:** I flagged 9 `[CONTRACT]` lines for other capabilities, and the main asks of them are:
+  - S18 must accept `llm.rag.tokens` and `subjectId: "anonymous"`.
+  - S46 must export the moderation port and say where it lives.
+  - S50 needs a new `rag.ingest` policy.
+- **`gaps.md`:** it has 51 numbered gaps. Debt rows D-6, D-7, D-8, D-12 and D-14 each name the IX.7 mechanism that replaces them: R1 for the two raw `Product` queries, R3 for the two foreign keys and the metering call.
+- **Also changed:** I pointed `.specify/feature.json` at the S47 directory, as the command requires.
+
+The spec is ready for `/speckit-plan`.

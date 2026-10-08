@@ -1,0 +1,31 @@
+The S41 specification is written and passed the quality checklist on the first pass. It has 57 acceptance scenarios, each mapped to one row of the test plan, and no `[NEEDS CLARIFICATION]` markers. I changed no code and ran no tests. I could not run `check:table-ownership` (the command wasn't approved in this session), so the cross-domain lines in `gaps.md` section C come from reading the code. Re-run the command and reconcile them first.
+
+**Where the spec departs from today's code and notes**
+- **Pattern map vs notes:** the notes say the Bloom filter was dropped, but the pattern map binds S41 to it. I kept it as a negative-only filter in front of the target table, so a false positive can never skip a fetch.
+- **Real bugs found in the draft:**
+  - A crawl that throws updates nothing, so the target is requeued every minute.
+  - A one-byte-per-second page holds a fetch loop and its host lease indefinitely.
+  - Registering a URL forces a recrawl every time.
+  - The alert hard-codes `'usd'` for the seller's price.
+  - `"1.299,00"` parses as a price of 1 cent.
+  - The robots user-agent match is a substring test.
+- **Cross-domain access to remove:** `Product` and `ShopMembership` SQL, foreign keys to `Shop` and `Product`, and the direct `NotificationRouter` call.
+
+**Contracts with other capabilities**
+- **S28:** the event `seller_insights.competitor_price_dropped` follows S28's shape exactly. I added a `priceVersion` field and emit one event per owner, so S28 must dedupe on `eventId`. I chose the topic name `seller-insights.events`; S28 didn't name one, so it needs to confirm.
+- **S18:** I need a new entitlement key `maxCompetitorWatches` that S18's spec doesn't define.
+- **S54:** I list the exact shape of an SSRF-safe GET that S54 would need to provide.
+- **Web:** no web capability owns the competitor screen yet, so the test plan names a journey file that has no owner.
+
+`questions.md` has 19 `[BREAKING]` lines, 8 `[CONTRACT]` lines and 12 `[LOCAL]` lines. Review the first two groups first.
+
+Files are in `specs/domains/S41-competitor-monitor/`:
+- `spec.md`
+- `test-plan.md`
+- `gaps.md`
+- `questions.md`
+- `checklists/requirements.md`
+
+I also set `.specify/feature.json` to point at this directory.
+
+The next step is `/speckit-plan`, or `/speckit-clarify` if you want to challenge any of the defaults first.

@@ -1,0 +1,24 @@
+The S39 spec, `questions.md`, `test-plan.md` and `gaps.md` are written. I changed no code. The one thing I couldn't do is run `check:table-ownership` (it needs approval), so I derived its result by reading the code instead.
+
+**Where things are**
+
+- **Feature directory:** `specs/domains/S39-analytics-ab` (also saved in `.specify/feature.json`). No before/after hooks exist, so none ran.
+- **Spec file:** `specs/domains/S39-analytics-ab/spec.md`, with 7 user stories, 57 acceptance scenarios (AS-01 to AS-57), FR-001 to FR-052, SC-001 to SC-007, Assumptions, and `## Cross-capability contracts` (Provides and Requires).
+- **Questions:** `questions.md` has 15 `[BREAKING]` lines, 12 `[CONTRACT]` lines and 11 `[LOCAL]` lines, in that order.
+- **Test plan:** `test-plan.md` has 57 rows matching the 57 scenarios, each naming its e2e file. I counted both sides to confirm.
+- **Gaps:** `gaps.md` lists 17 behaviour gaps and 6 layering gaps, with file and line references. The only open debt-register row naming experimentation is D-15, and S39 adds no domain edge to it.
+- **Checklist:** `checklists/requirements.md` passes on the first iteration, with no `[NEEDS CLARIFICATION]` markers.
+
+**table-ownership:** the experimentation code only touches `Experiment`, `FeatureFlag` and `FlagAudit`, all owned by experimentation. I expect zero D-7/D-12 findings. The first thing the implementation agent should do is run `pnpm --dir packages/backend check:table-ownership` and confirm.
+
+**Decisions to review first (from `questions.md`)**
+
+- **Dedupe key:** an event is identified by `event_id` alone, and the first received copy wins. Today the store key includes name and day, so a replay with a re-clamped timestamp counts twice.
+- **Experiment lifecycle:** draft → running → stopped, one way only. There are now `start` and `stop` endpoints, and `PUT` requires `expectedVersion`. Definitions are immutable once running. A history table records every change (the constitution requires a history row per transition).
+- **New `unit` field:** experiments count either `user` or `visitor`. `purchase` is only allowed for `user`, because purchase events carry no anonymous id.
+- **Untrustworthy data:** results withhold the comparison when there's an SRM mismatch, more than 1% of units were exposed to two variants (crossover), or an arm has fewer than 100 units. This replaces today's always-shown comparison.
+- **Contract with S38:** the assignment hash goes through S38's `bucketOf`, but with salts `layer:<layer>` and `exp:<key>`. S38's spec says "the experiment id as salt", so this is a `[CONTRACT]` question for you.
+- **New event name:** `video_view` is added for S30's player beacons.
+- **S25 and S37:** S39 will not consume `discussion.post_created` or `link.clicked`.
+
+Next step is `/speckit-plan`.

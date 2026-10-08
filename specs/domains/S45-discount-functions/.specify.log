@@ -1,0 +1,25 @@
+The S45 spec is written in `specs/domains/S45-discount-functions/`, with no code changed. I could not run `pnpm check:table-ownership`: the sandbox needs an approval that an unattended run can't give. The `gaps.md` section 3 is built from reading the code instead, and its first instruction to the implementation agent is to run the check and replace it with the live rows.
+
+The quality checklist is `checklists/requirements.md`, and every item passes. There are no `[NEEDS CLARIFICATION]` markers, and `spec.md` has 39 acceptance scenarios against 39 rows in `test-plan.md`. The three pattern-map rows for S45 (P0112, P0510, P0620) each appear as requirements and scenarios. I also pointed `.specify/feature.json` at the S45 directory (it said S44).
+
+**Files written**
+- `spec.md`: four user stories, FR-001 to FR-037, a Provides/Requires contracts section and the assumptions.
+- `questions.md`: 17 `[BREAKING]` lines, 9 `[CONTRACT]` lines, then the `[LOCAL]` lines.
+- `test-plan.md`: four API e2e files, four unit specs and one ops check. The UI column is empty because no web capability owns a function editor.
+- `gaps.md`: 31 gaps with file:line references, the debt rows that apply, and the mechanism that replaces each cross-domain line.
+
+**Main design decisions**
+- **Checkout contract.** S10's `evaluateDiscounts(cart)` shape is honoured exactly and exported as `DiscountEvaluationService`, an R1 export. It never rejects, finishes within 200 ms (under S10's 250 ms), and returns only shops with a discount.
+- **Dependency direction.** Today `shop-functions` imports an abstract class defined in `orders`, which is the reverse of the domain map. The spec flips that and tags it `[BREAKING]`.
+- **Judge.** A version passes only if every case passes, and the suite is frozen when the version is submitted. The judge request goes out through the outbox, and a recovery job picks up stuck versions. A passing version older than the active one ends as stale, and one active version per function is enforced by the database.
+- **Sandbox.** The current sandbox keeps its globals between runs and shares them across shops with identical source. The spec requires a fresh context per run and no `Date` or `Math.random`.
+- **Process isolation.** The second wall is a hardened runner deployment, which today exists only as a comment.
+
+**Asks of other capabilities**
+- S03: a permission `functions.manage`.
+- S18: an entitlement key `shopFunctions`.
+- S10: import the new service and drop the orders-side port.
+- S53, S49 and S50: a judge task, a recovery job and a rate-limit policy.
+- Domain map: add the runner as a host.
+
+All of these are in `questions.md` as `[CONTRACT]` lines.

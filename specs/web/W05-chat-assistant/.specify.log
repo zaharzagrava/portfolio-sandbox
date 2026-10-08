@@ -1,0 +1,33 @@
+I've written the W05 spec, plus `questions.md`, `test-plan.md`, `gaps.md` and a quality checklist, all in `specs/web/W05-chat-assistant/`. I changed no code and found no extension hooks. I did not run the spec quality checklist as a separate tool; I filled it in by hand against the spec. Two of its items stay unchecked on purpose; the third item that falls short is partly met.
+
+**What's in it**
+- **`spec.md`**: 12 user stories with 70 acceptance scenarios (AS-01 to AS-70) and 74 functional requirements.
+  - Chat covers opening from a product page, inbox and unread, send/retry/reply/delete, live delivery and reconnect, read receipts and presence.
+  - The assistant covers open and stream, resume after a drop or reload, stop, a copy table for every S46 problem code and stream error, conversations, and the allowance meter.
+  - Layout at ≤640 px and ≥1024 px, keyboard and screen-reader behaviour, a `## Cross-capability contracts` section, and pattern coverage for P0209 and P0406.
+- **`questions.md`**: 15 `[BREAKING]`, 12 `[CONTRACT]` and 14 `[LOCAL]` lines, sorted by impact.
+- **`test-plan.md`**: one row per scenario (70/70), with test files named, a layer for every edge case, and a Playwright journey for the main happy paths.
+- **`gaps.md`**: current-code gaps with file:line references, missing backend endpoints with owners, test-tooling gaps, and a suggested implementation order.
+- **`checklists/requirements.md`**: the filled-in checklist. It found one problem, a requirement-number clash, which I fixed.
+
+**Checklist result**
+- There are no `[NEEDS CLARIFICATION]` markers.
+- The two unchecked items are "no implementation details" (stated twice). The spec names data-flow rules and exact contract names because you asked for them. They stay in the data-flow requirements, AS-67 to AS-70, and the contracts section.
+- Success criteria are technology-agnostic except SC-010, which names browser storage and the console.
+
+**Decisions to review first** (`questions.md`)
+- **Missing backend pieces**, all owned by S24:
+  - The inbox needs a new `GET /chat/channels/mine`; today it makes one request per chat.
+  - The stream hub carries no message hints for the browser, so live delivery falls back to polling. With hints, new messages should appear within about 2 seconds.
+  - "Seen by" needs a `/receipts` endpoint; without it only readers observed after the page opens are shown.
+- **Behaviour changes that break today's code:**
+  - The chat page no longer silently creates a chat on navigation; shop staff press an explicit button.
+  - The open chat lives in the URL as `?channel=`.
+  - Sends reuse one message id across retries.
+  - Messages are marked read only when actually in view.
+  - The assistant gets idempotency keys, resume, stop and inline errors.
+  - Browser JavaScript no longer sends a token.
+  - An `<AssistantLauncher />` replaces the `toggle-assistant` event and the layout-mounted sheet.
+- **Contracts that need another capability's agreement:** W03 exposing a shared stream (`subscribeTopics`), W07 mounting the launcher, S48 forwarding `/api/assistant/*` and `/api/streams` with the session attached, and S46 making the history message id equal to the stream's `meta.messageId`.
+
+**Test tooling**: the web package has no React Testing Library, MSW or axe, Vitest only picks up `lib/` and `hooks/` tests, and there is no mobile Playwright project or visual folder. `gaps.md` lists these.

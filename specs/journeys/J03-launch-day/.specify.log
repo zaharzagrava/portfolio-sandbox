@@ -1,0 +1,41 @@
+I wrote the J03 spec (40 scenarios) and the test plan, gaps list, questions and quality checklist, with no code changes. Nothing was run. The code facts come from reading the code (a research pass plus my own spot-checks), so line numbers in `gaps.md` may have drifted.
+
+The extension hooks check found no `.specify/extensions.yml`, so no hooks ran. I ran the quality checklist and it passes on the first pass:
+- No `[NEEDS CLARIFICATION]` markers.
+- 40 scenarios in `spec.md` and 40 rows in `test-plan.md`.
+- All four failure modes are covered: duplicate and out-of-order events, consumer down and catch-up, compensation paths, and same-key retries.
+- I worked around the "no direct database reads" rule with two control-surface additions, listed below.
+
+**What's in `spec.md`**
+- Six user stories: booking, drop, live stream, auction, one buyer's inbox with everything running at once, and operations.
+- A 30-row hop table giving each hand-off's maximum time to visibility on the local stack and how a client observes it.
+- A cross-capability contracts section that honours what S22, S23, S21, S11 and S28 asked of J03.
+- One new rule: tests advance a shared stack clock instead of waiting for holds, windows and auction ends.
+
+**Biggest findings in `gaps.md`** (blockers):
+- No domain uses the injectable clock.
+- `launch-events` writes no outbox events at all, and the event status never changes.
+- Stream start and end have no events.
+- The drop has no lifecycle events, and loading and releasing its units are unsafe to repeat.
+- Auction bids go through Redis first and reach the database in batches.
+- The auction winner's order is inserted by raw SQL with no `order.reserved`, so the winner can't be paid through J01's chain.
+- Nothing ever marks an auction `SOLD`.
+- Notifications has no mapping for booking, second chance, `auction.sold` or the drop events.
+- The control surface J01 specified doesn't exist yet, and the existing e2e specs call services directly.
+
+**Judgement calls to review first** (in `questions.md`, 14 BREAKING and 14 CONTRACT lines):
+- The booking voucher is its own record in orders, readable at `GET /orders/vouchers`, not a zero-amount order.
+- Stream start and end are published but not notified, since there is no follower query to notify from.
+- Two new brand notices are added for the drop: sold out and failed load.
+- The control surface gains a read-only event tap (`GET /api/admin/topics/:topic/messages`). It proves "published exactly once" for events no consumer reads.
+- It also gains queue-consumer pause and resume, so the voucher consumer can be tested down and caught up.
+- The winner's order is requested by command after the closing transaction commits.
+
+Files are in `specs/journeys/J03-launch-day/`:
+- `spec.md`
+- `test-plan.md`
+- `gaps.md`
+- `questions.md`
+- `checklists/requirements.md`
+
+The spec is ready for `/speckit-plan`, with the J01 blockers (relay envelope, control surface, payment initiation) landing first.

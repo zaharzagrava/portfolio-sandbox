@@ -1,0 +1,57 @@
+# Questions and defaults: S53 — Events, outbox/CDC, projections, replay, read-your-writes
+
+No question was asked (unattended run). Each line is a choice the spec made, sorted by impact: BREAKING first, then CONTRACT, then LOCAL. Decision policy: the most production-grade option that `interview-prep` and the constitution support.
+
+## BREAKING (changes behaviour or an API/UI contract that exists today)
+
+- [BREAKING] Envelope field names → `type`, `version` (payload contract version), `aggregateVersion` (aggregate state version); today `eventName`, `version` (aggregate), `schemaVersion` → constitution IV.4 names `type` and `version`, and S01, S10, S13, S14, S39 already write `{eventId, type, version, occurredAt, aggregateId}`; every producer (`defineEvent` callers), `parseEnvelope`, `coalesceLatest`, `ProjectionCheckpoints` and all projectors change.
+- [BREAKING] Relay message value → the envelope itself, headers `eventId`/`type`/`version`/`traceparent`; today the poller sends `{payload: envelope, extra, error}` so `parseEnvelope` mistakes every relayed event for a legacy message (`<x>.legacy`, version 0) and the Debezium router sends something different (`outbox.service`, `outbox-publisher.service.ts:93`, `projections/envelope-parser.ts:52-84`) → one shape for both relays is the only way consumers can version-guard.
+- [BREAKING] Legacy lift removed from `parseEnvelope` (anything that is not an envelope is dead-lettered `INVALID_ENVELOPE`) → the lift hid the shape bug above; producers still on the old `{payload, extra, error}` shape (payments requests/responses, product controller) must emit envelopes or tasks.
+- [BREAKING] `KafkaTopicGroup` enum (`payments.requests`, `payments.responses`, `payments.dlq`, `products.events`) removed from `outbox.model.ts`; topics come from the registry (`<aggregateType>.events`) → X.3 forbids domain names in infrastructure; S07 asks for registration; payments flows move to S13's `payments.events` and `appendTask`.
+- [BREAKING] `OutboxService.notify` (opens its own transaction when none is active) and `DomainEventsService.record` (writes even without a transaction) merge into `OutboxService.append` that throws `NoActiveTransactionError`; `appendStandalone` is the explicit escape → a silent standalone write is a dual write waiting to happen (III.3, IV.4).
+- [BREAKING] `OutboxService.wrapInOutbox` and `KafkaConsumerService.consume` (in-process retry then a DLQ row written to the outbox) are replaced by the consumer framework's Kafka dead-letter topic with reason codes → a DLQ through Postgres couples consumption to the primary database and is not replayable by tooling.
+- [BREAKING] Version guard strictness: apply only when `aggregateVersion` is strictly greater; equal is `duplicate`. Redis Lua (`<`), Dynamo (`<=`) and Elasticsearch `external_gte` apply equal today → F-05 states "ignore event if `version <= stored`"; equal-apply masks duplicates and hides replay bugs.
+- [BREAKING] Transient sink failures pause the partition and retry; they no longer dead-letter. Today three failed batch attempts isolate each event and any failure goes to the DLQ, so a 10-second store outage empties a topic into `<group>.dlq` (`projection-runner.service.ts:117-142`) → notes §8: "stop consuming instead of burning through retries into the DLQ".
+- [BREAKING] Offsets are committed manually after the effects; `autoCommit: true` is turned off (`projection-runner.service.ts:65`) → today the auto-commit timer can commit an offset whose batch is still in flight.
+- [BREAKING] Relay retries are bounded (park after 10) and later rows of the same aggregate wait behind a pending row; published rows are purged after 7 days → today a failing row retries forever, a later row of the same aggregate can overtake it inside one drain (`outbox-publisher.service.ts:79-81`), and the table grows without bound.
+- [BREAKING] `KafkaProducerService` becomes idempotent, `acks=all`, with a 10 s timeout, and built through `createKafka` (today a bare `kafka.producer()` with its own broker settings, no timeout) → notes §2.1; IV.6.
+- [BREAKING] Inbox table owner `infrastructure:idempotency` → `infrastructure:inbox`, table extended with status, attempts and claim time; `orders/api/stripe-webhook.controller.ts:49` stops running raw SQL on it → IX.6 (exported service only); domain-map §3 names the inbox role.
+- [BREAKING] Read-your-writes: `ProjectionCheckpoints` keeps one hash per `(consumer, aggregateType)` that never expires; it becomes one expiring key per aggregate, and `waitFor` is replaced by `ReadYourWrites.resolve` (fallback or `202`) → unbounded memory and no fallback today (`read-your-writes.ts:20-45`).
+- [BREAKING] Task queue option `deduplicationId` renamed `dedupeId`; `enqueueBatch` returns `{sent, failed}` instead of throwing on partial failure; `consume` takes a `bodySchema` and dead-letters invalid bodies at once → S24 already writes `dedupeId`; a throw after a partial batch invites duplicates on retry.
+- [BREAKING] Rebuild CLI refuses an active group, a non-replayable consumer and truncated history, and gains `promote` and `rollback` → today it resets offsets of anything with no checks (`scripts/projections/rebuild.ts`).
+- [BREAKING] Domains stop inserting into `"Outbox"` with raw SQL (`media-processor.ts:70`, `catalog-import.service.ts:217`) → IX.6.
+
+## CONTRACT (decides something another capability must provide or consume)
+
+- [CONTRACT] Envelope `{eventId, type, version, aggregateType, aggregateId, aggregateVersion, occurredAt, traceparent?, payload}` → exact names in Provides; producers also keep their named payload version (`orderVersion`, `productVersion`, `paymentVersion`, `payoutVersion`, `shopVersion`) as S05, S10, S13, S15, S32 require → the framework guards on `aggregateVersion`, domains on their own field; both carry the same number.
+- [CONTRACT] Topic naming → `<aggregateType>.events` with aggregate types registered by each domain (`orders`, `payments`, `ledger`, `payouts`, `products`, `launch-events`, `catalog-sync`, `order-exports`, `stories`, `assets`, `statements`) → matches S07, S10, S12, S13, S14, S15, S16, S22, S27, S31; S53 holds no list.
+- [CONTRACT] Outbox surface → `append`, `appendStandalone`, `appendTask`, `appendWithExecutor`, `requeueParked` → S46 asks to append "inside or alone", S29 a framework-free append for a Lambda, S04/S45/S01/S13 single-consumer commands relayed to a queue (`onboarding.extract_document`, `shop-functions.judge-version`, `identity.password_reset_requested`, `orders.refund_requested`).
+- [CONTRACT] S25 / S26 / S23 (no SQL transaction) → `EventPublisher.publish` with a caller-supplied stable `eventId`; the caller records the event in its own store and retries until the send succeeds → community owns no Postgres table (D5), so the outbox would be a dual write; S23's high-volume `live.*` events use the same plain path.
+- [CONTRACT] S24 chat rows written by the Rust gateway → the gateway appends outbox rows in its own transaction following the row contract; no CDC of chat tables → IX.6 allows a connector on the outbox only. S24 AS-42/AS-46/AS-20 depend on S24 changing the gateway.
+- [CONTRACT] S10 webhook inbox → `InboxService.claim(provider, eventId)` returns `CLAIMED | DUPLICATE_IN_PROGRESS | DUPLICATE_DONE` with status `RECEIVED | PROCESSED | IGNORED | UNMATCHED | REJECTED | FAILED`; `FAILED` and a `RECEIVED` older than 5 minutes are re-claimable → matches S10's question; the idempotency-key HTTP store is not here.
+- [CONTRACT] S42 / S43 ask S53 for the "shared idempotency store (claim, stored response, fingerprint, TTL)" → not provided: that is the V.6 `Idempotency-Key` facility first specified in S10 and delivered by S54; the inbox here de-duplicates messages, not requests → S43 and S42 should take it from S54.
+- [CONTRACT] S43 queue needs (FIFO group and dedup ID, visibility timeout, DLQ with redrive, partial-batch response) → the `TaskQueue` port provides FIFO group, `dedupeId`, visibility extension, `receiveCount`, DLQ through queue configuration, per-message outcomes; the Lambda partial-batch response format belongs to S55's adapter; "redrive" for queues is the queue service's own redrive, not a new tool.
+- [CONTRACT] S32 replay → rebuild via a separate consumer group with committed offsets as the persisted position, `ConsumerLag.read` for progress, `latest-per-key` retention only for state-carrying events, and S05 emits full snapshots with strictly increasing `aggregateVersion` including delete → AS-82 to AS-89; S32 AS-34/AS-45 rely on it.
+- [CONTRACT] S16 watermark → `ConsumerLag.read(group).caughtUp` and `totalLag` are the "per-stream watermark or lag read" S16 asked for.
+- [CONTRACT] S36 → `TransactionalPipeline` (stable transactional identity, offsets in the transaction, fencing) and `ClickHouseSink.insert(table, rows, { dedupeToken })`; the marketing click aggregator's own implementation moves onto it.
+- [CONTRACT] S46 → `OutboxService.appendStandalone` for events without a state change; idempotent ClickHouse sink with `dedupeToken`.
+- [CONTRACT] S49 FR-060 → the outbox poller stays on a per-replica local ticker and is not a scheduled job; only `outbox.purge-published` and `inbox.purge` are registered with S49.
+- [CONTRACT] S39 `order.paid` → the event contract is exported by `@app/domains/orders` (S10); S53 provides only the envelope, the host and the DLQ; S39's assumed envelope `{eventId, type, version, occurredAt, aggregateId, payload}` is a subset of ours.
+- [CONTRACT] S40 lists S53 as a source of "seller activity" → S53 emits no business events of its own; nothing for S40 to consume.
+- [CONTRACT] S08 `delaySeconds` on `enqueue`, S24 `dedupeId` with `(eventId, recipientId)` identity, S29 `receiveCount` → already in the port or added by this spec; the 900 s cap and FIFO restriction are now validated before the call.
+- [CONTRACT] S32 generic Elasticsearch client (D-16) → `EsVersionedSink` is built on it; until S32 lands the sink uses the current product-index client and moves with it.
+
+## LOCAL (affects only this capability's internals)
+
+- [LOCAL] Poller keeps claim-then-publish with a lease (`UPDATE … FOR UPDATE SKIP LOCKED … RETURNING`) → already correct; batch 100, poll 2 s.
+- [LOCAL] Rows are claimed in `createdAt` order and per-aggregate holding is done in the relay → commit-order skew is covered by the aggregate's conditional update and the consumer guard.
+- [LOCAL] Parked rows no longer block their aggregate → otherwise one poison row stops an aggregate forever; the guard tolerates the gap.
+- [LOCAL] Task rows clear their body after a successful send → keeps reset tokens out of the table.
+- [LOCAL] Producer sends one batch per topic per drain (`sendMany`) → fewer round trips; order per key kept.
+- [LOCAL] Unclassified handler errors count as permanent after the attempt budget; sinks wrap driver errors into `TransientError` → conservative against a silent infinite retry loop.
+- [LOCAL] DLQ reason text is built from error class and schema paths, never values → VIII.1.
+- [LOCAL] Checkpoints stay in Redis with a 24 h expiry; loss means fallback, never a wrong answer.
+- [LOCAL] `ProductSearchProjector` keeps group `search-indexer` so offsets carry over; its migration to envelope fields is S32's.
+- [LOCAL] CDC e2e needs a Debezium service in the test compose behind an opt-in profile.
+- [LOCAL] Default 12 partitions, 64 for hot topics, RF 3, min ISR 2 → F-05 scale model.
+- [LOCAL] Lag metric clamps negative values at 0 → clock skew.

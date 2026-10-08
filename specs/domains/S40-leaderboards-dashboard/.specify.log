@@ -1,0 +1,28 @@
+I wrote the S40 spec, `questions.md`, `test-plan.md`, `gaps.md` and the quality checklist. All items pass the checklist after one fix iteration. I couldn't run `pnpm check:table-ownership` here (approval denied), so `gaps.md` section C comes from reading the code and says so. Please re-run the command before the implementation starts. I didn't touch any code. `.specify/extensions.yml` doesn't exist, so no hooks ran.
+
+- **spec.md:** 62 acceptance scenarios (AS-01 to AS-62) across 7 user stories, 47 functional requirements, 9 success criteria, assumptions, and the `## Cross-capability contracts` section with Provides and Requires lists.
+- **Pattern coverage:** P0323 is the only pattern row naming S40. It is written as behaviour: one ranked board per period and category, exact rank, expiry per period, ties encoded in the ranking key, and snapshots at period end.
+- **Existing contracts:** I honoured what S03, S05 and S10 already require of S40. Shop names and product categories become read models fed by events (IX.7 R3). The `shop:{id}:live` topic and its member-only policy stay in tenancy, which already registers them.
+- **test-plan.md:** one row per scenario, with the e2e spec file named. Unit tests cover only the pure arithmetic: periods, ranking key, percentile, conversion and average order value.
+- **gaps.md:** 51 code gaps with file:line, the debt rows D-6, D-7, D-8 and D-12, and the replacement mechanism for each cross-domain query or model use.
+
+**Breaking decisions** (all tagged `[BREAKING]` in `questions.md`):
+- The public top list no longer shows revenue.
+- My rank moves to `GET /shops/:shopId/rank` and is members only. It was public and returned revenue.
+- Seller stats move to `GET /shops/:shopId/stats`. The old `seller_sales` source has no writer outside the load-test seeder, so stats were empty in production.
+- Revenue uses `lineTotalMinor`, so discounts count.
+- The tie-break uses the shop's latest sale instant, which never moves back, so the final board doesn't depend on delivery order.
+- Snapshotting an open period is refused, and events for a frozen period are not applied.
+- Bad period ids return 400 or 422 instead of 500.
+
+**Bugs found in the current code** (the spec requires them fixed):
+- The live counters mark an event as seen before applying it, so a crash loses the event.
+- The ticker skips shops without recent sales, so a viewer's panel freezes at its last frame.
+- The ClickHouse minute view double counts redelivered batches and orders split across batches.
+
+The `[CONTRACT]` questions ask other capabilities for a few things:
+- S10 should list S40 as a consumer of `order.reserved` and `order.refunded`, with no payload change.
+- S51 should offer `topicsWithSubscribers` so the ticker can find subscribed shops.
+- W04 and J02 get the exact routes and schemas.
+
+Everything is in `specs/domains/S40-leaderboards-dashboard/`, and the spec is `spec.md`. `/speckit-plan` can start. I also repointed `.specify/feature.json` at this directory; it previously named S39.

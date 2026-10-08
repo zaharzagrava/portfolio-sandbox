@@ -1,0 +1,28 @@
+I wrote the J01 spec and its supporting files, but nothing was run. The code facts in `gaps.md` come from static reading by a code-mapping agent that I didn't re-verify. No code was changed. The files are in `specs/journeys/J01-buy-to-payout/`.
+
+- **`spec.md`:**
+  - **Contents:** 9 user stories, 31 scenarios, 25 requirements, 7 success criteria and the `## Cross-capability contracts` section.
+  - **Hand-off steps:** each scenario names the trigger, the reacting domain and a public-API observable.
+  - **Timing contract:** a table of 13 hops (H1–H13) gives the maximum time to visibility and how a client observes each hop. Tests poll with a deadline of twice that maximum.
+  - **Failure modes covered:** duplicate and replayed events, out-of-order provider signals, a consumer paused and resumed, declined card, cancel during the charge, hold expiry, rejected payout, and the same idempotency key retried.
+- **`questions.md`:** 14 BREAKING, 10 CONTRACT and 6 LOCAL lines.
+- **`test-plan.md`:** one row per scenario, each referencing the capability scenarios that already prove the underlying rule. I checked the cited S13–S16 scenario IDs against those specs and corrected four. The S10 and S28 references follow their spec text and weren't re-checked.
+- **`gaps.md`:** 27 broken hand-offs and 8 missing pieces of journey support, each with an owning capability and a suggested order of work.
+- **`checklists/requirements.md`:** passes except one accepted exception (the scenarios read as engineer-facing step chains rather than for non-technical readers), plus two notes (scenario numbering, unverified S10/S28 references). I also pointed `.specify/feature.json` at this directory.
+
+**Journey cannot run end to end until these are fixed:**
+- **Outbox relay:** the default relay wraps the event, so consumers see every event as a legacy message and skip it. This blocks every hand-off on the default relay mode.
+- **Payment intents:** no HTTP route creates a payment, and the local monolith doesn't run the payment processor.
+- **Control surface:** nothing lets a black-box test run a job, pause, resume or replay a consumer, or move the clock. I specified a small admin API for each and tagged those as CONTRACT questions for the owning capabilities.
+
+I overrode several existing behaviors under the decision policy (all tagged `[BREAKING]`):
+- The provider webhook alone can no longer mark an order paid.
+- Commission is booked at settlement so the ledger matches the statement.
+- A payment that completes for a cancelled order is refunded automatically.
+- Settlement waits for the sale journal instead of crediting shops without it.
+
+S13 says payments keeps an order copy from events, while S10 says S13 calls `getPayableOrder`. I followed S13 (events only, which avoids the D-11 module cycle) and logged it as a CONTRACT question.
+
+Scenario IDs run in story order, not strictly sequentially (AS-20 to AS-23 appear before AS-13). They are unique and consistent across the files.
+
+Ready for `/speckit-clarify` or `/speckit-plan`.

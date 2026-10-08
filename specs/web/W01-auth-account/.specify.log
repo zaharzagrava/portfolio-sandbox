@@ -1,0 +1,24 @@
+The W01 spec and its four companion files are written, and the quality checklist passes. No code was modified and nothing was committed. There was no `.specify/extensions.yml`, so no hooks ran. I also repointed `.specify/feature.json` at `specs/web/W01-auth-account`; it had been pointing at S55.
+
+- **Directory**: `specs/web/W01-auth-account/`
+- **Spec**: `spec.md`: 67 acceptance scenarios (AS-01 to AS-67) in 11 stories, 60+ functional requirements, and the Cross-capability contracts section. Every `W01` row of the pattern map (P0504, P0512, P0903) maps to requirements and scenarios.
+- **Test plan**: `test-plan.md` has 67 rows, one per scenario, and names the test file for each.
+- **Questions**: `questions.md` has 17 `[BREAKING]`, 13 `[CONTRACT]` and 17 `[LOCAL]` lines.
+- **Gaps**: `gaps.md` lists the current code's problems with file and line references, the missing backend endpoints, and the test-tooling gaps.
+- **Checklist**: `checklists/requirements.md` passes 16 of 16 items, with two notes. The spec names TanStack Query, `lib/api` and the cookie and header names because your brief and constitution VI require them. The requirements are written for the implementation agent, not for non-technical readers. The checks found no `[NEEDS CLARIFICATION]` markers, and every scenario has a test-plan row.
+
+Decisions to review first:
+
+- **Missing S48 endpoints**: Once no token lives in browser JavaScript, browser calls to cart, checkout, sessions and MFA need the BFF to attach the token server-side. S48 doesn't specify that forwarding today (contract C-FWD). The role-change refresh also needs `POST /api/bff/session/refresh` (C-REFRESH).
+- **Google sign-in**: S02's callback sets its own cookies, so a Google user would be signed in at the API but signed out in the UI. I specified the Google UI but gated it behind `AUTH_OIDC_ENABLED` until S48 and S02 unify the session (C-OIDC).
+- **No auto sign-in after register**: S01 returns the same 202 for new and existing addresses, and an automatic sign-in would reveal which addresses exist. This differs from S01's assumption that the web client logs in automatically, so it is a `[CONTRACT]` question.
+- **Reset link token in the URL fragment**: The link becomes `/reset-password#token=…` instead of `?token=…`, which contradicts S28's catalogue.
+- **Other findings**:
+  - Log in and Sign up are unreachable on mobile today.
+  - Forgot-password swallows every error and always claims "sent".
+  - The MFA challenge travels in the URL.
+  - `packages/contracts` has no source yet.
+
+Questions for you:
+
+- Is it acceptable that W01 makes the BFF forwarding (C-FWD) a hard dependency? Without it, removing the in-memory token breaks every authenticated browser call.

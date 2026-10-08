@@ -1,0 +1,31 @@
+The S42 spec is written, with the three companion files and the quality checklist. All checklist items pass: 71 acceptance scenarios (`AS-01` to `AS-71`) and no clarification markers. I changed no code.
+
+`pnpm check:table-ownership` needs an approval this session didn't have, so I never ran it. `gaps.md` section 3 is built from reading the code and has to be reconciled with the command's real output first.
+
+Files are in `specs/domains/S42-public-api/`:
+- `spec.md`: includes the `## Cross-capability contracts` section.
+- `questions.md`: 21 BREAKING, 12 CONTRACT and 14 LOCAL lines.
+- `test-plan.md`: 71 rows, each naming its e2e spec file, W04 UI journey or unit spec.
+- `gaps.md`: 45 code gaps with file:line, open debt rows D-12, D-7, D-6 and D-8, and a replacement mechanism for every cross-domain access.
+- `checklists/requirements.md`
+
+All eight S42 patterns from `pattern-map.md` (P0214, P0403, P0404, P0411, P0412, P0414, P0516, P0519) appear as requirements and scenarios, and `checklists/requirements.md` maps each one. I also pointed `.specify/feature.json` at the S42 directory, because it still said S41.
+
+The BREAKING choices most likely to matter in review:
+- **Stock writes:** bulk stock becomes deltas with an `operationId` through S05's `applyStockDelta`. The current code overwrites absolute values and loses concurrent sales.
+- **Idempotency:** `Idempotency-Key` is required on `POST /v1/products`, `/v1/stock/bulk` and `/v1/batch`.
+- **Product updates:** `PATCH` requires `If-Match` with the product version.
+- **Versioning:** a shop is pinned to the latest version when it creates its first key. Requests are upgraded as well as responses.
+- **Deprecation:** `410` after sunset, brownout windows, and deprecated versions as well as routes.
+- **Live keys:** creating or rotating a live key needs `mfa` in the session's `amr`.
+- **Usage events:** `usage.recorded` is derived from deduplicated request records. Nothing in the domain emits it today.
+- **Cross-domain SQL:** all of it is replaced by S03, S05 and S10 R1 services.
+
+Three asks go to other capabilities:
+- S10 needs a shop-scoped `getShopOrder(shopId, shopOrderId)`.
+- S50 needs per-request cost on its rate-limit policy, so a 50-operation batch isn't one unit.
+- The shared idempotency store needs a scope of acting shop plus route.
+
+`SecretBox` is not used here, though S01 lists S42 as a consumer; keys are hashed, so S01's note can be dropped.
+
+I put the OWASP mapping and the OpenAPI check in `public-api-contract.e2e-spec.ts` as a doc check. The AS-70 boundary scenario (`check:table-ownership --strict` and `check:boundaries`) is a static gate rather than an e2e test.

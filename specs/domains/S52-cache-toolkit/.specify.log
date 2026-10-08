@@ -1,0 +1,30 @@
+The S52 spec and its supporting files are written. The checklist passes on its first iteration with no `[NEEDS CLARIFICATION]` markers, but I couldn't run `pnpm check:table-ownership`. That check tried to reinstall dependencies and failed (`isolated-vm` needs `node-gyp`). I recorded its result for this domain as 0 findings, reasoned from the script and from reading the lib, and said so in `gaps.md`. The script only walks `libs/domains`, and the lib has no model, SQL or table access. No code or tracked files were changed. I also wrote `.specify/feature.json`.
+
+- **Feature directory:** `specs/domains/S52-cache-toolkit`
+- **Spec file:** `specs/domains/S52-cache-toolkit/spec.md`
+- **Contents:** 9 user stories, 74 acceptance scenarios (AS-01 to AS-74), 45 functional requirements, 9 success criteria, and the `## Cross-capability contracts` section with Provides and Requires.
+- **Patterns covered:** P0105, P0324, P0326, P0410 and P1103, each as functional requirements and scenarios. Locks with fencing tokens (P0326) and the Bloom filter (P1103) are not in the SD-34 summary, but the pattern map lists them under S52.
+- **`test-plan.md`:** 74 rows, one per scenario, with the e2e or unit file named. There are no UI journeys because the toolkit has no screen.
+- **`questions.md`:** 16 `[BREAKING]` lines first, then `[CONTRACT]`, then `[LOCAL]`.
+- **`gaps.md`:** 28 code gaps with file and line references, plus the list of existing callers affected by the breaking changes.
+  - **Debt register:** no open row names S52. D-14, D-16 and D-17 name `infrastructure` but belong to S46/S04, S32 and S50.
+  - **Boundary violation found:** the current `cache.e2e-spec.ts` imports `ProductModule` from the catalog domain, which breaks X.5. The spec replaces it with a test-only fixture module.
+
+## Choices to review first
+
+- **Contracts honoured:** S05 asked for `invalidateIfOlder`, versioned entries, a 250 ms timeout and non-blocking delete. S11 asked for `jitter`, S18 for stale-on-error, S27 for a caller-supplied strong ETag with list/weak/`*` matching, and S28/S44 for `l1: 'never'`. All are in Provides.
+- **Added beyond what callers listed:**
+  - `getOrLoadMany` for S05's batch read (AS-38), which would otherwise be N+1.
+  - Crash-safe `claim`/`commit` on write-behind counters, alongside the unchanged `drain`/`restore`.
+  - `DistributedLock` with fencing tokens.
+- **S44 single-use marker:** S44 asked for a "single-use set-if-absent marker". I did not add a new primitive; they use `DistributedLock.tryAcquire` held for its lifetime.
+- **Behaviour changes to existing code:**
+  - `invalidate` no longer throws on store failure and returns `{l2, deleted}`.
+  - Negative entries are never served stale.
+  - Lock release checks the owner.
+  - The ETag interceptor follows RFC 9110.
+  - L1 is used only while the invalidation broadcast is healthy.
+  - New defaults: 256 KiB entry cap, key validation, a circuit breaker, and a cap on concurrent loaders.
+- **Needs an owner:** the shared store client (`infrastructure/redis`, no capability ID) must offer per-call timeouts, `unlink` and a separate subscriber connection before S52 can be built. S50 asks for the same.
+
+The spec is ready for `/speckit-plan`. Since `questions.md` records the unattended defaults, reviewing its BREAKING and CONTRACT lines first would be sensible. No extension hooks were registered.

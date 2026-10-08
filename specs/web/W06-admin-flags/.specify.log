@@ -1,0 +1,32 @@
+The W06 spec and its companion files are written and the quality checklist passes on the first iteration. I didn't modify any code.
+
+- **Scenarios:** 66 (`AS-01` to `AS-66`) across 7 user stories, and `test-plan.md` has exactly 66 rows.
+- **Clarification markers:** zero `[NEEDS CLARIFICATION]` markers. `questions.md` has 14 `[BREAKING]`, 9 `[CONTRACT]` and 13 `[LOCAL]` lines.
+- **Pattern rows:** both pattern-map rows naming W06 are covered. P0515 maps to the admin guard, the `isAdmin` helper and AS-47, AS-48, AS-49 and AS-66. P0901 maps to the query keys, URL state and draft-state rules (FR-001 to FR-005).
+
+## Decisions in the spec
+
+- **Create:** a new flag starts **disabled** on its own page. Today's dialog creates a flag that is live for everyone.
+- **Save:** every save sends `expectedVersion`. A `409` conflict shows a banner and never overwrites a colleague's change. Today's code sends no version.
+- **Kill switch:** it needs one confirmation. Restore and archive are separate steps, and an archived flag is read-only.
+- **Access:** a server guard redirects anonymous visitors to sign in. Non-admins see only a "no access" panel and no flag data is requested. Today `app/admin/layout.tsx` has no guard at all.
+- **Mobile:** below 1024 px a drawer replaces the sidebar. Today the sidebar disappears at 768 px and nothing replaces it.
+- **Errors:** every S38 problem+json outcome has exact copy in the error catalogue. A `422` `{path, code}` entry is mapped onto the field it names.
+
+## Things to check
+
+- **Interview-Prep notes:** `.specify/memory/Interview-Prep` doesn't exist in this checkout. The spec relies on S38's record of what it read, and says so in Input and Assumptions.
+- **Contracts package:** `packages/contracts` has no source and `packages/web` doesn't depend on it. The spec depends on schemas and constants (`flagSchema`, `flagLimits` and others) that don't exist yet (`gaps.md` E5).
+- **Cross-capability contracts:** the `Cross-capability contracts` section lists what W06 Provides and Requires. The main requirement is that S48 forwards `/api/admin/flags/**` with the session. S38 should also expose the error `code` and list every `flag_definition_invalid` path and code. Those, and the rest, are `[CONTRACT]` lines in `questions.md`.
+- **Test tooling:** the web package has no React Testing Library, no `.tsx` in the Vitest `include`, no mobile or visual Playwright project, and no axe (`gaps.md` F1–F4).
+
+I also wrote `.specify/feature.json` pointing at `specs/web/W06-admin-flags`. No `before_specify` hooks ran, because `.specify/extensions.yml` doesn't exist.
+
+Files are in `specs/web/W06-admin-flags/`:
+- `spec.md`
+- `questions.md`
+- `test-plan.md`
+- `gaps.md`
+- `checklists/requirements.md`
+
+It's ready for `/speckit-plan`.
