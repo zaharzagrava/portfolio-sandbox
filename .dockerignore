@@ -21,6 +21,5 @@ docs
 infra
 !infra/docker/node/entrypoint.sh
 packages/hft-platform
-packages/payments
 packages/web
 packages/edge-be

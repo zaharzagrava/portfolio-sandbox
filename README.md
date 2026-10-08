@@ -7,9 +7,9 @@
 
 # 🚀 Enterprise Architecture Showcase
 
-Welcome to the laboratory. This is not a standard CRUD application—it is a **battle-tested showcase of distributed systems design, fault tolerance, and high-concurrency patterns.**
+Welcome to the laboratory. This is not a standard CRUD application. It is a **spec-driven showcase of distributed-systems design, fault tolerance and high-concurrency patterns.**
 
-If you want to see how production-grade code, edge-case failure handling and architectural trade-offs look in practice, you are in the right place. Dive into the code or check out the feature showcases below to see how I build systems designed to scale.
+If you want to see how production-grade code, edge-case failure handling and architectural trade-offs look in practice, you are in the right place. Dive into the code or check out the problem index below to see how I design systems to scale.
 
 > **Looking for something specific?** Jump to the [problem index](#what-i-can-build-for-you): payments, concurrency, multi-tenancy, search, realtime, AI.
 
@@ -257,6 +257,10 @@ Each section is a problem a real team has, and how I designed the solution: the 
 **Media, content & experiments**
 
 [Photos: from upload to safe, served images](#photos-from-upload-to-safe-served-images) · [Video pipeline as a DAG](#video-pipeline-as-a-dag) · [Dropbox-style file sync, dedupe and digital delivery](#dropbox-style-file-sync-dedupe-and-digital-delivery) · [A CMS for brand stories behind a CDN](#a-cms-for-brand-stories-behind-a-cdn) · [Feature flags with no network call per check](#feature-flags-with-no-network-call-per-check) · [A/B tests you can trust](#ab-tests-you-can-trust) · [Seller leaderboards and a live sales dashboard](#seller-leaderboards-and-a-live-sales-dashboard) · [Short and affiliate links](#short-and-affiliate-links)
+
+**End-to-end flows**
+
+[Buy to payout: eight domains, no lost money](#buy-to-payout-eight-domains-no-lost-money) · [Seller signup to first sale: eleven domains](#seller-signup-to-first-sale-eleven-domains) · [Launch day: queue, drop, live stream and auction](#launch-day-queue-drop-live-stream-and-auction) · [Catalog sync to search: bulk file, Shopify and an offline till](#catalog-sync-to-search-bulk-file-shopify-and-an-offline-till) · [Engagement loop: follow, discuss, share, buy, learn](#engagement-loop-follow-discuss-share-buy-learn)
 
 ---
 
@@ -819,6 +823,61 @@ Retries, double-clicks, and a payment provider that goes silent after your reque
 - Per-owner limits, idempotent creation, click statistics
 
 → Spec: [S37](specs/domains/S37-share-links/spec.md) · Where code differs: [S37](specs/domains/S37-share-links/gaps.md) · [First-pass code](packages/backend/libs/domains/marketing)
+
+---
+
+## End-to-end flows
+
+*Each flow crosses 5–11 domains. The spec proves only the hand-offs between them; each domain's own rules live in its capability spec.*
+
+### Buy to payout: eight domains, no lost money
+
+- Checkout → order copy in payments (R3, from events) → payment intent → **sale journal in the payment's own transaction** → settlement → weekly payout → monthly statement
+- An order becomes `PAID` **exactly once**, whether the signal arrives from the payments event or the provider's webhook
+- Settlement never credits shops before the sale journal exists, and never for a refunded payment
+- Failure edges: declined card cancels the order and releases stock; cancel-versus-pay race refunds; a rejected payout reverses in the books; an unanswered transfer is never re-sent blindly
+- Every consumer is idempotent and version-guarded. Each async hop has a stated time-to-visibility, and clients can see progress
+
+→ Spec: [J01](specs/journeys/J01-buy-to-payout/spec.md) · Where code differs: [J01](specs/journeys/J01-buy-to-payout/gaps.md)
+
+### Seller signup to first sale: eleven domains
+
+- Register → open shop → onboarding + AI document extraction → human review → verified shop with payouts enabled → pay for a plan → entitlements rebuilt → list a product → searchable → bought → shop's webhook fires → leaderboard rank
+- Cross-domain role changes are conditional and idempotent (promote USER → SELLER on the shop event)
+- Plan limits are enforced at product creation through the billing entitlement check
+- The shop's own system receives a signed `order.paid` webhook; sandbox shops never do
+- Black-box journey tests get a control surface: run a job, pause/resume/replay a consumer, move the clock
+
+→ Spec: [J02](specs/journeys/J02-seller-to-first-sale/spec.md) · Where code differs: [J02](specs/journeys/J02-seller-to-first-sale/gaps.md)
+
+### Launch day: queue, drop, live stream and auction
+
+- Waiting room → seat booking → voucher issued **idempotently** from the booking → notification
+- A limited drop sells exactly its units; unsold units return to stock in a reconciliation, with search availability updating from events
+- Live stream comments are persisted and moderated by two independent consumer groups; pinned products reach every viewer
+- An auction ends once; its winner gets a held-stock order through the same checkout and payment chain
+- Each step that matters ends in a notification
+
+→ Spec: [J03](specs/journeys/J03-launch-day/spec.md) · Where code differs: [J03](specs/journeys/J03-launch-day/gaps.md)
+
+### Catalog sync to search: bulk file, Shopify and an offline till
+
+- A bulk file and a Shopify store feed the catalog **only through the catalog's exported import command**, so every product emits the same events
+- Products become searchable and, once stocked at a pickup point, available near me
+- An offline till sells a unit: catalog stock drops, search flips availability, other devices pull the change, and Shopify's inventory is lowered with a conditional write
+- Shopify's echo of that write is a no-op (merge base = last synced stock), so there's no ping-pong
+- Both sides selling the same last unit lands in a conflict queue; provider outages, replays and suspended shops are covered
+
+→ Spec: [J04](specs/journeys/J04-catalog-sync-to-search/spec.md) · Where code differs: [J04](specs/journeys/J04-catalog-sync-to-search/gaps.md)
+
+### Engagement loop: follow, discuss, share, buy, learn
+
+- A published product reaches followers' feeds. A buyer starts a discussion, which creates feed items and notifications. A short link carries a `ref`
+- The link's attribution is **frozen on the order at checkout**. The paid order credits the link owner, and a refund reverses the conversion
+- One purchase event feeds three read models: bought-together recommendations, A/B experiment results, and, via the analytics stream, trending
+- A deleted post vanishes from feeds immediately, through hydration at read time
+
+→ Spec: [J05](specs/journeys/J05-engagement-loop/spec.md) · Where code differs: [J05](specs/journeys/J05-engagement-loop/gaps.md)
 
 ---
 

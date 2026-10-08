@@ -90,7 +90,6 @@ OrderCreated → Inventory reserves → InventoryReserved → Payment charges �
 <!-- theory-links:start -->
 > [!TIP] In this codebase
 > - [`OrderPaymentListener`](../../packages/backend/libs/domains/orders/infra/order-payment.listener.ts#L23): OrderPaymentListener is the saga step that reacts to the payment response and updates order status. _(order-payment.listener.ts)_
-> - [`ExecutePayment`](../../packages/payments/internal/payment/service.go#L46): ExecutePayment charges Stripe, decrements stock and records the ledger, with a refund as the compensation when stock runs out. _(service.go)_
 > - [Refund when stock runs out after charging](../../docs/humans/concepts/domain-payments/refund-saga.md): If stock runs out after the card is charged, the service refunds the charge and marks the payment REFUNDED. [`PaymentService.executePayment`](../../packages/backend/libs/domains/payments/application/payment.service.ts#L65)
 <!-- theory-links:end -->
 

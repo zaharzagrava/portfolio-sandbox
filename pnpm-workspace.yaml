@@ -2,8 +2,7 @@ packages:
   # Include everything in packages/ by default
   - "packages/*"
 
-  # Explicitly exclude your Go and Rust services from pnpm's tree
-  - "!packages/payments"
+  # Explicitly exclude the Rust service from pnpm's tree
   - "!packages/hft-platform"
 allowBuilds:
   '@apollo/protobufjs': true

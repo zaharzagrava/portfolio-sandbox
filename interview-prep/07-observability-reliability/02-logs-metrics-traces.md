@@ -109,7 +109,6 @@ logger.info({ invoiceId, amountCents }, 'invoice generated');   // fields, not s
 > [!TIP] In this codebase
 > - [`KafkaConsumerService`](../../packages/backend/libs/infrastructure/kafka/kafka-consumer.service.ts#L32): KafkaConsumerService processes messages with distributed tracing, picking up the trace context from the message. _(kafka-consumer.service.ts)_
 > - [`runInSpan`](../../packages/backend/libs/domains/payments/infra/tracing.utils.ts#L11): runInSpan wraps payment operations in a named span with optional parent linking. _(tracing.utils.ts)_ · [Charging a card through Stripe](../../docs/humans/concepts/domain-payments/charging-a-payment.md)
-> - [`Init`](../../packages/payments/internal/tracing/tracing.go#L24): The Go payments service's Init installs the global tracer provider and the W3C propagator. _(tracing.go)_
 <!-- theory-links:end -->
 
 ### OpenTelemetry in Node

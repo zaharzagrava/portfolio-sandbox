@@ -72,7 +72,6 @@ Subtle points:
 <!-- theory-links:start -->
 > [!TIP] In this codebase
 > - [Idempotent creation of the payment row](../../docs/humans/concepts/domain-payments/idempotent-payment-insert.md): The Payment row is created with ON CONFLICT ("idempotencyKey") DO NOTHING and then read back, so retried or duplicate messages share one row, enforced by a unique constraint. [`PaymentService.executePayment`](../../packages/backend/libs/domains/payments/application/payment.service.ts#L65)
-> - [`RefundPaymentIntent`](../../packages/payments/internal/stripe/stripe.go#L123): RefundPaymentIntent sends an idempotency key to Stripe, so the external call is idempotent too. _(stripe.go)_
 > - [Finding and dispatching stuck payments](../../docs/humans/concepts/domain-payments/resolve-method.md): A scheduled job settles payments stuck in UNKNOWN by querying Stripe by idempotency key, which serves as the reconciliation step for external side effects. [`PaymentResolutionJobs`](../../packages/backend/libs/domains/payments/infra/payment-resolution.jobs.ts#L29)
 <!-- theory-links:end -->
 

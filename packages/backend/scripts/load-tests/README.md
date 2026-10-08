@@ -21,7 +21,7 @@ then does that flow's work.
    - Set `THROTTLE_API_LIMIT` very high (e.g. `10000000`). The global Nest throttler is per IP, and every k6 VU shares one IP.
 4. Services for the flow you're running:
    - all flows: core (`pnpm start:dev`, port from `PORT`, default in these scripts `http://localhost:8000`)
-   - `payment`: edge worker (`cd ../edge-be && npx wrangler dev`, `:8787`) + **one** payment processor: NestJS (`pnpm start:dev:payment-processor`) **or** Go (`cd ../payments && go run ./cmd/main.go`)
+   - `payment`: edge worker (`cd ../edge-be && npx wrangler dev`, `:8787`) + the payment processor (`pnpm start:dev:payment-processor`)
    - `chat`: Rust gateway (`cd ../hft-platform && cargo run`, `:8090`)
    - `search`: start core at least once before seeding, so it creates the `products` index with its analyzers.
 5. [k6](https://grafana.com/docs/k6/latest/set-up/install-k6/) installed.
@@ -76,25 +76,3 @@ behaviour, not a test artifact. To take it out of the picture, seed with
 Each run writes `load-test-<flow>.html` and `load-test-<flow>.json` to the
 current directory.
 
-## NestJS vs Go payment processor
-
-Both consume `payments.requests` with the same consumer group
-(`payment-processor`) and write the same rows (Payment, LedgerEntry, Outbox),
-so you can swap them without touching anything else. **Run only one at a
-time.** Compare `payment_settle_time` and `payments_settle_timeouts` across two
-identical runs:
-
-```bash
-pnpm loadtest:seed payment
-pnpm start:dev:payment-processor &           # run A: NestJS
-k6 run -e PROFILE=load scripts/load-tests/payment.test.js
-# stop it, then
-pnpm loadtest:seed payment
-(cd ../payments && CONSUMER_WORKERS=1 go run ./cmd/main.go) &   # run B: Go
-k6 run -e PROFILE=load scripts/load-tests/payment.test.js
-```
-
-The NestJS consumer handles one message at a time per partition.
-`CONSUMER_WORKERS=1` makes the Go consumer do the same, which gives a
-like-for-like comparison. Raise it (e.g. `32`) to see what key-sharded
-concurrency adds.

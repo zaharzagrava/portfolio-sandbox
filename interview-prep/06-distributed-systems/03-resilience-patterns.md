@@ -73,7 +73,6 @@ breaker.on('open', () => metrics.inc('cb_open', { dep: 'bank' }));
 
 <!-- theory-links:start -->
 > [!TIP] In this codebase
-> - [`Client`](../../packages/payments/internal/stripe/stripe.go#L50): The Go Stripe Client wraps Stripe API calls in a circuit breaker configured through NewClient. _(stripe.go)_
 > - [`StripeService`](../../packages/backend/libs/infrastructure/stripe/stripe.service.ts#L16): StripeService (NestJS) applies a circuit breaker around Stripe payment operations. _(stripe.service.ts)_ · [stripe](../../docs/humans/concepts/platform-stripe/stripe.md)
 > - [`Domain_CircuitBreakerOpenError`](../../packages/backend/libs/infrastructure/stripe/stripe.errors.ts#L4): Domain_CircuitBreakerOpenError is the fail-fast error raised when the Stripe breaker is open. _(stripe.errors.ts)_ · [stripe](../../docs/humans/concepts/platform-stripe/stripe.md)
 <!-- theory-links:end -->

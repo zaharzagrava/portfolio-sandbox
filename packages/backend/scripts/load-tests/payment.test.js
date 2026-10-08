@@ -4,9 +4,8 @@
 //   k6 run -e PROFILE=load scripts/load-tests/payment.test.js
 //
 // POST /api/payments on the edge only *accepts* the command (202 -> Kafka).
-// A sample of payments is then polled until payment-processor (NestJS or the
-// Go port in packages/payments) settles it, which gives `payment_settle_time`
-// - the number to compare between the two implementations.
+// A sample of payments is then polled until payment-processor settles it,
+// which gives `payment_settle_time`.
 import http from 'k6/http';
 import exec from 'k6/execution';
 import { check, sleep } from 'k6';

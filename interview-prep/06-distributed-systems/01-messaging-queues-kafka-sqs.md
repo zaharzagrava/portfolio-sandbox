@@ -337,8 +337,6 @@ Sizing consequence: **choose partition count up front for your max expected para
 
 <!-- theory-links:start -->
 > [!TIP] In this codebase
-> - [`New`](../../packages/payments/internal/consumer/consumer.go#L43): The Go consumer's New sets up a Kafka consumer with its group ID and brokers. _(consumer.go)_
-> - [`Run`](../../packages/payments/internal/consumer/consumer.go#L82): Run polls Kafka records, shards them by key across workers and commits offsets. _(consumer.go)_
 <!-- theory-links:end -->
 
 ---
