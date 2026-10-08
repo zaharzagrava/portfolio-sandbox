@@ -1,0 +1,35 @@
+I've written the J05 spec, `questions.md`, `test-plan.md`, `gaps.md` and the quality checklist in `specs/journeys/J05-engagement-loop/`. I didn't run any code or change any, and the 37 scenarios are untested. The code findings come from reading, not running.
+
+**Checklist:** every item passes on the first iteration. There are no `[NEEDS CLARIFICATION]` markers; the one grep hit is the checklist's own item text.
+
+**Spec shape:**
+- Seven user stories and 37 acceptance scenarios (AS-01 to AS-37), each with a row in `test-plan.md`.
+- A 16-hop consistency table (H1–H16) with a maximum time and a polling observable per hop.
+- The canonical consumer-group names the control surface addresses.
+- The Cross-capability contracts section.
+- Failure modes covered:
+  - replay and consumer-down catch-up across the loop;
+  - refund reversing the affiliate credit;
+  - purchase before exposure not counting;
+  - self-referral, retried keys, and an unknown or disabled `ref` never failing a sale.
+
+**Findings:**
+- **Nothing owns the affiliate step.** Checkout has no `ref`, `order.paid` has no attribution, and no conversion or commission consumer exists, so I defined it here:
+  - `POST /checkout` takes an optional `ref` in the body.
+  - Orders resolves it through share links' lookup and freezes `{code, ownerId}` on the order.
+  - `order.paid` carries that attribution.
+  - Share links (S37) owns the conversion record, `GET /links/:code/conversions`, and the events `link.converted` and `link.conversion_reversed`.
+  - The link owner never sees who bought.
+  - Commission amounts and payout are out of scope.
+- **Trending (S35) doesn't count purchases by design.** I kept that. The journey drives `product_view` and `add_to_cart` as the storefront would, and asserts that a paid order alone changes nothing (AS-27).
+- **Recommendations need 3 orders from 3 buyers and a build job.** The journey makes three real purchases and runs the build through the control surface instead of lowering any threshold.
+- **Catalog has no typed product events.** It writes one legacy `{productId}` row, which blocks the feed hop. This is flagged as a blocker in `gaps.md`.
+- **Discussions publish nothing.** The only link to the feed is an in-process call that does nothing in the core app.
+- **The admin control surface and the injectable clock are missing.** I treat these as inherited from J01 and J03.
+
+**`questions.md`** has 16 `[BREAKING]`, 15 `[CONTRACT]` and 8 `[LOCAL]` lines, sorted BREAKING first. `gaps.md` has 23 rows with an owner each and a suggested order of work.
+
+**For you to review first:**
+- The affiliate contract. It puts new requirements on S10 and S37.
+- Whether trending should get a purchase signal later.
+- AS-34, the UI scenario for follow → feed. It stays pending because no web capability owns the follow button or home feed.
