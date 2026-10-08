@@ -11,216 +11,7 @@ Welcome to the laboratory. This is not a standard CRUD application. It is a **sp
 
 If you want to see how production-grade code, edge-case failure handling and architectural trade-offs look in practice, you are in the right place. Dive into the code or check out the problem index below to see how I design systems to scale.
 
-> **Looking for something specific?** Jump to the [problem index](#what-i-can-build-for-you): payments, concurrency, multi-tenancy, search, realtime, AI.
-
-## Infrastructure commands
-
-```
-moon run :infra-up
-moon run :infra-setup --force
-   --force matters: without it moon replays a cached result and skips the setup.
-5. Services, one terminal each:
-moon run :dev-api        # core :8000
-moon run :dev-bff        # :8006
-moon run :dev-sse        # :8001
-moon run :dev-worker     # :8003
-moon run :dev-projector  # :8002
-moon run :dev-web        # :3000
-```
-
-## Spec-driven Development Commands
-
-Generating constitution:
-
-```
-/speckit.constitution Read the architectural patterns and notes inside interview-prep/. Use these notes as the absolute source of truth to generate this project's constitution.
-
-You may scan the existing codebase for context, but treat the code as an imperfect, AI-generated draft. If the codebase contradicts the notes in interview-prep/, the notes win.
-
-Extract these patterns into strict, falsifiable, decision-ready rules.
-DO NOT write vague platitudes like "maintain quality" or "write clean code". Every principle must be a hard constraint that can be objectively validated during a pull request.
-
-Ensure the constitution explicitly defines:
-1. The required architectural boundaries (e.g., how routing, data access, and state management must be separated).
-2. Strict rules for what components are allowed to communicate with each other.
-3. The exact testing mandate (what must be tested and how).
-```
-
-Running spec generation:
-
-```
-Suggested order:
-1. Commit.
-2. DRY_RUN=1 scripts/sdd/write-specs.sh S10 W03 J01 to read one prompt of each kind.
-3. Pilot with scripts/sdd/write-specs.sh S01 S10 and read the results.
-4. Run the full scripts/sdd/write-specs.sh.
-5. Review the questions.md files.
-```
-
-Full unattended run (after the pilot; details in [`docs/architecture/sdd-runbook.md`](docs/architecture/sdd-runbook.md)):
-
-```bash
-# 1. Commit, then write all 67 specs (55 backend S, 7 web W, 5 journeys J). Takes roughly 13–17 hours.
-#    Unfinished specs (no .spec-done marker) are cleared and redone, including the S01/S10 pilot.
-#    Failures are retried after 10/30/60/120 min, then the run moves on. Re-run the same command to resume.
-tmux new -s specs                                   # detach: Ctrl-b d, re-attach: tmux attach -t specs
-cd <repo root>
-systemd-inhibit --what=sleep:idle --why="SDD spec run" \
-  scripts/sdd/write-specs.sh 2>&1 | tee -a specs-run.log
-
-# Progress: target is 67
-tail specs-run.log
-ls specs/*/*/.spec-done | wc -l
-
-# 2. Optional: veto any default (agents pick the most production-grade option and tag changes [BREAKING])
-scripts/sdd/review-questions.sh
-
-# 3. Commit, then implement spec by spec (needs the test stack; W and J also need the dev stack)
-docker compose -f docker-compose.test.yaml up -d
-# For W and J, each in its own terminal (infra-up and dev-monolith keep running in the foreground):
-#   moon run :infra-up        # dev stores
-#   moon run :infra-setup     # once the stores are up
-#   moon run :dev-monolith    # API + workers + projectors on :8000, watch mode
-COMMIT=1 scripts/sdd/implement-specs.sh
-```
-
-## Developer tooling
-
-Three things live next to the code: an Obsidian vault over the repo, a generated codebase map, and the spec-driven
-development scripts.
-
-### Obsidian vault
-
-Open the repo root as a vault (Obsidian → Open folder as vault). `.obsidian/` is gitignored, so a fresh clone has to
-recreate its settings. Obsidian only indexes markdown, so keep it away from `node_modules` before the first open.
-
-1. Create `.obsidian/app.json`:
-
-   ```json
-   {
-     "userIgnoreFilters": [
-       "/(^|\\/)node_modules\\//",
-       "/(^|\\/)\\.git\\//",
-       ".agents/",
-       ".specify/",
-       ".claude/",
-       ".moon/",
-       ".github/",
-       ".aider",
-       "infra/",
-       "packages/",
-       "scripts/"
-     ],
-     "useMarkdownLinks": true,
-     "newLinkFormat": "relative",
-     "alwaysUpdateLinks": true
-   }
-   ```
-
-   Same list in the UI: Settings → Files & links → Excluded files → Manage. If you open the vault first, close and
-   reopen it after editing the file.
-
-2. Excluded folders still show as empty shells in the file explorer. Hide them with a CSS snippet saved as
-   `.obsidian/snippets/hide-noise.css`, then switch it on under Settings → Appearance → CSS snippets:
-
-   ```css
-   .nav-folder:has(> .nav-folder-title[data-path$="node_modules"]),
-   .nav-folder:has(> .nav-folder-title[data-path="infra"]),
-   .nav-folder:has(> .nav-folder-title[data-path="packages"]),
-   .nav-folder:has(> .nav-folder-title[data-path="scripts"]) {
-     display: none;
-   }
-   ```
-
-   The code stays on disk and in git; it is only out of the vault's index, graph and sidebar.
-
-3. Links to code (`.ts` files) are not notes, so Obsidian hands them to your system's default app. To open them in the
-   editor window that already has this repo open, make the editor the default for those file types. On Linux the
-   catch is that the system classifies `.ts` as a Qt translation file (`text/vnd.trolltech.linguist`) and `.tsx` as
-   `application/x-tiled-tsx`, so setting `text/x-typescript` does nothing (check with `gio info FILE | grep -i type`):
-   `xdg-mime default cursor.desktop text/vnd.trolltech.linguist application/x-tiled-tsx text/x-typescript`.
-   Line anchors (`#L19`) are ignored that way.
-
-Folders in the vault:
-
-| Folder                                           | Owner                 | Notes                                                                                       |
-| ------------------------------------------------ | --------------------- | ------------------------------------------------------------------------------------------- |
-| `docs/humans/`                                   | the docs generator    | Rewritten on every run. Do not hand-edit; any other `.md` file in it is deleted.            |
-| `interview-prep/`                                | you                   | Hand-written theory notes. `interview-prep/my-practice/` is gitignored (private exercises). |
-| `docs/architecture/`, `docs/runbooks/`, `specs/` | you / the SDD scripts | Hand-written or agent-written, committed.                                                   |
-
-### Codebase map (`scripts/docs`)
-
-Builds `docs/humans/`: one page per unit, flow and topic, linked into a graph that can be browsed in Obsidian. Static
-analysis finds the structure; an LLM writes the words. Details, limits and configuration:
-[`scripts/docs/README.md`](scripts/docs/README.md). Needs Node 22.18 or newer, no install.
-
-```sh
-pnpm docs:extract                           # what static analysis found (free, instant)
-pnpm docs:plan --unit domain/payments       # how much a run would cost (no LLM calls)
-pnpm docs:generate --unit domain/payments   # one unit: file summaries -> topic map -> topic pages -> unit page
-pnpm docs:generate                          # everything (large; see below)
-pnpm docs:check --strict                    # CI gate: stale summaries, or pages out of sync with the cache
-pnpm docs:render                            # rebuild the markdown from the cache only (no LLM)
-pnpm docs:theory                            # link interview-prep sections to the code that implements them
-```
-
-- `generate` renders at the end, so there is no separate step for Obsidian: open `docs/humans/README.md`.
-- **Cache:** `docs/humans/.cache/` is keyed by a hash of each node's source and inputs. Commit it: a fresh clone then
-  regenerates only what changed, and everyone renders identical pages. `--force` regenerates the selected nodes anyway.
-- **Order:** a topic page can link to another unit only if that unit's topic map already exists. For a full run, first
-  do `pnpm docs:generate --level file,capmap` (every unit's file summaries and topic map), then generate units in any
-  order. `--unit` takes several names: `--unit domain/orders,domain/marketing`.
-- **LLM access:** `--provider auto` uses `ANTHROPIC_API_KEY` if set (fast, parallel), otherwise the logged-in `claude`
-  CLI (set `DOCS_CLAUDE_CONFIG_DIR` to run it under a separate Claude Code profile). `--provider mock`
-  tests the pipeline with placeholder text; use it only with a throwaway `outDir`, because it writes into the cache.
-- **Cost and time:** `--max-calls N` is a hard cap. One unit takes minutes; the whole repo is a few thousand calls
-  (mostly small ones), so use an API key for that run.
-- **Do not interrupt a run.** The topic-page level saves its cache only when the whole level finishes, so Ctrl+C loses
-  the pages written in that run.
-- **Depth:** a topic page splits itself into sub-topics until pieces are self-explanatory. Tune `maxConceptDepth`
-  (default 4) and `maxConceptsPerUnit` (default 40) in `scripts/docs/docs.config.json`.
-- **Theory links:** `pnpm docs:theory` adds an **In this codebase** block under every section of the notes in
-  `interview-prep/`, at any heading depth. Each link is Ctrl+clickable and lands on the exact function (`file.ts#L21`).
-  Code is always linked; topic pages are linked next to it only if they have been generated.
-- **Theory links, safety:** it writes only between the `theory-links:start` and `theory-links:end` HTML-comment
-  markers, so your text is never changed, and it never reads `interview-prep/my-practice/`.
-  `docs/humans/theory-coverage.md` shows the gaps in both directions.
-- **After a reimplementation:** run the two theory commands below again. Only changed files, and only notes whose
-  candidates changed, are redone. For topic links, generate topic pages for the units you want to study
-  (`pnpm docs:generate --unit ...`), then run `pnpm docs:theory` again.
-
-Cheap path for theory links, once the code you want linked exists (no topic pages needed):
-
-```sh
-pnpm docs:generate --level file   # summaries of every file and its exported functions (~800 small Haiku calls)
-pnpm docs:theory                  # ~45 calls: link every note section to the code that implements it
-git diff interview-prep           # review: read the model's one-sentence "how" lines critically
-```
-
-### Spec-driven development (`scripts/sdd`)
-
-Bulk spec writing and implementation on top of spec-kit, driven by the 67-row catalog in
-[`scripts/sdd/capabilities.tsv`](scripts/sdd/capabilities.tsv). Full procedure:
-[`docs/architecture/sdd-runbook.md`](docs/architecture/sdd-runbook.md).
-
-```sh
-DRY_RUN=1 scripts/sdd/write-specs.sh S10       # print the prompt for one capability, run nothing
-scripts/sdd/write-specs.sh S01 S10             # pilot: write these specs
-scripts/sdd/write-specs.sh payments web        # by domain column (`web` and `journeys` too)
-scripts/sdd/write-specs.sh                     # all capabilities; resumes if re-run
-scripts/sdd/review-questions.sh                # the [BREAKING]/[CONTRACT] defaults the agents chose
-COMMIT=1 scripts/sdd/implement-specs.sh S10    # plan -> tasks -> analyze -> implement -> converge -> gate
-```
-
-- A spec counts as written when `spec.md`, `test-plan.md`, `gaps.md` and `questions.md` exist and `.spec-done` is
-  present; interrupted ones are cleared and redone. Failures wait 10/30/60/120 minutes (`RETRY_WAITS`), then the run
-  moves on.
-- Implementation stops at the first failing gate and resumes from `.implemented` markers. Backend specs need
-  `docker compose -f docker-compose.test.yaml up -d`; web and journey specs also need `moon run :infra-up`,
-  `moon run :infra-setup` and `moon run :dev-monolith`.
-- To use a separate Claude Code profile, set `CLAUDE_CONFIG_DIR=DIR` for these scripts. Long runs:
-  `systemd-inhibit --what=sleep:idle` inside `tmux`, as in the runbook.
+> **Looking for something specific?** Jump to the [problem index](#what-i-can-build-for-you): payments, concurrency, multi-tenancy, search, realtime, AI. Or [run the tests yourself](#run-it-yourself-5-minutes).
 
 ---
 
@@ -228,7 +19,7 @@ COMMIT=1 scripts/sdd/implement-specs.sh S10    # plan -> tasks -> analyze -> imp
 
 Each section is a problem a real team has, and how I designed the solution: the architecture, not a tutorial.
 
-> **What this is, honestly:** this repo shows how I **architect** systems, not a finished product. It is built spec-first: every section below is a designed solution with a spec (linked), and each spec has a `gaps.md` listing exactly where the code still differs. Most capabilities have a first-pass implementation, but the spec-driven implementation is not fully run yet. Some details below are ahead of the code. The only thing between the specs and a complete implementation is my time and AI usage limits, not the design. Per-capability progress is in [`pattern-map.md`](docs/architecture/pattern-map.md).
+> **What this is, honestly:** this repo shows how I **architect** systems, not a finished product. It is built spec-first: every section below is a designed solution with a spec (linked), and each spec has a `gaps.md` listing exactly where the code still differs. Most capabilities have a first-pass implementation, but the spec-driven implementation is not fully run yet. Some details below are ahead of the code. Parts that already run and pass: see [Run it yourself](#run-it-yourself-5-minutes). The only thing between the specs and a complete implementation is my time and AI usage limits, not the design. Per-capability progress is in [`pattern-map.md`](docs/architecture/pattern-map.md).
 
 **Money**
 
@@ -881,7 +672,26 @@ Retries, double-clicks, and a payment provider that goes silent after your reque
 
 ---
 
-# Stack and quickstart
+# Run it yourself (5 minutes)
+
+You need Node 24+, pnpm 12 and Docker. This starts a throwaway Postgres and Redis and runs two end-to-end specs against them: the **rate limiter** (parallel requests admitted exactly up to the limit, leased budgets, fail-open and fail-closed when Redis is down) and the **job scheduler** (4 workers draining 400 jobs, each executed exactly once; expired leases reaped; one cron fire across two instances; DST-safe next fire).
+
+```bash
+git clone https://github.com/zaharzagrava/portfolio-sandbox.git
+cd portfolio-sandbox
+pnpm install
+cp packages/backend/env/test.env.example packages/backend/.env.test
+
+docker compose -f docker-compose.test.yaml -p marketplace_test up -d test_db test_redis
+pnpm --filter api run db:jest:migrate:up
+
+pnpm --filter api run test:e2e -- libs/infrastructure/rate-limit
+pnpm --filter api run test:e2e -- libs/infrastructure/jobs
+```
+
+Stop it with `docker compose -f docker-compose.test.yaml -p marketplace_test down`. The full test stack, the dev stack, ports, load tests and my tooling are in [README_ME.md](README_ME.md).
+
+# Stack
 
 <div align="center">
   <img src="https://img.shields.io/badge/Cloudflare-F38020?style=for-the-badge&logo=Cloudflare&logoColor=white" alt="Cloudflare" />
@@ -896,41 +706,3 @@ Retries, double-clicks, and a payment provider that goes silent after your reque
   <img src="https://img.shields.io/badge/k6-7D64FF?style=for-the-badge&logo=k6&logoColor=white" alt="k6" />
   <img src="https://img.shields.io/badge/WebSocket-4A4A55?style=for-the-badge&logo=websocket&logoColor=white" alt="WebSocket" />
 </div>
-
-# Quickstart
-
-```bash
-cd backend
-
-# 1. Infra (Postgres, PgBouncer, Redis, Redpanda, Jaeger)
-pnpm install && && pnpm infra:setup
-pnpm docker
-
-# 2. Depending on the case you want to run, execute this command with a param
-pnpm run dev --use-case-1
-
-# 2b. Read-model projections (search index, ...) run in their own app since F-05
-pnpm start:dev:projector
-```
-
-**Load tests:** four k6 flows (payment, search, seller stats, chat), each with
-its own 100k-user seeder. See
-[`packages/backend/scripts/load-tests/README.md`](packages/backend/scripts/load-tests/README.md).
-
-| Service                            | Port            |
-| ---------------------------------- | --------------- |
-| Edge Worker                        | `8787`          |
-| Nest API                           | `8000`          |
-| PgBouncer → Postgres               | `6432` / `5300` |
-| Kafka / Pandaproxy                 | `9092` / `8082` |
-| Redis HTTP (edge)                  | `8079`          |
-| Elasticsearch                      | `9200`          |
-| ClickHouse HTTP                    | `8123`          |
-| Jaeger UI                          | `16686`         |
-| MinIO (S3) / console               | `9100` / `9101` |
-| ElasticMQ (SQS) / UI               | `9324` / `9325` |
-| DynamoDB Local                     | `8100`          |
-| ScyllaDB (CQL)                     | `9042`          |
-| Mailpit SMTP / UI                  | `1025` / `8025` |
-| ClamAV                             | `3310`          |
-| Debezium Connect (`--profile cdc`) | `8083`          |
