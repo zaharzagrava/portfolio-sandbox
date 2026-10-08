@@ -59,7 +59,7 @@ Each section is a problem a real team has, and how I designed the solution: the 
 
 ### Never double-charge a customer
 
-*Idempotency keys · unknown-outcome handling · circuit breaker · saga with orders*
+_Idempotency keys · unknown-outcome handling · circuit breaker · saga with orders_
 
 Retries, double-clicks, and a payment provider that goes silent after your request.
 
@@ -75,7 +75,7 @@ Retries, double-clicks, and a payment provider that goes silent after your reque
 
 ### Never lose an event between DB and Kafka
 
-*Transactional outbox · CDC · idempotent consumers · replay*
+_Transactional outbox · CDC · idempotent consumers · replay_
 
 - The event is appended in the **same transaction** as the state change. Non-Nest writers (Lambda workers) have a framework-free append
 - Two relays publish the same message, at-least-once, in per-aggregate order: a `SKIP LOCKED` poller by default, or Debezium CDC of the outbox table only
@@ -88,7 +88,7 @@ Retries, double-clicks, and a payment provider that goes silent after your reque
 
 ### A ledger that always balances
 
-*Double-entry · hot-account sharding · reconciliation*
+_Double-entry · hot-account sharding · reconciliation_
 
 - Every money movement is a journal whose lines sum to zero, written once and never edited. Each (kind, reference) posts at most once
 - Postings join the caller's transaction. Unbalanced journals fail at `COMMIT` via a deferred constraint trigger
@@ -112,7 +112,7 @@ Retries, double-clicks, and a payment provider that goes silent after your reque
 
 ### Subscription billing that never double-bills
 
-*State machine · proration · dunning*
+_State machine · proration · dunning_
 
 - Prices are versioned and the store refuses an in-place edit. One live subscription per subject
 - Billing run is single-run and idempotent: one renewal invoice per (subscription, period). Month-end anchors survive short months
@@ -133,7 +133,7 @@ Retries, double-clicks, and a payment provider that goes silent after your reque
 
 ### As-of financial reports (bitemporal)
 
-*"What was my March statement as we knew it on April 1st?"*
+_"What was my March statement as we knew it on April 1st?"_
 
 - Commission rates carry two time axes (when true, when believed). Setting a rate never overwrites history; overlapping current beliefs are impossible
 - Closed months are served from a frozen snapshot, and any month can be shown as known at an earlier instant
@@ -177,7 +177,7 @@ Retries, double-clicks, and a payment provider that goes silent after your reque
 
 ### A million people, one on-sale moment
 
-*Waiting room · seat holds · admission control*
+_Waiting room · seat holds · admission control_
 
 - Virtual waiting room: pre-sale arrivals ordered randomly (refreshing early gains nothing), admitted at a fixed rate, with position and ETA
 - Admission token is short-lived and bound to the event **and** buyer. Booking refuses anything without it before touching any store
@@ -220,7 +220,7 @@ Retries, double-clicks, and a payment provider that goes silent after your reque
 
 ### A cache that survives viral traffic
 
-*L1 + L2 · stampede protection · versioned invalidation*
+_L1 + L2 · stampede protection · versioned invalidation_
 
 - Two levels (in-process and shared), single-flight within a process, a cross-process lock, **XFetch** early refresh, SWR with stale-if-error
 - Avalanche, penetration and hot/big-key protection: jittered TTL, negative entries, Bloom filter, hot-key promotion, size caps
@@ -527,7 +527,7 @@ Retries, double-clicks, and a payment provider that goes silent after your reque
 
 → Spec: [S47](specs/domains/S47-rag-help-center/spec.md) · Where code differs: [S47](specs/domains/S47-rag-help-center/gaps.md) · [First-pass code](packages/backend/libs/domains/assistant)
 
-### A streaming LLM assistant with tools
+###
 
 - The reply is generated server-side and **survives a dropped connection**; reconnects continue without gaps or duplicates
 - Read-only tools only, and the assistant never acts for the shopper. One reply at a time per user
@@ -619,7 +619,7 @@ Retries, double-clicks, and a payment provider that goes silent after your reque
 
 ## End-to-end flows
 
-*Each flow crosses 5–11 domains. The spec proves only the hand-offs between them; each domain's own rules live in its capability spec.*
+_Each flow crosses 5–11 domains. The spec proves only the hand-offs between them; each domain's own rules live in its capability spec._
 
 ### Buy to payout: eight domains, no lost money
 
