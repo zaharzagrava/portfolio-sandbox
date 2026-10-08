@@ -1,0 +1,23 @@
+The J04 spec and its supporting files are written, and nothing was run. I changed no code. The code facts in `gaps.md` come from static reading by a code-mapping agent that I did not re-verify.
+
+The files are in `specs/journeys/J04-catalog-sync-to-search/`:
+- **`spec.md`:**
+  - **Contents:** 8 user stories, 23 scenarios (AS-01 to AS-23), 18 requirements and 9 success criteria.
+  - **Timing contract:** a table of 16 hops (H1–H16) gives the maximum time to visibility on the local stack and how a client observes each one. Tests poll with a deadline of twice that maximum.
+  - **Failure modes covered:** duplicate and out-of-order events (a replay of the topics), paused consumers that catch up, a retried request with the same idempotency key, both sides selling the same unit, and Shopify being down. There is no distributed transaction in this journey. The compensations are the Shopify outage, where the next trigger repairs the difference, and the oversold clamp to zero with an open conflict.
+  - **Cross-capability contracts:** the section has Provides and Requires, with exact route, event and consumer-group names.
+- **`questions.md`:** 10 BREAKING, 13 CONTRACT and 8 LOCAL lines.
+- **`test-plan.md`:** 23 rows, one per scenario, each citing the capability scenarios that already prove the underlying rule.
+- **`gaps.md`:** 27 gaps, each with an owning capability and a suggested order of work. The blockers are:
+  - **Outbox relay:** it wraps every event, so the pickup projector drops all of them.
+  - **Product events:** they are untyped `{productId}` messages, and none of the stock commands the specs rely on exists yet.
+  - **Control surface and local stack:** there is no control surface, and the local stack has no Shopify double or scanner double.
+- **`checklists/requirements.md`:** the spec passes, except two accepted exceptions. They are the same two J01 and J02 record: routes, topics and queues are named, and the scenarios read as engineer-facing step chains.
+
+Things worth reviewing first:
+- **Pickup stock is independent of catalog stock.** S09's spec says an offline sale "reaches pickup". I followed S19's contract instead, so a till sale reaches pickup only as a product copy. The seller adjusts pickup stock through S19's own routes (AS-12). I logged this as a `[CONTRACT]` question.
+- **Only Shopify-origin products sync back to Shopify.** A CSV product has no link, so a till sale of one writes nothing to Shopify.
+- **Unread scenario IDs.** I cited two S08/S32 areas by story (webhook story, shop-state story) because I did not read their scenario IDs.
+- **Consumer group names.** I fixed the names as contract, which renames the existing `search-indexer` projector to `search-product-index`.
+
+The spec is ready for `/speckit-clarify` or `/speckit-plan`.
