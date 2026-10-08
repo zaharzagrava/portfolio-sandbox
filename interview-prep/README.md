@@ -27,6 +27,8 @@ Many sections also carry an **In this codebase** block that links the idea to th
 ### 01: JavaScript & TypeScript
 - [01 JavaScript internals](01-javascript-typescript/01-javascript-internals.md): agents/threads/processes, workers, ArrayBuffer/SAB, tasks vs microtasks, closures and leaks, `this`, promises and concurrency, ESM/CJS, money in JS
 - [02 Advanced TypeScript](01-javascript-typescript/02-advanced-typescript.md): branded types, discriminated unions, conditional/mapped types, variance, runtime validation, tsconfig
+- [03 Proxies & Metaprogramming](01-javascript-typescript/03-proxies-and-reflect.md): `Proxy` traps, `Reflect` API, schema-less runtime type validation, Vue 3 reactivity
+- [04 Fetch & Axios Async Errors](01-javascript-typescript/04-fetch-axios-async.md): `fetch` vs `axios` rejection behavior, `async/await` try-catch patterns, tuple wrappers
 
 ### 02: Node.js
 - [01 Event loop & runtime](02-nodejs/01-event-loop-and-runtime.md): libuv phases, thread pool, blocking detection, worker threads, AsyncLocalStorage, keep-alive
@@ -81,6 +83,7 @@ Many sections also carry an **In this codebase** block that links the idea to th
 - [08 Media & files](10-system-design/08-media-and-files.md): file sync, video streaming, large upload pipeline
 - [09 Data & infrastructure](10-system-design/09-data-and-infrastructure.md): job scheduler, webhooks, analytics, aggregation/top-K, metrics/logs, cache, crawler, ETL sync, search, feature flags, auth, code execution
 - [10 AI applications](10-system-design/10-ai-applications.md): LLM chat, RAG, AI document processing
+- [11 Application architecture](10-system-design/11-application-architecture.md): Modular Monolith, Hexagonal Architecture
 
 ### 11: Algorithms & Coding
 - [01 Coding interview process](11-algorithms-coding/01-coding-interview-process.md)

@@ -164,6 +164,26 @@ Watch out for proxies that buffer the response (nginx `X-Accel-Buffering: no`), 
 
 ---
 
+## 8. Custom Stream Implementations
+
+Sometimes you need to implement your own stream logic (e.g., in custom parsers or coding challenges):
+
+- **Custom `Readable`**: Instantiate `new Readable({ read(size) { ... } })`. You must provide a `read` method, even if it's a no-op (e.g. if you are pushing data manually from an external event source). Calling `this.push(chunk)` adds data to the internal buffer. Calling `this.push(null)` signals the end of the stream (EOF).
+- **Custom `Transform`**: Instantiate `new Transform({ transform(chunk, encoding, callback) { ... } })`. Inside the `transform` function:
+  - Modify the `chunk`.
+  - Use `this.push(modifiedChunk)` to pass data down the pipeline.
+  - Omit `this.push()` to **filter/drop** the chunk entirely.
+  - Always call `callback(err)` when done processing the current chunk. 
+
+**Flowing Mode Mechanics**: 
+A `Readable` stream starts in **paused mode**. It switches to **flowing mode** (where data is emitted automatically as fast as possible) when you:
+1. Call `.pipe()`.
+2. Attach a `'data'` event listener.
+3. Call `.resume()`.
+*Note: You can attach a `'data'` listener to intercept or log chunks without breaking a `.pipe()` setup; both the listener and the pipe destination will receive the chunks.*
+
+---
+
 ## Interview Q&A
 
 **Q: What is backpressure, and what happens without it?**
@@ -174,3 +194,6 @@ It's a flow-control signal from consumer to producer. In Node, `write()` returns
 
 **Q: How would you generate a 2 GB CSV report?**
 Stream from a DB cursor through a CSV transform into gzip and then to S3 multipart upload, all in an async job. Notify the user with a presigned download URL. Memory use stays constant and no HTTP request has to stay open for minutes.
+
+**Q: What triggers a Node.js `Readable` stream to switch into "flowing" mode, and how do you filter chunks dynamically?**
+You switch a stream into flowing mode by attaching a `'data'` event listener, calling `.resume()`, or calling `.pipe()`. To filter chunks dynamically, you route the stream through a `Transform` stream and omit the `this.push(chunk)` call inside the `_transform` callback for any chunks you want to drop. You can also attach a `'data'` listener purely for intercepting or logging chunks without breaking an existing `.pipe()`!

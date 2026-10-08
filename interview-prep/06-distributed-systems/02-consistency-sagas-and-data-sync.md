@@ -107,6 +107,20 @@ OrderCreated → Inventory reserves → InventoryReserved → Payment charges �
 > - [`RESERVATION_HOLD_MS`](../../packages/backend/libs/domains/orders/application/checkout.service.ts#L24): RESERVATION_HOLD_MS holds stock for 15 minutes as a reservation, after which an expiry job releases it. _(checkout.service.ts)_
 <!-- theory-links:end -->
 
+### The Outbox Pattern (Solving the Dual-Write Problem)
+When a service updates the database and needs to publish an event to a message broker (like Kafka or RabbitMQ), doing both operations sequentially isn't atomic. If the DB commits but the broker is down (or the app crashes before publishing), the system is left in an inconsistent state.
+
+**The Solution:**
+Instead of talking to the broker directly during the business transaction, the service writes the event to a dedicated `outbox_events` table **in the same database transaction** as the business entity update.
+Because both writes happen in a single local DB transaction, they are guaranteed to be atomic.
+
+**How events are published:**
+A separate asynchronous worker (or a CDC tool like Debezium) continuously reads the `outbox_events` table and publishes the messages to the broker. Once successfully published, the worker marks the event as processed or deletes it.
+
+- ✅ **Guaranteed at-least-once delivery:** The event cannot be lost if the broker is temporarily down.
+- ✅ **Atomicity without 2PC:** Solves the dual-write problem relying entirely on rock-solid local database ACID guarantees.
+- ❌ **Eventual consistency:** The event is published milliseconds or seconds after the DB transaction completes.
+
 ---
 
 ## 3. Bidirectional synchronization
