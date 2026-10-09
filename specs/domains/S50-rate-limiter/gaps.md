@@ -147,3 +147,20 @@ Each owner declares these in its own domain with `definePolicies` + `forFeature`
 4. Interceptor and default: header contract, refund on later denial, outcome handling, OPTIONS skip, order versus idempotency; delete the throttler, `Firewall` options and config keys (HTTP, REG).
 5. Move policy declarations to owners (table above) in step with each owner's capability; keep a temporary compatibility re-export only until each owner lands, and delete it with the last one.
 6. Edge worker and its spec (EDGE); update the k6 script; run `check:boundaries` and `check:table-ownership --strict`; update the pattern map.
+
+## Follow-ups from built specs
+
+- **S52**: `app.set('etag', false)` (`bootstrap-http.ts:184`) stays. HTTP e2e asserts that `429`, `503` and write responses carry no body-hash `ETag` and are never answered `304`. No S50 route relies on an automatic ETag.
+- **S54**: the replay header is `Idempotency-Replayed`. `spec.md` AS-47 and Requires (7) were renamed; the bootstrap already exposes the new name; HTTP e2e AS-47 asserts it.
+
+## Sibling-spec follow-ups
+
+- **S01**: remove `throttle`/`skipThrottle` from `Firewall(...)` (`firewall.decorator.ts`); declare `auth.*` policies with `definePolicies` + `forFeature`; `auth.login.account` and `auth.reset.account` use `count: 'failures-only'` with `resetOnSuccess`; the address comes from `req.clientIp` only (no `cf-connecting-ip`).
+- **S02**: declare `auth.mfa.ip`, `auth.mfa.account` (failures-only, shared by four code paths through `refund`/`reset`) and `auth.oidc.ip`.
+- **S07**: drop `imports.concurrent` and its `acquire` call (`catalog-import.service.ts:100`); `acquire` now returns `{ acquired, release, decision }`.
+- **S08**: use `penalize(policy, subject, ms)`; other workers' `check` returns `reason: 'paused'`.
+- **S10**: replace `@SkipThrottle()` on the Stripe webhook with `@RateLimitExempt('payment provider webhook, signature-verified')` or `orders.webhook.ip`.
+- **S24**: derive `chat_limiter_unavailable_total` from `rate_limit_store_unavailable_total` by policy prefix.
+- **S16, S19, S22, S29, S32–S35, S37, S39, S44**: replace the mis-used policies listed in G-35 with their own declared names; the transitional `legacy-policies.ts` goes away with the last owner.
+- **S25, S26, S28, S36, S42, S46, S47, S48 and every other owner in the table above**: move your policy numbers into your domain with `definePolicies` + `forFeature`; adopt the structured `RateLimit`/`RateLimit-Policy` headers and the `503 rate_limiter_unavailable` / `422 rate_limit_cost_exceeded` answers in your contracts and clients.
+- **S54**: nothing new to build. Keep the idempotency interceptor route-scoped (after the global rate-limit interceptors), keep `req.clientIp` set, keep the replay header `Idempotency-Replayed`.

@@ -26,3 +26,7 @@ interviews) until its status says so. The implementation loop appends here (rule
 | S52 | SC-005: no more than 5 % of 1,000 same-time keys share one expiry second | store 1,000 keys, read `PTTL` of each, bucket by second | not run |
 | S52 | SC-008: after 1,000,000 distinct reads the in-process structures stay within their limits | read 1,000,000 distinct keys; sample `cache_l1_entries` and heap | not run |
 | S52 | SC-009: cache layer adds under 5 ms p99 over the store round trip | benchmark `getOrLoad` hits against a bare `GET` on the VPS runner | not run |
+| S50 | SC-001 (4 instances): 0 overshoot at 2x the limit through 1, 2 and 4 instances (e2e covers two) | `specs/domains/S50-rate-limiter/quickstart.md`, "Ops artifacts" (`pnpm loadtest:ratelimit`) | not run |
+| S50 | SC-002: lease-served decision under 1 ms p99; 100,000 decisions/s with at most 10% store calls | same file (k6/benchmark on the VPS runner) | not run |
+| S50 | SC-003: after three store failures no request waits for a timeout; no limiter-caused 5xx on fail-open routes under load | same file (stop Redis under k6 load) | not run |
+| S50 | SC-007: every route of apps/core is limited, defaulted or exempt | same file (boot-time route listing) | not run |
