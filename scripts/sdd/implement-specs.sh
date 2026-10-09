@@ -160,6 +160,12 @@ step() { # $1 = dir, $2 = step name, $3 = prompt
   # plan, tasks and analyze are one-shot per spec: a re-run (after a later failure) must not pay for them again.
   # Delete the .<step>.done marker to redo one.
   case "$2" in plan|tasks|analyze) [[ -f "$1/.$2.done" ]] && { echo "  $2 (done earlier)"; return 0; } ;; esac
+  # Markers from a run on another machine may be missing (older runs did not commit them). A ticked task proves that plan, tasks
+  # and analyze were finished: skip them, because redoing `tasks` could regenerate tasks.md and wipe the ticks.
+  case "$2" in plan|tasks|analyze)
+    if [[ -f "$1/tasks.md" ]] && grep -q -E '^- \[[xX]\]' "$1/tasks.md"; then
+      touch "$1/.$2.done"; echo "  $2 (done earlier: tasks are already ticked)"; return 0
+    fi ;; esac
   echo "  $2"
   local rc=0
   run_claude "$1/.$2.log" "$3" "${IMPL_TOOLS[@]}" || rc=$?

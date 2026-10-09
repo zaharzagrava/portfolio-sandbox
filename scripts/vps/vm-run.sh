@@ -49,17 +49,31 @@ fail_and_wait() { # a setup problem or an unexpected loop failure: keep the mach
 say "runner starting: order=$SDD_ORDER until=${SDD_UNTIL:-none} ids='${SDD_ARGS:-}' hours=$SDD_HOURS branch=$PUSH_BRANCH"
 
 # --- git: work on PUSH_BRANCH (resume it if it exists on origin, else start from BASE_BRANCH), never on BASE_BRANCH
-git config --global user.name "${GIT_AUTHOR_NAME:-SDD runner}"
-git config --global user.email "${GIT_AUTHOR_EMAIL:-sdd-runner@users.noreply.github.com}"
+# identity through the environment, never through `git config --global`: that would overwrite the identity of whoever runs this
+# script by hand (it happened once on a laptop while rehearsing)
+export GIT_AUTHOR_NAME="${GIT_AUTHOR_NAME:-SDD runner}" GIT_COMMITTER_NAME="${GIT_AUTHOR_NAME:-SDD runner}"
+export GIT_AUTHOR_EMAIL="${GIT_AUTHOR_EMAIL:-sdd-runner@users.noreply.github.com}" GIT_COMMITTER_EMAIL="${GIT_AUTHOR_EMAIL:-sdd-runner@users.noreply.github.com}"
 git fetch -q origin || fail_and_wait "git fetch failed (deploy key?)"
-if git ls-remote --exit-code --heads origin "$PUSH_BRANCH" >/dev/null 2>&1; then
-  git checkout -q -B "$PUSH_BRANCH" "origin/$PUSH_BRANCH" || fail_and_wait "cannot check out $PUSH_BRANCH"
+
+# where to start: the newest of PUSH_BRANCH and the safety snapshot sdd/wip (a crashed run leaves the snapshot newer, with its
+# uncommitted work); a branch that does not exist yet starts from BASE_BRANCH
+pick_start_ref() {
+  local auto="" wip="" wt at=0
+  git rev-parse -q --verify "refs/remotes/origin/$PUSH_BRANCH" >/dev/null && auto="origin/$PUSH_BRANCH"
+  git rev-parse -q --verify "refs/remotes/origin/sdd/wip" >/dev/null && wip="origin/sdd/wip"
+  if [[ -n "$wip" ]]; then
+    wt="$(git log -1 --format=%ct "$wip")"
+    [[ -n "$auto" ]] && at="$(git log -1 --format=%ct "$auto")"
+    (( wt > at )) && { echo "$wip"; return; }
+  fi
+  [[ -n "$auto" ]] && echo "$auto" || echo "origin/$BASE_BRANCH"
+}
+start_ref="$(pick_start_ref)"
+git checkout -q -B "$PUSH_BRANCH" "$start_ref" || fail_and_wait "cannot check out $start_ref"
+if [[ "$start_ref" != "origin/$BASE_BRANCH" ]]; then
   git merge -q --no-edit "origin/$BASE_BRANCH" || { git merge --abort; fail_and_wait "merging $BASE_BRANCH into $PUSH_BRANCH conflicts; merge it yourself and run again"; }
-  say "resuming $PUSH_BRANCH ($(git rev-parse --short HEAD))"
-else
-  git checkout -q -B "$PUSH_BRANCH" "origin/$BASE_BRANCH" || fail_and_wait "cannot create $PUSH_BRANCH from $BASE_BRANCH"
-  say "new $PUSH_BRANCH from $BASE_BRANCH ($(git rev-parse --short HEAD))"
 fi
+say "starting from $start_ref ($(git rev-parse --short HEAD))"
 
 # --- dependencies and the files git does not carry
 pnpm install --frozen-lockfile --prefer-offline >"$LOG/install.log" 2>&1 || fail_and_wait "pnpm install failed (see $LOG/install.log)"
@@ -108,6 +122,23 @@ if command -v tmux >/dev/null; then
 fi
 ntfy "SDD runner working" "Stack is up, starting the loop (order $SDD_ORDER, until ${SDD_UNTIL:-the next checkpoint}, deadline in ${SDD_HOURS}h)." 3 hammer_and_wrench
 
+# --- rolling safety snapshot: every SNAPSHOT_MIN minutes the whole working tree (including uncommitted work) is pushed to the
+# branch sdd/wip. It uses a temporary git index and commit-tree, so it never touches the real index, the loop's commits or
+# sdd/auto. If this machine dies, the latest state is on GitHub.
+snapshot_loop() {
+  local every="${SDD_SNAPSHOT_SECONDS:-$(( ${SNAPSHOT_MIN:-15} * 60 ))}" last="" idx tree c
+  while sleep "$every"; do
+    idx="$(mktemp)"; cp "$(git rev-parse --git-dir)/index" "$idx" 2>/dev/null
+    tree="$(GIT_INDEX_FILE="$idx" git add -A >/dev/null 2>&1 && GIT_INDEX_FILE="$idx" git write-tree 2>/dev/null)"
+    rm -f "$idx"
+    [[ -n "$tree" && "$tree" != "$last" ]] || continue
+    c="$(git commit-tree "$tree" -p HEAD -m "wip(sdd) snapshot $(date -u +%FT%TZ)")" || continue
+    if git push -q -f origin "$c:refs/heads/sdd/wip" 2>/dev/null; then last="$tree"; say "snapshot pushed to sdd/wip ($(git rev-parse --short "$c"))"; fi
+  done
+}
+snapshot_loop &
+SNAP_PID=$!
+
 # --- the loop
 say "loop starting"
 # shellcheck disable=SC2086
@@ -115,7 +146,7 @@ scripts/sdd/implement-specs.sh ${SDD_ARGS:-} >"$LOG/loop.log" 2>&1
 code=$?
 say "loop ended with exit code $code"
 
-kill "$MON_PID" 2>/dev/null || true
+kill "$MON_PID" "$SNAP_PID" 2>/dev/null || true
 [[ -n "$STACK_PID" ]] && { kill -INT "$STACK_PID" 2>/dev/null || true; sleep 5; }
 
 # --- keep everything: commit leftovers, push
