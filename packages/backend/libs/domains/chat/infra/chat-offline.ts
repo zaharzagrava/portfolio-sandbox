@@ -41,6 +41,9 @@ interface OfflineCheck {
 export class ChatOfflineScheduler implements Projector {
   readonly name = 'chat-offline-scheduler';
   readonly topics = [ChatMessagePosted.topic];
+  // A repeated schedule only repeats a delayed check, and the check notifies once per channel and recipient.
+  readonly idempotency = 'natural' as const;
+  readonly handles = [{ event: ChatMessagePosted }];
 
   constructor(
     @InjectConnection() private readonly sequelize: Sequelize,
@@ -64,13 +67,17 @@ export class ChatOfflineScheduler implements Projector {
         },
       );
       if (recipients.length > MAX_RECIPIENTS) continue;
-      await this.queue.enqueueBatch<OfflineCheck>(
+      const { failed } = await this.queue.enqueueBatch<OfflineCheck>(
         CHAT_OFFLINE_QUEUE,
         recipients.map(({ userId }) => ({
           body: { ...m, recipientId: userId },
           options: { delaySeconds: GRACE_SEC },
         })),
       );
+      if (failed.length)
+        throw new Error(
+          `offline-check enqueue rejected ${failed.length} entries: ${failed[0].reason}`,
+        );
     }
   }
 }

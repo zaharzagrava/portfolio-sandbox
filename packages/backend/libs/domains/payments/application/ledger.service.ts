@@ -8,7 +8,7 @@ import {
 } from '@nestjs/common';
 import { QueryTypes } from 'sequelize';
 import { LedgerJournalKind } from '../infra/models/ledger-entry.model';
-import { DomainEventsService } from '@app/infrastructure/events/domain-events.service';
+import { OutboxService } from '@app/infrastructure/outbox/outbox.service';
 import { JournalPosted } from './events/ledger-events';
 import { InjectModel } from '@nestjs/sequelize';
 import LedgerEntry from '../infra/models/ledger-entry.model';
@@ -23,7 +23,7 @@ export class LedgerService {
     @InjectModel(LedgerEntry)
     private readonly ledgerEntryModel: typeof LedgerEntry,
     private readonly dbUtilsService: DbUtilsService,
-    @Optional() private readonly domainEvents?: DomainEventsService,
+    @Optional() private readonly domainEvents?: OutboxService,
   ) {}
 
   public async recordMarketplaceSale({
@@ -117,7 +117,7 @@ export class LedgerService {
       { transaction: tx, validate: true },
     );
 
-    await this.domainEvents?.record(
+    await this.domainEvents?.append(
       JournalPosted.create(journal.journalId, 1, {
         kind: journal.kind,
         lines: journal.lines,

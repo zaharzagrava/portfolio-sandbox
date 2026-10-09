@@ -133,17 +133,15 @@ describe('Trending & sponsored clicks (e2e)', () => {
       clicks: 30,
       invalid: 2,
     };
-    await clickhouse
-      .getClient()
-      .insert({
-        table: 'ad_click_minute',
-        format: 'JSONEachRow',
-        values: [
-          batch,
-          batch,
-          { ...batch, source_partition: 4, first_offset: 7, clicks: 10 },
-        ],
-      });
+    await clickhouse.getClient().insert({
+      table: 'ad_click_minute',
+      format: 'JSONEachRow',
+      values: [
+        batch,
+        batch,
+        { ...batch, source_partition: 4, first_offset: 7, clicks: 10 },
+      ],
+    });
 
     expect(
       await app.get(AdBillingJobs).billHour({ hour: hour.toISOString() }),
@@ -163,22 +161,20 @@ describe('Trending & sponsored clicks (e2e)', () => {
         86_400_000 +
         10 * 3_600_000,
     ); // yesterday 10:00
-    await clickhouse
-      .getClient()
-      .insert({
-        table: 'ad_click_minute',
-        format: 'JSONEachRow',
-        values: [
-          {
-            campaign_id: campaignId,
-            minute: chTime(hour).slice(0, 19),
-            source_partition: 0,
-            first_offset: 0,
-            clicks: 12,
-            invalid: 0,
-          },
-        ],
-      });
+    await clickhouse.getClient().insert({
+      table: 'ad_click_minute',
+      format: 'JSONEachRow',
+      values: [
+        {
+          campaign_id: campaignId,
+          minute: chTime(hour).slice(0, 19),
+          source_partition: 0,
+          first_offset: 0,
+          clicks: 12,
+          invalid: 0,
+        },
+      ],
+    });
     await app.get(AdBillingJobs).billHour({ hour: hour.toISOString() });
 
     const raw = (id: string, valid = 1) => ({
@@ -190,13 +186,11 @@ describe('Trending & sponsored clicks (e2e)', () => {
       valid,
     });
     const ids = Array.from({ length: 10 }, () => v4());
-    await clickhouse
-      .getClient()
-      .insert({
-        table: 'ad_clicks_raw',
-        format: 'JSONEachRow',
-        values: [...ids.map((id) => raw(id)), raw(ids[0]), raw(v4(), 0)],
-      }); // 10 valid unique, 1 dup, 1 invalid
+    await clickhouse.getClient().insert({
+      table: 'ad_clicks_raw',
+      format: 'JSONEachRow',
+      values: [...ids.map((id) => raw(id)), raw(ids[0]), raw(v4(), 0)],
+    }); // 10 valid unique, 1 dup, 1 invalid
 
     expect(
       await app

@@ -13,3 +13,8 @@ interviews) until its status says so. The implementation loop appends here (rule
 | S54 | SC-001: 10 000 responses of every error kind parse as problem+json with 0 leaks | `specs/domains/S54-platform-toolkit/quickstart.md`, "Ops artifacts" (error sample) | not run |
 | S54 | SC-006: 1 000 parallel requests with one Idempotency-Key give exactly one side effect | same file (parallel idempotency) | not run |
 | S54 | SC-010: a new capability adds a domain error, probe check, shutdown task, outbound client and idempotent route using only contract names | same file (throwaway capability) | not run |
+| S53 | SC-001: 10 000 randomized commit/rollback transactions with relay crashes and broker outages lose no committed event and emit none for a rollback | `specs/domains/S53-events-projections/quickstart.md`, "Ops artifacts" (randomized crash driver) | not run |
+| S53 | SC-004: with `minVersion`, 99% of reads see the write within 500 ms and 100% within 2.5 s | same file (read-your-writes latency run) | not run |
+| S53 | SC-005: projection lag p99 under 2 s at 1, 2 and 4 instances on 100 000 events | same file (F-05 load script) | not run |
+| S53 | SC-006: 100 000-event shadow rebuild with zero failed live reads and promotion refused until caught up | same file (rebuild drill) | not run |
+| S53 | AS-21 (not an SC): the CDC relay emits the same topic, key, value and headers as the poller | same file (`S53_CDC=1` outbox-cdc spec with the `cdc` profile) | not run |

@@ -23,7 +23,9 @@ import { EventsModule } from '@app/infrastructure/events/events.module';
     ApiConfigModule,
     DbUtilsModule,
     AuthModule,
-    EventsModule,
+    EventsModule.forAggregates([
+      { aggregateType: 'ledger', retention: 'full-history' },
+    ]),
   ],
   providers: [LedgerService],
   exports: [LedgerService],

@@ -2,12 +2,13 @@ import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
 import { InjectConnection, InjectModel } from '@nestjs/sequelize';
 import { Op, Sequelize } from 'sequelize';
 import Payment, { PaymentStatus } from './models/payment.model';
-import { KafkaTopicGroup } from '@app/infrastructure/outbox/outbox.model';
+import { PaymentProcessed } from '../application/events/payment-events';
 import { JobHandler } from '@app/infrastructure/jobs/job-handler.decorator';
 import { JobsService } from '@app/infrastructure/jobs/jobs.service';
 import { StripeService } from '@app/infrastructure/stripe/stripe.service';
 import { LedgerService } from '../application/ledger.service';
 import { OutboxService } from '@app/infrastructure/outbox/outbox.service';
+import { TransactionRunner } from '@app/infrastructure/context';
 import { LEDGER_ACCOUNTS, PLATFORM_FEE_MINOR } from '../domain/accounts';
 
 declare module '@app/infrastructure/jobs/job-types' {
@@ -32,6 +33,7 @@ export class PaymentResolutionJobs implements OnApplicationBootstrap {
   constructor(
     @InjectModel(Payment) private readonly paymentModel: typeof Payment,
     @InjectConnection() private readonly sequelize: Sequelize,
+    private readonly transactions: TransactionRunner,
     private readonly stripe: StripeService,
     private readonly ledger: LedgerService,
     private readonly outbox: OutboxService,
@@ -81,8 +83,7 @@ export class PaymentResolutionJobs implements OnApplicationBootstrap {
     status: PaymentStatus.COMPLETED | PaymentStatus.FAILED,
     providerRef: string | null,
   ) {
-    // S54 T037 audit: explicit unit of work, opens its own transaction by design; no network I/O inside.
-    await this.sequelize.transaction(async (tx) => {
+    await this.transactions.run(async (tx) => {
       const [updated] = await this.paymentModel.update(
         { status, providerRef },
         {
@@ -103,9 +104,8 @@ export class PaymentResolutionJobs implements OnApplicationBootstrap {
           tx,
         });
       }
-      await this.outbox.notify(
-        {
-          topic: KafkaTopicGroup.PAYMENTS_RESPONSES,
+      await this.outbox.append(
+        PaymentProcessed.create(payment.idempotencyKey, 1, {
           payload: {
             idempotency_key: payment.idempotencyKey,
             bisOrderId: payment.bisOrderId,
@@ -116,7 +116,7 @@ export class PaymentResolutionJobs implements OnApplicationBootstrap {
           ...(status === PaymentStatus.FAILED && {
             error: { title: 'Payment failed (resolved from UNKNOWN)' },
           }),
-        },
+        }),
         tx,
       );
     });

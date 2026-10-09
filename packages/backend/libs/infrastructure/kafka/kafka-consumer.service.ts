@@ -9,36 +9,34 @@ import {
   SpanStatusCode,
   TraceFlags,
 } from '@opentelemetry/api';
-import { OutboxService } from '@app/infrastructure/outbox/outbox.service';
-import { KafkaTopicGroup } from '@app/infrastructure/outbox/outbox.model';
 import { KafkaMessage } from 'kafkajs';
 
 export interface ConsumeKafkaEventOptions<T, P> {
   spanName: string;
   data: P;
   context: KafkaContext;
-  responseTopic: KafkaTopicGroup;
-  dlqTopic: KafkaTopicGroup;
+  responseTopic: string;
   handler: (params: {
     data: P;
     activeSpan: Span;
     idempotencyKey: string;
     context: KafkaContext;
-    responseTopic: KafkaTopicGroup;
+    responseTopic: string;
   }) => Promise<T>;
 }
 
+/**
+ * @deprecated Legacy request/response path, kept only until S13 moves the payments flows to `payments.events` and
+ * `appendTask` (S53 G-27). No new callers: consumers use the projection framework (`Projector`), which validates,
+ * retries, dead-letters to `<group>.dlq` and commits offsets after the effect. Errors are no longer turned into
+ * outbox DLQ rows; they propagate to the Kafka client's own retry.
+ */
 @Injectable()
 export class KafkaConsumerService {
   private readonly tracer = trace.getTracer('kafka-consumer-service');
 
-  constructor(private readonly outboxService: OutboxService) {}
-
-  async consume<T, P>(
-    options: ConsumeKafkaEventOptions<T, P>,
-  ): Promise<T | void> {
-    const { spanName, data, context, responseTopic, dlqTopic, handler } =
-      options;
+  async consume<T, P>(options: ConsumeKafkaEventOptions<T, P>): Promise<T> {
+    const { spanName, data, context, responseTopic, handler } = options;
 
     const originalMessage = context.getMessage();
     const idempotencyKey = originalMessage.key?.toString() ?? '';
@@ -65,31 +63,21 @@ export class KafkaConsumerService {
           }
           span.setAttribute('messaging.kafka.topic', context.getTopic());
 
-          // Delegate to your centralized Outbox & Error Boundary
-          return await this.outboxService.wrapInOutbox(
-            async () => {
-              return await handler({
-                data,
-                activeSpan: span,
-                idempotencyKey,
-                context,
-                responseTopic,
-              });
-            },
-            {
-              payload: data,
-              dlqTopic,
-            },
-          );
+          return await handler({
+            data,
+            activeSpan: span,
+            idempotencyKey,
+            context,
+            responseTopic,
+          });
         } catch (error: any) {
-          // Any error reaching here was evaluated as isRetryable === true by wrapInOutbox
           span.recordException(error);
           span.setStatus({
             code: SpanStatusCode.ERROR,
             message: error.message,
           });
           span.addEvent(
-            'Transient infrastructure failure; re-throwing to trigger KafkaJS backoff.',
+            'Handler failed; re-throwing to trigger KafkaJS backoff.',
           );
 
           throw error;
@@ -141,7 +129,7 @@ export class KafkaConsumerService {
     return trace.setSpanContext(ROOT_CONTEXT, {
       traceId: match[1].toLowerCase(),
       spanId: match[2].toLowerCase(),
-      traceFlags: parseInt(match[3], 16) as TraceFlags,
+      traceFlags: parseInt(match[3], 16),
       isRemote: true,
     });
   }

@@ -26,7 +26,7 @@ import LedgerEntry from './ledger-entry.model';
  * load orders' Nest modules while this barrel is still mid-load, leaving `@InjectModel(Payment)` undefined in
  * apps that load payments first (payment-processor). Every use below is lazy, so resolve orders on demand.
  */
-// eslint-disable-next-line @typescript-eslint/no-require-imports
+
 const orders = (): typeof import('@app/domains/orders') =>
   require('@app/domains/orders');
 
@@ -88,10 +88,7 @@ export interface PaymentWithAllFilters {
     if (bisOrderFilters) {
       findOptions.include?.push({
         model: orders().BisOrderModel.scope({
-          method: [
-            orders().BisOrderScope.WithAll,
-            bisOrderFilters as BisOrderWithAllFilters,
-          ],
+          method: [orders().BisOrderScope.WithAll, bisOrderFilters],
         }),
         as: 'bisOrder',
         required: bisOrderRequired ?? false,

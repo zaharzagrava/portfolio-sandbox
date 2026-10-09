@@ -6,9 +6,9 @@ import {
 import { InjectConnection } from '@nestjs/sequelize';
 import { QueryTypes, Sequelize } from 'sequelize';
 import { v7 as uuidv7 } from 'uuid';
-import { ProductService } from '@app/domains/catalog';
+import { ProductService, productChanged } from '@app/domains/catalog';
 import { OutboxService } from '@app/infrastructure/outbox/outbox.service';
-import { KafkaTopicGroup } from '@app/infrastructure/outbox/outbox.model';
+import { TransactionRunner } from '@app/infrastructure/context';
 import { RedisService } from '@app/infrastructure/redis/redis.service';
 import { TaskQueue } from '@app/infrastructure/sqs/task-queue.port';
 
@@ -109,6 +109,7 @@ export function pickFields<T extends object>(
 export class PublicCatalogService {
   constructor(
     @InjectConnection() private readonly sequelize: Sequelize,
+    private readonly transactions: TransactionRunner,
     private readonly products: ProductService,
     private readonly outbox: OutboxService,
     private readonly redis: RedisService,
@@ -203,8 +204,7 @@ export class PublicCatalogService {
       stock?: number;
     },
   ) {
-    // S54 T037 audit: explicit unit of work, opens its own transaction by design; no network I/O inside.
-    await this.sequelize.transaction(async (transaction) => {
+    await this.transactions.run(async (transaction) => {
       const [, meta] = await this.sequelize.query(
         `UPDATE "Product" SET title = coalesce(:title, title), description = coalesce(:description, description), price = coalesce(:price, price),
                 quantity = coalesce(:stock, quantity), version = version + 1, "updatedAt" = now()
@@ -226,14 +226,7 @@ export class PublicCatalogService {
           type: 'resource_missing',
           message: `No such product: ${id}`,
         });
-      await this.outbox.notify(
-        {
-          topic: KafkaTopicGroup.PRODUCTS_EVENTS,
-          payload: { productId: id },
-          aggregateId: id,
-        },
-        transaction,
-      );
+      await this.outbox.append(productChanged(id), transaction);
     });
     return this.get(shopId, id);
   }
@@ -320,8 +313,7 @@ export class PublicCatalogService {
     items: { productId: string; stock: number }[],
   ): Promise<number> {
     if (items.length === 0) return 0;
-    // S54 T037 audit: explicit unit of work, opens its own transaction by design; no network I/O inside.
-    return this.sequelize.transaction(async (transaction) => {
+    return this.transactions.run(async (transaction) => {
       const rows = await this.sequelize.query<{ id: string }>(
         `UPDATE "Product" p SET quantity = u.stock, version = p.version + 1, "updatedAt" = now()
          FROM unnest(CAST(:ids AS uuid[]), CAST(:stocks AS int[])) AS u(id, stock)
@@ -338,14 +330,7 @@ export class PublicCatalogService {
         },
       );
       for (const { id } of rows)
-        await this.outbox.notify(
-          {
-            topic: KafkaTopicGroup.PRODUCTS_EVENTS,
-            payload: { productId: id },
-            aggregateId: id,
-          },
-          transaction,
-        );
+        await this.outbox.append(productChanged(id), transaction);
       return rows.length;
     });
   }

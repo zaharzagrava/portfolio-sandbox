@@ -47,7 +47,7 @@ export class WebhookWorkers implements OnApplicationBootstrap, OnModuleDestroy {
     await this.deliverer.requeue(msg, async (m, dedupe) => {
       await this.queue.enqueue(WEBHOOK_QUEUE, m, {
         groupId: m.endpointId,
-        deduplicationId: createHash('sha256')
+        dedupeId: createHash('sha256')
           .update(dedupe)
           .digest('hex')
           .slice(0, 64),

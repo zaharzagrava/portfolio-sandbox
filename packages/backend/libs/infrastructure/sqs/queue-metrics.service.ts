@@ -11,8 +11,15 @@ import {
 } from '@aws-sdk/client-sqs';
 import { metrics } from '@opentelemetry/api';
 import { ApiConfigService } from '@app/common/config';
+import { MetricsRegistry } from '@app/common/telemetry/metrics-registry';
 
 const POLL_MS = 30_000;
+
+const queueDepth = MetricsRegistry.gauge({
+  name: 'task_queue_depth',
+  help: 'Approximate messages per task queue and state (visible, in_flight, delayed)',
+  labels: ['queue', 'state'],
+});
 
 /**
  * Queue depth + oldest-message age as Prometheus gauges (SD-33): the inputs
@@ -59,15 +66,16 @@ export class QueueMetricsService
   }
 
   onApplicationBootstrap() {
-    void this.poll();
-    this.timer = setInterval(() => void this.poll(), POLL_MS);
+    void this.refresh();
+    this.timer = setInterval(() => void this.refresh(), POLL_MS);
   }
 
   onModuleDestroy() {
     clearInterval(this.timer);
   }
 
-  private async poll() {
+  /** Reads every queue's counts once and updates the gauges (also called by specs). */
+  async refresh() {
     try {
       // One account/region per environment: every queue it lists is ours.
       const { QueueUrls = [] } = await this.client.send(
@@ -88,17 +96,20 @@ export class QueueMetricsService
             ],
           }),
         );
-        next.set(url.split('/').pop()!, {
+        const queue = url.split('/').pop()!;
+        const counts = {
           visible: Number(a.ApproximateNumberOfMessages ?? 0),
           inFlight: Number(a.ApproximateNumberOfMessagesNotVisible ?? 0),
           delayed: Number(a.ApproximateNumberOfMessagesDelayed ?? 0),
-        });
+        };
+        next.set(queue, counts);
+        queueDepth.set(counts.visible, { queue, state: 'visible' });
+        queueDepth.set(counts.inFlight, { queue, state: 'in_flight' });
+        queueDepth.set(counts.delayed, { queue, state: 'delayed' });
       }
       this.snapshot = next;
     } catch (error) {
-      this.logger.warn(
-        `queue metrics poll failed: ${(error as Error).message}`,
-      );
+      this.logger.warn(`queue metrics poll failed: ${(error as Error).name}`);
     }
   }
 }

@@ -7,6 +7,7 @@ import { ConfigUtilsService } from './config-utils/config-utils.service';
 import { Environment, Environments } from '@app/common/types';
 import { isSecretKey } from '@app/common/logging/redaction';
 import { ConfigRules } from './config-rules';
+import { eventsConfigKeys } from './events-config';
 
 dotenv.config({
   /**
@@ -522,10 +523,7 @@ export class ApiConfigService {
             verify: joi.string().optional().allow(''),
             name: 'CLAMAV_HOST',
           },
-          outbox_relay: {
-            verify: joi.string().valid('poller', 'cdc').optional(),
-            name: 'OUTBOX_RELAY',
-          },
+          ...eventsConfigKeys,
           cassandra_password: {
             verify: joi.string().optional().allow(''),
             name: 'CASSANDRA_PASSWORD',

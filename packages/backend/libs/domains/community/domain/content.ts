@@ -37,7 +37,7 @@ const ALLOWED = {
  */
 export function renderUserMarkdown(markdown: string): string {
   return sanitizeHtml(
-    marked.parse(markdown, { async: false, gfm: true, breaks: true }) as string,
+    marked.parse(markdown, { async: false, gfm: true, breaks: true }),
     ALLOWED,
   );
 }

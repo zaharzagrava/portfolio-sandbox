@@ -35,7 +35,9 @@ import { EventsModule } from '@app/infrastructure/events/events.module';
 
 @Module({
   imports: [
-    EventsModule,
+    EventsModule.forAggregates([
+      { aggregateType: 'auctions', retention: 'full-history' },
+    ]),
     SequelizeModule.forFeature([Auction, ...ORDER_MODELS]),
   ],
   providers: [AuctionJobs, BidRelay, OrderService, FlashStockService],

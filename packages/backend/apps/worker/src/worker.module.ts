@@ -46,6 +46,8 @@ import { DatabaseModule } from '@app/infrastructure/database';
 import { RedisModule } from '@app/infrastructure/redis/redis.module';
 import { JobsWorkerModule } from '@app/infrastructure/jobs/jobs-worker.module';
 import { IdempotencyModule } from '@app/infrastructure/idempotency';
+import { OutboxMaintenanceModule } from '@app/infrastructure/outbox/outbox-maintenance.module';
+import { InboxModule } from '@app/infrastructure/inbox';
 import { ProductWorkerModule } from '@app/domains/catalog';
 import { AuthWorkerModule } from '@app/domains/identity';
 
@@ -66,6 +68,9 @@ import { AuthWorkerModule } from '@app/domains/identity';
     JobsWorkerModule,
     // Runs the platform.purge-idempotency-keys job (S54 FR-069).
     IdempotencyModule,
+    // Runs the outbox.purge-published job (S53 FR-019) and the inbox.purge job (S53 FR-041).
+    OutboxMaintenanceModule,
+    InboxModule,
     ProductWorkerModule,
     AuthWorkerModule,
     TenancyWorkerModule,

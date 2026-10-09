@@ -5,14 +5,17 @@ import { ProductModel as Product } from '@app/domains/catalog';
 import { RedisService } from '@app/infrastructure/redis/redis.service';
 import { EventEnvelope } from '@app/infrastructure/events/event-envelope';
 import { Projector } from '@app/infrastructure/projections/projector';
-import { KafkaTopicGroup } from '@app/infrastructure/outbox/outbox.model';
+import { ProductChanged } from '@app/domains/catalog';
 import { FeedPublisher } from '../application/feed-publisher.service';
 
 /** New product in a shop → `new_product` feed item for the shop's followers (once per product). */
 @Injectable()
 export class ProductFeedProjector implements Projector {
   readonly name = 'product-feed';
-  readonly topics = [KafkaTopicGroup.PRODUCTS_EVENTS];
+  readonly topics = [ProductChanged.topic];
+  // A `SET NX` marker per product makes the feed item happen once.
+  readonly idempotency = 'natural' as const;
+  readonly handles = [{ event: ProductChanged }];
   readonly coalesce = true;
 
   constructor(

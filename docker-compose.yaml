@@ -187,7 +187,8 @@ services:
 
   debezium:
     # F-05: log-based CDC alternative to the outbox poller (infra/debezium/README.md)
-    image: quay.io/debezium/connect:3.0
+    build: ./infra/debezium # stock Connect image plus the scripting plugin the `kind = 'event'` filter needs
+    image: marketplace/debezium-connect:3.0
     container_name: payment_system_debezium
     profiles: ['cdc']
     depends_on:
@@ -202,6 +203,7 @@ services:
       CONFIG_STORAGE_REPLICATION_FACTOR: 1
       OFFSET_STORAGE_REPLICATION_FACTOR: 1
       STATUS_STORAGE_REPLICATION_FACTOR: 1
+      DB_HOSTNAME: db
       DB_USERNAME: ${DB_USERNAME}
       DB_PASSWORD: ${DB_PASSWORD}
       DB_NAME: ${DB_NAME}

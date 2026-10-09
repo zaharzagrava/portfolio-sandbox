@@ -68,6 +68,9 @@ export class LoggingPurger extends CdnPurger {
 export class StoryCacheInvalidator implements Projector {
   readonly name = 'story-cache-invalidation';
   readonly topics = [StoryPublished.topic];
+  // Purging a tag twice is harmless.
+  readonly idempotency = 'natural' as const;
+  readonly handles = [{ event: StoryPublished }];
   private readonly http = ResilientHttpClient.create({
     name: 'next-revalidate',
     internal: true,

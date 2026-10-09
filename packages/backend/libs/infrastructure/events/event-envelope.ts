@@ -1,36 +1,27 @@
-import { z } from 'zod';
+import { eventEnvelopeSchema } from '@marketplace-sandbox/contracts';
+
+/** The envelope schema lives in `packages/contracts` (S53 FR-007); the backend re-exports that very object. */
+export { eventEnvelopeSchema };
 
 /**
- * Every domain event on Kafka uses this envelope (lesson 06/01 §7):
- *  - eventId: consumer-side dedupe (inbox) key
- *  - aggregateId: Kafka message key → per-aggregate ordering
- *  - version: aggregate version after the change → version-guarded projections
- *  - schemaVersion: payload contract version (consumers upcast old versions)
+ * Every domain event on the outbox and on Kafka uses this envelope (field rules: `contracts/envelope.md`):
+ *  - eventId: UUIDv7, consumer-side dedupe (inbox) key
+ *  - type + version: payload contract (consumers route on the pair and upcast older versions)
+ *  - aggregateId: Kafka message key, per-aggregate ordering
+ *  - aggregateVersion: aggregate state version after the change, drives version-guarded projections
  *  - traceparent: W3C trace context across the async hop
  */
-export const eventEnvelopeSchema = z.object({
-  eventId: z.string().min(1),
-  eventName: z.string().min(1),
-  aggregateType: z.string().min(1),
-  aggregateId: z.string().min(1),
-  version: z.number().int().nonnegative(),
-  occurredAt: z.string(),
-  schemaVersion: z.number().int().positive(),
-  traceparent: z.string().optional(),
-  payload: z.unknown(),
-});
-
 export interface EventEnvelope<
-  TName extends string = string,
-  TPayload = unknown,
+  TType extends string = string,
+  TPayload = Record<string, unknown>,
 > {
   eventId: string;
-  eventName: TName;
+  type: TType;
+  version: number;
   aggregateType: string;
   aggregateId: string;
-  version: number;
+  aggregateVersion: number;
   occurredAt: string;
-  schemaVersion: number;
   traceparent?: string;
   payload: TPayload;
 }

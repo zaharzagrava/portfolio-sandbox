@@ -12,7 +12,13 @@ import {
 
 /** SD-05 CMS + public read (core). */
 @Module({
-  imports: [AuthModule, EventsModule, JobsModule],
+  imports: [
+    AuthModule,
+    EventsModule.forAggregates([
+      { aggregateType: 'stories', retention: 'full-history' },
+    ]),
+    JobsModule,
+  ],
   providers: [StoriesService],
   exports: [StoriesService],
   controllers: [StoriesController],
@@ -31,7 +37,12 @@ export class StoriesJobs {
 
 /** SD-05 scheduled publishing (apps/worker). */
 @Module({
-  imports: [EventsModule, JobsModule],
+  imports: [
+    EventsModule.forAggregates([
+      { aggregateType: 'stories', retention: 'full-history' },
+    ]),
+    JobsModule,
+  ],
   providers: [StoriesService, StoriesJobs],
 })
 export class StoriesWorkerModule {}

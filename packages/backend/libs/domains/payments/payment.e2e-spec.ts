@@ -12,9 +12,7 @@ import { PaymentService } from './application/payment.service';
 import { StripeService } from '@app/infrastructure/stripe/stripe.service';
 import Payment, { PaymentStatus } from './infra/models/payment.model';
 import LedgerEntry from './infra/models/ledger-entry.model';
-import Outbox, {
-  KafkaTopicGroup,
-} from '@app/infrastructure/outbox/outbox.model';
+import Outbox from '@app/infrastructure/outbox/outbox.model';
 import { ProductModel as Product } from '@app/domains/catalog';
 import { UserModel as User } from '@app/domains/identity';
 import { BisOrderModel as BisOrder } from '@app/domains/orders';
@@ -60,7 +58,6 @@ describe('PaymentService (e2e, real Postgres)', () => {
   const execute = (p: PostPaymentParamsDto) =>
     paymentService.executePayment({
       params: p,
-      topic: KafkaTopicGroup.PAYMENTS_RESPONSES,
       activeSpan: span(),
     });
 
@@ -125,9 +122,7 @@ describe('PaymentService (e2e, real Postgres)', () => {
 
       const events = await outboxModel.findAll();
       expect(
-        events.filter(
-          (e) => e.payload?.idempotency_key === message.idempotency_key,
-        ),
+        events.filter((e) => e.aggregateId === message.idempotency_key),
       ).toHaveLength(1);
     });
 

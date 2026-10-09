@@ -22,31 +22,27 @@ export function persistedQueriesMiddleware(
     if (hash) {
       const query = allowlist[hash];
       if (!query)
-        return res
-          .status(200)
-          .json({
-            errors: [
-              {
-                message: 'PersistedQueryNotFound',
-                extensions: { code: 'PERSISTED_QUERY_NOT_FOUND' },
-              },
-            ],
-          });
-      body!.query = query;
-      delete body!.extensions!.persistedQuery; // resolved here; don't let Apollo's own APQ cache re-process it
-      return next();
-    }
-    if (enforce && req.method === 'POST')
-      return res
-        .status(400)
-        .json({
+        return res.status(200).json({
           errors: [
             {
-              message: 'Only persisted queries are allowed',
-              extensions: { code: 'PERSISTED_QUERY_REQUIRED' },
+              message: 'PersistedQueryNotFound',
+              extensions: { code: 'PERSISTED_QUERY_NOT_FOUND' },
             },
           ],
         });
+      body.query = query;
+      delete body.extensions!.persistedQuery; // resolved here; don't let Apollo's own APQ cache re-process it
+      return next();
+    }
+    if (enforce && req.method === 'POST')
+      return res.status(400).json({
+        errors: [
+          {
+            message: 'Only persisted queries are allowed',
+            extensions: { code: 'PERSISTED_QUERY_REQUIRED' },
+          },
+        ],
+      });
     next();
   };
 }

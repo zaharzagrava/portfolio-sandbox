@@ -3,7 +3,7 @@
   "config": {
     "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
     "plugin.name": "pgoutput",
-    "database.hostname": "db",
+    "database.hostname": "${env:DB_HOSTNAME}",
     "database.port": "5432",
     "database.user": "${env:DB_USERNAME}",
     "database.password": "${env:DB_PASSWORD}",
@@ -14,15 +14,25 @@
     "slot.name": "marketplace_outbox",
     "tombstones.on.delete": "false",
 
-    "transforms": "outbox",
+    "transforms": "onlyEvents,outbox,headers",
+
+    "transforms.onlyEvents.type": "io.debezium.transforms.Filter",
+    "transforms.onlyEvents.language": "jsr223.groovy",
+    "transforms.onlyEvents.condition": "value.op == 'c' && value.after.kind == 'event'",
+
     "transforms.outbox.type": "io.debezium.transforms.outbox.EventRouter",
     "transforms.outbox.table.field.event.id": "id",
     "transforms.outbox.table.field.event.key": "aggregateId",
     "transforms.outbox.table.field.event.payload": "payload",
-    "transforms.outbox.table.fields.additional.placement": "eventName:header:eventName",
+    "transforms.outbox.table.expand.json.payload": "true",
     "transforms.outbox.route.by.field": "topic",
     "transforms.outbox.route.topic.replacement": "${routedByValue}",
-    "transforms.outbox.table.expand.json.payload": "true",
+    "transforms.outbox.table.op.invalid.behavior": "warn",
+
+    "transforms.headers.type": "org.apache.kafka.connect.transforms.HeaderFrom$Value",
+    "transforms.headers.fields": "eventId,type,version,traceparent",
+    "transforms.headers.headers": "eventId,type,version,traceparent",
+    "transforms.headers.operation": "copy",
 
     "key.converter": "org.apache.kafka.connect.storage.StringConverter",
     "value.converter": "org.apache.kafka.connect.json.JsonConverter",

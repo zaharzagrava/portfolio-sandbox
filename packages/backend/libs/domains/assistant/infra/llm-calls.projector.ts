@@ -10,6 +10,9 @@ import { LlmCallCompleted } from '../application/events/assistant-events';
 export class LlmCallsProjector implements Projector {
   readonly name = 'llm-calls-log';
   readonly topics = [LlmCallCompleted.topic];
+  // ClickHouse keeps one row per event_id at merge time.
+  readonly idempotency = 'natural' as const;
+  readonly handles = [{ event: LlmCallCompleted }];
   private readonly sink: ClickHouseSink;
 
   constructor(clickhouse: ClickHouseService) {

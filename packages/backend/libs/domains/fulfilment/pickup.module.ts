@@ -8,7 +8,13 @@ import { PickupController } from './api/pickup.controller';
 
 /** SD-13 (core). */
 @Module({
-  imports: [AuthModule, ElasticsearchModule, EventsModule],
+  imports: [
+    AuthModule,
+    ElasticsearchModule,
+    EventsModule.forAggregates([
+      { aggregateType: 'pickup', retention: 'full-history' },
+    ]),
+  ],
   providers: [PickupService, AvailabilityIndex],
   exports: [PickupService, AvailabilityIndex],
   controllers: [PickupController],

@@ -132,3 +132,31 @@ The implementation agent's to-do list. Paths are under `packages/backend/libs/in
 - `OutboxService.notify` callers (thin `{ productId }` legacy rows on `products.events`, and payment rows): `developer-platform/application/public-catalog.service.ts:139,186`, `payments/application/payment.service.ts:141,268,289,329`, `payments/infra/payment-resolution.jobs.ts:79`, `catalog-sync/application/sync.service.ts:88,113`, `catalog-sync/application/integration-sync.service.ts:141`, `catalog/application/product.service.ts:100`, `catalog/application/drafts.service.ts:133`. Each becomes a typed `append` of a state-carrying event (S05 owns the product events; S13 the payment ones).
 - `deduplicationId` callers (rename to `dedupeId`): `developer-platform/infra/webhook-router.projector.ts:65`, `developer-platform/infra/webhook-workers.ts:41`.
 - The list above of `KafkaTopicGroup` users came from a search cut at 20 files; re-run `grep -rn KafkaTopicGroup packages/backend` for the complete list before editing.
+
+## Sibling-spec follow-ups
+
+- **S05**: register `products` as `latest-per-key`; emit full-state `catalog.product_*` events with strictly increasing `aggregateVersion` (including delete) through `OutboxService.append`; replace the `notify` callers and `KafkaTopicGroup` use in `product.service.ts`, `drafts.service.ts` and the projectors; adopt envelope fields `type`/`version`/`aggregateVersion`.
+- **S07**: register its aggregate types with `TopicRegistry`; replace the raw `INSERT INTO "Outbox"` in `catalog-import.service.ts:217` (G-52) and the `notify` callers in `sync.service.ts` and `integration-sync.service.ts` with `append`.
+- **S10**: replace the raw SQL on `ProcessedWebhookEvent` in `stripe-webhook.controller.ts:49` (G-53) with `InboxService.claim('stripe', eventId)` / `markStatus` from an application service; adopt envelope fields in `order-payment.listener.ts`.
+- **S13**: move payments flows off `KafkaTopicGroup.payments.*`, `OutboxService.notify` and `KafkaConsumerService.consume` to `payments.events` and `appendTask`; the legacy consume path (G-27) is deleted after that.
+- **S29**: replace the raw `INSERT INTO "Outbox"` in `media/infra/media-processor.ts:70` (G-51) with `appendWithExecutor` or `append`.
+- **S32**: take over `ProductSearchProjector` (envelope fields, group `search-indexer` kept), the raw SQL on `"Shop"` in `product-search.projector.ts:33-41` (G-55: R3 copy or `tenancy.getShopsByIds`), and the generic ES client under `EsVersionedSink` (D-16).
+- **S12**: decide how projectors get membership data so `apps/projector` stops registering tenancy's `ShopMembershipModel` (G-54).
+- **S24**: the Rust gateway appends outbox rows per the row contract in `contracts/envelope.md`; adopt `dedupeId`.
+- **S36**: move the marketing click aggregator onto `TransactionalPipeline` and `ClickHouseSink.insert(..., { dedupeToken })` (G-44).
+- **S42**, **S43**: the shared HTTP idempotency store comes from S54, not S53.
+- **Consuming domains (D-8)**: export a consumer module and declare an idempotency mechanism per projector; `developer-platform` renames `deduplicationId` to `dedupeId` (`webhook-router.projector.ts:65`, `webhook-workers.ts:41`).
+- **All domains with tests that query `"Outbox"` (G-56)**: move to the `outboxRowsFor` helper once S53 ships it.
+
+Where the S53 codemod must touch these files to keep the tree compiling, it changes names only (envelope fields, topic strings), never behaviour.
+
+## Implementation notes (T050–T068)
+
+- **Check gate**: `pnpm check:table-ownership --strict` still exits 1 because of the 87 D-7/D-12 cross-domain findings owned by other specs. S53 added `pnpm check:technical-tables` (`--technical-only`), which gates the technical tables (Outbox, ProcessedWebhookEvent, IdempotencyKey, Job…) and is green with exactly the three handed-over files (S29 `media-processor.ts`, S07 `catalog-import.service.ts`, S10 `stripe-webhook.controller.ts`); the hand-over list is in `scripts/technical-table-scan.ts` and fails as stale once an owner fixes its file.
+- **`task_queue_oldest_message_age_seconds`**: SQS has no API for the age of the oldest message (CloudWatch only). The gauge is the wait of the oldest message the last receive of a consumer returned (0 when the receive was empty). `task_queue_depth{queue,state}` comes from `QueueMetricsService.refresh()`.
+- **Dead-letter code names**: Kafka consumers use `INVALID_PAYLOAD` (`contracts/dead-letter.md`); the spec text of AS-51/AS-107 says `SCHEMA_INVALID`, which is the code of the queue consumer (AS-96). Tests follow the contract file.
+- **AS-18 versus AS-106**: relay log lines carry the row ID, topic, reason code and error class but not the `eventId` (it is envelope content and AS-18 forbids payload in the line); consumer dead-letter lines carry `eventId` and `traceId` when the message has them.
+- **FIFO consumers**: a receive can return several messages of one group; the consumer now handles a group's messages one at a time and stops the group at the first failure (AS-93).
+- **Task rows**: `taskRow` stores the active `traceparent` in the row; the relay sends it as the message attribute; the dedupe ID is sent for FIFO queues only (standard queues take none).
+- **Migration** `20261009170000-outbox-parked-index.js`: partial index for the `outbox_parked` gauge.
+- **AS-21** (CDC) remains unrun: see `quickstart.md` Ops artifacts and `specs/UNVERIFIED.md`.

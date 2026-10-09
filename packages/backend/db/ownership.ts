@@ -42,6 +42,7 @@ export type Domain = (typeof DOMAINS)[number];
 /** IX.3 technical allowlist owners. Adding one requires a constitution amendment. */
 export const INFRASTRUCTURE_OWNERS = [
   'outbox',
+  'inbox',
   'idempotency',
   'jobs',
   'database',
@@ -173,7 +174,7 @@ export const OWNERSHIP = {
   KnowledgeChunk: 'domain:assistant',
   // IX.3 technical allowlist
   Outbox: 'infrastructure:outbox',
-  ProcessedWebhookEvent: 'infrastructure:idempotency', // inbox / processed-events role
+  ProcessedWebhookEvent: 'infrastructure:inbox', // the inbox (S53); table name kept (IX.2)
   IdempotencyKey: 'infrastructure:idempotency', // S54 request idempotency facility
   Job: 'infrastructure:jobs',
   JobKey: 'infrastructure:jobs',

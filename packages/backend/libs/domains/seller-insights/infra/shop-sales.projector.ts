@@ -13,6 +13,9 @@ import { OrderPaid } from '@app/domains/orders';
 export class ShopSalesProjector implements Projector {
   readonly name = 'shop-sales-olap';
   readonly topics = [OrderPaid.topic];
+  // ReplacingMergeTree absorbs replays.
+  readonly idempotency = 'natural' as const;
+  readonly handles = [{ event: OrderPaid }];
   private readonly sink: ClickHouseSink;
 
   constructor(

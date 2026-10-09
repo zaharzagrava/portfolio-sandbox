@@ -9,7 +9,8 @@ import { QueryTypes, Sequelize } from 'sequelize';
 import { hostname } from 'node:os';
 import { RedisService } from '@app/infrastructure/redis/redis.service';
 import { ShutdownRegistry } from '@app/infrastructure/lifecycle';
-import { DomainEventsService } from '@app/infrastructure/events/domain-events.service';
+import { OutboxService } from '@app/infrastructure/outbox/outbox.service';
+import { TransactionRunner } from '@app/infrastructure/context';
 import { AuctionLeaderChanged } from '../application/events/auction-events';
 import {
   ACTIVE_AUCTIONS_KEY,
@@ -37,7 +38,8 @@ export class BidRelay implements OnApplicationBootstrap {
   constructor(
     private readonly redis: RedisService,
     @InjectConnection() private readonly sequelize: Sequelize,
-    private readonly events: DomainEventsService,
+    private readonly transactions: TransactionRunner,
+    private readonly events: OutboxService,
     @Optional() shutdown?: ShutdownRegistry,
   ) {
     shutdown?.register({
@@ -112,8 +114,7 @@ export class BidRelay implements OnApplicationBootstrap {
       string
     >)[];
 
-    // S54 T037 audit: explicit unit of work, opens its own transaction by design; no network I/O inside.
-    await this.sequelize.transaction(async (transaction) => {
+    await this.transactions.run(async (transaction) => {
       await this.sequelize.query(
         `INSERT INTO "Bid" ("auctionId", "userId", "maxAmount", outcome, "priceAfter", version, "createdAt")
          SELECT * FROM unnest(CAST(:auctionIds AS uuid[]), CAST(:userIds AS uuid[]), CAST(:maxes AS bigint[]), CAST(:outcomes AS text[]),
@@ -174,7 +175,7 @@ export class BidRelay implements OnApplicationBootstrap {
           changed.leaderId &&
           changed.previousLeaderId !== changed.leaderId
         ) {
-          await this.events.record(
+          await this.events.append(
             AuctionLeaderChanged.create(b.auctionId, changed.version, {
               previousLeaderId: changed.previousLeaderId,
               leaderId: changed.leaderId,

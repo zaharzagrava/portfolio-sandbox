@@ -83,7 +83,7 @@ export class AnthropicLlmProvider implements LlmProvider {
     const counted = await this.client.beta.messages.countTokens({
       model: request.model,
       system: request.system,
-      tools: request.tools as Anthropic.Beta.MessageCountTokensParams['tools'],
+      tools: request.tools,
       messages: request.messages,
     });
     return counted.input_tokens;

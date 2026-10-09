@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
-import { ProductModule } from '@app/domains/catalog';
-import { OutboxModule } from '@app/infrastructure/outbox/outbox.module';
+import { ProductModule, PRODUCTS_AGGREGATE } from '@app/domains/catalog';
+import { EventsModule } from '@app/infrastructure/events/events.module';
 import { KafkaProducerModule } from '@app/infrastructure/kafka/kafka-producer.module';
 import { CacheModule } from '@app/infrastructure/cache/cache.module';
 import { SqsModule } from '@app/infrastructure/sqs/sqs.module';
@@ -16,7 +16,7 @@ import { V1Controller } from './api/v1.controller';
 @Module({
   imports: [
     ProductModule,
-    OutboxModule,
+    EventsModule.forAggregates([PRODUCTS_AGGREGATE]),
     KafkaProducerModule,
     CacheModule,
     SqsModule,

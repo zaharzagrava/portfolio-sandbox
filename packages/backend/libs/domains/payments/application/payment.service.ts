@@ -16,7 +16,7 @@ import {
   Fatal_InternalServerError,
 } from '@app/common/errors';
 import { LedgerService } from './ledger.service';
-import { KafkaTopicGroup } from '@app/infrastructure/outbox/outbox.model';
+import { PaymentProcessed } from './events/payment-events';
 import { OutboxService } from '@app/infrastructure/outbox/outbox.service';
 import { InjectConnection, InjectModel } from '@nestjs/sequelize';
 import { BisUtilsService } from './bis-utils.service';
@@ -52,11 +52,9 @@ export class PaymentService {
    */
   public async executePayment({
     params,
-    topic,
     activeSpan,
   }: {
     params: PostPaymentParamsDto;
-    topic: KafkaTopicGroup;
     activeSpan: Span;
   }): Promise<PostPaymentResponseDto> {
     if (!activeSpan) throw new Error('Active span is required');
@@ -149,14 +147,15 @@ export class PaymentService {
           const stockRow = (stockRows as any[])[0];
 
           if (!stockRow || stockRow.quantity < quantity) {
-            await this.outboxService.notify({
-              topic,
-              payload: params,
-              extra: { payment },
-              error: new Domain_InsufficientStockError({
-                detail: `Product ${productId} has insufficient stock`,
+            await this.outboxService.appendStandalone(
+              PaymentProcessed.create(idempotency_key, 1, {
+                payload: params,
+                extra: { payment },
+                error: new Domain_InsufficientStockError({
+                  detail: `Product ${productId} has insufficient stock`,
+                }),
               }),
-            });
+            );
 
             return { payment };
           }
@@ -283,12 +282,11 @@ export class PaymentService {
 
                 // See README.md#adr -> "Why do you use the Outbox pattern alongside Kafka?"
                 // Example: The Payment status update above and this Outbox insert happen in the same DB transaction 'tx', guaranteeing they NEVER get lost.
-                await this.outboxService.notify(
-                  {
-                    topic: topic,
+                await this.outboxService.append(
+                  PaymentProcessed.create(idempotency_key, 1, {
                     payload: params,
                     extra: { payment },
-                  },
+                  }),
                   tx,
                 );
               } else {
@@ -308,9 +306,8 @@ export class PaymentService {
                   });
                 }
 
-                await this.outboxService.notify(
-                  {
-                    topic: topic,
+                await this.outboxService.append(
+                  PaymentProcessed.create(idempotency_key, 1, {
                     extra: { payment, stripeResponse },
                     payload: params,
                     // Domain errors are not forwarded to the DLQ, they are recorded in DB and communicated to the client
@@ -319,7 +316,7 @@ export class PaymentService {
                       title: 'Stripe payment failed',
                       causes: [lastPaymentError],
                     }),
-                  },
+                  }),
                   tx,
                 );
               }
@@ -356,15 +353,14 @@ export class PaymentService {
               status: PaymentStatus.REFUNDED,
             };
 
-            await this.outboxService.notify(
-              {
-                topic,
+            await this.outboxService.append(
+              PaymentProcessed.create(idempotency_key, 2, {
                 payload: params,
                 extra: { payment: refundedPayment },
                 error: new Domain_InsufficientStockError({
                   detail: `Stock ran out for product ${productId} after payment succeeded — refunded`,
                 }),
-              },
+              }),
               tx,
             );
 

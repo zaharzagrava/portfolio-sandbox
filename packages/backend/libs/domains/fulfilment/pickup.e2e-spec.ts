@@ -158,12 +158,10 @@ describe('Pickup near me (e2e)', () => {
     });
     await pickup.setStock(shopId, point.id, p.id, 5); // v1
     await pickup.setStock(shopId, point.id, p.id, 0); // v2
-    const rows = await app
-      .get<typeof Outbox>(getModelToken(Outbox))
-      .findAll({
-        where: { topic: PickupStockChanged.topic },
-        order: [['createdAt', 'ASC']],
-      });
+    const rows = await app.get<typeof Outbox>(getModelToken(Outbox)).findAll({
+      where: { topic: PickupStockChanged.topic },
+      order: [['createdAt', 'ASC']],
+    });
     const [v1, v2] = rows.map((r) => r.payload as EventEnvelope);
 
     await projector.project([v2]);

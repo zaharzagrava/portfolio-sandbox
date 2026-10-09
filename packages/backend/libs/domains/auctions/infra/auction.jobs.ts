@@ -7,7 +7,8 @@ import { RedisService } from '@app/infrastructure/redis/redis.service';
 import { RealtimePublisher } from '@app/infrastructure/realtime/realtime-publisher.service';
 import { JobsService } from '@app/infrastructure/jobs/jobs.service';
 import { JobHandler } from '@app/infrastructure/jobs/job-handler.decorator';
-import { DomainEventsService } from '@app/infrastructure/events/domain-events.service';
+import { OutboxService } from '@app/infrastructure/outbox/outbox.service';
+import { TransactionRunner } from '@app/infrastructure/context';
 import { CLOSE_AUCTION } from './place-bid.lua';
 import { ACTIVE_AUCTIONS_KEY, stateKey } from '../application/auction.service';
 import { AuctionClosed } from '../application/events/auction-events';
@@ -29,10 +30,11 @@ export class AuctionJobs {
     @InjectModel(Auction) private readonly auctionModel: typeof Auction,
     @InjectModel(BisOrder) private readonly orderModel: typeof BisOrder,
     @InjectConnection() private readonly sequelize: Sequelize,
+    private readonly transactions: TransactionRunner,
     private readonly redis: RedisService,
     private readonly realtime: RealtimePublisher,
     private readonly jobs: JobsService,
-    private readonly events: DomainEventsService,
+    private readonly events: OutboxService,
     private readonly orders: OrderService,
   ) {}
 
@@ -71,8 +73,7 @@ export class AuctionJobs {
       !!leader &&
       (auction.reservePrice === null || price >= Number(auction.reservePrice));
 
-    // S54 T037 audit: explicit unit of work, opens its own transaction by design; no network I/O inside.
-    await this.sequelize.transaction(async (transaction) => {
+    await this.transactions.run(async (transaction) => {
       const [updated] = await this.auctionModel.update(
         {
           status: reserveMet ? 'CLOSED' : 'UNSOLD',
@@ -92,7 +93,7 @@ export class AuctionJobs {
           { replacements: { id: auction.productId }, transaction },
         );
       }
-      await this.events.record(
+      await this.events.append(
         AuctionClosed.create(auctionId, auction.version + 1, {
           shopId: auction.shopId,
           productId: auction.productId,
@@ -137,8 +138,7 @@ export class AuctionJobs {
         replacements: { auctionId, winner: auction.winnerId },
       },
     );
-    // S54 T037 audit: explicit unit of work, opens its own transaction by design; no network I/O inside.
-    await this.sequelize.transaction(async (transaction) => {
+    await this.transactions.run(async (transaction) => {
       if (!runnerUp) {
         await this.sequelize.query(
           `UPDATE "Product" SET quantity = quantity + 1, version = version + 1 WHERE id = :id`,

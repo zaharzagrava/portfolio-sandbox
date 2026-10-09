@@ -7,7 +7,8 @@ import Plan from './models/plan.model';
 import Invoice from './models/invoice.model';
 import { JobHandler } from '@app/infrastructure/jobs/job-handler.decorator';
 import { JobsService } from '@app/infrastructure/jobs/jobs.service';
-import { DomainEventsService } from '@app/infrastructure/events/domain-events.service';
+import { OutboxService } from '@app/infrastructure/outbox/outbox.service';
+import { TransactionRunner } from '@app/infrastructure/context';
 import { BillingService } from '../application/billing.service';
 import { BillingGateway } from './billing-gateway.port';
 import { EntitlementsService } from '../application/entitlements.service';
@@ -42,7 +43,8 @@ export class BillingJobs implements OnApplicationBootstrap {
     private readonly entitlements: EntitlementsService,
     private readonly usage: UsageService,
     private readonly jobs: JobsService,
-    private readonly events: DomainEventsService,
+    private readonly events: OutboxService,
+    private readonly runner: TransactionRunner,
   ) {}
 
   async onApplicationBootstrap() {
@@ -103,8 +105,7 @@ export class BillingJobs implements OnApplicationBootstrap {
       ...(await this.creditLines(subscription)),
     ];
 
-    // S54 T037 audit: explicit unit of work, opens its own transaction by design; no network I/O inside.
-    await this.sequelize.transaction(async (transaction) => {
+    await this.runner.run(async (transaction) => {
       const [advanced] = await this.subscriptionModel.update(
         {
           currentPeriodStart: start,
@@ -252,20 +253,23 @@ export class BillingJobs implements OnApplicationBootstrap {
       nextDays !== undefined
         ? new Date(Date.now() + nextDays * 86_400_000)
         : null;
-    await invoice.update({
-      attempts: attempt,
-      nextAttemptAt,
-      status: nextAttemptAt ? 'OPEN' : 'UNCOLLECTIBLE',
+    // The state change and its event commit together (S53 outbox contract).
+    await this.runner.run(async () => {
+      await invoice.update({
+        attempts: attempt,
+        nextAttemptAt,
+        status: nextAttemptAt ? 'OPEN' : 'UNCOLLECTIBLE',
+      });
+      await this.events.append(
+        InvoicePaymentFailed.create(invoice.id, attempt, {
+          subscriptionId: subscription.id,
+          subjectType: subscription.subjectType,
+          subjectId: subscription.subjectId,
+          attempt,
+          nextAttemptAt: nextAttemptAt?.toISOString() ?? null,
+        }),
+      );
     });
-    await this.events.record(
-      InvoicePaymentFailed.create(invoice.id, attempt, {
-        subscriptionId: subscription.id,
-        subjectType: subscription.subjectType,
-        subjectId: subscription.subjectId,
-        attempt,
-        nextAttemptAt: nextAttemptAt?.toISOString() ?? null,
-      }),
-    );
 
     if (nextAttemptAt) {
       if (subscription.status !== 'PAST_DUE')
@@ -287,17 +291,23 @@ export class BillingJobs implements OnApplicationBootstrap {
     subscription: Subscription,
     status: Subscription['status'],
   ) {
-    await subscription.update({ status, version: subscription.version + 1 });
+    await this.runner.run(async () => {
+      await subscription.update({ status, version: subscription.version + 1 });
+      await this.events.append(
+        SubscriptionStatusChanged.create(
+          subscription.id,
+          subscription.version,
+          {
+            subjectType: subscription.subjectType,
+            subjectId: subscription.subjectId,
+            status,
+          },
+        ),
+      );
+    });
     await this.entitlements.invalidate(
       subscription.subjectType,
       subscription.subjectId,
-    );
-    await this.events.record(
-      SubscriptionStatusChanged.create(subscription.id, subscription.version, {
-        subjectType: subscription.subjectType,
-        subjectId: subscription.subjectId,
-        status,
-      }),
     );
   }
 }

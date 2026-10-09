@@ -20,7 +20,9 @@ import { BILLING_MODELS } from './billing.module';
 @Module({
   imports: [
     JobsModule,
-    EventsModule,
+    EventsModule.forAggregates([
+      { aggregateType: 'billing', retention: 'full-history' },
+    ]),
     StripeModule,
     KafkaProducerModule,
     ClickHouseModule,

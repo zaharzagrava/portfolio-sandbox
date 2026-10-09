@@ -19,6 +19,9 @@ const REMOVE_AT = 0.7;
 export class LiveModerationConsumer implements Projector {
   readonly name = 'live-moderation';
   readonly topics = [LiveCommentPosted.topic];
+  // Scoring is deterministic and a removal is keyed by comment id, so a repeat produces the same removal.
+  readonly idempotency = 'natural' as const;
+  readonly handles = [{ event: LiveCommentPosted }];
   private readonly classifier: ToxicityClassifier;
 
   constructor(

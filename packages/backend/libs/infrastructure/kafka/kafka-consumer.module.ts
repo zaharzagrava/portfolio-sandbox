@@ -1,12 +1,8 @@
 import { Module } from '@nestjs/common';
-import { ApiConfigModule } from '@app/common/config';
-import { DbUtilsModule } from '@app/infrastructure/database/db-utils/db-utils.module';
-import { OutboxDtoModule } from '@app/infrastructure/outbox/dto/outbox-dto.module';
-import { OutboxModule } from '@app/infrastructure/outbox/outbox.module';
 import { KafkaConsumerService } from './kafka-consumer.service';
 
+/** @deprecated with `KafkaConsumerService`: removed once S13 migrates the payments flows (S53 G-27). */
 @Module({
-  imports: [ApiConfigModule, DbUtilsModule, OutboxDtoModule, OutboxModule],
   providers: [KafkaConsumerService],
   exports: [KafkaConsumerService],
 })

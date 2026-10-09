@@ -19,9 +19,9 @@ module.exports = {
     },
     {
       name: 'x6-production-never-imports-test',
-      comment: 'The e2e harness (test/) is for specs only.',
+      comment: 'The e2e harness (test/) is for specs only. Test-only kits under libs/**/testing/ support specs.',
       severity: 'error',
-      from: { path: '^(apps|libs)/', pathNot: SPEC },
+      from: { path: '^(apps|libs)/', pathNot: [SPEC, '^libs/.*/testing/'] },
       to: { path: '^test/' },
     },
     {

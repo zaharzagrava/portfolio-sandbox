@@ -5,7 +5,8 @@ import { ShopModel as Shop } from '@app/domains/tenancy';
 import Payment from './infra/models/payment.model';
 import { LedgerModule } from './ledger.module';
 import { StripeModule } from '@app/infrastructure/stripe/stripe.module';
-import { OutboxModule } from '@app/infrastructure/outbox/outbox.module';
+import { EventsModule } from '@app/infrastructure/events/events.module';
+import { PAYMENTS_AGGREGATE } from './application/events/payment-events';
 import { ProjectionsModule } from '@app/infrastructure/projections/projections.module';
 import {
   PayoutProvider,
@@ -22,7 +23,7 @@ import { SettlementListener } from './infra/settlement.listener';
   imports: [
     LedgerModule,
     StripeModule,
-    OutboxModule,
+    EventsModule.forAggregates([PAYMENTS_AGGREGATE]),
     SequelizeModule.forFeature([Payout, Shop, Payment]),
     ProjectionsModule.forProjectors([SettlementListener], [LedgerModule]),
   ],

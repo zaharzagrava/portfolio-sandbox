@@ -6,7 +6,6 @@ import {
   Payload,
 } from '@nestjs/microservices';
 import { OutboxService } from '@app/infrastructure/outbox/outbox.service';
-import { KafkaTopicGroup } from '@app/infrastructure/outbox/outbox.model';
 import { KafkaConsumerService } from '@app/infrastructure/kafka/kafka-consumer.service';
 import { PaymentService } from '../application/payment.service';
 import { PostPaymentParamsDto } from './payment.dto';
@@ -30,12 +29,10 @@ export class PaymentController {
       spanName: 'PaymentConsumer.handlePayment',
       data,
       context,
-      responseTopic: KafkaTopicGroup.PAYMENTS_RESPONSES,
-      dlqTopic: KafkaTopicGroup.PAYMENTS_DLQ,
-      handler: async ({ data, activeSpan, responseTopic }) => {
+      responseTopic: 'payments.events',
+      handler: async ({ data, activeSpan }) => {
         return await this.paymentService.executePayment({
           params: data,
-          topic: responseTopic,
           activeSpan,
         });
       },

@@ -15,3 +15,8 @@ export { ProductCacheInvalidator } from './infra/product-cache-invalidator.proje
 export { ProductDtoService } from './infra/product-dto.service';
 export { ProductSearchProjector } from './infra/product-search.projector';
 export { ProductBatchReadModule } from './batch-read.module';
+export {
+  ProductChanged,
+  productChanged,
+  PRODUCTS_AGGREGATE,
+} from './application/events/product-events';

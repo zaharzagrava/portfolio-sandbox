@@ -63,11 +63,11 @@ function matches(condition: Condition, ctx: EvalContext): boolean {
     case 'in':
       return Array.isArray(actual)
         ? actual.some((a) => values.includes(a))
-        : actual !== undefined && values.includes(actual as string);
+        : actual !== undefined && values.includes(actual);
     case 'not_in':
       return Array.isArray(actual)
         ? !actual.some((a) => values.includes(a))
-        : actual === undefined || !values.includes(actual as string);
+        : actual === undefined || !values.includes(actual);
     case 'eq':
       return actual === values[0];
     case 'neq':

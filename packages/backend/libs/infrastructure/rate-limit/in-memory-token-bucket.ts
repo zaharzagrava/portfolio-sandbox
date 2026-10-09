@@ -22,7 +22,7 @@ export class InMemoryTokenBucket {
     let bucket = this.buckets.get(key);
     if (!bucket) {
       if (this.buckets.size >= this.maxKeys)
-        this.buckets.delete(this.buckets.keys().next().value!);
+        this.buckets.delete(this.buckets.keys().next().value);
       bucket = { tokens: this.capacity, ts: now };
     } else {
       this.buckets.delete(key); // re-insert → most recently used at the end

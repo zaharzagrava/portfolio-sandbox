@@ -2,7 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectConnection } from '@nestjs/sequelize';
 import { QueryTypes, Sequelize } from 'sequelize';
 import { TransactionRunner } from '@app/infrastructure/context';
-import { DomainEventsService } from '@app/infrastructure/events/domain-events.service';
+import { OutboxService } from '@app/infrastructure/outbox/outbox.service';
 import { PickupStockChanged } from './events/pickup-events';
 
 export interface PickupPointNear {
@@ -26,7 +26,7 @@ export class PickupService {
   constructor(
     @InjectConnection() private readonly sequelize: Sequelize,
     private readonly tx: TransactionRunner,
-    private readonly events: DomainEventsService,
+    private readonly events: OutboxService,
   ) {}
 
   async createPoint(
@@ -82,7 +82,7 @@ export class PickupService {
           transaction,
         },
       );
-      await this.events.record(
+      await this.events.append(
         PickupStockChanged.create(
           `${pickupPointId}:${productId}`,
           stock.version,

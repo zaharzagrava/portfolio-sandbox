@@ -62,6 +62,9 @@ export class OfferTimeoutWorker
 export class CourierTrackProjector implements Projector {
   readonly name = 'courier-track';
   readonly topics = [CourierLocationsReported.topic];
+  // DynamoDB puts are keyed by courier, day and timestamp: the same point twice is one item.
+  readonly idempotency = 'natural' as const;
+  readonly handles = [{ event: CourierLocationsReported }];
 
   constructor(private readonly dynamo: DynamoService) {}
 

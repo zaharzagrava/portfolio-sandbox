@@ -22,7 +22,12 @@ import { EntitlementsService } from './application/entitlements.service';
 import { UsageService } from './application/usage.service';
 
 @Module({
-  imports: [EventsModule, SequelizeModule.forFeature(BILLING_MODELS)],
+  imports: [
+    EventsModule.forAggregates([
+      { aggregateType: 'billing', retention: 'full-history' },
+    ]),
+    SequelizeModule.forFeature(BILLING_MODELS),
+  ],
   providers: [
     { provide: BillingGateway, useClass: FakeBillingGateway },
     BillingJobs,

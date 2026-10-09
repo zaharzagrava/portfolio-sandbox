@@ -12,6 +12,9 @@ export const MAX_BASKET = 30;
 export class OrderBasketsProjector implements Projector {
   readonly name = 'order-baskets';
   readonly topics = [OrderPaid.topic];
+  // ClickHouse keeps one row per order at merge time.
+  readonly idempotency = 'natural' as const;
+  readonly handles = [{ event: OrderPaid }];
   private readonly sink: ClickHouseSink;
 
   constructor(clickhouse: ClickHouseService) {

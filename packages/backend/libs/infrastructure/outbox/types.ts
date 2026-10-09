@@ -1,13 +1,11 @@
-import { IntersectionType, PickType } from '@nestjs/swagger';
+import { IntersectionType } from '@nestjs/swagger';
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEnum, IsUUID } from 'class-validator';
-import { KafkaTopicGroup } from './outbox.model';
 import { IdField, TimestampsFields } from '@app/common/types';
 
-// --- --- --- --- --- Internal Types for Character --- --- --- --- --- //
+/** Shape of an outbox row for seeds and tests; production code appends through `OutboxService.append*`. */
 export class CreateOutboxDto {
   @ApiProperty()
-  topic: KafkaTopicGroup;
+  topic: string;
 
   @ApiProperty()
   payload: any;
@@ -18,7 +16,7 @@ export class CreateOutboxDto {
   @ApiProperty()
   error?: any;
 
-  /** Kafka key for per-aggregate ordering (F-05). */
+  /** Message key for per-aggregate ordering; never empty (database contract). */
   @ApiProperty()
   aggregateId?: string;
 }
@@ -29,8 +27,3 @@ export class OutboxRawDto extends IntersectionType(
 ) {}
 
 export class OutboxFullDto extends OutboxRawDto {}
-
-export interface OutboxWrapperConfig<P> {
-  payload: P;
-  dlqTopic: KafkaTopicGroup;
-}

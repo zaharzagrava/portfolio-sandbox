@@ -7,7 +7,7 @@ import { TaskQueue } from '@app/infrastructure/sqs/task-queue.port';
 import { EventEnvelope } from '@app/infrastructure/events/event-envelope';
 import { Projector } from '@app/infrastructure/projections/projector';
 import { OrderCancelled, OrderPaid } from '@app/domains/orders';
-import { KafkaTopicGroup } from '@app/infrastructure/outbox/outbox.model';
+import { ProductChanged } from '@app/domains/catalog';
 import {
   ApiVersion,
   isApiVersion,
@@ -42,7 +42,10 @@ interface ShopEvent {
 @Injectable()
 export class WebhookRouterProjector implements Projector {
   readonly name = 'webhook-router';
-  readonly topics = [OrderPaid.topic, KafkaTopicGroup.PRODUCTS_EVENTS];
+  readonly topics = [OrderPaid.topic, ProductChanged.topic];
+  // Each message carries a dedupe id derived from the source event and the endpoint; the queue drops repeats.
+  readonly idempotency = 'natural' as const;
+  readonly handles = [{ event: OrderPaid }, { event: ProductChanged }];
 
   constructor(
     @InjectConnection() private readonly sequelize: Sequelize,
@@ -82,14 +85,21 @@ export class WebhookRouterProjector implements Projector {
         } satisfies WebhookDelivery,
         options: {
           groupId: endpoint.id,
-          deduplicationId: createHash('sha256')
+          dedupeId: createHash('sha256')
             .update(`${e.eventId}:${endpoint.id}`)
             .digest('hex')
             .slice(0, 64),
         },
       };
     });
-    if (messages.length) await this.queue.enqueueBatch(WEBHOOK_QUEUE, messages);
+    if (messages.length) {
+      const { failed } = await this.queue.enqueueBatch(WEBHOOK_QUEUE, messages);
+      // The dedupe id makes re-sending the whole batch safe, so a rejected entry retries the event.
+      if (failed.length)
+        throw new Error(
+          `webhook enqueue rejected ${failed.length} entries: ${failed[0].reason}`,
+        );
+    }
     return messages.length;
   }
 
