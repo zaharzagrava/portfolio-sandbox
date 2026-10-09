@@ -143,7 +143,11 @@ export class BidRelay implements OnApplicationBootstrap {
           latest.set(b.auctionId, b);
       for (const b of latest.values()) {
         // `prev` CTE: the row is locked and its OLD leader read in the same statement.
-        const [changed] = await this.sequelize.query(
+        const [changed] = await this.sequelize.query<{
+          previousLeaderId: string | null;
+          leaderId: string | null;
+          version: number;
+        }>(
           `WITH prev AS (SELECT id, "leaderId" FROM "Auction" WHERE id = :auctionId FOR UPDATE)
            UPDATE "Auction" a SET "currentPrice" = :price, "leaderId" = NULLIF(:leader, '')::uuid, "endsAt" = to_timestamp(:endsAt / 1000.0),
                   version = :version, "bidCount" = a."bidCount" + :count, "updatedAt" = now()

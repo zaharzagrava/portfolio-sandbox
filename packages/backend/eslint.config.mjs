@@ -26,6 +26,9 @@ export default tseslint.config(
   },
   {
     rules: {
+      // Off: it declares result casts like (await sequelize.query(...)) as { id: string }[] unnecessary because the library types the
+      // result as object[]; its auto-fix then deletes them and the code stops compiling. tsc covers the real cases.
+      '@typescript-eslint/no-unnecessary-type-assertion': 'off',
       '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/no-floating-promises': 'off',
       '@typescript-eslint/no-unsafe-argument': 'warn',
