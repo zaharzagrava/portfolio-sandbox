@@ -84,7 +84,8 @@ warning (stalled, task running long, disk, container exited), each warning follo
 - *SDD runner FAILED*: a setup problem or a loop failure. The machine stays 2 hours: `scripts/vps/attach.sh`, logs in
   `/var/log/sdd/`.
 
-A new run resumes `sdd/auto` and merges `master` into it first. To start over from `master`: `git push origin --delete sdd/auto`.
+A new run resumes from the newest of `sdd/auto` and the safety snapshot `sdd/wip` (a crashed run leaves the snapshot newer, with its
+uncommitted work), and merges `master` into it first. To start over from `master`: `git push origin --delete sdd/auto`.
 
 ## Cost and safety
 
@@ -98,5 +99,6 @@ a project that holds nothing else. The runner writes only `sdd/auto`; protected 
 - No message after 15 min: `hcloud server list`, then `scripts/vps/attach.sh` or `ssh root@<ip> journalctl -u sdd-run`.
 - Fetch/push fails: the deploy key is missing or lacks write access (steps 3-4).
 - Tests fail only on the machine: check `free -h` and `docker stats`; `HCLOUD_SERVER_TYPE=ccx43` has 64 GB.
-- Kill a run: `hcloud server delete <name>`. Pushed work stays on `sdd/auto`; unpushed work on the machine is lost.
+- Kill a run: `hcloud server delete <name>`. Pushed work stays on `sdd/auto`; the latest safety snapshot (every 15 minutes,
+  uncommitted work included) is on branch `sdd/wip`. To recover after a crash: `git fetch origin && git checkout -B sdd/auto origin/sdd/wip && git push -f origin sdd/auto`.
 - Not covered yet: the front-end flow (dev stack + Playwright) on the machine.

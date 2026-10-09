@@ -30,12 +30,10 @@ infra/modules/lambda_sqs_worker/.placeholder.zip
 .obsidian/
 .aider*
 
-# SDD loop scratch (per spec): step logs, one-shot step markers, ownership baseline
+# SDD loop scratch (per spec): step logs only. The step markers (.plan.done ...) and the baselines (.ownership.baseline,
+# .tx.baseline) are NOT ignored: they are state, and a run that resumes the branch on another machine needs them.
 specs/**/.*.log
-specs/**/.*.done
-specs/**/.ownership.baseline
 
 # SDD monitor state and progress log
 .sdd-monitor/
 specs/.checkpoints/*.log
-specs/**/.tx.baseline

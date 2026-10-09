@@ -9,6 +9,7 @@
 #     --keep          never delete the machine (debugging; you must delete it yourself)
 #     --force         start even if another runner machine exists
 #     --dry-run       print what would be created, with secrets masked
+#     --no-check      skip the local test of the Claude token (normally done first: a few tokens, saves a wasted machine)
 #   Without IDs the loop works through the whole order up to --until or the next checkpoint.
 set -euo pipefail
 ROOT="$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel)"
@@ -23,6 +24,7 @@ while (( $# )); do
     --keep) KEEP=1; shift ;;
     --force) FORCE=1; shift ;;
     --dry-run) DRY_RUN=1; shift ;;
+    --no-check) NO_CHECK=1; shift ;;
     -h|--help) sed -n 2,14p "$0"; exit 0 ;;
     -*) die "unknown option $1" ;;
     *) IDS+=("$1"); shift ;;
@@ -39,6 +41,20 @@ HOURS="${HOURS:-${RUN_HOURS:-5}}"
 snap="$(snapshot_id)"; [[ -n "$snap" ]] || die "no snapshot yet: run scripts/vps/build-snapshot.sh first"
 
 say "preflight"
+tok="$CLAUDE_CODE_OAUTH_TOKEN"
+case "$tok" in
+  sk-ant-*) ;;
+  *) die "CLAUDE_CODE_OAUTH_TOKEN does not start with sk-ant-: it is ${#tok} characters long and looks wrong (cut off when copied? run 'claude setup-token' again in a terminal and copy the whole token)" ;;
+esac
+[[ "$tok" =~ ^[A-Za-z0-9_-]+$ ]] || die "CLAUDE_CODE_OAUTH_TOKEN contains characters a token never has (spaces, quotes or line breaks from copying?)"
+if [[ -z "${NO_CHECK:-}" && -z "${DRY_RUN:-}" ]]; then
+  say "testing the Claude token on this laptop (isolated config, a few tokens)"
+  cfg="$(mktemp -d)"
+  if ! out="$(CLAUDE_CONFIG_DIR="$cfg" CLAUDE_CODE_OAUTH_TOKEN="$tok" timeout 120 claude -p "reply with the single word ok" --tools "" --no-session-persistence 2>&1)"; then
+    rm -rf "$cfg"; die "the Claude token was rejected: ${out:0:200}"
+  fi
+  rm -rf "$cfg"
+fi
 git -C "$ROOT" fetch -q origin "$BASE_BRANCH"
 if ! git -C "$ROOT" merge-base --is-ancestor HEAD "origin/$BASE_BRANCH"; then
   die "your local commits are not on origin/$BASE_BRANCH yet; the machine can only see what is pushed: git push origin $BASE_BRANCH"
@@ -56,7 +72,7 @@ ud="$(mktemp)"; trap 'rm -f "$ud"' EXIT
   echo 'mkdir -p /etc/sdd /root/.ssh /var/log/sdd'
   echo "cat > /etc/sdd/env <<'SDD_ENV'"
   for v in HCLOUD_TOKEN CLAUDE_CODE_OAUTH_TOKEN NTFY_TOPIC NTFY_SERVER HEARTBEAT_URL REPO_SSH_URL BASE_BRANCH PUSH_BRANCH \
-           PASS_TIMEOUT_S FAILURE_KEEP_MIN GIT_AUTHOR_NAME GIT_AUTHOR_EMAIL; do
+           PASS_TIMEOUT_S FAILURE_KEEP_MIN SNAPSHOT_MIN GIT_AUTHOR_NAME GIT_AUTHOR_EMAIL; do
     printf '%s=%q\n' "$v" "${!v:-}"
   done
   printf '%s=%q\n' SDD_ORDER "$ORDER" SDD_UNTIL "$UNTIL" SDD_ARGS "${IDS[*]:-}" SDD_HOURS "$HOURS" SDD_KEEP "$KEEP"

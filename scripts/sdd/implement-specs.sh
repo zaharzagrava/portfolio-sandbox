@@ -115,8 +115,10 @@ ownership_count() { # $1 = domain column: cross-domain table accesses reported i
   (cd packages/backend && NODE_ENV=test pnpm check:table-ownership 2>&1 || true) | grep -c "$(code_path "$1")/" || true
 }
 
-tx_count() { # $1 = domain column: direct `.transaction(` call sites in non-test code of that backend domain
-  { grep -rn --include='*.ts' -E '\.transaction\(' "packages/backend/$(code_path "$1")" 2>/dev/null || true; } | { grep -v -E '\.(e2e-)?spec\.ts' || true; } | grep -c . || true
+tx_count() { # $1 = domain column: direct Sequelize `.transaction(` call sites in non-test, non-comment code of that backend domain
+  # (a Kafka producer.transaction() is not a database transaction, and a comment that mentions the call is not a call site)
+  { grep -rn --include='*.ts' -E '[sS]equelize[A-Za-z]*\.transaction\(' "packages/backend/$(code_path "$1")" 2>/dev/null || true; } \
+    | { grep -v -E '\.(e2e-)?spec\.ts' || true; } | { grep -v -E ':[0-9]+:[[:space:]]*(\*|//|/\*)' || true; } | grep -c . || true
 }
 
 gate_extras() { # $1 = capability id, $2 = domain column, $3 = spec dir
@@ -160,6 +162,12 @@ step() { # $1 = dir, $2 = step name, $3 = prompt
   # plan, tasks and analyze are one-shot per spec: a re-run (after a later failure) must not pay for them again.
   # Delete the .<step>.done marker to redo one.
   case "$2" in plan|tasks|analyze) [[ -f "$1/.$2.done" ]] && { echo "  $2 (done earlier)"; return 0; } ;; esac
+  # Markers from a run on another machine may be missing (older runs did not commit them). A ticked task proves that plan, tasks
+  # and analyze were finished: skip them, because redoing `tasks` could regenerate tasks.md and wipe the ticks.
+  case "$2" in plan|tasks|analyze)
+    if [[ -f "$1/tasks.md" ]] && grep -q -E '^- \[[xX]\]' "$1/tasks.md"; then
+      touch "$1/.$2.done"; echo "  $2 (done earlier: tasks are already ticked)"; return 0
+    fi ;; esac
   echo "  $2"
   local rc=0
   run_claude "$1/.$2.log" "$3" "${IMPL_TOOLS[@]}" || rc=$?
@@ -181,6 +189,17 @@ context_for() { # $1 = domain column
     web) echo "$base This is the Next.js app in packages/web: read packages/web/AGENTS.md and the relevant guide in packages/web/node_modules/next/dist/docs/ before writing code. Backend changes the UI needs go in packages/backend and follow the constitution (contracts in packages/contracts). The local dev stack is running (API at $API_URL, watch mode: after backend edits wait for GET $API_URL/health/ready before re-running UI tests); Playwright starts the web dev server; run it with `--reporter=line --max-failures=1` and only the spec file for the page you changed until the final full run. Add test tooling the test plan needs (e.g. React Testing Library, widen the Vitest include)." ;;
     journey) echo "$base Journey tests go in packages/backend/test/journeys/<slug>.journey-spec.ts (see test/journeys/README.md) and run with pnpm test:journeys against the running local stack (API at $API_URL, watch mode: after backend edits wait for GET $API_URL/health/ready). Fix broken hand-offs in the domain that owns them." ;;
   esac
+}
+
+# gate_digest <gate log>: the lines that explain why the gate failed, at most ~9000 characters (the log can be hundreds of KB).
+gate_digest() {
+  { grep -n -E '^(FAIL|Test Suites:|Tests:)|^ *●.*›|error TS[0-9]+|ESLint errors|^scenarios in test-plan|integrity|^check:|^direct \.transaction|tsc failed|^[A-Za-z0-9_./-]+:[0-9]+ ' "$1" | head -60
+    echo '--- the last lines of the gate output ---'; tail -n 40 "$1"; } | cut -c1-240 | head -c 9000
+}
+
+# repair_prompt <gate log>: what the agent is told when the gate fails.
+repair_prompt() {
+  printf '%s\n%s' "The hard gate for this capability FAILED. Find the cause and fix it so the whole gate passes. Rules: never weaken, skip or delete a test; a test that fails outside this capability's own files is still a real failure (the code under it may be wrong, e.g. it can depend on the machine's time zone): fix the code and note it under a '## Gate repairs' heading in this spec's gaps.md; a scenario that test-plan.md says has a test must get a real test whose title starts with this capability's ID and the scenario (for example it('S53 AS-27: ...')), not just a tag; change nothing unrelated. Re-run the failing check yourself before you stop (scripts/sdd/test-spec.sh for e2e specs, npx tsc --noEmit, python3 scripts/sdd/check-tests.py ...). Gate output, digested:" "$(gate_digest "$1")"
 }
 
 # Rules that apply to every capability, plus follow-ups that already-built specs left for this one.
@@ -265,10 +284,19 @@ ordered_capabilities "$@" | while IFS=$'\t' read -r id domain slug title sources
     echo "STOP  $id: $open task(s) still open after $pass passes (MAX_IMPLEMENT_PASSES). Re-run to continue." >&2; exit 1
   fi
 
-  echo "  gate"
-  if ! { MAX_PRIORITY="$limit" gate "$domain" && MAX_PRIORITY="$limit" gate_extras "$id" "$domain" "$dir"; } >"$dir/.gate.log" 2>&1; then
-    echo "FAIL  $id: gate (see $dir/.gate.log)" >&2; echo "$id gate failed" > "$STATE_FILE"; exit 1
-  fi
+  # The gate is a hard check, but a failing gate is usually fixable (a missing test, a lint error, a bug the capability exposed):
+  # hand the failure to the agent, then run the gate again. MAX_GATE_REPAIRS (default 2) bounds the attempts.
+  attempt=0
+  while :; do
+    echo "  gate"
+    if { MAX_PRIORITY="$limit" gate "$domain" && MAX_PRIORITY="$limit" gate_extras "$id" "$domain" "$dir"; } >"$dir/.gate.log" 2>&1; then break; fi
+    attempt=$((attempt + 1))
+    if (( attempt > ${MAX_GATE_REPAIRS:-2} )); then
+      echo "FAIL  $id: gate (see $dir/.gate.log)" >&2; echo "$id gate failed" > "$STATE_FILE"; exit 1
+    fi
+    echo "  gate failed: asking the agent to repair it (attempt $attempt of ${MAX_GATE_REPAIRS:-2})"
+    step "$dir" "repair-$attempt" "/speckit-implement $CONTEXT $(repair_prompt "$dir/.gate.log") $LIMIT_TEXT"
+  done
   date -u +%FT%TZ > "$done_marker"
   if [[ -n "${COMMIT:-}" ]]; then
     git add -A && git commit -q -m "feat($domain): $id $title${limit:+ ($limit stories)}" -m "Spec: $dir/spec.md"
