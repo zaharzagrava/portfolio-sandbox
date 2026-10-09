@@ -33,8 +33,15 @@ Do these in order. Everything you create lives in a project that holds only runn
    - *Firewalls* (optional but good): create `sdd-ssh-only` allowing inbound TCP 22 and nothing else, put the name in the config.
    - Check the machine type exists where you want it: `hcloud server-type describe ccx33` and the locations list. If your
      account has a server limit of 0 for dedicated vCPU, ask for an increase in *Limits* (this can take a day too).
-2. **hcloud CLI on the laptop.** Download from github.com/hetznercloud/cli/releases (or your package manager), then
-   `hcloud context create sdd-runner` and paste the token. Check: `hcloud server list` (empty list is fine).
+2. **hcloud CLI on the laptop.** Either `sudo apt install hcloud-cli` (Ubuntu 24.04 ships 1.39; the scripts work with it) or the
+   current release into your home directory:
+   ```
+   d=$(mktemp -d) && cd "$d" && curl -fsSLO https://github.com/hetznercloud/cli/releases/latest/download/hcloud-linux-amd64.tar.gz \
+     && curl -fsSLO https://github.com/hetznercloud/cli/releases/latest/download/checksums.txt \
+     && grep hcloud-linux-amd64.tar.gz checksums.txt | sha256sum -c - \
+     && mkdir -p ~/.local/bin && tar -xzf hcloud-linux-amd64.tar.gz -C ~/.local/bin hcloud && hcloud version
+   ```
+   No `hcloud context create` is needed: the scripts read `HCLOUD_TOKEN` from the config file in step 6.
 3. **A deploy key for the repo.**
    ```
    ssh-keygen -t ed25519 -N "" -f ~/.ssh/sdd_deploy
