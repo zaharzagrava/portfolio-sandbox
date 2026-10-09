@@ -557,6 +557,18 @@ export class ApiConfigService {
       ...secretsMangerConfigValues,
     };
 
+    // An unset claim batch takes the default, lowered to what a small pool allows; only an explicit value is refused by the jobs rule.
+    const pool = this.config.db_pool_max;
+    const explicitBatch =
+      process.env.JOBS_CLAIM_BATCH !== undefined ||
+      (secretsManagerConfig as Record<string, unknown> | undefined)
+        ?.JOBS_CLAIM_BATCH !== undefined;
+    if (!explicitBatch && typeof pool === 'number' && pool > 0)
+      this.config.jobs_claim_batch = Math.min(
+        this.config.jobs_claim_batch,
+        pool * 10,
+      );
+
     // Cross-field and capability rules: every violation in one error, naming keys and never values (S54 FR-077).
     ConfigRules.assertValid(this.config as unknown as Record<string, unknown>, {
       production: this.config.node_env === Environment.production,

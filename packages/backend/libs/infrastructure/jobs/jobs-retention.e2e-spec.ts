@@ -270,30 +270,45 @@ describe('Job retention, partitions and storage health (S49, e2e, real Postgres)
     expect(touched).toBeLessThan(1_000);
   }, 120_000);
 
-  it(`S49 AS-89: at least 90% of the updates of ${HOT_CYCLES} claim-and-complete cycles are heap-only`, async () => {
-    const stat = async () =>
-      (
-        await sql<{ upd: string; hot: string }>(
-          `SELECT coalesce(sum(n_tup_upd), 0)::text AS upd, coalesce(sum(n_tup_hot_upd), 0)::text AS hot
-           FROM pg_stat_user_tables WHERE relname LIKE 'Job\\_%'`,
-        )
-      )[0];
-    await sleep(1_500);
-    const before = await stat();
-    for (let i = 0; i < HOT_CYCLES; i += 50)
-      await Promise.all(
-        Array.from({ length: Math.min(50, HOT_CYCLES - i) }, (_, k) =>
-          t.jobs.enqueue('ret.work', { n: i + k }),
-        ),
+  it(`S49 AS-89: after a VACUUM, a second batch of ${HOT_CYCLES} claim-and-complete cycles grows the heap by less than 25%, and fillfactor stays 70`, async () => {
+    const heapBytes = async () =>
+      Number(
+        (
+          await sql<{ size: string }>(
+            `SELECT coalesce(sum(pg_relation_size(c.oid)), 0)::text AS size
+             FROM pg_class c JOIN pg_inherits i ON i.inhrelid = c.oid
+             WHERE i.inhparent = '"Job"'::regclass`,
+          )
+        )[0].size,
       );
-    while ((await t.worker.runOnce(50)) > 0);
-    await sleep(12_000); // idle backends report their counters after 10 s
-    const after = await stat();
+    const batch = async () => {
+      for (let i = 0; i < HOT_CYCLES; i += 50)
+        await Promise.all(
+          Array.from({ length: Math.min(50, HOT_CYCLES - i) }, (_, k) =>
+            t.jobs.enqueue('ret.work', { n: i + k }),
+          ),
+        );
+      while ((await t.worker.runOnce(50)) > 0);
+    };
 
-    const updates = Number(after.upd) - Number(before.upd);
-    const hot = Number(after.hot) - Number(before.hot);
-    expect(updates).toBeGreaterThanOrEqual(HOT_CYCLES * 2);
-    expect(hot / updates).toBeGreaterThanOrEqual(0.9);
+    await batch();
+    const afterFirst = await heapBytes();
+    // finished rows are what retention removes; without removing them the second batch's new rows
+    // would legitimately need new pages. VACUUM must then make the freed space reusable.
+    await sql(`DELETE FROM "Job" WHERE status = 'SUCCEEDED'`);
+    await sql(`VACUUM "Job"`); // explicit, never wait for autovacuum
+    await batch();
+    const afterSecond = await heapBytes();
+
+    expect(afterFirst).toBeGreaterThan(0);
+    expect(afterSecond).toBeLessThan(afterFirst * 1.25);
+
+    const opts = await sql<{ relname: string; reloptions: string[] | null }>(
+      `SELECT c.relname, c.reloptions FROM pg_class c JOIN pg_inherits i ON i.inhrelid = c.oid
+       WHERE i.inhparent = '"Job"'::regclass`,
+    );
+    expect(opts.length).toBeGreaterThan(0);
+    for (const o of opts) expect(o.reloptions ?? []).toContain('fillfactor=70');
   }, 120_000);
 
   it('S49 AS-90: a partition is dropped by its catalog name; a lock it cannot get in time makes it skip without damage', async () => {

@@ -119,3 +119,7 @@ Cross-domain SQL on the job tables found by grep (test code; IX.6 allows seed/cl
 - Claim cost: a claim is one short transaction of about six statements instead of one; the 5k jobs/s target (SC-002) is an ops artifact and still unmeasured.
 - New config keys (S54 schema, `libs/common/config/jobs-config.ts`): `JOBS_CLAIM_BATCH`, `JOBS_PER_SHOP_RUNNING_CAP`, `JOBS_RETAIN_DAYS`, `JOBS_POLL_IDLE_MS`.
 - Blocker: AS-89, see questions.md.
+
+## Gate repairs
+
+- `libs/infrastructure/database/database-settings.e2e-spec.ts` (S54 AS-145, pool of 2) failed at startup with `[jobs] jobs_claim_batch must not exceed db_pool_max × 10`: the S49 rule (G-22) rejected the unset-default batch of 50 against a pool of 2. Fix in `libs/common/config/api-config.service.ts`: when `JOBS_CLAIM_BATCH` is set in no source, the default is lowered to `db_pool_max × 10` before the rules run; an explicit value is still refused by the rule. No test was changed. Re-ran: that spec (5 passed), `jobs-config.spec.ts` and `libs/common/config` (51 passed), `npx tsc --noEmit` clean.
