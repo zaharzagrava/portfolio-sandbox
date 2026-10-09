@@ -12,22 +12,40 @@ That file is outside the repo and `chmod 600`. Create it with
 `mkdir -p ~/.config/sdd-vps && cp scripts/vps/config.example.env ~/.config/sdd-vps/config.env && chmod 600 ~/.config/sdd-vps/config.env`,
 open it with `nano ~/.config/sdd-vps/config.env`, and fill in the lines below. Never paste these values anywhere else.
 
-| # | Where you do it | What you do | Goes into the config file as |
-| --- | --- | --- | --- |
-| 1 | Hetzner console, your project | *Security -> API tokens -> Generate*, permission **Read & Write**, copy the token | `HCLOUD_TOKEN=` |
-| 2 | Hetzner console, same project | *Security -> SSH keys -> Add*: paste the line printed by `cat ~/.ssh/id_ed25519.pub` into the key box, type `sdd` in the Name box. (`sdd` is just a label, not a file) | nothing (`HCLOUD_SSH_KEY=sdd` is already there; the name must match) |
-| 3 | Terminal | `ssh-keygen -t ed25519 -N "" -f ~/.ssh/sdd_deploy` then `cat ~/.ssh/sdd_deploy.pub` | nothing (`DEPLOY_KEY_FILE=~/.ssh/sdd_deploy` is already there) |
-| 4 | GitHub, repo -> *Settings -> Deploy keys* | *Add deploy key*, paste the `cat` output from step 3, tick **Allow write access**. Also *Settings -> Branches*: protect `master` (include administrators) | nothing |
-| 5 | Terminal, signed in to the Claude account to spend | `claude setup-token`, copy the token it prints | `CLAUDE_CODE_OAUTH_TOKEN=` |
-| 6 | Phone | install the ntfy app, subscribe to a long random topic you invent (e.g. `sdd-` + 20 random letters), test with `curl -d hi https://ntfy.sh/<topic>` | `NTFY_TOPIC=` (the topic name) |
-| 7 | Terminal | `git push origin master` (the machine only sees what is on GitHub; the launcher refuses to start otherwise) | nothing |
+1. **Hetzner token.** In the Hetzner console, open your project: *Security -> API tokens -> Generate API token*, permission
+   **Read & Write**. Copy it and paste it into the config file after `HCLOUD_TOKEN=`.
+
+2. **Your SSH key into Hetzner.** In the terminal run `cat ~/.ssh/id_ed25519.pub` and copy the one line it prints. In the
+   Hetzner console: *Security -> SSH keys -> Add SSH key*. Paste that line into the key box and type `sdd` in the Name box.
+   (`sdd` is only a label, not a file. The config already has `HCLOUD_SSH_KEY=sdd`; the two names must match.)
+
+3. **A deploy key, so the machine can push to GitHub.** In the terminal:
+   ```
+   ssh-keygen -t ed25519 -N "" -f ~/.ssh/sdd_deploy
+   cat ~/.ssh/sdd_deploy.pub
+   ```
+   The config already has `DEPLOY_KEY_FILE=~/.ssh/sdd_deploy`, nothing to edit.
+
+4. **Give GitHub the deploy key.** Repo -> *Settings -> Deploy keys -> Add deploy key*. Paste the output of the `cat` from
+   step 3 and tick **Allow write access**. Then *Settings -> Branches*: protect `master` (include administrators), so the
+   machine can only ever write `sdd/auto`.
+
+5. **Claude token.** In the terminal, signed in to the Claude account you want to spend, run `claude setup-token`. Copy the
+   token it prints and paste it into the config after `CLAUDE_CODE_OAUTH_TOKEN=`.
+
+6. **Phone notifications.** Install the ntfy app and subscribe to a long random topic you invent (for example `sdd-` plus 20
+   random letters). Test it: `curl -d hi https://ntfy.sh/<your-topic>` should appear on the phone. Paste the topic name
+   into the config after `NTFY_TOPIC=`.
+
+7. **Push the repo.** `git push origin master`. The machine only sees what is on GitHub, and the launcher refuses to start if
+   your local commits are not pushed.
 
 Optional: `HCLOUD_FIREWALL=` (a Hetzner firewall that allows inbound port 22 only), `HEARTBEAT_URL=` (a healthchecks.io ping
 URL that alerts you if the machine goes silent). Do not set `ANTHROPIC_API_KEY` anywhere: it would bill the API instead of
 your subscription.
 
-Two SSH keys, two jobs: step 2 is the key **you** use to log in to a machine; steps 3-4 are the key the **machine** uses to
-push to GitHub. The file ending `.pub` is the only one you ever paste into a website.
+Two SSH keys, two jobs: step 2 is the key **you** use to log in to a machine; steps 3 and 4 are the key the **machine** uses
+to push to GitHub. The file ending `.pub` is the only one you ever paste into a website.
 
 `hcloud` (the Hetzner CLI) must be installed: `hcloud version`. If not: `sudo apt install hcloud-cli`, or the newer release
 from github.com/hetznercloud/cli/releases (put the `hcloud` file in `~/.local/bin`). You do not need `hcloud context create`.
@@ -53,13 +71,13 @@ warning (stalled, task running long, disk, container exited), each warning follo
 
 ## When it ends
 
-| Message | Meaning | You do |
-| --- | --- | --- |
-| *finished*, *checkpoint reached*, *SDD runner done* | work done or checkpoint passed; pushed; machine deleted | `git fetch origin && git checkout sdd/auto`, test on localhost |
-| *time budget used* | `--hours` ran out; pushed | run again, it resumes `sdd/auto` |
-| *out of budget* | Claude usage limit (reset time in the message); pushed | run again after the reset |
-| *Claude login failed* | token expired | `claude setup-token`, update the config, run again |
-| *SDD runner FAILED* | setup problem or loop failure | machine stays 2 h: `scripts/vps/attach.sh`; logs in `/var/log/sdd/` |
+- *finished*, *checkpoint reached*, *SDD runner done*: the work is done or the checkpoint passed, everything is pushed and
+  the machine is deleted. Run `git fetch origin && git checkout sdd/auto` and test on localhost.
+- *time budget used*: `--hours` ran out; everything is pushed. Run again, it resumes `sdd/auto`.
+- *out of budget*: the Claude usage limit (the reset time is in the message); pushed. Run again after the reset.
+- *Claude login failed*: the token expired. Run `claude setup-token`, update the config, run again.
+- *SDD runner FAILED*: a setup problem or a loop failure. The machine stays 2 hours: `scripts/vps/attach.sh`, logs in
+  `/var/log/sdd/`.
 
 A new run resumes `sdd/auto` and merges `master` into it first. To start over from `master`: `git push origin --delete sdd/auto`.
 
