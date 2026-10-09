@@ -1,153 +1,79 @@
-# Running the SDD loop on a Hetzner VPS
+# Run the SDD loop on a Hetzner VPS
 
-A fresh machine is created for each run from a prepared image. It builds the next capabilities with the loop, commits and
-pushes everything to a branch (`sdd/auto`), sends phone notifications, and **deletes itself**. You close the laptop, get a
-message when it is done, pull the branch and test on localhost.
+`scripts/vps/run-remote.sh` creates a machine for one run. It builds capabilities, commits and pushes branch `sdd/auto`,
+messages your phone, and **deletes itself**. You close the laptop, get a message, then `git fetch && git checkout sdd/auto`
+and test on localhost.
 
-```
-laptop                                                    Hetzner machine (CCX33: 8 dedicated vCPU, 32 GB), lives for one run
-scripts/vps/run-remote.sh --until S53   ──creates──►     checks out sdd/auto, installs, starts the test stack (9 containers)
-   then you close the lid                                 runs scripts/sdd/implement-specs.sh with a deadline, monitor beside it
-phone: ntfy messages at 25/50/75 % and problems  ◄─────  commits per capability, pushes sdd/auto after every commit
-laptop: git fetch && git checkout sdd/auto  ◄──────────  final push, notification, then the machine deletes itself
-```
+Status: rehearsed locally with fake `claude`/`hcloud`; **not yet run against a real Hetzner account**.
 
-What stops a run: the work is done (`--until`), the order reaches a **checkpoint** (`!STOP` line), the **time budget** ends
-(`--hours`), the Claude **usage limit** is hit, the Claude **login** fails, or something breaks. Every one of these pushes
-what exists and sends a different notification. After a *failure* the machine stays `FAILURE_KEEP_MIN` minutes (default
-120) so you can look around over ssh; after every other ending it deletes itself right after the push.
+## Setup (once). Every value ends up in ONE file: `~/.config/sdd-vps/config.env`
 
-Status: written and rehearsed on a laptop with fake `claude` and `hcloud` programs (branch handling, push, exit paths,
-notifications, deadline, login failure). **Not yet run against a real Hetzner account**; the first real run is the test of
-the `hcloud` calls, the cloud-init step and the image build. Read "If something goes wrong" before leaving it unattended.
+That file is outside the repo and `chmod 600`. Create it with
+`mkdir -p ~/.config/sdd-vps && cp scripts/vps/config.example.env ~/.config/sdd-vps/config.env && chmod 600 ~/.config/sdd-vps/config.env`,
+open it with `nano ~/.config/sdd-vps/config.env`, and fill in the lines below. Never paste these values anywhere else.
 
-## One-time setup (about 45 minutes, most of it waiting)
+| # | Where you do it | What you do | Goes into the config file as |
+| --- | --- | --- | --- |
+| 1 | Hetzner console, your project | *Security -> API tokens -> Generate*, permission **Read & Write**, copy the token | `HCLOUD_TOKEN=` |
+| 2 | Hetzner console, same project | *Security -> SSH keys -> Add*: paste the line printed by `cat ~/.ssh/id_ed25519.pub` into the key box, type `sdd` in the Name box. (`sdd` is just a label, not a file) | nothing (`HCLOUD_SSH_KEY=sdd` is already there; the name must match) |
+| 3 | Terminal | `ssh-keygen -t ed25519 -N "" -f ~/.ssh/sdd_deploy` then `cat ~/.ssh/sdd_deploy.pub` | nothing (`DEPLOY_KEY_FILE=~/.ssh/sdd_deploy` is already there) |
+| 4 | GitHub, repo -> *Settings -> Deploy keys* | *Add deploy key*, paste the `cat` output from step 3, tick **Allow write access**. Also *Settings -> Branches*: protect `master` (include administrators) | nothing |
+| 5 | Terminal, signed in to the Claude account to spend | `claude setup-token`, copy the token it prints | `CLAUDE_CODE_OAUTH_TOKEN=` |
+| 6 | Phone | install the ntfy app, subscribe to a long random topic you invent (e.g. `sdd-` + 20 random letters), test with `curl -d hi https://ntfy.sh/<topic>` | `NTFY_TOPIC=` (the topic name) |
+| 7 | Terminal | `git push origin master` (the machine only sees what is on GitHub; the launcher refuses to start otherwise) | nothing |
 
-**Two different SSH keys are involved; do not mix them up.**
+Optional: `HCLOUD_FIREWALL=` (a Hetzner firewall that allows inbound port 22 only), `HEARTBEAT_URL=` (a healthchecks.io ping
+URL that alerts you if the machine goes silent). Do not set `ANTHROPIC_API_KEY` anywhere: it would bill the API instead of
+your subscription.
 
-| | Login key | Deploy key |
-| --- | --- | --- |
-| What it is for | You logging in to a runner machine (`attach.sh`, debugging) | The machine pushing `sdd/auto` to GitHub |
-| Which file | your existing `~/.ssh/id_ed25519` (any key you normally use) | a new one, `~/.ssh/sdd_deploy`, no passphrase |
-| Public half goes to | Hetzner console, *Security -> SSH keys*, named `sdd` | GitHub repo, *Settings -> Deploy keys*, write access |
-| Private half goes to | stays on your laptop | the config file's `DEPLOY_KEY_FILE` points at it; the launcher copies it to the machine for the length of a run |
+Two SSH keys, two jobs: step 2 is the key **you** use to log in to a machine; steps 3-4 are the key the **machine** uses to
+push to GitHub. The file ending `.pub` is the only one you ever paste into a website.
 
-The file ending in `.pub` is the public half: that is the only one you ever paste or upload into a website. The file without
-`.pub` is the private half; it never leaves your laptop except through the launcher.
+`hcloud` (the Hetzner CLI) must be installed: `hcloud version`. If not: `sudo apt install hcloud-cli`, or the newer release
+from github.com/hetznercloud/cli/releases (put the `hcloud` file in `~/.local/bin`). You do not need `hcloud context create`.
 
-Do these in order. Everything you create lives in a project that holds only runner machines.
-
-1. **Hetzner account and project.** Sign up at hetzner.com/cloud (they may ask for an ID check; it can take a day, so do
-   this first). Create a project, e.g. `sdd-runner`.
-   - *Security -> API tokens -> Generate*: permission **Read & Write**. Copy it once; it goes into the config file. The
-     machine carries this token to delete itself, which is why the project must hold nothing else.
-   - *Security -> SSH keys -> Add*: paste the contents of your **login key's public half**, `~/.ssh/id_ed25519.pub`
-     (`cat ~/.ssh/id_ed25519.pub`; if you have none, `ssh-keygen -t ed25519` makes one) and name it exactly `sdd`; the
-     config's `HCLOUD_SSH_KEY` must match that name.
-   - *Firewalls* (optional but good): create `sdd-ssh-only` allowing inbound TCP 22 and nothing else, put the name in the config.
-   - Check the machine type exists where you want it: `hcloud server-type describe ccx33` and the locations list. If your
-     account has a server limit of 0 for dedicated vCPU, ask for an increase in *Limits* (this can take a day too).
-2. **hcloud CLI on the laptop.** Two equivalent ways: `sudo apt install hcloud-cli` (Ubuntu 24.04 ships 1.39, an older
-   version that works with the scripts) or the current release (1.70.1 at the time of writing) from Hetzner's GitHub into
-   your home directory, which is newer and needs no sudo. Do one of them; if both are installed, the one earlier in `PATH`
-   wins. The checksum below proves the download is intact, not that the release is genuine; that trust is the same as for any
-   download from the project's own releases:
-   ```
-   d=$(mktemp -d) && cd "$d" && curl -fsSLO https://github.com/hetznercloud/cli/releases/latest/download/hcloud-linux-amd64.tar.gz \
-     && curl -fsSLO https://github.com/hetznercloud/cli/releases/latest/download/checksums.txt \
-     && grep hcloud-linux-amd64.tar.gz checksums.txt | sha256sum -c - \
-     && mkdir -p ~/.local/bin && tar -xzf hcloud-linux-amd64.tar.gz -C ~/.local/bin hcloud && hcloud version
-   ```
-   No `hcloud context create` is needed: the scripts read `HCLOUD_TOKEN` from the config file in step 6.
-3. **A deploy key for the repo** (a second, separate key; see the table above). `-N ""` means no passphrase, which is needed
-   because nobody is at the machine to type one:
-   ```
-   ssh-keygen -t ed25519 -N "" -f ~/.ssh/sdd_deploy
-   cat ~/.ssh/sdd_deploy.pub
-   ```
-   GitHub -> repo *Settings -> Deploy keys -> Add deploy key*: title `sdd-runner`, paste the output of the `cat` (the `.pub`
-   file), tick **Allow write access**. Then set `DEPLOY_KEY_FILE=~/.ssh/sdd_deploy` (the private file) in the config.
-   Also protect `master` (*Settings -> Branches*, include administrators) so this key can never change it; the runner only
-   writes `sdd/auto`.
-4. **A Claude token for headless use.** On the laptop, signed in to the account you want to spend:
-   ```
-   claude setup-token
-   ```
-   Copy the token it prints (valid one year). Do **not** set `ANTHROPIC_API_KEY` anywhere for the runner: it would
-   override the subscription and bill the API per token.
-5. **Phone notifications.** Install the ntfy app, subscribe to a long random topic (e.g. `sdd-` plus 20 random characters;
-   the topic name is the only secret), then test: `curl -d "hello" https://ntfy.sh/<your-topic>` should pop up on the phone.
-   Optional: create a check at healthchecks.io and put its ping URL in `HEARTBEAT_URL`; it alerts you if the machine goes
-   silent (covers a machine that died completely).
-6. **The config file** (outside the repo):
-   ```
-   mkdir -p ~/.config/sdd-vps && cp scripts/vps/config.example.env ~/.config/sdd-vps/config.env && chmod 600 ~/.config/sdd-vps/config.env
-   $EDITOR ~/.config/sdd-vps/config.env
-   ```
-7. **Push the repo.** The machine can only see what is on GitHub: `git push origin master`. `run-remote.sh` refuses to start
-   if your local commits are not pushed.
-8. **Build the image once** (15-25 minutes, a few cents): `scripts/vps/build-snapshot.sh`. It creates a temporary machine,
-   installs Docker, Node 24, pnpm, the Claude Code CLI and the hcloud CLI, clones the repo, installs dependencies, pulls and
-   builds the test-stack images, takes a snapshot and deletes the temporary machine. The snapshot id is saved in
-   `~/.config/sdd-vps/snapshot-id`. Rebuild it (same command) when dependencies or the compose files change a lot; for
-   small changes the runner just pulls the newest code at start. Add `--with-web` when you want the front-end specs
-   (installs Playwright's Chromium and pulls the dev stack images).
-
-Check the plan without spending anything: `scripts/vps/build-snapshot.sh` and `scripts/vps/run-remote.sh --until S53` both
-accept `--dry-run` (build-snapshot via `DRY_RUN=1`) and print what they would do with secrets masked.
-
-## Starting a run
+## Build the image (once, 15-25 min, a few cents)
 
 ```
-scripts/vps/run-remote.sh --until S53 --hours 4
+scripts/vps/build-snapshot.sh
 ```
-Options: `--until ID` stop after that capability (`S01:P1` works too), `--order NAME` (default `by-flow`), `--hours N`,
-`--keep` (never delete the machine; you must), `--force` (start even if a runner exists), `--dry-run`. IDs after the
-options restrict the run to those capabilities. Without `--until` the run goes to the next checkpoint.
+Creates a temporary machine, installs everything, bakes in the test-stack Docker images, takes a snapshot, deletes the
+machine. Rebuild when dependencies or compose files change a lot (add `--with-web` for the front-end specs later).
 
-The first phone message ("SDD runner created") arrives immediately; "SDD runner working" arrives 5-10 minutes later, once
-the stack is up and the login check passed. Then you get 25/50/75 % milestones, and warnings (stalled, a task running
-long, disk, a test container exited) each followed by a quiet "recovered" message. Watch live with `scripts/vps/attach.sh`
-(tmux with the loop, monitor and stack logs; `Ctrl-b d` leaves it running).
+## Run
 
-Rough timeline for one big capability like S53: boot 1-2 min, setup 5-10 min, plan + tasks + analyze 10-20 min,
-implement 1-3 h in several fresh-context passes, gate 5-10 min, push. The Claude usage limit is the real cap; the time
-budget (`--hours`) is the hard stop.
+```
+scripts/vps/run-remote.sh --until S53 --hours 5      # add --dry-run first to see what it would do
+```
+Then close the laptop. `--until ID` stops after that capability; without it the run goes to the next checkpoint.
+Watch live (optional): `scripts/vps/attach.sh` (Ctrl-b d to leave).
+
+You get phone messages: *created* at once, *working* after 5-10 min (stack up, login checked), then 25/50/75 % and any
+warning (stalled, task running long, disk, container exited), each warning followed by a quiet "recovered".
 
 ## When it ends
 
-| Message | What happened | What to do |
+| Message | Meaning | You do |
 | --- | --- | --- |
-| "SDD loop: finished" / "checkpoint reached" + "SDD runner done" | work done or checkpoint passed; pushed; machine deleted | `git fetch origin && git checkout sdd/auto`, test on localhost |
-| "SDD loop: time budget used" | `--hours` ran out; everything committed is pushed | start another run: it resumes `sdd/auto` |
-| "SDD loop: out of budget" | Claude usage limit; the reset time is in the message | start another run after the reset |
-| "SDD loop: Claude login failed" | the token expired or is wrong | `claude setup-token`, update the config, run again |
-| "SDD runner FAILED" | setup problem or the loop failed | the machine stays 2 h: `scripts/vps/attach.sh`; logs in `/var/log/sdd/` |
+| *finished*, *checkpoint reached*, *SDD runner done* | work done or checkpoint passed; pushed; machine deleted | `git fetch origin && git checkout sdd/auto`, test on localhost |
+| *time budget used* | `--hours` ran out; pushed | run again, it resumes `sdd/auto` |
+| *out of budget* | Claude usage limit (reset time in the message); pushed | run again after the reset |
+| *Claude login failed* | token expired | `claude setup-token`, update the config, run again |
+| *SDD runner FAILED* | setup problem or loop failure | machine stays 2 h: `scripts/vps/attach.sh`; logs in `/var/log/sdd/` |
 
-To test locally after a run: `git fetch origin && git checkout sdd/auto`, then the usual `moon run infra-setup` and
-`moon run dev-monolith` (and `dev-web` for the browser). To continue on the VPS just run `run-remote.sh` again: it resumes
-`sdd/auto` and merges `master` into it first, so tooling fixes you pushed to `master` arrive on their own. To restart from
-`master` instead, delete the branch: `git push origin --delete sdd/auto`.
+A new run resumes `sdd/auto` and merges `master` into it first. To start over from `master`: `git push origin --delete sdd/auto`.
 
-## Safety nets and cost
+## Cost and safety
 
-- Time: `RUN_DEADLINE` stops the loop at `--hours`; a systemd timer on the machine deletes it `--hours + 1` hours after
-  start no matter what; `scripts/vps/cleanup.sh` (run it by hand, or from cron) deletes runner machines older than 8 hours.
-- Money: a CCX33 costs roughly $0.22-0.33 per hour (check Hetzner's current prices; they repriced in June 2026). A 4-hour
-  run is about $1-1.5. Look at the Hetzner console after the first run to confirm no machine is left.
-- Secrets live only in the config file on your laptop and, for the length of a run, in `/etc/sdd/env` on the machine
-  (mode 600). The image contains none. The token on the machine can only manage servers of its own project.
-- The runner writes only `sdd/auto`; with `master` protected it cannot change anything else in the repo.
-- Claude usage is shared with your normal use: a long run can leave you rate-limited when you sit down.
+About $0.22-0.33 per machine-hour (check Hetzner's current prices): a 4-5 hour run is $1-2. The machine is deleted by the
+script, by a timer on the machine (`--hours` + 1 h), or by `scripts/vps/cleanup.sh 0 --all` (run it by hand if in doubt;
+check the Hetzner console after the first run). The token on the machine can only manage servers of its own project, so use
+a project that holds nothing else. The runner writes only `sdd/auto`; protected `master` stays untouched.
 
 ## If something goes wrong
 
-- *No message at all after 15 minutes*: `hcloud server list`; if the machine exists, `scripts/vps/attach.sh` or
-  `ssh root@<ip> journalctl -u sdd-run`. Cloud-init output: `/var/log/cloud-init-output.log`.
-- *"cannot check out" / fetch fails*: the deploy key is not on the repo with write access, or the repo URL is wrong.
-- *Tests fail only on the machine*: compare memory (`free -h`, `docker stats`); 32 GB should fit both stacks (the test stack
-  alone uses about 4.8 GiB), and `ccx43` has 64 GB. Elasticsearch needs `vm.max_map_count` (the image sets it).
-- *A machine is left running*: `scripts/vps/cleanup.sh 0 --all`.
-- *Kill a run*: `hcloud server delete <name>`. Pushed work stays on `sdd/auto`; unpushed work on the machine is lost.
-- Not covered yet: the front-end flow (dev stack + Playwright) on the machine; build the image with `--with-web` and treat
-  the first front-end run as a trial.
+- No message after 15 min: `hcloud server list`, then `scripts/vps/attach.sh` or `ssh root@<ip> journalctl -u sdd-run`.
+- Fetch/push fails: the deploy key is missing or lacks write access (steps 3-4).
+- Tests fail only on the machine: check `free -h` and `docker stats`; `HCLOUD_SERVER_TYPE=ccx43` has 64 GB.
+- Kill a run: `hcloud server delete <name>`. Pushed work stays on `sdd/auto`; unpushed work on the machine is lost.
+- Not covered yet: the front-end flow (dev stack + Playwright) on the machine.
