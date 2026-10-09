@@ -14,6 +14,9 @@ import { OrderPaid } from '@app/domains/orders';
 export class PurchaseEventsProjector implements Projector {
   readonly name = 'analytics-purchases';
   readonly topics = [OrderPaid.topic];
+  // Deduped by the envelope's event id at merge time.
+  readonly idempotency = 'natural' as const;
+  readonly handles = [{ event: OrderPaid }];
   private readonly sink: ClickHouseSink;
 
   constructor(clickhouse: ClickHouseService) {

@@ -14,7 +14,9 @@ import { BidRelay } from './infra/bid-relay.service';
 /** SD-22 background side (apps/worker): bid relay (Redis stream → Postgres), close, second chance. */
 @Module({
   imports: [
-    EventsModule,
+    EventsModule.forAggregates([
+      { aggregateType: 'auctions', retention: 'full-history' },
+    ]),
     RealtimeModule,
     SequelizeModule.forFeature([Auction, ...ORDER_MODELS]),
   ],

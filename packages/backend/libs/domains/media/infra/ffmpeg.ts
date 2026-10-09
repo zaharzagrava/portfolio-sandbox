@@ -44,9 +44,7 @@ export function run(
   });
 }
 
-export async function probe(
-  file: string,
-): Promise<{
+export async function probe(file: string): Promise<{
   durationSec: number;
   width: number;
   height: number;

@@ -150,7 +150,26 @@ export class SecretsManagerConfig {
   cassandra_username?: string;
   cassandra_password?: string;
   /** `poller` (default) = OutboxPublisherService; `cdc` = Debezium streams the outbox (F-05), poller disabled. */
-  outbox_relay?: 'poller' | 'cdc';
+  outbox_relay: 'poller' | 'cdc';
+  /** S53 FR-064: relay, consumer framework, read-your-writes and topic settings, defaults in `events-config.ts`. */
+  outbox_relay_interval_ms: number;
+  outbox_relay_batch: number;
+  outbox_relay_lease_ms: number;
+  outbox_relay_max_attempts: number;
+  outbox_retention_days: number;
+  consumer_batch: number;
+  consumer_max_attempts: number;
+  consumer_backoff_min_ms: number;
+  consumer_backoff_max_ms: number;
+  consumer_handler_timeout_ms: number;
+  consumer_in_flight: number;
+  consumer_graceful_stop_ms: number;
+  consumer_session_timeout_ms: number;
+  ryw_wait_budget_ms: number;
+  ryw_checkpoint_ttl_s: number;
+  projection_promotion_max_lag: number;
+  topic_default_partitions: number;
+  topic_hot_partitions: number;
   /** SD-08 Feistel key for short codes (falls back to JWT_SECRET). */
   share_link_secret?: string;
   /** SD-08 public short-link base, e.g. https://mkt.to (falls back to BACKEND_HOST/api/l). */

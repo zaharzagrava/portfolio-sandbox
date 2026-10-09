@@ -13,7 +13,8 @@ import { SecretBox } from '@app/domains/identity';
 import { TaskQueue } from '@app/infrastructure/sqs/task-queue.port';
 import { RateLimiterService } from '@app/infrastructure/rate-limit/rate-limiter.service';
 import { OutboxService } from '@app/infrastructure/outbox/outbox.service';
-import { KafkaTopicGroup } from '@app/infrastructure/outbox/outbox.model';
+import { TransactionRunner } from '@app/infrastructure/context';
+import { productChanged } from '@app/domains/catalog';
 import { Environment } from '@app/common/types';
 import { sleep } from '@app/common/core/backoff';
 import { CommerceProvider, NormalizedProduct } from '../domain/provider.port';
@@ -62,6 +63,7 @@ export class IntegrationSyncService {
 
   constructor(
     @InjectConnection() private readonly sequelize: Sequelize,
+    private readonly transactions: TransactionRunner,
     private readonly box: SecretBox,
     private readonly queue: TaskQueue,
     private readonly limiter: RateLimiterService,
@@ -201,8 +203,7 @@ export class IntegrationSyncService {
     }
 
     const hash = syncHash(p);
-    // S54 T037 audit: explicit unit of work, opens its own transaction by design; no network I/O inside.
-    return this.sequelize.transaction(async (transaction) => {
+    return this.transactions.run(async (transaction) => {
       const [link] = await this.sequelize.query<{
         localId: string;
         lastHash: string;
@@ -267,14 +268,7 @@ export class IntegrationSyncService {
           transaction,
         },
       );
-      await this.outbox.notify(
-        {
-          topic: KafkaTopicGroup.PRODUCTS_EVENTS,
-          payload: { productId: localId },
-          aggregateId: localId,
-        },
-        transaction,
-      );
+      await this.outbox.append(productChanged(localId), transaction);
       return { result: 'applied' as const, updatedAt: p.updatedAt };
     });
   }
@@ -333,8 +327,7 @@ export class IntegrationSyncService {
     );
     const gone = links.filter((l) => !remote.has(l.externalId));
     for (const l of gone) {
-      // S54 T037 audit: explicit unit of work, opens its own transaction by design; no network I/O inside.
-      await this.sequelize.transaction(async (transaction: Transaction) => {
+      await this.transactions.run(async (transaction: Transaction) => {
         await this.sequelize.query(
           `UPDATE "Product" SET quantity = 0, version = version + 1 WHERE id = :id`,
           { replacements: { id: l.localId }, transaction },

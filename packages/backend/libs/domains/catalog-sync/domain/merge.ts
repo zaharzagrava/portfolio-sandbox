@@ -48,7 +48,7 @@ export function winningFields(
   const win: string[] = [];
   const lose: string[] = [];
   for (const field of Object.keys(fields))
-    (current[field] === undefined || opHlc > current[field]! ? win : lose).push(
+    (current[field] === undefined || opHlc > current[field] ? win : lose).push(
       field,
     );
   return { win, lose };

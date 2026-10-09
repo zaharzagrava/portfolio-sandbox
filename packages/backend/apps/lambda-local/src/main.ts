@@ -31,15 +31,15 @@ let running = true;
 
 async function pump(spec: LambdaSpec) {
   const queueUrl = `${prefix}${spec.queue}`;
-  const arn = ((
-    await sqs.send(
-      new GetQueueAttributesCommand({
-        QueueUrl: queueUrl,
-        AttributeNames: ['QueueArn'],
-      }),
-    )
-  ).Attributes?.QueueArn ??
-    `arn:aws:sqs:local:000000000000:${spec.queue}`) as string;
+  const arn =
+    (
+      await sqs.send(
+        new GetQueueAttributesCommand({
+          QueueUrl: queueUrl,
+          AttributeNames: ['QueueArn'],
+        }),
+      )
+    ).Attributes?.QueueArn ?? `arn:aws:sqs:local:000000000000:${spec.queue}`;
   const load = HANDLERS[spec.name];
   if (!load) throw new Error(`no handler registered for ${spec.name}`);
   const { handler } = await load();

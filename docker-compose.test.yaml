@@ -91,6 +91,34 @@ services:
       /usr/bin/mc mb --ignore-existing local/marketplace-media-test;
       exit 0;
       "
+  # S53 G-14: opt-in CDC relay for `outbox-cdc.e2e-spec.ts`. Not started by a plain `up`:
+  #   docker compose -f docker-compose.test.yaml -p marketplace_test --profile cdc up -d
+  # then register the connector (infra/debezium/README.md).
+  test_debezium:
+    build: ./infra/debezium
+    image: marketplace/debezium-connect:3.0
+    container_name: marketplace_test_debezium
+    profiles: ['cdc']
+    depends_on:
+      - test_db
+      - test_kafka
+    environment:
+      BOOTSTRAP_SERVERS: test_kafka:29192
+      GROUP_ID: marketplace-test-connect
+      CONFIG_STORAGE_TOPIC: connect.configs
+      OFFSET_STORAGE_TOPIC: connect.offsets
+      STATUS_STORAGE_TOPIC: connect.status
+      CONFIG_STORAGE_REPLICATION_FACTOR: 1
+      OFFSET_STORAGE_REPLICATION_FACTOR: 1
+      STATUS_STORAGE_REPLICATION_FACTOR: 1
+      DB_HOSTNAME: test_db
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: marketplace_test
+      CONNECT_CONFIG_PROVIDERS: env
+      CONNECT_CONFIG_PROVIDERS_ENV_CLASS: org.apache.kafka.common.config.provider.EnvVarConfigProvider
+    ports:
+      - '8183:8083'
   test_elasticmq:
     image: softwaremill/elasticmq-native:latest
     container_name: marketplace_test_elasticmq

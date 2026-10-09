@@ -19,7 +19,7 @@ import { UserModel as User } from '@app/domains/identity';
 import type { PaymentModel as Payment } from '@app/domains/payments';
 
 /** orders ↔ payments associate each other's models (debt D-11); resolve payments lazily (see payment.model.ts). */
-// eslint-disable-next-line @typescript-eslint/no-require-imports
+
 const payments = (): typeof import('@app/domains/payments') =>
   require('@app/domains/payments');
 import BisOrderItem from './bis-order-item.model';

@@ -39,7 +39,9 @@ export const ORDER_MODELS = [
     ApiConfigModule,
     AuthModule,
     StripeModule,
-    EventsModule,
+    EventsModule.forAggregates([
+      { aggregateType: 'orders', retention: 'full-history' },
+    ]),
     JobsModule,
     RealtimeModule,
     TenancyModule,

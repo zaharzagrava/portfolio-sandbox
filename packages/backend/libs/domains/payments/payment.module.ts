@@ -8,7 +8,8 @@ import { PaymentService } from './application/payment.service';
 import { PaymentController } from './api/payment.controller';
 import { StripeModule } from '@app/infrastructure/stripe/stripe.module';
 import { LedgerModule } from './ledger.module';
-import { OutboxModule } from '@app/infrastructure/outbox/outbox.module';
+import { EventsModule } from '@app/infrastructure/events/events.module';
+import { PAYMENTS_AGGREGATE } from './application/events/payment-events';
 import { KafkaConsumerModule } from '@app/infrastructure/kafka/kafka-consumer.module';
 import { BisUtilsModule } from './bis-utils.module';
 
@@ -21,7 +22,7 @@ import { BisUtilsModule } from './bis-utils.module';
     PaymentDtoModule,
     StripeModule,
     LedgerModule,
-    OutboxModule,
+    EventsModule.forAggregates([PAYMENTS_AGGREGATE]),
     KafkaConsumerModule,
   ],
   providers: [PaymentService],

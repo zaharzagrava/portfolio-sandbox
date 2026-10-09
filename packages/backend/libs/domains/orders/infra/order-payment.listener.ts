@@ -1,8 +1,7 @@
 import { ConflictException, Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import BisOrder from './models/bis-order.model';
-import { PaymentStatus } from '@app/domains/payments';
-import { KafkaTopicGroup } from '@app/infrastructure/outbox/outbox.model';
+import { PaymentStatus, PaymentProcessed } from '@app/domains/payments';
 import { EventEnvelope } from '@app/infrastructure/events/event-envelope';
 import { Projector } from '@app/infrastructure/projections/projector';
 import { OrderService } from '../application/order.service';
@@ -23,7 +22,10 @@ interface PaymentResponse {
 export class OrderPaymentListener implements Projector {
   private readonly logger = new Logger(OrderPaymentListener.name);
   readonly name = 'order-payment-listener';
-  readonly topics = [KafkaTopicGroup.PAYMENTS_RESPONSES];
+  readonly topics = [PaymentProcessed.topic];
+  // Order transitions are status-guarded: a repeated result changes nothing.
+  readonly idempotency = 'natural' as const;
+  readonly handles = [{ event: PaymentProcessed }];
 
   constructor(
     private readonly orders: OrderService,

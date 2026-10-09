@@ -74,7 +74,7 @@ export class TopicStreamController {
       userId: req.user?.id,
       roles: req.user?.role ? [req.user.role] : [],
     };
-    for (const topic of topics as RealtimeTopic[]) {
+    for (const topic of topics) {
       if (!(await this.topicRegistry.canSubscribe(viewer, topic)))
         throw new ForbiddenException(`not allowed: ${topic}`);
     }
@@ -127,7 +127,7 @@ export class TopicStreamController {
     req.on('close', close);
 
     // Replay what was missed while disconnected.
-    for (const topic of topics as RealtimeTopic[]) {
+    for (const topic of topics) {
       const from = cursor.get(topic);
       if (!from) continue;
       const entries = await this.redis.client.xrange(

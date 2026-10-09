@@ -101,11 +101,11 @@ describe('Webhooks (e2e)', () => {
     const enqueue = jest
       .spyOn(
         app.get(WebhookRouterProjector)['queue'] as {
-          enqueueBatch: (...a: unknown[]) => Promise<void>;
+          enqueueBatch: (...a: unknown[]) => Promise<unknown>;
         },
         'enqueueBatch',
       )
-      .mockResolvedValueOnce();
+      .mockResolvedValueOnce({ sent: 1, failed: [] });
     await app.get(WebhookRouterProjector).project([event]);
     const [, messages] = enqueue.mock.calls.at(-1) as [
       string,

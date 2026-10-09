@@ -8,7 +8,7 @@ import { JobHandler } from '@app/infrastructure/jobs/job-handler.decorator';
 import { JobsService } from '@app/infrastructure/jobs/jobs.service';
 import { EventEnvelope } from '@app/infrastructure/events/event-envelope';
 import { Projector } from '@app/infrastructure/projections/projector';
-import { KafkaTopicGroup } from '@app/infrastructure/outbox/outbox.model';
+import { ProductChanged } from '@app/domains/catalog';
 import {
   BACKFILL_QUEUE,
   IntegrationSyncService,
@@ -94,7 +94,10 @@ export class IntegrationWorkers
 @Injectable()
 export class StockPushProjector implements Projector {
   readonly name = 'integrations-stock-push';
-  readonly topics = [KafkaTopicGroup.PRODUCTS_EVENTS];
+  readonly topics = [ProductChanged.topic];
+  // Echo suppression by hash: pushing a state the provider already has is a no-op.
+  readonly idempotency = 'natural' as const;
+  readonly handles = [{ event: ProductChanged }];
   readonly coalesce = true;
 
   constructor(private readonly sync: IntegrationSyncService) {}

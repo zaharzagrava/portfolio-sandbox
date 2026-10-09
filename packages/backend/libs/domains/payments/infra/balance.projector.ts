@@ -26,6 +26,9 @@ export const BALANCES_KEY = 'ledger:balances';
 export class BalanceProjector implements Projector {
   readonly name = 'ledger-balances';
   readonly topics = [JournalPosted.topic];
+  // The Lua script sets a per-journal marker (SET NX) and applies the balances in one atomic step.
+  readonly idempotency = 'natural' as const;
+  readonly handles = [{ event: JournalPosted }];
 
   constructor(private readonly redis: RedisService) {}
 

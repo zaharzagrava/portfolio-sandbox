@@ -13,7 +13,8 @@ import { RedisService } from '@app/infrastructure/redis/redis.service';
 import { ObjectStorage } from '@app/infrastructure/storage/object-storage.port';
 import { ProductService } from './product.service';
 import { OutboxService } from '@app/infrastructure/outbox/outbox.service';
-import { KafkaTopicGroup } from '@app/infrastructure/outbox/outbox.model';
+import { TransactionRunner } from '@app/infrastructure/context';
+import { productChanged } from './events/product-events';
 import { DraftStore } from '../infra/draft-store';
 import { CollabInstanceRegistry } from '../infra/instance-registry';
 import { signCollabTicket } from '../infra/collab-ticket';
@@ -32,6 +33,7 @@ export interface DraftRow {
 export class DraftsService {
   constructor(
     @InjectConnection() private readonly sequelize: Sequelize,
+    private readonly transactions: TransactionRunner,
     private readonly store: DraftStore,
     private readonly registry: CollabInstanceRegistry,
     private readonly storage: ObjectStorage,
@@ -188,8 +190,7 @@ export class DraftsService {
       );
       productId = (created as { id: string }).id;
     } else {
-      // S54 T037 audit: explicit unit of work, opens its own transaction by design; no network I/O inside.
-      await this.sequelize.transaction(async (transaction) => {
+      await this.transactions.run(async (transaction) => {
         await this.sequelize.query(
           `UPDATE "Product" SET title = :title, description = :description, price = :price, brand = coalesce(:brand, brand), category = coalesce(:category, category),
                   quantity = coalesce(:quantity, quantity), version = version + 1, "updatedAt" = now()
@@ -208,14 +209,7 @@ export class DraftsService {
             transaction,
           },
         );
-        await this.outbox.notify(
-          {
-            topic: KafkaTopicGroup.PRODUCTS_EVENTS,
-            payload: { productId },
-            aggregateId: productId!,
-          },
-          transaction,
-        );
+        await this.outbox.append(productChanged(productId!), transaction);
       });
     }
     await this.createVersion(

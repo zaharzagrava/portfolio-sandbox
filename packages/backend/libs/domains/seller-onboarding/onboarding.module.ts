@@ -21,7 +21,15 @@ import {
 
 /** SD-44 (core): questionnaire, uploads, review queue. */
 @Module({
-  imports: [AuthModule, StorageModule, SqsModule, EventsModule, JobsModule],
+  imports: [
+    AuthModule,
+    StorageModule,
+    SqsModule,
+    EventsModule.forAggregates([
+      { aggregateType: 'shops', retention: 'full-history' },
+    ]),
+    JobsModule,
+  ],
   providers: [
     OnboardingSessionService,
     OnboardingDocumentsService,
@@ -41,7 +49,9 @@ export class OnboardingModule {}
   imports: [
     LlmModule,
     StorageModule,
-    EventsModule,
+    EventsModule.forAggregates([
+      { aggregateType: 'shops', retention: 'full-history' },
+    ]),
     JobsModule,
     KafkaProducerModule,
     ClickHouseModule,

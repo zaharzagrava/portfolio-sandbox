@@ -18,6 +18,9 @@ import { PickupStockChanged } from '../application/events/pickup-events';
 export class PickupAvailabilityProjector implements Projector {
   readonly name = 'pickup-availability';
   readonly topics = [PickupStockChanged.topic];
+  // Elasticsearch external versioning with the aggregate version: older and equal writes are rejected.
+  readonly idempotency = 'versionGuard' as const;
+  readonly handles = [{ event: PickupStockChanged }];
   readonly coalesce = true;
 
   constructor(
@@ -49,7 +52,7 @@ export class PickupAvailabilityProjector implements Projector {
       const meta = {
         _index: AVAILABILITY_INDEX,
         _id: c.aggregateId,
-        version: c.version,
+        version: c.aggregateVersion,
         version_type: 'external_gte' as const,
       };
       if (!product || c.payload.quantity <= 0) return [{ delete: meta }];

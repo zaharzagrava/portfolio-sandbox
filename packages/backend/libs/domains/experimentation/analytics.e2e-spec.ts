@@ -40,17 +40,15 @@ describe('Analytics & experiments (e2e)', () => {
       join(process.cwd(), 'clickhouse/070_analytics.sql'),
       'utf8',
     );
-    await clickhouse
-      .getClient()
-      .command({
-        query: ddl.slice(
+    await clickhouse.getClient().command({
+      query: ddl.slice(
+        ddl.indexOf('CREATE TABLE IF NOT EXISTS analytics_events\n'),
+        ddl.indexOf(
+          ';',
           ddl.indexOf('CREATE TABLE IF NOT EXISTS analytics_events\n'),
-          ddl.indexOf(
-            ';',
-            ddl.indexOf('CREATE TABLE IF NOT EXISTS analytics_events\n'),
-          ),
         ),
-      });
+      ),
+    });
   });
 
   afterAll(async () => {
@@ -147,17 +145,15 @@ describe('Analytics & experiments (e2e)', () => {
 
   it('duplicate deliveries of one event_id count once (ReplacingMergeTree + FINAL)', async () => {
     const event = row('add_to_cart', 'anon-dup', {});
-    await clickhouse
-      .getClient()
-      .insert({
-        table: 'analytics_events',
-        format: 'JSONEachRow',
-        values: [
-          event,
-          { ...event, received_at: chTime(Date.now() + 1_000) },
-          event,
-        ],
-      });
+    await clickhouse.getClient().insert({
+      table: 'analytics_events',
+      format: 'JSONEachRow',
+      values: [
+        event,
+        { ...event, received_at: chTime(Date.now() + 1_000) },
+        event,
+      ],
+    });
     const [{ n }] = await clickhouse.query<{ n: string }>(
       `SELECT count() AS n FROM analytics_events FINAL WHERE event_id = {id:UUID}`,
       { id: event.event_id },
@@ -251,13 +247,11 @@ describe('Analytics & experiments (e2e)', () => {
       rows.push(row('purchase', `f-${i}`, {}, start + 120_000));
     for (let i = 100; i < 150; i++)
       rows.push(row('purchase', `c-${i}`, {}, start + 30_000)); // bought BEFORE seeing the variant
-    await clickhouse
-      .getClient()
-      .insert({
-        table: 'analytics_events',
-        format: 'JSONEachRow',
-        values: rows,
-      });
+    await clickhouse.getClient().insert({
+      table: 'analytics_events',
+      format: 'JSONEachRow',
+      values: rows,
+    });
 
     const result = await analytics.results('free-shipping');
     expect(

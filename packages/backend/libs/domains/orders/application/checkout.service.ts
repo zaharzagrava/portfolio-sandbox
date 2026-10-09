@@ -13,7 +13,7 @@ import StockReservation from '../infra/models/stock-reservation.model';
 import { ProductModel as Product } from '@app/domains/catalog';
 import { TransactionRunner } from '@app/infrastructure/context';
 import { CheckoutDiscounts } from '../domain/checkout-discounts.port';
-import { DomainEventsService } from '@app/infrastructure/events/domain-events.service';
+import { OutboxService } from '@app/infrastructure/outbox/outbox.service';
 import { JobsService } from '@app/infrastructure/jobs/jobs.service';
 import { CartRepository } from '../infra/cart.repository';
 import { FlashStockService } from '../infra/flash-stock.service';
@@ -79,7 +79,7 @@ export class CheckoutService {
     @InjectModel(Product) private readonly productModel: typeof Product,
     @InjectConnection() private readonly sequelize: Sequelize,
     private readonly tx: TransactionRunner,
-    private readonly events: DomainEventsService,
+    private readonly events: OutboxService,
     private readonly jobs: JobsService,
     private readonly carts: CartRepository,
     private readonly flash: FlashStockService,
@@ -274,7 +274,7 @@ export class CheckoutService {
           null,
           transaction,
         ))!;
-        await this.events.record(
+        await this.events.append(
           OrderReserved.create(order.id, version, {
             userId,
             total,

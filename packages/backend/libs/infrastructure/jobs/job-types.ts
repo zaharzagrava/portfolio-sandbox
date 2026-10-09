@@ -7,7 +7,7 @@
  *     interface JobPayloads { 'auction.close': { auctionId: string } }
  *   }
  */
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+
 export interface JobPayloads {
   'jobs.partition-maintenance': { aheadDays?: number; retainDays?: number };
   /** Does nothing - used by `pnpm loadtest:jobs` to measure pure claim/complete throughput. */

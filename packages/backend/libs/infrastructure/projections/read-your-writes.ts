@@ -1,71 +1,61 @@
 import { Injectable } from '@nestjs/common';
+import { ApiConfigService } from '@app/common/config';
 import { RedisService } from '@app/infrastructure/redis/redis.service';
 import { EventEnvelope } from '@app/infrastructure/events/event-envelope';
-import { sleep } from '@app/common/core/backoff';
+import { coalesceLatest } from './coalesce';
 
+/** Raises the stored version, never lowers it, and (re)starts the expiry either way. */
 const RECORD_MAX = `
-local current = tonumber(redis.call('HGET', KEYS[1], ARGV[1]) or '-1')
-if tonumber(ARGV[2]) > current then redis.call('HSET', KEYS[1], ARGV[1], ARGV[2]) end
+local current = tonumber(redis.call('GET', KEYS[1]) or '-1')
+if tonumber(ARGV[1]) > current then
+  redis.call('SET', KEYS[1], ARGV[1], 'EX', ARGV[2])
+else
+  redis.call('EXPIRE', KEYS[1], ARGV[2])
+end
 return 1
 `;
 
 /**
- * Read-your-writes on top of eventually consistent read models (lesson
- * 06/02 §1): write APIs return the aggregate `version`; a read API given
- * `minVersion` waits briefly for the projection to catch up, and otherwise
- * falls back to the source of truth (or answers 202 "still processing").
+ * The checkpoint of a read model: the highest `aggregateVersion` of an aggregate that a consumer has handled
+ * (S53 FR-046). One key per consumer and aggregate, `ryw:{consumer}:{aggregateType}:{aggregateId}`, written by the
+ * framework after the sink write for every handled, coalesced and skipped event, only ever rising, expiring after
+ * `ryw_checkpoint_ttl_s` (24 h) so memory stays bounded.
  */
 @Injectable()
 export class ProjectionCheckpoints {
-  constructor(private readonly redis: RedisService) {}
+  constructor(
+    private readonly redis: RedisService,
+    private readonly config: ApiConfigService,
+  ) {}
 
-  private key(projector: string, aggregateType: string) {
-    return `proj:ckpt:${projector}:${aggregateType}`;
+  private key(consumer: string, aggregateType: string, aggregateId: string) {
+    return `ryw:${consumer}:${aggregateType}:${aggregateId}`;
   }
 
-  async record(projector: string, events: EventEnvelope[]): Promise<void> {
+  async record(consumer: string, events: EventEnvelope[]): Promise<void> {
+    const ttl = String(this.config.get('ryw_checkpoint_ttl_s'));
     await Promise.all(
-      events.map((e) =>
+      coalesceLatest(events).map((e) =>
         this.redis.client.eval(
           RECORD_MAX,
           1,
-          this.key(projector, e.aggregateType),
-          e.aggregateId,
-          String(e.version),
+          this.key(consumer, e.aggregateType, e.aggregateId),
+          String(e.aggregateVersion),
+          ttl,
         ),
       ),
     );
   }
 
+  /** The highest handled version, or -1 when nothing is recorded (never handled, or expired). */
   async projectedVersion(
-    projector: string,
+    consumer: string,
     aggregateType: string,
     aggregateId: string,
   ): Promise<number> {
-    const v = await this.redis.client.hget(
-      this.key(projector, aggregateType),
-      aggregateId,
+    const v = await this.redis.client.get(
+      this.key(consumer, aggregateType, aggregateId),
     );
     return v === null ? -1 : Number(v);
-  }
-
-  /** True once the read model reflects at least `minVersion`; false after `timeoutMs`. */
-  async waitFor(
-    projector: string,
-    aggregateType: string,
-    aggregateId: string,
-    minVersion: number,
-    timeoutMs = 500,
-  ) {
-    const deadline = Date.now() + timeoutMs;
-    for (;;) {
-      if (
-        (await this.projectedVersion(projector, aggregateType, aggregateId)) >=
-        minVersion
-      )
-        return true;
-      if (Date.now() >= deadline) return false;
-      await sleep(25);
-    }
   }
 }

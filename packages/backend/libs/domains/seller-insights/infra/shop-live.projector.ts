@@ -20,6 +20,9 @@ const BUCKET_TTL_SEC = 180;
 export class ShopLiveProjector implements Projector {
   readonly name = 'shop-live-dashboard';
   readonly topics = [OrderPaid.topic];
+  // A short-lived per-event `SET NX` marker skips replays (the counters are a live view).
+  readonly idempotency = 'natural' as const;
+  readonly handles = [{ event: OrderPaid }, { event: OrderReserved }];
 
   constructor(private readonly redis: RedisService) {}
 

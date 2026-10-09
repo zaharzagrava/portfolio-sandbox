@@ -12,7 +12,9 @@ import { ORDER_MODELS } from './orders.module';
 /** Order state machine for background code: the payment listener runs inside ProjectionsModule, so it needs an exporting module. */
 @Module({
   imports: [
-    EventsModule,
+    EventsModule.forAggregates([
+      { aggregateType: 'orders', retention: 'full-history' },
+    ]),
     RealtimeModule,
     SequelizeModule.forFeature(ORDER_MODELS),
   ],

@@ -83,11 +83,11 @@ export class OrderExportService {
     );
     if (!job) return 0;
     const key = `exports/${job.shopId}/${jobId}/orders.csv`;
-    const client = (await (
+    const client = await (
       this.sequelize.connectionManager as unknown as {
         getConnection(o: object): Promise<PoolClient>;
       }
-    ).getConnection({ type: 'read' })) as PoolClient;
+    ).getConnection({ type: 'read' });
     let rows = 0;
     try {
       const cursor = client.query(

@@ -116,13 +116,11 @@ describe('Bought together (e2e)', () => {
       { __type__: TableName.Product, title: 'B', quantity: 0 },
       { __type__: TableName.Product, title: 'C', quantity: 5 },
     ]);
-    await clickhouse
-      .getClient()
-      .insert({
-        table: 'order_baskets',
-        format: 'JSONEachRow',
-        values: [...baskets([a.id, b.id], 5), ...baskets([a.id, c.id], 3)],
-      });
+    await clickhouse.getClient().insert({
+      table: 'order_baskets',
+      format: 'JSONEachRow',
+      values: [...baskets([a.id, b.id], 5), ...baskets([a.id, c.id], 3)],
+    });
     await app.get(CoOccurrenceJobs).build({ buckets: 1 });
 
     const res = await request(app.getHttpServer())

@@ -1,17 +1,15 @@
 import { Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
-import { ApiConfigModule } from '@app/common/config';
-import { DbUtilsModule } from '@app/infrastructure/database/db-utils/db-utils.module';
-import { OutboxDtoModule } from './dto/outbox-dto.module';
+import { TransactionModule } from '@app/infrastructure/context/transaction.module';
+import { EventsCoreModule } from '@app/infrastructure/events/events-core.module';
 import Outbox from './outbox.model';
 import { OutboxService } from './outbox.service';
 
 @Module({
   imports: [
     SequelizeModule.forFeature([Outbox]),
-    ApiConfigModule,
-    DbUtilsModule,
-    OutboxDtoModule,
+    EventsCoreModule,
+    TransactionModule,
   ],
   providers: [OutboxService],
   exports: [OutboxService],

@@ -119,13 +119,11 @@ export class CartRepository {
       await this.dynamo.doc.send(
         new BatchWriteCommand({
           RequestItems: {
-            [this.dynamo.table(TABLE)]: lines
-              .slice(i, i + 25)
-              .map((l) => ({
-                DeleteRequest: {
-                  Key: { PK: `CART#${cartId}`, SK: `ITEM#${l.productId}` },
-                },
-              })),
+            [this.dynamo.table(TABLE)]: lines.slice(i, i + 25).map((l) => ({
+              DeleteRequest: {
+                Key: { PK: `CART#${cartId}`, SK: `ITEM#${l.productId}` },
+              },
+            })),
           },
         }),
       );

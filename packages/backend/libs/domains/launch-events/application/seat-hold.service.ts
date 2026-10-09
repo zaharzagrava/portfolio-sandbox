@@ -160,7 +160,7 @@ export class SeatHoldService {
     }
 
     // Seats stay taken forever now; the hold record is marked confirmed so the expiry job leaves it alone.
-    for (const seat of hold.seats as number[]) {
+    for (const seat of hold.seats) {
       await this.dynamo.doc.send(
         new UpdateCommand({
           TableName: this.dynamo.table(TABLE),

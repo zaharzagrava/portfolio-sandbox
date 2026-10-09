@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { CacheService } from '@app/infrastructure/cache/cache.service';
 import { EventEnvelope } from '@app/infrastructure/events/event-envelope';
 import { Projector } from '@app/infrastructure/projections/projector';
-import { KafkaTopicGroup } from '@app/infrastructure/outbox/outbox.model';
+import { ProductChanged } from '../application/events/product-events';
 import { productCacheKey } from './product-cache';
 
 /**
@@ -13,7 +13,10 @@ import { productCacheKey } from './product-cache';
 @Injectable()
 export class ProductCacheInvalidator implements Projector {
   readonly name = 'product-cache-invalidator';
-  readonly topics = [KafkaTopicGroup.PRODUCTS_EVENTS];
+  readonly topics = [ProductChanged.topic];
+  // Deleting a cache key twice is the same as deleting it once.
+  readonly idempotency = 'natural' as const;
+  readonly handles = [{ event: ProductChanged }];
   readonly coalesce = true;
 
   constructor(private readonly cache: CacheService) {}

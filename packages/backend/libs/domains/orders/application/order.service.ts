@@ -9,7 +9,7 @@ import { QueryTypes, Sequelize, Transaction } from 'sequelize';
 import BisOrder from '../infra/models/bis-order.model';
 import StockReservation from '../infra/models/stock-reservation.model';
 import { TransactionRunner } from '@app/infrastructure/context';
-import { DomainEventsService } from '@app/infrastructure/events/domain-events.service';
+import { OutboxService } from '@app/infrastructure/outbox/outbox.service';
 import { RealtimePublisher } from '@app/infrastructure/realtime/realtime-publisher.service';
 import { FlashStockService } from '../infra/flash-stock.service';
 import {
@@ -36,7 +36,7 @@ export class OrderService {
     private readonly reservationModel: typeof StockReservation,
     @InjectConnection() private readonly sequelize: Sequelize,
     private readonly tx: TransactionRunner,
-    private readonly events: DomainEventsService,
+    private readonly events: OutboxService,
     private readonly flash: FlashStockService,
     private readonly realtime: RealtimePublisher,
   ) {}
@@ -106,7 +106,7 @@ export class OrderService {
         include: ['items'],
         transaction,
       });
-      await this.events.record(
+      await this.events.append(
         OrderPaid.create(orderId, version, {
           userId: order!.userId,
           total: Number(order!.total),
@@ -172,7 +172,7 @@ export class OrderService {
         transaction,
         attributes: ['userId'],
       });
-      await this.events.record(
+      await this.events.append(
         OrderCancelled.create(orderId, version, {
           userId: order!.userId,
           reason,

@@ -17,7 +17,7 @@ export function addPeriod(
   const start = DateTime.fromJSDate(from, { zone: 'utc' });
   const target =
     interval === 'MONTH' ? start.plus({ months: 1 }) : start.plus({ years: 1 });
-  const day = Math.min(anchorDay, target.daysInMonth!);
+  const day = Math.min(anchorDay, target.daysInMonth);
   return target.set({ day }).toJSDate();
 }
 

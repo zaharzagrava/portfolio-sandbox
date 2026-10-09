@@ -10,6 +10,9 @@ import { LinkClicked } from '../application/share-link.service';
 export class LinkClicksProjector implements Projector {
   readonly name = 'link-clicks';
   readonly topics = [LinkClicked.topic];
+  // ClickHouse keeps one row per click id at merge time.
+  readonly idempotency = 'natural' as const;
+  readonly handles = [{ event: LinkClicked }];
   private readonly sink: ClickHouseSink;
 
   constructor(clickhouse: ClickHouseService) {

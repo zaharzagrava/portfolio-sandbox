@@ -5,8 +5,7 @@ import Product from './models/product.model';
 import { ElasticsearchService } from '@app/infrastructure/elasticsearch/elasticsearch.service';
 import { EventEnvelope } from '@app/infrastructure/events/event-envelope';
 import { Projector } from '@app/infrastructure/projections/projector';
-import { ProjectionCheckpoints } from '@app/infrastructure/projections/read-your-writes';
-import { KafkaTopicGroup } from '@app/infrastructure/outbox/outbox.model';
+import { ProductChanged } from '../application/events/product-events';
 
 /**
  * Products read model in Elasticsearch (README #7, SD-37), rebuilt on the F-05
@@ -22,13 +21,15 @@ import { KafkaTopicGroup } from '@app/infrastructure/outbox/outbox.model';
 @Injectable()
 export class ProductSearchProjector implements Projector {
   readonly name = 'search-indexer';
-  readonly topics = [KafkaTopicGroup.PRODUCTS_EVENTS];
+  readonly topics = [ProductChanged.topic];
+  // Elasticsearch indexes with the product's own version as the external version: older writes are rejected.
+  readonly idempotency = 'versionGuard' as const;
+  readonly handles = [{ event: ProductChanged }];
   readonly coalesce = true;
 
   constructor(
     @InjectModel(Product) private readonly productModel: typeof Product,
     private readonly elasticsearch: ElasticsearchService,
-    private readonly checkpoints: ProjectionCheckpoints,
   ) {}
 
   async project(events: EventEnvelope[]): Promise<void> {
@@ -75,16 +76,6 @@ export class ProductSearchProjector implements Projector {
         createdAt: p.createdAt,
       })),
       { refresh: false },
-    );
-
-    await this.checkpoints.record(
-      this.name,
-      products.map((p) => ({
-        ...events[0],
-        aggregateType: 'products',
-        aggregateId: p.id,
-        version: p.version,
-      })),
     );
   }
 }

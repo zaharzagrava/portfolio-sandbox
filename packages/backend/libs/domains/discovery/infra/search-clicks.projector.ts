@@ -9,6 +9,9 @@ import { SearchResultClicked } from '../application/events/search-click-events';
 export class SearchClicksProjector implements Projector {
   readonly name = 'search-clicks';
   readonly topics = [SearchResultClicked.topic];
+  // ClickHouse keeps one row per event_id at merge time.
+  readonly idempotency = 'natural' as const;
+  readonly handles = [{ event: SearchResultClicked }];
   private readonly sink: ClickHouseSink;
 
   constructor(clickhouse: ClickHouseService) {

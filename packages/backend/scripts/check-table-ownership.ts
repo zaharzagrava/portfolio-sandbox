@@ -8,14 +8,17 @@
  *
  * Run: pnpm check:table-ownership            # report, always exits 0
  *      pnpm check:table-ownership --strict   # exits 1 on any finding (turn on once debt D-7/D-12 is paid)
+ *      pnpm check:table-ownership --technical-only   # only the technical tables (outbox, inbox, jobs…): the gate for S53, green now
  */
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { basename, join, relative } from 'node:path';
 import { ownerOf } from '../db/ownership';
+import { technicalTableViolations } from './technical-table-scan';
 
 const BACKEND = join(__dirname, '..');
 const DOMAINS = join(BACKEND, 'libs/domains');
 const strict = process.argv.includes('--strict');
+const technicalOnly = process.argv.includes('--technical-only');
 
 const walk = (dir: string): string[] =>
   readdirSync(dir).flatMap((n) => {
@@ -57,7 +60,28 @@ for (const file of walk(DOMAINS).filter(
   }
 }
 
-let total = 0;
+// Technical tables (Outbox, ProcessedWebhookEvent, IdempotencyKey, Job…): only their owning lib's services may touch
+// them (S53 AS-09, SC-008). Files handed to other specs are allow-listed in `technical-table-scan.ts`; any other
+// reference, and any allow-list entry that no longer matches, fails `--strict` and `--technical-only`.
+const { unexpected, stale } = technicalTableViolations();
+if (unexpected.length > 0 || stale.length > 0) {
+  console.log('\ntechnical tables (reachable through the owning lib only)');
+  for (const r of unexpected)
+    console.log(
+      `  ${r.kind === 'sql' ? 'SQL  ' : 'MODEL'} ${r.table.padEnd(26)} ${r.file}`,
+    );
+  for (const file of stale)
+    console.log(`  STALE allow-list entry (fixed? remove it): ${file}`);
+}
+const technicalFindings = unexpected.length + stale.length;
+if (technicalOnly) {
+  console.log(
+    `\n${technicalFindings} technical-table violations (${basename(__filename)} --technical-only).`,
+  );
+  process.exit(technicalFindings > 0 ? 1 : 0);
+}
+
+let total = technicalFindings;
 for (const [domain, findings] of [...byDomain].sort()) {
   const unique = [
     ...new Map(

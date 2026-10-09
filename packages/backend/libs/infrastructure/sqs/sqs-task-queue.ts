@@ -10,13 +10,22 @@ import {
 } from '@aws-sdk/client-sqs';
 import { context, propagation } from '@opentelemetry/api';
 import { ApiConfigService } from '@app/common/config';
+import { MetricsRegistry } from '@app/common/telemetry/metrics-registry';
+import { validateEnqueueOptions } from './enqueue-options';
 import {
+  BatchResult,
   ConsumeOptions,
   EnqueueOptions,
   TaskMessage,
   TaskQueue,
 } from './task-queue.port';
 import { sleep } from '@app/common/core/backoff';
+
+const oldestMessageAge = MetricsRegistry.gauge({
+  name: 'task_queue_oldest_message_age_seconds',
+  help: 'Wait time of the oldest message the last receive returned, per queue (0 when the receive was empty)',
+  labels: ['queue'],
+});
 
 @Injectable()
 export class SqsTaskQueue extends TaskQueue {
@@ -48,13 +57,14 @@ export class SqsTaskQueue extends TaskQueue {
     body: T,
     options: EnqueueOptions = {},
   ): Promise<string> {
+    validateEnqueueOptions(queue, options);
     const res = await this.client.send(
       new SendMessageCommand({
         QueueUrl: this.queueUrl(queue),
         MessageBody: JSON.stringify(body),
-        DelaySeconds: options.groupId ? undefined : options.delaySeconds,
+        DelaySeconds: options.delaySeconds,
         MessageGroupId: options.groupId,
-        MessageDeduplicationId: options.deduplicationId,
+        MessageDeduplicationId: options.dedupeId,
         MessageAttributes: this.attributes(options.attributes),
       }),
     );
@@ -64,7 +74,9 @@ export class SqsTaskQueue extends TaskQueue {
   async enqueueBatch<T>(
     queue: string,
     bodies: { body: T; options?: EnqueueOptions }[],
-  ): Promise<void> {
+  ): Promise<BatchResult> {
+    for (const { options } of bodies) validateEnqueueOptions(queue, options);
+    const result: BatchResult = { sent: 0, failed: [] };
     // SQS batch limit is 10 entries.
     for (let i = 0; i < bodies.length; i += 10) {
       const chunk = bodies.slice(i, i + 10);
@@ -74,19 +86,22 @@ export class SqsTaskQueue extends TaskQueue {
           Entries: chunk.map(({ body, options = {} }, j) => ({
             Id: String(i + j),
             MessageBody: JSON.stringify(body),
-            DelaySeconds: options.groupId ? undefined : options.delaySeconds,
+            DelaySeconds: options.delaySeconds,
             MessageGroupId: options.groupId,
-            MessageDeduplicationId: options.deduplicationId,
+            MessageDeduplicationId: options.dedupeId,
             MessageAttributes: this.attributes(options.attributes),
           })),
         }),
       );
-      if (res.Failed?.length) {
-        throw new Error(
-          `SQS batch partially failed: ${res.Failed.map((f) => f.Code).join(', ')}`,
-        );
-      }
+      result.sent += res.Successful?.length ?? 0;
+      for (const f of res.Failed ?? [])
+        result.failed.push({
+          index: Number(f.Id),
+          reason: [f.Code, f.Message].filter(Boolean).join(': '),
+        });
     }
+    result.failed.sort((a, b) => a.index - b.index);
+    return result;
   }
 
   consume<T>(
@@ -96,13 +111,44 @@ export class SqsTaskQueue extends TaskQueue {
       concurrency = 10,
       visibilityTimeoutSec = 60,
       waitTimeSec = 20,
+      bodySchema,
+      deadLetterQueue = queue.replace(/(\.fifo)?$/, '-dlq$1'),
     }: ConsumeOptions = {},
   ): () => Promise<void> {
     const queueUrl = this.queueUrl(queue);
     let running = true;
     const inFlight = new Set<Promise<void>>();
+    const polling = new AbortController();
 
-    const processOne = async (raw: Message) => {
+    const deadLetter = async (raw: Message, reason: string) => {
+      const fifo = deadLetterQueue.endsWith('.fifo');
+      await this.client.send(
+        new SendMessageCommand({
+          QueueUrl: this.queueUrl(deadLetterQueue),
+          MessageBody: raw.Body ?? '',
+          MessageGroupId: fifo ? 'dead-letter' : undefined,
+          MessageDeduplicationId: fifo ? raw.MessageId : undefined,
+          MessageAttributes: {
+            ...Object.fromEntries(
+              Object.entries(raw.MessageAttributes ?? {}).map(([k, v]) => [
+                k,
+                { DataType: 'String', StringValue: v.StringValue ?? '' },
+              ]),
+            ),
+            deadLetterReason: { DataType: 'String', StringValue: reason },
+            sourceQueue: { DataType: 'String', StringValue: queue },
+          },
+        }),
+      );
+      await this.client.send(
+        new DeleteMessageCommand({
+          QueueUrl: queueUrl,
+          ReceiptHandle: raw.ReceiptHandle,
+        }),
+      );
+    };
+
+    const processOne = async (raw: Message): Promise<boolean> => {
       // Heartbeat: keep the message invisible while we work, so slow work isn't redelivered to another worker.
       const heartbeat = setInterval(
         () => {
@@ -130,11 +176,26 @@ export class SqsTaskQueue extends TaskQueue {
             v.StringValue ?? '',
           ]),
         );
+        let body: unknown;
+        let valid = true;
+        try {
+          body = JSON.parse(raw.Body ?? 'null');
+        } catch (e) {
+          if (!bodySchema) throw e;
+          valid = false;
+        }
+        if (bodySchema && (!valid || !bodySchema.safeParse(body).success)) {
+          await deadLetter(raw, 'SCHEMA_INVALID');
+          this.logger.warn(
+            `[${queue}] message ${raw.MessageId} dead-lettered: SCHEMA_INVALID`,
+          );
+          return true;
+        }
         const parentCtx = propagation.extract(context.active(), attributes);
         await context.with(parentCtx, () =>
           handler({
             id: raw.MessageId!,
-            body: JSON.parse(raw.Body ?? 'null') as T,
+            body: body as T,
             receiveCount: Number(raw.Attributes?.ApproximateReceiveCount ?? 1),
             attributes,
           }),
@@ -145,11 +206,13 @@ export class SqsTaskQueue extends TaskQueue {
             ReceiptHandle: raw.ReceiptHandle,
           }),
         );
+        return true;
       } catch (error) {
         // Not deleting = message becomes visible again after the timeout → retry; DLQ after maxReceiveCount.
         this.logger.error(
-          `[${queue}] message ${raw.MessageId} failed: ${(error as Error).message}`,
+          `[${queue}] message ${raw.MessageId} failed: ${(error as Error).name}`,
         );
+        return false;
       } finally {
         clearInterval(heartbeat);
       }
@@ -170,16 +233,42 @@ export class SqsTaskQueue extends TaskQueue {
               WaitTimeSeconds: waitTimeSec,
               VisibilityTimeout: visibilityTimeoutSec,
               MessageAttributeNames: ['All'],
-              MessageSystemAttributeNames: ['ApproximateReceiveCount'],
+              MessageSystemAttributeNames: [
+                'ApproximateReceiveCount',
+                'MessageGroupId',
+                'SentTimestamp',
+              ],
             }),
+            { abortSignal: polling.signal },
           );
+          // Backlog age as this consumer sees it: how long the oldest message just received had waited (0 when idle).
+          const sent = Messages.map((m) =>
+            Number(m.Attributes?.SentTimestamp),
+          ).filter(Number.isFinite);
+          oldestMessageAge.set(
+            sent.length
+              ? Math.max(0, (Date.now() - Math.min(...sent)) / 1000)
+              : 0,
+            { queue },
+          );
+          // One receive can return several messages of the same FIFO group: handle them one at a time,
+          // and after a failure leave the rest of that group for redelivery so order is kept.
+          const byGroup = new Map<string, Message[]>();
           for (const message of Messages) {
-            const task = processOne(message).finally(() =>
-              inFlight.delete(task),
-            );
+            const key =
+              message.Attributes?.MessageGroupId ?? message.MessageId!;
+            byGroup.set(key, [...(byGroup.get(key) ?? []), message]);
+          }
+          for (const messages of byGroup.values()) {
+            const task: Promise<void> = (async () => {
+              for (const message of messages) {
+                if (!(await processOne(message))) break;
+              }
+            })().finally(() => inFlight.delete(task));
             inFlight.add(task);
           }
         } catch (error) {
+          if (!running) break;
           this.logger.error(
             `[${queue}] receive failed: ${(error as Error).message}`,
           );
@@ -192,6 +281,7 @@ export class SqsTaskQueue extends TaskQueue {
 
     return async () => {
       running = false;
+      polling.abort();
       await loopDone;
       await Promise.allSettled(inFlight);
     };

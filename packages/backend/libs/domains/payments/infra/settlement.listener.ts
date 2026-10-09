@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectConnection } from '@nestjs/sequelize';
 import { QueryTypes, Sequelize } from 'sequelize';
 import { v5 as uuidv5 } from 'uuid';
+import { TransactionRunner } from '@app/infrastructure/context';
 import { EventEnvelope } from '@app/infrastructure/events/event-envelope';
 import { Projector } from '@app/infrastructure/projections/projector';
 import { LedgerService } from '../application/ledger.service';
@@ -27,9 +28,13 @@ const SETTLEMENT_NS = '0b9cf0b6-4a6f-4b8e-9d5c-6f0f3c2b9a11';
 export class SettlementListener implements Projector {
   readonly name = 'order-settlement';
   readonly topics = [OrderPaid.topic];
+  // A deterministic journal id (UUIDv5 of the order) plus an existence check under an advisory lock.
+  readonly idempotency = 'natural' as const;
+  readonly handles = [{ event: OrderPaid }];
 
   constructor(
     @InjectConnection() private readonly sequelize: Sequelize,
+    private readonly transactions: TransactionRunner,
     private readonly ledger: LedgerService,
   ) {}
 
@@ -62,8 +67,7 @@ export class SettlementListener implements Projector {
     );
 
     const journalId = uuidv5(`settlement:${orderId}`, SETTLEMENT_NS);
-    // S54 T037 audit: explicit unit of work, opens its own transaction by design; no network I/O inside.
-    await this.sequelize.transaction(async (tx) => {
+    await this.transactions.run(async (tx) => {
       await this.sequelize.query(
         `SELECT pg_advisory_xact_lock(hashtext(:journalId))`,
         { replacements: { journalId }, transaction: tx },

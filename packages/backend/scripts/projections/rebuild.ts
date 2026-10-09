@@ -1,44 +1,35 @@
 /**
- * Rebuilds a projection by replaying its topics from the beginning (D26).
+ * Rebuilds a projection in place by replaying its topics from the earliest offset (S53 FR-051, FR-053 to FR-055).
  *
- *   pnpm projections:rebuild <consumer-group> [topic ...]
+ *   pnpm projections:rebuild --consumer <group> [--topic <t> ...] [--from-retained]
+ *                            [--allow-side-effects --reason "<why>" [--operator <name>]]
  *
- * Steps (the projector app for this group must be stopped first - Kafka
- * refuses to reset offsets of an active group):
- *  1. reset the group's offsets to the earliest retained offset,
- *  2. start the projector again → it re-projects everything; version-guarded
- *     sinks make replaying already-applied events harmless.
- * For a zero-downtime rebuild into a NEW target (changed ES mapping, new
- * table), run the new projector version under a new group name writing to a
- * shadow index/table, then swap the alias (SD-37) - no offset reset needed.
+ * The consumer must be stopped (`GROUP_ACTIVE` otherwise, exit 2). A consumer declared `replayable: false` needs
+ * `--allow-side-effects` and a `--reason` (`NOT_REPLAYABLE`), and the override is written to the audit log. A topic whose
+ * history is gone and that is not compacted refuses (`HISTORY_TRUNCATED`) unless `--from-retained`. Starting the
+ * consumer again then re-projects everything; version-guarded sinks make replaying already applied events harmless, and
+ * an interrupted replay resumes from its committed offsets (do not run this command again to resume).
+ *
+ * For a zero-downtime rebuild into a new target (changed mapping, new table) run the new version of the consumer under a
+ * new group name into a shadow target, then `pnpm projections:promote`.
  */
-import { Kafka } from 'kafkajs';
+import { ProjectionAdmin } from '@app/infrastructure/projections/projection-admin.service';
+import { one, parseArgs, required, runCommand } from './admin-cli';
 
 async function main() {
-  const [groupId, ...topicsArg] = process.argv.slice(2);
-  if (!groupId)
-    throw new Error('usage: rebuild.ts <consumer-group> [topic ...]');
-
-  const kafka = new Kafka({
-    clientId: 'projection-rebuild',
-    brokers: (process.env.KAFKA_BROKER ?? 'localhost:9092').split(','),
+  const args = parseArgs(process.argv.slice(2));
+  const consumer = required(args, 'consumer');
+  await runCommand(async (app) => {
+    const { topics } = await app.get(ProjectionAdmin).rebuild({
+      consumer,
+      topics: args.get('topic'),
+      fromRetained: args.has('from-retained'),
+      allowSideEffects: args.has('allow-side-effects'),
+      reason: one(args, 'reason'),
+      operator: one(args, 'operator') ?? process.env.USER,
+    });
+    return `reset ${consumer} to the earliest offset of ${topics.join(', ')}; start the consumer to replay`;
   });
-  const admin = kafka.admin();
-  await admin.connect();
-
-  const topics = topicsArg.length
-    ? topicsArg
-    : (await admin.fetchOffsets({ groupId })).map((t) => t.topic);
-
-  for (const topic of topics) {
-    await admin.resetOffsets({ groupId, topic, earliest: true });
-    console.log(`reset ${groupId} @ ${topic} → earliest`);
-  }
-
-  await admin.disconnect();
 }
 
-main().catch((error) => {
-  console.error(error);
-  process.exit(1);
-});
+if (require.main === module) void main();

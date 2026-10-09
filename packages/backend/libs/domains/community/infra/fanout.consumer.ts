@@ -28,6 +28,9 @@ export class FeedFanoutConsumer implements Projector {
   private readonly logger = new Logger(FeedFanoutConsumer.name);
   readonly name = 'feed-fanout';
   readonly topics = [FeedItemPublished.topic];
+  // Pushing the same entry to a timeline twice shows it twice, so the framework records each event once.
+  readonly idempotency = 'inbox' as const;
+  readonly handles = [{ event: FeedItemPublished }];
 
   constructor(
     private readonly cassandra: CassandraService,

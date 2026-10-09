@@ -5,7 +5,8 @@ import { AuthModule } from '@app/domains/identity';
 import { DbUtilsModule } from '@app/infrastructure/database/db-utils/db-utils.module';
 import { ProductDtoModule } from './product-dto.module';
 import { ElasticsearchModule } from '@app/infrastructure/elasticsearch/elasticsearch.module';
-import { OutboxModule } from '@app/infrastructure/outbox/outbox.module';
+import { EventsModule } from '@app/infrastructure/events/events.module';
+import { PRODUCTS_AGGREGATE } from './application/events/product-events';
 import { ProductService } from './application/product.service';
 import { ProductController } from './api/product.controller';
 import { CacheModule } from '@app/infrastructure/cache/cache.module';
@@ -18,7 +19,7 @@ import { TenancyModule } from '@app/domains/tenancy';
     DbUtilsModule,
     ProductDtoModule,
     ElasticsearchModule,
-    OutboxModule,
+    EventsModule.forAggregates([PRODUCTS_AGGREGATE]),
     CacheModule,
     TenancyModule,
   ],

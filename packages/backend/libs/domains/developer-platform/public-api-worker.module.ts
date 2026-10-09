@@ -4,8 +4,8 @@ import {
   OnApplicationBootstrap,
   OnModuleDestroy,
 } from '@nestjs/common';
-import { ProductModule } from '@app/domains/catalog';
-import { OutboxModule } from '@app/infrastructure/outbox/outbox.module';
+import { ProductModule, PRODUCTS_AGGREGATE } from '@app/domains/catalog';
+import { EventsModule } from '@app/infrastructure/events/events.module';
 import { SqsModule } from '@app/infrastructure/sqs/sqs.module';
 import { TaskQueue } from '@app/infrastructure/sqs/task-queue.port';
 import { JobsModule } from '@app/infrastructure/jobs/jobs.module';
@@ -64,7 +64,12 @@ export class PublicApiWorkers
 
 /** SD-07 (apps/worker): async bulk stock chunks + API key lastUsedAt write-behind. */
 @Module({
-  imports: [ProductModule, OutboxModule, SqsModule, JobsModule],
+  imports: [
+    ProductModule,
+    EventsModule.forAggregates([PRODUCTS_AGGREGATE]),
+    SqsModule,
+    JobsModule,
+  ],
   providers: [PublicApiWorkers, PublicCatalogService, ApiKeysService],
 })
 export class PublicApiWorkerModule {}

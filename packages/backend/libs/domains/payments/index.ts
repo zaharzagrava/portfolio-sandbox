@@ -20,5 +20,9 @@ export { CreateLedgerEntryDto, SystemAccount } from './api/ledger.dto';
 export type { LedgerAccountId } from './api/ledger.dto';
 export { CreatePaymentDto } from './api/payment.dto';
 export { LedgerService } from './application/ledger.service';
+export {
+  PaymentProcessed,
+  PAYMENTS_AGGREGATE,
+} from './application/events/payment-events';
 export { BalanceProjector } from './infra/balance.projector';
 export { PaymentDtoService } from './infra/payment-dto.service';

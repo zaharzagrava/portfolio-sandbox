@@ -10,6 +10,9 @@ import { UsageRecorded } from '../application/usage.service';
 export class UsageProjector implements Projector {
   readonly name = 'usage-to-clickhouse';
   readonly topics = [UsageRecorded.topic];
+  // ClickHouse keeps one row per event_id at merge time.
+  readonly idempotency = 'natural' as const;
+  readonly handles = [{ event: UsageRecorded }];
 
   private readonly sink: ClickHouseSink;
 

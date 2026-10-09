@@ -14,7 +14,8 @@ import { LedgerModule } from './ledger.module';
 import { LedgerService } from './application/ledger.service';
 import { StripeModule } from '@app/infrastructure/stripe/stripe.module';
 import { StripeService } from '@app/infrastructure/stripe/stripe.service';
-import { OutboxModule } from '@app/infrastructure/outbox/outbox.module';
+import { EventsModule } from '@app/infrastructure/events/events.module';
+import { PAYMENTS_AGGREGATE } from './application/events/payment-events';
 import { JobsModule } from '@app/infrastructure/jobs/jobs.module';
 import {
   LEDGER_ACCOUNTS,
@@ -39,7 +40,7 @@ import { SettlementListener } from './infra/settlement.listener';
   imports: [
     LedgerModule,
     StripeModule,
-    OutboxModule,
+    EventsModule.forAggregates([PAYMENTS_AGGREGATE]),
     JobsModule,
     SequelizeModule.forFeature([Payout, Shop, Payment]),
   ],
@@ -221,7 +222,7 @@ describe('Ledger, settlement, payouts, reconciliation (e2e)', () => {
     expect(
       await app
         .get<typeof Outbox>(getModelToken(Outbox))
-        .count({ where: { topic: 'payments.responses' } }),
+        .count({ where: { topic: 'payments.events' } }),
     ).toBe(1);
   });
 

@@ -1,7 +1,7 @@
 import * as path from 'path';
 
 import { SequelizeModule } from '@nestjs/sequelize';
-import { Test } from '@nestjs/testing';
+import { Test, TestingModuleBuilder } from '@nestjs/testing';
 import { ApiConfigModule, ApiConfigService } from '@app/common/config';
 
 import { ScheduleModule } from '@nestjs/schedule';
@@ -65,6 +65,8 @@ export interface TestingModuleOptions {
   stores?: Array<
     'redis' | 'cassandra' | 'dynamo' | 'sqs' | 'storage' | 'elasticsearch'
   >;
+  /** Swap providers before compile, e.g. `b => b.overrideProvider(CLOCK).useValue(fakeClock)`. */
+  customize?: (builder: TestingModuleBuilder) => TestingModuleBuilder;
 }
 
 const STORE_MODULES = {
@@ -143,7 +145,7 @@ export const generateTestingModule = async (
     imports.push(module);
   }
 
-  return await Test.createTestingModule({
+  const builder = Test.createTestingModule({
     imports,
     providers: [
       {
@@ -160,6 +162,6 @@ export const generateTestingModule = async (
     .useFactory({
       factory: MockApiConfigServiceFactory,
       inject: [ConfigUtilsService],
-    })
-    .compile();
+    });
+  return await (options.customize?.(builder) ?? builder).compile();
 };

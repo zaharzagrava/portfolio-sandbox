@@ -3,7 +3,7 @@ import { ElasticsearchService } from '@app/infrastructure/elasticsearch/elastics
 import { DbUtilsService } from '@app/infrastructure/database/db-utils/db-utils.service';
 import { ProductDtoService } from '../infra/product-dto.service';
 import { OutboxService } from '@app/infrastructure/outbox/outbox.service';
-import { KafkaTopicGroup } from '@app/infrastructure/outbox/outbox.model';
+import { productChanged } from './events/product-events';
 import { InjectModel } from '@nestjs/sequelize';
 import Product from '../infra/models/product.model';
 import { CacheService } from '@app/infrastructure/cache/cache.service';
@@ -121,14 +121,7 @@ export class ProductService {
         tx,
       });
 
-      await this.outboxService.notify(
-        {
-          topic: KafkaTopicGroup.PRODUCTS_EVENTS,
-          payload: { productId: product.id },
-          aggregateId: product.id,
-        },
-        tx,
-      );
+      await this.outboxService.append(productChanged(product.id), tx);
 
       return product as unknown as ProductRawDto;
     });

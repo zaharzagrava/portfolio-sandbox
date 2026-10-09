@@ -147,11 +147,9 @@ export class DraftStore {
       await this.dynamo.doc.send(
         new BatchWriteCommand({
           RequestItems: {
-            [this.table()]: doomed
-              .slice(i, i + 25)
-              .map((sk) => ({
-                DeleteRequest: { Key: { PK: pk(draftId), SK: sk } },
-              })),
+            [this.table()]: doomed.slice(i, i + 25).map((sk) => ({
+              DeleteRequest: { Key: { PK: pk(draftId), SK: sk } },
+            })),
           },
         }),
       );

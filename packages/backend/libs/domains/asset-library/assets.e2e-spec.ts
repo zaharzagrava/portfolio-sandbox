@@ -219,15 +219,13 @@ describe('Asset library & digital delivery (e2e)', () => {
         total: 999,
         currency: 'usd',
       } as never);
-    await app
-      .get<typeof BisOrderItem>(getModelToken(BisOrderItem))
-      .create({
-        bisOrderId: order.id,
-        productId: product.id,
-        quantity: 1,
-        priceAtPurchase: 999,
-        shopId,
-      } as never);
+    await app.get<typeof BisOrderItem>(getModelToken(BisOrderItem)).create({
+      bisOrderId: order.id,
+      productId: product.id,
+      quantity: 1,
+      priceAtPurchase: 999,
+      shopId,
+    } as never);
 
     await expect(
       assets.digitalDownloadToken(stranger.id, product.id),

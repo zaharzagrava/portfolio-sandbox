@@ -15,7 +15,8 @@ import { ObjectStorage } from '@app/infrastructure/storage/object-storage.port';
 import { TaskQueue } from '@app/infrastructure/sqs/task-queue.port';
 import { RealtimePublisher } from '@app/infrastructure/realtime/realtime-publisher.service';
 import { RateLimiterService } from '@app/infrastructure/rate-limit/rate-limiter.service';
-import { KafkaTopicGroup } from '@app/infrastructure/outbox/outbox.model';
+import { ProductChanged } from '@app/domains/catalog';
+import { TransactionRunner } from '@app/infrastructure/context';
 import { scanStream } from '../infra/clamav';
 import { CatalogRow, sniff } from '../domain/rows';
 
@@ -44,6 +45,7 @@ export class CatalogImportService {
 
   constructor(
     @InjectConnection() private readonly sequelize: Sequelize,
+    private readonly transactions: TransactionRunner,
     private readonly storage: ObjectStorage,
     private readonly queue: TaskQueue,
     private readonly realtime: RealtimePublisher,
@@ -297,8 +299,7 @@ export class CatalogImportService {
 
   /** Idempotent by (shopId, externalSku): one statement per 1,000 rows, plus their outbox rows (search reindex). */
   private async upsert(job: Job, rows: (CatalogRow & { row: number })[]) {
-    // S54 T037 audit: explicit unit of work, opens its own transaction by design; no network I/O inside.
-    await this.sequelize.transaction(async (transaction) => {
+    await this.transactions.run(async (transaction) => {
       const arr = (values: (string | number)[]) =>
         `{${values.map((v) => `"${String(v).replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`).join(',')}}`;
       const ids = await this.sequelize.query<{ id: string }>(
@@ -327,11 +328,17 @@ export class CatalogImportService {
         },
       );
       await this.sequelize.query(
-        `INSERT INTO "Outbox" (id, topic, "aggregateId", payload, attempts, "nextAttemptAt", "createdAt")
-         SELECT uuidv7(), :topic, id::text, jsonb_build_object('productId', id), 0, now(), now() FROM unnest(CAST(:ids AS uuid[])) AS id`,
+        `INSERT INTO "Outbox" (id, topic, "aggregateId", "aggregateType", "type", "eventName", payload, attempts, "nextAttemptAt", "createdAt")
+         SELECT uuidv7(), :topic, id::text, 'products', 'catalog.product_changed', 'catalog.product_changed',
+           jsonb_build_object(
+             'eventId', uuidv7(), 'type', 'catalog.product_changed', 'version', 1, 'aggregateType', 'products',
+             'aggregateId', id::text, 'aggregateVersion', (extract(epoch FROM now()) * 1000)::bigint,
+             'occurredAt', to_char(now() AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'),
+             'payload', jsonb_build_object('productId', id)),
+           0, now(), now() FROM unnest(CAST(:ids AS uuid[])) AS id`,
         {
           replacements: {
-            topic: KafkaTopicGroup.PRODUCTS_EVENTS,
+            topic: ProductChanged.topic,
             ids: `{${ids.map((r) => r.id).join(',')}}`,
           },
           transaction,

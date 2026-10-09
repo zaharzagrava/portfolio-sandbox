@@ -1,6 +1,7 @@
 import { Kafka, logLevel } from 'kafkajs';
 import { ApiConfigService } from '@app/common/config';
 import { Environment } from '@app/common/types';
+import type { KafkaClientOverrides } from './kafka-client.options';
 
 /**
  * One place for "local Redpanda vs Confluent Cloud (SASL/SSL)" (D12) instead
@@ -9,6 +10,7 @@ import { Environment } from '@app/common/types';
 export function createKafka(
   config: ApiConfigService,
   clientId = 'marketplace',
+  overrides: KafkaClientOverrides = {},
 ): Kafka {
   const isLocal = [Environment.local, Environment.test].includes(
     config.get('node_env'),
@@ -27,5 +29,6 @@ export function createKafka(
             password: config.get('kafka_api_secret'),
           },
         }),
+    ...overrides,
   });
 }

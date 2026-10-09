@@ -3,7 +3,8 @@ import { AuthModule } from '@app/domains/identity';
 import { StorageModule } from '@app/infrastructure/storage/storage.module';
 import { DynamoModule } from '@app/infrastructure/dynamo/dynamo.module';
 import { ProductModule } from './product.module';
-import { OutboxModule } from '@app/infrastructure/outbox/outbox.module';
+import { EventsModule } from '@app/infrastructure/events/events.module';
+import { PRODUCTS_AGGREGATE } from './application/events/product-events';
 import { DraftStore } from './infra/draft-store';
 import { CollabInstanceRegistry } from './infra/instance-registry';
 import { DraftsService } from './application/drafts.service';
@@ -16,7 +17,7 @@ import { DraftsController } from './api/drafts.controller';
     StorageModule,
     DynamoModule,
     ProductModule,
-    OutboxModule,
+    EventsModule.forAggregates([PRODUCTS_AGGREGATE]),
   ],
   providers: [DraftStore, CollabInstanceRegistry, DraftsService],
   exports: [DraftsService, DraftStore],

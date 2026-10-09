@@ -9,7 +9,8 @@ import * as jwt from 'jsonwebtoken';
 import { ApiConfigService } from '@app/common/config';
 import { RedisService } from '@app/infrastructure/redis/redis.service';
 import { JobsService } from '@app/infrastructure/jobs/jobs.service';
-import { DomainEventsService } from '@app/infrastructure/events/domain-events.service';
+import { OutboxService } from '@app/infrastructure/outbox/outbox.service';
+import { TransactionRunner } from '@app/infrastructure/context';
 import { Blocks, localeChain, Seo } from '../domain/blocks';
 import { StoryPublished } from './events/story-events';
 
@@ -39,9 +40,10 @@ const readKey = (shopSlug: string, slug: string) =>
 export class StoriesService {
   constructor(
     @InjectConnection() private readonly sequelize: Sequelize,
+    private readonly transactions: TransactionRunner,
     private readonly redis: RedisService,
     private readonly jobs: JobsService,
-    private readonly events: DomainEventsService,
+    private readonly events: OutboxService,
     private readonly config: ApiConfigService,
   ) {}
 
@@ -132,8 +134,7 @@ export class StoriesService {
 
   /** Freeze drafts → version N, flip the pointer, refresh the read model, and announce it (outbox → cache purge). */
   async publishNow(storyId: string) {
-    // S54 T037 audit: explicit unit of work, opens its own transaction by design; no network I/O inside.
-    const published = await this.sequelize.transaction(async (transaction) => {
+    const published = await this.transactions.run(async (transaction) => {
       const [story] = await this.sequelize.query<{
         id: string;
         shopId: string;
@@ -160,7 +161,7 @@ export class StoriesService {
           transaction,
         },
       );
-      await this.events.record(
+      await this.events.append(
         StoryPublished.create(storyId, story.version, {
           storyId,
           shopId: story.shopId,

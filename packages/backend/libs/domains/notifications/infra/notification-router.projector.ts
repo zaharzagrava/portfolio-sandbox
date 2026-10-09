@@ -25,6 +25,15 @@ export class NotificationRouterProjector implements Projector {
     AuctionClosed.topic,
     InvoicePaymentFailed.topic,
   ];
+  // Every request carries `dedupeKey = eventId`; the router drops a request it has already dispatched.
+  readonly idempotency = 'natural' as const;
+  readonly handles = [
+    { event: OrderPaid },
+    { event: OrderCancelled },
+    { event: AuctionClosed },
+    { event: AuctionLeaderChanged },
+    { event: InvoicePaymentFailed },
+  ];
 
   constructor(
     private readonly router: NotificationRouter,

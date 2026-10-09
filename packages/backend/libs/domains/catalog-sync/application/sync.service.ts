@@ -2,7 +2,8 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectConnection } from '@nestjs/sequelize';
 import { QueryTypes, Sequelize, Transaction } from 'sequelize';
 import { OutboxService } from '@app/infrastructure/outbox/outbox.service';
-import { KafkaTopicGroup } from '@app/infrastructure/outbox/outbox.model';
+import { TransactionRunner } from '@app/infrastructure/context';
+import { productChanged } from '@app/domains/catalog';
 import { decodeHlc, encodeHlc, plausible, receive, tick } from '../domain/hlc';
 import { stockDelta, SyncOp, winningFields } from '../domain/merge';
 
@@ -29,6 +30,7 @@ export class SyncService {
 
   constructor(
     @InjectConnection() private readonly sequelize: Sequelize,
+    private readonly transactions: TransactionRunner,
     private readonly outbox: OutboxService,
   ) {}
 
@@ -93,8 +95,7 @@ export class SyncService {
       };
     this.serverClock = receive(this.serverClock, hlc, Date.now());
 
-    // S54 T037 audit: explicit unit of work, opens its own transaction by design; no network I/O inside.
-    return this.sequelize.transaction(async (transaction) => {
+    return this.transactions.run(async (transaction) => {
       const [claimed] = await this.sequelize.query(
         `INSERT INTO "SyncOperation" ("opId", "shopId", "deviceId", type, hlc, result) VALUES (:opId, :shopId, :deviceId, :type, :hlc, 'pending') ON CONFLICT ("opId") DO NOTHING RETURNING "opId"`,
         {
@@ -146,14 +147,7 @@ export class SyncService {
       );
       if (!row)
         return { result: 'rejected', detail: { reason: 'unknown product' } };
-      await this.outbox.notify(
-        {
-          topic: KafkaTopicGroup.PRODUCTS_EVENTS,
-          payload: { productId: op.productId },
-          aggregateId: op.productId,
-        },
-        transaction,
-      );
+      await this.outbox.append(productChanged(op.productId), transaction);
       // Deltas always apply (they commute); going negative means two devices sold the same last unit - a human decides.
       return row.quantity < 0
         ? {
@@ -203,14 +197,7 @@ export class SyncService {
           },
         );
       }
-      await this.outbox.notify(
-        {
-          topic: KafkaTopicGroup.PRODUCTS_EVENTS,
-          payload: { productId: op.productId },
-          aggregateId: op.productId,
-        },
-        transaction,
-      );
+      await this.outbox.append(productChanged(op.productId), transaction);
     }
     return lose.length
       ? { result: 'merged', detail: { applied: win, superseded: lose } }

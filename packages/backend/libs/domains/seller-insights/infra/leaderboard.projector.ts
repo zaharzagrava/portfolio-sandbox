@@ -28,6 +28,9 @@ const KEEP_AFTER_PERIOD_SEC = 35 * 86_400;
 export class LeaderboardProjector implements Projector {
   readonly name = 'leaderboards';
   readonly topics = [OrderPaid.topic];
+  // The Lua script applies a sale once per (period, order).
+  readonly idempotency = 'natural' as const;
+  readonly handles = [{ event: OrderPaid }];
 
   constructor(
     private readonly redis: RedisService,

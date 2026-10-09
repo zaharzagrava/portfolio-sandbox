@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto';
+import { v7 as uuidv7 } from 'uuid';
 import {
   bands,
   hamming,
@@ -110,21 +110,21 @@ export class MediaProcessor {
         ],
       );
       if (updated.length === 0) return;
-      const eventId = randomUUID();
+      const eventId = uuidv7(); // the envelope contract requires a UUIDv7
       await sql(
-        `INSERT INTO "Outbox" (id, topic, "aggregateId", "eventName", payload, attempts, "nextAttemptAt", "createdAt")
-         VALUES ($1, 'media.events', $2, 'media.ready', $3::jsonb, 0, now(), now())`,
+        `INSERT INTO "Outbox" (id, topic, "aggregateId", "aggregateType", "type", "eventName", payload, attempts, "nextAttemptAt", "createdAt")
+         VALUES ($1, 'media.events', $2, 'media', 'media.ready', 'media.ready', $3::jsonb, 0, now(), now())`,
         [
           eventId,
           media.id,
           JSON.stringify({
             eventId,
-            eventName: 'media.ready',
+            type: 'media.ready',
+            version: 1,
             aggregateType: 'media',
             aggregateId: media.id,
-            version: 1,
+            aggregateVersion: 1,
             occurredAt: new Date().toISOString(),
-            schemaVersion: 1,
             payload: {
               mediaId: media.id,
               shopId: media.shopId,

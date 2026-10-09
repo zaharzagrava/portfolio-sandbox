@@ -9,6 +9,9 @@ import { ApiRequestLogged } from '../application/events/api-events';
 export class ApiRequestsProjector implements Projector {
   readonly name = 'api-requests-log';
   readonly topics = [ApiRequestLogged.topic];
+  // ClickHouse keeps one row per request id at merge time.
+  readonly idempotency = 'natural' as const;
+  readonly handles = [{ event: ApiRequestLogged }];
   private readonly sink: ClickHouseSink;
 
   constructor(clickhouse: ClickHouseService) {

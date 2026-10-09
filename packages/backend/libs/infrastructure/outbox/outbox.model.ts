@@ -11,14 +11,8 @@ import {
 } from 'sequelize-typescript';
 import { Includeable, Sequelize, WhereOptions } from 'sequelize';
 
-export enum KafkaTopicGroup {
-  PAYMENTS_REQUESTS = 'payments.requests',
-  PAYMENTS_RESPONSES = 'payments.responses',
-  PAYMENTS_DLQ = 'payments.dlq',
-  PRODUCTS_EVENTS = 'products.events',
-}
-
-export const KafkaTopicGroups = Object.values(KafkaTopicGroup);
+export type OutboxKind = 'event' | 'task';
+export type OutboxStatus = 'pending' | 'published' | 'parked';
 
 export enum OutboxScope {
   WithAll = 'WithAll',
@@ -72,16 +66,41 @@ export default class Outbox extends Model<Outbox, Partial<Outbox>> {
   @Column({ type: DataType.UUID, defaultValue: Sequelize.literal('uuidv7()') })
   declare id: string;
 
-  /** TEXT since F-05: `KafkaTopicGroup` values plus one `<aggregate>.events` topic per domain. */
+  /** `event` rows go to the log, `task` rows to a queue (S53 row contract, `data-model.md`). */
+  @Column({ type: DataType.TEXT, allowNull: false, defaultValue: 'event' })
+  declare kind: OutboxKind;
+
+  /** `pending` → `published`, or `pending` → `parked` (10 attempts / non-retryable), `parked` → `pending` (requeue). */
+  @Column({ type: DataType.TEXT, allowNull: false, defaultValue: 'pending' })
+  declare status: OutboxStatus;
+
+  /** Topic (`<aggregateType>.events`) for events, queue name for tasks. */
   @Column({ type: DataType.TEXT, allowNull: false })
   declare topic: string;
 
-  /** Kafka message key (per-aggregate ordering). Null for legacy payment rows (keyed by idempotency key). */
-  @Column({ type: DataType.TEXT, allowNull: true })
-  declare aggregateId: string | null;
+  /** Message key (per-aggregate ordering); the database rejects null and empty. */
+  @Column({ type: DataType.TEXT, allowNull: false })
+  declare aggregateId: string;
 
+  /** Owning aggregate type; required for events. */
+  @Column({ type: DataType.TEXT, allowNull: true })
+  declare aggregateType: string | null;
+
+  /** Lowercase dotted event type (or task type). */
+  @Column({ type: DataType.TEXT, allowNull: true })
+  declare type: string | null;
+
+  /** Legacy mirror of `type`, still written so existing readers keep working until the contract migration. */
   @Column({ type: DataType.TEXT, allowNull: true })
   declare eventName: string | null;
+
+  /** Reason code when parked (never a payload value). */
+  @Column({ type: DataType.TEXT, allowNull: true })
+  declare parkedReason: string | null;
+
+  /** Claim lease: no other relay publishes this row until it passes. */
+  @Column({ type: DataType.DATE, allowNull: true })
+  declare leaseUntil: Date | null;
 
   // Any extra debug data that might have been generated during the executiong of the event itself
   @Column({ type: DataType.JSONB, allowNull: true })

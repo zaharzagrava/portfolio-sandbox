@@ -6,7 +6,8 @@ import {
 import { InjectConnection } from '@nestjs/sequelize';
 import { QueryTypes, Sequelize } from 'sequelize';
 import { RedisService } from '@app/infrastructure/redis/redis.service';
-import { DomainEventsService } from '@app/infrastructure/events/domain-events.service';
+import { OutboxService } from '@app/infrastructure/outbox/outbox.service';
+import { TransactionRunner } from '@app/infrastructure/context';
 import {
   Answers,
   AnswersSchema,
@@ -32,7 +33,8 @@ export class OnboardingSessionService {
   constructor(
     private readonly redis: RedisService,
     @InjectConnection() private readonly sequelize: Sequelize,
-    private readonly events: DomainEventsService,
+    private readonly transactions: TransactionRunner,
+    private readonly events: OutboxService,
   ) {}
 
   async saveStep(shopId: string, step: StepName, body: unknown) {
@@ -80,8 +82,7 @@ export class OnboardingSessionService {
     }
     const required = requiredDocuments(parsed.data);
 
-    // S54 T037 audit: explicit unit of work, opens its own transaction by design; no network I/O inside.
-    const inserted = await this.sequelize.transaction(async (transaction) => {
+    const inserted = await this.transactions.run(async (transaction) => {
       const [row] = await this.sequelize.query<{ shopId: string }>(
         `INSERT INTO "ShopOnboarding" ("shopId", answers, "submittedBy") VALUES (:shopId, CAST(:answers AS jsonb), :userId)
          ON CONFLICT ("shopId") DO NOTHING RETURNING "shopId"`,
@@ -103,7 +104,7 @@ export class OnboardingSessionService {
           replacements: { shopId },
         },
       );
-      await this.events.record(
+      await this.events.append(
         OnboardingSubmitted.create(shopId, 1, {
           shopId,
           country: parsed.data.business.country,

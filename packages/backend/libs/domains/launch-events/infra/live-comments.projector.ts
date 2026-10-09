@@ -30,6 +30,12 @@ export class LiveCommentsProjector implements Projector {
   readonly name = 'live-comments-history';
   // Same topic carries both event types.
   readonly topics = [LiveCommentPosted.topic];
+  // Puts and removal updates are keyed by comment id: applying them twice changes nothing.
+  readonly idempotency = 'natural' as const;
+  readonly handles = [
+    { event: LiveCommentPosted },
+    { event: LiveCommentRemoved },
+  ];
 
   constructor(private readonly dynamo: DynamoService) {}
 

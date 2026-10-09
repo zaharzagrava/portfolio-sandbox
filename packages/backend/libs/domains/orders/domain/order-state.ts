@@ -69,7 +69,7 @@ export function canTransition(
   from: OrderStatus,
   command: OrderCommand,
 ): boolean {
-  return (transitionFor(command).from as readonly OrderStatus[]).includes(from);
+  return transitionFor(command).from.includes(from);
 }
 
 /** States in which reserved stock must be returned. */

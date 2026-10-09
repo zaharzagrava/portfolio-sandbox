@@ -112,7 +112,7 @@ export class FunctionSandbox {
     entry.catch(() => this.cache.delete(key));
     this.cache.set(key, entry);
     while (this.cache.size > MAX_CACHED)
-      this.evict(this.cache.keys().next().value!);
+      this.evict(this.cache.keys().next().value);
     return entry;
   }
 

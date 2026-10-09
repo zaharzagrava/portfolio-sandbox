@@ -1,28 +1,40 @@
-import { Module } from '@nestjs/common';
-import { SequelizeModule } from '@nestjs/sequelize';
-import { DbUtilsModule } from '@app/infrastructure/database/db-utils/db-utils.module';
-import Outbox from './outbox.model';
-import { OutboxPublisherService } from './outbox-publisher.service';
-import { KafkaProducerModule } from '@app/infrastructure/kafka/kafka-producer.module';
-import { CronModule } from '@app/infrastructure/jobs/cron-module/cron.module';
+import { DynamicModule, Module } from '@nestjs/common';
 import { ApiConfigModule } from '@app/common/config';
+import { SqsModule } from '@app/infrastructure/sqs/sqs.module';
+import { KafkaProducerModule } from '@app/infrastructure/kafka/kafka-producer.module';
+import {
+  OUTBOX_PUBLISHER_OPTIONS,
+  OutboxPublisherOptions,
+  OutboxPublisherService,
+} from './outbox-publisher.service';
+import { RELAY_RANDOM } from './relay-random';
 
 /**
- * Separate from OutboxModule deliberately: OutboxService (writing rows) is
- * needed wherever payments/products are written (payment-processor, core).
- * OutboxPublisherService (the cron-driven mailman draining rows to Kafka) has
- * no Stripe-latency reason to live in payment-processor — it's cheap polling
- * against your own Postgres/Kafka, so it belongs in core with everything else
- * that has no distinguishing resource profile.
+ * Separate from OutboxModule deliberately: OutboxService (writing rows) is needed wherever events are appended;
+ * the relay (a local ticker draining rows to the log) belongs in core with everything that has no distinguishing
+ * resource profile. In `cdc` mode the ticker does not start (Debezium relays the outbox).
  */
 @Module({
-  imports: [
-    SequelizeModule.forFeature([Outbox]),
-    DbUtilsModule,
-    KafkaProducerModule,
-    CronModule,
-    ApiConfigModule,
+  imports: [ApiConfigModule, KafkaProducerModule, SqsModule],
+  providers: [
+    { provide: RELAY_RANDOM, useValue: Math.random },
+    { provide: OUTBOX_PUBLISHER_OPTIONS, useValue: {} },
+    OutboxPublisherService,
   ],
-  providers: [OutboxPublisherService],
+  exports: [OutboxPublisherService],
 })
-export class OutboxPublisherModule {}
+export class OutboxPublisherModule {
+  /** `ticker: false` keeps the relay passive so a spec can call `drain()` itself. */
+  static register(options: OutboxPublisherOptions = {}): DynamicModule {
+    return {
+      module: OutboxPublisherModule,
+      imports: [ApiConfigModule, KafkaProducerModule, SqsModule],
+      providers: [
+        { provide: RELAY_RANDOM, useValue: Math.random },
+        { provide: OUTBOX_PUBLISHER_OPTIONS, useValue: options },
+        OutboxPublisherService,
+      ],
+      exports: [OutboxPublisherService],
+    };
+  }
+}

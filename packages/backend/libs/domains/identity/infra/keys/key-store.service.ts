@@ -90,7 +90,7 @@ export class KeyStore {
     await this.keyModel.create({
       kid,
       alg: 'ES256',
-      publicJwk: publicKey.export({ format: 'jwk' }) as Record<string, unknown>,
+      publicJwk: publicKey.export({ format: 'jwk' }),
       privateKeyEnc: this.box.seal(
         privateKey.export({ format: 'pem', type: 'pkcs8' }).toString(),
       ),
