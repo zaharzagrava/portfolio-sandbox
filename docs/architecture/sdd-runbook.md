@@ -227,6 +227,11 @@ any other stop gets its own notification. Nothing is lost: re-run the same comma
 fresh-context passes (`MAX_IMPLEMENT_PASSES`, default 10) until every task in `tasks.md` is checked. The headless steps
 do not trigger the interactive Stop-hook ping (`SDD_LOOP=1`).
 
+**A failing gate is handed back to the agent.** When the gate fails, the loop gives the agent a digest of the failure (failing
+tests, compiler or lint errors, scenarios without a test) and lets it repair the cause, then runs the gate again. At most
+`MAX_GATE_REPAIRS` (default 2) attempts; after that the run stops with "gate failed". The agent may not weaken, skip or delete a
+test; a failure outside the capability's own files is still fixed and noted under "Gate repairs" in the spec's `gaps.md`.
+
 **Unattended runs.** `RUN_DEADLINE=<epoch seconds>` ends the whole run (no call starts after it, none outlives it): exit 76
 and a "time budget used" notification. A login failure exits 77. With `PUSH_BRANCH=<name>` every commit is pushed there. The
 VPS runner (`scripts/vps/`) sets all of these; see `scripts/vps/README.md`.

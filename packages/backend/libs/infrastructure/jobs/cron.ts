@@ -7,7 +7,11 @@ import { CronTime } from 'cron';
  * twice a year.
  */
 export function nextFireAt(cron: string, timezone: string, after: Date): Date {
-  return new CronTime(cron, timezone).getNextDateFrom(after).toJSDate();
+  // The zone must be passed to getNextDateFrom as well: without it the library measures `after` in the PROCESS time zone and
+  // the result is wrong whenever that differs from `timezone` (a UTC server scheduled every Warsaw job two hours off).
+  return new CronTime(cron, timezone)
+    .getNextDateFrom(after, timezone)
+    .toJSDate();
 }
 
 export function isValidCron(cron: string, timezone = 'UTC'): boolean {

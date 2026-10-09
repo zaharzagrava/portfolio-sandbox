@@ -168,6 +168,7 @@ How the run behaves (details in the runbook):
   notification: "finished", "out of budget" (exit code 75), or "stopped" with the spec and step.
 - Re-run the same command to resume. Plan, tasks and analyze are skipped for specs that already have them, and
   `implement` continues at the first unchecked task in `tasks.md`.
+- A failing gate is given back to the agent to repair (`MAX_GATE_REPAIRS`, default 2) before the run stops.
 - `UNTIL=S16` stops after that capability; `STEP_MAX_BUDGET_USD=5` caps a single step (leave it unset to run until the
   plan limit); `MAX_IMPLEMENT_PASSES` (default 10) bounds the fresh-context passes per spec.
 - Closing the laptop lid can still suspend it; keep it open or change the lid setting.
