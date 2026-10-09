@@ -2,20 +2,23 @@ import * as path from 'path';
 
 import { SequelizeModule } from '@nestjs/sequelize';
 import { Test } from '@nestjs/testing';
-import { ApiConfigModule } from '@app/common/config/api-config.module';
-import { ApiConfigService } from '@app/common/config/api-config.service';
+import { ApiConfigModule, ApiConfigService } from '@app/common/config';
+
 import { ScheduleModule } from '@nestjs/schedule';
 import { MockApiConfigServiceFactory } from '@app/common/config/api-config.service.mock';
 import { ConfigUtilsService } from '@app/common/config/config-utils/config-utils.service';
 
 import { APP_FILTER, APP_GUARD } from '@nestjs/core';
-import { AllExceptionsFilter } from '@app/common/exceptions-filter/exceptions-filter';
+import { AllExceptionsFilter } from '@app/common/exceptions-filter';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { ConfigUtilsModule } from '@app/common/config/config-utils/config-utils.module';
 import { ErrorUtilsModule } from '@app/common/errors/error-utils/error-utils.module';
-import { RequestContextModule } from '@app/infrastructure/context/request-context.module';
-import { TransactionModule } from '@app/infrastructure/context/transaction.module';
-import { HealthModule } from '@app/infrastructure/health/health.module';
+import {
+  RequestContextModule,
+  TransactionModule,
+} from '@app/infrastructure/context';
+
+import { HealthModule } from '@app/infrastructure/health';
 import { RedisModule } from '@app/infrastructure/redis/redis.module';
 import { CassandraModule } from '@app/infrastructure/cassandra/cassandra.module';
 import { DynamoModule } from '@app/infrastructure/dynamo/dynamo.module';
@@ -59,7 +62,9 @@ import '@app/domains/tenancy';
 
 export interface TestingModuleOptions {
   /** Extra store modules the feature under test needs (real docker-compose test instances, D5). */
-  stores?: Array<'redis' | 'cassandra' | 'dynamo' | 'sqs' | 'storage' | 'elasticsearch'>;
+  stores?: Array<
+    'redis' | 'cassandra' | 'dynamo' | 'sqs' | 'storage' | 'elasticsearch'
+  >;
 }
 
 const STORE_MODULES = {
@@ -71,7 +76,10 @@ const STORE_MODULES = {
   elasticsearch: ElasticsearchModule,
 } as const;
 
-export const generateTestingModule = async (module: any, options: TestingModuleOptions = {}) => {
+export const generateTestingModule = async (
+  module: any,
+  options: TestingModuleOptions = {},
+) => {
   const imports = [
     // global modules
     ConfigUtilsModule,
@@ -121,7 +129,9 @@ export const generateTestingModule = async (module: any, options: TestingModuleO
     // Always on in the test stack; Tenancy → Cache/RateLimit need it even when a spec lists no stores.
     RedisModule,
 
-    ...(options.stores ?? []).filter((store) => store !== 'redis').map((store) => STORE_MODULES[store]),
+    ...(options.stores ?? [])
+      .filter((store) => store !== 'redis')
+      .map((store) => STORE_MODULES[store]),
 
     // test modules
     // SeedsModule,

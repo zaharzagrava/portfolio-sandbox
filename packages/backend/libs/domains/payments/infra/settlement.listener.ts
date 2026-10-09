@@ -5,7 +5,11 @@ import { v5 as uuidv5 } from 'uuid';
 import { EventEnvelope } from '@app/infrastructure/events/event-envelope';
 import { Projector } from '@app/infrastructure/projections/projector';
 import { LedgerService } from '../application/ledger.service';
-import { LEDGER_ACCOUNTS, PLATFORM_FEE_MINOR, shopAccount } from '../domain/accounts';
+import {
+  LEDGER_ACCOUNTS,
+  PLATFORM_FEE_MINOR,
+  shopAccount,
+} from '../domain/accounts';
 import { allocate } from '@app/common/money/allocate';
 import { OrderPaid } from '@app/domains/orders';
 
@@ -37,22 +41,40 @@ export class SettlementListener implements Projector {
     }
   }
 
-  private async settle(orderId: string, paid: (typeof OrderPaid)['schema']['_output']) {
+  private async settle(
+    orderId: string,
+    paid: (typeof OrderPaid)['schema']['_output'],
+  ) {
     const shopLines = paid.lines.filter((l) => l.shopId);
     if (shopLines.length === 0) return;
 
     const byShop = new Map<string, number>();
-    for (const l of shopLines) byShop.set(l.shopId!, (byShop.get(l.shopId!) ?? 0) + l.price * l.quantity);
+    for (const l of shopLines)
+      byShop.set(
+        l.shopId!,
+        (byShop.get(l.shopId!) ?? 0) + l.price * l.quantity,
+      );
     const shops = [...byShop.keys()].sort();
     const net = Math.max(0, paid.total - PLATFORM_FEE_MINOR);
-    const shares = allocate(net, shops.map((s) => byShop.get(s)!));
+    const shares = allocate(
+      net,
+      shops.map((s) => byShop.get(s)!),
+    );
 
     const journalId = uuidv5(`settlement:${orderId}`, SETTLEMENT_NS);
+    // S54 T037 audit: explicit unit of work, opens its own transaction by design; no network I/O inside.
     await this.sequelize.transaction(async (tx) => {
-      await this.sequelize.query(`SELECT pg_advisory_xact_lock(hashtext(:journalId))`, { replacements: { journalId }, transaction: tx });
+      await this.sequelize.query(
+        `SELECT pg_advisory_xact_lock(hashtext(:journalId))`,
+        { replacements: { journalId }, transaction: tx },
+      );
       const [{ exists }] = await this.sequelize.query<{ exists: boolean }>(
         `SELECT EXISTS (SELECT 1 FROM "LedgerEntry" WHERE "journalId" = :journalId) AS exists`,
-        { type: QueryTypes.SELECT, replacements: { journalId }, transaction: tx },
+        {
+          type: QueryTypes.SELECT,
+          replacements: { journalId },
+          transaction: tx,
+        },
       );
       if (exists) return;
 
@@ -61,7 +83,13 @@ export class SettlementListener implements Projector {
           journalId,
           kind: 'SETTLEMENT',
           paymentId: paid.paymentId.startsWith('pay_') ? null : paid.paymentId,
-          lines: [{ accountId: LEDGER_ACCOUNTS.CLEARING, amount: -net }, ...shops.map((shopId, i) => ({ accountId: shopAccount(shopId), amount: shares[i] }))],
+          lines: [
+            { accountId: LEDGER_ACCOUNTS.CLEARING, amount: -net },
+            ...shops.map((shopId, i) => ({
+              accountId: shopAccount(shopId),
+              amount: shares[i],
+            })),
+          ],
         },
         tx,
       );

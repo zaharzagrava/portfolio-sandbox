@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { ApiConfigService } from '@app/common/config/api-config.service';
+import { ApiConfigService } from '@app/common/config';
 import {
   DeleteObjectCommand,
   GetObjectCommand,
@@ -9,7 +9,7 @@ import {
   S3Client,
 } from '@aws-sdk/client-s3';
 import { Upload } from '@aws-sdk/lib-storage';
-import { InternalServerError } from '@app/common/errors/error.types';
+import { InternalServerError } from '@app/common/errors';
 import { gunzip, gzip } from 'zlib';
 import { promisify } from 'util';
 import { S3ObjectTags } from './types';
@@ -29,11 +29,11 @@ export class AWSApiService {
   ) {
     const creds =
       configService.get('aws_access_key_id') &&
-        configService.get('aws_secret_access_key')
+      configService.get('aws_secret_access_key')
         ? {
-          accessKeyId: configService.get('aws_access_key_id'),
-          secretAccessKey: configService.get('aws_secret_access_key'),
-        }
+            accessKeyId: configService.get('aws_access_key_id'),
+            secretAccessKey: configService.get('aws_secret_access_key'),
+          }
         : undefined;
 
     this.s3Client = new S3Client({

@@ -1,8 +1,11 @@
 import { Injectable, Logger, OnModuleDestroy, Optional } from '@nestjs/common';
 import Redis from 'ioredis';
-import { ApiConfigService } from '@app/common/config/api-config.service';
-import { ShutdownRegistry } from '@app/infrastructure/lifecycle/shutdown-registry.service';
-import { channelName, RealtimeMessage } from '@app/infrastructure/realtime/topics';
+import { ApiConfigService } from '@app/common/config';
+import { ShutdownRegistry } from '@app/infrastructure/lifecycle';
+import {
+  channelName,
+  RealtimeMessage,
+} from '@app/infrastructure/realtime/topics';
 
 type Listener = (message: RealtimeMessage) => void;
 
@@ -24,13 +27,24 @@ export class SubscriptionHub implements OnModuleDestroy {
     config: ApiConfigService,
     @Optional() shutdown?: ShutdownRegistry,
   ) {
-    this.subscriber = new Redis(config.get('redis_url'), { maxRetriesPerRequest: null });
-    this.subscriber.on('message', (channel: string, raw: string) => this.dispatch(channel, raw));
+    this.subscriber = new Redis(config.get('redis_url'), {
+      maxRetriesPerRequest: null,
+    });
+    this.subscriber.on('message', (channel: string, raw: string) =>
+      this.dispatch(channel, raw),
+    );
     // On reconnect ioredis re-subscribes automatically; clients resume missed events via Last-Event-ID replay.
-    shutdown?.register({ name: 'sse.hub.close', order: 20, run: async () => this.onModuleDestroy() });
+    shutdown?.register({
+      name: 'sse.hub.close',
+      order: 20,
+      run: async () => this.onModuleDestroy(),
+    });
   }
 
-  async subscribe(topic: string, listener: Listener): Promise<() => Promise<void>> {
+  async subscribe(
+    topic: string,
+    listener: Listener,
+  ): Promise<() => Promise<void>> {
     const channel = channelName(topic);
     let set = this.listeners.get(channel);
     if (!set) {
@@ -46,7 +60,11 @@ export class SubscriptionHub implements OnModuleDestroy {
       current.delete(listener);
       if (current.size === 0) {
         this.listeners.delete(channel);
-        await this.subscriber.unsubscribe(channel).catch((e) => this.logger.warn(`unsubscribe ${channel}: ${e.message}`));
+        await this.subscriber
+          .unsubscribe(channel)
+          .catch((e) =>
+            this.logger.warn(`unsubscribe ${channel}: ${e.message}`),
+          );
       }
     };
   }

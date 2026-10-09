@@ -1,8 +1,10 @@
 import { Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
-import { ApiConfigService } from '@app/common/config/api-config.service';
-import { ApiConfigModule } from '@app/common/config/api-config.module';
+import { ApiConfigService, ApiConfigModule } from '@app/common/config';
+
 import { Environment } from '@app/common/types';
+import { ClockModule } from '@app/infrastructure/platform';
+import { HealthModule } from '@app/infrastructure/health';
 import { PaymentModule } from '@app/domains/payments';
 
 @Module({
@@ -28,6 +30,8 @@ import { PaymentModule } from '@app/domains/payments';
         }),
       }),
     }),
+    ClockModule,
+    HealthModule,
     PaymentModule,
   ],
 })

@@ -11,6 +11,9 @@ export abstract class Clock {
   }
 }
 
+/** Injection token for the time source; `common` code injects it, `ClockModule` (infrastructure/platform) binds `SystemClock`. */
+export const CLOCK = Symbol('CLOCK');
+
 export class SystemClock extends Clock {
   now(): Date {
     return new Date();

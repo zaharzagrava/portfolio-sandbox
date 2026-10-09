@@ -1,4 +1,9 @@
-import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectConnection } from '@nestjs/sequelize';
 import { QueryTypes, Sequelize } from 'sequelize';
 import { v7 as uuidv7 } from 'uuid';
@@ -41,32 +46,68 @@ export class OnboardingDocumentsService {
     private readonly queue: TaskQueue,
   ) {}
 
-  async requestUpload(shopId: string, kind: DocumentKind, sha256: string, size: number, contentType: string) {
+  async requestUpload(
+    shopId: string,
+    kind: DocumentKind,
+    sha256: string,
+    size: number,
+    contentType: string,
+  ) {
     const max = ACCEPTED_TYPES[contentType];
-    if (!max) throw new BadRequestException(`Unsupported file type ${contentType}`);
-    if (size > max) throw new BadRequestException(`File too large (max ${max / 1024 / 1024} MB)`);
-    const [submitted] = await this.sequelize.query(`SELECT 1 FROM "ShopOnboarding" WHERE "shopId" = :shopId`, { type: QueryTypes.SELECT, replacements: { shopId } });
+    if (!max)
+      throw new BadRequestException(`Unsupported file type ${contentType}`);
+    if (size > max)
+      throw new BadRequestException(
+        `File too large (max ${max / 1024 / 1024} MB)`,
+      );
+    const [submitted] = await this.sequelize.query(
+      `SELECT 1 FROM "ShopOnboarding" WHERE "shopId" = :shopId`,
+      { type: QueryTypes.SELECT, replacements: { shopId } },
+    );
     // Extraction cross-checks documents against the answers, so the questionnaire comes first.
-    if (!submitted) throw new ConflictException('Submit the onboarding questionnaire first');
+    if (!submitted)
+      throw new ConflictException('Submit the onboarding questionnaire first');
 
     const id = uuidv7();
     const [created] = await this.sequelize.query<ShopDocumentRow>(
       `INSERT INTO "ShopDocument" (id, "shopId", kind, "contentType", "contentHash", "storageKey")
        VALUES (:id, :shopId, :kind, :contentType, :sha256, :storageKey)
        ON CONFLICT ("shopId", kind, "contentHash") DO NOTHING RETURNING *`,
-      { type: QueryTypes.SELECT, replacements: { id, shopId, kind, contentType, sha256, storageKey: `kyc/${shopId}/${id}` } },
+      {
+        type: QueryTypes.SELECT,
+        replacements: {
+          id,
+          shopId,
+          kind,
+          contentType,
+          sha256,
+          storageKey: `kyc/${shopId}/${id}`,
+        },
+      },
     );
     const document = created ?? (await this.byHash(shopId, kind, sha256));
-    const upload = document.status === 'AWAITING_UPLOAD' ? await this.storage.presignPutChecked(document.storageKey, sha256, size) : null;
+    const upload =
+      document.status === 'AWAITING_UPLOAD'
+        ? await this.storage.presignPutChecked(
+            document.storageKey,
+            sha256,
+            size,
+          )
+        : null;
     return { document: publicView(document), deduplicated: !created, upload };
   }
 
   async uploaded(shopId: string, documentId: string) {
     const doc = await this.get(shopId, documentId);
     if (doc.status !== 'AWAITING_UPLOAD') return publicView(doc);
-    if (!(await this.storage.head(doc.storageKey))) throw new BadRequestException('Upload not found');
+    if (!(await this.storage.head(doc.storageKey)))
+      throw new BadRequestException('Upload not found');
+    // S54 T037 audit: explicit unit of work, opens its own transaction by design; no network I/O inside.
     await this.sequelize.transaction(async (transaction) => {
-      await this.sequelize.query(`UPDATE "ShopDocument" SET status = 'QUEUED', "updatedAt" = now() WHERE id = :id AND status = 'AWAITING_UPLOAD'`, { transaction, replacements: { id: doc.id } });
+      await this.sequelize.query(
+        `UPDATE "ShopDocument" SET status = 'QUEUED', "updatedAt" = now() WHERE id = :id AND status = 'AWAITING_UPLOAD'`,
+        { transaction, replacements: { id: doc.id } },
+      );
       // A new upload replaces earlier unresolved/rejected ones of the same kind.
       await this.sequelize.query(
         `UPDATE "ShopDocument" SET status = 'SUPERSEDED', "updatedAt" = now()
@@ -80,29 +121,50 @@ export class OnboardingDocumentsService {
 
   /** Sellers see statuses and rejection reasons - never extracted values. */
   async list(shopId: string) {
-    const rows = await this.sequelize.query<ShopDocumentRow>(`SELECT * FROM "ShopDocument" WHERE "shopId" = :shopId AND status <> 'SUPERSEDED' ORDER BY "createdAt" DESC`, {
-      type: QueryTypes.SELECT,
-      replacements: { shopId },
-    });
+    const rows = await this.sequelize.query<ShopDocumentRow>(
+      `SELECT * FROM "ShopDocument" WHERE "shopId" = :shopId AND status <> 'SUPERSEDED' ORDER BY "createdAt" DESC`,
+      {
+        type: QueryTypes.SELECT,
+        replacements: { shopId },
+      },
+    );
     return rows.map(publicView);
   }
 
-  private async get(shopId: string, documentId: string): Promise<ShopDocumentRow> {
-    const [doc] = await this.sequelize.query<ShopDocumentRow>(`SELECT * FROM "ShopDocument" WHERE id = :documentId AND "shopId" = :shopId`, {
-      type: QueryTypes.SELECT,
-      replacements: { documentId, shopId },
-    });
+  private async get(
+    shopId: string,
+    documentId: string,
+  ): Promise<ShopDocumentRow> {
+    const [doc] = await this.sequelize.query<ShopDocumentRow>(
+      `SELECT * FROM "ShopDocument" WHERE id = :documentId AND "shopId" = :shopId`,
+      {
+        type: QueryTypes.SELECT,
+        replacements: { documentId, shopId },
+      },
+    );
     if (!doc) throw new NotFoundException('Document not found');
     return doc;
   }
 
-  private async byHash(shopId: string, kind: DocumentKind, sha256: string): Promise<ShopDocumentRow> {
-    const [doc] = await this.sequelize.query<ShopDocumentRow>(`SELECT * FROM "ShopDocument" WHERE "shopId" = :shopId AND kind = :kind AND "contentHash" = :sha256`, {
-      type: QueryTypes.SELECT,
-      replacements: { shopId, kind, sha256 },
-    });
+  private async byHash(
+    shopId: string,
+    kind: DocumentKind,
+    sha256: string,
+  ): Promise<ShopDocumentRow> {
+    const [doc] = await this.sequelize.query<ShopDocumentRow>(
+      `SELECT * FROM "ShopDocument" WHERE "shopId" = :shopId AND kind = :kind AND "contentHash" = :sha256`,
+      {
+        type: QueryTypes.SELECT,
+        replacements: { shopId, kind, sha256 },
+      },
+    );
     return doc;
   }
 }
 
-const publicView = (d: ShopDocumentRow) => ({ id: d.id, kind: d.kind, status: d.status, rejectionReason: d.rejectionReason });
+const publicView = (d: ShopDocumentRow) => ({
+  id: d.id,
+  kind: d.kind,
+  status: d.status,
+  rejectionReason: d.rejectionReason,
+});

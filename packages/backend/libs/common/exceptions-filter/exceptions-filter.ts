@@ -1,14 +1,37 @@
-import { Catch, ArgumentsHost, Logger } from '@nestjs/common';
+import {
+  Catch,
+  ArgumentsHost,
+  Logger,
+  NotFoundException,
+  Optional,
+} from '@nestjs/common';
 import { BaseExceptionFilter } from '@nestjs/core';
-import * as Sentry from '@sentry/node';
 import { trace } from '@opentelemetry/api';
+import { v7 as uuidv7 } from 'uuid';
+import { AppError, ErrorArea } from '@app/common/errors/error.types';
+import { PlatformCodes } from '@app/common/errors/platform-codes';
 import { ErrorUtilsService } from '@app/common/errors/error-utils/error-utils.service';
+import { RouteTable } from '@app/common/routing/route-table';
+import { SENSITIVE_PATH_PARAMS_REQUEST_KEY } from './sensitive-path-params.decorator';
+import {
+  buildProblemDocument,
+  fallbackProblem,
+  stripQuery,
+} from './problem-document';
 
+/**
+ * Single place that turns any thrown value into the RFC 9457 problem document (S54 FR-001..FR-012).
+ * The body is built by the pure `buildProblemDocument`; stack and causes go to logs and the tracker only,
+ * and `NODE_ENV` never changes what the client sees.
+ */
 @Catch()
 export class AllExceptionsFilter extends BaseExceptionFilter {
   private readonly logger = new Logger(AllExceptionsFilter.name);
 
-  constructor(private readonly utilsService: ErrorUtilsService) {
+  constructor(
+    private readonly utilsService: ErrorUtilsService,
+    @Optional() private readonly routeTable?: RouteTable,
+  ) {
     super();
   }
 
@@ -17,65 +40,106 @@ export class AllExceptionsFilter extends BaseExceptionFilter {
     const response = ctx.getResponse();
     const request = ctx.getRequest();
 
-    // 1. Normalize the error into our standard AppError format
-    const appError = this.utilsService.normalizeError(exception);
-
-    // 2. Determine environment (Secure by default!)
-    const isDevelopment = process.env.NODE_ENV !== 'production';
-
-    // 3. Generate the payloads
-    // The frontend ONLY gets debug data if we are not in production
-    const publicPayload = appError.toJSON(isDevelopment);
-    // Observability tools ALWAYS get the full debug data
-    const internalPayload = appError.toJSON(true);
-
-    // 4. OpenTelemetry Integration
-    const activeSpan = trace.getActiveSpan();
-    let traceId = 'no-trace-id';
-
-    if (activeSpan) {
-      traceId = activeSpan.spanContext().traceId;
-
-      activeSpan.recordException(appError);
-      // We inject the FULL internal payload into Datadog
-      activeSpan.setAttributes({
-        'error.type': internalPayload.type,
-        'error.title': internalPayload.title,
-        'error.debug_data': JSON.stringify(internalPayload.data || {}),
-        'error.causes': JSON.stringify(internalPayload.causes || []),
-        'http.status_code': appError.status,
-      });
-      activeSpan.setStatus({ code: 2, message: appError.message });
-    }
-
-    // 5. Sentry Integration
-    if (appError.status >= 500) {
-      // Pass the raw AppError to preserve V8 stack traces and native cause chains
-      Sentry.captureException(appError, {
-        tags: { trace_id: traceId },
-        extra: {
-          path: request.url,
-          fullErrorState: internalPayload, // Sentry gets the juicy details
-        },
-      });
-    }
-
-    // 6. Standard Console Logging
-    this.logger.error(
-      `[Trace: ${traceId}] HTTP ${appError.status} - ${appError.name}: ${appError.message}`,
-      appError.stack,
+    const appError =
+      this.methodNotAllowed(exception, request) ??
+      this.utilsService.normalizeError(exception);
+    const requestId = String(
+      response.getHeader?.('x-request-id') ??
+        request.headers?.['x-request-id'] ??
+        uuidv7(),
+    );
+    const traceId = trace.getActiveSpan()?.spanContext().traceId;
+    const hasSensitive = (
+      request[SENSITIVE_PATH_PARAMS_REQUEST_KEY] as string[] | undefined
+    )?.length;
+    const instance = stripQuery(
+      hasSensitive && request.route?.path
+        ? `${request.baseUrl ?? ''}${request.route.path}`
+        : (request.originalUrl ?? request.url ?? ''),
     );
 
-    // 7. Send the SAFE response to the client as RFC 9457 Problem Details
-    const requestId = response.getHeader?.('x-request-id');
-    response
-      .status(appError.status)
-      .type('application/problem+json')
-      .json({
-        ...publicPayload,
-        instance: publicPayload.instance ?? request.originalUrl ?? request.url,
-        supportTraceId: traceId,
-        ...(requestId && { requestId }),
+    this.logFailure(appError, requestId, instance);
+    if (Number(appError.status) >= 500)
+      this.utilsService.track(appError, { requestId, path: instance });
+
+    const activeSpan = trace.getActiveSpan();
+    if (activeSpan) {
+      activeSpan.recordException(appError);
+      activeSpan.setAttributes({
+        'error.code': appError.code,
+        'http.status_code': appError.status,
       });
+      activeSpan.setStatus({ code: 2, message: appError.code });
+    }
+
+    // Too late for a clean answer: do not write a second response, drop the connection.
+    if (response.headersSent) {
+      request.socket?.destroy();
+      return;
+    }
+
+    const problem = buildProblemDocument(appError, {
+      requestId,
+      instance,
+      traceId,
+    });
+    try {
+      for (const [name, value] of Object.entries(problem.headers))
+        response.setHeader(name, value);
+      response.setHeader('x-request-id', requestId);
+      response
+        .status(problem.status)
+        .type('application/problem+json')
+        .send(JSON.stringify(problem.body));
+    } catch {
+      const fallback = fallbackProblem({ requestId, instance, traceId });
+      response
+        .status(fallback.status)
+        .type('application/problem+json')
+        .send(JSON.stringify(fallback.body));
+    }
+  }
+
+  /**
+   * Express answers a known path called with the wrong method as "Cannot POST /x" (404). When `/x` exists for other
+   * methods the right answer is `405` with an `Allow` header (S54 AS-07); a path nothing serves stays a 404.
+   */
+  private methodNotAllowed(
+    exception: unknown,
+    request: { method?: string; path?: string },
+  ): AppError | undefined {
+    if (
+      !this.routeTable ||
+      !(exception instanceof NotFoundException) ||
+      !/^Cannot [A-Z]+ /.test(exception.message)
+    )
+      return undefined;
+    const allowed = this.routeTable.allowedMethods(request.path ?? '');
+    if (allowed.length === 0 || allowed.includes(request.method ?? ''))
+      return undefined;
+    return new AppError({
+      code: PlatformCodes.method_not_allowed,
+      status: 405,
+      title: 'Method Not Allowed',
+      detail: 'This method is not supported for this resource.',
+      area: ErrorArea.DOMAIN,
+      headers: { Allow: allowed.join(', ') },
+    });
+  }
+
+  private logFailure(
+    error: ReturnType<ErrorUtilsService['normalizeError']>,
+    requestId: string,
+    instance: string,
+  ): void {
+    const line = `[requestId: ${requestId}] HTTP ${error.status} ${error.code} ${instance} - ${error.name}: ${error.message}`;
+    if (Number(error.status) >= 500)
+      this.logger.error(
+        line,
+        [error.stack, ...(error.causes ?? []).map((c) => c.stack)]
+          .filter(Boolean)
+          .join('\nCaused by: '),
+      );
+    else this.logger.warn(line);
   }
 }

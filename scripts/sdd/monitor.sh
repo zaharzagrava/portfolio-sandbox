@@ -45,6 +45,7 @@ build_scope() {
   : > "$SCOPE"
   local id domain slug title sources dir
   while IFS=$'\t' read -r id domain slug title sources; do
+    if [[ "$id" == '!STOP' ]]; then [[ -f "$ROOT/specs/.checkpoints/$domain" ]] && continue || break; fi  # scope ends at the next checkpoint
     dir="$(spec_dir "$domain" "$id" "$slug")"
     [[ -f "$dir/.spec-done" && ! -f "$dir/.implemented" ]] && printf '%s\t%s\n' "$id" "$dir" >> "$SCOPE"
     [[ -n "${UNTIL:-}" && "$id" == "$UNTIL" ]] && break

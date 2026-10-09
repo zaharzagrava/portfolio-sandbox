@@ -1,9 +1,12 @@
 import { Global, Module, OnModuleInit } from '@nestjs/common';
 import { ModuleRef } from '@nestjs/core';
-import { ApiConfigModule } from '@app/common/config/api-config.module';
+import { ApiConfigModule } from '@app/common/config';
 import { RedisService } from './redis.service';
-import { ReadinessService } from '@app/infrastructure/health/readiness.service';
-import { TEST_CLEANUP, TestCleanupPort } from '@app/common/testing/test-cleanup.port';
+import { ReadinessService } from '@app/infrastructure/health';
+import {
+  TEST_CLEANUP,
+  TestCleanupPort,
+} from '@app/common/testing/test-cleanup.port';
 
 @Global()
 @Module({
@@ -29,7 +32,10 @@ export class RedisModule implements OnModuleInit {
     try {
       this.moduleRef
         .get<TestCleanupPort>(TEST_CLEANUP, { strict: false })
-        .register('redis.flushdb', async () => void (await this.redis.client.flushdb()));
+        .register(
+          'redis.flushdb',
+          async () => void (await this.redis.client.flushdb()),
+        );
     } catch {
       // not a test module
     }

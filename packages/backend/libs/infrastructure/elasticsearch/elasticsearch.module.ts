@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { ApiConfigModule } from '@app/common/config/api-config.module';
+import { ApiConfigModule } from '@app/common/config';
 import { ElasticsearchService } from './elasticsearch.service';
 
 @Module({
@@ -7,4 +7,4 @@ import { ElasticsearchService } from './elasticsearch.service';
   providers: [ElasticsearchService],
   exports: [ElasticsearchService],
 })
-export class ElasticsearchModule { }
+export class ElasticsearchModule {}

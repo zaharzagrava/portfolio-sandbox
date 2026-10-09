@@ -6,7 +6,7 @@ import {
   Body,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
-import { ApiConfigService } from '@app/common/config/api-config.service';
+import { ApiConfigService } from '@app/common/config';
 import { Environment } from '@app/common/types';
 import { AdminService } from '../application/admin.service';
 import { DbCredsDto } from './admin.dto';

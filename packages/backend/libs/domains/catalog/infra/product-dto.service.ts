@@ -1,11 +1,7 @@
-import {
-  BadRequestException,
-  Injectable,
-  Logger,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { Transaction } from 'sequelize';
 import { InjectModel } from '@nestjs/sequelize';
-import { Fatal_NotFoundError } from '@app/common/errors/error.types';
+import { Fatal_NotFoundError } from '@app/common/errors';
 import Product, {
   ProductScope,
   ProductWithAllFilters,
@@ -17,7 +13,7 @@ export class ProductDtoService {
 
   constructor(
     @InjectModel(Product) private readonly productModel: typeof Product,
-  ) { }
+  ) {}
 
   public countAll(
     params?: ProductWithAllFilters,

@@ -2,9 +2,13 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import type Anthropic from '@anthropic-ai/sdk';
 import type { Request, Response } from 'express';
 import { v7 as uuidv7 } from 'uuid';
-import { ApiConfigService } from '@app/common/config/api-config.service';
+import { ApiConfigService } from '@app/common/config';
 import { RateLimiterService } from '@app/infrastructure/rate-limit/rate-limiter.service';
-import { LLM_PROVIDER, LlmAbortedError, LlmUnavailableError } from '../infra/llm/llm-provider';
+import {
+  LLM_PROVIDER,
+  LlmAbortedError,
+  LlmUnavailableError,
+} from '../infra/llm/llm-provider';
 import type { LlmProvider } from '../infra/llm/llm-provider';
 import { LlmMeter } from '../infra/llm/llm-meter';
 import { estimateTokens } from '../infra/llm/pricing';
@@ -61,21 +65,47 @@ export class AnswerService {
     return this.config.get('assistant_model') ?? 'claude-opus-5-5';
   }
 
-  async stream(scope: RetrievalScope, question: string, subjectId: string | null, req: Request, res: Response): Promise<void> {
+  async stream(
+    scope: RetrievalScope,
+    question: string,
+    subjectId: string | null,
+    req: Request,
+    res: Response,
+  ): Promise<void> {
     const chunks = await this.retriever.search(scope, question);
 
-    res.writeHead(200, { 'Content-Type': 'text/event-stream; charset=utf-8', 'Cache-Control': 'no-cache, no-transform', Connection: 'keep-alive', 'X-Accel-Buffering': 'no' });
-    const send = (event: string, data: unknown) => res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
+    res.writeHead(200, {
+      'Content-Type': 'text/event-stream; charset=utf-8',
+      'Cache-Control': 'no-cache, no-transform',
+      Connection: 'keep-alive',
+      'X-Accel-Buffering': 'no',
+    });
+    const send = (event: string, data: unknown) =>
+      res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
 
     if (!chunks.length) {
-      send('not_found', { message: "I couldn't find this in the product documentation. Try asking the seller." });
+      send('not_found', {
+        message:
+          "I couldn't find this in the product documentation. Try asking the seller.",
+      });
       return void res.end();
     }
 
-    const sources: AnswerSource[] = chunks.map((c, n) => ({ n, chunkId: c.id, documentId: c.documentId, title: c.title, headingPath: c.headingPath, page: c.page }));
+    const sources: AnswerSource[] = chunks.map((c, n) => ({
+      n,
+      chunkId: c.id,
+      documentId: c.documentId,
+      title: c.title,
+      headingPath: c.headingPath,
+      page: c.page,
+    }));
     send('sources', sources);
 
-    const budget = await this.limiter.check('llm.provider.tpm', this.model, estimateTokens(chunks.map((c) => c.content).join('')) + MAX_OUTPUT_TOKENS);
+    const budget = await this.limiter.check(
+      'llm.provider.tpm',
+      this.model,
+      estimateTokens(chunks.map((c) => c.content).join('')) + MAX_OUTPUT_TOKENS,
+    );
     if (!budget.allowed) {
       send('error', { code: 'BUSY', retryAfterMs: budget.retryAfterMs });
       return void res.end();
@@ -91,7 +121,15 @@ export class AnswerService {
           model: this.model,
           system: RAG_SYSTEM,
           tools: [],
-          messages: [{ role: 'user', content: [...chunks.map(toSearchResult), { type: 'text', text: question }] }],
+          messages: [
+            {
+              role: 'user',
+              content: [
+                ...chunks.map(toSearchResult),
+                { type: 'text', text: question },
+              ],
+            },
+          ],
           maxTokens: MAX_OUTPUT_TOKENS,
           effort: 'low',
         },
@@ -104,14 +142,24 @@ export class AnswerService {
         },
       );
       void this.meter
-        .record({ subjectId, scopeId: scope.kind === 'product' ? scope.productId : scope.shopId, callId: uuidv7(), purpose: 'rag', requestedModel: this.model, result, ttftMs, durationMs: Date.now() - started })
+        .record({
+          subjectId,
+          scopeId: scope.kind === 'product' ? scope.productId : scope.shopId,
+          callId: uuidv7(),
+          purpose: 'rag',
+          requestedModel: this.model,
+          result,
+          ttftMs,
+          durationMs: Date.now() - started,
+        })
         .catch(() => undefined);
 
       if (result.stopReason === 'refusal') send('refusal', {});
       else send('done', { citations: citationsOf(result.content, chunks) });
     } catch (error) {
       if (error instanceof LlmAbortedError) return; // client is gone
-      if (error instanceof LlmUnavailableError) send('error', { code: 'PROVIDER_UNAVAILABLE' });
+      if (error instanceof LlmUnavailableError)
+        send('error', { code: 'PROVIDER_UNAVAILABLE' });
       else {
         this.logger.error(`rag answer failed: ${(error as Error).stack}`);
         send('error', { code: 'INTERNAL' });
@@ -122,7 +170,9 @@ export class AnswerService {
   }
 }
 
-const toSearchResult = (c: RetrievedChunk): Anthropic.Beta.BetaSearchResultBlockParam => ({
+const toSearchResult = (
+  c: RetrievedChunk,
+): Anthropic.Beta.BetaSearchResultBlockParam => ({
   type: 'search_result',
   source: `chunk:${c.id}`,
   title: `${c.title} — ${c.headingPath}${c.page ? ` (p. ${c.page})` : ''}`,
@@ -131,7 +181,10 @@ const toSearchResult = (c: RetrievedChunk): Anthropic.Beta.BetaSearchResultBlock
 });
 
 /** Per answer text block: the source numbers (indexes into `sources`) the API says support it. */
-export function citationsOf(content: Anthropic.Beta.BetaContentBlock[], chunks: RetrievedChunk[]) {
+export function citationsOf(
+  content: Anthropic.Beta.BetaContentBlock[],
+  chunks: RetrievedChunk[],
+) {
   return content
     .filter((b): b is Anthropic.Beta.BetaTextBlock => b.type === 'text')
     .map((b) => ({
@@ -139,7 +192,10 @@ export function citationsOf(content: Anthropic.Beta.BetaContentBlock[], chunks: 
       sources: [
         ...new Set(
           (b.citations ?? [])
-            .filter((c): c is Anthropic.Beta.BetaCitationSearchResultLocation => c.type === 'search_result_location')
+            .filter(
+              (c): c is Anthropic.Beta.BetaCitationSearchResultLocation =>
+                c.type === 'search_result_location',
+            )
             .map((c) => c.search_result_index)
             .filter((i) => i >= 0 && i < chunks.length),
         ),

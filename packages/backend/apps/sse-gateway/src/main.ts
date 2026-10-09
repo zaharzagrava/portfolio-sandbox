@@ -3,8 +3,8 @@ import { NestFactory } from '@nestjs/core';
 import { SseGatewayModule } from './sse-gateway.module';
 import { Environment } from '@app/common/types';
 import { INestApplication } from '@nestjs/common';
-import { configureHttpApp } from '@app/infrastructure/platform/bootstrap-http';
-import { ApiConfigService } from '@app/common/config/api-config.service';
+import { configureHttpApp } from '@app/infrastructure/platform';
+import { ApiConfigService } from '@app/common/config';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 
 import Sentry from '@sentry/nestjs';
@@ -21,7 +21,7 @@ async function bootstrap() {
   // structured logs, crash handlers, graceful shutdown (replaces enableShutdownHooks).
   configureHttpApp(app);
 
-  const isLocal= configService.get('node_env') === Environment.local;
+  const isLocal = configService.get('node_env') === Environment.local;
 
   if (!isLocal) {
     Sentry.init({

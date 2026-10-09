@@ -5,8 +5,12 @@ import ShopMembership from './infra/models/shop-membership.model';
 import ShopInvite from './infra/models/shop-invite.model';
 import ShopDirectory from './infra/models/shop-directory.model';
 import ShopSsoConfig from './infra/models/shop-sso-config.model';
-import { UserModel as User, AuthModule, AuthApiModule } from '@app/domains/identity';
-import { ApiConfigModule } from '@app/common/config/api-config.module';
+import {
+  UserModel as User,
+  AuthModule,
+  AuthApiModule,
+} from '@app/domains/identity';
+import { ApiConfigModule } from '@app/common/config';
 import { CacheModule } from '@app/infrastructure/cache/cache.module';
 import { MembershipService } from './application/membership.service';
 import { ShopGuard } from './api/shop.guard';
@@ -28,10 +32,30 @@ import { ShopController } from './api/shop.controller';
     AuthModule,
     AuthApiModule,
     CacheModule,
-    SequelizeModule.forFeature([Shop, ShopMembership, ShopInvite, ShopDirectory, ShopSsoConfig, User]),
+    SequelizeModule.forFeature([
+      Shop,
+      ShopMembership,
+      ShopInvite,
+      ShopDirectory,
+      ShopSsoConfig,
+      User,
+    ]),
   ],
-  providers: [MembershipService, ShopGuard, ShopTransactionRunner, TenantConnectionResolver, ShopService, ShopSsoService],
-  exports: [MembershipService, ShopGuard, ShopTransactionRunner, TenantConnectionResolver, ShopService],
+  providers: [
+    MembershipService,
+    ShopGuard,
+    ShopTransactionRunner,
+    TenantConnectionResolver,
+    ShopService,
+    ShopSsoService,
+  ],
+  exports: [
+    MembershipService,
+    ShopGuard,
+    ShopTransactionRunner,
+    TenantConnectionResolver,
+    ShopService,
+  ],
   controllers: [ShopController],
 })
 export class TenancyModule {}

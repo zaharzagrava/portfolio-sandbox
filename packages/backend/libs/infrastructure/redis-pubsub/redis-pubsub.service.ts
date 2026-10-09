@@ -1,6 +1,6 @@
 import { Injectable, OnModuleDestroy } from '@nestjs/common';
 import Redis from 'ioredis';
-import { ApiConfigService } from '@app/common/config/api-config.service';
+import { ApiConfigService } from '@app/common/config';
 
 /**
  * Shared Redis pub/sub client. NestJS-side publishers only need `publish` -

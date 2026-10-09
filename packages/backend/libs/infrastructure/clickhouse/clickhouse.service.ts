@@ -1,6 +1,11 @@
-import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  OnModuleDestroy,
+  OnModuleInit,
+} from '@nestjs/common';
 import { createClient, ClickHouseClient } from '@clickhouse/client';
-import { ApiConfigService } from '@app/common/config/api-config.service';
+import { ApiConfigService } from '@app/common/config';
 
 /**
  * Analytics store for payment telemetry / OLAP showcases (#25–28).
@@ -11,7 +16,7 @@ export class ClickHouseService implements OnModuleInit, OnModuleDestroy {
   private readonly l = new Logger(ClickHouseService.name);
   private client: ClickHouseClient | null = null;
 
-  constructor(private readonly configService: ApiConfigService) { }
+  constructor(private readonly configService: ApiConfigService) {}
 
   async onModuleInit() {
     try {

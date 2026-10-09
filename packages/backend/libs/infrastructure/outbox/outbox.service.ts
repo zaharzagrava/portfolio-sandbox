@@ -1,11 +1,17 @@
 import { HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { Transaction } from 'sequelize';
 import { trace, SpanStatusCode } from '@opentelemetry/api';
-import { ApiConfigService } from '@app/common/config/api-config.service';
+import { ApiConfigService } from '@app/common/config';
 import { DbUtilsService } from '@app/infrastructure/database/db-utils/db-utils.service';
 import { OutboxDtoService } from './dto/outbox-dto.service';
 import { CreateOutboxDto, OutboxWrapperConfig } from './types';
-import { AppError, ErrorArea, Fatal_DomainErrorIsThrown, Fatal_InternalServerError, Fatal_RetriesExhaustedError } from '@app/common/errors/error.types';
+import {
+  AppError,
+  ErrorArea,
+  Fatal_DomainErrorIsThrown,
+  Fatal_InternalServerError,
+  Fatal_RetriesExhaustedError,
+} from '@app/common/errors';
 
 @Injectable()
 export class OutboxService {
@@ -15,7 +21,7 @@ export class OutboxService {
     private readonly configService: ApiConfigService,
     private readonly dbUtilsService: DbUtilsService,
     private readonly outboxDtoService: OutboxDtoService,
-  ) { }
+  ) {}
 
   async wrapInOutbox<T, P>(
     fun: () => Promise<T>,
@@ -49,7 +55,9 @@ export class OutboxService {
               detail: _error.message || 'Unexpected infrastructure failure',
               status: HttpStatus.INTERNAL_SERVER_ERROR,
               area: isCodeBug ? ErrorArea.FATAL : ErrorArea.TRANSIENT,
-              title: isCodeBug ? 'Fatal Code Bug' : 'Unexpected infrastructure failure',
+              title: isCodeBug
+                ? 'Fatal Code Bug'
+                : 'Unexpected infrastructure failure',
               causes: [_error],
             });
           }
@@ -67,7 +75,9 @@ export class OutboxService {
         }
 
         if (error.area === ErrorArea.TRANSIENT && attempt === maxAttempts) {
-          this.l.error(`[Transient Failure] Max retries (${maxRetries}) exhausted. Routing to DLQ.`);
+          this.l.error(
+            `[Transient Failure] Max retries (${maxRetries}) exhausted. Routing to DLQ.`,
+          );
           error = new Fatal_RetriesExhaustedError({
             detail: `Retries Exhausted after ${maxRetries} attempts`,
             title: `Retries Exhausted after ${maxRetries} attempts`,
@@ -105,10 +115,7 @@ export class OutboxService {
     }
   }
 
-  public async notify(
-    topic: CreateOutboxDto,
-    tx?: Transaction,
-  ): Promise<void> {
+  public async notify(topic: CreateOutboxDto, tx?: Transaction): Promise<void> {
     await this.dbUtilsService.wrapInTransaction(async (tx) => {
       await this.outboxDtoService.create({
         params: {

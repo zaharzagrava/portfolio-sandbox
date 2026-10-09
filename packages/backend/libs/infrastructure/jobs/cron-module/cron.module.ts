@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { CronService } from './cron.service';
-import { ApiConfigModule } from '@app/common/config/api-config.module';
+import { ApiConfigModule } from '@app/common/config';
 
 @Module({
   imports: [ApiConfigModule],

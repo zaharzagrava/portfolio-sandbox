@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { ApiConfigModule } from '@app/common/config/api-config.module';
+import { ApiConfigModule } from '@app/common/config';
 import { ClickHouseService } from './clickhouse.service';
 
 @Module({
@@ -7,4 +7,4 @@ import { ClickHouseService } from './clickhouse.service';
   providers: [ClickHouseService],
   exports: [ClickHouseService],
 })
-export class ClickHouseModule { }
+export class ClickHouseModule {}

@@ -16,6 +16,15 @@ export class EnvConfig {
  */
 export class SecretsManagerConfig {
   port: number;
+  /** Probe-only listener for apps with no HTTP surface (payment-processor); default 9091. */
+  management_port?: number;
+  /** Shutdown sequence and server timings (S54 FR-038 to FR-044); defaults and cross-field rules in `shutdown-config.ts`. */
+  shutdown_drain_delay_ms?: number;
+  shutdown_request_drain_ms?: number;
+  shutdown_hard_timeout_ms?: number;
+  server_keep_alive_ms?: number;
+  server_headers_timeout_ms?: number;
+  server_request_timeout_ms?: number;
 
   aws_access_key_id: string;
   aws_secret_access_key: string;
@@ -93,6 +102,28 @@ export class SecretsManagerConfig {
   // Showcase program (docs/showcase) - optional, defaults applied where used
   /** Event-loop p99 lag (ms) above which new requests are shed with 503. Default 200. */
   load_shedding_lag_ms?: number;
+  /** Concurrent requests per instance above which default and background requests are shed (critical at twice). Default 1000. */
+  load_shedding_max_inflight?: number;
+  /** Log level; `info` when unset. */
+  log_level?: 'trace' | 'debug' | 'info' | 'warn' | 'error';
+  /** ISO 4217 platform currency (three uppercase letters); USD outside production when unset, required in production. */
+  platform_currency?: string;
+  /** Origin that serves user-generated content; must differ from the app origin in production. */
+  usercontent_origin?: string;
+  /** `none` or a comma-separated list of proxy addresses / CIDR ranges whose X-Forwarded-For is believed. Required in production. */
+  trusted_proxies?: string;
+  /** Base URL of the problem document `type` member. */
+  problem_type_base_url?: string;
+  /** Service name, used as the database application_name. */
+  app_name?: string;
+  db_pool_max?: number;
+  db_replica_pool_max?: number;
+  db_max_instances?: number;
+  db_connection_limit?: number;
+  db_reserved_connections?: number;
+  db_statement_timeout_ms?: number;
+  db_idle_in_tx_timeout_ms?: number;
+  db_acquire_timeout_ms?: number;
   /** Comma-separated CORS allowlist. Unset = reflect origin (legacy local behaviour). */
   cors_allowed_origins?: string;
   /** MinIO locally; unset in AWS (real S3). */
@@ -191,4 +222,4 @@ export class SecretsManagerConfig {
   onboarding_escalation_model?: string;
 }
 
-export class Config extends IntersectionType(EnvConfig, SecretsManagerConfig) { }
+export class Config extends IntersectionType(EnvConfig, SecretsManagerConfig) {}

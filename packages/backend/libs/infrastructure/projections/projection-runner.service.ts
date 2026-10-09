@@ -1,9 +1,9 @@
 import { Injectable, Logger, Optional } from '@nestjs/common';
 import { Consumer, EachBatchPayload, Producer } from 'kafkajs';
 import { metrics, trace, SpanStatusCode } from '@opentelemetry/api';
-import { ApiConfigService } from '@app/common/config/api-config.service';
+import { ApiConfigService } from '@app/common/config';
 import { createKafka } from '@app/infrastructure/kafka/kafka-client.factory';
-import { ShutdownRegistry } from '@app/infrastructure/lifecycle/shutdown-registry.service';
+import { ShutdownRegistry } from '@app/infrastructure/lifecycle';
 import { EventEnvelope } from '@app/infrastructure/events/event-envelope';
 import { coalesceLatest, Projector, SinkBackpressureError } from './projector';
 import { parseEnvelope } from './envelope-parser';
@@ -28,24 +28,38 @@ export class ProjectionRunner {
   private readonly consumers: Consumer[] = [];
   private producer?: Producer;
   /** Exported as projection_lag_seconds (SLI for read-model freshness, alert ProjectionLagHigh). */
-  private readonly lag = metrics.getMeter('projections').createHistogram('projection.lag', {
-    description: 'Time from event occurrence to read-model write',
-    unit: 's',
-    advice: { explicitBucketBoundaries: [0.05, 0.1, 0.25, 0.5, 1, 2, 5, 10, 30, 60, 300] },
-  });
+  private readonly lag = metrics
+    .getMeter('projections')
+    .createHistogram('projection.lag', {
+      description: 'Time from event occurrence to read-model write',
+      unit: 's',
+      advice: {
+        explicitBucketBoundaries: [
+          0.05, 0.1, 0.25, 0.5, 1, 2, 5, 10, 30, 60, 300,
+        ],
+      },
+    });
   private readonly tracer = trace.getTracer('projections');
 
   constructor(
     private readonly config: ApiConfigService,
     @Optional() shutdown?: ShutdownRegistry,
   ) {
-    shutdown?.register({ name: 'projections.stop', order: 10, run: () => this.stopAll(), timeoutMs: 20_000 });
+    shutdown?.register({
+      name: 'projections.stop',
+      order: 10,
+      run: () => this.stopAll(),
+      timeoutMs: 20_000,
+    });
   }
 
   async start(projector: Projector): Promise<void> {
     const kafka = createKafka(this.config, `projector-${projector.name}`);
     if (!this.producer) {
-      this.producer = kafka.producer({ idempotent: true, maxInFlightRequests: 1 });
+      this.producer = kafka.producer({
+        idempotent: true,
+        maxInFlightRequests: 1,
+      });
       await this.producer.connect();
     }
 
@@ -68,37 +82,77 @@ export class ProjectionRunner {
     });
 
     this.consumers.push(consumer);
-    this.logger.log(`Projector ${projector.name} started on ${projector.topics.join(', ')}`);
+    this.logger.log(
+      `Projector ${projector.name} started on ${projector.topics.join(', ')}`,
+    );
   }
 
-  private async handleBatch(projector: Projector, consumer: Consumer, payload: EachBatchPayload): Promise<void> {
-    const { batch, resolveOffset, heartbeat, isRunning, isStale, commitOffsetsIfNecessary } = payload;
+  private async handleBatch(
+    projector: Projector,
+    consumer: Consumer,
+    payload: EachBatchPayload,
+  ): Promise<void> {
+    const {
+      batch,
+      resolveOffset,
+      heartbeat,
+      isRunning,
+      isStale,
+      commitOffsetsIfNecessary,
+    } = payload;
     if (!isRunning() || isStale()) return;
 
     const valid: EventEnvelope[] = [];
     for (const message of batch.messages) {
-      const result = parseEnvelope(batch.topic, message.key?.toString() ?? null, message.value, message.offset);
+      const result = parseEnvelope(
+        batch.topic,
+        message.key?.toString() ?? null,
+        message.value,
+        message.offset,
+      );
       if (result.ok) valid.push(result.envelope);
-      else await this.toDlq(projector, batch.topic, message.key, message.value, result.reason);
+      else
+        await this.toDlq(
+          projector,
+          batch.topic,
+          message.key,
+          message.value,
+          result.reason,
+        );
     }
 
     const toProject = projector.coalesce ? coalesceLatest(valid) : valid;
 
-    await this.tracer.startActiveSpan(`project ${projector.name}`, async (span) => {
-      span.setAttributes({ 'projection.name': projector.name, 'projection.batch_size': toProject.length });
-      try {
-        await this.projectWithRetries(projector, consumer, batch.topic, batch.partition, toProject);
-      } catch (error) {
-        span.recordException(error as Error);
-        span.setStatus({ code: SpanStatusCode.ERROR });
-        throw error;
-      } finally {
-        span.end();
-      }
-    });
+    await this.tracer.startActiveSpan(
+      `project ${projector.name}`,
+      async (span) => {
+        span.setAttributes({
+          'projection.name': projector.name,
+          'projection.batch_size': toProject.length,
+        });
+        try {
+          await this.projectWithRetries(
+            projector,
+            consumer,
+            batch.topic,
+            batch.partition,
+            toProject,
+          );
+        } catch (error) {
+          span.recordException(error as Error);
+          span.setStatus({ code: SpanStatusCode.ERROR });
+          throw error;
+        } finally {
+          span.end();
+        }
+      },
+    );
 
     const now = Date.now();
-    for (const event of valid) this.lag.record((now - Date.parse(event.occurredAt)) / 1000, { projector: projector.name });
+    for (const event of valid)
+      this.lag.record((now - Date.parse(event.occurredAt)) / 1000, {
+        projector: projector.name,
+      });
 
     for (const message of batch.messages) resolveOffset(message.offset);
     await commitOffsetsIfNecessary();
@@ -127,7 +181,9 @@ export class ProjectionRunner {
           attempt--; // backpressure isn't a failure of the batch
           continue;
         }
-        this.logger.warn(`[${projector.name}] batch attempt ${attempt + 1} failed: ${(error as Error).message}`);
+        this.logger.warn(
+          `[${projector.name}] batch attempt ${attempt + 1} failed: ${(error as Error).message}`,
+        );
         await sleep(fullJitterBackoff(attempt, { baseMs: 200, maxMs: 5_000 }));
       }
     }
@@ -137,16 +193,37 @@ export class ProjectionRunner {
       try {
         await projector.project([event]);
       } catch (error) {
-        await this.toDlq(projector, topic, Buffer.from(event.aggregateId), Buffer.from(JSON.stringify(event)), (error as Error).message);
+        await this.toDlq(
+          projector,
+          topic,
+          Buffer.from(event.aggregateId),
+          Buffer.from(JSON.stringify(event)),
+          (error as Error).message,
+        );
       }
     }
   }
 
-  private async toDlq(projector: Projector, topic: string, key: Buffer | null, value: Buffer | null, reason: string) {
+  private async toDlq(
+    projector: Projector,
+    topic: string,
+    key: Buffer | null,
+    value: Buffer | null,
+    reason: string,
+  ) {
     this.logger.error(`[${projector.name}] → DLQ (${topic}): ${reason}`);
     await this.producer!.send({
       topic: `${projector.name}.dlq`,
-      messages: [{ key, value, headers: { 'x-source-topic': topic, 'x-dlq-reason': reason.slice(0, 500) } }],
+      messages: [
+        {
+          key,
+          value,
+          headers: {
+            'x-source-topic': topic,
+            'x-dlq-reason': reason.slice(0, 500),
+          },
+        },
+      ],
     });
   }
 

@@ -1,10 +1,20 @@
 import { HttpStatus } from '@nestjs/common';
 import { IntersectionType, PickType } from '@nestjs/swagger';
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEnum, IsNumber, IsOptional, IsString, IsUUID } from 'class-validator';
-import { AppError, ConfiguredErrorParams, ErrorArea } from '@app/common/errors/error.types';
+import {
+  IsEnum,
+  IsNumber,
+  IsOptional,
+  IsString,
+  IsUUID,
+} from 'class-validator';
+import { AppError, ConfiguredErrorParams, ErrorArea } from '@app/common/errors';
 import { PaymentStatus } from '../infra/models/payment.model';
-import { DeletableTimestampsFields, IdField, TimestampsFields } from '@app/common/types';
+import {
+  DeletableTimestampsFields,
+  IdField,
+  TimestampsFields,
+} from '@app/common/types';
 
 // --- --- --- --- --- Internal Types for Character --- --- --- --- --- //
 export class CreatePaymentDto {
@@ -27,9 +37,9 @@ export class CreatePaymentDto {
 export class PaymentRawDto extends IntersectionType(
   IntersectionType(CreatePaymentDto, DeletableTimestampsFields),
   IdField,
-) { }
+) {}
 
-export class PaymentFullDto extends PaymentRawDto { }
+export class PaymentFullDto extends PaymentRawDto {}
 
 // --- --- --- --- --- POST / --- --- --- --- --- //
 export class PostPaymentParamsDto {

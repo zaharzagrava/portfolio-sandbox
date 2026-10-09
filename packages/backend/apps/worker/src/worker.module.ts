@@ -3,19 +3,35 @@ import { QueueMetricsService } from '@app/infrastructure/sqs/queue-metrics.servi
 import { FunctionJudgeModule } from '@app/domains/shop-functions';
 import { KnowledgeWorkerModule } from '@app/domains/assistant';
 import { OnboardingWorkerModule } from '@app/domains/seller-onboarding';
-import { CrawlerWorkerModule, LeaderboardsWorkerModule } from '@app/domains/seller-insights';
-import { IntegrationsWorkerModule, CatalogImportWorkerModule } from '@app/domains/catalog-sync';
+import {
+  CrawlerWorkerModule,
+  LeaderboardsWorkerModule,
+} from '@app/domains/seller-insights';
+import {
+  IntegrationsWorkerModule,
+  CatalogImportWorkerModule,
+} from '@app/domains/catalog-sync';
 import { VideoWorkerModule } from '@app/domains/media';
 import { AssetsWorkerModule } from '@app/domains/asset-library';
 import { StoriesWorkerModule } from '@app/domains/content';
 import { AdsWorkerModule } from '@app/domains/marketing';
 import { FlagsSdkModule } from '@app/domains/experimentation';
-import { WebhooksWorkerModule, PublicApiWorkerModule } from '@app/domains/developer-platform';
+import {
+  WebhooksWorkerModule,
+  PublicApiWorkerModule,
+} from '@app/domains/developer-platform';
 import { DeliveryWorkerModule } from '@app/domains/fulfilment';
 import { ChatOfflineWorkerModule } from '@app/domains/chat';
-import { LiveWorkerModule, LaunchEventsWorkerModule } from '@app/domains/launch-events';
+import {
+  LiveWorkerModule,
+  LaunchEventsWorkerModule,
+} from '@app/domains/launch-events';
 import { NotificationsWorkerModule } from '@app/domains/notifications';
-import { RecommendationsWorkerModule, SearchReindexWorkerModule, AutocompleteWorkerModule } from '@app/domains/discovery';
+import {
+  RecommendationsWorkerModule,
+  SearchReindexWorkerModule,
+  AutocompleteWorkerModule,
+} from '@app/domains/discovery';
 import { DiscussionsWorkerModule } from '@app/domains/community';
 import { StatementsWorkerModule } from '@app/domains/statements';
 import { BillingWorkerModule } from '@app/domains/billing';
@@ -24,11 +40,12 @@ import { FinanceWorkerModule } from '@app/domains/payments';
 import { OrdersWorkerModule } from '@app/domains/orders';
 import { Module } from '@nestjs/common';
 import { OpenTelemetryModule } from 'nestjs-otel';
-import { ApiConfigModule } from '@app/common/config/api-config.module';
-import { PlatformModule } from '@app/infrastructure/platform/platform.module';
-import { DatabaseModule } from '@app/infrastructure/database/database.module';
+import { ApiConfigModule } from '@app/common/config';
+import { PlatformModule } from '@app/infrastructure/platform';
+import { DatabaseModule } from '@app/infrastructure/database';
 import { RedisModule } from '@app/infrastructure/redis/redis.module';
 import { JobsWorkerModule } from '@app/infrastructure/jobs/jobs-worker.module';
+import { IdempotencyModule } from '@app/infrastructure/idempotency';
 import { ProductWorkerModule } from '@app/domains/catalog';
 import { AuthWorkerModule } from '@app/domains/identity';
 
@@ -47,6 +64,8 @@ import { AuthWorkerModule } from '@app/domains/identity';
     DatabaseModule,
     RedisModule,
     JobsWorkerModule,
+    // Runs the platform.purge-idempotency-keys job (S54 FR-069).
+    IdempotencyModule,
     ProductWorkerModule,
     AuthWorkerModule,
     TenancyWorkerModule,

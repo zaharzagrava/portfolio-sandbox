@@ -1,9 +1,19 @@
-import { Body, Controller, Get, Param, ParseUUIDPipe, Post, Put, Req, Res } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Post,
+  Put,
+  Req,
+  Res,
+} from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import type { Request, Response } from 'express';
 import * as cookie from 'cookie';
 import { Firewall, User, UserRawDto } from '@app/domains/identity';
-import { ApiConfigService } from '@app/common/config/api-config.service';
+import { ApiConfigService } from '@app/common/config';
 import { Environment } from '@app/common/types';
 import { CartRepository } from '../infra/cart.repository';
 import { CartIdentity } from './cart-identity';
@@ -24,12 +34,17 @@ export class CartController {
     private readonly carts: CartRepository,
     private readonly config: ApiConfigService,
   ) {
-    this.identity = new CartIdentity(config.get('cart_cookie_secret') || config.get('jwt_secret'));
+    this.identity = new CartIdentity(
+      config.get('cart_cookie_secret') || config.get('jwt_secret'),
+    );
   }
 
   @Firewall({ anonymous: true })
   @Get()
-  async get(@Req() req: Request & { user?: UserRawDto }, @Res({ passthrough: true }) res: Response) {
+  async get(
+    @Req() req: Request & { user?: UserRawDto },
+    @Res({ passthrough: true }) res: Response,
+  ) {
     return { lines: await this.carts.list(this.cartId(req, res)) };
   }
 
@@ -49,16 +64,28 @@ export class CartController {
   /** Called right after login: guest cart lines move into the user's cart. */
   @Firewall()
   @Post('merge')
-  async merge(@User() user: UserRawDto, @Req() req: Request, @Res({ passthrough: true }) res: Response) {
-    const guest = this.identity.verify(cookie.parse(req.headers.cookie ?? '')[CART_COOKIE]);
+  async merge(
+    @User() user: UserRawDto,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const guest = this.identity.verify(
+      cookie.parse(req.headers.cookie ?? '')[CART_COOKIE],
+    );
     const target = CartIdentity.userCartId(user.id);
     res.clearCookie(CART_COOKIE, { path: '/' });
-    return { lines: guest ? await this.carts.merge(guest, target) : await this.carts.list(target) };
+    return {
+      lines: guest
+        ? await this.carts.merge(guest, target)
+        : await this.carts.list(target),
+    };
   }
 
   private cartId(req: Request & { user?: UserRawDto }, res: Response): string {
     if (req.user) return CartIdentity.userCartId(req.user.id);
-    const existing = this.identity.verify(cookie.parse(req.headers.cookie ?? '')[CART_COOKIE]);
+    const existing = this.identity.verify(
+      cookie.parse(req.headers.cookie ?? '')[CART_COOKIE],
+    );
     if (existing) return existing;
     const { cartId, token } = this.identity.issueGuestToken();
     res.cookie(CART_COOKIE, token, {

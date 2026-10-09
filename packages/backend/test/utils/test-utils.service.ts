@@ -55,12 +55,26 @@ export class TestUtilsService {
 
 /**
  * Asserts an RFC 9457 Problem Details response (the shape `AllExceptionsFilter`
- * emits) - `errorName` is the AppError class name at the end of `type`.
+ * emits) - `errorName` is the AppError class name; the problem `code` is its snake_case form (S54 FR-001).
  */
 export function expectProblem(
-  body: { type?: string; status?: number; title?: string; detail?: string },
+  body: {
+    type?: string;
+    code?: string;
+    status?: number;
+    title?: string;
+    detail?: string;
+  },
   { status, errorName }: { status: number; errorName?: string },
 ): void {
   expect(body.status).toBe(status);
-  if (errorName) expect(body.type).toMatch(new RegExp(`/errors/${errorName}$`));
+  if (errorName) {
+    const code = errorName
+      .replace(/^(Domain|Fatal|Transient)_/, '')
+      .replace(/Error$/, '')
+      .replace(/([a-z0-9])([A-Z])/g, '$1_$2')
+      .toLowerCase();
+    expect(body.code).toBe(code);
+    expect(body.type).toMatch(new RegExp(`/${code}$`));
+  }
 }

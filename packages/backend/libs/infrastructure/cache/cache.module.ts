@@ -1,5 +1,5 @@
 import { Global, Module } from '@nestjs/common';
-import { ApiConfigModule } from '@app/common/config/api-config.module';
+import { ApiConfigModule } from '@app/common/config';
 import { CacheService } from './cache.service';
 
 /** Requires the global RedisModule. */

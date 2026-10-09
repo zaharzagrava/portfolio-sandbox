@@ -1,0 +1,101 @@
+# Flow-first order: build vertical slices, and stop at checkpoints where a human can try what exists.
+#   ORDER=by-flow COMMIT=1 scripts/sdd/implement-specs.sh
+# A "!STOP <label> <message>" line stops the run once (notification, exit 0) and is passed on the next run
+# (marker: specs/.checkpoints/<label>; delete it to stop there again). IDs missing from this file run last.
+# The point: a problem between two capabilities shows up at the first checkpoint that needs both, not after sixty specs.
+# Unlike by-layer.txt this puts the things the README features (public API, webhooks, integrations, offline sync) after
+# the first browser flow; move section 5 up if resume work matters more than seeing the flow early.
+
+# 0. Platform toolkit (S54 is done): events and projections, jobs, cache, rate limit
+S54
+S53
+S49
+S52
+S50
+
+# 1. Identity, shops, catalog
+S01
+S03
+S05
+
+# 2. FLOW 1, buying: cart, checkout, payment intents with the fake PSP, ledger, notifications, realtime status
+S10
+S13
+S14
+S28
+S51
+!STOP buy-api  Buying works at API level: register, create a shop and a product, cart, checkout, pay (fake PSP), order becomes paid, ledger journals balance, buyer notification arrives.
+
+# 3. FLOW 2, discovery: products created above become searchable
+S32
+S33
+S35
+S34
+S19
+S48
+!STOP search-api  Search, autocomplete, trending, recommendations and pickup-near-me return the products created through the API; the BFF product-page aggregate works.
+
+# 4. FLOW 3, the browser: shell, login, storefront, cart and checkout. Product-page extras first so the storefront
+#    spec does not have to stub them: discussions, share links, photos, ask-this-product, sponsored, analytics; MFA/OIDC for login; flash sales for checkout states.
+S02
+S25
+S37
+S29
+S47
+S36
+S39
+S11
+W07
+W01
+W02
+W03
+!STOP buy-ui  Browser flow: open the storefront, find a product by search, open its page, add it to the cart, pay, see the order and the notification.
+
+# 5. Featured on the resume: public API, webhooks, LLM provider port, integrations, offline sync
+S42
+S43
+S46
+S08
+S09
+
+# 6. The rest of the money chain, then the buy-to-payout journey
+S15
+S16
+S17
+S18
+J01
+!STOP payout-journey  Buy-to-payout journey (J01): order paid, ledger, settlement, seller payout, monthly statement.
+
+# 7. Commerce, onboarding, content
+S12
+S07
+S04
+S31
+S30
+S27
+
+# 8. Realtime, launch events, community
+S24
+S22
+S21
+S23
+S20
+S26
+S06
+
+# 9. The rest of the backend
+S38
+S40
+S41
+S44
+S45
+S55
+
+# 10. Remaining web and journeys
+W04
+W05
+W06
+J02
+J03
+J04
+J05

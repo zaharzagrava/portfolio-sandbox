@@ -15,7 +15,11 @@ export interface Statement extends StatementTotals {
   month: string;
   source: 'snapshot' | 'live' | 'as-known-at';
   knownAt?: string;
-  adjustments: { commissionDelta: number; reason: string; bookedMonth: string }[];
+  adjustments: {
+    commissionDelta: number;
+    reason: string;
+    bookedMonth: string;
+  }[];
 }
 
 const PAID_STATUSES = `('PAID','FULFILLING','SHIPPED','DELIVERED')`;
@@ -36,8 +40,17 @@ export class StatementService {
   constructor(@InjectConnection() private readonly sequelize: Sequelize) {}
 
   /** Live computation for one month; `shopId` null = every shop (used by month close). */
-  async compute(month: string, knownAt: Date, shopId: string | null): Promise<StatementTotals[]> {
-    const rows = await this.sequelize.query<{ shopId: string; gross: string; commission: string; lines: number }>(
+  async compute(
+    month: string,
+    knownAt: Date,
+    shopId: string | null,
+  ): Promise<StatementTotals[]> {
+    const rows = await this.sequelize.query<{
+      shopId: string;
+      gross: string;
+      commission: string;
+      lines: number;
+    }>(
       `SELECT i."shopId",
               sum(i."priceAtPurchase" * i.quantity)::bigint AS gross,
               sum(round(i."priceAtPurchase" * i.quantity * r."rateBps" / 10000.0))::bigint AS commission,
@@ -55,34 +68,81 @@ export class StatementService {
          AND o."createdAt" >= CAST(:month AS date) AND o."createdAt" < CAST(:month AS date) + interval '1 month'
          AND (CAST(:shopId AS uuid) IS NULL OR i."shopId" = CAST(:shopId AS uuid))
        GROUP BY i."shopId"`,
-      { type: QueryTypes.SELECT, replacements: { default: DEFAULT_SHOP_KEY, knownAt: knownAt.toISOString(), month, shopId } },
+      {
+        type: QueryTypes.SELECT,
+        replacements: {
+          default: DEFAULT_SHOP_KEY,
+          knownAt: knownAt.toISOString(),
+          month,
+          shopId,
+        },
+      },
     );
-    return rows.map((r) => ({ shopId: r.shopId, gross: Number(r.gross), commission: Number(r.commission), net: Number(r.gross) - Number(r.commission), lines: r.lines }));
+    return rows.map((r) => ({
+      shopId: r.shopId,
+      gross: Number(r.gross),
+      commission: Number(r.commission),
+      net: Number(r.gross) - Number(r.commission),
+      lines: r.lines,
+    }));
   }
 
-  async statement(shopId: string, month: string, knownAt?: Date): Promise<Statement> {
+  async statement(
+    shopId: string,
+    month: string,
+    knownAt?: Date,
+  ): Promise<Statement> {
     const empty = { shopId, gross: 0, commission: 0, net: 0, lines: 0 };
-    const adjustments = await this.sequelize.query<{ commissionDelta: string; reason: string; bookedMonth: string }>(
+    const adjustments = await this.sequelize.query<{
+      commissionDelta: string;
+      reason: string;
+      bookedMonth: string;
+    }>(
       `SELECT "commissionDelta", reason, "bookedMonth"::text FROM "StatementAdjustment" WHERE "shopId" = :shopId AND "refersToMonth" = CAST(:month AS date) ORDER BY "createdAt"`,
       { type: QueryTypes.SELECT, replacements: { shopId, month } },
     );
-    const adj = adjustments.map((a) => ({ ...a, commissionDelta: Number(a.commissionDelta) }));
+    const adj = adjustments.map((a) => ({
+      ...a,
+      commissionDelta: Number(a.commissionDelta),
+    }));
 
     if (knownAt) {
       const [totals] = await this.compute(month, knownAt, shopId);
-      return { ...(totals ?? empty), month, source: 'as-known-at', knownAt: knownAt.toISOString(), adjustments: [] };
+      return {
+        ...(totals ?? empty),
+        month,
+        source: 'as-known-at',
+        knownAt: knownAt.toISOString(),
+        adjustments: [],
+      };
     }
 
-    const [period] = await this.sequelize.query<{ status: string }>(`SELECT status FROM "AccountingPeriod" WHERE month = CAST(:month AS date)`, {
-      type: QueryTypes.SELECT,
-      replacements: { month },
-    });
+    const [period] = await this.sequelize.query<{ status: string }>(
+      `SELECT status FROM "AccountingPeriod" WHERE month = CAST(:month AS date)`,
+      {
+        type: QueryTypes.SELECT,
+        replacements: { month },
+      },
+    );
     if (period?.status === 'CLOSED') {
-      const [snap] = await this.sequelize.query<{ gross: string; commission: string; net: string; lines: number }>(
+      const [snap] = await this.sequelize.query<{
+        gross: string;
+        commission: string;
+        net: string;
+        lines: number;
+      }>(
         `SELECT gross, commission, net, lines FROM "StatementSnapshot" WHERE "shopId" = :shopId AND month = CAST(:month AS date)`,
         { type: QueryTypes.SELECT, replacements: { shopId, month } },
       );
-      const totals = snap ? { shopId, gross: Number(snap.gross), commission: Number(snap.commission), net: Number(snap.net), lines: snap.lines } : empty;
+      const totals = snap
+        ? {
+            shopId,
+            gross: Number(snap.gross),
+            commission: Number(snap.commission),
+            net: Number(snap.net),
+            lines: snap.lines,
+          }
+        : empty;
       return { ...totals, month, source: 'snapshot', adjustments: adj };
     }
 
@@ -92,8 +152,12 @@ export class StatementService {
 
   /** Month close: one snapshot row per shop, then the period is locked. Idempotent. */
   async closeMonth(month: string): Promise<number> {
+    // S54 T037 audit: explicit unit of work, opens its own transaction by design; no network I/O inside.
     return this.sequelize.transaction(async (transaction) => {
-      await this.sequelize.query(`SELECT pg_advisory_xact_lock(hashtext('statements.close:' || :month))`, { replacements: { month }, transaction });
+      await this.sequelize.query(
+        `SELECT pg_advisory_xact_lock(hashtext('statements.close:' || :month))`,
+        { replacements: { month }, transaction },
+      );
       const [period] = await this.sequelize.query<{ status: string }>(
         `INSERT INTO "AccountingPeriod" (month) VALUES (CAST(:month AS date)) ON CONFLICT (month) DO UPDATE SET month = EXCLUDED.month RETURNING status`,
         { type: QueryTypes.SELECT, replacements: { month }, transaction },
@@ -120,7 +184,10 @@ export class StatementService {
           },
         );
       }
-      await this.sequelize.query(`UPDATE "AccountingPeriod" SET status = 'CLOSED', "closedAt" = now() WHERE month = CAST(:month AS date)`, { replacements: { month }, transaction });
+      await this.sequelize.query(
+        `UPDATE "AccountingPeriod" SET status = 'CLOSED', "closedAt" = now() WHERE month = CAST(:month AS date)`,
+        { replacements: { month }, transaction },
+      );
       return totals.length;
     });
   }
@@ -131,35 +198,58 @@ export class StatementService {
    * the difference in the currently open month. Unique per (shop, month, reason)
    * → re-running the job never double-books.
    */
-  async retroAdjust(input: { shopKey: string; from: string; to: string | null; reason: string }): Promise<number> {
+  async retroAdjust(input: {
+    shopKey: string;
+    from: string;
+    to: string | null;
+    reason: string;
+  }): Promise<number> {
     const closed = await this.sequelize.query<{ month: string }>(
       `SELECT month::text FROM "AccountingPeriod" WHERE status = 'CLOSED'
          AND tstzrange(month, month + interval '1 month') && tstzrange(CAST(:from AS timestamptz), CAST(:to AS timestamptz))
        ORDER BY month`,
-      { type: QueryTypes.SELECT, replacements: { from: input.from, to: input.to } },
+      {
+        type: QueryTypes.SELECT,
+        replacements: { from: input.from, to: input.to },
+      },
     );
     const bookedMonth = new Date().toISOString().slice(0, 7) + '-01';
     let booked = 0;
 
     for (const { month } of closed) {
-      const shopFilter = input.shopKey === DEFAULT_SHOP_KEY ? null : input.shopKey;
+      const shopFilter =
+        input.shopKey === DEFAULT_SHOP_KEY ? null : input.shopKey;
       for (const current of await this.compute(month, new Date(), shopFilter)) {
         const [{ before }] = await this.sequelize.query<{ before: string }>(
           `SELECT coalesce((SELECT commission FROM "StatementSnapshot" WHERE "shopId" = :shopId AND month = CAST(:month AS date)), 0)
                 + coalesce((SELECT sum("commissionDelta") FROM "StatementAdjustment" WHERE "shopId" = :shopId AND "refersToMonth" = CAST(:month AS date)), 0) AS before`,
-          { type: QueryTypes.SELECT, replacements: { shopId: current.shopId, month } },
+          {
+            type: QueryTypes.SELECT,
+            replacements: { shopId: current.shopId, month },
+          },
         );
         const delta = current.commission - Number(before);
         if (delta === 0) continue;
         await this.sequelize.query(
           `INSERT INTO "StatementAdjustment" ("shopId", "bookedMonth", "refersToMonth", "commissionDelta", reason)
            VALUES (:shopId, CAST(:booked AS date), CAST(:month AS date), :delta, :reason) ON CONFLICT DO NOTHING`,
-          { replacements: { shopId: current.shopId, booked: bookedMonth, month, delta, reason: input.reason } },
+          {
+            replacements: {
+              shopId: current.shopId,
+              booked: bookedMonth,
+              month,
+              delta,
+              reason: input.reason,
+            },
+          },
         );
         booked++;
       }
     }
-    if (booked) this.logger.log(`retro adjustment "${input.reason}": ${booked} shop-months`);
+    if (booked)
+      this.logger.log(
+        `retro adjustment "${input.reason}": ${booked} shop-months`,
+      );
     return booked;
   }
 }

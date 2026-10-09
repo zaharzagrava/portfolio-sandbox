@@ -53,7 +53,7 @@ export class ConfigUtilsService {
       configValues[key as keyof T] = this.getConfigVariable(
         configMeta.name,
         srcs,
-      ) as T[keyof T];
+      );
     }
 
     // Post-process
@@ -81,7 +81,10 @@ export class ConfigUtilsService {
     });
 
     if (error) {
-      throw new Error(`Config validation error: ${error.message}`);
+      // Keys and the rule that failed, never values: joi messages can quote the offending value (a secret).
+      throw new Error(
+        `Config validation error: ${error.details.map((d) => `${d.path.join('.')} (${d.type})`).join('; ')}`,
+      );
     }
 
     return configValues as T;

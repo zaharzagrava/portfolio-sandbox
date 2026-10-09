@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { ApiConfigService } from '@app/common/config/api-config.service';
-import { HttpRequestError, ResilientHttpClient } from '@app/infrastructure/http-client/resilient-http-client';
+import { ApiConfigService } from '@app/common/config';
+import { ResilientHttpClient } from '@app/infrastructure/http-client';
 
 export interface CoreProduct {
   id: string;
@@ -21,17 +21,32 @@ export interface CoreProduct {
  */
 @Injectable()
 export class CoreClient {
-  private readonly http = new ResilientHttpClient('core');
+  private readonly http = ResilientHttpClient.create({
+    name: 'core',
+    internal: true,
+  });
   private readonly base: string;
 
   constructor(config: ApiConfigService) {
-    this.base = (config.get('core_internal_url') || 'http://localhost:8000').replace(/\/$/, '');
+    this.base = (
+      config.get('core_internal_url') || 'http://localhost:8000'
+    ).replace(/\/$/, '');
   }
 
-  async get<T>(path: string, { auth, timeoutMs = 1_000, signal }: { auth?: string; timeoutMs?: number; signal?: AbortSignal } = {}): Promise<T> {
-    const res = await this.http.requestJson<T>(`${this.base}/api${path}`, { headers: auth ? { authorization: auth } : {}, timeoutMs, maxRetries: 0, signal });
-    if (res.status === 404) throw new HttpRequestError('not found', 404);
-    if (res.status >= 400) throw new HttpRequestError(`core ${path} → ${res.status}`, res.status);
+  async get<T>(
+    path: string,
+    {
+      auth,
+      timeoutMs = 1_000,
+      signal,
+    }: { auth?: string; timeoutMs?: number; signal?: AbortSignal } = {},
+  ): Promise<T> {
+    const res = await this.http.requestJson<T>(`${this.base}/api${path}`, {
+      headers: auth ? { authorization: auth } : {},
+      timeoutMs,
+      maxAttempts: 1,
+      signal,
+    });
     return res.body;
   }
 
@@ -40,10 +55,16 @@ export class CoreClient {
   }
 
   products(ids: string[]) {
-    return this.get<(CoreProduct | null)[]>(`/batch/products?ids=${ids.join(',')}`, { timeoutMs: 800 });
+    return this.get<(CoreProduct | null)[]>(
+      `/batch/products?ids=${ids.join(',')}`,
+      { timeoutMs: 800 },
+    );
   }
 
   shops(ids: string[]) {
-    return this.get<({ id: string; name: string; slug: string } | null)[]>(`/batch/shops?ids=${ids.join(',')}`, { timeoutMs: 500 });
+    return this.get<({ id: string; name: string; slug: string } | null)[]>(
+      `/batch/shops?ids=${ids.join(',')}`,
+      { timeoutMs: 500 },
+    );
   }
 }

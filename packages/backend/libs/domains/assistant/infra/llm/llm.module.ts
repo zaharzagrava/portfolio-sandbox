@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { ApiConfigService } from '@app/common/config/api-config.service';
+import { ApiConfigService } from '@app/common/config';
 import { LLM_PROVIDER } from './llm-provider';
 import { AnthropicLlmProvider } from './anthropic.provider';
 import { ScriptedLlmProvider } from './scripted.provider';

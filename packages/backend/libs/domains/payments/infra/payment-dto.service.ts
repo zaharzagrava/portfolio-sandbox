@@ -6,8 +6,11 @@ import {
 } from '@nestjs/common';
 import { Transaction, WhereOptions } from 'sequelize';
 import { InjectModel } from '@nestjs/sequelize';
-import { Fatal_NotFoundError } from '@app/common/errors/error.types';
-import Payment, { PaymentScope, PaymentWithAllFilters } from './models/payment.model';
+import { Fatal_NotFoundError } from '@app/common/errors';
+import Payment, {
+  PaymentScope,
+  PaymentWithAllFilters,
+} from './models/payment.model';
 
 @Injectable()
 export class PaymentDtoService {
@@ -15,7 +18,7 @@ export class PaymentDtoService {
 
   constructor(
     @InjectModel(Payment) private readonly paymentModel: typeof Payment,
-  ) { }
+  ) {}
 
   public countAll(
     params?: PaymentWithAllFilters,
@@ -53,7 +56,6 @@ export class PaymentDtoService {
         transaction: tx,
       });
   }
-
 
   public async requestPaymentOptional({
     params,
@@ -100,7 +102,10 @@ export class PaymentDtoService {
     const rawPayments = await this.findOne(processedParams, tx);
 
     if (!rawPayments) {
-      throw new Fatal_NotFoundError({ detail: `Payment ${params.id} not found`, title: 'Payment not found' });
+      throw new Fatal_NotFoundError({
+        detail: `Payment ${params.id} not found`,
+        title: 'Payment not found',
+      });
     }
 
     return rawPayments;
@@ -160,11 +165,17 @@ export class PaymentDtoService {
     });
 
     if (_ === 0) {
-      throw new Fatal_NotFoundError({ detail: 'Payment is not updated', title: 'Payment is not updated' });
+      throw new Fatal_NotFoundError({
+        detail: 'Payment is not updated',
+        title: 'Payment is not updated',
+      });
     }
 
     if (!payment) {
-      throw new Fatal_NotFoundError({ detail: 'Payment is not updated', title: 'Payment is not updated' });
+      throw new Fatal_NotFoundError({
+        detail: 'Payment is not updated',
+        title: 'Payment is not updated',
+      });
     }
 
     return payment;

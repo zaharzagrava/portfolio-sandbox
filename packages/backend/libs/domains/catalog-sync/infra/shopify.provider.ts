@@ -1,6 +1,10 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
-import { ResilientHttpClient } from '@app/infrastructure/http-client/resilient-http-client';
-import { CommerceProvider, NormalizedProduct, Page } from '../domain/provider.port';
+import { ResilientHttpClient } from '@app/infrastructure/http-client';
+import {
+  CommerceProvider,
+  NormalizedProduct,
+  Page,
+} from '../domain/provider.port';
 
 const API = '2024-10';
 
@@ -11,7 +15,12 @@ interface ShopifyProduct {
   vendor: string;
   product_type: string;
   updated_at: string;
-  variants: { id: number; price: string; inventory_quantity: number; inventory_item_id: number }[];
+  variants: {
+    id: number;
+    price: string;
+    inventory_quantity: number;
+    inventory_item_id: number;
+  }[];
 }
 
 export interface ShopifyCredentials {
@@ -29,7 +38,10 @@ export interface ShopifyCredentials {
  */
 export class ShopifyProvider implements CommerceProvider {
   readonly name = 'shopify' as const;
-  private readonly http = new ResilientHttpClient('shopify');
+  private readonly http = ResilientHttpClient.create({
+    name: 'shopify',
+    retry: { profile: 'background', maxAttempts: 4 },
+  });
 
   constructor(
     private readonly shopDomain: string,
@@ -37,16 +49,32 @@ export class ShopifyProvider implements CommerceProvider {
     private readonly beforeRequest: () => Promise<void>,
   ) {}
 
-  async listUpdatedSince(since: Date | null, cursor: string | null): Promise<Page> {
-    const params = cursor ? `page_info=${encodeURIComponent(cursor)}&limit=250` : `limit=250&order=updated_at+asc${since ? `&updated_at_min=${since.toISOString()}` : ''}`;
-    const res = await this.request<{ products: ShopifyProduct[] }>('GET', `/products.json?${params}`);
+  async listUpdatedSince(
+    since: Date | null,
+    cursor: string | null,
+  ): Promise<Page> {
+    const params = cursor
+      ? `page_info=${encodeURIComponent(cursor)}&limit=250`
+      : `limit=250&order=updated_at+asc${since ? `&updated_at_min=${since.toISOString()}` : ''}`;
+    const res = await this.request<{ products: ShopifyProduct[] }>(
+      'GET',
+      `/products.json?${params}`,
+    );
     const link = String(res.headers.link ?? '');
-    const next = /<[^>]*[?&]page_info=([^&>]+)[^>]*>;\s*rel="next"/.exec(link)?.[1] ?? null;
-    return { items: res.body.products, nextCursor: next ? decodeURIComponent(next) : null };
+    const next =
+      /<[^>]*[?&]page_info=([^&>]+)[^>]*>;\s*rel="next"/.exec(link)?.[1] ??
+      null;
+    return {
+      items: res.body.products,
+      nextCursor: next ? decodeURIComponent(next) : null,
+    };
   }
 
   async get(externalId: string) {
-    const res = await this.request<{ product: ShopifyProduct }>('GET', `/products/${externalId}.json`).catch((e: { status?: number }) => {
+    const res = await this.request<{ product: ShopifyProduct }>(
+      'GET',
+      `/products/${externalId}.json`,
+    ).catch((e: { status?: number }) => {
       if (e.status === 404) return null;
       throw e;
     });
@@ -59,7 +87,10 @@ export class ShopifyProvider implements CommerceProvider {
     return NormalizedProduct.parse({
       externalId: String(p.id),
       title: p.title,
-      description: (p.body_html ?? '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim(),
+      description: (p.body_html ?? '')
+        .replace(/<[^>]+>/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim(),
       priceMinor: variant ? Math.round(Number(variant.price) * 100) : NaN,
       stock: variant?.inventory_quantity,
       category: p.product_type || 'uncategorized',
@@ -70,17 +101,29 @@ export class ShopifyProvider implements CommerceProvider {
   }
 
   async setStock(product: NormalizedProduct, stock: number) {
-    await this.request('POST', '/inventory_levels/set.json', { location_id: Number(this.creds.locationId), inventory_item_id: Number(product.writeBack.inventoryItemId), available: stock });
+    await this.request('POST', '/inventory_levels/set.json', {
+      location_id: Number(this.creds.locationId),
+      inventory_item_id: Number(product.writeBack.inventoryItemId),
+      available: stock,
+    });
   }
 
   async listAllIds(): Promise<string[]> {
     const ids: string[] = [];
     let cursor: string | null = null;
     do {
-      const params: string = cursor ? `page_info=${encodeURIComponent(cursor)}&limit=250&fields=id` : 'limit=250&fields=id';
-      const res = await this.request<{ products: { id: number }[] }>('GET', `/products.json?${params}`);
+      const params: string = cursor
+        ? `page_info=${encodeURIComponent(cursor)}&limit=250&fields=id`
+        : 'limit=250&fields=id';
+      const res = await this.request<{ products: { id: number }[] }>(
+        'GET',
+        `/products.json?${params}`,
+      );
       ids.push(...res.body.products.map((p) => String(p.id)));
-      cursor = /<[^>]*[?&]page_info=([^&>]+)[^>]*>;\s*rel="next"/.exec(String(res.headers.link ?? ''))?.[1] ?? null;
+      cursor =
+        /<[^>]*[?&]page_info=([^&>]+)[^>]*>;\s*rel="next"/.exec(
+          String(res.headers.link ?? ''),
+        )?.[1] ?? null;
     } while (cursor);
     return ids;
   }
@@ -88,18 +131,32 @@ export class ShopifyProvider implements CommerceProvider {
   /** `X-Shopify-Hmac-Sha256` = base64 HMAC-SHA256(app secret, raw body). */
   verifyWebhook(rawBody: Buffer, headers: Record<string, string | undefined>) {
     const given = Buffer.from(headers['x-shopify-hmac-sha256'] ?? '');
-    const expected = Buffer.from(createHmac('sha256', this.creds.webhookSecret).update(rawBody).digest('base64'));
+    const expected = Buffer.from(
+      createHmac('sha256', this.creds.webhookSecret)
+        .update(rawBody)
+        .digest('base64'),
+    );
     return given.length === expected.length && timingSafeEqual(given, expected);
   }
 
-  private async request<T>(method: 'GET' | 'POST', path: string, body?: object) {
+  private async request<T>(
+    method: 'GET' | 'POST',
+    path: string,
+    body?: object,
+  ) {
     await this.beforeRequest(); // per-credential token bucket (fleet-wide, Redis)
-    return this.http.requestJson<T>(`https://${this.shopDomain}/admin/api/${API}${path}`, {
-      method,
-      headers: { 'X-Shopify-Access-Token': this.creds.accessToken, 'content-type': 'application/json' },
-      body: body ? JSON.stringify(body) : undefined,
-      idempotent: method === 'GET' || path.includes('inventory_levels/set'), // "set" (not adjust) is idempotent
-      timeoutMs: 15_000,
-    });
+    return this.http.requestJson<T>(
+      `https://${this.shopDomain}/admin/api/${API}${path}`,
+      {
+        method,
+        headers: {
+          'X-Shopify-Access-Token': this.creds.accessToken,
+          'content-type': 'application/json',
+        },
+        body: body ? JSON.stringify(body) : undefined,
+        idempotent: method === 'GET' || path.includes('inventory_levels/set'), // "set" (not adjust) is idempotent
+        timeoutMs: 15_000,
+      },
+    );
   }
 }

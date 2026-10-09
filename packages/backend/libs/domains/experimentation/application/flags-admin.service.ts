@@ -1,9 +1,18 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectConnection } from '@nestjs/sequelize';
 import { QueryTypes, Sequelize } from 'sequelize';
 import { RedisService } from '@app/infrastructure/redis/redis.service';
 import { FlagDefinition, validateFlag } from '../domain/evaluator';
-import { evalCountKey, loadFlags, RULESET_CHANNEL, RULESET_KEY } from '../infra/flags.client';
+import {
+  evalCountKey,
+  loadFlags,
+  RULESET_CHANNEL,
+  RULESET_KEY,
+} from '../infra/flags.client';
 
 export interface FlagInput extends Omit<FlagDefinition, 'version' | 'key'> {
   description?: string;
@@ -31,14 +40,21 @@ export class FlagsAdminService {
   ) {}
 
   list() {
-    return this.sequelize.query(`SELECT * FROM "FeatureFlag" ORDER BY key`, { type: QueryTypes.SELECT });
+    return this.sequelize.query(`SELECT * FROM "FeatureFlag" ORDER BY key`, {
+      type: QueryTypes.SELECT,
+    });
   }
 
   async upsert(key: string, input: FlagInput, actorId: string) {
     const errors = validateFlag({ key, ...input });
-    if (errors.length) throw new BadRequestException({ message: 'Invalid flag', errors });
+    if (errors.length)
+      throw new BadRequestException({ message: 'Invalid flag', errors });
+    // S54 T037 audit: explicit unit of work, opens its own transaction by design; no network I/O inside.
     await this.sequelize.transaction(async (transaction) => {
-      const [before] = await this.sequelize.query(`SELECT * FROM "FeatureFlag" WHERE key = :key FOR UPDATE`, { type: QueryTypes.SELECT, replacements: { key }, transaction });
+      const [before] = await this.sequelize.query(
+        `SELECT * FROM "FeatureFlag" WHERE key = :key FOR UPDATE`,
+        { type: QueryTypes.SELECT, replacements: { key }, transaction },
+      );
       const [after] = await this.sequelize.query(
         `INSERT INTO "FeatureFlag" (key, description, enabled, variants, "defaultVariant", "offVariant", rules, "bucketBy", owner, "clientSide", "expiresAt")
          VALUES (:key, :description, :enabled, CAST(:variants AS jsonb), :defaultVariant, :offVariant, CAST(:rules AS jsonb), :bucketBy, :owner, :clientSide, :expiresAt)
@@ -64,7 +80,14 @@ export class FlagsAdminService {
           transaction,
         },
       );
-      await this.audit(key, actorId, before ? 'update' : 'create', before ?? null, after, transaction);
+      await this.audit(
+        key,
+        actorId,
+        before ? 'update' : 'create',
+        before ?? null,
+        after,
+        transaction,
+      );
     });
     await this.publish();
     return this.get(key);
@@ -72,38 +95,71 @@ export class FlagsAdminService {
 
   /** Kill switch: one call, propagated to every process within ~1 s via push. */
   async kill(key: string, actorId: string) {
+    // S54 T037 audit: explicit unit of work, opens its own transaction by design; no network I/O inside.
     await this.sequelize.transaction(async (transaction) => {
-      const [before] = await this.sequelize.query(`SELECT * FROM "FeatureFlag" WHERE key = :key FOR UPDATE`, { type: QueryTypes.SELECT, replacements: { key }, transaction });
+      const [before] = await this.sequelize.query(
+        `SELECT * FROM "FeatureFlag" WHERE key = :key FOR UPDATE`,
+        { type: QueryTypes.SELECT, replacements: { key }, transaction },
+      );
       if (!before) throw new NotFoundException('Unknown flag');
-      const [after] = await this.sequelize.query(`UPDATE "FeatureFlag" SET enabled = false, version = version + 1, "updatedAt" = now() WHERE key = :key RETURNING *`, {
-        type: QueryTypes.SELECT,
-        replacements: { key },
-        transaction,
-      });
+      const [after] = await this.sequelize.query(
+        `UPDATE "FeatureFlag" SET enabled = false, version = version + 1, "updatedAt" = now() WHERE key = :key RETURNING *`,
+        {
+          type: QueryTypes.SELECT,
+          replacements: { key },
+          transaction,
+        },
+      );
       await this.audit(key, actorId, 'kill', before, after, transaction);
     });
     await this.publish();
   }
 
   async get(key: string) {
-    const [flag] = await this.sequelize.query(`SELECT * FROM "FeatureFlag" WHERE key = :key`, { type: QueryTypes.SELECT, replacements: { key } });
+    const [flag] = await this.sequelize.query(
+      `SELECT * FROM "FeatureFlag" WHERE key = :key`,
+      { type: QueryTypes.SELECT, replacements: { key } },
+    );
     if (!flag) throw new NotFoundException('Unknown flag');
     return flag;
   }
 
   history(key: string) {
-    return this.sequelize.query(`SELECT "actorId", action, before, after, at FROM "FlagAudit" WHERE "flagKey" = :key ORDER BY at DESC LIMIT 100`, { type: QueryTypes.SELECT, replacements: { key } });
+    return this.sequelize.query(
+      `SELECT "actorId", action, before, after, at FROM "FlagAudit" WHERE "flagKey" = :key ORDER BY at DESC LIMIT 100`,
+      { type: QueryTypes.SELECT, replacements: { key } },
+    );
   }
 
   /** Flags are tech debt: expired ones, and ones nobody evaluated in 14 days. */
   async stale(days = 14) {
-    const flags = await this.sequelize.query<{ key: string; owner: string; expiresAt: string | null; updatedAt: string }>(`SELECT key, owner, "expiresAt", "updatedAt" FROM "FeatureFlag"`, { type: QueryTypes.SELECT });
+    const flags = await this.sequelize.query<{
+      key: string;
+      owner: string;
+      expiresAt: string | null;
+      updatedAt: string;
+    }>(`SELECT key, owner, "expiresAt", "updatedAt" FROM "FeatureFlag"`, {
+      type: QueryTypes.SELECT,
+    });
     const pipeline = this.redis.client.pipeline();
-    for (let i = 0; i < days; i++) pipeline.hgetall(evalCountKey(new Date(Date.now() - i * 86_400_000).toISOString().slice(0, 10)));
+    for (let i = 0; i < days; i++)
+      pipeline.hgetall(
+        evalCountKey(
+          new Date(Date.now() - i * 86_400_000).toISOString().slice(0, 10),
+        ),
+      );
     const totals = new Map<string, number>();
-    for (const [, counts] of (await pipeline.exec()) ?? []) for (const [k, n] of Object.entries((counts ?? {}) as Record<string, string>)) totals.set(k, (totals.get(k) ?? 0) + Number(n));
+    for (const [, counts] of (await pipeline.exec()) ?? [])
+      for (const [k, n] of Object.entries(
+        (counts ?? {}) as Record<string, string>,
+      ))
+        totals.set(k, (totals.get(k) ?? 0) + Number(n));
     return flags
-      .map((f) => ({ ...f, evaluations: totals.get(f.key) ?? 0, expired: !!f.expiresAt && Date.parse(f.expiresAt) < Date.now() }))
+      .map((f) => ({
+        ...f,
+        evaluations: totals.get(f.key) ?? 0,
+        expired: !!f.expiresAt && Date.parse(f.expiresAt) < Date.now(),
+      }))
       .filter((f) => f.expired || f.evaluations === 0);
   }
 
@@ -111,14 +167,37 @@ export class FlagsAdminService {
   async publish(): Promise<number> {
     const version = await this.redis.client.incr('flags:ruleset-version');
     const flags = await loadFlags(this.sequelize);
-    await this.redis.client.eval(PUBLISH_IF_NEWER, 2, RULESET_KEY, RULESET_CHANNEL, JSON.stringify({ version, flags }), version);
+    await this.redis.client.eval(
+      PUBLISH_IF_NEWER,
+      2,
+      RULESET_KEY,
+      RULESET_CHANNEL,
+      JSON.stringify({ version, flags }),
+      version,
+    );
     return version;
   }
 
-  private audit(flagKey: string, actorId: string, action: string, before: object | null, after: object, transaction: import('sequelize').Transaction) {
-    return this.sequelize.query(`INSERT INTO "FlagAudit" ("flagKey", "actorId", action, before, after) VALUES (:flagKey, :actorId, :action, CAST(:before AS jsonb), CAST(:after AS jsonb))`, {
-      replacements: { flagKey, actorId, action, before: before ? JSON.stringify(before) : null, after: JSON.stringify(after) },
-      transaction,
-    });
+  private audit(
+    flagKey: string,
+    actorId: string,
+    action: string,
+    before: object | null,
+    after: object,
+    transaction: import('sequelize').Transaction,
+  ) {
+    return this.sequelize.query(
+      `INSERT INTO "FlagAudit" ("flagKey", "actorId", action, before, after) VALUES (:flagKey, :actorId, :action, CAST(:before AS jsonb), CAST(:after AS jsonb))`,
+      {
+        replacements: {
+          flagKey,
+          actorId,
+          action,
+          before: before ? JSON.stringify(before) : null,
+          after: JSON.stringify(after),
+        },
+        transaction,
+      },
+    );
   }
 }

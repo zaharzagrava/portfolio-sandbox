@@ -4,7 +4,7 @@ import Outbox from './outbox.model';
 import { DbUtilsService } from '@app/infrastructure/database/db-utils/db-utils.service';
 import { KafkaProducerService } from '@app/infrastructure/kafka/kafka-producer.service';
 import { CronService } from '@app/infrastructure/jobs/cron-module/cron.service';
-import { ApiConfigService } from '@app/common/config/api-config.service';
+import { ApiConfigService } from '@app/common/config';
 
 const BATCH_SIZE = 50;
 const BASE_BACKOFF_MS = 1000;
@@ -38,7 +38,9 @@ export class OutboxPublisherService implements OnModuleInit {
   onModuleInit() {
     // With Debezium streaming the WAL (infra/debezium), polling would double-publish.
     if (this.configService.get('outbox_relay') === 'cdc') {
-      this.l.log('OUTBOX_RELAY=cdc - poller disabled, Debezium relays the outbox');
+      this.l.log(
+        'OUTBOX_RELAY=cdc - poller disabled, Debezium relays the outbox',
+      );
       return;
     }
 
@@ -73,7 +75,8 @@ export class OutboxPublisherService implements OnModuleInit {
 
     // Keep per-key order within the batch: RETURNING order is unspecified.
     const dueRows = (rows as unknown as DueRow[]).sort(
-      (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+      (a, b) =>
+        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
     );
 
     for (const row of dueRows) {
@@ -84,7 +87,10 @@ export class OutboxPublisherService implements OnModuleInit {
   private async publishOne(row: DueRow): Promise<void> {
     // Domain events are keyed by aggregate (per-aggregate ordering); legacy payment rows by idempotency key.
     const key =
-      row.aggregateId ?? row.payload?.idempotency_key ?? row.payload?.idempotencyKey ?? row.id;
+      row.aggregateId ??
+      row.payload?.idempotency_key ??
+      row.payload?.idempotencyKey ??
+      row.id;
 
     try {
       await this.kafkaProducerService.send({
@@ -103,7 +109,10 @@ export class OutboxPublisherService implements OnModuleInit {
       );
 
       // Exponential in the number of failed attempts (was a constant 2 ** 0), capped.
-      const backoffMs = Math.min(BASE_BACKOFF_MS * 2 ** row.attempts, MAX_BACKOFF_MS);
+      const backoffMs = Math.min(
+        BASE_BACKOFF_MS * 2 ** row.attempts,
+        MAX_BACKOFF_MS,
+      );
       const jitterMs = Math.floor(Math.random() * 500);
 
       await this.outboxModel.sequelize!.query(

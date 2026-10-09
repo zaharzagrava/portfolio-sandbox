@@ -5,7 +5,7 @@ import Outbox from './outbox.model';
 import { OutboxPublisherService } from './outbox-publisher.service';
 import { KafkaProducerModule } from '@app/infrastructure/kafka/kafka-producer.module';
 import { CronModule } from '@app/infrastructure/jobs/cron-module/cron.module';
-import { ApiConfigModule } from '@app/common/config/api-config.module';
+import { ApiConfigModule } from '@app/common/config';
 
 /**
  * Separate from OutboxModule deliberately: OutboxService (writing rows) is
@@ -25,4 +25,4 @@ import { ApiConfigModule } from '@app/common/config/api-config.module';
   ],
   providers: [OutboxPublisherService],
 })
-export class OutboxPublisherModule { }
+export class OutboxPublisherModule {}

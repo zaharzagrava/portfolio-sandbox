@@ -4,7 +4,7 @@ import { ChatService } from './application/chat.service';
 import { ChatDtoModule } from './chat-dto.module';
 import { ProductDtoModule } from '@app/domains/catalog';
 import { RedisPubSubModule } from '@app/infrastructure/redis-pubsub/redis-pubsub.module';
-import { ApiConfigModule } from '@app/common/config/api-config.module';
+import { ApiConfigModule } from '@app/common/config';
 import { DbUtilsModule } from '@app/infrastructure/database/db-utils/db-utils.module';
 import { AuthModule } from '@app/domains/identity';
 

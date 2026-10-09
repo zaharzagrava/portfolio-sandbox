@@ -40,10 +40,16 @@ export const DOMAINS = [
 export type Domain = (typeof DOMAINS)[number];
 
 /** IX.3 technical allowlist owners. Adding one requires a constitution amendment. */
-export const INFRASTRUCTURE_OWNERS = ['outbox', 'idempotency', 'jobs', 'database'] as const;
+export const INFRASTRUCTURE_OWNERS = [
+  'outbox',
+  'idempotency',
+  'jobs',
+  'database',
+] as const;
 export type InfrastructureOwner = (typeof INFRASTRUCTURE_OWNERS)[number];
 
-export type Owner = `domain:${Domain}` | `infrastructure:${InfrastructureOwner}`;
+export type Owner =
+  `domain:${Domain}` | `infrastructure:${InfrastructureOwner}`;
 
 export const OWNERSHIP = {
   // identity
@@ -168,6 +174,7 @@ export const OWNERSHIP = {
   // IX.3 technical allowlist
   Outbox: 'infrastructure:outbox',
   ProcessedWebhookEvent: 'infrastructure:idempotency', // inbox / processed-events role
+  IdempotencyKey: 'infrastructure:idempotency', // S54 request idempotency facility
   Job: 'infrastructure:jobs',
   JobKey: 'infrastructure:jobs',
   JobSchedule: 'infrastructure:jobs',
@@ -179,6 +186,8 @@ export type Table = keyof typeof OWNERSHIP;
 /** Tables created by an old migration and dropped by a later one. */
 export const RETIRED_TABLES = ['Inventory'] as const;
 
-export const ownerOf = (table: string): Owner | undefined => (OWNERSHIP as Record<string, Owner>)[table];
+export const ownerOf = (table: string): Owner | undefined =>
+  (OWNERSHIP as Record<string, Owner>)[table];
 
-export const ownedBy = (owner: Owner): Table[] => (Object.keys(OWNERSHIP) as Table[]).filter((t) => OWNERSHIP[t] === owner);
+export const ownedBy = (owner: Owner): Table[] =>
+  (Object.keys(OWNERSHIP) as Table[]).filter((t) => OWNERSHIP[t] === owner);

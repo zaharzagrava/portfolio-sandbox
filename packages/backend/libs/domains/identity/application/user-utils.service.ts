@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { UserRawDto } from '../api/users.dto';
 import type { RequestWithUser } from '../api/request-with-user';
-import { NotFoundError } from '@app/common/errors/error.types';
+import { NotFoundError } from '@app/common/errors';
 
 @Injectable()
 export class UserUtilsService {

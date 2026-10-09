@@ -3,8 +3,8 @@ import { NestFactory } from '@nestjs/core';
 import { CoreModule } from './core.module';
 import { Environment } from '@app/common/types';
 import { INestApplication } from '@nestjs/common';
-import { configureHttpApp } from '@app/infrastructure/platform/bootstrap-http';
-import { ApiConfigService } from '@app/common/config/api-config.service';
+import { configureHttpApp } from '@app/infrastructure/platform';
+import { ApiConfigService } from '@app/common/config';
 
 import Sentry from '@sentry/nestjs';
 import { nodeProfilingIntegration } from '@sentry/profiling-node';

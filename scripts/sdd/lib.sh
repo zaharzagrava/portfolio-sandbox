@@ -131,11 +131,29 @@ template_for() {
   esac
 }
 
-# for_each_capability, re-sorted by implement-order.txt (IDs not listed there come last, in catalog order).
-# (implement-specs.sh still carries its own copy; remove that one after the current run.)
+# ordered_capabilities [ID|domain ...]: for_each_capability, re-sorted by the order file (IDs it does not list come last, in
+# catalog order). The file is scripts/sdd/orders/$ORDER.txt (default by-layer; by-flow builds vertical slices) or ORDER_FILE.
+# A line "!STOP <label> <message>" is a checkpoint: with no ID filter it comes out as the row  !STOP<TAB>label<TAB>-<TAB>message<TAB>-
+ORDER_FILE="${ORDER_FILE:-$ROOT/scripts/sdd/orders/${ORDER:-by-layer}.txt}"
 ordered_capabilities() {
-  for_each_capability "$@" | awk -F'\t' -v order="$ROOT/scripts/sdd/implement-order.txt" '
-    BEGIN { while ((getline line < order) > 0) { if (line ~ /^#/ || line ~ /^[[:space:]]*$/) continue; pos[line] = ++n } }
+  [[ -f "$ORDER_FILE" ]] || { echo "order file not found: $ORDER_FILE" >&2; return 1; }
+  for_each_capability "$@" | awk -F'\t' -v order="$ORDER_FILE" -v withstops="$#" '
+    BEGIN {
+      while ((getline line < order) > 0) {
+        if (line ~ /^#/ || line ~ /^[[:space:]]*$/) continue
+        n++
+        if (line ~ /^!STOP[[:space:]]/) { stops[n] = line; continue }
+        pos[line] = n
+      }
+    }
     { print (($1 in pos) ? pos[$1] : 100000 + NR) "\t" $0 }
+    END {
+      if (withstops != 0) exit
+      for (i in stops) {
+        split(stops[i], w, /[[:space:]]+/); label = w[2]
+        msg = stops[i]; sub(/^!STOP[[:space:]]+[^[:space:]]+[[:space:]]*/, "", msg); if (msg == "") msg = label
+        print (i - 0.5) "\t!STOP\t" label "\t-\t" msg "\t-"
+      }
+    }
   ' | sort -n -k1,1 | cut -f2-
 }

@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { ApiConfigModule } from '@app/common/config/api-config.module';
+import { ApiConfigModule } from '@app/common/config';
 import { AuthModule } from '@app/domains/identity';
 import { RedisModule } from '@app/infrastructure/redis/redis.module';
 import { RealtimeModule } from '@app/infrastructure/realtime/realtime.module';

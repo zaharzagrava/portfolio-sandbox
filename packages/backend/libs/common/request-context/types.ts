@@ -13,6 +13,12 @@ export interface AppClsStore extends ClsStore {
   roles?: string[];
   /** Admission / API-key / service identity, when not a user. */
   principalType?: 'user' | 'apiKey' | 'service' | 'anonymous';
+  /** Resolved client address (trusted-proxy aware). */
+  clientIp?: string;
+  /** Inbound W3C `traceparent`, forwarded to outbound calls. */
+  traceparent?: string;
+  /** Absolute deadline (epoch ms) outbound calls must not outlive. */
+  deadlineAt?: number;
 }
 
 export const REQUEST_ID_HEADER = 'x-request-id';

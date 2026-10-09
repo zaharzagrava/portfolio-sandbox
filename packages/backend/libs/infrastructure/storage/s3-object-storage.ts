@@ -14,8 +14,13 @@ import { Upload } from '@aws-sdk/lib-storage';
 import { createPresignedPost } from '@aws-sdk/s3-presigned-post';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import type { Readable } from 'node:stream';
-import { ApiConfigService } from '@app/common/config/api-config.service';
-import { MultipartUploadInit, ObjectStorage, PresignedPost, PresignPostOptions } from './object-storage.port';
+import { ApiConfigService } from '@app/common/config';
+import {
+  MultipartUploadInit,
+  ObjectStorage,
+  PresignedPost,
+  PresignPostOptions,
+} from './object-storage.port';
 
 @Injectable()
 export class S3ObjectStorage extends ObjectStorage {
@@ -25,8 +30,10 @@ export class S3ObjectStorage extends ObjectStorage {
   constructor(config: ApiConfigService) {
     super();
     const endpoint = config.get('s3_endpoint');
-    const accessKeyId = config.get('s3_access_key_id') ?? config.get('aws_access_key_id');
-    const secretAccessKey = config.get('s3_secret_access_key') ?? config.get('aws_secret_access_key');
+    const accessKeyId =
+      config.get('s3_access_key_id') ?? config.get('aws_access_key_id');
+    const secretAccessKey =
+      config.get('s3_secret_access_key') ?? config.get('aws_secret_access_key');
     this.bucket = config.get('media_bucket') ?? 'marketplace-media';
     this.client = new S3Client({
       region: config.get('aws_region') || 'eu-central-1',
@@ -40,7 +47,12 @@ export class S3ObjectStorage extends ObjectStorage {
    * Presigned POST (not PUT) because its policy can enforce content type and
    * max size server-side - a presigned PUT lets the client upload anything.
    */
-  async presignPost({ key, contentTypePrefix, maxBytes, expiresInSec = 600 }: PresignPostOptions): Promise<PresignedPost> {
+  async presignPost({
+    key,
+    contentTypePrefix,
+    maxBytes,
+    expiresInSec = 600,
+  }: PresignPostOptions): Promise<PresignedPost> {
     const { url, fields } = await createPresignedPost(this.client, {
       Bucket: this.bucket,
       Key: key,
@@ -50,21 +62,52 @@ export class S3ObjectStorage extends ObjectStorage {
       ],
       Expires: expiresInSec,
     });
-    return { url, fields, key, expiresAt: new Date(Date.now() + expiresInSec * 1000) };
+    return {
+      url,
+      fields,
+      key,
+      expiresAt: new Date(Date.now() + expiresInSec * 1000),
+    };
   }
 
-  async presignPutChecked(key: string, sha256Hex: string, contentLength: number, expiresInSec = 900) {
+  async presignPutChecked(
+    key: string,
+    sha256Hex: string,
+    contentLength: number,
+    expiresInSec = 900,
+  ) {
     const checksum = Buffer.from(sha256Hex, 'hex').toString('base64');
     const url = await getSignedUrl(
       this.client,
-      new PutObjectCommand({ Bucket: this.bucket, Key: key, ChecksumSHA256: checksum, ContentLength: contentLength }),
+      new PutObjectCommand({
+        Bucket: this.bucket,
+        Key: key,
+        ChecksumSHA256: checksum,
+        ContentLength: contentLength,
+      }),
       // Sign the checksum header so the client can't swap it.
-      { expiresIn: expiresInSec, signableHeaders: new Set(['x-amz-checksum-sha256', 'content-length']) },
+      {
+        expiresIn: expiresInSec,
+        signableHeaders: new Set(['x-amz-checksum-sha256', 'content-length']),
+      },
     );
-    return { url, headers: { 'x-amz-checksum-sha256': checksum, 'x-amz-sdk-checksum-algorithm': 'SHA256', 'content-length': String(contentLength) } };
+    return {
+      url,
+      headers: {
+        'x-amz-checksum-sha256': checksum,
+        'x-amz-sdk-checksum-algorithm': 'SHA256',
+        'content-length': String(contentLength),
+      },
+    };
   }
 
-  async presignGet(key: string, { expiresInSec = 300, downloadName }: { expiresInSec?: number; downloadName?: string } = {}) {
+  async presignGet(
+    key: string,
+    {
+      expiresInSec = 300,
+      downloadName,
+    }: { expiresInSec?: number; downloadName?: string } = {},
+  ) {
     return getSignedUrl(
       this.client,
       new GetObjectCommand({
@@ -77,16 +120,30 @@ export class S3ObjectStorage extends ObjectStorage {
     );
   }
 
-  async createMultipartUpload(key: string, contentType: string, parts: number, expiresInSec = 3600): Promise<MultipartUploadInit> {
+  async createMultipartUpload(
+    key: string,
+    contentType: string,
+    parts: number,
+    expiresInSec = 3600,
+  ): Promise<MultipartUploadInit> {
     const { UploadId } = await this.client.send(
-      new CreateMultipartUploadCommand({ Bucket: this.bucket, Key: key, ContentType: contentType }),
+      new CreateMultipartUploadCommand({
+        Bucket: this.bucket,
+        Key: key,
+        ContentType: contentType,
+      }),
     );
     const partUrls = await Promise.all(
       Array.from({ length: parts }, async (_, i) => ({
         partNumber: i + 1,
         url: await getSignedUrl(
           this.client,
-          new UploadPartCommand({ Bucket: this.bucket, Key: key, UploadId, PartNumber: i + 1 }),
+          new UploadPartCommand({
+            Bucket: this.bucket,
+            Key: key,
+            UploadId,
+            PartNumber: i + 1,
+          }),
           { expiresIn: expiresInSec },
         ),
       })),
@@ -94,25 +151,39 @@ export class S3ObjectStorage extends ObjectStorage {
     return { uploadId: UploadId!, key, partUrls };
   }
 
-  async completeMultipartUpload(key: string, uploadId: string, parts: { partNumber: number; etag: string }[]) {
+  async completeMultipartUpload(
+    key: string,
+    uploadId: string,
+    parts: { partNumber: number; etag: string }[],
+  ) {
     await this.client.send(
       new CompleteMultipartUploadCommand({
         Bucket: this.bucket,
         Key: key,
         UploadId: uploadId,
         MultipartUpload: {
-          Parts: [...parts].sort((a, b) => a.partNumber - b.partNumber).map((p) => ({ PartNumber: p.partNumber, ETag: p.etag })),
+          Parts: [...parts]
+            .sort((a, b) => a.partNumber - b.partNumber)
+            .map((p) => ({ PartNumber: p.partNumber, ETag: p.etag })),
         },
       }),
     );
   }
 
   async abortMultipartUpload(key: string, uploadId: string) {
-    await this.client.send(new AbortMultipartUploadCommand({ Bucket: this.bucket, Key: key, UploadId: uploadId }));
+    await this.client.send(
+      new AbortMultipartUploadCommand({
+        Bucket: this.bucket,
+        Key: key,
+        UploadId: uploadId,
+      }),
+    );
   }
 
   async getStream(key: string): Promise<Readable> {
-    const { Body } = await this.client.send(new GetObjectCommand({ Bucket: this.bucket, Key: key }));
+    const { Body } = await this.client.send(
+      new GetObjectCommand({ Bucket: this.bucket, Key: key }),
+    );
     return Body as Readable;
   }
 
@@ -120,7 +191,12 @@ export class S3ObjectStorage extends ObjectStorage {
   async put(key: string, body: Buffer | Readable, contentType: string) {
     await new Upload({
       client: this.client,
-      params: { Bucket: this.bucket, Key: key, Body: body, ContentType: contentType },
+      params: {
+        Bucket: this.bucket,
+        Key: key,
+        Body: body,
+        ContentType: contentType,
+      },
       queueSize: 4,
       partSize: 8 * 1024 * 1024,
     }).done();
@@ -128,8 +204,13 @@ export class S3ObjectStorage extends ObjectStorage {
 
   async head(key: string) {
     try {
-      const res = await this.client.send(new HeadObjectCommand({ Bucket: this.bucket, Key: key }));
-      return { size: Number(res.ContentLength ?? 0), contentType: res.ContentType };
+      const res = await this.client.send(
+        new HeadObjectCommand({ Bucket: this.bucket, Key: key }),
+      );
+      return {
+        size: Number(res.ContentLength ?? 0),
+        contentType: res.ContentType,
+      };
     } catch (error) {
       if ((error as { name?: string }).name === 'NotFound') return null;
       throw error;
@@ -137,6 +218,8 @@ export class S3ObjectStorage extends ObjectStorage {
   }
 
   async delete(key: string) {
-    await this.client.send(new DeleteObjectCommand({ Bucket: this.bucket, Key: key }));
+    await this.client.send(
+      new DeleteObjectCommand({ Bucket: this.bucket, Key: key }),
+    );
   }
 }

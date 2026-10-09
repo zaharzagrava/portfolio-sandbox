@@ -1,12 +1,21 @@
-import { Injectable, Logger, OnApplicationBootstrap, Optional } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  OnApplicationBootstrap,
+  Optional,
+} from '@nestjs/common';
 import { InjectConnection } from '@nestjs/sequelize';
 import { QueryTypes, Sequelize } from 'sequelize';
 import { hostname } from 'node:os';
 import { RedisService } from '@app/infrastructure/redis/redis.service';
-import { ShutdownRegistry } from '@app/infrastructure/lifecycle/shutdown-registry.service';
+import { ShutdownRegistry } from '@app/infrastructure/lifecycle';
 import { DomainEventsService } from '@app/infrastructure/events/domain-events.service';
 import { AuctionLeaderChanged } from '../application/events/auction-events';
-import { ACTIVE_AUCTIONS_KEY, BID_RELAY_GROUP, bidStreamKey } from '../application/auction.service';
+import {
+  ACTIVE_AUCTIONS_KEY,
+  BID_RELAY_GROUP,
+  bidStreamKey,
+} from '../application/auction.service';
 
 const BATCH = 500;
 
@@ -31,7 +40,11 @@ export class BidRelay implements OnApplicationBootstrap {
     private readonly events: DomainEventsService,
     @Optional() shutdown?: ShutdownRegistry,
   ) {
-    shutdown?.register({ name: 'auctions.bid-relay.stop', order: 10, run: () => this.stop() });
+    shutdown?.register({
+      name: 'auctions.bid-relay.stop',
+      order: 10,
+      run: () => this.stop(),
+    });
   }
 
   onApplicationBootstrap() {
@@ -49,14 +62,26 @@ export class BidRelay implements OnApplicationBootstrap {
     while (this.running) {
       let moved = 0;
       try {
-        for (const auctionId of await this.redis.client.smembers(ACTIVE_AUCTIONS_KEY)) {
+        for (const auctionId of await this.redis.client.smembers(
+          ACTIVE_AUCTIONS_KEY,
+        )) {
           const stream = bidStreamKey(auctionId);
           const cursor = drainedPending.has(stream) ? '>' : '0';
-          const res = (await this.redis.client.xreadgroup('GROUP', BID_RELAY_GROUP, this.consumer, 'COUNT', BATCH, 'STREAMS', stream, cursor)) as
-            | [string, [string, string[]][]][]
-            | null;
-          const entries = (res?.[0]?.[1] ?? []).filter(([, fields]) => fields !== null);
-          if (cursor === '0' && entries.length === 0) drainedPending.add(stream);
+          const res = (await this.redis.client.xreadgroup(
+            'GROUP',
+            BID_RELAY_GROUP,
+            this.consumer,
+            'COUNT',
+            BATCH,
+            'STREAMS',
+            stream,
+            cursor,
+          )) as [string, [string, string[]][]][] | null;
+          const entries = (res?.[0]?.[1] ?? []).filter(
+            ([, fields]) => fields !== null,
+          );
+          if (cursor === '0' && entries.length === 0)
+            drainedPending.add(stream);
           if (entries.length) {
             await this.flush(stream, entries);
             moved += entries.length;
@@ -74,8 +99,20 @@ export class BidRelay implements OnApplicationBootstrap {
       const f: Record<string, string> = {};
       for (let i = 0; i < fields.length; i += 2) f[fields[i]] = fields[i + 1];
       return { streamId: id, ...f };
-    }) as ({ streamId: string } & Record<'auctionId' | 'userId' | 'maxAmount' | 'outcome' | 'price' | 'leader' | 'endsAt' | 'version' | 'at', string>)[];
+    }) as ({ streamId: string } & Record<
+      | 'auctionId'
+      | 'userId'
+      | 'maxAmount'
+      | 'outcome'
+      | 'price'
+      | 'leader'
+      | 'endsAt'
+      | 'version'
+      | 'at',
+      string
+    >)[];
 
+    // S54 T037 audit: explicit unit of work, opens its own transaction by design; no network I/O inside.
     await this.sequelize.transaction(async (transaction) => {
       await this.sequelize.query(
         `INSERT INTO "Bid" ("auctionId", "userId", "maxAmount", outcome, "priceAfter", version, "createdAt")
@@ -97,7 +134,12 @@ export class BidRelay implements OnApplicationBootstrap {
       );
 
       const latest = new Map<string, (typeof bids)[number]>();
-      for (const b of bids) if (!latest.has(b.auctionId) || Number(b.version) > Number(latest.get(b.auctionId)!.version)) latest.set(b.auctionId, b);
+      for (const b of bids)
+        if (
+          !latest.has(b.auctionId) ||
+          Number(b.version) > Number(latest.get(b.auctionId)!.version)
+        )
+          latest.set(b.auctionId, b);
       for (const b of latest.values()) {
         // `prev` CTE: the row is locked and its OLD leader read in the same statement.
         const [changed] = (await this.sequelize.query(
@@ -108,24 +150,47 @@ export class BidRelay implements OnApplicationBootstrap {
            WHERE a.id = prev.id AND a.version < :version
            RETURNING prev."leaderId" AS "previousLeaderId", a."leaderId" AS "leaderId", a.version`,
           {
-            replacements: { price: b.price, leader: b.leader, endsAt: Number(b.endsAt), version: Number(b.version), count: bids.filter((x) => x.auctionId === b.auctionId).length, auctionId: b.auctionId },
+            replacements: {
+              price: b.price,
+              leader: b.leader,
+              endsAt: Number(b.endsAt),
+              version: Number(b.version),
+              count: bids.filter((x) => x.auctionId === b.auctionId).length,
+              auctionId: b.auctionId,
+            },
             transaction,
             type: QueryTypes.SELECT,
           },
-        )) as { previousLeaderId: string | null; leaderId: string | null; version: number }[];
+        )) as {
+          previousLeaderId: string | null;
+          leaderId: string | null;
+          version: number;
+        }[];
 
         // One "outbid" per relay batch per auction: leaders who led for only a few ms inside the
         // same batch aren't notified - they were outbid before any notification could matter.
-        if (changed?.previousLeaderId && changed.leaderId && changed.previousLeaderId !== changed.leaderId) {
+        if (
+          changed?.previousLeaderId &&
+          changed.leaderId &&
+          changed.previousLeaderId !== changed.leaderId
+        ) {
           await this.events.record(
-            AuctionLeaderChanged.create(b.auctionId, changed.version, { previousLeaderId: changed.previousLeaderId, leaderId: changed.leaderId, price: Number(b.price) }),
+            AuctionLeaderChanged.create(b.auctionId, changed.version, {
+              previousLeaderId: changed.previousLeaderId,
+              leaderId: changed.leaderId,
+              price: Number(b.price),
+            }),
             transaction,
           );
         }
       }
     });
 
-    await this.redis.client.xack(stream, BID_RELAY_GROUP, ...entries.map(([id]) => id));
+    await this.redis.client.xack(
+      stream,
+      BID_RELAY_GROUP,
+      ...entries.map(([id]) => id),
+    );
   }
 
   async stop() {
@@ -134,4 +199,5 @@ export class BidRelay implements OnApplicationBootstrap {
   }
 }
 
-const pgArray = (values: string[]) => `{${values.map((v) => `"${String(v).replace(/"/g, '\\"')}"`).join(',')}}`;
+const pgArray = (values: string[]) =>
+  `{${values.map((v) => `"${String(v).replace(/"/g, '\\"')}"`).join(',')}}`;

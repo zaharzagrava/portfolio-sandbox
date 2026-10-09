@@ -7,7 +7,7 @@ import StockReservation from './infra/models/stock-reservation.model';
 import FlashSale from './infra/models/flash-sale.model';
 import { ProductModel as Product } from '@app/domains/catalog';
 import { PaymentModel as Payment } from '@app/domains/payments';
-import { ApiConfigModule } from '@app/common/config/api-config.module';
+import { ApiConfigModule } from '@app/common/config';
 import { AuthModule } from '@app/domains/identity';
 import { StripeModule } from '@app/infrastructure/stripe/stripe.module';
 import { EventsModule } from '@app/infrastructure/events/events.module';
@@ -23,11 +23,28 @@ import { StripeWebhookController } from './api/stripe-webhook.controller';
 
 import { TenancyModule } from '@app/domains/tenancy';
 
-export const ORDER_MODELS = [BisOrder, BisOrderItem, ShopOrder, StockReservation, FlashSale, Product, Payment];
+export const ORDER_MODELS = [
+  BisOrder,
+  BisOrderItem,
+  ShopOrder,
+  StockReservation,
+  FlashSale,
+  Product,
+  Payment,
+];
 
 /** SD-19 HTTP side (core). Needs global Redis + Dynamo modules. */
 @Module({
-  imports: [ApiConfigModule, AuthModule, StripeModule, EventsModule, JobsModule, RealtimeModule, TenancyModule, SequelizeModule.forFeature(ORDER_MODELS)],
+  imports: [
+    ApiConfigModule,
+    AuthModule,
+    StripeModule,
+    EventsModule,
+    JobsModule,
+    RealtimeModule,
+    TenancyModule,
+    SequelizeModule.forFeature(ORDER_MODELS),
+  ],
   providers: [CartRepository, FlashStockService, OrderService, CheckoutService],
   exports: [OrderService, FlashStockService, CartRepository],
   controllers: [CartController, OrdersController, StripeWebhookController],

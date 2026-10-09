@@ -1,10 +1,12 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import * as joi from 'joi';
 import { Config, EnvConfig, SecretsManagerConfig } from './types';
 import * as path from 'path';
 import * as dotenv from 'dotenv';
 import { ConfigUtilsService } from './config-utils/config-utils.service';
 import { Environment, Environments } from '@app/common/types';
+import { isSecretKey } from '@app/common/logging/redaction';
+import { ConfigRules } from './config-rules';
 
 dotenv.config({
   /**
@@ -44,7 +46,7 @@ dotenv.config({
 export class ApiConfigService {
   protected config: Config;
 
-  constructor(private readonly configUtilsService: ConfigUtilsService) { }
+  constructor(private readonly configUtilsService: ConfigUtilsService) {}
 
   public async init() {
     const localConfigValues: EnvConfig =
@@ -78,6 +80,43 @@ export class ApiConfigService {
           port: {
             verify: joi.number().positive().required(),
             name: 'PORT',
+            postProcess: (v: string) => (v ? Number(v) : undefined),
+          },
+
+          management_port: {
+            verify: joi.number().positive().optional(),
+            name: 'MANAGEMENT_PORT',
+            postProcess: (v: string) => (v ? Number(v) : undefined),
+          },
+
+          shutdown_drain_delay_ms: {
+            verify: joi.number().integer().positive().optional(),
+            name: 'SHUTDOWN_DRAIN_DELAY_MS',
+            postProcess: (v: string) => (v ? Number(v) : undefined),
+          },
+          shutdown_request_drain_ms: {
+            verify: joi.number().integer().positive().optional(),
+            name: 'SHUTDOWN_REQUEST_DRAIN_MS',
+            postProcess: (v: string) => (v ? Number(v) : undefined),
+          },
+          shutdown_hard_timeout_ms: {
+            verify: joi.number().integer().positive().optional(),
+            name: 'SHUTDOWN_HARD_TIMEOUT_MS',
+            postProcess: (v: string) => (v ? Number(v) : undefined),
+          },
+          server_keep_alive_ms: {
+            verify: joi.number().integer().positive().optional(),
+            name: 'SERVER_KEEP_ALIVE_MS',
+            postProcess: (v: string) => (v ? Number(v) : undefined),
+          },
+          server_headers_timeout_ms: {
+            verify: joi.number().integer().positive().optional(),
+            name: 'SERVER_HEADERS_TIMEOUT_MS',
+            postProcess: (v: string) => (v ? Number(v) : undefined),
+          },
+          server_request_timeout_ms: {
+            verify: joi.number().integer().positive().optional(),
+            name: 'SERVER_REQUEST_TIMEOUT_MS',
             postProcess: (v: string) => (v ? Number(v) : undefined),
           },
 
@@ -250,6 +289,79 @@ export class ApiConfigService {
           load_shedding_lag_ms: {
             verify: joi.number().optional().empty(''),
             name: 'LOAD_SHEDDING_LAG_MS',
+            postProcess: (v: string) => (v ? Number(v) : undefined),
+          },
+          load_shedding_max_inflight: {
+            verify: joi.number().integer().min(1).optional().empty(''),
+            name: 'LOAD_SHEDDING_MAX_INFLIGHT',
+            postProcess: (v: string) => (v ? Number(v) : undefined),
+          },
+          log_level: {
+            verify: joi
+              .string()
+              .valid('trace', 'debug', 'info', 'warn', 'error')
+              .optional()
+              .empty(''),
+            name: 'LOG_LEVEL',
+          },
+          platform_currency: {
+            verify: joi.string().optional().allow(''),
+            name: 'PLATFORM_CURRENCY',
+          },
+          usercontent_origin: {
+            verify: joi.string().optional().allow(''),
+            name: 'USERCONTENT_ORIGIN',
+          },
+          trusted_proxies: {
+            verify: joi.string().optional().allow(''),
+            name: 'TRUSTED_PROXIES',
+          },
+          problem_type_base_url: {
+            verify: joi.string().optional().allow(''),
+            name: 'PROBLEM_TYPE_BASE_URL',
+          },
+          app_name: {
+            verify: joi.string().optional().allow(''),
+            name: 'APP',
+          },
+          db_pool_max: {
+            verify: joi.number().integer().min(0).optional().empty(''),
+            name: 'DB_POOL_MAX',
+            postProcess: (v: string) => (v ? Number(v) : undefined),
+          },
+          db_replica_pool_max: {
+            verify: joi.number().integer().min(0).optional().empty(''),
+            name: 'DB_REPLICA_POOL_MAX',
+            postProcess: (v: string) => (v ? Number(v) : undefined),
+          },
+          db_max_instances: {
+            verify: joi.number().integer().min(0).optional().empty(''),
+            name: 'DB_MAX_INSTANCES',
+            postProcess: (v: string) => (v ? Number(v) : undefined),
+          },
+          db_connection_limit: {
+            verify: joi.number().integer().min(0).optional().empty(''),
+            name: 'DB_CONNECTION_LIMIT',
+            postProcess: (v: string) => (v ? Number(v) : undefined),
+          },
+          db_reserved_connections: {
+            verify: joi.number().integer().min(0).optional().empty(''),
+            name: 'DB_RESERVED_CONNECTIONS',
+            postProcess: (v: string) => (v ? Number(v) : undefined),
+          },
+          db_statement_timeout_ms: {
+            verify: joi.number().integer().min(0).optional().empty(''),
+            name: 'DB_STATEMENT_TIMEOUT_MS',
+            postProcess: (v: string) => (v ? Number(v) : undefined),
+          },
+          db_idle_in_tx_timeout_ms: {
+            verify: joi.number().integer().min(0).optional().empty(''),
+            name: 'DB_IDLE_IN_TX_TIMEOUT_MS',
+            postProcess: (v: string) => (v ? Number(v) : undefined),
+          },
+          db_acquire_timeout_ms: {
+            verify: joi.number().integer().min(0).optional().empty(''),
+            name: 'DB_ACQUIRE_TIMEOUT_MS',
             postProcess: (v: string) => (v ? Number(v) : undefined),
           },
           cors_allowed_origins: {
@@ -440,10 +552,32 @@ export class ApiConfigService {
         })(),
       );
 
-    this.config = <Config>{
+    this.config = {
       ...localConfigValues,
       ...secretsMangerConfigValues,
     };
+
+    // Cross-field and capability rules: every violation in one error, naming keys and never values (S54 FR-077).
+    ConfigRules.assertValid(this.config as unknown as Record<string, unknown>, {
+      production: this.config.node_env === Environment.production,
+    });
+    this.logLoadedKeys();
+  }
+
+  /** Startup line: which keys are loaded and which of them are secrets (`[set]`), never a value (S54 AS-152). */
+  private logLoadedKeys(): void {
+    const entries = Object.entries(
+      this.config as unknown as Record<string, unknown>,
+    ).filter(([, value]) => value !== undefined && value !== '');
+    const secrets = entries
+      .filter(([key]) => isSecretKey(key))
+      .map(([key]) => `${key}=[set]`);
+    const plain = entries
+      .filter(([key]) => !isSecretKey(key))
+      .map(([key]) => key);
+    new Logger('Config').log(
+      `configuration loaded: keys [${plain.join(', ')}]; secrets [${secrets.join(', ')}]`,
+    );
   }
 
   public get<T extends keyof Config>(key: T): Config[T] {

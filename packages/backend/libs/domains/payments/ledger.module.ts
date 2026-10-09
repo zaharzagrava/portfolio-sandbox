@@ -1,8 +1,13 @@
 import { Module } from '@nestjs/common';
 import { FirebaseModule } from '@app/infrastructure/firebase/firebase.module';
-import { UserModel as User, AuthModule, UserUtilsModule, UsersDtoModule } from '@app/domains/identity';
+import {
+  UserModel as User,
+  AuthModule,
+  UserUtilsModule,
+  UsersDtoModule,
+} from '@app/domains/identity';
 import { SequelizeModule } from '@nestjs/sequelize';
-import { ApiConfigModule } from '@app/common/config/api-config.module';
+import { ApiConfigModule } from '@app/common/config';
 import { DbUtilsModule } from '@app/infrastructure/database/db-utils/db-utils.module';
 import { PaymentDtoModule } from './payment-dto.module';
 import Payment from './infra/models/payment.model';
@@ -24,4 +29,4 @@ import { EventsModule } from '@app/infrastructure/events/events.module';
   exports: [LedgerService],
   controllers: [],
 })
-export class LedgerModule { }
+export class LedgerModule {}

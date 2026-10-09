@@ -39,29 +39,56 @@ export class PaymentResolutionJobs implements OnApplicationBootstrap {
   ) {}
 
   async onApplicationBootstrap() {
-    await this.jobs.upsertSchedule({ name: 'payments.resolve-unknown', cron: '*/5 * * * *', jobType: 'payments.resolve-unknown', payload: {} });
+    await this.jobs.upsertSchedule({
+      name: 'payments.resolve-unknown',
+      cron: '*/5 * * * *',
+      jobType: 'payments.resolve-unknown',
+      payload: {},
+    });
   }
 
   @JobHandler('payments.resolve-unknown', { concurrency: 1, leaseMs: 120_000 })
   async resolve(): Promise<void> {
     const stuck = await this.paymentModel.findAll({
-      where: { status: PaymentStatus.UNKNOWN, updatedAt: { [Op.lt]: new Date(Date.now() - RESOLVE_AFTER_MS) } },
+      where: {
+        status: PaymentStatus.UNKNOWN,
+        updatedAt: { [Op.lt]: new Date(Date.now() - RESOLVE_AFTER_MS) },
+      },
       limit: 100,
     });
 
     for (const payment of stuck) {
-      const intent = await this.stripe.findPaymentIntentByIdempotencyKey(payment.idempotencyKey);
-      if (intent?.status === 'succeeded') await this.settle(payment, PaymentStatus.COMPLETED, intent.id);
-      else if (intent && ['canceled', 'requires_payment_method'].includes(intent.status)) await this.settle(payment, PaymentStatus.FAILED, intent.id);
-      else if (!intent && Date.now() - payment.createdAt.getTime() > GIVE_UP_AFTER_MS) await this.settle(payment, PaymentStatus.FAILED, null); // never reached Stripe
+      const intent = await this.stripe.findPaymentIntentByIdempotencyKey(
+        payment.idempotencyKey,
+      );
+      if (intent?.status === 'succeeded')
+        await this.settle(payment, PaymentStatus.COMPLETED, intent.id);
+      else if (
+        intent &&
+        ['canceled', 'requires_payment_method'].includes(intent.status)
+      )
+        await this.settle(payment, PaymentStatus.FAILED, intent.id);
+      else if (
+        !intent &&
+        Date.now() - payment.createdAt.getTime() > GIVE_UP_AFTER_MS
+      )
+        await this.settle(payment, PaymentStatus.FAILED, null); // never reached Stripe
     }
   }
 
-  private async settle(payment: Payment, status: PaymentStatus.COMPLETED | PaymentStatus.FAILED, providerRef: string | null) {
+  private async settle(
+    payment: Payment,
+    status: PaymentStatus.COMPLETED | PaymentStatus.FAILED,
+    providerRef: string | null,
+  ) {
+    // S54 T037 audit: explicit unit of work, opens its own transaction by design; no network I/O inside.
     await this.sequelize.transaction(async (tx) => {
       const [updated] = await this.paymentModel.update(
         { status, providerRef },
-        { where: { id: payment.id, status: PaymentStatus.UNKNOWN }, transaction: tx },
+        {
+          where: { id: payment.id, status: PaymentStatus.UNKNOWN },
+          transaction: tx,
+        },
       );
       if (updated === 0) return; // resolved concurrently by a Kafka retry
 
@@ -79,9 +106,16 @@ export class PaymentResolutionJobs implements OnApplicationBootstrap {
       await this.outbox.notify(
         {
           topic: KafkaTopicGroup.PAYMENTS_RESPONSES,
-          payload: { idempotency_key: payment.idempotencyKey, bisOrderId: payment.bisOrderId, userId: payment.userId, amount: payment.amount },
+          payload: {
+            idempotency_key: payment.idempotencyKey,
+            bisOrderId: payment.bisOrderId,
+            userId: payment.userId,
+            amount: payment.amount,
+          },
           extra: { payment: { id: payment.id, status } },
-          ...(status === PaymentStatus.FAILED && { error: { title: 'Payment failed (resolved from UNKNOWN)' } }),
+          ...(status === PaymentStatus.FAILED && {
+            error: { title: 'Payment failed (resolved from UNKNOWN)' },
+          }),
         },
         tx,
       );

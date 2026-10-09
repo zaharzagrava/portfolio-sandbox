@@ -1,5 +1,5 @@
 import { HttpStatus } from '@nestjs/common';
-import { AppError, ConfiguredErrorParams, ErrorArea } from '@app/common/errors/error.types';
+import { AppError, ConfiguredErrorParams, ErrorArea } from '@app/common/errors';
 
 export class Domain_CircuitBreakerOpenError extends AppError {
   constructor(params?: ConfiguredErrorParams) {

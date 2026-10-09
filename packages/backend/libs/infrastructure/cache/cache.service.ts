@@ -1,10 +1,16 @@
-import { Injectable, Logger, OnModuleDestroy, OnModuleInit, Optional } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  OnModuleDestroy,
+  OnModuleInit,
+  Optional,
+} from '@nestjs/common';
 import Redis from 'ioredis';
 import { LRUCache } from 'lru-cache';
 import { metrics } from '@opentelemetry/api';
 import { RedisService } from '@app/infrastructure/redis/redis.service';
-import { ApiConfigService } from '@app/common/config/api-config.service';
-import { ShutdownRegistry } from '@app/infrastructure/lifecycle/shutdown-registry.service';
+import { ApiConfigService } from '@app/common/config';
+import { ShutdownRegistry } from '@app/infrastructure/lifecycle';
 import { SingleFlight } from './single-flight';
 import { jitterTtl, shouldRecomputeEarly } from './xfetch';
 import { HotKeyDetector } from './hot-key-detector';
@@ -47,31 +53,47 @@ export interface GetOrLoadOptions {
 @Injectable()
 export class CacheService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(CacheService.name);
-  private readonly l1 = new LRUCache<string, Envelope<unknown>>({ max: 10_000 });
+  private readonly l1 = new LRUCache<string, Envelope<unknown>>({
+    max: 10_000,
+  });
   private readonly flights = new SingleFlight();
   private readonly hotKeys = new HotKeyDetector();
   private subscriber?: Redis;
-  private readonly hits = metrics.getMeter('cache').createCounter('cache_requests_total');
+  private readonly hits = metrics
+    .getMeter('cache')
+    .createCounter('cache_requests_total');
 
   constructor(
     private readonly redis: RedisService,
     private readonly config: ApiConfigService,
     @Optional() shutdown?: ShutdownRegistry,
   ) {
-    shutdown?.register({ name: 'cache.l1-invalidation.close', order: 80, run: async () => this.onModuleDestroy() });
+    shutdown?.register({
+      name: 'cache.l1-invalidation.close',
+      order: 80,
+      run: async () => this.onModuleDestroy(),
+    });
   }
 
   async onModuleInit() {
-    this.subscriber = new Redis(this.config.get('redis_url'), { maxRetriesPerRequest: null });
+    this.subscriber = new Redis(this.config.get('redis_url'), {
+      maxRetriesPerRequest: null,
+    });
     await this.subscriber.subscribe(INVALIDATION_CHANNEL);
-    this.subscriber.on('message', (_channel, key: string) => this.l1.delete(key));
+    this.subscriber.on('message', (_channel, key: string) =>
+      this.l1.delete(key),
+    );
   }
 
   async onModuleDestroy() {
     this.subscriber?.disconnect();
   }
 
-  async getOrLoad<T>(key: string, loader: () => Promise<T | null>, options: GetOrLoadOptions): Promise<T | null> {
+  async getOrLoad<T>(
+    key: string,
+    loader: () => Promise<T | null>,
+    options: GetOrLoadOptions,
+  ): Promise<T | null> {
     const { l1 = 'hot' } = options;
     const now = Date.now();
     this.hotKeys.record(key);
@@ -88,14 +110,18 @@ export class CacheService implements OnModuleInit, OnModuleDestroy {
       cached = raw ? (JSON.parse(raw) as Envelope<T>) : null;
     } catch (error) {
       // Redis down: degrade to the loader (single-flighted) rather than failing reads.
-      this.logger.warn(`L2 read failed for ${key}: ${(error as Error).message}`);
+      this.logger.warn(
+        `L2 read failed for ${key}: ${(error as Error).message}`,
+      );
       return this.flights.do(key, loader);
     }
 
     if (cached && now < cached.hard) {
       const stale = now >= cached.exp;
       if (stale || shouldRecomputeEarly(now, cached.exp, cached.delta)) {
-        void this.flights.do(`refresh:${key}`, () => this.refresh(key, loader, options)).catch(() => undefined);
+        void this.flights
+          .do(`refresh:${key}`, () => this.refresh(key, loader, options))
+          .catch(() => undefined);
       }
       if (useL1) this.l1.set(key, cached, { ttl: options.l1TtlMs ?? 1_000 });
       return this.count(stale ? 'stale' : 'l2', cached.v);
@@ -109,14 +135,22 @@ export class CacheService implements OnModuleInit, OnModuleDestroy {
   async invalidate(keys: string[]): Promise<void> {
     if (keys.length === 0) return;
     await this.redis.client.del(...keys);
-    await Promise.all(keys.map((k) => this.redis.client.publish(INVALIDATION_CHANNEL, k)));
+    await Promise.all(
+      keys.map((k) => this.redis.client.publish(INVALIDATION_CHANNEL, k)),
+    );
     keys.forEach((k) => this.l1.delete(k));
   }
 
   /** Cross-instance stampede guard: one instance computes, others wait briefly for its result. */
-  private async loadWithLock<T>(key: string, loader: () => Promise<T | null>, options: GetOrLoadOptions): Promise<T | null> {
+  private async loadWithLock<T>(
+    key: string,
+    loader: () => Promise<T | null>,
+    options: GetOrLoadOptions,
+  ): Promise<T | null> {
     const lockKey = `lock:${key}`;
-    const acquired = await this.redis.client.set(lockKey, '1', 'PX', 5_000, 'NX').catch(() => 'OK');
+    const acquired = await this.redis.client
+      .set(lockKey, '1', 'PX', 5_000, 'NX')
+      .catch(() => 'OK');
     if (acquired === 'OK') {
       try {
         return await this.refresh(key, loader, options);
@@ -133,18 +167,31 @@ export class CacheService implements OnModuleInit, OnModuleDestroy {
     return this.refresh(key, loader, options); // lock holder is slow or died - compute ourselves
   }
 
-  private async refresh<T>(key: string, loader: () => Promise<T | null>, options: GetOrLoadOptions): Promise<T | null> {
+  private async refresh<T>(
+    key: string,
+    loader: () => Promise<T | null>,
+    options: GetOrLoadOptions,
+  ): Promise<T | null> {
     const started = Date.now();
     const value = await loader();
     const delta = Date.now() - started;
 
     if (value === null && !options.negativeTtlMs) return null;
 
-    const ttl = jitterTtl(value === null ? options.negativeTtlMs! : options.ttlMs);
-    const envelope: Envelope<T> = { v: value, exp: Date.now() + ttl, hard: Date.now() + ttl + (options.swrMs ?? 0), delta };
+    const ttl = jitterTtl(
+      value === null ? options.negativeTtlMs! : options.ttlMs,
+    );
+    const envelope: Envelope<T> = {
+      v: value,
+      exp: Date.now() + ttl,
+      hard: Date.now() + ttl + (options.swrMs ?? 0),
+      delta,
+    };
     await this.redis.client
       .set(key, JSON.stringify(envelope), 'PX', ttl + (options.swrMs ?? 0))
-      .catch((e) => this.logger.warn(`L2 write failed for ${key}: ${e.message}`));
+      .catch((e) =>
+        this.logger.warn(`L2 write failed for ${key}: ${e.message}`),
+      );
     return value;
   }
 

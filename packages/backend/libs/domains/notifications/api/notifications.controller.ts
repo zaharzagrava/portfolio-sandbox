@@ -1,8 +1,28 @@
-import { BadRequestException, Body, Controller, Delete, Get, HttpCode, Param, Post, Put, Query } from '@nestjs/common';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  Param,
+  Post,
+  Put,
+  Query,
+} from '@nestjs/common';
 import { ApiProperty, ApiPropertyOptional, ApiTags } from '@nestjs/swagger';
-import { ArrayMaxSize, IsArray, IsBoolean, IsIn, IsOptional, IsString, Matches, MaxLength } from 'class-validator';
+import {
+  ArrayMaxSize,
+  IsArray,
+  IsBoolean,
+  IsIn,
+  IsOptional,
+  IsString,
+  Matches,
+  MaxLength,
+} from 'class-validator';
 import { Firewall, User, UserRawDto } from '@app/domains/identity';
-import { ApiConfigService } from '@app/common/config/api-config.service';
+import { ApiConfigService } from '@app/common/config';
 import { CATEGORIES, CHANNELS } from '../domain/catalog';
 import type { Category, Channel } from '../domain/catalog';
 import { InboxService } from '../application/inbox.service';
@@ -12,7 +32,12 @@ import { verifyUnsubscribe } from '../domain/unsubscribe-token';
 const HHMM = /^([01]\d|2[0-3]):[0-5]\d$/;
 
 export class MarkReadDto {
-  @ApiPropertyOptional({ type: [String] }) @IsOptional() @IsArray() @ArrayMaxSize(100) @IsString({ each: true }) ids?: string[];
+  @ApiPropertyOptional({ type: [String] })
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(100)
+  @IsString({ each: true })
+  ids?: string[];
   @ApiPropertyOptional() @IsOptional() @IsBoolean() all?: boolean;
 }
 
@@ -23,17 +48,35 @@ export class PreferenceDto {
 }
 
 export class SettingsDto {
-  @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(64) timezone?: string;
-  @ApiPropertyOptional() @IsOptional() @Matches(/^[a-z]{2}(-[A-Z]{2})?$/) locale?: string;
-  @ApiPropertyOptional({ nullable: true }) @IsOptional() @Matches(HHMM) quietStart?: string | null;
-  @ApiPropertyOptional({ nullable: true }) @IsOptional() @Matches(HHMM) quietEnd?: string | null;
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(64)
+  timezone?: string;
+  @ApiPropertyOptional()
+  @IsOptional()
+  @Matches(/^[a-z]{2}(-[A-Z]{2})?$/)
+  locale?: string;
+  @ApiPropertyOptional({ nullable: true })
+  @IsOptional()
+  @Matches(HHMM)
+  quietStart?: string | null;
+  @ApiPropertyOptional({ nullable: true })
+  @IsOptional()
+  @Matches(HHMM)
+  quietEnd?: string | null;
   /** E.164; verifying ownership (OTP) is a TODO noted in DOUBTS. */
-  @ApiPropertyOptional({ nullable: true }) @IsOptional() @Matches(/^\+[1-9]\d{6,14}$/) phone?: string | null;
+  @ApiPropertyOptional({ nullable: true })
+  @IsOptional()
+  @Matches(/^\+[1-9]\d{6,14}$/)
+  phone?: string | null;
 }
 
 export class DeviceDto {
   @ApiProperty() @IsString() @MaxLength(4096) token: string;
-  @ApiProperty({ enum: ['ios', 'android', 'web'] }) @IsIn(['ios', 'android', 'web']) platform: 'ios' | 'android' | 'web';
+  @ApiProperty({ enum: ['ios', 'android', 'web'] })
+  @IsIn(['ios', 'android', 'web'])
+  platform: 'ios' | 'android' | 'web';
 }
 
 @ApiTags('notifications')
@@ -47,8 +90,16 @@ export class NotificationsController {
 
   @Firewall()
   @Get()
-  list(@User() user: UserRawDto, @Query('cursor') cursor?: string, @Query('limit') limit = '20') {
-    return this.inbox.list(user.id, cursor, Math.min(Math.max(Number(limit) || 20, 1), 50));
+  list(
+    @User() user: UserRawDto,
+    @Query('cursor') cursor?: string,
+    @Query('limit') limit = '20',
+  ) {
+    return this.inbox.list(
+      user.id,
+      cursor,
+      Math.min(Math.max(Number(limit) || 20, 1), 50),
+    );
   }
 
   @Firewall()
@@ -78,14 +129,20 @@ export class NotificationsController {
   @Firewall()
   @Put('preferences')
   async setPreference(@User() user: UserRawDto, @Body() body: PreferenceDto) {
-    await this.preferences.setPreference(user.id, body.category, body.channel, body.enabled);
+    await this.preferences.setPreference(
+      user.id,
+      body.category,
+      body.channel,
+      body.enabled,
+    );
     return this.preferences.matrix(user.id);
   }
 
   @Firewall()
   @Put('settings')
   async settings(@User() user: UserRawDto, @Body() body: SettingsDto) {
-    if (body.timezone && !isValidZone(body.timezone)) throw new BadRequestException('Unknown time zone');
+    if (body.timezone && !isValidZone(body.timezone))
+      throw new BadRequestException('Unknown time zone');
     await this.preferences.updateSettings(user.id, body);
     return this.preferences.matrix(user.id);
   }
@@ -124,12 +181,19 @@ export class NotificationsController {
   async unsubscribe(@Query('token') token: string) {
     const parsed = verifyUnsubscribe(token ?? '', this.secret());
     if (!parsed) throw new BadRequestException('Invalid link');
-    await this.preferences.setPreference(parsed.userId, parsed.category, 'email', false);
+    await this.preferences.setPreference(
+      parsed.userId,
+      parsed.category,
+      'email',
+      false,
+    );
     return { unsubscribed: parsed.category };
   }
 
   private secret() {
-    return this.config.get('notification_secret') ?? this.config.get('jwt_secret');
+    return (
+      this.config.get('notification_secret') ?? this.config.get('jwt_secret')
+    );
   }
 }
 

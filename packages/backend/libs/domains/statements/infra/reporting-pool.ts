@@ -1,6 +1,6 @@
 import { Injectable, OnModuleDestroy } from '@nestjs/common';
 import { Pool } from 'pg';
-import { ApiConfigService } from '@app/common/config/api-config.service';
+import { ApiConfigService } from '@app/common/config';
 import { Environment } from '@app/common/types';
 
 /**
@@ -23,7 +23,9 @@ export class ReportingPool implements OnModuleDestroy {
       max: 5,
       statement_timeout: 300_000,
       application_name: 'reporting',
-      ...(config.get('node_env') === Environment.production && { ssl: { rejectUnauthorized: false } }),
+      ...(config.get('node_env') === Environment.production && {
+        ssl: { rejectUnauthorized: false },
+      }),
     });
   }
 

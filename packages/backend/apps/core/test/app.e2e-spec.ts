@@ -1,7 +1,7 @@
 import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import { generateTestingModule } from '@app/test/utils/global-modules';
-import { ReadinessService } from '@app/infrastructure/health/readiness.service';
+import { ReadinessService } from '@app/infrastructure/health';
 
 /** F-01 health semantics: liveness never depends on the DB, readiness flips on shutdown. */
 describe('Health (e2e)', () => {
@@ -23,11 +23,13 @@ describe('Health (e2e)', () => {
 
   it('GET /readyz is 200 with Postgres up and 503 once shutdown starts', async () => {
     const ready = await request(app.getHttpServer()).get('/readyz').expect(200);
-    expect(ready.body.checks.postgres.ok).toBe(true);
+    expect(ready.body.checks.postgres).toBe('up');
 
     app.get(ReadinessService).markShuttingDown();
 
-    const draining = await request(app.getHttpServer()).get('/readyz').expect(503);
+    const draining = await request(app.getHttpServer())
+      .get('/readyz')
+      .expect(503);
     expect(draining.body.shuttingDown).toBe(true);
   });
 });

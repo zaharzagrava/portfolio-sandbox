@@ -1,4 +1,9 @@
-import { Injectable, Logger, OnApplicationBootstrap, Optional } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  OnApplicationBootstrap,
+  Optional,
+} from '@nestjs/common';
 import { InjectConnection } from '@nestjs/sequelize';
 import { QueryTypes, Sequelize } from 'sequelize';
 import { hostname } from 'node:os';
@@ -6,8 +11,8 @@ import { randomUUID } from 'node:crypto';
 import { metrics } from '@opentelemetry/api';
 import { JobRegistry, RegisteredHandler } from './job-registry.service';
 import { JobRow, NonRetryableJobError } from './job-types';
-import { ShutdownRegistry } from '@app/infrastructure/lifecycle/shutdown-registry.service';
-import { RequestContext } from '@app/infrastructure/context/request-context.service';
+import { ShutdownRegistry } from '@app/infrastructure/lifecycle';
+import { RequestContext } from '@app/infrastructure/context';
 import { fullJitterBackoff, sleep } from '@app/common/core/backoff';
 
 const POLL_IDLE_MS = 500;
@@ -33,7 +38,9 @@ export class JobWorker implements OnApplicationBootstrap {
   private readonly abort = new AbortController();
 
   private readonly meter = metrics.getMeter('jobs');
-  private readonly duration = this.meter.createHistogram('job_duration_ms', { unit: 'ms' });
+  private readonly duration = this.meter.createHistogram('job_duration_ms', {
+    unit: 'ms',
+  });
   private readonly outcomes = this.meter.createCounter('job_outcomes_total');
 
   constructor(
@@ -42,7 +49,12 @@ export class JobWorker implements OnApplicationBootstrap {
     private readonly requestContext: RequestContext,
     @Optional() shutdown?: ShutdownRegistry,
   ) {
-    shutdown?.register({ name: 'jobs.worker.drain', order: 10, run: () => this.stop(), timeoutMs: 25_000 });
+    shutdown?.register({
+      name: 'jobs.worker.drain',
+      order: 10,
+      run: () => this.stop(),
+      timeoutMs: 25_000,
+    });
   }
 
   onApplicationBootstrap() {
@@ -63,11 +75,14 @@ export class JobWorker implements OnApplicationBootstrap {
         const free = CLAIM_BATCH - this.inFlight.size;
         const jobs = free > 0 ? await this.claim(free) : [];
         for (const job of jobs) {
-          const run = this.execute(job).finally(() => this.inFlight.delete(job.id));
+          const run = this.execute(job).finally(() =>
+            this.inFlight.delete(job.id),
+          );
           this.inFlight.set(job.id, run);
         }
         if (jobs.length === 0) await sleep(POLL_IDLE_MS);
-        else if (this.inFlight.size >= CLAIM_BATCH) await Promise.race(this.inFlight.values());
+        else if (this.inFlight.size >= CLAIM_BATCH)
+          await Promise.race(this.inFlight.values());
       } catch (error) {
         this.logger.error(`claim loop: ${(error as Error).message}`);
         await sleep(1_000);
@@ -76,7 +91,13 @@ export class JobWorker implements OnApplicationBootstrap {
   }
 
   private async claim(limit: number): Promise<JobRow[]> {
-    const types = this.registry.types().filter((t) => (this.inFlightByType.get(t) ?? 0) < (this.registry.get(t)?.concurrency ?? 10));
+    const types = this.registry
+      .types()
+      .filter(
+        (t) =>
+          (this.inFlightByType.get(t) ?? 0) <
+          (this.registry.get(t)?.concurrency ?? 10),
+      );
     if (types.length === 0) return [];
 
     return this.sequelize.query<JobRow>(
@@ -100,24 +121,52 @@ export class JobWorker implements OnApplicationBootstrap {
         -- as text: a JS Date keeps only milliseconds, and the later "createdAt" = :createdAt matches need microseconds
         j."createdAt"::text AS "createdAt"
       `,
-      { type: QueryTypes.SELECT, replacements: { workerId: this.workerId, types, limit, shopCap: PER_SHOP_RUNNING_CAP } },
+      {
+        type: QueryTypes.SELECT,
+        replacements: {
+          workerId: this.workerId,
+          types,
+          limit,
+          shopCap: PER_SHOP_RUNNING_CAP,
+        },
+      },
     );
   }
 
   private async execute(job: JobRow): Promise<void> {
     const handler = this.registry.get(job.type);
-    if (!handler) return this.fail(job, new NonRetryableJobError(`no handler for ${job.type}`));
+    if (!handler)
+      return this.fail(
+        job,
+        new NonRetryableJobError(`no handler for ${job.type}`),
+      );
 
-    this.inFlightByType.set(job.type, (this.inFlightByType.get(job.type) ?? 0) + 1);
+    this.inFlightByType.set(
+      job.type,
+      (this.inFlightByType.get(job.type) ?? 0) + 1,
+    );
     const started = Date.now();
     const heartbeat = () => this.extendLease(job, handler);
-    const timer = setInterval(() => void heartbeat().catch(() => undefined), handler.leaseMs / 2);
+    const timer = setInterval(
+      () => void heartbeat().catch(() => undefined),
+      handler.leaseMs / 2,
+    );
     timer.unref();
 
     try {
       await this.extendLease(job, handler); // set the handler-specific lease right away
-      await this.requestContext.run({ requestId: `job:${job.id}`, shopId: job.shopId ?? undefined, principalType: 'service' }, () =>
-        handler.run(job.payload, { attempt: job.attempts, heartbeat, signal: this.abort.signal }),
+      await this.requestContext.run(
+        {
+          requestId: `job:${job.id}`,
+          shopId: job.shopId ?? undefined,
+          principalType: 'service',
+        },
+        () =>
+          handler.run(job.payload, {
+            attempt: job.attempts,
+            heartbeat,
+            signal: this.abort.signal,
+          }),
       );
       await this.finish(job, 'SUCCEEDED');
       this.outcomes.add(1, { type: job.type, outcome: 'succeeded' });
@@ -125,7 +174,10 @@ export class JobWorker implements OnApplicationBootstrap {
       await this.fail(job, error as Error);
     } finally {
       clearInterval(timer);
-      this.inFlightByType.set(job.type, (this.inFlightByType.get(job.type) ?? 1) - 1);
+      this.inFlightByType.set(
+        job.type,
+        (this.inFlightByType.get(job.type) ?? 1) - 1,
+      );
       this.duration.record(Date.now() - started, { type: job.type });
     }
   }
@@ -134,7 +186,14 @@ export class JobWorker implements OnApplicationBootstrap {
     await this.sequelize.query(
       `UPDATE "Job" SET "lockedUntil" = now() + (:leaseMs || ' milliseconds')::interval
        WHERE id = :id AND "createdAt" = :createdAt AND "lockedBy" = :workerId AND status = 'RUNNING'`,
-      { replacements: { id: job.id, createdAt: job.createdAt, workerId: this.workerId, leaseMs: handler.leaseMs } },
+      {
+        replacements: {
+          id: job.id,
+          createdAt: job.createdAt,
+          workerId: this.workerId,
+          leaseMs: handler.leaseMs,
+        },
+      },
     );
   }
 
@@ -142,14 +201,27 @@ export class JobWorker implements OnApplicationBootstrap {
     await this.sequelize.query(
       `UPDATE "Job" SET status = :status, "finishedAt" = now(), "lockedBy" = NULL, "lockedUntil" = NULL, "lastError" = NULL
        WHERE id = :id AND "createdAt" = :createdAt AND "lockedBy" = :workerId`,
-      { replacements: { status, id: job.id, createdAt: job.createdAt, workerId: this.workerId } },
+      {
+        replacements: {
+          status,
+          id: job.id,
+          createdAt: job.createdAt,
+          workerId: this.workerId,
+        },
+      },
     );
   }
 
   private async fail(job: JobRow, error: Error) {
-    const dead = error instanceof NonRetryableJobError || job.attempts >= job.maxAttempts;
-    const delayMs = fullJitterBackoff(job.attempts, { baseMs: 1_000, maxMs: 15 * 60_000 });
-    this.logger.warn(`job ${job.type}/${job.id} attempt ${job.attempts} failed${dead ? ' → DEAD' : ''}: ${error.message}`);
+    const dead =
+      error instanceof NonRetryableJobError || job.attempts >= job.maxAttempts;
+    const delayMs = fullJitterBackoff(job.attempts, {
+      baseMs: 1_000,
+      maxMs: 15 * 60_000,
+    });
+    this.logger.warn(
+      `job ${job.type}/${job.id} attempt ${job.attempts} failed${dead ? ' → DEAD' : ''}: ${error.message}`,
+    );
     this.outcomes.add(1, { type: job.type, outcome: dead ? 'dead' : 'retry' });
 
     await this.sequelize.query(
@@ -178,7 +250,9 @@ export class JobWorker implements OnApplicationBootstrap {
     await this.loopDone;
     // Let in-flight jobs finish; signal long ones to checkpoint and stop.
     const drained = Promise.allSettled([...this.inFlight.values()]);
-    const timeout = sleep(20_000).then(() => this.abort.abort(new Error('worker shutting down')));
+    const timeout = sleep(20_000).then(() =>
+      this.abort.abort(new Error('worker shutting down')),
+    );
     await Promise.race([drained, timeout]);
   }
 }

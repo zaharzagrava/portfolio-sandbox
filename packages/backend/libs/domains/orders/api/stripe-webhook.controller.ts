@@ -1,11 +1,19 @@
-import { BadRequestException, Controller, Headers, HttpCode, Logger, Post, Req } from '@nestjs/common';
+import {
+  BadRequestException,
+  Controller,
+  Headers,
+  HttpCode,
+  Logger,
+  Post,
+  Req,
+} from '@nestjs/common';
 import type { RawBodyRequest } from '@nestjs/common';
 import type { Request } from 'express';
 import { InjectConnection, InjectModel } from '@nestjs/sequelize';
 import { QueryTypes, Sequelize } from 'sequelize';
 import { SkipThrottle } from '@nestjs/throttler';
 import { StripeService } from '@app/infrastructure/stripe/stripe.service';
-import { ApiConfigService } from '@app/common/config/api-config.service';
+import { ApiConfigService } from '@app/common/config';
 import { PaymentModel as Payment } from '@app/domains/payments';
 import { OrderService } from '../application/order.service';
 
@@ -35,9 +43,13 @@ export class StripeWebhookController {
 
   @Post('stripe')
   @HttpCode(200)
-  async handle(@Req() req: RawBodyRequest<Request>, @Headers('stripe-signature') signature: string) {
+  async handle(
+    @Req() req: RawBodyRequest<Request>,
+    @Headers('stripe-signature') signature: string,
+  ) {
     const secret = this.config.get('stripe_webhook_secret');
-    if (!secret || !req.rawBody || !signature) throw new BadRequestException('Unsigned webhook');
+    if (!secret || !req.rawBody || !signature)
+      throw new BadRequestException('Unsigned webhook');
     let event: ReturnType<StripeService['constructEvent']>;
     try {
       event = this.stripe.constructEvent(req.rawBody, signature, secret);
@@ -51,20 +63,34 @@ export class StripeWebhookController {
     );
     if (inserted.length === 0) return { received: true, duplicate: true };
 
-    const intent = event.data.object as { id: string; metadata?: Record<string, string> };
+    const intent = event.data.object as {
+      id: string;
+      metadata?: Record<string, string>;
+    };
     const key = intent.metadata?.idempotencyKey;
-    const payment = key ? await this.paymentModel.findOne({ where: { idempotencyKey: key }, attributes: ['id', 'bisOrderId'] }) : null;
+    const payment = key
+      ? await this.paymentModel.findOne({
+          where: { idempotencyKey: key },
+          attributes: ['id', 'bisOrderId'],
+        })
+      : null;
     if (!payment) {
-      this.logger.warn(`stripe ${event.type} ${event.id}: no payment for key ${key}`);
+      this.logger.warn(
+        `stripe ${event.type} ${event.id}: no payment for key ${key}`,
+      );
       return { received: true };
     }
 
     switch (event.type) {
       case 'payment_intent.succeeded':
-        await this.orders.markPaid(payment.bisOrderId, payment.id).catch((e) => this.logger.warn(`markPaid: ${e.message}`));
+        await this.orders
+          .markPaid(payment.bisOrderId, payment.id)
+          .catch((e) => this.logger.warn(`markPaid: ${e.message}`));
         break;
       case 'payment_intent.payment_failed':
-        await this.orders.cancel(payment.bisOrderId, 'payment_failed').catch((e) => this.logger.warn(`cancel: ${e.message}`));
+        await this.orders
+          .cancel(payment.bisOrderId, 'payment_failed')
+          .catch((e) => this.logger.warn(`cancel: ${e.message}`));
         break;
       default:
         break;

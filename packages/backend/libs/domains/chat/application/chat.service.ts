@@ -9,7 +9,7 @@ import * as jwt from 'jsonwebtoken';
 import { ChatDtoService } from '../infra/chat-dto.service';
 import { ProductDtoService } from '@app/domains/catalog';
 import { DbUtilsService } from '@app/infrastructure/database/db-utils/db-utils.service';
-import { ApiConfigService } from '@app/common/config/api-config.service';
+import { ApiConfigService } from '@app/common/config';
 import { RedisPubSubService } from '@app/infrastructure/redis-pubsub/redis-pubsub.service';
 import ChatChannel from '../infra/models/chat-channel.model';
 import ChatMessage from '../infra/models/chat-message.model';
@@ -142,11 +142,21 @@ export class ChatService {
    * A buyer joins a product's chat. Re-joining keeps the existing membership (a ban sticks); archived
    * channels take no new members.
    */
-  public async joinChannel(channelId: string, userId: string): Promise<ChatChannelRawDto> {
-    const channel = await this.chatDtoService.requestChannel({ params: { id: channelId } });
-    if (channel.isArchived) throw new ForbiddenException('This chat is archived');
-    const member = await this.chatDtoService.ensureMember({ channelId, userId });
-    if (member.status === ChatChannelMemberStatus.BANNED) throw new ForbiddenException('You are banned from this chat');
+  public async joinChannel(
+    channelId: string,
+    userId: string,
+  ): Promise<ChatChannelRawDto> {
+    const channel = await this.chatDtoService.requestChannel({
+      params: { id: channelId },
+    });
+    if (channel.isArchived)
+      throw new ForbiddenException('This chat is archived');
+    const member = await this.chatDtoService.ensureMember({
+      channelId,
+      userId,
+    });
+    if (member.status === ChatChannelMemberStatus.BANNED)
+      throw new ForbiddenException('You are banned from this chat');
     return this.toRawDto(channel, member.role);
   }
 

@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { CronJob } from 'cron';
 import { Environment } from '@app/common/types';
 import { SchedulerRegistry } from '@nestjs/schedule';
-import { ApiConfigService } from '@app/common/config/api-config.service';
+import { ApiConfigService } from '@app/common/config';
 
 @Injectable()
 export class CronService {

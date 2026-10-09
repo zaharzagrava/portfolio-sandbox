@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Transaction } from 'sequelize';
 import { InjectModel } from '@nestjs/sequelize';
-import { Fatal_NotFoundError } from '@app/common/errors/error.types';
+import { Fatal_NotFoundError } from '@app/common/errors';
 import ChatChannel, {
   ChatChannelScope,
   ChatChannelWithAllFilters,
@@ -156,14 +156,11 @@ export class ChatDtoService {
     id: string;
     tx?: Transaction;
   }): Promise<ChatChannelMember> {
-    const [count, [member]] = await this.chatChannelMemberModel.update(
-      params,
-      {
-        where: { id },
-        transaction: tx,
-        returning: true,
-      },
-    );
+    const [count, [member]] = await this.chatChannelMemberModel.update(params, {
+      where: { id },
+      transaction: tx,
+      returning: true,
+    });
 
     if (count === 0 || !member) {
       throw new Fatal_NotFoundError({

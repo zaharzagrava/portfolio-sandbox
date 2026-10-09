@@ -1,8 +1,7 @@
 import { Injectable } from '@nestjs/common';
-import axios from 'axios';
 import * as admin from 'firebase-admin';
 import * as auth from 'firebase-admin/auth';
-import { ApiConfigService } from '@app/common/config/api-config.service';
+import { ApiConfigService } from '@app/common/config';
 
 @Injectable()
 export class FirebaseService {

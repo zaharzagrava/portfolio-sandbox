@@ -1,5 +1,6 @@
 import { allocate, allocateEvenly } from '@app/common/money/allocate';
 import { fullJitterBackoff } from './backoff';
+import { FakeClock } from './clock';
 import { mapWithConcurrency, settleWithConcurrency } from './promise-pool';
 import { RetryBudget } from '@app/infrastructure/http-client/retry-budget';
 import { parseRetryAfter } from '@app/infrastructure/http-client/resilient-http-client';
@@ -39,24 +40,55 @@ describe('platform core utils', () => {
 
   describe('fullJitterBackoff', () => {
     it('stays within [0, min(max, base * 2^attempt)]', () => {
-      expect(fullJitterBackoff(0, { baseMs: 100, maxMs: 5000 }, () => 0.999)).toBe(99);
-      expect(fullJitterBackoff(3, { baseMs: 100, maxMs: 5000 }, () => 0.5)).toBe(400);
-      expect(fullJitterBackoff(20, { baseMs: 100, maxMs: 5000 }, () => 0.999)).toBe(4995);
-      expect(fullJitterBackoff(5, { baseMs: 100, maxMs: 5000 }, () => 0)).toBe(0);
+      expect(
+        fullJitterBackoff(0, { baseMs: 100, maxMs: 5000 }, () => 0.999),
+      ).toBe(99);
+      expect(
+        fullJitterBackoff(3, { baseMs: 100, maxMs: 5000 }, () => 0.5),
+      ).toBe(400);
+      expect(
+        fullJitterBackoff(20, { baseMs: 100, maxMs: 5000 }, () => 0.999),
+      ).toBe(4995);
+      expect(fullJitterBackoff(5, { baseMs: 100, maxMs: 5000 }, () => 0)).toBe(
+        0,
+      );
     });
+  });
+
+  describe('fullJitterBackoff table (S54 AS-103)', () => {
+    const opts = { baseMs: 100, maxMs: 5000 };
+    const attempts = [0, 1, 2, 3, 4, 5, 6];
+    it.each(
+      attempts.flatMap((attempt) =>
+        [0, 0.5, 1].map((r) => [attempt, r] as const),
+      ),
+    )(
+      'S54 AS-103: attempt %i with random %f is r × min(cap, base × 2^attempt), within [0, cap]',
+      (attempt, r) => {
+        const ceiling = Math.min(5000, 100 * 2 ** attempt);
+        const delay = fullJitterBackoff(attempt, opts, () => r);
+        expect(delay).toBe(Math.floor(r * ceiling));
+        expect(delay).toBeGreaterThanOrEqual(0);
+        expect(delay).toBeLessThanOrEqual(5000);
+      },
+    );
   });
 
   describe('mapWithConcurrency', () => {
     it('never exceeds the concurrency limit and preserves order', async () => {
       let inFlight = 0;
       let peak = 0;
-      const result = await mapWithConcurrency([5, 1, 4, 2, 3, 0], 2, async (ms, i) => {
-        inFlight++;
-        peak = Math.max(peak, inFlight);
-        await new Promise((r) => setTimeout(r, ms));
-        inFlight--;
-        return i;
-      });
+      const result = await mapWithConcurrency(
+        [5, 1, 4, 2, 3, 0],
+        2,
+        async (ms, i) => {
+          inFlight++;
+          peak = Math.max(peak, inFlight);
+          await new Promise((r) => setTimeout(r, ms));
+          inFlight--;
+          return i;
+        },
+      );
       expect(peak).toBe(2);
       expect(result).toEqual([0, 1, 2, 3, 4, 5]);
     });
@@ -66,28 +98,41 @@ describe('platform core utils', () => {
         if (n === 2) throw new Error('boom');
         return n;
       });
-      expect(result.map((r) => r.status)).toEqual(['fulfilled', 'rejected', 'fulfilled']);
+      expect(result.map((r) => r.status)).toEqual([
+        'fulfilled',
+        'rejected',
+        'fulfilled',
+      ]);
     });
   });
 
   describe('RetryBudget', () => {
     it('caps retries at the ratio of recent requests, with a floor', () => {
-      let now = 0;
-      const budget = new RetryBudget(0.1, 2, 1000, () => now);
-      for (let i = 0; i < 50; i++) budget.recordRequest();
-      const granted = Array.from({ length: 20 }, () => budget.tryAcquireRetry()).filter(Boolean).length;
+      const clock = new FakeClock();
+      const budget = new RetryBudget({
+        clock,
+        ratio: 0.1,
+        minRetriesPerWindow: 2,
+        windowMs: 1000,
+      });
+      for (let i = 0; i < 50; i++) budget.recordRequest('h');
+      const granted = Array.from({ length: 20 }, () =>
+        budget.tryAcquireRetry('h'),
+      ).filter(Boolean).length;
       expect(granted).toBe(5);
 
-      now = 1000; // new window
-      expect(budget.tryAcquireRetry()).toBe(true);
+      clock.advance(1000); // new window
+      expect(budget.tryAcquireRetry('h')).toBe(true);
     });
   });
 
   describe('parseRetryAfter', () => {
     it('supports seconds and HTTP dates', () => {
-      expect(parseRetryAfter('3')).toBe(3000);
-      expect(parseRetryAfter(new Date(10_000).toUTCString(), 4_000)).toBe(6_000);
-      expect(parseRetryAfter('garbage')).toBeUndefined();
+      expect(parseRetryAfter('3', 0)).toBe(3000);
+      expect(parseRetryAfter(new Date(10_000).toUTCString(), 4_000)).toBe(
+        6_000,
+      );
+      expect(parseRetryAfter('garbage', 0)).toBeUndefined();
     });
   });
 
@@ -95,8 +140,16 @@ describe('platform core utils', () => {
     it('runs tasks in order and continues past failures', async () => {
       const registry = new ShutdownRegistry();
       const ran: string[] = [];
-      registry.register({ name: 'close-pools', order: 90, run: async () => void ran.push('close-pools') });
-      registry.register({ name: 'stop-consumers', order: 10, run: async () => void ran.push('stop-consumers') });
+      registry.register({
+        name: 'close-pools',
+        order: 90,
+        run: async () => void ran.push('close-pools'),
+      });
+      registry.register({
+        name: 'stop-consumers',
+        order: 10,
+        run: async () => void ran.push('stop-consumers'),
+      });
       registry.register({
         name: 'flush-buffers',
         order: 50,
@@ -106,7 +159,8 @@ describe('platform core utils', () => {
         },
       });
 
-      await registry.beforeApplicationShutdown('SIGTERM');
+      const result = await registry.run('stop');
+      expect(result.failed).toEqual(['flush-buffers']);
       expect(ran).toEqual(['stop-consumers', 'flush-buffers', 'close-pools']);
     });
   });

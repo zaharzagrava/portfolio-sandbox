@@ -1,6 +1,12 @@
-import { DynamicModule, Inject, Module, OnApplicationBootstrap, Type } from '@nestjs/common';
+import {
+  DynamicModule,
+  Inject,
+  Module,
+  OnApplicationBootstrap,
+  Type,
+} from '@nestjs/common';
 import { ModuleRef } from '@nestjs/core';
-import { ApiConfigModule } from '@app/common/config/api-config.module';
+import { ApiConfigModule } from '@app/common/config';
 import { Projector } from './projector';
 import { ProjectionRunner } from './projection-runner.service';
 import { ProjectionCheckpoints } from './read-your-writes';
@@ -20,11 +26,20 @@ export class ProjectionsModule implements OnApplicationBootstrap {
     @Inject(PROJECTORS) private readonly projectorTypes: Type<Projector>[],
   ) {}
 
-  static forProjectors(projectors: Type<Projector>[], imports: DynamicModule['imports'] = []): DynamicModule {
+  static forProjectors(
+    projectors: Type<Projector>[],
+    imports: DynamicModule['imports'] = [],
+  ): DynamicModule {
     return {
       module: ProjectionsModule,
       imports: [ApiConfigModule, ...imports],
-      providers: [ProjectionRunner, ProjectionCheckpoints, RedisDocSink, ...projectors, { provide: PROJECTORS, useValue: projectors }],
+      providers: [
+        ProjectionRunner,
+        ProjectionCheckpoints,
+        RedisDocSink,
+        ...projectors,
+        { provide: PROJECTORS, useValue: projectors },
+      ],
       exports: [ProjectionRunner, ProjectionCheckpoints, RedisDocSink],
     };
   }

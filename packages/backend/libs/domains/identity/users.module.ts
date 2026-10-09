@@ -4,7 +4,7 @@ import { UsersController } from './api/users.controller';
 import { FirebaseModule } from '@app/infrastructure/firebase/firebase.module';
 import User from './infra/models/user.model';
 import { SequelizeModule } from '@nestjs/sequelize';
-import { ApiConfigModule } from '@app/common/config/api-config.module';
+import { ApiConfigModule } from '@app/common/config';
 import { DbUtilsModule } from '@app/infrastructure/database/db-utils/db-utils.module';
 import { AuthModule } from './auth.module';
 import { UserUtilsModule } from './user-utils.module';
@@ -32,4 +32,4 @@ import { CronModule } from '@app/infrastructure/jobs/cron-module/cron.module';
   exports: [UsersService],
   controllers: [UsersController],
 })
-export class UsersModule { }
+export class UsersModule {}

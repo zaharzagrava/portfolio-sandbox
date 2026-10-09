@@ -1,10 +1,15 @@
-import { Injectable, Logger, OnApplicationBootstrap, OnModuleDestroy } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  OnApplicationBootstrap,
+  OnModuleDestroy,
+} from '@nestjs/common';
 import { HttpAdapterHost } from '@nestjs/core';
 import type { IncomingMessage, Server } from 'node:http';
 import type { Duplex } from 'node:stream';
 import { hostname } from 'node:os';
 import { WebSocket, WebSocketServer } from 'ws';
-import { ApiConfigService } from '@app/common/config/api-config.service';
+import { ApiConfigService } from '@app/common/config';
 import { CollabInstanceRegistry } from '../infra/instance-registry';
 import { RoomManager } from '../application/room-manager.service';
 import { verifyCollabTicket } from '../infra/collab-ticket';
@@ -23,7 +28,10 @@ const PING_MS = 30_000;
 @Injectable()
 export class CollabServer implements OnApplicationBootstrap, OnModuleDestroy {
   private readonly logger = new Logger(CollabServer.name);
-  private readonly wss = new WebSocketServer({ noServer: true, maxPayload: MAX_MESSAGE_BYTES });
+  private readonly wss = new WebSocketServer({
+    noServer: true,
+    maxPayload: MAX_MESSAGE_BYTES,
+  });
   readonly instanceId: string;
   private ping?: NodeJS.Timeout;
   private readonly alive = new WeakSet<WebSocket>();
@@ -34,14 +42,22 @@ export class CollabServer implements OnApplicationBootstrap, OnModuleDestroy {
     private readonly rooms: RoomManager,
     private readonly config: ApiConfigService,
   ) {
-    this.instanceId = config.get('collab_instance_id') || `${hostname()}-${process.pid}`;
+    this.instanceId =
+      config.get('collab_instance_id') || `${hostname()}-${process.pid}`;
   }
 
   async onApplicationBootstrap() {
     const server = this.adapterHost.httpAdapter.getHttpServer() as Server;
-    server.on('upgrade', (req: IncomingMessage, socket: Duplex, head: Buffer) => void this.upgrade(req, socket, head));
+    server.on(
+      'upgrade',
+      (req: IncomingMessage, socket: Duplex, head: Buffer) =>
+        void this.upgrade(req, socket, head),
+    );
     const port = this.config.get('port');
-    await this.registry.register(this.instanceId, this.config.get('collab_public_url') || `ws://localhost:${port}`);
+    await this.registry.register(
+      this.instanceId,
+      this.config.get('collab_public_url') || `ws://localhost:${port}`,
+    );
 
     // Dead-peer detection: a laptop that slept never sends FIN.
     this.ping = setInterval(() => {
@@ -66,7 +82,10 @@ export class CollabServer implements OnApplicationBootstrap, OnModuleDestroy {
     const match = PATH.exec(url.pathname);
     if (!match) return; // not ours (e.g. another upgrade handler)
     const draftId = match[1];
-    const ticket = verifyCollabTicket(url.searchParams.get('ticket') ?? '', this.config.get('jwt_secret'));
+    const ticket = verifyCollabTicket(
+      url.searchParams.get('ticket') ?? '',
+      this.config.get('jwt_secret'),
+    );
     if (!ticket || ticket.draftId !== draftId) {
       socket.end('HTTP/1.1 401 Unauthorized\r\n\r\n');
       return;
@@ -83,24 +102,34 @@ export class CollabServer implements OnApplicationBootstrap, OnModuleDestroy {
       ws.on('message', buffer);
 
       const owner = await this.registry.ownerOf(draftId);
-      if (owner && owner.id !== this.instanceId) return ws.close(4001, owner.url);
+      if (owner && owner.id !== this.instanceId)
+        return ws.close(4001, owner.url);
 
       let room;
       try {
         room = await this.rooms.acquire(draftId);
       } catch (error) {
-        this.logger.warn(`room ${draftId} load failed: ${(error as Error).message}`);
+        this.logger.warn(
+          `room ${draftId} load failed: ${(error as Error).message}`,
+        );
         return ws.close(4004, 'draft not found');
       }
-      if (room.members.size >= MAX_EDITORS_PER_ROOM) return ws.close(4008, 'room full');
+      if (room.members.size >= MAX_EDITORS_PER_ROOM)
+        return ws.close(4008, 'room full');
 
-      const socketAdapter = { send: (data: Uint8Array) => ws.readyState === WebSocket.OPEN && ws.send(data), close: (code?: number, reason?: string) => ws.close(code, reason) };
+      const socketAdapter = {
+        send: (data: Uint8Array) =>
+          ws.readyState === WebSocket.OPEN && ws.send(data),
+        close: (code?: number, reason?: string) => ws.close(code, reason),
+      };
       room.join(socketAdapter, ticket.userId, ticket.canWrite);
       const handle = (data: ArrayBuffer) => {
         try {
           room.handleMessage(socketAdapter, new Uint8Array(data));
         } catch (error) {
-          this.logger.warn(`bad message in ${draftId}: ${(error as Error).message}`);
+          this.logger.warn(
+            `bad message in ${draftId}: ${(error as Error).message}`,
+          );
           ws.close(4000, 'protocol error');
         }
       };

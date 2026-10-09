@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
-import { ApiConfigModule } from '@app/common/config/api-config.module';
+import { ApiConfigModule } from '@app/common/config';
 import { DbUtilsModule } from '@app/infrastructure/database/db-utils/db-utils.module';
 import { OutboxDtoModule } from './dto/outbox-dto.module';
 import Outbox from './outbox.model';
@@ -16,4 +16,4 @@ import { OutboxService } from './outbox.service';
   providers: [OutboxService],
   exports: [OutboxService],
 })
-export class OutboxModule { }
+export class OutboxModule {}

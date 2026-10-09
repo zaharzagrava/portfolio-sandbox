@@ -1,8 +1,20 @@
-import { Body, Get, Logger, Post, Query, Controller, Param, ParseUUIDPipe, UseInterceptors, Optional, Req } from '@nestjs/common';
+import {
+  Body,
+  Get,
+  Logger,
+  Post,
+  Query,
+  Controller,
+  Param,
+  ParseUUIDPipe,
+  UseInterceptors,
+  Optional,
+  Req,
+} from '@nestjs/common';
 import type { Request } from 'express';
 import { SearchQueryLogger } from '@app/domains/discovery';
 import { VersionEtagInterceptor } from '@app/infrastructure/cache/etag.interceptor';
-import { NotFoundError } from '@app/common/errors/error.types';
+import { NotFoundError } from '@app/common/errors';
 import { ApiTags } from '@nestjs/swagger';
 import { Firewall, User, UserRawDto } from '@app/domains/identity';
 import { ProductService } from '../application/product.service';
@@ -18,7 +30,7 @@ export class ProductController {
   constructor(
     private readonly productService: ProductService,
     @Optional() private readonly queryLogger?: SearchQueryLogger,
-  ) { }
+  ) {}
 
   /**
    * Elasticsearch showcase (#7–11): fuzzy + BM25 boosts + autocomplete
@@ -30,10 +42,17 @@ export class ProductController {
   @Firewall({ anonymous: true })
   @RateLimit('search.query')
   @Get('search')
-  async search(@Query() query: SearchProductsQueryDto, @Req() req: Request & { user?: { id: string } }) {
+  async search(
+    @Query() query: SearchProductsQueryDto,
+    @Req() req: Request & { user?: { id: string } },
+  ) {
     const result = await this.productService.search(query);
     // SD-12: query popularity feeds autocomplete (fire-and-forget, never slows the search).
-    this.queryLogger?.log(query.q, result.total ?? result.hits?.length ?? 0, req.user?.id ?? req.ip ?? 'anon');
+    this.queryLogger?.log(
+      query.q,
+      result.total ?? result.hits?.length ?? 0,
+      req.user?.id ?? req.ip ?? 'anon',
+    );
     return result;
   }
 
@@ -60,7 +79,11 @@ export class ProductController {
   /** SD-02: tenant-scoped creation - any STAFF+ member of the shop, product owned by the shop. */
   @ShopScoped('products.write')
   @Post('/shops/:shopId')
-  async createForShop(@Param('shopId', ParseUUIDPipe) shopId: string, @User() user: UserRawDto, @Body() body: CreateProductDto) {
+  async createForShop(
+    @Param('shopId', ParseUUIDPipe) shopId: string,
+    @User() user: UserRawDto,
+    @Body() body: CreateProductDto,
+  ) {
     return this.productService.create(body, user.id, shopId);
   }
 

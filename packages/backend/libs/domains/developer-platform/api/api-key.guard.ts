@@ -1,12 +1,25 @@
-import { applyDecorators, CanActivate, ExecutionContext, ForbiddenException, Injectable, SetMetadata, UnauthorizedException, UseGuards } from '@nestjs/common';
+import {
+  applyDecorators,
+  CanActivate,
+  ExecutionContext,
+  ForbiddenException,
+  Injectable,
+  SetMetadata,
+  UnauthorizedException,
+  UseGuards,
+} from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { RequestContext } from '@app/infrastructure/context/request-context.service';
+import { RequestContext } from '@app/infrastructure/context';
 import { ApiKeysService, VerifiedKey } from '../application/api-keys.service';
 import type { ApiScope } from '../domain/api-key-format';
 
 const SCOPES = 'publicApi:scopes';
 
-export type ApiKeyRequest = { headers: Record<string, string | undefined>; apiKey?: VerifiedKey; shopId?: string };
+export type ApiKeyRequest = {
+  headers: Record<string, string | undefined>;
+  apiKey?: VerifiedKey;
+  shopId?: string;
+};
 
 /**
  * `Authorization: Bearer sk_live_...`. The tenant comes ONLY from the key
@@ -25,11 +38,21 @@ export class ApiKeyGuard implements CanActivate {
     const req = ctx.switchToHttp().getRequest<ApiKeyRequest>();
     const raw = (req.headers.authorization ?? '').replace(/^Bearer\s+/i, '');
     const key = raw ? await this.keys.verify(raw) : null;
-    if (!key) throw new UnauthorizedException({ type: 'invalid_api_key', message: 'Invalid, expired or revoked API key' });
+    if (!key)
+      throw new UnauthorizedException({
+        type: 'invalid_api_key',
+        message: 'Invalid, expired or revoked API key',
+      });
 
-    const required = this.reflector.get<ApiScope[] | undefined>(SCOPES, ctx.getHandler()) ?? [];
+    const required =
+      this.reflector.get<ApiScope[] | undefined>(SCOPES, ctx.getHandler()) ??
+      [];
     const missing = required.filter((s) => !key.scopes.includes(s));
-    if (missing.length) throw new ForbiddenException({ type: 'insufficient_scope', message: `Key lacks scope(s): ${missing.join(', ')}` });
+    if (missing.length)
+      throw new ForbiddenException({
+        type: 'insufficient_scope',
+        message: `Key lacks scope(s): ${missing.join(', ')}`,
+      });
 
     req.apiKey = key;
     req.shopId = key.shopId;
@@ -38,4 +61,5 @@ export class ApiKeyGuard implements CanActivate {
   }
 }
 
-export const ApiKeyAuth = (...scopes: ApiScope[]) => applyDecorators(SetMetadata(SCOPES, scopes), UseGuards(ApiKeyGuard));
+export const ApiKeyAuth = (...scopes: ApiScope[]) =>
+  applyDecorators(SetMetadata(SCOPES, scopes), UseGuards(ApiKeyGuard));

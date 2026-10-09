@@ -9,7 +9,7 @@ import { CacheService } from '@app/infrastructure/cache/cache.service';
 import User, { Role } from '../infra/models/user.model';
 import { InjectModel } from '@nestjs/sequelize';
 import { UniqueConstraintError } from 'sequelize';
-import { ApiConfigService } from '@app/common/config/api-config.service';
+import { ApiConfigService } from '@app/common/config';
 import * as jwt from 'jsonwebtoken';
 import * as bcrypt from 'bcrypt';
 import * as fs from 'fs';
@@ -40,14 +40,17 @@ export class AuthService {
    * password" take the same time - otherwise response latency leaks which
    * emails are registered.
    */
-  private readonly dummyHash = bcrypt.hashSync('timing-equalizer', BCRYPT_ROUNDS);
+  private readonly dummyHash = bcrypt.hashSync(
+    'timing-equalizer',
+    BCRYPT_ROUNDS,
+  );
 
   constructor(
     @InjectModel(User) private userModel: typeof User,
     private configService: ApiConfigService,
     @Optional() private readonly keyStore?: KeyStore,
     @Optional() private readonly cache?: CacheService,
-  ) { }
+  ) {}
 
   public async register(dto: RegisterDto): Promise<AuthResponseDto> {
     const passwordHash = await bcrypt.hash(dto.password, BCRYPT_ROUNDS);
@@ -95,7 +98,9 @@ export class AuthService {
    * The user row is cached (L1/L2, 60 s) - verifying a token must not cost a
    * Postgres query on every request at 100k RPS.
    */
-  public async userAuthentication(userAuthToken?: string): Promise<User & { sessionId?: string }> {
+  public async userAuthentication(
+    userAuthToken?: string,
+  ): Promise<User & { sessionId?: string }> {
     if (!userAuthToken) {
       throw new UnauthorizedException('No auth token provided');
     }
@@ -106,9 +111,14 @@ export class AuthService {
       if (header?.kid) {
         const resolved = await this.keyStore?.verificationKey(header.kid);
         if (!resolved) throw new Error('unknown kid');
-        payload = jwt.verify(userAuthToken, resolved.key, { algorithms: [resolved.alg], issuer: 'marketplace' }) as typeof payload;
+        payload = jwt.verify(userAuthToken, resolved.key, {
+          algorithms: [resolved.alg],
+          issuer: 'marketplace',
+        }) as typeof payload;
       } else {
-        payload = jwt.verify(userAuthToken, this.getPublicKey(), { algorithms: ['RS256'] }) as typeof payload;
+        payload = jwt.verify(userAuthToken, this.getPublicKey(), {
+          algorithms: ['RS256'],
+        }) as typeof payload;
       }
     } catch {
       throw new UnauthorizedException('Invalid token');
@@ -122,11 +132,16 @@ export class AuthService {
     const load = () =>
       this.userModel.findOne({
         where: { id: payload.sub },
-        attributes: { exclude: ['passwordHash', 'mfaSecretEnc', 'mfaRecoveryCodes'] },
+        attributes: {
+          exclude: ['passwordHash', 'mfaSecretEnc', 'mfaRecoveryCodes'],
+        },
         raw: true,
       });
     const user = this.cache
-      ? await this.cache.getOrLoad(`auth:user:v1:${payload.sub}`, load, { ttlMs: 60_000, negativeTtlMs: 5_000 })
+      ? await this.cache.getOrLoad(`auth:user:v1:${payload.sub}`, load, {
+          ttlMs: 60_000,
+          negativeTtlMs: 5_000,
+        })
       : await load();
 
     if (!user) {
@@ -137,11 +152,15 @@ export class AuthService {
   }
 
   /** Public for internal callers that already authenticated the user another way (SSO callback, e2e specs). */
-  public issueTokensFor(user: Pick<User, 'id' | 'email' | 'role'>): AuthResponseDto {
+  public issueTokensFor(
+    user: Pick<User, 'id' | 'email' | 'role'>,
+  ): AuthResponseDto {
     return this.issueTokens(user);
   }
 
-  private issueTokens(user: Pick<User, 'id' | 'email' | 'role'>): AuthResponseDto {
+  private issueTokens(
+    user: Pick<User, 'id' | 'email' | 'role'>,
+  ): AuthResponseDto {
     const expiresIn =
       this.configService.get('jwt_expires_in') || DEFAULT_ACCESS_TOKEN_TTL;
     const payload: JwtPayloadDto = { sub: user.id, role: user.role };

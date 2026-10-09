@@ -59,10 +59,39 @@ export enum ErrorArea {
 // Dev-facing params perfectly align with the resulting JSON by extending AppErrorJSON
 export interface AppErrorParams extends Omit<AppErrorJSON, 'type'> {
   detail: string;
+  /**
+   * Stable snake_case machine code (S54 FR-001). Required on the platform Fatal_/Transient_ classes; for legacy
+   * domain subclasses that do not pass one it is derived from the class name.
+   */
+  code?: string;
+  /** Extra non-reserved members merged into the problem document. */
+  extensions?: Record<string, unknown>;
+  /** Seconds for the `Retry-After` header. */
+  retryAfterSeconds?: number;
+  /** The idempotency facility stores this response as final. */
+  idempotencyFinal?: boolean;
+  /** Extra response headers (`WWW-Authenticate`, `Allow`, ...). */
+  headers?: Record<string, string>;
 }
+
+const toSnakeCode = (name: string): string =>
+  name
+    .replace(/^(Domain|Fatal|Transient)_/, '')
+    .replace(/Error$/, '')
+    .replace(/([a-z0-9])([A-Z])/g, '$1_$2')
+    .toLowerCase() || 'internal_error';
+
+/** Base URL of the `type` member; overridable with PROBLEM_TYPE_BASE_URL (config key `problem_type_base_url`). */
+export const problemTypeBaseUrl = (): string =>
+  process.env.PROBLEM_TYPE_BASE_URL ?? 'https://errors.marketplace.invalid';
 
 export class AppError extends Error {
   public type: string;
+  public code: string;
+  public extensions?: Record<string, unknown>;
+  public retryAfterSeconds?: number;
+  public idempotencyFinal?: boolean;
+  public headers?: Record<string, string>;
   public instance?: string;
   public status: HttpStatus;
   public title: string;
@@ -91,7 +120,12 @@ export class AppError extends Error {
     // Snip the constructor out of the stack trace so it points to the real bug
     Error.captureStackTrace(this, this.constructor);
 
-    this.type = `https://api.yourdomain.com/errors/${this.name}`;
+    this.code = params.code ?? toSnakeCode(this.name);
+    this.type = `${problemTypeBaseUrl()}/${this.code}`;
+    this.extensions = params.extensions;
+    this.retryAfterSeconds = params.retryAfterSeconds;
+    this.idempotencyFinal = params.idempotencyFinal;
+    this.headers = params.headers;
     this.title = params.title ?? 'An unexpected error occurred.';
     this.status = params.status ?? HttpStatus.INTERNAL_SERVER_ERROR;
     this.instance = params.instance;
@@ -173,12 +207,24 @@ export class AppError extends Error {
  *    - This list must only contain common Fatal and Transient errors. All Domain errors must be defined in the appropriate modules
  *    - Also, Domain errors should never be thrown, they are not exceptions. They are proper business responses that must be recorded in the database and communicated to the client.
  */
-export interface ConfiguredErrorParams extends Partial<Pick<AppErrorParams, 'title' | 'detail' | 'instance' | 'causes'>> {
-}
+export type ConfiguredErrorParams = Partial<
+  Pick<
+    AppErrorParams,
+    | 'title'
+    | 'detail'
+    | 'instance'
+    | 'causes'
+    | 'extensions'
+    | 'retryAfterSeconds'
+    | 'idempotencyFinal'
+    | 'headers'
+  >
+>;
 
 export class Fatal_BadRequestError extends AppError {
   constructor(params?: ConfiguredErrorParams) {
     super({
+      code: 'validation_failed',
       status: HttpStatus.BAD_REQUEST,
       detail: 'Bad Request',
       title: 'Bad Request',
@@ -191,6 +237,7 @@ export class Fatal_BadRequestError extends AppError {
 export class Fatal_InternalServerError extends AppError {
   constructor(params?: ConfiguredErrorParams) {
     super({
+      code: 'internal_error',
       status: HttpStatus.INTERNAL_SERVER_ERROR,
       detail: 'Internal Server Error',
       title: 'Internal Server Error',
@@ -203,6 +250,7 @@ export class Fatal_InternalServerError extends AppError {
 export class Fatal_RetriesExhaustedError extends AppError {
   constructor(params?: ConfiguredErrorParams) {
     super({
+      code: 'internal_error',
       status: HttpStatus.INTERNAL_SERVER_ERROR,
       detail: 'Internal Server Error',
       title: 'Internal Server Error',
@@ -212,10 +260,10 @@ export class Fatal_RetriesExhaustedError extends AppError {
   }
 }
 
-
 export class Fatal_NotFoundError extends AppError {
   constructor(params?: ConfiguredErrorParams) {
     super({
+      code: 'not_found',
       status: HttpStatus.NOT_FOUND,
       detail: 'Not Found',
       title: 'Not Found',
@@ -233,8 +281,10 @@ export class Fatal_NotFoundError extends AppError {
 export class Fatal_DomainErrorIsThrown extends AppError {
   constructor(params?: ConfiguredErrorParams) {
     super({
+      code: 'internal_error',
       status: HttpStatus.INTERNAL_SERVER_ERROR,
-      detail: 'Domain errors should NEVER reach outbox. They must be hanlded gracefully in the appropriate module',
+      detail:
+        'Domain errors should NEVER reach outbox. They must be hanlded gracefully in the appropriate module',
       title: 'Domain error is thrown to the outbox',
       area: ErrorArea.FATAL,
       ...params,
@@ -250,6 +300,7 @@ export class Fatal_DomainErrorIsThrown extends AppError {
 export class Transient_InternalServerError extends AppError {
   constructor(params?: ConfiguredErrorParams) {
     super({
+      code: 'internal_error',
       status: HttpStatus.INTERNAL_SERVER_ERROR,
       detail: 'Transient Error',
       title: 'Transient Error',

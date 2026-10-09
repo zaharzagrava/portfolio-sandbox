@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectConnection } from '@nestjs/sequelize';
 import { Sequelize } from 'sequelize-typescript';
 import { Transaction } from 'sequelize';
-import { TransactionRunner } from '@app/infrastructure/context/transaction-runner.service';
+import { TransactionRunner } from '@app/infrastructure/context';
 
 /**
  * Transactions with the Postgres RLS tenant set (`app.shop_id`, transaction
@@ -19,18 +19,27 @@ export class ShopTransactionRunner {
 
   inShop<T>(shopId: string, fn: (tx: Transaction) => Promise<T>): Promise<T> {
     return this.runner.run(async (tx) => {
-      await this.sequelize.query(`SELECT set_config('app.shop_id', :shopId, true)`, { replacements: { shopId }, transaction: tx });
+      await this.sequelize.query(
+        `SELECT set_config('app.shop_id', :shopId, true)`,
+        { replacements: { shopId }, transaction: tx },
+      );
       return fn(tx);
     });
   }
 
   /** Explicit, auditable bypass for system paths that legitimately cross tenants (invite acceptance by token, backfills). */
-  crossTenant<T>(reason: string, fn: (tx: Transaction) => Promise<T>): Promise<T> {
+  crossTenant<T>(
+    reason: string,
+    fn: (tx: Transaction) => Promise<T>,
+  ): Promise<T> {
     return this.runner.run(async (tx) => {
-      await this.sequelize.query(`SELECT set_config('app.rls_bypass', 'on', true), set_config('app.rls_bypass_reason', :reason, true)`, {
-        replacements: { reason },
-        transaction: tx,
-      });
+      await this.sequelize.query(
+        `SELECT set_config('app.rls_bypass', 'on', true), set_config('app.rls_bypass_reason', :reason, true)`,
+        {
+          replacements: { reason },
+          transaction: tx,
+        },
+      );
       return fn(tx);
     });
   }

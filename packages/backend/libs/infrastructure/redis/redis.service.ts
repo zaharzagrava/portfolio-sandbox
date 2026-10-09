@@ -1,7 +1,7 @@
 import { Injectable, Optional } from '@nestjs/common';
 import Redis from 'ioredis';
-import { ApiConfigService } from '@app/common/config/api-config.service';
-import { ShutdownRegistry } from '@app/infrastructure/lifecycle/shutdown-registry.service';
+import { ApiConfigService } from '@app/common/config';
+import { ShutdownRegistry } from '@app/infrastructure/lifecycle';
 
 /**
  * Shared command connection for rate limiting, caching, holds, leaderboards,
@@ -28,6 +28,10 @@ export class RedisService {
       lazyConnect: false,
     });
 
-    shutdown?.register({ name: 'redis.quit', order: 90, run: async () => void (await this.client.quit()) });
+    shutdown?.register({
+      name: 'redis.quit',
+      order: 90,
+      run: async () => void (await this.client.quit()),
+    });
   }
 }

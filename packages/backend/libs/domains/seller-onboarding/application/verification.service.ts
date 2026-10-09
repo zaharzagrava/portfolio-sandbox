@@ -30,20 +30,28 @@ export class VerificationService {
    * the verification.
    */
   async maybeVerify(shopId: string): Promise<boolean> {
+    // S54 T037 audit: explicit unit of work, opens its own transaction by design; no network I/O inside.
     return this.sequelize.transaction(async (transaction) => {
-      const [onboarding] = await this.sequelize.query<{ answers: Answers }>(`SELECT answers FROM "ShopOnboarding" WHERE "shopId" = :shopId FOR UPDATE`, {
-        type: QueryTypes.SELECT,
-        transaction,
-        replacements: { shopId },
-      });
+      const [onboarding] = await this.sequelize.query<{ answers: Answers }>(
+        `SELECT answers FROM "ShopOnboarding" WHERE "shopId" = :shopId FOR UPDATE`,
+        {
+          type: QueryTypes.SELECT,
+          transaction,
+          replacements: { shopId },
+        },
+      );
       if (!onboarding) return false;
-      const approved = await this.sequelize.query<{ kind: string }>(`SELECT DISTINCT kind FROM "ShopDocument" WHERE "shopId" = :shopId AND status = 'APPROVED'`, {
-        type: QueryTypes.SELECT,
-        transaction,
-        replacements: { shopId },
-      });
+      const approved = await this.sequelize.query<{ kind: string }>(
+        `SELECT DISTINCT kind FROM "ShopDocument" WHERE "shopId" = :shopId AND status = 'APPROVED'`,
+        {
+          type: QueryTypes.SELECT,
+          transaction,
+          replacements: { shopId },
+        },
+      );
       const have = new Set(approved.map((r) => r.kind));
-      if (!requiredDocuments(onboarding.answers).every((k) => have.has(k))) return false;
+      if (!requiredDocuments(onboarding.answers).every((k) => have.has(k)))
+        return false;
 
       const [shop] = await this.sequelize.query<{ id: string }>(
         `UPDATE "Shop" SET "verificationStatus" = 'VERIFIED', "payoutsEnabled" = TRUE, "updatedAt" = now() WHERE id = :shopId AND "verificationStatus" <> 'VERIFIED' RETURNING id`,
@@ -51,12 +59,26 @@ export class VerificationService {
       );
       if (!shop) return false;
       const verifiedAt = new Date();
-      await this.sequelize.query(`UPDATE "ShopOnboarding" SET "verifiedAt" = :verifiedAt WHERE "shopId" = :shopId`, { transaction, replacements: { shopId, verifiedAt } });
-      await this.events.record(ShopVerified.create(shopId, 2, { shopId, verifiedAt: verifiedAt.toISOString() }), transaction);
+      await this.sequelize.query(
+        `UPDATE "ShopOnboarding" SET "verifiedAt" = :verifiedAt WHERE "shopId" = :shopId`,
+        { transaction, replacements: { shopId, verifiedAt } },
+      );
+      await this.events.record(
+        ShopVerified.create(shopId, 2, {
+          shopId,
+          verifiedAt: verifiedAt.toISOString(),
+        }),
+        transaction,
+      );
       await this.jobs.enqueue(
         'onboarding.purge-documents',
         { shopId },
-        { runAt: new Date(verifiedAt.getTime() + RAW_DOCUMENT_RETENTION_DAYS * 86_400_000), idempotencyKey: `onboarding-purge:${shopId}` },
+        {
+          runAt: new Date(
+            verifiedAt.getTime() + RAW_DOCUMENT_RETENTION_DAYS * 86_400_000,
+          ),
+          idempotencyKey: `onboarding-purge:${shopId}`,
+        },
       );
       return true;
     });

@@ -10,13 +10,13 @@ import { Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_FILTER, APP_GUARD } from '@nestjs/core';
-import { AllExceptionsFilter } from '@app/common/exceptions-filter/exceptions-filter';
-import { ApiConfigService } from '@app/common/config/api-config.service';
-import { ApiConfigModule } from '@app/common/config/api-config.module';
-import { PlatformModule } from '@app/infrastructure/platform/platform.module';
+import { AllExceptionsFilter } from '@app/common/exceptions-filter';
+import { ApiConfigService, ApiConfigModule } from '@app/common/config';
+
+import { PlatformModule } from '@app/infrastructure/platform';
 import { ErrorUtilsModule } from '@app/common/errors/error-utils/error-utils.module';
 import { Environment } from '@app/common/types';
-import { SentryModule } from "@sentry/nestjs/setup";
+import { SentryModule } from '@sentry/nestjs/setup';
 import { OpenTelemetryModule } from 'nestjs-otel';
 import { RealtimeNotifierModule } from './realtime-notifier/realtime-notifier.module';
 import { PaymentStreamModule } from './payment-stream/payment-stream.module';

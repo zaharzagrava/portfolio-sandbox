@@ -1,7 +1,16 @@
-import { applyDecorators, CanActivate, ExecutionContext, ForbiddenException, Injectable, NotFoundException, SetMetadata, UseGuards } from '@nestjs/common';
+import {
+  applyDecorators,
+  CanActivate,
+  ExecutionContext,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+  SetMetadata,
+  UseGuards,
+} from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { Firewall } from '@app/domains/identity';
-import { RequestContext } from '@app/infrastructure/context/request-context.service';
+import { RequestContext } from '@app/infrastructure/context';
 import { MembershipService } from '../application/membership.service';
 import { can, ShopPermission } from '../domain/permissions';
 import { ShopRole } from '../infra/models/shop-membership.model';
@@ -35,13 +44,18 @@ export class ShopGuard implements CanActivate {
   async canActivate(ctx: ExecutionContext): Promise<boolean> {
     const req = ctx.switchToHttp().getRequest<ShopRequest>();
     const shopId = req.params.shopId ?? req.headers['x-shop-id'];
-    if (!shopId || !UUID.test(shopId) || !req.user) throw new NotFoundException('Shop not found');
+    if (!shopId || !UUID.test(shopId) || !req.user)
+      throw new NotFoundException('Shop not found');
 
     const role = await this.memberships.role(req.user.id, shopId);
     if (!role) throw new NotFoundException('Shop not found');
 
-    const permission = this.reflector.get<ShopPermission | undefined>(SHOP_PERMISSION_METADATA, ctx.getHandler());
-    if (permission && !can(role, permission)) throw new ForbiddenException(`Missing permission ${permission}`);
+    const permission = this.reflector.get<ShopPermission | undefined>(
+      SHOP_PERMISSION_METADATA,
+      ctx.getHandler(),
+    );
+    if (permission && !can(role, permission))
+      throw new ForbiddenException(`Missing permission ${permission}`);
 
     req.shopId = shopId;
     req.shopRole = role;
@@ -53,4 +67,8 @@ export class ShopGuard implements CanActivate {
 
 /** `@ShopScoped('products.write')` = authenticated + member of the shop + permission. */
 export const ShopScoped = (permission?: ShopPermission) =>
-  applyDecorators(Firewall(), SetMetadata(SHOP_PERMISSION_METADATA, permission), UseGuards(ShopGuard));
+  applyDecorators(
+    Firewall(),
+    SetMetadata(SHOP_PERMISSION_METADATA, permission),
+    UseGuards(ShopGuard),
+  );

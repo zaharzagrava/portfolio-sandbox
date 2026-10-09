@@ -1,4 +1,9 @@
-import { ConflictException, Injectable, NotFoundException, UnprocessableEntityException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+  UnprocessableEntityException,
+} from '@nestjs/common';
 import { GetCommand, PutCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
 import { ConditionalCheckFailedException } from '@aws-sdk/client-dynamodb';
 import { z } from 'zod';
@@ -7,21 +12,26 @@ import { DynamoService } from '@app/infrastructure/dynamo/dynamo.service';
 import { RedisService } from '@app/infrastructure/redis/redis.service';
 import { CacheService } from '@app/infrastructure/cache/cache.service';
 import { RedisBloomFilter } from '@app/infrastructure/cache/bloom-filter';
-import { ApiConfigService } from '@app/common/config/api-config.service';
+import { ApiConfigService } from '@app/common/config';
 import { KafkaProducerService } from '@app/infrastructure/kafka/kafka-producer.service';
 import { ClickHouseService } from '@app/infrastructure/clickhouse/clickhouse.service';
 import { defineEvent } from '@app/infrastructure/events/define-event';
 import { CUSTOM_ALIAS, scramble, toBase62 } from '../domain/codes';
 import { IdLease } from '../infra/id-lease';
 
-export const LinkClicked = defineEvent('link.clicked', 'links', 1, z.object({
-  clickId: z.string(),
-  code: z.string(),
-  ts: z.string(),
-  country: z.string().default(''),
-  referer: z.string().default(''),
-  viaEdge: z.boolean().default(false),
-}));
+export const LinkClicked = defineEvent(
+  'link.clicked',
+  'links',
+  1,
+  z.object({
+    clickId: z.string(),
+    code: z.string(),
+    ts: z.string(),
+    country: z.string().default(''),
+    referer: z.string().default(''),
+    viaEdge: z.boolean().default(false),
+  }),
+);
 
 export interface ShortLink {
   code: string;
@@ -59,31 +69,60 @@ export class ShareLinkService {
     private readonly config: ApiConfigService,
   ) {
     this.ids = new IdLease(redis, 'share-links:id-seq');
-    this.bloom = new RedisBloomFilter(redis, 'share-links:bloom', 100_000_000, 0.01);
+    this.bloom = new RedisBloomFilter(
+      redis,
+      'share-links:bloom',
+      100_000_000,
+      0.01,
+    );
     this.secret = config.get('share_link_secret') || config.get('jwt_secret');
-    this.allowedHosts = new Set([new URL(config.get('front_host')).host, 'www.' + new URL(config.get('front_host')).host]);
+    this.allowedHosts = new Set([
+      new URL(config.get('front_host')).host,
+      'www.' + new URL(config.get('front_host')).host,
+    ]);
   }
 
   get publicBase(): string {
-    return this.config.get('share_link_base_url') || `${this.config.get('backend_host')}/api/l`;
+    return (
+      this.config.get('share_link_base_url') ||
+      `${this.config.get('backend_host')}/api/l`
+    );
   }
 
-  async create(ownerId: string, destination: string, alias?: string, ttlDays?: number): Promise<ShortLink & { shortUrl: string }> {
+  async create(
+    ownerId: string,
+    destination: string,
+    alias?: string,
+    ttlDays?: number,
+  ): Promise<ShortLink & { shortUrl: string }> {
     const url = this.validateDestination(destination);
-    const code = alias ?? toBase62(scramble(await this.ids.nextId(), this.secret));
-    if (alias && !CUSTOM_ALIAS.test(alias)) throw new UnprocessableEntityException('Alias: 4-32 letters, digits or dashes');
+    const code =
+      alias ?? toBase62(scramble(await this.ids.nextId(), this.secret));
+    if (alias && !CUSTOM_ALIAS.test(alias))
+      throw new UnprocessableEntityException(
+        'Alias: 4-32 letters, digits or dashes',
+      );
 
     const link: ShortLink = {
       code,
       destination: url.toString(),
       ownerId,
       createdAt: new Date().toISOString(),
-      ...(ttlDays && { expiresAtEpoch: Math.floor(Date.now() / 1000) + ttlDays * 86_400 }),
+      ...(ttlDays && {
+        expiresAtEpoch: Math.floor(Date.now() / 1000) + ttlDays * 86_400,
+      }),
     };
     try {
-      await this.dynamo.doc.send(new PutCommand({ TableName: this.dynamo.table(TABLE), Item: link, ConditionExpression: 'attribute_not_exists(code)' }));
+      await this.dynamo.doc.send(
+        new PutCommand({
+          TableName: this.dynamo.table(TABLE),
+          Item: link,
+          ConditionExpression: 'attribute_not_exists(code)',
+        }),
+      );
     } catch (error) {
-      if (error instanceof ConditionalCheckFailedException) throw new ConflictException('Alias is taken');
+      if (error instanceof ConditionalCheckFailedException)
+        throw new ConflictException('Alias is taken');
       throw error;
     }
     await this.bloom.add([code]);
@@ -96,15 +135,30 @@ export class ShareLinkService {
     if (!(await this.bloom.mightContain(code).catch(() => true))) return null; // enumeration scans stop here
     const link = await this.cache.getOrLoad<ShortLink>(
       linkCacheKey(code),
-      async () => ((await this.dynamo.doc.send(new GetCommand({ TableName: this.dynamo.table(TABLE), Key: { code } }))).Item as ShortLink) ?? null,
+      async () =>
+        ((
+          await this.dynamo.doc.send(
+            new GetCommand({
+              TableName: this.dynamo.table(TABLE),
+              Key: { code },
+            }),
+          )
+        ).Item as ShortLink) ?? null,
       { ttlMs: 3_600_000, swrMs: 86_400_000, negativeTtlMs: 60_000, l1: 'hot' },
     );
-    if (!link || (link.expiresAtEpoch && link.expiresAtEpoch < Date.now() / 1000)) return null;
+    if (
+      !link ||
+      (link.expiresAtEpoch && link.expiresAtEpoch < Date.now() / 1000)
+    )
+      return null;
     return link;
   }
 
   /** Click event off the redirect path (the HTTP response doesn't wait for Kafka). */
-  recordClick(code: string, meta: { country?: string; referer?: string; viaEdge?: boolean }): void {
+  recordClick(
+    code: string,
+    meta: { country?: string; referer?: string; viaEdge?: boolean },
+  ): void {
     const event = LinkClicked.create(code, 0, {
       clickId: uuidv7(),
       code,
@@ -113,7 +167,9 @@ export class ShareLinkService {
       referer: (meta.referer ?? '').slice(0, 300),
       viaEdge: meta.viaEdge ?? false,
     });
-    void this.producer.send({ topic: LinkClicked.topic, key: code, value: event }).catch(() => undefined);
+    void this.producer
+      .send({ topic: LinkClicked.topic, key: code, value: event })
+      .catch(() => undefined);
   }
 
   async mine(ownerId: string): Promise<ShortLink[]> {
@@ -132,7 +188,8 @@ export class ShareLinkService {
 
   async stats(code: string, ownerId: string) {
     const link = await this.resolve(code);
-    if (!link || link.ownerId !== ownerId) throw new NotFoundException('Link not found');
+    if (!link || link.ownerId !== ownerId)
+      throw new NotFoundException('Link not found');
     return this.clickhouse.query<{ minute: string; clicks: string }>(
       `SELECT minute, sum(clicks) AS clicks FROM link_clicks_minute WHERE code = {code:String} AND minute >= now() - INTERVAL 7 DAY GROUP BY minute ORDER BY minute`,
       { code },
@@ -145,10 +202,16 @@ export class ShareLinkService {
     try {
       url = new URL(destination);
     } catch {
-      throw new UnprocessableEntityException('Destination must be an absolute URL');
+      throw new UnprocessableEntityException(
+        'Destination must be an absolute URL',
+      );
     }
-    if (url.protocol !== 'https:' && url.protocol !== 'http:') throw new UnprocessableEntityException('Only http(s) destinations');
-    if (!this.allowedHosts.has(url.host)) throw new UnprocessableEntityException('Links may only point to marketplace pages');
+    if (url.protocol !== 'https:' && url.protocol !== 'http:')
+      throw new UnprocessableEntityException('Only http(s) destinations');
+    if (!this.allowedHosts.has(url.host))
+      throw new UnprocessableEntityException(
+        'Links may only point to marketplace pages',
+      );
     url.searchParams.delete('ref');
     return url;
   }

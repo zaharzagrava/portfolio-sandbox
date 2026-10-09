@@ -2,8 +2,8 @@ import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { GraphQLModule } from '@nestjs/graphql';
 import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
 import type { Request } from 'express';
-import { ApiConfigModule } from '@app/common/config/api-config.module';
-import { ApiConfigService } from '@app/common/config/api-config.service';
+import { ApiConfigModule, ApiConfigService } from '@app/common/config';
+
 import { Environment } from '@app/common/types';
 import { CoreClient } from './core-client';
 import { ProductPageService } from './product-page.service';
@@ -14,7 +14,11 @@ import { costLimit } from './graphql/limits';
 import { persistedQueriesMiddleware } from './graphql/persisted-queries';
 import { PERSISTED_QUERIES } from './graphql/persisted-queries.allowlist';
 
-@Module({ imports: [ApiConfigModule], providers: [CoreClient], exports: [CoreClient] })
+@Module({
+  imports: [ApiConfigModule],
+  providers: [CoreClient],
+  exports: [CoreClient],
+})
 export class BffCoreModule {}
 
 /** SD-04 BFF (apps/bff): REST aggregates for web, GraphQL for mobile. Composition only - no business rules. */
@@ -32,7 +36,10 @@ export class BffCoreModule {}
         useGlobalPrefix: true, // served at /api/graphql, like every other route (ALB rule, web proxy)
         introspection: config.get('node_env') !== Environment.production,
         validationRules: [costLimit(6, 2_000)],
-        context: ({ req }: { req: Request }) => ({ loaders: createLoaders(core), auth: req.headers.authorization }),
+        context: ({ req }: { req: Request }) => ({
+          loaders: createLoaders(core),
+          auth: req.headers.authorization,
+        }),
       }),
     }),
   ],
@@ -43,6 +50,13 @@ export class BffModule implements NestModule {
   constructor(private readonly config: ApiConfigService) {}
 
   configure(consumer: MiddlewareConsumer) {
-    consumer.apply(persistedQueriesMiddleware(PERSISTED_QUERIES, this.config.get('node_env') === Environment.production)).forRoutes('graphql');
+    consumer
+      .apply(
+        persistedQueriesMiddleware(
+          PERSISTED_QUERIES,
+          this.config.get('node_env') === Environment.production,
+        ),
+      )
+      .forRoutes('graphql');
   }
 }

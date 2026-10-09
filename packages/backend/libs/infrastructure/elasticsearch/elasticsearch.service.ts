@@ -1,6 +1,6 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { Client } from '@elastic/elasticsearch';
-import { ApiConfigService } from '@app/common/config/api-config.service';
+import { ApiConfigService } from '@app/common/config';
 import {
   PRODUCT_EMBEDDING_DIMS,
   ProductSearchParams,
@@ -10,7 +10,13 @@ import {
 
 export const PRODUCTS_INDEX = 'products';
 export const SYNONYMS_SET = 'product-synonyms';
-const DEFAULT_SYNONYMS = ['airpods, earbuds, wireless headphones', 'phone, smartphone, mobile', 'laptop, notebook', 'tv, television', 'sneakers, trainers'];
+const DEFAULT_SYNONYMS = [
+  'airpods, earbuds, wireless headphones',
+  'phone, smartphone, mobile',
+  'laptop, notebook',
+  'tv, television',
+  'sneakers, trainers',
+];
 
 @Injectable()
 export class ElasticsearchService implements OnModuleInit {
@@ -55,19 +61,37 @@ export class ElasticsearchService implements OnModuleInit {
 
     await this.ensureSynonymsSet();
     const physical = `${PRODUCTS_INDEX}_v${Date.now()}`;
-    await this.client.indices.create({ index: physical, ...this.productsIndexDefinition(), aliases: { [PRODUCTS_INDEX]: { is_write_index: true } } });
-    this.l.log(`Created Elasticsearch index [${physical}] behind alias [${PRODUCTS_INDEX}]`);
+    await this.client.indices.create({
+      index: physical,
+      ...this.productsIndexDefinition(),
+      aliases: { [PRODUCTS_INDEX]: { is_write_index: true } },
+    });
+    this.l.log(
+      `Created Elasticsearch index [${physical}] behind alias [${PRODUCTS_INDEX}]`,
+    );
   }
 
   /** Search-time synonyms via the Synonyms API: editable without reindexing ("airpods" ↔ "earbuds"). */
-  public async ensureSynonymsSet(rules: string[] = DEFAULT_SYNONYMS): Promise<void> {
-    const exists = await this.client.synonyms.getSynonym({ id: SYNONYMS_SET }).then(() => true).catch(() => false);
-    if (!exists) await this.client.synonyms.putSynonym({ id: SYNONYMS_SET, synonyms_set: rules.map((synonyms) => ({ synonyms })) });
+  public async ensureSynonymsSet(
+    rules: string[] = DEFAULT_SYNONYMS,
+  ): Promise<void> {
+    const exists = await this.client.synonyms
+      .getSynonym({ id: SYNONYMS_SET })
+      .then(() => true)
+      .catch(() => false);
+    if (!exists)
+      await this.client.synonyms.putSynonym({
+        id: SYNONYMS_SET,
+        synonyms_set: rules.map((synonyms) => ({ synonyms })),
+      });
   }
 
   public async updateSynonyms(rules: string[]): Promise<void> {
     // putSynonym reloads every search analyzer using the set - no index close, no reindex.
-    await this.client.synonyms.putSynonym({ id: SYNONYMS_SET, synonyms_set: rules.map((synonyms) => ({ synonyms })) });
+    await this.client.synonyms.putSynonym({
+      id: SYNONYMS_SET,
+      synonyms_set: rules.map((synonyms) => ({ synonyms })),
+    });
   }
 
   public productsIndexDefinition() {
@@ -99,7 +123,11 @@ export class ElasticsearchService implements OnModuleInit {
               min_gram: 2,
               max_gram: 20,
             },
-            product_synonyms: { type: 'synonym_graph', synonyms_set: SYNONYMS_SET, updateable: true },
+            product_synonyms: {
+              type: 'synonym_graph',
+              synonyms_set: SYNONYMS_SET,
+              updateable: true,
+            },
           },
         },
       },
@@ -118,7 +146,11 @@ export class ElasticsearchService implements OnModuleInit {
               keyword: { type: 'keyword' },
             },
           },
-          description: { type: 'text', analyzer: 'standard', search_analyzer: 'search_synonyms' },
+          description: {
+            type: 'text',
+            analyzer: 'standard',
+            search_analyzer: 'search_synonyms',
+          },
           brand: {
             type: 'text',
             fields: { keyword: { type: 'keyword' } },
@@ -157,7 +189,10 @@ export class ElasticsearchService implements OnModuleInit {
         index: {
           _index: PRODUCTS_INDEX,
           _id: doc.id,
-          ...(doc.version !== undefined && { version: doc.version, version_type: 'external_gte' as const }),
+          ...(doc.version !== undefined && {
+            version: doc.version,
+            version_type: 'external_gte' as const,
+          }),
         },
       },
       {
@@ -182,7 +217,9 @@ export class ElasticsearchService implements OnModuleInit {
     if (response.errors) {
       // Version conflicts are expected (a newer version is already indexed) - not failures.
       const failedItems = (response.items ?? []).filter(
-        (item: any) => item.index?.error && item.index.error.type !== 'version_conflict_engine_exception',
+        (item: any) =>
+          item.index?.error &&
+          item.index.error.type !== 'version_conflict_engine_exception',
       );
       if (failedItems.length === 0) return;
       this.l.warn(
@@ -216,12 +253,25 @@ export class ElasticsearchService implements OnModuleInit {
    * optional facets + optional k-NN + autocomplete suggestions.
    */
   /** Product-title completions only (edge n-grams, README #15) - the cheap half of `searchProducts` used by SD-12 /suggest. */
-  public async suggestTitles(prefix: string, size = 5, signal?: AbortSignal): Promise<string[]> {
+  public async suggestTitles(
+    prefix: string,
+    size = 5,
+    signal?: AbortSignal,
+  ): Promise<string[]> {
     const response = await this.client.search(
-      { index: PRODUCTS_INDEX, size, query: { match: { 'title.autocomplete': { query: prefix, operator: 'and' } } }, _source: ['title'] },
+      {
+        index: PRODUCTS_INDEX,
+        size,
+        query: {
+          match: { 'title.autocomplete': { query: prefix, operator: 'and' } },
+        },
+        _source: ['title'],
+      },
       { signal },
     );
-    return (response.hits.hits ?? []).map((h) => (h._source as { title?: string } | undefined)?.title).filter((t): t is string => Boolean(t));
+    return (response.hits.hits ?? [])
+      .map((h) => (h._source as { title?: string } | undefined)?.title)
+      .filter((t): t is string => Boolean(t));
   }
 
   public async searchProducts(
@@ -292,8 +342,22 @@ export class ElasticsearchService implements OnModuleInit {
           query: relevance,
           functions: [
             { filter: { term: { inStock: true } }, weight: 2 },
-            { field_value_factor: { field: 'rating', modifier: 'log1p', factor: 1, missing: 0 } },
-            { field_value_factor: { field: 'popularity', modifier: 'log1p', factor: 0.1, missing: 0 } },
+            {
+              field_value_factor: {
+                field: 'rating',
+                modifier: 'log1p',
+                factor: 1,
+                missing: 0,
+              },
+            },
+            {
+              field_value_factor: {
+                field: 'popularity',
+                modifier: 'log1p',
+                factor: 0.1,
+                missing: 0,
+              },
+            },
           ],
           score_mode: 'sum',
           boost_mode: 'multiply',
@@ -388,11 +452,11 @@ export class ElasticsearchService implements OnModuleInit {
       suggestions,
       facets: facets
         ? {
-          categories: this.bucketKeys(aggs?.categories),
-          brands: this.bucketKeys(aggs?.brands),
-          priceRanges: this.bucketKeys(aggs?.price_ranges),
-          avgRating: aggs?.avg_rating?.value ?? null,
-        }
+            categories: this.bucketKeys(aggs?.categories),
+            brands: this.bucketKeys(aggs?.brands),
+            priceRanges: this.bucketKeys(aggs?.price_ranges),
+            avgRating: aggs?.avg_rating?.value ?? null,
+          }
         : undefined,
     };
   }

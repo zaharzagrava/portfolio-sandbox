@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { createHmac } from 'node:crypto';
-import { ApiConfigService } from '@app/common/config/api-config.service';
-import { ResilientHttpClient } from '@app/infrastructure/http-client/resilient-http-client';
+import { ApiConfigService } from '@app/common/config';
+import { ResilientHttpClient } from '@app/infrastructure/http-client';
 import { EventEnvelope } from '@app/infrastructure/events/event-envelope';
 import { Projector } from '@app/infrastructure/projections/projector';
 import { StoryPublished } from '../application/events/story-events';
@@ -12,7 +12,7 @@ export abstract class CdnPurger {
 }
 
 export class CloudflarePurger extends CdnPurger {
-  private readonly http = new ResilientHttpClient('cloudflare');
+  private readonly http = ResilientHttpClient.create({ name: 'cloudflare' });
 
   constructor(
     private readonly zoneId: string,
@@ -24,14 +24,26 @@ export class CloudflarePurger extends CdnPurger {
   async purgeTags(tags: string[]) {
     // Cloudflare accepts ≤ 30 tags per call.
     for (let i = 0; i < tags.length; i += 30) {
-      const res = await this.http.requestJson<{ success: boolean; errors?: unknown[] }>(`https://api.cloudflare.com/client/v4/zones/${this.zoneId}/purge_cache`, {
-        method: 'POST',
-        headers: { authorization: `Bearer ${this.token}`, 'content-type': 'application/json' },
-        body: JSON.stringify({ tags: tags.slice(i, i + 30) }),
-        idempotent: true, // purging twice is harmless
-        timeoutMs: 5_000,
-      });
-      if (!res.body.success) throw new Error(`cloudflare purge failed: ${JSON.stringify(res.body.errors)}`);
+      const res = await this.http.requestJson<{
+        success: boolean;
+        errors?: unknown[];
+      }>(
+        `https://api.cloudflare.com/client/v4/zones/${this.zoneId}/purge_cache`,
+        {
+          method: 'POST',
+          headers: {
+            authorization: `Bearer ${this.token}`,
+            'content-type': 'application/json',
+          },
+          body: JSON.stringify({ tags: tags.slice(i, i + 30) }),
+          idempotent: true, // purging twice is harmless
+          timeoutMs: 5_000,
+        },
+      );
+      if (!res.body.success)
+        throw new Error(
+          `cloudflare purge failed: ${JSON.stringify(res.body.errors)}`,
+        );
     }
   }
 }
@@ -56,7 +68,10 @@ export class LoggingPurger extends CdnPurger {
 export class StoryCacheInvalidator implements Projector {
   readonly name = 'story-cache-invalidation';
   readonly topics = [StoryPublished.topic];
-  private readonly http = new ResilientHttpClient('next-revalidate');
+  private readonly http = ResilientHttpClient.create({
+    name: 'next-revalidate',
+    internal: true,
+  });
 
   constructor(
     private readonly purger: CdnPurger,
@@ -64,19 +79,37 @@ export class StoryCacheInvalidator implements Projector {
   ) {}
 
   async project(events: EventEnvelope[]): Promise<void> {
-    const tags = [...new Set(events.map((e) => StoryPublished.match(e)).filter((e): e is NonNullable<typeof e> => !!e).flatMap(({ payload }) => [`story:${payload.storyId}`, `shop:${payload.shopId}`]))];
+    const tags = [
+      ...new Set(
+        events
+          .map((e) => StoryPublished.match(e))
+          .filter((e): e is NonNullable<typeof e> => !!e)
+          .flatMap(({ payload }) => [
+            `story:${payload.storyId}`,
+            `shop:${payload.shopId}`,
+          ]),
+      ),
+    ];
     if (tags.length === 0) return;
     await this.purger.purgeTags(tags);
     const secret = this.config.get('revalidate_secret');
     if (!secret) return;
     const body = JSON.stringify({ tags, at: Date.now() });
-    await this.http.requestJson(`${this.config.get('front_host')}/api/revalidate`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json', 'x-revalidate-signature': createHmac('sha256', secret).update(body).digest('hex') },
-      body,
-      idempotent: true,
-      timeoutMs: 5_000,
-    });
+    await this.http.requestJson(
+      `${this.config.get('front_host')}/api/revalidate`,
+      {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          'x-revalidate-signature': createHmac('sha256', secret)
+            .update(body)
+            .digest('hex'),
+        },
+        body,
+        idempotent: true,
+        timeoutMs: 5_000,
+      },
+    );
   }
 }
 
@@ -86,6 +119,8 @@ export const CDN_PURGER_PROVIDER = {
   useFactory: (config: ApiConfigService) => {
     const zone = config.get('cloudflare_zone_id');
     const token = config.get('cloudflare_api_token');
-    return zone && token ? new CloudflarePurger(zone, token) : new LoggingPurger();
+    return zone && token
+      ? new CloudflarePurger(zone, token)
+      : new LoggingPurger();
   },
 };

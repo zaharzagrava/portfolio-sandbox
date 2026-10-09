@@ -1,7 +1,13 @@
-import { Injectable, Logger, OnModuleDestroy, OnModuleInit, Optional } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  OnModuleDestroy,
+  OnModuleInit,
+  Optional,
+} from '@nestjs/common';
 import Redis from 'ioredis';
-import { ApiConfigService } from '@app/common/config/api-config.service';
-import { ShutdownRegistry } from '@app/infrastructure/lifecycle/shutdown-registry.service';
+import { ApiConfigService } from '@app/common/config';
+import { ShutdownRegistry } from '@app/infrastructure/lifecycle';
 import { DraftStore } from '../infra/draft-store';
 import { Room } from './room';
 
@@ -26,15 +32,31 @@ export class RoomManager implements OnModuleInit, OnModuleDestroy {
     config: ApiConfigService,
     @Optional() shutdown?: ShutdownRegistry,
   ) {
-    this.subscriber = new Redis(config.get('redis_url'), { maxRetriesPerRequest: null, lazyConnect: true });
-    shutdown?.register({ name: 'collab.rooms.close', order: 15, run: () => this.onModuleDestroy() });
+    this.subscriber = new Redis(config.get('redis_url'), {
+      maxRetriesPerRequest: null,
+      lazyConnect: true,
+    });
+    shutdown?.register({
+      name: 'collab.rooms.close',
+      order: 15,
+      run: () => this.onModuleDestroy(),
+    });
   }
 
   async onModuleInit() {
-    await this.subscriber.connect().catch((e) => this.logger.warn(`revoke channel unavailable: ${e.message}`));
-    await this.subscriber.subscribe(COLLAB_REVOKE_CHANNEL).catch(() => undefined);
+    await this.subscriber
+      .connect()
+      .catch((e) =>
+        this.logger.warn(`revoke channel unavailable: ${e.message}`),
+      );
+    await this.subscriber
+      .subscribe(COLLAB_REVOKE_CHANNEL)
+      .catch(() => undefined);
     this.subscriber.on('message', (_channel: string, raw: string) => {
-      const { draftId, userId } = JSON.parse(raw) as { draftId: string; userId: string };
+      const { draftId, userId } = JSON.parse(raw) as {
+        draftId: string;
+        userId: string;
+      };
       void this.rooms.get(draftId)?.then((room) => room.kick(userId));
     });
   }
@@ -44,7 +66,14 @@ export class RoomManager implements OnModuleInit, OnModuleDestroy {
     this.idleTimers.delete(draftId);
     let room = this.rooms.get(draftId);
     if (!room) {
-      room = this.store.load(draftId).then(({ doc, seq }) => new Room(draftId, doc, seq, this.store, (failed) => this.evict(failed)));
+      room = this.store
+        .load(draftId)
+        .then(
+          ({ doc, seq }) =>
+            new Room(draftId, doc, seq, this.store, (failed) =>
+              this.evict(failed),
+            ),
+        );
       room.catch(() => this.rooms.delete(draftId));
       this.rooms.set(draftId, room);
     }
@@ -71,7 +100,11 @@ export class RoomManager implements OnModuleInit, OnModuleDestroy {
     const room = await this.rooms.get(draftId);
     this.rooms.delete(draftId);
     this.idleTimers.delete(draftId);
-    await room?.close().catch((e: Error) => this.logger.error(`unload ${draftId}: ${e.message}`));
+    await room
+      ?.close()
+      .catch((e: Error) =>
+        this.logger.error(`unload ${draftId}: ${e.message}`),
+      );
   }
 
   async onModuleDestroy() {

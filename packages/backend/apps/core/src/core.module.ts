@@ -1,17 +1,42 @@
 import { ShopFunctionsModule } from '@app/domains/shop-functions';
 import { KnowledgeModule } from '@app/domains/assistant';
 import { OnboardingModule } from '@app/domains/seller-onboarding';
-import { CrawlerModule, LeaderboardsModule, SellerStatsModule } from '@app/domains/seller-insights';
-import { IntegrationsModule, CatalogImportModule, OfflineSyncModule } from '@app/domains/catalog-sync';
+import {
+  CrawlerModule,
+  LeaderboardsModule,
+  SellerStatsModule,
+} from '@app/domains/seller-insights';
+import {
+  IntegrationsModule,
+  CatalogImportModule,
+  OfflineSyncModule,
+} from '@app/domains/catalog-sync';
 import { VideoModule, MediaModule } from '@app/domains/media';
 import { AssetsModule } from '@app/domains/asset-library';
 import { StoriesModule } from '@app/domains/content';
-import { WidgetModule, WebhooksModule, DevelopersModule } from '@app/domains/developer-platform';
-import { TrendingModule, RecommendationsModule, SearchAdminModule, AutocompleteModule } from '@app/domains/discovery';
+import {
+  WidgetModule,
+  WebhooksModule,
+  DevelopersModule,
+} from '@app/domains/developer-platform';
+import {
+  TrendingModule,
+  RecommendationsModule,
+  SearchAdminModule,
+  AutocompleteModule,
+} from '@app/domains/discovery';
 import { AdsModule, ShareLinksModule } from '@app/domains/marketing';
-import { AnalyticsModule, FlagsSdkModule, FlagsAdminModule } from '@app/domains/experimentation';
+import {
+  AnalyticsModule,
+  FlagsSdkModule,
+  FlagsAdminModule,
+} from '@app/domains/experimentation';
 import { DeliveryModule, PickupModule } from '@app/domains/fulfilment';
-import { DraftsModule, ProductBatchReadModule, ProductModule } from '@app/domains/catalog';
+import {
+  DraftsModule,
+  ProductBatchReadModule,
+  ProductModule,
+} from '@app/domains/catalog';
 import { ChatSyncModule, ChatModule } from '@app/domains/chat';
 import { LiveModule, LaunchEventsModule } from '@app/domains/launch-events';
 import { NotificationsModule } from '@app/domains/notifications';
@@ -26,11 +51,11 @@ import { Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_FILTER, APP_GUARD } from '@nestjs/core';
-import { AllExceptionsFilter } from '@app/common/exceptions-filter/exceptions-filter';
+import { AllExceptionsFilter } from '@app/common/exceptions-filter';
 import { ScheduleModule } from '@nestjs/schedule';
-import { ApiConfigService } from '@app/common/config/api-config.service';
-import { ApiConfigModule } from '@app/common/config/api-config.module';
-import { PlatformModule } from '@app/infrastructure/platform/platform.module';
+import { ApiConfigService, ApiConfigModule } from '@app/common/config';
+
+import { PlatformModule } from '@app/infrastructure/platform';
 import { RedisModule } from '@app/infrastructure/redis/redis.module';
 import { DynamoModule } from '@app/infrastructure/dynamo/dynamo.module';
 import { CacheModule } from '@app/infrastructure/cache/cache.module';
@@ -41,7 +66,7 @@ import { ErrorUtilsModule } from '@app/common/errors/error-utils/error-utils.mod
 import { AdminModule, UsersModule, AuthApiModule } from '@app/domains/identity';
 import { AppController } from './app.controller';
 import { Environment } from '@app/common/types';
-import { SentryModule } from "@sentry/nestjs/setup";
+import { SentryModule } from '@sentry/nestjs/setup';
 import { AppService } from './app.service';
 import { ClickHouseModule } from '@app/infrastructure/clickhouse/clickhouse.module';
 import { OpenTelemetryModule } from 'nestjs-otel';

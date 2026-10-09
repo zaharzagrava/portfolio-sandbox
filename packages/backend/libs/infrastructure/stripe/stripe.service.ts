@@ -1,9 +1,9 @@
-import { metrics } from '@opentelemetry/api';
 import { Injectable, Logger } from '@nestjs/common';
-import { ApiConfigService } from '@app/common/config/api-config.service';
+import { ApiConfigService } from '@app/common/config';
 import Stripe from 'stripe'; // Fixed: Cleaned up imports
-import CircuitBreaker from 'opossum';
-import { InternalServerError } from '@app/common/errors/error.types';
+import { CircuitBreaker, CircuitOpenError } from '@app/common/resilience';
+import { SystemClock } from '@app/common/core/clock';
+import { InternalServerError } from '@app/common/errors';
 import { ErrorUtilsService } from '@app/common/errors/error-utils/error-utils.service';
 import { Domain_CircuitBreakerOpenError } from './stripe.errors';
 import { Event } from 'node_modules/stripe/cjs/resources/Events';
@@ -16,10 +16,7 @@ import { Session } from 'node_modules/stripe/cjs/resources/Checkout';
 export class StripeService {
   private readonly l = new Logger(StripeService.name);
   private readonly stripe: Stripe.Stripe; // Fixed: Changed Stripe.Stripe to Stripe
-  private readonly createPaymentIntentBreaker: CircuitBreaker<
-    [{ amount: number; paymentMethodId: string; idempotencyKey: string }],
-    Response<PaymentIntent>
-  >;
+  private readonly createPaymentIntentBreaker: CircuitBreaker;
 
   constructor(
     private readonly configService: ApiConfigService,
@@ -28,18 +25,21 @@ export class StripeService {
     // Fixed: Added the required apiVersion config object
     this.stripe = new Stripe(this.configService.get('stripe_secret_key'), {
       apiVersion: '2026-08-26.dahlia', // Use the version your account is pinned to, or the latest
+      timeout: 15_000,
     });
 
-    this.createPaymentIntentBreaker = new CircuitBreaker(
-      (params: { amount: number; paymentMethodId: string; idempotencyKey: string }) =>
-        this.createPaymentIntentUnprotected(params),
-      { errorThresholdPercentage: 50, resetTimeout: 10_000, timeout: 15_000 },
-    );
-    // SD-33: breaker state as a gauge (1 = open) → alert StripeCircuitOpen.
-    metrics
-      .getMeter('payments')
-      .createObservableGauge('circuit_breaker_open', { description: '1 while the circuit breaker is open' })
-      .addCallback((r) => r.observe(this.createPaymentIntentBreaker.opened ? 1 : 0, { breaker: 'stripe.create_payment_intent' }));
+    // Opens when at least half of the recent calls fail (a card decline is the customer's, not Stripe's, so it does not count).
+    this.createPaymentIntentBreaker = new CircuitBreaker({
+      name: 'stripe.create_payment_intent',
+      clock: new SystemClock(),
+      windowMs: 30_000,
+      minimumCalls: 5,
+      failureRateThreshold: 0.5,
+      openDurationMs: 10_000,
+      halfOpenCalls: 1,
+      isFailure: (error) =>
+        (error as { type?: string }).type !== 'StripeCardError',
+    });
   }
 
   // Fixed: Changed Event.Event to Stripe.Event
@@ -66,11 +66,14 @@ export class StripeService {
     idempotencyKey: string;
   }): Promise<Response<PaymentIntent>> {
     try {
-      return await this.createPaymentIntentBreaker.fire(params);
+      return (
+        await this.createPaymentIntentBreaker.execute(() =>
+          this.createPaymentIntentUnprotected(params),
+        )
+      ).value;
     } catch (error) {
-      if (this.createPaymentIntentBreaker.opened) {
+      if (error instanceof CircuitOpenError)
         throw new Domain_CircuitBreakerOpenError({ causes: [error] });
-      }
       throw error;
     }
   }
@@ -192,7 +195,12 @@ export class StripeService {
    * happened". Card declines and validation errors are definite failures.
    */
   public isUnknownOutcome(error: unknown): boolean {
-    const e = error as { type?: string; code?: string; message?: string; name?: string };
+    const e = error as {
+      type?: string;
+      code?: string;
+      message?: string;
+      name?: string;
+    };
     return (
       e?.type === 'StripeConnectionError' ||
       e?.type === 'StripeAPIError' ||
@@ -203,15 +211,26 @@ export class StripeService {
   }
 
   /** "Query the provider by OUR reference" (lesson 10/02 Ex1) - never re-send a charge whose outcome is unknown. */
-  public async findPaymentIntentByIdempotencyKey(idempotencyKey: string): Promise<PaymentIntent | null> {
-    const result = await this.stripe.paymentIntents.search({ query: `metadata['idempotencyKey']:'${idempotencyKey.replace(/'/g, '')}'`, limit: 1 });
+  public async findPaymentIntentByIdempotencyKey(
+    idempotencyKey: string,
+  ): Promise<PaymentIntent | null> {
+    const result = await this.stripe.paymentIntents.search({
+      query: `metadata['idempotencyKey']:'${idempotencyKey.replace(/'/g, '')}'`,
+      limit: 1,
+    });
     return result.data[0] ?? null;
   }
 
   /** Streams every PaymentIntent created in [from, to) - auto-pagination with backpressure (`for await`). */
-  public async *paymentIntentsCreatedBetween(from: Date, to: Date): AsyncGenerator<PaymentIntent> {
+  public async *paymentIntentsCreatedBetween(
+    from: Date,
+    to: Date,
+  ): AsyncGenerator<PaymentIntent> {
     for await (const intent of this.stripe.paymentIntents.list({
-      created: { gte: Math.floor(from.getTime() / 1000), lt: Math.floor(to.getTime() / 1000) },
+      created: {
+        gte: Math.floor(from.getTime() / 1000),
+        lt: Math.floor(to.getTime() / 1000),
+      },
       limit: 100,
     })) {
       yield intent;
@@ -219,10 +238,21 @@ export class StripeService {
   }
 
   /** Stripe Connect transfer to a shop's connected account; idempotent by our payout id. */
-  public async transfer(params: { amount: number; currency: string; destination: string; idempotencyKey: string }): Promise<{ id: string }> {
-    if (this.configService.get('is_load_test')) return { id: `tr_loadtest_${params.idempotencyKey}` };
+  public async transfer(params: {
+    amount: number;
+    currency: string;
+    destination: string;
+    idempotencyKey: string;
+  }): Promise<{ id: string }> {
+    if (this.configService.get('is_load_test'))
+      return { id: `tr_loadtest_${params.idempotencyKey}` };
     const transfer = await this.stripe.transfers.create(
-      { amount: params.amount, currency: params.currency.toLowerCase(), destination: params.destination, metadata: { payoutId: params.idempotencyKey } },
+      {
+        amount: params.amount,
+        currency: params.currency.toLowerCase(),
+        destination: params.destination,
+        metadata: { payoutId: params.idempotencyKey },
+      },
       { idempotencyKey: params.idempotencyKey },
     );
     return { id: transfer.id };

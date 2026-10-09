@@ -16,12 +16,15 @@ import * as _ from 'lodash';
 
 import { UserModel as User } from '@app/domains/identity';
 import Migration from '@app/infrastructure/database/migration.model';
-import { PaymentModel as Payment, LedgerEntryModel as LedgerEntry } from '@app/domains/payments';
+import {
+  PaymentModel as Payment,
+  LedgerEntryModel as LedgerEntry,
+} from '@app/domains/payments';
 import { BisOrderModel as BisOrder } from '@app/domains/orders';
 import Outbox from '@app/infrastructure/outbox/outbox.model';
 import { ProductModel as Product } from '@app/domains/catalog';
 import { TestCleanupRegistry } from '../utils/test-cleanup.registry';
-import { ApiConfigService } from '@app/common/config/api-config.service';
+import { ApiConfigService } from '@app/common/config';
 import { TsNodeUtilsService } from '@app/common/scripts/ts-node-utils.service';
 import { v4 as uuidv4 } from 'uuid';
 import * as jwt from 'jsonwebtoken';
@@ -132,21 +135,29 @@ export class SeedsService {
     const tables = await sequelize.query<{ name: string }>(
       `SELECT table_name::text AS name FROM information_schema.tables
        WHERE table_schema = 'public' AND table_type = 'BASE TABLE' AND table_name NOT IN (:keep)`,
-      { type: QueryTypes.SELECT, replacements: { keep: SeedsService.KEEP_TABLES } },
+      {
+        type: QueryTypes.SELECT,
+        replacements: { keep: SeedsService.KEEP_TABLES },
+      },
     );
     if (tables.length) {
       // The app's own background pollers (outbox, jobs) may hold row locks: retry a deadlock a few times.
       for (let attempt = 1; ; attempt++) {
         try {
-          await sequelize.query(`TRUNCATE ${tables.map((t) => `"${t.name}"`).join(', ')} RESTART IDENTITY CASCADE`);
+          await sequelize.query(
+            `TRUNCATE ${tables.map((t) => `"${t.name}"`).join(', ')} RESTART IDENTITY CASCADE`,
+          );
           break;
         } catch (error) {
-          const pg = (error as { parent?: { message?: string; code?: string } }).parent;
+          const pg = (error as { parent?: { message?: string; code?: string } })
+            .parent;
           if (pg?.code === '40P01' && attempt < 5) {
             await new Promise((r) => setTimeout(r, 100 * attempt));
             continue;
           }
-          throw new Error(`seeds.clean TRUNCATE failed: ${pg?.message ?? (error as Error).message}`);
+          throw new Error(
+            `seeds.clean TRUNCATE failed: ${pg?.message ?? (error as Error).message}`,
+          );
         }
       }
     }
@@ -155,7 +166,13 @@ export class SeedsService {
     await this.testCleanupRegistry?.runAll();
   }
 
-  private static readonly KEEP_TABLES = ['SequelizeMeta', 'spatial_ref_sys', 'Plan', 'Price', 'CommissionRate'];
+  private static readonly KEEP_TABLES = [
+    'SequelizeMeta',
+    'spatial_ref_sys',
+    'Plan',
+    'Price',
+    'CommissionRate',
+  ];
 
   public getModel(
     modelType: BisOrder | Payment | User | Migration | LedgerEntry | Outbox,
@@ -233,7 +250,7 @@ export class SeedsService {
           // Parse special instructions
           if (
             relatedEntity[
-            relationData.foreignKey as keyof CreateTreelikeClass
+              relationData.foreignKey as keyof CreateTreelikeClass
             ] === 'GET_FROM_PARENT'
           ) {
             relatedEntity[
@@ -391,7 +408,10 @@ export class SeedsService {
     if (!fs.existsSync(dataDir)) {
       fs.mkdirSync(dataDir, { recursive: true });
     }
-    await fs.writeFileSync('scripts/load-tests/data/default.json', JSON.stringify(allData, null, 2));
+    fs.writeFileSync(
+      'scripts/load-tests/data/default.json',
+      JSON.stringify(allData, null, 2),
+    );
   }
 
   // Read private key only once

@@ -1,7 +1,12 @@
-import { Injectable, Logger, OnApplicationBootstrap, OnModuleDestroy } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  OnApplicationBootstrap,
+  OnModuleDestroy,
+} from '@nestjs/common';
 import type { Consumer, EachBatchPayload, Producer } from 'kafkajs';
 import { hostname } from 'node:os';
-import { ApiConfigService } from '@app/common/config/api-config.service';
+import { ApiConfigService } from '@app/common/config';
 import { createKafka } from '@app/infrastructure/kafka/kafka-client.factory';
 import { ADS_CLICKS_TOPIC, ClickRecord } from '../application/ads.service';
 
@@ -18,12 +23,23 @@ export interface MinuteAggregate {
 }
 
 /** Pure: one Kafka batch → per (campaign, minute) counts, tagged with the batch identity (partition, first offset). */
-export function aggregateBatch(partition: number, firstOffset: number, records: ClickRecord[]): MinuteAggregate[] {
+export function aggregateBatch(
+  partition: number,
+  firstOffset: number,
+  records: ClickRecord[],
+): MinuteAggregate[] {
   const byKey = new Map<string, MinuteAggregate>();
   for (const r of records) {
     const minute = `${r.ts.slice(0, 16)}:00`;
     const key = `${r.campaign_id}|${minute}`;
-    const agg = byKey.get(key) ?? { campaign_id: r.campaign_id, minute, source_partition: partition, first_offset: firstOffset, clicks: 0, invalid: 0 };
+    const agg = byKey.get(key) ?? {
+      campaign_id: r.campaign_id,
+      minute,
+      source_partition: partition,
+      first_offset: firstOffset,
+      clicks: 0,
+      invalid: 0,
+    };
     if (r.valid) agg.clicks++;
     else agg.invalid++;
     byKey.set(key, agg);
@@ -40,7 +56,9 @@ export function aggregateBatch(partition: number, firstOffset: number, records: 
  * offset), so even a non-transactional re-write would replace, not add.
  */
 @Injectable()
-export class ClickAggregator implements OnApplicationBootstrap, OnModuleDestroy {
+export class ClickAggregator
+  implements OnApplicationBootstrap, OnModuleDestroy
+{
   private readonly logger = new Logger(ClickAggregator.name);
   private consumer?: Consumer;
   private producer?: Producer;
@@ -49,14 +67,26 @@ export class ClickAggregator implements OnApplicationBootstrap, OnModuleDestroy 
 
   async onApplicationBootstrap() {
     const kafka = createKafka(this.config, 'ads-aggregator');
-    this.producer = kafka.producer({ transactionalId: `${GROUP}-${hostname()}-${process.pid}`, idempotent: true, maxInFlightRequests: 1 });
+    this.producer = kafka.producer({
+      transactionalId: `${GROUP}-${hostname()}-${process.pid}`,
+      idempotent: true,
+      maxInFlightRequests: 1,
+    });
     this.consumer = kafka.consumer({ groupId: GROUP, readUncommitted: false });
     try {
       await Promise.all([this.producer.connect(), this.consumer.connect()]);
-      await this.consumer.subscribe({ topic: ADS_CLICKS_TOPIC, fromBeginning: false });
-      void this.consumer.run({ autoCommit: false, eachBatch: (p) => this.onBatch(p) });
+      await this.consumer.subscribe({
+        topic: ADS_CLICKS_TOPIC,
+        fromBeginning: false,
+      });
+      void this.consumer.run({
+        autoCommit: false,
+        eachBatch: (p) => this.onBatch(p),
+      });
     } catch (error) {
-      this.logger.warn(`ads aggregator not started: ${(error as Error).message}`);
+      this.logger.warn(
+        `ads aggregator not started: ${(error as Error).message}`,
+      );
     }
   }
 
@@ -74,13 +104,34 @@ export class ClickAggregator implements OnApplicationBootstrap, OnModuleDestroy 
         return [];
       }
     });
-    const aggregates = aggregateBatch(batch.partition, Number(batch.messages[0].offset), records);
+    const aggregates = aggregateBatch(
+      batch.partition,
+      Number(batch.messages[0].offset),
+      records,
+    );
+    // S54 T037 audit: explicit unit of work, opens its own transaction by design; no network I/O inside.
     const tx = await this.producer!.transaction();
     try {
-      await tx.send({ topic: ADS_AGGREGATES_TOPIC, messages: aggregates.map((a) => ({ key: a.campaign_id, value: JSON.stringify(a) })) });
+      await tx.send({
+        topic: ADS_AGGREGATES_TOPIC,
+        messages: aggregates.map((a) => ({
+          key: a.campaign_id,
+          value: JSON.stringify(a),
+        })),
+      });
       await tx.sendOffsets({
         consumerGroupId: GROUP,
-        topics: [{ topic: batch.topic, partitions: [{ partition: batch.partition, offset: (BigInt(batch.lastOffset()) + 1n).toString() }] }],
+        topics: [
+          {
+            topic: batch.topic,
+            partitions: [
+              {
+                partition: batch.partition,
+                offset: (BigInt(batch.lastOffset()) + 1n).toString(),
+              },
+            ],
+          },
+        ],
       });
       await tx.commit();
     } catch (error) {

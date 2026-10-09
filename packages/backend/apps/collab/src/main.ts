@@ -1,7 +1,7 @@
 import './instrument';
 import { NestFactory } from '@nestjs/core';
-import { ApiConfigService } from '@app/common/config/api-config.service';
-import { configureHttpApp } from '@app/infrastructure/platform/bootstrap-http';
+import { ApiConfigService } from '@app/common/config';
+import { configureHttpApp } from '@app/infrastructure/platform';
 import { CollabAppModule } from './collab-app.module';
 
 async function bootstrap() {

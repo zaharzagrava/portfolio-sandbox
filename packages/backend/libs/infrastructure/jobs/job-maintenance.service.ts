@@ -1,10 +1,15 @@
-import { Injectable, Logger, OnApplicationBootstrap, Optional } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  OnApplicationBootstrap,
+  Optional,
+} from '@nestjs/common';
 import { InjectConnection } from '@nestjs/sequelize';
 import { QueryTypes, Sequelize } from 'sequelize';
 import { JobHandler } from './job-handler.decorator';
 import { JobPayloads } from './job-types';
 import { nextFireAt } from './cron';
-import { ShutdownRegistry } from '@app/infrastructure/lifecycle/shutdown-registry.service';
+import { ShutdownRegistry } from '@app/infrastructure/lifecycle';
 import { sleep } from '@app/common/core/backoff';
 import { metrics } from '@opentelemetry/api';
 
@@ -33,12 +38,18 @@ export class JobMaintenance implements OnApplicationBootstrap {
     @InjectConnection() private readonly sequelize: Sequelize,
     @Optional() shutdown?: ShutdownRegistry,
   ) {
-    shutdown?.register({ name: 'jobs.maintenance.stop', order: 10, run: () => this.stop() });
+    shutdown?.register({
+      name: 'jobs.maintenance.stop',
+      order: 10,
+      run: () => this.stop(),
+    });
 
     // The autoscaling signal for the worker fleet (O-03): how late is the oldest due job?
     metrics
       .getMeter('jobs')
-      .createObservableGauge('job_queue_lag_seconds', { description: 'now - runAt of the oldest due QUEUED job' })
+      .createObservableGauge('job_queue_lag_seconds', {
+        description: 'now - runAt of the oldest due QUEUED job',
+      })
       .addCallback((result) => result.observe(this.queueLagSeconds));
   }
 
@@ -52,7 +63,8 @@ export class JobMaintenance implements OnApplicationBootstrap {
       try {
         await this.materializeDueSchedules();
         await this.reapExpiredLeases();
-        if (this.ticks++ % 10 === 0) this.queueLagSeconds = await this.measureQueueLag();
+        if (this.ticks++ % 10 === 0)
+          this.queueLagSeconds = await this.measureQueueLag();
       } catch (error) {
         this.logger.error(`maintenance tick: ${(error as Error).message}`);
       }
@@ -62,14 +74,25 @@ export class JobMaintenance implements OnApplicationBootstrap {
 
   async materializeDueSchedules(now = new Date()): Promise<number> {
     return this.sequelize.transaction(async (tx) => {
-      const [{ locked }] = await this.sequelize.query<{ locked: boolean }>('SELECT pg_try_advisory_xact_lock(:key) AS locked', {
-        type: QueryTypes.SELECT,
-        replacements: { key: CRON_LOCK_KEY },
-        transaction: tx,
-      });
+      const [{ locked }] = await this.sequelize.query<{ locked: boolean }>(
+        'SELECT pg_try_advisory_xact_lock(:key) AS locked',
+        {
+          type: QueryTypes.SELECT,
+          replacements: { key: CRON_LOCK_KEY },
+          transaction: tx,
+        },
+      );
       if (!locked) return 0;
 
-      const due = await this.sequelize.query<{ id: string; name: string; cron: string; timezone: string; jobType: string; payload: unknown; nextFireAt: Date }>(
+      const due = await this.sequelize.query<{
+        id: string;
+        name: string;
+        cron: string;
+        timezone: string;
+        jobType: string;
+        payload: unknown;
+        nextFireAt: Date;
+      }>(
         `SELECT id, name, cron, timezone, "jobType", payload, "nextFireAt" FROM "JobSchedule"
          WHERE enabled AND "nextFireAt" <= :now ORDER BY "nextFireAt" LIMIT 500 FOR UPDATE`,
         { type: QueryTypes.SELECT, replacements: { now }, transaction: tx },
@@ -86,7 +109,12 @@ export class JobMaintenance implements OnApplicationBootstrap {
            INSERT INTO "Job" (id, type, payload, "runAt", "idempotencyKey")
            SELECT "jobId", :type, CAST(:payload AS JSONB), :fireAt, :key FROM key`,
           {
-            replacements: { key, type: schedule.jobType, payload: JSON.stringify(schedule.payload), fireAt },
+            replacements: {
+              key,
+              type: schedule.jobType,
+              payload: JSON.stringify(schedule.payload),
+              fireAt,
+            },
             transaction: tx,
           },
         );
@@ -94,7 +122,15 @@ export class JobMaintenance implements OnApplicationBootstrap {
         await this.sequelize.query(
           `UPDATE "JobSchedule" SET "lastFiredAt" = :fireAt, "nextFireAt" = :next, "updatedAt" = now() WHERE id = :id`,
           {
-            replacements: { id: schedule.id, fireAt, next: nextFireAt(schedule.cron, schedule.timezone, now > fireAt ? now : fireAt) },
+            replacements: {
+              id: schedule.id,
+              fireAt,
+              next: nextFireAt(
+                schedule.cron,
+                schedule.timezone,
+                now > fireAt ? now : fireAt,
+              ),
+            },
             transaction: tx,
           },
         );
@@ -126,8 +162,14 @@ export class JobMaintenance implements OnApplicationBootstrap {
   async noop(): Promise<void> {}
 
   @JobHandler('jobs.partition-maintenance', { concurrency: 1 })
-  async maintainPartitions({ aheadDays = 14, retainDays = 30 }: JobPayloads['jobs.partition-maintenance']): Promise<void> {
-    await this.sequelize.query(`SELECT job_ensure_partitions(now()::date, :aheadDays)`, { replacements: { aheadDays } });
+  async maintainPartitions({
+    aheadDays = 14,
+    retainDays = 30,
+  }: JobPayloads['jobs.partition-maintenance']): Promise<void> {
+    await this.sequelize.query(
+      `SELECT job_ensure_partitions(now()::date, :aheadDays)`,
+      { replacements: { aheadDays } },
+    );
 
     // Drop daily partitions older than retainDays that hold no unfinished jobs (far-future
     // schedules may still sit in an old createdAt partition - those are kept until done).

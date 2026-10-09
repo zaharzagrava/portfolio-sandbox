@@ -12,7 +12,7 @@ import { ProductModel as Product } from '@app/domains/catalog';
 import { TableName } from '@app/test/seeds/types';
 import { ChatModule } from './chat.module';
 import * as jwt from 'jsonwebtoken';
-import { ApiConfigService } from '@app/common/config/api-config.service';
+import { ApiConfigService } from '@app/common/config';
 
 describe('Chat (e2e)', () => {
   let app: INestApplication;
@@ -23,7 +23,10 @@ describe('Chat (e2e)', () => {
   let productModel: typeof Product;
 
   beforeAll(async () => {
-    const moduleRef = await generateTestingModule([ChatModule, RateLimitModule, CacheModule, SeedsModule], { stores: ['redis', 'dynamo'] });
+    const moduleRef = await generateTestingModule(
+      [ChatModule, RateLimitModule, CacheModule, SeedsModule],
+      { stores: ['redis', 'dynamo'] },
+    );
     app = moduleRef.createNestApplication({ rawBody: true });
     app.setGlobalPrefix('api');
     await app.init();
@@ -52,9 +55,12 @@ describe('Chat (e2e)', () => {
       .expect(201);
 
     expect(res.body.ticket).toBeDefined();
-    
+
     // Verify ticket
-    const decoded = jwt.verify(res.body.ticket, configService.get('jwt_secret')) as any;
+    const decoded = jwt.verify(
+      res.body.ticket,
+      configService.get('jwt_secret'),
+    ) as any;
     expect(decoded.sub).toBe(user.id);
     expect(decoded.typ).toBe('ws');
   });
@@ -63,7 +69,9 @@ describe('Chat (e2e)', () => {
     const seller = await userModel.create({ email: `seller-${v4()}@mail.com` });
     const token = authService.issueTokensFor(seller).accessToken.token;
 
-    const [product] = await seedsService.createTreelike([{ __type__: TableName.Product, sellerId: seller.id }]);
+    const [product] = await seedsService.createTreelike([
+      { __type__: TableName.Product, sellerId: seller.id },
+    ]);
 
     const res = await request(app.getHttpServer())
       .post('/api/chat/channels')
@@ -81,7 +89,9 @@ describe('Chat (e2e)', () => {
     const buyer = await userModel.create({ email: `buyer-${v4()}@mail.com` });
     const buyerToken = authService.issueTokensFor(buyer).accessToken.token;
 
-    const [product] = await seedsService.createTreelike([{ __type__: TableName.Product, sellerId: seller.id }]);
+    const [product] = await seedsService.createTreelike([
+      { __type__: TableName.Product, sellerId: seller.id },
+    ]);
 
     await request(app.getHttpServer())
       .post('/api/chat/channels')
@@ -95,7 +105,9 @@ describe('Chat (e2e)', () => {
     const member = await userModel.create({ email: `member-${v4()}@mail.com` });
     const sellerToken = authService.issueTokensFor(seller).accessToken.token;
 
-    const [product] = await seedsService.createTreelike([{ __type__: TableName.Product, sellerId: seller.id }]);
+    const [product] = await seedsService.createTreelike([
+      { __type__: TableName.Product, sellerId: seller.id },
+    ]);
 
     // Create channel
     const channelRes = await request(app.getHttpServer())
@@ -117,16 +129,41 @@ describe('Chat (e2e)', () => {
   it('buyers join a product chat; joining is idempotent and a ban sticks', async () => {
     const seller = await userModel.create({ email: `seller-${v4()}@mail.com` });
     const buyer = await userModel.create({ email: `buyer-${v4()}@mail.com` });
-    const sellerAuth = { Authorization: `Bearer ${authService.issueTokensFor(seller).accessToken.token}` };
-    const buyerAuth = { Authorization: `Bearer ${authService.issueTokensFor(buyer).accessToken.token}` };
-    const [product] = await seedsService.createTreelike([{ __type__: TableName.Product, sellerId: seller.id }]);
-    const channelId = (await request(app.getHttpServer()).post('/api/chat/channels').set(sellerAuth).send({ productId: product.id }).expect(201)).body.id;
+    const sellerAuth = {
+      Authorization: `Bearer ${authService.issueTokensFor(seller).accessToken.token}`,
+    };
+    const buyerAuth = {
+      Authorization: `Bearer ${authService.issueTokensFor(buyer).accessToken.token}`,
+    };
+    const [product] = await seedsService.createTreelike([
+      { __type__: TableName.Product, sellerId: seller.id },
+    ]);
+    const channelId = (
+      await request(app.getHttpServer())
+        .post('/api/chat/channels')
+        .set(sellerAuth)
+        .send({ productId: product.id })
+        .expect(201)
+    ).body.id;
 
-    const joined = await request(app.getHttpServer()).post(`/api/chat/channels/${channelId}/join`).set(buyerAuth).expect(200);
+    const joined = await request(app.getHttpServer())
+      .post(`/api/chat/channels/${channelId}/join`)
+      .set(buyerAuth)
+      .expect(200);
     expect(joined.body.id).toBe(channelId);
-    await request(app.getHttpServer()).post(`/api/chat/channels/${channelId}/join`).set(buyerAuth).expect(200);
+    await request(app.getHttpServer())
+      .post(`/api/chat/channels/${channelId}/join`)
+      .set(buyerAuth)
+      .expect(200);
 
-    await request(app.getHttpServer()).post(`/api/chat/channels/${channelId}/members/ban`).set(sellerAuth).send({ userId: buyer.id }).expect(201);
-    await request(app.getHttpServer()).post(`/api/chat/channels/${channelId}/join`).set(buyerAuth).expect(403);
+    await request(app.getHttpServer())
+      .post(`/api/chat/channels/${channelId}/members/ban`)
+      .set(sellerAuth)
+      .send({ userId: buyer.id })
+      .expect(201);
+    await request(app.getHttpServer())
+      .post(`/api/chat/channels/${channelId}/join`)
+      .set(buyerAuth)
+      .expect(403);
   });
 });

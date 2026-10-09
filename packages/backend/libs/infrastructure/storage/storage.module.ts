@@ -1,5 +1,5 @@
 import { Global, Module } from '@nestjs/common';
-import { ApiConfigModule } from '@app/common/config/api-config.module';
+import { ApiConfigModule } from '@app/common/config';
 import { ObjectStorage } from './object-storage.port';
 import { S3ObjectStorage } from './s3-object-storage';
 

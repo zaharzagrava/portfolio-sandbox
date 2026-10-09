@@ -19,12 +19,15 @@ export function fullJitterBackoff(
 
 export const sleep = (ms: number, signal?: AbortSignal): Promise<void> =>
   new Promise((resolve, reject) => {
+    // The abort reason is passed through exactly as given (usually an AbortError / TimeoutError DOMException).
+    // eslint-disable-next-line @typescript-eslint/prefer-promise-reject-errors
     if (signal?.aborted) return reject(signal.reason);
     const timer = setTimeout(resolve, ms);
     signal?.addEventListener(
       'abort',
       () => {
         clearTimeout(timer);
+        // eslint-disable-next-line @typescript-eslint/prefer-promise-reject-errors
         reject(signal.reason);
       },
       { once: true },

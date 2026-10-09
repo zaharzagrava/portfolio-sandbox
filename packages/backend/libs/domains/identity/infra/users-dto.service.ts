@@ -7,7 +7,7 @@ import {
 import User, { UserScope, UserWithAllFilters } from './models/user.model';
 import { Op, QueryTypes, Sequelize, Transaction } from 'sequelize';
 import { InjectConnection, InjectModel } from '@nestjs/sequelize';
-import { Fatal_NotFoundError } from '@app/common/errors/error.types';
+import { Fatal_NotFoundError } from '@app/common/errors';
 
 @Injectable()
 export class UsersDtoService {
@@ -16,7 +16,7 @@ export class UsersDtoService {
   constructor(
     @InjectModel(User) private readonly userModel: typeof User,
     @InjectConnection() private readonly sequelizeInstance: Sequelize,
-  ) { }
+  ) {}
 
   public countAll(
     params?: UserWithAllFilters,

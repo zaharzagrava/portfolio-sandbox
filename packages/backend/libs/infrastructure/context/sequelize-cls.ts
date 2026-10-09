@@ -26,7 +26,7 @@ export const sequelizeClsNamespace = {
     storage.getStore()?.set(key, value);
   },
   bind<F extends (...args: unknown[]) => unknown>(fn: F): F {
-    return AsyncResource.bind(fn) as F;
+    return AsyncResource.bind(fn);
   },
 };
 

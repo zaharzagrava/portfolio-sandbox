@@ -46,4 +46,41 @@ export default tseslint.config(
 
     },
   },
+  {
+    // S54 G-74 / AS-151: time comes from the injected CLOCK in the toolkit libs (mirrors scripts/check-no-wallclock.ts).
+    files: [
+      'libs/common/{resilience,load-shedding,core}/**/*.ts',
+      'libs/infrastructure/{health,http-client,net,idempotency,context}/**/*.ts',
+    ],
+    ignores: ['**/clock.ts', '**/*.spec.ts', '**/*.e2e-spec.ts'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        { selector: "CallExpression[callee.object.name='Date'][callee.property.name='now']", message: 'Inject CLOCK instead of Date.now().' },
+        { selector: "NewExpression[callee.name='Date'][arguments.length=0]", message: 'Inject CLOCK instead of new Date().' },
+        { selector: "CallExpression[callee.object.name='performance'][callee.property.name='now']", message: 'Inject CLOCK instead of performance.now().' },
+      ],
+    },
+  },
+  {
+    // Test doubles are often `async` stand-ins for a port that returns a promise; that is not a defect in a spec.
+    files: ['**/*.spec.ts', '**/*.e2e-spec.ts', 'test/**/*.ts'],
+    rules: {
+      '@typescript-eslint/require-await': 'off',
+      '@typescript-eslint/prefer-promise-reject-errors': 'off',
+      '@typescript-eslint/no-unnecessary-type-assertion': 'off',
+      '@typescript-eslint/no-base-to-string': 'off',
+    },
+  },
+  {
+    // S54 G-58: outbound HTTP goes through ResilientHttpClient (timeouts, retries, breaker); axios has none of that by default.
+    files: ['apps/**/*.ts', 'libs/**/*.ts', 'test/**/*.ts', 'scripts/**/*.ts'],
+    ignores: ['libs/infrastructure/http-client/**'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        { paths: [{ name: 'axios', message: 'Use ResilientHttpClient from @app/infrastructure/http-client.' }, { name: '@nestjs/axios', message: 'Use ResilientHttpClient from @app/infrastructure/http-client.' }] },
+      ],
+    },
+  },
 );

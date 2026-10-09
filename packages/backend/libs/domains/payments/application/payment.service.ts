@@ -14,7 +14,7 @@ import {
   ErrorArea,
   Fatal_BadRequestError,
   Fatal_InternalServerError,
-} from '@app/common/errors/error.types';
+} from '@app/common/errors';
 import { LedgerService } from './ledger.service';
 import { KafkaTopicGroup } from '@app/infrastructure/outbox/outbox.model';
 import { OutboxService } from '@app/infrastructure/outbox/outbox.service';
@@ -38,7 +38,7 @@ export class PaymentService {
     private readonly bisUtilsService: BisUtilsService,
     @InjectConnection() private readonly sequelizeInstance: Sequelize,
     @InjectModel(Payment) private readonly paymentModel: typeof Payment,
-  ) { }
+  ) {}
 
   /**
    *
@@ -64,7 +64,15 @@ export class PaymentService {
     return await runInSpan(
       'PaymentService.executePayment',
       async (mainSpan) => {
-        const { idempotency_key, amount, bisOrderId, userId, paymentMethodId, productId, quantity = 1 } = params;
+        const {
+          idempotency_key,
+          amount,
+          bisOrderId,
+          userId,
+          paymentMethodId,
+          productId,
+          quantity = 1,
+        } = params;
 
         // 1. Automatic Fail-Fast Validation
         if (!idempotency_key) {
@@ -122,7 +130,10 @@ export class PaymentService {
         // If the payment is already COMPLETED or FAILED from a previous run, return it.
         // UNKNOWN continues: re-sending with the SAME Stripe idempotency key returns the
         // original outcome instead of charging again - the redelivery IS the status query (SD-20).
-        if (payment.status !== PaymentStatus.PENDING && payment.status !== PaymentStatus.UNKNOWN) {
+        if (
+          payment.status !== PaymentStatus.PENDING &&
+          payment.status !== PaymentStatus.UNKNOWN
+        ) {
           return { payment: payment };
         }
 
@@ -156,7 +167,9 @@ export class PaymentService {
          * If SHUTDOWN happens here - we don't have to know whether this API was called and with which response, since
          * VISA has its own idempotency key, and it will return existing response if the request is made again.
          */
-        let stripeResponse: Awaited<ReturnType<StripeService['createPaymentIntent']>>;
+        let stripeResponse: Awaited<
+          ReturnType<StripeService['createPaymentIntent']>
+        >;
         try {
           stripeResponse = await runInSpan(
             'Stripe: Create Payment Intent',
@@ -180,133 +193,147 @@ export class PaymentService {
           throw error;
         }
 
-        const finalizeResult = (await runInSpan('Finalize Transaction', async () => {
-          return await this.dbUtilsService.wrapInTransaction(async (tx) => {
-            const isSuccess = stripeResponse.status === 'succeeded';
+        const finalizeResult = (await runInSpan(
+          'Finalize Transaction',
+          async () => {
+            return await this.dbUtilsService.wrapInTransaction(async (tx) => {
+              const isSuccess = stripeResponse.status === 'succeeded';
 
-            if (isSuccess && productId) {
-              // See README.md#adr -> "Why use Optimistic Concurrency Control (OCC) instead of pessimistic locks?"
-              const [, occResult] = await this.sequelizeInstance.query(
-                `UPDATE "Product" SET quantity = quantity - :quantity, version = version + 1
+              if (isSuccess && productId) {
+                // See README.md#adr -> "Why use Optimistic Concurrency Control (OCC) instead of pessimistic locks?"
+                const [, occResult] = await this.sequelizeInstance.query(
+                  `UPDATE "Product" SET quantity = quantity - :quantity, version = version + 1
                  WHERE id = :productId AND quantity >= :quantity
                  RETURNING id`,
-                { replacements: { productId, quantity }, transaction: tx },
-              );
-
-              const rowCount = (occResult as any)?.rowCount ?? 0;
-
-              if (rowCount === 0) {
-                // Stock lost the race after Stripe already charged. Return here,
-                // before the status-update block below ever touches Payment — it
-                // stays PENDING. The refund happens outside this transaction, then
-                // a follow-up transaction marks REFUNDED (see executePayment's
-                // caller below).
-                return {
-                  payment,
-                  needsRefund: true,
-                  stripePaymentIntentId: stripeResponse.id,
-                };
-              }
-            }
-
-            try {
-              // Attempt to update only if the payment is still in a PENDING state
-              await this.paymentDtoService.update({
-                where: { id: payment.id, status: [PaymentStatus.PENDING, PaymentStatus.UNKNOWN] },
-                params: {
-                  status: isSuccess
-                    ? PaymentStatus.COMPLETED
-                    : PaymentStatus.FAILED,
-                  providerRef: stripeResponse.id ?? null,
-                },
-                tx,
-              });
-            } catch (error) {
-              // If 0 rows are updated, the service throws a Domain_NotFoundError.
-              if (error instanceof Fatal_NotFoundError) {
-                const existingPayment = await this.paymentDtoService.findOne(
-                  { id: payment.id },
-                  tx,
+                  { replacements: { productId, quantity }, transaction: tx },
                 );
 
-                // If the record doesn't exist, it's an exception, and must be investigated
-                if (!existingPayment) {
+                const rowCount = (occResult as any)?.rowCount ?? 0;
+
+                if (rowCount === 0) {
+                  // Stock lost the race after Stripe already charged. Return here,
+                  // before the status-update block below ever touches Payment — it
+                  // stays PENDING. The refund happens outside this transaction, then
+                  // a follow-up transaction marks REFUNDED (see executePayment's
+                  // caller below).
+                  return {
+                    payment,
+                    needsRefund: true,
+                    stripePaymentIntentId: stripeResponse.id,
+                  };
+                }
+              }
+
+              try {
+                // Attempt to update only if the payment is still in a PENDING state
+                await this.paymentDtoService.update({
+                  where: {
+                    id: payment.id,
+                    status: [PaymentStatus.PENDING, PaymentStatus.UNKNOWN],
+                  },
+                  params: {
+                    status: isSuccess
+                      ? PaymentStatus.COMPLETED
+                      : PaymentStatus.FAILED,
+                    providerRef: stripeResponse.id ?? null,
+                  },
+                  tx,
+                });
+              } catch (error) {
+                // If 0 rows are updated, the service throws a Domain_NotFoundError.
+                if (error instanceof Fatal_NotFoundError) {
+                  const existingPayment = await this.paymentDtoService.findOne(
+                    { id: payment.id },
+                    tx,
+                  );
+
+                  // If the record doesn't exist, it's an exception, and must be investigated
+                  if (!existingPayment) {
+                    throw new Fatal_InternalServerError({
+                      detail: 'Payment is not found',
+                      title: 'Payment is not found',
+                      causes: [error],
+                    });
+                  }
+
+                  // Other process has already processed the payment, and we return the existing state
+                  return { payment: existingPayment };
+                }
+
+                // Rethrow any other unexpected database or network errors
+                throw error;
+              }
+
+              if (isSuccess) {
+                // See README.md#adr -> "Why use double-entry bookkeeping?"
+                await this.ledgerService.recordMarketplaceSale({
+                  paymentId: payment.id,
+                  buyerAccountId: this.bisUtilsService.getMerchantAccountId(
+                    payment.bisOrder.userId,
+                  ),
+                  // SD-20: customer money lands in CLEARING; per-shop settlement on order.paid moves it to SHOP_<id> accounts.
+                  merchantAccountId: LEDGER_ACCOUNTS.CLEARING,
+                  platformRevenueAccountId: LEDGER_ACCOUNTS.PLATFORM_FEES,
+                  totalAmount: amount,
+                  feeAmount: PLATFORM_FEE_MINOR,
+                  tx,
+                });
+
+                payment.status = PaymentStatus.COMPLETED;
+
+                // See README.md#adr -> "Why do you use the Outbox pattern alongside Kafka?"
+                // Example: The Payment status update above and this Outbox insert happen in the same DB transaction 'tx', guaranteeing they NEVER get lost.
+                await this.outboxService.notify(
+                  {
+                    topic: topic,
+                    payload: params,
+                    extra: { payment },
+                  },
+                  tx,
+                );
+              } else {
+                payment.status = PaymentStatus.FAILED;
+
+                const lastPaymentError = stripeResponse.last_payment_error;
+
+                if (!lastPaymentError) {
                   throw new Fatal_InternalServerError({
-                    detail: 'Payment is not found',
-                    title: 'Payment is not found',
-                    causes: [error]
+                    detail: 'Stripe did not provide with last payment error',
+                    title: 'Stripe did not provide with last payment error',
+                    causes: [
+                      new Error(
+                        'Stripe did not provide with last payment error',
+                      ),
+                    ],
                   });
                 }
 
-                // Other process has already processed the payment, and we return the existing state
-                return { payment: existingPayment };
+                await this.outboxService.notify(
+                  {
+                    topic: topic,
+                    extra: { payment, stripeResponse },
+                    payload: params,
+                    // Domain errors are not forwarded to the DLQ, they are recorded in DB and communicated to the client
+                    error: new Domain_StripePaymentFailed({
+                      detail: lastPaymentError.message ?? 'Unknown error',
+                      title: 'Stripe payment failed',
+                      causes: [lastPaymentError],
+                    }),
+                  },
+                  tx,
+                );
               }
 
-              // Rethrow any other unexpected database or network errors
-              throw error;
-            }
-
-            if (isSuccess) {
-              // See README.md#adr -> "Why use double-entry bookkeeping?"
-              await this.ledgerService.recordMarketplaceSale({
-                paymentId: payment.id,
-                buyerAccountId: this.bisUtilsService.getMerchantAccountId(
-                  payment.bisOrder.userId,
-                ),
-                // SD-20: customer money lands in CLEARING; per-shop settlement on order.paid moves it to SHOP_<id> accounts.
-                merchantAccountId: LEDGER_ACCOUNTS.CLEARING,
-                platformRevenueAccountId: LEDGER_ACCOUNTS.PLATFORM_FEES,
-                totalAmount: amount,
-                feeAmount: PLATFORM_FEE_MINOR,
-                tx,
-              });
-
-              payment.status = PaymentStatus.COMPLETED;
-
-              // See README.md#adr -> "Why do you use the Outbox pattern alongside Kafka?" 
-              // Example: The Payment status update above and this Outbox insert happen in the same DB transaction 'tx', guaranteeing they NEVER get lost.
-              await this.outboxService.notify(
-                {
-                  topic: topic,
-                  payload: params,
-                  extra: { payment },
-                },
-                tx,
-              );
-            } else {
-              payment.status = PaymentStatus.FAILED;
-
-              const lastPaymentError = stripeResponse.last_payment_error;
-
-              if (!lastPaymentError) {
-                throw new Fatal_InternalServerError({
-                  detail: 'Stripe did not provide with last payment error',
-                  title: 'Stripe did not provide with last payment error',
-                  causes: [new Error('Stripe did not provide with last payment error')],
-                });
-              }
-
-              await this.outboxService.notify(
-                {
-                  topic: topic,
-                  extra: { payment, stripeResponse },
-                  payload: params,
-                  // Domain errors are not forwarded to the DLQ, they are recorded in DB and communicated to the client
-                  error: new Domain_StripePaymentFailed({
-                    detail: lastPaymentError.message ?? 'Unknown error',
-                    title: 'Stripe payment failed',
-                    causes: [lastPaymentError],
-                  }),
-                },
-                tx,
-              );
-            }
-
-            return { payment };
-          });
-        })) as
+              return { payment };
+            });
+          },
+        )) as
           | PostPaymentResponseDto
-          | { payment: Payment; needsRefund: true; stripePaymentIntentId: string };
+          | {
+              payment: Payment;
+              needsRefund: true;
+              stripePaymentIntentId: string;
+            };
 
         if ('needsRefund' in finalizeResult && finalizeResult.needsRefund) {
           // See README.md#adr -> "Why use a Distributed Saga instead of 2-Phase Commits?"
@@ -324,7 +351,10 @@ export class PaymentService {
               tx,
             });
 
-            const refundedPayment = { ...payment.toJSON(), status: PaymentStatus.REFUNDED };
+            const refundedPayment = {
+              ...payment.toJSON(),
+              status: PaymentStatus.REFUNDED,
+            };
 
             await this.outboxService.notify(
               {

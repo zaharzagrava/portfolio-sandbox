@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Sequential implementation (docs/architecture/sdd-runbook.md, step 4). For each written spec, in the order of
-# scripts/sdd/implement-order.txt (platform, identity, money chain, resume-featured, ..., web, journeys): plan → tasks → analyze → implement → converge
+# scripts/sdd/orders/$ORDER.txt (by-layer, the default: platform, identity, money chain, ..., web, journeys; or by-flow: vertical slices with checkpoints): plan → tasks → analyze → implement → converge
 # (→ implement again if converge added tasks), then a hard gate for that kind of capability. Stops at the
 # first failure so a human can step in; re-running resumes, because finished specs carry `.implemented`.
 #
@@ -28,6 +28,8 @@ on_exit() {
   if [[ "$state" == limit:* ]]; then
     echo "OUT OF BUDGET  the Claude usage limit was reached at ${state#limit:}. Nothing is lost: re-run the same command after the limit resets and it resumes." >&2
     notify limit "SDD loop: out of budget" "Usage limit hit at ${state#limit:}. Re-run after the reset to resume."
+  elif [[ "$state" == Checkpoint* ]]; then
+    notify ok "SDD loop: checkpoint reached" "$state"
   elif (( code == 0 )); then
     notify ok "SDD loop: finished" "${state:-All requested specs are built.}"
   else
@@ -42,14 +44,6 @@ TEST_SPEC="$ROOT/scripts/sdd/test-spec.sh"   # condensed e2e runner: far fewer t
 IMPL_TOOLS=("Bash($TEST_SPEC:*)" 'Bash(npx tsc:*)' 'Bash(npx jest:*)' 'Bash(npx nest build:*)' 'Bash(npx vitest:*)' 'Bash(npx playwright:*)'
             'Bash(pnpm:*)' 'Bash(node:*)' 'Bash(docker compose:*)' 'Bash(curl:*)'
             'Bash(cd:*)' 'Bash(cat:*)' 'Bash(grep:*)' 'Bash(find:*)' 'Bash(git log:*)')
-
-# for_each_capability, re-sorted by implement-order.txt (IDs not listed there come last, in catalog order).
-ordered_capabilities() {
-  for_each_capability "$@" | awk -F'\t' -v order="$ROOT/scripts/sdd/implement-order.txt" '
-    BEGIN { while ((getline line < order) > 0) { if (line ~ /^#/ || line ~ /^[[:space:]]*$/) continue; pos[line] = ++n } }
-    { print (($1 in pos) ? pos[$1] : 100000 + NR) "\t" $0 }
-  ' | sort -n -k1,1 | cut -f2-
-}
 
 # Where a backend capability's code and e2e specs live, relative to packages/backend.
 code_path() {
@@ -183,6 +177,14 @@ extra_context() { # $1 = capability id
 }
 
 ordered_capabilities "$@" | while IFS=$'\t' read -r id domain slug title sources; do
+  if [[ "$id" == '!STOP' ]]; then # checkpoint: stop once so a human can test what exists, then pass on the next run
+    marker="$ROOT/specs/.checkpoints/$domain"
+    if [[ -f "$marker" ]]; then echo "pass  checkpoint $domain"; continue; fi
+    mkdir -p "$ROOT/specs/.checkpoints"; date -u +%FT%TZ > "$marker"
+    echo "CHECKPOINT $domain: $title"
+    echo "Checkpoint $domain: $title  Test it, then re-run the same command to continue." > "$STATE_FILE"
+    exit 0
+  fi
   dir="$(spec_dir "$domain" "$id" "$slug")"
   [[ -f "$dir/.spec-done" ]] || { echo "skip  $id (no finished spec yet)"; continue; }
   [[ -f "$dir/.implemented" ]] && { echo "skip  $id (already implemented)"; continue; }

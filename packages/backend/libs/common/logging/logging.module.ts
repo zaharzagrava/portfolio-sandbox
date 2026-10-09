@@ -4,19 +4,20 @@ import pino from 'pino';
 import { hostname } from 'node:os';
 import { ClsServiceManager } from 'nestjs-cls';
 import { trace } from '@opentelemetry/api';
-import type { IncomingMessage } from 'node:http';
+import type { IncomingMessage, ServerResponse } from 'node:http';
 import { ApiConfigModule } from '@app/common/config/api-config.module';
 import { ApiConfigService } from '@app/common/config/api-config.service';
 import { Environment } from '@app/common/types';
+import { isExemptPath } from './exempt-paths';
 import { AppClsStore } from '@app/common/request-context/types';
+import { redact } from './redaction';
 
-const QUIET_PATHS = new Set([
-  '/livez',
-  '/readyz',
-  '/api/livez',
-  '/api/readyz',
-  '/metrics',
-]);
+/** The matched route's template (`/orders/:id`); unmatched paths collapse to one value instead of echoing the URL. */
+const routeTemplate = (req: IncomingMessage): string => {
+  const path = (req as IncomingMessage & { route?: { path?: unknown } }).route
+    ?.path;
+  return typeof path === 'string' && !path.includes('*') ? path : 'unmatched';
+};
 
 /**
  * JSON logs to stdout (collected by the OTel collector / CloudWatch agent, SD-33).
@@ -35,17 +36,49 @@ const QUIET_PATHS = new Set([
         // LOG_FILE (local full-stack runs): JSON to stdout AND a file Alloy tails into Loki (SD-33). Pretty printing is off then.
         const file = process.env.LOG_FILE;
         const options = {
-          level: env === Environment.production ? 'info' : 'debug',
-          base: { service: process.env.OTEL_SERVICE_NAME ?? 'marketplace', pid: process.pid, hostname: hostname() },
+          // info by default everywhere; debug only when asked for (LOG_LEVEL), never implicitly outside production.
+          level: config.get('log_level') ?? 'info',
+          base: {
+            service: process.env.OTEL_SERVICE_NAME ?? 'marketplace',
+            pid: process.pid,
+            hostname: hostname(),
+          },
           transport:
             env === Environment.local && !file
               ? { target: 'pino-pretty', options: { singleLine: true } }
               : undefined,
           // "level":"info" instead of 30: Loki/Alloy can use it as a (low-cardinality) label directly (SD-33).
-          formatters: { level: (label: string) => ({ level: label }) },
+          formatters: {
+            level: (label: string) => ({ level: label }),
+            // Key-name redaction at any depth for everything a caller logs (S54 FR-079); the pino paths below cover req/res headers.
+            log: (object: Record<string, unknown>) =>
+              redact(object) as Record<string, unknown>,
+          },
+          // One access line per request: the route template, never the URL with its query string, and no body.
+          serializers: {
+            req: (req: { id?: unknown; method?: string }) => ({
+              id: req.id,
+              method: req.method,
+            }),
+            res: (res: { statusCode?: number }) => ({
+              statusCode: res.statusCode,
+            }),
+          },
+          customAttributeKeys: { responseTime: 'durationMs' },
+          // pino-http serializes `req` when the request starts, before routing: the route template is only known at the end.
+          customSuccessObject: (
+            req: IncomingMessage,
+            _res: ServerResponse,
+            value: object,
+          ) => ({ ...value, route: routeTemplate(req) }),
+          customErrorObject: (
+            req: IncomingMessage,
+            _res: ServerResponse,
+            _error: Error,
+            value: object,
+          ) => ({ ...value, route: routeTemplate(req) }),
           autoLogging: {
-            ignore: (req: IncomingMessage) =>
-              QUIET_PATHS.has(req.url?.split('?')[0] ?? ''),
+            ignore: (req: IncomingMessage) => isExemptPath(req.url ?? ''),
           },
           redact: {
             paths: [

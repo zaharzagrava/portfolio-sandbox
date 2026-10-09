@@ -2,16 +2,13 @@ import { Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { AdminController } from './api/admin.controller';
 import { AdminService } from './application/admin.service';
-import { ApiConfigModule } from '@app/common/config/api-config.module';
+import { ApiConfigModule } from '@app/common/config';
 import User from './infra/models/user.model';
 
 @Module({
-  imports: [
-    SequelizeModule.forFeature([User]),
-    ApiConfigModule,
-  ],
+  imports: [SequelizeModule.forFeature([User]), ApiConfigModule],
   providers: [AdminService],
   controllers: [AdminController],
   exports: [AdminService],
 })
-export class AdminModule { }
+export class AdminModule {}

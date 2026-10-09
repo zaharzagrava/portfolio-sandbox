@@ -3,7 +3,7 @@ import { AuthService } from './application/auth.service';
 import User from './infra/models/user.model';
 import SigningKey from './infra/models/signing-key.model';
 import { SequelizeModule } from '@nestjs/sequelize';
-import { ApiConfigModule } from '@app/common/config/api-config.module';
+import { ApiConfigModule } from '@app/common/config';
 import { KeyStore } from './infra/keys/key-store.service';
 import { SecretBox } from './infra/crypto/secret-box';
 

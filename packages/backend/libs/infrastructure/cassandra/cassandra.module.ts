@@ -1,9 +1,12 @@
 import { Global, Module, OnModuleInit } from '@nestjs/common';
-import { ApiConfigModule } from '@app/common/config/api-config.module';
+import { ApiConfigModule } from '@app/common/config';
 import { CassandraService } from './cassandra.service';
-import { ReadinessService } from '@app/infrastructure/health/readiness.service';
+import { ReadinessService } from '@app/infrastructure/health';
 import { ModuleRef } from '@nestjs/core';
-import { TEST_CLEANUP, TestCleanupPort } from '@app/common/testing/test-cleanup.port';
+import {
+  TEST_CLEANUP,
+  TestCleanupPort,
+} from '@app/common/testing/test-cleanup.port';
 
 @Global()
 @Module({
@@ -27,13 +30,21 @@ export class CassandraModule implements OnModuleInit {
     // Non-critical: Scylla-backed features (feeds, discussions) degrade; checkout keeps working.
     // e2e specs: SeedsService.clean() truncates every table of the (test) keyspace except migrations bookkeeping.
     try {
-      this.moduleRef.get<TestCleanupPort>(TEST_CLEANUP, { strict: false }).register('cassandra.truncate', async () => {
-        const keyspace = this.cassandra.client.keyspace;
-        const tables = await this.cassandra.execute('SELECT table_name FROM system_schema.tables WHERE keyspace_name = ?', [keyspace]);
-        for (const { table_name } of tables.rows) {
-          if (table_name !== 'schema_migrations') await this.cassandra.execute(`TRUNCATE ${keyspace}.${table_name}`);
-        }
-      });
+      this.moduleRef
+        .get<TestCleanupPort>(TEST_CLEANUP, { strict: false })
+        .register('cassandra.truncate', async () => {
+          const keyspace = this.cassandra.client.keyspace;
+          const tables = await this.cassandra.execute(
+            'SELECT table_name FROM system_schema.tables WHERE keyspace_name = ?',
+            [keyspace],
+          );
+          for (const { table_name } of tables.rows) {
+            if (table_name !== 'schema_migrations')
+              await this.cassandra.execute(
+                `TRUNCATE ${keyspace}.${table_name}`,
+              );
+          }
+        });
     } catch {
       // not a test module
     }

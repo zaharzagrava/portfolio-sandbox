@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
-import { ApiConfigModule } from '@app/common/config/api-config.module';
+import { ApiConfigModule } from '@app/common/config';
 import { DbUtilsModule } from '@app/infrastructure/database/db-utils/db-utils.module';
 import { PaymentDtoModule } from './payment-dto.module';
 import Payment from './infra/models/payment.model';
@@ -28,4 +28,4 @@ import { BisUtilsModule } from './bis-utils.module';
   exports: [PaymentService],
   controllers: [PaymentController],
 })
-export class PaymentModule { }
+export class PaymentModule {}

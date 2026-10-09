@@ -9,8 +9,13 @@ import {
   SQSClient,
 } from '@aws-sdk/client-sqs';
 import { context, propagation } from '@opentelemetry/api';
-import { ApiConfigService } from '@app/common/config/api-config.service';
-import { ConsumeOptions, EnqueueOptions, TaskMessage, TaskQueue } from './task-queue.port';
+import { ApiConfigService } from '@app/common/config';
+import {
+  ConsumeOptions,
+  EnqueueOptions,
+  TaskMessage,
+  TaskQueue,
+} from './task-queue.port';
 import { sleep } from '@app/common/core/backoff';
 
 @Injectable()
@@ -24,16 +29,25 @@ export class SqsTaskQueue extends TaskQueue {
     const endpoint = config.get('sqs_endpoint');
     this.client = new SQSClient({
       region: config.get('aws_region') || 'eu-central-1',
-      ...(endpoint && { endpoint, credentials: { accessKeyId: 'local', secretAccessKey: 'local' } }),
+      ...(endpoint && {
+        endpoint,
+        credentials: { accessKeyId: 'local', secretAccessKey: 'local' },
+      }),
     });
-    this.urlPrefix = config.get('sqs_queue_url_prefix') ?? 'http://localhost:9324/000000000000/';
+    this.urlPrefix =
+      config.get('sqs_queue_url_prefix') ??
+      'http://localhost:9324/000000000000/';
   }
 
   queueUrl(queue: string): string {
     return `${this.urlPrefix}${queue}`;
   }
 
-  async enqueue<T>(queue: string, body: T, options: EnqueueOptions = {}): Promise<string> {
+  async enqueue<T>(
+    queue: string,
+    body: T,
+    options: EnqueueOptions = {},
+  ): Promise<string> {
     const res = await this.client.send(
       new SendMessageCommand({
         QueueUrl: this.queueUrl(queue),
@@ -47,7 +61,10 @@ export class SqsTaskQueue extends TaskQueue {
     return res.MessageId!;
   }
 
-  async enqueueBatch<T>(queue: string, bodies: { body: T; options?: EnqueueOptions }[]): Promise<void> {
+  async enqueueBatch<T>(
+    queue: string,
+    bodies: { body: T; options?: EnqueueOptions }[],
+  ): Promise<void> {
     // SQS batch limit is 10 entries.
     for (let i = 0; i < bodies.length; i += 10) {
       const chunk = bodies.slice(i, i + 10);
@@ -65,7 +82,9 @@ export class SqsTaskQueue extends TaskQueue {
         }),
       );
       if (res.Failed?.length) {
-        throw new Error(`SQS batch partially failed: ${res.Failed.map((f) => f.Code).join(', ')}`);
+        throw new Error(
+          `SQS batch partially failed: ${res.Failed.map((f) => f.Code).join(', ')}`,
+        );
       }
     }
   }
@@ -73,7 +92,11 @@ export class SqsTaskQueue extends TaskQueue {
   consume<T>(
     queue: string,
     handler: (msg: TaskMessage<T>) => Promise<void>,
-    { concurrency = 10, visibilityTimeoutSec = 60, waitTimeSec = 20 }: ConsumeOptions = {},
+    {
+      concurrency = 10,
+      visibilityTimeoutSec = 60,
+      waitTimeSec = 20,
+    }: ConsumeOptions = {},
   ): () => Promise<void> {
     const queueUrl = this.queueUrl(queue);
     let running = true;
@@ -81,21 +104,31 @@ export class SqsTaskQueue extends TaskQueue {
 
     const processOne = async (raw: Message) => {
       // Heartbeat: keep the message invisible while we work, so slow work isn't redelivered to another worker.
-      const heartbeat = setInterval(() => {
-        this.client
-          .send(
-            new ChangeMessageVisibilityCommand({
-              QueueUrl: queueUrl,
-              ReceiptHandle: raw.ReceiptHandle,
-              VisibilityTimeout: visibilityTimeoutSec,
-            }),
-          )
-          .catch((e) => this.logger.warn(`[${queue}] visibility extension failed: ${e.message}`));
-      }, (visibilityTimeoutSec * 1000) / 2);
+      const heartbeat = setInterval(
+        () => {
+          this.client
+            .send(
+              new ChangeMessageVisibilityCommand({
+                QueueUrl: queueUrl,
+                ReceiptHandle: raw.ReceiptHandle,
+                VisibilityTimeout: visibilityTimeoutSec,
+              }),
+            )
+            .catch((e) =>
+              this.logger.warn(
+                `[${queue}] visibility extension failed: ${e.message}`,
+              ),
+            );
+        },
+        (visibilityTimeoutSec * 1000) / 2,
+      );
 
       try {
         const attributes = Object.fromEntries(
-          Object.entries(raw.MessageAttributes ?? {}).map(([k, v]) => [k, v.StringValue ?? '']),
+          Object.entries(raw.MessageAttributes ?? {}).map(([k, v]) => [
+            k,
+            v.StringValue ?? '',
+          ]),
         );
         const parentCtx = propagation.extract(context.active(), attributes);
         await context.with(parentCtx, () =>
@@ -106,10 +139,17 @@ export class SqsTaskQueue extends TaskQueue {
             attributes,
           }),
         );
-        await this.client.send(new DeleteMessageCommand({ QueueUrl: queueUrl, ReceiptHandle: raw.ReceiptHandle }));
+        await this.client.send(
+          new DeleteMessageCommand({
+            QueueUrl: queueUrl,
+            ReceiptHandle: raw.ReceiptHandle,
+          }),
+        );
       } catch (error) {
         // Not deleting = message becomes visible again after the timeout → retry; DLQ after maxReceiveCount.
-        this.logger.error(`[${queue}] message ${raw.MessageId} failed: ${(error as Error).message}`);
+        this.logger.error(
+          `[${queue}] message ${raw.MessageId} failed: ${(error as Error).message}`,
+        );
       } finally {
         clearInterval(heartbeat);
       }
@@ -134,11 +174,15 @@ export class SqsTaskQueue extends TaskQueue {
             }),
           );
           for (const message of Messages) {
-            const task = processOne(message).finally(() => inFlight.delete(task));
+            const task = processOne(message).finally(() =>
+              inFlight.delete(task),
+            );
             inFlight.add(task);
           }
         } catch (error) {
-          this.logger.error(`[${queue}] receive failed: ${(error as Error).message}`);
+          this.logger.error(
+            `[${queue}] receive failed: ${(error as Error).message}`,
+          );
           await sleep(1_000);
         }
       }
@@ -156,6 +200,11 @@ export class SqsTaskQueue extends TaskQueue {
   private attributes(extra: Record<string, string> = {}) {
     const carrier: Record<string, string> = { ...extra };
     propagation.inject(context.active(), carrier);
-    return Object.fromEntries(Object.entries(carrier).map(([k, v]) => [k, { DataType: 'String', StringValue: v }]));
+    return Object.fromEntries(
+      Object.entries(carrier).map(([k, v]) => [
+        k,
+        { DataType: 'String', StringValue: v },
+      ]),
+    );
   }
 }

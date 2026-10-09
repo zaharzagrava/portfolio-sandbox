@@ -16,7 +16,7 @@ The code is a sound first draft of the shape: an async-local request context, a 
 | **D-12** (cross-domain raw SQL, 87 findings at batch 5) | open for other domains | The S54 libs issue no domain SQL. The only SQL strings are `SELECT 1` (`health.module.ts:35`) and `SET LOCAL lock_timeout / statement_timeout` (`transaction-runner.service.ts:31,34`), neither touching a table. The new `IdempotencyKey` table is owned by `infrastructure:idempotency` (IX.3 allowlist) and reached only through the interceptor (IX.6): add its row to `packages/backend/db/ownership.ts` (G-52). |
 | D-17 (X.5): file cycle rate-limit decorator ↔ interceptor | open, names S50 | S54 has no part; do not copy that pattern when splitting the idempotency decorator from its interceptor (keep the metadata key in its own file). |
 | D-15, D-11, D-10 | open, other capabilities | Not S54. |
-| `pnpm --dir packages/backend check:table-ownership` (lines for this domain) | **not run**: the command needed approval in this unattended session (same for `check:boundaries`) | By grep, the S54 libs contain no `@InjectModel`, no `forFeature`, no `sequelize.literal`, no cross-domain `.query(` and no association. Expected lines for this domain: none (0 `MODEL`, 0 `SQL`). **First task of the implementer: run the command and the `--strict` variant, paste the lines for `infrastructure` here, and confirm 0.** After G-52 the new table must appear as `infrastructure:idempotency` and nothing else may query it. |
+| `pnpm --dir packages/backend check:table-ownership` (lines for this domain) | Run 2026-10-09: 0 MODEL, 0 SQL lines for `infrastructure` (87 cross-domain accesses, all in other domains); `check:boundaries` 0 errors / 62 warnings; `tsc --noEmit` clean | By grep, the S54 libs contain no `@InjectModel`, no `forFeature`, no `sequelize.literal`, no cross-domain `.query(` and no association. Expected lines for this domain: none (0 `MODEL`, 0 `SQL`). **First task of the implementer: run the command and the `--strict` variant, paste the lines for `infrastructure` here, and confirm 0.** After G-52 the new table must appear as `infrastructure:idempotency` and nothing else may query it. |
 | Callers of `sequelize.transaction` / `TransactionRunner` | audit | 87 occurrences in 52 files (`grep -c 'Transactional\|TransactionRunner\|\.transaction('`), e.g. `tenancy/infra/shop-transaction.ts`, `tenancy/application/shop.service.ts`, `orders/application/checkout.service.ts`, `payments/infra/payout.jobs.ts`. Each call must move to the toolkit scope (`run`, `@Transactional`) or stay explicit and documented; a transaction that writes tables of two domains is a D-12-class violation owned by that domain's capability (IX.4), not S54. |
 
 ## Gaps by area
@@ -131,3 +131,55 @@ The code is a sound first draft of the shape: an async-local request context, a 
 3. Context and transactions (G-14 to G-26), then probes and shutdown (G-27 to G-47), because S49, S51, S52 and S53 consume them.
 4. Shedding, client, breaker, SSRF (G-48 to G-51, G-53 to G-61, G-76), then the idempotency facility (G-52, G-62 to G-64) which unblocks S10, S13, S15, S42.
 5. Bootstrap and configuration (G-65 to G-75), then update the callers listed in `questions.md` (`[BREAKING]` lines) and their tests.
+
+## Apps without an HTTP surface (T045)
+
+| App | HTTP today | Probes today | Action |
+|-----|-----------|--------------|--------|
+| `worker` | yes (`configureHttpApp`, `port`) | `HealthController` | none |
+| `projector` | yes (`configureHttpApp`, `port`) | `HealthController` | none |
+| `payment-processor` | no (Kafka microservice only) | none — its module imports neither `PlatformModule` nor `HealthModule` | import `HealthModule` (and `ClockModule`) in `PaymentProcessorModule`, then call `startManagementListener(app, MANAGEMENT_PORT)` from `main.ts`; not wired yet because it changes that app's module graph and needs its own e2e run |
+
+`startManagementListener` (`libs/infrastructure/health/management-listener.ts`) is built and covered by AS-54.
+
+## Cross-domain transactions found (T037)
+
+Transactions whose callback touches a table owned by another domain (constitution IX.4). Found by scanning every `sequelize.transaction` / `runSerializable` / `runner.run` site in `apps/` and `libs/` (54 sites in 39 files, specs excluded) against `db/ownership.ts`. They belong to the owning domains and are **not** fixed here.
+
+| Site | Domain | Tables of other owners |
+|---|---|---|
+| `domains/auctions/infra/auction.jobs.ts:60`, `:97` | auctions | Product (catalog) |
+| `domains/catalog-sync/application/catalog-import.service.ts:189` | catalog-sync | Product (catalog), Outbox (infrastructure) |
+| `domains/catalog-sync/application/integration-sync.service.ts:116`, `:185` | catalog-sync | Product (catalog) |
+| `domains/developer-platform/application/public-catalog.service.ts:131`, `:178` | developer-platform | Product (catalog) |
+| `domains/media/application/media.service.ts:77` | media | Product, ProductMedia (catalog) |
+| `domains/orders/infra/order.jobs.ts:105` | orders | Product (catalog) |
+| `domains/seller-insights/application/crawler.service.ts:64` | seller-insights | Product (catalog) |
+| `domains/seller-onboarding/application/onboarding-session.service.ts:52` | seller-onboarding | Shop (tenancy) |
+| `domains/seller-onboarding/application/verification.service.ts:33` | seller-onboarding | Shop (tenancy) |
+| `domains/tenancy/infra/tenancy-backfill.jobs.ts:38` | tenancy | Product (catalog), ChatChannel (chat) |
+
+### Result of the call-site audit
+
+- Network I/O inside a transaction scope: one hit, `domains/asset-library/application/assets.service.ts` (`storage.head` inside the upload-finalise transaction); moved out of the scope (see T037 in `tasks.md`). Every other site (database, outbox, ledger, job-enqueue and in-process encryption calls only) is clean.
+- Sites were kept as explicit `sequelize.transaction` units of work rather than rewritten to `TransactionRunner.run`: with CLS enabled the callback form opens its own transaction, `run` joins an ambient one, so a blanket rewrite changes atomicity across domain boundaries and belongs to each owning domain. Each kept site carries a one-line `S54 T037` comment.
+
+## Decisions and deviations recorded while implementing
+
+- **Webhook deliverer keeps its Redis breaker (T093).** `developer-platform/application/webhook-deliverer.service.ts` calls user-supplied endpoints through `safeRequest` (SSRF-pinned, T064) and uses a fleet-wide, per-endpoint breaker in Redis with an exponential open time and a 3-day retry lane. The in-process `CircuitBreaker` cannot share state across instances, so replacing it would lose fleet-wide protection. Stripe and the notification channel sender moved to `CircuitBreaker`.
+- **Shedding runs before the Nest body parsers without `bodyParser: false` (T081).** `configureHttpApp` mounts the shedding gate with `app.use` first and registers the JSON/urlencoded parsers itself through `useBodyParser`, so no app needs a create-time option and shedding still precedes every body read (AS-81 proves it). Shed answers are rendered with the shared `buildProblemDocument`, not thrown, because a plain `app.use` error never reaches Nest filters.
+- **Pipeline order differs from contracts/platform-http.md in one place (T106).** Request context (CLS) and the access logger are mounted by their modules, so they run after the bootstrap's shed → headers → CORS → client address → compression → body parsing chain. The client address is copied into the context by the context middleware's `setup`, and a shed response sets `X-Request-Id` itself. Guards, rate limit, idempotency, validation and the filter follow the specified order (AS-140 proves precedence).
+- **Metric status label is the status code, not its class (AS-150).** The request-duration view keeps `http.response.status_code` (about 30 distinct values) because `slo-rules.ts` and the Grafana dashboards select `http_response_status_code=~"5.."`; the route label collapses unmatched paths to `unmatched`.
+- **`HttpClientError.status` is the dependency's status.** The client error is a plain `Error` with a `toAppError()` the exception filter honours (502/503/504 problem), so `status` can keep the contract meaning. `network_error` was added to the client failure vocabulary for resets and refusals.
+- **Config keys added:** `platform_currency`, `usercontent_origin`, `trusted_proxies`, `problem_type_base_url`, `app_name`, `log_level`, `db_pool_max`, `db_replica_pool_max`, `db_max_instances`, `db_connection_limit`, `db_reserved_connections`, `db_statement_timeout_ms`, `db_idle_in_tx_timeout_ms`, `db_acquire_timeout_ms`, `load_shedding_max_inflight`. `idle_in_transaction_session_timeout` now defaults to 30 s (AS-145) instead of 15 s.
+- **Dependency added:** `compression` (+ `@types/compression`) in `packages/backend`.
+- **`apps/lambda-local` has no shutdown/crash handlers.** It is a local Lambda harness, not a deployable service; left alone.
+- **Lint baseline.** `pnpm lint` reports about 2 000 `prettier/prettier` errors and about 250 type-aware errors across the repository that predate S54. With `prettier/prettier` off, the S54 libs and `test/toolkit` are clean; the repository as a whole is not (see T113).
+
+## Sibling-spec follow-ups (T111, no sibling spec edited)
+
+- **S50** (rate limiting): rename the replay header in its CORS exposure list and in its AS-47 from `Idempotent-Replayed` to `Idempotency-Replayed`; the bootstrap already exposes the new name.
+- **S07**: keep `422` only for semantic rule violations; the toolkit uses `422` for `idempotency_key_required`, `idempotency_key_invalid` and `idempotency_key_reuse`, and `400 validation_failed` for DTO failures.
+- **S41 / S43**: adopt the SSRF failure vocabulary (`blocked_address`, `unresolvable`, `invalid_url`, `redirect_refused`, `redirected_host`, `too_many_redirects`, `unsupported_content_type`, `timeout`, `tls_error`, `network_error`) from `@app/infrastructure/net`.
+- **S46**: adopt `CircuitBreaker` from `@app/common/resilience` instead of a private breaker (Stripe and the notification channel sender already moved).
+- **S49**: the purge job `platform.purge-idempotency-keys` is a `@JobHandler` on `IdempotencyPurgeService`, scheduled every 15 minutes by `JobsService.upsertSchedule` when the app imports the jobs module. `apps/worker` must import `IdempotencyModule` so the handler is discovered there.

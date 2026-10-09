@@ -3,7 +3,7 @@ import { InjectConnection } from '@nestjs/sequelize';
 import { QueryTypes, Sequelize } from 'sequelize';
 import { createHash } from 'node:crypto';
 import { RedisService } from '@app/infrastructure/redis/redis.service';
-import { ApiConfigService } from '@app/common/config/api-config.service';
+import { ApiConfigService } from '@app/common/config';
 import { Embedder, toVectorLiteral } from './embedder';
 import { reciprocalRankFusion } from '../domain/rrf';
 
@@ -35,12 +35,18 @@ const QUERY_EMBEDDING_TTL_S = 86_400;
  * out afterwards (a post-filter leaks through counts, timing and bugs, and
  * starves top-k).
  */
-function scopeSql(scope: RetrievalScope): { sql: string; replacements: Record<string, string> } {
+function scopeSql(scope: RetrievalScope): {
+  sql: string;
+  replacements: Record<string, string>;
+} {
   switch (scope.kind) {
     case 'product':
       return {
         sql: `c.visibility = 'PUBLIC' AND c."shopId" = :scopeShopId AND (c."productId" = :scopeProductId OR c."productId" IS NULL)`,
-        replacements: { scopeShopId: scope.shopId, scopeProductId: scope.productId },
+        replacements: {
+          scopeShopId: scope.shopId,
+          scopeProductId: scope.productId,
+        },
       };
     case 'shop':
       return {
@@ -71,14 +77,26 @@ export class Retriever {
     return Number(this.config.get('rag_min_similarity') ?? 0.3);
   }
 
-  async search(scope: RetrievalScope, question: string, k = 6): Promise<RetrievedChunk[]> {
+  async search(
+    scope: RetrievalScope,
+    question: string,
+    k = 6,
+  ): Promise<RetrievedChunk[]> {
     const embedding = await this.queryEmbedding(question);
     const { sql, replacements } = scopeSql(scope);
 
+    // S54 T037 audit: explicit unit of work, opens its own transaction by design; no network I/O inside.
     const rows = await this.sequelize.transaction(async (transaction) => {
       // pgvector ≥ 0.8: keep walking the HNSW graph until enough rows pass the scope filter (a selective filter would otherwise return < k).
-      await this.sequelize.query(`SET LOCAL hnsw.iterative_scan = relaxed_order; SET LOCAL hnsw.ef_search = 100`, { transaction });
-      return this.sequelize.query<{ src: 'vec' | 'fts'; id: string; similarity: number | null }>(
+      await this.sequelize.query(
+        `SET LOCAL hnsw.iterative_scan = relaxed_order; SET LOCAL hnsw.ef_search = 100`,
+        { transaction },
+      );
+      return this.sequelize.query<{
+        src: 'vec' | 'fts';
+        id: string;
+        similarity: number | null;
+      }>(
         `(SELECT 'vec' AS src, c.id, 1 - (c.embedding <=> CAST(:q AS halfvec)) AS similarity
           FROM "KnowledgeChunk" c WHERE ${sql}
           ORDER BY c.embedding <=> CAST(:q AS halfvec) LIMIT :n)
@@ -87,24 +105,52 @@ export class Retriever {
           FROM "KnowledgeChunk" c, websearch_to_tsquery('english', :question) query
           WHERE ${sql} AND c.tsv @@ query
           ORDER BY ts_rank_cd(c.tsv, query) DESC LIMIT :n)`,
-        { type: QueryTypes.SELECT, transaction, replacements: { ...replacements, q: toVectorLiteral(embedding), question, n: CANDIDATES } },
+        {
+          type: QueryTypes.SELECT,
+          transaction,
+          replacements: {
+            ...replacements,
+            q: toVectorLiteral(embedding),
+            question,
+            n: CANDIDATES,
+          },
+        },
       );
     });
 
-    const similarity = new Map(rows.filter((r) => r.src === 'vec').map((r) => [r.id, Number(r.similarity)]));
+    const similarity = new Map(
+      rows
+        .filter((r) => r.src === 'vec')
+        .map((r) => [r.id, Number(r.similarity)]),
+    );
     const ftsIds = rows.filter((r) => r.src === 'fts').map((r) => r.id);
-    const vecIds = rows.filter((r) => r.src === 'vec' && Number(r.similarity) >= this.minSimilarity).map((r) => r.id);
+    const vecIds = rows
+      .filter(
+        (r) => r.src === 'vec' && Number(r.similarity) >= this.minSimilarity,
+      )
+      .map((r) => r.id);
     const fused = reciprocalRankFusion([vecIds, ftsIds]).slice(0, k);
     if (!fused.length) return [];
 
-    const chunks = await this.sequelize.query<Omit<RetrievedChunk, 'similarity' | 'score'>>(
+    const chunks = await this.sequelize.query<
+      Omit<RetrievedChunk, 'similarity' | 'score'>
+    >(
       `SELECT c.id, c."documentId", d.title, c."headingPath", c.page, c.content
        FROM "KnowledgeChunk" c JOIN "KnowledgeDocument" d ON d.id = c."documentId"
        WHERE c.id IN (:ids) AND d.status = 'READY'`,
-      { type: QueryTypes.SELECT, replacements: { ids: fused.map((f) => f.id) } },
+      {
+        type: QueryTypes.SELECT,
+        replacements: { ids: fused.map((f) => f.id) },
+      },
     );
     const byId = new Map(chunks.map((c) => [c.id, c]));
-    return fused.filter((f) => byId.has(f.id)).map((f) => ({ ...byId.get(f.id)!, similarity: similarity.get(f.id) ?? null, score: f.score }));
+    return fused
+      .filter((f) => byId.has(f.id))
+      .map((f) => ({
+        ...byId.get(f.id)!,
+        similarity: similarity.get(f.id) ?? null,
+        score: f.score,
+      }));
   }
 
   /** Repeated questions ("does it support eSIM?") skip the embedding call entirely. */
@@ -113,9 +159,17 @@ export class Retriever {
     const key = `rag:qemb:${this.embedder.model}:${createHash('sha256').update(normalized).digest('hex')}`;
     const cached = await this.redis.client.getBuffer(key).catch(() => null);
     // Copy first: a pooled Buffer's byteOffset need not be 4-aligned.
-    if (cached) return Array.from(new Float32Array(Uint8Array.from(cached).buffer));
+    if (cached)
+      return Array.from(new Float32Array(Uint8Array.from(cached).buffer));
     const [embedding] = await this.embedder.embed([normalized], 'query');
-    await this.redis.client.set(key, Buffer.from(new Float32Array(embedding).buffer), 'EX', QUERY_EMBEDDING_TTL_S).catch(() => undefined);
+    await this.redis.client
+      .set(
+        key,
+        Buffer.from(new Float32Array(embedding).buffer),
+        'EX',
+        QUERY_EMBEDDING_TTL_S,
+      )
+      .catch(() => undefined);
     return embedding;
   }
 }

@@ -1,7 +1,21 @@
 import { Logger } from '@nestjs/common';
-import CircuitBreaker from 'opossum';
+import { SystemClock } from '@app/common/core/clock';
+import { CircuitBreaker, CircuitOpenError } from '@app/common/resilience';
 import { DeliveryMessage, PermanentDeliveryError } from '../../domain/types';
 import { ChannelProvider, SendResult } from '../../domain/provider-ports';
+
+const SEND_TIMEOUT_MS = 10_000;
+
+function withTimeout<T>(call: Promise<T>, ms: number): Promise<T> {
+  let timer: NodeJS.Timeout;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(
+      () => reject(new Error(`provider send timed out after ${ms}ms`)),
+      ms,
+    );
+  });
+  return Promise.race([call, timeout]).finally(() => clearTimeout(timer));
+}
 
 export class AllProvidersFailedError extends Error {
   constructor(readonly causes: string[]) {
@@ -18,22 +32,26 @@ export class AllProvidersFailedError extends Error {
  */
 export class ChannelSender {
   private readonly logger = new Logger(ChannelSender.name);
-  private readonly breakers: { provider: ChannelProvider; breaker: CircuitBreaker<[DeliveryMessage], SendResult> }[];
+  private readonly breakers: {
+    provider: ChannelProvider;
+    breaker: CircuitBreaker;
+  }[];
 
   constructor(providers: ChannelProvider[]) {
-    this.breakers = providers.map((provider) => {
-      const breaker = new CircuitBreaker((m: DeliveryMessage) => provider.send(m), {
-        timeout: 10_000,
-        errorThresholdPercentage: 50,
-        volumeThreshold: 10,
-        resetTimeout: 30_000,
+    this.breakers = providers.map((provider) => ({
+      provider,
+      breaker: new CircuitBreaker({
+        name: `notifications.${provider.name}`,
+        clock: new SystemClock(),
+        windowMs: 60_000,
+        minimumCalls: 10,
+        failureRateThreshold: 0.5,
+        openDurationMs: 30_000,
+        halfOpenCalls: 1,
         // Permanent rejections are the recipient's fault, not the provider's health.
-        errorFilter: (error: Error) => error instanceof PermanentDeliveryError,
-      });
-      breaker.on('open', () => this.logger.warn(`circuit OPEN for ${provider.name}`));
-      breaker.on('close', () => this.logger.log(`circuit closed for ${provider.name}`));
-      return { provider, breaker };
-    });
+        isFailure: (error) => !(error instanceof PermanentDeliveryError),
+      }),
+    }));
   }
 
   get providerNames(): string[] {
@@ -43,13 +61,18 @@ export class ChannelSender {
   async send(message: DeliveryMessage): Promise<SendResult> {
     const causes: string[] = [];
     for (const { provider, breaker } of this.breakers) {
-      if (breaker.opened) {
-        causes.push(`${provider.name}: circuit open`);
-        continue;
-      }
       try {
-        return await breaker.fire(message);
+        return (
+          await breaker.execute(() =>
+            withTimeout(provider.send(message), SEND_TIMEOUT_MS),
+          )
+        ).value;
       } catch (error) {
+        if (error instanceof CircuitOpenError) {
+          this.logger.warn(`circuit open for ${provider.name}, skipped`);
+          causes.push(`${provider.name}: circuit open`);
+          continue;
+        }
         if (error instanceof PermanentDeliveryError) throw error;
         causes.push(`${provider.name}: ${(error as Error).message}`);
       }

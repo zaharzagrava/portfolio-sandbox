@@ -1,15 +1,20 @@
 import { Injectable } from '@nestjs/common';
-import { ApiConfigService } from '@app/common/config/api-config.service';
+import { ApiConfigService } from '@app/common/config';
 import { RedisService } from '@app/infrastructure/redis/redis.service';
 import { EntitlementsService } from '@app/domains/billing';
 import { RateLimiterService } from '@app/infrastructure/rate-limit/rate-limiter.service';
 import { RATE_LIMIT_POLICIES } from '@app/infrastructure/rate-limit/rate-limit.types';
-import { Domain_AssistantBusy, Domain_AssistantQuotaExceeded } from './assistant-errors';
+import {
+  Domain_AssistantBusy,
+  Domain_AssistantQuotaExceeded,
+} from './assistant-errors';
 
 const DEFAULT_BUYER_TOKENS_PER_MONTH = 200_000;
 
-const monthOf = (d = new Date()) => `${d.getUTCFullYear()}${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
-const usedKey = (userId: string, month = monthOf()) => `assistant:tokens:{${userId}}:${month}`;
+const monthOf = (d = new Date()) =>
+  `${d.getUTCFullYear()}${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
+const usedKey = (userId: string, month = monthOf()) =>
+  `assistant:tokens:{${userId}}:${month}`;
 
 /**
  * Three layers (10/10 #42), cheapest check first:
@@ -32,11 +37,20 @@ export class AssistantQuotaService {
 
   async allowance(userId: string): Promise<number> {
     const ent = await this.entitlements.get('USER', userId);
-    return ent.assistantTokensPerMonth ?? Number(this.config.get('assistant_buyer_tokens_per_month') ?? DEFAULT_BUYER_TOKENS_PER_MONTH);
+    return (
+      ent.assistantTokensPerMonth ??
+      Number(
+        this.config.get('assistant_buyer_tokens_per_month') ??
+          DEFAULT_BUYER_TOKENS_PER_MONTH,
+      )
+    );
   }
 
   async usage(userId: string): Promise<{ used: number; allowance: number }> {
-    const [used, allowance] = await Promise.all([this.redis.client.get(usedKey(userId)), this.allowance(userId)]);
+    const [used, allowance] = await Promise.all([
+      this.redis.client.get(usedKey(userId)),
+      this.allowance(userId),
+    ]);
     return { used: Number(used ?? 0), allowance };
   }
 
@@ -44,19 +58,34 @@ export class AssistantQuotaService {
     const { used, allowance } = await this.usage(userId);
     if (used >= allowance) {
       const now = new Date();
-      const nextMonth = Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1);
+      const nextMonth = Date.UTC(
+        now.getUTCFullYear(),
+        now.getUTCMonth() + 1,
+        1,
+      );
       throw new Domain_AssistantQuotaExceeded(nextMonth - now.getTime());
     }
   }
 
-  async takeProviderBudget(model: string, estimatedTokens: number): Promise<void> {
-    const cost = Math.min(RATE_LIMIT_POLICIES['llm.provider.tpm'].limit, Math.max(1, estimatedTokens));
+  async takeProviderBudget(
+    model: string,
+    estimatedTokens: number,
+  ): Promise<void> {
+    const cost = Math.min(
+      RATE_LIMIT_POLICIES['llm.provider.tpm'].limit,
+      Math.max(1, estimatedTokens),
+    );
     const decision = await this.limiter.check('llm.provider.tpm', model, cost);
-    if (!decision.allowed) throw new Domain_AssistantBusy(decision.retryAfterMs);
+    if (!decision.allowed)
+      throw new Domain_AssistantBusy(decision.retryAfterMs);
   }
 
   async charge(userId: string, tokens: number): Promise<void> {
     const key = usedKey(userId);
-    await this.redis.client.multi().incrby(key, tokens).pexpire(key, 40 * 86_400_000).exec();
+    await this.redis.client
+      .multi()
+      .incrby(key, tokens)
+      .pexpire(key, 40 * 86_400_000)
+      .exec();
   }
 }

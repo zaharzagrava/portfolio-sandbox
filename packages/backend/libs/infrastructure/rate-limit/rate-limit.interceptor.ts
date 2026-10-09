@@ -1,11 +1,21 @@
-import { CallHandler, ExecutionContext, HttpStatus, Injectable, NestInterceptor } from '@nestjs/common';
+import {
+  CallHandler,
+  ExecutionContext,
+  HttpStatus,
+  Injectable,
+  NestInterceptor,
+} from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { createHash } from 'node:crypto';
 import type { Request, Response } from 'express';
 import { from, Observable, finalize, mergeMap } from 'rxjs';
-import { AppError, ErrorArea } from '@app/common/errors/error.types';
+import { AppError, ErrorArea } from '@app/common/errors';
 import { RateLimiterService } from './rate-limiter.service';
-import { RATE_LIMIT_POLICIES, RateLimitDecision, RateLimitPolicyName } from './rate-limit.types';
+import {
+  RATE_LIMIT_POLICIES,
+  RateLimitDecision,
+  RateLimitPolicyName,
+} from './rate-limit.types';
 import { RATE_LIMIT_METADATA } from './rate-limit.decorator';
 
 export class Domain_RateLimitedError extends AppError {
@@ -19,7 +29,11 @@ export class Domain_RateLimitedError extends AppError {
   }
 }
 
-type AuthedRequest = Request & { user?: { id: string }; apiKey?: { id: string; shopId: string }; shopId?: string };
+type AuthedRequest = Request & {
+  user?: { id: string };
+  apiKey?: { id: string; shopId: string };
+  shopId?: string;
+};
 
 @Injectable()
 export class RateLimitInterceptor implements NestInterceptor {
@@ -29,16 +43,28 @@ export class RateLimitInterceptor implements NestInterceptor {
   ) {}
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
-    const policies = this.reflector.get<RateLimitPolicyName[]>(RATE_LIMIT_METADATA, context.getHandler()) ?? [];
+    const policies =
+      this.reflector.get<RateLimitPolicyName[]>(
+        RATE_LIMIT_METADATA,
+        context.getHandler(),
+      ) ?? [];
     const req = context.switchToHttp().getRequest<AuthedRequest>();
     const res = context.switchToHttp().getResponse<Response>();
 
     return from(this.enforce(policies, req, res)).pipe(
-      mergeMap((releases) => next.handle().pipe(finalize(() => releases.forEach((release) => void release())))),
+      mergeMap((releases) =>
+        next
+          .handle()
+          .pipe(finalize(() => releases.forEach((release) => void release()))),
+      ),
     );
   }
 
-  private async enforce(policies: RateLimitPolicyName[], req: AuthedRequest, res: Response) {
+  private async enforce(
+    policies: RateLimitPolicyName[],
+    req: AuthedRequest,
+    res: Response,
+  ) {
     const releases: (() => Promise<void>)[] = [];
     let tightest: RateLimitDecision | undefined;
 
@@ -58,11 +84,15 @@ export class RateLimitInterceptor implements NestInterceptor {
       }
 
       const decision = await this.limiter.check(name, subject);
-      if (!tightest || decision.remaining < tightest.remaining) tightest = decision;
+      if (!tightest || decision.remaining < tightest.remaining)
+        tightest = decision;
       if (!decision.allowed) {
         await Promise.all(releases.map((r) => r()));
         this.setHeaders(res, name, decision);
-        res.setHeader('Retry-After', String(Math.max(1, Math.ceil(decision.retryAfterMs / 1000))));
+        res.setHeader(
+          'Retry-After',
+          String(Math.max(1, Math.ceil(decision.retryAfterMs / 1000))),
+        );
         throw new Domain_RateLimitedError(name, decision.retryAfterMs);
       }
     }
@@ -72,16 +102,24 @@ export class RateLimitInterceptor implements NestInterceptor {
   }
 
   /** IETF draft "RateLimit header fields for HTTP" (draft-06 field names, widely supported by clients). */
-  private setHeaders(res: Response, policyName: RateLimitPolicyName, d: RateLimitDecision) {
+  private setHeaders(
+    res: Response,
+    policyName: RateLimitPolicyName,
+    d: RateLimitDecision,
+  ) {
     const policy = RATE_LIMIT_POLICIES[policyName];
-    res.setHeader('RateLimit-Policy', `${policy.limit};w=${Math.round(policy.windowMs / 1000)}`);
+    res.setHeader(
+      'RateLimit-Policy',
+      `${policy.limit};w=${Math.round(policy.windowMs / 1000)}`,
+    );
     res.setHeader('RateLimit-Limit', String(d.limit));
     res.setHeader('RateLimit-Remaining', String(Math.max(0, d.remaining)));
     res.setHeader('RateLimit-Reset', String(Math.ceil(d.resetMs / 1000)));
   }
 
   private subject(source: string, req: AuthedRequest): string {
-    const ip = (req.headers['cf-connecting-ip'] as string) ?? req.ip ?? 'unknown';
+    const ip =
+      (req.headers['cf-connecting-ip'] as string) ?? req.ip ?? 'unknown';
     switch (source) {
       case 'ip':
         return `ip:${ip}`;
@@ -95,7 +133,9 @@ export class RateLimitInterceptor implements NestInterceptor {
         return req.apiKey?.shopId ?? req.shopId ?? `ip:${ip}`;
       case 'body.email': {
         // Hash: the email never appears in Redis keys (they show up in monitoring/slowlog).
-        const email = String((req.body as { email?: string })?.email ?? '').trim().toLowerCase();
+        const email = String((req.body as { email?: string })?.email ?? '')
+          .trim()
+          .toLowerCase();
         return `email:${createHash('sha256').update(email).digest('hex').slice(0, 32)}`;
       }
       default:

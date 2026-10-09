@@ -1,6 +1,6 @@
 import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { Kafka, Producer } from 'kafkajs';
-import { ApiConfigService } from '@app/common/config/api-config.service';
+import { ApiConfigService } from '@app/common/config';
 import { Environment } from '@app/common/types';
 
 @Injectable()
@@ -57,8 +57,17 @@ export class KafkaProducerService implements OnModuleInit, OnModuleDestroy {
   }
 
   /** Many messages to one topic in a single produce request (batched per partition by kafkajs). */
-  public async sendMany(topic: string, messages: { key: string; value: unknown }[]): Promise<void> {
+  public async sendMany(
+    topic: string,
+    messages: { key: string; value: unknown }[],
+  ): Promise<void> {
     if (messages.length === 0) return;
-    await this.kafkaProducer.send({ topic, messages: messages.map((m) => ({ key: m.key, value: JSON.stringify(m.value) })) });
+    await this.kafkaProducer.send({
+      topic,
+      messages: messages.map((m) => ({
+        key: m.key,
+        value: JSON.stringify(m.value),
+      })),
+    });
   }
 }

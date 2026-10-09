@@ -1,8 +1,8 @@
 import './instrument';
 import { NestFactory } from '@nestjs/core';
 import { ProjectorModule } from './projector.module';
-import { ApiConfigService } from '@app/common/config/api-config.service';
-import { configureHttpApp } from '@app/infrastructure/platform/bootstrap-http';
+import { ApiConfigService } from '@app/common/config';
+import { configureHttpApp } from '@app/infrastructure/platform';
 
 async function bootstrap() {
   // HTTP only for /livez, /readyz and metrics - the work is Kafka consumption.
