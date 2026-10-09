@@ -10,7 +10,7 @@
       `xdescribe`, `it.todo` may be added. Guards against "making the test pass" by weakening it.
 Exit 1 with a list of findings, else 0.
 """
-import re, subprocess, sys
+import os, re, subprocess, sys
 from pathlib import Path
 
 TEST_FILE = re.compile(r'\.(e2e-spec|spec|test|journey-spec)\.tsx?$')
@@ -26,8 +26,28 @@ def test_files(scopes):
             out += [f for f in p.rglob('*') if f.is_file() and TEST_FILE.search(f.name) and 'node_modules' not in f.parts]
     return sorted(set(out))
 
+def deferred_scenarios(plan, max_priority):
+    """AS ids that only stories of a lower priority than max_priority cover (the pass defers them).
+
+    Stories are the "### User Story N ... (Priority: Pn)" sections of spec.md. A scenario counts as deferred when every
+    story that cites it is below the limit; one that no story cites stays required."""
+    spec = Path(plan).with_name('spec.md')
+    if not max_priority or not spec.exists():
+        return set()
+    parts = re.split(r'(?m)^###\s+User Story\s+\d+[^\n]*?\(Priority:\s*P(\d)\)[^\n]*\n', spec.read_text())
+    cited_by = {}
+    for i in range(1, len(parts), 2):
+        body = re.split(r'(?m)^##\s', parts[i + 1])[0]
+        body = re.split(r'(?m)^###\s', body)[0]
+        for ref in set(re.findall(r'\bAS-0*(\d+)\b', body)):
+            cited_by.setdefault(int(ref), []).append(int(parts[i]))
+    return {n for n, pri in cited_by.items() if all(p > max_priority for p in pri)}
+
+
 def scenarios(kind, plan, spec_id, scopes):
     text = Path(plan).read_text()
+    lim = os.environ.get('MAX_PRIORITY', '')
+    deferred = deferred_scenarios(plan, int(lim[-1]) if lim[-1:].isdigit() else 0)
     sid_re = re.compile(r'\b%s\b' % re.escape(spec_id))
     # A scenario is carried by a line holding both IDs ("S54 AS-12: ..."), or, for table-driven tests (it.each rows),
     # by a file that names the capability somewhere (its describe title or header) and the scenario ID on any line.
@@ -52,6 +72,8 @@ def scenarios(kind, plan, spec_id, scopes):
             continue
         sid = m.group(1)
         n = int(sid.split('-')[1])
+        if n in deferred:
+            continue
         as_re = re.compile(r'\bAS-0*%d\b' % n)
         if not (any(sid_re.search(l) and as_re.search(l) for l in lines) or any(as_re.search(t) for t in file_texts)):
             missing.append(sid)

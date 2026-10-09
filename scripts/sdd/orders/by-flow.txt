@@ -1,51 +1,77 @@
-# Flow-first order: build vertical slices, and stop at checkpoints where a human can try what exists.
+# Priority-first flow order: reach a working browser flow early, then finish everything.
 #   ORDER=by-flow COMMIT=1 scripts/sdd/implement-specs.sh
-# A "!STOP <label> <message>" line stops the run once (notification, exit 0) and is passed on the next run
-# (marker: specs/.checkpoints/<label>; delete it to stop there again). IDs missing from this file run last.
-# The point: a problem between two capabilities shows up at the first checkpoint that needs both, not after sixty specs.
-# Unlike by-layer.txt this puts the things the README features (public API, webhooks, integrations, offline sync) after
-# the first browser flow; move section 5 up if resume work matters more than seeing the flow early.
+#
+# "ID:P1" builds only the user stories of priority P1 (plus Setup and Foundational) of that spec; a plain "ID" later in
+# the file builds the rest (the loop resumes at the first open task). The text after "# needs:" declares which
+# capabilities a limited pass really uses, and scripts/sdd/check-order.py verifies it against the file. Nothing is
+# stubbed: what a P1 pass cannot reach yet degrades the way the spec's own error handling says, and is listed under
+# "Deferred until a later pass" in that spec's gaps.md.
+#
+# "!STOP <label> <message>" stops the run once for a human to try what exists (the next run passes it; with COMMIT=1 the
+# marker specs/.checkpoints/<label> is committed, delete it to stop there again).
+# The point: a problem between two capabilities shows at the first checkpoint that needs both.
+#
+# Why this is shorter than by-layer: the P1 stories of the storefront, checkout, login and shell need about 20 capabilities
+# at P1 depth. Discussions, ask-this-product, share links, videos, sponsored cards, analytics, auctions, chat, flags,
+# the public API and the widget belong to P2/P3 stories and wait for the second pass.
 
-# 0. Platform toolkit (S54 is done): events and projections, jobs, cache, rate limit
+# 0. Platform toolkit (S54 is done)
 S54
 S53
 S49
 S52
 S50
 
-# 1. Identity, shops, catalog
+# 1. Identity, shops, catalog: P1 stories
+S01:P1  # needs: S50
+S02:P1  # needs: S01
+S03:P1  # needs: S01
+S05:P1  # needs: S03
+
+# 2. FLOW 1, buying: P1 stories of cart, checkout, payment intents and realtime status
+S10:P1  # needs: S05
+S13:P1  # needs: S10
+S51:P1  # needs: S01 S13 S53
+!STOP buy-api  Buying works at API level: register, log in, create a shop and a product, cart, checkout, pay, the order becomes paid, the status reaches the client.
+
+# 3. FLOW 2, discovery: P1 stories of search, autocomplete, recommendations, trending
+S32:P1  # needs: S05 S53
+S33:P1  # needs: S32
+S34:P1  # needs: S05 S10
+S35:P1  # needs: S05 S10
+!STOP search-api  Search, autocomplete, trending and recommendations return the products created through the API.
+
+# 4. FLOW 3, the browser: BFF, shell, login, storefront, cart and checkout, all P1 stories
+S48:P1  # needs: S01 S02 S03 S05 S34 S35
+W07:P1  # needs: S48
+W01:P1  # needs: S01 S02 S48
+W02:P1  # needs: S03 S05 S32 S33 S34 S35 S48
+W03:P1  # needs: S10 S13 S48 S51
+!STOP buy-ui  Browser flow: open the storefront, find a product by search, open its page, add it to the cart, sign in, pay, see the success page. Pages show only what P1 covers.
+
+# 5. Second pass: finish the specs above (P2/P3 stories), providers before the specs that call them
 S01
+S02
 S03
 S05
-
-# 2. FLOW 1, buying: cart, checkout, payment intents with the fake PSP, ledger, notifications, realtime status
 S10
 S13
 S14
 S28
 S51
-!STOP buy-api  Buying works at API level: register, create a shop and a product, cart, checkout, pay (fake PSP), order becomes paid, ledger journals balance, buyer notification arrives.
-
-# 3. FLOW 2, discovery: products created above become searchable
 S32
 S33
-S35
 S34
+S35
 S19
-!STOP search-api  Search, autocomplete, trending, recommendations and pickup-near-me return the products created through the API.
-
-# 4. FLOW 3, the browser. The BFF (S48) composes the product page from many capabilities and the web specs cite them
-#    all, so every provider comes first and no web spec has to stub one. Only after that: BFF, shell, login, storefront,
-#    cart and checkout. (check-order.py verifies this against the specs' own dependency lines.)
-S02
-S38
-S39
 S25
 S37
 S29
 S30
 S36
 S47
+S38
+S39
 S11
 S21
 S24
@@ -56,15 +82,15 @@ W07
 W01
 W02
 W03
-!STOP buy-ui  Browser flow: open the storefront, find a product by search, open its page, add it to the cart, pay, see the order and the notification.
+!STOP storefront-complete  Storefront complete: discussions, ask-this-product, share links, pickup near me, videos, sponsored cards, order history, notification bell, developer docs.
 
-# 5. Featured on the resume: public API, webhooks, LLM provider port, integrations, offline sync
+# 6. Featured on the resume: webhooks, LLM provider port, integrations, offline sync
 S43
 S46
 S08
 S09
 
-# 6. The rest of the money chain, then the buy-to-payout journey
+# 7. The rest of the money chain, then the buy-to-payout journey
 S15
 S16
 S17
@@ -72,27 +98,27 @@ S18
 J01
 !STOP payout-journey  Buy-to-payout journey (J01): order paid, ledger, settlement, seller payout, monthly statement.
 
-# 7. Commerce, onboarding, content
+# 8. Commerce, onboarding, content
 S12
 S07
 S04
 S31
 S27
 
-# 8. Realtime, launch events, community
+# 9. Realtime, launch events, community
 S22
 S23
 S20
 S26
 S06
 
-# 9. The rest of the backend
+# 10. The rest of the backend
 S40
 S41
 S45
 S55
 
-# 10. Remaining web and journeys
+# 11. Remaining web and journeys
 W04
 W05
 W06

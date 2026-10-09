@@ -6,7 +6,8 @@
 #   scripts/sdd/monitor.sh --status [...]     # print the current progress once and exit (sends nothing)
 #
 # Progress = average over the specs this run has to build (those with a finished spec and no .implemented at start):
-# a built spec counts 100%, a spec in progress counts ticked/total of its tasks.md.
+# a built spec counts 100%, a spec in progress counts ticked/total of its tasks.md (for a priority-limited entry such as W02:P1,
+# only the phases of that pass).
 #
 # Notifications (see notify in lib.sh; sound only for warnings and the end, never per task):
 #   info  milestone 25/50/75/100 %, and every recovery ("... resolved")
@@ -44,43 +45,48 @@ SCOPE="$STATE/scope.tsv"        # id <tab> dir
 build_scope() {
   : > "$SCOPE"
   local id domain slug title sources dir
-  while IFS=$'\t' read -r id domain slug title sources; do
+  while IFS=$'\t' read -r id domain slug title sources limit; do
+    [[ "${limit:--}" == "-" ]] && limit=""
     if [[ "$id" == '!STOP' ]]; then [[ -f "$ROOT/specs/.checkpoints/$domain" ]] && continue || break; fi  # scope ends at the next checkpoint
     dir="$(spec_dir "$domain" "$id" "$slug")"
-    [[ -f "$dir/.spec-done" && ! -f "$dir/.implemented" ]] && printf '%s\t%s\n' "$id" "$dir" >> "$SCOPE"
+    # one scope row per entry; a limited entry ("W02:P1") is its own unit of progress
+    [[ -f "$dir/.spec-done" && ! -f "$dir/.implemented" && ! -f "$dir/.implemented${limit:+-$limit}" ]] && printf '%s\t%s\t%s\n' "$id${limit:+:$limit}" "$dir" "$limit" >> "$SCOPE"
     [[ -n "${UNTIL:-}" && "$id" == "$UNTIL" ]] && break
   done < <(ordered_capabilities "$@")
 }
 
-ticked() { grep -c -E '^- \[[xX]\]' "$1/tasks.md" 2>/dev/null || true; }
-total()  { grep -c -E '^- \[[ xX]\]' "$1/tasks.md" 2>/dev/null || true; }
+# counts for a scope row's tasks (the phases of its priority limit; "$2" is the limit or empty)
+ticked() { python3 "$ROOT/scripts/sdd/tasks-scope.py" "$1/tasks.md" "${2:--}" | awk '{print $1}'; }
+total()  { python3 "$ROOT/scripts/sdd/tasks-scope.py" "$1/tasks.md" "${2:--}" | awk '{print $3}'; }
 
-spec_pct() { # $1 = dir
-  if [[ -f "$1/.implemented" ]]; then echo 100; return; fi
+built() { [[ -f "$1/.implemented" || ( -n "${2:-}" && -f "$1/.implemented-$2" ) ]]; } # $1 = dir, $2 = priority limit
+
+spec_pct() { # $1 = dir, $2 = priority limit
+  if built "$1" "${2:-}"; then echo 100; return; fi
   # All tasks ticked still leaves converge, the gate and the commit: 100% means built.
-  local t k p; t=$(total "$1"); k=$(ticked "$1")
+  local t k p; t=$(total "$1" "${2:-}"); k=$(ticked "$1" "${2:-}")
   if (( ${t:-0} > 0 )); then p=$(( 100 * k / t )); (( p > 95 )) && p=95; echo "$p"; else echo 0; fi
 }
 
 overall_pct() {
   local sum=0 n=0 id dir
-  while IFS=$'\t' read -r id dir; do sum=$(( sum + $(spec_pct "$dir") )); n=$(( n + 1 )); done < "$SCOPE"
+  while IFS=$'\t' read -r id dir lim; do sum=$(( sum + $(spec_pct "$dir" "$lim") )); n=$(( n + 1 )); done < "$SCOPE"
   (( n > 0 )) && echo $(( sum / n )) || echo 100
 }
 
-current_spec() { # first spec in scope that is not built yet: "id<tab>dir"
-  local id dir
-  while IFS=$'\t' read -r id dir; do [[ -f "$dir/.implemented" ]] || { printf '%s\t%s\n' "$id" "$dir"; return; }; done < "$SCOPE"
+current_spec() { # first entry in scope that is not built yet: "id<tab>dir<tab>limit"
+  local id dir lim
+  while IFS=$'\t' read -r id dir lim; do built "$dir" "$lim" || { printf '%s\t%s\t%s\n' "$id" "$dir" "$lim"; return; }; done < "$SCOPE"
 }
 
-first_open_task() { grep -m1 -E '^- \[ \]' "$1/tasks.md" 2>/dev/null | grep -o -E '\bT[0-9]+\b' | head -1; }
+first_open_task() { python3 "$ROOT/scripts/sdd/tasks-scope.py" "$1/tasks.md" "${2:--}" --open 2>/dev/null | head -1 | grep -o -E '\bT[0-9]+\b' | head -1; }
 
 describe() { # one line for --status
-  local cur id dir
+  local cur id dir lim
   cur="$(current_spec)"
-  if [[ -z "$cur" ]]; then echo "all $(wc -l < "$SCOPE") spec(s) in scope are built"; return; fi
-  IFS=$'\t' read -r id dir <<<"$cur"
-  echo "overall $(overall_pct)%  |  now $id: $(ticked "$dir")/$(total "$dir") tasks, next open ${1:-$(first_open_task "$dir")}"
+  if [[ -z "$cur" ]]; then echo "all $(wc -l < "$SCOPE") entr(ies) in scope are built"; return; fi
+  IFS=$'\t' read -r id dir lim <<<"$cur"
+  echo "overall $(overall_pct)%  |  now $id: $(ticked "$dir" "$lim")/$(total "$dir" "$lim") tasks, next open $(first_open_task "$dir" "$lim")"
 }
 
 # ---- raise / clear: each warning notifies once when it starts and once, quietly, when it ends ----
@@ -120,12 +126,12 @@ active_recently() { # any source, spec or script file touched within STALL_MIN m
 loop_alive() { pgrep -f "[i]mplement-specs.sh" >/dev/null; }
 
 check_once() {
-  local pct cur id dir task tick_total=0 d
+  local pct cur id dir lim task tick_total=0 d lm
   pct="$(overall_pct)"; milestones "$pct"
   cur="$(current_spec)"
 
   # task completions: a quiet line per tick, no notification
-  while IFS=$'\t' read -r id d; do tick_total=$(( tick_total + $(ticked "$d") )); done < "$SCOPE"
+  while IFS=$'\t' read -r id d lm; do tick_total=$(( tick_total + $(ticked "$d" "$lm") )); done < "$SCOPE"
   local last_ticks; last_ticks=$(cat "$STATE/ticks" 2>/dev/null || echo "$tick_total")
   if (( tick_total != last_ticks )); then
     say "progress  ${tick_total} tasks ticked in scope (was ${last_ticks})  $(describe)"
@@ -137,8 +143,8 @@ check_once() {
 
   # one task open too long, and its finish
   if [[ -n "$cur" ]]; then
-    IFS=$'\t' read -r id dir <<<"$cur"
-    task="$(first_open_task "$dir")"
+    IFS=$'\t' read -r id dir lim <<<"$cur"
+    task="$(first_open_task "$dir" "$lim")"
     if [[ -z "$task" ]]; then
       # every task is ticked: converge, the gate and the commit follow; a long task, if any, is over
       clear_flag long_task "SDD: long task finished" "$id has no open task left"

@@ -34,6 +34,8 @@ run_claude() {
   local pid code=0 grace="${CLAUDE_EXIT_GRACE_S:-90}" limit="${PASS_TIMEOUT_S:-7200}" start=$SECONDS size last=-1 since=$SECONDS killed=""
   SDD_LOOP=1 setsid claude "$prompt" "${args[@]}" </dev/null >"$log" 2>&1 &   # own process group: one kill reaches every helper
   pid=$!
+  # claude runs in its own process group, so a Ctrl-C aimed at this script would not reach it: forward it.
+  trap 'kill -TERM -- "-$pid" 2>/dev/null; sleep 2; kill -KILL -- "-$pid" 2>/dev/null; exit 130' INT TERM
   while kill -0 "$pid" 2>/dev/null; do
     sleep 5
     size=$(stat -c %s "$log" 2>/dev/null || echo 0)
@@ -45,10 +47,12 @@ run_claude() {
     kill -TERM -- "-$pid" 2>/dev/null || kill -TERM "$pid" 2>/dev/null; sleep 5
     kill -KILL -- "-$pid" 2>/dev/null || kill -KILL "$pid" 2>/dev/null
     wait "$pid" 2>/dev/null
+    trap - INT TERM
     if [[ "$killed" == done ]]; then echo "  (answer was complete but claude did not exit within ${grace}s: stopped it)" >&2; return 0; fi
     echo "  (stopped after the ${limit}s pass timeout)" >&2; return 124
   fi
   wait "$pid"; code=$?
+  trap - INT TERM
   return "$code"
 }
 
@@ -131,29 +135,33 @@ template_for() {
   esac
 }
 
-# ordered_capabilities [ID|domain ...]: for_each_capability, re-sorted by the order file (IDs it does not list come last, in
-# catalog order). The file is scripts/sdd/orders/$ORDER.txt (default by-layer; by-flow builds vertical slices) or ORDER_FILE.
-# A line "!STOP <label> <message>" is a checkpoint: with no ID filter it comes out as the row  !STOP<TAB>label<TAB>-<TAB>message<TAB>-
+# ordered_capabilities [ID|domain ...]: the catalog rows in the order of the order file, one row per entry, each with a
+# last column: the priority limit ("-" = the whole spec). The file is scripts/sdd/orders/$ORDER.txt (default by-layer;
+# by-flow builds vertical slices) or ORDER_FILE. Line forms (anything after '#' is a comment):
+#   S10            the whole spec           S10:P1   only the stories of priority P1 (a later plain S10 entry finishes it)
+#   !STOP <label> <message>   a checkpoint: with no ID filter it comes out as  !STOP<TAB>label<TAB>-<TAB>message<TAB>-<TAB>-
+# IDs the file never mentions run last, whole, in catalog order.
 ORDER_FILE="${ORDER_FILE:-$ROOT/scripts/sdd/orders/${ORDER:-by-layer}.txt}"
 ordered_capabilities() {
   [[ -f "$ORDER_FILE" ]] || { echo "order file not found: $ORDER_FILE" >&2; return 1; }
   for_each_capability "$@" | awk -F'\t' -v order="$ORDER_FILE" -v withstops="$#" '
-    BEGIN {
-      while ((getline line < order) > 0) {
-        if (line ~ /^#/ || line ~ /^[[:space:]]*$/) continue
-        n++
-        if (line ~ /^!STOP[[:space:]]/) { stops[n] = line; continue }
-        pos[line] = n
-      }
-    }
-    { print (($1 in pos) ? pos[$1] : 100000 + NR) "\t" $0 }
+    { rows[$1] = $0; ids[++nc] = $1 }
     END {
-      if (withstops != 0) exit
-      for (i in stops) {
-        split(stops[i], w, /[[:space:]]+/); label = w[2]
-        msg = stops[i]; sub(/^!STOP[[:space:]]+[^[:space:]]+[[:space:]]*/, "", msg); if (msg == "") msg = label
-        print (i - 0.5) "\t!STOP\t" label "\t-\t" msg "\t-"
+      while ((getline line < order) > 0) {
+        sub(/[[:space:]]*#.*$/, "", line)
+        if (line ~ /^[[:space:]]*$/) continue
+        if (line ~ /^!STOP[[:space:]]/) {
+          if (withstops != 0) continue
+          split(line, w, /[[:space:]]+/); label = w[2]
+          msg = line; sub(/^!STOP[[:space:]]+[^[:space:]]+[[:space:]]*/, "", msg); if (msg == "") msg = label
+          print "!STOP\t" label "\t-\t" msg "\t-\t-"
+          continue
+        }
+        split(line, a, /[[:space:]]+/); split(a[1], b, ":")
+        id = b[1]; lim = (b[2] == "" ? "-" : b[2])
+        if (id in rows) { print rows[id] "\t" lim; if (lim == "-") whole[id] = 1; mentioned[id] = 1 }
       }
+      for (i = 1; i <= nc; i++) if (!(ids[i] in mentioned)) print rows[ids[i]] "\t-"
     }
-  ' | sort -n -k1,1 | cut -f2-
+  '
 }

@@ -172,11 +172,20 @@ How the run behaves (details in the runbook):
   plan limit); `MAX_IMPLEMENT_PASSES` (default 10) bounds the fresh-context passes per spec.
 - Closing the laptop lid can still suspend it; keep it open or change the lid setting.
 - Order: `ORDER=by-layer` (default, `scripts/sdd/orders/by-layer.txt`: platform, identity, money, ..., web, journeys) or
-  `ORDER=by-flow` (`orders/by-flow.txt`: vertical slices). `by-flow` has checkpoints (`!STOP <label> <message>` lines): the
-  run stops once there with a notification so you can try what exists (buying at API level, search, the browser flow),
-  and the next run passes it. With `COMMIT=1` the "passed" marker (`specs/.checkpoints/<label>`) is committed; delete it
+  `ORDER=by-flow` (`orders/by-flow.txt`: priority-first, to reach a working browser flow early).
+  - An entry `W02:P1` builds only that spec's user stories of priority P1 (plus Setup and Foundational): `tasks.md` is
+    grouped in phases, each story phase is labelled `(P1)`, `(P2)`..., and the pass leaves the later phases unticked. A plain
+    `W02` entry later in the file finishes it (the loop resumes at the first open task). Markers: `.implemented-P1` after
+    the limited pass, `.implemented` after the whole spec. The gate's scenario check skips the scenarios only deferred
+    stories cover; what a limited pass cannot reach yet is listed under "Deferred until a later pass" in the spec's `gaps.md`.
+    `# needs: S01 S02` after a limited entry declares what its pass really uses.
+  - `!STOP <label> <message>` lines are checkpoints: the run stops once there so you can try what exists, and the next run
+    passes it. Before pausing, `scripts/sdd/checkpoint.sh <label>` runs the whole backend e2e suite (and Playwright when
+    the dev stack is up) as a regression sweep, then `scripts/sdd/checkpoints/<label>.sh` if present (a scripted walk of
+    the flow); a failure stops the run instead of pausing. With `COMMIT=1` the "passed" marker (`specs/.checkpoints/<label>`) is committed; delete it
   to stop at that checkpoint again. Switching orders mid-way is safe: built specs are skipped either way. `python3 scripts/sdd/check-order.py` verifies that
-  every order builds each capability after the ones its spec depends on (run it after editing an order file).
+  every order builds each capability after the ones its spec depends on, that each `:P1` entry's declared needs come
+  before it, and that every capability gets a plain entry (run it after editing an order file).
 
 ## Developer tooling
 

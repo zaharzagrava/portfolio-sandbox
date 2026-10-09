@@ -28,7 +28,7 @@ on_exit() {
   if [[ "$state" == limit:* ]]; then
     echo "OUT OF BUDGET  the Claude usage limit was reached at ${state#limit:}. Nothing is lost: re-run the same command after the limit resets and it resumes." >&2
     notify limit "SDD loop: out of budget" "Usage limit hit at ${state#limit:}. Re-run after the reset to resume."
-  elif [[ "$state" == Checkpoint* ]]; then
+  elif [[ "$state" == Checkpoint* ]] && (( code == 0 )); then
     notify ok "SDD loop: checkpoint reached" "$state"
   elif (( code == 0 )); then
     notify ok "SDD loop: finished" "${state:-All requested specs are built.}"
@@ -176,10 +176,14 @@ extra_context() { # $1 = capability id
   if [[ -n "$fu" ]]; then printf ' %s\n%s' "Follow-ups left for this capability by specs that are already built; treat each as a requirement, plan it, test it, and mention it in your report:" "$fu"; fi
 }
 
-ordered_capabilities "$@" | while IFS=$'\t' read -r id domain slug title sources; do
+ordered_capabilities "$@" | while IFS=$'\t' read -r id domain slug title sources limit; do
   if [[ "$id" == '!STOP' ]]; then # checkpoint: stop once so a human can test what exists, then pass on the next run
     marker="$ROOT/specs/.checkpoints/$domain"
     if [[ -f "$marker" ]]; then echo "pass  checkpoint $domain"; continue; fi
+    # Before pausing: every earlier capability must still work (full e2e sweep) and the flow script, if any, must pass.
+    if ! "$ROOT/scripts/sdd/checkpoint.sh" "$domain"; then
+      echo "Checkpoint $domain FAILED its regression sweep or flow script (specs/.checkpoints/$domain.log)." > "$STATE_FILE"; exit 1
+    fi
     mkdir -p "$ROOT/specs/.checkpoints"; date -u +%FT%TZ > "$marker"
     # Committed, so a fresh clone (the VPS runner) continues past this checkpoint instead of stopping at it forever.
     if [[ -n "${COMMIT:-}" ]]; then git add "$marker" && git commit -q -m "chore(sdd): checkpoint $domain reached" -m "$title" || true; fi
@@ -189,14 +193,22 @@ ordered_capabilities "$@" | while IFS=$'\t' read -r id domain slug title sources
   fi
   dir="$(spec_dir "$domain" "$id" "$slug")"
   [[ -f "$dir/.spec-done" ]] || { echo "skip  $id (no finished spec yet)"; continue; }
-  [[ -f "$dir/.implemented" ]] && { echo "skip  $id (already implemented)"; continue; }
+  # An entry can be limited to a priority ("W02:P1" in the order file): the stories of that priority and higher now, the
+  # rest in a later plain entry. Markers: .implemented (all of it) or .implemented-P1 (through P1).
+  [[ "${limit:--}" == "-" ]] && limit="" 
+  done_marker="$dir/.implemented${limit:+-$limit}"
+  [[ -f "$dir/.implemented" || -f "$done_marker" ]] && { echo "skip  $id${limit:+ ($limit)} (already implemented)"; continue; }
+  LIMIT_TEXT=""
+  if [[ -n "$limit" ]]; then
+    LIMIT_TEXT="PRIORITY LIMIT: this pass covers only the user stories of priority $limit and higher (P1 is the highest), plus the Setup and Foundational phases. Implement those, red → green, exactly as before. Do not start the phases of lower-priority stories, do not tick their tasks, and leave the Polish, Cross-Cutting and Convergence phases for the final full pass. A scenario (AS-nn) that only a deferred story covers is deferred, not failed. Under a '## Deferred until a later pass' heading in this spec's gaps.md list the deferred stories and scenarios and, for each, the capability it waits for. If a story you do implement would call a capability that is not built yet (no .implemented marker in its spec folder), do not stub or fake it: build the part that does not need it, let the missing part degrade exactly as this spec's error handling requires (for example a section reported as unavailable), and list it under the same heading."
+  fi
   [[ "$(kind_of "$domain")" == backend ]] || require_stack "$id"
   if [[ -n "${GATE_ONLY:-}" ]]; then # re-run just the gate (no claude, no marker, no commit): GATE_ONLY=1 scripts/sdd/implement-specs.sh S54
     echo "gate-only $id"
-    if { gate "$domain" && gate_extras "$id" "$domain" "$dir"; } >"$dir/.gate.log" 2>&1; then echo "GATE OK    $id"; else echo "GATE FAIL  $id (see $dir/.gate.log)"; fi
+    if { MAX_PRIORITY="$limit" gate "$domain" && MAX_PRIORITY="$limit" gate_extras "$id" "$domain" "$dir"; } >"$dir/.gate.log" 2>&1; then echo "GATE OK    $id${limit:+ ($limit)}"; else echo "GATE FAIL  $id (see $dir/.gate.log)"; fi
     continue
   fi
-  echo "build $id — $title"
+  echo "build $id${limit:+ ($limit only)} — $title"
   if [[ "$(kind_of "$domain")" == backend && ! -f "$dir/.ownership.baseline" ]]; then ownership_count "$domain" > "$dir/.ownership.baseline"; fi
   if [[ "$(kind_of "$domain")" == backend && ! -f "$dir/.tx.baseline" ]]; then tx_count "$domain" > "$dir/.tx.baseline"; fi
   printf '{\n  "feature_directory": "%s"\n}\n' "$dir" > .specify/feature.json
@@ -212,17 +224,17 @@ ordered_capabilities "$@" | while IFS=$'\t' read -r id domain slug title sources
   # One `claude -p` call cannot finish a big spec: it stops when its budget (STEP_MAX_BUDGET_USD) runs out, with its
   # context full. So implement runs in passes, each with a fresh context that resumes at the first unchecked task,
   # until nothing is open and converge adds nothing. A pass that closes no task stops the run (stuck, not slow).
-  open_tasks() { grep -c '^- \[ \]' "$dir/tasks.md" || true; }
+  open_tasks() { python3 "$ROOT/scripts/sdd/tasks-scope.py" "$dir/tasks.md" "${limit:--}" | awk '{print $2}'; }
   IMPL_RULES='Work red → green: name every test with its capability and scenario, e.g. it('\''S13 AS-12: ...'\'') (the gate checks that every scenario of test-plan.md that names a test has one); run each new test and watch it fail before writing the code, then make it pass. Do not weaken or skip a test to make it pass; if a spec requirement looks wrong, record it in questions.md and stop. If something this spec Requires from another capability (its Cross-capability contracts section or gaps.md) does not exist yet, build the minimal provider side in the owning domain exactly as that capability'\''s spec defines it (or as this spec states it, if that spec is not written yet), exported through that domain'\''s index.ts and covered by its own e2e test, and note it in gaps.md; never read or write the other domain'\''s tables instead (constitution IX.4).'
   pass=0; last_open=999999; open=$(open_tasks)
   while (( pass < ${MAX_IMPLEMENT_PASSES:-10} )); do
     pass=$((pass + 1))
     if (( pass == 1 )); then lead="Implement the tasks."; else lead="Resume: tasks already checked are done; continue at the first unchecked task in tasks.md (some may be partly built: inspect the code first)."; fi
     if (( pass == 1 && open == 0 )); then echo "  implement skipped: no open task"
-    else step "$dir" "implement-$pass" "/speckit-implement $CONTEXT $lead $IMPL_RULES"; fi
+    else step "$dir" "implement-$pass" "/speckit-implement $CONTEXT $lead $IMPL_RULES $LIMIT_TEXT"; fi
     open=$(open_tasks)
     if (( open == 0 )); then
-      step "$dir" "converge-$pass" "/speckit-converge $CONTEXT"
+      step "$dir" "converge-$pass" "/speckit-converge $CONTEXT $LIMIT_TEXT"
       open=$(open_tasks)
       (( open == 0 )) && break
       echo "  converge added tasks: $open open"
@@ -238,15 +250,15 @@ ordered_capabilities "$@" | while IFS=$'\t' read -r id domain slug title sources
   fi
 
   echo "  gate"
-  if ! { gate "$domain" && gate_extras "$id" "$domain" "$dir"; } >"$dir/.gate.log" 2>&1; then
+  if ! { MAX_PRIORITY="$limit" gate "$domain" && MAX_PRIORITY="$limit" gate_extras "$id" "$domain" "$dir"; } >"$dir/.gate.log" 2>&1; then
     echo "FAIL  $id: gate (see $dir/.gate.log)" >&2; echo "$id gate failed" > "$STATE_FILE"; exit 1
   fi
-  date -u +%FT%TZ > "$dir/.implemented"
+  date -u +%FT%TZ > "$done_marker"
   if [[ -n "${COMMIT:-}" ]]; then
-    git add -A && git commit -q -m "feat($domain): $id $title" -m "Spec: $dir/spec.md"
+    git add -A && git commit -q -m "feat($domain): $id $title${limit:+ ($limit stories)}" -m "Spec: $dir/spec.md"
     echo "  committed"
   fi
-  echo "done  $id"
-  echo "$id built" > "$STATE_FILE"
-  if [[ -n "${UNTIL:-}" && "$id" == "$UNTIL" ]]; then echo "reached UNTIL=$UNTIL, stopping"; echo "Reached UNTIL=$UNTIL." > "$STATE_FILE"; break; fi
+  echo "done  $id${limit:+ ($limit)}"
+  echo "$id${limit:+ ($limit)} built" > "$STATE_FILE"
+  if [[ -n "${UNTIL:-}" && ( "$id" == "$UNTIL" || "$id:$limit" == "$UNTIL" ) ]]; then echo "reached UNTIL=$UNTIL, stopping"; echo "Reached UNTIL=$UNTIL." > "$STATE_FILE"; break; fi
 done

@@ -41,14 +41,56 @@ def dependencies():
     return deps
 
 
+def entries(path):
+    """[(index, id, limit or None, needs or None)] in file order; '# needs: S01 S02' on a limited entry declares what its pass needs."""
+    out = []
+    for line in open(path):
+        line = line.rstrip('\n')
+        if not line.strip() or line.lstrip().startswith('#') or line.startswith('!STOP'):
+            continue
+        body, _, comment = line.partition('#')
+        ident, _, limit = body.split()[0].partition(':')
+        needs = None
+        m = re.search(r'needs:\s*(.*)', comment)
+        if m:
+            needs = set(ID.findall(m.group(1)))
+        out.append((len(out), ident, limit or None, needs))
+    return out
+
+
 def check(path, deps):
-    order = [l.strip() for l in open(path) if l.strip() and not l.startswith('#') and not l.startswith('!STOP')]
-    pos = {x: i for i, x in enumerate(order)}
+    """A whole-spec entry must come after the whole-spec entry of everything its spec depends on.
+    A limited entry (S10:P1) must come after what its comment says it needs ('# needs: S05'), in any form, and its own
+    plain entry must come later. Every capability needs exactly one plain entry."""
+    ents = entries(path)
+    first = {}      # id -> index of its first entry of any kind
+    full = {}       # id -> index of its plain entry
+    limited = {}    # id -> index of its limited entry
     bad = []
-    for x in order:
-        for d in sorted(deps.get(x, ())):
-            if d in pos and pos[d] > pos[x]:
-                bad.append('%s is built before %s, which it needs' % (x, d))
+    for i, ident, limit, needs in ents:
+        first.setdefault(ident, i)
+        if limit:
+            limited[ident] = i
+        elif ident in full:
+            bad.append('%s has two plain entries' % ident)
+        else:
+            full[ident] = i
+    for i, ident, limit, needs in ents:
+        if limit:
+            for d in sorted(needs if needs is not None else deps.get(ident, ())):
+                if d not in first or first[d] > i:
+                    bad.append('%s:%s is built before %s, which its pass needs' % (ident, limit, d))
+            if ident in full and full[ident] < i:
+                bad.append('%s:%s comes after its own plain entry' % (ident, limit))
+        else:
+            for d in sorted(deps.get(ident, ())):
+                if d in full and full[d] > i:
+                    bad.append('%s is built before %s, which it needs' % (ident, d))
+                elif d not in full and d in first:
+                    bad.append('%s needs %s, which only has a limited entry' % (ident, d))
+    for ident in first:
+        if ident not in full:
+            bad.append('%s has no plain (whole-spec) entry' % ident)
     return bad
 
 
