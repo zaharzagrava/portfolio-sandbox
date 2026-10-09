@@ -61,7 +61,6 @@ S06
 # 8. The rest of the backend
 S47
 S45
-S48
 S38
 S39
 S40
@@ -73,6 +72,7 @@ S29
 S30
 S31
 S44
+S48
 
 # 9. Web app (needs the dev stack: moon run infra-setup, then dev-monolith)
 W07

@@ -32,19 +32,26 @@ S33
 S35
 S34
 S19
-S48
-!STOP search-api  Search, autocomplete, trending, recommendations and pickup-near-me return the products created through the API; the BFF product-page aggregate works.
+!STOP search-api  Search, autocomplete, trending, recommendations and pickup-near-me return the products created through the API.
 
-# 4. FLOW 3, the browser: shell, login, storefront, cart and checkout. Product-page extras first so the storefront
-#    spec does not have to stub them: discussions, share links, photos, ask-this-product, sponsored, analytics; MFA/OIDC for login; flash sales for checkout states.
+# 4. FLOW 3, the browser. The BFF (S48) composes the product page from many capabilities and the web specs cite them
+#    all, so every provider comes first and no web spec has to stub one. Only after that: BFF, shell, login, storefront,
+#    cart and checkout. (check-order.py verifies this against the specs' own dependency lines.)
 S02
+S38
+S39
 S25
 S37
 S29
-S47
+S30
 S36
-S39
+S47
 S11
+S21
+S24
+S42
+S44
+S48
 W07
 W01
 W02
@@ -52,7 +59,6 @@ W03
 !STOP buy-ui  Browser flow: open the storefront, find a product by search, open its page, add it to the cart, pay, see the order and the notification.
 
 # 5. Featured on the resume: public API, webhooks, LLM provider port, integrations, offline sync
-S42
 S43
 S46
 S08
@@ -71,23 +77,18 @@ S12
 S07
 S04
 S31
-S30
 S27
 
 # 8. Realtime, launch events, community
-S24
 S22
-S21
 S23
 S20
 S26
 S06
 
 # 9. The rest of the backend
-S38
 S40
 S41
-S44
 S45
 S55
 

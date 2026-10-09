@@ -171,6 +171,12 @@ How the run behaves (details in the runbook):
 - `UNTIL=S16` stops after that capability; `STEP_MAX_BUDGET_USD=5` caps a single step (leave it unset to run until the
   plan limit); `MAX_IMPLEMENT_PASSES` (default 10) bounds the fresh-context passes per spec.
 - Closing the laptop lid can still suspend it; keep it open or change the lid setting.
+- Order: `ORDER=by-layer` (default, `scripts/sdd/orders/by-layer.txt`: platform, identity, money, ..., web, journeys) or
+  `ORDER=by-flow` (`orders/by-flow.txt`: vertical slices). `by-flow` has checkpoints (`!STOP <label> <message>` lines): the
+  run stops once there with a notification so you can try what exists (buying at API level, search, the browser flow),
+  and the next run passes it. With `COMMIT=1` the "passed" marker (`specs/.checkpoints/<label>`) is committed; delete it
+  to stop at that checkpoint again. Switching orders mid-way is safe: built specs are skipped either way. `python3 scripts/sdd/check-order.py` verifies that
+  every order builds each capability after the ones its spec depends on (run it after editing an order file).
 
 ## Developer tooling
 

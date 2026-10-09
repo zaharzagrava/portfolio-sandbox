@@ -181,6 +181,8 @@ ordered_capabilities "$@" | while IFS=$'\t' read -r id domain slug title sources
     marker="$ROOT/specs/.checkpoints/$domain"
     if [[ -f "$marker" ]]; then echo "pass  checkpoint $domain"; continue; fi
     mkdir -p "$ROOT/specs/.checkpoints"; date -u +%FT%TZ > "$marker"
+    # Committed, so a fresh clone (the VPS runner) continues past this checkpoint instead of stopping at it forever.
+    if [[ -n "${COMMIT:-}" ]]; then git add "$marker" && git commit -q -m "chore(sdd): checkpoint $domain reached" -m "$title" || true; fi
     echo "CHECKPOINT $domain: $title"
     echo "Checkpoint $domain: $title  Test it, then re-run the same command to continue." > "$STATE_FILE"
     exit 0
