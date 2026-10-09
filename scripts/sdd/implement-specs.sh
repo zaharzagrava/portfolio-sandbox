@@ -25,7 +25,13 @@ cd "$ROOT"
 STATE_FILE="$(mktemp)"
 on_exit() {
   local code=$? state; state="$(cat "$STATE_FILE" 2>/dev/null)"; rm -f "$STATE_FILE"
-  if [[ "$state" == limit:* ]]; then
+  if [[ "$state" == deadline:* ]]; then
+    echo "TIME BUDGET USED  ${state#deadline:}. Everything committed so far is kept; start another run to continue." >&2
+    notify warn "SDD loop: time budget used" "${state#deadline:}. Progress is committed; start another run to continue."
+  elif [[ "$state" == auth:* ]]; then
+    echo "LOGIN FAILED  ${state#auth:}" >&2
+    notify fail "SDD loop: Claude login failed" "${state#auth:}. Create a new token with 'claude setup-token' and update the runner config."
+  elif [[ "$state" == limit:* ]]; then
     echo "OUT OF BUDGET  the Claude usage limit was reached at ${state#limit:}. Nothing is lost: re-run the same command after the limit resets and it resumes." >&2
     notify limit "SDD loop: out of budget" "Usage limit hit at ${state#limit:}. Re-run after the reset to resume."
   elif [[ "$state" == Checkpoint* ]] && (( code == 0 )); then
@@ -44,6 +50,12 @@ TEST_SPEC="$ROOT/scripts/sdd/test-spec.sh"   # condensed e2e runner: far fewer t
 IMPL_TOOLS=("Bash($TEST_SPEC:*)" 'Bash(npx tsc:*)' 'Bash(npx jest:*)' 'Bash(npx nest build:*)' 'Bash(npx vitest:*)' 'Bash(npx playwright:*)'
             'Bash(pnpm:*)' 'Bash(node:*)' 'Bash(docker compose:*)' 'Bash(curl:*)'
             'Bash(cd:*)' 'Bash(cat:*)' 'Bash(grep:*)' 'Bash(find:*)' 'Bash(git log:*)')
+
+# push_branch: with PUSH_BRANCH set, publish HEAD to that branch (best effort; the VPS runner sets it so nothing is lost).
+push_branch() {
+  [[ -n "${PUSH_BRANCH:-}" ]] || return 0
+  git push -q origin "HEAD:refs/heads/$PUSH_BRANCH" 2>&1 | tail -2 || true
+}
 
 # Where a backend capability's code and e2e specs live, relative to packages/backend.
 code_path() {
@@ -153,7 +165,9 @@ step() { # $1 = dir, $2 = step name, $3 = prompt
   run_claude "$1/.$2.log" "$3" "${IMPL_TOOLS[@]}" || rc=$?
   # A pass that hit the time limit is not a failure: the next implement pass resumes at the first open task.
   if (( rc == 124 )) && [[ "$2" == implement-* ]]; then echo "  $2 hit the pass timeout; the next pass resumes"; return 0; fi
+  if (( rc == 125 )); then echo "deadline:$(basename "$1") at $2" > "$STATE_FILE"; exit 76; fi
   if (( rc != 0 )); then
+    if hit_auth_failure "$1/.$2.log"; then echo "auth:$(basename "$1") $2 could not authenticate" > "$STATE_FILE"; exit 77; fi
     if hit_usage_limit "$1/.$2.log"; then echo "limit:$(basename "$1") $2 ($(limit_reset_hint "$1/.$2.log"))" > "$STATE_FILE"; exit 75; fi
     echo "FAIL  $(basename "$1"): $2 (see $1/.$2.log)" >&2; echo "$(basename "$1") failed at $2" > "$STATE_FILE"; exit 1
   fi
@@ -186,11 +200,13 @@ ordered_capabilities "$@" | while IFS=$'\t' read -r id domain slug title sources
     fi
     mkdir -p "$ROOT/specs/.checkpoints"; date -u +%FT%TZ > "$marker"
     # Committed, so a fresh clone (the VPS runner) continues past this checkpoint instead of stopping at it forever.
-    if [[ -n "${COMMIT:-}" ]]; then git add "$marker" && git commit -q -m "chore(sdd): checkpoint $domain reached" -m "$title" || true; fi
+    if [[ -n "${COMMIT:-}" ]]; then git add "$marker" && git commit -q -m "chore(sdd): checkpoint $domain reached" -m "$title" || true; push_branch; fi
     echo "CHECKPOINT $domain: $title"
     echo "Checkpoint $domain: $title  Test it, then re-run the same command to continue." > "$STATE_FILE"
     exit 0
   fi
+  left="$(deadline_left)"
+  if [[ -n "$left" ]] && (( left <= 0 )); then echo "deadline:the time budget ended before $id" > "$STATE_FILE"; echo "STOP  time budget used before $id" >&2; exit 76; fi
   dir="$(spec_dir "$domain" "$id" "$slug")"
   [[ -f "$dir/.spec-done" ]] || { echo "skip  $id (no finished spec yet)"; continue; }
   # An entry can be limited to a priority ("W02:P1" in the order file): the stories of that priority and higher now, the
@@ -256,6 +272,7 @@ ordered_capabilities "$@" | while IFS=$'\t' read -r id domain slug title sources
   date -u +%FT%TZ > "$done_marker"
   if [[ -n "${COMMIT:-}" ]]; then
     git add -A && git commit -q -m "feat($domain): $id $title${limit:+ ($limit stories)}" -m "Spec: $dir/spec.md"
+    push_branch
     echo "  committed"
   fi
   echo "done  $id${limit:+ ($limit)}"

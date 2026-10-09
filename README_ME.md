@@ -187,6 +187,22 @@ How the run behaves (details in the runbook):
   every order builds each capability after the ones its spec depends on, that each `:P1` entry's declared needs come
   before it, and that every capability gets a plain entry (run it after editing an order file).
 
+### Running the loop on a Hetzner VPS
+
+`scripts/vps/` creates a machine per run, runs the loop there, pushes `sdd/auto`, notifies your phone and deletes the machine.
+Setup and use are in [`scripts/vps/README.md`](scripts/vps/README.md); the design is in
+[`docs/architecture/vps-runner-plan.md`](docs/architecture/vps-runner-plan.md). In short, after the one-time setup:
+
+```bash
+git push origin master                           # the machine only sees what is on GitHub
+scripts/vps/build-snapshot.sh                    # once: the runner image
+scripts/vps/run-remote.sh --until S53 --hours 4  # one capability; close the laptop and wait for the phone message
+git fetch origin && git checkout sdd/auto        # afterwards: test on localhost
+```
+
+Loop settings the runner uses: `RUN_DEADLINE` (epoch seconds, hard end; the loop exits 76), `PUSH_BRANCH` (push after every
+commit), exit codes 75 (usage limit), 76 (time budget), 77 (Claude login failed).
+
 ## Developer tooling
 
 Three things live next to the code: an Obsidian vault over the repo, a generated codebase map, and the spec-driven

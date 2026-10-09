@@ -32,6 +32,12 @@ run_claude() {
   #  - a call that runs longer than PASS_TIMEOUT_S is stopped and returns 124 (implement passes resume afterwards).
   # SDD_LOOP silences the interactive Stop-hook ping.
   local pid code=0 grace="${CLAUDE_EXIT_GRACE_S:-90}" limit="${PASS_TIMEOUT_S:-7200}" start=$SECONDS size last=-1 since=$SECONDS killed=""
+  # RUN_DEADLINE (epoch seconds) is the hard end of the whole run: no call starts after it and none may outlive it.
+  local left; left="$(deadline_left)"
+  if [[ -n "$left" ]]; then
+    (( left <= 0 )) && return 125
+    (( left < limit )) && { limit=$left; deadline_binds=1; }
+  fi
   SDD_LOOP=1 setsid claude "$prompt" "${args[@]}" </dev/null >"$log" 2>&1 &   # own process group: one kill reaches every helper
   pid=$!
   # claude runs in its own process group, so a Ctrl-C aimed at this script would not reach it: forward it.
@@ -49,11 +55,20 @@ run_claude() {
     wait "$pid" 2>/dev/null
     trap - INT TERM
     if [[ "$killed" == done ]]; then echo "  (answer was complete but claude did not exit within ${grace}s: stopped it)" >&2; return 0; fi
+    if [[ -n "${deadline_binds:-}" ]]; then echo "  (stopped: the run's time budget is used)" >&2; return 125; fi
     echo "  (stopped after the ${limit}s pass timeout)" >&2; return 124
   fi
   wait "$pid"; code=$?
   trap - INT TERM
   return "$code"
+}
+
+# deadline_left: seconds until RUN_DEADLINE (epoch), empty when no deadline is set.
+deadline_left() { [[ -n "${RUN_DEADLINE:-}" ]] && echo $(( RUN_DEADLINE - $(date +%s) )) || true; }
+
+# hit_auth_failure <logfile>: the login is expired or invalid (nothing was done; fix the token and re-run).
+hit_auth_failure() {
+  tail -c 4000 "$1" | grep -q -i -E "failed to authenticate|oauth (token|session) (has )?(expired|revoked|invalid)|invalid (api key|x-api-key|bearer)|not logged in|please run /login|authentication_error"
 }
 
 # hit_usage_limit <logfile>: did the step die because the plan's usage window is used up?

@@ -53,19 +53,18 @@ laptop                                  Hetzner project "sdd-runner" (its own pr
                                               3. scripts/sdd/implement-specs.sh   (deadline, watchdog, wait-for-reset)
                                               4. push branch sdd/auto, write run-report.md
                                               5. notify (ntfy)  → hcloud server delete self
-                                                 (at a CHECKPOINT the VM is NOT deleted: see below)
+                                                 (after a failure it waits FAILURE_KEEP_MIN so you can ssh in)
 ```
 
-### Checkpoints: the VM waits for you
+### Checkpoints: commit, push, delete
 
-The order file `by-flow` has checkpoints (`!STOP` lines). At one, the loop pauses and the monitor sends a phone
-notification ("Browser flow ready: ..."). The VM is kept alive for `CHECKPOINT_TTL` (default 6 h) so you can test the
-flow by hand: an SSH tunnel to the VM exposes the web app and the API (`ssh -L 3000:localhost:3000 -L 8000:localhost:8000`),
-nothing else is opened to the internet. Meanwhile it costs the hourly rate (about $0.22-0.33/h). When you are done,
-resume the run on the same VM (`tmux attach`, re-run the same command; the loop passes the checkpoint). If the TTL runs
-out first, the VM pushes the branch and deletes itself, and the next run starts from the pushed branch and the snapshot.
-There is no scripted flow walk (`scripts/sdd/checkpoints/<label>.sh`) for now: the checkpoint's own check is the full
-e2e sweep, and you are the flow test.
+The order file `by-flow` has checkpoints (`!STOP` lines). At one, the loop runs its regression sweep, commits the
+checkpoint marker, the runner pushes `sdd/auto`, sends a phone notification and **deletes the machine**. You pull the branch
+and test the flow on localhost (decided: no TTL, no ssh tunnel). The next run resumes `sdd/auto` and passes the checkpoint.
+There is no scripted flow walk (`scripts/sdd/checkpoints/<label>.sh`) for now.
+
+**Status:** the runner is built (`scripts/vps/`, hands-on guide in `scripts/vps/README.md`) and rehearsed on a laptop with
+fake `claude` and `hcloud`; it has not run against a real Hetzner account yet.
 
 ### The snapshot (`sdd-base-vN`), built once and rebuilt when the stack changes
 
@@ -135,7 +134,7 @@ deadline, the pass limits, and the plan's own usage window.
 | 2 | Hetzner account, project, token, limit increase; build the snapshot; write `run-remote.sh` | `run-remote.sh --dry-run` creates and deletes a VM |
 | 3 | Trial: `MAX_SPECS=2`, 2-hour deadline, watch it live over SSH | Branch pushed, report written, VM deleted, notification received |
 | 4 | Nightly runs, 5-hour deadline | Morning routine below |
-| 5 | Front-end on the VM: dev stack, monolith, Next.js and Playwright run next to the test stack; first run reaches the `buy-ui` checkpoint | Notification arrives, the app is reachable over the SSH tunnel, Playwright passes |
+| 5 | Front-end on the VM: dev stack, monolith, Next.js and Playwright run next to the test stack (`build-snapshot.sh --with-web`); first run reaches the `buy-ui` checkpoint | Notification arrives, Playwright passes, the pushed branch runs on localhost |
 
 ## Morning routine
 

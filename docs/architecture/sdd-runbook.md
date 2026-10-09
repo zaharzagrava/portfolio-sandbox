@@ -227,6 +227,10 @@ any other stop gets its own notification. Nothing is lost: re-run the same comma
 fresh-context passes (`MAX_IMPLEMENT_PASSES`, default 10) until every task in `tasks.md` is checked. The headless steps
 do not trigger the interactive Stop-hook ping (`SDD_LOOP=1`).
 
+**Unattended runs.** `RUN_DEADLINE=<epoch seconds>` ends the whole run (no call starts after it, none outlives it): exit 76
+and a "time budget used" notification. A login failure exits 77. With `PUSH_BRANCH=<name>` every commit is pushed there. The
+VPS runner (`scripts/vps/`) sets all of these; see `scripts/vps/README.md`.
+
 **Order and spend.** Capabilities run in `scripts/sdd/orders/by-layer.txt` order (platform → identity → money chain →
 resume-featured → …). `UNTIL=S16` stops after that capability; `STEP_MAX_BUDGET_USD=5` caps one step. Agents run
 e2e specs through `scripts/sdd/test-spec.sh` (condensed output) and stop after 5 failed attempts at one test.
