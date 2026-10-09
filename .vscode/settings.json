@@ -1,8 +1,13 @@
 {
   "eslint.alwaysShowStatus": true,
-  "editor.formatOnSave": true,
-  // "editor.defaultFormatter": "dbaeumer.vscode-eslint",
-  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  // Prettier is off in the editor for now: the implementation loop writes unformatted code, and saving a file
+  // would otherwise rewrite it. To bring it back, set formatOnSave to true and delete the customization below.
+  "editor.formatOnSave": false,
+  // "editor.defaultFormatter": "esbenp.prettier-vscode",
+  // The source.fixAll action below also applies Prettier through eslint-plugin-prettier; ignore that one rule.
+  "eslint.rules.customizations": [
+    { "rule": "prettier/prettier", "severity": "off" }
+  ],
   "editor.codeActionsOnSave": {
     "source.fixAll": "explicit"
   },
@@ -23,5 +28,6 @@
       "<node_internals>/**",
     ]
   },
-  "typescript.tsdk": "./backend/node_modules/typescript/lib",
+  "typescript.tsdk": "./packages/backend/node_modules/typescript/lib",
+  "js/ts.tsdk.path": "./packages/backend/node_modules/typescript/lib",
 }

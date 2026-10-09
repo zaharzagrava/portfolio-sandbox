@@ -38,6 +38,7 @@
     "db:migrate:up": "npx sequelize-cli db:migrate",
     "db:migrate:down": "npx sequelize-cli db:migrate:undo",
     "db:jest:migrate:up": "npx sequelize-cli db:migrate --env test",
+    "test:stack:migrate": "pnpm run db:jest:migrate:up && DOTENV_CONFIG_PATH=.env.test pnpm run dynamo:create-tables",
     "test:run": "NODE_OPTIONS=--experimental-vm-modules jest --runInBand",
     "test:debug:run": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest \"impossible-regex\" --watch --runInBand",
     "kafka:topics:init": "bash ./scripts/init-kafka-topics.sh",

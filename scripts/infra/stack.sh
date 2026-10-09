@@ -20,7 +20,7 @@ case "$env_name" in
   dev)  COMPOSE=(docker compose --env-file packages/backend/.env)
         UP_ARGS=(--build); MIGRATE=(pnpm --filter api run infra:setup); TRIES=60 ;;
   test) COMPOSE=(docker compose -f docker-compose.test.yaml -p marketplace_test)
-        UP_ARGS=();        MIGRATE=(pnpm --filter api run db:jest:migrate:up); TRIES=40 ;;
+        UP_ARGS=();        MIGRATE=(pnpm --filter api run test:stack:migrate); TRIES=40 ;;
   *) echo "usage: $0 <dev|test> <up|reup|setup|resetup>" >&2; exit 2 ;;
 esac
 

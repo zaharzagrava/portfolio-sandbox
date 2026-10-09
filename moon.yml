@@ -53,7 +53,7 @@ tasks:
     command: "scripts/infra/stack.sh test resetup"
     preset: server
   infra-test-migrate:
-    command: "pnpm --filter api run db:jest:migrate:up"
+    command: "pnpm --filter api run test:stack:migrate"
     options:
       cache: false
   infra-test-down:
