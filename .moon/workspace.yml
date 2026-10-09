@@ -10,6 +10,9 @@ projects:
 
 # Configures the version control system (VCS). Also known as
 # source code management (SCM).
+# `moon run infra-up` works without the leading colon
+defaultProject: "portfolio-sandbox"
+
 vcs:
   # The default branch / base.
   defaultBranch: "master"

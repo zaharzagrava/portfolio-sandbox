@@ -5,8 +5,8 @@ They exercise the hand-offs between domains (outbox → Kafka → projectors, SQ
 single-capability e2e spec can't, so they run against the **running local stack**, not a testing module:
 
 ```bash
-moon run :infra-up && moon run :infra-setup   # stores (docker compose)
-moon run :dev-monolith                         # API + workers + projectors in one process, on API_URL
+moon run infra-setup   # stores (docker compose), then schemas and topics
+moon run dev-monolith                         # API + workers + projectors in one process, on API_URL
 pnpm test:journeys                             # API_URL defaults to http://localhost:8000
 ```
 

@@ -13,7 +13,8 @@ pnpm install
 cp packages/backend/env/test.env.example packages/backend/.env.test
 
 # Whole test stack: Postgres, Redis, Redpanda, Elasticsearch, ClickHouse, Scylla, DynamoDB, MinIO, ElasticMQ
-pnpm --filter api run test:e2e:infra-up
+moon run infra-test-up        # foreground, keep it in its own terminal
+moon run infra-test-migrate   # from another terminal, once the stores are up
 
 # One spec, or a folder of them
 pnpm --filter api run test:e2e -- libs/domains/orders/checkout
@@ -27,24 +28,36 @@ Specs that only need Postgres and Redis (jobs, rate limiter, ...) start much fas
 There is no `.env` template for the dev stack yet. Create `packages/backend/.env` starting from `env/test.env.example` plus `env/showcase.env.example`, then:
 
 ```bash
-moon run :infra-up                # databases, Kafka, search, ...; runs in the foreground
-moon run :infra-setup --force     # schemas and topics. --force matters: without it moon replays a cached result and skips the setup
-moon run :dev-monolith            # API + workers + projectors in one process on :8000, watch mode
-moon run :dev-web                 # web app on :3000
+moon run infra-setup             # starts the databases, Kafka, search, ... in the foreground, then runs schemas and topics
+moon run dev-monolith            # (second terminal) API + workers + projectors in one process on :8000, watch mode
+moon run dev-web                 # web app on :3000
 ```
+
+Infra tasks come in the same four flavours for the dev stack (`infra-*`) and the test stack (`infra-test-*`). All of them run in the foreground, never detached; Ctrl+C stops the stack.
+
+| Task | What it does |
+| --- | --- |
+| `infra-up` / `infra-test-up` | Start the stack |
+| `infra-reup` / `infra-test-reup` | `pnpm infra-clean` first, then start |
+| `infra-setup` / `infra-test-setup` | Start, then run the migrations as soon as the stores answer |
+| `infra-resetup` / `infra-test-resetup` | `pnpm infra-clean`, start, migrate |
+| `infra-migrate` / `infra-test-migrate` | Only the migrations, against a stack that is already up |
+| `infra-down` / `infra-test-down` | Stop the stack from another terminal |
+
+`pnpm infra-clean` is machine-wide: it stops and removes every Docker container, then prunes volumes and networks.
 
 Or run the apps separately, one terminal each:
 
 ```bash
-moon run :dev-api        # core :8000
-moon run :dev-bff        # :8006
-moon run :dev-sse        # :8001
-moon run :dev-worker     # :8003
-moon run :dev-projector  # :8002
-moon run :dev-web        # :3000
+moon run dev-api        # core :8000
+moon run dev-bff        # :8006
+moon run dev-sse        # :8001
+moon run dev-worker     # :8003
+moon run dev-projector  # :8002
+moon run dev-web        # :3000
 ```
 
-Tracing, metrics, logs and alerts (Grafana, Jaeger, Prometheus, Loki, Alertmanager, exporters) are in the same compose file behind the `observability` profile and are not started by `infra-up`. Run `moon run :infra-up-observability` when you want them; otherwise set `OTEL_SDK_DISABLED=true` in `packages/backend/.env` so apps don't try to export traces.
+Tracing, metrics, logs and alerts (Grafana, Jaeger, Prometheus, Loki, Alertmanager, exporters) are in the same compose file behind the `observability` profile and are not started by `infra-up`. Run `moon run infra-up-observability` when you want them; otherwise set `OTEL_SDK_DISABLED=true` in `packages/backend/.env` so apps don't try to export traces.
 
 The chat WebSocket gateway is a separate Rust binary: see [`packages/hft-platform/README.md`](packages/hft-platform/README.md).
 
@@ -121,11 +134,10 @@ ls specs/*/*/.spec-done | wc -l
 scripts/sdd/review-questions.sh
 
 # 3. Commit, then implement spec by spec (needs the test stack; W and J also need the dev stack)
-docker compose -f docker-compose.test.yaml up -d
-# For W and J, each in its own terminal (infra-up and dev-monolith keep running in the foreground):
-#   moon run :infra-up        # dev stores
-#   moon run :infra-setup     # once the stores are up
-#   moon run :dev-monolith    # API + workers + projectors on :8000, watch mode
+moon run infra-test-setup     # foreground: keep it in its own terminal
+# For W and J, each in its own terminal (infra-setup and dev-monolith keep running in the foreground):
+#   moon run infra-setup     # dev stores, then schemas and topics
+#   moon run dev-monolith    # API + workers + projectors on :8000, watch mode
 COMMIT=1 scripts/sdd/implement-specs.sh
 ```
 
@@ -262,7 +274,7 @@ COMMIT=1 scripts/sdd/implement-specs.sh S10    # plan -> tasks -> analyze -> imp
   present; interrupted ones are cleared and redone. Failures wait 10/30/60/120 minutes (`RETRY_WAITS`), then the run
   moves on.
 - Implementation stops at the first failing gate and resumes from `.implemented` markers. Backend specs need
-  `docker compose -f docker-compose.test.yaml up -d`; web and journey specs also need `moon run :infra-up`,
-  `moon run :infra-setup` and `moon run :dev-monolith`.
+  `moon run infra-test-setup` (own terminal); web and journey specs also need `moon run infra-setup` and
+  `moon run dev-monolith`.
 - To use a separate Claude Code profile, set `CLAUDE_CONFIG_DIR=DIR` for these scripts. Long runs:
   `systemd-inhibit --what=sleep:idle` inside `tmux`, as in the runbook.

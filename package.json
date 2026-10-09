@@ -17,13 +17,5 @@
   },
   "devDependencies": {
     "typescript": "^7.0.2"
-  },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "@tree-sitter-grammars/tree-sitter-yaml",
-      "core-js-pure",
-      "tree-sitter-json",
-      "tree-sitter"
-    ]
   }
 }

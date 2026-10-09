@@ -682,14 +682,15 @@ cd portfolio-sandbox
 pnpm install
 cp packages/backend/env/test.env.example packages/backend/.env.test
 
-docker compose -f docker-compose.test.yaml -p marketplace_test up -d test_db test_redis
+docker compose -f docker-compose.test.yaml -p marketplace_test up test_db test_redis
+# ^ keeps running: open a second terminal for the rest
 pnpm --filter api run db:jest:migrate:up
 
 pnpm --filter api run test:e2e -- libs/infrastructure/rate-limit
 pnpm --filter api run test:e2e -- libs/infrastructure/jobs
 ```
 
-Stop it with `docker compose -f docker-compose.test.yaml -p marketplace_test down`. The full test stack, the dev stack, ports, load tests and my tooling are in [README_ME.md](README_ME.md).
+Stop it with Ctrl+C, or `docker compose -f docker-compose.test.yaml -p marketplace_test down`. The full test stack, the dev stack, ports, load tests and my tooling are in [README_ME.md](README_ME.md).
 
 # Stack
 

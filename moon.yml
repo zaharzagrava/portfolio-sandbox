@@ -6,25 +6,58 @@
 #  - one-shot ones set `options.cache: false`.
 
 tasks:
-  # Spin up the databases and Kafka (runs in foreground, use Ctrl+C to stop)
+  # Dev stack. All of these run in the foreground (never `-d`): Ctrl+C stops them.
+  #   up      start          reup     wipe this stack's containers + volumes, then start
+  #   setup   start, then run the migrations once the stores answer          resetup  reup + setup
   infra-up:
-    command: "docker compose --env-file packages/backend/.env up --build"
+    command: "scripts/infra/stack.sh dev up"
+    preset: server
+  infra-reup:
+    command: "scripts/infra/stack.sh dev reup"
+    preset: server
+  infra-setup:
+    command: "scripts/infra/stack.sh dev setup"
+    preset: server
+  infra-resetup:
+    command: "scripts/infra/stack.sh dev resetup"
     preset: server
 
-  # Same, plus the observability stack (Grafana :3001, Jaeger :16686, Prometheus :9090, Loki, Alertmanager, exporters)
+  # Only the migrations, against a stack that is already up (what infra-setup runs after starting it)
+  infra-migrate:
+    command: "pnpm --filter api run infra:setup"
+    options:
+      cache: false
+
+  # Dev stack plus observability (Grafana :3001, Jaeger :16686, Prometheus :9090, Loki, Alertmanager, exporters)
   infra-up-observability:
     command: "docker compose --env-file packages/backend/.env --profile observability up --build"
     preset: server
 
-  # Tear down the infrastructure
+  # Stop the dev stack from another terminal
   infra-down:
-    command: "docker compose --env-file packages/backend/.env --profile observability down"
+    command: "docker compose --env-file packages/backend/.env --profile '*' down"
     options:
       cache: false
 
-  # Setup DB schemas and Kafka topics
-  infra-setup:
-    command: "pnpm --filter api run infra:setup"
+  # Test stack for the e2e specs (ports shifted, runs next to the dev stack). Same four modes.
+  infra-test-up:
+    command: "scripts/infra/stack.sh test up"
+    preset: server
+  infra-test-reup:
+    command: "scripts/infra/stack.sh test reup"
+    preset: server
+  infra-test-setup:
+    command: "scripts/infra/stack.sh test setup"
+    preset: server
+  infra-test-resetup:
+    command: "scripts/infra/stack.sh test resetup"
+    preset: server
+  infra-test-migrate:
+    command: "pnpm --filter api run db:jest:migrate:up"
+    options:
+      cache: false
+  infra-test-down:
+    command: "docker compose -f docker-compose.test.yaml -p marketplace_test down"
     options:
       cache: false
 

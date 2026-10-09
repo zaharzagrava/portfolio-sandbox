@@ -7,7 +7,7 @@ Rules for AI agents working in this repo. Complements [Testing Strategy](Testing
 - **Edit skills in `.agents/skills/`.** Never create or edit files under `.claude/skills/`, since they are the same files.
 
 ## Environment rules
-- **Never run `docker compose` / `docker start|stop|rm`.** The user manages infra with moon (`:infra-up`), which is usually already running. If infra is down, ask the user to start it.
+- **Never run `docker compose` / `docker start|stop|rm`.** The user manages infra with moon (`infra-up`), which is usually already running. If infra is down, ask the user to start it.
 - Dev infra DB: `localhost:5300` (`postgres`/`postgres`). Test infra DB: `localhost:5400`, db `marketplace_test`, defined in `docker-compose.test.yaml` and `packages/backend/.env.test`. If the test stack is down, ask the user.
 - If backend e2e fails with `relation "X" does not exist`, the test DB schema is empty or stale. Run `pnpm --filter api db:jest:migrate:up` (touches only the test DB).
 - `dev-monolith` and `dev-web` (moon tasks) may already be running. Check before starting them, and do not start duplicates.

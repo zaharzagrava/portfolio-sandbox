@@ -10,9 +10,9 @@
 #   UNTIL=S16 scripts/sdd/implement-specs.sh    # stop after that capability (cap token spend)
 #
 # Prerequisites (runbook step 4):
-#   backend (S): the e2e test stores are up: `docker compose -f docker-compose.test.yaml up -d` (repo root)
-#   web (W) and journeys (J): also the local dev stack: `moon run :infra-up`, `moon run :infra-setup`,
-#     `moon run :dev-monolith` (API on $API_URL, watch mode). Playwright starts the web dev server itself.
+#   backend (S): the e2e test stores are up: `moon run infra-test-setup` (own terminal)
+#   web (W) and journeys (J): also the local dev stack: `moon run infra-setup`,
+#     `moon run dev-monolith` (API on $API_URL, watch mode). Playwright starts the web dev server itself.
 set -euo pipefail
 
 ROOT="$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel)"
@@ -110,7 +110,7 @@ gate_extras() { # $1 = capability id, $2 = domain column, $3 = spec dir
 
 require_stack() { # web and journeys run against the local dev stack
   if ! curl -sf "$API_URL/readyz" >/dev/null; then
-    echo "STOP  $1 needs the local stack: moon run :infra-up && moon run :infra-setup && moon run :dev-monolith (API_URL=$API_URL)" >&2
+    echo "STOP  $1 needs the local stack: moon run infra-setup && moon run dev-monolith (API_URL=$API_URL)" >&2
     exit 1
   fi
 }

@@ -4,7 +4,7 @@ Constitution VII.8 table: one row per acceptance scenario in [`spec.md`](spec.md
 
 ## Layers and conventions
 
-- **UI journey (Playwright, happy path only)**: `packages/web/tests/*.spec.ts`, against the real local dev stack (`moon run :dev-monolith`, web on 3000) with an isolated user per test, web-first assertions, no fixed sleeps. Each file's top-level `describe` names its feature (VII.8). No edge case is re-tested here.
+- **UI journey (Playwright, happy path only)**: `packages/web/tests/*.spec.ts`, against the real local dev stack (`moon run dev-monolith`, web on 3000) with an isolated user per test, web-first assertions, no fixed sleeps. Each file's top-level `describe` names its feature (VII.8). No edge case is re-tested here.
 - **UI unit (Vitest + React Testing Library)**: `*.test.tsx` / `*.test.ts` next to the code. Queries by role and label, `@testing-library/user-event`, MSW at the network boundary (problem+json fixtures parsed with the contracts schemas), `jsdom`. They cover UI-only validation, states, copy, focus and accessibility. No snapshot of markup.
 - **Visual (Playwright screenshot)**: `packages/web/tests/visual/*.spec.ts`. Layout states at mobile (390 × 844, ≤ 640) and desktop (1280 × 800, ≥ 1024) in the `chromium` project plus a `mobile` project. The backend is stubbed with `page.route` (layout only, no behaviour), animations disabled, an axe scan (serious/critical = 0) runs on each state, and screenshots are compared to committed baselines.
 - **Static gates** (VII.1; named in the unit column as "static"): `tsc --noEmit`, ESLint, `next build` (Cache Components validation), and the architecture test.

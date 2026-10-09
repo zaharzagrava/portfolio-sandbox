@@ -96,7 +96,7 @@ None of these exist in code today (the S01/S02/S48 specs' own `gaps.md` files li
 | G7 | Journey helpers: `register` must register then sign in; `login` must use `returnTo`; add `signOut`, `totp(secret)`, `getResetLink(email)` | `tests/helpers.ts:16-35` |
 | G8 | `tests/auth.spec.ts` uses `input[name="name"]`, the initials-named button and `button[id="terms"]`; rewrite to roles and labels; add `auth-mfa.spec.ts`, `auth-password-reset.spec.ts`, `auth-sessions.spec.ts`, `auth-google.spec.ts` (`fixme`) | `tests/auth.spec.ts:8-33` |
 | G9 | Existing unit tests that change: `lib/api/client.test.ts` (CSRF cookie name and header), `lib/safe-return-url.test.ts` (becomes `lib/auth/return-to.test.ts`), `lib/api/errors.test.ts` (problem model) | listed files |
-| G10 | `playwright.config.ts` starts `pnpm run dev`; the visual project needs no backend (stubbed routes), the journeys need `moon run :dev-monolith` and the BFF/auth work above (global setup already checks `/readyz`) | `playwright.config.ts`, `tests/global-setup.ts` |
+| G10 | `playwright.config.ts` starts `pnpm run dev`; the visual project needs no backend (stubbed routes), the journeys need `moon run dev-monolith` and the BFF/auth work above (global setup already checks `/readyz`) | `playwright.config.ts`, `tests/global-setup.ts` |
 
 ## H. Order of work
 

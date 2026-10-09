@@ -50,7 +50,6 @@
     "loadtest:chat": "k6 run scripts/load-tests/chat.test.js",
     "cql:migrate": "ts-node -r tsconfig-paths/register scripts/cql/migrate.ts",
     "dynamo:create-tables": "ts-node -r tsconfig-paths/register scripts/dynamo/create-tables.ts",
-    "test:e2e:infra-up": "docker compose -f ../../docker-compose.test.yaml -p marketplace_test up -d && pnpm run db:jest:migrate:up",
     "start:dev:projector": "NODE_ENV=local PORT=8002 nest start projector --watch",
     "build:projector": "nest build projector",
     "projections:rebuild": "ts-node -r tsconfig-paths/register scripts/projections/rebuild.ts",

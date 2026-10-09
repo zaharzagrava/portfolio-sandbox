@@ -2,7 +2,7 @@
 
 Constitution VII.8: one row per acceptance scenario in [`spec.md`](spec.md) (31 rows). A rule already proven inside one capability is referenced in the last column, never re-tested here.
 
-- Journey file: `packages/backend/test/journeys/buy-to-payout.journey-spec.ts`, top-level `describe` "Journey J01: buy to payout", one nested `describe` per user story. It runs against the **running local stack** (`moon run :infra-up && moon run :infra-setup`, then `moon run :dev-monolith`; `pnpm test:journeys`; `API_URL` default `http://localhost:8000`), black box: public APIs, the SSE stream and the control surface only; no database, topic or queue reads.
+- Journey file: `packages/backend/test/journeys/buy-to-payout.journey-spec.ts`, top-level `describe` "Journey J01: buy to payout", one nested `describe` per user story. It runs against the **running local stack** (`moon run infra-setup`, then `moon run dev-monolith`; `pnpm test:journeys`; `API_URL` default `http://localhost:8000`), black box: public APIs, the SSE stream and the control surface only; no database, topic or queue reads.
 - Waiting: `waitForContract(hop, probe)` over `test/utils/async-helpers.ts` `waitFor` (poll 250 ms, deadline = 2 × the hop's maximum in `spec.md`, × `JOURNEY_TIME_FACTOR`). No fixed sleeps.
 - Fixtures (`test/journeys/support/`): unique users and shops per test through public APIs; `controlSurface` restores the clock and resumes every paused group in `afterAll`.
 - Provider doubles at the edge, selected by `paymentMethodId` / `providerAccountId`. Webhooks are posted signed with the stack's secret.

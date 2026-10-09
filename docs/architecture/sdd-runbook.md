@@ -175,10 +175,9 @@ after setting `.specify/feature.json` to its directory.
 docker compose -f docker-compose.test.yaml up -d
 
 # Web (W) and journeys (J): also the local dev stack. The script checks GET $API_URL/readyz before each W/J.
-# each in its own terminal: infra-up and dev-monolith keep running in the foreground
-moon run :infra-up                                 # dev stores (docker compose up)
-moon run :infra-setup                              # once the stores are up
-moon run :dev-monolith                             # API + workers + projectors on http://localhost:8000 (watch mode)
+# each in its own terminal: infra-setup and dev-monolith keep running in the foreground
+moon run infra-setup                              # dev stores (docker compose up), then schemas and topics
+moon run dev-monolith                             # API + workers + projectors on http://localhost:8000 (watch mode)
 
 COMMIT=1 scripts/sdd/implement-specs.sh            # all written specs, in catalog order; resumes where it stopped
 ```

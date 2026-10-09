@@ -74,7 +74,7 @@ S30
 S31
 S44
 
-# 9. Web app (needs the dev stack: moon run :infra-up / :infra-setup / :dev-monolith)
+# 9. Web app (needs the dev stack: moon run infra-setup, then dev-monolith)
 W07
 W01
 W02
