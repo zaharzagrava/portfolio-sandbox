@@ -11,9 +11,14 @@ tasks:
     command: "docker compose --env-file packages/backend/.env up --build"
     preset: server
 
+  # Same, plus the observability stack (Grafana :3001, Jaeger :16686, Prometheus :9090, Loki, Alertmanager, exporters)
+  infra-up-observability:
+    command: "docker compose --env-file packages/backend/.env --profile observability up --build"
+    preset: server
+
   # Tear down the infrastructure
   infra-down:
-    command: "docker compose --env-file packages/backend/.env down"
+    command: "docker compose --env-file packages/backend/.env --profile observability down"
     options:
       cache: false
 

@@ -1,0 +1,91 @@
+# Implementation order for scripts/sdd/implement-specs.sh (one capability ID per line; '#' lines are comments).
+# Dependencies first, then what the README features, then the long tail; web and journeys last because they
+# need the whole dev stack running. Edit freely: IDs missing from this file run last, in catalog order.
+# Tip: UNTIL=S16 scripts/sdd/implement-specs.sh stops after that ID, to cap token spend.
+
+# 1. Platform toolkit: everything else builds on these
+S54
+S53
+S49
+S50
+S52
+
+# 2. Identity and tenancy
+S01
+S02
+S03
+
+# 3. Catalog and the money chain
+S05
+S10
+S13
+S14
+S15
+S16
+S17
+S18
+
+# 4. Featured on the resume: public API, webhooks, LLM provider port, integrations, offline sync
+S42
+S43
+S46
+S08
+S09
+
+# 5. More commerce, notifications, serverless workers, KYC
+S11
+S12
+S07
+S28
+S55
+S04
+
+# 6. Discovery and search
+S32
+S33
+S34
+S35
+S19
+
+# 7. Realtime, launch events, community
+S51
+S24
+S22
+S21
+S23
+S20
+S25
+S26
+S06
+
+# 8. The rest of the backend
+S47
+S45
+S48
+S38
+S39
+S40
+S41
+S36
+S37
+S27
+S29
+S30
+S31
+S44
+
+# 9. Web app (needs the dev stack: moon run :infra-up / :infra-setup / :dev-monolith)
+W07
+W01
+W02
+W03
+W04
+W05
+W06
+
+# 10. Cross-domain journeys (need the dev stack)
+J01
+J02
+J03
+J04
+J05

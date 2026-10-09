@@ -204,11 +204,27 @@ For each capability the script runs:
    - **W:** web `tsc`, Vitest (`pnpm --filter web test`), and the Playwright suite (`pnpm --filter web
      test:e2e`, which starts the web dev server itself).
    - **J:** `pnpm test:journeys` against the running monolith.
+
+   Then the integrity checks (`gate_extras`), which exist because an agent can "pass" without being right:
+   - **Scenario coverage** (`scripts/sdd/check-tests.py scenarios`): every row of `test-plan.md` that names a test
+     must have a test whose title carries the capability and scenario ID, e.g. `it('S13 AS-12: …')`.
+   - **Test integrity** (`check-tests.py integrity`): tests that exist at `HEAD` must not lose `it`/`expect`
+     calls, be deleted, or gain `.skip`/`xit`/`.todo`.
+   - **Lint ratchet:** files the capability changed are `eslint --fix`ed and must then be clean (old debt elsewhere
+     does not block).
+   - **Ownership ratchet:** a backend capability must not add `check:table-ownership` findings in its domain
+     (baseline recorded in `.ownership.baseline` before the work starts).
+
+   Every step is chained explicitly (`&&`, `|| return 1`): inside `if ! gate`, bash ignores `set -e`.
 6. Marks the capability `.implemented` and, with `COMMIT=1`, commits it as `feat(<domain>): <id> …`.
 
 When it stops, read the named `.log`, fix the problem (or edit `questions.md` / the spec), and re-run the
 same command. Finished capabilities are skipped. Run a single capability with
 `scripts/sdd/implement-specs.sh S13`.
+
+**Order and spend.** Capabilities run in `scripts/sdd/implement-order.txt` order (platform → identity → money chain →
+resume-featured → …). `UNTIL=S16` stops after that capability; `STEP_MAX_BUDGET_USD=5` caps one step. Agents run
+e2e specs through `scripts/sdd/test-spec.sh` (condensed output) and stop after 5 failed attempts at one test.
 
 **After each green capability**, update its rows in `pattern-map.md` from `implemented` to `verified`.
 

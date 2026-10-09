@@ -44,6 +44,8 @@ moon run :dev-projector  # :8002
 moon run :dev-web        # :3000
 ```
 
+Tracing, metrics, logs and alerts (Grafana, Jaeger, Prometheus, Loki, Alertmanager, exporters) are in the same compose file behind the `observability` profile and are not started by `infra-up`. Run `moon run :infra-up-observability` when you want them; otherwise set `OTEL_SDK_DISABLED=true` in `packages/backend/.env` so apps don't try to export traces.
+
 The chat WebSocket gateway is a separate Rust binary: see [`packages/hft-platform/README.md`](packages/hft-platform/README.md).
 
 **Load tests:** four k6 flows (payment, search, seller stats, chat), each with
@@ -57,7 +59,7 @@ its own 100k-user seeder. See
 | Edge Worker                        | `8787`          |
 | Nest API                           | `8000`          |
 | Chat Gateway (Rust)                | `8090`          |
-| PgBouncer → Postgres               | `6432` / `5300` |
+| PgBouncer (profile `pooling`) → Postgres | `6432` / `5300` |
 | Kafka / Pandaproxy                 | `9092` / `8082` |
 | Redis HTTP (edge)                  | `8079`          |
 | Elasticsearch                      | `9200`          |

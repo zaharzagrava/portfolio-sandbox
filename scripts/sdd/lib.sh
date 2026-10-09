@@ -18,6 +18,10 @@ run_claude() {
     tools="$(IFS=,; echo "${SPEC_TOOLS[*]}${*:+,$*}")"
     args=(-p --permission-mode acceptEdits --add-dir "$NOTES_DIR" --allowedTools "$tools")
   fi
+  # Optional safety valve: a step that would spend more than this many USD stops (the run stops with it; nothing is degraded).
+  if [[ -n "${STEP_MAX_BUDGET_USD:-}" ]]; then
+    args+=(--max-budget-usd "$STEP_MAX_BUDGET_USD")
+  fi
   if [[ -n "${CLOUD_SESSION_ID:-}" ]]; then
     args+=(--cloud "$CLOUD_SESSION_ID")
   fi

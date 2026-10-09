@@ -70,6 +70,8 @@ services:
     depends_on:
       - kafka
   pgbouncer:
+    # Optional: only for trying transaction pooling (port 6432). Start with `docker compose --profile pooling up`.
+    profiles: ['pooling']
     image: edoburu/pgbouncer:latest
     container_name: payment_system_pgbouncer
     environment:
@@ -90,112 +92,6 @@ services:
       - '6432:5432' # Expose PgBouncer on 6432
     depends_on:
       - db
-  jaeger:
-    image: jaegertracing/all-in-one:latest
-    container_name: payment_system_jaeger
-    environment:
-      - COLLECTOR_OTLP_ENABLED=true
-    ports:
-      - '16686:16686' # The Web UI
-    # SD-33: apps no longer talk to Jaeger directly - OTLP goes to otel-collector (tail sampling, PII scrub), which forwards here.
-
-  # --- SD-33 observability stack (configs in infra/observability) ---
-  otel-collector:
-    image: otel/opentelemetry-collector-contrib:0.137.0
-    container_name: marketplace_otel_collector
-    command: ['--config=/etc/otelcol/config.yaml']
-    volumes:
-      - ./infra/observability/otel-collector.yaml:/etc/otelcol/config.yaml:ro
-    ports:
-      - '4317:4317' # OTLP gRPC (apps)
-      - '4318:4318' # OTLP HTTP (apps; OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318)
-      - '13133:13133' # health
-    depends_on:
-      - jaeger
-
-  prometheus:
-    image: prom/prometheus:v3.6.0
-    container_name: marketplace_prometheus
-    command: ['--config.file=/etc/prometheus/prometheus.yml', '--storage.tsdb.retention.time=7d', '--web.enable-lifecycle']
-    volumes:
-      - ./infra/observability/prometheus:/etc/prometheus:ro
-      - promdata:/prometheus
-    extra_hosts:
-      - 'host.docker.internal:host-gateway' # apps run on the host (pnpm start:dev:*)
-    ports:
-      - '9090:9090'
-
-  alertmanager:
-    image: prom/alertmanager:v0.28.1
-    container_name: marketplace_alertmanager
-    command: ['--config.file=/etc/alertmanager/alertmanager.yml']
-    volumes:
-      - ./infra/observability/alertmanager:/etc/alertmanager:ro
-    extra_hosts:
-      - 'host.docker.internal:host-gateway'
-    ports:
-      - '9093:9093'
-
-  loki:
-    image: grafana/loki:3.5.0
-    container_name: marketplace_loki
-    command: ['-config.file=/etc/loki/loki.yaml']
-    volumes:
-      - ./infra/observability/loki/loki.yaml:/etc/loki/loki.yaml:ro
-      - lokidata:/loki
-    ports:
-      - '3100:3100'
-
-  alloy:
-    image: grafana/alloy:v1.10.0
-    container_name: marketplace_alloy
-    command: ['run', '/etc/alloy/config.alloy', '--server.http.listen-addr=0.0.0.0:12345']
-    volumes:
-      - ./infra/observability/alloy/config.alloy:/etc/alloy/config.alloy:ro
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ./packages/backend/logs:/host-logs:ro # LOG_FILE=./logs/<app>.log for host-run apps
-    depends_on:
-      - loki
-
-  grafana:
-    image: grafana/grafana:12.1.0
-    container_name: marketplace_grafana
-    environment:
-      GF_AUTH_ANONYMOUS_ENABLED: 'true'
-      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
-      GF_INSTALL_PLUGINS: grafana-clickhouse-datasource
-    volumes:
-      - ./infra/observability/grafana/provisioning:/etc/grafana/provisioning:ro
-      - ./infra/observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
-    ports:
-      - '3001:3000' # 3000 is the Next.js app
-    depends_on:
-      - prometheus
-      - loki
-      - jaeger
-
-  postgres-exporter:
-    image: quay.io/prometheuscommunity/postgres-exporter:v0.17.1
-    container_name: marketplace_postgres_exporter
-    environment:
-      DATA_SOURCE_NAME: postgresql://${DB_USERNAME}:${DB_PASSWORD}@db:5432/${DB_NAME}?sslmode=disable
-    depends_on:
-      - db
-
-  redis-exporter:
-    image: oliver006/redis_exporter:v1.74.0
-    container_name: marketplace_redis_exporter
-    environment:
-      REDIS_ADDR: redis://redis:6379
-    depends_on:
-      - redis
-
-  kafka-exporter:
-    image: danielqsj/kafka-exporter:v1.9.0
-    container_name: marketplace_kafka_exporter
-    command: ['--kafka.server=kafka:29092']
-    depends_on:
-      - kafka
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.15.3
     container_name: payment_system_elasticsearch
@@ -313,6 +209,126 @@ services:
       CONNECT_CONFIG_PROVIDERS_ENV_CLASS: org.apache.kafka.common.config.provider.EnvVarConfigProvider
     ports:
       - '8083:8083'
+
+  # --- Observability (tracing, metrics, logs, alerts): NOT started by default, not needed for dev or the e2e gates.
+  # Start with `moon run :infra-up-observability` (= --profile observability). Without it set OTEL_SDK_DISABLED=true
+  # in packages/backend/.env. Configs: infra/observability. Grafana :3001, Jaeger :16686, Prometheus :9090.
+  jaeger:
+    profiles: ['observability']
+    image: jaegertracing/all-in-one:latest
+    container_name: payment_system_jaeger
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+    ports:
+      - '16686:16686' # The Web UI
+
+  # --- SD-33 observability stack (configs in infra/observability) ---
+
+  otel-collector:
+    profiles: ['observability']
+    image: otel/opentelemetry-collector-contrib:0.137.0
+    container_name: marketplace_otel_collector
+    command: ['--config=/etc/otelcol/config.yaml']
+    volumes:
+      - ./infra/observability/otel-collector.yaml:/etc/otelcol/config.yaml:ro
+    ports:
+      - '4317:4317' # OTLP gRPC (apps)
+      - '4318:4318' # OTLP HTTP (apps; OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318)
+      - '13133:13133' # health
+    depends_on:
+      - jaeger
+
+  prometheus:
+    profiles: ['observability']
+    image: prom/prometheus:v3.6.0
+    container_name: marketplace_prometheus
+    command: ['--config.file=/etc/prometheus/prometheus.yml', '--storage.tsdb.retention.time=7d', '--web.enable-lifecycle']
+    volumes:
+      - ./infra/observability/prometheus:/etc/prometheus:ro
+      - promdata:/prometheus
+    extra_hosts:
+      - 'host.docker.internal:host-gateway' # apps run on the host (pnpm start:dev:*)
+    ports:
+      - '9090:9090'
+
+  alertmanager:
+    profiles: ['observability']
+    image: prom/alertmanager:v0.28.1
+    container_name: marketplace_alertmanager
+    command: ['--config.file=/etc/alertmanager/alertmanager.yml']
+    volumes:
+      - ./infra/observability/alertmanager:/etc/alertmanager:ro
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+    ports:
+      - '9093:9093'
+
+  loki:
+    profiles: ['observability']
+    image: grafana/loki:3.5.0
+    container_name: marketplace_loki
+    command: ['-config.file=/etc/loki/loki.yaml']
+    volumes:
+      - ./infra/observability/loki/loki.yaml:/etc/loki/loki.yaml:ro
+      - lokidata:/loki
+    ports:
+      - '3100:3100'
+
+  alloy:
+    profiles: ['observability']
+    image: grafana/alloy:v1.10.0
+    container_name: marketplace_alloy
+    command: ['run', '/etc/alloy/config.alloy', '--server.http.listen-addr=0.0.0.0:12345']
+    volumes:
+      - ./infra/observability/alloy/config.alloy:/etc/alloy/config.alloy:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./packages/backend/logs:/host-logs:ro # LOG_FILE=./logs/<app>.log for host-run apps
+    depends_on:
+      - loki
+
+  grafana:
+    profiles: ['observability']
+    image: grafana/grafana:12.1.0
+    container_name: marketplace_grafana
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: 'true'
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+      GF_INSTALL_PLUGINS: grafana-clickhouse-datasource
+    volumes:
+      - ./infra/observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./infra/observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    ports:
+      - '3001:3000' # 3000 is the Next.js app
+    depends_on:
+      - prometheus
+      - loki
+      - jaeger
+
+  postgres-exporter:
+    profiles: ['observability']
+    image: quay.io/prometheuscommunity/postgres-exporter:v0.17.1
+    container_name: marketplace_postgres_exporter
+    environment:
+      DATA_SOURCE_NAME: postgresql://${DB_USERNAME}:${DB_PASSWORD}@db:5432/${DB_NAME}?sslmode=disable
+    depends_on:
+      - db
+
+  redis-exporter:
+    profiles: ['observability']
+    image: oliver006/redis_exporter:v1.74.0
+    container_name: marketplace_redis_exporter
+    environment:
+      REDIS_ADDR: redis://redis:6379
+    depends_on:
+      - redis
+
+  kafka-exporter:
+    profiles: ['observability']
+    image: danielqsj/kafka-exporter:v1.9.0
+    container_name: marketplace_kafka_exporter
+    command: ['--kafka.server=kafka:29092']
+    depends_on:
+      - kafka
 
 volumes:
   pgdata:

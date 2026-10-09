@@ -43,7 +43,6 @@ export default tseslint.config(
       '@typescript-eslint/unbound-method': 'off',
       '@typescript-eslint/no-redundant-type-constituents': 'warn',
       '@typescript-eslint/no-misused-promises': 'warn',
-      'react-hooks/set-state-in-effect': 'warn',
 
     },
   },
