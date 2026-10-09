@@ -62,8 +62,11 @@ export class EntitlementsService {
     return loaded ?? {};
   }
 
-  invalidate(subjectType: 'USER' | 'SHOP', subjectId: string): Promise<void> {
-    return this.cache.invalidate([entitlementsKey(subjectType, subjectId)]);
+  async invalidate(
+    subjectType: 'USER' | 'SHOP',
+    subjectId: string,
+  ): Promise<void> {
+    await this.cache.invalidate([entitlementsKey(subjectType, subjectId)]);
   }
 }
 

@@ -5,13 +5,15 @@
  * get refreshed by one early reader instead of stampeding at the exact TTL.
  *
  *   recompute if  now - deltaMs * beta * ln(rand)  >=  expiresAt
+ *
+ * `random` is the injected source (FR-045): a uniform draw in [0, 1).
  */
 export function shouldRecomputeEarly(
   nowMs: number,
   expiresAtMs: number,
   deltaMs: number,
-  beta = 1,
-  random: () => number = Math.random,
+  beta: number,
+  random: () => number,
 ): boolean {
   const r = Math.max(random(), Number.MIN_VALUE); // ln(0) = -Infinity
   return nowMs - deltaMs * beta * Math.log(r) >= expiresAtMs;
@@ -20,8 +22,8 @@ export function shouldRecomputeEarly(
 /** ±`spread` relative jitter so keys written together don't expire together (avalanche). */
 export function jitterTtl(
   ttlMs: number,
-  spread = 0.1,
-  random: () => number = Math.random,
+  spread: number,
+  random: () => number,
 ): number {
   return Math.round(ttlMs * (1 - spread + 2 * spread * random()));
 }

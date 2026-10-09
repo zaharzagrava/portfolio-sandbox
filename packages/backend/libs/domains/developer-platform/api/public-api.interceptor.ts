@@ -146,7 +146,7 @@ export class PublicApiInterceptor implements NestInterceptor {
         );
         return row ? { v: row.pinnedVersion } : null;
       },
-      { ttlMs: 300_000, negativeTtlMs: 300_000, l1: 'always', l1TtlMs: 30_000 },
+      { ttlMs: 300_000, negativeTtlMs: 300_000, l1: 'always', l1TtlMs: 5_000 },
     );
     return pinned && isApiVersion(pinned.v) ? pinned.v : LATEST_VERSION;
   }

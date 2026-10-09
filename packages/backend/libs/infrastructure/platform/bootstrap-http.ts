@@ -179,6 +179,9 @@ export function configureHttpApp(
   );
 
   app.getHttpAdapter().getInstance().disable('x-powered-by');
+  // Validators come from the cache toolkit's VersionEtagInterceptor / withEtag only (S52 FR-036, FR-039): Express'
+  // automatic weak ETag would put a body hash on errors and on every write response, and answer 304 on its own.
+  app.getHttpAdapter().getInstance().set('etag', false);
 
   // 4. Client address: the TCP peer, or the first untrusted `X-Forwarded-For` hop behind a trusted proxy (FR-072).
   const trustedProxies = parseTrustedProxies(

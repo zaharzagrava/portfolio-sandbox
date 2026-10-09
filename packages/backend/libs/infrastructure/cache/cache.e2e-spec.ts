@@ -184,7 +184,10 @@ describe('Cache toolkit (e2e, real Redis)', () => {
         .set('If-None-Match', first.headers.etag)
         .expect(304);
 
-      const views = await redis.client.hget('wb:{product-views}', product.id);
+      const views = await redis.client.hget(
+        'counter:{product-views}:pending',
+        product.id,
+      );
       expect(Number(views)).toBe(2);
     });
 
