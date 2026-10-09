@@ -3,9 +3,9 @@
  * One list for every consumer (S54 G-33), matched with or without the global `/api` prefix.
  */
 export const EXEMPT_PATHS = [
-  '/livez',
-  '/readyz',
-  '/startupz',
+  '/health/live',
+  '/health/ready',
+  '/health/startup',
   '/metrics',
 ] as const;
 

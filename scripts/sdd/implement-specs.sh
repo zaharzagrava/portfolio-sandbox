@@ -138,7 +138,7 @@ gate_extras() { # $1 = capability id, $2 = domain column, $3 = spec dir
 }
 
 require_stack() { # web and journeys run against the local dev stack
-  if ! curl -sf "$API_URL/readyz" >/dev/null; then
+  if ! curl -sf "$API_URL/health/ready" >/dev/null; then
     echo "STOP  $1 needs the local stack: moon run infra-setup && moon run dev-monolith (API_URL=$API_URL)" >&2
     exit 1
   fi
@@ -164,8 +164,8 @@ context_for() { # $1 = domain column
   local base='Inputs in the feature directory: spec.md, test-plan.md, gaps.md, and questions.md (its defaults are accepted as written; a line the human edited overrides spec.md). Constitution: .specify/memory/constitution.md. Token discipline (never at the cost of correctness): read only the files you need and only the relevant line ranges of large ones; run backend e2e specs through '"$TEST_SPEC"' <path-or-pattern> [jest args], which prints a condensed result (summary, failing test titles, assertion diffs) and the path of the full log, and open the full log only if the condensed output is not enough; run the narrowest test that proves the change, and the whole capability suite once at the end. If the same test still fails after 5 fix attempts, stop and write the blocker, what you tried and your hypothesis into questions.md instead of continuing.'
   case "$(kind_of "$1")" in
     backend) echo "$base Run backend commands from packages/backend." ;;
-    web) echo "$base This is the Next.js app in packages/web: read packages/web/AGENTS.md and the relevant guide in packages/web/node_modules/next/dist/docs/ before writing code. Backend changes the UI needs go in packages/backend and follow the constitution (contracts in packages/contracts). The local dev stack is running (API at $API_URL, watch mode: after backend edits wait for GET $API_URL/readyz before re-running UI tests); Playwright starts the web dev server; run it with `--reporter=line --max-failures=1` and only the spec file for the page you changed until the final full run. Add test tooling the test plan needs (e.g. React Testing Library, widen the Vitest include)." ;;
-    journey) echo "$base Journey tests go in packages/backend/test/journeys/<slug>.journey-spec.ts (see test/journeys/README.md) and run with pnpm test:journeys against the running local stack (API at $API_URL, watch mode: after backend edits wait for GET $API_URL/readyz). Fix broken hand-offs in the domain that owns them." ;;
+    web) echo "$base This is the Next.js app in packages/web: read packages/web/AGENTS.md and the relevant guide in packages/web/node_modules/next/dist/docs/ before writing code. Backend changes the UI needs go in packages/backend and follow the constitution (contracts in packages/contracts). The local dev stack is running (API at $API_URL, watch mode: after backend edits wait for GET $API_URL/health/ready before re-running UI tests); Playwright starts the web dev server; run it with `--reporter=line --max-failures=1` and only the spec file for the page you changed until the final full run. Add test tooling the test plan needs (e.g. React Testing Library, widen the Vitest include)." ;;
+    journey) echo "$base Journey tests go in packages/backend/test/journeys/<slug>.journey-spec.ts (see test/journeys/README.md) and run with pnpm test:journeys against the running local stack (API at $API_URL, watch mode: after backend edits wait for GET $API_URL/health/ready). Fix broken hand-offs in the domain that owns them." ;;
   esac
 }
 

@@ -76,7 +76,7 @@ jobs:
           printf 'APP=%s\nIMAGE=%s/marketplace/%s:%s\nENV=%s\n' "${{ matrix.app }}" "$registry" "${{ matrix.app }}" "$SHA" "$ENV" > rev/release.env
           (cd rev && zip -qr "../${{ matrix.app }}-$SHA.zip" .)
           aws s3 cp "${{ matrix.app }}-$SHA.zip" "s3://${{ vars.ARTIFACTS_BUCKET }}/codedeploy/$ENV/${{ matrix.app }}-$SHA.zip"
-      # Blue/green on the ASG: new instances boot the new image, pass /readyz, take traffic; old ones drain and terminate.
+      # Blue/green on the ASG: new instances boot the new image, pass /health/ready, take traffic; old ones drain and terminate.
       # Rollback: automatic on deployment failure or on the group's alarms (5xx, p99, SLO fast burn).
       - name: CodeDeploy blue/green
         run: |

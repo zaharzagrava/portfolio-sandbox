@@ -6,12 +6,12 @@ import { ReadinessService } from './readiness.service';
 import { StartupService } from './startup.service';
 
 /**
- * - /livez: "is this process able to make progress?" Never touches the DB or
+ * - /health/live: "is this process able to make progress?" Never touches the DB or
  *   Redis - if Postgres is down, restarting every API instance only adds a
  *   reconnect storm on top of the outage.
- * - /readyz: "should the load balancer send me traffic?" Pod-local checks +
+ * - /health/ready: "should the load balancer send me traffic?" Pod-local checks +
  *   shutdown flag; shared dependencies are reported but do not fail it. Used by ALB target-group health checks (O-03).
- * - /startupz: "has warm-up finished?"
+ * - /health/startup: "has warm-up finished?"
  * Probes are exempt from throttling and shedding by their path (see exempt-paths), and are never cached.
  */
 @Controller()
@@ -22,7 +22,7 @@ export class HealthController {
     private readonly liveness: LivenessService,
   ) {}
 
-  @Get('livez')
+  @Get('health/live')
   live(@Res() res: Response) {
     const { alive, failing } = this.liveness.report();
     res
@@ -34,7 +34,7 @@ export class HealthController {
       });
   }
 
-  @Get('startupz')
+  @Get('health/startup')
   started(@Res() res: Response) {
     const ok = this.startup.isStarted();
     res
@@ -43,7 +43,7 @@ export class HealthController {
       .json({ status: ok ? 'started' : 'starting' });
   }
 
-  @Get('readyz')
+  @Get('health/ready')
   async ready(@Res() res: Response) {
     const report = await this.readiness.report();
     res

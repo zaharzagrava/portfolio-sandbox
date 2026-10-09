@@ -23,7 +23,7 @@ Images < 200 MB, cold start of a new ASG instance < 90 s (pre-pulled base AMI la
 - **`infra/docker/node/Dockerfile`:** one file for every Nest app (`--build-arg APP=`).
   - **Stages:** `pnpm fetch` from the lockfile alone (cached until the lockfile changes) → offline install of `api...` → `nest build $APP` → a separate offline `--prod` install.
   - **Copy:** the runtime copies the pnpm symlink farm whole (root + package `node_modules`), so links resolve without `pnpm deploy`, whose flags changed across pnpm 10-12.
-  - **Runtime image:** `node:24 bookworm-slim`, non-root `node`, **tini as PID 1** (signal forwarding to the F-01 graceful shutdown, reaps ffmpeg children). ffmpeg only in the worker image. No `HEALTHCHECK` (ALB probes `/readyz`).
+  - **Runtime image:** `node:24 bookworm-slim`, non-root `node`, **tini as PID 1** (signal forwarding to the F-01 graceful shutdown, reaps ffmpeg children). ffmpeg only in the worker image. No `HEALTHCHECK` (ALB probes `/health/ready`).
   - **Entrypoint:** sets `--max-old-space-size` to 75% of the cgroup memory limit.
   - **`migrator` target:** the build stage + pinned `sequelize-cli`, run once per release before any new instance starts. `sequelize-cli` wasn't a dependency, so the runtime image can't run migrations hermetically.
 - **`.dockerignore`:** keeps `creds/`, `.env*`, other packages and docs out of the context.
@@ -45,5 +45,5 @@ Images < 200 MB, cold start of a new ASG instance < 90 s (pre-pulled base AMI la
   - `pull.sh`: ECR login + pull before the old container stops.
   - `stop.sh`: runs after CodeDeploy deregistered the instance and waited out the deregistration delay; `docker stop --time 35` → SIGTERM → F-01 shutdown.
   - `start.sh`: memory capped at 85% of the host, awslogs driver, config from Secrets Manager inside the app, uniform `METRICS_PORT=9464`.
-  - `validate.sh`: `/readyz` must turn 200 within 3 min, or the deployment fails and blue keeps serving.
+  - `validate.sh`: `/health/ready` must turn 200 within 3 min, or the deployment fails and blue keeps serving.
 - **Release checklist:** `docs/runbooks/RELEASE_CHECKLIST.md` (expand/contract, flags, error budget, rollback paths).

@@ -10,7 +10,7 @@ Build the shared plumbing once, in the existing `libs/{common,infrastructure}` l
 
 1. **Problem details** (one filter, code registry, `packages/contracts/problem.ts`).
 2. **Request context and transactions** (join-by-default scope, `@Transactional`, `afterCommit`, network-in-transaction guard).
-3. **Probes and shutdown** (shared checks never fail readiness, `/startupz`, correct drain order, single signal owner).
+3. **Probes and shutdown** (shared checks never fail readiness, `/health/startup`, correct drain order, single signal owner).
 4. **Load shedding, resilient client, breaker, SSRF** (`safeGet`/`safeRequest`).
 5. **Idempotency facility** on a new `IdempotencyKey` table owned by `infrastructure:idempotency`.
 6. **Bootstrap, config, logging, metrics, clock**.
@@ -125,7 +125,7 @@ Every gaps.md item appears in exactly one WP. Each WP is test-first: write the e
 | **WP-1** Problem details | `AppError` fields + required `code`; catalogue module + duplicate check; renderer; filter rewrite; error-utils mapping (db 23505→409, 57014, 55P03, 40001/40P01, pool timeout); `problem.ts` contract; sensitive-path decorator; logging split warn/error with `requestId`; tracker seam; shedding body via renderer | G-01 – G-13 | ERR, U-DOC |
 | **WP-2** Context | `AppClsStore` fields; `shopId` immutability; `snapshot()`, `memo()`; `request-id.ts`; traceparent stored; `check:no-request-scope`; typed declaration-merging test | G-14 – G-19 | CTX, U-RID |
 | **WP-3** Transactions and DB settings | `propagation`, bounded `set_config` timeouts, `@Transactional`, `afterCommit`, `getActiveTransaction`/`assert…`, serializable retry ≤ 3 + `503`, network guard hook, concurrency isolation, connection settings + acquire timeout + pool arithmetic + replica handle, callers audit | G-20 – G-26 | TX, DB, U-TXO |
-| **WP-4** Probes and startup | `scope`/`failureThreshold`/abort/500 ms; 2 s cache + single-flight; `StartupService` + `/startupz`; liveness thresholds + heartbeats; drop `SkipThrottle`; one exempt list; management listener; `no-store`; gauges | G-27 – G-36 | HEALTH |
+| **WP-4** Probes and startup | `scope`/`failureThreshold`/abort/500 ms; 2 s cache + single-flight; `StartupService` + `/health/startup`; liveness thresholds + heartbeats; drop `SkipThrottle`; one exempt list; management listener; `no-store`; gauges | G-27 – G-36 | HEALTH |
 | **WP-5** Shutdown | New sequence in `graceful-shutdown.ts`; registry (concurrent equal order, phase `drain`, reject late register, exit 1 on failure); `process.on` guard; telemetry as order-95 task; crash handlers; startup ordering/deadline; image + no-migrate checks; worker apps audit | G-37 – G-47 | SHUT, U-SDC |
 | **WP-6** Load shedding | Pure policy + hysteresis; priority decorator; in-flight counter; randomised `Retry-After`; ordering before body parsers; monitor seam, fail-open; metric + sampled log | G-48 – G-51 | SHED, U-SHEDP |
 | **WP-7** Resilient HTTP, breaker, SSRF | `maxAttempts`, remove 500, `Retry-After` cap, per-host budget with clock, response cap, typed errors, URL logging, bulkhead, breaker lib, deadline propagation, 3 s connect timeout, remove axios `RequestService`, migrate Stripe/channel-sender/webhook-deliverer, `safeGet`/`safeRequest`, escape-hatch refusal, caller migration | G-53 – G-59, G-61, G-76 | HTTP, SSRF, U-CB, U-RETB, U-RETO, U-CORE, U-SSRF (extended to AS-105/106), U-URL |

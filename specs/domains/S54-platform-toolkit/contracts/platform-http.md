@@ -4,9 +4,9 @@
 
 | Path | 200 when | 503 when | Body |
 |---|---|---|---|
-| `/livez` | event-loop p99 ≤ liveness threshold (10 000 ms) and all heartbeats within `maxSilenceMs`; stays 200 during shutdown | threshold exceeded or heartbeat silent | `{ "status": "up" \| "down", "checks"?: { name: "up"\|"down" } }` (no uptime, no error text) |
-| `/readyz` | startup finished, shutdown not begun, no pod-critical check failing; `shared` checks reported only | not started / shutting down / critical check down (or promoted shared check past `failureThreshold`) | `{ "status", "reason"?, "checks": { name: "up"\|"down" } }` |
-| `/startupz` | all warm-ups done (never regresses) | warm-ups pending | `{ "status" }` |
+| `/health/live` | event-loop p99 ≤ liveness threshold (10 000 ms) and all heartbeats within `maxSilenceMs`; stays 200 during shutdown | threshold exceeded or heartbeat silent | `{ "status": "up" \| "down", "checks"?: { name: "up"\|"down" } }` (no uptime, no error text) |
+| `/health/ready` | startup finished, shutdown not begun, no pod-critical check failing; `shared` checks reported only | not started / shutting down / critical check down (or promoted shared check past `failureThreshold`) | `{ "status", "reason"?, "checks": { name: "up"\|"down" } }` |
+| `/health/startup` | all warm-ups done (never regresses) | warm-ups pending | `{ "status" }` |
 
 Check timeout 500 ms (abort signal), result cache 2 s, concurrent evaluations share one run. Gauges: `platform_ready`, `health_check_up{check}`.
 

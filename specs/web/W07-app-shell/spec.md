@@ -22,7 +22,7 @@ In scope:
 - **System states**: not-found, unexpected error, root-layout error, loading, access denied, offline, and the shared way a failed API call (RFC 9457 problem body) is shown when a page has no better place for it.
 - **Responsive layout and accessibility baseline** every page must meet (the rules W01–W06 pages inherit).
 - **Security headers and Content Security Policy** of every response of the web app, the `Referrer-Policy` exceptions, caching rules for private pages, CSP violation reporting.
-- **Cross-cutting runtime rules** of the shell: document metadata, `page_view` analytics, server-state defaults (query client), same-origin and no-token rules that belong to the shell, `/healthz`.
+- **Cross-cutting runtime rules** of the shell: document metadata, `page_view` analytics, server-state defaults (query client), same-origin and no-token rules that belong to the shell, `/health`.
 - **Delivery of the widget checkout application** (the bundle that runs inside the storefront-widget iframe) and the iframe side of its `postMessage` contract (S44).
 
 Out of scope (owned elsewhere):
@@ -44,7 +44,7 @@ Out of scope (owned elsewhere):
 | Any page whose rendering throws | everyone | error state inside the frame · root-layout error page (own document) |
 | Any route while its content streams in | everyone | loading placeholder inside `<main>`, frame stays |
 | Access-denied state (a page answered `403`) | signed in | "You don't have access" state inside the frame |
-| `/healthz` | infrastructure | `200 {"status":"ok"}`; not a page |
+| `/health` | infrastructure | `200 {"status":"ok"}`; not a page |
 | `/widget/v1/app.js` (configurable URL) | any host page's iframe document | the widget checkout bundle |
 | `/robots.txt` | crawlers | rules of FR-052 |
 
@@ -186,7 +186,7 @@ The embeddable widget (S44) opens an iframe whose checkout application is served
 
 **Acceptance Scenarios**:
 
-1. **AS-41 (liveness)** — **Given** the running web app, **When** `GET /healthz` is requested, **Then** it answers `200 {"status":"ok"}` with `Cache-Control: no-store`, without calling any backend, without a session, and without the nonce policy (it is not a document).
+1. **AS-41 (liveness)** — **Given** the running web app, **When** `GET /health` is requested, **Then** it answers `200 {"status":"ok"}` with `Cache-Control: no-store`, without calling any backend, without a session, and without the nonce policy (it is not a document).
 
 ### Edge Cases
 
@@ -267,7 +267,7 @@ Each is covered by the scenario shown; none is left to implementation judgement.
 **Widget application and operations**
 
 - **FR-070**: The widget checkout bundle is served per AS-39 and implements the iframe side of S44's message contract per AS-40, including `targetOrigin` equal to the registered host origin (never `"*"`), source and origin checks on receipt, and no use of `eval`. (AS-39, AS-40)
-- **FR-071**: `GET /healthz` per AS-41. (AS-41)
+- **FR-071**: `GET /health` per AS-41. (AS-41)
 
 **Layout and accessibility baseline** (inherited by every capability)
 
@@ -328,14 +328,14 @@ Exact names; modules are in `packages/web`.
 
 - **Frame rules for every page**: one `main` (`id="main-content"`), skip link, header/footer landmarks, route-change focus to `h1`, titles "{Page} · Marketplace", toast area (`sonner`, one `<Toaster />`), AS-31..AS-33 baseline. Other capabilities add no `main`, `banner`, `contentinfo`, skip link or toaster.
 - **`<NotFoundState title? description? actions? />`**, **`<ErrorState problem? reference? onRetry? />`**, **`<AccessDeniedState />`**, **`<PageSkeleton variant="detail" | "list" | "form" />`** (`components/layout/system-states.tsx`; client only where needed): shared copy of AS-09, AS-10, AS-12, AS-13. `ErrorState` takes `Problem` from W01's `problemFromError` and renders per AS-13; for `401` it renders nothing.
-- **Route files**: `app/not-found.tsx`, `app/error.tsx`, `app/global-error.tsx`, `app/loading.tsx`, `app/robots.ts`, `app/healthz/route.ts`.
+- **Route files**: `app/not-found.tsx`, `app/error.tsx`, `app/global-error.tsx`, `app/loading.tsx`, `app/robots.ts`, `app/health/route.ts`.
 - **`lib/routes/page-name.ts`** → `pageNameFor(pathname: string, matchedTemplate?: string): string` (pure): returns the route template; used by the `page_view` emitter (`components/analytics/page-view.tsx`, client, mounted in the root layout).
 - **Security module** (`lib/security/csp.ts` → `buildCsp({ nonce, pathname, isDev, hosts }): string`; `lib/security/headers.ts` → `staticSecurityHeaders`, `noReferrerPaths`, `noStorePaths`): the lists capabilities extend in the same pull request when they add a private area, a host or a cookie (FR-053). **Rule for other capabilities**: a new private area is added to `noStorePaths` and to the robots disallow list; a new external host is added to configuration (FR-022) and to the path-scoped CSP rule, never to a global allowance.
 - **Configuration module** (`lib/config.ts`, `server-only`): `config` with the keys of FR-063; fails fast at start-up.
 - **Query client defaults** (`lib/providers.tsx`): per AS-36; `lib/query-keys.ts` keys begin with the domain name and are the only key source. The shell adds one key, `queryKeys.developers.openapi`.
 - **`<RouteFocus />`** and **`<SkipLink />`** (`components/layout`): mounted once in the root layout.
 - **Widget application**: bundle at `WIDGET_APP_BUNDLE_URL` (default `/widget/v1/app.js`), message types `marketplace:need-identity`, `marketplace:identity {token}`, `marketplace:close` (S44), and the "checkout application" states of AS-40.
-- **`GET /healthz`** → `200 {"status":"ok"}`.
+- **`GET /health`** → `200 {"status":"ok"}`.
 - **Playwright helpers** (`tests/helpers.ts`): `expectNoCspViolations(page)` (collects `securitypolicyviolation` events and console CSP errors for the test's duration), `gotoAtWidth(page, 'mobile' | 'desktop', path)`, `headersOf(request, path)`.
 
 ### Requires
@@ -350,7 +350,7 @@ Exact names; modules are in `packages/web`.
 - **S42**: the OpenAPI 3.x description of the public API, reachable same-origin as `GET /api/developers/openapi.json` (proxy to the public API's documentation route); per-operation scopes, deprecation and sunset marks (S42 AS-36, AS-67). `[CONTRACT]` Q6.
 - **S44**: `GET /api/widget/v1/config`, `POST /api/widget/v1/identify {key, token}` → `{widgetToken, expiresIn, customer: {id, email: string | null}}`, `GET /api/widget/v1/session`; the loader's `postMessage` types and the embed document that loads the bundle with the nonce; `checkoutUrl` in the config response.
 - **S48 / S54**: the same-origin `/api/*` proxy rules (`next.config.ts` rewrites stay); problem+json on every error (`type, title, status, detail, instance, requestId, code`); **new** `POST /api/csp-reports` (accepts `application/csp-report` and `application/reports+json`, always `204`, rate-limited, logs the violated directive and blocked host without the full document URL query) — owner S54 `[CONTRACT]` Q5.
-- **Infrastructure** (not a capability): the ALB routes `/healthz` to the web service; `SITE_URL` and host variables are set per environment.
+- **Infrastructure** (not a capability): the ALB routes `/health` to the web service; `SITE_URL` and host variables are set per environment.
 
 ## Pattern coverage (pattern-map rows whose Specs column names W07)
 

@@ -1,7 +1,7 @@
 import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
 
 /**
- * Warm-up gate behind `/startupz` and the first `/readyz`. Modules add warm-up work with `addWarmup`; the instance
+ * Warm-up gate behind `/health/startup` and the first `/health/ready`. Modules add warm-up work with `addWarmup`; the instance
  * counts as started when every task finished. Once started it never regresses (a shutdown is signalled by readiness).
  */
 @Injectable()
@@ -23,7 +23,7 @@ export class StartupService implements OnApplicationBootstrap {
     return this.started;
   }
 
-  /** Warm-ups run in the background: the instance must listen (and answer `/startupz` `503`) while they retry. */
+  /** Warm-ups run in the background: the instance must listen (and answer `/health/startup` `503`) while they retry. */
   onApplicationBootstrap(): void {
     this.whenStarted().catch((error) =>
       this.logger.error(

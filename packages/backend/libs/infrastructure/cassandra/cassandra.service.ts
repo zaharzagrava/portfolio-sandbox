@@ -65,7 +65,7 @@ export class CassandraService implements OnModuleInit {
     try {
       await this.client.connect();
     } catch (error) {
-      // Don't crash the whole app at boot: features backed by Scylla fail individually and /readyz reports it.
+      // Don't crash the whole app at boot: features backed by Scylla fail individually and /health/ready reports it.
       this.logger.error(
         `Cassandra connect failed: ${(error as Error).message}`,
       );

@@ -34,7 +34,7 @@ const DEFAULT_THRESHOLD = 3;
 const readyGauge = () =>
   MetricsRegistry.gauge({
     name: 'platform_ready',
-    help: '1 when /readyz would answer 200, else 0',
+    help: '1 when /health/ready would answer 200, else 0',
     labels: [],
   });
 const checkGauge = () =>

@@ -8,7 +8,7 @@ import { ClockModule } from './clock.module';
 
 /**
  * F-01 platform toolkit in one import for HTTP apps: request context (CLS),
- * CLS-managed transactions, /livez + /readyz, ordered shutdown, event-loop
+ * CLS-managed transactions, /health/live + /health/ready, ordered shutdown, event-loop
  * load shedding, structured logging.
  */
 @Global()

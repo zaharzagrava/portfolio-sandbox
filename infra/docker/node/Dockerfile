@@ -58,7 +58,7 @@ COPY --from=build --chown=node:node /repo/packages/backend/dist/apps/${APP} /app
 COPY --chown=node:node infra/docker/node/entrypoint.sh /usr/local/bin/entrypoint.sh
 WORKDIR /app/packages/backend
 USER node
-# No HEALTHCHECK: the ALB/target group probes /readyz, the ASG replaces instances that fail /livez.
+# No HEALTHCHECK: the ALB/target group probes /health/ready, the ASG replaces instances that fail /health/live.
 EXPOSE 8000 9464
 # Orchestrators stop with SIGTERM; make it explicit so a base-image change cannot swap it for SIGINT/SIGKILL (S54 G-45).
 STOPSIGNAL SIGTERM

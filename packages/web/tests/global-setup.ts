@@ -7,8 +7,8 @@ import { API_URL } from './helpers';
  * data exists (idempotent `seed:dev`: admin, seller + shop, catalog - all created through the real API).
  */
 async function globalSetup() {
-  const ok = await fetch(`${API_URL}/readyz`).then((r) => r.ok).catch(() => false);
-  if (!ok) throw new Error(`API is not ready at ${API_URL}/readyz - start it with \`moon run :dev-monolith\``);
+  const ok = await fetch(`${API_URL}/health/ready`).then((r) => r.ok).catch(() => false);
+  if (!ok) throw new Error(`API is not ready at ${API_URL}/health/ready - start it with \`moon run :dev-monolith\``);
   execSync('pnpm --filter api seed:dev', { stdio: 'inherit', env: { ...process.env, API_URL } });
 }
 

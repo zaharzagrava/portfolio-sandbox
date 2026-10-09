@@ -211,12 +211,12 @@ describe('load shedding (SHED)', () => {
     const source = new FakeLagSource();
     const app = await boot({ source });
     source.emit(5_000);
-    for (const path of ['/livez', '/readyz', '/startupz', '/metrics']) {
+    for (const path of ['/health/live', '/health/ready', '/health/startup', '/metrics']) {
       const res = await get(app, path);
       expect(res.body.code).not.toBe('service_overloaded');
       expect(res.headers['retry-after']).toBeUndefined();
     }
-    expect((await get(app, '/livez')).status).toBe(200);
+    expect((await get(app, '/health/live')).status).toBe(200);
   });
 
   it('S54 AS-78: at the in-flight cap default is shed, critical is admitted up to twice the cap, and default recovers', async () => {

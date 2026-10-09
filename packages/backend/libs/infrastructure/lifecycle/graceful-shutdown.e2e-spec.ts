@@ -73,7 +73,7 @@ describe('graceful shutdown (SHUT)', () => {
     const inflight = get(child.url('/slow/450'));
     await child.waitFor((e) => e.event === 'request-start');
     child.kill('SIGTERM');
-    const ready = await get(child.url('/readyz')).catch(() => undefined);
+    const ready = await get(child.url('/health/ready')).catch(() => undefined);
     if (ready) expect(ready.status).toBe(503);
     const reply = await inflight;
     expect(reply.status).toBe(200);
@@ -403,16 +403,16 @@ describe('graceful shutdown (SHUT)', () => {
         expect(child.stderr).toContain(key);
     });
 
-    it('S54 AS-70: a slow dependency is retried with backoff, /startupz stays 503 until it answers', async () => {
+    it('S54 AS-70: a slow dependency is retried with backoff, /health/startup stays 503 until it answers', async () => {
       const child = await spawnChild({
         mode: 'slow-dependency',
         dependencyDownMs: 1_500,
         startupDeadlineMs: 20_000,
       });
       await child.waitForEvent('listening');
-      expect((await get(child.url('/startupz'))).status).toBe(503);
+      expect((await get(child.url('/health/startup'))).status).toBe(503);
       await child.waitForEvent('started');
-      expect((await get(child.url('/startupz'))).status).toBe(200);
+      expect((await get(child.url('/health/startup'))).status).toBe(200);
       const retries = child.events.filter(
         (e) => e.event === 'log' && String(e.msg).includes('retrying'),
       );
@@ -448,10 +448,10 @@ describe('graceful shutdown (SHUT)', () => {
     });
     await child.waitForEvent('listening');
     const base = `http://127.0.0.1:${managementPort}`;
-    expect((await get(`${base}/readyz`)).status).toBe(200);
+    expect((await get(`${base}/health/ready`)).status).toBe(200);
     child.kill('SIGTERM');
     await sleepMs(100);
-    expect((await get(`${base}/readyz`)).status).toBe(503);
+    expect((await get(`${base}/health/ready`)).status).toBe(503);
     expect((await child.exit).code).toBe(0);
     const order = [10, 50, 90].map((o) => idx(child, taskStart(`task-${o}`)));
     expect(order.every((i) => i >= 0)).toBe(true);

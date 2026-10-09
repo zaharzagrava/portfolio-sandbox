@@ -38,3 +38,4 @@ specs/**/.ownership.baseline
 # SDD monitor state and progress log
 .sdd-monitor/
 specs/.checkpoints/*.log
+specs/**/.tx.baseline

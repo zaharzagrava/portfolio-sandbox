@@ -97,7 +97,7 @@ describe('platform bootstrap (BOOT)', () => {
       ['a success', '/t/ok', 200],
       ['a 404', '/t/missing', 404],
       ['a 500', '/t/type-error', 500],
-      ['a probe', '/livez', 200],
+      ['a probe', '/health/live', 200],
     ])(
       'S54 AS-132: %s carries the strict headers, no X-Powered-By and no HSTS outside production',
       async (_label, path, status) => {

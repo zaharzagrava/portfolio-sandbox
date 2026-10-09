@@ -2,7 +2,7 @@
 
 Constitution VII.8 table: one row per acceptance scenario in [`spec.md`](spec.md) (152 scenarios, AS-01 to AS-152). A dash means the layer does not test that scenario. Each scenario is proven once, at the lowest layer that can prove it.
 
-- **API e2e** files live beside the code they prove, under `packages/backend/`. S54 has almost no HTTP endpoint of its own (only `/livez`, `/readyz`, `/startupz`), so each file boots a Nest app from the **real toolkit modules** with the production pipe, filter, prefix and interceptors (`configureHttpApp`), plus a small **test controller module** (test code only) whose routes throw each class of error, hold a configurable delay, write a row, count handler calls, or read the context. Real Postgres (production major version, real migrations) from `docker-compose.test.yaml`; no mocking of the toolkit's own code.
+- **API e2e** files live beside the code they prove, under `packages/backend/`. S54 has almost no HTTP endpoint of its own (only `/health/live`, `/health/ready`, `/health/startup`), so each file boots a Nest app from the **real toolkit modules** with the production pipe, filter, prefix and interceptors (`configureHttpApp`), plus a small **test controller module** (test code only) whose routes throw each class of error, hold a configurable delay, write a row, count handler calls, or read the context. Real Postgres (production major version, real migrations) from `docker-compose.test.yaml`; no mocking of the toolkit's own code.
 - **System-edge fakes only** (VII.2): the clock (`FakeClock`), the event-loop lag source (injectable sampler; AS-80 uses the real monitor), the DNS resolver (injectable), the outbound server (a local stand-in with scripted delays, status sequences, drip bodies, redirects and TLS), the error tracker (spy). Dependency outages are real: the pool or connection of the store under test is closed (a stop-the-connection helper), never a stub of the toolkit's check.
 - **Shutdown and crash rows** (AS-56 to AS-66, AS-70, AS-72) run the fixture app **as a child process** with real `SIGTERM` / `SIGINT`, tiny timings (drain 100–300 ms, hard timeout 1 s) and a recording task registry; the spec reads the recorded sequence and the exit code. The exit function is injectable for the in-process hard-timeout row (AS-62).
 - **Concurrency rows** use `Promise.all` (AS-19, AS-33, AS-35, AS-118, AS-130); AS-130 runs two Nest apps on one database.
@@ -94,13 +94,13 @@ Static checks (Unit column, "static:"): `check:no-request-scope`, `context-augme
 | AS-38 Timeout option bounds table (0, −1, NaN, 1.5, injection string, 700 000) | — | — | U-TXO |
 | AS-39 `assertActiveTransaction` throws outside, returns the transaction inside | TX | — | — |
 | AS-40 Network call inside a transaction refused; works from `afterCommit` | TX | — | — |
-| AS-41 `/livez` `200` with database and cache down, no store access | HEALTH | — | — |
-| AS-42 `/readyz` `200` with shared dependencies down, reported `down` | HEALTH | — | — |
+| AS-41 `/health/live` `200` with database and cache down, no store access | HEALTH | — | — |
+| AS-42 `/health/ready` `200` with shared dependencies down, reported `down` | HEALTH | — | — |
 | AS-43 Pod-local critical check failing → `503`, recovers after cache TTL | HEALTH | — | — |
 | AS-44 Promoted shared check with `failureThreshold: 3` | HEALTH | — | — |
-| AS-45 `/startupz` and `/readyz` `503` during warm-up, `/livez` `200` | HEALTH | — | — |
+| AS-45 `/health/startup` and `/health/ready` `503` during warm-up, `/health/live` `200` | HEALTH | — | — |
 | AS-46 Startup never regresses during shutdown | HEALTH | — | — |
-| AS-47 Shutdown start: `/readyz` `503` at once, `/livez` `200`, normal requests served | HEALTH | — | — |
+| AS-47 Shutdown start: `/health/ready` `503` at once, `/health/live` `200`, normal requests served | HEALTH | — | — |
 | AS-48 Hanging check reported `down` at its timeout, abort fired, response under 1 s | HEALTH | — | — |
 | AS-49 Check results cached, concurrent probes share one evaluation | HEALTH | — | — |
 | AS-50 Probe body has names and `up`/`down` only; message in log and gauge | HEALTH | — | — |

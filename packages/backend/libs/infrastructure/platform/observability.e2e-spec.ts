@@ -135,7 +135,7 @@ describe('observability (OBS)', () => {
   });
 
   it('S54 AS-147: probes are not access-logged', async () => {
-    await request(app.getHttpServer()).get('/livez').expect(200);
+    await request(app.getHttpServer()).get('/health/live').expect(200);
     await settle();
     expect(parsed().filter((l) => l.msg === 'request completed')).toHaveLength(
       0,

@@ -59,12 +59,12 @@ The code is a sound first draft of the shape: an async-local request context, a 
 ### Probes (FR-028 to FR-037, AS-41 to AS-55)
 
 - **G-27** `health.module.ts:31-37` registers Postgres as `critical: true`. Register it `scope: 'shared'`, not critical (AS-42). Cache, broker and search checks also `shared`.
-- **G-28** `readiness.service.ts:19,50`: the report has `error` text and `ms` per check, returned by `/readyz` (`health.controller.ts:27`) → names and `up`/`down` only; message to a `warn` log and the gauge (AS-50). Add `scope`, `failureThreshold`, abort signal, a 500 ms default (today `:45` 1 000 ms), the sync-throw guard (`:44-52` already catches; test it).
+- **G-28** `readiness.service.ts:19,50`: the report has `error` text and `ms` per check, returned by `/health/ready` (`health.controller.ts:27`) → names and `up`/`down` only; message to a `warn` log and the gauge (AS-50). Add `scope`, `failureThreshold`, abort signal, a 500 ms default (today `:45` 1 000 ms), the sync-throw guard (`:44-52` already catches; test it).
 - **G-29** `readiness.service.ts:40-60` runs every check on every probe: N pods × probe rate × checks queries. Add the 2 s cache and single-flight with the injected clock (AS-49).
-- **G-30** No startup state: `/startupz` missing; readiness ignores boot (`health.controller.ts:18-28`). Add `StartupService` with warm-ups and make readiness `503` until started (AS-45, AS-46). `bootstrap-http.ts:46-49` excludes only `livez`, `readyz` from the prefix; add `startupz`.
-- **G-31** `/livez` returns uptime and never fails (`:20-22`); add the extreme event-loop threshold and heartbeats (AS-52, AS-53). Remove `uptimeSec` (information, and a changing body).
+- **G-30** No startup state: `/health/startup` missing; readiness ignores boot (`health.controller.ts:18-28`). Add `StartupService` with warm-ups and make readiness `503` until started (AS-45, AS-46). `bootstrap-http.ts:46-49` excludes only `health/live`, `health/ready` from the prefix; add `health/startup`.
+- **G-31** `/health/live` returns uptime and never fails (`:20-22`); add the extreme event-loop threshold and heartbeats (AS-52, AS-53). Remove `uptimeSec` (information, and a changing body).
 - **G-32** `health.controller.ts:13` imports `SkipThrottle` from `@nestjs/throttler`, which S50 removes; replace with the probe exemption of the shared exempt list.
-- **G-33** Exempt-path lists are triplicated: `logging.module.ts:13-19`, `telemetry.ts:29`, `load-shedding.middleware.ts:6`; each lacks `/startupz` and the metrics path differs. One exported constant, used by all three and by the rate limiter and guards (AS-51).
+- **G-33** Exempt-path lists are triplicated: `logging.module.ts:13-19`, `telemetry.ts:29`, `load-shedding.middleware.ts:6`; each lacks `/health/startup` and the metrics path differs. One exported constant, used by all three and by the rate limiter and guards (AS-51).
 - **G-34** No management listener for apps without HTTP (AS-54). The worker, projector and payment-processor apps need it; audit `apps/*/main.ts`.
 - **G-35** No `Cache-Control: no-store`, no `platform_ready` and `health_check_up` gauges (AS-55).
 - **G-36** No e2e at all (the F-01 note says "written", none exists). Create `health-probes.e2e-spec.ts`.
@@ -85,7 +85,7 @@ The code is a sound first draft of the shape: an async-local request context, a 
 
 ### Load shedding (FR-048 to FR-054, AS-73 to AS-83)
 
-- **G-48** `load-shedding.middleware.ts:26`: one threshold, no priority, no hysteresis, no in-flight cap, fixed `Retry-After: '1'` (`:32`), exempt list without `/startupz` and keyed on `req.path` that carries the prefix. Implement `shedding-policy` (pure; AS-75, AS-77), the decorator `@LoadSheddingPriority`, the in-flight counter released on `finish` and `close` (AS-78, AS-79), the randomised `Retry-After`, `Connection: close`, the metric and the sampled log (AS-82).
+- **G-48** `load-shedding.middleware.ts:26`: one threshold, no priority, no hysteresis, no in-flight cap, fixed `Retry-After: '1'` (`:32`), exempt list without `/health/startup` and keyed on `req.path` that carries the prefix. Implement `shedding-policy` (pure; AS-75, AS-77), the decorator `@LoadSheddingPriority`, the in-flight counter released on `finish` and `close` (AS-78, AS-79), the randomised `Retry-After`, `Connection: close`, the metric and the sampled log (AS-82).
 - **G-49** Ordering: `load-shedding.module.ts:13` applies the middleware with `forRoutes('{*path}')`; Nest mounts its body parsers before module middleware, so bodies are read before shedding (AS-81), and the relative order to the CLS middleware and CORS depends on module import order. Take control of the parsers in `configureHttpApp` and mount in the order of AS-140; test it.
 - **G-50** `event-loop-monitor.service.ts`: fail-open path and "monitor unavailable" behaviour absent (AS-83); no injectable lag source for tests (AS-80 uses the real one, the rest the fake); the gauge callback reads `lastP99Ms` (fine). Add the seam.
 - **G-51** No e2e (`load-shedding.e2e-spec.ts`), no unit for the policy.

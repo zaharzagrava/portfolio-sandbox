@@ -1,5 +1,5 @@
 # Public ALB: TLS terminates here (ACM), Cloudflare in front (proxied DNS, WAF/DDoS at the edge).
-# One target group per HTTP service, routed by path; health check = /readyz (F-01 readiness).
+# One target group per HTTP service, routed by path; health check = /health/ready (F-01 readiness).
 # Long-lived streams (SSE, collab WebSockets) get a 1 h idle timeout.
 
 variable "name" { type = string }
@@ -65,7 +65,7 @@ resource "aws_lb_target_group" "service" {
   vpc_id               = var.vpc_id
   deregistration_delay = each.value.deregistration_delay
   health_check {
-    path                = "/readyz"
+    path                = "/health/ready"
     interval            = 10
     healthy_threshold   = 2
     unhealthy_threshold = 3

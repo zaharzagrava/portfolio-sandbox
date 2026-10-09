@@ -24,7 +24,7 @@ pnpm lint
 | 1 | `libs/common/exceptions-filter` | AS-01–AS-16; sample of error kinds all parse with `problemDetailsSchema` (SC-001) |
 | 2 | `libs/infrastructure/context/request-context` and `request-id.spec` | AS-17–AS-27 |
 | 3 | `libs/infrastructure/context/transactions`, `libs/infrastructure/database` | AS-28–AS-40, AS-145/146 |
-| 4 | `libs/infrastructure/health` | AS-41–AS-55 (DB down ⇒ `/readyz` 200, SC-004 shape) |
+| 4 | `libs/infrastructure/health` | AS-41–AS-55 (DB down ⇒ `/health/ready` 200, SC-004 shape) |
 | 5 | `libs/infrastructure/lifecycle` | AS-56–AS-72 (child process, real signals, exit codes) |
 | 6 | `libs/common/load-shedding` | AS-73–AS-83 |
 | 7 | `libs/infrastructure/http-client`, `libs/infrastructure/net`, `libs/common/resilience` | AS-84–AS-115 |
@@ -34,8 +34,8 @@ pnpm lint
 ## 2. Manual smoke (after WP-4/5)
 
 ```bash
-curl -si localhost:3000/readyz        # 200 + {"status":"up","checks":{...}}, Cache-Control: no-store
-kill -TERM <pid>                       # readyz → 503 at once; in-flight request finishes; exit code 0
+curl -si localhost:3000/health/ready        # 200 + {"status":"up","checks":{...}}, Cache-Control: no-store
+kill -TERM <pid>                       # health/ready → 503 at once; in-flight request finishes; exit code 0
 kill -TERM <pid> <pid>                 # second signal ignored
 curl -si localhost:3000/nope           # application/problem+json, code not_found, requestId == X-Request-Id
 ```
@@ -62,7 +62,7 @@ Load proofs that are not e2e rows (T112). Run them against a staging copy of one
 ### SC-002 - rolling restart loop (no accepted request dropped)
 
 - [ ] Start steady load: a constant-arrival-rate k6 scenario (adapt `packages/backend/scripts/load-tests/product-detail.test.js`) at ~50 % of measured capacity, requests with `Connection: keep-alive`.
-- [ ] Repeat 20 times: `kill -TERM <pid>` the instance, wait for exit, start it again, wait for `/startupz` 200, 30 s apart. (Containers: `docker stop -t 45 <name>` then `docker start`.)
+- [ ] Repeat 20 times: `kill -TERM <pid>` the instance, wait for exit, start it again, wait for `/health/startup` 200, 30 s apart. (Containers: `docker stop -t 45 <name>` then `docker start`.)
 - [ ] Pass: the load tool reports 0 connection errors and 0 `5xx` other than refusals by the load balancer for requests sent while the instance was draining; every exit code is `0`; every stop finishes within the 25 s hard timeout (45 s container grace).
 - [ ] Also confirm in the logs: one `forced shutdown` line means a failure of this proof.
 
@@ -70,12 +70,12 @@ Load proofs that are not e2e rows (T112). Run them against a staging copy of one
 
 - [ ] Find capacity: ramp the same scenario until event-loop p99 (`nodejs_eventloop_lag_p99_ms`) first exceeds 200 ms; note the request rate `C`.
 - [ ] Run a constant `2 × C` for 5 minutes.
-- [ ] Pass: admitted requests p99 < 300 ms; every refusal is `503` with `Retry-After` 1-3 (`http_requests_shed_total` > 0); `/livez`, `/readyz`, `/startupz` polled every second never answer `503 service_overloaded`.
+- [ ] Pass: admitted requests p99 < 300 ms; every refusal is `503` with `Retry-After` 1-3 (`http_requests_shed_total` > 0); `/health/live`, `/health/ready`, `/health/startup` polled every second never answer `503 service_overloaded`.
 
 ### SC-004 - 60 s database outage keeps readiness green
 
 - [ ] Under light load, stop Postgres (`docker stop marketplace_test_db` or the staging equivalent) for 60 s, then start it again.
-- [ ] Pass: every instance's `/readyz` stays `200` with `checks.postgres: "down"` (`health_check_up{check="postgres"}` = 0, `platform_ready` = 1); database-backed routes answer fast `503 database_unavailable` with `Retry-After`; no instance is replaced by the orchestrator; routes recover within one `/readyz` cache TTL (2 s) of the database returning.
+- [ ] Pass: every instance's `/health/ready` stays `200` with `checks.postgres: "down"` (`health_check_up{check="postgres"}` = 0, `platform_ready` = 1); database-backed routes answer fast `503 database_unavailable` with `Retry-After`; no instance is replaced by the orchestrator; routes recover within one `/health/ready` cache TTL (2 s) of the database returning.
 
 ### SC-008 - context and logging overhead below 0.5 ms p99
 

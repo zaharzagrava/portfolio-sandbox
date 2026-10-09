@@ -17,7 +17,7 @@ Every later feature needs the same plumbing: knowing *who/which shop* a request 
 | RFC 9457 Problem Details with stable error codes; safe messages (no stack/SQL leak) | 04/01 §3, 05/01 §5, 02/04 §3 |
 | Error taxonomy: operational vs programmer errors; `unhandledRejection` → crash + restart | 02/04 §1–2 |
 | Graceful shutdown sequence: readiness=false → stop accepting → drain HTTP (keep-alive close) → stop Kafka consumers after commit → close pools → exit; hard timeout | 02/04 §4, 08/01 |
-| `/livez` (process only, never DB) and `/readyz` (DB/Redis/Kafka with nuanced rules) | 08/01 §1–3 |
+| `/health/live` (process only, never DB) and `/health/ready` (DB/Redis/Kafka with nuanced rules) | 08/01 §1–3 |
 | Event-loop-lag monitoring (`monitorEventLoopDelay`) as metric + **load shedding** middleware (503 + Retry-After when lag > threshold) | 02/01 §3, 06/03 §5 |
 | Outbound HTTP client: per-call timeouts (AbortSignal.timeout), keep-alive agent (undici), retry with exponential backoff + full jitter + retry budget, only for idempotent calls | 06/03 §1–2, 02/01 §7 |
 | Bounded concurrency helper (promise pool) for fan-out calls | 01/01 §5 |
@@ -30,7 +30,7 @@ Every later feature needs the same plumbing: knowing *who/which shop* a request 
 - [x] `libs/common/src/context/` — `ClsModule` setup, `RequestContext` typed accessor, interceptor populating userId/shopId.
 - [x] Sequelize CLS transactions (`Sequelize.useCLS` with cls-hooked namespace or explicit `TransactionHost` via `@nestjs-cls/transactional` + sequelize adapter). Pick one, log in DOUBTS.
 - [x] `ProblemDetails` builder + update `AllExceptionsFilter` to emit `application/problem+json` with `type`, `title`, `status`, `code`, `traceId`.
-- [x] `libs/common/src/health/` — `HealthModule` with `/livez`, `/readyz`; readiness flips to false on SIGTERM.
+- [x] `libs/common/src/health/` — `HealthModule` with `/health/live`, `/health/ready`; readiness flips to false on SIGTERM.
 - [x] `libs/common/src/lifecycle/graceful-shutdown.service.ts` — ordered shutdown hooks registry + hard-kill timeout; wire in `core`, `sse-gateway`, `payment-processor` mains (`enableShutdownHooks`).
 - [x] `libs/common/src/load-shedding/` — event-loop-lag sampler + middleware; metric `nodejs_eventloop_lag_p99`.
 - [x] `libs/common/src/http-client/` — `ResilientHttpClient` (timeouts, retries w/ jitter, retry budget, keep-alive, OTEL spans).
@@ -38,7 +38,7 @@ Every later feature needs the same plumbing: knowing *who/which shop* a request 
 - [x] Shared-logic specs: problem-details mapping through a real Nest app; shutdown hook ordering; `allocate()` sums exactly; promise pool concurrency bound.
 
 ## Tests
-Unit (run). e2e: `/readyz` returns 503 during shutdown (written).
+Unit (run). e2e: `/health/ready` returns 503 during shutdown (written).
 
 ## FE visualisation (phase 2)
 None directly; Problem Details shape goes to `packages/contracts/problem.ts`.
@@ -51,7 +51,7 @@ None directly; Problem Details shape goes to `packages/contracts/problem.ts`.
 
 ## Implementation notes (2026-10-01)
 - `libs/common/src/context/` — `RequestContextModule` (nestjs-cls, request id honouring upstream `x-request-id`), `RequestContext`, `sequelize-cls.ts` (AsyncLocalStorage-backed namespace for `Sequelize.useCLS`), `TransactionRunner` (`run`, `runSerializable` with 40001/40P01 retry), `TransactionModule`.
-- `libs/common/src/health/` — `/livez` (process only), `/readyz` (critical vs non-critical checks + shutdown flag), outside the `/api` prefix.
+- `libs/common/src/health/` — `/health/live` (process only), `/health/ready` (critical vs non-critical checks + shutdown flag), outside the `/api` prefix.
 - `libs/common/src/lifecycle/` — `ShutdownRegistry` (ordered tasks with timeouts), `installGracefulShutdown` (readiness → drain delay → close idle sockets → `app.close()` → hard timeout; keepAlive 65 s > ALB 60 s), `installCrashHandlers`.
 - `libs/common/src/load-shedding/` — `EventLoopMonitor` (p99 lag gauge `nodejs_eventloop_lag_p99_ms`) + `LoadSheddingMiddleware` (503 + Retry-After, Problem Details).
 - `libs/common/src/http-client/` — `ResilientHttpClient` (undici keep-alive pool, per-attempt timeout, full-jitter retries honouring Retry-After, `RetryBudget`, OTel spans + trace propagation).

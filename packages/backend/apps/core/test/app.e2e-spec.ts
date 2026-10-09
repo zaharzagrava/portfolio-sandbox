@@ -17,18 +17,18 @@ describe('Health (e2e)', () => {
     await app.close();
   });
 
-  it('GET /livez is always 200', async () => {
-    await request(app.getHttpServer()).get('/livez').expect(200);
+  it('GET /health/live is always 200', async () => {
+    await request(app.getHttpServer()).get('/health/live').expect(200);
   });
 
-  it('GET /readyz is 200 with Postgres up and 503 once shutdown starts', async () => {
-    const ready = await request(app.getHttpServer()).get('/readyz').expect(200);
+  it('GET /health/ready is 200 with Postgres up and 503 once shutdown starts', async () => {
+    const ready = await request(app.getHttpServer()).get('/health/ready').expect(200);
     expect(ready.body.checks.postgres).toBe('up');
 
     app.get(ReadinessService).markShuttingDown();
 
     const draining = await request(app.getHttpServer())
-      .get('/readyz')
+      .get('/health/ready')
       .expect(503);
     expect(draining.body.shuttingDown).toBe(true);
   });

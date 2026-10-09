@@ -174,7 +174,7 @@ after setting `.specify/feature.json` to its directory.
 # Backend capabilities (S): real test stores for the e2e specs
 docker compose -f docker-compose.test.yaml up -d
 
-# Web (W) and journeys (J): also the local dev stack. The script checks GET $API_URL/readyz before each W/J.
+# Web (W) and journeys (J): also the local dev stack. The script checks GET $API_URL/health/ready before each W/J.
 # each in its own terminal: infra-setup and dev-monolith keep running in the foreground
 moon run infra-setup                              # dev stores (docker compose up), then schemas and topics
 moon run dev-monolith                             # API + workers + projectors on http://localhost:8000 (watch mode)

@@ -219,9 +219,9 @@ export function configureHttpApp(
   if (globalPrefix !== false) {
     app.setGlobalPrefix(globalPrefix, {
       exclude: [
-        { path: 'livez', method: RequestMethod.GET },
-        { path: 'startupz', method: RequestMethod.GET },
-        { path: 'readyz', method: RequestMethod.GET },
+        { path: 'health/live', method: RequestMethod.GET },
+        { path: 'health/startup', method: RequestMethod.GET },
+        { path: 'health/ready', method: RequestMethod.GET },
         { path: '.well-known/jwks.json', method: RequestMethod.GET },
       ],
     });

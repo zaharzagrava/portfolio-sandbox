@@ -29,7 +29,7 @@ Format: `- [TAG] question → default → why`. BREAKING first, then CONTRACT, t
 - [CONTRACT] W02's `<SearchBox variant="navbar" />` renders nothing on `/` and `/search` and closes with Escape; W03's `<CartBadge />`, `<NotificationsPopover />`; W05's `<AssistantLauncher />`, optional `<ChatNavBadge />` → named exactly as those specs provide; W07 adds no props.
 - [CONTRACT] W01 asks W07 for the `/account` → `/account/security` redirect and `Referrer-Policy: no-referrer` on `/reset-password` → both kept in `next.config.ts`/headers module by W07 (AS-19).
 - [CONTRACT] Payment provider hosts on `/checkout/pay/*` only (W03) → configuration `PAYMENT_PROVIDER_HOSTS`, exact hosts, added to `script-src`, `frame-src`, `connect-src` on that path (AS-18) → W03 supplies the host list per provider.
-- [CONTRACT] `/healthz` for the ALB/Kubernetes probe → web route handler, no backend call → infra capability must route to it (outside W07's code).
+- [CONTRACT] `/health` for the ALB/Kubernetes probe → web route handler, no backend call → infra capability must route to it (outside W07's code).
 
 ## LOCAL
 

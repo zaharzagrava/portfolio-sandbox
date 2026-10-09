@@ -27,18 +27,18 @@ export async function startManagementListener(
     const path = (req.url ?? '').split('?')[0];
     if (req.method !== 'GET')
       return send(405, { status: 'method_not_allowed' });
-    if (path === '/livez') {
+    if (path === '/health/live') {
       const { alive, failing } = liveness.report();
       return send(alive ? 200 : 503, {
         status: alive ? 'ok' : 'failing',
         ...(alive ? {} : { failing }),
       });
     }
-    if (path === '/startupz') {
+    if (path === '/health/startup') {
       const ok = startup.isStarted();
       return send(ok ? 200 : 503, { status: ok ? 'started' : 'starting' });
     }
-    if (path === '/readyz') {
+    if (path === '/health/ready') {
       readiness.report().then(
         (report) => send(report.ready ? 200 : 503, report),
         () => send(503, { status: 'failing' }),

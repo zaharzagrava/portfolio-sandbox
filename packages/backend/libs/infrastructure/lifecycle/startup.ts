@@ -48,7 +48,7 @@ function fatal(message: string, exit: (code: number) => void): void {
 
 /**
  * Startup order (S54 FR-043): validate configuration → create the app → add warm-ups (dependencies retried with
- * jittered backoff) → listen → `/startupz` turns `200` when every warm-up finished. Invalid configuration or an
+ * jittered backoff) → listen → `/health/startup` turns `200` when every warm-up finished. Invalid configuration or an
  * exceeded deadline exits `1`. Migrations and schema sync never run here (constitution III.11).
  */
 export async function bootstrapApp<App extends INestApplicationContext>(

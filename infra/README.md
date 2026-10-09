@@ -10,7 +10,7 @@ infra/
   envs/demo, envs/prod  backend + providers + sizing → module "stack"
   modules/
     network             VPC, 2 AZ, public/private/data subnets, NAT (1 or per-AZ), S3/DynamoDB gateway endpoints, interface endpoints (prod)
-    alb                 HTTPS ALB, target group per HTTP service, path routing, /readyz health checks, Cloudflare-only ingress (prod)
+    alb                 HTTPS ALB, target group per HTTP service, path routing, /health/ready health checks, Cloudflare-only ingress (prod)
     asg_service         launch template (AL2023 arm64, IMDSv2, encrypted gp3), mixed On-Demand/Spot ASG, user-data (Docker,
                         CodeDeploy agent, ADOT), drain lifecycle hook, instance refresh, target tracking, CodeDeploy blue/green group
     rds                 Postgres 17 (PostGIS/pgvector), managed master secret, Multi-AZ / replica / RDS Proxy toggles, deletion protection (prod)
@@ -28,7 +28,7 @@ infra/
     github_oidc         OIDC provider, build role (ECR push, artifacts), deploy role (only from the GitHub environment)
     confluent           Kafka cluster (Basic for demo, Standard multi-zone for prod), service account, API key, all topics
     edge                Cloudflare DNS (proxied API, CDN CNAME), Worker routes for packages/edge-be, Upstash Redis
-  codedeploy/           appspec + hooks (pull, drain-aware stop, start, /readyz validation)
+  codedeploy/           appspec + hooks (pull, drain-aware stop, start, /health/ready validation)
   docker/node/          the app Dockerfile (O-02)
   observability/        local Prometheus/Alertmanager/Loki/Alloy/Grafana/Collector configs (SD-33)
 ```

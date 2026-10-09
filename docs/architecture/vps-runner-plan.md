@@ -9,8 +9,13 @@ Run `scripts/sdd/implement-specs.sh` for up to 5 hours at a time on a rented mac
 the laptop. The machine exists only while the run does. It stops by itself when the work is done, when the time budget
 is used, or when something is wrong, and it tells the owner which of those happened.
 
-Non-goals: parallel agents (tokens, not wall-clock, are the constraint), running on `master`, running the dev stack
-for the web and journey specs (those come later, once the backend specs are green).
+Non-goals: parallel agents (tokens, not wall-clock, are the constraint) and running on `master`.
+
+The VM runs both stacks, the test stack (e2e specs) and the dev stack plus the web app (web specs, Playwright), so the
+front-end work can also run unattended. Measured on the laptop: the test stack's 9 containers use 4.8 GiB; the dev stack
+is a similar set (Elasticsearch capped at a 512 MB heap, Scylla at 1 GB) plus ClamAV, and the monolith, the Next.js dev
+server, Chromium and `tsc` add a few GiB, so 32 GB should fit with room. Verify in Phase 3 with `docker stats` and
+`free -h`; if a run is ever OOM-killed, step up to the 64 GB `CCX43` instead of trimming tests.
 
 ## Decision: ephemeral VM from a snapshot
 
@@ -48,13 +53,26 @@ laptop                                  Hetzner project "sdd-runner" (its own pr
                                               3. scripts/sdd/implement-specs.sh   (deadline, watchdog, wait-for-reset)
                                               4. push branch sdd/auto, write run-report.md
                                               5. notify (ntfy)  → hcloud server delete self
+                                                 (at a CHECKPOINT the VM is NOT deleted: see below)
 ```
+
+### Checkpoints: the VM waits for you
+
+The order file `by-flow` has checkpoints (`!STOP` lines). At one, the loop pauses and the monitor sends a phone
+notification ("Browser flow ready: ..."). The VM is kept alive for `CHECKPOINT_TTL` (default 6 h) so you can test the
+flow by hand: an SSH tunnel to the VM exposes the web app and the API (`ssh -L 3000:localhost:3000 -L 8000:localhost:8000`),
+nothing else is opened to the internet. Meanwhile it costs the hourly rate (about $0.22-0.33/h). When you are done,
+resume the run on the same VM (`tmux attach`, re-run the same command; the loop passes the checkpoint). If the TTL runs
+out first, the VM pushes the branch and deletes itself, and the next run starts from the pushed branch and the snapshot.
+There is no scripted flow walk (`scripts/sdd/checkpoints/<label>.sh`) for now: the checkpoint's own check is the full
+e2e sweep, and you are the flow test.
 
 ### The snapshot (`sdd-base-vN`), built once and rebuilt when the stack changes
 
 - Ubuntu LTS, Docker + compose plugin, Node 24, pnpm 12, moon, Claude Code CLI, tmux, `hcloud`, `jq`, `gh` optional.
-- Repo cloned at `/opt/sdd/repo`, `pnpm install` done, `docker compose -f docker-compose.test.yaml pull` done
-  (images baked in), `packages/backend/.env.test` in place.
+- Repo cloned at `/opt/sdd/repo`, `pnpm install` done, the images of both compose files pulled (baked in),
+  `packages/backend/.env.test` and a dev `.env` in place, Playwright's Chromium installed (`playwright install --with-deps chromium`;
+  runs headless, no display needed).
 - No secrets in the snapshot.
 
 ### Secrets (passed through cloud-init `user_data` at create time, from a local file that is never committed)
@@ -117,7 +135,7 @@ deadline, the pass limits, and the plan's own usage window.
 | 2 | Hetzner account, project, token, limit increase; build the snapshot; write `run-remote.sh` | `run-remote.sh --dry-run` creates and deletes a VM |
 | 3 | Trial: `MAX_SPECS=2`, 2-hour deadline, watch it live over SSH | Branch pushed, report written, VM deleted, notification received |
 | 4 | Nightly runs, 5-hour deadline | Morning routine below |
-| 5 | Add the dev stack on the VM for W and J specs | Only after the backend specs are green |
+| 5 | Front-end on the VM: dev stack, monolith, Next.js and Playwright run next to the test stack; first run reaches the `buy-ui` checkpoint | Notification arrives, the app is reachable over the SSH tunnel, Playwright passes |
 
 ## Morning routine
 

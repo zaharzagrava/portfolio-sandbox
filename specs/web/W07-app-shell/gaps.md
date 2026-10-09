@@ -26,7 +26,7 @@ The implementation agent's to-do list. Paths are under `packages/web` unless sta
 - `next.config.ts:11` comment says "experimental Partial Prerendering" — wrong once the nonce policy is on (Q1); `cacheComponents` stays for data caching. Check every page for runtime-data-outside-Suspense errors after the change.
 - `next.config.ts:23-24` wildcard `*.amazonaws.com` and `images.unsplash.com`; `:15` hard-coded `allowedOrigins` (AS-22, FR-063).
 - No central configuration module (`lib/config.ts`): env is read ad hoc (`next.config.ts:4-8`, `lib/api/client.ts` `NEXT_PUBLIC_API_URL`, `lib/api/catalog.ts` `serverApiUrl`) (FR-063).
-- No `app/robots.ts`, no `/healthz` route handler, no `/widget/v1/app.js` serving, no violation report endpoint reference (FR-024, FR-052, FR-070, FR-071).
+- No `app/robots.ts`, no `/health` route handler, no `/widget/v1/app.js` serving, no violation report endpoint reference (FR-024, FR-052, FR-070, FR-071).
 - `lib/api/client.ts:4`: `NEXT_PUBLIC_API_URL || 'http://localhost:3000'` absolute origin, and `:15-23` an in-memory `accessToken` with `setAccessToken` (browser JS holds a token; violates VI.2, AS-37). W01 owns the replacement (cookie session via BFF, relative URLs, `csrfHeaders` from `__Host-bff-csrf`); W07's CSP `connect-src 'self'` will block any absolute origin, so it must be gone first.
 
 ## C. Legal pages and developer docs
