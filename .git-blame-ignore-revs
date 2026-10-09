@@ -1,0 +1,3 @@
+# Mechanical formatting commits (git blame skips them; GitHub honours this file automatically)
+# git config blame.ignoreRevsFile .git-blame-ignore-revs   (once per clone, for local git blame)
+9d0830a615f50c260c17157011df0e36e446696c  # Format the backend once with Prettier

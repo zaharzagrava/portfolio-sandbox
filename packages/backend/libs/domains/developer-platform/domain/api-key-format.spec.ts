@@ -24,8 +24,10 @@ describe('API key format', () => {
     const stored = hashSecret(secret, 'pepper');
     expect(secretMatches(secret, stored, 'pepper')).toBe(true);
     expect(secretMatches(secret, stored, 'other-pepper')).toBe(false);
-    expect(secretMatches(`${secret.slice(0, -1)}x`, stored, 'pepper')).toBe(
-      false,
-    );
+    // a different last character: a fixed 'x' equals the original one time in 62
+    const last = secret.endsWith('x') ? 'y' : 'x';
+    expect(
+      secretMatches(`${secret.slice(0, -1)}${last}`, stored, 'pepper'),
+    ).toBe(false);
   });
 });
