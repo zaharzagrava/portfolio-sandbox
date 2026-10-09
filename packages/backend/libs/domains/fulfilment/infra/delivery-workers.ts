@@ -23,11 +23,19 @@ import {
 import { CourierLocationsReported } from '../application/events/courier-events';
 import { demandKey, geoKey, surgeKey } from './courier-keys';
 
+import { z } from 'zod';
+import { declareJobType } from '@app/infrastructure/jobs/job-type-registry';
+
 declare module '@app/infrastructure/jobs/job-types' {
   interface JobPayloads {
     'delivery.compute-surge': Record<string, never>;
   }
 }
+
+declareJobType({
+  name: 'delivery.compute-surge',
+  contract: z.object({}),
+});
 
 export const CITIES_KEY = 'delivery:cities';
 const TRACK_TTL_DAYS = 90;

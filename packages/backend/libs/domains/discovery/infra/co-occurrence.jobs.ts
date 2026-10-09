@@ -9,6 +9,9 @@ import {
   NEIGHBOURS,
 } from './recommendation-keys';
 
+import { z } from 'zod';
+import { declareJobType } from '@app/infrastructure/jobs/job-type-registry';
+
 declare module '@app/infrastructure/jobs/job-types' {
   interface JobPayloads {
     'recommendations.build-bought-together': {
@@ -17,6 +20,14 @@ declare module '@app/infrastructure/jobs/job-types' {
     };
   }
 }
+
+declareJobType({
+  name: 'recommendations.build-bought-together',
+  contract: z.object({
+    days: z.number().optional(),
+    buckets: z.number().optional(),
+  }),
+});
 
 /** Pairs seen in fewer orders than this are noise, not a signal. */
 const MIN_CO_ORDERS = 3;

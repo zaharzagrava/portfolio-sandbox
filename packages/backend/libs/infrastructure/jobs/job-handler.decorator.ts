@@ -1,18 +1,15 @@
 import { SetMetadata } from '@nestjs/common';
+import type { JobHandlerOptions } from './handler-options';
 import { JobType } from './job-types';
 
-export const JOB_HANDLER_METADATA = 'jobs:handler';
+export type { JobHandlerOptions } from './handler-options';
 
-export interface JobHandlerOptions {
-  /** Lease length; the worker heartbeats at half of it. */
-  leaseMs?: number;
-  /** Per-type concurrency cap on one worker instance (bulkhead). */
-  concurrency?: number;
-}
+export const JOB_HANDLER_METADATA = 'jobs:handler';
 
 /**
  * Marks a provider method as the handler of a job type. Discovered at boot
  * by JobRegistry, so domains own their handlers without editing the worker.
+ * Options are validated at boot (handler-options.ts); invalid ones abort startup.
  */
 export const JobHandler = (type: JobType, options: JobHandlerOptions = {}) =>
   SetMetadata(JOB_HANDLER_METADATA, { type, ...options });

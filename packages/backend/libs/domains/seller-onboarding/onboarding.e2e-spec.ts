@@ -16,6 +16,7 @@ import { AuthApiModule } from '@app/domains/identity';
 import { TaskQueue } from '@app/infrastructure/sqs/task-queue.port';
 import { ObjectStorage } from '@app/infrastructure/storage/object-storage.port';
 import { RedisService } from '@app/infrastructure/redis/redis.service';
+import { JobsTestProbe } from '@app/infrastructure/jobs';
 import {
   ShopModel as Shop,
   ShopMembershipModel as ShopMembership,
@@ -361,12 +362,9 @@ describe('Seller onboarding: staged questionnaire + KYC extraction (e2e)', () =>
       verificationStatus: 'VERIFIED',
       payoutsEnabled: true,
     });
-    const [job] = await db.query<{ runAt: Date }>(
-      `SELECT "runAt" FROM "Job" WHERE type = 'onboarding.purge-documents' AND payload->>'shopId' = :shopId`,
-      {
-        type: QueryTypes.SELECT,
-        replacements: { shopId: s.shopId },
-      },
+    const [job] = await new JobsTestProbe(db).find(
+      'onboarding.purge-documents',
+      { shopId: s.shopId },
     );
     expect(new Date(job.runAt).getTime()).toBeGreaterThan(
       Date.now() + 29 * 86_400_000,

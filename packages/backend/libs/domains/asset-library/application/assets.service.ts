@@ -14,11 +14,19 @@ import { ApiConfigService } from '@app/common/config';
 import { ObjectStorage } from '@app/infrastructure/storage/object-storage.port';
 import { JobHandler } from '@app/infrastructure/jobs/job-handler.decorator';
 
+import { z } from 'zod';
+import { declareJobType } from '@app/infrastructure/jobs/job-type-registry';
+
 declare module '@app/infrastructure/jobs/job-types' {
   interface JobPayloads {
     'assets.gc-chunks': Record<string, never>;
   }
 }
+
+declareJobType({
+  name: 'assets.gc-chunks',
+  contract: z.object({}),
+});
 
 const chunkKey = (shopId: string, hash: string) =>
   `assets/${shopId}/chunks/${hash}`;

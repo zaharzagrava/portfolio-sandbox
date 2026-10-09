@@ -5,11 +5,19 @@ import { JobHandler } from '@app/infrastructure/jobs/job-handler.decorator';
 import { JobsService } from '@app/infrastructure/jobs/jobs.service';
 import { StripeService } from '@app/infrastructure/stripe/stripe.service';
 
+import { z } from 'zod';
+import { declareJobType } from '@app/infrastructure/jobs/job-type-registry';
+
 declare module '@app/infrastructure/jobs/job-types' {
   interface JobPayloads {
     'payments.reconcile-daily': { day?: string };
   }
 }
+
+declareJobType({
+  name: 'payments.reconcile-daily',
+  contract: z.object({ day: z.string().optional() }),
+});
 
 type IssueKind =
   'MISSING_IN_LEDGER' | 'MISSING_AT_PROVIDER' | 'AMOUNT_MISMATCH';

@@ -1,16 +1,25 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { DiscoveryService, MetadataScanner, Reflector } from '@nestjs/core';
+import { JOB_HANDLER_METADATA } from './job-handler.decorator';
 import {
-  JOB_HANDLER_METADATA,
   JobHandlerOptions,
-} from './job-handler.decorator';
+  ResolvedHandlerOptions,
+  resolveHandlerOptions,
+} from './handler-options';
+import { getJobTypeDeclaration } from './job-type-registry';
 import { JobContext, JobType } from './job-types';
 
-export interface RegisteredHandler extends Required<JobHandlerOptions> {
-  type: JobType;
+export interface RegisteredHandler extends ResolvedHandlerOptions {
+  /** `Class.method` of the provider, to tell a re-discovered provider from a second one. */
+  provider: string;
   run: (payload: unknown, ctx: JobContext) => Promise<void>;
 }
 
+/**
+ * Discovers every `@JobHandler` at boot. Startup fails, naming the type and the cause, for: a bad type name or option, a
+ * type without a `declareJobType()`, and a second provider for the same type. The same provider found again (a module
+ * imported twice in a monolith) is ignored.
+ */
 @Injectable()
 export class JobRegistry implements OnModuleInit {
   private readonly logger = new Logger(JobRegistry.name);
@@ -38,16 +47,33 @@ export class JobRegistry implements OnModuleInit {
           method,
         );
         if (!meta) continue;
-        if (this.handlers.has(meta.type)) {
-          this.logger.debug(
-            `Ignoring duplicate @JobHandler for "${meta.type}" (likely due to monolith imports)`,
+
+        const provider = `${instance.constructor.name}.${methodName}`;
+        const existing = this.handlers.get(meta.type);
+        if (existing) {
+          if (existing.provider === provider) {
+            this.logger.debug(
+              `Ignoring re-discovered @JobHandler for "${meta.type}" (${provider})`,
+            );
+            continue;
+          }
+          throw new Error(
+            `duplicate @JobHandler for "${meta.type}": ${existing.provider} and ${provider}`,
           );
-          continue;
         }
+
+        const declaration = getJobTypeDeclaration(meta.type);
+        if (!declaration)
+          throw new Error(
+            `@JobHandler("${meta.type}") on ${provider} has no declareJobType() for that type`,
+          );
+        const options = resolveHandlerOptions(meta.type, {
+          ...meta,
+          leaseMs: meta.leaseMs ?? declaration.leaseMs,
+        });
         this.handlers.set(meta.type, {
-          type: meta.type,
-          leaseMs: meta.leaseMs ?? 60_000,
-          concurrency: meta.concurrency ?? 10,
+          ...options,
+          provider,
           run: (payload, ctx) => method.call(instance, payload, ctx),
         });
       }

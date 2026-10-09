@@ -20,11 +20,19 @@ import {
   SubscriptionStatusChanged,
 } from '../application/events/billing-events';
 
+import { z } from 'zod';
+import { declareJobType } from '@app/infrastructure/jobs/job-type-registry';
+
 declare module '@app/infrastructure/jobs/job-types' {
   interface JobPayloads {
     'billing.run': Record<string, never>;
   }
 }
+
+declareJobType({
+  name: 'billing.run',
+  contract: z.object({}),
+});
 
 /** Dunning: retry 1, 3 and 7 days after the first failure, then give up (lesson 10/07 #24). */
 export const DUNNING_DAYS = [1, 3, 7];

@@ -3,12 +3,24 @@ import { JobHandler } from '@app/infrastructure/jobs/job-handler.decorator';
 import { JobsService } from '@app/infrastructure/jobs/jobs.service';
 import { VoteService } from '../application/vote.service';
 
+import { z } from 'zod';
+import { declareJobType } from '@app/infrastructure/jobs/job-type-registry';
+
 declare module '@app/infrastructure/jobs/job-types' {
   interface JobPayloads {
     'discussions.flush-votes': Record<string, never>;
     'discussions.recount': { targetId: string };
   }
 }
+
+declareJobType({
+  name: 'discussions.flush-votes',
+  contract: z.object({}),
+});
+declareJobType({
+  name: 'discussions.recount',
+  contract: z.object({ targetId: z.string() }),
+});
 
 @Injectable()
 export class DiscussionsJobs implements OnApplicationBootstrap {

@@ -12,6 +12,7 @@ import {
 } from '@app/infrastructure/sqs/task-queue.port';
 import { RateLimiterService } from '@app/infrastructure/rate-limit/rate-limiter.service';
 import { JobHandler } from '@app/infrastructure/jobs/job-handler.decorator';
+import '../application/notification-delivery.job-types';
 import { SuppressionService } from '../application/suppression.service';
 import { DeliveryLogService } from './delivery-log.service';
 import { NotificationPreferencesService } from '../application/preferences.service';

@@ -4,11 +4,19 @@ import { QueryTypes, Sequelize } from 'sequelize';
 import { JobHandler } from '@app/infrastructure/jobs/job-handler.decorator';
 import { JobsService } from '@app/infrastructure/jobs/jobs.service';
 
+import { z } from 'zod';
+import { declareJobType } from '@app/infrastructure/jobs/job-type-registry';
+
 declare module '@app/infrastructure/jobs/job-types' {
   interface JobPayloads {
     'tenancy.backfill-shops': { batchSize?: number };
   }
 }
+
+declareJobType({
+  name: 'tenancy.backfill-shops',
+  contract: z.object({ batchSize: z.number().optional() }),
+});
 
 /**
  * Expand/contract backfill (lesson 03/03 §1): turns every legacy seller (User

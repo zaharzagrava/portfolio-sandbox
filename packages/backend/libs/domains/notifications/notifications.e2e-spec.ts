@@ -1,6 +1,6 @@
 import { INestApplication, Module } from '@nestjs/common';
 import { getConnectionToken, SequelizeModule } from '@nestjs/sequelize';
-import { QueryTypes, Sequelize } from 'sequelize';
+import { Sequelize } from 'sequelize';
 import request from 'supertest';
 import { generateKeyPairSync, createSign } from 'node:crypto';
 import { v4 } from 'uuid';
@@ -11,6 +11,7 @@ import { SeedsService } from '@app/test/seeds/seeds.service';
 import { AuthApiModule } from '@app/domains/identity';
 import { RateLimitModule } from '@app/infrastructure/rate-limit/rate-limit.module';
 import { ApiConfigService } from '@app/common/config';
+import { JobsTestProbe } from '@app/infrastructure/jobs';
 import { ShopMembershipModel as ShopMembership } from '@app/domains/tenancy';
 import { OrderPaid } from '@app/domains/orders';
 import { AuctionLeaderChanged } from '@app/domains/auctions';
@@ -222,17 +223,16 @@ describe('Notifications (e2e)', () => {
       }),
     ]);
 
-    const [job] = await app
-      .get<Sequelize>(getConnectionToken())
-      .query<{ runAt: Date; payload: { message: DeliveryMessage } }>(
-        `SELECT "runAt", payload FROM "Job" WHERE type = 'notifications.deliver' AND payload->'message'->>'userId' = :userId`,
-        { type: QueryTypes.SELECT, replacements: { userId: u.id } },
-      );
-    expect(job.payload.message).toMatchObject({
-      channel: 'push',
-      type: 'auction.outbid',
-      title: "You've been outbid",
-    });
+    const [job] = await new JobsTestProbe(
+      app.get<Sequelize>(getConnectionToken()),
+    ).find('notifications.deliver', { message: { userId: u.id } });
+    expect((job.payload as { message: DeliveryMessage }).message).toMatchObject(
+      {
+        channel: 'push',
+        type: 'auction.outbid',
+        title: "You've been outbid",
+      },
+    );
     expect(
       Math.abs(new Date(job.runAt).getTime() - end.getTime()),
     ).toBeLessThan(61_000);

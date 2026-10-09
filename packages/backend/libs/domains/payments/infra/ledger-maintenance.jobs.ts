@@ -5,12 +5,24 @@ import { metrics } from '@opentelemetry/api';
 import { JobHandler } from '@app/infrastructure/jobs/job-handler.decorator';
 import { JobsService } from '@app/infrastructure/jobs/jobs.service';
 
+import { z } from 'zod';
+import { declareJobType } from '@app/infrastructure/jobs/job-type-registry';
+
 declare module '@app/infrastructure/jobs/job-types' {
   interface JobPayloads {
     'ledger.ensure-partitions': { monthsAhead?: number };
     'ledger.verify-invariants': Record<string, never>;
   }
 }
+
+declareJobType({
+  name: 'ledger.ensure-partitions',
+  contract: z.object({ monthsAhead: z.number().optional() }),
+});
+declareJobType({
+  name: 'ledger.verify-invariants',
+  contract: z.object({}),
+});
 
 @Injectable()
 export class LedgerMaintenanceJobs implements OnApplicationBootstrap {

@@ -8,6 +8,7 @@ import { Environment, Environments } from '@app/common/types';
 import { isSecretKey } from '@app/common/logging/redaction';
 import { ConfigRules } from './config-rules';
 import { eventsConfigKeys } from './events-config';
+import { jobsConfigKeys } from './jobs-config';
 
 dotenv.config({
   /**
@@ -524,6 +525,7 @@ export class ApiConfigService {
             name: 'CLAMAV_HOST',
           },
           ...eventsConfigKeys,
+          ...jobsConfigKeys,
           cassandra_password: {
             verify: joi.string().optional().allow(''),
             name: 'CASSANDRA_PASSWORD',

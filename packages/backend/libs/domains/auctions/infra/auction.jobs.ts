@@ -13,11 +13,19 @@ import { CLOSE_AUCTION } from './place-bid.lua';
 import { ACTIVE_AUCTIONS_KEY, stateKey } from '../application/auction.service';
 import { AuctionClosed } from '../application/events/auction-events';
 
+import { z } from 'zod';
+import { declareJobType } from '@app/infrastructure/jobs/job-type-registry';
+
 declare module '@app/infrastructure/jobs/job-types' {
   interface JobPayloads {
     'auctions.second-chance': { auctionId: string };
   }
 }
+
+declareJobType({
+  name: 'auctions.second-chance',
+  contract: z.object({ auctionId: z.string() }),
+});
 
 /** Winners get 48 h to pay before the runner-up gets a second-chance offer. */
 export const WINNER_PAYMENT_WINDOW_MS = 48 * 3_600_000;

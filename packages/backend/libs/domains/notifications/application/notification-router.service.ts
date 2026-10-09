@@ -18,12 +18,7 @@ import {
   Recipient,
 } from '../domain/types';
 
-declare module '@app/infrastructure/jobs/job-types' {
-  interface JobPayloads {
-    /** Quiet-hours delays longer than SQS's 15-minute max. */
-    'notifications.deliver': { queue: string; message: DeliveryMessage };
-  }
-}
+import './notification-delivery.job-types';
 
 /** Marketing frequency caps per user (transactional is never capped). */
 const MARKETING_CAPS: Partial<

@@ -10,12 +10,24 @@ import { LEDGER_ACCOUNTS, shopAccount } from '../domain/accounts';
 import { PayoutProvider } from './payout-provider.port';
 import { v5 as uuidv5 } from 'uuid';
 
+import { z } from 'zod';
+import { declareJobType } from '@app/infrastructure/jobs/job-type-registry';
+
 declare module '@app/infrastructure/jobs/job-types' {
   interface JobPayloads {
     'payouts.run-weekly': { periodStart?: string };
     'payouts.send': { payoutId: string };
   }
 }
+
+declareJobType({
+  name: 'payouts.run-weekly',
+  contract: z.object({ periodStart: z.string().optional() }),
+});
+declareJobType({
+  name: 'payouts.send',
+  contract: z.object({ payoutId: z.string() }),
+});
 
 const MIN_PAYOUT_MINOR = 10_00;
 const PAYOUTS_SENT = 'PAYOUTS_SENT';

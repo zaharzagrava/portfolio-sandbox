@@ -7,11 +7,7 @@ import { JobsService } from '@app/infrastructure/jobs/jobs.service';
 import { Answers, requiredDocuments } from '../domain/questionnaire';
 import { ShopVerified } from './events/onboarding-events';
 
-declare module '@app/infrastructure/jobs/job-types' {
-  interface JobPayloads {
-    'onboarding.purge-documents': { shopId: string };
-  }
-}
+import './onboarding-documents.job-types';
 
 /** Raw KYC files are kept this long after verification (disputes, audits), then deleted; extracted fields stay sealed. */
 export const RAW_DOCUMENT_RETENTION_DAYS = 30;

@@ -7,11 +7,19 @@ import { JobHandler } from '@app/infrastructure/jobs/job-handler.decorator';
 import { JobsService } from '@app/infrastructure/jobs/jobs.service';
 import { PRODUCT_VIEWS_COUNTER } from './product-cache';
 
+import { z } from 'zod';
+import { declareJobType } from '@app/infrastructure/jobs/job-type-registry';
+
 declare module '@app/infrastructure/jobs/job-types' {
   interface JobPayloads {
     'products.flush-view-counts': Record<string, never>;
   }
 }
+
+declareJobType({
+  name: 'products.flush-view-counts',
+  contract: z.object({}),
+});
 
 /**
  * Drains the write-behind view counter (SD-34, README #22) every 10 s into

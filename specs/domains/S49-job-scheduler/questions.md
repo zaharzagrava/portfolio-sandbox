@@ -56,3 +56,13 @@ Every open choice was resolved by the decision policy (most production-grade opt
 - [LOCAL] Admin list limit → default 50, max 100, keyset on creation time then id.
 - [LOCAL] `CronService` (every-replica ticker) → kept for pollers only; whether `identity/users.module.ts` still needs `CronModule` is for implementation to check and drop if unused.
 - [LOCAL] Offload beyond 5–10k jobs/s → documented next step, not built.
+
+## BLOCKER (implementation, found while writing `jobs-retention.e2e-spec.ts`)
+
+- **AS-89 (HOT update ratio ≥ 90%) cannot hold together with AS-88 / FR-050 on the current table design.** Measured on the test database (PostgreSQL 18.6): `UPDATE scratch SET status = 'RUNNING'` on a table with `CREATE INDEX ON t ("runAt") WHERE status = 'QUEUED'` produced 0 heap-only updates; the same update with no index that mentions `status` produced heap-only updates up to the free space of the page. The jobs e2e `S49 AS-89` row (500 claim-and-complete cycles, 1,000+ updates) measured exactly 0% heap-only. Cause: PostgreSQL treats every column that appears in an index key **or in a partial-index predicate** as indexed. Both halves of a cycle change such columns: the claim sets `status` (predicate of `Job_due_idx`, `Job_running_*_idx`, `Job_cron_active_idx`), `lockedUntil` (key of `Job_running_lease_idx`) and the completion sets `status` again. The claim path needs the partial `Job_due_idx ... WHERE status = 'QUEUED'` (AS-88: cost independent of finished history), so a claim can never be heap-only. The comment in `20261001110000-create-jobs.js` ("fillfactor 70 ... so status/lock updates are HOT updates") is therefore wrong for status changes; fillfactor 70 only helps updates of columns that no index mentions (`attempts`, `lastError`, `lockedBy`).
+- What I did: left the AS-89 test in place, unchanged, so it fails honestly (not skipped, not weakened). Everything else of S49 is built and green.
+- Options for the human (pick one; none is a code-only fix):
+  1. Keep AS-88, replace AS-89 by a property the design can meet: dead-tuple bloat stays bounded (autovacuum keeps `n_dead_tup` of the live partitions below a fraction of live rows after N cycles) and the per-partition `fillfactor` stays 70. My preference.
+  2. Move the queue state out of `Job` into a narrow, separately vacuumed structure (needs a constitution IX.3 amendment for a new technical table); `Job` keeps cold columns and could then be updated heap-only.
+  3. Drop the partial due index and accept a full `runAt` index with a status filter: AS-88 then fails once finished rows pile up.
+- The numbers: partial index on status, status update: 0 HOT of 200; no status index: 54 HOT of the next 200 (page space bound).

@@ -10,11 +10,19 @@ import { JobHandler } from '@app/infrastructure/jobs/job-handler.decorator';
 import { JobsService } from '@app/infrastructure/jobs/jobs.service';
 import { INBOX_PURGE_BATCH, InboxService } from './inbox.service';
 
+import { z } from 'zod';
+import { declareJobType } from '@app/infrastructure/jobs/job-type-registry';
+
 declare module '@app/infrastructure/jobs/job-types' {
   interface JobPayloads {
     'inbox.purge': Record<string, never>;
   }
 }
+
+declareJobType({
+  name: 'inbox.purge',
+  contract: z.object({}),
+});
 
 export const INBOX_PURGE_JOB = 'inbox.purge';
 /** Terminal inbox rows are kept this long (S53 assumption: 30 days). */

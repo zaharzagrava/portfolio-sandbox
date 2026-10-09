@@ -16,8 +16,8 @@ export interface JobPayloads {
 
 export type JobType = keyof JobPayloads & string;
 
-export type JobStatus =
-  'QUEUED' | 'RUNNING' | 'SUCCEEDED' | 'DEAD' | 'CANCELLED';
+import type { JobStatus } from './job-state';
+export type { JobStatus } from './job-state';
 
 export interface JobRow<T extends JobType = JobType> {
   id: string;
@@ -28,6 +28,8 @@ export interface JobRow<T extends JobType = JobType> {
   attempts: number;
   maxAttempts: number;
   shopId: string | null;
+  enqueuedByRequestId: string | null;
+  traceparent: string | null;
   /** Exact Postgres text (microseconds): part of the partitioned primary key, matched on every update. */
   createdAt: string;
 }
@@ -41,10 +43,24 @@ export interface EnqueueOptions {
   maxAttempts?: number;
 }
 
+/** Result of `cancel` / `cancelByKey`: only a QUEUED job can be cancelled; another shop's job is NOT_FOUND. */
+export type CancelResult =
+  | { outcome: 'CANCELLED' }
+  | { outcome: 'NOT_FOUND' }
+  | { outcome: 'CONFLICT'; status: JobStatus };
+
+/** Why a run's signal aborted: it ran past `maxRuntimeMs`, its lease was taken over, or the worker is shutting down. */
+export type JobAbortReason = 'timeout' | 'lease_lost' | 'shutdown';
+
 export interface JobContext {
+  jobId: string;
   attempt: number;
+  maxAttempts: number;
+  /** True when a failure of this run sends the job to DEAD (no retry left). */
+  isLastAttempt: boolean;
   /** Extends the lease; call periodically from long jobs (the worker also heartbeats automatically). */
   heartbeat(): Promise<void>;
+  /** Aborted with `signal.reason` set to a `JobAbortReason`. */
   signal: AbortSignal;
 }
 

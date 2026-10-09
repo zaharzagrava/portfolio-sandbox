@@ -11,12 +11,24 @@ import {
   shopAccount,
 } from '@app/domains/payments';
 
+import { z } from 'zod';
+import { declareJobType } from '@app/infrastructure/jobs/job-type-registry';
+
 declare module '@app/infrastructure/jobs/job-types' {
   interface JobPayloads {
     'ads.bill-hour': { hour?: string };
     'ads.reconcile-day': { day?: string };
   }
 }
+
+declareJobType({
+  name: 'ads.bill-hour',
+  contract: z.object({ hour: z.string().optional() }),
+});
+declareJobType({
+  name: 'ads.reconcile-day',
+  contract: z.object({ day: z.string().optional() }),
+});
 
 const chHour = (d: Date) =>
   d.toISOString().slice(0, 13).replace('T', ' ') + ':00:00';

@@ -3,6 +3,7 @@ import { InjectConnection } from '@nestjs/sequelize';
 import { QueryTypes, Sequelize } from 'sequelize';
 import { JobHandler } from '@app/infrastructure/jobs/job-handler.decorator';
 import { ObjectStorage } from '@app/infrastructure/storage/object-storage.port';
+import '../application/onboarding-documents.job-types';
 
 /**
  * Retention (05/02 §9): raw KYC files are deleted RAW_DOCUMENT_RETENTION_DAYS

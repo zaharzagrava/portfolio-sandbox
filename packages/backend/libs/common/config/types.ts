@@ -157,6 +157,11 @@ export class SecretsManagerConfig {
   outbox_relay_lease_ms: number;
   outbox_relay_max_attempts: number;
   outbox_retention_days: number;
+  /** S49 R-09: job scheduler settings, defaults in `jobs-config.ts`. */
+  jobs_claim_batch: number;
+  jobs_per_shop_running_cap: number;
+  jobs_retain_days: number;
+  jobs_poll_idle_ms: number;
   consumer_batch: number;
   consumer_max_attempts: number;
   consumer_backoff_min_ms: number;

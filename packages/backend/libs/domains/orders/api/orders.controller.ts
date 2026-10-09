@@ -23,12 +23,7 @@ import { OrderService } from '../application/order.service';
 import { CartIdentity } from './cart-identity';
 import { CreateFlashSaleDto } from './orders.dto';
 
-declare module '@app/infrastructure/jobs/job-types' {
-  interface JobPayloads {
-    'flash-sale.start': { saleId: string };
-    'flash-sale.end': { saleId: string };
-  }
-}
+import '../application/order.job-types';
 
 const IDEMPOTENCY_KEY = /^[A-Za-z0-9_-]{8,128}$/;
 
