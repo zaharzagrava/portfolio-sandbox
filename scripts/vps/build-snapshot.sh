@@ -37,10 +37,10 @@ say "waiting for ssh on $ip"
 wait_ssh "$ip" || die "ssh never came up on $ip"
 
 say "bootstrapping (this is the long part)"
-scp -q -o StrictHostKeyChecking=accept-new "$ROOT/scripts/vps/bootstrap.sh" "root@$ip:/root/bootstrap.sh"
-ssh "root@$ip" 'mkdir -p /root/.ssh && chmod 700 /root/.ssh'
-scp -q "$DEPLOY_KEY_FILE" "root@$ip:/root/.ssh/sdd_deploy"
-ssh "root@$ip" "chmod 600 /root/.ssh/sdd_deploy && REPO_SSH_URL='$REPO_SSH_URL' BASE_BRANCH='$BASE_BRANCH' WITH_WEB='$WITH_WEB' bash /root/bootstrap.sh"
+scp -q $SDD_SSH_OPTS "$ROOT/scripts/vps/bootstrap.sh" "root@$ip:/root/bootstrap.sh"
+ssh $SDD_SSH_OPTS "root@$ip" 'mkdir -p /root/.ssh && chmod 700 /root/.ssh'
+scp -q $SDD_SSH_OPTS "$DEPLOY_KEY_FILE" "root@$ip:/root/.ssh/sdd_deploy"
+ssh $SDD_SSH_OPTS "root@$ip" "chmod 600 /root/.ssh/sdd_deploy && REPO_SSH_URL='$REPO_SSH_URL' BASE_BRANCH='$BASE_BRANCH' WITH_WEB='$WITH_WEB' bash /root/bootstrap.sh"
 
 say "powering off and taking the snapshot '$desc'"
 hcloud server shutdown "$name" >/dev/null

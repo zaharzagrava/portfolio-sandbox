@@ -2,6 +2,10 @@
 SDD_VPS_CONFIG="${SDD_VPS_CONFIG:-$HOME/.config/sdd-vps/config.env}"
 SDD_VPS_STATE="${SDD_VPS_STATE:-$HOME/.config/sdd-vps}"
 
+# Runner machines are ephemeral and Hetzner reuses IP addresses, so their host keys are neither trusted nor recorded
+# (otherwise ssh refuses with "REMOTE HOST IDENTIFICATION HAS CHANGED" the second time an address is reused).
+SDD_SSH_OPTS="-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o LogLevel=ERROR"
+
 die() { echo "ERROR: $*" >&2; exit 1; }
 say() { echo "==> $*"; }
 
@@ -25,7 +29,7 @@ require_tools() { local t; for t in "$@"; do command -v "$t" >/dev/null || die "
 wait_ssh() {
   local ip="$1" i
   for i in $(seq 1 60); do
-    ssh -o BatchMode=yes -o ConnectTimeout=5 -o StrictHostKeyChecking=accept-new "root@$ip" true 2>/dev/null && return 0
+    ssh $SDD_SSH_OPTS -o BatchMode=yes -o ConnectTimeout=5 "root@$ip" true 2>/dev/null && return 0
     sleep 5
   done
   return 1
