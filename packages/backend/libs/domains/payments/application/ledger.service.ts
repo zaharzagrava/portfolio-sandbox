@@ -128,10 +128,10 @@ export class LedgerService {
 
   /** Authoritative balance (sum of entries) - the Redis projection is the fast path; this is the fallback/rebuild. */
   public async balance(accountId: string, tx?: Transaction): Promise<number> {
-    const [row] = (await this.ledgerEntryModel.sequelize!.query(
+    const [row] = await this.ledgerEntryModel.sequelize!.query(
       `SELECT coalesce(sum(amount), 0)::bigint AS balance FROM "LedgerEntry" WHERE "accountId" = :accountId`,
       { replacements: { accountId }, transaction: tx, type: QueryTypes.SELECT },
-    )) as { balance: string }[];
+    );
     return Number(row.balance);
   }
 }

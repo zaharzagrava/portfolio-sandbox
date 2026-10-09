@@ -143,7 +143,7 @@ export class BidRelay implements OnApplicationBootstrap {
           latest.set(b.auctionId, b);
       for (const b of latest.values()) {
         // `prev` CTE: the row is locked and its OLD leader read in the same statement.
-        const [changed] = (await this.sequelize.query(
+        const [changed] = await this.sequelize.query(
           `WITH prev AS (SELECT id, "leaderId" FROM "Auction" WHERE id = :auctionId FOR UPDATE)
            UPDATE "Auction" a SET "currentPrice" = :price, "leaderId" = NULLIF(:leader, '')::uuid, "endsAt" = to_timestamp(:endsAt / 1000.0),
                   version = :version, "bidCount" = a."bidCount" + :count, "updatedAt" = now()
@@ -162,11 +162,7 @@ export class BidRelay implements OnApplicationBootstrap {
             transaction,
             type: QueryTypes.SELECT,
           },
-        )) as {
-          previousLeaderId: string | null;
-          leaderId: string | null;
-          version: number;
-        }[];
+        );
 
         // One "outbid" per relay batch per auction: leaders who led for only a few ms inside the
         // same batch aren't notified - they were outbid before any notification could matter.

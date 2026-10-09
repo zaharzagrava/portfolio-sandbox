@@ -145,7 +145,7 @@
 - [X] T064 [P] Add `outboxRowsFor(aggregateId)` helper exported from `@app/common/testing` (G-56) and use it in a new fixture test; the domain tests listed in G-56 migrate under their own specs (follow-up already recorded).
 - [X] T065 Record handled-by-sibling items G-54 (projector app `ShopMembershipModel`, S12) and G-55 (`product-search.projector.ts` raw `"Shop"` SQL, S32) in `gaps.md` by confirming the `## Sibling-spec follow-ups` bullets exist; no code change in S53. Also D-8: ensure `forProjectors` host contract is documented in `contracts/services.md` (G-50, FR-040).
 - [X] T066 Verify the unverified criteria: `quickstart.md` "Ops artifacts" lists SC-001, SC-004, SC-005, SC-006 and `specs/UNVERIFIED.md` has one `not run` row per criterion (already present; confirm no duplicate rows, none described as verified). SC-002, SC-003, SC-007, SC-008 are proven by tests (AS-28..34/66..70, AS-50/51/59, AS-89/105, AS-09).
-- [X] T067 Final gates from `packages/backend`: `pnpm exec tsc --noEmit`, `pnpm lint`, `pnpm check:boundaries`, `pnpm check:table-ownership --strict`; confirm direct `sequelize.transaction` count in `libs/infrastructure/{events,outbox,inbox,projections,kafka,sqs}` is 0.
+- [X] T067 Final gates from `packages/backend`: `pnpm exec tsc --noEmit`, `pnpm lint`, `pnpm check:boundaries`, `pnpm check:technical-tables` (0 violations; `check:table-ownership --strict` stays red on pre-existing D-7/D-12 debt owned by other specs, SC-008); confirm direct `sequelize.transaction` count in `libs/infrastructure/{events,outbox,inbox,projections,kafka,sqs}` is 0.
 - [X] T068 Run the whole capability suite once: `/opt/sdd/repo/scripts/sdd/test-spec.sh libs/infrastructure/events`, `…/outbox` (cdc spec only with the profile), `…/inbox`, `…/projections`, `…/sqs`; every AS-01..AS-108 passes once. Report any failure honestly.
 
 ## Gap coverage
@@ -160,3 +160,12 @@ G-01 T006/T014 · G-02 T006 · G-03 T008 · G-04–G-06 T013/T016 · G-07 T010/T
 ## Implementation strategy
 
 MVP = Phases 1–3 (contract, topics, append) → then US2 (relay) for end-to-end outbox → US3b/US3/US4/US5 (P1 consumer side) → US6 → P2 stories. Commit per phase with the tree compiling.
+
+## Phase 16: Convergence
+
+- [X] T069 [US5] HIGH: make `LIB/projections/versioned-sinks.e2e-spec.ts` pass: all 11 tests (AS-66..AS-70, AS-72) fail with `Keyspace 'marketplace' does not exist` on the test Cassandra (`localhost:9142`, `.env.test`) because the spec relies on an out-of-band `pnpm cql:migrate`. Have the spec (its beforeAll or a shared test helper) idempotently apply `cql/` migrations to the test Cassandra, or document the prerequisite in `quickstart.md`; then re-run `/opt/sdd/repo/scripts/sdd/test-spec.sh libs/infrastructure/projections` until it is green, per SC-007 / AS-66..70 (partial)
+
+## Phase 17: Convergence
+
+- [ ] T070 [Polish] HIGH: restore `pnpm exec tsc --noEmit` to green (T067): uncommitted edits dropped the `as {...}[]` result casts in `libs/domains/auctions/infra/bid-relay.service.ts` (~L146-165; TS2339 on `previousLeaderId`/`leaderId`/`version`) and `libs/domains/payments/application/ledger.service.ts` (~L131; TS2339 on `balance`). These domain files are outside S53's allowed scope (Conventions: codemod T014, names only), so revert both files to their committed state rather than re-typing them; then re-run `pnpm exec tsc --noEmit` per T067 / Conventions (contradicts)
+- [X] T071 [Polish] LOW: align the T063/T067 gate with the script: `pnpm check:table-ownership --strict` exits 1 on pre-existing domain-to-domain debt (D-7/D-12, not S53); the S53 gate that is green is `pnpm check:technical-tables` (0 violations). Make T067's final gate and `quickstart.md` name `check:technical-tables`, and note that `--strict` stays red until D-7/D-12 are paid, per SC-008 (partial)

@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { Client } from 'cassandra-driver';
 import { INestApplication, Injectable, Module } from '@nestjs/common';
 import {
   CreateTableCommand,
@@ -54,6 +57,34 @@ const runId = uuidv7().slice(-8);
 })
 class SinksTestModule {}
 
+/**
+ * The Cassandra module connects with the `marketplace` keyspace, so a fresh
+ * test Scylla must have it before the app starts. Applies only the keyspace
+ * file (idempotent: IF NOT EXISTS); the other cql/ files are not needed here.
+ */
+async function ensureCassandraKeyspace(): Promise<void> {
+  const client = new Client({
+    contactPoints: (
+      process.env.CASSANDRA_CONTACT_POINTS ?? 'localhost:9042'
+    ).split(','),
+    localDataCenter: process.env.CASSANDRA_LOCAL_DC ?? 'datacenter1',
+  });
+  try {
+    await client.connect();
+    const statements = readFileSync(
+      join(__dirname, '../../../cql/000_keyspace.cql'),
+      'utf8',
+    )
+      .replace(/--.*$/gm, '')
+      .split(';')
+      .map((s) => s.trim())
+      .filter(Boolean);
+    for (const statement of statements) await client.execute(statement);
+  } finally {
+    await client.shutdown();
+  }
+}
+
 describe('Versioned sinks never make a read model older', () => {
   let app: INestApplication;
   let redis: RedisDocSink;
@@ -68,6 +99,7 @@ describe('Versioned sinks never make a read model older', () => {
   const kit = new ConsumerKit();
 
   beforeAll(async () => {
+    await ensureCassandraKeyspace();
     const moduleRef = await generateTestingModule([SinksTestModule], {
       stores: ['redis', 'elasticsearch', 'dynamo', 'cassandra'],
     });
