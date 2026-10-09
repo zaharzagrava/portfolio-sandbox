@@ -23,18 +23,35 @@ the `hcloud` calls, the cloud-init step and the image build. Read "If something 
 
 ## One-time setup (about 45 minutes, most of it waiting)
 
+**Two different SSH keys are involved; do not mix them up.**
+
+| | Login key | Deploy key |
+| --- | --- | --- |
+| What it is for | You logging in to a runner machine (`attach.sh`, debugging) | The machine pushing `sdd/auto` to GitHub |
+| Which file | your existing `~/.ssh/id_ed25519` (any key you normally use) | a new one, `~/.ssh/sdd_deploy`, no passphrase |
+| Public half goes to | Hetzner console, *Security -> SSH keys*, named `sdd` | GitHub repo, *Settings -> Deploy keys*, write access |
+| Private half goes to | stays on your laptop | the config file's `DEPLOY_KEY_FILE` points at it; the launcher copies it to the machine for the length of a run |
+
+The file ending in `.pub` is the public half: that is the only one you ever paste or upload into a website. The file without
+`.pub` is the private half; it never leaves your laptop except through the launcher.
+
 Do these in order. Everything you create lives in a project that holds only runner machines.
 
 1. **Hetzner account and project.** Sign up at hetzner.com/cloud (they may ask for an ID check; it can take a day, so do
    this first). Create a project, e.g. `sdd-runner`.
    - *Security -> API tokens -> Generate*: permission **Read & Write**. Copy it once; it goes into the config file. The
      machine carries this token to delete itself, which is why the project must hold nothing else.
-   - *Security -> SSH keys -> Add*: upload `~/.ssh/id_ed25519.pub` (or create one) and name it `sdd`.
+   - *Security -> SSH keys -> Add*: paste the contents of your **login key's public half**, `~/.ssh/id_ed25519.pub`
+     (`cat ~/.ssh/id_ed25519.pub`; if you have none, `ssh-keygen -t ed25519` makes one) and name it exactly `sdd`; the
+     config's `HCLOUD_SSH_KEY` must match that name.
    - *Firewalls* (optional but good): create `sdd-ssh-only` allowing inbound TCP 22 and nothing else, put the name in the config.
    - Check the machine type exists where you want it: `hcloud server-type describe ccx33` and the locations list. If your
      account has a server limit of 0 for dedicated vCPU, ask for an increase in *Limits* (this can take a day too).
-2. **hcloud CLI on the laptop.** Either `sudo apt install hcloud-cli` (Ubuntu 24.04 ships 1.39; the scripts work with it) or the
-   current release into your home directory:
+2. **hcloud CLI on the laptop.** Two equivalent ways: `sudo apt install hcloud-cli` (Ubuntu 24.04 ships 1.39, an older
+   version that works with the scripts) or the current release (1.70.1 at the time of writing) from Hetzner's GitHub into
+   your home directory, which is newer and needs no sudo. Do one of them; if both are installed, the one earlier in `PATH`
+   wins. The checksum below proves the download is intact, not that the release is genuine; that trust is the same as for any
+   download from the project's own releases:
    ```
    d=$(mktemp -d) && cd "$d" && curl -fsSLO https://github.com/hetznercloud/cli/releases/latest/download/hcloud-linux-amd64.tar.gz \
      && curl -fsSLO https://github.com/hetznercloud/cli/releases/latest/download/checksums.txt \
@@ -42,11 +59,14 @@ Do these in order. Everything you create lives in a project that holds only runn
      && mkdir -p ~/.local/bin && tar -xzf hcloud-linux-amd64.tar.gz -C ~/.local/bin hcloud && hcloud version
    ```
    No `hcloud context create` is needed: the scripts read `HCLOUD_TOKEN` from the config file in step 6.
-3. **A deploy key for the repo.**
+3. **A deploy key for the repo** (a second, separate key; see the table above). `-N ""` means no passphrase, which is needed
+   because nobody is at the machine to type one:
    ```
    ssh-keygen -t ed25519 -N "" -f ~/.ssh/sdd_deploy
+   cat ~/.ssh/sdd_deploy.pub
    ```
-   GitHub -> repo *Settings -> Deploy keys -> Add deploy key*: paste `~/.ssh/sdd_deploy.pub`, tick **Allow write access**.
+   GitHub -> repo *Settings -> Deploy keys -> Add deploy key*: title `sdd-runner`, paste the output of the `cat` (the `.pub`
+   file), tick **Allow write access**. Then set `DEPLOY_KEY_FILE=~/.ssh/sdd_deploy` (the private file) in the config.
    Also protect `master` (*Settings -> Branches*, include administrators) so this key can never change it; the runner only
    writes `sdd/auto`.
 4. **A Claude token for headless use.** On the laptop, signed in to the account you want to spend:
