@@ -118,7 +118,7 @@ Unit files: `cron.spec.ts` (next fire), `backoff.spec.ts`, `job-state.spec.ts`, 
 | AS-86 insert with no partition lands in default; reported | RET | — | — |
 | AS-87 key purge in batches | RET | — | — |
 | AS-88 claim plan uses partial due index on 200k rows | RET | — | — |
-| AS-89 HOT update ratio ≥ 90% | RET | — | — |
+| AS-89 after a VACUUM, a second batch of 5,000 cycles grows the heap by less than 25%; fillfactor stays 70 | RET | — | — |
 | AS-90 drop by catalog-resolved name within lock timeout | RET | — | — |
 | AS-91 duplicate handler fails startup; same provider twice is fine | REG | — | — |
 | AS-92 bad type name or handler options fail startup | REG | — | `handler-options.spec.ts` (name pattern and ranges, table-driven; the startup failure itself is the REG e2e row of AS-91's file, asserted once there) |
