@@ -138,8 +138,39 @@ moon run infra-test-setup     # foreground: keep it in its own terminal
 # For W and J, each in its own terminal (infra-setup and dev-monolith keep running in the foreground):
 #   moon run infra-setup     # dev stores, then schemas and topics
 #   moon run dev-monolith    # API + workers + projectors on :8000, watch mode
-COMMIT=1 scripts/sdd/implement-specs.sh
+
+claude-personal-setup                                # this terminal uses ~/.claude-personal (function in ~/.bashrc)
+COMMIT=1 scripts/sdd/implement-specs.sh              # short run, terminal stays open
+
+# Long or walk-away run: keep it alive if the window closes (tmux) and keep the laptop awake (systemd-inhibit).
+# `env` is needed because systemd-inhibit runs a program, not a bare VAR=value.
+tmux new -s impl                                     # detach: Ctrl-b d, re-attach: tmux attach -t impl
+claude-personal-setup
+systemd-inhibit --what=sleep:idle --why="SDD implement" env COMMIT=1 scripts/sdd/implement-specs.sh
 ```
+
+Watch a run from a second terminal or tmux pane (separate process, so it also notices if the loop dies):
+
+```bash
+scripts/sdd/monitor.sh              # logs every finished task to .sdd-monitor/progress.log, notifies quietly at 25/50/75/100 %
+                                    # and loudly only for problems: stalled, one task too long, loop gone, disk, test container exited
+scripts/sdd/monitor.sh --status     # one-line progress, sends nothing
+tail -f .sdd-monitor/progress.log
+```
+
+Each problem alert is paired with a quiet "recovered" message, so a raised alert always gets an ending. Settings:
+`STALL_MIN`, `TASK_WARN_MIN`, `MONITOR_INTERVAL`, `NTFY_TOPIC` (phone), `HEARTBEAT_URL` (dead-man's switch), see the header
+of the script.
+
+How the run behaves (details in the runbook):
+
+- It runs until every requested spec is built or the Claude usage limit is hit, then stops cleanly and sends a desktop
+  notification: "finished", "out of budget" (exit code 75), or "stopped" with the spec and step.
+- Re-run the same command to resume. Plan, tasks and analyze are skipped for specs that already have them, and
+  `implement` continues at the first unchecked task in `tasks.md`.
+- `UNTIL=S16` stops after that capability; `STEP_MAX_BUDGET_USD=5` caps a single step (leave it unset to run until the
+  plan limit); `MAX_IMPLEMENT_PASSES` (default 10) bounds the fresh-context passes per spec.
+- Closing the laptop lid can still suspend it; keep it open or change the lid setting.
 
 ## Developer tooling
 

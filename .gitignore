@@ -29,3 +29,11 @@ infra/modules/lambda_sqs_worker/.placeholder.zip
 
 .obsidian/
 .aider*
+
+# SDD loop scratch (per spec): step logs, one-shot step markers, ownership baseline
+specs/**/.*.log
+specs/**/.*.done
+specs/**/.ownership.baseline
+
+# SDD monitor state and progress log
+.sdd-monitor/

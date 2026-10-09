@@ -221,6 +221,12 @@ When it stops, read the named `.log`, fix the problem (or edit `questions.md` / 
 same command. Finished capabilities are skipped. Run a single capability with
 `scripts/sdd/implement-specs.sh S13`.
 
+**Running until the plan runs out.** Leave `STEP_MAX_BUDGET_USD` unset to run until your Claude usage limit. A step that
+dies on the limit stops the run with exit code 75 and a desktop notification plus sound ("out of budget"); finishing or
+any other stop gets its own notification. Nothing is lost: re-run the same command after the reset. `implement` runs in
+fresh-context passes (`MAX_IMPLEMENT_PASSES`, default 10) until every task in `tasks.md` is checked. The headless steps
+do not trigger the interactive Stop-hook ping (`SDD_LOOP=1`).
+
 **Order and spend.** Capabilities run in `scripts/sdd/implement-order.txt` order (platform → identity → money chain →
 resume-featured → …). `UNTIL=S16` stops after that capability; `STEP_MAX_BUDGET_USD=5` caps one step. Agents run
 e2e specs through `scripts/sdd/test-spec.sh` (condensed output) and stop after 5 failed attempts at one test.

@@ -28,8 +28,15 @@ def test_files(scopes):
 
 def scenarios(kind, plan, spec_id, scopes):
     text = Path(plan).read_text()
-    lines = [l for f in test_files(scopes) for l in f.read_text(errors='ignore').splitlines()]
     sid_re = re.compile(r'\b%s\b' % re.escape(spec_id))
+    # A scenario is carried by a line holding both IDs ("S54 AS-12: ..."), or, for table-driven tests (it.each rows),
+    # by a file that names the capability somewhere (its describe title or header) and the scenario ID on any line.
+    lines, file_texts = [], []
+    for f in test_files(scopes):
+        t = f.read_text(errors='ignore')
+        lines += t.splitlines()
+        if sid_re.search(t):
+            file_texts.append(t)
     missing = []
     for line in text.splitlines():
         m = re.match(r'^\|\s*(AS-\d+)\b', line)
@@ -39,12 +46,14 @@ def scenarios(kind, plan, spec_id, scopes):
         tested = cells[1:]
         if kind in ('web', 'journey'):
             tested = tested[:-1] if kind == 'web' else tested[:1]   # last column = proven by another capability
+        # "static: check:no-request-scope" rows are proven by a static gate, not by a test that carries the ID.
+        tested = [c for c in tested if not c.lower().startswith('static')]
         if all(c in DASH for c in tested):
             continue
         sid = m.group(1)
         n = int(sid.split('-')[1])
         as_re = re.compile(r'\bAS-0*%d\b' % n)
-        if not any(sid_re.search(l) and as_re.search(l) for l in lines):
+        if not (any(sid_re.search(l) and as_re.search(l) for l in lines) or any(as_re.search(t) for t in file_texts)):
             missing.append(sid)
     if missing:
         print('scenarios in test-plan.md with no test carrying their ID (name tests it(\'%s AS-NN: ...\')): ' % spec_id + ', '.join(missing))

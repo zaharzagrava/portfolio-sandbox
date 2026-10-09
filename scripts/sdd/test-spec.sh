@@ -10,7 +10,7 @@ set -uo pipefail
 ROOT="$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel)"
 cd "$ROOT/packages/backend"
 log="$(mktemp "${TMPDIR:-/tmp}/test-spec.XXXXXX.log")"
-NODE_ENV=test NODE_OPTIONS=--experimental-vm-modules npx jest --config ./jest-e2e.json --runInBand --bail=1 --colors=false "$@" >"$log" 2>&1
+NODE_ENV=test NODE_OPTIONS=--experimental-vm-modules timeout "${TEST_SPEC_TIMEOUT_S:-1800}" npx jest --config ./jest-e2e.json --runInBand --forceExit --bail=1 --colors=false "$@" >"$log" 2>&1
 code=$?
 awk -v max="${MAX_FAIL_LINES:-40}" '
   /^Test Suites:|^Tests:|^Snapshots:|^Time:|^Ran all test suites/ { summary = summary $0 "\n"; next }

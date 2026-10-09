@@ -25,7 +25,65 @@ run_claude() {
   if [[ -n "${CLOUD_SESSION_ID:-}" ]]; then
     args+=(--cloud "$CLOUD_SESSION_ID")
   fi
-  claude "$prompt" "${args[@]}" </dev/null >"$log" 2>&1
+  # Run in the background and watch it, because `claude -p` has been seen to print its answer and then not exit
+  # (idle for 9 minutes with only helper processes left), which stalls the whole loop:
+  #  - `claude -p` prints its answer only at the end, so output that has not grown for CLAUDE_EXIT_GRACE_S seconds
+  #    means "finished, not exiting": stop it and count the step as done;
+  #  - a call that runs longer than PASS_TIMEOUT_S is stopped and returns 124 (implement passes resume afterwards).
+  # SDD_LOOP silences the interactive Stop-hook ping.
+  local pid code=0 grace="${CLAUDE_EXIT_GRACE_S:-90}" limit="${PASS_TIMEOUT_S:-7200}" start=$SECONDS size last=-1 since=$SECONDS killed=""
+  SDD_LOOP=1 setsid claude "$prompt" "${args[@]}" </dev/null >"$log" 2>&1 &   # own process group: one kill reaches every helper
+  pid=$!
+  while kill -0 "$pid" 2>/dev/null; do
+    sleep 5
+    size=$(stat -c %s "$log" 2>/dev/null || echo 0)
+    if (( size != last )); then last=$size; since=$SECONDS; fi
+    if (( size > 0 && SECONDS - since >= grace )); then killed=done; break; fi
+    if (( SECONDS - start >= limit )); then killed=timeout; break; fi
+  done
+  if [[ -n "$killed" ]]; then
+    kill -TERM -- "-$pid" 2>/dev/null || kill -TERM "$pid" 2>/dev/null; sleep 5
+    kill -KILL -- "-$pid" 2>/dev/null || kill -KILL "$pid" 2>/dev/null
+    wait "$pid" 2>/dev/null
+    if [[ "$killed" == done ]]; then echo "  (answer was complete but claude did not exit within ${grace}s: stopped it)" >&2; return 0; fi
+    echo "  (stopped after the ${limit}s pass timeout)" >&2; return 124
+  fi
+  wait "$pid"; code=$?
+  return "$code"
+}
+
+# hit_usage_limit <logfile>: did the step die because the plan's usage window is used up?
+hit_usage_limit() {
+  tail -c 4000 "$1" | grep -q -i -E "hit your .*limit|session limit|weekly limit|usage limit|limit reached|rate.?limit|limit will reset|resets [0-9]|resets at|out of (extra )?usage|credit balance"
+}
+
+# limit_reset_hint <logfile>: "resets 1:40pm (Europe/Warsaw)" from the CLI's message, if it gave one.
+limit_reset_hint() { tail -c 4000 "$1" | grep -o -i -E "resets [^|]*" | head -1 | sed 's/[[:space:]]*$//'; }
+
+# notify <ok|info|warn|limit|fail> <title> <body>
+#   info   progress and recoveries: quiet (no sound, low urgency)
+#   warn   something is slow or stuck: one soft sound
+#   ok / limit / fail   the run ended: a distinct sound each
+# Channels: desktop (notify-send + canberra) when available, and ntfy when NTFY_TOPIC is set (the topic is the only
+# secret: keep it long and random; NTFY_SERVER defaults to https://ntfy.sh). NOTIFY_DRY=1 prints instead of sending.
+# Best effort: a missing tool or a failed request is never an error.
+notify() {
+  local kind="$1" title="$2" body="$3" sound="" urgency=normal prio=3 tag=white_check_mark
+  case "$kind" in
+    ok)    sound=complete;       urgency=normal;   prio=3; tag=white_check_mark ;;
+    info)  sound="";             urgency=low;      prio=2; tag=information_source ;;
+    warn)  sound=dialog-warning; urgency=normal;   prio=4; tag=warning ;;
+    limit) sound=bell;           urgency=critical; prio=5; tag=hourglass ;;
+    fail)  sound=dialog-warning; urgency=critical; prio=5; tag=x ;;
+  esac
+  if [[ -n "${NOTIFY_DRY:-}" ]]; then echo "NOTIFY[$kind] $title: $body"; return 0; fi
+  command -v notify-send >/dev/null && notify-send -u "$urgency" "$title" "$body" || true
+  if [[ -n "$sound" ]]; then command -v canberra-gtk-play >/dev/null && { canberra-gtk-play -i "$sound" >/dev/null 2>&1 & } || true; fi
+  if [[ -n "${NTFY_TOPIC:-}" ]]; then
+    curl -fsS -m 10 -H "Title: $title" -H "Priority: $prio" -H "Tags: $tag" -d "$body" \
+      "${NTFY_SERVER:-https://ntfy.sh}/$NTFY_TOPIC" >/dev/null 2>&1 || true
+  fi
+  return 0
 }
 
 # for_each_capability [ID|domain ...]: prints matching catalog rows (tab-separated), in catalog order.
@@ -71,4 +129,13 @@ template_for() {
     journey) echo "$ROOT/scripts/sdd/spec-prompt-journey.md" ;;
     *)       echo "$ROOT/scripts/sdd/spec-prompt.md" ;;
   esac
+}
+
+# for_each_capability, re-sorted by implement-order.txt (IDs not listed there come last, in catalog order).
+# (implement-specs.sh still carries its own copy; remove that one after the current run.)
+ordered_capabilities() {
+  for_each_capability "$@" | awk -F'\t' -v order="$ROOT/scripts/sdd/implement-order.txt" '
+    BEGIN { while ((getline line < order) > 0) { if (line ~ /^#/ || line ~ /^[[:space:]]*$/) continue; pos[line] = ++n } }
+    { print (($1 in pos) ? pos[$1] : 100000 + NR) "\t" $0 }
+  ' | sort -n -k1,1 | cut -f2-
 }
