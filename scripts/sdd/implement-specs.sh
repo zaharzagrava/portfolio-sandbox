@@ -48,7 +48,7 @@ API_URL="${API_URL:-http://localhost:8000}"
 # Implementation needs to build and run tests, on top of the file tools in lib.sh.
 TEST_SPEC="$ROOT/scripts/sdd/test-spec.sh"   # condensed e2e runner: far fewer tokens per red/green iteration
 IMPL_TOOLS=("Bash($TEST_SPEC:*)" 'Bash(npx tsc:*)' 'Bash(npx jest:*)' 'Bash(npx nest build:*)' 'Bash(npx vitest:*)' 'Bash(npx playwright:*)'
-            'Bash(pnpm:*)' 'Bash(node:*)' 'Bash(docker compose:*)' 'Bash(curl:*)'
+            'Bash(python3 scripts/sdd/check-tests.py:*)' 'Bash(python3 scripts/sdd/tasks-scope.py:*)' 'Bash(pnpm:*)' 'Bash(node:*)' 'Bash(docker compose:*)' 'Bash(curl:*)'
             'Bash(cd:*)' 'Bash(cat:*)' 'Bash(grep:*)' 'Bash(find:*)' 'Bash(git log:*)')
 
 # push_branch: with PUSH_BRANCH set, publish HEAD to that branch (best effort; the VPS runner sets it so nothing is lost).
@@ -121,6 +121,8 @@ tx_count() { # $1 = domain column: direct Sequelize `.transaction(` call sites i
     | { grep -v -E '\.(e2e-)?spec\.ts' || true; } | { grep -v -E ':[0-9]+:[[:space:]]*(\*|//|/\*)' || true; } | grep -c . || true
 }
 
+# Run BEFORE gate(): everything here is static and takes seconds, while gate() spends ~7 minutes on the e2e suites. A missing scenario test,
+# a lint error or a ratchet failure should show up at once, not after the e2e run (it cost two extra 7-minute runs on S53).
 gate_extras() { # $1 = capability id, $2 = domain column, $3 = spec dir
   local id="$1" domain="$2" dir="$3" kind scope pkg files
   kind="$(kind_of "$domain")"; scope="$(scope_for "$domain")"
@@ -205,7 +207,7 @@ repair_prompt() {
 # Rules that apply to every capability, plus follow-ups that already-built specs left for this one.
 extra_context() { # $1 = capability id
   local fu; fu="$("$ROOT/scripts/sdd/followups.sh" "$1" 2>/dev/null || true)"
-  printf ' %s' "Cross-spec rules. (1) Sibling follow-ups: if your work changes something another capability's spec relies on (a name, header, status code, contract), do not edit that spec; add a bullet '- **<their id>**: <what they must adopt>' under a '## Sibling-spec follow-ups' heading in this spec's gaps.md. (2) Unverified criteria: every success criterion (SC-nnn) that no automated test proves goes under 'Ops artifacts' in quickstart.md and as one row in specs/UNVERIFIED.md (spec, criterion, how to run it, status 'not run'); never describe it as verified. (3) Transactions: use TransactionRunner.run or @Transactional (S54 toolkit); when you touch a file that opens a transaction directly with sequelize.transaction, migrate that site and delete its '// S54 T037 audit' comment; never add a new direct sequelize.transaction (the gate fails if the count of direct sites in your domain rises)."
+  printf ' %s' "Cross-spec rules. (1) Sibling follow-ups: if your work changes something another capability's spec relies on (a name, header, status code, contract), do not edit that spec; add a bullet '- **<their id>**: <what they must adopt>' under a '## Sibling-spec follow-ups' heading in this spec's gaps.md. (2) Unverified criteria: every success criterion (SC-nnn) that no automated test proves goes under 'Ops artifacts' in quickstart.md and as one row in specs/UNVERIFIED.md (spec, criterion, how to run it, status 'not run'); never describe it as verified. (3) Undoing work: never use git checkout, restore, reset, stash or clean (they are not available and could discard other work in the same file); to undo a change edit the file by hand and keep every other change in it, and if a task says to revert a file, restore only the lines it names. (4) Transactions: use TransactionRunner.run or @Transactional (S54 toolkit); when you touch a file that opens a transaction directly with sequelize.transaction, migrate that site and delete its '// S54 T037 audit' comment; never add a new direct sequelize.transaction (the gate fails if the count of direct sites in your domain rises)."
   if [[ -n "$fu" ]]; then printf ' %s\n%s' "Follow-ups left for this capability by specs that are already built; treat each as a requirement, plan it, test it, and mention it in your report:" "$fu"; fi
 }
 
@@ -240,7 +242,7 @@ ordered_capabilities "$@" | while IFS=$'\t' read -r id domain slug title sources
   [[ "$(kind_of "$domain")" == backend ]] || require_stack "$id"
   if [[ -n "${GATE_ONLY:-}" ]]; then # re-run just the gate (no claude, no marker, no commit): GATE_ONLY=1 scripts/sdd/implement-specs.sh S54
     echo "gate-only $id"
-    if { MAX_PRIORITY="$limit" gate "$domain" && MAX_PRIORITY="$limit" gate_extras "$id" "$domain" "$dir"; } >"$dir/.gate.log" 2>&1; then echo "GATE OK    $id${limit:+ ($limit)}"; else echo "GATE FAIL  $id (see $dir/.gate.log)"; fi
+    if { MAX_PRIORITY="$limit" gate_extras "$id" "$domain" "$dir" && MAX_PRIORITY="$limit" gate "$domain"; } >"$dir/.gate.log" 2>&1; then echo "GATE OK    $id${limit:+ ($limit)}"; else echo "GATE FAIL  $id (see $dir/.gate.log)"; fi
     continue
   fi
   echo "build $id${limit:+ ($limit only)} — $title"
@@ -289,7 +291,7 @@ ordered_capabilities "$@" | while IFS=$'\t' read -r id domain slug title sources
   attempt=0
   while :; do
     echo "  gate"
-    if { MAX_PRIORITY="$limit" gate "$domain" && MAX_PRIORITY="$limit" gate_extras "$id" "$domain" "$dir"; } >"$dir/.gate.log" 2>&1; then break; fi
+    if { MAX_PRIORITY="$limit" gate_extras "$id" "$domain" "$dir" && MAX_PRIORITY="$limit" gate "$domain"; } >"$dir/.gate.log" 2>&1; then break; fi
     attempt=$((attempt + 1))
     if (( attempt > ${MAX_GATE_REPAIRS:-2} )); then
       echo "FAIL  $id: gate (see $dir/.gate.log)" >&2; echo "$id gate failed" > "$STATE_FILE"; exit 1

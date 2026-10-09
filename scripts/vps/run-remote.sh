@@ -56,8 +56,10 @@ if [[ -z "${NO_CHECK:-}" && -z "${DRY_RUN:-}" ]]; then
   rm -rf "$cfg"
 fi
 git -C "$ROOT" fetch -q origin "$BASE_BRANCH"
-if ! git -C "$ROOT" merge-base --is-ancestor HEAD "origin/$BASE_BRANCH"; then
-  die "your local commits are not on origin/$BASE_BRANCH yet; the machine can only see what is pushed: git push origin $BASE_BRANCH"
+# The base branch (not the commit that happens to be checked out: you may be looking at sdd/auto) must be pushed.
+if git -C "$ROOT" rev-parse -q --verify "refs/heads/$BASE_BRANCH" >/dev/null \
+   && ! git -C "$ROOT" merge-base --is-ancestor "$BASE_BRANCH" "origin/$BASE_BRANCH"; then
+  die "your local $BASE_BRANCH has commits that are not on origin/$BASE_BRANCH yet; the machine can only see what is pushed: git push origin $BASE_BRANCH"
 fi
 if [[ -z "$FORCE" && -z "${DRY_RUN:-}" ]] && [[ -n "$(hcloud server list --selector sdd-runner=run -o noheader 2>/dev/null)" ]]; then
   die "a runner machine already exists (hcloud server list --selector sdd-runner=run); use --force or delete it"
@@ -71,7 +73,7 @@ ud="$(mktemp)"; trap 'rm -f "$ud"' EXIT
   echo 'umask 077'
   echo 'mkdir -p /etc/sdd /root/.ssh /var/log/sdd'
   echo "cat > /etc/sdd/env <<'SDD_ENV'"
-  for v in HCLOUD_TOKEN CLAUDE_CODE_OAUTH_TOKEN NTFY_TOPIC NTFY_SERVER HEARTBEAT_URL REPO_SSH_URL BASE_BRANCH PUSH_BRANCH \
+  for v in HCLOUD_TOKEN HCLOUD_SERVER_TYPE CLAUDE_CODE_OAUTH_TOKEN NTFY_TOPIC NTFY_SERVER HEARTBEAT_URL REPO_SSH_URL BASE_BRANCH PUSH_BRANCH \
            PASS_TIMEOUT_S FAILURE_KEEP_MIN SNAPSHOT_MIN GIT_AUTHOR_NAME GIT_AUTHOR_EMAIL; do
     printf '%s=%q\n' "$v" "${!v:-}"
   done

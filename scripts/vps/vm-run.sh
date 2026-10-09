@@ -139,6 +139,10 @@ snapshot_loop() {
 snapshot_loop &
 SNAP_PID=$!
 
+# peak memory use of the whole run, to size the machine (sampled every 20 s; the final message reports it)
+( peak=0; while sleep 20; do used="$(free -m | awk 'NR==2{print $3}')"; (( used > peak )) && { peak=$used; echo "$peak" > "$LOG/peak-mem-mb"; }; done ) &
+MEM_PID=$!
+
 # --- the loop
 say "loop starting"
 # shellcheck disable=SC2086
@@ -146,7 +150,8 @@ scripts/sdd/implement-specs.sh ${SDD_ARGS:-} >"$LOG/loop.log" 2>&1
 code=$?
 say "loop ended with exit code $code"
 
-kill "$MON_PID" "$SNAP_PID" 2>/dev/null || true
+kill "$MON_PID" "$SNAP_PID" "$MEM_PID" 2>/dev/null || true
+say "peak memory used during the run: $(cat "$LOG/peak-mem-mb" 2>/dev/null || echo ?) MB of $(free -m | awk 'NR==2{print $2}') MB (machine type: ${HCLOUD_SERVER_TYPE:-?})"
 [[ -n "$STACK_PID" ]] && { kill -INT "$STACK_PID" 2>/dev/null || true; sleep 5; }
 
 # --- keep everything: commit leftovers, push
@@ -161,7 +166,7 @@ say "pushed $(git rev-parse --short HEAD) to $PUSH_BRANCH"
 
 case "$code" in
   0|75|76|77)
-    ntfy "SDD runner done" "Branch $PUSH_BRANCH is pushed ($(git rev-parse --short HEAD)); deleting the machine. Pull it and test locally: git fetch origin && git checkout $PUSH_BRANCH" 3 white_check_mark
+    ntfy "SDD runner done" "Branch $PUSH_BRANCH is pushed ($(git rev-parse --short HEAD)); peak memory $(cat "$LOG/peak-mem-mb" 2>/dev/null || echo ?) MB; deleting the machine. Pull it and test locally: git fetch origin && git checkout $PUSH_BRANCH" 3 white_check_mark
     destroy_now ;;
   *) fail_and_wait "the loop failed with exit code $code (work is pushed to $PUSH_BRANCH)" ;;
 esac
