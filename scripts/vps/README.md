@@ -27,8 +27,13 @@ open it with `nano ~/.config/sdd-vps/config.env`, and fill in the lines below. N
    The config already has `DEPLOY_KEY_FILE=~/.ssh/sdd_deploy`, nothing to edit.
 
 4. **Give GitHub the deploy key.** Repo -> *Settings -> Deploy keys -> Add deploy key*. Paste the output of the `cat` from
-   step 3 and tick **Allow write access**. Then *Settings -> Branches*: protect `master` (include administrators), so the
-   machine can only ever write `sdd/auto`.
+   step 3 and tick **Allow write access**.
+
+   Optional safety net, so the key can never touch `master`: *Settings -> Rules -> Rulesets -> New ruleset -> New branch
+   ruleset*. Name `protect-master`, enforcement **Active**, bypass list: add the **Repository admin** role (that is you),
+   target: the default branch, rules: **Restrict updates**, **Restrict deletions**, **Block force pushes**. Do not tick
+   "Require a pull request" (it would block your own pushes). If you do not see Rules at all (private repo on the free plan),
+   skip it: the runner script only pushes `sdd/auto`.
 
 5. **Claude token.** In the terminal, signed in to the Claude account you want to spend, run `claude setup-token`. Copy the
    token it prints and paste it into the config after `CLAUDE_CODE_OAUTH_TOKEN=`.
