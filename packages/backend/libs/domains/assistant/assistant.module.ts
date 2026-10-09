@@ -20,7 +20,17 @@ import { LlmMeter } from './infra/llm/llm-meter';
 
 /** SD-42 (sse-gateway: thousands of held-open streams, I/O bound - the same resource profile as the topic streams). */
 @Module({
-  imports: [AuthModule, LlmModule, CassandraModule, CacheModule, RateLimitModule, KafkaProducerModule, ClickHouseModule, ProductModule, PickupModule],
+  imports: [
+    AuthModule,
+    LlmModule,
+    CassandraModule,
+    CacheModule,
+    RateLimitModule,
+    KafkaProducerModule,
+    ClickHouseModule,
+    ProductModule,
+    PickupModule,
+  ],
   providers: [
     ConversationStore,
     GenerationBuffer,

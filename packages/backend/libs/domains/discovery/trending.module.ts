@@ -6,9 +6,12 @@ import { TrendingService } from './application/trending.service';
 import { TrendingController } from './api/trending.controller';
 
 /** SD-32 trending reads (core). The streaming top-K consumer runs in apps/projector (TrendingConsumerModule). */
-@Module({ imports: [AuthModule, CacheModule], providers: [TrendingService], controllers: [TrendingController] })
+@Module({
+  imports: [AuthModule, CacheModule],
+  providers: [TrendingService],
+  controllers: [TrendingController],
+})
 export class TrendingModule {}
-
 
 @Module({ providers: [TrendingConsumer], exports: [TrendingConsumer] })
 export class TrendingConsumerModule {}

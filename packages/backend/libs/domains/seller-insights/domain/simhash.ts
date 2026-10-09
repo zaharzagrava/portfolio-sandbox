@@ -7,15 +7,21 @@ import { createHash } from 'node:crypto';
  * stays within ~3 bits, so we skip re-extracting it.
  */
 export function simhash(text: string): string {
-  const words = text.toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, ' ').split(/\s+/).filter(Boolean);
+  const words = text
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}\s]/gu, ' ')
+    .split(/\s+/)
+    .filter(Boolean);
   const votes = new Array<number>(64).fill(0);
   for (let i = 0; i + 2 < Math.max(words.length, 3); i++) {
     const shingle = words.slice(i, i + 3).join(' ');
     const h = createHash('md5').update(shingle).digest().readBigUInt64BE(0);
-    for (let bit = 0; bit < 64; bit++) votes[bit] += (h >> BigInt(bit)) & 1n ? 1 : -1;
+    for (let bit = 0; bit < 64; bit++)
+      votes[bit] += (h >> BigInt(bit)) & 1n ? 1 : -1;
   }
   let out = 0n;
-  for (let bit = 0; bit < 64; bit++) if (votes[bit] > 0) out |= 1n << BigInt(bit);
+  for (let bit = 0; bit < 64; bit++)
+    if (votes[bit] > 0) out |= 1n << BigInt(bit);
   return out.toString(16).padStart(16, '0');
 }
 

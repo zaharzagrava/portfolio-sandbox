@@ -14,23 +14,38 @@ export class InMemoryTokenBucket {
     private readonly now: () => number = Date.now,
   ) {}
 
-  take(key: string, requested = 1): { granted: boolean; remaining: number; retryAfterMs: number } {
+  take(
+    key: string,
+    requested = 1,
+  ): { granted: boolean; remaining: number; retryAfterMs: number } {
     const now = this.now();
     let bucket = this.buckets.get(key);
     if (!bucket) {
-      if (this.buckets.size >= this.maxKeys) this.buckets.delete(this.buckets.keys().next().value!);
+      if (this.buckets.size >= this.maxKeys)
+        this.buckets.delete(this.buckets.keys().next().value!);
       bucket = { tokens: this.capacity, ts: now };
     } else {
       this.buckets.delete(key); // re-insert → most recently used at the end
     }
-    bucket.tokens = Math.min(this.capacity, bucket.tokens + (now - bucket.ts) * this.refillPerMs);
+    bucket.tokens = Math.min(
+      this.capacity,
+      bucket.tokens + (now - bucket.ts) * this.refillPerMs,
+    );
     bucket.ts = now;
     this.buckets.set(key, bucket);
 
     if (bucket.tokens >= requested) {
       bucket.tokens -= requested;
-      return { granted: true, remaining: Math.floor(bucket.tokens), retryAfterMs: 0 };
+      return {
+        granted: true,
+        remaining: Math.floor(bucket.tokens),
+        retryAfterMs: 0,
+      };
     }
-    return { granted: false, remaining: Math.floor(bucket.tokens), retryAfterMs: Math.ceil((requested - bucket.tokens) / this.refillPerMs) };
+    return {
+      granted: false,
+      remaining: Math.floor(bucket.tokens),
+      retryAfterMs: Math.ceil((requested - bucket.tokens) / this.refillPerMs),
+    };
   }
 }

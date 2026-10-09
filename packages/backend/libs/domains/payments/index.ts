@@ -5,7 +5,10 @@
  * domains must stop injecting them.
  */
 export { default as LedgerEntryModel } from './infra/models/ledger-entry.model';
-export { default as PaymentModel, PaymentStatus } from './infra/models/payment.model';
+export {
+  default as PaymentModel,
+  PaymentStatus,
+} from './infra/models/payment.model';
 export { default as PayoutModel } from './infra/models/payout.model';
 export { LEDGER_ACCOUNTS, shopAccount } from './domain/accounts';
 export { FinanceWorkerModule } from './finance-worker.module';

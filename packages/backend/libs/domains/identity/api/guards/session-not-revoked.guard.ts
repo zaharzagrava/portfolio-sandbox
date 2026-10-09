@@ -1,4 +1,9 @@
-import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  CanActivate,
+  ExecutionContext,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { SessionStore } from '../../infra/sessions/session-store.service';
 
 /**
@@ -12,9 +17,11 @@ export class SessionNotRevokedGuard implements CanActivate {
   constructor(private readonly sessions: SessionStore) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const sid = context.switchToHttp().getRequest().user?.sessionId as string | undefined;
+    const sid = context.switchToHttp().getRequest().user?.sessionId as
+      string | undefined;
     // Legacy tokens (no session) are rejected for sensitive operations.
-    if (!sid || (await this.sessions.isRevoked(sid))) throw new UnauthorizedException('Session revoked or not session-bound');
+    if (!sid || (await this.sessions.isRevoked(sid)))
+      throw new UnauthorizedException('Session revoked or not session-bound');
     return true;
   }
 }

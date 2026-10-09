@@ -1,8 +1,22 @@
-import { Column, DataType, Model, PrimaryKey, Table } from 'sequelize-typescript';
+import {
+  Column,
+  DataType,
+  Model,
+  PrimaryKey,
+  Table,
+} from 'sequelize-typescript';
 import { Sequelize } from 'sequelize';
 
-@Table({ modelName: 'StockReservation', tableName: 'StockReservation', timestamps: true, updatedAt: false })
-export default class StockReservation extends Model<StockReservation, Partial<StockReservation>> {
+@Table({
+  modelName: 'StockReservation',
+  tableName: 'StockReservation',
+  timestamps: true,
+  updatedAt: false,
+})
+export default class StockReservation extends Model<
+  StockReservation,
+  Partial<StockReservation>
+> {
   @PrimaryKey
   @Column({ type: DataType.UUID, defaultValue: Sequelize.literal('uuidv7()') })
   declare id: string;

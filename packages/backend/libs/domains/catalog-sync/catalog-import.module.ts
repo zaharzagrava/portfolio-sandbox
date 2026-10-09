@@ -12,9 +12,23 @@ import { CatalogImportWorker } from './infra/catalog-import.worker';
 const SERVICES = [CatalogImportService, OrderExportService];
 
 /** SD-27 API (core). */
-@Module({ imports: [AuthModule, StorageModule, SqsModule, RealtimeModule, RateLimitModule], providers: SERVICES, exports: SERVICES, controllers: [CatalogImportController] })
+@Module({
+  imports: [
+    AuthModule,
+    StorageModule,
+    SqsModule,
+    RealtimeModule,
+    RateLimitModule,
+  ],
+  providers: SERVICES,
+  exports: SERVICES,
+  controllers: [CatalogImportController],
+})
 export class CatalogImportModule {}
 
 /** SD-27 processing (apps/worker). */
-@Module({ imports: [StorageModule, SqsModule, RealtimeModule, RateLimitModule], providers: [...SERVICES, CatalogImportWorker] })
+@Module({
+  imports: [StorageModule, SqsModule, RealtimeModule, RateLimitModule],
+  providers: [...SERVICES, CatalogImportWorker],
+})
 export class CatalogImportWorkerModule {}

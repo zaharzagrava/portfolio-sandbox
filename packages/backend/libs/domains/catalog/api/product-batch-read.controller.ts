@@ -19,11 +19,21 @@ export class ProductBatchReadController {
   @Get('products')
   async products(@Query('ids') raw: string) {
     const ids = parseIdList(raw);
-    const rows = await this.sequelize.query<{ id: string; title: string; price: string; quantity: number; category: string; shopId: string | null; rating: number }>(
+    const rows = await this.sequelize.query<{
+      id: string;
+      title: string;
+      price: string;
+      quantity: number;
+      category: string;
+      shopId: string | null;
+      rating: number;
+    }>(
       `SELECT id, title, price, quantity, category, "shopId", rating FROM "Product" WHERE id IN (:ids)`,
       { type: QueryTypes.SELECT, replacements: { ids } },
     );
-    const byId = new Map(rows.map((r) => [r.id, { ...r, price: Number(r.price) }]));
+    const byId = new Map(
+      rows.map((r) => [r.id, { ...r, price: Number(r.price) }]),
+    );
     return ids.map((id) => byId.get(id) ?? null);
   }
 }

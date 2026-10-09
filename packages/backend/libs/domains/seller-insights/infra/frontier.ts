@@ -30,12 +30,22 @@ export class Frontier {
   constructor(private readonly redis: RedisService) {}
 
   async push(host: string, url: string) {
-    await this.redis.client.multi().rpush(hostQueue(host), url).zadd(READY, 'NX', Date.now(), host).exec();
+    await this.redis.client
+      .multi()
+      .rpush(hostQueue(host), url)
+      .zadd(READY, 'NX', Date.now(), host)
+      .exec();
   }
 
   /** Note: the hash tag-free keys are touched inside Lua - fine on a single shard; with Redis Cluster, use `{host}` tags + one ZSET per shard. */
   async take(leaseMs = 60_000): Promise<{ host: string; url: string } | null> {
-    const res = (await this.redis.client.eval(TAKE, 1, READY, Date.now(), leaseMs)) as [string, string] | null;
+    const res = (await this.redis.client.eval(
+      TAKE,
+      1,
+      READY,
+      Date.now(),
+      leaseMs,
+    )) as [string, string] | null;
     return res ? { host: res[0], url: res[1] } : null;
   }
 

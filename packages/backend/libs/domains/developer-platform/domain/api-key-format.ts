@@ -24,13 +24,23 @@ function base62(length: number): string {
  * random, so brute force is infeasible regardless of hash speed, and a slow
  * hash per API call would cost real CPU at 30k RPS.
  */
-export function generateApiKey(livemode: boolean): { key: string; prefix: string; secret: string } {
+export function generateApiKey(livemode: boolean): {
+  key: string;
+  prefix: string;
+  secret: string;
+} {
   const prefix = base62(12);
   const secret = base62(32);
-  return { key: `sk_${livemode ? 'live' : 'test'}_${prefix}_${secret}`, prefix, secret };
+  return {
+    key: `sk_${livemode ? 'live' : 'test'}_${prefix}_${secret}`,
+    prefix,
+    secret,
+  };
 }
 
-export function parseApiKey(raw: string): { livemode: boolean; prefix: string; secret: string } | null {
+export function parseApiKey(
+  raw: string,
+): { livemode: boolean; prefix: string; secret: string } | null {
   const m = /^sk_(live|test)_([0-9A-Za-z]{12})_([0-9A-Za-z]{32})$/.exec(raw);
   return m ? { livemode: m[1] === 'live', prefix: m[2], secret: m[3] } : null;
 }
@@ -39,11 +49,20 @@ export function hashSecret(secret: string, pepper: string): string {
   return createHash('sha256').update(`${pepper}:${secret}`).digest('base64url');
 }
 
-export function secretMatches(secret: string, storedHash: string, pepper: string): boolean {
+export function secretMatches(
+  secret: string,
+  storedHash: string,
+  pepper: string,
+): boolean {
   const a = Buffer.from(hashSecret(secret, pepper));
   const b = Buffer.from(storedHash);
   return a.length === b.length && timingSafeEqual(a, b);
 }
 
-export const API_SCOPES = ['products:read', 'products:write', 'orders:read', 'stock:write'] as const;
+export const API_SCOPES = [
+  'products:read',
+  'products:write',
+  'orders:read',
+  'stock:write',
+] as const;
 export type ApiScope = (typeof API_SCOPES)[number];

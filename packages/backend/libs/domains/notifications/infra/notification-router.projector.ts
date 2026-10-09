@@ -20,11 +20,16 @@ const short = (id: string) => id.slice(0, 8).toUpperCase();
 @Injectable()
 export class NotificationRouterProjector implements Projector {
   readonly name = 'notification-router';
-  readonly topics = [OrderPaid.topic, AuctionClosed.topic, InvoicePaymentFailed.topic];
+  readonly topics = [
+    OrderPaid.topic,
+    AuctionClosed.topic,
+    InvoicePaymentFailed.topic,
+  ];
 
   constructor(
     private readonly router: NotificationRouter,
-    @InjectModel(ShopMembership) private readonly memberships: typeof ShopMembership,
+    @InjectModel(ShopMembership)
+    private readonly memberships: typeof ShopMembership,
   ) {}
 
   async project(events: EventEnvelope[]): Promise<void> {
@@ -37,27 +42,84 @@ export class NotificationRouterProjector implements Projector {
 
     const paid = OrderPaid.match(e);
     if (paid) {
-      return [{ ...base, type: 'order.confirmed', userId: paid.payload.userId, data: { orderId: e.aggregateId, orderShort: short(e.aggregateId), total: formatMoney(paid.payload.total, paid.payload.currency ?? 'usd', 'en-US') } }];
+      return [
+        {
+          ...base,
+          type: 'order.confirmed',
+          userId: paid.payload.userId,
+          data: {
+            orderId: e.aggregateId,
+            orderShort: short(e.aggregateId),
+            total: formatMoney(
+              paid.payload.total,
+              paid.payload.currency ?? 'usd',
+              'en-US',
+            ),
+          },
+        },
+      ];
     }
     const cancelled = OrderCancelled.match(e);
     if (cancelled) {
-      return [{ ...base, type: 'order.cancelled', userId: cancelled.payload.userId, data: { orderId: e.aggregateId, orderShort: short(e.aggregateId), reason: cancelled.payload.reason } }];
+      return [
+        {
+          ...base,
+          type: 'order.cancelled',
+          userId: cancelled.payload.userId,
+          data: {
+            orderId: e.aggregateId,
+            orderShort: short(e.aggregateId),
+            reason: cancelled.payload.reason,
+          },
+        },
+      ];
     }
     const leader = AuctionLeaderChanged.match(e);
     if (leader) {
-      return [{ ...base, type: 'auction.outbid', userId: leader.payload.previousLeaderId, data: { auctionId: e.aggregateId, price: formatMoney(leader.payload.price, 'usd', 'en-US') } }];
+      return [
+        {
+          ...base,
+          type: 'auction.outbid',
+          userId: leader.payload.previousLeaderId,
+          data: {
+            auctionId: e.aggregateId,
+            price: formatMoney(leader.payload.price, 'usd', 'en-US'),
+          },
+        },
+      ];
     }
     const closed = AuctionClosed.match(e);
     if (closed?.payload.winnerId && closed.payload.finalPrice !== null) {
-      return [{ ...base, type: 'auction.won', userId: closed.payload.winnerId, data: { auctionId: e.aggregateId, price: formatMoney(closed.payload.finalPrice, 'usd', 'en-US') } }];
+      return [
+        {
+          ...base,
+          type: 'auction.won',
+          userId: closed.payload.winnerId,
+          data: {
+            auctionId: e.aggregateId,
+            price: formatMoney(closed.payload.finalPrice, 'usd', 'en-US'),
+          },
+        },
+      ];
     }
     const failed = InvoicePaymentFailed.match(e);
     if (failed) {
       const userIds =
         failed.payload.subjectType === 'USER'
           ? [failed.payload.subjectId]
-          : (await this.memberships.findAll({ where: { shopId: failed.payload.subjectId, role: 'OWNER' }, attributes: ['userId'], raw: true })).map((m) => m.userId);
-      return userIds.map((userId) => ({ ...base, type: 'billing.payment_failed' as const, userId, data: { attempt: String(failed.payload.attempt) } }));
+          : (
+              await this.memberships.findAll({
+                where: { shopId: failed.payload.subjectId, role: 'OWNER' },
+                attributes: ['userId'],
+                raw: true,
+              })
+            ).map((m) => m.userId);
+      return userIds.map((userId) => ({
+        ...base,
+        type: 'billing.payment_failed' as const,
+        userId,
+        data: { attempt: String(failed.payload.attempt) },
+      }));
     }
     return [];
   }

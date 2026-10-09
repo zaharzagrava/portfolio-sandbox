@@ -6,7 +6,11 @@ export interface TopicViewer {
   roles?: string[];
 }
 
-export type TopicPolicy = (viewer: TopicViewer, topic: RealtimeTopic, id: string) => Promise<boolean> | boolean;
+export type TopicPolicy = (
+  viewer: TopicViewer,
+  topic: RealtimeTopic,
+  id: string,
+) => Promise<boolean> | boolean;
 
 export interface TopicDefinition {
   /** `<prefix>:<id>` topics, e.g. `auction` for `auction:{auctionId}`. */
@@ -35,7 +39,10 @@ export class TopicRegistry {
   private readonly suffixes = new Set<string>();
 
   define(def: TopicDefinition): void {
-    this.policies.set(def.prefix, [...(this.policies.get(def.prefix) ?? []), def.policy]);
+    this.policies.set(def.prefix, [
+      ...(this.policies.get(def.prefix) ?? []),
+      def.policy,
+    ]);
     if (def.singleton) this.singletons.add(def.prefix);
     for (const s of def.suffixes ?? []) this.suffixes.add(s);
   }
@@ -43,10 +50,18 @@ export class TopicRegistry {
   isKnown(topic: string): topic is RealtimeTopic {
     if (this.singletons.has(topic)) return true;
     const m = TOPIC.exec(topic);
-    return !!m && this.policies.has(m[1]) && !this.singletons.has(m[1]) && (!m[3] || this.suffixes.has(m[3]));
+    return (
+      !!m &&
+      this.policies.has(m[1]) &&
+      !this.singletons.has(m[1]) &&
+      (!m[3] || this.suffixes.has(m[3]))
+    );
   }
 
-  async canSubscribe(viewer: TopicViewer, topic: RealtimeTopic): Promise<boolean> {
+  async canSubscribe(
+    viewer: TopicViewer,
+    topic: RealtimeTopic,
+  ): Promise<boolean> {
     const [prefix, id = ''] = topic.split(':');
     for (const policy of this.policies.get(prefix) ?? []) {
       if (await policy(viewer, topic, id)) return true;

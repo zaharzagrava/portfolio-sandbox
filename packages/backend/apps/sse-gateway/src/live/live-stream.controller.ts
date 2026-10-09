@@ -1,9 +1,23 @@
-import { Controller, Get, NotFoundException, Param, ParseUUIDPipe, Req, Res } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  NotFoundException,
+  Param,
+  ParseUUIDPipe,
+  Req,
+  Res,
+} from '@nestjs/common';
 import type { Request, Response } from 'express';
 import { Firewall } from '@app/domains/identity';
 import type { RequestWithUser } from '@app/domains/identity';
 import { RedisService } from '@app/infrastructure/redis/redis.service';
-import { ACTIVE_STREAMS, LiveComment, pinKey, RECENT_COMMENTS, recentKey } from '@app/domains/launch-events';
+import {
+  ACTIVE_STREAMS,
+  LiveComment,
+  pinKey,
+  RECENT_COMMENTS,
+  recentKey,
+} from '@app/domains/launch-events';
 import { LiveBatcherRegistry, LiveViewer } from './live-batcher.service';
 
 const HEARTBEAT_MS = 15_000;
@@ -25,10 +39,20 @@ export class LiveStreamController {
 
   @Firewall({ anonymous: true, skipThrottle: true })
   @Get(':streamId/events')
-  async events(@Param('streamId', ParseUUIDPipe) streamId: string, @Req() req: Request & Partial<RequestWithUser>, @Res() res: Response) {
-    if (!(await this.redis.client.sismember(ACTIVE_STREAMS, streamId))) throw new NotFoundException('Stream is not live');
+  async events(
+    @Param('streamId', ParseUUIDPipe) streamId: string,
+    @Req() req: Request & Partial<RequestWithUser>,
+    @Res() res: Response,
+  ) {
+    if (!(await this.redis.client.sismember(ACTIVE_STREAMS, streamId)))
+      throw new NotFoundException('Stream is not live');
 
-    res.writeHead(200, { 'Content-Type': 'text/event-stream; charset=utf-8', 'Cache-Control': 'no-cache, no-transform', Connection: 'keep-alive', 'X-Accel-Buffering': 'no' });
+    res.writeHead(200, {
+      'Content-Type': 'text/event-stream; charset=utf-8',
+      'Cache-Control': 'no-cache, no-transform',
+      Connection: 'keep-alive',
+      'X-Accel-Buffering': 'no',
+    });
     res.write('retry: 3000\n\n');
 
     let closed = false;
@@ -41,8 +65,14 @@ export class LiveStreamController {
       },
     };
 
-    const [recent, pin] = await Promise.all([this.redis.client.lrange(recentKey(streamId), 0, RECENT_COMMENTS - 1), this.redis.client.get(pinKey(streamId))]);
-    viewer.send('snapshot', { recent: recent.map((s) => JSON.parse(s) as LiveComment).reverse(), pin: pin ? JSON.parse(pin) : null });
+    const [recent, pin] = await Promise.all([
+      this.redis.client.lrange(recentKey(streamId), 0, RECENT_COMMENTS - 1),
+      this.redis.client.get(pinKey(streamId)),
+    ]);
+    viewer.send('snapshot', {
+      recent: recent.map((s) => JSON.parse(s) as LiveComment).reverse(),
+      pin: pin ? JSON.parse(pin) : null,
+    });
 
     const leave = await this.registry.join(streamId, viewer);
     const heartbeat = setInterval(() => res.write(': ping\n\n'), HEARTBEAT_MS);

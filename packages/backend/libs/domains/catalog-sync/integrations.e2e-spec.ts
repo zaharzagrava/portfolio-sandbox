@@ -1,5 +1,9 @@
 import { INestApplication, Module } from '@nestjs/common';
-import { getConnectionToken, getModelToken, SequelizeModule } from '@nestjs/sequelize';
+import {
+  getConnectionToken,
+  getModelToken,
+  SequelizeModule,
+} from '@nestjs/sequelize';
 import { QueryTypes, Sequelize } from 'sequelize';
 import { createHmac } from 'node:crypto';
 import { v4 } from 'uuid';
@@ -23,7 +27,9 @@ describe('Shop integrations sync (e2e)', () => {
   let db: Sequelize;
 
   beforeAll(async () => {
-    const moduleRef = await generateTestingModule([SpecModule, SeedsModule], { stores: ['redis', 'sqs'] });
+    const moduleRef = await generateTestingModule([SpecModule, SeedsModule], {
+      stores: ['redis', 'sqs'],
+    });
     app = moduleRef.createNestApplication();
     await app.init();
     seeds = app.get(SeedsService);
@@ -40,12 +46,33 @@ describe('Shop integrations sync (e2e)', () => {
     await seeds.clean();
   });
 
-  const minutesAgo = (m: number) => new Date(Date.now() - m * 60_000).toISOString();
-  const product = (id: string, qty: number, modified: string, extra: Partial<FakeProduct> = {}): FakeProduct => ({ id, name: `Remote ${id}`, price_cents: 1999, qty, type: 'audio', modified, ...extra });
+  const minutesAgo = (m: number) =>
+    new Date(Date.now() - m * 60_000).toISOString();
+  const product = (
+    id: string,
+    qty: number,
+    modified: string,
+    extra: Partial<FakeProduct> = {},
+  ): FakeProduct => ({
+    id,
+    name: `Remote ${id}`,
+    price_cents: 1999,
+    qty,
+    type: 'audio',
+    modified,
+    ...extra,
+  });
 
   const connect = async () => {
-    const shop = await app.get<typeof Shop>(getModelToken(Shop)).create({ name: 'Synced', slug: `sy-${v4().slice(0, 8)}` });
-    const { integrationId } = await sync.connect(shop.id, 'fake', 'remote-store', { secret: 'hook-secret' });
+    const shop = await app
+      .get<typeof Shop>(getModelToken(Shop))
+      .create({ name: 'Synced', slug: `sy-${v4().slice(0, 8)}` });
+    const { integrationId } = await sync.connect(
+      shop.id,
+      'fake',
+      'remote-store',
+      { secret: 'hook-secret' },
+    );
     const remote = await sync.fakeFor(integrationId);
     return { shopId: shop.id, integrationId, remote };
   };
@@ -53,18 +80,39 @@ describe('Shop integrations sync (e2e)', () => {
     (
       await db.query<{ id: string; quantity: number; title: string }>(
         `SELECT p.id, p.quantity, p.title FROM "Product" p JOIN "ExternalLink" l ON l."localId" = p.id WHERE l."integrationId" = :integrationId AND l."externalId" = :externalId`,
-        { type: QueryTypes.SELECT, replacements: { integrationId, externalId } },
+        {
+          type: QueryTypes.SELECT,
+          replacements: { integrationId, externalId },
+        },
       )
     )[0];
 
   it('initial sync pages through everything; a malformed product is quarantined, not fatal', async () => {
     const { integrationId, remote } = await connect();
-    for (let i = 1; i <= 4; i++) remote.upsert(product(`p${i}`, i * 10, minutesAgo(60 - i)));
-    remote.upsert({ id: 'bad', name: 'Broken', price_cents: 'free', qty: 1, type: 'audio', modified: minutesAgo(30) }); // schema drift
+    for (let i = 1; i <= 4; i++)
+      remote.upsert(product(`p${i}`, i * 10, minutesAgo(60 - i)));
+    remote.upsert({
+      id: 'bad',
+      name: 'Broken',
+      price_cents: 'free',
+      qty: 1,
+      type: 'audio',
+      modified: minutesAgo(30),
+    }); // schema drift
 
-    expect(await sync.syncIncremental(integrationId)).toEqual({ applied: 4, skipped: 0, quarantined: 1 });
-    expect(await local(integrationId, 'p3')).toMatchObject({ quantity: 30, title: 'Remote p3' });
-    const [q] = await db.query<{ reason: string }>(`SELECT reason FROM "SyncQuarantine" WHERE "integrationId" = :integrationId`, { type: QueryTypes.SELECT, replacements: { integrationId } });
+    expect(await sync.syncIncremental(integrationId)).toEqual({
+      applied: 4,
+      skipped: 0,
+      quarantined: 1,
+    });
+    expect(await local(integrationId, 'p3')).toMatchObject({
+      quantity: 30,
+      title: 'Remote p3',
+    });
+    const [q] = await db.query<{ reason: string }>(
+      `SELECT reason FROM "SyncQuarantine" WHERE "integrationId" = :integrationId`,
+      { type: QueryTypes.SELECT, replacements: { integrationId } },
+    );
     expect(q.reason).toMatch(/^schema: priceMinor/);
   });
 
@@ -89,7 +137,9 @@ describe('Shop integrations sync (e2e)', () => {
     const mine = await local(integrationId, 'sku-1');
 
     expect(await sync.pushStock(mine.id)).toBe(0); // inbound apply already in sync → nothing to push
-    await db.query(`UPDATE "Product" SET quantity = 8 WHERE id = :id`, { replacements: { id: mine.id } }); // sold 2 on the marketplace
+    await db.query(`UPDATE "Product" SET quantity = 8 WHERE id = :id`, {
+      replacements: { id: mine.id },
+    }); // sold 2 on the marketplace
     expect(await sync.pushStock(mine.id)).toBe(1);
     expect(remote.stockWrites).toEqual([{ id: 'sku-1', qty: 8 }]);
 
@@ -102,9 +152,21 @@ describe('Shop integrations sync (e2e)', () => {
     const { integrationId, remote } = await connect();
     remote.upsert(product('hooked', 3, minutesAgo(1)));
     const body = Buffer.from(JSON.stringify({ id: 'hooked' }));
-    expect(await sync.verifyWebhook(integrationId, body, { 'x-fake-signature': createHmac('sha256', 'hook-secret').update(body).digest('hex') })).toBe(true);
-    expect(await sync.verifyWebhook(integrationId, body, { 'x-fake-signature': 'forged' })).toBe(false);
-    expect(await sync.syncOne(integrationId, 'hooked')).toMatchObject({ result: 'applied' });
+    expect(
+      await sync.verifyWebhook(integrationId, body, {
+        'x-fake-signature': createHmac('sha256', 'hook-secret')
+          .update(body)
+          .digest('hex'),
+      }),
+    ).toBe(true);
+    expect(
+      await sync.verifyWebhook(integrationId, body, {
+        'x-fake-signature': 'forged',
+      }),
+    ).toBe(false);
+    expect(await sync.syncOne(integrationId, 'hooked')).toMatchObject({
+      result: 'applied',
+    });
   });
 
   it('nightly reconciliation zeroes products deleted at the provider and reports them', async () => {
@@ -113,7 +175,10 @@ describe('Shop integrations sync (e2e)', () => {
     remote.upsert(product('gone', 4, minutesAgo(10)));
     await sync.syncIncremental(integrationId);
     remote.products.delete('gone');
-    expect(await sync.reconcile(integrationId)).toEqual({ deletedAtProvider: 1, missingLocally: 0 });
+    expect(await sync.reconcile(integrationId)).toEqual({
+      deletedAtProvider: 1,
+      missingLocally: 0,
+    });
     expect(await local(integrationId, 'gone')).toMatchObject({ quantity: 0 });
   });
 });

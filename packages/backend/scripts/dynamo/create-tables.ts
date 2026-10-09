@@ -16,7 +16,9 @@ import {
   UpdateTimeToLiveCommand,
 } from '@aws-sdk/client-dynamodb';
 
-type TableDefinition = CreateTableCommandInput & { TimeToLiveAttribute?: string };
+type TableDefinition = CreateTableCommandInput & {
+  TimeToLiveAttribute?: string;
+};
 
 async function main() {
   const dir = join(__dirname, '../../dynamodb');
@@ -29,11 +31,19 @@ async function main() {
 
   for (const file of readdirSync(dir).filter((f) => f.endsWith('.json'))) {
     // `_design` documents the key design next to the schema; it's not part of CreateTable.
-    const { TimeToLiveAttribute, _design, ...definition } = JSON.parse(readFileSync(join(dir, file), 'utf8')) as TableDefinition & { _design?: unknown };
+    const { TimeToLiveAttribute, _design, ...definition } = JSON.parse(
+      readFileSync(join(dir, file), 'utf8'),
+    ) as TableDefinition & { _design?: unknown };
     void _design;
     const TableName = `${prefix}${definition.TableName}`;
     try {
-      await client.send(new CreateTableCommand({ ...definition, TableName, BillingMode: 'PAY_PER_REQUEST' }));
+      await client.send(
+        new CreateTableCommand({
+          ...definition,
+          TableName,
+          BillingMode: 'PAY_PER_REQUEST',
+        }),
+      );
       console.log(`created ${TableName}`);
     } catch (error) {
       if (!(error instanceof ResourceInUseException)) throw error;
@@ -41,7 +51,15 @@ async function main() {
     }
     if (TimeToLiveAttribute) {
       await client
-        .send(new UpdateTimeToLiveCommand({ TableName, TimeToLiveSpecification: { Enabled: true, AttributeName: TimeToLiveAttribute } }))
+        .send(
+          new UpdateTimeToLiveCommand({
+            TableName,
+            TimeToLiveSpecification: {
+              Enabled: true,
+              AttributeName: TimeToLiveAttribute,
+            },
+          }),
+        )
         .catch(() => undefined); // already enabled
     }
   }

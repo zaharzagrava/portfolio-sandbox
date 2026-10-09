@@ -26,10 +26,9 @@ export class CreateOutboxDto {
 export class OutboxRawDto extends IntersectionType(
   IntersectionType(CreateOutboxDto, TimestampsFields),
   IdField,
-) { }
+) {}
 
-export class OutboxFullDto extends OutboxRawDto { }
-
+export class OutboxFullDto extends OutboxRawDto {}
 
 export interface OutboxWrapperConfig<P> {
   payload: P;

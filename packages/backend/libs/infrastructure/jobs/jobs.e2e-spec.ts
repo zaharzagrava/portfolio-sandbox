@@ -32,7 +32,10 @@ class SpecHandlers {
   }
 
   @JobHandler('spec.flaky')
-  async flaky({ failTimes, key }: { failTimes: number; key: string }, ctx: JobContext) {
+  async flaky(
+    { failTimes, key }: { failTimes: number; key: string },
+    ctx: JobContext,
+  ) {
     const calls = (this.flakyCalls.get(key) ?? 0) + 1;
     this.flakyCalls.set(key, calls);
     if (ctx.attempt <= failTimes) throw new Error(`transient #${ctx.attempt}`);
@@ -49,14 +52,19 @@ class JobsSql {
   constructor(@InjectConnection() readonly sequelize: Sequelize) {}
 
   async statuses(type: string) {
-    return this.sequelize.query<{ status: string; attempts: number }>(`SELECT status, attempts FROM "Job" WHERE type = :type`, {
-      type: QueryTypes.SELECT,
-      replacements: { type },
-    });
+    return this.sequelize.query<{ status: string; attempts: number }>(
+      `SELECT status, attempts FROM "Job" WHERE type = :type`,
+      {
+        type: QueryTypes.SELECT,
+        replacements: { type },
+      },
+    );
   }
 
   async makeAllDue() {
-    await this.sequelize.query(`UPDATE "Job" SET "runAt" = now() - interval '1 second' WHERE status = 'QUEUED'`);
+    await this.sequelize.query(
+      `UPDATE "Job" SET "runAt" = now() - interval '1 second' WHERE status = 'QUEUED'`,
+    );
   }
 }
 
@@ -70,7 +78,10 @@ describe('Jobs (e2e, real Postgres)', () => {
   let sql: JobsSql;
 
   beforeAll(async () => {
-    const moduleRef = await generateTestingModule([JobsWorkerModule, { module: class SpecModule {}, providers: [SpecHandlers, JobsSql] }]);
+    const moduleRef = await generateTestingModule([
+      JobsWorkerModule,
+      { module: class SpecModule {}, providers: [SpecHandlers, JobsSql] },
+    ]);
     app = moduleRef.createNestApplication();
     await app.init();
 
@@ -99,11 +110,14 @@ describe('Jobs (e2e, real Postgres)', () => {
     for (let n = 0; n < 400; n++) await jobs.enqueue('spec.count', { n });
 
     // Several claim rounds from 4 concurrent "instances" (same process, separate claims).
-    for (let round = 0; round < 6; round++) await inParallel(4, () => worker.runOnce(50));
+    for (let round = 0; round < 6; round++)
+      await inParallel(4, () => worker.runOnce(50));
 
     expect(handlers.executed).toHaveLength(400);
     expect(new Set(handlers.executed).size).toBe(400);
-    expect((await sql.statuses('spec.count')).every((j) => j.status === 'SUCCEEDED')).toBe(true);
+    expect(
+      (await sql.statuses('spec.count')).every((j) => j.status === 'SUCCEEDED'),
+    ).toBe(true);
   });
 
   it('retries transient failures with backoff and succeeds on a later attempt', async () => {
@@ -114,29 +128,45 @@ describe('Jobs (e2e, real Postgres)', () => {
       await sql.makeAllDue(); // skip the backoff delay
     }
 
-    expect(await sql.statuses('spec.flaky')).toEqual([{ status: 'SUCCEEDED', attempts: 3 }]);
+    expect(await sql.statuses('spec.flaky')).toEqual([
+      { status: 'SUCCEEDED', attempts: 3 },
+    ]);
   });
 
   it('non-retryable errors go straight to DEAD; retryable ones go DEAD after maxAttempts', async () => {
     await jobs.enqueue('spec.poison', {});
-    await jobs.enqueue('spec.flaky', { failTimes: 99, key: 'b' }, { maxAttempts: 2 });
+    await jobs.enqueue(
+      'spec.flaky',
+      { failTimes: 99, key: 'b' },
+      { maxAttempts: 2 },
+    );
 
     for (let i = 0; i < 3; i++) {
       await worker.runOnce();
       await sql.makeAllDue();
     }
 
-    expect(await sql.statuses('spec.poison')).toEqual([{ status: 'DEAD', attempts: 1 }]);
-    expect(await sql.statuses('spec.flaky')).toEqual([{ status: 'DEAD', attempts: 2 }]);
+    expect(await sql.statuses('spec.poison')).toEqual([
+      { status: 'DEAD', attempts: 1 },
+    ]);
+    expect(await sql.statuses('spec.flaky')).toEqual([
+      { status: 'DEAD', attempts: 2 },
+    ]);
   });
 
   it('idempotency key: concurrent enqueues of the same key create one job', async () => {
     const key = `order-${v4()}`;
-    const results = await inParallel(10, () => jobs.enqueue('spec.count', { n: 1 }, { idempotencyKey: key }));
+    const results = await inParallel(10, () =>
+      jobs.enqueue('spec.count', { n: 1 }, { idempotencyKey: key }),
+    );
 
-    const ids = results.map((r) => (r.status === 'fulfilled' ? r.value.id : 'rejected'));
+    const ids = results.map((r) =>
+      r.status === 'fulfilled' ? r.value.id : 'rejected',
+    );
     expect(new Set(ids).size).toBe(1);
-    expect(results.filter((r) => r.status === 'fulfilled' && r.value.created)).toHaveLength(1);
+    expect(
+      results.filter((r) => r.status === 'fulfilled' && r.value.created),
+    ).toHaveLength(1);
     expect(await sql.statuses('spec.count')).toHaveLength(1);
   });
 
@@ -153,8 +183,15 @@ describe('Jobs (e2e, real Postgres)', () => {
   });
 
   it('cron materializer creates one job per fire even when two instances tick at once', async () => {
-    await jobs.upsertSchedule({ name: 'spec.every-minute', cron: '* * * * *', jobType: 'spec.count', payload: { n: 7 } });
-    await sql.sequelize.query(`UPDATE "JobSchedule" SET "nextFireAt" = now() - interval '1 second'`);
+    await jobs.upsertSchedule({
+      name: 'spec.every-minute',
+      cron: '* * * * *',
+      jobType: 'spec.count',
+      payload: { n: 7 },
+    });
+    await sql.sequelize.query(
+      `UPDATE "JobSchedule" SET "nextFireAt" = now() - interval '1 second'`,
+    );
 
     await inParallel(3, () => maintenance.materializeDueSchedules());
 
@@ -163,10 +200,24 @@ describe('Jobs (e2e, real Postgres)', () => {
 
   it('next fire keeps local wall-clock time across DST (Europe/Warsaw)', () => {
     // 2026-03-29 is the spring-forward day in the EU.
-    const before = nextFireAt('0 9 * * *', 'Europe/Warsaw', new Date('2026-03-28T10:00:00Z'));
-    const after = nextFireAt('0 9 * * *', 'Europe/Warsaw', new Date('2026-03-29T10:00:00Z'));
+    const before = nextFireAt(
+      '0 9 * * *',
+      'Europe/Warsaw',
+      new Date('2026-03-28T10:00:00Z'),
+    );
+    const after = nextFireAt(
+      '0 9 * * *',
+      'Europe/Warsaw',
+      new Date('2026-03-29T10:00:00Z'),
+    );
     expect(before.toISOString()).toBe('2026-03-29T07:00:00.000Z'); // 09:00 CEST (UTC+2)
     expect(after.toISOString()).toBe('2026-03-30T07:00:00.000Z');
-    expect(nextFireAt('0 9 * * *', 'Europe/Warsaw', new Date('2026-03-27T10:00:00Z')).toISOString()).toBe('2026-03-28T08:00:00.000Z'); // CET (UTC+1)
+    expect(
+      nextFireAt(
+        '0 9 * * *',
+        'Europe/Warsaw',
+        new Date('2026-03-27T10:00:00Z'),
+      ).toISOString(),
+    ).toBe('2026-03-28T08:00:00.000Z'); // CET (UTC+1)
   });
 });

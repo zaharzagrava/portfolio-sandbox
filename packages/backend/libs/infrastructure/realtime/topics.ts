@@ -29,12 +29,16 @@ export function encodeCursor(cursor: Map<string, string>): string {
   return [...cursor.entries()].map(([t, id]) => `${t}~${id}`).join('|');
 }
 
-export function decodeCursor(raw: string | undefined, isKnownTopic: (topic: string) => boolean): Map<string, string> {
+export function decodeCursor(
+  raw: string | undefined,
+  isKnownTopic: (topic: string) => boolean,
+): Map<string, string> {
   const cursor = new Map<string, string>();
   if (!raw) return cursor;
   for (const part of raw.split('|')) {
     const [topic, id] = part.split('~');
-    if (topic && /^\d+-\d+$/.test(id ?? '') && isKnownTopic(topic)) cursor.set(topic, id);
+    if (topic && /^\d+-\d+$/.test(id ?? '') && isKnownTopic(topic))
+      cursor.set(topic, id);
   }
   return cursor;
 }

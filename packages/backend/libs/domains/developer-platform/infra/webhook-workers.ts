@@ -1,4 +1,8 @@
-import { Injectable, OnApplicationBootstrap, OnModuleDestroy } from '@nestjs/common';
+import {
+  Injectable,
+  OnApplicationBootstrap,
+  OnModuleDestroy,
+} from '@nestjs/common';
 import { createHash } from 'node:crypto';
 import { TaskQueue } from '@app/infrastructure/sqs/task-queue.port';
 import { JobHandler } from '@app/infrastructure/jobs/job-handler.decorator';
@@ -25,7 +29,10 @@ export class WebhookWorkers implements OnApplicationBootstrap, OnModuleDestroy {
       WEBHOOK_QUEUE,
       async ({ body, receiveCount }) => {
         const outcome = await this.deliverer.deliver(body, receiveCount);
-        if (outcome === 'retry-fifo') throw new Error(`delivery ${body.eventId} → ${body.endpointId} failed; redeliver`);
+        if (outcome === 'retry-fifo')
+          throw new Error(
+            `delivery ${body.eventId} → ${body.endpointId} failed; redeliver`,
+          );
       },
       { concurrency: 50, visibilityTimeoutSec: 30 },
     );
@@ -38,7 +45,13 @@ export class WebhookWorkers implements OnApplicationBootstrap, OnModuleDestroy {
   @JobHandler('webhooks.retry', { concurrency: 50 })
   async retry(msg: WebhookDelivery) {
     await this.deliverer.requeue(msg, async (m, dedupe) => {
-      await this.queue.enqueue(WEBHOOK_QUEUE, m, { groupId: m.endpointId, deduplicationId: createHash('sha256').update(dedupe).digest('hex').slice(0, 64) });
+      await this.queue.enqueue(WEBHOOK_QUEUE, m, {
+        groupId: m.endpointId,
+        deduplicationId: createHash('sha256')
+          .update(dedupe)
+          .digest('hex')
+          .slice(0, 64),
+      });
     });
   }
 }

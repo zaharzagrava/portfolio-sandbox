@@ -15,7 +15,11 @@ import { readFileSync } from 'node:fs';
 import { ApiConfigModule } from '@app/common/config/api-config.module';
 import { ApiConfigService } from '@app/common/config/api-config.service';
 import { RedisModule } from '@app/infrastructure/redis/redis.module';
-import { KnowledgeModule, Retriever, RetrievalScope } from '@app/domains/assistant';
+import {
+  KnowledgeModule,
+  Retriever,
+  RetrievalScope,
+} from '@app/domains/assistant';
 
 interface GoldenCase {
   question: string;
@@ -53,22 +57,34 @@ async function main() {
   const k = Number(kArg ?? 6);
   const cases = JSON.parse(readFileSync(file, 'utf8')) as GoldenCase[];
 
-  const app = await NestFactory.createApplicationContext(EvalModule, { logger: ['error'] });
+  const app = await NestFactory.createApplicationContext(EvalModule, {
+    logger: ['error'],
+  });
   const retriever = app.get(Retriever);
 
   let hits = 0;
   let reciprocalRanks = 0;
   for (const c of cases) {
     const results = await retriever.search(c.scope, c.question, k);
-    const rank = results.findIndex((r) => c.expectedDocuments.includes(r.title)) + 1;
+    const rank =
+      results.findIndex((r) => c.expectedDocuments.includes(r.title)) + 1;
     if (rank > 0) hits++;
     reciprocalRanks += rank > 0 ? 1 / rank : 0;
-    console.log(`${rank > 0 ? '✓' : '✗'} [rank ${rank || '-'}] ${c.question}  →  ${results.map((r) => r.title).slice(0, 3).join(' | ') || '(nothing)'}`);
+    console.log(
+      `${rank > 0 ? '✓' : '✗'} [rank ${rank || '-'}] ${c.question}  →  ${
+        results
+          .map((r) => r.title)
+          .slice(0, 3)
+          .join(' | ') || '(nothing)'
+      }`,
+    );
   }
   await app.close();
 
   const recall = hits / cases.length;
-  console.log(`\nrecall@${k} = ${recall.toFixed(3)}   MRR = ${(reciprocalRanks / cases.length).toFixed(3)}   (${cases.length} questions)`);
+  console.log(
+    `\nrecall@${k} = ${recall.toFixed(3)}   MRR = ${(reciprocalRanks / cases.length).toFixed(3)}   (${cases.length} questions)`,
+  );
   if (recall < Number(process.env.RAG_EVAL_MIN_RECALL ?? 0.8)) process.exit(1);
 }
 

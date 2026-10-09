@@ -11,7 +11,12 @@ import { LaunchEventsController } from './api/launch-events.controller';
 
 /** SD-21 HTTP side (core). Needs global Redis, Dynamo, Cache modules. */
 @Module({
-  imports: [AuthModule, JobsModule, RealtimeModule, SequelizeModule.forFeature([LaunchEvent, Booking])],
+  imports: [
+    AuthModule,
+    JobsModule,
+    RealtimeModule,
+    SequelizeModule.forFeature([LaunchEvent, Booking]),
+  ],
   providers: [WaitingRoomService, SeatHoldService],
   exports: [WaitingRoomService, SeatHoldService],
   controllers: [LaunchEventsController],

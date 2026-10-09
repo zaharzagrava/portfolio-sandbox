@@ -12,7 +12,9 @@ import { PaymentService } from './application/payment.service';
 import { StripeService } from '@app/infrastructure/stripe/stripe.service';
 import Payment, { PaymentStatus } from './infra/models/payment.model';
 import LedgerEntry from './infra/models/ledger-entry.model';
-import Outbox, { KafkaTopicGroup } from '@app/infrastructure/outbox/outbox.model';
+import Outbox, {
+  KafkaTopicGroup,
+} from '@app/infrastructure/outbox/outbox.model';
 import { ProductModel as Product } from '@app/domains/catalog';
 import { UserModel as User } from '@app/domains/identity';
 import { BisOrderModel as BisOrder } from '@app/domains/orders';
@@ -43,7 +45,9 @@ describe('PaymentService (e2e, real Postgres)', () => {
 
   const span = () => trace.getTracer('e2e').startSpan('test');
 
-  const params = (overrides: Partial<PostPaymentParamsDto> = {}): PostPaymentParamsDto =>
+  const params = (
+    overrides: Partial<PostPaymentParamsDto> = {},
+  ): PostPaymentParamsDto =>
     ({
       idempotency_key: v4(),
       amount: 100_00,
@@ -54,7 +58,11 @@ describe('PaymentService (e2e, real Postgres)', () => {
     }) as PostPaymentParamsDto;
 
   const execute = (p: PostPaymentParamsDto) =>
-    paymentService.executePayment({ params: p, topic: KafkaTopicGroup.PAYMENTS_RESPONSES, activeSpan: span() });
+    paymentService.executePayment({
+      params: p,
+      topic: KafkaTopicGroup.PAYMENTS_RESPONSES,
+      activeSpan: span(),
+    });
 
   beforeAll(async () => {
     const moduleRef = await generateTestingModule([PaymentModule, SeedsModule]);
@@ -80,11 +88,20 @@ describe('PaymentService (e2e, real Postgres)', () => {
 
     createIntentSpy = jest
       .spyOn(stripeService, 'createPaymentIntent')
-      .mockImplementation(async ({ idempotencyKey }) => ({ id: `pi_${idempotencyKey}`, status: 'succeeded' }) as never);
-    refundSpy = jest.spyOn(stripeService, 'refundPaymentIntent').mockResolvedValue(undefined as never);
+      .mockImplementation(
+        async ({ idempotencyKey }) =>
+          ({ id: `pi_${idempotencyKey}`, status: 'succeeded' }) as never,
+      );
+    refundSpy = jest
+      .spyOn(stripeService, 'refundPaymentIntent')
+      .mockResolvedValue(undefined as never);
 
-    [buyer] = await seedsService.createTreelike([{ __type__: TableName.User, email: `buyer-${v4()}@mail.com` }]);
-    [order] = await seedsService.createTreelike([{ __type__: TableName.BisOrder, userId: buyer.id }]);
+    [buyer] = await seedsService.createTreelike([
+      { __type__: TableName.User, email: `buyer-${v4()}@mail.com` },
+    ]);
+    [order] = await seedsService.createTreelike([
+      { __type__: TableName.BisOrder, userId: buyer.id },
+    ]);
   });
 
   describe('idempotency under duplicate delivery', () => {
@@ -94,16 +111,24 @@ describe('PaymentService (e2e, real Postgres)', () => {
       const results = await inParallel(2, () => execute(message));
       expect(results.every((r) => r.status === 'fulfilled')).toBe(true);
 
-      const payments = await paymentModel.findAll({ where: { idempotencyKey: message.idempotency_key } });
+      const payments = await paymentModel.findAll({
+        where: { idempotencyKey: message.idempotency_key },
+      });
       expect(payments).toHaveLength(1);
       expect(payments[0].status).toBe(PaymentStatus.COMPLETED);
 
-      const entries = await ledgerEntryModel.findAll({ where: { paymentId: payments[0].id } });
+      const entries = await ledgerEntryModel.findAll({
+        where: { paymentId: payments[0].id },
+      });
       expect(entries).toHaveLength(3);
       expect(entries.reduce((sum, e) => sum + BigInt(e.amount), 0n)).toBe(0n);
 
       const events = await outboxModel.findAll();
-      expect(events.filter((e) => e.payload?.idempotency_key === message.idempotency_key)).toHaveLength(1);
+      expect(
+        events.filter(
+          (e) => e.payload?.idempotency_key === message.idempotency_key,
+        ),
+      ).toHaveLength(1);
     });
 
     it('a redelivery after completion returns the stored result without charging again', async () => {
@@ -121,25 +146,42 @@ describe('PaymentService (e2e, real Postgres)', () => {
 
   describe('optimistic stock decrement (OCC) + compensating refund', () => {
     it('last unit bought by two buyers at once → one COMPLETED, one REFUNDED, stock 0, exactly one refund', async () => {
-      const [product] = await seedsService.createTreelike([{ __type__: TableName.Product, quantity: 1 }]);
+      const [product] = await seedsService.createTreelike([
+        { __type__: TableName.Product, quantity: 1 },
+      ]);
 
-      const results = await inParallel(2, () => execute(params({ productId: product.id, quantity: 1 })));
-      expect(results.flatMap((r) => (r.status === 'rejected' ? [String(r.reason)] : []))).toEqual([]);
+      const results = await inParallel(2, () =>
+        execute(params({ productId: product.id, quantity: 1 })),
+      );
+      expect(
+        results.flatMap((r) =>
+          r.status === 'rejected' ? [String(r.reason)] : [],
+        ),
+      ).toEqual([]);
 
-      const statuses = (await paymentModel.findAll()).map((p) => p.status).sort();
+      const statuses = (await paymentModel.findAll())
+        .map((p) => p.status)
+        .sort();
       // Either both raced past the cheap pre-check (COMPLETED + REFUNDED), or the
       // loser saw stock 0 up front and never charged (COMPLETED + PENDING). Never two sales.
-      expect(statuses.filter((s) => s === PaymentStatus.COMPLETED)).toHaveLength(1);
-      expect(await productModel.findByPk(product.id).then((p) => p!.quantity)).toBe(0);
+      expect(
+        statuses.filter((s) => s === PaymentStatus.COMPLETED),
+      ).toHaveLength(1);
+      expect(
+        await productModel.findByPk(product.id).then((p) => p!.quantity),
+      ).toBe(0);
       expect(refundSpy.mock.calls.length).toBeLessThanOrEqual(1);
-      if (statuses.includes(PaymentStatus.REFUNDED)) expect(refundSpy).toHaveBeenCalledTimes(1);
+      if (statuses.includes(PaymentStatus.REFUNDED))
+        expect(refundSpy).toHaveBeenCalledTimes(1);
 
       // Only the winning payment hits the ledger.
       expect(await ledgerEntryModel.count()).toBe(3);
     });
 
     it('out of stock before charging → no Stripe call, no ledger entries', async () => {
-      const [product] = await seedsService.createTreelike([{ __type__: TableName.Product, quantity: 0 }]);
+      const [product] = await seedsService.createTreelike([
+        { __type__: TableName.Product, quantity: 0 },
+      ]);
 
       await execute(params({ productId: product.id, quantity: 1 }));
 

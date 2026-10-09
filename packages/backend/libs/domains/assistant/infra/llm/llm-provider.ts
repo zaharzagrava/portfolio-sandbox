@@ -1,7 +1,5 @@
 import type Anthropic from '@anthropic-ai/sdk';
 
-
-
 /** What the assistant sends per model call. SDK types end to end - no hand-rolled message shapes. */
 export interface LlmTurnRequest {
   model: string;
@@ -46,10 +44,18 @@ export interface LlmStreamOptions {
  */
 export interface LlmProvider {
   readonly name: string;
-  streamTurn(request: LlmTurnRequest, options: LlmStreamOptions): Promise<LlmTurnResult>;
+  streamTurn(
+    request: LlmTurnRequest,
+    options: LlmStreamOptions,
+  ): Promise<LlmTurnResult>;
   /** Non-streamed, short output (summaries). */
-  complete(request: LlmTurnRequest, signal?: AbortSignal): Promise<LlmTurnResult>;
-  countTokens(request: Omit<LlmTurnRequest, 'maxTokens' | 'effort'>): Promise<number>;
+  complete(
+    request: LlmTurnRequest,
+    signal?: AbortSignal,
+  ): Promise<LlmTurnResult>;
+  countTokens(
+    request: Omit<LlmTurnRequest, 'maxTokens' | 'effort'>,
+  ): Promise<number>;
 }
 
 export const LLM_PROVIDER = Symbol('LLM_PROVIDER');

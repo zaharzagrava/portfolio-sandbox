@@ -29,7 +29,14 @@ export class RedisDocSink {
   async upsertMany(writes: RedisDocWrite[]): Promise<number> {
     const results = await Promise.all(
       writes.map((w) =>
-        this.redis.client.eval(UPSERT_IF_NEWER, 1, w.key, String(w.version), JSON.stringify(w.doc), String(w.ttlSec ?? 0)),
+        this.redis.client.eval(
+          UPSERT_IF_NEWER,
+          1,
+          w.key,
+          String(w.version),
+          JSON.stringify(w.doc),
+          String(w.ttlSec ?? 0),
+        ),
       ),
     );
     return results.filter((r) => r === 1).length;
@@ -37,6 +44,8 @@ export class RedisDocSink {
 
   async get<T>(key: string): Promise<{ version: number; doc: T } | null> {
     const [v, doc] = await this.redis.client.hmget(key, 'v', 'doc');
-    return v === null || doc === null ? null : { version: Number(v), doc: JSON.parse(doc) as T };
+    return v === null || doc === null
+      ? null
+      : { version: Number(v), doc: JSON.parse(doc) as T };
   }
 }

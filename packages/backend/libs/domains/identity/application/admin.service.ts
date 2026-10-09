@@ -10,7 +10,7 @@ export class AdminService {
 
   constructor(
     @InjectConnection() private readonly sequelizeInstance: Sequelize,
-  ) { }
+  ) {}
 
   private getDbConnection(body: DbCredsDto): Sequelize {
     if (body.isSsh) {

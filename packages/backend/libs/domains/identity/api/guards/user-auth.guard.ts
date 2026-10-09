@@ -9,7 +9,7 @@ import { extractAuthToken } from './extract-auth-token';
 
 @Injectable()
 export class UserAuthGuard implements CanActivate {
-  constructor(private authService: AuthService) { }
+  constructor(private authService: AuthService) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();

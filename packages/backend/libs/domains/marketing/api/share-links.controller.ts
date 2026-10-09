@@ -1,15 +1,44 @@
-import { Body, Controller, Get, Headers, NotFoundException, Param, Post, Res } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Headers,
+  NotFoundException,
+  Param,
+  Post,
+  Res,
+} from '@nestjs/common';
 import { ApiProperty, ApiPropertyOptional, ApiTags } from '@nestjs/swagger';
-import { IsInt, IsOptional, IsString, IsUrl, Max, MaxLength, Min } from 'class-validator';
+import {
+  IsInt,
+  IsOptional,
+  IsString,
+  IsUrl,
+  Max,
+  MaxLength,
+  Min,
+} from 'class-validator';
 import type { Response } from 'express';
 import { Firewall, User, UserRawDto } from '@app/domains/identity';
 import { RateLimit } from '@app/infrastructure/rate-limit/rate-limit.decorator';
 import { ShareLinkService } from '../application/share-link.service';
 
 export class CreateLinkDto {
-  @ApiProperty() @IsUrl({ require_protocol: true }) @MaxLength(2048) destination: string;
-  @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(32) alias?: string;
-  @ApiPropertyOptional() @IsOptional() @IsInt() @Min(1) @Max(3650) ttlDays?: number;
+  @ApiProperty()
+  @IsUrl({ require_protocol: true })
+  @MaxLength(2048)
+  destination: string;
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(32)
+  alias?: string;
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(3650)
+  ttlDays?: number;
 }
 
 @ApiTags('share-links')
@@ -21,7 +50,12 @@ export class ShareLinksController {
   @RateLimit('discussion.write')
   @Post('links')
   create(@User() user: UserRawDto, @Body() body: CreateLinkDto) {
-    return this.links.create(user.id, body.destination, body.alias, body.ttlDays);
+    return this.links.create(
+      user.id,
+      body.destination,
+      body.alias,
+      body.ttlDays,
+    );
   }
 
   @Firewall()
@@ -52,7 +86,8 @@ export class ShareLinksController {
   ) {
     const link = await this.links.resolve(code);
     if (!link) throw new NotFoundException('Link not found');
-    if (edgeRecorded !== '1') this.links.recordClick(code, { country, referer });
+    if (edgeRecorded !== '1')
+      this.links.recordClick(code, { country, referer });
     const target = new URL(link.destination);
     target.searchParams.set('ref', code);
     res.setHeader('Cache-Control', 'public, s-maxage=10');

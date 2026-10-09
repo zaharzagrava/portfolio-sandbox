@@ -12,8 +12,26 @@ import { NotificationRouter } from './application/notification-router.service';
 
 /** Shared SD-17 services (core HTTP, projector router, worker channels). Needs the app's global Redis. */
 @Module({
-  imports: [CassandraModule, RealtimeModule, CacheModule, SqsModule, JobsModule],
-  providers: [NotificationPreferencesService, SuppressionService, DeliveryLogService, InboxService, NotificationRouter],
-  exports: [NotificationPreferencesService, SuppressionService, DeliveryLogService, InboxService, NotificationRouter],
+  imports: [
+    CassandraModule,
+    RealtimeModule,
+    CacheModule,
+    SqsModule,
+    JobsModule,
+  ],
+  providers: [
+    NotificationPreferencesService,
+    SuppressionService,
+    DeliveryLogService,
+    InboxService,
+    NotificationRouter,
+  ],
+  exports: [
+    NotificationPreferencesService,
+    SuppressionService,
+    DeliveryLogService,
+    InboxService,
+    NotificationRouter,
+  ],
 })
 export class NotificationsCoreModule {}

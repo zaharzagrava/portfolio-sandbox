@@ -16,10 +16,13 @@ export class ExportJobTopics implements OnModuleInit {
       prefix: 'job',
       policy: async (viewer, _topic, jobId) => {
         if (!viewer.userId) return false;
-        const rows = await this.sequelize.query(`SELECT 1 FROM "ExportJob" WHERE id = :jobId AND "createdBy" = :userId LIMIT 1`, {
-          type: QueryTypes.SELECT,
-          replacements: { jobId, userId: viewer.userId },
-        });
+        const rows = await this.sequelize.query(
+          `SELECT 1 FROM "ExportJob" WHERE id = :jobId AND "createdBy" = :userId LIMIT 1`,
+          {
+            type: QueryTypes.SELECT,
+            replacements: { jobId, userId: viewer.userId },
+          },
+        );
         return rows.length > 0;
       },
     });

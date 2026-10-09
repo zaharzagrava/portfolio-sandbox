@@ -32,7 +32,7 @@ export interface ConsumeKafkaEventOptions<T, P> {
 export class KafkaConsumerService {
   private readonly tracer = trace.getTracer('kafka-consumer-service');
 
-  constructor(private readonly outboxService: OutboxService) { }
+  constructor(private readonly outboxService: OutboxService) {}
 
   async consume<T, P>(
     options: ConsumeKafkaEventOptions<T, P>,

@@ -20,7 +20,8 @@ import type { PaymentModel as Payment } from '@app/domains/payments';
 
 /** orders ↔ payments associate each other's models (debt D-11); resolve payments lazily (see payment.model.ts). */
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const payments = (): typeof import('@app/domains/payments') => require('@app/domains/payments');
+const payments = (): typeof import('@app/domains/payments') =>
+  require('@app/domains/payments');
 import BisOrderItem from './bis-order-item.model';
 import type { OrderStatus } from '../../domain/order-state';
 
@@ -39,7 +40,11 @@ export interface BisOrderWithAllFilters {
 }
 
 @Scopes(() => ({
-  [BisOrderScope.WithAll]: ({ id, userId, attributes }: BisOrderWithAllFilters = {}) => {
+  [BisOrderScope.WithAll]: ({
+    id,
+    userId,
+    attributes,
+  }: BisOrderWithAllFilters = {}) => {
     const findOptions: {
       where: WhereOptions;
       include?: Includeable[];

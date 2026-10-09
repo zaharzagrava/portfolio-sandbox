@@ -50,11 +50,18 @@ export class ProductViewsJobs implements OnApplicationBootstrap {
         `UPDATE "Product" p SET "viewCount" = p."viewCount" + d.delta
          FROM unnest(CAST(:ids AS uuid[]), CAST(:deltas AS bigint[])) AS d(id, delta)
          WHERE p.id = d.id`,
-        { replacements: { ids: `{${[...deltas.keys()].join(',')}}`, deltas: `{${[...deltas.values()].join(',')}}` } },
+        {
+          replacements: {
+            ids: `{${[...deltas.keys()].join(',')}}`,
+            deltas: `{${[...deltas.values()].join(',')}}`,
+          },
+        },
       );
     } catch (error) {
       await this.counter.restore(deltas);
-      this.logger.error(`view flush failed, ${deltas.size} deltas restored: ${(error as Error).message}`);
+      this.logger.error(
+        `view flush failed, ${deltas.size} deltas restored: ${(error as Error).message}`,
+      );
       throw error;
     }
   }

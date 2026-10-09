@@ -4,5 +4,9 @@
  * it by hand when a new export is needed. Models exported here are transitional (IX.4 debt): other
  * domains must stop injecting them.
  */
-export { OnboardingExtractionModule, OnboardingModule, OnboardingWorkerModule } from './onboarding.module';
+export {
+  OnboardingExtractionModule,
+  OnboardingModule,
+  OnboardingWorkerModule,
+} from './onboarding.module';
 export { ExtractionService } from './application/extraction.service';

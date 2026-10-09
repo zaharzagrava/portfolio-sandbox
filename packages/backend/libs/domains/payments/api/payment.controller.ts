@@ -19,10 +19,13 @@ export class PaymentController {
     private readonly paymentService: PaymentService,
     private readonly outboxService: OutboxService,
     private readonly kafkaConsumerService: KafkaConsumerService,
-  ) { }
+  ) {}
 
   @EventPattern('payments.requests')
-  async handlePayment(@Payload() data: PostPaymentParamsDto, @Ctx() context: KafkaContext) {
+  async handlePayment(
+    @Payload() data: PostPaymentParamsDto,
+    @Ctx() context: KafkaContext,
+  ) {
     return await this.kafkaConsumerService.consume({
       spanName: 'PaymentConsumer.handlePayment',
       data,
@@ -30,7 +33,11 @@ export class PaymentController {
       responseTopic: KafkaTopicGroup.PAYMENTS_RESPONSES,
       dlqTopic: KafkaTopicGroup.PAYMENTS_DLQ,
       handler: async ({ data, activeSpan, responseTopic }) => {
-        return await this.paymentService.executePayment({ params: data, topic: responseTopic, activeSpan });
+        return await this.paymentService.executePayment({
+          params: data,
+          topic: responseTopic,
+          activeSpan,
+        });
       },
     });
   }

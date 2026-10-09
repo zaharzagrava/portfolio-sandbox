@@ -26,7 +26,9 @@ export class FinanceController {
   @Get('balance')
   async balance(@Param('shopId', ParseUUIDPipe) shopId: string) {
     const account = shopAccount(shopId);
-    const projected = await this.redis.client.hget(BALANCES_KEY, account).catch(() => null);
+    const projected = await this.redis.client
+      .hget(BALANCES_KEY, account)
+      .catch(() => null);
     return projected !== null
       ? { available: Number(projected), source: 'projection' }
       : { available: await this.ledger.balance(account), source: 'ledger' };
@@ -35,6 +37,10 @@ export class FinanceController {
   @ShopScoped('payouts.read')
   @Get('payouts')
   payouts(@Param('shopId', ParseUUIDPipe) shopId: string) {
-    return this.payoutModel.findAll({ where: { shopId }, order: [['periodStart', 'DESC']], limit: 52 });
+    return this.payoutModel.findAll({
+      where: { shopId },
+      order: [['periodStart', 'DESC']],
+      limit: 52,
+    });
   }
 }

@@ -25,8 +25,14 @@ describe('Lambda idempotency (e2e, DynamoDB Local)', () => {
     const key = v4();
     let runs = 0;
     const work = async () => ++runs;
-    expect(await idem.run(key, 10_000, work)).toEqual({ result: 1, replayed: false });
-    expect(await idem.run(key, 10_000, work)).toEqual({ result: 1, replayed: true });
+    expect(await idem.run(key, 10_000, work)).toEqual({
+      result: 1,
+      replayed: false,
+    });
+    expect(await idem.run(key, 10_000, work)).toEqual({
+      result: 1,
+      replayed: true,
+    });
     expect(runs).toBe(1);
   });
 
@@ -36,19 +42,28 @@ describe('Lambda idempotency (e2e, DynamoDB Local)', () => {
     const slow = new Promise<void>((r) => (release = r));
     const first = idem.run(key, 10_000, async () => (await slow, 'done'));
     await new Promise((r) => setTimeout(r, 100));
-    await expect(idem.run(key, 10_000, async () => 'second')).rejects.toBeInstanceOf(AlreadyInProgressError);
+    await expect(
+      idem.run(key, 10_000, async () => 'second'),
+    ).rejects.toBeInstanceOf(AlreadyInProgressError);
     release();
     expect((await first).result).toBe('done');
   });
 
   it('a failure releases the claim (retry runs again); a crashed claim expires', async () => {
     const key = v4();
-    await expect(idem.run(key, 10_000, async () => Promise.reject(new Error('transient')))).rejects.toThrow('transient');
-    expect(await idem.run(key, 10_000, async () => 'second try')).toEqual({ result: 'second try', replayed: false });
+    await expect(
+      idem.run(key, 10_000, async () => Promise.reject(new Error('transient'))),
+    ).rejects.toThrow('transient');
+    expect(await idem.run(key, 10_000, async () => 'second try')).toEqual({
+      result: 'second try',
+      replayed: false,
+    });
 
     const crashed = v4();
     void idem.run(crashed, 50, () => new Promise(() => undefined)); // never completes, claim expires after 50 ms
     await new Promise((r) => setTimeout(r, 300));
-    expect((await idem.run(crashed, 10_000, async () => 'recovered')).result).toBe('recovered');
+    expect(
+      (await idem.run(crashed, 10_000, async () => 'recovered')).result,
+    ).toBe('recovered');
   });
 });

@@ -1,5 +1,9 @@
-import { ApiProperty, IntersectionType } from "@nestjs/swagger";
-import { DeletableTimestampsFields, IdField, ImmutableTimestampsFields } from "@app/common/types";
+import { ApiProperty, IntersectionType } from '@nestjs/swagger';
+import {
+  DeletableTimestampsFields,
+  IdField,
+  ImmutableTimestampsFields,
+} from '@app/common/types';
 
 // --- --- --- --- --- Internal Types for Character --- --- --- --- --- //
 export class CreateBisOrderDto {
@@ -10,6 +14,6 @@ export class CreateBisOrderDto {
 export class BisOrderRawDto extends IntersectionType(
   IntersectionType(CreateBisOrderDto, DeletableTimestampsFields),
   IdField,
-) { }
+) {}
 
-export class BisOrderFullDto extends BisOrderRawDto { }
+export class BisOrderFullDto extends BisOrderRawDto {}

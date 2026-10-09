@@ -21,7 +21,13 @@ export class SearchQueriesProjector implements Projector {
       events
         .map((e) => SearchPerformed.match(e))
         .filter((e): e is NonNullable<typeof e> => !!e)
-        .map((e) => ({ event_id: e.eventId, query: e.payload.query, results: e.payload.results, user_hash: e.payload.userHash, ts: e.occurredAt.replace('Z', '') })),
+        .map((e) => ({
+          event_id: e.eventId,
+          query: e.payload.query,
+          results: e.payload.results,
+          user_hash: e.payload.userHash,
+          ts: e.occurredAt.replace('Z', ''),
+        })),
     );
   }
 }

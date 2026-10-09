@@ -1,4 +1,13 @@
-import { BadRequestException, Body, Controller, Get, HttpCode, Param, ParseUUIDPipe, Post } from '@nestjs/common';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  Param,
+  ParseUUIDPipe,
+  Post,
+} from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { InjectConnection } from '@nestjs/sequelize';
 import { QueryTypes, Sequelize } from 'sequelize';
@@ -20,10 +29,14 @@ export class AuctionsController {
   @RequiresShopEntitlement('auctions')
   @ShopScoped('products.write')
   @Post('shops/:shopId/auctions')
-  create(@Param('shopId', ParseUUIDPipe) shopId: string, @Body() body: CreateAuctionDto) {
+  create(
+    @Param('shopId', ParseUUIDPipe) shopId: string,
+    @Body() body: CreateAuctionDto,
+  ) {
     const startsAt = new Date(body.startsAt);
     const endsAt = new Date(body.endsAt);
-    if (endsAt <= startsAt) throw new BadRequestException('endsAt must be after startsAt');
+    if (endsAt <= startsAt)
+      throw new BadRequestException('endsAt must be after startsAt');
     return this.auctions.create(shopId, { ...body, startsAt, endsAt });
   }
 
@@ -38,7 +51,11 @@ export class AuctionsController {
   @RateLimit('auction.bid')
   @HttpCode(200)
   @Post('auctions/:auctionId/bids')
-  bid(@Param('auctionId', ParseUUIDPipe) auctionId: string, @User() user: UserRawDto, @Body() body: PlaceBidDto) {
+  bid(
+    @Param('auctionId', ParseUUIDPipe) auctionId: string,
+    @User() user: UserRawDto,
+    @Body() body: PlaceBidDto,
+  ) {
     return this.auctions.placeBid(auctionId, user.id, body.maxAmount);
   }
 

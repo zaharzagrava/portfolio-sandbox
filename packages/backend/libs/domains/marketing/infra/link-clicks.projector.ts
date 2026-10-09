@@ -22,7 +22,14 @@ export class LinkClicksProjector implements Projector {
       events
         .map((e) => LinkClicked.match(e))
         .filter((e): e is NonNullable<typeof e> => !!e)
-        .map((e) => ({ click_id: e.payload.clickId, code: e.payload.code, ts: e.payload.ts.replace('Z', ''), country: e.payload.country, referer: e.payload.referer, via_edge: e.payload.viaEdge ? 1 : 0 })),
+        .map((e) => ({
+          click_id: e.payload.clickId,
+          code: e.payload.code,
+          ts: e.payload.ts.replace('Z', ''),
+          country: e.payload.country,
+          referer: e.payload.referer,
+          via_edge: e.payload.viaEdge ? 1 : 0,
+        })),
     );
   }
 }

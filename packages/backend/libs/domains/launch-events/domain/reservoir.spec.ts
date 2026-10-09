@@ -21,6 +21,7 @@ describe('Reservoir', () => {
     }
     const expected = (trials * k) / n; // 1,000
     // First and last items are not favoured (the classic bug in naive "keep the first k" / "keep the last k").
-    for (const i of [0, 1, 50, 98, 99]) expect(Math.abs(hits[i] - expected)).toBeLessThan(expected * 0.15);
+    for (const i of [0, 1, 50, 98, 99])
+      expect(Math.abs(hits[i] - expected)).toBeLessThan(expected * 0.15);
   });
 });

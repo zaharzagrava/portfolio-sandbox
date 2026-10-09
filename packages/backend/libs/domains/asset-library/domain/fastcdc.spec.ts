@@ -20,7 +20,11 @@ describe('FastCDC', () => {
 
   it('an insertion in the middle changes only a few chunks (content-defined, not offset-defined)', () => {
     const before = chunk(file, params);
-    const edited = Buffer.concat([file.subarray(0, 500_000), Buffer.from('INSERTED BYTES'), file.subarray(500_000)]);
+    const edited = Buffer.concat([
+      file.subarray(0, 500_000),
+      Buffer.from('INSERTED BYTES'),
+      file.subarray(500_000),
+    ]);
     const after = chunk(edited, params);
     const known = new Set(before.map((c) => c.hash));
     const changed = after.filter((c) => !known.has(c.hash));
@@ -29,6 +33,8 @@ describe('FastCDC', () => {
   });
 
   it('is deterministic', () => {
-    expect(chunk(file, params).map((c) => c.hash)).toEqual(chunk(Buffer.from(file), params).map((c) => c.hash));
+    expect(chunk(file, params).map((c) => c.hash)).toEqual(
+      chunk(Buffer.from(file), params).map((c) => c.hash),
+    );
   });
 });

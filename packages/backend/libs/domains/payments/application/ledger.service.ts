@@ -20,10 +20,11 @@ export class LedgerService {
   private readonly l = new Logger(LedgerService.name);
 
   constructor(
-    @InjectModel(LedgerEntry) private readonly ledgerEntryModel: typeof LedgerEntry,
+    @InjectModel(LedgerEntry)
+    private readonly ledgerEntryModel: typeof LedgerEntry,
     private readonly dbUtilsService: DbUtilsService,
     @Optional() private readonly domainEvents?: DomainEventsService,
-  ) { }
+  ) {}
 
   public async recordMarketplaceSale({
     paymentId,
@@ -45,7 +46,7 @@ export class LedgerService {
     await this.dbUtilsService.wrapInTransaction(async (tx) => {
       if (totalAmount < feeAmount) {
         throw new InternalServerErrorException(
-          'CRITICAL: Total amount is less than fee amount.'
+          'CRITICAL: Total amount is less than fee amount.',
         );
       }
 
@@ -56,7 +57,7 @@ export class LedgerService {
       if (buyerDebit + merchantCredit + platformCredit !== 0) {
         // If this throws, the outer Postgres transaction automatically rolls back.
         throw new InternalServerErrorException(
-          'CRITICAL: Ledger entry mathematically invalid. Amounts do not sum to zero.'
+          'CRITICAL: Ledger entry mathematically invalid. Amounts do not sum to zero.',
         );
       }
 
@@ -85,12 +86,22 @@ export class LedgerService {
    * through the outbox in the same transaction for the balance read model.
    */
   public async post(
-    journal: { journalId: string; kind: LedgerJournalKind; paymentId?: string | null; lines: { accountId: string; amount: number }[] },
+    journal: {
+      journalId: string;
+      kind: LedgerJournalKind;
+      paymentId?: string | null;
+      lines: { accountId: string; amount: number }[];
+    },
     tx: Transaction,
   ): Promise<void> {
     const sum = journal.lines.reduce((acc, l) => acc + l.amount, 0);
-    if (sum !== 0 || journal.lines.some((l) => !Number.isSafeInteger(l.amount))) {
-      throw new InternalServerErrorException(`CRITICAL: unbalanced journal ${journal.journalId} (sum ${sum})`);
+    if (
+      sum !== 0 ||
+      journal.lines.some((l) => !Number.isSafeInteger(l.amount))
+    ) {
+      throw new InternalServerErrorException(
+        `CRITICAL: unbalanced journal ${journal.journalId} (sum ${sum})`,
+      );
     }
 
     await this.ledgerEntryModel.bulkCreate(
@@ -106,7 +117,13 @@ export class LedgerService {
       { transaction: tx, validate: true },
     );
 
-    await this.domainEvents?.record(JournalPosted.create(journal.journalId, 1, { kind: journal.kind, lines: journal.lines }), tx);
+    await this.domainEvents?.record(
+      JournalPosted.create(journal.journalId, 1, {
+        kind: journal.kind,
+        lines: journal.lines,
+      }),
+      tx,
+    );
   }
 
   /** Authoritative balance (sum of entries) - the Redis projection is the fast path; this is the fallback/rebuild. */

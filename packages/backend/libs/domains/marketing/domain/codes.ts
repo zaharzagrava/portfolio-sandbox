@@ -1,6 +1,7 @@
 import { createHmac } from 'node:crypto';
 
-const ALPHABET = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+const ALPHABET =
+  '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
 export const CODE_LENGTH = 7;
 const HALF_BITS = 20; // 40-bit id space = 1.1 trillion codes (62^7 = 3.5 trillion ≥ 2^40)
 const HALF_MASK = (1 << HALF_BITS) - 1;
@@ -26,7 +27,10 @@ export function fromBase62(code: string): number {
 }
 
 function round(key: string, r: number, half: number): number {
-  return createHmac('sha256', key).update(`${r}:${half}`).digest().readUInt32BE(0) & HALF_MASK;
+  return (
+    createHmac('sha256', key).update(`${r}:${half}`).digest().readUInt32BE(0) &
+    HALF_MASK
+  );
 }
 
 /**
@@ -37,17 +41,20 @@ function round(key: string, r: number, half: number): number {
  * retry loop is needed.
  */
 export function scramble(id: number, key: string): number {
-  if (!Number.isSafeInteger(id) || id < 0 || id >= 2 ** (2 * HALF_BITS)) throw new RangeError('id out of 40-bit range');
+  if (!Number.isSafeInteger(id) || id < 0 || id >= 2 ** (2 * HALF_BITS))
+    throw new RangeError('id out of 40-bit range');
   let left = Math.floor(id / 2 ** HALF_BITS);
   let right = id % 2 ** HALF_BITS;
-  for (let r = 0; r < ROUNDS; r++) [left, right] = [right, left ^ round(key, r, right)];
+  for (let r = 0; r < ROUNDS; r++)
+    [left, right] = [right, left ^ round(key, r, right)];
   return left * 2 ** HALF_BITS + right;
 }
 
 export function unscramble(value: number, key: string): number {
   let left = Math.floor(value / 2 ** HALF_BITS);
   let right = value % 2 ** HALF_BITS;
-  for (let r = ROUNDS - 1; r >= 0; r--) [left, right] = [right ^ round(key, r, left), left];
+  for (let r = ROUNDS - 1; r >= 0; r--)
+    [left, right] = [right ^ round(key, r, left), left];
   return left * 2 ** HALF_BITS + right;
 }
 

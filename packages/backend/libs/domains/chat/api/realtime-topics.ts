@@ -16,10 +16,13 @@ export class ChatTopics implements OnModuleInit {
       prefix: 'chat',
       policy: async (viewer, _topic, channelId) => {
         if (!viewer.userId) return false;
-        const rows = await this.sequelize.query(`SELECT 1 FROM "ChatChannelMember" WHERE "channelId" = :channelId AND "userId" = :userId AND status = 'ACTIVE'`, {
-          type: QueryTypes.SELECT,
-          replacements: { channelId, userId: viewer.userId },
-        });
+        const rows = await this.sequelize.query(
+          `SELECT 1 FROM "ChatChannelMember" WHERE "channelId" = :channelId AND "userId" = :userId AND status = 'ACTIVE'`,
+          {
+            type: QueryTypes.SELECT,
+            replacements: { channelId, userId: viewer.userId },
+          },
+        );
         return rows.length > 0;
       },
     });

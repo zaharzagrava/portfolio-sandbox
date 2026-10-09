@@ -1,20 +1,23 @@
 import { ApiProperty, OmitType, PartialType } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { CreationAttributes } from 'sequelize';
-import { CreateBisOrderDto, BisOrderModel as BisOrder } from '@app/domains/orders';
-import { CreateLedgerEntryDto, LedgerEntryModel as LedgerEntry, PaymentModel as Payment, CreatePaymentDto } from '@app/domains/payments';
+import {
+  CreateBisOrderDto,
+  BisOrderModel as BisOrder,
+} from '@app/domains/orders';
+import {
+  CreateLedgerEntryDto,
+  LedgerEntryModel as LedgerEntry,
+  PaymentModel as Payment,
+  CreatePaymentDto,
+} from '@app/domains/payments';
 import Outbox from '@app/infrastructure/outbox/outbox.model';
 import { UserModel as User, CreateUserDto } from '@app/domains/identity';
 import { ProductModel as Product } from '@app/domains/catalog';
 import { CreateOutboxDto } from '@app/infrastructure/outbox/types';
 
 export type SqlModelClass =
-  | User
-  | BisOrder
-  | Payment
-  | LedgerEntry
-  | Outbox
-  | Product;
+  User | BisOrder | Payment | LedgerEntry | Outbox | Product;
 
 export type SqlModel =
   | typeof User
@@ -102,7 +105,9 @@ export class CreateTreelikePaymentDto extends PartialType(CreatePaymentDto) {
   ledgerEntries?: CreateTreelikeLedgerEntryDto[];
 }
 
-export class CreateTreelikeLedgerEntryDto extends PartialType(CreateLedgerEntryDto) {
+export class CreateTreelikeLedgerEntryDto extends PartialType(
+  CreateLedgerEntryDto,
+) {
   @ApiProperty()
   __type__: TableName.LedgerEntry | 'GET_FROM_PARENT';
 
@@ -121,12 +126,18 @@ export class CreateTreelikeOutboxDto extends PartialType(CreateOutboxDto) {
  * a full DTO class per table: any subset of the model's creation attributes
  * plus nested relations by name.
  */
-export type CreateTreelikeFixture<M extends SqlModelClass, T extends TableName> = Partial<CreationAttributes<M>> & {
+export type CreateTreelikeFixture<
+  M extends SqlModelClass,
+  T extends TableName,
+> = Partial<CreationAttributes<M>> & {
   __type__: T | 'GET_FROM_PARENT';
   [relation: string]: unknown;
 };
 
-export type CreateTreelikeProductDto = CreateTreelikeFixture<Product, TableName.Product>;
+export type CreateTreelikeProductDto = CreateTreelikeFixture<
+  Product,
+  TableName.Product
+>;
 
 export type CreateTreelikeClass =
   | CreateTreelikeProductDto

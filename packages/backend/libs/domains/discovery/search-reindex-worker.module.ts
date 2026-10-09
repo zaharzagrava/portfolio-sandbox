@@ -7,7 +7,11 @@ import { SearchReindexService } from './application/search-reindex.service';
 
 /** SD-37 alias reindex (apps/worker). */
 @Module({
-  imports: [SequelizeModule.forFeature([Product]), ElasticsearchModule, JobsModule],
+  imports: [
+    SequelizeModule.forFeature([Product]),
+    ElasticsearchModule,
+    JobsModule,
+  ],
   providers: [SearchReindexService],
   exports: [SearchReindexService],
 })

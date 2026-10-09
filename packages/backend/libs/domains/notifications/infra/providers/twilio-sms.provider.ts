@@ -19,18 +19,35 @@ export class TwilioSmsProvider extends ChannelProvider {
   }
 
   async send(message: DeliveryMessage): Promise<SendResult> {
-    const res = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${this.accountSid}/Messages.json`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Basic ${Buffer.from(`${this.accountSid}:${this.authToken}`).toString('base64')}`,
-        'Content-Type': 'application/x-www-form-urlencoded',
+    const res = await fetch(
+      `https://api.twilio.com/2010-04-01/Accounts/${this.accountSid}/Messages.json`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Basic ${Buffer.from(`${this.accountSid}:${this.authToken}`).toString('base64')}`,
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          To: message.to[0],
+          From: this.from,
+          Body: `${message.title}: ${message.body}`.slice(0, 320),
+          StatusCallback: this.statusCallbackUrl,
+        }),
+        signal: AbortSignal.timeout(5_000),
       },
-      body: new URLSearchParams({ To: message.to[0], From: this.from, Body: `${message.title}: ${message.body}`.slice(0, 320), StatusCallback: this.statusCallbackUrl }),
-      signal: AbortSignal.timeout(5_000),
-    });
-    const json = (await res.json().catch(() => ({}))) as { sid?: string; code?: number; message?: string };
-    if (res.ok && json.sid) return { provider: this.name, providerMessageId: json.sid };
-    if (json.code && PERMANENT_CODES.has(json.code)) throw new PermanentDeliveryError(`Twilio ${json.code}: ${json.message}`, message.to);
+    );
+    const json = (await res.json().catch(() => ({}))) as {
+      sid?: string;
+      code?: number;
+      message?: string;
+    };
+    if (res.ok && json.sid)
+      return { provider: this.name, providerMessageId: json.sid };
+    if (json.code && PERMANENT_CODES.has(json.code))
+      throw new PermanentDeliveryError(
+        `Twilio ${json.code}: ${json.message}`,
+        message.to,
+      );
     throw new Error(`Twilio ${res.status}: ${json.message ?? 'unknown'}`);
   }
 }

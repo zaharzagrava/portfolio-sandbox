@@ -33,7 +33,9 @@ export class FakePayoutProvider extends PayoutProvider {
   async transfer(t: PayoutTransfer) {
     if (this.failNext) {
       this.failNext = false;
-      throw Object.assign(new Error('account_closed'), { type: 'StripeInvalidRequestError' });
+      throw Object.assign(new Error('account_closed'), {
+        type: 'StripeInvalidRequestError',
+      });
     }
     this.transfers.push(t);
     return { providerRef: `tr_fake_${this.transfers.length}` };

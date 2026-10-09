@@ -14,7 +14,14 @@ export { LiveWorkerModule } from './live-worker.module';
 export { LiveModule } from './live.module';
 export { LiveService } from './application/live.service';
 export { LiveCommentsProjector } from './infra/live-comments.projector';
-export { ACTIVE_STREAMS, firehoseTopic, pinKey, RECENT_COMMENTS, recentKey, viewersKey } from './infra/live-keys';
+export {
+  ACTIVE_STREAMS,
+  firehoseTopic,
+  pinKey,
+  RECENT_COMMENTS,
+  recentKey,
+  viewersKey,
+} from './infra/live-keys';
 export type { LiveComment } from './infra/live-keys';
 export { LiveModerationConsumer } from './infra/live-moderation.consumer';
 export { LiveTicker } from './infra/live-ticker.service';

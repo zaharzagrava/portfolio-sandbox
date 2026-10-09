@@ -14,7 +14,13 @@ import { RecommendationsWorkerModule } from './recommendations-worker.module';
 import { CoOccurrenceJobs } from './infra/co-occurrence.jobs';
 import { boughtTogetherKey } from './infra/recommendation-keys';
 
-@Module({ imports: [RecommendationsModule, RecommendationsWorkerModule, RateLimitModule] })
+@Module({
+  imports: [
+    RecommendationsModule,
+    RecommendationsWorkerModule,
+    RateLimitModule,
+  ],
+})
 class SpecModule {}
 
 /** X-01 against real ClickHouse + Redis + Postgres: baskets → nightly build → ZSETs → endpoint. */
@@ -24,7 +30,9 @@ describe('Bought together (e2e)', () => {
   let clickhouse: ClickHouseService;
 
   beforeAll(async () => {
-    const moduleRef = await generateTestingModule([SpecModule, SeedsModule], { stores: ['redis'] });
+    const moduleRef = await generateTestingModule([SpecModule, SeedsModule], {
+      stores: ['redis'],
+    });
     app = moduleRef.createNestApplication();
     app.setGlobalPrefix('api');
     await app.init();
@@ -39,15 +47,27 @@ describe('Bought together (e2e)', () => {
 
   beforeEach(async () => {
     await seeds.clean();
-    await clickhouse.getClient().command({ query: 'TRUNCATE TABLE order_baskets' });
+    await clickhouse
+      .getClient()
+      .command({ query: 'TRUNCATE TABLE order_baskets' });
   });
 
   const baskets = (products: string[], times: number) =>
-    Array.from({ length: times }, () => ({ order_id: v4(), products: [...products].sort(), ts: new Date().toISOString().replace('Z', '') }));
+    Array.from({ length: times }, () => ({
+      order_id: v4(),
+      products: [...products].sort(),
+      ts: new Date().toISOString().replace('Z', ''),
+    }));
 
   it('cosine beats raw popularity; noise pairs and duplicates do not count; 2-hop fills cold products', async () => {
     const [iphone, magsafe, case17, cable, stand] = await seeds.createTreelike(
-      ['iPhone 17', 'MagSafe Charger', 'iPhone 17 Case', 'USB-C Cable', 'Charging Stand'].map((title) => ({ __type__: TableName.Product, title, quantity: 10 })),
+      [
+        'iPhone 17',
+        'MagSafe Charger',
+        'iPhone 17 Case',
+        'USB-C Cable',
+        'Charging Stand',
+      ].map((title) => ({ __type__: TableName.Product, title, quantity: 10 })),
     );
     const duplicated = baskets([magsafe.id, case17.id], 1);
     await clickhouse.getClient().insert({
@@ -68,15 +88,25 @@ describe('Bought together (e2e)', () => {
     const { edges } = await app.get(CoOccurrenceJobs).build({ buckets: 4 });
     expect(edges).toBeGreaterThan(0);
 
-    const magsafeList = await app.get(RedisService).client.zrevrange(boughtTogetherKey(magsafe.id), 0, -1);
+    const magsafeList = await app
+      .get(RedisService)
+      .client.zrevrange(boughtTogetherKey(magsafe.id), 0, -1);
     expect(magsafeList).toEqual([case17.id, iphone.id]); // 6 co-orders with a hub < 6 with a niche item
     expect(magsafeList).not.toContain(stand.id);
 
     // Stand has one direct edge (cable) → expansion through the cable's neighbours.
-    const res = await request(app.getHttpServer()).get(`/api/products/${stand.id}/recommendations`).expect(200);
+    const res = await request(app.getHttpServer())
+      .get(`/api/products/${stand.id}/recommendations`)
+      .expect(200);
     expect(res.body[0]).toMatchObject({ productId: cable.id, hops: 1 });
-    expect(res.body.slice(1).map((r: { productId: string; hops: number }) => [r.productId, r.hops])).toContainEqual([iphone.id, 2]);
-    expect(res.body.map((r: { productId: string }) => r.productId)).not.toContain(stand.id);
+    expect(
+      res.body
+        .slice(1)
+        .map((r: { productId: string; hops: number }) => [r.productId, r.hops]),
+    ).toContainEqual([iphone.id, 2]);
+    expect(
+      res.body.map((r: { productId: string }) => r.productId),
+    ).not.toContain(stand.id);
     expect(res.headers['cache-control']).toContain('s-maxage=300');
   });
 
@@ -86,10 +116,20 @@ describe('Bought together (e2e)', () => {
       { __type__: TableName.Product, title: 'B', quantity: 0 },
       { __type__: TableName.Product, title: 'C', quantity: 5 },
     ]);
-    await clickhouse.getClient().insert({ table: 'order_baskets', format: 'JSONEachRow', values: [...baskets([a.id, b.id], 5), ...baskets([a.id, c.id], 3)] });
+    await clickhouse
+      .getClient()
+      .insert({
+        table: 'order_baskets',
+        format: 'JSONEachRow',
+        values: [...baskets([a.id, b.id], 5), ...baskets([a.id, c.id], 3)],
+      });
     await app.get(CoOccurrenceJobs).build({ buckets: 1 });
 
-    const res = await request(app.getHttpServer()).get(`/api/products/${a.id}/recommendations`).expect(200);
-    expect(res.body.map((r: { productId: string }) => r.productId)).toEqual([c.id]);
+    const res = await request(app.getHttpServer())
+      .get(`/api/products/${a.id}/recommendations`)
+      .expect(200);
+    expect(res.body.map((r: { productId: string }) => r.productId)).toEqual([
+      c.id,
+    ]);
   });
 });

@@ -20,7 +20,8 @@ export function assign(exp: ExperimentDef, unit: string): string | null {
   const layerBucket = murmur3(`layer:${exp.layer}:${unit}`) % 10_000;
   if (layerBucket < exp.layerFrom || layerBucket >= exp.layerTo) return null;
   const total = exp.variants.reduce((s, v) => s + v.weight, 0);
-  const bucket = (murmur3(`exp:${exp.key}:${unit}`) % 10_000) * (total / 10_000);
+  const bucket =
+    (murmur3(`exp:${exp.key}:${unit}`) % 10_000) * (total / 10_000);
   let cumulative = 0;
   for (const v of exp.variants) {
     cumulative += v.weight;

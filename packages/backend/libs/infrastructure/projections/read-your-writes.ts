@@ -26,21 +26,44 @@ export class ProjectionCheckpoints {
   async record(projector: string, events: EventEnvelope[]): Promise<void> {
     await Promise.all(
       events.map((e) =>
-        this.redis.client.eval(RECORD_MAX, 1, this.key(projector, e.aggregateType), e.aggregateId, String(e.version)),
+        this.redis.client.eval(
+          RECORD_MAX,
+          1,
+          this.key(projector, e.aggregateType),
+          e.aggregateId,
+          String(e.version),
+        ),
       ),
     );
   }
 
-  async projectedVersion(projector: string, aggregateType: string, aggregateId: string): Promise<number> {
-    const v = await this.redis.client.hget(this.key(projector, aggregateType), aggregateId);
+  async projectedVersion(
+    projector: string,
+    aggregateType: string,
+    aggregateId: string,
+  ): Promise<number> {
+    const v = await this.redis.client.hget(
+      this.key(projector, aggregateType),
+      aggregateId,
+    );
     return v === null ? -1 : Number(v);
   }
 
   /** True once the read model reflects at least `minVersion`; false after `timeoutMs`. */
-  async waitFor(projector: string, aggregateType: string, aggregateId: string, minVersion: number, timeoutMs = 500) {
+  async waitFor(
+    projector: string,
+    aggregateType: string,
+    aggregateId: string,
+    minVersion: number,
+    timeoutMs = 500,
+  ) {
     const deadline = Date.now() + timeoutMs;
     for (;;) {
-      if ((await this.projectedVersion(projector, aggregateType, aggregateId)) >= minVersion) return true;
+      if (
+        (await this.projectedVersion(projector, aggregateType, aggregateId)) >=
+        minVersion
+      )
+        return true;
       if (Date.now() >= deadline) return false;
       await sleep(25);
     }

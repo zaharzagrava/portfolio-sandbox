@@ -1,6 +1,25 @@
-import { Body, Controller, Delete, Get, HttpCode, Param, ParseUUIDPipe, Post, Put, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  Param,
+  ParseUUIDPipe,
+  Post,
+  Put,
+  Query,
+} from '@nestjs/common';
 import { ApiProperty, ApiPropertyOptional, ApiTags } from '@nestjs/swagger';
-import { ArrayMinSize, IsArray, IsBoolean, IsIn, IsOptional, IsString, Length } from 'class-validator';
+import {
+  ArrayMinSize,
+  IsArray,
+  IsBoolean,
+  IsIn,
+  IsOptional,
+  IsString,
+  Length,
+} from 'class-validator';
 import { InjectConnection } from '@nestjs/sequelize';
 import { QueryTypes, Sequelize } from 'sequelize';
 import { ShopScoped } from '@app/domains/tenancy';
@@ -14,8 +33,14 @@ import { API_VERSIONS } from '../domain/versioning';
 
 export class CreateApiKeyDto {
   @ApiProperty() @IsString() @Length(1, 60) name: string;
-  @ApiProperty({ enum: API_SCOPES, isArray: true }) @IsArray() @ArrayMinSize(1) @IsIn(API_SCOPES, { each: true }) scopes: ApiScope[];
-  @ApiProperty({ description: 'false = sk_test_ key acting on the sandbox' }) @IsBoolean() livemode: boolean;
+  @ApiProperty({ enum: API_SCOPES, isArray: true })
+  @IsArray()
+  @ArrayMinSize(1)
+  @IsIn(API_SCOPES, { each: true })
+  scopes: ApiScope[];
+  @ApiProperty({ description: 'false = sk_test_ key acting on the sandbox' })
+  @IsBoolean()
+  livemode: boolean;
 }
 
 export class PinVersionDto {
@@ -35,8 +60,18 @@ export class ApiKeysController {
 
   @ShopScoped('shop.manage')
   @Post('keys')
-  create(@Param('shopId', ParseUUIDPipe) shopId: string, @User() user: UserRawDto, @Body() body: CreateApiKeyDto) {
-    return this.keys.create(shopId, user.id, body.name, body.scopes, body.livemode);
+  create(
+    @Param('shopId', ParseUUIDPipe) shopId: string,
+    @User() user: UserRawDto,
+    @Body() body: CreateApiKeyDto,
+  ) {
+    return this.keys.create(
+      shopId,
+      user.id,
+      body.name,
+      body.scopes,
+      body.livemode,
+    );
   }
 
   @ShopScoped('shop.manage')
@@ -47,20 +82,30 @@ export class ApiKeysController {
 
   @ShopScoped('shop.manage')
   @Post('keys/:keyId/rotate')
-  rotate(@Param('shopId', ParseUUIDPipe) shopId: string, @Param('keyId', ParseUUIDPipe) keyId: string, @User() user: UserRawDto) {
+  rotate(
+    @Param('shopId', ParseUUIDPipe) shopId: string,
+    @Param('keyId', ParseUUIDPipe) keyId: string,
+    @User() user: UserRawDto,
+  ) {
     return this.keys.rotate(shopId, keyId, user.id);
   }
 
   @ShopScoped('shop.manage')
   @Delete('keys/:keyId')
   @HttpCode(204)
-  revoke(@Param('shopId', ParseUUIDPipe) shopId: string, @Param('keyId', ParseUUIDPipe) keyId: string) {
+  revoke(
+    @Param('shopId', ParseUUIDPipe) shopId: string,
+    @Param('keyId', ParseUUIDPipe) keyId: string,
+  ) {
     return this.keys.revoke(shopId, keyId);
   }
 
   @ShopScoped('shop.manage')
   @Put('api-version')
-  async pin(@Param('shopId', ParseUUIDPipe) shopId: string, @Body() body: PinVersionDto) {
+  async pin(
+    @Param('shopId', ParseUUIDPipe) shopId: string,
+    @Body() body: PinVersionDto,
+  ) {
     await this.sequelize.query(
       `INSERT INTO "ShopApiSettings" ("shopId", "pinnedVersion") VALUES (:shopId, :version) ON CONFLICT ("shopId") DO UPDATE SET "pinnedVersion" = EXCLUDED."pinnedVersion", "updatedAt" = now()`,
       { replacements: { shopId, version: body.version } },
@@ -72,7 +117,11 @@ export class ApiKeysController {
   /** Request logs (last 30 days) - by request id, or the latest 100. */
   @ShopScoped('shop.read')
   @Get('logs')
-  logs(@Param('shopId', ParseUUIDPipe) shopId: string, @Query('requestId') requestId?: string, @Query('status') status?: string) {
+  logs(
+    @Param('shopId', ParseUUIDPipe) shopId: string,
+    @Query('requestId') requestId?: string,
+    @Query('status') status?: string,
+  ) {
     return this.clickhouse.query(
       `SELECT request_id, key_id, livemode, version, method, route, status, duration_ms, deprecated, ts FROM api_requests
        WHERE shop_id = {shopId:String} ${requestId ? 'AND request_id = {requestId:String}' : ''} ${status ? 'AND status >= {status:UInt16}' : ''}

@@ -1,6 +1,25 @@
-import { Body, Controller, ForbiddenException, Get, Headers, HttpCode, NotFoundException, Param, Post, Req, Res } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  ForbiddenException,
+  Get,
+  Headers,
+  HttpCode,
+  NotFoundException,
+  Param,
+  Post,
+  Req,
+  Res,
+} from '@nestjs/common';
 import { ApiProperty, ApiPropertyOptional, ApiTags } from '@nestjs/swagger';
-import { IsLatitude, IsLongitude, IsOptional, IsString, Length, Matches } from 'class-validator';
+import {
+  IsLatitude,
+  IsLongitude,
+  IsOptional,
+  IsString,
+  Length,
+  Matches,
+} from 'class-validator';
 import type { Request, Response } from 'express';
 import { Firewall, User, UserRawDto } from '@app/domains/identity';
 import { RateLimit } from '@app/infrastructure/rate-limit/rate-limit.decorator';
@@ -10,11 +29,16 @@ import { AssistantQuotaService } from '../application/assistant-quota.service';
 import { GenerationBuffer } from '../infra/generation-buffer';
 import { AssistantRetryLaterError } from '../application/assistant-errors';
 
-const TIME_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-1[0-9a-f]{3}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const TIME_UUID =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-1[0-9a-f]{3}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const STREAM_ID = /^\d+-\d+$/;
 
 export class CreateConversationDto {
-  @ApiPropertyOptional() @IsOptional() @IsString() @Length(1, 120) title?: string;
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @Length(1, 120)
+  title?: string;
 }
 
 export class SendAssistantMessageDto {
@@ -71,27 +95,56 @@ export class AssistantController {
   @Firewall({ skipThrottle: true })
   @RateLimit('llm.messages')
   @Post('conversations/:id/messages')
-  async send(@User() user: UserRawDto, @Param() params: ConversationParam, @Body() body: SendAssistantMessageDto, @Req() req: Request, @Res() res: Response) {
-    const location = body.lat !== undefined && body.lng !== undefined ? { lat: Number(body.lat), lng: Number(body.lng) } : null;
-    const { messageId } = await this.assistant.startTurn(user.id, params.id, { text: body.text, location }).catch((error) => {
-      if (error instanceof AssistantRetryLaterError) res.setHeader('Retry-After', String(Math.max(1, Math.ceil(error.retryAfterMs / 1000))));
-      throw error;
-    });
+  async send(
+    @User() user: UserRawDto,
+    @Param() params: ConversationParam,
+    @Body() body: SendAssistantMessageDto,
+    @Req() req: Request,
+    @Res() res: Response,
+  ) {
+    const location =
+      body.lat !== undefined && body.lng !== undefined
+        ? { lat: Number(body.lat), lng: Number(body.lng) }
+        : null;
+    const { messageId } = await this.assistant
+      .startTurn(user.id, params.id, { text: body.text, location })
+      .catch((error) => {
+        if (error instanceof AssistantRetryLaterError)
+          res.setHeader(
+            'Retry-After',
+            String(Math.max(1, Math.ceil(error.retryAfterMs / 1000))),
+          );
+        throw error;
+      });
     await this.streamer.pipe(messageId, null, req, res);
   }
 
   @Firewall({ skipThrottle: true })
   @Get('messages/:messageId/stream')
-  async resume(@User() user: UserRawDto, @Param('messageId') messageId: string, @Headers('last-event-id') lastEventId: string | undefined, @Req() req: Request, @Res() res: Response) {
+  async resume(
+    @User() user: UserRawDto,
+    @Param('messageId') messageId: string,
+    @Headers('last-event-id') lastEventId: string | undefined,
+    @Req() req: Request,
+    @Res() res: Response,
+  ) {
     await this.assertOwner(user.id, messageId);
-    await this.streamer.pipe(messageId, lastEventId && STREAM_ID.test(lastEventId) ? lastEventId : null, req, res);
+    await this.streamer.pipe(
+      messageId,
+      lastEventId && STREAM_ID.test(lastEventId) ? lastEventId : null,
+      req,
+      res,
+    );
   }
 
   /** Stop button: aborts the provider call wherever the generation runs. */
   @Firewall()
   @HttpCode(202)
   @Post('messages/:messageId/cancel')
-  async cancel(@User() user: UserRawDto, @Param('messageId') messageId: string) {
+  async cancel(
+    @User() user: UserRawDto,
+    @Param('messageId') messageId: string,
+  ) {
     await this.assertOwner(user.id, messageId);
     await this.assistant.cancel(user.id, messageId);
     return { cancelling: true };

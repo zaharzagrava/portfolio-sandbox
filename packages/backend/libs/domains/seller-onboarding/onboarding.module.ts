@@ -14,12 +14,20 @@ import { VerificationService } from './application/verification.service';
 import { ReviewService } from './application/review.service';
 import { ExtractionService } from './application/extraction.service';
 import { OnboardingJobs } from './infra/onboarding.jobs';
-import { OnboardingController, OnboardingReviewController } from './api/onboarding.controller';
+import {
+  OnboardingController,
+  OnboardingReviewController,
+} from './api/onboarding.controller';
 
 /** SD-44 (core): questionnaire, uploads, review queue. */
 @Module({
   imports: [AuthModule, StorageModule, SqsModule, EventsModule, JobsModule],
-  providers: [OnboardingSessionService, OnboardingDocumentsService, VerificationService, ReviewService],
+  providers: [
+    OnboardingSessionService,
+    OnboardingDocumentsService,
+    VerificationService,
+    ReviewService,
+  ],
   exports: [VerificationService],
   controllers: [OnboardingController, OnboardingReviewController],
 })
@@ -30,8 +38,21 @@ export class OnboardingModule {}
  * auth stack - SecretBox is provided directly.
  */
 @Module({
-  imports: [LlmModule, StorageModule, EventsModule, JobsModule, KafkaProducerModule, ClickHouseModule],
-  providers: [ExtractionService, VerificationService, LlmMeter, UsageService, SecretBox],
+  imports: [
+    LlmModule,
+    StorageModule,
+    EventsModule,
+    JobsModule,
+    KafkaProducerModule,
+    ClickHouseModule,
+  ],
+  providers: [
+    ExtractionService,
+    VerificationService,
+    LlmMeter,
+    UsageService,
+    SecretBox,
+  ],
   exports: [ExtractionService],
 })
 export class OnboardingExtractionModule {}

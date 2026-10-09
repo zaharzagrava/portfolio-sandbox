@@ -20,7 +20,10 @@ export const eventEnvelopeSchema = z.object({
   payload: z.unknown(),
 });
 
-export interface EventEnvelope<TName extends string = string, TPayload = unknown> {
+export interface EventEnvelope<
+  TName extends string = string,
+  TPayload = unknown,
+> {
   eventId: string;
   eventName: TName;
   aggregateType: string;
@@ -35,4 +38,5 @@ export interface EventEnvelope<TName extends string = string, TPayload = unknown
 /** `orders.events`, `auctions.events`, ... - one topic per aggregate type. */
 export type DomainTopic<A extends string = string> = `${A}.events`;
 
-export const topicFor = <A extends string>(aggregateType: A): DomainTopic<A> => `${aggregateType}.events`;
+export const topicFor = <A extends string>(aggregateType: A): DomainTopic<A> =>
+  `${aggregateType}.events`;

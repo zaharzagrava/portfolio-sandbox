@@ -17,7 +17,12 @@ export const AUTOCOMPLETE_POINTER = 'autocomplete:current';
 const MAX_QUERIES = 200_000;
 const MIN_SEARCHERS = 5;
 /** Never suggested, whatever their popularity (offensive, unsafe, competitor bait). */
-const BLOCKLIST = [/\bfake\b/, /\bcounterfeit\b/, /\bstolen\b/, /\bhack(ed)?\b/];
+const BLOCKLIST = [
+  /\bfake\b/,
+  /\bcounterfeit\b/,
+  /\bstolen\b/,
+  /\bhack(ed)?\b/,
+];
 
 /**
  * Offline half (lesson 10/05 #12): aggregate 30 days of searches in ClickHouse,
@@ -37,12 +42,20 @@ export class AutocompleteBuilderJobs implements OnApplicationBootstrap {
   ) {}
 
   async onApplicationBootstrap() {
-    await this.jobs.upsertSchedule({ name: 'search.build-autocomplete', cron: '7 * * * *', jobType: 'search.build-autocomplete', payload: {} });
+    await this.jobs.upsertSchedule({
+      name: 'search.build-autocomplete',
+      cron: '7 * * * *',
+      jobType: 'search.build-autocomplete',
+      payload: {},
+    });
   }
 
   @JobHandler('search.build-autocomplete', { concurrency: 1, leaseMs: 600_000 })
   async build(): Promise<number> {
-    const rows = await this.clickhouse.query<{ query: string; searchers: string }>(
+    const rows = await this.clickhouse.query<{
+      query: string;
+      searchers: string;
+    }>(
       `SELECT query, uniqCombined(user_hash) AS searchers
        FROM search_queries FINAL
        WHERE ts >= now() - INTERVAL 30 DAY AND results > 0
@@ -50,12 +63,20 @@ export class AutocompleteBuilderJobs implements OnApplicationBootstrap {
        ORDER BY searchers DESC LIMIT {limit:UInt32}`,
       { min: MIN_SEARCHERS, limit: MAX_QUERIES },
     );
-    const suggestions: Suggestion[] = rows.filter((r) => !BLOCKLIST.some((re) => re.test(r.query))).map((r) => ({ query: r.query, count: Number(r.searchers) }));
+    const suggestions: Suggestion[] = rows
+      .filter((r) => !BLOCKLIST.some((re) => re.test(r.query)))
+      .map((r) => ({ query: r.query, count: Number(r.searchers) }));
 
     const version = new Date().toISOString().replace(/[:.]/g, '-');
-    await this.storage.put(`autocomplete/${version}.json.gz`, gzipSync(JSON.stringify(suggestions)), 'application/gzip');
+    await this.storage.put(
+      `autocomplete/${version}.json.gz`,
+      gzipSync(JSON.stringify(suggestions)),
+      'application/gzip',
+    );
     await this.redis.client.set(AUTOCOMPLETE_POINTER, version);
-    this.logger.log(`autocomplete snapshot ${version}: ${suggestions.length} queries`);
+    this.logger.log(
+      `autocomplete snapshot ${version}: ${suggestions.length} queries`,
+    );
     return suggestions.length;
   }
 }

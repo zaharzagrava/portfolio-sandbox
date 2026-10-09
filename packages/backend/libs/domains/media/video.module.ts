@@ -1,4 +1,10 @@
-import { Injectable, Logger, Module, OnApplicationBootstrap, OnModuleDestroy } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  Module,
+  OnApplicationBootstrap,
+  OnModuleDestroy,
+} from '@nestjs/common';
 import { AuthModule } from '@app/domains/identity';
 import { StorageModule } from '@app/infrastructure/storage/storage.module';
 import { SqsModule } from '@app/infrastructure/sqs/sqs.module';
@@ -7,7 +13,12 @@ import { VIDEO_QUEUE, VideoService } from './application/video.service';
 import { VideoController } from './api/video.controller';
 
 /** SD-26 API (core). */
-@Module({ imports: [AuthModule, StorageModule, SqsModule], providers: [VideoService], exports: [VideoService], controllers: [VideoController] })
+@Module({
+  imports: [AuthModule, StorageModule, SqsModule],
+  providers: [VideoService],
+  exports: [VideoService],
+  controllers: [VideoController],
+})
 export class VideoModule {}
 
 /**
@@ -28,10 +39,19 @@ class VideoWorker implements OnApplicationBootstrap, OnModuleDestroy {
   ) {}
 
   onApplicationBootstrap() {
-    this.stop = this.queue.consume<{ videoId: string; task: string }>(VIDEO_QUEUE, async ({ body }) => void (await this.videos.runTask(body.videoId, body.task, this.abort.signal)), {
-      concurrency: 2,
-      visibilityTimeoutSec: 900,
-    });
+    this.stop = this.queue.consume<{ videoId: string; task: string }>(
+      VIDEO_QUEUE,
+      async ({ body }) =>
+        void (await this.videos.runTask(
+          body.videoId,
+          body.task,
+          this.abort.signal,
+        )),
+      {
+        concurrency: 2,
+        visibilityTimeoutSec: 900,
+      },
+    );
   }
 
   async onModuleDestroy() {
@@ -40,5 +60,8 @@ class VideoWorker implements OnApplicationBootstrap, OnModuleDestroy {
   }
 }
 
-@Module({ imports: [StorageModule, SqsModule], providers: [VideoService, VideoWorker] })
+@Module({
+  imports: [StorageModule, SqsModule],
+  providers: [VideoService, VideoWorker],
+})
 export class VideoWorkerModule {}

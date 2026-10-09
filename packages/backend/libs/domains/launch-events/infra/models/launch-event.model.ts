@@ -1,10 +1,19 @@
-import { Column, DataType, Model, PrimaryKey, Table } from 'sequelize-typescript';
+import {
+  Column,
+  DataType,
+  Model,
+  PrimaryKey,
+  Table,
+} from 'sequelize-typescript';
 import { Sequelize } from 'sequelize';
 
 export type LaunchEventStatus = 'SCHEDULED' | 'ON_SALE' | 'SOLD_OUT' | 'CLOSED';
 
 @Table({ modelName: 'LaunchEvent', tableName: 'LaunchEvent', timestamps: true })
-export default class LaunchEvent extends Model<LaunchEvent, Partial<LaunchEvent>> {
+export default class LaunchEvent extends Model<
+  LaunchEvent,
+  Partial<LaunchEvent>
+> {
   @PrimaryKey
   @Column({ type: DataType.UUID, defaultValue: Sequelize.literal('uuidv7()') })
   declare id: string;

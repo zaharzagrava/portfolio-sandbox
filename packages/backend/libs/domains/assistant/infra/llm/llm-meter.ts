@@ -33,7 +33,9 @@ export class LlmMeter {
     private readonly usage: UsageService,
   ) {}
 
-  async record(call: LlmCallRecord): Promise<{ tokens: number; costMicros: number }> {
+  async record(
+    call: LlmCallRecord,
+  ): Promise<{ tokens: number; costMicros: number }> {
     const tokens = quotaTokens(call.result.usage);
     const cost = costMicros(call.result.model, call.result.usage);
     const event = LlmCallCompleted.create(call.callId, 0, {
@@ -48,11 +50,25 @@ export class LlmMeter {
       ...call.result.usage,
       costMicros: cost,
       stopReason: call.result.stopReason ?? 'unknown',
-      toolCalls: call.result.content.filter((b) => b.type === 'tool_use').length,
+      toolCalls: call.result.content.filter((b) => b.type === 'tool_use')
+        .length,
     });
     await Promise.all([
-      call.subjectId ? this.usage.record(call.subjectId, `llm.${call.purpose}.tokens`, Math.max(1, tokens), event.eventId) : undefined,
-      this.producer.send({ topic: LlmCallCompleted.topic, key: call.subjectId ?? call.scopeId, value: event }).catch((e) => this.logger.warn(`llm metrics dropped: ${e.message}`)),
+      call.subjectId
+        ? this.usage.record(
+            call.subjectId,
+            `llm.${call.purpose}.tokens`,
+            Math.max(1, tokens),
+            event.eventId,
+          )
+        : undefined,
+      this.producer
+        .send({
+          topic: LlmCallCompleted.topic,
+          key: call.subjectId ?? call.scopeId,
+          value: event,
+        })
+        .catch((e) => this.logger.warn(`llm metrics dropped: ${e.message}`)),
     ]);
     return { tokens, costMicros: cost };
   }

@@ -6,4 +6,4 @@ import { BisUtilsService } from './application/bis-utils.service';
   providers: [BisUtilsService],
   exports: [BisUtilsService],
 })
-export class BisUtilsModule { }
+export class BisUtilsModule {}

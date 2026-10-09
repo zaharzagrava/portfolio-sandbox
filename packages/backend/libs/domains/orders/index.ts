@@ -5,7 +5,10 @@
  * domains must stop injecting them.
  */
 export { default as BisOrderItemModel } from './infra/models/bis-order-item.model';
-export { default as BisOrderModel, BisOrderScope } from './infra/models/bis-order.model';
+export {
+  default as BisOrderModel,
+  BisOrderScope,
+} from './infra/models/bis-order.model';
 export type { BisOrderWithAllFilters } from './infra/models/bis-order.model';
 export { default as FlashSaleModel } from './infra/models/flash-sale.model';
 export { default as ShopOrderModel } from './infra/models/shop-order.model';
@@ -15,7 +18,11 @@ export type { DiscountableLine } from './domain/checkout-discounts.port';
 export { OrdersWorkerModule } from './orders-worker.module';
 export { ORDER_MODELS, OrdersModule } from './orders.module';
 export { CreateBisOrderDto } from './api/bis-order.dto';
-export { OrderCancelled, OrderPaid, OrderReserved } from './application/events/order-events';
+export {
+  OrderCancelled,
+  OrderPaid,
+  OrderReserved,
+} from './application/events/order-events';
 export { OrderExportService } from './application/order-export.service';
 export { OrderService } from './application/order.service';
 export { FlashStockService } from './infra/flash-stock.service';

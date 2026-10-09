@@ -26,7 +26,11 @@ describe('clamd INSTREAM client', () => {
           if (buf.length < 4) return;
           const len = buf.readUInt32BE(0);
           if (len === 0) {
-            socket.end(received.includes('EICAR') ? 'stream: Eicar-Test-Signature FOUND\0' : 'stream: OK\0');
+            socket.end(
+              received.includes('EICAR')
+                ? 'stream: Eicar-Test-Signature FOUND\0'
+                : 'stream: OK\0',
+            );
             return;
           }
           if (buf.length < 4 + len) return;
@@ -44,11 +48,27 @@ describe('clamd INSTREAM client', () => {
 
   it('streams a large file in ≤ 64 KB framed chunks and reports clean', async () => {
     const file = Buffer.alloc(300_000, 'a');
-    expect(await scanStream('127.0.0.1', port, Readable.from([file.subarray(0, 100_000), file.subarray(100_000)]))).toEqual({ clean: true });
+    expect(
+      await scanStream(
+        '127.0.0.1',
+        port,
+        Readable.from([file.subarray(0, 100_000), file.subarray(100_000)]),
+      ),
+    ).toEqual({ clean: true });
     expect(received.equals(file)).toBe(true);
   });
 
   it('reports the signature of an infected file', async () => {
-    expect(await scanStream('127.0.0.1', port, Readable.from([Buffer.from('X5O!P%@AP[4\\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*')]))).toEqual({ clean: false, signature: 'Eicar-Test-Signature' });
+    expect(
+      await scanStream(
+        '127.0.0.1',
+        port,
+        Readable.from([
+          Buffer.from(
+            'X5O!P%@AP[4\\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*',
+          ),
+        ]),
+      ),
+    ).toEqual({ clean: false, signature: 'Eicar-Test-Signature' });
   });
 });

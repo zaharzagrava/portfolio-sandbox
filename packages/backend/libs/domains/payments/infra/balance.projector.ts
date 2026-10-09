@@ -34,8 +34,17 @@ export class BalanceProjector implements Projector {
       events.map((raw) => {
         const event = JournalPosted.match(raw);
         if (!event) return undefined;
-        const args = event.payload.lines.flatMap((l) => [l.accountId, String(l.amount)]);
-        return this.redis.client.eval(APPLY_JOURNAL, 2, BALANCES_KEY, `ledger:applied:${event.aggregateId}`, ...args);
+        const args = event.payload.lines.flatMap((l) => [
+          l.accountId,
+          String(l.amount),
+        ]);
+        return this.redis.client.eval(
+          APPLY_JOURNAL,
+          2,
+          BALANCES_KEY,
+          `ledger:applied:${event.aggregateId}`,
+          ...args,
+        );
       }),
     );
   }

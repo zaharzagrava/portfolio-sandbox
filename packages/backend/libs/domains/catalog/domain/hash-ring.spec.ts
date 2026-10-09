@@ -7,8 +7,10 @@ describe('HashRing', () => {
   it('spreads keys evenly across instances (virtual nodes)', () => {
     const ring = new HashRing(['a', 'b', 'c', 'd', 'e']);
     const counts = new Map<string, number>();
-    for (const k of keys) counts.set(ring.nodeFor(k)!, (counts.get(ring.nodeFor(k)!) ?? 0) + 1);
-    for (const count of counts.values()) expect(Math.abs(count - 4_000)).toBeLessThan(4_000 * 0.15);
+    for (const k of keys)
+      counts.set(ring.nodeFor(k)!, (counts.get(ring.nodeFor(k)!) ?? 0) + 1);
+    for (const count of counts.values())
+      expect(Math.abs(count - 4_000)).toBeLessThan(4_000 * 0.15);
   });
 
   it('adding an instance moves only ~1/N of the keys, all of them to the new instance', () => {
@@ -21,7 +23,9 @@ describe('HashRing', () => {
   });
 
   it('is deterministic regardless of node order; empty ring routes nowhere', () => {
-    expect(new HashRing(['x', 'y']).nodeFor('k')).toBe(new HashRing(['y', 'x']).nodeFor('k'));
+    expect(new HashRing(['x', 'y']).nodeFor('k')).toBe(
+      new HashRing(['y', 'x']).nodeFor('k'),
+    );
     expect(new HashRing([]).nodeFor('k')).toBeNull();
   });
 });

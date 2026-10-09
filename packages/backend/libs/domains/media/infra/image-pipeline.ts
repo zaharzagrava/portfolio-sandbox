@@ -19,7 +19,16 @@ export interface ProcessedImage {
   width: number;
   height: number;
   dhash: string;
-  variants: Record<VariantName, { buffer: Buffer; hash: string; width: number; height: number; contentType: string }>;
+  variants: Record<
+    VariantName,
+    {
+      buffer: Buffer;
+      hash: string;
+      width: number;
+      height: number;
+      contentType: string;
+    }
+  >;
 }
 
 /**
@@ -36,22 +45,52 @@ export interface ProcessedImage {
 export async function processImage(input: Buffer): Promise<ProcessedImage> {
   let meta: Metadata;
   try {
-    meta = await sharp(input, { limitInputPixels: MAX_INPUT_PIXELS }).metadata();
+    meta = await sharp(input, {
+      limitInputPixels: MAX_INPUT_PIXELS,
+    }).metadata();
   } catch (error) {
-    throw new RejectedImageError(`not a decodable image: ${(error as Error).message}`);
+    throw new RejectedImageError(
+      `not a decodable image: ${(error as Error).message}`,
+    );
   }
-  if (!meta.format || !(ALLOWED_FORMATS as readonly string[]).includes(meta.format)) throw new RejectedImageError(`format ${meta.format ?? 'unknown'} not allowed`);
-  if (!meta.width || !meta.height) throw new RejectedImageError('missing dimensions');
-  if (meta.width * meta.height > MAX_INPUT_PIXELS) throw new RejectedImageError('image too large');
+  if (
+    !meta.format ||
+    !(ALLOWED_FORMATS as readonly string[]).includes(meta.format)
+  )
+    throw new RejectedImageError(
+      `format ${meta.format ?? 'unknown'} not allowed`,
+    );
+  if (!meta.width || !meta.height)
+    throw new RejectedImageError('missing dimensions');
+  if (meta.width * meta.height > MAX_INPUT_PIXELS)
+    throw new RejectedImageError('image too large');
 
-  const base = () => sharp(input, { limitInputPixels: MAX_INPUT_PIXELS }).rotate(); // auto-orient from EXIF, then metadata is not re-emitted
+  const base = () =>
+    sharp(input, { limitInputPixels: MAX_INPUT_PIXELS }).rotate(); // auto-orient from EXIF, then metadata is not re-emitted
   const variants = {} as ProcessedImage['variants'];
-  for (const [name, width] of Object.entries(VARIANTS) as [VariantName, number][]) {
-    const { data, info } = await base().resize({ width, withoutEnlargement: true }).webp({ quality: 80, effort: 4 }).toBuffer({ resolveWithObject: true });
-    variants[name] = { buffer: data, hash: createHash('sha256').update(data).digest('hex').slice(0, 32), width: info.width, height: info.height, contentType: 'image/webp' };
+  for (const [name, width] of Object.entries(VARIANTS) as [
+    VariantName,
+    number,
+  ][]) {
+    const { data, info } = await base()
+      .resize({ width, withoutEnlargement: true })
+      .webp({ quality: 80, effort: 4 })
+      .toBuffer({ resolveWithObject: true });
+    variants[name] = {
+      buffer: data,
+      hash: createHash('sha256').update(data).digest('hex').slice(0, 32),
+      width: info.width,
+      height: info.height,
+      contentType: 'image/webp',
+    };
   }
   const oriented = await base().toBuffer({ resolveWithObject: true });
-  return { width: oriented.info.width, height: oriented.info.height, dhash: await dHash(input), variants };
+  return {
+    width: oriented.info.width,
+    height: oriented.info.height,
+    dhash: await dHash(input),
+    variants,
+  };
 }
 
 /**
@@ -60,10 +99,18 @@ export async function processImage(input: Buffer): Promise<ProcessedImage> {
  * of a product photo lands within a few bits.
  */
 export async function dHash(input: Buffer): Promise<string> {
-  const pixels = await sharp(input, { limitInputPixels: MAX_INPUT_PIXELS }).rotate().greyscale().resize(9, 8, { fit: 'fill' }).raw().toBuffer();
+  const pixels = await sharp(input, { limitInputPixels: MAX_INPUT_PIXELS })
+    .rotate()
+    .greyscale()
+    .resize(9, 8, { fit: 'fill' })
+    .raw()
+    .toBuffer();
   let bits = 0n;
   for (let row = 0; row < 8; row++) {
-    for (let col = 0; col < 8; col++) bits = (bits << 1n) | (pixels[row * 9 + col] > pixels[row * 9 + col + 1] ? 1n : 0n);
+    for (let col = 0; col < 8; col++)
+      bits =
+        (bits << 1n) |
+        (pixels[row * 9 + col] > pixels[row * 9 + col + 1] ? 1n : 0n);
   }
   return bits.toString(16).padStart(16, '0');
 }
@@ -80,5 +127,7 @@ export function hamming(a: string, b: string): number {
 
 /** 4 × 16-bit bands of the 64-bit hash (index keys for near-duplicate candidates). */
 export function bands(hash: string): [number, number, number, number] {
-  return [0, 1, 2, 3].map((i) => parseInt(hash.slice(i * 4, i * 4 + 4), 16)) as [number, number, number, number];
+  return [0, 1, 2, 3].map((i) =>
+    parseInt(hash.slice(i * 4, i * 4 + 4), 16),
+  ) as [number, number, number, number];
 }

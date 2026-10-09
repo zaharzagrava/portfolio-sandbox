@@ -10,7 +10,8 @@ export const tickerLeaseKey = (id: string) => `live:{${id}}:ticker`;
  * 200k HINCRBY/s on one stream must spread across cluster shards.
  */
 export const REACTION_SHARDS = 8;
-export const reactionKey = (id: string, second: number, shard: number) => `live:rx:${id}:${second}:${shard}`;
+export const reactionKey = (id: string, second: number, shard: number) =>
+  `live:rx:${id}:${second}:${shard}`;
 /** Raw comment firehose for gateways' batchers; not a public realtime topic (clients can't subscribe to it). */
 export const firehoseTopic = (id: string) => `livefeed:${id}`;
 

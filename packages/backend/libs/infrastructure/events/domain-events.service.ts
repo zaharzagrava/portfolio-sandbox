@@ -13,9 +13,14 @@ import { EventEnvelope } from './event-envelope';
  */
 @Injectable()
 export class DomainEventsService {
-  constructor(@InjectModel(Outbox) private readonly outboxModel: typeof Outbox) {}
+  constructor(
+    @InjectModel(Outbox) private readonly outboxModel: typeof Outbox,
+  ) {}
 
-  async record(events: EventEnvelope | EventEnvelope[], tx?: Transaction): Promise<void> {
+  async record(
+    events: EventEnvelope | EventEnvelope[],
+    tx?: Transaction,
+  ): Promise<void> {
     const list = Array.isArray(events) ? events : [events];
     if (list.length === 0) return;
 

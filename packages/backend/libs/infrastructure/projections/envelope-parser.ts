@@ -1,9 +1,13 @@
 import { v5 as uuidv5 } from 'uuid';
-import { EventEnvelope, eventEnvelopeSchema } from '@app/infrastructure/events/event-envelope';
+import {
+  EventEnvelope,
+  eventEnvelopeSchema,
+} from '@app/infrastructure/events/event-envelope';
 
 const LEGACY_NAMESPACE = '6f1d0c4e-6d4b-4b0e-9a8f-1f6f4b1b7c2a';
 
-export type ParseResult = { ok: true; envelope: EventEnvelope } | { ok: false; reason: string };
+export type ParseResult =
+  { ok: true; envelope: EventEnvelope } | { ok: false; reason: string };
 
 /**
  * Accepts F-05 envelopes and the pre-F-05 outbox shape
@@ -11,7 +15,12 @@ export type ParseResult = { ok: true; envelope: EventEnvelope } | { ok: false; r
  * which is lifted into an envelope with version 0 so old producers keep
  * working while they migrate. Anything else is a poison message.
  */
-export function parseEnvelope(topic: string, key: string | null, value: Buffer | null, offset: string): ParseResult {
+export function parseEnvelope(
+  topic: string,
+  key: string | null,
+  value: Buffer | null,
+  offset: string,
+): ParseResult {
   if (!value) return { ok: false, reason: 'empty message value (tombstone)' };
 
   let raw: unknown;
@@ -22,7 +31,8 @@ export function parseEnvelope(topic: string, key: string | null, value: Buffer |
   }
 
   const parsed = eventEnvelopeSchema.safeParse(raw);
-  if (parsed.success) return { ok: true, envelope: parsed.data as EventEnvelope };
+  if (parsed.success)
+    return { ok: true, envelope: parsed.data as EventEnvelope };
 
   const legacy = raw as { payload?: Record<string, unknown> } | null;
   if (legacy && typeof legacy === 'object' && 'payload' in legacy) {
@@ -48,5 +58,8 @@ export function parseEnvelope(topic: string, key: string | null, value: Buffer |
     };
   }
 
-  return { ok: false, reason: `not an event envelope: ${parsed.error.issues.map((i) => i.message).join('; ')}` };
+  return {
+    ok: false,
+    reason: `not an event envelope: ${parsed.error.issues.map((i) => i.message).join('; ')}`,
+  };
 }

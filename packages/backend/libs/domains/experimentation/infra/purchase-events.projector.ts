@@ -37,7 +37,11 @@ export class PurchaseEventsProjector implements Projector {
           country: '',
           platform: 'server',
           page: '',
-          props: { order_id: e.aggregateId, total: String(e.payload.total), currency: e.payload.currency ?? 'usd' },
+          props: {
+            order_id: e.aggregateId,
+            total: String(e.payload.total),
+            currency: e.payload.currency ?? 'usd',
+          },
         })),
     );
   }

@@ -8,7 +8,7 @@ export class DbUtilsService {
   constructor(
     private readonly configService: ApiConfigService,
     @InjectConnection() private readonly sequelizeInstance: Sequelize,
-  ) { }
+  ) {}
 
   public async wrapInTransaction<T>(
     fun: (transaction: Transaction) => T,

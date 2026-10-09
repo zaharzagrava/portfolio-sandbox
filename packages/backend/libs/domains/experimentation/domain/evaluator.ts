@@ -61,9 +61,13 @@ function matches(condition: Condition, ctx: EvalContext): boolean {
     case 'exists':
       return actual !== undefined && actual !== null && actual !== '';
     case 'in':
-      return Array.isArray(actual) ? actual.some((a) => values.includes(a)) : actual !== undefined && values.includes(actual as string);
+      return Array.isArray(actual)
+        ? actual.some((a) => values.includes(a))
+        : actual !== undefined && values.includes(actual as string);
     case 'not_in':
-      return Array.isArray(actual) ? !actual.some((a) => values.includes(a)) : actual === undefined || !values.includes(actual as string);
+      return Array.isArray(actual)
+        ? !actual.some((a) => values.includes(a))
+        : actual === undefined || !values.includes(actual as string);
     case 'eq':
       return actual === values[0];
     case 'neq':
@@ -85,40 +89,85 @@ function matches(condition: Condition, ctx: EvalContext): boolean {
  * Without a bucketing unit (anonymous, no userId) a rollout serves its first
  * variant (conservative: usually the control).
  */
-export function evaluate(flag: FlagDefinition | undefined, ctx: EvalContext): Evaluation {
-  if (!flag) return { key: '?', variant: 'off', value: false, reason: 'unknown_flag' };
-  const value = (variantKey: string) => flag.variants.find((v) => v.key === variantKey)?.value ?? false;
-  if (!flag.enabled) return { key: flag.key, variant: flag.offVariant, value: value(flag.offVariant), reason: 'off' };
+export function evaluate(
+  flag: FlagDefinition | undefined,
+  ctx: EvalContext,
+): Evaluation {
+  if (!flag)
+    return { key: '?', variant: 'off', value: false, reason: 'unknown_flag' };
+  const value = (variantKey: string) =>
+    flag.variants.find((v) => v.key === variantKey)?.value ?? false;
+  if (!flag.enabled)
+    return {
+      key: flag.key,
+      variant: flag.offVariant,
+      value: value(flag.offVariant),
+      reason: 'off',
+    };
 
   for (const rule of flag.rules) {
     if (!rule.conditions.every((c) => matches(c, ctx))) continue;
-    if (rule.variant) return { key: flag.key, variant: rule.variant, value: value(rule.variant), reason: 'rule', ruleId: rule.id };
+    if (rule.variant)
+      return {
+        key: flag.key,
+        variant: rule.variant,
+        value: value(rule.variant),
+        reason: 'rule',
+        ruleId: rule.id,
+      };
     if (rule.rollout?.length) {
       const unit = ctx[flag.bucketBy];
-      if (typeof unit !== 'string' || !unit) return { key: flag.key, variant: rule.rollout[0].variant, value: value(rule.rollout[0].variant), reason: 'rollout', ruleId: rule.id };
+      if (typeof unit !== 'string' || !unit)
+        return {
+          key: flag.key,
+          variant: rule.rollout[0].variant,
+          value: value(rule.rollout[0].variant),
+          reason: 'rollout',
+          ruleId: rule.id,
+        };
       const bucket = bucketOf(flag.key, unit);
       let cumulative = 0;
       for (const slice of rule.rollout) {
         cumulative += slice.weight;
-        if (bucket < cumulative) return { key: flag.key, variant: slice.variant, value: value(slice.variant), reason: 'rollout', ruleId: rule.id };
+        if (bucket < cumulative)
+          return {
+            key: flag.key,
+            variant: slice.variant,
+            value: value(slice.variant),
+            reason: 'rollout',
+            ruleId: rule.id,
+          };
       }
     }
   }
-  return { key: flag.key, variant: flag.defaultVariant, value: value(flag.defaultVariant), reason: 'default' };
+  return {
+    key: flag.key,
+    variant: flag.defaultVariant,
+    value: value(flag.defaultVariant),
+    reason: 'default',
+  };
 }
 
 /** Admin-side validation: weights sum to 10,000, every referenced variant exists. */
 export function validateFlag(flag: Omit<FlagDefinition, 'version'>): string[] {
   const errors: string[] = [];
   const keys = new Set(flag.variants.map((v) => v.key));
-  for (const k of [flag.defaultVariant, flag.offVariant]) if (!keys.has(k)) errors.push(`unknown variant ${k}`);
+  for (const k of [flag.defaultVariant, flag.offVariant])
+    if (!keys.has(k)) errors.push(`unknown variant ${k}`);
   for (const rule of flag.rules) {
-    if (!rule.variant && !rule.rollout?.length) errors.push(`rule ${rule.id}: needs a variant or a rollout`);
-    if (rule.variant && !keys.has(rule.variant)) errors.push(`rule ${rule.id}: unknown variant ${rule.variant}`);
+    if (!rule.variant && !rule.rollout?.length)
+      errors.push(`rule ${rule.id}: needs a variant or a rollout`);
+    if (rule.variant && !keys.has(rule.variant))
+      errors.push(`rule ${rule.id}: unknown variant ${rule.variant}`);
     if (rule.rollout) {
       const sum = rule.rollout.reduce((s, r) => s + r.weight, 0);
-      if (sum !== BUCKETS) errors.push(`rule ${rule.id}: rollout weights sum to ${sum}, expected ${BUCKETS}`);
-      for (const r of rule.rollout) if (!keys.has(r.variant)) errors.push(`rule ${rule.id}: unknown variant ${r.variant}`);
+      if (sum !== BUCKETS)
+        errors.push(
+          `rule ${rule.id}: rollout weights sum to ${sum}, expected ${BUCKETS}`,
+        );
+      for (const r of rule.rollout)
+        if (!keys.has(r.variant))
+          errors.push(`rule ${rule.id}: unknown variant ${r.variant}`);
     }
   }
   return errors;

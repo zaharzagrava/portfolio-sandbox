@@ -19,7 +19,11 @@ export interface ShopProductHit {
 export class ShopProductSearchService {
   constructor(@InjectConnection() private readonly sequelize: Sequelize) {}
 
-  async search(shopId: string, q: string, limit = 25): Promise<ShopProductHit[]> {
+  async search(
+    shopId: string,
+    q: string,
+    limit = 25,
+  ): Promise<ShopProductHit[]> {
     if (!q.trim()) {
       // No query: the shop's inventory, newest first (the seller's product list).
       return this.sequelize.query<ShopProductHit>(
@@ -49,7 +53,14 @@ export class ShopProductSearchService {
        WHERE p."shopId" = :shopId AND s.rank >= 0.3
        ORDER BY s.rank DESC
        LIMIT :limit`,
-      { type: QueryTypes.SELECT, replacements: { shopId, tokens: `{${tokens.map((t) => `"${t.replace(/["\\]/g, '')}"`).join(',')}}`, limit } },
+      {
+        type: QueryTypes.SELECT,
+        replacements: {
+          shopId,
+          tokens: `{${tokens.map((t) => `"${t.replace(/["\\]/g, '')}"`).join(',')}}`,
+          limit,
+        },
+      },
     );
   }
 }

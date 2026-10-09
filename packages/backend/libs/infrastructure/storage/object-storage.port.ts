@@ -28,18 +28,41 @@ export interface PresignPostOptions {
  */
 export abstract class ObjectStorage {
   abstract presignPost(options: PresignPostOptions): Promise<PresignedPost>;
-  abstract presignGet(key: string, options?: { expiresInSec?: number; downloadName?: string }): Promise<string>;
+  abstract presignGet(
+    key: string,
+    options?: { expiresInSec?: number; downloadName?: string },
+  ): Promise<string>;
   /**
    * Presigned PUT whose signature covers the body's SHA-256 checksum and length:
    * S3 rejects an upload whose bytes don't match - so a key named after a hash
    * really contains those bytes (content-addressed storage, SD-25).
    */
-  abstract presignPutChecked(key: string, sha256Hex: string, contentLength: number, expiresInSec?: number): Promise<{ url: string; headers: Record<string, string> }>;
-  abstract createMultipartUpload(key: string, contentType: string, parts: number, expiresInSec?: number): Promise<MultipartUploadInit>;
-  abstract completeMultipartUpload(key: string, uploadId: string, parts: { partNumber: number; etag: string }[]): Promise<void>;
+  abstract presignPutChecked(
+    key: string,
+    sha256Hex: string,
+    contentLength: number,
+    expiresInSec?: number,
+  ): Promise<{ url: string; headers: Record<string, string> }>;
+  abstract createMultipartUpload(
+    key: string,
+    contentType: string,
+    parts: number,
+    expiresInSec?: number,
+  ): Promise<MultipartUploadInit>;
+  abstract completeMultipartUpload(
+    key: string,
+    uploadId: string,
+    parts: { partNumber: number; etag: string }[],
+  ): Promise<void>;
   abstract abortMultipartUpload(key: string, uploadId: string): Promise<void>;
   abstract getStream(key: string): Promise<Readable>;
-  abstract put(key: string, body: Buffer | Readable, contentType: string): Promise<void>;
-  abstract head(key: string): Promise<{ size: number; contentType?: string } | null>;
+  abstract put(
+    key: string,
+    body: Buffer | Readable,
+    contentType: string,
+  ): Promise<void>;
+  abstract head(
+    key: string,
+  ): Promise<{ size: number; contentType?: string } | null>;
   abstract delete(key: string): Promise<void>;
 }

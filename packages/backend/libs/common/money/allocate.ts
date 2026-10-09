@@ -8,9 +8,11 @@
  * deterministic (same input → same split, important for idempotent invoices).
  */
 export function allocate(total: number, weights: readonly number[]): number[] {
-  if (!Number.isSafeInteger(total)) throw new RangeError('total must be a safe integer (minor units)');
+  if (!Number.isSafeInteger(total))
+    throw new RangeError('total must be a safe integer (minor units)');
   if (weights.length === 0) throw new RangeError('weights must not be empty');
-  if (weights.some((w) => w < 0 || !Number.isFinite(w))) throw new RangeError('weights must be finite and >= 0');
+  if (weights.some((w) => w < 0 || !Number.isFinite(w)))
+    throw new RangeError('weights must be finite and >= 0');
 
   const weightSum = weights.reduce((sum, w) => sum + w, 0);
   if (weightSum === 0) throw new RangeError('weights must not all be zero');
@@ -37,4 +39,7 @@ export function allocate(total: number, weights: readonly number[]): number[] {
 
 /** Splits evenly: allocate(total, [1, 1, ..., 1]). */
 export const allocateEvenly = (total: number, parts: number): number[] =>
-  allocate(total, Array.from({ length: parts }, () => 1));
+  allocate(
+    total,
+    Array.from({ length: parts }, () => 1),
+  );

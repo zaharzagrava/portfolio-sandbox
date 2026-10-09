@@ -15,13 +15,27 @@ export interface CollabTicket {
  * draft and ONE permission level; the WS handshake carries only that.
  */
 export function signCollabTicket(ticket: CollabTicket, secret: string): string {
-  return jwt.sign({ sub: ticket.userId, d: ticket.draftId, w: ticket.canWrite, typ: TYPE }, secret, { expiresIn: TTL_SEC });
+  return jwt.sign(
+    { sub: ticket.userId, d: ticket.draftId, w: ticket.canWrite, typ: TYPE },
+    secret,
+    { expiresIn: TTL_SEC },
+  );
 }
 
-export function verifyCollabTicket(token: string, secret: string): CollabTicket | null {
+export function verifyCollabTicket(
+  token: string,
+  secret: string,
+): CollabTicket | null {
   try {
-    const claims = jwt.verify(token, secret) as { sub: string; d: string; w: boolean; typ: string };
-    return claims.typ === TYPE ? { userId: claims.sub, draftId: claims.d, canWrite: !!claims.w } : null;
+    const claims = jwt.verify(token, secret) as {
+      sub: string;
+      d: string;
+      w: boolean;
+      typ: string;
+    };
+    return claims.typ === TYPE
+      ? { userId: claims.sub, draftId: claims.d, canWrite: !!claims.w }
+      : null;
   } catch {
     return null;
   }

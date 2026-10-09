@@ -6,7 +6,13 @@ import { RedisPubSubModule } from '../redis-pubsub/redis-pubsub.module';
 import { PaymentStreamController } from './payment-stream.controller';
 
 @Module({
-  imports: [AuthModule, DbUtilsModule, UserUtilsModule, PaymentDtoModule, RedisPubSubModule],
+  imports: [
+    AuthModule,
+    DbUtilsModule,
+    UserUtilsModule,
+    PaymentDtoModule,
+    RedisPubSubModule,
+  ],
   controllers: [PaymentStreamController],
 })
 export class PaymentStreamModule {}

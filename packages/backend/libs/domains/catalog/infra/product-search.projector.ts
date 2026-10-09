@@ -33,17 +33,30 @@ export class ProductSearchProjector implements Projector {
 
   async project(events: EventEnvelope[]): Promise<void> {
     const ids = [...new Set(events.map((e) => e.aggregateId))];
-    const all = await this.productModel.findAll({ where: { id: { [Op.in]: ids } }, raw: true });
+    const all = await this.productModel.findAll({
+      where: { id: { [Op.in]: ids } },
+      raw: true,
+    });
     // SD-07 sandbox shops (test API keys) must never reach public search.
     const sandboxShops = new Set(
       (
-        await this.productModel.sequelize!.query<{ id: string }>(`SELECT id FROM "Shop" WHERE "sandboxOf" IS NOT NULL AND id IN (:shopIds)`, {
-          type: QueryTypes.SELECT,
-          replacements: { shopIds: [...new Set(all.map((p) => p.shopId).filter(Boolean)), '00000000-0000-0000-0000-000000000000'] },
-        })
+        await this.productModel.sequelize!.query<{ id: string }>(
+          `SELECT id FROM "Shop" WHERE "sandboxOf" IS NOT NULL AND id IN (:shopIds)`,
+          {
+            type: QueryTypes.SELECT,
+            replacements: {
+              shopIds: [
+                ...new Set(all.map((p) => p.shopId).filter(Boolean)),
+                '00000000-0000-0000-0000-000000000000',
+              ],
+            },
+          },
+        )
       ).map((r) => r.id),
     );
-    const products = all.filter((p) => !p.shopId || !sandboxShops.has(p.shopId));
+    const products = all.filter(
+      (p) => !p.shopId || !sandboxShops.has(p.shopId),
+    );
 
     await this.elasticsearch.bulkUpsertProducts(
       products.map((p) => ({
@@ -66,7 +79,12 @@ export class ProductSearchProjector implements Projector {
 
     await this.checkpoints.record(
       this.name,
-      products.map((p) => ({ ...events[0], aggregateType: 'products', aggregateId: p.id, version: p.version })),
+      products.map((p) => ({
+        ...events[0],
+        aggregateType: 'products',
+        aggregateId: p.id,
+        version: p.version,
+      })),
     );
   }
 }

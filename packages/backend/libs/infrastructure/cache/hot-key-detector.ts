@@ -34,7 +34,11 @@ export class HotKeyDetector {
 
   private roll(): void {
     if (this.now() - this.windowStart < this.windowMs) return;
-    this.hot = new Set([...this.counts.entries()].filter(([, c]) => c >= this.threshold).map(([k]) => k));
+    this.hot = new Set(
+      [...this.counts.entries()]
+        .filter(([, c]) => c >= this.threshold)
+        .map(([k]) => k),
+    );
     this.counts = new Map();
     this.windowStart = this.now();
   }

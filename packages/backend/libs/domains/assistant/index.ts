@@ -8,7 +8,11 @@ export { AssistantModule } from './assistant.module';
 export { KnowledgeModule, KnowledgeWorkerModule } from './knowledge.module';
 export { LlmCallsProjector } from './infra/llm-calls.projector';
 export { LlmMeter } from './infra/llm/llm-meter';
-export { LLM_PROVIDER, LlmUnavailableError, textOf } from './infra/llm/llm-provider';
+export {
+  LLM_PROVIDER,
+  LlmUnavailableError,
+  textOf,
+} from './infra/llm/llm-provider';
 export type { LlmProvider, LlmTurnResult } from './infra/llm/llm-provider';
 export { LlmModule } from './infra/llm/llm.module';
 export { ScriptedLlmProvider } from './infra/llm/scripted.provider';

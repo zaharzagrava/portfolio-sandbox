@@ -2,12 +2,30 @@ import { marked } from 'marked';
 import sanitizeHtml from 'sanitize-html';
 
 const ALLOWED = {
-  allowedTags: ['p', 'br', 'strong', 'em', 'del', 'code', 'pre', 'blockquote', 'ul', 'ol', 'li', 'a', 'h3', 'h4'],
+  allowedTags: [
+    'p',
+    'br',
+    'strong',
+    'em',
+    'del',
+    'code',
+    'pre',
+    'blockquote',
+    'ul',
+    'ol',
+    'li',
+    'a',
+    'h3',
+    'h4',
+  ],
   allowedAttributes: { a: ['href', 'rel', 'target'] },
   allowedSchemes: ['https', 'http', 'mailto'],
   transformTags: {
     // User links never pass page rank or reach window.opener.
-    a: sanitizeHtml.simpleTransform('a', { rel: 'nofollow ugc noopener noreferrer', target: '_blank' }),
+    a: sanitizeHtml.simpleTransform('a', {
+      rel: 'nofollow ugc noopener noreferrer',
+      target: '_blank',
+    }),
   },
 } satisfies sanitizeHtml.IOptions;
 
@@ -18,5 +36,8 @@ const ALLOWED = {
  * no per-view rendering cost; the raw markdown is kept for editing.
  */
 export function renderUserMarkdown(markdown: string): string {
-  return sanitizeHtml(marked.parse(markdown, { async: false, gfm: true, breaks: true }) as string, ALLOWED);
+  return sanitizeHtml(
+    marked.parse(markdown, { async: false, gfm: true, breaks: true }) as string,
+    ALLOWED,
+  );
 }

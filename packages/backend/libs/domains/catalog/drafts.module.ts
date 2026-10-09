@@ -11,7 +11,13 @@ import { DraftsController } from './api/drafts.controller';
 
 /** SD-16 HTTP side (core): drafts, routing + tickets, versions, publish. The editing itself runs in apps/collab. */
 @Module({
-  imports: [AuthModule, StorageModule, DynamoModule, ProductModule, OutboxModule],
+  imports: [
+    AuthModule,
+    StorageModule,
+    DynamoModule,
+    ProductModule,
+    OutboxModule,
+  ],
   providers: [DraftStore, CollabInstanceRegistry, DraftsService],
   exports: [DraftsService, DraftStore],
   controllers: [DraftsController],

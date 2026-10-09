@@ -2,7 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { EventEmitter } from 'node:events';
 import { RedisService } from '@app/infrastructure/redis/redis.service';
 
-export type GenerationEventType = 'meta' | 'text' | 'tool' | 'done' | 'error' | 'refusal';
+export type GenerationEventType =
+  'meta' | 'text' | 'tool' | 'done' | 'error' | 'refusal';
 export interface GenerationEvent {
   /** Redis Stream id - doubles as the SSE `id:` (Last-Event-ID on reconnect). */
   id: string;
@@ -10,7 +11,11 @@ export interface GenerationEvent {
   data: Record<string, unknown>;
 }
 
-export const TERMINAL_EVENTS: GenerationEventType[] = ['done', 'error', 'refusal'];
+export const TERMINAL_EVENTS: GenerationEventType[] = [
+  'done',
+  'error',
+  'refusal',
+];
 
 const key = (messageId: string) => `assistant:gen:{${messageId}}`;
 const metaKey = (messageId: string) => `${key(messageId)}:meta`;
@@ -46,19 +51,40 @@ export class GenerationBuffer {
 
   constructor(private readonly redis: RedisService) {}
 
-  async open(messageId: string, owner: { userId: string; conversationId: string }): Promise<void> {
+  async open(
+    messageId: string,
+    owner: { userId: string; conversationId: string },
+  ): Promise<void> {
     this.localGenerations.add(messageId);
     await this.redis.client.hset(metaKey(messageId), owner);
     await this.redis.client.pexpire(metaKey(messageId), RETAIN_MS * 3);
   }
 
-  async owner(messageId: string): Promise<{ userId: string; conversationId: string } | null> {
+  async owner(
+    messageId: string,
+  ): Promise<{ userId: string; conversationId: string } | null> {
     const meta = await this.redis.client.hgetall(metaKey(messageId));
-    return meta.userId ? { userId: meta.userId, conversationId: meta.conversationId } : null;
+    return meta.userId
+      ? { userId: meta.userId, conversationId: meta.conversationId }
+      : null;
   }
 
-  async append(messageId: string, type: GenerationEventType, data: Record<string, unknown>): Promise<void> {
-    const id = (await this.redis.client.xadd(key(messageId), 'MAXLEN', '~', '20000', '*', 't', type, 'd', JSON.stringify(data)))!;
+  async append(
+    messageId: string,
+    type: GenerationEventType,
+    data: Record<string, unknown>,
+  ): Promise<void> {
+    const id = (await this.redis.client.xadd(
+      key(messageId),
+      'MAXLEN',
+      '~',
+      '20000',
+      '*',
+      't',
+      type,
+      'd',
+      JSON.stringify(data),
+    ))!;
     this.local.emit(messageId, { id, type, data } satisfies GenerationEvent);
   }
 
@@ -71,14 +97,33 @@ export class GenerationBuffer {
     return this.localGenerations.has(messageId);
   }
 
-  async replay(messageId: string, afterId: string | null): Promise<GenerationEvent[]> {
-    const rows = await this.redis.client.xrange(key(messageId), afterId ? `(${afterId}` : '-', '+', 'COUNT', 5000);
-    return rows.map(([id, fields]) => ({ id, type: fields[1] as GenerationEventType, data: JSON.parse(fields[3]) }));
+  async replay(
+    messageId: string,
+    afterId: string | null,
+  ): Promise<GenerationEvent[]> {
+    const rows = await this.redis.client.xrange(
+      key(messageId),
+      afterId ? `(${afterId}` : '-',
+      '+',
+      'COUNT',
+      5000,
+    );
+    return rows.map(([id, fields]) => ({
+      id,
+      type: fields[1] as GenerationEventType,
+      data: JSON.parse(fields[3]),
+    }));
   }
 
-  subscribe(messageId: string, listener: (event: GenerationEvent) => void): () => void {
+  subscribe(
+    messageId: string,
+    listener: (event: GenerationEvent) => void,
+  ): () => void {
     this.local.on(messageId, listener);
-    this.localViewers.set(messageId, (this.localViewers.get(messageId) ?? 0) + 1);
+    this.localViewers.set(
+      messageId,
+      (this.localViewers.get(messageId) ?? 0) + 1,
+    );
     return () => {
       this.local.off(messageId, listener);
       const n = (this.localViewers.get(messageId) ?? 1) - 1;
@@ -92,7 +137,10 @@ export class GenerationBuffer {
   }
 
   async hasViewer(messageId: string): Promise<boolean> {
-    return (this.localViewers.get(messageId) ?? 0) > 0 || (await this.redis.client.exists(viewerKey(messageId))) === 1;
+    return (
+      (this.localViewers.get(messageId) ?? 0) > 0 ||
+      (await this.redis.client.exists(viewerKey(messageId))) === 1
+    );
   }
 
   async requestCancel(messageId: string): Promise<void> {

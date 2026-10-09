@@ -8,4 +8,4 @@ import { ProductDtoService } from './infra/product-dto.service';
   providers: [ProductDtoService],
   exports: [ProductDtoService],
 })
-export class ProductDtoModule { }
+export class ProductDtoModule {}

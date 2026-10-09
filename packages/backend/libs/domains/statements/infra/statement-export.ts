@@ -4,7 +4,15 @@ import type { Writable } from 'node:stream';
 import type { Pool } from 'pg';
 import QueryStream from 'pg-query-stream';
 
-const COLUMNS = ['orderId', 'orderedAt', 'productId', 'category', 'quantity', 'unitPrice', 'lineTotal'] as const;
+const COLUMNS = [
+  'orderId',
+  'orderedAt',
+  'productId',
+  'category',
+  'quantity',
+  'unitPrice',
+  'lineTotal',
+] as const;
 
 /** Spreadsheet-safe CSV cell: quote everything, double quotes, neutralize formula injection (=, +, -, @). */
 export function csvCell(value: unknown): string {
@@ -19,7 +27,11 @@ class CsvRows extends Transform {
     this.push(COLUMNS.join(',') + '\n');
   }
 
-  _transform(row: Record<string, unknown>, _enc: BufferEncoding, done: TransformCallback) {
+  _transform(
+    row: Record<string, unknown>,
+    _enc: BufferEncoding,
+    done: TransformCallback,
+  ) {
     done(null, COLUMNS.map((c) => csvCell(row[c])).join(',') + '\n');
   }
 }
@@ -31,7 +43,12 @@ class CsvRows extends Transform {
  * client pauses the cursor instead of buffering the whole month in RAM - and
  * destroys every stage (releasing the DB connection) if the client disconnects.
  */
-export async function streamStatementCsv(pool: Pool, shopId: string, month: string, out: Writable): Promise<void> {
+export async function streamStatementCsv(
+  pool: Pool,
+  shopId: string,
+  month: string,
+  out: Writable,
+): Promise<void> {
   const client = await pool.connect();
   try {
     const query = new QueryStream(
@@ -44,7 +61,11 @@ export async function streamStatementCsv(pool: Pool, shopId: string, month: stri
       [shopId, month],
       { batchSize: 1_000 },
     );
-    await pipeline(client.query(query) as unknown as Readable, new CsvRows(), out);
+    await pipeline(
+      client.query(query) as unknown as Readable,
+      new CsvRows(),
+      out,
+    );
   } finally {
     client.release();
   }

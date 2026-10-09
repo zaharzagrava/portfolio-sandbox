@@ -12,7 +12,10 @@ import { mapWithConcurrency } from '@app/common/core/promise-pool';
 export class DynamoVersionedSink {
   constructor(private readonly dynamo: DynamoService) {}
 
-  async putIfNewer(table: string, item: Record<string, unknown> & { version: number }): Promise<boolean> {
+  async putIfNewer(
+    table: string,
+    item: Record<string, unknown> & { version: number },
+  ): Promise<boolean> {
     try {
       await this.dynamo.doc.send(
         new PutCommand({
@@ -31,17 +34,36 @@ export class DynamoVersionedSink {
   }
 
   /** Conditional writes can't be batched in Dynamo; bounded parallelism instead. */
-  async putManyIfNewer(table: string, items: (Record<string, unknown> & { version: number })[], concurrency = 16) {
-    return mapWithConcurrency(items, concurrency, (item) => this.putIfNewer(table, item));
+  async putManyIfNewer(
+    table: string,
+    items: (Record<string, unknown> & { version: number })[],
+    concurrency = 16,
+  ) {
+    return mapWithConcurrency(items, concurrency, (item) =>
+      this.putIfNewer(table, item),
+    );
   }
 
   /** Unconditional append-only items (time series): BatchWrite, 25 per request. */
-  async appendMany(table: string, items: Record<string, unknown>[]): Promise<void> {
+  async appendMany(
+    table: string,
+    items: Record<string, unknown>[],
+  ): Promise<void> {
     for (let i = 0; i < items.length; i += 25) {
-      let request = { [this.dynamo.table(table)]: items.slice(i, i + 25).map((Item) => ({ PutRequest: { Item } })) };
+      let request = {
+        [this.dynamo.table(table)]: items
+          .slice(i, i + 25)
+          .map((Item) => ({ PutRequest: { Item } })),
+      };
       // Retry unprocessed items (throttling) until none are left.
-      for (let attempt = 0; Object.keys(request).length && attempt < 5; attempt++) {
-        const res = await this.dynamo.doc.send(new BatchWriteCommand({ RequestItems: request }));
+      for (
+        let attempt = 0;
+        Object.keys(request).length && attempt < 5;
+        attempt++
+      ) {
+        const res = await this.dynamo.doc.send(
+          new BatchWriteCommand({ RequestItems: request }),
+        );
         request = (res.UnprocessedItems ?? {}) as typeof request;
       }
     }

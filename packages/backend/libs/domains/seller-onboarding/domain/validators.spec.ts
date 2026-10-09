@@ -1,7 +1,12 @@
 import { isValidIban, isValidVat, maskIban, namesMatch } from './validators';
 
 describe('isValidIban', () => {
-  it.each(['DE89 3704 0044 0532 0130 00', 'GB82 WEST 1234 5698 7654 32', 'NL91ABNA0417164300', 'FR14 2004 1010 0505 0001 3M02 606'])('accepts %s', (iban) => {
+  it.each([
+    'DE89 3704 0044 0532 0130 00',
+    'GB82 WEST 1234 5698 7654 32',
+    'NL91ABNA0417164300',
+    'FR14 2004 1010 0505 0001 3M02 606',
+  ])('accepts %s', (iban) => {
     expect(isValidIban(iban)).toBe(true);
   });
 

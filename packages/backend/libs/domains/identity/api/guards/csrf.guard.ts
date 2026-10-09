@@ -1,4 +1,9 @@
-import { CanActivate, ExecutionContext, ForbiddenException, Injectable } from '@nestjs/common';
+import {
+  CanActivate,
+  ExecutionContext,
+  ForbiddenException,
+  Injectable,
+} from '@nestjs/common';
 import * as cookie from 'cookie';
 import { timingSafeEqual } from 'node:crypto';
 
@@ -23,7 +28,11 @@ export class CsrfGuard implements CanActivate {
 
     const header = String(req.headers[CSRF_HEADER] ?? '');
     const expected = cookies[CSRF_COOKIE] ?? '';
-    if (!header || header.length !== expected.length || !timingSafeEqual(Buffer.from(header), Buffer.from(expected))) {
+    if (
+      !header ||
+      header.length !== expected.length ||
+      !timingSafeEqual(Buffer.from(header), Buffer.from(expected))
+    ) {
       throw new ForbiddenException('CSRF token missing or invalid');
     }
     return true;

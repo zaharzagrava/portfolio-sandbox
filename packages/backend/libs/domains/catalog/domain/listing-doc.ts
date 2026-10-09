@@ -19,8 +19,10 @@ export interface ListingContent {
 
 export function readListing(doc: Y.Doc): ListingContent {
   const fields = doc.getMap<unknown>('fields');
-  const num = (k: string) => (typeof fields.get(k) === 'number' ? (fields.get(k) as number) : null);
-  const str = (k: string) => (typeof fields.get(k) === 'string' ? (fields.get(k) as string) : null);
+  const num = (k: string) =>
+    typeof fields.get(k) === 'number' ? (fields.get(k) as number) : null;
+  const str = (k: string) =>
+    typeof fields.get(k) === 'string' ? (fields.get(k) as string) : null;
   return {
     title: doc.getText('title').toString().trim(),
     description: doc.getText('description').toString(),
@@ -28,7 +30,12 @@ export function readListing(doc: Y.Doc): ListingContent {
     brand: str('brand'),
     category: str('category'),
     quantity: num('quantity'),
-    specs: Object.fromEntries([...doc.getMap<string>('specs').entries()].map(([k, v]) => [k, String(v)])),
+    specs: Object.fromEntries(
+      [...doc.getMap<string>('specs').entries()].map(([k, v]) => [
+        k,
+        String(v),
+      ]),
+    ),
   };
 }
 
@@ -36,10 +43,14 @@ export function seedListing(content: Partial<ListingContent>): Y.Doc {
   const doc = new Y.Doc();
   doc.transact(() => {
     if (content.title) doc.getText('title').insert(0, content.title);
-    if (content.description) doc.getText('description').insert(0, content.description);
+    if (content.description)
+      doc.getText('description').insert(0, content.description);
     const fields = doc.getMap<unknown>('fields');
-    for (const key of ['price', 'brand', 'category', 'quantity'] as const) if (content[key] !== undefined && content[key] !== null) fields.set(key, content[key]);
-    for (const [k, v] of Object.entries(content.specs ?? {})) doc.getMap<string>('specs').set(k, v);
+    for (const key of ['price', 'brand', 'category', 'quantity'] as const)
+      if (content[key] !== undefined && content[key] !== null)
+        fields.set(key, content[key]);
+    for (const [k, v] of Object.entries(content.specs ?? {}))
+      doc.getMap<string>('specs').set(k, v);
   });
   return doc;
 }

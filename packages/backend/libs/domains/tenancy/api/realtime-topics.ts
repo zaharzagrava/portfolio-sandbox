@@ -8,7 +8,8 @@ import ShopMembership from '../infra/models/shop-membership.model';
 export class ShopTopics implements OnModuleInit {
   constructor(
     private readonly topics: TopicRegistry,
-    @InjectModel(ShopMembership) private readonly memberships: typeof ShopMembership,
+    @InjectModel(ShopMembership)
+    private readonly memberships: typeof ShopMembership,
   ) {}
 
   onModuleInit() {
@@ -17,7 +18,10 @@ export class ShopTopics implements OnModuleInit {
       suffixes: ['live'],
       policy: async (viewer, _topic, shopId) => {
         if (!viewer.userId) return false;
-        return !!(await this.memberships.findOne({ where: { shopId, userId: viewer.userId }, attributes: ['role'] }));
+        return !!(await this.memberships.findOne({
+          where: { shopId, userId: viewer.userId },
+          attributes: ['role'],
+        }));
       },
     });
   }

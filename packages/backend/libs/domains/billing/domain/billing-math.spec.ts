@@ -10,8 +10,17 @@ describe('billing math', () => {
       d = addPeriod(d, 'MONTH', 31);
       ends.push(d.toISOString().slice(0, 10));
     }
-    expect(ends).toEqual(['2026-02-28', '2026-03-31', '2026-04-30', '2026-05-31']);
-    expect(addPeriod(new Date('2028-02-29T00:00:00Z'), 'YEAR', 29).toISOString().slice(0, 10)).toBe('2029-02-28');
+    expect(ends).toEqual([
+      '2026-02-28',
+      '2026-03-31',
+      '2026-04-30',
+      '2026-05-31',
+    ]);
+    expect(
+      addPeriod(new Date('2028-02-29T00:00:00Z'), 'YEAR', 29)
+        .toISOString()
+        .slice(0, 10),
+    ).toBe('2029-02-28');
   });
 
   it('prorates an upgrade halfway through a 30-day period', () => {
@@ -26,14 +35,34 @@ describe('billing math', () => {
       expect.objectContaining({ kind: 'PRORATION_CREDIT', amount: -950 }),
       expect.objectContaining({ kind: 'PRORATION_CHARGE', amount: 4950 }),
     ]);
-    expect(daysBetween(new Date('2026-04-01T00:00:00Z'), new Date('2026-05-01T00:00:00Z'))).toBe(30);
+    expect(
+      daysBetween(
+        new Date('2026-04-01T00:00:00Z'),
+        new Date('2026-05-01T00:00:00Z'),
+      ),
+    ).toBe(30);
   });
 
   it('a downgrade nets to a credit; a change at period end prorates nothing', () => {
-    const base = { periodStart: new Date('2026-04-01T00:00:00Z'), periodEnd: new Date('2026-05-01T00:00:00Z') };
-    const down = prorate({ ...base, changeAt: new Date('2026-04-11T00:00:00Z'), oldAmount: 9900, newAmount: 1900 });
+    const base = {
+      periodStart: new Date('2026-04-01T00:00:00Z'),
+      periodEnd: new Date('2026-05-01T00:00:00Z'),
+    };
+    const down = prorate({
+      ...base,
+      changeAt: new Date('2026-04-11T00:00:00Z'),
+      oldAmount: 9900,
+      newAmount: 1900,
+    });
     expect(down.reduce((s, l) => s + l.amount, 0)).toBeLessThan(0);
-    expect(prorate({ ...base, changeAt: base.periodEnd, oldAmount: 9900, newAmount: 1900 })).toEqual([]);
+    expect(
+      prorate({
+        ...base,
+        changeAt: base.periodEnd,
+        oldAmount: 9900,
+        newAmount: 1900,
+      }),
+    ).toEqual([]);
   });
 
   it('rounds half away from zero and prices overage in whole blocks', () => {

@@ -15,7 +15,9 @@ export const SELF_ASSIGNABLE_ROLES = [Role.USER, Role.SELLER] as const;
 
 export class RegisterDto {
   @ApiProperty()
-  @Transform(({ value }) => (typeof value === 'string' ? value.trim().toLowerCase() : value))
+  @Transform(({ value }) =>
+    typeof value === 'string' ? value.trim().toLowerCase() : value,
+  )
   @IsEmail()
   @MaxLength(254)
   email: string;
@@ -34,7 +36,9 @@ export class RegisterDto {
 
 export class PasswordLoginDto {
   @ApiProperty()
-  @Transform(({ value }) => (typeof value === 'string' ? value.trim().toLowerCase() : value))
+  @Transform(({ value }) =>
+    typeof value === 'string' ? value.trim().toLowerCase() : value,
+  )
   @IsEmail()
   email: string;
 
@@ -100,7 +104,10 @@ export class MfaConfirmDto {
 }
 
 export class RefreshDto {
-  @ApiPropertyOptional({ description: 'Mobile/server clients send it in the body; browsers use the __Host-refresh cookie' })
+  @ApiPropertyOptional({
+    description:
+      'Mobile/server clients send it in the body; browsers use the __Host-refresh cookie',
+  })
   @IsOptional()
   @IsString()
   @MaxLength(256)

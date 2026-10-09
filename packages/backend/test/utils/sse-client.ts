@@ -26,7 +26,14 @@ export interface ReadSseOptions {
  */
 export function readSse(
   url: string,
-  { headers = {}, count, timeoutMs = 10_000, method = 'GET', body, until = [] }: ReadSseOptions,
+  {
+    headers = {},
+    count,
+    timeoutMs = 10_000,
+    method = 'GET',
+    body,
+    until = [],
+  }: ReadSseOptions,
 ): Promise<{ status: number; events: SseEvent[]; body?: any }> {
   return new Promise((resolve, reject) => {
     const events: SseEvent[] = [];
@@ -35,14 +42,27 @@ export function readSse(
       url,
       {
         method,
-        headers: { accept: 'text/event-stream', ...(payload && { 'content-type': 'application/json', 'content-length': Buffer.byteLength(payload) }), ...headers },
+        headers: {
+          accept: 'text/event-stream',
+          ...(payload && {
+            'content-type': 'application/json',
+            'content-length': Buffer.byteLength(payload),
+          }),
+          ...headers,
+        },
       },
       (res) => {
         if (res.statusCode !== 200) {
           let raw = '';
           res.setEncoding('utf8');
           res.on('data', (c: string) => (raw += c));
-          res.on('end', () => resolve({ status: res.statusCode ?? 0, events, body: raw ? safeJson(raw) : undefined }));
+          res.on('end', () =>
+            resolve({
+              status: res.statusCode ?? 0,
+              events,
+              body: raw ? safeJson(raw) : undefined,
+            }),
+          );
           return;
         }
         let buffer = '';
@@ -60,7 +80,10 @@ export function readSse(
               else if (line.startsWith('data: ')) event.data = line.slice(6);
             }
             if (event.data !== undefined) events.push(event);
-            if (events.length >= count || (event.event && until.includes(event.event))) {
+            if (
+              events.length >= count ||
+              (event.event && until.includes(event.event))
+            ) {
               req.destroy();
               return resolve({ status: 200, events });
             }

@@ -18,12 +18,24 @@ export class SearchQualityService {
 
   recordClick(query: string, productId: string, position: number): void {
     const q = normalizeQuery(query);
-    const event = SearchResultClicked.create(q, 0, { query: q, productId, position });
-    void this.producer.send({ topic: SearchResultClicked.topic, key: q, value: event }).catch(() => undefined);
+    const event = SearchResultClicked.create(q, 0, {
+      query: q,
+      productId,
+      position,
+    });
+    void this.producer
+      .send({ topic: SearchResultClicked.topic, key: q, value: event })
+      .catch(() => undefined);
   }
 
   async report(days = 7, limit = 50) {
-    return this.clickhouse.query<{ query: string; searches: string; ctr: number; mrr: number; zeroResultRate: number }>(
+    return this.clickhouse.query<{
+      query: string;
+      searches: string;
+      ctr: number;
+      mrr: number;
+      zeroResultRate: number;
+    }>(
       `WITH s AS (
          SELECT query, count() AS searches, countIf(results = 0) AS zero
          FROM search_queries FINAL WHERE ts >= now() - INTERVAL {days:UInt32} DAY GROUP BY query

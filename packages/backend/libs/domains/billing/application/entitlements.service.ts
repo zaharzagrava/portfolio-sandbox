@@ -1,4 +1,12 @@
-import { CanActivate, ExecutionContext, ForbiddenException, Injectable, SetMetadata, UseGuards, applyDecorators } from '@nestjs/common';
+import {
+  CanActivate,
+  ExecutionContext,
+  ForbiddenException,
+  Injectable,
+  SetMetadata,
+  UseGuards,
+  applyDecorators,
+} from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { InjectConnection } from '@nestjs/sequelize';
 import { QueryTypes, Sequelize } from 'sequelize';
@@ -6,10 +14,17 @@ import { CacheService } from '@app/infrastructure/cache/cache.service';
 import { Entitlements } from '../infra/models/plan.model';
 
 /** Free tier when there's no live subscription. */
-const FREE_SHOP: Entitlements = { maxProducts: 10, seats: 1, auctions: false, apiCallsPerMonth: 1000, assistantTokensPerMonth: 0 };
+const FREE_SHOP: Entitlements = {
+  maxProducts: 10,
+  seats: 1,
+  auctions: false,
+  apiCallsPerMonth: 1000,
+  assistantTokensPerMonth: 0,
+};
 const FREE_BUYER: Entitlements = {};
 
-export const entitlementsKey = (subjectType: string, subjectId: string) => `entitlements:v1:${subjectType}:${subjectId}`;
+export const entitlementsKey = (subjectType: string, subjectId: string) =>
+  `entitlements:v1:${subjectType}:${subjectId}`;
 
 /**
  * Features/limits derived from the live subscription (lesson 10/07 #24): the
@@ -24,16 +39,23 @@ export class EntitlementsService {
     private readonly cache: CacheService,
   ) {}
 
-  async get(subjectType: 'USER' | 'SHOP', subjectId: string): Promise<Entitlements> {
+  async get(
+    subjectType: 'USER' | 'SHOP',
+    subjectId: string,
+  ): Promise<Entitlements> {
     const loaded = await this.cache.getOrLoad(
       entitlementsKey(subjectType, subjectId),
       async () => {
-        const [row] = await this.sequelize.query<{ entitlements: Entitlements }>(
+        const [row] = await this.sequelize.query<{
+          entitlements: Entitlements;
+        }>(
           `SELECT p.entitlements FROM "Subscription" s JOIN "Price" pr ON pr.id = s."priceId" JOIN "Plan" p ON p.id = pr."planId"
            WHERE s."subjectType" = :subjectType AND s."subjectId" = :subjectId AND s.status IN ('TRIALING','ACTIVE','PAST_DUE')`,
           { type: QueryTypes.SELECT, replacements: { subjectType, subjectId } },
         );
-        return row?.entitlements ?? (subjectType === 'SHOP' ? FREE_SHOP : FREE_BUYER);
+        return (
+          row?.entitlements ?? (subjectType === 'SHOP' ? FREE_SHOP : FREE_BUYER)
+        );
       },
       { ttlMs: 300_000, l1: 'hot' },
     );
@@ -60,15 +82,23 @@ export class ShopEntitlementGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const feature = this.reflector.get<keyof Entitlements>(ENTITLEMENT_METADATA, context.getHandler());
-    const shopId = context.switchToHttp().getRequest().shopId as string | undefined;
+    const feature = this.reflector.get<keyof Entitlements>(
+      ENTITLEMENT_METADATA,
+      context.getHandler(),
+    );
+    const shopId = context.switchToHttp().getRequest().shopId as
+      string | undefined;
     if (!feature) return true;
     // Misconfigured route (no ShopGuard before this guard) → fail closed, never open.
     if (!shopId) throw new ForbiddenException('Shop context required');
-    if (!(await this.entitlements.get('SHOP', shopId))[feature]) throw new ForbiddenException(`Your plan doesn't include "${feature}"`);
+    if (!(await this.entitlements.get('SHOP', shopId))[feature])
+      throw new ForbiddenException(`Your plan doesn't include "${feature}"`);
     return true;
   }
 }
 
 export const RequiresShopEntitlement = (feature: keyof Entitlements) =>
-  applyDecorators(SetMetadata(ENTITLEMENT_METADATA, feature), UseGuards(ShopEntitlementGuard));
+  applyDecorators(
+    SetMetadata(ENTITLEMENT_METADATA, feature),
+    UseGuards(ShopEntitlementGuard),
+  );

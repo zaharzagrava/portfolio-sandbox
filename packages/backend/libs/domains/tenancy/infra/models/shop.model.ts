@@ -1,9 +1,16 @@
-import { Column, DataType, Model, PrimaryKey, Table } from 'sequelize-typescript';
+import {
+  Column,
+  DataType,
+  Model,
+  PrimaryKey,
+  Table,
+} from 'sequelize-typescript';
 import { Sequelize } from 'sequelize';
 
 export type ShopPlan = 'STARTER' | 'PRO' | 'ENTERPRISE';
 export type ShopStatus = 'ACTIVE' | 'SUSPENDED' | 'DELETING';
-export type ShopVerificationStatus = 'UNVERIFIED' | 'PENDING' | 'VERIFIED' | 'REJECTED';
+export type ShopVerificationStatus =
+  'UNVERIFIED' | 'PENDING' | 'VERIFIED' | 'REJECTED';
 
 /** A tenant (SD-02): the seller organisation that owns products, staff, API keys, webhooks, payouts. */
 @Table({ modelName: 'Shop', tableName: 'Shop', timestamps: true })

@@ -16,9 +16,13 @@ import { Kafka } from 'kafkajs';
 
 async function main() {
   const [groupId, ...topicsArg] = process.argv.slice(2);
-  if (!groupId) throw new Error('usage: rebuild.ts <consumer-group> [topic ...]');
+  if (!groupId)
+    throw new Error('usage: rebuild.ts <consumer-group> [topic ...]');
 
-  const kafka = new Kafka({ clientId: 'projection-rebuild', brokers: (process.env.KAFKA_BROKER ?? 'localhost:9092').split(',') });
+  const kafka = new Kafka({
+    clientId: 'projection-rebuild',
+    brokers: (process.env.KAFKA_BROKER ?? 'localhost:9092').split(','),
+  });
   const admin = kafka.admin();
   await admin.connect();
 

@@ -1,6 +1,25 @@
-import { BadRequestException, Body, Controller, Get, Header, Param, ParseUUIDPipe, Post, Put, Query } from '@nestjs/common';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Get,
+  Header,
+  Param,
+  ParseUUIDPipe,
+  Post,
+  Put,
+  Query,
+} from '@nestjs/common';
 import { ApiProperty, ApiPropertyOptional, ApiTags } from '@nestjs/swagger';
-import { IsInt, IsLatitude, IsLongitude, IsOptional, IsString, MaxLength, Min } from 'class-validator';
+import {
+  IsInt,
+  IsLatitude,
+  IsLongitude,
+  IsOptional,
+  IsString,
+  MaxLength,
+  Min,
+} from 'class-validator';
 import { Firewall } from '@app/domains/identity';
 import { ShopScoped } from '@app/domains/tenancy';
 import { RateLimit } from '@app/infrastructure/rate-limit/rate-limit.decorator';
@@ -37,7 +56,10 @@ export class PickupController {
 
   @ShopScoped('products.write')
   @Post('shops/:shopId/pickup-points')
-  create(@Param('shopId', ParseUUIDPipe) shopId: string, @Body() body: CreatePickupPointDto) {
+  create(
+    @Param('shopId', ParseUUIDPipe) shopId: string,
+    @Body() body: CreatePickupPointDto,
+  ) {
     return this.pickup.createPoint(shopId, body);
   }
 
@@ -57,7 +79,12 @@ export class PickupController {
   @RateLimit('search.query')
   @Get('search/near')
   searchNear(@Query() query: NearQueryDto) {
-    return this.availability.searchNear({ q: query.q, lat: Number(query.lat), lng: Number(query.lng), radiusKm: clampRadius(query.radiusKm) });
+    return this.availability.searchNear({
+      q: query.q,
+      lat: Number(query.lat),
+      lng: Number(query.lng),
+      radiusKm: clampRadius(query.radiusKm),
+    });
   }
 
   /** Pickup points within a radius - PostGIS, exact. */
@@ -65,7 +92,12 @@ export class PickupController {
   @RateLimit('search.query')
   @Get('pickup-points/near')
   near(@Query() query: NearQueryDto, @Query('productId') productId?: string) {
-    return this.pickup.near(Number(query.lat), Number(query.lng), clampRadius(query.radiusKm), productId);
+    return this.pickup.near(
+      Number(query.lat),
+      Number(query.lng),
+      clampRadius(query.radiusKm),
+      productId,
+    );
   }
 
   @Firewall({ anonymous: true, skipThrottle: true })
@@ -73,7 +105,11 @@ export class PickupController {
   @Get('pickup-points/clusters')
   clusters(@Query('bbox') bbox: string, @Query('zoom') zoom = '10') {
     const [top, left, bottom, right] = (bbox ?? '').split(',').map(Number);
-    if ([top, left, bottom, right].some((n) => !Number.isFinite(n))) throw new BadRequestException('bbox=top,left,bottom,right');
-    return this.availability.clusters({ top, left, bottom, right }, Number(zoom));
+    if ([top, left, bottom, right].some((n) => !Number.isFinite(n)))
+      throw new BadRequestException('bbox=top,left,bottom,right');
+    return this.availability.clusters(
+      { top, left, bottom, right },
+      Number(zoom),
+    );
   }
 }

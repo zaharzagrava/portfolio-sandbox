@@ -1,14 +1,32 @@
-import { Inject, Injectable, Logger, OnApplicationBootstrap, OnModuleDestroy } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  Logger,
+  OnApplicationBootstrap,
+  OnModuleDestroy,
+} from '@nestjs/common';
 import { RedisService } from '@app/infrastructure/redis/redis.service';
-import { TaskQueue, TaskMessage } from '@app/infrastructure/sqs/task-queue.port';
+import {
+  TaskQueue,
+  TaskMessage,
+} from '@app/infrastructure/sqs/task-queue.port';
 import { RateLimiterService } from '@app/infrastructure/rate-limit/rate-limiter.service';
 import { JobHandler } from '@app/infrastructure/jobs/job-handler.decorator';
 import { SuppressionService } from '../application/suppression.service';
 import { DeliveryLogService } from './delivery-log.service';
 import { NotificationPreferencesService } from '../application/preferences.service';
 import { ChannelSender } from './providers/channel-sender';
-import { EMAIL_PROVIDERS, PUSH_PROVIDERS, SMS_PROVIDERS, ChannelProvider } from '../domain/provider-ports';
-import { DeliveryMessage, NOTIFICATION_QUEUES, PermanentDeliveryError } from '../domain/types';
+import {
+  EMAIL_PROVIDERS,
+  PUSH_PROVIDERS,
+  SMS_PROVIDERS,
+  ChannelProvider,
+} from '../domain/provider-ports';
+import {
+  DeliveryMessage,
+  NOTIFICATION_QUEUES,
+  PermanentDeliveryError,
+} from '../domain/types';
 
 const sentKey = (deliveryId: string) => `notif:sent:${deliveryId}`;
 
@@ -22,7 +40,9 @@ const sentKey = (deliveryId: string) => `notif:sent:${deliveryId}`;
  * visibility timeout → DLQ after maxReceiveCount.
  */
 @Injectable()
-export class NotificationWorkers implements OnApplicationBootstrap, OnModuleDestroy {
+export class NotificationWorkers
+  implements OnApplicationBootstrap, OnModuleDestroy
+{
   private readonly logger = new Logger(NotificationWorkers.name);
   private readonly senders: Record<DeliveryMessage['channel'], ChannelSender>;
   private stops: (() => Promise<void>)[] = [];
@@ -38,11 +58,20 @@ export class NotificationWorkers implements OnApplicationBootstrap, OnModuleDest
     @Inject(SMS_PROVIDERS) sms: ChannelProvider[],
     @Inject(PUSH_PROVIDERS) push: ChannelProvider[],
   ) {
-    this.senders = { email: new ChannelSender(email), sms: new ChannelSender(sms), push: new ChannelSender(push) };
+    this.senders = {
+      email: new ChannelSender(email),
+      sms: new ChannelSender(sms),
+      push: new ChannelSender(push),
+    };
   }
 
   onApplicationBootstrap() {
-    const consume = (queue: string, concurrency: number) => this.queue.consume<DeliveryMessage>(queue, (msg) => this.process(queue, msg), { concurrency, visibilityTimeoutSec: 60 });
+    const consume = (queue: string, concurrency: number) =>
+      this.queue.consume<DeliveryMessage>(
+        queue,
+        (msg) => this.process(queue, msg),
+        { concurrency, visibilityTimeoutSec: 60 },
+      );
     this.stops = [
       consume(NOTIFICATION_QUEUES.email, 20),
       consume(NOTIFICATION_QUEUES.sms, 10),
@@ -55,44 +84,86 @@ export class NotificationWorkers implements OnApplicationBootstrap, OnModuleDest
     await Promise.all(this.stops.map((stop) => stop()));
   }
 
-  async process(queue: string, { body: m }: Pick<TaskMessage<DeliveryMessage>, 'body'>): Promise<void> {
+  async process(
+    queue: string,
+    { body: m }: Pick<TaskMessage<DeliveryMessage>, 'body'>,
+  ): Promise<void> {
     if (await this.redis.client.exists(sentKey(m.deliveryId))) return;
-    const log = { deliveryId: m.deliveryId, userId: m.userId, channel: m.channel, type: m.type };
+    const log = {
+      deliveryId: m.deliveryId,
+      userId: m.userId,
+      channel: m.channel,
+      type: m.type,
+    };
 
     const to: string[] = [];
-    for (const address of m.to) if (!(await this.suppression.isSuppressed(m.channel, address))) to.push(address);
+    for (const address of m.to)
+      if (!(await this.suppression.isSuppressed(m.channel, address)))
+        to.push(address);
     if (to.length === 0) {
       await this.deliveryLog.record({ ...log, status: 'suppressed' });
       return;
     }
 
-    const decision = await this.rateLimiter.check(`notify.${m.channel}`, 'provider');
+    const decision = await this.rateLimiter.check(
+      `notify.${m.channel}`,
+      'provider',
+    );
     if (!decision.allowed) {
       // Over the provider's send rate: put it back with a delay instead of burning a receive (and a DLQ strike).
-      await this.queue.enqueue(queue, m, { delaySeconds: Math.min(Math.ceil(decision.retryAfterMs / 1000) || 1, 900) });
+      await this.queue.enqueue(queue, m, {
+        delaySeconds: Math.min(
+          Math.ceil(decision.retryAfterMs / 1000) || 1,
+          900,
+        ),
+      });
       return;
     }
 
     try {
       const result = await this.senders[m.channel].send({ ...m, to });
-      if (result.invalidTokens?.length) await this.preferences.removeDevices(result.invalidTokens);
+      if (result.invalidTokens?.length)
+        await this.preferences.removeDevices(result.invalidTokens);
       await this.redis.client.set(sentKey(m.deliveryId), '1', 'EX', 7 * 86_400);
-      await this.deliveryLog.record({ ...log, status: 'sent', provider: result.provider, providerMessageId: result.providerMessageId });
+      await this.deliveryLog.record({
+        ...log,
+        status: 'sent',
+        provider: result.provider,
+        providerMessageId: result.providerMessageId,
+      });
     } catch (error) {
       if (error instanceof PermanentDeliveryError) {
-        if (m.channel === 'push') await this.preferences.removeDevices(error.suppress);
-        else if (error.suppress.length) await this.suppression.suppress(m.channel, error.suppress, 'provider-permanent');
-        await this.deliveryLog.record({ ...log, status: 'failed', detail: error.message });
+        if (m.channel === 'push')
+          await this.preferences.removeDevices(error.suppress);
+        else if (error.suppress.length)
+          await this.suppression.suppress(
+            m.channel,
+            error.suppress,
+            'provider-permanent',
+          );
+        await this.deliveryLog.record({
+          ...log,
+          status: 'failed',
+          detail: error.message,
+        });
         return;
       }
-      this.logger.warn(`${m.channel} delivery ${m.deliveryId} failed, will retry: ${(error as Error).message}`);
+      this.logger.warn(
+        `${m.channel} delivery ${m.deliveryId} failed, will retry: ${(error as Error).message}`,
+      );
       throw error;
     }
   }
 
   /** Quiet-hours delays beyond SQS's 15 minutes come back through the job scheduler. */
   @JobHandler('notifications.deliver', { concurrency: 20 })
-  async deliverLater({ queue, message }: { queue: string; message: DeliveryMessage }) {
+  async deliverLater({
+    queue,
+    message,
+  }: {
+    queue: string;
+    message: DeliveryMessage;
+  }) {
     await this.queue.enqueue(queue, message);
   }
 }

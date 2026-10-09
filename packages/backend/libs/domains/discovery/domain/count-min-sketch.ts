@@ -19,7 +19,8 @@ export class CountMinSketch {
   add(key: string, count = 1): number {
     let estimate = Infinity;
     for (let row = 0; row < this.depth; row++) {
-      const i = row * this.width + (murmur3(key, row * 0x9e3779b1) % this.width);
+      const i =
+        row * this.width + (murmur3(key, row * 0x9e3779b1) % this.width);
       this.table[i] += count;
       estimate = Math.min(estimate, this.table[i]);
     }
@@ -28,7 +29,13 @@ export class CountMinSketch {
 
   estimate(key: string): number {
     let estimate = Infinity;
-    for (let row = 0; row < this.depth; row++) estimate = Math.min(estimate, this.table[row * this.width + (murmur3(key, row * 0x9e3779b1) % this.width)]);
+    for (let row = 0; row < this.depth; row++)
+      estimate = Math.min(
+        estimate,
+        this.table[
+          row * this.width + (murmur3(key, row * 0x9e3779b1) % this.width)
+        ],
+      );
     return estimate;
   }
 }
@@ -65,7 +72,9 @@ export class TopK {
 
   /** Largest first. */
   top(): { key: string; count: number }[] {
-    return [...this.heap].sort((a, b) => b.count - a.count || a.key.localeCompare(b.key));
+    return [...this.heap].sort(
+      (a, b) => b.count - a.count || a.key.localeCompare(b.key),
+    );
   }
 
   private siftUp(i: number) {
@@ -82,8 +91,16 @@ export class TopK {
       const l = 2 * i + 1;
       const r = l + 1;
       let smallest = i;
-      if (l < this.heap.length && this.heap[l].count < this.heap[smallest].count) smallest = l;
-      if (r < this.heap.length && this.heap[r].count < this.heap[smallest].count) smallest = r;
+      if (
+        l < this.heap.length &&
+        this.heap[l].count < this.heap[smallest].count
+      )
+        smallest = l;
+      if (
+        r < this.heap.length &&
+        this.heap[r].count < this.heap[smallest].count
+      )
+        smallest = r;
       if (smallest === i) return;
       this.swap(i, smallest);
       i = smallest;

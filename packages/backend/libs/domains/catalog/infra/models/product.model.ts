@@ -13,7 +13,6 @@ import {
 import { Includeable, Sequelize, WhereOptions } from 'sequelize';
 import { UserModel as User } from '@app/domains/identity';
 
-
 export enum ProductScope {
   WithAll = 'WithAll',
 }

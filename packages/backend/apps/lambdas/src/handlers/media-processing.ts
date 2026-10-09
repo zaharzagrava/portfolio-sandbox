@@ -1,4 +1,8 @@
-import { GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import {
+  GetObjectCommand,
+  PutObjectCommand,
+  S3Client,
+} from '@aws-sdk/client-s3';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
 import { Pool } from 'pg';
@@ -15,14 +19,26 @@ import { log, metric } from '../shared/telemetry';
  * `{ originalKey }` message (local MinIO path / manual reprocessing).
  */
 const bucket = process.env.MEDIA_BUCKET ?? 'marketplace-media';
-const s3 = new S3Client({ region: process.env.AWS_REGION ?? 'eu-central-1', ...(process.env.S3_ENDPOINT && { endpoint: process.env.S3_ENDPOINT, forcePathStyle: true }) });
-const pool = new Pool({ connectionString: process.env.DATABASE_URL, max: 2, idleTimeoutMillis: 30_000 });
+const s3 = new S3Client({
+  region: process.env.AWS_REGION ?? 'eu-central-1',
+  ...(process.env.S3_ENDPOINT && {
+    endpoint: process.env.S3_ENDPOINT,
+    forcePathStyle: true,
+  }),
+});
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  max: 2,
+  idleTimeoutMillis: 30_000,
+});
 const sql: Sql = async (text, params) => (await pool.query(text, params)).rows;
 const tx = async <T>(fn: (q: Sql) => Promise<T>): Promise<T> => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
-    const result = await fn(async (text, params) => (await client.query(text, params)).rows);
+    const result = await fn(
+      async (text, params) => (await client.query(text, params)).rows,
+    );
     await client.query('COMMIT');
     return result;
   } catch (error) {
@@ -33,31 +49,76 @@ const tx = async <T>(fn: (q: Sql) => Promise<T>): Promise<T> => {
   }
 };
 const processor = new MediaProcessor(sql, tx, {
-  get: async (key) => Buffer.from(await (await s3.send(new GetObjectCommand({ Bucket: bucket, Key: key }))).Body!.transformToByteArray()),
-  put: async (key, body, contentType, cacheControl) => void (await s3.send(new PutObjectCommand({ Bucket: bucket, Key: key, Body: body, ContentType: contentType, CacheControl: cacheControl }))),
+  get: async (key) =>
+    Buffer.from(
+      await (
+        await s3.send(new GetObjectCommand({ Bucket: bucket, Key: key }))
+      ).Body!.transformToByteArray(),
+    ),
+  put: async (key, body, contentType, cacheControl) =>
+    void (await s3.send(
+      new PutObjectCommand({
+        Bucket: bucket,
+        Key: key,
+        Body: body,
+        ContentType: contentType,
+        CacheControl: cacheControl,
+      }),
+    )),
 });
-const dynamo = DynamoDBDocumentClient.from(new DynamoDBClient({ region: process.env.AWS_REGION ?? 'eu-central-1', ...(process.env.DYNAMO_ENDPOINT && { endpoint: process.env.DYNAMO_ENDPOINT }) }));
-const idempotency = new Idempotency(dynamo, `${process.env.DYNAMO_TABLE_PREFIX ?? ''}Idempotency`, 'media-processing');
+const dynamo = DynamoDBDocumentClient.from(
+  new DynamoDBClient({
+    region: process.env.AWS_REGION ?? 'eu-central-1',
+    ...(process.env.DYNAMO_ENDPOINT && {
+      endpoint: process.env.DYNAMO_ENDPOINT,
+    }),
+  }),
+);
+const idempotency = new Idempotency(
+  dynamo,
+  `${process.env.DYNAMO_TABLE_PREFIX ?? ''}Idempotency`,
+  'media-processing',
+);
 
 function keysOf(body: string): string[] {
-  const parsed = JSON.parse(body) as { originalKey?: string; Records?: { eventName?: string; s3?: { object?: { key?: string } } }[] };
+  const parsed = JSON.parse(body) as {
+    originalKey?: string;
+    Records?: { eventName?: string; s3?: { object?: { key?: string } } }[];
+  };
   if (parsed.originalKey) return [parsed.originalKey];
-  return (parsed.Records ?? []).filter((r) => r.eventName?.startsWith('ObjectCreated')).map((r) => decodeURIComponent((r.s3?.object?.key ?? '').replace(/\+/g, ' ')));
+  return (parsed.Records ?? [])
+    .filter((r) => r.eventName?.startsWith('ObjectCreated'))
+    .map((r) =>
+      decodeURIComponent((r.s3?.object?.key ?? '').replace(/\+/g, ' ')),
+    );
 }
 
 export async function handler(event: SqsEvent): Promise<SqsBatchResponse> {
   return processBatch(
     event,
     async (record) => {
-      for (const key of keysOf(record.body).filter((k) => k.startsWith('media/originals/'))) {
+      for (const key of keysOf(record.body).filter((k) =>
+        k.startsWith('media/originals/'),
+      )) {
         const started = Date.now();
         try {
-          const { result, replayed } = await idempotency.run(key, 120_000, () => processor.process(key));
-          metric('Marketplace/Media', 'ProcessMs', Date.now() - started, 'Milliseconds', { result: String(result) });
+          const { result, replayed } = await idempotency.run(key, 120_000, () =>
+            processor.process(key),
+          );
+          metric(
+            'Marketplace/Media',
+            'ProcessMs',
+            Date.now() - started,
+            'Milliseconds',
+            { result: String(result) },
+          );
           log('info', 'media processed', { key, result, replayed });
         } catch (error) {
           if (error instanceof AlreadyInProgressError) throw error; // another container has it; SQS retries this record later
-          log('error', 'media processing failed', { key, error: (error as Error).message });
+          log('error', 'media processing failed', {
+            key,
+            error: (error as Error).message,
+          });
           throw error;
         }
       }

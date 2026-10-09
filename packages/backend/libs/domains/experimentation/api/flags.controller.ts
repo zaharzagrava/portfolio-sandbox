@@ -1,6 +1,21 @@
-import { Body, Controller, Get, HttpCode, Param, Post, Put, Req } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  Param,
+  Post,
+  Put,
+  Req,
+} from '@nestjs/common';
 import { ApiProperty, ApiPropertyOptional, ApiTags } from '@nestjs/swagger';
-import { IsArray, IsBoolean, IsOptional, IsString, Matches } from 'class-validator';
+import {
+  IsArray,
+  IsBoolean,
+  IsOptional,
+  IsString,
+  Matches,
+} from 'class-validator';
 import { Firewall, User, UserRawDto, Role } from '@app/domains/identity';
 import { FlagsClient } from '../infra/flags.client';
 import { FlagsAdminService } from '../application/flags-admin.service';
@@ -32,7 +47,10 @@ export class FlagsController {
   @Firewall({ anonymous: true })
   @Get('flags')
   evaluate(@Req() req: Parameters<typeof contextFromRequest>[0]) {
-    return { version: this.flags.version, flags: this.flags.evaluateClientFlags(contextFromRequest(req)) };
+    return {
+      version: this.flags.version,
+      flags: this.flags.evaluateClientFlags(contextFromRequest(req)),
+    };
   }
 
   @Firewall({ roles: [Role.ADMIN] })
@@ -49,7 +67,11 @@ export class FlagsController {
 
   @Firewall({ roles: [Role.ADMIN] })
   @Put('admin/flags/:key')
-  upsert(@Param('key') key: string, @Body() body: FlagDto, @User() user: UserRawDto) {
+  upsert(
+    @Param('key') key: string,
+    @Body() body: FlagDto,
+    @User() user: UserRawDto,
+  ) {
     return this.admin.upsert(key, body, user.id);
   }
 

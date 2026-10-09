@@ -11,7 +11,11 @@ import { ORDER_MODELS } from './orders.module';
 
 /** Order state machine for background code: the payment listener runs inside ProjectionsModule, so it needs an exporting module. */
 @Module({
-  imports: [EventsModule, RealtimeModule, SequelizeModule.forFeature(ORDER_MODELS)],
+  imports: [
+    EventsModule,
+    RealtimeModule,
+    SequelizeModule.forFeature(ORDER_MODELS),
+  ],
   providers: [FlashStockService, OrderService],
   exports: [FlashStockService, OrderService],
 })
@@ -22,7 +26,10 @@ class OrderStateModule {}
   imports: [
     OrderStateModule,
     SequelizeModule.forFeature(ORDER_MODELS),
-    ProjectionsModule.forProjectors([OrderPaymentListener], [SequelizeModule.forFeature(ORDER_MODELS), OrderStateModule]),
+    ProjectionsModule.forProjectors(
+      [OrderPaymentListener],
+      [SequelizeModule.forFeature(ORDER_MODELS), OrderStateModule],
+    ),
   ],
   providers: [OrderJobs],
 })

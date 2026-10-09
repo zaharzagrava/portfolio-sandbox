@@ -15,7 +15,16 @@ describe('webhook signatures', () => {
   it('rejects tampered bodies and replays outside the tolerance window', () => {
     const header = signWebhook(body, ['s'], now);
     expect(verifyWebhook(`${body} `, header, 's', { now })).toBe(false);
-    expect(verifyWebhook(body, header, 's', { now: now + 301_000 })).toBe(false);
-    expect(verifyWebhook(body, header.replace(/t=\d+/, `t=${Math.floor(now / 1000) + 1}`), 's', { now })).toBe(false);
+    expect(verifyWebhook(body, header, 's', { now: now + 301_000 })).toBe(
+      false,
+    );
+    expect(
+      verifyWebhook(
+        body,
+        header.replace(/t=\d+/, `t=${Math.floor(now / 1000) + 1}`),
+        's',
+        { now },
+      ),
+    ).toBe(false);
   });
 });

@@ -60,9 +60,24 @@ describe('FlashStockService', () => {
 
       expect(allocateEvenly).toHaveBeenCalledWith(10, 2);
       expect(redisClient.set).toHaveBeenCalledTimes(3); // 2 buckets + 1 active marker
-      expect(redisClient.set).toHaveBeenCalledWith('flash:{sale-1:0}:stock', 5, 'PX', expect.any(Number));
-      expect(redisClient.set).toHaveBeenCalledWith('flash:{sale-1:1}:stock', 5, 'PX', expect.any(Number));
-      expect(redisClient.set).toHaveBeenCalledWith('flash:active:prod-1', expect.any(String), 'PX', expect.any(Number));
+      expect(redisClient.set).toHaveBeenCalledWith(
+        'flash:{sale-1:0}:stock',
+        5,
+        'PX',
+        expect.any(Number),
+      );
+      expect(redisClient.set).toHaveBeenCalledWith(
+        'flash:{sale-1:1}:stock',
+        5,
+        'PX',
+        expect.any(Number),
+      );
+      expect(redisClient.set).toHaveBeenCalledWith(
+        'flash:active:prod-1',
+        expect.any(String),
+        'PX',
+        expect.any(Number),
+      );
     });
   });
 
@@ -94,7 +109,14 @@ describe('FlashStockService', () => {
       const ok = await service.claimUserQuota('sale-1', 'user-1', 1, 2);
 
       expect(ok).toBe(true);
-      expect(redisClient.eval).toHaveBeenCalledWith(expect.any(String), 1, 'flash:{sale-1}:user:user-1', 1, 2, 7 * 86400000);
+      expect(redisClient.eval).toHaveBeenCalledWith(
+        expect.any(String),
+        1,
+        'flash:{sale-1}:user:user-1',
+        1,
+        2,
+        7 * 86400000,
+      );
     });
 
     it('should return false if over limit', async () => {

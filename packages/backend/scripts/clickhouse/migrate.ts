@@ -13,7 +13,10 @@ import { createClient } from '@clickhouse/client';
 async function main() {
   const database = process.env.CLICKHOUSE_DATABASE ?? 'marketplace';
   const url = process.env.CLICKHOUSE_URL ?? 'http://localhost:8123';
-  const auth = { username: process.env.CLICKHOUSE_USER ?? 'default', password: process.env.CLICKHOUSE_PASSWORD ?? '' };
+  const auth = {
+    username: process.env.CLICKHOUSE_USER ?? 'default',
+    password: process.env.CLICKHOUSE_PASSWORD ?? '',
+  };
 
   const admin = createClient({ url, ...auth });
   await admin.command({ query: `CREATE DATABASE IF NOT EXISTS ${database}` });
@@ -24,11 +27,20 @@ async function main() {
     query: `CREATE TABLE IF NOT EXISTS schema_migrations (file String, applied_at DateTime DEFAULT now()) ENGINE = ReplacingMergeTree ORDER BY file`,
   });
   const applied = new Set(
-    (await (await client.query({ query: 'SELECT file FROM schema_migrations FINAL', format: 'JSONEachRow' })).json<{ file: string }>()).map((r) => r.file),
+    (
+      await (
+        await client.query({
+          query: 'SELECT file FROM schema_migrations FINAL',
+          format: 'JSONEachRow',
+        })
+      ).json<{ file: string }>()
+    ).map((r) => r.file),
   );
 
   const dir = join(__dirname, '../../clickhouse');
-  for (const file of readdirSync(dir).filter((f) => f.endsWith('.sql')).sort()) {
+  for (const file of readdirSync(dir)
+    .filter((f) => f.endsWith('.sql'))
+    .sort()) {
     if (applied.has(file)) continue;
     // Comments first (a statement may end with `; -- note`), then split on statement terminators.
     const statements = readFileSync(join(dir, file), 'utf8')
@@ -37,7 +49,11 @@ async function main() {
       .map((s) => s.trim())
       .filter(Boolean);
     for (const query of statements) await client.command({ query });
-    await client.insert({ table: 'schema_migrations', values: [{ file }], format: 'JSONEachRow' });
+    await client.insert({
+      table: 'schema_migrations',
+      values: [{ file }],
+      format: 'JSONEachRow',
+    });
     console.log(`applied ${file}`);
   }
   await client.close();

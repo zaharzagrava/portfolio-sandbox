@@ -8,7 +8,13 @@ export interface Rendered {
   link: string;
 }
 
-const HTML_ESCAPES: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+const HTML_ESCAPES: Record<string, string> = {
+  '&': '&amp;',
+  '<': '&lt;',
+  '>': '&gt;',
+  '"': '&quot;',
+  "'": '&#39;',
+};
 const escapeHtml = (s: string) => s.replace(/[&<>"']/g, (c) => HTML_ESCAPES[c]);
 
 /**
@@ -18,7 +24,11 @@ const escapeHtml = (s: string) => s.replace(/[&<>"']/g, (c) => HTML_ESCAPES[c]);
  * a missing variable THROWS - a half-rendered "Hi {{name}}" email is a bug to
  * catch in the spec, not something to send to a million users.
  */
-export function interpolate(template: string, data: Record<string, string>, html = false): string {
+export function interpolate(
+  template: string,
+  data: Record<string, string>,
+  html = false,
+): string {
   return template.replace(/\{\{\s*(\w+)\s*\}\}/g, (_, key: string) => {
     if (!(key in data)) throw new Error(`template variable "${key}" missing`);
     return html ? escapeHtml(data[key]) : data[key];
@@ -32,7 +42,12 @@ export function pickTemplate(type: NotificationType, locale: string): Template {
   return all[locale] ?? all[locale.split('-')[0]] ?? templates.en;
 }
 
-export function render(type: NotificationType, locale: string, data: Record<string, string>, frontHost: string): Rendered {
+export function render(
+  type: NotificationType,
+  locale: string,
+  data: Record<string, string>,
+  frontHost: string,
+): Rendered {
   const template = pickTemplate(type, locale);
   const link = typeDef(type).link(data);
   const withUrl = { ...data, url: `${frontHost}${link}` };
@@ -42,12 +57,23 @@ export function render(type: NotificationType, locale: string, data: Record<stri
     title,
     body,
     link,
-    emailSubject: template.emailSubject ? interpolate(template.emailSubject, withUrl) : title,
-    emailHtml: template.emailHtml ? interpolate(template.emailHtml, withUrl, true) : `<p>${escapeHtml(body)}</p><p><a href="${escapeHtml(withUrl.url)}">Open</a></p>`,
+    emailSubject: template.emailSubject
+      ? interpolate(template.emailSubject, withUrl)
+      : title,
+    emailHtml: template.emailHtml
+      ? interpolate(template.emailHtml, withUrl, true)
+      : `<p>${escapeHtml(body)}</p><p><a href="${escapeHtml(withUrl.url)}">Open</a></p>`,
   };
 }
 
 /** Minor units → "€12.34" in the user's locale. */
-export function formatMoney(minor: number, currency: string, locale: string): string {
-  return new Intl.NumberFormat(locale, { style: 'currency', currency: currency.toUpperCase() }).format(minor / 100);
+export function formatMoney(
+  minor: number,
+  currency: string,
+  locale: string,
+): string {
+  return new Intl.NumberFormat(locale, {
+    style: 'currency',
+    currency: currency.toUpperCase(),
+  }).format(minor / 100);
 }

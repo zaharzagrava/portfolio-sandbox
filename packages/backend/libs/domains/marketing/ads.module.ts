@@ -10,9 +10,18 @@ import { AdBillingJobs } from './infra/ad-billing.jobs';
 import { ClickAggregator } from './infra/click-aggregator.service';
 
 /** SD-32 ads serving + click endpoint (core). */
-@Module({ imports: [AuthModule, KafkaProducerModule], providers: [AdsService], exports: [AdsService], controllers: [AdsController] })
+@Module({
+  imports: [AuthModule, KafkaProducerModule],
+  providers: [AdsService],
+  exports: [AdsService],
+  controllers: [AdsController],
+})
 export class AdsModule {}
 
 /** SD-32 exactly-once click aggregation + billing/reconciliation (apps/worker). */
-@Module({ imports: [ClickHouseModule, JobsModule, LedgerModule], providers: [ClickAggregator, AdBillingJobs], exports: [AdBillingJobs] })
+@Module({
+  imports: [ClickHouseModule, JobsModule, LedgerModule],
+  providers: [ClickAggregator, AdBillingJobs],
+  exports: [AdBillingJobs],
+})
 export class AdsWorkerModule {}

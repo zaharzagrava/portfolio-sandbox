@@ -2,7 +2,14 @@ import ivm from 'isolated-vm';
 import { createHash } from 'node:crypto';
 import { FunctionInput, FunctionOutput } from '../domain/contract';
 
-export type SandboxResult = { ok: true; output: FunctionOutput; ms: number } | { ok: false; error: 'timeout' | 'memory' | 'invalid-output' | 'runtime'; detail: string; ms: number };
+export type SandboxResult =
+  | { ok: true; output: FunctionOutput; ms: number }
+  | {
+      ok: false;
+      error: 'timeout' | 'memory' | 'invalid-output' | 'runtime';
+      detail: string;
+      ms: number;
+    };
 
 const MEMORY_MB = 32;
 const MAX_CACHED = 200;
@@ -30,26 +37,54 @@ export class FunctionSandbox {
     return createHash('sha256').update(source).digest('hex');
   }
 
-  async run(source: string, input: FunctionInput, timeoutMs: number): Promise<SandboxResult> {
+  async run(
+    source: string,
+    input: FunctionInput,
+    timeoutMs: number,
+  ): Promise<SandboxResult> {
     const key = FunctionSandbox.hash(source);
     const started = performance.now();
     let compiled: Compiled;
     try {
       compiled = await this.compiled(key, source);
     } catch (error) {
-      return { ok: false, error: 'runtime', detail: `compile: ${(error as Error).message}`, ms: performance.now() - started };
+      return {
+        ok: false,
+        error: 'runtime',
+        detail: `compile: ${(error as Error).message}`,
+        ms: performance.now() - started,
+      };
     }
     try {
       // Data crosses the boundary as a JSON string copy - no references into the host heap.
-      const raw = await compiled.run.apply(undefined, [JSON.stringify(input)], { timeout: timeoutMs, result: { copy: true }, arguments: { copy: true } });
+      const raw = await compiled.run.apply(undefined, [JSON.stringify(input)], {
+        timeout: timeoutMs,
+        result: { copy: true },
+        arguments: { copy: true },
+      });
       const parsed = FunctionOutput.safeParse(JSON.parse(String(raw)));
-      if (!parsed.success) return { ok: false, error: 'invalid-output', detail: parsed.error.issues[0]?.message ?? 'invalid', ms: performance.now() - started };
+      if (!parsed.success)
+        return {
+          ok: false,
+          error: 'invalid-output',
+          detail: parsed.error.issues[0]?.message ?? 'invalid',
+          ms: performance.now() - started,
+        };
       return { ok: true, output: parsed.data, ms: performance.now() - started };
     } catch (error) {
       const message = (error as Error).message;
-      const kind = /timed out/i.test(message) ? 'timeout' : /memory|disposed/i.test(message) ? 'memory' : 'runtime';
+      const kind = /timed out/i.test(message)
+        ? 'timeout'
+        : /memory|disposed/i.test(message)
+          ? 'memory'
+          : 'runtime';
       if (kind !== 'runtime' || compiled.isolate.isDisposed) this.evict(key);
-      return { ok: false, error: kind, detail: message.slice(0, 300), ms: performance.now() - started };
+      return {
+        ok: false,
+        error: kind,
+        detail: message.slice(0, 300),
+        ms: performance.now() - started,
+      };
     }
   }
 
@@ -64,21 +99,29 @@ export class FunctionSandbox {
       const isolate = new ivm.Isolate({ memoryLimit: MEMORY_MB });
       const context = await isolate.createContext();
       // Only the seller's code + a tiny JSON wrapper; the global has nothing but ECMAScript built-ins.
-      const script = await isolate.compileScript(`${source}\n;globalThis.__entry = (json) => JSON.stringify(run(JSON.parse(json)));`, { filename: 'shop-function.js' });
+      const script = await isolate.compileScript(
+        `${source}\n;globalThis.__entry = (json) => JSON.stringify(run(JSON.parse(json)));`,
+        { filename: 'shop-function.js' },
+      );
       await script.run(context, { timeout: 50 });
-      const run = (await context.global.get('__entry', { reference: true })) as ivm.Reference<(input: string) => string>;
+      const run = (await context.global.get('__entry', {
+        reference: true,
+      })) as ivm.Reference<(input: string) => string>;
       return { isolate, context, run };
     })();
     entry.catch(() => this.cache.delete(key));
     this.cache.set(key, entry);
-    while (this.cache.size > MAX_CACHED) this.evict(this.cache.keys().next().value!);
+    while (this.cache.size > MAX_CACHED)
+      this.evict(this.cache.keys().next().value!);
     return entry;
   }
 
   private evict(key: string) {
     const entry = this.cache.get(key);
     this.cache.delete(key);
-    void entry?.then((c) => !c.isolate.isDisposed && c.isolate.dispose()).catch(() => undefined);
+    void entry
+      ?.then((c) => !c.isolate.isDisposed && c.isolate.dispose())
+      .catch(() => undefined);
   }
 
   dispose() {

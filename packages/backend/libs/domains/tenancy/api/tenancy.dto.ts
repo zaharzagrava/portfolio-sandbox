@@ -1,5 +1,13 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsIn, IsString, IsUrl, Matches, MaxLength, MinLength } from 'class-validator';
+import {
+  IsEmail,
+  IsIn,
+  IsString,
+  IsUrl,
+  Matches,
+  MaxLength,
+  MinLength,
+} from 'class-validator';
 import { Transform } from 'class-transformer';
 
 export class CreateShopDto {
@@ -9,14 +17,18 @@ export class CreateShopDto {
   @MaxLength(80)
   name: string;
 
-  @ApiProperty({ description: 'URL-safe handle, unique across the marketplace' })
+  @ApiProperty({
+    description: 'URL-safe handle, unique across the marketplace',
+  })
   @Matches(/^[a-z0-9](?:[a-z0-9-]{1,38}[a-z0-9])$/)
   slug: string;
 }
 
 export class InviteMemberDto {
   @ApiProperty()
-  @Transform(({ value }) => (typeof value === 'string' ? value.trim().toLowerCase() : value))
+  @Transform(({ value }) =>
+    typeof value === 'string' ? value.trim().toLowerCase() : value,
+  )
   @IsEmail()
   email: string;
 

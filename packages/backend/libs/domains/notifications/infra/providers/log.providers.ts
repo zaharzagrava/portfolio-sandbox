@@ -10,7 +10,9 @@ abstract class LogProvider extends ChannelProvider {
 
   async send(message: DeliveryMessage): Promise<SendResult> {
     this.sent.push(message);
-    this.logger.log(`[${this.channel}] → ${message.to.join(', ')}: ${message.title}`);
+    this.logger.log(
+      `[${this.channel}] → ${message.to.join(', ')}: ${message.title}`,
+    );
     return { provider: this.name, providerMessageId: randomUUID() };
   }
 }

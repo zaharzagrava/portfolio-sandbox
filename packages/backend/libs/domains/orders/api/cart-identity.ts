@@ -19,7 +19,11 @@ export class CartIdentity {
     const cartId = token.slice(0, dot);
     const sig = Buffer.from(token.slice(dot + 1));
     const expected = Buffer.from(this.sign(cartId));
-    return cartId.startsWith('guest:') && sig.length === expected.length && timingSafeEqual(sig, expected) ? cartId : null;
+    return cartId.startsWith('guest:') &&
+      sig.length === expected.length &&
+      timingSafeEqual(sig, expected)
+      ? cartId
+      : null;
   }
 
   static userCartId(userId: string): string {

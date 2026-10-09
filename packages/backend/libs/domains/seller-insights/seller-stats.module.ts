@@ -9,4 +9,4 @@ import { SellerStatsService } from './application/seller-stats.service';
   providers: [SellerStatsService],
   controllers: [SellerStatsController],
 })
-export class SellerStatsModule { }
+export class SellerStatsModule {}

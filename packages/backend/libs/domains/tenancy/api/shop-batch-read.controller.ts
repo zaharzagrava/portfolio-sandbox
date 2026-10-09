@@ -19,10 +19,17 @@ export class ShopBatchReadController {
   @Get('shops')
   async shops(@Query('ids') raw: string) {
     const ids = parseIdList(raw);
-    const rows = await this.sequelize.query<{ id: string; name: string; slug: string }>(`SELECT id, name, slug FROM "Shop" WHERE id IN (:ids) AND "sandboxOf" IS NULL`, {
-      type: QueryTypes.SELECT,
-      replacements: { ids },
-    });
+    const rows = await this.sequelize.query<{
+      id: string;
+      name: string;
+      slug: string;
+    }>(
+      `SELECT id, name, slug FROM "Shop" WHERE id IN (:ids) AND "sandboxOf" IS NULL`,
+      {
+        type: QueryTypes.SELECT,
+        replacements: { ids },
+      },
+    );
     const byId = new Map(rows.map((r) => [r.id, r]));
     return ids.map((id) => byId.get(id) ?? null);
   }

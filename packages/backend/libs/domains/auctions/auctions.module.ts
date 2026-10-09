@@ -10,7 +10,13 @@ import { AuctionsController } from './api/auctions.controller';
 
 /** SD-22 HTTP side (core). Needs global Redis, Tenancy (membership) modules. */
 @Module({
-  imports: [AuthModule, BillingModule, JobsModule, RealtimeModule, SequelizeModule.forFeature([Auction])],
+  imports: [
+    AuthModule,
+    BillingModule,
+    JobsModule,
+    RealtimeModule,
+    SequelizeModule.forFeature([Auction]),
+  ],
   providers: [AuctionService],
   exports: [AuctionService],
   controllers: [AuctionsController],

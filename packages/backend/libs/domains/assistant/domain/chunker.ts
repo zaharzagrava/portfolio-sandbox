@@ -51,7 +51,12 @@ export function markdownSections(markdown: string, title: string): Section[] {
 
   const flush = () => {
     const text = buffer.join('\n').trim();
-    if (text) sections.push({ headings: [title, ...stack.filter(Boolean)], page: null, text });
+    if (text)
+      sections.push({
+        headings: [title, ...stack.filter(Boolean)],
+        page: null,
+        text,
+      });
     buffer = [];
   };
 
@@ -82,7 +87,8 @@ export function pdfSections(pages: string[], title: string): Section[] {
     let buffer: string[] = [];
     const flush = () => {
       const text = buffer.join('\n').trim();
-      if (text) sections.push({ headings: [title, ...stack], page: i + 1, text });
+      if (text)
+        sections.push({ headings: [title, ...stack], page: i + 1, text });
       buffer = [];
     };
     for (const raw of pageText.replace(/\r\n?/g, '\n').split('\n')) {
@@ -106,7 +112,10 @@ export function pdfSections(pages: string[], title: string): Section[] {
   return sections;
 }
 
-export function chunkSections(sections: Section[], { minTokens = 300, maxTokens = 800, overlapTokens = 80 }: ChunkOptions = {}): Chunk[] {
+export function chunkSections(
+  sections: Section[],
+  { minTokens = 300, maxTokens = 800, overlapTokens = 80 }: ChunkOptions = {},
+): Chunk[] {
   const merged = mergeSmallSiblings(sections, minTokens, maxTokens);
   const chunks: Omit<Chunk, 'ordinal'>[] = [];
 
@@ -118,7 +127,13 @@ export function chunkSections(sections: Section[], { minTokens = 300, maxTokens 
 
     const emit = () => {
       const content = current.join('\n\n').trim();
-      if (content) chunks.push({ headingPath, page: section.page, content, tokens: estimateTokens(content) });
+      if (content)
+        chunks.push({
+          headingPath,
+          page: section.page,
+          content,
+          tokens: estimateTokens(content),
+        });
     };
 
     for (const unit of units) {
@@ -148,24 +163,34 @@ export function chunkSections(sections: Section[], { minTokens = 300, maxTokens 
 /** Paragraphs; oversized ones → sentences; oversized sentences → hard character slices. */
 function toUnits(text: string, maxTokens: number): string[] {
   const units: string[] = [];
-  for (const paragraph of text.split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean)) {
+  for (const paragraph of text
+    .split(/\n\s*\n/)
+    .map((p) => p.trim())
+    .filter(Boolean)) {
     if (estimateTokens(paragraph) <= maxTokens) {
       units.push(paragraph);
       continue;
     }
     for (const sentence of paragraph.split(/(?<=[.!?])\s+/)) {
       if (estimateTokens(sentence) <= maxTokens) units.push(sentence);
-      else for (let i = 0; i < sentence.length; i += maxTokens * 4) units.push(sentence.slice(i, i + maxTokens * 4));
+      else
+        for (let i = 0; i < sentence.length; i += maxTokens * 4)
+          units.push(sentence.slice(i, i + maxTokens * 4));
     }
   }
   return units;
 }
 
 /** Adjacent small sections under the same parent (and page) merge; their own headings move inline into the text. */
-function mergeSmallSiblings(sections: Section[], minTokens: number, maxTokens: number): Section[] {
+function mergeSmallSiblings(
+  sections: Section[],
+  minTokens: number,
+  maxTokens: number,
+): Section[] {
   type Acc = Section & { inlined: boolean };
   const out: Acc[] = [];
-  const parentOf = (x: Acc) => (x.inlined ? x.headings : x.headings.slice(0, -1)).join('\u0000');
+  const parentOf = (x: Acc) =>
+    (x.inlined ? x.headings : x.headings.slice(0, -1)).join('\u0000');
   const leaf = (x: Section) => x.headings[x.headings.length - 1];
 
   for (const section of sections) {
@@ -194,4 +219,5 @@ function mergeSmallSiblings(sections: Section[], minTokens: number, maxTokens: n
 }
 
 /** What gets embedded / shown to the model: the heading path gives the chunk its context. */
-export const chunkText = (chunk: Pick<Chunk, 'headingPath' | 'content'>) => `${chunk.headingPath}\n\n${chunk.content}`;
+export const chunkText = (chunk: Pick<Chunk, 'headingPath' | 'content'>) =>
+  `${chunk.headingPath}\n\n${chunk.content}`;

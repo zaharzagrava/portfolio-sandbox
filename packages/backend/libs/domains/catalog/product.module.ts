@@ -26,4 +26,4 @@ import { TenancyModule } from '@app/domains/tenancy';
   exports: [ProductService],
   controllers: [ProductController],
 })
-export class ProductModule { }
+export class ProductModule {}

@@ -1,5 +1,5 @@
-import { ApiProperty, IntersectionType } from "@nestjs/swagger";
-import { IdField, ImmutableTimestampsFields } from "@app/common/types";
+import { ApiProperty, IntersectionType } from '@nestjs/swagger';
+import { IdField, ImmutableTimestampsFields } from '@app/common/types';
 
 // --- --- --- --- --- Internal Types for Character --- --- --- --- --- //
 export class CreateLedgerEntryDto {
@@ -16,9 +16,9 @@ export class CreateLedgerEntryDto {
 export class LedgerEntryRawDto extends IntersectionType(
   IntersectionType(CreateLedgerEntryDto, ImmutableTimestampsFields),
   IdField,
-) { }
+) {}
 
-export class LedgerEntryFullDto extends LedgerEntryRawDto { }
+export class LedgerEntryFullDto extends LedgerEntryRawDto {}
 
 // ---
 
@@ -28,7 +28,8 @@ export enum SystemAccount {
 }
 
 // A helper type to ensure type safety across your app
-export type LedgerAccountId = SystemAccount | `MERCHANT_${string}` | `USER_${string}`;
+export type LedgerAccountId =
+  SystemAccount | `MERCHANT_${string}` | `USER_${string}`;
 
 // For this demo, we use a fixed fee amount of $1
 export const FEE_AMOUNT = 100;

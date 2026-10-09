@@ -29,5 +29,8 @@ export function wilsonLowerBound(ups: number, downs: number, z = 1.96): number {
   if (n === 0) return 0;
   const p = ups / n;
   const z2 = z * z;
-  return (p + z2 / (2 * n) - z * Math.sqrt((p * (1 - p) + z2 / (4 * n)) / n)) / (1 + z2 / n);
+  return (
+    (p + z2 / (2 * n) - z * Math.sqrt((p * (1 - p) + z2 / (4 * n)) / n)) /
+    (1 + z2 / n)
+  );
 }

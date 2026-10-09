@@ -28,11 +28,15 @@ const READ: ShopPermission[] = ['shop.read', 'members.read', 'products.read'];
 
 export const ROLE_PERMISSIONS = {
   OWNER: [...SHOP_PERMISSIONS],
-  ADMIN: SHOP_PERMISSIONS.filter((p) => p !== 'shop.delete' && p !== 'billing.manage'),
+  ADMIN: SHOP_PERMISSIONS.filter(
+    (p) => p !== 'shop.delete' && p !== 'billing.manage',
+  ),
   STAFF: [...READ, 'products.write', 'orders.manage'],
   VIEWER: [...READ, 'payouts.read'],
 } as const satisfies Record<ShopRole, readonly ShopPermission[]>;
 
 export function can(role: ShopRole, permission: ShopPermission): boolean {
-  return (ROLE_PERMISSIONS[role] as readonly ShopPermission[]).includes(permission);
+  return (ROLE_PERMISSIONS[role] as readonly ShopPermission[]).includes(
+    permission,
+  );
 }

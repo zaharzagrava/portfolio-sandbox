@@ -4,7 +4,15 @@
  * it by hand when a new export is needed. Models exported here are transitional (IX.4 debt): other
  * domains must stop injecting them.
  */
-export { CatalogImportModule, CatalogImportWorkerModule } from './catalog-import.module';
-export { IntegrationsCoreModule, IntegrationsModule, IntegrationsWorkerModule, StockPushProjector } from './integrations.module';
+export {
+  CatalogImportModule,
+  CatalogImportWorkerModule,
+} from './catalog-import.module';
+export {
+  IntegrationsCoreModule,
+  IntegrationsModule,
+  IntegrationsWorkerModule,
+  StockPushProjector,
+} from './integrations.module';
 export { OfflineSyncModule } from './sync.module';
 export { ImportJobTopicsModule } from './realtime-topics.module';

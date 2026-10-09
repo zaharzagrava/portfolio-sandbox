@@ -1,4 +1,10 @@
-import { Column, DataType, Model, PrimaryKey, Table } from 'sequelize-typescript';
+import {
+  Column,
+  DataType,
+  Model,
+  PrimaryKey,
+  Table,
+} from 'sequelize-typescript';
 
 export type SigningKeyStatus = 'NEXT' | 'ACTIVE' | 'RETIRED';
 

@@ -22,7 +22,9 @@ describe('Health (e2e)', () => {
   });
 
   it('GET /health/ready is 200 with Postgres up and 503 once shutdown starts', async () => {
-    const ready = await request(app.getHttpServer()).get('/health/ready').expect(200);
+    const ready = await request(app.getHttpServer())
+      .get('/health/ready')
+      .expect(200);
     expect(ready.body.checks.postgres).toBe('up');
 
     app.get(ReadinessService).markShuttingDown();

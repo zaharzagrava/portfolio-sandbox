@@ -9,10 +9,15 @@ const contexts = new Map<Type<unknown>, Promise<INestApplicationContext>>();
  * reused by every warm invocation - cold start pays DI + DB connect once.
  * Small handlers (thumbnails) skip Nest entirely.
  */
-export function nestContext(module: Type<unknown>): Promise<INestApplicationContext> {
+export function nestContext(
+  module: Type<unknown>,
+): Promise<INestApplicationContext> {
   let ctx = contexts.get(module);
   if (!ctx) {
-    ctx = NestFactory.createApplicationContext(module, { bufferLogs: true, abortOnError: false });
+    ctx = NestFactory.createApplicationContext(module, {
+      bufferLogs: true,
+      abortOnError: false,
+    });
     ctx.catch(() => contexts.delete(module)); // a failed init must not poison the warm container
     contexts.set(module, ctx);
   }

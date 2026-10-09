@@ -5,5 +5,8 @@ import ShopMembership from './infra/models/shop-membership.model';
 import { ShopTopics } from './api/realtime-topics';
 
 /** Registers `shop:{id}:live` in the SSE gateway (imported there; debt D-3). */
-@Module({ imports: [RealtimeModule, SequelizeModule.forFeature([ShopMembership])], providers: [ShopTopics] })
+@Module({
+  imports: [RealtimeModule, SequelizeModule.forFeature([ShopMembership])],
+  providers: [ShopTopics],
+})
 export class ShopTopicsModule {}

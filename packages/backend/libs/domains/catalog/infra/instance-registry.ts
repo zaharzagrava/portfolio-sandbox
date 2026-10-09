@@ -27,7 +27,10 @@ export class CollabInstanceRegistry implements OnModuleDestroy {
     this.self = `${id}|${publicUrl}`;
     clearInterval(this.heartbeat);
     await this.heartbeatNow();
-    this.heartbeat = setInterval(() => void this.heartbeatNow().catch(() => undefined), STALE_MS / 3);
+    this.heartbeat = setInterval(
+      () => void this.heartbeatNow().catch(() => undefined),
+      STALE_MS / 3,
+    );
     this.heartbeat.unref();
   }
 
@@ -41,7 +44,8 @@ export class CollabInstanceRegistry implements OnModuleDestroy {
   async onModuleDestroy() {
     clearInterval(this.heartbeat);
     // Leave the ring immediately on graceful shutdown; clients reconnect to the new owner.
-    if (this.self) await this.redis.client.zrem(REGISTRY, this.self).catch(() => undefined);
+    if (this.self)
+      await this.redis.client.zrem(REGISTRY, this.self).catch(() => undefined);
   }
 
   async ownerOf(draftId: string): Promise<{ id: string; url: string } | null> {
@@ -52,8 +56,16 @@ export class CollabInstanceRegistry implements OnModuleDestroy {
 
   private async refresh(force = false) {
     if (!force && Date.now() - this.refreshedAt < REFRESH_MS) return;
-    await this.redis.client.zremrangebyscore(REGISTRY, '-inf', Date.now() - STALE_MS * 4);
-    const members = await this.redis.client.zrangebyscore(REGISTRY, Date.now() - STALE_MS, '+inf');
+    await this.redis.client.zremrangebyscore(
+      REGISTRY,
+      '-inf',
+      Date.now() - STALE_MS * 4,
+    );
+    const members = await this.redis.client.zrangebyscore(
+      REGISTRY,
+      Date.now() - STALE_MS,
+      '+inf',
+    );
     this.urls = new Map(members.map((m) => m.split('|') as [string, string]));
     this.ring = new HashRing([...this.urls.keys()]);
     this.refreshedAt = Date.now();

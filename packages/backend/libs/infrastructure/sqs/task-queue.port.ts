@@ -28,8 +28,19 @@ export interface ConsumeOptions {
  * visibility timeout, DLQ after maxReceiveCount (configured on the queue).
  */
 export abstract class TaskQueue {
-  abstract enqueue<T>(queue: string, body: T, options?: EnqueueOptions): Promise<string>;
-  abstract enqueueBatch<T>(queue: string, bodies: { body: T; options?: EnqueueOptions }[]): Promise<void>;
+  abstract enqueue<T>(
+    queue: string,
+    body: T,
+    options?: EnqueueOptions,
+  ): Promise<string>;
+  abstract enqueueBatch<T>(
+    queue: string,
+    bodies: { body: T; options?: EnqueueOptions }[],
+  ): Promise<void>;
   /** Starts a long-polling consumer; resolves the returned `stop()` once in-flight messages finish. */
-  abstract consume<T>(queue: string, handler: (msg: TaskMessage<T>) => Promise<void>, options?: ConsumeOptions): () => Promise<void>;
+  abstract consume<T>(
+    queue: string,
+    handler: (msg: TaskMessage<T>) => Promise<void>,
+    options?: ConsumeOptions,
+  ): () => Promise<void>;
 }

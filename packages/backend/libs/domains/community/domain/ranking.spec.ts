@@ -26,11 +26,15 @@ describe('discussion building blocks', () => {
     const child = childPath(parent, 2_000);
     const { from, to } = subtreeRange(parent);
     expect(child >= from && child < to).toBe(true);
-    expect(childPath(null, 3_000) >= to || childPath(null, 3_000) < from).toBe(true);
+    expect(childPath(null, 3_000) >= to || childPath(null, 3_000) < from).toBe(
+      true,
+    );
   });
 
   it('user markdown cannot inject script, handlers or javascript: links', () => {
-    const html = renderUserMarkdown('**hi** <script>alert(1)</script> <img src=x onerror=alert(1)> [x](javascript:alert(1)) [ok](https://apple.com)');
+    const html = renderUserMarkdown(
+      '**hi** <script>alert(1)</script> <img src=x onerror=alert(1)> [x](javascript:alert(1)) [ok](https://apple.com)',
+    );
     expect(html).toContain('<strong>hi</strong>');
     expect(html).not.toMatch(/script|onerror|javascript:|<img/i);
     expect(html).toContain('rel="nofollow ugc noopener noreferrer"');

@@ -33,5 +33,8 @@ export interface CommerceProvider {
   normalize(raw: unknown): NormalizedProduct;
   setStock(product: NormalizedProduct, stock: number): Promise<void>;
   listAllIds(): Promise<string[]>;
-  verifyWebhook(rawBody: Buffer, headers: Record<string, string | undefined>): boolean;
+  verifyWebhook(
+    rawBody: Buffer,
+    headers: Record<string, string | undefined>,
+  ): boolean;
 }

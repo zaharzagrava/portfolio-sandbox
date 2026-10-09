@@ -1,4 +1,9 @@
-import { Injectable, Logger, OnApplicationBootstrap, OnModuleDestroy } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  OnApplicationBootstrap,
+  OnModuleDestroy,
+} from '@nestjs/common';
 import { gunzipSync } from 'node:zlib';
 import { buffer } from 'node:stream/consumers';
 import { RedisService } from '@app/infrastructure/redis/redis.service';
@@ -25,7 +30,9 @@ export interface SuggestResponse {
  * response degrades to query suggestions only instead of waiting.
  */
 @Injectable()
-export class AutocompleteService implements OnApplicationBootstrap, OnModuleDestroy {
+export class AutocompleteService
+  implements OnApplicationBootstrap, OnModuleDestroy
+{
   private readonly logger = new Logger(AutocompleteService.name);
   private trie = new TopKTrie();
   private version: string | null = null;
@@ -51,14 +58,22 @@ export class AutocompleteService implements OnApplicationBootstrap, OnModuleDest
     try {
       const pointer = await this.redis.client.get(AUTOCOMPLETE_POINTER);
       if (!pointer || pointer === this.version) return false;
-      const raw = await buffer(await this.storage.getStream(`autocomplete/${pointer}.json.gz`));
-      const items = JSON.parse(gunzipSync(raw).toString('utf8')) as Suggestion[];
+      const raw = await buffer(
+        await this.storage.getStream(`autocomplete/${pointer}.json.gz`),
+      );
+      const items = JSON.parse(
+        gunzipSync(raw).toString('utf8'),
+      ) as Suggestion[];
       this.trie = await TopKTrie.buildFrom(items);
       this.version = pointer;
-      this.logger.log(`autocomplete ${pointer} loaded (${items.length} queries, ${this.trie.size()} nodes)`);
+      this.logger.log(
+        `autocomplete ${pointer} loaded (${items.length} queries, ${this.trie.size()} nodes)`,
+      );
       return true;
     } catch (error) {
-      this.logger.warn(`autocomplete refresh failed (serving ${this.version ?? 'nothing'}): ${(error as Error).message}`);
+      this.logger.warn(
+        `autocomplete refresh failed (serving ${this.version ?? 'nothing'}): ${(error as Error).message}`,
+      );
       return false;
     }
   }
@@ -76,7 +91,10 @@ export class AutocompleteService implements OnApplicationBootstrap, OnModuleDest
     const abort = new AbortController();
     const timeout = setTimeout(() => abort.abort(), ES_BUDGET_MS);
     try {
-      const products = prefix.length >= 2 ? await this.elasticsearch.suggestTitles(prefix, 5, abort.signal) : [];
+      const products =
+        prefix.length >= 2
+          ? await this.elasticsearch.suggestTitles(prefix, 5, abort.signal)
+          : [];
       return { queries, products, partial: false };
     } catch {
       return { queries, products: [], partial: true };

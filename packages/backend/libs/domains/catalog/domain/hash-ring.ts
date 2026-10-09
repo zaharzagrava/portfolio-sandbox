@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 
-const hash32 = (value: string) => createHash('md5').update(value).digest().readUInt32BE(0);
+const hash32 = (value: string) =>
+  createHash('md5').update(value).digest().readUInt32BE(0);
 
 /**
  * Consistent hashing with virtual nodes (10/09 #34). Every editor of a draft
@@ -17,7 +18,12 @@ export class HashRing {
     private readonly vnodes = 256,
   ) {
     this.points = nodes
-      .flatMap((node) => Array.from({ length: vnodes }, (_, i) => ({ hash: hash32(`${node}#${i}`), node })))
+      .flatMap((node) =>
+        Array.from({ length: vnodes }, (_, i) => ({
+          hash: hash32(`${node}#${i}`),
+          node,
+        })),
+      )
       .sort((a, b) => a.hash - b.hash || a.node.localeCompare(b.node));
   }
 

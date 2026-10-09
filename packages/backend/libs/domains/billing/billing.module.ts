@@ -10,7 +10,10 @@ import { JobsModule } from '@app/infrastructure/jobs/jobs.module';
 import { KafkaProducerModule } from '@app/infrastructure/kafka/kafka-producer.module';
 import { ClickHouseModule } from '@app/infrastructure/clickhouse/clickhouse.module';
 import { BillingService } from './application/billing.service';
-import { EntitlementsService, ShopEntitlementGuard } from './application/entitlements.service';
+import {
+  EntitlementsService,
+  ShopEntitlementGuard,
+} from './application/entitlements.service';
 import { UsageService } from './application/usage.service';
 import { BillingController } from './api/billing.controller';
 
@@ -22,9 +25,25 @@ export const BILLING_MODELS = [Plan, Price, Subscription, Invoice, InvoiceLine];
  */
 @Global()
 @Module({
-  imports: [AuthModule, JobsModule, KafkaProducerModule, ClickHouseModule, SequelizeModule.forFeature(BILLING_MODELS)],
-  providers: [BillingService, EntitlementsService, ShopEntitlementGuard, UsageService],
-  exports: [BillingService, EntitlementsService, ShopEntitlementGuard, UsageService],
+  imports: [
+    AuthModule,
+    JobsModule,
+    KafkaProducerModule,
+    ClickHouseModule,
+    SequelizeModule.forFeature(BILLING_MODELS),
+  ],
+  providers: [
+    BillingService,
+    EntitlementsService,
+    ShopEntitlementGuard,
+    UsageService,
+  ],
+  exports: [
+    BillingService,
+    EntitlementsService,
+    ShopEntitlementGuard,
+    UsageService,
+  ],
   controllers: [BillingController],
 })
 export class BillingModule {}

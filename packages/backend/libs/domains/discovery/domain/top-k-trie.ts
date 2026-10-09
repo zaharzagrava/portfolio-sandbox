@@ -64,9 +64,16 @@ export class TopKTrie {
    * inserts (lesson 02/01 §3 "partition the work") so a 200k-query rebuild
    * on a serving node never stalls in-flight requests.
    */
-  static async buildFrom(items: Suggestion[], k = 10, maxPrefix = 20, chunk = 5_000): Promise<TopKTrie> {
+  static async buildFrom(
+    items: Suggestion[],
+    k = 10,
+    maxPrefix = 20,
+    chunk = 5_000,
+  ): Promise<TopKTrie> {
     const trie = new TopKTrie(k, maxPrefix);
-    const sorted = [...items].sort((a, b) => b.count - a.count || a.query.localeCompare(b.query));
+    const sorted = [...items].sort(
+      (a, b) => b.count - a.count || a.query.localeCompare(b.query),
+    );
     for (let i = 0; i < sorted.length; i++) {
       trie.insert(sorted[i]);
       if (i % chunk === chunk - 1) await new Promise((r) => setImmediate(r));
@@ -77,5 +84,10 @@ export class TopKTrie {
 
 /** One canonical form for logging and lookup: lowercase, single spaces, trimmed, bounded. */
 export function normalizeQuery(q: string): string {
-  return q.toLowerCase().normalize('NFKC').replace(/\s+/g, ' ').trim().slice(0, 100);
+  return q
+    .toLowerCase()
+    .normalize('NFKC')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 100);
 }

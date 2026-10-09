@@ -2,7 +2,12 @@ import { Injectable, OnModuleDestroy } from '@nestjs/common';
 import { hostname } from 'node:os';
 import { RedisService } from '@app/infrastructure/redis/redis.service';
 import { RealtimeMessage } from '@app/infrastructure/realtime/topics';
-import { Reservoir, firehoseTopic, LiveComment, viewersKey } from '@app/domains/launch-events';
+import {
+  Reservoir,
+  firehoseTopic,
+  LiveComment,
+  viewersKey,
+} from '@app/domains/launch-events';
 import { SubscriptionHub } from '../topic-stream/subscription-hub.service';
 
 export const TICK_MS = 250;
@@ -39,7 +44,11 @@ export class StreamBatcher {
 
   add(viewer: LiveViewer) {
     this.viewers.add(viewer);
-    if (viewer.userId) this.watchingUsers.set(viewer.userId, (this.watchingUsers.get(viewer.userId) ?? 0) + 1);
+    if (viewer.userId)
+      this.watchingUsers.set(
+        viewer.userId,
+        (this.watchingUsers.get(viewer.userId) ?? 0) + 1,
+      );
   }
 
   remove(viewer: LiveViewer) {
@@ -53,11 +62,16 @@ export class StreamBatcher {
 
   onComment(comment: LiveComment) {
     if (comment.priority) {
-      if (this.priority.length < MAX_PRIORITY_PER_TICK) this.priority.push(comment);
+      if (this.priority.length < MAX_PRIORITY_PER_TICK)
+        this.priority.push(comment);
     } else {
       this.reservoir.offer(comment);
     }
-    if (this.watchingUsers.has(comment.authorId)) this.own.set(comment.authorId, [...(this.own.get(comment.authorId) ?? []), comment]);
+    if (this.watchingUsers.has(comment.authorId))
+      this.own.set(comment.authorId, [
+        ...(this.own.get(comment.authorId) ?? []),
+        comment,
+      ]);
   }
 
   broadcast(event: string, data: unknown) {
@@ -75,8 +89,13 @@ export class StreamBatcher {
     const shared = [...priority, ...sample];
     for (const viewer of this.viewers) {
       const mine = viewer.userId ? (own.get(viewer.userId) ?? []) : [];
-      const items = mine.length ? dedupe([...priority, ...mine, ...sample]) : shared;
-      viewer.send('comments', { items, rate: Math.round((seen + priority.length) * (1000 / TICK_MS)) });
+      const items = mine.length
+        ? dedupe([...priority, ...mine, ...sample])
+        : shared;
+      viewer.send('comments', {
+        items,
+        rate: Math.round((seen + priority.length) * (1000 / TICK_MS)),
+      });
     }
   }
 
@@ -93,7 +112,10 @@ function dedupe(items: LiveComment[]): LiveComment[] {
 /** Creates batchers on the first local viewer of a stream and tears them down after the last one leaves. */
 @Injectable()
 export class LiveBatcherRegistry implements OnModuleDestroy {
-  private readonly batchers = new Map<string, { batcher: StreamBatcher; unsubscribe: () => Promise<void> }>();
+  private readonly batchers = new Map<
+    string,
+    { batcher: StreamBatcher; unsubscribe: () => Promise<void> }
+  >();
   private readonly instance = `${hostname()}-${process.pid}`;
   private readonly heartbeat: NodeJS.Timeout;
 
@@ -101,19 +123,33 @@ export class LiveBatcherRegistry implements OnModuleDestroy {
     private readonly hub: SubscriptionHub,
     private readonly redis: RedisService,
   ) {
-    this.heartbeat = setInterval(() => void this.reportViewers().catch(() => undefined), VIEWER_HEARTBEAT_MS);
+    this.heartbeat = setInterval(
+      () => void this.reportViewers().catch(() => undefined),
+      VIEWER_HEARTBEAT_MS,
+    );
     this.heartbeat.unref();
   }
 
-  async join(streamId: string, viewer: LiveViewer): Promise<() => Promise<void>> {
+  async join(
+    streamId: string,
+    viewer: LiveViewer,
+  ): Promise<() => Promise<void>> {
     let entry = this.batchers.get(streamId);
     if (!entry) {
       const batcher = new StreamBatcher(streamId);
       const unsubscribers = await Promise.all([
-        this.hub.subscribe(firehoseTopic(streamId), (m: RealtimeMessage) => batcher.onComment(m.data as LiveComment)),
-        this.hub.subscribe(`stream:${streamId}`, (m: RealtimeMessage) => batcher.broadcast(m.type, m.data)),
+        this.hub.subscribe(firehoseTopic(streamId), (m: RealtimeMessage) =>
+          batcher.onComment(m.data as LiveComment),
+        ),
+        this.hub.subscribe(`stream:${streamId}`, (m: RealtimeMessage) =>
+          batcher.broadcast(m.type, m.data),
+        ),
       ]);
-      entry = { batcher, unsubscribe: async () => void (await Promise.all(unsubscribers.map((u) => u()))) };
+      entry = {
+        batcher,
+        unsubscribe: async () =>
+          void (await Promise.all(unsubscribers.map((u) => u()))),
+      };
       this.batchers.set(streamId, entry);
     }
     entry.batcher.add(viewer);
@@ -126,7 +162,9 @@ export class LiveBatcherRegistry implements OnModuleDestroy {
         this.batchers.delete(streamId);
         current.batcher.stop();
         await current.unsubscribe();
-        await this.redis.client.hdel(viewersKey(streamId), this.instance).catch(() => undefined);
+        await this.redis.client
+          .hdel(viewersKey(streamId), this.instance)
+          .catch(() => undefined);
       }
     };
   }
@@ -139,7 +177,11 @@ export class LiveBatcherRegistry implements OnModuleDestroy {
   async reportViewers() {
     const pipeline = this.redis.client.pipeline();
     for (const [streamId, { batcher }] of this.batchers) {
-      pipeline.hset(viewersKey(streamId), this.instance, `${batcher.viewers.size}:${Date.now()}`);
+      pipeline.hset(
+        viewersKey(streamId),
+        this.instance,
+        `${batcher.viewers.size}:${Date.now()}`,
+      );
       pipeline.expire(viewersKey(streamId), 60);
     }
     await pipeline.exec();

@@ -34,31 +34,60 @@ export class OrderExportService {
   ) {}
 
   async request(shopId: string, userId: string) {
-    const [job] = await this.sequelize.query<{ id: string }>(`INSERT INTO "ExportJob" ("shopId", "createdBy", kind) VALUES (:shopId, :userId, 'orders') RETURNING id`, {
-      type: QueryTypes.SELECT,
-      replacements: { shopId, userId },
-    });
+    const [job] = await this.sequelize.query<{ id: string }>(
+      `INSERT INTO "ExportJob" ("shopId", "createdBy", kind) VALUES (:shopId, :userId, 'orders') RETURNING id`,
+      {
+        type: QueryTypes.SELECT,
+        replacements: { shopId, userId },
+      },
+    );
     await this.queue.enqueue(EXPORT_QUEUE, { kind: 'export', jobId: job.id });
     return { jobId: job.id, status: 'QUEUED' };
   }
 
   async status(shopId: string, jobId: string) {
-    const [job] = await this.sequelize.query<{ status: string; rows: number; objectKey: string | null }>(`SELECT status, rows, "objectKey" FROM "ExportJob" WHERE id = :jobId AND "shopId" = :shopId`, {
-      type: QueryTypes.SELECT,
-      replacements: { jobId, shopId },
-    });
+    const [job] = await this.sequelize.query<{
+      status: string;
+      rows: number;
+      objectKey: string | null;
+    }>(
+      `SELECT status, rows, "objectKey" FROM "ExportJob" WHERE id = :jobId AND "shopId" = :shopId`,
+      {
+        type: QueryTypes.SELECT,
+        replacements: { jobId, shopId },
+      },
+    );
     if (!job) throw new NotFoundException('Export not found');
-    return { ...job, downloadUrl: job.status === 'DONE' && job.objectKey ? await this.storage.presignGet(job.objectKey, { expiresInSec: 600, downloadName: `orders-${jobId}.csv` }) : null };
+    return {
+      ...job,
+      downloadUrl:
+        job.status === 'DONE' && job.objectKey
+          ? await this.storage.presignGet(job.objectKey, {
+              expiresInSec: 600,
+              downloadName: `orders-${jobId}.csv`,
+            })
+          : null,
+    };
   }
 
   async run(jobId: string): Promise<number> {
-    const [job] = await this.sequelize.query<{ shopId: string; status: string }>(`UPDATE "ExportJob" SET status = 'RUNNING', "updatedAt" = now() WHERE id = :jobId AND status IN ('QUEUED', 'RUNNING') RETURNING "shopId", status`, {
-      type: QueryTypes.SELECT,
-      replacements: { jobId },
-    });
+    const [job] = await this.sequelize.query<{
+      shopId: string;
+      status: string;
+    }>(
+      `UPDATE "ExportJob" SET status = 'RUNNING', "updatedAt" = now() WHERE id = :jobId AND status IN ('QUEUED', 'RUNNING') RETURNING "shopId", status`,
+      {
+        type: QueryTypes.SELECT,
+        replacements: { jobId },
+      },
+    );
     if (!job) return 0;
     const key = `exports/${job.shopId}/${jobId}/orders.csv`;
-    const client = (await (this.sequelize.connectionManager as unknown as { getConnection(o: object): Promise<PoolClient> }).getConnection({ type: 'read' })) as PoolClient;
+    const client = (await (
+      this.sequelize.connectionManager as unknown as {
+        getConnection(o: object): Promise<PoolClient>;
+      }
+    ).getConnection({ type: 'read' })) as PoolClient;
     let rows = 0;
     try {
       const cursor = client.query(
@@ -80,20 +109,58 @@ export class OrderExportService {
           objectMode: true,
           transform(row: Record<string, unknown>, _enc, done) {
             rows++;
-            done(null, [row.id, new Date(row.createdAt as string).toISOString(), row.status, row.currency, row.productId, row.externalSku ?? '', row.title ?? '', row.quantity, row.priceAtPurchase]);
+            done(null, [
+              row.id,
+              new Date(row.createdAt as string).toISOString(),
+              row.status,
+              row.currency,
+              row.productId,
+              row.externalSku ?? '',
+              row.title ?? '',
+              row.quantity,
+              row.priceAtPurchase,
+            ]);
           },
         }),
-        stringify({ header: true, columns: ['order_id', 'created_at', 'status', 'currency', 'product_id', 'sku', 'title', 'quantity', 'unit_price_minor'] }),
+        stringify({
+          header: true,
+          columns: [
+            'order_id',
+            'created_at',
+            'status',
+            'currency',
+            'product_id',
+            'sku',
+            'title',
+            'quantity',
+            'unit_price_minor',
+          ],
+        }),
         body,
       );
       await upload;
     } catch (error) {
-      await this.sequelize.query(`UPDATE "ExportJob" SET status = 'FAILED', error = :error WHERE id = :jobId`, { replacements: { error: (error as Error).message.slice(0, 500), jobId } });
+      await this.sequelize.query(
+        `UPDATE "ExportJob" SET status = 'FAILED', error = :error WHERE id = :jobId`,
+        {
+          replacements: {
+            error: (error as Error).message.slice(0, 500),
+            jobId,
+          },
+        },
+      );
       throw error;
     } finally {
-      await (this.sequelize.connectionManager as unknown as { releaseConnection(c: PoolClient): Promise<void> }).releaseConnection(client);
+      await (
+        this.sequelize.connectionManager as unknown as {
+          releaseConnection(c: PoolClient): Promise<void>;
+        }
+      ).releaseConnection(client);
     }
-    await this.sequelize.query(`UPDATE "ExportJob" SET status = 'DONE', "objectKey" = :key, rows = :rows, "updatedAt" = now() WHERE id = :jobId`, { replacements: { key, rows, jobId } });
+    await this.sequelize.query(
+      `UPDATE "ExportJob" SET status = 'DONE', "objectKey" = :key, rows = :rows, "updatedAt" = now() WHERE id = :jobId`,
+      { replacements: { key, rows, jobId } },
+    );
     await this.realtime.publish(`job:${jobId}`, 'done', { rows });
     return rows;
   }

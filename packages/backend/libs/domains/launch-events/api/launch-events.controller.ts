@@ -1,4 +1,15 @@
-import { Body, Controller, Delete, Get, Header, Headers, NotFoundException, Param, ParseUUIDPipe, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Header,
+  Headers,
+  NotFoundException,
+  Param,
+  ParseUUIDPipe,
+  Post,
+} from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { InjectModel } from '@nestjs/sequelize';
 import { Firewall, User, UserRawDto } from '@app/domains/identity';
@@ -22,8 +33,16 @@ export class LaunchEventsController {
 
   @ShopScoped('products.write')
   @Post('shops/:shopId/launch-events')
-  create(@Param('shopId', ParseUUIDPipe) shopId: string, @Body() body: CreateLaunchEventDto) {
-    return this.eventModel.create({ ...body, shopId, startsAt: new Date(body.startsAt), salesOpenAt: new Date(body.salesOpenAt) });
+  create(
+    @Param('shopId', ParseUUIDPipe) shopId: string,
+    @Body() body: CreateLaunchEventDto,
+  ) {
+    return this.eventModel.create({
+      ...body,
+      shopId,
+      startsAt: new Date(body.startsAt),
+      salesOpenAt: new Date(body.salesOpenAt),
+    });
   }
 
   /** Static event page data: CDN/edge cacheable; only the seat map and queue are dynamic. */
@@ -37,7 +56,10 @@ export class LaunchEventsController {
   @Firewall()
   @RateLimit('search.query')
   @Post('launch-events/:eventId/queue')
-  async join(@Param('eventId', ParseUUIDPipe) eventId: string, @User() user: UserRawDto) {
+  async join(
+    @Param('eventId', ParseUUIDPipe) eventId: string,
+    @User() user: UserRawDto,
+  ) {
     const event = await this.load(eventId);
     return this.room.join(eventId, user.id, new Date(event.salesOpenAt));
   }
@@ -45,7 +67,10 @@ export class LaunchEventsController {
   /** Polling fallback for clients that can't hold an SSE connection (SSE topic `queue:<ticket>` is the push path). */
   @Firewall()
   @Get('launch-events/:eventId/queue/:ticket')
-  status(@Param('eventId', ParseUUIDPipe) eventId: string, @Param('ticket', ParseUUIDPipe) ticket: string) {
+  status(
+    @Param('eventId', ParseUUIDPipe) eventId: string,
+    @Param('ticket', ParseUUIDPipe) ticket: string,
+  ) {
     return this.room.status(eventId, ticket);
   }
 
@@ -73,23 +98,33 @@ export class LaunchEventsController {
 
   @Firewall()
   @Post('launch-holds/:holdId/confirm')
-  confirm(@Param('holdId', ParseUUIDPipe) holdId: string, @User() user: UserRawDto) {
+  confirm(
+    @Param('holdId', ParseUUIDPipe) holdId: string,
+    @User() user: UserRawDto,
+  ) {
     return this.holds.confirm(holdId, user.id);
   }
 
   @Firewall()
   @Delete('launch-holds/:holdId')
-  async release(@Param('holdId', ParseUUIDPipe) holdId: string, @User() user: UserRawDto) {
+  async release(
+    @Param('holdId', ParseUUIDPipe) holdId: string,
+    @User() user: UserRawDto,
+  ) {
     return { released: await this.holds.release(holdId, user.id) };
   }
 
   private async load(eventId: string) {
-    const event = await this.cache.getOrLoad(`launch-event:v1:${eventId}`, () => this.eventModel.findByPk(eventId, { raw: true }), {
-      ttlMs: 30_000,
-      negativeTtlMs: 5_000,
-      l1: 'always',
-      l1TtlMs: 2_000,
-    });
+    const event = await this.cache.getOrLoad(
+      `launch-event:v1:${eventId}`,
+      () => this.eventModel.findByPk(eventId, { raw: true }),
+      {
+        ttlMs: 30_000,
+        negativeTtlMs: 5_000,
+        l1: 'always',
+        l1TtlMs: 2_000,
+      },
+    );
     if (!event) throw new NotFoundException('Event not found');
     return event;
   }

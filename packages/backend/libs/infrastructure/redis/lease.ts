@@ -12,6 +12,13 @@ return 0`;
  * between them, the owner keeps renewing, and a crashed owner's keys are
  * picked up after `ttlMs`.
  */
-export async function holdLease(redis: RedisService, key: string, owner: string, ttlMs: number): Promise<boolean> {
-  return (await redis.client.eval(ACQUIRE_OR_RENEW, 1, key, owner, ttlMs)) === 1;
+export async function holdLease(
+  redis: RedisService,
+  key: string,
+  owner: string,
+  ttlMs: number,
+): Promise<boolean> {
+  return (
+    (await redis.client.eval(ACQUIRE_OR_RENEW, 1, key, owner, ttlMs)) === 1
+  );
 }

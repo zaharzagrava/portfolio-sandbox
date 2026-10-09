@@ -33,7 +33,8 @@ export class WriteBehindCounter {
   async drain(): Promise<Map<string, number>> {
     const flat = (await this.redis.client.eval(DRAIN, 1, this.key)) as string[];
     const deltas = new Map<string, number>();
-    for (let i = 0; i < flat.length; i += 2) deltas.set(flat[i], Number(flat[i + 1]));
+    for (let i = 0; i < flat.length; i += 2)
+      deltas.set(flat[i], Number(flat[i + 1]));
     return deltas;
   }
 

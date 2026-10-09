@@ -1,6 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import type { Request, Response } from 'express';
-import { compareStreamIds, GenerationBuffer, GenerationEvent, TERMINAL_EVENTS, VIEWER_TTL_MS } from '../infra/generation-buffer';
+import {
+  compareStreamIds,
+  GenerationBuffer,
+  GenerationEvent,
+  TERMINAL_EVENTS,
+  VIEWER_TTL_MS,
+} from '../infra/generation-buffer';
 
 const HEARTBEAT_MS = 15_000;
 const REMOTE_POLL_MS = 300;
@@ -16,7 +22,12 @@ const REMOTE_POLL_MS = 300;
 export class AssistantStreamer {
   constructor(private readonly buffer: GenerationBuffer) {}
 
-  async pipe(messageId: string, lastEventId: string | null, req: Request, res: Response): Promise<void> {
+  async pipe(
+    messageId: string,
+    lastEventId: string | null,
+    req: Request,
+    res: Response,
+  ): Promise<void> {
     res.writeHead(200, {
       'Content-Type': 'text/event-stream; charset=utf-8',
       'Cache-Control': 'no-cache, no-transform',
@@ -40,17 +51,26 @@ export class AssistantStreamer {
     const send = (event: GenerationEvent) => {
       if (closed || (cursor && compareStreamIds(event.id, cursor) <= 0)) return;
       cursor = event.id;
-      res.write(`id: ${event.id}\nevent: ${event.type}\ndata: ${JSON.stringify(event.data)}\n\n`);
+      res.write(
+        `id: ${event.id}\nevent: ${event.type}\ndata: ${JSON.stringify(event.data)}\n\n`,
+      );
       if (TERMINAL_EVENTS.includes(event.type)) close();
     };
 
-    const heartbeat = setInterval(() => !closed && res.write(': ping\n\n'), HEARTBEAT_MS);
+    const heartbeat = setInterval(
+      () => !closed && res.write(': ping\n\n'),
+      HEARTBEAT_MS,
+    );
     cleanups.push(() => clearInterval(heartbeat));
 
     if (this.buffer.isLocal(messageId)) {
       let replaying = true;
       const pending: GenerationEvent[] = [];
-      cleanups.push(this.buffer.subscribe(messageId, (e) => (replaying ? pending.push(e) : send(e))));
+      cleanups.push(
+        this.buffer.subscribe(messageId, (e) =>
+          replaying ? pending.push(e) : send(e),
+        ),
+      );
       for (const e of await this.buffer.replay(messageId, cursor)) send(e);
       replaying = false;
       pending.forEach(send);
@@ -62,7 +82,10 @@ export class AssistantStreamer {
       while (!closed) {
         await this.buffer.touchRemoteViewer(messageId).catch(() => undefined);
         for (const e of await this.buffer.replay(messageId, cursor)) send(e);
-        if (!closed) await new Promise((r) => setTimeout(r, Math.min(REMOTE_POLL_MS, VIEWER_TTL_MS / 2)));
+        if (!closed)
+          await new Promise((r) =>
+            setTimeout(r, Math.min(REMOTE_POLL_MS, VIEWER_TTL_MS / 2)),
+          );
       }
     };
     void poll().catch(close);

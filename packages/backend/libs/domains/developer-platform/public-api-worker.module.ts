@@ -1,4 +1,9 @@
-import { Injectable, Module, OnApplicationBootstrap, OnModuleDestroy } from '@nestjs/common';
+import {
+  Injectable,
+  Module,
+  OnApplicationBootstrap,
+  OnModuleDestroy,
+} from '@nestjs/common';
 import { ProductModule } from '@app/domains/catalog';
 import { OutboxModule } from '@app/infrastructure/outbox/outbox.module';
 import { SqsModule } from '@app/infrastructure/sqs/sqs.module';
@@ -7,7 +12,10 @@ import { JobsModule } from '@app/infrastructure/jobs/jobs.module';
 import { JobsService } from '@app/infrastructure/jobs/jobs.service';
 import { JobHandler } from '@app/infrastructure/jobs/job-handler.decorator';
 import { ApiKeysService } from './application/api-keys.service';
-import { BULK_STOCK_QUEUE, PublicCatalogService } from './application/public-catalog.service';
+import {
+  BULK_STOCK_QUEUE,
+  PublicCatalogService,
+} from './application/public-catalog.service';
 
 declare module '@app/infrastructure/jobs/job-types' {
   interface JobPayloads {
@@ -16,7 +24,9 @@ declare module '@app/infrastructure/jobs/job-types' {
 }
 
 @Injectable()
-export class PublicApiWorkers implements OnApplicationBootstrap, OnModuleDestroy {
+export class PublicApiWorkers
+  implements OnApplicationBootstrap, OnModuleDestroy
+{
   private stop?: () => Promise<void>;
 
   constructor(
@@ -27,8 +37,19 @@ export class PublicApiWorkers implements OnApplicationBootstrap, OnModuleDestroy
   ) {}
 
   async onApplicationBootstrap() {
-    this.stop = this.queue.consume<{ jobId: string; shopId: string; items: { productId: string; stock: number }[] }>(BULK_STOCK_QUEUE, ({ body }) => this.catalog.applyChunk(body), { concurrency: 5 });
-    await this.jobs.upsertSchedule({ name: 'public-api.flush-key-usage', cron: '* * * * *', jobType: 'public-api.flush-key-usage', payload: {} });
+    this.stop = this.queue.consume<{
+      jobId: string;
+      shopId: string;
+      items: { productId: string; stock: number }[];
+    }>(BULK_STOCK_QUEUE, ({ body }) => this.catalog.applyChunk(body), {
+      concurrency: 5,
+    });
+    await this.jobs.upsertSchedule({
+      name: 'public-api.flush-key-usage',
+      cron: '* * * * *',
+      jobType: 'public-api.flush-key-usage',
+      payload: {},
+    });
   }
 
   async onModuleDestroy() {

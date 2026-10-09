@@ -7,7 +7,10 @@ import { LedgerModule } from './ledger.module';
 import { StripeModule } from '@app/infrastructure/stripe/stripe.module';
 import { OutboxModule } from '@app/infrastructure/outbox/outbox.module';
 import { ProjectionsModule } from '@app/infrastructure/projections/projections.module';
-import { PayoutProvider, StripeConnectPayoutProvider } from './infra/payout-provider.port';
+import {
+  PayoutProvider,
+  StripeConnectPayoutProvider,
+} from './infra/payout-provider.port';
 import { PayoutJobs } from './infra/payout.jobs';
 import { PaymentResolutionJobs } from './infra/payment-resolution.jobs';
 import { ReconciliationJobs } from './infra/reconciliation.jobs';
@@ -23,6 +26,12 @@ import { SettlementListener } from './infra/settlement.listener';
     SequelizeModule.forFeature([Payout, Shop, Payment]),
     ProjectionsModule.forProjectors([SettlementListener], [LedgerModule]),
   ],
-  providers: [{ provide: PayoutProvider, useClass: StripeConnectPayoutProvider }, PayoutJobs, PaymentResolutionJobs, ReconciliationJobs, LedgerMaintenanceJobs],
+  providers: [
+    { provide: PayoutProvider, useClass: StripeConnectPayoutProvider },
+    PayoutJobs,
+    PaymentResolutionJobs,
+    ReconciliationJobs,
+    LedgerMaintenanceJobs,
+  ],
 })
 export class FinanceWorkerModule {}

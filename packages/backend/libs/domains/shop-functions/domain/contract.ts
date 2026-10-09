@@ -3,7 +3,12 @@ import { z } from 'zod';
 /** What seller code receives: one shop's cart lines (never other shops' lines, never customer PII). */
 export interface FunctionInput {
   currency: string;
-  lines: { productId: string; category: string; quantity: number; unitPrice: number }[];
+  lines: {
+    productId: string;
+    category: string;
+    quantity: number;
+    unitPrice: number;
+  }[];
 }
 
 /**
@@ -25,11 +30,19 @@ export const FunctionOutput = z.object({
 export type FunctionOutput = z.infer<typeof FunctionOutput>;
 
 /** Applies validated discounts → new unit prices (minor units, never negative, percentages capped at 100). */
-export function applyDiscounts(lines: FunctionInput['lines'], output: FunctionOutput): number[] {
+export function applyDiscounts(
+  lines: FunctionInput['lines'],
+  output: FunctionOutput,
+): number[] {
   const prices = lines.map((l) => l.unitPrice);
   for (const d of output.discounts) {
     if (d.lineIndex >= prices.length) continue;
-    const cut = d.type === 'percentage' ? Math.floor((lines[d.lineIndex].unitPrice * Math.min(d.value, 100)) / 100) : Math.floor(d.value);
+    const cut =
+      d.type === 'percentage'
+        ? Math.floor(
+            (lines[d.lineIndex].unitPrice * Math.min(d.value, 100)) / 100,
+          )
+        : Math.floor(d.value);
     prices[d.lineIndex] = Math.max(0, prices[d.lineIndex] - cut);
   }
   return prices;

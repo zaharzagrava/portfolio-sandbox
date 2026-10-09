@@ -6,7 +6,11 @@ import { SeedsService } from '@app/test/seeds/seeds.service';
 import { RedisService } from '@app/infrastructure/redis/redis.service';
 import { KafkaProducerService } from '@app/infrastructure/kafka/kafka-producer.service';
 import { FeedModule } from './feed.module';
-import { FeedService, CELEBRITIES, activeKey } from './application/feed.service';
+import {
+  FeedService,
+  CELEBRITIES,
+  activeKey,
+} from './application/feed.service';
 import { FeedPublisher } from './application/feed-publisher.service';
 import { FeedFanoutConsumer } from './infra/fanout.consumer';
 
@@ -20,9 +24,16 @@ describe('Follow feed (e2e)', () => {
   let redis: RedisService;
 
   beforeAll(async () => {
-    const moduleRef = await generateTestingModule([FeedModule, SeedsModule, { module: class FanoutSpec {}, providers: [FeedFanoutConsumer] }], {
-      stores: ['redis', 'cassandra'],
-    });
+    const moduleRef = await generateTestingModule(
+      [
+        FeedModule,
+        SeedsModule,
+        { module: class FanoutSpec {}, providers: [FeedFanoutConsumer] },
+      ],
+      {
+        stores: ['redis', 'cassandra'],
+      },
+    );
     app = moduleRef.createNestApplication();
     await app.init();
     seeds = app.get(SeedsService);
@@ -30,7 +41,9 @@ describe('Follow feed (e2e)', () => {
     publisher = app.get(FeedPublisher);
     fanout = app.get(FeedFanoutConsumer);
     redis = app.get(RedisService);
-    jest.spyOn(app.get(KafkaProducerService), 'send').mockResolvedValue(undefined as never);
+    jest
+      .spyOn(app.get(KafkaProducerService), 'send')
+      .mockResolvedValue(undefined as never);
   });
 
   afterAll(async () => {
@@ -47,7 +60,7 @@ describe('Follow feed (e2e)', () => {
     return fanout.fanOut(author, itemId, Date.now());
   };
 
-  it('push: an active follower sees a normal shop\'s new item via their Redis timeline', async () => {
+  it("push: an active follower sees a normal shop's new item via their Redis timeline", async () => {
     const reader = v4();
     const s = shop();
     await feed.follow(reader, s);
@@ -55,7 +68,9 @@ describe('Follow feed (e2e)', () => {
 
     const result = await publishAndFanOut(s, 'AirPods Pro 3');
     expect(result).toEqual({ pushed: 1, celebrity: false });
-    expect((await feed.timeline(reader)).items.map((i) => i.title)).toEqual(['AirPods Pro 3']);
+    expect((await feed.timeline(reader)).items.map((i) => i.title)).toEqual([
+      'AirPods Pro 3',
+    ]);
   });
 
   it('pull: celebrity items are not fanned out but merged in at read time', async () => {
@@ -65,8 +80,13 @@ describe('Follow feed (e2e)', () => {
     await feed.timeline(reader);
     await redis.client.sadd(CELEBRITIES, apple); // as if it crossed the follower threshold
 
-    expect(await publishAndFanOut(apple, 'iPhone 18 announced')).toEqual({ pushed: 0, celebrity: true });
-    expect((await feed.timeline(reader)).items.map((i) => i.title)).toEqual(['iPhone 18 announced']);
+    expect(await publishAndFanOut(apple, 'iPhone 18 announced')).toEqual({
+      pushed: 0,
+      celebrity: true,
+    });
+    expect((await feed.timeline(reader)).items.map((i) => i.title)).toEqual([
+      'iPhone 18 announced',
+    ]);
   });
 
   it('inactive followers get nothing pushed; on return their timeline is rebuilt by pull, newest first', async () => {
@@ -80,7 +100,10 @@ describe('Follow feed (e2e)', () => {
     expect((await publishAndFanOut(b, 'second')).pushed).toBe(0);
     expect(await redis.client.exists(activeKey(reader))).toBe(0);
 
-    expect((await feed.timeline(reader)).items.map((i) => i.title)).toEqual(['second', 'first']);
+    expect((await feed.timeline(reader)).items.map((i) => i.title)).toEqual([
+      'second',
+      'first',
+    ]);
   });
 
   it('unfollow hides already-delivered items at hydration', async () => {

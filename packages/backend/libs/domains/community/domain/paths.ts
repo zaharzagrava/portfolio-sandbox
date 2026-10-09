@@ -10,7 +10,12 @@ export const COMMENTS_PER_BUCKET = 5_000;
  * into duplicate paths.
  */
 export function pathSegment(now = Date.now()): string {
-  return now.toString(36).padStart(9, '0') + randomInt(36 ** 3).toString(36).padStart(3, '0');
+  return (
+    now.toString(36).padStart(9, '0') +
+    randomInt(36 ** 3)
+      .toString(36)
+      .padStart(3, '0')
+  );
 }
 
 export function childPath(parentPath: string | null, now?: number): string {

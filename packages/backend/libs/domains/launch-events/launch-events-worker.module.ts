@@ -11,7 +11,12 @@ import { AdmissionTicker } from './infra/admission-ticker.service';
 
 /** SD-21 background side (apps/worker): admission ticker + hold expiry. */
 @Module({
-  imports: [AuthModule, RealtimeModule, DynamoModule, SequelizeModule.forFeature([LaunchEvent, Booking])],
+  imports: [
+    AuthModule,
+    RealtimeModule,
+    DynamoModule,
+    SequelizeModule.forFeature([LaunchEvent, Booking]),
+  ],
   providers: [WaitingRoomService, SeatHoldService, AdmissionTicker],
 })
 export class LaunchEventsWorkerModule {}

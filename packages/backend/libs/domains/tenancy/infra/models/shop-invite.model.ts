@@ -1,9 +1,20 @@
-import { Column, DataType, Model, PrimaryKey, Table } from 'sequelize-typescript';
+import {
+  Column,
+  DataType,
+  Model,
+  PrimaryKey,
+  Table,
+} from 'sequelize-typescript';
 import { Sequelize } from 'sequelize';
 import { ShopRole } from './shop-membership.model';
 
 /** RLS-protected (tenant_isolation policy): only readable inside a transaction scoped to its shop. */
-@Table({ modelName: 'ShopInvite', tableName: 'ShopInvite', timestamps: true, updatedAt: false })
+@Table({
+  modelName: 'ShopInvite',
+  tableName: 'ShopInvite',
+  timestamps: true,
+  updatedAt: false,
+})
 export default class ShopInvite extends Model<ShopInvite, Partial<ShopInvite>> {
   @PrimaryKey
   @Column({ type: DataType.UUID, defaultValue: Sequelize.literal('uuidv7()') })

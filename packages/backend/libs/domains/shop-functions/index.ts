@@ -4,4 +4,7 @@
  * it by hand when a new export is needed. Models exported here are transitional (IX.4 debt): other
  * domains must stop injecting them.
  */
-export { FunctionJudgeModule, ShopFunctionsModule } from './shop-functions.module';
+export {
+  FunctionJudgeModule,
+  ShopFunctionsModule,
+} from './shop-functions.module';

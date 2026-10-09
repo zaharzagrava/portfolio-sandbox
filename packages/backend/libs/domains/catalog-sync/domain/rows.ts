@@ -12,7 +12,10 @@ export const CatalogRow = z.object({
   price: z
     .union([z.string(), z.number()])
     .transform((v) => String(v).trim())
-    .refine((v) => /^\d{1,9}(\.\d{1,2})?$/.test(v), 'price must look like 12.99')
+    .refine(
+      (v) => /^\d{1,9}(\.\d{1,2})?$/.test(v),
+      'price must look like 12.99',
+    )
     .transform((v) => {
       const [whole, frac = ''] = v.split('.');
       return Number(whole) * 100 + Number(frac.padEnd(2, '0'));

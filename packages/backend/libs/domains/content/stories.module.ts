@@ -5,10 +5,18 @@ import { JobsModule } from '@app/infrastructure/jobs/jobs.module';
 import { JobHandler } from '@app/infrastructure/jobs/job-handler.decorator';
 import { StoriesService } from './application/stories.service';
 import { StoriesController } from './api/stories.controller';
-import { CDN_PURGER_PROVIDER, StoryCacheInvalidator } from './infra/cache-invalidation';
+import {
+  CDN_PURGER_PROVIDER,
+  StoryCacheInvalidator,
+} from './infra/cache-invalidation';
 
 /** SD-05 CMS + public read (core). */
-@Module({ imports: [AuthModule, EventsModule, JobsModule], providers: [StoriesService], exports: [StoriesService], controllers: [StoriesController] })
+@Module({
+  imports: [AuthModule, EventsModule, JobsModule],
+  providers: [StoriesService],
+  exports: [StoriesService],
+  controllers: [StoriesController],
+})
 export class StoriesModule {}
 
 @Injectable()
@@ -22,7 +30,10 @@ export class StoriesJobs {
 }
 
 /** SD-05 scheduled publishing (apps/worker). */
-@Module({ imports: [EventsModule, JobsModule], providers: [StoriesService, StoriesJobs] })
+@Module({
+  imports: [EventsModule, JobsModule],
+  providers: [StoriesService, StoriesJobs],
+})
 export class StoriesWorkerModule {}
 
 /** SD-05 cache invalidation consumer deps (apps/projector). */

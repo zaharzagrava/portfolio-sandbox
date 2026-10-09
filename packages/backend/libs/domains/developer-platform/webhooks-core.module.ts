@@ -11,8 +11,19 @@ import { WebhookDeliverer } from './application/webhook-deliverer.service';
 
 /** Shared SD-30 services (core dashboard, projector router, worker/Lambda delivery). AuthModule provides SecretBox. */
 @Module({
-  imports: [AuthModule, CacheModule, SqsModule, DynamoModule, JobsModule, NotificationsCoreModule],
-  providers: [WebhookEndpointsService, WebhookRouterProjector, WebhookDeliverer],
+  imports: [
+    AuthModule,
+    CacheModule,
+    SqsModule,
+    DynamoModule,
+    JobsModule,
+    NotificationsCoreModule,
+  ],
+  providers: [
+    WebhookEndpointsService,
+    WebhookRouterProjector,
+    WebhookDeliverer,
+  ],
   exports: [WebhookEndpointsService, WebhookRouterProjector, WebhookDeliverer],
 })
 export class WebhooksCoreModule {}

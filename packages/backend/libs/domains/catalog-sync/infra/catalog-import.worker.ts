@@ -1,6 +1,15 @@
-import { Injectable, Logger, OnApplicationBootstrap, OnModuleDestroy } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  OnApplicationBootstrap,
+  OnModuleDestroy,
+} from '@nestjs/common';
 import { TaskQueue } from '@app/infrastructure/sqs/task-queue.port';
-import { CatalogImportService, IMPORT_QUEUE, ShopBusyError } from '../application/catalog-import.service';
+import {
+  CatalogImportService,
+  IMPORT_QUEUE,
+  ShopBusyError,
+} from '../application/catalog-import.service';
 import { OrderExportService } from '@app/domains/orders';
 
 /**
@@ -10,7 +19,9 @@ import { OrderExportService } from '@app/domains/orders';
  * redelivered message resume.
  */
 @Injectable()
-export class CatalogImportWorker implements OnApplicationBootstrap, OnModuleDestroy {
+export class CatalogImportWorker
+  implements OnApplicationBootstrap, OnModuleDestroy
+{
   private readonly logger = new Logger(CatalogImportWorker.name);
   private readonly shutdown = new AbortController();
   private stop?: () => Promise<void>;
@@ -22,7 +33,10 @@ export class CatalogImportWorker implements OnApplicationBootstrap, OnModuleDest
   ) {}
 
   onApplicationBootstrap() {
-    this.stop = this.queue.consume<{ kind: 'import' | 'export'; jobId: string }>(
+    this.stop = this.queue.consume<{
+      kind: 'import' | 'export';
+      jobId: string;
+    }>(
       IMPORT_QUEUE,
       async ({ body }) => {
         try {

@@ -5,7 +5,13 @@ import type { DocumentKind } from './questionnaire';
 export const PROMPT_VERSION = 'kyc-2026-10-02';
 
 export const FIELDS: Record<DocumentKind, readonly string[]> = {
-  BUSINESS_REGISTRATION: ['legalName', 'registrationNumber', 'country', 'registeredAddress', 'issueDate'],
+  BUSINESS_REGISTRATION: [
+    'legalName',
+    'registrationNumber',
+    'country',
+    'registeredAddress',
+    'issueDate',
+  ],
   VAT_CERTIFICATE: ['vatNumber', 'legalName', 'country'],
   BANK_STATEMENT: ['accountHolder', 'iban', 'bankName', 'statementDate'],
 };
@@ -16,9 +22,16 @@ export const SENSITIVE_FIELDS = new Set(['iban']);
 const field = {
   type: 'object',
   properties: {
-    value: { type: ['string', 'null'], description: 'Exactly as printed; null if absent or unreadable. Dates as YYYY-MM-DD, countries as ISO 3166-1 alpha-2.' },
+    value: {
+      type: ['string', 'null'],
+      description:
+        'Exactly as printed; null if absent or unreadable. Dates as YYYY-MM-DD, countries as ISO 3166-1 alpha-2.',
+    },
     confidence: { type: 'string', enum: ['high', 'medium', 'low'] },
-    evidence: { type: ['string', 'null'], description: 'The short verbatim snippet the value was read from.' },
+    evidence: {
+      type: ['string', 'null'],
+      description: 'The short verbatim snippet the value was read from.',
+    },
   },
   required: ['value', 'confidence', 'evidence'],
   additionalProperties: false,
@@ -31,24 +44,53 @@ export function jsonSchemaFor(kind: DocumentKind): Record<string, unknown> {
     properties: {
       documentType: {
         type: 'string',
-        enum: ['BUSINESS_REGISTRATION', 'VAT_CERTIFICATE', 'BANK_STATEMENT', 'OTHER'],
-        description: 'What this document actually is, regardless of what it was uploaded as.',
+        enum: [
+          'BUSINESS_REGISTRATION',
+          'VAT_CERTIFICATE',
+          'BANK_STATEMENT',
+          'OTHER',
+        ],
+        description:
+          'What this document actually is, regardless of what it was uploaded as.',
       },
-      fields: { type: 'object', properties: Object.fromEntries(FIELDS[kind].map((f) => [f, field])), required: [...FIELDS[kind]], additionalProperties: false },
-      legible: { type: 'boolean', description: 'false if the document is blurry, cut off or partially hidden.' },
+      fields: {
+        type: 'object',
+        properties: Object.fromEntries(FIELDS[kind].map((f) => [f, field])),
+        required: [...FIELDS[kind]],
+        additionalProperties: false,
+      },
+      legible: {
+        type: 'boolean',
+        description:
+          'false if the document is blurry, cut off or partially hidden.',
+      },
     },
     required: ['documentType', 'fields', 'legible'],
     additionalProperties: false,
   };
 }
 
-const FieldValue = z.object({ value: z.string().max(500).nullable(), confidence: z.enum(['high', 'medium', 'low']), evidence: z.string().max(1000).nullable() });
+const FieldValue = z.object({
+  value: z.string().max(500).nullable(),
+  confidence: z.enum(['high', 'medium', 'low']),
+  evidence: z.string().max(1000).nullable(),
+});
 
 /** Never trust the model's JSON, even with constrained decoding: re-validate shape and lengths. */
 export const extractionZod = (kind: DocumentKind) =>
   z.object({
-    documentType: z.enum(['BUSINESS_REGISTRATION', 'VAT_CERTIFICATE', 'BANK_STATEMENT', 'OTHER']),
-    fields: z.object(Object.fromEntries(FIELDS[kind].map((f) => [f, FieldValue])) as Record<string, typeof FieldValue>),
+    documentType: z.enum([
+      'BUSINESS_REGISTRATION',
+      'VAT_CERTIFICATE',
+      'BANK_STATEMENT',
+      'OTHER',
+    ]),
+    fields: z.object(
+      Object.fromEntries(FIELDS[kind].map((f) => [f, FieldValue])) as Record<
+        string,
+        typeof FieldValue
+      >,
+    ),
     legible: z.boolean(),
   });
 

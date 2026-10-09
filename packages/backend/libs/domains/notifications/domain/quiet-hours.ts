@@ -25,7 +25,9 @@ export function quietHoursEnd(now: Date, quiet: QuietHours): Date | null {
   const start = toMinutes(quiet.start);
   const end = toMinutes(quiet.end);
   const crossesMidnight = start > end;
-  const inside = crossesMidnight ? minutes >= start || minutes < end : minutes >= start && minutes < end;
+  const inside = crossesMidnight
+    ? minutes >= start || minutes < end
+    : minutes >= start && minutes < end;
   if (!inside) return null;
 
   const [h, m] = quiet.end.split(':').map(Number);

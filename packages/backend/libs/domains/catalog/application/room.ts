@@ -62,18 +62,31 @@ export class Room {
       this.flushTimer ??= setTimeout(() => this.scheduleFlush(), FLUSH_MS);
     });
 
-    this.awareness.on('update', ({ added, updated, removed }: { added: number[]; updated: number[]; removed: number[] }, origin: unknown) => {
-      const member = this.members.get(origin as RoomSocket);
-      if (member) {
-        added.forEach((id) => member.awarenessIds.add(id));
-        removed.forEach((id) => member.awarenessIds.delete(id));
-      }
-      const changed = [...added, ...updated, ...removed];
-      const encoder = encoding.createEncoder();
-      encoding.writeVarUint(encoder, MESSAGE_AWARENESS);
-      encoding.writeVarUint8Array(encoder, awarenessProtocol.encodeAwarenessUpdate(this.awareness, changed));
-      this.broadcast(encoding.toUint8Array(encoder));
-    });
+    this.awareness.on(
+      'update',
+      (
+        {
+          added,
+          updated,
+          removed,
+        }: { added: number[]; updated: number[]; removed: number[] },
+        origin: unknown,
+      ) => {
+        const member = this.members.get(origin as RoomSocket);
+        if (member) {
+          added.forEach((id) => member.awarenessIds.add(id));
+          removed.forEach((id) => member.awarenessIds.delete(id));
+        }
+        const changed = [...added, ...updated, ...removed];
+        const encoder = encoding.createEncoder();
+        encoding.writeVarUint(encoder, MESSAGE_AWARENESS);
+        encoding.writeVarUint8Array(
+          encoder,
+          awarenessProtocol.encodeAwarenessUpdate(this.awareness, changed),
+        );
+        this.broadcast(encoding.toUint8Array(encoder));
+      },
+    );
   }
 
   join(socket: RoomSocket, userId: string, canWrite: boolean) {
@@ -87,7 +100,10 @@ export class Room {
     if (states.length) {
       const aw = encoding.createEncoder();
       encoding.writeVarUint(aw, MESSAGE_AWARENESS);
-      encoding.writeVarUint8Array(aw, awarenessProtocol.encodeAwarenessUpdate(this.awareness, states));
+      encoding.writeVarUint8Array(
+        aw,
+        awarenessProtocol.encodeAwarenessUpdate(this.awareness, states),
+      );
       socket.send(encoding.toUint8Array(aw));
     }
   }
@@ -96,7 +112,11 @@ export class Room {
     const member = this.members.get(socket);
     if (!member) return;
     this.members.delete(socket);
-    awarenessProtocol.removeAwarenessStates(this.awareness, [...member.awarenessIds], null);
+    awarenessProtocol.removeAwarenessStates(
+      this.awareness,
+      [...member.awarenessIds],
+      null,
+    );
   }
 
   /** Access revoked mid-session: close that user's sockets (4003 = forbidden). */
@@ -119,14 +139,20 @@ export class Room {
       const peek = decoding.createDecoder(data);
       decoding.readVarUint(peek);
       const syncType = decoding.readVarUint(peek);
-      if (syncType !== syncProtocol.messageYjsSyncStep1 && !member.canWrite) return; // viewer tried to write
+      if (syncType !== syncProtocol.messageYjsSyncStep1 && !member.canWrite)
+        return; // viewer tried to write
 
       const encoder = encoding.createEncoder();
       encoding.writeVarUint(encoder, MESSAGE_SYNC);
       syncProtocol.readSyncMessage(decoder, encoder, this.doc, socket);
-      if (encoding.length(encoder) > 1) socket.send(encoding.toUint8Array(encoder));
+      if (encoding.length(encoder) > 1)
+        socket.send(encoding.toUint8Array(encoder));
     } else if (type === MESSAGE_AWARENESS) {
-      awarenessProtocol.applyAwarenessUpdate(this.awareness, decoding.readVarUint8Array(decoder), socket);
+      awarenessProtocol.applyAwarenessUpdate(
+        this.awareness,
+        decoding.readVarUint8Array(decoder),
+        socket,
+      );
     }
   }
 
@@ -135,7 +161,8 @@ export class Room {
     clearTimeout(this.flushTimer);
     this.flushTimer = undefined;
     await this.flush();
-    if (!this.failed && this.sinceCompaction > 0) await this.store.compact(this.draftId, this.doc, this.seq);
+    if (!this.failed && this.sinceCompaction > 0)
+      await this.store.compact(this.draftId, this.doc, this.seq);
     for (const socket of this.members.keys()) socket.close(1001, 'room closed');
     this.members.clear();
     this.awareness.destroy();
@@ -161,15 +188,19 @@ export class Room {
       }
     } catch (error) {
       // Seq conflict = another instance is writing this doc (ring changed under us). Stop and let clients reconnect to the owner.
-      this.logger.error(`room ${this.draftId} persistence failed: ${(error as Error).message}`);
+      this.logger.error(
+        `room ${this.draftId} persistence failed: ${(error as Error).message}`,
+      );
       this.failed = true;
-      for (const socket of this.members.keys()) socket.close(4002, 'room moved, reconnect');
+      for (const socket of this.members.keys())
+        socket.close(4002, 'room moved, reconnect');
       this.onFatal(this);
     }
   }
 
   private broadcast(message: Uint8Array, except?: RoomSocket) {
-    for (const socket of this.members.keys()) if (socket !== except) socket.send(message);
+    for (const socket of this.members.keys())
+      if (socket !== except) socket.send(message);
   }
 }
 

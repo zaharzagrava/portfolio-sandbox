@@ -9,7 +9,10 @@ export class BffController {
   constructor(private readonly pages: ProductPageService) {}
 
   @Get('product-page/:id')
-  productPage(@Param('id', ParseUUIDPipe) id: string, @Headers('authorization') auth?: string) {
+  productPage(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Headers('authorization') auth?: string,
+  ) {
     return this.pages.load(id, auth);
   }
 }

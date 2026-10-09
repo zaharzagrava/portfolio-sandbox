@@ -18,6 +18,10 @@ export function shouldRecomputeEarly(
 }
 
 /** ±`spread` relative jitter so keys written together don't expire together (avalanche). */
-export function jitterTtl(ttlMs: number, spread = 0.1, random: () => number = Math.random): number {
+export function jitterTtl(
+  ttlMs: number,
+  spread = 0.1,
+  random: () => number = Math.random,
+): number {
   return Math.round(ttlMs * (1 - spread + 2 * spread * random()));
 }

@@ -1,9 +1,24 @@
-import { BelongsTo, Column, DataType, ForeignKey, Model, PrimaryKey, Table } from 'sequelize-typescript';
+import {
+  BelongsTo,
+  Column,
+  DataType,
+  ForeignKey,
+  Model,
+  PrimaryKey,
+  Table,
+} from 'sequelize-typescript';
 import { Sequelize } from 'sequelize';
 import User from './user.model';
 
-@Table({ modelName: 'FederatedIdentity', tableName: 'FederatedIdentity', timestamps: false })
-export default class FederatedIdentity extends Model<FederatedIdentity, Partial<FederatedIdentity>> {
+@Table({
+  modelName: 'FederatedIdentity',
+  tableName: 'FederatedIdentity',
+  timestamps: false,
+})
+export default class FederatedIdentity extends Model<
+  FederatedIdentity,
+  Partial<FederatedIdentity>
+> {
   @PrimaryKey
   @Column({ type: DataType.UUID, defaultValue: Sequelize.literal('uuidv7()') })
   declare id: string;

@@ -20,7 +20,10 @@ describe('Cart (e2e)', () => {
   let userModel: typeof User;
 
   beforeAll(async () => {
-    const moduleRef = await generateTestingModule([OrdersModule, RateLimitModule, CacheModule, SeedsModule], { stores: ['redis', 'dynamo'] });
+    const moduleRef = await generateTestingModule(
+      [OrdersModule, RateLimitModule, CacheModule, SeedsModule],
+      { stores: ['redis', 'dynamo'] },
+    );
     app = moduleRef.createNestApplication({ rawBody: true });
     app.setGlobalPrefix('api');
     await app.init();
@@ -86,7 +89,7 @@ describe('Cart (e2e)', () => {
   it('merges guest cart into user cart on login', async () => {
     const user = await userModel.create({ email: `test-${v4()}@mail.com` });
     const token = authService.issueTokensFor(user).accessToken.token;
-    
+
     const prodGuest = v4();
     const prodUser = v4();
 
@@ -98,8 +101,9 @@ describe('Cart (e2e)', () => {
       .put(`/api/cart/items/${prodGuest}`)
       .send({ quantity: 3 })
       .expect(200);
-      
-    const setCookie = putGuestRes.headers['set-cookie'] as unknown as string[] | undefined;
+
+    const setCookie = putGuestRes.headers['set-cookie'] as unknown as
+      string[] | undefined;
     const cookies = (setCookie ?? []).map((c) => c.split(';')[0]).join('; ');
 
     // Merge carts
@@ -114,7 +118,7 @@ describe('Cart (e2e)', () => {
       expect.arrayContaining([
         expect.objectContaining({ productId: prodGuest, quantity: 3 }),
         expect.objectContaining({ productId: prodUser, quantity: 1 }),
-      ])
+      ]),
     );
   });
 });

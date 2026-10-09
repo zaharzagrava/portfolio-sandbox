@@ -22,7 +22,13 @@ describe('Topic streams (e2e, real Redis)', () => {
   beforeAll(async () => {
     const moduleRef = await generateTestingModule(
       // The topics these tests subscribe to are defined by their owning domains (auction:, stream:, user:; debt D-3).
-      [TopicStreamModule, IdentityTopicsModule, AuctionTopicsModule, LaunchEventTopicsModule, SeedsModule],
+      [
+        TopicStreamModule,
+        IdentityTopicsModule,
+        AuctionTopicsModule,
+        LaunchEventTopicsModule,
+        SeedsModule,
+      ],
       { stores: ['redis'] },
     );
     app = moduleRef.createNestApplication();
@@ -44,7 +50,8 @@ describe('Topic streams (e2e, real Redis)', () => {
   it('replays exactly the events missed since Last-Event-ID, then continues live', async () => {
     const topic = `auction:${v4().slice(0, 8)}` as const;
     const ids: string[] = [];
-    for (let price = 1; price <= 5; price++) ids.push(await publisher.publish(topic, 'price', { price }));
+    for (let price = 1; price <= 5; price++)
+      ids.push(await publisher.publish(topic, 'price', { price }));
 
     // Client saw up to event #2, reconnects.
     const { events } = await readSse(`${baseUrl}/streams?topics=${topic}`, {
@@ -52,7 +59,9 @@ describe('Topic streams (e2e, real Redis)', () => {
       count: 3,
     });
 
-    expect(events.map((e) => JSON.parse(e.data!).data.price)).toEqual([3, 4, 5]);
+    expect(events.map((e) => JSON.parse(e.data!).data.price)).toEqual([
+      3, 4, 5,
+    ]);
     expect(events.every((e) => e.event === 'price')).toBe(true);
     // The cursor in `id:` lets the next reconnect resume after #5.
     expect(events[2].id).toBe(`${topic}~${ids[4]}`);
@@ -66,12 +75,19 @@ describe('Topic streams (e2e, real Redis)', () => {
     await publisher.publish(topic, 'comment', { text: 'second' });
 
     const { events } = await reading;
-    expect(events.map((e) => JSON.parse(e.data!).data.text)).toEqual(['first', 'second']);
+    expect(events.map((e) => JSON.parse(e.data!).data.text)).toEqual([
+      'first',
+      'second',
+    ]);
   });
 
-  it("private user topics: owner allowed, others 403, anonymous 403", async () => {
-    const [alice] = await seedsService.createTreelike([{ __type__: TableName.User, email: `alice-${v4()}@mail.com` }]);
-    const [bob] = await seedsService.createTreelike([{ __type__: TableName.User, email: `bob-${v4()}@mail.com` }]);
+  it('private user topics: owner allowed, others 403, anonymous 403', async () => {
+    const [alice] = await seedsService.createTreelike([
+      { __type__: TableName.User, email: `alice-${v4()}@mail.com` },
+    ]);
+    const [bob] = await seedsService.createTreelike([
+      { __type__: TableName.User, email: `bob-${v4()}@mail.com` },
+    ]);
     const auth = app.get(AuthService);
     const bobToken = auth.issueTokensFor(bob).accessToken.token;
     const aliceToken = auth.issueTokensFor(alice).accessToken.token;
@@ -83,7 +99,10 @@ describe('Topic streams (e2e, real Redis)', () => {
     });
     expect(asBob.status).toBe(403);
 
-    const anonymous = await readSse(`${baseUrl}/streams?topics=user:${alice.id}`, { count: 1, timeoutMs: 2_000 });
+    const anonymous = await readSse(
+      `${baseUrl}/streams?topics=user:${alice.id}`,
+      { count: 1, timeoutMs: 2_000 },
+    );
     expect(anonymous.status).toBe(403);
 
     const reading = readSse(`${baseUrl}/streams?topics=user:${alice.id}`, {
@@ -91,9 +110,13 @@ describe('Topic streams (e2e, real Redis)', () => {
       count: 1,
     });
     await new Promise((r) => setTimeout(r, 300));
-    await publisher.publish(`user:${alice.id}`, 'notification', { title: 'Your order shipped' });
+    await publisher.publish(`user:${alice.id}`, 'notification', {
+      title: 'Your order shipped',
+    });
     const asAlice = await reading;
     expect(asAlice.status).toBe(200);
-    expect(JSON.parse(asAlice.events[0].data!).data.title).toBe('Your order shipped');
+    expect(JSON.parse(asAlice.events[0].data!).data.title).toBe(
+      'Your order shipped',
+    );
   });
 });

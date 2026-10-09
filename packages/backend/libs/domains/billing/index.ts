@@ -11,7 +11,10 @@ export { default as PriceModel } from './infra/models/price.model';
 export { default as SubscriptionModel } from './infra/models/subscription.model';
 export { BillingWorkerModule } from './billing-worker.module';
 export { BillingModule } from './billing.module';
-export { EntitlementsService, RequiresShopEntitlement } from './application/entitlements.service';
+export {
+  EntitlementsService,
+  RequiresShopEntitlement,
+} from './application/entitlements.service';
 export { InvoicePaymentFailed } from './application/events/billing-events';
 export { UsageService } from './application/usage.service';
 export { UsageProjector } from './infra/usage.projector';

@@ -9,12 +9,13 @@ import { Reflector } from '@nestjs/core';
 import { Role } from '../../infra/models/user.model';
 
 export const ROLES_METADATA_KEY = 'firewall:roles';
-export const Roles = (...roles: Role[]) => SetMetadata(ROLES_METADATA_KEY, roles);
+export const Roles = (...roles: Role[]) =>
+  SetMetadata(ROLES_METADATA_KEY, roles);
 
 /** Runs after UserAuthGuard, so `request.user` is already populated. */
 @Injectable()
 export class RolesGuard implements CanActivate {
-  constructor(private readonly reflector: Reflector) { }
+  constructor(private readonly reflector: Reflector) {}
 
   canActivate(context: ExecutionContext): boolean {
     const roles = this.reflector.getAllAndOverride<Role[] | undefined>(
@@ -26,7 +27,9 @@ export class RolesGuard implements CanActivate {
 
     const user = context.switchToHttp().getRequest().user;
     if (!user || !roles.includes(user.role)) {
-      throw new ForbiddenException(`Requires one of roles: ${roles.join(', ')}`);
+      throw new ForbiddenException(
+        `Requires one of roles: ${roles.join(', ')}`,
+      );
     }
 
     return true;

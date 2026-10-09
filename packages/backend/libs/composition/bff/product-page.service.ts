@@ -30,17 +30,71 @@ export class ProductPageService {
   constructor(private readonly core: CoreClient) {}
 
   async load(productId: string, auth?: string): Promise<ProductPage> {
-    const product = await this.core.product(productId, auth).catch((e: { status?: number }) => {
-      if (e.status === 404) throw new NotFoundException('Product not found');
-      throw e;
-    });
+    const product = await this.core
+      .product(productId, auth)
+      .catch((e: { status?: number }) => {
+        if (e.status === 404) throw new NotFoundException('Product not found');
+        throw e;
+      });
 
     const sections: Section<unknown>[] = [
-      { name: 'shop', required: false, timeoutMs: 300, load: async () => (product.shopId ? (await this.core.shops([product.shopId]))[0] : null) },
-      { name: 'recommendations', required: false, timeoutMs: 300, load: (signal) => this.core.get(`/products/${productId}/recommendations?limit=8`, { timeoutMs: 300, signal }) },
-      { name: 'trending', required: false, timeoutMs: 200, load: (signal) => this.core.get(`/trending?category=${encodeURIComponent(product.category)}`, { timeoutMs: 200, signal }) },
-      { name: 'flags', required: false, timeoutMs: 150, load: async (signal) => (await this.core.get<{ flags: Record<string, unknown> }>(`/flags`, { auth, timeoutMs: 150, signal })).flags },
-      ...(auth ? [{ name: 'chatUnread', required: false, timeoutMs: 200, load: async (signal: AbortSignal) => (await this.core.get<{ unread: number }[]>(`/chat/unread`, { auth, timeoutMs: 200, signal })).reduce((s, c) => s + c.unread, 0) }] : []),
+      {
+        name: 'shop',
+        required: false,
+        timeoutMs: 300,
+        load: async () =>
+          product.shopId ? (await this.core.shops([product.shopId]))[0] : null,
+      },
+      {
+        name: 'recommendations',
+        required: false,
+        timeoutMs: 300,
+        load: (signal) =>
+          this.core.get(`/products/${productId}/recommendations?limit=8`, {
+            timeoutMs: 300,
+            signal,
+          }),
+      },
+      {
+        name: 'trending',
+        required: false,
+        timeoutMs: 200,
+        load: (signal) =>
+          this.core.get(
+            `/trending?category=${encodeURIComponent(product.category)}`,
+            { timeoutMs: 200, signal },
+          ),
+      },
+      {
+        name: 'flags',
+        required: false,
+        timeoutMs: 150,
+        load: async (signal) =>
+          (
+            await this.core.get<{ flags: Record<string, unknown> }>(`/flags`, {
+              auth,
+              timeoutMs: 150,
+              signal,
+            })
+          ).flags,
+      },
+      ...(auth
+        ? [
+            {
+              name: 'chatUnread',
+              required: false,
+              timeoutMs: 200,
+              load: async (signal: AbortSignal) =>
+                (
+                  await this.core.get<{ unread: number }[]>(`/chat/unread`, {
+                    auth,
+                    timeoutMs: 200,
+                    signal,
+                  })
+                ).reduce((s, c) => s + c.unread, 0),
+            },
+          ]
+        : []),
     ];
 
     const errors: ProductPage['errors'] = [];
@@ -51,17 +105,25 @@ export class ProductPageService {
         try {
           return await Promise.race([
             section.load(controller.signal),
-            new Promise((_, reject) => controller.signal.addEventListener('abort', () => reject(new Error(`timeout after ${section.timeoutMs} ms`)))),
+            new Promise((_, reject) =>
+              controller.signal.addEventListener('abort', () =>
+                reject(new Error(`timeout after ${section.timeoutMs} ms`)),
+              ),
+            ),
           ]);
         } catch (error) {
-          errors.push({ section: section.name, reason: (error as Error).message });
+          errors.push({
+            section: section.name,
+            reason: (error as Error).message,
+          });
           return null;
         } finally {
           clearTimeout(timer);
         }
       }),
     );
-    const value = (name: string) => results[sections.findIndex((s) => s.name === name)] ?? null;
+    const value = (name: string) =>
+      results[sections.findIndex((s) => s.name === name)] ?? null;
     return {
       product,
       shop: value('shop') as ProductPage['shop'],

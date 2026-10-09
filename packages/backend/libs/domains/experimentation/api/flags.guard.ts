@@ -1,4 +1,12 @@
-import { applyDecorators, CanActivate, ExecutionContext, Injectable, NotFoundException, SetMetadata, UseGuards } from '@nestjs/common';
+import {
+  applyDecorators,
+  CanActivate,
+  ExecutionContext,
+  Injectable,
+  NotFoundException,
+  SetMetadata,
+  UseGuards,
+} from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { FlagsClient } from '../infra/flags.client';
 import { contextFromRequest } from '../domain/flags-context';
@@ -15,9 +23,17 @@ export class FlagGuard implements CanActivate {
 
   canActivate(ctx: ExecutionContext): boolean {
     const key = this.reflector.get<string>(FLAG, ctx.getHandler());
-    if (key && !this.flags.isEnabled(key, contextFromRequest(ctx.switchToHttp().getRequest()))) throw new NotFoundException();
+    if (
+      key &&
+      !this.flags.isEnabled(
+        key,
+        contextFromRequest(ctx.switchToHttp().getRequest()),
+      )
+    )
+      throw new NotFoundException();
     return true;
   }
 }
 
-export const RequireFlag = (key: string) => applyDecorators(SetMetadata(FLAG, key), UseGuards(FlagGuard));
+export const RequireFlag = (key: string) =>
+  applyDecorators(SetMetadata(FLAG, key), UseGuards(FlagGuard));

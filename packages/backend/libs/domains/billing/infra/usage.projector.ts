@@ -21,7 +21,13 @@ export class UsageProjector implements Projector {
     const rows = events
       .map((e) => UsageRecorded.match(e))
       .filter((e): e is NonNullable<typeof e> => !!e)
-      .map((e) => ({ event_id: e.eventId, subject_id: e.aggregateId, metric: e.payload.metric, quantity: e.payload.quantity, ts: e.payload.ts.replace('Z', '') }));
+      .map((e) => ({
+        event_id: e.eventId,
+        subject_id: e.aggregateId,
+        metric: e.payload.metric,
+        quantity: e.payload.quantity,
+        ts: e.payload.ts.replace('Z', ''),
+      }));
     await this.sink.insert('usage_events', rows);
   }
 }

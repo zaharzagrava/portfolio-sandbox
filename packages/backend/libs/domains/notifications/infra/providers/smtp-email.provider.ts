@@ -15,7 +15,9 @@ export class SmtpEmailProvider extends ChannelProvider {
   ) {
     super();
     // Pooled connections (reused across messages) via URL options: smtp://host:port?pool=true&maxConnections=5
-    this.transport = createTransport(`${url}${url.includes('?') ? '&' : '?'}pool=true&maxConnections=5`);
+    this.transport = createTransport(
+      `${url}${url.includes('?') ? '&' : '?'}pool=true&maxConnections=5`,
+    );
   }
 
   async send(message: DeliveryMessage): Promise<SendResult> {
@@ -32,7 +34,8 @@ export class SmtpEmailProvider extends ChannelProvider {
     } catch (error) {
       // 5xx SMTP reply = permanent (mailbox doesn't exist); 4xx / network = transient.
       const code = (error as { responseCode?: number }).responseCode;
-      if (code && code >= 500 && code < 600) throw new PermanentDeliveryError(`SMTP ${code}`, message.to);
+      if (code && code >= 500 && code < 600)
+        throw new PermanentDeliveryError(`SMTP ${code}`, message.to);
       throw error;
     }
   }

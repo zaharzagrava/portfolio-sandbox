@@ -1,5 +1,9 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
-import { CommerceProvider, NormalizedProduct, Page } from '../domain/provider.port';
+import {
+  CommerceProvider,
+  NormalizedProduct,
+  Page,
+} from '../domain/provider.port';
 
 export interface FakeProduct {
   id: string;
@@ -26,12 +30,22 @@ export class FakeProvider implements CommerceProvider {
     this.products.set(String(p.id), p);
   }
 
-  async listUpdatedSince(since: Date | null, cursor: string | null): Promise<Page> {
+  async listUpdatedSince(
+    since: Date | null,
+    cursor: string | null,
+  ): Promise<Page> {
     const all = [...this.products.values()]
       .filter((p) => !since || String(p.modified) >= since.toISOString())
-      .sort((a, b) => String(a.modified).localeCompare(String(b.modified)) || String(a.id).localeCompare(String(b.id)));
+      .sort(
+        (a, b) =>
+          String(a.modified).localeCompare(String(b.modified)) ||
+          String(a.id).localeCompare(String(b.id)),
+      );
     const start = cursor ? Number(cursor) : 0;
-    return { items: all.slice(start, start + 2), nextCursor: start + 2 < all.length ? String(start + 2) : null };
+    return {
+      items: all.slice(start, start + 2),
+      nextCursor: start + 2 < all.length ? String(start + 2) : null,
+    };
   }
 
   async get(externalId: string) {
@@ -57,7 +71,11 @@ export class FakeProvider implements CommerceProvider {
     this.stockWrites.push({ id: product.externalId, qty: stock });
     const p = this.products.get(product.externalId) as FakeProduct;
     // Like real providers, a write bumps updated_at → it WILL come back in the next incremental pull (the echo).
-    this.products.set(product.externalId, { ...p, qty: stock, modified: new Date().toISOString() });
+    this.products.set(product.externalId, {
+      ...p,
+      qty: stock,
+      modified: new Date().toISOString(),
+    });
   }
 
   async listAllIds() {
@@ -66,7 +84,9 @@ export class FakeProvider implements CommerceProvider {
 
   verifyWebhook(rawBody: Buffer, headers: Record<string, string | undefined>) {
     const given = Buffer.from(headers['x-fake-signature'] ?? '');
-    const expected = Buffer.from(createHmac('sha256', this.secret).update(rawBody).digest('hex'));
+    const expected = Buffer.from(
+      createHmac('sha256', this.secret).update(rawBody).digest('hex'),
+    );
     return given.length === expected.length && timingSafeEqual(given, expected);
   }
 }

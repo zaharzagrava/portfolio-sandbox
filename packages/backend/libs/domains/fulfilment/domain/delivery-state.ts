@@ -1,4 +1,10 @@
-export type DeliveryStatus = 'REQUESTED' | 'OFFERED' | 'ASSIGNED' | 'PICKED_UP' | 'DELIVERED' | 'CANCELLED';
+export type DeliveryStatus =
+  | 'REQUESTED'
+  | 'OFFERED'
+  | 'ASSIGNED'
+  | 'PICKED_UP'
+  | 'DELIVERED'
+  | 'CANCELLED';
 
 export type DeliveryCommand =
   | { type: 'offer'; courierId: string }
@@ -18,7 +24,10 @@ const assertNever = (x: never): never => {
  * read-then-write in Node, decides whether a transition happens (two
  * couriers accepting the same offer → exactly one row updated).
  */
-export function transition(command: DeliveryCommand): { from: DeliveryStatus[]; to: DeliveryStatus } {
+export function transition(command: DeliveryCommand): {
+  from: DeliveryStatus[];
+  to: DeliveryStatus;
+} {
   switch (command.type) {
     case 'offer':
       return { from: ['REQUESTED'], to: 'OFFERED' };

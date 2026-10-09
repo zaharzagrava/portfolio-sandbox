@@ -4,4 +4,9 @@
  * it by hand when a new export is needed. Models exported here are transitional (IX.4 debt): other
  * domains must stop injecting them.
  */
-export { StoriesModule, StoriesWorkerModule, StoryCacheInvalidator, StoryCacheModule } from './stories.module';
+export {
+  StoriesModule,
+  StoriesWorkerModule,
+  StoryCacheInvalidator,
+  StoryCacheModule,
+} from './stories.module';

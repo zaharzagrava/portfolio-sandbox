@@ -1,4 +1,9 @@
-import { chiSquarePValue, normalCdf, srmCheck, twoProportionZTest } from './stats';
+import {
+  chiSquarePValue,
+  normalCdf,
+  srmCheck,
+  twoProportionZTest,
+} from './stats';
 
 /** Experiment readouts depend on these; checked against textbook values. */
 describe('experiment statistics', () => {
@@ -15,10 +20,18 @@ describe('experiment statistics', () => {
   });
 
   it('z-test: 10% vs 12% on 10k each is significant; 10% vs 10.2% is not', () => {
-    const significant = twoProportionZTest({ conversions: 1_000, exposures: 10_000 }, { conversions: 1_200, exposures: 10_000 });
+    const significant = twoProportionZTest(
+      { conversions: 1_000, exposures: 10_000 },
+      { conversions: 1_200, exposures: 10_000 },
+    );
     expect(significant.pValue).toBeLessThan(0.001);
     expect(significant.lift).toBeCloseTo(0.2, 6);
-    expect(twoProportionZTest({ conversions: 1_000, exposures: 10_000 }, { conversions: 1_020, exposures: 10_000 }).pValue).toBeGreaterThan(0.5);
+    expect(
+      twoProportionZTest(
+        { conversions: 1_000, exposures: 10_000 },
+        { conversions: 1_020, exposures: 10_000 },
+      ).pValue,
+    ).toBeGreaterThan(0.5);
   });
 
   it('SRM: 60/40 on a 50/50 split is flagged, 5,030/4,970 is not', () => {

@@ -10,7 +10,12 @@ import { AutocompleteController } from './api/autocomplete.controller';
 /** SD-12 serving side (core). Global: the product search endpoint logs queries through it. */
 @Global()
 @Module({
-  imports: [AuthModule, ElasticsearchModule, KafkaProducerModule, StorageModule],
+  imports: [
+    AuthModule,
+    ElasticsearchModule,
+    KafkaProducerModule,
+    StorageModule,
+  ],
   providers: [AutocompleteService, SearchQueryLogger],
   exports: [AutocompleteService, SearchQueryLogger],
   controllers: [AutocompleteController],

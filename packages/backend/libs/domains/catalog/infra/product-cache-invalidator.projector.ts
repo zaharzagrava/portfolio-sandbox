@@ -19,6 +19,8 @@ export class ProductCacheInvalidator implements Projector {
   constructor(private readonly cache: CacheService) {}
 
   async project(events: EventEnvelope[]): Promise<void> {
-    await this.cache.invalidate([...new Set(events.map((e) => productCacheKey(e.aggregateId)))]);
+    await this.cache.invalidate([
+      ...new Set(events.map((e) => productCacheKey(e.aggregateId))),
+    ]);
   }
 }

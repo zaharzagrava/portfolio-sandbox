@@ -1,4 +1,12 @@
-import { BadRequestException, Controller, Get, Header, Param, ParseUUIDPipe, Query } from '@nestjs/common';
+import {
+  BadRequestException,
+  Controller,
+  Get,
+  Header,
+  Param,
+  ParseUUIDPipe,
+  Query,
+} from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Firewall } from '@app/domains/identity';
 import { ShopScoped } from '@app/domains/tenancy';
@@ -24,13 +32,28 @@ export class LeaderboardsController {
   @Firewall({ anonymous: true })
   @Header('Cache-Control', 'public, max-age=10, s-maxage=30')
   @Get('leaderboards')
-  top(@Query('period') period?: string, @Query('id') id?: string, @Query('category') category?: string, @Query('limit') limit = '20') {
-    return this.leaderboards.top(kindOf(period), id, category, Math.min(Math.max(Number(limit) || 20, 1), 100));
+  top(
+    @Query('period') period?: string,
+    @Query('id') id?: string,
+    @Query('category') category?: string,
+    @Query('limit') limit = '20',
+  ) {
+    return this.leaderboards.top(
+      kindOf(period),
+      id,
+      category,
+      Math.min(Math.max(Number(limit) || 20, 1), 100),
+    );
   }
 
   @Firewall({ anonymous: true })
   @Get('leaderboards/shops/:shopId')
-  rank(@Param('shopId', ParseUUIDPipe) shopId: string, @Query('period') period?: string, @Query('id') id?: string, @Query('category') category?: string) {
+  rank(
+    @Param('shopId', ParseUUIDPipe) shopId: string,
+    @Query('period') period?: string,
+    @Query('id') id?: string,
+    @Query('category') category?: string,
+  ) {
     return this.leaderboards.rank(shopId, kindOf(period), id, category);
   }
 

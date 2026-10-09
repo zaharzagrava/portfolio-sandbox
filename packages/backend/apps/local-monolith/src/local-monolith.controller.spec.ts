@@ -11,7 +11,9 @@ describe('LocalMonolithController', () => {
       providers: [LocalMonolithService],
     }).compile();
 
-    localMonolithController = app.get<LocalMonolithController>(LocalMonolithController);
+    localMonolithController = app.get<LocalMonolithController>(
+      LocalMonolithController,
+    );
   });
 
   describe('root', () => {

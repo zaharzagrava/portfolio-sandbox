@@ -18,7 +18,10 @@ import { ProductModel as Product } from '@app/domains/catalog';
   timestamps: true,
   tableName: 'BisOrderItem',
 })
-export default class BisOrderItem extends Model<BisOrderItem, Partial<BisOrderItem>> {
+export default class BisOrderItem extends Model<
+  BisOrderItem,
+  Partial<BisOrderItem>
+> {
   @PrimaryKey
   @Column({ type: DataType.UUID, defaultValue: Sequelize.literal('uuidv7()') })
   declare id: string;

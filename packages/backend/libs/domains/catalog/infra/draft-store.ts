@@ -1,7 +1,17 @@
-import { ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectConnection } from '@nestjs/sequelize';
 import { QueryTypes, Sequelize } from 'sequelize';
-import { BatchWriteCommand, PutCommand, QueryCommand, QueryCommandOutput } from '@aws-sdk/lib-dynamodb';
+import {
+  BatchWriteCommand,
+  PutCommand,
+  QueryCommand,
+  QueryCommandOutput,
+} from '@aws-sdk/lib-dynamodb';
 import { buffer } from 'node:stream/consumers';
 import * as Y from 'yjs';
 import { DynamoService } from '@app/infrastructure/dynamo/dynamo.service';
@@ -33,14 +43,26 @@ export class DraftStore {
   ) {}
 
   async load(draftId: string): Promise<LoadedDoc> {
-    const [draft] = await this.sequelize.query<{ snapshotKey: string | null; snapshotSeq: string }>(`SELECT "snapshotKey", "snapshotSeq" FROM "ListingDraft" WHERE id = :draftId`, {
-      type: QueryTypes.SELECT,
-      replacements: { draftId },
-    });
+    const [draft] = await this.sequelize.query<{
+      snapshotKey: string | null;
+      snapshotSeq: string;
+    }>(
+      `SELECT "snapshotKey", "snapshotSeq" FROM "ListingDraft" WHERE id = :draftId`,
+      {
+        type: QueryTypes.SELECT,
+        replacements: { draftId },
+      },
+    );
     if (!draft) throw new NotFoundException('Draft not found');
 
     const doc = new Y.Doc();
-    if (draft.snapshotKey) Y.applyUpdate(doc, new Uint8Array(await buffer(await this.storage.getStream(draft.snapshotKey))));
+    if (draft.snapshotKey)
+      Y.applyUpdate(
+        doc,
+        new Uint8Array(
+          await buffer(await this.storage.getStream(draft.snapshotKey)),
+        ),
+      );
     let seq = Number(draft.snapshotSeq);
     let tailLength = 0;
     let startKey: QueryCommandOutput['LastEvaluatedKey'];
@@ -49,7 +71,10 @@ export class DraftStore {
         new QueryCommand({
           TableName: this.table(),
           KeyConditionExpression: 'PK = :pk AND SK > :seq',
-          ExpressionAttributeValues: { ':pk': pk(draftId), ':seq': Number(draft.snapshotSeq) },
+          ExpressionAttributeValues: {
+            ':pk': pk(draftId),
+            ':seq': Number(draft.snapshotSeq),
+          },
           ExclusiveStartKey: startKey,
           ConsistentRead: true,
         }),
@@ -69,13 +94,22 @@ export class DraftStore {
    * one doc during a ring change), this fails loudly - the caller reloads
    * instead of silently forking the log.
    */
-  async append(draftId: string, seq: number, update: Uint8Array): Promise<void> {
+  async append(
+    draftId: string,
+    seq: number,
+    update: Uint8Array,
+  ): Promise<void> {
     try {
       await this.dynamo.doc.send(
-        new PutCommand({ TableName: this.table(), Item: { PK: pk(draftId), SK: seq, update, at: Date.now() }, ConditionExpression: 'attribute_not_exists(SK)' }),
+        new PutCommand({
+          TableName: this.table(),
+          Item: { PK: pk(draftId), SK: seq, update, at: Date.now() },
+          ConditionExpression: 'attribute_not_exists(SK)',
+        }),
       );
     } catch (error) {
-      if ((error as Error).name === 'ConditionalCheckFailedException') throw new ConflictException(`seq ${seq} of ${draftId} already written`);
+      if ((error as Error).name === 'ConditionalCheckFailedException')
+        throw new ConflictException(`seq ${seq} of ${draftId} already written`);
       throw error;
     }
   }
@@ -83,7 +117,11 @@ export class DraftStore {
   /** Snapshot the full state at `seq`, move the pointer forward (never back), trim the log. */
   async compact(draftId: string, doc: Y.Doc, seq: number): Promise<void> {
     const key = `drafts/${draftId}/snapshots/${String(seq).padStart(12, '0')}.ybin`;
-    await this.storage.put(key, Buffer.from(Y.encodeStateAsUpdate(doc)), 'application/octet-stream');
+    await this.storage.put(
+      key,
+      Buffer.from(Y.encodeStateAsUpdate(doc)),
+      'application/octet-stream',
+    );
     const [, meta] = await this.sequelize.query(
       `UPDATE "ListingDraft" SET "snapshotKey" = :key, "snapshotSeq" = :seq, "updatedAt" = now() WHERE id = :draftId AND "snapshotSeq" < :seq`,
       { replacements: { key, seq, draftId } },
@@ -107,17 +145,34 @@ export class DraftStore {
     } while (startKey);
     for (let i = 0; i < doomed.length; i += 25) {
       await this.dynamo.doc.send(
-        new BatchWriteCommand({ RequestItems: { [this.table()]: doomed.slice(i, i + 25).map((sk) => ({ DeleteRequest: { Key: { PK: pk(draftId), SK: sk } } })) } }),
+        new BatchWriteCommand({
+          RequestItems: {
+            [this.table()]: doomed
+              .slice(i, i + 25)
+              .map((sk) => ({
+                DeleteRequest: { Key: { PK: pk(draftId), SK: sk } },
+              })),
+          },
+        }),
       );
     }
-    this.logger.debug(`compacted ${draftId} at seq ${seq} (${doomed.length} log items trimmed)`);
+    this.logger.debug(
+      `compacted ${draftId} at seq ${seq} (${doomed.length} log items trimmed)`,
+    );
   }
 
   /** Initial content (e.g. from an existing product) as the seq-0 snapshot. */
   async seed(draftId: string, doc: Y.Doc): Promise<void> {
     const key = `drafts/${draftId}/snapshots/${'0'.repeat(12)}.ybin`;
-    await this.storage.put(key, Buffer.from(Y.encodeStateAsUpdate(doc)), 'application/octet-stream');
-    await this.sequelize.query(`UPDATE "ListingDraft" SET "snapshotKey" = :key WHERE id = :draftId`, { replacements: { key, draftId } });
+    await this.storage.put(
+      key,
+      Buffer.from(Y.encodeStateAsUpdate(doc)),
+      'application/octet-stream',
+    );
+    await this.sequelize.query(
+      `UPDATE "ListingDraft" SET "snapshotKey" = :key WHERE id = :draftId`,
+      { replacements: { key, draftId } },
+    );
   }
 
   private table() {

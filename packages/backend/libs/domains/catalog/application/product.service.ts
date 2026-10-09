@@ -9,7 +9,11 @@ import Product from '../infra/models/product.model';
 import { CacheService } from '@app/infrastructure/cache/cache.service';
 import { RedisService } from '@app/infrastructure/redis/redis.service';
 import { WriteBehindCounter } from '@app/infrastructure/cache/write-behind-counter';
-import { PRODUCT_VIEWS_COUNTER, ProductDetailDto, productCacheKey } from '../infra/product-cache';
+import {
+  PRODUCT_VIEWS_COUNTER,
+  ProductDetailDto,
+  productCacheKey,
+} from '../infra/product-cache';
 import {
   CreateProductDto,
   ProductRawDto,
@@ -46,9 +50,29 @@ export class ProductService {
       async () => {
         const row = await this.productModel.findByPk(id, {
           raw: true,
-          attributes: ['id', 'sellerId', 'title', 'description', 'brand', 'category', 'price', 'rating', 'tags', 'quantity', 'version', 'viewCount'],
+          attributes: [
+            'id',
+            'sellerId',
+            'title',
+            'description',
+            'brand',
+            'category',
+            'price',
+            'rating',
+            'tags',
+            'quantity',
+            'version',
+            'viewCount',
+          ],
         });
-        return row ? { ...row, price: Number(row.price), viewCount: Number(row.viewCount), inStock: row.quantity > 0 } : null;
+        return row
+          ? {
+              ...row,
+              price: Number(row.price),
+              viewCount: Number(row.viewCount),
+              inStock: row.quantity > 0,
+            }
+          : null;
       },
       { ttlMs: 60_000, swrMs: 5 * 60_000, negativeTtlMs: 10_000 },
     );

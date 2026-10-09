@@ -29,7 +29,6 @@ export enum Environment {
 
 export const Environments = Object.values(Environment);
 
-
 export class TimestampsFields {
   @ApiProperty()
   createdAt: Date;
@@ -41,12 +40,14 @@ export class TimestampsFields {
   deletedAt: Date | null;
 }
 
+export class DeletableTimestampsFields extends PickType(TimestampsFields, [
+  'createdAt',
+  'updatedAt',
+]) {}
 
-export class DeletableTimestampsFields extends PickType(TimestampsFields, ['createdAt', 'updatedAt']) {
-}
-
-export class ImmutableTimestampsFields extends PickType(TimestampsFields, ['createdAt']) {
-}
+export class ImmutableTimestampsFields extends PickType(TimestampsFields, [
+  'createdAt',
+]) {}
 
 export interface FileData {
   filename: string;

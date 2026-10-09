@@ -27,9 +27,7 @@ export enum ChatChannelMemberStatus {
   BANNED = 'BANNED',
 }
 
-export const ChatChannelMemberStatuses = Object.values(
-  ChatChannelMemberStatus,
-);
+export const ChatChannelMemberStatuses = Object.values(ChatChannelMemberStatus);
 
 export enum ChatChannelMemberScope {
   WithAll = 'WithAll',

@@ -16,10 +16,13 @@ export class DeliveryTopics implements OnModuleInit {
       prefix: 'delivery',
       policy: async (viewer, _topic, deliveryId) => {
         if (!viewer.userId) return false;
-        const rows = await this.sequelize.query(`SELECT 1 FROM "Delivery" WHERE id = :deliveryId AND (:userId IN ("buyerId", "courierId"))`, {
-          type: QueryTypes.SELECT,
-          replacements: { deliveryId, userId: viewer.userId },
-        });
+        const rows = await this.sequelize.query(
+          `SELECT 1 FROM "Delivery" WHERE id = :deliveryId AND (:userId IN ("buyerId", "courierId"))`,
+          {
+            type: QueryTypes.SELECT,
+            replacements: { deliveryId, userId: viewer.userId },
+          },
+        );
         return rows.length > 0;
       },
     });

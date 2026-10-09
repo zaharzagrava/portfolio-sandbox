@@ -3,7 +3,9 @@ import { LedgerAccountId, SystemAccount } from '../api/ledger.dto';
 
 @Injectable()
 export class BisUtilsService {
-  public getMerchantAccountId = (merchantId: string | number): LedgerAccountId => {
+  public getMerchantAccountId = (
+    merchantId: string | number,
+  ): LedgerAccountId => {
     return `MERCHANT_${merchantId}`;
   };
 

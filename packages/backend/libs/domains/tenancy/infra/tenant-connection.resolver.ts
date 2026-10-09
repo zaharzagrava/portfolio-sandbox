@@ -19,7 +19,8 @@ export class TenantConnectionResolver implements OnModuleDestroy {
 
   constructor(
     @InjectConnection() private readonly pooled: Sequelize,
-    @InjectModel(ShopDirectory) private readonly directory: typeof ShopDirectory,
+    @InjectModel(ShopDirectory)
+    private readonly directory: typeof ShopDirectory,
     private readonly cache: CacheService,
   ) {
     this.cellUrls = JSON.parse(process.env.TENANT_CELLS ?? '{}');
@@ -29,7 +30,9 @@ export class TenantConnectionResolver implements OnModuleDestroy {
     return (
       (await this.cache.getOrLoad(
         `shop-cell:v1:${shopId}`,
-        async () => (await this.directory.findByPk(shopId, { raw: true }))?.cell ?? 'pooled',
+        async () =>
+          (await this.directory.findByPk(shopId, { raw: true }))?.cell ??
+          'pooled',
         { ttlMs: 300_000, l1: 'always', l1TtlMs: 30_000 },
       )) ?? 'pooled'
     );
@@ -40,7 +43,11 @@ export class TenantConnectionResolver implements OnModuleDestroy {
     if (cell === 'pooled' || !this.cellUrls[cell]) return this.pooled;
     let connection = this.cells.get(cell);
     if (!connection) {
-      connection = new Sequelize(this.cellUrls[cell], { dialect: 'postgres', logging: false, pool: { max: 10 } });
+      connection = new Sequelize(this.cellUrls[cell], {
+        dialect: 'postgres',
+        logging: false,
+        pool: { max: 10 },
+      });
       this.cells.set(cell, connection);
     }
     return connection;

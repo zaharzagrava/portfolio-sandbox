@@ -211,7 +211,12 @@ describe('load shedding (SHED)', () => {
     const source = new FakeLagSource();
     const app = await boot({ source });
     source.emit(5_000);
-    for (const path of ['/health/live', '/health/ready', '/health/startup', '/metrics']) {
+    for (const path of [
+      '/health/live',
+      '/health/ready',
+      '/health/startup',
+      '/metrics',
+    ]) {
       const res = await get(app, path);
       expect(res.body.code).not.toBe('service_overloaded');
       expect(res.headers['retry-after']).toBeUndefined();

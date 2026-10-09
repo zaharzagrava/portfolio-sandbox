@@ -11,7 +11,12 @@ import * as bcrypt from 'bcrypt';
  */
 @Injectable()
 export class PasswordHasher {
-  private readonly options = { type: argon2.argon2id, memoryCost: 19_456, timeCost: 2, parallelism: 1 } as const;
+  private readonly options = {
+    type: argon2.argon2id,
+    memoryCost: 19_456,
+    timeCost: 2,
+    parallelism: 1,
+  } as const;
 
   /** A real hash compared against when the user doesn't exist → constant-ish timing, no user enumeration. */
   private readonly dummy = argon2.hash('timing-equalizer', this.options);
@@ -20,14 +25,20 @@ export class PasswordHasher {
     return argon2.hash(password, this.options);
   }
 
-  async verify(password: string, hash: string | null | undefined): Promise<{ valid: boolean; needsRehash: boolean }> {
+  async verify(
+    password: string,
+    hash: string | null | undefined,
+  ): Promise<{ valid: boolean; needsRehash: boolean }> {
     if (!hash) {
       await argon2.verify(await this.dummy, password).catch(() => false);
       return { valid: false, needsRehash: false };
     }
     if (hash.startsWith('$argon2')) {
       const valid = await argon2.verify(hash, password);
-      return { valid, needsRehash: valid && argon2.needsRehash(hash, this.options) };
+      return {
+        valid,
+        needsRehash: valid && argon2.needsRehash(hash, this.options),
+      };
     }
     // Legacy bcrypt ($2a$/$2b$)
     const valid = await bcrypt.compare(password, hash);

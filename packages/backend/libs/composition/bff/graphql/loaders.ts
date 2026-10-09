@@ -16,6 +16,8 @@ export interface Loaders {
 export function createLoaders(core: CoreClient): Loaders {
   return {
     shop: new DataLoader((ids) => core.shops([...ids]), { maxBatchSize: 100 }),
-    product: new DataLoader((ids) => core.products([...ids]), { maxBatchSize: 100 }),
+    product: new DataLoader((ids) => core.products([...ids]), {
+      maxBatchSize: 100,
+    }),
   };
 }

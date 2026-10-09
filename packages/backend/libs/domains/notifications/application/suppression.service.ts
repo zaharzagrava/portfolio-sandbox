@@ -3,7 +3,8 @@ import { InjectConnection } from '@nestjs/sequelize';
 import { QueryTypes, Sequelize } from 'sequelize';
 import { CacheService } from '@app/infrastructure/cache/cache.service';
 
-const key = (channel: string, address: string) => `notif:supp:${channel}:${address.toLowerCase()}`;
+const key = (channel: string, address: string) =>
+  `notif:supp:${channel}:${address.toLowerCase()}`;
 
 /**
  * Addresses we must never contact again (hard bounce, spam complaint, carrier
@@ -24,7 +25,10 @@ export class SuppressionService {
       async () => {
         const [row] = await this.sequelize.query<{ reason: string }>(
           `SELECT reason FROM "NotificationSuppression" WHERE channel = :channel AND address = :address`,
-          { type: QueryTypes.SELECT, replacements: { channel, address: address.toLowerCase() } },
+          {
+            type: QueryTypes.SELECT,
+            replacements: { channel, address: address.toLowerCase() },
+          },
         );
         return row ?? null;
       },
@@ -33,7 +37,11 @@ export class SuppressionService {
     return !!hit;
   }
 
-  async suppress(channel: string, addresses: string[], reason: string): Promise<void> {
+  async suppress(
+    channel: string,
+    addresses: string[],
+    reason: string,
+  ): Promise<void> {
     for (const address of addresses) {
       await this.sequelize.query(
         `INSERT INTO "NotificationSuppression" (channel, address, reason) VALUES (:channel, :address, :reason) ON CONFLICT DO NOTHING`,

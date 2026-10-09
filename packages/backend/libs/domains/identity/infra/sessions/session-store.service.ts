@@ -1,6 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { ConditionalCheckFailedException } from '@aws-sdk/client-dynamodb';
-import { GetCommand, PutCommand, QueryCommand, TransactWriteCommand, UpdateCommand, BatchWriteCommand } from '@aws-sdk/lib-dynamodb';
+import {
+  GetCommand,
+  PutCommand,
+  QueryCommand,
+  TransactWriteCommand,
+  UpdateCommand,
+  BatchWriteCommand,
+} from '@aws-sdk/lib-dynamodb';
 import { createHash, randomBytes } from 'node:crypto';
 import { v7 as uuidv7 } from 'uuid';
 import { DynamoService } from '@app/infrastructure/dynamo/dynamo.service';
@@ -21,7 +28,8 @@ export type RotateResult =
   | { ok: false; reason: 'unknown' | 'expired' | 'revoked' | 'reuse_detected' };
 
 const TABLE = 'Auth';
-const hashToken = (token: string) => createHash('sha256').update(token).digest('base64url');
+const hashToken = (token: string) =>
+  createHash('sha256').update(token).digest('base64url');
 
 /**
  * Sessions + rotating refresh tokens in DynamoDB (single-table, see
@@ -38,7 +46,11 @@ export class SessionStore {
     private readonly redis: RedisService,
   ) {}
 
-  async create(userId: string, ttlDays: number, meta: { device?: string; ip?: string } = {}) {
+  async create(
+    userId: string,
+    ttlDays: number,
+    meta: { device?: string; ip?: string } = {},
+  ) {
     const sid = uuidv7();
     const familyId = uuidv7();
     const createdAt = new Date().toISOString();
@@ -67,7 +79,13 @@ export class SessionStore {
             },
             {
               PutRequest: {
-                Item: this.tokenItem(refreshToken, sid, userId, familyId, expiresAtEpoch),
+                Item: this.tokenItem(
+                  refreshToken,
+                  sid,
+                  userId,
+                  familyId,
+                  expiresAtEpoch,
+                ),
               },
             },
           ],
@@ -75,7 +93,10 @@ export class SessionStore {
       }),
     );
 
-    return { session: { sid, userId, familyId, createdAt, ...meta } as SessionInfo, refreshToken };
+    return {
+      session: { sid, userId, familyId, createdAt, ...meta } as SessionInfo,
+      refreshToken,
+    };
   }
 
   /**
@@ -83,11 +104,18 @@ export class SessionStore {
    * moments ago is a benign race (two tabs, a response the browser dropped mid-navigation) - it gets another
    * successor instead of revoking. Outside that window a reused token means theft: the session is revoked.
    */
-  async rotate(refreshToken: string, ttlDays: number, reuseGraceMs = 0): Promise<RotateResult> {
+  async rotate(
+    refreshToken: string,
+    ttlDays: number,
+    reuseGraceMs = 0,
+  ): Promise<RotateResult> {
     const key = { PK: `RT#${hashToken(refreshToken)}`, SK: 'META' };
-    const { Item: token } = await this.dynamo.doc.send(new GetCommand({ TableName: this.dynamo.table(TABLE), Key: key }));
+    const { Item: token } = await this.dynamo.doc.send(
+      new GetCommand({ TableName: this.dynamo.table(TABLE), Key: key }),
+    );
     if (!token) return { ok: false, reason: 'unknown' };
-    if (token.expiresAtEpoch < Date.now() / 1000) return { ok: false, reason: 'expired' };
+    if (token.expiresAtEpoch < Date.now() / 1000)
+      return { ok: false, reason: 'expired' };
 
     const session = await this.get(token.sid);
     if (!session || session.revokedAt) return { ok: false, reason: 'revoked' };
@@ -104,8 +132,12 @@ export class SessionStore {
       );
     } catch (error) {
       if (!(error instanceof ConditionalCheckFailedException)) throw error;
-      const { Item: used } = await this.dynamo.doc.send(new GetCommand({ TableName: this.dynamo.table(TABLE), Key: key }));
-      const usedAgoMs = used?.usedAt ? Date.now() - Date.parse(used.usedAt) : Infinity;
+      const { Item: used } = await this.dynamo.doc.send(
+        new GetCommand({ TableName: this.dynamo.table(TABLE), Key: key }),
+      );
+      const usedAgoMs = used?.usedAt
+        ? Date.now() - Date.parse(used.usedAt)
+        : Infinity;
       if (usedAgoMs > reuseGraceMs) {
         await this.revoke(token.sid, 'refresh_token_reuse');
         return { ok: false, reason: 'reuse_detected' };
@@ -115,13 +147,27 @@ export class SessionStore {
     const next = randomBytes(32).toString('base64url');
     const expiresAtEpoch = Math.floor(Date.now() / 1000) + ttlDays * 86_400;
     await this.dynamo.doc.send(
-      new PutCommand({ TableName: this.dynamo.table(TABLE), Item: this.tokenItem(next, token.sid, token.userId, token.familyId, expiresAtEpoch) }),
+      new PutCommand({
+        TableName: this.dynamo.table(TABLE),
+        Item: this.tokenItem(
+          next,
+          token.sid,
+          token.userId,
+          token.familyId,
+          expiresAtEpoch,
+        ),
+      }),
     );
     return { ok: true, session, refreshToken: next };
   }
 
   async get(sid: string): Promise<SessionInfo | undefined> {
-    const { Item } = await this.dynamo.doc.send(new GetCommand({ TableName: this.dynamo.table(TABLE), Key: { PK: `SESSION#${sid}`, SK: 'META' } }));
+    const { Item } = await this.dynamo.doc.send(
+      new GetCommand({
+        TableName: this.dynamo.table(TABLE),
+        Key: { PK: `SESSION#${sid}`, SK: 'META' },
+      }),
+    );
     return Item as SessionInfo | undefined;
   }
 
@@ -131,7 +177,10 @@ export class SessionStore {
         TableName: this.dynamo.table(TABLE),
         IndexName: 'GSI1',
         KeyConditionExpression: 'GSI1PK = :pk AND begins_with(GSI1SK, :prefix)',
-        ExpressionAttributeValues: { ':pk': `USER#${userId}`, ':prefix': 'SESSION#' },
+        ExpressionAttributeValues: {
+          ':pk': `USER#${userId}`,
+          ':prefix': 'SESSION#',
+        },
         ScanIndexForward: false,
       }),
     );
@@ -143,21 +192,42 @@ export class SessionStore {
    * longest access token could, so `@Sensitive()` endpoints reject the
    * session's still-valid access tokens immediately.
    */
-  async revoke(sid: string, reason: string, accessTokenTtlSec = 3_600): Promise<void> {
+  async revoke(
+    sid: string,
+    reason: string,
+    accessTokenTtlSec = 3_600,
+  ): Promise<void> {
     await this.dynamo.doc.send(
       new UpdateCommand({
         TableName: this.dynamo.table(TABLE),
         Key: { PK: `SESSION#${sid}`, SK: 'META' },
-        UpdateExpression: 'SET revokedAt = if_not_exists(revokedAt, :now), revokeReason = :reason',
-        ExpressionAttributeValues: { ':now': new Date().toISOString(), ':reason': reason },
+        UpdateExpression:
+          'SET revokedAt = if_not_exists(revokedAt, :now), revokeReason = :reason',
+        ExpressionAttributeValues: {
+          ':now': new Date().toISOString(),
+          ':reason': reason,
+        },
       }),
     );
-    await this.redis.client.set(`auth:revoked:${sid}`, reason, 'EX', accessTokenTtlSec);
+    await this.redis.client.set(
+      `auth:revoked:${sid}`,
+      reason,
+      'EX',
+      accessTokenTtlSec,
+    );
   }
 
-  async revokeAllForUser(userId: string, reason: string, accessTokenTtlSec?: number): Promise<number> {
-    const sessions = (await this.listForUser(userId)).filter((s) => !s.revokedAt);
-    await Promise.all(sessions.map((s) => this.revoke(s.sid, reason, accessTokenTtlSec)));
+  async revokeAllForUser(
+    userId: string,
+    reason: string,
+    accessTokenTtlSec?: number,
+  ): Promise<number> {
+    const sessions = (await this.listForUser(userId)).filter(
+      (s) => !s.revokedAt,
+    );
+    await Promise.all(
+      sessions.map((s) => this.revoke(s.sid, reason, accessTokenTtlSec)),
+    );
     return sessions.length;
   }
 
@@ -165,7 +235,20 @@ export class SessionStore {
     return (await this.redis.client.exists(`auth:revoked:${sid}`)) === 1;
   }
 
-  private tokenItem(token: string, sid: string, userId: string, familyId: string, expiresAtEpoch: number) {
-    return { PK: `RT#${hashToken(token)}`, SK: 'META', sid, userId, familyId, expiresAtEpoch };
+  private tokenItem(
+    token: string,
+    sid: string,
+    userId: string,
+    familyId: string,
+    expiresAtEpoch: number,
+  ) {
+    return {
+      PK: `RT#${hashToken(token)}`,
+      SK: 'META',
+      sid,
+      userId,
+      familyId,
+      expiresAtEpoch,
+    };
   }
 }

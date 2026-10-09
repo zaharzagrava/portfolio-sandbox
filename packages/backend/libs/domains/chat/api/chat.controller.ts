@@ -53,7 +53,10 @@ export class ChatController {
   @Firewall()
   @Post('channels/:channelId/join')
   @HttpCode(200)
-  async joinChannel(@User() user: UserRawDto, @Param('channelId', ParseUUIDPipe) channelId: string) {
+  async joinChannel(
+    @User() user: UserRawDto,
+    @Param('channelId', ParseUUIDPipe) channelId: string,
+  ) {
     return this.chatService.joinChannel(channelId, user.id);
   }
 

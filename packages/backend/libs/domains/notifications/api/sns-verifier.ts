@@ -16,9 +16,32 @@ export interface SnsMessage {
 }
 
 const SIGNED_FIELDS: Record<SnsMessage['Type'], (keyof SnsMessage)[]> = {
-  Notification: ['Message', 'MessageId', 'Subject', 'Timestamp', 'TopicArn', 'Type'],
-  SubscriptionConfirmation: ['Message', 'MessageId', 'SubscribeURL', 'Timestamp', 'Token', 'TopicArn', 'Type'],
-  UnsubscribeConfirmation: ['Message', 'MessageId', 'SubscribeURL', 'Timestamp', 'Token', 'TopicArn', 'Type'],
+  Notification: [
+    'Message',
+    'MessageId',
+    'Subject',
+    'Timestamp',
+    'TopicArn',
+    'Type',
+  ],
+  SubscriptionConfirmation: [
+    'Message',
+    'MessageId',
+    'SubscribeURL',
+    'Timestamp',
+    'Token',
+    'TopicArn',
+    'Type',
+  ],
+  UnsubscribeConfirmation: [
+    'Message',
+    'MessageId',
+    'SubscribeURL',
+    'Timestamp',
+    'Token',
+    'TopicArn',
+    'Type',
+  ],
 };
 const SNS_HOST = /^sns\.[a-z0-9-]+\.amazonaws\.com(\.cn)?$/;
 const MAX_AGE_MS = 60 * 60_000;
@@ -44,12 +67,19 @@ export class SnsVerifier {
     } catch {
       return false;
     }
-    if (certUrl.protocol !== 'https:' || !SNS_HOST.test(certUrl.hostname)) return false;
-    if (Math.abs(now - Date.parse(message.Timestamp)) > MAX_AGE_MS) return false;
+    if (certUrl.protocol !== 'https:' || !SNS_HOST.test(certUrl.hostname))
+      return false;
+    if (Math.abs(now - Date.parse(message.Timestamp)) > MAX_AGE_MS)
+      return false;
 
-    const canonical = fields.filter((f) => message[f] !== undefined).map((f) => `${f}\n${message[f]}\n`).join('');
+    const canonical = fields
+      .filter((f) => message[f] !== undefined)
+      .map((f) => `${f}\n${message[f]}\n`)
+      .join('');
     const pem = await this.certificate(certUrl.toString());
-    return createVerify(message.SignatureVersion === '2' ? 'RSA-SHA256' : 'RSA-SHA1')
+    return createVerify(
+      message.SignatureVersion === '2' ? 'RSA-SHA256' : 'RSA-SHA1',
+    )
       .update(canonical, 'utf8')
       .verify(pem, message.Signature, 'base64');
   }
@@ -76,7 +106,16 @@ export class SnsVerifier {
 }
 
 /** Twilio request signature: base64(HMAC-SHA1(authToken, url + sorted(k+v)...)). */
-export function twilioSignature(authToken: string, url: string, params: Record<string, string>): string {
-  const data = url + Object.keys(params).sort().map((k) => k + params[k]).join('');
+export function twilioSignature(
+  authToken: string,
+  url: string,
+  params: Record<string, string>,
+): string {
+  const data =
+    url +
+    Object.keys(params)
+      .sort()
+      .map((k) => k + params[k])
+      .join('');
   return createHmac('sha1', authToken).update(data, 'utf8').digest('base64');
 }

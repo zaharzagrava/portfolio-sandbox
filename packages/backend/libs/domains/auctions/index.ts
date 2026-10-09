@@ -7,5 +7,8 @@
 export { default as AuctionModel } from './infra/models/auction.model';
 export { AuctionsWorkerModule } from './auctions-worker.module';
 export { AuctionsModule } from './auctions.module';
-export { AuctionClosed, AuctionLeaderChanged } from './application/events/auction-events';
+export {
+  AuctionClosed,
+  AuctionLeaderChanged,
+} from './application/events/auction-events';
 export { AuctionTopicsModule } from './realtime-topics.module';

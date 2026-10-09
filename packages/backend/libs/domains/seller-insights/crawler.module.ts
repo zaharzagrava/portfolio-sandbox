@@ -1,4 +1,14 @@
-import { Body, Controller, Injectable, Module, OnApplicationBootstrap, OnModuleDestroy, Param, ParseUUIDPipe, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Injectable,
+  Module,
+  OnApplicationBootstrap,
+  OnModuleDestroy,
+  Param,
+  ParseUUIDPipe,
+  Post,
+} from '@nestjs/common';
 import { ApiProperty, ApiTags } from '@nestjs/swagger';
 import { IsUrl, IsUUID } from 'class-validator';
 import { AuthModule } from '@app/domains/identity';
@@ -29,7 +39,10 @@ export class CompetitorController {
 
   @ShopScoped('products.write')
   @Post()
-  watch(@Param('shopId', ParseUUIDPipe) shopId: string, @Body() body: WatchDto) {
+  watch(
+    @Param('shopId', ParseUUIDPipe) shopId: string,
+    @Body() body: WatchDto,
+  ) {
     return this.crawler.watch(shopId, body.productId, body.url);
   }
 }
@@ -37,7 +50,11 @@ export class CompetitorController {
 const IMPORTS = [StorageModule, ClickHouseModule, NotificationsCoreModule];
 
 /** SD-35 API (core). */
-@Module({ imports: [AuthModule, ...IMPORTS], providers: [CrawlerService], controllers: [CompetitorController] })
+@Module({
+  imports: [AuthModule, ...IMPORTS],
+  providers: [CrawlerService],
+  controllers: [CompetitorController],
+})
 export class CrawlerModule {}
 
 /**
@@ -56,7 +73,12 @@ class CrawlerWorker implements OnApplicationBootstrap, OnModuleDestroy {
   ) {}
 
   async onApplicationBootstrap() {
-    await this.jobs.upsertSchedule({ name: 'crawler.schedule-due', cron: '* * * * *', jobType: 'crawler.schedule-due', payload: {} });
+    await this.jobs.upsertSchedule({
+      name: 'crawler.schedule-due',
+      cron: '* * * * *',
+      jobType: 'crawler.schedule-due',
+      payload: {},
+    });
     this.loops = Array.from({ length: 16 }, () => this.loop());
   }
 
@@ -78,5 +100,8 @@ class CrawlerWorker implements OnApplicationBootstrap, OnModuleDestroy {
   }
 }
 
-@Module({ imports: [...IMPORTS, JobsModule], providers: [CrawlerService, CrawlerWorker] })
+@Module({
+  imports: [...IMPORTS, JobsModule],
+  providers: [CrawlerService, CrawlerWorker],
+})
 export class CrawlerWorkerModule {}

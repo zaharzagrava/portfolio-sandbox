@@ -18,7 +18,10 @@ describe('Product (e2e)', () => {
   let esService: ElasticsearchService;
 
   beforeAll(async () => {
-    const moduleRef = await generateTestingModule([ProductModule, RateLimitModule, CacheModule, SeedsModule], { stores: ['redis'] });
+    const moduleRef = await generateTestingModule(
+      [ProductModule, RateLimitModule, CacheModule, SeedsModule],
+      { stores: ['redis'] },
+    );
     app = moduleRef.createNestApplication({ rawBody: true });
     app.setGlobalPrefix('api');
     await app.init();
@@ -35,7 +38,9 @@ describe('Product (e2e)', () => {
     await seedsService.clean();
     // Clean ES properly by getting concrete index name
     try {
-      const aliases = await esService.getClient().indices.getAlias({ name: 'products' });
+      const aliases = await esService
+        .getClient()
+        .indices.getAlias({ name: 'products' });
       const indices = Object.keys(aliases);
       if (indices.length > 0) {
         await esService.getClient().indices.delete({ index: indices });
@@ -47,7 +52,9 @@ describe('Product (e2e)', () => {
   });
 
   it('retrieves a product by ID', async () => {
-    const [product] = await seedsService.createTreelike([{ __type__: TableName.Product, title: 'Test Product 123' }]);
+    const [product] = await seedsService.createTreelike([
+      { __type__: TableName.Product, title: 'Test Product 123' },
+    ]);
 
     const res = await request(app.getHttpServer())
       .get(`/api/products/${product.id}`)
@@ -58,9 +65,7 @@ describe('Product (e2e)', () => {
   });
 
   it('returns 404 for non-existent product', async () => {
-    await request(app.getHttpServer())
-      .get(`/api/products/${v4()}`)
-      .expect(404);
+    await request(app.getHttpServer()).get(`/api/products/${v4()}`).expect(404);
   });
 
   it('searches for products and respects pagination', async () => {
@@ -71,11 +76,26 @@ describe('Product (e2e)', () => {
       { __type__: TableName.Product, title: 'Samsung Galaxy' },
     ]);
 
-    await esService.bulkUpsertProducts([
-      { id: p1.id, title: p1.title, embedding: esService.stubEmbed(p1.title) } as any,
-      { id: p2.id, title: p2.title, embedding: esService.stubEmbed(p2.title) } as any,
-      { id: p3.id, title: p3.title, embedding: esService.stubEmbed(p3.title) } as any,
-    ], { refresh: true });
+    await esService.bulkUpsertProducts(
+      [
+        {
+          id: p1.id,
+          title: p1.title,
+          embedding: esService.stubEmbed(p1.title),
+        } as any,
+        {
+          id: p2.id,
+          title: p2.title,
+          embedding: esService.stubEmbed(p2.title),
+        } as any,
+        {
+          id: p3.id,
+          title: p3.title,
+          embedding: esService.stubEmbed(p3.title),
+        } as any,
+      ],
+      { refresh: true },
+    );
 
     // Search query
     const res = await request(app.getHttpServer())
@@ -92,16 +112,58 @@ describe('Product (e2e)', () => {
     beforeEach(async () => {
       // Seed products with specific prices, ratings, and creation dates
       const [p1, p2, p3] = await seedsService.createTreelike([
-        { __type__: TableName.Product, title: 'Cheap Phone', price: 10000, rating: 3.5, createdAt: new Date('2026-01-01') },
-        { __type__: TableName.Product, title: 'Mid Phone', price: 30000, rating: 4.2, createdAt: new Date('2026-01-05') },
-        { __type__: TableName.Product, title: 'Expensive Phone', price: 80000, rating: 4.8, createdAt: new Date('2026-01-10') },
+        {
+          __type__: TableName.Product,
+          title: 'Cheap Phone',
+          price: 10000,
+          rating: 3.5,
+          createdAt: new Date('2026-01-01'),
+        },
+        {
+          __type__: TableName.Product,
+          title: 'Mid Phone',
+          price: 30000,
+          rating: 4.2,
+          createdAt: new Date('2026-01-05'),
+        },
+        {
+          __type__: TableName.Product,
+          title: 'Expensive Phone',
+          price: 80000,
+          rating: 4.8,
+          createdAt: new Date('2026-01-10'),
+        },
       ]);
 
-      await esService.bulkUpsertProducts([
-        { id: p1.id, title: p1.title, price: 10000, rating: 3.5, createdAt: new Date('2026-01-01').toISOString(), embedding: esService.stubEmbed(p1.title) } as any,
-        { id: p2.id, title: p2.title, price: 30000, rating: 4.2, createdAt: new Date('2026-01-05').toISOString(), embedding: esService.stubEmbed(p2.title) } as any,
-        { id: p3.id, title: p3.title, price: 80000, rating: 4.8, createdAt: new Date('2026-01-10').toISOString(), embedding: esService.stubEmbed(p3.title) } as any,
-      ], { refresh: true });
+      await esService.bulkUpsertProducts(
+        [
+          {
+            id: p1.id,
+            title: p1.title,
+            price: 10000,
+            rating: 3.5,
+            createdAt: new Date('2026-01-01').toISOString(),
+            embedding: esService.stubEmbed(p1.title),
+          } as any,
+          {
+            id: p2.id,
+            title: p2.title,
+            price: 30000,
+            rating: 4.2,
+            createdAt: new Date('2026-01-05').toISOString(),
+            embedding: esService.stubEmbed(p2.title),
+          } as any,
+          {
+            id: p3.id,
+            title: p3.title,
+            price: 80000,
+            rating: 4.8,
+            createdAt: new Date('2026-01-10').toISOString(),
+            embedding: esService.stubEmbed(p3.title),
+          } as any,
+        ],
+        { refresh: true },
+      );
     });
 
     it('filters by price range', async () => {
@@ -119,8 +181,12 @@ describe('Product (e2e)', () => {
         .expect(200);
 
       expect(res.body.hits).toHaveLength(2);
-      expect(res.body.hits.some((h: any) => h.source.title === 'Mid Phone')).toBe(true);
-      expect(res.body.hits.some((h: any) => h.source.title === 'Expensive Phone')).toBe(true);
+      expect(
+        res.body.hits.some((h: any) => h.source.title === 'Mid Phone'),
+      ).toBe(true);
+      expect(
+        res.body.hits.some((h: any) => h.source.title === 'Expensive Phone'),
+      ).toBe(true);
     });
 
     it('sorts by price-asc', async () => {

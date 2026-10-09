@@ -51,10 +51,25 @@ export interface PaymentWithAllFilters {
   attributes?: string[];
 }
 
-export type LedgerJournalKind = 'SALE' | 'SETTLEMENT' | 'PAYOUT' | 'PAYOUT_REVERSAL' | 'REFUND' | 'ADJUSTMENT' | 'AD_CHARGE';
+export type LedgerJournalKind =
+  | 'SALE'
+  | 'SETTLEMENT'
+  | 'PAYOUT'
+  | 'PAYOUT_REVERSAL'
+  | 'REFUND'
+  | 'ADJUSTMENT'
+  | 'AD_CHARGE';
 
 @Scopes(() => ({
-  [PaymentScope.WithAll]: ({ id, userId, idempotencyKey, reason, status, amount, attributes }: PaymentWithAllFilters = {}) => {
+  [PaymentScope.WithAll]: ({
+    id,
+    userId,
+    idempotencyKey,
+    reason,
+    status,
+    amount,
+    attributes,
+  }: PaymentWithAllFilters = {}) => {
     const findOptions: {
       where: WhereOptions;
       include?: Includeable[];
@@ -82,7 +97,10 @@ export type LedgerJournalKind = 'SALE' | 'SETTLEMENT' | 'PAYOUT' | 'PAYOUT_REVER
   updatedAt: false, // ledgers entries are immutable
   deletedAt: false, // ledgers entries are immutable
 })
-export default class LedgerEntry extends Model<LedgerEntry, Partial<LedgerEntry>> {
+export default class LedgerEntry extends Model<
+  LedgerEntry,
+  Partial<LedgerEntry>
+> {
   @PrimaryKey
   @Column({ type: DataType.UUID, defaultValue: Sequelize.literal('uuidv7()') })
   declare id: string;

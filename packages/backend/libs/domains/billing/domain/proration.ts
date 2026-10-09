@@ -22,16 +22,33 @@ export interface ProrationLine {
  * same day boundary so they're consistent. Rounding: half away from zero per
  * line, documented, so an invoice can be recomputed bit-for-bit (audits).
  */
-export function prorate({ periodStart, periodEnd, changeAt, oldAmount, newAmount }: ProrationInput): ProrationLine[] {
+export function prorate({
+  periodStart,
+  periodEnd,
+  changeAt,
+  oldAmount,
+  newAmount,
+}: ProrationInput): ProrationLine[] {
   const total = daysBetween(periodStart, periodEnd);
-  const remaining = Math.max(0, Math.min(total, daysBetween(changeAt, periodEnd)));
+  const remaining = Math.max(
+    0,
+    Math.min(total, daysBetween(changeAt, periodEnd)),
+  );
   if (total <= 0 || remaining === 0) return [];
 
   const credit = roundHalfAwayFromZero((oldAmount * remaining) / total);
   const charge = roundHalfAwayFromZero((newAmount * remaining) / total);
   return [
-    { kind: 'PRORATION_CREDIT' as const, description: `Unused time on previous plan (${remaining}/${total} days)`, amount: -credit },
-    { kind: 'PRORATION_CHARGE' as const, description: `Remaining time on new plan (${remaining}/${total} days)`, amount: charge },
+    {
+      kind: 'PRORATION_CREDIT' as const,
+      description: `Unused time on previous plan (${remaining}/${total} days)`,
+      amount: -credit,
+    },
+    {
+      kind: 'PRORATION_CHARGE' as const,
+      description: `Remaining time on new plan (${remaining}/${total} days)`,
+      amount: charge,
+    },
   ].filter((l) => l.amount !== 0);
 }
 
@@ -40,7 +57,11 @@ export function roundHalfAwayFromZero(value: number): number {
 }
 
 /** Overage beyond the included quota, priced per 1,000 units, rounded up to whole blocks. */
-export function overage(used: number, included: number, pricePer1000: number): { units: number; amount: number } {
+export function overage(
+  used: number,
+  included: number,
+  pricePer1000: number,
+): { units: number; amount: number } {
   const units = Math.max(0, used - included);
   return { units, amount: Math.ceil(units / 1000) * pricePer1000 };
 }

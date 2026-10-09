@@ -3,13 +3,22 @@ import { z } from 'zod';
 import { context, propagation } from '@opentelemetry/api';
 import { DomainTopic, EventEnvelope, topicFor } from './event-envelope';
 
-export interface EventDefinition<TName extends string, TAggregate extends string, TSchema extends z.ZodType> {
+export interface EventDefinition<
+  TName extends string,
+  TAggregate extends string,
+  TSchema extends z.ZodType,
+> {
   name: TName;
   aggregateType: TAggregate;
   schemaVersion: number;
   topic: DomainTopic<TAggregate>;
   schema: TSchema;
-  create(aggregateId: string, version: number, payload: z.infer<TSchema>, occurredAt?: Date): EventEnvelope<TName, z.infer<TSchema>>;
+  create(
+    aggregateId: string,
+    version: number,
+    payload: z.infer<TSchema>,
+    occurredAt?: Date,
+  ): EventEnvelope<TName, z.infer<TSchema>>;
   /** Narrows + validates an incoming envelope; returns null for other event names. */
   match(envelope: EventEnvelope): EventEnvelope<TName, z.infer<TSchema>> | null;
 }
@@ -21,7 +30,11 @@ export interface EventDefinition<TName extends string, TAggregate extends string
  *
  *   export const AuctionBidPlaced = defineEvent('auction.bid_placed', 'auctions', 1, z.object({...}));
  */
-export function defineEvent<TName extends string, TAggregate extends string, TSchema extends z.ZodType>(
+export function defineEvent<
+  TName extends string,
+  TAggregate extends string,
+  TSchema extends z.ZodType,
+>(
   name: TName,
   aggregateType: TAggregate,
   schemaVersion: number,
@@ -50,7 +63,11 @@ export function defineEvent<TName extends string, TAggregate extends string, TSc
     },
     match(envelope) {
       if (envelope.eventName !== name) return null;
-      return { ...envelope, eventName: name, payload: schema.parse(envelope.payload) };
+      return {
+        ...envelope,
+        eventName: name,
+        payload: schema.parse(envelope.payload),
+      };
     },
   };
 }

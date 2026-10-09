@@ -1,4 +1,11 @@
-import { Controller, Get, Header, Param, ParseUUIDPipe, Query } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Header,
+  Param,
+  ParseUUIDPipe,
+  Query,
+} from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Firewall } from '@app/domains/identity';
 import { RateLimit } from '@app/infrastructure/rate-limit/rate-limit.decorator';
@@ -14,7 +21,13 @@ export class RecommendationsController {
   @RateLimit('search.query')
   @Header('Cache-Control', 'public, max-age=60, s-maxage=300')
   @Get(':id/recommendations')
-  boughtTogether(@Param('id', ParseUUIDPipe) id: string, @Query('limit') limit = '8') {
-    return this.recommendations.boughtTogether(id, Math.min(Math.max(Number(limit) || 8, 1), 20));
+  boughtTogether(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Query('limit') limit = '8',
+  ) {
+    return this.recommendations.boughtTogether(
+      id,
+      Math.min(Math.max(Number(limit) || 8, 1), 20),
+    );
   }
 }

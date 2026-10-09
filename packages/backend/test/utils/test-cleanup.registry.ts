@@ -10,7 +10,11 @@ import { TestCleanupPort } from '@app/common/testing/test-cleanup.port';
  */
 @Injectable()
 export class TestCleanupRegistry implements TestCleanupPort {
-  private readonly cleaners: { name: string; order: number; run: () => Promise<void> }[] = [];
+  private readonly cleaners: {
+    name: string;
+    order: number;
+    run: () => Promise<void>;
+  }[] = [];
 
   register(name: string, run: () => Promise<void>, order = 50): void {
     if (this.cleaners.some((c) => c.name === name)) return;
@@ -18,7 +22,9 @@ export class TestCleanupRegistry implements TestCleanupPort {
   }
 
   async runAll(): Promise<void> {
-    for (const cleaner of [...this.cleaners].sort((a, b) => a.order - b.order)) {
+    for (const cleaner of [...this.cleaners].sort(
+      (a, b) => a.order - b.order,
+    )) {
       await cleaner.run();
     }
   }

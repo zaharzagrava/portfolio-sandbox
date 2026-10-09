@@ -27,7 +27,10 @@ export class OnboardingJobs {
     );
     for (const doc of docs) {
       await this.storage.delete(doc.storageKey);
-      await this.sequelize.query(`UPDATE "ShopDocument" SET "purgedAt" = now() WHERE id = :id`, { replacements: { id: doc.id } });
+      await this.sequelize.query(
+        `UPDATE "ShopDocument" SET "purgedAt" = now() WHERE id = :id`,
+        { replacements: { id: doc.id } },
+      );
     }
     this.logger.log(`purged ${docs.length} KYC files of shop ${shopId}`);
   }

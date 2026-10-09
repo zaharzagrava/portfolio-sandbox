@@ -11,9 +11,11 @@ describe('streaming top-K', () => {
       cms.add(key);
       exact.set(key, (exact.get(key) ?? 0) + 1);
     }
-    for (const [key, count] of exact) expect(cms.estimate(key)).toBeGreaterThanOrEqual(count);
+    for (const [key, count] of exact)
+      expect(cms.estimate(key)).toBeGreaterThanOrEqual(count);
     const heavy = [...exact].sort((a, b) => b[1] - a[1]).slice(0, 10);
-    for (const [key, count] of heavy) expect(cms.estimate(key) - count).toBeLessThan(count * 0.05);
+    for (const [key, count] of heavy)
+      expect(cms.estimate(key) - count).toBeLessThan(count * 0.05);
   });
 
   it('CMS + TopK recover the true top-10 (precision ≥ 0.9)', () => {
@@ -25,7 +27,12 @@ describe('streaming top-K', () => {
       top.offer(key, cms.add(key));
       exact.set(key, (exact.get(key) ?? 0) + 1);
     }
-    const truth = new Set([...exact].sort((a, b) => b[1] - a[1]).slice(0, 10).map(([k]) => k));
+    const truth = new Set(
+      [...exact]
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 10)
+        .map(([k]) => k),
+    );
     const hits = top.top().filter((t) => truth.has(t.key)).length;
     expect(hits).toBeGreaterThanOrEqual(9);
   });

@@ -3,11 +3,18 @@ import { ClickHouseService } from '@app/infrastructure/clickhouse/clickhouse.ser
 import { RedisService } from '@app/infrastructure/redis/redis.service';
 import { JobHandler } from '@app/infrastructure/jobs/job-handler.decorator';
 import { JobsService } from '@app/infrastructure/jobs/jobs.service';
-import { boughtTogetherKey, boughtTogetherStagingKey, NEIGHBOURS } from './recommendation-keys';
+import {
+  boughtTogetherKey,
+  boughtTogetherStagingKey,
+  NEIGHBOURS,
+} from './recommendation-keys';
 
 declare module '@app/infrastructure/jobs/job-types' {
   interface JobPayloads {
-    'recommendations.build-bought-together': { days?: number; buckets?: number };
+    'recommendations.build-bought-together': {
+      days?: number;
+      buckets?: number;
+    };
   }
 }
 
@@ -47,15 +54,31 @@ export class CoOccurrenceJobs implements OnApplicationBootstrap {
   ) {}
 
   async onApplicationBootstrap() {
-    await this.jobs.upsertSchedule({ name: 'recommendations.build-bought-together', cron: '17 3 * * *', jobType: 'recommendations.build-bought-together', payload: {} });
+    await this.jobs.upsertSchedule({
+      name: 'recommendations.build-bought-together',
+      cron: '17 3 * * *',
+      jobType: 'recommendations.build-bought-together',
+      payload: {},
+    });
   }
 
-  @JobHandler('recommendations.build-bought-together', { concurrency: 1, leaseMs: 3_600_000 })
-  async build({ days = 180, buckets = 16 }: { days?: number; buckets?: number } = {}): Promise<{ products: number; edges: number }> {
+  @JobHandler('recommendations.build-bought-together', {
+    concurrency: 1,
+    leaseMs: 3_600_000,
+  })
+  async build({
+    days = 180,
+    buckets = 16,
+  }: { days?: number; buckets?: number } = {}): Promise<{
+    products: number;
+    edges: number;
+  }> {
     let products = 0;
     let edges = 0;
     for (let bucket = 0; bucket < buckets; bucket++) {
-      const rows = await this.clickhouse.query<NeighbourRow & Record<string, unknown>>(
+      const rows = await this.clickhouse.query<
+        NeighbourRow & Record<string, unknown>
+      >(
         `WITH
            baskets AS (
              SELECT products FROM order_baskets FINAL WHERE ts >= now() - INTERVAL {days:UInt32} DAY
@@ -83,7 +106,8 @@ export class CoOccurrenceJobs implements OnApplicationBootstrap {
       );
 
       const byProduct = new Map<string, NeighbourRow[]>();
-      for (const row of rows) byProduct.set(row.a, [...(byProduct.get(row.a) ?? []), row]);
+      for (const row of rows)
+        byProduct.set(row.a, [...(byProduct.get(row.a) ?? []), row]);
 
       const pipeline = this.redis.client.pipeline();
       for (const [productId, neighbours] of byProduct) {

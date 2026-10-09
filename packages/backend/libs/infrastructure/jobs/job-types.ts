@@ -16,7 +16,8 @@ export interface JobPayloads {
 
 export type JobType = keyof JobPayloads & string;
 
-export type JobStatus = 'QUEUED' | 'RUNNING' | 'SUCCEEDED' | 'DEAD' | 'CANCELLED';
+export type JobStatus =
+  'QUEUED' | 'RUNNING' | 'SUCCEEDED' | 'DEAD' | 'CANCELLED';
 
 export interface JobRow<T extends JobType = JobType> {
   id: string;
@@ -47,7 +48,10 @@ export interface JobContext {
   signal: AbortSignal;
 }
 
-export type JobHandlerFn<T extends JobType> = (payload: JobPayloads[T], ctx: JobContext) => Promise<void>;
+export type JobHandlerFn<T extends JobType> = (
+  payload: JobPayloads[T],
+  ctx: JobContext,
+) => Promise<void>;
 
 /** Thrown by a handler to stop retrying immediately (bad payload, entity gone). */
 export class NonRetryableJobError extends Error {

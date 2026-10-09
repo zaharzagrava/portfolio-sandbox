@@ -9,7 +9,7 @@ export class PaymentQueryService {
   constructor(
     private readonly dbUtilsService: DbUtilsService,
     private readonly paymentDtoService: PaymentDtoService,
-  ) { }
+  ) {}
 
   public async getPayment({
     id,

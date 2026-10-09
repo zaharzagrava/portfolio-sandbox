@@ -20,7 +20,12 @@ export interface SloDefinition {
   sli:
     | { type: 'availability'; metric: string; selector: string }
     /** thresholdSeconds must be an exact histogram bucket boundary of `metric`. */
-    | { type: 'latency'; metric: string; selector: string; thresholdSeconds: number };
+    | {
+        type: 'latency';
+        metric: string;
+        selector: string;
+        thresholdSeconds: number;
+      };
   runbook: string;
   k6?: { threshold: string };
 }
@@ -34,9 +39,12 @@ export const BURN_ALERTS = [
 ] as const;
 
 export function validateSlo(slo: SloDefinition): void {
-  if (!/^[a-z0-9-]+$/.test(slo.name)) throw new Error(`${slo.name}: name must be kebab-case`);
-  if (!(slo.objective > 0 && slo.objective < 100)) throw new Error(`${slo.name}: objective must be in (0, 100)`);
-  if (slo.sli.type === 'latency' && !(slo.sli.thresholdSeconds > 0)) throw new Error(`${slo.name}: latency SLI needs thresholdSeconds`);
+  if (!/^[a-z0-9-]+$/.test(slo.name))
+    throw new Error(`${slo.name}: name must be kebab-case`);
+  if (!(slo.objective > 0 && slo.objective < 100))
+    throw new Error(`${slo.name}: objective must be in (0, 100)`);
+  if (slo.sli.type === 'latency' && !(slo.sli.thresholdSeconds > 0))
+    throw new Error(`${slo.name}: latency SLI needs thresholdSeconds`);
 }
 
 /** PromQL error ratio of the SLI over `w`. */
@@ -59,7 +67,11 @@ export function sloRuleGroup(slo: SloDefinition) {
   return {
     name: `slo-${slo.name}`,
     rules: [
-      ...WINDOWS.map((w) => ({ record: record(w), expr: errorRatio(slo, w), labels })),
+      ...WINDOWS.map((w) => ({
+        record: record(w),
+        expr: errorRatio(slo, w),
+        labels,
+      })),
       { record: 'slo:error_budget:ratio', expr: `vector(${budget})`, labels },
       ...BURN_ALERTS.map((a) => ({
         alert: `SLOBurn_${slo.name.replace(/-/g, '_')}_${a.severity}_${a.long}`,

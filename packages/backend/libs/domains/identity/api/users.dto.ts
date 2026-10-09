@@ -62,12 +62,9 @@ export class CreateUserDto {
 export class UserRawDto extends IntersectionType(
   IntersectionType(CreateUserDto, TimestampsFields),
   IdField,
-) { }
+) {}
 
-export class UserFullDto extends UserRawDto {
-
-}
-
+export class UserFullDto extends UserRawDto {}
 
 // --- --- --- --- --- POST /login --- --- --- --- --- //
 export class LoginUserDto {

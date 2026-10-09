@@ -2,7 +2,15 @@ import { Injectable } from '@nestjs/common';
 import { InjectConnection } from '@nestjs/sequelize';
 import { QueryTypes, Sequelize } from 'sequelize';
 import { CacheService } from '@app/infrastructure/cache/cache.service';
-import { Category, CATEGORIES, Channel, CHANNELS, NotificationType, OPT_IN_CHANNELS, typeDef } from '../domain/catalog';
+import {
+  Category,
+  CATEGORIES,
+  Channel,
+  CHANNELS,
+  NotificationType,
+  OPT_IN_CHANNELS,
+  typeDef,
+} from '../domain/catalog';
 import { Recipient } from '../domain/types';
 
 const recipientKey = (userId: string) => `notif:recipient:${userId}`;
@@ -30,9 +38,18 @@ export class NotificationPreferencesService {
   async recipients(userIds: string[]): Promise<Map<string, Recipient>> {
     const unique = [...new Set(userIds)];
     const loaded = await Promise.all(
-      unique.map((id) => this.cache.getOrLoad<Recipient>(recipientKey(id), () => this.load(id), { ttlMs: 300_000, swrMs: 60_000, negativeTtlMs: 30_000, l1: 'hot' })),
+      unique.map((id) =>
+        this.cache.getOrLoad<Recipient>(recipientKey(id), () => this.load(id), {
+          ttlMs: 300_000,
+          swrMs: 60_000,
+          negativeTtlMs: 30_000,
+          l1: 'hot',
+        }),
+      ),
     );
-    return new Map(loaded.filter((r): r is Recipient => !!r).map((r) => [r.userId, r]));
+    return new Map(
+      loaded.filter((r): r is Recipient => !!r).map((r) => [r.userId, r]),
+    );
   }
 
   /** Channels this notification goes to for this user, before suppressions / caps / quiet hours. */
@@ -42,7 +59,8 @@ export class NotificationPreferencesService {
       const isDefault = def.channels.includes(channel);
       const override = recipient.overrides[`${def.category}:${channel}`];
       if (def.mandatory && isDefault) return true;
-      if (override !== undefined) return override && (isDefault || OPT_IN_CHANNELS.includes(channel));
+      if (override !== undefined)
+        return override && (isDefault || OPT_IN_CHANNELS.includes(channel));
       return isDefault && !OPT_IN_CHANNELS.includes(channel);
     }).filter((channel) => {
       if (channel === 'email') return !!recipient.email;
@@ -56,15 +74,31 @@ export class NotificationPreferencesService {
     const recipient = (await this.recipients([userId])).get(userId);
     const overrides = recipient?.overrides ?? {};
     return {
-      settings: recipient && { timezone: recipient.timezone, locale: recipient.locale, quietStart: recipient.quietStart, quietEnd: recipient.quietEnd, phone: recipient.phone },
+      settings: recipient && {
+        timezone: recipient.timezone,
+        locale: recipient.locale,
+        quietStart: recipient.quietStart,
+        quietEnd: recipient.quietEnd,
+        phone: recipient.phone,
+      },
       preferences: CATEGORIES.map((category) => ({
         category,
-        channels: Object.fromEntries(CHANNELS.map((c) => [c, overrides[`${category}:${c}`] ?? defaultFor(category, c)])),
+        channels: Object.fromEntries(
+          CHANNELS.map((c) => [
+            c,
+            overrides[`${category}:${c}`] ?? defaultFor(category, c),
+          ]),
+        ),
       })),
     };
   }
 
-  async setPreference(userId: string, category: Category, channel: Channel, enabled: boolean) {
+  async setPreference(
+    userId: string,
+    category: Category,
+    channel: Channel,
+    enabled: boolean,
+  ) {
     await this.sequelize.query(
       `INSERT INTO "NotificationPreference" ("userId", category, channel, enabled) VALUES (:userId, :category, :channel, :enabled)
        ON CONFLICT ("userId", category, channel) DO UPDATE SET enabled = EXCLUDED.enabled, "updatedAt" = now()`,
@@ -92,7 +126,8 @@ export class NotificationPreferencesService {
           quietStart: input.quietStart ?? null,
           quietEnd: input.quietEnd ?? null,
           phone: input.phone ?? null,
-          hasQuiet: input.quietStart !== undefined || input.quietEnd !== undefined,
+          hasQuiet:
+            input.quietStart !== undefined || input.quietEnd !== undefined,
           hasPhone: input.phone !== undefined,
         },
       },
@@ -100,7 +135,11 @@ export class NotificationPreferencesService {
     await this.cache.invalidate([recipientKey(userId)]);
   }
 
-  async registerDevice(userId: string, token: string, platform: 'ios' | 'android' | 'web') {
+  async registerDevice(
+    userId: string,
+    token: string,
+    platform: 'ios' | 'android' | 'web',
+  ) {
     // A token moves to whoever logged in on that device last.
     await this.sequelize.query(
       `INSERT INTO "PushDevice" (token, "userId", platform) VALUES (:token, :userId, :platform)
@@ -112,15 +151,24 @@ export class NotificationPreferencesService {
 
   async removeDevices(tokens: string[]) {
     if (tokens.length === 0) return;
-    const rows = await this.sequelize.query<{ userId: string }>(`DELETE FROM "PushDevice" WHERE token IN (:tokens) RETURNING "userId"`, {
-      type: QueryTypes.SELECT,
-      replacements: { tokens },
-    });
-    await this.cache.invalidate([...new Set(rows.map((r) => recipientKey(r.userId)))]);
+    const rows = await this.sequelize.query<{ userId: string }>(
+      `DELETE FROM "PushDevice" WHERE token IN (:tokens) RETURNING "userId"`,
+      {
+        type: QueryTypes.SELECT,
+        replacements: { tokens },
+      },
+    );
+    await this.cache.invalidate([
+      ...new Set(rows.map((r) => recipientKey(r.userId))),
+    ]);
   }
 
   private async load(userId: string): Promise<Recipient | null> {
-    const [row] = await this.sequelize.query<Omit<Recipient, 'overrides'> & { overrides: { k: string; v: boolean }[] | null }>(
+    const [row] = await this.sequelize.query<
+      Omit<Recipient, 'overrides'> & {
+        overrides: { k: string; v: boolean }[] | null;
+      }
+    >(
       `SELECT u.id AS "userId", u.email, s.phone,
               coalesce(s.locale, 'en') AS locale, coalesce(s.timezone, 'UTC') AS timezone, s."quietStart", s."quietEnd",
               coalesce((SELECT array_agg(token ORDER BY "lastSeenAt" DESC) FROM (SELECT token, "lastSeenAt" FROM "PushDevice" d WHERE d."userId" = u.id ORDER BY "lastSeenAt" DESC LIMIT 5) t), '{}') AS "pushTokens",
@@ -130,7 +178,12 @@ export class NotificationPreferencesService {
       { type: QueryTypes.SELECT, replacements: { userId } },
     );
     if (!row) return null;
-    return { ...row, overrides: Object.fromEntries((row.overrides ?? []).map((o) => [o.k, o.v])) };
+    return {
+      ...row,
+      overrides: Object.fromEntries(
+        (row.overrides ?? []).map((o) => [o.k, o.v]),
+      ),
+    };
   }
 }
 

@@ -1,10 +1,34 @@
-import { Body, Controller, Delete, ForbiddenException, Get, HttpCode, NotFoundException, Param, ParseUUIDPipe, Post, Put } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  ForbiddenException,
+  Get,
+  HttpCode,
+  NotFoundException,
+  Param,
+  ParseUUIDPipe,
+  Post,
+  Put,
+} from '@nestjs/common';
 import { ApiProperty, ApiPropertyOptional, ApiTags } from '@nestjs/swagger';
 import { InjectModel } from '@nestjs/sequelize';
-import { IsInt, IsObject, IsOptional, IsString, IsUUID, Length, MaxLength, Min } from 'class-validator';
+import {
+  IsInt,
+  IsObject,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Length,
+  MaxLength,
+  Min,
+} from 'class-validator';
 import { Firewall, User, UserRawDto } from '@app/domains/identity';
 import { RateLimit } from '@app/infrastructure/rate-limit/rate-limit.decorator';
-import { ShopScoped, ShopMembershipModel as ShopMembership } from '@app/domains/tenancy';
+import {
+  ShopScoped,
+  ShopMembershipModel as ShopMembership,
+} from '@app/domains/tenancy';
 import { LiveService } from '../application/live.service';
 import type { Reaction } from '../infra/live-keys';
 
@@ -18,7 +42,9 @@ export class CommentDto {
 }
 
 export class ReactDto {
-  @ApiProperty({ example: { '❤️': 7, '🔥': 2 } }) @IsObject() reactions: Partial<Record<Reaction, number>>;
+  @ApiProperty({ example: { '❤️': 7, '🔥': 2 } })
+  @IsObject()
+  reactions: Partial<Record<Reaction, number>>;
 }
 
 export class PinDto {
@@ -32,42 +58,66 @@ export class PinDto {
 export class LiveController {
   constructor(
     private readonly live: LiveService,
-    @InjectModel(ShopMembership) private readonly memberships: typeof ShopMembership,
+    @InjectModel(ShopMembership)
+    private readonly memberships: typeof ShopMembership,
   ) {}
 
   @ShopScoped('products.write')
   @Post('shops/:shopId/live')
-  create(@Param('shopId', ParseUUIDPipe) shopId: string, @Body() body: CreateStreamDto) {
+  create(
+    @Param('shopId', ParseUUIDPipe) shopId: string,
+    @Body() body: CreateStreamDto,
+  ) {
     return this.live.create(shopId, body.title, body.launchEventId);
   }
 
   @ShopScoped('products.write')
   @Post('shops/:shopId/live/:streamId/start')
-  start(@Param('shopId', ParseUUIDPipe) shopId: string, @Param('streamId', ParseUUIDPipe) streamId: string) {
+  start(
+    @Param('shopId', ParseUUIDPipe) shopId: string,
+    @Param('streamId', ParseUUIDPipe) streamId: string,
+  ) {
     return this.live.setStatus(shopId, streamId, 'LIVE');
   }
 
   @ShopScoped('products.write')
   @Post('shops/:shopId/live/:streamId/end')
-  end(@Param('shopId', ParseUUIDPipe) shopId: string, @Param('streamId', ParseUUIDPipe) streamId: string) {
+  end(
+    @Param('shopId', ParseUUIDPipe) shopId: string,
+    @Param('streamId', ParseUUIDPipe) streamId: string,
+  ) {
     return this.live.setStatus(shopId, streamId, 'ENDED');
   }
 
   @Firewall()
   @RateLimit('live.comment')
   @Post('live/:streamId/comments')
-  async comment(@Param('streamId', ParseUUIDPipe) streamId: string, @User() user: UserRawDto, @Body() body: CommentDto) {
+  async comment(
+    @Param('streamId', ParseUUIDPipe) streamId: string,
+    @User() user: UserRawDto,
+    @Body() body: CommentDto,
+  ) {
     const stream = await this.live.get(streamId);
     if (!stream) throw new NotFoundException();
-    const isStaff = !!(await this.memberships.findOne({ where: { shopId: stream.shopId, userId: user.id }, attributes: ['role'] }));
-    return this.live.comment(streamId, { id: user.id, name: user.email.split('@')[0], isStaff }, body.text);
+    const isStaff = !!(await this.memberships.findOne({
+      where: { shopId: stream.shopId, userId: user.id },
+      attributes: ['role'],
+    }));
+    return this.live.comment(
+      streamId,
+      { id: user.id, name: user.email.split('@')[0], isStaff },
+      body.text,
+    );
   }
 
   @Firewall()
   @RateLimit('live.reaction')
   @Post('live/:streamId/reactions')
   @HttpCode(202)
-  async react(@Param('streamId', ParseUUIDPipe) streamId: string, @Body() body: ReactDto) {
+  async react(
+    @Param('streamId', ParseUUIDPipe) streamId: string,
+    @Body() body: ReactDto,
+  ) {
     await this.live.react(streamId, body.reactions);
   }
 
@@ -76,12 +126,20 @@ export class LiveController {
   async snapshot(@Param('streamId', ParseUUIDPipe) streamId: string) {
     const stream = await this.live.get(streamId);
     if (!stream) throw new NotFoundException();
-    return { ...stream, pin: await this.live.currentPin(streamId), recent: await this.live.recent(streamId) };
+    return {
+      ...stream,
+      pin: await this.live.currentPin(streamId),
+      recent: await this.live.recent(streamId),
+    };
   }
 
   @Firewall()
   @Put('live/:streamId/pin')
-  async pin(@Param('streamId', ParseUUIDPipe) streamId: string, @User() user: UserRawDto, @Body() body: PinDto) {
+  async pin(
+    @Param('streamId', ParseUUIDPipe) streamId: string,
+    @User() user: UserRawDto,
+    @Body() body: PinDto,
+  ) {
     await this.assertStaff(streamId, user.id);
     await this.live.pin(streamId, body);
   }
@@ -89,7 +147,10 @@ export class LiveController {
   @Firewall()
   @Delete('live/:streamId/pin')
   @HttpCode(204)
-  async unpin(@Param('streamId', ParseUUIDPipe) streamId: string, @User() user: UserRawDto) {
+  async unpin(
+    @Param('streamId', ParseUUIDPipe) streamId: string,
+    @User() user: UserRawDto,
+  ) {
     await this.assertStaff(streamId, user.id);
     await this.live.pin(streamId, null);
   }
@@ -97,7 +158,11 @@ export class LiveController {
   @Firewall()
   @Delete('live/:streamId/comments/:commentId')
   @HttpCode(204)
-  async remove(@Param('streamId', ParseUUIDPipe) streamId: string, @Param('commentId') commentId: string, @User() user: UserRawDto) {
+  async remove(
+    @Param('streamId', ParseUUIDPipe) streamId: string,
+    @Param('commentId') commentId: string,
+    @User() user: UserRawDto,
+  ) {
     await this.assertStaff(streamId, user.id);
     await this.live.remove(streamId, commentId, `moderator:${user.id}`);
   }
@@ -105,7 +170,11 @@ export class LiveController {
   @Firewall()
   @Post('live/:streamId/mutes/:userId')
   @HttpCode(204)
-  async mute(@Param('streamId', ParseUUIDPipe) streamId: string, @Param('userId', ParseUUIDPipe) userId: string, @User() user: UserRawDto) {
+  async mute(
+    @Param('streamId', ParseUUIDPipe) streamId: string,
+    @Param('userId', ParseUUIDPipe) userId: string,
+    @User() user: UserRawDto,
+  ) {
     await this.assertStaff(streamId, user.id);
     await this.live.mute(streamId, userId);
   }
@@ -113,7 +182,9 @@ export class LiveController {
   private async assertStaff(streamId: string, userId: string) {
     const stream = await this.live.get(streamId);
     if (!stream) throw new NotFoundException();
-    const member = await this.memberships.findOne({ where: { shopId: stream.shopId, userId } });
+    const member = await this.memberships.findOne({
+      where: { shopId: stream.shopId, userId },
+    });
     if (!member || member.role === 'VIEWER') throw new ForbiddenException();
   }
 }

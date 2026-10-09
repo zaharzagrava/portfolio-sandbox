@@ -1,21 +1,50 @@
-import { Body, Controller, Global, Injectable, Module, OnApplicationBootstrap, OnModuleDestroy, Param, ParseUUIDPipe, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Global,
+  Injectable,
+  Module,
+  OnApplicationBootstrap,
+  OnModuleDestroy,
+  Param,
+  ParseUUIDPipe,
+  Post,
+} from '@nestjs/common';
 import { ApiProperty, ApiTags } from '@nestjs/swagger';
-import { ArrayMaxSize, ArrayMinSize, IsArray, IsString, Length } from 'class-validator';
+import {
+  ArrayMaxSize,
+  ArrayMinSize,
+  IsArray,
+  IsString,
+  Length,
+} from 'class-validator';
 import { AuthModule, User, UserRawDto } from '@app/domains/identity';
 import { SqsModule } from '@app/infrastructure/sqs/sqs.module';
 import { TaskQueue } from '@app/infrastructure/sqs/task-queue.port';
 import { ShopScoped } from '@app/domains/tenancy';
 import { CheckoutDiscounts } from '@app/domains/orders';
-import { ShopFunctionsService, TEST_RUN_QUEUE } from './application/shop-functions.service';
+import {
+  ShopFunctionsService,
+  TEST_RUN_QUEUE,
+} from './application/shop-functions.service';
 import type { FunctionInput } from './domain/contract';
 
 export class CreateFunctionDto {
   @ApiProperty() @IsString() @Length(1, 60) name: string;
-  @ApiProperty({ description: '[{ name, input: FunctionInput, expected: FunctionOutput }]' }) @IsArray() @ArrayMinSize(1) @ArrayMaxSize(50) tests: { name: string; input: FunctionInput; expected: unknown }[];
+  @ApiProperty({
+    description: '[{ name, input: FunctionInput, expected: FunctionOutput }]',
+  })
+  @IsArray()
+  @ArrayMinSize(1)
+  @ArrayMaxSize(50)
+  tests: { name: string; input: FunctionInput; expected: unknown }[];
 }
 
 export class SubmitDto {
-  @ApiProperty({ example: 'function run(input) { return { discounts: [] }; }' }) @IsString() @Length(1, 20_000) source: string;
+  @ApiProperty({ example: 'function run(input) { return { discounts: [] }; }' })
+  @IsString()
+  @Length(1, 20_000)
+  source: string;
 }
 
 @ApiTags('shop-functions')
@@ -25,13 +54,21 @@ export class ShopFunctionsController {
 
   @ShopScoped('shop.manage')
   @Post()
-  create(@Param('shopId', ParseUUIDPipe) shopId: string, @Body() body: CreateFunctionDto) {
+  create(
+    @Param('shopId', ParseUUIDPipe) shopId: string,
+    @Body() body: CreateFunctionDto,
+  ) {
     return this.functions.create(shopId, body.name, body.tests);
   }
 
   @ShopScoped('shop.manage')
   @Post(':functionId/versions')
-  submit(@Param('shopId', ParseUUIDPipe) shopId: string, @Param('functionId', ParseUUIDPipe) functionId: string, @User() user: UserRawDto, @Body() body: SubmitDto) {
+  submit(
+    @Param('shopId', ParseUUIDPipe) shopId: string,
+    @Param('functionId', ParseUUIDPipe) functionId: string,
+    @User() user: UserRawDto,
+    @Body() body: SubmitDto,
+  ) {
     return this.functions.submit(shopId, functionId, user.id, body.source);
   }
 }
@@ -43,7 +80,10 @@ export class ShopFunctionsController {
 @Global()
 @Module({
   imports: [AuthModule, SqsModule],
-  providers: [ShopFunctionsService, { provide: CheckoutDiscounts, useExisting: ShopFunctionsService }],
+  providers: [
+    ShopFunctionsService,
+    { provide: CheckoutDiscounts, useExisting: ShopFunctionsService },
+  ],
   exports: [ShopFunctionsService, CheckoutDiscounts],
   controllers: [ShopFunctionsController],
 })
@@ -64,7 +104,12 @@ class FunctionJudgeWorker implements OnApplicationBootstrap, OnModuleDestroy {
   ) {}
 
   onApplicationBootstrap() {
-    this.stop = this.queue.consume<{ functionId: string; version: number }>(TEST_RUN_QUEUE, async ({ body }) => void (await this.functions.judge(body.functionId, body.version)), { concurrency: 4 });
+    this.stop = this.queue.consume<{ functionId: string; version: number }>(
+      TEST_RUN_QUEUE,
+      async ({ body }) =>
+        void (await this.functions.judge(body.functionId, body.version)),
+      { concurrency: 4 },
+    );
   }
 
   async onModuleDestroy() {
@@ -72,6 +117,8 @@ class FunctionJudgeWorker implements OnApplicationBootstrap, OnModuleDestroy {
   }
 }
 
-@Module({ imports: [SqsModule], providers: [ShopFunctionsService, FunctionJudgeWorker] })
+@Module({
+  imports: [SqsModule],
+  providers: [ShopFunctionsService, FunctionJudgeWorker],
+})
 export class FunctionJudgeModule {}
-

@@ -9,9 +9,14 @@ export type BillingInterval = 'MONTH' | 'YEAR';
  * so a subscription started on Jan 31 bills Feb 28, then Mar 31 - not Mar 28
  * forever. All in UTC.
  */
-export function addPeriod(from: Date, interval: BillingInterval, anchorDay: number): Date {
+export function addPeriod(
+  from: Date,
+  interval: BillingInterval,
+  anchorDay: number,
+): Date {
   const start = DateTime.fromJSDate(from, { zone: 'utc' });
-  const target = interval === 'MONTH' ? start.plus({ months: 1 }) : start.plus({ years: 1 });
+  const target =
+    interval === 'MONTH' ? start.plus({ months: 1 }) : start.plus({ years: 1 });
   const day = Math.min(anchorDay, target.daysInMonth!);
   return target.set({ day }).toJSDate();
 }

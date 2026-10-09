@@ -13,8 +13,19 @@ import { ProductModel as Product } from '@app/domains/catalog';
 
 /** SD-37 (core). */
 @Module({
-  imports: [AuthModule, ElasticsearchModule, ClickHouseModule, KafkaProducerModule, JobsModule, SequelizeModule.forFeature([Product])],
-  providers: [ShopProductSearchService, SearchQualityService, SearchReindexService],
+  imports: [
+    AuthModule,
+    ElasticsearchModule,
+    ClickHouseModule,
+    KafkaProducerModule,
+    JobsModule,
+    SequelizeModule.forFeature([Product]),
+  ],
+  providers: [
+    ShopProductSearchService,
+    SearchQualityService,
+    SearchReindexService,
+  ],
   controllers: [SearchAdminController],
 })
 export class SearchAdminModule {}

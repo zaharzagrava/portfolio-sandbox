@@ -26,12 +26,18 @@ export class PickupAvailabilityProjector implements Projector {
   ) {}
 
   async project(events: EventEnvelope[]): Promise<void> {
-    const changes = events.map((e) => PickupStockChanged.match(e)).filter((e): e is NonNullable<typeof e> => !!e);
+    const changes = events
+      .map((e) => PickupStockChanged.match(e))
+      .filter((e): e is NonNullable<typeof e> => !!e);
     if (changes.length === 0) return;
     const products = new Map(
       (
         await this.productModel.findAll({
-          where: { id: { [Op.in]: [...new Set(changes.map((c) => c.payload.productId))] } },
+          where: {
+            id: {
+              [Op.in]: [...new Set(changes.map((c) => c.payload.productId))],
+            },
+          },
           attributes: ['id', 'title', 'category', 'price'],
           raw: true,
         })
@@ -40,7 +46,12 @@ export class PickupAvailabilityProjector implements Projector {
 
     const operations = changes.flatMap((c): object[] => {
       const product = products.get(c.payload.productId);
-      const meta = { _index: AVAILABILITY_INDEX, _id: c.aggregateId, version: c.version, version_type: 'external_gte' as const };
+      const meta = {
+        _index: AVAILABILITY_INDEX,
+        _id: c.aggregateId,
+        version: c.version,
+        version_type: 'external_gte' as const,
+      };
       if (!product || c.payload.quantity <= 0) return [{ delete: meta }];
       return [
         { index: meta },
@@ -59,8 +70,13 @@ export class PickupAvailabilityProjector implements Projector {
     const res = await this.es.getClient().bulk({ operations, refresh: false });
     const failures = res.items.filter((i) => {
       const r = i.index ?? i.delete;
-      return r?.error && r.error.type !== 'version_conflict_engine_exception' && r.status !== 404;
+      return (
+        r?.error &&
+        r.error.type !== 'version_conflict_engine_exception' &&
+        r.status !== 404
+      );
     });
-    if (failures.length) throw new Error(`pickup availability bulk: ${failures.length} failures`);
+    if (failures.length)
+      throw new Error(`pickup availability bulk: ${failures.length} failures`);
   }
 }

@@ -1,6 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { RedisService } from '@app/infrastructure/redis/redis.service';
-import { channelName, REPLAY_MAXLEN, RealtimeMessage, RealtimeTopic, streamKey } from './topics';
+import {
+  channelName,
+  REPLAY_MAXLEN,
+  RealtimeMessage,
+  RealtimeTopic,
+  streamKey,
+} from './topics';
 
 /**
  * Domain code calls `publish(topic, type, data)`; gateways deliver it to every
@@ -13,10 +19,18 @@ import { channelName, REPLAY_MAXLEN, RealtimeMessage, RealtimeTopic, streamKey }
 export class RealtimePublisher {
   constructor(private readonly redis: RedisService) {}
 
-  async publish<T>(topic: RealtimeTopic, type: string, data: T, { replay = true } = {}): Promise<string> {
+  async publish<T>(
+    topic: RealtimeTopic,
+    type: string,
+    data: T,
+    { replay = true } = {},
+  ): Promise<string> {
     if (!replay) {
       const message: RealtimeMessage<T> = { id: '0-0', topic, type, data };
-      await this.redis.client.publish(channelName(topic), JSON.stringify(message));
+      await this.redis.client.publish(
+        channelName(topic),
+        JSON.stringify(message),
+      );
       return message.id;
     }
 
@@ -32,7 +46,10 @@ export class RealtimePublisher {
       JSON.stringify(data),
     ))!;
     const message: RealtimeMessage<T> = { id, topic, type, data };
-    await this.redis.client.publish(channelName(topic), JSON.stringify(message));
+    await this.redis.client.publish(
+      channelName(topic),
+      JSON.stringify(message),
+    );
     return id;
   }
 }

@@ -9,7 +9,7 @@ export class OutboxDtoService {
 
   constructor(
     @InjectModel(Outbox) private readonly outboxModel: typeof Outbox,
-  ) { }
+  ) {}
 
   public async create({
     params,

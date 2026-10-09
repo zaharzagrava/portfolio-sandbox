@@ -9,7 +9,10 @@ export const EMBEDDING_DIMS = 1024;
  */
 export abstract class Embedder {
   abstract readonly model: string;
-  abstract embed(texts: string[], kind: 'document' | 'query'): Promise<number[][]>;
+  abstract embed(
+    texts: string[],
+    kind: 'document' | 'query',
+  ): Promise<number[][]>;
 }
 
 const BATCH = 128;
@@ -26,28 +29,48 @@ export class VoyageEmbedder extends Embedder {
     super();
   }
 
-  async embed(texts: string[], kind: 'document' | 'query'): Promise<number[][]> {
+  async embed(
+    texts: string[],
+    kind: 'document' | 'query',
+  ): Promise<number[][]> {
     const out: number[][] = [];
-    for (let i = 0; i < texts.length; i += BATCH) out.push(...(await this.batch(texts.slice(i, i + BATCH), kind)));
+    for (let i = 0; i < texts.length; i += BATCH)
+      out.push(...(await this.batch(texts.slice(i, i + BATCH), kind)));
     return out;
   }
 
   /** Retries 429/5xx with exponential backoff + full jitter (embedding a batch is idempotent). */
-  private async batch(input: string[], kind: 'document' | 'query', attempt = 0): Promise<number[][]> {
+  private async batch(
+    input: string[],
+    kind: 'document' | 'query',
+    attempt = 0,
+  ): Promise<number[][]> {
     const res = await fetch('https://api.voyageai.com/v1/embeddings', {
       method: 'POST',
-      headers: { authorization: `Bearer ${this.apiKey}`, 'content-type': 'application/json' },
-      body: JSON.stringify({ input, model: this.model, input_type: kind, output_dimension: EMBEDDING_DIMS }),
+      headers: {
+        authorization: `Bearer ${this.apiKey}`,
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        input,
+        model: this.model,
+        input_type: kind,
+        output_dimension: EMBEDDING_DIMS,
+      }),
       signal: AbortSignal.timeout(TIMEOUT_MS),
     });
     if ((res.status === 429 || res.status >= 500) && attempt < 4) {
       const delay = Math.random() * Math.min(10_000, 500 * 2 ** attempt);
-      this.logger.warn(`voyage ${res.status}, retry in ${Math.round(delay)} ms`);
+      this.logger.warn(
+        `voyage ${res.status}, retry in ${Math.round(delay)} ms`,
+      );
       await new Promise((r) => setTimeout(r, delay));
       return this.batch(input, kind, attempt + 1);
     }
     if (!res.ok) throw new Error(`embedding request failed: ${res.status}`);
-    const body = (await res.json()) as { data: { embedding: number[]; index: number }[] };
+    const body = (await res.json()) as {
+      data: { embedding: number[]; index: number }[];
+    };
     return body.data.sort((a, b) => a.index - b.index).map((d) => d.embedding);
   }
 }
@@ -66,8 +89,13 @@ export class HashingEmbedder extends Embedder {
     return texts.map((t) => {
       const v = new Array<number>(EMBEDDING_DIMS).fill(0);
       const words = t.toLowerCase().match(/[a-z0-9]+/g) ?? [];
-      const terms = words.map((w) => (w.length > 3 && w.endsWith('s') ? w.slice(0, -1) : w));
-      const features = [...terms, ...terms.slice(1).map((w, i) => `${terms[i]}_${w}`)];
+      const terms = words.map((w) =>
+        w.length > 3 && w.endsWith('s') ? w.slice(0, -1) : w,
+      );
+      const features = [
+        ...terms,
+        ...terms.slice(1).map((w, i) => `${terms[i]}_${w}`),
+      ];
       for (const f of features) {
         const h = createHash('md5').update(f).digest();
         v[h.readUInt16BE(0) % EMBEDDING_DIMS] += h[2] & 1 ? 1 : -1;
@@ -79,4 +107,5 @@ export class HashingEmbedder extends Embedder {
 }
 
 /** pgvector literal. */
-export const toVectorLiteral = (v: number[]) => `[${v.map((x) => (Number.isFinite(x) ? x.toFixed(6) : '0')).join(',')}]`;
+export const toVectorLiteral = (v: number[]) =>
+  `[${v.map((x) => (Number.isFinite(x) ? x.toFixed(6) : '0')).join(',')}]`;

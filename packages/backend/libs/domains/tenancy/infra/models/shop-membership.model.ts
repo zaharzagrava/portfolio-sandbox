@@ -1,9 +1,23 @@
-import { Column, DataType, Model, PrimaryKey, Table } from 'sequelize-typescript';
+import {
+  Column,
+  DataType,
+  Model,
+  PrimaryKey,
+  Table,
+} from 'sequelize-typescript';
 
 export type ShopRole = 'OWNER' | 'ADMIN' | 'STAFF' | 'VIEWER';
 
-@Table({ modelName: 'ShopMembership', tableName: 'ShopMembership', timestamps: true, updatedAt: false })
-export default class ShopMembership extends Model<ShopMembership, Partial<ShopMembership>> {
+@Table({
+  modelName: 'ShopMembership',
+  tableName: 'ShopMembership',
+  timestamps: true,
+  updatedAt: false,
+})
+export default class ShopMembership extends Model<
+  ShopMembership,
+  Partial<ShopMembership>
+> {
   @PrimaryKey
   @Column({ type: DataType.UUID })
   declare shopId: string;

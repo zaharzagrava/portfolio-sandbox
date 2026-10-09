@@ -1,4 +1,10 @@
-import { Column, DataType, Model, PrimaryKey, Table } from 'sequelize-typescript';
+import {
+  Column,
+  DataType,
+  Model,
+  PrimaryKey,
+  Table,
+} from 'sequelize-typescript';
 import { Sequelize } from 'sequelize';
 
 export type FlashSaleStatus = 'SCHEDULED' | 'LIVE' | 'ENDED' | 'RECONCILED';

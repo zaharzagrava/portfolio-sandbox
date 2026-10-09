@@ -7,4 +7,6 @@ declare const brand: unique symbol;
 export type Brand<T, B extends string> = T & { readonly [brand]: B };
 
 /** Cast helper for trusted boundaries (DB rows, validated DTOs). */
-export const asBrand = <B extends Brand<unknown, string>>(value: Omit<B, typeof brand>): B => value as B;
+export const asBrand = <B extends Brand<unknown, string>>(
+  value: Omit<B, typeof brand>,
+): B => value as B;

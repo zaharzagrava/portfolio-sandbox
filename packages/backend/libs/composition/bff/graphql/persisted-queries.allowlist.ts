@@ -4,5 +4,5 @@
  */
 export const PERSISTED_QUERIES: Record<string, string> = {
   '89fc92a2fb9d8f7fea91d081e3327108d8943005f5b3326f2992320fb669bc10':
-    "query ProductScreen($id: ID!) { product(id: $id) { id title price stock shop { id name } recommendations { id title price } } }",
+    'query ProductScreen($id: ID!) { product(id: $id) { id title price stock shop { id name } recommendations { id title price } } }',
 };

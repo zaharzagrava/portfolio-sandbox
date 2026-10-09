@@ -1,7 +1,32 @@
-import { Body, Controller, ForbiddenException, Get, HttpCode, Param, ParseUUIDPipe, Post, Put } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  ForbiddenException,
+  Get,
+  HttpCode,
+  Param,
+  ParseUUIDPipe,
+  Post,
+  Put,
+} from '@nestjs/common';
 import { ApiProperty, ApiPropertyOptional, ApiTags } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { ArrayMaxSize, IsArray, IsBoolean, IsIn, IsInt, IsLatitude, IsLongitude, IsNumber, IsOptional, IsString, IsUUID, Length, Matches, ValidateNested } from 'class-validator';
+import {
+  ArrayMaxSize,
+  IsArray,
+  IsBoolean,
+  IsIn,
+  IsInt,
+  IsLatitude,
+  IsLongitude,
+  IsNumber,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Length,
+  Matches,
+  ValidateNested,
+} from 'class-validator';
 import { Firewall, User, UserRawDto } from '@app/domains/identity';
 import { ShopScoped } from '@app/domains/tenancy';
 import { RedisService } from '@app/infrastructure/redis/redis.service';
@@ -21,7 +46,9 @@ class TrackPointDto extends PointDto {
 
 export class RegisterCourierDto {
   @ApiProperty() @Matches(/^[a-z0-9-]{2,40}$/) city: string;
-  @ApiProperty({ enum: ['bike', 'scooter', 'car'] }) @IsIn(['bike', 'scooter', 'car']) vehicle: 'bike' | 'scooter' | 'car';
+  @ApiProperty({ enum: ['bike', 'scooter', 'car'] })
+  @IsIn(['bike', 'scooter', 'car'])
+  vehicle: 'bike' | 'scooter' | 'car';
 }
 
 export class AvailabilityDto {
@@ -29,7 +56,12 @@ export class AvailabilityDto {
 }
 
 export class LocationsDto {
-  @ApiProperty({ type: [TrackPointDto] }) @IsArray() @ArrayMaxSize(20) @ValidateNested({ each: true }) @Type(() => TrackPointDto) points: TrackPointDto[];
+  @ApiProperty({ type: [TrackPointDto] })
+  @IsArray()
+  @ArrayMaxSize(20)
+  @ValidateNested({ each: true })
+  @Type(() => TrackPointDto)
+  points: TrackPointDto[];
 }
 
 export class RequestDeliveryDto {
@@ -73,7 +105,10 @@ export class DeliveryController {
 
   @ShopScoped('orders.manage')
   @Post('shops/:shopId/deliveries')
-  request(@Param('shopId', ParseUUIDPipe) shopId: string, @Body() body: RequestDeliveryDto) {
+  request(
+    @Param('shopId', ParseUUIDPipe) shopId: string,
+    @Body() body: RequestDeliveryDto,
+  ) {
     return this.dispatch.request({ shopId, ...body });
   }
 
@@ -82,8 +117,11 @@ export class DeliveryController {
   @Get('deliveries/:id')
   async get(@Param('id', ParseUUIDPipe) id: string, @User() user: UserRawDto) {
     const d = await this.dispatch.get(id);
-    if (![d.buyerId, d.courierId, d.offeredCourierId].includes(user.id)) throw new ForbiddenException();
-    const position = d.courierId ? await this.couriers.position(d.city, d.courierId) : null;
+    if (![d.buyerId, d.courierId, d.offeredCourierId].includes(user.id))
+      throw new ForbiddenException();
+    const position = d.courierId
+      ? await this.couriers.position(d.city, d.courierId)
+      : null;
     return { ...d, courierPosition: position };
   }
 
@@ -97,21 +135,30 @@ export class DeliveryController {
   @Firewall()
   @Post('deliveries/:id/decline')
   @HttpCode(204)
-  async decline(@Param('id', ParseUUIDPipe) id: string, @User() user: UserRawDto) {
+  async decline(
+    @Param('id', ParseUUIDPipe) id: string,
+    @User() user: UserRawDto,
+  ) {
     await this.dispatch.decline(id, user.id);
   }
 
   @Firewall()
   @Post('deliveries/:id/picked-up')
   @HttpCode(204)
-  async pickedUp(@Param('id', ParseUUIDPipe) id: string, @User() user: UserRawDto) {
+  async pickedUp(
+    @Param('id', ParseUUIDPipe) id: string,
+    @User() user: UserRawDto,
+  ) {
     await this.dispatch.pickUp(id, user.id);
   }
 
   @Firewall()
   @Post('deliveries/:id/delivered')
   @HttpCode(204)
-  async delivered(@Param('id', ParseUUIDPipe) id: string, @User() user: UserRawDto) {
+  async delivered(
+    @Param('id', ParseUUIDPipe) id: string,
+    @User() user: UserRawDto,
+  ) {
     await this.dispatch.deliver(id, user.id);
   }
 }

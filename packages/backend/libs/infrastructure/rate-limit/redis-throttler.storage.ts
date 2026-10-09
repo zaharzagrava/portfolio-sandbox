@@ -21,14 +21,24 @@ return { hits, ttl, blockTtl }
 export class RedisThrottlerStorage implements ThrottlerStorage {
   constructor(private readonly redis: RedisService) {}
 
-  async increment(key: string, ttl: number, limit: number, blockDuration: number, throttlerName: string) {
+  async increment(
+    key: string,
+    ttl: number,
+    limit: number,
+    blockDuration: number,
+    throttlerName: string,
+  ) {
     const base = `throttle:{${throttlerName}:${key}}`;
     try {
-      const [hits, ttlMs, blockMs] = (await this.redis.client.eval(FIXED_WINDOW, 2, base, `${base}:blocked`, ttl, limit, blockDuration)) as [
-        number,
-        number,
-        number,
-      ];
+      const [hits, ttlMs, blockMs] = (await this.redis.client.eval(
+        FIXED_WINDOW,
+        2,
+        base,
+        `${base}:blocked`,
+        ttl,
+        limit,
+        blockDuration,
+      )) as [number, number, number];
       const isBlocked = blockMs > 0 || hits > limit;
       return {
         totalHits: hits,
@@ -38,7 +48,12 @@ export class RedisThrottlerStorage implements ThrottlerStorage {
       };
     } catch {
       // Global coarse throttle fails open: endpoint-specific @RateLimit policies decide fail-closed cases.
-      return { totalHits: 0, timeToExpire: 0, isBlocked: false, timeToBlockExpire: 0 };
+      return {
+        totalHits: 0,
+        timeToExpire: 0,
+        isBlocked: false,
+        timeToBlockExpire: 0,
+      };
     }
   }
 }

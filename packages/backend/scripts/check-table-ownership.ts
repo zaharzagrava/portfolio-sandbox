@@ -23,21 +23,35 @@ const walk = (dir: string): string[] =>
     return statSync(p).isDirectory() ? walk(p) : [p];
   });
 
-type Finding = { kind: 'sql' | 'model'; what: string; owner: string; file: string };
+type Finding = {
+  kind: 'sql' | 'model';
+  what: string;
+  owner: string;
+  file: string;
+};
 const byDomain = new Map<string, Finding[]>();
 
-for (const file of walk(DOMAINS).filter((f) => f.endsWith('.ts') && !f.endsWith('spec.ts'))) {
+for (const file of walk(DOMAINS).filter(
+  (f) => f.endsWith('.ts') && !f.endsWith('spec.ts'),
+)) {
   const domain = relative(DOMAINS, file).split('/')[0];
   const src = readFileSync(file, 'utf8');
-  const add = (f: Finding) => byDomain.set(domain, [...(byDomain.get(domain) ?? []), f]);
+  const add = (f: Finding) =>
+    byDomain.set(domain, [...(byDomain.get(domain) ?? []), f]);
 
   for (const [, table] of src.matchAll(/"([A-Z][A-Za-z_]+)"/g)) {
     const owner = ownerOf(table);
-    if (owner?.startsWith('domain:') && owner !== `domain:${domain}`) add({ kind: 'sql', what: table, owner: owner.slice(7), file });
+    if (owner?.startsWith('domain:') && owner !== `domain:${domain}`)
+      add({ kind: 'sql', what: table, owner: owner.slice(7), file });
   }
-  for (const [, names, from] of src.matchAll(/import\s+(?:type\s+)?\{([^}]*)\}\s+from\s+'@app\/domains\/([a-z-]+)'/g)) {
+  for (const [, names, from] of src.matchAll(
+    /import\s+(?:type\s+)?\{([^}]*)\}\s+from\s+'@app\/domains\/([a-z-]+)'/g,
+  )) {
     if (from === domain) continue;
-    for (const name of names.split(',').map((n) => n.trim().split(/\s+as\s+/)[0]).filter((n) => /Model$/.test(n))) {
+    for (const name of names
+      .split(',')
+      .map((n) => n.trim().split(/\s+as\s+/)[0])
+      .filter((n) => /Model$/.test(n))) {
       add({ kind: 'model', what: name, owner: from, file });
     }
   }
@@ -45,12 +59,22 @@ for (const file of walk(DOMAINS).filter((f) => f.endsWith('.ts') && !f.endsWith(
 
 let total = 0;
 for (const [domain, findings] of [...byDomain].sort()) {
-  const unique = [...new Map(findings.map((f) => [`${f.kind}|${f.what}|${f.file}`, f])).values()];
+  const unique = [
+    ...new Map(
+      findings.map((f) => [`${f.kind}|${f.what}|${f.file}`, f]),
+    ).values(),
+  ];
   total += unique.length;
   console.log(`\n${domain}  (${unique.length})`);
-  for (const f of unique.sort((a, b) => a.owner.localeCompare(b.owner) || a.what.localeCompare(b.what))) {
-    console.log(`  ${f.kind === 'sql' ? 'SQL  ' : 'MODEL'} ${f.what.padEnd(26)} owned by ${f.owner.padEnd(18)} ${relative(BACKEND, f.file)}`);
+  for (const f of unique.sort(
+    (a, b) => a.owner.localeCompare(b.owner) || a.what.localeCompare(b.what),
+  )) {
+    console.log(
+      `  ${f.kind === 'sql' ? 'SQL  ' : 'MODEL'} ${f.what.padEnd(26)} owned by ${f.owner.padEnd(18)} ${relative(BACKEND, f.file)}`,
+    );
   }
 }
-console.log(`\n${total} cross-domain data accesses in ${byDomain.size} domains (${basename(__filename)}).`);
+console.log(
+  `\n${total} cross-domain data accesses in ${byDomain.size} domains (${basename(__filename)}).`,
+);
 process.exit(strict && total > 0 ? 1 : 0);

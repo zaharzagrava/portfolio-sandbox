@@ -18,7 +18,12 @@ export class DiscussionsJobs implements OnApplicationBootstrap {
   ) {}
 
   async onApplicationBootstrap() {
-    await this.jobs.upsertSchedule({ name: 'discussions.flush-votes', cron: '*/5 * * * * *', jobType: 'discussions.flush-votes', payload: {} });
+    await this.jobs.upsertSchedule({
+      name: 'discussions.flush-votes',
+      cron: '*/5 * * * * *',
+      jobType: 'discussions.flush-votes',
+      payload: {},
+    });
   }
 
   @JobHandler('discussions.flush-votes', { concurrency: 1 })

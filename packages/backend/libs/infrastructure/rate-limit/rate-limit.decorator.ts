@@ -10,4 +10,7 @@ export const RATE_LIMIT_METADATA = 'rate-limit:policies';
  * runs after the auth guards and can key by the authenticated user/API key.
  */
 export const RateLimit = (...policies: RateLimitPolicyName[]) =>
-  applyDecorators(SetMetadata(RATE_LIMIT_METADATA, policies), UseInterceptors(RateLimitInterceptor));
+  applyDecorators(
+    SetMetadata(RATE_LIMIT_METADATA, policies),
+    UseInterceptors(RateLimitInterceptor),
+  );

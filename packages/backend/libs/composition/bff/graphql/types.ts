@@ -16,6 +16,10 @@ export class ProductGql {
   @Field() category: string;
   /** Resolved lazily through the per-request ShopLoader (batched). */
   @Field(() => ShopGql, { nullable: true }) shop?: ShopGql | null;
-  @Field(() => [ProductGql], { nullable: true, description: 'Bought together (partial: null if the recommender is slow)' }) recommendations?: ProductGql[] | null;
+  @Field(() => [ProductGql], {
+    nullable: true,
+    description: 'Bought together (partial: null if the recommender is slow)',
+  })
+  recommendations?: ProductGql[] | null;
   shopId?: string | null;
 }

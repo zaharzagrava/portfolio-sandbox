@@ -21,7 +21,10 @@ describe('OutboxPublisherService (e2e, real Postgres)', () => {
   let outboxModel: typeof Outbox;
 
   beforeAll(async () => {
-    const moduleRef = await generateTestingModule([OutboxPublisherModule, SeedsModule]);
+    const moduleRef = await generateTestingModule([
+      OutboxPublisherModule,
+      SeedsModule,
+    ]);
     app = moduleRef.createNestApplication();
     await app.init();
 
@@ -50,18 +53,24 @@ describe('OutboxPublisherService (e2e, real Postgres)', () => {
     );
 
   it('publishes due rows keyed by idempotency key and marks them published', async () => {
-    const sendSpy = jest.spyOn(producer, 'send').mockResolvedValue(undefined as never);
+    const sendSpy = jest
+      .spyOn(producer, 'send')
+      .mockResolvedValue(undefined as never);
     await seedEvents(3);
 
     await publisher.drain();
 
     expect(sendSpy).toHaveBeenCalledTimes(3);
-    expect(sendSpy.mock.calls.map(([arg]) => (arg as { key: string }).key).sort()).toEqual(['key-0', 'key-1', 'key-2']);
+    expect(
+      sendSpy.mock.calls.map(([arg]) => (arg as { key: string }).key).sort(),
+    ).toEqual(['key-0', 'key-1', 'key-2']);
     expect(await outboxModel.count({ where: { publishedAt: null } })).toBe(0);
   });
 
   it('broker down → rows stay unpublished with attempts incremented and a future nextAttemptAt (nothing lost)', async () => {
-    jest.spyOn(producer, 'send').mockRejectedValue(new Error('broker unavailable'));
+    jest
+      .spyOn(producer, 'send')
+      .mockRejectedValue(new Error('broker unavailable'));
     await seedEvents(2);
     const before = new Date();
 
@@ -72,12 +81,17 @@ describe('OutboxPublisherService (e2e, real Postgres)', () => {
     for (const row of rows) {
       expect(row.publishedAt).toBeNull();
       expect(row.attempts).toBe(1);
-      expect(new Date(row.nextAttemptAt).getTime()).toBeGreaterThan(before.getTime());
+      expect(new Date(row.nextAttemptAt).getTime()).toBeGreaterThan(
+        before.getTime(),
+      );
     }
   });
 
   it('recovers: after the broker comes back the same rows are published exactly once', async () => {
-    const sendSpy = jest.spyOn(producer, 'send').mockRejectedValueOnce(new Error('down')).mockResolvedValue(undefined as never);
+    const sendSpy = jest
+      .spyOn(producer, 'send')
+      .mockRejectedValueOnce(new Error('down'))
+      .mockResolvedValue(undefined as never);
     await seedEvents(1);
 
     await publisher.drain(); // fails, schedules retry

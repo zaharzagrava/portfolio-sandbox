@@ -18,7 +18,9 @@ export async function waitFor<T>(
     }
     await new Promise((r) => setTimeout(r, intervalMs));
   }
-  throw new Error(`waitFor(${description}) timed out after ${timeoutMs}ms${lastError ? `: ${(lastError as Error).message}` : ''}`);
+  throw new Error(
+    `waitFor(${description}) timed out after ${timeoutMs}ms${lastError ? `: ${(lastError as Error).message}` : ''}`,
+  );
 }
 
 /**
@@ -26,7 +28,10 @@ export async function waitFor<T>(
  * returns all settled results - the core of the "exactly one winner"
  * contention specs (seat holds, bids, stock, idempotency).
  */
-export async function inParallel<T>(n: number, fn: (i: number) => Promise<T>): Promise<PromiseSettledResult<T>[]> {
+export async function inParallel<T>(
+  n: number,
+  fn: (i: number) => Promise<T>,
+): Promise<PromiseSettledResult<T>[]> {
   let release!: () => void;
   const gate = new Promise<void>((resolve) => (release = resolve));
   const calls = Array.from({ length: n }, async (_, i) => {
@@ -38,7 +43,9 @@ export async function inParallel<T>(n: number, fn: (i: number) => Promise<T>): P
 }
 
 /** Counts HTTP statuses from supertest responses settled by `inParallel`. */
-export function countStatuses(results: PromiseSettledResult<{ status: number }>[]): Record<number, number> {
+export function countStatuses(
+  results: PromiseSettledResult<{ status: number }>[],
+): Record<number, number> {
   return results.reduce<Record<number, number>>((acc, r) => {
     const status = r.status === 'fulfilled' ? r.value.status : -1;
     acc[status] = (acc[status] ?? 0) + 1;

@@ -1,4 +1,13 @@
-import { Controller, ForbiddenException, Get, Headers, Query, Req, Res, BadRequestException } from '@nestjs/common';
+import {
+  Controller,
+  ForbiddenException,
+  Get,
+  Headers,
+  Query,
+  Req,
+  Res,
+  BadRequestException,
+} from '@nestjs/common';
 import type { Request, Response } from 'express';
 import { Firewall } from '@app/domains/identity';
 import type { RequestWithUser } from '@app/domains/identity';
@@ -43,14 +52,31 @@ export class TopicStreamController {
     @Req() req: Request & Partial<RequestWithUser>,
     @Res() res: Response,
   ) {
-    const topics = [...new Set((topicsParam ?? '').split(',').map((t) => t.trim()).filter(Boolean))];
-    if (topics.length === 0 || topics.length > MAX_TOPICS_PER_CONNECTION || !topics.every((t) => this.topicRegistry.isKnown(t))) {
-      throw new BadRequestException(`topics: 1-${MAX_TOPICS_PER_CONNECTION} valid realtime topics`);
+    const topics = [
+      ...new Set(
+        (topicsParam ?? '')
+          .split(',')
+          .map((t) => t.trim())
+          .filter(Boolean),
+      ),
+    ];
+    if (
+      topics.length === 0 ||
+      topics.length > MAX_TOPICS_PER_CONNECTION ||
+      !topics.every((t) => this.topicRegistry.isKnown(t))
+    ) {
+      throw new BadRequestException(
+        `topics: 1-${MAX_TOPICS_PER_CONNECTION} valid realtime topics`,
+      );
     }
 
-    const viewer = { userId: req.user?.id, roles: req.user?.role ? [req.user.role] : [] };
+    const viewer = {
+      userId: req.user?.id,
+      roles: req.user?.role ? [req.user.role] : [],
+    };
     for (const topic of topics as RealtimeTopic[]) {
-      if (!(await this.topicRegistry.canSubscribe(viewer, topic))) throw new ForbiddenException(`not allowed: ${topic}`);
+      if (!(await this.topicRegistry.canSubscribe(viewer, topic)))
+        throw new ForbiddenException(`not allowed: ${topic}`);
     }
 
     res.writeHead(200, {
@@ -62,7 +88,9 @@ export class TopicStreamController {
     });
     res.write('retry: 3000\n\n');
 
-    const cursor = decodeCursor(lastEventId, (t) => this.topicRegistry.isKnown(t));
+    const cursor = decodeCursor(lastEventId, (t) =>
+      this.topicRegistry.isKnown(t),
+    );
     let closed = false;
     let replaying = true;
     const buffered: RealtimeMessage[] = [];
@@ -71,7 +99,9 @@ export class TopicStreamController {
       const last = cursor.get(message.topic);
       if (last && compareStreamIds(message.id, last) <= 0) return; // already delivered (replay overlap)
       cursor.set(message.topic, message.id);
-      const ok = res.write(`id: ${encodeCursor(cursor)}\nevent: ${message.type}\ndata: ${JSON.stringify({ topic: message.topic, data: message.data })}\n\n`);
+      const ok = res.write(
+        `id: ${encodeCursor(cursor)}\nevent: ${message.type}\ndata: ${JSON.stringify({ topic: message.topic, data: message.data })}\n\n`,
+      );
       if (!ok && res.writableLength > MAX_BUFFERED_BYTES) close();
     };
 
@@ -81,7 +111,9 @@ export class TopicStreamController {
       else send(message);
     };
 
-    const unsubscribers = await Promise.all(topics.map((t) => this.hub.subscribe(t, onLive)));
+    const unsubscribers = await Promise.all(
+      topics.map((t) => this.hub.subscribe(t, onLive)),
+    );
 
     const heartbeat = setInterval(() => res.write(': ping\n\n'), HEARTBEAT_MS);
 
@@ -98,7 +130,13 @@ export class TopicStreamController {
     for (const topic of topics as RealtimeTopic[]) {
       const from = cursor.get(topic);
       if (!from) continue;
-      const entries = await this.redis.client.xrange(streamKey(topic), `(${from}`, '+', 'COUNT', REPLAY_LIMIT);
+      const entries = await this.redis.client.xrange(
+        streamKey(topic),
+        `(${from}`,
+        '+',
+        'COUNT',
+        REPLAY_LIMIT,
+      );
       for (const [id, fields] of entries) {
         const type = fields[fields.indexOf('type') + 1];
         const data = JSON.parse(fields[fields.indexOf('data') + 1]);

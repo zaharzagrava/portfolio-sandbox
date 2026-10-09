@@ -1,4 +1,8 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { types } from 'cassandra-driver';
 import { CassandraService } from '@app/infrastructure/cassandra/cassandra.service';
 import { RedisService } from '@app/infrastructure/redis/redis.service';
@@ -29,29 +33,57 @@ export class VoteService {
     this.deltas = new WriteBehindCounter(redis, VOTE_DELTAS);
   }
 
-  async vote(userId: string, targetType: 'post' | 'comment', targetId: string, value: VoteValue) {
+  async vote(
+    userId: string,
+    targetType: 'post' | 'comment',
+    targetId: string,
+    value: VoteValue,
+  ) {
     const lockKey = `vote-lock:${userId}:${targetId}`;
-    if ((await this.redis.client.set(lockKey, '1', 'PX', 3_000, 'NX')) !== 'OK') throw new ConflictException('Vote in progress');
+    if ((await this.redis.client.set(lockKey, '1', 'PX', 3_000, 'NX')) !== 'OK')
+      throw new ConflictException('Vote in progress');
     try {
       const context = await this.context(targetType, targetId);
-      const previous = (await this.cassandra.execute('SELECT value FROM votes_by_user WHERE user_id = ? AND target_id = ?', [userId, targetId])).rows[0]?.value ?? 0;
+      const previous =
+        (
+          await this.cassandra.execute(
+            'SELECT value FROM votes_by_user WHERE user_id = ? AND target_id = ?',
+            [userId, targetId],
+          )
+        ).rows[0]?.value ?? 0;
       if (previous === value) return this.score(targetId);
 
       if (value === 0) {
         await Promise.all([
-          this.cassandra.execute('DELETE FROM votes_by_user WHERE user_id = ? AND target_id = ?', [userId, targetId]),
-          this.cassandra.execute('DELETE FROM votes_by_target WHERE target_id = ? AND user_id = ?', [targetId, userId]),
+          this.cassandra.execute(
+            'DELETE FROM votes_by_user WHERE user_id = ? AND target_id = ?',
+            [userId, targetId],
+          ),
+          this.cassandra.execute(
+            'DELETE FROM votes_by_target WHERE target_id = ? AND user_id = ?',
+            [targetId, userId],
+          ),
         ]);
       } else {
         await Promise.all([
-          this.cassandra.execute('INSERT INTO votes_by_user (user_id, target_id, value) VALUES (?, ?, ?)', [userId, targetId, value]),
-          this.cassandra.execute('INSERT INTO votes_by_target (target_id, user_id, value) VALUES (?, ?, ?)', [targetId, userId, value]),
+          this.cassandra.execute(
+            'INSERT INTO votes_by_user (user_id, target_id, value) VALUES (?, ?, ?)',
+            [userId, targetId, value],
+          ),
+          this.cassandra.execute(
+            'INSERT INTO votes_by_target (target_id, user_id, value) VALUES (?, ?, ?)',
+            [targetId, userId, value],
+          ),
         ]);
       }
 
       const upsDelta = (value === 1 ? 1 : 0) - (previous === 1 ? 1 : 0);
       const downsDelta = (value === -1 ? 1 : 0) - (previous === -1 ? 1 : 0);
-      const [ups, downs] = await this.applyDelta(targetId, upsDelta, downsDelta);
+      const [ups, downs] = await this.applyDelta(
+        targetId,
+        upsDelta,
+        downsDelta,
+      );
       await this.rerank(targetType, targetId, context, ups, downs);
       return { ups, downs, myVote: value };
     } finally {
@@ -60,7 +92,11 @@ export class VoteService {
   }
 
   async score(targetId: string) {
-    const [ups, downs] = await this.redis.client.hmget(scoreKey(targetId), 'ups', 'downs');
+    const [ups, downs] = await this.redis.client.hmget(
+      scoreKey(targetId),
+      'ups',
+      'downs',
+    );
     return { ups: Number(ups ?? 0), downs: Number(downs ?? 0) };
   }
 
@@ -76,10 +112,14 @@ export class VoteService {
     }
     try {
       for (const [targetId, d] of byTarget) {
-        await this.cassandra.client.execute('UPDATE vote_counts SET ups = ups + ?, downs = downs + ? WHERE target_id = ?', [types_long(d.ups), types_long(d.downs), targetId], {
-          prepare: true,
-          isIdempotent: false, // counter updates must never be retried by the driver
-        });
+        await this.cassandra.client.execute(
+          'UPDATE vote_counts SET ups = ups + ?, downs = downs + ? WHERE target_id = ?',
+          [types_long(d.ups), types_long(d.downs), targetId],
+          {
+            prepare: true,
+            isIdempotent: false, // counter updates must never be retried by the driver
+          },
+        );
       }
     } catch (error) {
       await this.deltas.restore(drained);
@@ -97,47 +137,97 @@ export class VoteService {
     let downs = 0;
     let pageState: string | undefined;
     do {
-      const page = await this.cassandra.execute('SELECT value FROM votes_by_target WHERE target_id = ?', [targetId], { fetchSize: 5_000, pageState });
+      const page = await this.cassandra.execute(
+        'SELECT value FROM votes_by_target WHERE target_id = ?',
+        [targetId],
+        { fetchSize: 5_000, pageState },
+      );
       for (const row of page.rows) row.value === 1 ? ups++ : downs++;
       pageState = page.pageState ?? undefined;
     } while (pageState);
-    await this.redis.client.hset(scoreKey(targetId), 'ups', ups, 'downs', downs);
+    await this.redis.client.hset(
+      scoreKey(targetId),
+      'ups',
+      ups,
+      'downs',
+      downs,
+    );
     return { ups, downs };
   }
 
-  private async applyDelta(targetId: string, upsDelta: number, downsDelta: number): Promise<[number, number]> {
-    const tx = this.redis.client.multi().hincrby(scoreKey(targetId), 'ups', upsDelta).hincrby(scoreKey(targetId), 'downs', downsDelta);
+  private async applyDelta(
+    targetId: string,
+    upsDelta: number,
+    downsDelta: number,
+  ): Promise<[number, number]> {
+    const tx = this.redis.client
+      .multi()
+      .hincrby(scoreKey(targetId), 'ups', upsDelta)
+      .hincrby(scoreKey(targetId), 'downs', downsDelta);
     const results = await tx.exec();
     if (upsDelta) await this.deltas.increment(`${targetId}|ups`, upsDelta);
-    if (downsDelta) await this.deltas.increment(`${targetId}|downs`, downsDelta);
+    if (downsDelta)
+      await this.deltas.increment(`${targetId}|downs`, downsDelta);
     return [Number(results![0][1]), Number(results![1][1])];
   }
 
-  private async context(targetType: 'post' | 'comment', targetId: string): Promise<{ boardId?: string; createdAt?: number; postId?: string }> {
+  private async context(
+    targetType: 'post' | 'comment',
+    targetId: string,
+  ): Promise<{ boardId?: string; createdAt?: number; postId?: string }> {
     if (targetType === 'post') {
-      const [boardId, createdAt] = await this.redis.client.hmget(`post-meta:${targetId}`, 'boardId', 'createdAt');
+      const [boardId, createdAt] = await this.redis.client.hmget(
+        `post-meta:${targetId}`,
+        'boardId',
+        'createdAt',
+      );
       if (!boardId) {
-        const row = (await this.cassandra.execute('SELECT board_id, created_at FROM posts WHERE post_id = ?', [targetId])).rows[0];
+        const row = (
+          await this.cassandra.execute(
+            'SELECT board_id, created_at FROM posts WHERE post_id = ?',
+            [targetId],
+          )
+        ).rows[0];
         if (!row) throw new NotFoundException('Post not found');
         return { boardId: row.board_id, createdAt: row.created_at.getTime() };
       }
       return { boardId, createdAt: Number(createdAt) };
     }
-    const loc = (await this.cassandra.execute('SELECT post_id FROM comment_locator WHERE comment_id = ?', [targetId])).rows[0];
+    const loc = (
+      await this.cassandra.execute(
+        'SELECT post_id FROM comment_locator WHERE comment_id = ?',
+        [targetId],
+      )
+    ).rows[0];
     if (!loc) throw new NotFoundException('Comment not found');
     return { postId: loc.post_id.toString() };
   }
 
-  private async rerank(targetType: 'post' | 'comment', targetId: string, ctx: { boardId?: string; createdAt?: number; postId?: string }, ups: number, downs: number) {
+  private async rerank(
+    targetType: 'post' | 'comment',
+    targetId: string,
+    ctx: { boardId?: string; createdAt?: number; postId?: string },
+    ups: number,
+    downs: number,
+  ) {
     if (targetType === 'post') {
       await this.redis.client
         .multi()
-        .zadd(boardKey(ctx.boardId!, 'hot'), hotScore(ups, downs, new Date(ctx.createdAt!)), targetId)
+        .zadd(
+          boardKey(ctx.boardId!, 'hot'),
+          hotScore(ups, downs, new Date(ctx.createdAt!)),
+          targetId,
+        )
         .zadd(boardKey(ctx.boardId!, 'top'), ups - downs, targetId)
         .exec();
     } else {
       // Only top-level comments live in the "best" set (XX: never add replies).
-      await this.redis.client.zadd(`post:{${ctx.postId}}:best`, 'XX', wilsonLowerBound(ups, downs), targetId);
+      await this.redis.client.zadd(
+        `post:{${ctx.postId}}:best`,
+        'XX',
+        wilsonLowerBound(ups, downs),
+        targetId,
+      );
     }
   }
 }

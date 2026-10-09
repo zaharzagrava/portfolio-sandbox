@@ -3,7 +3,11 @@ export interface SqsRecord {
   messageId: string;
   receiptHandle: string;
   body: string;
-  attributes: { ApproximateReceiveCount: string; MessageGroupId?: string; SentTimestamp?: string };
+  attributes: {
+    ApproximateReceiveCount: string;
+    MessageGroupId?: string;
+    SentTimestamp?: string;
+  };
   eventSourceARN: string;
 }
 export interface SqsEvent {
@@ -58,7 +62,16 @@ export async function processBatch(
         }
       }
     };
-    await Promise.all(Array.from({ length: Math.min(concurrency, event.Records.length) }, worker));
+    await Promise.all(
+      Array.from(
+        { length: Math.min(concurrency, event.Records.length) },
+        worker,
+      ),
+    );
   }
-  return { batchItemFailures: event.Records.filter((r) => failures.includes(r.messageId)).map((r) => ({ itemIdentifier: r.messageId })) };
+  return {
+    batchItemFailures: event.Records.filter((r) =>
+      failures.includes(r.messageId),
+    ).map((r) => ({ itemIdentifier: r.messageId })),
+  };
 }

@@ -1,8 +1,22 @@
-import { Column, DataType, Model, PrimaryKey, Table } from 'sequelize-typescript';
+import {
+  Column,
+  DataType,
+  Model,
+  PrimaryKey,
+  Table,
+} from 'sequelize-typescript';
 
 /** Per-shop enterprise IdP (OIDC). RLS-protected; client secret encrypted (SecretBox). */
-@Table({ modelName: 'ShopSsoConfig', tableName: 'ShopSsoConfig', timestamps: true, createdAt: false })
-export default class ShopSsoConfig extends Model<ShopSsoConfig, Partial<ShopSsoConfig>> {
+@Table({
+  modelName: 'ShopSsoConfig',
+  tableName: 'ShopSsoConfig',
+  timestamps: true,
+  createdAt: false,
+})
+export default class ShopSsoConfig extends Model<
+  ShopSsoConfig,
+  Partial<ShopSsoConfig>
+> {
   @PrimaryKey
   @Column({ type: DataType.UUID })
   declare shopId: string;

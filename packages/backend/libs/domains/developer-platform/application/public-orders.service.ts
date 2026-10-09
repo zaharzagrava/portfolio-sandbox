@@ -17,22 +17,53 @@ export interface ApiOrder {
 export class PublicOrdersService {
   constructor(@InjectConnection() private readonly sequelize: Sequelize) {}
 
-  async list(shopId: string, cursor?: string, limit = 20): Promise<ApiList<ApiOrder>> {
+  async list(
+    shopId: string,
+    cursor?: string,
+    limit = 20,
+  ): Promise<ApiList<ApiOrder>> {
     const size = Math.min(Math.max(limit, 1), 100);
     const before = cursor ? Buffer.from(cursor, 'base64url').toString() : null;
-    const rows = await this.query(shopId, `${before ? 'AND so.id < :before' : ''} ORDER BY so.id DESC LIMIT :limit`, { before, limit: size + 1 });
+    const rows = await this.query(
+      shopId,
+      `${before ? 'AND so.id < :before' : ''} ORDER BY so.id DESC LIMIT :limit`,
+      { before, limit: size + 1 },
+    );
     const page = rows.slice(0, size);
-    return { object: 'list', data: page, has_more: rows.length > size, next_cursor: rows.length > size ? Buffer.from(page[page.length - 1].id).toString('base64url') : null };
+    return {
+      object: 'list',
+      data: page,
+      has_more: rows.length > size,
+      next_cursor:
+        rows.length > size
+          ? Buffer.from(page[page.length - 1].id).toString('base64url')
+          : null,
+    };
   }
 
   async get(shopId: string, id: string): Promise<ApiOrder> {
     const [order] = await this.query(shopId, 'AND so.id = :id', { id });
-    if (!order) throw new NotFoundException({ type: 'resource_missing', message: `No such order: ${id}` });
+    if (!order)
+      throw new NotFoundException({
+        type: 'resource_missing',
+        message: `No such order: ${id}`,
+      });
     return order;
   }
 
-  private async query(shopId: string, tail: string, replacements: Record<string, unknown>): Promise<ApiOrder[]> {
-    const rows = await this.sequelize.query<{ id: string; status: string; subtotal: string; currency: string; createdAt: Date; lines: { product_id: string; quantity: number; unit_price: string }[] }>(
+  private async query(
+    shopId: string,
+    tail: string,
+    replacements: Record<string, unknown>,
+  ): Promise<ApiOrder[]> {
+    const rows = await this.sequelize.query<{
+      id: string;
+      status: string;
+      subtotal: string;
+      currency: string;
+      createdAt: Date;
+      lines: { product_id: string; quantity: number; unit_price: string }[];
+    }>(
       `SELECT so.id, so.status, so.subtotal, o.currency, so."createdAt",
               coalesce((SELECT json_agg(json_build_object('product_id', i."productId", 'quantity', i.quantity, 'unit_price', i."priceAtPurchase"))
                         FROM "BisOrderItem" i WHERE i."bisOrderId" = so."bisOrderId" AND i."shopId" = so."shopId"), '[]') AS lines

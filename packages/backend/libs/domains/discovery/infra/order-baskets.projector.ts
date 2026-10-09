@@ -22,7 +22,11 @@ export class OrderBasketsProjector implements Projector {
     const rows = events
       .map((e) => OrderPaid.match(e))
       .filter((e): e is NonNullable<typeof e> => !!e)
-      .map((e) => ({ order_id: e.aggregateId, products: [...new Set(e.payload.lines.map((l) => l.productId))].sort(), ts: e.occurredAt.replace('Z', '') }))
+      .map((e) => ({
+        order_id: e.aggregateId,
+        products: [...new Set(e.payload.lines.map((l) => l.productId))].sort(),
+        ts: e.occurredAt.replace('Z', ''),
+      }))
       .filter((r) => r.products.length >= 2 && r.products.length <= MAX_BASKET);
     await this.sink.insert('order_baskets', rows);
   }

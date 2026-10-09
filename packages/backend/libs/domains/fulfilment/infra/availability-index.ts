@@ -35,7 +35,12 @@ export class AvailabilityIndex implements OnModuleInit {
 
   async onModuleInit() {
     const client = this.es.getClient();
-    if (await client.indices.exists({ index: AVAILABILITY_INDEX }).catch(() => true)) return;
+    if (
+      await client.indices
+        .exists({ index: AVAILABILITY_INDEX })
+        .catch(() => true)
+    )
+      return;
     await client.indices
       .create({
         index: AVAILABILITY_INDEX,
@@ -55,38 +60,82 @@ export class AvailabilityIndex implements OnModuleInit {
           },
         },
       })
-      .catch((e) => this.logger.warn(`availability index create: ${e.message}`));
+      .catch((e) =>
+        this.logger.warn(`availability index create: ${e.message}`),
+      );
   }
 
-  async searchNear(params: { q?: string; lat: number; lng: number; radiusKm: number; size?: number }): Promise<NearbyProduct[]> {
+  async searchNear(params: {
+    q?: string;
+    lat: number;
+    lng: number;
+    radiusKm: number;
+    size?: number;
+  }): Promise<NearbyProduct[]> {
     const origin = { lat: params.lat, lon: params.lng };
     const res = await this.es.getClient().search({
       index: AVAILABILITY_INDEX,
       size: params.size ?? 20,
       query: {
         bool: {
-          ...(params.q && { must: [{ match: { title: { query: params.q, fuzziness: 'AUTO', operator: 'and' } } }] }),
+          ...(params.q && {
+            must: [
+              {
+                match: {
+                  title: {
+                    query: params.q,
+                    fuzziness: 'AUTO',
+                    operator: 'and',
+                  },
+                },
+              },
+            ],
+          }),
           // Filter context: cached, unscored.
-          filter: [{ geo_distance: { distance: `${params.radiusKm}km`, location: origin } }, { range: { quantity: { gt: 0 } } }],
+          filter: [
+            {
+              geo_distance: {
+                distance: `${params.radiusKm}km`,
+                location: origin,
+              },
+            },
+            { range: { quantity: { gt: 0 } } },
+          ],
         },
       },
-      sort: params.q ? ['_score', { _geo_distance: { location: origin, order: 'asc', unit: 'm' } }] : [{ _geo_distance: { location: origin, order: 'asc', unit: 'm' } }],
+      sort: params.q
+        ? [
+            '_score',
+            { _geo_distance: { location: origin, order: 'asc', unit: 'm' } },
+          ]
+        : [{ _geo_distance: { location: origin, order: 'asc', unit: 'm' } }],
       collapse: {
         field: 'productId',
-        inner_hits: { name: 'nearest', size: 1, sort: [{ _geo_distance: { location: origin, order: 'asc', unit: 'm' } }] },
+        inner_hits: {
+          name: 'nearest',
+          size: 1,
+          sort: [
+            { _geo_distance: { location: origin, order: 'asc', unit: 'm' } },
+          ],
+        },
       },
     });
 
     return res.hits.hits.map((hit) => {
       const doc = hit._source as AvailabilityDoc;
-      const nearest = (hit.inner_hits?.nearest.hits.hits[0] ?? hit) as { _source?: AvailabilityDoc; sort?: unknown[] };
+      const nearest = (hit.inner_hits?.nearest.hits.hits[0] ?? hit) as {
+        _source?: AvailabilityDoc;
+        sort?: unknown[];
+      };
       return {
         productId: doc.productId,
         title: doc.title,
         price: doc.price,
         nearest: {
           pickupPointId: nearest._source!.pickupPointId,
-          distanceM: Math.round(Number(nearest.sort?.[nearest.sort.length - 1] ?? 0)),
+          distanceM: Math.round(
+            Number(nearest.sort?.[nearest.sort.length - 1] ?? 0),
+          ),
           quantity: nearest._source!.quantity,
         },
       };
@@ -94,26 +143,52 @@ export class AvailabilityIndex implements OnModuleInit {
   }
 
   /** Map clusters: count of in-stock offers per geotile inside the viewport. */
-  async clusters(bbox: { top: number; left: number; bottom: number; right: number }, zoom: number) {
+  async clusters(
+    bbox: { top: number; left: number; bottom: number; right: number },
+    zoom: number,
+  ) {
     const res = await this.es.getClient().search({
       index: AVAILABILITY_INDEX,
       size: 0,
       query: {
         bool: {
           filter: [
-            { geo_bounding_box: { location: { top_left: { lat: bbox.top, lon: bbox.left }, bottom_right: { lat: bbox.bottom, lon: bbox.right } } } },
+            {
+              geo_bounding_box: {
+                location: {
+                  top_left: { lat: bbox.top, lon: bbox.left },
+                  bottom_right: { lat: bbox.bottom, lon: bbox.right },
+                },
+              },
+            },
             { range: { quantity: { gt: 0 } } },
           ],
         },
       },
       aggs: {
         tiles: {
-          geotile_grid: { field: 'location', precision: Math.min(Math.max(zoom, 0), 20) },
+          geotile_grid: {
+            field: 'location',
+            precision: Math.min(Math.max(zoom, 0), 20),
+          },
           aggs: { center: { geo_centroid: { field: 'location' } } },
         },
       },
     });
-    const buckets = (res.aggregations?.tiles as { buckets: { key: string; doc_count: number; center: { location: { lat: number; lon: number } } }[] }).buckets;
-    return buckets.map((b) => ({ tile: b.key, offers: b.doc_count, lat: b.center.location.lat, lng: b.center.location.lon }));
+    const buckets = (
+      res.aggregations?.tiles as {
+        buckets: {
+          key: string;
+          doc_count: number;
+          center: { location: { lat: number; lon: number } };
+        }[];
+      }
+    ).buckets;
+    return buckets.map((b) => ({
+      tile: b.key,
+      offers: b.doc_count,
+      lat: b.center.location.lat,
+      lng: b.center.location.lon,
+    }));
   }
 }

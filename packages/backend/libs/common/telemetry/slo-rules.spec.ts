@@ -1,4 +1,9 @@
-import { errorRatio, k6Thresholds, sloRuleGroup, SloDefinition } from './slo-rules';
+import {
+  errorRatio,
+  k6Thresholds,
+  sloRuleGroup,
+  SloDefinition,
+} from './slo-rules';
 
 const checkout: SloDefinition = {
   name: 'checkout-availability',
@@ -7,7 +12,11 @@ const checkout: SloDefinition = {
   description: 'Checkout succeeds',
   objective: 99.95,
   window: '30d',
-  sli: { type: 'availability', metric: 'http_server_request_duration_seconds', selector: 'service="core"' },
+  sli: {
+    type: 'availability',
+    metric: 'http_server_request_duration_seconds',
+    selector: 'service="core"',
+  },
   runbook: 'docs/runbooks/APIErrorBudgetFastBurn.md',
   k6: { threshold: 'http_req_failed{journey:checkout}: rate<0.0005' },
 };
@@ -20,13 +29,27 @@ describe('SLO rule generation', () => {
   });
 
   it('latency SLI = requests slower than the threshold bucket / all requests', () => {
-    const slo: SloDefinition = { ...checkout, sli: { type: 'latency', metric: 'm', selector: 'a="b"', thresholdSeconds: 0.3 } };
-    expect(errorRatio(slo, '1h')).toBe('(sum(rate(m_count{a="b"}[1h])) - sum(rate(m_bucket{a="b", le="0.3"}[1h]))) / sum(rate(m_count{a="b"}[1h]))');
+    const slo: SloDefinition = {
+      ...checkout,
+      sli: {
+        type: 'latency',
+        metric: 'm',
+        selector: 'a="b"',
+        thresholdSeconds: 0.3,
+      },
+    };
+    expect(errorRatio(slo, '1h')).toBe(
+      '(sum(rate(m_count{a="b"}[1h])) - sum(rate(m_bucket{a="b", le="0.3"}[1h]))) / sum(rate(m_count{a="b"}[1h]))',
+    );
   });
 
   it('emits recording rules per window and the three multi-window burn-rate alerts with budget-scaled thresholds', () => {
     const group = sloRuleGroup(checkout);
-    expect(group.rules.filter((r) => 'record' in r).map((r) => (r as { record: string }).record)).toEqual([
+    expect(
+      group.rules
+        .filter((r) => 'record' in r)
+        .map((r) => (r as { record: string }).record),
+    ).toEqual([
       'slo:sli_error:ratio_rate5m',
       'slo:sli_error:ratio_rate30m',
       'slo:sli_error:ratio_rate1h',
@@ -34,21 +57,40 @@ describe('SLO rule generation', () => {
       'slo:sli_error:ratio_rate3d',
       'slo:error_budget:ratio',
     ]);
-    const alerts = group.rules.filter((r) => 'alert' in r) as { alert: string; expr: string; labels: { severity: string } }[];
+    const alerts = group.rules.filter((r) => 'alert' in r) as {
+      alert: string;
+      expr: string;
+      labels: { severity: string };
+    }[];
     // budget = 0.0005 → 14.4× = 0.0072, 6× = 0.003, 1× = 0.0005
     expect(alerts.map((a) => [a.labels.severity, a.expr])).toEqual([
-      ['page', 'slo:sli_error:ratio_rate1h{slo="checkout-availability"} > 0.0072 and slo:sli_error:ratio_rate5m{slo="checkout-availability"} > 0.0072'],
-      ['page', 'slo:sli_error:ratio_rate6h{slo="checkout-availability"} > 0.003 and slo:sli_error:ratio_rate30m{slo="checkout-availability"} > 0.003'],
-      ['ticket', 'slo:sli_error:ratio_rate3d{slo="checkout-availability"} > 0.0005 and slo:sli_error:ratio_rate6h{slo="checkout-availability"} > 0.0005'],
+      [
+        'page',
+        'slo:sli_error:ratio_rate1h{slo="checkout-availability"} > 0.0072 and slo:sli_error:ratio_rate5m{slo="checkout-availability"} > 0.0072',
+      ],
+      [
+        'page',
+        'slo:sli_error:ratio_rate6h{slo="checkout-availability"} > 0.003 and slo:sli_error:ratio_rate30m{slo="checkout-availability"} > 0.003',
+      ],
+      [
+        'ticket',
+        'slo:sli_error:ratio_rate3d{slo="checkout-availability"} > 0.0005 and slo:sli_error:ratio_rate6h{slo="checkout-availability"} > 0.0005',
+      ],
     ]);
   });
 
   it('rejects malformed definitions', () => {
-    expect(() => sloRuleGroup({ ...checkout, objective: 100 })).toThrow(/objective/);
-    expect(() => sloRuleGroup({ ...checkout, name: 'Bad Name' })).toThrow(/kebab/);
+    expect(() => sloRuleGroup({ ...checkout, objective: 100 })).toThrow(
+      /objective/,
+    );
+    expect(() => sloRuleGroup({ ...checkout, name: 'Bad Name' })).toThrow(
+      /kebab/,
+    );
   });
 
   it('collects k6 thresholds per journey', () => {
-    expect(k6Thresholds([checkout, { ...checkout, k6: undefined }])).toEqual({ Checkout: ['http_req_failed{journey:checkout}: rate<0.0005'] });
+    expect(k6Thresholds([checkout, { ...checkout, k6: undefined }])).toEqual({
+      Checkout: ['http_req_failed{journey:checkout}: rate<0.0005'],
+    });
   });
 });

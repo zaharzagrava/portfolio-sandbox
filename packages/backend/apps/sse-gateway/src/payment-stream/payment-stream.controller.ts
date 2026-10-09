@@ -36,11 +36,12 @@ export class PaymentStreamController {
       let closed = false;
 
       const validateOwnershipThenListen = async () => {
-        const existingPayment = await this.dbUtilsService.wrapInTransaction((tx) =>
-          this.paymentDtoService.requestPaymentOptional({
-            params: { idempotencyKey },
-            tx,
-          }),
+        const existingPayment = await this.dbUtilsService.wrapInTransaction(
+          (tx) =>
+            this.paymentDtoService.requestPaymentOptional({
+              params: { idempotencyKey },
+              tx,
+            }),
         );
 
         // Payment.userId is denormalized from BisOrder, so no join is needed

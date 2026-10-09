@@ -1,4 +1,15 @@
-import { BadRequestException, Body, Controller, Get, Headers, HttpCode, Param, ParseUUIDPipe, Post, Query } from '@nestjs/common';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Get,
+  Headers,
+  HttpCode,
+  Param,
+  ParseUUIDPipe,
+  Post,
+  Query,
+} from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { InjectModel } from '@nestjs/sequelize';
 import { Firewall, User, UserRawDto } from '@app/domains/identity';
@@ -36,9 +47,19 @@ export class OrdersController {
   @Firewall()
   @RateLimit('checkout.create')
   @Post('checkout')
-  async checkout(@User() user: UserRawDto, @Headers('idempotency-key') idempotencyKey: string) {
-    if (!idempotencyKey || !IDEMPOTENCY_KEY.test(idempotencyKey)) throw new BadRequestException('Idempotency-Key header (8-128 chars) is required');
-    return this.checkoutService.checkout(user.id, CartIdentity.userCartId(user.id), idempotencyKey);
+  async checkout(
+    @User() user: UserRawDto,
+    @Headers('idempotency-key') idempotencyKey: string,
+  ) {
+    if (!idempotencyKey || !IDEMPOTENCY_KEY.test(idempotencyKey))
+      throw new BadRequestException(
+        'Idempotency-Key header (8-128 chars) is required',
+      );
+    return this.checkoutService.checkout(
+      user.id,
+      CartIdentity.userCartId(user.id),
+      idempotencyKey,
+    );
   }
 
   @Firewall()
@@ -49,14 +70,20 @@ export class OrdersController {
 
   @Firewall()
   @Get('orders/:orderId')
-  get(@User() user: UserRawDto, @Param('orderId', ParseUUIDPipe) orderId: string) {
+  get(
+    @User() user: UserRawDto,
+    @Param('orderId', ParseUUIDPipe) orderId: string,
+  ) {
     return this.orders.get(orderId, user.id);
   }
 
   @Firewall()
   @HttpCode(200)
   @Post('orders/:orderId/cancel')
-  async cancel(@User() user: UserRawDto, @Param('orderId', ParseUUIDPipe) orderId: string) {
+  async cancel(
+    @User() user: UserRawDto,
+    @Param('orderId', ParseUUIDPipe) orderId: string,
+  ) {
     await this.orders.get(orderId, user.id); // ownership check (404 for other users' orders)
     return { cancelled: await this.orders.cancel(orderId, 'user_cancelled') };
   }
@@ -64,14 +91,43 @@ export class OrdersController {
   /** A shop schedules a drop; jobs move units into Redis just before start and back after the end. */
   @ShopScoped('products.write')
   @Post('shops/:shopId/flash-sales')
-  async createFlashSale(@Param('shopId', ParseUUIDPipe) shopId: string, @Body() body: CreateFlashSaleDto) {
-    const product = await this.productModel.findOne({ where: { id: body.productId, shopId }, attributes: ['id'] });
-    if (!product) throw new BadRequestException('Product not found in this shop');
-    if (Date.parse(body.endsAt) <= Date.parse(body.startsAt)) throw new BadRequestException('endsAt must be after startsAt');
+  async createFlashSale(
+    @Param('shopId', ParseUUIDPipe) shopId: string,
+    @Body() body: CreateFlashSaleDto,
+  ) {
+    const product = await this.productModel.findOne({
+      where: { id: body.productId, shopId },
+      attributes: ['id'],
+    });
+    if (!product)
+      throw new BadRequestException('Product not found in this shop');
+    if (Date.parse(body.endsAt) <= Date.parse(body.startsAt))
+      throw new BadRequestException('endsAt must be after startsAt');
 
-    const sale = await this.flashSaleModel.create({ ...body, shopId, startsAt: new Date(body.startsAt), endsAt: new Date(body.endsAt) });
-    await this.jobs.enqueue('flash-sale.start', { saleId: sale.id }, { runAt: new Date(Date.parse(body.startsAt) - 60_000), idempotencyKey: `flash-start:${sale.id}`, shopId });
-    await this.jobs.enqueue('flash-sale.end', { saleId: sale.id }, { runAt: new Date(body.endsAt), idempotencyKey: `flash-end:${sale.id}`, shopId });
+    const sale = await this.flashSaleModel.create({
+      ...body,
+      shopId,
+      startsAt: new Date(body.startsAt),
+      endsAt: new Date(body.endsAt),
+    });
+    await this.jobs.enqueue(
+      'flash-sale.start',
+      { saleId: sale.id },
+      {
+        runAt: new Date(Date.parse(body.startsAt) - 60_000),
+        idempotencyKey: `flash-start:${sale.id}`,
+        shopId,
+      },
+    );
+    await this.jobs.enqueue(
+      'flash-sale.end',
+      { saleId: sale.id },
+      {
+        runAt: new Date(body.endsAt),
+        idempotencyKey: `flash-end:${sale.id}`,
+        shopId,
+      },
+    );
     return sale;
   }
 }

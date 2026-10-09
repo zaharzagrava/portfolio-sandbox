@@ -14,8 +14,17 @@ import { isValidCron, nextFireAt } from './cron';
 export class JobsService {
   constructor(@InjectConnection() private readonly sequelize: Sequelize) {}
 
-  async enqueue<T extends JobType>(type: T, payload: JobPayloads[T], options: EnqueueOptions = {}): Promise<{ id: string; created: boolean }> {
-    const { runAt = new Date(), idempotencyKey, shopId, maxAttempts = 8 } = options;
+  async enqueue<T extends JobType>(
+    type: T,
+    payload: JobPayloads[T],
+    options: EnqueueOptions = {},
+  ): Promise<{ id: string; created: boolean }> {
+    const {
+      runAt = new Date(),
+      idempotencyKey,
+      shopId,
+      maxAttempts = 8,
+    } = options;
 
     // One statement: dedupe via JobKey (global PK) and insert the job only if the key was new.
     const rows = await this.sequelize.query<{ id: string; created: boolean }>(
@@ -63,9 +72,12 @@ export class JobsService {
   }
 
   async cancel(jobId: string): Promise<boolean> {
-    const [, meta] = await this.sequelize.query(`UPDATE "Job" SET status = 'CANCELLED', "finishedAt" = now() WHERE id = :jobId AND status = 'QUEUED'`, {
-      replacements: { jobId },
-    });
+    const [, meta] = await this.sequelize.query(
+      `UPDATE "Job" SET status = 'CANCELLED', "finishedAt" = now() WHERE id = :jobId AND status = 'QUEUED'`,
+      {
+        replacements: { jobId },
+      },
+    );
     return ((meta as { rowCount?: number })?.rowCount ?? 0) > 0;
   }
 
@@ -79,7 +91,8 @@ export class JobsService {
     enabled?: boolean;
   }): Promise<void> {
     const timezone = schedule.timezone ?? 'UTC';
-    if (!isValidCron(schedule.cron, timezone)) throw new Error(`Invalid cron "${schedule.cron}" (${timezone})`);
+    if (!isValidCron(schedule.cron, timezone))
+      throw new Error(`Invalid cron "${schedule.cron}" (${timezone})`);
 
     await this.sequelize.query(
       `INSERT INTO "JobSchedule" ("name", "cron", "timezone", "jobType", "payload", "enabled", "nextFireAt")

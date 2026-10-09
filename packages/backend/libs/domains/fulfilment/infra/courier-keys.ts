@@ -5,12 +5,17 @@
  * its own shard without affecting others. Kafka uses the city as the key too.
  */
 export const geoKey = (city: string) => `couriers:{${city}}:available`;
-export const courierKey = (city: string, courierId: string) => `courier:{${city}}:${courierId}`;
-export const offerLockKey = (city: string, courierId: string) => `courier:{${city}}:${courierId}:offer`;
-export const declinedKey = (city: string, deliveryId: string) => `delivery:{${city}}:${deliveryId}:declined`;
-export const trackThrottleKey = (deliveryId: string) => `delivery:${deliveryId}:pushed`;
+export const courierKey = (city: string, courierId: string) =>
+  `courier:{${city}}:${courierId}`;
+export const offerLockKey = (city: string, courierId: string) =>
+  `courier:{${city}}:${courierId}:offer`;
+export const declinedKey = (city: string, deliveryId: string) =>
+  `delivery:{${city}}:${deliveryId}:declined`;
+export const trackThrottleKey = (deliveryId: string) =>
+  `delivery:${deliveryId}:pushed`;
 export const surgeKey = (city: string) => `surge:{${city}}`;
-export const demandKey = (city: string, minute: number) => `demand:{${city}}:${minute}`;
+export const demandKey = (city: string, minute: number) =>
+  `demand:{${city}}:${minute}`;
 
 export const OFFER_TTL_MS = 15_000;
 

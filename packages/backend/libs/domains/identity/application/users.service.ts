@@ -15,5 +15,5 @@ import * as _ from 'lodash';
 export class UsersService {
   private readonly l = new Logger(UsersService.name);
 
-  constructor(@InjectModel(User) private readonly userModel: typeof User) { }
+  constructor(@InjectModel(User) private readonly userModel: typeof User) {}
 }

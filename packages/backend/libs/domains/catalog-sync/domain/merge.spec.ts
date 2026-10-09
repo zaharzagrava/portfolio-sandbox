@@ -15,17 +15,48 @@ describe('offline merge rules', () => {
 
   it('stock ops commute: any order of the same deltas gives the same result', () => {
     const ops = [
-      { type: 'stock.adjust' as const, opId: '1', hlc: 'x', productId: 'p', delta: 3, reason: 'received' as const },
-      { type: 'stock.adjust' as const, opId: '2', hlc: 'x', productId: 'p', delta: -1, reason: 'sold' as const },
-      { type: 'stock.count' as const, opId: '3', hlc: 'x', productId: 'p', counted: 8, base: 10 }, // device saw 2 missing
+      {
+        type: 'stock.adjust' as const,
+        opId: '1',
+        hlc: 'x',
+        productId: 'p',
+        delta: 3,
+        reason: 'received' as const,
+      },
+      {
+        type: 'stock.adjust' as const,
+        opId: '2',
+        hlc: 'x',
+        productId: 'p',
+        delta: -1,
+        reason: 'sold' as const,
+      },
+      {
+        type: 'stock.count' as const,
+        opId: '3',
+        hlc: 'x',
+        productId: 'p',
+        counted: 8,
+        base: 10,
+      }, // device saw 2 missing
     ];
-    const total = (list: typeof ops) => list.reduce((s, op) => s + stockDelta(op), 0);
+    const total = (list: typeof ops) =>
+      list.reduce((s, op) => s + stockDelta(op), 0);
     expect(total(ops)).toBe(0);
     expect(total([...ops].reverse())).toBe(total(ops));
   });
 
   it('LWW per field: newer HLC wins its field only', () => {
-    const current = { title: '000000000002000-00000-dev-b', price: '000000000000500-00000-dev-b' };
-    expect(winningFields({ title: 'x', price: 1 }, '000000000001000-00000-dev-a', current)).toEqual({ win: ['price'], lose: ['title'] });
+    const current = {
+      title: '000000000002000-00000-dev-b',
+      price: '000000000000500-00000-dev-b',
+    };
+    expect(
+      winningFields(
+        { title: 'x', price: 1 },
+        '000000000001000-00000-dev-a',
+        current,
+      ),
+    ).toEqual({ win: ['price'], lose: ['title'] });
   });
 });

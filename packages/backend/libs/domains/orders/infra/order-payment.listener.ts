@@ -38,15 +38,23 @@ export class OrderPaymentListener implements Projector {
       if (!orderId || !payment) continue;
 
       // Only checkout orders (created by SD-19) have a state machine; legacy orders are left alone.
-      const order = await this.orderModel.findByPk(orderId, { attributes: ['id', 'idempotencyKey'] });
+      const order = await this.orderModel.findByPk(orderId, {
+        attributes: ['id', 'idempotencyKey'],
+      });
       if (!order?.idempotencyKey) continue;
 
       try {
-        if (payment.status === PaymentStatus.COMPLETED) await this.orders.markPaid(orderId, payment.id);
-        else if (payment.status === PaymentStatus.FAILED || payment.status === PaymentStatus.REFUNDED) await this.orders.cancel(orderId, 'payment_failed');
+        if (payment.status === PaymentStatus.COMPLETED)
+          await this.orders.markPaid(orderId, payment.id);
+        else if (
+          payment.status === PaymentStatus.FAILED ||
+          payment.status === PaymentStatus.REFUNDED
+        )
+          await this.orders.cancel(orderId, 'payment_failed');
       } catch (error) {
         // e.g. payment completed after the hold expired: the order is CANCELLED → needs a refund (logged for the finance queue, SD-20).
-        if (error instanceof ConflictException) this.logger.warn(`order ${orderId}: ${(error as Error).message}`);
+        if (error instanceof ConflictException)
+          this.logger.warn(`order ${orderId}: ${(error as Error).message}`);
         else throw error;
       }
     }

@@ -23,14 +23,29 @@ export class ProductFeedProjector implements Projector {
 
   async project(events: EventEnvelope[]): Promise<void> {
     const products = await this.productModel.findAll({
-      where: { id: { [Op.in]: events.map((e) => e.aggregateId) }, shopId: { [Op.ne]: null } },
+      where: {
+        id: { [Op.in]: events.map((e) => e.aggregateId) },
+        shopId: { [Op.ne]: null },
+      },
       attributes: ['id', 'shopId', 'title', 'price'],
       raw: true,
     });
     for (const p of products) {
       // products.events also fires on updates; publish a feed item only the first time we see the product.
-      if ((await this.redis.client.set(`feed:product-published:${p.id}`, '1', 'EX', 30 * 86_400, 'NX')) !== 'OK') continue;
-      await this.feed.publish(`shop:${p.shopId}`, 'new_product', p.title, { productId: p.id, price: Number(p.price) });
+      if (
+        (await this.redis.client.set(
+          `feed:product-published:${p.id}`,
+          '1',
+          'EX',
+          30 * 86_400,
+          'NX',
+        )) !== 'OK'
+      )
+        continue;
+      await this.feed.publish(`shop:${p.shopId}`, 'new_product', p.title, {
+        productId: p.id,
+        price: Number(p.price),
+      });
     }
   }
 }

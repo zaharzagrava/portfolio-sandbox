@@ -1,6 +1,9 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { DiscoveryService, MetadataScanner, Reflector } from '@nestjs/core';
-import { JOB_HANDLER_METADATA, JobHandlerOptions } from './job-handler.decorator';
+import {
+  JOB_HANDLER_METADATA,
+  JobHandlerOptions,
+} from './job-handler.decorator';
 import { JobContext, JobType } from './job-types';
 
 export interface RegisteredHandler extends Required<JobHandlerOptions> {
@@ -24,12 +27,21 @@ export class JobRegistry implements OnModuleInit {
       const instance = wrapper.instance as Record<string, unknown> | undefined;
       if (!instance || typeof instance !== 'object') continue;
 
-      for (const methodName of this.scanner.getAllMethodNames(Object.getPrototypeOf(instance))) {
-        const method = instance[methodName] as (...args: unknown[]) => Promise<void>;
-        const meta = this.reflector.get<{ type: JobType } & JobHandlerOptions>(JOB_HANDLER_METADATA, method);
+      for (const methodName of this.scanner.getAllMethodNames(
+        Object.getPrototypeOf(instance),
+      )) {
+        const method = instance[methodName] as (
+          ...args: unknown[]
+        ) => Promise<void>;
+        const meta = this.reflector.get<{ type: JobType } & JobHandlerOptions>(
+          JOB_HANDLER_METADATA,
+          method,
+        );
         if (!meta) continue;
         if (this.handlers.has(meta.type)) {
-          this.logger.debug(`Ignoring duplicate @JobHandler for "${meta.type}" (likely due to monolith imports)`);
+          this.logger.debug(
+            `Ignoring duplicate @JobHandler for "${meta.type}" (likely due to monolith imports)`,
+          );
           continue;
         }
         this.handlers.set(meta.type, {
@@ -40,7 +52,9 @@ export class JobRegistry implements OnModuleInit {
         });
       }
     }
-    this.logger.log(`Job handlers: ${[...this.handlers.keys()].join(', ') || '(none)'}`);
+    this.logger.log(
+      `Job handlers: ${[...this.handlers.keys()].join(', ') || '(none)'}`,
+    );
   }
 
   get(type: string): RegisteredHandler | undefined {

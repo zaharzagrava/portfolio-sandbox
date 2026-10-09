@@ -19,11 +19,26 @@ export function signClick(claims: ClickClaims, secret: string): string {
   return `${payload}.${createHmac('sha256', secret).update(payload).digest('base64url').slice(0, 32)}`;
 }
 
-export function verifyClick(token: string, secret: string, now = Date.now()): ClickClaims | null {
+export function verifyClick(
+  token: string,
+  secret: string,
+  now = Date.now(),
+): ClickClaims | null {
   const [payload, mac] = token.split('.');
   if (!payload || !mac) return null;
-  const expected = Buffer.from(createHmac('sha256', secret).update(payload).digest('base64url').slice(0, 32));
-  if (expected.length !== Buffer.from(mac).length || !timingSafeEqual(expected, Buffer.from(mac))) return null;
-  const claims = JSON.parse(Buffer.from(payload, 'base64url').toString()) as ClickClaims;
+  const expected = Buffer.from(
+    createHmac('sha256', secret)
+      .update(payload)
+      .digest('base64url')
+      .slice(0, 32),
+  );
+  if (
+    expected.length !== Buffer.from(mac).length ||
+    !timingSafeEqual(expected, Buffer.from(mac))
+  )
+    return null;
+  const claims = JSON.parse(
+    Buffer.from(payload, 'base64url').toString(),
+  ) as ClickClaims;
   return claims.e > now ? claims : null;
 }

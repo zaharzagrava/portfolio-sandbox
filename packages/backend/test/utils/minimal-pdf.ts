@@ -5,12 +5,18 @@
 export function minimalPdf(pages: string[][]): Buffer {
   const escape = (s: string) => s.replace(/[\\()]/g, (c) => `\\${c}`);
   const objs: string[] = ['<< /Type /Catalog /Pages 2 0 R >>'];
-  objs.push(`<< /Type /Pages /Kids [${pages.map((_, i) => `${3 + i * 2} 0 R`).join(' ')}] /Count ${pages.length} >>`);
+  objs.push(
+    `<< /Type /Pages /Kids [${pages.map((_, i) => `${3 + i * 2} 0 R`).join(' ')}] /Count ${pages.length} >>`,
+  );
   const fontId = 3 + pages.length * 2;
   pages.forEach((lines, i) => {
     const content = `BT /F1 12 Tf 50 750 Td 16 TL ${lines.map((l) => `(${escape(l)}) Tj T*`).join(' ')} ET`;
-    objs.push(`<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents ${4 + i * 2} 0 R /Resources << /Font << /F1 ${fontId} 0 R >> >> >>`);
-    objs.push(`<< /Length ${Buffer.byteLength(content, 'latin1')} >>\nstream\n${content}\nendstream`);
+    objs.push(
+      `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents ${4 + i * 2} 0 R /Resources << /Font << /F1 ${fontId} 0 R >> >> >>`,
+    );
+    objs.push(
+      `<< /Length ${Buffer.byteLength(content, 'latin1')} >>\nstream\n${content}\nendstream`,
+    );
   });
   objs.push('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>');
 

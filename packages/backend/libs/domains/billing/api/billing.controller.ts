@@ -1,4 +1,14 @@
-import { Body, Controller, Get, Header, HttpCode, NotFoundException, Param, ParseUUIDPipe, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Header,
+  HttpCode,
+  NotFoundException,
+  Param,
+  ParseUUIDPipe,
+  Post,
+} from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Firewall, User, UserRawDto } from '@app/domains/identity';
 import { ShopScoped } from '@app/domains/tenancy';
@@ -25,19 +35,32 @@ export class BillingController {
   @ShopScoped('shop.read')
   @Get('shops/:shopId/subscription')
   async shopSubscription(@Param('shopId', ParseUUIDPipe) shopId: string) {
-    return { subscription: await this.billing.forSubject('SHOP', shopId), entitlements: await this.entitlements.get('SHOP', shopId) };
+    return {
+      subscription: await this.billing.forSubject('SHOP', shopId),
+      entitlements: await this.entitlements.get('SHOP', shopId),
+    };
   }
 
   @ShopScoped('billing.manage')
   @Post('shops/:shopId/subscription')
-  subscribeShop(@Param('shopId', ParseUUIDPipe) shopId: string, @Body() body: SubscribeDto) {
-    return this.billing.subscribe({ subjectType: 'SHOP', subjectId: shopId, ...body });
+  subscribeShop(
+    @Param('shopId', ParseUUIDPipe) shopId: string,
+    @Body() body: SubscribeDto,
+  ) {
+    return this.billing.subscribe({
+      subjectType: 'SHOP',
+      subjectId: shopId,
+      ...body,
+    });
   }
 
   @ShopScoped('billing.manage')
   @HttpCode(200)
   @Post('shops/:shopId/subscription/preview')
-  async preview(@Param('shopId', ParseUUIDPipe) shopId: string, @Body() body: ChangeSubscriptionDto) {
+  async preview(
+    @Param('shopId', ParseUUIDPipe) shopId: string,
+    @Body() body: ChangeSubscriptionDto,
+  ) {
     const sub = await this.mustHave('SHOP', shopId);
     const lines = await this.billing.previewChange(sub.id, body);
     return { lines, dueNow: lines.reduce((s, l) => s + l.amount, 0) };
@@ -45,7 +68,10 @@ export class BillingController {
 
   @ShopScoped('billing.manage')
   @Post('shops/:shopId/subscription/change')
-  async change(@Param('shopId', ParseUUIDPipe) shopId: string, @Body() body: ChangeSubscriptionDto) {
+  async change(
+    @Param('shopId', ParseUUIDPipe) shopId: string,
+    @Body() body: ChangeSubscriptionDto,
+  ) {
     return this.billing.change((await this.mustHave('SHOP', shopId)).id, body);
   }
 
@@ -53,7 +79,9 @@ export class BillingController {
   @HttpCode(204)
   @Post('shops/:shopId/subscription/cancel')
   async cancel(@Param('shopId', ParseUUIDPipe) shopId: string) {
-    await this.billing.cancelAtPeriodEnd((await this.mustHave('SHOP', shopId)).id);
+    await this.billing.cancelAtPeriodEnd(
+      (await this.mustHave('SHOP', shopId)).id,
+    );
   }
 
   @ShopScoped('billing.manage')
@@ -66,13 +94,20 @@ export class BillingController {
   @Firewall()
   @Get('me/subscription')
   async mine(@User() user: UserRawDto) {
-    return { subscription: await this.billing.forSubject('USER', user.id), entitlements: await this.entitlements.get('USER', user.id) };
+    return {
+      subscription: await this.billing.forSubject('USER', user.id),
+      entitlements: await this.entitlements.get('USER', user.id),
+    };
   }
 
   @Firewall()
   @Post('me/subscription')
   subscribeMe(@User() user: UserRawDto, @Body() body: SubscribeDto) {
-    return this.billing.subscribe({ subjectType: 'USER', subjectId: user.id, ...body });
+    return this.billing.subscribe({
+      subjectType: 'USER',
+      subjectId: user.id,
+      ...body,
+    });
   }
 
   private async mustHave(subjectType: 'USER' | 'SHOP', subjectId: string) {

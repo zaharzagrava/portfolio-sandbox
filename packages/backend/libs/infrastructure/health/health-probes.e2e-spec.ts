@@ -207,7 +207,9 @@ describe('health probes (HEALTH)', () => {
   });
 
   it('S54 AS-49: results are cached and concurrent probes share one evaluation', async () => {
-    await Promise.all(Array.from({ length: 10 }, () => http().get('/health/ready')));
+    await Promise.all(
+      Array.from({ length: 10 }, () => http().get('/health/ready')),
+    );
     expect(state.calls).toBe(1);
     await http().get('/health/ready');
     expect(state.calls).toBe(1);

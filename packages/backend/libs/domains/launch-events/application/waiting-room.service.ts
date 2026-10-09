@@ -10,10 +10,14 @@ export const QUEUE_SHARDS = 8;
 const TICKET_TTL_SEC = 3_600;
 const ADMISSION_TTL_SEC = 600;
 
-const shardOf = (ticket: string) => createHash('sha1').update(ticket).digest().readUInt32BE(0) % QUEUE_SHARDS;
-const queueKey = (eventId: string, shard: number) => `wr:{${eventId}:${shard}}:queue`;
-const ticketKey = (eventId: string, ticket: string) => `wr:${eventId}:ticket:${ticket}`;
-const admittedKey = (eventId: string, ticket: string) => `wr:${eventId}:admitted:${ticket}`;
+const shardOf = (ticket: string) =>
+  createHash('sha1').update(ticket).digest().readUInt32BE(0) % QUEUE_SHARDS;
+const queueKey = (eventId: string, shard: number) =>
+  `wr:{${eventId}:${shard}}:queue`;
+const ticketKey = (eventId: string, ticket: string) =>
+  `wr:${eventId}:ticket:${ticket}`;
+const admittedKey = (eventId: string, ticket: string) =>
+  `wr:${eventId}:admitted:${ticket}`;
 export const ACTIVE_ROOMS_KEY = 'wr:active';
 
 export interface QueueStatus {
@@ -43,13 +47,22 @@ export class WaitingRoomService {
     private readonly realtime: RealtimePublisher,
   ) {}
 
-  async join(eventId: string, userId: string, salesOpenAt: Date): Promise<QueueStatus> {
-    const existing = await this.redis.client.get(`wr:${eventId}:user:${userId}`);
+  async join(
+    eventId: string,
+    userId: string,
+    salesOpenAt: Date,
+  ): Promise<QueueStatus> {
+    const existing = await this.redis.client.get(
+      `wr:${eventId}:user:${userId}`,
+    );
     if (existing) return this.status(eventId, existing);
 
     const ticket = randomUUID();
     const now = Date.now();
-    const score = now < salesOpenAt.getTime() ? salesOpenAt.getTime() + Math.random() * 1_000 : now;
+    const score =
+      now < salesOpenAt.getTime()
+        ? salesOpenAt.getTime() + Math.random() * 1_000
+        : now;
     const shard = shardOf(ticket);
 
     await this.redis.client
@@ -65,9 +78,16 @@ export class WaitingRoomService {
   async status(eventId: string, ticket: string): Promise<QueueStatus> {
     const token = await this.redis.client.get(admittedKey(eventId, ticket));
     if (token) return { ticket, admitted: true, admissionToken: token };
-    const rank = await this.redis.client.zrank(queueKey(eventId, shardOf(ticket)), ticket);
+    const rank = await this.redis.client.zrank(
+      queueKey(eventId, shardOf(ticket)),
+      ticket,
+    );
     // Shards drain at the same rate, so rank × shards approximates the global position.
-    return { ticket, admitted: false, position: rank === null ? undefined : rank * QUEUE_SHARDS + 1 };
+    return {
+      ticket,
+      admitted: false,
+      position: rank === null ? undefined : rank * QUEUE_SHARDS + 1,
+    };
   }
 
   /** Pops up to `count` users (spread over shards) and admits them. Returns how many were admitted. */
@@ -75,7 +95,10 @@ export class WaitingRoomService {
     const perShard = Math.ceil(count / QUEUE_SHARDS);
     let admitted = 0;
     for (let shard = 0; shard < QUEUE_SHARDS; shard++) {
-      const popped = await this.redis.client.zpopmin(queueKey(eventId, shard), perShard);
+      const popped = await this.redis.client.zpopmin(
+        queueKey(eventId, shard),
+        perShard,
+      );
       for (let i = 0; i < popped.length; i += 2) {
         const ticket = popped[i];
         const userId = await this.redis.client.get(ticketKey(eventId, ticket));
@@ -84,8 +107,16 @@ export class WaitingRoomService {
           { sub: userId, tid: ticket, eventId, purpose: 'admission' },
           { expiresInSec: ADMISSION_TTL_SEC, audience: `admission:${eventId}` },
         );
-        await this.redis.client.set(admittedKey(eventId, ticket), token, 'EX', ADMISSION_TTL_SEC);
-        await this.realtime.publish(`queue:${ticket}`, 'admitted', { eventId, admissionToken: token });
+        await this.redis.client.set(
+          admittedKey(eventId, ticket),
+          token,
+          'EX',
+          ADMISSION_TTL_SEC,
+        );
+        await this.realtime.publish(`queue:${ticket}`, 'admitted', {
+          eventId,
+          admissionToken: token,
+        });
         admitted++;
       }
     }
@@ -93,24 +124,39 @@ export class WaitingRoomService {
   }
 
   async queueLength(eventId: string): Promise<number> {
-    const sizes = await Promise.all(Array.from({ length: QUEUE_SHARDS }, (_, s) => this.redis.client.zcard(queueKey(eventId, s))));
+    const sizes = await Promise.all(
+      Array.from({ length: QUEUE_SHARDS }, (_, s) =>
+        this.redis.client.zcard(queueKey(eventId, s)),
+      ),
+    );
     return sizes.reduce((a, b) => a + b, 0);
   }
 
   /** Verifies an admission token for (event, user). Cheap: signature check, no I/O beyond the cached JWKS key. */
-  async assertAdmitted(eventId: string, userId: string, token: string | undefined): Promise<void> {
+  async assertAdmitted(
+    eventId: string,
+    userId: string,
+    token: string | undefined,
+  ): Promise<void> {
     try {
       if (!token) throw new Error('missing');
       const kid = jwt.decode(token, { complete: true })?.header.kid;
       const key = kid ? await this.keys.verificationKey(kid) : undefined;
       if (!key) throw new Error('unknown key');
-      const claims = jwt.verify(token, key.key, { algorithms: [key.alg], audience: `admission:${eventId}`, issuer: 'marketplace' }) as {
+      const claims = jwt.verify(token, key.key, {
+        algorithms: [key.alg],
+        audience: `admission:${eventId}`,
+        issuer: 'marketplace',
+      }) as {
         sub: string;
         purpose: string;
       };
-      if (claims.purpose !== 'admission' || claims.sub !== userId) throw new Error('wrong subject');
+      if (claims.purpose !== 'admission' || claims.sub !== userId)
+        throw new Error('wrong subject');
     } catch {
-      throw new ForbiddenException('Join the waiting room first (missing or invalid admission token)');
+      throw new ForbiddenException(
+        'Join the waiting room first (missing or invalid admission token)',
+      );
     }
   }
 }

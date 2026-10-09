@@ -1,6 +1,25 @@
-import { Body, Controller, Get, HttpCode, Param, ParseUUIDPipe, Post, Put, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  Param,
+  ParseUUIDPipe,
+  Post,
+  Put,
+  Query,
+} from '@nestjs/common';
 import { ApiProperty, ApiTags } from '@nestjs/swagger';
-import { ArrayMaxSize, IsArray, IsInt, IsString, IsUUID, Matches, MaxLength, Min } from 'class-validator';
+import {
+  ArrayMaxSize,
+  IsArray,
+  IsInt,
+  IsString,
+  IsUUID,
+  Matches,
+  MaxLength,
+  Min,
+} from 'class-validator';
 import { Firewall, Role } from '@app/domains/identity';
 import { ShopScoped } from '@app/domains/tenancy';
 import { ElasticsearchService } from '@app/infrastructure/elasticsearch/elasticsearch.service';
@@ -37,7 +56,10 @@ export class SearchAdminController {
 
   @ShopScoped('products.read')
   @Get('shops/:shopId/products/search')
-  shopProducts(@Param('shopId', ParseUUIDPipe) shopId: string, @Query('q') q = '') {
+  shopProducts(
+    @Param('shopId', ParseUUIDPipe) shopId: string,
+    @Query('q') q = '',
+  ) {
     return this.shopSearch.search(shopId, q.slice(0, 100));
   }
 
@@ -66,6 +88,14 @@ export class SearchAdminController {
   @HttpCode(202)
   @Post('admin/search/reindex')
   async reindex() {
-    return { jobId: await this.jobs.enqueue('search.reindex-products', {}, { idempotencyKey: `search-reindex:${new Date().toISOString().slice(0, 13)}` }) };
+    return {
+      jobId: await this.jobs.enqueue(
+        'search.reindex-products',
+        {},
+        {
+          idempotencyKey: `search-reindex:${new Date().toISOString().slice(0, 13)}`,
+        },
+      ),
+    };
   }
 }

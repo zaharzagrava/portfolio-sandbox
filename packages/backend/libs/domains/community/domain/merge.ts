@@ -16,11 +16,15 @@ export const decodeEntry = (raw: string): TimelineEntry => {
   return { ms: Number(ms), itemId };
 };
 
-export function mergeNewestFirst(lists: TimelineEntry[][], limit: number, before = Number.POSITIVE_INFINITY): TimelineEntry[] {
+export function mergeNewestFirst(
+  lists: TimelineEntry[][],
+  limit: number,
+  before = Number.POSITIVE_INFINITY,
+): TimelineEntry[] {
   const heap: { entry: TimelineEntry; list: number; index: number }[] = [];
   const push = (node: (typeof heap)[number]) => {
     heap.push(node);
-    for (let i = heap.length - 1; i > 0; ) {
+    for (let i = heap.length - 1; i > 0;) {
       const parent = (i - 1) >> 1;
       if (heap[parent].entry.ms >= heap[i].entry.ms) break;
       [heap[parent], heap[i]] = [heap[i], heap[parent]];
@@ -32,7 +36,7 @@ export function mergeNewestFirst(lists: TimelineEntry[][], limit: number, before
     const last = heap.pop()!;
     if (heap.length) {
       heap[0] = last;
-      for (let i = 0; ; ) {
+      for (let i = 0; ;) {
         const l = 2 * i + 1;
         const r = l + 1;
         let max = i;
@@ -59,7 +63,8 @@ export function mergeNewestFirst(lists: TimelineEntry[][], limit: number, before
       seen.add(entry.itemId);
       out.push(entry);
     }
-    if (index + 1 < lists[list].length) push({ entry: lists[list][index + 1], list, index: index + 1 });
+    if (index + 1 < lists[list].length)
+      push({ entry: lists[list][index + 1], list, index: index + 1 });
   }
   return out;
 }

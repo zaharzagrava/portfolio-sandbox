@@ -16,18 +16,26 @@ const SCHEMA_FILE = 'clickhouse/001_seller_sales.sql';
 export class SellerStatsService implements OnModuleInit {
   private readonly l = new Logger(SellerStatsService.name);
 
-  constructor(private readonly clickHouseService: ClickHouseService) { }
+  constructor(private readonly clickHouseService: ClickHouseService) {}
 
   async onModuleInit() {
     try {
-      const ddl = fs.readFileSync(path.resolve(process.cwd(), SCHEMA_FILE), 'utf8');
+      const ddl = fs.readFileSync(
+        path.resolve(process.cwd(), SCHEMA_FILE),
+        'utf8',
+      );
       await this.clickHouseService.getClient().command({ query: ddl });
     } catch (error: any) {
-      this.l.warn(`seller_sales schema not applied: ${error?.message ?? error}`);
+      this.l.warn(
+        `seller_sales schema not applied: ${error?.message ?? error}`,
+      );
     }
   }
 
-  public async getStats(sellerId: string, days: number): Promise<SellerStatsResponseDto> {
+  public async getStats(
+    sellerId: string,
+    days: number,
+  ): Promise<SellerStatsResponseDto> {
     const params = { sellerId, days };
     const where = `seller_id = {sellerId:UUID} AND ts >= now64(3) - toIntervalDay({days:UInt32})`;
 
@@ -50,7 +58,11 @@ export class SellerStatsService implements OnModuleInit {
          WHERE ${where}`,
         params,
       ),
-      this.clickHouseService.query<{ day: string; revenue: string; orders: string }>(
+      this.clickHouseService.query<{
+        day: string;
+        revenue: string;
+        orders: string;
+      }>(
         `SELECT
            toString(toDate(ts))                      AS day,
            sumIf(amount_cents, status = 'COMPLETED') AS revenue,
@@ -61,7 +73,11 @@ export class SellerStatsService implements OnModuleInit {
          ORDER BY day`,
         params,
       ),
-      this.clickHouseService.query<{ product_id: string; revenue: string; units: string }>(
+      this.clickHouseService.query<{
+        product_id: string;
+        revenue: string;
+        units: string;
+      }>(
         `SELECT
            toString(product_id) AS product_id,
            sum(amount_cents)    AS revenue,

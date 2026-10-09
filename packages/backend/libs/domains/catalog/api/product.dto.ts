@@ -109,13 +109,18 @@ export class SearchProductsQueryDto {
   @IsBoolean()
   facets?: boolean;
 
-  @ApiPropertyOptional({ description: 'Use dense-vector k-NN instead of lexical search' })
+  @ApiPropertyOptional({
+    description: 'Use dense-vector k-NN instead of lexical search',
+  })
   @IsOptional()
   @Transform(({ value }) => value === true || value === 'true' || value === '1')
   @IsBoolean()
   semantic?: boolean;
 
-  @ApiPropertyOptional({ description: 'Sort criteria', enum: ['relevance', 'price-asc', 'price-desc', 'newest'] })
+  @ApiPropertyOptional({
+    description: 'Sort criteria',
+    enum: ['relevance', 'price-asc', 'price-desc', 'newest'],
+  })
   @IsOptional()
   @IsString()
   sort?: 'relevance' | 'price-asc' | 'price-desc' | 'newest';

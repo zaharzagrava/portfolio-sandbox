@@ -15,7 +15,11 @@ export interface ChunkingParams {
 }
 
 /** Production sizes: 1 MB / 4 MB / 16 MB. */
-export const DEFAULT_PARAMS: ChunkingParams = { min: 1 << 20, avg: 4 << 20, max: 16 << 20 };
+export const DEFAULT_PARAMS: ChunkingParams = {
+  min: 1 << 20,
+  avg: 4 << 20,
+  max: 16 << 20,
+};
 
 /** 256 pseudo-random 32-bit values, fixed forever (changing them would change every boundary and kill dedupe). */
 const GEAR = (() => {
@@ -39,7 +43,10 @@ export interface Chunk {
   hash: string;
 }
 
-export function chunkBoundaries(data: Uint8Array, params: ChunkingParams = DEFAULT_PARAMS): number[] {
+export function chunkBoundaries(
+  data: Uint8Array,
+  params: ChunkingParams = DEFAULT_PARAMS,
+): number[] {
   const avgBits = bits(params.avg);
   // Spread mask bits over the high part of the word (gear hash mixes upward).
   const maskS = (maskOf(avgBits + 1) << (31 - avgBits)) >>> 0; // harder before avg
@@ -79,12 +86,19 @@ export function chunkBoundaries(data: Uint8Array, params: ChunkingParams = DEFAU
   return cuts;
 }
 
-export function chunk(data: Uint8Array, params: ChunkingParams = DEFAULT_PARAMS): Chunk[] {
+export function chunk(
+  data: Uint8Array,
+  params: ChunkingParams = DEFAULT_PARAMS,
+): Chunk[] {
   const chunks: Chunk[] = [];
   let offset = 0;
   for (const cut of chunkBoundaries(data, params)) {
     const slice = data.subarray(offset, cut);
-    chunks.push({ offset, length: slice.length, hash: createHash('sha256').update(slice).digest('hex') });
+    chunks.push({
+      offset,
+      length: slice.length,
+      hash: createHash('sha256').update(slice).digest('hex'),
+    });
     offset = cut;
   }
   return chunks;

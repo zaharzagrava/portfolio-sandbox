@@ -1,5 +1,9 @@
 import { INestApplication, Module } from '@nestjs/common';
-import { getConnectionToken, getModelToken, SequelizeModule } from '@nestjs/sequelize';
+import {
+  getConnectionToken,
+  getModelToken,
+  SequelizeModule,
+} from '@nestjs/sequelize';
 import { QueryTypes, Sequelize } from 'sequelize';
 import { execFileSync } from 'node:child_process';
 import { mkdtempSync, readFileSync } from 'node:fs';
@@ -29,7 +33,8 @@ const hasFfmpeg = (() => {
     return false;
   }
 })();
-const maybe = process.env.FFMPEG_AVAILABLE || hasFfmpeg ? describe : describe.skip;
+const maybe =
+  process.env.FFMPEG_AVAILABLE || hasFfmpeg ? describe : describe.skip;
 
 /** SD-26 against real Postgres + MinIO + ffmpeg: the DAG runs to completion, driven by the queued task messages. */
 maybe('Video transcoding DAG (e2e, ffmpeg)', () => {
@@ -41,17 +46,21 @@ maybe('Video transcoding DAG (e2e, ffmpeg)', () => {
   let queued: { videoId: string; task: string }[] = [];
 
   beforeAll(async () => {
-    const moduleRef = await generateTestingModule([SpecModule, SeedsModule], { stores: ['storage', 'sqs'] });
+    const moduleRef = await generateTestingModule([SpecModule, SeedsModule], {
+      stores: ['storage', 'sqs'],
+    });
     app = moduleRef.createNestApplication();
     await app.init();
     seeds = app.get(SeedsService);
     videos = app.get(VideoService);
     storage = app.get(ObjectStorage);
     db = app.get(getConnectionToken());
-    jest.spyOn(app.get(TaskQueue), 'enqueue').mockImplementation(async (_queue, body) => {
-      queued.push(body as { videoId: string; task: string });
-      return 'm';
-    });
+    jest
+      .spyOn(app.get(TaskQueue), 'enqueue')
+      .mockImplementation(async (_queue, body) => {
+        queued.push(body as { videoId: string; task: string });
+        return 'm';
+      });
   }, 60_000);
 
   afterAll(async () => {
@@ -67,18 +76,49 @@ maybe('Video transcoding DAG (e2e, ffmpeg)', () => {
   const sample = () => {
     const dir = mkdtempSync(join(tmpdir(), 'sample-'));
     const file = join(dir, 'clip.mp4');
-    execFileSync('ffmpeg', ['-loglevel', 'error', '-f', 'lavfi', '-i', 'testsrc2=size=1280x720:rate=24', '-f', 'lavfi', '-i', 'sine=frequency=440', '-t', '6', '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-shortest', file]);
+    execFileSync('ffmpeg', [
+      '-loglevel',
+      'error',
+      '-f',
+      'lavfi',
+      '-i',
+      'testsrc2=size=1280x720:rate=24',
+      '-f',
+      'lavfi',
+      '-i',
+      'sine=frequency=440',
+      '-t',
+      '6',
+      '-c:v',
+      'libx264',
+      '-pix_fmt',
+      'yuv420p',
+      '-c:a',
+      'aac',
+      '-shortest',
+      file,
+    ]);
     return readFileSync(file);
   };
 
   const createVideo = async () => {
-    const shop = await app.get<typeof Shop>(getModelToken(Shop)).create({ name: 'Brand', slug: `b-${v4().slice(0, 8)}` });
+    const shop = await app
+      .get<typeof Shop>(getModelToken(Shop))
+      .create({ name: 'Brand', slug: `b-${v4().slice(0, 8)}` });
     const [user] = await seeds.createTreelike([{ __type__: TableName.User }]);
     const id = v4();
     await storage.put(`videos/${id}/source`, sample(), 'video/mp4'); // what the completed multipart upload leaves behind
-    await db.query(`INSERT INTO "Video" (id, "shopId", "uploaderId", title, "sourceKey") VALUES (:id, :shopId, :userId, 'Launch', :key)`, {
-      replacements: { id, shopId: shop.id, userId: user.id, key: `videos/${id}/source` },
-    });
+    await db.query(
+      `INSERT INTO "Video" (id, "shopId", "uploaderId", title, "sourceKey") VALUES (:id, :shopId, :userId, 'Launch', :key)`,
+      {
+        replacements: {
+          id,
+          shopId: shop.id,
+          userId: user.id,
+          key: `videos/${id}/source`,
+        },
+      },
+    );
     return id;
   };
 
@@ -89,18 +129,34 @@ maybe('Video transcoding DAG (e2e, ffmpeg)', () => {
     while (queued.length) {
       // Run everything currently ready concurrently, like several workers would.
       const wave = queued.splice(0);
-      order.push(wave.map((w) => w.task).sort().join('+'));
+      order.push(
+        wave
+          .map((w) => w.task)
+          .sort()
+          .join('+'),
+      );
       await Promise.all(wave.map((w) => videos.runTask(w.videoId, w.task)));
     }
-    expect(order).toEqual(['probe', 'poster+transcode:240p+transcode:480p+transcode:720p', 'package', 'publish']);
+    expect(order).toEqual([
+      'probe',
+      'poster+transcode:240p+transcode:480p+transcode:720p',
+      'package',
+      'publish',
+    ]);
 
-    const master = (await buffer(await storage.getStream(`videos/${id}/master.m3u8`))).toString();
+    const master = (
+      await buffer(await storage.getStream(`videos/${id}/master.m3u8`))
+    ).toString();
     expect(master.match(/#EXT-X-STREAM-INF/g)).toHaveLength(3);
     expect(master).toContain('RESOLUTION=1280x720');
-    const rendition = (await buffer(await storage.getStream(`videos/${id}/480p/index.m3u8`))).toString();
+    const rendition = (
+      await buffer(await storage.getStream(`videos/${id}/480p/index.m3u8`))
+    ).toString();
     expect(rendition).toContain('#EXT-X-PLAYLIST-TYPE:VOD');
     expect(await storage.head(`videos/${id}/poster.jpg`)).not.toBeNull();
-    expect(await videos.playback(id)).toMatchObject({ masterUrl: expect.stringContaining(`videos/${id}/master.m3u8`) });
+    expect(await videos.playback(id)).toMatchObject({
+      masterUrl: expect.stringContaining(`videos/${id}/master.m3u8`),
+    });
   }, 180_000);
 
   it('concurrent sibling completions enqueue package exactly once; a duplicate message for a finished task is a no-op', async () => {
@@ -115,7 +171,10 @@ maybe('Video transcoding DAG (e2e, ffmpeg)', () => {
     }
     expect(all.filter((t) => t === 'package')).toHaveLength(1);
     expect(await videos.runTask(id, 'probe')).toBe('stale');
-    const [{ status }] = await db.query<{ status: string }>(`SELECT status FROM "Video" WHERE id = :id`, { type: QueryTypes.SELECT, replacements: { id } });
+    const [{ status }] = await db.query<{ status: string }>(
+      `SELECT status FROM "Video" WHERE id = :id`,
+      { type: QueryTypes.SELECT, replacements: { id } },
+    );
     expect(status).toBe('READY');
   }, 180_000);
 });

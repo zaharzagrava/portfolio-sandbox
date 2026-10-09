@@ -21,9 +21,9 @@ export class CreatePaymentDto {
 export class PaymentRawDto extends IntersectionType(
   IntersectionType(CreatePaymentDto, DeletableTimestampsFields),
   IdField,
-) { }
+) {}
 
-export class PaymentFullDto extends PaymentRawDto { }
+export class PaymentFullDto extends PaymentRawDto {}
 
 export class ListPaymentsResponseDto {
   @ApiProperty()

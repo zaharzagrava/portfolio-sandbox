@@ -1,17 +1,37 @@
-import { Body, Controller, Get, HttpCode, Param, ParseUUIDPipe, Post, Put } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  Param,
+  ParseUUIDPipe,
+  Post,
+  Put,
+} from '@nestjs/common';
 import { ApiProperty, ApiPropertyOptional, ApiTags } from '@nestjs/swagger';
-import { ArrayMaxSize, IsArray, IsIn, IsOptional, IsUUID } from 'class-validator';
+import {
+  ArrayMaxSize,
+  IsArray,
+  IsIn,
+  IsOptional,
+  IsUUID,
+} from 'class-validator';
 import { Firewall, User, UserRawDto } from '@app/domains/identity';
 import { ShopScoped } from '@app/domains/tenancy';
 import { RateLimit } from '@app/infrastructure/rate-limit/rate-limit.decorator';
 import { MediaService } from '../application/media.service';
 
 export class UploadDto {
-  @ApiProperty({ enum: ['review', 'post'] }) @IsIn(['review', 'post']) purpose: 'review' | 'post';
+  @ApiProperty({ enum: ['review', 'post'] }) @IsIn(['review', 'post']) purpose:
+    'review' | 'post';
 }
 
 export class GalleryDto {
-  @ApiProperty() @IsArray() @ArrayMaxSize(20) @IsUUID('all', { each: true }) mediaIds: string[];
+  @ApiProperty()
+  @IsArray()
+  @ArrayMaxSize(20)
+  @IsUUID('all', { each: true })
+  mediaIds: string[];
 }
 
 export class ShopUploadDto {
@@ -33,7 +53,10 @@ export class MediaController {
 
   @ShopScoped('products.write')
   @Post('shops/:shopId/media/uploads')
-  shopUpload(@Param('shopId', ParseUUIDPipe) shopId: string, @User() user: UserRawDto) {
+  shopUpload(
+    @Param('shopId', ParseUUIDPipe) shopId: string,
+    @User() user: UserRawDto,
+  ) {
     return this.media.createUpload(user.id, 'product', shopId);
   }
 
@@ -53,7 +76,11 @@ export class MediaController {
   @ShopScoped('products.write')
   @Put('shops/:shopId/products/:productId/gallery')
   @HttpCode(204)
-  gallery(@Param('shopId', ParseUUIDPipe) shopId: string, @Param('productId', ParseUUIDPipe) productId: string, @Body() body: GalleryDto) {
+  gallery(
+    @Param('shopId', ParseUUIDPipe) shopId: string,
+    @Param('productId', ParseUUIDPipe) productId: string,
+    @Body() body: GalleryDto,
+  ) {
     return this.media.attachToProduct(shopId, productId, body.mediaIds);
   }
 }

@@ -14,16 +14,30 @@ interface VersionChange {
   version: ApiVersion;
   description: string;
   /** Converts a resource FROM this version's shape TO the previous version's shape. */
-  downgrade: Partial<Record<Exclude<ApiResourceType, 'list'>, (resource: Record<string, unknown>) => Record<string, unknown>>>;
+  downgrade: Partial<
+    Record<
+      Exclude<ApiResourceType, 'list'>,
+      (resource: Record<string, unknown>) => Record<string, unknown>
+    >
+  >;
 }
 
 export const VERSION_CHANGES: VersionChange[] = [
   {
     version: '2026-10-01',
-    description: 'Product `price` became a money object {amount, currency}; `quantity` renamed to `stock`. Order `total` became a money object.',
+    description:
+      'Product `price` became a money object {amount, currency}; `quantity` renamed to `stock`. Order `total` became a money object.',
     downgrade: {
-      product: ({ price, stock, ...rest }) => ({ ...rest, price: (price as { amount: number } | undefined)?.amount, quantity: stock }),
-      order: ({ total, ...rest }) => ({ ...rest, total: (total as { amount: number } | undefined)?.amount, currency: (total as { currency: string } | undefined)?.currency }),
+      product: ({ price, stock, ...rest }) => ({
+        ...rest,
+        price: (price as { amount: number } | undefined)?.amount,
+        quantity: stock,
+      }),
+      order: ({ total, ...rest }) => ({
+        ...rest,
+        total: (total as { amount: number } | undefined)?.amount,
+        currency: (total as { currency: string } | undefined)?.currency,
+      }),
     },
   },
 ];
@@ -33,14 +47,27 @@ export function isApiVersion(value: string | undefined): value is ApiVersion {
 }
 
 /** Applies every downgrade for changes newer than `target`, newest first. Lists transform each item in `data`. */
-export function transformForVersion(type: ApiResourceType, body: unknown, target: ApiVersion, itemType?: Exclude<ApiResourceType, 'list'>): unknown {
-  if (target === LATEST_VERSION || body === null || typeof body !== 'object') return body;
+export function transformForVersion(
+  type: ApiResourceType,
+  body: unknown,
+  target: ApiVersion,
+  itemType?: Exclude<ApiResourceType, 'list'>,
+): unknown {
+  if (target === LATEST_VERSION || body === null || typeof body !== 'object')
+    return body;
   if (type === 'list') {
     const list = body as { data: Record<string, unknown>[] };
-    return { ...list, data: list.data.map((item) => transformForVersion(itemType!, item, target)) };
+    return {
+      ...list,
+      data: list.data.map((item) =>
+        transformForVersion(itemType!, item, target),
+      ),
+    };
   }
   let resource = body as Record<string, unknown>;
-  for (const change of [...VERSION_CHANGES].sort((a, b) => b.version.localeCompare(a.version))) {
+  for (const change of [...VERSION_CHANGES].sort((a, b) =>
+    b.version.localeCompare(a.version),
+  )) {
     if (change.version <= target) break;
     resource = change.downgrade[type]?.(resource) ?? resource;
   }
@@ -48,6 +75,13 @@ export function transformForVersion(type: ApiResourceType, body: unknown, target
 }
 
 /** Endpoints on their way out: announced via headers (RFC 8594 Sunset, RFC 9745 Deprecation) on every call. */
-export const DEPRECATED_ROUTES: Record<string, { deprecatedAt: string; sunset: string; replacement: string }> = {
-  'GET /v1/products/:id/stock': { deprecatedAt: '2026-10-01', sunset: '2027-04-01', replacement: '/v1/stock/{productId}' },
+export const DEPRECATED_ROUTES: Record<
+  string,
+  { deprecatedAt: string; sunset: string; replacement: string }
+> = {
+  'GET /v1/products/:id/stock': {
+    deprecatedAt: '2026-10-01',
+    sunset: '2027-04-01',
+    replacement: '/v1/stock/{productId}',
+  },
 };

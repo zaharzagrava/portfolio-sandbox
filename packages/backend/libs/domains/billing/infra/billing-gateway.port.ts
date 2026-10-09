@@ -9,7 +9,9 @@ export interface ChargeRequest {
   idempotencyKey: string;
 }
 
-export type ChargeResult = { ok: true; providerRef: string } | { ok: false; definite: boolean; reason: string };
+export type ChargeResult =
+  | { ok: true; providerRef: string }
+  | { ok: false; definite: boolean; reason: string };
 
 export abstract class BillingGateway {
   abstract charge(request: ChargeRequest): Promise<ChargeResult>;
@@ -23,10 +25,20 @@ export class StripeBillingGateway extends BillingGateway {
 
   async charge(r: ChargeRequest): Promise<ChargeResult> {
     try {
-      const intent = await this.stripe.createPaymentIntent({ amount: r.amount, paymentMethodId: r.paymentMethodRef, idempotencyKey: r.idempotencyKey });
-      return intent.status === 'succeeded' ? { ok: true, providerRef: intent.id } : { ok: false, definite: true, reason: intent.status };
+      const intent = await this.stripe.createPaymentIntent({
+        amount: r.amount,
+        paymentMethodId: r.paymentMethodRef,
+        idempotencyKey: r.idempotencyKey,
+      });
+      return intent.status === 'succeeded'
+        ? { ok: true, providerRef: intent.id }
+        : { ok: false, definite: true, reason: intent.status };
     } catch (error) {
-      return { ok: false, definite: !this.stripe.isUnknownOutcome(error), reason: (error as Error).message };
+      return {
+        ok: false,
+        definite: !this.stripe.isUnknownOutcome(error),
+        reason: (error as Error).message,
+      };
     }
   }
 }

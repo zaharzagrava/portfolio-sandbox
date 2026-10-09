@@ -1,5 +1,13 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsDateString, IsInt, IsOptional, IsString, IsUUID, MaxLength, Min } from 'class-validator';
+import {
+  IsDateString,
+  IsInt,
+  IsOptional,
+  IsString,
+  IsUUID,
+  MaxLength,
+  Min,
+} from 'class-validator';
 
 export class CreateAuctionDto {
   @ApiProperty() @IsUUID() productId: string;
@@ -12,7 +20,10 @@ export class CreateAuctionDto {
 }
 
 export class PlaceBidDto {
-  @ApiProperty({ description: 'Your maximum (proxy) bid in minor units; the visible price rises only as needed' })
+  @ApiProperty({
+    description:
+      'Your maximum (proxy) bid in minor units; the visible price rises only as needed',
+  })
   @IsInt()
   @Min(1)
   maxAmount: number;
