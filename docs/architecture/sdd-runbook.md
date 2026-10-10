@@ -227,6 +227,16 @@ any other stop gets its own notification. Nothing is lost: re-run the same comma
 fresh-context passes (`MAX_IMPLEMENT_PASSES`, default 10) until every task in `tasks.md` is checked. The headless steps
 do not trigger the interactive Stop-hook ping (`SDD_LOOP=1`).
 
+**Self-repair: a failure inside one capability does not end the run.** A failed analysis (a CRITICAL finding), a stuck implement
+pass, a failed gate or a crashed step goes to a separate *repair agent* (fresh context, `doctor-N.log`), which gets a time budget
+(`REPAIR_BUDGET_MIN`, default 60 minutes for the whole run; at most `MAX_REPAIRS_PER_SPEC`, default 2, attempts of up to 25 minutes
+per capability). It diagnoses the cause, fixes it (it may decide a contradiction and record it in `questions.md`, but never weakens
+a test or a requirement) and the capability is retried. A crashed step is also retried once by itself. If the agent answers
+`DOCTOR: needs human: <why>` or the budget is gone, the capability is **blocked**: `BLOCKED.md` in its spec folder says why, the
+loop commits it, notifies you, and goes on to the next capability that does not depend on it (dependents are skipped too). The run
+then ends with exit code 78 ("finished, but some capabilities are blocked"). A blocked capability is skipped on later runs until you
+fix the cause and delete its `BLOCKED.md` (or set `RETRY_BLOCKED=1`).
+
 **A failing gate is handed back to the agent.** When the gate fails, the loop gives the agent a digest of the failure (failing
 tests, compiler or lint errors, scenarios without a test) and lets it repair the cause, then runs the gate again. At most
 `MAX_GATE_REPAIRS` (default 2) attempts; after that the run stops with "gate failed". The agent may not weaken, skip or delete a

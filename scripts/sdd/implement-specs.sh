@@ -34,6 +34,9 @@ on_exit() {
   elif [[ "$state" == limit:* ]]; then
     echo "OUT OF BUDGET  the Claude usage limit was reached at ${state#limit:}. Nothing is lost: re-run the same command after the limit resets and it resumes." >&2
     notify limit "SDD loop: out of budget" "Usage limit hit at ${state#limit:}. Re-run after the reset to resume."
+  elif (( code == 78 )); then
+    echo "FINISHED WITH BLOCKED CAPABILITIES  ${state#blocked:}  (see BLOCKED.md in each spec folder)" >&2
+    notify warn "SDD loop: finished, but some capabilities are blocked" "${state#blocked:}. Each has a BLOCKED.md that says why; everything else is built and pushed."
   elif [[ "$state" == Checkpoint* ]] && (( code == 0 )); then
     notify ok "SDD loop: checkpoint reached" "$state"
   elif (( code == 0 )); then
@@ -171,15 +174,21 @@ step() { # $1 = dir, $2 = step name, $3 = prompt
       touch "$1/.$2.done"; echo "  $2 (done earlier: tasks are already ticked)"; return 0
     fi ;; esac
   echo "  $2"
-  local rc=0
-  run_claude "$1/.$2.log" "$3" "${IMPL_TOOLS[@]}" || rc=$?
+  local rc=0 try
+  for try in 1 2; do
+    rc=0; run_claude "$1/.$2.log" "$3" "${IMPL_TOOLS[@]}" || rc=$?
+    (( rc == 0 || rc == 124 || rc == 125 )) && break
+    hit_auth_failure "$1/.$2.log" && break
+    hit_usage_limit "$1/.$2.log" && break
+    (( try == 1 )) && { echo "  $2 failed; retrying once (transient errors happen)"; sleep 20; }
+  done
   # A pass that hit the time limit is not a failure: the next implement pass resumes at the first open task.
   if (( rc == 124 )) && [[ "$2" == implement-* ]]; then echo "  $2 hit the pass timeout; the next pass resumes"; return 0; fi
   if (( rc == 125 )); then echo "deadline:$(basename "$1") at $2" > "$STATE_FILE"; exit 76; fi
   if (( rc != 0 )); then
     if hit_auth_failure "$1/.$2.log"; then echo "auth:$(basename "$1") $2 could not authenticate" > "$STATE_FILE"; exit 77; fi
     if hit_usage_limit "$1/.$2.log"; then echo "limit:$(basename "$1") $2 ($(limit_reset_hint "$1/.$2.log"))" > "$STATE_FILE"; exit 75; fi
-    echo "FAIL  $(basename "$1"): $2 (see $1/.$2.log)" >&2; echo "$(basename "$1") failed at $2" > "$STATE_FILE"; exit 1
+    echo "FAIL  $(basename "$1"): $2 (see $1/.$2.log)" >&2; echo "$(basename "$1") failed at $2" > "$STATE_FILE"; exit 20
   fi
   case "$2" in plan|tasks|analyze) touch "$1/.$2.done" ;; esac
 }
@@ -211,6 +220,45 @@ extra_context() { # $1 = capability id
   if [[ -n "$fu" ]]; then printf ' %s\n%s' "Follow-ups left for this capability by specs that are already built; treat each as a requirement, plan it, test it, and mention it in your report:" "$fu"; fi
 }
 
+# ---- Self-repair. When a step inside one capability fails (a CRITICAL analysis finding, a stuck implement pass, a failed gate, a
+# crashed step) the loop does not end the run. A separate repair agent with a fresh context gets a time budget to fix the cause, then
+# the capability is retried. If the agent says a human is needed, or the budget is gone, the capability is marked BLOCKED (BLOCKED.md)
+# and the loop moves on to the next capability that does not depend on it. REPAIR_BUDGET_MIN (60) is shared by the whole run,
+# MAX_REPAIRS_PER_SPEC (2) bounds the attempts per capability, one attempt runs at most 25 minutes.
+REPAIR_USED=0
+BLOCKED_LIST="$(mktemp)"
+declare -A DEPS
+while read -r k v; do DEPS[$k]="$v"; done < <(python3 "$ROOT/scripts/sdd/check-order.py" --deps 2>/dev/null || true)
+
+doctor_prompt() { # $1 = id, $2 = spec dir, $3 = what failed
+  local log digest=""; log="$(ls -t "$2"/.*.log 2>/dev/null | head -1 || true)"
+  if [[ -n "$log" ]]; then
+    if [[ "$log" == *.gate.log ]]; then digest="$(gate_digest "$log")"; else digest="$(tail -c 5000 "$log")"; fi
+  fi
+  printf '%s\n%s' "You are the repair agent of an unattended build loop. A step failed for capability $1 and the loop cannot continue until it is fixed. What failed: $3. Find the root cause and fix it so the step can be retried. Work in the spec folder $2 (spec.md, plan.md, tasks.md, test-plan.md, gaps.md, questions.md) and in the code. Typical causes: (a) an analysis finding marked CRITICAL: fix the artifacts it points at (add the missing task, align spec, plan and tasks, resolve the contradiction); never delete or weaken a requirement or a test just to make the analysis pass; (b) two requirements that contradict each other: decide it as the constitution and the spec's own intent require, record the decision under a '## RESOLVED (agent decision)' heading in questions.md, and update spec.md and test-plan.md consistently; (c) a step that crashed or produced nothing: re-run the underlying command yourself and find the cause; (d) an implement pass that closed no task: do the blocked task yourself, or record why it needs a human. Rules: never use git to undo work (edit files by hand and keep every other change in them); never skip, weaken or delete a test; change nothing unrelated. End your final message with exactly one line: 'DOCTOR: fixed' if the loop can retry, or 'DOCTOR: needs human: <one sentence why>' if a human decision or access is needed. The end of the failing log follows." "$digest"
+}
+
+block_spec() { # $1 = id, $2 = spec dir, $3 = reason
+  local f="$2/BLOCKED.md" last
+  last="$(ls -t "$2"/.*.log 2>/dev/null | head -1 || true)"
+  {
+    echo "# $1 is blocked"; echo
+    echo "- when: $(date -u +%FT%TZ)"
+    echo "- why: $3"
+    echo "- repair agent time used in this run: $((REPAIR_USED / 60)) of ${REPAIR_BUDGET_MIN:-60} minutes"; echo
+    echo "## What to do"
+    echo "Fix the cause (for example decide the open question in questions.md), delete this file, and run the loop again: it resumes this"
+    echo "capability. Until then the loop skips it and everything that depends on it."; echo
+    echo "## End of the last log (${last##*/})"; echo '```'
+    [[ -n "$last" ]] && tail -c 3500 "$last"
+    echo '```'
+  } > "$f"
+  printf '%s\t%s\n' "$1" "$3" >> "$BLOCKED_LIST"
+  if [[ -n "${COMMIT:-}" ]]; then git add -A && git commit -q -m "blocked($1): $3" -m "See $f"; push_branch; fi
+  notify warn "SDD: $1 blocked" "$3. The loop continues with the next capability."
+  echo "BLOCKED  $1: $3"
+}
+
 ordered_capabilities "$@" | while IFS=$'\t' read -r id domain slug title sources limit; do
   if [[ "$id" == '!STOP' ]]; then # checkpoint: stop once so a human can test what exists, then pass on the next run
     marker="$ROOT/specs/.checkpoints/$domain"
@@ -235,15 +283,28 @@ ordered_capabilities "$@" | while IFS=$'\t' read -r id domain slug title sources
   [[ "${limit:--}" == "-" ]] && limit="" 
   done_marker="$dir/.implemented${limit:+-$limit}"
   [[ -f "$dir/.implemented" || -f "$done_marker" ]] && { echo "skip  $id${limit:+ ($limit)} (already implemented)"; continue; }
+  if [[ -f "$dir/BLOCKED.md" && -z "${RETRY_BLOCKED:-}" && -z "${GATE_ONLY:-}" ]]; then
+    echo "skip  $id (blocked earlier, see $dir/BLOCKED.md; delete it to retry)"; printf '%s\t%s\n' "$id" "blocked earlier" >> "$BLOCKED_LIST"; continue
+  fi
+  skipdep=""
+  for d in ${DEPS[$id]:-}; do grep -q "^$d"$'\t' "$BLOCKED_LIST" && skipdep="$d"; done
+  if [[ -n "$skipdep" ]]; then echo "skip  $id (depends on the blocked $skipdep)"; printf '%s\t%s\n' "$id" "depends on blocked $skipdep" >> "$BLOCKED_LIST"; continue; fi
   LIMIT_TEXT=""
   if [[ -n "$limit" ]]; then
     LIMIT_TEXT="PRIORITY LIMIT: this pass covers only the user stories of priority $limit and higher (P1 is the highest), plus the Setup and Foundational phases. Implement those, red → green, exactly as before. Do not start the phases of lower-priority stories, do not tick their tasks, and leave the Polish, Cross-Cutting and Convergence phases for the final full pass. A scenario (AS-nn) that only a deferred story covers is deferred, not failed. Under a '## Deferred until a later pass' heading in this spec's gaps.md list the deferred stories and scenarios and, for each, the capability it waits for. If a story you do implement would call a capability that is not built yet (no .implemented marker in its spec folder), do not stub or fake it: build the part that does not need it, let the missing part degrade exactly as this spec's error handling requires (for example a section reported as unavailable), and list it under the same heading."
   fi
+  # Build this entry. Inside the subshell, exit 20 means "this capability failed" (the repair agent gets a go); 75/76/77 end the run
+  # (usage limit, time budget, login); 30 means UNTIL was reached.
+  repair_tries=0; reached_until=""; blocked=""
+  while :; do
+  set +e   # a failing capability must not end the run by itself: its exit status is read below (errexit is back on inside the subshell)
+  (
+  set -e
   [[ "$(kind_of "$domain")" == backend ]] || require_stack "$id"
   if [[ -n "${GATE_ONLY:-}" ]]; then # re-run just the gate (no claude, no marker, no commit): GATE_ONLY=1 scripts/sdd/implement-specs.sh S54
     echo "gate-only $id"
     if { MAX_PRIORITY="$limit" gate_extras "$id" "$domain" "$dir" && MAX_PRIORITY="$limit" gate "$domain"; } >"$dir/.gate.log" 2>&1; then echo "GATE OK    $id${limit:+ ($limit)}"; else echo "GATE FAIL  $id (see $dir/.gate.log)"; fi
-    continue
+    exit 0
   fi
   echo "build $id${limit:+ ($limit only)} — $title"
   if [[ "$(kind_of "$domain")" == backend && ! -f "$dir/.ownership.baseline" ]]; then ownership_count "$domain" > "$dir/.ownership.baseline"; fi
@@ -256,7 +317,7 @@ ordered_capabilities "$@" | while IFS=$'\t' read -r id domain slug title sources
   step "$dir" analyze "/speckit-analyze $CONTEXT"
   # Only a CRITICAL in the Severity column of the findings table counts; the report also says "no CRITICAL issues".
   if grep -qE '^\|[^|]*\|[^|]*\| *\**CRITICAL\** *\|' "$dir/.analyze.log"; then
-    echo "STOP  $id: /speckit-analyze reported CRITICAL issues (see $dir/.analyze.log)" >&2; echo "$id: analyze reported CRITICAL issues" > "$STATE_FILE"; exit 1
+    echo "STOP  $id: /speckit-analyze reported CRITICAL issues (see $dir/.analyze.log)" >&2; echo "$id: analyze reported CRITICAL issues" > "$STATE_FILE"; rm -f "$dir/.analyze.done"; exit 20
   fi
   # One `claude -p` call cannot finish a big spec: it stops when its budget (STEP_MAX_BUDGET_USD) runs out, with its
   # context full. So implement runs in passes, each with a fresh context that resumes at the first unchecked task,
@@ -276,14 +337,14 @@ ordered_capabilities "$@" | while IFS=$'\t' read -r id domain slug title sources
       (( open == 0 )) && break
       echo "  converge added tasks: $open open"
     elif (( open >= last_open )); then
-      echo "$id: implement stuck at pass $pass" > "$STATE_FILE"; echo "STOP  $id: implement pass $pass closed no task ($open still open). See $dir/.implement-$pass.log and questions.md" >&2; exit 1
+      echo "$id: implement stuck at pass $pass" > "$STATE_FILE"; echo "STOP  $id: implement pass $pass closed no task ($open still open). See $dir/.implement-$pass.log and questions.md" >&2; exit 20
     else
       echo "  $open task(s) still open after pass $pass"
     fi
     last_open=$open
   done
   if (( open > 0 )); then
-    echo "STOP  $id: $open task(s) still open after $pass passes (MAX_IMPLEMENT_PASSES). Re-run to continue." >&2; exit 1
+    echo "$id: $open task(s) still open after $pass passes" > "$STATE_FILE"; echo "STOP  $id: $open task(s) still open after $pass passes (MAX_IMPLEMENT_PASSES)." >&2; exit 20
   fi
 
   # The gate is a hard check, but a failing gate is usually fixable (a missing test, a lint error, a bug the capability exposed):
@@ -294,7 +355,7 @@ ordered_capabilities "$@" | while IFS=$'\t' read -r id domain slug title sources
     if { MAX_PRIORITY="$limit" gate_extras "$id" "$domain" "$dir" && MAX_PRIORITY="$limit" gate "$domain"; } >"$dir/.gate.log" 2>&1; then break; fi
     attempt=$((attempt + 1))
     if (( attempt > ${MAX_GATE_REPAIRS:-2} )); then
-      echo "FAIL  $id: gate (see $dir/.gate.log)" >&2; echo "$id gate failed" > "$STATE_FILE"; exit 1
+      echo "FAIL  $id: gate (see $dir/.gate.log)" >&2; echo "$id gate failed" > "$STATE_FILE"; exit 20
     fi
     echo "  gate failed: asking the agent to repair it (attempt $attempt of ${MAX_GATE_REPAIRS:-2})"
     step "$dir" "repair-$attempt" "/speckit-implement $CONTEXT $(repair_prompt "$dir/.gate.log") $LIMIT_TEXT"
@@ -307,5 +368,40 @@ ordered_capabilities "$@" | while IFS=$'\t' read -r id domain slug title sources
   fi
   echo "done  $id${limit:+ ($limit)}"
   echo "$id${limit:+ ($limit)} built" > "$STATE_FILE"
-  if [[ -n "${UNTIL:-}" && ( "$id" == "$UNTIL" || "$id:$limit" == "$UNTIL" ) ]]; then echo "reached UNTIL=$UNTIL, stopping"; echo "Reached UNTIL=$UNTIL." > "$STATE_FILE"; break; fi
+  if [[ -n "${UNTIL:-}" && ( "$id" == "$UNTIL" || "$id:$limit" == "$UNTIL" ) ]]; then echo "reached UNTIL=$UNTIL, stopping"; echo "Reached UNTIL=$UNTIL." > "$STATE_FILE"; exit 30; fi
+  )
+  rc=$?
+  set -e
+  case $rc in
+    0) break ;;
+    30) reached_until=1; break ;;
+    20) ;;
+    *) exit "$rc" ;;
+  esac
+  detail="$(cat "$STATE_FILE" 2>/dev/null)"
+  repair_tries=$((repair_tries + 1))
+  budget_left=$(( ${REPAIR_BUDGET_MIN:-60} * 60 - REPAIR_USED ))
+  if (( repair_tries <= ${MAX_REPAIRS_PER_SPEC:-2} && budget_left >= 120 )); then
+    cap=$(( budget_left < 1500 ? budget_left : 1500 )); t0=$SECONDS
+    echo "  repair agent for $id: $detail (repair budget left: $((budget_left / 60)) min)"
+    ( export PASS_TIMEOUT_S=$cap; step "$dir" "doctor-$repair_tries" "$(doctor_prompt "$id" "$dir" "$detail")" ) && drc=0 || drc=$?
+    REPAIR_USED=$(( REPAIR_USED + SECONDS - t0 ))
+    case $drc in 75|76|77) exit "$drc" ;; esac
+    if (( drc == 0 )); then
+      if grep -q "DOCTOR: needs human" "$dir/.doctor-$repair_tries.log" 2>/dev/null; then
+        detail="needs a human: $(grep -o 'DOCTOR: needs human:.*' "$dir/.doctor-$repair_tries.log" | head -1 | cut -c1-300)"
+      else
+        echo "  repair agent finished; retrying $id"; continue
+      fi
+    fi
+  fi
+  block_spec "$id" "$dir" "$detail"; blocked=1; break
+  done
+  if [[ -n "$reached_until" ]]; then echo "reached UNTIL=$UNTIL, stopping"; break; fi
+  if [[ -n "$blocked" ]]; then continue; fi   # (not `[[ ]] && continue`: that returns 1 as the last command and made a good run exit 1)
 done
+if [[ -s "$BLOCKED_LIST" ]]; then
+  echo "blocked:$(cut -f1 "$BLOCKED_LIST" | sort -u | tr '\n' ' ')" > "$STATE_FILE"
+  exit 78
+fi
+
