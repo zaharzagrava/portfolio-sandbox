@@ -12,8 +12,14 @@ import {
   shopAccount,
 } from '../domain/accounts';
 import { allocate } from '@app/common/money/allocate';
-import { OrderPaid } from '@app/domains/orders';
+import type { z } from 'zod';
+import type { orderEventSchemas } from '@marketplace-sandbox/contracts';
+import { orderEvents } from '../application/events/order-events';
 
+/** `order.paid` comes from the shared contract (payments never imports the orders domain); resolved lazily. */
+type OrderPaidPayload = z.infer<(typeof orderEventSchemas)['order.paid']>;
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const SETTLEMENT_NS = '0b9cf0b6-4a6f-4b8e-9d5c-6f0f3c2b9a11';
 
 /**
@@ -27,10 +33,10 @@ const SETTLEMENT_NS = '0b9cf0b6-4a6f-4b8e-9d5c-6f0f3c2b9a11';
 @Injectable()
 export class SettlementListener implements Projector {
   readonly name = 'order-settlement';
-  readonly topics = [OrderPaid.topic];
+  readonly topics = [orderEvents().paid.topic];
   // A deterministic journal id (UUIDv5 of the order) plus an existence check under an advisory lock.
   readonly idempotency = 'natural' as const;
-  readonly handles = [{ event: OrderPaid }];
+  readonly handles = [{ event: orderEvents().paid }];
 
   constructor(
     @InjectConnection() private readonly sequelize: Sequelize,
@@ -40,16 +46,13 @@ export class SettlementListener implements Projector {
 
   async project(events: EventEnvelope[]): Promise<void> {
     for (const raw of events) {
-      const event = OrderPaid.match(raw);
+      const event = orderEvents().paid.match(raw);
       if (!event) continue;
       await this.settle(event.aggregateId, event.payload);
     }
   }
 
-  private async settle(
-    orderId: string,
-    paid: (typeof OrderPaid)['schema']['_output'],
-  ) {
+  private async settle(orderId: string, paid: OrderPaidPayload) {
     const shopLines = paid.lines.filter((l) => l.shopId);
     if (shopLines.length === 0) return;
 
@@ -86,9 +89,9 @@ export class SettlementListener implements Projector {
         {
           journalId,
           kind: 'SETTLEMENT',
-          paymentId: paid.paymentRef.startsWith('pay_')
-            ? null
-            : paid.paymentRef,
+          // The ledger column holds a payment id (a UUID). `paymentRef` is the provider's reference (`pi_…`), which
+          // is not one; the sale journal of S13 already carries the payment id. S14 decides what this column means.
+          paymentId: UUID.test(paid.paymentRef) ? paid.paymentRef : null,
           lines: [
             { accountId: LEDGER_ACCOUNTS.CLEARING, amount: -net },
             ...shops.map((shopId, i) => ({

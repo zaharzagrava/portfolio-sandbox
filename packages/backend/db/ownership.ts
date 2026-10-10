@@ -112,6 +112,8 @@ export const OWNERSHIP = {
   DeliveryEvent: 'domain:fulfilment',
   // payments (payment + ledger share one transaction boundary: decision D4)
   Payment: 'domain:payments',
+  PaymentHistory: 'domain:payments',
+  PayableOrder: 'domain:payments',
   LedgerEntry: 'domain:payments',
   LedgerEntry_legacy: 'domain:payments',
   Payout: 'domain:payments',

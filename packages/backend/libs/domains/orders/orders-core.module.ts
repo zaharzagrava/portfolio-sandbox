@@ -8,6 +8,7 @@ import { InboxModule } from '@app/infrastructure/inbox';
 import { JobsModule } from '@app/infrastructure/jobs/jobs.module';
 import { RealtimeModule } from '@app/infrastructure/realtime/realtime.module';
 import { ProductModule } from '@app/domains/catalog';
+import { PaymentQueryModule } from '@app/domains/payments';
 import { TenancyModule } from '@app/domains/tenancy';
 import { ORDER_MODELS } from './orders-models';
 import {
@@ -43,7 +44,7 @@ import { DynamoCartStore } from './infra/cart.dynamo-store';
 import { LegacyCheckoutDiscountsAdapter } from './infra/discounts.adapter';
 import { SequelizeOrderHistoryRepository } from './infra/order-history.repository';
 import { SequelizeOrderRepository } from './infra/order.repository';
-import { PaymentStatusUnavailableAdapter } from './infra/payment-status.adapter';
+import { PaymentQueryStatusAdapter } from './infra/payment-status.adapter';
 import { RealtimeAdapter } from './infra/realtime.adapter';
 import { RefundCommandAdapter } from './infra/refund-command.adapter';
 import { SequelizeReservationRepository } from './infra/reservation.repository';
@@ -65,6 +66,7 @@ import { SequelizeShopOrderRepository } from './infra/shop-order.repository';
     RealtimeModule,
     ProductModule,
     TenancyModule,
+    PaymentQueryModule,
     ProblemCatalogModule.forFeature(ORDERS_PROBLEMS),
     SequelizeModule.forFeature(ORDER_MODELS),
   ],
@@ -87,7 +89,7 @@ import { SequelizeShopOrderRepository } from './infra/shop-order.repository';
     CatalogReservationSource,
     { provide: RESERVATION_SOURCE, useExisting: CatalogReservationSource },
     { provide: REALTIME_PORT, useClass: RealtimeAdapter },
-    { provide: PAYMENT_STATUS, useClass: PaymentStatusUnavailableAdapter },
+    { provide: PAYMENT_STATUS, useClass: PaymentQueryStatusAdapter },
     { provide: REFUND_COMMAND, useClass: RefundCommandAdapter },
     ReservationReleaseService,
     OrderLifecycleService,

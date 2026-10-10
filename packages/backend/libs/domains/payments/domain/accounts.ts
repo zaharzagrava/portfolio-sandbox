@@ -9,6 +9,8 @@ export const LEDGER_ACCOUNTS = {
   CLEARING: 'MARKETPLACE_CLEARING',
   PLATFORM_FEES: 'PLATFORM_FEES',
   PAYOUT_CLEARING: 'PAYOUT_CLEARING',
+  /** Money held for us by the payment provider: debited when a payment is captured, credited on a refund (S13). */
+  PROVIDER_FUNDS: 'PROVIDER_FUNDS',
 } as const;
 
 export const shopAccount = (shopId: string) => `SHOP_${shopId}`;

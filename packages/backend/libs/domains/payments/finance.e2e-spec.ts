@@ -25,16 +25,15 @@ import {
 import Payout from './infra/models/payout.model';
 import { ShopModel as Shop } from '@app/domains/tenancy';
 import Payment, { PaymentStatus } from './infra/models/payment.model';
-import Outbox from '@app/infrastructure/outbox/outbox.model';
 import { OrderPaid } from '@app/domains/orders';
 import {
   FakePayoutProvider,
   PayoutProvider,
 } from './infra/payout-provider.port';
 import { PayoutJobs } from './infra/payout.jobs';
-import { PaymentResolutionJobs } from './infra/payment-resolution.jobs';
 import { ReconciliationJobs } from './infra/reconciliation.jobs';
 import { SettlementListener } from './infra/settlement.listener';
+import { seedPayment } from './testing';
 
 @Module({
   imports: [
@@ -47,7 +46,6 @@ import { SettlementListener } from './infra/settlement.listener';
   providers: [
     { provide: PayoutProvider, useClass: FakePayoutProvider },
     PayoutJobs,
-    PaymentResolutionJobs,
     ReconciliationJobs,
     SettlementListener,
   ],
@@ -191,47 +189,42 @@ describe('Ledger, settlement, payouts, reconciliation (e2e)', () => {
     expect(await balance(LEDGER_ACCOUNTS.PAYOUT_CLEARING)).toBe(0);
   });
 
-  it('UNKNOWN payment is resolved by asking Stripe (never re-charging) and settled through ledger + outbox', async () => {
+  it('a captured payment is booked once through the payment wrappers and a refund reverses it exactly', async () => {
     const [user] = await seeds.createTreelike([
       { __type__: TableName.User, email: `u-${v4()}@mail.com` },
     ]);
-    const [order] = await seeds.createTreelike([
-      { __type__: TableName.BisOrder, userId: user.id },
-    ]);
-    const payment = await app
-      .get<typeof Payment>(getModelToken(Payment))
-      .create({
-        idempotencyKey: v4(),
-        amount: 2000,
-        status: PaymentStatus.UNKNOWN,
-        userId: user.id,
-        bisOrderId: order.id,
-      });
-    await sequelize.query(
-      `UPDATE "Payment" SET "updatedAt" = now() - interval '10 minutes', "createdAt" = now() - interval '10 minutes' WHERE id = :id`,
-      {
-        replacements: { id: payment.id },
-      },
-    );
-    const stripe = app.get(StripeService);
-    jest
-      .spyOn(stripe, 'findPaymentIntentByIdempotencyKey')
-      .mockResolvedValue({ id: 'pi_found', status: 'succeeded' } as never);
-    const create = jest.spyOn(stripe, 'createPaymentIntent');
+    const { id: paymentId } = await seedPayment(app, {
+      userId: user.id,
+      amountMinor: 2000,
+      createdAt: new Date(),
+    });
+    const payment = {
+      paymentId,
+      userId: user.id,
+      amountMinor: 2000,
+      currency: 'EUR',
+    };
+    const book = (fn: 'recordPaymentCaptured' | 'recordPaymentRefunded') =>
+      sequelize.transaction((tx) => ledger[fn](payment, tx));
 
-    await app.get(PaymentResolutionJobs).resolve();
+    const first = await book('recordPaymentCaptured');
+    const replay = await book('recordPaymentCaptured'); // redelivery posts nothing new
 
-    expect((await payment.reload()).status).toBe(PaymentStatus.COMPLETED);
-    expect(payment.providerRef).toBe('pi_found');
-    expect(create).not.toHaveBeenCalled();
+    expect(replay.journalId).toBe(first.journalId);
+    expect(await balance(LEDGER_ACCOUNTS.PROVIDER_FUNDS)).toBe(-2000);
     expect(await balance(LEDGER_ACCOUNTS.CLEARING)).toBe(
       2000 - PLATFORM_FEE_MINOR,
     );
-    expect(
-      await app
-        .get<typeof Outbox>(getModelToken(Outbox))
-        .count({ where: { topic: 'payments.events' } }),
-    ).toBe(1);
+    expect(await balance(LEDGER_ACCOUNTS.PLATFORM_FEES)).toBe(
+      PLATFORM_FEE_MINOR,
+    );
+
+    await book('recordPaymentRefunded');
+    await book('recordPaymentRefunded');
+
+    expect(await balance(LEDGER_ACCOUNTS.PROVIDER_FUNDS)).toBe(0);
+    expect(await balance(LEDGER_ACCOUNTS.CLEARING)).toBe(0);
+    expect(await balance(LEDGER_ACCOUNTS.PLATFORM_FEES)).toBe(0);
   });
 
   it('daily reconciliation flags missing-in-ledger, missing-at-provider and amount mismatches', async () => {

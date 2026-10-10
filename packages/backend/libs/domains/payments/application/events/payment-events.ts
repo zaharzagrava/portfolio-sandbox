@@ -1,25 +1,34 @@
-import { z } from 'zod';
-import { defineEvent } from '@app/infrastructure/events/define-event';
+import { paymentEventSchemas } from '@marketplace-sandbox/contracts';
 import type { TopicRegistration } from '@app/infrastructure/events/topic-registry';
+import { lazy, sharedEvent } from './shared-event';
 
 /**
- * `payments.events` (key = the payment request's idempotency key). Transitional carrier of the former
- * `payments.responses` message: `payload` is the original request, `extra.payment` the resulting payment, `error`
- * the failure if any. `aggregateVersion` is the step of the payment's story (1 = decided, 2 = refunded). S13 replaces
- * this with typed `payments.*` events and `appendTask` for the request/response hop.
+ * `payments.events` v1 (specs/domains/S13-payment-intents/contracts/events.md): key = `paymentId`, money fields end
+ * in `Minor`, payloads are built field by field (never the payment method, the client secret, provider objects or
+ * errors). Orders defines the same three contracts to consume them; `sharedEvent` keeps one definition per process.
  */
-export const PaymentProcessed = defineEvent(
-  'payment.processed',
-  'payments',
-  1,
-  z.object({
-    payload: z.unknown(),
-    extra: z.unknown().optional(),
-    error: z.unknown().optional(),
-  }),
-);
-
 export const PAYMENTS_AGGREGATE: TopicRegistration = {
   aggregateType: 'payments',
   retention: 'full-history',
 };
+
+export const paymentEvents = lazy(() => ({
+  succeeded: sharedEvent(
+    'payments.payment_succeeded',
+    'payments',
+    1,
+    paymentEventSchemas['payments.payment_succeeded'],
+  ),
+  failed: sharedEvent(
+    'payments.payment_failed',
+    'payments',
+    1,
+    paymentEventSchemas['payments.payment_failed'],
+  ),
+  refunded: sharedEvent(
+    'payments.payment_refunded',
+    'payments',
+    1,
+    paymentEventSchemas['payments.payment_refunded'],
+  ),
+}));

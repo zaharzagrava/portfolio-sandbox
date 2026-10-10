@@ -44,7 +44,7 @@ import { FeedModule, DiscussionsModule } from '@app/domains/community';
 import { StatementsModule } from '@app/domains/statements';
 import { BillingModule } from '@app/domains/billing';
 import { AuctionsModule } from '@app/domains/auctions';
-import { FinanceModule } from '@app/domains/payments';
+import { FinanceModule, PaymentModule } from '@app/domains/payments';
 import { OrdersModule } from '@app/domains/orders';
 import { ShopBatchReadModule, TenancyModule } from '@app/domains/tenancy';
 import { Module } from '@nestjs/common';
@@ -67,7 +67,6 @@ import { SentryModule } from '@sentry/nestjs/setup';
 import { AppService } from './app.service';
 import { ClickHouseModule } from '@app/infrastructure/clickhouse/clickhouse.module';
 import { OpenTelemetryModule } from 'nestjs-otel';
-import { PaymentQueryModule } from './payment-query/payment-query.module';
 import { OutboxPublisherModule } from '@app/infrastructure/outbox/outbox-publisher.module';
 
 /**
@@ -119,11 +118,11 @@ import { OutboxPublisherModule } from '@app/infrastructure/outbox/outbox-publish
     SentryModule.forRoot(),
     ProductModule,
     ClickHouseModule,
-    PaymentQueryModule,
     OutboxPublisherModule,
     ChatModule,
     TenancyModule,
     OrdersModule,
+    PaymentModule,
     FinanceModule,
     LaunchEventsModule,
     AuctionsModule,

@@ -53,7 +53,7 @@ import '@app/domains/marketing';
 import '@app/domains/media';
 import { notificationsRatePolicies } from '@app/domains/notifications';
 import { ordersRatePolicies } from '@app/domains/orders';
-import '@app/domains/payments';
+import { paymentsRatePolicies } from '@app/domains/payments';
 import '@app/domains/seller-insights';
 import '@app/domains/seller-onboarding';
 import '@app/domains/shop-functions';
@@ -64,6 +64,7 @@ const ALL_RATE_LIMIT_TABLES = [
   identityRatePolicies,
   catalogRatePolicies,
   ordersRatePolicies,
+  paymentsRatePolicies,
   developerPlatformRatePolicies,
   catalogSyncRatePolicies,
   statementsRatePolicies,

@@ -16,10 +16,6 @@ import * as _ from 'lodash';
 
 import { UserModel as User } from '@app/domains/identity';
 import Migration from '@app/infrastructure/database/migration.model';
-import {
-  PaymentModel as Payment,
-  LedgerEntryModel as LedgerEntry,
-} from '@app/domains/payments';
 import { BisOrderModel as BisOrder } from '@app/domains/orders';
 import Outbox from '@app/infrastructure/outbox/outbox.model';
 import { ProductModel as Product } from '@app/domains/catalog';
@@ -40,11 +36,9 @@ export class SeedsService {
     private readonly configService: ApiConfigService,
     private readonly tsNodeUtilsService: TsNodeUtilsService,
     @InjectModel(BisOrder) private bisOrderModel: typeof BisOrder,
-    @InjectModel(Payment) private paymentModel: typeof Payment,
     @InjectModel(User) private userModel: typeof User,
     @InjectModel(Migration)
     private migrationModel: typeof Migration,
-    @InjectModel(LedgerEntry) private ledgerEntryModel: typeof LedgerEntry,
     @InjectModel(Outbox) private outboxModel: typeof Outbox,
     @InjectModel(Product) private productModel: typeof Product,
     @Optional() private readonly testCleanupRegistry?: TestCleanupRegistry,
@@ -68,38 +62,6 @@ export class SeedsService {
           user: {
             model: User,
             foreignKey: 'userId',
-            relationType: DBRelation.belongsTo,
-          },
-          payments: {
-            model: Payment,
-            foreignKey: 'bisOrderId',
-            relationType: DBRelation.hasMany,
-          },
-        },
-      },
-      Payment: {
-        sqlModel: this.paymentModel,
-        defaults: {},
-        relations: {
-          bisOrder: {
-            model: BisOrder,
-            foreignKey: 'bisOrderId',
-            relationType: DBRelation.belongsTo,
-          },
-          ledgerEntries: {
-            model: LedgerEntry,
-            foreignKey: 'paymentId',
-            relationType: DBRelation.hasMany,
-          },
-        },
-      },
-      LedgerEntry: {
-        sqlModel: this.ledgerEntryModel,
-        defaults: {},
-        relations: {
-          payment: {
-            model: Payment,
-            foreignKey: 'paymentId',
             relationType: DBRelation.belongsTo,
           },
         },
@@ -174,19 +136,13 @@ export class SeedsService {
     'CommissionRate',
   ];
 
-  public getModel(
-    modelType: BisOrder | Payment | User | Migration | LedgerEntry | Outbox,
-  ) {
+  public getModel(modelType: BisOrder | User | Migration | Outbox) {
     if (modelType instanceof BisOrder) {
       return this.bisOrderModel;
-    } else if (modelType instanceof Payment) {
-      return this.paymentModel;
     } else if (modelType instanceof User) {
       return this.userModel;
     } else if (modelType instanceof Migration) {
       return this.migrationModel;
-    } else if (modelType instanceof LedgerEntry) {
-      return this.ledgerEntryModel;
     } else if (modelType instanceof Outbox) {
       return this.outboxModel;
     }

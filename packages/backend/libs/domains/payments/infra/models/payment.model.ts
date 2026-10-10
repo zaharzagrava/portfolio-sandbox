@@ -1,34 +1,14 @@
 import {
   Column,
   CreatedAt,
-  Default,
-  DeletedAt,
-  IsUUID,
+  DataType,
   Model,
   PrimaryKey,
+  Scopes,
   Table,
   UpdatedAt,
-  Scopes,
-  DataType,
-  BelongsTo,
-  HasMany,
-  ForeignKey,
 } from 'sequelize-typescript';
-import { Includeable, Sequelize, WhereOptions } from 'sequelize';
-import type {
-  BisOrderModel as BisOrder,
-  BisOrderWithAllFilters,
-} from '@app/domains/orders';
-import LedgerEntry from './ledger-entry.model';
-
-/**
- * orders ↔ payments associate each other's models (debt D-11). A top-level import of the orders barrel would
- * load orders' Nest modules while this barrel is still mid-load, leaving `@InjectModel(Payment)` undefined in
- * apps that load payments first (payment-processor). Every use below is lazy, so resolve orders on demand.
- */
-
-const orders = (): typeof import('@app/domains/orders') =>
-  require('@app/domains/orders');
+import { Sequelize, WhereOptions } from 'sequelize';
 
 export enum PaymentScope {
   WithAll = 'WithAll',
@@ -42,59 +22,41 @@ export enum PaymentStatus {
   REFUNDED = 'REFUNDED',
   /** Provider call timed out: the charge may or may not exist. Resolved by asking the provider (SD-20), never by re-sending blindly. */
   UNKNOWN = 'UNKNOWN',
+  /** A refund was requested and is being executed at the provider. */
+  REFUND_PENDING = 'REFUND_PENDING',
 }
 
-/**
- * @description - for the default is, if you filter by, you fetch it as well
- *
- */
 export interface PaymentWithAllFilters {
   id?: string | string[];
+  userId?: string;
   idempotencyKey?: string | string[];
   status?: PaymentStatus | PaymentStatus[];
   amount?: number | number[];
   attributes?: string[];
-
-  // BisOrder filters
-  bisOrderFilters?: BisOrderWithAllFilters;
-  bisOrderRequired?: boolean;
 }
 
 @Scopes(() => ({
   [PaymentScope.WithAll]: ({
     id,
+    userId,
     idempotencyKey,
     status,
     amount,
     attributes,
-    bisOrderFilters,
-    bisOrderRequired,
   }: PaymentWithAllFilters = {}) => {
     const findOptions: {
       where: WhereOptions;
-      include?: Includeable[];
       attributes?: string[];
     } = {
       where: {
         ...(id && { id }),
+        ...(userId && { userId }),
         ...(idempotencyKey && { idempotencyKey }),
         ...(status && { status }),
         ...(amount && { amount }),
       },
-      include: [],
       attributes: attributes,
     };
-
-    if (bisOrderFilters) {
-      findOptions.include?.push({
-        model: orders().BisOrderModel.scope({
-          method: [orders().BisOrderScope.WithAll, bisOrderFilters],
-        }),
-        as: 'bisOrder',
-        required: bisOrderRequired ?? false,
-      });
-    }
-
     return findOptions;
   },
 }))
@@ -102,43 +64,78 @@ export interface PaymentWithAllFilters {
   modelName: 'Payment',
   timestamps: true,
   tableName: 'Payment',
-  indexes: [
-    {
-      name: 'idx_payment_user_id_desc',
-      fields: ['userId', { name: 'id', order: 'DESC' }],
-    },
-  ],
 })
 export default class Payment extends Model<Payment, Partial<Payment>> {
   @PrimaryKey
   @Column({ type: DataType.UUID, defaultValue: Sequelize.literal('uuidv7()') })
   declare id: string;
 
-  @Column({ type: DataType.STRING })
+  /** Legacy (client-chosen key); never read by S13, NULL on new rows, dropped at the contract release. */
+  @Column({ type: DataType.STRING, allowNull: true })
   declare idempotencyKey: string;
 
   @Column({ type: DataType.BIGINT })
   declare amount: number;
 
+  @Column({ type: DataType.TEXT, allowNull: false, defaultValue: 'USD' })
+  declare currency: string;
+
   @Column({ type: DataType.ENUM(...Object.values(PaymentStatus)) })
   declare status: PaymentStatus;
 
+  @Column({ type: DataType.INTEGER, allowNull: false, defaultValue: 1 })
+  declare version: number;
+
+  /** Plain column: no association to the user (IX.4). */
   @Column({ type: DataType.STRING, allowNull: false })
   declare userId: string;
 
-  @ForeignKey(() => orders().BisOrderModel)
-  @Column({ type: DataType.STRING, allowNull: false })
+  /** Legacy copy of `orderId`, still written until the contract release; no association, no foreign key. */
+  @Column({ type: DataType.UUID, allowNull: false })
   declare bisOrderId: string;
+
+  @Column({ type: DataType.UUID, allowNull: true })
+  declare orderId: string | null;
 
   /** Provider reference (Stripe PaymentIntent id) once known. */
   @Column({ type: DataType.TEXT, allowNull: true })
   declare providerRef: string | null;
 
-  @BelongsTo(() => orders().BisOrderModel, { foreignKey: 'bisOrderId' })
-  declare bisOrder: BisOrder;
+  @Column({ type: DataType.DATE, allowNull: true })
+  declare chargeAttemptedAt: Date | null;
 
-  @HasMany(() => LedgerEntry, { foreignKey: 'paymentId' })
-  declare ledgerEntries: LedgerEntry[];
+  @Column({ type: DataType.INTEGER, allowNull: false, defaultValue: 0 })
+  declare chargeAttempts: number;
+
+  @Column({ type: DataType.BOOLEAN, allowNull: false, defaultValue: false })
+  declare requiresAction: boolean;
+
+  @Column({ type: DataType.TEXT, allowNull: true })
+  declare clientSecret: string | null;
+
+  @Column({ type: DataType.TEXT, allowNull: true })
+  declare paymentMethodToken: string | null;
+
+  @Column({ type: DataType.TEXT, allowNull: true })
+  declare failureCode: string | null;
+
+  @Column({ type: DataType.DATE, allowNull: true })
+  declare nextResolveAt: Date | null;
+
+  @Column({ type: DataType.INTEGER, allowNull: false, defaultValue: 0 })
+  declare resolveChecks: number;
+
+  @Column({ type: DataType.DATE, allowNull: true })
+  declare unknownSince: Date | null;
+
+  @Column({ type: DataType.DATE, allowNull: true })
+  declare lastStuckAlertAt: Date | null;
+
+  @Column({ type: DataType.DATE, allowNull: true })
+  declare refundRequestedAt: Date | null;
+
+  @Column({ type: DataType.DATE, allowNull: true })
+  declare refundNextAt: Date | null;
 
   @CreatedAt
   declare createdAt: Date;

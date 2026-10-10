@@ -10,6 +10,7 @@ import { ConfigRules } from './config-rules';
 import { eventsConfigKeys } from './events-config';
 import { jobsConfigKeys } from './jobs-config';
 import { ordersConfigKeys } from './orders-config';
+import { paymentsConfigKeys } from './payments-config';
 
 dotenv.config({
   /**
@@ -541,6 +542,11 @@ export class ApiConfigService {
           ...eventsConfigKeys,
           ...jobsConfigKeys,
           ...ordersConfigKeys,
+          ...paymentsConfigKeys,
+          payments_cursor_secret: {
+            verify: joi.string().optional().allow(''),
+            name: 'PAYMENTS_CURSOR_SECRET',
+          },
           cassandra_password: {
             verify: joi.string().optional().allow(''),
             name: 'CASSANDRA_PASSWORD',

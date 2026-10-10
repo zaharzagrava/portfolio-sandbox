@@ -5,33 +5,19 @@ import {
   CreateBisOrderDto,
   BisOrderModel as BisOrder,
 } from '@app/domains/orders';
-import {
-  CreateLedgerEntryDto,
-  LedgerEntryModel as LedgerEntry,
-  PaymentModel as Payment,
-  CreatePaymentDto,
-} from '@app/domains/payments';
 import Outbox from '@app/infrastructure/outbox/outbox.model';
 import { UserModel as User, CreateUserDto } from '@app/domains/identity';
 import { ProductModel as Product } from '@app/domains/catalog';
 import { CreateOutboxDto } from '@app/infrastructure/outbox/types';
 
-export type SqlModelClass =
-  User | BisOrder | Payment | LedgerEntry | Outbox | Product;
+export type SqlModelClass = User | BisOrder | Outbox | Product;
 
 export type SqlModel =
-  | typeof User
-  | typeof BisOrder
-  | typeof Payment
-  | typeof LedgerEntry
-  | typeof Outbox
-  | typeof Product;
+  typeof User | typeof BisOrder | typeof Outbox | typeof Product;
 
 export enum TableName {
   User = 'User',
   BisOrder = 'BisOrder',
-  Payment = 'Payment',
-  LedgerEntry = 'LedgerEntry',
   Outbox = 'Outbox',
   Product = 'Product',
 }
@@ -65,8 +51,6 @@ export interface TableData<
 export type Schema = {
   User: TableData<typeof User, User>;
   BisOrder: TableData<typeof BisOrder, BisOrder>;
-  Payment: TableData<typeof Payment, Payment>;
-  LedgerEntry: TableData<typeof LedgerEntry, LedgerEntry>;
   Outbox: TableData<typeof Outbox, Outbox>;
   Product: TableData<typeof Product, Product>;
 };
@@ -86,34 +70,6 @@ export class CreateTreelikeBisOrderDto extends PartialType(CreateBisOrderDto) {
   @Type(() => CreateTreelikeUserDto)
   @ApiProperty({ type: () => CreateTreelikeUserDto, isArray: true })
   user?: CreateTreelikeUserDto[];
-
-  @Type(() => CreateTreelikePaymentDto)
-  @ApiProperty({ type: () => CreateTreelikePaymentDto, isArray: true })
-  payments?: CreateTreelikePaymentDto[];
-}
-
-export class CreateTreelikePaymentDto extends PartialType(CreatePaymentDto) {
-  @ApiProperty()
-  __type__: TableName.Payment | 'GET_FROM_PARENT';
-
-  @Type(() => CreateTreelikeBisOrderDto)
-  @ApiProperty({ type: () => CreateTreelikeBisOrderDto, isArray: true })
-  bisOrder?: CreateTreelikeBisOrderDto[];
-
-  @Type(() => CreateTreelikeLedgerEntryDto)
-  @ApiProperty({ type: () => CreateTreelikeLedgerEntryDto, isArray: true })
-  ledgerEntries?: CreateTreelikeLedgerEntryDto[];
-}
-
-export class CreateTreelikeLedgerEntryDto extends PartialType(
-  CreateLedgerEntryDto,
-) {
-  @ApiProperty()
-  __type__: TableName.LedgerEntry | 'GET_FROM_PARENT';
-
-  @Type(() => CreateTreelikePaymentDto)
-  @ApiProperty({ type: () => CreateTreelikePaymentDto, isArray: true })
-  payment?: CreateTreelikePaymentDto[];
 }
 
 export class CreateTreelikeOutboxDto extends PartialType(CreateOutboxDto) {
@@ -143,8 +99,6 @@ export type CreateTreelikeClass =
   | CreateTreelikeProductDto
   | CreateTreelikeUserDto
   | CreateTreelikeBisOrderDto
-  | CreateTreelikePaymentDto
-  | CreateTreelikeLedgerEntryDto
   | CreateTreelikeOutboxDto;
 
 export interface CreateTreelikeOptions {

@@ -1,11 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ApiConfigService } from '@app/common/config';
 import Stripe from 'stripe'; // Fixed: Cleaned up imports
-import { CircuitBreaker, CircuitOpenError } from '@app/common/resilience';
-import { SystemClock } from '@app/common/core/clock';
 import { InternalServerError } from '@app/common/errors';
 import { ErrorUtilsService } from '@app/common/errors/error-utils/error-utils.service';
-import { Domain_CircuitBreakerOpenError } from './stripe.errors';
 import { Event } from 'node_modules/stripe/cjs/resources/Events';
 import { Response } from 'node_modules/stripe/cjs/lib';
 import { VerificationSession } from 'node_modules/stripe/cjs/resources/Identity';
@@ -16,29 +13,17 @@ import { Session } from 'node_modules/stripe/cjs/resources/Checkout';
 export class StripeService {
   private readonly l = new Logger(StripeService.name);
   private readonly stripe: Stripe.Stripe; // Fixed: Changed Stripe.Stripe to Stripe
-  private readonly createPaymentIntentBreaker: CircuitBreaker;
 
   constructor(
     private readonly configService: ApiConfigService,
     private readonly errorUtilsService: ErrorUtilsService,
   ) {
-    // Fixed: Added the required apiVersion config object
+    // Thin client (S13 A24): no breaker and no retries here. The payments adapter owns both, so a call is sent once
+    // and every call site picks its own timeout (`timeout` below is only the ceiling for callers that pass none).
     this.stripe = new Stripe(this.configService.get('stripe_secret_key'), {
       apiVersion: '2026-08-26.dahlia', // Use the version your account is pinned to, or the latest
       timeout: 15_000,
-    });
-
-    // Opens when at least half of the recent calls fail (a card decline is the customer's, not Stripe's, so it does not count).
-    this.createPaymentIntentBreaker = new CircuitBreaker({
-      name: 'stripe.create_payment_intent',
-      clock: new SystemClock(),
-      windowMs: 30_000,
-      minimumCalls: 5,
-      failureRateThreshold: 0.5,
-      openDurationMs: 10_000,
-      halfOpenCalls: 1,
-      isFailure: (error) =>
-        (error as { type?: string }).type !== 'StripeCardError',
+      maxNetworkRetries: 0,
     });
   }
 
@@ -59,75 +44,91 @@ export class StripeService {
     return this.stripe.identity.verificationSessions.retrieve(sessionId);
   }
 
-  // TODO: Depending on how you configured your stripeService.createPaymentIntent wrapper, the official Stripe Node SDK throws exceptions for card declines (like Insufficient Funds, Fraud, or Expired Cards) returning a 402 Payment Required HTTP status. It doesn't return a neat object with status: 'failed'.
+  /**
+   * Creates and confirms an intent in one call. The SDK throws for card declines (`StripeCardError`, 402), for every
+   * other error response and for timeouts; the payments adapter classifies them. `metadata` lets the webhook and the
+   * unknown-outcome lookup map the intent back to our order.
+   */
   public async createPaymentIntent(params: {
     amount: number;
+    currency: string;
     paymentMethodId: string;
     idempotencyKey: string;
+    metadata?: Record<string, string>;
+    timeoutMs?: number;
   }): Promise<Response<PaymentIntent>> {
-    try {
-      return (
-        await this.createPaymentIntentBreaker.execute(() =>
-          this.createPaymentIntentUnprotected(params),
-        )
-      ).value;
-    } catch (error) {
-      if (error instanceof CircuitOpenError)
-        throw new Domain_CircuitBreakerOpenError({ causes: [error] });
-      throw error;
-    }
-  }
-
-  private async createPaymentIntentUnprotected({
-    amount,
-    paymentMethodId,
-    idempotencyKey,
-  }: {
-    amount: number;
-    paymentMethodId: string;
-    idempotencyKey: string;
-  }): Promise<Response<PaymentIntent>> {
-    if (this.configService.get('is_load_test')) {
-      return {
-        status: 'succeeded',
-        payment_method: paymentMethodId,
-        amount: amount,
-        currency: 'usd',
-        created: Date.now(),
-      } as any;
-    }
-
     return await this.stripe.paymentIntents.create(
       {
-        amount: amount, // e.g., 10000 cents ($100.00)
-        currency: 'usd',
-        payment_method: paymentMethodId,
+        amount: params.amount, // minor units
+        currency: params.currency.toLowerCase(),
+        payment_method: params.paymentMethodId,
         confirm: true, // Attempt to charge it immediately
         automatic_payment_methods: { enabled: true, allow_redirects: 'never' },
-        // SD-19: lets the Stripe webhook map the intent back to our Payment/order.
-        metadata: { idempotencyKey },
+        metadata: params.metadata ?? { idempotencyKey: params.idempotencyKey },
       },
       {
-        idempotencyKey: idempotencyKey, // Stripe prevents double-charges natively!
+        idempotencyKey: params.idempotencyKey, // Stripe prevents double-charges natively!
+        ...(params.timeoutMs !== undefined && { timeout: params.timeoutMs }),
+        maxNetworkRetries: 0,
       },
     );
   }
 
-  public async refundPaymentIntent({
-    paymentIntentId,
-    idempotencyKey,
-  }: {
-    paymentIntentId: string;
-    idempotencyKey: string;
-  }): Promise<void> {
-    if (this.configService.get('is_load_test')) {
-      return;
-    }
+  public retrievePaymentIntent(
+    intentId: string,
+    timeoutMs: number,
+  ): Promise<Response<PaymentIntent>> {
+    return this.stripe.paymentIntents.retrieve(intentId, undefined, {
+      timeout: timeoutMs,
+      maxNetworkRetries: 0,
+    });
+  }
 
-    await this.stripe.refunds.create(
-      { payment_intent: paymentIntentId },
-      { idempotencyKey: `refund:${idempotencyKey}` },
+  /** The intent whose `metadata[key]` equals `value` (search query values are escaped), or null. */
+  public async findPaymentIntentByMetadata(
+    key: string,
+    value: string,
+    timeoutMs: number,
+  ): Promise<PaymentIntent | null> {
+    const escaped = value.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+    const result = await this.stripe.paymentIntents.search(
+      { query: `metadata['${key}']:'${escaped}'`, limit: 1 },
+      { timeout: timeoutMs, maxNetworkRetries: 0 },
     );
+    return result.data[0] ?? null;
+  }
+
+  public cancelPaymentIntent(
+    intentId: string,
+    idempotencyKey: string,
+    timeoutMs: number,
+  ): Promise<Response<PaymentIntent>> {
+    return this.stripe.paymentIntents.cancel(intentId, undefined, {
+      idempotencyKey,
+      timeout: timeoutMs,
+      maxNetworkRetries: 0,
+    });
+  }
+
+  /** A full refund of the charge; `idempotencyKey` is ours (`refund:<paymentId>`), the provider dedupes on it. */
+  public createRefund(
+    paymentIntentId: string,
+    idempotencyKey: string,
+    timeoutMs: number,
+  ) {
+    return this.stripe.refunds.create(
+      { payment_intent: paymentIntentId },
+      { idempotencyKey, timeout: timeoutMs, maxNetworkRetries: 0 },
+    );
+  }
+
+  /** The refunds the provider holds for a charge (a lookup before any retry of a refund). */
+  public async listRefunds(paymentIntentId: string, timeoutMs: number) {
+    const result = await this.stripe.refunds.list(
+      { payment_intent: paymentIntentId, limit: 10 },
+      { timeout: timeoutMs, maxNetworkRetries: 0 },
+    );
+    return result.data;
   }
 
   public async createPaymentSession({

@@ -14,6 +14,11 @@ import { InjectModel } from '@nestjs/sequelize';
 import LedgerEntry from '../infra/models/ledger-entry.model';
 import { Transaction } from 'sequelize';
 import { DbUtilsService } from '@app/infrastructure/database/db-utils/db-utils.service';
+import { v5 as uuidv5 } from 'uuid';
+import { LEDGER_ACCOUNTS, PLATFORM_FEE_MINOR } from '../domain/accounts';
+
+/** Namespace of the deterministic journal ids of captured and refunded payments. */
+const PAYMENT_NS = '5d1a2f7e-6c1b-4a58-9b38-2f3a7d0c8e44';
 
 @Injectable()
 export class LedgerService {
@@ -77,6 +82,97 @@ export class LedgerService {
         tx,
       );
     }, tx);
+  }
+
+  /**
+   * Books a captured payment (S13 CONTRACT 8; S14 replaces the internals, the name and shape stay): one SALE journal
+   * per payment, id `uuidv5('sale:' + paymentId)`, so a repeat finds it and does nothing. Runs in the caller's
+   * transaction. The buyer side is the provider-funds account, never an account named after the user.
+   */
+  public async recordPaymentCaptured(
+    payment: {
+      paymentId: string;
+      userId: string;
+      amountMinor: number;
+      currency: string;
+    },
+    tx: Transaction,
+  ): Promise<{ journalId: string }> {
+    const journalId = uuidv5(`sale:${payment.paymentId}`, PAYMENT_NS);
+    if (await this.journalExists(journalId, tx)) return { journalId };
+    const fee = Math.min(PLATFORM_FEE_MINOR, payment.amountMinor);
+    await this.post(
+      {
+        journalId,
+        kind: 'SALE',
+        paymentId: payment.paymentId,
+        lines: [
+          {
+            accountId: LEDGER_ACCOUNTS.PROVIDER_FUNDS,
+            amount: -payment.amountMinor,
+          },
+          {
+            accountId: LEDGER_ACCOUNTS.CLEARING,
+            amount: payment.amountMinor - fee,
+          },
+          { accountId: LEDGER_ACCOUNTS.PLATFORM_FEES, amount: fee },
+        ],
+      },
+      tx,
+    );
+    return { journalId };
+  }
+
+  /** The reversal of `recordPaymentCaptured`, id `uuidv5('refund:' + paymentId)`; idempotent the same way. */
+  public async recordPaymentRefunded(
+    payment: { paymentId: string; amountMinor: number; currency: string },
+    tx: Transaction,
+  ): Promise<{ journalId: string }> {
+    const journalId = uuidv5(`refund:${payment.paymentId}`, PAYMENT_NS);
+    if (await this.journalExists(journalId, tx)) return { journalId };
+    const fee = Math.min(PLATFORM_FEE_MINOR, payment.amountMinor);
+    await this.post(
+      {
+        journalId,
+        kind: 'REFUND',
+        paymentId: payment.paymentId,
+        lines: [
+          {
+            accountId: LEDGER_ACCOUNTS.PROVIDER_FUNDS,
+            amount: payment.amountMinor,
+          },
+          {
+            accountId: LEDGER_ACCOUNTS.CLEARING,
+            amount: -(payment.amountMinor - fee),
+          },
+          { accountId: LEDGER_ACCOUNTS.PLATFORM_FEES, amount: -fee },
+        ],
+      },
+      tx,
+    );
+    return { journalId };
+  }
+
+  private async journalExists(
+    journalId: string,
+    tx: Transaction,
+  ): Promise<boolean> {
+    // The advisory lock serialises two postings of the same journal; the check then sees the first one.
+    await this.ledgerEntryModel.sequelize!.query(
+      `SELECT pg_advisory_xact_lock(hashtext(:journalId))`,
+      { replacements: { journalId }, transaction: tx },
+    );
+    const [{ exists }] = await this.ledgerEntryModel.sequelize!.query<{
+      exists: boolean;
+    }>(
+      `SELECT EXISTS (SELECT 1 FROM "LedgerEntry" WHERE "journalId" = :journalId) AS exists`,
+      {
+        type: QueryTypes.SELECT,
+        replacements: { journalId },
+        transaction: tx,
+      },
+    );
+    return exists;
   }
 
   /**

@@ -48,7 +48,7 @@ import { KafkaProducerModule } from '@app/infrastructure/kafka/kafka-producer.mo
 import { UsageProjector } from '@app/domains/billing';
 import { LlmCallsProjector } from '@app/domains/assistant';
 import { ClickHouseModule } from '@app/infrastructure/clickhouse/clickhouse.module';
-import { BalanceProjector } from '@app/domains/payments';
+import { paymentsProjectors } from '@app/domains/payments';
 import { Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { OpenTelemetryModule } from 'nestjs-otel';
@@ -85,7 +85,7 @@ import { CacheModule } from '@app/infrastructure/cache/cache.module';
     ProjectionsModule.forProjectors(
       [
         ...ProductProjectorModule.projectors,
-        BalanceProjector,
+        ...paymentsProjectors,
         UsageProjector,
         FeedFanoutConsumer,
         ProductFeedProjector,

@@ -162,6 +162,38 @@ export class SecretsManagerConfig {
   jobs_retain_days: number;
   jobs_poll_idle_ms: number;
 
+  /** S13: payments settings, defaults in `payments-config.ts`. */
+  payments_create_timeout_ms: number;
+  payments_refund_timeout_ms: number;
+  payments_lookup_timeout_ms: number;
+  payments_cancel_timeout_ms: number;
+  payments_refresh_timeout_ms: number;
+  payments_connect_timeout_ms: number;
+  payments_breaker_window_ms: number;
+  payments_breaker_min_calls: number;
+  payments_breaker_failure_pct: number;
+  payments_breaker_open_ms: number;
+  payments_breaker_slow_ms: number;
+  payments_charge_max_attempts: number;
+  payments_charge_deadline_seconds: number;
+  payments_charge_backoff_base_ms: number;
+  payments_charge_backoff_cap_ms: number;
+  payments_resolve_first_delay_ms: number;
+  payments_resolve_backoff_cap_ms: number;
+  payments_resolve_no_record_seconds: number;
+  payments_stuck_seconds: number;
+  payments_sweep_interval_seconds: number;
+  payments_sweep_batch: number;
+  payments_refund_backoff_base_ms: number;
+  payments_refund_backoff_cap_ms: number;
+  payments_refund_window_seconds: number;
+  payments_refund_batch: number;
+  payments_order_copy_wait_ms: number;
+  payments_refresh_min_interval_ms: number;
+  payments_page_default: number;
+  payments_page_max: number;
+  payments_cursor_secret?: string;
+
   /** S10: orders settings, defaults in `orders-config.ts`. */
   orders_hold_seconds: number;
   orders_cart_max_lines: number;

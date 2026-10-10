@@ -3,10 +3,6 @@ import { SequelizeModule } from '@nestjs/sequelize';
 import { UserModel as User } from '@app/domains/identity';
 import { SeedsService } from './seeds.service';
 import { BisOrderModel as BisOrder } from '@app/domains/orders';
-import {
-  PaymentModel as Payment,
-  LedgerEntryModel as LedgerEntry,
-} from '@app/domains/payments';
 import Outbox from '@app/infrastructure/outbox/outbox.model';
 import { ApiConfigModule } from '@app/common/config';
 import { TsNodeUtilsModule } from '@app/common/scripts/ts-node-utils.module';
@@ -17,15 +13,7 @@ import { ProductModel as Product } from '@app/domains/catalog';
   imports: [
     ApiConfigModule,
     TsNodeUtilsModule,
-    SequelizeModule.forFeature([
-      User,
-      BisOrder,
-      Payment,
-      LedgerEntry,
-      Outbox,
-      Migration,
-      Product,
-    ]),
+    SequelizeModule.forFeature([User, BisOrder, Outbox, Migration, Product]),
   ],
   providers: [SeedsService],
   controllers: [],

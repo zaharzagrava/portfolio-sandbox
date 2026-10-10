@@ -36,7 +36,10 @@ import { DiscussionsWorkerModule } from '@app/domains/community';
 import { StatementsWorkerModule } from '@app/domains/statements';
 import { BillingWorkerModule } from '@app/domains/billing';
 import { AuctionsWorkerModule } from '@app/domains/auctions';
-import { FinanceWorkerModule } from '@app/domains/payments';
+import {
+  FinanceWorkerModule,
+  PaymentProcessorModule,
+} from '@app/domains/payments';
 import { OrdersWorkerModule } from '@app/domains/orders';
 import { Module } from '@nestjs/common';
 import { OpenTelemetryModule } from 'nestjs-otel';
@@ -76,6 +79,7 @@ import { AuthWorkerModule } from '@app/domains/identity';
     TenancyWorkerModule,
     OrdersWorkerModule,
     FinanceWorkerModule,
+    PaymentProcessorModule,
     LaunchEventsWorkerModule,
     AuctionsWorkerModule,
     BillingWorkerModule,

@@ -5,7 +5,10 @@ import { ApiConfigService, ApiConfigModule } from '@app/common/config';
 import { Environment } from '@app/common/types';
 import { ClockModule } from '@app/infrastructure/platform';
 import { HealthModule } from '@app/infrastructure/health';
-import { PaymentModule } from '@app/domains/payments';
+import { JobsModule } from '@app/infrastructure/jobs/jobs.module';
+import { RedisModule } from '@app/infrastructure/redis/redis.module';
+import { SqsModule } from '@app/infrastructure/sqs/sqs.module';
+import { PaymentProcessorModule as PaymentProcessorDomainModule } from '@app/domains/payments';
 
 @Module({
   imports: [
@@ -32,7 +35,11 @@ import { PaymentModule } from '@app/domains/payments';
     }),
     ClockModule,
     HealthModule,
-    PaymentModule,
+    RedisModule,
+    SqsModule,
+    JobsModule,
+    // The charge command consumer (SQS `payments-charge`); the job handlers run in apps/worker.
+    PaymentProcessorDomainModule,
   ],
 })
 export class PaymentProcessorModule {}

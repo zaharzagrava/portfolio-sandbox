@@ -18,7 +18,6 @@ import { Environment } from '@app/common/types';
 import { SentryModule } from '@sentry/nestjs/setup';
 import { OpenTelemetryModule } from 'nestjs-otel';
 import { RealtimeNotifierModule } from './realtime-notifier/realtime-notifier.module';
-import { PaymentStreamModule } from './payment-stream/payment-stream.module';
 import { TopicStreamModule } from './topic-stream/topic-stream.module';
 import { LiveGatewayModule } from './live/live-gateway.module';
 import { IdentityTopicsModule } from '@app/domains/identity';
@@ -77,7 +76,6 @@ import { AssistantModule } from '@app/domains/assistant';
     ErrorUtilsModule,
     SentryModule.forRoot(),
     RealtimeNotifierModule,
-    PaymentStreamModule,
     TopicStreamModule,
     LiveGatewayModule,
     // Realtime topics each domain owns (debt D-3): the gateway authorizes subscriptions, so it loads them all.

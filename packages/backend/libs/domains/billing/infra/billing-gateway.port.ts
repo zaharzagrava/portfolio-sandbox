@@ -27,6 +27,7 @@ export class StripeBillingGateway extends BillingGateway {
     try {
       const intent = await this.stripe.createPaymentIntent({
         amount: r.amount,
+        currency: r.currency,
         paymentMethodId: r.paymentMethodRef,
         idempotencyKey: r.idempotencyKey,
       });

@@ -63,6 +63,9 @@ export class PaymentsEventsConsumer implements Projector {
           p.currency.toUpperCase() !== order.currency.toUpperCase()
         )
           throw new PermanentError('payment does not match the order');
+        // `payment_failed` may carry no reference (S13); a success always does.
+        if (!p.paymentRef)
+          throw new PermanentError('payment_succeeded without a reference');
         const result = await this.results.applySuccess(
           order.id,
           p.paymentRef,

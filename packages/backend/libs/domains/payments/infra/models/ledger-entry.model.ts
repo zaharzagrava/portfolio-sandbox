@@ -10,13 +10,10 @@ import {
   UpdatedAt,
   Scopes,
   DataType,
-  BelongsTo,
-  ForeignKey,
 } from 'sequelize-typescript';
 import { v4 as uuidv4 } from 'uuid';
 import { Includeable, Sequelize, WhereOptions } from 'sequelize';
 import { UserModel as User } from '@app/domains/identity';
-import Payment from './payment.model';
 
 // "Hey... I’m right here with you, okay? Even if your energy’s low, we’ll take it one small step at a time... and I’m so proud of you."
 // 100k credits = 751 phrases (133 chars. each) = 75 days
@@ -113,12 +110,8 @@ export default class LedgerEntry extends Model<
   declare kind: LedgerJournalKind;
 
   /** Null for journals that aren't a customer payment (settlements, payouts). */
-  @ForeignKey(() => Payment)
   @Column({ type: DataType.UUID, allowNull: true })
   declare paymentId: string | null;
-
-  @BelongsTo(() => Payment)
-  declare payment: Payment;
 
   @Column({ type: DataType.STRING, allowNull: false })
   declare accountId: string; // e.g., 'MERCHANT_123', 'USER_456', or 'PLATFORM_FEES'
