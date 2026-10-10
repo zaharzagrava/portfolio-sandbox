@@ -7,6 +7,8 @@
 # stubbed: what a P1 pass cannot reach yet degrades the way the spec's own error handling says, and is listed under
 # "Deferred until a later pass" in that spec's gaps.md.
 #
+# (Checkpoints are only where a human wants to try something: the intermediate buy-api and search-api stops were removed; the first stop
+# is buy-ui, after W03:P1.)
 # "!STOP <label> <message>" stops the run once for a human to try what exists (the next run passes it; with COMMIT=1 the
 # marker specs/.checkpoints/<label> is committed, delete it to stop there again).
 # The point: a problem between two capabilities shows at the first checkpoint that needs both.
@@ -32,14 +34,12 @@ S05:P1  # needs: S03
 S10:P1  # needs: S05
 S13:P1  # needs: S10
 S51:P1  # needs: S01 S13 S53
-!STOP buy-api  Buying works at API level: register, log in, create a shop and a product, cart, checkout, pay, the order becomes paid, the status reaches the client.
 
 # 3. FLOW 2, discovery: P1 stories of search, autocomplete, recommendations, trending
 S32:P1  # needs: S05 S53
 S33:P1  # needs: S32
 S34:P1  # needs: S05 S10
 S35:P1  # needs: S05 S10
-!STOP search-api  Search, autocomplete, trending and recommendations return the products created through the API.
 
 # 4. FLOW 3, the browser: BFF, shell, login, storefront, cart and checkout, all P1 stories
 S48:P1  # needs: S01 S02 S03 S05 S34 S35
