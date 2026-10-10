@@ -6,7 +6,7 @@ import { v7 as uuidv7 } from 'uuid';
 import { CLOCK, type Clock } from '@app/common/core/clock';
 import { ProductQueryService } from '@app/domains/catalog';
 import { JobsModule } from '@app/infrastructure/jobs/jobs.module';
-import { RealtimePublisher } from '@app/infrastructure/realtime/realtime-publisher.service';
+import { RealtimePublisher } from '@app/infrastructure/realtime';
 import {
   createCatalogApp,
   type CatalogTestApp,

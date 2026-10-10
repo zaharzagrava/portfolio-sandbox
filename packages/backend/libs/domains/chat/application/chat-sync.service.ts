@@ -7,7 +7,7 @@ import { InjectConnection } from '@nestjs/sequelize';
 import { QueryTypes, Sequelize } from 'sequelize';
 import { RedisService } from '@app/infrastructure/redis/redis.service';
 import { CacheService } from '@app/infrastructure/cache/cache.service';
-import { RealtimePublisher } from '@app/infrastructure/realtime/realtime-publisher.service';
+import { RealtimePublisher } from '@app/infrastructure/realtime';
 import { chatChannelRedisTopic } from '../domain/chat.constants';
 
 export interface SyncedMessage {

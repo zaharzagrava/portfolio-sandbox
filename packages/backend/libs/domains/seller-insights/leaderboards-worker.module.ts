@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { RealtimeModule } from '@app/infrastructure/realtime/realtime.module';
+import { RealtimeModule } from '@app/infrastructure/realtime';
 import { JobsModule } from '@app/infrastructure/jobs/jobs.module';
 import { DashboardTicker } from './infra/dashboard-ticker.service';
 import { LeaderboardSnapshotJobs } from './infra/leaderboard-snapshot.jobs';

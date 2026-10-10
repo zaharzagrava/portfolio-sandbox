@@ -8,7 +8,7 @@ import { PassThrough, Transform } from 'node:stream';
 import type { PoolClient } from 'pg';
 import { ObjectStorage } from '@app/infrastructure/storage/object-storage.port';
 import { TaskQueue } from '@app/infrastructure/sqs/task-queue.port';
-import { RealtimePublisher } from '@app/infrastructure/realtime/realtime-publisher.service';
+import { RealtimePublisher } from '@app/infrastructure/realtime';
 
 /**
  * Exports still ride catalog-sync's import queue: its worker consumes `{ kind: 'export' }` messages
@@ -161,7 +161,7 @@ export class OrderExportService {
       `UPDATE "ExportJob" SET status = 'DONE', "objectKey" = :key, rows = :rows, "updatedAt" = now() WHERE id = :jobId`,
       { replacements: { key, rows, jobId } },
     );
-    await this.realtime.publish(`job:${jobId}`, 'done', { rows });
+    await this.realtime.publish(`order-export:${jobId}`, 'done', { rows });
     return rows;
   }
 }

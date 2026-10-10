@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { CassandraModule } from '@app/infrastructure/cassandra/cassandra.module';
-import { RealtimeModule } from '@app/infrastructure/realtime/realtime.module';
+import { RealtimeModule } from '@app/infrastructure/realtime';
 import { CacheModule } from '@app/infrastructure/cache/cache.module';
 import { SqsModule } from '@app/infrastructure/sqs/sqs.module';
 import { JobsModule } from '@app/infrastructure/jobs/jobs.module';

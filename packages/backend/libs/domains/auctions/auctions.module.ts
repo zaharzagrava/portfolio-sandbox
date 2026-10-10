@@ -4,7 +4,7 @@ import { SequelizeModule } from '@nestjs/sequelize';
 import Auction from './infra/models/auction.model';
 import { AuthModule } from '@app/domains/identity';
 import { JobsModule } from '@app/infrastructure/jobs/jobs.module';
-import { RealtimeModule } from '@app/infrastructure/realtime/realtime.module';
+import { RealtimeModule } from '@app/infrastructure/realtime';
 import { AuctionService } from './application/auction.service';
 import { AuctionsController } from './api/auctions.controller';
 import { RateLimitModule } from '@app/infrastructure/rate-limit';

@@ -12,7 +12,7 @@ import { SeedsModule } from '@app/test/seeds/seeds.module';
 import { SeedsService } from '@app/test/seeds/seeds.service';
 import { TableName } from '@app/test/seeds/types';
 import { ObjectStorage } from '@app/infrastructure/storage/object-storage.port';
-import { RealtimePublisher } from '@app/infrastructure/realtime/realtime-publisher.service';
+import { RealtimePublisher } from '@app/infrastructure/realtime';
 import { TaskQueue } from '@app/infrastructure/sqs/task-queue.port';
 import { ShopModel as Shop } from '@app/domains/tenancy';
 import { CatalogImportModule } from './catalog-import.module';
@@ -136,7 +136,7 @@ describe('Bulk catalog import & export (e2e)', () => {
     expect(report[1]).toMatch(/^17,SKU-17,/);
     expect(
       progress.mock.calls.filter(
-        ([topic, type]) => topic === `job:${jobId}` && type === 'progress',
+        ([topic, type]) => topic === `import:${jobId}` && type === 'progress',
       ),
     ).toHaveLength(10);
 

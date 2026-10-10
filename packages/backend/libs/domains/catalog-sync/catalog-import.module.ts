@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { AuthModule } from '@app/domains/identity';
 import { StorageModule } from '@app/infrastructure/storage/storage.module';
 import { SqsModule } from '@app/infrastructure/sqs/sqs.module';
-import { RealtimeModule } from '@app/infrastructure/realtime/realtime.module';
+import { RealtimeModule } from '@app/infrastructure/realtime';
 import { RateLimitModule } from '@app/infrastructure/rate-limit';
 import { catalogSyncRatePolicies } from './rate-limit-policies';
 import { CatalogImportService } from './application/catalog-import.service';

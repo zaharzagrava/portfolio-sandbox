@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { AuthModule } from '@app/domains/identity';
-import { RealtimeModule } from '@app/infrastructure/realtime/realtime.module';
+import { RealtimeModule } from '@app/infrastructure/realtime';
 import { CacheModule } from '@app/infrastructure/cache/cache.module';
 import { ChatSyncService } from './application/chat-sync.service';
 import { ChatSyncController } from './api/chat-sync.controller';

@@ -13,7 +13,8 @@ export const REACTION_SHARDS = 8;
 export const reactionKey = (id: string, second: number, shard: number) =>
   `live:rx:${id}:${second}:${shard}`;
 /** Raw comment firehose for gateways' batchers; not a public realtime topic (clients can't subscribe to it). */
-export const firehoseTopic = (id: string) => `livefeed:${id}`;
+export const firehoseTopic = (id: string): `livefeed:${string}` =>
+  `livefeed:${id}`;
 
 export const RECENT_COMMENTS = 50;
 export const ALLOWED_REACTIONS = ['❤️', '🔥', '😂', '😮', '👏', '🛒'] as const;

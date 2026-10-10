@@ -7,7 +7,7 @@ import { InjectConnection } from '@nestjs/sequelize';
 import { QueryTypes, Sequelize } from 'sequelize';
 import { RedisService } from '@app/infrastructure/redis/redis.service';
 import { KafkaProducerService } from '@app/infrastructure/kafka/kafka-producer.service';
-import { RealtimePublisher } from '@app/infrastructure/realtime/realtime-publisher.service';
+import { RealtimePublisher } from '@app/infrastructure/realtime';
 import {
   APPLY_LOCATION,
   courierKey,

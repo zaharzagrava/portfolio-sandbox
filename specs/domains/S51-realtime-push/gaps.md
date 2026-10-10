@@ -77,6 +77,47 @@ The code is a good draft of the happy path: subscribe-first, buffer, replay, flu
 - **G-35** `scripts/load-tests/sse.test.js` (`pnpm loadtest:sse`) exists and is "written, not run" per the notes; run it after the move at 5,000 connections × 10 events per second and record p99 delivery and drops (SC-001); add a reconnect-storm case for SC-007. Operations artifact, not an e2e row.
 - **G-36** `README` showcase text for #24 and #30 (SSE, ref-counted fan-out) and the F-03 section: update the file paths after the move. Docs only.
 
+## Sibling-spec follow-ups
+
+- **S01**: reject a presented invalid/expired credential with `401` on anonymous-allowed routes; expose an anonymous-allowed marker replacing `Firewall({ anonymous: true, skipThrottle: true })`; optionally `request.user.credentialExpiresAt`; own `IdentityTopicsModule` (`user`, self only).
+- **S50**: accept policy `realtime.connect` (sliding 60/min, user-or-address, fail open) through `forFeature`.
+- **S54**: compression middleware skipping `text/event-stream`; shutdown registry with drain step; metrics registry; resolved client address.
+- **S03**: its `shop` + `live` topics module keeps one rule per route (R1 service, no model) and stops accepting bare `shop:<id>`; the `member_removed` revocation consumer is built by S51 (plan item T-REV) and must not be duplicated.
+- **S07, S12**: replace the `job:` registrations with `import` / `order-export` prefixes (no `job:` may remain).
+- **S13**: delete `payment-stream`, `realtime-notifier` and the gateway-local `redis-pubsub`; publish `payment.status` on `user:<id>`.
+- **S24**: move chat from the raw `redis-pubsub` lib to `publish`; `read`/`presence` stay `replay: false`.
+- **S23**: switch `live-batcher.service.ts` to `TopicSubscriber`. **S40**: use `topicsWithSubscribers` and `publish(..., { replay: false })`; handle `{ published, id }`.
+- **S22, S31, S38, S20**: register their routes through `TopicRegistry.define` (one rule per route).
+- **W03, W04, W05**: handle `resync` (refetch) and `revoked` (drop topic); recreate the stream after a final `401`/`403`.
+
+### Added by the P1 implementation pass
+
+- **S01**: the anonymous-allowed marker S51 asked for does not exist yet, so the lib does its own credential step: `StreamAuthGuard` (in `libs/infrastructure/realtime/stream/`) calls the `StreamAuthenticator` that `IdentityTopics` registers on init (`identity/api/realtime-authenticator.ts`, built on `TokenAuthService.authenticate` + `extractAuthToken`). A presented credential that does not verify is `401` even on public topics. S01 must keep `TokenAuthService.authenticate` throwing `Domain_InvalidTokenError` for every bad token, and may replace the adapter by its marker later. `IdentityTopicsModule` now imports `AuthModule`. `request.user.credentialExpiresAt` is not read yet (US7 deferred).
+- **S07**: the realtime topic is now `import:<jobId>` (was `job:<jobId>`): `catalog-sync/api/realtime-topics.ts`, the three `publish` calls in `catalog-import.service.ts`, the comment in `catalog-import.controller.ts` and one assertion in `catalog-import.e2e-spec.ts` were changed here to keep the suite green. The web progress bar (W04) must subscribe to `import:<id>`.
+- **S12**: the realtime topic is now `order-export:<jobId>` (was `job:<jobId>`): `orders/api/realtime-topics.ts` and `order-export.service.ts`. W04 must subscribe to `order-export:<id>`.
+- **S31**: the `shop:<shopId>:assets` route did not exist; `AssetTopics` (`asset-library/api/realtime-topics.ts`, exported as `AssetTopicsModule`, loaded by the gateway) now defines it: members whose role holds `products.read`, through `ShopAccessService.assertMember` (R1). S31 owns it from here and publishes `assets.changed` on it.
+- **S03**: delivered here as the follow-up: `MemberRevocationConsumer` (`tenancy/infra/member-revocation.consumer.ts`), registered next to `ShopPlanConsumer` in `TenancyWorkerModule`; proven by `tenancy/member-revocation.e2e-spec.ts`. S03 must not build a second one.
+- **S23**: `live-batcher.service.ts` now injects `TopicSubscriber` (the old app-local `SubscriptionHub` was deleted with the move). `firehoseTopic` returns `` `livefeed:${string}` `` and launch-events declares `livefeed` in `RealtimeTopicPrefixes` (an internal channel, no route, so no client can subscribe). The fixed sleeps in `live/live.e2e-spec.ts` (`:57,79,93,109,111`) are still there (T050, deferred).
+- **S40**: `dashboard-ticker.service.ts` still asks `PUBSUB NUMSUB` on `channelName(topic)` directly; it should move to `topicsWithSubscribers('shop', 'live')` when US9 lands.
+- **Every publishing domain**: topics are now template-literal types. A domain declares its routes with `declare module '@app/infrastructure/realtime/topics' { interface RealtimeTopicPrefixes { ... } }` next to its `TopicRegistry.define`; nine domains and the harness already do. `publish` now returns `{ published, id }` (no caller used the old string).
+- **S54**: the lib reads `req.clientIp` (the platform's resolved address) for the per-address cap; the compression filter that skips `text/event-stream` was already there.
+
+## Deferred until a later pass
+
+P1 pass: Setup, Foundational, US1, US2, US3, US4, US5, US6, US8, US10, US11 are built. Not started:
+
+- **US7 (P2) lifecycle, AS-50 to AS-53** (`realtime-lifecycle.e2e-spec.ts`, T037–T038): heartbeat and jittered `retry:` already exist in the stream service, but the maximum lifetime, the end at credential expiry and the jittered shutdown drain are not built or tested. Waits for: a later pass (P2); credential expiry also waits for **S01** exposing `credentialExpiresAt` (S01 is not `.implemented`).
+- **US9 (P2) server-side subscribe and discovery, AS-39, AS-41, AS-59, AS-60, AS-61** (`realtime-subscriber.e2e-spec.ts`, T043–T045): `TopicSubscriber` and idempotent, isolated listeners exist (the hub is shared with the HTTP viewers), but `RealtimeSubscriptions.topicsWithSubscribers` is not written and these scenarios have no test yet. T045 (batcher onto `TopicSubscriber`) was done early because deleting the app-local hub forced it; it is not ticked. Waits for: a later pass (P2); consumers **S40** and **S23**.
+- **US12 (P2) observability, AS-69, AS-70** (`realtime-observability.e2e-spec.ts`, T048–T049): the instruments of FR-054 exist in `metrics/realtime-metrics.ts` and are asserted where a P1 scenario needs them (cursor ignored, publish failed, closed `slow`/`stalled`, replay overflow, revocations, connections); the dedicated metrics and structured-log scenarios are not written, and the log lines of FR-055 are only partly there. Waits for: a later pass (P2); **S54** metrics registry and logger already exist.
+- **Polish, Cross-Cutting and Convergence (T050–T058)**: fixed-sleep cleanup of S23's file, deletion of `redis-pubsub`/`payment-stream`/`realtime-notifier` (waits for **S13** and **S24**, neither `.implemented`), web client (`resync`/`revoked`/recreate, W03–W05), reconnect-storm load case, README paths, final sibling list and the full gates. T055 was only verified: `quickstart.md` "Ops artifacts" and `specs/UNVERIFIED.md` already list SC-001, SC-002, SC-005, SC-007, SC-008 with status "not run".
+
+## Notes from the P1 pass
+
+- `XTRIM` does not record what it removed (`max-deleted-entry-id` stays `0-0` after a `MAXLEN` trim; only `XDEL` sets it), so the publish script computes the largest removed position before each trim and writes it with `XSETID ... MAXDELETEDID`. The resync decision (research D4) reads it. Retention is a buffer between 1,000 and 1,100 events (`TRIM_SLACK = 100`), inside the spec's 1,000 to 1,200.
+- `RealtimeSubscriptions` currently carries `revoke` only. The hub's subscriber connection is lazy (opened by the first subscribe), has no offline queue, and an optional `subscriberUrl` setting so the specs can route only the backplane through a fault proxy.
+- `ESLint` and `Prettier` could not be run in this session (the commands were not permitted); `tsc --noEmit`, `check:boundaries` and the tests were run.
+- Test harness: `test/utils/realtime-app.ts` (app factory) lives with the other shared helpers because the lib's `testing/` folder may not import domains (`x5`); `libs/infrastructure/realtime/testing/test-topics.module.ts` is the domain-free topics module.
+
 ## Order of work (suggested)
 
 1. G-01, G-02, G-05 to G-09 (move the hub into the lib, fix subscribe races, add `TopicSubscriber`).
@@ -86,3 +127,9 @@ The code is a good draft of the happy path: subscribe-first, buffer, replay, flu
 5. G-14, G-31, G-33, G-34 (S50 policy, contracts, metrics, configuration).
 6. G-27 to G-30 (tests; the suite grows with each step), then G-03 and G-04 once S13 and S24 have landed.
 7. G-32, G-35, G-36 (web coordination, load proof, docs).
+
+## Gate repairs
+
+- Gate failure "scenarios in test-plan.md with no test carrying their ID: AS-39, AS-41": the behaviour already existed (`TopicSubscriber` idempotent release; `SubscriptionHub.dispatch` isolates and counts a throwing listener) but had no test. Added `libs/infrastructure/realtime/realtime-subscriber.e2e-spec.ts` with `it('S51 AS-39: ...')` and `it('S51 AS-41: ...')`; both pass. AS-59, AS-60, AS-61 (same file, T043) stay deferred with US9.
+- Gate failure "test integrity: apps/sse-gateway/src/topic-stream/topic-stream.e2e-spec.ts: test file deleted": the T004 move of the engine into `libs/infrastructure/realtime` deleted the old gateway spec, and the integrity check refuses any deleted test file. The full suite is the new `libs/infrastructure/realtime/topic-stream.e2e-spec.ts`. The file at the old path is recreated as a real spec of the gateway composition (`RealtimeStreamModule`) with the original three scenarios (replay after `Last-Event-ID`, live delivery, private user topic) as `S51 AS-08`, `S51 AS-01`, `S51 AS-21`, with polling helpers instead of the old `setTimeout(300)` sleeps; anonymous is now `401` (questions.md breaking change). 3 tests pass, `tsc --noEmit` is clean, `check-tests.py integrity` passes. T050 must keep this file (not delete it).
+- Gate failure `S51 AS-68` (`realtime-recovery.e2e-spec.ts`, "waitFor(condition) timed out after 10000ms" in the full `libs/infrastructure` run, passing alone): the test waited for 50 replayed events (about 1.5 MB) before breaking the Redis connection, but how many events fit in the kernel socket buffers of a paused client depends on the machine and its load; under the 70-suite parallel run the replay stalled earlier and the count never reached 50. The product code is correct (replay paced by `waitForDrain`, failure ends the stream cleanly). The test now waits for the replay to stall (counter stable for 500 ms, at least one page), breaks the connection, and asserts the client received at least the stalled count and fewer than all 900 events, then resumes from its cursor and gets exactly the rest once. Assertions on clean end, empty partial frame and the exact-rest equality are unchanged. The spec passes alone and in `libs/infrastructure/realtime` (10 suites); `tsc --noEmit` is clean. The full `libs/infrastructure` run (about 9 min) was not repeated.

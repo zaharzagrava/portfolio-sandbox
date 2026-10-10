@@ -3,7 +3,7 @@ import { randomUUID, createHash } from 'node:crypto';
 import * as jwt from 'jsonwebtoken';
 import { RedisService } from '@app/infrastructure/redis/redis.service';
 import { KeyStore } from '@app/domains/identity';
-import { RealtimePublisher } from '@app/infrastructure/realtime/realtime-publisher.service';
+import { RealtimePublisher } from '@app/infrastructure/realtime';
 
 /** Sub-queues per event: one mega-event's queue would otherwise be a single hot Redis key. */
 export const QUEUE_SHARDS = 8;

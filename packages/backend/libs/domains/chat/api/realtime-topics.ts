@@ -1,7 +1,7 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { InjectConnection } from '@nestjs/sequelize';
 import { QueryTypes, Sequelize } from 'sequelize';
-import { TopicRegistry } from '@app/infrastructure/realtime/topic-registry';
+import { TopicRegistry } from '@app/infrastructure/realtime';
 
 /** `chat:{channelId}` (SD-14 receipts + presence): active channel members only. */
 @Injectable()
@@ -26,5 +26,12 @@ export class ChatTopics implements OnModuleInit {
         return rows.length > 0;
       },
     });
+  }
+}
+
+/** The routes this domain declares in the shared topic type (S51 FR-024). */
+declare module '@app/infrastructure/realtime/topics' {
+  interface RealtimeTopicPrefixes {
+    chat: `chat:${string}`;
   }
 }

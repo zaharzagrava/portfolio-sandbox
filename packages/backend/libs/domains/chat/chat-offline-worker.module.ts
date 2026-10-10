@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { RealtimeModule } from '@app/infrastructure/realtime/realtime.module';
+import { RealtimeModule } from '@app/infrastructure/realtime';
 import { CacheModule } from '@app/infrastructure/cache/cache.module';
 import { SqsModule } from '@app/infrastructure/sqs/sqs.module';
 import { NotificationsCoreModule } from '@app/domains/notifications';

@@ -3,7 +3,7 @@ import { createHash } from 'node:crypto';
 import { types } from 'cassandra-driver';
 import { CassandraService } from '@app/infrastructure/cassandra/cassandra.service';
 import { RedisService } from '@app/infrastructure/redis/redis.service';
-import { RealtimePublisher } from '@app/infrastructure/realtime/realtime-publisher.service';
+import { RealtimePublisher } from '@app/infrastructure/realtime';
 
 export interface InboxItem {
   id: string;

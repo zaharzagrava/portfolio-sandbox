@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { RealtimeModule } from '@app/infrastructure/realtime/realtime.module';
+import { RealtimeModule } from '@app/infrastructure/realtime';
 import { KafkaProducerModule } from '@app/infrastructure/kafka/kafka-producer.module';
 import { SqsModule } from '@app/infrastructure/sqs/sqs.module';
 import { CourierService } from './application/courier.service';

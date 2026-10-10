@@ -1,14 +1,13 @@
 import { Injectable, OnModuleDestroy } from '@nestjs/common';
 import { hostname } from 'node:os';
 import { RedisService } from '@app/infrastructure/redis/redis.service';
-import { RealtimeMessage } from '@app/infrastructure/realtime/topics';
+import { RealtimeMessage, TopicSubscriber } from '@app/infrastructure/realtime';
 import {
   Reservoir,
   firehoseTopic,
   LiveComment,
   viewersKey,
 } from '@app/domains/launch-events';
-import { SubscriptionHub } from '../topic-stream/subscription-hub.service';
 
 export const TICK_MS = 250;
 /** 20 comments/s per viewer - more than anyone can read. */
@@ -120,7 +119,7 @@ export class LiveBatcherRegistry implements OnModuleDestroy {
   private readonly heartbeat: NodeJS.Timeout;
 
   constructor(
-    private readonly hub: SubscriptionHub,
+    private readonly hub: TopicSubscriber,
     private readonly redis: RedisService,
   ) {
     this.heartbeat = setInterval(

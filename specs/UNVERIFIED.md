@@ -57,3 +57,8 @@ interviews) until its status says so. The implementation loop appends here (rule
 | S13 | SC-009: the buyer sees the final result within 5 s of the provider's answer on the real stack (relay, hub, SSE) | same file (SSE and polling probe against the sandbox provider) | not run |
 | S13 | SC-010 (log part): 0 secrets or card data in a 10,000-line log sample of the full flows (AS-63 searches sentinels in the flows it runs) | same file (log capture loop and grep) | not run |
 | S13 | SC-010 (ownership part): `check:table-ownership --strict` reports 0 findings for `payments` (3 remain in S14/S15 files: `ledger-entry.model.ts` User, `finance-worker.module.ts` and `payout.jobs.ts` Shop) | same file (`check:table-ownership --strict`; green after S14 and S15 land) | not run |
+| S51 | SC-001: 50,000 idle connections, 5,000 events/s; at 5,000 connections x 10 events/s p99 under 500 ms, no healthy-viewer loss | `specs/domains/S51-realtime-push/quickstart.md`, "Ops artifacts" (`pnpm loadtest:sse`) | not run |
+| S51 | SC-002 (100 repetitions): 100 reconnects lose and duplicate nothing; beyond the window resync 100% (AS-14 proves one) | same file (REPLAY scenario loop) | not run |
+| S51 | SC-005 (10,000 cycles): memory returns to baseline after 10,000 connect/close cycles (AS-42 runs 500) | same file (k6 cycle case, heap comparison) | not run |
+| S51 | SC-007: restarting every instance reconnects all viewers within 10 s | same file (k6 reconnect-storm case) | not run |
+| S51 | SC-008 (under load): publisher latency under hub outage at most +1 s (AS-32 proves one attempt, 1 s) | same file (outage drill under load) | not run |

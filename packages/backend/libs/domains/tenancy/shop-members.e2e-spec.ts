@@ -2,7 +2,7 @@ import { QueryTypes } from 'sequelize';
 import { Sequelize } from 'sequelize-typescript';
 import { pageSchema, shopMemberSchema } from '@marketplace-sandbox/contracts';
 import { outboxRowsFor } from '@app/common/testing/outbox-rows';
-import { TopicRegistry } from '@app/infrastructure/realtime/topic-registry';
+import { TopicRegistry } from '@app/infrastructure/realtime';
 import { addMember, createShop } from '@app/test/utils/tenancy-fixtures';
 import {
   SessionRevocationService,

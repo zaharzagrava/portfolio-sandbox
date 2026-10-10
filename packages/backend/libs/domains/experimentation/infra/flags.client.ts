@@ -11,7 +11,7 @@ import Redis from 'ioredis';
 import { ApiConfigService } from '@app/common/config';
 import { RedisService } from '@app/infrastructure/redis/redis.service';
 import { ShutdownRegistry } from '@app/infrastructure/lifecycle';
-import { channelName } from '@app/infrastructure/realtime/topics';
+import { channelName } from '@app/infrastructure/realtime';
 import {
   EvalContext,
   Evaluation,

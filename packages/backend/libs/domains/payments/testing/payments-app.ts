@@ -1,7 +1,7 @@
 import { Global, Module, type INestApplication } from '@nestjs/common';
 import { QueryTypes } from 'sequelize';
 import { Sequelize } from 'sequelize-typescript';
-import { RealtimePublisher } from '@app/infrastructure/realtime/realtime-publisher.service';
+import { RealtimePublisher } from '@app/infrastructure/realtime';
 import { JobsModule } from '@app/infrastructure/jobs/jobs.module';
 import { InMemoryTaskQueue } from '@app/infrastructure/sqs/in-memory-task-queue';
 import { TaskQueue } from '@app/infrastructure/sqs/task-queue.port';

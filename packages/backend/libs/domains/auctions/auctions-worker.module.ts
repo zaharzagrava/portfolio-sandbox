@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
 import Auction from './infra/models/auction.model';
 import { EventsModule } from '@app/infrastructure/events/events.module';
-import { RealtimeModule } from '@app/infrastructure/realtime/realtime.module';
+import { RealtimeModule } from '@app/infrastructure/realtime';
 import {
   FlashStockService,
   OrderService,

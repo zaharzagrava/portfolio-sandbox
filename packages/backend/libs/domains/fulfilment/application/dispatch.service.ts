@@ -8,7 +8,7 @@ import { InjectConnection } from '@nestjs/sequelize';
 import { QueryTypes, Sequelize, Transaction } from 'sequelize';
 import { RedisService } from '@app/infrastructure/redis/redis.service';
 import { TaskQueue } from '@app/infrastructure/sqs/task-queue.port';
-import { RealtimePublisher } from '@app/infrastructure/realtime/realtime-publisher.service';
+import { RealtimePublisher } from '@app/infrastructure/realtime';
 import { CourierService } from './courier.service';
 import {
   declinedKey,

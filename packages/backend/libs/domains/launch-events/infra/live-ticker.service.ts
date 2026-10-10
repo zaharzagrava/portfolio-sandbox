@@ -7,7 +7,7 @@ import {
 import { hostname } from 'node:os';
 import { RedisService } from '@app/infrastructure/redis/redis.service';
 import { holdLease } from '@app/infrastructure/redis/lease';
-import { RealtimePublisher } from '@app/infrastructure/realtime/realtime-publisher.service';
+import { RealtimePublisher } from '@app/infrastructure/realtime';
 import {
   ACTIVE_STREAMS,
   REACTION_SHARDS,

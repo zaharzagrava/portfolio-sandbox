@@ -7,8 +7,8 @@ import {
 import { hostname } from 'node:os';
 import { RedisService } from '@app/infrastructure/redis/redis.service';
 import { holdLease } from '@app/infrastructure/redis/lease';
-import { RealtimePublisher } from '@app/infrastructure/realtime/realtime-publisher.service';
-import { channelName } from '@app/infrastructure/realtime/topics';
+import { RealtimePublisher } from '@app/infrastructure/realtime';
+import { channelName } from '@app/infrastructure/realtime';
 import { DASH_ACTIVE, dashBucketKey } from './shop-live.projector';
 
 const WINDOW_SEC = 60;

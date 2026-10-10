@@ -9,12 +9,9 @@ import { InjectConnection } from '@nestjs/sequelize';
 import { QueryTypes, Sequelize } from 'sequelize';
 import { v7 as uuidv7 } from 'uuid';
 import { RedisService } from '@app/infrastructure/redis/redis.service';
-import { RealtimePublisher } from '@app/infrastructure/realtime/realtime-publisher.service';
+import { RealtimePublisher } from '@app/infrastructure/realtime';
 import { KafkaProducerService } from '@app/infrastructure/kafka/kafka-producer.service';
-import {
-  channelName,
-  RealtimeMessage,
-} from '@app/infrastructure/realtime/topics';
+import { channelName, RealtimeMessage } from '@app/infrastructure/realtime';
 import { LiveCommentPosted, LiveCommentRemoved } from './events/live-events';
 import { syncModeration } from '../domain/moderation';
 import {

@@ -1,5 +1,5 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
-import { TopicRegistry } from '@app/infrastructure/realtime/topic-registry';
+import { TopicRegistry } from '@app/infrastructure/realtime';
 import { ShopAccessService } from '../application/shop-access.service';
 
 /**
@@ -23,5 +23,12 @@ export class ShopTopics implements OnModuleInit {
         return this.access.mayFollowLiveTopic(shopId, viewer.userId);
       },
     });
+  }
+}
+
+/** The routes this domain declares in the shared topic type (S51 FR-024). */
+declare module '@app/infrastructure/realtime/topics' {
+  interface RealtimeTopicPrefixes {
+    'shop:live': `shop:${string}:live`;
   }
 }

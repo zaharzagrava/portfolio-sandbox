@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { RealtimeModule } from '@app/infrastructure/realtime/realtime.module';
+import { RealtimeModule } from '@app/infrastructure/realtime';
 import { ShopTopics } from './api/realtime-topics';
 
 /** Registers `shop:{id}:live` in the SSE gateway (imported there; debt D-3). `ShopAccessService` comes from the global TenancyModule. */

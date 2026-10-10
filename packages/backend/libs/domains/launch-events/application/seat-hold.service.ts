@@ -17,7 +17,7 @@ import { v7 as uuidv7 } from 'uuid';
 import { UniqueConstraintError } from 'sequelize';
 import { RedisService } from '@app/infrastructure/redis/redis.service';
 import { DynamoService } from '@app/infrastructure/dynamo/dynamo.service';
-import { RealtimePublisher } from '@app/infrastructure/realtime/realtime-publisher.service';
+import { RealtimePublisher } from '@app/infrastructure/realtime';
 import { JobsService } from '@app/infrastructure/jobs/jobs.service';
 import Booking from '../infra/models/booking.model';
 import LaunchEvent from '../infra/models/launch-event.model';

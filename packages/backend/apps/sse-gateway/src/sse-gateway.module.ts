@@ -18,7 +18,7 @@ import { Environment } from '@app/common/types';
 import { SentryModule } from '@sentry/nestjs/setup';
 import { OpenTelemetryModule } from 'nestjs-otel';
 import { RealtimeNotifierModule } from './realtime-notifier/realtime-notifier.module';
-import { TopicStreamModule } from './topic-stream/topic-stream.module';
+import { RealtimeStreamModule } from '@app/infrastructure/realtime';
 import { LiveGatewayModule } from './live/live-gateway.module';
 import { IdentityTopicsModule } from '@app/domains/identity';
 import { AuctionTopicsModule } from '@app/domains/auctions';
@@ -29,6 +29,7 @@ import { DeliveryTopicsModule } from '@app/domains/fulfilment';
 import { ImportJobTopicsModule } from '@app/domains/catalog-sync';
 import { ExportJobTopicsModule } from '@app/domains/orders';
 import { AssistantModule } from '@app/domains/assistant';
+import { AssetTopicsModule } from '@app/domains/asset-library';
 
 /**
  * SSE-only: the only thing here is bridging Kafka payment-status events to
@@ -76,11 +77,12 @@ import { AssistantModule } from '@app/domains/assistant';
     ErrorUtilsModule,
     SentryModule.forRoot(),
     RealtimeNotifierModule,
-    TopicStreamModule,
+    RealtimeStreamModule,
     LiveGatewayModule,
     // Realtime topics each domain owns (debt D-3): the gateway authorizes subscriptions, so it loads them all.
     IdentityTopicsModule,
     ShopTopicsModule,
+    AssetTopicsModule,
     AuctionTopicsModule,
     LaunchEventTopicsModule,
     FlagTopicsModule,

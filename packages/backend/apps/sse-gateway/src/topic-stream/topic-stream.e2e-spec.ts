@@ -1,61 +1,49 @@
-import { INestApplication } from '@nestjs/common';
-import { AddressInfo } from 'node:net';
-import { v4 } from 'uuid';
-import { generateTestingModule } from '@app/test/utils/global-modules';
-import { readSse } from '@app/test/utils/sse-client';
-import { RealtimePublisher } from '@app/infrastructure/realtime/realtime-publisher.service';
-import { SeedsModule } from '@app/test/seeds/seeds.module';
-import { SeedsService } from '@app/test/seeds/seeds.service';
-import { TableName } from '@app/test/seeds/types';
-import { IdentityTopicsModule } from '@app/domains/identity';
-import { issueSession } from '@app/test/seeds/session.fixture';
-import { AuctionTopicsModule } from '@app/domains/auctions';
-import { LaunchEventTopicsModule } from '@app/domains/launch-events';
-import { TopicStreamModule } from './topic-stream.module';
+import {
+  createRealtimeApp,
+  freshId,
+  type RealtimeTestApp,
+} from '@app/test/utils/realtime-app';
+import { openSse, readSse, type OpenSse } from '@app/test/utils/sse-client';
+import { waitFor } from '@app/test/utils/async-helpers';
 
-/** F-03 against the real test Redis: replay after reconnect, per-topic authorization. */
-describe('Topic streams (e2e, real Redis)', () => {
-  let app: INestApplication;
-  let baseUrl: string;
-  let publisher: RealtimePublisher;
-  let seedsService: SeedsService;
+/**
+ * The gateway's three original stream scenarios (F-03), kept at their original path after the engine moved into
+ * `libs/infrastructure/realtime` (S51 T004). The 12-file suite lives beside the engine; these run the same checks
+ * through the same composition the gateway app imports (`RealtimeStreamModule`). Real Redis, no fixed sleeps.
+ * The anonymous refusal is 401 now (S51 questions.md, breaking change from 403).
+ */
+describe('S51 gateway topic streams (e2e, real Redis)', () => {
+  let rt: RealtimeTestApp;
+  const open: OpenSse[] = [];
+  const track = async (url: string, headers: Record<string, string> = {}) => {
+    const stream = await openSse(url, { headers });
+    open.push(stream);
+    return stream;
+  };
 
   beforeAll(async () => {
-    const moduleRef = await generateTestingModule(
-      // The topics these tests subscribe to are defined by their owning domains (auction:, stream:, user:; debt D-3).
-      [
-        TopicStreamModule,
-        IdentityTopicsModule,
-        AuctionTopicsModule,
-        LaunchEventTopicsModule,
-        SeedsModule,
-      ],
-      { stores: ['redis'] },
-    );
-    app = moduleRef.createNestApplication();
-    app.setGlobalPrefix('api');
-    await app.listen(0);
-    baseUrl = `http://127.0.0.1:${(app.getHttpServer().address() as AddressInfo).port}/api`;
-    publisher = app.get(RealtimePublisher);
-    seedsService = app.get(SeedsService);
+    rt = await createRealtimeApp();
   });
-
   afterAll(async () => {
-    await app.close();
+    await rt.close();
+  });
+  afterEach(async () => {
+    while (open.length) open.pop()!.close();
+    await waitFor(
+      async () => rt.hub.channelCount() === 0 && rt.hub.listenerCount() === 0,
+      { timeoutMs: 5_000, intervalMs: 25 },
+    );
   });
 
-  beforeEach(async () => {
-    await seedsService.clean();
-  });
-
-  it('replays exactly the events missed since Last-Event-ID, then continues live', async () => {
-    const topic = `auction:${v4().slice(0, 8)}` as const;
+  it('S51 AS-08: replays exactly the events missed since Last-Event-ID, then continues live', async () => {
+    const topic = `auction:${freshId()}` as const;
     const ids: string[] = [];
-    for (let price = 1; price <= 5; price++)
-      ids.push(await publisher.publish(topic, 'price', { price }));
+    for (let price = 1; price <= 5; price++) {
+      const { id } = await rt.publisher.publish(topic, 'price', { price });
+      ids.push(id!);
+    }
 
-    // Client saw up to event #2, reconnects.
-    const { events } = await readSse(`${baseUrl}/streams?topics=${topic}`, {
+    const { events } = await readSse(rt.url(topic), {
       headers: { 'last-event-id': `${topic}~${ids[1]}` },
       count: 3,
     });
@@ -68,53 +56,45 @@ describe('Topic streams (e2e, real Redis)', () => {
     expect(events[2].id).toBe(`${topic}~${ids[4]}`);
   });
 
-  it('delivers live events published after connecting', async () => {
-    const topic = `stream:${v4().slice(0, 8)}` as const;
-    const reading = readSse(`${baseUrl}/streams?topics=${topic}`, { count: 2 });
-    await new Promise((r) => setTimeout(r, 300)); // let the subscription register
-    await publisher.publish(topic, 'comment', { text: 'first' });
-    await publisher.publish(topic, 'comment', { text: 'second' });
+  it('S51 AS-01: delivers live events published after connecting', async () => {
+    const topic = `auction:${freshId()}` as const;
+    const stream = await track(rt.url(topic));
+    await rt.publisher.publish(topic, 'comment', { text: 'first' });
+    await rt.publisher.publish(topic, 'comment', { text: 'second' });
+    await stream.waitFor(
+      (frames) => frames.filter((f) => f.event === 'comment').length === 2,
+    );
 
-    const { events } = await reading;
-    expect(events.map((e) => JSON.parse(e.data!).data.text)).toEqual([
+    expect(stream.events.map((e) => JSON.parse(e.data!).data.text)).toEqual([
       'first',
       'second',
     ]);
   });
 
-  it('private user topics: owner allowed, others 403, anonymous 403', async () => {
-    const [alice] = await seedsService.createTreelike([
-      { __type__: TableName.User, email: `alice-${v4()}@mail.com` },
-    ]);
-    const [bob] = await seedsService.createTreelike([
-      { __type__: TableName.User, email: `bob-${v4()}@mail.com` },
-    ]);
-    const { accessToken: bobToken } = await issueSession(app, bob);
-    const { accessToken: aliceToken } = await issueSession(app, alice);
+  it('S51 AS-21: private user topics: owner allowed, others 403, anonymous 401', async () => {
+    const alice = await rt.newUser();
+    const bob = await rt.newUser();
+    const topic = `user:${alice.id}` as const;
 
-    const asBob = await readSse(`${baseUrl}/streams?topics=user:${alice.id}`, {
-      headers: { authorization: `Bearer ${bobToken}` },
+    const asBob = await readSse(rt.url(topic), {
+      headers: { authorization: bob.bearer },
       count: 1,
       timeoutMs: 2_000,
     });
     expect(asBob.status).toBe(403);
 
-    const anonymous = await readSse(
-      `${baseUrl}/streams?topics=user:${alice.id}`,
-      { count: 1, timeoutMs: 2_000 },
-    );
-    expect(anonymous.status).toBe(403);
-
-    const reading = readSse(`${baseUrl}/streams?topics=user:${alice.id}`, {
-      headers: { authorization: `Bearer ${aliceToken}` },
+    const anonymous = await readSse(rt.url(topic), {
       count: 1,
+      timeoutMs: 2_000,
     });
-    await new Promise((r) => setTimeout(r, 300));
-    await publisher.publish(`user:${alice.id}`, 'notification', {
+    expect(anonymous.status).toBe(401);
+
+    const asAlice = await track(rt.url(topic), { authorization: alice.bearer });
+    expect(asAlice.status).toBe(200);
+    await rt.publisher.publish(topic, 'notification', {
       title: 'Your order shipped',
     });
-    const asAlice = await reading;
-    expect(asAlice.status).toBe(200);
+    await asAlice.waitFor((f) => f.some((x) => x.event === 'notification'));
     expect(JSON.parse(asAlice.events[0].data!).data.title).toBe(
       'Your order shipped',
     );

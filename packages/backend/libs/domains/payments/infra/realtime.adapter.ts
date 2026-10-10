@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { RealtimePublisher } from '@app/infrastructure/realtime/realtime-publisher.service';
+import { RealtimePublisher } from '@app/infrastructure/realtime';
 import type { PaymentRecord, RealtimePort } from '../domain/ports';
 import { realtimeFailedCounter } from '../domain/payment-metrics';
 import { withTimeout } from './with-timeout';

@@ -6,7 +6,7 @@ import { ProblemCatalogModule } from '@app/common/errors';
 import { EventsModule } from '@app/infrastructure/events/events.module';
 import { JobsModule } from '@app/infrastructure/jobs/jobs.module';
 import { ClockModule } from '@app/infrastructure/platform/clock.module';
-import { RealtimeModule } from '@app/infrastructure/realtime/realtime.module';
+import { RealtimeModule } from '@app/infrastructure/realtime';
 import { StripeModule } from '@app/infrastructure/stripe/stripe.module';
 import { StripeService } from '@app/infrastructure/stripe/stripe.service';
 import { PAYMENTS_PROBLEMS } from './domain/payment-errors';

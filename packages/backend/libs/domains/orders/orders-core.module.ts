@@ -6,7 +6,7 @@ import { ClockModule } from '@app/infrastructure/platform/clock.module';
 import { EventsModule } from '@app/infrastructure/events/events.module';
 import { InboxModule } from '@app/infrastructure/inbox';
 import { JobsModule } from '@app/infrastructure/jobs/jobs.module';
-import { RealtimeModule } from '@app/infrastructure/realtime/realtime.module';
+import { RealtimeModule } from '@app/infrastructure/realtime';
 import { ProductModule } from '@app/domains/catalog';
 import { PaymentQueryModule } from '@app/domains/payments';
 import { TenancyModule } from '@app/domains/tenancy';

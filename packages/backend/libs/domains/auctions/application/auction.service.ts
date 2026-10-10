@@ -7,7 +7,7 @@ import {
 import { InjectModel } from '@nestjs/sequelize';
 import Auction from '../infra/models/auction.model';
 import { RedisService } from '@app/infrastructure/redis/redis.service';
-import { RealtimePublisher } from '@app/infrastructure/realtime/realtime-publisher.service';
+import { RealtimePublisher } from '@app/infrastructure/realtime';
 import { JobsService } from '@app/infrastructure/jobs/jobs.service';
 import { MembershipService } from '@app/domains/tenancy';
 import { TransactionRunner } from '@app/infrastructure/context';

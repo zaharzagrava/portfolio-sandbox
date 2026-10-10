@@ -4,7 +4,7 @@ import { QueryTypes, Sequelize } from 'sequelize';
 import Auction from './models/auction.model';
 import { BisOrderModel as BisOrder, OrderService } from '@app/domains/orders';
 import { RedisService } from '@app/infrastructure/redis/redis.service';
-import { RealtimePublisher } from '@app/infrastructure/realtime/realtime-publisher.service';
+import { RealtimePublisher } from '@app/infrastructure/realtime';
 import { JobsService } from '@app/infrastructure/jobs/jobs.service';
 import { JobHandler } from '@app/infrastructure/jobs/job-handler.decorator';
 import { OutboxService } from '@app/infrastructure/outbox/outbox.service';

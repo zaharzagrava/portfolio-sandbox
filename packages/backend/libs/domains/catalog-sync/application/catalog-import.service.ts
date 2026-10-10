@@ -13,7 +13,7 @@ import { stringify } from 'csv-stringify';
 import { ApiConfigService } from '@app/common/config';
 import { ObjectStorage } from '@app/infrastructure/storage/object-storage.port';
 import { TaskQueue } from '@app/infrastructure/sqs/task-queue.port';
-import { RealtimePublisher } from '@app/infrastructure/realtime/realtime-publisher.service';
+import { RealtimePublisher } from '@app/infrastructure/realtime';
 import { RateLimiterService } from '@app/infrastructure/rate-limit';
 import { ProductChanged } from '@app/domains/catalog';
 import { TransactionRunner } from '@app/infrastructure/context';
@@ -236,7 +236,7 @@ export class CatalogImportService {
         },
       );
       await this.realtime.publish(
-        `job:${job.id}`,
+        `import:${job.id}`,
         'progress',
         { processed, failed },
         { replay: false },
@@ -261,7 +261,10 @@ export class CatalogImportService {
       `UPDATE "ImportJob" SET status = 'DONE', "errorReportKey" = :key, "updatedAt" = now() WHERE id = :id`,
       { replacements: { key: failed > 0 ? errorsKey : null, id: job.id } },
     );
-    await this.realtime.publish(`job:${job.id}`, 'done', { processed, failed });
+    await this.realtime.publish(`import:${job.id}`, 'done', {
+      processed,
+      failed,
+    });
     return 'DONE';
   }
 
@@ -359,7 +362,7 @@ export class CatalogImportService {
 
   private async fail(job: Job, reason: string) {
     await this.setStatus(job.id, 'FAILED', reason);
-    await this.realtime.publish(`job:${job.id}`, 'failed', { reason });
+    await this.realtime.publish(`import:${job.id}`, 'failed', { reason });
     return 'FAILED';
   }
 

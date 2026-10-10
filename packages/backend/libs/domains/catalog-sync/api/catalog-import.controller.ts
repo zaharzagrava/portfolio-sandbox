@@ -74,7 +74,7 @@ export class CatalogImportController {
     return this.imports.complete(shopId, jobId, body.parts);
   }
 
-  /** Live progress: SSE topic `job:{jobId}` (creator only). */
+  /** Live progress: SSE topic `import:{jobId}` (creator only). */
   @ShopScoped('products.read')
   @Get('imports/:jobId')
   status(

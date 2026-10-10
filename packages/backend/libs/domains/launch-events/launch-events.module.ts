@@ -4,7 +4,7 @@ import LaunchEvent from './infra/models/launch-event.model';
 import Booking from './infra/models/booking.model';
 import { AuthModule } from '@app/domains/identity';
 import { JobsModule } from '@app/infrastructure/jobs/jobs.module';
-import { RealtimeModule } from '@app/infrastructure/realtime/realtime.module';
+import { RealtimeModule } from '@app/infrastructure/realtime';
 import { WaitingRoomService } from './application/waiting-room.service';
 import { SeatHoldService } from './application/seat-hold.service';
 import { LaunchEventsController } from './api/launch-events.controller';

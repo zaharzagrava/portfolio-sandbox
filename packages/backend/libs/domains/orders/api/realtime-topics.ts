@@ -1,9 +1,9 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { InjectConnection } from '@nestjs/sequelize';
 import { QueryTypes, Sequelize } from 'sequelize';
-import { TopicRegistry } from '@app/infrastructure/realtime/topic-registry';
+import { TopicRegistry } from '@app/infrastructure/realtime';
 
-/** `job:{id}` for order exports (SD-27 progress): only the user who started it. Catalog-sync defines `job:` for imports; the registry ORs both. */
+/** `order-export:{id}` for order exports (SD-27 progress): only the user who started it (S12). */
 @Injectable()
 export class ExportJobTopics implements OnModuleInit {
   constructor(
@@ -13,7 +13,7 @@ export class ExportJobTopics implements OnModuleInit {
 
   onModuleInit() {
     this.topics.define({
-      prefix: 'job',
+      prefix: 'order-export',
       policy: async (viewer, _topic, jobId) => {
         if (!viewer.userId) return false;
         const rows = await this.sequelize.query(
@@ -26,5 +26,12 @@ export class ExportJobTopics implements OnModuleInit {
         return rows.length > 0;
       },
     });
+  }
+}
+
+/** The routes this domain declares in the shared topic type (S51 FR-024). */
+declare module '@app/infrastructure/realtime/topics' {
+  interface RealtimeTopicPrefixes {
+    'order-export': `order-export:${string}`;
   }
 }

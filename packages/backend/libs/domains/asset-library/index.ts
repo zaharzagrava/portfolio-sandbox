@@ -5,3 +5,4 @@
  * domains must stop injecting them.
  */
 export { AssetsModule, AssetsWorkerModule } from './assets.module';
+export { AssetTopicsModule } from './realtime-topics.module';

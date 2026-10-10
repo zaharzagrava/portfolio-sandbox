@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { RealtimePublisher } from '@app/infrastructure/realtime/realtime-publisher.service';
+import { RealtimePublisher } from '@app/infrastructure/realtime';
 import type { RealtimePort } from '../domain/ports';
 import type { OrderStatus } from '../domain/order-state';
 import { realtimeFailedCounter } from '../domain/order-metrics';
