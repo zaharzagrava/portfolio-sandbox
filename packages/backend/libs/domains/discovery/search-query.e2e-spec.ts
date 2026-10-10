@@ -37,7 +37,9 @@ describe('Public product search API', () => {
     await t.resetSearch();
     shopId = newId();
     // the very publisher instance the search module uses
-    const adapter = t.app.get(SEARCH_EVENT_PUBLISHER, { strict: false }) as unknown as {
+    const adapter = t.app.get(SEARCH_EVENT_PUBLISHER, {
+      strict: false,
+    }) as unknown as {
       publisher: EventPublisher;
     };
     published = jest.spyOn(adapter.publisher, 'publish');
@@ -54,7 +56,14 @@ describe('Public product search API', () => {
   const titles = (r: ProductSearchResponse) => r.items.map((i) => i.title);
   const performed = () =>
     published.mock.calls
-      .map(([e]) => e as { type: string; aggregateId: string; payload: Record<string, unknown> })
+      .map(
+        ([e]) =>
+          e as {
+            type: string;
+            aggregateId: string;
+            payload: Record<string, unknown>;
+          },
+      )
       .filter((e) => e.type === 'search.performed');
 
   describe('lexical search (AS-01 to AS-03)', () => {
@@ -80,9 +89,24 @@ describe('Public product search API', () => {
       expect(body.searchId.length).toBeGreaterThan(10);
       expect('facets' in body).toBe(false);
       expect(Object.keys(body.items[0]).sort()).toEqual(
-        ['brand', 'category', 'currency', 'id', 'imageUrl', 'inStock', 'position', 'priceMinor', 'rating', 'shopId', 'sponsored', 'title'].sort(),
+        [
+          'brand',
+          'category',
+          'currency',
+          'id',
+          'imageUrl',
+          'inStock',
+          'position',
+          'priceMinor',
+          'rating',
+          'shopId',
+          'sponsored',
+          'title',
+        ].sort(),
       );
-      expect(JSON.stringify(res.body)).not.toMatch(/embedding|_score|browseScore|description/);
+      expect(JSON.stringify(res.body)).not.toMatch(
+        /embedding|_score|browseScore|description/,
+      );
       expect(engineCalls).toHaveBeenCalledTimes(1);
 
       expect(performed()).toHaveLength(1);
@@ -120,16 +144,33 @@ describe('Public product search API', () => {
       expect((await ok({ q: 'xpone' })).items).toEqual([]);
 
       const ranked = titles(await ok({ q: 'case' }));
-      expect(ranked.indexOf('Case iPhone')).toBeLessThan(ranked.indexOf('Cose iPhone'));
+      expect(ranked.indexOf('Case iPhone')).toBeLessThan(
+        ranked.indexOf('Cose iPhone'),
+      );
       expect((await ok({ q: 'xase' })).items).toEqual([]);
     });
 
     it('S32 AS-03: a title match outranks brand, description and tags in that order', async () => {
       const ids = await seedProducts(t, shopId, [
         { title: 'Espresso', brand: 'Acme', description: 'plain', tags: [] },
-        { title: 'Plain thing', brand: 'Espresso', description: 'plain', tags: [] },
-        { title: 'Plain thing', brand: 'Acme', description: 'about espresso', tags: [] },
-        { title: 'Plain thing', brand: 'Acme', description: 'plain', tags: ['espresso'] },
+        {
+          title: 'Plain thing',
+          brand: 'Espresso',
+          description: 'plain',
+          tags: [],
+        },
+        {
+          title: 'Plain thing',
+          brand: 'Acme',
+          description: 'about espresso',
+          tags: [],
+        },
+        {
+          title: 'Plain thing',
+          brand: 'Acme',
+          description: 'plain',
+          tags: ['espresso'],
+        },
       ]);
       expect((await ok({ q: 'espresso' })).items.map((i) => i.id)).toEqual(ids);
     });
@@ -143,7 +184,9 @@ describe('Public product search API', () => {
         { title: 'Stocked', quantity: 3 },
       ]);
       for (const q of [undefined, '', '%20%20'] as const) {
-        const res = await search(q === undefined ? {} : { q: decodeURIComponent(q) }).expect(200);
+        const res = await search(
+          q === undefined ? {} : { q: decodeURIComponent(q) },
+        ).expect(200);
         const body = productSearchResponseSchema.parse(res.body);
         expect(body.mode).toBe('browse');
         expect(body.items.map((i) => i.id)).toEqual([b, c, a]);
@@ -157,7 +200,11 @@ describe('Public product search API', () => {
         const other = newId();
         const [x, y] = await seedProducts(t, shopId, [
           { title: 'Widget', ...a },
-          { title: 'Widget', ...b, shopId: (b as { plan?: string }).plan ? other : shopId },
+          {
+            title: 'Widget',
+            ...b,
+            shopId: (b as { plan?: string }).plan ? other : shopId,
+          },
         ]);
         const ids = (await ok({ q: 'widget' })).items.map((i) => i.id);
         return { first: ids[0], x, y };
@@ -172,11 +219,15 @@ describe('Public product search API', () => {
       expect(r.first).toBe(r.y);
       r = await rank({}, { sponsored: true });
       expect(r.first).toBe(r.y);
-      const sponsoredItem = (await ok({ q: 'widget' })).items.find((i) => i.id === r.y)!;
+      const sponsoredItem = (await ok({ q: 'widget' })).items.find(
+        (i) => i.id === r.y,
+      )!;
       expect(sponsoredItem.sponsored).toBe(true);
 
       await t.resetSearch();
-      const [bare] = await seedProducts(t, shopId, [{ title: 'Brand new thing' }]);
+      const [bare] = await seedProducts(t, shopId, [
+        { title: 'Brand new thing' },
+      ]);
       expect((await ok({ q: 'brand' })).items.map((i) => i.id)).toEqual([bare]);
     });
 
@@ -200,24 +251,63 @@ describe('Public product search API', () => {
     });
 
     it('S32 AS-07: archived, deleted and closed-shop products never appear; restoring or reinstating brings them back', async () => {
-      const closed = (status: 'SUSPENDED' | 'DELETING' | 'DELETED') => newId() && status;
+      const closed = (status: 'SUSPENDED' | 'DELETING' | 'DELETED') =>
+        newId() && status;
       void closed;
       const shops = { suspended: newId(), deleting: newId(), deleted: newId() };
       const [visible, archived, deleted, suspended, deleting, gone] = [
-        newId(), newId(), newId(), newId(), newId(), newId(),
+        newId(),
+        newId(),
+        newId(),
+        newId(),
+        newId(),
+        newId(),
       ];
       const lamp = (productId: string, over = {}) =>
-        productEvent('created', snapshot({ productId, shopId, title: 'Desk lamp', ...over }));
+        productEvent(
+          'created',
+          snapshot({ productId, shopId, title: 'Desk lamp', ...over }),
+        );
       await deliver(t.app).products(
         lamp(visible),
         lamp(archived),
         lamp(deleted),
-        productEvent('created', snapshot({ productId: suspended, shopId: shops.suspended, title: 'Desk lamp' })),
-        productEvent('created', snapshot({ productId: deleting, shopId: shops.deleting, title: 'Desk lamp' })),
-        productEvent('created', snapshot({ productId: gone, shopId: shops.deleted, title: 'Desk lamp' })),
+        productEvent(
+          'created',
+          snapshot({
+            productId: suspended,
+            shopId: shops.suspended,
+            title: 'Desk lamp',
+          }),
+        ),
+        productEvent(
+          'created',
+          snapshot({
+            productId: deleting,
+            shopId: shops.deleting,
+            title: 'Desk lamp',
+          }),
+        ),
+        productEvent(
+          'created',
+          snapshot({
+            productId: gone,
+            shopId: shops.deleted,
+            title: 'Desk lamp',
+          }),
+        ),
       );
       await deliver(t.app).products(
-        productEvent('archived', snapshot({ productId: archived, shopId, title: 'Desk lamp', status: 'ARCHIVED', productVersion: 2 })),
+        productEvent(
+          'archived',
+          snapshot({
+            productId: archived,
+            shopId,
+            title: 'Desk lamp',
+            status: 'ARCHIVED',
+            productVersion: 2,
+          }),
+        ),
         productDeleted(deleted, shopId, 2),
       );
       await deliver(t.app).shops(
@@ -232,13 +322,122 @@ describe('Public product search API', () => {
       expect(body.total).toEqual({ value: 1, exact: true });
 
       await deliver(t.app).products(
-        productEvent('restored', snapshot({ productId: archived, shopId, title: 'Desk lamp', productVersion: 3 })),
+        productEvent(
+          'restored',
+          snapshot({
+            productId: archived,
+            shopId,
+            title: 'Desk lamp',
+            productVersion: 3,
+          }),
+        ),
       );
-      await deliver(t.app).shops(shopStatusEvent(shops.suspended, 'ACTIVE', 3, t.clock.now()));
+      await deliver(t.app).shops(
+        shopStatusEvent(shops.suspended, 'ACTIVE', 3, t.clock.now()),
+      );
       await t.refresh();
       expect((await ok({ q: 'lamp' })).items.map((i) => i.id).sort()).toEqual(
         [visible, archived, suspended].sort(),
       );
+    });
+  });
+
+  describe('privacy of the log and public lifecycle (AS-74, AS-67)', () => {
+    it('S32 AS-74: emails, long digit runs and card numbers are logged as [redacted] with results kept; short queries are not logged; the caller hash is stable, per caller, from a dedicated secret and carries no ids', async () => {
+      await seedProducts(t, shopId, [{ title: 'Desk lamp' }]);
+      for (const q of [
+        'me@example.com',
+        '123456789012',
+        '4111 1111 1111 1111',
+      ]) {
+        published.mockClear();
+        const body = await ok({ q });
+        expect(performed()).toHaveLength(1);
+        expect(performed()[0].payload).toMatchObject({
+          query: '[redacted]',
+          results: body.total.value,
+        });
+        expect(JSON.stringify(performed()[0])).not.toContain(q);
+      }
+
+      published.mockClear();
+      await ok({ q: 'a' });
+      expect(performed()).toHaveLength(0);
+
+      published.mockClear();
+      await ok({ q: 'lamp' });
+      await ok({ q: 'lamp' });
+      const [first, second] = performed().map((e) => e.payload);
+      expect(first.userHash).toBe(second.userHash);
+      expect(String(first.userHash)).toMatch(/^[0-9a-f]{16}$/);
+      expect(Object.keys(first).sort()).toEqual(
+        [
+          'degraded',
+          'filters',
+          'mode',
+          'query',
+          'results',
+          'searchId',
+          'surface',
+          'userHash',
+        ].sort(),
+      );
+
+      // two callers, two hashes; neither is derived from the session secret
+      const adapter = t.app.get(SEARCH_EVENT_PUBLISHER, { strict: false });
+      const hashOf = (subject: string) => {
+        published.mockClear();
+        adapter.performed({
+          searchId: newId(),
+          rawQuery: 'lamp',
+          results: 1,
+          mode: 'lexical',
+          filters: [],
+          degraded: [],
+          surface: 'http',
+          subject,
+        } as never);
+        return performed()[0].payload.userHash;
+      };
+      const [a, b] = [hashOf('user:1'), hashOf('user:2')];
+      expect(a).not.toBe(b);
+      expect(hashOf('user:1')).toBe(a);
+      const { createHmac } = await import('node:crypto');
+      const withSession = createHmac(
+        'sha256',
+        process.env.JWT_SECRET ?? 'jwt_secret',
+      )
+        .update('user:1')
+        .digest('hex')
+        .slice(0, 16);
+      expect(a).not.toBe(withSession);
+    });
+
+    it('S32 AS-67: a sandbox product is absent from public search, and deleting the shop removes every product from it', async () => {
+      const [sandboxed, live] = [newId(), newId()];
+      await deliver(t.app).products(
+        productEvent(
+          'created',
+          snapshot({
+            productId: sandboxed,
+            shopId,
+            title: 'Trial widget',
+            isSandbox: true,
+          }),
+        ),
+        productEvent(
+          'created',
+          snapshot({ productId: live, shopId, title: 'Trial widget' }),
+        ),
+      );
+      await t.refresh();
+      expect((await ok({ q: 'trial' })).items.map((i) => i.id)).toEqual([live]);
+
+      await deliver(t.app).shops(shopDeleted(shopId, t.clock.now()));
+      await t.refresh();
+      const body = await ok({ q: 'trial' });
+      expect(body.items).toEqual([]);
+      expect(body.total.value).toBe(0);
     });
   });
 
@@ -251,14 +450,21 @@ describe('Public product search API', () => {
         { title: 'Item', priceMinor: 500 },
         { title: 'Item', priceMinor: 900 },
       ]);
-      const priceOf = new Map(ids.map((id, i) => [id, [100, 100, 250, 500, 900][i]]));
-      const order = async (sort: string) => (await ok({ q: 'item', sort })).items.map((i) => i.id);
+      const priceOf = new Map(
+        ids.map((id, i) => [id, [100, 100, 250, 500, 900][i]]),
+      );
+      const order = async (sort: string) =>
+        (await ok({ q: 'item', sort })).items.map((i) => i.id);
 
       const asc = await order('price-asc');
-      expect(asc.map((id) => priceOf.get(id))).toEqual([100, 100, 250, 500, 900]);
+      expect(asc.map((id) => priceOf.get(id))).toEqual([
+        100, 100, 250, 500, 900,
+      ]);
       expect(asc.slice(0, 2)).toEqual([...asc.slice(0, 2)].sort());
       const desc = await order('price-desc');
-      expect(desc.map((id) => priceOf.get(id))).toEqual([900, 500, 250, 100, 100]);
+      expect(desc.map((id) => priceOf.get(id))).toEqual([
+        900, 500, 250, 100, 100,
+      ]);
       expect(desc.slice(3)).toEqual([...desc.slice(3)].sort());
       expect(await order('newest')).toEqual([...ids].reverse());
       expect(await order('price-asc')).toEqual(asc);
@@ -276,7 +482,11 @@ describe('Public product search API', () => {
       const sizes: number[] = [];
       let first: ProductSearchResponse | null = null;
       do {
-        const page: ProductSearchResponse = await ok({ q: 'cable', limit: 20, ...(cursor ? { cursor } : {}) });
+        const page: ProductSearchResponse = await ok({
+          q: 'cable',
+          limit: 20,
+          ...(cursor ? { cursor } : {}),
+        });
         first ??= page;
         expect(page.total).toEqual({ value: 45, exact: true });
         sizes.push(page.items.length);
@@ -334,11 +544,17 @@ describe('Public product search API', () => {
       for (const [field, query] of bad) {
         const res = await search(query).expect(400);
         expect(res.headers['content-type']).toContain('problem+json');
-        expect(res.body).toMatchObject({ code: 'validation_failed', status: 400 });
+        expect(res.body).toMatchObject({
+          code: 'validation_failed',
+          status: 400,
+        });
         expect(res.body.requestId).toBeDefined();
         expect(JSON.stringify(res.body.errors ?? res.body)).toContain(field);
       }
-      const range = await search({ minPriceMinor: 500, maxPriceMinor: 100 }).expect(422);
+      const range = await search({
+        minPriceMinor: 500,
+        maxPriceMinor: 100,
+      }).expect(422);
       expect(range.body.code).toBe('invalid_price_range');
       expect(engineCalls).not.toHaveBeenCalled();
     });
@@ -359,9 +575,15 @@ describe('Public product search API', () => {
         'iphone\u0000\u0007 case',
       ])
         await search({ q }).expect(200);
-      expect((await ok({ q: 'iph*' })).items.map((i) => i.id)).not.toContain(iphone);
-      expect((await ok({ q: 'ＩＰＨＯＮＥ' })).items.map((i) => i.id)).toContain(iphone);
-      expect((await ok({ q: 'iphone\u0000\u0007' })).items.map((i) => i.id)).toContain(iphone);
+      expect((await ok({ q: 'iph*' })).items.map((i) => i.id)).not.toContain(
+        iphone,
+      );
+      expect(
+        (await ok({ q: 'ＩＰＨＯＮＥ' })).items.map((i) => i.id),
+      ).toContain(iphone);
+      expect(
+        (await ok({ q: 'iphone\u0000\u0007' })).items.map((i) => i.id),
+      ).toContain(iphone);
     });
 
     it('S32 AS-12: anonymous and signed-in callers are served alike; one caller over 120 a minute gets 429 with Retry-After while others are unaffected', async () => {
@@ -369,7 +591,8 @@ describe('Public product search API', () => {
       const user = await t.newUser();
       const a = await ok({ q: 'public' });
       const b = productSearchResponseSchema.parse(
-        (await t.as(user).get('/api/products/search?q=public').expect(200)).body,
+        (await t.as(user).get('/api/products/search?q=public').expect(200))
+          .body,
       );
       expect(titles(a)).toEqual(titles(b));
 
@@ -392,10 +615,15 @@ describe('Public product search API', () => {
 
       t.proxy!.mode = 'refuse';
       const refused = await search({ q: 'resilient' }).expect(503);
-      expect(refused.body).toMatchObject({ code: 'search_unavailable', status: 503 });
+      expect(refused.body).toMatchObject({
+        code: 'search_unavailable',
+        status: 503,
+      });
       expect(refused.headers['retry-after']).toBe('1');
       expect(refused.body.requestId).toBeDefined();
-      expect(JSON.stringify(refused.body)).not.toMatch(/elastic|ECONN|stack|127\.0\.0\.1/i);
+      expect(JSON.stringify(refused.body)).not.toMatch(
+        /elastic|ECONN|stack|127\.0\.0\.1/i,
+      );
 
       t.proxy!.mode = 'hang';
       const started = Date.now();
@@ -413,9 +641,31 @@ describe('Public product search API', () => {
 
     it('S32 AS-14: filters are an AND, never reorder what remains, and an empty answer is a normal 200 with its event', async () => {
       const [a, b, c] = await seedProducts(t, shopId, [
-        { title: 'Wire headset', category: 'audio', brand: 'Acme', priceMinor: 2_000, rating: 4.5, quantity: 3 },
-        { title: 'Wire headset pro', category: 'audio', brand: 'Acme', priceMinor: 5_000, rating: 4.1, quantity: 3 },
-        { title: 'Wire headset mini', category: 'video', brand: 'Other', priceMinor: 500, rating: 2, quantity: 0, inStock: false },
+        {
+          title: 'Wire headset',
+          category: 'audio',
+          brand: 'Acme',
+          priceMinor: 2_000,
+          rating: 4.5,
+          quantity: 3,
+        },
+        {
+          title: 'Wire headset pro',
+          category: 'audio',
+          brand: 'Acme',
+          priceMinor: 5_000,
+          rating: 4.1,
+          quantity: 3,
+        },
+        {
+          title: 'Wire headset mini',
+          category: 'video',
+          brand: 'Other',
+          priceMinor: 500,
+          rating: 2,
+          quantity: 0,
+          inStock: false,
+        },
       ]);
       const filtered = await ok({
         q: 'wire headset',
@@ -427,14 +677,23 @@ describe('Public product search API', () => {
         inStock: 'true',
       });
       expect(filtered.items.map((i) => i.id).sort()).toEqual([a, b].sort());
-      const unfiltered = (await ok({ q: 'wire headset' })).items.map((i) => i.id).filter((id) => id !== c);
+      const unfiltered = (await ok({ q: 'wire headset' })).items
+        .map((i) => i.id)
+        .filter((id) => id !== c);
       expect(filtered.items.map((i) => i.id)).toEqual(unfiltered);
       await ok({ category: 'audio' });
 
       published.mockClear();
       const none = await ok({ q: 'wire headset', category: 'nonexistent' });
-      expect(none).toMatchObject({ items: [], total: { value: 0, exact: true }, nextCursor: null });
-      expect(performed()[0].payload).toMatchObject({ results: 0, filters: ['category'] });
+      expect(none).toMatchObject({
+        items: [],
+        total: { value: 0, exact: true },
+        nextCursor: null,
+      });
+      expect(performed()[0].payload).toMatchObject({
+        results: 0,
+        filters: ['category'],
+      });
     });
   });
 
@@ -458,20 +717,56 @@ describe('Public product search API', () => {
       const apple = await ok({ q: 'Apple', limit: 1 });
       expect(apple.items).toHaveLength(1);
       expect(apple.total.value).toBe(2);
-      const next = await ok({ q: 'Apple', limit: 1, cursor: apple.nextCursor! });
+      const next = await ok({
+        q: 'Apple',
+        limit: 1,
+        cursor: apple.nextCursor!,
+      });
       expect(next.items[0].id).not.toBe(apple.items[0].id);
 
       await t.resetSearch();
       await seedProducts(t, shopId, [
-        { title: 'Cheap Phone', priceMinor: 10_000, rating: 3.5, createdAt: '2026-01-01T00:00:00.000Z' },
-        { title: 'Mid Phone', priceMinor: 30_000, rating: 4.2, createdAt: '2026-01-05T00:00:00.000Z' },
-        { title: 'Expensive Phone', priceMinor: 80_000, rating: 4.8, createdAt: '2026-01-10T00:00:00.000Z' },
+        {
+          title: 'Cheap Phone',
+          priceMinor: 10_000,
+          rating: 3.5,
+          createdAt: '2026-01-01T00:00:00.000Z',
+        },
+        {
+          title: 'Mid Phone',
+          priceMinor: 30_000,
+          rating: 4.2,
+          createdAt: '2026-01-05T00:00:00.000Z',
+        },
+        {
+          title: 'Expensive Phone',
+          priceMinor: 80_000,
+          rating: 4.8,
+          createdAt: '2026-01-10T00:00:00.000Z',
+        },
       ]);
-      expect(titles(await ok({ minPriceMinor: 20_000, maxPriceMinor: 50_000 }))).toEqual(['Mid Phone']);
-      expect(titles(await ok({ minRating: 4 })).sort()).toEqual(['Expensive Phone', 'Mid Phone']);
-      expect(titles(await ok({ sort: 'price-asc' }))).toEqual(['Cheap Phone', 'Mid Phone', 'Expensive Phone']);
-      expect(titles(await ok({ sort: 'price-desc' }))).toEqual(['Expensive Phone', 'Mid Phone', 'Cheap Phone']);
-      expect(titles(await ok({ sort: 'newest' }))).toEqual(['Expensive Phone', 'Mid Phone', 'Cheap Phone']);
+      expect(
+        titles(await ok({ minPriceMinor: 20_000, maxPriceMinor: 50_000 })),
+      ).toEqual(['Mid Phone']);
+      expect(titles(await ok({ minRating: 4 })).sort()).toEqual([
+        'Expensive Phone',
+        'Mid Phone',
+      ]);
+      expect(titles(await ok({ sort: 'price-asc' }))).toEqual([
+        'Cheap Phone',
+        'Mid Phone',
+        'Expensive Phone',
+      ]);
+      expect(titles(await ok({ sort: 'price-desc' }))).toEqual([
+        'Expensive Phone',
+        'Mid Phone',
+        'Cheap Phone',
+      ]);
+      expect(titles(await ok({ sort: 'newest' }))).toEqual([
+        'Expensive Phone',
+        'Mid Phone',
+        'Cheap Phone',
+      ]);
     });
   });
 });

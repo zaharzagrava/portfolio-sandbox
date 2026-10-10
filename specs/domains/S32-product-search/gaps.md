@@ -54,20 +54,41 @@ What exists: one controller (`api/search-admin.controller.ts`, 71 lines: shop se
 
 ## C. `pnpm --dir packages/backend check:table-ownership` lines for `discovery`
 
-The command was **not run** while writing this spec: the sandbox required an approval it could not obtain unattended. The lines below were found by reading the code (`grep` for `@app/domains/<other>`, `InjectModel`, `forFeature`, `"Product"`, `sequelize.query`) on 2026-10-05; the implementation agent must run the command, replace this section with its exact output, and treat any line that is not listed here as an additional gap. Rows marked "S32" are this capability's to pay; the others belong to the named capability.
+Output of `pnpm --dir packages/backend check:table-ownership` after the P1 pass (section `discovery` only; the run reports 65 accesses in 20 domains in total):
 
-| Kind | Where | What it touches | Owner | Replacement |
-|---|---|---|---|---|
-| SQL | `application/shop-product-search.service.ts:26` | `SELECT … FROM "Product"` (shop's product list, empty `q`) | S32 | Removed: the list is S05's `GET /shops/:shopId/products` (R1 route); the empty-`q` branch disappears |
-| SQL | `application/shop-product-search.service.ts:32-33` | `FROM "Product"` with `"searchVector"` full text | S32 | R3: the discovery-owned shop search table fed by `catalog.product_*` |
-| SQL | `application/shop-product-search.service.ts:47-48` | `FROM "Product" p` trigram fallback | S32 | R3: same table (trigram index there) |
-| MODEL | `application/search-reindex.service.ts:4,45` | `ProductModel` injected (`@InjectModel(Product)`) | S32 | R3: replay of the retained `products.events`; no model |
-| MODEL | `search-admin.module.ts:12,16` | `SequelizeModule.forFeature([Product])` | S32 | Removed |
-| MODEL | `search-reindex-worker.module.ts:3,10` | `SequelizeModule.forFeature([Product])` | S32 | Removed |
-| MODEL (test) | `search-reindex.e2e-spec.ts:3,14` | `ShopModel` of tenancy registered in a spec module | S32 | Seed through the shared fixture helpers (tests may touch every table, IX.6) or publish tenancy events; no `forFeature` of a foreign model |
-| SQL | `application/trending.service.ts:37` | `FROM "Product"` | S35 | R1 `getProductsByIds` (S05) |
-| MODEL | `application/recommendations.service.ts:4,30`, `recommendations.module.ts:3,10` | `ProductModel` | S34 | R1 `getProductsByIds` (S05) |
-| Event import | `infra/order-baskets.projector.ts:6` | `OrderPaid` event contract from `orders` | S34 | Allowed (event contract through the entry point); verify it is exported as a contract |
+```
+discovery  (4)
+  SQL   Product                    owned by catalog            libs/domains/discovery/application/shop-product-search.service.ts
+  SQL   Product                    owned by catalog            libs/domains/discovery/application/trending.service.ts
+  MODEL ProductModel               owned by catalog            libs/domains/discovery/application/recommendations.service.ts
+  MODEL ProductModel               owned by catalog            libs/domains/discovery/recommendations.module.ts
+```
+
+`pnpm check:boundaries`: no dependency violations (1702 modules). `tsc --noEmit -p packages/backend`: clean.
+
+| Line | Owner | Status |
+|---|---|---|
+| `shop-product-search.service.ts` raw SQL on `"Product"` | S32 (US7, P2) | Open, deferred: replaced by the discovery-owned `SearchShopProduct` read side in the P2 pass (T092–T093) |
+| `trending.service.ts` `"Product"` | S35 | Not S32's; R1 `getProductsByIds` |
+| `recommendations.service.ts`, `recommendations.module.ts` `ProductModel` | S34 | Not S32's; R1 `getProductsByIds` |
+
+The reindex, admin and worker `ProductModel`/`forFeature([Product])` lines and the `ShopModel` in `search-reindex.e2e-spec.ts` listed when the spec was written are gone (no longer reported).
+
+## Deferred until a later pass
+
+P1 pass done: Setup, Foundational, US4 (index projection), US1 (public search), US5 (reindex). Deferred (not failed):
+
+- **US2 facets (P2)**, AS-15–AS-17, T065–T067: wait for nothing external; next pass.
+- **US3 semantic (P2)**, AS-18–AS-21, T068–T070: next pass.
+- **US6 synonyms (P2)**, AS-53–AS-60 (the `unit` AS-83 grammar is done), T084–T089: next pass. `GET/PUT /admin/search/synonyms` routes are not mounted yet, so AS-52 covers the reindex/index/rollback admin routes only.
+- **US7 shop product search (P2)**, AS-61–AS-69, T090–T094: next pass; closes the remaining S32 raw-SQL line in section C. Needs S03's `ShopScoped` (built).
+- **US8 measurement (P3)**, AS-70–AS-76 e2e parts, T095–T100, and **US9 platform (P3)**, AS-78–AS-80, T101–T105: later pass. (Click-related AS-70/AS-71 tests already present from earlier work are not ticked.)
+- **Polish T106–T113**: final pass.
+- Waits on other capabilities, not blocking P1: S29 (`media.gallery_changed`, `MediaQueryService.getReadyMediaByIds`: items carry `imageUrl: null` via the null resolver), S36 (`marketing.product_sponsorship_changed`: no product is sponsored), S03 (`shopVersion` on offboarding events: ordered by `occurredAt`).
+
+## Gate repairs
+
+- Gate failure "no test carrying their ID: AS-67, AS-74". Both are cited by P1 stories (AS-27 in US4, AS-04 in US1), so they are not deferred. Added to `search-query.e2e-spec.ts`: `S32 AS-74` (email, digit run and card query logged as `[redacted]` with `results` kept; one-character query not logged; `userHash` stable per caller, different across callers, differs from a hash under the session secret; event keys carry no ids) and `S32 AS-67` (sandbox product absent from public search; `tenancy.shop_deleted` empties public search). The seller-search parts of AS-67 (sandbox product found in its own shop's search, shop search answers `404` after deletion) and the 90-day expiry part of AS-74 stay with US7 and US8 (T091, T096) in the next passes.
 
 ## D. Ordered work list for the implementation agent
 
