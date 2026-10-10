@@ -60,7 +60,9 @@ docker compose -f docker-compose.test.yaml -p marketplace_test build
 if [[ "${WITH_WEB:-}" == 1 ]]; then
   echo "== front-end: Playwright browser and dev stack images"
   (cd packages/web && pnpm exec playwright install --with-deps chromium) || echo "WARN: playwright install failed (no Playwright in packages/web yet?)"
-  docker compose --profile '*' pull --ignore-buildable || echo "WARN: dev stack pull needs packages/backend/.env; do it on first use"
+  bash scripts/infra/make-dev-env.sh
+  docker compose --env-file packages/backend/.env pull --ignore-buildable
+  docker compose --env-file packages/backend/.env build db
 fi
 
 echo "== clean up (no secrets stay in the image)"

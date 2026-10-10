@@ -105,6 +105,26 @@ if [[ -z "${SDD_SKIP_STACK:-}" ]]; then
   done
   grep -q "stack is up and migrated" "$LOG/stack.log" || fail_and_wait "the test stack did not come up in 20 minutes (see $LOG/stack.log)"
 fi
+# --- FE image: the dev stack, its migrations and the API (monolith) on :8000; Playwright starts Next.js itself
+DEV_PID=""; API_PID=""
+if [[ "${SDD_IMAGE:-be}" == fe && -z "${SDD_SKIP_STACK:-}" ]]; then
+  say "starting the dev stack"
+  bash scripts/infra/make-dev-env.sh >/dev/null
+  scripts/infra/stack.sh dev setup >"$LOG/dev-stack.log" 2>&1 &
+  DEV_PID=$!
+  for _ in $(seq 1 360); do
+    grep -q "dev stack is up and migrated" "$LOG/dev-stack.log" 2>/dev/null && break
+    kill -0 "$DEV_PID" 2>/dev/null || fail_and_wait "the dev stack exited during start-up (see $LOG/dev-stack.log)"
+    sleep 5
+  done
+  grep -q "dev stack is up and migrated" "$LOG/dev-stack.log" || fail_and_wait "the dev stack did not come up in 30 minutes (see $LOG/dev-stack.log)"
+  say "starting the API"
+  pnpm --filter api run start:dev:monolith >"$LOG/api.log" 2>&1 &
+  API_PID=$!
+  for _ in $(seq 1 120); do curl -sf http://localhost:8000/health/ready >/dev/null && break; kill -0 "$API_PID" 2>/dev/null || fail_and_wait "the API exited during start-up (see $LOG/api.log)"; sleep 5; done
+  curl -sf http://localhost:8000/health/ready >/dev/null || fail_and_wait "the API did not become ready in 10 minutes (see $LOG/api.log)"
+  say "dev stack and API ready"
+fi
 say "test stack ready; memory: $(free -h | awk 'NR==2{print $3" used of "$2}')"
 
 # --- watch it from a tmux session (ssh in, 'tmux attach -t sdd'), monitor in the background
@@ -150,9 +170,10 @@ scripts/sdd/implement-specs.sh ${SDD_ARGS:-} >"$LOG/loop.log" 2>&1
 code=$?
 say "loop ended with exit code $code"
 
-kill "$MON_PID" "$SNAP_PID" "$MEM_PID" 2>/dev/null || true
+kill "$MON_PID" "$SNAP_PID" "$MEM_PID" ${API_PID:+"$API_PID"} 2>/dev/null || true
 say "peak memory used during the run: $(cat "$LOG/peak-mem-mb" 2>/dev/null || echo ?) MB of $(free -m | awk 'NR==2{print $2}') MB (machine type: ${HCLOUD_SERVER_TYPE:-?})"
 [[ -n "$STACK_PID" ]] && { kill -INT "$STACK_PID" 2>/dev/null || true; sleep 5; }
+[[ -n "${DEV_PID:-}" ]] && { kill -INT "$DEV_PID" 2>/dev/null || true; sleep 5; }
 
 # --- keep the evidence: the logs of this run go to the branch sdd/logs (one rolling commit, replaced every run), because they die with the machine
 save_logs() {
