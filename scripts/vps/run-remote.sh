@@ -6,6 +6,8 @@
 #     --until ID      stop after this capability (e.g. --until S53 for a one-spec first run); ID or ID:P1
 #     --order NAME    order file in scripts/sdd/orders (default by-flow)
 #     --hours N       hard end of the run (default RUN_HOURS from the config)
+#     --image be|fe   be = test stack only (default, cheap machine); fe = also dev stack, API and Chromium for the W* specs
+#                     (default fe when --until or an ID starts with W)
 #     --keep          never delete the machine (debugging; you must delete it yourself)
 #     --force         start even if another runner machine exists
 #     --dry-run       print what would be created, with secrets masked
@@ -15,12 +17,13 @@ set -euo pipefail
 ROOT="$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel)"
 source "$ROOT/scripts/vps/lib.sh"
 
-UNTIL=""; ORDER=by-flow; HOURS=""; KEEP=""; FORCE=""; IDS=()
+UNTIL=""; IMAGE=""; ORDER=by-flow; HOURS=""; KEEP=""; FORCE=""; IDS=()
 while (( $# )); do
   case "$1" in
     --until) UNTIL="$2"; shift 2 ;;
     --order) ORDER="$2"; shift 2 ;;
     --hours) HOURS="$2"; shift 2 ;;
+    --image) IMAGE="$2"; shift 2 ;;
     --keep) KEEP=1; shift ;;
     --force) FORCE=1; shift ;;
     --dry-run) DRY_RUN=1; shift ;;
@@ -38,7 +41,14 @@ require_vars HCLOUD_TOKEN HCLOUD_SSH_KEY HCLOUD_LOCATION HCLOUD_SERVER_TYPE CLAU
 [[ -f "$ROOT/scripts/sdd/orders/$ORDER.txt" ]] || die "no order file scripts/sdd/orders/$ORDER.txt"
 [[ -z "${ANTHROPIC_API_KEY:-}" ]] || die "ANTHROPIC_API_KEY is set in your environment; unset it (the runner must use the subscription)"
 HOURS="${HOURS:-${RUN_HOURS:-5}}"
-snap="$(snapshot_id)"; [[ -n "$snap" ]] || die "no snapshot yet: run scripts/vps/build-snapshot.sh first"
+if [[ -z "$IMAGE" ]]; then IMAGE=be; [[ "$UNTIL" == W* || "${IDS[*]:-}" == W* ]] && IMAGE=fe; fi
+case "$IMAGE" in
+  be) snap="$(snapshot_id)"; [[ -n "$snap" ]] || die "no BE snapshot yet: run scripts/vps/build-snapshot.sh first" ;;
+  fe) snap="$(cat "$SDD_VPS_STATE/snapshot-id-fe" 2>/dev/null || true)"; [[ -n "$snap" ]] || die "no FE snapshot yet: run scripts/vps/build-snapshot.sh --with-web first"
+      HCLOUD_SERVER_TYPE="${HCLOUD_SERVER_TYPE_FE:-ccx33}" ;;
+  *) die "--image must be be or fe" ;;
+esac
+say "image: $IMAGE (snapshot $snap, machine type $HCLOUD_SERVER_TYPE)"
 
 say "preflight"
 tok="$CLAUDE_CODE_OAUTH_TOKEN"
@@ -77,7 +87,7 @@ ud="$(mktemp)"; trap 'rm -f "$ud"' EXIT
            PASS_TIMEOUT_S FAILURE_KEEP_MIN SNAPSHOT_MIN REPAIR_BUDGET_MIN MAX_REPAIRS_PER_SPEC GIT_AUTHOR_NAME GIT_AUTHOR_EMAIL; do
     printf '%s=%q\n' "$v" "${!v:-}"
   done
-  printf '%s=%q\n' SDD_ORDER "$ORDER" SDD_UNTIL "$UNTIL" SDD_ARGS "${IDS[*]:-}" SDD_HOURS "$HOURS" SDD_KEEP "$KEEP"
+  printf '%s=%q\n' SDD_IMAGE "$IMAGE" SDD_ORDER "$ORDER" SDD_UNTIL "$UNTIL" SDD_ARGS "${IDS[*]:-}" SDD_HOURS "$HOURS" SDD_KEEP "$KEEP"
   echo 'SDD_ENV'
   echo "base64 -d > /root/.ssh/sdd_deploy <<'SDD_KEY'"
   base64 -w0 "$DEPLOY_KEY_FILE"; echo

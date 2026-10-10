@@ -2,7 +2,7 @@
 # Build the runner image once (and again whenever the stack or its dependencies change a lot): create a temporary machine,
 # run bootstrap.sh on it, take a snapshot, delete the machine. Takes about 15-25 minutes and costs a few cents.
 #
-#   scripts/vps/build-snapshot.sh [--with-web]     (DRY_RUN=1 only prints what it would do)
+#   scripts/vps/build-snapshot.sh [--with-web]   (--with-web = the FE image, HCLOUD_SERVER_TYPE_FE (default ccx33); a separate snapshot)     (DRY_RUN=1 only prints what it would do)
 #
 # Prerequisite: the repo (including scripts/vps) is pushed to REPO_SSH_URL on BASE_BRANCH, because the machine clones it.
 set -euo pipefail
@@ -11,6 +11,9 @@ source "$ROOT/scripts/vps/lib.sh"
 WITH_WEB=""; [[ "${1:-}" == "--with-web" ]] && WITH_WEB=1
 
 load_config
+# two images side by side: BE (test stack only, cheap machine) and FE (also dev stack + Chromium, 32 GB machine)
+IMG_KIND=be; STATE_FILE=snapshot-id
+if [[ -n "$WITH_WEB" ]]; then IMG_KIND=fe; STATE_FILE=snapshot-id-fe; HCLOUD_SERVER_TYPE="${HCLOUD_SERVER_TYPE_FE:-ccx33}"; fi
 require_tools hcloud ssh scp git
 require_vars HCLOUD_TOKEN HCLOUD_SSH_KEY HCLOUD_LOCATION HCLOUD_SERVER_TYPE REPO_SSH_URL BASE_BRANCH DEPLOY_KEY_FILE
 [[ -f "$DEPLOY_KEY_FILE" ]] || die "deploy key not found: $DEPLOY_KEY_FILE"
@@ -22,7 +25,7 @@ fi
 
 mkdir -p "$SDD_VPS_STATE"
 name="sdd-build-$(date +%Y%m%d-%H%M%S)"
-desc="sdd-base-$(date +%Y%m%d-%H%M)"
+desc="sdd-base-$IMG_KIND-$(date +%Y%m%d-%H%M)"
 say "creating $name ($HCLOUD_SERVER_TYPE in $HCLOUD_LOCATION)"
 fw=(); [[ -n "${HCLOUD_FIREWALL:-}" ]] && fw=(--firewall "$HCLOUD_FIREWALL")
 run hcloud server create --name "$name" --type "$HCLOUD_SERVER_TYPE" --image ubuntu-24.04 --location "$HCLOUD_LOCATION" \
@@ -45,9 +48,9 @@ ssh $SDD_SSH_OPTS "root@$ip" "chmod 600 /root/.ssh/sdd_deploy && REPO_SSH_URL='$
 say "powering off and taking the snapshot '$desc'"
 hcloud server shutdown "$name" >/dev/null
 for _ in $(seq 1 30); do [[ "$(hcloud server describe "$name" -o format='{{.Status}}')" == off ]] && break; sleep 5; done
-hcloud server create-image --type snapshot --description "$desc" --label sdd-runner=image "$name" | tee "$SDD_VPS_STATE/last-snapshot.txt"
-id="$(hcloud image list --type snapshot --selector sdd-runner=image -o noheader -o columns=id,created | sort -k2 | tail -1 | awk '{print $1}')"
-mkdir -p "$SDD_VPS_STATE"; echo "$id" > "$SDD_VPS_STATE/snapshot-id"
+hcloud server create-image --type snapshot --description "$desc" --label sdd-runner=image --label sdd-image="$IMG_KIND" "$name" | tee "$SDD_VPS_STATE/last-snapshot.txt"
+id="$(hcloud image list --type snapshot --selector "sdd-runner=image,sdd-image=$IMG_KIND" -o noheader -o columns=id,created | sort -k2 | tail -1 | awk '{print $1}')"
+mkdir -p "$SDD_VPS_STATE"; echo "$id" > "$SDD_VPS_STATE/$STATE_FILE"
 trap - ERR
 hcloud server delete "$name" >/dev/null
-say "done: snapshot $id ($desc). run-remote.sh will use it."
+say "done: snapshot $id ($desc). run-remote.sh --image $IMG_KIND will use it."
