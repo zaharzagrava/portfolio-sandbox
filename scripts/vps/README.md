@@ -81,6 +81,10 @@ warning (stalled, task running long, disk, container exited), each warning follo
 - *time budget used*: `--hours` ran out; everything is pushed. Run again, it resumes `sdd/auto`.
 - *out of budget*: the Claude usage limit (the reset time is in the message); pushed. Run again after the reset.
 - *Claude login failed*: the token expired. Run `claude setup-token`, update the config, run again.
+- *SDD loop: finished, but some capabilities are blocked*: everything else is built and pushed. Each blocked capability has a
+  `BLOCKED.md` in its spec folder (why, and the end of the last log). Fix the cause (often a decision in `questions.md`), delete the
+  file, run again. The loop tries to repair problems by itself first (a repair agent with a 60-minute budget per run) and only blocks
+  a capability when that fails; it never stops the whole run for one capability.
 - *SDD runner FAILED*: a setup problem or a loop failure. The machine stays 2 hours: `scripts/vps/attach.sh`, logs in
   `/var/log/sdd/`.
 
@@ -99,6 +103,6 @@ a project that holds nothing else. The runner writes only `sdd/auto`; protected 
 - No message after 15 min: `hcloud server list`, then `scripts/vps/attach.sh` or `ssh root@<ip> journalctl -u sdd-run`.
 - Fetch/push fails: the deploy key is missing or lacks write access (steps 3-4).
 - Tests fail only on the machine: check `free -h` and `docker stats`; `HCLOUD_SERVER_TYPE=ccx43` has 64 GB.
-- Kill a run: `hcloud server delete <name>`. Pushed work stays on `sdd/auto`; the latest safety snapshot (every 15 minutes,
+- Kill a run: `hcloud server delete <name>`. Pushed work stays on `sdd/auto`; the logs of every run are on the branch `sdd/logs` (one commit, replaced each run: `git fetch origin sdd/logs && git show origin/sdd/logs:logs-of-the-last-run.tar.gz > logs.tgz`); the latest safety snapshot (every 15 minutes,
   uncommitted work included) is on branch `sdd/wip`. To recover after a crash: `git fetch origin && git checkout -B sdd/auto origin/sdd/wip && git push -f origin sdd/auto`.
 - Not covered yet: the front-end flow (dev stack + Playwright) on the machine.

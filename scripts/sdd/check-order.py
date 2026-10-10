@@ -58,6 +58,18 @@ def entries(path):
     return out
 
 
+def primary_deps():
+    """What each capability names as its first prerequisite: the first bullet under "**Requires**:" (S01 -> S50, S10 -> S05, ...).
+    Used only by the loop to skip dependents of a blocked capability; the order check above uses the stricter dependencies()."""
+    out = {}
+    for f in sorted(glob.glob(os.path.join(ROOT, 'specs', '*', '*', 'spec.md'))):
+        sid = os.path.basename(os.path.dirname(f)).split('-')[0]
+        text = open(f).read()
+        m = re.search(r'^\*\*Requires\*\*:?[ \t]*\n+[ \t]*[-*][ \t]*(.*)$', text, re.M)
+        out[sid] = set(ID.findall(m.group(1))) - {sid} if m else set()
+    return out
+
+
 def check(path, deps):
     """A whole-spec entry must come after the whole-spec entry of everything its spec depends on.
     A limited entry (S10:P1) must come after what its comment says it needs ('# needs: S05'), in any form, and its own
@@ -95,6 +107,13 @@ def check(path, deps):
 
 
 def main():
+    if '--deps' in sys.argv:  # "ID dep dep ..." per capability: what each one needs (used by the loop to skip dependents of a blocked one)
+        merged = {k: set(v) for k, v in dependencies().items()}
+        for k, v in primary_deps().items():
+            merged.setdefault(k, set()).update(x for x in v if x[0] == 'S' or k[0] != 'S')
+        for k, v in sorted(merged.items()):
+            print(k, ' '.join(sorted(v)))
+        return 0
     files = sys.argv[1:] or sorted(glob.glob(os.path.join(ROOT, 'scripts', 'sdd', 'orders', '*.txt')))
     deps = dependencies()
     status = 0
