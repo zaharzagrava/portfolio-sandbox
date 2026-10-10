@@ -15,6 +15,7 @@ import { searchConfigKeys } from './search-config';
 import { autocompleteConfigKeys } from './autocomplete-config';
 import { recommendationsConfigKeys } from './recommendations-config';
 import { trendingConfigKeys } from './trending-config';
+import { bffConfigKeys } from './bff-config';
 
 dotenv.config({
   /**
@@ -519,10 +520,6 @@ export class ApiConfigService {
             verify: joi.string().optional().allow(''),
             name: 'WEBHOOKS_ALLOW_PRIVATE_HOSTS',
           },
-          core_internal_url: {
-            verify: joi.string().optional().allow(''),
-            name: 'CORE_INTERNAL_URL',
-          },
           cloudflare_zone_id: {
             verify: joi.string().optional().allow(''),
             name: 'CLOUDFLARE_ZONE_ID',
@@ -551,6 +548,7 @@ export class ApiConfigService {
           ...autocompleteConfigKeys,
           ...recommendationsConfigKeys,
           ...trendingConfigKeys,
+          ...bffConfigKeys,
           payments_cursor_secret: {
             verify: joi.string().optional().allow(''),
             name: 'PAYMENTS_CURSOR_SECRET',

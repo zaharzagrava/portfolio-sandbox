@@ -8,3 +8,4 @@ export * from './src/payments';
 export * from './src/realtime';
 export * from './src/search';
 export * from './src/analytics';
+export * from './src/bff';

@@ -11,6 +11,9 @@ export type {
 } from './rate-limit.decorator';
 export { RateLimitModule } from './rate-limit.module';
 export { definePolicies } from './policy';
+/** Structured `RateLimit` / `RateLimit-Policy` / `Retry-After` formatting for callers that charge the limiter themselves (S48 GraphQL cost). */
+export { formatRetryAfter, headersFor } from './rate-limit-headers';
+export type { HeaderItem } from './rate-limit-headers';
 export type { PolicyTable } from './policy';
 export {
   Domain_RateLimitCostExceededError,

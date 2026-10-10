@@ -37,6 +37,8 @@ export interface HttpClientErrorInit {
   retryable?: boolean;
   /** `Retry-After` the dependency asked for, or the time the caller should wait, in ms. */
   retryAfterMs?: number;
+  /** The machine `code` of the dependency's problem document (snake_case, at most 64 characters); never free text. */
+  problemCode?: string;
 }
 
 /**
@@ -49,6 +51,7 @@ export class HttpClientError extends Error {
   readonly attempts: number;
   readonly retryable: boolean;
   readonly retryAfterMs?: number;
+  readonly problemCode?: string;
 
   constructor(
     readonly kind: HttpClientErrorKind,
@@ -62,6 +65,7 @@ export class HttpClientError extends Error {
     this.attempts = init.attempts;
     this.retryable = init.retryable ?? false;
     this.retryAfterMs = init.retryAfterMs;
+    this.problemCode = init.problemCode;
   }
 
   withAttempts(attempts: number): HttpClientError {
@@ -70,6 +74,7 @@ export class HttpClientError extends Error {
       attempts,
       retryable: this.retryable,
       retryAfterMs: this.retryAfterMs,
+      problemCode: this.problemCode,
     });
   }
 

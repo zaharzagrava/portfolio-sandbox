@@ -1,0 +1,44 @@
+type ChatUnreadItem {
+  channelId: String!
+  lastSeq: Int!
+  unread: Int!
+}
+
+type ChatUnreadPage {
+  items: [ChatUnreadItem!]!
+  nextCursor: String
+}
+
+"""Money in minor units: a decimal integer string"""
+scalar MinorUnits
+
+type Product {
+  category: String!
+  currency: String!
+  id: ID!
+  inStock: Boolean!
+
+  """Price in minor units of `currency`"""
+  priceMinor: MinorUnits!
+  rating: Float!
+
+  """
+  Bought together; null (with an error entry) when the recommender is slow or down
+  """
+  recommendations(first: Int = 8): [Product]
+  shop: Shop
+  title: String!
+}
+
+type Query {
+  chatUnread: ChatUnreadPage
+  product(id: ID!): Product
+  products(ids: [ID!]!): [Product]
+  shop(id: ID!): Shop
+}
+
+type Shop {
+  id: ID!
+  name: String!
+  slug: String!
+}

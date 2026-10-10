@@ -315,6 +315,30 @@ describe('resilient HTTP client (HTTP)', () => {
     expect(html.requests).toHaveLength(1);
   });
 
+  it('S48 AS-45: the machine code of a problem answer is exposed as problemCode; free text and other bodies are not', async () => {
+    const s = await stand({
+      handler: scripted([
+        json(401, '{"code":"invalid_credentials","detail":"no such user bob"}'),
+        json(401, '{"code":"Not A Code","detail":"x"}'),
+        json(400, '<html>'),
+      ]),
+    });
+    const c = client();
+    const e1 = await failure(c.requestJson(urlOf(s), { maxAttempts: 1 }));
+    expect(e1).toMatchObject({
+      kind: 'status',
+      status: 401,
+      problemCode: 'invalid_credentials',
+    });
+    expect(e1.message).not.toContain('bob');
+    expect(
+      (await failure(c.requestJson(urlOf(s), { maxAttempts: 1 }))).problemCode,
+    ).toBeUndefined();
+    expect(
+      (await failure(c.requestJson(urlOf(s), { maxAttempts: 1 }))).problemCode,
+    ).toBeUndefined();
+  });
+
   it('S54 AS-95: a redirect is not followed by default', async () => {
     const s = await stand({
       handler: scripted([{ status: 302, headers: { location: '/elsewhere' } }]),

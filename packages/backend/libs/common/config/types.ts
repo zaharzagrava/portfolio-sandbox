@@ -1,5 +1,6 @@
 import { IntersectionType } from '@nestjs/swagger';
 import { Environment } from '@app/common/types';
+import type { BffConfig } from './bff-config';
 
 /**
  * @description - config that should always be present in environment variables where application is run
@@ -13,7 +14,9 @@ export class EnvConfig {
 
 /**
  * @description - config that is generated after fetching the secret manager API
+ * (the BFF's `bff_*` keys are merged in below from `bff-config.ts`)
  */
+// eslint-disable-next-line @typescript-eslint/no-unsafe-declaration-merging
 export class SecretsManagerConfig {
   port: number;
   /** Probe-only listener for apps with no HTTP surface (payment-processor); default 9091. */
@@ -312,8 +315,6 @@ export class SecretsManagerConfig {
   api_key_pepper?: string;
   /** Comma list of hosts webhooks may reach over http / private IPs - local & test only, ignored in production (SD-30). */
   webhooks_allow_private_hosts?: string;
-  /** Where the BFF reaches the core API (internal ALB / service discovery), e.g. http://core.internal:8000 (SD-04). */
-  core_internal_url?: string;
   /** CDN purge-by-tag (SD-05); unset → purges are logged only. */
   cloudflare_zone_id?: string;
   cloudflare_api_token?: string;
@@ -364,5 +365,9 @@ export class SecretsManagerConfig {
   /** Re-read on validation failure. default claude-opus-5-5 */
   onboarding_escalation_model?: string;
 }
+
+/** S48: BFF settings; keys, defaults and cross-checks in `bff-config.ts`. */
+// eslint-disable-next-line @typescript-eslint/no-unsafe-declaration-merging, @typescript-eslint/no-empty-object-type
+export interface SecretsManagerConfig extends BffConfig {}
 
 export class Config extends IntersectionType(EnvConfig, SecretsManagerConfig) {}

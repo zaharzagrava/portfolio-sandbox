@@ -374,6 +374,7 @@ export class ResilientHttpClient {
               attempts: attempt + 1,
               retryable: RETRYABLE_STATUS.has(res.statusCode),
               retryAfterMs,
+              problemCode: problemCodeOf(text),
             });
           }
           return {
@@ -452,6 +453,18 @@ export class ResilientHttpClient {
       attempts: attempt + 1,
       retryable: true,
     });
+  }
+}
+
+/** The `code` member of a problem document, when the body is one; nothing else of the body is kept. */
+function problemCodeOf(text: string): string | undefined {
+  try {
+    const code = (JSON.parse(text) as { code?: unknown } | null)?.code;
+    return typeof code === 'string' && /^[a-z][a-z0-9_]{0,63}$/.test(code)
+      ? code
+      : undefined;
+  } catch {
+    return undefined;
   }
 }
 

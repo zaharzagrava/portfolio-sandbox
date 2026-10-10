@@ -14,7 +14,8 @@ module.exports = {
       name: 'x1-nothing-imports-apps',
       comment: 'X.1: apps/ are deployment units; nothing imports from them.',
       severity: 'error',
-      from: { path: '^(libs|test|db)/' },
+      // the composition specs' kit boots the application module of the app that deploys the lib (S48 test plan)
+      from: { path: '^(libs|test|db)/', pathNot: '^libs/composition/[^/]+/testing/' },
       to: { path: '^apps/' },
     },
     {
@@ -49,7 +50,8 @@ module.exports = {
       name: 'x8-composition-infrastructure-allowlist',
       comment: 'X.8.4: composition may use only http-client, net, cache, redis and rate-limit.',
       severity: 'error',
-      from: { path: '^libs/composition/', pathNot: SPEC },
+      // `libs/composition/<lib>/testing/` is the specs' kit: it boots the production application module (S48 test plan, X.8.5)
+      from: { path: '^libs/composition/', pathNot: [SPEC, '^libs/composition/[^/]+/testing/'] },
       to: { path: '^libs/infrastructure/', pathNot: '^libs/infrastructure/(http-client|net|cache|redis|rate-limit)/' },
     },
     {

@@ -79,3 +79,4 @@ interviews) until its status says so. The implementation loop appends here (rule
 | S35 | SC-007: uncached p99 under 200 ms at 500 rps, never an unfiltered list | same file (`loadtest:trending`) | not run |
 | S35 | SC-008: an alert fires when no window merged for 10 minutes while events flow | same file (alert drill) | not run |
 | S35 | SC-009: 500k events/s over 64 partitions with lag under 60 s | same file (load proof, 16 consumers) | not run |
+| S48 | SC-008: with 50k page requests/s and one optional dependency slowed to 2 s, every request completes within the 1 s page deadline and the slow dependency's breaker opens within 10 s | `specs/domains/S48-bff/quickstart.md`, "Ops artifacts" (`loadtest:product-page`, k6) | not run |
