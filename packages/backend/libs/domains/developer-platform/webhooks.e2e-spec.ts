@@ -92,12 +92,27 @@ describe('Webhooks (e2e)', () => {
     shopId: string,
     endpointId: string,
   ): Promise<WebhookDelivery> => {
-    const event = OrderPaid.create(v4(), 2, {
+    const orderId = v4();
+    const event = OrderPaid.create(orderId, 2, {
+      orderId,
       userId: v4(),
-      total: 5_000,
+      orderVersion: 2,
+      totalMinor: 5_000,
       currency: 'usd',
-      paymentId: v4(),
-      lines: [{ productId: v4(), shopId, quantity: 2, price: 2_500 }],
+      paymentRef: v4(),
+      paidAt: new Date().toISOString(),
+      lines: [
+        {
+          productId: v4(),
+          shopId,
+          title: 'Item',
+          quantity: 2,
+          unitPriceMinor: 2_500,
+          discountMinor: 0,
+          lineTotalMinor: 5_000,
+        },
+      ],
+      shopOrders: [],
     });
     const enqueue = jest
       .spyOn(

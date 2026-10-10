@@ -1,18 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsDateString, IsInt, IsUUID, Max, Min } from 'class-validator';
-import { MAX_LINE_QUANTITY } from '../infra/cart.repository';
-
-export class SetCartLineDto {
-  @ApiProperty({
-    minimum: 0,
-    maximum: MAX_LINE_QUANTITY,
-    description: '0 removes the line',
-  })
-  @IsInt()
-  @Min(0)
-  @Max(MAX_LINE_QUANTITY)
-  quantity: number;
-}
 
 export class CreateFlashSaleDto {
   @ApiProperty()

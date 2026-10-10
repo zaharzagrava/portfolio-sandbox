@@ -18,8 +18,6 @@ export const HANDED_OVER: Record<string, string> = {
     'S29 (media): append the event through OutboxService.appendWithExecutor',
   'libs/domains/catalog-sync/application/catalog-import.service.ts':
     'S07 (catalog sync): use OutboxService.append',
-  'libs/domains/orders/api/stripe-webhook.controller.ts':
-    'S10 (orders): use InboxService.claim',
 };
 
 export interface TableReference {

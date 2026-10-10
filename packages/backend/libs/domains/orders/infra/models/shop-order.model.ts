@@ -23,7 +23,7 @@ export default class ShopOrder extends Model<ShopOrder, Partial<ShopOrder>> {
   declare subtotal: number;
 
   @Column({ type: DataType.TEXT, allowNull: false, defaultValue: 'PENDING' })
-  declare status: string;
+  declare status: 'PENDING' | 'PAID' | 'CANCELLED' | 'REFUNDED';
 
   declare createdAt: Date;
   declare updatedAt: Date;

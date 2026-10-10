@@ -11,7 +11,6 @@ import {
 } from 'sequelize-typescript';
 import { Sequelize } from 'sequelize';
 import BisOrder from './bis-order.model';
-import { ProductModel as Product } from '@app/domains/catalog';
 
 @Table({
   modelName: 'BisOrderItem',
@@ -33,18 +32,26 @@ export default class BisOrderItem extends Model<
   @BelongsTo(() => BisOrder, { foreignKey: 'bisOrderId' })
   declare bisOrder: BisOrder;
 
-  @ForeignKey(() => Product)
+  /** Plain id of the catalog's product: no association to a foreign model (IX.4). */
   @Column({ type: DataType.UUID, allowNull: false })
   declare productId: string;
 
-  @BelongsTo(() => Product, { foreignKey: 'productId' })
-  declare product: Product;
+  /** The product title at purchase time (NULL until the backfill job has filled legacy rows). */
+  @Column({ type: DataType.TEXT, allowNull: true })
+  declare title: string | null;
 
   @Column({ type: DataType.INTEGER, allowNull: false, defaultValue: 1 })
   declare quantity: number;
 
+  /** The unit price at purchase time (API: `unitPriceMinor`). */
   @Column({ type: DataType.BIGINT, allowNull: false })
   declare priceAtPurchase: number;
+
+  @Column({ type: DataType.BIGINT, allowNull: false, defaultValue: 0 })
+  declare discountMinor: number;
+
+  @Column({ type: DataType.BIGINT, allowNull: true })
+  declare lineTotalMinor: number | null;
 
   @Column({ type: DataType.UUID, allowNull: true })
   declare shopId: string | null;

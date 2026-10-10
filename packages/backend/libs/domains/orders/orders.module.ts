@@ -1,57 +1,69 @@
-import { Module } from '@nestjs/common';
+import {
+  MiddlewareConsumer,
+  Module,
+  NestModule,
+  RequestMethod,
+} from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
-import BisOrder from './infra/models/bis-order.model';
-import BisOrderItem from './infra/models/bis-order-item.model';
-import ShopOrder from './infra/models/shop-order.model';
-import StockReservation from './infra/models/stock-reservation.model';
-import FlashSale from './infra/models/flash-sale.model';
-import { ProductModel as Product } from '@app/domains/catalog';
-import { PaymentModel as Payment } from '@app/domains/payments';
-import { ApiConfigModule } from '@app/common/config';
 import { AuthModule } from '@app/domains/identity';
-import { StripeModule } from '@app/infrastructure/stripe/stripe.module';
-import { EventsModule } from '@app/infrastructure/events/events.module';
-import { JobsModule } from '@app/infrastructure/jobs/jobs.module';
-import { RealtimeModule } from '@app/infrastructure/realtime/realtime.module';
-import { CartRepository } from './infra/cart.repository';
+import { ProductModule } from '@app/domains/catalog';
+import { IdempotencyModule } from '@app/infrastructure/idempotency';
+import { InboxModule } from '@app/infrastructure/inbox';
+import { RateLimitModule } from '@app/infrastructure/rate-limit';
 import { FlashStockService } from './infra/flash-stock.service';
 import { OrderService } from './application/order.service';
+import { CartService } from './application/cart.service';
 import { CheckoutService } from './application/checkout.service';
+import { WebhookIntakeService } from './application/webhook-intake.service';
+import { CartCookie } from './api/cart-cookie';
 import { CartController } from './api/cart.controller';
+import { CheckoutController } from './api/checkout.controller';
+import { FlashSaleController } from './api/flash-sale.controller';
 import { OrdersController } from './api/orders.controller';
+import { EmptyBodyMiddleware } from './api/empty-body.middleware';
 import { StripeWebhookController } from './api/stripe-webhook.controller';
-
-import { TenancyModule } from '@app/domains/tenancy';
-import { RateLimitModule } from '@app/infrastructure/rate-limit';
+import { WebhookRawBodyMiddleware } from './api/webhook-raw-body.middleware';
+import { ORDER_MODELS } from './orders-models';
+import { OrdersCoreModule } from './orders-core.module';
 import { ordersRatePolicies } from './rate-limit-policies';
 
-export const ORDER_MODELS = [
-  BisOrder,
-  BisOrderItem,
-  ShopOrder,
-  StockReservation,
-  FlashSale,
-  Product,
-  Payment,
-];
+export { ORDER_MODELS } from './orders-models';
 
-/** SD-19 HTTP side (core). Needs global Redis + Dynamo modules. */
+/** HTTP side (apps/core): the cart, checkout, order and webhook routes. Shares its providers with the worker side. */
 @Module({
   imports: [
-    ApiConfigModule,
+    OrdersCoreModule,
     AuthModule,
-    StripeModule,
-    EventsModule.forAggregates([
-      { aggregateType: 'orders', retention: 'full-history' },
-    ]),
-    JobsModule,
-    RealtimeModule,
-    TenancyModule,
+    ProductModule,
+    IdempotencyModule,
+    InboxModule,
     RateLimitModule.forFeature(ordersRatePolicies),
     SequelizeModule.forFeature(ORDER_MODELS),
   ],
-  providers: [CartRepository, FlashStockService, OrderService, CheckoutService],
-  exports: [OrderService, FlashStockService, CartRepository],
-  controllers: [CartController, OrdersController, StripeWebhookController],
+  providers: [
+    FlashStockService,
+    OrderService,
+    CartService,
+    CartCookie,
+    CheckoutService,
+    WebhookIntakeService,
+  ],
+  exports: [OrdersCoreModule, OrderService, FlashStockService],
+  controllers: [
+    CartController,
+    CheckoutController,
+    OrdersController,
+    StripeWebhookController,
+    FlashSaleController,
+  ],
 })
-export class OrdersModule {}
+export class OrdersModule implements NestModule {
+  configure(consumer: MiddlewareConsumer): void {
+    consumer
+      .apply(WebhookRawBodyMiddleware)
+      .forRoutes({ path: 'webhooks/stripe', method: RequestMethod.POST });
+    consumer
+      .apply(EmptyBodyMiddleware)
+      .forRoutes({ path: 'checkout', method: RequestMethod.POST });
+  }
+}

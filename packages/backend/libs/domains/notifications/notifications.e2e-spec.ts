@@ -119,14 +119,30 @@ describe('Notifications (e2e)', () => {
     };
   };
 
-  const paid = (userId: string) =>
-    OrderPaid.create(v4(), 2, {
+  const paid = (userId: string) => {
+    const orderId = v4();
+    return OrderPaid.create(orderId, 2, {
+      orderId,
       userId,
-      total: 129_900,
+      orderVersion: 2,
+      totalMinor: 129_900,
       currency: 'usd',
-      paymentId: v4(),
-      lines: [{ productId: v4(), shopId: null, quantity: 1, price: 129_900 }],
+      paymentRef: v4(),
+      paidAt: new Date().toISOString(),
+      lines: [
+        {
+          productId: v4(),
+          shopId: null,
+          title: 'Item',
+          quantity: 1,
+          unitPriceMinor: 129_900,
+          discountMinor: 0,
+          lineTotalMinor: 129_900,
+        },
+      ],
+      shopOrders: [],
     });
+  };
 
   const emailsTo = (address: string) =>
     emailSend.mock.calls

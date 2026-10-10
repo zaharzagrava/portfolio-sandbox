@@ -30,9 +30,18 @@ export default class StockReservation extends Model<
   @Column({ type: DataType.INTEGER, allowNull: false })
   declare quantity: number;
 
-  /** POSTGRES = conditional row decrement; FLASH = Redis bucket (Postgres updated after payment). */
-  @Column({ type: DataType.TEXT, allowNull: false })
-  declare source: 'POSTGRES' | 'FLASH';
+  /** CATALOG = stock held by the catalog's `applyStockDelta`; FLASH = Redis bucket (legacy, S11); POSTGRES = legacy rows. */
+  @Column({ type: DataType.TEXT, allowNull: false, defaultValue: 'CATALOG' })
+  declare source: 'CATALOG' | 'POSTGRES' | 'FLASH';
+
+  @Column({ type: DataType.TEXT, allowNull: true })
+  declare sourceRef: string | null;
+
+  @Column({ type: DataType.INTEGER, allowNull: false, defaultValue: 0 })
+  declare releaseAttempts: number;
+
+  @Column({ type: DataType.DATE, allowNull: true })
+  declare nextReleaseAt: Date | null;
 
   @Column({ type: DataType.UUID, allowNull: true })
   declare flashSaleId: string | null;
@@ -41,7 +50,8 @@ export default class StockReservation extends Model<
   declare bucket: number | null;
 
   @Column({ type: DataType.TEXT, allowNull: false, defaultValue: 'HELD' })
-  declare status: 'HELD' | 'CONVERTED' | 'RELEASED';
+  declare status:
+    'REQUESTED' | 'HELD' | 'CONVERTED' | 'RELEASE_PENDING' | 'RELEASED';
 
   @Column({ type: DataType.DATE, allowNull: false })
   declare expiresAt: Date;

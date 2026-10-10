@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  HttpCode,
   Param,
   ParseUUIDPipe,
   Post,
@@ -11,90 +12,66 @@ import {
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import type { Request, Response } from 'express';
-import * as cookie from 'cookie';
-import { Firewall, User, UserRawDto } from '@app/domains/identity';
-import { ApiConfigService } from '@app/common/config';
-import { Environment } from '@app/common/types';
-import { CartRepository } from '../infra/cart.repository';
-import { CartIdentity } from './cart-identity';
-import { SetCartLineDto } from './orders.dto';
-
-const CART_COOKIE = 'cart';
+import { Firewall, User } from '@app/domains/identity';
+import type { AuthenticatedUser } from '@app/domains/identity';
+import { RateLimit } from '@app/infrastructure/rate-limit';
+import { CartService } from '../application/cart.service';
+import { userCartId } from '../domain/guest-cart-token';
+import { CartCookie } from './cart-cookie';
+import { SetCartLineDto } from './cart.dto';
 
 /**
- * Cart API (SD-19): pure DynamoDB - add-to-cart storms during a drop never
- * touch Postgres. Logged-in users use `user:<id>`, guests a signed cookie id.
+ * Cart API (S10 US1): DynamoDB only, so add-to-cart storms never touch Postgres. A signed-in caller always uses
+ * `user:<id>`; a guest uses the signed cookie. No route takes a cart id.
  */
 @ApiTags('cart')
 @Controller('cart')
 export class CartController {
-  private readonly identity: CartIdentity;
-
   constructor(
-    private readonly carts: CartRepository,
-    private readonly config: ApiConfigService,
-  ) {
-    this.identity = new CartIdentity(
-      config.get('cart_cookie_secret') || config.get('jwt_secret'),
-    );
-  }
+    private readonly cart: CartService,
+    private readonly cookie: CartCookie,
+  ) {}
 
+  /** Never issues a cookie: a guest without a (valid) cookie has an empty cart. */
   @Firewall({ anonymous: true })
   @Get()
-  async get(
-    @Req() req: Request & { user?: UserRawDto },
-    @Res({ passthrough: true }) res: Response,
-  ) {
-    return { lines: await this.carts.list(this.cartId(req, res)) };
+  async get(@User() user: AuthenticatedUser | null, @Req() req: Request) {
+    const cartId = user ? userCartId(user.id) : this.cookie.verified(req);
+    return cartId ? this.cart.get(cartId) : { lines: [], droppedLines: 0 };
   }
 
   @Firewall({ anonymous: true })
+  @RateLimit('orders.cart-write.identity')
   @Put('items/:productId')
   async setLine(
     @Param('productId', ParseUUIDPipe) productId: string,
     @Body() body: SetCartLineDto,
-    @Req() req: Request & { user?: UserRawDto },
-    @Res({ passthrough: true }) res: Response,
-  ) {
-    const cartId = this.cartId(req, res);
-    await this.carts.setLine(cartId, productId, body.quantity);
-    return { lines: await this.carts.list(cartId) };
-  }
-
-  /** Called right after login: guest cart lines move into the user's cart. */
-  @Firewall()
-  @Post('merge')
-  async merge(
-    @User() user: UserRawDto,
+    @User() user: AuthenticatedUser | null,
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const guest = this.identity.verify(
-      cookie.parse(req.headers.cookie ?? '')[CART_COOKIE],
-    );
-    const target = CartIdentity.userCartId(user.id);
-    res.clearCookie(CART_COOKIE, { path: '/' });
-    return {
-      lines: guest
-        ? await this.carts.merge(guest, target)
-        : await this.carts.list(target),
-    };
+    const cartId = user
+      ? userCartId(user.id)
+      : (this.cookie.verified(req) ?? this.cookie.issue(res));
+    return this.cart.setLine(cartId, productId, body.quantity);
   }
 
-  private cartId(req: Request & { user?: UserRawDto }, res: Response): string {
-    if (req.user) return CartIdentity.userCartId(req.user.id);
-    const existing = this.identity.verify(
-      cookie.parse(req.headers.cookie ?? '')[CART_COOKIE],
+  /** Right after login: the guest cart's lines move into the user's cart; the cookie is always cleared. */
+  @Firewall()
+  @RateLimit('orders.cart-write.identity')
+  @HttpCode(200)
+  @Post('merge')
+  async merge(
+    @User() user: AuthenticatedUser,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const sent = this.cookie.present(req);
+    const result = await this.cart.merge(
+      this.cookie.verified(req),
+      userCartId(user.id),
     );
-    if (existing) return existing;
-    const { cartId, token } = this.identity.issueGuestToken();
-    res.cookie(CART_COOKIE, token, {
-      httpOnly: true,
-      sameSite: 'lax',
-      secure: this.config.get('node_env') !== Environment.local,
-      path: '/',
-      maxAge: 30 * 86_400_000,
-    });
-    return cartId;
+    if (sent) this.cookie.clear(res);
+    return result;
   }
 }

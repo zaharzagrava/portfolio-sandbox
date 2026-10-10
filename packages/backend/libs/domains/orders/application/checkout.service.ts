@@ -1,328 +1,417 @@
-import {
-  Injectable,
-  Optional,
-  Logger,
-  UnprocessableEntityException,
-} from '@nestjs/common';
-import { InjectConnection, InjectModel } from '@nestjs/sequelize';
-import { Op, QueryTypes, Sequelize, UniqueConstraintError } from 'sequelize';
-import BisOrder from '../infra/models/bis-order.model';
-import BisOrderItem from '../infra/models/bis-order-item.model';
-import ShopOrder from '../infra/models/shop-order.model';
-import StockReservation from '../infra/models/stock-reservation.model';
-import { ProductModel as Product } from '@app/domains/catalog';
+import { createHash } from 'node:crypto';
+import { Inject, Injectable, Logger } from '@nestjs/common';
+import { v7 as uuidv7 } from 'uuid';
+import type {
+  CheckoutRequest,
+  CheckoutResponse,
+} from '@marketplace-sandbox/contracts';
+import { ApiConfigService } from '@app/common/config';
+import { CLOCK, type Clock } from '@app/common/core/clock';
+import { AppError } from '@app/common/errors';
 import { TransactionRunner } from '@app/infrastructure/context';
-import { CheckoutDiscounts } from '../domain/checkout-discounts.port';
-import { OutboxService } from '@app/infrastructure/outbox/outbox.service';
+import { idempotencyError } from '@app/infrastructure/idempotency/idempotency.errors';
 import { JobsService } from '@app/infrastructure/jobs/jobs.service';
-import { CartRepository } from '../infra/cart.repository';
-import { FlashStockService } from '../infra/flash-stock.service';
-import { OrderService } from './order.service';
-import { OrderReserved } from './events/order-events';
+import {
+  CART_STORE,
+  CHECKOUT_LOCK,
+  ORDER_REPOSITORY,
+  PRODUCT_CATALOG,
+  SHOP_DIRECTORY,
+  SHOP_DISCOUNTS,
+  type CartStore,
+  type CatalogProduct,
+  type CheckoutLock,
+  type DiscountLine,
+  type OrderRecord,
+  type OrderRepository,
+  type ProductCatalogPort,
+  type ShopDirectoryPort,
+  type ShopDiscountsPort,
+} from '../domain/ports';
+import {
+  CartEmptyError,
+  CheckoutInProgressError,
+  CheckoutUnavailableError,
+  MixedCurrencyError,
+  OutOfStockError,
+  PriceChangedError,
+  ProductUnavailableError,
+  UpstreamUnavailableError,
+} from '../domain/order-errors';
+import {
+  checkoutCounter,
+  discountFallbackCounter,
+} from '../domain/order-metrics';
+import { priceCart, type PricedCart } from '../domain/money-allocation';
+import { userCartId } from '../domain/guest-cart-token';
+import { withTimeout } from '../infra/with-timeout';
+import { OrderReservationService } from './order-reservation.service';
 
 import './order.job-types';
 
-export const RESERVATION_HOLD_MS = 15 * 60_000;
-
-export class Domain_OutOfStockError extends UnprocessableEntityException {
-  constructor(readonly productId: string) {
-    super({
-      message: `Product ${productId} is out of stock`,
-      productId,
-      code: 'OUT_OF_STOCK',
-    });
-  }
-}
-
-interface PlannedLine {
-  product: Pick<Product, 'id' | 'shopId' | 'price' | 'category'>;
-  quantity: number;
-  price: number;
-  flash?: { saleId: string; bucket: number };
-}
-
-export interface CheckoutResult {
-  orderId: string;
-  status: string;
-  total: number;
-  currency: string;
-  reservedUntil: Date | null;
-  /** Pay with Idempotency-Key = orderId (README #3) so retries never double charge. */
-  paymentIdempotencyKey: string;
-}
+type Outcome =
+  | 'reserved'
+  | 'out_of_stock'
+  | 'price_changed'
+  | 'invalid'
+  | 'unavailable'
+  | 'in_progress'
+  | 'replayed';
 
 /**
- * Checkout = reserve stock + create the order, atomically, then hand over to
- * payment (lesson 10/07 #19):
- *  - prices come from the database (or the flash sale), never from the client,
- *  - normal stock: conditional decrement `WHERE quantity >= q` (no read-then-write
- *    race), rows touched in product-id order (no deadlocks),
- *  - flash-sale stock: Redis buckets (no Postgres row lock on the hottest SKU),
- *    compensated if the database part fails,
- *  - idempotent per (user, Idempotency-Key): retries return the same order,
- *  - a 15-min hold, released by a scheduled job unless payment converts it.
+ * Checkout (S10 US2, US3): price the cart on the server, write the order `PENDING`, take the stock through the
+ * catalog, move the order to `RESERVED` (D-4). No transaction spans two capabilities and none contains a network
+ * call: the catalog read, the shop read, the discount source, the stock command, the lock and the cart store all run
+ * outside the two short transactions. The order row also guards the idempotency key after the interceptor's record
+ * expires and while a checkout whose stock answer was lost waits for recovery (D-3).
  */
 @Injectable()
 export class CheckoutService {
   private readonly logger = new Logger(CheckoutService.name);
 
   constructor(
-    @InjectModel(BisOrder) private readonly orderModel: typeof BisOrder,
-    @InjectModel(BisOrderItem) private readonly itemModel: typeof BisOrderItem,
-    @InjectModel(ShopOrder) private readonly shopOrderModel: typeof ShopOrder,
-    @InjectModel(StockReservation)
-    private readonly reservationModel: typeof StockReservation,
-    @InjectModel(Product) private readonly productModel: typeof Product,
-    @InjectConnection() private readonly sequelize: Sequelize,
-    private readonly tx: TransactionRunner,
-    private readonly events: OutboxService,
+    @Inject(ORDER_REPOSITORY) private readonly orders: OrderRepository,
+    @Inject(CART_STORE) private readonly cart: CartStore,
+    @Inject(CHECKOUT_LOCK) private readonly lock: CheckoutLock,
+    @Inject(PRODUCT_CATALOG) private readonly catalog: ProductCatalogPort,
+    @Inject(SHOP_DIRECTORY) private readonly shops: ShopDirectoryPort,
+    @Inject(SHOP_DISCOUNTS) private readonly discounts: ShopDiscountsPort,
+    private readonly reservation: OrderReservationService,
+    private readonly runner: TransactionRunner,
     private readonly jobs: JobsService,
-    private readonly carts: CartRepository,
-    private readonly flash: FlashStockService,
-    private readonly orders: OrderService,
-    @Optional() private readonly discounts?: CheckoutDiscounts,
+    private readonly config: ApiConfigService,
+    @Inject(CLOCK) private readonly clock: Clock,
   ) {}
 
   async checkout(
     userId: string,
-    cartId: string,
     idempotencyKey: string,
-  ): Promise<CheckoutResult> {
-    const existing = await this.orderModel.findOne({
-      where: { userId, idempotencyKey },
-    });
-    if (existing) return this.result(existing);
+    request: CheckoutRequest,
+  ): Promise<CheckoutResponse> {
+    const requestHash = this.hashOf(request);
+    const existing = await this.orders.findByKey(userId, idempotencyKey);
+    if (existing) return this.resolveExisting(existing, requestHash);
 
-    const lines = await this.carts.list(cartId);
-    if (lines.length === 0)
-      throw new UnprocessableEntityException('Cart is empty');
-
-    const products = await this.productModel.findAll({
-      where: { id: { [Op.in]: lines.map((l) => l.productId) } },
-      attributes: ['id', 'shopId', 'price', 'category'],
-      raw: true,
-    });
-    const byId = new Map(products.map((p) => [p.id, p]));
-    const flashSales = await this.flash.activeFor(
-      lines.map((l) => l.productId),
-    );
-
-    const planned: PlannedLine[] = [];
+    const token = await this.lock.acquire(userId);
+    if (!token) {
+      checkoutCounter.add(1, { outcome: 'in_progress' satisfies Outcome });
+      throw new CheckoutInProgressError();
+    }
     try {
-      for (const line of lines) {
-        const product = byId.get(line.productId);
-        if (!product) throw new Domain_OutOfStockError(line.productId);
-        const sale = flashSales.get(line.productId);
-
-        if (sale) {
-          if (
-            !(await this.flash.claimUserQuota(
-              sale.saleId,
-              userId,
-              line.quantity,
-              sale.perUserLimit,
-            ))
-          ) {
-            throw new UnprocessableEntityException(
-              `Limit of ${sale.perUserLimit} per customer for this drop`,
-            );
-          }
-          const bucket = await this.flash.reserve(
-            sale.saleId,
-            sale.buckets,
-            line.quantity,
-          );
-          if (bucket === null) {
-            await this.flash.releaseUserQuota(
-              sale.saleId,
-              userId,
-              line.quantity,
-            );
-            throw new Domain_OutOfStockError(line.productId);
-          }
-          planned.push({
-            product,
-            quantity: line.quantity,
-            price: sale.price,
-            flash: { saleId: sale.saleId, bucket },
-          });
-        } else {
-          planned.push({
-            product,
-            quantity: line.quantity,
-            price: Number(product.price),
-          });
-        }
-      }
-
-      // SD-40: seller discount functions (sandboxed, time-boxed, fail-safe = catalogue price). Flash-sale lines keep their drop price.
-      if (this.discounts) {
-        const regular = planned.filter((l) => !l.flash);
-        const prices = await this.discounts.unitPrices(
-          regular.map((l) => ({
-            productId: l.product.id,
-            shopId: l.product.shopId,
-            category: l.product.category ?? '',
-            quantity: l.quantity,
-            unitPrice: l.price,
-          })),
-        );
-        regular.forEach(
-          (l, i) => (l.price = Math.min(l.price, prices[i] ?? l.price)),
-        );
-      }
-
-      const order = await this.createReservedOrder(
-        userId,
-        idempotencyKey,
-        planned,
-      );
-      await this.carts
-        .clear(cartId)
-        .catch((e) => this.logger.warn(`cart clear failed: ${e.message}`));
-      return this.result(order);
-    } catch (error) {
-      await this.compensateFlash(userId, planned);
-      if (error instanceof UniqueConstraintError) {
-        // Two concurrent requests with the same Idempotency-Key: the other one won.
-        const winner = await this.orderModel.findOne({
-          where: { userId, idempotencyKey },
-        });
-        if (winner) return this.result(winner);
-      }
-      throw error;
+      return await this.run(userId, idempotencyKey, request, requestHash);
+    } finally {
+      await this.lock.release(userId, token);
     }
   }
 
-  private async createReservedOrder(
+  private async run(
     userId: string,
     idempotencyKey: string,
-    planned: PlannedLine[],
-  ): Promise<BisOrder> {
-    const reservedUntil = new Date(Date.now() + RESERVATION_HOLD_MS);
-    const total = planned.reduce((sum, l) => sum + l.price * l.quantity, 0);
+    request: CheckoutRequest,
+    requestHash: string,
+  ): Promise<CheckoutResponse> {
+    const started = process.hrtime.bigint();
+    const budgetMs = this.config.get('orders_checkout_budget_ms');
+    const within = <T>(call: () => Promise<T>): Promise<T> => {
+      const remaining =
+        budgetMs - Number(process.hrtime.bigint() - started) / 1e6;
+      if (remaining <= 0) throw new CheckoutUnavailableError();
+      return withTimeout(
+        call(),
+        remaining,
+        () => new CheckoutUnavailableError(),
+      );
+    };
 
-    return this.tx.run(
-      async (transaction) => {
-        const order = await this.orderModel.create(
-          { userId, idempotencyKey, total, reservedUntil, status: 'PENDING' },
-          { transaction },
-        );
+    const cartId = userCartId(userId);
+    const now = this.clock.now();
+    let priced: PricedCart;
+    let consumed: Array<{ productId: string; quantity: number }>;
+    let titles: Map<string, string>;
+    let currency: string;
+    try {
+      const lines = await within(() => this.cart.list(cartId, now));
+      if (lines.length === 0) throw new CartEmptyError();
+      consumed = lines.map((l) => ({
+        productId: l.productId,
+        quantity: l.quantity,
+      }));
 
-        const postgresLines = planned
-          .filter((l) => !l.flash)
-          .sort((a, b) => a.product.id.localeCompare(b.product.id));
-        for (const line of postgresLines) {
-          const [rows] = await this.sequelize.query(
-            `UPDATE "Product" SET quantity = quantity - :q, version = version + 1 WHERE id = :id AND quantity >= :q RETURNING id`,
-            {
-              replacements: { q: line.quantity, id: line.product.id },
-              transaction,
-            },
+      const products = await within(() =>
+        this.catalog.getProducts(lines.map((l) => l.productId)),
+      );
+      const shopIds = [
+        ...new Set(
+          [...products.values()]
+            .map((p) => p.shopId)
+            .filter((s): s is string => !!s),
+        ),
+      ];
+      const shops = await within(() => this.shops.getShops(shopIds));
+
+      const bad = lines
+        .filter((l) => {
+          const p = products.get(l.productId);
+          const shop = p?.shopId ? shops.get(p.shopId) : undefined;
+          return (
+            !p ||
+            p.status !== 'ACTIVE' ||
+            p.isSandbox ||
+            !p.shopId ||
+            !shop ||
+            shop.status !== 'ACTIVE' ||
+            shop.isSandbox
           );
-          if (rows.length === 0)
-            throw new Domain_OutOfStockError(line.product.id);
-        }
+        })
+        .map((l) => l.productId);
+      if (bad.length > 0) throw new ProductUnavailableError(bad);
 
-        await this.itemModel.bulkCreate(
-          planned.map((l) => ({
-            bisOrderId: order.id,
-            productId: l.product.id,
-            quantity: l.quantity,
-            priceAtPurchase: l.price,
-            shopId: l.product.shopId,
-            flashSaleId: l.flash?.saleId ?? null,
+      const currencies = new Set([...products.values()].map((p) => p.currency));
+      if (currencies.size > 1) throw new MixedCurrencyError();
+      currency = [...currencies][0];
+      titles = new Map([...products].map(([id, p]) => [id, p.title]));
+
+      const priceLines = lines.map((l) => {
+        const p = products.get(l.productId) as CatalogProduct;
+        return {
+          productId: l.productId,
+          shopId: p.shopId as string,
+          unitPriceMinor: p.priceMinor,
+          quantity: l.quantity,
+          category: p.category,
+        };
+      });
+      const shopDiscounts = await this.shopDiscounts(
+        priceLines,
+        started,
+        budgetMs,
+      );
+      priced = priceCart({ lines: priceLines, shopDiscounts });
+
+      if (
+        request.expectedTotalMinor !== undefined &&
+        request.expectedTotalMinor !== priced.totalMinor
+      )
+        throw new PriceChangedError(
+          priced.totalMinor,
+          priced.lines.map((l) => ({
+            productId: l.productId,
+            unitPriceMinor: l.unitPriceMinor,
           })),
-          { transaction },
         );
-
-        await this.reservationModel.bulkCreate(
-          planned.map((l) => ({
-            bisOrderId: order.id,
-            productId: l.product.id,
-            quantity: l.quantity,
-            source: l.flash ? ('FLASH' as const) : ('POSTGRES' as const),
-            flashSaleId: l.flash?.saleId ?? null,
-            bucket: l.flash?.bucket ?? null,
-            expiresAt: reservedUntil,
-          })),
-          { transaction },
-        );
-
-        const subtotals = new Map<string | null, number>();
-        for (const l of planned)
-          subtotals.set(
-            l.product.shopId,
-            (subtotals.get(l.product.shopId) ?? 0) + l.price * l.quantity,
-          );
-        await this.shopOrderModel.bulkCreate(
-          [...subtotals.entries()].map(([shopId, subtotal]) => ({
-            bisOrderId: order.id,
-            shopId,
-            subtotal,
-          })),
-          { transaction },
-        );
-
-        const version = (await this.orders.transition(
-          order.id,
-          { type: 'reserve' },
-          null,
-          transaction,
-        ))!;
-        await this.events.append(
-          OrderReserved.create(order.id, version, {
-            userId,
-            total,
-            currency: order.currency ?? 'EUR',
-            shopIds: [...subtotals.keys()],
-            reservedUntil: reservedUntil.toISOString(),
-          }),
-          transaction,
-        );
-        // Transactional enqueue (SD-29): the expiry job exists iff the order does.
-        await this.jobs.enqueue(
-          'orders.expire-reservation',
-          { orderId: order.id },
-          { runAt: reservedUntil, idempotencyKey: `order-expire:${order.id}` },
-        );
-
-        order.status = 'RESERVED';
-        return order;
-      },
-      { lockTimeoutMs: 2_000 },
-    );
-  }
-
-  private async compensateFlash(userId: string, planned: PlannedLine[]) {
-    for (const l of planned.filter((l) => l.flash)) {
-      await this.flash
-        .release(l.flash!.saleId, l.flash!.bucket, l.quantity)
-        .catch(() => undefined);
-      await this.flash
-        .releaseUserQuota(l.flash!.saleId, userId, l.quantity)
-        .catch(() => undefined);
+    } catch (error) {
+      throw this.preOrderFailure(error);
     }
+
+    // Tx 1: the order, its snapshots, its shop orders and its reservation requests, atomically.
+    const orderId = uuidv7();
+    const created = await this.runner.run(() =>
+      this.orders.createPending({
+        id: orderId,
+        userId,
+        idempotencyKey,
+        requestHash,
+        totalMinor: priced.totalMinor,
+        currency,
+        now,
+        items: priced.lines.map((l) => ({
+          productId: l.productId,
+          shopId: l.shopId,
+          title: titles.get(l.productId) ?? '',
+          quantity: l.quantity,
+          unitPriceMinor: l.unitPriceMinor,
+          discountMinor: l.discountMinor,
+          lineTotalMinor: l.lineTotalMinor,
+        })),
+        shopOrders: priced.shops,
+      }),
+    );
+    if (!created) {
+      // another request with this key wrote its order between our check and our insert
+      const winner = await this.orders.findByKey(userId, idempotencyKey);
+      if (winner) return this.resolveExisting(winner, requestHash);
+      throw new CheckoutUnavailableError();
+    }
+
+    // The stock step; an unknown outcome leaves the order PENDING for the recovery job.
+    let outcome;
+    try {
+      outcome = await this.reservation.reserve(orderId, `user:${userId}`);
+    } catch (error) {
+      this.logger.warn(
+        `order ${orderId}: stock outcome unknown (${(error as Error).name}); left PENDING`,
+      );
+      checkoutCounter.add(1, { outcome: 'unavailable' satisfies Outcome });
+      throw new CheckoutUnavailableError();
+    }
+    if (outcome.kind === 'rejected') {
+      checkoutCounter.add(1, { outcome: 'out_of_stock' satisfies Outcome });
+      if (outcome.insufficient.length === 0) {
+        const error = new ProductUnavailableError(outcome.unavailable);
+        error.idempotencyFinal = true;
+        throw error;
+      }
+      throw new OutOfStockError([
+        ...new Set([...outcome.insufficient, ...outcome.unavailable]),
+      ]);
+    }
+    if (outcome.kind === 'gone') {
+      checkoutCounter.add(1, { outcome: 'unavailable' satisfies Outcome });
+      throw new CheckoutUnavailableError();
+    }
+
+    await this.consumeCart(cartId, consumed, orderId, now);
+    checkoutCounter.add(1, { outcome: 'reserved' satisfies Outcome });
+    return this.answer(outcome.order);
   }
 
-  private result(order: BisOrder): CheckoutResult {
+  /** The order already holds this key: a different body is a misuse; a pending order is in flight; the rest are the answer. */
+  private async resolveExisting(
+    order: OrderRecord,
+    requestHash: string,
+  ): Promise<CheckoutResponse> {
+    if (order.requestHash !== null && order.requestHash !== requestHash)
+      throw idempotencyError('idempotency_key_reuse');
+    checkoutCounter.add(1, { outcome: 'replayed' satisfies Outcome });
+    if (order.status === 'PENDING')
+      throw idempotencyError('idempotency_in_flight', { retryAfterSeconds: 1 });
+    if (order.status === 'CANCELLED' && order.cancelReason === 'out_of_stock') {
+      const items = await this.orders.items(order.id);
+      throw new OutOfStockError(items.map((i) => i.productId));
+    }
+    return this.answer(order);
+  }
+
+  private answer(order: OrderRecord): CheckoutResponse {
     return {
       orderId: order.id,
-      status: order.status,
-      total: Number(order.total),
-      currency: order.currency ?? 'EUR',
-      reservedUntil: order.reservedUntil,
-      paymentIdempotencyKey: order.id,
+      status: 'RESERVED',
+      totalMinor: order.totalMinor,
+      currency: order.currency,
+      reservedUntil: (order.reservedUntil ?? order.createdAt).toISOString(),
     };
   }
 
-  /** Used by the history endpoint (covering index on userId, createdAt INCLUDE status, total). */
-  async history(userId: string, before?: string, limit = 20) {
-    return this.sequelize.query(
-      `SELECT id, status, total, "createdAt" FROM "BisOrder"
-       WHERE "userId" = :userId ${before ? `AND "createdAt" < :before` : ''}
-       ORDER BY "createdAt" DESC LIMIT :limit`,
-      { type: QueryTypes.SELECT, replacements: { userId, before, limit } },
-    );
+  private hashOf(request: CheckoutRequest): string {
+    const canonical =
+      request.expectedTotalMinor === undefined
+        ? '{}'
+        : JSON.stringify({ expectedTotalMinor: request.expectedTotalMinor });
+    return createHash('sha256').update(canonical).digest('hex');
+  }
+
+  /** Failures before an order exists: the domain's own problems pass through, a collaborator's silence is a 503. */
+  private preOrderFailure(error: unknown): unknown {
+    if (error instanceof UpstreamUnavailableError) {
+      checkoutCounter.add(1, { outcome: 'unavailable' satisfies Outcome });
+      return new CheckoutUnavailableError();
+    }
+    if (error instanceof AppError) {
+      const outcome: Outcome =
+        error instanceof PriceChangedError
+          ? 'price_changed'
+          : error instanceof CheckoutUnavailableError
+            ? 'unavailable'
+            : 'invalid';
+      checkoutCounter.add(1, { outcome });
+    }
+    return error;
+  }
+
+  /**
+   * Seller discounts per shop, validated; any failure falls back to catalogue prices (for the affected shop when the
+   * answer is partly wrong, for all on a timeout or error) and is counted; the warning carries no discount payload.
+   */
+  private async shopDiscounts(
+    lines: Array<DiscountLine & { productId: string }>,
+    started: bigint,
+    budgetMs: number,
+  ): Promise<Array<{ shopId: string; discountMinor: number }>> {
+    const gross = new Map<string, number>();
+    for (const l of lines)
+      gross.set(
+        l.shopId,
+        (gross.get(l.shopId) ?? 0) + l.unitPriceMinor * l.quantity,
+      );
+    const remaining =
+      budgetMs - Number(process.hrtime.bigint() - started) / 1e6;
+    if (remaining <= 0) throw new CheckoutUnavailableError();
+
+    let raw: unknown;
+    try {
+      raw = await withTimeout(
+        this.discounts.evaluate(lines),
+        Math.min(this.config.get('orders_discount_timeout_ms'), remaining),
+        () => new UpstreamUnavailableError('discounts'),
+      );
+    } catch (error) {
+      const reason =
+        error instanceof UpstreamUnavailableError ? 'timeout' : 'error';
+      discountFallbackCounter.add(1, { reason });
+      this.logger.warn(
+        `discount source failed (${reason}); catalogue prices used`,
+      );
+      return [];
+    }
+    if (!Array.isArray(raw)) {
+      discountFallbackCounter.add(1, { reason: 'invalid' });
+      this.logger.warn(
+        'discount source answered an invalid result; catalogue prices used',
+      );
+      return [];
+    }
+    const valid: Array<{ shopId: string; discountMinor: number }> = [];
+    for (const entry of raw as Array<{
+      shopId?: unknown;
+      discountMinor?: unknown;
+    }>) {
+      const shopGross =
+        typeof entry?.shopId === 'string' ? gross.get(entry.shopId) : undefined;
+      if (
+        shopGross === undefined ||
+        typeof entry.discountMinor !== 'number' ||
+        !Number.isSafeInteger(entry.discountMinor) ||
+        entry.discountMinor < 0 ||
+        entry.discountMinor > shopGross
+      ) {
+        discountFallbackCounter.add(1, { reason: 'invalid' });
+        this.logger.warn(
+          'discount source answered an invalid amount; catalogue prices used for that shop',
+        );
+        continue;
+      }
+      valid.push({
+        shopId: entry.shopId as string,
+        discountMinor: entry.discountMinor,
+      });
+    }
+    return valid;
+  }
+
+  /** Removes exactly what the order took; a refusal is logged and handed to a retrying job, never fatal. */
+  private async consumeCart(
+    cartId: string,
+    consumed: Array<{ productId: string; quantity: number }>,
+    orderId: string,
+    now: Date,
+  ): Promise<void> {
+    try {
+      await this.cart.removeConsumed(cartId, consumed, now);
+    } catch (error) {
+      this.logger.warn(
+        `order ${orderId}: cart clean-up failed (${(error as Error).name}); a job will retry`,
+      );
+      try {
+        await this.jobs.enqueue(
+          'orders.clear-cart',
+          { cartId, consumed },
+          { idempotencyKey: `clear-cart:${orderId}` },
+        );
+      } catch (enqueueError) {
+        this.logger.error(
+          `order ${orderId}: clear-cart job not queued (${(enqueueError as Error).name})`,
+        );
+      }
+    }
   }
 }

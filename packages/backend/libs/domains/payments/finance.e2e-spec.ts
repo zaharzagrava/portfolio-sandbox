@@ -124,15 +124,23 @@ describe('Ledger, settlement, payouts, reconciliation (e2e)', () => {
 
     const orderId = v7();
     const event = OrderPaid.create(orderId, 3, {
+      orderId,
       userId: v4(),
-      total: 1000 + PLATFORM_FEE_MINOR,
-      paymentId: 'pay_spec',
+      orderVersion: 3,
+      totalMinor: 1000 + PLATFORM_FEE_MINOR,
+      currency: 'usd',
+      paymentRef: 'pay_spec',
+      paidAt: new Date().toISOString(),
       lines: [a, b, c].map((s) => ({
         productId: v4(),
         shopId: s.id,
+        title: 'Item',
         quantity: 1,
-        price: 350,
+        unitPriceMinor: 350,
+        discountMinor: 0,
+        lineTotalMinor: 350,
       })),
+      shopOrders: [],
     });
     const listener = app.get(SettlementListener);
     await listener.project([event]);

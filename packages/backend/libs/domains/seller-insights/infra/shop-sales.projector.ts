@@ -53,7 +53,7 @@ export class ShopSalesProjector implements Projector {
             product_id: l.productId,
             category: categories.get(l.productId) ?? '',
             units: l.quantity,
-            revenue: l.price * l.quantity,
+            revenue: l.unitPriceMinor * l.quantity,
             ts: e.occurredAt.replace('Z', ''),
           })),
       ),

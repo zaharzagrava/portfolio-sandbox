@@ -46,3 +46,8 @@ interviews) until its status says so. The implementation loop appends here (rule
 | S05 | SC-007: after 10,000 views of one product at most one count write per 10 s for it, and the stored count equals the views served | same file (k6 10,000 reads plus `pg_stat_statements` count) | not run |
 | S05 | SC-008: a seller lists a new product and sees it in the inventory in under 2 minutes of interaction | same file (W04 inventory walk-through, timed, once the screen exists) | not run |
 | S05 | SC-009: `check:table-ownership --strict` reports 0 findings for `catalog` and no query against `Product` from any other domain | same file (`check:table-ownership --strict`; the second half is red until the consumers in gaps.md section C migrate) | not run |
+| S10 | SC-001: 100% of 50 repeated races of 200 buyers for 50 units end with 50 accepted and no oversell (the e2e runs the race 5 times) | `specs/domains/S10-cart-checkout/quickstart.md`, "Ops artifacts" (50-run loop) | not run |
+| S10 | SC-003: 99% of checkouts answer in under 800 ms with 200 buyers at once | same file (k6, 200 virtual users) | not run |
+| S10 | SC-004 (latency part): 99% of cart operations finish in under 50 ms (no-relational-access half is tested by AS-01) | same file (k6 on `GET /cart` and `PUT /cart/items/:id`) | not run |
+| S10 | SC-005 (latency part): 99% of genuine webhooks are acknowledged in under 1 s (forgery and duplicate halves are tested) | same file (k6 with signed events) | not run |
+| S10 | SC-010: `check:table-ownership --strict` reports 0 cross-domain accesses for `orders` (the `order-export.service.ts` `Product` join stays until S12) | same file (`check:table-ownership --strict`; green after S12 lands) | not run |

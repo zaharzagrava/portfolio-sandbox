@@ -16,11 +16,10 @@ describe('Outbox and inbox tables are reached through their services only', () =
     expect(technicalTableViolations(refs).stale).toEqual([]);
   });
 
-  it('S53 AS-09: the hand-over list is exactly the three known files, each naming the spec that fixes it', () => {
+  it('S53 AS-09: the hand-over list is exactly the two known files, each naming the spec that fixes it', () => {
     expect(Object.keys(HANDED_OVER).sort()).toEqual([
       'libs/domains/catalog-sync/application/catalog-import.service.ts',
       'libs/domains/media/infra/media-processor.ts',
-      'libs/domains/orders/api/stripe-webhook.controller.ts',
     ]);
     for (const owner of Object.values(HANDED_OVER))
       expect(owner).toMatch(/^S\d+ /);
@@ -30,8 +29,6 @@ describe('Outbox and inbox tables are reached through their services only', () =
     const tables = refs
       .filter((r) => r.file in HANDED_OVER)
       .map((r) => r.table);
-    expect(tables).toEqual(
-      expect.arrayContaining(['Outbox', 'ProcessedWebhookEvent']),
-    );
+    expect(tables).toEqual(expect.arrayContaining(['Outbox']));
   });
 });

@@ -161,6 +161,26 @@ export class SecretsManagerConfig {
   jobs_per_shop_running_cap: number;
   jobs_retain_days: number;
   jobs_poll_idle_ms: number;
+
+  /** S10: orders settings, defaults in `orders-config.ts`. */
+  orders_hold_seconds: number;
+  orders_cart_max_lines: number;
+  orders_cart_max_quantity: number;
+  orders_cart_line_ttl_days: number;
+  orders_catalog_timeout_ms: number;
+  orders_stock_timeout_ms: number;
+  orders_discount_timeout_ms: number;
+  orders_shops_timeout_ms: number;
+  orders_payment_status_timeout_ms: number;
+  orders_cart_store_timeout_ms: number;
+  orders_lock_timeout_ms: number;
+  orders_checkout_budget_ms: number;
+  orders_sweeper_batch: number;
+  orders_recovery_age_seconds: number;
+  orders_webhook_max_attempts: number;
+  orders_clear_cart_max_attempts: number;
+  orders_inbox_retention_days: number;
+  orders_webhook_body_limit_bytes: number;
   consumer_batch: number;
   consumer_max_attempts: number;
   consumer_backoff_min_ms: number;
@@ -209,6 +229,8 @@ export class SecretsManagerConfig {
   stripe_webhook_secret?: string;
   /** SD-19 HMAC secret for guest cart cookies (falls back to JWT_SECRET). */
   cart_cookie_secret?: string;
+  /** S10: the webhook secret being rotated out; accepted next to `stripe_webhook_secret`. */
+  stripe_webhook_secret_previous?: string;
   /** base64 32-byte key-encryption key for signing keys / MFA secrets (Secrets Manager in AWS). */
   auth_kek?: string;
   /** SD-39 access token lifetime, default 600. */

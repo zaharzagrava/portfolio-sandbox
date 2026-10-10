@@ -57,10 +57,10 @@ export class SettlementListener implements Projector {
     for (const l of shopLines)
       byShop.set(
         l.shopId!,
-        (byShop.get(l.shopId!) ?? 0) + l.price * l.quantity,
+        (byShop.get(l.shopId!) ?? 0) + l.unitPriceMinor * l.quantity,
       );
     const shops = [...byShop.keys()].sort();
-    const net = Math.max(0, paid.total - PLATFORM_FEE_MINOR);
+    const net = Math.max(0, paid.totalMinor - PLATFORM_FEE_MINOR);
     const shares = allocate(
       net,
       shops.map((s) => byShop.get(s)!),
@@ -86,7 +86,9 @@ export class SettlementListener implements Projector {
         {
           journalId,
           kind: 'SETTLEMENT',
-          paymentId: paid.paymentId.startsWith('pay_') ? null : paid.paymentId,
+          paymentId: paid.paymentRef.startsWith('pay_')
+            ? null
+            : paid.paymentRef,
           lines: [
             { accountId: LEDGER_ACCOUNTS.CLEARING, amount: -net },
             ...shops.map((shopId, i) => ({

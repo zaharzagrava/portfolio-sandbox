@@ -1,38 +1,31 @@
 import { Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
-import { EventsModule } from '@app/infrastructure/events/events.module';
-import { RealtimeModule } from '@app/infrastructure/realtime/realtime.module';
 import { ProjectionsModule } from '@app/infrastructure/projections/projections.module';
 import { FlashStockService } from './infra/flash-stock.service';
-import { OrderService } from './application/order.service';
+import { FlashSaleJobs } from './infra/flash-sale.jobs';
 import { OrderJobs } from './infra/order.jobs';
-import { OrderPaymentListener } from './infra/order-payment.listener';
-import { ORDER_MODELS } from './orders.module';
+import { PaymentsEventsConsumer } from './infra/payments-events.consumer';
+import { ORDER_MODELS } from './orders-models';
+import { OrdersCoreModule } from './orders-core.module';
 
-/** Order state machine for background code: the payment listener runs inside ProjectionsModule, so it needs an exporting module. */
+/** The job handlers: hold expiry, sweeper, recovery, release, cart clean-up, webhook processing, flash-sale lifecycle. */
 @Module({
-  imports: [
-    EventsModule.forAggregates([
-      { aggregateType: 'orders', retention: 'full-history' },
-    ]),
-    RealtimeModule,
-    SequelizeModule.forFeature(ORDER_MODELS),
-  ],
-  providers: [FlashStockService, OrderService],
-  exports: [FlashStockService, OrderService],
+  imports: [OrdersCoreModule, SequelizeModule.forFeature(ORDER_MODELS)],
+  providers: [FlashStockService, FlashSaleJobs, OrderJobs],
 })
-class OrderStateModule {}
+export class OrdersJobsModule {}
 
-/** SD-19 background side (apps/worker): hold expiry, flash-sale lifecycle, payment → order saga step. */
+/**
+ * Background side of orders (apps/worker): the job handlers and the consumer of `payments.events`. The e2e specs load
+ * `OrdersJobsModule` alone and call the handlers and the consumer directly, so no Kafka consumer starts in a spec.
+ */
 @Module({
   imports: [
-    OrderStateModule,
-    SequelizeModule.forFeature(ORDER_MODELS),
+    OrdersJobsModule,
     ProjectionsModule.forProjectors(
-      [OrderPaymentListener],
-      [SequelizeModule.forFeature(ORDER_MODELS), OrderStateModule],
+      [PaymentsEventsConsumer],
+      [OrdersCoreModule],
     ),
   ],
-  providers: [OrderJobs],
 })
 export class OrdersWorkerModule {}

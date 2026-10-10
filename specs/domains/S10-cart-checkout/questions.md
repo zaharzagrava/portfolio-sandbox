@@ -64,3 +64,16 @@ Format: `[TAG] question → default taken → why`. BREAKING first, then CONTRAC
 - [LOCAL] Status values get a database CHECK constraint; `ShopOrder` gets a unique `(orderId, shopId)`; reservations a unique `(orderId, productId)`.
 - [LOCAL] Metric names as in AS-66; logs carry `orderId`, never payload bodies.
 - [LOCAL] Orders that predate the title snapshot get their item titles from a one-off resumable backfill (`"(removed product)"` when the product is gone); see `gaps.md` section E.
+
+## Notes from the first implementation pass (2026-10-10; no blocker, nothing above was edited)
+
+These are places where the spec text and the design documents say slightly different things, and which one the code follows. None of them stopped the work; a human can overrule any of them by editing this file.
+
+- [NOTE] AS-13 says the new order is "version 1, `RESERVED`"; `data-model.md` and `contracts/events.md` say the order starts at `version` 1 as `PENDING` and every move adds 1, so a reserved order is `version` 2 and `order.reserved` carries `orderVersion: 2`. The code and the tests follow the data model.
+- [NOTE] `cart_cookie_secret` and `stripe_webhook_secret` are required at startup only in production (`NODE_ENV=production`); elsewhere an unset cart secret is replaced by a per-process random one and an unset webhook secret refuses every webhook. When set, the cart secret must be at least 32 bytes and differ from `jwt_secret` in every environment. Reason: every other app and spec boots the shared config without these keys.
+- [NOTE] The 250 ms discount time box is applied by the checkout service, not by the discounts adapter (the adapter is replaced by a fake in the specs, and the box must hold for any adapter).
+- [NOTE] AS-26, limiter store down: the checkout is refused with `503`; the first fail-closed guard to meet the dead store answers (the sensitive-session check, code `overloaded`, or the limiter, `rate_limiter_unavailable`). The spec asserts the refusal and asks the limiter directly that `checkout.create` is fail closed.
+- [NOTE] AS-32 "have no reservation": a refused checkout leaves its reservation rows as `RELEASED` (they were `REQUESTED`, nothing was ever held); the spec asserts there is no `HELD` row and no `order.reserved` event.
+- [NOTE] AS-44 "dead-lettered": the spec drives the job handler eight times and asserts the event is `FAILED`, the metric moved and the handler threw on the last attempt; turning that throw into a dead job is S49's proven behaviour and is not re-proven here.
+- [NOTE] `checkoutResponseSchema.status` is the literal `RESERVED`; a key whose order has moved on and whose idempotency record expired is answered from the order with that same literal (the answer describes the creation outcome).
+- [NOTE] The e2e kit builds on the shared catalog app (`createCatalogApp`, which adds the identity session fixture and the catalog and tenancy modules) rather than on a separate `identity/testing/auth-app.ts` app.

@@ -60,7 +60,7 @@ export class NotificationRouterProjector implements Projector {
             orderId: e.aggregateId,
             orderShort: short(e.aggregateId),
             total: formatMoney(
-              paid.payload.total,
+              paid.payload.totalMinor,
               paid.payload.currency ?? 'usd',
               'en-US',
             ),

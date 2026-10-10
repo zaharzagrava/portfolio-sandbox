@@ -42,7 +42,7 @@ export class PurchaseEventsProjector implements Projector {
           page: '',
           props: {
             order_id: e.aggregateId,
-            total: String(e.payload.total),
+            total: String(e.payload.totalMinor),
             currency: e.payload.currency ?? 'usd',
           },
         })),

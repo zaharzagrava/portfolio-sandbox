@@ -9,6 +9,7 @@ import { isSecretKey } from '@app/common/logging/redaction';
 import { ConfigRules } from './config-rules';
 import { eventsConfigKeys } from './events-config';
 import { jobsConfigKeys } from './jobs-config';
+import { ordersConfigKeys } from './orders-config';
 
 dotenv.config({
   /**
@@ -453,6 +454,10 @@ export class ApiConfigService {
             verify: joi.string().optional().allow(''),
             name: 'CART_COOKIE_SECRET',
           },
+          stripe_webhook_secret_previous: {
+            verify: joi.string().optional().allow(''),
+            name: 'STRIPE_WEBHOOK_SECRET_PREVIOUS',
+          },
           db_read_host: {
             verify: joi.string().optional().allow(''),
             name: 'DB_READ_HOST',
@@ -535,6 +540,7 @@ export class ApiConfigService {
           },
           ...eventsConfigKeys,
           ...jobsConfigKeys,
+          ...ordersConfigKeys,
           cassandra_password: {
             verify: joi.string().optional().allow(''),
             name: 'CASSANDRA_PASSWORD',

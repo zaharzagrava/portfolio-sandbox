@@ -74,19 +74,35 @@ describe('Leaderboards & live dashboard (e2e)', () => {
     price: number,
     at: Date,
     quantity = 1,
-  ) =>
-    OrderPaid.create(
-      v4(),
+  ) => {
+    const orderId = v4();
+    return OrderPaid.create(
+      orderId,
       2,
       {
+        orderId,
         userId: v4(),
-        total: price * quantity,
+        orderVersion: 2,
+        totalMinor: price * quantity,
         currency: 'usd',
-        paymentId: v4(),
-        lines: [{ productId, shopId, quantity, price }],
+        paymentRef: v4(),
+        paidAt: at.toISOString(),
+        lines: [
+          {
+            productId,
+            shopId,
+            title: 'Item',
+            quantity,
+            unitPriceMinor: price,
+            discountMinor: 0,
+            lineTotalMinor: price * quantity,
+          },
+        ],
+        shopOrders: [],
       },
       at,
     );
+  };
 
   it('ranks by revenue, earlier sale wins ties, replays never double count, per-category boards', async () => {
     const [alpha, beta] = [await shop('Alpha'), await shop('Beta')];
@@ -172,19 +188,23 @@ describe('Leaderboards & live dashboard (e2e)', () => {
     const shopId = v4();
     const live = app.get(ShopLiveProjector);
     const now = new Date();
-    const reserve = () =>
-      OrderReserved.create(
-        v4(),
+    const reserve = () => {
+      const orderId = v4();
+      return OrderReserved.create(
+        orderId,
         1,
         {
+          orderId,
+          orderVersion: 1,
           userId: v4(),
-          total: 0,
+          totalMinor: 0,
           currency: 'usd',
           shopIds: [shopId],
           reservedUntil: now.toISOString(),
         },
         now,
       );
+    };
     const paid = sale(shopId, v4(), 2_500, now, 2);
     await live.project([reserve(), reserve(), reserve(), reserve(), paid]);
     await live.project([paid]); // replay

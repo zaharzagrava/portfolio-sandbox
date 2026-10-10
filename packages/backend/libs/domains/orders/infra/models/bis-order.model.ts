@@ -1,29 +1,15 @@
 import {
   Column,
   CreatedAt,
-  Default,
-  DeletedAt,
-  IsUUID,
   Model,
   PrimaryKey,
   Table,
   UpdatedAt,
   Scopes,
   DataType,
-  BelongsTo,
-  HasMany,
 } from 'sequelize-typescript';
-import { v4 as uuidv4 } from 'uuid';
 import { Includeable, Sequelize, WhereOptions } from 'sequelize';
-import { UserModel as User } from '@app/domains/identity';
-import type { PaymentModel as Payment } from '@app/domains/payments';
-
-/** orders ↔ payments associate each other's models (debt D-11); resolve payments lazily (see payment.model.ts). */
-
-const payments = (): typeof import('@app/domains/payments') =>
-  require('@app/domains/payments');
-import BisOrderItem from './bis-order-item.model';
-import type { OrderStatus } from '../../domain/order-state';
+import type { CancelReason, OrderStatus } from '../../domain/order-state';
 
 export enum BisOrderScope {
   WithAll = 'WithAll',
@@ -71,19 +57,11 @@ export default class BisOrder extends Model<BisOrder, Partial<BisOrder>> {
   @Column({ type: DataType.UUID, defaultValue: Sequelize.literal('uuidv7()') })
   declare id: string;
 
+  /** Plain id of the buyer (identity's user): no association to a foreign model (IX.4). */
   @Column({ type: DataType.STRING })
   declare userId: string;
 
-  @BelongsTo(() => User, { foreignKey: 'userId' })
-  declare user: User;
-
-  @HasMany(() => payments().PaymentModel, { foreignKey: 'bisOrderId' })
-  declare payments: Payment[];
-
-  @HasMany(() => BisOrderItem, { foreignKey: 'bisOrderId' })
-  declare items: BisOrderItem[];
-
-  /** SD-19 state machine - see libs/domains/orders/domain/order-state.ts. */
+  /** State machine - see libs/domains/orders/domain/order-state.ts. */
   @Column({ type: DataType.TEXT, allowNull: false, defaultValue: 'PENDING' })
   declare status: OrderStatus;
 
@@ -91,20 +69,32 @@ export default class BisOrder extends Model<BisOrder, Partial<BisOrder>> {
   @Column({ type: DataType.BIGINT, allowNull: false, defaultValue: 0 })
   declare total: number;
 
+  /**
+   * Checkout always writes the currency of the products. The model default exists only for the auctions worker, which
+   * still creates orders through this model (S21 replaces it with an order-creating command).
+   */
   @Column({ type: DataType.TEXT, allowNull: false, defaultValue: 'EUR' })
   declare currency: string;
 
   @Column({ type: DataType.TEXT, allowNull: true })
   declare idempotencyKey: string | null;
 
+  /** SHA-256 of the canonical checkout body; `NULL` for legacy orders. */
+  @Column({ type: DataType.TEXT, allowNull: true })
+  declare requestHash: string | null;
+
   @Column({ type: DataType.DATE, allowNull: true })
   declare reservedUntil: Date | null;
 
-  @Column({ type: DataType.INTEGER, allowNull: false, defaultValue: 0 })
+  @Column({ type: DataType.INTEGER, allowNull: false, defaultValue: 1 })
   declare version: number;
 
   @Column({ type: DataType.TEXT, allowNull: true })
-  declare cancelReason: string | null;
+  declare cancelReason: CancelReason | null;
+
+  /** The payment provider's reference, set by the move to `PAID`. */
+  @Column({ type: DataType.TEXT, allowNull: true })
+  declare paymentRef: string | null;
 
   @CreatedAt
   declare createdAt: Date;

@@ -77,7 +77,7 @@ export class LeaderboardProjector implements Projector {
       productId: string;
       shopId: string | null;
       quantity: number;
-      price: number;
+      unitPriceMinor: number;
     }[],
     categories: Map<string, string>,
   ) {
@@ -88,7 +88,7 @@ export class LeaderboardProjector implements Projector {
     >();
     for (const line of lines) {
       if (!line.shopId) continue;
-      const amount = line.price * line.quantity;
+      const amount = line.unitPriceMinor * line.quantity;
       const category = categories.get(line.productId);
       for (const board of [
         ALL,

@@ -124,13 +124,16 @@ export class WebhookRouterProjector implements Projector {
           object: 'order',
           status: 'PAID',
           total: {
-            amount: lines.reduce((s, l) => s + l.price * l.quantity, 0),
+            amount: lines.reduce(
+              (s, l) => s + l.unitPriceMinor * l.quantity,
+              0,
+            ),
             currency: paid.payload.currency ?? 'usd',
           },
           lines: lines.map((l) => ({
             product_id: l.productId,
             quantity: l.quantity,
-            unit_price: l.price,
+            unit_price: l.unitPriceMinor,
           })),
         },
       }));
