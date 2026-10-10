@@ -59,11 +59,6 @@ export class SecretsManagerConfig {
   resend_api_key: string;
   /** HS256 secret - only for short-lived chat WS tickets shared with the Rust gateway. */
   jwt_secret: string;
-  /** RS256 access-token key pair (PEM). Optional - falls back to creds/ files. */
-  jwt_private_key?: string;
-  jwt_public_key?: string;
-  /** Access-token lifetime, e.g. "1h" (default). */
-  jwt_expires_in?: string;
 
   private_s3_bucket_name: string;
   quarantine_s3_bucket_name: string;
@@ -133,7 +128,6 @@ export class SecretsManagerConfig {
   /** MinIO locally; unset in AWS (real S3). */
   s3_endpoint?: string;
   s3_access_key_id?: string;
-  auth_refresh_reuse_grace_ms?: number;
   s3_secret_access_key?: string;
   media_bucket?: string;
   /** Public CDN base for derived media (CloudFront in front of the bucket), e.g. https://media.marketplace.dev (SD-10). */

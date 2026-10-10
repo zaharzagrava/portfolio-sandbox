@@ -49,7 +49,9 @@ RUN apt-get update \
  && apt-get install -y --no-install-recommends tini ca-certificates \
  && if [ "$APP" = "worker" ]; then apt-get install -y --no-install-recommends ffmpeg; fi \
  && rm -rf /var/lib/apt/lists/*
-ENV NODE_ENV=production APP=${APP} OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318
+# UV_THREADPOOL_SIZE: password hashing runs on the libuv pool; identity allows 4 concurrent hashes and refuses to start
+# when that exceeds UV_THREADPOOL_SIZE - 1 (S01 A12), so the pool is 8 instead of the default 4.
+ENV NODE_ENV=production APP=${APP} OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318 UV_THREADPOOL_SIZE=8
 WORKDIR /app
 # pnpm's node_modules is a symlink farm into .pnpm: copy both levels whole so the links still resolve.
 COPY --from=prod-deps --chown=node:node /repo/node_modules /app/node_modules

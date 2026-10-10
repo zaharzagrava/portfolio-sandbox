@@ -10,6 +10,8 @@ import { SeedsService } from '@app/test/seeds/seeds.service';
 import { RateLimitModule } from '@app/infrastructure/rate-limit/rate-limit.module';
 import { CacheModule } from '@app/infrastructure/cache/cache.module';
 import { ProductModule } from '@app/domains/catalog';
+import { UserModel as User } from '@app/domains/identity';
+import { issueSession } from '@app/test/seeds/session.fixture';
 import ShopInvite from './infra/models/shop-invite.model';
 import ShopMembership from './infra/models/shop-membership.model';
 import { TenancyModule } from './tenancy.module';
@@ -48,17 +50,16 @@ describe('Multi-tenant shops (e2e)', () => {
   /** Registers a user through the real auth flow and returns a bearer header + id. */
   const user = async () => {
     const email = `u-${v4()}@mail.com`;
-    const body = (
-      await http()
-        .post('/api/auth/register')
-        .send({ email, password: 'password-1234' })
-        .expect(201)
-    ).body;
+    const created = await app
+      .get<typeof User>(getModelToken(User))
+      .create({ email });
+    const session = await issueSession(app, created);
+    expect(session.bearer).toMatch(/^Bearer /);
     return {
-      id: body.user.id as string,
+      id: created.id,
       email,
-      refreshToken: body.refreshToken as string,
-      auth: { Authorization: `Bearer ${body.accessToken.token}` },
+      refreshToken: session.refreshToken as string,
+      auth: { Authorization: session.bearer },
     };
   };
 

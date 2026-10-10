@@ -8,7 +8,8 @@ import { SeedsModule } from '@app/test/seeds/seeds.module';
 import { SeedsService } from '@app/test/seeds/seeds.service';
 import { CacheModule } from '@app/infrastructure/cache/cache.module';
 import { RateLimitModule } from '@app/infrastructure/rate-limit/rate-limit.module';
-import { AuthService, UserModel as User } from '@app/domains/identity';
+import { UserModel as User } from '@app/domains/identity';
+import { issueSession } from '@app/test/seeds/session.fixture';
 import { ShopModel as Shop } from '@app/domains/tenancy';
 import LaunchEvent from './infra/models/launch-event.model';
 import Booking from './infra/models/booking.model';
@@ -161,9 +162,7 @@ describe('Launch event booking (e2e)', () => {
 
   it('HTTP: holding without an admission token is rejected before touching any store', async () => {
     const [a] = await users(1);
-    const auth = {
-      Authorization: `Bearer ${app.get(AuthService).issueTokensFor(a).accessToken.token}`,
-    };
+    const auth = { Authorization: (await issueSession(app, a)).bearer };
     await request(app.getHttpServer())
       .post(`/api/launch-events/${event.id}/holds`)
       .set(auth)

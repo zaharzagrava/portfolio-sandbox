@@ -1,4 +1,10 @@
-import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  Logger,
+  OnApplicationBootstrap,
+} from '@nestjs/common';
+import { CLOCK, Clock } from '@app/common/core/clock';
 import { InjectConnection, InjectModel } from '@nestjs/sequelize';
 import { Op, Sequelize } from 'sequelize';
 import SigningKey from '../models/signing-key.model';
@@ -37,6 +43,7 @@ export class KeyRotationJobs implements OnApplicationBootstrap {
     @InjectConnection() private readonly sequelize: Sequelize,
     private readonly keys: KeyStore,
     private readonly jobs: JobsService,
+    @Inject(CLOCK) private readonly clock: Clock,
   ) {}
 
   async onApplicationBootstrap() {
@@ -66,17 +73,19 @@ export class KeyRotationJobs implements OnApplicationBootstrap {
         .catch((e) => this.logger.warn(`bootstrap ACTIVE key: ${e.message}`));
     } else if (
       next &&
-      Date.now() - next.createdAt.getTime() > DAY &&
-      Date.now() - (active.activatedAt?.getTime() ?? 0) > activeMaxAgeDays * DAY
+      this.clock.nowMs() - next.createdAt.getTime() > DAY &&
+      this.clock.nowMs() - (active.activatedAt?.getTime() ?? 0) >
+        activeMaxAgeDays * DAY
     ) {
+      const now = this.clock.now();
       // S54 T037 audit: explicit unit of work, opens its own transaction by design; no network I/O inside.
       await this.sequelize.transaction(async (transaction) => {
         await active.update(
-          { status: 'RETIRED', retiredAt: new Date() },
+          { status: 'RETIRED', retiredAt: now },
           { transaction },
         );
         await next.update(
-          { status: 'ACTIVE', activatedAt: new Date() },
+          { status: 'ACTIVE', activatedAt: now },
           { transaction },
         );
       });
@@ -90,7 +99,7 @@ export class KeyRotationJobs implements OnApplicationBootstrap {
     await this.keyModel.destroy({
       where: {
         status: 'RETIRED',
-        retiredAt: { [Op.lt]: new Date(Date.now() - 2 * DAY) },
+        retiredAt: { [Op.lt]: new Date(this.clock.nowMs() - 2 * DAY) },
       },
     });
     this.keys.invalidate();

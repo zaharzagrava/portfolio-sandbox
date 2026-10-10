@@ -1,5 +1,9 @@
 import { INestApplication, Module } from '@nestjs/common';
-import { getConnectionToken, SequelizeModule } from '@nestjs/sequelize';
+import {
+  getConnectionToken,
+  getModelToken,
+  SequelizeModule,
+} from '@nestjs/sequelize';
 import { Sequelize } from 'sequelize';
 import request from 'supertest';
 import { generateKeyPairSync, createSign } from 'node:crypto';
@@ -8,7 +12,8 @@ import { generateTestingModule } from '@app/test/utils/global-modules';
 import { waitFor } from '@app/test/utils/async-helpers';
 import { SeedsModule } from '@app/test/seeds/seeds.module';
 import { SeedsService } from '@app/test/seeds/seeds.service';
-import { AuthApiModule } from '@app/domains/identity';
+import { AuthApiModule, UserModel as User } from '@app/domains/identity';
+import { issueSession } from '@app/test/seeds/session.fixture';
 import { RateLimitModule } from '@app/infrastructure/rate-limit/rate-limit.module';
 import { ApiConfigService } from '@app/common/config';
 import { JobsTestProbe } from '@app/infrastructure/jobs';
@@ -102,16 +107,15 @@ describe('Notifications (e2e)', () => {
 
   const user = async () => {
     const email = `n-${v4()}@mail.com`;
-    const body = (
-      await http()
-        .post('/api/auth/register')
-        .send({ email, password: 'password-1234' })
-        .expect(201)
-    ).body;
+    const created = await app
+      .get<typeof User>(getModelToken(User))
+      .create({ email });
+    const { bearer } = await issueSession(app, created);
+    expect(bearer).toMatch(/^Bearer /);
     return {
-      id: body.user.id as string,
+      id: created.id,
       email,
-      auth: { Authorization: `Bearer ${body.accessToken.token}` },
+      auth: { Authorization: bearer },
     };
   };
 

@@ -12,7 +12,12 @@ import {
   Req,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
-import { Firewall, User, UserRawDto } from '@app/domains/identity';
+import {
+  Firewall,
+  User,
+  UserDirectoryService,
+  UserRawDto,
+} from '@app/domains/identity';
 import { ShopScoped } from './shop.guard';
 import type { ShopRequest } from './shop.guard';
 import { ShopService } from '../application/shop.service';
@@ -31,6 +36,7 @@ export class ShopController {
   constructor(
     private readonly shops: ShopService,
     private readonly sso: ShopSsoService,
+    private readonly directory: UserDirectoryService,
   ) {}
 
   @Firewall()
@@ -77,8 +83,12 @@ export class ShopController {
 
   @Firewall()
   @Post('shop-invites/accept')
-  accept(@User() user: UserRawDto, @Body() body: AcceptInviteDto) {
-    return this.shops.acceptInvite(user.id, user.email, body.token);
+  async accept(@User() user: UserRawDto, @Body() body: AcceptInviteDto) {
+    // The principal carries claims only (no e-mail): the invitee's address comes from the user directory.
+    const profile = (await this.directory.getUsersByIds([user.id])).get(
+      user.id,
+    );
+    return this.shops.acceptInvite(user.id, profile?.email ?? '', body.token);
   }
 
   @ShopScoped('members.manage')

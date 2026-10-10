@@ -30,3 +30,7 @@ interviews) until its status says so. The implementation loop appends here (rule
 | S50 | SC-002: lease-served decision under 1 ms p99; 100,000 decisions/s with at most 10% store calls | same file (k6/benchmark on the VPS runner) | not run |
 | S50 | SC-003: after three store failures no request waits for a timeout; no limiter-caused 5xx on fail-open routes under load | same file (stop Redis under k6 load) | not run |
 | S50 | SC-007: every route of apps/core is limited, defaulted or exempt | same file (boot-time route listing) | not run |
+| S01 | SC-001 (timing): register then log in in under 30 seconds | `specs/domains/S01-auth-sessions/quickstart.md`, "Ops artifacts" (W01 journey with a stopwatch assertion) | not run |
+| S01 | SC-005 (edge half): zero identity calls per request at the edge and zero rejected valid tokens across a key rotation | same file (rotate keys under k6 through `packages/edge-be`) | not run |
+| S01 | SC-006: 2,000 logins/s fleet-wide, p99 login < 300 ms, refresh < 50 ms, overload shed with 503 + Retry-After | same file (k6 login storm on staging) | not run |
+| S01 | SC-008 (browser half): no access or refresh token in script-readable storage in the cookie flow | same file (W01 Playwright journey AS-86 inspecting storage and `document.cookie`) | not run |

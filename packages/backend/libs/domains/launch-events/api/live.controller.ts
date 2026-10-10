@@ -23,7 +23,12 @@ import {
   MaxLength,
   Min,
 } from 'class-validator';
-import { Firewall, User, UserRawDto } from '@app/domains/identity';
+import {
+  Firewall,
+  User,
+  UserDirectoryService,
+  UserRawDto,
+} from '@app/domains/identity';
 import { RateLimit } from '@app/infrastructure/rate-limit';
 import {
   ShopScoped,
@@ -60,6 +65,7 @@ export class LiveController {
     private readonly live: LiveService,
     @InjectModel(ShopMembership)
     private readonly memberships: typeof ShopMembership,
+    private readonly directory: UserDirectoryService,
   ) {}
 
   @ShopScoped('products.write')
@@ -103,9 +109,13 @@ export class LiveController {
       where: { shopId: stream.shopId, userId: user.id },
       attributes: ['role'],
     }));
+    // The principal carries claims only (no e-mail): the display name comes from the user directory.
+    const email = (await this.directory.getUsersByIds([user.id])).get(
+      user.id,
+    )?.email;
     return this.live.comment(
       streamId,
-      { id: user.id, name: user.email.split('@')[0], isStaff },
+      { id: user.id, name: (email ?? 'viewer').split('@')[0], isStaff },
       body.text,
     );
   }

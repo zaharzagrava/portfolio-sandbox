@@ -7,7 +7,8 @@ import { RealtimePublisher } from '@app/infrastructure/realtime/realtime-publish
 import { SeedsModule } from '@app/test/seeds/seeds.module';
 import { SeedsService } from '@app/test/seeds/seeds.service';
 import { TableName } from '@app/test/seeds/types';
-import { AuthService, IdentityTopicsModule } from '@app/domains/identity';
+import { IdentityTopicsModule } from '@app/domains/identity';
+import { issueSession } from '@app/test/seeds/session.fixture';
 import { AuctionTopicsModule } from '@app/domains/auctions';
 import { LaunchEventTopicsModule } from '@app/domains/launch-events';
 import { TopicStreamModule } from './topic-stream.module';
@@ -88,9 +89,8 @@ describe('Topic streams (e2e, real Redis)', () => {
     const [bob] = await seedsService.createTreelike([
       { __type__: TableName.User, email: `bob-${v4()}@mail.com` },
     ]);
-    const auth = app.get(AuthService);
-    const bobToken = auth.issueTokensFor(bob).accessToken.token;
-    const aliceToken = auth.issueTokensFor(alice).accessToken.token;
+    const { accessToken: bobToken } = await issueSession(app, bob);
+    const { accessToken: aliceToken } = await issueSession(app, alice);
 
     const asBob = await readSse(`${baseUrl}/streams?topics=user:${alice.id}`, {
       headers: { authorization: `Bearer ${bobToken}` },

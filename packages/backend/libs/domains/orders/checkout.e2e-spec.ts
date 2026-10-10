@@ -12,7 +12,8 @@ import { ApiConfigService } from '@app/common/config';
 import { MockApiConfigService } from '@app/common/config/api-config.service.mock';
 import { RateLimitModule } from '@app/infrastructure/rate-limit/rate-limit.module';
 import { CacheModule } from '@app/infrastructure/cache/cache.module';
-import { AuthService, UserModel as User } from '@app/domains/identity';
+import { UserModel as User } from '@app/domains/identity';
+import { issueSession } from '@app/test/seeds/session.fixture';
 import { ProductModel as Product } from '@app/domains/catalog';
 import BisOrder from './infra/models/bis-order.model';
 import { PaymentModel as Payment, PaymentStatus } from '@app/domains/payments';
@@ -164,7 +165,7 @@ describe('Checkout & inventory (e2e)', () => {
     ]);
     const [user] = await buyers(1);
     await fillCarts([user], product.id);
-    const token = app.get(AuthService).issueTokensFor(user).accessToken.token;
+    const { accessToken: token } = await issueSession(app, user);
 
     const responses = await inParallel(5, () =>
       request(app.getHttpServer())

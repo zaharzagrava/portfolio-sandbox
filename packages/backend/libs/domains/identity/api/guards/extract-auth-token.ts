@@ -1,22 +1,24 @@
 import * as cookie from 'cookie';
 
+export const ACCESS_COOKIE = '__Host-access';
+
 /**
- * Accepts the token the same way the edge worker does
- * (`Authorization: Bearer <jwt>`), plus the legacy `x-auth-token` header and
- * cookie so existing clients keep working.
+ * The only two credential channels (FR-024): `Authorization: Bearer <jwt>` and the `__Host-access` cookie of cookie
+ * delivery. The legacy `x-auth-token` header and cookie, and query-string tokens, are not read.
  */
 export function extractAuthToken(request: {
-  headers: Record<string, string | undefined>;
+  headers: Record<string, string | string[] | undefined>;
 }): string | undefined {
   const authorization = request.headers['authorization'];
-  if (authorization?.startsWith('Bearer ')) {
-    return authorization.slice('Bearer '.length).trim();
+  if (
+    typeof authorization === 'string' &&
+    authorization.startsWith('Bearer ')
+  ) {
+    return authorization.slice('Bearer '.length).trim() || undefined;
   }
-
-  const tokenInHeader = request.headers['x-auth-token'];
-  if (tokenInHeader) {
-    return tokenInHeader;
-  }
-
-  return cookie.parse(request.headers.cookie || '')['x-auth-token'];
+  const header = request.headers.cookie;
+  return (
+    cookie.parse(typeof header === 'string' ? header : '')[ACCESS_COOKIE] ||
+    undefined
+  );
 }

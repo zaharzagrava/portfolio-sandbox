@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { DbUtilsService } from '@app/infrastructure/database/db-utils/db-utils.service';
 import { PaymentDtoService } from '@app/domains/payments';
-import { UserRawDto } from '@app/domains/identity';
+import type { AuthenticatedUser } from '@app/domains/identity';
 import { ListPaymentsResponseDto, PaymentRawDto } from './types';
 
 @Injectable()
@@ -16,7 +16,7 @@ export class PaymentQueryService {
     viewerUser,
   }: {
     id: string;
-    viewerUser: UserRawDto;
+    viewerUser: AuthenticatedUser;
   }): Promise<PaymentRawDto> {
     return await this.dbUtilsService.wrapInTransaction(async (tx) => {
       return await this.paymentDtoService.requestPayment({
@@ -37,7 +37,7 @@ export class PaymentQueryService {
     viewerUser,
   }: {
     idempotencyKey: string;
-    viewerUser: UserRawDto;
+    viewerUser: AuthenticatedUser;
   }): Promise<PaymentRawDto> {
     return await this.dbUtilsService.wrapInTransaction(async (tx) => {
       return await this.paymentDtoService.requestPayment({
@@ -54,7 +54,7 @@ export class PaymentQueryService {
   public async listPayments({
     viewerUser,
   }: {
-    viewerUser: UserRawDto;
+    viewerUser: AuthenticatedUser;
   }): Promise<ListPaymentsResponseDto> {
     return await this.dbUtilsService.wrapInTransaction(async (tx) => {
       const payments = await this.paymentDtoService.requestPayments({

@@ -8,7 +8,9 @@ import { waitFor } from '@app/test/utils/async-helpers';
 import { SeedsModule } from '@app/test/seeds/seeds.module';
 import { SeedsService } from '@app/test/seeds/seeds.service';
 import { TableName } from '@app/test/seeds/types';
-import { AuthApiModule } from '@app/domains/identity';
+import { AuthApiModule, UserModel as User } from '@app/domains/identity';
+import { issueSession } from '@app/test/seeds/session.fixture';
+import { getModelToken } from '@nestjs/sequelize';
 import { RedisService } from '@app/infrastructure/redis/redis.service';
 import { ApiConfigService } from '@app/common/config';
 import { MockApiConfigService } from '@app/common/config/api-config.service.mock';
@@ -67,16 +69,14 @@ describe('Shopping assistant (e2e)', () => {
   });
 
   const user = async () => {
-    const email = `a-${v4()}@mail.com`;
-    const body = (
-      await http()
-        .post('/api/auth/register')
-        .send({ email, password: 'password-1234' })
-        .expect(201)
-    ).body;
+    const created = await app
+      .get<typeof User>(getModelToken(User))
+      .create({ email: `a-${v4()}@mail.com` });
+    const { bearer } = await issueSession(app, created);
+    expect(bearer).toMatch(/^Bearer /);
     return {
-      id: body.user.id as string,
-      auth: { Authorization: `Bearer ${body.accessToken.token}` },
+      id: created.id,
+      auth: { Authorization: bearer },
     };
   };
 

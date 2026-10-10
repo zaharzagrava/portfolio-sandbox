@@ -17,11 +17,28 @@ export { UsersModule } from './users.module';
 export { Firewall } from './api/decorators/firewall.decorator';
 export { User } from './api/decorators/user.decorator';
 export { CreateUserDto, UserRawDto } from './api/users.dto';
-export { AuthService } from './application/auth.service';
+export { AccessTokenSigner } from './application/access-token-signer.service';
+export {
+  TooManyIdsError,
+  UserDirectoryService,
+} from './application/user-directory.service';
+export type { UserSummaryDto } from './application/user-directory.service';
+export { SessionIssuer } from './application/session-issuer.service';
+export type { IssuedSession } from './application/session-issuer.service';
+export { SessionRevocationService } from './application/session-revocation.service';
+export type {
+  AuthenticatedUser,
+  ServicePrincipal,
+} from './domain/authenticated-user';
+export {
+  PasswordChanged,
+  RegistrationDuplicateAttempted,
+  UserRegistered,
+} from './domain/events';
 export { UserUtilsService } from './application/user-utils.service';
 export { SecretBox } from './infra/crypto/secret-box';
 export { KeyStore } from './infra/keys/key-store.service';
 export { OidcService } from './infra/oidc/oidc.service';
 export type { RequestWithUser } from './api/request-with-user';
 export { IdentityTopicsModule } from './realtime-topics.module';
-export { identityRatePolicies } from './rate-limit-policies';
+export { identityRatePolicies } from './domain/auth-rate-policies';

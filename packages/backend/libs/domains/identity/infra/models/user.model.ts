@@ -77,7 +77,7 @@ export default class User extends Model<User, Partial<User>> {
   @Column({ type: DataType.STRING, allowNull: true, unique: true })
   declare email: string | null;
 
-  /** bcrypt hash; never returned from the API (see AuthService). */
+  /** bcrypt hash; never returned from the API (see LoginService). */
   @Column({ type: DataType.STRING, allowNull: true })
   declare passwordHash: string | null;
 

@@ -6,7 +6,8 @@ import { SeedsModule } from '@app/test/seeds/seeds.module';
 import { SeedsService } from '@app/test/seeds/seeds.service';
 import { RateLimitModule } from '@app/infrastructure/rate-limit/rate-limit.module';
 import { CacheModule } from '@app/infrastructure/cache/cache.module';
-import { AuthService, UserModel as User } from '@app/domains/identity';
+import { UserModel as User } from '@app/domains/identity';
+import { issueSession } from '@app/test/seeds/session.fixture';
 import { getModelToken } from '@nestjs/sequelize';
 import { ProductModel as Product } from '@app/domains/catalog';
 import { TableName } from '@app/test/seeds/types';
@@ -17,7 +18,6 @@ import { ApiConfigService } from '@app/common/config';
 describe('Chat (e2e)', () => {
   let app: INestApplication;
   let seedsService: SeedsService;
-  let authService: AuthService;
   let configService: ApiConfigService;
   let userModel: typeof User;
   let productModel: typeof Product;
@@ -31,7 +31,6 @@ describe('Chat (e2e)', () => {
     app.setGlobalPrefix('api');
     await app.init();
     seedsService = app.get(SeedsService);
-    authService = app.get(AuthService);
     configService = app.get(ApiConfigService);
     userModel = app.get(getModelToken(User));
     productModel = app.get(getModelToken(Product));
@@ -47,7 +46,7 @@ describe('Chat (e2e)', () => {
 
   it('mints a valid websocket ticket for the user', async () => {
     const user = await userModel.create({ email: `test-${v4()}@mail.com` });
-    const token = authService.issueTokensFor(user).accessToken.token;
+    const { accessToken: token } = await issueSession(app, user);
 
     const res = await request(app.getHttpServer())
       .post('/api/chat/ws-ticket')
@@ -67,7 +66,7 @@ describe('Chat (e2e)', () => {
 
   it('allows a seller to create a channel for their product', async () => {
     const seller = await userModel.create({ email: `seller-${v4()}@mail.com` });
-    const token = authService.issueTokensFor(seller).accessToken.token;
+    const { accessToken: token } = await issueSession(app, seller);
 
     const [product] = await seedsService.createTreelike([
       { __type__: TableName.Product, sellerId: seller.id },
@@ -87,7 +86,7 @@ describe('Chat (e2e)', () => {
   it('prevents non-sellers from creating a channel', async () => {
     const seller = await userModel.create({ email: `seller-${v4()}@mail.com` });
     const buyer = await userModel.create({ email: `buyer-${v4()}@mail.com` });
-    const buyerToken = authService.issueTokensFor(buyer).accessToken.token;
+    const { accessToken: buyerToken } = await issueSession(app, buyer);
 
     const [product] = await seedsService.createTreelike([
       { __type__: TableName.Product, sellerId: seller.id },
@@ -103,7 +102,7 @@ describe('Chat (e2e)', () => {
   it('allows owner to mute a member', async () => {
     const seller = await userModel.create({ email: `seller-${v4()}@mail.com` });
     const member = await userModel.create({ email: `member-${v4()}@mail.com` });
-    const sellerToken = authService.issueTokensFor(seller).accessToken.token;
+    const { accessToken: sellerToken } = await issueSession(app, seller);
 
     const [product] = await seedsService.createTreelike([
       { __type__: TableName.Product, sellerId: seller.id },
@@ -130,10 +129,10 @@ describe('Chat (e2e)', () => {
     const seller = await userModel.create({ email: `seller-${v4()}@mail.com` });
     const buyer = await userModel.create({ email: `buyer-${v4()}@mail.com` });
     const sellerAuth = {
-      Authorization: `Bearer ${authService.issueTokensFor(seller).accessToken.token}`,
+      Authorization: (await issueSession(app, seller)).bearer,
     };
     const buyerAuth = {
-      Authorization: `Bearer ${authService.issueTokensFor(buyer).accessToken.token}`,
+      Authorization: (await issueSession(app, buyer)).bearer,
     };
     const [product] = await seedsService.createTreelike([
       { __type__: TableName.Product, sellerId: seller.id },

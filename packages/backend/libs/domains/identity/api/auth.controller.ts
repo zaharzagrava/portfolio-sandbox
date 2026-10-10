@@ -3,6 +3,7 @@ import {
   Body,
   Controller,
   Get,
+  Header,
   HttpCode,
   HttpStatus,
   Param,
@@ -18,19 +19,19 @@ import * as cookie from 'cookie';
 import { randomBytes } from 'node:crypto';
 import { Firewall } from './decorators/firewall.decorator';
 import { User } from './decorators/user.decorator';
-import { UserRawDto } from './users.dto';
 import { RateLimit } from '@app/infrastructure/rate-limit';
 import { ApiConfigService } from '@app/common/config';
-import { Environment } from '@app/common/types';
-import {
-  AuthSessionService,
-  SessionTokens,
-} from '../application/auth-session.service';
-import { SessionStore } from '../infra/sessions/session-store.service';
+import type { AuthenticatedUser } from '../domain/authenticated-user';
+import { AuthSessionService } from '../application/auth-session.service';
+import { AccountService } from '../application/account.service';
+import { LoginService } from '../application/login.service';
+import { RefreshService } from '../application/refresh.service';
+import { RegistrationService } from '../application/registration.service';
+import { SessionRevocationService } from '../application/session-revocation.service';
+import type { IssuedSession } from '../application/session-issuer.service';
 import { TotpService } from '../application/mfa/totp.service';
 import { OidcService } from '../infra/oidc/oidc.service';
 import { CsrfGuard, CSRF_COOKIE } from './guards/csrf.guard';
-import { SessionNotRevokedGuard } from './guards/session-not-revoked.guard';
 import {
   AuthUserDto,
   MfaConfirmDto,
@@ -41,113 +42,122 @@ import {
 } from './auth.dto';
 
 const REFRESH_COOKIE = '__Host-refresh';
+const NO_STORE = 'no-store';
 
-type SessionUser = UserRawDto & { sessionId?: string };
+/** The body of a credential response: tokens and the user, never the delivery bookkeeping. */
+const credentialBody = ({ delivery: _delivery, ...body }: IssuedSession) =>
+  body;
 
 @ApiTags('auth')
 @Controller('auth')
 export class AuthController {
   constructor(
+    private readonly registration: RegistrationService,
+    private readonly login_: LoginService,
+    private readonly refresh_: RefreshService,
+    private readonly revocation: SessionRevocationService,
+    private readonly account: AccountService,
     private readonly sessions: AuthSessionService,
-    private readonly sessionStore: SessionStore,
     private readonly totp: TotpService,
     private readonly oidc: OidcService,
     private readonly config: ApiConfigService,
   ) {}
 
-  @RateLimit('auth.login.ip')
+  @RateLimit('auth.register.ip')
   @Post('register')
-  async register(
-    @Body() body: RegisterDto,
-    @Req() req: Request,
-    @Res({ passthrough: true }) res: Response,
-  ) {
-    return this.withCookies(
-      res,
-      await this.sessions.register(body, this.meta(req)),
-    );
+  @HttpCode(HttpStatus.ACCEPTED)
+  async register(@Body() body: RegisterDto) {
+    await this.registration.register(body);
+    return { status: 'accepted' as const };
   }
 
-  // SD-28: per-IP (credential stuffing from one host) + per-account (distributed guessing of one email).
+  // SD-28: per-IP (credential stuffing from one host) + per-account (distributed guessing of one email); the account
+  // policy counts failures only and a success clears it (S50).
   @RateLimit('auth.login.ip', 'auth.login.account')
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  async login(
-    @Body() body: PasswordLoginDto,
-    @Req() req: Request,
-    @Res({ passthrough: true }) res: Response,
-  ) {
-    const result = await this.sessions.login(body, this.meta(req));
-    return result.mfaRequired ? result : this.withCookies(res, result);
+  @Header('Cache-Control', NO_STORE)
+  @Header('Pragma', 'no-cache')
+  async login(@Body() body: PasswordLoginDto, @Req() req: Request) {
+    const result = await this.login_.login(body, this.meta(req));
+    return result.mfaRequired
+      ? { mfaRequired: true as const, mfaToken: result.mfaToken }
+      : credentialBody(result);
   }
 
   @RateLimit('auth.login.ip')
   @Post('mfa/verify')
   @HttpCode(HttpStatus.OK)
-  async verifyMfa(
-    @Body() body: MfaVerifyDto,
-    @Req() req: Request,
-    @Res({ passthrough: true }) res: Response,
-  ) {
-    return this.withCookies(
-      res,
+  @Header('Cache-Control', NO_STORE)
+  @Header('Pragma', 'no-cache')
+  async verifyMfa(@Body() body: MfaVerifyDto, @Req() req: Request) {
+    return credentialBody(
       await this.sessions.completeMfa(body.mfaToken, body.code, this.meta(req)),
     );
   }
 
+  @RateLimit('auth.refresh.ip')
   @UseGuards(CsrfGuard)
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
-  async refresh(
-    @Body() body: RefreshDto,
-    @Req() req: Request,
-    @Res({ passthrough: true }) res: Response,
-  ) {
+  @Header('Cache-Control', NO_STORE)
+  @Header('Pragma', 'no-cache')
+  async refresh(@Body() body: RefreshDto, @Req() req: Request) {
     const token =
       body.refreshToken ??
       cookie.parse(req.headers.cookie ?? '')[REFRESH_COOKIE] ??
       '';
-    return this.withCookies(res, await this.sessions.refresh(token));
+    return credentialBody(await this.refresh_.refresh(token));
   }
 
   @Firewall()
   @Post('logout')
   @HttpCode(HttpStatus.NO_CONTENT)
   async logout(
-    @User() user: SessionUser,
+    @User() user: AuthenticatedUser,
     @Res({ passthrough: true }) res: Response,
   ) {
-    if (user.sessionId) await this.sessions.logout(user.sessionId);
+    await this.revocation.revokeBySid(user.sessionId, 'logout');
     res.clearCookie(REFRESH_COOKIE, { path: '/' });
   }
 
-  @UseGuards(SessionNotRevokedGuard) // listed above @Firewall(): decorators apply bottom-up, auth must run first
-  @Firewall()
+  @Firewall({ sensitive: true })
   @Post('logout-all')
-  async logoutAll(@User() user: SessionUser) {
-    return { revokedSessions: await this.sessions.logoutAll(user.id) };
+  @HttpCode(HttpStatus.OK)
+  async logoutAll(@User() user: AuthenticatedUser) {
+    return {
+      revokedSessions: await this.revocation.revokeAllForUser(
+        user.id,
+        'logout_all',
+      ),
+    };
   }
 
   @Firewall()
   @Get('sessions')
-  async listSessions(@User() user: SessionUser) {
-    return (await this.sessionStore.listForUser(user.id)).map((s) => ({
-      ...s,
+  async listSessions(@User() user: AuthenticatedUser) {
+    return (await this.account.activeSessions(user.id)).map((s) => ({
+      sessionId: s.sid,
+      device: s.device ?? null,
+      ip: s.ip ?? null,
+      createdAt: s.createdAt,
+      lastUsedAt: s.lastUsedAt ?? null,
       current: s.sid === user.sessionId,
     }));
   }
 
-  @UseGuards(SessionNotRevokedGuard) // listed above @Firewall(): decorators apply bottom-up, auth must run first
-  @Firewall()
+  @Firewall({ sensitive: true })
   @Post('mfa/enroll')
-  async enrollMfa(@User() user: SessionUser) {
-    return this.totp.enroll(user);
+  async enrollMfa(@User() user: AuthenticatedUser) {
+    return this.totp.enroll({ id: user.id, email: null });
   }
 
-  @UseGuards(SessionNotRevokedGuard) // listed above @Firewall(): decorators apply bottom-up, auth must run first
-  @Firewall()
+  @Firewall({ sensitive: true })
   @Post('mfa/confirm')
-  async confirmMfa(@User() user: SessionUser, @Body() body: MfaConfirmDto) {
+  async confirmMfa(
+    @User() user: AuthenticatedUser,
+    @Body() body: MfaConfirmDto,
+  ) {
     const result = await this.totp.confirm(user.id, body.code);
     if (!result) throw new BadRequestException('Invalid code');
     return result;
@@ -155,8 +165,8 @@ export class AuthController {
 
   @Firewall()
   @Get('me')
-  async me(@User() user: UserRawDto): Promise<AuthUserDto> {
-    return { id: user.id, email: user.email, role: user.role };
+  async me(@User() user: AuthenticatedUser): Promise<AuthUserDto> {
+    return this.account.profile(user.id);
   }
 
   @RateLimit('auth.login.ip')
@@ -185,7 +195,7 @@ export class AuthController {
       provider,
       new URL(req.originalUrl, base),
     );
-    this.withCookies(
+    this.refreshCookies(
       res,
       await this.sessions.loginWithOidc(identity, this.meta(req)),
     );
@@ -194,30 +204,25 @@ export class AuthController {
   }
 
   /**
-   * Refresh token → `__Host-` cookie (HttpOnly, Secure, Path=/, no Domain: can't
-   * be set or read by subdomains or JS), plus a readable CSRF cookie for the
-   * double-submit header. Body keeps the refresh token for non-browser clients.
+   * OIDC browser flow only until cookie delivery (US6) takes over: refresh token → `__Host-` cookie (HttpOnly, Secure,
+   * Path=/, no Domain), plus a readable CSRF cookie for the double-submit header.
    */
-  private withCookies(res: Response, tokens: SessionTokens): SessionTokens {
-    // Always Secure: `__Host-` cookies are rejected without it, and browsers treat http://localhost as a secure origin.
-    const secure = true;
-    const maxAge =
-      (this.config.get('refresh_token_ttl_days') ?? 30) * 86_400_000;
+  private refreshCookies(res: Response, tokens: IssuedSession): void {
+    const maxAge = 30 * 86_400_000;
     res.cookie(REFRESH_COOKIE, tokens.refreshToken, {
       httpOnly: true,
-      secure,
+      secure: true,
       sameSite: 'strict',
       path: '/',
       maxAge,
     });
     res.cookie(CSRF_COOKIE, randomBytes(16).toString('base64url'), {
       httpOnly: false,
-      secure,
+      secure: true,
       sameSite: 'strict',
       path: '/',
       maxAge,
     });
-    return tokens;
   }
 
   /** Relative paths only - prevents open redirects through ?returnTo=https://evil.example. */
@@ -227,10 +232,11 @@ export class AuthController {
       : '/';
   }
 
-  private meta(req: Request) {
+  /** Device and address of the session; the address is the platform's trusted-proxy result, never a header (FR-014). */
+  private meta(req: Request & { clientIp?: string }) {
     return {
       device: String(req.headers['user-agent'] ?? '').slice(0, 200),
-      ip: (req.headers['cf-connecting-ip'] as string) ?? req.ip,
+      ip: req.clientIp,
     };
   }
 }

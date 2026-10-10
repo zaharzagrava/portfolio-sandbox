@@ -15,7 +15,8 @@ import { minimalPdf } from '@app/test/utils/minimal-pdf';
 import { SeedsModule } from '@app/test/seeds/seeds.module';
 import { SeedsService } from '@app/test/seeds/seeds.service';
 import { TableName } from '@app/test/seeds/types';
-import { AuthApiModule } from '@app/domains/identity';
+import { AuthApiModule, UserModel as User } from '@app/domains/identity';
+import { issueSession } from '@app/test/seeds/session.fixture';
 import { TaskQueue } from '@app/infrastructure/sqs/task-queue.port';
 import { ObjectStorage } from '@app/infrastructure/storage/object-storage.port';
 import {
@@ -96,27 +97,25 @@ describe('Knowledge base & cited answers (e2e)', () => {
   });
 
   const owner = async () => {
-    const email = `k-${v4()}@mail.com`;
-    const body = (
-      await http()
-        .post('/api/auth/register')
-        .send({ email, password: 'password-1234' })
-        .expect(201)
-    ).body;
+    const created = await app
+      .get<typeof User>(getModelToken(User))
+      .create({ email: `k-${v4()}@mail.com` });
+    const { bearer } = await issueSession(app, created);
+    expect(bearer).toMatch(/^Bearer /);
     const shop = await app
       .get<typeof Shop>(getModelToken(Shop))
       .create({ name: 'Phones', slug: `p-${v4().slice(0, 8)}` });
     await app
       .get<typeof ShopMembership>(getModelToken(ShopMembership))
-      .create({ shopId: shop.id, userId: body.user.id, role: 'OWNER' });
+      .create({ shopId: shop.id, userId: created.id, role: 'OWNER' });
     const [product] = await seeds.createTreelike([
       { __type__: TableName.Product, title: 'Pixel 10', shopId: shop.id },
     ]);
     return {
-      userId: body.user.id as string,
+      userId: created.id,
       shopId: shop.id as string,
       productId: product.id as string,
-      auth: { Authorization: `Bearer ${body.accessToken.token}` },
+      auth: { Authorization: bearer },
     };
   };
 

@@ -6,7 +6,8 @@ import { SeedsModule } from '@app/test/seeds/seeds.module';
 import { OrdersModule } from './orders.module';
 import { RateLimitModule } from '@app/infrastructure/rate-limit/rate-limit.module';
 import { CacheModule } from '@app/infrastructure/cache/cache.module';
-import { AuthService, UserModel as User } from '@app/domains/identity';
+import { UserModel as User } from '@app/domains/identity';
+import { issueSession } from '@app/test/seeds/session.fixture';
 import { SeedsService } from '@app/test/seeds/seeds.service';
 import { getModelToken } from '@nestjs/sequelize';
 import { CartRepository } from './infra/cart.repository';
@@ -15,7 +16,6 @@ import { CartIdentity } from './api/cart-identity';
 describe('Cart (e2e)', () => {
   let app: INestApplication;
   let seedsService: SeedsService;
-  let authService: AuthService;
   let carts: CartRepository;
   let userModel: typeof User;
 
@@ -28,7 +28,6 @@ describe('Cart (e2e)', () => {
     app.setGlobalPrefix('api');
     await app.init();
     seedsService = app.get(SeedsService);
-    authService = app.get(AuthService);
     carts = app.get(CartRepository);
     userModel = app.get(getModelToken(User));
   });
@@ -68,7 +67,7 @@ describe('Cart (e2e)', () => {
 
   it('allows an authenticated user to add items to their cart', async () => {
     const user = await userModel.create({ email: `test-${v4()}@mail.com` });
-    const token = authService.issueTokensFor(user).accessToken.token;
+    const { accessToken: token } = await issueSession(app, user);
     const productId = v4();
 
     const putRes = await request(app.getHttpServer())
@@ -88,7 +87,7 @@ describe('Cart (e2e)', () => {
 
   it('merges guest cart into user cart on login', async () => {
     const user = await userModel.create({ email: `test-${v4()}@mail.com` });
-    const token = authService.issueTokensFor(user).accessToken.token;
+    const { accessToken: token } = await issueSession(app, user);
 
     const prodGuest = v4();
     const prodUser = v4();

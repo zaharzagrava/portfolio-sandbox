@@ -1,7 +1,7 @@
 import type { Request } from 'express';
-import { UserRawDto } from './users.dto';
+import type { AuthenticatedUser } from '../domain/authenticated-user';
 
-/** An Express request after the identity guards have attached the authenticated user. */
+/** An Express request after the identity guards have attached the authenticated principal (claims only). */
 export interface RequestWithUser extends Request {
-  user: UserRawDto;
+  user: AuthenticatedUser;
 }

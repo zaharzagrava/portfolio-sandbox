@@ -12,7 +12,8 @@ import { generateTestingModule } from '@app/test/utils/global-modules';
 import { minimalPdf } from '@app/test/utils/minimal-pdf';
 import { SeedsModule } from '@app/test/seeds/seeds.module';
 import { SeedsService } from '@app/test/seeds/seeds.service';
-import { AuthApiModule } from '@app/domains/identity';
+import { Role, UserModel as User } from '@app/domains/identity';
+import { issueSession } from '@app/test/seeds/session.fixture';
 import { TaskQueue } from '@app/infrastructure/sqs/task-queue.port';
 import { ObjectStorage } from '@app/infrastructure/storage/object-storage.port';
 import { RedisService } from '@app/infrastructure/redis/redis.service';
@@ -105,10 +106,9 @@ describe('Seller onboarding: staged questionnaire + KYC extraction (e2e)', () =>
   const http = () => request(app.getHttpServer());
 
   beforeAll(async () => {
-    const moduleRef = await generateTestingModule(
-      [SpecModule, AuthApiModule, SeedsModule],
-      { stores: ['redis', 'sqs', 'storage'] },
-    );
+    const moduleRef = await generateTestingModule([SpecModule, SeedsModule], {
+      stores: ['redis', 'sqs', 'storage'],
+    });
     app = moduleRef.createNestApplication();
     app.setGlobalPrefix('api');
     await app.init();
@@ -130,19 +130,14 @@ describe('Seller onboarding: staged questionnaire + KYC extraction (e2e)', () =>
   });
 
   const register = async (role?: 'MODERATOR') => {
-    const body = (
-      await http()
-        .post('/api/auth/register')
-        .send({ email: `o-${v4()}@mail.com`, password: 'password-1234' })
-        .expect(201)
-    ).body;
-    if (role)
-      await db.query(`UPDATE "User" SET role = :role WHERE id = :id`, {
-        replacements: { role, id: body.user.id },
-      });
+    const user = await app
+      .get<typeof User>(getModelToken(User))
+      .create({ email: `o-${v4()}@mail.com`, role: Role[role ?? 'USER'] });
+    const { bearer } = await issueSession(app, user);
+    expect(bearer).toMatch(/^Bearer /);
     return {
-      id: body.user.id as string,
-      auth: { Authorization: `Bearer ${body.accessToken.token}` },
+      id: user.id,
+      auth: { Authorization: bearer },
     };
   };
 

@@ -9,23 +9,29 @@ import {
 } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { Role } from '../infra/models/user.model';
+import {
+  EMAIL_MAX,
+  PASSWORD_MAX,
+  PASSWORD_MIN,
+} from '../domain/password-policy';
 
 /** Roles a user may pick for themselves at sign-up. */
 export const SELF_ASSIGNABLE_ROLES = [Role.USER, Role.SELLER] as const;
 
+const normalizeEmailInput = ({ value }: { value: unknown }) =>
+  typeof value === 'string' ? value.trim().toLowerCase() : value;
+
 export class RegisterDto {
   @ApiProperty()
-  @Transform(({ value }) =>
-    typeof value === 'string' ? value.trim().toLowerCase() : value,
-  )
+  @Transform(normalizeEmailInput)
   @IsEmail()
-  @MaxLength(254)
+  @MaxLength(EMAIL_MAX)
   email: string;
 
-  @ApiProperty({ minLength: 8 })
+  @ApiProperty({ minLength: PASSWORD_MIN, maxLength: PASSWORD_MAX })
   @IsString()
-  @MinLength(8)
-  @MaxLength(72) // bcrypt ignores everything past 72 bytes
+  @MinLength(PASSWORD_MIN)
+  @MaxLength(PASSWORD_MAX)
   password: string;
 
   @ApiPropertyOptional({ enum: SELF_ASSIGNABLE_ROLES, default: Role.USER })
@@ -36,32 +42,16 @@ export class RegisterDto {
 
 export class PasswordLoginDto {
   @ApiProperty()
-  @Transform(({ value }) =>
-    typeof value === 'string' ? value.trim().toLowerCase() : value,
-  )
+  @Transform(normalizeEmailInput)
   @IsEmail()
+  @MaxLength(EMAIL_MAX)
   email: string;
 
-  @ApiProperty()
+  /** Login never applies the registration policy: older, shorter passwords keep working. Only the cap applies. */
+  @ApiProperty({ maxLength: PASSWORD_MAX })
   @IsString()
-  @MaxLength(72)
+  @MaxLength(PASSWORD_MAX)
   password: string;
-}
-
-export class JwtPayloadDto {
-  @ApiProperty()
-  sub: string;
-
-  @ApiProperty({ enum: Role })
-  role: Role;
-}
-
-export class JwtTokenDto {
-  @ApiProperty()
-  token: string;
-
-  @ApiProperty()
-  expiresIn: string | number;
 }
 
 export class AuthUserDto {
@@ -73,14 +63,6 @@ export class AuthUserDto {
 
   @ApiProperty({ enum: Role })
   role: Role;
-}
-
-export class AuthResponseDto {
-  @ApiProperty()
-  accessToken: JwtTokenDto;
-
-  @ApiProperty()
-  user: AuthUserDto;
 }
 
 // --- --- --- --- --- SD-39 sessions / MFA --- --- --- --- --- //

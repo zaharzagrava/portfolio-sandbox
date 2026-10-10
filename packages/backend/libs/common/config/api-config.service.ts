@@ -193,11 +193,6 @@ export class ApiConfigService {
             name: 'AWS_SECRET_ACCESS_KEY',
           },
           // Object storage only (local MinIO); falls back to the AWS keys when unset.
-          // Refresh-token reuse inside this window is a benign race, not theft (default 10 s).
-          auth_refresh_reuse_grace_ms: {
-            verify: joi.number().optional(),
-            name: 'AUTH_REFRESH_REUSE_GRACE_MS',
-          },
           s3_access_key_id: {
             verify: joi.string().optional(),
             name: 'S3_ACCESS_KEY_ID',
@@ -210,22 +205,6 @@ export class ApiConfigService {
           jwt_secret: {
             verify: joi.string().required(),
             name: 'JWT_SECRET',
-          },
-          // RS256 key pair for access tokens. Optional: when unset, AuthService
-          // falls back to creds/jwtRS256.key(.pub) (see scripts/auth/generate-keys.js).
-          jwt_private_key: {
-            verify: joi.string().optional().allow(''),
-            name: 'JWT_PRIVATE_KEY',
-            postProcess: (v: any) => v?.replace(/\\n/g, '\n'),
-          },
-          jwt_public_key: {
-            verify: joi.string().optional().allow(''),
-            name: 'JWT_PUBLIC_KEY',
-            postProcess: (v: any) => v?.replace(/\\n/g, '\n'),
-          },
-          jwt_expires_in: {
-            verify: joi.string().optional().allow(''),
-            name: 'JWT_EXPIRES_IN',
           },
 
           front_host: {

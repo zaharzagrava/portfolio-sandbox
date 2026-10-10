@@ -36,7 +36,7 @@
     "test:watch": "NODE_OPTIONS=--experimental-vm-modules jest --watch",
     "test:cov": "NODE_OPTIONS=--experimental-vm-modules jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "NODE_ENV=test NODE_OPTIONS=--experimental-vm-modules jest --config ./jest-e2e.json --runInBand",
+    "test:e2e": "UV_THREADPOOL_SIZE=8 NODE_ENV=testNODE_OPTIONS=--experimental-vm-modules jest --config ./jest-e2e.json --runInBand",
     "db:drop": "npx sequelize-cli db:drop",
     "db:create": "npx sequelize-cli db:create",
     "db:migrate:create": "npx sequelize-cli migration:generate --name $1",

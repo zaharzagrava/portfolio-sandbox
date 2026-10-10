@@ -57,6 +57,7 @@ export const OWNERSHIP = {
   User: 'domain:identity',
   FederatedIdentity: 'domain:identity',
   SigningKey: 'domain:identity',
+  PasswordResetToken: 'domain:identity',
   // tenancy
   Shop: 'domain:tenancy',
   ShopMembership: 'domain:tenancy',
