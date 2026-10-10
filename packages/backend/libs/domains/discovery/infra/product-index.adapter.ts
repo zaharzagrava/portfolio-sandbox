@@ -6,9 +6,16 @@ import {
   EngineRejectedError,
   EngineUnavailableError,
 } from '@app/infrastructure/elasticsearch/search-engine.errors';
-import { MAX_BOOST_MULTIPLIER, tierFactor as tierFactorOf } from '../domain/boost';
+import {
+  MAX_BOOST_MULTIPLIER,
+  tierFactor as tierFactorOf,
+} from '../domain/boost';
 import { visibilityFilter } from '../domain/visibility-filter';
-import { emptyDocument, type IndexedDocument, type Mutation } from '../domain/index-document';
+import {
+  emptyDocument,
+  type IndexedDocument,
+  type Mutation,
+} from '../domain/index-document';
 import type { GuardOutcome } from '../domain/projection-guard';
 import type {
   EngineSearchRequest,
@@ -132,7 +139,10 @@ export class ProductIndexAdapter implements ProductIndexPort {
         const result = item.mutation(current);
         outcomes.set(item.id, result.outcome);
         // an equal-version redelivery that changes nothing is not written again: one logical write (AS-24)
-        if (!result.next || (current && isDeepStrictEqual(current, result.next)))
+        if (
+          !result.next ||
+          (current && isDeepStrictEqual(current, result.next))
+        )
           continue;
         operations.push(
           doc?.found
@@ -199,6 +209,36 @@ export class ProductIndexAdapter implements ProductIndexPort {
     };
   }
 
+  async suggestTitles(
+    prefix: string,
+    size: number,
+    signal?: AbortSignal,
+  ): Promise<string[]> {
+    const res = await this.engine.search(
+      {
+        index: PRODUCTS_ALIAS,
+        size,
+        _source: ['title'],
+        query: {
+          bool: {
+            filter: visibilityFilter(),
+            must: [
+              {
+                match: {
+                  'title.autocomplete': { query: prefix, operator: 'and' },
+                },
+              },
+            ],
+          },
+        },
+      },
+      { timeoutMs: this.settings.searchBudgetMs, maxRetries: 0, signal },
+    );
+    return ((res.hits?.hits ?? []) as { _source?: { title?: string } }[])
+      .map((h) => h._source?.title)
+      .filter((t): t is string => typeof t === 'string' && t.length > 0);
+  }
+
   private queryOf(request: EngineSearchRequest): object {
     const f = request.filters;
     const filter: object[] = [...visibilityFilter()];
@@ -234,11 +274,15 @@ export class ProductIndexAdapter implements ProductIndexPort {
                 },
               },
             ],
-            should: [{ match_phrase: { title: { query: request.q, boost: 2 } } }],
+            should: [
+              { match_phrase: { title: { query: request.q, boost: 2 } } },
+            ],
           },
         },
         // the precomputed business multiplier, already capped at 4: text relevance stays dominant
-        functions: [{ field_value_factor: { field: 'browseScore', missing: 1 } }],
+        functions: [
+          { field_value_factor: { field: 'browseScore', missing: 1 } },
+        ],
         boost_mode: 'multiply',
       },
     };
@@ -367,7 +411,10 @@ export class ProductIndexAdapter implements ProductIndexPort {
     return (res.hits?.hits ?? []).map((h: { _id: string }) => h._id);
   }
 
-  async distinctShopIds(after: string | null, limit: number): Promise<string[]> {
+  async distinctShopIds(
+    after: string | null,
+    limit: number,
+  ): Promise<string[]> {
     const res = await this.engine.search({
       index: PRODUCTS_ALIAS,
       size: 0,

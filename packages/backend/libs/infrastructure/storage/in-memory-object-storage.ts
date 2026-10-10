@@ -8,7 +8,10 @@ import {
 
 /** Test double: keeps objects in a Map, returns fake but well-formed signed URLs. */
 export class InMemoryObjectStorage extends ObjectStorage {
-  readonly objects = new Map<string, { body: Buffer; contentType: string }>();
+  readonly objects = new Map<
+    string,
+    { body: Buffer; contentType: string; modifiedAt: Date }
+  >();
 
   async presignPost({
     key,
@@ -77,7 +80,11 @@ export class InMemoryObjectStorage extends ObjectStorage {
     const buffer = Buffer.isBuffer(body)
       ? body
       : Buffer.concat(await body.toArray());
-    this.objects.set(key, { body: buffer, contentType });
+    this.objects.set(key, {
+      body: buffer,
+      contentType,
+      modifiedAt: new Date(),
+    });
   }
 
   async head(key: string) {
@@ -87,5 +94,17 @@ export class InMemoryObjectStorage extends ObjectStorage {
 
   async delete(key: string) {
     this.objects.delete(key);
+  }
+
+  list(prefix: string) {
+    return Promise.resolve(
+      [...this.objects.entries()]
+        .filter(([key]) => key.startsWith(prefix))
+        .map(([key, o]) => ({
+          key,
+          lastModified: o.modifiedAt,
+          size: o.body.length,
+        })),
+    );
   }
 }

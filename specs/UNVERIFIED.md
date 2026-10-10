@@ -67,3 +67,7 @@ interviews) until its status says so. The implementation loop appends here (rule
 | S32 | SC-003 (load part): reindex under full load causes zero failed searches, rollback under one minute (AS-40 proves 50 searches/s) | same file (reindex during k6 load) | not run |
 | S32 | SC-006: zero hidden products in 10,000 searches against a polluted index | same file (polluted-index replay) | not run |
 | S32 | SC-010: at least 95% of a curated typo set finds the intended product | same file (relevance harness) | not run |
+| S33 | SC-001: 99% of keystrokes answered within 100 ms at 50,000 requests/s behind the edge cache | `specs/domains/S33-autocomplete/quickstart.md`, "Ops artifacts" (`loadtest:suggest`) | not run |
+| S33 | SC-003: a query reaching 5 distinct searchers is suggested within 65 minutes | same file (deployed worker and node, hourly build plus poll) | not run |
+| S33 | SC-007: at least 18 of 20 single-typo searches show a correct suggestion | same file (typo fixture against the real engine, needs S32 fuzzy method) | not run |
+| S33 | SC-008: 200,000-query index within 400 MB per serving node (AS-54 proves a scaled bound) | same file (load a 200k snapshot, compare RSS) | not run |

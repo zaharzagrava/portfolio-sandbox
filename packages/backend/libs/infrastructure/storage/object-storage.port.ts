@@ -65,4 +65,8 @@ export abstract class ObjectStorage {
     key: string,
   ): Promise<{ size: number; contentType?: string } | null>;
   abstract delete(key: string): Promise<void>;
+  /** Objects whose key starts with `prefix`, with their last-modified instant (all pages). */
+  abstract list(
+    prefix: string,
+  ): Promise<{ key: string; lastModified: Date; size: number }[]>;
 }

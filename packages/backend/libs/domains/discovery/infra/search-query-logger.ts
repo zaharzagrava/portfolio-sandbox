@@ -3,7 +3,9 @@ import { createHash } from 'node:crypto';
 import { KafkaProducerService } from '@app/infrastructure/kafka/kafka-producer.service';
 import { ApiConfigService } from '@app/common/config';
 import { SearchPerformed } from '../application/events/search-query-events';
-import { normalizeQuery } from '../domain/top-k-trie';
+import { normaliseQuery } from '../domain/query-text';
+
+const normalizeQuery = (q: string): string => normaliseQuery(q).toLowerCase();
 
 /** Fire-and-forget: search latency never waits for analytics. */
 @Injectable()

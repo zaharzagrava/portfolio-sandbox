@@ -1,7 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { ClickHouseService } from '@app/infrastructure/clickhouse/clickhouse.service';
 import { KafkaProducerService } from '@app/infrastructure/kafka/kafka-producer.service';
-import { normalizeQuery } from '../domain/top-k-trie';
+import { normaliseQuery } from '../domain/query-text';
+
+const normalizeQuery = (q: string): string => normaliseQuery(q).toLowerCase();
 import { SearchResultClicked } from './events/search-click-events';
 
 /**

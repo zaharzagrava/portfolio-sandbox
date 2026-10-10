@@ -33,6 +33,14 @@ export const discoveryRatePolicies = definePolicies('discovery', {
     key: 'ip',
     failMode: 'open',
   },
+  // S33 FR-015: per keystroke, so far above real typing; the edge cache absorbs popular prefixes
+  'discovery.suggest': {
+    algorithm: 'slidingWindow',
+    limit: 600,
+    windowMs: MINUTE,
+    key: 'ip',
+    failMode: 'open',
+  },
   'discovery.search-admin': {
     algorithm: 'slidingWindow',
     limit: 30,

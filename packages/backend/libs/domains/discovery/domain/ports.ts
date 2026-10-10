@@ -30,6 +30,15 @@ export interface ProductIndexPort {
   ): Promise<Map<string, GuardOutcome>>;
   /** One query to the engine: visible products only, filtered, sorted, cursor-paged. Throws `EngineUnavailableError`. */
   search(request: EngineSearchRequest): Promise<EngineSearchResult>;
+  /**
+   * Titles of visible products whose title starts with the words of `prefix` (S33 autocomplete; the visibility filter
+   * is the one of search). Honours the signal; throws `EngineUnavailableError`.
+   */
+  suggestTitles(
+    prefix: string,
+    size: number,
+    signal?: AbortSignal,
+  ): Promise<string[]>;
   /** Stamps the shop state on every document of the shop whose stamp is older (waits for pending writes to be searchable). */
   stampShop(shopId: string, stamp: ShopStampWrite): Promise<void>;
   /** Removes every document of a shop (shop deleted). */
@@ -158,7 +167,9 @@ export interface ShopProductRow {
 export interface ShopSearchRepository {
   /** Version-guarded upserts (one statement); a tombstone is only replaced by a higher-version `created`. */
   upsert(
-    rows: (ShopProductRow & { kind: 'created' | 'updated' | 'archived' | 'restored' })[],
+    rows: (ShopProductRow & {
+      kind: 'created' | 'updated' | 'archived' | 'restored';
+    })[],
   ): Promise<void>;
   /** Tombstones: `deletedAt` = the event time, kept for the retention window. */
   markDeleted(

@@ -7,6 +7,7 @@ import {
   DeleteObjectCommand,
   GetObjectCommand,
   HeadObjectCommand,
+  ListObjectsV2Command,
   S3Client,
   UploadPartCommand,
 } from '@aws-sdk/client-s3';
@@ -221,5 +222,28 @@ export class S3ObjectStorage extends ObjectStorage {
     await this.client.send(
       new DeleteObjectCommand({ Bucket: this.bucket, Key: key }),
     );
+  }
+
+  async list(prefix: string) {
+    const out: { key: string; lastModified: Date; size: number }[] = [];
+    let token: string | undefined;
+    do {
+      const res = await this.client.send(
+        new ListObjectsV2Command({
+          Bucket: this.bucket,
+          Prefix: prefix,
+          ContinuationToken: token,
+        }),
+      );
+      for (const o of res.Contents ?? [])
+        if (o.Key)
+          out.push({
+            key: o.Key,
+            lastModified: o.LastModified ?? new Date(0),
+            size: Number(o.Size ?? 0),
+          });
+      token = res.IsTruncated ? res.NextContinuationToken : undefined;
+    } while (token);
+    return out;
   }
 }

@@ -1,14 +1,13 @@
 import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
-import { gzipSync } from 'node:zlib';
-import { ClickHouseService } from '@app/infrastructure/clickhouse/clickhouse.service';
-import { RedisService } from '@app/infrastructure/redis/redis.service';
-import { ObjectStorage } from '@app/infrastructure/storage/object-storage.port';
-import { JobHandler } from '@app/infrastructure/jobs/job-handler.decorator';
-import { JobsService } from '@app/infrastructure/jobs/jobs.service';
-import { Suggestion } from '../domain/top-k-trie';
-
 import { z } from 'zod';
+import { InvalidScheduleError, JobsService } from '@app/infrastructure/jobs';
+import type { JobContext } from '@app/infrastructure/jobs';
+import { JobHandler } from '@app/infrastructure/jobs/job-handler.decorator';
 import { declareJobType } from '@app/infrastructure/jobs/job-type-registry';
+import {
+  AutocompleteBuildService,
+  type BuildOutcome,
+} from '../application/autocomplete-build.service';
 
 declare module '@app/infrastructure/jobs/job-types' {
   interface JobPayloads {
@@ -18,73 +17,49 @@ declare module '@app/infrastructure/jobs/job-types' {
 
 declareJobType({
   name: 'search.build-autocomplete',
-  contract: z.object({}),
+  contract: z.object({}).strict(),
 });
 
-export const AUTOCOMPLETE_POINTER = 'autocomplete:current';
-const MAX_QUERIES = 200_000;
-const MIN_SEARCHERS = 5;
-/** Never suggested, whatever their popularity (offensive, unsafe, competitor bait). */
-const BLOCKLIST = [
-  /\bfake\b/,
-  /\bcounterfeit\b/,
-  /\bstolen\b/,
-  /\bhack(ed)?\b/,
-];
+/** The lease stays 10 minutes (FR-030); the run is stopped at the lease boundary, so a second replica never overlaps the first. */
+export const BUILD_LEASE_MS = 600_000;
+export const BUILD_MAX_RUNTIME_MS = 600_000;
 
 /**
- * Offline half (lesson 10/05 #12): aggregate 30 days of searches in ClickHouse,
- * keep queries typed by ≥ 5 distinct people that returned results (typos and
- * one-off junk drop out), filter the blocklist, publish a versioned snapshot to
- * object storage and flip a pointer. Serving nodes hot-swap on the pointer.
+ * Offline half (S33 FR-020): the hourly schedule and the job handler. The work is the build service's; this is the thin
+ * edge that registers the schedule and passes the run's abort signal on.
  */
 @Injectable()
 export class AutocompleteBuilderJobs implements OnApplicationBootstrap {
   private readonly logger = new Logger(AutocompleteBuilderJobs.name);
 
   constructor(
-    private readonly clickhouse: ClickHouseService,
-    private readonly storage: ObjectStorage,
-    private readonly redis: RedisService,
     private readonly jobs: JobsService,
+    private readonly builds: AutocompleteBuildService,
   ) {}
 
   async onApplicationBootstrap() {
-    await this.jobs.upsertSchedule({
-      name: 'search.build-autocomplete',
-      cron: '7 * * * *',
-      jobType: 'search.build-autocomplete',
-      payload: {},
-    });
+    try {
+      await this.jobs.upsertSchedule({
+        name: 'search.build-autocomplete',
+        cron: '7 * * * *',
+        jobType: 'search.build-autocomplete',
+        payload: {},
+      });
+    } catch (error) {
+      if (!(error instanceof InvalidScheduleError)) throw error;
+      this.logger.error(`schedule not registered: ${error.message}`);
+    }
   }
 
-  @JobHandler('search.build-autocomplete', { concurrency: 1, leaseMs: 600_000 })
-  async build(): Promise<number> {
-    const rows = await this.clickhouse.query<{
-      query: string;
-      searchers: string;
-    }>(
-      `SELECT query, uniqCombined(user_hash) AS searchers
-       FROM search_queries FINAL
-       WHERE ts >= now() - INTERVAL 30 DAY AND results > 0
-       GROUP BY query HAVING searchers >= {min:UInt32}
-       ORDER BY searchers DESC LIMIT {limit:UInt32}`,
-      { min: MIN_SEARCHERS, limit: MAX_QUERIES },
-    );
-    const suggestions: Suggestion[] = rows
-      .filter((r) => !BLOCKLIST.some((re) => re.test(r.query)))
-      .map((r) => ({ query: r.query, count: Number(r.searchers) }));
-
-    const version = new Date().toISOString().replace(/[:.]/g, '-');
-    await this.storage.put(
-      `autocomplete/${version}.json.gz`,
-      gzipSync(JSON.stringify(suggestions)),
-      'application/gzip',
-    );
-    await this.redis.client.set(AUTOCOMPLETE_POINTER, version);
-    this.logger.log(
-      `autocomplete snapshot ${version}: ${suggestions.length} queries`,
-    );
-    return suggestions.length;
+  @JobHandler('search.build-autocomplete', {
+    concurrency: 1,
+    leaseMs: BUILD_LEASE_MS,
+    maxRuntimeMs: BUILD_MAX_RUNTIME_MS,
+  })
+  build(
+    _payload?: Record<string, never>,
+    context?: JobContext,
+  ): Promise<BuildOutcome> {
+    return this.builds.build(context?.signal);
   }
 }

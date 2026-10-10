@@ -4,7 +4,8 @@ export interface Suggestion {
 }
 
 interface TrieNode {
-  children: Map<string, TrieNode>;
+  /** Created on the first child: most nodes sit at the depth cap and are leaves. */
+  children: Map<string, TrieNode> | null;
   /** Precomputed best completions for the prefix ending here (≤ K, by count desc). */
   top: Suggestion[];
 }
@@ -20,7 +21,7 @@ interface TrieNode {
  * for typing users) and K.
  */
 export class TopKTrie {
-  private readonly root: TrieNode = { children: new Map(), top: [] };
+  private readonly root: TrieNode = { children: null, top: [] };
   private nodes = 1;
 
   constructor(
@@ -34,10 +35,10 @@ export class TopKTrie {
     if (node.top.length < this.k) node.top.push(s);
     const chars = [...s.query.slice(0, this.maxPrefix)];
     for (const ch of chars) {
-      let next = node.children.get(ch);
+      let next = node.children?.get(ch);
       if (!next) {
-        next = { children: new Map(), top: [] };
-        node.children.set(ch, next);
+        next = { children: null, top: [] };
+        (node.children ??= new Map()).set(ch, next);
         this.nodes++;
       }
       node = next;
@@ -48,7 +49,7 @@ export class TopKTrie {
   lookup(prefix: string, limit = this.k): Suggestion[] {
     let node: TrieNode | undefined = this.root;
     for (const ch of [...prefix.slice(0, this.maxPrefix)]) {
-      node = node.children.get(ch);
+      node = node.children?.get(ch);
       if (!node) return [];
     }
     // Prefix longer than maxPrefix: the node's list is a superset; filter exact.
@@ -72,7 +73,9 @@ export class TopKTrie {
   ): Promise<TopKTrie> {
     const trie = new TopKTrie(k, maxPrefix);
     const sorted = [...items].sort(
-      (a, b) => b.count - a.count || a.query.localeCompare(b.query),
+      (a, b) =>
+        b.count - a.count ||
+        (a.query < b.query ? -1 : a.query > b.query ? 1 : 0),
     );
     for (let i = 0; i < sorted.length; i++) {
       trie.insert(sorted[i]);
@@ -80,14 +83,4 @@ export class TopKTrie {
     }
     return trie;
   }
-}
-
-/** One canonical form for logging and lookup: lowercase, single spaces, trimmed, bounded. */
-export function normalizeQuery(q: string): string {
-  return q
-    .toLowerCase()
-    .normalize('NFKC')
-    .replace(/\s+/g, ' ')
-    .trim()
-    .slice(0, 100);
 }

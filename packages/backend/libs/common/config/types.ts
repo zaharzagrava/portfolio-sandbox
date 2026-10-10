@@ -206,6 +206,20 @@ export class SecretsManagerConfig {
   search_log_secret?: string;
   search_id_signing_key?: string;
 
+  /** S33: autocomplete settings, defaults in `autocomplete-config.ts`. */
+  autocomplete_catalog_budget_ms: number;
+  autocomplete_typo_budget_ms: number;
+  autocomplete_k: number;
+  autocomplete_depth: number;
+  autocomplete_min_searchers: number;
+  autocomplete_window_days: number;
+  autocomplete_cap: number;
+  autocomplete_poll_ms: number;
+  autocomplete_retention_count: number;
+  autocomplete_retention_grace_ms: number;
+  autocomplete_log_query_timeout_ms: number;
+  autocomplete_blocklist: string;
+
   /** S10: orders settings, defaults in `orders-config.ts`. */
   orders_hold_seconds: number;
   orders_cart_max_lines: number;

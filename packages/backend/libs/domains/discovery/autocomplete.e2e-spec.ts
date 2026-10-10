@@ -1,101 +1,71 @@
-import { INestApplication, Module } from '@nestjs/common';
-import request from 'supertest';
-import { v4 } from 'uuid';
-import { generateTestingModule } from '@app/test/utils/global-modules';
-import { applyClickHouseDdl } from '@app/test/utils/clickhouse-ddl';
-import { SeedsModule } from '@app/test/seeds/seeds.module';
-import { ClickHouseModule } from '@app/infrastructure/clickhouse/clickhouse.module';
-import { ClickHouseService } from '@app/infrastructure/clickhouse/clickhouse.service';
-import { ElasticsearchService } from '@app/infrastructure/elasticsearch/elasticsearch.service';
-import { JobsModule } from '@app/infrastructure/jobs/jobs.module';
-import { AutocompleteModule } from './autocomplete.module';
-import { AutocompleteService } from './application/autocomplete.service';
-import { AutocompleteBuilderJobs } from './infra/autocomplete-builder.jobs';
+import {
+  closeNodes,
+  createAutocompleteApp,
+  type AutocompleteTestApp,
+} from './testing/autocomplete-app';
 
-@Module({
-  imports: [ClickHouseModule, JobsModule],
-  providers: [AutocompleteBuilderJobs],
-})
-class BuilderSpecModule {}
-
-/** SD-12 end to end against real ClickHouse + MinIO + Redis: logs → build job → snapshot → hot-swap → /suggest. */
+/**
+ * SD-12 end to end against real ClickHouse + object storage + Redis: logs → build → snapshot → hot swap → /suggest.
+ * The detailed rows live in the autocomplete-suggest, -sources and -snapshot specs; this file keeps the original
+ * whole-journey checks (S33) against the new API.
+ */
 describe('Autocomplete (e2e)', () => {
-  let app: INestApplication;
-  let clickhouse: ClickHouseService;
+  let t: AutocompleteTestApp;
 
   beforeAll(async () => {
-    const moduleRef = await generateTestingModule(
-      [AutocompleteModule, BuilderSpecModule, SeedsModule],
-      { stores: ['redis', 'storage'] },
-    );
-    app = moduleRef.createNestApplication();
-    app.setGlobalPrefix('api');
-    await app.init();
-    clickhouse = app.get(ClickHouseService);
-    await applyClickHouseDdl(clickhouse, '030_search_queries.sql');
-    await clickhouse
-      .getClient()
-      .command({ query: 'TRUNCATE TABLE search_queries' });
+    t = await createAutocompleteApp();
   });
-
-  afterAll(async () => {
-    await app.close();
+  afterAll(() => closeNodes(t));
+  beforeEach(async () => {
+    await t.resetSearch();
+    await t.resetAutocomplete();
+    // an open breaker from an earlier test would hide the catalog half
+    t.clock.advance(10_000);
   });
+  afterEach(() => jest.restoreAllMocks());
 
-  const searches = (query: string, searchers: number, results = 10) =>
-    Array.from({ length: searchers }, () => ({
-      event_id: v4(),
-      query,
-      results,
-      user_hash: v4().slice(0, 16),
-      ts: new Date().toISOString().replace('Z', ''),
-    }));
+  it('S33 SD-12: popular, successful queries become suggestions; rare, failed and blocklisted ones do not', async () => {
+    await t.logQuery('iphone 17', 50);
+    await t.logQuery('iphone charger', 20);
+    await t.logQuery('iphne 17', 2); // typo: too rare
+    await t.logQuery('iphone xyz9000', 30, { results: 0 }); // returns nothing
+    await t.logQuery('iphone hacked', 40); // blocklisted
 
-  it('popular, successful queries become suggestions; rare, failed and blocklisted ones do not', async () => {
-    await clickhouse.getClient().insert({
-      table: 'search_queries',
-      format: 'JSONEachRow',
-      values: [
-        ...searches('iphone 17', 50),
-        ...searches('iphone charger', 20),
-        ...searches('iphne 17', 2), // typo: too rare
-        ...searches('iphone xyz9000', 30, 0), // returns nothing
-        ...searches('iphone hacked', 40), // blocklisted
-      ],
-    });
+    const outcome = await t.publish();
+    expect(outcome).toMatchObject({ outcome: 'published', queries: 2 });
 
-    expect(await app.get(AutocompleteBuilderJobs).build()).toBe(2);
-    expect(await app.get(AutocompleteService).refresh()).toBe(true);
-
-    jest
-      .spyOn(app.get(ElasticsearchService), 'suggestTitles')
-      .mockResolvedValue(['Apple iPhone 17 Pro 256GB']);
-    const res = await request(app.getHttpServer())
-      .get('/api/suggest?q=IPH')
+    const res = await t
+      .http()
+      .get('/api/suggest')
+      .query({ q: 'IPH' })
       .expect(200);
-    expect(res.body).toEqual({
-      queries: ['iphone 17', 'iphone charger'],
-      products: ['Apple iPhone 17 Pro 256GB'],
-      partial: false,
-    });
+    const queries = (res.body.suggestions as { text: string; source: string }[])
+      .filter((s) => s.source === 'query')
+      .map((s) => s.text);
+    expect(queries).toEqual(['iphone 17', 'iphone charger']);
+    expect(res.body.prefix).toBe('iph');
     expect(res.headers['cache-control']).toContain('s-maxage=60');
   });
 
-  it('a slow product index degrades to query suggestions within the budget', async () => {
+  it('S33 SD-12: a slow product index degrades to query suggestions within the budget', async () => {
+    await t.logQuery('iphone 17', 50);
+    await t.publish();
     jest
-      .spyOn(app.get(ElasticsearchService), 'suggestTitles')
+      .spyOn(t.engine, 'search')
       .mockImplementation(
-        (_q, _s, signal) =>
+        (_params: unknown, options?: { signal?: AbortSignal }) =>
           new Promise((_, reject) =>
-            signal!.addEventListener('abort', () =>
+            options?.signal?.addEventListener('abort', () =>
               reject(new Error('aborted')),
             ),
           ),
       );
+
     const started = Date.now();
-    const result = await app.get(AutocompleteService).suggest('iph');
-    expect(result.partial).toBe(true);
-    expect(result.queries.length).toBeGreaterThan(0);
+    const result = await t.suggest('ipho');
+
+    expect(result.degraded).toContain('catalog_timeout');
+    expect(result.suggestions.length).toBeGreaterThan(0);
     expect(Date.now() - started).toBeLessThan(500);
   });
 });
