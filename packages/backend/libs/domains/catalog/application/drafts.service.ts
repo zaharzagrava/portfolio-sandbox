@@ -11,10 +11,9 @@ import { v7 as uuidv7 } from 'uuid';
 import { ApiConfigService } from '@app/common/config';
 import { RedisService } from '@app/infrastructure/redis/redis.service';
 import { ObjectStorage } from '@app/infrastructure/storage/object-storage.port';
-import { ProductService } from './product.service';
-import { OutboxService } from '@app/infrastructure/outbox/outbox.service';
-import { TransactionRunner } from '@app/infrastructure/context';
-import { productChanged } from './events/product-events';
+import { ShopAccessService } from '@app/domains/tenancy';
+import { ProductCommandService } from './product-command.service';
+import { ProductQueryService } from './product-query.service';
 import { DraftStore } from '../infra/draft-store';
 import { CollabInstanceRegistry } from '../infra/instance-registry';
 import { signCollabTicket } from '../infra/collab-ticket';
@@ -33,12 +32,12 @@ export interface DraftRow {
 export class DraftsService {
   constructor(
     @InjectConnection() private readonly sequelize: Sequelize,
-    private readonly transactions: TransactionRunner,
     private readonly store: DraftStore,
     private readonly registry: CollabInstanceRegistry,
     private readonly storage: ObjectStorage,
-    private readonly products: ProductService,
-    private readonly outbox: OutboxService,
+    private readonly commands: ProductCommandService,
+    private readonly productQuery: ProductQueryService,
+    private readonly access: ShopAccessService,
     private readonly redis: RedisService,
     private readonly config: ApiConfigService,
   ) {}
@@ -52,22 +51,14 @@ export class DraftsService {
   ) {
     let seed: Y.Doc | null = null;
     if (productId) {
-      const [p] = await this.sequelize.query<{
-        title: string;
-        description: string;
-        price: string;
-        brand: string;
-        category: string;
-        quantity: number;
-      }>(
-        `SELECT title, description, price, brand, category, quantity FROM "Product" WHERE id = :productId AND "shopId" = :shopId`,
-        { type: QueryTypes.SELECT, replacements: { productId, shopId } },
-      );
+      const p = (
+        await this.productQuery.getProductsByIds([productId], { shopId })
+      ).get(productId);
       if (!p) throw new NotFoundException('Product not found in this shop');
       seed = seedListing({
         title: p.title,
         description: p.description,
-        price: Number(p.price),
+        price: p.priceMinor,
         brand: p.brand,
         category: p.category,
         quantity: p.quantity,
@@ -97,18 +88,12 @@ export class DraftsService {
   /** Where to connect + a 60 s ticket bound to this draft and the caller's permission level. */
   async connect(draftId: string, userId: string) {
     const draft = await this.get(draftId);
-    const [member] = await this.sequelize.query<{ role: string }>(
-      `SELECT role FROM "ShopMembership" WHERE "shopId" = :shopId AND "userId" = :userId`,
-      {
-        type: QueryTypes.SELECT,
-        replacements: { shopId: draft.shopId, userId },
-      },
-    );
-    if (!member) throw new NotFoundException('Draft not found'); // BOLA-safe: don't reveal other shops' drafts
+    const role = await this.access.getRole(draft.shopId, userId);
+    if (!role) throw new NotFoundException('Draft not found'); // BOLA-safe: don't reveal other shops' drafts
     const owner = await this.registry.ownerOf(draftId);
     if (!owner)
       throw new BadRequestException('Collaboration service unavailable');
-    const canWrite = member.role !== 'VIEWER' && draft.status === 'DRAFT';
+    const canWrite = role !== 'VIEWER' && draft.status === 'DRAFT';
     return {
       url: `${owner.url}/collab/${draftId}`,
       ticket: signCollabTicket(
@@ -157,9 +142,9 @@ export class DraftsService {
   }
 
   /**
-   * Publish: materialize the CRDT into a product revision (create, or update +
-   * version bump + products.events outbox in one transaction - the search
-   * projector reindexes it), freeze a "Published" version, close the draft.
+   * Publish: materialize the CRDT into a product revision through the catalog's one write path
+   * (`ProductCommandService`: create, or update with the current version, one full-state event in the same
+   * transaction), freeze a "Published" version, close the draft.
    */
   async publish(draftId: string, userId: string) {
     const draft = await this.get(draftId);
@@ -167,7 +152,7 @@ export class DraftsService {
       throw new BadRequestException('Draft already published');
     const { doc } = await this.store.load(draftId);
     const c = readListing(doc);
-    if (!c.title || c.price === null || c.price < 0)
+    if (!c.title || c.price === null || c.price < 1)
       throw new BadRequestException('Title and price are required to publish');
     const specs = Object.entries(c.specs)
       .map(([k, v]) => `- ${k}: ${v}`)
@@ -176,41 +161,33 @@ export class DraftsService {
 
     let productId = draft.productId;
     if (!productId) {
-      const created = await this.products.create(
+      const created = await this.commands.create(draft.shopId, userId, {
+        title: c.title,
+        description,
+        priceMinor: c.price,
+        // A product has a brand (1 to 100 characters); a draft that never set one is published as unbranded.
+        brand: c.brand?.trim() || 'Unbranded',
+        category: c.category ?? 'uncategorized',
+        quantity: c.quantity ?? 0,
+      });
+      productId = created.id;
+    } else {
+      const current = await this.commands.getForShop(draft.shopId, productId);
+      const updated = await this.commands.update(
+        draft.shopId,
+        productId,
         {
+          expectedVersion: current.version,
           title: c.title,
           description,
-          price: c.price,
-          brand: c.brand ?? '',
-          category: c.category ?? 'uncategorized',
-          quantity: c.quantity ?? 0,
+          priceMinor: c.price,
+          ...(c.brand?.trim() ? { brand: c.brand.trim() } : {}),
+          ...(c.category ? { category: c.category } : {}),
+          ...(c.quantity !== null ? { quantity: c.quantity } : {}),
         },
         userId,
-        draft.shopId,
       );
-      productId = (created as { id: string }).id;
-    } else {
-      await this.transactions.run(async (transaction) => {
-        await this.sequelize.query(
-          `UPDATE "Product" SET title = :title, description = :description, price = :price, brand = coalesce(:brand, brand), category = coalesce(:category, category),
-                  quantity = coalesce(:quantity, quantity), version = version + 1, "updatedAt" = now()
-           WHERE id = :productId AND "shopId" = :shopId`,
-          {
-            replacements: {
-              title: c.title,
-              description,
-              price: c.price,
-              brand: c.brand,
-              category: c.category,
-              quantity: c.quantity,
-              productId,
-              shopId: draft.shopId,
-            },
-            transaction,
-          },
-        );
-        await this.outbox.append(productChanged(productId!), transaction);
-      });
+      productId = updated.id;
     }
     await this.createVersion(
       draftId,

@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { AuthModule } from '@app/domains/identity';
+import { TenancyModule } from '@app/domains/tenancy';
 import { StorageModule } from '@app/infrastructure/storage/storage.module';
 import { DynamoModule } from '@app/infrastructure/dynamo/dynamo.module';
 import { ProductModule } from './product.module';
@@ -14,6 +15,7 @@ import { DraftsController } from './api/drafts.controller';
 @Module({
   imports: [
     AuthModule,
+    TenancyModule,
     StorageModule,
     DynamoModule,
     ProductModule,

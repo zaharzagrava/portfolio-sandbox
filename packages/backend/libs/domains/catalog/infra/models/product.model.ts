@@ -1,9 +1,7 @@
 import {
-  BelongsTo,
   Column,
   CreatedAt,
   DataType,
-  ForeignKey,
   Model,
   PrimaryKey,
   Scopes,
@@ -11,7 +9,6 @@ import {
   UpdatedAt,
 } from 'sequelize-typescript';
 import { Includeable, Sequelize, WhereOptions } from 'sequelize';
-import { UserModel as User } from '@app/domains/identity';
 
 export enum ProductScope {
   WithAll = 'WithAll',
@@ -66,18 +63,17 @@ export default class Product extends Model<Product, Partial<Product>> {
   declare id: string;
 
   /**
-   * Nullable for backwards compatibility with rows seeded before sellers
-   * existed as a concept; new products are always stamped with the
-   * authenticated creator (see ProductService#create).
+   * Legacy column: a plain id (no foreign key, IX.4), never serialised. The creator is `createdBy`; writers of other
+   * capabilities that have not converted yet still set this one (specs/domains/S05-products/gaps.md section C).
    */
-  @ForeignKey(() => User)
   @Column({ type: DataType.UUID, allowNull: true })
   declare sellerId: string | null;
 
-  @BelongsTo(() => User, { foreignKey: 'sellerId' })
-  declare seller: User;
+  /** User who created the product; a plain id. */
+  @Column({ type: DataType.UUID, allowNull: true })
+  declare createdBy: string | null;
 
-  /** Owning tenant (SD-02). Nullable until the backfill + contract step ran. */
+  /** Owning shop for life; a plain id (no foreign key). `NOT NULL` after the backfill and the contract migration. */
   @Column({ type: DataType.UUID, allowNull: true })
   declare shopId: string | null;
 
@@ -93,9 +89,31 @@ export default class Product extends Model<Product, Partial<Product>> {
   @Column({ type: DataType.STRING, allowNull: false })
   declare category: string;
 
-  /** Price in cents */
+  /** Legacy name of `priceMinor`; a trigger keeps the two equal until the last reader of `price` has moved. */
   @Column({ type: DataType.BIGINT, allowNull: false })
   declare price: number;
+
+  /** Price in minor units, `1…10,000,000,000`. Optional in the model only: the database fills it for legacy writers. */
+  @Column({ type: DataType.BIGINT, allowNull: true })
+  declare priceMinor: number;
+
+  /** ISO 4217 code of the platform currency. */
+  @Column({ type: DataType.STRING(3), allowNull: false, defaultValue: 'USD' })
+  declare currency: string;
+
+  @Column({
+    type: DataType.STRING(16),
+    allowNull: false,
+    defaultValue: 'ACTIVE',
+  })
+  declare status: 'ACTIVE' | 'ARCHIVED';
+
+  /** Stamped at creation from the shop; sandbox products are never public. */
+  @Column({ type: DataType.BOOLEAN, allowNull: false, defaultValue: false })
+  declare isSandbox: boolean;
+
+  @Column({ type: DataType.TEXT, allowNull: true })
+  declare externalSku: string | null;
 
   @Column({ type: DataType.FLOAT, allowNull: false, defaultValue: 0 })
   declare rating: number;
@@ -103,19 +121,22 @@ export default class Product extends Model<Product, Partial<Product>> {
   @Column({ type: DataType.JSONB, allowNull: false, defaultValue: [] })
   declare tags: string[];
 
-  /** Stock count (single-seller; OCC uses version). */
+  /** Stock count: `0…1,000,000,000`, changed only by the catalog's commands. */
   @Column({ type: DataType.INTEGER, allowNull: false, defaultValue: 0 })
   declare quantity: number;
 
-  /** Optimistic concurrency control version (feature #12). */
-  @Column({ type: DataType.INTEGER, allowNull: false, defaultValue: 0 })
+  /** Optimistic concurrency version: starts at 1, +1 on every committed change except a view flush. */
+  @Column({ type: DataType.INTEGER, allowNull: false, defaultValue: 1 })
   declare version: number;
 
   /** Write-behind counter (SD-34): incremented in Redis, flushed in batches by `products.flush-view-counts`. */
   @Column({ type: DataType.BIGINT, allowNull: false, defaultValue: 0 })
   declare viewCount: number;
 
-  /** Stub dense vector for k-NN demos (same dims as ES mapping). */
+  /**
+   * TRANSITIONAL: still mapped only because discovery's `search-reindex.service.ts` reads it through this model (S32
+   * owns the decision). No catalog view, event or cache entry carries it; `searchVector` is not mapped at all.
+   */
   @Column({ type: DataType.JSONB, allowNull: true })
   declare embedding: number[] | null;
 

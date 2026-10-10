@@ -78,6 +78,10 @@ export const OWNERSHIP = {
   ListingDraft: 'domain:catalog',
   ListingDraftVersion: 'domain:catalog',
   ProductMedia: 'domain:catalog',
+  ProductStatusHistory: 'domain:catalog',
+  ProductStockOperation: 'domain:catalog',
+  ProductShopState: 'domain:catalog',
+  ProductViewBatch: 'domain:catalog',
   // catalog-sync
   ImportJob: 'domain:catalog-sync',
   Integration: 'domain:catalog-sync',

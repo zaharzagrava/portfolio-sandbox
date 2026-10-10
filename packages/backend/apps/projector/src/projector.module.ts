@@ -59,9 +59,8 @@ import { RedisModule } from '@app/infrastructure/redis/redis.module';
 import { ElasticsearchModule } from '@app/infrastructure/elasticsearch/elasticsearch.module';
 import { ProjectionsModule } from '@app/infrastructure/projections/projections.module';
 import {
-  ProductSearchProjector,
   ProductModel as Product,
-  ProductCacheInvalidator,
+  ProductProjectorModule,
 } from '@app/domains/catalog';
 import { CacheModule } from '@app/infrastructure/cache/cache.module';
 
@@ -85,8 +84,7 @@ import { CacheModule } from '@app/infrastructure/cache/cache.module';
     TrendingConsumerModule,
     ProjectionsModule.forProjectors(
       [
-        ProductSearchProjector,
-        ProductCacheInvalidator,
+        ...ProductProjectorModule.projectors,
         BalanceProjector,
         UsageProjector,
         FeedFanoutConsumer,
@@ -112,6 +110,7 @@ import { CacheModule } from '@app/infrastructure/cache/cache.module';
         LlmCallsProjector,
       ],
       [
+        ProductProjectorModule,
         IntegrationsCoreModule,
         StoryCacheModule,
         WebhooksCoreModule,

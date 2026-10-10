@@ -57,3 +57,10 @@ Format: `[TAG] question → default taken → why`. BREAKING first, then CONTRAC
 - [LOCAL] Currency → one platform currency, validated, stored per product → expansion needs no contract change.
 - [LOCAL] `embedding` and `searchVector` columns → no longer written or serialized by the catalog; S32 decides where they live → D-16.
 - [LOCAL] Event `description` in the snapshot → included (≤ 4,000 characters) so projectors need no read.
+
+## Implementation notes (P1 pass, 2026-10-10)
+
+Two scenario wordings that the built framework answers differently; the implementation follows the framework and the contract's answer order, and neither blocks anything.
+
+- AS-02 says a `shopId` in the path that is not a UUID answers `400 validation_failed`. `contracts/http.md` ("Answer order on shop routes") and S03's `ShopScoped` guard answer the hidden-shop `404 shop_not_found` first, for a malformed shop id as for an unknown one (a `400` would tell a prober that the shape was right). Implemented and tested as `404` (`product-write.e2e-spec.ts`, "a shop id that is not a UUID"). A malformed product id is `400` as specified.
+- AS-44 lists "whose `type` is unknown" among the envelopes that are dead-lettered. The consumer framework (S53 AS-52) skips an event type the consumer does not handle (counted `ignored`, offset committed, no dead letter) and dead-letters a bad aggregate id, a payload that fails its schema and a newer contract version. Implemented and tested that way (`product-invalidation.e2e-spec.ts`, real broker): three dead letters, the unknown type ignored, no cache change, the rest of the batch applied.

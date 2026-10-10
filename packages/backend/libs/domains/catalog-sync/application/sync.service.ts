@@ -137,24 +137,41 @@ export class SyncService {
       const delta = stockDelta(op);
       if (!Number.isInteger(delta))
         throw new BadRequestException('integer stock deltas only');
-      const [row] = await this.sequelize.query<{ quantity: number }>(
-        `UPDATE "Product" SET quantity = quantity + :delta, version = version + 1, "updatedAt" = now() WHERE id = :productId AND "shopId" = :shopId RETURNING quantity`,
+      const [current] = await this.sequelize.query<{ quantity: number }>(
+        `SELECT quantity FROM "Product" WHERE id = :productId AND "shopId" = :shopId FOR UPDATE`,
         {
           type: QueryTypes.SELECT,
-          replacements: { delta, productId: op.productId, shopId },
+          replacements: { productId: op.productId, shopId },
           transaction,
         },
       );
-      if (!row)
+      if (!current)
         return { result: 'rejected', detail: { reason: 'unknown product' } };
-      await this.outbox.append(productChanged(op.productId), transaction);
-      // Deltas always apply (they commute); going negative means two devices sold the same last unit - a human decides.
-      return row.quantity < 0
+      // Stock never goes below zero (S05): the available part applies, the shortfall is an oversold conflict a human settles.
+      const applied = Math.max(delta, -current.quantity);
+      if (applied !== 0) {
+        await this.sequelize.query(
+          `UPDATE "Product" SET quantity = quantity + :applied, version = version + 1, "updatedAt" = now() WHERE id = :productId AND "shopId" = :shopId`,
+          {
+            replacements: { applied, productId: op.productId, shopId },
+            transaction,
+          },
+        );
+        await this.outbox.append(productChanged(op.productId), transaction);
+      }
+      const quantity = current.quantity + applied;
+      return applied !== delta
         ? {
             result: 'conflict',
-            detail: { reason: 'oversold', quantity: row.quantity, delta },
+            detail: {
+              reason: 'oversold',
+              quantity,
+              requested: delta,
+              applied,
+              shortfall: delta - applied,
+            },
           }
-        : { result: 'applied', detail: { quantity: row.quantity } };
+        : { result: 'applied', detail: { quantity } };
     }
 
     const clocks = await this.sequelize.query<{ field: string; hlc: string }>(

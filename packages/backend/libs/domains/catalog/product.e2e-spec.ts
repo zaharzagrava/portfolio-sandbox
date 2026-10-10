@@ -1,41 +1,31 @@
-import { INestApplication } from '@nestjs/common';
-import request from 'supertest';
 import { randomUUID as v4 } from 'crypto';
-import { generateTestingModule } from '@app/test/utils/global-modules';
-import { SeedsModule } from '@app/test/seeds/seeds.module';
-import { RateLimitModule } from '@app/infrastructure/rate-limit/rate-limit.module';
-import { CacheModule } from '@app/infrastructure/cache/cache.module';
-import { SeedsService } from '@app/test/seeds/seeds.service';
-import { TableName } from '@app/test/seeds/types';
-import { ProductModule } from './product.module';
-import { ProductService } from './application/product.service';
+import { ApiConfigService } from '@app/common/config';
 import { ElasticsearchService } from '@app/infrastructure/elasticsearch/elasticsearch.service';
+import { createProduct } from '@app/test/utils/catalog-fixtures';
+import { createCatalogApp, type CatalogTestApp } from './testing/catalog-app';
+import { createShopWorld, type ShopWorld } from './testing/catalog-spec-kit';
 
+/**
+ * The original `Product (e2e)` cases. Reading a product by id is still served by the catalog
+ * (`GET /api/products/:id`, deeper cases in `product-read.e2e-spec.ts`). Search moved out of the catalog (its
+ * routes are served by S32), so the search cases keep their assertions but call the search adapter,
+ * `ElasticsearchService.searchProducts`, which is what `/api/products/search` delegated to.
+ */
 describe('Product (e2e)', () => {
-  let app: INestApplication;
-  let seedsService: SeedsService;
-  let productService: ProductService;
+  let t: CatalogTestApp;
+  let w: ShopWorld;
   let esService: ElasticsearchService;
 
   beforeAll(async () => {
-    const moduleRef = await generateTestingModule(
-      [ProductModule, RateLimitModule, CacheModule, SeedsModule],
-      { stores: ['redis'] },
-    );
-    app = moduleRef.createNestApplication({ rawBody: true });
-    app.setGlobalPrefix('api');
-    await app.init();
-    seedsService = app.get(SeedsService);
-    productService = app.get(ProductService);
-    esService = app.get(ElasticsearchService);
+    t = await createCatalogApp();
+    esService = new ElasticsearchService(t.app.get(ApiConfigService));
   });
 
-  afterAll(async () => {
-    await app.close();
-  });
+  afterAll(() => t.close());
 
   beforeEach(async () => {
-    await seedsService.clean();
+    await t.reset();
+    w = await createShopWorld(t);
     // Clean ES properly by getting concrete index name
     try {
       const aliases = await esService
@@ -52,174 +42,127 @@ describe('Product (e2e)', () => {
   });
 
   it('retrieves a product by ID', async () => {
-    const [product] = await seedsService.createTreelike([
-      { __type__: TableName.Product, title: 'Test Product 123' },
-    ]);
+    const product = await createProduct(t.app, w.shop, {
+      title: 'Test Product 123',
+    });
 
-    const res = await request(app.getHttpServer())
-      .get(`/api/products/${product.id}`)
-      .expect(200);
+    const res = await t.http().get(`/api/products/${product.id}`).expect(200);
 
     expect(res.body.id).toBe(product.id);
     expect(res.body.title).toBe('Test Product 123');
+    expect(res.body.shopId).toBe(w.shop.id);
+    expect(res.headers.etag).toBe(`W/"${product.id}-v${product.version}"`);
   });
 
   it('returns 404 for non-existent product', async () => {
-    await request(app.getHttpServer()).get(`/api/products/${v4()}`).expect(404);
+    const res = await t.http().get(`/api/products/${v4()}`).expect(404);
+
+    expect(res.headers['content-type']).toContain('problem+json');
+    expect(res.body.status).toBe(404);
   });
 
   it('searches for products and respects pagination', async () => {
-    // Seed and index manually for test
-    const [p1, p2, p3] = await seedsService.createTreelike([
-      { __type__: TableName.Product, title: 'Apple iPhone' },
-      { __type__: TableName.Product, title: 'Apple iPad' },
-      { __type__: TableName.Product, title: 'Samsung Galaxy' },
-    ]);
-
+    const titles = ['Apple iPhone', 'Apple iPad', 'Samsung Galaxy'];
+    const ids = titles.map(() => v4());
     await esService.bulkUpsertProducts(
-      [
-        {
-          id: p1.id,
-          title: p1.title,
-          embedding: esService.stubEmbed(p1.title),
-        } as any,
-        {
-          id: p2.id,
-          title: p2.title,
-          embedding: esService.stubEmbed(p2.title),
-        } as any,
-        {
-          id: p3.id,
-          title: p3.title,
-          embedding: esService.stubEmbed(p3.title),
-        } as any,
-      ],
+      titles.map((title, i) => ({
+        id: ids[i],
+        title,
+        embedding: esService.stubEmbed(title),
+      })) as any,
       { refresh: true },
     );
 
-    // Search query
-    const res = await request(app.getHttpServer())
-      .get('/api/products/search?q=Apple')
-      .expect(200);
+    const res = await esService.searchProducts({ q: 'Apple' });
 
-    expect(res.body.hits).toHaveLength(2);
-    expect(res.body.hits.some((h: any) => h.id === p1.id)).toBe(true);
-    expect(res.body.hits.some((h: any) => h.id === p2.id)).toBe(true);
-    expect(res.body.total).toBe(2);
+    expect(res.hits).toHaveLength(2);
+    expect(res.hits.some((h: any) => h.id === ids[0])).toBe(true);
+    expect(res.hits.some((h: any) => h.id === ids[1])).toBe(true);
+    expect(res.total).toBe(2);
+
+    const page = await esService.searchProducts({ q: 'Apple', size: 1 });
+    expect(page.hits).toHaveLength(1);
+    expect(page.total).toBe(2);
+    const next = await esService.searchProducts({
+      q: 'Apple',
+      size: 1,
+      from: 1,
+    });
+    expect(next.hits).toHaveLength(1);
+    expect(next.hits[0].id).not.toBe(page.hits[0].id);
   });
 
   describe('search filters and sorting', () => {
     beforeEach(async () => {
-      // Seed products with specific prices, ratings, and creation dates
-      const [p1, p2, p3] = await seedsService.createTreelike([
+      const docs = [
+        { title: 'Cheap Phone', price: 10000, rating: 3.5, at: '2026-01-01' },
+        { title: 'Mid Phone', price: 30000, rating: 4.2, at: '2026-01-05' },
         {
-          __type__: TableName.Product,
-          title: 'Cheap Phone',
-          price: 10000,
-          rating: 3.5,
-          createdAt: new Date('2026-01-01'),
-        },
-        {
-          __type__: TableName.Product,
-          title: 'Mid Phone',
-          price: 30000,
-          rating: 4.2,
-          createdAt: new Date('2026-01-05'),
-        },
-        {
-          __type__: TableName.Product,
           title: 'Expensive Phone',
           price: 80000,
           rating: 4.8,
-          createdAt: new Date('2026-01-10'),
+          at: '2026-01-10',
         },
-      ]);
-
+      ];
       await esService.bulkUpsertProducts(
-        [
-          {
-            id: p1.id,
-            title: p1.title,
-            price: 10000,
-            rating: 3.5,
-            createdAt: new Date('2026-01-01').toISOString(),
-            embedding: esService.stubEmbed(p1.title),
-          } as any,
-          {
-            id: p2.id,
-            title: p2.title,
-            price: 30000,
-            rating: 4.2,
-            createdAt: new Date('2026-01-05').toISOString(),
-            embedding: esService.stubEmbed(p2.title),
-          } as any,
-          {
-            id: p3.id,
-            title: p3.title,
-            price: 80000,
-            rating: 4.8,
-            createdAt: new Date('2026-01-10').toISOString(),
-            embedding: esService.stubEmbed(p3.title),
-          } as any,
-        ],
+        docs.map((d) => ({
+          id: v4(),
+          title: d.title,
+          price: d.price,
+          rating: d.rating,
+          createdAt: new Date(d.at).toISOString(),
+          embedding: esService.stubEmbed(d.title),
+        })) as any,
         { refresh: true },
       );
     });
 
-    it('filters by price range', async () => {
-      const res = await request(app.getHttpServer())
-        .get('/api/products/search?priceMin=20000&priceMax=50000')
-        .expect(200);
+    const titlesOf = (res: { hits: any[] }) =>
+      res.hits.map((h) => h.source.title);
 
-      expect(res.body.hits).toHaveLength(1);
-      expect(res.body.hits[0].source.title).toBe('Mid Phone');
+    it('filters by price range', async () => {
+      const res = await esService.searchProducts({
+        priceMin: 20000,
+        priceMax: 50000,
+      });
+
+      expect(res.hits).toHaveLength(1);
+      expect(res.hits[0].source.title).toBe('Mid Phone');
     });
 
     it('filters by rating', async () => {
-      const res = await request(app.getHttpServer())
-        .get('/api/products/search?ratingMin=4.0')
-        .expect(200);
+      const res = await esService.searchProducts({ ratingMin: 4.0 });
 
-      expect(res.body.hits).toHaveLength(2);
-      expect(
-        res.body.hits.some((h: any) => h.source.title === 'Mid Phone'),
-      ).toBe(true);
-      expect(
-        res.body.hits.some((h: any) => h.source.title === 'Expensive Phone'),
-      ).toBe(true);
+      expect(res.hits).toHaveLength(2);
+      expect(titlesOf(res)).toContain('Mid Phone');
+      expect(titlesOf(res)).toContain('Expensive Phone');
     });
 
     it('sorts by price-asc', async () => {
-      const res = await request(app.getHttpServer())
-        .get('/api/products/search?sort=price-asc')
-        .expect(200);
+      const res = await esService.searchProducts({ sort: 'price-asc' });
 
-      expect(res.body.hits).toHaveLength(3);
-      expect(res.body.hits[0].source.title).toBe('Cheap Phone');
-      expect(res.body.hits[1].source.title).toBe('Mid Phone');
-      expect(res.body.hits[2].source.title).toBe('Expensive Phone');
+      expect(res.hits).toHaveLength(3);
+      expect(res.hits[0].source.title).toBe('Cheap Phone');
+      expect(res.hits[1].source.title).toBe('Mid Phone');
+      expect(res.hits[2].source.title).toBe('Expensive Phone');
     });
 
     it('sorts by price-desc', async () => {
-      const res = await request(app.getHttpServer())
-        .get('/api/products/search?sort=price-desc')
-        .expect(200);
+      const res = await esService.searchProducts({ sort: 'price-desc' });
 
-      expect(res.body.hits).toHaveLength(3);
-      expect(res.body.hits[0].source.title).toBe('Expensive Phone');
-      expect(res.body.hits[1].source.title).toBe('Mid Phone');
-      expect(res.body.hits[2].source.title).toBe('Cheap Phone');
+      expect(res.hits).toHaveLength(3);
+      expect(res.hits[0].source.title).toBe('Expensive Phone');
+      expect(res.hits[1].source.title).toBe('Mid Phone');
+      expect(res.hits[2].source.title).toBe('Cheap Phone');
     });
 
     it('sorts by newest', async () => {
-      const res = await request(app.getHttpServer())
-        .get('/api/products/search?sort=newest')
-        .expect(200);
+      const res = await esService.searchProducts({ sort: 'newest' });
 
-      expect(res.body.hits).toHaveLength(3);
-      expect(res.body.hits[0].source.title).toBe('Expensive Phone');
-      expect(res.body.hits[1].source.title).toBe('Mid Phone');
-      expect(res.body.hits[2].source.title).toBe('Cheap Phone');
+      expect(res.hits).toHaveLength(3);
+      expect(res.hits[0].source.title).toBe('Expensive Phone');
+      expect(res.hits[1].source.title).toBe('Mid Phone');
+      expect(res.hits[2].source.title).toBe('Cheap Phone');
     });
   });
 });

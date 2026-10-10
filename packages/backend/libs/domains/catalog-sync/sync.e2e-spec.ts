@@ -131,7 +131,7 @@ describe('Offline sync (e2e)', () => {
       'applied',
       'conflict',
     ]);
-    expect(await quantity(productId)).toBe(-1);
+    expect(await quantity(productId)).toBe(0); // never negative (S05 FR-031, S09 AS-08)
     expect(await sync.conflicts(shopId)).toHaveLength(1);
   });
 

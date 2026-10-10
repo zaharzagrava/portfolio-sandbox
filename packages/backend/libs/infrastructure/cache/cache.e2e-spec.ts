@@ -1,41 +1,55 @@
-import { INestApplication } from '@nestjs/common';
+import { INestApplication, Module } from '@nestjs/common';
+import { APP_FILTER } from '@nestjs/core';
+import { Test } from '@nestjs/testing';
 import request from 'supertest';
-import { v4, v7 } from 'uuid';
-import { generateTestingModule } from '@app/test/utils/global-modules';
+import { v4 } from 'uuid';
 import { inParallel, waitFor } from '@app/test/utils/async-helpers';
-import { SeedsModule } from '@app/test/seeds/seeds.module';
-import { SeedsService } from '@app/test/seeds/seeds.service';
-import { TableName } from '@app/test/seeds/types';
-import { RedisService } from '@app/infrastructure/redis/redis.service';
-import { ApiConfigService } from '@app/common/config';
-import { ProductModule } from '@app/domains/catalog';
-import { RateLimitModule } from '@app/infrastructure/rate-limit/rate-limit.module';
-import { CacheModule } from './cache.module';
-import { CacheService } from './cache.service';
+import { ApiConfigModule } from '@app/common/config/api-config.module';
+import { ErrorUtilsModule } from '@app/common/errors/error-utils/error-utils.module';
+import { AllExceptionsFilter } from '@app/common/exceptions-filter/exceptions-filter';
+import { RequestContextModule } from '@app/infrastructure/context/request-context.module';
+import { HealthModule } from '@app/infrastructure/health/health.module';
+import { ClockModule } from '@app/infrastructure/platform/clock.module';
+import { configureHttpApp } from '@app/infrastructure/platform/bootstrap-http';
+import {
+  CacheInstance,
+  createCacheInstance,
+} from './testing/cache-fixture.module';
+import {
+  FixtureStore,
+  HttpCachingFixtureModule,
+} from './testing/http-caching-fixture';
 import { WriteBehindCounter } from './write-behind-counter';
 
-/** SD-34 against the real test Redis/Postgres. */
+@Module({
+  imports: [
+    ApiConfigModule,
+    ClockModule,
+    RequestContextModule,
+    ErrorUtilsModule,
+    HealthModule,
+    HttpCachingFixtureModule,
+  ],
+  providers: [{ provide: APP_FILTER, useClass: AllExceptionsFilter }],
+})
+class CacheE2eHttpModule {}
+
+/**
+ * Smoke of the cache toolkit against the real test Redis. The earlier copy of this file imported the catalog's
+ * `ProductModule` (a cross-domain import); the product route cases now live in the catalog's own
+ * `product-read.e2e-spec.ts` and the HTTP cases here use the toolkit's neutral fixture.
+ */
 describe('Cache toolkit (e2e, real Redis)', () => {
-  let app: INestApplication;
-  let cache: CacheService;
-  let redis: RedisService;
-  let seedsService: SeedsService;
+  let one: CacheInstance;
+  let two: CacheInstance;
 
   beforeAll(async () => {
-    const moduleRef = await generateTestingModule(
-      [CacheModule, ProductModule, RateLimitModule, SeedsModule],
-      { stores: ['redis'] },
-    );
-    app = moduleRef.createNestApplication();
-    app.setGlobalPrefix('api');
-    await app.init();
-    cache = app.get(CacheService);
-    redis = app.get(RedisService);
-    seedsService = app.get(SeedsService);
+    one = await createCacheInstance();
+    two = await createCacheInstance();
   });
 
   afterAll(async () => {
-    await app.close();
+    await Promise.all([one.close(), two.close()]);
   });
 
   const key = () => `spec:cache:${v4()}`;
@@ -50,7 +64,7 @@ describe('Cache toolkit (e2e, real Redis)', () => {
     };
 
     const results = await inParallel(200, () =>
-      cache.getOrLoad(k, loader, { ttlMs: 60_000 }),
+      one.cache.getOrLoad(k, loader, { ttlMs: 60_000 }),
     );
 
     expect(calls).toBe(1);
@@ -65,7 +79,6 @@ describe('Cache toolkit (e2e, real Redis)', () => {
 
   it('cross-instance: a second CacheService (another pod) waits for the lock holder instead of recomputing', async () => {
     const k = key();
-    const otherPod = new CacheService(redis, app.get(ApiConfigService));
     let calls = 0;
     const loader = async () => {
       calls++;
@@ -74,8 +87,8 @@ describe('Cache toolkit (e2e, real Redis)', () => {
     };
 
     await Promise.all([
-      cache.getOrLoad(k, loader, { ttlMs: 60_000 }),
-      otherPod.getOrLoad(k, loader, { ttlMs: 60_000 }),
+      one.cache.getOrLoad(k, loader, { ttlMs: 60_000 }),
+      two.cache.getOrLoad(k, loader, { ttlMs: 60_000 }),
     ]);
     expect(calls).toBe(1);
   });
@@ -84,12 +97,12 @@ describe('Cache toolkit (e2e, real Redis)', () => {
     const k = key();
     let version = 1;
     const loader = async () => ({ version: version });
-    await cache.getOrLoad(k, loader, { ttlMs: 200, swrMs: 60_000 });
+    await one.cache.getOrLoad(k, loader, { ttlMs: 200, swrMs: 60_000 });
 
     version = 2;
-    await new Promise((r) => setTimeout(r, 300)); // soft-expired, still within SWR
+    one.clock.advance(300); // soft-expired, still within SWR (the toolkit reads the injected clock)
 
-    const served = await cache.getOrLoad(k, loader, {
+    const served = await one.cache.getOrLoad(k, loader, {
       ttlMs: 200,
       swrMs: 60_000,
     });
@@ -97,11 +110,13 @@ describe('Cache toolkit (e2e, real Redis)', () => {
 
     await waitFor(
       async () =>
-        (await cache.getOrLoad(k, loader, { ttlMs: 60_000, swrMs: 60_000 }))
-          ?.version === 2,
-      {
-        description: 'background refresh',
-      },
+        (
+          await one.cache.getOrLoad(k, loader, {
+            ttlMs: 60_000,
+            swrMs: 60_000,
+          })
+        )?.version === 2,
+      { description: 'background refresh' },
     );
   });
 
@@ -114,7 +129,7 @@ describe('Cache toolkit (e2e, real Redis)', () => {
     };
     for (let i = 0; i < 5; i++)
       expect(
-        await cache.getOrLoad(k, loader, {
+        await one.cache.getOrLoad(k, loader, {
           ttlMs: 60_000,
           negativeTtlMs: 10_000,
         }),
@@ -124,31 +139,25 @@ describe('Cache toolkit (e2e, real Redis)', () => {
 
   it('invalidate drops L1 copies on other instances via pub/sub', async () => {
     const k = key();
-    const otherPod = new CacheService(redis, app.get(ApiConfigService));
-    await otherPod.onModuleInit();
-
     let value = 'old';
     const loader = async () => value;
-    await otherPod.getOrLoad(k, loader, { ttlMs: 60_000, l1: 'always' });
+    await two.cache.getOrLoad(k, loader, { ttlMs: 60_000, l1: 'always' });
 
     value = 'new';
-    await cache.invalidate([k]);
+    await one.cache.invalidate([k]);
 
     await waitFor(
       async () =>
-        (await otherPod.getOrLoad(k, loader, {
+        (await two.cache.getOrLoad(k, loader, {
           ttlMs: 60_000,
           l1: 'always',
         })) === 'new',
-      {
-        description: 'L1 invalidated on the other pod',
-      },
+      { description: 'L1 invalidated on the other pod' },
     );
-    await otherPod.onModuleDestroy();
   });
 
   it('write-behind counter: drain takes everything atomically; restore puts it back', async () => {
-    const counter = new WriteBehindCounter(redis, `spec-${v4()}`);
+    const counter = new WriteBehindCounter(one.redis, `spec-${v4()}`);
     await Promise.all(
       Array.from({ length: 100 }, (_, i) =>
         counter.increment(i % 2 ? 'a' : 'b'),
@@ -163,38 +172,52 @@ describe('Cache toolkit (e2e, real Redis)', () => {
     expect(Object.fromEntries(await counter.drain())).toEqual({ a: 50, b: 50 });
   });
 
-  describe('GET /api/products/:id', () => {
-    beforeEach(async () => {
-      await seedsService.clean();
+  describe('GET /api/fixture/docs/:id (neutral fixture replacing the product route cases)', () => {
+    let app: INestApplication;
+    let store: FixtureStore;
+    const tenant = { 'x-tenant': 'tenant-a' };
+
+    beforeAll(async () => {
+      const moduleRef = await Test.createTestingModule({
+        imports: [CacheE2eHttpModule],
+      }).compile();
+      app = moduleRef.createNestApplication();
+      configureHttpApp(app, {
+        useStructuredLogger: false,
+        processHandlers: false,
+      });
+      await app.init();
+      store = app.get(FixtureStore);
     });
 
-    it('returns the product with an ETag, 304 on If-None-Match, counts the view write-behind', async () => {
-      const [product] = await seedsService.createTreelike([
-        { __type__: TableName.Product, title: 'iPhone 17 Pro' },
-      ]);
+    afterAll(async () => {
+      await app.close();
+    });
+
+    it('returns the document with an ETag and answers 304 on If-None-Match', async () => {
+      store.put({ id: 'c1', version: 4, tenant: 'tenant-a', title: 'Phone' });
 
       const first = await request(app.getHttpServer())
-        .get(`/api/products/${product.id}`)
+        .get('/api/fixture/docs/c1')
+        .set(tenant)
         .expect(200);
-      expect(first.body.title).toBe('iPhone 17 Pro');
-      expect(first.headers.etag).toBe(`W/"${product.id}-v${product.version}"`);
+      expect(first.body.title).toBe('Phone');
+      expect(first.headers.etag).toBe('W/"c1-v4"');
 
-      await request(app.getHttpServer())
-        .get(`/api/products/${product.id}`)
+      const repeat = await request(app.getHttpServer())
+        .get('/api/fixture/docs/c1')
+        .set(tenant)
         .set('If-None-Match', first.headers.etag)
         .expect(304);
-
-      const views = await redis.client.hget(
-        'counter:{product-views}:pending',
-        product.id,
-      );
-      expect(Number(views)).toBe(2);
+      expect(repeat.text).toBe('');
     });
 
-    it('unknown id → 404 Problem Details, and the miss is negatively cached', async () => {
-      const id = v7();
-      await request(app.getHttpServer()).get(`/api/products/${id}`).expect(404);
-      expect(await redis.client.exists(`product:v1:${id}`)).toBe(1);
+    it('unknown id → 404 Problem Details', async () => {
+      const res = await request(app.getHttpServer())
+        .get(`/api/fixture/docs/${v4()}`)
+        .set(tenant)
+        .expect(404);
+      expect(res.headers['content-type']).toContain('problem+json');
     });
   });
 });
