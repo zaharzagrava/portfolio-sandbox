@@ -239,6 +239,29 @@ export const httpProductionRule: RuleCheck = (ctx) => {
   return found;
 };
 
+/**
+ * Google sign-in (S02 FR-040): a client id without its secret (or the reverse) and a redirect base that is not https
+ * (outside localhost) refuse to start; with Google configured the redirect base is required (no silent fall-back to
+ * the backend host).
+ */
+export const validateOidcConfig: RuleCheck = (ctx) => {
+  const found = requireTogether([
+    'google_oidc_client_id',
+    'google_oidc_client_secret',
+  ])(ctx);
+  found.push(
+    ...httpsUrl('auth_redirect_base_url', { allowLocalhost: true })(ctx),
+  );
+  if (
+    isSet(ctx.get('google_oidc_client_id')) &&
+    !isSet(ctx.get('auth_redirect_base_url'))
+  )
+    found.push(
+      'auth_redirect_base_url is required when Google sign-in is configured',
+    );
+  return found;
+};
+
 /** Rules owned by the platform toolkit itself. */
 export const platformRules: ConfigRule[] = [
   { owner: 'platform', keys: ['platform_currency'], validate: currencyRule },
@@ -266,6 +289,15 @@ export const platformRules: ConfigRule[] = [
     owner: 'platform',
     keys: ['trusted_proxies', 'cors_allowed_origins'],
     validate: httpProductionRule,
+  },
+  {
+    owner: 'identity',
+    keys: [
+      'google_oidc_client_id',
+      'google_oidc_client_secret',
+      'auth_redirect_base_url',
+    ],
+    validate: validateOidcConfig,
   },
   {
     owner: 'platform',

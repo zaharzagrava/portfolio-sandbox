@@ -32,3 +32,54 @@ export const PasswordChanged = defineEvent(
   1,
   z.object({ userId: z.string() }),
 );
+
+export const MfaEnabled = defineEvent(
+  'identity.mfa_enabled',
+  'identity',
+  1,
+  z.object({ userId: z.string() }),
+);
+
+export const MfaDisabled = defineEvent(
+  'identity.mfa_disabled',
+  'identity',
+  1,
+  z.object({
+    userId: z.string(),
+    reason: z.enum(['user', 'account_linking']),
+  }),
+);
+
+export const MfaRecoveryCodeUsed = defineEvent(
+  'identity.mfa_recovery_code_used',
+  'identity',
+  1,
+  z.object({ userId: z.string(), remaining: z.number().int().min(0) }),
+);
+
+export const MfaRecoveryCodesRegenerated = defineEvent(
+  'identity.mfa_recovery_codes_regenerated',
+  'identity',
+  1,
+  z.object({ userId: z.string() }),
+);
+
+export const FederatedIdentityLinked = defineEvent(
+  'identity.federated_identity_linked',
+  'identity',
+  1,
+  z.object({
+    userId: z.string(),
+    provider: z.string(),
+    linkMethod: z.enum(['login', 'email_match', 'explicit']),
+    passwordInvalidated: z.boolean(),
+    mfaReset: z.boolean(),
+  }),
+);
+
+export const FederatedIdentityUnlinked = defineEvent(
+  'identity.federated_identity_unlinked',
+  'identity',
+  1,
+  z.object({ userId: z.string(), provider: z.string() }),
+);

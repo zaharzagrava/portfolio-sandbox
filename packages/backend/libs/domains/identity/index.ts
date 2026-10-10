@@ -23,6 +23,8 @@ export {
   UserDirectoryService,
 } from './application/user-directory.service';
 export type { UserSummaryDto } from './application/user-directory.service';
+export { SecondFactorService } from './application/second-factor.service';
+export { OidcProviderRegistry } from './application/oidc-provider-registry';
 export { SessionIssuer } from './application/session-issuer.service';
 export type { IssuedSession } from './application/session-issuer.service';
 export { SessionRevocationService } from './application/session-revocation.service';
@@ -31,6 +33,12 @@ export type {
   ServicePrincipal,
 } from './domain/authenticated-user';
 export {
+  FederatedIdentityLinked,
+  FederatedIdentityUnlinked,
+  MfaDisabled,
+  MfaEnabled,
+  MfaRecoveryCodeUsed,
+  MfaRecoveryCodesRegenerated,
   PasswordChanged,
   RegistrationDuplicateAttempted,
   UserRegistered,

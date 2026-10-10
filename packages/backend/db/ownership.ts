@@ -58,6 +58,9 @@ export const OWNERSHIP = {
   FederatedIdentity: 'domain:identity',
   SigningKey: 'domain:identity',
   PasswordResetToken: 'domain:identity',
+  SecondFactor: 'domain:identity',
+  MfaRecoveryCode: 'domain:identity',
+  MfaChallengeState: 'domain:identity',
   // tenancy
   Shop: 'domain:tenancy',
   ShopMembership: 'domain:tenancy',

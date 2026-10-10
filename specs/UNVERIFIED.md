@@ -34,3 +34,6 @@ interviews) until its status says so. The implementation loop appends here (rule
 | S01 | SC-005 (edge half): zero identity calls per request at the edge and zero rejected valid tokens across a key rotation | same file (rotate keys under k6 through `packages/edge-be`) | not run |
 | S01 | SC-006: 2,000 logins/s fleet-wide, p99 login < 300 ms, refresh < 50 ms, overload shed with 503 + Retry-After | same file (k6 login storm on staging) | not run |
 | S01 | SC-008 (browser half): no access or refresh token in script-readable storage in the cookie flow | same file (W01 Playwright journey AS-86 inspecting storage and `document.cookie`) | not run |
+| S02 | SC-004 (latency half): 95 % of Google sign-ins complete within 3 s of approval | `specs/domains/S02-mfa-oidc/quickstart.md`, "Ops artifacts" (200 sign-ins on staging, p95 from callback to rendered page) | not run |
+| S02 | SC-007: a member enables the authenticator app and saves recovery codes in under 2 minutes | same file (W01 journey AS-65 with a stopwatch assertion) | not run |
+| S02 | SC-008 (browser half): no token, code, secret, state, nonce or verifier in script-readable browser storage across the S02 flows | same file (W01 Playwright journeys AS-65/AS-66 inspecting storage, `document.cookie`, URL history) | not run |

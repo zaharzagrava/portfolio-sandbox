@@ -432,6 +432,10 @@ export class ApiConfigService {
             verify: joi.string().optional().allow(''),
             name: 'GOOGLE_OIDC_CLIENT_SECRET',
           },
+          google_oidc_issuer: {
+            verify: joi.string().uri().optional().allow(''),
+            name: 'GOOGLE_OIDC_ISSUER',
+          },
           auth_redirect_base_url: {
             verify: joi.string().optional().allow(''),
             name: 'AUTH_REDIRECT_BASE_URL',

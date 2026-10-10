@@ -65,6 +65,31 @@ export const identityRatePolicies = definePolicies('identity', {
     count: 'failures-only',
     resetOnSuccess: true,
   },
+  // S02. `auth.mfa.account` is enforced from code (`MfaAttemptBudget`): the subject is the user, known only after the
+  // challenge verifies, and one budget is shared by verify, confirm, regenerate and disable.
+  'auth.mfa.ip': {
+    algorithm: 'slidingWindow',
+    limit: 20,
+    windowMs: 60_000,
+    key: 'ip',
+    failMode: 'closed',
+  },
+  'auth.mfa.account': {
+    algorithm: 'slidingWindow',
+    limit: 5,
+    windowMs: 15 * 60_000,
+    key: 'user',
+    failMode: 'closed',
+    count: 'failures-only',
+    resetOnSuccess: true,
+  },
+  'auth.oidc.ip': {
+    algorithm: 'slidingWindow',
+    limit: 30,
+    windowMs: 60_000,
+    key: 'ip',
+    failMode: 'closed',
+  },
 } as const);
 
 declare module '@app/infrastructure/rate-limit/rate-limit.types' {

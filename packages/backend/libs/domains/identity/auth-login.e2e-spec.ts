@@ -14,6 +14,7 @@ import {
   decodeJwt,
   TEST_PASSWORD,
 } from './testing/auth-app';
+import { enableSecondFactor } from './testing/mfa-fixtures';
 import { PasswordHasher } from './infra/crypto/password-hasher';
 import { USER_REPOSITORY, type UserRepository } from './domain/ports';
 
@@ -299,7 +300,7 @@ describe('Login', () => {
 
   it('S01 AS-19: an enrolled second factor gets a challenge, no session and no cookie', async () => {
     const user = await t.seedUser({ email: 'mfa@example.com' });
-    await user.update({ mfaSecretEnc: 'sealed', mfaEnabledAt: new Date() });
+    await enableSecondFactor(t, user.id);
 
     const res = await login({
       email: 'mfa@example.com',
@@ -309,7 +310,7 @@ describe('Login', () => {
     const body = mfaChallengeSchema.parse(res.body);
     const { header, claims } = decodeJwt(body.mfaToken);
     expect(header.typ).toBe('mfa+jwt');
-    expect(claims).toMatchObject({ aud: 'mfa', sub: user.id });
+    expect(claims).toMatchObject({ aud: 'mfa', sub: user.id, fa: 'pwd' });
     expect((claims.exp as number) - (claims.iat as number)).toBe(300);
     expect(res.headers['set-cookie']).toBeUndefined();
     expect(await authItems()).toHaveLength(0);

@@ -1,6 +1,6 @@
 import { getModelToken } from '@nestjs/sequelize';
-import { generate } from 'otplib';
 import * as bcrypt from 'bcrypt';
+import { generate } from 'otplib';
 import { authSessionSchema } from '@marketplace-sandbox/contracts';
 import {
   AuthTestApp,
@@ -11,14 +11,13 @@ import {
 import User from './infra/models/user.model';
 import SigningKey from './infra/models/signing-key.model';
 import { KeyStore } from './infra/keys/key-store.service';
-import { SecretBox } from './infra/crypto/secret-box';
 
 /**
  * Transitional (S01 T089): the scenarios of the old catch-all file now live in `auth-register`, `auth-login`,
  * `auth-tokens` and `auth-refresh`. What stays here until its own capability file exists: key rotation (S01 US7,
- * `auth-jwks-keys`) and the S02 second-factor seam.
+ * `auth-jwks-keys`). The second-factor case moved to S02's `mfa-*` files.
  */
-describe('Auth sessions: key rotation and second factor (transitional)', () => {
+describe('Auth sessions: key rotation (transitional)', () => {
   let t: AuthTestApp;
   let userModel: typeof User;
   let keyModel: typeof SigningKey;
@@ -89,9 +88,10 @@ describe('Auth sessions: key rotation and second factor (transitional)', () => {
     const session = await login(user.email!);
     const auth = { Authorization: `Bearer ${session.accessToken.token}` };
 
-    await t.http().post('/api/auth/mfa/enroll').set(auth).expect(201);
-    const enrolled = await userModel.findOne({ where: { id: user.id } });
-    const secret = t.app.get(SecretBox).open(enrolled!.mfaSecretEnc!);
+    // S02 contract: enroll answers 200 with the manual key (the sealed secret is bound to the user).
+    const { manualEntryKey: secret } = (
+      await t.http().post('/api/auth/mfa/enroll').set(auth).expect(200)
+    ).body;
 
     const confirmCode = await generate({ secret });
     const { recoveryCodes } = (
@@ -100,7 +100,7 @@ describe('Auth sessions: key rotation and second factor (transitional)', () => {
         .post('/api/auth/mfa/confirm')
         .set(auth)
         .send({ code: confirmCode })
-        .expect(201)
+        .expect(200)
     ).body;
     expect(recoveryCodes).toHaveLength(10);
 

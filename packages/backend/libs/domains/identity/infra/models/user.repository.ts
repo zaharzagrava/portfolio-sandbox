@@ -12,7 +12,6 @@ const toRecord = (u: User): UserRecord => ({
   email: u.email,
   passwordHash: u.passwordHash,
   role: u.role,
-  mfaEnabled: u.mfaEnabledAt != null,
   createdAt: u.createdAt,
 });
 
@@ -71,6 +70,61 @@ export class SequelizeUserRepository implements UserRepository {
       { bind: [input.email], transaction, type: QueryTypes.SELECT },
     );
     return { id: existing[0].id, created: false };
+  }
+
+  async clearPassword(id: string): Promise<boolean> {
+    const updated = await this.sequelize.query<{ id: string }>(
+      `UPDATE "User" SET "passwordHash" = NULL, "updatedAt" = $2
+       WHERE "id" = $1 AND "passwordHash" IS NOT NULL
+       RETURNING "id"`,
+      {
+        bind: [id, this.clock.now()],
+        transaction: getActiveTransaction(),
+        type: QueryTypes.SELECT,
+      },
+    );
+    return updated.length > 0;
+  }
+
+  async lookupByEmail(email: string) {
+    const [row] = await this.sequelize.query<{
+      id: string;
+      email: string | null;
+      passwordHash: string | null;
+      deletedAt: Date | null;
+    }>(
+      `SELECT "id","email","passwordHash","deletedAt" FROM "User"
+       WHERE lower("email") = $1 AND "email" IS NOT NULL LIMIT 1`,
+      {
+        bind: [email],
+        transaction: getActiveTransaction(),
+        type: QueryTypes.SELECT,
+      },
+    );
+    return row
+      ? {
+          id: row.id,
+          email: row.email,
+          hasPassword: row.passwordHash != null,
+          deleted: row.deletedAt != null,
+        }
+      : null;
+  }
+
+  async insertFederated(input: { email: string | null; role: Role }) {
+    const now = this.clock.now();
+    const [inserted] = await this.sequelize.query<{ id: string }>(
+      `INSERT INTO "User" ("email", "passwordHash", "role", "createdAt", "updatedAt")
+       VALUES ($1, NULL, $2::"enum_User_role", $3, $3)
+       ON CONFLICT DO NOTHING
+       RETURNING "id"`,
+      {
+        bind: [input.email, input.role, now],
+        transaction: getActiveTransaction(),
+        type: QueryTypes.SELECT,
+      },
+    );
+    return inserted ? { id: inserted.id } : null;
   }
 
   async replacePasswordHash(

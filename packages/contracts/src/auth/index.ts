@@ -18,7 +18,48 @@ export const mfaChallengeSchema = z.object({
   mfaToken: z.string().min(1),
 });
 
-export const acceptedSchema = z.object({ status: z.literal('accepted') });
+/** `GET /auth/mfa`: the state of the caller's second factor; never a secret or a digest (S02 contracts/http.md). */
+export const mfaStatusSchema = z
+  .object({
+    state: z.enum(['none', 'pending', 'enabled']),
+    enabledAt: z.string().optional(),
+    recoveryCodesRemaining: z.number().int().min(0).optional(),
+  })
+  .strict();
+
+export const mfaEnrollSchema = z
+  .object({
+    otpauthUri: z.string().startsWith('otpauth://totp/'),
+    manualEntryKey: z.string().min(1),
+  })
+  .strict();
+
+export const mfaRecoveryCodesSchema = z
+  .object({
+    recoveryCodes: z
+      .array(z.string().regex(/^[A-Z2-9]{5}-[A-Z2-9]{5}$/))
+      .length(10),
+  })
+  .strict();
+
+export const oidcProviderSchema = z
+  .object({ id: z.string().min(1), displayName: z.string().min(1) })
+  .strict();
+
+export const oidcStartSchema = z
+  .object({ authorizationUrl: z.string().url() })
+  .strict();
+
+export const federatedIdentitySchema = z
+  .object({
+    id: z.string().uuid(),
+    provider: z.string().min(1),
+    email: z.string().nullable(),
+    linkedAt: z.string(),
+  })
+  .strict();
+
+export const acceptedSchema =z.object({ status: z.literal('accepted') });
 
 export const sessionListItemSchema = z.object({
   sessionId: z.string(),

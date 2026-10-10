@@ -12,7 +12,16 @@ import { TokenAuthService } from './application/token-auth.service';
 import { AccessTokenSigner } from './application/access-token-signer.service';
 import { SequelizeUserRepository } from './infra/models/user.repository';
 import { UserDirectoryService } from './application/user-directory.service';
+import SecondFactor from './infra/models/second-factor.model';
+import MfaRecoveryCode from './infra/models/mfa-recovery-code.model';
+import MfaChallengeState from './infra/models/mfa-challenge-state.model';
+import { SequelizeSecondFactorRepository } from './infra/models/second-factor.repository';
+import { SequelizeMfaChallengeRepository } from './infra/models/mfa-challenge.repository';
+import { MfaMaintenanceService } from './application/mfa-maintenance.service';
+import { OidcProviderRegistry } from './application/oidc-provider-registry';
 import {
+  MFA_CHALLENGE_REPOSITORY,
+  SECOND_FACTOR_REPOSITORY,
   SECRET_SEALER,
   SIGNING_KEY_REPOSITORY,
   USER_REPOSITORY,
@@ -27,7 +36,13 @@ import {
  */
 @Module({
   imports: [
-    SequelizeModule.forFeature([User, SigningKey]),
+    SequelizeModule.forFeature([
+      User,
+      SigningKey,
+      SecondFactor,
+      MfaRecoveryCode,
+      MfaChallengeState,
+    ]),
     ApiConfigModule,
     ClockModule,
   ],
@@ -40,6 +55,16 @@ import {
       useClass: SequelizeSigningKeyRepository,
     },
     { provide: USER_REPOSITORY, useClass: SequelizeUserRepository },
+    {
+      provide: SECOND_FACTOR_REPOSITORY,
+      useClass: SequelizeSecondFactorRepository,
+    },
+    {
+      provide: MFA_CHALLENGE_REPOSITORY,
+      useClass: SequelizeMfaChallengeRepository,
+    },
+    MfaMaintenanceService,
+    OidcProviderRegistry,
     TokenAuthService,
     AccessTokenSigner,
     RevocationMarkers,
@@ -49,6 +74,10 @@ import {
     KeyStore,
     SecretBox,
     USER_REPOSITORY,
+    SECOND_FACTOR_REPOSITORY,
+    MFA_CHALLENGE_REPOSITORY,
+    MfaMaintenanceService,
+    OidcProviderRegistry,
     TokenAuthService,
     AccessTokenSigner,
     RevocationMarkers,

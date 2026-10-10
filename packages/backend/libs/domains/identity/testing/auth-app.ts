@@ -10,6 +10,10 @@ import { generateTestingModule } from '@app/test/utils/global-modules';
 import { SeedsModule } from '@app/test/seeds/seeds.module';
 import { SeedsService } from '@app/test/seeds/seeds.service';
 import { FakeBreachChecker } from '@app/test/fakes/breach-checker.fake';
+import {
+  ManualTimeSource,
+  TimeSource,
+} from '@app/infrastructure/rate-limit/time-source';
 import { AuthApiModule } from '../auth-api.module';
 import { BREACH_CHECKER } from '../domain/ports';
 import { KeyStore } from '../infra/keys/key-store.service';
@@ -59,6 +63,8 @@ export function decodeJwt(token: string): {
 export interface AuthTestApp {
   app: INestApplication;
   clock: FakeClock;
+  /** Only moves rate-limit windows when the app was created with `manualRateTime`. */
+  rateTime: ManualTimeSource;
   breach: FakeBreachChecker;
   seeds: SeedsService;
   hasher: PasswordHasher;
@@ -82,20 +88,33 @@ export interface AuthTestApp {
  * dependencies are replaced: the breached-password corpus and the clock (F-S50-2).
  */
 export async function createAuthApp(
-  options: { extraImports?: unknown[] } = {},
+  options: {
+    extraImports?: unknown[];
+    /** Rate-limit windows follow `rateTime` (moved with `advance`) instead of the store's own clock. */
+    manualRateTime?: boolean;
+    /** Replaces providers (the fake OIDC provider's options, a config value, ...). */
+    overrides?: Array<{ provide: unknown; useValue: unknown }>;
+  } = {},
 ): Promise<AuthTestApp> {
   const clock = new FakeClock(new Date());
   const breach = new FakeBreachChecker();
+  const rateTime = new ManualTimeSource(Date.now());
   const moduleRef = await generateTestingModule(
     [AuthApiModule, SeedsModule, ...(options.extraImports ?? [])],
     {
       stores: ['redis', 'dynamo'],
-      customize: (builder) =>
-        builder
+      customize: (builder) => {
+        let b = builder
           .overrideProvider(CLOCK)
           .useValue(clock)
           .overrideProvider(BREACH_CHECKER)
-          .useValue(breach),
+          .useValue(breach);
+        if (options.manualRateTime)
+          b = b.overrideProvider(TimeSource).useValue(rateTime);
+        for (const o of options.overrides ?? [])
+          b = b.overrideProvider(o.provide).useValue(o.useValue);
+        return b;
+      },
     },
   );
   const app = moduleRef.createNestApplication({ bufferLogs: false });
@@ -110,6 +129,7 @@ export async function createAuthApp(
   return {
     app,
     clock,
+    rateTime,
     breach,
     seeds,
     hasher,
@@ -117,6 +137,7 @@ export async function createAuthApp(
     async reset() {
       await seeds.clean();
       clock.set(new Date());
+      rateTime.set(Date.now());
       breach.reset();
       app.get(KeyStore).invalidate();
     },

@@ -5,17 +5,19 @@ const HOUR = 3_600_000;
 describe('S01 AS-22: identity rate-limit policies', () => {
   const p = identityRatePolicies.policies;
 
-  it('declares exactly the seven auth.* policies, owned by identity', () => {
+  it('declares the seven S01 auth.* policies, owned by identity', () => {
     expect(identityRatePolicies.owner).toBe('identity');
-    expect(Object.keys(p).sort()).toEqual([
-      'auth.login.account',
-      'auth.login.ip',
-      'auth.refresh.ip',
-      'auth.register.ip',
-      'auth.reset.account',
-      'auth.reset.confirm.ip',
-      'auth.reset.ip',
-    ]);
+    expect(Object.keys(p).sort()).toEqual(
+      expect.arrayContaining([
+        'auth.login.account',
+        'auth.login.ip',
+        'auth.refresh.ip',
+        'auth.register.ip',
+        'auth.reset.account',
+        'auth.reset.confirm.ip',
+        'auth.reset.ip',
+      ]),
+    );
   });
 
   it.each([
@@ -64,5 +66,57 @@ describe('S01 AS-22: identity rate-limit policies', () => {
   it('every policy fails closed', () => {
     for (const policy of Object.values(p))
       expect(policy.failMode).toBe('closed');
+  });
+});
+
+describe('S02 AS-17, AS-18, AS-30: second-factor and OIDC rate-limit policies', () => {
+  const p = identityRatePolicies.policies;
+
+  it('declares exactly the three S02 policies next to the S01 ones', () => {
+    expect(Object.keys(p).sort()).toEqual([
+      'auth.login.account',
+      'auth.login.ip',
+      'auth.mfa.account',
+      'auth.mfa.ip',
+      'auth.oidc.ip',
+      'auth.refresh.ip',
+      'auth.register.ip',
+      'auth.reset.account',
+      'auth.reset.confirm.ip',
+      'auth.reset.ip',
+    ]);
+  });
+
+  it('auth.mfa.ip is 20 per minute per IP, fail-closed', () => {
+    expect(p['auth.mfa.ip']).toMatchObject({
+      algorithm: 'slidingWindow',
+      limit: 20,
+      windowMs: 60_000,
+      key: 'ip',
+      failMode: 'closed',
+    });
+    expect('count' in p['auth.mfa.ip']).toBe(false);
+  });
+
+  it('auth.mfa.account is 5 failures per 15 minutes per user, reset on success', () => {
+    expect(p['auth.mfa.account']).toMatchObject({
+      algorithm: 'slidingWindow',
+      limit: 5,
+      windowMs: 900_000,
+      key: 'user',
+      failMode: 'closed',
+      count: 'failures-only',
+      resetOnSuccess: true,
+    });
+  });
+
+  it('auth.oidc.ip is 30 per minute per IP, fail-closed', () => {
+    expect(p['auth.oidc.ip']).toMatchObject({
+      algorithm: 'slidingWindow',
+      limit: 30,
+      windowMs: 60_000,
+      key: 'ip',
+      failMode: 'closed',
+    });
   });
 });

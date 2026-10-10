@@ -216,6 +216,8 @@ export class SecretsManagerConfig {
   refresh_token_ttl_days?: number;
   google_oidc_client_id?: string;
   google_oidc_client_secret?: string;
+  /** Issuer of the Google sign-in provider; default https://accounts.google.com (a private mirror or a test double). */
+  google_oidc_issuer?: string;
   /** Public base URL of this API for OIDC redirect URIs, e.g. https://api.mkt.dev */
   auth_redirect_base_url?: string;
   /** SD-42. Unset → scripted LLM provider (local dev / e2e). */

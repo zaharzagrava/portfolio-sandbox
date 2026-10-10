@@ -18,6 +18,9 @@ export const MFA_CHALLENGE_TYP = 'mfa+jwt';
 export const MFA_CHALLENGE_AUDIENCE = 'mfa';
 const MFA_CHALLENGE_TTL_SEC = 300;
 
+/** How the user already proved who they are when the second factor is asked for (`amr` of the final session). */
+export type FirstFactor = 'pwd' | 'fed';
+
 export interface IssuedSession {
   accessToken: { token: string; expiresIn: number };
   refreshToken: string;
@@ -79,23 +82,45 @@ export class SessionIssuer {
   }
 
   /** Second-factor challenge: purpose-limited, never accepted as an access token (FR-015, FR-027). */
-  createChallenge(userId: string): Promise<string> {
-    return this.keys.sign(
-      { sub: userId },
+  async createChallenge(input: {
+    userId: string;
+    firstFactor: FirstFactor;
+  }): Promise<{ token: string; jti: string }> {
+    const jti = uuidv7();
+    const token = await this.keys.sign(
+      { sub: input.userId, fa: input.firstFactor },
       {
         expiresInSec: MFA_CHALLENGE_TTL_SEC,
         audience: MFA_CHALLENGE_AUDIENCE,
         typ: MFA_CHALLENGE_TYP,
-        jwtId: uuidv7(),
+        jwtId: jti,
       },
     );
+    return { token, jti };
   }
 
-  async verifyChallenge(token: string): Promise<{ userId: string }> {
+  /** Throws `Domain_InvalidTokenError` for any defect; the caller maps every one to the same challenge error. */
+  async verifyChallenge(token: string): Promise<{
+    userId: string;
+    firstFactor: FirstFactor;
+    jti: string;
+    expiresAt: Date;
+  }> {
     const claims = await this.tokens.verifyPurpose(token, {
       typ: MFA_CHALLENGE_TYP,
       aud: MFA_CHALLENGE_AUDIENCE,
     });
-    return { userId: claims.sub };
+    const firstFactor = claims.fa;
+    if (
+      (firstFactor !== 'pwd' && firstFactor !== 'fed') ||
+      typeof claims.jti !== 'string'
+    )
+      throw new Domain_InvalidTokenError('challenge_claims');
+    return {
+      userId: claims.sub,
+      firstFactor,
+      jti: claims.jti,
+      expiresAt: new Date(claims.exp * 1000),
+    };
   }
 }

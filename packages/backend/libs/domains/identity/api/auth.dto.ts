@@ -4,9 +4,13 @@ import {
   IsIn,
   IsOptional,
   IsString,
+  Matches,
   MaxLength,
   MinLength,
+  registerDecorator,
+  type ValidationOptions,
 } from 'class-validator';
+import { parseReturnPath } from '../domain/return-path';
 import { Transform } from 'class-transformer';
 import { Role } from '../infra/models/user.model';
 import {
@@ -67,22 +71,71 @@ export class AuthUserDto {
 
 // --- --- --- --- --- SD-39 sessions / MFA --- --- --- --- --- //
 export class MfaVerifyDto {
-  @ApiProperty()
+  @ApiPropertyOptional({
+    description:
+      'The challenge from the password step; with delivery "cookie" it may come from the __Host-mfa-challenge cookie instead',
+  })
+  @IsOptional()
   @IsString()
   @MaxLength(4096)
-  mfaToken: string;
+  mfaToken?: string;
 
   @ApiProperty({ description: '6-digit TOTP code or a recovery code' })
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
   @IsString()
+  @MinLength(1)
   @MaxLength(32)
+  @Matches(/^[0-9A-Za-z-]+$/)
+  code: string;
+
+  @ApiPropertyOptional({ enum: ['body', 'cookie'] })
+  @IsOptional()
+  @IsIn(['body', 'cookie'])
+  delivery?: 'body' | 'cookie';
+}
+
+/** Confirm, regenerate and disable take an authenticator code, never a recovery code: exactly six digits. */
+export class MfaCodeDto {
+  @ApiProperty({ description: '6-digit TOTP code' })
+  @IsString()
+  @Matches(/^[0-9]{6}$/)
   code: string;
 }
 
-export class MfaConfirmDto {
-  @ApiProperty()
+export class MfaConfirmDto extends MfaCodeDto {}
+
+/** `returnTo` must be a relative path (FR-045); an invalid one is a 400, never rewritten. */
+function IsReturnPath(options?: ValidationOptions) {
+  return (target: object, propertyName: string) =>
+    registerDecorator({
+      name: 'isReturnPath',
+      target: target.constructor,
+      propertyName,
+      options,
+      validator: {
+        validate: (value: unknown) => parseReturnPath(value) !== null,
+        defaultMessage: () => 'returnTo must be a relative path',
+      },
+    });
+}
+
+export class OidcStartDto {
+  @ApiPropertyOptional({
+    description: 'Relative path to land on after sign-in',
+  })
+  @IsOptional()
+  @IsReturnPath()
+  returnTo?: string;
+}
+
+export class OidcLinkStartDto extends OidcStartDto {
+  @ApiPropertyOptional({
+    description: '6-digit TOTP code, required when a second factor is enabled',
+  })
+  @IsOptional()
   @IsString()
-  @MaxLength(6)
-  code: string;
+  @Matches(/^[0-9]{6}$/)
+  code?: string;
 }
 
 export class RefreshDto {

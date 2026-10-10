@@ -9,6 +9,7 @@ import {
 import { Domain_InvalidCredentialsError } from '../domain/errors';
 import { normalizeEmail } from '../domain/password-policy';
 import { AuditService } from './audit.service';
+import { SecondFactorService } from './second-factor.service';
 import { IssuedSession, SessionIssuer } from './session-issuer.service';
 
 export type LoginResult =
@@ -27,6 +28,7 @@ export class LoginService {
     @Inject(PASSWORD_HASHER) private readonly hasher: PasswordHasherPort,
     private readonly issuer: SessionIssuer,
     private readonly audit: AuditService,
+    private readonly secondFactor: SecondFactorService,
   ) {}
 
   async login(
@@ -56,10 +58,15 @@ export class LoginService {
       );
     }
 
-    if (user.mfaEnabled)
+    if (await this.secondFactor.isSecondFactorEnrolled(user.id))
       return {
         mfaRequired: true,
-        mfaToken: await this.issuer.createChallenge(user.id),
+        mfaToken: (
+          await this.issuer.createChallenge({
+            userId: user.id,
+            firstFactor: 'pwd',
+          })
+        ).token,
       };
 
     const session = await this.issuer.issue({

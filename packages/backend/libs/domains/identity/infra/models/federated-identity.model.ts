@@ -38,8 +38,13 @@ export default class FederatedIdentity extends Model<
   @Column({ type: DataType.TEXT, allowNull: false })
   declare subject: string;
 
+  /** A hint copied from the provider's claim (null allowed): never a key, never proof that the user owns the address. */
   @Column({ type: DataType.TEXT, allowNull: true })
   declare email: string | null;
+
+  /** The account-linking wipe committed but its session revocation has not been confirmed yet (R-11). */
+  @Column({ type: DataType.BOOLEAN, allowNull: false, defaultValue: false })
+  declare wipePending: boolean;
 
   @Column({ type: DataType.DATE, allowNull: false, defaultValue: DataType.NOW })
   declare createdAt: Date;
