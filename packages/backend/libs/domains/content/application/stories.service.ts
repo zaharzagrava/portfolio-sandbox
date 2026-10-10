@@ -14,11 +14,19 @@ import { TransactionRunner } from '@app/infrastructure/context';
 import { Blocks, localeChain, Seo } from '../domain/blocks';
 import { StoryPublished } from './events/story-events';
 
+import { z } from 'zod';
+import { declareJobType } from '@app/infrastructure/jobs/job-type-registry';
+
 declare module '@app/infrastructure/jobs/job-types' {
   interface JobPayloads {
     'stories.publish': { storyId: string; scheduledAt: string };
   }
 }
+
+declareJobType({
+  name: 'stories.publish',
+  contract: z.object({ storyId: z.string(), scheduledAt: z.string() }),
+});
 
 export interface PublicStory {
   id: string;

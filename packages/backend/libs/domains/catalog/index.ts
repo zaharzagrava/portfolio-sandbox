@@ -10,6 +10,7 @@ export { DraftsModule } from './drafts.module';
 export { ProductDtoModule } from './product-dto.module';
 export { ProductWorkerModule } from './product-worker.module';
 export { ProductModule } from './product.module';
+export { catalogRatePolicies } from './rate-limit-policies';
 export { ProductService } from './application/product.service';
 export { ProductCacheInvalidator } from './infra/product-cache-invalidator.projector';
 export { ProductDtoService } from './infra/product-dto.service';

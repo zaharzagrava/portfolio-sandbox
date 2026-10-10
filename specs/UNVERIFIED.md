@@ -18,3 +18,15 @@ interviews) until its status says so. The implementation loop appends here (rule
 | S53 | SC-005: projection lag p99 under 2 s at 1, 2 and 4 instances on 100 000 events | same file (F-05 load script) | not run |
 | S53 | SC-006: 100 000-event shadow rebuild with zero failed live reads and promotion refused until caught up | same file (rebuild drill) | not run |
 | S53 | AS-21 (not an SC): the CDC relay emits the same topic, key, value and headers as the poller | same file (`S53_CDC=1` outbox-cdc spec with the `cdc` profile) | not run |
+| S49 | SC-002: doubling workers 1 to 2 to 4 roughly halves no-op drain time (within 30% of linear), zero re-executions | `pnpm --dir packages/backend loadtest:jobs` at 1, 2, 4 workers (VPS runner) | not run |
+| S49 | SC-006: a schedule fire materialises within 2 s of due and a delayed job starts within 1 s of `runAt` under normal load | `loadtest:jobs` with 1 s `runAt` jobs and a 10 s schedule; read `job_queue_lag_seconds` | not run |
+| S49 | SC-007: queue lag visible within 10 s of becoming non-zero | scrape `/metrics` while enqueuing past-due jobs with workers stopped | not run |
+| S49 | AS-88 / AS-89 at full scale (200,000 jobs, 5,000 cycles); CI runs a reduced size | `S49_PLAN_ROWS=200000 S49_HOT_CYCLES=5000 scripts/sdd/test-spec.sh libs/infrastructure/jobs/jobs-retention.e2e-spec.ts` on the runner | not run |
+| S52 | SC-004: 10,000 repeated lookups of one unknown key cause 1 source read | loop 10,000 `getOrLoad` calls with `negativeTtlMs` against the test Redis; count loader calls | not run |
+| S52 | SC-005: no more than 5 % of 1,000 same-time keys share one expiry second | store 1,000 keys, read `PTTL` of each, bucket by second | not run |
+| S52 | SC-008: after 1,000,000 distinct reads the in-process structures stay within their limits | read 1,000,000 distinct keys; sample `cache_l1_entries` and heap | not run |
+| S52 | SC-009: cache layer adds under 5 ms p99 over the store round trip | benchmark `getOrLoad` hits against a bare `GET` on the VPS runner | not run |
+| S50 | SC-001 (4 instances): 0 overshoot at 2x the limit through 1, 2 and 4 instances (e2e covers two) | `specs/domains/S50-rate-limiter/quickstart.md`, "Ops artifacts" (`pnpm loadtest:ratelimit`) | not run |
+| S50 | SC-002: lease-served decision under 1 ms p99; 100,000 decisions/s with at most 10% store calls | same file (k6/benchmark on the VPS runner) | not run |
+| S50 | SC-003: after three store failures no request waits for a timeout; no limiter-caused 5xx on fail-open routes under load | same file (stop Redis under k6 load) | not run |
+| S50 | SC-007: every route of apps/core is limited, defaulted or exempt | same file (boot-time route listing) | not run |

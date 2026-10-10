@@ -4,6 +4,9 @@
  * it by hand when a new export is needed. Models exported here are transitional (IX.4 debt): other
  * domains must stop injecting them.
  */
+
+// Registers the orders job contracts for any app that enqueues them (e.g. auctions) without loading order.jobs.
+import './application/order.job-types';
 export { default as BisOrderItemModel } from './infra/models/bis-order-item.model';
 export {
   default as BisOrderModel,
@@ -25,5 +28,6 @@ export {
 } from './application/events/order-events';
 export { OrderExportService } from './application/order-export.service';
 export { OrderService } from './application/order.service';
+export { ordersRatePolicies } from './rate-limit-policies';
 export { FlashStockService } from './infra/flash-stock.service';
 export { ExportJobTopicsModule } from './realtime-topics.module';

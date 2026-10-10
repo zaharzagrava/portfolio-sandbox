@@ -17,11 +17,19 @@ import {
   PublicCatalogService,
 } from './application/public-catalog.service';
 
+import { z } from 'zod';
+import { declareJobType } from '@app/infrastructure/jobs/job-type-registry';
+
 declare module '@app/infrastructure/jobs/job-types' {
   interface JobPayloads {
     'public-api.flush-key-usage': Record<string, never>;
   }
 }
+
+declareJobType({
+  name: 'public-api.flush-key-usage',
+  contract: z.object({}),
+});
 
 @Injectable()
 export class PublicApiWorkers

@@ -94,3 +94,32 @@ Cross-domain SQL on the job tables found by grep (test code; IX.6 allows seed/cl
 ## Summary count
 
 48 gap items (G-01 to G-47, plus G-24b for fairness). Highest risk first: G-24b (cap overshoot), G-26 (reaper loop), G-14 (zombie completion), G-30 (one bad schedule blocks all), G-01/G-03 (validation and key conflict), G-04 (unbounded `JobKey`), G-24 (IX.5).
+
+## Sibling-spec follow-ups
+
+- **S01**: add the ADMIN-only operator routes (list jobs, stats, retry dead, cancel, list/enable/disable schedules) over `JobsAdminService` (contracts/jobs-admin-service.md).
+- **S03, S05, S06, S07, S08, S09, S11, S12, S14, S15, S18, S20, S21, S23, S24, S26, S27, S28, S29, S30, S32, S33, S34, S36, S37, S41, S45** (every capability registering or enqueueing jobs): call `declareJobType` with a payload contract next to the `JobPayloads` augmentation, otherwise enqueue and `upsertSchedule` fail with `UnknownJobTypeError` / `InvalidScheduleError`; callers of `JobsService.cancel` adapt to the discriminated result; catch `InvalidScheduleError` instead of a generic `Error`.
+- **S05, S34, S45**: use `fleetConcurrency: 1` where they promise one run in the fleet.
+- **S33, S34**: raise `maxRuntimeMs` above the 15 min default (S34 lease 1 h, S33 lease 10 min).
+- **S08**: call `removeSchedule` for renamed schedules.
+- **S14**: pass `maxAttempts: 3` on its schedules and enqueues.
+- **S53, S54** (outbox purge, inbox purge, idempotency purge): their job types need `declareJobType`; S49 adds the call in their handler files in P9 only where missing, their specs are not edited.
+- **seller-onboarding, developer-platform, notifications e2e specs** (`onboarding.e2e-spec.ts:168`, `webhooks.e2e-spec.ts:102`, `notifications.e2e-spec.ts:123`): stop querying `"Job"` directly; use `JobsAdminService.listJobs` or the test probe exported by the lib.
+
+## Implementation notes (this run)
+
+- **Sibling-spec follow-ups added by the implementation**:
+  - **S14, S15, S27, S34 and every capability that sets a handler `concurrency: 1`**: `fleetConcurrency` is now the fleet-wide limit; `concurrency` stays per worker. Review each `concurrency: 1` handler in `libs/domains/**` (payments, billing, statements, discovery, marketing, community, identity key rotation, catalog-sync, seller-insights, asset-library, tenancy) and add `fleetConcurrency: 1` where one run in the whole fleet is the promise. S49 did not change them.
+  - **orders, statements, notifications, discovery, seller-onboarding**: new sibling files `*.job-types.ts` hold their `JobPayloads` augmentation and `declareJobType` call so enqueue-only apps load the declaration without the handler (`orders/index.ts` imports `order.job-types` for its side effect).
+  - **S01**: `JobsAdminService` and `JobsTestProbe` are exported from `@app/infrastructure/jobs`; S01 owns the routes.
+- G-46: `jobs.e2e-spec.ts` retired. Its 7 cases map to: 4 workers draining → AS-10 (`jobs-worker`); transient retry → AS-17; non-retryable / `maxAttempts` → AS-19, AS-20; concurrent idempotency key → AS-04 (`jobs-enqueue`); expired lease reaped → AS-27 (`jobs-lease`); materialiser with concurrent ticks → AS-54 (`jobs-cron`); DST → AS-68 (`cron.spec.ts`).
+- G-47 decision: `JobsService` SQL touches only `Job`, `JobKey`, `JobSchedule`; the lib stays flat, no repository split. `job-claim.sql.ts` is the only SQL-only file.
+- R-03 decision: the `cron` library was run against AS-68–AS-75 first; it returned an instant before the base at the repeated hour (AS-70), so `cron.ts` is now a pure Luxon implementation (see research.md).
+- Shutdown: the drain deadline is 25 s (`DRAIN_DEADLINE_MS`) and the registered `jobs-worker` task has a 30 s timeout so the release writes after the abort have time; if the platform hard-shutdown timeout (default 25 s) fires first, the unreleased jobs fall back to the reaper after their lease.
+- Claim cost: a claim is one short transaction of about six statements instead of one; the 5k jobs/s target (SC-002) is an ops artifact and still unmeasured.
+- New config keys (S54 schema, `libs/common/config/jobs-config.ts`): `JOBS_CLAIM_BATCH`, `JOBS_PER_SHOP_RUNNING_CAP`, `JOBS_RETAIN_DAYS`, `JOBS_POLL_IDLE_MS`.
+- Blocker: AS-89, see questions.md.
+
+## Gate repairs
+
+- `libs/infrastructure/database/database-settings.e2e-spec.ts` (S54 AS-145, pool of 2) failed at startup with `[jobs] jobs_claim_batch must not exceed db_pool_max × 10`: the S49 rule (G-22) rejected the unset-default batch of 50 against a pool of 2. Fix in `libs/common/config/api-config.service.ts`: when `JOBS_CLAIM_BATCH` is set in no source, the default is lowered to `db_pool_max × 10` before the rules run; an explicit value is still refused by the rule. No test was changed. Re-ran: that spec (5 passed), `jobs-config.spec.ts` and `libs/common/config` (51 passed), `npx tsc --noEmit` clean.

@@ -8,6 +8,7 @@ import { Environment, Environments } from '@app/common/types';
 import { isSecretKey } from '@app/common/logging/redaction';
 import { ConfigRules } from './config-rules';
 import { eventsConfigKeys } from './events-config';
+import { jobsConfigKeys } from './jobs-config';
 
 dotenv.config({
   /**
@@ -142,14 +143,35 @@ export class ApiConfigService {
             name: 'DB_HOST',
           },
 
-          throttle_api_limit: {
-            verify: joi.number().required(),
-            name: 'THROTTLE_API_LIMIT',
+          // Rate limiter (S50 FR-055); defaults are applied by rate-limit.config.ts.
+          rate_limit_store_timeout_ms: {
+            verify: joi.number().integer().positive().optional(),
+            name: 'RATE_LIMIT_STORE_TIMEOUT_MS',
             postProcess: (v: string) => (v ? Number(v) : undefined),
           },
-          throttle_api_ttl: {
-            verify: joi.number().required(),
-            name: 'THROTTLE_API_TTL',
+          rate_limit_breaker_failures: {
+            verify: joi.number().integer().positive().optional(),
+            name: 'RATE_LIMIT_BREAKER_FAILURES',
+            postProcess: (v: string) => (v ? Number(v) : undefined),
+          },
+          rate_limit_breaker_open_ms: {
+            verify: joi.number().integer().positive().optional(),
+            name: 'RATE_LIMIT_BREAKER_OPEN_MS',
+            postProcess: (v: string) => (v ? Number(v) : undefined),
+          },
+          rate_limit_fallback_instances: {
+            verify: joi.number().integer().positive().optional(),
+            name: 'RATE_LIMIT_FALLBACK_INSTANCES',
+            postProcess: (v: string) => (v ? Number(v) : undefined),
+          },
+          rate_limit_lease_ttl_ms: {
+            verify: joi.number().integer().positive().optional(),
+            name: 'RATE_LIMIT_LEASE_TTL_MS',
+            postProcess: (v: string) => (v ? Number(v) : undefined),
+          },
+          rate_limit_penalty_max_ms: {
+            verify: joi.number().integer().positive().optional(),
+            name: 'RATE_LIMIT_PENALTY_MAX_MS',
             postProcess: (v: string) => (v ? Number(v) : undefined),
           },
 
@@ -524,6 +546,7 @@ export class ApiConfigService {
             name: 'CLAMAV_HOST',
           },
           ...eventsConfigKeys,
+          ...jobsConfigKeys,
           cassandra_password: {
             verify: joi.string().optional().allow(''),
             name: 'CASSANDRA_PASSWORD',
@@ -554,6 +577,18 @@ export class ApiConfigService {
       ...localConfigValues,
       ...secretsMangerConfigValues,
     };
+
+    // An unset claim batch takes the default, lowered to what a small pool allows; only an explicit value is refused by the jobs rule.
+    const pool = this.config.db_pool_max;
+    const explicitBatch =
+      process.env.JOBS_CLAIM_BATCH !== undefined ||
+      (secretsManagerConfig as Record<string, unknown> | undefined)
+        ?.JOBS_CLAIM_BATCH !== undefined;
+    if (!explicitBatch && typeof pool === 'number' && pool > 0)
+      this.config.jobs_claim_batch = Math.min(
+        this.config.jobs_claim_batch,
+        pool * 10,
+      );
 
     // Cross-field and capability rules: every violation in one error, naming keys and never values (S54 FR-077).
     ConfigRules.assertValid(this.config as unknown as Record<string, unknown>, {

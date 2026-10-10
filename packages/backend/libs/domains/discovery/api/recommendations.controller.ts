@@ -8,7 +8,7 @@ import {
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Firewall } from '@app/domains/identity';
-import { RateLimit } from '@app/infrastructure/rate-limit/rate-limit.decorator';
+import { RateLimit } from '@app/infrastructure/rate-limit';
 import { RecommendationsService } from '../application/recommendations.service';
 
 @ApiTags('products')

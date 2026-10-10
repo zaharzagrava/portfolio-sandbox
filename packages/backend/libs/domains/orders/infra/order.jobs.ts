@@ -10,13 +10,7 @@ import { FlashStockService } from './flash-stock.service';
 import { OrderService } from '../application/order.service';
 import { RESERVATION_HOLD_MS } from '../application/checkout.service';
 
-declare module '@app/infrastructure/jobs/job-types' {
-  interface JobPayloads {
-    'flash-sale.start': { saleId: string };
-    'flash-sale.end': { saleId: string };
-    'flash-sale.reconcile': { saleId: string };
-  }
-}
+import '../application/order.job-types';
 
 @Injectable()
 export class OrderJobs {

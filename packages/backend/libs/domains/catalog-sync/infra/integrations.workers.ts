@@ -15,12 +15,24 @@ import {
   SYNC_QUEUE,
 } from '../application/integration-sync.service';
 
+import { z } from 'zod';
+import { declareJobType } from '@app/infrastructure/jobs/job-type-registry';
+
 declare module '@app/infrastructure/jobs/job-types' {
   interface JobPayloads {
     'integrations.sync-all': Record<string, never>;
     'integrations.reconcile-all': Record<string, never>;
   }
 }
+
+declareJobType({
+  name: 'integrations.sync-all',
+  contract: z.object({}),
+});
+declareJobType({
+  name: 'integrations.reconcile-all',
+  contract: z.object({}),
+});
 
 type SyncMessage =
   | { integrationId: string; kind: 'incremental' }

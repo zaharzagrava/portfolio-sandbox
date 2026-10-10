@@ -63,7 +63,7 @@ export class IntegrationsController {
    * fetches the CURRENT state - webhook payloads can arrive out of order.
    */
   @ApiExcludeEndpoint()
-  @Firewall({ anonymous: true, skipThrottle: true })
+  @Firewall({ anonymous: true })
   @Post('integrations/:integrationId/webhooks')
   @HttpCode(200)
   async webhook(

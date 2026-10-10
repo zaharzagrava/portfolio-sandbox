@@ -11,7 +11,7 @@ import { ZodError } from 'zod';
 import { ApiConfigService } from '@app/common/config';
 import { SecretBox } from '@app/domains/identity';
 import { TaskQueue } from '@app/infrastructure/sqs/task-queue.port';
-import { RateLimiterService } from '@app/infrastructure/rate-limit/rate-limiter.service';
+import { RateLimiterService } from '@app/infrastructure/rate-limit';
 import { OutboxService } from '@app/infrastructure/outbox/outbox.service';
 import { TransactionRunner } from '@app/infrastructure/context';
 import { productChanged } from '@app/domains/catalog';
@@ -405,7 +405,7 @@ export class IntegrationSyncService {
             integration.id,
           );
           if (d.allowed) return;
-          await sleep(Math.max(d.retryAfterMs, 100));
+          await sleep(Math.max(d.retryAfterMs ?? 0, 100));
         }
         throw new Error('shopify rate limit wait exceeded');
       });

@@ -11,6 +11,8 @@ import { IdempotencyModule } from '@app/infrastructure/idempotency';
 import { PublicCatalogService } from './application/public-catalog.service';
 import { PublicOrdersService } from './application/public-orders.service';
 import { V1Controller } from './api/v1.controller';
+import { RateLimitModule } from '@app/infrastructure/rate-limit';
+import { developerPlatformRatePolicies } from './rate-limit-policies';
 
 /** SD-07 public API surface (apps/public-api). */
 @Module({
@@ -21,6 +23,7 @@ import { V1Controller } from './api/v1.controller';
     CacheModule,
     SqsModule,
     IdempotencyModule,
+    RateLimitModule.forFeature(developerPlatformRatePolicies),
   ],
   providers: [
     ApiKeysService,

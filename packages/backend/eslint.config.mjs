@@ -66,6 +66,18 @@ export default tseslint.config(
     },
   },
   {
+    // S52 A17 / AS-74: the cache toolkit reads time from the injected CLOCK and randomness from the injected RandomSource.
+    files: ['libs/infrastructure/cache/**/*.ts'],
+    ignores: ['**/random-source.ts', '**/*.spec.ts', '**/*.e2e-spec.ts'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        { selector: "CallExpression[callee.object.name='Date'][callee.property.name='now']", message: 'Inject CLOCK instead of Date.now().' },
+        { selector: "CallExpression[callee.object.name='Math'][callee.property.name='random']", message: 'Inject RANDOM_SOURCE instead of Math.random().' },
+      ],
+    },
+  },
+  {
     // Test doubles are often `async` stand-ins for a port that returns a promise; that is not a defect in a spec.
     files: ['**/*.spec.ts', '**/*.e2e-spec.ts', 'test/**/*.ts'],
     rules: {

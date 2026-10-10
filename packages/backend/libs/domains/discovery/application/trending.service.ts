@@ -3,6 +3,7 @@ import { InjectConnection } from '@nestjs/sequelize';
 import { QueryTypes, Sequelize } from 'sequelize';
 import { RedisService } from '@app/infrastructure/redis/redis.service';
 import { CacheService } from '@app/infrastructure/cache/cache.service';
+import { cacheKey } from '@app/infrastructure/cache/cache-key';
 import { WINDOW_MS, windowKey } from '../infra/trending.consumer';
 
 /**
@@ -21,7 +22,8 @@ export class TrendingService {
   async trending(category = 'all', minutes = 60, limit = 20) {
     return (
       (await this.cache.getOrLoad(
-        `trending:view:${category}:${minutes}`,
+        // `category` is a public query value: cacheKey() encodes whatever it contains (S52 AS-09).
+        cacheKey('trending', 1, 'view', category, String(minutes)),
         async () => {
           const now = Date.now();
           const last = now - (now % WINDOW_MS);
@@ -66,7 +68,7 @@ export class TrendingService {
               score: t.score,
             }));
         },
-        { ttlMs: 30_000, l1: 'always', l1TtlMs: 10_000 },
+        { ttlMs: 30_000, l1: 'always', l1TtlMs: 5_000 },
       )) ?? []
     );
   }

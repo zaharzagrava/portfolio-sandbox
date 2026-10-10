@@ -24,3 +24,4 @@ export { KeyStore } from './infra/keys/key-store.service';
 export { OidcService } from './infra/oidc/oidc.service';
 export type { RequestWithUser } from './api/request-with-user';
 export { IdentityTopicsModule } from './realtime-topics.module';
+export { identityRatePolicies } from './rate-limit-policies';

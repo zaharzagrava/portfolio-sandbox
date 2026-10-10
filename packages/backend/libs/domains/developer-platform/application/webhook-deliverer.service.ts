@@ -10,13 +10,26 @@ import { SafeRequestError } from '@app/infrastructure/net';
 import { WebhookEndpointsService } from './webhook-endpoints.service';
 import { postWebhook, SendResult } from '../infra/http-sender';
 import { signWebhook, SIGNATURE_HEADER } from '../domain/signature';
-import { WebhookDelivery } from '../domain/webhook-events';
+import { WebhookDelivery, WEBHOOK_EVENT_TYPES } from '../domain/webhook-events';
+import { z } from 'zod';
+import { declareJobType } from '@app/infrastructure/jobs/job-type-registry';
 
 declare module '@app/infrastructure/jobs/job-types' {
   interface JobPayloads {
     'webhooks.retry': WebhookDelivery;
   }
 }
+
+declareJobType({
+  name: 'webhooks.retry',
+  contract: z.object({
+    endpointId: z.string(),
+    eventId: z.string(),
+    type: z.enum(WEBHOOK_EVENT_TYPES),
+    body: z.string(),
+    attempt: z.number(),
+  }),
+});
 
 /** Immediate retries inside the FIFO (ordering kept), then the long-backoff lane. */
 const FIFO_RECEIVES = 3;

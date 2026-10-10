@@ -10,11 +10,19 @@ import { JobHandler } from '@app/infrastructure/jobs/job-handler.decorator';
 import { JobsService } from '@app/infrastructure/jobs/jobs.service';
 import { IdempotencyRepository } from './idempotency.repository';
 
+import { z } from 'zod';
+import { declareJobType } from '@app/infrastructure/jobs/job-type-registry';
+
 declare module '@app/infrastructure/jobs/job-types' {
   interface JobPayloads {
     'platform.purge-idempotency-keys': Record<string, never>;
   }
 }
+
+declareJobType({
+  name: 'platform.purge-idempotency-keys',
+  contract: z.object({}),
+});
 
 export const PURGE_JOB_NAME = 'platform.purge-idempotency-keys';
 const BATCH_SIZE = 1000;

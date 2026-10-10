@@ -35,8 +35,12 @@ export class SecretsManagerConfig {
   db_name: string;
   db_host: string;
 
-  throttle_api_limit: number;
-  throttle_api_ttl: number;
+  rate_limit_store_timeout_ms?: number;
+  rate_limit_breaker_failures?: number;
+  rate_limit_breaker_open_ms?: number;
+  rate_limit_fallback_instances?: number;
+  rate_limit_lease_ttl_ms?: number;
+  rate_limit_penalty_max_ms?: number;
 
   secret_salt: string;
   book_cover_s3_url: string;
@@ -157,6 +161,11 @@ export class SecretsManagerConfig {
   outbox_relay_lease_ms: number;
   outbox_relay_max_attempts: number;
   outbox_retention_days: number;
+  /** S49 R-09: job scheduler settings, defaults in `jobs-config.ts`. */
+  jobs_claim_batch: number;
+  jobs_per_shop_running_cap: number;
+  jobs_retain_days: number;
+  jobs_poll_idle_ms: number;
   consumer_batch: number;
   consumer_max_attempts: number;
   consumer_backoff_min_ms: number;

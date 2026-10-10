@@ -2,7 +2,8 @@ import { Module } from '@nestjs/common';
 import { AuthModule } from '@app/domains/identity';
 import { CassandraModule } from '@app/infrastructure/cassandra/cassandra.module';
 import { CacheModule } from '@app/infrastructure/cache/cache.module';
-import { RateLimitModule } from '@app/infrastructure/rate-limit/rate-limit.module';
+import { RateLimitModule } from '@app/infrastructure/rate-limit';
+import { assistantRatePolicies } from './rate-limit-policies';
 import { KafkaProducerModule } from '@app/infrastructure/kafka/kafka-producer.module';
 import { ClickHouseModule } from '@app/infrastructure/clickhouse/clickhouse.module';
 import { ProductModule } from '@app/domains/catalog';
@@ -25,7 +26,7 @@ import { LlmMeter } from './infra/llm/llm-meter';
     LlmModule,
     CassandraModule,
     CacheModule,
-    RateLimitModule,
+    RateLimitModule.forFeature(assistantRatePolicies),
     KafkaProducerModule,
     ClickHouseModule,
     ProductModule,

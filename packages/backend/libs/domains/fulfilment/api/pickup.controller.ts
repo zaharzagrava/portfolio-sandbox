@@ -22,7 +22,7 @@ import {
 } from 'class-validator';
 import { Firewall } from '@app/domains/identity';
 import { ShopScoped } from '@app/domains/tenancy';
-import { RateLimit } from '@app/infrastructure/rate-limit/rate-limit.decorator';
+import { RateLimit } from '@app/infrastructure/rate-limit';
 import { PickupService } from '../application/pickup.service';
 import { AvailabilityIndex } from '../infra/availability-index';
 
@@ -100,7 +100,7 @@ export class PickupController {
     );
   }
 
-  @Firewall({ anonymous: true, skipThrottle: true })
+  @Firewall({ anonymous: true })
   @Header('Cache-Control', 'public, s-maxage=30')
   @Get('pickup-points/clusters')
   clusters(@Query('bbox') bbox: string, @Query('zoom') zoom = '10') {

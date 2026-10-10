@@ -22,11 +22,19 @@ import { JobsService } from '@app/infrastructure/jobs/jobs.service';
 import Booking from '../infra/models/booking.model';
 import LaunchEvent from '../infra/models/launch-event.model';
 
+import { z } from 'zod';
+import { declareJobType } from '@app/infrastructure/jobs/job-type-registry';
+
 declare module '@app/infrastructure/jobs/job-types' {
   interface JobPayloads {
     'launch-events.expire-hold': { holdId: string };
   }
 }
+
+declareJobType({
+  name: 'launch-events.expire-hold',
+  contract: z.object({ holdId: z.string() }),
+});
 
 export const HOLD_MS = 10 * 60_000;
 const TABLE = 'Holds';

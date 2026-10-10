@@ -33,7 +33,7 @@ export class TenantConnectionResolver implements OnModuleDestroy {
         async () =>
           (await this.directory.findByPk(shopId, { raw: true }))?.cell ??
           'pooled',
-        { ttlMs: 300_000, l1: 'always', l1TtlMs: 30_000 },
+        { ttlMs: 300_000, l1: 'always', l1TtlMs: 5_000 },
       )) ?? 'pooled'
     );
   }

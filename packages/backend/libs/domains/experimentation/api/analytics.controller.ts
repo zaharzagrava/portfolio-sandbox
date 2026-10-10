@@ -12,7 +12,7 @@ import {
 import { buffer } from 'node:stream/consumers';
 import { ApiTags } from '@nestjs/swagger';
 import { Firewall, Role } from '@app/domains/identity';
-import { RateLimit } from '@app/infrastructure/rate-limit/rate-limit.decorator';
+import { RateLimit } from '@app/infrastructure/rate-limit';
 import { AnalyticsService } from '../application/analytics.service';
 import type { ExperimentDef } from '../domain/experiments';
 
@@ -27,7 +27,7 @@ export class AnalyticsController {
   constructor(private readonly analytics: AnalyticsService) {}
 
   /** Fallback ingest (edge `/collect` is primary). sendBeacon posts text/plain, so the body may arrive as a string. */
-  @Firewall({ anonymous: true, skipThrottle: true })
+  @Firewall({ anonymous: true })
   @RateLimit('search.query')
   @Post('events')
   @HttpCode(202)

@@ -5,6 +5,7 @@
  * domains must stop injecting them.
  */
 export { AssistantModule } from './assistant.module';
+export { assistantRatePolicies } from './rate-limit-policies';
 export { KnowledgeModule, KnowledgeWorkerModule } from './knowledge.module';
 export { LlmCallsProjector } from './infra/llm-calls.projector';
 export { LlmMeter } from './infra/llm/llm-meter';

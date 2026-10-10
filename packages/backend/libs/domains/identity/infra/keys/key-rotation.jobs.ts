@@ -6,11 +6,19 @@ import { KeyStore } from './key-store.service';
 import { JobHandler } from '@app/infrastructure/jobs/job-handler.decorator';
 import { JobsService } from '@app/infrastructure/jobs/jobs.service';
 
+import { z } from 'zod';
+import { declareJobType } from '@app/infrastructure/jobs/job-type-registry';
+
 declare module '@app/infrastructure/jobs/job-types' {
   interface JobPayloads {
     'auth.rotate-signing-keys': { activeMaxAgeDays?: number };
   }
 }
+
+declareJobType({
+  name: 'auth.rotate-signing-keys',
+  contract: z.object({ activeMaxAgeDays: z.number().optional() }),
+});
 
 const DAY = 86_400_000;
 

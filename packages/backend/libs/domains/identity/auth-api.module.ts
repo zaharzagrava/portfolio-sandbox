@@ -5,7 +5,8 @@ import FederatedIdentity from './infra/models/federated-identity.model';
 import { ApiConfigModule } from '@app/common/config';
 import { AuthModule } from './auth.module';
 import { DynamoModule } from '@app/infrastructure/dynamo/dynamo.module';
-import { RateLimitModule } from '@app/infrastructure/rate-limit/rate-limit.module';
+import { RateLimitModule } from '@app/infrastructure/rate-limit';
+import { identityRatePolicies } from './rate-limit-policies';
 import { AuthController } from './api/auth.controller';
 import { WellKnownController } from './api/well-known.controller';
 import { AuthSessionService } from './application/auth-session.service';
@@ -25,6 +26,7 @@ import { SessionNotRevokedGuard } from './api/guards/session-not-revoked.guard';
     AuthModule,
     ApiConfigModule,
     RateLimitModule,
+    RateLimitModule.forFeature(identityRatePolicies),
     DynamoModule,
     SequelizeModule.forFeature([User, FederatedIdentity]),
   ],

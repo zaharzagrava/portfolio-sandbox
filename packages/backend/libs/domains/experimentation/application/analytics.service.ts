@@ -92,7 +92,7 @@ export class AnalyticsService {
             `SELECT key, status, variants, layer, "layerFrom", "layerTo", metric FROM "Experiment" WHERE status = 'RUNNING'`,
             { type: QueryTypes.SELECT },
           ),
-        { ttlMs: 30_000, l1: 'always', l1TtlMs: 10_000 },
+        { ttlMs: 30_000, l1: 'always', l1TtlMs: 5_000 },
       )) ?? []
     );
   }

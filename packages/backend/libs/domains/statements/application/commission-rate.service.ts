@@ -5,17 +5,7 @@ import { JobsService } from '@app/infrastructure/jobs/jobs.service';
 
 export const DEFAULT_SHOP_KEY = '00000000-0000-0000-0000-000000000000';
 
-declare module '@app/infrastructure/jobs/job-types' {
-  interface JobPayloads {
-    'statements.retro-adjust': {
-      shopKey: string;
-      category: string;
-      from: string;
-      to: string | null;
-      reason: string;
-    };
-  }
-}
+import './commission-rate.job-types';
 
 export interface RateRow {
   id: string;

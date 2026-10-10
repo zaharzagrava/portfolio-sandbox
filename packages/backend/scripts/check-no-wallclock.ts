@@ -17,6 +17,7 @@ const DIRS = [
   'libs/infrastructure/net',
   'libs/infrastructure/idempotency',
   'libs/infrastructure/context',
+  'libs/infrastructure/jobs',
 ];
 const FORBIDDEN =
   /\bDate\.now\s*\(|\bnew Date\s*\(\s*\)|\bperformance\.now\s*\(/;

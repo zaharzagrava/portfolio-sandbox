@@ -11,11 +11,19 @@ import { OutboxService } from '@app/infrastructure/outbox/outbox.service';
 import { TransactionRunner } from '@app/infrastructure/context';
 import { LEDGER_ACCOUNTS, PLATFORM_FEE_MINOR } from '../domain/accounts';
 
+import { z } from 'zod';
+import { declareJobType } from '@app/infrastructure/jobs/job-type-registry';
+
 declare module '@app/infrastructure/jobs/job-types' {
   interface JobPayloads {
     'payments.resolve-unknown': Record<string, never>;
   }
 }
+
+declareJobType({
+  name: 'payments.resolve-unknown',
+  contract: z.object({}),
+});
 
 const RESOLVE_AFTER_MS = 5 * 60_000;
 const GIVE_UP_AFTER_MS = 60 * 60_000;

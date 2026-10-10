@@ -11,6 +11,8 @@ import { ProductService } from './application/product.service';
 import { ProductController } from './api/product.controller';
 import { CacheModule } from '@app/infrastructure/cache/cache.module';
 import { TenancyModule } from '@app/domains/tenancy';
+import { RateLimitModule } from '@app/infrastructure/rate-limit';
+import { catalogRatePolicies } from './rate-limit-policies';
 
 @Module({
   imports: [
@@ -22,6 +24,7 @@ import { TenancyModule } from '@app/domains/tenancy';
     EventsModule.forAggregates([PRODUCTS_AGGREGATE]),
     CacheModule,
     TenancyModule,
+    RateLimitModule.forFeature(catalogRatePolicies),
   ],
   providers: [ProductService],
   exports: [ProductService],

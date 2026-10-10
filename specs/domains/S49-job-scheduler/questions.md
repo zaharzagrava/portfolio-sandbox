@@ -56,3 +56,27 @@ Every open choice was resolved by the decision policy (most production-grade opt
 - [LOCAL] Admin list limit → default 50, max 100, keyset on creation time then id.
 - [LOCAL] `CronService` (every-replica ticker) → kept for pollers only; whether `identity/users.module.ts` still needs `CronModule` is for implementation to check and drop if unused.
 - [LOCAL] Offload beyond 5–10k jobs/s → documented next step, not built.
+
+## RESOLVED (human decision, 2026-10-09): AS-89 replaced; option 1 of the former blocker
+
+The conflict was real and is settled: a column that appears in a partial index predicate can never be updated heap-only, so
+AS-89 (HOT ratio of at least 90%) cannot hold together with AS-88 (the partial due index, FR-050). **Decision: keep AS-88 and the
+partial due index; replace AS-89** by a property the design can meet: after a `VACUUM`, a second batch of 5,000
+claim-and-complete cycles grows the heap by less than 25%, and the table keeps `fillfactor` 70 (spec.md AS-89 and FR-050, the
+test-plan row, and this file are updated). Consequences for the agent:
+- T053 and T066 are **unblocked**: rewrite the AS-89 test in `jobs-retention.e2e-spec.ts` to the new scenario (deterministic: run an
+  explicit `VACUUM`, never wait for autovacuum), finish T053, then run the whole capability suite for T066.
+- Correct the comment in `20261001110000-create-jobs.js` that says status updates are HOT (they are not); do not claim HOT anywhere.
+- Do not move queue state out of `Job` and do not drop the partial index (options 2 and 3 are rejected).
+- Keep the measurements below as the reason.
+
+Original report, kept for the record:
+
+
+- **AS-89 (HOT update ratio ≥ 90%) cannot hold together with AS-88 / FR-050 on the current table design.** Measured on the test database (PostgreSQL 18.6): `UPDATE scratch SET status = 'RUNNING'` on a table with `CREATE INDEX ON t ("runAt") WHERE status = 'QUEUED'` produced 0 heap-only updates; the same update with no index that mentions `status` produced heap-only updates up to the free space of the page. The jobs e2e `S49 AS-89` row (500 claim-and-complete cycles, 1,000+ updates) measured exactly 0% heap-only. Cause: PostgreSQL treats every column that appears in an index key **or in a partial-index predicate** as indexed. Both halves of a cycle change such columns: the claim sets `status` (predicate of `Job_due_idx`, `Job_running_*_idx`, `Job_cron_active_idx`), `lockedUntil` (key of `Job_running_lease_idx`) and the completion sets `status` again. The claim path needs the partial `Job_due_idx ... WHERE status = 'QUEUED'` (AS-88: cost independent of finished history), so a claim can never be heap-only. The comment in `20261001110000-create-jobs.js` ("fillfactor 70 ... so status/lock updates are HOT updates") is therefore wrong for status changes; fillfactor 70 only helps updates of columns that no index mentions (`attempts`, `lastError`, `lockedBy`).
+- What I did: left the AS-89 test in place, unchanged, so it fails honestly (not skipped, not weakened). Everything else of S49 is built and green.
+- Options for the human (pick one; none is a code-only fix):
+  1. Keep AS-88, replace AS-89 by a property the design can meet: dead-tuple bloat stays bounded (autovacuum keeps `n_dead_tup` of the live partitions below a fraction of live rows after N cycles) and the per-partition `fillfactor` stays 70. My preference.
+  2. Move the queue state out of `Job` into a narrow, separately vacuumed structure (needs a constitution IX.3 amendment for a new technical table); `Job` keeps cold columns and could then be updated heap-only.
+  3. Drop the partial due index and accept a full `runAt` index with a status filter: AS-88 then fails once finished rows pile up.
+- The numbers: partial index on status, status update: 0 HOT of 200; no status index: 54 HOT of the next 200 (page space bound).

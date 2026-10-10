@@ -2,12 +2,20 @@ import { Injectable, OnApplicationBootstrap } from '@nestjs/common';
 import { JobHandler } from '@app/infrastructure/jobs/job-handler.decorator';
 import { JobsService } from '@app/infrastructure/jobs/jobs.service';
 import { StatementService } from '../application/statement.service';
+import '../application/commission-rate.job-types';
+import { z } from 'zod';
+import { declareJobType } from '@app/infrastructure/jobs/job-type-registry';
 
 declare module '@app/infrastructure/jobs/job-types' {
   interface JobPayloads {
     'statements.close-month': { month?: string };
   }
 }
+
+declareJobType({
+  name: 'statements.close-month',
+  contract: z.object({ month: z.string().optional() }),
+});
 
 @Injectable()
 export class StatementsJobs implements OnApplicationBootstrap {

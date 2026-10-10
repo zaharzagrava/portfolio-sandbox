@@ -34,7 +34,7 @@ export class MembershipService {
     );
   }
 
-  invalidate(userId: string, shopId: string): Promise<void> {
-    return this.cache.invalidate([membershipCacheKey(userId, shopId)]);
+  async invalidate(userId: string, shopId: string): Promise<void> {
+    await this.cache.invalidate([membershipCacheKey(userId, shopId)]);
   }
 }

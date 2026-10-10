@@ -13,7 +13,7 @@ export class AutocompleteController {
    * minute: popular prefixes ("iph", "airp") are answered at the edge. Clients
    * debounce ~120 ms and abort stale requests (FE phase 2).
    */
-  @Firewall({ anonymous: true, skipThrottle: true })
+  @Firewall({ anonymous: true })
   @Header('Cache-Control', 'public, max-age=60, s-maxage=60')
   @Get()
   suggest(@Query('q') q = '') {

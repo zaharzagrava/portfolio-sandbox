@@ -37,7 +37,7 @@ export class LiveStreamController {
     private readonly redis: RedisService,
   ) {}
 
-  @Firewall({ anonymous: true, skipThrottle: true })
+  @Firewall({ anonymous: true })
   @Get(':streamId/events')
   async events(
     @Param('streamId', ParseUUIDPipe) streamId: string,

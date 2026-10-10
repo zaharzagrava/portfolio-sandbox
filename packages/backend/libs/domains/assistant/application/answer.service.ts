@@ -3,7 +3,7 @@ import type Anthropic from '@anthropic-ai/sdk';
 import type { Request, Response } from 'express';
 import { v7 as uuidv7 } from 'uuid';
 import { ApiConfigService } from '@app/common/config';
-import { RateLimiterService } from '@app/infrastructure/rate-limit/rate-limiter.service';
+import { RateLimiterService } from '@app/infrastructure/rate-limit';
 import {
   LLM_PROVIDER,
   LlmAbortedError,

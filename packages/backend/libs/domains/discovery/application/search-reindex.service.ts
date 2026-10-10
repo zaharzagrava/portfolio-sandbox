@@ -9,11 +9,7 @@ import {
 import { UpsertProductDocument } from '@app/infrastructure/elasticsearch/types';
 import { JobHandler } from '@app/infrastructure/jobs/job-handler.decorator';
 
-declare module '@app/infrastructure/jobs/job-types' {
-  interface JobPayloads {
-    'search.reindex-products': { batchSize?: number };
-  }
-}
+import './search-reindex.job-types';
 
 const toDoc = (p: Product): UpsertProductDocument => ({
   id: p.id,

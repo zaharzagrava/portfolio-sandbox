@@ -14,7 +14,7 @@ import { parseIdList } from '@app/infrastructure/platform/parse-id-list';
 export class ShopBatchReadController {
   constructor(@InjectConnection() private readonly sequelize: Sequelize) {}
 
-  @Firewall({ anonymous: true, skipThrottle: true })
+  @Firewall({ anonymous: true })
   @Header('Cache-Control', 'public, max-age=30')
   @Get('shops')
   async shops(@Query('ids') raw: string) {

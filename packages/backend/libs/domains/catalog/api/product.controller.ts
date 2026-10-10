@@ -18,7 +18,7 @@ import { NotFoundError } from '@app/common/errors';
 import { ApiTags } from '@nestjs/swagger';
 import { Firewall, User, UserRawDto } from '@app/domains/identity';
 import { ProductService } from '../application/product.service';
-import { RateLimit } from '@app/infrastructure/rate-limit/rate-limit.decorator';
+import { RateLimit } from '@app/infrastructure/rate-limit';
 import { ShopScoped } from '@app/domains/tenancy';
 import { CreateProductDto, SearchProductsQueryDto } from './product.dto';
 

@@ -20,11 +20,7 @@ import { FlashStockService } from '../infra/flash-stock.service';
 import { OrderService } from './order.service';
 import { OrderReserved } from './events/order-events';
 
-declare module '@app/infrastructure/jobs/job-types' {
-  interface JobPayloads {
-    'orders.expire-reservation': { orderId: string };
-  }
-}
+import './order.job-types';
 
 export const RESERVATION_HOLD_MS = 15 * 60_000;
 

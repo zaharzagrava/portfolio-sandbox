@@ -13,11 +13,19 @@ import { TransactionRunner } from '@app/infrastructure/context';
 import { JobHandler } from '@app/infrastructure/jobs/job-handler.decorator';
 import { JobsService } from '@app/infrastructure/jobs/jobs.service';
 
+import { z } from 'zod';
+import { declareJobType } from '@app/infrastructure/jobs/job-type-registry';
+
 declare module '@app/infrastructure/jobs/job-types' {
   interface JobPayloads {
     'outbox.purge-published': Record<string, never>;
   }
 }
+
+declareJobType({
+  name: 'outbox.purge-published',
+  contract: z.object({}),
+});
 
 export const PURGE_PUBLISHED_JOB = 'outbox.purge-published';
 const BATCH_SIZE = 1_000;

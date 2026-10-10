@@ -13,7 +13,7 @@ import {
 import { ApiTags } from '@nestjs/swagger';
 import { InjectModel } from '@nestjs/sequelize';
 import { Firewall, User, UserRawDto } from '@app/domains/identity';
-import { RateLimit } from '@app/infrastructure/rate-limit/rate-limit.decorator';
+import { RateLimit } from '@app/infrastructure/rate-limit';
 import { ShopScoped } from '@app/domains/tenancy';
 import { JobsService } from '@app/infrastructure/jobs/jobs.service';
 import FlashSale from '../infra/models/flash-sale.model';
@@ -23,12 +23,7 @@ import { OrderService } from '../application/order.service';
 import { CartIdentity } from './cart-identity';
 import { CreateFlashSaleDto } from './orders.dto';
 
-declare module '@app/infrastructure/jobs/job-types' {
-  interface JobPayloads {
-    'flash-sale.start': { saleId: string };
-    'flash-sale.end': { saleId: string };
-  }
-}
+import '../application/order.job-types';
 
 const IDEMPOTENCY_KEY = /^[A-Za-z0-9_-]{8,128}$/;
 

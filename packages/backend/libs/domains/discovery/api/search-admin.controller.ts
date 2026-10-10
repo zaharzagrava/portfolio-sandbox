@@ -25,7 +25,8 @@ import { ShopScoped } from '@app/domains/tenancy';
 import { ElasticsearchService } from '@app/infrastructure/elasticsearch/elasticsearch.service';
 import { JobsService } from '@app/infrastructure/jobs/jobs.service';
 
-// 'search.reindex-products' payload type is declared next to its handler (search-reindex.service.ts).
+// 'search.reindex-products' payload type + contract live in search-reindex.job-types.ts (no handler code pulled in).
+import '../application/search-reindex.job-types';
 import { ShopProductSearchService } from '../application/shop-product-search.service';
 import { SearchQualityService } from '../application/search-quality.service';
 

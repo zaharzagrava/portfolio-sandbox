@@ -13,8 +13,10 @@
  * partition column, so idempotency keys live in "JobKey" (global PK) and are
  * inserted in the same transaction as the job.
  *
- * fillfactor=70 leaves room on each page so status/lock updates are HOT
- * updates (no index maintenance) - the hot path of the table is updates.
+ * fillfactor=70 leaves room on each page so that after a VACUUM later updates
+ * reuse the dead space and bloat stays bounded. Status updates are NOT heap-only
+ * (status is in partial-index predicates); only columns no index mentions
+ * (attempts, lastError, lockedBy) can be.
  */
 module.exports = {
   async up(queryInterface) {

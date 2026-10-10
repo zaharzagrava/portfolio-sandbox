@@ -8,6 +8,7 @@ export { DevelopersModule } from './developers.module';
 export type { WebhookDelivery } from './domain/webhook-events';
 export { PublicApiWorkerModule } from './public-api-worker.module';
 export { PublicApiModule } from './public-api.module';
+export { developerPlatformRatePolicies } from './rate-limit-policies';
 export { WebhooksCoreModule } from './webhooks-core.module';
 export { WebhooksWorkerModule } from './webhooks-worker.module';
 export { WebhooksModule } from './webhooks.module';

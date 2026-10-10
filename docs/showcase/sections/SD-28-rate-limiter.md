@@ -46,3 +46,8 @@ Seller API dashboard shows usage vs limits (SD-07).
 - Applied: `POST /api/auth/login` (`auth.login.ip` + `auth.login.account`), `GET /api/products/search` (`search.query`, lease 10 %). `core` imports `RedisModule` + `RateLimitModule`.
 - Edge (`packages/edge-be`): fixed window (INCR + separate EXPIRE, 2× burst at boundaries) → sliding window in one atomic `EVAL`, 500 ms timeout, fail-open. Edge typecheck clean.
 - Spec `rate-limit/rate-limit.e2e-spec.ts`; k6 `scripts/load-tests/ratelimit.test.js` (`pnpm loadtest:ratelimit`).
+
+## Update (S50, 2026-10-10)
+- One limiter: the global `@nestjs/throttler` guard, `RedisThrottlerStorage`, `Firewall({ throttle, skipThrottle })` and the `throttle_api_*` config are gone. `RateLimitModule.forRoot()` installs a global interceptor: explicit `@RateLimit(...)`, else `default.read` (300/min) / `default.write` (60/min), unless `@RateLimitExempt(reason)`.
+- Headers are the IETF structured fields (`RateLimit-Policy: "p";q=5;w=900`, `RateLimit: "p";r=0;t=12`) plus `Retry-After`; a fail-closed outage answers `503 rate_limiter_unavailable`, a cost above the limit `422 rate_limit_cost_exceeded`. The sliding window reads the store clock inside the script; `acquire` returns `{ acquired, release, decision }`; failures-only counting, `penalize`, `refund`, `reset` exist.
+- Policies are declared by their owning domain (`rate-limit-policies.ts` + `RateLimitModule.forFeature`), validated at startup. Edge: same `429` shape, `Retry-After` and `RateLimit*` headers.

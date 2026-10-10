@@ -1,18 +1,19 @@
 import { applyDecorators, UseGuards } from '@nestjs/common';
-import { Throttle, SkipThrottle } from '@nestjs/throttler';
 import { UserAuthGuard } from '../guards/user-auth.guard';
 import { UserAuthOptionalGuard } from '../guards/user-auth-optional.guard';
 import { Roles, RolesGuard } from '../guards/roles.guard';
 import { Role } from '../../infra/models/user.model';
 
+/**
+ * Authentication and role guards of a route. Rate limiting is not decided here (S50): every route gets the default
+ * limit, `@RateLimit(...)` names a policy, `@RateLimitExempt(reason)` takes a route out with a stated reason.
+ */
 export function Firewall(options?: {
   anonymous?: boolean;
-  throttle?: { limit: number; ttl: number };
-  skipThrottle?: boolean;
   /** Restrict to these roles (ignored for anonymous endpoints). */
   roles?: Role[];
 }) {
-  const { throttle, anonymous, skipThrottle, roles } = options || {
+  const { anonymous, roles } = options || {
     anonymous: false,
   };
 
@@ -32,19 +33,6 @@ export function Firewall(options?: {
   }
 
   decorators.push(UseGuards(...guards));
-
-  if (skipThrottle) {
-    decorators.push(SkipThrottle());
-  } else if (throttle) {
-    decorators.push(
-      Throttle({
-        asd: {
-          limit: throttle.limit,
-          ttl: throttle.ttl,
-        },
-      }),
-    );
-  }
 
   return applyDecorators(...decorators);
 }

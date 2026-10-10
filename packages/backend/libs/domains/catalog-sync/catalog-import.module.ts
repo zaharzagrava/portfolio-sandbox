@@ -3,7 +3,8 @@ import { AuthModule } from '@app/domains/identity';
 import { StorageModule } from '@app/infrastructure/storage/storage.module';
 import { SqsModule } from '@app/infrastructure/sqs/sqs.module';
 import { RealtimeModule } from '@app/infrastructure/realtime/realtime.module';
-import { RateLimitModule } from '@app/infrastructure/rate-limit/rate-limit.module';
+import { RateLimitModule } from '@app/infrastructure/rate-limit';
+import { catalogSyncRatePolicies } from './rate-limit-policies';
 import { CatalogImportService } from './application/catalog-import.service';
 import { OrderExportService } from '@app/domains/orders';
 import { CatalogImportController } from './api/catalog-import.controller';
@@ -18,7 +19,7 @@ const SERVICES = [CatalogImportService, OrderExportService];
     StorageModule,
     SqsModule,
     RealtimeModule,
-    RateLimitModule,
+    RateLimitModule.forFeature(catalogSyncRatePolicies),
   ],
   providers: SERVICES,
   exports: SERVICES,
@@ -28,7 +29,12 @@ export class CatalogImportModule {}
 
 /** SD-27 processing (apps/worker). */
 @Module({
-  imports: [StorageModule, SqsModule, RealtimeModule, RateLimitModule],
+  imports: [
+    StorageModule,
+    SqsModule,
+    RealtimeModule,
+    RateLimitModule.forFeature(catalogSyncRatePolicies),
+  ],
   providers: [...SERVICES, CatalogImportWorker],
 })
 export class CatalogImportWorkerModule {}

@@ -4,7 +4,7 @@ import {
   getModelToken,
   SequelizeModule,
 } from '@nestjs/sequelize';
-import { QueryTypes, Sequelize } from 'sequelize';
+import { Sequelize } from 'sequelize';
 import http from 'node:http';
 import { AddressInfo } from 'node:net';
 import { v4 } from 'uuid';
@@ -12,6 +12,7 @@ import { generateTestingModule } from '@app/test/utils/global-modules';
 import { SeedsModule } from '@app/test/seeds/seeds.module';
 import { SeedsService } from '@app/test/seeds/seeds.service';
 import { ApiConfigService } from '@app/common/config';
+import { JobsTestProbe } from '@app/infrastructure/jobs';
 import { ShopModel as Shop } from '@app/domains/tenancy';
 import { OrderPaid } from '@app/domains/orders';
 import { WebhooksCoreModule } from './webhooks-core.module';
@@ -153,15 +154,9 @@ describe('Webhooks (e2e)', () => {
 
     expect(await deliverer.deliver(msg, 1)).toBe('retry-fifo');
     expect(await deliverer.deliver(msg, 3)).toBe('retry-later');
-    const [job] = await app
-      .get<Sequelize>(getConnectionToken())
-      .query<{ runAt: Date }>(
-        `SELECT "runAt" FROM "Job" WHERE type = 'webhooks.retry' AND payload->>'endpointId' = :id`,
-        {
-          type: QueryTypes.SELECT,
-          replacements: { id: ep.id },
-        },
-      );
+    const [job] = await new JobsTestProbe(
+      app.get<Sequelize>(getConnectionToken()),
+    ).find('webhooks.retry', { endpointId: ep.id });
     expect(new Date(job.runAt).getTime() - Date.now()).toBeGreaterThan(
       4 * 60_000,
     ); // first backoff step: 5 min

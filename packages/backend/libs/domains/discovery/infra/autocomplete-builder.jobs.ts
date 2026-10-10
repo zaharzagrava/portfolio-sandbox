@@ -7,11 +7,19 @@ import { JobHandler } from '@app/infrastructure/jobs/job-handler.decorator';
 import { JobsService } from '@app/infrastructure/jobs/jobs.service';
 import { Suggestion } from '../domain/top-k-trie';
 
+import { z } from 'zod';
+import { declareJobType } from '@app/infrastructure/jobs/job-type-registry';
+
 declare module '@app/infrastructure/jobs/job-types' {
   interface JobPayloads {
     'search.build-autocomplete': Record<string, never>;
   }
 }
+
+declareJobType({
+  name: 'search.build-autocomplete',
+  contract: z.object({}),
+});
 
 export const AUTOCOMPLETE_POINTER = 'autocomplete:current';
 const MAX_QUERIES = 200_000;

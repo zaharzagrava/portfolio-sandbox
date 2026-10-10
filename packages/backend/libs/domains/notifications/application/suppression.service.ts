@@ -2,9 +2,11 @@ import { Injectable } from '@nestjs/common';
 import { InjectConnection } from '@nestjs/sequelize';
 import { QueryTypes, Sequelize } from 'sequelize';
 import { CacheService } from '@app/infrastructure/cache/cache.service';
+import { cacheKey } from '@app/infrastructure/cache/cache-key';
 
+// An address can contain any character (spaces, braces, colons): cacheKey() encodes it (S52 AS-09).
 const key = (channel: string, address: string) =>
-  `notif:supp:${channel}:${address.toLowerCase()}`;
+  cacheKey('notif-supp', 1, channel, address.toLowerCase());
 
 /**
  * Addresses we must never contact again (hard bounce, spam complaint, carrier

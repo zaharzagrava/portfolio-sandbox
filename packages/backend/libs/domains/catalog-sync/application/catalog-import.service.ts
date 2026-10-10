@@ -14,7 +14,7 @@ import { ApiConfigService } from '@app/common/config';
 import { ObjectStorage } from '@app/infrastructure/storage/object-storage.port';
 import { TaskQueue } from '@app/infrastructure/sqs/task-queue.port';
 import { RealtimePublisher } from '@app/infrastructure/realtime/realtime-publisher.service';
-import { RateLimiterService } from '@app/infrastructure/rate-limit/rate-limiter.service';
+import { RateLimiterService } from '@app/infrastructure/rate-limit';
 import { ProductChanged } from '@app/domains/catalog';
 import { TransactionRunner } from '@app/infrastructure/context';
 import { scanStream } from '../infra/clamav';
@@ -152,11 +152,8 @@ export class CatalogImportService {
     );
     if (!job || ['DONE', 'FAILED', 'PENDING_UPLOAD'].includes(job.status))
       return job?.status ?? 'MISSING';
-    const release = await this.limiter.acquire(
-      'imports.concurrent',
-      job.shopId,
-    );
-    if (!release)
+    const lease = await this.limiter.acquire('imports.concurrent', job.shopId);
+    if (!lease.acquired)
       throw new ShopBusyError(
         `shop ${job.shopId} already has an import running`,
       );
@@ -171,7 +168,7 @@ export class CatalogImportService {
       );
       throw error;
     } finally {
-      await release();
+      await lease.release();
     }
   }
 

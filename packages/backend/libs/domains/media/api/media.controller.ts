@@ -18,7 +18,7 @@ import {
 } from 'class-validator';
 import { Firewall, User, UserRawDto } from '@app/domains/identity';
 import { ShopScoped } from '@app/domains/tenancy';
-import { RateLimit } from '@app/infrastructure/rate-limit/rate-limit.decorator';
+import { RateLimit } from '@app/infrastructure/rate-limit';
 import { MediaService } from '../application/media.service';
 
 export class UploadDto {

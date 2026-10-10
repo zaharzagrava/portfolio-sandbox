@@ -259,7 +259,7 @@ Finished jobs are dropped by whole daily partitions, idempotency keys expire wit
 3. **AS-86** — **Given** an inserted job whose creation day has no partition (maintenance fell behind), **Then** the insert succeeds (default partition), a metric `job_default_partition_rows` is raised on the next maintenance run, and a log line warns.
 4. **AS-87** — **Given** idempotency keys of jobs finished more than 30 days ago, **When** maintenance runs, **Then** those keys are removed (in batches of at most 10,000 per statement) and keys of newer jobs are kept (AS-09).
 5. **AS-88** — **Given** 200,000 seeded jobs of which 100 are due, **When** a worker claims a batch, **Then** the claim's query plan uses the due-jobs partial index and reads fewer than 1,000 heap rows (it does not scan the table).
-6. **AS-89** — **Given** 5,000 claim-and-complete cycles, **Then** at least 90% of updates to the job table are in-page (heap-only) updates.
+6. **AS-89** — **Given** 5,000 claim-and-complete cycles followed by a `VACUUM` of the job table, **When** a second batch of 5,000 cycles runs, **Then** the table's heap size grows by less than 25% compared with its size after the first batch (vacuum lets the next cycles reuse the dead space: bloat stays bounded), and the table keeps its `fillfactor` of 70.
 7. **AS-90** — **Given** maintenance drops a partition, **Then** it does so with a catalog-resolved name (no string-built identifier from caller input) and the drop completes within `lock_timeout` 5 s or fails without leaving a partial state.
 
 ---
@@ -379,7 +379,7 @@ All edge cases are acceptance scenarios; the index maps them:
 - **FR-047**: The system MUST keep daily creation-date partitions ahead of time (default 14 days) and create missing ones idempotently (AS-84).
 - **FR-048**: Maintenance MUST drop a partition only when it is older than the retention (default 30 days), holds no `QUEUED` or `RUNNING` job, and no `DEAD` job finished within the retention (AS-85); it MUST remove idempotency keys of jobs older than retention in bounded batches (AS-87) and MUST NOT build table names from untrusted input (AS-90).
 - **FR-049**: A job with no matching partition MUST still be stored, and the condition MUST be reported (AS-86).
-- **FR-050**: The claim path MUST remain index-assisted: cost independent of the number of finished jobs (AS-88); updates on the job table MUST be mostly in-page (AS-89).
+- **FR-050**: The claim path MUST remain index-assisted: cost independent of the number of finished jobs (AS-88); dead-tuple bloat from status updates MUST stay bounded because vacuum reclaims the space and later updates reuse it (AS-89). Heap-only updates are not possible for a column that appears in the partial index predicate, so the design does not claim them.
 - **FR-051**: Partition maintenance MUST itself run as a schedule of this capability (`jobs.partition-maintenance`, daily `15 3 * * *` UTC, concurrency 1) (AS-84).
 
 **Observability and context**

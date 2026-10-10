@@ -38,24 +38,55 @@ async function tryGetUserId(request: Request, env: Env): Promise<string | null> 
  * backend's own per-endpoint limits (fail-closed where it matters) still apply.
  * // See README.md#adr -> "Why use Redis at the edge?"
  */
-const SLIDING_WINDOW_LUA = `
+export const SLIDING_WINDOW_LUA = `
 local limit = tonumber(ARGV[1])
-local window = tonumber(ARGV[2])
+local W = tonumber(ARGV[2])
 local elapsed = tonumber(ARGV[3])
 local current = tonumber(redis.call('GET', KEYS[1]) or '0')
 local previous = tonumber(redis.call('GET', KEYS[2]) or '0')
-local estimate = previous * (1 - elapsed / window) + current
-if estimate + 1 > limit then return 0 end
-redis.call('INCR', KEYS[1])
-redis.call('PEXPIRE', KEYS[1], window * 2)
-return 1
+local used = previous * (W - elapsed) + current * W
+if used + W <= limit * W then
+  redis.call('INCR', KEYS[1])
+  redis.call('PEXPIRE', KEYS[1], W * 2)
+  return { 1, math.floor((limit * W - used - W) / W), W - elapsed }
+end
+local retry
+local room = (limit - current - 1) * W
+if room >= 0 then
+  retry = (W - math.floor(room / previous)) - elapsed
+else
+  local e3 = 0
+  if current > 0 then
+    e3 = W - math.floor((limit - 1) * W / current)
+    if e3 < 0 then e3 = 0 end
+  end
+  retry = (W - elapsed) + e3
+end
+if retry < 1 then retry = 1 end
+return { 0, 0, retry }
 `;
 
-async function checkRateLimit(rateLimitKey: string, env: Env): Promise<boolean> {
+export interface EdgeDecision {
+	allowed: boolean;
+	remaining: number;
+	/** ms until a request would be admitted (denial) or until the window rolls (allowed). */
+	resetMs: number;
+}
+
+/** Fail-open decisions since this isolate started: the edge has no metrics pipeline, so they are counted here and logged. */
+export const edgeRateLimitStats = { failOpen: 0 };
+
+const POLICY_NAME = 'edge';
+
+/**
+ * One atomic store call per decision, 500 ms timeout. Any failure (error, timeout, malformed answer) admits the
+ * request: the backend's own limits still apply behind the edge (FR-057).
+ */
+async function checkRateLimit(subject: string, env: Env): Promise<EdgeDecision> {
 	const windowMs = RATE_LIMIT_WINDOW_SECONDS * 1000;
 	const now = Date.now();
 	const window = Math.floor(now / windowMs);
-	const base = `ratelimit:{${rateLimitKey}}`;
+	const base = `ratelimit:{${subject}}`;
 
 	try {
 		const response = await fetch(env.UPSTASH_REDIS_REST_URL, {
@@ -76,11 +107,50 @@ async function checkRateLimit(rateLimitKey: string, env: Env): Promise<boolean> 
 			]),
 			signal: AbortSignal.timeout(500),
 		});
-		const data = (await response.json()) as { result?: number };
-		return Number(data.result) === 1;
-	} catch {
-		return true;
+		const data = (await response.json()) as { result?: [number, number, number] };
+		const [allowed, remaining, resetMs] = (data.result ?? []).map(Number);
+		if (![allowed, remaining, resetMs].every(Number.isFinite)) throw new Error('malformed answer');
+		return { allowed: allowed === 1, remaining, resetMs };
+	} catch (error) {
+		edgeRateLimitStats.failOpen++;
+		console.warn(JSON.stringify({ event: 'edge_rate_limit_fail_open', reason: (error as Error)?.name ?? 'error' }));
+		return { allowed: true, remaining: RATE_LIMIT_MAX_REQUESTS, resetMs: 0 };
 	}
+}
+
+/** The one 429 of the edge: problem+json and the RateLimit headers of the backend contract (FR-058). Never names the subject. */
+function rateLimitResponse(decision: EdgeDecision, request: Request): Response {
+	const retryAfterSeconds = Math.max(1, Math.ceil(decision.resetMs / 1000));
+	const url = new URL(request.url);
+	return new Response(
+		JSON.stringify({
+			type: 'https://errors.marketplace.invalid/rate_limited',
+			title: 'Too Many Requests',
+			status: 429,
+			detail: `Too many requests. Retry in ${retryAfterSeconds}s.`,
+			instance: url.pathname,
+			code: 'rate_limited',
+			retryAfterSeconds,
+		}),
+		{
+			status: 429,
+			headers: {
+				'Content-Type': 'application/problem+json',
+				'Retry-After': String(retryAfterSeconds),
+				'RateLimit-Policy': `"${POLICY_NAME}";q=${RATE_LIMIT_MAX_REQUESTS};w=${RATE_LIMIT_WINDOW_SECONDS}`,
+				RateLimit: `"${POLICY_NAME}";r=0;t=${retryAfterSeconds}`,
+				'Cache-Control': 'no-store',
+			},
+		},
+	);
+}
+
+/** Verified user id, else the address the CDN reports, else one shared bucket (FR-058). Never a client-set forwarding header. */
+async function rateLimitSubject(request: Request, env: Env): Promise<string> {
+	const userId = await tryGetUserId(request, env);
+	if (userId) return `user:${userId}`;
+	const address = request.headers.get('CF-Connecting-IP');
+	return address ? `ip:${address}` : 'anonymous';
 }
 
 function isProxiedReadPath(pathname: string): boolean {
@@ -330,11 +400,8 @@ export default {
 		// edge is the single ingress applying auth + rate limiting uniformly
 		// across both the async write path and the sync read path.
 		if (request.method === 'GET' && isProxiedReadPath(url.pathname)) {
-			const rateLimitKey = (await tryGetUserId(request, env)) ?? request.headers.get('CF-Connecting-IP') ?? 'anonymous';
-			const withinLimit = await checkRateLimit(rateLimitKey, env);
-			if (!withinLimit) {
-				return new Response(JSON.stringify({ error: 'Rate limit exceeded' }), { status: 429 });
-			}
+			const decision = await checkRateLimit(await rateLimitSubject(request, env), env);
+			if (!decision.allowed) return rateLimitResponse(decision, request);
 
 			const upstreamUrl = `${env.REALTIME_ORIGIN}${url.pathname}${url.search}`;
 			const upstreamResponse = await fetch(upstreamUrl, {
@@ -396,10 +463,8 @@ export default {
 			}
 
 			// --- --- --- --- --- Rate limiting --- --- --- --- --- //
-			const withinLimit = await checkRateLimit(userContext.userId, env);
-			if (!withinLimit) {
-				return new Response(JSON.stringify({ error: 'Rate limit exceeded' }), { status: 429 });
-			}
+			const decision = await checkRateLimit(`user:${userContext.userId}`, env);
+			if (!decision.allowed) return rateLimitResponse(decision, request);
 
 			// --- --- --- --- --- Redis idempotency check --- --- --- --- --- //
 			const redisAuth = {

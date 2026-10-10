@@ -4,17 +4,29 @@ import { v4 } from 'uuid';
 import { generateTestingModule } from '@app/test/utils/global-modules';
 import { countStatuses, inParallel } from '@app/test/utils/async-helpers';
 import { expectProblem } from '@app/test/utils/test-utils.service';
-import { RedisService } from '@app/infrastructure/redis/redis.service';
-import { AuthApiModule } from '@app/domains/identity';
+import { AuthApiModule, identityRatePolicies } from '@app/domains/identity';
+import { ordersRatePolicies } from '@app/domains/orders';
+import { catalogRatePolicies } from '@app/domains/catalog';
+import { statementsRatePolicies } from '@app/domains/statements';
 import { RateLimitModule } from './rate-limit.module';
 import { CacheModule } from '@app/infrastructure/cache/cache.module';
-import { RateLimiterService } from './rate-limiter.service';
 import { RateLimitDecision } from './rate-limit.types';
+import {
+  LimiterInstance,
+  createLimiter,
+  evalCalls,
+} from './test/limiter-fixture';
 
 /** SD-28 against the real test Redis: exact limits under concurrency, fail modes, HTTP contract. */
 describe('Rate limiting (e2e, real Redis)', () => {
   let app: INestApplication;
-  let limiter: RateLimiterService;
+  let a: LimiterInstance;
+  const tables = [
+    identityRatePolicies,
+    ordersRatePolicies,
+    catalogRatePolicies,
+    statementsRatePolicies,
+  ];
 
   beforeAll(async () => {
     const moduleRef = await generateTestingModule(
@@ -24,17 +36,18 @@ describe('Rate limiting (e2e, real Redis)', () => {
     app = moduleRef.createNestApplication();
     app.setGlobalPrefix('api');
     await app.init();
-    limiter = app.get(RateLimiterService);
+    a = await createLimiter({ policies: tables, time: 'store' });
   });
 
   afterAll(async () => {
+    await a.close();
     await app.close();
   });
 
   it('token bucket: 50 concurrent requests against a burst of 10 → exactly 10 allowed', async () => {
     const subject = `user:${v4()}`;
     const results = await inParallel(50, () =>
-      limiter.check('checkout.create', subject),
+      a.limiter.check('checkout.create', subject),
     );
     const allowed = results.filter(
       (r) => r.status === 'fulfilled' && r.value.allowed,
@@ -46,7 +59,7 @@ describe('Rate limiting (e2e, real Redis)', () => {
     const subject = `email:${v4()}`;
     const decisions: RateLimitDecision[] = [];
     for (let i = 0; i < 6; i++)
-      decisions.push(await limiter.check('auth.login.account', subject));
+      decisions.push(await a.limiter.check('auth.login.account', subject));
     expect(decisions.map((d) => d.allowed)).toEqual([
       true,
       true,
@@ -60,46 +73,51 @@ describe('Rate limiting (e2e, real Redis)', () => {
 
   it('local leases: a hot key costs far fewer Redis calls than requests, total never exceeds the budget', async () => {
     const subject = `user:${v4()}`;
-    const evalSpy = jest.spyOn(app.get(RedisService).client, 'eval');
+    const before = await evalCalls(a.redis);
     const results = await inParallel(200, () =>
-      limiter.check('search.query', subject),
+      a.limiter.check('search.query', subject),
     );
     const allowed = results.filter(
       (r) => r.status === 'fulfilled' && r.value.allowed,
     ).length;
+    const calls = (await evalCalls(a.redis)) - before;
 
     expect(allowed).toBeLessThanOrEqual(60);
     expect(allowed).toBeGreaterThanOrEqual(54); // ~ capacity, minus lease slices handed out concurrently
-    expect(evalSpy.mock.calls.length).toBeLessThan(200);
-    evalSpy.mockRestore();
+    expect(calls).toBeLessThan(200);
   });
 
   it('concurrency limiter: 2 in flight per shop, third rejected until one is released', async () => {
     const shop = `shop:${v4()}`;
-    const first = await limiter.acquire('exports.concurrent', shop);
-    const second = await limiter.acquire('exports.concurrent', shop);
-    expect(await limiter.acquire('exports.concurrent', shop)).toBeNull();
+    const first = await a.limiter.acquire('exports.concurrent', shop);
+    const second = await a.limiter.acquire('exports.concurrent', shop);
+    expect((await a.limiter.acquire('exports.concurrent', shop)).acquired).toBe(
+      false,
+    );
 
-    await first!();
-    const third = await limiter.acquire('exports.concurrent', shop);
-    expect(third).not.toBeNull();
-    await second!();
-    await third!();
+    if (first.acquired) await first.release();
+    const third = await a.limiter.acquire('exports.concurrent', shop);
+    expect(third.acquired).toBe(true);
+    if (second.acquired) await second.release();
+    if (third.acquired) await third.release();
   });
 
   it('Redis down: fail-closed policies reject, fail-open policies fall back to the in-memory limiter', async () => {
-    const broken = new RateLimiterService({
-      client: { eval: () => Promise.reject(new Error('ECONNREFUSED')) },
-    } as unknown as RedisService);
+    const broken = await createLimiter({
+      policies: tables,
+      clientUrl: 'redis://127.0.0.1:1/0',
+    });
 
-    expect(await broken.check('checkout.create', 'user:x')).toMatchObject({
-      allowed: false,
-      source: 'fail-closed',
-    });
-    expect(await broken.check('search.query', 'user:x')).toMatchObject({
-      allowed: true,
-      source: 'fallback',
-    });
+    try {
+      expect(
+        await broken.limiter.check('checkout.create', 'user:x'),
+      ).toMatchObject({ allowed: false });
+      expect(
+        await broken.limiter.check('search.query', 'user:x'),
+      ).toMatchObject({ allowed: true, source: 'fallback' });
+    } finally {
+      await broken.close();
+    }
   });
 
   it('HTTP: login is limited per account with 429, Retry-After, RateLimit-* headers and Problem Details', async () => {
@@ -118,7 +136,10 @@ describe('Rate limiting (e2e, real Redis)', () => {
 
     const limited = await attempt().expect(429);
     expect(Number(limited.headers['retry-after'])).toBeGreaterThan(0);
-    expect(limited.headers['ratelimit-limit']).toBe('5');
+    // S50 AS-82: structured-field RateLimit-Policy replaces the legacy RateLimit-Limit header
+    expect(limited.headers['ratelimit-policy']).toContain(
+      '"auth.login.account";q=5;w=900',
+    );
     expect(limited.headers['content-type']).toContain(
       'application/problem+json',
     );

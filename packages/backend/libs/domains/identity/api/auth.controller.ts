@@ -19,7 +19,7 @@ import { randomBytes } from 'node:crypto';
 import { Firewall } from './decorators/firewall.decorator';
 import { User } from './decorators/user.decorator';
 import { UserRawDto } from './users.dto';
-import { RateLimit } from '@app/infrastructure/rate-limit/rate-limit.decorator';
+import { RateLimit } from '@app/infrastructure/rate-limit';
 import { ApiConfigService } from '@app/common/config';
 import { Environment } from '@app/common/types';
 import {

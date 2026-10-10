@@ -6,3 +6,4 @@
  */
 export { StatementsWorkerModule } from './statements-worker.module';
 export { StatementsModule } from './statements.module';
+export { statementsRatePolicies } from './rate-limit-policies';

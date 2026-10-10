@@ -49,8 +49,7 @@ import { OrdersModule } from '@app/domains/orders';
 import { ShopBatchReadModule, TenancyModule } from '@app/domains/tenancy';
 import { Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
-import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
-import { APP_FILTER, APP_GUARD } from '@nestjs/core';
+import { APP_FILTER } from '@nestjs/core';
 import { AllExceptionsFilter } from '@app/common/exceptions-filter';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ApiConfigService, ApiConfigModule } from '@app/common/config';
@@ -59,9 +58,7 @@ import { PlatformModule } from '@app/infrastructure/platform';
 import { RedisModule } from '@app/infrastructure/redis/redis.module';
 import { DynamoModule } from '@app/infrastructure/dynamo/dynamo.module';
 import { CacheModule } from '@app/infrastructure/cache/cache.module';
-import { RedisService } from '@app/infrastructure/redis/redis.service';
-import { RateLimitModule } from '@app/infrastructure/rate-limit/rate-limit.module';
-import { RedisThrottlerStorage } from '@app/infrastructure/rate-limit/redis-throttler.storage';
+import { RateLimitModule } from '@app/infrastructure/rate-limit';
 import { ErrorUtilsModule } from '@app/common/errors/error-utils/error-utils.module';
 import { AdminModule, UsersModule, AuthApiModule } from '@app/domains/identity';
 import { AppController } from './app.controller';
@@ -89,21 +86,8 @@ import { OutboxPublisherModule } from '@app/infrastructure/outbox/outbox-publish
     RedisModule,
     DynamoModule,
     CacheModule,
-    RateLimitModule,
-    ThrottlerModule.forRootAsync({
-      imports: [ApiConfigModule, RedisModule],
-      inject: [ApiConfigService, RedisService],
-      useFactory: (config: ApiConfigService, redis: RedisService) => ({
-        throttlers: [
-          {
-            ttl: config.get('throttle_api_ttl'),
-            limit: config.get('throttle_api_limit'),
-          },
-        ],
-        // SD-28: shared across instances (in-memory storage made the limit N× per fleet).
-        storage: new RedisThrottlerStorage(redis),
-      }),
-    }),
+    // SD-28: one limiter for the whole app - default.read / default.write on every route, @RateLimit for the rest.
+    RateLimitModule.forRoot(),
     SequelizeModule.forRootAsync({
       imports: [ApiConfigModule],
       inject: [ApiConfigService],
@@ -191,10 +175,6 @@ import { OutboxPublisherModule } from '@app/infrastructure/outbox/outbox-publish
     {
       provide: APP_FILTER,
       useClass: AllExceptionsFilter,
-    },
-    {
-      provide: APP_GUARD,
-      useClass: ThrottlerGuard,
     },
     AppService,
   ],

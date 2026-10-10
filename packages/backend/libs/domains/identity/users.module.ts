@@ -12,7 +12,6 @@ import { UsersDtoModule } from './users-dto.module';
 import { AWSApiModule } from '@app/infrastructure/aws/aws-api.module';
 import { StripeModule } from '@app/infrastructure/stripe/stripe.module';
 import { TsNodeUtilsModule } from '@app/common/scripts/ts-node-utils.module';
-import { CronModule } from '@app/infrastructure/jobs/cron-module/cron.module';
 
 @Module({
   imports: [
@@ -26,7 +25,6 @@ import { CronModule } from '@app/infrastructure/jobs/cron-module/cron.module';
     AWSApiModule,
     StripeModule,
     TsNodeUtilsModule,
-    CronModule,
   ],
   providers: [UsersService],
   exports: [UsersService],

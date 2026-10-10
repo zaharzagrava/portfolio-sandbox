@@ -17,11 +17,19 @@ import { EntitlementsService } from './entitlements.service';
 import { addPeriod } from '../domain/periods';
 import { prorate, ProrationLine } from '../domain/proration';
 
+import { z } from 'zod';
+import { declareJobType } from '@app/infrastructure/jobs/job-type-registry';
+
 declare module '@app/infrastructure/jobs/job-types' {
   interface JobPayloads {
     'billing.charge-invoice': { invoiceId: string };
   }
 }
+
+declareJobType({
+  name: 'billing.charge-invoice',
+  contract: z.object({ invoiceId: z.string() }),
+});
 
 const amountFor = (price: Price, quantity: number) =>
   Number(price.unitAmount) * (price.perSeat ? quantity : 1);

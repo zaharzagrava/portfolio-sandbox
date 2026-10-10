@@ -2,8 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { ApiConfigService } from '@app/common/config';
 import { RedisService } from '@app/infrastructure/redis/redis.service';
 import { EntitlementsService } from '@app/domains/billing';
-import { RateLimiterService } from '@app/infrastructure/rate-limit/rate-limiter.service';
-import { RATE_LIMIT_POLICIES } from '@app/infrastructure/rate-limit/rate-limit.types';
+import { RateLimiterService } from '@app/infrastructure/rate-limit';
+import { assistantRatePolicies } from '../rate-limit-policies';
 import {
   Domain_AssistantBusy,
   Domain_AssistantQuotaExceeded,
@@ -72,12 +72,12 @@ export class AssistantQuotaService {
     estimatedTokens: number,
   ): Promise<void> {
     const cost = Math.min(
-      RATE_LIMIT_POLICIES['llm.provider.tpm'].limit,
+      assistantRatePolicies.policies['llm.provider.tpm'].limit,
       Math.max(1, estimatedTokens),
     );
     const decision = await this.limiter.check('llm.provider.tpm', model, cost);
     if (!decision.allowed)
-      throw new Domain_AssistantBusy(decision.retryAfterMs);
+      throw new Domain_AssistantBusy(decision.retryAfterMs ?? 0);
   }
 
   async charge(userId: string, tokens: number): Promise<void> {

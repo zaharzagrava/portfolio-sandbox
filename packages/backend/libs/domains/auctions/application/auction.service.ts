@@ -13,11 +13,19 @@ import { MembershipService } from '@app/domains/tenancy';
 import { TransactionRunner } from '@app/infrastructure/context';
 import { PLACE_BID } from '../infra/place-bid.lua';
 
+import { z } from 'zod';
+import { declareJobType } from '@app/infrastructure/jobs/job-type-registry';
+
 declare module '@app/infrastructure/jobs/job-types' {
   interface JobPayloads {
     'auctions.close': { auctionId: string };
   }
 }
+
+declareJobType({
+  name: 'auctions.close',
+  contract: z.object({ auctionId: z.string() }),
+});
 
 export const ANTI_SNIPE_MS = 2 * 60_000;
 export const EXTEND_MS = 2 * 60_000;

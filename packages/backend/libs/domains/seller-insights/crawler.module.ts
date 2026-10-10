@@ -21,11 +21,19 @@ import { NotificationsCoreModule } from '@app/domains/notifications';
 import { ShopScoped } from '@app/domains/tenancy';
 import { CrawlerService } from './application/crawler.service';
 
+import { z } from 'zod';
+import { declareJobType } from '@app/infrastructure/jobs/job-type-registry';
+
 declare module '@app/infrastructure/jobs/job-types' {
   interface JobPayloads {
     'crawler.schedule-due': Record<string, never>;
   }
 }
+
+declareJobType({
+  name: 'crawler.schedule-due',
+  contract: z.object({}),
+});
 
 export class WatchDto {
   @ApiProperty() @IsUUID() productId: string;

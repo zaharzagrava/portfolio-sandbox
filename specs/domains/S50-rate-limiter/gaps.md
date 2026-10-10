@@ -147,3 +147,46 @@ Each owner declares these in its own domain with `definePolicies` + `forFeature`
 4. Interceptor and default: header contract, refund on later denial, outcome handling, OPTIONS skip, order versus idempotency; delete the throttler, `Firewall` options and config keys (HTTP, REG).
 5. Move policy declarations to owners (table above) in step with each owner's capability; keep a temporary compatibility re-export only until each owner lands, and delete it with the last one.
 6. Edge worker and its spec (EDGE); update the k6 script; run `check:boundaries` and `check:table-ownership --strict`; update the pattern map.
+
+## Follow-ups from built specs
+
+- **S52**: `app.set('etag', false)` (`bootstrap-http.ts:184`) stays. HTTP e2e asserts that `429`, `503` and write responses carry no body-hash `ETag` and are never answered `304`. No S50 route relies on an automatic ETag.
+- **S54**: the replay header is `Idempotency-Replayed`. `spec.md` AS-47 and Requires (7) were renamed; the bootstrap already exposes the new name; HTTP e2e AS-47 asserts it.
+
+## Sibling-spec follow-ups
+
+- **S01**: remove `throttle`/`skipThrottle` from `Firewall(...)` (`firewall.decorator.ts`); declare `auth.*` policies with `definePolicies` + `forFeature`; `auth.login.account` and `auth.reset.account` use `count: 'failures-only'` with `resetOnSuccess`; the address comes from `req.clientIp` only (no `cf-connecting-ip`).
+- **S02**: declare `auth.mfa.ip`, `auth.mfa.account` (failures-only, shared by four code paths through `refund`/`reset`) and `auth.oidc.ip`.
+- **S07**: drop `imports.concurrent` and its `acquire` call (`catalog-import.service.ts:100`); `acquire` now returns `{ acquired, release, decision }`.
+- **S08**: use `penalize(policy, subject, ms)`; other workers' `check` returns `reason: 'paused'`.
+- **S10**: replace `@SkipThrottle()` on the Stripe webhook with `@RateLimitExempt('payment provider webhook, signature-verified')` or `orders.webhook.ip`.
+- **S24**: derive `chat_limiter_unavailable_total` from `rate_limit_store_unavailable_total` by policy prefix.
+- **S16, S19, S22, S29, S32–S35, S37, S39, S44**: replace the mis-used policies listed in G-35 with their own declared names; the names stay declared by the domain holding the current call site (T048), so nothing breaks meanwhile.
+- **S25, S26, S28, S36, S42, S46, S47, S48 and every other owner in the table above**: move your policy numbers into your domain with `definePolicies` + `forFeature`; adopt the structured `RateLimit`/`RateLimit-Policy` headers and the `503 rate_limiter_unavailable` / `422 rate_limit_cost_exceeded` answers in your contracts and clients.
+- **S54**: nothing new to build. Keep the idempotency interceptor route-scoped (after the global rate-limit interceptors), keep `req.clientIp` set, keep the replay header `Idempotency-Replayed`.
+- **Every capability with a controller or a worker that uses a policy** (built with S50): the policy tables now live in `libs/domains/<domain>/rate-limit-policies.ts` (`definePolicies` + a `declare module '@app/infrastructure/rate-limit/rate-limit.types'` augmentation) and are registered by the domain's module through `RateLimitModule.forFeature(...)`; the table is exported from the domain barrel (`<domain>RatePolicies`). A spec that boots its own module with `RateLimitModule.forRoot()` must also register the tables of the domains whose policy names its routes reference (G-35 cross-domain names), or startup fails with `undeclared policy`; `generateTestingModule` does this for all domains.
+- **S07, S10, S01 and the owners of `@RateLimit` routes**: `@RateLimit(...)` is now **metadata only**. The one enforcement point is a global interceptor installed by `RateLimitModule.forRoot()` (the three HTTP apps `core`, `sse-gateway`, `public-api` do it). A new HTTP app, or a spec that wants the limit enforced, imports `RateLimitModule.forRoot()`; a plain `RateLimitModule` import only provides the service for code callers.
+- **S42, S43, S48** (clients of `RateLimit-*` headers): the legacy `RateLimit-Limit` / `RateLimit-Remaining` / `RateLimit-Reset` headers and `X-RateLimit-*` no longer exist; read the structured `RateLimit` and `RateLimit-Policy`.
+- **Owners of the shared Redis client (`infrastructure/redis`)**: ioredis replays a command whose connection died before the answer (`autoResendUnfulfilledCommands`, default on). A limiter decision that timed out can therefore still be applied once after recovery (at most the decisions in flight when the connection broke). S50 does not change the shared client; if exact accounting across an outage matters to another capability, set `autoResendUnfulfilledCommands: false` on a dedicated client.
+
+## Implementation notes (S50 as built)
+
+- **Time source** (R-01): the test `TimeSource` passes an **absolute** store time in milliseconds to the scripts (empty string in production = `TIME`), not an offset; same effect, simpler to read.
+- **One enforcement point**: `@RateLimit` and `@RateLimitExempt` are metadata; `RateLimitInterceptor` is a global `APP_INTERCEPTOR`, so it runs before every route-scoped interceptor (idempotency included) whatever the order of the decorators on the route (G-13). `default-rate-limit.ts` only chooses `default.read` / `default.write`; there is no separate default interceptor class.
+- **`forRoot({ applyDefault: false })`** exists only for the shared e2e harness (`test/utils/global-modules.ts`), which keeps explicit policies enforced but leaves out the `default.*` floor, because specs of other capabilities fire hundreds of requests from one address. Applications never pass it.
+- **Pause expiry** (FR-011): a penalized bucket lives until the pause ends **plus its time-to-full plus 1 s** (the spec text says "until + 1 s"). With "until + 1 s" the empty bucket would expire one second after the pause and reappear **full**, which is the burst AS-65 forbids.
+- **Decision `source` for fail-closed denials** is `store` with `reason: 'store-unavailable'`; `fallback` is reserved for the in-process limiter. A helper fault (extractor, cost resolver) counts `rate_limit_decisions_total{reason="helper-error", source="fallback"}` and logs one warning.
+- **Breaker gauge**: `rate_limit_breaker_state` is `1` while the breaker is open or probing, `0` when closed (AS-74).
+- **Denial of several policies**: all policies of a route are decided; units taken by the allowed ones are returned; on a refusal the `RateLimit` header shows the budget after the refund (AS-40).
+- **`localLeaseFraction: 0`** (old `live.comment` entry) is invalid now (AS-69); the declaration simply omits the field.
+- **Mis-used policy names** (G-35) stay as they are: `search.query` is declared by `catalog`, `discussion.write` by `community`, `auth.login.ip` by `identity`; the other domains keep referencing the name.
+- **`libs/infrastructure/rate-limit/testing/fault-proxy.ts`** is the only part of the lib's spec kit that imports the e2e harness (`test/fakes`), kept under `testing/` as the dependency rules require.
+- **Not changed on purpose**: `payment-processor`, `collab`, `bff`, `worker`, `projector` do not import `RateLimitModule.forRoot()` (they had no global throttler before); their routes, if any, are unlimited until their owners decide.
+- **Edge**: the worker spec runs against a fake edge store that mirrors the Lua in JavaScript; the Lua text itself is executed against the real test Redis by `edge-script.e2e-spec.ts` (reads the script out of `packages/edge-be/src/index.ts`).
+- **Environment**: `assistant.e2e-spec.ts`, `knowledge.e2e-spec.ts` and `notifications.e2e-spec.ts` could not run here (`Keyspace 'marketplace' does not exist`: the Scylla keyspace of the test stack is not created in this environment). Their rate-limit wiring (`llm.messages`, `rag.ask`, `notify.*`) compiles and the modules register their tables, but those suites are **not run**.
+
+## Gate repairs
+
+- **Missing scenario tests AS-78, AS-79**: their tests existed only in `packages/edge-be/src/rate-limit.spec.ts` (vitest), outside the scope the gate scans. Added `packages/backend/libs/infrastructure/rate-limit/edge-worker.e2e-spec.ts`: it runs the real worker `fetch` handler against the test Redis through a REST-shaped bridge (`jose` replaced) and proves fail open on a down, malformed or 500 ms-slow store (AS-78) and the subject choice (AS-79). Code unchanged; no test weakened.
+- **Replay header**: `Idempotent-Replayed` no longer occurs in `packages/`; the code uses `Idempotency-Replayed` (S54 follow-up adopted). `app.set('etag', false)` in the HTTP bootstrap is kept (S52 follow-up).
+- **Deleted test file (test integrity)**: `libs/infrastructure/rate-limit/rate-limit.e2e-spec.ts` had been deleted when the throttler was replaced. Restored with all six original tests (and every `it`/`expect`), ported to the new API: limiter from `createLimiter` with the domain policy tables; `acquire` returns `{ acquired, release }`; store-call count from `evalCalls` (`INFO commandstats`) instead of a spy on `client.eval`; the "Redis down" case uses an unreachable store URL instead of a stubbed client; the HTTP case asserts the structured `RateLimit-Policy` header (AS-82) instead of the removed legacy `RateLimit-Limit`. 6/6 pass; `check-tests.py integrity` is clean.

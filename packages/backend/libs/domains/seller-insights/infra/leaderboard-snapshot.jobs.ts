@@ -8,11 +8,22 @@ import { JobsService } from '@app/infrastructure/jobs/jobs.service';
 import { boardKey, boardsKey, revenueKey } from './leaderboard-keys';
 import { periodOf, PeriodKind } from '../domain/periods';
 
+import { z } from 'zod';
+import { declareJobType } from '@app/infrastructure/jobs/job-type-registry';
+
 declare module '@app/infrastructure/jobs/job-types' {
   interface JobPayloads {
     'leaderboards.snapshot': { kind?: PeriodKind; periodId?: string };
   }
 }
+
+declareJobType({
+  name: 'leaderboards.snapshot',
+  contract: z.object({
+    kind: z.enum(['week', 'month']).optional(),
+    periodId: z.string().optional(),
+  }),
+});
 
 const SNAPSHOT_TOP = 100;
 

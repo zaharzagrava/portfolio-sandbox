@@ -20,7 +20,7 @@ import {
 } from 'class-validator';
 import type { Response } from 'express';
 import { Firewall, User, UserRawDto } from '@app/domains/identity';
-import { RateLimit } from '@app/infrastructure/rate-limit/rate-limit.decorator';
+import { RateLimit } from '@app/infrastructure/rate-limit';
 import { ShareLinkService } from '../application/share-link.service';
 
 export class CreateLinkDto {
@@ -75,7 +75,7 @@ export class ShareLinksController {
    * cache: a viral link is answered by the CDN for 10 s at a time, edits still
    * propagate quickly, and the `ref` parameter carries attribution to checkout.
    */
-  @Firewall({ anonymous: true, skipThrottle: true })
+  @Firewall({ anonymous: true })
   @Get('l/:code')
   async redirect(
     @Param('code') code: string,

@@ -22,7 +22,7 @@ import {
 } from 'class-validator';
 import type { Request, Response } from 'express';
 import { Firewall, User, UserRawDto } from '@app/domains/identity';
-import { RateLimit } from '@app/infrastructure/rate-limit/rate-limit.decorator';
+import { RateLimit } from '@app/infrastructure/rate-limit';
 import { AssistantService } from '../application/assistant.service';
 import { AssistantStreamer } from './assistant-stream';
 import { AssistantQuotaService } from '../application/assistant-quota.service';
@@ -92,7 +92,7 @@ export class AssistantController {
    * Errors before the stream starts (404, 409 turn in progress, 429 quota) are normal JSON responses.
    * Lost the connection? GET /assistant/messages/:messageId/stream with Last-Event-ID.
    */
-  @Firewall({ skipThrottle: true })
+  @Firewall()
   @RateLimit('llm.messages')
   @Post('conversations/:id/messages')
   async send(
@@ -119,7 +119,7 @@ export class AssistantController {
     await this.streamer.pipe(messageId, null, req, res);
   }
 
-  @Firewall({ skipThrottle: true })
+  @Firewall()
   @Get('messages/:messageId/stream')
   async resume(
     @User() user: UserRawDto,

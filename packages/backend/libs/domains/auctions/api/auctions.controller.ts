@@ -13,7 +13,7 @@ import { InjectConnection } from '@nestjs/sequelize';
 import { QueryTypes, Sequelize } from 'sequelize';
 import { Firewall, User, UserRawDto } from '@app/domains/identity';
 import { ShopScoped } from '@app/domains/tenancy';
-import { RateLimit } from '@app/infrastructure/rate-limit/rate-limit.decorator';
+import { RateLimit } from '@app/infrastructure/rate-limit';
 import { RequiresShopEntitlement } from '@app/domains/billing';
 import { AuctionService } from '../application/auction.service';
 import { CreateAuctionDto, PlaceBidDto } from './auctions.dto';
@@ -41,7 +41,7 @@ export class AuctionsController {
   }
 
   /** Live state from Redis (+ server time for countdown sync); updates over SSE `auction:<id>`. */
-  @Firewall({ anonymous: true, skipThrottle: true })
+  @Firewall({ anonymous: true })
   @Get('auctions/:auctionId')
   view(@Param('auctionId', ParseUUIDPipe) auctionId: string) {
     return this.auctions.view(auctionId);

@@ -8,7 +8,8 @@ import { AuthModule } from '@app/domains/identity';
 import { StorageModule } from '@app/infrastructure/storage/storage.module';
 import { SqsModule } from '@app/infrastructure/sqs/sqs.module';
 import { TaskQueue } from '@app/infrastructure/sqs/task-queue.port';
-import { RateLimitModule } from '@app/infrastructure/rate-limit/rate-limit.module';
+import { RateLimitModule } from '@app/infrastructure/rate-limit';
+import { assistantRatePolicies } from './rate-limit-policies';
 import { KafkaProducerModule } from '@app/infrastructure/kafka/kafka-producer.module';
 import { ClickHouseModule } from '@app/infrastructure/clickhouse/clickhouse.module';
 import { ApiConfigService } from '@app/common/config';
@@ -49,7 +50,7 @@ export class KnowledgeCoreModule {}
     AuthModule,
     KnowledgeCoreModule,
     LlmModule,
-    RateLimitModule,
+    RateLimitModule.forFeature(assistantRatePolicies),
     KafkaProducerModule,
     ClickHouseModule,
   ],

@@ -120,7 +120,7 @@ export class LeaderboardService {
             ttlMs: 3_600_000,
             negativeTtlMs: 60_000,
             l1: 'always',
-            l1TtlMs: 60_000,
+            l1TtlMs: 5_000, // the toolkit caps an L1 lifetime at 5 s (S52 FR-002)
           },
         ),
       ),

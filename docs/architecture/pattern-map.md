@@ -34,7 +34,7 @@ capability spec must prove it, and how far it has got. It supersedes the per-les
 | P0110 | Discriminated unions + `assertNever` state machines | 01/02 §2 | orders, billing, auctions, fulfilment, launch-events; infrastructure/jobs (job types) | S10, S17, S21, S20, S22, S49 | implemented |
 | P0111 | Conditional / mapped / template-literal types | 01/02 §5 | infrastructure/realtime (topics); infrastructure/events (event map) | S51, S53 | implemented |
 | P0112 | Runtime validation at boundaries (class-validator HTTP, zod messages) | 01/02 §8 | infrastructure/events; developer-platform (webhooks); catalog-sync (integrations); seller-onboarding; shop-functions | S53, S43, S08, S04, S45 | implemented |
-| P0113 | `satisfies` / `as const` policy tables | 01/02 §7 | infrastructure/rate-limit (policies); state transition tables | S50 | implemented |
+| P0113 | `satisfies` / `as const` policy tables | 01/02 §7 | infrastructure/rate-limit (policies); state transition tables | S50 | verified |
 | P0114 | Module augmentation (request context, job registry) | 01/02 §9 | infrastructure/context; infrastructure/jobs (`JobTypes`) | S54, S49 | implemented |
 | P0115 | tsconfig strictness review | 01/02 §10 | repo tsconfig | ops | implemented |
 
@@ -55,7 +55,7 @@ capability spec must prove it, and how far it has got. It supersedes the per-les
 | P0211 | Profiling and load testing (k6 per capability) | 02/03 | scripts/load-tests | ops | implemented |
 | P0212 | Error taxonomy, async propagation, mapping to HTTP | 02/04 §1–3 | common/exceptions-filter, common/errors | S54 | implemented |
 | P0213 | Graceful shutdown order, PID 1, startup ordering | 02/04 §4–5 | common/lifecycle; Dockerfile (`tini`) | S54 | implemented |
-| P0214 | Nest request lifecycle placement (middleware → guards → interceptors → pipes → filters) | 02/05 §1 | common/platform; identity guards; infrastructure/rate-limit; developer-platform (ApiKeyGuard) | S54, S01, S50, S42 | implemented |
+| P0214 | Nest request lifecycle placement (middleware → guards → interceptors → pipes → filters) | 02/05 §1 | common/platform; identity guards; infrastructure/rate-limit; developer-platform (ApiKeyGuard) | S54, S01, S50, S42 | verified |
 | P0215 | DI scopes: no REQUEST scope on hot paths, dynamic modules | 02/05 §2 | infrastructure modules (`forRootAsync`); composition/bff (DataLoaders via CLS) | S54, S48 | implemented |
 | P0216 | CLS-managed transactions across services | 02/05 §4 | infrastructure/context (transaction runner) | S54 | implemented |
 | P0217 | Cron with replicas (leader election) | 02/05 §6 | infrastructure/jobs | S49 | implemented |
@@ -90,7 +90,7 @@ capability spec must prove it, and how far it has got. It supersedes the per-les
 | P0324 | Cache-aside, write-behind, SWR, stampede, avalanche, penetration, hot / big keys | 03/04 §3–4 | infrastructure/cache; catalog (product cache); orders (flash-sale stock buckets = hot-key splitting) | S52, S05, S11 | implemented |
 | P0325 | Eviction policies (separate cache vs state clusters) | 03/04 §5 | ElastiCache parameter groups | ops | implemented |
 | P0326 | Distributed locks + fencing tokens | 03/04 §6 | infrastructure/cache; launch-events | S52, S22 | implemented |
-| P0327 | Rate limiting in Redis (Lua) | 03/04 §7 | infrastructure/rate-limit | S50 | implemented |
+| P0327 | Rate limiting in Redis (Lua) | 03/04 §7 | infrastructure/rate-limit | S50 | verified |
 | P0328 | Geo queries: PostGIS `ST_DWithin` as truth, ES `geo_distance` + geohash clustering, Redis GEO for live positions | 03/01, 10/05 #13, 10/07 #23 | fulfilment (pickup near me, courier positions) | S19, S20 | implemented |
 
 ## 04 · API design
@@ -112,7 +112,7 @@ capability spec must prove it, and how far it has got. It supersedes the per-les
 | P0413 | Webhook and event versioning | 04/02 §8 | developer-platform (webhooks); infrastructure/events | S43, S53 | implemented |
 | P0414 | Idempotency keys (replay, in-flight 409, different-body 422, TTL) | 04/03 §1 | infrastructure/idempotency; orders; launch-events; auctions; developer-platform; payments (intents, payout transfers keyed by payout ID) | S10, S22, S21, S42, S13, S15, W03, J01 | implemented |
 | P0415 | Cursor pagination (opaque, signed) | 04/03 §2 | every list endpoint | all | implemented |
-| P0416 | Rate limiting as provider (algorithms, `RateLimit` headers, 429) | 04/03 §3 | infrastructure/rate-limit; edge-be | S50 | implemented |
+| P0416 | Rate limiting as provider (algorithms, `RateLimit` headers, 429) | 04/03 §3 | infrastructure/rate-limit; edge-be | S50 | verified |
 | P0417 | Consuming rate-limited APIs (token bucket per credential, `Retry-After`) | 04/03 §4 | catalog-sync (integrations); assistant (LLM provider) | S08, S46 | implemented |
 | P0418 | Webhooks as provider (signing, retries, auto-disable) | 04/03 §5 | developer-platform | S43 | implemented |
 | P0419 | Webhooks as consumer (verify raw body, fast 2xx, dedupe event ID) | 04/03 §5 | orders (Stripe); notifications (provider status); catalog-sync (Shopify) | S10, S28, S08 | implemented |

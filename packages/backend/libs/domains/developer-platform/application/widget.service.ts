@@ -11,6 +11,7 @@ import { randomBytes } from 'node:crypto';
 import * as jwt from 'jsonwebtoken';
 import { ApiConfigService } from '@app/common/config';
 import { CacheService } from '@app/infrastructure/cache/cache.service';
+import { cacheKey } from '@app/infrastructure/cache/cache-key';
 import { RedisService } from '@app/infrastructure/redis/redis.service';
 import { SecretBox } from '@app/domains/identity';
 
@@ -25,7 +26,8 @@ export interface WidgetSite {
   identitySecretSealed: string;
 }
 
-const siteKey = (pk: string) => `widget:site:${pk}`;
+// The publishable key arrives in a public request: cacheKey() encodes whatever it contains (S52 AS-09).
+const siteKey = (pk: string) => cacheKey('widget-site', 1, pk);
 const ORIGIN = /^https:\/\/[a-z0-9.-]+(:\d+)?$/;
 const HANDOFF_MAX_TTL_SEC = 300;
 const WIDGET_TOKEN_TTL_SEC = 15 * 60;
@@ -97,6 +99,7 @@ export class WidgetService {
   }
 
   async site(publishableKey: string): Promise<WidgetSite> {
+    if (!publishableKey) throw new NotFoundException('Unknown site key');
     const site = await this.cache.getOrLoad<WidgetSite>(
       siteKey(publishableKey),
       async () =>
@@ -106,7 +109,7 @@ export class WidgetService {
             { type: QueryTypes.SELECT, replacements: { publishableKey } },
           )
         )[0] ?? null,
-      { ttlMs: 60_000, negativeTtlMs: 60_000, l1: 'always', l1TtlMs: 10_000 },
+      { ttlMs: 60_000, negativeTtlMs: 60_000, l1: 'always', l1TtlMs: 5_000 },
     );
     if (!site) throw new NotFoundException('Unknown site key');
     return site;
