@@ -1,109 +1,159 @@
-import { Injectable } from '@nestjs/common';
-import { InjectModel } from '@nestjs/sequelize';
-import { Op } from 'sequelize';
-import { ProductModel as Product } from '@app/domains/catalog';
-import { RedisService } from '@app/infrastructure/redis/redis.service';
-import { boughtTogetherKey } from '../infra/recommendation-keys';
+import { Inject, Injectable, Logger } from '@nestjs/common';
+import { z } from 'zod';
+import {
+  RECOMMENDATION_LIMITS,
+  recommendationsQuerySchema,
+  type RecommendationsResponse,
+} from '@marketplace-sandbox/contracts';
+import { roundScore } from '../domain/cosine-score';
+import {
+  sanitiseEntries,
+  type NeighbourEntry,
+} from '../domain/neighbour-entry';
+import {
+  CATALOG_FACTS,
+  NEIGHBOUR_LIST_READER,
+  type CatalogFacts,
+  type NeighbourListReader,
+} from '../domain/recommendation-ports';
+import {
+  RecommendationsProductNotFoundError,
+  RecommendationsUnavailableError,
+  RecommendationsValidationError,
+} from '../domain/recommendation-errors';
+import { rankCandidates } from '../domain/recommendation-ranking';
+import { blendTwoHop } from '../domain/two-hop-blend';
+import {
+  recommendationsBadEntries,
+  recommendationsHops,
+  recommendationsRequests,
+} from '../infra/recommendations-metrics';
+import { RecommendationsSettings } from '../infra/recommendations-config';
 
-export interface Recommendation {
-  productId: string;
-  title: string;
-  price: number;
-  score: number;
-  /** 1 = bought together directly; 2 = via a neighbour (cold-start expansion). */
-  hops: 1 | 2;
+/** Runs one dependency call; a failure or overrun becomes the one 503 and only the error name is logged. */
+async function guarded<T>(logger: Logger, work: () => Promise<T>): Promise<T> {
+  try {
+    return await work();
+  } catch (error) {
+    recommendationsRequests.add(1, { result: 'unavailable' });
+    logger.warn(
+      `dependency failed: ${error instanceof Error ? error.name : 'unknown'}`,
+    );
+    throw new RecommendationsUnavailableError();
+  }
 }
 
-const HOP_DECAY = 0.5;
-const EXPAND_FROM = 5;
+const productIdSchema = z.string().uuid();
+
+/** Best score first, equal scores by id: the order seeds are picked in. */
+const bestFirst = (a: NeighbourEntry, b: NeighbourEntry): number =>
+  b.score - a.score || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
 
 /**
- * Read path: one ZREVRANGE (sub-ms) per product page. Products with few direct
- * edges (new / niche) get a depth-2 BFS over the precomputed graph: neighbours
- * of the top-5 neighbours, score = s1 · s2 · decay, best path wins. Bounded:
- * at most 1 + 5 ZSET reads, one pipeline round-trip.
+ * Read path of "bought together" (S34 FR-001 to FR-012). One read of the product's list; when it does not fill the rail, a
+ * depth-2 expansion over the top seeds in one batched read of their full lists; then one product batch and one shop batch
+ * for the whole pool, so visibility is decided on every request. Pure ranking decides the order.
  */
 @Injectable()
 export class RecommendationsService {
+  private readonly logger = new Logger(RecommendationsService.name);
+
   constructor(
-    private readonly redis: RedisService,
-    @InjectModel(Product) private readonly productModel: typeof Product,
+    @Inject(NEIGHBOUR_LIST_READER) private readonly lists: NeighbourListReader,
+    @Inject(CATALOG_FACTS) private readonly catalog: CatalogFacts,
+    private readonly settings: RecommendationsSettings,
   ) {}
 
   async boughtTogether(
-    productId: string,
-    limit = 8,
-  ): Promise<Recommendation[]> {
-    const direct = await this.neighbours(productId, limit * 2);
-    const scored = new Map<string, { score: number; hops: 1 | 2 }>(
-      direct.map((n) => [n.id, { score: n.score, hops: 1 }]),
-    );
+    rawProductId: string,
+    rawQuery: Record<string, unknown>,
+  ): Promise<RecommendationsResponse> {
+    const { productId, limit } = this.validate(rawProductId, rawQuery);
 
-    if (direct.length < limit) {
-      const seeds = direct.slice(0, EXPAND_FROM);
-      const pipeline = this.redis.client.pipeline();
-      for (const seed of seeds)
-        pipeline.zrevrange(
-          boughtTogetherKey(seed.id),
-          0,
-          limit - 1,
-          'WITHSCORES',
-        );
-      const results = (await pipeline.exec()) ?? [];
-      results.forEach(([error, flat], i) => {
-        if (error) return;
-        for (const n of pairs(flat as string[])) {
-          if (n.id === productId || scored.get(n.id)?.hops === 1) continue;
-          const score = seeds[i].score * n.score * HOP_DECAY;
-          if (score > (scored.get(n.id)?.score ?? 0))
-            scored.set(n.id, { score, hops: 2 });
-        }
+    const stored = sanitiseEntries(
+      productId,
+      await guarded(this.logger, () => this.lists.read(productId)),
+    );
+    let bad = stored.skipped;
+    const direct = [...stored.entries].sort(bestFirst);
+
+    // Fewer valid direct neighbours than the rail asked for: borrow from the neighbours of the best ones (R-2).
+    let seeds: { seed: NeighbourEntry; list: NeighbourEntry[] }[] = [];
+    if (direct.length > 0 && direct.length < limit) {
+      const chosen = direct.slice(0, this.settings.expandSeeds);
+      const read = await guarded(this.logger, () =>
+        this.lists.readMany(chosen.map((s) => s.id)),
+      );
+      seeds = chosen.map((seed) => {
+        const clean = sanitiseEntries(productId, read.get(seed.id) ?? []);
+        bad += clean.skipped;
+        return { seed, list: clean.entries };
       });
     }
+    if (bad > 0) recommendationsBadEntries.add(bad);
 
-    const ranked = [...scored.entries()].sort(
-      (a, b) => b[1].score - a[1].score || a[0].localeCompare(b[0]),
+    const pool = blendTwoHop(productId, direct, seeds, this.settings.hopDecay);
+    const facts = await guarded(this.logger, () =>
+      this.catalog.lookup([productId, ...pool.map((c) => c.productId)]),
     );
-    // Hydrate + drop anything out of stock or deleted since the nightly build.
-    const products = new Map(
-      (
-        await this.productModel.findAll({
-          where: {
-            id: { [Op.in]: ranked.slice(0, limit * 2).map(([id]) => id) },
-            quantity: { [Op.gt]: 0 },
-          },
-          attributes: ['id', 'title', 'price'],
-          raw: true,
-        })
-      ).map((p) => [p.id, p]),
+    if (!facts.get(productId)?.listed) {
+      recommendationsRequests.add(1, { result: 'not_found' });
+      throw new RecommendationsProductNotFoundError();
+    }
+
+    const ranked = rankCandidates(
+      pool.filter((c) => {
+        const f = facts.get(c.productId);
+        return !!f && f.listed && f.inStock;
+      }),
+      limit,
     );
-    return ranked
-      .filter(([id]) => products.has(id))
-      .slice(0, limit)
-      .map(([id, { score, hops }]) => ({
-        productId: id,
-        title: products.get(id)!.title,
-        price: Number(products.get(id)!.price),
-        score: Math.round(score * 1e4) / 1e4,
-        hops,
-      }));
+    for (const hops of [1, 2] as const) {
+      const n = ranked.filter((c) => c.hops === hops).length;
+      if (n > 0) recommendationsHops.add(n, { hops: String(hops) });
+    }
+    recommendationsRequests.add(1, {
+      result: ranked.length === 0 ? 'empty' : 'ok',
+    });
+    return {
+      type: 'bought-together',
+      items: ranked.map((c) => {
+        const f = facts.get(c.productId)!;
+        return {
+          productId: c.productId,
+          title: f.title,
+          priceMinor: f.priceMinor,
+          currency: f.currency,
+          score: roundScore(c.score),
+          hops: c.hops,
+        };
+      }),
+    };
   }
 
-  private async neighbours(productId: string, count: number) {
-    return pairs(
-      await this.redis.client.zrevrange(
-        boughtTogetherKey(productId),
-        0,
-        count - 1,
-        'WITHSCORES',
-      ),
-    );
+  private validate(
+    rawProductId: string,
+    rawQuery: Record<string, unknown>,
+  ): { productId: string; limit: number } {
+    const fields: string[] = [];
+    if (!productIdSchema.safeParse(rawProductId).success)
+      fields.push('productId');
+    const parsed = recommendationsQuerySchema.safeParse(rawQuery);
+    if (!parsed.success)
+      for (const issue of parsed.error.issues) {
+        if (issue.code === 'unrecognized_keys') fields.push(...issue.keys);
+        else
+          fields.push(issue.path.length > 0 ? String(issue.path[0]) : 'query');
+      }
+    if (fields.length > 0) {
+      recommendationsRequests.add(1, { result: 'invalid' });
+      throw new RecommendationsValidationError([...new Set(fields)]);
+    }
+    return {
+      productId: rawProductId.toLowerCase(),
+      limit: parsed.success
+        ? (parsed.data.limit ?? RECOMMENDATION_LIMITS.limit.default)
+        : RECOMMENDATION_LIMITS.limit.default,
+    };
   }
-}
-
-function pairs(flat: string[]): { id: string; score: number }[] {
-  const out: { id: string; score: number }[] = [];
-  for (let i = 0; i < flat.length; i += 2)
-    out.push({ id: flat[i], score: Number(flat[i + 1]) });
-  return out;
 }

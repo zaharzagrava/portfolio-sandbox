@@ -6,6 +6,7 @@
  */
 export { AutocompleteWorkerModule } from './autocomplete-worker.module';
 export { AutocompleteModule } from './autocomplete.module';
+export { RecommendationsProjectorModule } from './recommendations-projector.module';
 export { RecommendationsWorkerModule } from './recommendations-worker.module';
 export { RecommendationsModule } from './recommendations.module';
 export { ProductSearchModule } from './product-search.module';
@@ -15,7 +16,6 @@ export { discoveryRatePolicies } from './rate-limit-policies';
 export { SearchAdminModule } from './search-admin.module';
 export { TrendingConsumerModule, TrendingModule } from './trending.module';
 export { TrendingService } from './application/trending.service';
-export { OrderBasketsProjector } from './infra/order-baskets.projector';
 export { SearchClicksProjector } from './infra/search-clicks.projector';
 export { SearchQueriesProjector } from './infra/search-queries.projector';
 export { SearchQueryLogger } from './infra/search-query-logger';

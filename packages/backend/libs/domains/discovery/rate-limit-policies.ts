@@ -41,6 +41,14 @@ export const discoveryRatePolicies = definePolicies('discovery', {
     key: 'ip',
     failMode: 'open',
   },
+  // S34 FR-011: a product page issues one call; the edge cache absorbs repeats
+  'discovery.recommendations': {
+    algorithm: 'slidingWindow',
+    limit: 600,
+    windowMs: MINUTE,
+    key: 'ip',
+    failMode: 'open',
+  },
   'discovery.search-admin': {
     algorithm: 'slidingWindow',
     limit: 30,

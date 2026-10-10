@@ -4,3 +4,4 @@ export * from './admin';
 export * from './click';
 export * from './events';
 export * from './suggest';
+export * from './recommendations';

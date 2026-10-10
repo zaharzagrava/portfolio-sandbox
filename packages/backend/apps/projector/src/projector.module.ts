@@ -5,7 +5,7 @@ import {
 import { StoryCacheInvalidator, StoryCacheModule } from '@app/domains/content';
 import {
   TrendingConsumerModule,
-  OrderBasketsProjector,
+  RecommendationsProjectorModule,
   SearchClicksProjector,
   SearchQueriesProjector,
   SearchProjectorModule,
@@ -95,7 +95,7 @@ import { CacheModule } from '@app/infrastructure/cache/cache.module';
         SearchQueriesProjector,
         PickupAvailabilityProjector,
         SearchClicksProjector,
-        OrderBasketsProjector,
+        ...RecommendationsProjectorModule.projectors,
         NotificationRouterProjector,
         LiveCommentsProjector,
         LiveModerationConsumer,
@@ -114,6 +114,7 @@ import { CacheModule } from '@app/infrastructure/cache/cache.module';
       [
         ProductProjectorModule,
         SearchProjectorModule,
+        RecommendationsProjectorModule,
         IntegrationsCoreModule,
         StoryCacheModule,
         WebhooksCoreModule,

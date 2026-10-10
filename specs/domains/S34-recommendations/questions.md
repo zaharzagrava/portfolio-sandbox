@@ -30,3 +30,8 @@ Each line is a choice made unattended, with the default taken and why. Sorted by
 - [LOCAL] Stored scores are unrounded floats; rounding to 4 decimals happens only at the response → 2-hop scores use unrounded values.
 - [LOCAL] Damaged list entries are skipped and counted, not repaired → the next build fixes them.
 - [LOCAL] `n(p)` counts all eligible baskets of `p` in the window, not only those that formed a qualifying pair → this is what cosine requires and what the current SQL does.
+
+## Open during implementation (2026-10-10)
+
+- [SPEC CONFLICT] AS-01 lists exactly `[C, P]` for product `M` of dataset D, but `M` has 2 direct neighbours (< `limit` 8), so FR-006 / AS-13 / AS-14 require the 2-hop expansion, and `P`'s list holds `K` (0.1794 × 0.6578 × 0.5 = 0.0590). The same rule gives `S` for `P` in AS-14 and `P` for `S` in AS-13, so no trigger based on the count of direct neighbours can keep AS-01 literally true and the other three true. Implemented as FR-006 says (expansion whenever valid direct entries < `limit`); the AS-01 test asserts the two direct items `[C 0.2067, P 0.1794]` first and the indirect `K 0.059 (hops 2)` after them. If AS-01 is the intended behaviour, FR-006 needs an extra condition (for example a minimum indirect score); decision for the human.
+- [CONTRACT] The platform problem schema (`problemDetailsSchema`) requires `errors: [{field, code}]`; the spec promises `{field, message}`. The 400 body carries both (`{field, code: "invalid", message}`).

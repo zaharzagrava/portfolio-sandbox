@@ -220,6 +220,21 @@ export class SecretsManagerConfig {
   autocomplete_log_query_timeout_ms: number;
   autocomplete_blocklist: string;
 
+  /** S34: recommendations settings, defaults in `recommendations-config.ts`. */
+  rec_min_co_orders: number;
+  rec_min_buyers: number;
+  rec_top_n: number;
+  rec_window_days: number;
+  rec_buckets: number;
+  rec_ttl_seconds: number;
+  rec_expand_seeds: number;
+  rec_hop_decay: number;
+  rec_store_budget_ms: number;
+  rec_product_budget_ms: number;
+  rec_shop_budget_ms: number;
+  rec_basket_min: number;
+  rec_basket_max: number;
+
   /** S10: orders settings, defaults in `orders-config.ts`. */
   orders_hold_seconds: number;
   orders_cart_max_lines: number;
