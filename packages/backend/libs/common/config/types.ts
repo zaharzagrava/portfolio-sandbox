@@ -235,6 +235,29 @@ export class SecretsManagerConfig {
   rec_basket_min: number;
   rec_basket_max: number;
 
+  /** S35: trending settings, defaults in `trending-config.ts`. */
+  trending_weight_view: number;
+  trending_weight_cart: number;
+  trending_window_seconds: number;
+  trending_lateness_seconds: number;
+  trending_idle_seconds: number;
+  trending_heap_k: number;
+  trending_all_width: number;
+  trending_category_width: number;
+  trending_depth: number;
+  trending_category_cap: number;
+  trending_memory_budget_mb: number;
+  trending_retention_seconds: number;
+  trending_aggregate_budget_ms: number;
+  trending_product_budget_ms: number;
+  trending_shop_budget_ms: number;
+  trending_merge_budget_ms: number;
+  trending_connect_timeout_ms: number;
+  trending_shutdown_deadline_ms: number;
+  trending_filter_bits: number;
+  trending_tick_ms: number;
+  trending_merge_backoff_base_ms: number;
+
   /** S10: orders settings, defaults in `orders-config.ts`. */
   orders_hold_seconds: number;
   orders_cart_max_lines: number;

@@ -1,75 +1,144 @@
-import { Injectable } from '@nestjs/common';
-import { InjectConnection } from '@nestjs/sequelize';
-import { QueryTypes, Sequelize } from 'sequelize';
-import { RedisService } from '@app/infrastructure/redis/redis.service';
+import { Inject, Injectable, Logger } from '@nestjs/common';
+import {
+  trendingQuerySchema,
+  type TrendingResponse,
+} from '@marketplace-sandbox/contracts';
+import { CLOCK, type Clock } from '@app/common/core/clock';
 import { CacheService } from '@app/infrastructure/cache/cache.service';
-import { cacheKey } from '@app/infrastructure/cache/cache-key';
-import { WINDOW_MS, windowKey } from '../infra/trending.consumer';
+import type { TrendingSettingsValues } from '../domain/trending-config';
+import {
+  TrendingDependencyError,
+  TrendingUnavailableError,
+  TrendingValidationError,
+  type TrendingDependency,
+} from '../domain/trending-errors';
+import {
+  TRENDING_AGGREGATE_READER,
+  TRENDING_CATALOG_FACTS,
+  TRENDING_SETTINGS,
+  type RankedEntry,
+  type TrendingAggregateReader,
+  type TrendingCatalogFacts,
+} from '../domain/trending-ports';
+import {
+  boundaryOf,
+  MAX_POOL,
+  poolSize,
+  rankCacheKey,
+  selectVisible,
+  servingWindows,
+  sumAndOrder,
+} from '../domain/trending-ranking';
+import {
+  trendingDependencyFailures,
+  trendingRankingCache,
+  trendingRequests,
+} from './trending-metrics';
+
+const RANKING_TTL_MS = 30_000;
 
 /**
- * "Trending in the last hour": ZUNION of the last 60 one-minute window ZSETs
- * (same hash tag → one slot), top 20, hydrated. Cached 30 s - the list is the
- * same for everyone and changes per minute anyway.
+ * "Trending in the last hour" (S35 FR-001 to FR-010). The ranking (60 closed windows summed, best 60) is cached for 30
+ * seconds with one computation shared by concurrent readers; the facts and visibility of the candidate pool are looked up
+ * on EVERY origin request in one product batch and one shop batch, so a stock, status or price change shows at once. Any
+ * dependency failure is the one `503`, never an unfiltered list, never retried inside the request.
  */
 @Injectable()
 export class TrendingService {
+  private readonly logger = new Logger(TrendingService.name);
+
   constructor(
-    private readonly redis: RedisService,
+    @Inject(TRENDING_AGGREGATE_READER)
+    private readonly aggregates: TrendingAggregateReader,
+    @Inject(TRENDING_CATALOG_FACTS)
+    private readonly catalog: TrendingCatalogFacts,
+    @Inject(TRENDING_SETTINGS)
+    private readonly settings: TrendingSettingsValues,
     private readonly cache: CacheService,
-    @InjectConnection() private readonly sequelize: Sequelize,
+    @Inject(CLOCK) private readonly clock: Clock,
   ) {}
 
-  async trending(category = 'all', minutes = 60, limit = 20) {
-    return (
-      (await this.cache.getOrLoad(
-        // `category` is a public query value: cacheKey() encodes whatever it contains (S52 AS-09).
-        cacheKey('trending', 1, 'view', category, String(minutes)),
+  async trending(rawQuery: Record<string, unknown>): Promise<TrendingResponse> {
+    const { category, limit } = this.validate(rawQuery);
+    const now = this.clock.now();
+    const ranking = await this.ranking(category, now.getTime());
+    const pool = ranking.slice(0, poolSize(limit));
+    let items: TrendingResponse['items'] = [];
+    if (pool.length > 0) {
+      const facts = await this.guarded('product', () =>
+        this.catalog.lookup(pool.map((e) => e.productId)),
+      );
+      items = selectVisible(pool, facts, category, limit);
+    }
+    trendingRequests.add(1, { outcome: items.length === 0 ? 'empty' : 'ok' });
+    return {
+      category,
+      windowMinutes: 60,
+      generatedAt: now.toISOString(),
+      items,
+    };
+  }
+
+  private async ranking(
+    category: string,
+    nowMs: number,
+  ): Promise<RankedEntry[]> {
+    let loaded = false;
+    const stored = await this.guarded('cache', () =>
+      this.cache.getOrLoad<RankedEntry[]>(
+        rankCacheKey(category, boundaryOf(nowMs)),
         async () => {
-          const now = Date.now();
-          const last = now - (now % WINDOW_MS);
-          const keys = Array.from({ length: minutes }, (_, i) =>
-            windowKey(category, last - i * WINDOW_MS),
-          );
-          const flat = (await this.redis.client.call(
-            'ZUNION',
-            String(keys.length),
-            ...keys,
-            'AGGREGATE',
-            'SUM',
-            'WITHSCORES',
-          )) as string[];
-          const ranked: { id: string; score: number }[] = [];
-          for (let i = 0; i < flat.length; i += 2)
-            ranked.push({ id: flat[i], score: Number(flat[i + 1]) });
-          ranked.sort((a, b) => b.score - a.score);
-          const top = ranked.slice(0, limit);
-          if (top.length === 0) return [];
-          const products = new Map(
-            (
-              await this.sequelize.query<{
-                id: string;
-                title: string;
-                price: string;
-                category: string;
-              }>(
-                `SELECT id, title, price, category FROM "Product" WHERE id IN (:ids) AND quantity > 0`,
-                {
-                  type: QueryTypes.SELECT,
-                  replacements: { ids: top.map((t) => t.id) },
-                },
-              )
-            ).map((p) => [p.id, p]),
-          );
-          return top
-            .filter((t) => products.has(t.id))
-            .map((t) => ({
-              ...products.get(t.id)!,
-              price: Number(products.get(t.id)!.price),
-              score: t.score,
-            }));
+          loaded = true;
+          try {
+            return sumAndOrder(
+              await this.aggregates.readUnion(
+                category,
+                servingWindows(nowMs),
+                MAX_POOL,
+              ),
+            );
+          } catch (cause) {
+            throw new TrendingDependencyError('aggregate', cause);
+          }
         },
-        { ttlMs: 30_000, l1: 'always', l1TtlMs: 5_000 },
-      )) ?? []
+        { ttlMs: RANKING_TTL_MS, l1: 'never' },
+      ),
     );
+    trendingRankingCache.add(1, { result: loaded ? 'miss' : 'hit' });
+    return stored ?? [];
+  }
+
+  /** Runs one dependency call; a failure or overrun becomes the one 503 and only the error name is logged. */
+  private async guarded<T>(
+    fallback: TrendingDependency,
+    work: () => Promise<T>,
+  ): Promise<T> {
+    try {
+      return await work();
+    } catch (error) {
+      const dependency =
+        error instanceof TrendingDependencyError ? error.dependency : fallback;
+      trendingDependencyFailures.add(1, { dependency });
+      trendingRequests.add(1, { outcome: 'unavailable' });
+      this.logger.warn(
+        `dependency failed: ${dependency} (${error instanceof Error ? error.name : 'unknown'})`,
+      );
+      throw new TrendingUnavailableError();
+    }
+  }
+
+  private validate(rawQuery: Record<string, unknown>): {
+    category: string;
+    limit: number;
+  } {
+    const parsed = trendingQuerySchema.safeParse(rawQuery);
+    if (parsed.success) return parsed.data;
+    const fields: string[] = [];
+    for (const issue of parsed.error.issues) {
+      if (issue.code === 'unrecognized_keys') fields.push(...issue.keys);
+      else fields.push(issue.path.length > 0 ? String(issue.path[0]) : 'query');
+    }
+    trendingRequests.add(1, { outcome: 'invalid' });
+    throw new TrendingValidationError([...new Set(fields)]);
   }
 }

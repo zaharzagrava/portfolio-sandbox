@@ -1,10 +1,12 @@
 import { murmur3 } from '@app/common/core/murmur3';
 
+const MAX_COUNTER = 0xffffffff;
+
 /**
- * Count-Min Sketch (10/09 #32): frequency estimates for a stream with
- * millions of distinct keys in FIXED memory (width × depth counters).
- * Estimates never undercount; with width w the overcount is ≤ e/w · N with
- * probability 1 - e^-depth. 2^16 × 4 × 4 bytes ≈ 1 MB per window.
+ * Count-Min Sketch (S35 FR-016, pattern P1102): frequency estimates for a stream with millions of distinct keys in FIXED
+ * memory (width × depth counters). Estimates never undercount; with width w the overcount is ≤ e/w · N with probability
+ * 1 - e^-depth. Counters saturate at 2^32 - 1 instead of wrapping, so an estimate never decreases when events are added.
+ * 2^16 × 4 × 4 bytes ≈ 1 MiB.
  */
 export class CountMinSketch {
   private readonly table: Uint32Array;
@@ -16,149 +18,41 @@ export class CountMinSketch {
     this.table = new Uint32Array(width * depth);
   }
 
+  /** Memory held by the counters, whatever the number of distinct keys. */
+  get byteSize(): number {
+    return this.table.byteLength;
+  }
+
+  /** Adds `count` and returns the new estimate. */
   add(key: string, count = 1): number {
-    let estimate = Infinity;
+    let estimate = MAX_COUNTER;
     for (let row = 0; row < this.depth; row++) {
-      const i =
-        row * this.width + (murmur3(key, row * 0x9e3779b1) % this.width);
-      this.table[i] += count;
-      estimate = Math.min(estimate, this.table[i]);
+      const i = this.cell(row, key);
+      const next = Math.min(MAX_COUNTER, this.table[i] + count);
+      this.table[i] = next;
+      if (next < estimate) estimate = next;
     }
     return estimate;
   }
 
   estimate(key: string): number {
-    let estimate = Infinity;
-    for (let row = 0; row < this.depth; row++)
-      estimate = Math.min(
-        estimate,
-        this.table[
-          row * this.width + (murmur3(key, row * 0x9e3779b1) % this.width)
-        ],
-      );
+    let estimate = MAX_COUNTER;
+    for (let row = 0; row < this.depth; row++) {
+      const value = this.table[this.cell(row, key)];
+      if (value < estimate) estimate = value;
+    }
     return estimate;
   }
-}
 
-/**
- * Heavy hitters: min-heap of the K largest estimates + index for O(log K)
- * updates. Each event: sketch.add → if the key is in the heap, update its
- * count; else if it beats the heap minimum, it replaces the minimum.
- */
-export class TopK {
-  private heap: { key: string; count: number }[] = [];
-  private readonly index = new Map<string, number>();
-
-  constructor(readonly k: number) {}
-
-  offer(key: string, count: number): void {
-    const at = this.index.get(key);
-    if (at !== undefined) {
-      this.heap[at].count = count;
-      this.siftDown(at);
-      return;
-    }
-    if (this.heap.length < this.k) {
-      this.heap.push({ key, count });
-      this.index.set(key, this.heap.length - 1);
-      this.siftUp(this.heap.length - 1);
-    } else if (count > this.heap[0].count) {
-      this.index.delete(this.heap[0].key);
-      this.heap[0] = { key, count };
-      this.index.set(key, 0);
-      this.siftDown(0);
-    }
+  /** Adds `other` cell by cell (saturating); the result equals one sketch fed both streams. */
+  merge(other: CountMinSketch): void {
+    if (other.width !== this.width || other.depth !== this.depth)
+      throw new Error('cannot merge sketches of different dimensions');
+    for (let i = 0; i < this.table.length; i++)
+      this.table[i] = Math.min(MAX_COUNTER, this.table[i] + other.table[i]);
   }
 
-  /** Largest first. */
-  top(): { key: string; count: number }[] {
-    return [...this.heap].sort(
-      (a, b) => b.count - a.count || a.key.localeCompare(b.key),
-    );
-  }
-
-  private siftUp(i: number) {
-    while (i > 0) {
-      const parent = (i - 1) >> 1;
-      if (this.heap[parent].count <= this.heap[i].count) break;
-      this.swap(i, parent);
-      i = parent;
-    }
-  }
-
-  private siftDown(i: number) {
-    for (;;) {
-      const l = 2 * i + 1;
-      const r = l + 1;
-      let smallest = i;
-      if (
-        l < this.heap.length &&
-        this.heap[l].count < this.heap[smallest].count
-      )
-        smallest = l;
-      if (
-        r < this.heap.length &&
-        this.heap[r].count < this.heap[smallest].count
-      )
-        smallest = r;
-      if (smallest === i) return;
-      this.swap(i, smallest);
-      i = smallest;
-    }
-  }
-
-  private swap(a: number, b: number) {
-    [this.heap[a], this.heap[b]] = [this.heap[b], this.heap[a]];
-    this.index.set(this.heap[a].key, a);
-    this.index.set(this.heap[b].key, b);
-  }
-}
-
-/**
- * Tumbling 1-minute windows by EVENT time with a watermark
- * (max event time seen − allowed lateness). Windows close when the watermark
- * passes their end; events for already-closed windows are counted as late
- * (trending is approximate - they're dropped; billing uses the exact path).
- */
-export class TumblingWindows<S> {
-  private readonly open = new Map<number, S>();
-  private maxEventTime = 0;
-  lateEvents = 0;
-
-  constructor(
-    private readonly sizeMs: number,
-    private readonly allowedLatenessMs: number,
-    private readonly create: () => S,
-  ) {}
-
-  /** Returns the window state for the event, or null if it's too late. */
-  stateFor(eventTime: number): S | null {
-    this.maxEventTime = Math.max(this.maxEventTime, eventTime);
-    const start = eventTime - (eventTime % this.sizeMs);
-    if (start + this.sizeMs <= this.watermark() && !this.open.has(start)) {
-      this.lateEvents++;
-      return null;
-    }
-    let state = this.open.get(start);
-    if (!state) {
-      state = this.create();
-      this.open.set(start, state);
-    }
-    return state;
-  }
-
-  watermark(): number {
-    return this.maxEventTime - this.allowedLatenessMs;
-  }
-
-  /** Windows whose end is behind the watermark (or all, on shutdown). */
-  closeReady(all = false): { start: number; state: S }[] {
-    const closed: { start: number; state: S }[] = [];
-    for (const [start, state] of [...this.open].sort((a, b) => a[0] - b[0])) {
-      if (!all && start + this.sizeMs > this.watermark()) continue;
-      this.open.delete(start);
-      closed.push({ start, state });
-    }
-    return closed;
+  private cell(row: number, key: string): number {
+    return row * this.width + (murmur3(key, row * 0x9e3779b1) % this.width);
   }
 }

@@ -4,7 +4,7 @@ import {
 } from '@app/domains/catalog-sync';
 import { StoryCacheInvalidator, StoryCacheModule } from '@app/domains/content';
 import {
-  TrendingConsumerModule,
+  TrendingProjectorModule,
   RecommendationsProjectorModule,
   SearchClicksProjector,
   SearchQueriesProjector,
@@ -82,7 +82,7 @@ import { CacheModule } from '@app/infrastructure/cache/cache.module';
     ClickHouseModule,
     CassandraModule,
     KafkaProducerModule,
-    TrendingConsumerModule,
+    TrendingProjectorModule,
     ProjectionsModule.forProjectors(
       [
         ...ProductProjectorModule.projectors,

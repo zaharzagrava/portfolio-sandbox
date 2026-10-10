@@ -68,10 +68,23 @@ module.exports = {
     },
     {
       name: 'x4-other-domain-entry-point-only',
-      comment: 'X.4: a domain imports another domain only through its index.ts.',
+      comment:
+        'X.4: production code in a domain imports another domain only through its index.ts, never its testing/ kit.',
       severity: 'error',
-      from: { path: '^libs/domains/([^/]+)/' },
+      from: { path: '^libs/domains/([^/]+)/', pathNot: SPEC },
       to: { path: '^libs/domains/[^/]+/', pathNot: ['^libs/domains/$1/', '^libs/domains/[^/]+/index\\.ts$'] },
+    },
+    {
+      name: 'x4-other-domain-entry-point-only-specs',
+      comment:
+        'X.4 for spec files: besides index.ts, a spec may use another domain\'s test-only kit under ' +
+        'libs/domains/<d>/testing/ (the kits x6 already lets specs use).',
+      severity: 'error',
+      from: { path: '^libs/domains/([^/]+)/.*\\.(e2e-)?spec\\.ts$' },
+      to: {
+        path: '^libs/domains/[^/]+/',
+        pathNot: ['^libs/domains/$1/', '^libs/domains/[^/]+/index\\.ts$', '^libs/domains/[^/]+/testing/'],
+      },
     },
     {
       name: 'x5-no-circular',

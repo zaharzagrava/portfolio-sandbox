@@ -49,6 +49,14 @@ export const discoveryRatePolicies = definePolicies('discovery', {
     key: 'ip',
     failMode: 'open',
   },
+  // S35 FR-009: anonymous and cacheable; every miss costs two lookups, the CDN is not a limiter
+  'discovery.trending': {
+    algorithm: 'slidingWindow',
+    limit: 300,
+    windowMs: MINUTE,
+    key: 'ip',
+    failMode: 'open',
+  },
   'discovery.search-admin': {
     algorithm: 'slidingWindow',
     limit: 30,

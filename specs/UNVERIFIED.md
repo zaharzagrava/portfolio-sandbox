@@ -74,3 +74,8 @@ interviews) until its status says so. The implementation loop appends here (rule
 | S34 | SC-001: the rail adds at most 300 ms p99 uncached and the page renders when the rail is slow or down | `specs/domains/S34-recommendations/quickstart.md`, "Ops artifacts" (`loadtest:recommendations`) | not run |
 | S34 | SC-007: the nightly build finishes in under 60 minutes at 1 billion order lines | same file (build run on the 1B-line fixture) | not run |
 | S34 | SC-009: an alert fires when no build has succeeded for 36 hours | same file (alert drill) | not run |
+| S35 | SC-001: an interaction shows in the ranking within 5 minutes in 99% of probes and the home page renders when the section is slow or down | `specs/domains/S35-trending/quickstart.md`, "Ops artifacts" (freshness probe on a deployed stack) | not run |
+| S35 | SC-006: consumer memory stays within budget at 10M products and 1,000 categories per window with no event lost | same file (10M-event replay vs exact top-K) | not run |
+| S35 | SC-007: uncached p99 under 200 ms at 500 rps, never an unfiltered list | same file (`loadtest:trending`) | not run |
+| S35 | SC-008: an alert fires when no window merged for 10 minutes while events flow | same file (alert drill) | not run |
+| S35 | SC-009: 500k events/s over 64 partitions with lag under 60 s | same file (load proof, 16 consumers) | not run |

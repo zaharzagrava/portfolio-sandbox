@@ -16,7 +16,7 @@ import { AdsModule, AdsWorkerModule } from './ads.module';
 import { AdsService } from './application/ads.service';
 import { AdBillingJobs } from './infra/ad-billing.jobs';
 import { aggregateBatch } from './infra/click-aggregator.service';
-import { TrendingConsumer, TrendingService } from '@app/domains/discovery';
+import { createTrendingApp } from '../discovery/testing/trending.fixtures';
 
 @Module({
   imports: [
@@ -25,7 +25,6 @@ import { TrendingConsumer, TrendingService } from '@app/domains/discovery';
     CacheModule,
     SequelizeModule.forFeature([Shop]),
   ],
-  providers: [TrendingConsumer, TrendingService],
 })
 class SpecModule {}
 
@@ -252,31 +251,20 @@ describe('Trending & sponsored clicks (e2e)', () => {
   });
 
   it('trending: weighted views/add-to-carts per closed window → hourly ranking (add-to-cart counts 5×)', async () => {
-    const [a, b, c] = await seeds.createTreelike(
-      ['A', 'B', 'C'].map((title) => ({
-        __type__: TableName.Product,
-        title,
-        quantity: 5,
-        category: 'audio',
-      })),
-    );
-    const consumer = app.get(TrendingConsumer);
-    const ts = chTime(new Date(Date.now() - 5 * 60_000));
-    const emit = (name: string, productId: string, n: number) => {
-      for (let i = 0; i < n; i++)
-        consumer.ingest({
-          name,
-          ts,
-          props: { product_id: productId, category: 'audio' },
-        });
-    };
-    emit('product_view', a.id, 30);
-    emit('product_view', b.id, 10);
-    emit('add_to_cart', b.id, 5); // 10 + 25 = 35 > 30
-    emit('product_view', c.id, 3);
-    await consumer.flush(true);
-
-    const list = await app.get(TrendingService).trending('audio');
-    expect(list.map((p) => p.title)).toEqual(['B', 'A', 'C']);
+    // S35 replaced the in-process consumer: events go through the real topic and consumer of the trending capability.
+    const t = await createTrendingApp();
+    try {
+      await t.clean();
+      await t.seedDatasetT(); // A 30 views, B 10 views + 5 add-to-carts (= 35), C 3, D 22 (cameras)
+      const audio = await t.trending({ category: 'audio' });
+      expect(audio.items.map((p) => p.title)).toEqual([
+        'Headphones B',
+        'Speaker A',
+        'Cable C',
+      ]);
+      expect(audio.items.map((p) => p.score)).toEqual([35, 30, 3]);
+    } finally {
+      await t.close();
+    }
   });
 });

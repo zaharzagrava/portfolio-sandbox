@@ -17,6 +17,32 @@ describe('BFF (e2e)', () => {
   let core: http.Server;
   const calls: string[] = [];
   let slowRecommendations = false;
+  let trendingMode: 'ok' | 'slow' | 'fail' = 'ok';
+  const trendingBody = {
+    category: 'audio',
+    windowMinutes: 60,
+    generatedAt: '2026-01-01T12:00:00.000Z',
+    items: [
+      {
+        rank: 1,
+        productId: v4(),
+        title: 'B',
+        priceMinor: 9_900,
+        currency: 'USD',
+        category: 'audio',
+        score: 35,
+      },
+      {
+        rank: 2,
+        productId: v4(),
+        title: 'A',
+        priceMinor: 4_900,
+        currency: 'USD',
+        category: 'audio',
+        score: 30,
+      },
+    ],
+  };
   const shopId = v4();
   const products = Array.from({ length: 20 }, (_, i) => ({
     id: v4(),
@@ -60,7 +86,10 @@ describe('BFF (e2e)', () => {
         );
       if (url.pathname.startsWith('/api/products/'))
         return json(products.find((p) => url.pathname.endsWith(p.id)) ?? null);
-      if (url.pathname === '/api/trending') return json([]);
+      if (url.pathname === '/api/trending') {
+        if (trendingMode === 'fail') return res.writeHead(503).end();
+        return json(trendingBody, trendingMode === 'slow' ? 2_000 : 0);
+      }
       if (url.pathname === '/api/flags')
         return json({ flags: { 'web-new-header': true } });
       res.writeHead(404).end();
@@ -87,6 +116,7 @@ describe('BFF (e2e)', () => {
   beforeEach(() => {
     calls.length = 0;
     slowRecommendations = false;
+    trendingMode = 'ok';
   });
 
   it('product page aggregates in parallel; a slow optional section degrades to a partial response within its budget', async () => {
@@ -106,6 +136,31 @@ describe('BFF (e2e)', () => {
         reason: expect.stringContaining('timeout'),
       },
     ]);
+  });
+
+  it('S35 AS-42: trending is an optional 200 ms section; slow or failing it is absent and the rest intact, and on success the body passes through unchanged', async () => {
+    const page = () =>
+      request(app.getHttpServer())
+        .get(`/bff/product-page/${products[0].id}`)
+        .expect(200);
+    const ok = await page();
+    expect(ok.body.trending).toEqual(trendingBody);
+    expect(ok.body.errors).toEqual([]);
+    expect(calls).toContain('/api/trending');
+
+    for (const mode of ['slow', 'fail'] as const) {
+      trendingMode = mode;
+      const started = Date.now();
+      const res = await page();
+      expect(Date.now() - started).toBeLessThan(1_000);
+      expect(res.body.trending).toBeNull();
+      expect(res.body.product.title).toBe('P0');
+      expect(res.body.shop).toMatchObject({ name: 'Audio Shop' });
+      expect(res.body.flags).toEqual({ 'web-new-header': true });
+      expect(
+        res.body.errors.map((e: { section: string }) => e.section),
+      ).toEqual(['trending']);
+    }
   });
 
   it('GraphQL: 20 products and their shops = one batch call each (DataLoader, no N+1)', async () => {

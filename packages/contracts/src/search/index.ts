@@ -5,3 +5,4 @@ export * from './click';
 export * from './events';
 export * from './suggest';
 export * from './recommendations';
+export * from './trending';

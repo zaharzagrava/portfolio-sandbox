@@ -7,3 +7,4 @@ export * from './src/orders';
 export * from './src/payments';
 export * from './src/realtime';
 export * from './src/search';
+export * from './src/analytics';
