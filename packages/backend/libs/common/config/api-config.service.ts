@@ -13,6 +13,7 @@ import { ordersConfigKeys } from './orders-config';
 import { paymentsConfigKeys } from './payments-config';
 import { searchConfigKeys } from './search-config';
 import { autocompleteConfigKeys } from './autocomplete-config';
+import { recommendationsConfigKeys } from './recommendations-config';
 
 dotenv.config({
   /**
@@ -547,6 +548,7 @@ export class ApiConfigService {
           ...paymentsConfigKeys,
           ...searchConfigKeys,
           ...autocompleteConfigKeys,
+          ...recommendationsConfigKeys,
           payments_cursor_secret: {
             verify: joi.string().optional().allow(''),
             name: 'PAYMENTS_CURSOR_SECRET',

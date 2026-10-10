@@ -71,3 +71,6 @@ interviews) until its status says so. The implementation loop appends here (rule
 | S33 | SC-003: a query reaching 5 distinct searchers is suggested within 65 minutes | same file (deployed worker and node, hourly build plus poll) | not run |
 | S33 | SC-007: at least 18 of 20 single-typo searches show a correct suggestion | same file (typo fixture against the real engine, needs S32 fuzzy method) | not run |
 | S33 | SC-008: 200,000-query index within 400 MB per serving node (AS-54 proves a scaled bound) | same file (load a 200k snapshot, compare RSS) | not run |
+| S34 | SC-001: the rail adds at most 300 ms p99 uncached and the page renders when the rail is slow or down | `specs/domains/S34-recommendations/quickstart.md`, "Ops artifacts" (`loadtest:recommendations`) | not run |
+| S34 | SC-007: the nightly build finishes in under 60 minutes at 1 billion order lines | same file (build run on the 1B-line fixture) | not run |
+| S34 | SC-009: an alert fires when no build has succeeded for 36 hours | same file (alert drill) | not run |

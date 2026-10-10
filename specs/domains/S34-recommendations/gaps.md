@@ -69,3 +69,10 @@ Target: `check:table-ownership --strict` reports zero lines for the recommendati
 4. Read: validation, requested-product check, bounded pool, R1 lookups, direct-before-indirect ranking, entry sanitising, time budgets, 503, headers, rate-limit policy.
 5. Consumers: web, BFF composition and GraphQL adopt the new shape; Playwright journey.
 6. Contract step: make `buyer_id` and `order_version` mandatory once the replay is done, delete `forFeature([Product])`, tighten the barrel; run `check:boundaries` and `check:table-ownership --strict`.
+
+## Sibling-spec follow-ups
+
+- **W02**: adopt the new response shape in `packages/web/lib/api/catalog.ts` (`Recommendation`, `recommendationToCard`) and `packages/web/app/products/[slug]/page.tsx` (envelope `{type, items}`, money from `priceMinor`/`currency`, section hidden on empty/404/429/503); add the Playwright journey `packages/web/tests/product-recommendations.spec.ts` (AS-48, A25). S34 only keeps the in-repo callers compiling.
+- **S48**: `libs/composition/bff/product-page.service.ts` and `bff/graphql/product.resolver.ts` adopt `recommendationsResponseSchema` (validate the body; `recommendations: null` plus a partial-error entry on timeout/503/404/invalid body), and `bff.e2e-spec.ts` gains the AS-49 cases (A25).
+- **S50**: policy `discovery.recommendations` (600/min per address, fail open) is declared in `discovery/rate-limit-policies.ts`; it replaces the `search.query` reuse and must appear in the registry listing.
+- **S49**: `recommendations.build-bought-together` now declares a strict payload contract, `fleetConcurrency: 1`, and `leaseMs`/`maxRuntimeMs` of 1 h; nothing further to adopt.
