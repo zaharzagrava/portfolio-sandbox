@@ -255,7 +255,7 @@ block_spec() { # $1 = id, $2 = spec dir, $3 = reason
   } > "$f"
   printf '%s\t%s\n' "$1" "$3" >> "$BLOCKED_LIST"
   if [[ -n "${COMMIT:-}" ]]; then git add -A && git commit -q -m "blocked($1): $3" -m "See $f"; push_branch; fi
-  notify warn "SDD: $1 blocked" "$3. The loop continues with the next capability."
+  notify warn "SDD: $1 BLOCKED, needs you" "$3. The repair agent could not fix it (or its budget is used up), so the loop moved on to the next capability. Read $f when you can; nothing else is lost."
   echo "BLOCKED  $1: $3"
 }
 
@@ -384,6 +384,7 @@ ordered_capabilities "$@" | while IFS=$'\t' read -r id domain slug title sources
   if (( repair_tries <= ${MAX_REPAIRS_PER_SPEC:-2} && budget_left >= 120 )); then
     cap=$(( budget_left < 1500 ? budget_left : 1500 )); t0=$SECONDS
     echo "  repair agent for $id: $detail (repair budget left: $((budget_left / 60)) min)"
+    notify info "SDD: $id hit a problem, repair in progress" "$detail. The repair agent is working on it (attempt $repair_tries of ${MAX_REPAIRS_PER_SPEC:-2}, repair budget left $((budget_left / 60)) min). Nothing to do yet; you will get another message if it gets blocked."
     ( export PASS_TIMEOUT_S=$cap; step "$dir" "doctor-$repair_tries" "$(doctor_prompt "$id" "$dir" "$detail")" ) && drc=0 || drc=$?
     REPAIR_USED=$(( REPAIR_USED + SECONDS - t0 ))
     case $drc in 75|76|77) exit "$drc" ;; esac
@@ -391,7 +392,9 @@ ordered_capabilities "$@" | while IFS=$'\t' read -r id domain slug title sources
       if grep -q "DOCTOR: needs human" "$dir/.doctor-$repair_tries.log" 2>/dev/null; then
         detail="needs a human: $(grep -o 'DOCTOR: needs human:.*' "$dir/.doctor-$repair_tries.log" | head -1 | cut -c1-300)"
       else
-        echo "  repair agent finished; retrying $id"; continue
+        echo "  repair agent finished; retrying $id"
+        notify info "SDD: $id repaired, retrying" "The repair agent says it fixed the problem; the loop is building $id again. Its decisions are written in the spec folder (questions.md, BLOCKED.md if any)."
+        continue
       fi
     fi
   fi
