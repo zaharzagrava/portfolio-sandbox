@@ -8,7 +8,7 @@ import { TrendingService } from '../application/trending.service';
 export class TrendingController {
   constructor(private readonly trending: TrendingService) {}
 
-  @Firewall({ anonymous: true, skipThrottle: true })
+  @Firewall({ anonymous: true })
   @Header('Cache-Control', 'public, max-age=30, s-maxage=30')
   @Get()
   get(@Query('category') category = 'all') {

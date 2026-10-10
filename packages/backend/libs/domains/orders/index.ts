@@ -28,5 +28,6 @@ export {
 } from './application/events/order-events';
 export { OrderExportService } from './application/order-export.service';
 export { OrderService } from './application/order.service';
+export { ordersRatePolicies } from './rate-limit-policies';
 export { FlashStockService } from './infra/flash-stock.service';
 export { ExportJobTopicsModule } from './realtime-topics.module';

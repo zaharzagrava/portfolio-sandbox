@@ -10,7 +10,7 @@ import {
   TaskQueue,
   TaskMessage,
 } from '@app/infrastructure/sqs/task-queue.port';
-import { RateLimiterService } from '@app/infrastructure/rate-limit/rate-limiter.service';
+import { RateLimiterService } from '@app/infrastructure/rate-limit';
 import { JobHandler } from '@app/infrastructure/jobs/job-handler.decorator';
 import '../application/notification-delivery.job-types';
 import { SuppressionService } from '../application/suppression.service';
@@ -114,7 +114,7 @@ export class NotificationWorkers
       // Over the provider's send rate: put it back with a delay instead of burning a receive (and a DLQ strike).
       await this.queue.enqueue(queue, m, {
         delaySeconds: Math.min(
-          Math.ceil(decision.retryAfterMs / 1000) || 1,
+          Math.ceil((decision.retryAfterMs ?? 0) / 1000) || 1,
           900,
         ),
       });

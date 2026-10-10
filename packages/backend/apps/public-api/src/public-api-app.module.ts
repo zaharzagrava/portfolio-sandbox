@@ -5,7 +5,7 @@ import { ApiConfigModule } from '@app/common/config';
 import { PlatformModule } from '@app/infrastructure/platform';
 import { DatabaseModule } from '@app/infrastructure/database';
 import { RedisModule } from '@app/infrastructure/redis/redis.module';
-import { RateLimitModule } from '@app/infrastructure/rate-limit/rate-limit.module';
+import { RateLimitModule } from '@app/infrastructure/rate-limit';
 import { AllExceptionsFilter } from '@app/common/exceptions-filter';
 import { PublicApiModule } from '@app/domains/developer-platform';
 import { ErrorUtilsModule } from '@app/common/errors/error-utils/error-utils.module';
@@ -23,7 +23,7 @@ import { TenancyModule } from '@app/domains/tenancy';
     TenancyModule,
     DatabaseModule,
     RedisModule,
-    RateLimitModule,
+    RateLimitModule.forRoot(),
     PublicApiModule,
     ErrorUtilsModule,
     OpenTelemetryModule.forRoot({ metrics: { hostMetrics: true } }),

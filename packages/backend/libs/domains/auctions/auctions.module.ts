@@ -7,6 +7,8 @@ import { JobsModule } from '@app/infrastructure/jobs/jobs.module';
 import { RealtimeModule } from '@app/infrastructure/realtime/realtime.module';
 import { AuctionService } from './application/auction.service';
 import { AuctionsController } from './api/auctions.controller';
+import { RateLimitModule } from '@app/infrastructure/rate-limit';
+import { auctionsRatePolicies } from './rate-limit-policies';
 
 /** SD-22 HTTP side (core). Needs global Redis, Tenancy (membership) modules. */
 @Module({
@@ -15,6 +17,7 @@ import { AuctionsController } from './api/auctions.controller';
     BillingModule,
     JobsModule,
     RealtimeModule,
+    RateLimitModule.forFeature(auctionsRatePolicies),
     SequelizeModule.forFeature([Auction]),
   ],
   providers: [AuctionService],

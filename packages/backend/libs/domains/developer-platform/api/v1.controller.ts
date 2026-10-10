@@ -34,7 +34,7 @@ import {
   Min,
   ValidateNested,
 } from 'class-validator';
-import { RateLimit } from '@app/infrastructure/rate-limit/rate-limit.decorator';
+import { RateLimit } from '@app/infrastructure/rate-limit';
 import { Idempotent } from '@app/infrastructure/idempotency';
 import { ApiKeyAuth } from './api-key.guard';
 import type { ApiKeyRequest } from './api-key.guard';

@@ -15,7 +15,7 @@ import { ApiTags } from '@nestjs/swagger';
 import type { Response } from 'express';
 import { Firewall, Role } from '@app/domains/identity';
 import { ShopScoped } from '@app/domains/tenancy';
-import { RateLimit } from '@app/infrastructure/rate-limit/rate-limit.decorator';
+import { RateLimit } from '@app/infrastructure/rate-limit';
 import { CommissionRateService } from '../application/commission-rate.service';
 import { StatementService } from '../application/statement.service';
 import { streamStatementCsv } from '../infra/statement-export';

@@ -15,4 +15,5 @@ export {
   StockPushProjector,
 } from './integrations.module';
 export { OfflineSyncModule } from './sync.module';
+export { catalogSyncRatePolicies } from './rate-limit-policies';
 export { ImportJobTopicsModule } from './realtime-topics.module';

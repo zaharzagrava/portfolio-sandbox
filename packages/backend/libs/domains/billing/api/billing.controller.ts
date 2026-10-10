@@ -24,7 +24,7 @@ export class BillingController {
     private readonly entitlements: EntitlementsService,
   ) {}
 
-  @Firewall({ anonymous: true, skipThrottle: true })
+  @Firewall({ anonymous: true })
   @Header('Cache-Control', 'public, s-maxage=300')
   @Get('plans')
   plans() {

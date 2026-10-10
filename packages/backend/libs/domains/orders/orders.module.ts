@@ -22,6 +22,8 @@ import { OrdersController } from './api/orders.controller';
 import { StripeWebhookController } from './api/stripe-webhook.controller';
 
 import { TenancyModule } from '@app/domains/tenancy';
+import { RateLimitModule } from '@app/infrastructure/rate-limit';
+import { ordersRatePolicies } from './rate-limit-policies';
 
 export const ORDER_MODELS = [
   BisOrder,
@@ -45,6 +47,7 @@ export const ORDER_MODELS = [
     JobsModule,
     RealtimeModule,
     TenancyModule,
+    RateLimitModule.forFeature(ordersRatePolicies),
     SequelizeModule.forFeature(ORDER_MODELS),
   ],
   providers: [CartRepository, FlashStockService, OrderService, CheckoutService],

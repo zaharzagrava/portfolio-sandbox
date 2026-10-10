@@ -143,14 +143,35 @@ export class ApiConfigService {
             name: 'DB_HOST',
           },
 
-          throttle_api_limit: {
-            verify: joi.number().required(),
-            name: 'THROTTLE_API_LIMIT',
+          // Rate limiter (S50 FR-055); defaults are applied by rate-limit.config.ts.
+          rate_limit_store_timeout_ms: {
+            verify: joi.number().integer().positive().optional(),
+            name: 'RATE_LIMIT_STORE_TIMEOUT_MS',
             postProcess: (v: string) => (v ? Number(v) : undefined),
           },
-          throttle_api_ttl: {
-            verify: joi.number().required(),
-            name: 'THROTTLE_API_TTL',
+          rate_limit_breaker_failures: {
+            verify: joi.number().integer().positive().optional(),
+            name: 'RATE_LIMIT_BREAKER_FAILURES',
+            postProcess: (v: string) => (v ? Number(v) : undefined),
+          },
+          rate_limit_breaker_open_ms: {
+            verify: joi.number().integer().positive().optional(),
+            name: 'RATE_LIMIT_BREAKER_OPEN_MS',
+            postProcess: (v: string) => (v ? Number(v) : undefined),
+          },
+          rate_limit_fallback_instances: {
+            verify: joi.number().integer().positive().optional(),
+            name: 'RATE_LIMIT_FALLBACK_INSTANCES',
+            postProcess: (v: string) => (v ? Number(v) : undefined),
+          },
+          rate_limit_lease_ttl_ms: {
+            verify: joi.number().integer().positive().optional(),
+            name: 'RATE_LIMIT_LEASE_TTL_MS',
+            postProcess: (v: string) => (v ? Number(v) : undefined),
+          },
+          rate_limit_penalty_max_ms: {
+            verify: joi.number().integer().positive().optional(),
+            name: 'RATE_LIMIT_PENALTY_MAX_MS',
             postProcess: (v: string) => (v ? Number(v) : undefined),
           },
 

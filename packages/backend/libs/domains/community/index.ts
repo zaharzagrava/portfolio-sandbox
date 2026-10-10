@@ -6,6 +6,7 @@
  */
 export { DiscussionsWorkerModule } from './discussions-worker.module';
 export { DiscussionsModule } from './discussions.module';
+export { communityRatePolicies } from './rate-limit-policies';
 export { FeedPublisherModule } from './feed-publisher.module';
 export { FeedModule } from './feed.module';
 export { FeedFanoutConsumer } from './infra/fanout.consumer';

@@ -7,6 +7,7 @@
 export { default as AuctionModel } from './infra/models/auction.model';
 export { AuctionsWorkerModule } from './auctions-worker.module';
 export { AuctionsModule } from './auctions.module';
+export { auctionsRatePolicies } from './rate-limit-policies';
 export {
   AuctionClosed,
   AuctionLeaderChanged,

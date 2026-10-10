@@ -1,4 +1,4 @@
-import { RateLimitModule } from '@app/infrastructure/rate-limit/rate-limit.module';
+import { RateLimitModule } from '@app/infrastructure/rate-limit';
 import { StorageModule } from '@app/infrastructure/storage/storage.module';
 import { SqsModule } from '@app/infrastructure/sqs/sqs.module';
 import { JobsModule } from '@app/infrastructure/jobs/jobs.module';
@@ -8,8 +8,7 @@ import { RedisModule } from '@app/infrastructure/redis/redis.module';
 import { ShopTopicsModule, TenancyModule } from '@app/domains/tenancy';
 import { Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
-import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
-import { APP_FILTER, APP_GUARD } from '@nestjs/core';
+import { APP_FILTER } from '@nestjs/core';
 import { AllExceptionsFilter } from '@app/common/exceptions-filter';
 import { ApiConfigService, ApiConfigModule } from '@app/common/config';
 
@@ -51,19 +50,7 @@ import { AssistantModule } from '@app/domains/assistant';
     JobsModule,
     SqsModule,
     StorageModule,
-    RateLimitModule,
-    ThrottlerModule.forRootAsync({
-      imports: [ApiConfigModule],
-      inject: [ApiConfigService],
-      useFactory: (config: ApiConfigService) => ({
-        throttlers: [
-          {
-            ttl: config.get('throttle_api_ttl'),
-            limit: config.get('throttle_api_limit'),
-          },
-        ],
-      }),
-    }),
+    RateLimitModule.forRoot(),
     SequelizeModule.forRootAsync({
       imports: [ApiConfigModule],
       inject: [ApiConfigService],
@@ -115,10 +102,6 @@ import { AssistantModule } from '@app/domains/assistant';
     {
       provide: APP_FILTER,
       useClass: AllExceptionsFilter,
-    },
-    {
-      provide: APP_GUARD,
-      useClass: ThrottlerGuard,
     },
   ],
 })

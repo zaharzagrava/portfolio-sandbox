@@ -18,7 +18,7 @@ then does that flow's work.
 2. `creds/jwtRS256.key(.pub)` exist (`node scripts/auth/generate-keys.js`). The edge's `JWT_PUBLIC_KEY` must hold the same public key.
 3. In `packages/backend/.env` for load tests:
    - `IS_LOAD_TEST=true`: Stripe is stubbed with a successful response.
-   - Set `THROTTLE_API_LIMIT` very high (e.g. `10000000`). The global Nest throttler is per IP, and every k6 VU shares one IP.
+   - The rate limiter (S50) applies `default.read` (300/min) and `default.write` (60/min) per user or address, plus each route's own policy. Every k6 VU shares one address, so set `TRUSTED_PROXIES` to the load generator's address and send a distinct `X-Forwarded-For` per virtual user (the default limit is then per virtual user), or the run measures the limiter instead of the system.
 4. Services for the flow you're running:
    - all flows: core (`pnpm start:dev`, port from `PORT`, default in these scripts `http://localhost:8000`)
    - `payment`: edge worker (`cd ../edge-be && npx wrangler dev`, `:8787`) + the payment processor (`pnpm start:dev:payment-processor`)

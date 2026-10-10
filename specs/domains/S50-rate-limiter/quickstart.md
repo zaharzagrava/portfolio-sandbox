@@ -22,6 +22,7 @@ $S libs/infrastructure/rate-limit/penalize.e2e-spec.ts              # AS-60-65
 $S libs/infrastructure/rate-limit/rate-limit-registry.e2e-spec.ts   # AS-66-68, 70, 71
 $S libs/infrastructure/rate-limit/rate-limit-observability.e2e-spec.ts  # AS-74, 75
 $S libs/infrastructure/rate-limit/rate-limit-fleet.e2e-spec.ts      # AS-80, 81
+$S libs/infrastructure/rate-limit/edge-script.e2e-spec.ts           # AS-76, 77: the edge worker's Lua, run against the real Redis
 $S libs/infrastructure/rate-limit                                   # whole capability suite, once at the end
 (cd ../edge-be && pnpm test)                                        # rate-limit.spec.ts: AS-76-79
 ```

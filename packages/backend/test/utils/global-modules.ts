@@ -8,9 +8,9 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { MockApiConfigServiceFactory } from '@app/common/config/api-config.service.mock';
 import { ConfigUtilsService } from '@app/common/config/config-utils/config-utils.service';
 
-import { APP_FILTER, APP_GUARD } from '@nestjs/core';
+import { APP_FILTER } from '@nestjs/core';
 import { AllExceptionsFilter } from '@app/common/exceptions-filter';
-import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { RateLimitModule } from '@app/infrastructure/rate-limit';
 import { ConfigUtilsModule } from '@app/common/config/config-utils/config-utils.module';
 import { ErrorUtilsModule } from '@app/common/errors/error-utils/error-utils.module';
 import {
@@ -35,30 +35,44 @@ import { TenancyModule } from '@app/domains/tenancy';
  * (debt D-9): domains own their model registration; the harness just loads them all.
  */
 import '@app/domains/asset-library';
-import '@app/domains/assistant';
-import '@app/domains/auctions';
+import { assistantRatePolicies } from '@app/domains/assistant';
+import { auctionsRatePolicies } from '@app/domains/auctions';
 import '@app/domains/billing';
-import '@app/domains/catalog';
-import '@app/domains/catalog-sync';
+import { catalogRatePolicies } from '@app/domains/catalog';
+import { catalogSyncRatePolicies } from '@app/domains/catalog-sync';
 import '@app/domains/chat';
-import '@app/domains/community';
+import { communityRatePolicies } from '@app/domains/community';
 import '@app/domains/content';
-import '@app/domains/developer-platform';
+import { developerPlatformRatePolicies } from '@app/domains/developer-platform';
 import '@app/domains/discovery';
 import '@app/domains/experimentation';
 import '@app/domains/fulfilment';
-import '@app/domains/identity';
-import '@app/domains/launch-events';
+import { identityRatePolicies } from '@app/domains/identity';
+import { launchEventsRatePolicies } from '@app/domains/launch-events';
 import '@app/domains/marketing';
 import '@app/domains/media';
-import '@app/domains/notifications';
-import '@app/domains/orders';
+import { notificationsRatePolicies } from '@app/domains/notifications';
+import { ordersRatePolicies } from '@app/domains/orders';
 import '@app/domains/payments';
 import '@app/domains/seller-insights';
 import '@app/domains/seller-onboarding';
 import '@app/domains/shop-functions';
-import '@app/domains/statements';
+import { statementsRatePolicies } from '@app/domains/statements';
 import '@app/domains/tenancy';
+
+const ALL_RATE_LIMIT_TABLES = [
+  identityRatePolicies,
+  catalogRatePolicies,
+  ordersRatePolicies,
+  developerPlatformRatePolicies,
+  catalogSyncRatePolicies,
+  statementsRatePolicies,
+  auctionsRatePolicies,
+  communityRatePolicies,
+  notificationsRatePolicies,
+  launchEventsRatePolicies,
+  assistantRatePolicies,
+];
 
 export interface TestingModuleOptions {
   /** Extra store modules the feature under test needs (real docker-compose test instances, D5). */
@@ -106,19 +120,11 @@ export const generateTestingModule = async (
     }),
     ScheduleModule.forRoot(),
 
-    // needed for exceptions filter and throttler
-    ThrottlerModule.forRootAsync({
-      imports: [ApiConfigModule],
-      inject: [ApiConfigService],
-      useFactory: (config: ApiConfigService) => ({
-        throttlers: [
-          {
-            ttl: config.get('throttle_api_ttl'),
-            limit: config.get('throttle_api_limit'),
-          },
-        ],
-      }),
-    }),
+    // The one limiter, as in the apps, but without the default.read / default.write floor: specs of other
+    // capabilities fire many requests from one address. Explicit @RateLimit policies are enforced as in production,
+    // and every domain's policy table is registered because routes reference each other's names (S50 G-35).
+    RateLimitModule.forRoot({ applyDefault: false }),
+    ...ALL_RATE_LIMIT_TABLES.map((table) => RateLimitModule.forFeature(table)),
 
     // F-01 platform pieces the app modules rely on (CLS context, CLS transactions,
     // readiness/shutdown registries). Logging and load shedding are left out of tests.
@@ -151,10 +157,6 @@ export const generateTestingModule = async (
       {
         provide: APP_FILTER,
         useClass: AllExceptionsFilter,
-      },
-      {
-        provide: APP_GUARD,
-        useClass: ThrottlerGuard,
       },
     ],
   })

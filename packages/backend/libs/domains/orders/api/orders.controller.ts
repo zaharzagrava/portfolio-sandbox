@@ -13,7 +13,7 @@ import {
 import { ApiTags } from '@nestjs/swagger';
 import { InjectModel } from '@nestjs/sequelize';
 import { Firewall, User, UserRawDto } from '@app/domains/identity';
-import { RateLimit } from '@app/infrastructure/rate-limit/rate-limit.decorator';
+import { RateLimit } from '@app/infrastructure/rate-limit';
 import { ShopScoped } from '@app/domains/tenancy';
 import { JobsService } from '@app/infrastructure/jobs/jobs.service';
 import FlashSale from '../infra/models/flash-sale.model';

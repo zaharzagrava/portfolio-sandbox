@@ -54,7 +54,7 @@ export class AdsController {
   }
 
   /** Always redirects (a fraud-filtered click still lands on the product); `no-store` so every click reaches us. */
-  @Firewall({ anonymous: true, skipThrottle: true })
+  @Firewall({ anonymous: true })
   @Get('ads/click/:token')
   async click(
     @Param('token') token: string,

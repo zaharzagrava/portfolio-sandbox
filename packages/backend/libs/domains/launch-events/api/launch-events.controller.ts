@@ -14,7 +14,7 @@ import { ApiTags } from '@nestjs/swagger';
 import { InjectModel } from '@nestjs/sequelize';
 import { Firewall, User, UserRawDto } from '@app/domains/identity';
 import { ShopScoped } from '@app/domains/tenancy';
-import { RateLimit } from '@app/infrastructure/rate-limit/rate-limit.decorator';
+import { RateLimit } from '@app/infrastructure/rate-limit';
 import { CacheService } from '@app/infrastructure/cache/cache.service';
 import LaunchEvent from '../infra/models/launch-event.model';
 import { WaitingRoomService } from '../application/waiting-room.service';
@@ -46,7 +46,7 @@ export class LaunchEventsController {
   }
 
   /** Static event page data: CDN/edge cacheable; only the seat map and queue are dynamic. */
-  @Firewall({ anonymous: true, skipThrottle: true })
+  @Firewall({ anonymous: true })
   @Header('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=300')
   @Get('launch-events/:eventId')
   async get(@Param('eventId', ParseUUIDPipe) eventId: string) {
@@ -75,7 +75,7 @@ export class LaunchEventsController {
   }
 
   /** 1 bit per seat (base64) - 100k seats = 12.5 KB; cacheable for 1 s at the CDN, deltas via SSE `event:<id>:seatmap`. */
-  @Firewall({ anonymous: true, skipThrottle: true })
+  @Firewall({ anonymous: true })
   @Header('Cache-Control', 'public, s-maxage=1')
   @Get('launch-events/:eventId/seatmap')
   async seatMap(@Param('eventId', ParseUUIDPipe) eventId: string) {

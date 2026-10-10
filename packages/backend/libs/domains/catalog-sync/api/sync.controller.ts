@@ -13,7 +13,7 @@ import { ApiProperty, ApiTags } from '@nestjs/swagger';
 import { ArrayMaxSize, IsArray } from 'class-validator';
 import { z } from 'zod';
 import { ShopScoped } from '@app/domains/tenancy';
-import { RateLimit } from '@app/infrastructure/rate-limit/rate-limit.decorator';
+import { RateLimit } from '@app/infrastructure/rate-limit';
 import { SyncService } from '../application/sync.service';
 import type { SyncOp } from '../domain/merge';
 

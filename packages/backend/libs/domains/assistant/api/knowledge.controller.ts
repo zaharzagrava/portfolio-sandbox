@@ -29,7 +29,7 @@ import { QueryTypes, Sequelize } from 'sequelize';
 import type { Request, Response } from 'express';
 import { Firewall, User, UserRawDto, Role } from '@app/domains/identity';
 import { ShopScoped } from '@app/domains/tenancy';
-import { RateLimit } from '@app/infrastructure/rate-limit/rate-limit.decorator';
+import { RateLimit } from '@app/infrastructure/rate-limit';
 import { KnowledgeService } from '../application/knowledge.service';
 import { AnswerService } from '../application/answer.service';
 
@@ -145,7 +145,7 @@ export class KnowledgeController {
   }
 
   /** "Ask this product" (buyers, anonymous allowed) → text/event-stream: sources → text… → done {citations} | not_found. */
-  @Firewall({ anonymous: true, skipThrottle: true })
+  @Firewall({ anonymous: true })
   @RateLimit('rag.ask')
   @Post('products/:productId/ask')
   async askProduct(

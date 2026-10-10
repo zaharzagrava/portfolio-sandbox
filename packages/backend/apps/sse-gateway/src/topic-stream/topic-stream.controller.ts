@@ -44,7 +44,7 @@ export class TopicStreamController {
     private readonly topicRegistry: TopicRegistry,
   ) {}
 
-  @Firewall({ anonymous: true, skipThrottle: true })
+  @Firewall({ anonymous: true })
   @Get()
   async stream(
     @Query('topics') topicsParam: string,

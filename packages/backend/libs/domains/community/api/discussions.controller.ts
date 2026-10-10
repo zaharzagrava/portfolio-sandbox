@@ -12,7 +12,7 @@ import {
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Firewall, User, UserRawDto } from '@app/domains/identity';
-import { RateLimit } from '@app/infrastructure/rate-limit/rate-limit.decorator';
+import { RateLimit } from '@app/infrastructure/rate-limit';
 import { DiscussionService } from '../application/discussion.service';
 import type { BoardSort } from '../application/discussion.service';
 import { VoteService } from '../application/vote.service';
@@ -43,7 +43,7 @@ export class DiscussionsController {
     );
   }
 
-  @Firewall({ anonymous: true, skipThrottle: true })
+  @Firewall({ anonymous: true })
   @Get('boards/:boardId/posts')
   board(
     @Param('boardId') boardId: string,
@@ -57,13 +57,13 @@ export class DiscussionsController {
     );
   }
 
-  @Firewall({ anonymous: true, skipThrottle: true })
+  @Firewall({ anonymous: true })
   @Get('posts/:postId')
   post(@Param('postId', ParseUUIDPipe) postId: string) {
     return this.discussions.getPost(postId);
   }
 
-  @Firewall({ anonymous: true, skipThrottle: true })
+  @Firewall({ anonymous: true })
   @Get('posts/:postId/comments')
   comments(
     @Param('postId', ParseUUIDPipe) postId: string,

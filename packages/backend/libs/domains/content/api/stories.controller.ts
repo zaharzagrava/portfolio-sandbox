@@ -112,7 +112,7 @@ export class StoriesController {
    * exactly this story's objects; ETag (id-version-locale) answers 304 to
    * conditional requests without a body.
    */
-  @Firewall({ anonymous: true, skipThrottle: true })
+  @Firewall({ anonymous: true })
   @Get('stories/:shopSlug/:slug')
   async story(
     @Param('shopSlug') shopSlug: string,
@@ -147,7 +147,7 @@ export class StoriesController {
   }
 
   /** Sitemap index: one child sitemap per 50k URLs. */
-  @Firewall({ anonymous: true, skipThrottle: true })
+  @Firewall({ anonymous: true })
   @Get('sitemaps/stories.xml')
   async index(@Res() res: Response) {
     const pages = Math.max(
@@ -173,7 +173,7 @@ export class StoriesController {
    * batches of 1,000) - constant memory whether the page has 10 or 50,000
    * URLs, and the first bytes go out immediately. hreflang alternates per locale.
    */
-  @Firewall({ anonymous: true, skipThrottle: true })
+  @Firewall({ anonymous: true })
   @Get('sitemaps/stories-:page.xml')
   async page(@Param('page') page: string, @Res() res: Response) {
     const n = Number(page);

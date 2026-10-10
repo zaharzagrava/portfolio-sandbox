@@ -95,7 +95,7 @@ export class DeliveryController {
   }
 
   /** Phones send a batch every ~4 s (≤ 20 points); keep-alive connection. */
-  @Firewall({ skipThrottle: true })
+  @Firewall()
   @Post('couriers/me/locations')
   @HttpCode(202)
   async locations(@User() user: UserRawDto, @Body() body: LocationsDto) {

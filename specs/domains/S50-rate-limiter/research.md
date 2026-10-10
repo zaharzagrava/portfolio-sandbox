@@ -2,6 +2,10 @@
 
 Each item resolves a design choice; no `NEEDS CLARIFICATION` remains. Facts about the repo were checked in the code on 2026-10-09.
 
+## Baseline
+
+Recorded when the work finished (T001 was not captured before the first edit, so there is no "before" number): `pnpm check:boundaries` → 0 errors, 61 warnings, none naming `infrastructure/rate-limit` (the decorator ↔ interceptor cycle D-17 is gone: both import `rate-limit.metadata.ts`); `pnpm check:table-ownership --strict` → 0 lines for `infrastructure/rate-limit`; `grep -rn "sequelize.transaction" libs/infrastructure/rate-limit` → nothing (the lib owns no table and runs no SQL).
+
 ## R-01 Time source
 
 - **Decision**: a `TimeSource` port. Production = the store's `TIME`, read **inside every script** (`redis.call('TIME')`) so the decision and the clock are one atomic step. The test source supplies an offset the script adds to `TIME` (passed as an argument, `0` in production).
@@ -30,7 +34,7 @@ Each item resolves a design choice; no `NEEDS CLARIFICATION` remains. Facts abou
 
 ## R-06 Breaker
 
-- **Decision**: a small lib-local consecutive-failure breaker (closed → open until T → one probe → closed), 3 failures / 2 s from config, gauge `rate_limit_breaker_state`, one log line per transition.
+- **Decision (confirmed at T002)**: a small lib-local consecutive-failure breaker (`store-guard.ts`; closed → open until T → one probe → closed), 3 failures / 2 s from config, gauge `rate_limit_breaker_state`, one log line per transition. `CircuitBreaker` (`libs/common/resilience/circuit-breaker.ts`) was read: it opens on a failure **rate** over a rolling window with `minimumCalls`, and admits `halfOpenCalls` trial calls, so it cannot give "3 in a row, then exactly one probe".
 - **Rationale**: `libs/common/resilience` `CircuitBreaker` is failure-**rate** based over a rolling window with `minimumCalls`; FR-022 and AS-30 need "3 consecutive failures, 2 s of zero store calls, exactly one probe". **Alternative**: configure the shared breaker to approximate it (`minimumCalls: 3`, threshold 1): the semantics differ under mixed outcomes and fail AS-30's exactness.
 
 ## R-07 Store timeout and script loading

@@ -25,7 +25,7 @@ import {
 } from 'class-validator';
 import { Firewall } from '@app/domains/identity';
 import { ShopScoped } from '@app/domains/tenancy';
-import { RateLimit } from '@app/infrastructure/rate-limit/rate-limit.decorator';
+import { RateLimit } from '@app/infrastructure/rate-limit';
 import { WidgetService } from '../application/widget.service';
 
 export class CreateSiteDto {
@@ -84,7 +84,7 @@ export class WidgetController {
    * Edge-cacheable per (key, origin): `Vary: Origin` + the CORS header echoes
    * only that registered origin (never `*`, never credentials).
    */
-  @Firewall({ anonymous: true, skipThrottle: true })
+  @Firewall({ anonymous: true })
   @Get('widget/v1/config')
   async config(
     @Query('key') key: string,

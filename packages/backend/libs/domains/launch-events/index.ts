@@ -25,4 +25,5 @@ export {
 export type { LiveComment } from './infra/live-keys';
 export { LiveModerationConsumer } from './infra/live-moderation.consumer';
 export { LiveTicker } from './infra/live-ticker.service';
+export { launchEventsRatePolicies } from './rate-limit-policies';
 export { LaunchEventTopicsModule } from './realtime-topics.module';

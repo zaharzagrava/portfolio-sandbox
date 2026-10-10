@@ -35,8 +35,12 @@ export class SecretsManagerConfig {
   db_name: string;
   db_host: string;
 
-  throttle_api_limit: number;
-  throttle_api_ttl: number;
+  rate_limit_store_timeout_ms?: number;
+  rate_limit_breaker_failures?: number;
+  rate_limit_breaker_open_ms?: number;
+  rate_limit_fallback_instances?: number;
+  rate_limit_lease_ttl_ms?: number;
+  rate_limit_penalty_max_ms?: number;
 
   secret_salt: string;
   book_cover_s3_url: string;

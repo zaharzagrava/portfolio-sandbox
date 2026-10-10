@@ -24,7 +24,7 @@ import {
   Min,
 } from 'class-validator';
 import { Firewall, User, UserRawDto } from '@app/domains/identity';
-import { RateLimit } from '@app/infrastructure/rate-limit/rate-limit.decorator';
+import { RateLimit } from '@app/infrastructure/rate-limit';
 import {
   ShopScoped,
   ShopMembershipModel as ShopMembership,

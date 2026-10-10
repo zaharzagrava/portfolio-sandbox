@@ -11,7 +11,7 @@ import type { RawBodyRequest } from '@nestjs/common';
 import type { Request } from 'express';
 import { InjectConnection, InjectModel } from '@nestjs/sequelize';
 import { QueryTypes, Sequelize } from 'sequelize';
-import { SkipThrottle } from '@nestjs/throttler';
+import { RateLimitExempt } from '@app/infrastructure/rate-limit';
 import { StripeService } from '@app/infrastructure/stripe/stripe.service';
 import { ApiConfigService } from '@app/common/config';
 import { PaymentModel as Payment } from '@app/domains/payments';
@@ -28,7 +28,7 @@ import { OrderService } from '../application/order.service';
  * Redundant with the Kafka payments.responses path on purpose: whichever
  * arrives first marks the order paid; the other is a no-op.
  */
-@SkipThrottle()
+@RateLimitExempt('payment provider webhook, signature-verified')
 @Controller('webhooks')
 export class StripeWebhookController {
   private readonly logger = new Logger(StripeWebhookController.name);

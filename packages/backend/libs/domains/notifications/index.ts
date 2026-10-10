@@ -8,5 +8,6 @@ export { formatMoney } from './domain/templates';
 export { NotificationsCoreModule } from './notifications-core.module';
 export { NotificationsWorkerModule } from './notifications-worker.module';
 export { NotificationsModule } from './notifications.module';
+export { notificationsRatePolicies } from './rate-limit-policies';
 export { NotificationRouter } from './application/notification-router.service';
 export { NotificationRouterProjector } from './infra/notification-router.projector';
