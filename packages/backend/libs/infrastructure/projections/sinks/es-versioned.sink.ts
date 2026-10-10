@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { ElasticsearchService } from '@app/infrastructure/elasticsearch/elasticsearch.service';
+import { SearchEngineClient } from '@app/infrastructure/elasticsearch/search-engine.client';
 import { PermanentError, TransientError } from '../errors';
 import type { SinkCounts } from '../projector';
 
@@ -31,11 +31,11 @@ interface BulkItem {
  * error and not logged as a failure; the conflict reason tells `duplicate` (equal) from `stale` (older). Deletes
  * carry a version too, so a late older write cannot bring a deleted document back.
  *
- * Built on the current product-index client; it moves with the generic client of S32 (debt D-16).
+ * Built on the generic engine client (S32, debt D-16).
  */
 @Injectable()
 export class EsVersionedSink {
-  constructor(private readonly elasticsearch: ElasticsearchService) {}
+  constructor(private readonly engine: SearchEngineClient) {}
 
   async bulkIfNewer(
     index: string,
@@ -87,15 +87,13 @@ export class EsVersionedSink {
     if (operations.length === 0) return counts;
     let response;
     try {
-      response = await this.elasticsearch
-        .getClient()
-        .bulk({ operations, refresh });
+      response = await this.engine.bulk(operations, { refresh });
     } catch (error) {
       throw new TransientError(`Elasticsearch bulk to ${index} failed`, {
         cause: error,
       });
     }
-    for (const item of response.items) {
+    for (const item of response.items as Record<string, BulkItem | undefined>[]) {
       const result = (item.index ??
         item.delete ??
         item.create ??

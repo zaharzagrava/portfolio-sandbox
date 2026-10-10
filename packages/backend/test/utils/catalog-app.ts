@@ -63,6 +63,8 @@ export interface CatalogTestApp {
 export async function createCatalogApp(
   options: {
     extraImports?: unknown[];
+    /** Modules registered before the catalog's, so their routes are matched first (S32 mounts /products/search). */
+    prependImports?: unknown[];
     overrides?: Array<{ provide: unknown; useValue: unknown }>;
     redisUrl?: string;
     env?: Record<string, string>;
@@ -84,6 +86,7 @@ export async function createCatalogApp(
       [
         AuthApiModule,
         SeedsModule,
+        ...(options.prependImports ?? []),
         ProductModule,
         ProductBatchReadModule,
         ...(options.extraImports ?? []),

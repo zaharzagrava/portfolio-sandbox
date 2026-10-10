@@ -62,3 +62,8 @@ interviews) until its status says so. The implementation loop appends here (rule
 | S51 | SC-005 (10,000 cycles): memory returns to baseline after 10,000 connect/close cycles (AS-42 runs 500) | same file (k6 cycle case, heap comparison) | not run |
 | S51 | SC-007: restarting every instance reconnects all viewers within 10 s | same file (k6 reconnect-storm case) | not run |
 | S51 | SC-008 (under load): publisher latency under hub outage at most +1 s (AS-32 proves one attempt, 1 s) | same file (outage drill under load) | not run |
+| S32 | SC-001: p95 under 300 ms at 100,000 searches/s over 50 M products | `specs/domains/S32-product-search/quickstart.md`, "Ops artifacts" (k6 `loadtest:search`) | not run |
+| S32 | SC-002: change visible in 10 s (p95) / 60 s (p99) at 5,000 product changes/s | same file (event-stream lag run) | not run |
+| S32 | SC-003 (load part): reindex under full load causes zero failed searches, rollback under one minute (AS-40 proves 50 searches/s) | same file (reindex during k6 load) | not run |
+| S32 | SC-006: zero hidden products in 10,000 searches against a polluted index | same file (polluted-index replay) | not run |
+| S32 | SC-010: at least 95% of a curated typo set finds the intended product | same file (relevance harness) | not run |

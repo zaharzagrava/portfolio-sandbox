@@ -151,7 +151,13 @@ export const OWNERSHIP = {
   NotificationSettings: 'domain:notifications',
   NotificationSuppression: 'domain:notifications',
   PushDevice: 'domain:notifications',
-  // discovery: read models only (Elasticsearch, Redis, ClickHouse)
+  // discovery: Elasticsearch/Redis/ClickHouse read models plus six small search tables (S32)
+  SearchShopProduct: 'domain:discovery',
+  SearchShopState: 'domain:discovery',
+  SearchReindexRun: 'domain:discovery',
+  SearchReindexRunHistory: 'domain:discovery',
+  SearchSynonymSet: 'domain:discovery',
+  SearchSynonymVersion: 'domain:discovery',
   // marketing
   AdCampaign: 'domain:marketing',
   AdBillingRun: 'domain:marketing',

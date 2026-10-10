@@ -11,6 +11,7 @@ import { eventsConfigKeys } from './events-config';
 import { jobsConfigKeys } from './jobs-config';
 import { ordersConfigKeys } from './orders-config';
 import { paymentsConfigKeys } from './payments-config';
+import { searchConfigKeys } from './search-config';
 
 dotenv.config({
   /**
@@ -543,6 +544,7 @@ export class ApiConfigService {
           ...jobsConfigKeys,
           ...ordersConfigKeys,
           ...paymentsConfigKeys,
+          ...searchConfigKeys,
           payments_cursor_secret: {
             verify: joi.string().optional().allow(''),
             name: 'PAYMENTS_CURSOR_SECRET',

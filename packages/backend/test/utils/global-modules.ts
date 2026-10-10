@@ -44,7 +44,7 @@ import '@app/domains/chat';
 import { communityRatePolicies } from '@app/domains/community';
 import '@app/domains/content';
 import { developerPlatformRatePolicies } from '@app/domains/developer-platform';
-import '@app/domains/discovery';
+import { discoveryRatePolicies } from '@app/domains/discovery';
 import '@app/domains/experimentation';
 import '@app/domains/fulfilment';
 import { identityRatePolicies } from '@app/domains/identity';
@@ -73,6 +73,7 @@ const ALL_RATE_LIMIT_TABLES = [
   notificationsRatePolicies,
   launchEventsRatePolicies,
   assistantRatePolicies,
+  discoveryRatePolicies,
 ];
 
 export interface TestingModuleOptions {

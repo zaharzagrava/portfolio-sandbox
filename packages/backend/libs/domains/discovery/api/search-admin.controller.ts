@@ -23,10 +23,7 @@ import {
 import { Firewall, Role } from '@app/domains/identity';
 import { ShopScoped } from '@app/domains/tenancy';
 import { ElasticsearchService } from '@app/infrastructure/elasticsearch/elasticsearch.service';
-import { JobsService } from '@app/infrastructure/jobs/jobs.service';
 
-// 'search.reindex-products' payload type + contract live in search-reindex.job-types.ts (no handler code pulled in).
-import '../application/search-reindex.job-types';
 import { ShopProductSearchService } from '../application/shop-product-search.service';
 import { SearchQualityService } from '../application/search-quality.service';
 
@@ -52,7 +49,6 @@ export class SearchAdminController {
     private readonly shopSearch: ShopProductSearchService,
     private readonly quality: SearchQualityService,
     private readonly es: ElasticsearchService,
-    private readonly jobs: JobsService,
   ) {}
 
   @ShopScoped('products.read')
@@ -84,19 +80,4 @@ export class SearchAdminController {
     return this.es.updateSynonyms(body.rules);
   }
 
-  /** Mapping changes: zero-downtime rebuild behind the alias (runs on the worker). */
-  @Firewall({ roles: [Role.ADMIN] })
-  @HttpCode(202)
-  @Post('admin/search/reindex')
-  async reindex() {
-    return {
-      jobId: await this.jobs.enqueue(
-        'search.reindex-products',
-        {},
-        {
-          idempotencyKey: `search-reindex:${new Date().toISOString().slice(0, 13)}`,
-        },
-      ),
-    };
-  }
 }

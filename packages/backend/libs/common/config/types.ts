@@ -194,6 +194,18 @@ export class SecretsManagerConfig {
   payments_page_max: number;
   payments_cursor_secret?: string;
 
+  /** S32: search settings, defaults in `search-config.ts`. */
+  search_budget_ms: number;
+  embedding_budget_ms: number;
+  search_refresh_interval: string;
+  search_tombstone_retention_days: number;
+  search_previous_index_retention_hours: number;
+  search_registry_ttl_ms: number;
+  search_reindex_verify_wait_ms: number;
+  search_boost_weights?: string;
+  search_log_secret?: string;
+  search_id_signing_key?: string;
+
   /** S10: orders settings, defaults in `orders-config.ts`. */
   orders_hold_seconds: number;
   orders_cart_max_lines: number;

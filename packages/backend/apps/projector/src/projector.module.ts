@@ -8,6 +8,7 @@ import {
   OrderBasketsProjector,
   SearchClicksProjector,
   SearchQueriesProjector,
+  SearchProjectorModule,
 } from '@app/domains/discovery';
 import { PurchaseEventsProjector } from '@app/domains/experimentation';
 import {
@@ -85,6 +86,7 @@ import { CacheModule } from '@app/infrastructure/cache/cache.module';
     ProjectionsModule.forProjectors(
       [
         ...ProductProjectorModule.projectors,
+        ...SearchProjectorModule.projectors,
         ...paymentsProjectors,
         UsageProjector,
         FeedFanoutConsumer,
@@ -111,6 +113,7 @@ import { CacheModule } from '@app/infrastructure/cache/cache.module';
       ],
       [
         ProductProjectorModule,
+        SearchProjectorModule,
         IntegrationsCoreModule,
         StoryCacheModule,
         WebhooksCoreModule,

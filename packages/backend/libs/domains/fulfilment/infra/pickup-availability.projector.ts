@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Op } from 'sequelize';
 import { ProductModel as Product } from '@app/domains/catalog';
-import { ElasticsearchService } from '@app/infrastructure/elasticsearch/elasticsearch.service';
+import { SearchEngineClient } from '@app/infrastructure/elasticsearch/search-engine.client';
 import { EventEnvelope } from '@app/infrastructure/events/event-envelope';
 import { Projector } from '@app/infrastructure/projections/projector';
 import { AVAILABILITY_INDEX } from './availability-index';
@@ -25,7 +25,7 @@ export class PickupAvailabilityProjector implements Projector {
 
   constructor(
     @InjectModel(Product) private readonly productModel: typeof Product,
-    private readonly es: ElasticsearchService,
+    private readonly es: SearchEngineClient,
   ) {}
 
   async project(events: EventEnvelope[]): Promise<void> {

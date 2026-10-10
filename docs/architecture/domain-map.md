@@ -285,7 +285,9 @@ uses to get other domains' data.
 ### discovery
 - **Responsibility**: everything a buyer uses to *find* products: search index sync and reindex,
   relevance, autocomplete, "bought together" recommendations, and trending.
-- **Owns (Postgres)**: none. It is a pure **read-model domain** (IX.7 R3).
+- **Owns (Postgres)**: `SearchShopProduct` (shop product search rows), `SearchShopState` (copy of shop
+  status/plan, IX.8), `SearchReindexRun`, `SearchReindexRunHistory`, `SearchSynonymSet`,
+  `SearchSynonymVersion` (S32). Everything else is a **read model** (IX.7 R3).
 - **Other stores**: product index (Elasticsearch), top-K trie snapshot (S3), recommendations and
   trending (Redis), query logs (ClickHouse).
 - **Emits**: `search.performed`, `search.result_clicked`.

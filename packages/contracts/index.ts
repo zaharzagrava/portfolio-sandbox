@@ -6,3 +6,4 @@ export * from './src/catalog';
 export * from './src/orders';
 export * from './src/payments';
 export * from './src/realtime';
+export * from './src/search';

@@ -134,6 +134,9 @@ export class SeedsService {
     'Plan',
     'Price',
     'CommissionRate',
+    // S32: the synonym set is seeded by its migration (version 1)
+    'SearchSynonymSet',
+    'SearchSynonymVersion',
   ];
 
   public getModel(modelType: BisOrder | User | Migration | Outbox) {

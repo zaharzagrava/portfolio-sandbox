@@ -29,7 +29,7 @@ import {
 import { NotificationsWorkerModule } from '@app/domains/notifications';
 import {
   RecommendationsWorkerModule,
-  SearchReindexWorkerModule,
+  SearchWorkerModule,
   AutocompleteWorkerModule,
 } from '@app/domains/discovery';
 import { DiscussionsWorkerModule } from '@app/domains/community';
@@ -86,7 +86,7 @@ import { AuthWorkerModule } from '@app/domains/identity';
     StatementsWorkerModule,
     DiscussionsWorkerModule,
     AutocompleteWorkerModule,
-    SearchReindexWorkerModule,
+    SearchWorkerModule,
     RecommendationsWorkerModule,
     NotificationsWorkerModule,
     LiveWorkerModule,

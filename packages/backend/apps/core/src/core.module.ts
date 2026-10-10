@@ -23,6 +23,7 @@ import {
   TrendingModule,
   RecommendationsModule,
   SearchAdminModule,
+  ProductSearchModule,
   AutocompleteModule,
 } from '@app/domains/discovery';
 import { AdsModule, ShareLinksModule } from '@app/domains/marketing';
@@ -116,6 +117,8 @@ import { OutboxPublisherModule } from '@app/infrastructure/outbox/outbox-publish
     AuthApiModule,
     UsersModule,
     SentryModule.forRoot(),
+    // before the catalog: GET /products/search must be matched before GET /products/:id
+    ProductSearchModule,
     ProductModule,
     ClickHouseModule,
     OutboxPublisherModule,

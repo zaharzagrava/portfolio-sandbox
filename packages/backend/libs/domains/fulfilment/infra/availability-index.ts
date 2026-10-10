@@ -1,5 +1,5 @@
 import { Injectable, OnModuleInit, Logger } from '@nestjs/common';
-import { ElasticsearchService } from '@app/infrastructure/elasticsearch/elasticsearch.service';
+import { SearchEngineClient } from '@app/infrastructure/elasticsearch/search-engine.client';
 
 export const AVAILABILITY_INDEX = 'pickup_availability';
 
@@ -31,7 +31,7 @@ export interface NearbyProduct {
 export class AvailabilityIndex implements OnModuleInit {
   private readonly logger = new Logger(AvailabilityIndex.name);
 
-  constructor(private readonly es: ElasticsearchService) {}
+  constructor(private readonly es: SearchEngineClient) {}
 
   async onModuleInit() {
     const client = this.es.getClient();

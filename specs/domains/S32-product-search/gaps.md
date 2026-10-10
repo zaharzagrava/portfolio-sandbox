@@ -82,3 +82,18 @@ The command was **not run** while writing this spec: the sandbox required an app
 9. Shop search routes on the new table (AS-61–AS-69); remove `shop-product-search.service.ts` raw SQL.
 10. Measurement: signed `searchId`, click endpoint, consumers with DLQ, redaction, dedicated secret, report validation, 90-day expiry on the ClickHouse tables (AS-70–AS-76); jobs `search.refresh-popularity`, `search.backfill-shop-state`, `search.backfill-embeddings`, `search.purge-tombstones`.
 11. Wire apps to the three modules, narrow the barrel (D-8), run `pnpm check:table-ownership --strict` and `pnpm check:boundaries` (AS-80), write the e2e files of `test-plan.md`, delete `search-reindex.e2e-spec.ts` in its old form and the search cases of `catalog/product.e2e-spec.ts`, and record the green run (VII.9).
+
+## Sibling-spec follow-ups
+
+Things other capabilities must adopt because of what S32 changes or assumes. Their specs are not edited from here.
+
+- **S05**: stop calling `ElasticsearchService.searchProducts` from `catalog/application/product.service.ts` and delete the catalog search routes and DTO (`product.controller.ts`, `product.dto.ts:68-137`) once `/products/search` is served by `ProductSearchModule`; delete the `search` entry of `RESERVED_PRODUCT_SEGMENTS` (`api/product-id.pipe.ts:12`) after that; move the old search cases of `product.e2e-spec.ts:66-150` out (S32 re-proves them in `search-query.e2e-spec.ts`); drop `Product.embedding` and `searchVector` only after S32 is live (contract step).
+- **S53**: `products.events` must keep the latest event per `productId` (compaction), including deletes, and `productVersion` must rise strictly per product including on delete (reindex replay and tombstones rely on it).
+- **S03**: add `shopVersion` to `tenancy.shop_offboarding_started`, `tenancy.shop_offboarding_cancelled` and `tenancy.shop_deleted` (S32 orders them by `occurredAt` until then); `ShopQueryService.getShopsByIds` must return `status`, `shopVersion` and `plan` (S32 uses it only in `search.backfill-shop-state`).
+- **S29**: publish `media.gallery_changed v1 {productId, shopId, mediaIds, galleryVersion}` and export `MediaQueryService.getReadyMediaByIds(ids ≤ 500)` returning `urls.thumb`; the media module must be loadable in `apps/projector`. Until then S32 binds a null image resolver (items carry `imageUrl: null`) and consumes a locally defined schema.
+- **S36**: publish `marketing.product_sponsorship_changed v1 {productId, shopId, sponsored, sponsorshipVersion}`; until then no product is sponsored.
+- **S33**: read visible titles only through `ProductTitleSuggester` (replace `ElasticsearchService.suggestTitles` in `application/autocomplete.service.ts`); `search.performed` is keyed by `searchId` (no per-query ordering) and `suggestions` no longer exists in the search response.
+- **S19**: `fulfilment/infra/pickup-availability.projector.ts` and `availability-index.ts` move from `ElasticsearchService` to the generic `SearchEngineClient` (S32 makes this code edit to keep the build green); no shared index or filter.
+- **S46**: assistant product search uses `ProductSearchService.search` (`limit ≤ 20`, `surface: "internal"`).
+- **S50**: `catalogRatePolicies` keeps declaring `search.query` for its other call sites (`experimentation/api/analytics.controller.ts:31`, `catalog-sync/api/sync.controller.ts:63`, `fulfilment/api/pickup.controller.ts:79,92`, `discovery/api/recommendations.controller.ts:21`); those owners replace it with their own names (G-35). The four `discovery.*` policies are declared by S32.
+- **W02 / S48**: the search page sends `limit` and `cursor` (no `from`), sends the `searchId` with each click, reads `items`, `total.exact`, `degraded` and the facet keys; the BFF does not compose search.
