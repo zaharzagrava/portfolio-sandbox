@@ -229,7 +229,7 @@ do not trigger the interactive Stop-hook ping (`SDD_LOOP=1`).
 
 **Self-repair: a failure inside one capability does not end the run.** A failed analysis (a CRITICAL finding), a stuck implement
 pass, a failed gate or a crashed step goes to a separate *repair agent* (fresh context, `doctor-N.log`), which gets a time budget
-(`REPAIR_BUDGET_MIN`, default 60 minutes for the whole run; at most `MAX_REPAIRS_PER_SPEC`, default 2, attempts of up to 25 minutes
+(`REPAIR_BUDGET_MIN`, default 60 minutes for the whole run; at most `MAX_REPAIRS_PER_SPEC`, default 3, attempts of up to 25 minutes
 per capability). It diagnoses the cause, fixes it (it may decide a contradiction and record it in `questions.md`, but never weakens
 a test or a requirement) and the capability is retried. A crashed step is also retried once by itself. If the agent answers
 `DOCTOR: needs human: <why>` or the budget is gone, the capability is **blocked**: `BLOCKED.md` in its spec folder says why, the

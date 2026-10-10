@@ -224,7 +224,7 @@ extra_context() { # $1 = capability id
 # crashed step) the loop does not end the run. A separate repair agent with a fresh context gets a time budget to fix the cause, then
 # the capability is retried. If the agent says a human is needed, or the budget is gone, the capability is marked BLOCKED (BLOCKED.md)
 # and the loop moves on to the next capability that does not depend on it. REPAIR_BUDGET_MIN (60) is shared by the whole run,
-# MAX_REPAIRS_PER_SPEC (2) bounds the attempts per capability, one attempt runs at most 25 minutes.
+# MAX_REPAIRS_PER_SPEC (3) bounds the attempts per capability, one attempt runs at most 25 minutes.
 REPAIR_USED=0
 BLOCKED_LIST="$(mktemp)"
 declare -A DEPS
@@ -348,19 +348,24 @@ ordered_capabilities "$@" | while IFS=$'\t' read -r id domain slug title sources
   fi
 
   # The gate is a hard check, but a failing gate is usually fixable (a missing test, a lint error, a bug the capability exposed):
-  # hand the failure to the agent, then run the gate again. MAX_GATE_REPAIRS (default 2) bounds the attempts.
+  # hand the failure to the agent, then run the gate again. MAX_GATE_REPAIRS (default 3) bounds the attempts.
   attempt=0
   while :; do
     echo "  gate"
     if { MAX_PRIORITY="$limit" gate_extras "$id" "$domain" "$dir" && MAX_PRIORITY="$limit" gate "$domain"; } >"$dir/.gate.log" 2>&1; then break; fi
     attempt=$((attempt + 1))
-    if (( attempt > ${MAX_GATE_REPAIRS:-2} )); then
+    if (( attempt > ${MAX_GATE_REPAIRS:-3} )); then
       echo "FAIL  $id: gate (see $dir/.gate.log)" >&2; echo "$id gate failed" > "$STATE_FILE"; exit 20
     fi
-    echo "  gate failed: asking the agent to repair it (attempt $attempt of ${MAX_GATE_REPAIRS:-2})"
+    echo "  gate failed: asking the agent to repair it (attempt $attempt of ${MAX_GATE_REPAIRS:-3})"
+    : > "$dir/.repaired-by-agent"
     step "$dir" "repair-$attempt" "/speckit-implement $CONTEXT $(repair_prompt "$dir/.gate.log") $LIMIT_TEXT"
   done
   date -u +%FT%TZ > "$done_marker"
+  if [[ -f "$dir/.repaired-by-agent" ]]; then
+    rm -f "$dir/.repaired-by-agent"
+    notify ok "SDD: $id fixed and built" "The repair worked: $id${limit:+ ($limit)} passed its gate and is committed. The run continues."
+  fi
   if [[ -n "${COMMIT:-}" ]]; then
     git add -A && git commit -q -m "feat($domain): $id $title${limit:+ ($limit stories)}" -m "Spec: $dir/spec.md"
     push_branch
@@ -381,10 +386,10 @@ ordered_capabilities "$@" | while IFS=$'\t' read -r id domain slug title sources
   detail="$(cat "$STATE_FILE" 2>/dev/null)"
   repair_tries=$((repair_tries + 1))
   budget_left=$(( ${REPAIR_BUDGET_MIN:-60} * 60 - REPAIR_USED ))
-  if (( repair_tries <= ${MAX_REPAIRS_PER_SPEC:-2} && budget_left >= 120 )); then
+  if (( repair_tries <= ${MAX_REPAIRS_PER_SPEC:-3} && budget_left >= 120 )); then
     cap=$(( budget_left < 1500 ? budget_left : 1500 )); t0=$SECONDS
     echo "  repair agent for $id: $detail (repair budget left: $((budget_left / 60)) min)"
-    notify info "SDD: $id hit a problem, repair in progress" "$detail. The repair agent is working on it (attempt $repair_tries of ${MAX_REPAIRS_PER_SPEC:-2}, repair budget left $((budget_left / 60)) min). Nothing to do yet; you will get another message if it gets blocked."
+    notify info "SDD: $id hit a problem, repair in progress" "$detail. The repair agent is working on it (attempt $repair_tries of ${MAX_REPAIRS_PER_SPEC:-3}, repair budget left $((budget_left / 60)) min). Nothing to do yet; you will get another message if it gets blocked."
     ( export PASS_TIMEOUT_S=$cap; step "$dir" "doctor-$repair_tries" "$(doctor_prompt "$id" "$dir" "$detail")" ) && drc=0 || drc=$?
     REPAIR_USED=$(( REPAIR_USED + SECONDS - t0 ))
     case $drc in 75|76|77) exit "$drc" ;; esac
@@ -393,6 +398,7 @@ ordered_capabilities "$@" | while IFS=$'\t' read -r id domain slug title sources
         detail="needs a human: $(grep -o 'DOCTOR: needs human:.*' "$dir/.doctor-$repair_tries.log" | head -1 | cut -c1-300)"
       else
         echo "  repair agent finished; retrying $id"
+        : > "$dir/.repaired-by-agent"
         notify info "SDD: $id repaired, retrying" "The repair agent says it fixed the problem; the loop is building $id again. Its decisions are written in the spec folder (questions.md, BLOCKED.md if any)."
         continue
       fi
