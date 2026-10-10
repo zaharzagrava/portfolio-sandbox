@@ -1,204 +1,213 @@
-import {
-  ConflictException,
-  Injectable,
-  NotFoundException,
-  Optional,
-  UnprocessableEntityException,
-} from '@nestjs/common';
-import { InjectModel } from '@nestjs/sequelize';
-import { Op, QueryTypes, Sequelize, UniqueConstraintError } from 'sequelize';
-import { InjectConnection } from '@nestjs/sequelize';
-import { createHash, randomBytes } from 'node:crypto';
-import Shop from '../infra/models/shop.model';
-import ShopMembership, {
-  ShopRole,
-} from '../infra/models/shop-membership.model';
-import ShopInvite from '../infra/models/shop-invite.model';
-import ShopDirectory from '../infra/models/shop-directory.model';
-import { UserModel as User, Role } from '@app/domains/identity';
-import { CacheService } from '@app/infrastructure/cache/cache.service';
-import { TransactionRunner } from '@app/infrastructure/context';
+import { Inject, Injectable } from '@nestjs/common';
+import { v7 as uuidv7 } from 'uuid';
+import { CLOCK, Clock } from '@app/common/core/clock';
 import { ApiConfigService } from '@app/common/config';
-import { MembershipService } from './membership.service';
-import { ShopTransactionRunner } from '../infra/shop-transaction';
+import { TransactionRunner } from '@app/infrastructure/context';
+import { OutboxService } from '@app/infrastructure/outbox/outbox.service';
+import {
+  DIRECTORY_REPOSITORY,
+  MEMBERSHIP_REPOSITORY,
+  SHOP_REPOSITORY,
+  STATUS_HISTORY_REPOSITORY,
+  TENANT_TRANSACTIONS,
+  type DirectoryRepository,
+  type MembershipRepository,
+  type ShopRepository,
+  type StatusHistoryRepository,
+  type TenantTransactions,
+} from '../domain/ports';
+import { MemberAdded, ShopCreated, ShopUpdated } from '../domain/events';
+import {
+  Domain_InvalidQueryError,
+  Domain_RegionNotAllowedError,
+  Domain_ShopLimitReachedError,
+  Domain_ShopNotFoundError,
+  Domain_SlugReservedError,
+  Domain_SlugTakenError,
+} from '../domain/errors';
+import { decodeKeyset, encodeKeyset, parseLimit } from '../domain/cursor';
+import { checkSlug } from '../domain/slug-policy';
+import { MAX_OWNED_SHOPS } from '../domain/seat-policy';
+import type { ShopRole } from '../domain/shop-types';
+import { toShopDto } from './shop.mapper';
+import { TenancyAudit } from './tenancy-observability';
 
-const INVITE_TTL_MS = 7 * 86_400_000;
-const sha256 = (v: string) => createHash('sha256').update(v).digest('hex');
+export const DEFAULT_REGIONS = ['eu-central-1', 'us-east-1'];
 
+/** Creating, reading and renaming shops (FR-001 to FR-005). One transaction per mutation, event in the same one. */
 @Injectable()
 export class ShopService {
   constructor(
-    @InjectModel(Shop) private readonly shopModel: typeof Shop,
-    @InjectModel(ShopMembership)
-    private readonly membershipModel: typeof ShopMembership,
-    @InjectModel(ShopInvite) private readonly inviteModel: typeof ShopInvite,
-    @InjectModel(ShopDirectory)
-    private readonly directoryModel: typeof ShopDirectory,
-    @InjectModel(User) private readonly userModel: typeof User,
-    @InjectConnection() private readonly sequelize: Sequelize,
-    private readonly tx: TransactionRunner,
-    private readonly shopTx: ShopTransactionRunner,
-    private readonly memberships: MembershipService,
+    @Inject(SHOP_REPOSITORY) private readonly shops: ShopRepository,
+    @Inject(MEMBERSHIP_REPOSITORY)
+    private readonly members: MembershipRepository,
+    @Inject(DIRECTORY_REPOSITORY)
+    private readonly directory: DirectoryRepository,
+    @Inject(STATUS_HISTORY_REPOSITORY)
+    private readonly history: StatusHistoryRepository,
+    @Inject(TENANT_TRANSACTIONS) private readonly shopTx: TenantTransactions,
+    @Inject(CLOCK) private readonly clock: Clock,
+    private readonly runner: TransactionRunner,
+    private readonly outbox: OutboxService,
     private readonly config: ApiConfigService,
-    @Optional() private readonly cache?: CacheService,
+    private readonly audit: TenancyAudit,
   ) {}
 
-  /**
-   * Onboarding: shop + OWNER membership + directory entry (pooled cell) atomically. Opening a shop makes a
-   * plain USER a SELLER (staff roles are kept); the new role reaches the access token on the next refresh.
-   */
-  async create(ownerId: string, name: string, slug: string): Promise<Shop> {
-    try {
-      const shop = await this.tx.run(async () => {
-        const shop = await this.shopModel.create({ name, slug });
-        await this.membershipModel.create({
-          shopId: shop.id,
+  /** Shop, OWNER membership, pooled directory entry, history row and events, atomically; writes nothing of identity's. */
+  async create(
+    ownerId: string,
+    input: { name: string; slug: string; region?: string },
+  ) {
+    const slugCheck = checkSlug(input.slug);
+    if (slugCheck === 'invalid')
+      throw new Domain_InvalidQueryError('slug', 'invalid_slug');
+    if (slugCheck === 'reserved') throw new Domain_SlugReservedError();
+    const regions = this.regions();
+    const region = input.region ?? regions[0];
+    if (!regions.includes(region)) throw new Domain_RegionNotAllowedError();
+
+    const id = uuidv7();
+    const shop = await this.shopTx.inShop(
+      id,
+      async () => {
+        await this.shops.lockOwnerCreation(ownerId);
+        if ((await this.shops.countOwnedBy(ownerId)) >= MAX_OWNED_SHOPS)
+          throw new Domain_ShopLimitReachedError();
+        const now = this.clock.now();
+        const created = await this.shops.insert({
+          id,
+          name: input.name,
+          slug: input.slug,
+          region,
+          now,
+        });
+        if (!created) throw new Domain_SlugTakenError();
+        await this.directory.insert(id, 'pooled', region, now);
+        await this.members.insert({
+          shopId: id,
           userId: ownerId,
           role: 'OWNER',
+          source: 'owner',
+          now,
         });
-        await this.directoryModel.create({ shopId: shop.id });
-        await this.userModel.update(
-          { role: Role.SELLER },
-          { where: { id: ownerId, role: Role.USER } },
-        );
-        return shop;
-      });
-      await this.cache?.invalidate([`auth:user:v1:${ownerId}`]);
-      return shop;
-    } catch (error) {
-      if (error instanceof UniqueConstraintError)
-        throw new ConflictException('Slug is taken');
-      throw error;
-    }
+        await this.history.insert({
+          shopId: id,
+          from: null,
+          to: 'ACTIVE',
+          actor: ownerId,
+          reason: null,
+          at: now,
+        });
+        await this.outbox.append([
+          ShopCreated.create(id, created.shopVersion, {
+            shopId: id,
+            ownerId,
+            name: created.name,
+            slug: created.slug,
+            plan: created.plan,
+            region,
+            shopVersion: created.shopVersion,
+          }),
+          MemberAdded.create(id, created.shopVersion, {
+            shopId: id,
+            userId: ownerId,
+            role: 'OWNER',
+            source: 'owner',
+          }),
+        ]);
+        return created;
+      },
+      { userId: ownerId },
+    );
+    this.audit.record('shop.created', { shopId: id, actorId: ownerId });
+    return toShopDto(shop, 'OWNER');
   }
 
-  async mine(userId: string) {
-    return this.sequelize.query<{
+  /** The caller proved membership in the guard; `role` is what it resolved. */
+  async get(shopId: string, role: ShopRole) {
+    const shop = await this.shops.findById(shopId);
+    if (!shop || shop.status === 'DELETED')
+      throw new Domain_ShopNotFoundError();
+    return toShopDto(shop, role);
+  }
+
+  async rename(shopId: string, actorId: string, name: string, role: ShopRole) {
+    const shop = await this.shopTx.inShop(
+      shopId,
+      async () => {
+        const updated = await this.shops.patchName(
+          shopId,
+          name,
+          this.clock.now(),
+        );
+        if (!updated) throw new Domain_ShopNotFoundError();
+        await this.outbox.append(
+          ShopUpdated.create(shopId, updated.shopVersion, {
+            shopId,
+            name: updated.name,
+            slug: updated.slug,
+            shopVersion: updated.shopVersion,
+          }),
+        );
+        return updated;
+      },
+      { userId: actorId },
+    );
+    this.audit.record('shop.updated', { shopId, actorId });
+    return toShopDto(shop, role);
+  }
+
+  /** "My shops" (FR-005): keyset pages in membership order; sandbox and deleted shops are not listed. */
+  async mine(
+    userId: string,
+    query: { limit?: string; cursor?: string },
+  ): Promise<{
+    items: Array<{
       id: string;
       name: string;
       slug: string;
       plan: string;
+      status: string;
       role: ShopRole;
-    }>(
-      `SELECT s.id, s.name, s.slug, s.plan, m.role FROM "ShopMembership" m JOIN "Shop" s ON s.id = m."shopId"
-       WHERE m."userId" = :userId ORDER BY m."createdAt"`,
-      { type: QueryTypes.SELECT, replacements: { userId } },
+    }>;
+    nextCursor: string | null;
+  }> {
+    const limit = parseLimit(query.limit);
+    if (limit === null)
+      throw new Domain_InvalidQueryError('limit', 'invalid_limit');
+    let after: { key: string; id: string } | null = null;
+    if (query.cursor !== undefined) {
+      after = decodeKeyset(query.cursor);
+      if (!after)
+        throw new Domain_InvalidQueryError('cursor', 'invalid_cursor');
+    }
+    const rows = await this.shopTx.asUser(userId, () =>
+      this.shops.listForUser(userId, after, limit + 1),
     );
+    const page = rows.slice(0, limit);
+    const last = page[page.length - 1];
+    return {
+      items: page.map((r) => ({
+        id: r.id,
+        name: r.name,
+        slug: r.slug,
+        plan: r.plan,
+        status: r.status,
+        role: r.role,
+      })),
+      nextCursor:
+        rows.length > limit && last
+          ? encodeKeyset(last.cursorKey, last.id)
+          : null,
+    };
   }
 
-  async get(shopId: string) {
-    return this.shopModel.findByPk(shopId, { raw: true });
-  }
-
-  async members(shopId: string) {
-    return this.sequelize.query<{
-      userId: string;
-      email: string | null;
-      role: ShopRole;
-    }>(
-      `SELECT m."userId", u.email, m.role FROM "ShopMembership" m JOIN "User" u ON u.id = m."userId"
-       WHERE m."shopId" = :shopId ORDER BY m."createdAt"`,
-      { type: QueryTypes.SELECT, replacements: { shopId } },
-    );
-  }
-
-  /** Invite token is random, single-use, stored hashed; the link is delivered by email (SD-17). */
-  async invite(
-    shopId: string,
-    invitedBy: string,
-    email: string,
-    role: ShopInvite['role'],
-  ) {
-    const token = randomBytes(24).toString('base64url');
-    await this.shopTx.inShop(shopId, () =>
-      this.inviteModel.create({
-        shopId,
-        email,
-        role,
-        invitedBy,
-        tokenHash: sha256(token),
-        expiresAt: new Date(Date.now() + INVITE_TTL_MS),
-      }),
-    );
-    return { inviteUrl: `${this.config.get('front_host')}/invites/${token}` };
-  }
-
-  async listInvites(shopId: string) {
-    // No explicit WHERE: RLS returns only this shop's invites (the backstop doing the filtering).
-    return this.shopTx.inShop(shopId, () =>
-      this.inviteModel.findAll({ where: { acceptedAt: null }, raw: true }),
-    );
-  }
-
-  /** The invitee has no shop context yet → an explicit, audited cross-tenant lookup by token hash. */
-  async acceptInvite(userId: string, userEmail: string | null, token: string) {
-    return this.shopTx.crossTenant('invite.accept', async () => {
-      const invite = await this.inviteModel.findOne({
-        where: {
-          tokenHash: sha256(token),
-          acceptedAt: null,
-          expiresAt: { [Op.gt]: new Date() },
-        },
-      });
-      if (!invite) throw new NotFoundException('Invite not found or expired');
-      if (invite.email !== userEmail)
-        throw new NotFoundException('Invite not found or expired');
-
-      await this.membershipModel.upsert({
-        shopId: invite.shopId,
-        userId,
-        role: invite.role,
-      });
-      await invite.update({ acceptedAt: new Date() });
-      await this.memberships.invalidate(userId, invite.shopId);
-      return { shopId: invite.shopId, role: invite.role };
-    });
-  }
-
-  /**
-   * Invariant spanning rows: "a shop always keeps ≥ 1 OWNER". Two owners
-   * demoting each other concurrently both see "another owner exists" under
-   * READ COMMITTED (write skew, lesson 03/02 §2). SERIALIZABLE detects the
-   * conflict and aborts one; runSerializable retries it, and the retry sees
-   * the truth and fails the invariant.
-   */
-  async changeRole(
-    shopId: string,
-    userId: string,
-    role: ShopRole,
-  ): Promise<void> {
-    await this.tx.runSerializable(async () => {
-      const member = await this.membershipModel.findOne({
-        where: { shopId, userId },
-      });
-      if (!member) throw new NotFoundException('Member not found');
-      if (member.role === 'OWNER' && role !== 'OWNER')
-        await this.assertAnotherOwner(shopId, userId);
-      await member.update({ role });
-    });
-    await this.memberships.invalidate(userId, shopId);
-  }
-
-  async removeMember(shopId: string, userId: string): Promise<void> {
-    await this.tx.runSerializable(async () => {
-      const member = await this.membershipModel.findOne({
-        where: { shopId, userId },
-      });
-      if (!member) throw new NotFoundException('Member not found');
-      if (member.role === 'OWNER')
-        await this.assertAnotherOwner(shopId, userId);
-      await member.destroy();
-    });
-    await this.memberships.invalidate(userId, shopId);
-  }
-
-  private async assertAnotherOwner(shopId: string, exceptUserId: string) {
-    const others = await this.membershipModel.count({
-      where: { shopId, role: 'OWNER', userId: { [Op.ne]: exceptUserId } },
-    });
-    if (others === 0)
-      throw new UnprocessableEntityException(
-        'A shop must keep at least one owner',
-      );
+  private regions(): string[] {
+    const configured = this.config.get('tenancy_regions');
+    const list = (configured ?? '')
+      .split(',')
+      .map((r) => r.trim())
+      .filter(Boolean);
+    return list.length > 0 ? list : DEFAULT_REGIONS;
   }
 }

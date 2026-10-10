@@ -12,7 +12,7 @@ import re, sys
 PHASE = re.compile(r'^##\s+Phase\s+\d+\s*[:.-]\s*(.*)$')
 TASK = re.compile(r'^-\s+\[([ xX])\]\s+(.*)$')
 PRIORITY = re.compile(r'\(\s*(?:Priority:\s*)?P(\d)\b')
-FULL_ONLY = re.compile(r'polish|cross-cutting|final|closure|convergence|converge', re.I)
+FULL_ONLY = re.compile(r'polish|cross-cutting|final|finish|cleanup|closure|convergence|converge', re.I)
 
 
 def included(title, limit):

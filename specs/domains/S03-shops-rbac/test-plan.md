@@ -95,5 +95,8 @@ Constitution VII.8 table: one row per acceptance scenario in [`spec.md`](spec.md
 | AS-81 audit lines and metric labels | `tenancy-observability.e2e-spec.ts` | — | — |
 | AS-82 `GET /shop-roles` | `shop-roles.e2e-spec.ts` | — | — |
 | AS-83 realtime topic policy | `shop-members.e2e-spec.ts` | — | — |
+| FR-090 `429` + `Retry-After` for `tenancy.shop-create.user` (5/h) and `tenancy.shop-write.shop` (120/min) | `shop-lifecycle.e2e-spec.ts`, `shop-members.e2e-spec.ts` | — | — |
+| FR-090 `429` + `Retry-After` for `tenancy.invite-accept.ip` (30/min) | `shop-invites.e2e-spec.ts` | — | — |
+| III.12 non-zero `statement_timeout` on pooled, cell and probe connections | `tenancy-startup.e2e-spec.ts`, `tenancy-isolation.e2e-spec.ts` | — | — |
 
 Async consumers (VII.4): every consumer named above is covered by a duplicate-delivery row and an invalid-payload row (AS-47/AS-48, AS-72, AS-73). The producers' events are consumed and tested by S01 (promotion), S28 (mail), S51 (subscription closing) and the shop-owning domains (purge); the event envelopes are asserted here (AS-78).

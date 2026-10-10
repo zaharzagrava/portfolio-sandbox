@@ -370,6 +370,11 @@ export class ApiConfigService {
             verify: joi.string().optional().allow(''),
             name: 'CORS_ALLOWED_ORIGINS',
           },
+          /** Comma-separated regions a shop may be created in (S03 FR-002); the first is the default. */
+          tenancy_regions: {
+            verify: joi.string().optional().allow(''),
+            name: 'TENANCY_REGIONS',
+          },
           s3_endpoint: {
             verify: joi.string().optional().allow(''),
             name: 'S3_ENDPOINT',

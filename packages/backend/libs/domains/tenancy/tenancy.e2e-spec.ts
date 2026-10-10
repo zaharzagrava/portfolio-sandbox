@@ -1,223 +1,198 @@
 import { QueryTypes } from 'sequelize';
-import { INestApplication } from '@nestjs/common';
-import request from 'supertest';
-import { getModelToken } from '@nestjs/sequelize';
-import { v4 } from 'uuid';
-import { generateTestingModule } from '@app/test/utils/global-modules';
-import { inParallel } from '@app/test/utils/async-helpers';
-import { SeedsModule } from '@app/test/seeds/seeds.module';
-import { SeedsService } from '@app/test/seeds/seeds.service';
-import { RateLimitModule } from '@app/infrastructure/rate-limit/rate-limit.module';
-import { CacheModule } from '@app/infrastructure/cache/cache.module';
-import { ProductModule } from '@app/domains/catalog';
-import { UserModel as User } from '@app/domains/identity';
-import { issueSession } from '@app/test/seeds/session.fixture';
-import ShopInvite from './infra/models/shop-invite.model';
-import ShopMembership from './infra/models/shop-membership.model';
-import { TenancyModule } from './tenancy.module';
-import { ShopService } from './application/shop.service';
+import { Sequelize } from 'sequelize-typescript';
+import { outboxRowsFor } from '@app/common/testing/outbox-rows';
+import {
+  addMember,
+  createInvite,
+  createShop,
+} from '@app/test/utils/tenancy-fixtures';
+import { connectAs, ensureProbeRole } from '@app/test/utils/tenancy-roles';
+import {
+  createTenancyApp,
+  type TenancyTestApp,
+  type TestUser,
+} from './testing/tenancy-app';
 
-/** SD-02 against real Postgres (RLS) + Redis + DynamoDB (sessions). */
+const PROBE = 'tenancy_probe_legacy';
+
+/**
+ * The original SD-02 end-to-end cases (BOLA, invite → accept → role, write skew, RLS backstop, cache invalidation,
+ * seller promotion), kept as one regression spec on the S03 API. Each case is also covered in depth by the
+ * feature-named specs next to this file.
+ */
 describe('Multi-tenant shops (e2e)', () => {
-  let app: INestApplication;
-  let seedsService: SeedsService;
-  let shops: ShopService;
+  let t: TenancyTestApp;
+  let sequelize: Sequelize;
 
-  const http = () => request(app.getHttpServer());
+  const sql = <R extends object>(
+    query: string,
+    replacements: Record<string, unknown> = {},
+  ) => sequelize.query<R>(query, { type: QueryTypes.SELECT, replacements });
+  const probeAs = (user: TestUser, shopId: string, permission: string) =>
+    t.as(user).get(`/api/probe/shop/${permission}`).set('X-Shop-Id', shopId);
 
   beforeAll(async () => {
-    const moduleRef = await generateTestingModule(
-      [TenancyModule, ProductModule, RateLimitModule, CacheModule, SeedsModule],
-      {
-        stores: ['redis', 'dynamo'],
-      },
-    );
-    app = moduleRef.createNestApplication();
-    app.setGlobalPrefix('api');
-    await app.init();
-    seedsService = app.get(SeedsService);
-    shops = app.get(ShopService);
+    t = await createTenancyApp();
+    sequelize = t.app.get(Sequelize);
   });
-
-  afterAll(async () => {
-    await app.close();
-  });
-
+  afterAll(() => t.close());
   beforeEach(async () => {
-    await seedsService.clean();
+    await t.reset();
   });
 
-  /** Registers a user through the real auth flow and returns a bearer header + id. */
-  const user = async () => {
-    const email = `u-${v4()}@mail.com`;
-    const created = await app
-      .get<typeof User>(getModelToken(User))
-      .create({ email });
-    const session = await issueSession(app, created);
-    expect(session.bearer).toMatch(/^Bearer /);
-    return {
-      id: created.id,
-      email,
-      refreshToken: session.refreshToken as string,
-      auth: { Authorization: session.bearer },
-    };
-  };
+  it('S03 AS-09: BOLA: a member of shop A gets 404 (not 403) for shop B and its members', async () => {
+    const alice = await t.newUser();
+    const bob = await t.newUser();
+    const shopA = await createShop(t.app, alice);
+    const shopB = await createShop(t.app, bob);
 
-  const shopOf = async (owner: { auth: Record<string, string> }) =>
-    (
-      await http()
-        .post('/api/shops')
-        .set(owner.auth)
-        .send({ name: 'Acme', slug: `acme-${v4().slice(0, 8)}` })
-        .expect(201)
-    ).body.id as string;
-
-  it('BOLA: a member of shop A gets 404 (not 403) for shop B and its members', async () => {
-    const alice = await user();
-    const bob = await user();
-    const shopA = await shopOf(alice);
-    const shopB = await shopOf(bob);
-
-    await http().get(`/api/shops/${shopA}`).set(alice.auth).expect(200);
-    await http().get(`/api/shops/${shopB}`).set(alice.auth).expect(404);
-    await http().get(`/api/shops/${shopB}/members`).set(alice.auth).expect(404);
-    await http()
-      .post(`/api/products/shops/${shopB}`)
-      .set(alice.auth)
-      .send({
-        title: 'x',
-        description: 'x',
-        brand: 'x',
-        category: 'x',
-        price: 1,
-      })
-      .expect(404);
+    await t.as(alice).get(`/api/shops/${shopA.id}`).expect(200);
+    const foreign = await t.as(alice).get(`/api/shops/${shopB.id}`).expect(404);
+    expect(foreign.body.code).toBe('shop_not_found');
+    await t.as(alice).get(`/api/shops/${shopB.id}/members`).expect(404);
+    await probeAs(alice, shopB.id, 'shop.read').expect(404);
+    await probeAs(alice, shopA.id, 'shop.read').expect(200);
   });
 
-  it('invite → accept → role permissions: VIEWER can read but not write products', async () => {
-    const owner = await user();
-    const viewer = await user();
-    const shopId = await shopOf(owner);
+  it('S03 AS-32: invite → accept → role permissions: VIEWER can read but not manage, and the invite is single use', async () => {
+    const owner = await t.newUser();
+    const viewer = await t.newUser();
+    const shop = await createShop(t.app, owner);
 
-    const { inviteUrl } = (
-      await http()
-        .post(`/api/shops/${shopId}/invites`)
-        .set(owner.auth)
-        .send({ email: viewer.email, role: 'VIEWER' })
-        .expect(201)
-    ).body;
-    const token = inviteUrl.split('/').pop();
-    await http()
+    const created = await t
+      .as(owner)
+      .post(`/api/shops/${shop.id}/invites`)
+      .send({ email: viewer.email, role: 'VIEWER' })
+      .expect(201);
+    expect(JSON.stringify(created.body)).not.toContain('token');
+    const [{ body }] = (await outboxRowsFor(t.app, shop.id))
+      .filter((e) => e.kind === 'task')
+      .map((e) => e.payload as { body: { token: string } });
+    const token = body.token;
+    await t
+      .as(viewer)
       .post('/api/shop-invites/accept')
-      .set(viewer.auth)
       .send({ token })
       .expect(201);
 
-    await http().get(`/api/shops/${shopId}`).set(viewer.auth).expect(200);
-    await http()
-      .post(`/api/products/shops/${shopId}`)
-      .set(viewer.auth)
-      .send({
-        title: 'AirPods',
-        description: 'x',
-        brand: 'Apple',
-        category: 'audio',
-        price: 24900,
-      })
-      .expect(403);
+    await t.as(viewer).get(`/api/shops/${shop.id}`).expect(200);
+    await probeAs(viewer, shop.id, 'shop.read').expect(200);
+    await probeAs(viewer, shop.id, 'shop.manage').expect(403);
 
-    // single use
-    await http()
+    await t
+      .as(viewer)
       .post('/api/shop-invites/accept')
-      .set(viewer.auth)
       .send({ token })
       .expect(404);
   });
 
-  it('write skew: two owners demoting each other at the same time cannot leave the shop ownerless', async () => {
-    const a = await user();
-    const b = await user();
-    const shopId = await shopOf(a);
-    await app
-      .get<typeof ShopMembership>(getModelToken(ShopMembership))
-      .create({ shopId, userId: b.id, role: 'OWNER' });
+  it('S03 AS-23: write skew: two owners demoting each other at the same time cannot leave the shop ownerless', async () => {
+    const a = await t.newUser();
+    const b = await t.newUser();
+    const shop = await createShop(t.app, a);
+    await addMember(t.app, shop.id, b.id, 'OWNER', 'invite');
 
-    const results = await inParallel(2, (i) =>
-      shops.changeRole(shopId, i === 0 ? a.id : b.id, 'ADMIN'),
+    const results = await Promise.all(
+      [a, b].map((u) =>
+        t
+          .as(u)
+          .patch(`/api/shops/${shop.id}/members/${u.id}`)
+          .send({ role: 'ADMIN' }),
+      ),
     );
 
-    expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(1);
-    const owners = (await shops.members(shopId)).filter(
-      (m) => m.role === 'OWNER',
+    expect(results.filter((r) => r.status === 204)).toHaveLength(1);
+    expect(results.filter((r) => r.status === 409)).toHaveLength(1);
+    const owners = await sql(
+      `SELECT "userId" FROM "ShopMembership" WHERE "shopId" = :shopId AND "role" = 'OWNER'`,
+      { shopId: shop.id },
     );
     expect(owners).toHaveLength(1);
   });
 
-  it('RLS backstop: invites are invisible outside their shop transaction', async () => {
-    const owner = await user();
-    const shopId = await shopOf(owner);
-    await http()
-      .post(`/api/shops/${shopId}/invites`)
-      .set(owner.auth)
-      .send({ email: `x-${v4()}@mail.com`, role: 'STAFF' })
-      .expect(201);
-
-    // Superusers bypass RLS even with FORCE, and the test DB connects as one - so probe the policy as a plain role.
-    const inviteModel = app.get<typeof ShopInvite>(getModelToken(ShopInvite));
-    const sequelize = inviteModel.sequelize!;
-    await sequelize.query(
-      `DO $$ BEGIN CREATE ROLE rls_probe NOLOGIN NOSUPERUSER NOBYPASSRLS; EXCEPTION WHEN duplicate_object THEN NULL; END $$`,
-    );
-    await sequelize.query(`GRANT SELECT ON "ShopInvite" TO rls_probe`);
-    const visible = await sequelize.transaction(async (transaction) => {
-      await sequelize.query('SET LOCAL ROLE rls_probe', { transaction });
-      const [row] = await sequelize.query<{ n: number }>(
-        `SELECT count(*)::int AS n FROM "ShopInvite"`,
-        { type: QueryTypes.SELECT, transaction },
-      );
-      return row.n;
+  it('S03 AS-57: RLS backstop: invites are invisible outside their shop transaction', async () => {
+    const owner = await t.newUser();
+    const shop = await createShop(t.app, owner);
+    await createInvite(t.app, shop.id, {
+      email: 'x@example.com',
+      role: 'STAFF',
+      invitedBy: owner.id,
     });
-    expect(visible).toBe(0); // no app.shop_id set → policy filters everything
-    expect(await shops.listInvites(shopId)).toHaveLength(1);
+
+    // The test database connects as a superuser, which bypasses RLS even with FORCE: probe the policy as a plain role.
+    await ensureProbeRole(sequelize, { name: PROBE });
+    const probe = connectAs(sequelize, PROBE);
+    try {
+      const visible = await probe.transaction(async (transaction) => {
+        const [row] = await probe.query<{ n: number }>(
+          `SELECT count(*)::int AS n FROM "ShopInvite"`,
+          { type: QueryTypes.SELECT, transaction },
+        );
+        return row.n;
+      });
+      expect(visible).toBe(0); // no app.shop_id set → the policy filters everything
+      const scoped = await probe.transaction(async (transaction) => {
+        await probe.query(`SELECT set_config('app.shop_id', :id, true)`, {
+          replacements: { id: shop.id },
+          transaction,
+        });
+        const [row] = await probe.query<{ n: number }>(
+          `SELECT count(*)::int AS n FROM "ShopInvite"`,
+          { type: QueryTypes.SELECT, transaction },
+        );
+        return row.n;
+      });
+      expect(scoped).toBe(1);
+    } finally {
+      await probe.close();
+    }
+    const listed = await t.as(owner).get(`/api/shops/${shop.id}/invites`);
+    expect(listed.status).toBe(200);
+    expect(listed.body.items).toHaveLength(1);
   });
 
-  it('membership changes take effect immediately (cache invalidated)', async () => {
-    const owner = await user();
-    const staff = await user();
-    const shopId = await shopOf(owner);
-    await app
-      .get<typeof ShopMembership>(getModelToken(ShopMembership))
-      .create({ shopId, userId: staff.id, role: 'STAFF' });
+  it('S03 AS-13: membership changes take effect immediately (cache invalidated)', async () => {
+    const owner = await t.newUser();
+    const staff = await t.newUser();
+    const shop = await createShop(t.app, owner);
+    await addMember(t.app, shop.id, staff.id, 'STAFF');
 
-    await http().get(`/api/shops/${shopId}`).set(staff.auth).expect(200); // warms the membership cache
-    await http()
-      .delete(`/api/shops/${shopId}/members/${staff.id}`)
-      .set(owner.auth)
+    await t.as(staff).get(`/api/shops/${shop.id}`).expect(200); // warms the authorization cache
+    await t
+      .as(owner)
+      .delete(`/api/shops/${shop.id}/members/${staff.id}`)
       .expect(204);
-    await http().get(`/api/shops/${shopId}`).set(staff.auth).expect(404);
+    await t.as(staff).get(`/api/shops/${shop.id}`).expect(404);
+    await probeAs(staff, shop.id, 'shop.read').expect(404);
   });
 
-  it('opening a shop makes the owner a SELLER; the next refresh issues a SELLER token', async () => {
-    const owner = await user();
-    expect(
-      (await http().get('/api/auth/me').set(owner.auth).expect(200)).body.role,
-    ).toBe('USER');
+  it('S03 AS-01: opening a shop makes the owner an OWNER member, lists it under mine, and does not touch the account', async () => {
+    const owner = await t.newUser();
+    const before = await sql<{ role: string }>(
+      `SELECT "role" FROM "User" WHERE "id" = :id`,
+      { id: owner.id },
+    );
+    expect(before[0].role).toBe('USER');
 
-    await shopOf(owner);
-    const refreshed = (
-      await http()
-        .post('/api/auth/refresh')
-        .send({ refreshToken: owner.refreshToken })
-        .expect(200)
-    ).body;
-    expect(refreshed.user.role).toBe('SELLER');
-    const me = await http()
-      .get('/api/auth/me')
-      .set({ Authorization: `Bearer ${refreshed.accessToken.token}` })
-      .expect(200);
-    expect(me.body.role).toBe('SELLER');
-    expect(
-      (await http().get('/api/shops/mine').set(owner.auth).expect(200)).body,
-    ).toHaveLength(1);
+    const res = await t
+      .as(owner)
+      .post('/api/shops')
+      .send({ name: 'Acme', slug: 'acme-legacy' })
+      .expect(201);
+    expect(res.body.slug).toBe('acme-legacy');
+
+    const after = await sql<{ role: string }>(
+      `SELECT "role" FROM "User" WHERE "id" = :id`,
+      { id: owner.id },
+    );
+    expect(after[0].role).toBe('USER');
+    const mine = await t.as(owner).get('/api/shops/mine').expect(200);
+    expect(mine.body.items).toHaveLength(1);
+    expect(mine.body.items[0].id).toBe(res.body.id);
+    const member = await sql<{ role: string; source: string }>(
+      `SELECT "role","source" FROM "ShopMembership" WHERE "shopId" = :id AND "userId" = :u`,
+      { id: res.body.id, u: owner.id },
+    );
+    expect(member).toEqual([{ role: 'OWNER', source: 'owner' }]);
   });
 });

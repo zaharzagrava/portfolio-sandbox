@@ -125,6 +125,7 @@ export class SecretsManagerConfig {
   db_acquire_timeout_ms?: number;
   /** Comma-separated CORS allowlist. Unset = reflect origin (legacy local behaviour). */
   cors_allowed_origins?: string;
+  tenancy_regions?: string;
   /** MinIO locally; unset in AWS (real S3). */
   s3_endpoint?: string;
   s3_access_key_id?: string;

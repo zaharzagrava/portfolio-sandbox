@@ -67,6 +67,7 @@ export const OWNERSHIP = {
   ShopInvite: 'domain:tenancy',
   ShopDirectory: 'domain:tenancy',
   ShopSsoConfig: 'domain:tenancy',
+  ShopStatusHistory: 'domain:tenancy',
   // seller-onboarding
   ShopOnboarding: 'domain:seller-onboarding',
   ShopDocument: 'domain:seller-onboarding',

@@ -6,7 +6,7 @@ import {
   Table,
 } from 'sequelize-typescript';
 
-/** Tenant → cell (pooled vs dedicated database) and region. */
+/** Tenant → cell (pooled vs dedicated database) and region. Routing data, read before a tenant is known: no RLS. */
 @Table({
   modelName: 'ShopDirectory',
   tableName: 'ShopDirectory',
@@ -30,6 +30,10 @@ export default class ShopDirectory extends Model<
     defaultValue: 'eu-central-1',
   })
   declare region: string;
+
+  /** Conditional update target for the admin move. */
+  @Column({ type: DataType.BIGINT, allowNull: false, defaultValue: 1 })
+  declare version: string | number;
 
   declare updatedAt: Date;
 }

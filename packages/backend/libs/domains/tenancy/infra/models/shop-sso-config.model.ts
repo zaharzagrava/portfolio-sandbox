@@ -30,6 +30,10 @@ export default class ShopSsoConfig extends Model<
   @Column({ type: DataType.TEXT, allowNull: false })
   declare clientSecretEnc: string;
 
+  /** Role given to a member provisioned by a login through this provider. */
+  @Column({ type: DataType.TEXT, allowNull: false, defaultValue: 'VIEWER' })
+  declare defaultRole: 'STAFF' | 'VIEWER';
+
   @Column({ type: DataType.BOOLEAN, allowNull: false, defaultValue: true })
   declare enabled: boolean;
 

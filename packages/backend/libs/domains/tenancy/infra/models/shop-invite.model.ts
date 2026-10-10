@@ -6,7 +6,7 @@ import {
   Table,
 } from 'sequelize-typescript';
 import { Sequelize } from 'sequelize';
-import { ShopRole } from './shop-membership.model';
+import type { ShopRole } from '../../domain/shop-types';
 
 /** RLS-protected (tenant_isolation policy): only readable inside a transaction scoped to its shop. */
 @Table({
@@ -29,6 +29,7 @@ export default class ShopInvite extends Model<ShopInvite, Partial<ShopInvite>> {
   @Column({ type: DataType.TEXT, allowNull: false })
   declare role: Exclude<ShopRole, 'OWNER'>;
 
+  /** sha256 hex of the token; the token itself is never stored. */
   @Column({ type: DataType.TEXT, allowNull: false })
   declare tokenHash: string;
 
@@ -40,6 +41,12 @@ export default class ShopInvite extends Model<ShopInvite, Partial<ShopInvite>> {
 
   @Column({ type: DataType.DATE, allowNull: true })
   declare acceptedAt: Date | null;
+
+  @Column({ type: DataType.UUID, allowNull: true })
+  declare acceptedBy: string | null;
+
+  @Column({ type: DataType.DATE, allowNull: true })
+  declare revokedAt: Date | null;
 
   declare createdAt: Date;
 }

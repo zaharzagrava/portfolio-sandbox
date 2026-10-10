@@ -1,8 +1,10 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import ShopSsoConfig from '../infra/models/shop-sso-config.model';
 import { SecretBox, OidcService } from '@app/domains/identity';
 import { ShopTransactionRunner } from '../infra/shop-transaction';
+import { SHOP_REPOSITORY, type ShopRepository } from '../domain/ports';
+import { Domain_ShopNotFoundError } from '../domain/errors';
 
 /**
  * Enterprise SSO per shop (lesson 10/04 #2): a shop's staff log in through
@@ -16,7 +18,23 @@ export class ShopSsoService implements OnModuleInit {
     private readonly box: SecretBox,
     private readonly oidc: OidcService,
     private readonly shopTx: ShopTransactionRunner,
+    @Inject(SHOP_REPOSITORY) private readonly shops: ShopRepository,
   ) {}
+
+  /**
+   * Public lookup for the sign-in page (FR-043): only `{providerId, displayName}`, and the same not-found for an
+   * unknown slug, a missing or disabled configuration and a shop that is not active.
+   */
+  async publicLookup(slug: string) {
+    const shop = await this.shops.findBySlug(slug);
+    if (!shop || shop.status !== 'ACTIVE' || shop.sandboxOf)
+      throw new Domain_ShopNotFoundError();
+    const config = await this.shopTx.inShop(shop.id, () =>
+      this.ssoModel.findByPk(shop.id),
+    );
+    if (!config?.enabled) throw new Domain_ShopNotFoundError();
+    return { providerId: `shop:${shop.id}`, displayName: shop.name };
+  }
 
   onModuleInit() {
     this.oidc.setResolver(async (provider) => {

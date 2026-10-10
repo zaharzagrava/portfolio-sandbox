@@ -1,15 +1,17 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
-import { InjectModel } from '@nestjs/sequelize';
 import { TopicRegistry } from '@app/infrastructure/realtime/topic-registry';
-import ShopMembership from '../infra/models/shop-membership.model';
+import { ShopAccessService } from '../application/shop-access.service';
 
-/** `shop:{shopId}:live` (SD-18 live sales dashboard, published by seller-insights): that shop's members only. */
+/**
+ * `shop:{shopId}:live` (SD-18 live sales dashboard, published by seller-insights): members of an `ACTIVE` or
+ * `SUSPENDED` shop only (AS-83). The decision reads the database, not the cache: access to a stream must end with the
+ * membership (S51 also closes subscriptions that are already open when `tenancy.member_removed` arrives).
+ */
 @Injectable()
 export class ShopTopics implements OnModuleInit {
   constructor(
     private readonly topics: TopicRegistry,
-    @InjectModel(ShopMembership)
-    private readonly memberships: typeof ShopMembership,
+    private readonly access: ShopAccessService,
   ) {}
 
   onModuleInit() {
@@ -18,10 +20,7 @@ export class ShopTopics implements OnModuleInit {
       suffixes: ['live'],
       policy: async (viewer, _topic, shopId) => {
         if (!viewer.userId) return false;
-        return !!(await this.memberships.findOne({
-          where: { shopId, userId: viewer.userId },
-          attributes: ['role'],
-        }));
+        return this.access.mayFollowLiveTopic(shopId, viewer.userId);
       },
     });
   }

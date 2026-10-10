@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unnecessary-type-assertion -- ClsService is typed `any` for the lint project but strictly for tsc; the casts are required by tsc */
 import { Injectable } from '@nestjs/common';
 import { ClsService } from 'nestjs-cls';
 import { AppClsStore } from '@app/common/request-context/types';

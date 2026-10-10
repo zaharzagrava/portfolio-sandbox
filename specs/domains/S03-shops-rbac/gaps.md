@@ -95,3 +95,68 @@ D-4 (batch reads) is resolved in the register, but the controller still runs raw
 5. R1 services and barrel (A28); migrate consumers in C1 and C2 in their capabilities' PRs, then drop the model exports; make `check:table-ownership --strict` a gate for tenancy's tables.
 6. Delete the backfill job (A22) once S05 and the chat domain call the R1 provisioning service.
 7. Split `tenancy.e2e-spec.ts` into the files of `test-plan.md` (A29).
+
+## Sibling-spec follow-ups
+
+Things S03's work changes that another capability's spec relies on. Their specs are not edited from here.
+
+- **S01**: add a consumer of `tenancy.shop_created` v1 that promotes a `USER` owner to `SELLER` (conditional, idempotent); tenancy no longer writes `User` or clears `auth:user:v1:<id>`. Keep `UserDirectoryService`, `SessionRevocationService.revokeAllForUser(userId, 'shop_membership_removed')` and `SecretBox` contexts stable (tenancy depends on them).
+- **S02**: `OidcProviderRegistry` has no `registerResolver` / `invalidate` and `OidcService` is still injected by `tenancy/application/shop-sso.service.ts` (checked 2026-10-10). If S02's pass did not land them, S03 adds the two additive methods (WP-7); S02 must adopt them in its `oidc-providers` tests and keep emitting `identity.federated_identity_linked` with `provider = shop:<uuid>` on the first shop-IdP login, including account-creating logins.
+- **S04**: emit `shop.onboarding_submitted`, `shop.verified`, `shop.rejected` `{shopId}`; stop `UPDATE "Shop"` in `onboarding-session.service.ts:59` and `verification.service.ts:49`; use `ShopQueryService` in `review.service.ts:43`.
+- **S05**: call `ShopProvisioningService.ensureShopsForLegacySellers` (≤ 200) in its shop-id backfill, own the NOT NULL contract step on `Product.shopId`, drop the foreign key `Product.shopId → Shop`.
+- **S06, S23, S41, S43, S40, S27, S42, S32, S44, S15, S16, S17, S28**: replace direct use of `ShopModel`, `ShopMembershipModel`, `MembershipService` and raw SQL on tenancy tables with `ShopAccessService`, `ShopQueryService`, `MembershipQueryService` (rows of sections C1/C2). `payouts.read` routes now exclude VIEWER, `sso.manage` excludes ADMIN, and `ShopScoped` routes answer `403 shop_suspended` / `409 shop_offboarding` for write permissions on closed shops: retest them.
+- **S14, S15**: take over the payment-provider account id (`Shop.stripeAccountId`) into a table they own; tenancy drops the column afterwards; `payments/infra/payout.jobs.ts` stops reading `Shop`.
+- **S17**: emit `billing.subscription_plan_changed {shopId, plan, version}` with a per-shop monotonic `version`.
+- **S28**: consume `tenancy.invite_requested` (token; link `<front>/invites/<token>`) and the offboarding events (owners via `MembershipQueryService.getMembersByShopIds(ids, ['OWNER'])`).
+- **S51**: close open subscriptions to `shop:<id>:*` for the user on `tenancy.member_removed`.
+- **S49, S50, S53, S54**: nothing to change; tenancy registers its six policies and two jobs with their toolkits as documented.
+- **Chat domain**: drop the foreign key `ChatChannel.shopId → Shop`, run its own backfill through `ensureShopsForLegacySellers`.
+- **W04**: `/invites/<token>`, shop switcher, team and roles screens from `GET /shop-roles` and `myPermissions`; lists are now `{items, nextCursor}`. `GET /shop-roles` answers `{roles: {OWNER: [...], ADMIN: [...], STAFF: [...], VIEWER: [...]}, permissions: [...]}` (spec.md AS-82; contracts/http.md writes it shorter).
+- **S28** (added in the P1 pass): the invite message is an outbox task on queue `tenancy-invite-requested`, type `tenancy.invite_requested`, body `{inviteId, shopId, shopName, email, role, token, expiresAt, invitedBy}` (`aggregateId` = shopId). It is not on `tenancy.events`.
+- **S01** (added in the P1 pass): the foreign key `ShopMembership.userId → User` is dropped (contract migration `20261010141000-tenancy-s03-contract-fks`), so deleting a user no longer cascades to memberships. Identity's account deletion must tell tenancy (a `identity.user_deleted` consumer is not built yet) or leave the orphan row; the guard answers `404` for such a user anyway because no session exists.
+- **All domains with shop e2e specs** (added in the P1 pass): seed shops and members with `createShop`, `addMember`, `createInvite` from `test/utils/tenancy-fixtures.ts` (written for S03) instead of the models; `ShopMembership` rows now carry `source` (defaults to `provisioned`).
+
+## Deferred until a later pass
+
+This pass built the Setup and Foundational phases and the stories of priority P1: US1, US2, US3, US4, US5, US8 and US10. Not started (P2 and cross-cutting), with what each waits for:
+
+| Story / task | Scenarios | Waits for |
+|---|---|---|
+| US6 company sign-in per shop (T045–T051) | AS-40–AS-50; FR-090 `tenancy.sso-lookup.ip`; `sso_*` error codes | a later pass; needs S02's `OidcProviderRegistry.registerResolver/invalidate` (not present: checked 2026-10-10, T005 not done; `OidcService.setResolver/register` still exist and `shop-sso.service.ts` still uses them, only its permission moved to `sso.manage`) and S01's `SecretBox` context seal (exists). `identity.federated_identity_linked` is emitted by S02 (built) |
+| US7 cells (T052–T054) | AS-51–AS-56; the `dedicated-1` half of III.12; `unknown_cell`, `cell_unavailable`, `stale_version` | a later pass; needs a second Postgres in `docker-compose.test.yaml` (T004 part, not added in this pass) |
+| US9 offboarding and lifecycle (T060–T063) | AS-65–AS-70, AS-72, AS-73; `confirmation_mismatch`; the DELETED-tombstone purge | a later pass; verification and plan consumers wait for S04 (`shop.*` events) and S17 (`billing.subscription_plan_changed`), which have no `.implemented` marker. The status machine (`nextState`) and `ShopStatusHistory` are built and unit-tested; the guard already applies the status gate |
+| Jobs and cleanup (T073–T075) | purge jobs, `declareJobType` for them, `InvalidScheduleError` catch | US9. `tenancy.backfill-shops` (`infra/tenancy-backfill.jobs.ts`, the one direct `sequelize.transaction`, two table-ownership findings) stays until S05 and chat call `ensureShopsForLegacySellers`; T076 (the old `tenancy.e2e-spec.ts`) is done because the P1 work made it uncompilable |
+| Polish, cross-cutting (T077–T082) | AS-77 static half ("barrel without models") | consumers of sections C1/C2; `tenancy-exports.e2e-spec.ts` pins the transitional model list so it can only shrink |
+| Admin routes, export, offboarding routes (the by-slug lookup and the plan consumer were built in the gate repair, see Gate repairs) | parts of AS-05, AS-09, AS-15, AS-79 that name them | with US6, US7 and US9; the `tenancy-resolution` route table lists only built routes |
+
+## Gate repairs
+
+The gate failed with "no test carries AS-46, AS-73". Both scenarios are cited by P1 stories (AS-05 in US1, AS-31 in US5), so the checker treats them as required even though their own stories (US6, US9) are deferred. The parts that need nothing unbuilt were built, with real tests:
+
+- **AS-46** `GET /shops/by-slug/:slug/sso` (anonymous, `tenancy.sso-lookup.ip`): `ShopSsoService.publicLookup`, `SsoController.lookup`; `shop-sso.e2e-spec.ts` covers the `200` body, the identical `404` for an unknown slug, a disabled configuration, a suspended shop and a shop without SSO, and the `429` on the 31st call. The rest of US6 (T045–T051) stays deferred, so its tasks are not ticked.
+- **AS-73** consumer of `billing.subscription_plan_changed` (`infra/shop-plan.consumer.ts`, registered in `TenancyWorkerModule` through `ProjectionsModule.forProjectors`; `ShopRepository.applyPlan` is the version guard). `tenancy-consumers.e2e-spec.ts` covers the change plus `tenancy.shop_plan_changed`, older/equal/duplicate ignored, invalid payload as `PermanentError`, and the AS-31 effect (raised plan admits an invite, lowered plan removes nobody). The tests call the consumer's entry point (`project`) with real envelopes; the broker round trip (offsets, the dead-letter topic itself) is the framework's, proven by S53, and is not exercised here. S17 does not emit the event yet, so nothing publishes it in production. AS-72 (verification events) and the rest of US9 stay deferred.
+- **Test integrity (`tenancy.e2e-spec.ts` deleted)**: the gate forbids deleting a test file and requires at least as many `it()`/`expect()` calls as at HEAD. T076 had deleted the file; it is recreated at `libs/domains/tenancy/tenancy.e2e-spec.ts` as a regression spec on the S03 API with the same six cases (BOLA, invite → accept → role, write skew, RLS backstop, cache invalidation, shop creation/mine). The seller-promotion case now asserts that creating a shop does not touch the `User` row (promotion is S01's consumer, see Sibling-spec follow-ups). The count by the gate's regex is 38 against 33 at HEAD; the spec passes (6/6). It has no direct `sequelize.transaction` (the old test-only site is gone). `check-tests.py integrity` itself needed an approval this pass could not get; the counts were checked with the same regex by hand. Run it before merging.
+- Not run: `scripts/sdd/check-tests.py scenarios` needed an approval this pass could not get; the titles were confirmed with a search (`it('S03 AS-46: …')`, `it('S03 AS-73: …')`). Run it before merging.
+
+## Baseline (T001–T005, recorded 2026-10-10 before the work)
+
+- `pnpm check:table-ownership`: tenancy had 5 findings: SQL `Product` and `ChatChannel` in `infra/tenancy-backfill.jobs.ts`, SQL `User`, MODEL `UserModel` in `application/shop.service.ts`, MODEL `UserModel` in `tenancy.module.ts`. After this pass: 2 (the backfill job, deferred). Rows of C1/C2 (other domains reading tenancy tables) are reproduced by the gate as 20 findings in 11 domains: unchanged, theirs to migrate. Total went 87 → 84.
+- `pnpm check:boundaries`: 0 errors before; 0 errors after (61 pre-existing `x5-no-circular` warnings, none in tenancy).
+- Direct `sequelize.transaction` in `libs/domains/tenancy`: 1 production site (`tenancy-backfill.jobs.ts:47`, deferred) plus the test-only site in the old `tenancy.e2e-spec.ts`, now deleted. No site added.
+- Follow-up greps in tenancy before: `InjectModel(User)` 1, `"User"` join 1, `User` in `forFeature` 1, `OidcService` 1 (kept, SSO deferred), `Firewall({ throttle` 0, `JobsService.cancel` 0. After: the first three are gone.
+- `ShopScoped(` consumers outside tenancy: 80 routes in 20 domains (payouts.read: payments finance, statements; shop.manage: developer-platform, seller-onboarding, catalog-sync, shop-functions; billing.manage: billing; the rest products/orders). Their suites were run after the P1 work (28 suites): 24 pass; 4 fail with `ResponseError: Keyspace 'marketplace' does not exist` (ScyllaDB keyspace missing in this sandbox: assistant, notifications, seller-insights crawler, developer-platform webhooks), unrelated to tenancy and not re-run.
+- Test stack: the Postgres of `docker-compose.test.yaml` is used as is; the non-superuser probe roles are created idempotently by the specs through `test/utils/tenancy-roles.ts` (no compose change in this pass); the second database for cell `dedicated-1` is deferred with US7.
+
+## Decisions taken while implementing (P1 pass)
+
+- **Column names kept**: `ShopInvite.tokenHash` (data-model.md says `tokenDigest`) and `ShopSsoConfig.clientSecretEnc` (`secretSealed`) keep their existing names; renaming a column is not expand-only. Only the digest is stored either way.
+- **Region** lives in `ShopDirectory.region` (the only place the table has it); `Shop` has no `region` column, the DTO joins it. Allowed regions come from the new config key `TENANCY_REGIONS` (comma list, first is the default; default `eu-central-1,us-east-1`).
+- **Request bodies** use class-validator DTOs through the platform's global pipe (`validation_failed` with `errors[]`), the same as identity; the zod schemas in `packages/contracts/src/tenancy` describe the responses and are what the e2e specs parse.
+- **Removing a member** is guarded by `shop.read` in the controller, because every member may remove themselves; removing someone else asks `ShopAccessService.resolve(…, 'members.manage')` (strong read, status gate) inside the service. A viewer removing another gets `403 permission_denied`.
+- **Event version**: member and invite events carry the shop's current `shopVersion` as `aggregateVersion` (they do not bump it); only `Shop` writes bump it.
+- **Accept** refuses (uniform `404 invite_not_found`) when the shop is not `ACTIVE`; an expired-but-unrevoked pending invite may be resent (it becomes pending again) and is revoked when the same address is invited again.
+- **AS-23**: of a pair of simultaneous owner actions exactly one succeeds; the loser is `409 last_owner` or `403 insufficient_role` (the winner may already have demoted the loser's role), never a second success.
+- **AS-14** is proven through the request context (the values the platform logger mixin reads) and the event envelopes; the structured logger itself is not in the test stack.
+- **Authorization cache**: entries carry their write time from the injected clock, so the 15 s / 10 s windows hold with a frozen clock; the Redis TTL is a hygiene bound only.
+- **`MembershipService`** stays as a thin transitional wrapper over `ShopAccessService.getRole` for `auctions` (it is in the barrel's transitional block); it has no cache of its own.
+- **Observability**: tenancy writes audit lines through its own `TenancyAudit` (`Logger('Audit')`, fields `action, actorId, shopId, requestId`) because identity's `AuditService` is not exported.
