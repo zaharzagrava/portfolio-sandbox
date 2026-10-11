@@ -237,6 +237,7 @@
       "<rootDir>/db/"
     ],
     "moduleNameMapper": {
+      "^(\\.{1,2}/.*)\\.js$": "$1",
       "^@app/(infrastructure|composition|domains)/(.*)$": "<rootDir>/libs/$1/$2",
       "^@app/test/(.*)$": "<rootDir>/test/$1",
       "^@app/common/(.*)$": "<rootDir>/libs/common/$1"

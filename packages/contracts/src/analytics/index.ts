@@ -1,1 +1,1 @@
-export * from './stored-event';
+export * from './stored-event.ts';

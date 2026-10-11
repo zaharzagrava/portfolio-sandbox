@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { paymentFailureCodeSchema } from './payment';
+import { paymentFailureCodeSchema } from './payment.ts';
 
 /**
  * `payments.events` v1 (specs/domains/S13-payment-intents/contracts/events.md). Moved from `orders/` (S10 consumes the

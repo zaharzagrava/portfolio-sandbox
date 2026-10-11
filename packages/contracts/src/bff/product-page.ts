@@ -1,8 +1,8 @@
 import { z } from 'zod';
-import { productPublicSchema } from '../catalog';
-import { recommendationsResponseSchema } from '../search/recommendations';
-import { trendingResponseSchema } from '../search/trending';
-import { shopSummarySchema } from '../tenancy';
+import { productPublicSchema } from '../catalog/index.ts';
+import { recommendationsResponseSchema } from '../search/recommendations.ts';
+import { trendingResponseSchema } from '../search/trending.ts';
+import { shopSummarySchema } from '../tenancy/index.ts';
 import {
   auctionPublicSchema,
   boardPostsPageSchema,
@@ -11,7 +11,7 @@ import {
   flashSalePublicSchema,
   pickupPageSchema,
   productVideosSchema,
-} from './upstream';
+} from './upstream.ts';
 
 /** Closed set of section outcomes (S48 FR-005); also the GraphQL `extensions.code` of a degraded field. */
 export const BFF_SECTION_CODES = [

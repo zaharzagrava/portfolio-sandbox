@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { orderStatusSchema } from './order';
+import { orderStatusSchema } from './order.ts';
 
 /** `orders.events` payloads (specs/domains/S10-cart-checkout/contracts/events.md). Every payload carries `orderVersion`. */
 const minor = z.number().int().nonnegative();

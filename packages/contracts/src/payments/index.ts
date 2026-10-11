@@ -1,2 +1,2 @@
-export * from './payment';
-export * from './payment-events';
+export * from './payment.ts';
+export * from './payment-events.ts';

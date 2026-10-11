@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { SEARCH_LIMITS, digitsToInt } from './product-search';
+import { SEARCH_LIMITS, digitsToInt } from './product-search.ts';
 
 /**
  * S32 shop-scoped product search. `q` is required, 1..100 after the backend's normalisation (see product-search.ts for

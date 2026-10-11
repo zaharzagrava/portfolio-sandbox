@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { searchModeSchema } from './product-search';
-import { reindexKindSchema } from './admin';
+import { searchModeSchema } from './product-search.ts';
+import { reindexKindSchema } from './admin.ts';
 
 /**
  * `search.events` v1 (contracts/events-and-ports.md, AS-76). `searchEventSchemas` are the full wire events (envelope

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { BFF_SECTION_CODES } from './product-page';
+import { BFF_SECTION_CODES } from './product-page.ts';
 
 /** `extensions.code` values of the BFF GraphQL endpoint: the section codes plus request-level rejections. */
 export const BFF_GRAPHQL_REJECTION_CODES = [

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { digitsToInt } from './product-search';
+import { digitsToInt } from './product-search.ts';
 
 /** S32 admin contracts (http-api.md, data-model.md SearchReindexRun, AS-77, AS-73). */
 export const REINDEX_KINDS = ['REINDEX', 'ROLLBACK'] as const;
