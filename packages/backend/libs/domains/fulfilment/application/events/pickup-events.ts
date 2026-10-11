@@ -14,4 +14,6 @@ export const PickupStockChanged = defineEvent(
     lat: z.number(),
     lng: z.number(),
   }),
+  // `quantity` is the absolute stock of one (point, product): the latest event is the full state, so consumers may coalesce.
+  { carries: 'state' },
 );
