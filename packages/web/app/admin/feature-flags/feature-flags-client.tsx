@@ -71,8 +71,8 @@ export function FeatureFlagsClient() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
-        <div>
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="min-w-0">
           <h1 className="text-3xl font-bold tracking-tight">Feature Flags</h1>
           <p className="text-muted-foreground">
             Manage your application feature flags and kill switches.

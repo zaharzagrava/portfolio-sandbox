@@ -1,0 +1,27 @@
+import { test, expect } from '@playwright/test';
+import { SEED, productId, register } from './helpers';
+test('dbg', async ({ page }) => {
+  page.on('response', (r) => { if (/auth\/refresh|api\/orders|checkout|api\/cart/.test(r.url())) console.log('RESP', r.status(), r.request().method(), r.url()); });
+  const id = await productId();
+  await page.goto(`/products/${id}`);
+  await page.getByRole('button', { name: 'Add to Cart' }).click();
+  await expect(page.getByText('Added to cart')).toBeVisible();
+  await register(page);
+  await page.goto('/cart');
+  const line = page.getByTestId('cart-line');
+  await expect(line).toHaveCount(1);
+  await expect(line).toContainText(SEED.product);
+  await page.getByRole('button', { name: 'Increase quantity' }).click();
+  await expect(page.getByTestId('cart-line-quantity')).toHaveText('2');
+  await expect(page.getByTestId('cart-subtotal')).toHaveText('$1,799.98');
+  await page.getByRole('link', { name: 'Proceed to Checkout' }).click();
+  await expect(page.getByTestId('checkout-total')).toHaveText('$1,799.98');
+  await page.getByRole('button', { name: 'Place Order' }).click();
+  await expect(page).toHaveURL(/\/checkout\/success\?orderId=/);
+  console.log('STEP cart');
+  await page.goto('/cart');
+  await expect(page.getByTestId('cart-empty')).toBeVisible();
+  console.log('STEP orders');
+  await page.goto('/dashboard/orders');
+  await page.waitForTimeout(4000);
+});

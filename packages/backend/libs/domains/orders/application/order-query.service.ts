@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import type { OrderDto } from '@marketplace-sandbox/contracts';
+import type { OrderDto, OrderPageDto } from '@marketplace-sandbox/contracts';
 import {
   ORDER_HISTORY_REPOSITORY,
   ORDER_REPOSITORY,
@@ -9,6 +9,7 @@ import {
   type ShopOrderRepository,
 } from '../domain/ports';
 import { OrderNotFoundError } from '../domain/order-errors';
+import { decodeOrderCursor, encodeOrderCursor } from '../domain/order-cursor';
 
 /**
  * Order reads as plain DTOs (no model leaves the domain). Every read is scoped to the principal inside the statement:
@@ -23,6 +24,35 @@ export class OrderQueryService {
     @Inject(ORDER_HISTORY_REPOSITORY)
     private readonly history: OrderHistoryRepository,
   ) {}
+
+  /** One keyset page of the buyer's own orders, newest first; `nextCursor` is bound to the buyer. */
+  async getOrdersForUser(
+    userId: string,
+    limit: number,
+    cursor: string | null,
+  ): Promise<OrderPageDto> {
+    const scope = `user:${userId}`;
+    const after = cursor ? decodeOrderCursor(scope, cursor) : null;
+    const rows = await this.orders.pageForUser(userId, limit + 1, after);
+    const page = rows.slice(0, limit);
+    const last = page[page.length - 1];
+    return {
+      items: page.map((o) => ({
+        id: o.id,
+        status: o.status,
+        totalMinor: o.totalMinor,
+        currency: o.currency,
+        createdAt: o.createdAt.toISOString(),
+      })),
+      nextCursor:
+        rows.length > limit && last
+          ? encodeOrderCursor(scope, {
+              createdAt: last.createdAt.toISOString(),
+              id: last.id,
+            })
+          : null,
+    };
+  }
 
   /** The buyer's own order with its snapshots and timeline; `OrderNotFoundError` for a missing or foreign one. */
   async getOrderForUser(orderId: string, userId: string): Promise<OrderDto> {

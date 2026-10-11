@@ -25,7 +25,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const params = useParams();
-  const { data: shops } = useMyShops(user?.role === 'SELLER');
+  const { data: shops } = useMyShops(!!user);
   const shopId = (params?.shopId as string) || shops?.[0]?.id;
 
   useEffect(() => {
@@ -38,7 +38,8 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
     return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
   }
 
-  const isSeller = user.role === 'SELLER';
+  // Opening a shop no longer changes the account role: a seller is a member of at least one shop.
+  const isSeller = (shops?.length ?? 0) > 0;
 
   return (
     <div className="flex min-h-screen flex-col md:flex-row">

@@ -16,22 +16,37 @@ export interface ProductDetail {
   price: number; // cents
   rating: number;
   tags: string[];
-  quantity: number;
+  /** Not exposed by the catalog API any more (only `inStock`). */
+  quantity: number | null;
   inStock: boolean;
   viewCount: number;
 }
 
-/** GET /api/products/search → hits[] (Elasticsearch documents) */
-export interface SearchHit {
+/** GET /api/products/:id as the catalog API serves it (money in minor units, the owning shop, no stock count). */
+export function normalizeProduct(raw: Record<string, unknown> & { priceMinor: number }): ProductDetail {
+  return { ...raw, price: raw.priceMinor, sellerId: null, quantity: null } as unknown as ProductDetail;
+}
+
+/** GET /api/products/search → items[] (S31; money in minor units, `total` carries an exactness flag) */
+export interface SearchItem {
   id: string;
-  score: number;
-  source: { title?: string; brand?: string; category?: string; price?: number; rating?: number };
+  shopId: string;
+  title: string;
+  brand: string | null;
+  category: string;
+  priceMinor: number;
+  currency: string;
+  rating: number;
+  inStock: boolean;
+  imageUrl: string | null;
+  sponsored: boolean;
+  position: number;
 }
 
 export interface SearchResponse {
-  total: number;
-  hits: SearchHit[];
-  suggestions?: string[];
+  items: SearchItem[];
+  total: { value: number; exact: boolean };
+  nextCursor?: string | null;
   facets?: { categories?: { key: string; count: number }[]; brands?: { key: string; count: number }[] };
 }
 
@@ -51,14 +66,14 @@ export interface SuggestResponse {
   partial: boolean;
 }
 
-export function hitToCard(hit: SearchHit): ProductCardProps {
+export function hitToCard(item: SearchItem): ProductCardProps {
   return {
-    id: hit.id,
-    slug: hit.id,
-    name: hit.source.title ?? 'Untitled product',
-    shopName: hit.source.brand ?? '',
-    price: Number(hit.source.price ?? 0),
-    rating: Number(hit.source.rating ?? 0),
+    id: item.id,
+    slug: item.id,
+    name: item.title || 'Untitled product',
+    shopName: item.brand ?? '',
+    price: Number(item.priceMinor ?? 0),
+    rating: Number(item.rating ?? 0),
     reviewsCount: 0,
   };
 }

@@ -130,3 +130,8 @@ Files in scope: `packages/web/app/cart/page.tsx`, `app/checkout/page.tsx`, `app/
 4. Cart (page, line, badge, add-to-cart), then checkout review and the order function, then the pay step and success page, then history and detail, then the popover.
 5. Redirect `/dashboard/orders`, remove the old components and tests, update W04's dashboard usage.
 6. Journeys JC, JO, JN; visual baselines.
+
+## Gate repairs
+
+- **Playwright `cart-checkout.spec.ts` "guest cart survives sign-up, checks out…" (order list empty)**: the cause was a race, not the orders page. A full page load starts `POST /api/auth/refresh` (the AuthProvider restore); the test left the page (`goto('/dashboard/orders')`) while it was in flight. The core API had already rotated the one-time refresh token, but the browser never received the new cookie, so the next refresh presented a spent token, was treated as reuse, and revoked the session; the dashboard then redirected to `/login`. Fix in `packages/web/lib/api/auth-relay.ts`: refreshes carrying the same cookie share one upstream rotation and its answer is replayed for 10 s (failures are not replayed), so a refresh the browser abandoned can be repeated safely. Verified: the spec passes 4/4 repeated runs and the full Playwright suite passes (53 passed). One unrelated `product-community.spec.ts` failure appeared in one earlier full run and did not reproduce (3/3 alone, full suite green on the next run).
+- `packages/web/tests/zz-dbg.spec.ts` is a debug spec that was already in the tree; left untouched (no test deleted).

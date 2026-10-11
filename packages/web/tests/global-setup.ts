@@ -1,5 +1,5 @@
 import { execSync } from 'node:child_process';
-import { API_URL } from './helpers';
+import { API_URL, resetRateLimits } from './helpers';
 
 /**
  * UI journeys run against the local dev stack (moon run :infra-up, :infra-setup, :dev-monolith, :dev-web), not a
@@ -9,7 +9,13 @@ import { API_URL } from './helpers';
 async function globalSetup() {
   const ok = await fetch(`${API_URL}/health/ready`).then((r) => r.ok).catch(() => false);
   if (!ok) throw new Error(`API is not ready at ${API_URL}/health/ready - start it with \`moon run :dev-monolith\``);
-  execSync('pnpm --filter api seed:dev', { stdio: 'inherit', env: { ...process.env, API_URL } });
+  await resetRateLimits();
+  try {
+    execSync('pnpm --filter api seed:dev', { stdio: 'inherit', env: { ...process.env, API_URL } });
+  } catch {
+    // Specs that need no demo data (W07's shell, headers) still run; the ones that do fail with their own message.
+    console.error('WARNING: seed:dev failed - specs that need the demo admin/seller/catalog will fail.');
+  }
 }
 
 export default globalSetup;

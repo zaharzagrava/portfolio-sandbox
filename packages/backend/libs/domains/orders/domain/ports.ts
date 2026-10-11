@@ -106,6 +106,15 @@ export interface OrderRepository {
     },
     now: Date,
   ): Promise<OrderRecord | null>;
+  /**
+   * The buyer's orders newest first with the id as tiebreaker, strictly after `after` when given; never the orders
+   * cancelled for `out_of_stock` (they were never reserved). Scoped to `userId` inside the statement.
+   */
+  pageForUser(
+    userId: string,
+    limit: number,
+    after: { createdAt: string; id: string } | null,
+  ): Promise<OrderRecord[]>;
   /** Orders `RESERVED` whose hold ended at or before `now`, oldest first, `FOR UPDATE SKIP LOCKED`. */
   expiredReserved(now: Date, limit: number): Promise<string[]>;
   /** Orders `PENDING` created before `before`, oldest first. */

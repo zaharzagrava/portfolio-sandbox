@@ -5,15 +5,15 @@
  *   pnpm --filter api seed:dev            (API_URL defaults to http://localhost:8000)
  *
  * Creates:
- *   - admin@marketplace.local  / password-1234  (role ADMIN - the only direct DB write: no API grants ADMIN)
- *   - seller@marketplace.local / password-1234  (opens the "Demo Shop", which makes them a SELLER)
+ *   - admin@marketplace.local  / Demo-Seed-Pw-7491!  (role ADMIN - the only direct DB write: no API grants ADMIN)
+ *   - seller@marketplace.local / Demo-Seed-Pw-7491!  (opens the "Demo Shop", which makes them a SELLER)
  *   - a small catalog in that shop
  */
 import 'dotenv/config';
 import { Client } from 'pg';
 
 const API = process.env.API_URL ?? 'http://localhost:8000';
-const PASSWORD = 'password-1234';
+const PASSWORD = 'Demo-Seed-Pw-7491!';
 
 export const SEED_USERS = {
   admin: 'admin@marketplace.local',
@@ -74,7 +74,8 @@ const PRODUCTS = [
     brand: 'BrewMaster',
     category: 'kitchen',
     price: 89999,
-    quantity: 5,
+    // headroom: every UI run of the cart journey reserves two units (and holds them until the reservation lapses)
+    quantity: 50,
     rating: 4.9,
   },
   {
@@ -173,6 +174,20 @@ async function main() {
   });
   await db.connect();
   try {
+    // Products created before the catalog writer mirrored "createdBy" into the legacy "sellerId" column (which chat,
+    // not converted yet, still reads) get it now; a no-op on a fresh database.
+    await db.query(
+      `UPDATE "Product" SET "sellerId" = "createdBy" WHERE "sellerId" IS NULL AND "createdBy" IS NOT NULL`,
+    );
+
+    // Restock: reservations of earlier runs hold units until they lapse, so the demo products never fall below their
+    // seed quantity. Direct write for the same reason as the admin role: no API sets stock for a demo database.
+    for (const p of PRODUCTS)
+      await db.query(
+        `UPDATE "Product" SET quantity = GREATEST(quantity, $1) WHERE title = $2 AND quantity < $1`,
+        [p.quantity, p.title],
+      );
+
     // Already seeded? Then don't touch the API at all (logins count against the per-account login rate limit).
     const { rows: done } = await db.query<{ n: number }>(
       `SELECT count(*)::int AS n FROM "Product" p JOIN "ShopMembership" m ON m."shopId" = p."shopId" JOIN "User" u ON u.id = m."userId"
@@ -223,11 +238,14 @@ async function main() {
     const existing = new Set(rows.map((r) => r.title));
     let created = 0;
     for (const p of PRODUCTS.filter((p) => !existing.has(p.title))) {
+      // The create contract is strict: `priceMinor` (not `price`) and no `rating` (it is derived from reviews).
+      const { price, rating: _rating, ...fields } = p;
       const res = await call(
         'POST',
-        `/api/products/shops/${shopId}`,
+        `/api/shops/${shopId}/products`,
         {
-          ...p,
+          ...fields,
+          priceMinor: price,
           description: `${p.title} by ${p.brand}. Demo product.`,
           tags: [p.category],
         },

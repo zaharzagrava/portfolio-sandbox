@@ -95,9 +95,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // Register already opens a session (backend returns tokens + sets the refresh cookie).
+  // Registration answers `202 {status: 'accepted'}` with no session (identical for new and known addresses, S01), so the
+  // member signs in right after with the same credentials. W01 owns the final journey.
   const register = async (input: any) => {
-    const { data } = await apiClient.post('/api/auth/register', { email: input.email, password: input.password });
+    await apiClient.post('/api/auth/register', { email: input.email, password: input.password });
+    const { data } = await apiClient.post('/api/auth/login', { email: input.email, password: input.password });
     await acceptSession(data);
   };
 

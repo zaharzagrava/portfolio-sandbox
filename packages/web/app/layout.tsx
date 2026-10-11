@@ -1,11 +1,13 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
-import { Providers } from '@/lib/providers';
 import { AuthProvider } from '@/hooks/use-auth';
-import { Navbar } from '@/components/layout/navbar';
 import { Footer } from '@/components/layout/footer';
-import { AssistantSheet } from '@/components/assistant/assistant-sheet';
+import { Navbar } from '@/components/layout/navbar';
+import { NonceProviders } from '@/components/layout/nonce-providers';
+import { RouteFocus } from '@/components/layout/route-focus';
+import { SkipLink } from '@/components/layout/skip-link';
+import { config } from '@/lib/config';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -18,9 +20,16 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Marketplace Showcase',
+  metadataBase: new URL(config.siteUrl),
+  title: { default: 'Marketplace', template: '%s · Marketplace' },
   description: 'A modern full-stack marketplace platform built with Next.js 16',
 };
+
+export const viewport: Viewport = { width: 'device-width', initialScale: 1 };
+
+// No static shell for any route: the nonce of the CSP is per response, so a prerendered shell could not carry it
+// (docs: `instant = false` on the root layout disables static-shell validation for the whole app).
+export const instant = false;
 
 export default function RootLayout({
   children,
@@ -32,14 +41,18 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col`}
       >
-        <Providers>
+        {/* The nonce comes from the request, so every document renders per request (never a prerendered shell). */}
+        <NonceProviders>
           <AuthProvider>
+            <SkipLink />
             <Navbar />
-            <main className="flex-1">{children}</main>
+            <main id="main-content" tabIndex={-1} className="flex-1 outline-none">
+              {children}
+            </main>
             <Footer />
-            <AssistantSheet />
+            <RouteFocus />
           </AuthProvider>
-        </Providers>
+        </NonceProviders>
       </body>
     </html>
   );

@@ -9,22 +9,26 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/hooks/use-auth';
-import { apiClient } from '@/lib/api/client';
 import { chatApi, mergeMessages, type ChatChannel, type ChatMessage } from '@/lib/api/chat';
 import { apiErrorMessage } from '@/lib/api/errors';
 
 const POLL_MS = 3_000;
 
 /** `?product=<id>`: open that product's chat - join it as a buyer, or create it when you are its seller. */
-async function openProductChat(productId: string, userId: string): Promise<ChatChannel> {
+async function openProductChat(productId: string): Promise<ChatChannel> {
   try {
     const channel = await chatApi.byProduct(productId);
     return channel.myRole ? channel : await chatApi.join(channel.id);
   } catch (error) {
     if ((error as { response?: { status?: number } }).response?.status !== 404) throw error;
-    const { data: product } = await apiClient.get<{ sellerId: string }>(`/api/products/${productId}`);
-    if (product.sellerId !== userId) throw new Error('The seller has not opened a chat for this product yet.');
-    return chatApi.create(productId);
+    // Products name their shop, not a seller account: let the chat API decide whether this member may open the chat.
+    try {
+      return await chatApi.create(productId);
+    } catch (createError) {
+      const status = (createError as { response?: { status?: number } }).response?.status;
+      if (status === 403 || status === 404) throw new Error('The seller has not opened a chat for this product yet.');
+      throw createError;
+    }
   }
 }
 
@@ -53,7 +57,7 @@ export function ChatView() {
     let cancelled = false;
     (async () => {
       try {
-        const opened = productId ? await openProductChat(productId, user.id) : null;
+        const opened = productId ? await openProductChat(productId) : null;
         const mine = await chatApi.myChannels();
         const list = await Promise.all(mine.map((c) => chatApi.channel(c.channelId)));
         if (cancelled) return;

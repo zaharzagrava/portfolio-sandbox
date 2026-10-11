@@ -31,7 +31,12 @@ export function orderStats(orders: OrderSummary[]) {
 export function useOrders() {
   return useQuery({
     queryKey: ORDERS_QUERY_KEY,
-    queryFn: async () => (await apiClient.get<OrderSummary[]>('/api/orders')).data,
+    // S10 contract: { items: [{ id, status, totalMinor, currency, createdAt }], nextCursor }; the list route arrives with
+    // S10's reads story (US6) - until then the request fails and the page shows its error state.
+    queryFn: async () => {
+      const { data } = await apiClient.get<{ items: (Omit<OrderSummary, 'total'> & { totalMinor: number })[] }>('/api/orders');
+      return data.items.map(({ totalMinor, ...order }): OrderSummary => ({ ...order, total: totalMinor }));
+    },
   });
 }
 

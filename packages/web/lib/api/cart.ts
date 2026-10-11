@@ -3,7 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/use-auth';
 import { apiClient } from './client';
-import type { ProductDetail } from './catalog';
+import { normalizeProduct, type ProductDetail } from './catalog';
 
 /** Server cart (DynamoDB, SD-19): guests are identified by a signed HttpOnly `cart` cookie, users by their id. */
 export interface CartLine {
@@ -45,8 +45,8 @@ async function hydrate(lines: CartLine[]): Promise<CartItem[]> {
   return Promise.all(
     lines.map(async (line) => {
       try {
-        const { data } = await apiClient.get<ProductDetail>(`/api/products/${line.productId}`);
-        return { ...line, product: data };
+        const { data } = await apiClient.get(`/api/products/${line.productId}`);
+        return { ...line, product: normalizeProduct(data) };
       } catch {
         return { ...line, product: null };
       }

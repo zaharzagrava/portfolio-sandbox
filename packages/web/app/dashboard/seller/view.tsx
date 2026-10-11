@@ -67,10 +67,12 @@ function OpenShop() {
 
 export function SellerOverviewView() {
   const { user } = useAuth();
-  const isSeller = user?.role === 'SELLER';
   const shops = useMyShops();
-  const stats = useSellerStats(isSeller);
   const shop = shops.data?.[0];
+  const isSeller = !!shop;
+  // The sales rollup is only served to accounts with the SELLER role, which opening a shop no longer grants.
+  const hasStats = user?.role === 'SELLER';
+  const stats = useSellerStats(isSeller && hasStats);
 
   if (shops.isLoading) return <div className="flex h-full items-center justify-center">Loading...</div>;
 
@@ -84,11 +86,12 @@ export function SellerOverviewView() {
   }
 
   const summary = stats.data?.summary;
+  const dash = hasStats ? '…' : '—';
   const cards = [
-    { title: 'Revenue (30d)', value: summary ? formatMoney(summary.revenueCents) : '…', icon: DollarSign },
-    { title: 'Orders', value: summary?.orders ?? '…', icon: ShoppingCart },
-    { title: 'Unique Buyers', value: summary?.uniqueBuyers ?? '…', icon: Users },
-    { title: 'Units Sold', value: summary?.unitsSold ?? '…', icon: Activity },
+    { title: 'Revenue (30d)', value: summary ? formatMoney(summary.revenueCents) : dash, icon: DollarSign },
+    { title: 'Orders', value: summary?.orders ?? dash, icon: ShoppingCart },
+    { title: 'Unique Buyers', value: summary?.uniqueBuyers ?? dash, icon: Users },
+    { title: 'Units Sold', value: summary?.unitsSold ?? dash, icon: Activity },
   ];
 
   return (

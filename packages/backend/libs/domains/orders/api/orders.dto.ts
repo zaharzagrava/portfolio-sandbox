@@ -1,5 +1,14 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsDateString, IsInt, IsUUID, Max, Min } from 'class-validator';
+import { Type } from 'class-transformer';
+import {
+  IsDateString,
+  IsInt,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Max,
+  Min,
+} from 'class-validator';
 
 export class CreateFlashSaleDto {
   @ApiProperty()
@@ -36,4 +45,18 @@ export class CreateFlashSaleDto {
   @ApiProperty()
   @IsDateString()
   endsAt: string;
+}
+
+export class ListOrdersQueryDto {
+  @ApiProperty({ required: false, default: 20, minimum: 1, maximum: 100 })
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(100)
+  limit: number = 20;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  cursor?: string;
 }

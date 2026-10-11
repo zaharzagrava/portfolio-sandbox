@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { register } from './helpers';
+import { openMenuIfCollapsed, register } from './helpers';
 
 /**
  * SD-42 shopping assistant: a streamed turn end to end. Locally, without ANTHROPIC_API_KEY, the backend's own
@@ -8,6 +8,7 @@ import { register } from './helpers';
 test.describe('Shopping assistant', () => {
   test('ask the assistant and get a streamed reply', async ({ page }) => {
     await register(page);
+    await openMenuIfCollapsed(page); // on the phone the launcher is a menu entry
     await page.getByRole('button', { name: 'AI Assistant' }).click();
     await page.getByPlaceholder('Ask me anything...').fill('Recommend a coffee grinder');
     await page.getByPlaceholder('Ask me anything...').press('Enter');

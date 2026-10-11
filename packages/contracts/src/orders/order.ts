@@ -85,6 +85,8 @@ export const orderPageSchema = z
   })
   .strict();
 
+export type OrderPageDto = z.infer<typeof orderPageSchema>;
+
 export const shopOrderPageSchema = z
   .object({
     items: z.array(

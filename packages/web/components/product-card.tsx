@@ -23,7 +23,8 @@ export function ProductCard({
   price,
   rating,
   reviewsCount,
-  imageUrl = 'https://placehold.co/400x400/png',
+  // Same-origin: `img-src` allows only 'self' plus the configured media hosts.
+  imageUrl = '/product-placeholder.svg',
   className,
 }: ProductCardProps) {
   return (

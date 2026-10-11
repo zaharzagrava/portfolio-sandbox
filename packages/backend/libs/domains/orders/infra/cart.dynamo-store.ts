@@ -2,7 +2,6 @@ import { Injectable } from '@nestjs/common';
 import {
   DeleteCommand,
   QueryCommand,
-  TransactWriteCommand,
   UpdateCommand,
 } from '@aws-sdk/lib-dynamodb';
 import { ApiConfigService } from '@app/common/config';
@@ -171,24 +170,22 @@ export class DynamoCartStore implements CartStore {
         if (state.lines.length >= this.config.get('orders_cart_max_lines'))
           return 'line_limit';
         await this.send((signal) =>
-          this.dynamo.doc.send(
-            new TransactWriteCommand({
-              TransactItems: [
-                {
-                  Put: {
-                    TableName: this.table,
-                    Item: {
-                      ...key,
-                      productId,
-                      quantity,
-                      addedAt: now.toISOString(),
-                      expiresAtEpoch,
-                    },
+          this.dynamo.transactWrite(
+            [
+              {
+                Put: {
+                  TableName: this.table,
+                  Item: {
+                    ...key,
+                    productId,
+                    quantity,
+                    addedAt: now.toISOString(),
+                    expiresAtEpoch,
                   },
                 },
-                this.metaUpdate(cartId, state.metaVersion),
-              ],
-            }),
+              },
+              this.metaUpdate(cartId, state.metaVersion),
+            ],
             { abortSignal: signal },
           ),
         );
@@ -269,12 +266,7 @@ export class DynamoCartStore implements CartStore {
 
       try {
         await this.send((signal) =>
-          this.dynamo.doc.send(
-            new TransactWriteCommand({
-              TransactItems: items as never,
-            }),
-            { abortSignal: signal },
-          ),
+          this.dynamo.transactWrite(items as never, { abortSignal: signal }),
         );
         return { lines: merged.lines, droppedLines: merged.droppedLines };
       } catch (error) {

@@ -129,3 +129,32 @@
     @apply font-sans;
   }
 }
+/* Placeholder reveal: hidden for the delay set inline (150 ms in app/loading.tsx), so quick loads never flash one. */
+@keyframes loading-reveal {
+  from {
+    visibility: hidden;
+  }
+  to {
+    visibility: visible;
+  }
+}
+.loading-reveal {
+  visibility: hidden;
+  animation: loading-reveal 0s linear;
+}
+
+/* A focused element is never hidden behind the sticky header (3.5 rem) when the browser scrolls it into view. */
+html {
+  scroll-padding-top: 5rem;
+}
+
+/* Reduced motion: the sheet and the toasts appear and disappear without animating (W07 AS-33). */
+@media (prefers-reduced-motion: reduce) {
+  [data-slot="sheet-content"],
+  [data-slot="sheet-overlay"],
+  [data-sonner-toast],
+  [data-sonner-toaster] {
+    animation: none !important;
+    transition: none !important;
+  }
+}

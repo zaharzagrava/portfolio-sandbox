@@ -61,6 +61,9 @@ const DEFAULT_FAILURE_STATUSES: readonly number[] = [401, 403];
 
 export const RATE_LIMIT_ROOT_OPTIONS = Symbol('RATE_LIMIT_ROOT_OPTIONS');
 
+/** Requests an interceptor has already enforced (see `intercept`). */
+const ENFORCED = new WeakSet<object>();
+
 const statusOf = (error: unknown): number => {
   if (error instanceof HttpException) return error.getStatus();
   const status = (error as { status?: unknown } | null)?.status;
@@ -91,8 +94,12 @@ export class RateLimitInterceptor implements NestInterceptor {
     const http = context.switchToHttp();
     const req = http.getRequest<LimitedRequest>();
     if (req.method === 'OPTIONS') return next.handle(); // a CORS preflight costs nothing (FR-030)
+    // The local monolith hosts several applications in one process, each with its own `forRoot()`: the first
+    // interceptor to see a request enforces, the others must not charge the same request again.
+    if (ENFORCED.has(req)) return next.handle();
     const entries = this.entriesFor(context, req);
     if (!entries.length) return next.handle();
+    ENFORCED.add(req);
     const res = http.getResponse<Response>();
 
     return from(this.admit(entries, req, res)).pipe(

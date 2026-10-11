@@ -5,6 +5,7 @@ import { HealthModule } from '@app/infrastructure/health/health.module';
 import { LoadSheddingModule } from '@app/common/load-shedding/load-shedding.module';
 import { LoggingModule } from '@app/common/logging/logging.module';
 import { ClockModule } from './clock.module';
+import { CspReportsController } from './csp-reports.controller';
 
 /**
  * F-01 platform toolkit in one import for HTTP apps: request context (CLS),
@@ -21,6 +22,7 @@ import { ClockModule } from './clock.module';
     LoadSheddingModule,
     LoggingModule,
   ],
+  controllers: [CspReportsController],
   exports: [
     ClockModule,
     RequestContextModule,

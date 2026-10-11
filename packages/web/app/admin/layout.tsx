@@ -5,7 +5,7 @@ import { Flag, LayoutDashboard } from 'lucide-react';
 export default function AdminLayout({ children }: { children: ReactNode }) {
   return (
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
-      <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6 sm:pt-4">
+      <header className="flex h-14 items-center gap-4 border-b bg-background px-4 sm:h-auto sm:border-0 sm:bg-transparent sm:px-6 sm:pt-4">
         <Link href="/admin" className="flex items-center gap-2 font-semibold">
           <LayoutDashboard className="h-5 w-5" />
           <span className="text-lg">Marketplace Admin</span>
@@ -23,7 +23,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
             </Link>
           </nav>
         </aside>
-        <main className="flex-1 p-4 sm:p-6">
+        <main className="min-w-0 flex-1 p-4 sm:p-6">
           {children}
         </main>
       </div>

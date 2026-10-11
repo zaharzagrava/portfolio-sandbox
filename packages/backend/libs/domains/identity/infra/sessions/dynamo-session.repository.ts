@@ -2,7 +2,6 @@ import { Injectable } from '@nestjs/common';
 import {
   GetCommand,
   QueryCommand,
-  TransactWriteCommand,
   UpdateCommand,
 } from '@aws-sdk/lib-dynamodb';
 import {
@@ -64,38 +63,34 @@ export class DynamoSessionRepository implements SessionRepository {
       lastUsedAt: createdAt,
       absoluteExpiry,
     };
-    await this.dynamo.doc.send(
-      new TransactWriteCommand({
-        TransactItems: [
-          {
-            Put: {
-              TableName: this.dynamo.table(TABLE),
-              Item: {
-                ...sessionKey(sid),
-                GSI1PK: `USER#${userId}`,
-                GSI1SK: `SESSION#${createdAt}#${sid}`,
-                ...session,
-                expiresAtEpoch: absoluteExpiry,
-              },
-              ConditionExpression: 'attribute_not_exists(PK)',
-            },
+    await this.dynamo.transactWrite([
+      {
+        Put: {
+          TableName: this.dynamo.table(TABLE),
+          Item: {
+            ...sessionKey(sid),
+            GSI1PK: `USER#${userId}`,
+            GSI1SK: `SESSION#${createdAt}#${sid}`,
+            ...session,
+            expiresAtEpoch: absoluteExpiry,
           },
-          {
-            Put: {
-              TableName: this.dynamo.table(TABLE),
-              Item: this.tokenItem(
-                refreshToken,
-                sid,
-                userId,
-                familyId,
-                refreshExpiry(now, absoluteExpiry),
-              ),
-              ConditionExpression: 'attribute_not_exists(PK)',
-            },
-          },
-        ],
-      }),
-    );
+          ConditionExpression: 'attribute_not_exists(PK)',
+        },
+      },
+      {
+        Put: {
+          TableName: this.dynamo.table(TABLE),
+          Item: this.tokenItem(
+            refreshToken,
+            sid,
+            userId,
+            familyId,
+            refreshExpiry(now, absoluteExpiry),
+          ),
+          ConditionExpression: 'attribute_not_exists(PK)',
+        },
+      },
+    ]);
     return { session, refreshToken };
   }
 
@@ -126,48 +121,44 @@ export class DynamoSessionRepository implements SessionRepository {
       const next = randomBytes(32).toString('base64url');
       const stamp = now.toISOString();
       try {
-        await this.dynamo.doc.send(
-          new TransactWriteCommand({
-            TransactItems: [
-              {
-                Update: {
-                  TableName: this.dynamo.table(TABLE),
-                  Key: key,
-                  UpdateExpression: 'SET usedAt = :now',
-                  ConditionExpression:
-                    'attribute_exists(PK) AND attribute_not_exists(usedAt) AND expiresAtEpoch > :epoch',
-                  ExpressionAttributeValues: {
-                    ':now': stamp,
-                    ':epoch': nowEpoch,
-                  },
-                },
+        await this.dynamo.transactWrite([
+          {
+            Update: {
+              TableName: this.dynamo.table(TABLE),
+              Key: key,
+              UpdateExpression: 'SET usedAt = :now',
+              ConditionExpression:
+                'attribute_exists(PK) AND attribute_not_exists(usedAt) AND expiresAtEpoch > :epoch',
+              ExpressionAttributeValues: {
+                ':now': stamp,
+                ':epoch': nowEpoch,
               },
-              {
-                Update: {
-                  TableName: this.dynamo.table(TABLE),
-                  Key: sessionKey(ids.sid),
-                  UpdateExpression: 'SET lastUsedAt = :now',
-                  ConditionExpression:
-                    'attribute_exists(PK) AND attribute_not_exists(revokedAt)',
-                  ExpressionAttributeValues: { ':now': stamp },
-                },
-              },
-              {
-                Put: {
-                  TableName: this.dynamo.table(TABLE),
-                  Item: this.tokenItem(
-                    next,
-                    ids.sid,
-                    ids.userId,
-                    token.familyId as string,
-                    refreshExpiry(now, session.absoluteExpiry),
-                  ),
-                  ConditionExpression: 'attribute_not_exists(PK)',
-                },
-              },
-            ],
-          }),
-        );
+            },
+          },
+          {
+            Update: {
+              TableName: this.dynamo.table(TABLE),
+              Key: sessionKey(ids.sid),
+              UpdateExpression: 'SET lastUsedAt = :now',
+              ConditionExpression:
+                'attribute_exists(PK) AND attribute_not_exists(revokedAt)',
+              ExpressionAttributeValues: { ':now': stamp },
+            },
+          },
+          {
+            Put: {
+              TableName: this.dynamo.table(TABLE),
+              Item: this.tokenItem(
+                next,
+                ids.sid,
+                ids.userId,
+                token.familyId as string,
+                refreshExpiry(now, session.absoluteExpiry),
+              ),
+              ConditionExpression: 'attribute_not_exists(PK)',
+            },
+          },
+        ]);
         return {
           ok: true,
           session: { ...session, lastUsedAt: stamp },

@@ -1,0 +1,107 @@
+/**
+ * Environment parsing for the web app. Pure and free of Next/React imports so `next.config.ts`, `proxy.ts`
+ * and tests can all use it. `lib/config.ts` parses `process.env` once for server code.
+ */
+
+export type Config = {
+  siteUrl: string;
+  apiUrl: string;
+  bffUrl: string;
+  sseUrl: string;
+  publicApiUrl: string;
+  mediaHosts: string[];
+  videoHosts: string[];
+  mapTileHost?: string;
+  paymentProviderHosts: string[];
+  widgetAppBundleUrl: string;
+  sourceCodeUrl?: string;
+  allowedOrigins: string[];
+  isDev: boolean;
+};
+
+type Env = Record<string, string | undefined>;
+
+// Local backend ports (packages/backend start:dev:* scripts). Next itself runs on 3000, so never default to it.
+const LOCAL_API_URL = 'http://localhost:8000';
+const LOCAL_MINIO_HOST = 'http://localhost:9100';
+const DEFAULT_WIDGET_BUNDLE = '/widget/v1/app.js';
+
+const list = (value: string | undefined) =>
+  (value ?? '')
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+/** Exact origin `https://host[:port]` (`http:` only in development): no path, query, credentials or wildcard. */
+function exactHost(name: string, value: string, isDev: boolean): string {
+  let url: URL;
+  try {
+    url = new URL(value);
+  } catch {
+    throw new Error(`${name}: "${value}" is not a valid https://host[:port] origin`);
+  }
+  const allowedProtocol = url.protocol === 'https:' || (isDev && url.protocol === 'http:');
+  if (!allowedProtocol) throw new Error(`${name}: "${value}" must use https`);
+  if (value.includes('*') || url.hostname.includes('*')) throw new Error(`${name}: "${value}" must not contain a wildcard`);
+  if (value.replace(/\/$/, '') !== url.origin) {
+    throw new Error(`${name}: "${value}" must be an origin only (https://host[:port])`);
+  }
+  return url.origin;
+}
+
+export function parseConfig(env: Env, options: { warn?: (message: string) => void } = {}): Config {
+  const isDev = env.NODE_ENV === 'development';
+  const isProd = env.NODE_ENV === 'production';
+  const warn = options.warn ?? ((message: string) => console.warn(message));
+
+  const hosts = (name: string, defaults: string[] = []) => {
+    const values = list(env[name]);
+    return values.length > 0 ? values.map((value) => exactHost(name, value, isDev)) : defaults;
+  };
+
+  let siteUrl = env.SITE_URL?.trim();
+  if (!siteUrl) {
+    if (isProd) throw new Error('SITE_URL is required in production');
+    siteUrl = 'http://localhost:3000';
+  }
+  if (isProd) {
+    let parsed: URL;
+    try {
+      parsed = new URL(siteUrl);
+    } catch {
+      throw new Error(`SITE_URL: "${siteUrl}" is not a valid URL`);
+    }
+    if (parsed.protocol !== 'https:') throw new Error('SITE_URL must use https in production');
+  }
+
+  const apiUrl = env.API_URL?.trim() || LOCAL_API_URL;
+
+  const mapTileHosts = hosts('MAP_TILE_HOST');
+
+  let sourceCodeUrl: string | undefined;
+  const rawSource = env.SOURCE_CODE_URL?.trim();
+  if (rawSource) {
+    try {
+      if (new URL(rawSource).protocol === 'https:') sourceCodeUrl = rawSource;
+    } catch {
+      // handled below
+    }
+    if (!sourceCodeUrl) warn('SOURCE_CODE_URL is ignored: it must be an https: address');
+  }
+
+  return {
+    siteUrl,
+    apiUrl,
+    bffUrl: env.BFF_URL?.trim() || apiUrl,
+    sseUrl: env.SSE_URL?.trim() || apiUrl,
+    publicApiUrl: env.PUBLIC_API_URL?.trim() || apiUrl,
+    mediaHosts: hosts('MEDIA_HOST', isDev ? [LOCAL_MINIO_HOST] : []),
+    videoHosts: hosts('VIDEO_HOST'),
+    mapTileHost: mapTileHosts[0],
+    paymentProviderHosts: hosts('PAYMENT_PROVIDER_HOSTS'),
+    widgetAppBundleUrl: env.WIDGET_APP_BUNDLE_URL?.trim() || DEFAULT_WIDGET_BUNDLE,
+    sourceCodeUrl,
+    allowedOrigins: list(env.ALLOWED_ORIGINS),
+    isDev,
+  };
+}

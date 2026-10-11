@@ -183,6 +183,29 @@ export class SequelizeOrderRepository implements OrderRepository {
     return row ? toRecord(row) : null;
   }
 
+  async pageForUser(
+    userId: string,
+    limit: number,
+    after: { createdAt: string; id: string } | null,
+  ): Promise<OrderRecord[]> {
+    const rows = await this.select<OrderRow>(
+      `SELECT ${COLUMNS} FROM "BisOrder"
+       WHERE "userId" = :userId
+         AND ("cancelReason" IS DISTINCT FROM 'out_of_stock')
+         AND (CAST(:afterCreatedAt AS timestamptz) IS NULL
+              OR ("createdAt", "id") < (CAST(:afterCreatedAt AS timestamptz), CAST(:afterId AS uuid)))
+       ORDER BY "createdAt" DESC, "id" DESC
+       LIMIT :limit`,
+      {
+        userId,
+        limit,
+        afterCreatedAt: after?.createdAt ?? null,
+        afterId: after?.id ?? null,
+      },
+    );
+    return rows.map(toRecord);
+  }
+
   async findByKey(
     userId: string,
     idempotencyKey: string,

@@ -9,3 +9,4 @@ export * from './src/realtime.ts';
 export * from './src/search/index.ts';
 export * from './src/analytics/index.ts';
 export * from './src/bff/index.ts';
+export * from './src/platform/index.ts';

@@ -10,7 +10,7 @@ import { ProductCard } from '@/components/product-card';
 import { AddToCartButton } from '@/components/add-to-cart-button';
 import { AskProduct } from '@/components/product/ask-product';
 import { ProductDiscussions } from '@/components/product/product-discussions';
-import { recommendationToCard, serverApiUrl, type ProductDetail, type Recommendation } from '@/lib/api/catalog';
+import { normalizeProduct, recommendationToCard, serverApiUrl, type ProductDetail, type Recommendation } from '@/lib/api/catalog';
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -20,7 +20,8 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 async function loadProduct(id: string): Promise<ProductDetail | null> {
   if (!UUID.test(id)) return null;
   const res = await fetch(`${serverApiUrl()}/api/products/${id}`, { cache: 'no-store' });
-  return res.ok ? res.json() : null;
+  if (!res.ok) return null;
+  return normalizeProduct(await res.json());
 }
 
 async function loadRecommendations(id: string): Promise<Recommendation[]> {
@@ -69,7 +70,7 @@ async function ProductDetails({ params }: Props) {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-10 mb-16">
         <div className="aspect-square bg-muted rounded-lg overflow-hidden">
-          <img src={`https://placehold.co/800x800/png?text=${encodeURIComponent(product.title.slice(0, 20))}`} alt={product.title} className="object-cover w-full h-full" />
+          <img src="/product-placeholder.svg" alt={product.title} className="object-cover w-full h-full" />
         </div>
 
         <div className="flex flex-col">
@@ -87,7 +88,7 @@ async function ProductDetails({ params }: Props) {
 
           <div className="text-sm mb-8">
             {product.inStock ? (
-              <span className="text-green-600 font-medium">In Stock ({product.quantity} available)</span>
+              <span className="text-green-600 font-medium">In Stock{product.quantity != null ? ` (${product.quantity} available)` : ""}</span>
             ) : (
               <span className="text-destructive font-medium">Out of Stock</span>
             )}

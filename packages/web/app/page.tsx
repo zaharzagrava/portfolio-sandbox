@@ -183,9 +183,9 @@ function TrendingProductsSkeleton() {
 }
 
 interface TrendingItem {
-  id: string;
+  productId: string;
   title: string;
-  price: number;
+  priceMinor: number;
   category: string;
   score: number;
 }
@@ -197,15 +197,16 @@ interface TrendingItem {
 async function loadHomeProducts(): Promise<ProductCardProps[]> {
   const base = serverApiUrl();
   const trending: TrendingItem[] = await fetch(`${base}/api/trending`, { cache: "no-store" })
-    .then((r) => (r.ok ? r.json() : []))
+    .then((r) => (r.ok ? r.json() : { items: [] }))
+    .then((body: { items?: TrendingItem[] }) => body.items ?? [])
     .catch(() => []);
   if (trending.length) {
-    return trending.slice(0, 8).map((t) => ({ id: t.id, slug: t.id, name: t.title, shopName: t.category, price: t.price, rating: 0, reviewsCount: 0 }));
+    return trending.slice(0, 8).map((t) => ({ id: t.productId, slug: t.productId, name: t.title, shopName: t.category, price: t.priceMinor, rating: 0, reviewsCount: 0 }));
   }
-  const search: SearchResponse | null = await fetch(`${base}/api/products/search?size=8`, { cache: "no-store" })
+  const search: SearchResponse | null = await fetch(`${base}/api/products/search?limit=8`, { cache: "no-store" })
     .then((r) => (r.ok ? r.json() : null))
     .catch(() => null);
-  return (search?.hits ?? []).map(hitToCard);
+  return (search?.items ?? []).map(hitToCard);
 }
 
 async function TrendingProducts() {

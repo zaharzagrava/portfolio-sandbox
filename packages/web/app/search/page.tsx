@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition, useEffect, Suspense } from 'react';
+import { useId, useState, useTransition, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { Search, SlidersHorizontal, MapPin, Loader2, X } from 'lucide-react';
@@ -20,17 +20,18 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 const fetchProducts = async (params: any) => {
-  const queryParams = new URLSearchParams();
+  const queryParams = new URLSearchParams({ limit: '50' });
   if (params.q) queryParams.set('q', params.q);
   if (params.category && params.category.length > 0) {
-    queryParams.set('category', params.category.join(','));
+    // the API filters by one category; several selected are narrowed client-side below
+    if (params.category.length === 1) queryParams.set('category', params.category[0]);
   }
   if (params.priceRange && params.priceRange.length === 2) {
-    queryParams.set('priceMin', (params.priceRange[0] * 100).toString());
-    queryParams.set('priceMax', (params.priceRange[1] * 100).toString());
+    queryParams.set('minPriceMinor', (params.priceRange[0] * 100).toString());
+    queryParams.set('maxPriceMinor', (params.priceRange[1] * 100).toString());
   }
   if (params.rating) {
-    queryParams.set('ratingMin', params.rating.toString());
+    queryParams.set('minRating', params.rating.toString());
   }
   if (params.sort) {
     queryParams.set('sort', params.sort);
@@ -40,9 +41,11 @@ const fetchProducts = async (params: any) => {
     const res = await fetch(`/api/products/search?${queryParams.toString()}`);
     if (!res.ok) throw new Error('Failed to fetch products');
     const data: SearchResponse = await res.json();
+    const wanted: string[] = params.category ?? [];
+    const items = (data.items || []).filter((item) => wanted.length < 2 || wanted.includes(item.category));
     return {
-      items: (data.hits || []).map(hitToCard),
-      total: data.total || 0,
+      items: items.map(hitToCard),
+      total: wanted.length < 2 ? data.total?.value || 0 : items.length,
       facets: data.facets || {}
     };
   } catch (error) {
@@ -316,6 +319,8 @@ function SearchContent() {
 }
 
 function FiltersContent({ filters, toggleCategory, setFilters, updateSearch }: any) {
+  // Rendered twice (sidebar and phone sheet): element ids must stay unique for the labels to find their controls.
+  const uid = useId();
   const categories = [
     { id: 'clothing', label: 'Clothing', count: 124 },
     { id: 'shoes', label: 'Shoes', count: 86 },
@@ -333,11 +338,11 @@ function FiltersContent({ filters, toggleCategory, setFilters, updateSearch }: a
             <div key={cat.id} className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
                 <Checkbox 
-                  id={`cat-${cat.id}`} 
+                  id={`${uid}-cat-${cat.id}`} 
                   checked={filters.category.includes(cat.id)}
                   onCheckedChange={() => toggleCategory(cat.id)}
                 />
-                <Label htmlFor={`cat-${cat.id}`} className="text-sm font-normal cursor-pointer">
+                <Label htmlFor={`${uid}-cat-${cat.id}`} className="text-sm font-normal cursor-pointer">
                   {cat.label}
                 </Label>
               </div>
@@ -381,11 +386,11 @@ function FiltersContent({ filters, toggleCategory, setFilters, updateSearch }: a
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <div className="space-y-0.5">
-            <Label htmlFor="nearMe-switch" className="font-medium text-sm">Near Me</Label>
+            <Label htmlFor={`${uid}-nearMe`} className="font-medium text-sm">Near Me</Label>
             <p className="text-xs text-muted-foreground">Local pickup available</p>
           </div>
           <Switch 
-            id="nearMe-switch"
+            id={`${uid}-nearMe`}
             checked={filters.nearMe} 
             onCheckedChange={(c) => {
               const newFilters = { ...filters, nearMe: c };

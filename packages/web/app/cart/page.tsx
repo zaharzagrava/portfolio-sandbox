@@ -87,7 +87,7 @@ export default function CartPage() {
                               size="icon"
                               className="h-8 w-8"
                               aria-label="Increase quantity"
-                              disabled={item.quantity >= 20 || (item.product !== null && item.quantity >= item.product.quantity)}
+                              disabled={item.quantity >= 20 || (item.product?.quantity != null && item.quantity >= item.product.quantity)}
                               onClick={() => change(item.productId, nextQuantity(item.quantity, 1))}
                             >
                               <Plus className="h-3 w-3" />

@@ -1,6 +1,8 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 
-const baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+// Same-origin by default (the web app's rewrites reach the API): the CSP allows `connect-src 'self'` only. W01 removes
+// the in-memory access token and this variable altogether (sibling follow-up).
+const baseURL = process.env.NEXT_PUBLIC_API_URL || '';
 
 export const apiClient = axios.create({
   baseURL,

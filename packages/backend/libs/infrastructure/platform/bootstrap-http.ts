@@ -211,7 +211,14 @@ export function configureHttpApp(
     if (Buffer.isBuffer(buffer)) (req as RawBodyRequest).rawBody = buffer;
   };
   const expressApp = app as NestExpressApplication;
-  expressApp.useBodyParser('json', { limit: BODY_LIMIT, verify: keepRawBody });
+  expressApp.useBodyParser('json', {
+    limit: BODY_LIMIT,
+    verify: keepRawBody,
+    // The CSP report endpoint reads its own body and must answer 204 even for malformed JSON (W07 AS-21).
+    type: (req: Request) =>
+      !req.path.endsWith('/csp-reports') &&
+      /^application\/json\s*(;|$)/i.test(req.headers['content-type'] ?? ''),
+  });
   expressApp.useBodyParser('urlencoded', {
     limit: BODY_LIMIT,
     extended: true,

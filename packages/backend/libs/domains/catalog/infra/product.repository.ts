@@ -107,9 +107,10 @@ export class SequelizeProductRepository implements ProductRepository {
 
   async insert(input: NewProduct): Promise<ProductRecord> {
     const [row] = await this.rows<Row>(
-      `INSERT INTO "Product" AS p ("id","shopId","createdBy","isSandbox","title","description","brand","category",
+      // "sellerId" mirrors "createdBy": the legacy column that capabilities not converted yet (chat, S24) still read.
+      `INSERT INTO "Product" AS p ("id","shopId","createdBy","sellerId","isSandbox","title","description","brand","category",
          "price","priceMinor","currency","quantity","tags","status","version","viewCount","rating","createdAt","updatedAt")
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$9,$10,$11,$12::jsonb,'ACTIVE',1,0,0,$13,$13)
+       VALUES ($1,$2,$3,$3,$4,$5,$6,$7,$8,$9,$9,$10,$11,$12::jsonb,'ACTIVE',1,0,0,$13,$13)
        RETURNING ${PRODUCT_COLUMNS}`,
       [
         input.id,

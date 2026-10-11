@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { SEED, productId } from './helpers';
+import { SEED, openFiltersIfCollapsed, productId } from './helpers';
 
 /** Home → search → product page, against the seeded catalog (SD-37 search, SD-32 trending fallback). */
 test.describe('Catalog & search', () => {
@@ -28,15 +28,17 @@ test.describe('Catalog & search', () => {
     await page.getByRole('option', { name: 'Price: High to Low' }).click();
     await expect(page).toHaveURL(/sort=price-desc/);
 
-    // Apply price filter - type in max price
-    await page.getByPlaceholder('Max').fill('500');
+    // Apply price filter - type in max price (on the phone the filters sit in a sheet)
+    const filters = await openFiltersIfCollapsed(page);
+    await filters.getByPlaceholder('Max').fill('500');
     // We expect the price filters to apply to the URL (assuming we implement it correctly in the frontend)
     // We will adjust page.tsx to trigger updateSearch on price blur or change
   });
 
   test.fail('Near Me filter is not implemented yet', async ({ page }) => {
     await page.goto('/search');
-    await page.getByRole('switch', { name: /Near Me/i }).click();
+    const filters = await openFiltersIfCollapsed(page);
+    await filters.getByRole('switch', { name: /Near Me/i }).click();
     // This will fail because the backend doesn't support geo sorting yet
     await expect(page).toHaveURL(/nearMe=true/);
     const results = page.getByTestId('product-card');

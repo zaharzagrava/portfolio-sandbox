@@ -80,3 +80,6 @@ interviews) until its status says so. The implementation loop appends here (rule
 | S35 | SC-008: an alert fires when no window merged for 10 minutes while events flow | same file (alert drill) | not run |
 | S35 | SC-009: 500k events/s over 64 partitions with lag under 60 s | same file (load proof, 16 consumers) | not run |
 | S48 | SC-008: with 50k page requests/s and one optional dependency slowed to 2 s, every request completes within the 1 s page deadline and the slow dependency's breaker opens within 10 s | `specs/domains/S48-bff/quickstart.md`, "Ops artifacts" (`loadtest:product-page`, k6) | not run |
+| W07 | SC-004: the frame causes a cumulative layout shift of 0.02 or less on every page while slots load | `specs/web/W07-app-shell/quickstart.md`, "Ops artifacts" (layout-shift capture on the production build) | not run |
+| W07 | SC-005: a phone visitor reaches Log in, Sign up, Cart, Browse, Terms and Privacy within two taps from any page | same file (manual 390 px walk) | not run |
+| W07 | SC-006: every AS-13 failure shows a plain message and a way forward within 1 s, and the quoted reference finds the request | same file (forced failures, timing, log lookup) | not run |
