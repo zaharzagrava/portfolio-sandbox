@@ -65,7 +65,7 @@ Constitution VII.8 table: one row per acceptance scenario in [`spec.md`](spec.md
 | U-aapi | `lib/api/ask.test.ts` | `ask stream` |
 | U-share | `components/product/share-popover.test.tsx` | `SharePopover` |
 | U-ref | `lib/attribution/ref.test.ts` | `referral cookie` |
-| U-redir | `app/p/[productId]/route.test.ts` | `/p redirect` |
+| U-redir | `app/p/[productId]/page.test.tsx` | `/p redirect` |
 | U-video | `components/product/video-section.test.tsx` | `VideoSection` |
 | U-track | `lib/analytics/track.test.ts` | `track` |
 | U-pv | `components/analytics/product-view.test.tsx` | `ProductView` |
@@ -145,7 +145,7 @@ Constitution VII.8 table: one row per acceptance scenario in [`spec.md`](spec.md
 | AS-66 Sponsored slot | JA › `sponsored cards above results` (`test.fixme`) | U-ads › `clickUrl verbatim; rel sponsored nofollow; not prefetched; empty, 429, 503, invalid, offline render nothing; flag off makes no request` | — | S36 AS-26 |
 | AS-67 `product_view` once | JE › `a product view reaches ingestion` (request to `/api/events` carries one `product_view` with `product_id` and `category`) | U-pv › `once per page view; Strict Mode double mount and tab changes add none; another product adds one`; U-track › `event shape and props limits` | — | S35 AS-16; S39 AS-02 |
 | AS-68 Batching, retry, privacy | — | U-track › `batch of 20, 5 s flush, visibility change uses sendBeacon, retry 1/2/4 s with the same event_id then drop; GPC and DNT create no cookie and no event; anonymous id format` | — | S39 AS-02..AS-09 |
-| AS-69 Rendering model | — | static: `next build` succeeds with Cache Components (no runtime-data-outside-Suspense or blocking-route error); U-page › `product read sends no cookie, Authorization or X-Anonymous-Id; cache key is the id; degraded not kept`; U-arch › `no "use cache" function reads cookies or headers` | — | — |
+| AS-69 Rendering model (the shell streams first: the per-request CSP nonce layout opts out of a prerendered static shell, research R-01) | — | static: `next build` succeeds with Cache Components (no runtime-data-outside-Suspense or blocking-route error); U-page › `product read sends no cookie, Authorization or X-Anonymous-Id; cache key is the id; degraded not kept`; U-arch › `no "use cache" function reads cookies or headers` | — | — |
 | AS-70 Boundaries and data flow | — | static: U-arch › `no fetch, axios or EventSource in components or hooks; no NEXT_PUBLIC_API_URL; no Authorization or storage access in W02 files; every page and layout is a Server Component; client files are leaves; props passed to client files are plain fields` | — | — |
 | AS-71 State homes and keys | — | U-keys › `W02 keys are tuples from the factory, params canonicalised so equal views share a key`; U-arch › `no server data in useState or Context; no new Context or store` | — | — |
 | AS-72 Content safety | — | U-arch › `dangerouslySetInnerHTML only in sanitizer output and JSON-LD`; U-card › `non-https imageUrl ignored`; U-share › `non-https shortUrl ignored`; U-ads › `non-https clickUrl ignored`; U-video › `non-https masterUrl ignored` | — | — |

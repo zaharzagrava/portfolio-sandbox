@@ -16,6 +16,15 @@ export class ProductQueryService {
   ) {}
 
   /**
+   * Whether the product is shown to the public (ACTIVE, not sandbox, shop active). Counts no view and fills no cache;
+   * for read paths of other capabilities that must answer a hidden product like an unknown one. A non-UUID is `false`.
+   */
+  async isPubliclyVisible(id: string): Promise<boolean> {
+    if (!isUuid(id)) return false;
+    return (await this.products.findVisibleByIds([id.toLowerCase()])).length > 0;
+  }
+
+  /**
    * Unknown ids are absent, duplicates collapse, `[]` is an empty map without a statement. With `{shopId}` only that
    * shop's products are returned (the ownership check of the caller). More than 500 ids or a non-UUID is refused.
    */

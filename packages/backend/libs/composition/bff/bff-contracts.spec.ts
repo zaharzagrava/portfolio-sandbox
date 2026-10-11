@@ -4,6 +4,7 @@ import {
   graphqlErrorCodeSchema,
   mfaRequiredResponseSchema,
   pageQuerySchema,
+  productGallerySchema,
   productPageResponseSchema,
   sectionErrorSchema,
   sessionLoginRequestSchema,
@@ -63,7 +64,7 @@ describe('S48 BFF contracts', () => {
   });
 
   it('S48 C1: the page has the product plus ten nullable sections and an errors array', () => {
-    expect(BFF_SECTIONS).toHaveLength(11);
+    expect(BFF_SECTIONS).toHaveLength(12);
     const page = {
       product,
       shop: null,
@@ -73,6 +74,7 @@ describe('S48 BFF contracts', () => {
       chatUnread: null,
       discussions: null,
       videos: null,
+      gallery: null,
       pickup: null,
       flashSale: null,
       auction: null,
@@ -91,6 +93,30 @@ describe('S48 BFF contracts', () => {
         shop: { id: product.shopId, name: 'S', slug: 's' },
       }),
     ).toBe(true);
+  });
+
+  it('W02 B-2: gallery is a nullable section of the page and a valid section name in errors', () => {
+    expect(BFF_SECTIONS).toContain('gallery');
+    expect(
+      ok(sectionErrorSchema, {
+        section: 'gallery',
+        code: 'BUDGET_EXCEEDED',
+        retryable: true,
+      }),
+    ).toBe(true);
+    const gallery = {
+      items: [
+        {
+          mediaId: '0b3f4d0e-6a52-4c53-9a37-6d0a2a5c2e11',
+          position: 0,
+          urls: { thumb: 'https://m/t', feed: 'https://m/f', full: 'https://m/u' },
+          width: 1600,
+          height: 1200,
+        },
+      ],
+    };
+    expect(ok(productGallerySchema, gallery)).toBe(true);
+    expect(ok(productGallerySchema, { items: [{ mediaId: 'x' }] })).toBe(false);
   });
 
   it.each([

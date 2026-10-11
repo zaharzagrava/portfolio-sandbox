@@ -41,6 +41,30 @@ describe('W07 config (lib/config-parse.ts)', () => {
     for (const host of [...config.mediaHosts, ...config.videoHosts, ...config.paymentProviderHosts]) expect(host).not.toContain('*');
   });
 
+  it('W02 FR-152: NEXT_PUBLIC_MAP_TILE_URL needs {z}, {x}, {y} and its host in MAP_TILE_HOST (the CSP allows only that host)', () => {
+    const tiles = { MAP_TILE_HOST: 'https://tiles.example.com', NEXT_PUBLIC_MAP_TILE_URL: 'https://tiles.example.com/{z}/{x}/{y}.png' };
+    expect(parseConfig({ ...prod, ...tiles }).mapTileUrl).toBe('https://tiles.example.com/{z}/{x}/{y}.png');
+    expect(parseConfig(prod).mapTileUrl).toBeUndefined();
+    expect(() => parseConfig({ ...prod, NEXT_PUBLIC_MAP_TILE_URL: tiles.NEXT_PUBLIC_MAP_TILE_URL })).toThrowError(/MAP_TILE_HOST/);
+    expect(() => parseConfig({ ...prod, ...tiles, MAP_TILE_HOST: 'https://other.example.com' })).toThrowError(/MAP_TILE_HOST/);
+    expect(() => parseConfig({ ...prod, ...tiles, NEXT_PUBLIC_MAP_TILE_URL: 'https://tiles.example.com/tiles.png' })).toThrowError(/NEXT_PUBLIC_MAP_TILE_URL/);
+    expect(() => parseConfig({ ...prod, ...tiles, NEXT_PUBLIC_MAP_TILE_URL: 'http://tiles.example.com/{z}/{x}/{y}.png' })).toThrowError(/NEXT_PUBLIC_MAP_TILE_URL/);
+    expect(() => parseConfig({ ...prod, ...tiles, NEXT_PUBLIC_MAP_TILE_URL: 'nonsense' })).toThrowError(/NEXT_PUBLIC_MAP_TILE_URL/);
+  });
+
+  it('W02 FR-131: STOREFRONT_ADS_ENABLED is off unless it is exactly "true"', () => {
+    expect(parseConfig(prod).adsEnabled).toBe(false);
+    expect(parseConfig({ ...prod, STOREFRONT_ADS_ENABLED: 'true' }).adsEnabled).toBe(true);
+    for (const value of ['1', 'TRUE', 'yes', '', 'false']) expect(parseConfig({ ...prod, STOREFRONT_ADS_ENABLED: value }).adsEnabled).toBe(false);
+  });
+
+  it('W02 FR-152: MEDIA_HOST and VIDEO_HOST are exact origins and VIDEO_HOST defaults to none', () => {
+    const config = parseConfig({ ...prod, MEDIA_HOST: 'https://media.example.com', VIDEO_HOST: 'https://video.example.com' });
+    expect(config.mediaHosts).toEqual(['https://media.example.com']);
+    expect(config.videoHosts).toEqual(['https://video.example.com']);
+    expect(parseConfig(prod).videoHosts).toEqual([]);
+  });
+
   it('W07 AS-34: production without SITE_URL throws, naming the variable', () => {
     expect(() => parseConfig({ NODE_ENV: 'production' })).toThrowError(/SITE_URL/);
   });

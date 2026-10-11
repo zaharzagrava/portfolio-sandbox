@@ -7,7 +7,7 @@ import { nextQuantity, useCart, useSetCartQuantity } from '@/lib/api/cart';
 import { apiErrorMessage } from '@/lib/api/errors';
 
 /** Adds one unit (the cart API sets absolute quantities, so it reads the current line first). */
-export function AddToCartButton({ productId, disabled }: { productId: string; disabled?: boolean }) {
+export function AddToCartButton({ productId, disabled }: { productId: string; /** The product's category slug, for the `add_to_cart` event (W02 hands it over; W03 emits it). */ category?: string; disabled?: boolean }) {
   const { data: items } = useCart();
   const setQuantity = useSetCartQuantity();
   const current = items?.find((i) => i.productId === productId)?.quantity ?? 0;

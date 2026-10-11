@@ -12,6 +12,10 @@ export type Config = {
   mediaHosts: string[];
   videoHosts: string[];
   mapTileHost?: string;
+  /** `NEXT_PUBLIC_MAP_TILE_URL` (`https://host/{z}/{x}/{y}.png`); its origin equals `mapTileHost`. Absent: the map shows the list view only. */
+  mapTileUrl?: string;
+  /** `STOREFRONT_ADS_ENABLED=true`; off by default (W02 FR-131). */
+  adsEnabled: boolean;
   paymentProviderHosts: string[];
   widgetAppBundleUrl: string;
   sourceCodeUrl?: string;
@@ -78,6 +82,26 @@ export function parseConfig(env: Env, options: { warn?: (message: string) => voi
 
   const mapTileHosts = hosts('MAP_TILE_HOST');
 
+  // The tile template is public by nature, and the page's CSP only lets the browser reach MAP_TILE_HOST: the two must agree.
+  let mapTileUrl: string | undefined;
+  const rawTiles = env.NEXT_PUBLIC_MAP_TILE_URL?.trim();
+  if (rawTiles) {
+    let tiles: URL;
+    try {
+      tiles = new URL(rawTiles.replace(/\{[xyz]\}/g, '0'));
+    } catch {
+      throw new Error(`NEXT_PUBLIC_MAP_TILE_URL: "${rawTiles}" is not a valid URL`);
+    }
+    if (!(tiles.protocol === 'https:' || (isDev && tiles.protocol === 'http:'))) throw new Error('NEXT_PUBLIC_MAP_TILE_URL must use https');
+    if (!/\{z\}/.test(rawTiles) || !/\{x\}/.test(rawTiles) || !/\{y\}/.test(rawTiles)) {
+      throw new Error('NEXT_PUBLIC_MAP_TILE_URL must contain {z}, {x} and {y}');
+    }
+    if (!mapTileHosts.includes(tiles.origin)) {
+      throw new Error(`NEXT_PUBLIC_MAP_TILE_URL: "${tiles.origin}" must also be listed in MAP_TILE_HOST (the CSP allows only that host)`);
+    }
+    mapTileUrl = rawTiles;
+  }
+
   let sourceCodeUrl: string | undefined;
   const rawSource = env.SOURCE_CODE_URL?.trim();
   if (rawSource) {
@@ -98,6 +122,8 @@ export function parseConfig(env: Env, options: { warn?: (message: string) => voi
     mediaHosts: hosts('MEDIA_HOST', isDev ? [LOCAL_MINIO_HOST] : []),
     videoHosts: hosts('VIDEO_HOST'),
     mapTileHost: mapTileHosts[0],
+    mapTileUrl,
+    adsEnabled: env.STOREFRONT_ADS_ENABLED?.trim() === 'true',
     paymentProviderHosts: hosts('PAYMENT_PROVIDER_HOSTS'),
     widgetAppBundleUrl: env.WIDGET_APP_BUNDLE_URL?.trim() || DEFAULT_WIDGET_BUNDLE,
     sourceCodeUrl,

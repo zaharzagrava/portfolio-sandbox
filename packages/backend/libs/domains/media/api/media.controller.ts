@@ -73,6 +73,13 @@ export class MediaController {
     return this.media.get(id);
   }
 
+  /** Public product gallery (W02 B-1): READY images by position; hidden products are `404` like unknown ones. */
+  @Firewall({ anonymous: true })
+  @Get('products/:productId/gallery')
+  publicGallery(@Param('productId', ParseUUIDPipe) productId: string) {
+    return this.media.publicGallery(productId);
+  }
+
   @ShopScoped('products.write')
   @Put('shops/:shopId/products/:productId/gallery')
   @HttpCode(204)

@@ -75,6 +75,12 @@ describe('ProblemAlert', () => {
     expect(screen.queryByRole('alert')).toBeNull();
   });
 
+  it('W02 AS-73: a storefront surface takes its text and reference from the W02 catalogue, never from the server', () => {
+    render(<ProblemAlert surface="pickup" problem={problem({ status: 503, requestId: 'req-77' })} />);
+    expect(screen.getByRole('alert')).toHaveTextContent('Pickup availability is temporarily unavailable. Try again.');
+    expect(screen.getByRole('alert')).toHaveTextContent('Reference: req-77');
+  });
+
   it('W01 AS-66: forwards id and ref so a form can link and focus it', () => {
     const ref = { current: null as HTMLDivElement | null };
     render(<ProblemAlert problem={problem({ status: 500 })} id="form-error" ref={ref} />);

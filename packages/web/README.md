@@ -20,6 +20,19 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Environment (storefront)
+
+See `.env.example`. The values below are read once by `lib/config-parse.ts`; a bad value fails the first request naming the variable.
+
+| Variable | Meaning |
+|---|---|
+| `API_URL`, `BFF_URL`, `SITE_URL` | Server-only. `SITE_URL` is required in production and must be `https`; it is the origin of share links and canonical addresses. |
+| `MEDIA_HOST` | Exact origin(s) of the media delivery host. The only image host `next/image` and the CSP accept. |
+| `VIDEO_HOST` | Exact origin(s) of the video delivery host (CSP `media-src`). None by default. |
+| `MAP_TILE_HOST` | Exact origin of the map tile server (CSP). |
+| `NEXT_PUBLIC_MAP_TILE_URL` | Public tile template with `{z}/{x}/{y}`; its origin must equal `MAP_TILE_HOST`. Unset: the pickup map shows the list view only. |
+| `STOREFRONT_ADS_ENABLED` | `true` turns on the sponsored slot on `/search`. Off by default. |
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

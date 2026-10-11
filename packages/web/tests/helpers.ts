@@ -114,7 +114,7 @@ export async function closeMenu(page: Page) {
  * holding the filter controls (the sheet on the phone, the whole page at desktop width, where the sidebar is shown).
  */
 export async function openFiltersIfCollapsed(page: Page) {
-  if (viewportWidth(page) >= 768) return page.locator('body'); // the sidebar is shown from the md breakpoint up
+  if (viewportWidth(page) >= 1024) return page.locator('body'); // the sidebar is shown from the lg breakpoint up (W02 FR-181)
   await page.getByRole('button', { name: 'Filters' }).click();
   const sheet = page.getByRole('dialog', { name: 'Filters' });
   await expect(sheet).toBeVisible();
@@ -158,6 +158,16 @@ export async function expectNoCspViolations(page: Page) {
   };
 }
 
+/**
+ * Pretends the visitor is at `lat`/`lng` and allows location for the page's origin (W02 pickup journeys). Call before
+ * the page asks; the browser context keeps the permission for later navigations.
+ */
+export async function grantLocation(page: Page, lat: number, lng: number) {
+  const context = page.context();
+  await context.grantPermissions(['geolocation']);
+  await context.setGeolocation({ latitude: lat, longitude: lng });
+}
+
 /** A seeded product's id, found through the real search API (indexing is asynchronous, so poll briefly). */
 export async function productId(title = SEED.product): Promise<string> {
   for (let attempt = 0; attempt < 30; attempt++) {
@@ -170,4 +180,18 @@ export async function productId(title = SEED.product): Promise<string> {
     await new Promise((r) => setTimeout(r, 1_000));
   }
   throw new Error(`"${title}" is not searchable - is the worker/indexer running (dev-monolith)?`);
+}
+
+/** The first seeded product that has bought-together recommendations (S34 dataset D), or `null` when none has. */
+export async function productWithRecommendations(request: APIRequestContext): Promise<{ id: string; titles: string[] } | null> {
+  const list = await request.get(`${API_URL}/api/products/search?limit=50`);
+  if (!list.ok()) return null;
+  const { items } = (await list.json()) as { items: { id: string }[] };
+  for (const { id } of items) {
+    const res = await request.get(`${API_URL}/api/products/${id}/recommendations`);
+    if (!res.ok()) continue;
+    const body = (await res.json()) as { items?: { title: string }[] };
+    if (body.items?.length) return { id, titles: body.items.map((item) => item.title) };
+  }
+  return null;
 }

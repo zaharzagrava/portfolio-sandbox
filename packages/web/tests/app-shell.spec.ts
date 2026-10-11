@@ -16,7 +16,7 @@ test.describe('W07 app shell', () => {
     await expect(banner.getByRole('link', { name: 'Marketplace home' })).toHaveAttribute('href', '/');
     const nav = banner.getByRole('navigation', { name: 'Main' });
     await expect(nav.getByRole('link')).toHaveText(['Browse', 'Developers']);
-    await expect(banner.getByRole('searchbox', { name: 'Search products' })).toBeVisible();
+    await expect(banner.getByRole('combobox', { name: 'Search products' })).toBeVisible();
     await expect(banner.getByRole('button', { name: 'Open menu' })).toBeHidden();
     // right-hand group, left to right (measured once the session read has settled: the visitor links are wider than the
     // account skeleton, so the group moves when it resolves)

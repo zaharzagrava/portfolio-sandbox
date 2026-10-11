@@ -49,6 +49,19 @@ if (typeof window !== 'undefined') {
       return false;
     }
   } as unknown as typeof BroadcastChannel;
+  // W02: tests replace these per case (`vi.mocked(navigator.geolocation.getCurrentPosition).mockImplementation(...)`).
+  if (!('geolocation' in navigator)) {
+    Object.defineProperty(navigator, 'geolocation', {
+      configurable: true,
+      value: { getCurrentPosition: vi.fn(), watchPosition: vi.fn(() => 0), clearWatch: vi.fn() },
+    });
+  }
+  if (!navigator.clipboard) {
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText: vi.fn(() => Promise.resolve()), readText: vi.fn(() => Promise.resolve('')) },
+    });
+  }
   Element.prototype.scrollIntoView ??= () => {};
   Element.prototype.setPointerCapture ??= () => {};
   Element.prototype.releasePointerCapture ??= () => {};

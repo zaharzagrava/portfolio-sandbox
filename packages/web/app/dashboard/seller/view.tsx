@@ -89,7 +89,7 @@ export function SellerOverviewView() {
   const summary = stats.data?.summary;
   const dash = hasStats ? '…' : '—';
   const cards = [
-    { title: 'Revenue (30d)', value: summary ? formatMoney(summary.revenueCents) : dash, icon: DollarSign },
+    { title: 'Revenue (30d)', value: summary ? formatMoney(summary.revenueCents, 'USD') : dash, icon: DollarSign },
     { title: 'Orders', value: summary?.orders ?? dash, icon: ShoppingCart },
     { title: 'Unique Buyers', value: summary?.uniqueBuyers ?? dash, icon: Users },
     { title: 'Units Sold', value: summary?.unitsSold ?? dash, icon: Activity },
@@ -149,7 +149,7 @@ export function SellerOverviewView() {
                     {p.productId.slice(0, 8)}
                   </Link>
                   <span>
-                    {p.unitsSold} sold · {formatMoney(p.revenueCents)}
+                    {p.unitsSold} sold · {formatMoney(p.revenueCents, 'USD')}
                   </span>
                 </li>
               ))}

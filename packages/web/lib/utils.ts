@@ -1,19 +1,17 @@
 export { cn } from "cn";
 
 /**
- * Format cents (integer minor units) to a human-readable currency string.
- * All money in the system is stored as integer cents (BIGINT) — never floats.
+ * Format an amount in minor units (integers, never floats) as a currency string. The currency is required and decides
+ * the number of fraction digits: JPY 0, USD 2, KWD 3 (W02 U-money).
  */
 export function formatMoney(
-  cents: number | bigint,
-  currency = "USD",
+  minor: number | bigint,
+  currency: string,
   locale = "en-US",
 ): string {
-  const amount = Number(cents) / 100;
-  return new Intl.NumberFormat(locale, {
-    style: "currency",
-    currency,
-  }).format(amount);
+  const formatter = new Intl.NumberFormat(locale, { style: "currency", currency });
+  const digits = formatter.resolvedOptions().maximumFractionDigits ?? 2;
+  return formatter.format(Number(minor) / 10 ** digits);
 }
 
 /**

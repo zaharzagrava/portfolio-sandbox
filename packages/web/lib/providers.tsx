@@ -11,21 +11,24 @@ import { OfflineNotice } from '@/components/layout/offline-notice';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { Toaster } from '@/components/ui/sonner';
 import { THEME_STORAGE_KEY } from '@/lib/browser-storage-keys';
+import { applyQueryDefaults } from '@/lib/query-defaults';
 
 /** `nonce` is this response's CSP nonce (read from the request in `components/layout/nonce-providers.tsx`). */
 export function Providers({ children, nonce }: { children: ReactNode; nonce?: string }) {
   const [queryClient] = useState(
     () =>
-      new QueryClient({
-        defaultOptions: {
-          queries: {
-            staleTime: 60 * 1000, // 60s
-            retry: 1,
-            // Off by default; the session query turns it on for itself (hooks/use-auth.tsx).
-            refetchOnWindowFocus: false,
+      applyQueryDefaults(
+        new QueryClient({
+          defaultOptions: {
+            queries: {
+              staleTime: 60 * 1000, // 60s
+              retry: 1,
+              // Off by default; the session query turns it on for itself (hooks/use-auth.tsx).
+              refetchOnWindowFocus: false,
+            },
           },
-        },
-      })
+        }),
+      ),
   );
 
   return (

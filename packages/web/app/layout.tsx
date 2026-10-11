@@ -8,7 +8,7 @@ import { Navbar } from '@/components/layout/navbar';
 import { NonceProviders } from '@/components/layout/nonce-providers';
 import { RouteFocus } from '@/components/layout/route-focus';
 import { SkipLink } from '@/components/layout/skip-link';
-import { config } from '@/lib/config';
+import { siteUrl } from '@/lib/server/endpoints.server';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -21,7 +21,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(config.siteUrl),
+  metadataBase: new URL(siteUrl()),
   title: { default: 'Marketplace', template: '%s · Marketplace' },
   description: 'A modern full-stack marketplace platform built with Next.js 16',
 };

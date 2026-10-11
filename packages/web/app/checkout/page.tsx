@@ -84,14 +84,14 @@ export default function CheckoutPage() {
                   <span>
                     {item.product.title} × {item.quantity}
                   </span>
-                  <span>{formatMoney(item.product.price * item.quantity)}</span>
+                  <span>{formatMoney(item.product.price * item.quantity, 'USD')}</span>
                 </div>
               ) : null,
             )}
             <Separator />
             <div className="flex justify-between font-bold text-lg">
               <span>Total ({itemCount} items)</span>
-              <span data-testid="checkout-total">{formatMoney(subtotal)}</span>
+              <span data-testid="checkout-total">{formatMoney(subtotal, 'USD')}</span>
             </div>
           </CardContent>
           <CardFooter>

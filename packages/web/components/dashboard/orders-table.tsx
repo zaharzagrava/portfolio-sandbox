@@ -34,7 +34,7 @@ export function OrdersTable({ orders, allowCancel = false }: { orders: OrderSumm
                 {order.status}
               </Badge>
             </TableCell>
-            <TableCell className="text-right">{formatMoney(Number(order.total))}</TableCell>
+            <TableCell className="text-right">{formatMoney(Number(order.total), 'USD')}</TableCell>
             {allowCancel && (
               <TableCell className="text-right">
                 {isCancellable(order.status) && (

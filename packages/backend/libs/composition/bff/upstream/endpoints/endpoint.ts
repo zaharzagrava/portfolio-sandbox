@@ -10,6 +10,7 @@ export type Capability =
   | 'chat'
   | 'boards'
   | 'video'
+  | 'media'
   | 'pickup'
   | 'flash-sales'
   | 'auctions'

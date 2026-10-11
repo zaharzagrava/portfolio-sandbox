@@ -22,6 +22,8 @@ test.describe('Product community', () => {
     await expect(post.getByTestId('post-score')).toHaveText('1');
 
     // Grounded Q&A: answers come only from the shop's documents - with none uploaded it says so instead of guessing.
+    // (The product page's tabs open their content on demand; T088 rewrites this journey for the new panels.)
+    await page.getByRole('tab', { name: 'Ask about this product' }).click();
     await page.getByLabel('Question').fill('Is it waterproof?');
     await page.getByRole('button', { name: 'Ask' }).click();
     await expect(page.getByTestId('ask-answer').or(page.getByTestId('ask-message'))).toBeVisible();

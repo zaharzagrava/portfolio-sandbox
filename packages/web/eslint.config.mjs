@@ -5,13 +5,31 @@ import nextTs from "eslint-config-next/typescript";
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
-  // Constitution VII.1: network calls live in lib/api/** (tests and tooling are exempt).
+  // Constitution VII.1: network calls live in lib/api/** and the server-only readers in lib/server/** (W02 A8); route
+  // handlers under app/api are the same-origin edge (tests and tooling are exempt).
   {
     files: ["app/**/*.{ts,tsx}", "components/**/*.{ts,tsx}", "hooks/**/*.{ts,tsx}", "lib/**/*.{ts,tsx}"],
-    ignores: ["lib/api/**", "**/*.test.{ts,tsx}"],
+    ignores: ["lib/api/**", "lib/server/**", "app/api/**", "**/*.test.{ts,tsx}"],
     rules: {
-      "no-restricted-globals": ["error", { name: "fetch", message: "Call the backend through lib/api/*." }],
+      "no-restricted-globals": [
+        "error",
+        { name: "fetch", message: "Call the backend through lib/api/* (or lib/server/* on the server)." },
+        { name: "EventSource", message: "Streams are opened in lib/api/*." },
+      ],
       "no-restricted-imports": ["error", { paths: [{ name: "axios", message: "Call the backend through lib/api/*." }] }],
+    },
+  },
+  // W02 (AS-70, AS-72): no NEXT_PUBLIC API base URL, and HTML is injected only from the sanitizer and the JSON-LD component.
+  {
+    files: ["app/**/*.{ts,tsx}", "components/**/*.{ts,tsx}", "hooks/**/*.{ts,tsx}", "lib/**/*.{ts,tsx}"],
+    // components/product/product-discussions.tsx is the old discussions block that T087 deletes.
+    ignores: ["**/*.test.{ts,tsx}", "components/seo/json-ld.tsx", "components/product/discussions/safe-body.tsx", "components/product/product-discussions.tsx"],
+    rules: {
+      "no-restricted-syntax": [
+        "error",
+        { selector: "JSXAttribute[name.name='dangerouslySetInnerHTML']", message: "Render text; HTML only through sanitizeBodyHtml or the JSON-LD component (VI.7)." },
+        { selector: "MemberExpression[property.name='NEXT_PUBLIC_API_URL']", message: "The browser calls relative same-origin URLs (AS-70)." },
+      ],
     },
   },
   // W01 (VI.2, VI.7): no credential in the browser - no web storage, no Authorization header, no cookie access outside
@@ -38,6 +56,7 @@ const eslintConfig = defineConfig([
         { selector: "Property[key.value=/^authorization$/i]", message: "The browser never sends Authorization (VI.2)." },
         { selector: "MemberExpression[object.name='document'][property.name='cookie']", message: "Cookies are read only in lib/api/csrf.ts." },
         { selector: "JSXAttribute[name.name='dangerouslySetInnerHTML']", message: "Render text only (VI.7)." },
+        { selector: "MemberExpression[property.name='NEXT_PUBLIC_API_URL']", message: "The browser calls relative same-origin URLs (AS-70)." },
       ],
     },
   },
@@ -48,15 +67,11 @@ const eslintConfig = defineConfig([
       "no-restricted-globals": [
         "error",
         { name: "fetch", message: "Call the backend through lib/api/*." },
+        { name: "EventSource", message: "Streams are opened in lib/api/*." },
         { name: "localStorage", message: "No credential or session state in web storage (VI.2)." },
         { name: "sessionStorage", message: "No credential or session state in web storage (VI.2)." },
       ],
     },
-  },
-  // Existing violations in pages W07 does not own (W02 moves these calls into lib/api/*); warn until then.
-  {
-    files: ["app/page.tsx", "app/products/[[]slug]/page.tsx", "app/search/page.tsx"],
-    rules: { "no-restricted-globals": ["warn", { name: "fetch", message: "Call the backend through lib/api/* (W02 follow-up)." }] },
   },
   // Override default ignores of eslint-config-next.
   globalIgnores([

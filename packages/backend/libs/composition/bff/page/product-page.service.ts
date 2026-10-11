@@ -187,6 +187,7 @@ export class ProductPageService {
       chatUnread: value('chatUnread'),
       discussions: value('discussions'),
       videos: value('videos'),
+      gallery: value('gallery'),
       pickup: value('pickup'),
       flashSale: value('flashSale'),
       auction: value('auction'),

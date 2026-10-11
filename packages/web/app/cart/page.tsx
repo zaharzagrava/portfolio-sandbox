@@ -94,8 +94,8 @@ export default function CartPage() {
                             </Button>
                           </div>
                         </TableCell>
-                        <TableCell className="text-right">{item.product ? formatMoney(item.product.price) : '—'}</TableCell>
-                        <TableCell className="text-right font-medium">{item.product ? formatMoney(item.product.price * item.quantity) : '—'}</TableCell>
+                        <TableCell className="text-right">{item.product ? formatMoney(item.product.price, 'USD') : '—'}</TableCell>
+                        <TableCell className="text-right font-medium">{item.product ? formatMoney(item.product.price * item.quantity, 'USD') : '—'}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -112,7 +112,7 @@ export default function CartPage() {
               <CardContent className="space-y-4">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Subtotal</span>
-                  <span data-testid="cart-subtotal">{formatMoney(subtotal)}</span>
+                  <span data-testid="cart-subtotal">{formatMoney(subtotal, 'USD')}</span>
                 </div>
                 <Separator />
                 <p className="text-xs text-muted-foreground">Stock is reserved and the final total confirmed at checkout.</p>

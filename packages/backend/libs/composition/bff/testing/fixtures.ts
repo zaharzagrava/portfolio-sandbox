@@ -9,6 +9,7 @@ import {
   pickupPageSchema,
   productBatchItemSchema,
   productPublicSchema,
+  productGallerySchema,
   productVideosSchema,
   recommendationsResponseSchema,
   shopSummarySchema,
@@ -123,6 +124,25 @@ export const postsFixture = () =>
 
 export const videosFixture = () =>
   productVideosSchema.parse({ items: [{ videoId: 'v1', title: 'Unboxing' }] });
+
+export const galleryFixture = () => {
+  const mediaId = randomUUID();
+  return productGallerySchema.parse({
+    items: [
+      {
+        mediaId,
+        position: 0,
+        urls: {
+          thumb: `https://media.example/${mediaId}/thumb.webp`,
+          feed: `https://media.example/${mediaId}/feed.webp`,
+          full: `https://media.example/${mediaId}/full.webp`,
+        },
+        width: 1600,
+        height: 1200,
+      },
+    ],
+  });
+};
 
 export const pickupFixture = () =>
   pickupPageSchema.parse({

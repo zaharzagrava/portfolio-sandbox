@@ -26,6 +26,7 @@ export interface BffConfig {
   bff_budget_chat_ms: number;
   bff_budget_discussions_ms: number;
   bff_budget_videos_ms: number;
+  bff_budget_gallery_ms: number;
   bff_budget_pickup_ms: number;
   bff_budget_flash_sale_ms: number;
   bff_budget_auction_ms: number;
@@ -102,6 +103,7 @@ export const bffConfigKeys: Record<keyof BffConfig, Key> = {
   bff_budget_chat_ms: int('BFF_BUDGET_CHAT_MS', 200),
   bff_budget_discussions_ms: int('BFF_BUDGET_DISCUSSIONS_MS', 300),
   bff_budget_videos_ms: int('BFF_BUDGET_VIDEOS_MS', 300),
+  bff_budget_gallery_ms: int('BFF_BUDGET_GALLERY_MS', 300),
   bff_budget_pickup_ms: int('BFF_BUDGET_PICKUP_MS', 300),
   bff_budget_flash_sale_ms: int('BFF_BUDGET_FLASH_SALE_MS', 200),
   bff_budget_auction_ms: int('BFF_BUDGET_AUCTION_MS', 200),
@@ -135,6 +137,7 @@ export const BFF_SECTION_NAMES_FOR_BUDGET = [
   'chatUnread',
   'discussions',
   'videos',
+  'gallery',
   'pickup',
   'flashSale',
   'auction',
@@ -234,6 +237,7 @@ const RANGES: Partial<Record<keyof BffConfig, [number, number]>> = {
   bff_budget_chat_ms: [1, 60_000],
   bff_budget_discussions_ms: [1, 60_000],
   bff_budget_videos_ms: [1, 60_000],
+  bff_budget_gallery_ms: [1, 60_000],
   bff_budget_pickup_ms: [1, 60_000],
   bff_budget_flash_sale_ms: [1, 60_000],
   bff_budget_auction_ms: [1, 60_000],
@@ -354,6 +358,7 @@ export function parseBffSettings(
       chatUnread: num('bff_budget_chat_ms', 200),
       discussions: num('bff_budget_discussions_ms', 300),
       videos: num('bff_budget_videos_ms', 300),
+      gallery: num('bff_budget_gallery_ms', 300),
       pickup: num('bff_budget_pickup_ms', 300),
       flashSale: num('bff_budget_flash_sale_ms', 200),
       auction: num('bff_budget_auction_ms', 200),

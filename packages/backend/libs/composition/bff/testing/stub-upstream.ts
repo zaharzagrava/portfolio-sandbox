@@ -8,6 +8,7 @@ import {
   chatUnreadFixture,
   flagsFixture,
   flashSaleFixture,
+  galleryFixture,
   pickupFixture,
   postsFixture,
   productFixture,
@@ -28,6 +29,7 @@ export type RouteName =
   | 'chatUnread'
   | 'discussions'
   | 'videos'
+  | 'gallery'
   | 'pickup'
   | 'flashSale'
   | 'auction'
@@ -75,6 +77,7 @@ export type BehaviorSpec = Behavior | ((call: RecordedCall) => Behavior);
 const ROUTES: [RegExp, string, RouteName][] = [
   [/^\/api\/products\/[^/]+\/recommendations$/, 'GET', 'recommendations'],
   [/^\/api\/products\/[^/]+\/videos$/, 'GET', 'videos'],
+  [/^\/api\/products\/[^/]+\/gallery$/, 'GET', 'gallery'],
   [/^\/api\/products\/[^/]+$/, 'GET', 'product'],
   [/^\/api\/batch\/shops$/, 'GET', 'shopBatch'],
   [/^\/api\/batch\/products$/, 'GET', 'productBatch'],
@@ -277,6 +280,8 @@ export class StubUpstream {
         return { body: postsFixture() };
       case 'videos':
         return { body: videosFixture() };
+      case 'gallery':
+        return { body: galleryFixture() };
       case 'pickup':
         return { body: pickupFixture() };
       case 'flashSale':

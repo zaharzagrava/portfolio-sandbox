@@ -170,7 +170,7 @@ export function InventoryView() {
                     <TableCell className="font-medium">
                       <Link href={`/products/${product.id}`} className="hover:underline">{product.title}</Link>
                     </TableCell>
-                    <TableCell>{formatMoney(product.price)}</TableCell>
+                    <TableCell>{formatMoney(product.price, 'USD')}</TableCell>
                     <TableCell>{product.quantity}</TableCell>
                     <TableCell>
                       <Badge variant={product.quantity === 0 ? 'destructive' : product.quantity <= LOW_STOCK ? 'secondary' : 'default'}>

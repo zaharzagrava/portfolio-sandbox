@@ -27,6 +27,7 @@ describe('S48 BFF configuration (startup validation)', () => {
       chatUnread: 200,
       discussions: 300,
       videos: 300,
+      gallery: 300,
       pickup: 300,
       flashSale: 200,
       auction: 200,

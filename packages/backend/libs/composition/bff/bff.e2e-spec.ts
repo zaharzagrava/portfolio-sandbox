@@ -91,6 +91,7 @@ describe('BFF product page composition', () => {
       expect(body.flags).toEqual(response('flags'));
       expect(body.discussions).toEqual(response('discussions'));
       expect(body.videos).toEqual(response('videos'));
+      expect(body.gallery).toEqual(response('gallery'));
       expect(body.flashSale).toEqual((response('flashSale') as unknown[])[0]);
       expect(body.auction).toEqual((response('auction') as unknown[])[0]);
       expect(body.chatUnread).toBeNull();
@@ -211,6 +212,7 @@ describe('BFF product page composition', () => {
         'flags',
         'discussions',
         'videos',
+        'gallery',
         'flashSale',
         'auction',
       ] as const)
@@ -230,6 +232,7 @@ describe('BFF product page composition', () => {
         'flags',
         'discussions',
         'videos',
+        'gallery',
         'flashSale',
         'auction',
       ] as const)
@@ -458,6 +461,7 @@ describe('BFF product page composition', () => {
       | 'chatUnread'
       | 'discussions'
       | 'videos'
+      | 'gallery'
       | 'pickup'
       | 'flashSale'
       | 'auction';
@@ -469,6 +473,7 @@ describe('BFF product page composition', () => {
       chatUnread: 'chatUnread',
       discussions: 'discussions',
       videos: 'videos',
+      gallery: 'gallery',
       pickup: 'pickup',
       flashSale: 'flashSale',
       auction: 'auction',
@@ -498,6 +503,50 @@ describe('BFF product page composition', () => {
         false,
       ],
     ] as const;
+
+    it('W02 B-2: the gallery section is present, anonymous-safe, and forwards the upstream body unchanged', async () => {
+      const product = seedProduct(stub);
+      const who = await signIn(ctx, stub, { accessToken: 'access-of-A' });
+      stub.calls.length = 0;
+      const res = await page(product.id).set('Cookie', who.cookie).expect(200);
+      const body = parsePage(res.body);
+      const call = stub.callsTo('gallery')[0];
+      expect(body.gallery).toEqual(call.responseBody);
+      expect(body.gallery?.items).toHaveLength(1);
+      expect(call.headers.authorization).toBeUndefined();
+      expect(call.headers.cookie).toBeUndefined();
+      expect(call.headers['x-anonymous-id']).toBeUndefined();
+      expect(call.path).toBe(`/api/products/${product.id}/gallery`);
+    });
+
+    it('W02 B-2: a failing gallery gives gallery null plus one errors entry; the rest is unchanged', async () => {
+      const product = seedProduct(stub);
+      stub.respond('gallery', { status: 503, body: {} });
+      const body = parsePage((await page(product.id).expect(200)).body);
+      expect(body.gallery).toBeNull();
+      expect(body.errors).toEqual([
+        { section: 'gallery', code: 'UPSTREAM_UNAVAILABLE', retryable: true },
+      ]);
+      expect(body.shop).not.toBeNull();
+      expect(body.videos).not.toBeNull();
+    });
+
+    it('W02 B-2: a gallery slower than its 300 ms budget is null with UPSTREAM_TIMEOUT and is aborted', async () => {
+      const product = seedProduct(stub);
+      stub.respond('gallery', { delayMs: 500 });
+      const started = Date.now();
+      const body = parsePage((await page(product.id).expect(200)).body);
+      expect(Date.now() - started).toBeLessThan(300 + 150);
+      expect(body.gallery).toBeNull();
+      expect(body.errors).toEqual([
+        { section: 'gallery', code: 'UPSTREAM_TIMEOUT', retryable: true },
+      ]);
+      await waitFor(
+        () => stub.callsTo('gallery')[0].aborted,
+        1_000,
+        'gallery abort',
+      );
+    });
 
     it('S48 AS-12: a recommendations call slower than its 300 ms budget degrades to null with UPSTREAM_TIMEOUT and is aborted', async () => {
       const product = seedProduct(stub);
@@ -579,7 +628,7 @@ describe('BFF product page composition', () => {
       expect(body.errors).toEqual([]);
     });
 
-    it('S48 AS-14: one failing section leaves the other nine byte-identical; all ten failing is still 200', async () => {
+    it('S48 AS-14: one failing section leaves the others byte-identical; all eleven failing is still 200', async () => {
       const product = seedProduct(stub);
       const healthy = (await fullPage(product.id).expect(200)).body;
       stub.respond('recommendations', { status: 503, body: {} });
@@ -597,7 +646,7 @@ describe('BFF product page composition', () => {
       const allDown = parsePage((await fullPage(product.id).expect(200)).body);
       expect(allDown.product).toEqual(product);
       for (const section of SECTIONS) expect(allDown[section]).toBeNull();
-      expect(allDown.errors).toHaveLength(10);
+      expect(allDown.errors).toHaveLength(11);
     });
 
     it.each([
@@ -815,6 +864,7 @@ describe('BFF product page composition', () => {
         'chatUnread',
         'discussions',
         'videos',
+        'gallery',
         'pickup',
         'flashSale',
         'auction',
@@ -932,6 +982,7 @@ describe('BFF product page composition', () => {
         'trending',
         'discussions',
         'videos',
+        'gallery',
         'flashSale',
         'auction',
       ] as const)
@@ -951,6 +1002,7 @@ describe('BFF product page composition', () => {
         'trending',
         'discussions',
         'videos',
+        'gallery',
         'flashSale',
         'auction',
       ] as const)

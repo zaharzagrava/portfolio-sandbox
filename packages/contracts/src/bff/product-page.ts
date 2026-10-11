@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { productPublicSchema } from '../catalog/index.ts';
+import { productGallerySchema } from '../media/gallery.ts';
 import { recommendationsResponseSchema } from '../search/recommendations.ts';
 import { trendingResponseSchema } from '../search/trending.ts';
 import { shopSummarySchema } from '../tenancy/index.ts';
@@ -36,6 +37,7 @@ export const BFF_SECTIONS = [
   'chatUnread',
   'discussions',
   'videos',
+  'gallery',
   'pickup',
   'flashSale',
   'auction',
@@ -63,6 +65,7 @@ export const productPageResponseSchema = z
     chatUnread: chatUnreadPageSchema.nullable(),
     discussions: boardPostsPageSchema.nullable(),
     videos: productVideosSchema.nullable(),
+    gallery: productGallerySchema.nullable(),
     pickup: pickupPageSchema.nullable(),
     flashSale: flashSalePublicSchema.nullable(),
     auction: auctionPublicSchema.nullable(),

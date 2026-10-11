@@ -86,3 +86,9 @@ interviews) until its status says so. The implementation loop appends here (rule
 | W01 | SC-001: a new visitor is signed in within 60 s, keyboard only | `specs/web/W01-auth-account/quickstart.md`, "Ops artifacts" (timed manual run) | not run |
 | W01 | SC-002: 100 % of open tabs show the right account state within 1 s (5 tabs, 20 cycles) | same file (multi-tab drill; the automated test covers two tabs) | not run |
 | W01 | SC-006: two-step setup with saved recovery codes in under 2 minutes with a real authenticator app | same file (timed manual run) | not run |
+| W02 | SC-001: home to a product page in at most three interactions and 15 s, no instruction | `specs/web/W02-storefront-discovery/quickstart.md`, "Ops artifacts" (timed manual run) | not run |
+| W02 | SC-002: suggestions visible within 400 ms of a typing pause for 95 % of pauses | same file (trace of 100 pauses) | not run |
+| W02 | SC-003: LCP 2.5 s / INP 200 ms / CLS 0.1 for 75 % of mobile visits to Home and a product page | same file (Lighthouse or field run, mobile throttling) | not run |
+| W02 | SC-004: new results within 1 s for 95 % of filter, sort or page changes | same file (100 scripted changes) | not run |
+| W02 | SC-008 (keyboard part): each journey is completable by keyboard alone | same file (manual keyboard walk) | not run |
+| W02 | SC-009: a posted discussion, vote or comment is visible within 1 s; answer text appears as it is sent | same file (Performance panel measurement) | not run |

@@ -7,6 +7,8 @@ import { InjectConnection } from '@nestjs/sequelize';
 import { QueryTypes, Sequelize } from 'sequelize';
 import { v4 } from 'uuid';
 import { ApiConfigService } from '@app/common/config';
+import { ProductQueryService } from '@app/domains/catalog';
+import { TransactionRunner } from '@app/infrastructure/context';
 import { ObjectStorage } from '@app/infrastructure/storage/object-storage.port';
 import { TaskQueue } from '@app/infrastructure/sqs/task-queue.port';
 
@@ -35,6 +37,8 @@ export class MediaService {
     private readonly storage: ObjectStorage,
     private readonly queue: TaskQueue,
     private readonly config: ApiConfigService,
+    private readonly products: ProductQueryService,
+    private readonly transactions: TransactionRunner,
   ) {}
 
   async createUpload(
@@ -100,9 +104,7 @@ export class MediaService {
       { type: QueryTypes.SELECT, replacements: { mediaId } },
     );
     if (!m) throw new NotFoundException('Media not found');
-    const cdn =
-      this.config.get('media_cdn_url') ??
-      `${this.config.get('s3_endpoint') ?? ''}/${this.config.get('media_bucket') ?? 'marketplace-media'}`;
+    const cdn = this.cdnBase();
     return {
       ...m,
       urls: m.variants
@@ -116,10 +118,63 @@ export class MediaService {
     };
   }
 
+  /**
+   * Public gallery (W02 B-1): READY media of a publicly visible product, by position. Hidden and unknown products
+   * are the same `NotFoundException`; visibility comes from the catalog's R1 service, never its tables.
+   */
+  async publicGallery(productId: string): Promise<{
+    items: Array<{
+      mediaId: string;
+      position: number;
+      urls: { thumb: string; feed: string; full: string };
+      width: number | null;
+      height: number | null;
+    }>;
+  }> {
+    if (!(await this.products.isPubliclyVisible(productId)))
+      throw new NotFoundException('Product not found');
+    const rows = await this.sequelize.query<{
+      id: string;
+      position: number;
+      variants: Record<string, { key: string }>;
+      width: number | null;
+      height: number | null;
+    }>(
+      `SELECT m.id, pm.position, m.variants, m.width, m.height
+         FROM "ProductMedia" pm JOIN "Media" m ON m.id = pm."mediaId"
+        WHERE pm."productId" = :productId AND m.status = 'READY' AND m.variants IS NOT NULL
+        ORDER BY pm.position, m.id`,
+      { type: QueryTypes.SELECT, replacements: { productId } },
+    );
+    const cdn = this.cdnBase();
+    const url = (v: { key: string } | undefined) => (v ? `${cdn}/${v.key}` : '');
+    return {
+      items: rows
+        .filter((r) => r.variants.thumb && r.variants.feed && r.variants.full)
+        .map((r) => ({
+          mediaId: r.id,
+          position: r.position,
+          urls: {
+            thumb: url(r.variants.thumb),
+            feed: url(r.variants.feed),
+            full: url(r.variants.full),
+          },
+          width: r.width,
+          height: r.height,
+        })),
+    };
+  }
+
+  private cdnBase(): string {
+    return (
+      this.config.get('media_cdn_url') ??
+      `${this.config.get('s3_endpoint') ?? ''}/${this.config.get('media_bucket') ?? 'marketplace-media'}`
+    );
+  }
+
   /** Gallery order for a product; only READY media of the same shop can be attached. */
   async attachToProduct(shopId: string, productId: string, mediaIds: string[]) {
-    // S54 T037 audit: explicit unit of work, opens its own transaction by design; no network I/O inside.
-    await this.sequelize.transaction(async (transaction) => {
+    await this.transactions.run(async (transaction) => {
       const ok = await this.sequelize.query<{ id: string }>(
         `SELECT m.id FROM "Media" m JOIN "Product" p ON p.id = :productId AND p."shopId" = :shopId WHERE m.id IN (:mediaIds) AND m."shopId" = :shopId AND m.status = 'READY'`,
         {

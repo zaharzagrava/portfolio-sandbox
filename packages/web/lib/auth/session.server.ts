@@ -3,7 +3,7 @@ import { cache } from 'react';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { BFF_COOKIES } from '@marketplace-sandbox/contracts';
-import { config } from '@/lib/config';
+import { bffUrl } from '@/lib/server/endpoints.server';
 import { fetchServerSession, type ServerSessionUser } from '@/lib/api/session-server';
 import { loginHref } from './return-to';
 
@@ -16,7 +16,7 @@ export type SessionUser = ServerSessionUser;
 export const getServerSession = cache(async (): Promise<SessionUser | null> => {
   const cookieValue = (await cookies()).get(BFF_COOKIES.session)?.value;
   if (!cookieValue) return null;
-  return fetchServerSession({ bffUrl: config.bffUrl, cookieName: BFF_COOKIES.session, cookieValue });
+  return fetchServerSession({ bffUrl: bffUrl(), cookieName: BFF_COOKIES.session, cookieValue });
 });
 
 /** Guard for pages that need a member: anonymous visitors go to `/login?returnTo=…`. Convenience only (VI.5). */

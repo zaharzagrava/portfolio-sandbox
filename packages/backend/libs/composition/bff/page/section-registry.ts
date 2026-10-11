@@ -14,6 +14,7 @@ import { flags } from '../upstream/endpoints/flags';
 import { flashSalesFor } from '../upstream/endpoints/flash-sales';
 import { pickupNear } from '../upstream/endpoints/pickup';
 import { shopsBatch } from '../upstream/endpoints/tenancy';
+import { productGallery } from '../upstream/endpoints/gallery';
 import { productVideos } from '../upstream/endpoints/video';
 
 type Product = ProductPageResponse['product'];
@@ -99,6 +100,13 @@ export const SECTION_REGISTRY: readonly SectionDefinition<any>[] = [
     required: false,
     dependsOn: 'productId',
     endpoint: (c) => productVideos(c.productId),
+    shape: (body) => body,
+  },
+  {
+    name: 'gallery',
+    required: false,
+    dependsOn: 'productId',
+    endpoint: (c) => productGallery(c.productId),
     shape: (body) => body,
   },
   {
