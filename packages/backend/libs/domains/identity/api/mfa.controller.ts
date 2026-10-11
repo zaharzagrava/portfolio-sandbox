@@ -25,7 +25,7 @@ import { User } from './decorators/user.decorator';
 import { assertOriginAllowed } from './guards/origin.guard';
 import { JsonOnlyGuard } from './guards/json-only.guard';
 import { sessionMeta } from './request-meta';
-import { MfaConfirmDto, MfaVerifyDto } from './auth.dto';
+import { MfaConfirmDto, MfaManageCodeDto, MfaVerifyDto } from './auth.dto';
 
 const NO_STORE = 'no-store';
 
@@ -68,6 +68,38 @@ export class MfaController {
   @Header('Pragma', 'no-cache')
   async confirm(@User() user: AuthenticatedUser, @Body() body: MfaConfirmDto) {
     return { recoveryCodes: await this.factor.confirm(user.id, body.code) };
+  }
+
+  @Firewall({ sensitive: true })
+  @RateLimit('auth.mfa.ip')
+  @UseGuards(JsonOnlyGuard)
+  @Post('recovery-codes/regenerate')
+  @HttpCode(HttpStatus.OK)
+  @Header('Cache-Control', NO_STORE)
+  @Header('Pragma', 'no-cache')
+  async regenerate(
+    @User() user: AuthenticatedUser,
+    @Body() body: MfaManageCodeDto,
+  ) {
+    return {
+      recoveryCodes: await this.factor.regenerateRecoveryCodes(
+        user.id,
+        body.code,
+      ),
+    };
+  }
+
+  @Firewall({ sensitive: true })
+  @RateLimit('auth.mfa.ip')
+  @UseGuards(JsonOnlyGuard)
+  @Post('disable')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Header('Cache-Control', NO_STORE)
+  async disable(
+    @User() user: AuthenticatedUser,
+    @Body() body: MfaManageCodeDto,
+  ) {
+    await this.factor.disable(user.id, body.code);
   }
 
   @RateLimit('auth.mfa.ip')

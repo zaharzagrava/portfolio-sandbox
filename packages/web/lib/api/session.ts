@@ -1,11 +1,14 @@
+import { mfaRequiredResponseSchema, sessionResponseSchema } from '@marketplace-sandbox/contracts';
+import { csrfHeaders } from './csrf';
+
 /**
  * Browser session through the BFF (token handler, S48 contracts/http.md). The browser never reads or stores a token:
  * it holds an HttpOnly `__Host-bff-session` cookie and a readable `__Host-bff-csrf` cookie that is echoed in
  * `X-CSRF-Token` on cookie-authenticated `POST`s. The API and the web app share one origin (`next.config.ts` rewrites
  * `/api/bff/*`), which is what makes the `__Host-` cookies valid.
  *
- * Callers switch on the problem `code`, never on message text. Shapes mirror `packages/contracts/src/bff/session.ts`
- * (this package does not depend on the contracts workspace yet).
+ * Callers switch on the problem `code`, never on message text. Every success body is parsed with the contracts schemas;
+ * a body that does not match is reported as a `500 invalid_response`.
  */
 export type SessionRole = 'USER' | 'SELLER' | 'MODERATOR' | 'ADMIN';
 
@@ -15,39 +18,30 @@ export interface SessionView {
   expiresAt: string;
 }
 
+export type SessionFailure = {
+  ok: false;
+  status: number;
+  /** The BFF's / identity service's problem `code`; `unknown` when the answer carried none. */
+  code: string;
+  retryAfterSeconds?: number;
+  requestId?: string;
+};
+
 export type SessionResult =
   | { ok: true; kind: 'session'; session: SessionView }
   | { ok: true; kind: 'mfa_required' }
   | { ok: true; kind: 'signed_out' }
-  | {
-      ok: false;
-      status: number;
-      /** The BFF's / identity service's problem `code`; `unknown` when the answer carried none. */
-      code: string;
-      retryAfterSeconds?: number;
-    };
+  | SessionFailure;
 
 const BASE = '/api/bff/session';
-export const CSRF_COOKIE = '__Host-bff-csrf';
-export const CSRF_HEADER = 'X-CSRF-Token';
 
-function csrfToken(): string | undefined {
-  if (typeof document === 'undefined') return undefined;
-  const match = document.cookie.match(new RegExp(`(?:^|;\\s*)${CSRF_COOKIE}=([^;]+)`));
-  return match ? decodeURIComponent(match[1]) : undefined;
-}
-
-/** `{ 'X-CSRF-Token': <cookie value> }` when the readable CSRF cookie is present, else nothing. */
-export function csrfHeader(): Record<string, string> {
-  const token = csrfToken();
-  return token ? { [CSRF_HEADER]: token } : {};
-}
-
-async function failure(res: Response): Promise<SessionResult> {
+async function failure(res: Response): Promise<SessionFailure> {
   let code = 'unknown';
+  let requestId: string | undefined;
   try {
-    const body = (await res.json()) as { code?: unknown };
+    const body = (await res.json()) as { code?: unknown; requestId?: unknown };
     if (typeof body.code === 'string') code = body.code;
+    if (typeof body.requestId === 'string') requestId = body.requestId;
   } catch {
     /* no problem document: keep `unknown` */
   }
@@ -57,6 +51,7 @@ async function failure(res: Response): Promise<SessionResult> {
     status: res.status,
     code,
     ...(Number.isFinite(retry) && retry > 0 ? { retryAfterSeconds: retry } : {}),
+    ...(requestId ? { requestId } : {}),
   };
 }
 
@@ -66,7 +61,7 @@ async function send(
 ): Promise<Response> {
   const headers: Record<string, string> = {};
   if (init.body !== undefined) headers['Content-Type'] = 'application/json';
-  if (init.csrf) Object.assign(headers, csrfHeader());
+  if (init.csrf) Object.assign(headers, csrfHeaders());
   return fetch(`${BASE}${path}`, {
     method: init.method,
     headers,
@@ -75,31 +70,57 @@ async function send(
   });
 }
 
+const invalidResponse = (): SessionFailure => ({ ok: false, status: 500, code: 'invalid_response' });
+
 async function sessionResult(res: Response): Promise<SessionResult> {
   if (!res.ok) return failure(res);
-  const body = (await res.json()) as Partial<SessionView> & { mfaRequired?: boolean };
-  if (body.mfaRequired === true) return { ok: true, kind: 'mfa_required' };
-  return { ok: true, kind: 'session', session: body as SessionView };
+  let body: unknown;
+  try {
+    body = await res.json();
+  } catch {
+    return invalidResponse();
+  }
+  const mfa = mfaRequiredResponseSchema.safeParse(body);
+  if (mfa.success) return { ok: true, kind: 'mfa_required' };
+  const session = sessionResponseSchema.safeParse(body);
+  if (!session.success) return invalidResponse();
+  return { ok: true, kind: 'session', session: session.data };
+}
+
+/** The network can fail before any answer exists: report it as status 0 so callers show the offline copy. */
+async function guarded(run: () => Promise<SessionResult>): Promise<SessionResult> {
+  try {
+    return await run();
+  } catch {
+    return { ok: false, status: 0, code: 'network_error' };
+  }
 }
 
 export const sessionApi = {
-  /** Password login. `mfa_required` means: ask for the second factor and call `verifyMfa`. */
-  async login(email: string, password: string): Promise<SessionResult> {
-    return sessionResult(await send('', { method: 'POST', body: { email, password } }));
+  /** Password login (anonymous: no CSRF). `mfa_required` means: ask for the second factor and call `verifyMfa`. */
+  login(email: string, password: string): Promise<SessionResult> {
+    return guarded(async () => sessionResult(await send('', { method: 'POST', body: { email, password } })));
   },
 
-  async verifyMfa(code: string): Promise<SessionResult> {
-    return sessionResult(await send('/mfa', { method: 'POST', body: { code } }));
+  verifyMfa(code: string): Promise<SessionResult> {
+    return guarded(async () => sessionResult(await send('/mfa', { method: 'POST', body: { code } })));
   },
 
   /** The signed-in user, or a `401` problem (`unauthenticated`, `session_expired`). */
-  async current(): Promise<SessionResult> {
-    return sessionResult(await send('', { method: 'GET' }));
+  current(): Promise<SessionResult> {
+    return guarded(async () => sessionResult(await send('', { method: 'GET' })));
   },
 
   /** Idempotent: always ends signed out unless the CSRF check fails. */
-  async logout(): Promise<SessionResult> {
-    const res = await send('/logout', { method: 'POST', csrf: true });
-    return res.ok ? { ok: true, kind: 'signed_out' } : failure(res);
+  logout(): Promise<SessionResult> {
+    return guarded(async () => {
+      const res = await send('/logout', { method: 'POST', csrf: true });
+      return res.ok ? { ok: true, kind: 'signed_out' } : failure(res);
+    });
+  },
+
+  /** Forces an identity refresh so a changed role shows (C-REFRESH). */
+  refresh(): Promise<SessionResult> {
+    return guarded(async () => sessionResult(await send('/refresh', { method: 'POST', csrf: true })));
   },
 };

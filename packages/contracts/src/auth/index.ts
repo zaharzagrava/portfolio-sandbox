@@ -61,14 +61,41 @@ export const federatedIdentitySchema = z
 
 export const acceptedSchema =z.object({ status: z.literal('accepted') });
 
-export const sessionListItemSchema = z.object({
-  sessionId: z.string(),
-  device: z.string().nullable().optional(),
-  ip: z.string().nullable().optional(),
-  createdAt: z.string(),
-  lastUsedAt: z.string().nullable().optional(),
-  current: z.boolean(),
+/** `GET /auth/sessions` item (S01 FR-037); also the shape the web renders. */
+export const sessionListItemSchema = z
+  .object({
+    sessionId: z.string().min(1),
+    device: z.string().nullable(),
+    ip: z.string().nullable(),
+    createdAt: z.string(),
+    lastUsedAt: z.string().nullable(),
+    current: z.boolean(),
+  })
+  .strict();
+export type SessionListItem = z.infer<typeof sessionListItemSchema>;
+
+/** `POST /auth/register` (S01 FR-001). Unknown members (such as a role) are refused. */
+export const registerRequestSchema = z
+  .object({ email: z.string(), password: z.string() })
+  .strict();
+export type RegisterRequest = z.infer<typeof registerRequestSchema>;
+
+/** `POST /auth/password-reset/request` (S01 FR-080). */
+export const passwordResetRequestSchema = z.object({ email: z.string() });
+export type PasswordResetRequest = z.infer<typeof passwordResetRequestSchema>;
+
+/** `POST /auth/password-reset/confirm` (S01 FR-081). */
+export const passwordResetConfirmSchema = z.object({
+  token: z.string().min(1),
+  password: z.string().min(1),
 });
+export type PasswordResetConfirm = z.infer<typeof passwordResetConfirmSchema>;
+
+/** Body of confirm, regenerate and disable (S02): one code of 1..64 characters (a TOTP or a recovery code). */
+export const mfaCodeRequestSchema = z
+  .object({ code: z.string().min(1).max(64) })
+  .strict();
+export type MfaCodeRequest = z.infer<typeof mfaCodeRequestSchema>;
 
 export const jwksSchema = z.object({
   keys: z.array(

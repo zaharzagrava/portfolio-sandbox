@@ -32,6 +32,7 @@ const CATALOG = {
     'Bad Gateway',
     'A service answered with an unusable response.',
   ],
+  bad_gateway: [502, 'Bad Gateway', 'The service could not be reached.'],
   upstream_unavailable: [
     503,
     'Service Unavailable',

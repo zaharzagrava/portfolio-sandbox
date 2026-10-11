@@ -40,6 +40,33 @@ export class Domain_InvalidRefreshTokenError extends AppError {
   }
 }
 
+/** Unknown, used and expired reset tokens are one answer (S01 FR-081). */
+export class Domain_InvalidResetTokenError extends AppError {
+  constructor() {
+    super({
+      status: HttpStatus.BAD_REQUEST,
+      code: 'invalid_reset_token',
+      title: 'Bad Request',
+      detail: 'The reset link is invalid or has expired.',
+      area: ErrorArea.DOMAIN,
+      headers: { 'Cache-Control': 'no-store' },
+    });
+  }
+}
+
+/** Unknown, already revoked or somebody else's session: the same answer (IDOR, III.4). */
+export class Domain_SessionNotFoundError extends AppError {
+  constructor() {
+    super({
+      status: HttpStatus.NOT_FOUND,
+      code: 'session_not_found',
+      title: 'Not Found',
+      detail: 'No such session.',
+      area: ErrorArea.DOMAIN,
+    });
+  }
+}
+
 export class Domain_WeakPasswordError extends AppError {
   constructor(reason: 'too_short' | 'too_long' | 'is_email' | 'breached') {
     super({

@@ -29,6 +29,6 @@ describe('S48 GraphQL client', () => {
     answer({ data: null, errors: [{ message: 'The service is unavailable.', path: ['product'], extensions: { code: 'UPSTREAM_UNAVAILABLE' } }] });
     const error = await gqlClient.query('{ product(id: "p1") { id } }').catch((e: unknown) => e);
     expect(error).toBeInstanceOf(GraphQLError);
-    expect((error as GraphQLError).errors[0].extensions.code).toBe('UPSTREAM_UNAVAILABLE');
+    expect((error as GraphQLError).errors[0].extensions?.code).toBe('UPSTREAM_UNAVAILABLE');
   });
 });

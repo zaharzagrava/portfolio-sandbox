@@ -1,8 +1,8 @@
-import { csrfHeader } from './session';
+import { csrfHeaders } from './csrf';
 
 export class GraphQLError extends Error {
-  public errors: any[];
-  constructor(errors: any[]) {
+  public errors: { message?: string; path?: unknown[]; extensions?: { code?: string } & Record<string, unknown> }[];
+  constructor(errors: GraphQLError['errors']) {
     super(errors[0]?.message || 'GraphQL Error');
     this.name = 'GraphQLError';
     this.errors = errors;
@@ -19,7 +19,7 @@ export const gqlClient = {
     const response = await fetch('/api/graphql', {
       method: 'POST',
       credentials: 'include',
-      headers: { 'Content-Type': 'application/json', ...csrfHeader() },
+      headers: { 'Content-Type': 'application/json', ...csrfHeaders() },
       body: JSON.stringify({ query: document, variables }),
     });
 

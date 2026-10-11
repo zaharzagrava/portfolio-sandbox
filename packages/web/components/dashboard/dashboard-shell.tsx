@@ -1,6 +1,8 @@
 'use client';
 
 import { useAuth } from '@/hooks/use-auth';
+import { useLogout } from '@/hooks/use-auth-actions';
+import { loginHref } from '@/lib/auth/return-to';
 import { useRouter, usePathname, useParams } from 'next/navigation';
 import { useEffect } from 'react';
 import Link from 'next/link';
@@ -21,7 +23,8 @@ const sellerNavItems = [
 ];
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
-  const { user, isLoading, logout } = useAuth();
+  const { user, isLoading } = useAuth();
+  const logout = useLogout();
   const router = useRouter();
   const pathname = usePathname();
   const params = useParams();
@@ -30,9 +33,9 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!isLoading && !user) {
-      router.push('/login');
+      router.replace(loginHref(pathname || '/dashboard'));
     }
-  }, [user, isLoading, router]);
+  }, [user, isLoading, router, pathname]);
 
   if (isLoading || !user) {
     return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
@@ -132,7 +135,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         </nav>
         
         <div className="mt-auto">
-          <Button variant="ghost" className="w-full justify-start gap-3" onClick={() => logout()}>
+          <Button variant="ghost" className="w-full justify-start gap-3" onClick={() => logout.mutate()}>
             <LogOut className="h-4 w-4" />
             Logout
           </Button>

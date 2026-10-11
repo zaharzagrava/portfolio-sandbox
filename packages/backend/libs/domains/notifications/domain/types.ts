@@ -1,5 +1,8 @@
 import { Channel, NotificationType, Priority } from './catalog';
 
+/** Catalogue types plus the one-off transactional mails sent directly (no preferences, no queue). */
+export type DeliveryType = NotificationType | 'auth.password_reset';
+
 /** What domain code asks for: "tell user X about Y". */
 export interface NotificationRequest {
   type: NotificationType;
@@ -15,7 +18,7 @@ export interface NotificationRequest {
 export interface DeliveryMessage {
   deliveryId: string;
   userId: string;
-  type: NotificationType;
+  type: DeliveryType;
   channel: Exclude<Channel, 'inapp'>;
   priority: Priority;
   /** email address / E.164 phone / push tokens */

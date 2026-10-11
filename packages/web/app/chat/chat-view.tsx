@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { useAuth } from '@/hooks/use-auth';
 import { chatApi, mergeMessages, type ChatChannel, type ChatMessage } from '@/lib/api/chat';
 import { apiErrorMessage } from '@/lib/api/errors';
+import { loginHref } from '@/lib/auth/return-to';
 
 const POLL_MS = 3_000;
 
@@ -48,7 +49,7 @@ export function ChatView() {
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!authLoading && !user) router.replace('/login?returnUrl=%2Fchat');
+    if (!authLoading && !user) router.replace(loginHref('/chat'));
   }, [authLoading, user, router]);
 
   // Channel list (+ the product's chat when opened from a product page).

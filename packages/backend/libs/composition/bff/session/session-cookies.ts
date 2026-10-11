@@ -2,7 +2,7 @@ import type { Response } from 'express';
 import { BFF_COOKIES } from '@marketplace-sandbox/contracts';
 
 /** The one place that knows cookie names and attributes (S48 FR-040, contracts/http.md). */
-const MFA_PATH = '/api/bff/session';
+const MFA_PATH = '/'; // a `__Host-` cookie must have Path=/
 
 const attributes = (
   path: string,
@@ -44,7 +44,7 @@ export const sessionCookies = {
     );
   },
 
-  /** The pending second-factor cookie lives five minutes and is only sent to the session endpoints. */
+  /** The pending second-factor cookie lives five minutes and is only read by the session endpoints. */
   setMfa(res: Response, value: string, maxAgeSeconds: number): void {
     append(
       res,

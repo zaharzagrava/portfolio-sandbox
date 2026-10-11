@@ -1,7 +1,9 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
+  Param,
   Header,
   HttpCode,
   HttpStatus,
@@ -25,9 +27,13 @@ import { SessionRevocationService } from '../application/session-revocation.serv
 import type { IssuedSession } from '../application/session-issuer.service';
 import { CsrfGuard } from './guards/csrf.guard';
 import { sessionMeta } from './request-meta';
+import { PasswordResetService } from '../application/password-reset.service';
+import { Domain_SessionNotFoundError } from '../domain/errors';
 import {
   AuthUserDto,
   PasswordLoginDto,
+  PasswordResetConfirmDto,
+  PasswordResetRequestDto,
   RefreshDto,
   RegisterDto,
 } from './auth.dto';
@@ -49,6 +55,7 @@ export class AuthController {
     private readonly refresh_: RefreshService,
     private readonly revocation: SessionRevocationService,
     private readonly account: AccountService,
+    private readonly passwordReset: PasswordResetService,
   ) {}
 
   @RateLimit('auth.register.ip')
@@ -85,6 +92,34 @@ export class AuthController {
       cookie.parse(req.headers.cookie ?? '')[REFRESH_COOKIE] ??
       '';
     return credentialBody(await this.refresh_.refresh(token));
+  }
+
+  @RateLimit('auth.reset.ip')
+  @Post('password-reset/request')
+  @HttpCode(HttpStatus.ACCEPTED)
+  @Header('Cache-Control', NO_STORE)
+  async requestPasswordReset(@Body() body: PasswordResetRequestDto) {
+    await this.passwordReset.request(body.email);
+    return { status: 'accepted' as const };
+  }
+
+  @RateLimit('auth.reset.confirm.ip')
+  @Post('password-reset/confirm')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Header('Cache-Control', NO_STORE)
+  async confirmPasswordReset(@Body() body: PasswordResetConfirmDto) {
+    await this.passwordReset.confirm(body.token, body.password);
+  }
+
+  @Firewall()
+  @Delete('sessions/:sessionId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async revokeSession(
+    @User() user: AuthenticatedUser,
+    @Param('sessionId') sessionId: string,
+  ) {
+    if (!(await this.revocation.revokeSession(user.id, sessionId, 'revoked')))
+      throw new Domain_SessionNotFoundError();
   }
 
   @Firewall()

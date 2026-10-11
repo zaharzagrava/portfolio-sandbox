@@ -5,7 +5,13 @@ export const queryKeys = {
     search: (query: string) => ['products', 'search', query],
   },
   cart: { all: ['cart'] },
-  auth: { user: ['auth', 'user'] },
+  auth: {
+    session: () => ['auth', 'session'] as const,
+    mfaStatus: () => ['auth', 'mfa-status'] as const,
+    sessions: () => ['auth', 'sessions'] as const,
+    identities: () => ['auth', 'identities'] as const,
+    oidcProviders: () => ['auth', 'oidc-providers'] as const,
+  },
   orders: {
     all: ['orders'],
     detail: (id: string) => ['orders', id],

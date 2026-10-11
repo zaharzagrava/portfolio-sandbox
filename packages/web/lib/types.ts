@@ -4,36 +4,6 @@
  * `@marketplace-sandbox/contracts` zod schemas once fully wired up.
  */
 
-// ---------- Auth ----------
-
-export interface User {
-  id: string;
-  email: string;
-  name: string;
-  avatarUrl?: string;
-  role: "buyer" | "seller" | "admin";
-  mfaEnabled: boolean;
-  createdAt: string;
-}
-
-export interface AuthTokens {
-  accessToken: string;
-  refreshToken: string;
-  sessionId: string;
-}
-
-export interface LoginRequest {
-  email: string;
-  password: string;
-  totpCode?: string;
-}
-
-export interface RegisterRequest {
-  email: string;
-  password: string;
-  name: string;
-}
-
 // ---------- Products ----------
 
 export interface Product {

@@ -22,14 +22,15 @@ export class SessionRevocationService {
     await this.markers.mark(sid, reason);
   }
 
-  /** `false` when the session does not exist or belongs to someone else. Idempotent for an already revoked one. */
+  /** `false` when the session does not exist, belongs to someone else or is already revoked (all "not found"). */
   async revokeSession(
     userId: string,
     sessionId: string,
     reason: string,
   ): Promise<boolean> {
     const session = await this.sessions.get(sessionId);
-    if (!session || session.userId !== userId) return false;
+    if (!session || session.userId !== userId || session.revokedAt)
+      return false;
     await this.revokeBySid(sessionId, reason);
     return true;
   }

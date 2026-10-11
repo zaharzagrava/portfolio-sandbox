@@ -1,4 +1,4 @@
-import { csrfHeaders, getAccessToken } from './client';
+import { csrfHeaders } from './csrf';
 
 export interface SseEvent {
   id?: string;
@@ -41,14 +41,13 @@ export class SseParser {
 
 /**
  * POST (or GET) a streaming endpoint and deliver parsed events - for streams EventSource can't open
- * (POST bodies, Authorization header). Resolves when the server ends the stream or `signal` aborts.
+ * (POST bodies). The session cookie identifies the caller. Resolves when the server ends the stream or `signal` aborts.
  */
 export async function streamSse(
   url: string,
   init: { method?: 'GET' | 'POST'; body?: unknown; headers?: Record<string, string>; signal?: AbortSignal },
   onEvent: (event: SseEvent) => void,
 ): Promise<Response> {
-  const token = getAccessToken();
   const res = await fetch(url, {
     method: init.method ?? 'POST',
     credentials: 'include',
@@ -56,7 +55,6 @@ export async function streamSse(
     headers: {
       accept: 'text/event-stream',
       ...(init.body !== undefined && { 'content-type': 'application/json' }),
-      ...(token && { authorization: `Bearer ${token}` }),
       ...csrfHeaders(),
       ...init.headers,
     },

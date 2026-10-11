@@ -16,8 +16,11 @@ import {
   OIDC_NET_OPTIONS,
   OIDC_PROVIDER,
   PASSWORD_HASHER,
+  RESET_TOKEN_REPOSITORY,
   SESSION_REPOSITORY,
 } from './domain/ports';
+import { PasswordResetService } from './application/password-reset.service';
+import { SequelizeResetTokenRepository } from './infra/models/reset-token.repository';
 import { IdentitiesController } from './api/identities.controller';
 import { OidcController } from './api/oidc.controller';
 import { FederatedIdentityService } from './application/federated-identity.service';
@@ -66,6 +69,8 @@ import { CsrfGuard } from './api/guards/csrf.guard';
   providers: [
     { provide: SESSION_REPOSITORY, useClass: DynamoSessionRepository },
     { provide: PASSWORD_HASHER, useClass: PasswordHasher },
+    { provide: RESET_TOKEN_REPOSITORY, useClass: SequelizeResetTokenRepository },
+    PasswordResetService,
     { provide: BREACH_CHECKER, useClass: RangeBreachChecker },
     {
       provide: FEDERATED_IDENTITY_REPOSITORY,

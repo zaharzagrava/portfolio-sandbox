@@ -303,6 +303,8 @@ export class SecretsManagerConfig {
   ses_from_address?: string;
   /** SMTP failover / local Mailpit (smtp://localhost:1025). */
   smtp_url?: string;
+  /** `memory` keeps sent e-mail in process (dev/test, read through the dev mailbox); unset → SES/SMTP. */
+  email_provider?: string;
   twilio_account_sid?: string;
   twilio_auth_token?: string;
   twilio_from?: string;

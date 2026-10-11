@@ -15,6 +15,8 @@ const nextConfig: NextConfig = {
   // (`instant = false` + reading the nonce from the request): every document is rendered per request.
   cacheComponents: true,
   poweredByHeader: false,
+  // The contracts workspace ships TypeScript source (explicit .ts import extensions).
+  transpilePackages: ["@marketplace-sandbox/contracts"],
   experimental: {
     serverActions: {
       allowedOrigins: config.allowedOrigins,
@@ -41,13 +43,10 @@ const nextConfig: NextConfig = {
       // GraphQL + REST aggregates → BFF
       { source: "/api/graphql", destination: `${config.bffUrl}/api/graphql` },
       { source: "/api/bff/:path*", destination: `${config.bffUrl}/api/bff/:path*` },
-      // Long-lived streams → SSE gateway
-      { source: "/api/streams", destination: `${config.sseUrl}/api/streams` },
-      { source: "/api/live/:id/events", destination: `${config.sseUrl}/api/live/:id/events` },
-      { source: "/api/payment/stream", destination: `${config.sseUrl}/api/payment/stream` },
-      { source: "/api/assistant/:path*", destination: `${config.sseUrl}/api/assistant/:path*` },
-      // Everything else → core
-      { source: "/api/:path*", destination: `${config.apiUrl}/api/:path*` },
+      // Everything else goes through the BFF forwarder (W01 C-FWD): it turns the session cookie into the bearer token on
+      // the server and routes long-lived streams (/api/streams, /api/live/:id/events, /api/payment/stream,
+      // /api/assistant/*) to the SSE gateway and the rest to the core API. The browser never holds a token.
+      { source: "/api/:path*", destination: `${config.bffUrl}/api/bff/f/:path*` },
     ];
   },
 
@@ -57,6 +56,8 @@ const nextConfig: NextConfig = {
     return [
       { source: "/admin", destination: "/admin/feature-flags", permanent: false },
       { source: "/account", destination: "/account/security", permanent: false },
+      // The old second-step route (it carried the challenge in the URL) is gone; the pending sign-in lives in a cookie now.
+      { source: "/mfa", destination: "/login", permanent: false },
     ];
   },
 

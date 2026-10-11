@@ -15,7 +15,7 @@ const HTML_ESCAPES: Record<string, string> = {
   '"': '&quot;',
   "'": '&#39;',
 };
-const escapeHtml = (s: string) => s.replace(/[&<>"']/g, (c) => HTML_ESCAPES[c]);
+export const escapeHtml =(s: string) => s.replace(/[&<>"']/g, (c) => HTML_ESCAPES[c]);
 
 /**
  * `{{var}}` interpolation. Deliberately logic-less (no helpers, no partials):

@@ -1,126 +1,69 @@
 'use client';
 
-import { createContext, useContext, useEffect, useRef, useState, ReactNode } from 'react';
-import { apiClient, refreshSession, setAccessToken } from '@/lib/api/client';
-import { useRouter } from 'next/navigation';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
+import { sessionApi, type SessionRole, type SessionView } from '@/lib/api/session';
+import { queryKeys } from '@/lib/query-keys';
+import { endSession } from '@/lib/auth/session-ended';
 
-export type UserRole = 'USER' | 'SELLER' | 'ADMIN';
+export type SessionUser = { id: string; email: string; role: SessionRole };
+export type AuthStatus = 'loading' | 'authenticated' | 'anonymous' | 'unavailable';
 
-export interface User {
-  id: string;
-  email: string;
-  /** Not provided by the API today; UI falls back to the email. */
-  name?: string;
-  role: UserRole;
-  avatarUrl?: string;
-}
+export const toSessionUser = (view: SessionView): SessionUser => ({
+  id: view.user.id,
+  email: view.user.email ?? '',
+  role: view.user.role,
+});
 
-interface AuthContextType {
-  user: User | null;
-  isAuthenticated: boolean;
-  isLoading: boolean;
-  /** Returns `{ mfaRequired: true, mfaToken }` when a second factor is needed; otherwise the session is active. */
-  login: (credentials: any) => Promise<{ mfaRequired: false } | { mfaRequired: true; mfaToken: string }>;
-  verifyMfa: (mfaToken: string, code: string) => Promise<void>;
-  logout: () => Promise<void>;
-  register: (data: any) => Promise<void>;
-  /** Re-issues the access token (e.g. after opening a shop made the user a SELLER). */
-  refreshSession: () => Promise<void>;
-}
-
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const router = useRouter();
-  const queryClient = useQueryClient();
-
-  // The refresh rotates the HttpOnly cookie and returns a new access token carrying the user's current role.
-  const reissueSession = async () => {
-    setUser((await refreshSession()).user as User);
-  };
-
-  // Bumped on every sign-in/out: a slower restore that started earlier must not overwrite a newer session.
-  const sessionEpoch = useRef(0);
-
-  useEffect(() => {
-    // The access token lives in memory only; after a reload the HttpOnly refresh cookie restores the session.
-    const epoch = sessionEpoch.current;
-    refreshSession()
-      .then((data) => {
-        if (sessionEpoch.current === epoch) setUser(data.user as User);
-      })
-      .catch(() => {
-        if (sessionEpoch.current === epoch) setUser(null);
-      })
-      .finally(() => setIsLoading(false));
-  }, []);
-
-  // A fresh sign-in: move the guest cart into the user's cart (checkout reads the user's cart), then drop
-  // everything cached for the anonymous visitor.
-  const acceptSession = async (data: { user: User; accessToken: { token: string } }) => {
-    sessionEpoch.current++;
-    setAccessToken(data.accessToken.token);
-    setUser(data.user);
-    await apiClient.post('/api/cart/merge', {}).catch(() => undefined);
-    await queryClient.invalidateQueries();
-  };
-
-  // Navigation is the caller's job (returnUrl, MFA step).
-  const login: AuthContextType['login'] = async (credentials) => {
-    const { data } = await apiClient.post('/api/auth/login', { email: credentials.email, password: credentials.password });
-    if (data.mfaRequired) return { mfaRequired: true, mfaToken: data.mfaToken };
-    await acceptSession(data);
-    return { mfaRequired: false };
-  };
-
-  const verifyMfa = async (mfaToken: string, code: string) => {
-    const { data } = await apiClient.post('/api/auth/mfa/verify', { mfaToken, code });
-    await acceptSession(data);
-  };
-
-  const logout = async () => {
-    try {
-      await apiClient.post('/api/auth/logout');
-    } catch (e) {
-      // Ignore failure on logout
-    } finally {
-      sessionEpoch.current++;
-      setAccessToken(null);
-      setUser(null);
-      queryClient.clear();
-      router.push('/login');
-    }
-  };
-
-  // Registration answers `202 {status: 'accepted'}` with no session (identical for new and known addresses, S01), so the
-  // member signs in right after with the same credentials. W01 owns the final journey.
-  const register = async (input: any) => {
-    await apiClient.post('/api/auth/register', { email: input.email, password: input.password });
-    const { data } = await apiClient.post('/api/auth/login', { email: input.email, password: input.password });
-    await acceptSession(data);
-  };
-
-  const value = {
-    user,
-    isAuthenticated: !!user,
-    isLoading,
-    login,
-    verifyMfa,
-    logout,
-    register,
-    refreshSession: reissueSession,
-  };
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-}
-
-export function useAuth() {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+/**
+ * `GET /api/bff/session`: a user, `null` for anonymous (401), or a throw for "could not check" (503, network), in which
+ * case TanStack keeps the previous value. A 401 that follows a known user means the session ended (W01 AS-26).
+ */
+async function fetchSession(queryClient: QueryClient): Promise<SessionUser | null> {
+  const result = await sessionApi.current();
+  if (result.ok && result.kind === 'session') return toSessionUser(result.session);
+  if (!result.ok && result.status === 401) {
+    if (queryClient.getQueryData(queryKeys.auth.session())) endSession();
+    return null;
   }
-  return context;
+  throw new Error('session_unavailable');
+}
+
+/**
+ * The browser's view of the session: server data, so it lives in TanStack Query (VI.4), never in `useState` or a second
+ * context. Read-only: sign-in, sign-out and role refresh are the hooks in `use-auth-actions.ts`.
+ */
+export function useAuth(): { user: SessionUser | null; status: AuthStatus; isAuthenticated: boolean; isLoading: boolean } {
+  const queryClient = useQueryClient();
+  const query = useQuery({
+    queryKey: queryKeys.auth.session(),
+    queryFn: () => fetchSession(queryClient),
+    staleTime: 60_000,
+    // 'always': a member must see a session ended elsewhere, and recover from "unavailable", even inside the stale window.
+    refetchOnWindowFocus: 'always',
+    refetchOnReconnect: 'always',
+    retry: false,
+  });
+  const user = query.data ?? null;
+  let status: AuthStatus;
+  if (query.isError) status = 'unavailable';
+  else if (query.data === undefined) status = 'loading';
+  else status = user ? 'authenticated' : 'anonymous';
+  return { user, status, isAuthenticated: user !== null, isLoading: status === 'loading' };
+}
+
+/**
+ * Seeds the session query with the value the server already read, so a signed-in member's first paint never passes
+ * through "anonymous" (W01 AS-18). Receives only `{id, email, role}`.
+ */
+export function AuthBootstrap({ user }: { user: SessionUser | null }) {
+  const queryClient = useQueryClient();
+  // Lazy state initializer: runs once, during the first render, before any sibling reads the session.
+  useState(() => {
+    if (queryClient.getQueryData(queryKeys.auth.session()) === undefined) {
+      queryClient.setQueryData(queryKeys.auth.session(), user);
+    }
+    return true;
+  });
+  return null;
 }

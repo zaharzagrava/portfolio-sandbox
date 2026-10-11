@@ -39,6 +39,8 @@ def deferred_scenarios(plan, max_priority):
     for i in range(1, len(parts), 2):
         body = re.split(r'(?m)^##\s', parts[i + 1])[0]
         body = re.split(r'(?m)^###\s', body)[0]
+        # "(S48 AS-44, AS-59.)" names another capability's scenarios, not this spec's own
+        body = re.sub(r'\([^()]*\bS\d+ AS-\d+[^()]*\)', '', body)
         for ref in set(re.findall(r'\bAS-0*(\d+)\b', body)):
             cited_by.setdefault(int(ref), []).append(int(parts[i]))
     return {n for n, pri in cited_by.items() if all(p > max_priority for p in pri)}
@@ -102,7 +104,12 @@ def integrity(scopes):
             bad.append(f'{f}: fewer it()/expect() calls than at HEAD ({len(COUNT.findall(now))} < {len(COUNT.findall(before))})')
     # tests deleted outright
     r = subprocess.run(['git', 'diff', '--name-only', '--diff-filter=D', 'HEAD', '--', *scopes], capture_output=True, text=True)
-    bad += [f'{p}: test file deleted' for p in r.stdout.split() if TEST_FILE.search(p)]
+    deleted = set(r.stdout.split())
+    # a test may go with the module it tested (foo.test.ts next to a deleted foo.ts); a test deleted alone is still a finding
+    def subject_deleted(p):
+        stem = TEST_FILE.sub('', p)
+        return any(stem + ext in deleted for ext in ('.ts', '.tsx'))
+    bad += [f'{p}: test file deleted' for p in sorted(deleted) if TEST_FILE.search(p) and not subject_deleted(p)]
     if bad:
         print('test integrity: ' + '; '.join(bad))
         return 1

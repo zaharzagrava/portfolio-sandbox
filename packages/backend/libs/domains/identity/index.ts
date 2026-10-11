@@ -43,6 +43,8 @@ export {
   RegistrationDuplicateAttempted,
   UserRegistered,
 } from './domain/events';
+export { PASSWORD_RESET_MAILER } from './domain/ports';
+export type { PasswordResetMailer } from './domain/ports';
 export { UserUtilsService } from './application/user-utils.service';
 export { SecretBox } from './infra/crypto/secret-box';
 export { KeyStore } from './infra/keys/key-store.service';

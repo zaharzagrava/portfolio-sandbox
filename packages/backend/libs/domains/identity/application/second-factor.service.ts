@@ -16,9 +16,15 @@ import {
   Domain_InvalidMfaChallengeError,
   Domain_InvalidMfaCodeError,
   Domain_MfaAlreadyEnabledError,
+  Domain_MfaNotEnabledError,
   Domain_MfaNotPendingError,
 } from '../domain/errors';
-import { MfaEnabled, MfaRecoveryCodeUsed } from '../domain/events';
+import {
+  MfaDisabled,
+  MfaEnabled,
+  MfaRecoveryCodesRegenerated,
+  MfaRecoveryCodeUsed,
+} from '../domain/events';
 import {
   generateRecoveryCodes,
   normaliseRecoveryCode,
@@ -246,6 +252,83 @@ export class SecondFactorService {
     )
       throw new Domain_InvalidCodeError();
     await this.budget.succeeded(userId);
+  }
+
+  /**
+   * New recovery codes for an `enabled` factor, proved with a fresh TOTP code (a recovery code is not accepted here).
+   * The old codes stop working in the same transaction; the new ones are shown once.
+   */
+  async regenerateRecoveryCodes(
+    userId: string,
+    code: string,
+  ): Promise<string[]> {
+    await this.requireEnabled(userId);
+    await this.proveWithTotp(userId, code);
+    const recoveryCodes = generateRecoveryCodes();
+    await this.transactions.run(async () => {
+      await this.factors.replaceCodes(
+        userId,
+        recoveryCodes.map((c) => this.digest(c)),
+        this.clock.now(),
+      );
+      await this.outbox.append(
+        MfaRecoveryCodesRegenerated.create(userId, this.clock.nowMs(), {
+          userId,
+        }),
+      );
+    });
+    return recoveryCodes;
+  }
+
+  /** Turns the factor off; the proof is a fresh TOTP code or an unspent recovery code (spent in the same transaction). */
+  async disable(userId: string, code: string): Promise<void> {
+    await this.requireEnabled(userId);
+    if (/^[0-9]{6}$/.test(code)) {
+      await this.proveWithTotp(userId, code);
+      await this.transactions.run(() => this.removeFactor(userId));
+      return;
+    }
+    const recovery = normaliseRecoveryCode(code);
+    await this.budget.take(userId);
+    if (recovery === null) throw new Domain_InvalidCodeError();
+    await this.transactions.run(async () => {
+      if (
+        !(await this.factors.spendCode(
+          userId,
+          this.digest(recovery),
+          this.clock.now(),
+        ))
+      )
+        throw new Domain_InvalidCodeError();
+      await this.removeFactor(userId);
+    });
+    await this.budget.succeeded(userId);
+  }
+
+  private async removeFactor(userId: string): Promise<void> {
+    if (!(await this.factors.disable(userId)))
+      throw new Domain_MfaNotEnabledError();
+    await this.outbox.append(
+      MfaDisabled.create(userId, this.clock.nowMs(), {
+        userId,
+        reason: 'user',
+      }),
+    );
+  }
+
+  private async requireEnabled(userId: string): Promise<SecondFactorRow> {
+    const row = await this.factors.find(userId, this.clock.now());
+    if (!row || row.state !== 'enabled') throw new Domain_MfaNotEnabledError();
+    return row;
+  }
+
+  /** A fresh TOTP code through the shared attempt budget; anything that is not six digits is a wrong code that costs a slot. */
+  private async proveWithTotp(userId: string, code: string): Promise<void> {
+    if (!/^[0-9]{6}$/.test(code)) {
+      await this.budget.take(userId);
+      throw new Domain_InvalidCodeError();
+    }
+    await this.consumeTotpCode(userId, code);
   }
 
   private context(userId: string): string {

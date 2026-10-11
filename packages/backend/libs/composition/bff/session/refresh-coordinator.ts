@@ -82,6 +82,52 @@ export class RefreshCoordinator {
     }
   }
 
+  /**
+   * A refresh the caller asked for (the identity may have changed, e.g. a new role), whatever the token's age.
+   * Still single flight: concurrent callers wait for the one rotation, and a record already rotated since the caller
+   * read it is returned as is.
+   */
+  async refreshNow(
+    cookie: string,
+    record: SessionRecord,
+    clientIp: string,
+  ): Promise<SessionRecord> {
+    const lockKey = refreshLockKey(cookie);
+    const owner = await this.store.acquireLock(lockKey, LOCK_MS).catch(() => {
+      throw this.unavailable();
+    });
+    if (!owner) return this.waitForVersion(cookie, record);
+    try {
+      const current = await this.store.get(cookie).catch(() => {
+        throw this.unavailable();
+      });
+      if (!current) throw new SessionEndedError('gone');
+      if (current.tokenVersion > record.tokenVersion) return current;
+      const rotated = await this.rotate(cookie, current, clientIp);
+      if (rotated.tokenVersion === current.tokenVersion)
+        throw this.unavailable(); // identity could not be reached: nothing new to show
+      return rotated;
+    } finally {
+      await this.store.releaseLock(lockKey, owner).catch(() => undefined);
+    }
+  }
+
+  private async waitForVersion(
+    cookie: string,
+    seen: SessionRecord,
+  ): Promise<SessionRecord> {
+    const until = performance.now() + this.settings.session.refreshWaitMs;
+    while (performance.now() < until) {
+      await sleepMs(25 + Math.floor(Math.random() * 25));
+      const latest = await this.store.get(cookie).catch(() => {
+        throw this.unavailable();
+      });
+      if (!latest) throw new SessionEndedError('gone');
+      if (latest.tokenVersion > seen.tokenVersion) return latest;
+    }
+    throw this.unavailable();
+  }
+
   private async rotate(
     cookie: string,
     current: SessionRecord,

@@ -18,6 +18,7 @@ import {
   TRUSTED_DOCUMENT_ENTRIES,
   TrustedDocuments,
 } from './graphql/trusted-documents';
+import { ForwardController } from './forward/forward.controller';
 import { ProductPageController } from './page/product-page.controller';
 import { ProductPageService } from './page/product-page.service';
 import { JsonBodyGuard, SessionController } from './session/session.controller';
@@ -72,7 +73,7 @@ import { UpstreamClient } from './upstream/upstream-client';
     ProductPageService,
     JsonBodyGuard,
   ],
-  controllers: [ProductPageController, SessionController],
+  controllers: [ProductPageController, SessionController, ForwardController],
 })
 export class BffModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {

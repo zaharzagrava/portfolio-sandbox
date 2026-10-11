@@ -88,6 +88,18 @@ export class SessionController {
     return this.sessions.current(req, res);
   }
 
+  /** Forces an identity refresh so a changed role shows; same answer as `GET`. */
+  @UseGuards(CsrfGuard)
+  @HttpCode(200)
+  @Post('refresh')
+  refresh(
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<SessionResponse> {
+    res.setHeader('Cache-Control', 'no-store');
+    return this.sessions.refresh(req, res);
+  }
+
   @UseGuards(CsrfGuard)
   @HttpCode(204)
   @Post('logout')

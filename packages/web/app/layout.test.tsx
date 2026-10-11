@@ -7,7 +7,7 @@ vi.mock('next/font/google', () => ({
 }));
 vi.mock('@/lib/config', () => ({ config: { siteUrl: 'https://shop.example.com' } }));
 vi.mock('@/components/layout/nonce-providers', () => ({ NonceProviders: ({ children }: { children: React.ReactNode }) => <>{children}</> }));
-vi.mock('@/hooks/use-auth', () => ({ AuthProvider: ({ children }: { children: React.ReactNode }) => <>{children}</> }));
+vi.mock('@/components/auth/session-bootstrap', () => ({ SessionBootstrap: () => null }));
 vi.mock('@/components/layout/navbar', () => ({ Navbar: () => <header data-testid="header">header</header> }));
 vi.mock('@/components/layout/footer', () => ({ Footer: () => <footer data-testid="footer">footer</footer> }));
 vi.mock('@/components/layout/route-focus', () => ({ RouteFocus: () => null }));

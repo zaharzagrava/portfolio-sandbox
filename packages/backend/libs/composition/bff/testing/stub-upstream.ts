@@ -145,6 +145,21 @@ export class StubUpstream {
     return `http://127.0.0.1:${(this.server.address() as AddressInfo).port}`;
   }
 
+  private unknownHandler?: (
+    call: RecordedCall,
+    req: http.IncomingMessage,
+    res: http.ServerResponse,
+  ) => void;
+
+  /**
+   * Takes over every request that matches no named route (the forwarder specs), answering on the raw response so
+   * streaming and arbitrary status/headers are possible. The call is still recorded. Cleared by `reset()`.
+   */
+  onUnknown(handler: NonNullable<StubUpstream['unknownHandler']>): this {
+    this.unknownHandler = handler;
+    return this;
+  }
+
   /** Persistent answer for a route until `reset()`. */
   respond(route: RouteName, behavior: BehaviorSpec): this {
     this.persistent.set(route, behavior);
@@ -186,6 +201,7 @@ export class StubUpstream {
     this.persistent.clear();
     this.queued.clear();
     this.memo.clear();
+    this.unknownHandler = undefined;
     this.products.clear();
     this.hiddenShops.clear();
     this.maxInFlight = 0;
@@ -322,6 +338,11 @@ export class StubUpstream {
         } catch {
           call.body = text;
         }
+      }
+      if (call.route === 'unknown' && this.unknownHandler) {
+        this.unknownHandler(call, req, res);
+        res.once('finish', () => (call.status = res.statusCode));
+        return;
       }
       const behavior = this.pick(call);
       void this.answer(call, behavior, res, () => call.aborted);

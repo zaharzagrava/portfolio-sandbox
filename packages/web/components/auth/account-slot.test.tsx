@@ -1,61 +1,53 @@
-import { render, screen, within } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { render, screen } from '@testing-library/react';
+import { isValidElement } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+const router = vi.hoisted(() => ({ replace: vi.fn(), push: vi.fn(), refresh: vi.fn() }));
+vi.mock('next/navigation', () => ({ useRouter: () => router }));
+const session = vi.hoisted(() => ({ user: null as unknown }));
+vi.mock('@/lib/auth/session.server', () => ({ getServerSession: async () => session.user }));
+
 import { AccountSlot, AccountSlotSkeleton, MobileAccountEntries } from './account-slot';
 
-let mockUser: { id: string; email: string; role: string } | null = null;
-let mockLoading = false;
-vi.mock('@/hooks/use-auth', () => ({
-  useAuth: () => ({ user: mockUser, isAuthenticated: !!mockUser, isLoading: mockLoading, logout: vi.fn() }),
-}));
+const mount = (ui: React.ReactNode) =>
+  render(<QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>{ui}</QueryClientProvider>);
 
-describe('W07 account slot stand-in (AS-05, AS-04)', () => {
+describe('W01 account slot (server part, AS-18)', () => {
   beforeEach(() => {
-    mockUser = null;
-    mockLoading = false;
+    session.user = null;
   });
 
-  it.each([
-    ['ADMIN', true],
-    ['SELLER', false],
-    ['USER', false],
-  ])('W07 AS-05: the account menu lists Admin after "Account & security" only for ADMIN (%s -> %s)', async (role, admin) => {
-    mockUser = { id: 'u1', email: 'a@example.com', role };
-    render(<AccountSlot />);
-    await userEvent.click(screen.getByRole('button', { name: /^Account menu/ }));
-    const items = screen.getAllByRole('menuitem').map((item) => item.textContent?.trim());
-    expect(items.includes('Admin')).toBe(admin);
-    if (admin) {
-      expect(items[items.indexOf('Account & security') + 1]).toBe('Admin');
-      expect(screen.getByRole('menuitem', { name: 'Admin' })).toHaveAttribute('href', '/admin');
-    }
+  it('W01 AS-18: the placeholder has the account button size, aria-busy and announces no text', () => {
+    const { container } = render(<AccountSlotSkeleton />);
+    const skeleton = container.firstElementChild!;
+    expect(skeleton).toHaveAttribute('aria-busy', 'true');
+    expect(skeleton).toHaveAttribute('data-slot', 'account-skeleton');
+    expect(skeleton.className).toContain('size-9');
+    expect(skeleton).toHaveTextContent('');
   });
 
-  it.each([
-    ['ADMIN', true],
-    ['USER', false],
-  ])('W07 AS-05: the mobile account group lists Admin only for ADMIN (%s -> %s)', (role, admin) => {
-    mockUser = { id: 'u1', email: 'a@example.com', role };
-    render(<MobileAccountEntries />);
-    const group = screen.getByRole('group', { name: 'Account' });
-    expect(within(group).queryByRole('link', { name: 'Admin' }) !== null).toBe(admin);
+  it('W01 AS-18: the server component hands the client leaf only {id, email, role}', async () => {
+    session.user = { id: 'u1', email: 'a@example.com', role: 'SELLER', passwordHash: 'secret', extra: 1 };
+    const element = await AccountSlot();
+    expect(isValidElement(element)).toBe(true);
+    expect((element as { props: { initialUser: unknown } }).props.initialUser).toEqual({ id: 'u1', email: 'a@example.com', role: 'SELLER' });
   });
 
-  it('W07 AS-02: visitors get Log in and Sign up in the mobile entries', () => {
-    render(<MobileAccountEntries />);
-    expect(screen.getAllByRole('link').map((link) => link.textContent)).toEqual(['Log in', 'Sign up']);
+  it('W01 AS-18: a signed-in member resolves to the account menu without ever rendering Log in or Sign up', async () => {
+    session.user = { id: 'u1', email: 'a@example.com', role: 'USER' };
+    mount(await AccountSlot());
+    expect(screen.getByRole('button', { name: 'Account menu' })).toHaveTextContent('A');
+    expect(screen.queryByRole('link', { name: /Log in|Sign up/ })).not.toBeInTheDocument();
   });
 
-  it('W07 AS-04: while the session loads the slot is the fixed-size skeleton of the account button', () => {
-    mockLoading = true;
-    const { container } = render(<AccountSlot />);
-    expect(container.querySelector('[data-slot="account-skeleton"]')).not.toBeNull();
-    expect(render(<AccountSlotSkeleton />).container.firstElementChild!.className).toContain('size-9');
+  it('W01 AS-17: a visitor resolves to Log in and Sign up links', async () => {
+    mount(await AccountSlot());
+    expect(screen.getByRole('link', { name: 'Log in' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Sign up' })).toBeInTheDocument();
   });
 
-  it('W07 AS-04: the signed-in account button has the same size as the skeleton (size-9 / icon-lg)', async () => {
-    mockUser = { id: 'u1', email: 'a@example.com', role: 'USER' };
-    render(<AccountSlot />);
-    expect(screen.getByRole('button', { name: /^Account menu/ }).className).toContain('size-9');
+  it('W01 AS-17: the slot module still exports MobileAccountEntries for the mobile menu contract', () => {
+    expect(typeof MobileAccountEntries).toBe('function');
   });
 });

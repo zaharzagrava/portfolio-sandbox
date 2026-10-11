@@ -44,6 +44,28 @@ export class RegisterDto {
   role?: (typeof SELF_ASSIGNABLE_ROLES)[number];
 }
 
+export class PasswordResetRequestDto {
+  @ApiProperty()
+  @Transform(normalizeEmailInput)
+  @IsEmail()
+  @MaxLength(EMAIL_MAX)
+  email: string;
+}
+
+export class PasswordResetConfirmDto {
+  @ApiProperty({ description: 'The token from the e-mailed link' })
+  @IsString()
+  @MinLength(1)
+  @MaxLength(256)
+  token: string;
+
+  @ApiProperty({ minLength: PASSWORD_MIN, maxLength: PASSWORD_MAX })
+  @IsString()
+  @MinLength(PASSWORD_MIN)
+  @MaxLength(PASSWORD_MAX)
+  password: string;
+}
+
 export class PasswordLoginDto {
   @ApiProperty()
   @Transform(normalizeEmailInput)
@@ -103,6 +125,16 @@ export class MfaCodeDto {
 }
 
 export class MfaConfirmDto extends MfaCodeDto {}
+
+/** Regenerate and disable (`mfaCodeRequestSchema`): the format is judged by the service so a wrong kind of code is `422 invalid_code`. */
+export class MfaManageCodeDto {
+  @ApiProperty({ description: 'TOTP code, or for disable also a recovery code' })
+  @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
+  @IsString()
+  @MinLength(1)
+  @MaxLength(64)
+  code: string;
+}
 
 /** `returnTo` must be a relative path (FR-045); an invalid one is a 400, never rewritten. */
 function IsReturnPath(options?: ValidationOptions) {

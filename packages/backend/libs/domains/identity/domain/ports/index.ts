@@ -9,7 +9,30 @@ export const USER_REPOSITORY = Symbol('USER_REPOSITORY');
 export const SESSION_REPOSITORY = Symbol('SESSION_REPOSITORY');
 export const SIGNING_KEY_REPOSITORY = Symbol('SIGNING_KEY_REPOSITORY');
 export const RESET_TOKEN_REPOSITORY = Symbol('RESET_TOKEN_REPOSITORY');
+export const PASSWORD_RESET_MAILER = Symbol('PASSWORD_RESET_MAILER');
 export const PASSWORD_HASHER = Symbol('PASSWORD_HASHER');
+
+/**
+ * Hands the reset link to the mail channel. Implemented by the notifications domain (identity may not import it) and
+ * sent directly, not through the outbox: the raw token must never be stored (W01 B-4).
+ */
+export interface PasswordResetMailer {
+  sendResetLink(input: { to: string; link: string; expiresAt: Date }): Promise<void>;
+}
+
+export interface ResetTokenRepository {
+  /** Invalidates the user's older unused tokens and stores the new digest (one statement pair, joins the active transaction). */
+  issue(input: {
+    userId: string;
+    digest: string;
+    expiresAt: Date;
+    now: Date;
+  }): Promise<void>;
+  /** The owner of an unused, unexpired token, without spending it. */
+  find(digest: string, now: Date): Promise<string | null>;
+  /** Spends the token; `false` for exactly the losers of a race, unknown, used or expired tokens. */
+  consume(digest: string, now: Date): Promise<boolean>;
+}
 export const SECRET_SEALER = Symbol('SECRET_SEALER');
 export const BREACH_CHECKER = Symbol('BREACH_CHECKER');
 export const SECOND_FACTOR_REPOSITORY = Symbol('SECOND_FACTOR_REPOSITORY');
@@ -55,6 +78,8 @@ export interface UserRepository {
     oldHash: string,
     newHash: string,
   ): Promise<boolean>;
+  /** Sets the hash unconditionally (password reset, where the token is the proof); `false` for a missing or deleted user. */
+  setPasswordHash(id: string, newHash: string): Promise<boolean>;
   /** Removes the password (account linking wipe); `false` when there was none. Conditional on `passwordHash IS NOT NULL`. */
   clearPassword(id: string): Promise<boolean>;
   /** The user with this (trimmed, lower-cased) address, soft-deleted users included. */

@@ -12,7 +12,10 @@ vi.mock('@/lib/api/cart', () => ({
   useCart: () => ({ data: mockCount === undefined ? undefined : [] }),
   cartTotals: () => ({ itemCount: mockCount ?? 0, subtotal: 0 }),
 }));
-vi.mock('@/components/auth/account-slot', () => ({ MobileAccountEntries: () => <div data-testid="account-entries">account</div> }));
+vi.mock('@/components/auth/account-menu', () => ({
+  MobileAccountEntries: () => <div data-testid="account-entries">account</div>,
+  MobileLoginLink: () => null,
+}));
 vi.mock('@/components/chat/assistant-launcher', () => ({
   AssistantLauncher: ({ variant }: { variant: string }) => <button type="button">AI Assistant ({variant})</button>,
 }));

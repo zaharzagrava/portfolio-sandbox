@@ -1,6 +1,9 @@
 // @vitest-environment node
 import { renderToString } from 'react-dom/server';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+
+vi.mock('next/navigation', () => ({ useRouter: () => ({ replace: vi.fn(), push: vi.fn(), refresh: vi.fn() }) }));
+
 import { Providers } from './providers';
 
 // Rendered in a Node environment on purpose: next-themes writes the nonce only when there is no `window`, i.e. on the

@@ -77,7 +77,7 @@
     "start:dev:collab": "NODE_ENV=local PORT=8004 nest start collab --watch",
     "start:dev:public-api": "NODE_ENV=local PORT=8005 nest start public-api --watch",
     "start:dev:bff": "NODE_ENV=local PORT=8006 BFF_LOCAL_DEV=true BFF_UPSTREAM_URL=http://localhost:8000 BFF_ALLOWED_ORIGINS=http://localhost:3000 BFF_SESSION_KEYS=AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQE= BFF_CSRF_KEY=AgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgI= nest start bff --watch",
-    "start:dev:monolith": "NODE_ENV=local BFF_LOCAL_DEV=true BFF_UPSTREAM_URL=http://localhost:8000 BFF_ALLOWED_ORIGINS=http://localhost:3000 BFF_SESSION_KEYS=AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQE= BFF_CSRF_KEY=AgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgI= nest start local-monolith --watch",
+    "start:dev:monolith": "NODE_ENV=local EMAIL_PROVIDER=memory DEV_MAILBOX_ENABLED=true BFF_LOCAL_DEV=true BFF_UPSTREAM_URL=http://localhost:8000 BFF_ALLOWED_ORIGINS=http://localhost:3000 BFF_SESSION_KEYS=AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQE= BFF_CSRF_KEY=AgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgI= nest start local-monolith --watch",
     "build:lambdas": "node scripts/build-lambdas.mjs",
     "start:lambda-local": "nest build lambda-local && node dist/apps/lambda-local/main.js",
     "seed:dev": "ts-node -r tsconfig-paths/register scripts/seed/dev-seed.ts"

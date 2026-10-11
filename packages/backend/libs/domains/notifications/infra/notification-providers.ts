@@ -7,36 +7,33 @@ import {
   SMS_PROVIDERS,
   ChannelProvider,
 } from '../domain/provider-ports';
+import { MemoryEmailProvider } from './providers/memory-email.provider';
 import { SesEmailProvider } from './providers/ses-email.provider';
 import { SmtpEmailProvider } from './providers/smtp-email.provider';
 import { TwilioSmsProvider } from './providers/twilio-sms.provider';
 import { FcmPushProvider } from './providers/fcm-push.provider';
 import { LogPushProvider, LogSmsProvider } from './providers/log.providers';
 
+/** E-mail failover chain: `EMAIL_PROVIDER=memory` (dev/test), else SES when configured, then SMTP. */
+export function emailProviderChain(config: ApiConfigService): ChannelProvider[] {
+  if (config.get('email_provider') === 'memory')
+    return [new MemoryEmailProvider()];
+  const from =
+    config.get('ses_from_address') ?? 'Marketplace <no-reply@marketplace.local>';
+  return [
+    ...(config.get('ses_from_address')
+      ? [new SesEmailProvider(from, config.get('aws_region') ?? 'eu-central-1')]
+      : []),
+    new SmtpEmailProvider(config.get('smtp_url') ?? 'smtp://localhost:1025', from),
+  ];
+}
+
 /** Provider chains from config: real SDKs when credentials exist, local stand-ins otherwise. Order = failover order. */
 export const NOTIFICATION_PROVIDERS: Provider[] = [
   {
     provide: EMAIL_PROVIDERS,
     inject: [ApiConfigService],
-    useFactory: (config: ApiConfigService): ChannelProvider[] => {
-      const from =
-        config.get('ses_from_address') ??
-        'Marketplace <no-reply@marketplace.local>';
-      return [
-        ...(config.get('ses_from_address')
-          ? [
-              new SesEmailProvider(
-                from,
-                config.get('aws_region') ?? 'eu-central-1',
-              ),
-            ]
-          : []),
-        new SmtpEmailProvider(
-          config.get('smtp_url') ?? 'smtp://localhost:1025',
-          from,
-        ),
-      ];
-    },
+    useFactory: emailProviderChain,
   },
   {
     provide: SMS_PROVIDERS,

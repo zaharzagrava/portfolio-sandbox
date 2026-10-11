@@ -488,6 +488,10 @@ export class ApiConfigService {
             verify: joi.string().optional().allow(''),
             name: 'SMTP_URL',
           },
+          email_provider: {
+            verify: joi.string().optional().allow(''),
+            name: 'EMAIL_PROVIDER',
+          },
           twilio_account_sid: {
             verify: joi.string().optional().allow(''),
             name: 'TWILIO_ACCOUNT_SID',

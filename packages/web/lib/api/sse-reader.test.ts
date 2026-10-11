@@ -1,5 +1,22 @@
-import { describe, expect, it } from 'vitest';
-import { SseParser } from './sse-reader';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { SseParser, streamSse } from './sse-reader';
+
+describe('streamSse', () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  it('W01 AS-31: authenticates with the cookie session and the CSRF header, never an Authorization header', async () => {
+    vi.spyOn(document, 'cookie', 'get').mockReturnValue('__Host-bff-csrf=tok');
+    const spy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('event: done\ndata: {}\n\n', { status: 200 }));
+    const events: string[] = [];
+    await streamSse('/api/assistant/chat', { body: { q: 1 } }, (e) => events.push(e.event));
+    const [, init] = spy.mock.calls[0];
+    expect(init).toMatchObject({ method: 'POST', credentials: 'include' });
+    const headers = init?.headers as Record<string, string>;
+    expect(headers['X-CSRF-Token']).toBe('tok');
+    expect(Object.keys(headers).map((k) => k.toLowerCase())).not.toContain('authorization');
+    expect(events).toEqual(['done']);
+  });
+});
 
 describe('SseParser', () => {
   it('parses named events with ids and JSON data', () => {

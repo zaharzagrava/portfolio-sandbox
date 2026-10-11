@@ -21,4 +21,12 @@ describe('S48 same-origin routing of the BFF', () => {
     expect(rewrites[graphql].destination.endsWith('/api/graphql')).toBe(true);
     expect(rewrites[bff].destination.endsWith('/api/bff/:path*')).toBe(true);
   });
+
+  it('W01 A7: every other /api path (REST and streams) goes through the BFF forwarder, never straight to a service', async () => {
+    const rewrites = (await nextConfig.rewrites!()) as { source: string; destination: string }[];
+    const catchAll = rewrites.find((r) => r.source === '/api/:path*')!;
+    const bffOrigin = new URL(rewrites[0].destination).origin;
+    expect(catchAll.destination).toBe(`${bffOrigin}/api/bff/f/:path*`);
+    expect(rewrites.filter((r) => !r.destination.startsWith(`${bffOrigin}/`))).toEqual([]);
+  });
 });

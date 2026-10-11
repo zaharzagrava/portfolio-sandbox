@@ -207,9 +207,9 @@ A member sees the devices that are signed in, signs out one other device, or sig
 3. **AS-56** — **Given** the tab, **When** the member presses **Log out of all devices**, **Then** a confirmation dialog says "This signs you out here too." with **Cancel** / **Log out everywhere**; on success the interface ends the local session and navigates to `/login?notice=signed_out_everywhere`. (S01 AS-43.)
 4. **AS-57** — **Given** the tab at ≤ 640 px and ≥ 1024 px, **Then** at ≥ 1024 px the sessions are a table (Device, IP address, Signed in, Last active, Actions); at ≤ 640 px each session is a stacked card with the same fields as a definition list and a full-width action.
 
-### User Story 10 — Continue with Google and manage sign-in methods (Priority: P3, conditional on C-OIDC)
+### User Story 10 — Continue with Google and manage sign-in methods (Priority: P3)
 
-A visitor chooses **Continue with Google** and lands signed in; a member links or unlinks Google in their account. Specified now, shipped when contract C-OIDC is met; until then the button is not rendered (FR-045).
+Conditional on contract C-OIDC. A visitor chooses **Continue with Google** and lands signed in; a member links or unlinks Google in their account. Specified now, shipped when contract C-OIDC is met; until then the button is not rendered (FR-045).
 
 **Why this priority**: one-click sign-in is valuable but depends on a session hand-off between S02 and S48 that does not exist yet.
 

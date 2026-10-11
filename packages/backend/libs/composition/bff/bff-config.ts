@@ -17,6 +17,7 @@ import { Environment } from '@app/common/types';
 @Injectable()
 export class BffSettings implements BffSettingsValues {
   readonly upstreamOrigin: string;
+  readonly sseOrigin: string;
   readonly sessionKeys: Buffer[];
   readonly csrfKey: Buffer;
   readonly allowedOrigins: string[];

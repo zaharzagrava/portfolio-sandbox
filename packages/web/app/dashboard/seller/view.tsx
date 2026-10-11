@@ -9,13 +9,14 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/hooks/use-auth';
+import { useRefreshSession } from '@/hooks/use-auth-actions';
 import { apiErrorMessage } from '@/lib/api/errors';
 import { SHOP_SLUG, slugify, useCreateShop, useMyShops, useSellerStats } from '@/lib/api/shops';
 import { formatMoney } from '@/lib/utils';
 
 /** Buyers open a shop here; that makes them a SELLER, and the page turns into the seller overview. */
 function OpenShop() {
-  const { refreshSession } = useAuth();
+  const refreshSession = useRefreshSession();
   const createShop = useCreateShop();
   const [name, setName] = useState('');
   const [slug, setSlug] = useState('');
@@ -27,7 +28,7 @@ function OpenShop() {
       { name: name.trim(), slug: effectiveSlug },
       {
         onSuccess: async () => {
-          await refreshSession(); // new token with the SELLER role
+          await refreshSession.mutateAsync(); // the BFF re-issues the session with the SELLER role
           toast.success('Your shop is open');
         },
         onError: (error) => toast.error(apiErrorMessage(error, 'Could not open the shop.')),

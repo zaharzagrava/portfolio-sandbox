@@ -38,30 +38,63 @@ export async function resetRateLimits() {
   }
 }
 
-/** Registers through the UI; lands on the home page signed in. */
+/** The password the journeys give the accounts they register (the seeded accounts use `SEED.password`). */
+export const NEW_USER_PASSWORD = 'SuperSecurePassword123!';
+
+/**
+ * Waits until React has attached its handlers to the page's form: text typed before that is wiped by the first client
+ * render, and a click would submit the form natively.
+ */
+export async function waitForForm(page: Page) {
+  await page.waitForFunction(() => {
+    const form = document.querySelector('#main-content form');
+    return !!form && Object.keys(form).some((key) => key.startsWith('__reactProps'));
+  });
+}
+
+/** Signs in through the sign-in form; lands on `returnTo` (a validated same-site path). */
+export async function login(page: Page, email: string, password: string, returnTo = '/') {
+  await page.goto(returnTo === '/' ? '/login' : `/login?returnTo=${encodeURIComponent(returnTo)}`);
+  await waitForForm(page);
+  await page.getByLabel('Email').fill(email);
+  await page.getByLabel('Password', { exact: true }).fill(password);
+  await page.getByRole('button', { name: 'Sign in' }).click();
+  await expect(page).toHaveURL(new URL(returnTo, 'http://localhost:3000').href);
+}
+
+/**
+ * Registers through the UI (which, by design, does not sign in: the outcome is the same for every address), then signs in
+ * with the new credentials; lands on the home page signed in.
+ */
 export async function register(page: Page, email = uniqueEmail()) {
   await resetRateLimits();
-  const password = 'SuperSecurePassword123!';
+  const password = NEW_USER_PASSWORD;
   await page.goto('/register');
-  await page.fill('input[name="name"]', 'UI Test User');
-  await page.fill('input[name="email"]', email);
-  await page.fill('input[name="password"]', password);
-  await page.fill('input[name="confirmPassword"]', password);
-  await page.locator('button[id="terms"]').click();
-  await page.click('button[type="submit"]');
-  await expect(page).toHaveURL('http://localhost:3000/');
+  await waitForForm(page);
+  await page.getByLabel('Email').fill(email);
+  await page.getByLabel('Password', { exact: true }).fill(password);
+  await page.getByLabel('Confirm password', { exact: true }).fill(password);
+  await page.getByRole('checkbox', { name: /I agree to the Terms/ }).click();
+  await page.getByRole('button', { name: 'Create account' }).click();
+  await expect(page).toHaveURL('http://localhost:3000/login?notice=registered');
+  await login(page, email, password);
   return { email, password };
 }
 
-export async function login(page: Page, email: string, password: string, returnUrl = '/') {
-  await page.goto(`/login?returnUrl=${encodeURIComponent(returnUrl)}`);
-  await page.fill('input[name="email"]', email);
-  await page.fill('input[name="password"]', password);
-  await page.click('button[type="submit"]');
-  await expect(page).toHaveURL(new RegExp(`${returnUrl.replace(/[?]/g, '\\?')}$`));
-}
-
 const viewportWidth = (page: Page) => page.viewportSize()?.width ?? 1280;
+
+/** Signs out from the account menu (desktop) or the phone menu's account group; waits for the sign-in page. */
+export async function signOut(page: Page) {
+  if (viewportWidth(page) >= 1024) {
+    await page.getByRole('button', { name: 'Account menu' }).click();
+    await page.getByRole('menuitem', { name: 'Log out' }).click();
+  } else {
+    await page.getByRole('button', { name: 'Open menu' }).click();
+    await expect(page.getByRole('dialog', { name: 'Menu' })).toBeVisible();
+    await page.getByRole('button', { name: 'Log out' }).click();
+  }
+  await expect(page).toHaveURL(/\/login\?notice=signed_out$/);
+}
 
 /** Phone layout: the header controls (account, assistant) live in the menu. Opens it; a no-op at desktop width. */
 export async function openMenuIfCollapsed(page: Page) {

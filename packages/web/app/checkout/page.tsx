@@ -13,6 +13,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { apiClient } from '@/lib/api/client';
 import { CART_QUERY_KEY, cartTotals, useCart } from '@/lib/api/cart';
 import { apiErrorMessage } from '@/lib/api/errors';
+import { loginHref } from '@/lib/auth/return-to';
 import { formatMoney } from '@/lib/utils';
 
 interface CheckoutResult {
@@ -38,7 +39,7 @@ export default function CheckoutPage() {
   const { itemCount, subtotal } = cartTotals(items);
 
   useEffect(() => {
-    if (!authLoading && !isAuthenticated) router.replace('/login?returnUrl=%2Fcheckout');
+    if (!authLoading && !isAuthenticated) router.replace(loginHref('/checkout'));
   }, [authLoading, isAuthenticated, router]);
 
   const placeOrder = async () => {

@@ -1,58 +1,109 @@
 import { test, expect, type Page } from '@playwright/test';
-import { closeMenu, openMenuIfCollapsed, resetRateLimits } from './helpers';
+import { NEW_USER_PASSWORD, register, resetRateLimits, signOut, uniqueEmail, waitForForm } from './helpers';
 
-// At desktop width the account control is a button in the header; on the phone it is the entries of the menu.
-const phone = (page: Page) => (page.viewportSize()?.width ?? 1280) < 768;
+const isDesktop = (page: Page) => (page.viewportSize()?.width ?? 1280) >= 1024;
 
-/** SD-39 happy path against the real backend (D27: UI journeys = happy paths; edge cases live in the API e2e suite). */
+/** The navbar tells the truth: the account menu (desktop) or the phone menu's account group shows the member's e-mail. */
+async function expectSignedInAs(page: Page, email: string) {
+  await expect(page.getByRole('link', { name: 'Log in' })).toHaveCount(0);
+  if (isDesktop(page)) {
+    await page.getByRole('button', { name: 'Account menu' }).click();
+    await expect(page.getByRole('menu').getByText(email)).toBeVisible();
+    await page.keyboard.press('Escape');
+    return;
+  }
+  await page.getByRole('button', { name: 'Open menu' }).click();
+  const sheet = page.getByRole('dialog', { name: 'Menu' });
+  await expect(sheet.getByRole('group', { name: 'Account' }).getByText(email)).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(sheet).toBeHidden();
+}
+
+/** W01 AS-01/06/19/21/24/27/29: the happy path against the real backend (edge cases live in the unit and API specs). */
 test.describe('Authentication', () => {
-  test('register, stay signed in across a reload, log out, log back in', async ({ page }) => {
-    const expectSignedIn = async () => {
-      if (!phone(page)) {
-        await expect(account).toBeVisible();
-        await expect(page.getByRole('link', { name: 'Log in' })).toHaveCount(0);
-        return;
-      }
-      await openMenuIfCollapsed(page);
-      await expect(page.getByRole('button', { name: 'Log out' })).toBeVisible();
-      await expect(page.getByRole('link', { name: 'Log in' })).toHaveCount(0);
-      await closeMenu(page);
-    };
-    const logOut = async () => {
-      if (!phone(page)) {
-        await account.click();
-        return page.getByRole('menuitem', { name: 'Log out' }).click();
-      }
-      await openMenuIfCollapsed(page);
-      await page.getByRole('button', { name: 'Log out' }).click();
-    };
-    const email = `ui-${Date.now()}-${Math.floor(Math.random() * 1e6)}@example.com`;
-    const password = 'SuperSecurePassword123!';
-    const account = page.getByRole('button', { name: email.split('@')[0].slice(0, 2).toUpperCase() });
+  test('register, sign in, stay signed in, sign out', async ({ page, context }) => {
+    const email = uniqueEmail();
+    const authorizationHeaders: string[] = [];
+    page.on('request', (request) => {
+      if (request.headers()['authorization']) authorizationHeaders.push(request.url());
+    });
 
-    await resetRateLimits(); // register is limited to 10/hour per address; a full run registers more often
-    await page.goto('/register');
-    await page.fill('input[name="name"]', 'UI Test User');
-    await page.fill('input[name="email"]', email);
-    await page.fill('input[name="password"]', password);
-    await page.fill('input[name="confirmPassword"]', password);
-    await page.locator('button[id="terms"]').click();
-    await page.click('button[type="submit"]');
+    await test.step('a guarded page sends an anonymous visitor to sign in (AS-27)', async () => {
+      await page.goto('/account/security');
+      await expect(page).toHaveURL('http://localhost:3000/login?returnTo=%2Faccount%2Fsecurity');
+    });
 
-    await expect(page).toHaveURL('http://localhost:3000/');
-    await expectSignedIn();
+    await test.step('register ends on the sign-in page, not signed in (AS-01)', async () => {
+      await resetRateLimits();
+      await page.goto('/register');
+      await waitForForm(page);
+      await page.getByLabel('Email').fill(email);
+      await page.getByLabel('Password', { exact: true }).fill(NEW_USER_PASSWORD);
+      await page.getByLabel('Confirm password', { exact: true }).fill(NEW_USER_PASSWORD);
+      await page.getByRole('checkbox', { name: /I agree to the Terms/ }).click();
+      await page.getByRole('button', { name: 'Create account' }).click();
+      await expect(page).toHaveURL('http://localhost:3000/login?notice=registered');
+      await expect(page.getByRole('status').filter({ hasText: 'Thanks for signing up.' })).toBeVisible();
+      await expect(page.getByRole('link', { name: 'Log in' }).first()).toBeVisible();
+      expect(page.url()).not.toContain(email);
+    });
 
-    // The access token lives in memory; the HttpOnly refresh cookie must restore the session.
-    await page.reload();
-    await expectSignedIn();
+    await test.step('sign in lands on returnTo with the account menu (AS-06, AS-19)', async () => {
+      await page.goto('/login?returnTo=%2Faccount%2Fsecurity');
+      await waitForForm(page);
+      await page.getByLabel('Email').fill(email);
+      await page.getByLabel('Password', { exact: true }).fill(NEW_USER_PASSWORD);
+      await page.getByRole('button', { name: 'Sign in' }).click();
+      await expect(page).toHaveURL('http://localhost:3000/account/security');
+      await expectSignedInAs(page, email);
+    });
 
-    await logOut();
-    await expect(page).toHaveURL(/\/login/);
+    await test.step('a reload and a second page in the same context stay signed in (AS-21)', async () => {
+      await page.reload();
+      await expectSignedInAs(page, email);
+      const second = await context.newPage();
+      await second.goto('/');
+      await expectSignedInAs(second, email);
+      await second.close();
+    });
 
-    await page.fill('input[name="email"]', email);
-    await page.fill('input[name="password"]', password);
-    await page.click('button[type="submit"]');
-    await expect(page).toHaveURL('http://localhost:3000/');
-    await expectSignedIn();
+    await test.step('no token is script-readable and none is sent (AS-29)', async () => {
+      const exposed = await page.evaluate(async () => ({
+        local: Object.keys(window.localStorage),
+        session: Object.keys(window.sessionStorage),
+        cookie: document.cookie,
+        databases: (await indexedDB.databases?.())?.map((db) => db.name) ?? [],
+        url: location.href,
+      }));
+      expect(exposed.local).toEqual([]);
+      expect(exposed.session).toEqual([]);
+      expect(exposed.cookie.split(';').map((entry) => entry.trim().split('=')[0])).toEqual(['__Host-bff-csrf']);
+      // (the dev server's own `__next_debug_channel` database is not ours)
+      expect(exposed.databases.filter((name) => /token|auth|session|bearer|credential/i.test(name ?? ''))).toEqual([]);
+      expect(exposed.url).not.toMatch(/token|bearer|eyJ/i);
+      const cookies = await context.cookies();
+      expect(cookies.find((cookie) => cookie.name === '__Host-bff-session')?.httpOnly).toBe(true);
+      expect(authorizationHeaders).toEqual([]);
+    });
+
+    await test.step('sign out lands on the sign-in notice, anonymous again (AS-24)', async () => {
+      await signOut(page);
+      await expect(page.getByRole('status').filter({ hasText: "You've been signed out." })).toBeVisible();
+      await expect(page.getByRole('link', { name: 'Log in' }).first()).toBeVisible();
+      await page.goto('/account/security');
+      await expect(page).toHaveURL('http://localhost:3000/login?returnTo=%2Faccount%2Fsecurity');
+    });
+  });
+
+  test('signing out in one tab signs the other tab out (AS-22)', async ({ page, context }) => {
+    const { email } = await register(page);
+    await expectSignedInAs(page, email);
+    const other = await context.newPage();
+    await other.goto('/');
+    await expectSignedInAs(other, email);
+
+    await signOut(page);
+    await expect(other.getByRole('link', { name: 'Log in' }).first()).toBeVisible({ timeout: 1_000 });
+    await other.close();
   });
 });

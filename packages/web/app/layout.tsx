@@ -1,7 +1,8 @@
 import type { Metadata, Viewport } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
-import { AuthProvider } from '@/hooks/use-auth';
+import { Suspense } from 'react';
+import { SessionBootstrap } from '@/components/auth/session-bootstrap';
 import { Footer } from '@/components/layout/footer';
 import { Navbar } from '@/components/layout/navbar';
 import { NonceProviders } from '@/components/layout/nonce-providers';
@@ -43,15 +44,17 @@ export default function RootLayout({
       >
         {/* The nonce comes from the request, so every document renders per request (never a prerendered shell). */}
         <NonceProviders>
-          <AuthProvider>
-            <SkipLink />
-            <Navbar />
-            <main id="main-content" tabIndex={-1} className="flex-1 outline-none">
-              {children}
-            </main>
-            <Footer />
-            <RouteFocus />
-          </AuthProvider>
+          {/* The session is read on the server only inside this boundary, never at the top of the layout (W01 FR-005). */}
+          <Suspense fallback={null}>
+            <SessionBootstrap />
+          </Suspense>
+          <SkipLink />
+          <Navbar />
+          <main id="main-content" tabIndex={-1} className="flex-1 outline-none">
+            {children}
+          </main>
+          <Footer />
+          <RouteFocus />
         </NonceProviders>
       </body>
     </html>

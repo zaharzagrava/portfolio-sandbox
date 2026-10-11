@@ -32,7 +32,7 @@ describe('S48 session client', () => {
   it('S48 AS-48: an mfaRequired answer is reported as such, and the code goes to /mfa', async () => {
     fetchSpy(json(200, { mfaRequired: true }));
     expect(await sessionApi.login('a@b.co', 'x')).toEqual({ ok: true, kind: 'mfa_required' });
-    const spy = fetchSpy(json(200, { user: { id: 'u1', email: null, role: 'SELLER' }, expiresAt: 'x' }));
+    const spy = fetchSpy(json(200, { user: { id: 'u1', email: null, role: 'SELLER' }, expiresAt: '2026-01-02T00:00:00.000Z' }));
     const result = await sessionApi.verifyMfa('123456');
     expect(result).toMatchObject({ ok: true, kind: 'session' });
     expect(spy.mock.calls[0][0]).toBe('/api/bff/session/mfa');
@@ -71,8 +71,29 @@ describe('S48 session client', () => {
   it('S48 AS-51: current() reports an unauthenticated visitor by code', async () => {
     fetchSpy(json(401, { code: 'unauthenticated' }));
     expect(await sessionApi.current()).toEqual({ ok: false, status: 401, code: 'unauthenticated' });
-    const spy = fetchSpy(json(200, { user: { id: 'u1', email: 'a@b.co', role: 'ADMIN' }, expiresAt: 'x' }));
+    const spy = fetchSpy(json(200, { user: { id: 'u1', email: 'a@b.co', role: 'ADMIN' }, expiresAt: '2026-01-02T00:00:00.000Z' }));
     await sessionApi.current();
     expect(spy.mock.calls[0][1]).toMatchObject({ method: 'GET', credentials: 'include' });
+  });
+
+  it('W01 U-api: refresh posts with the CSRF header and returns the new role', async () => {
+    stubCookies('__Host-bff-csrf=tok');
+    const spy = fetchSpy(json(200, { user: { id: 'u1', email: 'a@b.co', role: 'SELLER' }, expiresAt: '2026-01-02T00:00:00.000Z' }));
+    const result = await sessionApi.refresh();
+    expect(result).toMatchObject({ ok: true, kind: 'session', session: { user: { role: 'SELLER' } } });
+    expect(spy.mock.calls[0][0]).toBe('/api/bff/session/refresh');
+    expect((spy.mock.calls[0][1]?.headers as Record<string, string>)['X-CSRF-Token']).toBe('tok');
+  });
+
+  it('W01 U-api: a success body that does not match the contract is a 500 invalid_response', async () => {
+    fetchSpy(json(200, { user: { id: 'u1' } }));
+    expect(await sessionApi.current()).toEqual({ ok: false, status: 500, code: 'invalid_response' });
+  });
+
+  it('W01 U-api: the problem requestId is carried and a network failure is status 0', async () => {
+    fetchSpy(json(500, { code: 'internal_error', requestId: 'req-9' }));
+    expect(await sessionApi.login('a@b.co', 'x')).toEqual({ ok: false, status: 500, code: 'internal_error', requestId: 'req-9' });
+    vi.spyOn(globalThis, 'fetch').mockRejectedValue(new TypeError('Failed to fetch'));
+    expect(await sessionApi.current()).toEqual({ ok: false, status: 0, code: 'network_error' });
   });
 });

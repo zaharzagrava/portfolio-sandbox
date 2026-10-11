@@ -16,6 +16,7 @@ import { classify } from '../upstream/upstream-error';
 import { csrfSessionId } from './csrf-origin.guard';
 import { issueCsrfToken } from './csrf-token';
 import { IdentityClient } from './identity-client';
+import { RefreshCoordinator, SessionEndedError } from './refresh-coordinator';
 import { sessionCookies } from './session-cookies';
 import { SessionManager } from './session-manager';
 import type { SessionRecord } from './session-record';
@@ -37,6 +38,7 @@ export class SessionService {
     private readonly sessions: SessionManager,
     private readonly store: SessionStore,
     private readonly identity: IdentityClient,
+    private readonly refresher: RefreshCoordinator,
     private readonly settings: BffSettings,
     @Inject(CLOCK) private readonly clock: Clock,
   ) {}
@@ -179,6 +181,38 @@ export class SessionService {
         ),
       );
     return this.toResponse(loaded.record);
+  }
+
+  /**
+   * The browser asks for a fresh identity (its role may have changed): one single-flight refresh, the same answer as
+   * `current`. A refresh the identity rejects ends the session like any other.
+   */
+  async refresh(req: Request, res: Response): Promise<SessionResponse> {
+    const cookie = readCookie(req, BFF_COOKIES.session);
+    if (!cookie) throw new BffProblem('unauthenticated');
+    const loaded = await this.sessions.load(cookie);
+    if (loaded.state !== 'active') {
+      sessionCookies.clearSession(res);
+      throw new BffProblem(
+        loaded.state === 'expired' ? 'session_expired' : 'unauthenticated',
+      );
+    }
+    try {
+      const record = await this.refresher.refreshNow(
+        cookie,
+        loaded.record,
+        clientIpOf(req),
+      );
+      return this.toResponse(record);
+    } catch (error) {
+      if (error instanceof SessionEndedError) {
+        sessionCookies.clearSession(res);
+        if (error.reason === 'store_lost')
+          throw new BffProblem('session_unavailable', { retryAfterSeconds: 1 });
+        throw new BffProblem('session_expired');
+      }
+      throw error;
+    }
   }
 
   /** Idempotent: the local record goes first, the identity call is best effort, the answer is always the same. */

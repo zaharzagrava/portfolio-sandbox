@@ -345,7 +345,7 @@ describe('BFF session handling', () => {
       expect(lines[0]).toContain('HttpOnly');
       expect(lines[0]).toContain('Secure');
       expect(lines[0]).toContain('SameSite=Lax');
-      expect(lines[0]).toContain('Path=/api/bff/session');
+      expect(lines[0]).toMatch(/; Path=\/(;|$)/); // a __Host- cookie needs Path=/
       expect(lines[0]).toContain('Max-Age=300');
       expect(JSON.stringify([res.body, res.headers])).not.toContain(
         'MFA-CHALLENGE-SECRET',
@@ -775,6 +775,113 @@ describe('BFF session handling', () => {
       ])
         expect(parseProblem(res.body).code).toBe('ambiguous_credentials');
       expect(stub.calls).toHaveLength(0);
+    });
+  });
+
+  describe('forced refresh (W01 B-2)', () => {
+    const refreshRoute = (cookie?: string, csrf?: string, app = ctx) => {
+      const r = app.http().post('/api/bff/session/refresh');
+      if (cookie) r.set('Cookie', cookie);
+      if (csrf) r.set('X-CSRF-Token', csrf);
+      return r.set('Origin', ALLOWED_ORIGIN).send();
+    };
+
+    it('bff-session: refresh re-reads the identity so a changed role is visible, and rotates the stored tokens', async () => {
+      const who = await signIn(ctx, stub, { role: 'USER' });
+      stub.respondInOrder('refresh', [
+        {
+          body: identitySessionFixture({
+            userId: who.userId,
+            role: 'SELLER',
+            accessToken: 'after-promotion',
+            refreshToken: 'rotated',
+          }),
+        },
+      ]);
+      const res = await refreshRoute(who.cookie, who.csrf).expect(200);
+      const session = sessionResponseSchema.parse(res.body);
+      expect(session.user.role).toBe('SELLER');
+      expect(res.headers['cache-control']).toBe('no-store');
+      expect(JSON.stringify([res.body, res.headers])).not.toContain(
+        'after-promotion',
+      );
+      expect(stub.callsTo('refresh')).toHaveLength(1);
+      expect(stub.callsTo('refresh')[0].body).toEqual({
+        refreshToken: who.refreshToken,
+      });
+      const current = await ctx
+        .http()
+        .get('/api/bff/session')
+        .set('Cookie', who.cookie)
+        .expect(200);
+      expect(current.body.user.role).toBe('SELLER');
+    });
+
+    it('bff-session: refresh without a session cookie is 401 unauthenticated and calls nobody', async () => {
+      const res = await refreshRoute().expect(401);
+      expect(parseProblem(res.body).code).toBe('unauthenticated');
+      expect(stub.callsTo('refresh')).toHaveLength(0);
+    });
+
+    it('bff-session: refresh with a missing or wrong CSRF token is 403 csrf_invalid', async () => {
+      const who = await signIn(ctx, stub);
+      for (const csrf of [undefined, 'not-the-token']) {
+        const res = await refreshRoute(who.cookie, csrf).expect(403);
+        expect(parseProblem(res.body).code).toBe('csrf_invalid');
+      }
+      expect(stub.callsTo('refresh')).toHaveLength(0);
+    });
+
+    it('bff-session: concurrent refresh calls cause one upstream refresh and all see the new role', async () => {
+      const who = await signIn(ctx, stub);
+      stub.respond('refresh', {
+        body: identitySessionFixture({
+          userId: who.userId,
+          role: 'ADMIN',
+          refreshToken: 'only-rotation',
+        }),
+        delayMs: 120,
+      });
+      const results = await Promise.all(
+        Array.from({ length: 6 }, (_, i) =>
+          refreshRoute(who.cookie, who.csrf, i % 2 ? second : ctx),
+        ),
+      );
+      for (const r of results) {
+        expect(r.status).toBe(200);
+        expect(r.body.user.role).toBe('ADMIN');
+      }
+      expect(stub.callsTo('refresh')).toHaveLength(1);
+    });
+
+    it('bff-session: a rejected refresh ends the session with 401 session_expired and cleared cookies', async () => {
+      const who = await signIn(ctx, stub);
+      stub.respond('refresh', {
+        status: 401,
+        body: { code: 'invalid_refresh_token' },
+      });
+      const res = await refreshRoute(who.cookie, who.csrf).expect(401);
+      expect(parseProblem(res.body).code).toBe('session_expired');
+      expect(
+        setCookieLines(res).find((l) =>
+          l.startsWith(`${BFF_COOKIES.session}=`),
+        ),
+      ).toMatch(/Max-Age=0/);
+    });
+
+    it('bff-session: refresh with the session store down is 503 session_unavailable', async () => {
+      const down = await createBffApp({
+        upstreamUrl: stub.url,
+        clock: ctx.clock,
+      });
+      try {
+        const who = await signIn(down, stub);
+        down.redis.client.disconnect();
+        const res = await refreshRoute(who.cookie, who.csrf, down).expect(503);
+        expect(parseProblem(res.body).code).toBe('session_unavailable');
+      } finally {
+        await down.close().catch(() => undefined);
+      }
     });
   });
 

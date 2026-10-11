@@ -127,6 +127,20 @@ export class SequelizeUserRepository implements UserRepository {
     return inserted ? { id: inserted.id } : null;
   }
 
+  async setPasswordHash(id: string, newHash: string): Promise<boolean> {
+    const updated = await this.sequelize.query<{ id: string }>(
+      `UPDATE "User" SET "passwordHash" = $1, "updatedAt" = $3
+       WHERE "id" = $2 AND "deletedAt" IS NULL
+       RETURNING "id"`,
+      {
+        bind: [newHash, id, this.clock.now()],
+        transaction: getActiveTransaction(),
+        type: QueryTypes.SELECT,
+      },
+    );
+    return updated.length > 0;
+  }
+
   async replacePasswordHash(
     id: string,
     oldHash: string,

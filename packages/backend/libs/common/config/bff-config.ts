@@ -8,6 +8,8 @@ import * as joi from 'joi';
  */
 export interface BffConfig {
   bff_upstream_url?: string;
+  /** Origin of the SSE gateway for forwarded stream routes; defaults to the upstream origin. */
+  bff_sse_url?: string;
   bff_session_keys?: string;
   bff_csrf_key?: string;
   bff_allowed_origins?: string;
@@ -72,6 +74,7 @@ const int = (name: string, fallback: number): Key => ({
 
 export const bffConfigKeys: Record<keyof BffConfig, Key> = {
   bff_upstream_url: optionalText('BFF_UPSTREAM_URL'),
+  bff_sse_url: optionalText('BFF_SSE_URL'),
   bff_session_keys: optionalText('BFF_SESSION_KEYS'),
   bff_csrf_key: optionalText('BFF_CSRF_KEY'),
   bff_allowed_origins: optionalText('BFF_ALLOWED_ORIGINS'),
@@ -141,6 +144,8 @@ export type BffBudgetSection = (typeof BFF_SECTION_NAMES_FOR_BUDGET)[number];
 export interface BffSettingsValues {
   /** `scheme://host[:port]` of the one domain-API origin; the only place a token is ever sent. */
   upstreamOrigin: string;
+  /** `scheme://host[:port]` of the SSE gateway (forwarded stream routes); the upstream origin when unset. */
+  sseOrigin: string;
   /** Newest first; decryption tries each, encryption uses the first. */
   sessionKeys: Buffer[];
   csrfKey: Buffer;
@@ -287,6 +292,18 @@ export function parseBffSettings(
     upstreamOrigin = checked.origin ?? '';
   }
 
+  let sseOrigin = upstreamOrigin;
+  if (isSet(raw.bff_sse_url)) {
+    const checked = checkOrigin(
+      'bff_sse_url',
+      String(raw.bff_sse_url),
+      production,
+      true,
+    );
+    problems.push(...checked.problems);
+    sseOrigin = checked.origin ?? upstreamOrigin;
+  }
+
   const ring = parseKeyRing(raw.bff_session_keys);
   problems.push(...ring.problems);
 
@@ -320,6 +337,7 @@ export function parseBffSettings(
 
   const settings: BffSettingsValues = {
     upstreamOrigin,
+    sseOrigin,
     sessionKeys: ring.keys,
     csrfKey: csrf,
     allowedOrigins,
