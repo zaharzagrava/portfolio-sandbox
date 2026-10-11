@@ -3,7 +3,7 @@
 import { useMutation, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { cartApi } from '@/lib/api/cart';
+import { mergeGuestCart } from '@/lib/api/cart';
 import { sessionApi, type SessionResult } from '@/lib/api/session';
 import { COPY } from '@/lib/auth/copy';
 import { safeReturnTo } from '@/lib/auth/return-to';
@@ -22,7 +22,7 @@ function useSignInEffects(returnTo?: string | null) {
     queryClient.setQueryData(queryKeys.auth.session(), toSessionUser(result.session));
     // Data cached for the anonymous visitor must not survive: refetch everything except the session itself.
     void queryClient.invalidateQueries({ predicate: (query) => query.queryKey[0] !== 'auth' || query.queryKey[1] !== 'session' });
-    void cartApi.mergeGuestCart().catch(() => undefined);
+    void mergeGuestCart(queryClient);
     router.replace(safeReturnTo(returnTo));
     router.refresh();
     announceAuth('signed-in');

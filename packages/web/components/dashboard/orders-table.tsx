@@ -5,12 +5,12 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { apiErrorMessage } from '@/lib/api/errors';
-import { isCancellable, useCancelOrder, type OrderSummary } from '@/lib/api/orders';
+import { isCancellable, useCancelOrder, type OrderPageDto } from '@/lib/api/orders';
 import { formatMoney } from '@/lib/utils';
 
 const shortId = (id: string) => id.slice(0, 8).toUpperCase();
 
-export function OrdersTable({ orders, allowCancel = false }: { orders: OrderSummary[]; allowCancel?: boolean }) {
+export function OrdersTable({ orders, allowCancel = false }: { orders: OrderPageDto['items']; allowCancel?: boolean }) {
   const cancel = useCancelOrder();
   if (orders.length === 0) return <p className="text-sm text-muted-foreground" data-testid="orders-empty">No orders yet.</p>;
   return (
@@ -34,7 +34,7 @@ export function OrdersTable({ orders, allowCancel = false }: { orders: OrderSumm
                 {order.status}
               </Badge>
             </TableCell>
-            <TableCell className="text-right">{formatMoney(Number(order.total), 'USD')}</TableCell>
+            <TableCell className="text-right">{formatMoney(order.totalMinor, order.currency)}</TableCell>
             {allowCancel && (
               <TableCell className="text-right">
                 {isCancellable(order.status) && (

@@ -15,7 +15,7 @@ import { OrderCancellationService } from '../application/order-cancellation.serv
 import { OrderQueryService } from '../application/order-query.service';
 import { ListOrdersQueryDto } from './orders.dto';
 
-/** The buyer's order routes. `GET /orders/:id` arrives with the rest of the reads story (US6). */
+/** The buyer's order routes. */
 @ApiTags('orders')
 @Controller('orders')
 export class OrdersController {
@@ -32,6 +32,15 @@ export class OrdersController {
       query.limit,
       query.cursor ?? null,
     );
+  }
+
+  @Firewall()
+  @Get(':orderId')
+  get(
+    @User() user: AuthenticatedUser,
+    @Param('orderId', ParseUUIDPipe) orderId: string,
+  ) {
+    return this.queries.getOrderForUser(orderId, user.id);
   }
 
   @Firewall({ sensitive: true })

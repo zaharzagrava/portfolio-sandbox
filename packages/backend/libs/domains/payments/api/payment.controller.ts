@@ -5,6 +5,7 @@ import {
   HttpCode,
   Param,
   Post,
+  Query,
   Res,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
@@ -15,7 +16,7 @@ import { Idempotent } from '@app/infrastructure/idempotency';
 import { RateLimit } from '@app/infrastructure/rate-limit';
 import { PaymentQueryService } from '../application/payment-query.service';
 import { PaymentIntentService } from '../application/payment-intent.service';
-import { CreatePaymentIntentDto } from './payment.dto';
+import { CreatePaymentIntentDto, ListPaymentsQueryDto } from './payment.dto';
 
 /** Payment routes (S13 contracts/http.md): thin, one service call per route. */
 @ApiTags('payments')
@@ -42,6 +43,13 @@ export class PaymentController {
     });
     res.setHeader('Location', `/api/payments/${accepted.paymentId}`);
     return accepted;
+  }
+
+  @Firewall({ sensitive: true })
+  @RateLimit('payments.read.user')
+  @Get('payments')
+  list(@User() user: AuthenticatedUser, @Query() query: ListPaymentsQueryDto) {
+    return this.queries.listOwned(user.id, query);
   }
 
   @Firewall({ sensitive: true })

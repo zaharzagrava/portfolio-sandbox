@@ -19,6 +19,10 @@ import {
   TrustedDocuments,
 } from './graphql/trusted-documents';
 import { ForwardController } from './forward/forward.controller';
+import { CartPageController } from './cart/cart-page.controller';
+import { CartPageService } from './cart/cart-page.service';
+import { OrderPageController } from './orders/order-page.controller';
+import { OrderPageService } from './orders/order-page.service';
 import { ProductPageController } from './page/product-page.controller';
 import { ProductPageService } from './page/product-page.service';
 import { JsonBodyGuard, SessionController } from './session/session.controller';
@@ -71,9 +75,17 @@ import { UpstreamClient } from './upstream/upstream-client';
     { provide: TRUSTED_DOCUMENT_ENTRIES, useValue: PERSISTED_QUERIES },
     GraphqlGuardMiddleware,
     ProductPageService,
+    CartPageService,
+    OrderPageService,
     JsonBodyGuard,
   ],
-  controllers: [ProductPageController, SessionController, ForwardController],
+  controllers: [
+    ProductPageController,
+    CartPageController,
+    OrderPageController,
+    SessionController,
+    ForwardController,
+  ],
 })
 export class BffModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {

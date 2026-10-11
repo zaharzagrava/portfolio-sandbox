@@ -15,6 +15,7 @@ export function ProblemAlert({
   context = 'generic',
   surface,
   target,
+  copyOptions,
   role = 'alert',
   id,
   className,
@@ -25,12 +26,14 @@ export function ProblemAlert({
   /** W02 surfaces: the text and reference come from the storefront catalogue (`lib/api/problem-copy.ts`). */
   surface?: Surface;
   target?: CopyOptions['target'];
+  /** W03 FR-082: extra inputs of the catalogue (`detail` of a 4xx for the generic form, `titles`, `operation`). */
+  copyOptions?: Omit<CopyOptions, 'target'>;
   role?: 'alert' | 'status';
   id?: string;
   className?: string;
   ref?: Ref<HTMLDivElement>;
 }) {
-  const copy = surface ? problemCopy(surface, problem, { target }) : undefined;
+  const copy = surface ? problemCopy(surface, problem, { ...copyOptions, target }) : undefined;
   return (
     <div
       ref={ref}
@@ -40,6 +43,7 @@ export function ProblemAlert({
       className={`rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-900 outline-none dark:border-red-900 dark:bg-red-950/60 dark:text-red-100 focus-visible:ring-3 focus-visible:ring-ring/50 ${className ?? ''}`}
     >
       <p>{copy ? copy.text : problemMessage(problem, context)}</p>
+      {copy?.detail && <p className="mt-1 text-xs">{copy.detail}</p>}
       {copy ? (
         copy.reference && (
           <p className="mt-1 text-xs">

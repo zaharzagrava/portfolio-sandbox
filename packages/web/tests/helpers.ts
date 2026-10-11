@@ -182,6 +182,15 @@ export async function productId(title = SEED.product): Promise<string> {
   throw new Error(`"${title}" is not searchable - is the worker/indexer running (dev-monolith)?`);
 }
 
+/**
+ * W03 pay step: picks the sandbox test card (shown when `NEXT_PUBLIC_PAYMENTS_SANDBOX=true`, which the Playwright dev
+ * server sets) and presses Pay. No card number is typed anywhere.
+ */
+export async function payWithSandboxCard(page: Page) {
+  await page.getByRole('radio', { name: /Visa test card/ }).check();
+  await page.getByRole('button', { name: /^Pay / }).click();
+}
+
 /** The first seeded product that has bought-together recommendations (S34 dataset D), or `null` when none has. */
 export async function productWithRecommendations(request: APIRequestContext): Promise<{ id: string; titles: string[] } | null> {
   const list = await request.get(`${API_URL}/api/products/search?limit=50`);

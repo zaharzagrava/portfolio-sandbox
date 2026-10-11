@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { parseConfig } from './config-parse';
+import { buildCsp } from './security/csp';
 
 const prod = { NODE_ENV: 'production', SITE_URL: 'https://shop.example.com' };
 const dev = { NODE_ENV: 'development' };
@@ -22,6 +23,21 @@ describe('W07 config (lib/config-parse.ts)', () => {
     it(`W07 AS-18: ${name} accepts exact https hosts with a port`, () => {
       expect(() => parseConfig({ ...prod, [name]: 'https://cdn.example.com:8443' })).not.toThrow();
     });
+  });
+
+  it('W03 T005: PAYMENT_PROVIDER_HOSTS is parsed to paymentProviderHosts and the CSP applies it to /checkout/pay/* only', () => {
+    const config = parseConfig({ ...prod, PAYMENT_PROVIDER_HOSTS: 'https://js.pay.example.com, https://3ds.pay.example.com:8443' });
+    expect(config.paymentProviderHosts).toEqual(['https://js.pay.example.com', 'https://3ds.pay.example.com:8443']);
+    expect(parseConfig(prod).paymentProviderHosts).toEqual([]);
+    const hosts = { mediaHosts: [], videoHosts: [], paymentProviderHosts: config.paymentProviderHosts };
+    const csp = (pathname: string) => buildCsp({ nonce: 'abc', pathname, isDev: false, hosts });
+    for (const pathname of ['/checkout/pay/9d8c7b6a-5f4e-4d3c-8b2a-1f0e9d8c7b6a']) {
+      expect(csp(pathname)).toContain('https://js.pay.example.com');
+      expect(csp(pathname)).toContain('https://3ds.pay.example.com:8443');
+    }
+    for (const pathname of ['/', '/cart', '/checkout', '/checkout/success/9d8c7b6a-5f4e-4d3c-8b2a-1f0e9d8c7b6a', '/orders', '/checkout/pay']) {
+      expect(csp(pathname), pathname).not.toContain('pay.example.com');
+    }
   });
 
   it('W07 AS-18: http hosts are accepted in development only', () => {

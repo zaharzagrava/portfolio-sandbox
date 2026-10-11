@@ -6,12 +6,17 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { OrdersTable } from '@/components/dashboard/orders-table';
 import { useAuth } from '@/hooks/use-auth';
-import { orderStats, useOrders } from '@/lib/api/orders';
+import { useOrdersPage } from '@/lib/api/orders';
 
 export function DashboardOverviewView() {
   const { user } = useAuth();
-  const { data: orders = [], isLoading } = useOrders();
-  const stats = orderStats(orders);
+  const { data, isLoading } = useOrdersPage();
+  const orders = data?.items ?? [];
+  const stats = {
+    total: orders.length,
+    open: orders.filter((order) => !['DELIVERED', 'CANCELLED', 'REFUNDED'].includes(order.status)).length,
+    delivered: orders.filter((order) => order.status === 'DELIVERED').length,
+  };
   const cards = [
     { title: 'Total Orders', value: stats.total, icon: Package, description: 'All time' },
     { title: 'In Progress', value: stats.open, icon: Truck, description: 'Not delivered yet' },

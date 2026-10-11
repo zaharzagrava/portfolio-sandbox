@@ -122,6 +122,33 @@ export class SequelizePaymentRepository implements PaymentRepository {
     return row ? toRecord(row) : null;
   }
 
+  async pageForUser(
+    userId: string,
+    filter: { orderId?: string; status?: PaymentStatus },
+    limit: number,
+    after: { createdAt: Date; id: string } | null,
+  ): Promise<PaymentRecord[]> {
+    const rows = await this.select<PaymentRow>(
+      `SELECT ${COLUMNS} FROM "Payment"
+       WHERE "userId" = :userId
+         AND (CAST(:orderId AS uuid) IS NULL OR "orderId" = CAST(:orderId AS uuid))
+         AND (CAST(:status AS text) IS NULL OR "status"::text = CAST(:status AS text))
+         AND (CAST(:afterCreatedAt AS timestamptz) IS NULL
+              OR ("createdAt", "id") < (CAST(:afterCreatedAt AS timestamptz), CAST(:afterId AS uuid)))
+       ORDER BY "createdAt" DESC, "id" DESC
+       LIMIT :limit`,
+      {
+        userId,
+        orderId: filter.orderId ?? null,
+        status: filter.status ?? null,
+        afterCreatedAt: after?.createdAt ?? null,
+        afterId: after?.id ?? null,
+        limit,
+      },
+    );
+    return rows.map(toRecord);
+  }
+
   async findById(id: string): Promise<PaymentRecord | null> {
     const [row] = await this.select<PaymentRow>(
       `SELECT ${COLUMNS} FROM "Payment" WHERE "id" = :id`,

@@ -6,7 +6,9 @@ import { PageSkeleton } from '@/components/layout/page-skeleton';
  */
 export default function Loading() {
   return (
-    <div aria-busy="true">
+    // At least one viewport tall, so the footer stays below the fold while a long page streams in (it would otherwise be
+    // visible under the short placeholder and jump out of view: a layout shift).
+    <div aria-busy="true" className="min-h-svh">
       <div data-reveal-delay className="loading-reveal" style={{ animationDelay: '150ms', animationFillMode: 'both' }}>
         <span role="status" className="sr-only">
           Loading…

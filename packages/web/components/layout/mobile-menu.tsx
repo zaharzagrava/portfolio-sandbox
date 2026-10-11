@@ -9,17 +9,16 @@ import { AssistantLauncher } from '@/components/chat/assistant-launcher';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { useAuth } from '@/hooks/use-auth';
-import { cartTotals, useCart } from '@/lib/api/cart';
+import { useCartCount } from '@/components/cart/cart-badge';
 
 const item = 'flex min-h-11 w-full items-center gap-2 rounded-md px-2 hover:bg-accent';
 
-/** Cart entry with its count; the count is shown only once known and above zero. */
+/** Cart entry with its count (W03's `useCartCount`); the count is shown only once known and above zero. */
 function CartEntry({ onNavigate }: { onNavigate: () => void }) {
-  const { data } = useCart();
-  const count = data ? cartTotals(data).itemCount : 0;
+  const count = useCartCount() ?? 0;
   return (
     <Link href="/cart" className={item} onClick={onNavigate}>
-      Cart{count > 0 ? ` (${count})` : ''}
+      Cart{count > 0 ? ` (${count > 99 ? '99+' : count})` : ''}
     </Link>
   );
 }

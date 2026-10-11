@@ -75,6 +75,13 @@ export interface PaymentRepository {
   insertAccepted(input: NewPayment): Promise<PaymentRecord | null>;
   findById(id: string): Promise<PaymentRecord | null>;
   findByOrderId(orderId: string): Promise<PaymentRecord | null>;
+  /** The buyer's own payments, newest first (`createdAt DESC, id DESC`), strictly after the keyset position. */
+  pageForUser(
+    userId: string,
+    filter: { orderId?: string; status?: PaymentStatus },
+    limit: number,
+    after: { createdAt: Date; id: string } | null,
+  ): Promise<PaymentRecord[]>;
   findByProviderRef(providerRef: string): Promise<PaymentRecord | null>;
   /** Conditional update by id, status and version; null when the row moved on (a lost race). */
   move(move: PaymentMove): Promise<PaymentRecord | null>;

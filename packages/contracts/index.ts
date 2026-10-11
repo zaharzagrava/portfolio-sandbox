@@ -6,6 +6,8 @@ export * from './src/catalog/index.ts';
 export * from './src/orders/index.ts';
 export * from './src/payments/index.ts';
 export * from './src/realtime.ts';
+export * from './src/realtime-user.ts';
+export * from './src/notifications/index.ts';
 export * from './src/search/index.ts';
 export * from './src/analytics/index.ts';
 export * from './src/bff/index.ts';

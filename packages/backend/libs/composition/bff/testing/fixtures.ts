@@ -3,7 +3,11 @@ import {
   auctionPublicSchema,
   authSessionSchema,
   boardPostsPageSchema,
+  cartSchema,
   chatUnreadPageSchema,
+  orderSchema,
+  paymentSchema,
+  type OrderDto,
   flagsResponseSchema,
   flashSalePublicSchema,
   pickupPageSchema,
@@ -203,3 +207,71 @@ export const identitySessionFixture = (
     },
   });
 };
+
+/** S10 `GET /api/cart` body. */
+export const cartFixture = (productIds: string[] = [], droppedLines = 0) =>
+  cartSchema.parse({
+    lines: productIds.map((productId, i) => ({
+      productId,
+      quantity: (i % 20) + 1,
+      addedAt: `2026-01-01T00:00:0${i % 10}.000Z`,
+    })),
+    droppedLines,
+  });
+
+/** S10 `GET /api/orders/:id` body: one line, one shop order, a two-step timeline. */
+export const orderFixture = (
+  over: Partial<{
+    id: string;
+    shopId: string;
+    status: OrderDto['status'];
+  }> = {},
+) => {
+  const shopId = over.shopId ?? randomUUID();
+  return orderSchema.parse({
+    id: over.id ?? randomUUID(),
+    status: over.status ?? 'RESERVED',
+    totalMinor: 9_800,
+    currency: 'USD',
+    reservedUntil: '2026-01-01T00:15:00.000Z',
+    createdAt: '2026-01-01T00:00:00.000Z',
+    items: [
+      {
+        productId: randomUUID(),
+        shopId,
+        title: 'Studio headphones',
+        quantity: 2,
+        unitPriceMinor: 4_900,
+        discountMinor: 0,
+        lineTotalMinor: 9_800,
+      },
+    ],
+    shopOrders: [
+      { id: randomUUID(), shopId, subtotalMinor: 9_800, status: 'PENDING' },
+    ],
+    timeline: [
+      { status: 'PENDING', reason: null, at: '2026-01-01T00:00:00.000Z' },
+      { status: 'RESERVED', reason: null, at: '2026-01-01T00:00:01.000Z' },
+    ],
+  });
+};
+
+/** S13 `GET /api/payments` item (the list never carries a secret). */
+export const paymentFixture = (
+  orderId: string,
+  over: Record<string, unknown> = {},
+) =>
+  paymentSchema.parse({
+    id: randomUUID(),
+    orderId,
+    status: 'PENDING',
+    amountMinor: 9_800,
+    currency: 'USD',
+    failureCode: null,
+    requiresAction: false,
+    clientSecret: null,
+    version: 2,
+    createdAt: '2026-01-01T00:00:02.000Z',
+    updatedAt: '2026-01-01T00:00:03.000Z',
+    ...over,
+  });

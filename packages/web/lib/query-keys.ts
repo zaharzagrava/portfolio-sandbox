@@ -47,7 +47,12 @@ export const queryKeys = {
   ads: {
     sponsored: (category?: string) => ['ads', 'sponsored', category ?? 'all'] as const,
   },
-  cart: { all: ['cart'] },
+  cart: {
+    all: ['cart'] as const,
+    lines: () => ['cart', 'lines'] as const,
+    page: () => ['cart', 'page'] as const,
+    lastMerge: () => ['cart', 'lastMerge'] as const,
+  },
   auth: {
     session: () => ['auth', 'session'] as const,
     mfaStatus: () => ['auth', 'mfa-status'] as const,
@@ -56,14 +61,23 @@ export const queryKeys = {
     oidcProviders: () => ['auth', 'oidc-providers'] as const,
   },
   orders: {
-    all: ['orders'],
-    detail: (id: string) => ['orders', id],
+    all: ['orders'] as const,
+    list: (params: { cursor?: string }) => ['orders', 'list', canonical({ cursor: params.cursor })] as const,
+    detail: (id: string) => ['orders', 'detail', id] as const,
+  },
+  payments: {
+    all: ['payments'] as const,
+    detail: (id: string) => ['payments', 'detail', id] as const,
   },
   chat: {
     channels: ['chat', 'channels'],
     messages: (channelId: string) => ['chat', 'messages', channelId],
   },
-  notifications: { all: ['notifications'] },
+  notifications: {
+    all: ['notifications'] as const,
+    unreadCount: () => ['notifications', 'unreadCount'] as const,
+    inbox: () => ['notifications', 'inbox'] as const,
+  },
   seller: {
     dashboard: (shopId: string) => ['seller', shopId, 'dashboard'],
     products: (shopId: string) => ['seller', shopId, 'products'],

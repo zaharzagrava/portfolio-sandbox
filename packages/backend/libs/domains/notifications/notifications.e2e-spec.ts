@@ -5,6 +5,11 @@ import {
   SequelizeModule,
 } from '@nestjs/sequelize';
 import { Sequelize } from 'sequelize';
+import {
+  markReadRequestSchema,
+  notificationPageSchema,
+  unreadCountSchema,
+} from '@marketplace-sandbox/contracts';
 import request from 'supertest';
 import { generateKeyPairSync, createSign } from 'node:crypto';
 import { v4 } from 'uuid';
@@ -175,6 +180,25 @@ describe('Notifications (e2e)', () => {
       read: false,
       link: `/orders/${event.aggregateId}`,
     });
+    // W03 B-5: the shapes the web reads are the contract schemas
+    expect(notificationPageSchema.parse(inbox).items[0].id).toBe(
+      inbox.items[0].id,
+    );
+    expect(
+      unreadCountSchema.parse(
+        (
+          await http()
+            .get('/api/notifications/unread-count')
+            .set(u.auth)
+            .expect(200)
+        ).body,
+      ),
+    ).toEqual({ unread: 1 });
+    expect(
+      markReadRequestSchema.safeParse({ ids: [inbox.items[0].id] }).success,
+    ).toBe(true);
+    expect(markReadRequestSchema.safeParse({ all: true }).success).toBe(true);
+    expect(markReadRequestSchema.safeParse({ ids: [] }).success).toBe(false);
     expect(
       (
         await http()

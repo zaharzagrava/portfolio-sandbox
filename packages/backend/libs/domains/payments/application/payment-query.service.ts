@@ -1,8 +1,13 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import type {
   PaymentCurrency,
+  PaymentPage,
   PaymentView,
 } from '@marketplace-sandbox/contracts';
+import {
+  decodePaymentCursor,
+  encodePaymentCursor,
+} from '../domain/payment-cursor';
 import { ApiConfigService } from '@app/common/config';
 import { classifyLookup } from '../domain/provider-outcome';
 import {
@@ -39,6 +44,20 @@ const VIEW_STATUS: Record<PaymentStatus, PaymentStatusView['status']> = {
   CANCELLED: 'FAILED',
 };
 
+const toView = (payment: PaymentRecord, showSecret: boolean): PaymentView => ({
+  id: payment.id,
+  orderId: payment.orderId,
+  status: payment.status,
+  amountMinor: payment.amountMinor,
+  currency: payment.currency,
+  failureCode: payment.failureCode,
+  requiresAction: payment.requiresAction,
+  clientSecret: showSecret ? payment.clientSecret : null,
+  version: payment.version,
+  createdAt: payment.createdAt.toISOString(),
+  updatedAt: payment.updatedAt.toISOString(),
+});
+
 const MAX_REF_LENGTH = 255;
 const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -72,18 +91,43 @@ export class PaymentQueryService {
     const payment = await this.payments.findById(paymentId);
     if (!payment || payment.userId !== userId) throw new PaymentNotFoundError();
     const showSecret = payment.status === 'PENDING' && payment.requiresAction;
+    return toView(payment, showSecret);
+  }
+
+  /**
+   * `GET /payments` (W03 B-2): the caller's own payments, newest first, one keyset page. Scoped to the caller inside
+   * the statement, so another buyer's `orderId` is an empty page. `clientSecret` is always `null` in list items.
+   */
+  async listOwned(
+    userId: string,
+    query: {
+      orderId?: string;
+      status?: PaymentStatus;
+      limit: number;
+      cursor?: string;
+    },
+  ): Promise<PaymentPage> {
+    const secret = this.config.get('jwt_secret');
+    const after = query.cursor
+      ? decodePaymentCursor(query.cursor, secret)
+      : null;
+    const rows = await this.payments.pageForUser(
+      userId,
+      { orderId: query.orderId, status: query.status },
+      query.limit + 1,
+      after,
+    );
+    const page = rows.slice(0, query.limit);
+    const last = page[page.length - 1];
     return {
-      id: payment.id,
-      orderId: payment.orderId,
-      status: payment.status,
-      amountMinor: payment.amountMinor,
-      currency: payment.currency,
-      failureCode: payment.failureCode,
-      requiresAction: payment.requiresAction,
-      clientSecret: showSecret ? payment.clientSecret : null,
-      version: payment.version,
-      createdAt: payment.createdAt.toISOString(),
-      updatedAt: payment.updatedAt.toISOString(),
+      items: page.map((p) => toView(p, false)),
+      nextCursor:
+        rows.length > query.limit && last
+          ? encodePaymentCursor(
+              { createdAt: last.createdAt, id: last.id },
+              secret,
+            )
+          : null,
     };
   }
 

@@ -14,7 +14,9 @@ export type Capability =
   | 'pickup'
   | 'flash-sales'
   | 'auctions'
-  | 'identity';
+  | 'identity'
+  | 'orders'
+  | 'payments';
 
 /**
  * One declared upstream call (S48 FR-001): method, path, contract schema, identity need, shared-cache eligibility.
@@ -38,6 +40,8 @@ export interface Endpoint<T> {
   sharedCache: boolean;
   /** Feeds the per-upstream breaker (optional sections; the required product call and identity relays do not). */
   breaker: boolean;
+  /** Guest cart token, sent as the only cookie (`cart=<token>`) when it has the expected shape (cart read only). */
+  guestCartToken?: string;
   /** Extra request headers from the allowlist (identity relays: `x-forwarded-for`). */
   headers?: Record<string, string>;
 }

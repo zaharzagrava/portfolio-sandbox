@@ -57,3 +57,7 @@ Format: `[TAG] question → default taken → why`. BREAKING first, then CONTRAC
 - [LOCAL] Cart notice after merge → kept in the query cache (`cart.lastMerge`), lost on a full reload → no browser storage for a courtesy message.
 - [LOCAL] Sandbox card picker → shown when `NEXT_PUBLIC_PAYMENTS_SANDBOX=true` and never in production builds.
 - [LOCAL] Component folders → `components/{cart,checkout,orders,notifications}/`; `add-to-cart-button.tsx` keeps its path.
+
+## BLOCKER (resolved: `zz-dbg.spec.ts` rewritten onto the W03 UI, see gaps.md "Gate repairs")
+
+- [BLOCKER] `packages/web/tests/zz-dbg.spec.ts` fails the Playwright gate (`getByTestId('cart-line')` finds 0 elements, desktop and mobile). It is a debug scratch spec committed with W07 that walks the pre-W03 flow: `data-testid`s `cart-line`, `cart-line-quantity`, `cart-subtotal`, `checkout-total`, `cart-empty`; a "Proceed to Checkout" link; a "Place Order" button; the URL `/checkout/success?orderId=…`; `/dashboard/orders`. W03's spec replaces every one of these (no `data-testid` in W03 files, "Place order" on a review screen, success at `/checkout/success/{orderId}`, `/orders`), and its journeys in `tests/cart-checkout.spec.ts` cover the same path and pass. Making `zz-dbg` pass would mean reintroducing the old UI against the spec. Rules forbid deleting, skipping or weakening a test, so I left it untouched. Hypothesis: it was never meant to be part of the gate. Decision needed: delete it (a human call) or rewrite it into a real journey.

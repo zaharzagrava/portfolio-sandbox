@@ -33,6 +33,9 @@ export type RouteName =
   | 'pickup'
   | 'flashSale'
   | 'auction'
+  | 'cart'
+  | 'order'
+  | 'payments'
   | 'login'
   | 'refresh'
   | 'logout'
@@ -88,6 +91,9 @@ const ROUTES: [RegExp, string, RouteName][] = [
   [/^\/api\/pickup-points\/near$/, 'GET', 'pickup'],
   [/^\/api\/flash-sales$/, 'GET', 'flashSale'],
   [/^\/api\/auctions$/, 'GET', 'auction'],
+  [/^\/api\/cart$/, 'GET', 'cart'],
+  [/^\/api\/orders\/[^/]+$/, 'GET', 'order'],
+  [/^\/api\/payments$/, 'GET', 'payments'],
   [/^\/api\/auth\/login$/, 'POST', 'login'],
   [/^\/api\/auth\/refresh$/, 'POST', 'refresh'],
   [/^\/api\/auth\/logout$/, 'POST', 'logout'],
@@ -96,6 +102,9 @@ const ROUTES: [RegExp, string, RouteName][] = [
 
 const routeOf = (method: string, path: string): RouteName | 'unknown' =>
   ROUTES.find(([re, m]) => m === method && re.test(path))?.[2] ?? 'unknown';
+
+/** Routes the forwarder specs reach through `onUnknown` (they predate the W03 aggregates' named routes). */
+const FORWARDED_ROUTES = new Set<RouteName>(['cart', 'order', 'payments']);
 
 /** Path parameter `index` (0 = the first segment after `/api`) of a recorded call. */
 export const segment = (call: RecordedCall, index: number): string =>
@@ -298,6 +307,12 @@ export class StubUpstream {
             .filter(Boolean)
             .map(auctionFixture),
         };
+      case 'cart':
+        return { body: { lines: [], droppedLines: 0 } };
+      case 'order':
+        return { status: 404, body: problem(404, 'order_not_found') };
+      case 'payments':
+        return { body: { items: [], nextCursor: null } };
       default:
         return { status: 501, body: problem(501) };
     }
@@ -305,9 +320,15 @@ export class StubUpstream {
 
   private handle(req: http.IncomingMessage, res: http.ServerResponse): void {
     const url = new URL(req.url ?? '/', 'http://stub');
+    const named = routeOf(req.method ?? 'GET', url.pathname);
     const call: RecordedCall = {
       seq: ++this.seq,
-      route: routeOf(req.method ?? 'GET', url.pathname),
+      route:
+        this.unknownHandler &&
+        named !== 'unknown' &&
+        FORWARDED_ROUTES.has(named)
+          ? 'unknown'
+          : named,
       method: req.method ?? 'GET',
       path: url.pathname,
       query: Object.fromEntries(url.searchParams),

@@ -2,10 +2,11 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { OrdersTable } from '@/components/dashboard/orders-table';
-import { useOrders } from '@/lib/api/orders';
+import { useOrdersPage } from '@/lib/api/orders';
 
 export function OrdersView() {
-  const { data: orders = [], isLoading, isError } = useOrders();
+  const { data, isLoading, isError } = useOrdersPage();
+  const orders = data?.items ?? [];
   return (
     <div className="space-y-6">
       <div>

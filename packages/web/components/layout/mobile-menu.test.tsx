@@ -8,9 +8,8 @@ let mockAuthenticated = false;
 let mockCount: number | undefined;
 vi.mock('next/navigation', () => ({ usePathname: () => mockPathname }));
 vi.mock('@/hooks/use-auth', () => ({ useAuth: () => ({ isAuthenticated: mockAuthenticated }) }));
-vi.mock('@/lib/api/cart', () => ({
-  useCart: () => ({ data: mockCount === undefined ? undefined : [] }),
-  cartTotals: () => ({ itemCount: mockCount ?? 0, subtotal: 0 }),
+vi.mock('@/components/cart/cart-badge', () => ({
+  useCartCount: () => mockCount ?? null,
 }));
 vi.mock('@/components/auth/account-menu', () => ({
   MobileAccountEntries: () => <div data-testid="account-entries">account</div>,

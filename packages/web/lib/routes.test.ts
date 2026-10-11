@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { productHref, searchHref, signInHref } from './routes';
+import { cartHref, checkoutHref, orderHref, ordersHref, payHref, productHref, searchHref, signInHref, successHref } from './routes';
 
 const ID = '3f2b8c1e-5a4d-4e6f-9a7b-1c2d3e4f5a6b';
 
@@ -25,6 +25,17 @@ describe('routes', () => {
   it('W02 AS-12: searchHref cleans an invalid view the way the parser does', () => {
     expect(searchHref({ minPriceMinor: 500, maxPriceMinor: 100 })).toBe('/search');
     expect(searchHref({ semantic: true })).toBe('/search');
+  });
+
+  it('W03 FR-053: checkout and order route builders', () => {
+    expect(cartHref()).toBe('/cart');
+    expect(checkoutHref()).toBe('/checkout');
+    expect(payHref(ID)).toBe(`/checkout/pay/${ID}`);
+    expect(successHref(ID)).toBe(`/checkout/success/${ID}`);
+    expect(ordersHref()).toBe('/orders');
+    expect(ordersHref('a b/c')).toBe('/orders?cursor=a%20b%2Fc');
+    expect(orderHref(ID)).toBe(`/orders/${ID}`);
+    expect(orderHref('a/b')).toBe('/orders/a%2Fb');
   });
 
   it('W02 AS-51: signInHref wraps W01 loginHref with a same-site returnTo', () => {

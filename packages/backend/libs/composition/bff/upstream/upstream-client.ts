@@ -38,6 +38,10 @@ export interface CallResult<T> {
 /** Request headers the BFF may send upstream besides the ones it derives itself (contracts/http.md). */
 const EXTRA_HEADERS = new Set(['x-forwarded-for', 'content-type']);
 
+/** The guest cart token as the cart domain signs it: URL-safe characters and dots, bounded (no header injection). */
+// The orders domain issues `guest:<uuid>.<signature>`: the colon is part of the token.
+const GUEST_CART_TOKEN = /^[A-Za-z0-9._~:-]{1,1024}$/;
+
 const callsTotal = () =>
   MetricsRegistry.counter({
     name: 'bff_upstream_calls_total',
@@ -127,6 +131,12 @@ export class UpstreamClient {
       headers['x-anonymous-id'] = credentials.anonymousId;
     for (const [k, v] of Object.entries(endpoint.headers ?? {}))
       if (EXTRA_HEADERS.has(k.toLowerCase())) headers[k.toLowerCase()] = v;
+    // The one cookie that may travel: the guest cart token, as `cart=<token>` (never the caller's raw Cookie header).
+    if (
+      endpoint.guestCartToken &&
+      GUEST_CART_TOKEN.test(endpoint.guestCartToken)
+    )
+      headers.cookie = `cart=${endpoint.guestCartToken}`;
     return headers;
   }
 

@@ -15,5 +15,12 @@ export function applyQueryDefaults(client: QueryClient): QueryClient {
   client.setQueryDefaults(['share'], { staleTime: Infinity });
   client.setQueryDefaults(['video'], { staleTime: 0 });
   client.setQueryDefaults(['ads'], { staleTime: 30_000 });
+  // W03 (FR-057): the cart is re-read on focus (another tab or device may have changed it); orders and payments are
+  // fresh while they can still change (the terminal 60 s is applied by the hooks); notifications keep 30 s.
+  client.setQueryDefaults(['cart'], { staleTime: 0, refetchOnWindowFocus: true });
+  client.setQueryDefaults(['orders', 'list'], { staleTime: 15_000 });
+  client.setQueryDefaults(['orders', 'detail'], { staleTime: 0 });
+  client.setQueryDefaults(['payments'], { staleTime: 0 });
+  client.setQueryDefaults(['notifications'], { staleTime: 30_000, refetchOnWindowFocus: true });
   return client;
 }

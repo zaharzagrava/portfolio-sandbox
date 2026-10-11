@@ -92,3 +92,9 @@ interviews) until its status says so. The implementation loop appends here (rule
 | W02 | SC-004: new results within 1 s for 95 % of filter, sort or page changes | same file (100 scripted changes) | not run |
 | W02 | SC-008 (keyboard part): each journey is completable by keyboard alone | same file (manual keyboard walk) | not run |
 | W02 | SC-009: a posted discussion, vote or comment is visible within 1 s; answer text appears as it is sent | same file (Performance panel measurement) | not run |
+| W03 | SC-001: product page to confirmed order in at most 8 actions and under 3 minutes with the sandbox card | `specs/web/W03-cart-checkout-orders/quickstart.md`, "Ops artifacts" (stopwatch run) | not run |
+| W03 | SC-002 (two open tabs): exactly one order when Place order is pressed in two tabs | same file (manual two-tab run) | not run |
+| W03 | SC-004: payment status reaches the page within 2 s live and 7 s polling for 95 % of cases | same file (50 scripted payments, Performance panel) | not run |
+| W03 | SC-005: a cart change is correct again within 1 s after the server answer for 95 % of cases | same file (100 scripted changes) | not run |
+| W03 | SC-007 (keyboard part): each journey is completable by keyboard alone | same file (manual keyboard walk) | not run |
+| W03 | SC-010 (real provider part): card data is only inside the provider's frames | same file (Stripe test keys, DevTools check) | not run |

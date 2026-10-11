@@ -10,4 +10,6 @@ export const browserStorageKeys = [
   { key: '__Host-bff-csrf', store: 'cookie', purpose: 'Protection against forged requests (W01)' },
   { key: '__Host-bff-session', store: 'cookie', purpose: 'Your signed-in session (HttpOnly, set by the server)' },
   { key: 'cart', store: 'cookie', purpose: 'Your cart while you are not signed in (HttpOnly, set by the server)' },
+  { key: 'w03.attempt.checkout', store: 'sessionStorage', purpose: 'A random key that makes sure pressing Place order twice, or after a reload, creates one order; cleared when the order is placed, after 24 hours, or on sign-out (W03)' },
+  { key: 'w03.attempt.pay:{orderId}', store: 'sessionStorage', purpose: 'A random key that makes sure paying twice, or after a reload, charges once; cleared when the payment settles, after 24 hours, or on sign-out (W03)' },
 ] as const;

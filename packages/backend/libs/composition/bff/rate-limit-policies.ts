@@ -17,6 +17,20 @@ export const bffRatePolicies = definePolicies('bff', {
     key: 'userOrIp',
     failMode: 'open',
   },
+  'bff.cart-page.principal': {
+    algorithm: 'slidingWindow',
+    limit: 300,
+    windowMs: 60_000,
+    key: 'userOrIp',
+    failMode: 'open',
+  },
+  'bff.order-page.principal': {
+    algorithm: 'slidingWindow',
+    limit: 300,
+    windowMs: 60_000,
+    key: 'userOrIp',
+    failMode: 'open',
+  },
   'bff.graphql.cost': {
     algorithm: 'tokenBucket',
     limit: 20_000,

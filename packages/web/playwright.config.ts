@@ -43,6 +43,7 @@ export default defineConfig({
   webServer: [
     {
       command: 'pnpm run dev',
+      env: { NEXT_PUBLIC_PAYMENTS_SANDBOX: 'true' }, // W03: the pay step shows the sandbox card picker (never in production builds)
       url: 'http://localhost:3000',
       reuseExistingServer: !process.env.CI,
       timeout: 120 * 1000, // Give Next.js time to compile

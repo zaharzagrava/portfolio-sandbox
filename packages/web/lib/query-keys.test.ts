@@ -64,6 +64,40 @@ describe('queryKeys', () => {
     expect(stale(queryKeys.ads.sponsored('audio'))).toBe(30_000);
   });
 
+  it('W03 AS-71: cart, orders, payments and notifications keys are factory tuples under their roots', () => {
+    expect(queryKeys.cart.all).toEqual(['cart']);
+    expect(queryKeys.cart.lines()).toEqual(['cart', 'lines']);
+    expect(queryKeys.cart.page()).toEqual(['cart', 'page']);
+    expect(queryKeys.cart.lastMerge()).toEqual(['cart', 'lastMerge']);
+    expect(queryKeys.orders.all).toEqual(['orders']);
+    expect(queryKeys.orders.list({ cursor: 'tok' })).toEqual(['orders', 'list', { cursor: 'tok' }]);
+    expect(queryKeys.orders.list({})).toEqual(['orders', 'list', {}]);
+    expect(queryKeys.orders.detail(ID)).toEqual(['orders', 'detail', ID]);
+    expect(queryKeys.payments.all).toEqual(['payments']);
+    expect(queryKeys.payments.detail(ID)).toEqual(['payments', 'detail', ID]);
+    expect(queryKeys.notifications.all).toEqual(['notifications']);
+    expect(queryKeys.notifications.unreadCount()).toEqual(['notifications', 'unreadCount']);
+    expect(queryKeys.notifications.inbox()).toEqual(['notifications', 'inbox']);
+  });
+
+  it('W03 AS-71: the cart key does not include a user id, and every cart key sits under the cart prefix', () => {
+    for (const key of [queryKeys.cart.lines(), queryKeys.cart.page(), queryKeys.cart.lastMerge()]) expect(key.slice(0, 1)).toEqual(queryKeys.cart.all);
+  });
+
+  it('W03 FR-057: browser cache lifetimes follow the decision table', () => {
+    const client = applyQueryDefaults(new QueryClient());
+    const options = (key: readonly unknown[]) => client.defaultQueryOptions({ queryKey: key });
+    expect(options(queryKeys.cart.lines()).staleTime).toBe(0);
+    expect(options(queryKeys.cart.lines()).refetchOnWindowFocus).toBe(true);
+    expect(options(queryKeys.cart.page()).staleTime).toBe(0);
+    expect(options(queryKeys.cart.page()).refetchOnWindowFocus).toBe(true);
+    expect(options(queryKeys.orders.list({})).staleTime).toBe(15_000);
+    expect(options(queryKeys.orders.detail(ID)).staleTime).toBe(0);
+    expect(options(queryKeys.payments.detail(ID)).staleTime).toBe(0);
+    expect(options(queryKeys.notifications.unreadCount()).staleTime).toBe(30_000);
+    expect(options(queryKeys.notifications.inbox()).staleTime).toBe(30_000);
+  });
+
   it('W02 AS-71: the old products.search key is gone and the other roots are unchanged', () => {
     expect('search' in queryKeys.products).toBe(false);
     expect(queryKeys.cart.all).toEqual(['cart']);

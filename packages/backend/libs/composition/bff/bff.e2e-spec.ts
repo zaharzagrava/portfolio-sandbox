@@ -1,6 +1,8 @@
 import { Logger } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import {
+  cartPageResponseSchema,
+  orderPageResponseSchema,
   problemDetailsSchema,
   productPageResponseSchema,
 } from '@marketplace-sandbox/contracts';
@@ -11,6 +13,7 @@ import {
   createBffApp,
   resetBffRedis,
 } from './testing/app-factory';
+import { cartFixture, orderFixture, paymentFixture } from './testing/fixtures';
 import { seedProduct, signIn, waitFor } from './testing/helpers';
 import { StubUpstream, TripwireServer } from './testing/stub-upstream';
 import { BreakerRegistry } from './upstream/breaker-registry';
@@ -1092,6 +1095,261 @@ describe('BFF product page composition', () => {
       );
       expect(names).not.toContain('chatUnread');
       expect(String(res.headers['server-timing'])).toMatch(/product;dur=\d/);
+    });
+  });
+
+  describe('W03 B-3 GET /bff/cart', () => {
+    // The real shape issued by the orders domain: `guest:<uuid>.<signature>` (the colon once made the BFF drop the cookie).
+    const GUEST = 'guest:f38e6db8-af73-4e85-a7b1-b9ffcb76f4f4.-B3X5QLLaCsr15Vnv-y82NpGxSKP1ydgiFebDsZRQzM';
+    const cartPage = () => ctx.http().get('/api/bff/cart');
+    const seedCart = (n: number) => {
+      const products = Array.from({ length: n }, () => seedProduct(stub));
+      stub.respond('cart', {
+        body: cartFixture(products.map((p) => p.id)),
+      });
+      return products;
+    };
+    const parseCart = (body: unknown) => cartPageResponseSchema.parse(body);
+
+    it('anonymous guest cart: the cart cookie (only it) is forwarded, lines are composed in cart order', async () => {
+      const products = seedCart(2);
+      const res = await cartPage()
+        .set('Cookie', `cart=${GUEST}; unrelated=1`)
+        .expect(200);
+      const body = parseCart(res.body);
+      expect(body.lines.map((l) => l.productId)).toEqual(
+        products.map((p) => p.id),
+      );
+      expect(body.lines[0]).toMatchObject({
+        quantity: 1,
+        product: {
+          title: products[0].title,
+          priceMinor: products[0].priceMinor,
+          currency: products[0].currency,
+          inStock: true,
+        },
+        shop: { id: products[0].shopId, name: 'Audio Shop' },
+      });
+      expect(body.droppedLines).toBe(0);
+      expect(body.errors).toEqual([]);
+      expect(res.headers['cache-control']).toBe('private, no-store');
+      expect(res.headers['set-cookie']).toBeUndefined();
+      const call = stub.callsTo('cart')[0];
+      expect(call.headers.cookie).toBe(`cart=${GUEST}`);
+      expect(call.headers.authorization).toBeUndefined();
+      expect(stub.callsTo('productBatch')[0].query.ids).toBe(
+        products.map((p) => p.id).join(','),
+      );
+    });
+
+    it('member cart: the access token reaches the cart read only, the session cookie never leaves the BFF', async () => {
+      const products = seedCart(1);
+      const who = await signIn(ctx, stub, { accessToken: 'access-of-B' });
+      stub.calls.length = 0;
+      const res = await cartPage().set('Cookie', who.cookie).expect(200);
+      expect(parseCart(res.body).lines).toHaveLength(1);
+      expect(stub.callsTo('cart')[0].headers.authorization).toBe(
+        'Bearer access-of-B',
+      );
+      for (const call of stub.calls) {
+        expect(call.headers.cookie).toBeUndefined();
+        if (call.route !== 'cart')
+          expect(call.headers.authorization).toBeUndefined();
+      }
+      expect(JSON.stringify(res.body)).not.toContain('access-of-B');
+      void products;
+    });
+
+    it('a hidden product gives product null and no error entry', async () => {
+      const products = seedCart(2);
+      stub.products.delete(products[0].id);
+      const body = parseCart((await cartPage().expect(200)).body);
+      expect(body.lines[0].product).toBeNull();
+      expect(body.lines[0].shop).toBeNull();
+      expect(body.lines[1].product).not.toBeNull();
+      expect(body.errors).toEqual([]);
+    });
+
+    it('products down: every product and shop is null and errors names the products section', async () => {
+      seedCart(2);
+      stub.respond('productBatch', { status: 503 });
+      const body = parseCart((await cartPage().expect(200)).body);
+      expect(body.lines).toHaveLength(2);
+      for (const line of body.lines) {
+        expect(line.product).toBeNull();
+        expect(line.shop).toBeNull();
+      }
+      expect(body.errors).toEqual([
+        { section: 'products', code: 'UPSTREAM_UNAVAILABLE', retryable: true },
+      ]);
+      expect(stub.callsTo('shopBatch')).toHaveLength(0);
+    });
+
+    it('shops down: shop null with an error entry, products still shown', async () => {
+      const products = seedCart(2);
+      stub.respond('shopBatch', { status: 503 });
+      const body = parseCart((await cartPage().expect(200)).body);
+      for (const [i, line] of body.lines.entries()) {
+        expect(line.shop).toBeNull();
+        expect(line.product?.title).toBe(products[i].title);
+      }
+      expect(body.errors).toEqual([
+        { section: 'shops', code: 'UPSTREAM_UNAVAILABLE', retryable: true },
+      ]);
+    });
+
+    it('empty cart: no product or shop call', async () => {
+      const body = parseCart((await cartPage().expect(200)).body);
+      expect(body).toEqual({ lines: [], droppedLines: 0, errors: [] });
+      expect(stub.callsTo('productBatch')).toHaveLength(0);
+      expect(stub.callsTo('shopBatch')).toHaveLength(0);
+    });
+
+    it('50 lines: one product batch of 50 ids and one shop batch of the distinct shops', async () => {
+      const products = seedCart(50);
+      const body = parseCart((await cartPage().expect(200)).body);
+      expect(body.lines).toHaveLength(50);
+      expect(stub.callsTo('productBatch')).toHaveLength(1);
+      expect(stub.callsTo('productBatch')[0].query.ids.split(',')).toHaveLength(
+        50,
+      );
+      expect(stub.callsTo('shopBatch')).toHaveLength(1);
+      expect(stub.callsTo('shopBatch')[0].query.ids.split(',').sort()).toEqual(
+        [...new Set(products.map((p) => p.shopId))].sort(),
+      );
+    });
+
+    it('the cart read is required: its failure is the answer, status and Retry-After kept', async () => {
+      stub.respond('cart', {
+        status: 429,
+        headers: { 'retry-after': '7' },
+        body: {
+          type: 'x',
+          title: 'Too many',
+          status: 429,
+          detail: 'slow down',
+          instance: '/',
+          code: 'rate_limited',
+          requestId: randomUUID(),
+        },
+      });
+      const res = await cartPage().expect(429);
+      expect(res.headers['retry-after']).toBe('7');
+      expect(res.headers['cache-control']).toBe('no-store');
+      expect(parseProblem(res.body).code).toBe('rate_limited');
+      expect(stub.callsTo('productBatch')).toHaveLength(0);
+    });
+
+    it('a cart upstream outage is 503', async () => {
+      stub.respond('cart', { status: 503 });
+      await cartPage().expect(503);
+    });
+  });
+
+  describe('W03 B-4 GET /bff/orders/:orderId', () => {
+    const orderPage = (id: string) => ctx.http().get(`/api/bff/orders/${id}`);
+    const parseOrder = (body: unknown) => orderPageResponseSchema.parse(body);
+
+    it('happy: order plus the latest payment, no secret, no-store, read with the access token', async () => {
+      const order = orderFixture();
+      const payment = paymentFixture(order.id, {
+        requiresAction: true,
+        clientSecret: 'pi_secret_never_copied',
+      });
+      stub.respond('order', { body: order });
+      stub.respond('payments', {
+        body: { items: [payment], nextCursor: null },
+      });
+      const who = await signIn(ctx, stub, { accessToken: 'access-of-C' });
+      stub.calls.length = 0;
+      const res = await orderPage(order.id)
+        .set('Cookie', who.cookie)
+        .expect(200);
+      const body = parseOrder(res.body);
+      expect(body.order).toEqual(order);
+      expect(body.payment).toEqual({
+        id: payment.id,
+        status: 'PENDING',
+        amountMinor: 9_800,
+        currency: 'USD',
+        failureCode: null,
+        requiresAction: true,
+        version: 2,
+        updatedAt: payment.updatedAt,
+      });
+      expect(body.errors).toEqual([]);
+      expect(res.headers['cache-control']).toBe('private, no-store');
+      expect(JSON.stringify(res.body)).not.toContain('pi_secret_never_copied');
+      expect(JSON.stringify(res.body)).not.toContain('clientSecret');
+      expect(stub.callsTo('order')[0].headers.authorization).toBe(
+        'Bearer access-of-C',
+      );
+      expect(stub.callsTo('payments')[0].query).toEqual({
+        orderId: order.id,
+        limit: '1',
+      });
+    });
+
+    it('no payment yet: payment null and no error', async () => {
+      const order = orderFixture();
+      stub.respond('order', { body: order });
+      const who = await signIn(ctx, stub);
+      const body = parseOrder(
+        (await orderPage(order.id).set('Cookie', who.cookie).expect(200)).body,
+      );
+      expect(body.payment).toBeNull();
+      expect(body.errors).toEqual([]);
+    });
+
+    it('payment upstream down: payment null plus an error entry, the order is still served', async () => {
+      const order = orderFixture();
+      stub.respond('order', { body: order });
+      stub.respond('payments', { status: 503 });
+      const who = await signIn(ctx, stub);
+      const body = parseOrder(
+        (await orderPage(order.id).set('Cookie', who.cookie).expect(200)).body,
+      );
+      expect(body.order.id).toBe(order.id);
+      expect(body.payment).toBeNull();
+      expect(body.errors).toEqual([
+        { section: 'payment', code: 'UPSTREAM_UNAVAILABLE', retryable: true },
+      ]);
+    });
+
+    it("a foreign or unknown order is the upstream's 404 order_not_found", async () => {
+      const who = await signIn(ctx, stub);
+      stub.calls.length = 0;
+      const res = await orderPage(randomUUID())
+        .set('Cookie', who.cookie)
+        .expect(404);
+      expect(parseProblem(res.body).code).toBe('order_not_found');
+      expect(res.headers['cache-control']).toBe('no-store');
+    });
+
+    it('a malformed id is 400 and nothing is called', async () => {
+      const who = await signIn(ctx, stub);
+      stub.calls.length = 0;
+      const res = await orderPage('not-a-uuid')
+        .set('Cookie', who.cookie)
+        .expect(400);
+      expect(parseProblem(res.body).code).toBe('validation_failed');
+      expect(stub.calls).toHaveLength(0);
+    });
+
+    it('no credentials is 401 and nothing is called', async () => {
+      const res = await orderPage(randomUUID()).expect(401);
+      expect(parseProblem(res.body).code).toBe('unauthenticated');
+      expect(res.headers['cache-control']).toBe('no-store');
+      expect(stub.calls).toHaveLength(0);
+    });
+
+    it('an upstream 401 rejects the credential', async () => {
+      stub.respond('order', { status: 401 });
+      const who = await signIn(ctx, stub);
+      const res = await orderPage(randomUUID())
+        .set('Cookie', who.cookie)
+        .expect(401);
+      expect(parseProblem(res.body).code).toBe('invalid_token');
     });
   });
 });

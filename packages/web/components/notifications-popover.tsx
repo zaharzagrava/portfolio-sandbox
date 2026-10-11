@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useMemo, useState } from 'react';
 import { Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -9,7 +9,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import { useEventStream } from '@/hooks/use-event-stream';
+import { useUserEvents, type UserEventHandler } from '@/hooks/use-user-stream';
 import { formatDistanceToNow } from 'date-fns';
 
 export interface Notification {
@@ -23,14 +23,18 @@ export function NotificationsPopover() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isOpen, setIsOpen] = useState(false);
 
-  const handleEvent = useCallback((topic: string, type: string, data: unknown) => {
-    if (type === 'notification') {
-      const newNotification = data as Notification;
-      setNotifications((prev) => [newNotification, ...prev]);
-    }
-  }, []);
+  const handler = useMemo<UserEventHandler>(
+    () => ({
+      onEvent: (event) => {
+        if (event.type !== 'notification') return;
+        const { id, title, createdAt } = event.data;
+        setNotifications((prev) => (prev.some((n) => n.id === id) ? prev : [{ id, message: title, createdAt, read: false }, ...prev]));
+      },
+    }),
+    [],
+  );
 
-  useEventStream(['notifications'], ['notification'], handleEvent);
+  useUserEvents(handler);
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
