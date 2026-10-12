@@ -236,6 +236,22 @@ python3 scripts/livespec/generate.py --system               # rebuild docs/spec/
 python3 scripts/livespec/test_livespec.py
 ```
 
+### Lessons loop (`docs/lessons.md`, `scripts/lessons`)
+
+A failure is written down once; the agents read the failure classes before they work; a check keeps every claimed prevention real.
+
+```sh
+python3 scripts/lessons/digest.py        # the failure classes and one-line rules, at most 40 lines (what the agents' prompts get)
+python3 scripts/lessons/check.py         # exit 1 when a `prevented` lesson links something that does not exist
+python3 scripts/lessons/test_lessons.py  # the tests of both scripts (16)
+```
+
+- Add a lesson in two places: a line `- L-nnn date class status` in the index, and an entry `## L-nnn title` with a `**Rule:**` line, the symptom and cause,
+  and `**Prevention:**` with backticked links (file paths, commit hashes). Status `prevented` means every link exists; `open` needs no link.
+- `check.py` also lists `open` lessons older than 14 days and prints the repeats per class (a lesson in a class that already had one). Neither fails the check.
+- `scripts/sdd/implement-specs.sh` puts the digest into the plan, tasks, analyze, implement, converge, gate-repair and repair-agent prompts (`lessons_block` in `scripts/sdd/lib.sh`).
+  `write-specs.sh` is not changed: spec writing does not build or repair anything.
+
 ## Developer tooling
 
 Three things live next to the code: an Obsidian vault over the repo, a generated codebase map, and the spec-driven

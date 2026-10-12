@@ -63,6 +63,13 @@ run_claude() {
   return "$code"
 }
 
+# lessons_block: the failure classes of docs/lessons.md as a few prompt lines (empty when there is no lessons file).
+lessons_block() {
+  local d; d="$(python3 "${ROOT:-.}/scripts/lessons/digest.py" 2>/dev/null | sed 1d)" || return 0
+  [[ -n "$d" ]] && printf 'Known failure classes (from earlier failures of this very loop): check these first, and never repeat one.\n%s\n' "$d"
+  return 0
+}
+
 # deadline_left: seconds until RUN_DEADLINE (epoch), empty when no deadline is set.
 deadline_left() { [[ -n "${RUN_DEADLINE:-}" ]] && echo $(( RUN_DEADLINE - $(date +%s) )) || true; }
 
