@@ -33,6 +33,9 @@ export default defineConfig({
     trace: 'on-first-retry',
   },
   expect: {
+    // A loaded runner (two stacks, a dev server compiling pages on demand, parallel browsers) needs longer than 5 s for a page to settle;
+    // the build machine sets PW_EXPECT_TIMEOUT_MS. The assertions themselves are unchanged.
+    timeout: Number(process.env.PW_EXPECT_TIMEOUT_MS) || 5_000,
     toHaveScreenshot: { animations: 'disabled', maxDiffPixelRatio: 0.01 },
   },
   snapshotPathTemplate: '{testDir}/__screenshots__/{testFileName}/{projectName}/{arg}{ext}',

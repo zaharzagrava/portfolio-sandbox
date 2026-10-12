@@ -79,7 +79,7 @@ test.describe('Cart & checkout', () => {
     // TODO(T081): add `/orders` and `/orders/{id}` when the orders pages exist (user story 5).
     for (const path of ['/checkout', `/checkout/pay/${orderId}`, `/checkout/success/${orderId}`]) {
       // The redirect to sign-in can abort the navigation that triggered it (net::ERR_ABORTED); the destination is what is asserted.
-      await page.goto(path).catch((error: Error) => {
+      await page.goto(path, { waitUntil: 'commit' }).catch((error: Error) => {
         if (!/ERR_ABORTED/.test(error.message)) throw error;
       });
       await expect(page).toHaveURL(new RegExp(`/login\\?returnTo=${encodeURIComponent(path).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`));
