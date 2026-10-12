@@ -46,6 +46,14 @@ if [[ "${CHECKPOINT_SWEEP:-1}" != 0 ]]; then
   fi
 fi
 
+# The living specification must agree with the code and the tests (docs/spec); the models run only where Node is available.
+if [[ -d docs/spec && -f scripts/livespec/check.py ]]; then
+  echo "  checkpoint $label: living specification" >>"$log"
+  base_arg=(); git rev-parse -q --verify "${CHECKPOINT_BASE:-origin/master}" >/dev/null && base_arg=(--base "${CHECKPOINT_BASE:-origin/master}")
+  { python3 scripts/livespec/check.py "${base_arg[@]}" && python3 scripts/livespec/models.py check && python3 scripts/livespec/test_livespec.py 2>&1 | tail -3 \
+      && { ! command -v npx >/dev/null || python3 scripts/livespec/run_models.py; }; } >>"$log" 2>&1 || { echo "  living specification check FAILED"; fail=1; }
+fi
+
 script="$ROOT/scripts/sdd/checkpoints/$label.sh"
 if [[ -x "$script" ]]; then
   echo "  checkpoint $label: flow script"

@@ -355,3 +355,15 @@ in order of payoff:
 On "harnesses": the loop's weak points were all in the harness (what the agent can see and run, what counts as passing, what happens on a failed
 checkpoint), not in the model. Measure the loop before changing it: tasks closed per pass, repairs per capability, gates passed after a repair
 that changed no code, failures found only by hand.
+
+## The living specification in the loop
+
+`docs/spec/` (see its README) says what the system does today. The loop treats it like this:
+- **Gate:** `scripts/livespec/check.py` runs in `gate_extras` of every capability (broken proofs, code references, routes, links, models or a changed signed
+  item fail the gate; a page whose code changed without the page, and style, only warn), and `check.py --guard` fails a run that touched a `.reviewed.json`.
+- **A built capability gets a draft page** by itself (`generate.py --only <id>`, only when no page exists yet). After that the page is authored: an agent that
+  changes behavior edits the page first (rule 0 of the agents' cross-spec rules).
+- **Checkpoint:** the same checks, the state machines, the unit tests of the scripts and the Quint models, plus the code-versus-page warning against
+  `origin/master`.
+- Agents may run `check.py` and `models.py`; they cannot run `sign.py`.
+

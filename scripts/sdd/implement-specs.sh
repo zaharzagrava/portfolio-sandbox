@@ -51,7 +51,7 @@ API_URL="${API_URL:-http://localhost:8000}"
 # Implementation needs to build and run tests, on top of the file tools in lib.sh.
 TEST_SPEC="$ROOT/scripts/sdd/test-spec.sh"   # condensed e2e runner: far fewer tokens per red/green iteration
 IMPL_TOOLS=("Bash($TEST_SPEC:*)" 'Bash(npx tsc:*)' 'Bash(npx jest:*)' 'Bash(npx nest build:*)' 'Bash(npx vitest:*)' 'Bash(npx playwright:*)'
-            'Bash(python3 scripts/sdd/check-tests.py:*)' 'Bash(python3 scripts/sdd/tasks-scope.py:*)' 'Bash(bash scripts/sdd/stack-fix.sh:*)' 'Bash(pnpm:*)' 'Bash(node:*)' 'Bash(docker compose:*)' 'Bash(curl:*)'
+            'Bash(python3 scripts/sdd/check-tests.py:*)' 'Bash(python3 scripts/sdd/tasks-scope.py:*)' 'Bash(python3 scripts/livespec/check.py:*)' 'Bash(python3 scripts/livespec/models.py:*)' 'Bash(bash scripts/sdd/stack-fix.sh:*)' 'Bash(pnpm:*)' 'Bash(node:*)' 'Bash(docker compose:*)' 'Bash(curl:*)'
             'Bash(cd:*)' 'Bash(cat:*)' 'Bash(grep:*)' 'Bash(find:*)' 'Bash(git log:*)')
 
 # push_branch: with PUSH_BRANCH set, publish HEAD to that branch (best effort; the VPS runner sets it so nothing is lost).
@@ -163,6 +163,10 @@ gate_extras() { # $1 = capability id, $2 = domain column, $3 = spec dir
   kind="$(kind_of "$domain")"; scope="$(scope_for "$domain")"
   python3 scripts/sdd/check-tests.py scenarios "$kind" "$dir/test-plan.md" "$id" $scope || return 1
   python3 scripts/sdd/check-tests.py integrity $scope || return 1
+  # Living specification (docs/spec): links, proofs, code references, routes, models, signed items; agents never touch sign-offs. Warnings (a page whose
+  # code changed without the page, style) are printed, not fatal.
+  python3 scripts/livespec/check.py --guard || return 1
+  python3 scripts/livespec/check.py --base HEAD || return 1
   # Lint ratchet: files this spec changed must be clean (formatting is auto-fixed first); old debt elsewhere is not our problem.
   pkg=packages/backend; [[ "$kind" == web ]] && pkg=packages/web
   files=$( { git diff --name-only --diff-filter=d HEAD -- "$pkg"; git ls-files --others --exclude-standard -- "$pkg"; } | grep -E '\.(ts|tsx)$' | sed "s|^$pkg/||" | sort -u || true)
@@ -248,7 +252,7 @@ repair_prompt() {
 # Rules that apply to every capability, plus follow-ups that already-built specs left for this one.
 extra_context() { # $1 = capability id
   local fu; fu="$("$ROOT/scripts/sdd/followups.sh" "$1" 2>/dev/null || true)"
-  printf ' %s' "Cross-spec rules. (1) Sibling follow-ups: if your work changes something another capability's spec relies on (a name, header, status code, contract), do not edit that spec; add a bullet '- **<their id>**: <what they must adopt>' under a '## Sibling-spec follow-ups' heading in this spec's gaps.md. (2) Unverified criteria: every success criterion (SC-nnn) that no automated test proves goes under 'Ops artifacts' in quickstart.md and as one row in specs/UNVERIFIED.md (spec, criterion, how to run it, status 'not run'); never describe it as verified. (3) Undoing work: never use git checkout, restore, reset, stash or clean (they are not available and could discard other work in the same file); to undo a change edit the file by hand and keep every other change in it, and if a task says to revert a file, restore only the lines it names. (4) Transactions: use TransactionRunner.run or @Transactional (S54 toolkit); when you touch a file that opens a transaction directly with sequelize.transaction, migrate that site and delete its '// S54 T037 audit' comment; never add a new direct sequelize.transaction (the gate fails if the count of direct sites in your domain rises)."
+  printf ' %s' "Cross-spec rules. (0) The living specification in docs/spec says what the system does today. A change of behavior starts in the page of the capability (docs/spec/capabilities/<ID>-*.md): edit its rules and behaviors first, keep every `[proof: ...]` and `[code: ...]` true (python3 scripts/livespec/check.py checks them), and never create or edit a *.reviewed.json file (human sign-offs); if you change something a human signed, say so under '## Spec changes' in gaps.md. (1) Sibling follow-ups: if your work changes something another capability's spec relies on (a name, header, status code, contract), do not edit that spec; add a bullet '- **<their id>**: <what they must adopt>' under a '## Sibling-spec follow-ups' heading in this spec's gaps.md. (2) Unverified criteria: every success criterion (SC-nnn) that no automated test proves goes under 'Ops artifacts' in quickstart.md and as one row in specs/UNVERIFIED.md (spec, criterion, how to run it, status 'not run'); never describe it as verified. (3) Undoing work: never use git checkout, restore, reset, stash or clean (they are not available and could discard other work in the same file); to undo a change edit the file by hand and keep every other change in it, and if a task says to revert a file, restore only the lines it names. (4) Transactions: use TransactionRunner.run or @Transactional (S54 toolkit); when you touch a file that opens a transaction directly with sequelize.transaction, migrate that site and delete its '// S54 T037 audit' comment; never add a new direct sequelize.transaction (the gate fails if the count of direct sites in your domain rises)."
   if [[ -n "$fu" ]]; then printf ' %s\n%s' "Follow-ups left for this capability by specs that are already built; treat each as a requirement, plan it, test it, and mention it in your report:" "$fu"; fi
 }
 
@@ -394,6 +398,10 @@ ordered_capabilities "$@" | while IFS=$'\t' read -r id domain slug title sources
     step "$dir" "repair-$attempt" "/speckit-implement $CONTEXT $(repair_prompt "$dir/.gate.log") $LIMIT_TEXT"
   done
   date -u +%FT%TZ > "$done_marker"
+  if [[ -f scripts/livespec/generate.py ]] && ! ls docs/spec/capabilities/"$id"-*.md >/dev/null 2>&1; then
+    echo "  living spec page"
+    python3 scripts/livespec/generate.py --only "$id" >"$dir/.livespec.log" 2>&1 || echo "  (the living page could not be generated; see $dir/.livespec.log)"
+  fi
   if [[ -f "$dir/.repaired-by-agent" ]]; then
     rm -f "$dir/.repaired-by-agent"
     notify ok "SDD: $id fixed and built" "The repair worked: $id${limit:+ ($limit)} passed its gate and is committed. The run continues."
