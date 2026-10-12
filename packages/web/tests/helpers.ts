@@ -1,5 +1,4 @@
 import { createRequire } from 'node:module';
-import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 import { expect, type APIRequestContext, type Page } from '@playwright/test';
 
@@ -207,10 +206,34 @@ export async function productWithRecommendations(request: APIRequestContext): Pr
 }
 
 /**
- * Forgets the trending ranking and the BFF's cached copy of it (Redis, dev stack). Events that earlier tests recorded stay in the
- * 60-minute window, and a spec that asserts "no trending rail" must not depend on what ran before it. The command is the same one
- * the build loop's repair agent may use (`scripts/sdd/stack-fix.sh reset-ranking`).
+ * A product of its own in a category nobody else uses (created through the real API as the seller). Nothing can trend, be bought
+ * together or be recommended there, so its page has none of the optional rails whatever the other tests did to the shared ranking
+ * (the ranking is rebuilt from a store a test cannot clear, and events stay in its 60-minute window).
  */
-export function resetRanking() {
-  execFileSync('bash', [path.resolve(__dirname, '../../../scripts/sdd/stack-fix.sh'), 'reset-ranking'], { stdio: 'inherit' });
+export async function createIsolatedProduct(): Promise<{ id: string; title: string }> {
+  const call = async (method: string, route: string, body?: unknown, token?: string) => {
+    const res = await fetch(`${API_URL}${route}`, {
+      method,
+      headers: { 'content-type': 'application/json', ...(token && { authorization: `Bearer ${token}` }) },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    });
+    const text = await res.text();
+    return { status: res.status, data: text ? JSON.parse(text) : undefined };
+  };
+  const login = await call('POST', '/api/auth/login', { email: SEED.seller, password: SEED.password });
+  expect(login.status).toBe(200);
+  const token: string = login.data.accessToken.token;
+  const mine = await call('GET', '/api/shops/mine', undefined, token);
+  const shopId: string = (mine.data.items ?? mine.data)[0].id;
+  const stamp = `${Date.now().toString(36)}${Math.floor(Math.random() * 1e4)}`;
+  const title = `Isolated Lantern ${stamp}`;
+  const category = `isolated-${stamp}`;
+  const created = await call(
+    'POST',
+    `/api/shops/${shopId}/products`,
+    { title, brand: 'Isolated', category, quantity: 5, priceMinor: 1999, description: `${title}. Test product in its own category.`, tags: [category] },
+    token,
+  );
+  expect(created.status).toBe(201);
+  return { id: await productId(title), title };
 }

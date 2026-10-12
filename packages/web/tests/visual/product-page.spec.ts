@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { expectMainFitsWidth, expectNoSeriousViolations } from './axe';
-import { SEED, productId, resetRanking } from '../helpers';
+import { SEED, createIsolatedProduct, productId } from '../helpers';
 
 /**
  * VP rows of W02 (AS-32..AS-34, AS-36..AS-38, AS-75): the product page's layout at the phone (390 x 844) and desktop
@@ -62,8 +62,7 @@ test.describe('Product page layout', () => {
   });
 
   test('product: all optional sections missing', async ({ page }) => {
-    const id = await productId();
-    resetRanking(); // trending events recorded by earlier tests would show a rail here
+    const { id } = await createIsolatedProduct(); // its own category: no trending, recommendation or related rail can exist for it
     await page.goto(`/products/${id}`);
     await expect(page.getByTestId('product-price')).toBeVisible();
     await expect(page.getByTestId('gallery-placeholder')).toBeVisible();
