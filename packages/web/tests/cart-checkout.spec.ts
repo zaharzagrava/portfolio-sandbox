@@ -9,7 +9,12 @@ test.describe('Cart & checkout', () => {
   // The journeys really add to the cart, so the browser sends `add_to_cart`. The request is still made (and observed below),
   // but it is answered here: real events would fill the shared dev stack's trending ranking for an hour, and W02's page
   // layout specs assume that ranking is empty.
+  // A beacon (sent when the page is hidden) is not seen by `page.route`, so the beacon is refused and the keep-alive request
+  // that `sendEvents` falls back to is the one answered here.
   test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() => {
+      navigator.sendBeacon = () => false;
+    });
     await page.route('**/api/events', (route) => route.fulfill({ status: 202, contentType: 'application/json', body: '{}' }));
   });
 

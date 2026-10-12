@@ -11,6 +11,9 @@ import { productId, register } from '../helpers';
 
 async function memberWithCart(page: Page, title?: string) {
   // Real `add_to_cart` events would fill the shared dev stack's trending ranking and break W02's "no optional sections" layout spec.
+  await page.addInitScript(() => {
+    navigator.sendBeacon = () => false; // a beacon bypasses `page.route`; the keep-alive fallback is answered below
+  });
   await page.route('**/api/events', (route) => route.fulfill({ status: 202, contentType: 'application/json', body: '{}' }));
   const id = await productId(title);
   await register(page);
