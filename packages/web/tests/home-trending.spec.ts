@@ -8,7 +8,7 @@ import { API_URL, productId } from './helpers';
  */
 test.describe('Home trending', () => {
   test('trending card links to the product, prices are formatted, no implementation note', async ({ page, request }) => {
-    test.setTimeout(120_000);
+    test.setTimeout(180_000);
     const id = await productId();
     const trending = async () => {
       const res = await request.get(`${API_URL}/api/trending?limit=8`);
@@ -34,12 +34,16 @@ test.describe('Home trending', () => {
     }
     test.fixme(items.length === 0, 'the trending window does not fill on demand: S35 dataset T hook missing (questions.md Q-W02-2)');
 
-    await page.goto('/');
     const rail = page.getByTestId('home-products');
+    // The home page reads trending through a short cache, and shows the catalogue's first products until it holds the ranking: reload until
+    // the trending cards (test id rail-card) are on the page. Waiting on a page that was already rendered would never see them.
+    await expect(async () => {
+      await page.goto('/');
+      await expect(rail.getByTestId('rail-card').first()).toBeVisible({ timeout: 3_000 });
+    }).toPass({ timeout: 90_000, intervals: [2_000, 5_000] });
     const card = rail.getByRole('link').first();
     await expect(card).toHaveAttribute('href', /^\/products\/[0-9a-f-]{36}$/);
     await expect(card).toContainText(/\$\d[\d,]*\.\d{2}/);
-    await expect(rail.getByTestId('rail-card').first()).toBeVisible();
     await expect(page.getByText(/Powered by|Count-Min Sketch/i)).toHaveCount(0);
     await card.click();
     await expect(page).toHaveURL(/\/products\/[0-9a-f-]{36}$/);
