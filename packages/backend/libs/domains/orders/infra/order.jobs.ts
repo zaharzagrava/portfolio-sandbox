@@ -9,7 +9,9 @@ import { JobHandler } from '@app/infrastructure/jobs/job-handler.decorator';
 import { InvalidScheduleError } from '@app/infrastructure/jobs/job-errors';
 import type { JobContext } from '@app/infrastructure/jobs/job-types';
 import { JobsService } from '@app/infrastructure/jobs/jobs.service';
+import { InboxService } from '@app/infrastructure/inbox';
 import { CART_STORE, type CartStore } from '../domain/ports';
+import { ItemBackfillService } from '../application/item-backfill.service';
 import { cartCleanupFailedCounter } from '../domain/order-metrics';
 import type { ProcessWebhookPayload } from '../application/order.job-types';
 import { ReservationRecoveryService } from '../application/reservation-recovery.service';
@@ -17,6 +19,11 @@ import { ReservationReleaseService } from '../application/reservation-release.se
 import { WebhookProcessorService } from '../application/webhook-processor.service';
 
 import '../application/order.job-types';
+
+/** Stored webhook events are kept this long (the provider retries for at most 3 days). */
+const WEBHOOK_RETENTION_MS = 35 * 86_400_000;
+/** The inbox deletes at most this many rows per call; a full batch means there may be more. */
+const INBOX_PURGE_BATCH = 1_000;
 
 /**
  * Job handlers of `orders` (S10 D-5). Each is idempotent by conditional state: a second run, or a run on another
@@ -31,6 +38,8 @@ export class OrderJobs implements OnApplicationBootstrap {
     private readonly release: ReservationReleaseService,
     private readonly webhooks: WebhookProcessorService,
     private readonly jobs: JobsService,
+    private readonly inbox: InboxService,
+    private readonly backfill: ItemBackfillService,
     @Inject(CART_STORE) private readonly cart: CartStore,
     @Inject(CLOCK) private readonly clock: Clock,
   ) {}
@@ -40,6 +49,8 @@ export class OrderJobs implements OnApplicationBootstrap {
       { name: 'orders.sweep-expired-reservations', cron: '0 * * * * *' },
       { name: 'orders.recover-pending', cron: '*/30 * * * * *' },
       { name: 'orders.release-stock', cron: '*/30 * * * * *' },
+      { name: 'orders.purge-webhook-inbox', cron: '0 30 3 * * *' },
+      { name: 'orders.backfill-item-titles', cron: '0 */10 * * * *' },
     ] as const;
     for (const s of schedules) {
       try {
@@ -95,6 +106,31 @@ export class OrderJobs implements OnApplicationBootstrap {
     ctx: Pick<JobContext, 'attempt' | 'maxAttempts' | 'isLastAttempt'>,
   ): Promise<void> {
     await this.webhooks.process(payload, ctx);
+  }
+
+  /** Stored provider events are kept 35 days (provider retries last at most 3); older terminal ones go, in batches. */
+  @JobHandler('orders.purge-webhook-inbox', {
+    concurrency: 1,
+    fleetConcurrency: 1,
+  })
+  async purgeWebhookInbox(): Promise<number> {
+    const cutoff = new Date(this.clock.nowMs() - WEBHOOK_RETENTION_MS);
+    let total = 0;
+    for (;;) {
+      const removed = await this.inbox.purge(cutoff, 'stripe');
+      total += removed;
+      if (removed < INBOX_PURGE_BATCH) break;
+    }
+    return total;
+  }
+
+  /** Fills title and line total of items from before the snapshot columns; resumable, batches of 200. */
+  @JobHandler('orders.backfill-item-titles', {
+    concurrency: 1,
+    fleetConcurrency: 1,
+  })
+  async backfillItemTitles(): Promise<number> {
+    return this.backfill.run();
   }
 
   /** Removes the lines a finished checkout consumed when the cart store refused the first clean-up. */

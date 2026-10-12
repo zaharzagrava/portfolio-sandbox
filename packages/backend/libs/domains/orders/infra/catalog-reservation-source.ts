@@ -4,7 +4,7 @@ import { ProductStockService } from '@app/domains/catalog';
 import type { ReservationSource, StockOutcome } from '../domain/ports';
 import type { StockOperationInput } from '../domain/stock-operations';
 import { UpstreamUnavailableError } from '../domain/order-errors';
-import { withTimeout } from './with-timeout';
+import { withTimeout } from '../domain/with-timeout';
 
 /**
  * Stock held through the catalog's `applyStockDelta` (S05 R1): all-or-nothing, replay-safe per `operationId`. Maps the

@@ -159,9 +159,9 @@
 
 **Independent test**: `$S libs/domains/orders/order-lifecycle`.
 
-- [ ] T067 [US5] Extend `D/order-lifecycle.e2e-spec.ts` with failing AS-55 (cancel on `PAID`/`FULFILLING`/`SHIPPED`/`DELIVERED`/`REFUNDED` → `409` + `currentStatus`; `CANCELLED` → `200` unchanged; unknown/other's `404` byte-identical; bad id `400`; `401`) and the 50-run pay-vs-cancel race hook shared with AS-51.
-- [ ] T068 [US5] Make T067 green (T058 already routes cancel); also register job `orders.clear-cart` and `orders.cleanup-cart` handlers in `D/infra/order.jobs.ts` (cart cleanup retry, AS-29).
-- [ ] T069 [US5] Run `$S libs/domains/orders/order-lifecycle` — AS-40, AS-54…AS-57 green.
+- [X] T067 [US5] Extend `D/order-lifecycle.e2e-spec.ts` with failing AS-55 (cancel on `PAID`/`FULFILLING`/`SHIPPED`/`DELIVERED`/`REFUNDED` → `409` + `currentStatus`; `CANCELLED` → `200` unchanged; unknown/other's `404` byte-identical; bad id `400`; `401`) and the 50-run pay-vs-cancel race hook shared with AS-51.
+- [X] T068 [US5] Make T067 green (T058 already routes cancel); also register job `orders.clear-cart` and `orders.cleanup-cart` handlers in `D/infra/order.jobs.ts` (cart cleanup retry, AS-29).
+- [X] T069 [US5] Run `$S libs/domains/orders/order-lifecycle` — AS-40, AS-54…AS-57 green.
 
 ---
 
@@ -169,10 +169,10 @@
 
 **Independent test**: `$S libs/domains/orders/order-read`.
 
-- [ ] T070 [US6] Write failing `D/order-read.e2e-spec.ts` (describe "Orders: reads, history and tenant isolation"): AS-58 (owner body with timeline parsed by `orderSchema`; other buyer, shop member, admin → `404` byte-identical to missing; `401`; `400`), AS-59 (45 orders same instants pages 20/20/5, no repeat/skip under concurrent inserts, hidden `out_of_stock`, default and max limit, bad limit/cursor `400`), AS-60 (10,000 orders, `VACUUM`, `EXPLAIN` index-only, no sort), AS-61 (all roles of `S1` `200` only `S1` slice; `S2`-only/non-member `404`; anonymous `401`; non-active shop per S03 gate; bad `status`/cursor `400`), AS-62, AS-63.
-- [ ] T071 [US6] Implement `D/application/order-query.service.ts` (`getOrdersForShop`, `getOrderLines` one statement ≤ 500 ids, 501 throws, `getPayableOrder` → `OrderNotPayableError`/`OrderNotFoundError`; DTOs only, no models) and `order-history.repository.ts` keyset query.
-- [ ] T072 [US6] Implement in `D/api/orders.controller.ts` `GET /orders` (`limit`, `cursor`) and `GET /orders/:id` (principal-scoped, no persistence fields); create `D/api/shop-orders.controller.ts` `GET /shops/:shopId/orders` with `ShopScoped('orders.read')`.
-- [ ] T073 [US6] Run `$S libs/domains/orders/order-read` until green.
+- [X] T070 [US6] Write failing `D/order-read.e2e-spec.ts` (describe "Orders: reads, history and tenant isolation"): AS-58 (owner body with timeline parsed by `orderSchema`; other buyer, shop member, admin → `404` byte-identical to missing; `401`; `400`), AS-59 (45 orders same instants pages 20/20/5, no repeat/skip under concurrent inserts, hidden `out_of_stock`, default and max limit, bad limit/cursor `400`), AS-60 (10,000 orders, `VACUUM`, `EXPLAIN` index-only, no sort), AS-61 (all roles of `S1` `200` only `S1` slice; `S2`-only/non-member `404`; anonymous `401`; non-active shop per S03 gate; bad `status`/cursor `400`), AS-62, AS-63.
+- [X] T071 [US6] Implement `D/application/order-query.service.ts` (`getOrdersForShop`, `getOrderLines` one statement ≤ 500 ids, 501 throws, `getPayableOrder` → `OrderNotPayableError`/`OrderNotFoundError`; DTOs only, no models) and `order-history.repository.ts` keyset query.
+- [X] T072 [US6] Implement in `D/api/orders.controller.ts` `GET /orders` (`limit`, `cursor`) and `GET /orders/:id` (principal-scoped, no persistence fields); create `D/api/shop-orders.controller.ts` `GET /shops/:shopId/orders` with `ShopScoped('orders.read')`.
+- [X] T073 [US6] Run `$S libs/domains/orders/order-read` until green.
 
 ---
 
@@ -180,28 +180,28 @@
 
 **Independent test**: `$S libs/domains/orders/order-events`, `…/orders-boundary`.
 
-- [ ] T074 [US7] Write failing `D/order-events.e2e-spec.ts` (describe "Orders: events, realtime, observability and jobs"): AS-64 (one outbox row per transition with envelope + `orderVersion` parsed by `orderEventSchemas`; append failure → rollback + `503`), AS-65 (hub down), AS-66 (logs carry `requestId`/`traceId`/`orderId`, none of body, signature, secret, cookie, authorization, key; metrics exist), AS-67 (each job twice and on two instances → one effect; inbox purge at 35 d + 1 s removes, 35 d keeps, only webhook rows).
-- [ ] T075 [US7] Register all 8 job types in `D/orders-worker.module.ts` with `declareJobType`, schedules, single-run: expiry, sweeper, recover-pending, release, clear-cart, process-webhook, inbox purge (35 d, ≤ 1,000), `orders.backfill-item-titles` (batches of 200, `"(removed product)"`, `lineTotalMinor = priceAtPurchase × quantity`, `orders_backfill_orphans` gauge, resumable).
-- [ ] T076 [US7] Rewrite `D/infra/order.jobs.ts` on `TransactionRunner.run`: migrate the direct `sequelize.transaction` at `:125` and delete its `// S54 T037 audit` comment (count 1 → 0); remove flash handlers from it (moved in T078).
-- [ ] T077 [US7] Add metrics and structured logs per T009 across services (A42); verify T074 green with `$S libs/domains/orders/order-events`.
-- [ ] T078 [US7] Park flash-sale code in `D/infra/flash/` (`flash-stock.service.ts` + spec, `flash-sale.model.ts`, `flash-sale.jobs.ts`, `flash-sale.controller.ts`) + `D/flash-sale-legacy.module.ts`; replace its raw `Product` SQL with `applyStockDelta` (`orders:flash:<saleId>:load|return`) and its `ProductModel` use with `getProductsByIds(ids,{shopId})`; remove the flash branch from checkout behind `ReservationSource` (A38, D-9).
-- [ ] T079 [US7] Compat shrink of `D/application/order.service.ts` (same constructor for `auctions-worker.module.ts`, delegates to `OrderLifecycleService`); no `infra` imports from `api/` or `application/` (A32, A33, D-6).
-- [ ] T080 [US7] Rewrite `D/index.ts`: export `OrderQueryService`, `OrderFulfilmentService`, DTO types, errors, event definitions; keep a clearly marked TRANSITIONAL block (`BisOrderModel`, `BisOrderItemModel`, `ShopOrderModel`, `StockReservationModel`, `FlashSaleModel`, `OrderService`, `FlashStockService`, `OrderExportService`, `CheckoutDiscounts`, legacy event classes, `CreateBisOrderDto`) with removal dates per CT-1 (D-7, D-8).
-- [ ] T081 [US7] Adapt in-repo importers minimally (field reads only) for the event renames in `catalog-sync`, `notifications`, `experimentation`, `discovery`, `seller-insights`, `shop-functions`, `developer-platform` (`total`→`totalMinor`, `price`→`unitPriceMinor`, `paymentId`→`paymentRef`, `shopOrders`, `previousStatus`); do not edit their specs' prose.
-- [ ] T082 [US7] Write `D/orders-boundary.e2e-spec.ts` (AS-68): `check:table-ownership --strict` yields only the S12 `order-export.service.ts` `Product` join for `orders` (12 → 1); `check:boundaries` green; barrel exports no `*Model` outside the TRANSITIONAL block; no association to foreign models; ownership registry complete; zero `sequelize.transaction`/`S54 T037 audit` in `D/`; no `SessionNotRevokedGuard`, `@SkipThrottle`, `throttle`/`skipThrottle` args in the domain.
-- [ ] T083 [US7] Run `$S libs/domains/orders/orders-boundary` until green.
+- [X] T074 [US7] Write failing `D/order-events.e2e-spec.ts` (describe "Orders: events, realtime, observability and jobs"): AS-64 (one outbox row per transition with envelope + `orderVersion` parsed by `orderEventSchemas`; append failure → rollback + `503`), AS-65 (hub down), AS-66 (logs carry `requestId`/`traceId`/`orderId`, none of body, signature, secret, cookie, authorization, key; metrics exist), AS-67 (each job twice and on two instances → one effect; inbox purge at 35 d + 1 s removes, 35 d keeps, only webhook rows).
+- [X] T075 [US7] Register all 8 job types in `D/orders-worker.module.ts` with `declareJobType`, schedules, single-run: expiry, sweeper, recover-pending, release, clear-cart, process-webhook, inbox purge (35 d, ≤ 1,000), `orders.backfill-item-titles` (batches of 200, `"(removed product)"`, `lineTotalMinor = priceAtPurchase × quantity`, `orders_backfill_orphans` gauge, resumable).
+- [X] T076 [US7] Rewrite `D/infra/order.jobs.ts` on `TransactionRunner.run`: migrate the direct `sequelize.transaction` at `:125` and delete its `// S54 T037 audit` comment (count 1 → 0); remove flash handlers from it (moved in T078).
+- [X] T077 [US7] Add metrics and structured logs per T009 across services (A42); verify T074 green with `$S libs/domains/orders/order-events`.
+- [X] T078 [US7] Park flash-sale code in `D/infra/flash/` (`flash-stock.service.ts` + spec, `flash-sale.model.ts`, `flash-sale.jobs.ts`, `flash-sale.controller.ts`) + `D/flash-sale-legacy.module.ts`; replace its raw `Product` SQL with `applyStockDelta` (`orders:flash:<saleId>:load|return`) and its `ProductModel` use with `getProductsByIds(ids,{shopId})`; remove the flash branch from checkout behind `ReservationSource` (A38, D-9).
+- [X] T079 [US7] Compat shrink of `D/application/order.service.ts` (same constructor for `auctions-worker.module.ts`, delegates to `OrderLifecycleService`); no `infra` imports from `api/` or `application/` (A32, A33, D-6).
+- [X] T080 [US7] Rewrite `D/index.ts`: export `OrderQueryService`, `OrderFulfilmentService`, DTO types, errors, event definitions; keep a clearly marked TRANSITIONAL block (`BisOrderModel`, `BisOrderItemModel`, `ShopOrderModel`, `StockReservationModel`, `FlashSaleModel`, `OrderService`, `FlashStockService`, `OrderExportService`, `CheckoutDiscounts`, legacy event classes, `CreateBisOrderDto`) with removal dates per CT-1 (D-7, D-8).
+- [X] T081 [US7] Adapt in-repo importers minimally (field reads only) for the event renames in `catalog-sync`, `notifications`, `experimentation`, `discovery`, `seller-insights`, `shop-functions`, `developer-platform` (`total`→`totalMinor`, `price`→`unitPriceMinor`, `paymentId`→`paymentRef`, `shopOrders`, `previousStatus`); do not edit their specs' prose.
+- [X] T082 [US7] Write `D/orders-boundary.e2e-spec.ts` (AS-68): `check:table-ownership --strict` yields only the S12 `order-export.service.ts` `Product` join for `orders` (12 → 1); `check:boundaries` green; barrel exports no `*Model` outside the TRANSITIONAL block; no association to foreign models; ownership registry complete; zero `sequelize.transaction`/`S54 T037 audit` in `D/`; no `SessionNotRevokedGuard`, `@SkipThrottle`, `throttle`/`skipThrottle` args in the domain.
+- [X] T083 [US7] Run `$S libs/domains/orders/orders-boundary` until green.
 
 ---
 
 ## Phase 10: Polish, whole-capability run, gap closure (WP-14)
 
-- [ ] T084 Delete obsolete files (`order-payment.listener.ts`, old `cart.repository.ts`, `checkout-discounts.port.ts` if superseded) and every `issueTokensFor` use in the domain.
-- [ ] T085 [P] Static gates from `packages/backend`: `npx tsc --noEmit -p tsconfig.json`, `npx eslint libs/domains/orders`, `pnpm check:boundaries`, `pnpm check:table-ownership` (record output; expect only the S12 remainder), `pnpm check:no-wallclock`, `pnpm check:model-registry`; `(cd ../contracts && npx tsc --noEmit)`; direct-transaction count in `libs/domains/orders` = 0 (baseline 1 in `.tx.baseline`).
-- [ ] T086 Run the whole capability once: `$S libs/domains/orders` and `npx jest libs/domains/orders/domain`; then importer suites from T002 and `libs/infrastructure/rate-limit`; fix regressions (5-attempt rule).
-- [ ] T087 Gap audit: walk `gaps.md` A1–A43, B (D-6, D-7, D-8, D-10 not paid/S12, D-11, D-12, D-15, D-17), C rows 1–12 (row 2 → S12/CT-2, row 4 flash minimal replacement), D1–D9, E; each is closed by a named task above or recorded as a remainder in `research.md`. Mapping: A1–A4,A9–A14 → T049–T052; A5–A8 → T055–T057; A15 → T020,T042; A16–A23 → T062–T065; A24–A26 → T071–T072,T058; A27,A28 → T041–T042,T036; A29–A31 → T016,T037,T046,T008; A32–A34 → T023,T033,T046,T079; A35,A36 → T004–T006; A37 → T025–T031; A38 → T078; A39 → T038; A40 → T044,T048 and later test tasks; A41 → T010–T015; A42 → T009,T077; A43 → T065,T075.
-- [ ] T088 Confirm each follow-up from built specs is met and list it in the final report: S01 (T025 `User` dropped; T039 `RateLimitModule.forRoot()`; T044/T048 session fixture; T051/T058 `Firewall({sensitive:true})`), S05 (T034/T036/T055/T057/T026/T054), S50 (T063, `@RateLimit` metadata + forRoot in kit), S53 (T062, T065).
-- [ ] T089 Verify `specs/UNVERIFIED.md` rows for S10 SC-001, SC-003, SC-004 (latency), SC-005 (latency), SC-010 (present, status `not run`) match `quickstart.md` "Ops artifacts"; add any other SC no test proves (none expected: SC-002, 006, 007, 008, 009 are proven by AS-15/17/20, AS-36/37/39, AS-25, AS-40/55/58/61/63, AS-47/51). Never mark them verified.
-- [ ] T090 Record the green run (VII.9) in `quickstart.md` under a "Recorded run" heading (date, commands, counts) and check `Sibling-spec follow-ups` in `gaps.md` still match shipped names/shapes; edit only that section if not.
+- [X] T084 Delete obsolete files (`order-payment.listener.ts`, old `cart.repository.ts`, `checkout-discounts.port.ts` if superseded) and every `issueTokensFor` use in the domain.
+- [X] T085 [P] Static gates from `packages/backend`: `npx tsc --noEmit -p tsconfig.json`, `npx eslint libs/domains/orders`, `pnpm check:boundaries`, `pnpm check:table-ownership` (record output; expect only the S12 remainder), `pnpm check:no-wallclock`, `pnpm check:model-registry`; `(cd ../contracts && npx tsc --noEmit)`; direct-transaction count in `libs/domains/orders` = 0 (baseline 1 in `.tx.baseline`).
+- [X] T086 Run the whole capability once: `$S libs/domains/orders` and `npx jest libs/domains/orders/domain`; then importer suites from T002 and `libs/infrastructure/rate-limit`; fix regressions (5-attempt rule).
+- [X] T087 Gap audit: walk `gaps.md` A1–A43, B (D-6, D-7, D-8, D-10 not paid/S12, D-11, D-12, D-15, D-17), C rows 1–12 (row 2 → S12/CT-2, row 4 flash minimal replacement), D1–D9, E; each is closed by a named task above or recorded as a remainder in `research.md`. Mapping: A1–A4,A9–A14 → T049–T052; A5–A8 → T055–T057; A15 → T020,T042; A16–A23 → T062–T065; A24–A26 → T071–T072,T058; A27,A28 → T041–T042,T036; A29–A31 → T016,T037,T046,T008; A32–A34 → T023,T033,T046,T079; A35,A36 → T004–T006; A37 → T025–T031; A38 → T078; A39 → T038; A40 → T044,T048 and later test tasks; A41 → T010–T015; A42 → T009,T077; A43 → T065,T075.
+- [X] T088 Confirm each follow-up from built specs is met and list it in the final report: S01 (T025 `User` dropped; T039 `RateLimitModule.forRoot()`; T044/T048 session fixture; T051/T058 `Firewall({sensitive:true})`), S05 (T034/T036/T055/T057/T026/T054), S50 (T063, `@RateLimit` metadata + forRoot in kit), S53 (T062, T065).
+- [X] T089 Verify `specs/UNVERIFIED.md` rows for S10 SC-001, SC-003, SC-004 (latency), SC-005 (latency), SC-010 (present, status `not run`) match `quickstart.md` "Ops artifacts"; add any other SC no test proves (none expected: SC-002, 006, 007, 008, 009 are proven by AS-15/17/20, AS-36/37/39, AS-25, AS-40/55/58/61/63, AS-47/51). Never mark them verified.
+- [X] T090 Record the green run (VII.9) in `quickstart.md` under a "Recorded run" heading (date, commands, counts) and check `Sibling-spec follow-ups` in `gaps.md` still match shipped names/shapes; edit only that section if not.
 
 ---
 
@@ -224,3 +224,10 @@
 2. MVP = US1 cart (stop, run `cart`).
 3. Then US2 → US3 (P1 checkout path with the 200/50 race), US4 (payments), then US5, US6, US7.
 4. Phase 10 only once: whole-capability run, gates, gap audit, report (task count, follow-ups met, UNVERIFIED rows).
+
+---
+
+## Phase 11: Convergence
+
+- [X] T140 Accept an optional `refCode` on `POST /checkout` (strict DTO, format validated, persisted on the order, absent code unchanged), starting in `docs/spec/capabilities/S10-cart-checkout.md` and `spec.md`, test first in `checkout.e2e-spec.ts`; W03 then sends it with no change per follow-up (from W02-storefront-discovery / W03-cart-checkout-orders: `getRefCode()`, `checkoutRequestSchema`) (missing)
+- [X] T141 Resolve the seller-stats follow-up (from S05-products / W04 / W07): `GET /api/sellers/me/stats` is role `SELLER` only and unreachable for shop owners; either serve the stats from a shop-scoped, permission-guarded route (seller-insights owns the controller, so record it under `## Sibling-spec follow-ups` in `gaps.md` for that capability and the web) or add the S10 read it needs (`shops/:shopId/orders` aggregate) with a test, and mention the outcome in the report (partial)

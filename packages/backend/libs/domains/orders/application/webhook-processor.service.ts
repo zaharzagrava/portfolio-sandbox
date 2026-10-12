@@ -65,7 +65,11 @@ export class WebhookProcessorService {
     webhookEventCounter.add(1, { result: status.toLowerCase() });
     if (status === 'REJECTED' || status === 'FAILED')
       this.logger.warn(
-        `stripe event ${event.eventId} (${event.type}) ${status}: ${detail}`,
+        `stripe event ${event.eventId} (${event.type}) ${status}: ${detail} orderId=${event.orderId ?? 'none'}`,
+      );
+    else
+      this.logger.log(
+        `stripe event ${event.eventId} (${event.type}) ${status}: ${detail} orderId=${event.orderId ?? 'none'}`,
       );
   }
 

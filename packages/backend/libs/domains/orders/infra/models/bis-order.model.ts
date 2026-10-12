@@ -83,6 +83,10 @@ export default class BisOrder extends Model<BisOrder, Partial<BisOrder>> {
   @Column({ type: DataType.TEXT, allowNull: true })
   declare requestHash: string | null;
 
+  /** The buyer's referral code from checkout (S10 AS-69); `NULL` when none was sent. */
+  @Column({ type: DataType.TEXT, allowNull: true })
+  declare refCode: string | null;
+
   @Column({ type: DataType.DATE, allowNull: true })
   declare reservedUntil: Date | null;
 

@@ -3,8 +3,10 @@ import { InjectConnection } from '@nestjs/sequelize';
 import { QueryTypes } from 'sequelize';
 import { Sequelize } from 'sequelize-typescript';
 import type {
+  ItemSnapshotGap,
   NewOrder,
   OrderItemRecord,
+  OrderListRecord,
   OrderRecord,
   OrderRepository,
 } from '../domain/ports';
@@ -45,6 +47,18 @@ const toRecord = (r: OrderRow): OrderRecord => ({
 });
 
 /**
+ * The buyer's history page. It names only columns of `BisOrder_user_history_v2_idx` and repeats the index's partial
+ * predicate so the plan is an index-only scan with no sort (S10 AS-60).
+ */
+export const USER_HISTORY_PAGE_SQL = `SELECT "id", "status", "total", "currency", "createdAt" FROM "BisOrder"
+  WHERE "userId" = :userId
+    AND NOT ("status" = 'CANCELLED' AND "cancelReason" = 'out_of_stock')
+    AND (CAST(:afterCreatedAt AS timestamptz) IS NULL
+         OR ("createdAt", "id") < (CAST(:afterCreatedAt AS timestamptz), CAST(:afterId AS uuid)))
+  ORDER BY "createdAt" DESC, "id" DESC
+  LIMIT :limit`;
+
+/**
  * `BisOrder` and its owned child rows. Every statement joins the active transaction (CLS). Foreign orders are absent:
  * `findForUser` filters in the statement, never after the read (III.4). Times come from the caller (the injected clock).
  */
@@ -74,8 +88,8 @@ export class SequelizeOrderRepository implements OrderRepository {
     };
     const inserted = await this.select<OrderRow>(
       `INSERT INTO "BisOrder" ("id", "userId", "status", "total", "currency", "idempotencyKey", "requestHash",
-                               "version", "createdAt", "updatedAt")
-       VALUES (:id, :userId, 'PENDING', :total, :currency, :key, :hash, 1, :now, :now)
+                               "refCode", "version", "createdAt", "updatedAt")
+       VALUES (:id, :userId, 'PENDING', :total, :currency, :key, :hash, :refCode, 1, :now, :now)
        ON CONFLICT ("userId", "idempotencyKey") WHERE "idempotencyKey" IS NOT NULL DO NOTHING
        RETURNING ${COLUMNS}`,
       {
@@ -85,6 +99,7 @@ export class SequelizeOrderRepository implements OrderRepository {
         currency: order.currency,
         key: order.idempotencyKey,
         hash: order.requestHash,
+        refCode: order.refCode,
         now: order.now,
       },
     );
@@ -187,23 +202,70 @@ export class SequelizeOrderRepository implements OrderRepository {
     userId: string,
     limit: number,
     after: { createdAt: string; id: string } | null,
-  ): Promise<OrderRecord[]> {
-    const rows = await this.select<OrderRow>(
-      `SELECT ${COLUMNS} FROM "BisOrder"
-       WHERE "userId" = :userId
-         AND ("cancelReason" IS DISTINCT FROM 'out_of_stock')
-         AND (CAST(:afterCreatedAt AS timestamptz) IS NULL
-              OR ("createdAt", "id") < (CAST(:afterCreatedAt AS timestamptz), CAST(:afterId AS uuid)))
-       ORDER BY "createdAt" DESC, "id" DESC
-       LIMIT :limit`,
-      {
-        userId,
-        limit,
-        afterCreatedAt: after?.createdAt ?? null,
-        afterId: after?.id ?? null,
-      },
+  ): Promise<OrderListRecord[]> {
+    const found = await this.select<{
+      id: string;
+      status: OrderStatus;
+      total: string | number;
+      currency: string;
+      createdAt: Date;
+    }>(USER_HISTORY_PAGE_SQL, {
+      userId,
+      limit,
+      afterCreatedAt: after?.createdAt ?? null,
+      afterId: after?.id ?? null,
+    });
+    return found.map((r) => ({
+      id: r.id,
+      status: r.status,
+      totalMinor: safeNumber(r.total),
+      currency: r.currency,
+      createdAt: r.createdAt,
+    }));
+  }
+
+  async itemsMissingSnapshot(limit: number): Promise<ItemSnapshotGap[]> {
+    const found = await this.select<{
+      id: string;
+      productId: string;
+      quantity: number;
+      priceAtPurchase: string | number;
+      title: string | null;
+      lineTotalMinor: string | number | null;
+    }>(
+      `SELECT "id", "productId", "quantity", "priceAtPurchase", "title", "lineTotalMinor" FROM "BisOrderItem"
+       WHERE "title" IS NULL OR "lineTotalMinor" IS NULL ORDER BY "id" LIMIT :limit`,
+      { limit },
     );
-    return rows.map(toRecord);
+    return found.map((r) => ({
+      id: r.id,
+      productId: r.productId,
+      quantity: r.quantity,
+      unitPriceMinor: safeNumber(r.priceAtPurchase),
+      title: r.title,
+      lineTotalMinor:
+        r.lineTotalMinor === null ? null : safeNumber(r.lineTotalMinor),
+    }));
+  }
+
+  async fillItemSnapshot(
+    itemId: string,
+    title: string,
+    lineTotalMinor: number,
+  ): Promise<void> {
+    await this.sequelize.query(
+      `UPDATE "BisOrderItem" SET "title" = COALESCE("title", :title), "lineTotalMinor" = COALESCE("lineTotalMinor", :lineTotalMinor)
+       WHERE "id" = :itemId`,
+      { replacements: { itemId, title, lineTotalMinor } },
+    );
+  }
+
+  async countItemsWithoutShop(): Promise<number> {
+    const [row] = await this.select<{ n: string | number }>(
+      `SELECT count(*) AS "n" FROM "BisOrderItem" WHERE "shopId" IS NULL`,
+      {},
+    );
+    return safeNumber(row?.n ?? 0);
   }
 
   async findByKey(

@@ -28,6 +28,24 @@ export interface OrderRecord {
   createdAt: Date;
 }
 
+export interface ItemSnapshotGap {
+  id: string;
+  productId: string;
+  quantity: number;
+  unitPriceMinor: number;
+  title: string | null;
+  lineTotalMinor: number | null;
+}
+
+/** One row of the buyer's history: only what the covering index holds. */
+export interface OrderListRecord {
+  id: string;
+  status: OrderStatus;
+  totalMinor: number;
+  currency: string;
+  createdAt: Date;
+}
+
 export interface OrderItemRecord {
   productId: string;
   shopId: string | null;
@@ -69,6 +87,7 @@ export interface NewOrder {
   userId: string;
   idempotencyKey: string;
   requestHash: string;
+  refCode: string | null;
   totalMinor: number;
   currency: string;
   now: Date;
@@ -114,14 +133,50 @@ export interface OrderRepository {
     userId: string,
     limit: number,
     after: { createdAt: string; id: string } | null,
-  ): Promise<OrderRecord[]>;
+  ): Promise<OrderListRecord[]>;
+  /** Items that still lack a title or a line total (orders from before the snapshot columns), by id, at most `limit`. */
+  itemsMissingSnapshot(limit: number): Promise<ItemSnapshotGap[]>;
+  /** Fills only what is still empty, so two runs of the backfill agree. */
+  fillItemSnapshot(
+    itemId: string,
+    title: string,
+    lineTotalMinor: number,
+  ): Promise<void>;
+  /** Items without a shop id: reported by the backfill, never guessed. */
+  countItemsWithoutShop(): Promise<number>;
   /** Orders `RESERVED` whose hold ended at or before `now`, oldest first, `FOR UPDATE SKIP LOCKED`. */
   expiredReserved(now: Date, limit: number): Promise<string[]>;
   /** Orders `PENDING` created before `before`, oldest first. */
   stalePending(before: Date, limit: number): Promise<string[]>;
 }
 
+/** A shop's slice of an order as the seller's list shows it. */
+export interface ShopOrderListRecord {
+  id: string;
+  orderId: string;
+  status: ShopOrderStatus;
+  subtotalMinor: number;
+  currency: string;
+  buyerId: string;
+  createdAt: Date;
+}
+
+/** An item line with the shop order it belongs to. */
+export interface OrderLineRecord extends OrderItemRecord {
+  orderId: string;
+  shopOrderId: string;
+}
+
 export interface ShopOrderRepository {
+  /** The shop's slices newest first with the id as tiebreaker, strictly after `after`; every table is filtered by `shopId` in the statement. */
+  pageForShop(
+    shopId: string,
+    status: ShopOrderStatus | null,
+    limit: number,
+    after: { createdAt: string; id: string } | null,
+  ): Promise<ShopOrderListRecord[]>;
+  /** Item lines of the orders in one statement; `shopId` restricts them to one shop's lines. */
+  lines(orderIds: string[], shopId: string | null): Promise<OrderLineRecord[]>;
   forOrder(orderId: string): Promise<ShopOrderRecord[]>;
   setStatus(orderId: string, status: ShopOrderStatus, now: Date): Promise<void>;
 }

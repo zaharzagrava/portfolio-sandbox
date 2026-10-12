@@ -7,10 +7,11 @@ import {
 import { SequelizeModule } from '@nestjs/sequelize';
 import { AuthModule } from '@app/domains/identity';
 import { ProductModule } from '@app/domains/catalog';
+import { TenancyModule } from '@app/domains/tenancy';
 import { IdempotencyModule } from '@app/infrastructure/idempotency';
 import { InboxModule } from '@app/infrastructure/inbox';
 import { RateLimitModule } from '@app/infrastructure/rate-limit';
-import { FlashStockService } from './infra/flash-stock.service';
+import { FlashSaleLegacyModule } from './flash-sale-legacy.module';
 import { OrderService } from './application/order.service';
 import { CartService } from './application/cart.service';
 import { CheckoutService } from './application/checkout.service';
@@ -18,8 +19,8 @@ import { WebhookIntakeService } from './application/webhook-intake.service';
 import { CartCookie } from './api/cart-cookie';
 import { CartController } from './api/cart.controller';
 import { CheckoutController } from './api/checkout.controller';
-import { FlashSaleController } from './api/flash-sale.controller';
 import { OrdersController } from './api/orders.controller';
+import { ShopOrdersController } from './api/shop-orders.controller';
 import { EmptyBodyMiddleware } from './api/empty-body.middleware';
 import { StripeWebhookController } from './api/stripe-webhook.controller';
 import { WebhookRawBodyMiddleware } from './api/webhook-raw-body.middleware';
@@ -35,26 +36,27 @@ export { ORDER_MODELS } from './orders-models';
     OrdersCoreModule,
     AuthModule,
     ProductModule,
+    TenancyModule,
     IdempotencyModule,
     InboxModule,
+    FlashSaleLegacyModule,
     RateLimitModule.forFeature(ordersRatePolicies),
     SequelizeModule.forFeature(ORDER_MODELS),
   ],
   providers: [
-    FlashStockService,
     OrderService,
     CartService,
     CartCookie,
     CheckoutService,
     WebhookIntakeService,
   ],
-  exports: [OrdersCoreModule, OrderService, FlashStockService],
+  exports: [OrdersCoreModule, OrderService, FlashSaleLegacyModule],
   controllers: [
     CartController,
     CheckoutController,
     OrdersController,
+    ShopOrdersController,
     StripeWebhookController,
-    FlashSaleController,
   ],
 })
 export class OrdersModule implements NestModule {

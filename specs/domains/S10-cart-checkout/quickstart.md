@@ -55,3 +55,18 @@ These are not verified. Each has a row in [`specs/UNVERIFIED.md`](../../UNVERIFI
 | SC-004 (latency part) | 99% of cart operations under 50 ms | Same k6 harness, `GET /cart` and `PUT /cart/items/:id` at 500 req/s; the "zero relational access" half **is** proven by AS-01. |
 | SC-005 (latency part) | 99% of genuine webhooks acknowledged under 1 s | k6 posting signed events at 100 req/s with the test secret; p99 of the `200`. Signature, tamper and duplicate behaviour **is** proven by AS-42, AS-43, AS-53. |
 | SC-010 | `check:table-ownership --strict` shows 0 findings for `orders` | Run it after S12 replaces the `Product` join in `order-export.service.ts`; until then the output lists exactly that one remainder (AS-68 asserts every other finding is gone). |
+
+## Recorded run
+
+Implementation pass 2, 2026-10-12, from `packages/backend` (VII.9). The four SC rows above stay "not run".
+
+| Command | Result |
+|---|---|
+| `test-spec.sh libs/domains/orders` | 11 suites, 109 tests green: cart, checkout, checkout-stock, payment-webhook, payment-events, payment-status-adapter, order-lifecycle (13), order-read (14), order-events (8), orders-boundary (9), flash-sale-legacy (3) |
+| `pnpm test libs/domains/orders` (unit) | 8 suites, 157 tests green |
+| Importer suites (`catalog-sync`, `auctions`, `notifications`, `experimentation`, `developer-platform`, `discovery`, `seller-insights`, `payments`, `shop-functions`, `asset-library`, `infrastructure/rate-limit`, `infrastructure/inbox`) | 59 of 61 suites green. `experimentation/analytics` fails as in the baseline (ClickHouse DDL, `research.md` "Baseline"). `discovery/recommendations-read` AS-08 (601st request on the shared limiter) failed once in the parallel run and passes alone (12/12) |
+| `npx tsc --noEmit -p tsconfig.json` | clean (`packages/contracts` has no tsconfig of its own; the backend compile covers it) |
+| `pnpm exec eslint libs/domains/orders libs/infrastructure/inbox` | 0 errors, 131 warnings (unsafe `any` on supertest bodies in specs) |
+| `pnpm check:boundaries`, `check:no-wallclock`, `check:model-registry` | green |
+| `pnpm check:table-ownership` | `orders`: 1 finding, the S12 `order-export.service.ts` `Product` join |
+| Direct `sequelize.transaction` in `libs/domains/orders` | 0 (baseline 1) |

@@ -274,4 +274,105 @@ describe('Orders: state machine, cancel and fulfilment commands', () => {
     expect((await orderRow(t.app, order.id)).version).toBe(1);
     // (the single history row is the creation row)
   });
+
+  describe('AS-55: cancel at the API', () => {
+    const paths: Array<[string, Array<Record<string, unknown>>]> = [
+      ['PAID', [{ type: 'markPaid', paymentRef: 'pi_x' }]],
+      [
+        'FULFILLING',
+        [{ type: 'markPaid', paymentRef: 'pi_x' }, { type: 'startFulfilment' }],
+      ],
+      [
+        'SHIPPED',
+        [
+          { type: 'markPaid', paymentRef: 'pi_x' },
+          { type: 'startFulfilment' },
+          { type: 'ship', trackingCode: 'T' },
+        ],
+      ],
+      [
+        'DELIVERED',
+        [
+          { type: 'markPaid', paymentRef: 'pi_x' },
+          { type: 'startFulfilment' },
+          { type: 'ship', trackingCode: 'T' },
+          { type: 'deliver' },
+        ],
+      ],
+      [
+        'REFUNDED',
+        [
+          { type: 'markPaid', paymentRef: 'pi_x' },
+          { type: 'refund', reason: 'full' },
+        ],
+      ],
+    ];
+
+    it.each(paths)(
+      'S10 AS-55: cancel on a %s order is 409 order_not_cancellable with currentStatus and changes nothing',
+      async (status, commands) => {
+        const { buyer, order } = await pendingOrder();
+        await lifecycle.transition(
+          order.id,
+          { type: 'reserve' },
+          { actor: 'system', reservedUntil: hold() },
+        );
+        for (const command of commands) {
+          const r = await lifecycle.transition(order.id, command as never, {
+            actor: 'system',
+          });
+          expect(r.kind).toBe('applied');
+        }
+        const before = await orderRow(t.app, order.id);
+        const history = await historyOf(t.app, order.id);
+        const res = await t.as(buyer).post(`/api/orders/${order.id}/cancel`);
+        expect(res.status).toBe(409);
+        expect(res.body.code).toBe('order_not_cancellable');
+        expect(res.body.currentStatus).toBe(status);
+        expect(await orderRow(t.app, order.id)).toEqual(before);
+        expect(await historyOf(t.app, order.id)).toHaveLength(history.length);
+      },
+    );
+
+    it('S10 AS-55: cancelling a CANCELLED order is 200, unchanged, with no second event', async () => {
+      const { buyer, order } = await pendingOrder();
+      await lifecycle.transition(
+        order.id,
+        { type: 'reserve' },
+        { actor: 'system', reservedUntil: hold() },
+      );
+      const first = await t.as(buyer).post(`/api/orders/${order.id}/cancel`);
+      expect(first.status).toBe(200);
+      const before = await orderRow(t.app, order.id);
+      const events = (await outboxRowsFor(t.app, order.id)).length;
+      const again = await t.as(buyer).post(`/api/orders/${order.id}/cancel`);
+      expect(again.status).toBe(200);
+      expect(again.body.status).toBe('CANCELLED');
+      expect(await orderRow(t.app, order.id)).toEqual(before);
+      expect((await outboxRowsFor(t.app, order.id)).length).toBe(events);
+    });
+
+    it('S10 AS-55: an unknown and another buyer’s order are the same 404; a bad id is 400; no token is 401', async () => {
+      const { order } = await pendingOrder();
+      const other = await t.newUser();
+      const foreign = await t.as(other).post(`/api/orders/${order.id}/cancel`);
+      const unknown = await t
+        .as(other)
+        .post('/api/orders/0194f3a0-0000-7000-8000-00000000dead/cancel');
+      expect(foreign.status).toBe(404);
+      expect(unknown.status).toBe(404);
+      const stable = ({
+        instance,
+        requestId,
+        ...rest
+      }: Record<string, unknown>) => rest;
+      expect(stable(foreign.body)).toEqual(stable(unknown.body));
+      expect((await t.as(other).post('/api/orders/nope/cancel')).status).toBe(
+        400,
+      );
+      expect(
+        (await t.http().post(`/api/orders/${order.id}/cancel`)).status,
+      ).toBe(401);
+    });
+  });
 });

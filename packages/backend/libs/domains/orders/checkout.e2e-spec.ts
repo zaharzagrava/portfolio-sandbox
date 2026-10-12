@@ -254,6 +254,50 @@ describe('Checkout: idempotency, validation, pricing and split', () => {
       expect(await orderCount(extra)).toBe(0);
     });
 
+    it('S10 AS-69: refCode is stored on the order; absent stays empty; malformed codes are 400 with no order; the same key with another code is 422', async () => {
+      const { a } = await standard();
+      const refOf = async (orderId: string) =>
+        (
+          await rows<{ refCode: string | null }>(
+            t.app,
+            `SELECT "refCode" FROM "BisOrder" WHERE "id" = :id`,
+            { id: orderId },
+          )
+        )[0].refCode;
+
+      const user = await t.newUser();
+      await addToCart(user, a, 1);
+      const key = newKey();
+      const coded = await checkout(user, key, { refCode: 'friend-42' });
+      expect(coded.status).toBe(202);
+      expect(await refOf(coded.body.orderId)).toBe('friend-42');
+
+      const reused = await checkout(user, key, { refCode: 'other-code' });
+      expect(reused.status).toBe(422);
+      expect(reused.body.code).toBe('idempotency_key_reuse');
+
+      const plain = await t.newUser();
+      await addToCart(plain, a, 1);
+      const served = await checkout(plain, newKey());
+      expect(served.status).toBe(202);
+      expect(await refOf(served.body.orderId)).toBeNull();
+
+      const bad = await t.newUser();
+      await addToCart(bad, a, 1);
+      for (const refCode of [
+        'ab',
+        'x'.repeat(65),
+        'has space',
+        'semi;colon',
+        7,
+      ]) {
+        const res = await checkout(bad, newKey(), { refCode });
+        expect(res.status).toBe(400);
+        expect(res.body.code).toBe('validation_failed');
+      }
+      expect(await orderCount(bad)).toBe(0);
+    });
+
     it('S10 AS-15: the same key and body after the order became PAID replays the original answer byte for byte; nothing is created; the new cart line stays', async () => {
       const { a, b } = await standard();
       const user = await t.newUser();
@@ -571,10 +615,11 @@ describe('Checkout: idempotency, validation, pricing and split', () => {
       expect(items.every((i) => i.shopId !== null)).toBe(true);
 
       const shopless = await seedShopWithProducts(t.app, [{ currency: 'EUR' }]);
+      // "a product without a shop" cannot exist any more (shopId is NOT NULL, S05): the shop is unknown to tenancy instead
       await exec(
         t.app,
-        `UPDATE "Product" SET "shopId" = NULL WHERE "id" = :id`,
-        { id: shopless.products[0].id },
+        `UPDATE "Product" SET "shopId" = :unknown WHERE "id" = :id`,
+        { id: shopless.products[0].id, unknown: randomUUID() },
       );
       const other = await t.newUser();
       await addToCart(other, shopless.products[0], 1);

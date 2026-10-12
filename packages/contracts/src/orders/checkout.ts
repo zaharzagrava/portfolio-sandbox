@@ -1,7 +1,13 @@
 import { z } from 'zod';
 
 export const checkoutRequestSchema = z
-  .object({ expectedTotalMinor: z.number().int().min(0).optional() })
+  .object({
+    expectedTotalMinor: z.number().int().min(0).optional(),
+    refCode: z
+      .string()
+      .regex(/^[A-Za-z0-9_-]{3,64}$/)
+      .optional(),
+  })
   .strict();
 export type CheckoutRequest = z.infer<typeof checkoutRequestSchema>;
 

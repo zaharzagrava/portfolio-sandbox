@@ -1,7 +1,9 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
+import { SHOP_ORDER_STATUSES } from '@marketplace-sandbox/contracts';
 import {
   IsDateString,
+  IsIn,
   IsInt,
   IsOptional,
   IsString,
@@ -59,4 +61,11 @@ export class ListOrdersQueryDto {
   @IsOptional()
   @IsString()
   cursor?: string;
+}
+
+export class ListShopOrdersQueryDto extends ListOrdersQueryDto {
+  @ApiProperty({ required: false, enum: SHOP_ORDER_STATUSES })
+  @IsOptional()
+  @IsIn(SHOP_ORDER_STATUSES)
+  status?: (typeof SHOP_ORDER_STATUSES)[number];
 }

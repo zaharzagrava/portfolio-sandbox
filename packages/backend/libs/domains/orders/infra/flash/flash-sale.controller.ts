@@ -11,10 +11,10 @@ import { InjectModel } from '@nestjs/sequelize';
 import { ShopScoped } from '@app/domains/tenancy';
 import { ProductQueryService } from '@app/domains/catalog';
 import { JobsService } from '@app/infrastructure/jobs/jobs.service';
-import FlashSale from '../infra/models/flash-sale.model';
-import { CreateFlashSaleDto } from './orders.dto';
+import { CreateFlashSaleDto } from '../../api/orders.dto';
+import FlashSale from './flash-sale.model';
 
-import '../application/order.job-types';
+import '../../application/order.job-types';
 
 /** Legacy flash-sale scheduling, served until S11 replaces flash sales (research D-9). Not part of the S10 contract. */
 @ApiTags('orders')

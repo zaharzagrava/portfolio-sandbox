@@ -494,6 +494,9 @@ describe('Payment webhook: signature, dedupe, async processing and out-of-order 
       await run('evt_47late');
       expect((await orderRow(t.app, late.orderId)).status).toBe('CANCELLED');
       expect((await inbox('evt_47late'))[0].status).toBe('PROCESSED');
+      expect(
+        MetricsRegistry.value('orders_paid_after_cancel_total'),
+      ).toBeGreaterThanOrEqual(1);
       let tasks = await refundTasks(late.orderId);
       expect(tasks).toHaveLength(1);
       expect(tasks[0].type).toBe('orders.refund_requested');

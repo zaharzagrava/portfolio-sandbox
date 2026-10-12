@@ -3,9 +3,8 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { InjectConnection, InjectModel } from '@nestjs/sequelize';
+import { InjectConnection } from '@nestjs/sequelize';
 import { QueryTypes, Sequelize, Transaction } from 'sequelize';
-import BisOrder from '../infra/models/bis-order.model';
 import {
   OrderCommand,
   OrderStatus,
@@ -19,10 +18,7 @@ import {
  */
 @Injectable()
 export class OrderService {
-  constructor(
-    @InjectModel(BisOrder) private readonly orderModel: typeof BisOrder,
-    @InjectConnection() private readonly sequelize: Sequelize,
-  ) {}
+  constructor(@InjectConnection() private readonly sequelize: Sequelize) {}
 
   /** Returns the new version, or null if the order is already in the target state (idempotent no-op). */
   async transition(
@@ -49,10 +45,10 @@ export class OrderService {
     );
 
     if (rows.length === 0) {
-      const current = await this.orderModel.findByPk(orderId, {
-        transaction,
-        attributes: ['status'],
-      });
+      const [current] = await this.sequelize.query<{ status: OrderStatus }>(
+        `SELECT "status" FROM "BisOrder" WHERE "id" = :orderId`,
+        { type: QueryTypes.SELECT, replacements: { orderId }, transaction },
+      );
       if (!current) throw new NotFoundException(`Order ${orderId} not found`);
       if (current.status === to) return null;
       throw new ConflictException(

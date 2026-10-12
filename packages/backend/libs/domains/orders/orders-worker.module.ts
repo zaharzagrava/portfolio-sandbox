@@ -1,8 +1,7 @@
 import { Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { ProjectionsModule } from '@app/infrastructure/projections/projections.module';
-import { FlashStockService } from './infra/flash-stock.service';
-import { FlashSaleJobs } from './infra/flash-sale.jobs';
+import { FlashSaleLegacyJobsModule } from './flash-sale-legacy.module';
 import { OrderJobs } from './infra/order.jobs';
 import { PaymentsEventsConsumer } from './infra/payments-events.consumer';
 import { ORDER_MODELS } from './orders-models';
@@ -10,8 +9,12 @@ import { OrdersCoreModule } from './orders-core.module';
 
 /** The job handlers: hold expiry, sweeper, recovery, release, cart clean-up, webhook processing, flash-sale lifecycle. */
 @Module({
-  imports: [OrdersCoreModule, SequelizeModule.forFeature(ORDER_MODELS)],
-  providers: [FlashStockService, FlashSaleJobs, OrderJobs],
+  imports: [
+    OrdersCoreModule,
+    FlashSaleLegacyJobsModule,
+    SequelizeModule.forFeature(ORDER_MODELS),
+  ],
+  providers: [OrderJobs],
 })
 export class OrdersJobsModule {}
 

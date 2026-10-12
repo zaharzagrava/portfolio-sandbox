@@ -137,6 +137,21 @@ export class CheckoutUnavailableError extends AppError {
   }
 }
 
+/** A state change of an order could not be committed (for example its event could not be written): nothing changed, retry. */
+export class OrderUnavailableError extends AppError {
+  constructor() {
+    super(
+      domainError(
+        HttpStatus.SERVICE_UNAVAILABLE,
+        'order_unavailable',
+        'Service Unavailable',
+        'The order could not be changed right now; nothing was changed, retry.',
+        { area: ErrorArea.TRANSIENT, retryAfterSeconds: 1 },
+      ),
+    );
+  }
+}
+
 export class CartUnavailableError extends AppError {
   constructor() {
     super(

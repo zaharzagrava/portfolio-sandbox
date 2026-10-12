@@ -57,6 +57,12 @@ export const ORDERS_PROBLEMS: ProblemCatalogEntry[] = [
     'Checkout is temporarily unavailable; retry.',
   ),
   entry(
+    'order_unavailable',
+    503,
+    'Service Unavailable',
+    'The order could not be changed right now; nothing was changed, retry.',
+  ),
+  entry(
     'cart_unavailable',
     503,
     'Service Unavailable',

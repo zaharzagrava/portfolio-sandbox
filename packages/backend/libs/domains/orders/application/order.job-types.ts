@@ -36,6 +36,8 @@ declare module '@app/infrastructure/jobs/job-types' {
     'orders.release-stock': Record<string, never>;
     'orders.clear-cart': z.infer<typeof clearCartPayloadSchema>;
     'orders.process-webhook': ProcessWebhookPayload;
+    'orders.purge-webhook-inbox': Record<string, never>;
+    'orders.backfill-item-titles': Record<string, never>;
     'flash-sale.start': { saleId: string };
     'flash-sale.end': { saleId: string };
     'flash-sale.reconcile': { saleId: string };
@@ -61,6 +63,14 @@ declareJobType({
   name: 'orders.process-webhook',
   contract: processWebhookPayloadSchema,
   maxAttempts: 8,
+});
+declareJobType({
+  name: 'orders.purge-webhook-inbox',
+  contract: z.object({}),
+});
+declareJobType({
+  name: 'orders.backfill-item-titles',
+  contract: z.object({}),
 });
 declareJobType({
   name: 'flash-sale.start',

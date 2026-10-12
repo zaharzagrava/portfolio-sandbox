@@ -106,3 +106,5 @@ export const shopOrderPageSchema = z
     nextCursor: z.string().nullable(),
   })
   .strict();
+
+export type ShopOrderPageDto = z.infer<typeof shopOrderPageSchema>;

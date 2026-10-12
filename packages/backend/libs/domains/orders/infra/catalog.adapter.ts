@@ -3,7 +3,7 @@ import { ApiConfigService } from '@app/common/config';
 import { ProductQueryService } from '@app/domains/catalog';
 import type { CatalogProduct, ProductCatalogPort } from '../domain/ports';
 import { UpstreamUnavailableError } from '../domain/order-errors';
-import { withTimeout } from './with-timeout';
+import { withTimeout } from '../domain/with-timeout';
 
 /** Prices, currency, status, shop and sandbox flag of the cart's products in one batched read (S05 R1). */
 @Injectable()

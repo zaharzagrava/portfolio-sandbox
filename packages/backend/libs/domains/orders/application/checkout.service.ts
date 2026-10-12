@@ -44,7 +44,7 @@ import {
 } from '../domain/order-metrics';
 import { priceCart, type PricedCart } from '../domain/money-allocation';
 import { userCartId } from '../domain/guest-cart-token';
-import { withTimeout } from '../infra/with-timeout';
+import { withTimeout } from '../domain/with-timeout';
 import { OrderReservationService } from './order-reservation.service';
 
 import './order.job-types';
@@ -211,6 +211,7 @@ export class CheckoutService {
         userId,
         idempotencyKey,
         requestHash,
+        refCode: request.refCode ?? null,
         totalMinor: priced.totalMinor,
         currency,
         now,
@@ -262,6 +263,7 @@ export class CheckoutService {
 
     await this.consumeCart(cartId, consumed, orderId, now);
     checkoutCounter.add(1, { outcome: 'reserved' satisfies Outcome });
+    this.logger.log(`order ${orderId}: checkout reserved`);
     return this.answer(outcome.order);
   }
 
@@ -293,10 +295,11 @@ export class CheckoutService {
   }
 
   private hashOf(request: CheckoutRequest): string {
-    const canonical =
-      request.expectedTotalMinor === undefined
-        ? '{}'
-        : JSON.stringify({ expectedTotalMinor: request.expectedTotalMinor });
+    const fingerprint: Record<string, unknown> = {};
+    if (request.expectedTotalMinor !== undefined)
+      fingerprint.expectedTotalMinor = request.expectedTotalMinor;
+    if (request.refCode !== undefined) fingerprint.refCode = request.refCode;
+    const canonical = JSON.stringify(fingerprint);
     return createHash('sha256').update(canonical).digest('hex');
   }
 

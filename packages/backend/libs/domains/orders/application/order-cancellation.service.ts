@@ -1,9 +1,11 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type { OrderDto } from '@marketplace-sandbox/contracts';
 import { ORDER_REPOSITORY, type OrderRepository } from '../domain/ports';
+import { AppError } from '@app/common/errors';
 import {
   OrderNotCancellableError,
   OrderNotFoundError,
+  OrderUnavailableError,
 } from '../domain/order-errors';
 import { OrderLifecycleService } from './order-lifecycle.service';
 import { OrderQueryService } from './order-query.service';
@@ -24,11 +26,17 @@ export class OrderCancellationService {
   async cancel(orderId: string, userId: string): Promise<OrderDto> {
     const order = await this.orders.findForUser(orderId, userId);
     if (!order) throw new OrderNotFoundError();
-    const result = await this.lifecycle.transition(
-      orderId,
-      { type: 'cancel', reason: 'user_cancelled' },
-      { actor: `user:${userId}` },
-    );
+    // Anything that stops the move (the event could not be appended, the database failed) rolled it back whole.
+    const result = await this.lifecycle
+      .transition(
+        orderId,
+        { type: 'cancel', reason: 'user_cancelled' },
+        { actor: `user:${userId}` },
+      )
+      .catch((error: unknown) => {
+        if (error instanceof AppError) throw error;
+        throw new OrderUnavailableError();
+      });
     switch (result.kind) {
       case 'applied':
       case 'already_applied':

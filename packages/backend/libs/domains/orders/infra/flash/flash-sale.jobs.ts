@@ -2,16 +2,16 @@ import { metrics } from '@opentelemetry/api';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { InjectConnection, InjectModel } from '@nestjs/sequelize';
 import { QueryTypes, Sequelize } from 'sequelize';
-import FlashSale from './models/flash-sale.model';
+import FlashSale from './flash-sale.model';
 import { CLOCK, type Clock } from '@app/common/core/clock';
 import { ApiConfigService } from '@app/common/config';
-import { TransactionRunner } from '@app/infrastructure/context';
+import { ProductStockService } from '@app/domains/catalog';
 import { JobHandler } from '@app/infrastructure/jobs/job-handler.decorator';
 import { JobsService } from '@app/infrastructure/jobs/jobs.service';
 import { NonRetryableJobError } from '@app/infrastructure/jobs/job-types';
 import { FlashStockService } from './flash-stock.service';
 
-import '../application/order.job-types';
+import '../../application/order.job-types';
 
 /**
  * Flash-sale lifecycle (legacy, parked until S11 replaces flash sales): moves a drop's units out of the catalog's stock
@@ -26,7 +26,7 @@ export class FlashSaleJobs {
     @InjectConnection() private readonly sequelize: Sequelize,
     private readonly flash: FlashStockService,
     private readonly jobs: JobsService,
-    private readonly tx: TransactionRunner,
+    private readonly stock: ProductStockService,
     private readonly config: ApiConfigService,
     @Inject(CLOCK) private readonly clock: Clock,
   ) {}
@@ -36,12 +36,20 @@ export class FlashSaleJobs {
   async start({ saleId }: { saleId: string }) {
     const sale = await this.saleModel.findByPk(saleId);
     if (!sale || sale.status !== 'SCHEDULED') return;
+    if (!sale.shopId)
+      throw new NonRetryableJobError(`flash sale ${saleId} has no shop`);
 
-    const [rows] = await this.sequelize.query(
-      `UPDATE "Product" SET quantity = quantity - :units, version = version + 1 WHERE id = :productId AND quantity >= :units RETURNING id`,
-      { replacements: { units: sale.units, productId: sale.productId } },
-    );
-    if (rows.length === 0)
+    // The catalog owns stock: one idempotent operation moves the units out (a retry replays, never subtracts twice).
+    const loaded = await this.stock.applyStockDelta([
+      {
+        operationId: `orders:flash:${saleId}:load`,
+        productId: sale.productId,
+        shopId: sale.shopId,
+        delta: -sale.units,
+        reason: 'flash_sale.load',
+      },
+    ]);
+    if (loaded.outcome === 'rejected')
       throw new NonRetryableJobError(
         `not enough stock to start flash sale ${saleId}`,
       );
@@ -95,6 +103,8 @@ export class FlashSaleJobs {
   async reconcile({ saleId }: { saleId: string }) {
     const sale = await this.saleModel.findByPk(saleId);
     if (!sale || sale.status !== 'ENDED') return;
+    if (!sale.shopId)
+      throw new NonRetryableJobError(`flash sale ${saleId} has no shop`);
 
     const [{ held, sold }] = await this.sequelize.query<{
       held: number;
@@ -122,15 +132,22 @@ export class FlashSaleJobs {
       });
     }
 
-    await this.tx.run(async (transaction) => {
-      await this.sequelize.query(
-        `UPDATE "Product" SET quantity = quantity + :unsold, version = version + 1 WHERE id = :productId`,
+    // Returned through the catalog under a fixed operation id: a retry after a crash replays instead of adding twice.
+    if (unsold > 0) {
+      const returned = await this.stock.applyStockDelta([
         {
-          replacements: { unsold, productId: sale.productId },
-          transaction,
+          operationId: `orders:flash:${saleId}:return`,
+          productId: sale.productId,
+          shopId: sale.shopId,
+          delta: unsold,
+          reason: 'flash_sale.return',
         },
-      );
-      await sale.update({ status: 'RECONCILED' }, { transaction });
-    });
+      ]);
+      if (returned.outcome === 'rejected')
+        throw new Error(
+          `stock of flash sale ${saleId} could not be returned (${returned.failures[0]?.code}); retrying later`,
+        );
+    }
+    await sale.update({ status: 'RECONCILED' });
   }
 }

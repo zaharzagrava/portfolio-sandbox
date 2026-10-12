@@ -30,6 +30,7 @@ export class CheckoutController {
       idempotencyKey,
       {
         expectedTotalMinor: body.expectedTotalMinor,
+        refCode: body.refCode,
       },
     );
     res.setHeader('Location', `/api/orders/${result.orderId}`);

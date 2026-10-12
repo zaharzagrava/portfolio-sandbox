@@ -89,4 +89,5 @@ Constitution VII.8 table: one row per acceptance scenario in [`spec.md`](spec.md
 | AS-65 realtime is best effort | `order-events.e2e-spec.ts`: hub down → transition and events commit, failure logged and counted, `GET` shows new status | — | — |
 | AS-66 observability | `order-events.e2e-spec.ts`: captured logs have `requestId`/`traceId`, `orderId`, none of body, signature, secret, cookie, authorization, key; metrics exist | — | — |
 | AS-67 jobs | `order-events.e2e-spec.ts`: each job twice and on two instances → one effect; inbox purge at 35 d + 1 s removes, at 35 d keeps | — | — |
+| AS-69 referral code | `checkout.e2e-spec.ts`: valid code stored on the order; absent code null; malformed codes 400 with no order; same key with another code 422 `idempotency_key_reuse` | — | — |
 | AS-68 boundaries (static) | static gates: `check:table-ownership --strict` 0 findings for `orders`, `check:boundaries` green, barrel has no `*Model`, no associations to foreign models, ownership registry complete | — | — |

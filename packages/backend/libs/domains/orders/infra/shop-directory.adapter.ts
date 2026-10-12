@@ -3,7 +3,7 @@ import { ApiConfigService } from '@app/common/config';
 import { ShopQueryService } from '@app/domains/tenancy';
 import type { ShopDirectoryPort, ShopSummary } from '../domain/ports';
 import { UpstreamUnavailableError } from '../domain/order-errors';
-import { withTimeout } from './with-timeout';
+import { withTimeout } from '../domain/with-timeout';
 
 const MAX_SHOPS_PER_CALL = 50;
 

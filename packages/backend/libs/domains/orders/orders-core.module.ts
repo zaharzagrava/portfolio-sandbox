@@ -32,6 +32,7 @@ import { OrderFulfilmentService } from './application/order-fulfilment.service';
 import { OrderCancellationService } from './application/order-cancellation.service';
 import { OrderLifecycleService } from './application/order-lifecycle.service';
 import { OrderQueryService } from './application/order-query.service';
+import { ItemBackfillService } from './application/item-backfill.service';
 import { OrderReservationService } from './application/order-reservation.service';
 import { PaymentResultService } from './application/payment-result.service';
 import { WebhookProcessorService } from './application/webhook-processor.service';
@@ -100,6 +101,7 @@ import { SequelizeShopOrderRepository } from './infra/shop-order.repository';
     OrderCancellationService,
     PaymentResultService,
     WebhookProcessorService,
+    ItemBackfillService,
   ],
   exports: [
     InboxModule,
@@ -127,6 +129,7 @@ import { SequelizeShopOrderRepository } from './infra/shop-order.repository';
     OrderCancellationService,
     PaymentResultService,
     WebhookProcessorService,
+    ItemBackfillService,
   ],
 })
 export class OrdersCoreModule {}

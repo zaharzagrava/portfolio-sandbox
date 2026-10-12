@@ -4,7 +4,7 @@ import { ApiConfigService } from '@app/common/config';
 import { RedisService } from '@app/infrastructure/redis/redis.service';
 import type { CheckoutLock } from '../domain/ports';
 import { CheckoutUnavailableError } from '../domain/order-errors';
-import { withTimeout } from './with-timeout';
+import { withTimeout } from '../domain/with-timeout';
 
 const LOCK_TTL_MS = 15_000;
 /** Deletes the key only when it still holds our token (a lock that expired and was retaken is not ours). */

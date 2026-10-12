@@ -123,16 +123,20 @@ export class InboxService {
     return rows.length === 1;
   }
 
-  /** Deletes one batch (at most 1 000) of terminal rows handled before `olderThan`; `RECEIVED` and `FAILED` stay. */
-  async purge(olderThan: Date): Promise<number> {
+  /** Deletes one batch (at most 1 000) of terminal rows handled before `olderThan` (only those of `source` when given); `RECEIVED` and `FAILED` stay. */
+  async purge(olderThan: Date, source?: string): Promise<number> {
     return this.runner.run(async (transaction) => {
       const [rows] = await this.sequelize.query(
         `DELETE FROM ${TABLE} WHERE ctid IN (
            SELECT ctid FROM ${TABLE}
            WHERE "status" = ANY($1::text[]) AND COALESCE("handledAt", "processedAt") < $2
+             AND ($4::text IS NULL OR "provider" = $4::text)
            LIMIT $3
          ) RETURNING 1`,
-        { bind: [TERMINAL, olderThan, INBOX_PURGE_BATCH], transaction },
+        {
+          bind: [TERMINAL, olderThan, INBOX_PURGE_BATCH, source ?? null],
+          transaction,
+        },
       );
       return rows.length;
     });
