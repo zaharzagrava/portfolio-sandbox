@@ -34,8 +34,8 @@ with the links that prove it: backticked file paths and commit hashes. For a `pr
 - **Rule:** Every queue the code names must be defined in `elasticmq.conf`, and readiness must fail while a consumed queue is missing.
 - **Symptom:** the same stuck payment. **Cause:** `payments-charge`, `orders-refund-requested`, `tenancy-invite-requested` were missing from `elasticmq.conf`; the only
   signal was a repeated log line while `/health/ready` said ready.
-- **Fixed by** `6886cde`. **Prevention missing:** a check that every queue the code names is defined in the infrastructure file, and a readiness check that fails
-  while a consumed queue is missing (roadmap: "the infrastructure doctor").
+- **Fixed by** `6886cde`. **Prevention missing:** the static check exists (`scripts/infra/doctor.py`, tested in `scripts/infra/test_doctor.py`) but is not run by the gate or the
+  checkpoint yet; a readiness check that fails while a consumed queue is missing is still to be built (roadmap: "the infrastructure doctor").
 
 ## L-003 A test that passes whether or not the feature works
 - **Rule:** A test must be able to fail: never assert "A or B" where one branch means the feature does not work; report an environment limit as blocked.
@@ -88,7 +88,8 @@ with the links that prove it: backticked file paths and commit hashes. For a `pr
 ## L-011 Missing database tables in the test stack
 - **Rule:** Every table, keyspace and bucket the code needs must exist in the test stack; compare them with the doctor.
 - **Symptom:** assistant and notification suites failed with "unconfigured table". **Cause:** the test-stack migration created Postgres and Dynamo, not the Cassandra
-  schema. **Fixed by** `6266d1f`. **Prevention missing:** the doctor (L-002) should list the tables and keyspaces the code needs and compare.
+  schema. **Fixed by** `6266d1f`. **Prevention missing:** the doctor lists the tables the code needs and compares them with the migration files (`scripts/infra/doctor.py`),
+  but not with what a test stack actually applied, and it is not run by the gate yet.
 
 ## L-012 A fix verified on a warm environment
 - **Rule:** Verify a fix on a fresh stack (`scripts/qa/fresh-run.sh`), not on a warm one: the failing environment starts empty.

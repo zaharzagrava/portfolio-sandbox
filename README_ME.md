@@ -283,6 +283,21 @@ python3 scripts/sdd/failures.py digest specs/.checkpoints/buy-ui.log --label buy
 - A gate or checkpoint that passes after repairs that changed no code is a flake: its failing tests are written under "Flaky tests" in the spec's `gaps.md`
   (checkpoint: `specs/.checkpoints/<label>.flakes.md`) and named in the final notification.
 
+### Infrastructure doctor, static half (`scripts/infra/doctor.py`)
+
+Every queue, topic, bucket and table the backend code names, checked against what the local stack defines (`elasticmq.conf`, the compose files, the Kafka topic script,
+the migrations, `dynamodb/*.json`, `cql/*.cql`). It reads files only: no Docker needed. Exit 1 and a `MISSING` line when something is not defined.
+
+```sh
+python3 scripts/infra/doctor.py                    # every item, OK or MISSING
+python3 scripts/infra/doctor.py --missing-only     # only the problems and the counts
+python3 scripts/infra/doctor.py --only queues,topics   # kinds: queues, topics, buckets, tables
+python3 scripts/infra/test_doctor.py               # its tests (19), including a fixture where one queue is missing
+```
+
+- What it finds today and what it cannot see: runbook, "The infrastructure doctor (static half)". It exits 1 on this repository (23 topics that nothing creates), so it is not part of the gate yet.
+- A new queue, topic, bucket or table needs a definition in the stack file named in the `MISSING` line; the doctor only reads, it never fixes.
+
 ## Developer tooling
 
 Three things live next to the code: an Obsidian vault over the repo, a generated codebase map, and the spec-driven

@@ -355,6 +355,36 @@ What the loop measures, so that a change to a prompt or a limit can be judged by
 - **Not recorded yet:** the runner's machine type, hours and peak memory, and tasks closed per pass (the loop only knows how many are open). The QA agent's hits and misses go into
   the same log once that agent exists.
 
+## The infrastructure doctor (static half)
+
+`python3 scripts/infra/doctor.py` lists every queue, topic, bucket and table that the backend code names and checks each against what the local stack defines. It only
+reads files: no Docker, no network. Exit 1 and a `MISSING` line (with the place that uses the item and the place that should define it) when something is not defined.
+
+- **Queues:** names found in `packages/backend/libs` and `apps` (constants named like `*_QUEUE`, `queue: '...'`, `.enqueue/.consume('...')`, the notification queue map) against
+  `infra/docker/elasticmq/elasticmq.conf`; every queue also needs its dead-letter queue (`<name>-dlq`, `<name>-dlq.fifo`); both compose files must mount the conf.
+- **Topics:** `<aggregateType>.events` from `defineEvent(..., 'aggregate', ...)`, topic registrations and `aggregateType:` literals, plus literal topic strings, against
+  `packages/backend/scripts/init-kafka-topics.sh` and `rpk topic create` lines (or topic auto-creation switched on in a compose file).
+- **Buckets:** `*BUCKET*` values of the env examples (each against its own stack) and the default after `config.get('..bucket..') ??`, against the `mc mb` lines of the compose files.
+- **Tables:** Postgres models (`tableName`) against `migrations/` (`createTable`, `CREATE TABLE`); DynamoDB tables against `dynamodb/*.json`; Cassandra tables against `cql/*.cql`.
+- **Limits:** lexical, not a TypeScript parse. A name built at run time is invisible, so a clean run is not proof; a `MISSING` line is a lead to read. ClickHouse tables, the
+  Terraform modules (`infra/modules`) and consumer-group topics are not covered. The dynamic half (the broker answers, the queue exists in the running ElasticMQ, `/health/ready`
+  fails while a consumed queue is missing or an outbox row is parked) needs the stack and is not built.
+- **Not wired into the gate or the checkpoint yet,** because it exits 1 on the real repository today (the topics below); wire it in when the topic question is settled.
+
+What it finds on this repository (run on 2026-10-12, 142 items checked):
+- queues: 40 checked, none missing. The three queues of lesson L-002 (`payments-charge`, `orders-refund-requested`, `tenancy-invite-requested`) and their dead-letter queues are defined.
+  With `payments-charge` removed from a copy of the conf, the doctor names it and its dead-letter queue.
+- buckets: 3 checked, none missing (`marketplace-media`, `marketplace-media-test`, and the code default `marketplace-media`).
+- tables: 73 checked (Postgres models, DynamoDB, Cassandra), none missing.
+- topics: 26 checked, 23 missing. Only `payments.dlq`, `payments.responses` and `products.events` are created by `init-kafka-topics.sh`. These are named by the code and created
+  by nothing in the stack definitions: `analytics.events`, `api.events`, `auctions.events`, `billing.events`, `chat.events`, `courier.events`, `feed.events`, `identity.events`,
+  `ledger.events`, `links.events`, `live.events`, `llm.events`, `marketing.events`, `media.events`, `orders.events`, `payments.events`, `pickup.events`, `search.events`,
+  `shop.events`, `shops.events`, `stories.events`, `tenancy.events`, `usage.events`.
+  I did not check this against a running broker. Redpanda does not create a topic on first use unless `auto_create_topics_enabled` is on, and neither compose file sets it, so on a
+  fresh dev stack the first event of a missing topic may fail; if the stack works in practice, something creates the topics that this script cannot see, and the doctor should learn
+  about it. One more lead: `tenancy/domain/events.ts:174` consumes `shop.events`, marked "provisional", while `seller-onboarding` registers `shops.events`; one of the two names may be wrong.
+  Product code was not changed.
+
 ## Follow-ups for the build loop
 
 Not built yet, in the order I would do them:
@@ -381,6 +411,7 @@ Not built yet, in the order I would do them:
    (`payments-charge`, `orders-refund-requested`, `tenancy-invite-requested`), so a payment stayed PENDING for ever on the dev stack (found by
    hand-testing; the browser tests stub the payment path). Add a static check that every queue name the code consumes or publishes is defined in
    that file, and run the payment journey once without stubs.
+   **Static check built (overnight run):** `scripts/infra/doctor.py`, see "The infrastructure doctor (static half)". The payment journey without stubs is not.
 
 ## From "the gates pass" to "the product works"
 
