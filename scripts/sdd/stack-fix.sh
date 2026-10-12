@@ -5,8 +5,9 @@
 #   scripts/sdd/stack-fix.sh smoke     API ready, product search answers 200, Playwright's Chromium installed; says what to run if not
 #   scripts/sdd/stack-fix.sh browser   install Playwright's Chromium for the version packages/web uses
 #   scripts/sdd/stack-fix.sh reindex   rebuild the product search index from the database (as the seeded admin) and wait for documents
-#   scripts/sdd/stack-fix.sh reset-ranking   forget the trending ranking and the BFF's cached copy of it (Redis); events recorded by earlier test runs
-#                                      otherwise stay in the 60-minute window and make a product page show a trending rail
+#
+# Shared state that other tests change (the trending ranking, carts, counters) cannot be cleaned from outside: it is rebuilt from stores a
+# test cannot clear. A test that needs a known state creates its own data (its own product in its own category) instead.
 #
 # Environment faults (a 503 from search, a missing browser, an empty index) are not code faults: fix them here, do not edit tests or
 # product code to get around them, and write what you did in the spec's gaps.md.
@@ -43,13 +44,5 @@ case "${1:-}" in
       sleep 4
     done
     echo "the reindex did not produce documents within 2 minutes (is there any product in the database?)"; exit 1 ;;
-  reset-ranking)
-    redis="${REDIS_CONTAINER:-payment_system_redis}"
-    n=0
-    for pattern in 'trending:v1:*' 'bff:cache:trending:*'; do
-      keys="$(docker exec "$redis" redis-cli --scan --pattern "$pattern")"
-      [[ -n "$keys" ]] && { echo "$keys" | xargs docker exec "$redis" redis-cli del >/dev/null; n=$((n + $(echo "$keys" | wc -l))); }
-    done
-    echo "reset-ranking: removed $n keys" ;;
-  *) echo "usage: $0 <smoke|browser|reindex|reset-ranking>" >&2; exit 2 ;;
+  *) echo "usage: $0 <smoke|browser|reindex>" >&2; exit 2 ;;
 esac
