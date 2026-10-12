@@ -85,8 +85,39 @@ backend_core_gate() {
   )
 }
 
+# The backend core gate only reads packages/backend, packages/contracts and the lockfile. If those files are byte-identical to
+# the last time it passed in this checkout, it would pass again: skip it (a web repair that touches only packages/web is the case).
+core_fingerprint() {
+  git ls-files -z -c -o --exclude-standard -- packages/backend packages/contracts pnpm-lock.yaml \
+    | xargs -0 sha1sum 2>/dev/null | sha1sum | cut -d' ' -f1
+}
+CORE_OK_FILE="$(git rev-parse --git-dir)/sdd-core-gate-ok"   # inside .git: never committed
+core_gate_cached() {
+  local fp; fp="$(core_fingerprint)"
+  if [[ -f "$CORE_OK_FILE" && "$(cat "$CORE_OK_FILE")" == "$fp" ]]; then
+    echo "backend core gate: files unchanged since it last passed, skipped"; return 0
+  fi
+  if backend_core_gate; then echo "$fp" > "$CORE_OK_FILE"; return 0; fi
+  rm -f "$CORE_OK_FILE"; return 1
+}
+
+# After a gate failure, run the Playwright tests that failed last time first (seconds, not minutes). Only a shortcut for a
+# failing attempt: the full gate below still has to pass before anything is marked done.
+web_failed_first() {
+  local f=packages/web/test-results/.last-run.json
+  [[ -f "$f" ]] || return 0
+  python3 - "$f" <<'PY' || return 0
+import json,sys
+j=json.load(open(sys.argv[1]))
+sys.exit(0 if j.get("status")=="failed" and j.get("failedTests") else 1)
+PY
+  echo "re-running the tests that failed last time first"
+  (cd packages/web && API_URL="$API_URL" pnpm test:e2e --last-failed ${PW_WORKERS:+--workers="$PW_WORKERS"})
+}
+
 gate() { # $1 = domain column; everything must pass
-  backend_core_gate || return 1
+  if [[ "$(kind_of "$1")" == web ]]; then web_failed_first || return 1; fi
+  core_gate_cached || return 1
   case "$(kind_of "$1")" in
     backend)
       (cd packages/backend && NODE_ENV=test NODE_OPTIONS=--experimental-vm-modules timeout 1800 npx jest --ci --runInBand --forceExit --config jest-e2e.json "$(code_path "$1")") || return 1 ;;
@@ -95,7 +126,7 @@ gate() { # $1 = domain column; everything must pass
         cd packages/web &&
         npx tsc --noEmit -p tsconfig.json &&
         pnpm test &&                               # Vitest: UI-only logic, component states, a11y
-        API_URL="$API_URL" pnpm test:e2e           # Playwright: happy-path journeys + layout screenshots
+        API_URL="$API_URL" pnpm test:e2e ${PW_WORKERS:+--workers="$PW_WORKERS"}   # Playwright: happy-path journeys + layout screenshots (PW_WORKERS overrides the config)
       ) || return 1 ;;
     journey)
       (cd packages/backend && API_URL="$API_URL" pnpm test:journeys) || return 1 ;;
