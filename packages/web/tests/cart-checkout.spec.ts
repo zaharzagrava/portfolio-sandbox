@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { SEED, payWithSandboxCard, productId, register } from './helpers';
+import { SEED, createIsolatedProduct, payWithSandboxCard, productId, register } from './helpers';
 
 /**
  * W03 journeys JC-1 and JC-3 against the real dev stack: a guest adds to the cart, signs up and keeps it; the last line is
@@ -41,7 +41,8 @@ test.describe('Cart & checkout', () => {
   });
 
   test('JC-2 cart quantity, checkout, place order, pay with the sandbox card', async ({ page }) => {
-    const id = await productId();
+    // Placing the order reserves stock; the seeded product's stock is finite and shared by every run on this stack.
+    const { id, title } = await createIsolatedProduct({ quantity: 200 });
     await register(page);
     await page.goto(`/products/${id}`);
     await page.getByRole('button', { name: 'Add to cart' }).click();
@@ -50,7 +51,7 @@ test.describe('Cart & checkout', () => {
     await page.goto('/cart');
     const subtotal = page.getByText(/^Subtotal \(/).first();
     await expect(subtotal).toContainText('1 item');
-    await page.getByRole('button', { name: `Increase quantity of ${SEED.product}` }).click();
+    await page.getByRole('button', { name: `Increase quantity of ${title}` }).click();
     await expect(subtotal).toContainText('2 items');
 
     await page.getByRole('link', { name: 'Checkout', exact: true }).first().click();
