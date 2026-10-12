@@ -60,19 +60,13 @@ test.describe('Cart & checkout', () => {
     await expect(page).toHaveURL(/\/checkout\/pay\/[0-9a-f-]{36}$/);
 
     await payWithSandboxCard(page);
-    // This stack's provider key is a dummy (research.md R-08): the payment stays in progress unless the stack settles it,
-    // and the page must never claim success before the order is paid.
-    const processing = page.getByText('Payment is being processed…');
-    const confirmed = page.getByRole('heading', { name: 'Order confirmed' });
-    await expect(processing.or(confirmed)).toBeVisible({ timeout: 20_000 });
-    if (await confirmed.isVisible()) {
-      await expect(page).toHaveURL(/\/checkout\/success\//);
-      await expect(page.getByRole('link', { name: 'View order' })).toBeVisible();
-      await expect(page.getByRole('link', { name: 'Continue shopping' })).toBeVisible();
-    } else {
-      await page.goto(page.url().replace('/checkout/pay/', '/checkout/success/'));
-      await expect(page.getByRole('heading', { name: 'Order confirmed' })).toHaveCount(0);
-    }
+    // The dev stack settles the payment through its fake provider (IS_LOAD_TEST=true), so the order must become PAID and the page must say so.
+    // A payment that stays "being processed" is a defect (2026-10-12: it hid a charge request the queue refused). That the page never claims
+    // success before the order is paid is tested in visual/checkout.spec.ts with a forced state.
+    await expect(page.getByRole('heading', { name: 'Order confirmed' })).toBeVisible({ timeout: 45_000 });
+    await expect(page).toHaveURL(/\/checkout\/success\//);
+    await expect(page.getByRole('link', { name: 'View order' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Continue shopping' })).toBeVisible();
   });
 
   test('W03 AS-14: JC-4 anonymous visitors are sent to sign-in with returnTo from the checkout URLs', async ({ page }) => {
