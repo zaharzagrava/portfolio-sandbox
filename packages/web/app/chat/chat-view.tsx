@@ -16,7 +16,7 @@ import { loginHref } from '@/lib/auth/return-to';
 const POLL_MS = 3_000;
 
 /** `?product=<id>`: open that product's chat - join it as a buyer, or create it when you are its seller. */
-async function openProductChat(productId: string): Promise<ChatChannel> {
+export async function openProductChat(productId: string): Promise<ChatChannel> {
   try {
     const channel = await chatApi.byProduct(productId);
     return channel.myRole ? channel : await chatApi.join(channel.id);
@@ -28,6 +28,11 @@ async function openProductChat(productId: string): Promise<ChatChannel> {
     } catch (createError) {
       const status = (createError as { response?: { status?: number } }).response?.status;
       if (status === 403 || status === 404) throw new Error('The seller has not opened a chat for this product yet.');
+      if (status === 409) {
+        // Someone else created the product's chat between our lookup and our create (two members opening it at once): open that one.
+        const existing = await chatApi.byProduct(productId);
+        return existing.myRole ? existing : await chatApi.join(existing.id);
+      }
       throw createError;
     }
   }

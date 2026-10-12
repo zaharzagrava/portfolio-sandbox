@@ -1,5 +1,5 @@
 import {
-  BadRequestException,
+  ConflictException,
   ForbiddenException,
   Injectable,
   Logger,
@@ -115,7 +115,8 @@ export class ChatService {
       return this.toRawDto(channel, ChatChannelMemberRole.OWNER);
     } catch (error) {
       if (error instanceof UniqueConstraintError) {
-        throw new BadRequestException(
+        // 409, not 400: two members opening a product's chat at once is expected, and the client opens the existing one.
+        throw new ConflictException(
           'A chat channel already exists for this product',
         );
       }
