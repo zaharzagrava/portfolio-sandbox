@@ -79,7 +79,9 @@ test.describe('Cart & checkout', () => {
     const orderId = '00000000-0000-4000-8000-000000000001';
     // TODO(T081): add `/orders` and `/orders/{id}` when the orders pages exist (user story 5).
     for (const path of ['/checkout', `/checkout/pay/${orderId}`, `/checkout/success/${orderId}`]) {
-      // The redirect to sign-in can abort the navigation that triggered it (net::ERR_ABORTED); the destination is what is asserted.
+      // Start from a blank page: the sign-in page of the previous round can still be navigating itself, which aborts the next navigation
+      // (net::ERR_ABORTED) and leaves the browser on the old URL. The destination is what is asserted.
+      await page.goto('about:blank');
       await page.goto(path, { waitUntil: 'commit' }).catch((error: Error) => {
         if (!/ERR_ABORTED/.test(error.message)) throw error;
       });
