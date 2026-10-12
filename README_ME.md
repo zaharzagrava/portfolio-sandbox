@@ -204,6 +204,38 @@ git fetch origin && git checkout sdd/auto        # afterwards: test on localhost
 Loop settings the runner uses: `RUN_DEADLINE` (epoch seconds, hard end; the loop exits 76), `PUSH_BRANCH` (push after every
 commit), exit codes 75 (usage limit), 76 (time budget), 77 (Claude login failed).
 
+### Living specification (`docs/spec`, `scripts/livespec`)
+
+What the system does today, checked against the code and the tests. Pages are `draft` until you read and sign them (recipe: `docs/spec/REVIEW.md`).
+
+```sh
+# is everything true? (links, proofs, code references, routes, concepts, state machines, signed items)
+python3 scripts/livespec/check.py
+python3 scripts/livespec/check.py --base origin/master      # also: code changed under a page, page did not
+python3 scripts/livespec/check.py --strict                  # warnings (style, unproven rules) fail too
+python3 scripts/livespec/check.py --fix-backlinks           # refresh the "used by" blocks of the concept pages
+
+# review and sign (a human action; agents cannot run it)
+python3 scripts/livespec/sign.py status                     # who signed what, and what changed since
+python3 scripts/livespec/sign.py sign S13                   # sign every rule and behavior of the page you read
+python3 scripts/livespec/sign.py sign S13 --only S13.R-01,S13.B-02
+python3 scripts/livespec/sign.py diff S13                   # the page's git diff since your signature
+
+# the formal layer
+python3 scripts/livespec/models.py check [--fix]            # state machines: total, deterministic, matched to the code (--fix redraws the diagrams)
+python3 scripts/livespec/run_models.py                      # Quint models: type-check and simulate (needs Node; the first run downloads Quint)
+
+# generate (the first draft only; pages are authored afterwards)
+python3 scripts/livespec/generate.py --facts                # what would be fed to the model, no model calls
+python3 scripts/livespec/generate.py --only S99             # a draft page for a newly built capability (the loop does this itself)
+python3 scripts/livespec/generate.py --only S13 --force     # regenerate a DRAFT page (a signed page is never overwritten)
+python3 scripts/livespec/generate.py --concepts --force     # regenerate the concept pages from the capability pages
+python3 scripts/livespec/generate.py --system               # rebuild docs/spec/system.md
+
+# the tests of the scripts
+python3 scripts/livespec/test_livespec.py
+```
+
 ## Developer tooling
 
 Three things live next to the code: an Obsidian vault over the repo, a generated codebase map, and the spec-driven

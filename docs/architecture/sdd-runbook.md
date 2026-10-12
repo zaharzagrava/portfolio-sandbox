@@ -304,6 +304,31 @@ product with their own stock), the trending ranking (events recorded by other te
 category of its own), and a warm search history or catalogue size (suggestion casing, a second results page). Rule: a test that needs a known
 state creates its own data through the real API (`createIsolatedProduct` in `packages/web/tests/helpers.ts`), and never relies on what ran before.
 
+## Harness roadmap
+
+What turns the setup from "it works for me" into evidence a reader can check. The first three are the claims a description of this setup would make that the
+repository does not yet back; build them before anything else. Estimates are working time, not elapsed time, and include tests.
+
+1. **Role separation: a QA agent.** Today there is a builder and a repair agent. Add a separate agent with a fresh context that uses the running product like a
+   person at every checkpoint (browser, console, network, API log, database), files each defect with its evidence, and hands them to the repair agent (follow-up 1
+   below). About 5 to 7 hours.
+2. **Persistent learning from detected failures.** Today a person (and I) add rules after an incident. Add `docs/lessons.md`: every incident and every repair that
+   needed a human appends a lesson (symptom, cause, the rule or check that prevents it); the agents' prompts include it; a script lists lessons with no check
+   behind them. Measure repeats ("the same class of failure twice"). About 4 to 6 hours.
+3. **Measurable delivery.** Per run and per capability: tasks closed per pass, repairs, gates that passed after a repair that changed no code (flakes),
+   failures found only by hand, time and quota. Written to a report (`run-report.md`) and a trend page. This is also the baseline for changing a prompt and seeing
+   whether it helped. About 3 to 5 hours.
+
+Then, in order of payoff:
+
+4. Repair agent for a failed checkpoint (follow-up 1 below), the flake signal (2), the unstubbed buy flow and the journey that must end in "Order confirmed",
+   the infrastructure doctor with a readiness check that fails loudly. About 8 to 10 hours together.
+5. Mutation testing on the money and identity code, so "every scenario's test can fail" is measured. About 3 to 4 hours.
+6. The memory growth in the backend e2e suites (follow-up 3), the unexplained browser flakes (follow-up 4). About 3 to 5 hours.
+
+Total: roughly 25 to 35 hours of work, about a week. Items 1 to 3 are about 12 to 18 hours and carry most of the value. More tooling after that has little
+value compared with one shipped product and a short write-up with real numbers.
+
 ## Follow-ups for the build loop
 
 Not built yet, in the order I would do them:
