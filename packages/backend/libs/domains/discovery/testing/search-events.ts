@@ -110,15 +110,25 @@ export const offboardingStarted = (shopId: string, occurredAt?: Date) =>
   ShopOffboardingStarted.create(
     shopId,
     0,
-    { shopId, purgeAt: new Date(Date.now() + 86_400_000).toISOString() },
+    {
+      shopId,
+      purgeAt: new Date(Date.now() + 86_400_000).toISOString(),
+      shopVersion: 0,
+    },
     occurredAt,
   );
 
+// `shopVersion` joined these three payloads in S03; S32 still orders them by `occurredAt` (its follow-up adopts it).
 export const offboardingCancelled = (shopId: string, occurredAt?: Date) =>
-  ShopOffboardingCancelled.create(shopId, 0, { shopId }, occurredAt);
+  ShopOffboardingCancelled.create(
+    shopId,
+    0,
+    { shopId, shopVersion: 0 },
+    occurredAt,
+  );
 
 export const shopDeleted = (shopId: string, occurredAt?: Date) =>
-  ShopDeleted.create(shopId, 0, { shopId }, occurredAt);
+  ShopDeleted.create(shopId, 0, { shopId, shopVersion: 0 }, occurredAt);
 
 export const galleryEvent = (
   productId: string,

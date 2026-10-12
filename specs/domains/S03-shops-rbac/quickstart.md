@@ -41,6 +41,8 @@ pnpm tsc --noEmit -p . && pnpm lint && pnpm check:boundaries && pnpm check:table
 | AS-16–18, 64, 71 | unit specs in `TN/domain/` | matrix, monotonicity, `canManage` grid, status machine, verification machine |
 | AS-77 (static) | gates above | zero findings for tenancy tables once consumers migrate |
 
+The cell spec needs no compose change: it creates the database `marketplace_test_cell_dedicated1` on the test Postgres server if it is missing and passes it to the app as cell `dedicated-1` through `TENANCY_CELLS`, with `TENANCY_CELL_POOL_MAX=1` for the bulkhead case. To try a cell by hand, set `TENANCY_CELLS='{"dedicated-1":"postgres://…"}'` and move a shop with `PUT /api/admin/shops/<id>/directory` as a platform administrator.
+
 ## Success criteria proven by tests
 
 SC-001 (`tenant-resolution`), SC-002 (`tenant-resolution`, `shop-members`), SC-004 (`shop-invites` with 20 simultaneous accepts), SC-007 (`shop-sso` AS-50), SC-008 (`shop-offboarding` AS-69, rows counted after purge), SC-009 is not proven by a test in this pass: it is an Ops artifact (`check:table-ownership --strict`, expected red until the consumers listed in gaps.md section C migrate) and a `not run` row in `specs/UNVERIFIED.md`.

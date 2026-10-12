@@ -27,12 +27,11 @@ import {
 } from '../domain/errors';
 import { decodeKeyset, encodeKeyset, parseLimit } from '../domain/cursor';
 import { checkSlug } from '../domain/slug-policy';
+import { allowedRegions } from '../domain/region-policy';
 import { MAX_OWNED_SHOPS } from '../domain/seat-policy';
 import type { ShopRole } from '../domain/shop-types';
 import { toShopDto } from './shop.mapper';
 import { TenancyAudit } from './tenancy-observability';
-
-export const DEFAULT_REGIONS = ['eu-central-1', 'us-east-1'];
 
 /** Creating, reading and renaming shops (FR-001 to FR-005). One transaction per mutation, event in the same one. */
 @Injectable()
@@ -203,11 +202,6 @@ export class ShopService {
   }
 
   private regions(): string[] {
-    const configured = this.config.get('tenancy_regions');
-    const list = (configured ?? '')
-      .split(',')
-      .map((r) => r.trim())
-      .filter(Boolean);
-    return list.length > 0 ? list : DEFAULT_REGIONS;
+    return allowedRegions(this.config.get('tenancy_regions'));
   }
 }

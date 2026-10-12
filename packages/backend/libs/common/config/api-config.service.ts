@@ -382,6 +382,30 @@ export class ApiConfigService {
             verify: joi.string().optional().allow(''),
             name: 'TENANCY_REGIONS',
           },
+          tenancy_cells: {
+            verify: joi.string().optional().allow(''),
+            name: 'TENANCY_CELLS',
+          },
+          tenancy_cell_pool_max: {
+            verify: joi.number().integer().min(1).optional().empty(''),
+            name: 'TENANCY_CELL_POOL_MAX',
+            postProcess: (v: string) => (v ? Number(v) : undefined),
+          },
+          tenancy_cell_acquire_timeout_ms: {
+            verify: joi.number().integer().min(1).optional().empty(''),
+            name: 'TENANCY_CELL_ACQUIRE_TIMEOUT_MS',
+            postProcess: (v: string) => (v ? Number(v) : undefined),
+          },
+          tenancy_cell_connection_limit: {
+            verify: joi.number().integer().min(1).optional().empty(''),
+            name: 'TENANCY_CELL_CONNECTION_LIMIT',
+            postProcess: (v: string) => (v ? Number(v) : undefined),
+          },
+          tenancy_cell_reserved_connections: {
+            verify: joi.number().integer().min(0).optional().empty(''),
+            name: 'TENANCY_CELL_RESERVED_CONNECTIONS',
+            postProcess: (v: string) => (v ? Number(v) : undefined),
+          },
           s3_endpoint: {
             verify: joi.string().optional().allow(''),
             name: 'S3_ENDPOINT',

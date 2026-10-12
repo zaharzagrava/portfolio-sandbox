@@ -1,4 +1,6 @@
 import { Logger } from '@nestjs/common';
+import { Sequelize } from 'sequelize-typescript';
+import { Role } from '@app/domains/identity';
 import { MetricsRegistry } from '@app/common/telemetry/metrics-registry';
 import { outboxRowsFor } from '@app/common/testing/outbox-rows';
 import {
@@ -166,5 +168,75 @@ describe('Observability of the tenancy domain', () => {
           for (const value of Object.values(labels))
             expect(String(value)).not.toMatch(/[0-9a-f]{8}-[0-9a-f]{4}-/i);
         }
+  });
+
+  it('S03 AS-81: company sign-in, suspension, cell moves and offboarding are audited with actor and shop, and without secrets', async () => {
+    const lines: Array<Record<string, unknown>> = [];
+    const all: string[] = [];
+    jest.spyOn(Logger.prototype, 'log').mockImplementation((...args) => {
+      all.push(JSON.stringify(args));
+      const first = args[0];
+      if (first && typeof first === 'object' && 'action' in first)
+        lines.push(first as Record<string, unknown>);
+    });
+    const owner = await t.newUser();
+    const root = await t.newUser({ role: Role.ADMIN });
+    const shop = await createShop(t.app, owner);
+    await t.app.get(Sequelize).query(
+      `INSERT INTO "ShopSsoConfig" ("shopId","issuer","clientId","clientSecretEnc","enabled","updatedAt")
+       VALUES ($1,'https://idp.example.com','c','v2.TOPSECRET.a.b',true,now())`,
+      { bind: [shop.id] },
+    );
+
+    await t.as(owner).delete(`/api/shops/${shop.id}/sso`).expect(204);
+    await t
+      .http()
+      .post(`/api/admin/shops/${shop.id}/suspend`)
+      .set('Authorization', root.bearer)
+      .send({ reason: 'audit me' })
+      .expect(200);
+    await t
+      .http()
+      .put(`/api/admin/shops/${shop.id}/directory`)
+      .set('Authorization', root.bearer)
+      .send({
+        cell: 'pooled',
+        region: 'us-east-1',
+        expectedVersion: 1,
+        reason: 'residency',
+      })
+      .expect(200);
+    await t
+      .http()
+      .post(`/api/admin/shops/${shop.id}/reinstate`)
+      .set('Authorization', root.bearer)
+      .send({ reason: 'fine' })
+      .expect(200);
+    await t
+      .as(owner)
+      .post(`/api/shops/${shop.id}/offboarding`)
+      .send({ confirmSlug: shop.slug })
+      .expect(200);
+    await t.as(owner).get(`/api/shops/${shop.id}/export`).expect(200);
+    await t.as(owner).delete(`/api/shops/${shop.id}/offboarding`).expect(200);
+
+    const mine = lines.filter((l) => l.shopId === shop.id);
+    expect(mine.map((l) => l.action)).toEqual([
+      'sso.removed',
+      'shop.status_changed',
+      'shop.cell_moved',
+      'shop.status_changed',
+      'shop.offboarding_started',
+      'shop.exported',
+      'shop.offboarding_cancelled',
+    ]);
+    for (const line of mine)
+      expect(line).toMatchObject({
+        actorId: expect.any(String),
+        requestId: expect.any(String),
+      });
+    const text = all.join('\n');
+    for (const secret of [owner.email, 'TOPSECRET'])
+      expect(text.includes(secret) ? secret : null).toBeNull();
   });
 });

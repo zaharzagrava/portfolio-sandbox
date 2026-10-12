@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { ShopCreated } from '@app/domains/tenancy/domain/events';
+import { ShopCreated } from '@app/domains/tenancy/contracts';
 import type { EventEnvelope } from '@app/infrastructure/events/event-envelope';
 import { PermanentError } from '@app/infrastructure/projections/errors';
 import type {

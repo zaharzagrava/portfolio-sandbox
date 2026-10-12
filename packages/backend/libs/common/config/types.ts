@@ -129,6 +129,15 @@ export class SecretsManagerConfig {
   /** Comma-separated CORS allowlist. Unset = reflect origin (legacy local behaviour). */
   cors_allowed_origins?: string;
   tenancy_regions?: string;
+  /** JSON object `{"<cell>": "postgres://…"}`: the dedicated database cells (S03 FR-051). Unset = pooled only. */
+  tenancy_cells?: string;
+  /** Pool size per cell and instance (default 5). */
+  tenancy_cell_pool_max?: number;
+  /** Wait for a cell connection before the shop answers `503 cell_unavailable` (default 2000). */
+  tenancy_cell_acquire_timeout_ms?: number;
+  /** `max_connections` of a cell database and the part of it kept for operators (defaults 100 and 20). */
+  tenancy_cell_connection_limit?: number;
+  tenancy_cell_reserved_connections?: number;
   /** MinIO locally; unset in AWS (real S3). */
   s3_endpoint?: string;
   s3_access_key_id?: string;

@@ -19,6 +19,46 @@ export const OIDC_DISCOVERY = Symbol('OIDC_DISCOVERY');
 export const TENANT_DB_ROLE_CHECK = Symbol('TENANT_DB_ROLE_CHECK');
 export const MEMBERSHIP_READER = Symbol('MEMBERSHIP_READER');
 export const TENANT_TRANSACTIONS = Symbol('TENANT_TRANSACTIONS');
+/** Net options of the outbound requests tenancy makes (SSRF escape hatches for specs only; empty in production). */
+export const TENANCY_NET_OPTIONS = Symbol('TENANCY_NET_OPTIONS');
+
+/**
+ * Checks a shop's identity provider before it is stored (FR-041): HTTPS to a public address, discovery document
+ * answered within 3 s and naming the same issuer. Throws `sso_issuer_invalid|mismatch|unreachable`. Never called
+ * inside a transaction.
+ */
+export interface OidcDiscovery {
+  verify(issuer: string): Promise<void>;
+}
+
+export interface SsoConfigRecord {
+  shopId: string;
+  issuer: string;
+  clientId: string;
+  clientSecretEnc: string;
+  defaultRole: 'STAFF' | 'VIEWER';
+  enabled: boolean;
+  updatedAt: Date;
+}
+
+export interface SsoConfigRepository {
+  find(shopId: string): Promise<SsoConfigRecord | null>;
+  /** Insert or replace; the caller already merged the secret. */
+  upsert(input: {
+    shopId: string;
+    issuer: string;
+    clientId: string;
+    clientSecretEnc: string;
+    defaultRole: 'STAFF' | 'VIEWER';
+    now: Date;
+  }): Promise<SsoConfigRecord>;
+  /** `false` when there was nothing to delete. */
+  delete(shopId: string): Promise<boolean>;
+  /** Rows sealed without a context (`v1.`), at most `limit`, across shops (cross-tenant). */
+  listLegacySealed(limit: number): Promise<SsoConfigRecord[]>;
+  /** Replaces the sealed secret only while it still is `from` (a concurrent edit wins). */
+  replaceSealed(shopId: string, from: string, to: string): Promise<boolean>;
+}
 
 /** Startup check that the application role cannot bypass row-level security (FR-053). Throws in production. */
 export interface TenantDbRoleCheck {
@@ -98,6 +138,28 @@ export interface ShopRepository {
     version: number,
     now: Date,
   ): Promise<ShopRecord | null>;
+  /**
+   * Status change conditional on the status the caller read (`WHERE status = from`), `shopVersion + 1`; `purgeAt` is
+   * set to the given value (null clears it). `null` when somebody else changed the status first.
+   */
+  transition(input: {
+    shopId: string;
+    from: ShopStatus;
+    to: ShopStatus;
+    purgeAt: Date | null;
+    now: Date;
+  }): Promise<ShopRecord | null>;
+  /** Verification fields and `shopVersion + 1`; `null` when the shop is gone. */
+  setVerification(
+    shopId: string,
+    status: VerificationStatus,
+    payoutsEnabled: boolean,
+    now: Date,
+  ): Promise<ShopRecord | null>;
+  /** `DELETING` → tombstone `{DELETED, "[deleted]", deleted-<id>, purgeAt null}`; `null` unless it was `DELETING`. */
+  tombstone(shopId: string, now: Date): Promise<ShopRecord | null>;
+  /** Ids of closing shops whose `purgeAt` has passed, oldest first. */
+  listDueForPurge(now: Date, limit: number): Promise<string[]>;
   /** Serialises shop creation per user (transaction-scoped advisory lock). */
   lockOwnerCreation(userId: string): Promise<void>;
   countOwnedBy(userId: string): Promise<number>;
@@ -143,6 +205,10 @@ export interface MembershipRepository {
     to: ShopRole,
   ): Promise<boolean>;
   delete(shopId: string, userId: string, role: ShopRole): Promise<boolean>;
+  /** Every member of the shop, oldest first (purge and export; a shop has at most 250 seats). */
+  listAll(shopId: string): Promise<MemberRow[]>;
+  /** Removes every member of the shop; returns how many. */
+  deleteAll(shopId: string): Promise<number>;
   /** One query for many shops, order `(shopId, createdAt, userId)`. */
   listByShopIds(
     shopIds: string[],
@@ -206,6 +272,13 @@ export interface InviteRepository {
   findByTokenHash(tokenHash: string): Promise<InviteRecord | null>;
   /** The single winner: conditional on pending and unexpired. */
   markAccepted(id: string, userId: string, now: Date): Promise<boolean>;
+  /** Every invite of the shop (purge removes them with their addresses). */
+  deleteAllForShop(shopId: string): Promise<number>;
+  /**
+   * Deletes up to `limit` invites whose last event (revocation, acceptance, else expiry) is older than `before`,
+   * across shops (cross-tenant); returns how many.
+   */
+  deleteSettledBefore(before: Date, limit: number): Promise<number>;
 }
 
 export interface DirectoryRecord {
@@ -223,6 +296,15 @@ export interface DirectoryRepository {
     now: Date,
   ): Promise<void>;
   find(shopId: string): Promise<DirectoryRecord | null>;
+  delete(shopId: string): Promise<void>;
+  /** Conditional on `version = expectedVersion` (then `version + 1`); `null` when somebody else moved it first. */
+  move(input: {
+    shopId: string;
+    expectedVersion: number;
+    cell: string;
+    region: string;
+    now: Date;
+  }): Promise<DirectoryRecord | null>;
 }
 
 export interface StatusHistoryRepository {
@@ -234,6 +316,8 @@ export interface StatusHistoryRepository {
     reason: string | null;
     at: Date;
   }): Promise<void>;
+  /** Purge removes the trail with the rest of the shop's data (it names the acting users). */
+  deleteAll(shopId: string): Promise<void>;
 }
 
 /** What the guard and `ShopAccessService` need: role and shop status, with the principal in the predicate. */

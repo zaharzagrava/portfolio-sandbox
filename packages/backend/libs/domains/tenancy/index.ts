@@ -22,6 +22,7 @@ export { ShopAccessService } from './application/shop-access.service';
 export { ShopQueryService } from './application/shop-query.service';
 export { MembershipQueryService } from './application/membership-query.service';
 export { ShopProvisioningService } from './application/shop-provisioning.service';
+export { ShopCellService } from './application/shop-cell.service';
 export type { ShopSummaryDto } from './application/shop-summary';
 export { TenantConnectionResolver } from './infra/tenant-connection.resolver';
 export { ShopTransactionRunner } from './infra/shop-transaction';

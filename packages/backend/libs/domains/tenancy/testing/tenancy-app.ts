@@ -1,5 +1,4 @@
 import type { INestApplication } from '@nestjs/common';
-import { getModelToken } from '@nestjs/sequelize';
 import { GetCommand } from '@aws-sdk/lib-dynamodb';
 import supertest from 'supertest';
 import { CLOCK, FakeClock } from '@app/common/core/clock';
@@ -8,13 +7,9 @@ import { configureHttpApp } from '@app/infrastructure/platform/bootstrap-http';
 import { generateTestingModule } from '@app/test/utils/global-modules';
 import { SeedsModule } from '@app/test/seeds/seeds.module';
 import { SeedsService } from '@app/test/seeds/seeds.service';
+import { TableName } from '@app/test/seeds/types';
 import { issueSession } from '@app/test/seeds/session.fixture';
-import {
-  AuthApiModule,
-  KeyStore,
-  Role,
-  UserModel,
-} from '@app/domains/identity';
+import { AuthApiModule, KeyStore, Role } from '@app/domains/identity';
 import { ShopProbeModule } from './shop-probe.module';
 
 export interface TestUser {
@@ -84,17 +79,18 @@ export async function createTenancyApp(
   await app.listen(0, '127.0.0.1');
 
   const seeds = app.get(SeedsService);
-  const users = app.get<typeof UserModel>(getModelToken(UserModel));
   const dynamo = app.get(DynamoService);
   let counter = 0;
   const http = () => supertest(app.getHttpServer());
 
   const newUser: TenancyTestApp['newUser'] = async (opts = {}) => {
-    const user = await users.create({
-      email: opts.email ?? `user-${++counter}-${Date.now()}@example.com`,
-      passwordHash: null,
-      role: opts.role ?? Role.USER,
-    });
+    const [user] = await seeds.createTreelike([
+      {
+        __type__: TableName.User,
+        email: opts.email ?? `user-${++counter}-${Date.now()}@example.com`,
+        role: opts.role ?? Role.USER,
+      },
+    ]);
     const session = await issueSession(app, { id: user.id, role: user.role });
     return {
       id: user.id,

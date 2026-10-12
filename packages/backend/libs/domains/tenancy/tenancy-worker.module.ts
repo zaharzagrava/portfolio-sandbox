@@ -7,7 +7,9 @@ import { SequelizeShopRepository } from './infra/models/shop.repository';
 import { RealtimeModule } from '@app/infrastructure/realtime';
 import { MemberRevocationConsumer } from './infra/member-revocation.consumer';
 import { ShopPlanConsumer } from './infra/shop-plan.consumer';
-import { TenancyBackfillJobs } from './infra/tenancy-backfill.jobs';
+import { PurgeShopsJobs } from './infra/jobs/purge-shops.jobs';
+import { SsoProvisioningProjector } from './infra/projectors/sso-provisioning.projector';
+import { VerificationProjector } from './infra/projectors/verification.projector';
 
 /** What the plan consumer injects: the shop repository and the outbox (the transaction runner comes from the global TenancyModule). */
 @Module({
@@ -18,17 +20,25 @@ import { TenancyBackfillJobs } from './infra/tenancy-backfill.jobs';
 export class TenancyPlanStateModule {}
 
 /**
- * Background side of tenancy, hosted by apps/worker: the backfill job (enqueue once:
- * `jobs.enqueue('tenancy.backfill-shops', {})`) and the consumer of `billing.subscription_plan_changed` (AS-73) and the consumer of `tenancy.member_removed` that ends the removed
- * member's open realtime streams (S51 follow-up from S03).
+ * Background side of tenancy, hosted by apps/worker: the consumers of `billing.subscription_plan_changed` (AS-73), of
+ * seller onboarding's `shop.*` verification events (AS-72) and of `identity.federated_identity_linked` (membership for
+ * company sign-ins, AS-47), the consumer of `tenancy.member_removed` that ends the removed member's open realtime
+ * streams (S51 follow-up from S03), and the scheduled jobs: purge of closed shops and of old invites, and the SSO
+ * secret re-seal. The old `tenancy.backfill-shops` job is gone: owning domains backfill their own `shopId` through
+ * `ShopProvisioningService.ensureShopsForLegacySellers`.
  */
 @Module({
   imports: [
     ProjectionsModule.forProjectors(
-      [ShopPlanConsumer, MemberRevocationConsumer],
+      [
+        ShopPlanConsumer,
+        MemberRevocationConsumer,
+        SsoProvisioningProjector,
+        VerificationProjector,
+      ],
       [TenancyPlanStateModule, RealtimeModule],
     ),
   ],
-  providers: [TenancyBackfillJobs],
+  providers: [PurgeShopsJobs],
 })
 export class TenancyWorkerModule {}

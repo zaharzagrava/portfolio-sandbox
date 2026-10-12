@@ -73,13 +73,17 @@ module.exports = {
       comment:
         'X.4: production code in a domain imports another domain only through its index.ts, never its testing/ kit.',
       severity: 'error',
-      // identity's shop-owner promotion consumer reads tenancy's `ShopCreated` contract: the tenancy barrel imports identity,
-      // so going through it would be an import cycle (module graph fails to load); the contract file is a leaf.
+      // A domain may also publish its event contracts as a leaf, `libs/domains/<d>/contracts.ts` (@app/domains/<d>/contracts):
+      // a file that imports no other domain, so a consumer whose own domain the producer's barrel depends on (identity
+      // reading tenancy's `ShopCreated`) does not close an import cycle through the barrel.
       from: {
         path: '^libs/domains/([^/]+)/',
-        pathNot: [SPEC, '^libs/domains/identity/infra/shop-owner-promotion\\.consumer\\.ts$'],
+        pathNot: [SPEC],
       },
-      to: { path: '^libs/domains/[^/]+/', pathNot: ['^libs/domains/$1/', '^libs/domains/[^/]+/index\\.ts$'] },
+      to: {
+        path: '^libs/domains/[^/]+/',
+        pathNot: ['^libs/domains/$1/', '^libs/domains/[^/]+/index\\.ts$', '^libs/domains/[^/]+/contracts\\.ts$'],
+      },
     },
     {
       name: 'x4-other-domain-entry-point-only-specs',

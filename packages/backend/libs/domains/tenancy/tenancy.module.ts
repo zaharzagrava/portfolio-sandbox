@@ -22,8 +22,11 @@ import {
   INVITE_REPOSITORY,
   MEMBERSHIP_READER,
   MEMBERSHIP_REPOSITORY,
+  OIDC_DISCOVERY,
   SHOP_REPOSITORY,
+  SSO_CONFIG_REPOSITORY,
   STATUS_HISTORY_REPOSITORY,
+  TENANCY_NET_OPTIONS,
   TENANT_DB_ROLE_CHECK,
   TENANT_TRANSACTIONS,
 } from './domain/ports';
@@ -33,6 +36,8 @@ import { SequelizeMembershipRepository } from './infra/models/shop-membership.re
 import { SequelizeInviteRepository } from './infra/models/shop-invite.repository';
 import { SequelizeDirectoryRepository } from './infra/models/shop-directory.repository';
 import { SequelizeStatusHistoryRepository } from './infra/models/shop-status-history.repository';
+import { SequelizeSsoConfigRepository } from './infra/models/shop-sso-config.repository';
+import { OidcDiscoveryAdapter } from './infra/oidc-discovery.adapter';
 import { RedisAuthzCache } from './infra/authz-cache.redis';
 import { ShopTransactionRunner } from './infra/shop-transaction';
 import { TenantConnectionResolver } from './infra/tenant-connection.resolver';
@@ -40,6 +45,8 @@ import { ShopGuard } from './api/shop.guard';
 import { ShopController } from './api/shop.controller';
 import { ShopRolesController } from './api/shop-roles.controller';
 import { SsoController } from './api/sso.controller';
+import { AdminShopsController } from './api/admin-shops.controller';
+import { OffboardingController } from './api/offboarding.controller';
 import { MembersController } from './api/members.controller';
 import { InvitesController } from './api/invites.controller';
 import { InviteService } from './application/invite.service';
@@ -51,6 +58,10 @@ import { ShopQueryService } from './application/shop-query.service';
 import { MembershipService } from './application/membership.service';
 import { ShopService } from './application/shop.service';
 import { ShopSsoService } from './application/shop-sso.service';
+import { SsoProvisioningService } from './application/sso-provisioning.service';
+import { ShopCellService } from './application/shop-cell.service';
+import { ShopLifecycleService } from './application/shop-lifecycle.service';
+import { VerificationService } from './application/verification.service';
 import { TenancyAudit } from './application/tenancy-observability';
 
 /**
@@ -92,6 +103,9 @@ import { TenancyAudit } from './application/tenancy-observability';
       provide: STATUS_HISTORY_REPOSITORY,
       useClass: SequelizeStatusHistoryRepository,
     },
+    { provide: SSO_CONFIG_REPOSITORY, useClass: SequelizeSsoConfigRepository },
+    { provide: OIDC_DISCOVERY, useClass: OidcDiscoveryAdapter },
+    { provide: TENANCY_NET_OPTIONS, useValue: {} },
     { provide: AUTHZ_CACHE, useClass: RedisAuthzCache },
     { provide: TENANT_DB_ROLE_CHECK, useExisting: TenantDbRoleCheck },
     TenantDbRoleCheck,
@@ -104,6 +118,10 @@ import { TenancyAudit } from './application/tenancy-observability';
     ShopGuard,
     ShopService,
     ShopSsoService,
+    SsoProvisioningService,
+    ShopCellService,
+    ShopLifecycleService,
+    VerificationService,
     MembershipAdminService,
     MembershipQueryService,
     InviteService,
@@ -115,10 +133,16 @@ import { TenancyAudit } from './application/tenancy-observability';
     ShopQueryService,
     MembershipQueryService,
     ShopProvisioningService,
+    ShopCellService,
     MembershipService,
     ShopGuard,
     ShopTransactionRunner,
     TenantConnectionResolver,
+    // For the domain's own worker module (projectors and jobs); not part of the barrel.
+    SsoProvisioningService,
+    VerificationService,
+    ShopLifecycleService,
+    ShopSsoService,
   ],
   controllers: [
     ShopController,
@@ -126,6 +150,8 @@ import { TenancyAudit } from './application/tenancy-observability';
     InvitesController,
     ShopRolesController,
     SsoController,
+    AdminShopsController,
+    OffboardingController,
   ],
 })
 export class TenancyModule {}

@@ -44,6 +44,22 @@ export class SequelizeMembershipRepository
     return inserted.length === 1;
   }
 
+  listAll(shopId: string) {
+    return this.rows<MemberRow>(
+      `SELECT "userId","role","source","createdAt" AS "joinedAt","createdAt"::text AS "cursorKey"
+       FROM "ShopMembership" WHERE "shopId" = $1 ORDER BY "createdAt","userId"`,
+      [shopId],
+    );
+  }
+
+  async deleteAll(shopId: string) {
+    const deleted = await this.rows(
+      `DELETE FROM "ShopMembership" WHERE "shopId" = $1 RETURNING "userId"`,
+      [shopId],
+    );
+    return deleted.length;
+  }
+
   async find(shopId: string, userId: string) {
     const [row] = await this.rows<MemberRow>(
       `SELECT "userId","role","source","createdAt" AS "joinedAt","createdAt"::text AS "cursorKey"

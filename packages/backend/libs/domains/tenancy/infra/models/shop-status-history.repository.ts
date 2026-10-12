@@ -10,6 +10,13 @@ import type { ShopStatus } from '../../domain/shop-status';
 export class SequelizeStatusHistoryRepository implements StatusHistoryRepository {
   constructor(@InjectConnection() private readonly sequelize: Sequelize) {}
 
+  async deleteAll(shopId: string) {
+    await this.sequelize.query(
+      `DELETE FROM "ShopStatusHistory" WHERE "shopId" = $1`,
+      { bind: [shopId], transaction: getActiveTransaction() },
+    );
+  }
+
   async insert(input: {
     shopId: string;
     from: ShopStatus | null;

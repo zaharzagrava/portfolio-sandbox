@@ -1,5 +1,8 @@
 import { z } from 'zod';
-import { defineEvent } from '@app/infrastructure/events/define-event';
+import {
+  defineEvent,
+  type EventDefinition,
+} from '@app/infrastructure/events/define-event';
 import type { TopicRegistration } from '@app/infrastructure/events/topic-registry';
 
 /**
@@ -134,21 +137,21 @@ export const ShopOffboardingStarted = defineEvent(
   'tenancy.shop_offboarding_started',
   'tenancy',
   1,
-  z.object({ shopId: id, purgeAt: z.string() }),
+  z.object({ shopId: id, purgeAt: z.string(), shopVersion: z.number().int() }),
 );
 
 export const ShopOffboardingCancelled = defineEvent(
   'tenancy.shop_offboarding_cancelled',
   'tenancy',
   1,
-  z.object({ shopId: id }),
+  z.object({ shopId: id, shopVersion: z.number().int() }),
 );
 
 export const ShopDeleted = defineEvent(
   'tenancy.shop_deleted',
   'tenancy',
   1,
-  z.object({ shopId: id }),
+  z.object({ shopId: id, shopVersion: z.number().int() }),
 );
 
 /**
@@ -171,19 +174,64 @@ export type InviteRequested = z.infer<typeof inviteRequestedSchema>;
 
 /** Consumed events (payload validated with zod before acting; topics of S04 and S17 are provisional constants). */
 export const IDENTITY_EVENTS_TOPIC = 'identity.events';
-export const SHOP_EVENTS_TOPIC = 'shop.events';
+/** S04's events are produced on the `shops` aggregate (`shops.events`), not on a topic named `shop.events`. */
+export const SHOP_EVENTS_TOPIC = 'shops.events';
 export const BILLING_EVENTS_TOPIC = 'billing.events';
 
 export const federatedIdentityLinkedPayload = z.object({
   userId: id,
   provider: z.string(),
 });
-export const shopVerificationPayload = z.object({ shopId: id });
+export const shopVerificationPayload = z.object({ shopId: z.string().uuid() });
 export const planChangedPayload = z.object({
   shopId: id,
   plan: z.enum(['STARTER', 'PRO', 'ENTERPRISE']),
   version: z.number().int(),
 });
+
+/**
+ * The consumer's reading of an event another capability produces. The producer owns the registered definition
+ * (`defineEvent` refuses a second one for the same type), so this is a matcher only: `(type, version)` and the
+ * payload fields tenancy reads, validated before acting. Producing through it is a programming error.
+ */
+function consumedEvent<TType extends string, TSchema extends z.ZodType>(
+  type: TType,
+  aggregateType: string,
+  schema: TSchema,
+): EventDefinition<TType, string, TSchema> {
+  return {
+    type,
+    version: 1,
+    aggregateType,
+    topic: `${aggregateType}.events`,
+    schema,
+    carries: 'delta',
+    create() {
+      throw new Error(`${type} is produced by another capability`);
+    },
+    match(envelope) {
+      if (envelope.type !== type || envelope.version !== 1) return null;
+      return { ...envelope, type, payload: schema.parse(envelope.payload) };
+    },
+  } as EventDefinition<TType, string, TSchema>;
+}
+
+/** `shop.*` from seller onboarding (S04): the shop id is all tenancy reads. */
+export const OnboardingSubmittedSeen = consumedEvent(
+  'shop.onboarding_submitted',
+  'shops',
+  shopVerificationPayload,
+);
+export const ShopVerifiedSeen = consumedEvent(
+  'shop.verified',
+  'shops',
+  shopVerificationPayload,
+);
+export const ShopRejectedSeen = consumedEvent(
+  'shop.rejected',
+  'shops',
+  shopVerificationPayload,
+);
 
 /** `billing.subscription_plan_changed` (S17, provisional contract): `version` is monotonic per shop. */
 export const SubscriptionPlanChanged = defineEvent(

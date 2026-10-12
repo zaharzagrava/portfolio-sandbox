@@ -1,4 +1,13 @@
-import { Controller, Get, Module, Req } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Module,
+  Param,
+  ParseUUIDPipe,
+  Req,
+} from '@nestjs/common';
+import { QueryTypes } from 'sequelize';
+import { TenantConnectionResolver } from '../infra/tenant-connection.resolver';
 import { AuthModule } from '@app/domains/identity';
 import { RequestContext } from '@app/infrastructure/context';
 import { ShopScoped } from '../api/shop.guard';
@@ -29,9 +38,27 @@ function probeController(permission: ShopPermission | undefined) {
   return ShopProbeController;
 }
 
+/** A shop-scoped route that goes to the shop's database cell: the way another domain would use the resolver (AS-54). */
+@Controller('probe/cell')
+class CellProbeController {
+  constructor(private readonly resolver: TenantConnectionResolver) {}
+
+  @ShopScoped('shop.read')
+  @Get(':shopId')
+  async database(@Param('shopId', ParseUUIDPipe) shopId: string) {
+    const connection = await this.resolver.connectionFor(shopId);
+    const [row] = await connection.query<{ db: string }>(
+      'SELECT current_database() AS db',
+      { type: QueryTypes.SELECT },
+    );
+    return { database: row.db };
+  }
+}
+
 @Module({
   imports: [AuthModule],
   controllers: [
+    CellProbeController,
     probeController(undefined),
     ...SHOP_PERMISSIONS.map((p) => probeController(p)),
   ],

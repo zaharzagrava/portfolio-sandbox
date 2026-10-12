@@ -1,22 +1,22 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
+  HttpCode,
   Param,
   ParseUUIDPipe,
   Put,
 } from '@nestjs/common';
-import { Firewall } from '@app/domains/identity';
+import { Firewall, User } from '@app/domains/identity';
+import type { AuthenticatedUser } from '@app/domains/identity';
 import { RateLimit } from '@app/infrastructure/rate-limit';
 import { ApiTags } from '@nestjs/swagger';
 import { ShopScoped } from './shop.guard';
 import { ShopSsoService } from '../application/shop-sso.service';
 import { ShopSsoConfigDto } from './tenancy.dto';
 
-/**
- * Shop identity provider configuration. Still the pre-S03 behaviour (US6 of the S03 plan rebuilds it: discovery,
- * context-bound secrets, registry wiring); only the permission moved to the new matrix (OWNER only).
- */
+/** Company sign-in per shop (FR-040 to FR-043). Configuration is the owner's: `sso.manage`. */
 @ApiTags('shops')
 @Controller()
 export class SsoController {
@@ -31,16 +31,30 @@ export class SsoController {
   }
 
   @ShopScoped('sso.manage')
+  @RateLimit('tenancy.shop-write.shop')
   @Put('shops/:shopId/sso')
   configureSso(
     @Param('shopId', ParseUUIDPipe) shopId: string,
+    @User() user: AuthenticatedUser,
     @Body() body: ShopSsoConfigDto,
   ) {
-    return this.sso.configure(
-      shopId,
-      body.issuer,
-      body.clientId,
-      body.clientSecret,
-    );
+    return this.sso.configure(shopId, user.id, body);
+  }
+
+  @ShopScoped('sso.manage')
+  @Get('shops/:shopId/sso')
+  read(@Param('shopId', ParseUUIDPipe) shopId: string) {
+    return this.sso.get(shopId);
+  }
+
+  @ShopScoped('sso.manage')
+  @RateLimit('tenancy.shop-write.shop')
+  @Delete('shops/:shopId/sso')
+  @HttpCode(204)
+  async remove(
+    @Param('shopId', ParseUUIDPipe) shopId: string,
+    @User() user: AuthenticatedUser,
+  ): Promise<void> {
+    await this.sso.remove(shopId, user.id);
   }
 }

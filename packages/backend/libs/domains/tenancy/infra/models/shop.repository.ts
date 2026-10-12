@@ -4,6 +4,8 @@ import { Sequelize } from 'sequelize-typescript';
 import { QueryTypes } from 'sequelize';
 import { getActiveTransaction } from '@app/infrastructure/context';
 import type { ShopPlan } from '../../domain/shop-types';
+import type { ShopStatus } from '../../domain/shop-status';
+import type { VerificationStatus } from '../../domain/verification-status';
 import type {
   ShopListRow,
   ShopRecord,
@@ -126,6 +128,53 @@ export class SequelizeShopRepository implements ShopRepository {
       [shopId, plan, version, now],
     );
     return updated.length === 0 ? null : this.findById(shopId);
+  }
+
+  async transition(input: {
+    shopId: string;
+    from: ShopStatus;
+    to: ShopStatus;
+    purgeAt: Date | null;
+    now: Date;
+  }) {
+    const updated = await this.rows<{ id: string }>(
+      `UPDATE "Shop" SET "status" = $3, "purgeAt" = $4, "shopVersion" = "shopVersion" + 1, "updatedAt" = $5
+       WHERE "id" = $1 AND "status" = $2 RETURNING "id"`,
+      [input.shopId, input.from, input.to, input.purgeAt, input.now],
+    );
+    return updated.length === 0 ? null : this.findById(input.shopId);
+  }
+
+  async setVerification(
+    shopId: string,
+    status: VerificationStatus,
+    payoutsEnabled: boolean,
+    now: Date,
+  ) {
+    const updated = await this.rows<{ id: string }>(
+      `UPDATE "Shop" SET "verificationStatus" = $2, "payoutsEnabled" = $3, "shopVersion" = "shopVersion" + 1, "updatedAt" = $4
+       WHERE "id" = $1 AND "status" <> 'DELETED' RETURNING "id"`,
+      [shopId, status, payoutsEnabled, now],
+    );
+    return updated.length === 0 ? null : this.findById(shopId);
+  }
+
+  async tombstone(shopId: string, now: Date) {
+    const updated = await this.rows<{ id: string }>(
+      `UPDATE "Shop" SET "status" = 'DELETED', "name" = '[deleted]', "slug" = 'deleted-' || "id"::text, "purgeAt" = NULL,
+              "shopVersion" = "shopVersion" + 1, "updatedAt" = $2
+       WHERE "id" = $1 AND "status" = 'DELETING' RETURNING "id"`,
+      [shopId, now],
+    );
+    return updated.length === 0 ? null : this.findById(shopId);
+  }
+
+  async listDueForPurge(now: Date, limit: number) {
+    const rows = await this.rows<{ id: string }>(
+      `SELECT "id" FROM "Shop" WHERE "status" = 'DELETING' AND "purgeAt" <= $1 ORDER BY "purgeAt","id" LIMIT $2`,
+      [now, limit],
+    );
+    return rows.map((r) => r.id);
   }
 
   async lockOwnerCreation(userId: string) {

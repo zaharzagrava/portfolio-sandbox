@@ -1,5 +1,6 @@
 import { problemDetailsSchema } from '@marketplace-sandbox/contracts';
 import { Sequelize } from 'sequelize-typescript';
+import { Role } from '@app/domains/identity';
 import {
   addMember,
   createInvite,
@@ -45,6 +46,8 @@ describe('Errors of the tenancy domain', () => {
       invitedBy: owner.id,
       acceptedAt: new Date(),
     });
+    const root = await t.newUser({ role: Role.ADMIN });
+    const ghost = await createShop(t.app, owner, { cell: 'ghost-1' });
     const heavy = await t.newUser();
     for (let i = 0; i < 10; i++) await createShop(t.app, heavy);
     expect(token).toBeDefined();
@@ -191,6 +194,67 @@ describe('Errors of the tenancy domain', () => {
           t
             .as(owner)
             .delete(`/api/shops/${shop.id}/invites/${accepted.invite.id}`),
+      ],
+      [
+        'sso_issuer_invalid',
+        422,
+        () =>
+          t.as(owner).put(`/api/shops/${shop.id}/sso`).send({
+            issuer: 'http://idp.example.com',
+            clientId: 'c',
+            clientSecret: 's',
+          }),
+      ],
+      [
+        'sso_issuer_unreachable',
+        422,
+        () =>
+          t.as(owner).put(`/api/shops/${shop.id}/sso`).send({
+            issuer: 'https://no-such-host.invalid',
+            clientId: 'c',
+            clientSecret: 's',
+          }),
+      ],
+      [
+        'sso_not_configured',
+        404,
+        () => t.as(owner).get(`/api/shops/${shop.id}/sso`),
+      ],
+      [
+        'confirmation_mismatch',
+        422,
+        () =>
+          t
+            .as(owner)
+            .post(`/api/shops/${shop.id}/offboarding`)
+            .send({ confirmSlug: 'not-the-slug' }),
+      ],
+      [
+        'unknown_cell',
+        422,
+        () =>
+          t.as(root).put(`/api/admin/shops/${shop.id}/directory`).send({
+            cell: 'nowhere',
+            region: 'eu-central-1',
+            expectedVersion: 1,
+            reason: 'x',
+          }),
+      ],
+      [
+        'stale_version',
+        409,
+        () =>
+          t.as(root).put(`/api/admin/shops/${shop.id}/directory`).send({
+            cell: 'pooled',
+            region: 'eu-central-1',
+            expectedVersion: 9,
+            reason: 'x',
+          }),
+      ],
+      [
+        'cell_unavailable',
+        503,
+        () => t.as(owner).get(`/api/probe/cell/${ghost.id}`),
       ],
     ];
     expect(invite.id).toBeDefined();

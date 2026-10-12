@@ -10,15 +10,19 @@ import {
   createInvite,
   createShop,
 } from '@app/test/utils/tenancy-fixtures';
+import { TransactionRunner } from '@app/infrastructure/context';
+import { InboxModule, InboxService } from '@app/infrastructure/inbox';
+import { MetricsRegistry } from '@app/common/telemetry/metrics-registry';
 import { SubscriptionPlanChanged } from './domain/events';
 import { ShopPlanConsumer } from './infra/shop-plan.consumer';
+import { VerificationProjector } from './infra/projectors/verification.projector';
 import { TenancyPlanStateModule } from './tenancy-worker.module';
 import { createTenancyApp, type TenancyTestApp } from './testing/tenancy-app';
 
 @Module({
-  imports: [TenancyPlanStateModule],
-  providers: [ShopPlanConsumer],
-  exports: [ShopPlanConsumer],
+  imports: [TenancyPlanStateModule, InboxModule],
+  providers: [ShopPlanConsumer, VerificationProjector],
+  exports: [ShopPlanConsumer, VerificationProjector],
 })
 class PlanConsumerProbeModule {}
 
@@ -146,5 +150,169 @@ describe('Consumers of the tenancy domain', () => {
       .post(`/api/shops/${shop.id}/invites`)
       .send({ email: 'again@example.com', role: 'STAFF' })
       .expect(409);
+  });
+
+  describe('S03 AS-72: seller verification events', () => {
+    let verification: VerificationProjector;
+    type Kind = 'submitted' | 'verified' | 'rejected';
+    const TYPES: Record<Kind, string> = {
+      submitted: 'shop.onboarding_submitted',
+      verified: 'shop.verified',
+      rejected: 'shop.rejected',
+    };
+    const event = (kind: Kind, shopId: string, eventId = uuidv7()) =>
+      ({
+        eventId,
+        type: TYPES[kind],
+        version: 1,
+        aggregateType: 'shops',
+        aggregateId: shopId,
+        aggregateVersion: 1,
+        occurredAt: new Date().toISOString(),
+        // the producer sends more than tenancy reads
+        payload: { shopId, country: 'DE', verifiedAt: 'x' },
+      }) as EventEnvelope;
+    /** What the projection framework does for `idempotency: 'inbox'`. */
+    const deliver = (raw: EventEnvelope) =>
+      t.app.get(TransactionRunner).run(async () => {
+        if (
+          await t.app
+            .get(InboxService)
+            .recordOnce(verification.name, raw.eventId)
+        )
+          return verification.project([raw]);
+        return { applied: 0, duplicate: 1, stale: 0 };
+      });
+    const state = async (shopId: string) =>
+      (
+        await sequelize.query<{
+          verificationStatus: string;
+          payoutsEnabled: boolean;
+          shopVersion: string;
+        }>(
+          `SELECT "verificationStatus","payoutsEnabled","shopVersion" FROM "Shop" WHERE "id" = $1`,
+          { type: QueryTypes.SELECT, bind: [shopId] },
+        )
+      )[0];
+    const changed = async (shopId: string) =>
+      (await outboxRowsFor(sequelize, shopId))
+        .filter((e) => e.type === 'tenancy.shop_verification_changed')
+        .map((e) => (e.payload as { payload: unknown }).payload);
+    const ignored = () =>
+      MetricsRegistry.value('tenancy_provisioned_total', {
+        outcome: 'verification_ignored',
+      }) ?? 0;
+
+    beforeAll(() => {
+      verification = t.app.get(VerificationProjector);
+    });
+
+    it('follows the verification machine, publishes shop_verification_changed on change only, and payouts follow VERIFIED', async () => {
+      const owner = await t.newUser();
+      const shop = await createShop(t.app, owner);
+
+      await deliver(event('submitted', shop.id));
+      expect(await state(shop.id)).toMatchObject({
+        verificationStatus: 'PENDING',
+        payoutsEnabled: false,
+        shopVersion: '2',
+      });
+      await deliver(event('verified', shop.id));
+      expect(await state(shop.id)).toMatchObject({
+        verificationStatus: 'VERIFIED',
+        payoutsEnabled: true,
+        shopVersion: '3',
+      });
+      expect(await changed(shop.id)).toEqual([
+        {
+          shopId: shop.id,
+          verificationStatus: 'PENDING',
+          payoutsEnabled: false,
+          shopVersion: 2,
+        },
+        {
+          shopId: shop.id,
+          verificationStatus: 'VERIFIED',
+          payoutsEnabled: true,
+          shopVersion: 3,
+        },
+      ]);
+
+      // VERIFIED ignores everything after it: no change, no event
+      const before = ignored();
+      await deliver(event('rejected', shop.id));
+      await deliver(event('submitted', shop.id));
+      expect((await state(shop.id)).verificationStatus).toBe('VERIFIED');
+      expect(await changed(shop.id)).toHaveLength(2);
+      expect(ignored()).toBe(before + 2);
+    });
+
+    it('a rejection can be resubmitted', async () => {
+      const owner = await t.newUser();
+      const shop = await createShop(t.app, owner);
+      await deliver(event('submitted', shop.id));
+      await deliver(event('rejected', shop.id));
+      expect((await state(shop.id)).verificationStatus).toBe('REJECTED');
+      await deliver(event('submitted', shop.id));
+      expect((await state(shop.id)).verificationStatus).toBe('PENDING');
+    });
+
+    it('the same eventId twice is one change and one event', async () => {
+      const owner = await t.newUser();
+      const shop = await createShop(t.app, owner);
+      const submitted = event('submitted', shop.id);
+      await deliver(submitted);
+      const counts = await deliver(submitted);
+      expect(counts).toMatchObject({ duplicate: 1 });
+      expect(await changed(shop.id)).toHaveLength(1);
+      expect((await state(shop.id)).shopVersion).toBe('2');
+    });
+
+    it('verified arriving before submitted leaves the shop VERIFIED after the late submitted', async () => {
+      const owner = await t.newUser();
+      const shop = await createShop(t.app, owner);
+      await deliver(event('verified', shop.id));
+      expect(await state(shop.id)).toMatchObject({
+        verificationStatus: 'VERIFIED',
+        payoutsEnabled: true,
+      });
+      await deliver(event('submitted', shop.id)); // late
+      expect(await state(shop.id)).toMatchObject({
+        verificationStatus: 'VERIFIED',
+        payoutsEnabled: true,
+      });
+      expect(await changed(shop.id)).toHaveLength(1);
+    });
+
+    it('an unknown or DELETED shop is ignored and counted; unknown event types are skipped', async () => {
+      const owner = await t.newUser();
+      const gone = await createShop(t.app, owner, { status: 'DELETED' });
+      const before = ignored();
+      await deliver(event('submitted', uuidv7()));
+      await deliver(event('submitted', gone.id));
+      expect(ignored()).toBe(before + 2);
+      expect((await state(gone.id)).verificationStatus).toBe('UNVERIFIED');
+      expect(await changed(gone.id)).toHaveLength(0);
+      await expect(
+        verification.project([
+          { ...event('submitted', gone.id), type: 'shop.something_else' },
+        ]),
+      ).resolves.toEqual({ applied: 0, duplicate: 0, stale: 0 });
+    });
+
+    it('an invalid payload is a permanent failure for the dead-letter topic and changes nothing', async () => {
+      const owner = await t.newUser();
+      const shop = await createShop(t.app, owner);
+      await expect(
+        verification.project([
+          { ...event('verified', shop.id), payload: { shopId: 5 } },
+        ]),
+      ).rejects.toBeInstanceOf(PermanentError);
+      await expect(
+        verification.project([{ ...event('verified', shop.id), payload: {} }]),
+      ).rejects.toBeInstanceOf(PermanentError);
+      expect((await state(shop.id)).verificationStatus).toBe('UNVERIFIED');
+      expect(await changed(shop.id)).toHaveLength(0);
+    });
   });
 });

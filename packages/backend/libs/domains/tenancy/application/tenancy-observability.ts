@@ -15,7 +15,9 @@ export type TenancyAuditAction =
   | 'shop.offboarding_started'
   | 'shop.offboarding_cancelled'
   | 'shop.status_changed'
-  | 'shop.cell_moved';
+  | 'shop.cell_moved'
+  | 'shop.exported'
+  | 'shop.purged';
 
 /**
  * Audit lines for tenancy mutations (VIII.1, AS-81): `{action, actorId, shopId, requestId, ...ids}`. Identifiers only:

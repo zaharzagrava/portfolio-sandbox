@@ -55,6 +55,15 @@ describe('Tenant resolution and isolation', () => {
       ['post', '/api/shop-invites/accept'],
       ['get', '/api/shop-roles'],
       ['put', `/api/shops/${shopId}/sso`],
+      ['get', `/api/shops/${shopId}/sso`],
+      ['delete', `/api/shops/${shopId}/sso`],
+      ['post', `/api/shops/${shopId}/offboarding`],
+      ['delete', `/api/shops/${shopId}/offboarding`],
+      ['get', `/api/shops/${shopId}/export`],
+      ['post', `/api/admin/shops/${shopId}/suspend`],
+      ['post', `/api/admin/shops/${shopId}/reinstate`],
+      ['get', `/api/admin/shops/${shopId}/directory`],
+      ['put', `/api/admin/shops/${shopId}/directory`],
     ];
 
     it.each(routes)(
@@ -125,6 +134,11 @@ describe('Tenant resolution and isolation', () => {
             clientSecret: 's',
           },
         ],
+        ['get', `/api/shops/${id}/sso`],
+        ['delete', `/api/shops/${id}/sso`],
+        ['post', `/api/shops/${id}/offboarding`, { confirmSlug: 'shop-b' }],
+        ['delete', `/api/shops/${id}/offboarding`],
+        ['get', `/api/shops/${id}/export`],
       ];
       let attempts = 0;
       for (let i = 0; i < calls(shopB.id).length; i++) {

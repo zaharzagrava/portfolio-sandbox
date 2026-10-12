@@ -301,6 +301,58 @@ export class Domain_ConfirmationMismatchError extends AppError {
   }
 }
 
+export class Domain_SsoIssuerInvalidError extends AppError {
+  constructor() {
+    super(
+      domainError(
+        HttpStatus.UNPROCESSABLE_ENTITY,
+        'sso_issuer_invalid',
+        'Unprocessable entity',
+        'The issuer must be a public https URL.',
+      ),
+    );
+  }
+}
+
+export class Domain_SsoIssuerMismatchError extends AppError {
+  constructor() {
+    super(
+      domainError(
+        HttpStatus.UNPROCESSABLE_ENTITY,
+        'sso_issuer_mismatch',
+        'Unprocessable entity',
+        'The provider names a different issuer than the one given.',
+      ),
+    );
+  }
+}
+
+export class Domain_SsoIssuerUnreachableError extends AppError {
+  constructor() {
+    super(
+      domainError(
+        HttpStatus.UNPROCESSABLE_ENTITY,
+        'sso_issuer_unreachable',
+        'Unprocessable entity',
+        'The provider did not answer a valid discovery document in time.',
+      ),
+    );
+  }
+}
+
+export class Domain_SsoNotConfiguredError extends AppError {
+  constructor() {
+    super(
+      domainError(
+        HttpStatus.NOT_FOUND,
+        'sso_not_configured',
+        'Not found',
+        'Company sign-in is not configured for this shop.',
+      ),
+    );
+  }
+}
+
 export class Domain_StaleVersionError extends AppError {
   constructor() {
     super(
@@ -366,6 +418,10 @@ export const TENANCY_PROBLEMS = [
   new Domain_CellUnavailableError(),
   new Domain_ConfirmationMismatchError(),
   new Domain_StaleVersionError(),
+  new Domain_SsoIssuerInvalidError(),
+  new Domain_SsoIssuerMismatchError(),
+  new Domain_SsoIssuerUnreachableError(),
+  new Domain_SsoNotConfiguredError(),
 ].map((e) => ({
   code: e.code,
   status: e.status,

@@ -124,6 +124,25 @@ export class SequelizeInviteRepository implements InviteRepository {
     return row ?? null;
   }
 
+  async deleteAllForShop(shopId: string) {
+    const deleted = await this.rows(
+      `DELETE FROM "ShopInvite" WHERE "shopId" = $1 RETURNING "id"`,
+      [shopId],
+    );
+    return deleted.length;
+  }
+
+  async deleteSettledBefore(before: Date, limit: number) {
+    const deleted = await this.rows(
+      `DELETE FROM "ShopInvite" WHERE "id" IN (
+         SELECT "id" FROM "ShopInvite"
+         WHERE COALESCE("revokedAt","acceptedAt","expiresAt") < $1 ORDER BY "expiresAt" LIMIT $2
+       ) RETURNING "id"`,
+      [before, limit],
+    );
+    return deleted.length;
+  }
+
   async markAccepted(id: string, userId: string, now: Date) {
     const updated = await this.rows(
       `UPDATE "ShopInvite" SET "acceptedAt" = $3, "acceptedBy" = $2

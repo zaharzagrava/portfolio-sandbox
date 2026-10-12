@@ -7,7 +7,11 @@ import {
   createInvite,
   createShop,
 } from '@app/test/utils/tenancy-fixtures';
+import { Role } from '@app/domains/identity';
+import { ShopLifecycleService } from './application/shop-lifecycle.service';
 import { ShopProvisioningService } from './application/shop-provisioning.service';
+import { SsoProvisioningService } from './application/sso-provisioning.service';
+import { VerificationService } from './application/verification.service';
 import { createTenancyApp, type TenancyTestApp } from './testing/tenancy-app';
 
 describe('Events of the tenancy domain', () => {
@@ -159,7 +163,87 @@ describe('Events of the tenancy domain', () => {
           }
         },
       ],
+      [
+        'suspend shop',
+        () =>
+          t
+            .http()
+            .post(`/api/admin/shops/${w.shop.id}/suspend`)
+            .set('Authorization', root.bearer)
+            .send({ reason: 'doomed' }),
+      ],
+      [
+        'start offboarding',
+        () =>
+          t
+            .as(w.owner)
+            .post(`/api/shops/${w.shop.id}/offboarding`)
+            .send({ confirmSlug: w.shop.slug }),
+      ],
+      [
+        'cancel offboarding',
+        () => t.as(w.owner).delete(`/api/shops/${closing.id}/offboarding`),
+      ],
+      [
+        'move to another cell',
+        () =>
+          t
+            .http()
+            .put(`/api/admin/shops/${w.shop.id}/directory`)
+            .set('Authorization', root.bearer)
+            .send({
+              cell: 'pooled',
+              region: 'us-east-1',
+              expectedVersion: 1,
+              reason: 'doomed',
+            }),
+      ],
+      [
+        'purge shop',
+        async () => {
+          try {
+            await t.app.get(ShopLifecycleService).purge(closing.id);
+            return { status: 200 };
+          } catch {
+            return { status: 500 };
+          }
+        },
+      ],
+      [
+        'apply verification event',
+        async () => {
+          try {
+            await t.app.get(VerificationService).apply(w.shop.id, 'submitted');
+            return { status: 200 };
+          } catch {
+            return { status: 500 };
+          }
+        },
+      ],
+      [
+        'provision from company sign-in',
+        async () => {
+          try {
+            await t.app
+              .get(SsoProvisioningService)
+              .provision(sellerToProvision.id, `shop:${w.shop.id}`);
+            return { status: 200 };
+          } catch {
+            return { status: 500 };
+          }
+        },
+      ],
     ];
+    const root = await t.newUser({ role: Role.ADMIN });
+    const closing = await createShop(t.app, w.owner, {
+      status: 'DELETING',
+      purgeAt: new Date(Date.now() - 1000),
+    });
+    await sequelize.query(
+      `INSERT INTO "ShopSsoConfig" ("shopId","issuer","clientId","clientSecretEnc","enabled","updatedAt")
+       VALUES ($1,'https://idp.example.com','c','v2.a.b.c',true,now())`,
+      { bind: [w.shop.id] },
+    );
     const before = await snapshot();
     const outboxBefore = await outboxCount();
     await failOutbox();

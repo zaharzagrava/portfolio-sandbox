@@ -100,3 +100,61 @@ export const shopRolesSchema = z
 export const shopSummarySchema = z
   .object({ id: z.string().uuid(), name: z.string(), slug: z.string() })
   .strict();
+
+/** `GET /shops/:shopId/export` (S03 AS-68): everything tenancy holds about the shop, no secret, no digest. */
+export const shopExportSchema = z
+  .object({
+    generatedAt: z.string(),
+    shop: shopSchema,
+    members: z.array(shopMemberSchema),
+    invites: z.array(
+      z
+        .object({
+          id: z.string().uuid(),
+          email: z.string(),
+          role: z.enum(['ADMIN', 'STAFF', 'VIEWER']),
+          status: z.enum(['pending', 'accepted', 'revoked', 'expired']),
+          createdAt: z.string(),
+        })
+        .strict(),
+    ),
+    sso: z
+      .object({
+        issuer: z.string(),
+        clientId: z.string(),
+        defaultRole: z.enum(['STAFF', 'VIEWER']),
+        enabled: z.boolean(),
+      })
+      .strict()
+      .nullable(),
+  })
+  .strict();
+
+/** `GET|PUT /admin/shops/:shopId/directory` (S03 AS-52). */
+export const shopDirectorySchema = z
+  .object({
+    shopId: z.string().uuid(),
+    cell: z.string(),
+    region: z.string(),
+    version: z.number().int(),
+  })
+  .strict();
+
+/** `PUT|GET /shops/:shopId/sso`: what is configured, never the client secret (S03 AS-43). */
+export const shopSsoConfigSchema = z
+  .object({
+    providerId: z.string(),
+    issuer: z.string(),
+    clientId: z.string(),
+    secretSet: z.literal(true),
+    defaultRole: z.enum(['STAFF', 'VIEWER']),
+    enabled: z.boolean(),
+    updatedAt: z.string(),
+  })
+  .strict();
+export type ShopSsoConfigDto = z.infer<typeof shopSsoConfigSchema>;
+
+/** `GET /shops/by-slug/:slug/sso`: the anonymous sign-in page lookup (S03 AS-46). */
+export const shopSsoLookupSchema = z
+  .object({ providerId: z.string(), displayName: z.string() })
+  .strict();
