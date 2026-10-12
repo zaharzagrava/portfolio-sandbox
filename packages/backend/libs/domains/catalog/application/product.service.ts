@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { ElasticsearchService } from '@app/infrastructure/elasticsearch/elasticsearch.service';
 import { ProductValidationError } from '../domain/product-errors';
 import { ProductCommandService } from './product-command.service';
 import { PublicProductService } from './public-product.service';
@@ -18,6 +17,8 @@ export interface ProductSearchParams {
   size?: number;
   from?: number;
 }
+
+const LEGACY_EMPTY_BRAND = 'Unbranded';
 
 export interface LegacyCreateProduct {
   title: string;
@@ -48,15 +49,14 @@ export interface ProductDetailDto {
 }
 
 /**
- * DEPRECATED compatibility facade for `findById`, `create` and `search`, kept only while other capabilities still call
- * them (removal: with the last importer, listed in `specs/domains/S05-products/gaps.md`). New code uses
- * `ProductCommandService`, `ProductQueryService` and the public read routes. `findById` and `create` are thin adapters
- * over the one read path and the one write path; `search` moves to S32 together with its Elasticsearch dependency.
+ * DEPRECATED compatibility facade for `findById` and `create`, kept only while other capabilities still call them
+ * (removal: with the last importer, listed in `specs/domains/S05-products/gaps.md`). New code uses
+ * `ProductCommandService`, `ProductQueryService` and the public read routes. Both are thin adapters over the one read
+ * path and the one write path; search lives in S32 and the catalog no longer touches Elasticsearch.
  */
 @Injectable()
 export class ProductService {
   constructor(
-    private readonly elasticsearchService: ElasticsearchService,
     private readonly commands: ProductCommandService,
     private readonly reads: PublicProductService,
   ) {}
@@ -66,31 +66,17 @@ export class ProductService {
     return view ? { ...view, price: view.priceMinor } : null;
   }
 
-  public search(query: ProductSearchParams) {
-    return this.elasticsearchService.searchProducts({
-      q: query.q,
-      priceMin: query.priceMin,
-      priceMax: query.priceMax,
-      ratingMin: query.ratingMin,
-      category: query.category,
-      brand: query.brand,
-      facets: query.facets ?? false,
-      semantic: query.semantic ?? false,
-      sort: query.sort as never,
-      size: query.size ?? 20,
-      from: query.from ?? 0,
-    });
-  }
-
   public async create(
     params: LegacyCreateProduct,
     sellerId: string,
     shopId?: string,
   ): Promise<{ id: string }> {
     if (!shopId) throw new ProductValidationError(['shopId']);
-    const { price, ...rest } = params;
+    const { price, brand, ...rest } = params;
     return this.commands.create(shopId, sellerId, {
       ...rest,
+      // Legacy callers (public API) allowed an empty brand; the catalog contract needs 1 to 100 characters.
+      brand: brand.trim() === '' ? LEGACY_EMPTY_BRAND : brand,
       priceMinor: price,
     });
   }

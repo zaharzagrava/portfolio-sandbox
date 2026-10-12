@@ -10,6 +10,28 @@ import type { ViewBatchRepository } from '../domain/ports';
 export class SequelizeViewBatchRepository implements ViewBatchRepository {
   constructor(@InjectConnection() private readonly sequelize: Sequelize) {}
 
+  async applyChunk(
+    batchId: string,
+    chunk: number,
+    ids: string[],
+    deltas: number[],
+  ): Promise<boolean> {
+    const transaction = getActiveTransaction();
+    const marker = await this.sequelize.query(
+      `INSERT INTO "ProductViewBatch" ("batchId","chunk","appliedAt") VALUES ($1,$2,now())
+       ON CONFLICT ("batchId","chunk") DO NOTHING RETURNING "batchId"`,
+      { bind: [batchId, chunk], transaction, type: QueryTypes.SELECT },
+    );
+    if (marker.length === 0) return false;
+    await this.sequelize.query(
+      `UPDATE "Product" p SET "viewCount" = p."viewCount" + d.delta
+       FROM unnest($1::uuid[], $2::bigint[]) AS d(id, delta)
+       WHERE p.id = d.id`,
+      { bind: [ids, deltas], transaction },
+    );
+    return true;
+  }
+
   async purgeOlderThan(cutoff: Date): Promise<number> {
     const rows = await this.sequelize.query<{ batchId: string }>(
       `DELETE FROM "ProductViewBatch" WHERE "appliedAt" < $1 RETURNING "batchId"`,

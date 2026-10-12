@@ -14,7 +14,10 @@ import {
   productEvents,
   productRow,
 } from '@app/test/utils/catalog-fixtures';
-import { ProductStockService } from '@app/domains/catalog';
+import {
+  ProductImportService,
+  ProductStockService,
+} from '@app/domains/catalog';
 import { JobsModule } from '@app/infrastructure/jobs/jobs.module';
 import { ProductMaintenanceJobs } from './infra/product-maintenance.jobs';
 import { ProductWorkerModule } from './product-worker.module';
@@ -158,6 +161,111 @@ describe('Product events and observability', () => {
     expect(Number(count[0].n)).toBe(1);
     expect(await catalogEventCount(t.app)).toBe(0);
     expect(await productEntryExists(t.app, product.id)).toBe(true);
+  });
+
+  it('S05 AS-82: stock deltas and external upserts write schema-valid events whose aggregateVersion follows the product version', async () => {
+    const stock = t.app.get(ProductStockService);
+    const imports = t.app.get(ProductImportService);
+    const [imported] = await imports.upsertFromExternal(
+      w.shop.id,
+      [{ ...body, externalSku: 'SKU-9', tags: [] }],
+      'import',
+    );
+    await stock.applyStockDelta([
+      {
+        operationId: `op-${randomUUID()}`,
+        productId: imported.productId!,
+        shopId: w.shop.id,
+        delta: -2,
+        reason: 'checkout',
+      },
+    ]);
+    const events = await productEvents(t.app, imported.productId!);
+    expect(events.map((e) => e.type)).toEqual([
+      'catalog.product_created',
+      'catalog.product_updated',
+    ]);
+    expect(events.map((e) => e.aggregateVersion)).toEqual([1, 2]);
+    for (const event of events)
+      productEventSchemas[event.type as ProductEventType].parse(event.payload);
+    expect(events[1].payload).toMatchObject({ quantity: 3, productVersion: 2 });
+  });
+
+  it('S05 AS-83: when the outbox insert fails a stock delta and an external upsert roll back with their operation and product rows', async () => {
+    const stock = t.app.get(ProductStockService);
+    const imports = t.app.get(ProductImportService);
+    const product = await createProduct(t.app, w.shop, {
+      version: 2,
+      quantity: 10,
+    });
+    await sequelize.query(`
+      CREATE OR REPLACE FUNCTION fail_catalog_outbox() RETURNS trigger AS $$
+      BEGIN
+        IF NEW."type" LIKE 'catalog.%' THEN RAISE EXCEPTION 'outbox is down'; END IF;
+        RETURN NEW;
+      END; $$ LANGUAGE plpgsql;
+      CREATE TRIGGER fail_catalog_outbox_trg BEFORE INSERT ON "Outbox"
+        FOR EACH ROW EXECUTE FUNCTION fail_catalog_outbox();`);
+    try {
+      await expect(
+        stock.applyStockDelta([
+          {
+            operationId: 'op-rollback',
+            productId: product.id,
+            shopId: w.shop.id,
+            delta: -3,
+            reason: 'checkout',
+          },
+        ]),
+      ).rejects.toThrow();
+      await expect(
+        imports.upsertFromExternal(
+          w.shop.id,
+          [{ ...body, externalSku: 'SKU-NEW', tags: [] }],
+          'import',
+        ),
+      ).rejects.toThrow();
+    } finally {
+      await sequelize.query(`
+        DROP TRIGGER IF EXISTS fail_catalog_outbox_trg ON "Outbox";
+        DROP FUNCTION IF EXISTS fail_catalog_outbox();`);
+    }
+    const stored = await productRow<{ version: number; quantity: number }>(
+      t.app,
+      product.id,
+    );
+    expect(stored).toMatchObject({ version: 2, quantity: 10 });
+    const [ops] = await sequelize.query<{ n: string }>(
+      `SELECT count(*) AS n FROM "ProductStockOperation"`,
+      { type: QueryTypes.SELECT },
+    );
+    expect(Number(ops.n)).toBe(0);
+    const [products] = await sequelize.query<{ n: string }>(
+      `SELECT count(*) AS n FROM "Product" WHERE "shopId" = :s`,
+      { type: QueryTypes.SELECT, replacements: { s: w.shop.id } },
+    );
+    expect(Number(products.n)).toBe(1);
+    expect(await catalogEventCount(t.app)).toBe(0);
+  });
+
+  it('S05 AS-85: no catalog metric carries a product, shop or user label', () => {
+    for (const name of [
+      'catalog_product_read_total',
+      'catalog_product_invalidation_total',
+      'catalog_view_flush_total',
+      'catalog_stock_operation_total',
+      'catalog_shop_sweep_total',
+      'catalog_product_write_total',
+    ])
+      for (const labels of MetricsRegistry.labelSets(name))
+        for (const key of Object.keys(labels))
+          expect([
+            'outcome',
+            'result',
+            'kind',
+            'operation',
+            'reason',
+          ]).toContain(key);
   });
 
   it('S05 AS-85: each write logs one audit line with requestId and ids and no body; the write counter moves; errors are problem+json with code, status and type', async () => {

@@ -3,7 +3,6 @@ import { SequelizeModule } from '@nestjs/sequelize';
 import { AuthModule } from '@app/domains/identity';
 import { TenancyModule } from '@app/domains/tenancy';
 import { CacheModule } from '@app/infrastructure/cache/cache.module';
-import { ElasticsearchModule } from '@app/infrastructure/elasticsearch/elasticsearch.module';
 import { EventsModule } from '@app/infrastructure/events/events.module';
 import { RateLimitModule } from '@app/infrastructure/rate-limit';
 import { ClockModule } from '@app/infrastructure/platform/clock.module';
@@ -23,7 +22,9 @@ import {
   PRODUCT_REPOSITORY,
   STATUS_HISTORY_REPOSITORY,
   STOCK_OPERATION_REPOSITORY,
+  VIEW_BATCH_REPOSITORY,
 } from './domain/ports';
+import { SequelizeViewBatchRepository } from './infra/view-batch.repository';
 import { SequelizeStockOperationRepository } from './infra/stock-operation.repository';
 import Product from './infra/models/product.model';
 import ProductShopState from './infra/models/product-shop-state.model';
@@ -48,7 +49,6 @@ import { catalogRatePolicies } from './rate-limit-policies';
     AuthModule,
     ClockModule,
     ProductDtoModule,
-    ElasticsearchModule,
     EventsModule.forAggregates([PRODUCTS_AGGREGATE]),
     CacheModule,
     TenancyModule,
@@ -60,6 +60,7 @@ import { catalogRatePolicies } from './rate-limit-policies';
       provide: STOCK_OPERATION_REPOSITORY,
       useClass: SequelizeStockOperationRepository,
     },
+    { provide: VIEW_BATCH_REPOSITORY, useClass: SequelizeViewBatchRepository },
     ProductViewsService,
     PublicProductService,
     ProductQueryService,

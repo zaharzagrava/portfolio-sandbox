@@ -51,6 +51,8 @@ Numbers to record in the final report: `check:table-ownership` `catalog` 3 → 0
 - Pending view counts staged under the old Redis name `wb:{product-views}` at deploy time are not read by the new code (loss ≤ one flush interval, analytics-grade, FR-037).
 - Old `product:v1:*` entries expire by TTL; the new key space is `product:v2:*`.
 - Routes `POST /products`, `POST /products/shops/:shopId`, `GET /products/search`, `GET /shops/:shopId/products/search` answer `404` after this release; `packages/web` is adapted in the same change.
+- Run the migrations of the contract step against the right database: `--env test` reads `.env`, so for the test stack use `DOTENV_CONFIG_PATH=.env.test pnpm run db:jest:migrate:up`. `…-contract-fks` and `…-contract-shop-not-null` are deploy steps of their own, after `products.backfill-shop-ids` has finished.
+- `Product.embedding` and `Product.searchVector` are not dropped yet: `libs/domains/discovery/application/shop-product-search.service.ts` still reads `"Product"."searchVector"` (see `gaps.md`, S32).
 - Orphan products (no `shopId` and no `sellerId`) block the `NOT NULL` contract migration; resolve them by hand (assign a shop or archive) before running it.
 
 ## Ops artifacts (criteria no automated test proves)
@@ -62,7 +64,6 @@ Each is also a row in `specs/UNVERIFIED.md` (status `not run`). Do not describe 
 | **SC-004** (99% of pages show a new price within 5 s, 100% within 6 minutes even if the notification is lost, under production-like load) | Deployed stack with the real broker: script that updates a price on 1,000 products, polls `GET /products/:id` from two instances every 250 ms, records time-to-new-price per product; repeat with the invalidation consumer stopped to confirm the 6-minute bound. The automated tests prove the mechanism (AS-30, AS-39–AS-46, p99 over 100 events in the test environment) but not the percentile at scale |
 | **SC-007** (after 10,000 views of one product at most one count write per 10 s for it; stored count equals views served) | k6 script of 10,000 `GET /products/:id` for one id against a deployed stack with the worker running; count `UPDATE "Product"` statements touching the id through `pg_stat_statements` over the run; compare `viewCount` to the number of `200`/`304` answers. Automated tests prove the flush logic with 5 and 2,500 views (AS-66, AS-69) |
 | **SC-008** (a seller lists a new product and sees it in the inventory in under 2 minutes of interaction) | Stopwatch walk-through of the W04 inventory screen once it exists (add product, see it in the list), 5 runs, median reported. The API half (create then list) is proven by AS-01 and AS-14 |
-
 | **SC-009** (0 cross-domain queries for `catalog` and 0 queries against the product table from any other domain) | `pnpm check:table-ownership --strict`. The `catalog` half is expected green and is asserted in the final report; the second half stays red until the consumers in `gaps.md` section C migrate (same situation as S03's SC-009), so the criterion as a whole is not run |
 
 SC-001, SC-002, SC-003, SC-005, SC-006 and SC-010 are proven by tests and gates named in the table above (SC-001 matrix and SC-002 1,000-request run are explicit test cases in `product-write` and `product-query-stock`).

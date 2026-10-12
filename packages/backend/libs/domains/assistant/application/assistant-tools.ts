@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import type Anthropic from '@anthropic-ai/sdk';
 import { z } from 'zod';
 import { ProductService } from '@app/domains/catalog';
+import { ElasticsearchService } from '@app/infrastructure/elasticsearch/elasticsearch.service';
 import { AvailabilityIndex } from '@app/domains/fulfilment';
 
 export interface ToolContext {
@@ -108,6 +109,7 @@ export class AssistantToolExecutor {
 
   constructor(
     private readonly products: ProductService,
+    private readonly search: ElasticsearchService,
     private readonly availability: AvailabilityIndex,
   ) {}
 
@@ -121,11 +123,14 @@ export class AssistantToolExecutor {
         case 'search_products': {
           const args = SearchInput.safeParse(input);
           if (!args.success) return invalid(input);
-          const res = await this.products.search({
+          const res = await this.search.searchProducts({
             q: args.data.query,
             priceMax: args.data.max_price ?? undefined,
             category: args.data.category ?? undefined,
+            facets: false,
+            semantic: false,
             size: args.data.limit ?? 5,
+            from: 0,
           });
           const hits = res.hits.map((h) => ({
             id: h.id,

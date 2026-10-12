@@ -48,6 +48,12 @@ A shop sells products. Members of a shop ({{concept:tenant-shop-rbac}}, {{cap:S0
 - **S05.R-18** An invalidation event deletes the entry only when its version is higher than the cached one; stale or duplicate events change nothing. [proof: S05 AS-41, S05 AS-42, S05 AS-43]
 - **S05.R-19** `applyStockDelta` is all-or-nothing, idempotent by `operationId`, and MUST NOT take stock below 0 or above 1,000,000,000. [proof: S05 AS-52, S05 AS-53, S05 AS-54, S05 AS-58, S05 AS-59] [code: packages/backend/libs/domains/catalog/domain/stock-rule.ts#applyDelta]
 - **S05.R-20** Every committed change writes one versioned product event in the same transaction ({{concept:outbox-task-queue}}). [proof: S05 AS-82, S05 AS-83]
+- **S05.R-21** The view flush claims the pending counts, applies them in chunks of at most 1,000 products (one transaction and one `ProductViewBatch` marker per chunk), changes no `version`, writes no event and deletes no cache entry; two concurrent flushes apply each count once. [proof: S05 AS-66, S05 AS-69, S05 AS-71, S05 AS-74] [code: packages/backend/libs/domains/catalog/application/product-views.service.ts#ProductViewsService]
+- **S05.R-22** A failed chunk stops the flush: the chunks not yet applied go back to the pending counts, the applied ones stay, and the next flush stores each count exactly once; members that are not UUIDs are skipped and counted. [proof: S05 AS-67, S05 AS-69, S05 AS-70]
+- **S05.R-23** The catalog keeps the shop status from `tenancy.shop_status_changed`, ignoring an event whose `shopVersion` is not above the stored one, and drops the shop's cache entries in batches of at most 1,000. [proof: S05 AS-76, S05 AS-78] [code: packages/backend/libs/domains/catalog/infra/shop-consumers.ts#ShopStatusConsumer]
+- **S05.R-24** On `tenancy.shop_deleted` the catalog deletes the shop's products, history and stock operations in transactions of at most 500 products, writes one `catalog.product_deleted` per product with `productVersion` one above its last, and can run again after any interruption. [proof: S05 AS-77] [code: packages/backend/libs/domains/catalog/application/shop-listing.service.ts#ShopListingService]
+- **S05.R-25** Products without a shop get the shop of their owner through `ShopProvisioningService.ensureShopsForLegacySellers` (at most 200 owners per call, at most 200 products per transaction), with one `catalog.product_updated` per product; `Product.shopId` is `NOT NULL` and `Product` has no foreign key to `User` or `Shop`, and no table of another domain holds a foreign key that references `Product` (they keep a plain `productId`; cleanup follows the `catalog.product_*` events). [proof: S05 AS-79, S05 AS-80] [code: packages/backend/libs/domains/catalog/application/product-backfill.service.ts#ProductBackfillService]
+- **S05.R-26** A product created in a sandbox shop is flagged `isSandbox`, every event carries the flag, and the product is never public. [proof: S05 AS-81]
 
 ## Behaviors
 - **S05.B-01** Given a `STAFF` member of an active shop, when they post a valid product, then the answer is `201` with the member view at `version: 1`. [proof: S05 AS-01]
@@ -68,6 +74,10 @@ A shop sells products. Members of a shop ({{concept:tenant-shop-rbac}}, {{cap:S0
 - **S05.B-16** Given a new `externalSku`, when `upsertFromExternal` runs, then a product is created; an identical second call is idempotent. [proof: S05 AS-60, S05 AS-61]
 - **S05.B-17** Given five reads and a flush, when the job runs, then the stored `viewCount` is 5 with `version` unchanged. [proof: S05 AS-66]
 - **S05.B-18** Given an operation record older than 30 days, when the purge job runs, then it is deleted. [proof: S05 AS-65]
+- **S05.B-19** Given 2,500 products with pending views and a failure in the second chunk, when the flush runs, then 1,000 are stored, 1,500 stay pending, and the next flush stores the rest once. [proof: S05 AS-69]
+- **S05.B-20** Given a shop with 2,500 products suspended at `shopVersion: 5`, when the event is consumed, then its products answer `404`, and reinstating at `shopVersion: 6` shows them again. [proof: S05 AS-76]
+- **S05.B-21** Given `tenancy.shop_deleted` for a shop of 1,200 products, when the purge runs, then 1,200 `catalog.product_deleted` events exist and the other shops are untouched. [proof: S05 AS-77]
+- **S05.B-22** Given 453 products of two owners without a shop, when the backfill runs twice at once, then each product gets its owner's shop once. [proof: S05 AS-79]
 
 ## Lifecycles
 Statuses: `ACTIVE` and `ARCHIVED`. A shop member with `products.write` moves them with `archive` and `restore`; each move adds a status-history row and increments `version`. The external upsert never revives an archived product.
@@ -76,7 +86,7 @@ Statuses: `ACTIVE` and `ARCHIVED`. A shop member with `products.write` moves the
 - Tables: `Product`, `ProductShopState`, `ProductStatusHistory`, `ProductStockOperation`, `ProductViewBatch`.
 - Events: `catalog.product_created`, `catalog.product_updated`, `catalog.product_archived`, `catalog.product_restored`, `catalog.product_deleted` on topic `products.events`.
 - Rate policies: `catalog.product-write.shop` (120/min), `catalog.product-read.ip` (600/min), `catalog.batch-read.ip` (120/min).
-- Job: `products.flush-view-counts`.
+- Jobs: `products.flush-view-counts` (every 10 s, one run in the fleet), `products.purge-stock-operations`, `products.drop-shop-entries`, `products.purge-shop`, `products.backfill-shop-ids`.
 
 ## Decisions
 - Money is an integer in minor units with one platform currency, never a float.
@@ -87,8 +97,6 @@ Statuses: `ACTIVE` and `ARCHIVED`. A shop member with `products.write` moves the
 - Entries carry the product version so late events and slow readers cannot restore old data.
 
 ## Known gaps
-- No test id covers AS-33 (limiter store down), AS-36 hot key as listed in the code excerpts beyond cache tests, or AS-67 to AS-79 (flush failures, chunks, two workers, shop suspension, shop purge, backfill); the specification lists them but no test carries these ids except AS-80.
-- AS-81 (sandbox stamping) has no test carrying its id.
-- Tests listed for the following ids in the facts exist, but the fact list does not show their detail: AS-40, AS-44 to AS-47 are covered only by the invalidation file.
+- `Product.embedding` and `Product.searchVector` still exist: `libs/domains/discovery/application/shop-product-search.service.ts` reads `searchVector`, so the drop waits for S32.
 - R-16 negative caching and R-11 rate-limit fail-closed on limiter outage have no `[proof]` for the outage case.
-- AS-73 to AS-75 (not counted cases, no write amplification, schedule) have no test.
+- A failed flush whose restore also fails leaves the claim for the cache toolkit's reclaim after the claim age; a chunk applied before that failure can then be counted twice (analytics-grade counts, at most one flush).

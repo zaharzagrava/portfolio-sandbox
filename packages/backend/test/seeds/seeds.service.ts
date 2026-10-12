@@ -75,6 +75,8 @@ export class SeedsService {
         sqlModel: this.productModel,
         defaults: {
           title: () => `Product ${uuidv4().slice(0, 8)}`,
+          // `Product.shopId` is NOT NULL (S05) and a plain id: no shop row is needed for a product to exist.
+          shopId: () => uuidv4(),
           description: 'Seeded product',
           brand: 'Acme',
           category: 'electronics',

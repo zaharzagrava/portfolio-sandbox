@@ -161,6 +161,16 @@ export interface StockOperationRepository {
 }
 
 export interface ViewBatchRepository {
+  /**
+   * Inside the caller's transaction: records the `(batchId, chunk)` marker and adds `deltas[i]` to the `viewCount` of
+   * `ids[i]` in one statement. `false` (nothing written) when the marker already exists, i.e. the chunk was applied.
+   */
+  applyChunk(
+    batchId: string,
+    chunk: number,
+    ids: string[],
+    deltas: number[],
+  ): Promise<boolean>;
   /** Deletes the chunk markers applied before `cutoff`; returns how many. */
   purgeOlderThan(cutoff: Date): Promise<number>;
 }
@@ -184,10 +194,53 @@ export interface ShopStateRepository {
     status: ShopStateStatus;
     shopVersion: number;
   } | null>;
+  /** Upsert guarded by `shopVersion`: `false` (nothing written) when the stored version is not lower. */
+  apply(
+    shopId: string,
+    status: ShopStateStatus,
+    shopVersion: number,
+    now: Date,
+  ): Promise<boolean>;
+  remove(shopId: string): Promise<void>;
+}
+
+/** Bounded sweeps over the products of one shop (suspension and offboarding). */
+export interface ShopSweepRepository {
+  /** Ids of the shop's products after `after` (keyset on id), at most `limit`. */
+  idsAfter(
+    shopId: string,
+    after: string | null,
+    limit: number,
+  ): Promise<string[]>;
+  /** Locks up to `limit` of the shop's products (`FOR UPDATE SKIP LOCKED`, ordered by id). */
+  lockBatch(
+    shopId: string,
+    limit: number,
+  ): Promise<Array<{ id: string; version: number }>>;
+  /** Deletes the products with their status-history and stock-operation rows. */
+  deleteBatch(shopId: string, ids: string[]): Promise<void>;
+}
+
+export interface LegacyBackfillRepository {
+  /** Distinct legacy owners (`sellerId`, else `createdBy`) of products with no shop, ascending, at most `limit`. */
+  legacySellers(limit: number): Promise<string[]>;
+  /** Products with no shop and no owner to derive one from. */
+  orphanCount(): Promise<number>;
+  /**
+   * Gives up to `limit` shop-less products of `sellerId` that shop (`SKIP LOCKED`), `version + 1`; returns them.
+   */
+  assignShop(
+    sellerId: string,
+    shopId: string,
+    limit: number,
+    now: Date,
+  ): Promise<ProductRecord[]>;
 }
 
 export const PRODUCT_REPOSITORY = Symbol('PRODUCT_REPOSITORY');
 export const STATUS_HISTORY_REPOSITORY = Symbol('STATUS_HISTORY_REPOSITORY');
 export const SHOP_STATE_REPOSITORY = Symbol('SHOP_STATE_REPOSITORY');
+export const SHOP_SWEEP_REPOSITORY = Symbol('SHOP_SWEEP_REPOSITORY');
+export const LEGACY_BACKFILL_REPOSITORY = Symbol('LEGACY_BACKFILL_REPOSITORY');
 export const STOCK_OPERATION_REPOSITORY = Symbol('STOCK_OPERATION_REPOSITORY');
 export const VIEW_BATCH_REPOSITORY = Symbol('VIEW_BATCH_REPOSITORY');

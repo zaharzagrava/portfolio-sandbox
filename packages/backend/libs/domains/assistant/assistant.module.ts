@@ -7,6 +7,7 @@ import { assistantRatePolicies } from './rate-limit-policies';
 import { KafkaProducerModule } from '@app/infrastructure/kafka/kafka-producer.module';
 import { ClickHouseModule } from '@app/infrastructure/clickhouse/clickhouse.module';
 import { ProductModule } from '@app/domains/catalog';
+import { ElasticsearchModule } from '@app/infrastructure/elasticsearch/elasticsearch.module';
 import { PickupModule } from '@app/domains/fulfilment';
 import { EntitlementsService, UsageService } from '@app/domains/billing';
 import { ConversationStore } from './infra/conversation.store';
@@ -30,6 +31,7 @@ import { LlmMeter } from './infra/llm/llm-meter';
     KafkaProducerModule,
     ClickHouseModule,
     ProductModule,
+    ElasticsearchModule,
     PickupModule,
   ],
   providers: [

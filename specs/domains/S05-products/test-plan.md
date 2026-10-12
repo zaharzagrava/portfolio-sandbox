@@ -114,7 +114,7 @@ Abbreviations for the e2e files (all under `libs/domains/catalog/`):
 | AS-84 timeouts | C: table lock → cold read 503 within 3 s, warm still served | — | — |
 | AS-85 observability | E: log fields, metrics move, problem+json members | — | — |
 | AS-86 boundary, static | static gates in CI: `check:table-ownership --strict`, `check:boundaries`; B: a test module importing only the entry point compiles and resolves every R1 service | — | — |
-| AS-87 removed search routes | B: catalog modules alone answer 404 for both search routes | — | — |
+| AS-87 removed search routes | B: catalog modules alone answer 400 (malformed id) for `/products/search`; an app with S32 answers 200 | — | — |
 
 ## Coverage notes
 

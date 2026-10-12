@@ -58,6 +58,10 @@ Format: `[TAG] question → default taken → why`. BREAKING first, then CONTRAC
 - [LOCAL] `embedding` and `searchVector` columns → no longer written or serialized by the catalog; S32 decides where they live → D-16.
 - [LOCAL] Event `description` in the snapshot → included (≤ 4,000 characters) so projectors need no read.
 
+## W02 follow-up: `category` alphabet (2026-10-12)
+
+- [CONTRACT] Is `category` a lowercase slug (`^[a-z0-9-]{1,40}$`)? → No: it stays free text (1–100 characters, as AS-02 specifies) → enforcing a slug is a breaking contract change spec.md does not ask for, and would reject existing rows on edit; W02 and S35 normalise on their side (see `gaps.md`, Sibling-spec follow-ups). Reviewer: edit this line to require the slug and S05 will add the rule to the contract and `product-input.ts` with an AS id.
+
 ## Implementation notes (P1 pass, 2026-10-10)
 
 Two scenario wordings that the built framework answers differently; the implementation follows the framework and the contract's answer order, and neither blocks anything.

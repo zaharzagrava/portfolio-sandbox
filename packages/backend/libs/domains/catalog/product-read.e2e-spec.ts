@@ -18,7 +18,10 @@ import {
   createProduct,
   recordStatements,
 } from '@app/test/utils/catalog-fixtures';
+import { TransactionRunner } from '@app/infrastructure/context';
+import { ProductViewsService } from './application/product-views.service';
 import { ProductViewsJobs } from './infra/product-views.jobs';
+import { SequelizeViewBatchRepository } from './infra/view-batch.repository';
 import { createCatalogApp, type CatalogTestApp } from './testing/catalog-app';
 import {
   createShopWorld,
@@ -180,8 +183,13 @@ describe('Public product read API', () => {
       }
       await waitUntil(async () => (await pendingViews(product.id)) === 5);
 
-      const jobs = new ProductViewsJobs(redis, {} as JobsService, sequelize);
-      await jobs.flush();
+      const views = new ProductViewsService(
+        redis,
+        t.clock,
+        t.app.get(TransactionRunner, { strict: false }),
+        new SequelizeViewBatchRepository(sequelize),
+      );
+      await new ProductViewsJobs({} as JobsService, views).flush();
 
       const [after] = await row();
       expect(Number(after.viewCount)).toBe(Number(before.viewCount) + 5);

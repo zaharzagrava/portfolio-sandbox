@@ -7,7 +7,10 @@ import {
   ProductStockService,
 } from '@app/domains/catalog';
 import { generateTestingModule } from '@app/test/utils/global-modules';
-import { createShopWorld } from './testing/catalog-spec-kit';
+import {
+  createSearchApp,
+  type SearchTestApp,
+} from '../discovery/testing/search-app';
 import { createCatalogApp, type CatalogTestApp } from './testing/catalog-app';
 
 /**
@@ -86,24 +89,25 @@ describe('Catalog module boundary', () => {
 
   describe('removed search routes (AS-87)', () => {
     let t: CatalogTestApp;
+    let withSearch: SearchTestApp;
     beforeAll(async () => {
       t = await createCatalogApp();
+      withSearch = await createSearchApp();
     });
-    afterAll(() => t.close());
-    beforeEach(() => t.reset());
+    afterAll(async () => {
+      await t.close();
+      await withSearch.close();
+    });
 
-    it('S05 AS-87: an application that loads only the catalog modules answers 404 for both search routes', async () => {
-      const world = await createShopWorld(t);
-      await t.http().get('/api/products/search?q=coat').expect(404);
-      await t.as(world.staff).get('/api/products/search?q=coat').expect(404);
-      await t
-        .as(world.staff)
-        .get(`/api/shops/${world.shop.id}/products/search?q=coat`)
-        .expect(404);
-      await t
-        .as(world.viewer)
-        .get(`/api/shops/${world.shop.id}/products/search?q=coat`)
-        .expect(404);
+    it('S05 AS-87: the catalog alone serves no search route: `search` is a malformed product id (400)', async () => {
+      await t.http().get('/api/products/search?q=coat').expect(400);
+      await t.http().get('/api/products/not-a-uuid').expect(400);
+    });
+
+    it('S05 AS-87: an application mounting S32 answers GET /api/products/search from it, and a malformed id still gets 400', async () => {
+      await withSearch.resetSearch();
+      await withSearch.http().get('/api/products/search?q=coat').expect(200);
+      await withSearch.http().get('/api/products/not-a-uuid').expect(400);
     });
   });
 });
