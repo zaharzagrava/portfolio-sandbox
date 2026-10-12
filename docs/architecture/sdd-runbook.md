@@ -239,8 +239,13 @@ fix the cause and delete its `BLOCKED.md` (or set `RETRY_BLOCKED=1`).
 
 **A failing gate is handed back to the agent.** When the gate fails, the loop gives the agent a digest of the failure (failing
 tests, compiler or lint errors, scenarios without a test) and lets it repair the cause, then runs the gate again. At most
-`MAX_GATE_REPAIRS` (default 2) attempts; after that the run stops with "gate failed". The agent may not weaken, skip or delete a
+`MAX_GATE_REPAIRS` (default 5) attempts; after that the run stops with "gate failed". The agent may not weaken, skip or delete a
 test; a failure outside the capability's own files is still fixed and noted under "Gate repairs" in the spec's `gaps.md`.
+
+Gate speed (quality unchanged): the backend core gate (tsc, unit suites, module graph, model registry, boundaries) is skipped when
+`packages/backend`, `packages/contracts` and the lockfile are byte-identical to the last time it passed in this checkout (fingerprint in
+`.git/sdd-core-gate-ok`). After a failed web gate, the Playwright tests that failed run first (`--last-failed`, seconds); the full suite
+must still pass before a spec is done. `PW_WORKERS` sets the Playwright workers (the VM uses 3; the config default is 2).
 
 **Unattended runs.** `RUN_DEADLINE=<epoch seconds>` ends the whole run (no call starts after it, none outlives it): exit 76
 and a "time budget used" notification. A login failure exits 77. With `PUSH_BRANCH=<name>` every commit is pushed there. The

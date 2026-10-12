@@ -51,7 +51,7 @@ API_URL="${API_URL:-http://localhost:8000}"
 # Implementation needs to build and run tests, on top of the file tools in lib.sh.
 TEST_SPEC="$ROOT/scripts/sdd/test-spec.sh"   # condensed e2e runner: far fewer tokens per red/green iteration
 IMPL_TOOLS=("Bash($TEST_SPEC:*)" 'Bash(npx tsc:*)' 'Bash(npx jest:*)' 'Bash(npx nest build:*)' 'Bash(npx vitest:*)' 'Bash(npx playwright:*)'
-            'Bash(python3 scripts/sdd/check-tests.py:*)' 'Bash(python3 scripts/sdd/tasks-scope.py:*)' 'Bash(pnpm:*)' 'Bash(node:*)' 'Bash(docker compose:*)' 'Bash(curl:*)'
+            'Bash(python3 scripts/sdd/check-tests.py:*)' 'Bash(python3 scripts/sdd/tasks-scope.py:*)' 'Bash(bash scripts/sdd/stack-fix.sh:*)' 'Bash(pnpm:*)' 'Bash(node:*)' 'Bash(docker compose:*)' 'Bash(curl:*)'
             'Bash(cd:*)' 'Bash(cat:*)' 'Bash(grep:*)' 'Bash(find:*)' 'Bash(git log:*)')
 
 # push_branch: with PUSH_BRANCH set, publish HEAD to that branch (best effort; the VPS runner sets it so nothing is lost).
@@ -85,17 +85,49 @@ backend_core_gate() {
   )
 }
 
+# The backend core gate only reads packages/backend, packages/contracts and the lockfile. If those files are byte-identical to
+# the last time it passed in this checkout, it would pass again: skip it (a web repair that touches only packages/web is the case).
+core_fingerprint() {
+  git ls-files -z -c -o --exclude-standard -- packages/backend packages/contracts pnpm-lock.yaml \
+    | xargs -0 sha1sum 2>/dev/null | sha1sum | cut -d' ' -f1
+}
+CORE_OK_FILE="$(git rev-parse --git-dir)/sdd-core-gate-ok"   # inside .git: never committed
+core_gate_cached() {
+  local fp; fp="$(core_fingerprint)"
+  if [[ -f "$CORE_OK_FILE" && "$(cat "$CORE_OK_FILE")" == "$fp" ]]; then
+    echo "backend core gate: files unchanged since it last passed, skipped"; return 0
+  fi
+  if backend_core_gate; then echo "$fp" > "$CORE_OK_FILE"; return 0; fi
+  rm -f "$CORE_OK_FILE"; return 1
+}
+
+# After a gate failure, run the Playwright tests that failed last time first (seconds, not minutes). Only a shortcut for a
+# failing attempt: the full gate below still has to pass before anything is marked done.
+web_failed_first() {
+  local f=packages/web/test-results/.last-run.json
+  [[ -f "$f" ]] || return 0
+  python3 - "$f" <<'PY' || return 0
+import json,sys
+j=json.load(open(sys.argv[1]))
+sys.exit(0 if j.get("status")=="failed" and j.get("failedTests") else 1)
+PY
+  echo "re-running the tests that failed last time first"
+  (cd packages/web && API_URL="$API_URL" pnpm test:e2e --last-failed ${PW_WORKERS:+--workers="$PW_WORKERS"})
+}
+
 gate() { # $1 = domain column; everything must pass
-  backend_core_gate || return 1
+  if [[ "$(kind_of "$1")" == web ]]; then web_failed_first || return 1; fi
+  core_gate_cached || return 1
   case "$(kind_of "$1")" in
     backend)
       (cd packages/backend && NODE_ENV=test NODE_OPTIONS=--experimental-vm-modules timeout 1800 npx jest --ci --runInBand --forceExit --config jest-e2e.json "$(code_path "$1")") || return 1 ;;
     web)
+      bash "$ROOT/scripts/sdd/stack-fix.sh" smoke || return 1
       (
         cd packages/web &&
         npx tsc --noEmit -p tsconfig.json &&
         pnpm test &&                               # Vitest: UI-only logic, component states, a11y
-        API_URL="$API_URL" pnpm test:e2e           # Playwright: happy-path journeys + layout screenshots
+        API_URL="$API_URL" pnpm test:e2e ${PW_WORKERS:+--workers="$PW_WORKERS"}   # Playwright: happy-path journeys + layout screenshots (PW_WORKERS overrides the config)
       ) || return 1 ;;
     journey)
       (cd packages/backend && API_URL="$API_URL" pnpm test:journeys) || return 1 ;;
@@ -210,7 +242,7 @@ gate_digest() {
 
 # repair_prompt <gate log>: what the agent is told when the gate fails.
 repair_prompt() {
-  printf '%s\n%s' "The hard gate for this capability FAILED. Find the cause and fix it so the whole gate passes. Rules: never weaken, skip or delete a test; a test that fails outside this capability's own files is still a real failure (the code under it may be wrong, e.g. it can depend on the machine's time zone): fix the code and note it under a '## Gate repairs' heading in this spec's gaps.md; a scenario that test-plan.md says has a test must get a real test whose title starts with this capability's ID and the scenario (for example it('S53 AS-27: ...')), not just a tag; change nothing unrelated. Re-run the failing check yourself before you stop (scripts/sdd/test-spec.sh for e2e specs, npx tsc --noEmit, python3 scripts/sdd/check-tests.py ...). Gate output, digested:" "$(gate_digest "$1")"
+  printf '%s\n%s' "The hard gate for this capability FAILED. Find the cause and fix it so the whole gate passes. Rules: never weaken, skip or delete a test; a test that fails outside this capability's own files is still a real failure (the code under it may be wrong, e.g. it can depend on the machine's time zone): fix the code and note it under a '## Gate repairs' heading in this spec's gaps.md; a scenario that test-plan.md says has a test must get a real test whose title starts with this capability's ID and the scenario (for example it('S53 AS-27: ...')), not just a tag; change nothing unrelated. Before editing anything, decide whether the failure is a fault of the ENVIRONMENT or of the code: many tests failing the same way at a 30 s timeout, an HTTP 503 or 5xx from an endpoint the failing tests only wait on, a missing browser (browserType.launch), a container that is down or an empty or stale search index are environment faults. For those run 'bash scripts/sdd/stack-fix.sh smoke' (it says what is wrong and what to run: 'browser', 'reindex') and 'bash scripts/sdd/stack-fix.sh <action>'; read the API log (/var/log/sdd/api.log on the runner) for the real error; if the root cause is a defect in product or backend code (for example a start-up hook that creates a resource with an old definition), fix THAT code, not the tests, and say so under '## Gate repairs' in gaps.md. Never change a test or a page to get around a broken environment. Re-run the failing check yourself before you stop (scripts/sdd/test-spec.sh for e2e specs, npx tsc --noEmit, python3 scripts/sdd/check-tests.py ...). Gate output, digested:" "$(gate_digest "$1")"
 }
 
 # Rules that apply to every capability, plus follow-ups that already-built specs left for this one.
@@ -348,16 +380,16 @@ ordered_capabilities "$@" | while IFS=$'\t' read -r id domain slug title sources
   fi
 
   # The gate is a hard check, but a failing gate is usually fixable (a missing test, a lint error, a bug the capability exposed):
-  # hand the failure to the agent, then run the gate again. MAX_GATE_REPAIRS (default 3) bounds the attempts.
+  # hand the failure to the agent, then run the gate again. MAX_GATE_REPAIRS (default 5) bounds the attempts.
   attempt=0
   while :; do
     echo "  gate"
     if { MAX_PRIORITY="$limit" gate_extras "$id" "$domain" "$dir" && MAX_PRIORITY="$limit" gate "$domain"; } >"$dir/.gate.log" 2>&1; then break; fi
     attempt=$((attempt + 1))
-    if (( attempt > ${MAX_GATE_REPAIRS:-3} )); then
+    if (( attempt > ${MAX_GATE_REPAIRS:-5} )); then
       echo "FAIL  $id: gate (see $dir/.gate.log)" >&2; echo "$id gate failed" > "$STATE_FILE"; exit 20
     fi
-    echo "  gate failed: asking the agent to repair it (attempt $attempt of ${MAX_GATE_REPAIRS:-3})"
+    echo "  gate failed: asking the agent to repair it (attempt $attempt of ${MAX_GATE_REPAIRS:-5})"
     : > "$dir/.repaired-by-agent"
     step "$dir" "repair-$attempt" "/speckit-implement $CONTEXT $(repair_prompt "$dir/.gate.log") $LIMIT_TEXT"
   done

@@ -77,6 +77,9 @@ say "starting from $start_ref ($(git rev-parse --short HEAD))"
 
 # --- dependencies and the files git does not carry
 pnpm install --frozen-lockfile --prefer-offline >"$LOG/install.log" 2>&1 || fail_and_wait "pnpm install failed (see $LOG/install.log)"
+if [[ "${SDD_IMAGE:-be}" == fe ]]; then
+  (cd packages/web && pnpm exec playwright install chromium >"$LOG/playwright-install.log" 2>&1) || fail_and_wait "playwright install chromium failed (see $LOG/playwright-install.log)"
+fi
 [[ -f packages/backend/.env.test ]] || cp packages/backend/env/test.env.example packages/backend/.env.test
 if [[ ! -f packages/backend/creds/jwtRS256.key ]]; then
   mkdir -p packages/backend/creds
@@ -128,6 +131,7 @@ fi
 say "test stack ready; memory: $(free -h | awk 'NR==2{print $3" used of "$2}')"
 
 # --- watch it from a tmux session (ssh in, 'tmux attach -t sdd'), monitor in the background
+export PW_WORKERS="${PW_WORKERS:-3}"   # Playwright workers on the 8-core machine (the config default is 2)
 export ORDER="$SDD_ORDER" COMMIT=1 PUSH_BRANCH PASS_TIMEOUT_S NTFY_TOPIC NTFY_SERVER HEARTBEAT_URL
 [[ -n "${SDD_UNTIL:-}" ]] && export UNTIL="$SDD_UNTIL"
 export RUN_DEADLINE=$(( $(date +%s) + SDD_HOURS * 3600 ))

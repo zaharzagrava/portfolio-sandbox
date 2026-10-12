@@ -30,8 +30,9 @@ export class ElasticsearchService implements OnModuleInit {
   }
 
   async onModuleInit() {
+    // The products index is created by the S32 IndexBootstrapService (onApplicationBootstrap) with the current mapping. Creating it
+    // here too (this hook runs first) left the legacy mapping behind: productId as text, so every search sort failed with a 503.
     try {
-      await this.ensureProductsIndex();
       this.l.log(
         `Elasticsearch ready at ${this.configService.get('elasticsearch_node')}`,
       );
