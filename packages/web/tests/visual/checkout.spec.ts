@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { expectMainFitsWidth, expectNoSeriousViolations } from './axe';
-import { productId, register } from '../helpers';
+import { SEED, createIsolatedProduct, productId, register } from '../helpers';
 
 /**
  * VK rows of W03 (AS-74, SC-008): the checkout screens' layout at the phone (390 x 844) and desktop (1280 x 800) widths,
@@ -15,7 +15,8 @@ async function memberWithCart(page: Page, title?: string) {
     navigator.sendBeacon = () => false; // a beacon bypasses `page.route`; the keep-alive fallback is answered below
   });
   await page.route('**/api/events', (route) => route.fulfill({ status: 202, contentType: 'application/json', body: '{}' }));
-  const id = await productId(title);
+  // Placing an order reserves stock, and the seeded products' stock is finite and shared by every run on this stack: own product, own stock.
+  const id = title ? await productId(title) : (await createIsolatedProduct({ quantity: 200 })).id;
   await register(page);
   await page.goto(`/products/${id}`);
   await page.getByRole('button', { name: 'Add to cart' }).click();
@@ -164,7 +165,8 @@ test.describe('Checkout layout', () => {
   });
 
   test('price-changed', async ({ page }) => {
-    await memberWithCart(page);
+    // The seeded product on purpose: its name and price are in the baseline screenshot, and the order is refused (409) before any stock is reserved.
+    await memberWithCart(page, SEED.product);
     // The review's own read of the cart shows a unit price 1.00 lower than the stored one.
     await page.route('**/api/bff/cart', async (route) => {
       const response = await route.fetch();

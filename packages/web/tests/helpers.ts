@@ -206,7 +206,7 @@ export async function productWithRecommendations(request: APIRequestContext): Pr
 }
 
 /**
- * A product of its own in a category nobody else uses (created through the real API as the seller). Nothing can trend, be bought
+ * A product of its own in a category nobody else uses (created through the real API as the seller; `quantity` is its stock, 5 by default). Nothing can trend, be bought
  * together or be recommended there, so its page has none of the optional rails whatever the other tests did to the shared ranking
  * (the ranking is rebuilt from a store a test cannot clear, and events stay in its 60-minute window).
  */
@@ -229,21 +229,21 @@ async function sellerSession(): Promise<{ token: string; shopId: string }> {
   return { token, shopId: (mine.data.items ?? mine.data)[0].id };
 }
 
-async function createProduct(session: { token: string; shopId: string }, title: string, category: string) {
+async function createProduct(session: { token: string; shopId: string }, title: string, category: string, quantity = 5) {
   const created = await sellerCall(
     'POST',
     `/api/shops/${session.shopId}/products`,
-    { title, brand: 'Test', category, quantity: 5, priceMinor: 1999, description: `${title}. Product created by a test.`, tags: [category] },
+    { title, brand: 'Test', category, quantity, priceMinor: 1999, description: `${title}. Product created by a test.`, tags: [category] },
     session.token,
   );
   expect(created.status).toBe(201);
 }
 
-export async function createIsolatedProduct(): Promise<{ id: string; title: string }> {
+export async function createIsolatedProduct(options: { quantity?: number } = {}): Promise<{ id: string; title: string }> {
   const session = await sellerSession();
   const stamp = `${Date.now().toString(36)}${Math.floor(Math.random() * 1e4)}`;
   const title = `Isolated Lantern ${stamp}`;
-  await createProduct(session, title, `isolated-${stamp}`);
+  await createProduct(session, title, `isolated-${stamp}`, options.quantity);
   return { id: await productId(title), title };
 }
 

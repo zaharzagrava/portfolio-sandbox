@@ -183,7 +183,7 @@ say "peak memory used during the run: $(cat "$LOG/peak-mem-mb" 2>/dev/null || ec
 save_logs() {
   local tar blob tree c
   tar="$(mktemp --suffix=.tar.gz)"
-  ( cd "$REPO" && { echo "$LOG"; find specs -name '.*.log' ! -name '.specify.log' -size -3000k; [[ -f .sdd-monitor/progress.log ]] && echo .sdd-monitor/progress.log; } | tar czf "$tar" -T - 2>/dev/null )
+  ( cd "$REPO" && { echo "$LOG"; find specs -name '.*.log' ! -name '.specify.log' -size -3000k; [[ -f .sdd-monitor/progress.log ]] && echo .sdd-monitor/progress.log; find packages/web/test-results -name error-context.md -size -200k 2>/dev/null; } | tar czf "$tar" -T - 2>/dev/null )
   if [[ -s "$tar" ]] && (( $(stat -c %s "$tar") < 20000000 )); then
     blob="$(cd "$REPO" && git hash-object -w "$tar")"
     tree="$(cd "$REPO" && printf '100644 blob %s\tlogs-of-the-last-run.tar.gz\n' "$blob" | git mktree)"
