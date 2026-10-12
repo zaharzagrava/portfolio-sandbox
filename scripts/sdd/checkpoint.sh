@@ -20,7 +20,7 @@ if [[ "${CHECKPOINT_SWEEP:-1}" != 0 ]]; then
      npx jest --ci --runInBand --forceExit --config jest-e2e.json --colors=false) >>"$log" 2>&1 || { echo "  backend e2e sweep FAILED"; fail=1; }
   if [[ -d packages/web ]] && ls packages/web/playwright.config.* >/dev/null 2>&1 && curl -sf "$API_URL/health/ready" >/dev/null; then
     echo "  checkpoint $label: web (Playwright) sweep"
-    (cd packages/web && timeout "${SWEEP_TIMEOUT_S:-3600}" npx playwright test --reporter=line --max-failures=3) >>"$log" 2>&1 || { echo "  web sweep FAILED"; fail=1; }
+    (cd packages/web && timeout "${SWEEP_TIMEOUT_S:-3600}" npx playwright test --reporter=list ${PW_WORKERS:+--workers="$PW_WORKERS"}) >>"$log" 2>&1 || { echo "  web sweep FAILED"; fail=1; }
   fi
 fi
 
