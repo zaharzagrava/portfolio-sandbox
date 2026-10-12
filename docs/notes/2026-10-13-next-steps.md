@@ -117,7 +117,7 @@ Branch `harness/overnight`, four items built in a cloud session without Docker o
 or any `.reviewed.json` was touched. Product code was not changed. How to run each: `README_ME.md`.
 
 What was built
-- **Lessons loop** (`scripts/lessons/`): `digest.py` (failure classes and one-line rules, 21 lines today, never more than 40) and `check.py` (a `prevented` lesson must link something
+- **Lessons loop** (`scripts/lessons/`): `digest.py` (failure classes and one-line rules, 20 lines today, never more than 40) and `check.py` (a `prevented` lesson must link something
   that exists, paths and commits; lists `open` lessons older than 14 days; counts repeats per class: wiring 2, config 1, state-leak 1, process 1; exit 1 on a broken link).
   `docs/lessons.md` got a `Rule:` line per lesson and its index became a list. The digest is in the plan, tasks, analyze, implement, converge, gate-repair and repair-agent prompts of
   `implement-specs.sh`. Acceptance tested with a fixture: deleting a linked prevention makes `check.py` fail.
