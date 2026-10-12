@@ -34,7 +34,6 @@ export class RefundCommandAdapter implements RefundCommandPort {
       queue: REFUND_REQUESTED_QUEUE,
       type: REFUND_REQUESTED_TYPE,
       aggregateId: command.orderId,
-      groupId: command.orderId,
       body: {
         orderId: command.orderId,
         paymentRef: command.paymentRef,

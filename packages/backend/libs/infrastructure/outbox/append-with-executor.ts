@@ -6,6 +6,7 @@ import {
   EventTooLargeError,
   InvalidEnvelopeError,
 } from '../events/event-errors';
+import { validateEnqueueOptions } from '../sqs/enqueue-options';
 import { InvalidTaskError } from './outbox-errors';
 
 /** What a framework-free writer needs: the query method every Postgres client has (`pg`, `postgres`, Sequelize bind). */
@@ -57,6 +58,11 @@ export function taskRow(task: OutboxTaskInput): unknown[] {
   if (!task.queue) throw new InvalidTaskError('queue is required');
   if (!task.type) throw new InvalidTaskError('type is required');
   if (!task.aggregateId) throw new InvalidTaskError('aggregateId is required');
+  // The relay would reject these options on every attempt and park the row ten retries later; refuse them where the task is created.
+  validateEnqueueOptions(task.queue, {
+    groupId: task.groupId,
+    delaySeconds: task.delaySeconds,
+  });
   const carrier: Record<string, string> = {};
   propagation.inject(context.active(), carrier);
   const payload = JSON.stringify({

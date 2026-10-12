@@ -86,7 +86,6 @@ export class PaymentIntentService {
         queue: CHARGE_QUEUE,
         type: CHARGE_REQUESTED_TYPE,
         aggregateId: id,
-        groupId: id,
         body: { paymentId: id, attempt: 0 },
       });
       return payment;
