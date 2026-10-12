@@ -278,3 +278,80 @@ and an explicit tool allowlist:
 
 If a step stops on a permission error, extend the list in `lib.sh` or `implement-specs.sh`, or override
 everything with `CLAUDE_ARGS="..."`.
+
+## Known problem: the backend e2e sweep runs in batches (memory)
+
+The checkpoint's regression sweep (`scripts/sdd/checkpoint.sh`) used to run every backend e2e suite (201 files) in one Jest process
+(`--runInBand`). That process grew to the default 4 GB heap after about 16 minutes: the garbage collector then paused for seconds, so
+the late suites saw 503s from load shedding, dropped database connections and impossible timer values, and the process finally aborted
+("JavaScript heap out of memory"). A sweep reached only 67 of 201 suites, and the two suites that failed (`auth-register`, `topic-replay`)
+passed alone, in pairs and in a batched run.
+
+Fix: the sweep runs the suites in batches of `SWEEP_BATCH` (12), each batch in a fresh process, with `--max-old-space-size=6144` as margin
+(a full sweep takes about 15 minutes). A batch that ends without its "Test Suites:" summary counts as a crash and fails the checkpoint.
+`scripts/sdd/sweep-verdict.py` lists failing suites of domains with no built capability as "not counted" (old tests of features that are still
+to be rebuilt); everything else counts.
+
+Why memory grows is not found yet. Suspects: Jest's ES-module mode (`--experimental-vm-modules`) keeps loaded modules of finished suites alive,
+and some suites leave Kafka clients or Nest apps open (the log shows `MaxListenersExceededWarning` for sockets). To find the biggest growers:
+run one batch with `--logHeapUsage` and rank the suites by heap added.
+
+## Known problem: web tests that depend on shared state
+
+Browser tests run in parallel against one shared dev stack. Three kinds of state made them pass on a fresh stack and fail on re-runs
+(the repair loop re-runs the gate on the same stack): inventory (every order-placing test reserved the same seeded product; they now create a
+product with their own stock), the trending ranking (events recorded by other tests; the product-page layout test now uses a product in a
+category of its own), and a warm search history or catalogue size (suggestion casing, a second results page). Rule: a test that needs a known
+state creates its own data through the real API (`createIsolatedProduct` in `packages/web/tests/helpers.ts`), and never relies on what ran before.
+
+## Follow-ups for the build loop
+
+Not built yet, in the order I would do them:
+
+1. **Repair agent for a failed checkpoint.** A failing capability gate goes to the repair agent (bounded attempts, the `stack-fix.sh` tools, the
+   failure digest); a failing checkpoint sweep does not: the loop stops with "checkpoint failed" and waits for a human. Hand the sweep's failing test
+   names, Playwright's `error-context.md` snapshots and the log to a repair pass, then re-run the checkpoint, with the same attempt limit as a gate.
+2. **Flake signal.** A gate that fails and then passes with a repair that changed no code is a flake, not a fix. Record the test names in the
+   spec's `gaps.md` and in the final notification instead of counting it as a repair.
+3. **Find the memory growth in the backend e2e suites** (see "Known problem: the backend e2e sweep runs in batches"): `--logHeapUsage`, rank the
+   suites by heap added, make the top ones close their Nest apps and Kafka/Redis clients.
+4. **Occasional browser flakes seen once in ~550 runs** and not explained: `product-page` "focus order", `search` "no horizontal scroll at 320 px".
+5. **The living spec** (docs of the current state, human-reviewed, signed with content hashes): its own SDD flow. A prototype of the sign-off
+   tool exists uncommitted (`scripts/sdd/spec-guard.py`, with `specs/platform/G01-spec-governance/` drafted for the wrong target: it should govern
+   the living pages, not the work-order specs).
+6. **Queue registry check.** The local ElasticMQ configuration (`infra/docker/elasticmq/elasticmq.conf`) lacked three queues the code uses
+   (`payments-charge`, `orders-refund-requested`, `tenancy-invite-requested`), so a payment stayed PENDING for ever on the dev stack (found by
+   hand-testing; the browser tests stub the payment path). Add a static check that every queue name the code consumes or publishes is defined in
+   that file, and run the payment journey once without stubs.
+
+## From "the gates pass" to "the product works"
+
+What went wrong in the first full run (a memory crash in the sweep, a queue that did not exist, a payment that stayed PENDING, tests that only
+passed on a warm stack) had one cause: nothing ran the real product end to end until late, and the tests that did were tolerant. Five changes,
+in order of payoff:
+
+1. **Define "done" as a flow, not a capability.** An unstubbed journey (register, add to cart, check out, pay, the order is PAID) must pass on a
+   fresh stack and assert the outcome. Today `packages/web/tests/cart-checkout.spec.ts` (JC-2) accepts both "Payment is being processed…" and
+   "Order confirmed"; make it require "Order confirmed", and keep "the page never claims success before the order is paid" as a separate test
+   with a forced stuck state. Add `scripts/sdd/checkpoints/buy-ui.sh` (the checkpoint already runs such a script when it exists): an API-only
+   walk of the same flow that waits up to 30 s for the order to be PAID. Run a cheap version of it after every few capabilities, not only at
+   the end.
+2. **A QA agent with a fresh context** that uses the running app like a person: it drives the browser, reads the console, the network calls, the
+   API log and the database, and files each defect with the evidence. The defects go to the repair agent (see follow-up 1 above), then the
+   checkpoint runs again. It is the step that would have found the stuck payment in minutes.
+3. **Give agents eyes and tools, and make the system fail loudly.**
+   - A "doctor" check that the infrastructure matches the code: every queue, topic, table and bucket the code uses is defined (the queue
+     registry check from follow-up 6 is the first part).
+   - The API must not report ready while a queue it consumes is missing or an outbox row is parked; today a missing queue was only a log line.
+   - The repair agent gets the commands it needs behind one allowed script (`scripts/sdd/stack-fix.sh` has `smoke`, `browser`, `reindex`; add
+     the ones that turn out to be missing).
+4. **Rules against hollow tests.** No assertion that passes both when the feature works and when it does not ("A or B"). Every scenario's test
+   must be able to fail: run it once against a deliberately broken implementation (mutation testing on the money and identity code is the
+   systematic version). A test must never encode an environment limit as acceptable: report it as blocked.
+5. **Always verify on a fresh stack, and keep the loop cheap to iterate.** A gate or sweep that only passes after earlier runs is not green.
+   Keep a local "fresh stack, whole suite once" command (new compose project name, empty volumes), because a cloud attempt costs 30 to 40
+   minutes.
+
+On "harnesses": the loop's weak points were all in the harness (what the agent can see and run, what counts as passing, what happens on a failed
+checkpoint), not in the model. Measure the loop before changing it: tasks closed per pass, repairs per capability, gates passed after a repair
+that changed no code, failures found only by hand.
