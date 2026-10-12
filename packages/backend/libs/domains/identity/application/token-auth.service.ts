@@ -8,7 +8,7 @@ import {
   verifyPurposeToken,
   type TokenClaims,
 } from '../domain/token-verifier';
-import { KeyStore } from '../infra/keys/key-store.service';
+import { KEY_STORE, type KeyStorePort } from '../domain/ports';
 
 /**
  * Token verification for every app (no user lookup, no store but the cached key set). The principal comes from the
@@ -17,7 +17,7 @@ import { KeyStore } from '../infra/keys/key-store.service';
 @Injectable()
 export class TokenAuthService {
   constructor(
-    private readonly keys: KeyStore,
+    @Inject(KEY_STORE) private readonly keys: KeyStorePort,
     @Inject(CLOCK) private readonly clock: Clock,
   ) {}
 

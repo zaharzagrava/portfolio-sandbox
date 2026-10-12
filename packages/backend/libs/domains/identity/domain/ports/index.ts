@@ -1,4 +1,5 @@
-import type { Role } from '../../infra/models/user.model';
+import type { KeyObject } from 'node:crypto';
+import type { Role } from '../role';
 
 /**
  * Domain ports (D-6): `api/` and `application/` depend on these tokens; adapters live in `infra/` and are bound in
@@ -17,7 +18,11 @@ export const PASSWORD_HASHER = Symbol('PASSWORD_HASHER');
  * sent directly, not through the outbox: the raw token must never be stored (W01 B-4).
  */
 export interface PasswordResetMailer {
-  sendResetLink(input: { to: string; link: string; expiresAt: Date }): Promise<void>;
+  sendResetLink(input: {
+    to: string;
+    link: string;
+    expiresAt: Date;
+  }): Promise<void>;
 }
 
 export interface ResetTokenRepository {
@@ -32,6 +37,8 @@ export interface ResetTokenRepository {
   find(digest: string, now: Date): Promise<string | null>;
   /** Spends the token; `false` for exactly the losers of a race, unknown, used or expired tokens. */
   consume(digest: string, now: Date): Promise<boolean>;
+  /** Deletes up to `limit` tokens that expired before `before`; returns how many (bounded batch, idempotent). */
+  purgeExpired(before: Date, limit: number): Promise<number>;
 }
 export const SECRET_SEALER = Symbol('SECRET_SEALER');
 export const BREACH_CHECKER = Symbol('BREACH_CHECKER');
@@ -82,6 +89,8 @@ export interface UserRepository {
   setPasswordHash(id: string, newHash: string): Promise<boolean>;
   /** Removes the password (account linking wipe); `false` when there was none. Conditional on `passwordHash IS NOT NULL`. */
   clearPassword(id: string): Promise<boolean>;
+  /** `USER` → `SELLER` in one conditional update (`WHERE role = 'USER'`); `false` when the user is missing, deleted or already above `USER`. */
+  promoteToSeller(id: string): Promise<boolean>;
   /** The user with this (trimmed, lower-cased) address, soft-deleted users included. */
   lookupByEmail(email: string): Promise<UserLookup | null>;
   /** A user created by a federated login: no password, `email` null or a verified address. `null` when the address is taken. */
@@ -297,6 +306,8 @@ export interface SessionRepository {
   /** One atomic write: spend the old digest, store the successor, assert the session is not revoked. */
   rotate(refreshToken: string, now: Date): Promise<RotateOutcome>;
   get(sid: string): Promise<SessionRecord | undefined>;
+  /** The session a refresh token belongs to (spent or not), read-only; `undefined` for an unknown token. */
+  sidOfRefreshToken(refreshToken: string): Promise<string | undefined>;
   listForUser(userId: string): Promise<SessionRecord[]>;
   /** Durable revoke, idempotent; the first reason wins. */
   revoke(sid: string, reason: string, now: Date): Promise<void>;
@@ -316,6 +327,12 @@ export interface SigningKeyRepository {
   list(): Promise<SigningKeyRow[]>;
   /** `false` when a unique index refused it (another instance won the bootstrap race); any other error throws. */
   insert(row: Omit<SigningKeyRow, 'retiredAt'>): Promise<boolean>;
+  /** ACTIVE → RETIRED, only if it still is ACTIVE; `false` when another run got there first. Joins the active transaction. */
+  retire(kid: string, now: Date): Promise<boolean>;
+  /** NEXT → ACTIVE, only if it still is NEXT. Joins the active transaction. */
+  activate(kid: string, now: Date): Promise<boolean>;
+  /** Deletes a RETIRED key; `false` when it is gone or no longer RETIRED. */
+  purge(kid: string): Promise<boolean>;
 }
 
 export interface PasswordHasherPort {
@@ -329,6 +346,39 @@ export interface PasswordHasherPort {
 export interface SecretSealerPort {
   seal(plaintext: string, context?: string): string;
   open(sealed: string, context?: string): string;
+  /** Deterministic keyed digest for values that are compared, not recovered (recovery codes). */
+  keyedDigest(purpose: string, value: string): string;
+}
+
+export const KEY_STORE = Symbol('KEY_STORE');
+export const REVOCATION_MARKERS = Symbol('REVOCATION_MARKERS');
+
+export interface SignOptions {
+  expiresInSec: number;
+  audience?: string;
+  /** JOSE `typ` header (`at+jwt`, `mfa+jwt`, `svc+jwt`); omitted = a plain JWT. */
+  typ?: string;
+  jwtId?: string;
+}
+
+/** The rotating signing keys: signing with the ACTIVE key, verification keys by `kid`, the public key set. */
+export interface KeyStorePort {
+  sign(payload: object, options: SignOptions): Promise<string>;
+  verificationKey(
+    kid: string,
+  ): Promise<{ key: KeyObject; alg: 'ES256' } | undefined>;
+  jwks(): Promise<{ keys: Record<string, unknown>[] }>;
+  /** `null` when another instance created the ACTIVE/NEXT key first. */
+  createKey(status?: 'NEXT' | 'ACTIVE'): Promise<string | null>;
+  /** Drops the in-process key cache. */
+  invalidate(): void;
+}
+
+/** Session-revoked markers for instant revocation on sensitive routes (FR-025). */
+export interface RevocationMarkersPort {
+  mark(sid: string, reason: string): Promise<void>;
+  /** Throws when the store is unreachable: callers on sensitive routes fail closed. */
+  isRevoked(sid: string): Promise<boolean>;
 }
 
 export interface BreachCheckerPort {

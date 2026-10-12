@@ -426,6 +426,20 @@ export class ApiConfigService {
             verify: joi.string().optional().allow(''),
             name: 'AUTH_KEK',
           },
+          /** Comma-separated audiences a service token may be minted for (S01 FR-070); default `core,worker`. */
+          service_token_audiences: {
+            verify: joi.string().optional().allow(''),
+            name: 'SERVICE_TOKEN_AUDIENCES',
+          },
+          /** The audience this app's internal endpoints accept service tokens for (S01 FR-071); default `core`. */
+          service_audience: {
+            verify: joi.string().optional().allow(''),
+            name: 'SERVICE_AUDIENCE',
+          },
+          auth_kek_previous: {
+            verify: joi.string().optional().allow(''),
+            name: 'AUTH_KEK_PREVIOUS',
+          },
           access_token_ttl_sec: {
             verify: joi.number().optional().empty(''),
             name: 'ACCESS_TOKEN_TTL_SEC',

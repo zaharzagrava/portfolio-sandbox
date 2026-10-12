@@ -4,6 +4,8 @@ import {
   Injectable,
   Logger,
 } from '@nestjs/common';
+import { ApiConfigService } from '@app/common/config';
+import { assertCookieRequestAllowed } from './cookie-request';
 import { Domain_InvalidTokenError } from '../../domain/errors';
 import { TokenAuthService } from '../../application/token-auth.service';
 import { extractAuthToken } from './extract-auth-token';
@@ -13,7 +15,10 @@ import { extractAuthToken } from './extract-auth-token';
 export class UserAuthOptionalGuard implements CanActivate {
   private readonly logger = new Logger(UserAuthOptionalGuard.name);
 
-  constructor(private readonly tokens: TokenAuthService) {}
+  constructor(
+    private readonly tokens: TokenAuthService,
+    private readonly config: ApiConfigService,
+  ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
@@ -28,6 +33,9 @@ export class UserAuthOptionalGuard implements CanActivate {
         }`,
       );
     }
+    // A cookie credential that did authenticate is ambient: it gets the same CSRF/origin check as everywhere.
+    if (request.user)
+      assertCookieRequestAllowed(context, this.config, request.user.sessionId);
     return true;
   }
 }

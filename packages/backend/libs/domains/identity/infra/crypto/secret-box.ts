@@ -8,7 +8,32 @@ import {
   randomBytes,
 } from 'node:crypto';
 import { ApiConfigService } from '@app/common/config';
+import { ConfigRules } from '@app/common/config/config-rules';
 import { Environment } from '@app/common/types';
+import type { SecretSealerPort } from '../../domain/ports';
+
+const base64Bytes = (value: unknown) =>
+  Buffer.from(String(value), 'base64').length;
+
+// FR-066: the master key is mandatory in production and well formed whenever it is set; the previous key (rotation)
+// must be a different, well formed key. Messages name keys, never values.
+ConfigRules.register({
+  owner: 'identity',
+  keys: ['auth_kek', 'auth_kek_previous'],
+  validate: (ctx) => {
+    const found: string[] = [];
+    const kek = ctx.get('auth_kek');
+    const previous = ctx.get('auth_kek_previous');
+    if (ctx.production && !kek) found.push('auth_kek is required');
+    if (kek && base64Bytes(kek) !== 32)
+      found.push('auth_kek must be 32 bytes (base64)');
+    if (previous && base64Bytes(previous) !== 32)
+      found.push('auth_kek_previous must be 32 bytes (base64)');
+    if (previous && previous === kek)
+      found.push('auth_kek_previous must differ from auth_kek');
+    return found;
+  },
+});
 
 /**
  * Envelope-style encryption for secrets we must store (signing private keys,
@@ -18,11 +43,19 @@ import { Environment } from '@app/common/types';
  * rotating it = re-encrypting with v2 while still decrypting v1.
  */
 @Injectable()
-export class SecretBox {
+export class SecretBox implements SecretSealerPort {
   private readonly key: Buffer;
+  /** The master key being rotated out: opens old values, never seals. */
+  private readonly previousKey?: Buffer;
 
   constructor(config: ApiConfigService) {
     const kek = config.get('auth_kek');
+    const previous = config.get('auth_kek_previous');
+    if (previous) {
+      this.previousKey = Buffer.from(previous, 'base64');
+      if (this.previousKey.length !== 32)
+        throw new Error('AUTH_KEK_PREVIOUS must be 32 bytes (base64)');
+    }
     if (kek) {
       this.key = Buffer.from(kek, 'base64');
       if (this.key.length !== 32)
@@ -64,9 +97,24 @@ export class SecretBox {
       throw new Error(`unsupported secret version ${version}`);
     if ((version === 'v2') !== Boolean(context))
       throw new Error('secret context mismatch');
+    try {
+      return this.decrypt(this.key, iv, tag, ciphertext, context);
+    } catch (error) {
+      if (!this.previousKey) throw error;
+      return this.decrypt(this.previousKey, iv, tag, ciphertext, context);
+    }
+  }
+
+  private decrypt(
+    key: Buffer,
+    iv: string,
+    tag: string,
+    ciphertext: string,
+    context?: string,
+  ): string {
     const decipher = createDecipheriv(
       'aes-256-gcm',
-      this.key,
+      key,
       Buffer.from(iv, 'base64url'),
     );
     if (context) decipher.setAAD(Buffer.from(context, 'utf8'));

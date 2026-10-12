@@ -2,14 +2,16 @@ import { createHash } from 'node:crypto';
 import type { ApiConfigService } from '@app/common/config';
 import { SecretBox } from './secret-box';
 
-const config = (kek?: Buffer) =>
+const config = (kek?: Buffer, previous?: Buffer, env = 'test') =>
   ({
     get: (key: string) =>
       key === 'auth_kek'
         ? kek?.toString('base64')
-        : key === 'node_env'
-          ? 'test'
-          : undefined,
+        : key === 'auth_kek_previous'
+          ? previous?.toString('base64')
+          : key === 'node_env'
+            ? env
+            : undefined,
   }) as unknown as ApiConfigService;
 
 describe('S02 SecretBox', () => {
@@ -40,6 +42,67 @@ describe('S02 SecretBox', () => {
 
   it('produces a different ciphertext on every seal', () => {
     expect(box.seal('a', 'c')).not.toBe(box.seal('a', 'c'));
+  });
+
+  describe('S01 AS-67', () => {
+    const OLD = Buffer.alloc(32, 1);
+    const NEW = Buffer.alloc(32, 2);
+    const swap = (sealed: string, index: number, value?: string) => {
+      const parts = sealed.split('.');
+      parts[index] = value ?? `${parts[index].slice(0, -2)}AA`;
+      return parts.join('.');
+    };
+
+    it.each([
+      ['iv', 1],
+      ['tag', 2],
+      ['ciphertext', 3],
+    ])('rejects a tampered %s', (_part, index) => {
+      const sealed = box.seal('secret', 'ctx');
+      expect(() => box.open(swap(sealed, index), 'ctx')).toThrow();
+    });
+
+    it('rejects a tampered or unknown version', () => {
+      const sealed = box.seal('secret', 'ctx');
+      expect(() => box.open(swap(sealed, 0, 'v3'), 'ctx')).toThrow(
+        /unsupported/,
+      );
+      expect(() => box.open(swap(sealed, 0, 'v1'), 'ctx')).toThrow();
+    });
+
+    it('opens a value sealed with the previous master key while current and previous are configured', () => {
+      const sealedByOld = new SecretBox(config(OLD)).seal('rotating', 'ctx');
+      const rotated = new SecretBox(config(NEW, OLD));
+      expect(rotated.open(sealedByOld, 'ctx')).toBe('rotating');
+      // New values are sealed with the current key only.
+      const fresh = rotated.seal('fresh', 'ctx');
+      expect(() => new SecretBox(config(OLD)).open(fresh, 'ctx')).toThrow();
+      expect(new SecretBox(config(NEW)).open(fresh, 'ctx')).toBe('fresh');
+    });
+
+    it('does not open a value sealed with the previous key once it is no longer configured', () => {
+      const sealedByOld = new SecretBox(config(OLD)).seal('rotating');
+      expect(() => new SecretBox(config(NEW)).open(sealedByOld)).toThrow();
+    });
+
+    it('still opens a context-free legacy value', () => {
+      expect(box.open(box.seal('legacy'))).toBe('legacy');
+    });
+
+    it('refuses to start in production without a master key and with a malformed one', () => {
+      expect(
+        () => new SecretBox(config(undefined, undefined, 'production')),
+      ).toThrow(/AUTH_KEK is required/);
+      expect(
+        () => new SecretBox(config(Buffer.alloc(16), undefined, 'production')),
+      ).toThrow();
+      expect(() => new SecretBox(config(NEW, Buffer.alloc(5)))).toThrow(
+        /AUTH_KEK_PREVIOUS/,
+      );
+      expect(
+        () => new SecretBox(config(NEW, undefined, 'production')),
+      ).not.toThrow();
+    });
   });
 
   describe('keyedDigest', () => {

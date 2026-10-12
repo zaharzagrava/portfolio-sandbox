@@ -3,10 +3,11 @@ import { CLOCK, Clock } from '@app/common/core/clock';
 import {
   MFA_CHALLENGE_REPOSITORY,
   SECOND_FACTOR_REPOSITORY,
+  SECRET_SEALER,
   type MfaChallengeRepository,
   type SecondFactorRepository,
+  type SecretSealerPort,
 } from '../domain/ports';
-import { SecretBox } from '../infra/crypto/secret-box';
 
 const DAY = 86_400_000;
 const HOUR = 3_600_000;
@@ -24,7 +25,7 @@ export class MfaMaintenanceService {
     @Inject(MFA_CHALLENGE_REPOSITORY)
     private readonly challenges: MfaChallengeRepository,
     @Inject(CLOCK) private readonly clock: Clock,
-    private readonly box: SecretBox,
+    @Inject(SECRET_SEALER) private readonly box: SecretSealerPort,
   ) {}
 
   /** Binds secrets that were migrated without a context to `mfa:<userId>` (R-05). */

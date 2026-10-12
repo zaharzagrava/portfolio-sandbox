@@ -46,7 +46,8 @@ export class PasswordResetService {
 
   constructor(
     @Inject(USER_REPOSITORY) private readonly users: UserRepository,
-    @Inject(RESET_TOKEN_REPOSITORY) private readonly tokens: ResetTokenRepository,
+    @Inject(RESET_TOKEN_REPOSITORY)
+    private readonly tokens: ResetTokenRepository,
     @Inject(PASSWORD_HASHER) private readonly hasher: PasswordHasherPort,
     @Inject(BREACH_CHECKER) private readonly breach: BreachCheckerPort,
     @Inject(CLOCK) private readonly clock: Clock,
@@ -67,8 +68,12 @@ export class PasswordResetService {
     const user = await this.users.findByEmail(email);
     if (!user?.email || !user.passwordHash) {
       digestOf(randomBytes(32).toString('base64url')); // the same hashing work as the known path
+      this.audit.record('auth.password_reset.requested', {
+        subject: user ? user.id : `unknown:${this.audit.tag(email)}`,
+      });
       return;
     }
+    this.audit.record('auth.password_reset.requested', { userId: user.id });
     const token = randomBytes(32).toString('base64url');
     const now = this.clock.now();
     const expiresAt = new Date(now.getTime() + RESET_TOKEN_TTL_MS);
@@ -120,6 +125,7 @@ export class PasswordResetService {
       );
     });
     await this.revocation.revokeAllForUser(userId, 'password_reset');
+    this.audit.record('auth.password_reset.completed', { userId });
   }
 
   private async isBreached(password: string): Promise<boolean> {

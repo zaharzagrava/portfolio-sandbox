@@ -6,7 +6,7 @@ import {
   SetMetadata,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { Role } from '../../infra/models/user.model';
+import { Role } from '../../domain/role';
 
 export const ROLES_METADATA_KEY = 'firewall:roles';
 export const Roles = (...roles: Role[]) =>

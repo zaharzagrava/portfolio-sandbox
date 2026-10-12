@@ -7,7 +7,9 @@ import { AuthModule } from './auth.module';
 import { DynamoModule } from '@app/infrastructure/dynamo/dynamo.module';
 import { EventsModule } from '@app/infrastructure/events/events.module';
 import { RateLimitModule } from '@app/infrastructure/rate-limit';
+import { ProblemCatalogModule } from '@app/common/errors';
 import { identityRatePolicies } from './domain/auth-rate-policies';
+import { identityProblems } from './domain/problem-catalog';
 import { IDENTITY_AGGREGATE } from './domain/events';
 import {
   BREACH_CHECKER,
@@ -16,11 +18,9 @@ import {
   OIDC_NET_OPTIONS,
   OIDC_PROVIDER,
   PASSWORD_HASHER,
-  RESET_TOKEN_REPOSITORY,
   SESSION_REPOSITORY,
 } from './domain/ports';
 import { PasswordResetService } from './application/password-reset.service';
-import { SequelizeResetTokenRepository } from './infra/models/reset-token.repository';
 import { IdentitiesController } from './api/identities.controller';
 import { OidcController } from './api/oidc.controller';
 import { FederatedIdentityService } from './application/federated-identity.service';
@@ -34,9 +34,10 @@ import { AuthController } from './api/auth.controller';
 import { AuthBodyLimitMiddleware } from './api/body-limit.middleware';
 import { CredentialCookies } from './api/credential-cookies';
 import { MfaController } from './api/mfa.controller';
+import { SessionsController } from './api/sessions.controller';
+import { SessionAdminService } from './application/session-admin.service';
 import { WellKnownController } from './api/well-known.controller';
 import { AccountService } from './application/account.service';
-import { AuditService } from './application/audit.service';
 import { LoginService } from './application/login.service';
 import { MfaAttemptBudget } from './application/mfa-attempt-budget';
 import { MfaLoginService } from './application/mfa-login.service';
@@ -63,13 +64,13 @@ import { CsrfGuard } from './api/guards/csrf.guard';
     RateLimitModule,
     RateLimitModule.forFeature(identityRatePolicies),
     DynamoModule,
+    ProblemCatalogModule.forFeature(identityProblems),
     EventsModule.forAggregates([IDENTITY_AGGREGATE]),
     SequelizeModule.forFeature([User, FederatedIdentity]),
   ],
   providers: [
     { provide: SESSION_REPOSITORY, useClass: DynamoSessionRepository },
     { provide: PASSWORD_HASHER, useClass: PasswordHasher },
-    { provide: RESET_TOKEN_REPOSITORY, useClass: SequelizeResetTokenRepository },
     PasswordResetService,
     { provide: BREACH_CHECKER, useClass: RangeBreachChecker },
     {
@@ -81,7 +82,6 @@ import { CsrfGuard } from './api/guards/csrf.guard';
     // Production reaches providers over the public internet; the e2e app overrides this with the fake provider's host.
     { provide: OIDC_NET_OPTIONS, useValue: {} },
     AccountService,
-    AuditService,
     CredentialCookies,
     FederatedIdentityService,
     LoginService,
@@ -95,6 +95,7 @@ import { CsrfGuard } from './api/guards/csrf.guard';
     SecondFactorService,
     SessionIssuer,
     SessionRevocationService,
+    SessionAdminService,
     // Legacy engine: only tenancy's shop-SSO still registers providers on it until the registry takes over (US8).
     OidcService,
     CsrfGuard,
@@ -108,6 +109,7 @@ import { CsrfGuard } from './api/guards/csrf.guard';
   ],
   controllers: [
     AuthController,
+    SessionsController,
     MfaController,
     OidcController,
     IdentitiesController,
@@ -120,6 +122,7 @@ export class AuthApiModule implements NestModule {
       .apply(AuthBodyLimitMiddleware)
       .forRoutes(
         AuthController,
+        SessionsController,
         MfaController,
         OidcController,
         IdentitiesController,

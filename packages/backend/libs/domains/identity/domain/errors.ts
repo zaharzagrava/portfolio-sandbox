@@ -189,6 +189,76 @@ export class Domain_InvalidMfaChallengeError extends AppError {
   }
 }
 
+/** A valid service token from a caller the endpoint does not list (FR-071). */
+export class Domain_ServiceCallerNotAllowedError extends AppError {
+  constructor() {
+    super({
+      status: HttpStatus.FORBIDDEN,
+      code: 'service_caller_not_allowed',
+      title: 'Forbidden',
+      detail: 'This service may not call this endpoint.',
+      area: ErrorArea.DOMAIN,
+    });
+  }
+}
+
+/** Operator routes: a tampered or foreign list cursor is a validation failure of the `cursor` field. */
+export class Domain_InvalidCursorError extends AppError {
+  constructor() {
+    super({
+      status: HttpStatus.BAD_REQUEST,
+      code: 'validation_failed',
+      title: 'Bad Request',
+      detail: 'The request is not valid.',
+      area: ErrorArea.DOMAIN,
+      extensions: { errors: [{ field: 'cursor', code: 'invalid_cursor' }] },
+    });
+  }
+}
+
+export class Domain_JobNotFoundError extends AppError {
+  constructor() {
+    super({
+      status: HttpStatus.NOT_FOUND,
+      code: 'job_not_found',
+      title: 'Not Found',
+      detail: 'No such job.',
+      area: ErrorArea.DOMAIN,
+    });
+  }
+}
+
+export class Domain_ScheduleNotFoundError extends AppError {
+  constructor() {
+    super({
+      status: HttpStatus.NOT_FOUND,
+      code: 'schedule_not_found',
+      title: 'Not Found',
+      detail: 'No such schedule.',
+      area: ErrorArea.DOMAIN,
+    });
+  }
+}
+
+/** A mint/exchange request outside the policy: a programming or configuration error of the calling service. */
+export class ServiceTokenRequestError extends Error {
+  constructor(readonly reason: 'caller' | 'audience' | 'ttl') {
+    super(`service token request refused: ${reason}`);
+  }
+}
+
+export class Domain_CsrfInvalidError extends AppError {
+  constructor() {
+    super({
+      status: HttpStatus.FORBIDDEN,
+      code: 'csrf_invalid',
+      title: 'Forbidden',
+      detail: 'The CSRF token is missing or invalid.',
+      area: ErrorArea.DOMAIN,
+    });
+  }
+}
+
 export class Domain_OriginNotAllowedError extends AppError {
   constructor() {
     super({

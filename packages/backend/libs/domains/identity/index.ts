@@ -7,13 +7,10 @@
 export { default as FederatedIdentityModel } from './infra/models/federated-identity.model';
 export { default as SigningKeyModel } from './infra/models/signing-key.model';
 export { Role, default as UserModel } from './infra/models/user.model';
-export { AdminModule } from './admin.module';
+export { IdentityOpsModule } from './identity-ops.module';
 export { AuthApiModule } from './auth-api.module';
 export { AuthWorkerModule } from './auth-worker.module';
 export { AuthModule } from './auth.module';
-export { UserUtilsModule } from './user-utils.module';
-export { UsersDtoModule } from './users-dto.module';
-export { UsersModule } from './users.module';
 export { Firewall } from './api/decorators/firewall.decorator';
 export { User } from './api/decorators/user.decorator';
 export { CreateUserDto, UserRawDto } from './api/users.dto';
@@ -28,6 +25,11 @@ export { OidcProviderRegistry } from './application/oidc-provider-registry';
 export { SessionIssuer } from './application/session-issuer.service';
 export type { IssuedSession } from './application/session-issuer.service';
 export { SessionRevocationService } from './application/session-revocation.service';
+export { ServiceTokenService } from './application/service-token.service';
+export {
+  AllowedCallers,
+  ServiceAuthGuard,
+} from './api/guards/service-auth.guard';
 export type {
   AuthenticatedUser,
   ServicePrincipal,
@@ -45,7 +47,6 @@ export {
 } from './domain/events';
 export { PASSWORD_RESET_MAILER } from './domain/ports';
 export type { PasswordResetMailer } from './domain/ports';
-export { UserUtilsService } from './application/user-utils.service';
 export { SecretBox } from './infra/crypto/secret-box';
 export { KeyStore } from './infra/keys/key-store.service';
 export { OidcService } from './infra/oidc/oidc.service';

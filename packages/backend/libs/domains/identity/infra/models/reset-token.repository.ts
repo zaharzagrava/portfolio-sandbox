@@ -48,6 +48,19 @@ export class SequelizeResetTokenRepository implements ResetTokenRepository {
     return row?.userId ?? null;
   }
 
+  async purgeExpired(before: Date, limit: number): Promise<number> {
+    const rows = await this.rows(
+      `DELETE FROM "PasswordResetToken"
+       WHERE "id" IN (
+         SELECT "id" FROM "PasswordResetToken"
+         WHERE "expiresAt" < $1 ORDER BY "expiresAt" LIMIT $2
+       )
+       RETURNING "id"`,
+      [before, limit],
+    );
+    return rows.length;
+  }
+
   async consume(digest: string, now: Date): Promise<boolean> {
     const rows = await this.rows(
       `UPDATE "PasswordResetToken" SET "usedAt" = $2

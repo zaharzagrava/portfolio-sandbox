@@ -73,7 +73,12 @@ module.exports = {
       comment:
         'X.4: production code in a domain imports another domain only through its index.ts, never its testing/ kit.',
       severity: 'error',
-      from: { path: '^libs/domains/([^/]+)/', pathNot: SPEC },
+      // identity's shop-owner promotion consumer reads tenancy's `ShopCreated` contract: the tenancy barrel imports identity,
+      // so going through it would be an import cycle (module graph fails to load); the contract file is a leaf.
+      from: {
+        path: '^libs/domains/([^/]+)/',
+        pathNot: [SPEC, '^libs/domains/identity/infra/shop-owner-promotion\\.consumer\\.ts$'],
+      },
       to: { path: '^libs/domains/[^/]+/', pathNot: ['^libs/domains/$1/', '^libs/domains/[^/]+/index\\.ts$'] },
     },
     {

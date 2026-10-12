@@ -313,6 +313,10 @@ describe('Second factor at login', () => {
   describe('S02 AS-17: per-account budget', () => {
     it('allows five failures per 15 minutes, refuses the sixth with Retry-After, and slides with the clock', async () => {
       const { email, secret } = await member();
+      // The limiter's windows are aligned to the epoch; pin the manual clock to the middle of one so the weight of the
+      // previous window after the slide does not depend on the time of day the suite happens to run.
+      const window = 15 * 60_000;
+      t.rateTime.set(Math.floor(Date.now() / window) * window + window / 2);
       for (let i = 0; i < 5; i++)
         await verify({
           mfaToken: await challengeFor(email),

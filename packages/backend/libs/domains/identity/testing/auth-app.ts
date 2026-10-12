@@ -17,6 +17,7 @@ import {
 import { AuthApiModule } from '../auth-api.module';
 import { BREACH_CHECKER } from '../domain/ports';
 import { KeyStore } from '../infra/keys/key-store.service';
+import { ServiceTokenService } from '../application/service-token.service';
 import { PasswordHasher } from '../infra/crypto/password-hasher';
 import User, { Role } from '../infra/models/user.model';
 
@@ -140,6 +141,7 @@ export async function createAuthApp(
       rateTime.set(Date.now());
       breach.reset();
       app.get(KeyStore).invalidate();
+      app.get(ServiceTokenService).invalidate();
     },
     async seedUser(input = {}) {
       const password = input.password ?? TEST_PASSWORD;

@@ -12,7 +12,7 @@ import {
 } from 'class-validator';
 import { parseReturnPath } from '../domain/return-path';
 import { Transform } from 'class-transformer';
-import { Role } from '../infra/models/user.model';
+import { Role } from '../domain/role';
 import {
   EMAIL_MAX,
   PASSWORD_MAX,
@@ -78,6 +78,15 @@ export class PasswordLoginDto {
   @IsString()
   @MaxLength(PASSWORD_MAX)
   password: string;
+
+  @ApiPropertyOptional({
+    enum: ['body', 'cookie'],
+    description:
+      'cookie: tokens are delivered as __Host- cookies and never appear in the body',
+  })
+  @IsOptional()
+  @IsIn(['body', 'cookie'])
+  delivery?: 'body' | 'cookie';
 }
 
 export class AuthUserDto {
@@ -128,7 +137,9 @@ export class MfaConfirmDto extends MfaCodeDto {}
 
 /** Regenerate and disable (`mfaCodeRequestSchema`): the format is judged by the service so a wrong kind of code is `422 invalid_code`. */
 export class MfaManageCodeDto {
-  @ApiProperty({ description: 'TOTP code, or for disable also a recovery code' })
+  @ApiProperty({
+    description: 'TOTP code, or for disable also a recovery code',
+  })
   @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
   @IsString()
   @MinLength(1)

@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { RedisService } from '@app/infrastructure/redis/redis.service';
+import type { RevocationMarkersPort } from '../../domain/ports';
 import { ACCESS_TOKEN_TTL_SEC } from '../../domain/session-policy';
 
 /** A marker has to outlive every access token the session could still hold, plus clock tolerance. */
@@ -11,7 +12,7 @@ const MARKER_TTL_SEC = ACCESS_TOKEN_TTL_SEC + 60;
  * swallowed (R-02).
  */
 @Injectable()
-export class RevocationMarkers {
+export class RevocationMarkers implements RevocationMarkersPort {
   constructor(private readonly redis: RedisService) {}
 
   async mark(sid: string, reason: string): Promise<void> {

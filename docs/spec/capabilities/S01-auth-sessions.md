@@ -18,13 +18,14 @@ Buyers, sellers and other backend capabilities need a way to prove who a caller 
 - `POST /auth/register` — creates an account; always answers `202 {"status":"accepted"}`. [code: packages/backend/libs/domains/identity/api/auth.controller.ts#AuthController]
 - `POST /auth/login` — password login; returns tokens in the body, sets cookies for `delivery: "cookie"`, or returns `{mfaRequired, mfaToken}` when a second factor is enrolled ({{cap:S02}} completes that flow). [code: packages/backend/libs/domains/identity/api/auth.controller.ts#AuthController]
 - `POST /auth/refresh` — exchanges a refresh token for a new access token and a new refresh token. [code: packages/backend/libs/domains/identity/application/refresh.service.ts#RefreshService]
-- `POST /auth/logout` and `POST /auth/logout-all` — revoke the current session or all sessions of the caller.
-- `GET /auth/sessions` and `DELETE /auth/sessions/:sessionId` — list the caller's active sessions; revoke one of them.
+- `POST /auth/logout` and `POST /auth/logout-all` — revoke the current session or all sessions of the caller; `logout-all` answers `200 {revokedSessions}` and is a sensitive route. [code: packages/backend/libs/domains/identity/api/auth.controller.ts#AuthController]
+- `GET /auth/sessions` and `DELETE /auth/sessions/:sessionId` — list the caller's active sessions; revoke one of them (sensitive). [code: packages/backend/libs/domains/identity/api/sessions.controller.ts#SessionsController]
 - `GET /auth/me` — returns the signed-in user.
 - `POST /auth/password-reset/request` and `POST /auth/password-reset/confirm` — password reset by single-use token.
-- `GET /.well-known/jwks.json` — public key set, served outside the `/api` prefix without credential. The facts list no controller file for this route.
-- Scheduled key-rotation job. [code: packages/backend/libs/domains/identity/infra/keys/key-rotation.jobs.ts#KeyRotationJobs]
-- Exported services for other domains: `UserDirectoryService`, `SessionRevocationService`, `ServiceTokenService`, `SecretBox`. [code: packages/backend/libs/domains/identity/application/user-directory.service.ts#UserDirectoryService]
+- `GET /.well-known/jwks.json` — public key set, served outside the `/api` prefix without credential, with `ETag` and `304`. [code: packages/backend/libs/domains/identity/api/well-known.controller.ts#WellKnownController]
+- Scheduled jobs: `auth.rotate-signing-keys` (daily, no run at boot) and `auth.purge-reset-tokens` (daily). [code: packages/backend/libs/domains/identity/infra/keys/key-rotation.jobs.ts#KeyRotationJobs] [code: packages/backend/libs/domains/identity/infra/jobs/reset-token.jobs.ts#ResetTokenJobs]
+- Operator routes, ADMIN only, hosted by `core`: `GET /admin/jobs`, `GET /admin/jobs/stats`, `POST /admin/jobs/:id/retry`, `POST /admin/jobs/:id/cancel`, `GET /admin/job-schedules`, `POST /admin/job-schedules/:name/enable` and `POST /admin/job-schedules/:name/disable`. [code: packages/backend/libs/domains/identity/api/jobs-admin.controller.ts#JobsAdminController]
+- Exported services for other domains: `UserDirectoryService`, `SessionRevocationService`, `ServiceTokenService`, `SecretBox`; the guard `ServiceAuthGuard` with `@AllowedCallers(...)` protects internal endpoints. [code: packages/backend/libs/domains/identity/application/user-directory.service.ts#UserDirectoryService] [code: packages/backend/libs/domains/identity/api/guards/service-auth.guard.ts#ServiceAuthGuard]
 - Events: `identity.user_registered`, `identity.registration_duplicate_attempted`, `identity.password_changed`.
 
 ## Rules
@@ -52,6 +53,26 @@ Buyers, sellers and other backend capabilities need a way to prove who a caller 
 - **S01.R-22** A refresh token MUST expire 30 days after issue, and a session MUST end 90 days after creation. [proof: S01 AS-35, S01 AS-36] [code: packages/backend/libs/domains/identity/domain/session-policy.ts#refreshExpiry]
 - **S01.R-23** The 61st refresh request from one IP within a minute MUST give `429` and MUST NOT consume the token. [proof: S01 AS-38]
 - **S01.R-24** Responses that carry credentials MUST send `Cache-Control: no-store`. [proof: S01 AS-57]
+- **S01.R-25** `GET /auth/sessions` MUST list only the caller's active sessions, newest first, as `{sessionId, device, ip, createdAt, lastUsedAt, current}` and nothing else; another user's session ID MUST answer exactly like an unknown one (`404 session_not_found`). [proof: S01 AS-39, S01 AS-40] [code: packages/backend/libs/domains/identity/api/sessions.controller.ts#SessionsController]
+- **S01.R-26** Revoking a session, logging out and logging out everywhere MUST be durable and idempotent: logout twice gives `204` twice and keeps the first revocation time and reason; `logout-all` answers `{revokedSessions}` and only touches the caller's sessions. [proof: S01 AS-41, S01 AS-42, S01 AS-43] [code: packages/backend/libs/domains/identity/application/session-revocation.service.ts#SessionRevocationService]
+- **S01.R-27** A user MUST have at most 20 active sessions; the 21st login revokes the oldest with reason `session_limit`. `SessionRevocationService.revokeAllForUser` MUST return the number revoked, record the reason and end the refresh tokens. [proof: S01 AS-44, S01 AS-45] [code: packages/backend/libs/domains/identity/application/session-issuer.service.ts#SessionIssuer]
+- **S01.R-28** Login with `delivery: "cookie"` MUST put no token in the body and set `__Host-access`, `__Host-refresh` (HttpOnly) and `__Host-csrf` (readable), all `Secure; SameSite=Lax; Path=/` without `Domain`. [proof: S01 AS-46] [code: packages/backend/libs/domains/identity/api/credential-cookies.ts#CredentialCookies]
+- **S01.R-29** A state-changing request authenticated by the access cookie MUST carry an `X-CSRF-Token` equal to the `__Host-csrf` cookie and issued for its own session, else `403 csrf_invalid`; a `Bearer` request is exempt. The token is a random part plus a keyed MAC over the session ID, compared in constant time. [proof: S01 AS-47, S01 AS-48, S01 AS-49, S01 AS-53] [code: packages/backend/libs/domains/identity/domain/csrf-token.ts#verifyCsrfToken]
+- **S01.R-30** Cookie-authenticated state changes and cookie-delivery logins MUST come from an allowed `Origin` (or, without `Origin`, not from `Sec-Fetch-Site: cross-site`), else `403 origin_not_allowed` before anything is created. Credential endpoints MUST accept only `application/json` bodies (`415 unsupported_media_type`) and `GET` MUST NOT change state. [proof: S01 AS-50, S01 AS-51, S01 AS-52, S01 AS-56] [code: packages/backend/libs/domains/identity/api/guards/cookie-request.ts#assertCookieRequestAllowed]
+- **S01.R-31** Cookie-mode refresh MUST need no body token, rotate all three cookies and return no token; a request refused by the CSRF check MUST NOT consume the refresh token. Cookie-mode logout MUST clear all three cookies. [proof: S01 AS-54, S01 AS-55] [code: packages/backend/libs/domains/identity/api/guards/csrf.guard.ts#CsrfGuard]
+- **S01.R-32** The JWKS MUST list the public parts of every NEXT, ACTIVE and RETIRED key (ES256 only, no private member) with `Cache-Control: public, max-age=300, stale-while-revalidate=3600` and an `ETag` that answers `304`; a stock verifier configured only from it MUST verify access tokens. [proof: S01 AS-58, S01 AS-59] [code: packages/backend/libs/domains/identity/api/well-known.controller.ts#WellKnownController]
+- **S01.R-33** Exactly one ACTIVE signing key MUST exist, also when ten first uses race on an empty store. [proof: S01 AS-60] [code: packages/backend/libs/domains/identity/infra/keys/key-store.service.ts#KeyStore]
+- **S01.R-34** The rotation job MUST promote a NEXT key once it has been published 24 h and the ACTIVE key is 7 days old, keep a NEXT key available, and purge a RETIRED key 24 h after retirement; tokens of a retired key verify until then. Concurrent and repeated runs MUST leave one ACTIVE and one NEXT key and change nothing on the last run. [proof: S01 AS-61, S01 AS-62, S01 AS-63, S01 AS-64] [code: packages/backend/libs/domains/identity/domain/key-rotation-policy.ts#decideRotation]
+- **S01.R-35** An unknown `kid` MUST cause at most one forced reload of the key set per 30 s. [proof: S01 AS-65] [code: packages/backend/libs/domains/identity/domain/key-cache-policy.ts#KeyCachePolicy]
+- **S01.R-36** A signing key's private part MUST be stored sealed and bound to its `kid`; `SecretBox` MUST detect tampering, a wrong context and a wrong master key, open values sealed with the previous master key, and refuse to start in production without a master key. [proof: S01 AS-66, S01 AS-67] [code: packages/backend/libs/domains/identity/infra/crypto/secret-box.ts#SecretBox]
+- **S01.R-37** `ServiceTokenService.mint` MUST issue `svc+jwt` ES256 tokens of 60 s (maximum 300 s) with `sub: svc:<caller>` and no role, session or address, only for a configured audience; a minted token MUST be reused until 80 % of its lifetime. [proof: S01 AS-68, S01 AS-71, S01 AS-72] [code: packages/backend/libs/domains/identity/application/service-token.service.ts#ServiceTokenService]
+- **S01.R-38** An internal endpoint guarded by `ServiceAuthGuard` MUST give `401` for a missing, expired, wrong-audience or user token and `403 service_caller_not_allowed` for a valid token of a caller outside its `@AllowedCallers`; `exchange` MUST turn a live user token into a token that names the user and the caller, and refuse a revoked session. [proof: S01 AS-69, S01 AS-70] [code: packages/backend/libs/domains/identity/api/guards/service-auth.guard.ts#ServiceAuthGuard]
+- **S01.R-39** A password-reset request MUST answer `202` alike for an existing, a passwordless and an unknown address, send one message only for an existing address with a password, invalidate older links, and keep the raw token out of every table, outbox row and log. [proof: S01 AS-73, S01 AS-74] [code: packages/backend/libs/domains/identity/application/password-reset.service.ts#PasswordResetService]
+- **S01.R-40** Confirming a reset MUST replace the password, revoke every session with reason `password_reset` and record `identity.password_changed`; an unknown, spent or expired token MUST give the same `400 invalid_reset_token`, a weak password `422` that keeps the token, and two simultaneous confirms MUST have one winner. [proof: S01 AS-75, S01 AS-76, S01 AS-77] [code: packages/backend/libs/domains/identity/application/password-reset.service.ts#PasswordResetService]
+- **S01.R-41** Reset requests MUST be limited to 5 per hour per IP and 3 per hour per address (known or not), and confirmations to 10 per hour per IP, with `429` and `Retry-After`. [proof: S01 AS-78] [code: packages/backend/libs/domains/identity/domain/auth-rate-policies.ts#identityRatePolicies]
+- **S01.R-42** Security events (login failure, session creation, revocation, refresh reuse, key rotation, reset request and completion, duplicate registration) MUST each write one audit line with the request ID and known IDs and never an address, password, token or hash, and MUST be counted in `auth_events_total` with the bounded labels `endpoint`, `result`, `reason`. [proof: S01 AS-82, S01 AS-83] [code: packages/backend/libs/domains/identity/application/audit.service.ts#AuditService]
+- **S01.R-43** Every S01 error MUST be `application/problem+json` with its stable `code` and a `requestId` equal to the response header; an unreadable signing key MUST give a generic `500` and leave no usable session. [proof: S01 AS-84, S01 AS-85] [code: packages/backend/libs/domains/identity/domain/problem-catalog.ts#identityProblems]
+- **S01.R-44** The operator job routes MUST answer `401` without a token and `403` for any role but `ADMIN`; they MUST return job DTOs without payload, map a tampered cursor to `400 validation_failed`, and mark mutations sensitive. [proof: none] [code: packages/backend/libs/domains/identity/api/jobs-admin.controller.ts#JobsAdminController]
 
 ## Behaviors
 - **S01.B-01** Given no account, when `" New@Example.COM "` registers with a valid password, then the response is `202` with no tokens and one `USER` account exists as `new@example.com`. [proof: S01 AS-01]
@@ -71,18 +92,30 @@ Buyers, sellers and other backend capabilities need a way to prove who a caller 
 - **S01.B-15** Given users A, B and a soft-deleted C, when `getUsersByIds([A, B, C, unknown])` runs, then the map holds only A and B without secret fields. [proof: S01 AS-79]
 - **S01.B-16** Given `findByEmail(" A@Example.com ")`, then A's summary returns; an unknown address returns `null`. [proof: S01 AS-80]
 - **S01.B-17** Given a stock-verifier request with `alg: none`, an unknown `kid` or an expired token on a protected route, then the three bodies are identical apart from `requestId`. [proof: S01 AS-24]
+- **S01.B-18** Given a user with 3 active sessions and 1 revoked one, when they list sessions, then they see their 3 active ones newest first, one marked `current`, and no storage key or user ID. [proof: S01 AS-39]
+- **S01.B-19** Given a user with 20 active sessions, when a 21st login succeeds, then the oldest is revoked with reason `session_limit` and its refresh token yields `401`. [proof: S01 AS-44]
+- **S01.B-20** Given a cookie session, when it logs out without `X-CSRF-Token`, then the response is `403 csrf_invalid` and the session is still active; with the matching token it is `204` and the three cookies are cleared. [proof: S01 AS-47, S01 AS-55]
+- **S01.B-21** Given a cookie login from `https://evil.example`, then the response is `403 origin_not_allowed`, sets no cookie and creates no session. [proof: S01 AS-51]
+- **S01.B-22** Given a session with only the refresh and CSRF cookies, when it refreshes with a valid CSRF header, then it gets three new cookies and no token in the body; without the header the response is `403` and the refresh token still works afterwards. [proof: S01 AS-54]
+- **S01.B-23** Given ACTIVE 7 days old and NEXT published 24 h ago, when the rotation job runs, then NEXT is ACTIVE, the former ACTIVE is RETIRED, a new NEXT exists, and a token of the former key still verifies. [proof: S01 AS-61]
+- **S01.B-24** Given a RETIRED key retired 25 h ago, when the rotation job runs, then it leaves the store and the JWKS and its tokens yield `401`; at 23 h it stays. [proof: S01 AS-63]
+- **S01.B-25** Given caller `worker` and audience `core`, when it presents a service token to an internal endpoint allowing `worker` and `billing`, then the response is `200` with principal `{kind:"service", caller:"worker"}`; a token from `projector` is `403 service_caller_not_allowed`. [proof: S01 AS-69]
+- **S01.B-26** Given a user token with a live session, when `exchange` runs for caller `core` and audience `worker`, then the token has `sub` = user, `act.sub` = `svc:core` and the session ID; after the session is revoked the exchange throws. [proof: S01 AS-70]
+- **S01.B-27** Given a user who requested a reset, when they confirm with the e-mailed token and a strong password, then the password changes, all their sessions end and the same token yields `400`. [proof: S01 AS-75, S01 AS-76]
+- **S01.B-28** Given a full register, login, refresh, logout and reset flow with log capture, then no log line holds the password, a token, a CSRF value or a hash. [proof: S01 AS-83]
 
 ## Lifecycles
 No model is listed for this capability. Statuses are not stored in a documented model.
-- Session: active, then revoked with a reason (`logout`, `refresh_token_reuse`, `session_limit`, `password_reset`, `admin_ban`). Users, the refresh service and other domains move it.
-- Signing key: NEXT, then ACTIVE, then RETIRED, then purged; the rotation job moves it. Rotation tests (AS-61 to AS-64) are not in the proof list.
+- Session: active, then revoked with a reason (`logout`, `logout_all`, `revoked`, `refresh_token_reuse`, `session_limit`, `password_reset`, `admin_ban`). Users, the refresh service, the session cap and other domains move it.
+- Signing key: NEXT, then ACTIVE, then RETIRED, then purged; the rotation job moves it (S01.R-34).
 
 ## Owns
 - Table/model: `User`; also `FederatedIdentity` and `SigningKey` by ownership rule (only `User` is listed in the facts).
 - Events: `identity.user_registered`, `identity.registration_duplicate_attempted`, `identity.password_changed`, plus the MFA and federated-identity events used by {{cap:S02}}.
-- Rate policies: `auth.register.ip`, `auth.login.ip`, `auth.login.account`, `auth.refresh.ip`, `auth.reset.ip`, `auth.reset.account` ({{concept:rate-limit-policy}}).
-- Cookies: `__Host-access`, `__Host-refresh`, `__Host-csrf`.
-- Configuration: master key for secret sealing, trusted proxies, audience allowlist, front-end origin allowlist.
+- Rate policies: `auth.register.ip`, `auth.login.ip`, `auth.login.account`, `auth.refresh.ip`, `auth.reset.ip`, `auth.reset.account` and `auth.reset.confirm.ip` ({{concept:rate-limit-policy}}).
+- Cookies: `__Host-access`, `__Host-refresh`, `__Host-csrf` (plus the challenge and flow cookies of {{cap:S02}}).
+- Jobs: `auth.rotate-signing-keys`, `auth.purge-reset-tokens`. Table `PasswordResetToken`. Metric `auth_events_total`.
+- Configuration: master key for secret sealing (`AUTH_KEK`, and `AUTH_KEK_PREVIOUS` while it rotates), trusted proxies, service-token audience allowlist (`SERVICE_TOKEN_AUDIENCES`) and this app's service audience (`SERVICE_AUDIENCE`), front-end origin allowlist. The CSRF MAC key is derived from `JWT_SECRET`.
 - Migration: `packages/backend/migrations/20261010090000-identity-s01-expand.js`.
 
 ## Decisions
@@ -93,11 +126,13 @@ No model is listed for this capability. Statuses are not stored in a documented 
 - Throttle policies are fail-closed, and the per-address counter uses the submitted address whether or not it exists.
 - Other domains reach users only through DTO services; identity owns `User`, `FederatedIdentity` and `SigningKey`.
 - Errors use {{concept:problem-json-errors}} with stable codes.
+- Cookie sessions are opt-in and protected twice: a CSRF token bound to the session, and an origin check; bearer clients carry no ambient credential and need neither.
+- Password-reset mail goes straight to the mail channel after commit (a port that notifications binds), not through the outbox, because the raw token must be in no table; a lost mail is recovered by requesting again.
+- Key rotation is a pure decision (`decideRotation`) applied until it has nothing left to do, so every run is idempotent and a fresh environment ends with one ACTIVE and one NEXT key.
 
 ## Known gaps
-- No test carries a scenario id for AS-39 to AS-56 (sessions list, logout, cookie delivery, CSRF, origin check, media type) and AS-58 to AS-64, AS-66 to AS-78, AS-81 to AS-86. Their behavior is not tied to a test in this page. AS-22, AS-65 are covered by unit tests but no rule here depends on them beyond R-07.
-- Not proven: session limit of 20 (AS-44), `revokeAllForUser` (AS-45), CSRF and origin checks, cookie delivery, JWKS content and cache, key rotation and purge, `SecretBox`, service tokens, password reset and its throttles.
-- AS-30 and AS-29 are described in R-19, but AS-29 has no test in the list that includes AS-30 coverage by id beyond `auth-tokens.e2e-spec.ts`; the proof is accepted from that file.
-- The JWKS route has no controller in the listed files, so its code location is unverified.
-- Audit logging and log redaction (AS-82, AS-83) have no test.
-- Rotation tests, the P1 AS-22 policy table limits and AS-86 (browser journey, owned by W01) are not verified here.
+- AS-81 (ownership and boundary gates) is a static gate, not a test: `pnpm check:table-ownership --strict` reports no identity-side access to another domain's table, but still lists seven accesses by other domains to identity tables (chat ×4, notifications, payments, tenancy test kit); `UserModel`, `FederatedIdentityModel`, `SigningKeyModel`, `KeyStore`, `OidcService` and `UserRawDto` stay exported until those owners move.
+- AS-86 (browser journey) belongs to W01 and is not verified here. The performance and edge criteria (SC-001, SC-005, SC-006, SC-008) are in `specs/UNVERIFIED.md`.
+- The operator job routes (R-44) have tests (`auth-jobs-admin.e2e-spec.ts`, ids `OPS-01` to `OPS-07`) but no scenario id a proof can name.
+- The CSRF MAC key is `JWT_SECRET`-derived (domain-separated by the `csrf:` prefix), not a dedicated `AUTH_CSRF_SECRET`.
+- `auth.e2e-spec.ts` (legacy catch-all, 9 tests, green) is kept: deleting a test file trips the test-integrity gate (see `questions.md`).

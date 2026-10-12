@@ -13,7 +13,7 @@ import {
   IsBoolean,
   IsDate,
 } from 'class-validator';
-import { Role } from '../infra/models/user.model';
+import { Role } from '../domain/role';
 import { IdField, TimestampsFields } from '@app/common/types';
 
 // --- --- --- --- --- Internal Types --- --- --- --- --- //

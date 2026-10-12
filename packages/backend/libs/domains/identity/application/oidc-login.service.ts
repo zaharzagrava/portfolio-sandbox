@@ -24,7 +24,7 @@ import {
   type LinkTrust,
 } from '../domain/link-decision';
 import { OidcCallbackError } from '../domain/oidc-errors';
-import { Role } from '../infra/models/user.model';
+import { Role } from '../domain/role';
 import { SessionRevocationService } from './session-revocation.service';
 
 /** Thrown inside the transaction to roll it back and run the whole decision again against the committed state. */

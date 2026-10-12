@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import type { CookieOptions, Response } from 'express';
-import { createHmac, randomBytes } from 'node:crypto';
 import { ApiConfigService } from '@app/common/config';
+import { issueCsrfToken } from '../domain/csrf-token';
 import type { IssuedSession } from '../application/session-issuer.service';
 import { REFRESH_IDLE_SEC } from '../domain/session-policy';
 
@@ -74,12 +74,15 @@ export class CredentialCookies {
     res.clearCookie(OIDC_FLOW_COOKIE, clearing());
   }
 
-  /** A random part and a keyed MAC over the session and that part: bound to the session (S01 FR-051). */
+  /** Cookie-mode logout: all three credential cookies end, with the attributes they were set with. */
+  clear(res: Response): void {
+    for (const name of [ACCESS_COOKIE, REFRESH_COOKIE])
+      res.clearCookie(name, clearing());
+    res.clearCookie(CSRF_COOKIE_NAME, { ...clearing(), httpOnly: false });
+  }
+
+  /** Bound to the session (S01 FR-051, `domain/csrf-token.ts`). */
   private csrfToken(sessionId: string): string {
-    const random = randomBytes(24).toString('base64url');
-    const mac = createHmac('sha256', this.config.get('jwt_secret'))
-      .update(`csrf:${sessionId}:${random}`)
-      .digest('base64url');
-    return `${random}.${mac}`;
+    return issueCsrfToken(this.config.get('jwt_secret'), sessionId);
   }
 }

@@ -2,7 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { AppError, ErrorArea } from '@app/common/errors';
 import { USER_REPOSITORY, type UserRepository } from '../domain/ports';
 import { normalizeEmail } from '../domain/password-policy';
-import type { Role } from '../infra/models/user.model';
+import type { Role } from '../domain/role';
 
 export const USER_DIRECTORY_MAX_IDS = 500;
 

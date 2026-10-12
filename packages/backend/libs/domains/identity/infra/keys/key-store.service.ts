@@ -11,7 +11,9 @@ import { CLOCK, Clock } from '@app/common/core/clock';
 import {
   SECRET_SEALER,
   SIGNING_KEY_REPOSITORY,
+  type KeyStorePort,
   type SecretSealerPort,
+  type SignOptions,
   type SigningKeyRepository,
   type SigningKeyRow,
 } from '../../domain/ports';
@@ -27,14 +29,6 @@ interface LoadedKey {
   privateKey?: KeyObject;
 }
 
-export interface SignOptions {
-  expiresInSec: number;
-  audience?: string;
-  /** JOSE `typ` header (`at+jwt`, `mfa+jwt`, `svc+jwt`); omitted = a plain JWT. */
-  typ?: string;
-  jwtId?: string;
-}
-
 /**
  * Rotating JWT signing keys (lesson 05/02 §2, 10/09 #39):
  *   NEXT    - published in JWKS, not used to sign yet (verifiers' caches pick it up)
@@ -45,7 +39,7 @@ export interface SignOptions {
  * The key set is cached per process (`KeyCachePolicy`: 300 s, one forced reload per 30 s for an unknown `kid`).
  */
 @Injectable()
-export class KeyStore {
+export class KeyStore implements KeyStorePort {
   private readonly logger = new Logger(KeyStore.name);
   private cache?: LoadedKey[];
   private readonly policy = new KeyCachePolicy();
@@ -122,6 +116,7 @@ export class KeyStore {
       publicJwk: publicKey.export({ format: 'jwk' }),
       privateKeySealed: this.box.seal(
         privateKey.export({ format: 'pem', type: 'pkcs8' }).toString(),
+        `signing-key:${kid}`,
       ),
       status,
       activatedAt: status === 'ACTIVE' ? now : null,
@@ -142,6 +137,13 @@ export class KeyStore {
     this.policy.reset();
   }
 
+  /** Keys sealed before contexts existed (`v1`) still open; new ones are bound to their kid (`v2`, FR-065). */
+  private openPrivateKey(row: SigningKeyRow): string {
+    return row.privateKeySealed.startsWith('v1.')
+      ? this.box.open(row.privateKeySealed)
+      : this.box.open(row.privateKeySealed, `signing-key:${row.kid}`);
+  }
+
   private async keys(force = false): Promise<LoadedKey[]> {
     const now = this.clock.now();
     if (!force && this.cache && !this.policy.needsRefresh(now))
@@ -158,7 +160,7 @@ export class KeyStore {
       }),
       privateKey:
         row.status === 'ACTIVE'
-          ? createPrivateKey(this.box.open(row.privateKeySealed))
+          ? createPrivateKey(this.openPrivateKey(row))
           : undefined,
     }));
     this.policy.loaded(now);

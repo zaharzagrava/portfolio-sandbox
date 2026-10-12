@@ -83,7 +83,9 @@ describe('Password reset', () => {
     const unknown = await request('nobody-here@example.com').expect(202);
     expect(acceptedSchema.parse(known.body)).toEqual({ status: 'accepted' });
     expect(unknown.body).toEqual(known.body);
-    expect(stableHeaders(unknown.headers)).toEqual(stableHeaders(known.headers));
+    expect(stableHeaders(unknown.headers)).toEqual(
+      stableHeaders(known.headers),
+    );
     expect(known.headers['set-cookie']).toBeUndefined();
   });
 
@@ -211,9 +213,7 @@ describe('Password reset', () => {
 
     const requested = await request('nope').expect(400);
     expect(
-      problemDetailsSchema
-        .parse(requested.body)
-        .errors?.map((e) => e.field),
+      problemDetailsSchema.parse(requested.body).errors?.map((e) => e.field),
     ).toContain('email');
   });
 
@@ -248,7 +248,9 @@ describe('Password reset', () => {
     for (const method of ['log', 'warn', 'error', 'debug', 'verbose'] as const)
       jest
         .spyOn(Logger.prototype, method)
-        .mockImplementation((...args: unknown[]) => void lines.push(String(args)));
+        .mockImplementation(
+          (...args: unknown[]) => void lines.push(String(args)),
+        );
     const stdout = jest
       .spyOn(process.stdout, 'write')
       .mockImplementation((chunk: unknown) => {
@@ -272,8 +274,6 @@ describe('Password reset', () => {
     });
     const everything = JSON.stringify([rows, outbox, lines]);
     expect(everything).not.toContain(token);
-    expect((rows[0] as { digest: string }).digest).toMatch(
-      /^[0-9a-f]{64}$/,
-    );
+    expect((rows[0] as { digest: string }).digest).toMatch(/^[0-9a-f]{64}$/);
   });
 });

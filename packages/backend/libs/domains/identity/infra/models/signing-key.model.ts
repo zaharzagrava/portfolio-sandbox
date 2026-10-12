@@ -15,7 +15,7 @@ export default class SigningKey extends Model<SigningKey, Partial<SigningKey>> {
   declare kid: string;
 
   @Column({ type: DataType.TEXT, allowNull: false })
-  declare alg: 'ES256' | 'RS256';
+  declare alg: 'ES256';
 
   @Column({ type: DataType.JSONB, allowNull: false })
   declare publicJwk: Record<string, unknown>;

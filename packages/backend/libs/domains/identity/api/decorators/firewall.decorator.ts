@@ -3,7 +3,7 @@ import { UserAuthGuard } from '../guards/user-auth.guard';
 import { UserAuthOptionalGuard } from '../guards/user-auth-optional.guard';
 import { SensitiveSessionGuard } from '../guards/sensitive-session.guard';
 import { Roles, RolesGuard } from '../guards/roles.guard';
-import { Role } from '../../infra/models/user.model';
+import { Role } from '../../domain/role';
 
 /**
  * Authentication and role guards of a route. Rate limiting is not decided here (S50): every route gets the default

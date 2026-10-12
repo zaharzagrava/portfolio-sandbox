@@ -8,6 +8,11 @@ import { KeyStore } from './infra/keys/key-store.service';
 import { SecretBox } from './infra/crypto/secret-box';
 import { SequelizeSigningKeyRepository } from './infra/models/signing-key.repository';
 import { RevocationMarkers } from './infra/sessions/revocation-markers';
+import { AuditService } from './application/audit.service';
+import { KeyRotationService } from './application/key-rotation.service';
+import { ServiceTokenService } from './application/service-token.service';
+import { ResetTokenMaintenanceService } from './application/reset-token-maintenance.service';
+import { SequelizeResetTokenRepository } from './infra/models/reset-token.repository';
 import { TokenAuthService } from './application/token-auth.service';
 import { AccessTokenSigner } from './application/access-token-signer.service';
 import { SequelizeUserRepository } from './infra/models/user.repository';
@@ -20,7 +25,10 @@ import { SequelizeMfaChallengeRepository } from './infra/models/mfa-challenge.re
 import { MfaMaintenanceService } from './application/mfa-maintenance.service';
 import { OidcProviderRegistry } from './application/oidc-provider-registry';
 import {
+  KEY_STORE,
   MFA_CHALLENGE_REPOSITORY,
+  RESET_TOKEN_REPOSITORY,
+  REVOCATION_MARKERS,
   SECOND_FACTOR_REPOSITORY,
   SECRET_SEALER,
   SIGNING_KEY_REPOSITORY,
@@ -50,6 +58,8 @@ import {
     KeyStore,
     SecretBox,
     { provide: SECRET_SEALER, useExisting: SecretBox },
+    { provide: KEY_STORE, useExisting: KeyStore },
+    { provide: REVOCATION_MARKERS, useExisting: RevocationMarkers },
     {
       provide: SIGNING_KEY_REPOSITORY,
       useClass: SequelizeSigningKeyRepository,
@@ -69,9 +79,25 @@ import {
     AccessTokenSigner,
     RevocationMarkers,
     UserDirectoryService,
+    KeyRotationService,
+    ServiceTokenService,
+    {
+      provide: RESET_TOKEN_REPOSITORY,
+      useClass: SequelizeResetTokenRepository,
+    },
+    ResetTokenMaintenanceService,
+    AuditService,
   ],
   exports: [
+    AuditService,
+    KEY_STORE,
+    REVOCATION_MARKERS,
+    SECRET_SEALER,
     KeyStore,
+    KeyRotationService,
+    ServiceTokenService,
+    RESET_TOKEN_REPOSITORY,
+    ResetTokenMaintenanceService,
     SecretBox,
     USER_REPOSITORY,
     SECOND_FACTOR_REPOSITORY,

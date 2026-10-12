@@ -86,6 +86,20 @@ export class SequelizeUserRepository implements UserRepository {
     return updated.length > 0;
   }
 
+  async promoteToSeller(id: string): Promise<boolean> {
+    const updated = await this.sequelize.query<{ id: string }>(
+      `UPDATE "User" SET "role" = 'SELLER', "updatedAt" = $2
+       WHERE "id" = $1 AND "role" = 'USER' AND "deletedAt" IS NULL
+       RETURNING "id"`,
+      {
+        bind: [id, this.clock.now()],
+        transaction: getActiveTransaction(),
+        type: QueryTypes.SELECT,
+      },
+    );
+    return updated.length > 0;
+  }
+
   async lookupByEmail(email: string) {
     const [row] = await this.sequelize.query<{
       id: string;

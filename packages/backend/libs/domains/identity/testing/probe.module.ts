@@ -1,5 +1,9 @@
-import { Controller, Get, Module, Post } from '@nestjs/common';
+import { Controller, Get, Module, Post, UseGuards } from '@nestjs/common';
 import { AuthModule } from '../auth.module';
+import {
+  AllowedCallers,
+  ServiceAuthGuard,
+} from '../api/guards/service-auth.guard';
 import { Firewall } from '../api/decorators/firewall.decorator';
 import { User } from '../api/decorators/user.decorator';
 import { Role } from '../infra/models/user.model';
@@ -37,3 +41,17 @@ export class AuthProbeController {
 
 @Module({ imports: [AuthModule], controllers: [AuthProbeController] })
 export class AuthProbeModule {}
+
+/** An internal endpoint of audience `core` for the service-token specs: the real guard and allowlist. */
+@Controller('probe')
+export class ServiceProbeController {
+  @UseGuards(ServiceAuthGuard)
+  @AllowedCallers('worker', 'billing')
+  @Get('internal')
+  internal(@User() user: unknown) {
+    return { user };
+  }
+}
+
+@Module({ imports: [AuthModule], controllers: [ServiceProbeController] })
+export class ServiceProbeModule {}

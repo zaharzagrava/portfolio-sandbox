@@ -1,9 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import {
-  GetCommand,
-  QueryCommand,
-  UpdateCommand,
-} from '@aws-sdk/lib-dynamodb';
+import { GetCommand, QueryCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
 import {
   ConditionalCheckFailedException,
   TransactionCanceledException,
@@ -183,6 +179,17 @@ export class DynamoSessionRepository implements SessionRepository {
       }),
     );
     return Item as SessionRecord | undefined;
+  }
+
+  async sidOfRefreshToken(refreshToken: string): Promise<string | undefined> {
+    const { Item } = await this.dynamo.doc.send(
+      new GetCommand({
+        TableName: this.dynamo.table(TABLE),
+        Key: tokenKey(digestOf(refreshToken)),
+        ConsistentRead: true,
+      }),
+    );
+    return Item?.sid as string | undefined;
   }
 
   async listForUser(userId: string): Promise<SessionRecord[]> {

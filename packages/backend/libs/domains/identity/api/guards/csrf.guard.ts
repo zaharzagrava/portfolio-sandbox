@@ -1,40 +1,42 @@
 import {
   CanActivate,
   ExecutionContext,
-  ForbiddenException,
+  Inject,
   Injectable,
 } from '@nestjs/common';
 import * as cookie from 'cookie';
-import { timingSafeEqual } from 'node:crypto';
+import type { Request } from 'express';
+import { ApiConfigService } from '@app/common/config';
+import { SESSION_REPOSITORY, type SessionRepository } from '../../domain/ports';
+import { assertCsrf } from './cookie-request';
+import { assertOriginAllowed } from './origin.guard';
 
-export const CSRF_COOKIE = '__Host-csrf';
-export const CSRF_HEADER = 'x-csrf-token';
+export { CSRF_COOKIE, CSRF_HEADER } from './cookie-request';
+
+const REFRESH_COOKIE = '__Host-refresh';
 
 /**
- * Double-submit CSRF protection (lesson 05/01 §3) for endpoints that accept a
- * credential from a cookie (refresh, logout). A cross-site form can make the
- * browser send the cookie but cannot read it to copy it into the header.
- * Requests carrying the refresh token in the body (mobile apps) don't use
- * ambient credentials, so they skip the check.
+ * CSRF and origin protection for the refresh endpoint when the credential is the `__Host-refresh` cookie (FR-051,
+ * FR-052, FR-055): the signed double-submit token must be valid for the session the refresh token belongs to. It runs
+ * before the handler, so a refused request has consumed nothing. A refresh token in the body is not an ambient
+ * credential and skips the check; an unknown cookie token is left to the handler, which answers the uniform 401.
  */
 @Injectable()
 export class CsrfGuard implements CanActivate {
-  canActivate(context: ExecutionContext): boolean {
-    const req = context.switchToHttp().getRequest();
+  constructor(
+    private readonly config: ApiConfigService,
+    @Inject(SESSION_REPOSITORY) private readonly sessions: SessionRepository,
+  ) {}
+
+  async canActivate(context: ExecutionContext): Promise<boolean> {
+    const req = context.switchToHttp().getRequest<Request>();
     if (req.body?.refreshToken) return true;
+    const token = cookie.parse(req.headers.cookie ?? '')[REFRESH_COOKIE];
+    if (!token) return true; // nothing ambient to protect
 
-    const cookies = cookie.parse(req.headers.cookie ?? '');
-    if (!cookies['__Host-refresh']) return true; // nothing ambient to protect
-
-    const header = String(req.headers[CSRF_HEADER] ?? '');
-    const expected = cookies[CSRF_COOKIE] ?? '';
-    if (
-      !header ||
-      header.length !== expected.length ||
-      !timingSafeEqual(Buffer.from(header), Buffer.from(expected))
-    ) {
-      throw new ForbiddenException('CSRF token missing or invalid');
-    }
+    assertOriginAllowed(req, this.config);
+    const sid = await this.sessions.sidOfRefreshToken(token);
+    if (sid) assertCsrf(req, this.config, sid);
     return true;
   }
 }

@@ -1,9 +1,17 @@
-import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
+import {
+  CanActivate,
+  ExecutionContext,
+  Inject,
+  Injectable,
+} from '@nestjs/common';
 import {
   Domain_InvalidTokenError,
   Domain_RevocationCheckUnavailableError,
 } from '../../domain/errors';
-import { RevocationMarkers } from '../../infra/sessions/revocation-markers';
+import {
+  REVOCATION_MARKERS,
+  type RevocationMarkersPort,
+} from '../../domain/ports';
 
 /**
  * For sensitive operations (change password, payouts, API keys, log out everywhere): besides a valid token, the
@@ -12,7 +20,10 @@ import { RevocationMarkers } from '../../infra/sessions/revocation-markers';
  */
 @Injectable()
 export class SensitiveSessionGuard implements CanActivate {
-  constructor(private readonly markers: RevocationMarkers) {}
+  constructor(
+    @Inject(REVOCATION_MARKERS)
+    private readonly markers: RevocationMarkersPort,
+  ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const sid = context.switchToHttp().getRequest().user?.sessionId as

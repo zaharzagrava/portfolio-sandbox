@@ -1,9 +1,7 @@
 import {
   Body,
   Controller,
-  Delete,
   Get,
-  Param,
   Header,
   HttpCode,
   HttpStatus,
@@ -25,10 +23,13 @@ import { RefreshService } from '../application/refresh.service';
 import { RegistrationService } from '../application/registration.service';
 import { SessionRevocationService } from '../application/session-revocation.service';
 import type { IssuedSession } from '../application/session-issuer.service';
+import { ApiConfigService } from '@app/common/config';
+import { CredentialCookies } from './credential-cookies';
 import { CsrfGuard } from './guards/csrf.guard';
+import { JsonOnlyGuard } from './guards/json-only.guard';
+import { assertOriginAllowed } from './guards/origin.guard';
 import { sessionMeta } from './request-meta';
 import { PasswordResetService } from '../application/password-reset.service';
-import { Domain_SessionNotFoundError } from '../domain/errors';
 import {
   AuthUserDto,
   PasswordLoginDto,
@@ -56,9 +57,12 @@ export class AuthController {
     private readonly revocation: SessionRevocationService,
     private readonly account: AccountService,
     private readonly passwordReset: PasswordResetService,
+    private readonly cookies: CredentialCookies,
+    private readonly config: ApiConfigService,
   ) {}
 
   @RateLimit('auth.register.ip')
+  @UseGuards(JsonOnlyGuard)
   @Post('register')
   @HttpCode(HttpStatus.ACCEPTED)
   async register(@Body() body: RegisterDto) {
@@ -69,32 +73,52 @@ export class AuthController {
   // SD-28: per-IP (credential stuffing from one host) + per-account (distributed guessing of one email); the account
   // policy counts failures only and a success clears it (S50).
   @RateLimit('auth.login.ip', 'auth.login.account')
+  @UseGuards(JsonOnlyGuard)
   @Post('login')
   @HttpCode(HttpStatus.OK)
   @Header('Cache-Control', NO_STORE)
   @Header('Pragma', 'no-cache')
-  async login(@Body() body: PasswordLoginDto, @Req() req: Request) {
+  async login(
+    @Body() body: PasswordLoginDto,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const cookieMode = body.delivery === 'cookie';
+    // Before any credential is checked: a login-CSRF attempt must not reach the password or set a cookie (FR-052).
+    if (cookieMode) assertOriginAllowed(req, this.config);
     const result = await this.login_.login(body, sessionMeta(req));
-    return result.mfaRequired
-      ? { mfaRequired: true as const, mfaToken: result.mfaToken }
-      : credentialBody(result);
+    if (result.mfaRequired) {
+      if (!cookieMode)
+        return { mfaRequired: true as const, mfaToken: result.mfaToken };
+      this.cookies.setChallenge(res, result.mfaToken);
+      return { mfaRequired: true as const };
+    }
+    return cookieMode ? this.cookies.set(res, result) : credentialBody(result);
   }
 
   @RateLimit('auth.refresh.ip')
-  @UseGuards(CsrfGuard)
+  @UseGuards(JsonOnlyGuard, CsrfGuard)
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
   @Header('Cache-Control', NO_STORE)
   @Header('Pragma', 'no-cache')
-  async refresh(@Body() body: RefreshDto, @Req() req: Request) {
-    const token =
-      body.refreshToken ??
-      cookie.parse(req.headers.cookie ?? '')[REFRESH_COOKIE] ??
-      '';
-    return credentialBody(await this.refresh_.refresh(token));
+  async refresh(
+    @Body() body: RefreshDto,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const fromCookie = cookie.parse(req.headers.cookie ?? '')[REFRESH_COOKIE];
+    const issued = await this.refresh_.refresh(
+      body.refreshToken ?? fromCookie ?? '',
+    );
+    // A browser that sent no body token is a cookie session: rotate the cookies, return no token (FR-055).
+    return body.refreshToken === undefined && fromCookie
+      ? this.cookies.set(res, issued)
+      : credentialBody(issued);
   }
 
   @RateLimit('auth.reset.ip')
+  @UseGuards(JsonOnlyGuard)
   @Post('password-reset/request')
   @HttpCode(HttpStatus.ACCEPTED)
   @Header('Cache-Control', NO_STORE)
@@ -104,22 +128,12 @@ export class AuthController {
   }
 
   @RateLimit('auth.reset.confirm.ip')
+  @UseGuards(JsonOnlyGuard)
   @Post('password-reset/confirm')
   @HttpCode(HttpStatus.NO_CONTENT)
   @Header('Cache-Control', NO_STORE)
   async confirmPasswordReset(@Body() body: PasswordResetConfirmDto) {
     await this.passwordReset.confirm(body.token, body.password);
-  }
-
-  @Firewall()
-  @Delete('sessions/:sessionId')
-  @HttpCode(HttpStatus.NO_CONTENT)
-  async revokeSession(
-    @User() user: AuthenticatedUser,
-    @Param('sessionId') sessionId: string,
-  ) {
-    if (!(await this.revocation.revokeSession(user.id, sessionId, 'revoked')))
-      throw new Domain_SessionNotFoundError();
   }
 
   @Firewall()
@@ -130,7 +144,8 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ) {
     await this.revocation.revokeBySid(user.sessionId, 'logout');
-    res.clearCookie(REFRESH_COOKIE, { path: '/' });
+    // Harmless for a bearer client; for a cookie session it ends the three credential cookies (FR-055).
+    this.cookies.clear(res);
   }
 
   @Firewall({ sensitive: true })
@@ -143,19 +158,6 @@ export class AuthController {
         'logout_all',
       ),
     };
-  }
-
-  @Firewall()
-  @Get('sessions')
-  async listSessions(@User() user: AuthenticatedUser) {
-    return (await this.account.activeSessions(user.id)).map((s) => ({
-      sessionId: s.sid,
-      device: s.device ?? null,
-      ip: s.ip ?? null,
-      createdAt: s.createdAt,
-      lastUsedAt: s.lastUsedAt ?? null,
-      current: s.sid === user.sessionId,
-    }));
   }
 
   @Firewall()

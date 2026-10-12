@@ -16,12 +16,10 @@ import {
 import { v4 as uuidv4 } from 'uuid';
 import { Includeable, Sequelize, WhereOptions } from 'sequelize';
 
-export enum Role {
-  ADMIN = 'ADMIN',
-  MODERATOR = 'MODERATOR',
-  SELLER = 'SELLER',
-  USER = 'USER',
-}
+import { Role } from '../../domain/role';
+
+// Kept here as well: other domains reach the role through the barrel, and the model's column uses it.
+export { Role };
 
 export enum UserScope {
   WithAll = 'WithAll',

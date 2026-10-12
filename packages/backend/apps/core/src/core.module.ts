@@ -61,7 +61,7 @@ import { DynamoModule } from '@app/infrastructure/dynamo/dynamo.module';
 import { CacheModule } from '@app/infrastructure/cache/cache.module';
 import { RateLimitModule } from '@app/infrastructure/rate-limit';
 import { ErrorUtilsModule } from '@app/common/errors/error-utils/error-utils.module';
-import { AdminModule, UsersModule, AuthApiModule } from '@app/domains/identity';
+import { AuthApiModule, IdentityOpsModule } from '@app/domains/identity';
 import { AppController } from './app.controller';
 import { Environment } from '@app/common/types';
 import { SentryModule } from '@sentry/nestjs/setup';
@@ -113,9 +113,8 @@ import { OutboxPublisherModule } from '@app/infrastructure/outbox/outbox-publish
     }),
     ScheduleModule.forRoot(),
     ErrorUtilsModule,
-    AdminModule,
     AuthApiModule,
-    UsersModule,
+    IdentityOpsModule,
     SentryModule.forRoot(),
     // before the catalog: GET /products/search must be matched before GET /products/:id
     ProductSearchModule,

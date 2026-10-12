@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { createHmac } from 'node:crypto';
 import { ApiConfigService } from '@app/common/config';
 import { MetricsRegistry } from '@app/common/telemetry/metrics-registry';
+import { RequestContext } from '@app/infrastructure/context';
 
 const refreshReuse = MetricsRegistry.counter({
   name: 'auth_refresh_reuse_total',
@@ -13,22 +14,113 @@ const breachSkipped = MetricsRegistry.counter({
   help: 'Registrations that proceeded because the breached-password lookup failed or timed out',
   labels: [],
 });
+const events = MetricsRegistry.counter({
+  name: 'auth_events_total',
+  help: 'Security events of the identity domain by endpoint, result and bounded reason',
+  labels: ['endpoint', 'result', 'reason'],
+});
 
-export type AuditEvent =
-  'auth.refresh.reuse_detected' | 'auth.login.failed' | 'auth.login.succeeded';
+/** Every audited event with the bounded labels it is counted under (FR-095). */
+const EVENTS = {
+  'auth.login.failed': {
+    endpoint: 'login',
+    result: 'failure',
+    reason: 'invalid_credentials',
+  },
+  'auth.login.succeeded': {
+    endpoint: 'login',
+    result: 'success',
+    reason: 'ok',
+  },
+  'auth.session.created': {
+    endpoint: 'session',
+    result: 'success',
+    reason: 'created',
+  },
+  'auth.session.revoked': {
+    endpoint: 'session',
+    result: 'success',
+    reason: 'revoked',
+  },
+  'auth.refresh.reuse_detected': {
+    endpoint: 'refresh',
+    result: 'failure',
+    reason: 'reuse',
+  },
+  'auth.registration.duplicate_attempted': {
+    endpoint: 'register',
+    result: 'failure',
+    reason: 'duplicate',
+  },
+  'auth.password_reset.requested': {
+    endpoint: 'reset',
+    result: 'success',
+    reason: 'requested',
+  },
+  'auth.password_reset.completed': {
+    endpoint: 'reset',
+    result: 'success',
+    reason: 'completed',
+  },
+  'auth.signing_key.rotated': {
+    endpoint: 'signing_key',
+    result: 'success',
+    reason: 'rotated',
+  },
+  'auth.signing_key.purged': {
+    endpoint: 'signing_key',
+    result: 'success',
+    reason: 'purged',
+  },
+} as const;
+
+export type AuditEvent = keyof typeof EVENTS;
+
+/** Revocation reasons that become a metric label; anything else is "other" (callers in other domains pass their own). */
+const REVOCATION_REASONS = new Set([
+  'logout',
+  'logout_all',
+  'revoked',
+  'refresh_token_reuse',
+  'password_reset',
+  'session_limit',
+  'user_deleted',
+  'shop_membership_removed',
+]);
 
 /**
- * Audit lines for security events (VIII.1): structured, no password, token, hash or address in clear. An address that
- * matched no account is logged as a keyed hash so a spike is debuggable without storing the person's data.
+ * Audit lines for security events (VIII.1): structured, one per event, with the request ID and the ids that are known;
+ * never a password, token, hash or address in clear. An address that matched no account is logged as a keyed hash so a
+ * spike is debuggable without storing the person's data.
  */
 @Injectable()
 export class AuditService {
   private readonly logger = new Logger('Audit');
 
-  constructor(private readonly config: ApiConfigService) {}
+  constructor(
+    private readonly config: ApiConfigService,
+    private readonly context: RequestContext,
+  ) {}
 
   record(event: AuditEvent, fields: Record<string, string | undefined> = {}) {
-    this.logger.log({ event, ...fields });
+    const requestId = this.context.requestId;
+    this.logger.log({
+      event,
+      ...(requestId && { requestId }),
+      ...Object.fromEntries(
+        Object.entries(fields).filter(([, v]) => v !== undefined),
+      ),
+    });
+    const labels = { ...EVENTS[event] } as {
+      endpoint: string;
+      result: string;
+      reason: string;
+    };
+    if (event === 'auth.session.revoked' && fields.reason)
+      labels.reason = REVOCATION_REASONS.has(fields.reason)
+        ? fields.reason
+        : 'other';
+    events.add(1, labels);
     if (event === 'auth.refresh.reuse_detected') refreshReuse.add(1);
   }
 

@@ -53,6 +53,13 @@ Also grep: `sequelize.transaction` count in `libs/domains/identity` is 0 and no 
 
 Record the green run (VII.9). Other domains' specs that used `issueTokensFor` (`orders/cart`, `orders/checkout`, `launch-events`, `chat`, `sse-gateway/topic-stream`) must be re-run after the move to the session fixture.
 
+### Green run (VII.9), 2026-10-12
+
+- `test-spec.sh libs/domains/identity`: 22 suites, 353 tests passed. Pure units (`pnpm jest libs/domains/identity --testPathIgnorePatterns e2e`): 16 suites, 246 tests passed.
+- Other domains that use identity sessions, re-run after the changes: `orders` (cart, checkout), `launch-events`, `chat` (5 suites, 48 tests), `tenancy`, `rate-limit`, `sse-gateway`, `seller-onboarding`, `auctions` (37 suites, 299 tests): all passed. `assistant` and `notifications` were not re-run (they need the Cassandra keyspace; see `gaps.md`).
+- Gates: `tsc --noEmit` clean; ESLint reports no error in the files of this pass (`search-config.ts` has an older one); `check:boundaries` clean; `check:module-graph` 9/9; `check:no-wallclock` OK; `sequelize.transaction`, `S54 T037 audit`, `cf-connecting-ip`, `throttle` absent from `libs/domains/identity` (one comment word "throttle" in `mfa.controller.ts`); `check:table-ownership --strict` has no identity-side finding but fails overall on other domains' findings (62), 7 of them naming identity tables (SC-009 below); `python3 scripts/livespec/check.py`: 0 errors.
+- One S02 timing test (`mfa-login` "S02 AS-17 … slides with the clock") failed in two consecutive runs within one minute of the hour and passed in the runs before and after.
+
 ## Ops artifacts (criteria no automated test proves)
 
 Do not describe these as verified; each has a row in `specs/UNVERIFIED.md`.
@@ -60,4 +67,5 @@ Do not describe these as verified; each has a row in `specs/UNVERIFIED.md`.
 - **SC-001 (timing part)**: "register then log in in under 30 seconds" is a UX measure; the indistinguishability half is proven by AS-02. Run the W01 journey (AS-86) with a stopwatch assertion once W01 exists.
 - **SC-005 (edge half)**: zero identity calls per request at the edge and zero rejected valid tokens across a rotation, observed with `packages/edge-be` pinned to ES256/`aud`/`typ` (gap A46, outside identity). Drill: rotate keys while a k6 script sends valid tokens through the edge; expect 0 rejections and 0 requests to identity.
 - **SC-006**: 2,000 logins/s fleet-wide, p99 < 300 ms (logins), < 50 ms (refresh), overload shed with `503 + Retry-After`. Run a k6 script with 2,000 login VUs against a staging fleet with `UV_THREADPOOL_SIZE=8`, hash concurrency 4.
+- **SC-009**: no other domain touches identity-owned tables. The static gate `pnpm check:table-ownership --strict` is the check and it is **not yet clean**: `pnpm check:table-ownership --strict | grep "owned by identity"` lists 7 accesses (chat ×4, notifications, payments, the tenancy test kit), each covered by a sibling follow-up in `gaps.md`. Run it again after those capabilities moved to `UserDirectoryService`; the criterion is met when the grep is empty.
 - **SC-008 (browser half)**: no access/refresh token in script-readable storage in the cookie flow. Run the W01 Playwright journey (AS-86) inspecting `localStorage`, `sessionStorage`, `document.cookie`.

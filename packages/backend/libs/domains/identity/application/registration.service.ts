@@ -16,7 +16,7 @@ import {
   UserRegistered,
 } from '../domain/events';
 import { normalizeEmail, passwordProblem } from '../domain/password-policy';
-import { Role } from '../infra/models/user.model';
+import { Role } from '../domain/role';
 import { AuditService } from './audit.service';
 
 /**
@@ -56,6 +56,10 @@ export class RegistrationService {
         passwordHash,
         role,
       });
+      if (!created)
+        this.audit.record('auth.registration.duplicate_attempted', {
+          userId: id,
+        });
       await this.outbox.append(
         created
           ? UserRegistered.create(id, 1, { userId: id, role })

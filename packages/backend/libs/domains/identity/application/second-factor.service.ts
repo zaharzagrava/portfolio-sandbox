@@ -5,10 +5,12 @@ import { OutboxService } from '@app/infrastructure/outbox/outbox.service';
 import {
   MFA_CHALLENGE_REPOSITORY,
   SECOND_FACTOR_REPOSITORY,
+  SECRET_SEALER,
   USER_REPOSITORY,
   type MfaChallengeRepository,
   type SecondFactorRepository,
   type SecondFactorRow,
+  type SecretSealerPort,
   type UserRepository,
 } from '../domain/ports';
 import {
@@ -31,7 +33,6 @@ import {
 } from '../domain/recovery-code';
 import { nextState } from '../domain/second-factor-state';
 import { generateSecret, otpauthUri, verifyTotp } from '../domain/totp';
-import { SecretBox } from '../infra/crypto/secret-box';
 import { MfaAttemptBudget } from './mfa-attempt-budget';
 
 export const TOTP_ISSUER = 'Marketplace';
@@ -59,7 +60,7 @@ export class SecondFactorService {
     private readonly challenges: MfaChallengeRepository,
     @Inject(USER_REPOSITORY) private readonly users: UserRepository,
     @Inject(CLOCK) private readonly clock: Clock,
-    private readonly box: SecretBox,
+    @Inject(SECRET_SEALER) private readonly box: SecretSealerPort,
     private readonly budget: MfaAttemptBudget,
     private readonly transactions: TransactionRunner,
     private readonly outbox: OutboxService,

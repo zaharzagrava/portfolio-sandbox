@@ -1,12 +1,12 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { v7 as uuidv7 } from 'uuid';
 import {
   ACCESS_TOKEN_AUDIENCE,
   ACCESS_TOKEN_TYP,
 } from '../domain/token-verifier';
 import { ACCESS_TOKEN_TTL_SEC } from '../domain/session-policy';
-import type { Role } from '../infra/models/user.model';
-import { KeyStore } from '../infra/keys/key-store.service';
+import type { Role } from '../domain/role';
+import { KEY_STORE, type KeyStorePort } from '../domain/ports';
 
 /**
  * Signs access tokens (FR-021): ES256, `typ: at+jwt`, `aud: marketplace-api`, 300 s, no personal data. The one signer,
@@ -14,7 +14,7 @@ import { KeyStore } from '../infra/keys/key-store.service';
  */
 @Injectable()
 export class AccessTokenSigner {
-  constructor(private readonly keys: KeyStore) {}
+  constructor(@Inject(KEY_STORE) private readonly keys: KeyStorePort) {}
 
   async sign(input: {
     userId: string;

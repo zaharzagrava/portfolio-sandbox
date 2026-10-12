@@ -1,4 +1,4 @@
-import type { Role } from '../infra/models/user.model';
+import type { Role } from './role';
 
 /** The principal of a request, built from verified token claims only (no per-request user lookup). */
 export interface AuthenticatedUser {

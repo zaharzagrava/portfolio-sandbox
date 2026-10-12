@@ -332,6 +332,10 @@ export class SecretsManagerConfig {
   stripe_webhook_secret_previous?: string;
   /** base64 32-byte key-encryption key for signing keys / MFA secrets (Secrets Manager in AWS). */
   auth_kek?: string;
+  /** base64 32-byte key-encryption key being rotated out: values sealed with it still open next to `auth_kek`. */
+  auth_kek_previous?: string;
+  service_token_audiences?: string;
+  service_audience?: string;
   /** SD-39 access token lifetime, default 600. */
   access_token_ttl_sec?: number;
   /** default 30 */

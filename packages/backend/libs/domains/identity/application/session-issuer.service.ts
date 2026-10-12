@@ -2,16 +2,20 @@ import { Inject, Injectable } from '@nestjs/common';
 import { v7 as uuidv7 } from 'uuid';
 import { CLOCK, Clock } from '@app/common/core/clock';
 import {
+  KEY_STORE,
   SESSION_REPOSITORY,
   USER_REPOSITORY,
+  type KeyStorePort,
   type SessionMeta,
   type SessionRepository,
   type UserRecord,
   type UserRepository,
 } from '../domain/ports';
 import { Domain_InvalidTokenError } from '../domain/errors';
-import { KeyStore } from '../infra/keys/key-store.service';
+import { epochSec, MAX_ACTIVE_SESSIONS } from '../domain/session-policy';
 import { AccessTokenSigner } from './access-token-signer.service';
+import { AuditService } from './audit.service';
+import { SessionRevocationService } from './session-revocation.service';
 import { TokenAuthService } from './token-auth.service';
 
 export const MFA_CHALLENGE_TYP = 'mfa+jwt';
@@ -37,12 +41,14 @@ export interface IssuedSession {
 @Injectable()
 export class SessionIssuer {
   constructor(
-    private readonly keys: KeyStore,
+    @Inject(KEY_STORE) private readonly keys: KeyStorePort,
     private readonly signer: AccessTokenSigner,
     private readonly tokens: TokenAuthService,
     @Inject(USER_REPOSITORY) private readonly users: UserRepository,
     @Inject(SESSION_REPOSITORY) private readonly sessions: SessionRepository,
     @Inject(CLOCK) private readonly clock: Clock,
+    private readonly revocation: SessionRevocationService,
+    private readonly audit: AuditService,
   ) {}
 
   async issue(input: {
@@ -62,6 +68,11 @@ export class SessionIssuer {
       meta: input.meta ?? {},
       now: this.clock.now(),
     });
+    await this.evictOverflow(user.id);
+    this.audit.record('auth.session.created', {
+      userId: user.id,
+      sessionId: sid,
+    });
     return {
       accessToken,
       refreshToken,
@@ -69,6 +80,16 @@ export class SessionIssuer {
       user: { id: user.id, email: user.email, role: user.role },
       delivery: input.delivery ?? 'body',
     };
+  }
+
+  /** At most `MAX_ACTIVE_SESSIONS` stay active per user; the oldest ones are revoked (FR-036). */
+  private async evictOverflow(userId: string): Promise<void> {
+    const now = epochSec(this.clock.now());
+    const active = (await this.sessions.listForUser(userId)).filter(
+      (s) => !s.revokedAt && s.absoluteExpiry > now,
+    ); // newest first
+    for (const old of active.slice(MAX_ACTIVE_SESSIONS))
+      await this.revocation.revokeBySid(old.sid, 'session_limit');
   }
 
   /** An access token for an existing session (refresh): role and everything else come from the user as of now. */
