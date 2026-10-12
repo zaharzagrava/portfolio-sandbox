@@ -51,7 +51,7 @@ API_URL="${API_URL:-http://localhost:8000}"
 # Implementation needs to build and run tests, on top of the file tools in lib.sh.
 TEST_SPEC="$ROOT/scripts/sdd/test-spec.sh"   # condensed e2e runner: far fewer tokens per red/green iteration
 IMPL_TOOLS=("Bash($TEST_SPEC:*)" 'Bash(npx tsc:*)' 'Bash(npx jest:*)' 'Bash(npx nest build:*)' 'Bash(npx vitest:*)' 'Bash(npx playwright:*)'
-            'Bash(python3 scripts/sdd/check-tests.py:*)' 'Bash(python3 scripts/sdd/tasks-scope.py:*)' 'Bash(pnpm:*)' 'Bash(node:*)' 'Bash(docker compose:*)' 'Bash(curl:*)'
+            'Bash(python3 scripts/sdd/check-tests.py:*)' 'Bash(python3 scripts/sdd/tasks-scope.py:*)' 'Bash(bash scripts/sdd/stack-fix.sh:*)' 'Bash(pnpm:*)' 'Bash(node:*)' 'Bash(docker compose:*)' 'Bash(curl:*)'
             'Bash(cd:*)' 'Bash(cat:*)' 'Bash(grep:*)' 'Bash(find:*)' 'Bash(git log:*)')
 
 # push_branch: with PUSH_BRANCH set, publish HEAD to that branch (best effort; the VPS runner sets it so nothing is lost).
@@ -122,6 +122,7 @@ gate() { # $1 = domain column; everything must pass
     backend)
       (cd packages/backend && NODE_ENV=test NODE_OPTIONS=--experimental-vm-modules timeout 1800 npx jest --ci --runInBand --forceExit --config jest-e2e.json "$(code_path "$1")") || return 1 ;;
     web)
+      bash "$ROOT/scripts/sdd/stack-fix.sh" smoke || return 1
       (
         cd packages/web &&
         npx tsc --noEmit -p tsconfig.json &&
@@ -241,7 +242,7 @@ gate_digest() {
 
 # repair_prompt <gate log>: what the agent is told when the gate fails.
 repair_prompt() {
-  printf '%s\n%s' "The hard gate for this capability FAILED. Find the cause and fix it so the whole gate passes. Rules: never weaken, skip or delete a test; a test that fails outside this capability's own files is still a real failure (the code under it may be wrong, e.g. it can depend on the machine's time zone): fix the code and note it under a '## Gate repairs' heading in this spec's gaps.md; a scenario that test-plan.md says has a test must get a real test whose title starts with this capability's ID and the scenario (for example it('S53 AS-27: ...')), not just a tag; change nothing unrelated. Re-run the failing check yourself before you stop (scripts/sdd/test-spec.sh for e2e specs, npx tsc --noEmit, python3 scripts/sdd/check-tests.py ...). Gate output, digested:" "$(gate_digest "$1")"
+  printf '%s\n%s' "The hard gate for this capability FAILED. Find the cause and fix it so the whole gate passes. Rules: never weaken, skip or delete a test; a test that fails outside this capability's own files is still a real failure (the code under it may be wrong, e.g. it can depend on the machine's time zone): fix the code and note it under a '## Gate repairs' heading in this spec's gaps.md; a scenario that test-plan.md says has a test must get a real test whose title starts with this capability's ID and the scenario (for example it('S53 AS-27: ...')), not just a tag; change nothing unrelated. Before editing anything, decide whether the failure is a fault of the ENVIRONMENT or of the code: many tests failing the same way at a 30 s timeout, an HTTP 503 or 5xx from an endpoint the failing tests only wait on, a missing browser (browserType.launch), a container that is down or an empty or stale search index are environment faults. For those run 'bash scripts/sdd/stack-fix.sh smoke' (it says what is wrong and what to run: 'browser', 'reindex') and 'bash scripts/sdd/stack-fix.sh <action>'; read the API log (/var/log/sdd/api.log on the runner) for the real error; if the root cause is a defect in product or backend code (for example a start-up hook that creates a resource with an old definition), fix THAT code, not the tests, and say so under '## Gate repairs' in gaps.md. Never change a test or a page to get around a broken environment. Re-run the failing check yourself before you stop (scripts/sdd/test-spec.sh for e2e specs, npx tsc --noEmit, python3 scripts/sdd/check-tests.py ...). Gate output, digested:" "$(gate_digest "$1")"
 }
 
 # Rules that apply to every capability, plus follow-ups that already-built specs left for this one.

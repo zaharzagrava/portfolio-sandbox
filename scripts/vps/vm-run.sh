@@ -77,6 +77,9 @@ say "starting from $start_ref ($(git rev-parse --short HEAD))"
 
 # --- dependencies and the files git does not carry
 pnpm install --frozen-lockfile --prefer-offline >"$LOG/install.log" 2>&1 || fail_and_wait "pnpm install failed (see $LOG/install.log)"
+if [[ "${SDD_IMAGE:-be}" == fe ]]; then
+  (cd packages/web && pnpm exec playwright install chromium >"$LOG/playwright-install.log" 2>&1) || fail_and_wait "playwright install chromium failed (see $LOG/playwright-install.log)"
+fi
 [[ -f packages/backend/.env.test ]] || cp packages/backend/env/test.env.example packages/backend/.env.test
 if [[ ! -f packages/backend/creds/jwtRS256.key ]]; then
   mkdir -p packages/backend/creds
