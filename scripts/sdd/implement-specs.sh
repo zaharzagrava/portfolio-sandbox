@@ -348,16 +348,16 @@ ordered_capabilities "$@" | while IFS=$'\t' read -r id domain slug title sources
   fi
 
   # The gate is a hard check, but a failing gate is usually fixable (a missing test, a lint error, a bug the capability exposed):
-  # hand the failure to the agent, then run the gate again. MAX_GATE_REPAIRS (default 3) bounds the attempts.
+  # hand the failure to the agent, then run the gate again. MAX_GATE_REPAIRS (default 5) bounds the attempts.
   attempt=0
   while :; do
     echo "  gate"
     if { MAX_PRIORITY="$limit" gate_extras "$id" "$domain" "$dir" && MAX_PRIORITY="$limit" gate "$domain"; } >"$dir/.gate.log" 2>&1; then break; fi
     attempt=$((attempt + 1))
-    if (( attempt > ${MAX_GATE_REPAIRS:-3} )); then
+    if (( attempt > ${MAX_GATE_REPAIRS:-5} )); then
       echo "FAIL  $id: gate (see $dir/.gate.log)" >&2; echo "$id gate failed" > "$STATE_FILE"; exit 20
     fi
-    echo "  gate failed: asking the agent to repair it (attempt $attempt of ${MAX_GATE_REPAIRS:-3})"
+    echo "  gate failed: asking the agent to repair it (attempt $attempt of ${MAX_GATE_REPAIRS:-5})"
     : > "$dir/.repaired-by-agent"
     step "$dir" "repair-$attempt" "/speckit-implement $CONTEXT $(repair_prompt "$dir/.gate.log") $LIMIT_TEXT"
   done
