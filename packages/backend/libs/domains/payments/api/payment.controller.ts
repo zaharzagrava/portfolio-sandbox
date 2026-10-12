@@ -45,14 +45,14 @@ export class PaymentController {
     return accepted;
   }
 
-  @Firewall({ sensitive: true })
+  @Firewall()
   @RateLimit('payments.read.user')
   @Get('payments')
   list(@User() user: AuthenticatedUser, @Query() query: ListPaymentsQueryDto) {
     return this.queries.listOwned(user.id, query);
   }
 
-  @Firewall({ sensitive: true })
+  @Firewall()
   @RateLimit('payments.read.user')
   @Get('payments/:paymentId')
   getOne(

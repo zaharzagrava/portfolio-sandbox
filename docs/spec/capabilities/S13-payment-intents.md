@@ -29,7 +29,7 @@ A buyer with a reserved order pays for it. The platform records one payment per 
 
 ## Rules
 - **S13.R-01** The amount and currency of a payment MUST come from the order copy; a body with `amountMinor`, `currency`, `userId`, a card field or any unknown property answers `400 validation_failed`. [proof: S13 AS-02] [code: packages/backend/libs/domains/payments/domain/payment-amount.ts#checkPaymentMoney]
-- **S13.R-02** `amountMinor` MUST be an integer from 1 to 99,999,999 (else `422 amount_out_of_range`), and the currency MUST be `EUR`, `USD` or `GBP`. [proof: none] [code: packages/backend/libs/domains/payments/domain/payment-amount.ts#checkPaymentMoney]
+- **S13.R-02** `amountMinor` MUST be an integer from 1 to 99,999,999 (else `422 amount_out_of_range`), and the currency MUST be `EUR`, `USD` or `GBP`. [proof: S13 AS-13] [code: packages/backend/libs/domains/payments/domain/payment-amount.ts#checkPaymentMoney]
 - **S13.R-03** An order is payable only when it belongs to the caller, is `RESERVED`, and `now < reservedUntil`; at `now == reservedUntil` the hold is expired (`409 order_not_payable`, reason `order_cancelled`, `order_paid` or `hold_expired`). [proof: S13 AS-11] [code: packages/backend/libs/domains/payments/domain/order-copy.ts#checkPayable]
 - **S13.R-04** A foreign order and an unknown order MUST answer the same `404 order_not_found`; an unauthenticated or guest-only caller gets `401`. [proof: S13 AS-10, S13 AS-12] [code: packages/backend/libs/domains/payments/domain/payment-errors.ts#OrderNotFoundError]
 - **S13.R-05** One payment MUST exist per order, enforced by the store; the loser of a race gets `409 payment_already_exists` with `existingPaymentId`. [proof: S13 AS-06] [code: packages/backend/libs/domains/payments/domain/payment-errors.ts#PaymentAlreadyExistsError]
@@ -53,6 +53,11 @@ A buyer with a reserved order pays for it. The platform records one payment per 
 - **S13.R-23** A refund request MUST refund a `COMPLETED` payment exactly once; it waits while the payment is `UNKNOWN` or `PENDING` with an attempt. [proof: S13 AS-50, S13 AS-51, S13 AS-52, S13 AS-53, S13 AS-54]
 - **S13.R-24** Every status change publishes `payment.status` to the owner's topic only; a push failure MUST NOT affect the transition ({{concept:realtime-topic-stream}}). [proof: S13 AS-61]
 - **S13.R-25** Payment code MUST read and write only tables owned by payments. [proof: S13 AS-64]
+- **S13.R-26** `GET /payments/:paymentId` and `GET /payments` are limited to 120 per buyer per minute and fail open when the limiter store is down; they are plain `Firewall()` routes (no revocation check against Redis), so a Redis outage does not stop reads. [proof: S13 AS-60]
+- **S13.R-27** The provider call metric `payments_provider_calls_total{operation, outcome}` counts a charge by its classified outcome (`succeeded`, `declined`, `requires_action`, `rejected`, `not_sent`, `ambiguous`, `invalid`); the other operations are counted by the provider's raw answer kind. Metric labels never carry a user, order or payment ID; logs of a payment carry its `paymentId` and `orderId`. [proof: S13 AS-62]
+- **S13.R-28** The payment method token, the provider secret and the customer-action `clientSecret` MUST NOT appear in logs, outbox payloads, events, realtime pushes or error bodies, and a `5xx` answer carries only a generic `detail`. [proof: S13 AS-63]
+- **S13.R-29** Startup MUST fail, naming the setting and no value, when the provider key is missing or any payments limit is not a positive integer. [proof: S13 AS-65]
+- **S13.R-30** On the stop signal the charge worker and the refund worker stop taking commands first (shutdown task order 10, 9 s limit) and the provider call in flight finishes and is recorded; a forced kill follows the crash-recovery path. [proof: S13 AS-66] [code: packages/backend/libs/domains/payments/infra/charge-command.worker.ts#ChargeCommandWorker]
 
 ## Behaviors
 - **S13.B-01** Given a reserved order and a new key, when the buyer posts `{orderId, paymentMethodId}`, then the answer is `202` with `Location`, status `PENDING`, and one charge command in the outbox. [proof: S13 AS-01]
@@ -75,6 +80,7 @@ A buyer with a reserved order pays for it. The platform records one payment per 
 - **S13.B-18** Given `orders.refund_requested` for a `COMPLETED` payment, then it becomes `REFUND_PENDING`, then `REFUNDED` with a reversing journal. [proof: S13 AS-50]
 - **S13.B-19** Given the order system asks for a status by provider reference, then it gets a mapped status; a pending payment is refreshed from the provider within 2 s. [proof: S13 AS-55, S13 AS-56]
 - **S13.B-20** Given a buyer reads another buyer's payment, then the answer is `404 payment_not_found`, identical to a missing one. [proof: S13 AS-57]
+- **S13.B-21** Given 45 payments, then `GET /payments` returns 20, 20 and 5 newest first with no repeat or skip even when a payment is inserted between pages, a tampered cursor answers `400 invalid_cursor`, and another buyer's `orderId` filter returns an empty page. [proof: S13 AS-58, S13 AS-59]
 
 ## Lifecycles
 Statuses: `PENDING`, `UNKNOWN`, `COMPLETED`, `FAILED`, `CANCELLED`, `REFUND_PENDING`, `REFUNDED`. The accept path creates `PENDING`; the charge processor, the resolution job, order events and the refund worker move the rest. See [payment-status](../models/payment-status.md) and [charge-delivery](../models/charge-delivery.md).
@@ -95,7 +101,7 @@ Statuses: `PENDING`, `UNKNOWN`, `COMPLETED`, `FAILED`, `CANCELLED`, `REFUND_PEND
 - Terminal statuses are never revisited; contradictions are logged and left to reconciliation.
 
 ## Known gaps
-- No test with a scenario id covers AS-13 (amount and currency limits), AS-58 (list pagination), AS-59 (list scoping), AS-60 (read rate limit), AS-62 (metrics), AS-63 (no secrets), AS-65 (startup validation) or AS-66 (graceful shutdown); R-02 has no proof.
-- AS-57 (read one) is the only P2 read scenario with a test; the list, the read limit (120 per minute, fail open) and the 24-hour `UNKNOWN` warning are unproven.
-- The 24-hour refund alarm and the refund retry cap are described in the specification but no test is tied to them in these facts.
-- AS-64 records that earlier code queried the catalog's table and referenced orders by foreign key; the facts do not show whether this is fully removed.
+- Not proven by an automated test (listed in `specs/UNVERIFIED.md`, status `not run`): 200 repeated runs of 5 simultaneous requests, 99% under 300 ms over a sustained outage, refund within 5 minutes on the sandbox provider, the 5 s end-to-end push on the real stack, and a 10,000-line log sample.
+- The processor side of the trace (`traceparent` read from the queue message) is S54's queue consumer; this capability proves only that the request's trace ID reaches the outbox row.
+- Three table-ownership findings remain in S14/S15 files (`ledger-entry.model.ts`, `finance-worker.module.ts`, `payout.jobs.ts`); `payment-boundary.e2e-spec.ts` asserts none is in a payment-intent file.
+- The edge worker no longer accepts payment writes (the Kafka `payments.requests` route is gone); only `GET /api/payments*` is proxied.

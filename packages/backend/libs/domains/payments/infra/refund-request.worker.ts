@@ -4,6 +4,7 @@ import {
   type OnApplicationBootstrap,
   type OnApplicationShutdown,
 } from '@nestjs/common';
+import { ShutdownRegistry } from '@app/infrastructure/lifecycle';
 import { TaskQueue } from '@app/infrastructure/sqs/task-queue.port';
 import type { TaskMessage } from '@app/infrastructure/sqs/task-queue.port';
 import {
@@ -27,9 +28,16 @@ export class RefundRequestWorker
   constructor(
     private readonly requests: RefundRequestService,
     @Optional() private readonly queue?: TaskQueue,
+    @Optional() private readonly shutdown?: ShutdownRegistry,
   ) {}
 
   onApplicationBootstrap(): void {
+    this.shutdown?.register({
+      name: 'payments.refund-worker',
+      order: 10,
+      timeoutMs: 9_000,
+      run: () => this.drain(),
+    });
     if (!this.queue) return;
     this.stop = this.queue.consume(
       REFUND_QUEUE,
@@ -43,6 +51,11 @@ export class RefundRequestWorker
   }
 
   async onApplicationShutdown(): Promise<void> {
+    await this.drain();
+  }
+
+  /** Stops taking refund requests; the queue consumer finishes the message it holds before `stop` returns. */
+  private async drain(): Promise<void> {
     await this.stop?.();
   }
 }

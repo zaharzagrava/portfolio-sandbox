@@ -3,12 +3,14 @@ import {
   paymentPageSchema,
   paymentSchema,
 } from '@marketplace-sandbox/contracts';
+import { TcpFaultProxy } from '@app/test/fakes/tcp-fault-proxy';
 import {
   acceptPayment,
   createPaymentsApp,
   deliverCharge,
   payableBuyer,
   publishOrderReserved,
+  seedPayment,
   type PaymentsTestApp,
 } from './testing';
 
@@ -71,7 +73,7 @@ describe('Payments: reads, list and tenant isolation', () => {
   });
 
   describe('W03 B-2: GET /payments?orderId&status&limit&cursor', () => {
-    it('lists the owner payment for an order, parsed by paymentPageSchema, with a null clientSecret', async () => {
+    it('S13 AS-58: lists the owner payment for an order, parsed by paymentPageSchema, with a null clientSecret', async () => {
       const buyer = await payableBuyer(t);
       const id = await acceptPayment(t, buyer);
       t.provider.script('create', {
@@ -97,7 +99,7 @@ describe('Payments: reads, list and tenant isolation', () => {
       expect(JSON.stringify(res.body)).not.toContain('pi_secret_list');
     });
 
-    it('returns the newest first and pages by keyset', async () => {
+    it('S13 AS-58: returns the newest first and pages by keyset', async () => {
       const user = await t.newUser();
       const ids: string[] = [];
       for (let i = 0; i < 3; i++) {
@@ -118,7 +120,7 @@ describe('Payments: reads, list and tenant isolation', () => {
       expect(p2.nextCursor).toBeNull();
     });
 
-    it('filters by status', async () => {
+    it('S13 AS-58: filters by status', async () => {
       const buyer = await payableBuyer(t);
       await acceptPayment(t, buyer);
       const pending = await t
@@ -129,7 +131,7 @@ describe('Payments: reads, list and tenant isolation', () => {
       expect(paymentPageSchema.parse(done.body).items).toHaveLength(0);
     });
 
-    it("another buyer's orderId gives an empty page (existence hidden)", async () => {
+    it("S13 AS-59: another buyer's orderId gives an empty page (existence hidden)", async () => {
       const buyer = await payableBuyer(t);
       await acceptPayment(t, buyer);
       const stranger = await t.newUser();
@@ -140,7 +142,7 @@ describe('Payments: reads, list and tenant isolation', () => {
       expect(res.body).toEqual({ items: [], nextCursor: null });
     });
 
-    it('a bad query is 400; no credentials is 401', async () => {
+    it('S13 AS-58: a bad query is 400; no credentials is 401', async () => {
       const user = await t.newUser();
       for (const q of [
         'orderId=nope',
@@ -156,7 +158,99 @@ describe('Payments: reads, list and tenant isolation', () => {
       expect((await t.http().get('/api/payments')).status).toBe(401);
     });
 
-    it('the 121st read in a minute is 429', async () => {
+    it('S13 AS-58: 45 payments page 20/20/5 with no repeat or skip under concurrent inserts; default limit is 20; a tampered cursor is invalid_cursor', async () => {
+      const user = await t.newUser();
+      const base = t.clock.now().getTime();
+      const seeded: string[] = [];
+      for (let i = 0; i < 45; i++) {
+        const row = await seedPayment(t.app, {
+          userId: user.id,
+          createdAt: new Date(base - (45 - i) * 1_000),
+        });
+        seeded.push(row.id);
+      }
+      const newestFirst = [...seeded].reverse();
+
+      const first = paymentPageSchema.parse(
+        (await t.as(user).get('/api/payments')).body,
+      );
+      expect(first.items).toHaveLength(20);
+      // a newer payment arrives between pages: it must not shift the next page
+      await seedPayment(t.app, { userId: user.id, createdAt: new Date(base) });
+      const second = paymentPageSchema.parse(
+        (await t.as(user).get(`/api/payments?cursor=${first.nextCursor}`)).body,
+      );
+      const third = paymentPageSchema.parse(
+        (await t.as(user).get(`/api/payments?cursor=${second.nextCursor}`))
+          .body,
+      );
+      expect(second.items).toHaveLength(20);
+      expect(third.items).toHaveLength(5);
+      expect(third.nextCursor).toBeNull();
+      expect(
+        [...first.items, ...second.items, ...third.items].map((p) => p.id),
+      ).toEqual(newestFirst);
+
+      const cursor = first.nextCursor as string;
+      const tampered = `${cursor.slice(0, -2)}${cursor.endsWith('AA') ? 'BB' : 'AA'}`;
+      const bad = await t.as(user).get(`/api/payments?cursor=${tampered}`);
+      expect(bad.status).toBe(400);
+      expect(JSON.stringify(bad.body)).toContain('invalid_cursor');
+    });
+
+    it("S13 AS-59: no filter combination returns another buyer's payment", async () => {
+      const buyer = await payableBuyer(t);
+      const id = await acceptPayment(t, buyer);
+      const stranger = await t.newUser();
+      for (const q of [
+        '',
+        `?orderId=${buyer.order.orderId}`,
+        '?status=PENDING',
+        `?orderId=${buyer.order.orderId}&status=PENDING&limit=100`,
+      ]) {
+        const res = await t.as(stranger).get(`/api/payments${q}`);
+        expect([q, res.status]).toEqual([q, 200]);
+        expect(JSON.stringify(res.body)).not.toContain(id);
+        expect(paymentPageSchema.parse(res.body).items).toHaveLength(0);
+      }
+    });
+
+    it('S13 SC-007: every read and create route, as another buyer or anonymous, is the same refusal and changes nothing', async () => {
+      const buyer = await payableBuyer(t);
+      const id = await acceptPayment(t, buyer);
+      const stranger = await t.newUser();
+      const before = JSON.stringify(
+        (await t.as(buyer.user).get(`/api/payments/${id}`)).body,
+      );
+
+      expect((await t.as(stranger).get(`/api/payments/${id}`)).status).toBe(
+        404,
+      );
+      const createAsStranger = await t
+        .as(stranger)
+        .post('/api/payments/intents')
+        .set('Idempotency-Key', `key-${randomUUID()}`)
+        .send({
+          orderId: buyer.order.orderId,
+          paymentMethodId: 'pm_card_visa',
+        });
+      expect(createAsStranger.status).toBe(404);
+      for (const [method, url] of [
+        ['get', `/api/payments/${id}`],
+        ['get', `/api/payments?orderId=${buyer.order.orderId}`],
+        ['post', '/api/payments/intents'],
+      ] as const) {
+        const res = await t.http()[method](url);
+        expect([url, res.status]).toEqual([url, 401]);
+      }
+      expect(
+        JSON.stringify(
+          (await t.as(buyer.user).get(`/api/payments/${id}`)).body,
+        ),
+      ).toBe(before);
+    });
+
+    it('S13 AS-60: the 121st read in a minute is 429', async () => {
       const user = await t.newUser();
       for (let i = 0; i < 120; i++) {
         const res = await t.as(user).get('/api/payments?limit=1');
@@ -166,5 +260,31 @@ describe('Payments: reads, list and tenant isolation', () => {
       expect(limited.status).toBe(429);
       expect(limited.headers['retry-after']).toBeDefined();
     });
+  });
+
+  it('S13 AS-60: with the limiter store down reads are still answered (fail open)', async () => {
+    const redis = new URL(process.env.REDIS_URL ?? 'redis://localhost:6400/0');
+    const proxy = await TcpFaultProxy.start({
+      host: redis.hostname,
+      port: Number(redis.port || 6379),
+    });
+    const own = await createPaymentsApp({
+      redisUrl: `redis://127.0.0.1:${proxy.port}/0`,
+    });
+    try {
+      await own.reset();
+      const buyer = await payableBuyer(own);
+      const id = await acceptPayment(own, buyer);
+      proxy.mode = 'refuse';
+      proxy.sever();
+      await new Promise((r) => setTimeout(r, 300));
+      const res = await own.as(buyer.user).get(`/api/payments/${id}`);
+      expect(res.status).toBe(200);
+      expect(res.body.id).toBe(id);
+    } finally {
+      proxy.mode = 'pass';
+      await own.close();
+      await proxy.close();
+    }
   });
 });

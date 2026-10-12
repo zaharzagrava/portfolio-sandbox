@@ -309,6 +309,11 @@ export class StripePaymentProvider implements PaymentProvider {
     assertNoActiveTransaction('network');
     const breaker = this.breakers[name];
     const operation = name;
+    // `create_intent` is counted by the charge service by its classified outcome (succeeded, declined, ...).
+    const count = (outcome: string) => {
+      if (name !== 'create_intent')
+        providerCallsCounter.add(1, { operation, outcome });
+    };
     try {
       const { value } = await breaker.execute(async () => {
         try {
@@ -319,18 +324,15 @@ export class StripePaymentProvider implements PaymentProvider {
           return mapped.response;
         }
       });
-      providerCallsCounter.add(1, { operation, outcome: value.kind });
+      count(value.kind);
       return value;
     } catch (error) {
       if (error instanceof CircuitOpenError) {
-        providerCallsCounter.add(1, { operation, outcome: 'not_sent' });
+        count('not_sent');
         return { kind: 'not_sent', reason: 'circuit_open' };
       }
       if (error instanceof ProviderFailure) {
-        providerCallsCounter.add(1, {
-          operation,
-          outcome: error.response.kind,
-        });
+        count(error.response.kind);
         return error.response;
       }
       throw error;

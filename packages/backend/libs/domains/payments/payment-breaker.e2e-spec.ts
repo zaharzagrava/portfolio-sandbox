@@ -293,6 +293,12 @@ describe('Payments: provider circuit breaker, timeouts and degradation', () => {
       .send({ orderId: buyer.order.orderId, paymentMethodId: 'pm_x' });
     expect(meanwhile.status).toBe(202);
     expect(performance.now() - started).toBeLessThan(300);
+    const readStarted = performance.now();
+    const read = await t
+      .as(buyer.user)
+      .get(`/api/payments/${meanwhile.body.paymentId}`);
+    expect(read.status).toBe(200);
+    expect(performance.now() - readStarted).toBeLessThan(300);
     await deliverCharge(t, other);
     expect(await paymentRow(t.app, other)).toMatchObject({
       status: 'COMPLETED',
@@ -343,6 +349,12 @@ describe('Payments: provider circuit breaker, timeouts and degradation', () => {
       .send({ orderId: buyer.order.orderId, paymentMethodId: 'pm_x' });
     expect(res.status).toBe(202);
     expect(performance.now() - started).toBeLessThan(300);
+    const readStarted = performance.now();
+    const read = await t
+      .as(buyer.user)
+      .get(`/api/payments/${res.body.paymentId}`);
+    expect(read.status).toBe(200);
+    expect(performance.now() - readStarted).toBeLessThan(300);
     await t.http().get('/health/ready').expect(200);
     await t.http().get('/health/live').expect(200);
   });

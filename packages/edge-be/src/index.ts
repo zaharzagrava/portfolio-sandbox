@@ -156,11 +156,9 @@ async function rateLimitSubject(request: Request, env: Env): Promise<string> {
 function isProxiedReadPath(pathname: string): boolean {
 	return (
 		pathname.startsWith('/api/products/search') ||
-		pathname.startsWith('/api/payment')
+		pathname.startsWith('/api/payments')
 	);
 }
-
-const UUID_V7_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 // Module-level caches survive across requests within one isolate.
 let jwks: ReturnType<typeof createRemoteJWKSet> | undefined;
@@ -203,67 +201,6 @@ async function authenticateRequest(request: Request, env: Env): Promise<{ userId
 		console.error('Error authenticating request', error);
 		throw new Error('Invalid or expired token');
 	}
-}
-
-function generateTraceparent(): string {
-	// 1. Generate standard W3C 16-byte Trace ID and 8-byte Span ID
-	const traceId = crypto.randomUUID().replace(/-/g, '');
-	const spanId = crypto.randomUUID().replace(/-/g, '').substring(0, 16);
-
-	// 2. Format it exactly like this: 00-{traceId}-{spanId}-01
-	const traceparent = `00-${traceId}-${spanId}-01`;
-
-	return traceparent;
-}
-export interface PaymentPayload {
-	idempotency_key: string;
-	amount: number;
-	bisOrderId: string;
-	paymentMethodId: string;
-}
-
-export function validatePaymentPayload(body: any): { isValid: boolean; errors: string[]; data?: PaymentPayload } {
-	const errors: string[] = [];
-
-	if (!body || typeof body !== 'object') {
-		return { isValid: false, errors: ['Payload must be a valid JSON object'] };
-	}
-
-	// 1. Validate idempotency_key
-	if (typeof body.idempotency_key !== 'string' || body.idempotency_key.trim() === '') {
-		errors.push('idempotency_key must be a non-empty string');
-	}
-
-	// 2. Validate amount (assuming it must be a positive integer/cents)
-	if (typeof body.amount !== 'number' || body.amount <= 0 || !Number.isInteger(body.amount)) {
-		errors.push('amount must be a positive integer');
-	}
-
-	// 4. Validate bisOrderId (UUID)
-	if (typeof body.bisOrderId !== 'string' || !UUID_V7_REGEX.test(body.bisOrderId)) {
-		errors.push('bisOrderId must be a valid UUID');
-	}
-
-	// 5. Validate paymentMethodId
-	if (typeof body.paymentMethodId !== 'string' || body.paymentMethodId.trim() === '') {
-		errors.push('paymentMethodId must be a non-empty string');
-	}
-
-	if (errors.length > 0) {
-		return { isValid: false, errors };
-	}
-
-	// Return the safely typed data
-	return {
-		isValid: true,
-		errors: [],
-		data: {
-			idempotency_key: body.idempotency_key,
-			amount: body.amount,
-			bisOrderId: body.bisOrderId,
-			paymentMethodId: body.paymentMethodId,
-		},
-	};
 }
 
 // --- --- --- --- --- SD-08 share links at the edge --- --- --- --- --- //
@@ -415,153 +352,7 @@ export default {
 			});
 		}
 
-		if (request.method !== 'POST') return new Response('Method not allowed', { status: 405 });
-
-		try {
-			// --- --- --- --- --- Validation --- --- --- --- --- //
-			const rawBody = await request.text();
-			let body = JSON.parse(rawBody);
-
-			try {
-				body = JSON.parse(rawBody);
-			} catch (e) {
-				return new Response(JSON.stringify({ error: 'Invalid JSON format' }), { status: 400 });
-			}
-
-			// Run the raw JS validator
-			const validation = validatePaymentPayload(body);
-
-			if (!validation.isValid) {
-				// Fail fast and tell the frontend exactly what they did wrong
-				return new Response(
-					JSON.stringify({
-						error: 'Validation failed',
-						details: validation.errors,
-					}),
-					{
-						status: 400,
-						headers: { 'Content-Type': 'application/json' },
-					},
-				);
-			}
-
-			// Now you can safely use validation.data knowing it is 100% correct
-			const safePayload = validation.data;
-
-			if (!safePayload) {
-				return new Response(JSON.stringify({ error: 'Invalid payload' }), { status: 400 });
-			}
-
-			// --- --- --- --- --- Authentication --- --- --- --- --- //
-			const { idempotency_key } = safePayload;
-
-			let userContext;
-			try {
-				userContext = await authenticateRequest(request, env);
-			} catch (authErr: any) {
-				return new Response(JSON.stringify({ error: authErr.message }), { status: 401 });
-			}
-
-			// --- --- --- --- --- Rate limiting --- --- --- --- --- //
-			const decision = await checkRateLimit(`user:${userContext.userId}`, env);
-			if (!decision.allowed) return rateLimitResponse(decision, request);
-
-			// --- --- --- --- --- Redis idempotency check --- --- --- --- --- //
-			const redisAuth = {
-				Authorization: `Bearer ${env.UPSTASH_REDIS_REST_TOKEN}`,
-				'Content-Type': 'application/json',
-			};
-
-			const redisKey = `idempotency:${userContext.userId}:${idempotency_key}`;
-
-			const redisCheck = await fetch(`${env.UPSTASH_REDIS_REST_URL}`, {
-				method: 'POST',
-				headers: redisAuth,
-				body: JSON.stringify(['SET', redisKey, 'processing', 'NX', 'EX', 86400]),
-			});
-			const redisData = (await redisCheck.json()) as any;
-
-			if (redisData.result !== 'OK') {
-				return new Response(JSON.stringify({ error: 'Duplicate request detected.' }), { status: 409 });
-			}
-
-			// --- --- --- --- --- Sending to Kafka --- --- --- --- --- //
-
-			// Kafka URL and body generation based on the broker type
-			console.log('Kafka URL and body generation based on the broker type');
-			const isConfluent = env.KAFKA_BROKER.includes('confluent.cloud');
-			const traceparent = generateTraceparent();
-			const { kafkaUrl, kafkaHeaders, kafkaBody } = (() => {
-				let kafkaUrl: string;
-				let kafkaHeaders: Record<string, string>;
-				let kafkaBody: any;
-
-				const newBody = {
-					...body,
-					userId: userContext.userId,
-				};
-
-				if (isConfluent) {
-					kafkaUrl = `${env.KAFKA_BROKER}/kafka/v3/clusters/${env.KAFKA_CLUSTER_ID}/topics/payments.requests/records`;
-					kafkaHeaders = {
-						'Content-Type': 'application/json',
-						Authorization: `Basic ${btoa(`${env.KAFKA_API_KEY}:${env.KAFKA_API_SECRET}`)}`,
-					};
-					// Confluent REST v3 expects header values as base64
-					kafkaBody = {
-						key: { type: 'JSON', data: idempotency_key },
-						value: { type: 'JSON', data: newBody },
-						headers: [{ name: 'traceparent', value: btoa(traceparent) }],
-					};
-				} else {
-					kafkaUrl = `${env.KAFKA_BROKER}/topics/payments.requests`;
-					kafkaHeaders = {
-						'Content-Type': 'application/vnd.kafka.json.v2+json',
-						Accept: 'application/vnd.kafka.v2+json',
-					};
-					// Must live on the Kafka record — HTTP headers are not forwarded by the proxy
-					kafkaBody = {
-						records: [
-							{
-								key: idempotency_key,
-								value: newBody,
-								headers: [{ name: 'traceparent', value: traceparent }],
-							},
-						],
-					};
-				}
-
-				return { kafkaUrl, kafkaHeaders, kafkaBody };
-			})();
-
-			console.log('Fetching Kafka response');
-
-			console.log('Kafka URL', kafkaUrl);
-			console.log('Kafka headers', kafkaHeaders);
-			console.log('Kafka body', kafkaBody);
-
-			const kafkaResponse = await fetch(kafkaUrl, {
-				method: 'POST',
-				headers: kafkaHeaders,
-				body: JSON.stringify(kafkaBody),
-			});
-			const kafkaPayload = await kafkaResponse.json();
-
-			console.log('Kafka status', kafkaResponse.status);
-			console.log('Kafka payload', kafkaPayload);
-
-			if (!kafkaResponse.ok) {
-				await fetch(`${env.UPSTASH_REDIS_REST_URL}`, {
-					method: 'POST',
-					headers: redisAuth,
-					body: JSON.stringify(['DEL', redisKey]),
-				});
-				throw new Error(`Kafka Error: ${await kafkaResponse.text()}`);
-			}
-
-			return new Response(JSON.stringify({ status: 'Accepted', idempotencyKey: idempotency_key }), { status: 202 });
-		} catch (err: any) {
-			return new Response(JSON.stringify({ error: err.message }), { status: 500 });
-		}
+		// The payment write path (`payments.requests` through Kafka) is gone: S13 accepts payments at POST /api/payments/intents on the origin.
+		return new Response(request.method === 'GET' ? 'Not found' : 'Method not allowed', { status: request.method === 'GET' ? 404 : 405 });
 	},
 };

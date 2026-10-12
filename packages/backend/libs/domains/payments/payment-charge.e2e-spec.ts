@@ -56,6 +56,15 @@ describe('Payments: charge processing and outcomes', () => {
     await deliverCharge(t, id);
     await settle();
 
+    const read = await t.as(buyer.user).get(`/api/payments/${id}`);
+    expect(read.status).toBe(200);
+    expect(read.body).toMatchObject({
+      id,
+      status: 'COMPLETED',
+      version: 2,
+      clientSecret: null,
+    });
+
     expect(t.provider.calls).toHaveLength(1);
     const [call] = t.provider.calls;
     expect(call).toMatchObject({
@@ -230,6 +239,20 @@ describe('Payments: charge processing and outcomes', () => {
     expect(JSON.stringify(await outboxRowsFor(t.app, id))).not.toContain(
       'pi_secret_3ds',
     );
+
+    // the owner's read has the secret, another buyer's read is a 404, the list never carries it
+    const own = await t.as(buyer.user).get(`/api/payments/${id}`);
+    expect(own.body).toMatchObject({
+      status: 'PENDING',
+      requiresAction: true,
+      clientSecret: 'pi_secret_3ds',
+    });
+    expect(
+      (await t.as(await t.newUser()).get(`/api/payments/${id}`)).status,
+    ).toBe(404);
+    const list = await t.as(buyer.user).get('/api/payments');
+    expect(list.body.items).toHaveLength(1);
+    expect(JSON.stringify(list.body)).not.toContain('pi_secret_3ds');
 
     await t.app
       .get(PaymentTransitionService, { strict: false })

@@ -6,6 +6,7 @@ import {
   type OnApplicationShutdown,
 } from '@nestjs/common';
 import { z } from 'zod';
+import { ShutdownRegistry } from '@app/infrastructure/lifecycle';
 import { TaskQueue } from '@app/infrastructure/sqs/task-queue.port';
 import type { TaskMessage } from '@app/infrastructure/sqs/task-queue.port';
 import { PaymentChargeService } from '../application/payment-charge.service';
@@ -35,9 +36,17 @@ export class ChargeCommandWorker
   constructor(
     private readonly charges: PaymentChargeService,
     @Optional() private readonly queue?: TaskQueue,
+    @Optional() private readonly shutdown?: ShutdownRegistry,
   ) {}
 
   onApplicationBootstrap(): void {
+    // First band (stop intake); the provider call in flight is bounded by its 8 s limit, so 9 s covers it (S13 AS-66).
+    this.shutdown?.register({
+      name: 'payments.charge-worker',
+      order: 10,
+      timeoutMs: 9_000,
+      run: () => this.drain(),
+    });
     if (!this.queue) return;
     this.stop = this.queue.consume<ChargeCommand>(
       CHARGE_QUEUE,
@@ -66,6 +75,10 @@ export class ChargeCommandWorker
 
   /** Stops taking commands, then lets the calls in flight finish (the provider call is bounded by its own timeout). */
   async onApplicationShutdown(): Promise<void> {
+    await this.drain();
+  }
+
+  private async drain(): Promise<void> {
     this.stopping = true;
     await this.stop?.();
     await Promise.allSettled([...this.inFlight]);

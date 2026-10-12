@@ -9,7 +9,6 @@ concepts: [problem-json-errors, request-context, transaction-runner, idempotency
 models: []
 scope:
   - packages/backend/apps/lambdas/src/handlers/**
-  - packages/backend/apps/sse-gateway/src/redis-pubsub/**
   - packages/backend/libs/common/core/**
   - packages/backend/libs/common/errors/**
   - packages/backend/libs/common/exceptions-filter/**

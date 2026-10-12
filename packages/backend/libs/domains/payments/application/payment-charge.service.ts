@@ -107,6 +107,12 @@ export class PaymentChargeService {
       orderId: payment.orderId,
     });
 
+    // One count per create call, by the classified outcome (the adapter counts the other operations by their raw answer).
+    providerCallsCounter.add(1, {
+      operation: 'create_intent',
+      outcome: outcome.kind,
+    });
+
     switch (outcome.kind) {
       case 'succeeded':
         await this.transitions.apply(paymentId, { type: 'succeed' }, ACTOR, {
@@ -125,10 +131,6 @@ export class PaymentChargeService {
         this.logger.error(
           `provider rejected the charge of payment ${paymentId} order ${payment.orderId}: http ${outcome.httpStatus} request ${outcome.requestId ?? 'n/a'}`,
         );
-        providerCallsCounter.add(1, {
-          operation: 'create_intent',
-          outcome: 'rejected',
-        });
         await this.transitions.apply(
           paymentId,
           { type: 'fail', code: 'provider_rejected' },

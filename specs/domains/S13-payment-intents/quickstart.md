@@ -60,3 +60,11 @@ These are **not verified**. Each has a row in [`specs/UNVERIFIED.md`](../../UNVE
 | SC-009 | the buyer sees the final result within 5 s of the provider's answer on the real stack (outbox relay, realtime hub, SSE) | Browser/SSE probe: subscribe to `user:<id>`, trigger the sandbox provider's success, measure time to `payment.status COMPLETED`; also poll `GET`. |
 | SC-010 (log part) | 0 secrets or card data in a 10,000-line log sample of the full flows (AS-63 searches sentinels in the logs of the flows it runs, not a 10,000-line sample) | Run the flows in a loop until 10,000 log lines are captured; grep for the provider secret, a sentinel `clientSecret`, the sentinel token; expect 0 hits. |
 | SC-010 (ownership part) | `check:table-ownership --strict` shows 0 findings for the payment-intent files | The three remaining `payments` findings are in S14/S15 files; run `--strict` after those capabilities land. `payment-boundary.e2e-spec.ts` asserts that none of the three is in a payment-intent file. |
+
+## Recorded run (implementation pass 2, 2026-10-12)
+
+- `tsc --noEmit` (backend; it also compiles `packages/contracts`, which has no tsconfig): clean. `check:no-wallclock`, `check:model-registry`, `check:boundaries` (no violations), `check:module-graph` (all apps ✓, no `orders ↔ payments` cycle): pass. `eslint libs/domains/payments libs/infrastructure/stripe`: 2 errors, both in S14/S15 files (`balance.projector.ts`, `payout-provider.port.ts`), none in S13 files.
+- `check:table-ownership`: `payments` 7 → 3 (`ledger-entry.model.ts` User, `finance-worker.module.ts` Shop, `payout.jobs.ts` Shop). Direct `sequelize.transaction` sites in payments: 4, equal to the baseline.
+- `$S libs/domains/payments`: 14 suites, 141 tests pass. `pnpm test libs/domains/payments` (units): 5 suites, 109 tests pass.
+- Dependent suites: `libs/domains/orders` 11 suites / 110 tests; `libs/domains/marketing` + `libs/infrastructure/rate-limit` + `libs/infrastructure/idempotency` 18 suites / 149 tests; `libs/infrastructure/events` + `libs/infrastructure/projections` + `apps/sse-gateway` 14 suites / 112 tests: all pass.
+- `python3 scripts/livespec/check.py`: 1 error, owned by S54 (scope `packages/backend/apps/sse-gateway/src/redis-pubsub/**` matches no file because S13 deleted the directory); no error on the S13 page.

@@ -17,7 +17,6 @@ import { ErrorUtilsModule } from '@app/common/errors/error-utils/error-utils.mod
 import { Environment } from '@app/common/types';
 import { SentryModule } from '@sentry/nestjs/setup';
 import { OpenTelemetryModule } from 'nestjs-otel';
-import { RealtimeNotifierModule } from './realtime-notifier/realtime-notifier.module';
 import { RealtimeStreamModule } from '@app/infrastructure/realtime';
 import { LiveGatewayModule } from './live/live-gateway.module';
 import { IdentityTopicsModule } from '@app/domains/identity';
@@ -32,9 +31,8 @@ import { AssistantModule } from '@app/domains/assistant';
 import { AssetTopicsModule } from '@app/domains/asset-library';
 
 /**
- * SSE-only: the only thing here is bridging Kafka payment-status events to
- * long-lived browser connections. No auth/admin/product/etc — that's core's
- * job. Isolated because its resource profile (concurrent held-open
+ * SSE-only: long-lived browser connections (topic streams, live, assistant). No
+ * auth/admin/product/etc — that's core's job. Isolated because its resource profile (concurrent held-open
  * connections) is genuinely different from ordinary request/response HTTP.
  */
 @Module({
@@ -76,7 +74,6 @@ import { AssetTopicsModule } from '@app/domains/asset-library';
     }),
     ErrorUtilsModule,
     SentryModule.forRoot(),
-    RealtimeNotifierModule,
     RealtimeStreamModule,
     LiveGatewayModule,
     // Realtime topics each domain owns (debt D-3): the gateway authorizes subscriptions, so it loads them all.
