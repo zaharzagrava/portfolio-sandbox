@@ -1,4 +1,5 @@
 import { createRequire } from 'node:module';
+import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 import { expect, type APIRequestContext, type Page } from '@playwright/test';
 
@@ -203,4 +204,13 @@ export async function productWithRecommendations(request: APIRequestContext): Pr
     if (body.items?.length) return { id, titles: body.items.map((item) => item.title) };
   }
   return null;
+}
+
+/**
+ * Forgets the trending ranking and the BFF's cached copy of it (Redis, dev stack). Events that earlier tests recorded stay in the
+ * 60-minute window, and a spec that asserts "no trending rail" must not depend on what ran before it. The command is the same one
+ * the build loop's repair agent may use (`scripts/sdd/stack-fix.sh reset-ranking`).
+ */
+export function resetRanking() {
+  execFileSync('bash', [path.resolve(__dirname, '../../../scripts/sdd/stack-fix.sh'), 'reset-ranking'], { stdio: 'inherit' });
 }
