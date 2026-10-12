@@ -49,19 +49,16 @@ export class SignalProjectionService {
         .map((p) => p.payload.mediaIds[0])
         .filter((id): id is string => Boolean(id));
       const thumbs = await this.images.thumbnails(first);
-      return this.apply(
-        'gallery',
-        parsed,
-        (p): Mutation =>
-          galleryMutation({
-            productId: p.payload.productId,
-            shopId: p.payload.shopId,
-            imageUrl: p.payload.mediaIds[0]
-              ? (thumbs.get(p.payload.mediaIds[0]) ?? null)
-              : null,
-            galleryVersion: p.payload.galleryVersion,
-            weights,
-          }),
+      return this.apply('gallery', parsed, (p): Mutation =>
+        galleryMutation({
+          productId: p.payload.productId,
+          shopId: p.payload.shopId,
+          imageUrl: p.payload.mediaIds[0]
+            ? (thumbs.get(p.payload.mediaIds[0]) ?? null)
+            : null,
+          galleryVersion: p.payload.galleryVersion,
+          weights,
+        }),
       );
     });
   }
@@ -74,17 +71,14 @@ export class SignalProjectionService {
       'sponsorshipVersion',
     );
     return guarded(() =>
-      this.apply(
-        'sponsorship',
-        parsed,
-        (p): Mutation =>
-          sponsorshipMutation({
-            productId: p.payload.productId,
-            shopId: p.payload.shopId,
-            sponsored: p.payload.sponsored,
-            sponsorshipVersion: p.payload.sponsorshipVersion,
-            weights,
-          }),
+      this.apply('sponsorship', parsed, (p): Mutation =>
+        sponsorshipMutation({
+          productId: p.payload.productId,
+          shopId: p.payload.shopId,
+          sponsored: p.payload.sponsored,
+          sponsorshipVersion: p.payload.sponsorshipVersion,
+          weights,
+        }),
       ),
     );
   }
@@ -141,7 +135,10 @@ export class SignalProjectionService {
           throw new PermanentError(error.message, { cause: error });
         throw error;
       }
-      if (!UUID.test(payload.productId) || payload.productId !== envelope.aggregateId)
+      if (
+        !UUID.test(payload.productId) ||
+        payload.productId !== envelope.aggregateId
+      )
         throw new PermanentError(
           `productId of ${envelope.type} is not the aggregate id`,
         );
@@ -149,7 +146,8 @@ export class SignalProjectionService {
       const current = out.get(key);
       if (
         !current ||
-        (payload[versionField] as number) >= (current.payload[versionField] as number)
+        (payload[versionField] as number) >=
+          (current.payload[versionField] as number)
       )
         out.set(key, { envelope, payload });
     }

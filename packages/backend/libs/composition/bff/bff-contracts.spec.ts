@@ -109,7 +109,11 @@ describe('S48 BFF contracts', () => {
         {
           mediaId: '0b3f4d0e-6a52-4c53-9a37-6d0a2a5c2e11',
           position: 0,
-          urls: { thumb: 'https://m/t', feed: 'https://m/f', full: 'https://m/u' },
+          urls: {
+            thumb: 'https://m/t',
+            feed: 'https://m/f',
+            full: 'https://m/u',
+          },
           width: 1600,
           height: 1200,
         },

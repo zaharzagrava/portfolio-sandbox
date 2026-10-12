@@ -122,7 +122,8 @@ export class ProductProjectionService {
       });
 
       const pub = live.filter(
-        (p) => p.kind === 'deleted' || !(p.snapshot as ProductSnapshot).isSandbox,
+        (p) =>
+          p.kind === 'deleted' || !(p.snapshot as ProductSnapshot).isSandbox,
       );
       for (const p of live)
         if (p.kind !== 'deleted' && (p.snapshot as ProductSnapshot).isSandbox)
@@ -177,7 +178,8 @@ export class ProductProjectionService {
       );
       ledger.ignored += latest.length - open.length;
       const pub = open.filter(
-        (p) => p.kind === 'deleted' || !(p.snapshot as ProductSnapshot).isSandbox,
+        (p) =>
+          p.kind === 'deleted' || !(p.snapshot as ProductSnapshot).isSandbox,
       );
       ledger.ignored += open.length - pub.length;
 
@@ -233,9 +235,7 @@ export class ProductProjectionService {
             `unsupported contract version ${envelope.version} of ${envelope.type}`,
           );
         if (event.payload.productId !== envelope.aggregateId)
-          throw new PermanentError(
-            'productId differs from the aggregate id',
-          );
+          throw new PermanentError('productId differs from the aggregate id');
         return { kind: 'deleted', envelope, snapshot: event.payload };
       }
     } catch (error) {
@@ -250,8 +250,8 @@ export class ProductProjectionService {
   /** One event per product: the highest `productVersion`; ties keep the later one in the batch. */
   private latestPerProduct(parsed: Parsed[]): Parsed[] {
     const byEnvelope = new Map(parsed.map((p) => [p.envelope, p]));
-    return coalesceLatest(parsed.map((p) => p.envelope)).map(
-      (e) => byEnvelope.get(e)!,
+    return coalesceLatest(parsed.map((p) => p.envelope)).map((e) =>
+      byEnvelope.get(e)!,
     );
   }
 
@@ -271,7 +271,9 @@ export class ProductProjectionService {
       ? await this.index.readFrom(replay.index, ids)
       : await this.index.read(ids);
     // a replay also looks at the live index: for the signals it must keep and for vectors it may reuse
-    const liveDocs = replay ? await this.index.read(ids) : new Map<string, IndexedDocument>();
+    const liveDocs = replay
+      ? await this.index.read(ids)
+      : new Map<string, IndexedDocument>();
 
     // vectors only where the text a vector is made from changed (or never had one)
     const vectors = new Map<string, EmbeddingResult>();
@@ -288,7 +290,10 @@ export class ProductProjectionService {
           reusable?.embedding &&
           reusable.embeddingTextHash === hash
         ) {
-          vectors.set(p.snapshot.productId, { vector: reusable.embedding, hash });
+          vectors.set(p.snapshot.productId, {
+            vector: reusable.embedding,
+            hash,
+          });
           return;
         }
         const vector = await this.embeddings
@@ -349,7 +354,10 @@ export class ProductProjectionService {
           ? (current) => {
               const result = base(current);
               return result.next
-                ? { ...result, next: overlaySignals(result.next, live, weights) }
+                ? {
+                    ...result,
+                    next: overlaySignals(result.next, live, weights),
+                  }
                 : result;
             }
           : base,

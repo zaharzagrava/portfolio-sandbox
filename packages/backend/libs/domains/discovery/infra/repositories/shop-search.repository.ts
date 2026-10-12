@@ -3,10 +3,7 @@ import { InjectConnection } from '@nestjs/sequelize';
 import { QueryTypes } from 'sequelize';
 import { Sequelize } from 'sequelize-typescript';
 import { TransactionRunner } from '@app/infrastructure/context';
-import type {
-  ShopProductRow,
-  ShopSearchRepository,
-} from '../../domain/ports';
+import type { ShopProductRow, ShopSearchRepository } from '../../domain/ports';
 
 type Upsert = ShopProductRow & {
   kind: 'created' | 'updated' | 'archived' | 'restored';

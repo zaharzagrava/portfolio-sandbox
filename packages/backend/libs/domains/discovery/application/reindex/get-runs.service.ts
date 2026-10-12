@@ -5,7 +5,10 @@ import {
   type ReindexRunRecord,
   type ReindexRunRepository,
 } from '../../domain/ports';
-import { InvalidCursorError, RunNotFoundError } from '../../domain/search-errors';
+import {
+  InvalidCursorError,
+  RunNotFoundError,
+} from '../../domain/search-errors';
 
 const UUID =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -59,12 +62,14 @@ export class GetRunsService {
   }
 
   async list(limit: number, cursor?: string) {
-    const rows = await this.runs.list(limit + 1, cursor ? decode(cursor) : null);
+    const rows = await this.runs.list(
+      limit + 1,
+      cursor ? decode(cursor) : null,
+    );
     const page = rows.slice(0, limit);
     return {
       items: page.map(toRunView),
-      nextCursor:
-        rows.length > limit ? encode(page[page.length - 1]) : null,
+      nextCursor: rows.length > limit ? encode(page[page.length - 1]) : null,
     };
   }
 }

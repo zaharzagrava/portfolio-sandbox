@@ -7,7 +7,10 @@ import {
 } from '@app/infrastructure/kafka/kafka-client.options';
 import type { EventEnvelope } from '@app/infrastructure/events/event-envelope';
 import { ProductCreated } from '@app/domains/catalog';
-import { ProductProjectionService, type ReplayLedger } from '../projection/product-projection.service';
+import {
+  ProductProjectionService,
+  type ReplayLedger,
+} from '../projection/product-projection.service';
 
 const TOPIC = ProductCreated.topic;
 /** Events applied (and offsets committed) per step; a crash loses at most one step of work. */
@@ -48,11 +51,17 @@ export class HistoryReplayService {
 
   /** The end offsets now: the point the replay will stop at. */
   async captureWatermark(): Promise<Record<string, number>> {
-    const admin = createKafka(this.config, 'search-reindex', this.overrides).admin();
+    const admin = createKafka(
+      this.config,
+      'search-reindex',
+      this.overrides,
+    ).admin();
     await admin.connect();
     try {
       const offsets = await admin.fetchTopicOffsets(TOPIC).catch(() => []);
-      return Object.fromEntries(offsets.map((o) => [String(o.partition), Number(o.high)]));
+      return Object.fromEntries(
+        offsets.map((o) => [String(o.partition), Number(o.high)]),
+      );
     } finally {
       await admin.disconnect();
     }
@@ -64,7 +73,11 @@ export class HistoryReplayService {
     watermark: Record<string, number>,
     hooks: ReplayHooks,
     initial: ReplayLedger,
-  ): Promise<{ ledger: ReplayLedger; position: ReplayPosition; stopped: boolean }> {
+  ): Promise<{
+    ledger: ReplayLedger;
+    position: ReplayPosition;
+    stopped: boolean;
+  }> {
     const ledger = { ...initial };
     const group = HistoryReplayService.groupOf(runId);
     const kafka = createKafka(this.config, 'search-reindex', this.overrides);
@@ -119,7 +132,14 @@ export class HistoryReplayService {
     await consumer.run({
       autoCommit: false,
       eachBatchAutoResolve: false,
-      eachBatch: async ({ batch, resolveOffset, heartbeat, commitOffsetsIfNecessary, isRunning, isStale }) => {
+      eachBatch: async ({
+        batch,
+        resolveOffset,
+        heartbeat,
+        commitOffsetsIfNecessary,
+        isRunning,
+        isStale,
+      }) => {
         const end = watermark[String(batch.partition)] ?? 0;
         const messages = batch.messages.filter(
           (m) => Number(m.offset) < end && m.value !== null,
@@ -135,7 +155,13 @@ export class HistoryReplayService {
               (m) => JSON.parse(m.value!.toString('utf8')) as EventEnvelope,
             );
             const part = await this.projection.replay(events, target);
-            for (const key of ['read', 'applied', 'duplicate', 'stale', 'ignored'] as const)
+            for (const key of [
+              'read',
+              'applied',
+              'duplicate',
+              'stale',
+              'ignored',
+            ] as const)
               ledger[key] += part[key];
             const lastOffset = Number(chunk[chunk.length - 1].offset);
             resolveOffset(String(lastOffset));
@@ -150,7 +176,11 @@ export class HistoryReplayService {
             }
           }
           // compaction can leave no message at the very end of the range: the batch reaching the end settles it
-          if (lastSeen >= end - 1 || batch.messages.length === 0 || messages.length === 0) {
+          if (
+            lastSeen >= end - 1 ||
+            batch.messages.length === 0 ||
+            messages.length === 0
+          ) {
             if (lastSeen >= end - 1 || batch.offsetLag() === '0') {
               next[String(batch.partition)] = end;
               pending.delete(batch.partition);

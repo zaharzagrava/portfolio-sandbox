@@ -21,15 +21,31 @@ const playback = {
 describe('W02 B-7: video playback contract', () => {
   it('W02 B-7: public and unlisted playback bodies parse', () => {
     expect(ok(videoPlaybackSchema, playback)).toBe(true);
-    expect(ok(videoPlaybackSchema, { ...playback, expiresAt: '2026-10-10T16:00:00.000Z' })).toBe(true);
+    expect(
+      ok(videoPlaybackSchema, {
+        ...playback,
+        expiresAt: '2026-10-10T16:00:00.000Z',
+      }),
+    ).toBe(true);
     const { spriteUrl: _s, ...noSprite } = playback;
     expect(ok(videoPlaybackSchema, noSprite)).toBe(true);
   });
 
   it('W02 B-7: playback rejects a non-URL master, a missing expiresAt and a negative duration', () => {
-    expect(ok(videoPlaybackSchema, { ...playback, masterUrl: 'videos/v1/master.m3u8' })).toBe(false);
-    expect(ok(videoPlaybackSchema, { ...playback, expiresAt: undefined })).toBe(false);
-    expect(ok(videoPlaybackSchema, { ...playback, durationSec: -1 })).toBe(false);
-    expect(ok(videoPlaybackSchema, { ...playback, renditions: [{ name: '720p' }] })).toBe(false);
+    expect(
+      ok(videoPlaybackSchema, {
+        ...playback,
+        masterUrl: 'videos/v1/master.m3u8',
+      }),
+    ).toBe(false);
+    expect(ok(videoPlaybackSchema, { ...playback, expiresAt: undefined })).toBe(
+      false,
+    );
+    expect(ok(videoPlaybackSchema, { ...playback, durationSec: -1 })).toBe(
+      false,
+    );
+    expect(
+      ok(videoPlaybackSchema, { ...playback, renditions: [{ name: '720p' }] }),
+    ).toBe(false);
   });
 });

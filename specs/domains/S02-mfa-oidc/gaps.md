@@ -113,9 +113,9 @@ Things S02's work changes that another capability's spec relies on. Their specs 
 - **S01** (added): `AuthController` lost `mfa/enroll`, `mfa/confirm`, `mfa/verify` and the OIDC routes (now `MfaController`, `OidcController`, `IdentitiesController`); `AuthSessionService`, `TotpService` and the old MFA case in `auth.e2e-spec.ts` are deleted; S01's `auth-login.e2e-spec.ts` AS-19 now seeds the factor through the S02 fixture and expects `fa: 'pwd'` in the challenge. The S01 password-reset endpoint is not built yet, so S02 AS-22 is proven on the one write a reset makes (`replacePasswordHash`); the full-flow check belongs in the S01 reset suite.
 - **S54** (added): `openid-client` does not verify the signature of an ID token that came from the token endpoint and its key-set cache (5 min, 60 s reload) cannot be bounded to FR-046; `IdTokenSignatureVerifier` (`infra/oidc/id-token-signature.ts`) checks it against the guarded key-set fetch (1 h cache, one reload per 30 s). Recorded as the R-09 outcome in research.md. New optional config key `GOOGLE_OIDC_ISSUER` (default `https://accounts.google.com`).
 
-## Deferred until a later pass
+## Deferred until a later pass (historical: the state after the P1 pass; the final pass below finished it)
 
-The P1 pass (Setup, Foundational, US1, US2, US4, US5, US6) is done. Not started, by the priority limit:
+The P1 pass (Setup, Foundational, US1, US2, US4, US5, US6) was done. Not started at that time, by the priority limit:
 
 | Story | Scenarios | Waits for |
 |---|---|---|
@@ -129,6 +129,47 @@ The P1 pass (Setup, Foundational, US1, US2, US4, US5, US6) is done. Not started,
 
 Other leftovers of the P1 pass, for the final pass: `SecondFactorService` lives in `AuthApiModule` (needs the rate limiter and outbox), not in the light `AuthModule`; the burned-challenge cookie is cleared on `invalid_mfa_challenge` but the third wrong code (which burns the challenge while answering `invalid_mfa_code`) does not clear it yet; the `link_email_plain` branch (account that already has a verified-email identity) is proven by the unit grid only, because Google is the one verified-email provider and a second Google subject is a `link_conflict`; `otplib` is no longer imported but is still in `package.json`; `down` of the migration was run (up, down, up) and works.
 
+## Final pass (US3, US7, US8, US9, US10; polish)
+
+Built: regenerate/disable (`mfa-management.e2e-spec.ts`, AS-25–27), the federated challenge (`oidc-mfa.e2e-spec.ts`, AS-54–55), the registry with `registerResolver`/`invalidate` and the SSRF refusals (`oidc-providers.e2e-spec.ts`, AS-56–58), audit lines/counters/errors/events (`mfa-oidc-observability.e2e-spec.ts`, AS-59–62, 64), tenancy moved onto the registry, `OidcService` deleted, `FederatedIdentityModel` and `OidcService` out of the barrel.
+
+**Gate run (T118, after the final pass).** `check:table-ownership --strict`: 62 cross-domain data accesses (baseline 87); no row names `FederatedIdentity`, `SigningKey`, `SecondFactor`, `MfaRecoveryCode` or `MfaChallengeState`; the 7 rows "owned by identity" name only `User`/`UserModel` and sit in `chat`, `notifications`, `payments` and `tenancy/testing/tenancy-app.ts` (S01's `UserDirectoryService` follow-up, not S02's). `check:boundaries`: no dependency violations. `check:module-graph`: 9/9. Direct `sequelize.transaction` sites in `libs/domains/identity`: 0 outside spec files by `grep -rn "sequelize.transaction"` (the baseline counted 1, S01's `key-rotation.jobs.ts`, which I did not touch; the count only fell). `tsc --noEmit`: clean.
+
+**Green run (T125, VII.9).** `test-spec.sh libs/domains/identity`: 29 suites, 392 tests passed; `pnpm jest libs/domains/identity/domain --testPathIgnorePatterns e2e`: 14 suites, 220 tests passed; `test-spec.sh libs/domains/tenancy`: 18 suites, 151 tests passed (tenancy now registers its resolver on the registry). `python3 scripts/livespec/check.py`: 0 errors.
+
+**Test seam.** The test stack always loads `TenancyModule`, which registers the real `shop:` resolver, and a prefix registers once. `oidc-providers.e2e-spec.ts` therefore replaces that one entry through the registry's private map (`standIn`) instead of calling `registerResolver('shop:')`; registration rules are asserted against the real, already-registered prefix. The repository only accepts `google` and `shop:<uuid>` provider ids, which is why the stand-in cannot use another prefix.
+
+### Spec changes
+
+`docs/spec/capabilities/S02-mfa-oidc.md` gained rules R-25–R-36 and behaviors B-21–B-25 for the work above and lost the matching "Known gaps" lines; `auth.mfa.account` was added to its Owns list. No `*.reviewed.json` exists for it, so nothing a human signed changed.
+
+### Sibling-spec follow-ups (final pass)
+
+- **W01**: the journeys AS-65 ("MFA") and AS-66 ("Google") belong in `packages/web/tests/auth.spec.ts`; this change does not run them. The federated second step is `/login/mfa?returnTo=<path>` with the `__Host-mfa-challenge` cookie and `POST /api/auth/mfa/verify {delivery:'cookie', code}` which needs an allowed `Origin` (no CSRF header: there is no session yet); the challenge never appears in a URL.
+- **S03**: the `shop:` resolver must call `registry.invalidate('shop:<id>')` when a config is disabled or deleted too (the registry reads the resolver on every flow, so a disabled shop stops working at once, but the cached discovery stays until invalidated or 1 h).
+- **S01**: the 7 remaining `User`/`UserModel` cross-domain accesses (chat ×4, notifications, payments, `tenancy/testing/tenancy-app.ts`) stay with S01's `UserDirectoryService` follow-up.
+
+### Deferred contract migration (not part of this change)
+
+Dropping `User.mfaSecretEnc`, `mfaEnabledAt`, `mfaRecoveryCodes` and adding the `FederatedIdentity.provider` check constraint is a later contract migration, gated on `identity.reseal-mfa-secrets` having finished in every environment. Also recorded in quickstart.md.
+
+### Where the follow-ups of built specs are satisfied
+
+- S01 re-wire onto `SessionIssuer.issue`, `isSecondFactorEnrolled`, link wipe: `mfa-login.service.ts`, `oidc-callback.service.ts`, `second-factor.service.ts`, `oidc-login.service.ts` (`link_email_wipe`: password cleared, factor deleted, sessions revoked).
+- S01/W01 cookie CSRF + origin: `MfaController`/`IdentitiesController` routes are guarded by the S01 guards; cookie-delivery verify checks `Origin` before the challenge is touched.
+- S03 registry methods: `OidcProviderRegistry.registerResolver/invalidate`, adopted by `tenancy/application/shop-sso.service.ts`; `identity.federated_identity_linked` with `provider = shop:<uuid>` is emitted on the first shop-IdP login, account-creating logins included (`oidc-providers.e2e-spec.ts` AS-56 asserts the link row).
+- S48 `401` code tells wrong code from spent challenge: `invalid_mfa_code` vs `invalid_mfa_challenge` (`mfa-login.e2e-spec.ts`, `oidc-mfa.e2e-spec.ts`).
+- S50 policies: `auth.mfa.ip`, `auth.mfa.account`, `auth.oidc.ip` in `identityRatePolicies`.
+- W01 `recovery-codes/regenerate` and `disable`: built (AS-25–27).
+- Not done here, by design: the BFF/`__Host-bff-mfa` path defect and C-OIDC (`GET /api/bff/session` after a Google callback, `AUTH_OIDC_ENABLED`) belong to S48/W01; the callback still sets its own `__Host-access`/`__Host-refresh` cookies.
+
+### Decisions where the inputs disagreed
+
+- A resolver that throws answers `503 oidc_provider_unavailable` (spec AS-57); tasks.md T106 said "answers as unknown". The spec was followed.
+- A dynamic issuer the SSRF guard refuses (scheme, port, loopback/private/link-local, DNS rebinding) answers `404 oidc_provider_not_found` plus a warning line naming the provider id (spec AS-58). A redirect from a dynamic issuer is never followed and surfaces as `503`, not `404`, because the guarded fetch returns the `3xx` as a response.
+- Counter names follow spec AS-59 (`auth_mfa_verify_total{result,method}`, `auth_mfa_challenge_burned_total`, `auth_account_link_total{method}`, `auth_account_link_wipe_total`, existing `auth_oidc_login_total`), not the earlier names in research R-15 and tasks T112.
+- Red → green: US7 and US9 tests were run red before the code (US9's error, event and AS-62 tests were already green because that code existed). US3's endpoints already existed from W01's pass, so `mfa-management.e2e-spec.ts` could not start red; its first run failed on two real defects (no `mfa_recovery_code_used` event when disabling with a recovery code; a parallel disable answered `422` instead of `409`), fixed in `second-factor.service.ts`. US8's registry code was written before its test file, so that file never ran red. No test was weakened or skipped.
+
 ## Coverage of this file by the plan
 
 Every gap above maps to a section of `plan.md` ("Gap coverage"); constitution debt rows D-6, D-7, D-8 are plan work items (WP-3, WP-6), D-12/D-17 are not S02's. The ownership caveat at the top is handled by plan task "baseline gate run" (WP-0): the reconstruction in section C is reconciled with the real `check:table-ownership` output before any code changes.
@@ -136,3 +177,7 @@ Every gap above maps to a section of `plan.md` ("Gap coverage"); constitution de
 ## Gate repairs
 
 - **Test integrity (`auth.e2e-spec.ts`, 47 < 57 it()/expect() calls)**: the S01 test "MFA: login returns a challenge; the TOTP code completes it; the same code cannot be replayed" had been deleted when the MFA endpoints moved to S02. It is restored with every assertion kept (challenge, `mfaToken` rejected as an access token, replayed TOTP code refused, recovery code works once then refused). Only the S02 contract changes were adopted: `enroll`/`confirm` now answer 200 (not 201), and the secret is read from the enroll response's `manualEntryKey` because the sealed secret moved to the second-factor table. `check-tests.py integrity` and the spec (9/9) pass; `tsc --noEmit` is clean.
+
+- **Scenarios without a tagged test (AS-63, AS-65, AS-66)**: the gate found no test carrying these IDs because test-plan.md assigned them to a static gate and to W01's Playwright journeys. They now have real backend tests in `libs/domains/identity/mfa-oidc-journeys.e2e-spec.ts`: AS-63 scans the other domains' source for the factor and federated-identity models, columns and `OidcService`, and checks the barrel; AS-65 runs enrol, confirm, recovery codes, logout, password login and code verification through the API; AS-66 runs "Continue with Google" against the fake provider and checks the return page and the sessions list. These cover the server half only. The browser journeys (script-readable storage, navbar, SC-007 stopwatch) stay with W01 and are not run by this change.
+
+- **Heap-bound test in another capability (`discovery/domain/top-k-trie.spec.ts`, S33 AS-54)**: the full unit run failed with 41,982,344 B against the 40,000,000 B bound; the test passes alone. It measures `heapUsed` growth across `TopKTrie.buildFrom`, so garbage the build leaves behind counts against the bound, and `insert` allocated a throwaway `[...query.slice(0, maxPrefix)]` array per query. Fixed in `top-k-trie.ts`: `insert` now walks the query's code points in place and stops at `maxPrefix`. The test is unchanged. The full unit run passes (179 suites, 2857 tests) and `tsc --noEmit` is clean. The failure was not caused by S02 code; the fix is a code change only.

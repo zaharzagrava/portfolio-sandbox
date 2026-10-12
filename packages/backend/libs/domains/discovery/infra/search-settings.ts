@@ -2,10 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { randomBytes } from 'node:crypto';
 import { ApiConfigService } from '@app/common/config';
 import { Environment } from '@app/common/types';
-import {
-  DEFAULT_BOOST_WEIGHTS,
-  type BoostWeights,
-} from '../domain/boost';
+import { DEFAULT_BOOST_WEIGHTS, type BoostWeights } from '../domain/boost';
 import {
   PRODUCTION_PROFILE,
   TEST_PROFILE,
@@ -47,7 +44,10 @@ export class SearchSettings {
   }
 
   get logSecret(): string {
-    return (this.config.get('search_log_secret') as string | undefined) || this.fallbackLogSecret;
+    return (
+      (this.config.get('search_log_secret') as string | undefined) ||
+      this.fallbackLogSecret
+    );
   }
 
   get signingKey(): string {

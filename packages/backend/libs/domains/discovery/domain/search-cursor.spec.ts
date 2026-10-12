@@ -53,7 +53,9 @@ describe('search cursor codec (S32 AS-84)', () => {
       searchFingerprint(scope({ filters: { category: 'kitchen' } })),
     ).not.toBe(base);
     expect(
-      searchFingerprint(scope({ filters: { inStock: true, category: 'kitchen' } })),
+      searchFingerprint(
+        scope({ filters: { inStock: true, category: 'kitchen' } }),
+      ),
     ).toBe(base);
     expect(searchFingerprint(scope({ q: null }))).not.toBe(base);
   });
@@ -79,7 +81,9 @@ describe('search cursor codec (S32 AS-84)', () => {
     for (let i = 0; i < cursor.length; i += 3) {
       const swapped = cursor[i] === 'A' ? 'B' : 'A';
       const tampered = cursor.slice(0, i) + swapped + cursor.slice(i + 1);
-      expect(() => decodeSearchCursor(tampered, fp)).toThrow(InvalidCursorError);
+      expect(() => decodeSearchCursor(tampered, fp)).toThrow(
+        InvalidCursorError,
+      );
     }
   });
 
@@ -94,7 +98,10 @@ describe('search cursor codec (S32 AS-84)', () => {
     ['empty', ''],
     ['not base64url', '***'],
     ['not json', Buffer.from('hello').toString('base64url')],
-    ['json object', Buffer.from('{"sv":[1],"id":"x","fp":"y"}').toString('base64url')],
+    [
+      'json object',
+      Buffer.from('{"sv":[1],"id":"x","fp":"y"}').toString('base64url'),
+    ],
     ['wrong length', Buffer.from('[[1],"a"]').toString('base64url')],
     ['too long', 'A'.repeat(2000)],
   ])('S32 AS-84: garbage (%s) is refused', (_n, garbage) => {

@@ -17,7 +17,13 @@ const unsupported = () =>
 
 const items = [
   { Put: { TableName: 'T', Item: { PK: 'a' } } },
-  { Update: { TableName: 'T', Key: { PK: 'b' }, UpdateExpression: 'SET x = :x' } },
+  {
+    Update: {
+      TableName: 'T',
+      Key: { PK: 'b' },
+      UpdateExpression: 'SET x = :x',
+    },
+  },
   { Delete: { TableName: 'T', Key: { PK: 'c' } } },
 ];
 

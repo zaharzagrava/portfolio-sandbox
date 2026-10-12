@@ -54,6 +54,18 @@ Account holders need a second factor on top of the password, and a way to sign i
 - **S02.R-22** A login for a known `(provider, subject)` MUST sign in the linked user, whatever e-mail the provider now reports. [proof: S02 AS-32]
 - **S02.R-23** One account MUST hold at most one identity per provider, and the store MUST enforce it. [proof: S02 AS-46, S02 AS-53]
 - **S02.R-24** Unlinking MUST be scoped to the caller; another user's or unknown identity answers the same `404 identity_not_found`. [proof: S02 AS-52]
+- **S02.R-25** Regenerating recovery codes MUST need state `enabled` and a current TOTP code, never a recovery code, and MUST replace the whole set in one transaction. [proof: S02 AS-25, S02 AS-27] [code: packages/backend/libs/domains/identity/application/second-factor.service.ts#SecondFactorService]
+- **S02.R-26** Disabling MUST need state `enabled` and a current TOTP code or an unspent recovery code, and MUST delete the secret and all codes. [proof: S02 AS-26]
+- **S02.R-27** Of two concurrent disables with one code, one MUST answer `204` and the other `409 mfa_not_enabled`, and exactly one `identity.mfa_disabled` event MUST exist. [proof: S02 AS-27]
+- **S02.R-28** A Google login of a user whose factor is `enabled` MUST NOT issue a session; it MUST set `__Host-mfa-challenge` and redirect to `/login/mfa?returnTo=<path>`. [proof: S02 AS-54] [code: packages/backend/libs/domains/identity/application/oidc-callback.service.ts#OidcCallbackService]
+- **S02.R-29** Verify with the challenge cookie MUST refuse a foreign `Origin` with `403` before touching the challenge, and the cookie MUST be cleared once the challenge is spent or burned. [proof: S02 AS-55]
+- **S02.R-30** A registry resolver prefix MUST be refused at registration when it is empty, starts with or is a prefix of `google`, or overlaps a registered prefix. [proof: S02 AS-57] [code: packages/backend/libs/domains/identity/application/oidc-provider-registry.ts#OidcProviderRegistry]
+- **S02.R-31** A provider from a resolver MUST be believed for its subject only: its login creates an account with `email = null` and never links to an existing account by e-mail. [proof: S02 AS-56]
+- **S02.R-32** A provider that is disabled, unknown or answered with a malformed settings object MUST answer `404 oidc_provider_not_found`; a resolver that throws MUST answer `503 oidc_provider_unavailable`. [proof: S02 AS-57]
+- **S02.R-33** A provider issuer that is not `https`, uses a port other than 443, or resolves to a loopback, private or link-local address MUST answer `404 oidc_provider_not_found` with no outbound request. [proof: S02 AS-58]
+- **S02.R-34** An unreadable stored secret MUST answer a generic `500` that spends no TOTP step, challenge attempt or recovery code and issues no session. [proof: S02 AS-62]
+- **S02.R-35** Each of the six events MUST carry `eventId`, `type`, `version`, `occurredAt` and `aggregateId` with identifiers only, MUST commit with its state change, and MUST be absent after a rejected call. [proof: S02 AS-64]
+- **S02.R-36** Each security step MUST write one audit line with `requestId` and `userId` and count it, and no log line MUST contain a secret, code, challenge, `state`, `nonce`, verifier or e-mail. [proof: S02 AS-59, S02 AS-60]
 
 ## Behaviors
 - **S02.B-01** Given state `none`, when the user calls enrol, then the answer is `200` with `otpauthUri` and `manualEntryKey`, with `Cache-Control: no-store`. [proof: S02 AS-01]
@@ -76,6 +88,11 @@ Account holders need a second factor on top of the password, and a way to sign i
 - **S02.B-18** Given a soft-deleted linked user, when the callback completes, then `error=account_unavailable`. [proof: S02 AS-47]
 - **S02.B-19** Given a signed-in user, when explicit linking completes, then the callback redirects with `?linked=google` and issues no new session. [proof: S02 AS-49, S02 AS-50]
 - **S02.B-20** Given a user with two identities, when the user lists them, then only their own identities appear, newest first. [proof: S02 AS-51]
+- **S02.B-21** Given an enabled factor and a TOTP code, when the user regenerates, then ten new codes are returned, the old ten stop working and one `identity.mfa_recovery_codes_regenerated` event is written. [proof: S02 AS-25]
+- **S02.B-22** Given an enabled factor, when the user disables it with a recovery code, then the answer is `204` and `identity.mfa_recovery_code_used` and `identity.mfa_disabled` with reason `user` are written. [proof: S02 AS-26]
+- **S02.B-23** Given a Google login of a user with an enabled factor, when the user posts the current code with `delivery: cookie`, then a session with `amr` `["fed","otp","mfa"]` is issued. [proof: S02 AS-54]
+- **S02.B-24** Given a shop provider asserting a victim's verified e-mail, when its callback completes, then a new account without e-mail is created and the victim's password, factor and sessions stay unchanged. [proof: S02 AS-56]
+- **S02.B-25** Given `invalidate` for a provider, when the next flow starts, then the provider document is fetched again and the resolver's current settings are used. [proof: S02 AS-57]
 
 ## Lifecycles
 The second-factor state moves as follows. The user moves `none→pending` (enrol), `pending→pending` (re-enrol), `pending→enabled` (confirm) and `enabled→none` (disable). Account linking by e-mail also moves `enabled→none`. A pending enrolment expires after 15 minutes and reads as `none`.
@@ -84,7 +101,7 @@ The second-factor state moves as follows. The user moves `none→pending` (enrol
 - Models: `SecondFactor`, `MfaRecoveryCode`, `MfaChallengeState`, `FederatedIdentity`.
 - Events: `identity.mfa_enabled`, `identity.mfa_disabled`, `identity.mfa_recovery_code_used`, `identity.mfa_recovery_codes_regenerated`, `identity.federated_identity_linked`, `identity.federated_identity_unlinked`, and `identity.user_registered` for Google-created users.
 - Cookies: `__Host-oidc-flow`, `__Host-mfa-challenge`.
-- Rate-limit policies: `auth.mfa.ip`, `auth.oidc.ip`.
+- Rate-limit policies: `auth.mfa.ip`, `auth.mfa.account`, `auth.oidc.ip`.
 - Configuration: Google client settings, the redirect URI and the front-end origin, validated in `config-rules.ts`.
 
 ## Decisions
@@ -97,11 +114,8 @@ The second-factor state moves as follows. The user moves `none→pending` (enrol
 - Dynamic providers from {{cap:S03}} are trusted for the subject only and never link by e-mail.
 
 ## Known gaps
-- AS-25 to AS-27 (regenerate and disable; step-up with a recovery code; concurrent disable) have no test with a scenario id.
-- AS-54 and AS-55 (challenge cookie for federated logins) have no test with a scenario id.
-- AS-56 to AS-58 (registry, subject-only providers, SSRF guard for shop issuers) have no test with a scenario id.
-- AS-59 to AS-66 (audit lines, log secrecy, error schema, corrupted secret, ownership boundaries, event envelope, front-end flows) have no test with a scenario id.
-- The rules for regeneration, disabling, the challenge cookie, the SSRF guard and the registry are therefore `[proof: none]` and absent from the Rules list.
+- AS-61 (every error answers the problem schema with the stable code) and AS-63 (ownership gates) are tested or checked but not stated as their own rules.
+- AS-65 and AS-66 (the browser journeys "MFA" and "Google") belong to {{cap:W01}} and are not run by this capability's tests.
+- A redirect from a dynamic issuer is not followed and answers `503 oidc_provider_unavailable`, not the `404` that {{cap:S02}} AS-58 asks for.
 - AS-42 (discovery with a mismatched issuer or non-https endpoints) is tested but not stated as its own rule.
 - The Rules list does not include the unlink refusal `409 last_login_method`, because no listed test names it.
-- Event emission (one event per change) has test evidence only inside AS-07 and AS-21 and is not stated as a rule.

@@ -3,7 +3,10 @@ import { InjectConnection } from '@nestjs/sequelize';
 import { QueryTypes } from 'sequelize';
 import { Sequelize } from 'sequelize-typescript';
 import { TransactionRunner } from '@app/infrastructure/context';
-import { decideShopState, type GuardOutcome } from '../../domain/projection-guard';
+import {
+  decideShopState,
+  type GuardOutcome,
+} from '../../domain/projection-guard';
 import type {
   ShopStateChange,
   ShopStateRecord,

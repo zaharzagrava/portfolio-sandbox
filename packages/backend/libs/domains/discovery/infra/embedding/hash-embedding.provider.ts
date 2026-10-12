@@ -1,5 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import { EMBEDDING_DIMS, EMBEDDING_MODEL_VERSION } from '../../domain/index-definition';
+import {
+  EMBEDDING_DIMS,
+  EMBEDDING_MODEL_VERSION,
+} from '../../domain/index-definition';
 import type { EmbeddingProvider } from '../../domain/ports';
 
 /**

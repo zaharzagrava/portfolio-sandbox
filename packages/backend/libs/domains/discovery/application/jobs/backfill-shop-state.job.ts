@@ -37,7 +37,11 @@ export class BackfillShopStateJob {
     fleetConcurrency: 1,
     leaseMs: 120_000,
   })
-  async run({ cursor }: { cursor?: string }): Promise<{ shops: number; applied: number }> {
+  async run({
+    cursor,
+  }: {
+    cursor?: string;
+  }): Promise<{ shops: number; applied: number }> {
     const shopIds = await this.index.distinctShopIds(cursor ?? null, BATCH);
     if (shopIds.length === 0) return { shops: 0, applied: 0 };
     const summaries = await this.tenancy.getShopsByIds(shopIds);
@@ -47,7 +51,8 @@ export class BackfillShopStateJob {
       if (!summary) continue;
       const { outcome, record } = await this.shops.apply({
         shopId,
-        status: summary.status as 'ACTIVE' | 'SUSPENDED' | 'DELETING' | 'DELETED',
+        status: summary.status as
+          'ACTIVE' | 'SUSPENDED' | 'DELETING' | 'DELETED',
         plan: summary.plan as 'STARTER' | 'PRO' | 'ENTERPRISE',
         shopVersion: summary.shopVersion,
         occurredAt: this.clock.now(),
@@ -65,7 +70,11 @@ export class BackfillShopStateJob {
         { idempotencyKey: `search.backfill-shop-state:${next}` },
       );
     }
-    this.logger.log({ action: 'search.shop_state_backfilled', shops: shopIds.length, applied });
+    this.logger.log({
+      action: 'search.shop_state_backfilled',
+      shops: shopIds.length,
+      applied,
+    });
     return { shops: shopIds.length, applied };
   }
 }

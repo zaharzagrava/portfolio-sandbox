@@ -80,9 +80,12 @@ export class DynamoService {
     ];
     for (const item of ordered) {
       try {
-        if (item.Update) await this.doc.send(new UpdateCommand(item.Update), options);
-        else if (item.Put) await this.doc.send(new PutCommand(item.Put), options);
-        else if (item.Delete) await this.doc.send(new DeleteCommand(item.Delete), options);
+        if (item.Update)
+          await this.doc.send(new UpdateCommand(item.Update), options);
+        else if (item.Put)
+          await this.doc.send(new PutCommand(item.Put), options);
+        else if (item.Delete)
+          await this.doc.send(new DeleteCommand(item.Delete), options);
         else throw new Error('transactWrite fallback: unsupported item type');
       } catch (error) {
         if (error instanceof ConditionalCheckFailedException)

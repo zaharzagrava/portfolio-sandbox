@@ -5,7 +5,10 @@ import {
   KAFKA_CONSUMER_OVERRIDES,
   type KafkaClientOverrides,
 } from '@app/infrastructure/kafka/kafka-client.options';
-import { ConsumerLag, UnknownConsumerGroupError } from '@app/infrastructure/projections/consumer-lag';
+import {
+  ConsumerLag,
+  UnknownConsumerGroupError,
+} from '@app/infrastructure/projections/consumer-lag';
 import { ProductCreated } from '@app/domains/catalog';
 import type { ProjectionLagPort } from '../domain/ports';
 
@@ -40,7 +43,9 @@ export class KafkaProjectionLag implements ProjectionLagPort {
         behind.partition,
         behind.committedOffset,
       );
-      return timestamp === null ? 0 : Math.max(0, (Date.now() - timestamp) / 1000);
+      return timestamp === null
+        ? 0
+        : Math.max(0, (Date.now() - timestamp) / 1000);
     } catch (error) {
       if (error instanceof UnknownConsumerGroupError) return 0;
       this.logger.warn(`projection lag unknown: ${(error as Error).message}`);
@@ -70,7 +75,9 @@ export class KafkaProjectionLag implements ProjectionLagPort {
               resolve(Number(message.timestamp));
             },
           })
-          .then(() => consumer.seek({ topic, partition, offset: String(offset) }));
+          .then(() =>
+            consumer.seek({ topic, partition, offset: String(offset) }),
+          );
       });
     } finally {
       await consumer.disconnect().catch(() => undefined);

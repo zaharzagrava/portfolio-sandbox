@@ -15,16 +15,22 @@ import { FcmPushProvider } from './providers/fcm-push.provider';
 import { LogPushProvider, LogSmsProvider } from './providers/log.providers';
 
 /** E-mail failover chain: `EMAIL_PROVIDER=memory` (dev/test), else SES when configured, then SMTP. */
-export function emailProviderChain(config: ApiConfigService): ChannelProvider[] {
+export function emailProviderChain(
+  config: ApiConfigService,
+): ChannelProvider[] {
   if (config.get('email_provider') === 'memory')
     return [new MemoryEmailProvider()];
   const from =
-    config.get('ses_from_address') ?? 'Marketplace <no-reply@marketplace.local>';
+    config.get('ses_from_address') ??
+    'Marketplace <no-reply@marketplace.local>';
   return [
     ...(config.get('ses_from_address')
       ? [new SesEmailProvider(from, config.get('aws_region') ?? 'eu-central-1')]
       : []),
-    new SmtpEmailProvider(config.get('smtp_url') ?? 'smtp://localhost:1025', from),
+    new SmtpEmailProvider(
+      config.get('smtp_url') ?? 'smtp://localhost:1025',
+      from,
+    ),
   ];
 }
 

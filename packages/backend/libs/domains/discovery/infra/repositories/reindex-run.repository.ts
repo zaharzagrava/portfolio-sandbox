@@ -104,7 +104,8 @@ export class SequelizeReindexRunRepository implements ReindexRunRepository {
       });
     } catch (error) {
       // the caller looks up the active run after its transaction has rolled back
-      if (error instanceof UniqueConstraintError) throw new ActiveRunExistsError('');
+      if (error instanceof UniqueConstraintError)
+        throw new ActiveRunExistsError('');
       throw error;
     }
   }

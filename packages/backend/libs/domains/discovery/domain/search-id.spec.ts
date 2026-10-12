@@ -1,8 +1,4 @@
-import {
-  SEARCH_ID_TTL_MS,
-  signSearchId,
-  verifySearchId,
-} from './search-id';
+import { SEARCH_ID_TTL_MS, signSearchId, verifySearchId } from './search-id';
 
 const KEY = 'k'.repeat(32);
 const T0 = Date.UTC(2026, 0, 1, 12, 0, 0);
@@ -41,7 +37,9 @@ describe('searchId token (S32 AS-70, AS-71, FR-051)', () => {
     expect(verifySearchId(KEY, `${v}.${forgedBody}.${mac}`, T0).ok).toBe(false);
     const flipped = mac.slice(0, -1) + (mac.endsWith('A') ? 'B' : 'A');
     expect(verifySearchId(KEY, `${v}.${body}.${flipped}`, T0).ok).toBe(false);
-    expect(verifySearchId(KEY, `${v}.${body}.${mac.slice(1)}`, T0).ok).toBe(false);
+    expect(verifySearchId(KEY, `${v}.${body}.${mac.slice(1)}`, T0).ok).toBe(
+      false,
+    );
   });
 
   it.each([

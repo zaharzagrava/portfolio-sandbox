@@ -1100,7 +1100,8 @@ describe('BFF product page composition', () => {
 
   describe('W03 B-3 GET /bff/cart', () => {
     // The real shape issued by the orders domain: `guest:<uuid>.<signature>` (the colon once made the BFF drop the cookie).
-    const GUEST = 'guest:f38e6db8-af73-4e85-a7b1-b9ffcb76f4f4.-B3X5QLLaCsr15Vnv-y82NpGxSKP1ydgiFebDsZRQzM';
+    const GUEST =
+      'guest:f38e6db8-af73-4e85-a7b1-b9ffcb76f4f4.-B3X5QLLaCsr15Vnv-y82NpGxSKP1ydgiFebDsZRQzM';
     const cartPage = () => ctx.http().get('/api/bff/cart');
     const seedCart = (n: number) => {
       const products = Array.from({ length: n }, () => seedProduct(stub));

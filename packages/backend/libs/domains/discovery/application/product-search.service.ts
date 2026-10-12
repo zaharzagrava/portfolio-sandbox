@@ -22,7 +22,11 @@ import {
   UnsupportedCombinationError,
 } from '../domain/search-errors';
 import { signSearchId } from '../domain/search-id';
-import { exceedsQueryLimit, logForm, normaliseQuery } from '../domain/query-text';
+import {
+  exceedsQueryLimit,
+  logForm,
+  normaliseQuery,
+} from '../domain/query-text';
 import {
   PRODUCT_INDEX,
   SEARCH_EVENT_PUBLISHER,
@@ -179,7 +183,8 @@ export class ProductSearchService {
       for (const issue of parsed.error.issues) {
         if (issue.code === 'unrecognized_keys')
           for (const key of issue.keys) fields.add(key);
-        else fields.add(issue.path.length > 0 ? String(issue.path[0]) : 'query');
+        else
+          fields.add(issue.path.length > 0 ? String(issue.path[0]) : 'query');
       }
       searchRequestsCounter.add(1, { mode: 'browse', status: 'invalid' });
       throw new SearchValidationError([...fields]);
@@ -197,11 +202,14 @@ export class ProductSearchService {
     if (call.surface === 'internal') {
       if (query.limit > INTERNAL_MAX_LIMIT)
         throw new SearchValidationError(['limit']);
-      if (query.cursor !== undefined) throw new SearchValidationError(['cursor']);
-      if (query.facets !== undefined) throw new SearchValidationError(['facets']);
+      if (query.cursor !== undefined)
+        throw new SearchValidationError(['cursor']);
+      if (query.facets !== undefined)
+        throw new SearchValidationError(['facets']);
     }
     // Facets (US2) and semantic mode (US3) are not served yet: refuse rather than silently answer without them.
-    if (query.facets === true) throw new UnsupportedCombinationError(['facets']);
+    if (query.facets === true)
+      throw new UnsupportedCombinationError(['facets']);
     if (query.semantic === true)
       throw new UnsupportedCombinationError(['semantic']);
 

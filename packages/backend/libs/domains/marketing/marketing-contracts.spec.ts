@@ -30,18 +30,40 @@ const link = {
 
 describe('W02 B-7: share link contracts', () => {
   it('W02 B-7: the create request needs a destination and rejects unknown keys', () => {
-    expect(ok(createShortLinkRequestSchema, { destination: stored.destination })).toBe(true);
-    expect(ok(createShortLinkRequestSchema, { destination: stored.destination, alias: 'summer-drop' })).toBe(true);
+    expect(
+      ok(createShortLinkRequestSchema, { destination: stored.destination }),
+    ).toBe(true);
+    expect(
+      ok(createShortLinkRequestSchema, {
+        destination: stored.destination,
+        alias: 'summer-drop',
+      }),
+    ).toBe(true);
     expect(ok(createShortLinkRequestSchema, {})).toBe(false);
     expect(ok(createShortLinkRequestSchema, { destination: '' })).toBe(false);
-    expect(ok(createShortLinkRequestSchema, { destination: 'x'.repeat(2049) })).toBe(false);
-    expect(ok(createShortLinkRequestSchema, { destination: stored.destination, ownerId: 'u' })).toBe(false);
+    expect(
+      ok(createShortLinkRequestSchema, { destination: 'x'.repeat(2049) }),
+    ).toBe(false);
+    expect(
+      ok(createShortLinkRequestSchema, {
+        destination: stored.destination,
+        ownerId: 'u',
+      }),
+    ).toBe(false);
   });
 
   it('W02 B-7: a short link parses and exposes no owner or internal field', () => {
     expect(ok(shortLinkSchema, link)).toBe(true);
-    expect(ok(shortLinkSchema, { ...link, status: 'DISABLED', disabledAt: link.createdAt })).toBe(true);
-    expect(ok(shortLinkSchema, { ...link, ownerId: stored.ownerId })).toBe(false);
+    expect(
+      ok(shortLinkSchema, {
+        ...link,
+        status: 'DISABLED',
+        disabledAt: link.createdAt,
+      }),
+    ).toBe(true);
+    expect(ok(shortLinkSchema, { ...link, ownerId: stored.ownerId })).toBe(
+      false,
+    );
     expect(ok(shortLinkSchema, { ...link, shortUrl: 'not a url' })).toBe(false);
     expect(ok(shortLinkSchema, { ...link, status: 'EXPIRED' })).toBe(false);
     expect(ok(shortLinkSchema, { ...link, expiresAt: undefined })).toBe(false);
@@ -62,15 +84,38 @@ describe('W02 B-7: sponsored slot contracts', () => {
   };
 
   it('W02 B-7: a sponsored response parses up to three slots', () => {
-    const body = { items: [slot, { ...slot, shopId: 's2' }], generatedAt: slot.expiresAt };
+    const body = {
+      items: [slot, { ...slot, shopId: 's2' }],
+      generatedAt: slot.expiresAt,
+    };
     expect(ok(sponsoredSlotsResponseSchema, body)).toBe(true);
-    expect(ok(sponsoredSlotsResponseSchema, { items: [], generatedAt: slot.expiresAt })).toBe(true);
+    expect(
+      ok(sponsoredSlotsResponseSchema, {
+        items: [],
+        generatedAt: slot.expiresAt,
+      }),
+    ).toBe(true);
   });
 
   it('W02 B-7: a sponsored response rejects more than three slots, an unmarked slot and a bare array', () => {
-    expect(ok(sponsoredSlotsResponseSchema, { items: [slot, slot, slot, slot], generatedAt: 'x' })).toBe(false);
-    expect(ok(sponsoredSlotsResponseSchema, { items: [{ ...slot, sponsored: false }], generatedAt: 'x' })).toBe(false);
-    expect(ok(sponsoredSlotsResponseSchema, { items: [{ ...slot, priceMinor: 1.5 }], generatedAt: 'x' })).toBe(false);
+    expect(
+      ok(sponsoredSlotsResponseSchema, {
+        items: [slot, slot, slot, slot],
+        generatedAt: 'x',
+      }),
+    ).toBe(false);
+    expect(
+      ok(sponsoredSlotsResponseSchema, {
+        items: [{ ...slot, sponsored: false }],
+        generatedAt: 'x',
+      }),
+    ).toBe(false);
+    expect(
+      ok(sponsoredSlotsResponseSchema, {
+        items: [{ ...slot, priceMinor: 1.5 }],
+        generatedAt: 'x',
+      }),
+    ).toBe(false);
     expect(ok(sponsoredSlotsResponseSchema, [slot])).toBe(false);
   });
 });

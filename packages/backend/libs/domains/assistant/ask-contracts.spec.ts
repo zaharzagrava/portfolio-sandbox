@@ -15,7 +15,9 @@ describe('W02 B-7: ask contracts', () => {
     expect(ok(ragAskRequestSchema, { question: 'ab' })).toBe(false);
     expect(ok(ragAskRequestSchema, { question: 'a'.repeat(501) })).toBe(false);
     expect(ok(ragAskRequestSchema, {})).toBe(false);
-    expect(ok(ragAskRequestSchema, { question: 'abc', productId: 'p' })).toBe(false);
+    expect(ok(ragAskRequestSchema, { question: 'abc', productId: 'p' })).toBe(
+      false,
+    );
   });
 
   it('W02 B-7: every S47 stream event name parses with its payload', () => {
@@ -23,10 +25,23 @@ describe('W02 B-7: ask contracts', () => {
       {
         event: 'sources',
         mode: 'hybrid',
-        items: [{ n: 1, chunkId: 'c1', documentId: 'd1', title: 'Manual', headingPath: ['Setup', 'USB'], page: null }],
+        items: [
+          {
+            n: 1,
+            chunkId: 'c1',
+            documentId: 'd1',
+            title: 'Manual',
+            headingPath: ['Setup', 'USB'],
+            page: null,
+          },
+        ],
       },
       { event: 'text', t: 'Yes, ' },
-      { event: 'done', citations: [{ text: 'Yes [1]', sources: [1] }], grounded: true },
+      {
+        event: 'done',
+        citations: [{ text: 'Yes [1]', sources: [1] }],
+        grounded: true,
+      },
       { event: 'not_found', message: 'No answer in the product documents.' },
       { event: 'refusal', category: 'self_harm', source: 'moderation' },
       { event: 'refusal', category: 'x' },
@@ -36,11 +51,25 @@ describe('W02 B-7: ask contracts', () => {
   });
 
   it('W02 B-7: stream negatives: unknown event, wrong error code, missing sources mode, text without t', () => {
-    expect(ok(ragStreamEventSchema, { event: 'meta', messageId: 'm' })).toBe(false);
-    expect(ok(ragStreamEventSchema, { event: 'error', code: 'BOOM' })).toBe(false);
-    expect(ok(ragStreamEventSchema, { event: 'sources', items: [] })).toBe(false);
+    expect(ok(ragStreamEventSchema, { event: 'meta', messageId: 'm' })).toBe(
+      false,
+    );
+    expect(ok(ragStreamEventSchema, { event: 'error', code: 'BOOM' })).toBe(
+      false,
+    );
+    expect(ok(ragStreamEventSchema, { event: 'sources', items: [] })).toBe(
+      false,
+    );
     expect(ok(ragStreamEventSchema, { event: 'text' })).toBe(false);
-    expect(ok(ragStreamEventSchema, { event: 'done', grounded: true })).toBe(false);
-    expect(ok(ragStreamEventSchema, { event: 'refusal', category: 'x', source: 'other' })).toBe(false);
+    expect(ok(ragStreamEventSchema, { event: 'done', grounded: true })).toBe(
+      false,
+    );
+    expect(
+      ok(ragStreamEventSchema, {
+        event: 'refusal',
+        category: 'x',
+        source: 'other',
+      }),
+    ).toBe(false);
   });
 });

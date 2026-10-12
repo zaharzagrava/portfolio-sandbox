@@ -29,7 +29,9 @@ export class SearchController {
     return this.search.search({
       query,
       surface: 'http',
-      subject: req.user?.id ? `user:${req.user.id}` : `ip:${req.clientIp ?? req.ip}`,
+      subject: req.user?.id
+        ? `user:${req.user.id}`
+        : `ip:${req.clientIp ?? req.ip}`,
     });
   }
 }

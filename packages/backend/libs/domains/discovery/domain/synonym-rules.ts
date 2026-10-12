@@ -20,8 +20,7 @@ export interface SynonymRuleError {
 }
 
 export type ParsedSynonyms =
-  | { ok: true; rules: string[] }
-  | { ok: false; errors: SynonymRuleError[] };
+  { ok: true; rules: string[] } | { ok: false; errors: SynonymRuleError[] };
 
 /** Letters, digits, spaces, and a few joiners common in product names. */
 const TERM_CHARACTERS = /^[\p{L}\p{N} \-_.'/&+]+$/u;
@@ -48,7 +47,10 @@ function parseRule(raw: string): Parsed {
     return { kind: 'one-way', from, to, text: `${from} => ${to}` };
   }
 
-  const terms = raw.split(',').map(normaliseTerm).filter((t) => t !== '');
+  const terms = raw
+    .split(',')
+    .map(normaliseTerm)
+    .filter((t) => t !== '');
   if (!terms.every((t) => TERM_CHARACTERS.test(t)))
     return { code: 'invalid_character' };
   const unique = [...new Set(terms)].sort();
@@ -75,7 +77,9 @@ function cycleMembers(edges: { index: number; from: string; to: string }[]) {
     return false;
   };
   // An edge a -> b is on a cycle iff b reaches a.
-  return new Set(edges.filter((e) => reaches(e.to, e.from)).map((e) => e.index));
+  return new Set(
+    edges.filter((e) => reaches(e.to, e.from)).map((e) => e.index),
+  );
 }
 
 export function parseSynonymRules(input: readonly string[]): ParsedSynonyms {
@@ -106,7 +110,8 @@ export function parseSynonymRules(input: readonly string[]): ParsedSynonyms {
       edges.push({ index, from: parsed.from, to: parsed.to });
   });
 
-  for (const index of cycleMembers(edges)) errors.push({ index, code: 'cycle' });
+  for (const index of cycleMembers(edges))
+    errors.push({ index, code: 'cycle' });
   if (errors.length)
     return { ok: false, errors: errors.sort((a, b) => a.index - b.index) };
   return { ok: true, rules };

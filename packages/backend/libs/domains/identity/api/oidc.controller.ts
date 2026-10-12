@@ -128,6 +128,13 @@ export class OidcController {
         `${front}${result.returnPath}${sep}linked=google`,
       );
     }
+    if (result.kind === 'challenge') {
+      this.cookies.setChallenge(res, result.token);
+      return res.redirect(
+        302,
+        `${front}/login/mfa?returnTo=${encodeURIComponent(result.returnPath)}`,
+      );
+    }
     this.cookies.set(res, result.issued);
     return res.redirect(302, `${front}${result.returnPath}`);
   }

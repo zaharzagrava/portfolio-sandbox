@@ -150,12 +150,12 @@ All in `ID/mfa-enrollment.e2e-spec.ts` (top-level `describe` named after the fea
 
 **Independent Test**: `test-spec.sh libs/domains/identity/mfa-management.e2e-spec.ts` green (AS-25–AS-27).
 
-- [ ] T065 [US3] `ID/mfa-management.e2e-spec.ts` AS-25 regenerate with a valid TOTP code: new set of 10, all old codes dead, event `identity.mfa_recovery_codes_regenerated`; `409 mfa_not_enabled` when not enabled; `422 invalid_code` on a wrong code (counted).
-- [ ] T066 [US3] Same file, AS-26 disable with a TOTP code or an unspent recovery code → `204`, row and codes deleted, `identity.mfa_disabled{reason:'user'}` (plus `mfa_recovery_code_used` when a recovery code was spent); `409 mfa_not_enabled`; `422 invalid_code`.
-- [ ] T067 [US3] Same file, AS-27 a recovery code cannot regenerate (`422`), a TOTP step already used is refused (step reuse), `Promise.all` of two disables → one `204` and one `409`, exactly one `mfa_disabled` event. Covers SC-010 (no weakening without a current code).
-- [ ] T068 [US3] `ID/application/second-factor.service.ts`: add `regenerate` (TOTP only; `acceptStep` + `replaceCodes` — delete the user's rows and insert 10 new digests — in one `@Transactional` unit; outbox `MfaRecoveryCodesRegenerated`) and `disable` (TOTP or recovery code; conditional `enabled→none`, delete codes, outbox `MfaDisabled{reason:'user'}`); both use `MfaAttemptBudget`.
-- [ ] T069 [US3] `ID/api/mfa.controller.ts`: `POST /auth/mfa/recovery-codes/regenerate` and `POST /auth/mfa/disable` (`@Firewall({ sensitive: true })`, `@RateLimit('auth.mfa.ip')`, strict code DTO, `disable` → `204`).
-- [ ] T070 [US3] Run `test-spec.sh libs/domains/identity/mfa-management.e2e-spec.ts` until green.
+- [X] T065 [US3] `ID/mfa-management.e2e-spec.ts` AS-25 regenerate with a valid TOTP code: new set of 10, all old codes dead, event `identity.mfa_recovery_codes_regenerated`; `409 mfa_not_enabled` when not enabled; `422 invalid_code` on a wrong code (counted).
+- [X] T066 [US3] Same file, AS-26 disable with a TOTP code or an unspent recovery code → `204`, row and codes deleted, `identity.mfa_disabled{reason:'user'}` (plus `mfa_recovery_code_used` when a recovery code was spent); `409 mfa_not_enabled`; `422 invalid_code`.
+- [X] T067 [US3] Same file, AS-27 a recovery code cannot regenerate (`422`), a TOTP step already used is refused (step reuse), `Promise.all` of two disables → one `204` and one `409`, exactly one `mfa_disabled` event. Covers SC-010 (no weakening without a current code).
+- [X] T068 [US3] `ID/application/second-factor.service.ts`: add `regenerate` (TOTP only; `acceptStep` + `replaceCodes` — delete the user's rows and insert 10 new digests — in one `@Transactional` unit; outbox `MfaRecoveryCodesRegenerated`) and `disable` (TOTP or recovery code; conditional `enabled→none`, delete codes, outbox `MfaDisabled{reason:'user'}`); both use `MfaAttemptBudget`.
+- [X] T069 [US3] `ID/api/mfa.controller.ts`: `POST /auth/mfa/recovery-codes/regenerate` and `POST /auth/mfa/disable` (`@Firewall({ sensitive: true })`, `@RateLimit('auth.mfa.ip')`, strict code DTO, `disable` → `204`).
+- [X] T070 [US3] Run `test-spec.sh libs/domains/identity/mfa-management.e2e-spec.ts` until green.
 
 ---
 
@@ -228,10 +228,10 @@ _T083 (delete `OidcService`) moved to Phase 10 (US8), after T109: it needs tenan
 
 **Independent Test**: `test-spec.sh libs/domains/identity/oidc-mfa.e2e-spec.ts` green (AS-54–AS-55).
 
-- [ ] T101 [US7] `ID/oidc-mfa.e2e-spec.ts` AS-54 Google login for a user with an enabled factor → `302 <front>/login/mfa?returnTo=…` with `__Host-mfa-challenge` (HttpOnly, Secure, Lax, Path=/, Max-Age 300), **no** access/refresh cookies, no session in the store; `POST /auth/mfa/verify {delivery:'cookie', code}` → session with `amr ["fed","otp","mfa"]`, challenge cookie cleared.
-- [ ] T102 [US7] Same file, AS-55 challenge-cookie verify: evil origin → `403` (challenge intact), no cookie and no body token → `401 invalid_mfa_challenge`, expired cookie → `401`, body `mfaToken` takes precedence over the cookie; a burned challenge clears the cookie.
-- [ ] T103 [US7] `ID/application/oidc-callback.service.ts`: when the resolved user's factor is `enabled` (`isSecondFactorEnrolled`), create `createChallenge({userId, firstFactor:'fed'})`, set `__Host-mfa-challenge` and redirect to `/login/mfa?returnTo=<validated>` instead of issuing; `mfa-login.service.ts` completes with `fed`. Gap B11, research R-13.
-- [ ] T104 [US7] Run `test-spec.sh libs/domains/identity/oidc-mfa.e2e-spec.ts` until green.
+- [X] T101 [US7] `ID/oidc-mfa.e2e-spec.ts` AS-54 Google login for a user with an enabled factor → `302 <front>/login/mfa?returnTo=…` with `__Host-mfa-challenge` (HttpOnly, Secure, Lax, Path=/, Max-Age 300), **no** access/refresh cookies, no session in the store; `POST /auth/mfa/verify {delivery:'cookie', code}` → session with `amr ["fed","otp","mfa"]`, challenge cookie cleared.
+- [X] T102 [US7] Same file, AS-55 challenge-cookie verify: evil origin → `403` (challenge intact), no cookie and no body token → `401 invalid_mfa_challenge`, expired cookie → `401`, body `mfaToken` takes precedence over the cookie; a burned challenge clears the cookie.
+- [X] T103 [US7] `ID/application/oidc-callback.service.ts`: when the resolved user's factor is `enabled` (`isSecondFactorEnrolled`), create `createChallenge({userId, firstFactor:'fed'})`, set `__Host-mfa-challenge` and redirect to `/login/mfa?returnTo=<validated>` instead of issuing; `mfa-login.service.ts` completes with `fed`. Gap B11, research R-13.
+- [X] T104 [US7] Run `test-spec.sh libs/domains/identity/oidc-mfa.e2e-spec.ts` until green.
 
 ---
 
@@ -239,14 +239,14 @@ _T083 (delete `OidcService`) moved to Phase 10 (US8), after T109: it needs tenan
 
 **Independent Test**: `test-spec.sh libs/domains/identity/oidc-providers.e2e-spec.ts` green (AS-56–AS-58) and the tenancy shop-SSO e2e still green.
 
-- [ ] T105 [US8] `ID/oidc-providers.e2e-spec.ts` (a stand-in module registers a `shop:` resolver through the real `OidcProviderRegistry`) AS-56 shop IdP asserting a victim's verified e-mail → new account with `email = null`, claimed address kept only as hint on the link, victim's account, password, factor and sessions untouched, no link to the victim (SC-006).
-- [ ] T106 [US8] Same file, AS-57 registry lifecycle: disabled provider → `404 oidc_provider_not_found`; resolver that throws → provider answers as unknown (no 500); `invalidate('shop:<id>')` makes the next flow use fresh settings and drops the discovery cache; registering prefix `''`, `google` or a duplicate throws at registration; resolver output validated; `trust` forced to subject-only.
-- [ ] T107 [US8] Same file, AS-58 SSRF refusals for dynamic issuers with the real guard, a stubbed DNS resolver and a spy on the outbound transport: `http://`, loopback, link-local/metadata (169.254.169.254), private ranges, DNS rebinding to a private address, non-443 port → provider answers as unknown/`503`, **no outbound request is made**.
-- [ ] T108 [US8] Create `ID/application/oidc-provider-registry.ts`: static `google` entry from config (trust `verified-email`), `registerResolver(prefix, resolver)` (refuses `''`, `'google'`, duplicates), `invalidate(providerId)` (drops settings + discovery cache via an in-process emitter the engine listens to), resolver output validation (issuer `https` + SSRF check; `trust` forced to `subject-only`), `OidcProviderSettings = {issuer, clientId, clientSecret, scope?}`. Provide and export from `AuthModule`. Gap B14, D-8.
-- [ ] T109 [US8] Edit `packages/backend/libs/domains/tenancy/application/shop-sso.service.ts` (registry wiring only, the lines using `OidcService.setResolver/register`): use `OidcProviderRegistry.registerResolver('shop:', …)` and `invalidate('shop:<id>')` after a config change, handing over the plain secret it opened with the exported `SecretBox`. Then delete any remaining `OidcService` usage. Run the existing tenancy shop-SSO e2e. (Sibling bullet for S03 is already in gaps.md.)
-- [ ] T083 [US8] (moved here from US4) Delete `ID/infra/oidc/oidc.service.ts` and its `OidcService` provider/export in `auth-api.module.ts` and `index.ts` now that T109 moved tenancy to the registry. Gap C0 (OIDC part), D-6.
-- [ ] T110 [US8] `ID/application/oidc-login.service.ts`: pass `trust` from the registry to `decideLink`; subject-only providers never link by e-mail and create the account with `email = null`. Gap B14.
-- [ ] T111 [US8] Run `test-spec.sh libs/domains/identity/oidc-providers.e2e-spec.ts` and the tenancy shop-SSO spec until green.
+- [X] T105 [US8] `ID/oidc-providers.e2e-spec.ts` (a stand-in module registers a `shop:` resolver through the real `OidcProviderRegistry`) AS-56 shop IdP asserting a victim's verified e-mail → new account with `email = null`, claimed address kept only as hint on the link, victim's account, password, factor and sessions untouched, no link to the victim (SC-006).
+- [X] T106 [US8] Same file, AS-57 registry lifecycle: disabled provider → `404 oidc_provider_not_found`; resolver that throws → provider answers as unknown (no 500); `invalidate('shop:<id>')` makes the next flow use fresh settings and drops the discovery cache; registering prefix `''`, `google` or a duplicate throws at registration; resolver output validated; `trust` forced to subject-only.
+- [X] T107 [US8] Same file, AS-58 SSRF refusals for dynamic issuers with the real guard, a stubbed DNS resolver and a spy on the outbound transport: `http://`, loopback, link-local/metadata (169.254.169.254), private ranges, DNS rebinding to a private address, non-443 port → provider answers as unknown/`503`, **no outbound request is made**.
+- [X] T108 [US8] Create `ID/application/oidc-provider-registry.ts`: static `google` entry from config (trust `verified-email`), `registerResolver(prefix, resolver)` (refuses `''`, `'google'`, duplicates), `invalidate(providerId)` (drops settings + discovery cache via an in-process emitter the engine listens to), resolver output validation (issuer `https` + SSRF check; `trust` forced to `subject-only`), `OidcProviderSettings = {issuer, clientId, clientSecret, scope?}`. Provide and export from `AuthModule`. Gap B14, D-8.
+- [X] T109 [US8] Edit `packages/backend/libs/domains/tenancy/application/shop-sso.service.ts` (registry wiring only, the lines using `OidcService.setResolver/register`): use `OidcProviderRegistry.registerResolver('shop:', …)` and `invalidate('shop:<id>')` after a config change, handing over the plain secret it opened with the exported `SecretBox`. Then delete any remaining `OidcService` usage. Run the existing tenancy shop-SSO e2e. (Sibling bullet for S03 is already in gaps.md.)
+- [X] T083 [US8] (moved here from US4) Delete `ID/infra/oidc/oidc.service.ts` and its `OidcService` provider/export in `auth-api.module.ts` and `index.ts` now that T109 moved tenancy to the registry. Gap C0 (OIDC part), D-6.
+- [X] T110 [US8] `ID/application/oidc-login.service.ts`: pass `trust` from the registry to `decideLink`; subject-only providers never link by e-mail and create the account with `email = null`. Gap B14.
+- [X] T111 [US8] Run `test-spec.sh libs/domains/identity/oidc-providers.e2e-spec.ts` and the tenancy shop-SSO spec until green.
 
 ---
 
@@ -254,11 +254,11 @@ _T083 (delete `OidcService`) moved to Phase 10 (US8), after T109: it needs tenan
 
 **Independent Test**: `test-spec.sh libs/domains/identity/mfa-oidc-observability.e2e-spec.ts` green (AS-59–AS-62, AS-64).
 
-- [ ] T112 [US9] `ID/mfa-oidc-observability.e2e-spec.ts` AS-59 audit lines (`auth.mfa.enrolled|confirmed|failed|verified|recovery_used|regenerated|disabled|challenge_burned`, `auth.oidc.started|callback_failed|login|linked|unlinked`) and counters (`auth_mfa_total{outcome}`, `auth_mfa_challenge_burned_total`, `auth_oidc_callback_total{outcome}`, `auth_oidc_provider_timeout_total`, `auth_identity_linked_total{method}`) across the S02 flows. AS-60 log capture over full flows: no token, code, secret, `state`, `nonce`, verifier, recovery code or digest in any log line, URL or error body (SC-008 server half).
-- [ ] T113 [US9] Same file, AS-61 error catalogue: every error response is `application/problem+json` with `type,title,status,detail,instance,requestId` and the stable `code` of FR-100; callback error codes are exactly the closed set. AS-62 an unopenable (corrupt / wrong-context) secret → generic `500`, nothing spent (step, challenge attempts, codes), no session, no secret in the response.
-- [ ] T114 [US9] Same file, AS-64 outbox envelope for each of the six events (`eventId, type, version, occurredAt, aggregateId = userId, payload`), payload has identifiers and flags only, row written in the same transaction as the state change (a rolled-back operation leaves none), rejected operations (409/422/401) append nothing.
-- [ ] T115 [US9] Add audit lines (`AuditService`) and counters (`MetricsRegistry`) to `second-factor.service.ts`, `mfa-login.service.ts`, `oidc-flow.service.ts`, `oidc-callback.service.ts`, `oidc-login.service.ts`, `federated-identity.service.ts` with outcomes and no secrets (research R-15); verify the corrupt-secret path and the error catalogue; fix whatever the tests expose. Gap B17.
-- [ ] T116 [US9] Run `test-spec.sh libs/domains/identity/mfa-oidc-observability.e2e-spec.ts` until green.
+- [X] T112 [US9] `ID/mfa-oidc-observability.e2e-spec.ts` AS-59 audit lines (`auth.mfa.enrolled|confirmed|failed|verified|recovery_used|regenerated|disabled|challenge_burned`, `auth.oidc.started|callback_failed|login|linked|unlinked`) and counters (`auth_mfa_total{outcome}`, `auth_mfa_challenge_burned_total`, `auth_oidc_callback_total{outcome}`, `auth_oidc_provider_timeout_total`, `auth_identity_linked_total{method}`) across the S02 flows. AS-60 log capture over full flows: no token, code, secret, `state`, `nonce`, verifier, recovery code or digest in any log line, URL or error body (SC-008 server half).
+- [X] T113 [US9] Same file, AS-61 error catalogue: every error response is `application/problem+json` with `type,title,status,detail,instance,requestId` and the stable `code` of FR-100; callback error codes are exactly the closed set. AS-62 an unopenable (corrupt / wrong-context) secret → generic `500`, nothing spent (step, challenge attempts, codes), no session, no secret in the response.
+- [X] T114 [US9] Same file, AS-64 outbox envelope for each of the six events (`eventId, type, version, occurredAt, aggregateId = userId, payload`), payload has identifiers and flags only, row written in the same transaction as the state change (a rolled-back operation leaves none), rejected operations (409/422/401) append nothing.
+- [X] T115 [US9] Add audit lines (`AuditService`) and counters (`MetricsRegistry`) to `second-factor.service.ts`, `mfa-login.service.ts`, `oidc-flow.service.ts`, `oidc-callback.service.ts`, `oidc-login.service.ts`, `federated-identity.service.ts` with outcomes and no secrets (research R-15); verify the corrupt-secret path and the error catalogue; fix whatever the tests expose. Gap B17.
+- [X] T116 [US9] Run `test-spec.sh libs/domains/identity/mfa-oidc-observability.e2e-spec.ts` until green.
 
 ---
 
@@ -266,8 +266,8 @@ _T083 (delete `OidcService`) moved to Phase 10 (US8), after T109: it needs tenan
 
 **Independent Test**: static gates report 0 identity findings (AS-63, SC-009).
 
-- [ ] T117 [US10] `ID/index.ts`: remove the `FederatedIdentityModel` export (D-7) and the `OidcService` export (D-8); add `SecondFactorService`, `OidcProviderRegistry`, `OidcProviderSettings`, the six event contracts and the three rate policies (via `identityRatePolicies`); fix any importer the compiler reports.
-- [ ] T118 [US10] Run `pnpm --dir packages/backend check:table-ownership --strict` (0 findings naming `User`, `FederatedIdentity`, `SigningKey`, `SecondFactor`, `MfaRecoveryCode`, `MfaChallengeState`), `check:boundaries` (no identity-related error), `check:module-graph` (stays 9/9), and the direct-`sequelize.transaction` count in `ID` (still 1). Fix findings; record the numbers in gaps.md next to the baseline line. Gaps section C, D-6, D-7, D-8.
+- [X] T117 [US10] `ID/index.ts`: remove the `FederatedIdentityModel` export (D-7) and the `OidcService` export (D-8); add `SecondFactorService`, `OidcProviderRegistry`, `OidcProviderSettings`, the six event contracts and the three rate policies (via `identityRatePolicies`); fix any importer the compiler reports.
+- [X] T118 [US10] Run `pnpm --dir packages/backend check:table-ownership --strict` (0 findings naming `User`, `FederatedIdentity`, `SigningKey`, `SecondFactor`, `MfaRecoveryCode`, `MfaChallengeState`), `check:boundaries` (no identity-related error), `check:module-graph` (stays 9/9), and the direct-`sequelize.transaction` count in `ID` (still 1). Fix findings; record the numbers in gaps.md next to the baseline line. Gaps section C, D-6, D-7, D-8.
 
 ---
 
@@ -275,19 +275,19 @@ _T083 (delete `OidcService`) moved to Phase 10 (US8), after T109: it needs tenan
 
 **Owned by W01** (`packages/web`); nothing to implement in this backend change.
 
-- [ ] T119 [US11] Confirm gaps.md "Sibling-spec follow-ups" lists the W01/S48 items of gap C2 (single origin for `__Host-` cookies, `POST …/start` then navigate to `authorizationUrl`, `/login?error=<code>`, `/login/mfa`, `?linked=google`, switch on `code`, challenge never in a URL, `recoveryCodesRemaining: 0` prompt) and names the journeys AS-65 ("MFA") and AS-66 ("Google") in `packages/web/tests/auth.spec.ts`. Add the missing bullet if any. AS-65/AS-66 are not run by this change.
+- [X] T119 [US11] Confirm gaps.md "Sibling-spec follow-ups" lists the W01/S48 items of gap C2 (single origin for `__Host-` cookies, `POST …/start` then navigate to `authorizationUrl`, `/login?error=<code>`, `/login/mfa`, `?linked=google`, switch on `code`, challenge never in a URL, `recoveryCodesRemaining: 0` prompt) and names the journeys AS-65 ("MFA") and AS-66 ("Google") in `packages/web/tests/auth.spec.ts`. Add the missing bullet if any. AS-65/AS-66 are not run by this change.
 
 ---
 
 ## Phase 14: Polish and cross-cutting
 
-- [ ] T120 Re-check that quickstart.md "Ops artifacts" lists SC-004 (latency half), SC-007 and SC-008 (browser half) and that `specs/UNVERIFIED.md` has exactly one `not run` row for each (present at lines 37–39); do not mark any as verified. If a task above changed what is automated, adjust both files together.
-- [ ] T121 Re-read gaps.md "Sibling-spec follow-ups" against what was actually built (S01 challenge signature, cookie/guard files, `SecretBox` context, `clearPassword`, dead `User.mfa*` columns; S03 registry; S50 code-enforced policy; S54 config + guarded fetch; S49 jobs; S28 events; W01 items) and fix any bullet that no longer matches. Do not edit other specs.
-- [ ] T122 Run the migration and re-seal drill of quickstart.md: seed a legacy enabled factor, migrate, confirm login still demands a code, run `identity.reseal-mfa-secrets`, check `SecondFactor.sealVersion = 1` for every row and `recoveryCodesRemaining = 0` until regeneration.
-- [ ] T123 Record the deferred contract migration (drop `User.mfaSecretEnc`, `mfaEnabledAt`, `mfaRecoveryCodes`; add the `FederatedIdentity.provider` check constraint) in quickstart.md and gaps.md as **not part of this change**, gated on the re-seal job having completed in every environment.
-- [ ] T124 Run `pnpm --dir packages/backend tsc --noEmit` and `pnpm --dir packages/backend lint`; fix all findings in files touched here.
-- [ ] T125 Run the whole capability once: `/opt/sdd/repo/scripts/sdd/test-spec.sh libs/domains/identity` (S01 files must stay green) plus `pnpm jest libs/domains/identity/domain --testPathIgnorePatterns e2e`; record the green run (VII.9) in gaps.md.
-- [ ] T126 Report to the human: what was built, the four follow-ups (S01 ×3, S50) and where each is satisfied, the legacy-recovery-codes behaviour change, the duplicate-identity migration abort, the three `not run` UNVERIFIED rows, and the sibling bullets.
+- [X] T120 Re-check that quickstart.md "Ops artifacts" lists SC-004 (latency half), SC-007 and SC-008 (browser half) and that `specs/UNVERIFIED.md` has exactly one `not run` row for each (present at lines 37–39); do not mark any as verified. If a task above changed what is automated, adjust both files together.
+- [X] T121 Re-read gaps.md "Sibling-spec follow-ups" against what was actually built (S01 challenge signature, cookie/guard files, `SecretBox` context, `clearPassword`, dead `User.mfa*` columns; S03 registry; S50 code-enforced policy; S54 config + guarded fetch; S49 jobs; S28 events; W01 items) and fix any bullet that no longer matches. Do not edit other specs.
+- [X] T122 Run the migration and re-seal drill of quickstart.md: seed a legacy enabled factor, migrate, confirm login still demands a code, run `identity.reseal-mfa-secrets`, check `SecondFactor.sealVersion = 1` for every row and `recoveryCodesRemaining = 0` until regeneration.
+- [X] T123 Record the deferred contract migration (drop `User.mfaSecretEnc`, `mfaEnabledAt`, `mfaRecoveryCodes`; add the `FederatedIdentity.provider` check constraint) in quickstart.md and gaps.md as **not part of this change**, gated on the re-seal job having completed in every environment.
+- [X] T124 Run `pnpm --dir packages/backend tsc --noEmit` and `pnpm --dir packages/backend lint`; fix all findings in files touched here.
+- [X] T125 Run the whole capability once: `/opt/sdd/repo/scripts/sdd/test-spec.sh libs/domains/identity` (S01 files must stay green) plus `pnpm jest libs/domains/identity/domain --testPathIgnorePatterns e2e`; record the green run (VII.9) in gaps.md.
+- [X] T126 Report to the human: what was built, the four follow-ups (S01 ×3, S50) and where each is satisfied, the legacy-recovery-codes behaviour change, the duplicate-identity migration abort, the three `not run` UNVERIFIED rows, and the sibling bullets.
 
 ---
 

@@ -1,4 +1,9 @@
-import { Inject, Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  Logger,
+  OnApplicationBootstrap,
+} from '@nestjs/common';
 import { InvalidScheduleError, JobsService } from '@app/infrastructure/jobs';
 import { JobHandler } from '@app/infrastructure/jobs/job-handler.decorator';
 import {
@@ -63,10 +68,16 @@ export class BackfillEmbeddingsJob implements OnApplicationBootstrap {
         tags: doc.tags,
       });
       try {
-        const vector = await this.embeddings.embed(text, AbortSignal.timeout(5_000));
+        const vector = await this.embeddings.embed(
+          text,
+          AbortSignal.timeout(5_000),
+        );
         items.push({
           id,
-          mutation: embeddingFillMutation({ hash: embeddingHashOf(text), vector }),
+          mutation: embeddingFillMutation({
+            hash: embeddingHashOf(text),
+            vector,
+          }),
         });
       } catch {
         // the provider is still unwell: the document stays pending and the next run tries again
@@ -74,7 +85,11 @@ export class BackfillEmbeddingsJob implements OnApplicationBootstrap {
     }
     const outcomes = await this.index.mutate(items);
     const filled = [...outcomes.values()].filter((o) => o === 'applied').length;
-    this.logger.log({ action: 'search.embeddings_backfilled', filled, pending: ids.length - filled });
+    this.logger.log({
+      action: 'search.embeddings_backfilled',
+      filled,
+      pending: ids.length - filled,
+    });
     return { filled, pending: ids.length - filled };
   }
 }

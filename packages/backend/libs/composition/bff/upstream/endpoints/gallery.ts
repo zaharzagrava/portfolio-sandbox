@@ -5,7 +5,9 @@ import {
 import { Endpoint, enc } from './endpoint';
 
 /** W02 B-1 `GET /api/products/:productId/gallery` (media domain): public, anonymous, no per-visitor data. */
-export const productGallery = (productId: string): Endpoint<ProductGallery> => ({
+export const productGallery = (
+  productId: string,
+): Endpoint<ProductGallery> => ({
   name: 'gallery',
   upstream: 'media',
   method: 'GET',

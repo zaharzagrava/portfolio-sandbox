@@ -1,7 +1,7 @@
 import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import ShopSsoConfig from '../infra/models/shop-sso-config.model';
-import { SecretBox, OidcService } from '@app/domains/identity';
+import { SecretBox, OidcProviderRegistry } from '@app/domains/identity';
 import { ShopTransactionRunner } from '../infra/shop-transaction';
 import { SHOP_REPOSITORY, type ShopRepository } from '../domain/ports';
 import { Domain_ShopNotFoundError } from '../domain/errors';
@@ -9,14 +9,14 @@ import { Domain_ShopNotFoundError } from '../domain/errors';
 /**
  * Enterprise SSO per shop (lesson 10/04 #2): a shop's staff log in through
  * their company IdP via `/api/auth/oidc/shop:<shopId>/start`. Configs are
- * loaded lazily into OidcService the first time a provider name is used.
+ * read by the identity `OidcProviderRegistry` (resolver for the `shop:` prefix) each time a provider name is used.
  */
 @Injectable()
 export class ShopSsoService implements OnModuleInit {
   constructor(
     @InjectModel(ShopSsoConfig) private readonly ssoModel: typeof ShopSsoConfig,
     private readonly box: SecretBox,
-    private readonly oidc: OidcService,
+    private readonly registry: OidcProviderRegistry,
     private readonly shopTx: ShopTransactionRunner,
     @Inject(SHOP_REPOSITORY) private readonly shops: ShopRepository,
   ) {}
@@ -37,7 +37,7 @@ export class ShopSsoService implements OnModuleInit {
   }
 
   onModuleInit() {
-    this.oidc.setResolver(async (provider) => {
+    this.registry.registerResolver('shop:', async (provider) => {
       const match = /^shop:([0-9a-f-]{36})$/.exec(provider);
       if (!match) return undefined;
       const config = await this.shopTx.inShop(match[1], () =>
@@ -68,7 +68,7 @@ export class ShopSsoService implements OnModuleInit {
       }),
     );
     // Drop any cached discovery so the next login uses the new settings.
-    this.oidc.register(`shop:${shopId}`, { issuer, clientId, clientSecret });
+    this.registry.invalidate(`shop:${shopId}`);
     return { loginUrl: `/api/auth/oidc/shop:${shopId}/start` };
   }
 }

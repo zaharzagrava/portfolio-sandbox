@@ -5,7 +5,11 @@ import { JobsModule } from '@app/infrastructure/jobs/jobs.module';
 import { JobsWorkerModule } from '@app/infrastructure/jobs/jobs-worker.module';
 import { JobWorker } from '@app/infrastructure/jobs/job-worker.service';
 import { Role } from '@app/domains/identity';
-import { createTopics, deleteTopicsMatching, testKafka } from '@app/test/utils/kafka-test';
+import {
+  createTopics,
+  deleteTopicsMatching,
+  testKafka,
+} from '@app/test/utils/kafka-test';
 import type { EventEnvelope } from '@app/infrastructure/events/event-envelope';
 import { SearchEngineClient } from '@app/infrastructure/elasticsearch/search-engine.client';
 import {
@@ -77,13 +81,18 @@ export async function createSearchApp(
   const embeddings = new TestEmbeddingProvider();
   const probe = new TestReindexProbe();
   const proxy = options.engineProxy
-    ? await TcpFaultProxy.start({ host: 'localhost', port: new URL(ES_NODE).port ? Number(new URL(ES_NODE).port) : 9300 })
+    ? await TcpFaultProxy.start({
+        host: 'localhost',
+        port: new URL(ES_NODE).port ? Number(new URL(ES_NODE).port) : 9300,
+      })
     : null;
   const redisProxy = options.redisProxy
     ? await TcpFaultProxy.start({ host: 'localhost', port: 6400 })
     : null;
   const base = await createCatalogApp({
-    ...(redisProxy ? { redisUrl: `redis://127.0.0.1:${redisProxy.port}/0` } : {}),
+    ...(redisProxy
+      ? { redisUrl: `redis://127.0.0.1:${redisProxy.port}/0` }
+      : {}),
     prependImports: [ProductSearchModule],
     extraImports: [
       JobsModule,
@@ -101,7 +110,9 @@ export async function createSearchApp(
       // short windows keep the specs fast; production defaults are 1 s and 30 s
       SEARCH_REGISTRY_TTL_MS: '100',
       SEARCH_REINDEX_VERIFY_WAIT_MS: '1500',
-      ...(proxy ? { ELASTICSEARCH_NODE: `http://127.0.0.1:${proxy.port}` } : {}),
+      ...(proxy
+        ? { ELASTICSEARCH_NODE: `http://127.0.0.1:${proxy.port}` }
+        : {}),
       ...options.env,
     },
   });
@@ -121,7 +132,9 @@ export async function createSearchApp(
     admin: () => base.newUser({ role: Role.ADMIN }),
     async resetHistory(partitions = 3) {
       await deleteTopicsMatching(/^products\.events$/);
-      await createTopics([{ topic: 'products.events', numPartitions: partitions }]);
+      await createTopics([
+        { topic: 'products.events', numPartitions: partitions },
+      ]);
     },
     async publishHistory(events) {
       const producer = testKafka().producer();
@@ -159,11 +172,16 @@ export async function createSearchApp(
       if (names.length > 0)
         await es.indices.delete({ index: names, ignore_unavailable: true });
       base.app.get(SearchIndexRegistry, { strict: false }).invalidate();
-      await base.app.get(IndexBootstrapService, { strict: false }).ensureLiveIndex();
+      await base.app
+        .get(IndexBootstrapService, { strict: false })
+        .ensureLiveIndex();
       base.app.get(SearchIndexRegistry, { strict: false }).invalidate();
     },
     async refresh() {
-      await es.indices.refresh({ index: 'products*', ignore_unavailable: true });
+      await es.indices.refresh({
+        index: 'products*',
+        ignore_unavailable: true,
+      });
     },
     async doc(productId) {
       const res = await es
@@ -175,13 +193,22 @@ export async function createSearchApp(
     },
     async count(query) {
       await app.refresh();
-      const res = await es.count({ index: 'products', ...(query && { query }) });
+      const res = await es.count({
+        index: 'products',
+        ...(query && { query }),
+      });
       return res.count;
     },
     async indices() {
-      const res = await es.indices.get({ index: 'products*', expand_wildcards: 'all' });
+      const res = await es.indices.get({
+        index: 'products*',
+        expand_wildcards: 'all',
+      });
       return Object.fromEntries(
-        Object.entries(res).map(([name, info]) => [name, Object.keys(info.aliases ?? {})]),
+        Object.entries(res).map(([name, info]) => [
+          name,
+          Object.keys(info.aliases ?? {}),
+        ]),
       );
     },
     rows: <T extends object>(sql: string, bind: unknown[] = []) =>

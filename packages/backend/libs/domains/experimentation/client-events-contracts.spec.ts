@@ -18,7 +18,9 @@ const event: ClientEvent = {
 
 describe('W02 B-7: client event batch contract', () => {
   it('W02 B-7: a batch the backend ingest accepts parses with the contract too', () => {
-    const batch = { events: [event, { ...event, name: 'video_view', props: undefined }] };
+    const batch = {
+      events: [event, { ...event, name: 'video_view', props: undefined }],
+    };
     expect(ok(clientEventBatchSchema, { events: [event] })).toBe(true);
     expect(ok(ClientBatch, { events: [event] })).toBe(true);
     expect(ok(clientEventBatchSchema, batch)).toBe(true);
@@ -26,18 +28,29 @@ describe('W02 B-7: client event batch contract', () => {
 
   it('W02 B-7: the batch holds 1 to 50 events', () => {
     expect(ok(clientEventBatchSchema, { events: [] })).toBe(false);
-    expect(ok(clientEventBatchSchema, { events: Array(50).fill(event) })).toBe(true);
-    expect(ok(clientEventBatchSchema, { events: Array(51).fill(event) })).toBe(false);
+    expect(ok(clientEventBatchSchema, { events: Array(50).fill(event) })).toBe(
+      true,
+    );
+    expect(ok(clientEventBatchSchema, { events: Array(51).fill(event) })).toBe(
+      false,
+    );
   });
 
   it('W02 B-7: event negatives mirror the backend: unknown name, non-uuid id, short anonymous id, 31 props, nested prop', () => {
-    const bad = (patch: object) => ok(clientEventBatchSchema, { events: [{ ...event, ...patch }] });
+    const bad = (patch: object) =>
+      ok(clientEventBatchSchema, { events: [{ ...event, ...patch }] });
     expect(bad({ name: 'purchase' })).toBe(false);
     expect(bad({ event_id: 'not-a-uuid' })).toBe(false);
     expect(bad({ anonymous_id: 'short' })).toBe(false);
     expect(bad({ ts: 1.5 })).toBe(false);
     expect(bad({ page: 'x'.repeat(501) })).toBe(false);
-    expect(bad({ props: Object.fromEntries(Array.from({ length: 31 }, (_, i) => [`k${i}`, 'v'])) })).toBe(false);
+    expect(
+      bad({
+        props: Object.fromEntries(
+          Array.from({ length: 31 }, (_, i) => [`k${i}`, 'v']),
+        ),
+      }),
+    ).toBe(false);
     expect(bad({ props: { nested: { a: 1 } } })).toBe(false);
     expect(bad({ props: { k: 'x'.repeat(501) } })).toBe(false);
   });

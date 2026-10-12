@@ -301,7 +301,10 @@ export function galleryMutation(input: {
   weights: BoostWeights;
 }): Mutation {
   return (stored) => {
-    const outcome = decideMedia(stored?.galleryVersion ?? null, input.galleryVersion);
+    const outcome = decideMedia(
+      stored?.galleryVersion ?? null,
+      input.galleryVersion,
+    );
     if (outcome === 'stale') return { outcome, next: null };
     const base = stored ?? emptyDocument(input.productId);
     return {
@@ -363,7 +366,10 @@ export function popularityMutation(input: {
       input.at.getTime(),
     );
     if (outcome === 'stale' || stored.popularityBucket === input.bucket)
-      return { outcome: outcome === 'stale' ? 'stale' : 'duplicate', next: null };
+      return {
+        outcome: outcome === 'stale' ? 'stale' : 'duplicate',
+        next: null,
+      };
     return {
       outcome,
       next: withScores(

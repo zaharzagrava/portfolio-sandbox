@@ -79,5 +79,4 @@ export class SearchAdminController {
   synonyms(@Body() body: SynonymsDto) {
     return this.es.updateSynonyms(body.rules);
   }
-
 }

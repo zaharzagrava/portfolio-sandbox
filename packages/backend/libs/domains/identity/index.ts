@@ -4,7 +4,6 @@
  * hand when a new export is needed. Models exported here are transitional (IX.4 debt): other
  * domains must stop injecting them.
  */
-export { default as FederatedIdentityModel } from './infra/models/federated-identity.model';
 export { default as SigningKeyModel } from './infra/models/signing-key.model';
 export { Role, default as UserModel } from './infra/models/user.model';
 export { IdentityOpsModule } from './identity-ops.module';
@@ -22,6 +21,7 @@ export {
 export type { UserSummaryDto } from './application/user-directory.service';
 export { SecondFactorService } from './application/second-factor.service';
 export { OidcProviderRegistry } from './application/oidc-provider-registry';
+export type { OidcProviderSettings } from './application/oidc-provider-registry';
 export { SessionIssuer } from './application/session-issuer.service';
 export type { IssuedSession } from './application/session-issuer.service';
 export { SessionRevocationService } from './application/session-revocation.service';
@@ -49,7 +49,6 @@ export { PASSWORD_RESET_MAILER } from './domain/ports';
 export type { PasswordResetMailer } from './domain/ports';
 export { SecretBox } from './infra/crypto/secret-box';
 export { KeyStore } from './infra/keys/key-store.service';
-export { OidcService } from './infra/oidc/oidc.service';
 export type { RequestWithUser } from './api/request-with-user';
 export { IdentityTopicsModule } from './realtime-topics.module';
 export { identityRatePolicies } from './domain/auth-rate-policies';

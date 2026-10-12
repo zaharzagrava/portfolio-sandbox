@@ -93,7 +93,10 @@ export class EsVersionedSink {
         cause: error,
       });
     }
-    for (const item of response.items as Record<string, BulkItem | undefined>[]) {
+    for (const item of response.items as Record<
+      string,
+      BulkItem | undefined
+    >[]) {
       const result = (item.index ??
         item.delete ??
         item.create ??

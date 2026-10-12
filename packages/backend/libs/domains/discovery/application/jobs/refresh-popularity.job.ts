@@ -1,4 +1,9 @@
-import { Inject, Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  Logger,
+  OnApplicationBootstrap,
+} from '@nestjs/common';
 import { CLOCK, type Clock } from '@app/common/core/clock';
 import { ClickHouseService } from '@app/infrastructure/clickhouse/clickhouse.service';
 import { InvalidScheduleError, JobsService } from '@app/infrastructure/jobs';
@@ -71,12 +76,13 @@ export class RefreshPopularityJob implements OnApplicationBootstrap {
           offset,
         },
       );
-      for (const r of rows) buckets.set(r.product_id, popularityBucket(Number(r.clicks)));
+      for (const r of rows)
+        buckets.set(r.product_id, popularityBucket(Number(r.clicks)));
       if (rows.length < PAGE) break;
     }
 
     // products that had a bucket and lost every click in the window decay to 0
-    for (let after: string | null = null; ; ) {
+    for (let after: string | null = null; ;) {
       const ids = await this.index.popularProductIds(after, PAGE);
       for (const id of ids) if (!buckets.has(id)) buckets.set(id, 0);
       if (ids.length < PAGE) break;
@@ -97,9 +103,14 @@ export class RefreshPopularityJob implements OnApplicationBootstrap {
           }),
         })),
       );
-      for (const outcome of outcomes.values()) if (outcome === 'applied') changed++;
+      for (const outcome of outcomes.values())
+        if (outcome === 'applied') changed++;
     }
-    this.logger.log({ action: 'search.popularity_refreshed', examined: ids.length, changed });
+    this.logger.log({
+      action: 'search.popularity_refreshed',
+      examined: ids.length,
+      changed,
+    });
     return { examined: ids.length, changed };
   }
 }

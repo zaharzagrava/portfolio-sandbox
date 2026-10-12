@@ -28,12 +28,15 @@ describe('popularity bucket (S32 AS-86)', () => {
     expect(popularityBucket(120)).toBeGreaterThan(popularityBucket(2));
   });
 
-  it.each([-1, NaN, -Infinity, 1.7])('S32 AS-86: odd input %p stays an integer in range', (x) => {
-    const b = popularityBucket(x);
-    expect(Number.isInteger(b)).toBe(true);
-    expect(b).toBeGreaterThanOrEqual(0);
-    expect(b).toBeLessThanOrEqual(MAX_POPULARITY_BUCKET);
-  });
+  it.each([-1, NaN, -Infinity, 1.7])(
+    'S32 AS-86: odd input %p stays an integer in range',
+    (x) => {
+      const b = popularityBucket(x);
+      expect(Number.isInteger(b)).toBe(true);
+      expect(b).toBeGreaterThanOrEqual(0);
+      expect(b).toBeLessThanOrEqual(MAX_POPULARITY_BUCKET);
+    },
+  );
 
   it('S32 AS-86: monotone, bounded, integral, 0 for zero clicks', () => {
     fc.assert(
@@ -70,26 +73,35 @@ describe('business multiplier (S32 AS-86, AS-06)', () => {
   it('S32 AS-05: missing signals are neutral (multiplier 1)', () => {
     expect(businessMultiplier(neutral)).toBe(1);
     expect(
-      businessMultiplier({ ...neutral, rating: 0, popularityBucket: 0, tier: 'STARTER' }),
+      businessMultiplier({
+        ...neutral,
+        rating: 0,
+        popularityBucket: 0,
+        tier: 'STARTER',
+      }),
     ).toBe(1);
   });
 
   it('S32 AS-05: each signal raises the multiplier on its own', () => {
     const base = businessMultiplier(neutral);
-    expect(businessMultiplier({ ...neutral, inStock: true })).toBeGreaterThan(base);
+    expect(businessMultiplier({ ...neutral, inStock: true })).toBeGreaterThan(
+      base,
+    );
     expect(businessMultiplier({ ...neutral, rating: 5 })).toBeGreaterThan(
       businessMultiplier({ ...neutral, rating: 2 }),
     );
-    expect(businessMultiplier({ ...neutral, popularityBucket: 9 })).toBeGreaterThan(
-      businessMultiplier({ ...neutral, popularityBucket: 3 }),
-    );
+    expect(
+      businessMultiplier({ ...neutral, popularityBucket: 9 }),
+    ).toBeGreaterThan(businessMultiplier({ ...neutral, popularityBucket: 3 }));
     expect(businessMultiplier({ ...neutral, tier: 'PRO' })).toBeGreaterThan(
       businessMultiplier({ ...neutral, tier: 'STARTER' }),
     );
-    expect(businessMultiplier({ ...neutral, tier: 'ENTERPRISE' })).toBeGreaterThanOrEqual(
-      businessMultiplier({ ...neutral, tier: 'PRO' }),
+    expect(
+      businessMultiplier({ ...neutral, tier: 'ENTERPRISE' }),
+    ).toBeGreaterThanOrEqual(businessMultiplier({ ...neutral, tier: 'PRO' }));
+    expect(businessMultiplier({ ...neutral, sponsored: true })).toBeGreaterThan(
+      base,
     );
-    expect(businessMultiplier({ ...neutral, sponsored: true })).toBeGreaterThan(base);
   });
 
   it('S32 AS-06: the best possible product never exceeds 4', () => {
@@ -130,10 +142,16 @@ describe('business multiplier (S32 AS-86, AS-06)', () => {
   it('S32 AS-86: the documented defaults multiply: in stock x2, rating 1 + r/10, popularity 1 + bucket/20, PRO x1.1, ENTERPRISE x1.2, sponsored x1.3', () => {
     expect(businessMultiplier({ ...neutral, inStock: true })).toBeCloseTo(2);
     expect(businessMultiplier({ ...neutral, rating: 5 })).toBeCloseTo(1.5);
-    expect(businessMultiplier({ ...neutral, popularityBucket: 10 })).toBeCloseTo(1.5);
+    expect(
+      businessMultiplier({ ...neutral, popularityBucket: 10 }),
+    ).toBeCloseTo(1.5);
     expect(businessMultiplier({ ...neutral, tier: 'PRO' })).toBeCloseTo(1.1);
-    expect(businessMultiplier({ ...neutral, tier: 'ENTERPRISE' })).toBeCloseTo(1.2);
-    expect(businessMultiplier({ ...neutral, sponsored: true })).toBeCloseTo(1.3);
+    expect(businessMultiplier({ ...neutral, tier: 'ENTERPRISE' })).toBeCloseTo(
+      1.2,
+    );
+    expect(businessMultiplier({ ...neutral, sponsored: true })).toBeCloseTo(
+      1.3,
+    );
     expect(
       businessMultiplier({
         inStock: true,
@@ -146,11 +164,21 @@ describe('business multiplier (S32 AS-86, AS-06)', () => {
   });
 
   it('S32 AS-86: the tier factor applies after the other factors are capped (engine-side recompute)', () => {
-    const rest = { inStock: true, rating: 5, popularityBucket: 10, sponsored: true };
+    const rest = {
+      inStock: true,
+      rating: 5,
+      popularityBucket: 10,
+      sponsored: true,
+    };
     const base = businessMultiplier({ ...rest, tier: null });
     expect(base).toBe(4);
     expect(businessMultiplier({ ...rest, tier: 'PRO' })).toBe(4);
-    const mid = { inStock: true, rating: 2, popularityBucket: 0, sponsored: false };
+    const mid = {
+      inStock: true,
+      rating: 2,
+      popularityBucket: 0,
+      sponsored: false,
+    };
     expect(businessMultiplier({ ...mid, tier: 'PRO' })).toBeCloseTo(
       businessMultiplier({ ...mid, tier: null }) * 1.1,
     );
@@ -167,7 +195,13 @@ describe('business multiplier (S32 AS-86, AS-06)', () => {
     };
     expect(
       businessMultiplier(
-        { inStock: true, rating: 5, popularityBucket: 10, tier: 'ENTERPRISE', sponsored: true },
+        {
+          inStock: true,
+          rating: 5,
+          popularityBucket: 10,
+          tier: 'ENTERPRISE',
+          sponsored: true,
+        },
         huge,
       ),
     ).toBe(4);
@@ -187,7 +221,13 @@ describe('business multiplier (S32 AS-86, AS-06)', () => {
       sponsored: false,
     });
     expect(m).toBe(
-      businessMultiplier({ inStock: true, rating: 5, popularityBucket: 10, tier: null, sponsored: false }),
+      businessMultiplier({
+        inStock: true,
+        rating: 5,
+        popularityBucket: 10,
+        tier: null,
+        sponsored: false,
+      }),
     );
   });
 });

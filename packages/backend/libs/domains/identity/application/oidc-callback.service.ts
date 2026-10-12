@@ -15,6 +15,7 @@ import {
   type OidcCallbackErrorCode,
 } from '../domain/oidc-errors';
 import { ApiConfigService } from '@app/common/config';
+import { AuditService } from './audit.service';
 import { redirectUriFor, sha256Hex } from './oidc-flow.service';
 import { OidcLoginService } from './oidc-login.service';
 import { OidcProviderRegistry } from './oidc-provider-registry';
@@ -34,6 +35,7 @@ const providerTimeouts = MetricsRegistry.counter({
 
 export type CallbackResult =
   | { kind: 'session'; issued: IssuedSession; returnPath: string }
+  | { kind: 'challenge'; token: string; returnPath: string }
   | { kind: 'linked'; returnPath: string }
   | { kind: 'failure'; code: OidcCallbackErrorCode };
 
@@ -78,6 +80,7 @@ export class OidcCallbackService {
     private readonly factor: SecondFactorService,
     private readonly issuer: SessionIssuer,
     private readonly config: ApiConfigService,
+    private readonly audit: AuditService,
   ) {}
 
   async handle(input: CallbackInput): Promise<CallbackResult> {
@@ -89,11 +92,19 @@ export class OidcCallbackService {
     } catch (error) {
       if (error instanceof OidcCallbackError) {
         loginTotal.add(1, { provider: label, result: resultLabel[error.code] });
+        this.audit.record('auth.oidc.callback_failed', {
+          provider: input.provider,
+          code: error.code,
+        });
         return { kind: 'failure', code: error.code };
       }
       // A browser navigation cannot show a problem document: an unexpected fault is a failed sign-in with a closed code.
       this.logger.error(`oidc callback failed: ${(error as Error)?.name}`);
       loginTotal.add(1, { provider: label, result: 'exchange_failed' });
+      this.audit.record('auth.oidc.callback_failed', {
+        provider: input.provider,
+        code: 'oidc_exchange_failed',
+      });
       return { kind: 'failure', code: 'oidc_exchange_failed' };
     }
   }
@@ -118,7 +129,9 @@ export class OidcCallbackService {
     if (typeof code !== 'string' || code.length === 0 || code.length > 2048)
       throw new OidcCallbackError('oidc_exchange_failed');
 
-    const resolved = await this.registry.resolve(flow.provider);
+    const resolved = await this.registry
+      .resolve(flow.provider)
+      .catch(() => undefined);
     if (!resolved) throw new OidcCallbackError('oidc_provider_unavailable');
 
     let claims: Record<string, unknown>;
@@ -154,6 +167,11 @@ export class OidcCallbackService {
         provider: resolved.id,
         identity: read.identity,
       });
+      this.audit.record('auth.oidc.linked', {
+        userId: flow.userId,
+        provider: resolved.id,
+        method: 'explicit',
+      });
       return { kind: 'linked', returnPath: flow.returnPath };
     }
 
@@ -162,10 +180,15 @@ export class OidcCallbackService {
       trust: resolved.trust,
       identity: read.identity,
     });
-    // The second-factor challenge for federated logins arrives with US7; until then an enabled factor must not be
-    // skipped, so such a login ends without a session.
-    if (await this.factor.isSecondFactorEnrolled(userId))
-      throw new OidcCallbackError('oidc_exchange_failed');
+    this.audit.record('auth.oidc.login', { userId, provider: resolved.id });
+    // A federated login does not bypass an enabled second factor: it ends in a challenge, not a session.
+    if (await this.factor.isSecondFactorEnrolled(userId)) {
+      const { token } = await this.issuer.createChallenge({
+        userId,
+        firstFactor: 'fed',
+      });
+      return { kind: 'challenge', token, returnPath: flow.returnPath };
+    }
 
     const issued = await this.issuer.issue({
       userId,

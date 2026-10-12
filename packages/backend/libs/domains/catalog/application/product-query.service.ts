@@ -21,7 +21,9 @@ export class ProductQueryService {
    */
   async isPubliclyVisible(id: string): Promise<boolean> {
     if (!isUuid(id)) return false;
-    return (await this.products.findVisibleByIds([id.toLowerCase()])).length > 0;
+    return (
+      (await this.products.findVisibleByIds([id.toLowerCase()])).length > 0
+    );
   }
 
   /**

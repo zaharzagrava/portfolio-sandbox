@@ -53,7 +53,12 @@ describe('BFF forwarder (authenticated pass-through of /api/*)', () => {
     path: string,
     body: unknown,
     headers: Record<string, string> = {},
-  ) => ctx.http().post(`/api/bff/f/${path}`).set(headers).send(body as object);
+  ) =>
+    ctx
+      .http()
+      .post(`/api/bff/f/${path}`)
+      .set(headers)
+      .send(body as object);
 
   it('bff-forward: a cart read with a session reaches core with the bearer and the answer comes back unchanged and no-store', async () => {
     const who = await signIn(ctx, stub, { accessToken: 'ACCESS-A' });
@@ -126,7 +131,10 @@ describe('BFF forwarder (authenticated pass-through of /api/*)', () => {
       res
         .writeHead(200, {
           'content-type': 'application/json',
-          'set-cookie': ['cart=guest:new.sig; Path=/; HttpOnly', 'core=1; Path=/'],
+          'set-cookie': [
+            'cart=guest:new.sig; Path=/; HttpOnly',
+            'core=1; Path=/',
+          ],
         })
         .end('{}');
     });
@@ -247,9 +255,7 @@ describe('BFF forwarder (authenticated pass-through of /api/*)', () => {
     const res = await post('cart/items', { blob: 'x'.repeat(20_000) }).expect(
       413,
     );
-    expect(problemDetailsSchema.parse(res.body).code).toBe(
-      'payload_too_large',
-    );
+    expect(problemDetailsSchema.parse(res.body).code).toBe('payload_too_large');
     expect(stub.calls).toHaveLength(0);
   });
 
@@ -267,7 +273,10 @@ describe('BFF forwarder (authenticated pass-through of /api/*)', () => {
   });
 
   it('bff-forward: with the session store down a cookie request is 503 session_unavailable with Retry-After', async () => {
-    const down = await createBffApp({ upstreamUrl: stub.url, clock: ctx.clock });
+    const down = await createBffApp({
+      upstreamUrl: stub.url,
+      clock: ctx.clock,
+    });
     try {
       const who = await signIn(down, stub);
       stub.onUnknown((_c, _r, res) => json(res, 200, {}));

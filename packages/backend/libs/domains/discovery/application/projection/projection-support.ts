@@ -44,9 +44,7 @@ export async function guarded<T>(work: () => Promise<T>): Promise<T> {
   }
 }
 
-export const tierOf = (
-  plan: ShopStateRecord['plan'],
-): BoostTier | null => plan;
+export const tierOf = (plan: ShopStateRecord['plan']): BoostTier | null => plan;
 
 /** The stamp a shop-state record puts on documents: hidden unless ACTIVE and not leaving. */
 export function stampOf(record: ShopStateRecord): ShopStampWrite {
@@ -59,11 +57,7 @@ export function stampOf(record: ShopStateRecord): ShopStampWrite {
   };
 }
 
-export function recordLag(
-  source: string,
-  occurredAt: string,
-  now: Date,
-): void {
+export function recordLag(source: string, occurredAt: string, now: Date): void {
   const seconds = (now.getTime() - Date.parse(occurredAt)) / 1000;
   if (Number.isFinite(seconds))
     searchProjectionLag.record(Math.max(0, seconds), { source });

@@ -53,7 +53,9 @@ describe('W02 B-7: pickup contracts', () => {
     expect(ok(pickupPointsNearResponseSchema, page([good]))).toBe(true);
     const { openingHours: _o, ...noHours } = good;
     expect(ok(pickupPointsNearResponseSchema, page([noHours]))).toBe(false);
-    expect(ok(pickupPointsNearResponseSchema, page([{ ...good, lat: 91 }]))).toBe(false);
+    expect(
+      ok(pickupPointsNearResponseSchema, page([{ ...good, lat: 91 }])),
+    ).toBe(false);
     expect(ok(pickupPointsNearResponseSchema, [good])).toBe(false);
     expect(
       ok(
@@ -61,7 +63,10 @@ describe('W02 B-7: pickup contracts', () => {
         page([
           {
             ...good,
-            openingHours: { timezone: 'UTC', weekly: { mon: [{ open: '9am', close: '5pm' }] } },
+            openingHours: {
+              timezone: 'UTC',
+              weekly: { mon: [{ open: '9am', close: '5pm' }] },
+            },
           },
         ]),
       ),
@@ -78,17 +83,47 @@ describe('W02 B-7: pickup contracts', () => {
     };
     const body = { items: [item], nextCursor: 'abc' };
     expect(ok(pickupNearSearchResponseSchema, body)).toBe(true);
-    expect(ok(pickupNearSearchResponseSchema, { ...body, items: [{ ...item, priceMinor: 12.5 }] })).toBe(false);
-    expect(ok(pickupNearSearchResponseSchema, { ...body, items: [{ ...item, nearest: undefined }] })).toBe(false);
+    expect(
+      ok(pickupNearSearchResponseSchema, {
+        ...body,
+        items: [{ ...item, priceMinor: 12.5 }],
+      }),
+    ).toBe(false);
+    expect(
+      ok(pickupNearSearchResponseSchema, {
+        ...body,
+        items: [{ ...item, nearest: undefined }],
+      }),
+    ).toBe(false);
   });
 
   it('W02 B-7: /pickup-points/clusters parses cells and rejects a missing truncated flag', () => {
     const cells = [
-      { cellId: '12/2200/1343', offers: 7, pickupPoints: 2, lat: 52.5, lng: 13.4 },
-      { cellId: '12/2201/1343', offers: 1, pickupPoints: 1, lat: 52.5, lng: 13.5, pickupPointId: point.id },
+      {
+        cellId: '12/2200/1343',
+        offers: 7,
+        pickupPoints: 2,
+        lat: 52.5,
+        lng: 13.4,
+      },
+      {
+        cellId: '12/2201/1343',
+        offers: 1,
+        pickupPoints: 1,
+        lat: 52.5,
+        lng: 13.5,
+        pickupPointId: point.id,
+      },
     ];
-    expect(ok(pickupClustersResponseSchema, { cells, truncated: false })).toBe(true);
+    expect(ok(pickupClustersResponseSchema, { cells, truncated: false })).toBe(
+      true,
+    );
     expect(ok(pickupClustersResponseSchema, { cells })).toBe(false);
-    expect(ok(pickupClustersResponseSchema, { cells: [{ ...cells[0], offers: -1 }], truncated: false })).toBe(false);
+    expect(
+      ok(pickupClustersResponseSchema, {
+        cells: [{ ...cells[0], offers: -1 }],
+        truncated: false,
+      }),
+    ).toBe(false);
   });
 });

@@ -11,6 +11,7 @@ import {
   Domain_LastLoginMethodError,
 } from '../domain/errors';
 import { FederatedIdentityUnlinked } from '../domain/events';
+import { AuditService } from './audit.service';
 
 export interface IdentityView {
   id: string;
@@ -28,6 +29,7 @@ export class FederatedIdentityService {
     @Inject(CLOCK) private readonly clock: Clock,
     private readonly transactions: TransactionRunner,
     private readonly outbox: OutboxService,
+    private readonly audit: AuditService,
   ) {}
 
   async list(userId: string): Promise<IdentityView[]> {
@@ -41,7 +43,7 @@ export class FederatedIdentityService {
 
   /** The last way to sign in cannot be removed; another user's, unknown and already deleted ids are all "not found". */
   async unlink(userId: string, identityId: string): Promise<void> {
-    await this.transactions.run(async () => {
+    const provider = await this.transactions.run(async () => {
       const mine = (await this.identities.listForUser(userId)).find(
         (i) => i.id === identityId,
       );
@@ -56,6 +58,8 @@ export class FederatedIdentityService {
           provider: removed.provider,
         }),
       );
+      return removed.provider;
     });
+    this.audit.record('auth.oidc.unlinked', { userId, provider });
   }
 }

@@ -232,6 +232,8 @@ export class OidcProviderError extends Error {
   constructor(
     readonly kind: OidcProviderFailure,
     readonly timeout = false,
+    /** The SSRF guard refused the target (scheme, port, address, redirect): the issuer is not one we may call. */
+    readonly refused = false,
   ) {
     super(`oidc provider: ${kind}`);
     this.name = 'OidcProviderError';
@@ -239,6 +241,8 @@ export class OidcProviderError extends Error {
 }
 
 export interface OidcProviderPort {
+  /** Drops whatever is cached about a provider (a changed configuration). */
+  invalidate(providerId: string): void;
   authorizationUrl(
     provider: string,
     settings: OidcProviderSettings,

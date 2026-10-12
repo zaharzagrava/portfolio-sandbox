@@ -63,9 +63,15 @@ export class SearchIndexAdminController {
   list(@Query() query: Record<string, unknown>) {
     const parsed = reindexListQuerySchema.safeParse(query);
     if (!parsed.success)
-      throw new SearchValidationError(
-        [...new Set(parsed.error.issues.flatMap((i) => (i.code === 'unrecognized_keys' ? i.keys : [String(i.path[0] ?? 'query')])))],
-      );
+      throw new SearchValidationError([
+        ...new Set(
+          parsed.error.issues.flatMap((i) =>
+            i.code === 'unrecognized_keys'
+              ? i.keys
+              : [String(i.path[0] ?? 'query')],
+          ),
+        ),
+      ]);
     return this.runs.list(parsed.data.limit ?? 20, parsed.data.cursor);
   }
 

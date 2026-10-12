@@ -44,7 +44,13 @@ describe('projection guard (S32 AS-81)', () => {
     ['tombstone, equal created', tomb(6), 6, 'created', 'stale'],
     ['tombstone, same delete again', tomb(6), 6, 'deleted', 'duplicate'],
     ['tombstone, older delete', tomb(6), 4, 'deleted', 'stale'],
-    ['tombstone, newer created (new product)', tomb(6), 7, 'created', 'applied'],
+    [
+      'tombstone, newer created (new product)',
+      tomb(6),
+      7,
+      'created',
+      'applied',
+    ],
     ['tombstone, newer update', tomb(6), 7, 'updated', 'stale'],
     ['tombstone, newer archive', tomb(6), 7, 'archived', 'stale'],
     ['tombstone, newer restore', tomb(6), 7, 'restored', 'stale'],
@@ -116,12 +122,42 @@ describe('projection guard (S32 AS-81)', () => {
       ['no row', null, incoming(1, 10), 'applied'],
       ['both versioned, newer', stored(2, 100), incoming(3, 1), 'applied'],
       ['both versioned, equal', stored(2, 100), incoming(2, 50), 'duplicate'],
-      ['both versioned, older (newer clock)', stored(3, 1), incoming(2, 999), 'stale'],
-      ['unversioned, later time', stored(null, 100), incoming(null, 200), 'applied'],
-      ['unversioned, same time', stored(null, 100), incoming(null, 100), 'duplicate'],
-      ['unversioned, earlier time', stored(null, 100), incoming(null, 50), 'stale'],
-      ['stored versioned, incoming unversioned, later', stored(5, 100), incoming(null, 200), 'applied'],
-      ['stored unversioned, incoming versioned, earlier', stored(null, 100), incoming(7, 50), 'stale'],
+      [
+        'both versioned, older (newer clock)',
+        stored(3, 1),
+        incoming(2, 999),
+        'stale',
+      ],
+      [
+        'unversioned, later time',
+        stored(null, 100),
+        incoming(null, 200),
+        'applied',
+      ],
+      [
+        'unversioned, same time',
+        stored(null, 100),
+        incoming(null, 100),
+        'duplicate',
+      ],
+      [
+        'unversioned, earlier time',
+        stored(null, 100),
+        incoming(null, 50),
+        'stale',
+      ],
+      [
+        'stored versioned, incoming unversioned, later',
+        stored(5, 100),
+        incoming(null, 200),
+        'applied',
+      ],
+      [
+        'stored unversioned, incoming versioned, earlier',
+        stored(null, 100),
+        incoming(7, 50),
+        'stale',
+      ],
     ] as const)('S32 AS-81: %s', (_n, s, i, out) => {
       expect(decideShopState(s, i)).toBe(out);
     });
@@ -135,7 +171,11 @@ describe('projection guard (S32 AS-81)', () => {
     ) => {
       const outcome = decideProduct(state, event);
       return shouldWrite(outcome)
-        ? { version: event.version, deleted: event.kind === 'deleted', kind: event.kind }
+        ? {
+            version: event.version,
+            deleted: event.kind === 'deleted',
+            kind: event.kind,
+          }
         : state;
     };
 

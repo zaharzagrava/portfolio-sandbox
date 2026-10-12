@@ -39,7 +39,9 @@ export interface BoostSignals {
 }
 
 const clamp = (value: number | null, max: number): number =>
-  value === null || !Number.isFinite(value) ? 0 : Math.min(Math.max(value, 0), max);
+  value === null || !Number.isFinite(value)
+    ? 0
+    : Math.min(Math.max(value, 0), max);
 
 /** A factor below 1 would turn a boost into a penalty; non-numbers are neutral. */
 const factor = (weight: number): number =>

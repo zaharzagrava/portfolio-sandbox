@@ -112,10 +112,7 @@ export class SearchEngineClient {
     return this.call((o) => this.client.indices.refresh({ index }, o), opts);
   }
 
-  async indexExists(
-    index: string,
-    opts?: EngineCallOptions,
-  ): Promise<boolean> {
+  async indexExists(index: string, opts?: EngineCallOptions): Promise<boolean> {
     return this.call(
       (o) => this.client.indices.exists({ index }, o) as Promise<boolean>,
       opts,
@@ -146,8 +143,7 @@ export class SearchEngineClient {
 
   async deleteIndex(index: string, opts?: EngineCallOptions): Promise<void> {
     await this.call(
-      (o) =>
-        this.client.indices.delete({ index, ignore_unavailable: true }, o),
+      (o) => this.client.indices.delete({ index, ignore_unavailable: true }, o),
       { timeoutMs: 30_000, ...opts },
     );
   }
@@ -202,9 +198,9 @@ export class SearchEngineClient {
               unknown
             >,
             aliases: Object.keys(info.aliases ?? {}),
-            createdAt: Number(
-              (info.settings as Params)?.index?.creation_date ?? 0,
-            ) || null,
+            createdAt:
+              Number((info.settings as Params)?.index?.creation_date ?? 0) ||
+              null,
           },
         ]),
       );

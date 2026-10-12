@@ -49,7 +49,6 @@ import { SessionRevocationService } from './application/session-revocation.servi
 import { RangeBreachChecker } from './infra/breach/range-breach-checker';
 import { PasswordHasher } from './infra/crypto/password-hasher';
 import { DynamoSessionRepository } from './infra/sessions/dynamo-session.repository';
-import { OidcService } from './infra/oidc/oidc.service';
 import { CsrfGuard } from './api/guards/csrf.guard';
 
 /**
@@ -96,17 +95,10 @@ import { CsrfGuard } from './api/guards/csrf.guard';
     SessionIssuer,
     SessionRevocationService,
     SessionAdminService,
-    // Legacy engine: only tenancy's shop-SSO still registers providers on it until the registry takes over (US8).
-    OidcService,
     CsrfGuard,
     AuthBodyLimitMiddleware,
   ],
-  exports: [
-    SecondFactorService,
-    SessionIssuer,
-    SessionRevocationService,
-    OidcService,
-  ],
+  exports: [SecondFactorService, SessionIssuer, SessionRevocationService],
   controllers: [
     AuthController,
     SessionsController,

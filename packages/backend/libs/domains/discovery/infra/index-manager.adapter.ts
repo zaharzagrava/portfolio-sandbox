@@ -95,7 +95,11 @@ export class SearchIndexManager implements IndexManagerPort {
   private toInfo(
     name: string,
     found:
-      | { meta: Record<string, unknown>; aliases: string[]; createdAt: number | null }
+      | {
+          meta: Record<string, unknown>;
+          aliases: string[];
+          createdAt: number | null;
+        }
       | undefined,
   ): IndexInfo | undefined {
     if (!found) return undefined;

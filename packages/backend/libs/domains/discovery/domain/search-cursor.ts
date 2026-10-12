@@ -24,7 +24,11 @@ const FINGERPRINT_LENGTH = 22; // base64url of 16 bytes
 const CHECKSUM_LENGTH = 11; // base64url of 8 bytes
 
 const digest = (text: string, bytes: number): string =>
-  createHash('sha256').update(text).digest().subarray(0, bytes).toString('base64url');
+  createHash('sha256')
+    .update(text)
+    .digest()
+    .subarray(0, bytes)
+    .toString('base64url');
 
 const stable = (value: unknown): unknown => {
   if (Array.isArray(value)) return value.map(stable);

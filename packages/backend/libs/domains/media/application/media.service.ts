@@ -147,7 +147,8 @@ export class MediaService {
       { type: QueryTypes.SELECT, replacements: { productId } },
     );
     const cdn = this.cdnBase();
-    const url = (v: { key: string } | undefined) => (v ? `${cdn}/${v.key}` : '');
+    const url = (v: { key: string } | undefined) =>
+      v ? `${cdn}/${v.key}` : '';
     return {
       items: rows
         .filter((r) => r.variants.thumb && r.variants.feed && r.variants.full)

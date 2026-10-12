@@ -25,6 +25,7 @@ import {
 } from '../domain/link-decision';
 import { OidcCallbackError } from '../domain/oidc-errors';
 import { Role } from '../domain/role';
+import { AuditService } from './audit.service';
 import { SessionRevocationService } from './session-revocation.service';
 
 /** Thrown inside the transaction to roll it back and run the whole decision again against the committed state. */
@@ -36,6 +37,8 @@ export interface LoginResolution {
   userId: string;
   /** A link whose wipe still has to be confirmed by a session revocation (a crash between commit and revoke). */
   wipeLinkId?: string;
+  /** How a link written by this login came about, for the counters (counted after the commit, not per attempt). */
+  linked?: 'login' | 'email_match';
 }
 
 /**
@@ -55,6 +58,7 @@ export class OidcLoginService {
     private readonly transactions: TransactionRunner,
     private readonly outbox: OutboxService,
     private readonly revocation: SessionRevocationService,
+    private readonly audit: AuditService,
   ) {}
 
   async complete(input: {
@@ -75,6 +79,11 @@ export class OidcLoginService {
       }
     }
     const done = resolution!;
+    if (done.linked)
+      this.audit.accountLinked(
+        done.linked,
+        done.wipeLinkId !== undefined && done.linked === 'email_match',
+      );
     // After the commit: end every session the account had before the link. Until it is confirmed, no session is
     // issued (the link row keeps `wipePending`, so the next sign-in repeats this).
     if (done.wipeLinkId) await this.confirmWipe(done.userId, done.wipeLinkId);
@@ -117,6 +126,7 @@ export class OidcLoginService {
         }),
       );
     });
+    this.audit.accountLinked('explicit');
   }
 
   private async confirmWipe(userId: string, linkId: string): Promise<void> {
@@ -193,7 +203,7 @@ export class OidcLoginService {
           }),
           this.linked(created.id, provider, 'login', false, false),
         ]);
-        return { userId: created.id };
+        return { userId: created.id, linked: 'login' };
       }
 
       case 'link_email_wipe': {
@@ -219,7 +229,7 @@ export class OidcLoginService {
             }),
           );
         await this.outbox.append(events);
-        return { userId, wipeLinkId: row.id };
+        return { userId, wipeLinkId: row.id, linked: 'email_match' };
       }
 
       case 'link_email_plain': {
@@ -228,7 +238,7 @@ export class OidcLoginService {
         await this.outbox.append(
           this.linked(userId, provider, 'email_match', false, false),
         );
-        return { userId };
+        return { userId, linked: 'email_match' };
       }
     }
   }

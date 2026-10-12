@@ -40,7 +40,9 @@ export class SearchIndexStatusService {
       this.synonyms.current(),
       this.lag.seconds(),
     ]);
-    const lastRun = (await this.runs.list(10, null)).find((r) => isTerminal(r.status)) ?? null;
+    const lastRun =
+      (await this.runs.list(10, null)).find((r) => isTerminal(r.status)) ??
+      null;
     if (live) await this.manager.refresh(live.name);
     const mappingVersion = info?.mappingVersion ?? 0;
     return {

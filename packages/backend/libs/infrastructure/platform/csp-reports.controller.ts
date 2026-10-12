@@ -25,9 +25,17 @@ export class CspReportsController {
   async report(@Req() req: Request): Promise<void> {
     try {
       const body = await readCapped(req, MAX_REPORT_BYTES);
-      if (!body || !REPORT_TYPES.test(String(req.headers['content-type'] ?? ''))) return;
-      for (const { directive, blockedHost } of cspViolationsFrom(JSON.parse(body.toString('utf8')))) {
-        this.logger.warn(`csp_violation directive=${directive} blocked=${blockedHost}`);
+      if (
+        !body ||
+        !REPORT_TYPES.test(String(req.headers['content-type'] ?? ''))
+      )
+        return;
+      for (const { directive, blockedHost } of cspViolationsFrom(
+        JSON.parse(body.toString('utf8')),
+      )) {
+        this.logger.warn(
+          `csp_violation directive=${directive} blocked=${blockedHost}`,
+        );
       }
     } catch {
       // Malformed or unreadable: dropped on purpose.

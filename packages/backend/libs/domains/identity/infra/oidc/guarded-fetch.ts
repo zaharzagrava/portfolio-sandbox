@@ -1,12 +1,26 @@
 import { safeRequest, SafeRequestError } from '@app/infrastructure/net';
-import type { SafeUrlOptions } from '@app/infrastructure/net';
+import type {
+  SafeRequestOptions,
+  SafeUrlOptions,
+} from '@app/infrastructure/net';
 import { MAX_ID_TOKEN_BYTES } from '../../domain/id-token-claims';
 import { OidcProviderError } from '../../domain/ports';
 
 export type OidcNetOptions = SafeUrlOptions & {
   /** Per provider request, default 3 s (FR-046). */
   timeoutMs?: number;
+  /** DNS resolver; specs stub it, production uses the system's. */
+  resolver?: SafeRequestOptions['resolver'];
 };
+
+/** Failures that say "this target is not allowed", as opposed to "the provider did not answer". */
+const REFUSED_BY_GUARD = new Set<SafeRequestError['kind']>([
+  'blocked_address',
+  'invalid_url',
+  'redirect_refused',
+  'redirected_host',
+  'too_many_redirects',
+]);
 
 export const OIDC_TIMEOUT_MS = 3000;
 export const OIDC_MAX_RESPONSE_BYTES = 1024 * 1024;
@@ -58,7 +72,11 @@ export function guardedFetch(net: OidcNetOptions) {
       });
     } catch (error) {
       if (error instanceof SafeRequestError)
-        throw new OidcProviderError('unavailable', error.kind === 'timeout');
+        throw new OidcProviderError(
+          'unavailable',
+          error.kind === 'timeout',
+          REFUSED_BY_GUARD.has(error.kind),
+        );
       throw new OidcProviderError('unavailable');
     }
     // A response cut at the cap is not a document we can trust.

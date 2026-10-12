@@ -99,7 +99,12 @@ export const shopPlanEvent = (
   shopVersion: number,
   occurredAt?: Date,
 ): EventEnvelope =>
-  ShopPlanChanged.create(shopId, shopVersion, { shopId, plan, shopVersion }, occurredAt);
+  ShopPlanChanged.create(
+    shopId,
+    shopVersion,
+    { shopId, plan, shopVersion },
+    occurredAt,
+  );
 
 export const offboardingStarted = (shopId: string, occurredAt?: Date) =>
   ShopOffboardingStarted.create(

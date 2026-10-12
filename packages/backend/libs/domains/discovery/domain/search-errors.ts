@@ -37,11 +37,17 @@ const problem = (
 export class SearchValidationError extends AppError {
   constructor(readonly fields: string[]) {
     super(
-      problem(400, 'validation_failed', 'Bad request', 'The request is not valid.', {
-        extensions: {
-          errors: fields.map((field) => ({ field, code: 'invalid' })),
+      problem(
+        400,
+        'validation_failed',
+        'Bad request',
+        'The request is not valid.',
+        {
+          extensions: {
+            errors: fields.map((field) => ({ field, code: 'invalid' })),
+          },
         },
-      }),
+      ),
     );
   }
 }
@@ -145,9 +151,15 @@ export class SuggestionTimeoutError extends AppError {
 export class ReindexInProgressError extends AppError {
   constructor(readonly runId: string) {
     super(
-      problem(409, 'reindex_in_progress', 'Conflict', 'A reindex run is already active.', {
-        extensions: { runId },
-      }),
+      problem(
+        409,
+        'reindex_in_progress',
+        'Conflict',
+        'A reindex run is already active.',
+        {
+          extensions: { runId },
+        },
+      ),
     );
   }
 }
@@ -162,9 +174,15 @@ export class RunNotFoundError extends AppError {
 export class InvalidRunTransitionError extends AppError {
   constructor(readonly current: string) {
     super(
-      problem(409, 'invalid_transition', 'Conflict', 'The run cannot be cancelled in its current status.', {
-        extensions: { status: current },
-      }),
+      problem(
+        409,
+        'invalid_transition',
+        'Conflict',
+        'The run cannot be cancelled in its current status.',
+        {
+          extensions: { status: current },
+        },
+      ),
     );
   }
 }
@@ -172,7 +190,12 @@ export class InvalidRunTransitionError extends AppError {
 export class NoPreviousIndexError extends AppError {
   constructor() {
     super(
-      problem(409, 'no_previous_index', 'Conflict', 'There is no retained previous index to roll back to.'),
+      problem(
+        409,
+        'no_previous_index',
+        'Conflict',
+        'There is no retained previous index to roll back to.',
+      ),
     );
   }
 }

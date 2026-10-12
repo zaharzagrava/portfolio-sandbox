@@ -1,4 +1,9 @@
-import { Inject, Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  Logger,
+  OnApplicationBootstrap,
+} from '@nestjs/common';
 import { CLOCK, type Clock } from '@app/common/core/clock';
 import { InvalidScheduleError, JobsService } from '@app/infrastructure/jobs';
 import { JobHandler } from '@app/infrastructure/jobs/job-handler.decorator';

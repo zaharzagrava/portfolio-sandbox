@@ -20,6 +20,27 @@ const events = MetricsRegistry.counter({
   labels: ['endpoint', 'result', 'reason'],
 });
 
+const mfaVerify = MetricsRegistry.counter({
+  name: 'auth_mfa_verify_total',
+  help: 'Second-factor code checks at login by result and kind of code',
+  labels: ['result', 'method'],
+});
+const challengeBurned = MetricsRegistry.counter({
+  name: 'auth_mfa_challenge_burned_total',
+  help: 'Login challenges used up by wrong codes',
+  labels: [],
+});
+const accountLink = MetricsRegistry.counter({
+  name: 'auth_account_link_total',
+  help: 'Provider identities linked to an account by how',
+  labels: ['method'],
+});
+const accountLinkWipe = MetricsRegistry.counter({
+  name: 'auth_account_link_wipe_total',
+  help: 'Password accounts taken over by a provider link (password, factor and sessions removed)',
+  labels: [],
+});
+
 /** Every audited event with the bounded labels it is counted under (FR-095). */
 const EVENTS = {
   'auth.login.failed': {
@@ -72,6 +93,63 @@ const EVENTS = {
     result: 'success',
     reason: 'purged',
   },
+  'auth.mfa.enrolled': {
+    endpoint: 'mfa',
+    result: 'success',
+    reason: 'enrolled',
+  },
+  'auth.mfa.confirmed': {
+    endpoint: 'mfa',
+    result: 'success',
+    reason: 'confirmed',
+  },
+  'auth.mfa.failed': {
+    endpoint: 'mfa',
+    result: 'failure',
+    reason: 'wrong_code',
+  },
+  'auth.mfa.verified': {
+    endpoint: 'mfa',
+    result: 'success',
+    reason: 'verified',
+  },
+  'auth.mfa.recovery_used': {
+    endpoint: 'mfa',
+    result: 'success',
+    reason: 'recovery_used',
+  },
+  'auth.mfa.regenerated': {
+    endpoint: 'mfa',
+    result: 'success',
+    reason: 'regenerated',
+  },
+  'auth.mfa.disabled': {
+    endpoint: 'mfa',
+    result: 'success',
+    reason: 'disabled',
+  },
+  'auth.mfa.challenge_burned': {
+    endpoint: 'mfa',
+    result: 'failure',
+    reason: 'challenge_burned',
+  },
+  'auth.oidc.started': {
+    endpoint: 'oidc',
+    result: 'success',
+    reason: 'started',
+  },
+  'auth.oidc.callback_failed': {
+    endpoint: 'oidc',
+    result: 'failure',
+    reason: 'callback_failed',
+  },
+  'auth.oidc.login': { endpoint: 'oidc', result: 'success', reason: 'login' },
+  'auth.oidc.linked': { endpoint: 'oidc', result: 'success', reason: 'linked' },
+  'auth.oidc.unlinked': {
+    endpoint: 'oidc',
+    result: 'success',
+    reason: 'unlinked',
+  },
 } as const;
 
 export type AuditEvent = keyof typeof EVENTS;
@@ -122,6 +200,20 @@ export class AuditService {
         : 'other';
     events.add(1, labels);
     if (event === 'auth.refresh.reuse_detected') refreshReuse.add(1);
+  }
+
+  mfaVerified(result: 'success' | 'failure', method: 'totp' | 'recovery') {
+    mfaVerify.add(1, { result, method });
+  }
+
+  mfaChallengeBurned(fields: Record<string, string | undefined>) {
+    challengeBurned.add(1);
+    this.record('auth.mfa.challenge_burned', fields);
+  }
+
+  accountLinked(method: 'login' | 'email_match' | 'explicit', wiped = false) {
+    accountLink.add(1, { method });
+    if (wiped) accountLinkWipe.add(1);
   }
 
   breachCheckSkipped(): void {

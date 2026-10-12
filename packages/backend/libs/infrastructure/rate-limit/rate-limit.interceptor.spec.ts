@@ -6,7 +6,9 @@ import { RateLimitInterceptor } from './rate-limit.interceptor';
 describe('RateLimitInterceptor in a process hosting several applications', () => {
   const build = () => {
     const reflector = {
-      getAllAndOverride: jest.fn().mockReturnValue([{ policy: 'auth.login.ip' }]),
+      getAllAndOverride: jest
+        .fn()
+        .mockReturnValue([{ policy: 'auth.login.ip' }]),
     };
     const interceptor = new RateLimitInterceptor(
       reflector as never,

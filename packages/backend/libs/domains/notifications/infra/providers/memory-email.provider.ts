@@ -38,7 +38,8 @@ export class MemoryMailbox {
 
   add(message: MailboxMessage): void {
     this.messages.unshift(message);
-    if (this.messages.length > MAX_MESSAGES) this.messages.length = MAX_MESSAGES;
+    if (this.messages.length > MAX_MESSAGES)
+      this.messages.length = MAX_MESSAGES;
   }
 
   list(to?: string): MailboxMessage[] {

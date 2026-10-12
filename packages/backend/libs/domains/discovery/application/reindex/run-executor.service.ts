@@ -141,7 +141,9 @@ export class RunExecutorService {
   /** QUEUED: the target index exists, the run is BUILDING. */
   private async begin(run: ReindexRunRecord): Promise<void> {
     const index =
-      run.kind === 'REINDEX' ? await this.manager.createFor(run.runId) : run.index;
+      run.kind === 'REINDEX'
+        ? await this.manager.createFor(run.runId)
+        : run.index;
     const moved = await this.runs.transition(
       run.runId,
       'QUEUED',
@@ -156,7 +158,10 @@ export class RunExecutorService {
   }
 
   /** BUILDING: replay (REINDEX) or nothing to do (ROLLBACK), then CATCHING_UP. */
-  private async build(run: ReindexRunRecord, ctx: ExecuteContext): Promise<void> {
+  private async build(
+    run: ReindexRunRecord,
+    ctx: ExecuteContext,
+  ): Promise<void> {
     // every instance must have the new index in its write set before the replay starts
     this.registry.invalidate();
     await sleep(2 * this.registry.ttlMs);
@@ -219,7 +224,8 @@ export class RunExecutorService {
   /** CATCHING_UP: verify, switch once, complete. */
   private async finish(run: ReindexRunRecord): Promise<void> {
     const live = await this.manager.liveIndex();
-    const alreadySwitched = run.switchingAt !== null && live?.name === run.index;
+    const alreadySwitched =
+      run.switchingAt !== null && live?.name === run.index;
     if (!alreadySwitched) {
       if (run.kind === 'REINDEX') await this.verify(run);
       await this.probe.beforeSwitch?.(run);
@@ -239,7 +245,7 @@ export class RunExecutorService {
       this.registry.invalidate();
       await this.probe.afterSwitch?.(run);
     }
-    await this.complete(await this.runs.get(run.runId) ?? run);
+    await this.complete((await this.runs.get(run.runId)) ?? run);
   }
 
   /** (a) every event read is accounted for and none was rejected; (b) the new index holds at least what the live one holds. */
@@ -321,7 +327,11 @@ export class RunExecutorService {
         { kind: run.kind },
       );
     await this.removeSuperseded(done);
-    this.logger.log({ action: 'search.reindex.completed', runId: run.runId, documents });
+    this.logger.log({
+      action: 'search.reindex.completed',
+      runId: run.runId,
+      documents,
+    });
   }
 
   /** Only the new live index and its one retained predecessor stay; older ones from earlier runs go. */
@@ -338,11 +348,24 @@ export class RunExecutorService {
   }
 
   /** FAILED: the half-built index is deleted, the failure is counted, search was never touched. */
-  private async fail(runId: string, reason: string, cause: Error): Promise<void> {
-    this.logger.error({ action: 'search.reindex.failed', runId, reason, cause: cause.message });
+  private async fail(
+    runId: string,
+    reason: string,
+    cause: Error,
+  ): Promise<void> {
+    this.logger.error({
+      action: 'search.reindex.failed',
+      runId,
+      reason,
+      cause: cause.message,
+    });
     const run = await this.runs.get(runId);
     if (!run) return;
-    if (run.status === 'QUEUED' || run.status === 'BUILDING' || run.status === 'CATCHING_UP') {
+    if (
+      run.status === 'QUEUED' ||
+      run.status === 'BUILDING' ||
+      run.status === 'CATCHING_UP'
+    ) {
       const moved = await this.runs.transition(
         runId,
         run.status,
@@ -360,9 +383,11 @@ export class RunExecutorService {
   /** A failed or cancelled REINDEX run leaves nothing behind; a rollback's target is the retained index and stays. */
   async cleanup(run: ReindexRunRecord): Promise<void> {
     if (run.kind === 'REINDEX' && run.index)
-      await this.manager.deleteUnlessLive(run.index).catch((error: Error) =>
-        this.logger.warn(`could not delete ${run.index}: ${error.message}`),
-      );
+      await this.manager
+        .deleteUnlessLive(run.index)
+        .catch((error: Error) =>
+          this.logger.warn(`could not delete ${run.index}: ${error.message}`),
+        );
     this.registry.invalidate();
   }
 }

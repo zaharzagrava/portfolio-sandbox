@@ -19,8 +19,16 @@ const errorsOf = (input: string[]) => {
 describe('synonym rule grammar (S32 AS-83, AS-54, AS-55)', () => {
   it('S32 AS-54: accepts one-way, two-way and multi-word rules', () => {
     expect(
-      rulesOf(['tv => television', 'sneakers, trainers', 'usb c, usb-c, type c']),
-    ).toEqual(['tv => television', 'sneakers, trainers', 'type c, usb c, usb-c']);
+      rulesOf([
+        'tv => television',
+        'sneakers, trainers',
+        'usb c, usb-c, type c',
+      ]),
+    ).toEqual([
+      'tv => television',
+      'sneakers, trainers',
+      'type c, usb c, usb-c',
+    ]);
   });
 
   it.each([
@@ -96,7 +104,8 @@ describe('synonym rule grammar (S32 AS-83, AS-54, AS-55)', () => {
   });
 
   it('S32 AS-55: allows exactly 5000 rules and rejects 5001 with too_many', () => {
-    const make = (n: number) => Array.from({ length: n }, (_, i) => `x${i}, y${i}`);
+    const make = (n: number) =>
+      Array.from({ length: n }, (_, i) => `x${i}, y${i}`);
     expect(rulesOf(make(MAX_SYNONYM_RULES))).toHaveLength(5000);
     expect(errorsOf(make(MAX_SYNONYM_RULES + 1))).toEqual([
       { index: MAX_SYNONYM_RULES, code: 'too_many' },

@@ -1,4 +1,9 @@
-import { Inject, Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  Logger,
+  OnApplicationBootstrap,
+} from '@nestjs/common';
 import { CLOCK, type Clock } from '@app/common/core/clock';
 import { InvalidScheduleError, JobsService } from '@app/infrastructure/jobs';
 import { JobHandler } from '@app/infrastructure/jobs/job-handler.decorator';
@@ -59,7 +64,9 @@ export class RetirePreviousIndexJob implements OnApplicationBootstrap {
     ) {
       const active = await this.runs.findActive();
       if (active?.index !== latest.previousIndex) {
-        const deleted = await this.manager.deleteUnlessLive(latest.previousIndex);
+        const deleted = await this.manager.deleteUnlessLive(
+          latest.previousIndex,
+        );
         if (deleted) retired.push(latest.previousIndex);
         await this.runs.clearPrevious(latest.runId);
         this.registry.invalidate();
@@ -73,7 +80,10 @@ export class RetirePreviousIndexJob implements OnApplicationBootstrap {
     const maxAgeMs = this.settings.previousIndexRetentionHours * 3_600_000;
     for (const info of await this.manager.productIndices()) {
       if (info.name === live?.name || known.has(info.name)) continue;
-      if (!info.createdAt || now.getTime() - info.createdAt.getTime() < maxAgeMs)
+      if (
+        !info.createdAt ||
+        now.getTime() - info.createdAt.getTime() < maxAgeMs
+      )
         continue;
       if (await this.manager.deleteUnlessLive(info.name)) swept.push(info.name);
     }

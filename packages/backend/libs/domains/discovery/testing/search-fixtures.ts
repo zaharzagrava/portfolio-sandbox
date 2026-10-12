@@ -38,7 +38,9 @@ export async function seedProducts(
     const shop = fields.shopId ?? shopId;
     ids.push(productId);
     if (plan)
-      await deliver(t.app).shops(shopPlanEvent(shop, plan, version++, t.clock.now()));
+      await deliver(t.app).shops(
+        shopPlanEvent(shop, plan, version++, t.clock.now()),
+      );
     await deliver(t.app).products(
       productEvent(
         'created',

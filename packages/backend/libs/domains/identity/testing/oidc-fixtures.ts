@@ -5,6 +5,7 @@ import {
   type FakeClaims,
 } from '../../../../test/fakes/fake-oidc-provider';
 import { OIDC_NET_OPTIONS, OIDC_PROVIDER } from '../domain/ports';
+import type { OidcNetOptions } from '../infra/oidc/guarded-fetch';
 import { OpenidClientProvider } from '../infra/oidc/openid-client.provider';
 import { createAuthApp, type AuthTestApp } from './auth-app';
 
@@ -33,7 +34,12 @@ export interface OidcTestApp {
 
 /** The real auth app with Google pointed at an in-process fake provider (hatches for a plain-http loopback host). */
 export async function createOidcApp(
-  options: { timeoutMs?: number; configured?: boolean } = {},
+  options: {
+    timeoutMs?: number;
+    configured?: boolean;
+    /** Replaces the net options (no local-host escape hatches): for SSRF specs that must not reach the fake provider. */
+    net?: OidcNetOptions;
+  } = {},
 ): Promise<OidcTestApp> {
   const provider = await FakeOidcProvider.start();
   const saved = ENV_KEYS.map((k) => [k, process.env[k]] as const);
@@ -50,7 +56,7 @@ export async function createOidcApp(
     overrides: [
       {
         provide: OIDC_NET_OPTIONS,
-        useValue: {
+        useValue: options.net ?? {
           allowHttpHosts: [provider.host],
           allowPrivateHosts: [provider.host],
           ...(options.timeoutMs && { timeoutMs: options.timeoutMs }),

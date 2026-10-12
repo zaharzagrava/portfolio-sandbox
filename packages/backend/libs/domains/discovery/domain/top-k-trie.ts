@@ -33,8 +33,11 @@ export class TopKTrie {
   insert(s: Suggestion): void {
     let node = this.root;
     if (node.top.length < this.k) node.top.push(s);
-    const chars = [...s.query.slice(0, this.maxPrefix)];
-    for (const ch of chars) {
+    // Walk the code points in place: no per-insert array (200k inserts of
+    // garbage count against the build's heap growth).
+    let depth = 0;
+    for (const ch of s.query) {
+      if (depth++ === this.maxPrefix) break;
       let next = node.children?.get(ch);
       if (!next) {
         next = { children: null, top: [] };

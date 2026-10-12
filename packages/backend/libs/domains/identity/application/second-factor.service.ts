@@ -33,6 +33,7 @@ import {
 } from '../domain/recovery-code';
 import { nextState } from '../domain/second-factor-state';
 import { generateSecret, otpauthUri, verifyTotp } from '../domain/totp';
+import { AuditService } from './audit.service';
 import { MfaAttemptBudget } from './mfa-attempt-budget';
 
 export const TOTP_ISSUER = 'Marketplace';
@@ -64,6 +65,7 @@ export class SecondFactorService {
     private readonly budget: MfaAttemptBudget,
     private readonly transactions: TransactionRunner,
     private readonly outbox: OutboxService,
+    private readonly audit: AuditService,
   ) {}
 
   /** True only for an `enabled` factor: a pending enrolment never changes how login works (S01 FR-015). */
@@ -103,6 +105,7 @@ export class SecondFactorService {
     });
     // The factor became enabled between the read and the write: the store refused to replace it.
     if (!stored) throw new Domain_MfaAlreadyEnabledError();
+    this.audit.record('auth.mfa.enrolled', { userId });
     return {
       otpauthUri: otpauthUri({
         issuer: TOTP_ISSUER,
@@ -128,7 +131,10 @@ export class SecondFactorService {
       nowMs: now.getTime(),
       lastStep: row.lastStep,
     });
-    if (!check.valid) throw new Domain_InvalidCodeError();
+    if (!check.valid) {
+      this.audit.record('auth.mfa.failed', { userId, flow: 'confirm' });
+      throw new Domain_InvalidCodeError();
+    }
 
     const recoveryCodes = generateRecoveryCodes();
     try {
@@ -151,6 +157,7 @@ export class SecondFactorService {
       throw error;
     }
     await this.budget.succeeded(userId);
+    this.audit.record('auth.mfa.confirmed', { userId });
     return recoveryCodes;
   }
 
@@ -187,47 +194,69 @@ export class SecondFactorService {
       throw new Domain_InvalidMfaChallengeError();
     }
 
+    const label = isTotp ? 'totp' : 'recovery';
     let method: 'otp' | 'rcv';
-    if (secret !== null) {
-      const check = verifyTotp({
-        secret,
-        code: input.code,
-        nowMs: now.getTime(),
-        lastStep: row.lastStep,
-      });
-      if (!check.valid) throw new Domain_InvalidMfaCodeError();
-      await this.transactions.run(async () => {
-        // A step already taken by a parallel request (or another challenge) is a replay.
-        if (!(await this.factors.acceptStep(input.userId, check.step, now)))
-          throw new Domain_InvalidMfaCodeError();
-        if (!(await this.challenges.spend(input.jti, now)))
-          throw new Domain_InvalidMfaChallengeError();
-      });
-      method = 'otp';
-    } else if (recovery !== null) {
-      await this.transactions.run(async () => {
-        if (
-          !(await this.factors.spendCode(
-            input.userId,
-            this.digest(recovery),
-            now,
-          ))
-        )
-          throw new Domain_InvalidMfaCodeError();
-        if (!(await this.challenges.spend(input.jti, now)))
-          throw new Domain_InvalidMfaChallengeError();
-        await this.outbox.append(
-          MfaRecoveryCodeUsed.create(input.userId, this.clock.nowMs(), {
-            userId: input.userId,
-            remaining: await this.factors.remainingCodes(input.userId),
-          }),
-        );
-      });
-      method = 'rcv';
-    } else {
-      throw new Domain_InvalidMfaCodeError();
+    try {
+      if (secret !== null) {
+        const check = verifyTotp({
+          secret,
+          code: input.code,
+          nowMs: now.getTime(),
+          lastStep: row.lastStep,
+        });
+        if (!check.valid) throw new Domain_InvalidMfaCodeError();
+        await this.transactions.run(async () => {
+          // A step already taken by a parallel request (or another challenge) is a replay.
+          if (!(await this.factors.acceptStep(input.userId, check.step, now)))
+            throw new Domain_InvalidMfaCodeError();
+          if (!(await this.challenges.spend(input.jti, now)))
+            throw new Domain_InvalidMfaChallengeError();
+        });
+        method = 'otp';
+      } else if (recovery !== null) {
+        await this.transactions.run(async () => {
+          if (
+            !(await this.factors.spendCode(
+              input.userId,
+              this.digest(recovery),
+              now,
+            ))
+          )
+            throw new Domain_InvalidMfaCodeError();
+          if (!(await this.challenges.spend(input.jti, now)))
+            throw new Domain_InvalidMfaChallengeError();
+          await this.outbox.append(
+            MfaRecoveryCodeUsed.create(input.userId, this.clock.nowMs(), {
+              userId: input.userId,
+              remaining: await this.factors.remainingCodes(input.userId),
+            }),
+          );
+        });
+        method = 'rcv';
+      } else {
+        throw new Domain_InvalidMfaCodeError();
+      }
+    } catch (error) {
+      if (error instanceof Domain_InvalidMfaCodeError) {
+        this.audit.mfaVerified('failure', label);
+        this.audit.record('auth.mfa.failed', {
+          userId: input.userId,
+          flow: 'verify',
+        });
+        // The attempt that used the last allowance burns the challenge.
+        if (attempt >= MAX_CHALLENGE_ATTEMPTS)
+          this.audit.mfaChallengeBurned({ userId: input.userId });
+      }
+      throw error;
     }
     await this.budget.succeeded(input.userId);
+    this.audit.mfaVerified('success', label);
+    this.audit.record('auth.mfa.verified', {
+      userId: input.userId,
+      method: label,
+    });
+    if (method === 'rcv')
+      this.audit.record('auth.mfa.recovery_used', { userId: input.userId });
     return method;
   }
 
@@ -236,6 +265,14 @@ export class SecondFactorService {
    * explicit link and, later, regenerate and disable). `invalid_code` for any mismatch.
    */
   async consumeTotpCode(userId: string, code: string): Promise<void> {
+    const step = await this.checkTotp(userId, code);
+    if (!(await this.factors.acceptStep(userId, step, this.clock.now())))
+      throw new Domain_InvalidCodeError();
+    await this.budget.succeeded(userId);
+  }
+
+  /** Takes a budget slot and checks a TOTP code against an `enabled` factor without spending the step; returns the step. */
+  private async checkTotp(userId: string, code: string): Promise<number> {
     const now = this.clock.now();
     const row = await this.factors.find(userId, now);
     if (!row || row.state !== 'enabled') throw new Domain_MfaNotPendingError();
@@ -247,12 +284,11 @@ export class SecondFactorService {
       nowMs: now.getTime(),
       lastStep: row.lastStep,
     });
-    if (
-      !check.valid ||
-      !(await this.factors.acceptStep(userId, check.step, now))
-    )
+    if (!check.valid) {
+      this.audit.record('auth.mfa.failed', { userId, flow: 'step_up' });
       throw new Domain_InvalidCodeError();
-    await this.budget.succeeded(userId);
+    }
+    return check.step;
   }
 
   /**
@@ -278,20 +314,35 @@ export class SecondFactorService {
         }),
       );
     });
+    this.audit.record('auth.mfa.regenerated', { userId });
     return recoveryCodes;
   }
 
-  /** Turns the factor off; the proof is a fresh TOTP code or an unspent recovery code (spent in the same transaction). */
+  /**
+   * Turns the factor off; the proof is a fresh TOTP code or an unspent recovery code. The proof is spent in the same
+   * transaction that removes the factor, so of two parallel disables the loser finds the factor gone (409).
+   */
   async disable(userId: string, code: string): Promise<void> {
     await this.requireEnabled(userId);
     if (/^[0-9]{6}$/.test(code)) {
-      await this.proveWithTotp(userId, code);
-      await this.transactions.run(() => this.removeFactor(userId));
+      const step = await this.checkTotp(userId, code);
+      await this.transactions.run(async () => {
+        if (!(await this.factors.acceptStep(userId, step, this.clock.now()))) {
+          await this.requireEnabled(userId);
+          throw new Domain_InvalidCodeError();
+        }
+        await this.removeFactor(userId);
+      });
+      await this.budget.succeeded(userId);
+      this.audit.record('auth.mfa.disabled', { userId, method: 'totp' });
       return;
     }
     const recovery = normaliseRecoveryCode(code);
     await this.budget.take(userId);
-    if (recovery === null) throw new Domain_InvalidCodeError();
+    if (recovery === null) {
+      this.audit.record('auth.mfa.failed', { userId, flow: 'step_up' });
+      throw new Domain_InvalidCodeError();
+    }
     await this.transactions.run(async () => {
       if (
         !(await this.factors.spendCode(
@@ -299,11 +350,22 @@ export class SecondFactorService {
           this.digest(recovery),
           this.clock.now(),
         ))
-      )
+      ) {
+        await this.requireEnabled(userId);
+        this.audit.record('auth.mfa.failed', { userId, flow: 'step_up' });
         throw new Domain_InvalidCodeError();
+      }
+      await this.outbox.append(
+        MfaRecoveryCodeUsed.create(userId, this.clock.nowMs(), {
+          userId,
+          remaining: await this.factors.remainingCodes(userId),
+        }),
+      );
       await this.removeFactor(userId);
     });
     await this.budget.succeeded(userId);
+    this.audit.record('auth.mfa.recovery_used', { userId });
+    this.audit.record('auth.mfa.disabled', { userId, method: 'recovery' });
   }
 
   private async removeFactor(userId: string): Promise<void> {
@@ -327,6 +389,7 @@ export class SecondFactorService {
   private async proveWithTotp(userId: string, code: string): Promise<void> {
     if (!/^[0-9]{6}$/.test(code)) {
       await this.budget.take(userId);
+      this.audit.record('auth.mfa.failed', { userId, flow: 'step_up' });
       throw new Domain_InvalidCodeError();
     }
     await this.consumeTotpCode(userId, code);

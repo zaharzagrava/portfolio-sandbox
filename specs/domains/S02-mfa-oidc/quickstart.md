@@ -54,6 +54,10 @@ pnpm --dir packages/backend migrate                    # 20261010…-identity-s0
 
 Expected: users who had MFA enabled before the migration still get a challenge at login; their `recoveryCodesRemaining` is 0 until they regenerate (documented behaviour change).
 
+## Deferred contract migration (not part of this change)
+
+Dropping `User.mfaSecretEnc`, `mfaEnabledAt`, `mfaRecoveryCodes` and adding the `FederatedIdentity.provider` check constraint is a later contract migration. Run it only after `identity.reseal-mfa-secrets` has completed in every environment (every `SecondFactor.sealVersion = 1`).
+
 ## Ops artifacts (success criteria that no automated test proves)
 
 Listed in `specs/UNVERIFIED.md` with status `not run`; none is described as verified.

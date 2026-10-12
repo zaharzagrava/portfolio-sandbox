@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { createHash, randomBytes } from 'node:crypto';
 import { ApiConfigService } from '@app/common/config';
 import {
@@ -13,6 +13,7 @@ import {
   type OidcFlowStore,
   type OidcProviderPort,
 } from '../domain/ports';
+import { AuditService } from './audit.service';
 import { OidcProviderRegistry } from './oidc-provider-registry';
 
 export const FLOW_TTL_SEC = 600;
@@ -38,12 +39,18 @@ export function redirectUriFor(
  */
 @Injectable()
 export class OidcFlowService {
+  private readonly logger = new Logger('Audit');
+
   constructor(
     private readonly registry: OidcProviderRegistry,
     @Inject(OIDC_PROVIDER) private readonly provider: OidcProviderPort,
     @Inject(OIDC_FLOW_STORE) private readonly store: OidcFlowStore,
     private readonly config: ApiConfigService,
-  ) {}
+    private readonly audit: AuditService,
+  ) {
+    // A changed provider configuration drops what the engine cached about it.
+    registry.onInvalidate((providerId) => provider.invalidate(providerId));
+  }
 
   async start(input: {
     provider: string;
@@ -72,8 +79,17 @@ export class OidcFlowService {
         },
       );
     } catch (error) {
-      if (error instanceof OidcProviderError)
+      if (error instanceof OidcProviderError) {
+        // A tenant-controlled issuer the SSRF guard refuses is, for everyone else, a provider that does not exist.
+        if (error.refused && resolved.dynamic) {
+          this.logger.warn({
+            event: 'auth.oidc.issuer_refused',
+            provider: resolved.id,
+          });
+          throw new Domain_OidcProviderNotFoundError();
+        }
         throw new Domain_OidcProviderUnavailableError();
+      }
       throw error;
     }
 
@@ -90,6 +106,11 @@ export class OidcFlowService {
       },
       FLOW_TTL_SEC,
     );
+    this.audit.record('auth.oidc.started', {
+      provider: resolved.id,
+      purpose: input.purpose,
+      ...(input.userId && { userId: input.userId }),
+    });
     return { authorizationUrl, flowCookie };
   }
 }

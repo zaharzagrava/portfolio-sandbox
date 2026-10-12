@@ -1,7 +1,10 @@
 import { v4 } from 'uuid';
 import { ApiConfigService } from '@app/common/config';
 import { ElasticsearchService } from '@app/infrastructure/elasticsearch/elasticsearch.service';
-import { createCatalogApp, type CatalogTestApp } from '@app/test/utils/catalog-app';
+import {
+  createCatalogApp,
+  type CatalogTestApp,
+} from '@app/test/utils/catalog-app';
 import { createProduct } from '@app/test/utils/catalog-fixtures';
 import { createShop } from '@app/test/utils/tenancy-fixtures';
 import { ShopProductSearchService } from './application/shop-product-search.service';
@@ -27,11 +30,17 @@ describe('Search features awaiting their stories (transitional)', () => {
     const names = Object.keys(
       await es
         .getClient()
-        .indices.get({ index: 'products*', expand_wildcards: 'all', ignore_unavailable: true })
+        .indices.get({
+          index: 'products*',
+          expand_wildcards: 'all',
+          ignore_unavailable: true,
+        })
         .catch(() => ({})),
     );
     if (names.length > 0)
-      await es.getClient().indices.delete({ index: names, ignore_unavailable: true });
+      await es
+        .getClient()
+        .indices.delete({ index: names, ignore_unavailable: true });
   });
 
   it('search-time synonyms: "earbuds" finds AirPods without reindexing', async () => {

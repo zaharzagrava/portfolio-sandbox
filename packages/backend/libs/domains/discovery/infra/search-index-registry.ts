@@ -10,7 +10,6 @@ import { SearchSettings } from './search-settings';
 
 export { PRODUCTS_ALIAS };
 
-
 /**
  * Which concrete indices a projector writes to (R-05): the index behind the alias, the index an active run is
  * building and the retained previous index (so a rollback loses nothing). Resolved from the engine and the run table

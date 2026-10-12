@@ -1,4 +1,9 @@
-import { Inject, Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  Logger,
+  OnApplicationBootstrap,
+} from '@nestjs/common';
 import { SearchEngineClient } from '@app/infrastructure/elasticsearch/search-engine.client';
 import {
   MAPPING_VERSION,

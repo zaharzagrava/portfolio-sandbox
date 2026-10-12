@@ -11,7 +11,8 @@ export const REINDEX_RUN_STATUSES = [
 export type ReindexRunStatus = (typeof REINDEX_RUN_STATUSES)[number];
 
 export type RunMove =
-  { ok: true; to: ReindexRunStatus } | { ok: false; code: 'invalid_transition' };
+  | { ok: true; to: ReindexRunStatus }
+  | { ok: false; code: 'invalid_transition' };
 
 /** Statuses a run in `from` may move to (AS-82). Terminal statuses have none. */
 export function nextStatuses(from: ReindexRunStatus): ReindexRunStatus[] {
