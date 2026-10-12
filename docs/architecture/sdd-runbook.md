@@ -329,6 +329,32 @@ Then, in order of payoff:
 Total: roughly 10 to 14 hours of work (the scripts of the living specification, the same kind of work, took about an hour). Items 1 to 3 are about 5 to 6 hours and carry most of the value. More tooling after that has little
 value compared with one shipped product and a short write-up with real numbers.
 
+## Metrics
+
+What the loop measures, so that a change to a prompt or a limit can be judged by numbers and not by feel.
+
+- **The log:** `.sdd-metrics/steps.jsonl`, one JSON line per step, appended by `metric_step` in `scripts/sdd/lib.sh`. Fields: `run` (one id per start of
+  `implement-specs.sh`), `capability` (`S13`; `checkpoint:<label>` for a checkpoint; `-` for the run itself), `step`, `start`, `end`, `seconds`, `result`,
+  `attempt`, `reason`, and on some lines `code_changed` (a repair step: did it change any file under `packages/` or `scripts/`) and `flake` (a gate or checkpoint that passed after repairs that changed no code).
+- **Steps recorded:** `run-start` (with the commit and the limits in force: `MAX_GATE_REPAIRS`, `MAX_REPAIRS_PER_SPEC`, `REPAIR_BUDGET_MIN`, `MAX_IMPLEMENT_PASSES`),
+  every Claude call (`plan`, `tasks`, `analyze`, `implement-N`, `converge-N`, `repair-N`, `doctor-N`, `ckrepair-<label>-N`), every `gate` and `checkpoint` attempt,
+  `built`, `blocked`, and `intervention`. Steps skipped because they were done earlier are not recorded. A metrics failure never stops the loop.
+- **Interventions:** `scripts/sdd/note-intervention.sh "found by hand: payment stays PENDING" S48` (the capability is optional). Start the text with
+  `found by hand:` for a defect that no automated check found; the report counts those separately.
+- **The report:** `python3 scripts/sdd/report.py` writes `docs/reports/<date>.md`: per capability the implement passes, repairs (and how many changed no code), gate failures, flakes,
+  interventions and elapsed time; per checkpoint the failures, repairs and flakes; the interventions; and the trend over runs, with the latest run compared with the one before
+  and any change of the limits shown ("settings changed since the previous run: MAX_GATE_REPAIRS 3 -> 5"). Read it at the start of a session.
+- **A flake** is a gate (or checkpoint) that failed, was given to the repair agent, and passed while the code was byte-identical to the code at the first failure. The loop
+  then writes the failing test names under "Flaky tests" in the spec's `gaps.md` (for a checkpoint: `specs/.checkpoints/<label>.flakes.md`), adds them to the final notification, and
+  sets `"flake":true` on the metrics line. The report also derives a flake from the order of the lines when a log has none.
+- **Is `.sdd-metrics` in `.gitignore`? No, on purpose.** The log is the only record of what a run did, and the runs that matter most happen on the cloud machine or the VPS
+  runner, which is deleted when the run ends; only what the loop commits and pushes survives. With `COMMIT=1` the log is committed with each capability, so the data comes back
+  with the branch. The costs: one short line per step (about 30 lines per capability) in the diffs, and two machines can append to the same file; `.gitattributes` sets
+  `merge=union` for `.sdd-metrics/*.jsonl`, so merging keeps the lines of both sides and never conflicts (checked on a throwaway repository). If the noise bothers you, add
+  `.sdd-metrics/` to `.gitignore` next to `.sdd-monitor/`; then the runner must copy the file back itself, which `scripts/vps/` does not do yet.
+- **Not recorded yet:** the runner's machine type, hours and peak memory, and tasks closed per pass (the loop only knows how many are open). The QA agent's hits and misses go into
+  the same log once that agent exists.
+
 ## Follow-ups for the build loop
 
 Not built yet, in the order I would do them:
@@ -336,8 +362,15 @@ Not built yet, in the order I would do them:
 1. **Repair agent for a failed checkpoint.** A failing capability gate goes to the repair agent (bounded attempts, the `stack-fix.sh` tools, the
    failure digest); a failing checkpoint sweep does not: the loop stops with "checkpoint failed" and waits for a human. Hand the sweep's failing test
    names, Playwright's `error-context.md` snapshots and the log to a repair pass, then re-run the checkpoint, with the same attempt limit as a gate.
+   **Built (overnight run, not yet run against a real failure):** `checkpoint_with_repair` in `scripts/sdd/checkpoint-repair.sh`, called by `implement-specs.sh` in place of
+   `checkpoint.sh`. On a failure it builds a prompt from `scripts/sdd/failures.py digest` (failing suites and tests with their first assertion lines, Playwright failures,
+   crashed batches, the `error-context.md` snapshots, the end of the log) and the lessons digest, runs a repair agent (`ckrepair-<label>-N`, fresh context, at most 25 minutes, inside
+   the shared `REPAIR_BUDGET_MIN`), then runs the checkpoint again, at most `MAX_CHECKPOINT_REPAIRS` times (default `MAX_GATE_REPAIRS`). The agent ends with
+   `CHECKPOINT-REPAIR: fixed`, `flake` or `needs human: <why>`; the last stops the run as before. Preview without running anything:
+   `scripts/sdd/checkpoint-repair.sh --dry-run <label> [--log FILE]`. Not covered by tests: the real `claude` call and the real `checkpoint.sh` (they need the stack).
 2. **Flake signal.** A gate that fails and then passes with a repair that changed no code is a flake, not a fix. Record the test names in the
    spec's `gaps.md` and in the final notification instead of counting it as a repair.
+   **Built (overnight run):** see "Metrics" above for the rule and where it is recorded. The gate loop calls `gate_failed` and `gate_passed`; the checkpoint loop does the same.
 3. **Find the memory growth in the backend e2e suites** (see "Known problem: the backend e2e sweep runs in batches"): `--logHeapUsage`, rank the
    suites by heap added, make the top ones close their Nest apps and Kafka/Redis clients.
 4. **Occasional browser flakes seen once in ~550 runs** and not explained: `product-page` "focus order", `search` "no horizontal scroll at 320 px".

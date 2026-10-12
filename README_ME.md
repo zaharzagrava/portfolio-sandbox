@@ -252,6 +252,37 @@ python3 scripts/lessons/test_lessons.py  # the tests of both scripts (16)
 - `scripts/sdd/implement-specs.sh` puts the digest into the plan, tasks, analyze, implement, converge, gate-repair and repair-agent prompts (`lessons_block` in `scripts/sdd/lib.sh`).
   `write-specs.sh` is not changed: spec writing does not build or repair anything.
 
+### Metrics, interventions and the report (`.sdd-metrics`, `scripts/sdd/report.py`)
+
+`implement-specs.sh` appends one JSON line per step to `.sdd-metrics/steps.jsonl` (what is recorded and why the file is committed, not ignored: runbook, "Metrics").
+
+```sh
+scripts/sdd/note-intervention.sh "found by hand: payment stays PENDING (queue missing)" S48   # tag what a person had to do; the capability is optional
+python3 scripts/sdd/report.py                  # writes docs/reports/<today>.md from .sdd-metrics/steps.jsonl
+python3 scripts/sdd/report.py --stdout         # print it instead
+python3 scripts/sdd/report.py --input other.jsonl --out-dir /tmp/reports --date 2026-10-13
+python3 scripts/sdd/test_sdd.py                # tests of report.py, failures.py, the metric helpers and the checkpoint repair loop (42)
+```
+
+- The report has, per capability: implement passes, repairs (and how many changed no code), gate failures, flakes, interventions, elapsed time; per checkpoint:
+  failures, repairs, flakes; then the trend over runs, which also shows when a limit such as `MAX_GATE_REPAIRS` changed between two runs.
+- Try it without a run: put a few lines in a scratch file (see `FIXTURE` in `scripts/sdd/test_sdd.py` for the format) and pass it with `--input`.
+
+### Repair of a failed checkpoint, and the flake signal (`scripts/sdd/checkpoint-repair.sh`, `scripts/sdd/failures.py`)
+
+A failed checkpoint no longer ends the run at once: a repair agent gets the failing tests, the page snapshots and the log, then the checkpoint runs again.
+
+```sh
+scripts/sdd/checkpoint-repair.sh --dry-run buy-ui                       # what the loop would do for that checkpoint, with the prompt; runs and writes nothing
+scripts/sdd/checkpoint-repair.sh --dry-run buy-ui --log some.log        # the same, for a log you have (e.g. a copy of specs/.checkpoints/<label>.log)
+python3 scripts/sdd/failures.py names specs/.checkpoints/buy-ui.log     # the failing tests the parser finds in a log, one per line
+python3 scripts/sdd/failures.py digest specs/.checkpoints/buy-ui.log --label buy-ui --results-dir packages/web/test-results
+```
+
+- `MAX_CHECKPOINT_REPAIRS` (default: `MAX_GATE_REPAIRS`, 5) bounds the attempts; the time comes out of the shared `REPAIR_BUDGET_MIN`.
+- A gate or checkpoint that passes after repairs that changed no code is a flake: its failing tests are written under "Flaky tests" in the spec's `gaps.md`
+  (checkpoint: `specs/.checkpoints/<label>.flakes.md`) and named in the final notification.
+
 ## Developer tooling
 
 Three things live next to the code: an Obsidian vault over the repo, a generated codebase map, and the spec-driven

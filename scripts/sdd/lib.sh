@@ -70,6 +70,45 @@ lessons_block() {
   return 0
 }
 
+# ---- Metrics (docs/architecture/sdd-runbook.md, "Metrics"): one JSON line per step in .sdd-metrics/steps.jsonl, read by scripts/sdd/report.py.
+# Never an error: a metrics problem must not stop a build.
+SDD_METRICS_DIR="${SDD_METRICS_DIR:-${ROOT:-.}/.sdd-metrics}"
+SDD_RUN_ID="${SDD_RUN_ID:-$(date -u +%Y%m%dT%H%M%SZ)}"   # one id per process start: a resumed run is a new run
+
+# json_str <text>: a JSON string literal (quotes, backslashes and control characters made safe, cut at 300 characters).
+json_str() {
+  local s="${1:0:300}"
+  s="$(printf '%s' "$s" | tr '\000-\037' ' ')"; s=${s//\\/\\\\}; s=${s//\"/\\\"}
+  printf '"%s"' "$s"
+}
+
+# metric_step <capability|-> <step> <start epoch> <end epoch> <result> <attempt> [reason] [extra JSON fields, e.g. '"flake":true']
+metric_step() {
+  local cap="$1" step="$2" s="$3" e="$4" result="$5" attempt="$6" reason="${7:-}" extra="${8:-}"
+  mkdir -p "$SDD_METRICS_DIR" 2>/dev/null || return 0
+  printf '{"run":%s,"capability":%s,"step":%s,"start":"%s","end":"%s","seconds":%s,"result":%s,"attempt":%s,"reason":%s%s}\n' \
+    "$(json_str "$SDD_RUN_ID")" "$(json_str "$cap")" "$(json_str "$step")" \
+    "$(date -u -d "@$s" +%FT%TZ 2>/dev/null || echo "$s")" "$(date -u -d "@$e" +%FT%TZ 2>/dev/null || echo "$e")" "$(( e - s ))" \
+    "$(json_str "$result")" "${attempt:-0}" "$(json_str "$reason")" "${extra:+,$extra}" >> "$SDD_METRICS_DIR/steps.jsonl" 2>/dev/null || true
+  return 0
+}
+
+# step_outcome <rc> <log>: "<result> <reason>" for a finished claude step, from its exit code and the end of its log.
+step_outcome() {
+  case "$1" in
+    0)   echo "ok ok" ;;
+    124) echo "timeout pass-timeout" ;;
+    125) echo "stopped deadline" ;;
+    *)   if hit_auth_failure "$2" 2>/dev/null; then echo "fail auth"; elif hit_usage_limit "$2" 2>/dev/null; then echo "fail usage-limit"; else echo "fail crash-exit-$1"; fi ;;
+  esac
+}
+
+# code_fingerprint: a hash of the code (packages, scripts; tracked and untracked files, not ignored ones). Equal before and after a repair
+# means the repair changed no code (only specs, docs or nothing): a gate that then passes was a flake.
+code_fingerprint() {
+  git -C "${ROOT:-.}" ls-files -z -c -o --exclude-standard -- packages scripts | (cd "${ROOT:-.}" && xargs -0 sha1sum 2>/dev/null) | sha1sum | cut -d' ' -f1
+}
+
 # deadline_left: seconds until RUN_DEADLINE (epoch), empty when no deadline is set.
 deadline_left() { [[ -n "${RUN_DEADLINE:-}" ]] && echo $(( RUN_DEADLINE - $(date +%s) )) || true; }
 

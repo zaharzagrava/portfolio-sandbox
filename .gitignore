@@ -37,3 +37,6 @@ specs/**/.*.log
 # SDD monitor state and progress log
 .sdd-monitor/
 specs/.checkpoints/*.log
+
+# Python bytecode of the scripts (scripts/livespec/__pycache__ was committed earlier and stays as it is)
+__pycache__/
