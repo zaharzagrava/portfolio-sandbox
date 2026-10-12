@@ -110,3 +110,43 @@ An earlier estimate of 25 to 35 hours was padding and is withdrawn.
 In a Claude Code session with the browser tools, the assistant can drive Chrome on the running local app (`localhost:3000`): buy something, try odd inputs, and report
 what it sees. This is the QA agent done by hand once, and shows what the automated version would do before it is built. It acts in your real browser (your logins,
 your tabs), so it only happens when you say so.
+
+## Overnight result
+Branch `harness/overnight`, four items built in a cloud session without Docker or a browser. 77 unit tests, all passing (`python3 scripts/lessons/test_lessons.py` 16,
+`python3 scripts/sdd/test_sdd.py` 42, `python3 scripts/infra/test_doctor.py` 19). `bash -n` is clean on every `scripts/sdd/*.sh`. Nothing under `scripts/livespec`, `docs/spec`
+or any `.reviewed.json` was touched. Product code was not changed. How to run each: `README_ME.md`.
+
+What was built
+- **Lessons loop** (`scripts/lessons/`): `digest.py` (failure classes and one-line rules, 21 lines today, never more than 40) and `check.py` (a `prevented` lesson must link something
+  that exists, paths and commits; lists `open` lessons older than 14 days; counts repeats per class: wiring 2, config 1, state-leak 1, process 1; exit 1 on a broken link).
+  `docs/lessons.md` got a `Rule:` line per lesson and its index became a list. The digest is in the plan, tasks, analyze, implement, converge, gate-repair and repair-agent prompts of
+  `implement-specs.sh`. Acceptance tested with a fixture: deleting a linked prevention makes `check.py` fail.
+- **Metrics:** `metric_step` in `lib.sh`, called by `implement-specs.sh` for every Claude step, gate and checkpoint attempt, `built`, `blocked` and `run-start` (which records the limits in force,
+  so a changed `MAX_GATE_REPAIRS` shows in the trend); `note-intervention.sh`; `report.py` writes `docs/reports/<date>.md`. `.sdd-metrics` is **committed on purpose** (the runner machine is
+  deleted after a run; `.gitattributes` merges the file with `union`), reasons in the runbook, "Metrics". Not recorded: the runner's machine type, hours, peak memory, tasks closed per pass.
+- **Infrastructure doctor, static half** (`scripts/infra/doctor.py`): queues (and their dead-letter queues), topics, buckets, Postgres/DynamoDB/Cassandra tables. On this repository: queues
+  40 checked, none missing; buckets 3, none missing; tables 73, none missing; **topics 26 checked, 23 missing** (the list and a caveat are in the runbook). It exits 1 on the real repo,
+  so it is not wired into the gate or the checkpoint.
+- **Checkpoint repair and flake signal:** `checkpoint-repair.sh` (`checkpoint_with_repair`, the repair prompt, `--dry-run`), `failures.py` (parses Jest, Playwright and tsc logs; digest with the
+  `error-context.md` snapshots; flake note), hooks `gate_failed` / `gate_passed`. A pass after repairs that changed no code is recorded under "Flaky tests" in `gaps.md` (checkpoint:
+  `specs/.checkpoints/<label>.flakes.md`), named in the final notification, and flagged in the metrics.
+
+What was tested, and how far
+- Unit and fixture tests as above. The checkpoint repair loop and the gate flake hooks are tested in a throwaway git repository with a fake checkpoint and a fake repair step
+  (fixed, flake, attempts bounded, "needs human", budget used up).
+- One end-to-end smoke run of the real `implement-specs.sh` in a throwaway clone, with a fake `claude` and a flow script that fails once: the checkpoint failed, the repair step ran,
+  the second run passed with the code unchanged, the flake note, the metrics lines and the final notification were all produced. Not committed as a test (it takes about 10 seconds and needs a clone).
+- The doctor was also run against a copy of the real repository with `payments-charge` removed from `elasticmq.conf`: it named the queue and its dead-letter queue.
+
+What was not done or not verified
+- No real `claude` call, no real `checkpoint.sh` sweep and no real capability gate were run through the loop. The gate wiring (`gate_failed`, `gate_passed`, the `built` line) is covered by
+  unit tests and a syntax check, not by a run. The first real run is the real test.
+- The doctor's topic result is not checked against a running broker. If the dev stack works in practice, something creates the topics that the script cannot see.
+- Not built: the dynamic half of the doctor and the loud `/health/ready`; ClickHouse and Terraform in the doctor; the QA agent; the scripted buy flow; the mutation benchmark. L-002 and L-011 stay `open`
+  (the static check exists but nothing runs it). The VPS runner does not yet copy `.sdd-metrics` back if you decide to ignore it. `write-specs.sh` does not get the lessons digest.
+- Code fingerprint for the flake rule covers `packages/` and `scripts/`; a checkpoint run that itself writes tracked or unignored files there would hide a flake (the safe direction).
+- Items 2 and 4 share code (`implement-specs.sh`, `lib.sh`), so they are in one commit. `__pycache__/` was added to `.gitignore`; the `.pyc` files already committed in `scripts/livespec` were left alone.
+
+Worth reading first in the morning
+- The 23 topics in the runbook, and `shop.events` (consumed by tenancy, "provisional") against `shops.events` (registered by seller-onboarding).
+- `python3 scripts/sdd/checkpoint-repair.sh --dry-run buy-ui` shows the repair prompt as the agent would get it.
