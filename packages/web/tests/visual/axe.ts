@@ -3,6 +3,16 @@ import { expect, type Page } from '@playwright/test';
 
 /** W02 (AS-75): axe findings of impact serious or critical, as readable lines; empty when the page is clean. */
 export async function seriousViolations(page: Page, selector?: string): Promise<string[]> {
+  // Contrast is computed from the colours on screen: wait for finite animations (a sheet fading in) to end, or a slow machine measures
+  // a half-transparent surface and reports a violation that is not there once the page has settled.
+  await page.evaluate(() =>
+    Promise.all(
+      document
+        .getAnimations()
+        .filter((a) => a.effect?.getComputedTiming().iterations !== Infinity)
+        .map((a) => a.finished.catch(() => undefined)),
+    ),
+  );
   const builder = new AxeBuilder({ page });
   const { violations } = await (selector ? builder.include(selector) : builder).analyze();
   return violations.filter((v) => v.impact === 'serious' || v.impact === 'critical').map((v) => `${v.id}: ${v.help} (${v.nodes.length})`);

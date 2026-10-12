@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { SEED, openFiltersIfCollapsed, productId } from './helpers';
+import { SEED, ensureCatalogueSize, openFiltersIfCollapsed, productId } from './helpers';
 
 /** Home → search → product page, against the seeded catalogue (S32 search, S33 suggestions, S35 trending fallback). */
 test.describe('Catalog & search', () => {
@@ -30,11 +30,12 @@ test.describe('Catalog & search', () => {
     await page.goto('/');
     const box = page.getByRole('combobox', { name: 'Search products' });
     await box.pressSequentially('espr');
-    const option = page.getByRole('option', { name: 'espresso machine titanium' });
+    // The suggestion is the query-log form (lowercase) once someone has searched it, and the catalogue title (as written) before that.
+    const option = page.getByRole('option', { name: /^espresso machine titanium$/i });
     await expect(option).toBeVisible();
     await option.click();
-    await expect(page).toHaveURL(/\/search\?q=espresso\+machine\+titanium$/);
-    await expect(page.getByRole('heading', { level: 1, name: 'Results for “espresso machine titanium”' })).toBeVisible();
+    await expect(page).toHaveURL(/\/search\?q=espresso\+machine\+titanium$/i);
+    await expect(page.getByRole('heading', { level: 1, name: /^Results for “espresso machine titanium”$/i })).toBeVisible();
   });
 
   test('search finds one', async ({ page }) => {
@@ -92,6 +93,7 @@ test.describe('Catalog & search', () => {
 
   test('next page keeps the filters and the browser back button returns', async ({ page }) => {
     await productId();
+    await ensureCatalogueSize(30); // a page holds 24; a fresh stack seeds 12
     await page.goto('/search?sort=newest');
     const next = page.getByRole('link', { name: 'Next page' });
     await expect(next).toBeVisible();

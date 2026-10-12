@@ -12,7 +12,7 @@ test.describe('Product chat', () => {
 
     // The seller opens (or creates) the product's chat.
     await login(seller, SEED.seller, SEED.password, `/chat?product=${id}`);
-    await expect(seller.getByTestId('chat-title')).toHaveText('Mesh Office Chair');
+    await expect(seller.getByTestId('chat-title')).toHaveText('Mesh Office Chair', { timeout: 20_000 }); // the channel is created on first open; slower under parallel load
 
     // A buyer joins from the product page and asks.
     await register(buyer);

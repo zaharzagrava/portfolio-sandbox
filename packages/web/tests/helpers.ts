@@ -210,30 +210,61 @@ export async function productWithRecommendations(request: APIRequestContext): Pr
  * together or be recommended there, so its page has none of the optional rails whatever the other tests did to the shared ranking
  * (the ranking is rebuilt from a store a test cannot clear, and events stay in its 60-minute window).
  */
-export async function createIsolatedProduct(): Promise<{ id: string; title: string }> {
-  const call = async (method: string, route: string, body?: unknown, token?: string) => {
-    const res = await fetch(`${API_URL}${route}`, {
-      method,
-      headers: { 'content-type': 'application/json', ...(token && { authorization: `Bearer ${token}` }) },
-      body: body === undefined ? undefined : JSON.stringify(body),
-    });
-    const text = await res.text();
-    return { status: res.status, data: text ? JSON.parse(text) : undefined };
-  };
-  const login = await call('POST', '/api/auth/login', { email: SEED.seller, password: SEED.password });
+async function sellerCall(method: string, route: string, body?: unknown, token?: string) {
+  const res = await fetch(`${API_URL}${route}`, {
+    method,
+    headers: { 'content-type': 'application/json', ...(token && { authorization: `Bearer ${token}` }) },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+  const text = await res.text();
+  return { status: res.status, data: text ? JSON.parse(text) : undefined };
+}
+
+/** The seeded seller's token and shop id (the same real API calls the seed script makes). */
+async function sellerSession(): Promise<{ token: string; shopId: string }> {
+  const login = await sellerCall('POST', '/api/auth/login', { email: SEED.seller, password: SEED.password });
   expect(login.status).toBe(200);
   const token: string = login.data.accessToken.token;
-  const mine = await call('GET', '/api/shops/mine', undefined, token);
-  const shopId: string = (mine.data.items ?? mine.data)[0].id;
-  const stamp = `${Date.now().toString(36)}${Math.floor(Math.random() * 1e4)}`;
-  const title = `Isolated Lantern ${stamp}`;
-  const category = `isolated-${stamp}`;
-  const created = await call(
+  const mine = await sellerCall('GET', '/api/shops/mine', undefined, token);
+  return { token, shopId: (mine.data.items ?? mine.data)[0].id };
+}
+
+async function createProduct(session: { token: string; shopId: string }, title: string, category: string) {
+  const created = await sellerCall(
     'POST',
-    `/api/shops/${shopId}/products`,
-    { title, brand: 'Isolated', category, quantity: 5, priceMinor: 1999, description: `${title}. Test product in its own category.`, tags: [category] },
-    token,
+    `/api/shops/${session.shopId}/products`,
+    { title, brand: 'Test', category, quantity: 5, priceMinor: 1999, description: `${title}. Product created by a test.`, tags: [category] },
+    session.token,
   );
   expect(created.status).toBe(201);
+}
+
+export async function createIsolatedProduct(): Promise<{ id: string; title: string }> {
+  const session = await sellerSession();
+  const stamp = `${Date.now().toString(36)}${Math.floor(Math.random() * 1e4)}`;
+  const title = `Isolated Lantern ${stamp}`;
+  await createProduct(session, title, `isolated-${stamp}`);
   return { id: await productId(title), title };
+}
+
+/**
+ * Makes sure the catalogue holds at least `min` searchable products (a fresh stack has 12 seeded ones, and a search page holds 24),
+ * by creating the missing ones through the real API in a category of their own, then waits until search reports them.
+ */
+export async function ensureCatalogueSize(min: number): Promise<void> {
+  const total = async () => {
+    const res = await fetch(`${API_URL}/api/products/search?limit=1`);
+    return res.ok ? ((await res.json()) as { total: { value: number } }).total.value : 0;
+  };
+  const missing = min - (await total());
+  if (missing > 0) {
+    const session = await sellerSession();
+    const stamp = Date.now().toString(36);
+    for (let i = 0; i < missing; i++) await createProduct(session, `Catalogue Filler ${stamp} ${i}`, `filler-${stamp}`);
+  }
+  for (let attempt = 0; attempt < 60; attempt++) {
+    if ((await total()) >= min) return;
+    await new Promise((r) => setTimeout(r, 1_000));
+  }
+  throw new Error(`the catalogue never reached ${min} searchable products`);
 }
