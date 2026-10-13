@@ -28,6 +28,12 @@ SQL
     want="$(docker exec -i "$pg" psql -U postgres -d marketplace -At -c "select distinct topic from \"Outbox\" where kind='task' and status <> 'published'" 2>/dev/null)"
     for q in $want; do grep -qx "$q" <<<"$have" || echo "CAUSE: outbox rows wait for queue '$q' and the queue server has no such queue (infra/docker/elasticmq/elasticmq.conf)" >&2; done
   fi
+  # a consumer that fails the message names its reason in the API log (a payment that stays PENDING with nothing parked is usually this)
+  local alog="${API_LOG:-$(ls -t /tmp/tmp.*/api.log /tmp/api*.log 2>/dev/null | head -1)}"
+  if [[ -n "$alog" && -f "$alog" ]]; then
+    local fl; fl="$(sed 's/\x1b\[[0-9;]*m//g' "$alog" | grep -E "\[[a-z-]+\] message [0-9a-f-]+ failed" | tail -3 | cut -c1-240)"
+    [[ -n "$fl" ]] && { echo "CAUSE (API log $alog): a queue consumer fails its message:" >&2; echo "$fl" >&2; }
+  fi
   [[ -n "$mq" ]] && { echo "payment queues known to the queue server:" >&2; curl -s 'localhost:9324/?Action=ListQueues' | grep -o '<QueueUrl>[^<]*' | sed 's/<QueueUrl>.*\///' | grep -i "payments\|refund" | sed 's/^/  /' >&2; }
 }
 

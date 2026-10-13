@@ -192,6 +192,11 @@ gate_extras() { # $1 = capability id, $2 = domain column, $3 = spec dir
     local now base; now="$(ownership_count "$domain")"; base="$(cat "$dir/.ownership.baseline")"
     if (( now > base )); then echo "check:table-ownership: $now findings in $(code_path "$domain") (baseline $base)"; return 1; fi
   fi
+  # Boot ratchet: the gates test with small modules of their own, so a wiring mistake (a provider a module does not import) passes them and then stops the whole API at
+  # startup (the first cloud run of 2026-10-13 died on it). Where an API runs under watch mode (the runner sets API_LOG; or BOOT_CHECK=1) it must be ready after the change.
+  if [[ -n "${API_LOG:-}${BOOT_CHECK:-}" && "$kind" == backend ]]; then
+    scripts/infra/boot-check.sh --wait "${BOOT_WAIT:-240}" || return 1
+  fi
 }
 
 require_stack() { # web and journeys run against the local dev stack

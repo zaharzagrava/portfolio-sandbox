@@ -125,8 +125,15 @@ if [[ "${SDD_IMAGE:-be}" == fe && -z "${SDD_SKIP_STACK:-}" ]]; then
   export API_LOG="$LOG/api.log"   # read by the QA agent (scripts/qa/run.sh) when a checkpoint runs it
   pnpm --filter api run start:dev:monolith >"$LOG/api.log" 2>&1 &
   API_PID=$!
-  for _ in $(seq 1 120); do curl -sf http://localhost:8000/health/ready >/dev/null && break; kill -0 "$API_PID" 2>/dev/null || fail_and_wait "the API exited during start-up (see $LOG/api.log)"; sleep 5; done
-  curl -sf http://localhost:8000/health/ready >/dev/null || fail_and_wait "the API did not become ready in 10 minutes (see $LOG/api.log)"
+  api_cause() { sed 's/\x1b\[[0-9;]*m//g' "$LOG/api.log" | grep -m2 -E "UnknownDependenciesException|Nest can't resolve|error TS[0-9]+|Cannot find module" | cut -c1-260 | tr '\n' ' '; }
+  for _ in $(seq 1 120); do
+    curl -sf http://localhost:8000/health/ready >/dev/null && break
+    kill -0 "$API_PID" 2>/dev/null || fail_and_wait "the API exited during start-up: $(api_cause)(see $LOG/api.log)"
+    # watch mode keeps the process alive after a fatal wiring error: do not wait ten minutes for it
+    [[ -n "$(api_cause)" ]] && { sleep 20; curl -sf http://localhost:8000/health/ready >/dev/null && break; fail_and_wait "the API cannot start: $(api_cause)(see $LOG/api.log)"; }
+    sleep 5
+  done
+  curl -sf http://localhost:8000/health/ready >/dev/null || fail_and_wait "the API did not become ready in 10 minutes: $(api_cause)(see $LOG/api.log)"
   say "dev stack and API ready"
 fi
 say "test stack ready; memory: $(free -h | awk 'NR==2{print $3" used of "$2}')"

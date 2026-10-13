@@ -6,6 +6,7 @@ import { BalanceProjector } from './infra/balance.projector';
 @Module({
   imports: [LedgerModule],
   providers: [BalanceProjector],
-  exports: [BalanceProjector],
+  // ProjectionsModule builds the projector class itself, so it needs the stores the projector injects (BALANCE_HOT_STORE, ...): re-export the module that provides them
+  exports: [BalanceProjector, LedgerModule],
 })
 export class LedgerProjectorModule {}

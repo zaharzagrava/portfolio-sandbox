@@ -14,6 +14,12 @@ log="$ROOT/specs/.checkpoints/$label.log"
 mkdir -p "$ROOT/specs/.checkpoints"; : > "$log"
 fail=0
 
+# the monolith must boot before anything else is worth running (the unit and e2e suites build their own small modules)
+if [[ -n "${API_LOG:-}${BOOT_CHECK:-}" ]]; then
+  echo "  checkpoint $label: boot check"
+  scripts/infra/boot-check.sh --wait "${BOOT_WAIT:-240}" >>"$log" 2>&1 || { echo "  boot check FAILED: the API does not start (the Nest errors are in $log)"; fail=1; }
+fi
+
 if [[ "${CHECKPOINT_SWEEP:-1}" != 0 ]]; then
   echo "  checkpoint $label: backend e2e sweep (log: $log)"
   # One jest process for all ~70 suites ran out of memory (4 GB heap) after ~16 minutes: the late suites then ran in a process whose

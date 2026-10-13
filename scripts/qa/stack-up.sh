@@ -17,6 +17,7 @@ stale="$(docker ps -a -q --filter name=payment_system_)"; [[ -n "$stale" ]] && d
 COMPOSE_PROJECT_NAME="$P" setsid scripts/infra/stack.sh dev setup >"$QA_DIR/stack.log" 2>&1 & echo $! > "$QA_DIR/stack.pid"
 for _ in $(seq 1 180); do grep -q "dev stack is up and migrated" "$QA_DIR/stack.log" && break; kill -0 "$(cat "$QA_DIR/stack.pid")" 2>/dev/null || break; sleep 5; done
 grep -q "dev stack is up and migrated" "$QA_DIR/stack.log" || { echo "the stack did not come up: see $QA_DIR/stack.log" >&2; "$(dirname "$0")/stack-down.sh" "$QA_DIR"; exit 1; }
+[[ -n "${NO_API:-}" ]] && { echo "QA_DIR=$QA_DIR"; exit 0; }   # NO_API=1: only the stack (scripts/infra/boot-check.sh starts and judges the API)
 setsid pnpm --filter api run start:dev:monolith >"$QA_DIR/api.log" 2>&1 & echo $! > "$QA_DIR/api.pid"
 for _ in $(seq 1 120); do curl -sf localhost:8000/health/ready >/dev/null && break; sleep 5; done
 curl -sf localhost:8000/health/ready >/dev/null || { echo "the API did not become ready: see $QA_DIR/api.log" >&2; "$(dirname "$0")/stack-down.sh" "$QA_DIR"; exit 1; }

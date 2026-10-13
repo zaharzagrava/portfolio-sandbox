@@ -202,10 +202,11 @@ export class DynamoSessionRepository implements SessionRepository {
           ':pk': `USER#${userId}`,
           ':prefix': 'SESSION#',
         },
-        ScanIndexForward: false,
       }),
     );
-    return Items as SessionRecord[];
+    // Newest first. Read ascending and reverse here: a descending query (ScanIndexForward: false) on a GSI makes Scylla 6.2 Alternator fail with
+    // "uninitialized base info" (a 500 on every login in the local dev stack); the list of one user's sessions is short.
+    return (Items as SessionRecord[]).reverse();
   }
 
   async revoke(sid: string, reason: string, now: Date): Promise<void> {

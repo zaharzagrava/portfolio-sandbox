@@ -23,6 +23,7 @@ with the links that prove it: backticked file paths and commit hashes. For a `pr
 - L-012 2026-10-12 process open
 - L-013 2026-10-13 process prevented
 - L-014 2026-10-13 process open
+- L-015 2026-10-13 wiring prevented
 
 ## L-001 A message option the queue refuses, found only by hand
 - **Rule:** A queue option must be validated where the message is created, not discovered when the relay fails (FIFO-only options like `groupId` never go to a standard queue).
@@ -112,3 +113,8 @@ with the links that prove it: backticked file paths and commit hashes. For a `pr
 - **Symptom:** every build left a `questions.md` (about 2900 lines in 67 files); none was ever read. **Cause:** the output grew with the number of specs, the reader did not.
 - **Prevention missing:** `scripts/decisions/triage.py` reduces them to at most 8 ranked decisions per capability in `docs/work/decisions` (151 open for 21 capabilities); it counts only if the
   decisions get answered (`triage.py status`). Mark this lesson prevented when the open count has gone down in a real morning routine.
+
+## L-015 Every gate passed and the whole application could not start
+- **Rule:** A change is not done until the application that contains it starts. A test that builds its own small module cannot see a missing import in the real one.
+- **Symptom:** the second cloud run of 2026-10-13 stopped 10 minutes after it began: the API never became ready. **Cause:** two modules built overnight were wired wrongly: the ledger's balance projector and the notification consumers inject providers (`BALANCE_HOT_STORE`, `EventRoutingService`) that the module hosting them in `ProjectionsModule` did not import (`UnknownDependenciesException`). Each capability's gate and e2e suite passed, because they build their own test modules; only the monolith composes them.
+- **Prevention:** the two modules re-export what their classes inject; `scripts/infra/boot-check.sh` judges whether the monolith is ready and prints the Nest error that stopped it. It runs in the gate of every backend capability when an API runs under watch mode (`API_LOG` or `BOOT_CHECK=1`), at the start of every checkpoint, and the runner stops at once with the cause in its message instead of waiting ten minutes. Not covered: runs on the `be` image (test stack only, no API).
