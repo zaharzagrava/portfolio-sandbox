@@ -1,207 +1,172 @@
-import { INestApplication, Module } from '@nestjs/common';
-import {
-  getConnectionToken,
-  getModelToken,
-  SequelizeModule,
-} from '@nestjs/sequelize';
-import { QueryTypes, Sequelize } from 'sequelize';
-import { buffer } from 'node:stream/consumers';
 import sharp from 'sharp';
-import { v4 } from 'uuid';
-import { generateTestingModule } from '@app/test/utils/global-modules';
-import { SeedsModule } from '@app/test/seeds/seeds.module';
-import { SeedsService } from '@app/test/seeds/seeds.service';
-import { TableName } from '@app/test/seeds/types';
-import { ObjectStorage } from '@app/infrastructure/storage/object-storage.port';
-import { TaskQueue } from '@app/infrastructure/sqs/task-queue.port';
-import { ShopModel as Shop } from '@app/domains/tenancy';
-import { MediaModule } from './media.module';
-import { MediaService } from './application/media.service';
-import { MediaProcessor, Sql } from './infra/media-processor';
-
-@Module({ imports: [MediaModule, SequelizeModule.forFeature([Shop])] })
-class SpecModule {}
+import {
+  mediaCompleteResponseSchema,
+  mediaOwnerSchema,
+  mediaPublicSchema,
+  mediaUploadResponseSchema,
+  type MediaUploadResponse,
+} from '@marketplace-sandbox/contracts';
+import type { TestUser } from '@app/test/utils/catalog-app';
+import {
+  createMediaApp,
+  type MediaTestApp,
+  type MediaWorld,
+} from './testing/media-app';
+import { duplicatePair, phpScript, photo } from './testing/test-images';
 
 /**
- * SD-10 against real Postgres + MinIO (S3 API): upload contract → the same
- * MediaProcessor the Lambda runs (wired to the test DB and MinIO) → READY,
- * EXIF-free variants, duplicate detection, outbox event.
+ * The photo journey end to end through the real API, the real object store and the worker core: presign, browser POST,
+ * `complete`, processing, read. The scenario-level suites (`media-upload`, `media-processing`, `media-duplicates`, …)
+ * prove each rule on its own; this file keeps the three walks the first version of this capability had (L-017) and walks
+ * them through the new routes.
  */
 describe('Media pipeline (e2e)', () => {
-  let app: INestApplication;
-  let seeds: SeedsService;
-  let media: MediaService;
-  let storage: ObjectStorage;
-  let db: Sequelize;
-  let processor: MediaProcessor;
+  let t: MediaTestApp;
+  let w: MediaWorld;
 
   beforeAll(async () => {
-    const moduleRef = await generateTestingModule([SpecModule, SeedsModule], {
-      stores: ['storage', 'sqs'],
-    });
-    app = moduleRef.createNestApplication();
-    await app.init();
-    seeds = app.get(SeedsService);
-    media = app.get(MediaService);
-    storage = app.get(ObjectStorage);
-    db = app.get(getConnectionToken());
-    jest.spyOn(app.get(TaskQueue), 'enqueue').mockResolvedValue('msg');
-    // Same positional-SQL contract as pg.Pool in the Lambda, backed by Sequelize bind parameters.
-    const sql: Sql = async (text, params) =>
-      (await db.query(text, {
-        bind: params,
-        type: QueryTypes.SELECT,
-      })) as never;
-    processor = new MediaProcessor(
-      sql,
-      (fn) =>
-        db.transaction((t) =>
-          fn(
-            async (text, params) =>
-              (await db.query(text, {
-                bind: params,
-                type: QueryTypes.SELECT,
-                transaction: t,
-              })) as never,
-          ),
-        ),
-      {
-        get: async (key) => buffer(await storage.getStream(key)),
-        put: (key, body, contentType) => storage.put(key, body, contentType),
-      },
-    );
+    t = await createMediaApp();
   });
-
-  afterAll(async () => {
-    await app.close();
-  });
-
+  afterAll(() => t.close());
   beforeEach(async () => {
-    await seeds.clean();
+    await t.reset();
+    w = await t.world();
   });
 
-  const photo = (
-    color: { r: number; g: number; b: number },
-    withGps = true,
+  const presign = async (user: TestUser, shopId: string) =>
+    mediaUploadResponseSchema.parse(
+      (
+        await t
+          .as(user)
+          .post(`/api/shops/${shopId}/media/uploads`)
+          .send({ purpose: 'product' })
+          .expect(201)
+      ).body,
+    );
+  const browserPost = (
+    upload: MediaUploadResponse['upload'],
+    bytes: Buffer,
+    contentType = 'image/jpeg',
   ) => {
-    const img = sharp({
-      create: { width: 1800, height: 1200, channels: 3, background: color },
-    })
-      .composite([
-        {
-          input: Buffer.from(
-            '<svg width="1800" height="1200"><circle cx="600" cy="600" r="300" fill="white"/></svg>',
-          ),
-        },
-      ])
-      .jpeg();
-    return (
-      withGps
-        ? img.withExif({
-            IFD3: { GPSLatitudeRef: 'N', GPSLatitude: '50/1 27/1 0/1' },
-          })
-        : img
-    ).toBuffer();
+    const form = new FormData();
+    for (const [name, value] of Object.entries(upload.fields))
+      form.append(name, value);
+    form.append('Content-Type', contentType);
+    form.append(
+      'file',
+      new Blob([new Uint8Array(bytes)], { type: contentType }),
+      'x',
+    );
+    return fetch(upload.url, { method: 'POST', body: form });
+  };
+  const upload = async (user: TestUser, shopId: string, bytes: Buffer) => {
+    const created = await presign(user, shopId);
+    expect((await browserPost(created.upload, bytes)).status).toBeLessThan(300);
+    const done = await t
+      .as(user)
+      .post(`/api/media/${created.mediaId}/complete`)
+      .expect(202);
+    expect(mediaCompleteResponseSchema.parse(done.body).status).toBe(
+      'UPLOADED',
+    );
+    return { id: created.mediaId, key: created.upload.fields.key };
   };
 
-  const uploaded = async (shopId: string, userId: string, bytes: Buffer) => {
-    const { mediaId } = await media.createUpload(userId, 'product', shopId);
-    const [{ originalKey }] = await db.query<{ originalKey: string }>(
-      `SELECT "originalKey" FROM "Media" WHERE id = :mediaId`,
-      { type: QueryTypes.SELECT, replacements: { mediaId } },
-    );
-    await storage.put(originalKey, bytes, 'image/jpeg'); // what the browser does with the presigned POST
-    return { mediaId, originalKey };
-  };
-
-  it('presigned POST: server-chosen key under the shop, image/* only, 15 MB cap - the API never sees bytes', async () => {
-    const shop = await app
-      .get<typeof Shop>(getModelToken(Shop))
-      .create({ name: 'S', slug: `s-${v4().slice(0, 8)}` });
-    const [user] = await seeds.createTreelike([{ __type__: TableName.User }]);
-    const res = await media.createUpload(user.id, 'product', shop.id);
-    expect(res.maxBytes).toBe(15 * 1024 * 1024);
-    expect(res.upload.key).toMatch(
-      new RegExp(`^media/originals/shops/${shop.id}/[0-9a-f-]{36}$`),
-    );
-    // The limits live in the signed POLICY (S3 enforces them on upload), not in the client's hands.
+  it('S29 AS-01: presigned POST: server-chosen key under the shop, a closed content-type family, the 15 MiB cap - the API never sees bytes', async () => {
+    const created = await presign(w.staff, w.shop.id);
+    const row = (await t.row(created.mediaId))!;
+    expect(row.originalKey).toBe(created.upload.fields.key);
+    expect(
+      row.originalKey.startsWith(`media/originals/shops/${w.shop.id}/`),
+    ).toBe(true);
     const policy = JSON.parse(
       Buffer.from(
-        res.upload.fields.Policy ?? res.upload.fields.policy,
+        created.upload.fields.Policy ?? created.upload.fields.policy,
         'base64',
       ).toString(),
     );
+    expect(JSON.stringify(policy.conditions)).toContain('content-length-range');
+    expect(JSON.stringify(policy.conditions)).toContain('15728640');
     expect(JSON.stringify(policy.conditions)).toContain('image/');
-    expect(policy.conditions).toContainEqual([
-      'content-length-range',
-      expect.any(Number),
-      15 * 1024 * 1024,
-    ]);
-    await expect(
-      media.createUpload(user.id, 'product', null),
-    ).rejects.toMatchObject({ status: 400 });
+    expect(created.maxBytes).toBe(15 * 1024 * 1024);
+    expect(await t.objectExists(created.upload.fields.key)).toBe(false); // nothing has been uploaded through the API
+    const refused = await browserPost(
+      created.upload,
+      Buffer.alloc(15 * 1024 * 1024 + 1, 7),
+    );
+    expect(refused.status).toBeGreaterThanOrEqual(400);
+    expect(await t.objectExists(created.upload.fields.key)).toBe(false);
+    expect(
+      (
+        await browserPost(
+          created.upload,
+          await photo({ width: 64, height: 64 }),
+        )
+      ).status,
+    ).toBeLessThan(300);
+    expect(await t.objectExists(created.upload.fields.key)).toBe(true);
   });
 
-  it('processing: READY with stripped-metadata WebP variants, outbox event, idempotent re-run; garbage is REJECTED', async () => {
-    const shop = await app
-      .get<typeof Shop>(getModelToken(Shop))
-      .create({ name: 'S', slug: `s-${v4().slice(0, 8)}` });
-    const [user] = await seeds.createTreelike([{ __type__: TableName.User }]);
-    const { mediaId, originalKey } = await uploaded(
-      shop.id,
-      user.id,
-      await photo({ r: 220, g: 40, b: 40 }),
+  it('S29 AS-12: processing: READY with stripped-metadata WebP variants, an outbox event and an idempotent re-run; garbage is REJECTED', async () => {
+    const good = await upload(
+      w.staff,
+      w.shop.id,
+      await photo({
+        width: 2400,
+        height: 1600,
+        withMetadata: true,
+        seed: Math.floor(Math.random() * 1e9) + 1,
+      }),
     );
+    const processor = t.processor();
+    expect(await processor.process(good.key)).toBe('READY');
+    const row = (await t.row(good.id))!;
+    const variants = row.variants as Record<
+      string,
+      { key: string; width: number }
+    >;
+    expect(Object.keys(variants).sort()).toEqual(['feed', 'full', 'thumb']);
+    for (const v of Object.values(variants)) {
+      const meta = await sharp(await t.objectBytes(v.key)).metadata();
+      expect(meta.format).toBe('webp');
+      expect(meta.exif).toBeUndefined();
+    }
+    expect(variants.full.width).toBe(1600);
+    expect(await t.outbox('media.ready')).toHaveLength(1);
+    expect(await processor.process(good.key)).toBe('SKIPPED'); // a duplicate delivery changes nothing
+    expect(await t.outbox('media.ready')).toHaveLength(1);
+    const view = mediaPublicSchema.parse(
+      (await t.http().get(`/api/media/${good.id}`).expect(200)).body,
+    );
+    expect(view.urls.full).toContain(variants.full.key);
 
-    expect(await processor.process(originalKey)).toBe('READY');
-    expect(await processor.process(originalKey)).toBe('SKIPPED'); // duplicate S3 event
-    const view = await media.get(mediaId);
-    expect(view.status).toBe('READY');
-    const [full] = await db.query<{
-      variants: Record<string, { key: string; width: number }>;
-    }>(`SELECT variants FROM "Media" WHERE id = :mediaId`, {
-      type: QueryTypes.SELECT,
-      replacements: { mediaId },
+    const bad = await upload(w.staff, w.shop.id, phpScript());
+    expect(await processor.process(bad.key)).toBe('REJECTED');
+    const rejected = mediaOwnerSchema.parse(
+      (await t.as(w.staff).get(`/api/media/${bad.id}`).expect(200)).body,
+    );
+    expect(rejected).toMatchObject({
+      status: 'REJECTED',
+      rejectCode: 'not_an_image',
+      urls: null,
     });
-    expect(full.variants.full.width).toBe(1600);
-    const derived = await buffer(
-      await storage.getStream(full.variants.feed.key),
-    );
-    expect((await sharp(derived).metadata()).exif).toBeUndefined();
-    const [{ n }] = await db.query<{ n: string }>(
-      `SELECT count(*) AS n FROM "Outbox" WHERE "eventName" = 'media.ready' AND "aggregateId" = :mediaId`,
-      { type: QueryTypes.SELECT, replacements: { mediaId } },
-    );
-    expect(Number(n)).toBe(1);
-
-    const bad = await uploaded(
-      shop.id,
-      user.id,
-      Buffer.from('<?php system($_GET["c"]); ?>'),
-    );
-    expect(await processor.process(bad.originalKey)).toBe('REJECTED');
-    expect((await media.get(bad.mediaId)).status).toBe('REJECTED');
+    await t.http().get(`/api/media/${bad.id}`).expect(404);
   });
 
-  it("a re-saved copy of another shop's photo is flagged as a possible duplicate", async () => {
-    const shops = await app.get<typeof Shop>(getModelToken(Shop)).bulkCreate([
-      { name: 'Original', slug: `o-${v4().slice(0, 8)}` },
-      { name: 'Copycat', slug: `c-${v4().slice(0, 8)}` },
-    ]);
-    const [user] = await seeds.createTreelike([{ __type__: TableName.User }]);
-    const original = await photo({ r: 30, g: 90, b: 200 }, false);
-    const first = await uploaded(shops[0].id, user.id, original);
-    await processor.process(first.originalKey);
-    const copy = await uploaded(
-      shops[1].id,
-      user.id,
-      await sharp(original).resize(900).jpeg({ quality: 55 }).toBuffer(),
+  it("S29 AS-25: a re-saved copy of another shop's photo is flagged as a possible duplicate, privately", async () => {
+    const pair = await duplicatePair();
+    const first = await upload(w.staff, w.shop.id, pair.original);
+    const copy = await upload(w.otherOwner, w.otherShop.id, pair.copy);
+    const processor = t.processor();
+    expect(await processor.process(first.key)).toBe('READY');
+    expect(await processor.process(copy.key)).toBe('READY');
+    expect((await t.row(copy.id))!.possibleDuplicateOf).toBe(first.id);
+    expect((await t.row(first.id))!.possibleDuplicateOf).toBeNull();
+    const body = JSON.stringify(
+      (await t.as(w.otherOwner).get(`/api/media/${copy.id}`).expect(200)).body,
     );
-    await processor.process(copy.originalKey);
-    const [row] = await db.query<{ possibleDuplicateOf: string }>(
-      `SELECT "possibleDuplicateOf" FROM "Media" WHERE id = :id`,
-      { type: QueryTypes.SELECT, replacements: { id: copy.mediaId } },
-    );
-    expect(row.possibleDuplicateOf).toBe(first.mediaId);
+    expect(body).not.toContain(first.id);
+    expect(body).not.toMatch(/duplicate/i);
+    expect(await t.outbox('media.duplicate_suspected')).toHaveLength(1);
   });
 });

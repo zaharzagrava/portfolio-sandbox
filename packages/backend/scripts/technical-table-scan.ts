@@ -14,8 +14,6 @@ const BACKEND = join(__dirname, '..');
  * reference. An entry that no longer matches is reported as stale, so the list shrinks as the owners fix them.
  */
 export const HANDED_OVER: Record<string, string> = {
-  'libs/domains/media/infra/media-processor.ts':
-    'S29 (media): append the event through OutboxService.appendWithExecutor',
   'libs/domains/catalog-sync/application/catalog-import.service.ts':
     'S07 (catalog sync): use OutboxService.append',
 };

@@ -59,3 +59,14 @@
 {"run":"20261013T163357Z","capability":"S37","step":"repair-1","start":"2026-10-13T18:41:10Z","end":"2026-10-13T18:45:55Z","seconds":285,"result":"ok","attempt":1,"reason":"ok","code_changed":true}
 {"run":"20261013T163357Z","capability":"S37","step":"gate","start":"2026-10-13T18:45:55Z","end":"2026-10-13T18:49:44Z","seconds":229,"result":"pass","attempt":2,"reason":""}
 {"run":"20261013T163357Z","capability":"S37","step":"built","start":"2026-10-13T17:50:54Z","end":"2026-10-13T18:49:44Z","seconds":3530,"result":"ok","attempt":1,"reason":"Share and affiliate short links: code generation, custom aliases, redirects, click attribution"}
+{"run":"20261013T163357Z","capability":"S29","step":"plan","start":"2026-10-13T18:50:05Z","end":"2026-10-13T18:55:05Z","seconds":300,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261013T163357Z","capability":"S29","step":"tasks","start":"2026-10-13T18:55:05Z","end":"2026-10-13T18:58:00Z","seconds":175,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261013T163357Z","capability":"S29","step":"analyze","start":"2026-10-13T18:58:00Z","end":"2026-10-13T18:58:55Z","seconds":55,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261013T163357Z","capability":"S29","step":"implement-1","start":"2026-10-13T18:58:55Z","end":"2026-10-13T19:54:08Z","seconds":3313,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261013T163357Z","capability":"S29","step":"converge-1","start":"2026-10-13T19:54:08Z","end":"2026-10-13T19:56:08Z","seconds":120,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261013T163357Z","capability":"S29","step":"implement-2","start":"2026-10-13T19:56:08Z","end":"2026-10-13T20:00:39Z","seconds":271,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261013T163357Z","capability":"S29","step":"converge-2","start":"2026-10-13T20:00:39Z","end":"2026-10-13T20:01:14Z","seconds":35,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261013T163357Z","capability":"S29","step":"gate","start":"2026-10-13T20:01:14Z","end":"2026-10-13T20:01:58Z","seconds":44,"result":"fail","attempt":1,"reason":"FAIL libs/infrastructure/outbox/outbox-isolation.spec.ts"}
+{"run":"20261013T163357Z","capability":"S29","step":"repair-1","start":"2026-10-13T20:01:58Z","end":"2026-10-13T20:02:34Z","seconds":36,"result":"ok","attempt":1,"reason":"ok","code_changed":true}
+{"run":"20261013T163357Z","capability":"S29","step":"gate","start":"2026-10-13T20:02:34Z","end":"2026-10-13T20:06:06Z","seconds":212,"result":"pass","attempt":2,"reason":""}
+{"run":"20261013T163357Z","capability":"S29","step":"built","start":"2026-10-13T18:50:04Z","end":"2026-10-13T20:06:06Z","seconds":4562,"result":"ok","attempt":1,"reason":"Product and review photos: presigned upload, processing pipeline, EXIF strip, variants, duplicate detection"}

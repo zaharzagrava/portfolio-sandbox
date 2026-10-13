@@ -52,6 +52,21 @@ resource "aws_s3_bucket_lifecycle_configuration" "media" {
     filter {}
     abort_incomplete_multipart_upload { days_after_initiation = 2 }
   }
+  # S29 AS-60: uploaded originals stay private and move to cheaper tiers by age (derived variants stay hot: they are
+  # what the media origin serves). Abandoned multipart and unfinished uploads are aborted by the rule above.
+  rule {
+    id     = "photo-originals-tiering"
+    status = "Enabled"
+    filter { prefix = "media/originals/" }
+    transition {
+      days          = 30
+      storage_class = "STANDARD_IA"
+    }
+    transition {
+      days          = 180
+      storage_class = "GLACIER"
+    }
+  }
   rule {
     id     = "imports-expire"
     status = "Enabled"
@@ -100,7 +115,24 @@ resource "aws_cloudfront_key_group" "signing" {
   items = [aws_cloudfront_public_key.signing.id]
 }
 
-data "aws_cloudfront_cache_policy" "optimized" { name = "Managed-CachingOptimized" }
+data "aws_cloudfront_cache_policy" "optimized" { name = "Managed-CachingOptimized" } # no cookies, no query string in the key
+
+# S29 AS-60 / FR-070: the media origin never lets a browser sniff a stored file into something else, and tells every
+# cache that a content-addressed variant never changes. (The stored objects carry the same Cache-Control; this makes
+# the header true for anything the origin serves, whatever was written.)
+resource "aws_cloudfront_response_headers_policy" "media" {
+  name = "marketplace-${var.env}-media"
+  security_headers_config {
+    content_type_options { override = true } # X-Content-Type-Options: nosniff
+  }
+  custom_headers_config {
+    items {
+      header   = "Cache-Control"
+      value    = "public, max-age=31536000, immutable"
+      override = false # videos/* playlists set their own
+    }
+  }
+}
 
 resource "aws_cloudfront_distribution" "media" {
   enabled         = true
@@ -120,8 +152,9 @@ resource "aws_cloudfront_distribution" "media" {
     viewer_protocol_policy = "redirect-to-https"
     allowed_methods        = ["GET", "HEAD"]
     cached_methods         = ["GET", "HEAD"]
-    cache_policy_id        = data.aws_cloudfront_cache_policy.optimized.id
-    compress               = true
+    cache_policy_id            = data.aws_cloudfront_cache_policy.optimized.id
+    response_headers_policy_id = aws_cloudfront_response_headers_policy.media.id
+    compress                   = true
   }
 
   # HLS playback (SD-26): signed cookies scoped to /videos/<id>/ (Q79).

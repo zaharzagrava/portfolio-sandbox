@@ -23,3 +23,34 @@ export const productGallerySchema = z
   .object({ items: z.array(productGalleryItemSchema) })
   .strict();
 export type ProductGallery = z.infer<typeof productGallerySchema>;
+
+/** S29 names for the same public read (`galleryPublicSchema` of the spec's Provides list). */
+export const galleryPublicSchema = productGallerySchema;
+export type GalleryPublic = ProductGallery;
+
+export const GALLERY_MAX_PHOTOS = 20;
+
+/** `PUT /api/shops/:shopId/products/:productId/gallery`: the whole list replaces the gallery (FR-040). */
+export const galleryPutRequestSchema = z
+  .object({
+    mediaIds: z
+      .array(z.uuid())
+      .max(GALLERY_MAX_PHOTOS)
+      .refine((ids) => new Set(ids).size === ids.length, {
+        message: 'mediaIds must be unique',
+      }),
+    expectedVersion: z.number().int().min(0),
+  })
+  .strict();
+export type GalleryPutRequest = z.infer<typeof galleryPutRequestSchema>;
+
+/** Member read and write answer: the ordered items and the gallery version (0 when none). */
+export const galleryMemberSchema = z
+  .object({
+    items: z.array(productGalleryItemSchema),
+    version: z.number().int().min(0),
+  })
+  .strict();
+export type GalleryMember = z.infer<typeof galleryMemberSchema>;
+
+export const galleryFailureCodeSchema = z.enum(['not_found', 'not_ready']);

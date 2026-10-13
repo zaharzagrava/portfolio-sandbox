@@ -36,7 +36,7 @@ Visitors and members find products through the Home page, the search box and the
 - `/p/[productId]` redirects with `308` to `/products/[productId]` and keeps the query. /page.tsx#ShortProductLink]
 - Search box (variants `hero`, `page`, `navbar`) calls the suggestions endpoint. [code: packages/web/components/search/search-box.tsx#SearchBox]
 - Same-origin `/api/events` receives batches of visitor events. [code: packages/web/lib/api/events.ts#sendEvents]
-- `GET /products/:productId/gallery` returns the public gallery of ready images by position. [code: packages/backend/libs/domains/media/api/media.controller.ts#MediaController]
+- `GET /products/:productId/gallery` returns the public gallery of ready images by position. [code: packages/backend/libs/domains/media/api/gallery.controller.ts#GalleryController]
 
 ## Rules
 - **W02.R-01** The first response of `/` MUST contain the [static shell](../terms/static-shell.md) (hero with one `h1`, search box, showcase blocks). The [category shortcuts](../terms/category-shortcuts.md) and the [trending rail](../terms/recommendation-rail.md) MUST [stream in](../terms/streaming-section.md) behind [same-size skeletons](../terms/skeleton.md). [proof: W02 AS-01] [code: packages/web/app/page.tsx#HomePage]
@@ -86,7 +86,7 @@ Visitors and members find products through the Home page, the search box and the
 No status of this capability changes over time.
 
 ## Owns
-- Queue `media-processing` (`MEDIA_QUEUE` in `media.service.ts`) and the gallery route.
+- Queue `media-processing` (`MEDIA_QUEUE` in `media.constants.ts`) and the gallery route.
 - Same-origin endpoint `/api/events` with the `product_view` event.
 - Cookie `__Host-ref` (30 days) for attribution.
 - Cache tags: `trending` (30 s), `search-facets` (60 s), `product:{id}` (15 s).

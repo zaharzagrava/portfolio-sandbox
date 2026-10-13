@@ -128,6 +128,11 @@ resource "aws_lambda_event_source_mapping" "sqs" {
   batch_size                         = each.value.batchSize
   maximum_batching_window_in_seconds = 1
   function_response_types            = ["ReportBatchItemFailures"]
+  # Connection arithmetic (constitution III.12): every container holds at most `pool max` (2 for media-processing)
+  # connections, so the database sees concurrency × 2 from each function. S29 media-processing: 100 × 2 = 200 at the
+  # cap, and the READY transaction is held for milliseconds with no network call inside it. The sum over all functions
+  # (webhook-delivery 200 × pool, media-processing 100 × 2, document-extractor 20 × pool) must stay under the RDS Proxy
+  # limit; change `maxConcurrency` in `apps/lambdas/src/lambdas.manifest.ts` and this sum together.
   scaling_config { maximum_concurrency = max(2, each.value.maxConcurrency) }
 }
 

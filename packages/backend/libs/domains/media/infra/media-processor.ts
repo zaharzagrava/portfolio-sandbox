@@ -1,141 +1,299 @@
-import { v7 as uuidv7 } from 'uuid';
+import { bands, CANDIDATE_CAP, findNearest } from '../domain/duplicate-match';
+import type {
+  Blobs,
+  Actor,
+  MalwareScannerPort,
+  MediaLogger,
+  MediaLogFields,
+  MediaMetrics,
+  MediaRecord,
+  ReadyInput,
+  Tx,
+} from '../domain/ports';
+import { noopLogger, noopMetrics } from '../domain/ports';
 import {
-  bands,
-  hamming,
-  ProcessedImage,
-  processImage,
   RejectedImageError,
-} from './image-pipeline';
+  RejectCode,
+  TransientProcessingError,
+} from '../domain/reject-code';
+import {
+  DERIVED_PREFIX,
+  MAX_ATTEMPTS,
+  MAX_ORIGINAL_BYTES,
+} from '../domain/upload-policy';
+import type { Variants } from '../domain/media-urls';
+import { processImage } from './image-pipeline';
 
-/** Positional-parameter SQL runner ($1, $2…): backed by `pg.Pool` in the Lambda, by Sequelize `bind` in specs. */
-export type Sql = <T = Record<string, unknown>>(
-  text: string,
-  params?: unknown[],
-) => Promise<T[]>;
-export interface Blobs {
-  get(key: string): Promise<Buffer>;
-  put(
-    key: string,
-    body: Buffer,
-    contentType: string,
-    cacheControl: string,
-  ): Promise<void>;
+export type ProcessResult = 'READY' | 'REJECTED' | 'SKIPPED' | 'BUSY';
+
+export interface ProcessorLimits {
+  readMs: number;
+  writeMs: number;
+  scanMs: number;
+  runMs: number;
+}
+/** FR-020: read 20 s, each variant write 10 s, scanner 15 s, one image's whole run 45 s. */
+export const DEFAULT_LIMITS: ProcessorLimits = {
+  readMs: 20_000,
+  writeMs: 10_000,
+  scanMs: 15_000,
+  runMs: 45_000,
+};
+
+export interface MediaProcessorDeps {
+  /** One database transaction with repositories bound to it; supplied by the caller (Nest, or `pg` in the Lambda). */
+  tx: Tx;
+  blobs: Blobs;
+  scanner: MalwareScannerPort;
+  clock: { now(): Date };
+  metrics?: MediaMetrics;
+  logger?: MediaLogger;
+  limits?: Partial<ProcessorLimits>;
 }
 
-const NEAR_DUPLICATE_BITS = 3;
+export interface ProcessContext {
+  requestId?: string;
+  traceId?: string;
+}
+
+const WORKER: Actor = { type: 'worker' };
+const IMMUTABLE = 'public, max-age=31536000, immutable';
 
 /**
- * The media Lambda's core, framework-free (it is a "small" handler: sharp +
- * pg + S3, no Nest container to boot on cold start):
- *   originalKey → claim (PENDING_UPLOAD|PROCESSING → PROCESSING) → process →
- *   write content-addressed variants → READY + near-duplicate check +
- *   MediaReady outbox row in ONE transaction. Rejected uploads become REJECTED.
- * Re-running for the same key is harmless: variant keys are content hashes
- * and the final UPDATE only fires from PROCESSING.
+ * The worker core, framework-free (it runs in a small Lambda: sharp + pg + S3 SDK, no Nest container):
+ *   originalKey → claim (lease, attempt count) → malware scan → header and limit checks → three content-addressed
+ *   variants → existence check → ONE transaction (band locks, nearest-match scan, `→ READY`, history, outbox events).
+ * Re-running for the same key is harmless: variant keys are content hashes and every transition is conditional.
+ * A permanent refusal ends `REJECTED` with a code of the closed vocabulary; anything else ends the run with a
+ * `TransientProcessingError` (the message is not acknowledged and the queue retries; only the claim counts attempts).
  */
-export class MediaProcessor {
-  constructor(
-    private readonly sql: Sql,
-    private readonly tx: <T>(fn: (sql: Sql) => Promise<T>) => Promise<T>,
-    private readonly blobs: Blobs,
-  ) {}
-
-  async process(
+export function createMediaProcessor(deps: MediaProcessorDeps): {
+  process(
     originalKey: string,
-  ): Promise<'READY' | 'REJECTED' | 'SKIPPED'> {
-    const [media] = await this.sql<{
-      id: string;
-      shopId: string | null;
-      status: string;
-      purpose: string;
-    }>(
-      `UPDATE "Media" SET status = 'PROCESSING', "updatedAt" = now() WHERE "originalKey" = $1 AND status IN ('PENDING_UPLOAD', 'PROCESSING') RETURNING id, "shopId", status, purpose`,
-      [originalKey],
+    context?: ProcessContext,
+  ): Promise<ProcessResult>;
+} {
+  const metrics = deps.metrics ?? noopMetrics;
+  const logger = deps.logger ?? noopLogger;
+  const limits: ProcessorLimits = { ...DEFAULT_LIMITS, ...deps.limits };
+
+  async function reject(
+    media: MediaRecord,
+    code: RejectCode,
+    from: MediaRecord['status'],
+  ): Promise<void> {
+    const now = deps.clock.now();
+    await deps.tx(({ media: repo }) =>
+      repo.markRejected({
+        id: media.id,
+        from: [from],
+        code,
+        actor: WORKER,
+        now,
+      }),
     );
-    if (!media) return 'SKIPPED'; // unknown key, or already READY/REJECTED (duplicate S3 event)
-
-    let processed: ProcessedImage;
-    try {
-      processed = await processImage(await this.blobs.get(originalKey));
-    } catch (error) {
-      if (!(error instanceof RejectedImageError)) throw error; // transient (S3 down…) → retry via SQS
-      await this.sql(
-        `UPDATE "Media" SET status = 'REJECTED', "rejectReason" = $2, "updatedAt" = now() WHERE id = $1 AND status = 'PROCESSING'`,
-        [media.id, error.message],
-      );
-      return 'REJECTED';
-    }
-
-    const variants: Record<
-      string,
-      { key: string; width: number; height: number }
-    > = {};
-    for (const [name, v] of Object.entries(processed.variants)) {
-      const key = `media/derived/${v.hash}.webp`;
-      await this.blobs.put(
-        key,
-        v.buffer,
-        v.contentType,
-        'public, max-age=31536000, immutable',
-      );
-      variants[name] = { key, width: v.width, height: v.height };
-    }
-
-    const [b0, b1, b2, b3] = bands(processed.dhash);
-    const candidates = await this.sql<{ id: string; dhash: string }>(
-      `SELECT id, dhash FROM "Media" WHERE status = 'READY' AND id <> $1 AND "shopId" IS DISTINCT FROM $2
-         AND ("dhashB0" = $3 OR "dhashB1" = $4 OR "dhashB2" = $5 OR "dhashB3" = $6) LIMIT 200`,
-      [media.id, media.shopId, b0, b1, b2, b3],
-    );
-    const duplicate = candidates.find(
-      (c) => hamming(c.dhash, processed.dhash) <= NEAR_DUPLICATE_BITS,
-    );
-
-    await this.tx(async (sql) => {
-      const updated = await sql(
-        `UPDATE "Media" SET status = 'READY', variants = $2::jsonb, width = $3, height = $4, dhash = $5,
-                "dhashB0" = $6, "dhashB1" = $7, "dhashB2" = $8, "dhashB3" = $9, "possibleDuplicateOf" = $10, "updatedAt" = now()
-         WHERE id = $1 AND status = 'PROCESSING' RETURNING id`,
-        [
-          media.id,
-          JSON.stringify(variants),
-          processed.width,
-          processed.height,
-          processed.dhash,
-          b0,
-          b1,
-          b2,
-          b3,
-          duplicate?.id ?? null,
-        ],
-      );
-      if (updated.length === 0) return;
-      const eventId = uuidv7(); // the envelope contract requires a UUIDv7
-      await sql(
-        `INSERT INTO "Outbox" (id, topic, "aggregateId", "aggregateType", "type", "eventName", payload, attempts, "nextAttemptAt", "createdAt")
-         VALUES ($1, 'media.events', $2, 'media', 'media.ready', 'media.ready', $3::jsonb, 0, now(), now())`,
-        [
-          eventId,
-          media.id,
-          JSON.stringify({
-            eventId,
-            type: 'media.ready',
-            version: 1,
-            aggregateType: 'media',
-            aggregateId: media.id,
-            aggregateVersion: 1,
-            occurredAt: new Date().toISOString(),
-            payload: {
-              mediaId: media.id,
-              shopId: media.shopId,
-              purpose: media.purpose,
-              variants,
-              possibleDuplicateOf: duplicate?.id ?? null,
-            },
-          }),
-        ],
-      );
-    });
-    return 'READY';
   }
+
+  return {
+    async process(originalKey, context = {}): Promise<ProcessResult> {
+      const started = deps.clock.now();
+      const deadline = started.getTime() + limits.runMs;
+      const left = (cap: number): number => {
+        const remaining = deadline - deps.clock.now().getTime();
+        if (remaining <= 0)
+          throw new TransientProcessingError('run budget exceeded');
+        return Math.min(cap, remaining);
+      };
+      const fields = (
+        media: MediaRecord | null,
+        extra: MediaLogFields = {},
+      ): MediaLogFields => ({
+        ...(media && { mediaId: media.id, attempt: media.attempts }),
+        ...context,
+        ...extra,
+      });
+      const finish = (result: string, media: MediaRecord | null): void => {
+        metrics.inc('media_processing_total', { result });
+        const durationMs = deps.clock.now().getTime() - started.getTime();
+        metrics.observe('media_processing_seconds', durationMs / 1000, {
+          result,
+        });
+        logger.info('media processed', fields(media, { result, durationMs }));
+      };
+
+      const claim = await deps.tx(({ media: repo }) =>
+        repo.claim(originalKey, deps.clock.now()),
+      );
+      if (claim.outcome === 'skipped') {
+        if (claim.reason === 'unknown') {
+          metrics.inc('media_unknown_key_total');
+          logger.warn('media key unknown', fields(null, { result: 'skipped' }));
+        }
+        metrics.inc('media_processing_total', { result: 'skipped' });
+        return 'SKIPPED';
+      }
+      if (claim.outcome === 'busy') {
+        metrics.inc('media_processing_total', { result: 'busy' });
+        return 'BUSY';
+      }
+      const media = claim.media;
+
+      // FR-019 / AS-22: the fifth claim is not processed, it rejects (so a poison file costs four attempts, not a loop).
+      if (media.attempts >= MAX_ATTEMPTS) {
+        await reject(media, 'processing_failed', 'PROCESSING');
+        metrics.inc('media_processing_attempts_exhausted_total');
+        logger.error(
+          'media attempts exhausted',
+          fields(media, { result: 'rejected' }),
+        );
+        finish('rejected', media);
+        return 'REJECTED';
+      }
+
+      try {
+        // 1. The original must be a plausible size before anything reads it.
+        const head = await deps.blobs.head(originalKey, left(limits.readMs));
+        if (!head || head.size < 1 || head.size > MAX_ORIGINAL_BYTES) {
+          if (!head)
+            throw new TransientProcessingError('original not readable yet');
+          await deps.blobs.delete(originalKey).catch(() => undefined);
+          await reject(media, 'size_invalid', 'PROCESSING');
+          finish('rejected', media);
+          return 'REJECTED';
+        }
+
+        // 2. Malware scan, before any variant exists. An engine that cannot answer is a transient failure.
+        let verdict;
+        try {
+          verdict = await deps.scanner.scan(
+            await deps.blobs.stream(originalKey, left(limits.readMs)),
+            { timeoutMs: left(limits.scanMs) },
+          );
+        } catch (error) {
+          if (error instanceof TransientProcessingError) throw error;
+          metrics.inc('media_scan_unavailable_total');
+          throw new TransientProcessingError(
+            'malware scanner unavailable',
+            error,
+          );
+        }
+        if (!verdict.clean) {
+          await deps.blobs.delete(originalKey).catch(() => undefined);
+          await reject(media, 'malware_detected', 'PROCESSING');
+          finish('rejected', media);
+          return 'REJECTED';
+        }
+
+        // 3. Decide from the bytes, then make the variants.
+        const bytes = await deps.blobs.read(originalKey, left(limits.readMs));
+        const processed = await processImage(bytes, {
+          computeHash: media.purpose === 'product',
+        });
+        const variants = {} as Variants;
+        for (const [name, v] of Object.entries(processed.variants) as [
+          keyof Variants,
+          (typeof processed.variants)['thumb'],
+        ][]) {
+          const key = `${DERIVED_PREFIX}${v.hash}.webp`;
+          await deps.blobs.write(key, v.buffer, v.contentType, {
+            cacheControl: IMMUTABLE,
+            timeoutMs: left(limits.writeMs),
+          });
+          variants[name] = { key, width: v.width, height: v.height };
+        }
+        // READY only after all three objects are confirmed to exist (AS-24).
+        for (const v of Object.values(variants)) {
+          const present = await deps.blobs.head(v.key, left(limits.readMs));
+          if (!present || present.size < 1)
+            throw new TransientProcessingError(
+              'variant object missing after write',
+            );
+        }
+
+        // 4. One transaction: no storage or queue call inside it.
+        let truncated = 0;
+        let flagged = false;
+        const ready = await deps.tx(async ({ media: repo }) => {
+          const now = deps.clock.now();
+          let duplicate: ReadyInput['duplicate'] = null;
+          let hash: ReadyInput['hash'] = null;
+          if (processed.dhash && media.shopId) {
+            const hashBands = bands(processed.dhash);
+            hash = { dhash: processed.dhash, bands: hashBands };
+            await repo.lockBands(hashBands);
+            const scan = await repo.scanDuplicates(
+              hashBands,
+              media.shopId,
+              CANDIDATE_CAP,
+            );
+            truncated = scan.truncatedBands;
+            const nearest = findNearest(processed.dhash, scan.candidates);
+            if (nearest) {
+              const match = scan.candidates.find((c) => c.id === nearest.id)!;
+              duplicate = {
+                mediaId: nearest.id,
+                shopId: match.shopId,
+                distance: nearest.distance,
+              };
+            }
+          }
+          const row = await repo.markReady(
+            {
+              id: media.id,
+              variants,
+              width: processed.width,
+              height: processed.height,
+              hash,
+              duplicate,
+              uploadedToReadyMs: media.uploadedAt
+                ? now.getTime() - media.uploadedAt.getTime()
+                : null,
+            },
+            now,
+          );
+          flagged = row !== null && duplicate !== null;
+          return row;
+        });
+        if (truncated > 0)
+          metrics.inc('media_duplicate_scan_truncated_total', {}, truncated);
+        if (!ready) {
+          // Lost the claim (deleted, or taken over after the lease): nothing was written.
+          finish('skipped', media);
+          return 'SKIPPED';
+        }
+        if (flagged) metrics.inc('media_duplicate_suspected_total');
+        if (media.uploadedAt)
+          metrics.observe(
+            'media_upload_to_ready_seconds',
+            (deps.clock.now().getTime() - media.uploadedAt.getTime()) / 1000,
+          );
+        finish('ready', media);
+        return 'READY';
+      } catch (error) {
+        if (error instanceof RejectedImageError) {
+          logger.warn(
+            'media refused',
+            fields(media, { code: error.code, detail: error.detail }),
+          );
+          await reject(media, error.code, 'PROCESSING');
+          finish('rejected', media);
+          return 'REJECTED';
+        }
+        // Transient: end the lease so the next delivery does not wait for it; the attempt stays counted.
+        await deps
+          .tx(({ media: repo }) =>
+            repo.releaseLease(media.id, deps.clock.now()),
+          )
+          .catch(() => undefined);
+        metrics.inc('media_processing_total', { result: 'failed' });
+        logger.error(
+          'media processing failed',
+          fields(media, { result: 'failed', reason: (error as Error).message }),
+        );
+        throw error instanceof TransientProcessingError
+          ? error
+          : new TransientProcessingError((error as Error).message, error);
+      }
+    },
+  };
 }

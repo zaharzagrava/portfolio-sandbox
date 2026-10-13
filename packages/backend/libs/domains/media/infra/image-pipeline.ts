@@ -1,24 +1,18 @@
 import sharp from 'sharp';
 import type { Metadata } from 'sharp';
 import { createHash } from 'node:crypto';
+import { RejectedImageError } from '../domain/reject-code';
+import { MAX_INPUT_PIXELS } from '../domain/upload-policy';
 
-export const ALLOWED_FORMATS = ['jpeg', 'png', 'webp', 'avif', 'heif'] as const;
-/** Decompression-bomb guard: a 200 KB PNG can declare 100k × 100k pixels. */
-export const MAX_INPUT_PIXELS = 50_000_000;
+export { RejectedImageError };
 export const VARIANTS = { thumb: 200, feed: 640, full: 1600 } as const;
 export type VariantName = keyof typeof VARIANTS;
-
-export class RejectedImageError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = 'RejectedImageError';
-  }
-}
 
 export interface ProcessedImage {
   width: number;
   height: number;
-  dhash: string;
+  /** 64-bit hex perceptual hash; null unless `computeHash` (product photos only, FR-030). */
+  dhash: string | null;
   variants: Record<
     VariantName,
     {
@@ -31,72 +25,93 @@ export interface ProcessedImage {
   >;
 }
 
-/**
- * Untrusted upload → safe derivatives (10/05 #10):
- *  - the declared Content-Type is ignored; the real format comes from the bytes
- *    (sharp/libvips sniffing) and must be in the allowlist;
- *  - pixel-count limit before decoding the whole image;
- *  - EXIF orientation applied, then ALL metadata dropped (GPS coordinates in
- *    a review photo can dox the buyer's home) - sharp strips by default;
- *  - 3 widths as WebP, never upscaled; each output is content-hashed so its
- *    key is immutable (CDN `max-age=1y, immutable`, no invalidations ever).
- * Deterministic: same input → same outputs → same keys (safe to re-run).
- */
-export async function processImage(input: Buffer): Promise<ProcessedImage> {
+/** The bytes decide, not the label (AS-17): JPEG, PNG, WebP, and AVIF (a HEIF container with an AV1 payload). */
+function isAllowedFormat(meta: Metadata): boolean {
+  if (meta.format === 'jpeg' || meta.format === 'png' || meta.format === 'webp')
+    return true;
+  return meta.format === 'heif' && meta.compression === 'av1';
+}
+
+/** Header-only inspection: nothing here decodes pixels, so a decompression bomb costs nothing (AS-16). */
+async function inspect(
+  input: Buffer,
+): Promise<{ width: number; height: number; meta: Metadata }> {
   let meta: Metadata;
   try {
-    meta = await sharp(input, {
-      limitInputPixels: MAX_INPUT_PIXELS,
-    }).metadata();
-  } catch (error) {
-    throw new RejectedImageError(
-      `not a decodable image: ${(error as Error).message}`,
-    );
+    meta = await sharp(input, { limitInputPixels: false }).metadata();
+  } catch {
+    throw new RejectedImageError('not_an_image');
   }
-  if (
-    !meta.format ||
-    !(ALLOWED_FORMATS as readonly string[]).includes(meta.format)
-  )
-    throw new RejectedImageError(
-      `format ${meta.format ?? 'unknown'} not allowed`,
-    );
-  if (!meta.width || !meta.height)
-    throw new RejectedImageError('missing dimensions');
+  if (!meta.format) throw new RejectedImageError('not_an_image');
+  if (!isAllowedFormat(meta))
+    throw new RejectedImageError('format_not_allowed');
+  if (!meta.width || !meta.height) throw new RejectedImageError('not_an_image');
   if (meta.width * meta.height > MAX_INPUT_PIXELS)
-    throw new RejectedImageError('image too large');
-
-  const base = () =>
-    sharp(input, { limitInputPixels: MAX_INPUT_PIXELS }).rotate(); // auto-orient from EXIF, then metadata is not re-emitted
-  const variants = {} as ProcessedImage['variants'];
-  for (const [name, width] of Object.entries(VARIANTS) as [
-    VariantName,
-    number,
-  ][]) {
-    const { data, info } = await base()
-      .resize({ width, withoutEnlargement: true })
-      .webp({ quality: 80, effort: 4 })
-      .toBuffer({ resolveWithObject: true });
-    variants[name] = {
-      buffer: data,
-      hash: createHash('sha256').update(data).digest('hex').slice(0, 32),
-      width: info.width,
-      height: info.height,
-      contentType: 'image/webp',
-    };
-  }
-  const oriented = await base().toBuffer({ resolveWithObject: true });
+    throw new RejectedImageError('image_too_large');
+  if ((meta.pages ?? 1) > 1) throw new RejectedImageError('multi_frame');
+  const swap = (meta.orientation ?? 1) >= 5;
   return {
-    width: oriented.info.width,
-    height: oriented.info.height,
-    dhash: await dHash(input),
-    variants,
+    width: swap ? meta.height : meta.width,
+    height: swap ? meta.width : meta.height,
+    meta,
   };
 }
 
 /**
- * Difference hash: 9×8 greyscale, 1 bit per "left pixel brighter than right"
- * → 64 bits, robust to resizing/re-encoding, so a competitor's re-saved copy
- * of a product photo lands within a few bits.
+ * Untrusted upload → safe derivatives (S29 FR-011–FR-016):
+ *  - the declared Content-Type is ignored; the format comes from the bytes and must be in the allowlist;
+ *  - pixel count, frame count and format are decided from the header before the pixels are decoded;
+ *  - EXIF orientation is applied, the pixels are converted to sRGB through the embedded profile, then ALL metadata is
+ *    dropped (GPS coordinates in a review photo can dox the buyer's home);
+ *  - 3 widths as WebP, never upscaled; each output is content-hashed so its key is immutable;
+ *  - deterministic: same input → same outputs → same keys (safe to re-run).
+ * Every refusal is a `RejectedImageError` with a code of the closed vocabulary; the decoder message is never kept.
+ */
+export async function processImage(
+  input: Buffer,
+  options: { computeHash?: boolean } = {},
+): Promise<ProcessedImage> {
+  const { width, height } = await inspect(input);
+  const base = () =>
+    sharp(input, { limitInputPixels: MAX_INPUT_PIXELS })
+      .rotate()
+      .pipelineColourspace('rgb16')
+      .toColourspace('srgb');
+  const variants = {} as ProcessedImage['variants'];
+  try {
+    for (const [name, target] of Object.entries(VARIANTS) as [
+      VariantName,
+      number,
+    ][]) {
+      const { data, info } = await base()
+        .resize({ width: target, withoutEnlargement: true })
+        .webp({ quality: 80, effort: 4 })
+        .toBuffer({ resolveWithObject: true });
+      variants[name] = {
+        buffer: data,
+        hash: createHash('sha256').update(data).digest('hex'),
+        width: info.width,
+        height: info.height,
+        contentType: 'image/webp',
+      };
+    }
+    return {
+      width,
+      height,
+      dhash: options.computeHash ? await dHash(input) : null,
+      variants,
+    };
+  } catch (error) {
+    if (error instanceof RejectedImageError) throw error;
+    // A header that passed but pixels that do not decode (truncated, corrupt): the input is bad, not the system.
+    throw new RejectedImageError('not_an_image', (error as Error).message);
+  }
+}
+
+/**
+ * Difference hash: 9×8 greyscale of the oriented image, 1 bit per "left pixel brighter than right" → 64 bits, robust
+ * to resizing/re-encoding, so a re-saved copy of a photo lands within a few bits. The matching rules are in
+ * `domain/duplicate-match.ts`.
  */
 export async function dHash(input: Buffer): Promise<string> {
   const pixels = await sharp(input, { limitInputPixels: MAX_INPUT_PIXELS })
@@ -113,21 +128,4 @@ export async function dHash(input: Buffer): Promise<string> {
         (pixels[row * 9 + col] > pixels[row * 9 + col + 1] ? 1n : 0n);
   }
   return bits.toString(16).padStart(16, '0');
-}
-
-export function hamming(a: string, b: string): number {
-  let x = BigInt(`0x${a}`) ^ BigInt(`0x${b}`);
-  let count = 0;
-  while (x) {
-    count += Number(x & 1n);
-    x >>= 1n;
-  }
-  return count;
-}
-
-/** 4 × 16-bit bands of the 64-bit hash (index keys for near-duplicate candidates). */
-export function bands(hash: string): [number, number, number, number] {
-  return [0, 1, 2, 3].map((i) =>
-    parseInt(hash.slice(i * 4, i * 4 + 4), 16),
-  ) as [number, number, number, number];
 }

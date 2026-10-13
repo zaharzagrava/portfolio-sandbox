@@ -147,8 +147,10 @@ export class SecretsManagerConfig {
   media_bucket?: string;
   /** Public CDN base for derived media (CloudFront in front of the bucket), e.g. https://media.marketplace.dev (SD-10). */
   media_cdn_url?: string;
-  /** clamd TCP endpoint for upload scanning, e.g. clamav:3310 (SD-27). Unset → scanning skipped (local only). */
+  /** clamd TCP endpoint for upload scanning, e.g. clamav:3310 (SD-27). Required in production; unset elsewhere → scanning skipped with a warning. */
   clamav_host?: string;
+  /** Non-production switch that turns the malware scan off explicitly (S29 AS-58); refused in production. */
+  media_scanner_disabled?: boolean;
   /** ElasticMQ locally; unset in AWS. */
   sqs_endpoint?: string;
   /** e.g. http://localhost:9324/000000000000/ - queue name is appended. */

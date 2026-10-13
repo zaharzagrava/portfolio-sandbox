@@ -1,104 +1,170 @@
 import sharp from 'sharp';
+import { bands, hamming } from '../domain/duplicate-match';
+import { RejectedImageError } from '../domain/reject-code';
 import {
-  bands,
-  dHash,
-  hamming,
-  processImage,
-  RejectedImageError,
-} from './image-pipeline';
+  animatedWebp,
+  blankPhoto,
+  displayP3Patch,
+  gifImage,
+  heavyMetadataJpeg,
+  hundredMegapixelPng,
+  P3_PATCH_RAW,
+  pdfBytes,
+  phpScript,
+  photo,
+  resaved,
+  svgWithScript,
+  textBytes,
+  tiffImage,
+  truncatedJpeg,
+  zeroBytes,
+} from '../testing/test-images';
+import { dHash, processImage } from './image-pipeline';
 
 /** The pipeline runs in the media Lambda and in the local runner; real libvips, no mocks. */
 describe('image pipeline', () => {
-  const photo = async (width = 2400, height = 1600) =>
-    sharp({
-      create: {
-        width,
-        height,
-        channels: 3,
-        background: { r: 200, g: 80, b: 40 },
-      },
-    })
-      .composite([
-        {
-          input: Buffer.from(
-            `<svg width="${width}" height="${height}"><circle cx="${width / 3}" cy="${height / 2}" r="${height / 4}" fill="white"/></svg>`,
-          ),
-        },
-      ])
-      .jpeg()
-      .withExif({
-        IFD0: { Make: 'PhoneCo' },
-        IFD3: { GPSLatitudeRef: 'N', GPSLatitude: '50/1 27/1 0/1' },
-      })
-      .toBuffer();
+  const widths = (out: Awaited<ReturnType<typeof processImage>>) =>
+    Object.fromEntries(
+      Object.entries(out.variants).map(([name, v]) => [name, v.width]),
+    );
 
-  it('produces 3 WebP variants, never upscaled, with all metadata stripped', async () => {
-    const input = await photo();
-    expect((await sharp(input).metadata()).exif).toBeDefined();
-    const out = await processImage(input);
-    expect(
-      Object.fromEntries(
-        Object.entries(out.variants).map(([k, v]) => [k, v.width]),
-      ),
-    ).toEqual({ thumb: 200, feed: 640, full: 1600 });
+  it('S29 AS-12: produces 3 WebP variants (200/640/1600), never upscaled, aspect ratio kept', async () => {
+    const out = await processImage(await photo({ width: 2400, height: 1600 }));
+    expect(widths(out)).toEqual({ thumb: 200, feed: 640, full: 1600 });
+    expect(out.variants.feed.height).toBeGreaterThanOrEqual(426);
+    expect(out.variants.feed.height).toBeLessThanOrEqual(427);
     for (const v of Object.values(out.variants)) {
       const meta = await sharp(v.buffer).metadata();
       expect(meta.format).toBe('webp');
-      expect(meta.exif).toBeUndefined();
+      expect(v.contentType).toBe('image/webp');
     }
-    const small = await processImage(await photo(300, 200));
-    expect(small.variants.full.width).toBe(300); // withoutEnlargement
   });
 
-  it('is deterministic: same input → same content-hashed keys', async () => {
-    const input = await photo(800, 600);
-    const [a, b] = await Promise.all([
+  it.each([
+    ['EXIF', (m: sharp.Metadata) => m.exif],
+    ['XMP', (m: sharp.Metadata) => m.xmp],
+    ['IPTC', (m: sharp.Metadata) => m.iptc],
+    ['ICC profile', (m: sharp.Metadata) => m.icc],
+  ])(
+    'S29 AS-13: no %s survives in any variant, and the image is upright',
+    async (_kind, pick) => {
+      const input = await heavyMetadataJpeg();
+      const source = await sharp(input).metadata();
+      expect(source.exif).toBeDefined();
+      expect(source.xmp).toBeDefined();
+      expect(source.iptc).toBeDefined();
+      expect(source.icc).toBeDefined();
+      expect(source.orientation).toBe(6);
+      const out = await processImage(input);
+      // stored 1200x1800 with orientation 6 -> displayed 1800x1200
+      expect([out.width, out.height]).toEqual([1800, 1200]);
+      for (const v of Object.values(out.variants)) {
+        const meta = await sharp(v.buffer).metadata();
+        expect(pick(meta)).toBeUndefined();
+        expect(v.width).toBeGreaterThan(v.height);
+      }
+    },
+  );
+
+  it('S29 AS-13: pixels are converted to sRGB (a Display-P3 patch changes value)', async () => {
+    const out = await processImage(await displayP3Patch());
+    const { data } = await sharp(out.variants.feed.buffer)
+      .raw()
+      .toBuffer({ resolveWithObject: true });
+    const [r, g, b] = [data[0], data[1], data[2]];
+    expect(
+      Math.abs(r - P3_PATCH_RAW.r) +
+        Math.abs(g - P3_PATCH_RAW.g) +
+        Math.abs(b - P3_PATCH_RAW.b),
+    ).toBeGreaterThan(40); // converted, not copied
+    expect(r).toBeGreaterThan(60);
+    expect(r).toBeLessThan(140); // ~(100, 217, 75) after conversion, within tolerance
+    expect(g).toBeGreaterThan(190);
+    expect(b).toBeGreaterThan(40);
+    expect(b).toBeLessThan(110);
+  });
+
+  it('S29 AS-14: a 300x200 source is never upscaled', async () => {
+    const out = await processImage(await photo({ width: 300, height: 200 }));
+    expect(widths(out)).toEqual({ thumb: 200, feed: 300, full: 300 });
+  });
+
+  it('S29 AS-15: same input, same bytes, same keys (also concurrently)', async () => {
+    const input = await photo({ width: 800, height: 600 });
+    const [a, b, c] = await Promise.all([
+      processImage(input),
       processImage(input),
       processImage(input),
     ]);
-    expect(a.variants.feed.hash).toBe(b.variants.feed.hash);
+    for (const name of ['thumb', 'feed', 'full'] as const) {
+      expect(a.variants[name].hash).toBe(b.variants[name].hash);
+      expect(a.variants[name].hash).toBe(c.variants[name].hash);
+      expect(a.variants[name].buffer.equals(b.variants[name].buffer)).toBe(
+        true,
+      );
+    }
   });
 
-  it('rejects non-images and decompression bombs regardless of declared type', async () => {
-    await expect(
-      processImage(Buffer.from('%PDF-1.7 not an image')),
-    ).rejects.toBeInstanceOf(RejectedImageError);
-    const bomb = await sharp({
-      create: {
-        width: 10_000,
-        height: 10_000,
-        channels: 3,
-        background: { r: 0, g: 0, b: 0 },
-      },
-    })
-      .png({ compressionLevel: 9 })
-      .toBuffer();
-    await expect(processImage(bomb)).rejects.toBeInstanceOf(RejectedImageError);
+  const rejections: Array<[string, () => Promise<Buffer> | Buffer, string]> = [
+    ['a PDF', pdfBytes, 'not_an_image'],
+    ['a PHP script', phpScript, 'not_an_image'],
+    ['a text file', textBytes, 'not_an_image'],
+    ['a zero-byte file', zeroBytes, 'not_an_image'],
+    ['a truncated JPEG', truncatedJpeg, 'not_an_image'],
+    ['an SVG with a script', svgWithScript, 'format_not_allowed'],
+    ['a GIF', gifImage, 'format_not_allowed'],
+    ['a TIFF', tiffImage, 'format_not_allowed'],
+    ['an animated WebP', animatedWebp, 'multi_frame'],
+    ['a 100-megapixel PNG header', hundredMegapixelPng, 'image_too_large'],
+  ];
+  it.each(rejections)(
+    'S29 AS-16: %s is refused as %s',
+    async (_name, build, code) => {
+      const error = await processImage(await build()).catch((e: unknown) => e);
+      expect(error).toBeInstanceOf(RejectedImageError);
+      expect((error as RejectedImageError).code).toBe(code);
+      // a decoder message never becomes the visible text of the refusal
+      expect((error as Error).message).not.toMatch(/vips|buffer|unsupported/i);
+    },
+  );
+
+  it('S29 AS-16: the bomb is decided from the header, before any pixel is decoded', async () => {
+    const started = Date.now();
+    await expect(processImage(hundredMegapixelPng())).rejects.toMatchObject({
+      code: 'image_too_large',
+    });
+    expect(Date.now() - started).toBeLessThan(1_000);
   });
 
-  it('dHash: a re-encoded, resized copy is near; a different image is far; bands share a value when near', async () => {
-    const original = await photo(1200, 800);
-    const copy = await sharp(original)
-      .resize(600)
-      .jpeg({ quality: 60 })
-      .toBuffer();
-    const other = await sharp({
-      create: {
-        width: 1200,
-        height: 800,
-        channels: 3,
-        background: { r: 10, g: 10, b: 10 },
-      },
-    })
-      .composite([
-        {
-          input: Buffer.from(
-            '<svg width="1200" height="800"><rect x="700" y="100" width="400" height="600" fill="white"/></svg>',
-          ),
-        },
-      ])
-      .jpeg()
-      .toBuffer();
+  it('S29 AS-17: a genuine PNG is accepted whatever it was declared as', async () => {
+    const out = await processImage(
+      await photo({ format: 'png', width: 600, height: 400 }),
+    );
+    expect(out.width).toBe(600);
+  });
+
+  it.each(['webp', 'avif'] as const)(
+    'S29 AS-11: %s input is accepted',
+    async (format) => {
+      const out = await processImage(
+        await photo({ format, width: 640, height: 480 }),
+      );
+      expect(out.variants.full.width).toBe(640);
+    },
+  );
+
+  it('S29 FR-030: the hash is computed only when asked (product photos)', async () => {
+    const input = await photo({ width: 800, height: 600 });
+    expect((await processImage(input)).dhash).toBeNull();
+    expect((await processImage(input, { computeHash: true })).dhash).toMatch(
+      /^[0-9a-f]{16}$/,
+    );
+  });
+
+  it('S29 AS-25: dHash of a re-encoded, resized copy is near; an unrelated image is far; bands are shared', async () => {
+    const original = await photo({ width: 1200, height: 800, seed: 7 });
+    const copy = await resaved(original, { width: 600, quality: 55 });
+    const other = await photo({ width: 1200, height: 800, seed: 99 });
     const [h1, h2, h3] = await Promise.all([
       dHash(original),
       dHash(copy),
@@ -107,5 +173,10 @@ describe('image pipeline', () => {
     expect(hamming(h1, h2)).toBeLessThanOrEqual(3);
     expect(hamming(h1, h3)).toBeGreaterThan(10);
     expect(bands(h1).some((b, i) => b === bands(h2)[i])).toBe(true);
+  });
+
+  it('S29 AS-27: a blank picture hashes to a near-uniform value', async () => {
+    const hash = await dHash(await blankPhoto());
+    expect(BigInt(`0x${hash}`)).toBe(0n);
   });
 });

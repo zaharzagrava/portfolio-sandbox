@@ -1,93 +1,122 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   Param,
-  ParseUUIDPipe,
   Post,
-  Put,
+  Res,
+  UseGuards,
 } from '@nestjs/common';
-import { ApiProperty, ApiPropertyOptional, ApiTags } from '@nestjs/swagger';
+import { ApiTags } from '@nestjs/swagger';
+import type { Response } from 'express';
 import {
-  ArrayMaxSize,
-  IsArray,
-  IsIn,
-  IsOptional,
-  IsUUID,
-} from 'class-validator';
+  mediaUploadRequestSchema,
+  type MediaCompleteResponse,
+  type MediaOwner,
+  type MediaPublic,
+  type MediaUploadRequest,
+  type MediaUploadResponse,
+} from '@marketplace-sandbox/contracts';
 import { Firewall, User, UserRawDto } from '@app/domains/identity';
 import { ShopScoped } from '@app/domains/tenancy';
 import { RateLimit } from '@app/infrastructure/rate-limit';
-import { MediaService } from '../application/media.service';
+import { MediaDeleteService } from '../application/media-delete.service';
+import { MediaReadService } from '../application/media-read.service';
+import { UploadService } from '../application/upload.service';
+import { MediaZodPipe, validationFailed } from './media-problem';
+import { PathIdsGuard, uuidPipe } from './path-ids.guard';
 
-export class UploadDto {
-  @ApiProperty({ enum: ['review', 'post'] }) @IsIn(['review', 'post']) purpose:
-    'review' | 'post';
-}
+const NO_STORE = 'no-store';
+const PUBLIC_CACHE = 'public, max-age=15';
+const OWNER_CACHE = 'private, no-store';
 
-export class GalleryDto {
-  @ApiProperty()
-  @IsArray()
-  @ArrayMaxSize(20)
-  @IsUUID('all', { each: true })
-  mediaIds: string[];
-}
-
-export class ShopUploadDto {
-  @ApiPropertyOptional() @IsOptional() @IsIn(['product']) purpose?: 'product';
-}
+/** The route decides which purpose is valid; the body schema is the contract's (unknown fields refused). */
+const requirePurpose = (
+  body: MediaUploadRequest,
+  expected: 'review' | 'product',
+): void => {
+  if (body.purpose !== expected) throw validationFailed(['purpose']);
+};
 
 @ApiTags('media')
 @Controller()
 export class MediaController {
-  constructor(private readonly media: MediaService) {}
+  constructor(
+    private readonly uploads: UploadService,
+    private readonly reads: MediaReadService,
+    private readonly deletes: MediaDeleteService,
+  ) {}
 
-  /** Buyer photos (reviews, discussion posts). */
+  /** Buyer photos (reviews). */
   @Firewall()
-  @RateLimit('discussion.write')
+  @RateLimit('media.upload.user')
   @Post('media/uploads')
-  upload(@User() user: UserRawDto, @Body() body: UploadDto) {
-    return this.media.createUpload(user.id, body.purpose, null);
+  async upload(
+    @User() user: UserRawDto,
+    @Body(new MediaZodPipe(mediaUploadRequestSchema)) body: MediaUploadRequest,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<MediaUploadResponse> {
+    requirePurpose(body, 'review');
+    res.setHeader('Cache-Control', NO_STORE);
+    return this.uploads.presign(user.id, 'review', null);
   }
 
   @ShopScoped('products.write')
+  @UseGuards(PathIdsGuard)
+  @RateLimit('media.upload.shop')
   @Post('shops/:shopId/media/uploads')
-  shopUpload(
-    @Param('shopId', ParseUUIDPipe) shopId: string,
+  async shopUpload(
+    @Param('shopId') shopId: string,
     @User() user: UserRawDto,
-  ) {
-    return this.media.createUpload(user.id, 'product', shopId);
+    @Body(new MediaZodPipe(mediaUploadRequestSchema)) body: MediaUploadRequest,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<MediaUploadResponse> {
+    requirePurpose(body, 'product');
+    res.setHeader('Cache-Control', NO_STORE);
+    return this.uploads.presign(user.id, 'product', shopId.toLowerCase());
   }
 
+  /** `202` while work is pending, `200` when finished (READY or REJECTED). */
   @Firewall()
   @Post('media/:id/complete')
   @HttpCode(202)
-  complete(@Param('id', ParseUUIDPipe) id: string, @User() user: UserRawDto) {
-    return this.media.complete(id, user.id);
+  async complete(
+    @Param('id', uuidPipe('id')) id: string,
+    @User() user: UserRawDto,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<MediaCompleteResponse> {
+    res.setHeader('Cache-Control', NO_STORE);
+    const answer = await this.uploads.complete(user.id, id);
+    if (answer.status === 'READY' || answer.status === 'REJECTED')
+      res.status(200);
+    return answer;
   }
 
   @Firewall({ anonymous: true })
+  @RateLimit('media.read.ip')
   @Get('media/:id')
-  get(@Param('id', ParseUUIDPipe) id: string) {
-    return this.media.get(id);
+  async get(
+    @Param('id', uuidPipe('id')) id: string,
+    @User() user: UserRawDto | null,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<MediaPublic | MediaOwner> {
+    const view = await this.reads.get(id, user?.id ?? null);
+    res.setHeader(
+      'Cache-Control',
+      view.kind === 'public' ? PUBLIC_CACHE : OWNER_CACHE,
+    );
+    return view.body;
   }
 
-  /** Public product gallery (W02 B-1): READY images by position; hidden products are `404` like unknown ones. */
-  @Firewall({ anonymous: true })
-  @Get('products/:productId/gallery')
-  publicGallery(@Param('productId', ParseUUIDPipe) productId: string) {
-    return this.media.publicGallery(productId);
-  }
-
-  @ShopScoped('products.write')
-  @Put('shops/:shopId/products/:productId/gallery')
+  @Firewall()
+  @Delete('media/:id')
   @HttpCode(204)
-  gallery(
-    @Param('shopId', ParseUUIDPipe) shopId: string,
-    @Param('productId', ParseUUIDPipe) productId: string,
-    @Body() body: GalleryDto,
-  ) {
-    return this.media.attachToProduct(shopId, productId, body.mediaIds);
+  async remove(
+    @Param('id', uuidPipe('id')) id: string,
+    @User() user: UserRawDto,
+  ): Promise<void> {
+    await this.deletes.delete(user.id, id);
   }
 }

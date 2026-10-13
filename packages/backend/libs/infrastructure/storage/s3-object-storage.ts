@@ -17,10 +17,13 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import type { Readable } from 'node:stream';
 import { ApiConfigService } from '@app/common/config';
 import {
+  contentTypeCondition,
   MultipartUploadInit,
   ObjectStorage,
   PresignedPost,
   PresignPostOptions,
+  PutOptions,
+  StorageCallOptions,
 } from './object-storage.port';
 
 @Injectable()
@@ -51,6 +54,8 @@ export class S3ObjectStorage extends ObjectStorage {
   async presignPost({
     key,
     contentTypePrefix,
+    contentTypes,
+    minBytes = 1,
     maxBytes,
     expiresInSec = 600,
   }: PresignPostOptions): Promise<PresignedPost> {
@@ -58,8 +63,8 @@ export class S3ObjectStorage extends ObjectStorage {
       Bucket: this.bucket,
       Key: key,
       Conditions: [
-        ['content-length-range', 1, maxBytes],
-        ['starts-with', '$Content-Type', contentTypePrefix],
+        ['content-length-range', minBytes, maxBytes],
+        contentTypeCondition({ contentTypes, contentTypePrefix }),
       ],
       Expires: expiresInSec,
     });
@@ -181,32 +186,68 @@ export class S3ObjectStorage extends ObjectStorage {
     );
   }
 
-  async getStream(key: string): Promise<Readable> {
+  async getStream(
+    key: string,
+    options: StorageCallOptions = {},
+  ): Promise<Readable> {
     const { Body } = await this.client.send(
       new GetObjectCommand({ Bucket: this.bucket, Key: key }),
+      this.abort(options),
     );
     return Body as Readable;
   }
 
-  /** Streams (constant memory) via lib-storage's managed multipart upload for large bodies. */
-  async put(key: string, body: Buffer | Readable, contentType: string) {
-    await new Upload({
+  /**
+   * Buffers go in one request (variants, a few hundred KB) with an optional cache header and time limit; streams use
+   * lib-storage's managed multipart upload (constant memory) for large bodies.
+   */
+  async put(
+    key: string,
+    body: Buffer | Readable,
+    contentType: string,
+    options: PutOptions = {},
+  ) {
+    if (Buffer.isBuffer(body)) {
+      await this.client.send(
+        new PutObjectCommand({
+          Bucket: this.bucket,
+          Key: key,
+          Body: body,
+          ContentType: contentType,
+          ...(options.cacheControl && { CacheControl: options.cacheControl }),
+        }),
+        this.abort(options),
+      );
+      return;
+    }
+    const upload = new Upload({
       client: this.client,
       params: {
         Bucket: this.bucket,
         Key: key,
         Body: body,
         ContentType: contentType,
+        ...(options.cacheControl && { CacheControl: options.cacheControl }),
       },
       queueSize: 4,
       partSize: 8 * 1024 * 1024,
-    }).done();
+    });
+    if (options.timeoutMs)
+      AbortSignal.timeout(options.timeoutMs).addEventListener('abort', () => {
+        void upload.abort();
+      });
+    await upload.done();
   }
 
-  async head(key: string) {
+  private abort({ timeoutMs }: StorageCallOptions) {
+    return timeoutMs ? { abortSignal: AbortSignal.timeout(timeoutMs) } : {};
+  }
+
+  async head(key: string, options: StorageCallOptions = {}) {
     try {
       const res = await this.client.send(
         new HeadObjectCommand({ Bucket: this.bucket, Key: key }),
+        this.abort(options),
       );
       return {
         size: Number(res.ContentLength ?? 0),

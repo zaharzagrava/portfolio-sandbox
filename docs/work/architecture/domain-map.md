@@ -148,8 +148,8 @@ uses to get other domains' data.
 ### catalog
 - **Responsibility**: products, prices shown on listings, product revisions, and the
   collaborative listing-draft editor that publishes revisions.
-- **Owns**: `Product`, `ListingDraft`, `ListingDraftVersion`, `ProductMedia` (links products to
-  media IDs).
+- **Owns**: `Product`, `ListingDraft`, `ListingDraftVersion`. (`ProductMedia`, the gallery links, moved
+  to media in S29.)
 - **Other stores**: draft update log (DynamoDB) and snapshots (S3).
 - **Emits**: product change events (`products` aggregate).
 - **Hosted by**: core, worker, projector, collab.
@@ -166,12 +166,19 @@ uses to get other domains' data.
 - **Depends on**: catalog (R1 write commands; it never writes `Product` directly), tenancy (R1).
 
 ### media
-- **Responsibility**: image upload and processing (EXIF strip, variants), video upload,
-  transcoding DAG, and HLS packaging. It is used by catalog, community, and reviews.
-- **Owns**: `Media`, `Video`, `VideoTask`.
-- **Emits**: `media.ready`.
-- **Hosted by**: core, worker, lambdas.
-- **Depends on**: none. Consumers reference media by ID.
+- **Responsibility**: photo upload and processing (malware scan, EXIF strip, sRGB, three WebP variants,
+  duplicate flag), product galleries (ordered, versioned), video upload, transcoding DAG, and HLS
+  packaging. Consumers reference media by ID.
+- **Owns**: `Media`, `MediaStatusHistory`, `ProductMedia`, `ProductGallery`, `Video`, `VideoTask`.
+- **Emits**: `media.ready`, `media.rejected`, `media.deleted`, `media.gallery_changed`,
+  `media.duplicate_suspected` (outbox, topic `media.events`).
+- **Consumes**: `catalog.product_deleted` (drops the gallery), `tenancy.shop_deleted` (deletes the shop's
+  photos and galleries).
+- **Hosted by**: core (HTTP, `MediaQueryService`), worker (expire, re-drive, purge jobs), projector
+  (the two consumers), lambdas (`createMediaProcessor`).
+- **Exports (R1)**: `MediaQueryService.getReadyMediaByIds`; (R2) `GET /batch/media`.
+- **Depends on**: catalog (R1 `getProductsByIds` for the gallery), tenancy (R1 `ShopAccessService`,
+  `getShopsByIds`).
 
 ### orders
 - **Responsibility**: cart, checkout, stock reservation, flash-sale stock, the order state
@@ -393,7 +400,7 @@ during the move.
 | `User` (identity) | admin*, chat-sync, ledger, notifications, tenancy | R1 identity exports. *`admin` merges into identity, so it stops being a violation. |
 | `Payment` (payments) | orders | Payment result event or R1 `getPaymentStatus` |
 | `ChatChannel` (chat) | tenancy | Chat consumes tenancy membership events. Tenancy never touches chat. |
-| `Outbox` (infra) | catalog-import, media | Only `outbox.append()` (IX.6) |
+| `Outbox` (infra) | catalog-import | Only `outbox.append()` (IX.6). media wrote it by raw SQL until S29; it now uses `append` / `appendWithExecutor`. |
 
 ## 5. Decisions to confirm
 

@@ -1,24 +1,51 @@
 import {
+  DeleteObjectCommand,
   GetObjectCommand,
+  HeadObjectCommand,
   PutObjectCommand,
   S3Client,
 } from '@aws-sdk/client-s3';
-import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb';
 import { Pool } from 'pg';
-import { MediaProcessor, Sql } from '@app/domains/media';
-import { AlreadyInProgressError, Idempotency } from '../shared/idempotency';
-import { processBatch, SqsBatchResponse, SqsEvent } from '../shared/sqs-batch';
+import type { Readable } from 'node:stream';
+import {
+  createMediaProcessor,
+  createTx,
+  type Blobs,
+  type MediaLogger,
+  type MediaMetrics,
+  type SqlRunner,
+} from '@app/domains/media';
+import { ClamdMalwareScanner } from '@app/infrastructure/antivirus/clamd-scanner';
+import { DisabledMalwareScanner } from '@app/infrastructure/antivirus/disabled-scanner';
+import {
+  processBatch,
+  SqsBatchResponse,
+  SqsEvent,
+  SqsRecord,
+} from '../shared/sqs-batch';
 import { log, metric } from '../shared/telemetry';
 
 /**
- * SD-10 media processing - a SMALL handler (no Nest): sharp + pg + S3 SDK,
- * created at module scope so warm invocations reuse connections. Pool max=2:
- * Lambda concurrency × 2 is the DB connection budget (RDS Proxy in AWS).
- * Accepts both the native S3 event notification (ObjectCreated) and our own
- * `{ originalKey }` message (local MinIO path / manual reprocessing).
+ * SD-10 media processing - a SMALL handler (no Nest): sharp + pg + S3 SDK, created at module scope so warm invocations
+ * reuse connections. Pool max=2: Lambda concurrency × 2 is the DB connection budget (RDS Proxy in AWS). All the logic
+ * is `createMediaProcessor` (S29): the claim and its lease are the idempotency mechanism, so there is no second one here.
+ * Accepts the native S3 event notification (ObjectCreated) and our own `{ mediaId, originalKey }` message (the local
+ * MinIO path, the re-drive job, a manual re-run).
  */
-const bucket = process.env.MEDIA_BUCKET ?? 'marketplace-media';
+function requiredEnv(name: string): string {
+  const value = process.env[name];
+  if (!value) throw new Error(`${name} is required`);
+  return value;
+}
+const bucket = requiredEnv('MEDIA_BUCKET');
+const databaseUrl = requiredEnv('DATABASE_URL');
+const scannerDisabled = process.env.MEDIA_SCANNER_DISABLED === 'true';
+if (scannerDisabled && process.env.NODE_ENV === 'production')
+  throw new Error('MEDIA_SCANNER_DISABLED is not allowed in production');
+const scanner = scannerDisabled
+  ? new DisabledMalwareScanner()
+  : ClamdMalwareScanner.fromAddress(requiredEnv('CLAMAV_HOST'));
+
 const s3 = new S3Client({
   region: process.env.AWS_REGION ?? 'eu-central-1',
   ...(process.env.S3_ENDPOINT && {
@@ -27,36 +54,57 @@ const s3 = new S3Client({
   }),
 });
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
+  connectionString: databaseUrl,
   max: 2,
   idleTimeoutMillis: 30_000,
 });
-const sql: Sql = async (text, params) => (await pool.query(text, params)).rows;
-const tx = async <T>(fn: (q: Sql) => Promise<T>): Promise<T> => {
+
+/** One `pg` connection inside its own BEGIN/COMMIT: not a `sequelize.transaction` site, and no Nest container. */
+const transaction = async <T>(
+  fn: (sql: SqlRunner) => Promise<T>,
+): Promise<T> => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
     const result = await fn(
-      async (text, params) => (await client.query(text, params)).rows,
+      (async (text: string, params?: unknown[]) =>
+        (await client.query(text, params)).rows) as SqlRunner,
     );
     await client.query('COMMIT');
     return result;
   } catch (error) {
-    await client.query('ROLLBACK');
+    await client.query('ROLLBACK').catch(() => undefined);
     throw error;
   } finally {
     client.release();
   }
 };
-const processor = new MediaProcessor(sql, tx, {
-  get: async (key) =>
-    Buffer.from(
-      await (
-        await s3.send(new GetObjectCommand({ Bucket: bucket, Key: key }))
-      ).Body!.transformToByteArray(),
-    ),
-  put: async (key, body, contentType, cacheControl) =>
-    void (await s3.send(
+
+const send = <T>(
+  command: Parameters<S3Client['send']>[0],
+  timeoutMs?: number,
+): Promise<T> =>
+  s3.send(
+    command,
+    timeoutMs ? { abortSignal: AbortSignal.timeout(timeoutMs) } : {},
+  ) as Promise<T>;
+
+const blobs: Blobs = {
+  read: async (key, timeoutMs) => {
+    const out = await send<{
+      Body: { transformToByteArray(): Promise<Uint8Array> };
+    }>(new GetObjectCommand({ Bucket: bucket, Key: key }), timeoutMs);
+    return Buffer.from(await out.Body.transformToByteArray());
+  },
+  stream: async (key, timeoutMs) =>
+    (
+      await send<{ Body: Readable }>(
+        new GetObjectCommand({ Bucket: bucket, Key: key }),
+        timeoutMs,
+      )
+    ).Body,
+  write: async (key, body, contentType, { cacheControl, timeoutMs }) => {
+    await send(
       new PutObjectCommand({
         Bucket: bucket,
         Key: key,
@@ -64,27 +112,63 @@ const processor = new MediaProcessor(sql, tx, {
         ContentType: contentType,
         CacheControl: cacheControl,
       }),
-    )),
+      timeoutMs,
+    );
+  },
+  head: async (key, timeoutMs) => {
+    try {
+      const out = await send<{ ContentLength?: number }>(
+        new HeadObjectCommand({ Bucket: bucket, Key: key }),
+        timeoutMs,
+      );
+      return { size: Number(out.ContentLength ?? 0) };
+    } catch (error) {
+      if ((error as { name?: string }).name === 'NotFound') return null;
+      throw error;
+    }
+  },
+  delete: async (key) => {
+    await send(new DeleteObjectCommand({ Bucket: bucket, Key: key }));
+  },
+};
+
+const NAMESPACE = 'Marketplace/Media';
+const metrics: MediaMetrics = {
+  inc: (name, labels = {}, by = 1) =>
+    metric(NAMESPACE, name, by, 'Count', labels),
+  observe: (name, value, labels = {}) =>
+    metric(
+      NAMESPACE,
+      name,
+      name.endsWith('_seconds') ? value * 1000 : value,
+      name.endsWith('_seconds') ? 'Milliseconds' : 'Count',
+      labels,
+    ),
+};
+const logger: MediaLogger = {
+  info: (message, fields) => log('info', message, fields),
+  warn: (message, fields) => log('warn', message, fields),
+  error: (message, fields) => log('error', message, fields),
+};
+
+const processor = createMediaProcessor({
+  tx: createTx(transaction),
+  blobs,
+  scanner,
+  clock: { now: () => new Date() },
+  metrics,
+  logger,
 });
-const dynamo = DynamoDBDocumentClient.from(
-  new DynamoDBClient({
-    region: process.env.AWS_REGION ?? 'eu-central-1',
-    ...(process.env.DYNAMO_ENDPOINT && {
-      endpoint: process.env.DYNAMO_ENDPOINT,
-    }),
-  }),
-);
-const idempotency = new Idempotency(
-  dynamo,
-  `${process.env.DYNAMO_TABLE_PREFIX ?? ''}Idempotency`,
-  'media-processing',
-);
+
+const ORIGINALS_PREFIX = 'media/originals/';
+
+interface QueueMessage {
+  originalKey?: string;
+  Records?: { eventName?: string; s3?: { object?: { key?: string } } }[];
+}
 
 function keysOf(body: string): string[] {
-  const parsed = JSON.parse(body) as {
-    originalKey?: string;
-    Records?: { eventName?: string; s3?: { object?: { key?: string } } }[];
-  };
+  const parsed = JSON.parse(body) as QueueMessage;
   if (parsed.originalKey) return [parsed.originalKey];
   return (parsed.Records ?? [])
     .filter((r) => r.eventName?.startsWith('ObjectCreated'))
@@ -93,34 +177,37 @@ function keysOf(body: string): string[] {
     );
 }
 
+/** `requestId` / `traceId` written at `complete` travel as SQS message attributes. */
+function contextOf(record: SqsRecord): {
+  requestId?: string;
+  traceId?: string;
+} {
+  const attributes = (
+    record as SqsRecord & {
+      messageAttributes?: Record<string, { stringValue?: string }>;
+    }
+  ).messageAttributes;
+  return {
+    requestId: attributes?.requestId?.stringValue,
+    traceId: attributes?.traceId?.stringValue,
+  };
+}
+
 export async function handler(event: SqsEvent): Promise<SqsBatchResponse> {
   return processBatch(
     event,
     async (record) => {
-      for (const key of keysOf(record.body).filter((k) =>
-        k.startsWith('media/originals/'),
-      )) {
-        const started = Date.now();
-        try {
-          const { result, replayed } = await idempotency.run(key, 120_000, () =>
-            processor.process(key),
-          );
-          metric(
-            'Marketplace/Media',
-            'ProcessMs',
-            Date.now() - started,
-            'Milliseconds',
-            { result: String(result) },
-          );
-          log('info', 'media processed', { key, result, replayed });
-        } catch (error) {
-          if (error instanceof AlreadyInProgressError) throw error; // another container has it; SQS retries this record later
-          log('error', 'media processing failed', {
-            key,
-            error: (error as Error).message,
-          });
-          throw error;
+      const context = contextOf(record);
+      for (const key of keysOf(record.body)) {
+        // A key outside the originals prefix is not ours: no row is read, nothing happens (AS-11).
+        if (!key.startsWith(ORIGINALS_PREFIX)) {
+          log('info', 'media notification ignored (foreign prefix)', context);
+          continue;
         }
+        const result = await processor.process(key, context);
+        // A held lease means another worker has it: let the queue deliver again later.
+        if (result === 'BUSY')
+          throw new Error('media is being processed by another worker');
       }
     },
     { concurrency: 2 }, // sharp is CPU-bound; parallelism comes from many containers, not one

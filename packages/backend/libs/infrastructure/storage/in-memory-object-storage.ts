@@ -1,34 +1,48 @@
 import { Readable } from 'node:stream';
 import {
+  contentTypeCondition,
   MultipartUploadInit,
   ObjectStorage,
   PresignedPost,
   PresignPostOptions,
+  PutOptions,
+  StorageCallOptions,
 } from './object-storage.port';
 
 /** Test double: keeps objects in a Map, returns fake but well-formed signed URLs. */
 export class InMemoryObjectStorage extends ObjectStorage {
   readonly objects = new Map<
     string,
-    { body: Buffer; contentType: string; modifiedAt: Date }
+    {
+      body: Buffer;
+      contentType: string;
+      modifiedAt: Date;
+      cacheControl?: string;
+    }
   >();
 
-  async presignPost({
+  presignPost({
     key,
     contentTypePrefix,
+    contentTypes,
+    minBytes = 1,
     maxBytes,
     expiresInSec = 600,
   }: PresignPostOptions): Promise<PresignedPost> {
-    return {
+    const [, , contentType] = contentTypeCondition({
+      contentTypes,
+      contentTypePrefix,
+    });
+    return Promise.resolve({
       url: 'http://storage.test/upload',
       fields: {
         key,
-        'Content-Type': contentTypePrefix,
-        policy: `max=${maxBytes}`,
+        'Content-Type': contentType,
+        policy: `min=${minBytes};max=${maxBytes}`,
       },
       key,
       expiresAt: new Date(Date.now() + expiresInSec * 1000),
-    };
+    });
   }
 
   async presignPutChecked(
@@ -76,7 +90,12 @@ export class InMemoryObjectStorage extends ObjectStorage {
     return Readable.from(obj.body);
   }
 
-  async put(key: string, body: Buffer | Readable, contentType: string) {
+  async put(
+    key: string,
+    body: Buffer | Readable,
+    contentType: string,
+    options: PutOptions = {},
+  ) {
     const buffer = Buffer.isBuffer(body)
       ? body
       : Buffer.concat(await body.toArray());
@@ -84,12 +103,15 @@ export class InMemoryObjectStorage extends ObjectStorage {
       body: buffer,
       contentType,
       modifiedAt: new Date(),
+      cacheControl: options.cacheControl,
     });
   }
 
-  async head(key: string) {
+  head(key: string, _options?: StorageCallOptions) {
     const obj = this.objects.get(key);
-    return obj ? { size: obj.body.length, contentType: obj.contentType } : null;
+    return Promise.resolve(
+      obj ? { size: obj.body.length, contentType: obj.contentType } : null,
+    );
   }
 
   async delete(key: string) {

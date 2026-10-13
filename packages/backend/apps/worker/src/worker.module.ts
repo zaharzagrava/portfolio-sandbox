@@ -11,7 +11,7 @@ import {
   IntegrationsWorkerModule,
   CatalogImportWorkerModule,
 } from '@app/domains/catalog-sync';
-import { VideoWorkerModule } from '@app/domains/media';
+import { MediaWorkerModule, VideoWorkerModule } from '@app/domains/media';
 import { AssetsWorkerModule } from '@app/domains/asset-library';
 import { StoriesWorkerModule } from '@app/domains/content';
 import {
@@ -105,6 +105,7 @@ import { AuthWorkerModule } from '@app/domains/identity';
     CatalogImportWorkerModule,
     AssetsWorkerModule,
     VideoWorkerModule,
+    MediaWorkerModule,
     IntegrationsWorkerModule,
     CrawlerWorkerModule,
     FunctionJudgeModule,

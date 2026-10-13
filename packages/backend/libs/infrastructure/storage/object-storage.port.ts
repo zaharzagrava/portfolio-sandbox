@@ -16,9 +16,42 @@ export interface MultipartUploadInit {
 
 export interface PresignPostOptions {
   key: string;
-  contentTypePrefix: string;
+  /** Prefix condition (`image/`). Use `contentTypes` for a closed set. */
+  contentTypePrefix?: string;
+  /**
+   * The closed set of accepted content types. A POST policy can only express "equals" or "starts with", so one type
+   * becomes an exact condition and several become the longest prefix they share (the caller must still decide from
+   * the bytes; S29 does).
+   */
+  contentTypes?: string[];
+  /** Smallest accepted body (default 1). */
+  minBytes?: number;
   maxBytes: number;
   expiresInSec?: number;
+}
+
+export interface StorageCallOptions {
+  /** The call is abandoned (and the request aborted) after this many milliseconds. */
+  timeoutMs?: number;
+}
+
+export interface PutOptions extends StorageCallOptions {
+  cacheControl?: string;
+}
+
+/** The condition a POST policy can enforce for a closed set of content types (see `PresignPostOptions`). */
+export function contentTypeCondition(
+  options: Pick<PresignPostOptions, 'contentTypes' | 'contentTypePrefix'>,
+): ['eq' | 'starts-with', '$Content-Type', string] {
+  const types = options.contentTypes ?? [];
+  if (types.length === 1) return ['eq', '$Content-Type', types[0]];
+  if (types.length > 1) {
+    let prefix = types[0];
+    for (const type of types)
+      while (!type.startsWith(prefix)) prefix = prefix.slice(0, -1);
+    return ['starts-with', '$Content-Type', prefix];
+  }
+  return ['starts-with', '$Content-Type', options.contentTypePrefix ?? ''];
 }
 
 /**
@@ -55,14 +88,19 @@ export abstract class ObjectStorage {
     parts: { partNumber: number; etag: string }[],
   ): Promise<void>;
   abstract abortMultipartUpload(key: string, uploadId: string): Promise<void>;
-  abstract getStream(key: string): Promise<Readable>;
+  abstract getStream(
+    key: string,
+    options?: StorageCallOptions,
+  ): Promise<Readable>;
   abstract put(
     key: string,
     body: Buffer | Readable,
     contentType: string,
+    options?: PutOptions,
   ): Promise<void>;
   abstract head(
     key: string,
+    options?: StorageCallOptions,
   ): Promise<{ size: number; contentType?: string } | null>;
   abstract delete(key: string): Promise<void>;
   /** Objects whose key starts with `prefix`, with their last-modified instant (all pages). */

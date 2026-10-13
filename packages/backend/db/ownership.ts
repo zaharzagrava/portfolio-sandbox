@@ -77,7 +77,6 @@ export const OWNERSHIP = {
   Product: 'domain:catalog',
   ListingDraft: 'domain:catalog',
   ListingDraftVersion: 'domain:catalog',
-  ProductMedia: 'domain:catalog',
   ProductStatusHistory: 'domain:catalog',
   ProductStockOperation: 'domain:catalog',
   ProductShopState: 'domain:catalog',
@@ -94,6 +93,10 @@ export const OWNERSHIP = {
   ProductFieldClock: 'domain:catalog-sync',
   // media
   Media: 'domain:media',
+  MediaStatusHistory: 'domain:media',
+  // S29: gallery links and the gallery version row belong to media (S05 neither reads nor writes them)
+  ProductMedia: 'domain:media',
+  ProductGallery: 'domain:media',
   Video: 'domain:media',
   VideoTask: 'domain:media',
   // orders (ExportJob: decision D2, order export belongs to orders)

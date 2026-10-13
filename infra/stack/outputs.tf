@@ -19,6 +19,8 @@ output "app_config" {
     CLICKHOUSE_URL           = module.search_analytics.clickhouse_url
     MEDIA_BUCKET             = module.storage.media_bucket
     CDN_DOMAIN               = module.storage.cdn_domain
+    MEDIA_CDN_URL            = "https://${module.storage.cdn_domain}" # S29: the media origin, a different site from the app and the API
+    # CLAMAV_HOST (the malware scanner) is required in production by the S29 startup rules; the demo stack supplies it with the app secret.
     SQS_QUEUE_URL_PREFIX     = replace(values(module.sqs.queue_urls)[0], "/[^/]+$/", "${var.env}-")
     DYNAMO_TABLE_PREFIX      = "${var.env}_"
     CASSANDRA_CONTACT_POINTS = module.keyspaces.contact_point

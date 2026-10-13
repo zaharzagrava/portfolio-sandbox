@@ -111,3 +111,37 @@ media  (2)
 4. Gallery with R1 product check, versions and events (D1–D3); consumers and the three jobs (D4).
 5. Extract the scanner to `libs/infrastructure/antivirus` (S07 follow-up), extend the storage port (B4, B6, B7), wire `createMediaProcessor` in `apps/lambdas` (B11, E4).
 6. Replace `media.e2e-spec.ts` with the suites of `test-plan.md` (E5); add the web journey with W04 (F1), load scripts and ops checks (F2, F3); run `pnpm check:table-ownership --strict` and `pnpm check:boundaries` for AS-59.
+
+## Sibling-spec follow-ups
+
+- **S07**: `catalog-sync/infra/clamav.ts` becomes a re-export of the new `libs/infrastructure/antivirus` scanner (behaviour and contracts unchanged); switch the import to `@app/infrastructure/antivirus` and delete the shim.
+- **S32**: bind the real image resolver `MediaQueryService.getReadyMediaByIds` (`urls.thumb`) instead of the null one, and consume `media.gallery_changed v1 {productId, shopId, mediaIds, galleryVersion}` from `@marketplace-sandbox/contracts` (`mediaEventSchemas`) instead of the locally defined schema; `MediaProjectorModule` is loadable in `apps/projector`. **Already done in code by S29** (one defineEvent per `type@version` per process, so a second definition fails at import): `discovery/domain/consumed-events.ts` now re-exports media's `MediaGalleryChanged` instead of defining its own; S32's spec must record that. The payload became stricter (UUID ids, `mediaIds` at most 20, non-negative `galleryVersion`); S32's AS-33 "invalid payload refused" still passes. Every `media.*` event is `carries: 'state'` because the framework refuses a coalescing consumer (`search-media`) on a topic whose aggregate type has a delta event.
+- **S49**: nothing to adopt; media declares its own three job types (`media.expire-pending-uploads`, `media.requeue-stuck`, `media.purge`) with `z.object({}).strict()` contracts, catches `InvalidScheduleError` and never calls `JobsService.cancel`.
+- **S50**: G-35's `discussion.write` is no longer referenced by media (S25's budget is posts only); media declares `media.upload.user`, `media.upload.shop`, `media.gallery.shop`, `media.read.ip` itself (`libs/domains/media/rate-limit-policies.ts`).
+- **S53**: the raw `INSERT INTO "Outbox"` of the media Lambda (G-51) is gone; every media event is appended with `appendWithExecutor` inside the transaction that changed the state.
+- **S25**: `discussion.write` is no longer borrowed by media uploads (its budget is posts only); the `post` upload purpose is removed (answer `400 validation_failed`).
+- **S05**: `ProductMedia` and the new `ProductGallery` belong to `media` (ownership registry and domain map change in S29's PR); catalog reads galleries only through `GET /products/:id/gallery`, `GET /batch/media` or `media.gallery_changed`.
+- **S26**, **S43**: consume `media.gallery_changed` (primary image = `mediaIds[0]`) and resolve URLs with `getReadyMediaByIds`/`/batch/media`; never poll `ProductMedia`.
+- **S28**: may notify the uploader on `media.rejected {code}`.
+- **W04**: the seller gallery screen sends `expectedVersion`, reads the `code` values of FR-073, polls `GET /media/:id` until `READY`, never builds URLs; `PUT gallery` now answers `200` with a body (was `204`); `complete` answers `202`/`200` with `rejectCode`. The Playwright journey `seller-photos.spec.ts` and F1 belong to W04.
+- **W02**: the public gallery read (`GET /products/:productId/gallery`) keeps its path and shape; visibility now comes from S05 `getProductsByIds` and S03 `getShopsByIds`, response validated by `galleryPublicSchema`.
+
+## Implementation notes (what the build did differently from, or beyond, the plan)
+
+- **Content-type list (FR-003, AS-06)**: a presigned POST policy can only say "equals" or "starts with" (no list operator in S3 or MinIO). One type becomes an exact condition; the four accepted types become their common prefix `image/`. `svg`, `gif` and `tiff` can therefore reach storage and are refused by the worker from the bytes (`format_not_allowed`, AS-16); `text/plain` and the like are refused by storage. Recorded in `questions.md` under "Implementation findings".
+- **Attempt cap (FR-019, AS-22)**: the fifth claim rejects (`attempts >= 5` after the increment); R-2's wording "the sixth finds attempts = 5" was the odd one out against FR-019, AS-22 and the test plan.
+- **Legacy `post` photos**: the backfill sets `purpose = 'review'` together with `DELETED` (the new purpose CHECK no longer knows `post`; the rows are purged 7 days later).
+- **Events**: definitions live in `domain/media-events.ts` (the repository in `infra/` and the Lambda use them; `application/events/media-events.ts` re-exports). Payload ids are UUIDs and versions non-negative; all five events are `carries: 'state'` (see the S32 bullet).
+- **Jobs**: the three decision services are one `application/maintenance.service.ts`; their pure parts are `domain/lifecycle-rules.ts`. The re-drive job marks a photo it re-sent (`updatedAt = now`, no transition, no version bump) so a rerun within the minute sends nothing new.
+- **Shop deletion** forces `DELETED` from any live status (`FORCED_DELETE_FROM`), including `UPLOADED` and `PROCESSING`, which AS-49's user-facing table does not allow; a late worker run answers `SKIPPED`.
+- **`ShopScoped` and malformed ids**: the shop guard answers a malformed `:shopId` with the hidden `404`; AS-32 wants `400`, so `PathIdsGuard` runs first on the routes with `:shopId`/`:productId` (a malformed id is `400 validation_failed` even without a session).
+- **Public gallery cache**: `Cache-Control: public, s-maxage=5` (no browser caching, as W02's test requires); `GET /media/:id` and the batch keep `public, max-age=15`.
+- **Not run in this environment**: the exec bit of `scripts/ops/check-media-origin.sh` (run it with `bash`), the k6 script, AS-60's `terraform plan`; the throughput script ran on 40 images (6.1, 11.7 and 20.6 photos/s for 1, 2 and 4 workers, no variant with metadata), not the 1,000-image corpus.
+
+## Spec changes
+
+No `*.reviewed.json` exists for any page of `docs/spec/capabilities/`, so nothing a human signed changed. New: `docs/spec/capabilities/S29-photos.md` (`python3 scripts/livespec/check.py`: 0 errors; the page's own style warnings are the long-sentence kind the other pages also have). Edited for accuracy: two lines of `W02-storefront-discovery.md` (the public gallery route now lives in `gallery.controller.ts`; `MEDIA_QUEUE` now lives in `media.constants.ts`), both anchors still true.
+
+## Gate repairs
+
+- `libs/infrastructure/outbox/outbox-isolation.spec.ts` (S53 AS-09) failed: `libs/domains/media/infra/media-processor.ts` was still in the hand-over list (`HANDED_OVER` in `packages/backend/scripts/technical-table-scan.ts`) although S29 had already replaced its raw `INSERT INTO "Outbox"` with the outbox service, so the stale-entry check fired. Code fault, not environment. Removed the entry from `HANDED_OVER` and updated the list-content test to the one file left (`catalog-import.service.ts`, S07). No scenario lost: all four S53 AS-09 tests remain and pass.

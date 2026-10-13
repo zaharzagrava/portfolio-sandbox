@@ -3,18 +3,14 @@ import { defineEvent } from '@app/infrastructure/events/define-event';
 
 /**
  * Contracts of events this domain consumes but whose owners have not published them yet (research R-04/R-06). Owned
- * locally until S29 (media) and S36 (marketing) export them from their entry points; then these imports are replaced.
+ * locally until S36 (marketing) exports its own; then that import is replaced. `media.gallery_changed` is now exported
+ * by S29 (media), which registers the one definition of `media.gallery_changed@1` a process may hold: S32 re-exports it
+ * here instead of defining it a second time (a second `defineEvent` of the same pair fails at import).
  * The guard value of each is the payload version below, never the envelope's `aggregateVersion` of another source.
  */
 const id = z.string().uuid();
 
-export const mediaGalleryChangedSchema = z.object({
-  productId: id,
-  shopId: id,
-  mediaIds: z.array(id).max(100),
-  galleryVersion: z.number().int().nonnegative(),
-});
-export type MediaGalleryChanged = z.infer<typeof mediaGalleryChangedSchema>;
+export { MediaGalleryChanged } from '@app/domains/media';
 
 export const productSponsorshipChangedSchema = z.object({
   productId: id,
@@ -25,15 +21,6 @@ export const productSponsorshipChangedSchema = z.object({
 export type ProductSponsorshipChanged = z.infer<
   typeof productSponsorshipChangedSchema
 >;
-
-/** `media.events`, key = productId. */
-export const MediaGalleryChanged = defineEvent(
-  'media.gallery_changed',
-  'media',
-  1,
-  mediaGalleryChangedSchema,
-  { carries: 'state' },
-);
 
 /** `marketing.events`, key = productId. */
 export const ProductSponsorshipChanged = defineEvent(
