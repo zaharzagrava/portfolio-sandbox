@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [pinned, pinned-request.ts]
 defined_for: S54-platform-toolkit
-rules_hash: e3b0c44298fc
+rules_hash: c5e09917cdab
 ---
 # Pinned address
 ## Definition
@@ -21,5 +21,6 @@ The app calls `safeGet` on `https://partner.example/feed` (illustrative). The ho
 
 ## Used by
 <!-- used-by:start -->
+- [S28](../capabilities/S28-notifications.md): R-45
 - [blocked-address](blocked-address.md)
 <!-- used-by:end -->

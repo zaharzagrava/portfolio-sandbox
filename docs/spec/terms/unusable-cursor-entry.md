@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [unusable entry]
 defined_for: S51-realtime-push
-rules_hash: e3b0c44298fc
+rules_hash: 70939beb171a
 ---
 # Unusable Last-Event-ID entry
 ## Definition
@@ -20,6 +20,7 @@ A client reconnects to two topics. Its cursor has a valid position for one topic
 
 ## Used by
 <!-- used-by:start -->
+- [S51](../capabilities/S51-realtime-push.md): R-10, R-34
 - [baseline-frame](baseline-frame.md)
 - [realtime-hub](realtime-hub.md)
 - [realtime-topic](realtime-topic.md)

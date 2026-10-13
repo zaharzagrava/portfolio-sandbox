@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [bad request, oversized value]
 defined_for: access-token-session
-rules_hash: a467e78c209f
+rules_hash: a3af2634ad41
 ---
 # Oversized refresh token rejection
 ## Definition
@@ -24,7 +24,6 @@ HTTP/1.1 400 Bad Request
 
 ## Used by
 <!-- used-by:start -->
-- [S01](../capabilities/S01-auth-sessions.md): R-21
 - [invalid-refresh-token-error](invalid-refresh-token-error.md)
 - [token-refresh](token-refresh.md)
 <!-- used-by:end -->

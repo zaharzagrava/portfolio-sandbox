@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [15-minute pending expiry, pending expiry]
 defined_for: S02-mfa-oidc
-rules_hash: 2c3f7a990300
+rules_hash: 662b431692d8
 ---
 # MFA pending expiry
 ## Definition
@@ -19,7 +19,7 @@ At 10:00 a user enrols, and at 10:05 they enrol again, so the deadline is reset 
 
 ## Used by
 <!-- used-by:start -->
-- [S02](../capabilities/S02-mfa-oidc.md): R-03
+- [S02](../capabilities/S02-mfa-oidc.md): R-03, R-05
 - [mfa-confirm](mfa-confirm.md)
 - [mfa-enrolment](mfa-enrolment.md)
 - [mfa-state](mfa-state.md)

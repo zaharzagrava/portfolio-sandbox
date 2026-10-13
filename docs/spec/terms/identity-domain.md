@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [identity]
 defined_for: S01-auth-sessions
-rules_hash: 44d27b45c41e
+rules_hash: 9def38b4e7e6
 ---
 # Identity domain
 ## Definition
@@ -28,14 +28,18 @@ identity/infra/keys/key-rotation.jobs.ts  → scheduled signing-key rotation
 ## Used by
 <!-- used-by:start -->
 - [S10](../capabilities/S10-cart-checkout.md): R-01
+- [S28](../capabilities/S28-notifications.md): R-07
 - [S48](../capabilities/S48-bff.md): B-17
 - [master-key](master-key.md)
 - [mfa-recovery-codes-regenerated-event](mfa-recovery-codes-regenerated-event.md)
 - [normalise-recovery-code](normalise-recovery-code.md)
+- [notification-routing](notification-routing.md)
 - [oidc-provider-registry](oidc-provider-registry.md)
+- [password-changed-event](password-changed-event.md)
 - [registration-service](registration-service.md)
 - [second-factor-service](second-factor-service.md)
 - [secret-box](secret-box.md)
+- [service-auth-guard](service-auth-guard.md)
 - [service-to-service-token](service-to-service-token.md)
 - [session-expired](session-expired.md)
 - [session-revocation-service](session-revocation-service.md)

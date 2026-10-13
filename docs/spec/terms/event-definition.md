@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [event definition, typed definition]
 defined_for: outbox-task-queue
-rules_hash: 7be27ebd0383
+rules_hash: 4daa177f28cc
 ---
 # Typed event definition
 ## Definition
@@ -20,17 +20,18 @@ A typed event definition declares one kind of event and the schema its payload m
 
 ## Used by
 <!-- used-by:start -->
-- [S05](../capabilities/S05-products.md): R-20
 - [S53](../capabilities/S53-events-projections.md): R-01
 - [outbox-task-queue](../concepts/outbox-task-queue.md): C-02
 - [projection-and-replay](../concepts/projection-and-replay.md)
 - [search-index](../concepts/search-index.md): C-01, C-02
 - [carries-state](carries-state.md)
+- [catalog-product-events](catalog-product-events.md)
 - [inbox-table](inbox-table.md)
 - [latest-per-key-topic](latest-per-key-topic.md)
 - [order-paid-event](order-paid-event.md)
 - [payment-status-event](payment-status-event.md)
 - [product-version](product-version.md)
+- [search-surface](search-surface.md)
 - [shop-status](shop-status.md)
 - [topic-policy-error](topic-policy-error.md)
 <!-- used-by:end -->

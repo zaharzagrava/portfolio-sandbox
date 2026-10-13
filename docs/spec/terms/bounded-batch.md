@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [batch, bounded batches]
 defined_for: S53-events-projections
-rules_hash: e3b0c44298fc
+rules_hash: 62ad1f4bf515
 ---
 # Bounded batch
 ## Definition
@@ -21,9 +21,18 @@ Assume the purge job finds 2,500 outbox rows (illustrative) that were published 
 
 ## Used by
 <!-- used-by:start -->
+- [S05](../capabilities/S05-products.md): B-19
+- [S32](../capabilities/S32-product-search.md): B-14
+- [catalog-shop-purge](catalog-shop-purge.md)
+- [invite-purge-job](invite-purge-job.md)
+- [order-items-backfill](order-items-backfill.md)
+- [orders-backfill-item-titles-job](orders-backfill-item-titles-job.md)
 - [outbox-purge-job](outbox-purge-job.md)
 - [outbox-relay](outbox-relay.md)
 - [parked-row](parked-row.md)
 - [pending-row](pending-row.md)
 - [published-row](published-row.md)
+- [shop-deleted-event](shop-deleted-event.md)
+- [shop-status-changed-event](shop-status-changed-event.md)
+- [shop-status-consumer](shop-status-consumer.md)
 <!-- used-by:end -->

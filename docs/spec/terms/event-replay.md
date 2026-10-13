@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [replay]
 defined_for: outbox-task-queue
-rules_hash: 4eda64f54c9c
+rules_hash: bfeb89f6fa1c
 ---
 # Event replay
 ## Definition
@@ -21,9 +21,10 @@ Illustrative, not taken from the spec: [S32](../capabilities/S32-product-search.
 
 ## Used by
 <!-- used-by:start -->
+- [S28](../capabilities/S28-notifications.md): B-03
 - [S34](../capabilities/S34-recommendations.md): B-14
 - [S35](../capabilities/S35-trending.md): R-20
-- [S51](../capabilities/S51-realtime-push.md): R-07, B-04, B-15, B-18
+- [S51](../capabilities/S51-realtime-push.md): R-07, R-08, B-04, B-12, B-15, B-18
 - [projection-and-replay](../concepts/projection-and-replay.md): C-02
 - [realtime-topic-stream](../concepts/realtime-topic-stream.md): C-04, C-05
 - [search-index](../concepts/search-index.md): C-08
@@ -34,6 +35,7 @@ Illustrative, not taken from the spec: [S32](../capabilities/S32-product-search.
 - [order-paid-event](order-paid-event.md)
 - [parked-row](parked-row.md)
 - [published-row](published-row.md)
+- [queue-refusal](queue-refusal.md)
 - [replay-cursor](replay-cursor.md)
 - [search-index](search-index.md)
 - [stream-frame](stream-frame.md)

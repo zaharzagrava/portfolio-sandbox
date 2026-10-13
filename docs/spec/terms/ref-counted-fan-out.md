@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [fan-out, ref-counted]
 defined_for: realtime-topic-stream
-rules_hash: 6981d634ebc0
+rules_hash: 3b72caaeef0a
 ---
 # Ref-counted fan-out
 ## Definition
@@ -21,7 +21,7 @@ On one instance, three browser tabs (illustrative) watch the `user:{userId}` top
 
 ## Used by
 <!-- used-by:start -->
-- [S51](../capabilities/S51-realtime-push.md): B-10, B-11
+- [S51](../capabilities/S51-realtime-push.md): R-33
 - [realtime-backplane](realtime-backplane.md)
 - [realtime-hub](realtime-hub.md)
 - [realtime-topic-access-rule](realtime-topic-access-rule.md)

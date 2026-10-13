@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [serializable]
 defined_for: transaction-runner
-rules_hash: 7202f9b9ad8f
+rules_hash: 894ed3514ccd
 ---
 # Serializable scope
 ## Definition
@@ -23,6 +23,7 @@ These values are illustrative. Attempt 1 fails with `40001` (serialization failu
 <!-- used-by:start -->
 - [S54](../capabilities/S54-platform-toolkit.md): R-15, B-06
 - [max-owned-shops](max-owned-shops.md)
+- [order-settlement](order-settlement.md)
 - [transaction-conflict](transaction-conflict.md)
 - [transaction-scope](transaction-scope.md)
 - [transaction-timeouts](transaction-timeouts.md)

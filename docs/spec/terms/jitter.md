@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: []
 defined_for: cache-layers
-rules_hash: 4474a3d100e1
+rules_hash: 189b1e6c3aaa
 ---
 # Jitter
 ## Definition
@@ -20,8 +20,8 @@ With `jitter` = 0.1 and a lifetime of 60 s (illustrative), each entry's real lif
 
 ## Used by
 <!-- used-by:start -->
-- [S05](../capabilities/S05-products.md): R-14
 - [S10](../capabilities/S10-cart-checkout.md): R-28
+- [S28](../capabilities/S28-notifications.md): R-34
 - [S35](../capabilities/S35-trending.md): B-17
 - [S49](../capabilities/S49-job-scheduler.md): R-12
 - [S52](../capabilities/S52-cache-toolkit.md): R-01, R-15
@@ -30,10 +30,13 @@ With `jitter` = 0.1 and a lifetime of 60 s (illustrative), each entry's real lif
 - [outbox-task-queue](../concepts/outbox-task-queue.md): C-06
 - [cache-entry](cache-entry.md)
 - [cache-toolkit](cache-toolkit.md)
+- [exhausted](exhausted.md)
 - [job-retry-delay](job-retry-delay.md)
 - [loader](loader.md)
 - [outbox-relay](outbox-relay.md)
 - [search-refresh-popularity](search-refresh-popularity.md)
 - [soft-expiry](soft-expiry.md)
+- [transient-error](transient-error.md)
+- [transient-failure](transient-failure.md)
 - [upstream-unavailable](upstream-unavailable.md)
 <!-- used-by:end -->

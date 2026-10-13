@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [enroll, re-enrolling]
 defined_for: S02-mfa-oidc
-rules_hash: 797be81c839b
+rules_hash: eb5d0cf74b9d
 ---
 # MFA enrolment
 ## Definition
@@ -23,7 +23,8 @@ A user in state `none` calls `POST /auth/mfa/enroll` and gets back `200` with [`
 
 ## Used by
 <!-- used-by:start -->
-- [S02](../capabilities/S02-mfa-oidc.md): R-02, B-01
+- [S01](../capabilities/S01-auth-sessions.md): R-14
+- [S02](../capabilities/S02-mfa-oidc.md): R-02, R-03, B-01
 - [manual-entry-key](manual-entry-key.md)
 - [mfa-not-pending](mfa-not-pending.md)
 - [mfa-pending-expiry](mfa-pending-expiry.md)

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [user cart]
 defined_for: S10-cart-checkout
-rules_hash: 7f89cbcacbee
+rules_hash: 226d1edfc4f2
 ---
 # Cart
 ## Definition
@@ -19,6 +19,7 @@ A signed-in user who still has a guest cookie calls `PUT /cart/items/A`. The lin
 
 ## Used by
 <!-- used-by:start -->
-- [S10](../capabilities/S10-cart-checkout.md): B-02, B-03
+- [line-expiry](line-expiry.md)
+- [put-cart-items](put-cart-items.md)
 - [user-prefix](user-prefix.md)
 <!-- used-by:end -->

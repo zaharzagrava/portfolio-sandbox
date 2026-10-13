@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [secret field]
 defined_for: S01-auth-sessions
-rules_hash: e7279712bdf1
+rules_hash: d6a814b39da9
 ---
 # Secret fields
 ## Definition
@@ -21,8 +21,11 @@ Secret fields are the parts of a user record that must never leave [S01](../capa
 ## Used by
 <!-- used-by:start -->
 - [S01](../capabilities/S01-auth-sessions.md): B-15
+- [S03](../capabilities/S03-shops-rbac.md): B-19
+- [get-dev-mailbox](get-dev-mailbox.md)
 - [get-users-by-ids](get-users-by-ids.md)
 - [password-hash](password-hash.md)
+- [resolve-as-unknown](resolve-as-unknown.md)
 - [user-directory-service](user-directory-service.md)
 - [user-summary](user-summary.md)
 <!-- used-by:end -->

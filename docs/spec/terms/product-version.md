@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [currentversion, version]
 defined_for: S05-products
-rules_hash: c693d5eb2c3a
+rules_hash: b470cc45d028
 ---
 # Product version
 ## Definition
@@ -24,10 +24,14 @@ The status is `409` and nothing changes.
 
 ## Used by
 <!-- used-by:start -->
+- [S05](../capabilities/S05-products.md): R-20
 - [S32](../capabilities/S32-product-search.md): R-13, R-14
 - [cache-entry](cache-entry.md)
 - [catalog-product-deleted-event](catalog-product-deleted-event.md)
 - [event-definition](event-definition.md)
 - [product-view-count](product-view-count.md)
+- [products-flush-view-counts-job](products-flush-view-counts-job.md)
+- [search-document](search-document.md)
+- [search-projector](search-projector.md)
 - [version-conflict](version-conflict.md)
 <!-- used-by:end -->

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [history row]
 defined_for: S10-cart-checkout
-rules_hash: a1cbbd639284
+rules_hash: a029f40524c1
 ---
 # Order status history
 ## Definition
@@ -21,10 +21,13 @@ A buyer checks out, the [signed webhook](verified-webhook-event.md) marks the or
 
 ## Used by
 <!-- used-by:start -->
-- [S10](../capabilities/S10-cart-checkout.md): R-33
+- [S10](../capabilities/S10-cart-checkout.md): R-33, R-36
+- [S14](../capabilities/S14-ledger-reconciliation.md): B-14
 - [durable-conditional-write](durable-conditional-write.md)
+- [get-order-by-id](get-order-by-id.md)
 - [order-command](order-command.md)
 - [order-status](order-status.md)
+- [order-unavailable](order-unavailable.md)
 - [order-version](order-version.md)
 - [payments-events-topic](payments-events-topic.md)
 - [ship-order](ship-order.md)

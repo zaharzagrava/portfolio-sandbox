@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [deltas]
 defined_for: S05-products
-rules_hash: c8b192393dc0
+rules_hash: 8e5416fd7cb5
 ---
 # Stock delta
 ## Definition

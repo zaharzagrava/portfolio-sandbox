@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [status history]
 defined_for: S05-products
-rules_hash: 13b77c6534cb
+rules_hash: 9d06c95a9f02
 ---
 # ProductStatusHistory
 ## Definition
@@ -22,4 +22,5 @@ A member with [`products.write`](permission.md) calls `POST /shops/:shopId/produ
 ## Used by
 <!-- used-by:start -->
 - [product-archive](product-archive.md)
+- [shop-deleted-event](shop-deleted-event.md)
 <!-- used-by:end -->

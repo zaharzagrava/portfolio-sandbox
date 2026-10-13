@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [replayable]
 defined_for: realtime-topic-stream
-rules_hash: 99984226e1c6
+rules_hash: 70f30cd966d8
 ---
 # Replayable event
 ## Definition
@@ -20,7 +20,7 @@ A browser loses its connection during checkout and reconnects with its last `id:
 
 ## Used by
 <!-- used-by:start -->
-- [S51](../capabilities/S51-realtime-push.md): R-06, R-09, B-12, B-15, B-17
+- [S51](../capabilities/S51-realtime-push.md): R-06, R-33, B-12, B-15, B-17
 - [realtime-topic-stream](../concepts/realtime-topic-stream.md): C-04
 - [realtime-event](realtime-event.md)
 - [realtime-hub](realtime-hub.md)

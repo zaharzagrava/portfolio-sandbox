@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [release, stock return]
 defined_for: order-reservation
-rules_hash: 6fef0ce00865
+rules_hash: c6697115895f
 ---
 # Stock release
 ## Definition
@@ -21,7 +21,7 @@ Order `42` (illustrative) is cancelled with [`hold_expired`](hold-expired.md). I
 
 ## Used by
 <!-- used-by:start -->
-- [S10](../capabilities/S10-cart-checkout.md): R-22, B-14
+- [S10](../capabilities/S10-cart-checkout.md): B-13, B-14
 - [order-reservation](../concepts/order-reservation.md): C-04
 - [catalog-stock-command](catalog-stock-command.md)
 - [hold-expired](hold-expired.md)

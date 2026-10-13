@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [search.performed]
 defined_for: S32-product-search
-rules_hash: e3b0c44298fc
+rules_hash: b4febe611455
 ---
 # search.performed event
 ## Definition
@@ -22,4 +22,5 @@ An anonymous caller sends `GET /products/search?q=iphone` and gets `200` with a 
 ## Used by
 <!-- used-by:start -->
 - [query-log](query-log.md)
+- [search-surface](search-surface.md)
 <!-- used-by:end -->

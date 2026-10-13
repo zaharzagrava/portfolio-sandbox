@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [entry points]
 defined_for: S49-job-scheduler
-rules_hash: 27fac4d25609
+rules_hash: 5d475f659c22
 ---
 # Entry point
 ## Definition
@@ -22,12 +22,23 @@ An entry point is a way into a [capability](capability.md): a place where other 
 
 ## Used by
 <!-- used-by:start -->
+- [S14](../capabilities/S14-ledger-reconciliation.md): R-46
+- [S28](../capabilities/S28-notifications.md): R-52
 - [capability](capability.md)
 - [code-facts](code-facts.md)
+- [confirmation-mismatch](confirmation-mismatch.md)
 - [cron-fires-skipped-total](cron-fires-skipped-total.md)
+- [in-memory-mailbox](in-memory-mailbox.md)
 - [job-handler](job-handler.md)
+- [ledger-module](ledger-module.md)
 - [navbar-menu-entry](navbar-menu-entry.md)
 - [not-found-state](not-found-state.md)
+- [notification-family](notification-family.md)
+- [notifications-callbacks-queue](notifications-callbacks-queue.md)
+- [notifications-reconcile-unread-job](notifications-reconcile-unread-job.md)
+- [notifications-wake-delivery-job](notifications-wake-delivery-job.md)
+- [notify-marketing-email-queue](notify-marketing-email-queue.md)
 - [table-ownership](table-ownership.md)
+- [use-case](use-case.md)
 - [worker-instance](worker-instance.md)
 <!-- used-by:end -->

@@ -25,6 +25,7 @@ A minimum of `100` with a maximum of `20` is refused, and no search request is s
 - [W02](../capabilities/W02-storefront-discovery.md): R-11
 - [minor-units](minor-units.md)
 - [parse-price-input](parse-price-input.md)
+- [price-ranges-facet](price-ranges-facet.md)
 - [search-filters](search-filters.md)
 - [search-page](search-page.md)
 - [search-view-url-state](search-view-url-state.md)

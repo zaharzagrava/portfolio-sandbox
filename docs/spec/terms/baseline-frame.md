@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [baseline]
 defined_for: S51-realtime-push
-rules_hash: 7471a5f237d1
+rules_hash: 575e715293e1
 ---
 # Baseline frame
 ## Definition

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [managers]
 defined_for: S03-shops-rbac
-rules_hash: 285bbb9ce74d
+rules_hash: 3cff8ae1f1c0
 ---
 # Manager (invite management)
 ## Definition
@@ -21,6 +21,7 @@ An [`ADMIN`](shop-role.md) of a shop holds `members.manage`. They call `DELETE /
 ## Used by
 <!-- used-by:start -->
 - [S03](../capabilities/S03-shops-rbac.md): B-13
+- [invite-lifecycle](invite-lifecycle.md)
 - [invite-resend](invite-resend.md)
 - [invite-revoke](invite-revoke.md)
 - [invite-token-digest](invite-token-digest.md)

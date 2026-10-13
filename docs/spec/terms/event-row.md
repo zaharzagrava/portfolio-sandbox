@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [event row]
 defined_for: transaction-runner
-rules_hash: 3cadddb55c0a
+rules_hash: 1291bae892a3
 ---
 # Event row (outbox)
 ## Definition
@@ -22,17 +22,22 @@ After commit, the row is published to Kafka. On rollback, no event row is left (
 
 ## Used by
 <!-- used-by:start -->
-- [S01](../capabilities/S01-auth-sessions.md): B-03
-- [S10](../capabilities/S10-cart-checkout.md): R-26
+- [S01](../capabilities/S01-auth-sessions.md): R-39, B-03
+- [S05](../capabilities/S05-products.md): R-08
+- [S14](../capabilities/S14-ledger-reconciliation.md): R-06
 - [S53](../capabilities/S53-events-projections.md): R-04, R-12, R-15, B-01, B-02
 - [active-transaction](active-transaction.md)
 - [append-standalone](append-standalone.md)
+- [balance-overflow](balance-overflow.md)
 - [event-envelope](event-envelope.md)
+- [journal-unbalanced](journal-unbalanced.md)
 - [no-op-update](no-op-update.md)
 - [outbox-append-task](outbox-append-task.md)
 - [outbox-relay](outbox-relay.md)
 - [pending-row](pending-row.md)
+- [post-journal](post-journal.md)
 - [published-row](published-row.md)
+- [raw-token](raw-token.md)
 - [task-row](task-row.md)
 - [transaction-scope](transaction-scope.md)
 - [unregistered-aggregate-type-error](unregistered-aggregate-type-error.md)

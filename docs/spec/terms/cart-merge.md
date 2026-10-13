@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [merge, merges, post /cart/merge]
 defined_for: S10-cart-checkout
-rules_hash: c2496bc4af58
+rules_hash: 97918ce7c662
 ---
 # Cart merge
 ## Definition
@@ -21,8 +21,10 @@ The user cart is `{A: 1, B: 19}` and the guest cart is `{A: 3, B: 5, C: 2}`. Aft
 
 ## Used by
 <!-- used-by:start -->
-- [S10](../capabilities/S10-cart-checkout.md): R-02, R-06, R-07, B-03, B-04
+- [S10](../capabilities/S10-cart-checkout.md): R-06, B-03, B-04
 - [W03](../capabilities/W03-cart-checkout-orders.md): R-06, B-06
+- [added-at](added-at.md)
 - [cart-line-limit](cart-line-limit.md)
 - [dropped-lines](dropped-lines.md)
+- [line-expiry](line-expiry.md)
 <!-- used-by:end -->

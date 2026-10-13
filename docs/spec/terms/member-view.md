@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [public view]
 defined_for: S05-products
-rules_hash: 65df17c71e0c
+rules_hash: 761aa648c133
 ---
 # Member view (product)
 ## Definition
@@ -20,6 +20,7 @@ A [`STAFF`](shop-role.md) member posts a valid product to `POST /shops/:shopId/p
 ## Used by
 <!-- used-by:start -->
 - [S05](../capabilities/S05-products.md): B-01, B-06
+- [batch-products-lookup](batch-products-lookup.md)
 - [permission](permission.md)
 - [product-view-count](product-view-count.md)
 - [shop-member](shop-member.md)

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: []
 defined_for: S03-shops-rbac
-rules_hash: f578e8773fce
+rules_hash: d8866b4fbbbe
 ---
 # Source of truth
 ## Definition
@@ -29,5 +29,6 @@ An owner demotes a member with `PATCH /shops/:shopId/members/:userId` and gets `
 - [optimistic-update](optimistic-update.md)
 - [permission](permission.md)
 - [read-model](read-model.md)
+- [rebuildable-read-model](rebuildable-read-model.md)
 - [write-model](write-model.md)
 <!-- used-by:end -->

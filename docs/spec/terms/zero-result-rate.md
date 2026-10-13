@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [zeroresultrate]
 defined_for: S32-product-search
-rules_hash: 716dc1bb2b9b
+rules_hash: 7eb5b9b822b1
 ---
 # Zero-result rate
 ## Definition
@@ -27,6 +27,7 @@ The zero-result rate is the share of searches for one query that returned no ite
 - [fuzzy-matching](fuzzy-matching.md)
 - [get-admin-search-quality](get-admin-search-quality.md)
 - [mrr](mrr.md)
+- [redacted-query](redacted-query.md)
 - [search-filters](search-filters.md)
 - [search-mode](search-mode.md)
 - [search-quality-report](search-quality-report.md)

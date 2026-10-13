@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [boost, boosts]
 defined_for: job-scheduler-lease
-rules_hash: 260e289648ee
+rules_hash: 63661b767359
 ---
 # Relevance boosts
 ## Definition
@@ -21,7 +21,7 @@ Illustrative only. Two products match the query "running shoes" equally well on 
 
 ## Used by
 <!-- used-by:start -->
-- [S32](../capabilities/S32-product-search.md): R-07, B-04, B-11
+- [S32](../capabilities/S32-product-search.md): R-07, B-11
 - [business-score](business-score.md)
 - [combined-business-multiplier](combined-business-multiplier.md)
 - [search-facets](search-facets.md)

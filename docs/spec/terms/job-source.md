@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [source, sources]
 defined_for: idempotency-key
-rules_hash: 3a2ce4b8f93b
+rules_hash: 74915b50fb49
 ---
 # Job source
 ## Definition
@@ -21,6 +21,8 @@ Source A enqueues 10,000 jobs, and then source B enqueues 5 jobs (illustrative v
 
 ## Used by
 <!-- used-by:start -->
+- [S10](../capabilities/S10-cart-checkout.md): R-45
 - [gallery-event](gallery-event.md)
 - [job-fairness](job-fairness.md)
+- [marketing-notice](marketing-notice.md)
 <!-- used-by:end -->

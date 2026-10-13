@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [version]
 defined_for: S10-cart-checkout
-rules_hash: d27d9c664abf
+rules_hash: a6ce1f11a5dc
 ---
 # Order version
 ## Definition
@@ -20,8 +20,9 @@ An order in [`RESERVED`](order-status.md) has `version` 2 (illustrative value). 
 
 ## Used by
 <!-- used-by:start -->
-- [S10](../capabilities/S10-cart-checkout.md): R-33
+- [S13](../capabilities/S13-payment-intents.md): R-20
 - [event-consumer](event-consumer.md)
+- [get-order-by-id](get-order-by-id.md)
 - [guarded-update](guarded-update.md)
 - [hold-expired](hold-expired.md)
 - [optimistic-concurrency](optimistic-concurrency.md)

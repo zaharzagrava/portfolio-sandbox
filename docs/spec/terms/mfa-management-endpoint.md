@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [management endpoints]
 defined_for: S02-mfa-oidc
-rules_hash: d07ceb42eb06
+rules_hash: e372f43b9c32
 ---
 # MFA management endpoint
 ## Definition
@@ -23,6 +23,7 @@ An MFA management endpoint is a route a signed-in user calls to view or change t
 - [S02](../capabilities/S02-mfa-oidc.md): R-06
 - [access-token](access-token.md)
 - [mfa-challenge-token](mfa-challenge-token.md)
+- [mfa-not-enabled](mfa-not-enabled.md)
 - [mfa-recovery-code-regenerate](mfa-recovery-code-regenerate.md)
 - [mfa-recovery-code](mfa-recovery-code.md)
 - [mfa-state](mfa-state.md)

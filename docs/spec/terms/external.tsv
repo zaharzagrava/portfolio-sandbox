@@ -215,3 +215,53 @@ csp-report-only	Report-only mode	https://developer.mozilla.org/en-US/docs/Web/HT
 main-element	main element	https://developer.mozilla.org/en-US/docs/Web/HTML/Element/main	MDN	<main>
 http-404-not-found	404 Not Found	https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404	MDN	404,not-found http status
 web-crawler	Web crawler	https://en.wikipedia.org/wiki/Web_crawler	Wikipedia	crawler,crawlers
+uuid	UUID	https://datatracker.ietf.org/doc/html/rfc9562	RFC 9562	uuid
+foreign-key	Foreign key	https://www.postgresql.org/docs/current/ddl-constraints.html	PostgreSQL docs	foreign keys
+oidc-discovery-document	OIDC discovery document	https://openid.net/specs/openid-connect-discovery-1_0.html	OpenID Connect	discovery document
+oauth-client-id	OAuth client identifier	https://datatracker.ietf.org/doc/html/rfc6749	RFC 6749	
+message-authentication-code	Keyed MAC	https://en.wikipedia.org/wiki/Message_authentication_code	Wikipedia	mac
+sec-fetch-site	Sec-Fetch-Site	https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Sec-Fetch-Site	MDN	
+jwt-act	JWT act (actor) claim	https://datatracker.ietf.org/doc/html/rfc8693	RFC 8693	act
+at-least-once-delivery	At-least-once delivery	https://en.wikipedia.org/wiki/Message_queue	Wikipedia	redelivered
+jwt	JWT (JSON Web Token)	https://jwt.io/introduction	jwt.io	jwt library
+covering-index	Covering index	https://www.postgresql.org/docs/current/indexes-index-only-scans.html	PostgreSQL docs	index-only scan
+partial-index-predicate	Index predicate	https://www.postgresql.org/docs/current/indexes-partial.html	PostgreSQL docs	predicate
+oauth-client-secret	Client secret	https://datatracker.ietf.org/doc/html/rfc6749	RFC 6749	client secret
+metrics	Metrics	https://opentelemetry.io/docs/concepts/signals/metrics/	OpenTelemetry	metric,metrics
+account-enumeration	Account enumeration	https://owasp.org/www-project-web-security-testing-guide/latest/4-Web_Application_Security_Testing/03-Identity_Management_Testing/04-Testing_for_Account_Enumeration_and_Guessable_User_Account	OWASP	
+webhook-event	Webhook event	https://docs.stripe.com/webhooks	Stripe docs	webhook events,webhook
+data-residency	Data residency	https://en.wikipedia.org/wiki/Data_localization	Wikipedia	data residency,data localization
+redis	Redis	https://redis.io/docs/latest/	Redis docs	
+database-constraint	Database constraint	https://www.postgresql.org/docs/current/ddl-constraints.html	PostgreSQL docs	
+safe-integer-range	Safe-integer range	https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number/MAX_SAFE_INTEGER	MDN	
+out-of-order-delivery	Out-of-order delivery	https://en.wikipedia.org/wiki/Message_queue	Wikipedia	out of order
+stable-hash	Stable hash	https://en.wikipedia.org/wiki/Hash_function	Wikipedia	
+keyset-pagination	Keyset pagination	https://en.wikipedia.org/wiki/Pagination	Wikipedia	keyset
+expand-and-contract	Expand and contract migration	https://martinfowler.com/bliki/ParallelChange.html	martinfowler.com	parallel change,contract step
+check-constraint	CHECK constraint	https://www.postgresql.org/docs/current/ddl-constraints.html	PostgreSQL docs	
+list-unsubscribe-one-click	One-click unsubscribe headers	https://datatracker.ietf.org/doc/html/rfc8058	RFC 8058	list-unsubscribe
+constant-time	Constant time (O(1))	https://en.wikipedia.org/wiki/Time_complexity	Wikipedia	
+e164	E.164	https://en.wikipedia.org/wiki/E.164	Wikipedia	
+sns-message	Amazon SNS message	https://docs.aws.amazon.com/sns/latest/dg/sns-message-and-json-formats.html	AWS docs	sns
+logic-less-template	Logic-less template	https://en.wikipedia.org/wiki/Mustache_(template_system)	Wikipedia	logic-less
+crlf-injection	CR and LF (CRLF injection)	https://owasp.org/www-community/vulnerabilities/CRLF_Injection	OWASP	crlf
+http-401-unauthorized	401 Unauthorized	https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/401	MDN	
+trigram-match	Trigram match	https://www.postgresql.org/docs/current/pgtrgm.html	PostgreSQL docs	trigram
+immutable	Immutable	https://en.wikipedia.org/wiki/Immutable_object	Wikipedia	
+database-trigger	Database trigger	https://www.postgresql.org/docs/current/triggers.html	PostgreSQL docs	triggers
+deferred-constraint	Deferred constraint	https://www.postgresql.org/docs/current/sql-set-constraints.html	PostgreSQL docs	deferred constraints
+double-entry-bookkeeping	Double-entry bookkeeping	https://en.wikipedia.org/wiki/Double-entry_bookkeeping	Wikipedia	double-entry
+sqs-queue	Amazon SQS queue	https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/welcome.html	AWS docs	sqs
+amazon-ses	Amazon SES	https://docs.aws.amazon.com/ses/latest/dg/Welcome.html	AWS docs	ses
+serializable-isolation	Serialized (serializable isolation)	https://www.postgresql.org/docs/current/transaction-iso.html	PostgreSQL docs	serializable
+url-fragment	URL fragment	https://developer.mozilla.org/en-US/docs/Web/URI/Reference/Fragment	MDN	fragment
+tampered-token	Tampered token	https://en.wikipedia.org/wiki/Tamper_resistance	Wikipedia	tampered
+polling	Polling	https://en.wikipedia.org/wiki/Polling_(computer_science)	Wikipedia	
+orm	ORM (object-relational mapping)	https://en.wikipedia.org/wiki/Object%E2%80%93relational_mapping	Wikipedia	orm,orm model
+key-rotation	Key rotation	https://cheatsheetseries.owasp.org/cheatsheets/Key_Management_Cheat_Sheet.html	OWASP	rotating,rotation
+nestjs-module	Module	https://docs.nestjs.com/modules	NestJS docs	modules
+http-2xx-success	2xx success status	https://developer.mozilla.org/en-US/docs/Web/HTTP/Status	MDN	2xx
+pure-function	Pure function	https://en.wikipedia.org/wiki/Pure_function	Wikipedia	
+http-authentication	HTTP authentication	https://developer.mozilla.org/en-US/docs/Web/HTTP/Authentication	MDN	
+phishing	Phishing	https://en.wikipedia.org/wiki/Phishing	Wikipedia	
+http-post	POST method	https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/POST	MDN	

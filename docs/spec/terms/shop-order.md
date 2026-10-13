@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [shop orders]
 defined_for: order-reservation
-rules_hash: 4132d84aa3e7
+rules_hash: 22a47462954c
 ---
 # Shop order
 ## Definition
@@ -27,8 +27,10 @@ order ord_123
 
 ## Used by
 <!-- used-by:start -->
-- [S10](../capabilities/S10-cart-checkout.md): R-14, B-05
+- [S10](../capabilities/S10-cart-checkout.md): R-14, R-36, B-05
 - [discount-tie-break](discount-tie-break.md)
+- [get-order-by-id](get-order-by-id.md)
+- [get-shop-orders](get-shop-orders.md)
 - [line-position](line-position.md)
 - [order-status](order-status.md)
 - [order-total](order-total.md)

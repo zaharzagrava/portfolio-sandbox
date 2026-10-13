@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [reason code]
 defined_for: S53-events-projections
-rules_hash: a40f4e29a3df
+rules_hash: cd6e8ed7d737
 ---
 # Dead-letter reason code
 ## Definition
@@ -23,10 +23,13 @@ A batch of 5 events reaches a consumer, and the third event's payload fails its 
 
 ## Used by
 <!-- used-by:start -->
+- [S28](../capabilities/S28-notifications.md): B-04
 - [consumer-attempt-budget](consumer-attempt-budget.md)
 - [event-consumer](event-consumer.md)
 - [event-sink](event-sink.md)
+- [known-unmapped-type](known-unmapped-type.md)
 - [partition-pause](partition-pause.md)
 - [permanent-error](permanent-error.md)
+- [render-failure](render-failure.md)
 - [unsupported-version](unsupported-version.md)
 <!-- used-by:end -->

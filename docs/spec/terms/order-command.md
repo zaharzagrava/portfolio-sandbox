@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [cancel, deliver, markpaid, order commands, reserve, ship, startfulfilment]
 defined_for: S10-cart-checkout
-rules_hash: d8bcc966c03d
+rules_hash: bc4cb70fcfde
 ---
 # Order command
 ## Definition
@@ -25,10 +25,12 @@ Code: `packages/backend/libs/domains/orders/domain/order-state.ts#decide`
 
 ## Used by
 <!-- used-by:start -->
+- [S10](../capabilities/S10-cart-checkout.md): R-42
 - [deliver-order](deliver-order.md)
 - [fulfilment](fulfilment.md)
 - [guarded-update](guarded-update.md)
 - [order-status-history](order-status-history.md)
 - [order-status](order-status.md)
+- [order-unavailable](order-unavailable.md)
 - [order-version](order-version.md)
 <!-- used-by:end -->

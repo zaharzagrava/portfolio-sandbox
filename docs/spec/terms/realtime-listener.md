@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [listeners]
 defined_for: S51-realtime-push
-rules_hash: 96c4057f64fa
+rules_hash: 611ef3a31d3b
 ---
 # Listener (realtime)
 ## Definition
@@ -21,7 +21,7 @@ A domain in the same process calls `subscribe("user:<A>", handler)` (topic value
 
 ## Used by
 <!-- used-by:start -->
-- [S51](../capabilities/S51-realtime-push.md): R-23
+- [S51](../capabilities/S51-realtime-push.md): R-23, R-32
 - [cache-broadcast-subscription](cache-broadcast-subscription.md)
 - [realtime-hub](realtime-hub.md)
 - [realtime-topic](realtime-topic.md)

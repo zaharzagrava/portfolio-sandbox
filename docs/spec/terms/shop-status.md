@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [`deleted`, `deleting`, deleted, deleting, suspended]
 defined_for: search-index
-rules_hash: e996e3d6679b
+rules_hash: 90fa10f76c1e
 ---
 # Shop status
 ## Definition
@@ -21,15 +21,17 @@ Shop "shop-42" (illustrative) moves to `SUSPENDED`. Its existing products disapp
 
 ## Used by
 <!-- used-by:start -->
-- [S03](../capabilities/S03-shops-rbac.md): R-01, R-15, B-01, B-14
-- [S05](../capabilities/S05-products.md): B-01
+- [S03](../capabilities/S03-shops-rbac.md): R-01, R-26, B-14, B-22, B-23, B-24
+- [S05](../capabilities/S05-products.md): R-10, R-23, B-01, B-20
 - [S32](../capabilities/S32-product-search.md): R-16
 - [S34](../capabilities/S34-recommendations.md): R-03
 - [search-index](../concepts/search-index.md): C-05
 - [apply-verification](apply-verification.md)
 - [batch-shops-lookup](batch-shops-lookup.md)
 - [event-definition](event-definition.md)
+- [get-shop-export](get-shop-export.md)
 - [live-shop](live-shop.md)
+- [platform-admin](platform-admin.md)
 - [post-shops](post-shops.md)
 - [product-not-found](product-not-found.md)
 - [role-permission-matrix](role-permission-matrix.md)
@@ -37,6 +39,12 @@ Shop "shop-42" (illustrative) moves to `SUSPENDED`. Its existing products disapp
 - [search-index](search-index.md)
 - [search-visibility](search-visibility.md)
 - [semantic-search](semantic-search.md)
+- [shop-offboarding](shop-offboarding.md)
+- [shop-purge-due](shop-purge-due.md)
+- [shop-purge-job](shop-purge-job.md)
+- [shop-status-changed-event](shop-status-changed-event.md)
+- [shop-status-consumer](shop-status-consumer.md)
+- [shop-status-history](shop-status-history.md)
 - [shop-verification](shop-verification.md)
 - [tenancy-domain-layer](tenancy-domain-layer.md)
 - [view-count-flush](view-count-flush.md)

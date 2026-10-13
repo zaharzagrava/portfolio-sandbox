@@ -22,4 +22,5 @@ A batch holds three `order.paid` events. The second one has a payload that does 
 <!-- used-by:start -->
 - [consumer-batch](consumer-batch.md)
 - [event-consumer](event-consumer.md)
+- [known-unmapped-type](known-unmapped-type.md)
 <!-- used-by:end -->

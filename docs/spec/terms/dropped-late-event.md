@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [dropped and counted]
 defined_for: S35-trending
-rules_hash: c188b2eaa058
+rules_hash: 54ba93c527d5
 ---
 # Dropped late event
 ## Definition
@@ -20,10 +20,15 @@ At 12:00 the ranking covers the windows from 11:00 to 12:00. A `product_view` wi
 
 ## Used by
 <!-- used-by:start -->
+- [S28](../capabilities/S28-notifications.md): R-47
+- [S32](../capabilities/S32-product-search.md): R-13, R-14, B-12
 - [S35](../capabilities/S35-trending.md): R-17
 - [correction-path](correction-path.md)
 - [event-consumer](event-consumer.md)
 - [late-event-horizon](late-event-horizon.md)
+- [provider-message-id](provider-message-id.md)
+- [search-document](search-document.md)
+- [search-purge-tombstones-job](search-purge-tombstones-job.md)
 - [trending-aggregate](trending-aggregate.md)
 - [trending-window](trending-window.md)
 - [watermark](watermark.md)

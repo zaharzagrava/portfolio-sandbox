@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [byte-identical]
 defined_for: S01-auth-sessions
-rules_hash: 825fc0c6d7ec
+rules_hash: 0f1d21eafe22
 ---
 # Identical registration response
 ## Definition
@@ -26,12 +26,12 @@ The second request leaves the account unchanged and emits [`identity.registratio
 ## Used by
 <!-- used-by:start -->
 - [S01](../capabilities/S01-auth-sessions.md): B-02
-- [S13](../capabilities/S13-payment-intents.md): B-02
 - [S34](../capabilities/S34-recommendations.md): R-08
 - [S35](../capabilities/S35-trending.md): R-06
 - [W01](../capabilities/W01-auth-account.md): R-08, B-02
 - [normalize-email](normalize-email.md)
 - [password-hash](password-hash.md)
+- [passwordless-account](passwordless-account.md)
 - [post-auth-register](post-auth-register.md)
 - [query-suggestion](query-suggestion.md)
 - [query-suggestions](query-suggestions.md)

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [spend, spent]
 defined_for: S02-mfa-oidc
-rules_hash: 03e256aaea9e
+rules_hash: 1a4073fb3680
 ---
 # Recovery code spend
 ## Definition
@@ -21,6 +21,7 @@ Alice sends `K7QPM-4XZ2R` (illustrative) to `POST /auth/mfa/verify` and receives
 
 ## Used by
 <!-- used-by:start -->
+- [S02](../capabilities/S02-mfa-oidc.md): R-11, R-26, B-07
 - [durable-conditional-write](durable-conditional-write.md)
 - [invalid-mfa-code](invalid-mfa-code.md)
 - [mfa-recovery-code-used-event](mfa-recovery-code-used-event.md)

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [/api/bff/session/logout, logout]
 defined_for: W01-auth-account
-rules_hash: e3b0c44298fc
+rules_hash: c734a79b6a14
 ---
 # POST /api/bff/session/logout
 ## Definition
@@ -26,6 +26,7 @@ On success, other open tabs learn about the sign-out through the [`auth` Broadca
 
 ## Used by
 <!-- used-by:start -->
+- [S01](../capabilities/S01-auth-sessions.md): R-31
 - [capability](capability.md)
 - [client-cache-clear](client-cache-clear.md)
 - [host-bff-cookies](host-bff-cookies.md)

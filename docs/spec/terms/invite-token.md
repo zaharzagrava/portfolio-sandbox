@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [invite tokens]
 defined_for: S03-shops-rbac
-rules_hash: 43cecc66901d
+rules_hash: 0a747ab84673
 ---
 # Invite token
 ## Definition
@@ -21,11 +21,16 @@ The invitee later sends the token to `POST /shop-invites/accept`. If a second re
 
 ## Used by
 <!-- used-by:start -->
-- [S03](../capabilities/S03-shops-rbac.md): R-14, B-09, B-11
+- [S03](../capabilities/S03-shops-rbac.md): R-14, B-09, B-11, B-13
+- [get-shop-export](get-shop-export.md)
 - [invite-acceptance](invite-acceptance.md)
+- [invite-lifecycle](invite-lifecycle.md)
 - [invite-resend](invite-resend.md)
 - [invite-revoke](invite-revoke.md)
 - [invite-token-digest](invite-token-digest.md)
+- [malformed-queue-message](malformed-queue-message.md)
 - [pending-invite](pending-invite.md)
 - [shop-tenant](shop-tenant.md)
+- [template-redaction](template-redaction.md)
+- [tenancy-invite-requested-queue](tenancy-invite-requested-queue.md)
 <!-- used-by:end -->

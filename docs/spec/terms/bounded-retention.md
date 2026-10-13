@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [retention]
 defined_for: S35-trending
-rules_hash: 955ef9d7cd46
+rules_hash: a868db780bb9
 ---
 # Bounded retention
 ## Definition
@@ -22,10 +22,16 @@ Keeping keys longer than the [ranking span](ranking-span.md) is design intent (n
 
 ## Used by
 <!-- used-by:start -->
+- [S28](../capabilities/S28-notifications.md): R-38
 - [aggregate-store](aggregate-store.md)
 - [allowed-lateness](allowed-lateness.md)
+- [get-notifications](get-notifications.md)
+- [order-webhook-events-purge](order-webhook-events-purge.md)
 - [outbox-purge-job](outbox-purge-job.md)
+- [provider-message-id](provider-message-id.md)
 - [ranking-span](ranking-span.md)
+- [stock-operation-purge](stock-operation-purge.md)
+- [synonym-history](synonym-history.md)
 - [trending-aggregate](trending-aggregate.md)
 - [trending-configuration](trending-configuration.md)
 - [trending-ranking-cache](trending-ranking-cache.md)

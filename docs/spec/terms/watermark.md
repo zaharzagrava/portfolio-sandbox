@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [watermarks]
 defined_for: S35-trending
-rules_hash: c2bfb3ddcc32
+rules_hash: 06fe05f08058
 ---
 # Watermark
 ## Definition
@@ -20,6 +20,7 @@ With the configured lateness of 120 s, suppose the latest event time seen on a p
 
 ## Used by
 <!-- used-by:start -->
+- [S28](../capabilities/S28-notifications.md): R-40
 - [S35](../capabilities/S35-trending.md): R-15, R-16
 - [allowed-lateness](allowed-lateness.md)
 - [analytics-events-topic](analytics-events-topic.md)
@@ -28,6 +29,8 @@ With the configured lateness of 120 s, suppose the latest event time seen on a p
 - [idle-partition](idle-partition.md)
 - [idle-timeout](idle-timeout.md)
 - [late-event-horizon](late-event-horizon.md)
+- [mark-all-read](mark-all-read.md)
+- [post-notifications-read](post-notifications-read.md)
 - [ranking-span](ranking-span.md)
 - [received-at](received-at.md)
 - [trending-minute-window](trending-minute-window.md)

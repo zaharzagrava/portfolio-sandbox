@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [secondfactor]
 defined_for: S02-mfa-oidc
-rules_hash: e3b0c44298fc
+rules_hash: 648dc92cfab8
 ---
 # SecondFactor model
 ## Definition
@@ -21,9 +21,12 @@ A user in state `none` calls `POST /auth/mfa/enroll`, and their `SecondFactor` m
 
 ## Used by
 <!-- used-by:start -->
+- [S02](../capabilities/S02-mfa-oidc.md): R-26
 - [mfa-challenge](mfa-challenge.md)
 - [mfa-confirm](mfa-confirm.md)
+- [mfa-disabled-event](mfa-disabled-event.md)
 - [mfa-enrolment](mfa-enrolment.md)
+- [mfa-not-enabled](mfa-not-enabled.md)
 - [mfa-pending-expiry](mfa-pending-expiry.md)
 - [mfa-recovery-code](mfa-recovery-code.md)
 - [mfa-state](mfa-state.md)

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [conflict]
 defined_for: problem-json-errors
-rules_hash: 9265904f4a2f
+rules_hash: ddac55bbd8f3
 ---
 # conflict error (409)
 ## Definition
@@ -28,6 +28,7 @@ Two concurrent requests try to insert the same unique value. The second one rece
 - [error-catalogue](error-catalogue.md)
 - [error-code](error-code.md)
 - [last-owner](last-owner.md)
+- [mfa-not-enabled](mfa-not-enabled.md)
 - [no-previous-index](no-previous-index.md)
 - [order-not-cancellable](order-not-cancellable.md)
 - [reindex-in-progress](reindex-in-progress.md)

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: []
 defined_for: realtime-topic-stream
-rules_hash: 46d7b152f465
+rules_hash: 7286f671120b
 ---
 # revoke
 ## Definition
@@ -24,7 +24,7 @@ S51 hub API: stream endpoint, publish, in-process subscriber, replay, access rul
 
 ## Used by
 <!-- used-by:start -->
-- [S51](../capabilities/S51-realtime-push.md): B-19
+- [S51](../capabilities/S51-realtime-push.md): R-33, R-34, B-19
 - [connection-admission](connection-admission.md)
 - [realtime-hub](realtime-hub.md)
 - [realtime-topic-access-rule](realtime-topic-access-rule.md)

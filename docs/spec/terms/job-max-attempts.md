@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: []
 defined_for: job-scheduler-lease
-rules_hash: 683602fcb8b9
+rules_hash: cc761bf43b3f
 ---
 # maxAttempts
 ## Definition
@@ -20,11 +20,12 @@ A job with an illustrative `maxAttempts` of 5 fails on its 5th attempt. It is no
 
 ## Used by
 <!-- used-by:start -->
-- [S10](../capabilities/S10-cart-checkout.md): R-28
 - [job-attempt](job-attempt.md)
 - [job-enqueue](job-enqueue.md)
 - [job-lease](job-lease.md)
 - [job-reaper](job-reaper.md)
 - [job-retries](job-retries.md)
 - [jobs-admin-service-retry-dead](jobs-admin-service-retry-dead.md)
+- [ledger-jobs](ledger-jobs.md)
+- [provider-unavailable-failed-run](provider-unavailable-failed-run.md)
 <!-- used-by:end -->

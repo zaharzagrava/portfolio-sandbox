@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [position]
 defined_for: S10-cart-checkout
-rules_hash: e3b0c44298fc
+rules_hash: 3caee03c981b
 ---
 # Line position
 ## Definition
@@ -21,6 +21,8 @@ Illustrative values: a seller discount of `100` is split over three lines in one
 
 ## Used by
 <!-- used-by:start -->
+- [S32](../capabilities/S32-product-search.md): B-31
+- [S51](../capabilities/S51-realtime-push.md): R-12
 - [cart-line](cart-line.md)
 - [discount-tie-break](discount-tie-break.md)
 - [minor-units](minor-units.md)

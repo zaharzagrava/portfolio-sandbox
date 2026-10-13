@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [`aftercommit`, aftercommit callbacks]
 defined_for: transaction-runner
-rules_hash: 71eb8de580d7
+rules_hash: a323a4d13a68
 ---
 # afterCommit callback
 ## Definition
@@ -21,6 +21,7 @@ Illustrative: a scope registers callback A and then callback B, and then commits
 
 ## Used by
 <!-- used-by:start -->
+- [S05](../capabilities/S05-products.md): R-17
 - [S54](../capabilities/S54-platform-toolkit.md): R-14
 - [transaction-runner](../concepts/transaction-runner.md): C-02
 - [consumer-effects](consumer-effects.md)

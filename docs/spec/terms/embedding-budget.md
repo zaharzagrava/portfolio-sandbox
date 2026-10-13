@@ -26,6 +26,7 @@ A semantic-mode call to [`GET /products/search`](product-search-route.md) is the
 
 ## Used by
 <!-- used-by:start -->
+- [embedding-provider](embedding-provider.md)
 - [search-budget](search-budget.md)
 - [semantic-search](semantic-search.md)
 <!-- used-by:end -->

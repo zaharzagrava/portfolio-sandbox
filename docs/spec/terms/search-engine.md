@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [engine]
 defined_for: S33-autocomplete
-rules_hash: 1fd97cf3b8ae
+rules_hash: 4b88920194f3
 ---
 # Search engine
 ## Definition
@@ -24,11 +24,16 @@ That response carries `Cache-Control: no-store`.
 
 ## Used by
 <!-- used-by:start -->
+- [S32](../capabilities/S32-product-search.md): R-30, B-14
 - [S33](../capabilities/S33-autocomplete.md): R-05, B-08
 - [catalog-completions](catalog-completions.md)
+- [invalid-synonym-rules](invalid-synonym-rules.md)
 - [search-budget](search-budget.md)
 - [search-unavailable-total](search-unavailable-total.md)
 - [search-unavailable](search-unavailable.md)
 - [shop-search-table](shop-search-table.md)
+- [suggestion-timeout-error](suggestion-timeout-error.md)
+- [synonym-rules-version](synonym-rules-version.md)
+- [synonyms-unchanged-flag](synonyms-unchanged-flag.md)
 - [text-relevance](text-relevance.md)
 <!-- used-by:end -->

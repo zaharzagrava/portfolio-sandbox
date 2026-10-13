@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [mutating routes]
 defined_for: S50-rate-limiter
-rules_hash: 923115d0f1f1
+rules_hash: 63164f2ad707
 ---
 # Mutating route
 ## Definition
@@ -20,6 +20,7 @@ A route with an `Idempotency-Key` header is limited to 3 requests. The client se
 
 ## Used by
 <!-- used-by:start -->
+- [S01](../capabilities/S01-auth-sessions.md): R-29
 - [S50](../capabilities/S50-rate-limiter.md): B-11
 - [idempotency-key](idempotency-key.md)
 - [rate-limit-budget](rate-limit-budget.md)

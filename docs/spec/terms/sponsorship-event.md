@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [sponsored]
 defined_for: S32-product-search
-rules_hash: b4c3aec40636
+rules_hash: b7834b62cc66
 ---
 # Sponsorship event
 ## Definition
@@ -19,12 +19,13 @@ A newer sponsorship event arrives first, and an older one arrives after it. The 
 
 ## Used by
 <!-- used-by:start -->
-- [S32](../capabilities/S32-product-search.md): B-12
+- [S32](../capabilities/S32-product-search.md): B-04
 - [W02](../capabilities/W02-storefront-discovery.md): R-14
 - [business-score](business-score.md)
 - [combined-business-multiplier](combined-business-multiplier.md)
 - [consumer-outcomes](consumer-outcomes.md)
 - [relevance-boost](relevance-boost.md)
 - [search-items](search-items.md)
+- [search-ranking-signals](search-ranking-signals.md)
 - [version-guard](version-guard.md)
 <!-- used-by:end -->

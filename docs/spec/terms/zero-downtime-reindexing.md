@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [reindex, reindexing]
 defined_for: job-scheduler-lease
-rules_hash: 8a36e4564f64
+rules_hash: 5cda8e9118b2
 ---
 # Zero-downtime reindexing
 ## Definition
@@ -26,17 +26,21 @@ Illustrative flow (the order of steps is not stated in the spec):
 
 ## Used by
 <!-- used-by:start -->
-- [S32](../capabilities/S32-product-search.md): R-18
+- [S32](../capabilities/S32-product-search.md): R-28, B-16
 - [search-index](../concepts/search-index.md): C-07
 - [cutover](cutover.md)
 - [job-lease](job-lease.md)
 - [live-index-alias](live-index-alias.md)
+- [put-admin-search-synonyms](put-admin-search-synonyms.md)
 - [reindex-rollback](reindex-rollback.md)
 - [reindex-run-status](reindex-run-status.md)
 - [reindex-run-transition](reindex-run-transition.md)
 - [search-index](search-index.md)
+- [search-projector](search-projector.md)
 - [search-retire-previous-index](search-retire-previous-index.md)
 - [search-synonyms](search-synonyms.md)
 - [shop-search-table](shop-search-table.md)
+- [synonym-rules-version](synonym-rules-version.md)
+- [synonym-rules](synonym-rules.md)
 - [verification-failed](verification-failed.md)
 <!-- used-by:end -->

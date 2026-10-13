@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [enterprise, plan, pro, starter]
 defined_for: tenant-shop-rbac
-rules_hash: 24141fcc2b64
+rules_hash: cdd5a614c088
 ---
 # Plan limit
 ## Definition
@@ -28,8 +28,10 @@ Per tenant-shop-rbac.C-08: `STARTER` allows 5 seats, `PRO` allows 25 and `ENTERP
 - [combined-business-multiplier](combined-business-multiplier.md)
 - [last-owner](last-owner.md)
 - [live-shop](live-shop.md)
+- [member-provisioning](member-provisioning.md)
 - [pending-invite](pending-invite.md)
 - [post-shops](post-shops.md)
+- [search-ranking-signals](search-ranking-signals.md)
 - [seat](seat.md)
 - [shop-tenant](shop-tenant.md)
 - [tenancy-domain-layer](tenancy-domain-layer.md)

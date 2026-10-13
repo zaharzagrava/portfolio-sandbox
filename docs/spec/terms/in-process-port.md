@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [port]
 defined_for: S32-product-search
-rules_hash: d434a44b2aef
+rules_hash: 45f1e11383cc
 ---
 # In-process port
 ## Definition
@@ -21,9 +21,22 @@ A module inside the application needs products that match the text "iphone". It 
 
 ## Used by
 <!-- used-by:start -->
+- [S14](../capabilities/S14-ledger-reconciliation.md): R-28
+- [S51](../capabilities/S51-realtime-push.md): R-33
 - [acceptance-scenario](acceptance-scenario.md)
+- [ledger-module](ledger-module.md)
+- [ledger-service](ledger-service.md)
+- [list-seller-balances](list-seller-balances.md)
+- [model-registration](model-registration.md)
+- [orm-association](orm-association.md)
+- [password-reset-mailer-port](password-reset-mailer-port.md)
 - [product-search-service](product-search-service.md)
+- [provider-statement](provider-statement.md)
 - [rate-limit-policy](rate-limit-policy.md)
 - [search-budget](search-budget.md)
+- [search-surface](search-surface.md)
 - [search-visibility](search-visibility.md)
+- [stripe-statement-adapter](stripe-statement-adapter.md)
+- [suggest-titles-fuzzy](suggest-titles-fuzzy.md)
+- [transactional-mail-module](transactional-mail-module.md)
 <!-- used-by:end -->

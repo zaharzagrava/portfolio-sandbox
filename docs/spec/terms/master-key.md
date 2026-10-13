@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [master key]
 defined_for: S01-auth-sessions
-rules_hash: e3b0c44298fc
+rules_hash: 9f2057fcee1f
 ---
 # Master key for secret sealing
 ## Definition
@@ -25,6 +25,9 @@ Illustrative: [`SecretBox`](secret-box.md) is likely the component that uses thi
 
 ## Used by
 <!-- used-by:start -->
+- [S01](../capabilities/S01-auth-sessions.md): R-36
 - [identity-domain](identity-domain.md)
+- [reseal-sso-secrets-job](reseal-sso-secrets-job.md)
+- [secret-box-context](secret-box-context.md)
 - [secret-box](secret-box.md)
 <!-- used-by:end -->

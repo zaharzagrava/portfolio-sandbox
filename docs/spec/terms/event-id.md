@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: []
 defined_for: outbox-task-queue
-rules_hash: ca63de08f15d
+rules_hash: 0116d4f88a51
 ---
 # eventId
 ## Definition
@@ -24,10 +24,14 @@ The consumer's inbox already has `9b1e2c40-…` recorded, so it skips the second
 ## Used by
 <!-- used-by:start -->
 - [S10](../capabilities/S10-cart-checkout.md): R-26
+- [S28](../capabilities/S28-notifications.md): R-01
 - [S33](../capabilities/S33-autocomplete.md): R-19
+- [dedupe-identity](dedupe-identity.md)
+- [delivery](delivery.md)
 - [distinct-searchers](distinct-searchers.md)
 - [event-consumer](event-consumer.md)
 - [inbox-table](inbox-table.md)
+- [known-unmapped-type](known-unmapped-type.md)
 - [outbox-relay](outbox-relay.md)
 - [query-index-build](query-index-build.md)
 - [query-log](query-log.md)

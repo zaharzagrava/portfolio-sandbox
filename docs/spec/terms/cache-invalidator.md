@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: []
 defined_for: S05-products
-rules_hash: a32bc0460c1a
+rules_hash: 47b3d07f72d9
 ---
 # Cache invalidator
 ## Definition
@@ -22,11 +22,14 @@ Code: `packages/backend/libs/domains/catalog/infra/product-cache-invalidator.pro
 
 ## Used by
 <!-- used-by:start -->
+- [S05](../capabilities/S05-products.md): R-18
 - [acceptance-scenario](acceptance-scenario.md)
 - [cache-entry](cache-entry.md)
 - [catalog-product-deleted-event](catalog-product-deleted-event.md)
+- [catalog-product-events](catalog-product-events.md)
 - [consumer-outcomes](consumer-outcomes.md)
 - [event-consumer](event-consumer.md)
+- [infrastructure-layer](infrastructure-layer.md)
 - [invalidation-only-writes](invalidation-only-writes.md)
 - [l1-cache](l1-cache.md)
 - [l2-cache](l2-cache.md)

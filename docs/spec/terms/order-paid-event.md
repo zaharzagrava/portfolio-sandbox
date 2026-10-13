@@ -30,5 +30,7 @@ rules_hash: d32613bfda5d
 - [event-definition](event-definition.md)
 - [event-payload](event-payload.md)
 - [event-replay](event-replay.md)
+- [model-registration](model-registration.md)
 - [order-baskets-projector](order-baskets-projector.md)
+- [orm-association](orm-association.md)
 <!-- used-by:end -->

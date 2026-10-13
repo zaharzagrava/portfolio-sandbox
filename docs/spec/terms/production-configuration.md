@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [production]
 defined_for: S48-bff
-rules_hash: 8f20ad8e45c1
+rules_hash: 8945dec854b3
 ---
 # Production configuration
 ## Definition
@@ -21,6 +21,7 @@ In production, `{ __schema { types { name } } }` sent to `/api/graphql` gets `IN
 
 ## Used by
 <!-- used-by:start -->
+- [S01](../capabilities/S01-auth-sessions.md): R-36
 - [domain-api-origin](domain-api-origin.md)
 - [graphql-introspection](graphql-introspection.md)
 - [introspection-disabled](introspection-disabled.md)

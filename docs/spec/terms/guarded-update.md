@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: []
 defined_for: payment-lifecycle
-rules_hash: 5492bb1ada92
+rules_hash: 7e6c67bc34ce
 ---
 # Guarded update
 ## Definition
@@ -25,6 +25,7 @@ The processor reads a payment as `UNKNOWN` at version 3 and tries to write `COMP
 - [payment-lifecycle](../concepts/payment-lifecycle.md): C-07
 - [aggregate-version](aggregate-version.md)
 - [best-effort-push](best-effort-push.md)
+- [charge-outcome](charge-outcome.md)
 - [decide-payment-status](decide-payment-status.md)
 - [inbox-table](inbox-table.md)
 - [last-owner](last-owner.md)
@@ -44,4 +45,5 @@ The processor reads a payment as `UNKNOWN` at version 3 and tries to write `COMP
 - [totp-replay-protection](totp-replay-protection.md)
 - [unknown-payment-resolution](unknown-payment-resolution.md)
 - [version-guard](version-guard.md)
+- [webhook-redelivery](webhook-redelivery.md)
 <!-- used-by:end -->

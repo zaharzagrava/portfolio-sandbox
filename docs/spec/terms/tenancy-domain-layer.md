@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [tenancy domain]
 defined_for: S03-shops-rbac
-rules_hash: 7e7d2a5c3cb0
+rules_hash: 5371fc18896b
 ---
 # Tenancy domain layer
 ## Definition
@@ -33,12 +33,14 @@ errors.ts                Domain_ShopNotFoundError (S03.R-01)
 
 ## Used by
 <!-- used-by:start -->
+- [S28](../capabilities/S28-notifications.md): R-07
 - [apply-verification](apply-verification.md)
 - [capability](capability.md)
 - [is-cross-tenant-reason](is-cross-tenant-reason.md)
 - [max-owned-shops](max-owned-shops.md)
 - [plan-limit](plan-limit.md)
 - [realtime-topic](realtime-topic.md)
+- [reseal-sso-secrets-job](reseal-sso-secrets-job.md)
 - [role-permission-matrix](role-permission-matrix.md)
 - [rule-proof](rule-proof.md)
 - [seat](seat.md)
@@ -46,7 +48,13 @@ errors.ts                Domain_ShopNotFoundError (S03.R-01)
 - [shop-cell-moved-event](shop-cell-moved-event.md)
 - [shop-cell](shop-cell.md)
 - [shop-guard](shop-guard.md)
+- [shop-onboarding-submitted-event](shop-onboarding-submitted-event.md)
+- [shop-rejected-event](shop-rejected-event.md)
+- [shop-status-changed-event](shop-status-changed-event.md)
+- [shop-status-history](shop-status-history.md)
 - [shop-status](shop-status.md)
 - [shop-verification-changed-event](shop-verification-changed-event.md)
+- [shop-verified-event](shop-verified-event.md)
 - [slug-policy](slug-policy.md)
+- [tenancy-shop-events](tenancy-shop-events.md)
 <!-- used-by:end -->

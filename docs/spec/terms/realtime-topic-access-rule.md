@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [access rules]
 defined_for: realtime-topic-stream
-rules_hash: c844f7dc95f6
+rules_hash: e856ad81ee7e
 ---
 # Topic access rule
 ## Definition
@@ -21,13 +21,13 @@ A signed-in viewer opens the stream with two topics: their own `user:{userId}` a
 
 ## Used by
 <!-- used-by:start -->
-- [S03](../capabilities/S03-shops-rbac.md): B-07
-- [S51](../capabilities/S51-realtime-push.md): R-16, R-17, R-18, B-01, B-08, B-09
+- [S51](../capabilities/S51-realtime-push.md): R-16, R-17, R-28, B-01, B-08, B-09
 - [connection-admission](connection-admission.md)
 - [default-deny-topic](default-deny-topic.md)
 - [realtime-hub](realtime-hub.md)
 - [realtime-policy-unavailable](realtime-policy-unavailable.md)
 - [realtime-revoke](realtime-revoke.md)
+- [realtime-route](realtime-route.md)
 - [realtime-topic](realtime-topic.md)
 - [ref-counted-fan-out](ref-counted-fan-out.md)
 - [stream-connection](stream-connection.md)

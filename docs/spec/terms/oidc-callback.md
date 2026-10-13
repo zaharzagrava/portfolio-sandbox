@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [callback response]
 defined_for: S02-mfa-oidc
-rules_hash: 091d4037d86b
+rules_hash: 9955f8bfc849
 ---
 # OIDC callback
 ## Definition
@@ -27,7 +27,7 @@ After explicit linking by a signed-in user, the redirect carries `?linked=google
 
 ## Used by
 <!-- used-by:start -->
-- [S02](../capabilities/S02-mfa-oidc.md): R-18, B-10
+- [S02](../capabilities/S02-mfa-oidc.md): R-18, B-10, B-18
 - [account-unavailable](account-unavailable.md)
 - [closed-error-code](closed-error-code.md)
 - [email-not-verified](email-not-verified.md)
@@ -39,7 +39,10 @@ After explicit linking by a signed-in user, the redirect carries `?linked=google
 - [oauth-callback](oauth-callback.md)
 - [oidc-account-link](oidc-account-link.md)
 - [oidc-flow-cookie](oidc-flow-cookie.md)
+- [oidc-issuer](oidc-issuer.md)
 - [oidc-login-error](oidc-login-error.md)
+- [oidc-provider-not-found](oidc-provider-not-found.md)
+- [oidc-provider-unavailable](oidc-provider-unavailable.md)
 - [oidc-state](oidc-state.md)
 - [parse-return-path](parse-return-path.md)
 - [return-to](return-to.md)

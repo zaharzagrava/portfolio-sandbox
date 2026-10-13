@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [minor unit]
 defined_for: S05-products
-rules_hash: b4a4da20be42
+rules_hash: 7e6757ecda9e
 ---
 # Minor units (price)
 ## Definition
@@ -24,19 +24,45 @@ A product priced at 19.99 in a currency with two decimal places is sent as `1999
 ## Used by
 <!-- used-by:start -->
 - [S05](../capabilities/S05-products.md): R-03
-- [S10](../capabilities/S10-cart-checkout.md): R-15, B-05, B-16
+- [S10](../capabilities/S10-cart-checkout.md): R-15
+- [S14](../capabilities/S14-ledger-reconciliation.md): R-01, R-11
+- [S28](../capabilities/S28-notifications.md): R-09, R-56
 - [W02](../capabilities/W02-storefront-discovery.md): R-11
+- [aggregate-rows](aggregate-rows.md)
+- [available-minor](available-minor.md)
+- [balance-overflow](balance-overflow.md)
+- [balanced-journal](balanced-journal.md)
 - [catalog-product-updated-event](catalog-product-updated-event.md)
+- [catalog-template](catalog-template.md)
 - [check-payment-money](check-payment-money.md)
+- [classify-line](classify-line.md)
 - [discount-tie-break](discount-tie-break.md)
 - [expected-total-minor](expected-total-minor.md)
+- [guarded-account](guarded-account.md)
+- [journal-conflict](journal-conflict.md)
+- [journal-posted-event](journal-posted-event.md)
+- [ledger-invariants](ledger-invariants.md)
+- [ledger-journal](ledger-journal.md)
+- [ledger-system-accounts](ledger-system-accounts.md)
+- [ledger](ledger.md)
 - [line-position](line-position.md)
+- [line-total-minor](line-total-minor.md)
+- [locale](locale.md)
 - [major-units](major-units.md)
+- [notification-rendering](notification-rendering.md)
 - [order-total](order-total.md)
 - [orders-domain](orders-domain.md)
 - [parse-price-input](parse-price-input.md)
+- [payment-capture](payment-capture.md)
+- [payout-journal](payout-journal.md)
 - [platform-currency](platform-currency.md)
+- [platform-fee](platform-fee.md)
+- [reconciliation-issue](reconciliation-issue.md)
 - [recorded-decision](recorded-decision.md)
+- [render-failure](render-failure.md)
 - [seller-discount](seller-discount.md)
+- [settlement-journal](settlement-journal.md)
+- [shop-share](shop-share.md)
 - [shop-subtotal](shop-subtotal.md)
+- [unit-price-minor](unit-price-minor.md)
 <!-- used-by:end -->

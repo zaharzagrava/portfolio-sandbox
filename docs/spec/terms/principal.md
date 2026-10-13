@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: []
 defined_for: access-token-session
-rules_hash: b33cb8bebc81
+rules_hash: c53e2d89a688
 ---
 # Principal
 ## Definition
@@ -20,8 +20,10 @@ A request carries [`Authorization: Bearer <token for user A>` ↗](../sw-externa
 
 ## Used by
 <!-- used-by:start -->
-- [S01](../capabilities/S01-auth-sessions.md): R-16
+- [S01](../capabilities/S01-auth-sessions.md): R-16, B-25
+- [S28](../capabilities/S28-notifications.md): R-53
 - [S48](../capabilities/S48-bff.md): R-14, R-17, B-11
+- [S51](../capabilities/S51-realtime-push.md): R-29
 - [access-token-session](../concepts/access-token-session.md): C-01
 - [access-token](access-token.md)
 - [edge-stripping](edge-stripping.md)
@@ -31,5 +33,6 @@ A request carries [`Authorization: Bearer <token for user A>` ↗](../sw-externa
 - [protected-route](protected-route.md)
 - [request-context](request-context.md)
 - [service-to-service-token](service-to-service-token.md)
+- [unauthenticated-endpoint](unauthenticated-endpoint.md)
 - [x-user-id-header](x-user-id-header.md)
 <!-- used-by:end -->

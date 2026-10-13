@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [revoke the session, revoked]
 defined_for: access-token-session
-rules_hash: 21a09050a385
+rules_hash: 6d36ea02873f
 ---
 # Session revocation
 ## Definition
@@ -23,17 +23,32 @@ A user's session is revoked while their access token still has 200 s left (illus
 
 ## Used by
 <!-- used-by:start -->
-- [S01](../capabilities/S01-auth-sessions.md): R-17, R-20, B-11
-- [S03](../capabilities/S03-shops-rbac.md): B-08
+- [S01](../capabilities/S01-auth-sessions.md): R-17, R-26, R-38, R-40, B-11, B-18, B-26, B-27
+- [S03](../capabilities/S03-shops-rbac.md): R-25, B-08
+- [S13](../capabilities/S13-payment-intents.md): R-26
 - [W01](../capabilities/W01-auth-account.md): R-17
 - [access-token-session](../concepts/access-token-session.md): C-04
 - [access-token](access-token.md)
+- [directory-row](directory-row.md)
+- [firewall-route](firewall-route.md)
+- [get-auth-sessions](get-auth-sessions.md)
+- [get-payments](get-payments.md)
+- [internal-endpoint](internal-endpoint.md)
 - [invalid-refresh-token-error](invalid-refresh-token-error.md)
 - [invalid-token-error](invalid-token-error.md)
 - [membership-removal-source](membership-removal-source.md)
+- [password-changed-event](password-changed-event.md)
+- [password-reset-token](password-reset-token.md)
+- [platform-admin](platform-admin.md)
+- [post-auth-logout](post-auth-logout.md)
 - [protected-route](protected-route.md)
 - [refresh-token-rotation](refresh-token-rotation.md)
 - [sensitive-route](sensitive-route.md)
+- [session-last-used-at](session-last-used-at.md)
+- [session-limit](session-limit.md)
+- [session-not-found](session-not-found.md)
 - [soft-delete](soft-delete.md)
+- [spent-token](spent-token.md)
+- [token-exchange](token-exchange.md)
 - [token-refresh](token-refresh.md)
 <!-- used-by:end -->

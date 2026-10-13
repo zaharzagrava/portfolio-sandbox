@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [spend, spent token]
 defined_for: access-token-session
-rules_hash: 0dc7df2fb2d4
+rules_hash: 51b83d82cb50
 ---
 # Refresh token rotation (spent token)
 ## Definition
@@ -23,12 +23,15 @@ Refresh-token rotation means each [refresh token](token-refresh.md) works only o
 
 ## Used by
 <!-- used-by:start -->
-- [S01](../capabilities/S01-auth-sessions.md): R-20, R-23
-- [S02](../capabilities/S02-mfa-oidc.md): R-11, B-07
+- [S01](../capabilities/S01-auth-sessions.md): R-20, R-23, R-42, B-11
 - [W01](../capabilities/W01-auth-account.md): B-13
 - [access-token-session](../concepts/access-token-session.md): C-05
+- [auth-events-total](auth-events-total.md)
+- [host-refresh-cookie](host-refresh-cookie.md)
 - [invalid-refresh-token-error](invalid-refresh-token-error.md)
+- [post-auth-refresh](post-auth-refresh.md)
 - [service-to-service-token](service-to-service-token.md)
 - [session-revocation](session-revocation.md)
+- [spent-token](spent-token.md)
 - [token-refresh](token-refresh.md)
 <!-- used-by:end -->

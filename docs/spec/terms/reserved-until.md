@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [reservation deadline]
 defined_for: order-reservation
-rules_hash: 5eef8487bc3e
+rules_hash: d9c0ef37a78f
 ---
 # reservedUntil
 ## Definition
@@ -21,7 +21,7 @@ Stock is reserved at `2026-10-13T10:00:00Z` (illustrative), so `reservedUntil` i
 
 ## Used by
 <!-- used-by:start -->
-- [S10](../capabilities/S10-cart-checkout.md): B-05
+- [S10](../capabilities/S10-cart-checkout.md): R-41
 - [all-or-nothing-reservation](all-or-nothing-reservation.md)
 - [orders-domain](orders-domain.md)
 - [payment-command](payment-command.md)

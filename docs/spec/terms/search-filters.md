@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [filter]
 defined_for: S32-product-search
-rules_hash: bacaa4dfee45
+rules_hash: 4e3ba34d01d7
 ---
 # Search filters
 ## Definition
@@ -22,6 +22,8 @@ Search filters narrow the results to products that meet extra conditions, such a
 <!-- used-by:start -->
 - [S32](../capabilities/S32-product-search.md): R-08
 - [W02](../capabilities/W02-storefront-discovery.md): B-08
+- [avg-rating-facet](avg-rating-facet.md)
+- [in-stock-filter](in-stock-filter.md)
 - [major-units](major-units.md)
 - [min-rating](min-rating.md)
 - [parse-price-input](parse-price-input.md)

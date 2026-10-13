@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [counter store, store that holds its counters]
 defined_for: idempotency-key
-rules_hash: f73cb0e105be
+rules_hash: 71c8dbd130d9
 ---
 # Rate limit counter store
 ## Definition
@@ -26,7 +26,8 @@ request 4    -> counter 4    -> 429
 ## Used by
 <!-- used-by:start -->
 - [S10](../capabilities/S10-cart-checkout.md): R-16
-- [S13](../capabilities/S13-payment-intents.md): R-09
+- [S13](../capabilities/S13-payment-intents.md): R-09, R-26
+- [S28](../capabilities/S28-notifications.md): R-29
 - [S50](../capabilities/S50-rate-limiter.md): R-07, R-13
 - [rate-limit-policy](../concepts/rate-limit-policy.md): C-03
 - [circuit-breaker-probe](circuit-breaker-probe.md)
@@ -34,6 +35,7 @@ request 4    -> counter 4    -> 429
 - [fallback-token-bucket](fallback-token-bucket.md)
 - [hash-tag](hash-tag.md)
 - [idempotency-key](idempotency-key.md)
+- [marketing-delivery-cap](marketing-delivery-cap.md)
 - [rate-limit-bucket](rate-limit-bucket.md)
 - [rate-limit-budget](rate-limit-budget.md)
 - [rate-limit-fail-mode](rate-limit-fail-mode.md)

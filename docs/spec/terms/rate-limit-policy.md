@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [policy]
 defined_for: rate-limit-policy
-rules_hash: b7bbd82fcf48
+rules_hash: 93e9e7691375
 ---
 # Rate limit policy
 ## Definition
@@ -22,8 +22,11 @@ Policy `discovery.recommendations` in S34 allows 600 requests per minute per add
 ## Used by
 <!-- used-by:start -->
 - [S05](../capabilities/S05-products.md): R-11
+- [S14](../capabilities/S14-ledger-reconciliation.md): R-40
+- [S28](../capabilities/S28-notifications.md): R-52
 - [S32](../capabilities/S32-product-search.md): R-12
 - [S50](../capabilities/S50-rate-limiter.md): R-03, R-15, B-01, B-03, B-06, B-07, B-08, B-10, B-13, B-20
+- [batch-products-lookup](batch-products-lookup.md)
 - [batch-shops-lookup](batch-shops-lookup.md)
 - [client-address](client-address.md)
 - [concurrency-limit](concurrency-limit.md)
@@ -57,5 +60,6 @@ Policy `discovery.recommendations` in S34 allows 600 requests per minute per add
 - [subject-extractor](subject-extractor.md)
 - [time-to-full](time-to-full.md)
 - [trusted-proxy](trusted-proxy.md)
+- [unauthenticated-endpoint](unauthenticated-endpoint.md)
 - [window-ms](window-ms.md)
 <!-- used-by:end -->

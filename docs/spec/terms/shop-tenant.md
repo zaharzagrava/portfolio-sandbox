@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [shops]
 defined_for: tenant-shop-rbac
-rules_hash: ef4f172a2d6a
+rules_hash: 48d01bfa98f4
 ---
 # Shop
 ## Definition
@@ -25,8 +25,7 @@ A [`STARTER`](plan-limit.md) shop with 4 members and 1 unexpired [pending invite
 
 ## Used by
 <!-- used-by:start -->
-- [S03](../capabilities/S03-shops-rbac.md): R-12
-- [S05](../capabilities/S05-products.md): R-01
+- [S03](../capabilities/S03-shops-rbac.md): R-12, R-21
 - [S49](../capabilities/S49-job-scheduler.md): B-13
 - [W02](../capabilities/W02-storefront-discovery.md): B-14
 - [ensure-shops-for-legacy-sellers](ensure-shops-for-legacy-sellers.md)

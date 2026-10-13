@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [payload]
 defined_for: realtime-topic-stream
-rules_hash: b8944efb8c4a
+rules_hash: 4d47eaed7b4e
 ---
 # Event payload
 ## Definition
@@ -20,15 +20,24 @@ The event payload is the data a domain attaches to an event when it publishes to
 
 ## Used by
 <!-- used-by:start -->
+- [S13](../capabilities/S13-payment-intents.md): R-28
+- [S28](../capabilities/S28-notifications.md): B-04
+- [S32](../capabilities/S32-product-search.md): R-40
 - [S51](../capabilities/S51-realtime-push.md): R-05
 - [realtime-topic-stream](../concepts/realtime-topic-stream.md): C-02
 - [connection-admission](connection-admission.md)
+- [domain-boundary-rules](domain-boundary-rules.md)
 - [format-frame](format-frame.md)
+- [is-sandbox](is-sandbox.md)
+- [member-removed-event](member-removed-event.md)
 - [order-cancelled-event](order-cancelled-event.md)
 - [order-paid-event](order-paid-event.md)
+- [orm-association](orm-association.md)
+- [payment-method-token](payment-method-token.md)
 - [realtime-hub](realtime-hub.md)
 - [realtime-topic](realtime-topic.md)
 - [registration-duplicate-attempted-event](registration-duplicate-attempted-event.md)
+- [search-document](search-document.md)
 - [shop-verification-changed-event](shop-verification-changed-event.md)
 - [sse-data-line](sse-data-line.md)
 - [stream-frame](stream-frame.md)

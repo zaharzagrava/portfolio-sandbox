@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [problem body member]
 defined_for: W07-app-shell
-rules_hash: 6366f4c4fd53
+rules_hash: 12027e55d066
 ---
 # Problem body
 ## Definition
@@ -25,5 +25,10 @@ A call to a product returns this problem body:
 
 ## Used by
 <!-- used-by:start -->
+- [S14](../capabilities/S14-ledger-reconciliation.md): R-47
+- [invalid-reset-token](invalid-reset-token.md)
+- [payment-method-token](payment-method-token.md)
 - [problem-title](problem-title.md)
+- [service-caller-not-allowed](service-caller-not-allowed.md)
+- [unsupported-combination](unsupported-combination.md)
 <!-- used-by:end -->

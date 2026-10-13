@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: []
 defined_for: S33-autocomplete
-rules_hash: fda7056cc80b
+rules_hash: 7e6b71f839d2
 ---
 # Operator
 ## Definition
@@ -21,10 +21,13 @@ An operator is a person who runs the system in production, not a component of it
 
 ## Used by
 <!-- used-by:start -->
+- [S01](../capabilities/S01-auth-sessions.md): R-44
 - [S33](../capabilities/S33-autocomplete.md): R-24
 - [S49](../capabilities/S49-job-scheduler.md): B-14
 - [S53](../capabilities/S53-events-projections.md): B-14
+- [adjustment-journal](adjustment-journal.md)
 - [audit-log](audit-log.md)
+- [auth-purge-reset-tokens-job](auth-purge-reset-tokens-job.md)
 - [autocomplete-blocklist](autocomplete-blocklist.md)
 - [autocomplete-pointer](autocomplete-pointer.md)
 - [blocked-host](blocked-host.md)
@@ -36,6 +39,11 @@ An operator is a person who runs the system in production, not a component of it
 - [node](node.md)
 - [non-retryable-broker-error](non-retryable-broker-error.md)
 - [published-version](published-version.md)
+- [reconciliation-issue-auto-resolve](reconciliation-issue-auto-resolve.md)
+- [reconciliation-issue](reconciliation-issue.md)
+- [reconciliation-resolution](reconciliation-resolution.md)
+- [reconciliation](reconciliation.md)
+- [reset-token-jobs](reset-token-jobs.md)
 - [schedule-auto-disable](schedule-auto-disable.md)
 - [schedule-enabled](schedule-enabled.md)
 - [serve-time](serve-time.md)

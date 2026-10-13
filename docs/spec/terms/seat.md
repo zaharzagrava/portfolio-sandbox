@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [seats]
 defined_for: tenant-shop-rbac
-rules_hash: da9f0ecf371e
+rules_hash: 5021ad383087
 ---
 # Seat
 ## Definition
@@ -21,13 +21,16 @@ A [`STARTER`](plan-limit.md) shop has 3 members and 2 unexpired pending invites,
 
 ## Used by
 <!-- used-by:start -->
-- [S03](../capabilities/S03-shops-rbac.md): R-17
+- [S03](../capabilities/S03-shops-rbac.md): R-17, R-23
 - [tenant-shop-rbac](../concepts/tenant-shop-rbac.md): C-08
 - [already-member](already-member.md)
+- [invite-lifecycle](invite-lifecycle.md)
 - [invite-revoke](invite-revoke.md)
 - [max-owned-shops](max-owned-shops.md)
+- [member-provisioning](member-provisioning.md)
 - [pending-invite](pending-invite.md)
 - [plan-limit](plan-limit.md)
+- [provider-default-role](provider-default-role.md)
 - [sandbox-shop](sandbox-shop.md)
 - [shop-member](shop-member.md)
 - [shop-role](shop-role.md)

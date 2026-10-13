@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [operators, wildcards]
 defined_for: S32-product-search
-rules_hash: c449efa0932d
+rules_hash: 26289a92b2b5
 ---
 # Plain-word query matching
 ## Definition
@@ -19,8 +19,9 @@ Plain-word query matching means search treats everything in `q` as ordinary word
 
 ## Used by
 <!-- used-by:start -->
-- [S32](../capabilities/S32-product-search.md): R-04
+- [S32](../capabilities/S32-product-search.md): R-04, R-37
 - [S33](../capabilities/S33-autocomplete.md): R-03, R-08, B-04
 - [field-weights](field-weights.md)
+- [lexical-search](lexical-search.md)
 - [suggest-prefix](suggest-prefix.md)
 <!-- used-by:end -->

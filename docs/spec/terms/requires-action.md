@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [requires action]
 defined_for: S13-payment-intents
-rules_hash: e3b0c44298fc
+rules_hash: 65d3812e2b5b
 ---
 # requiresAction
 ## Definition
@@ -21,6 +21,7 @@ The charge call returns a "needs customer action" result. `GET /payments/:paymen
 
 ## Used by
 <!-- used-by:start -->
+- [S13](../capabilities/S13-payment-intents.md): B-17
 - [payment-intent](payment-intent.md)
 - [payment-provider](payment-provider.md)
 - [provider-idempotency-reference](provider-idempotency-reference.md)

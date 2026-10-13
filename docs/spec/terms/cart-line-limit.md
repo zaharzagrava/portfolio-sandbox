@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [50 lines]
 defined_for: S10-cart-checkout
-rules_hash: 0ac9a7ecf31c
+rules_hash: 88c6fb0e63c5
 ---
 # Cart line limit
 ## Definition
@@ -19,10 +19,13 @@ A user cart has 40 lines. The guest cart has 20 other products. After `POST /car
 
 ## Used by
 <!-- used-by:start -->
-- [S10](../capabilities/S10-cart-checkout.md): B-04
+- [S10](../capabilities/S10-cart-checkout.md): R-04
+- [added-at](added-at.md)
 - [cart-line](cart-line.md)
 - [cart-merge](cart-merge.md)
 - [cart-unit-count](cart-unit-count.md)
 - [dropped-lines](dropped-lines.md)
 - [guest-cart](guest-cart.md)
+- [line-expiry](line-expiry.md)
+- [put-cart-items](put-cart-items.md)
 <!-- used-by:end -->

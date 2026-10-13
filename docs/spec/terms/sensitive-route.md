@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [ordinary route, sensitive routes]
 defined_for: access-token-session
-rules_hash: 0eb980d4bff7
+rules_hash: 65ef8f0f6c35
 ---
 # Sensitive route
 ## Definition
@@ -21,13 +21,17 @@ A user revokes a session. For up to 300 s, an ordinary route still accepts that 
 
 ## Used by
 <!-- used-by:start -->
-- [S01](../capabilities/S01-auth-sessions.md): R-17, B-14
-- [S03](../capabilities/S03-shops-rbac.md): R-02
+- [S01](../capabilities/S01-auth-sessions.md): R-17, R-44, B-14
 - [access-token-session](../concepts/access-token-session.md): C-04
 - [access-token](access-token.md)
 - [authorization-cache](authorization-cache.md)
+- [get-auth-sessions](get-auth-sessions.md)
 - [invalid-token-error](invalid-token-error.md)
+- [logout-all](logout-all.md)
+- [platform-admin](platform-admin.md)
+- [post-auth-logout](post-auth-logout.md)
 - [protected-route](protected-route.md)
 - [session-revocation-service](session-revocation-service.md)
 - [session-revocation](session-revocation.md)
+- [shop-cell-move](shop-cell-move.md)
 <!-- used-by:end -->

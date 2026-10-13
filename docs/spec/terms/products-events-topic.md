@@ -24,6 +24,7 @@ A member sends `PATCH /shops/:shopId/products/:productId` with `expectedVersion:
 - [cache-invalidator](cache-invalidator.md)
 - [capability](capability.md)
 - [catalog-product-deleted-event](catalog-product-deleted-event.md)
+- [catalog-product-events](catalog-product-events.md)
 - [event-backbone](event-backbone.md)
 - [inbox-table](inbox-table.md)
 - [no-op-update](no-op-update.md)

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [unmatched]
 defined_for: S10-cart-checkout
-rules_hash: 075d078a475e
+rules_hash: e3b0c44298fc
 ---
 # UNMATCHED payment event
 ## Definition
@@ -21,7 +21,6 @@ A [verified webhook event](verified-webhook-event.md) `payments.payment_succeede
 
 ## Used by
 <!-- used-by:start -->
-- [S10](../capabilities/S10-cart-checkout.md): R-29
 - [payment-event-outcome](payment-event-outcome.md)
 - [verified-webhook-event](verified-webhook-event.md)
 <!-- used-by:end -->

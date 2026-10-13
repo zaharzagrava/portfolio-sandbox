@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [provider subject]
 defined_for: S02-mfa-oidc
-rules_hash: 03c98b5f0df0
+rules_hash: e7aafe583348
 ---
 # (provider, subject) pair
 ## Definition
@@ -20,6 +20,7 @@ A user is linked to Google subject `g-1`. A login arrives for `g-1` carrying a n
 
 ## Used by
 <!-- used-by:start -->
+- [S02](../capabilities/S02-mfa-oidc.md): R-31
 - [dynamic-provider](dynamic-provider.md)
 - [federated-identity](federated-identity.md)
 - [identity-link](identity-link.md)

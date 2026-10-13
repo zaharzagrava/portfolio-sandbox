@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: []
 defined_for: S52-cache-toolkit
-rules_hash: e3b0c44298fc
+rules_hash: 7bb004993399
 ---
 # invalidateIfOlder
 ## Definition
@@ -26,5 +26,5 @@ await cache.invalidateIfOlder(K, 4); // 'skipped' (repeat)
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [S05](../capabilities/S05-products.md): R-18
 <!-- used-by:end -->

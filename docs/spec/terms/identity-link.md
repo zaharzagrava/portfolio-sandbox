@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [identity, linked, unlinking]
 defined_for: S02-mfa-oidc
-rules_hash: 0494f9995e88
+rules_hash: ace9ecf08111
 ---
 # Identity link (linking)
 ## Definition
@@ -20,7 +20,7 @@ A password account with the e-mail of a Google login that has `email_verified: t
 
 ## Used by
 <!-- used-by:start -->
-- [S02](../capabilities/S02-mfa-oidc.md): R-21, R-23
+- [S02](../capabilities/S02-mfa-oidc.md): R-23, R-24, B-15, B-16
 - [dynamic-provider](dynamic-provider.md)
 - [federated-identity](federated-identity.md)
 - [identity-not-found](identity-not-found.md)

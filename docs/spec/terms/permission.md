@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [members.read, permissions, shop.read]
 defined_for: tenant-shop-rbac
-rules_hash: 3ef2601d357c
+rules_hash: aa6b58348ec2
 ---
 # Permission
 ## Definition
@@ -32,5 +32,6 @@ shop.read, members.read, shop.export
 - [shop-role](shop-role.md)
 - [shop-tenant](shop-tenant.md)
 - [source-of-truth](source-of-truth.md)
+- [sso-not-configured](sso-not-configured.md)
 - [tenancy-tables](tenancy-tables.md)
 <!-- used-by:end -->

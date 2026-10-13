@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [slow, slow consumer]
 defined_for: S51-realtime-push
-rules_hash: 52981a3ae7d3
+rules_hash: 6868b669e501
 ---
 # Slow and stalled close reasons
 ## Definition
@@ -21,7 +21,7 @@ A viewer stops reading its stream, and a publisher then sends 5 MiB of events. T
 
 ## Used by
 <!-- used-by:start -->
-- [S51](../capabilities/S51-realtime-push.md): R-26
+- [S51](../capabilities/S51-realtime-push.md): B-14
 - [realtime-hub](realtime-hub.md)
 - [realtime-topic](realtime-topic.md)
 - [stream-connection](stream-connection.md)

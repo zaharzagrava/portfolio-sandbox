@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [the callback]
 defined_for: S02-mfa-oidc
-rules_hash: be11dc35c683
+rules_hash: b5e208262d89
 ---
 # OAuth callback
 ## Definition
@@ -19,7 +19,7 @@ Google redirects the browser to `/auth/oidc/google/callback?code=…&state=…`.
 
 ## Used by
 <!-- used-by:start -->
-- [S02](../capabilities/S02-mfa-oidc.md): R-21, B-18, B-19
+- [S02](../capabilities/S02-mfa-oidc.md): R-21
 - [closed-error-code](closed-error-code.md)
 - [front-end-origin](front-end-origin.md)
 - [identity-store](identity-store.md)

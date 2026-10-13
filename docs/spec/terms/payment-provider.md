@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: []
 defined_for: idempotency-key
-rules_hash: dff0b4de8dce
+rules_hash: 4d409263cf22
 ---
 # Payment provider
 ## Definition
@@ -20,23 +20,28 @@ The payment provider is the outside payment service (PSP) that actually charges 
 
 ## Used by
 <!-- used-by:start -->
-- [S13](../capabilities/S13-payment-intents.md): R-10, B-16
+- [S13](../capabilities/S13-payment-intents.md): B-08, B-11
 - [idempotency-key](../concepts/idempotency-key.md): C-03
 - [payment-lifecycle](../concepts/payment-lifecycle.md): C-03
+- [dead-push-token](dead-push-token.md)
 - [definite-decline](definite-decline.md)
 - [find-mismatch](find-mismatch.md)
 - [orders-events-consumer](orders-events-consumer.md)
 - [paid-mark](paid-mark.md)
+- [payer-id](payer-id.md)
+- [payment-capture](payment-capture.md)
 - [payment-command](payment-command.md)
 - [payment-intent](payment-intent.md)
 - [payment-processor](payment-processor.md)
 - [payments-domain-layer](payments-domain-layer.md)
+- [payments-provider-calls-total](payments-provider-calls-total.md)
 - [provider-charge-metadata](provider-charge-metadata.md)
 - [provider-idempotency-reference](provider-idempotency-reference.md)
 - [provider-lookup-window](provider-lookup-window.md)
 - [provider-lookup](provider-lookup.md)
 - [provider-operation](provider-operation.md)
 - [provider-rejected](provider-rejected.md)
+- [provider-statement](provider-statement.md)
 - [requires-action](requires-action.md)
 - [safe-http-client](safe-http-client.md)
 - [terminal-payment-status](terminal-payment-status.md)

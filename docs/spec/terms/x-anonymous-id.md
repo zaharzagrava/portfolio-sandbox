@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [anonymous request]
 defined_for: bff-aggregate
-rules_hash: 189d88174a2b
+rules_hash: 35c74286e1c1
 ---
 # X-Anonymous-Id
 ## Definition
@@ -22,6 +22,8 @@ The pattern is `ANONYMOUS_ID = /^[A-Za-z0-9_-]{8,64}$/`.
 
 ## Used by
 <!-- used-by:start -->
+- [S03](../capabilities/S03-shops-rbac.md): B-14
+- [S32](../capabilities/S32-product-search.md): R-01
 - [S48](../capabilities/S48-bff.md): R-10, R-20
 - [W01](../capabilities/W01-auth-account.md): R-03
 - [bff-aggregate](../concepts/bff-aggregate.md): C-08

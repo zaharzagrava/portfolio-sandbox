@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [live shops]
 defined_for: S03-shops-rbac
-rules_hash: 30586e136314
+rules_hash: b736518c88a7
 ---
 # Live shop
 ## Definition
@@ -22,6 +22,7 @@ A live shop is a real shop that trades on the marketplace, as opposed to a [sand
 <!-- used-by:start -->
 - [S03](../capabilities/S03-shops-rbac.md): B-17
 - [ensure-sandbox-shop](ensure-sandbox-shop.md)
+- [is-publicly-visible](is-publicly-visible.md)
 - [plan-limit](plan-limit.md)
 - [realtime-topic](realtime-topic.md)
 - [sandbox-shop](sandbox-shop.md)

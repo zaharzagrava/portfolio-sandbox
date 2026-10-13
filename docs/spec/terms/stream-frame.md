@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [frames]
 defined_for: realtime-topic-stream
-rules_hash: aa179e8d9426
+rules_hash: 1c4fd5093c50
 ---
 # Stream frame
 ## Definition
@@ -24,7 +24,7 @@ data: {"reason":"replay-gap"}
 
 ## Used by
 <!-- used-by:start -->
-- [S51](../capabilities/S51-realtime-push.md): R-05, R-12, R-27, B-02, B-18, B-19
+- [S51](../capabilities/S51-realtime-push.md): R-05, R-27, R-31, B-18, B-19
 - [realtime-topic-stream](../concepts/realtime-topic-stream.md): C-02
 - [connection-admission](connection-admission.md)
 - [create-event-stream](create-event-stream.md)

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: []
 defined_for: S52-cache-toolkit
-rules_hash: 5deb67827255
+rules_hash: f939a7c0797e
 ---
 # Cache penetration
 ## Definition
@@ -26,6 +26,7 @@ Without the check, every such request runs the loader. With [`negativeTtlMs`](ne
 
 ## Used by
 <!-- used-by:start -->
+- [S05](../capabilities/S05-products.md): B-10
 - [l1-cache](l1-cache.md)
 - [loader](loader.md)
 - [redis-bloom-filter](redis-bloom-filter.md)

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: []
 defined_for: S10-cart-checkout
-rules_hash: 07e8bf39ee85
+rules_hash: 5d6a60db7b74
 ---
 # Order total
 ## Definition
@@ -21,8 +21,10 @@ The cart holds A × 2. A now costs `1200`, so the server's order total is `2400`
 
 ## Used by
 <!-- used-by:start -->
+- [S10](../capabilities/S10-cart-checkout.md): B-10
 - [W03](../capabilities/W03-cart-checkout-orders.md): B-07
 - [checkout-review-step](checkout-review-step.md)
+- [line-total-minor](line-total-minor.md)
 - [minor-units](minor-units.md)
 - [seller-discount](seller-discount.md)
 - [shop-order](shop-order.md)

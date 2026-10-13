@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [fleet, not per worker, whole fleet]
 defined_for: job-scheduler-lease
-rules_hash: e8e4fc77d8e0
+rules_hash: 07aa78d3a9e4
 ---
 # Fleet-wide limit
 ## Definition
@@ -21,7 +21,6 @@ The default per-shop cap is 5. Worker 1 runs 3 jobs of shop A, and worker 2 runs
 ## Used by
 <!-- used-by:start -->
 - [S49](../capabilities/S49-job-scheduler.md): R-15
-- [S51](../capabilities/S51-realtime-push.md): R-27
 - [fleet-concurrency](fleet-concurrency.md)
 - [hash-queue-limit](hash-queue-limit.md)
 - [job-claim](job-claim.md)

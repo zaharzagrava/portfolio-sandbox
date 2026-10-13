@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [permanent errors]
 defined_for: S53-events-projections
-rules_hash: db0f780ca484
+rules_hash: f6290ee97135
 ---
 # Permanent error
 ## Definition
@@ -21,10 +21,25 @@ A handler throws on every call for one event. The consumer attempts that event 3
 
 ## Used by
 <!-- used-by:start -->
+- [S28](../capabilities/S28-notifications.md): R-33, R-46
 - [S53](../capabilities/S53-events-projections.md): B-12
+- [bounce](bounce.md)
 - [consumer-attempt-budget](consumer-attempt-budget.md)
 - [dead-letter-reason-code](dead-letter-reason-code.md)
+- [dead-push-token](dead-push-token.md)
+- [delivery-status](delivery-status.md)
+- [delivery-suppression](delivery-suppression.md)
+- [device-registration](device-registration.md)
+- [device-token](device-token.md)
+- [exhausted](exhausted.md)
+- [failover-timeline-entry](failover-timeline-entry.md)
+- [fallback-provider](fallback-provider.md)
 - [handler-timeout](handler-timeout.md)
 - [job-handler](job-handler.md)
 - [partition-pause](partition-pause.md)
+- [provider-chain](provider-chain.md)
+- [provider-failure](provider-failure.md)
+- [suppression](suppression.md)
+- [transient-error](transient-error.md)
+- [transient-failure](transient-failure.md)
 <!-- used-by:end -->

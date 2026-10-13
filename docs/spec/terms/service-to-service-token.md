@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [service tokens]
 defined_for: access-token-session
-rules_hash: 0ea47a6d51a3
+rules_hash: 05b24cea14fa
 ---
 # Service-to-service token
 ## Definition
@@ -25,11 +25,16 @@ Authorization: Bearer <service-to-service token issued by S01>
 
 ## Used by
 <!-- used-by:start -->
+- [S01](../capabilities/S01-auth-sessions.md): B-25
 - [access-token](access-token.md)
+- [allowed-callers-decorator](allowed-callers-decorator.md)
 - [host-access-cookie](host-access-cookie.md)
 - [identity-domain](identity-domain.md)
 - [identity-headers](identity-headers.md)
+- [internal-endpoint](internal-endpoint.md)
 - [principal](principal.md)
 - [refresh-token-rotation](refresh-token-rotation.md)
+- [service-auth-guard](service-auth-guard.md)
+- [service-caller-not-allowed](service-caller-not-allowed.md)
 - [session-lifetime](session-lifetime.md)
 <!-- used-by:end -->

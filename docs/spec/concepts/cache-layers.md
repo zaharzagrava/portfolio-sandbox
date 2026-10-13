@@ -32,6 +32,7 @@ Layered cache and single-flight is the shared way every domain keeps fast copies
 <!-- used-by:start -->
 - {{cap:S03}} Shops as tenants: memberships, roles and permissions, invites, per-shop SSO, cells, offboarding
 - {{cap:S05}} Product CRUD, pricing, stock fields, product cache and invalidation, product views
+- {{cap:S28}} Notification routing, preferences, quiet hours, caps, per-channel queues, provider failover, inbox, suppression
 - {{cap:S33}} Search autocomplete: query-log top-K trie, catalog completions, per-source budgets, typo fallback
 - {{cap:S34}} "Bought together" recommendations: co-occurrence graph, normalisation, 2-hop cold start
 - {{cap:S35}} Trending products: windowed approximate top-K per category

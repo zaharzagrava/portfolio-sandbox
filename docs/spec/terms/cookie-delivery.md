@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: []
 defined_for: S02-mfa-oidc
-rules_hash: 818137fb314a
+rules_hash: 369df0d5b23e
 ---
 # Cookie delivery
 ## Definition
@@ -25,11 +25,15 @@ The same request from the allowed [front-end origin](front-end-origin.md) return
 
 ## Used by
 <!-- used-by:start -->
+- [S01](../capabilities/S01-auth-sessions.md): B-06
 - [S02](../capabilities/S02-mfa-oidc.md): B-05
 - [front-end-origin](front-end-origin.md)
+- [host-refresh-cookie](host-refresh-cookie.md)
 - [mfa-verify-endpoint](mfa-verify-endpoint.md)
 - [origin-allow-list](origin-allow-list.md)
 - [origin-not-allowed](origin-not-allowed.md)
 - [post-auth-login](post-auth-login.md)
+- [post-auth-logout](post-auth-logout.md)
+- [post-auth-refresh](post-auth-refresh.md)
 - [session-lifetime](session-lifetime.md)
 <!-- used-by:end -->

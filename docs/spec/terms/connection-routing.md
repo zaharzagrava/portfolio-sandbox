@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [routing]
 defined_for: S03-shops-rbac
-rules_hash: 7d656e262cae
+rules_hash: ef1f83d84e67
 ---
 # Connection routing
 ## Definition
@@ -21,8 +21,15 @@ A request for shop `shop_123` (illustrative) is routed to its cell `cell-a` (ill
 
 ## Used by
 <!-- used-by:start -->
+- [acquire-timeout](acquire-timeout.md)
 - [cell-unavailable](cell-unavailable.md)
+- [directory-row](directory-row.md)
+- [pooled-database](pooled-database.md)
+- [pooled-placement](pooled-placement.md)
+- [shop-cell-directory-row](shop-cell-directory-row.md)
+- [shop-cell-move](shop-cell-move.md)
 - [shop-cell-service](shop-cell-service.md)
 - [shop-cell](shop-cell.md)
 - [tenant](tenant.md)
+- [unknown-cell](unknown-cell.md)
 <!-- used-by:end -->

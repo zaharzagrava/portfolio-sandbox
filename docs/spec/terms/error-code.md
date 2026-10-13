@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [code]
 defined_for: problem-json-errors
-rules_hash: 7dd1ab67b372
+rules_hash: 7445e5489774
 ---
 # Error code (code member)
 ## Definition
@@ -21,6 +21,8 @@ A checkout fails and the body carries `"code": "conflict"`. [{{cap:W03}}](../cap
 
 ## Used by
 <!-- used-by:start -->
+- [S01](../capabilities/S01-auth-sessions.md): R-43
+- [S28](../capabilities/S28-notifications.md): R-53
 - [S54](../capabilities/S54-platform-toolkit.md): B-01
 - [W03](../capabilities/W03-cart-checkout-orders.md): R-13, B-17
 - [W07](../capabilities/W07-app-shell.md): R-13, B-09
@@ -34,6 +36,7 @@ A checkout fails and the body carries `"code": "conflict"`. [{{cap:W03}}](../cap
 - [error-state](error-state.md)
 - [form-alert](form-alert.md)
 - [method-not-allowed](method-not-allowed.md)
+- [phone-code-lockout](phone-code-lockout.md)
 - [reindex-in-progress](reindex-in-progress.md)
 - [unknown-query-parameter](unknown-query-parameter.md)
 <!-- used-by:end -->

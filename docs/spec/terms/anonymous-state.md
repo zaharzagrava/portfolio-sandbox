@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [anonymous]
 defined_for: W01-auth-account
-rules_hash: 5411a50d700f
+rules_hash: 2ecd17fdc690
 ---
 # Anonymous state
 ## Definition
@@ -19,6 +19,8 @@ A member has two tabs open and chooses **Log out** in one. [`POST /api/bff/sessi
 
 ## Used by
 <!-- used-by:start -->
+- [S05](../capabilities/S05-products.md): B-06
+- [S51](../capabilities/S51-realtime-push.md): B-07, B-08
 - [W03](../capabilities/W03-cart-checkout-orders.md): R-07
 - [account-slot](account-slot.md)
 - [account-unavailable](account-unavailable.md)

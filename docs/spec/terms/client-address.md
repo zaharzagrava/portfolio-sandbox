@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [client address, resolved address]
 defined_for: S50-rate-limiter
-rules_hash: 5888718e7c57
+rules_hash: 21b95ad19347
 ---
 # Client address (resolved by the platform)
 ## Definition
@@ -20,6 +20,7 @@ A client sends three requests and changes `CF-Connecting-IP`, `X-Forwarded-For` 
 
 ## Used by
 <!-- used-by:start -->
+- [S05](../capabilities/S05-products.md): B-10
 - [S50](../capabilities/S50-rate-limiter.md): B-12
 - [forwarding-headers](forwarding-headers.md)
 - [rate-limit-bucket](rate-limit-bucket.md)
@@ -28,4 +29,5 @@ A client sends three requests and changes `CF-Connecting-IP`, `X-Forwarded-For` 
 - [rate-limit-subject-fallback](rate-limit-subject-fallback.md)
 - [rate-limit-subject](rate-limit-subject.md)
 - [subject-extractor](subject-extractor.md)
+- [user-hash](user-hash.md)
 <!-- used-by:end -->

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [lookup, our reference]
 defined_for: payment-lifecycle
-rules_hash: 0b0088ebab91
+rules_hash: e24c36f78984
 ---
 # Provider lookup by reference
 ## Definition

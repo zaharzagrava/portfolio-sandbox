@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [toolkit]
 defined_for: cache-layers
-rules_hash: a2607f4728ed
+rules_hash: df396dc871e1
 ---
 # Cache toolkit
 ## Definition
@@ -20,6 +20,7 @@ S05 serves product pages through the toolkit's `getOrLoad`. The toolkit checks L
 
 ## Used by
 <!-- used-by:start -->
+- [S05](../capabilities/S05-products.md): B-08
 - [S52](../capabilities/S52-cache-toolkit.md): R-02, R-03, R-20
 - [cache-layers](../concepts/cache-layers.md): C-07
 - [cache-invalidate-channel](cache-invalidate-channel.md)

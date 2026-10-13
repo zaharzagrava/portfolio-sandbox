@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [catalog domain]
 defined_for: S05-products
-rules_hash: 0155cc1e9a05
+rules_hash: c65ce31dccbf
 ---
 # Catalog domain layer
 ## Definition
@@ -29,10 +29,12 @@ packages/backend/libs/domains/catalog/domain/stock-rule.ts      applyDelta      
 <!-- used-by:start -->
 - [apply-delta](apply-delta.md)
 - [expected-total-minor](expected-total-minor.md)
+- [is-publicly-visible](is-publicly-visible.md)
 - [parse-create-input](parse-create-input.md)
 - [price-changed](price-changed.md)
 - [product-lifecycle](product-lifecycle.md)
 - [product-stock-service](product-stock-service.md)
 - [search-visibility](search-visibility.md)
+- [shop-search-freshness](shop-search-freshness.md)
 - [stock-delta](stock-delta.md)
 <!-- used-by:end -->

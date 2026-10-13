@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [source, sso]
 defined_for: S03-shops-rbac
-rules_hash: 804f5dac9378
+rules_hash: e8d3abf0b276
 ---
 # Membership removal source
 ## Definition
@@ -21,7 +21,7 @@ The shop's identity provider reports that a person has left. Their membership is
 
 ## Used by
 <!-- used-by:start -->
-- [S03](../capabilities/S03-shops-rbac.md): B-08
 - [after-commit-callback](after-commit-callback.md)
 - [session-revocation](session-revocation.md)
+- [shop-purge](shop-purge.md)
 <!-- used-by:end -->

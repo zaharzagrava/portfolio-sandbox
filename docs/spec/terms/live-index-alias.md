@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [live alias, live name]
 defined_for: S32-product-search
-rules_hash: 2d7dcf88f2a3
+rules_hash: 2a6b59ca5423
 ---
 # Live index name (alias)
 ## Definition
@@ -20,12 +20,13 @@ These index names are illustrative: the live name points at `products_v7`, and a
 
 ## Used by
 <!-- used-by:start -->
-- [S32](../capabilities/S32-product-search.md): B-19
+- [S32](../capabilities/S32-product-search.md): R-20, B-19
 - [cutover](cutover.md)
 - [no-previous-index](no-previous-index.md)
 - [product-search-route](product-search-route.md)
 - [reindex-history](reindex-history.md)
 - [reindex-rollback](reindex-rollback.md)
+- [search-projector](search-projector.md)
 - [shop-search-table](shop-search-table.md)
 - [verification-gate](verification-gate.md)
 - [zero-downtime-reindexing](zero-downtime-reindexing.md)

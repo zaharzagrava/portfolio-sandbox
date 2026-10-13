@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [billing.subscription_plan_changed]
 defined_for: S03-shops-rbac
-rules_hash: e3b0c44298fc
+rules_hash: 6fc69dd915c4
 ---
 # billing.subscription_plan_changed event
 ## Definition
@@ -21,6 +21,7 @@ The shop is on `PRO` after a version-5 event. A late version-3 event says `START
 
 ## Used by
 <!-- used-by:start -->
+- [S03](../capabilities/S03-shops-rbac.md): B-18
 - [consumer-outcomes](consumer-outcomes.md)
 - [event-payload](event-payload.md)
 - [pending-invite](pending-invite.md)

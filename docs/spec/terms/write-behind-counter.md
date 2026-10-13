@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [write-behind counters]
 defined_for: S52-cache-toolkit
-rules_hash: e3b0c44298fc
+rules_hash: 0a611e78fec3
 ---
 # WriteBehindCounter
 ## Definition
@@ -24,6 +24,7 @@ Illustrative flow, read from the method names only. The spec does not describe t
 
 ## Used by
 <!-- used-by:start -->
+- [S05](../capabilities/S05-products.md): R-21, R-22
 - [l2-cache](l2-cache.md)
 - [platform-toolkit](platform-toolkit.md)
 - [write-behind-fence-record](write-behind-fence-record.md)

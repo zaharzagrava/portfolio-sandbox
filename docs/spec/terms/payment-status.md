@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [cancelled, completed, pending, unknown]
 defined_for: payment-lifecycle
-rules_hash: cfb071ac6ecc
+rules_hash: d5323d0ca8f6
 ---
 # Payment status
 ## Definition
@@ -21,8 +21,7 @@ A payment is `PENDING` and its [provider charge](provider-charge-metadata.md) ti
 
 ## Used by
 <!-- used-by:start -->
-- [S10](../capabilities/S10-cart-checkout.md): R-27
-- [S13](../capabilities/S13-payment-intents.md): B-17, B-19
+- [S13](../capabilities/S13-payment-intents.md): B-19
 - [W03](../capabilities/W03-cart-checkout-orders.md): B-17
 - [payment-lifecycle](../concepts/payment-lifecycle.md): C-07
 - [guarded-update](guarded-update.md)

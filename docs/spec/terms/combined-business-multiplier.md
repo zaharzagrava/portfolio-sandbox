@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [capped multiplier]
 defined_for: S32-product-search
-rules_hash: e3b0c44298fc
+rules_hash: 3cf8322dbcc6
 ---
 # Combined business multiplier
 ## Definition
@@ -21,11 +21,13 @@ The combined business multiplier is a single factor applied to a product's [text
 
 ## Used by
 <!-- used-by:start -->
+- [S32](../capabilities/S32-product-search.md): R-07
 - [browse-mode](browse-mode.md)
 - [business-score](business-score.md)
 - [clamping](clamping.md)
 - [plan-limit](plan-limit.md)
 - [relevance-boost](relevance-boost.md)
+- [search-ranking-signals](search-ranking-signals.md)
 - [sponsorship-event](sponsorship-event.md)
 - [text-relevance](text-relevance.md)
 - [weak-match](weak-match.md)

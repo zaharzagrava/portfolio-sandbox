@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [shared transaction, transaction is active]
 defined_for: transaction-runner
-rules_hash: 0a5c00f5c5c4
+rules_hash: c5316ee8fab3
 ---
 # Active transaction
 ## Definition
@@ -20,19 +20,28 @@ Inside [S13](../capabilities/S13-payment-intents.md)'s payment scope, [S53](../c
 
 ## Used by
 <!-- used-by:start -->
+- [S03](../capabilities/S03-shops-rbac.md): R-21
 - [S49](../capabilities/S49-job-scheduler.md): R-02, B-02
 - [S54](../capabilities/S54-platform-toolkit.md): R-17, B-05
 - [transaction-runner](../concepts/transaction-runner.md): C-03
 - [append-standalone](append-standalone.md)
 - [event-row](event-row.md)
+- [get-balances](get-balances.md)
 - [idempotency-key-conflict-error](idempotency-key-conflict-error.md)
 - [inbox-table](inbox-table.md)
+- [insufficient-balance](insufficient-balance.md)
+- [ledger-service](ledger-service.md)
+- [logical-account](logical-account.md)
+- [logical-balance](logical-balance.md)
+- [mfa-disabled-event](mfa-disabled-event.md)
 - [outbox-rollback](outbox-rollback.md)
 - [post-shops](post-shops.md)
+- [record-payment-captured](record-payment-captured.md)
 - [safe-http-client](safe-http-client.md)
 - [task-row](task-row.md)
 - [tenancy-tables](tenancy-tables.md)
 - [transaction-runner](transaction-runner.md)
 - [transaction-scope](transaction-scope.md)
 - [transactional-decorator](transactional-decorator.md)
+- [use-case](use-case.md)
 <!-- used-by:end -->

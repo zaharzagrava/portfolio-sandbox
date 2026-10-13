@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [webhook event]
 defined_for: order-reservation
-rules_hash: 4adc8b3e473e
+rules_hash: 401555d7ae84
 ---
 # Verified webhook event
 ## Definition
@@ -21,12 +21,13 @@ A verified event reports a successful payment of 49.90 EUR for order `42` (illus
 
 ## Used by
 <!-- used-by:start -->
-- [S10](../capabilities/S10-cart-checkout.md): R-25, R-31, R-32, B-16
+- [S10](../capabilities/S10-cart-checkout.md): R-27, B-16
 - [order-reservation](../concepts/order-reservation.md): C-07
 - [hold-expired](hold-expired.md)
 - [ignored-payment-event](ignored-payment-event.md)
 - [order-status-history](order-status-history.md)
 - [order-version](order-version.md)
+- [order-webhook-events-purge](order-webhook-events-purge.md)
 - [orders-domain](orders-domain.md)
 - [paid-mark](paid-mark.md)
 - [payment-provider](payment-provider.md)

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [allow-list, allowed origins]
 defined_for: S02-mfa-oidc
-rules_hash: 007421941e9e
+rules_hash: 29c49def6cb8
 ---
 # Origin allow-list
 ## Definition
@@ -26,6 +26,7 @@ If the `Origin` is on the list, the same verify request sets three cookies and p
 
 ## Used by
 <!-- used-by:start -->
+- [S02](../capabilities/S02-mfa-oidc.md): R-29
 - [S48](../capabilities/S48-bff.md): R-18
 - [api-bff-endpoints](api-bff-endpoints.md)
 - [authorization-url](authorization-url.md)

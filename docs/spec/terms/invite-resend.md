@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [resend]
 defined_for: S03-shops-rbac
-rules_hash: 602ab492bff4
+rules_hash: 40eede44b93b
 ---
 # Invite resend
 ## Definition
@@ -21,7 +21,8 @@ An invite to `new@mail.com` is about to expire. The manager resends it, and the 
 
 ## Used by
 <!-- used-by:start -->
-- [S03](../capabilities/S03-shops-rbac.md): B-13
+- [S03](../capabilities/S03-shops-rbac.md): B-13, B-26
+- [invite-lifecycle](invite-lifecycle.md)
 - [invite-manager](invite-manager.md)
 - [invite-token](invite-token.md)
 - [pending-invite](pending-invite.md)

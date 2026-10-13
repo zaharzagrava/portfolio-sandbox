@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [id:]
 defined_for: S51-realtime-push
-rules_hash: d707f1793b8a
+rules_hash: 30a93a0a14b9
 ---
 # id: line (event id)
 ## Definition
@@ -26,6 +26,7 @@ data: {...}
 
 ## Used by
 <!-- used-by:start -->
+- [S51](../capabilities/S51-realtime-push.md): B-01
 - [encode-cursor](encode-cursor.md)
 - [realtime-hub](realtime-hub.md)
 - [replay-cursor](replay-cursor.md)

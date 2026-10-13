@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [building, catching_up, completed, queued]
 defined_for: S32-product-search
-rules_hash: 7f670c01178f
+rules_hash: a3cdd9ecbe69
 ---
 # Reindex run status
 ## Definition
@@ -23,6 +23,7 @@ The reindex run status is the state of one [zero-downtime reindex](zero-downtime
 
 ## Used by
 <!-- used-by:start -->
+- [S32](../capabilities/S32-product-search.md): R-18
 - [no-previous-index](no-previous-index.md)
 - [reindex-history](reindex-history.md)
 - [reindex-rollback](reindex-rollback.md)

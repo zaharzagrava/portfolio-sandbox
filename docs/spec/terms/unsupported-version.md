@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: []
 defined_for: S53-events-projections
-rules_hash: e3b0c44298fc
+rules_hash: 178d50486d28
 ---
 # UNSUPPORTED_VERSION
 ## Definition
@@ -21,5 +21,10 @@ A consumer handles `fixtures.item_changed` up to version 1. A producer starts se
 
 ## Used by
 <!-- used-by:start -->
+- [S28](../capabilities/S28-notifications.md): R-01
+- [S32](../capabilities/S32-product-search.md): R-17
+- [billing-source-family](billing-source-family.md)
 - [dead-letter-reason-code](dead-letter-reason-code.md)
+- [known-unmapped-type](known-unmapped-type.md)
+- [search-projector](search-projector.md)
 <!-- used-by:end -->

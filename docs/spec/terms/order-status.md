@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [cancelled, order statuses]
 defined_for: order-reservation
-rules_hash: a326534431d3
+rules_hash: 6047b3ce19f3
 ---
 # Order status
 ## Definition
@@ -21,9 +21,11 @@ A typical path is `PENDING` → `RESERVED` → `PAID`. [W03](../capabilities/W03
 
 ## Used by
 <!-- used-by:start -->
-- [S10](../capabilities/S10-cart-checkout.md): R-33
+- [S10](../capabilities/S10-cart-checkout.md): R-33, B-17
+- [S13](../capabilities/S13-payment-intents.md): B-01
 - [W03](../capabilities/W03-cart-checkout-orders.md): B-18, B-19
 - [order-reservation](../concepts/order-reservation.md): C-08
+- [get-shop-orders](get-shop-orders.md)
 - [order-command](order-command.md)
 - [order-id](order-id.md)
 - [order-status-history](order-status-history.md)

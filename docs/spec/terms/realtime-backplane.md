@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [backplane]
 defined_for: realtime-topic-stream
-rules_hash: 82862ba13949
+rules_hash: edf3987d344f
 ---
 # Realtime backplane
 ## Definition
@@ -21,7 +21,7 @@ On one instance, three browser tabs (illustrative) watch the same `user:{userId}
 
 ## Used by
 <!-- used-by:start -->
-- [S51](../capabilities/S51-realtime-push.md): R-21, B-10, B-17
+- [S51](../capabilities/S51-realtime-push.md): R-21, R-31, B-10, B-17
 - [realtime-hub](realtime-hub.md)
 - [realtime-store](realtime-store.md)
 - [realtime-topic](realtime-topic.md)

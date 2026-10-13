@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [idempotency key, idempotency-key, the key]
 defined_for: idempotency-key
-rules_hash: 49dd241caadb
+rules_hash: 8d9ccd1fe935
 ---
 # Idempotency-Key header
 ## Definition
@@ -25,11 +25,12 @@ If this exact request is sent again with the same key, the client still gets one
 
 ## Used by
 <!-- used-by:start -->
-- [S10](../capabilities/S10-cart-checkout.md): R-12, R-13, B-07, B-08
-- [S13](../capabilities/S13-payment-intents.md): R-08, R-10, B-01, B-02
+- [S10](../capabilities/S10-cart-checkout.md): R-12, R-13, R-36, R-44, B-07
+- [S13](../capabilities/S13-payment-intents.md): R-08, B-01, B-05
 - [S49](../capabilities/S49-job-scheduler.md): R-06
 - [W03](../capabilities/W03-cart-checkout-orders.md): R-09, R-11, B-14, B-16
 - [job-scheduler-lease](../concepts/job-scheduler-lease.md): C-03
+- [adjustment-journal](adjustment-journal.md)
 - [cart-empty](cart-empty.md)
 - [checkout-attempt](checkout-attempt.md)
 - [checkout-in-progress](checkout-in-progress.md)
@@ -37,6 +38,7 @@ If this exact request is sent again with the same key, the client still gets one
 - [concurrency-limit](concurrency-limit.md)
 - [correction-path](correction-path.md)
 - [cron-fire-key](cron-fire-key.md)
+- [get-order-by-id](get-order-by-id.md)
 - [idempotency-in-flight](idempotency-in-flight.md)
 - [idempotency-key-conflict-error](idempotency-key-conflict-error.md)
 - [idempotency-key-required](idempotency-key-required.md)
@@ -58,6 +60,7 @@ If this exact request is sent again with the same key, the client still gets one
 - [rate-limit-decorator](rate-limit-decorator.md)
 - [rate-limit-response-headers](rate-limit-response-headers.md)
 - [rate-limit](rate-limit.md)
+- [request-fingerprint](request-fingerprint.md)
 - [scheduler-leader](scheduler-leader.md)
 - [scheduler-tick](scheduler-tick.md)
 - [search-backfill-shop-state](search-backfill-shop-state.md)

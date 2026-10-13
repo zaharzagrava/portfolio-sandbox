@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [exchange, refresh token]
 defined_for: access-token-session
-rules_hash: f7df5db0d28f
+rules_hash: b8759ec8cab3
 ---
 # Token refresh
 ## Definition
@@ -20,19 +20,27 @@ The BFF finds that the access token for a [`__Host-bff-session` cookie](session-
 
 ## Used by
 <!-- used-by:start -->
-- [S01](../capabilities/S01-auth-sessions.md): R-18, R-21, R-22, B-10
+- [S01](../capabilities/S01-auth-sessions.md): R-18, R-21, R-22, R-27, R-31, B-06, B-10, B-19, B-22, B-28
 - [S48](../capabilities/S48-bff.md): R-19, B-17
 - [W01](../capabilities/W01-auth-account.md): B-19
 - [access-token-session](../concepts/access-token-session.md): C-05
 - [access-token](access-token.md)
 - [clock-skew-tolerance](clock-skew-tolerance.md)
+- [host-refresh-cookie](host-refresh-cookie.md)
 - [identity-domain](identity-domain.md)
+- [logout-all](logout-all.md)
 - [mfa-challenge-token](mfa-challenge-token.md)
 - [oversized-refresh-token](oversized-refresh-token.md)
+- [post-auth-logout](post-auth-logout.md)
+- [post-auth-refresh](post-auth-refresh.md)
 - [refresh-token-rotation](refresh-token-rotation.md)
 - [session-cookie](session-cookie.md)
 - [session-expired](session-expired.md)
+- [session-id](session-id.md)
+- [session-issuer](session-issuer.md)
+- [session-last-used-at](session-last-used-at.md)
 - [session-lifetime](session-lifetime.md)
+- [session-limit](session-limit.md)
 - [session-revocation](session-revocation.md)
 - [soft-delete](soft-delete.md)
 <!-- used-by:end -->

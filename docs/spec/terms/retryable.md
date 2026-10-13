@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [retryable flag]
 defined_for: S48-bff
-rules_hash: e3b0c44298fc
+rules_hash: 01322a8a12d8
 ---
 # retryable
 ## Definition
@@ -23,7 +23,12 @@ rules_hash: e3b0c44298fc
 
 ## Used by
 <!-- used-by:start -->
+- [S14](../capabilities/S14-ledger-reconciliation.md): R-21
+- [S28](../capabilities/S28-notifications.md): R-10
+- [balance-overflow](balance-overflow.md)
+- [balance-row](balance-row.md)
 - [errors-entry](errors-entry.md)
+- [ledger-busy](ledger-busy.md)
 - [product-page-endpoint](product-page-endpoint.md)
 - [required-section](required-section.md)
 <!-- used-by:end -->

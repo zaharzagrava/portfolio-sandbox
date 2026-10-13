@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [payment_failed]
 defined_for: S13-payment-intents
-rules_hash: ed21e90ecfe7
+rules_hash: 852e7aad32d5
 ---
 # payment_failed event
 ## Definition

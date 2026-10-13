@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: []
 defined_for: S10-cart-checkout
-rules_hash: 32342fbce4d8
+rules_hash: 98e080254bcc
 ---
 # Webhook secret
 ## Definition
@@ -24,6 +24,7 @@ During a secret rotation, the payment provider still signs an event with the pre
 
 ## Used by
 <!-- used-by:start -->
+- [S10](../capabilities/S10-cart-checkout.md): R-25
 - [clock-skew-tolerance](clock-skew-tolerance.md)
 - [guest-cart-token](guest-cart-token.md)
 - [verified-webhook-event](verified-webhook-event.md)

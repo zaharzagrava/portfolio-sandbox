@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [payments events consumer]
 defined_for: S10-cart-checkout
-rules_hash: e3b0c44298fc
+rules_hash: ea0e28d46a76
 ---
 # PaymentsEventsConsumer
 ## Definition
@@ -21,6 +21,7 @@ Order `ord_42` (illustrative ID) is `RESERVED`. The webhook marks it `PAID`. Lat
 
 ## Used by
 <!-- used-by:start -->
+- [S10](../capabilities/S10-cart-checkout.md): R-31
 - [consumer-deduplication-mode](consumer-deduplication-mode.md)
 - [event-consumer](event-consumer.md)
 - [guarded-update](guarded-update.md)

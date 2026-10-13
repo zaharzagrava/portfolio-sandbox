@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [config module]
 defined_for: W07-app-shell
-rules_hash: 570e276d9707
+rules_hash: 0f8a1aee59df
 ---
 # Validated config module
 ## Definition
@@ -28,6 +28,7 @@ For example, [`buildCsp`](build-csp.md) gets the payment provider hosts from her
 - [map-tile-hosts](map-tile-hosts.md)
 - [media-host-setting](media-host-setting.md)
 - [payment-provider-hosts](payment-provider-hosts.md)
+- [platform-fee](platform-fee.md)
 - [source-code-url](source-code-url.md)
 - [video-host-setting](video-host-setting.md)
 <!-- used-by:end -->

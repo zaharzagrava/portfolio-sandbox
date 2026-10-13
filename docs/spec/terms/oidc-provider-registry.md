@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [registry]
 defined_for: S02-mfa-oidc
-rules_hash: 455ad194ce5d
+rules_hash: 2bed89eec8a9
 ---
 # OidcProviderRegistry
 ## Definition
@@ -21,7 +21,12 @@ The registry lives in `packages/backend/libs/domains/identity/application/oidc-p
 
 ## Used by
 <!-- used-by:start -->
+- [S02](../capabilities/S02-mfa-oidc.md): R-32, B-25
+- [S03](../capabilities/S03-shops-rbac.md): R-22
 - [auth-oidc-enabled](auth-oidc-enabled.md)
 - [identity-domain](identity-domain.md)
+- [oidc-issuer](oidc-issuer.md)
 - [reserved-provider-prefix](reserved-provider-prefix.md)
+- [resolve-as-unknown](resolve-as-unknown.md)
+- [seal-context](seal-context.md)
 <!-- used-by:end -->

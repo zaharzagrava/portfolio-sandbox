@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [attempt budget]
 defined_for: S53-events-projections
-rules_hash: 07799db0c7fb
+rules_hash: b62decb42f75
 ---
 # Consumer attempt budget
 ## Definition
@@ -21,9 +21,14 @@ A handler throws a [permanent error](permanent-error.md) every time it is called
 
 ## Used by
 <!-- used-by:start -->
+- [S14](../capabilities/S14-ledger-reconciliation.md): R-16
 - [dead-letter-reason-code](dead-letter-reason-code.md)
 - [dead-letter-topic](dead-letter-topic.md)
+- [failover-timeline-entry](failover-timeline-entry.md)
 - [handler-failed](handler-failed.md)
 - [handler-timeout](handler-timeout.md)
+- [ledger-settle-order-job](ledger-settle-order-job.md)
 - [permanent-error](permanent-error.md)
+- [queue-refusal](queue-refusal.md)
+- [settlement-journal](settlement-journal.md)
 <!-- used-by:end -->

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [jobs]
 defined_for: S49-job-scheduler
-rules_hash: e785aaef9218
+rules_hash: b1d5886310c3
 ---
 # Job (scheduler job)
 ## Definition
@@ -20,11 +20,33 @@ A capability calls `JobsService.enqueue(type, payload, { idempotencyKey: 'K' })`
 
 ## Used by
 <!-- used-by:start -->
+- [S01](../capabilities/S01-auth-sessions.md): R-44
+- [S10](../capabilities/S10-cart-checkout.md): B-17
+- [S14](../capabilities/S14-ledger-reconciliation.md): R-34, R-43
 - [S49](../capabilities/S49-job-scheduler.md): R-01
+- [api-layer](api-layer.md)
+- [auth-purge-reset-tokens-job](auth-purge-reset-tokens-job.md)
+- [infrastructure-layer](infrastructure-layer.md)
+- [invite-purge-job](invite-purge-job.md)
 - [job-claim](job-claim.md)
 - [job-enqueue](job-enqueue.md)
 - [job-status](job-status.md)
 - [job-type](job-type.md)
+- [ledger-jobs](ledger-jobs.md)
+- [ledger-settle-order-job](ledger-settle-order-job.md)
+- [notifications-callbacks-queue](notifications-callbacks-queue.md)
+- [notifications-reconcile-unread-job](notifications-reconcile-unread-job.md)
+- [order-items-backfill](order-items-backfill.md)
+- [order-settlement](order-settlement.md)
+- [orders-backfill-item-titles-job](orders-backfill-item-titles-job.md)
 - [outbox-purge-job](outbox-purge-job.md)
 - [per-shop-running-cap](per-shop-running-cap.md)
+- [products-flush-view-counts-job](products-flush-view-counts-job.md)
+- [provider-statement](provider-statement.md)
+- [provider-unavailable-failed-run](provider-unavailable-failed-run.md)
+- [reset-token-jobs](reset-token-jobs.md)
+- [search-backfill-embeddings-job](search-backfill-embeddings-job.md)
+- [search-purge-tombstones-job](search-purge-tombstones-job.md)
+- [shop-purge-job](shop-purge-job.md)
+- [stock-operation-purge](stock-operation-purge.md)
 <!-- used-by:end -->

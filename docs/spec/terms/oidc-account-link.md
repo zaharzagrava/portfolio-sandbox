@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [link, linked]
 defined_for: S02-mfa-oidc
-rules_hash: d9df7b5f8bbc
+rules_hash: f5fc7fad76dd
 ---
 # OIDC account link
 ## Definition
@@ -25,12 +25,14 @@ A password account for `ana@example.com` (illustrative) has never used Google. A
 
 ## Used by
 <!-- used-by:start -->
-- [S02](../capabilities/S02-mfa-oidc.md): B-15, B-16
+- [S02](../capabilities/S02-mfa-oidc.md): R-31, B-19
+- [S03](../capabilities/S03-shops-rbac.md): B-21
 - [dynamic-provider](dynamic-provider.md)
 - [email-not-verified](email-not-verified.md)
 - [linked-identity](linked-identity.md)
 - [linked-query-param](linked-query-param.md)
 - [mfa-state](mfa-state.md)
 - [oidc-callback](oidc-callback.md)
+- [oidc-provider-resolver](oidc-provider-resolver.md)
 - [provider-subject](provider-subject.md)
 <!-- used-by:end -->

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [reserved prefix]
 defined_for: S02-mfa-oidc
-rules_hash: 47175efc1169
+rules_hash: c1e6c908bf00
 ---
 # Reserved provider prefix
 ## Definition
@@ -21,7 +21,9 @@ Say S03 has reserved the prefix `sso-` (illustrative, the real value is not in t
 
 ## Used by
 <!-- used-by:start -->
+- [S02](../capabilities/S02-mfa-oidc.md): R-30
 - [dynamic-provider](dynamic-provider.md)
 - [oidc-provider-registry](oidc-provider-registry.md)
+- [oidc-provider-resolver](oidc-provider-resolver.md)
 - [static-provider-configuration](static-provider-configuration.md)
 <!-- used-by:end -->

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [refuses to start, startup fails]
 defined_for: S50-rate-limiter
-rules_hash: ec1feeeab052
+rules_hash: b94e5717a948
 ---
 # Startup validation
 ## Definition
@@ -22,11 +22,18 @@ Two modules each declare a policy with the same name through [`definePolicies`](
 
 ## Used by
 <!-- used-by:start -->
+- [S03](../capabilities/S03-shops-rbac.md): R-20
+- [S13](../capabilities/S13-payment-intents.md): R-29
+- [S14](../capabilities/S14-ledger-reconciliation.md): R-48
+- [S28](../capabilities/S28-notifications.md): R-37
 - [S54](../capabilities/S54-platform-toolkit.md): R-07, B-16
 - [bootstrap-app](bootstrap-app.md)
 - [graceful-shutdown-drain](graceful-shutdown-drain.md)
 - [hard-shutdown-timeout](hard-shutdown-timeout.md)
 - [nestjs-module](nestjs-module.md)
+- [notification-catalog](notification-catalog.md)
+- [notification-secret](notification-secret.md)
+- [provider-secret](provider-secret.md)
 - [rate-limit-exemption](rate-limit-exemption.md)
 - [rate-limit-policy-registry](rate-limit-policy-registry.md)
 - [request-drain-timeout](request-drain-timeout.md)

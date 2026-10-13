@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [search.refresh-popularity]
 defined_for: job-scheduler-lease
-rules_hash: d4865d7d5273
+rules_hash: e3b0c44298fc
 ---
 # search.refresh-popularity job
 ## Definition
@@ -25,9 +25,9 @@ The "Found in" text you gave for all three terms is the same paragraph, and it i
 
 ## Used by
 <!-- used-by:start -->
-- [S32](../capabilities/S32-product-search.md): B-04
 - [jitter](jitter.md)
 - [job-lease](job-lease.md)
 - [per-shop-running-cap](per-shop-running-cap.md)
 - [relevance-boost](relevance-boost.md)
+- [search-ranking-signals](search-ranking-signals.md)
 <!-- used-by:end -->

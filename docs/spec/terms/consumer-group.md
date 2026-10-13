@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [group name, group names]
 defined_for: projection-and-replay
-rules_hash: 4cc3788446bc
+rules_hash: 0b07caef84db
 ---
 # Consumer group
 ## Definition
@@ -24,7 +24,16 @@ A consumer group is the name a consumer declares when it registers to read the e
 - [S53](../capabilities/S53-events-projections.md): R-17
 - [projection-and-replay](../concepts/projection-and-replay.md): C-03
 - [analytics-events-topic](analytics-events-topic.md)
+- [balance-projector](balance-projector.md)
 - [consumer-declaration-error](consumer-declaration-error.md)
 - [consumer-deduplication-mode](consumer-deduplication-mode.md)
 - [dead-letter-redrive](dead-letter-redrive.md)
+- [ledger-events-topic](ledger-events-topic.md)
+- [ledger-journal-posted-event](ledger-journal-posted-event.md)
+- [ledger-lag-metric](ledger-lag-metric.md)
+- [ledger-projector-module](ledger-projector-module.md)
+- [order-tolerant](order-tolerant.md)
+- [settlement-consumer](settlement-consumer.md)
+- [settlement-journal](settlement-journal.md)
+- [shop-status-consumer](shop-status-consumer.md)
 <!-- used-by:end -->

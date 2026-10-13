@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: []
 defined_for: S13-payment-intents
-rules_hash: efb5fe8e93be
+rules_hash: 243bc24370f4
 ---
 # crash_recovery
 ## Definition
@@ -19,9 +19,11 @@ The processor records an attempt for a payment, sends the charge, and crashes be
 
 ## Used by
 <!-- used-by:start -->
+- [S13](../capabilities/S13-payment-intents.md): R-30
 - [checkout-attempt](checkout-attempt.md)
 - [merge-cycle](merge-cycle.md)
 - [payment-processor](payment-processor.md)
 - [provider-lookup](provider-lookup.md)
+- [reconciliation-run](reconciliation-run.md)
 - [unknown-payment-resolution](unknown-payment-resolution.md)
 <!-- used-by:end -->

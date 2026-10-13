@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: []
 defined_for: problem-json-errors
-rules_hash: 93eec916b8a9
+rules_hash: 5c51b3e0fa4a
 ---
 # minVersion
 ## Definition
@@ -21,7 +21,6 @@ A client sends `minVersion=abc` (or `-1`, or `1.5`) to S53. It gets a `400` `app
 
 ## Used by
 <!-- used-by:start -->
-- [S05](../capabilities/S05-products.md): R-18
 - [S52](../capabilities/S52-cache-toolkit.md): R-19, B-14
 - [read-your-writes](read-your-writes.md)
 <!-- used-by:end -->

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [challenge token]
 defined_for: S02-mfa-oidc
-rules_hash: 24897f3ee6b2
+rules_hash: a2365d62f573
 ---
 # MFA challenge token
 ## Definition
@@ -21,6 +21,8 @@ Alice logs in with her password and gets a challenge. Her browser receives it in
 ## Used by
 <!-- used-by:start -->
 - [S02](../capabilities/S02-mfa-oidc.md): R-06
+- [invalid-mfa-challenge](invalid-mfa-challenge.md)
+- [mfa-challenge-spent-burned](mfa-challenge-spent-burned.md)
 - [mfa-management-endpoint](mfa-management-endpoint.md)
 - [mfa-recovery-code-regenerate](mfa-recovery-code-regenerate.md)
 - [mfa-recovery-code](mfa-recovery-code.md)

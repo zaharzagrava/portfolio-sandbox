@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [invite, invites]
 defined_for: tenant-shop-rbac
-rules_hash: 837d6a26b032
+rules_hash: 898d93d10e68
 ---
 # Pending invite
 ## Definition
@@ -21,10 +21,12 @@ An [`ADMIN`](shop-role.md) of a [`PRO`](plan-limit.md) shop invites a new `STAFF
 
 ## Used by
 <!-- used-by:start -->
-- [S03](../capabilities/S03-shops-rbac.md): R-17, B-09, B-13
+- [S03](../capabilities/S03-shops-rbac.md): R-16, R-17, B-09, B-10, B-13
 - [tenant-shop-rbac](../concepts/tenant-shop-rbac.md): C-08
 - [already-member](already-member.md)
+- [invite-lifecycle](invite-lifecycle.md)
 - [invite-manager](invite-manager.md)
+- [invite-purge-job](invite-purge-job.md)
 - [invite-resend](invite-resend.md)
 - [invite-revoke](invite-revoke.md)
 - [invite-token](invite-token.md)
@@ -34,5 +36,6 @@ An [`ADMIN`](shop-role.md) of a [`PRO`](plan-limit.md) shop invites a new `STAFF
 - [seat](seat.md)
 - [shop-member](shop-member.md)
 - [shop-tenant](shop-tenant.md)
+- [shop-tombstone](shop-tombstone.md)
 - [subscription-plan-changed-event](subscription-plan-changed-event.md)
 <!-- used-by:end -->

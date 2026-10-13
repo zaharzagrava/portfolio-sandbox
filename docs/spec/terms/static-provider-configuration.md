@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [static ids, static providers]
 defined_for: S02-mfa-oidc
-rules_hash: fb8a3c6e1972
+rules_hash: 640086b92edc
 ---
 # Static provider configuration
 ## Definition
@@ -23,6 +23,7 @@ When Google is configured, `POST /auth/oidc/google/start` returns an `authorizat
 
 ## Used by
 <!-- used-by:start -->
+- [S02](../capabilities/S02-mfa-oidc.md): B-24
 - [dynamic-provider](dynamic-provider.md)
 - [get-auth-oidc-providers](get-auth-oidc-providers.md)
 - [oidc-flow-cookie](oidc-flow-cookie.md)

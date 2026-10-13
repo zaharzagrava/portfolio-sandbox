@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [stale-if-error, staleiferrorms]
 defined_for: cache-layers
-rules_hash: 725f19b9e524
+rules_hash: 3b959e902d38
 ---
 # Stale-if-error (staleIfErrorMs)
 ## Definition
@@ -20,6 +20,7 @@ An illustrative entry has `exp` at 12:00:00 and `staleIfErrorMs: 300000` (5 minu
 
 ## Used by
 <!-- used-by:start -->
+- [S05](../capabilities/S05-products.md): B-12
 - [cache-layers](../concepts/cache-layers.md): C-05
 - [cache-entry](cache-entry.md)
 - [cache-loader-busy](cache-loader-busy.md)

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: []
 defined_for: S54-platform-toolkit
-rules_hash: ce9c999cad66
+rules_hash: d57540c06f8d
 ---
 # blocked_address
 ## Definition
@@ -22,4 +22,5 @@ A webhook URL uses the hostname `internal.example` (illustrative), which resolve
 ## Used by
 <!-- used-by:start -->
 - [pinned-address](pinned-address.md)
+- [sso-issuer-errors](sso-issuer-errors.md)
 <!-- used-by:end -->

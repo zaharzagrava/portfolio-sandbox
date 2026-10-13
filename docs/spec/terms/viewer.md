@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [anonymous viewer, authenticated viewer]
 defined_for: realtime-topic-stream
-rules_hash: d1df4ec36415
+rules_hash: 732c216608ac
 ---
 # Viewer
 ## Definition
@@ -20,18 +20,18 @@ A signed-in shopper has checkout open in W03, and their browser is a viewer of [
 
 ## Used by
 <!-- used-by:start -->
-- [S03](../capabilities/S03-shops-rbac.md): B-14
-- [S32](../capabilities/S32-product-search.md): R-01
+- [S32](../capabilities/S32-product-search.md): B-01
 - [S33](../capabilities/S33-autocomplete.md): R-01
 - [S34](../capabilities/S34-recommendations.md): R-01, B-01
 - [S35](../capabilities/S35-trending.md): R-01, B-01
-- [S51](../capabilities/S51-realtime-push.md): R-14, B-14, B-17, B-20
+- [S51](../capabilities/S51-realtime-push.md): R-14, B-10, B-11, B-17, B-20
 - [W01](../capabilities/W01-auth-account.md): B-15, B-17
 - [realtime-topic-stream](../concepts/realtime-topic-stream.md): C-03
 - [batch-shops-lookup](batch-shops-lookup.md)
 - [connection-admission](connection-admission.md)
 - [default-deny-topic](default-deny-topic.md)
 - [realtime-backplane](realtime-backplane.md)
+- [realtime-route](realtime-route.md)
 - [realtime-topic-access-rule](realtime-topic-access-rule.md)
 - [realtime-topic](realtime-topic.md)
 - [stream-connection](stream-connection.md)

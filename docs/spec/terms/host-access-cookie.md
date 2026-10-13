@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [__host-access]
 defined_for: access-token-session
-rules_hash: 08cc34c175ac
+rules_hash: e013f15948f2
 ---
 # __Host-access cookie
 ## Definition

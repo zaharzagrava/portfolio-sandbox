@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [fail mode]
 defined_for: idempotency-key
-rules_hash: d3514e023340
+rules_hash: 64d9e09ab1db
 ---
 # Rate limit fail mode
 ## Definition
@@ -30,6 +30,7 @@ fail closed -> request is rejected
 - [circuit-breaker-probe](circuit-breaker-probe.md)
 - [concurrency-limit](concurrency-limit.md)
 - [default-rate-limit-policies](default-rate-limit-policies.md)
+- [get-payments](get-payments.md)
 - [rate-limit-cost-resolver](rate-limit-cost-resolver.md)
 - [rate-limit-counter-store](rate-limit-counter-store.md)
 - [rate-limit-store-timeout-ms](rate-limit-store-timeout-ms.md)

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [clamped]
 defined_for: S35-trending
-rules_hash: 4d9d771d8c0d
+rules_hash: f8dfe8d2cb28
 ---
 # Clamping (no silent adjustment of out-of-range values)
 ## Definition
@@ -20,6 +20,7 @@ Clamping means quietly changing an out-of-range value to the nearest allowed val
 
 ## Used by
 <!-- used-by:start -->
+- [S32](../capabilities/S32-product-search.md): R-41
 - [S35](../capabilities/S35-trending.md): R-03
 - [S50](../capabilities/S50-rate-limiter.md): R-11
 - [acquire](acquire.md)

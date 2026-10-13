@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [exact match, exact text match]
 defined_for: S32-product-search
-rules_hash: 6dea31287505
+rules_hash: 0a5fe051d650
 ---
 # Weak match
 ## Definition
@@ -21,5 +21,7 @@ A weak match is a product that matches the search text only loosely, so its text
 
 ## Used by
 <!-- used-by:start -->
+- [S32](../capabilities/S32-product-search.md): R-07
 - [combined-business-multiplier](combined-business-multiplier.md)
+- [search-ranking-signals](search-ranking-signals.md)
 <!-- used-by:end -->

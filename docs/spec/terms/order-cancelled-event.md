@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [order.cancelled]
 defined_for: S10-cart-checkout
-rules_hash: e3b0c44298fc
+rules_hash: 88e04d58ae79
 ---
 # order.cancelled event
 ## Definition
@@ -21,6 +21,7 @@ A buyer calls `POST /orders/:orderId/cancel` on a [`RESERVED`](order-status.md) 
 
 ## Used by
 <!-- used-by:start -->
+- [S10](../capabilities/S10-cart-checkout.md): R-35, B-15
 - [event-payload](event-payload.md)
 - [orders-domain](orders-domain.md)
 - [pending-order-recovery](pending-order-recovery.md)

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [oidc_denied, oidc_exchange_failed, oidc_provider_unavailable]
 defined_for: S02-mfa-oidc
-rules_hash: 074620d8fae6
+rules_hash: 394912121f72
 ---
 # OIDC login error codes
 ## Definition
@@ -33,4 +33,6 @@ Other codes in the spec: `oidc_exchange_failed`, `oidc_provider_unavailable`, `e
 - [front-end-origin](front-end-origin.md)
 - [link-conflict](link-conflict.md)
 - [oidc-callback](oidc-callback.md)
+- [oidc-provider-unavailable](oidc-provider-unavailable.md)
+- [resolve-as-unknown](resolve-as-unknown.md)
 <!-- used-by:end -->

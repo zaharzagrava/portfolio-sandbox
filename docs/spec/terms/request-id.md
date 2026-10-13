@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [requestid, x-request-id]
 defined_for: problem-json-errors
-rules_hash: e43c14d3454a
+rules_hash: e25220d7a590
 ---
 # requestId / X-Request-Id
 ## Definition
@@ -25,6 +25,8 @@ The error body then contains `"requestId": "checkout-7f3a9c21"` (values are illu
 
 ## Used by
 <!-- used-by:start -->
+- [S01](../capabilities/S01-auth-sessions.md): R-42
+- [S51](../capabilities/S51-realtime-push.md): R-34
 - [request-context](../concepts/request-context.md): C-03
 - [configure-http-app](configure-http-app.md)
 - [http-pipeline](http-pipeline.md)

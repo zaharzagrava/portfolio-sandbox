@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [enabled, pending, second-factor state, state `pending`]
 defined_for: S02-mfa-oidc
-rules_hash: 6e2fcae3e68b
+rules_hash: 70bae24b8412
 ---
 # MFA state (none, pending, enabled)
 ## Definition
@@ -20,7 +20,8 @@ The user calls enrol, so the state goes `none→pending`. They confirm with a cu
 
 ## Used by
 <!-- used-by:start -->
-- [S02](../capabilities/S02-mfa-oidc.md): R-01, R-16, B-01
+- [S01](../capabilities/S01-auth-sessions.md): B-09
+- [S02](../capabilities/S02-mfa-oidc.md): R-01, R-16, R-25, B-01, B-02, B-21, B-24
 - [S48](../capabilities/S48-bff.md): B-15
 - [W01](../capabilities/W01-auth-account.md): B-10
 - [identity-link](identity-link.md)
@@ -29,6 +30,7 @@ The user calls enrol, so the state goes `none→pending`. They confirm with a cu
 - [mfa-challenge-token](mfa-challenge-token.md)
 - [mfa-confirm](mfa-confirm.md)
 - [mfa-management-endpoint](mfa-management-endpoint.md)
+- [mfa-not-enabled](mfa-not-enabled.md)
 - [mfa-recovery-code](mfa-recovery-code.md)
 - [mfa-recovery-codes-regenerated-event](mfa-recovery-codes-regenerated-event.md)
 - [mfa-recovery-digest](mfa-recovery-digest.md)

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [topic]
 defined_for: realtime-topic-stream
-rules_hash: bae94f445b3a
+rules_hash: de84d6bbf6cd
 ---
 # Realtime topic
 ## Definition
@@ -22,13 +22,16 @@ S13 publishes a `payment.status` event to the owner's topic `user:{userId}` each
 ## Used by
 <!-- used-by:start -->
 - [S13](../capabilities/S13-payment-intents.md): R-24
-- [S51](../capabilities/S51-realtime-push.md): R-02, R-13, R-21, R-28, B-05, B-16, B-19
+- [S28](../capabilities/S28-notifications.md): R-41
+- [S51](../capabilities/S51-realtime-push.md): R-02, R-13, R-32, B-19
 - [realtime-topic-stream](../concepts/realtime-topic-stream.md): C-01, C-02
 - [best-effort-push](best-effort-push.md)
 - [connection-admission](connection-admission.md)
 - [event-payload](event-payload.md)
 - [live-shop](live-shop.md)
 - [membership-query-service](membership-query-service.md)
+- [mfa-disabled-event](mfa-disabled-event.md)
+- [notification-bell](notification-bell.md)
 - [orders-domain](orders-domain.md)
 - [payment-status-event](payment-status-event.md)
 - [realtime-backplane](realtime-backplane.md)
@@ -37,6 +40,7 @@ S13 publishes a `payment.status` event to the owner's topic `user:{userId}` each
 - [realtime-listener](realtime-listener.md)
 - [realtime-publish-limit](realtime-publish-limit.md)
 - [realtime-publish](realtime-publish.md)
+- [realtime-route](realtime-route.md)
 - [realtime-store](realtime-store.md)
 - [realtime-topic-access-rule](realtime-topic-access-rule.md)
 - [realtime-unavailable](realtime-unavailable.md)

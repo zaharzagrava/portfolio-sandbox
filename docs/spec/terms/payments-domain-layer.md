@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [payments domain]
 defined_for: S13-payment-intents
-rules_hash: de2714240cda
+rules_hash: e55e66337e53
 ---
 # Payments domain layer
 ## Definition
@@ -24,6 +24,9 @@ Later, the processor gets a [provider success](payment-provider.md) whose `order
 ## Used by
 <!-- used-by:start -->
 - [classify-charge](classify-charge.md)
+- [classify-line](classify-line.md)
+- [compare-rows](compare-rows.md)
+- [finance-reconciliation-api](finance-reconciliation-api.md)
 - [find-mismatch](find-mismatch.md)
 - [order-copy](order-copy.md)
 - [order-reserved-event](order-reserved-event.md)
@@ -31,4 +34,5 @@ Later, the processor gets a [provider success](payment-provider.md) whose `order
 - [pagination-cursor](pagination-cursor.md)
 - [payment-intent](payment-intent.md)
 - [payment-provider](payment-provider.md)
+- [resolve-issue](resolve-issue.md)
 <!-- used-by:end -->

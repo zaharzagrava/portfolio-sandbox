@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [foreign secret, freshly issued token, signed cookie]
 defined_for: S10-cart-checkout
-rules_hash: b2a02a15b4b5
+rules_hash: 20dc1c085957
 ---
 # Guest cart token
 ## Definition
@@ -24,10 +24,11 @@ A guest sends a cookie whose signature was made with another environment's secre
 
 ## Used by
 <!-- used-by:start -->
-- [S10](../capabilities/S10-cart-checkout.md): R-03
+- [S10](../capabilities/S10-cart-checkout.md): R-01, R-02, R-03, B-02
 - [S13](../capabilities/S13-payment-intents.md): R-04
 - [get-cart](get-cart.md)
 - [guest-cart](guest-cart.md)
+- [put-cart-items](put-cart-items.md)
 - [user-prefix](user-prefix.md)
 - [verify-guest-token](verify-guest-token.md)
 - [webhook-secret](webhook-secret.md)

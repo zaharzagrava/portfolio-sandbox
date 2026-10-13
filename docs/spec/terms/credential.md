@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [any credential, credentials]
 defined_for: S48-bff
-rules_hash: 71e390b29ae0
+rules_hash: 0a1eaa3c6519
 ---
 # Credential (request)
 ## Definition
@@ -21,10 +21,13 @@ A credential is anything on an incoming request that identifies a signed-in prin
 
 ## Used by
 <!-- used-by:start -->
+- [S01](../capabilities/S01-auth-sessions.md): R-30
+- [S03](../capabilities/S03-shops-rbac.md): R-02
 - [S48](../capabilities/S48-bff.md): B-12
 - [S50](../capabilities/S50-rate-limiter.md): B-10
-- [S51](../capabilities/S51-realtime-push.md): R-18
+- [S51](../capabilities/S51-realtime-push.md): R-18, R-29
 - [persisted-query-hash](persisted-query-hash.md)
+- [post-auth-logout](post-auth-logout.md)
 - [session-cookie](session-cookie.md)
 - [trusted-document-allowlist](trusted-document-allowlist.md)
 <!-- used-by:end -->

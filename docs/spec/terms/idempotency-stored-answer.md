@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [stored answers, stored error answers]
 defined_for: S10-cart-checkout
-rules_hash: c81dc935612a
+rules_hash: 7b2817e673b0
 ---
 # Stored answer
 ## Definition
@@ -26,6 +26,8 @@ Idempotency-Replayed: true
 
 ## Used by
 <!-- used-by:start -->
+- [S10](../capabilities/S10-cart-checkout.md): R-12, B-07
+- [S13](../capabilities/S13-payment-intents.md): R-08, B-02
 - [S54](../capabilities/S54-platform-toolkit.md): B-17
 - [idempotency-in-flight](idempotency-in-flight.md)
 - [idempotency-key-required](idempotency-key-required.md)
@@ -35,4 +37,5 @@ Idempotency-Replayed: true
 - [idempotency-store](idempotency-store.md)
 - [ledger-entry-table](ledger-entry-table.md)
 - [payment-already-exists](payment-already-exists.md)
+- [request-fingerprint](request-fingerprint.md)
 <!-- used-by:end -->

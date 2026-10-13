@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [unknown outcome]
 defined_for: idempotency-key
-rules_hash: d567c3c7a63a
+rules_hash: 5c759e5bb609
 ---
 # Unknown payment outcome
 ## Definition
@@ -21,7 +21,6 @@ A client sends `POST /payments/intents` with an [`Idempotency-Key` header](idemp
 
 ## Used by
 <!-- used-by:start -->
-- [S13](../capabilities/S13-payment-intents.md): B-12
 - [idempotency-key](idempotency-key.md)
 - [payment-failed-event](payment-failed-event.md)
 - [payment-intent](payment-intent.md)

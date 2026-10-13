@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [owned tables]
 defined_for: S13-payment-intents
-rules_hash: 889cabbf5473
+rules_hash: 632feb94adb4
 ---
 # Table ownership
 ## Definition
@@ -19,8 +19,15 @@ To check that an order is payable, [`checkPayable`](check-payable.md) reads `Pay
 
 ## Used by
 <!-- used-by:start -->
+- [S10](../capabilities/S10-cart-checkout.md): R-46
 - [S13](../capabilities/S13-payment-intents.md): R-25
+- [S14](../capabilities/S14-ledger-reconciliation.md): R-45
+- [S28](../capabilities/S28-notifications.md): R-51
+- [boundary-finding](boundary-finding.md)
+- [boundary-review](boundary-review.md)
 - [domain](domain.md)
 - [entry-point](entry-point.md)
+- [export-join](export-join.md)
 - [ledger-entry-table](ledger-entry-table.md)
+- [transitional-block](transitional-block.md)
 <!-- used-by:end -->

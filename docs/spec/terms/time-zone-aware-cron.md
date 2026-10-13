@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [cron]
 defined_for: idempotency-key
-rules_hash: 3f3fcf426380
+rules_hash: 1aee1116849b
 ---
 # Time-zone-aware cron
 ## Definition
@@ -22,6 +22,7 @@ The schedule `0 9 * * *` with the zone `Europe/Kyiv` (both illustrative) fires a
 <!-- used-by:start -->
 - [S49](../capabilities/S49-job-scheduler.md): R-19
 - [jobs-partition-maintenance](jobs-partition-maintenance.md)
+- [order-items-backfill](order-items-backfill.md)
 - [schedule-enabled](schedule-enabled.md)
 - [search-retire-previous-index](search-retire-previous-index.md)
 <!-- used-by:end -->

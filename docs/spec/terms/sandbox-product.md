@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [sandbox products]
 defined_for: search-index
-rules_hash: 94769af82af8
+rules_hash: 3ff3203686a2
 ---
 # Sandbox product
 ## Definition
@@ -21,7 +21,7 @@ A seller has a product marked as sandbox (illustrative). A buyer search that wou
 
 ## Used by
 <!-- used-by:start -->
-- [S05](../capabilities/S05-products.md): R-12, B-07
+- [S05](../capabilities/S05-products.md): R-26, B-07
 - [S10](../capabilities/S10-cart-checkout.md): B-09
 - [S32](../capabilities/S32-product-search.md): R-06, R-15
 - [S34](../capabilities/S34-recommendations.md): R-03
@@ -33,6 +33,7 @@ A seller has a product marked as sandbox (illustrative). A buyer search that wou
 - [search-facets](search-facets.md)
 - [search-index](search-index.md)
 - [search-items](search-items.md)
+- [search-projector](search-projector.md)
 - [search-totals](search-totals.md)
 - [search-visibility](search-visibility.md)
 - [semantic-search](semantic-search.md)

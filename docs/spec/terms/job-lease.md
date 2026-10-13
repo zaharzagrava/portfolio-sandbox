@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [lease, leases]
 defined_for: job-scheduler-lease
-rules_hash: 8bbe54f9d010
+rules_hash: b7535ca3c152
 ---
 # Job lease
 ## Definition
@@ -38,8 +38,13 @@ Worker A claims `recommendations.build-bought-together` on attempt 2 (illustrati
 - [job-reaper](job-reaper.md)
 - [job-retry-delay](job-retry-delay.md)
 - [job-status](job-status.md)
+- [lazy-statement-stream](lazy-statement-stream.md)
+- [ledger-ensure-partitions](ledger-ensure-partitions.md)
+- [ledger-jobs](ledger-jobs.md)
 - [order-baskets-build](order-baskets-build.md)
 - [outbox-relay](outbox-relay.md)
+- [reconciliation-run-service](reconciliation-run-service.md)
+- [reconciliation-run-uniqueness](reconciliation-run-uniqueness.md)
 - [scheduler-leader](scheduler-leader.md)
 - [search-backfill-shop-state](search-backfill-shop-state.md)
 - [search-refresh-popularity](search-refresh-popularity.md)

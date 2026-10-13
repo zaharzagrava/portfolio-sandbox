@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [idempotency_unavailable]
 defined_for: S54-platform-toolkit
-rules_hash: 04d6537d507f
+rules_hash: 6e237dbc2e74
 ---
 # Idempotency store
 ## Definition
@@ -20,6 +20,7 @@ The store is unreachable. A request arrives at a route declared with [`@Idempote
 
 ## Used by
 <!-- used-by:start -->
+- [S13](../capabilities/S13-payment-intents.md): R-10
 - [S54](../capabilities/S54-platform-toolkit.md): B-19
 - [idempotency-key](idempotency-key.md)
 - [idempotency-purge-job](idempotency-purge-job.md)

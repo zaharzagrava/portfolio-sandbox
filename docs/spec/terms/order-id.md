@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: []
 defined_for: S10-cart-checkout
-rules_hash: e3b0c44298fc
+rules_hash: 465b47e87bdc
 ---
 # orderId
 ## Definition
@@ -24,6 +24,7 @@ orders:ord_7f3a:reserve:p_42
 
 ## Used by
 <!-- used-by:start -->
+- [S13](../capabilities/S13-payment-intents.md): B-21
 - [order-status](order-status.md)
 - [payment-event-outcome](payment-event-outcome.md)
 - [provider-charge-metadata](provider-charge-metadata.md)

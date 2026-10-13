@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [discount]
 defined_for: S10-cart-checkout
-rules_hash: 239eff677771
+rules_hash: 0b612d557ae0
 ---
 # Seller discount
 ## Definition
@@ -24,7 +24,9 @@ A shop's lines gross `2000` and the seller discount is `300`. The shop order sub
 - [cart-line](cart-line.md)
 - [discount-tie-break](discount-tie-break.md)
 - [line-position](line-position.md)
+- [line-total-minor](line-total-minor.md)
 - [minor-units](minor-units.md)
 - [order-total](order-total.md)
+- [orders-backfill-item-titles-job](orders-backfill-item-titles-job.md)
 - [shop-subtotal](shop-subtotal.md)
 <!-- used-by:end -->

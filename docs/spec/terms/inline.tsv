@@ -1,0 +1,30 @@
+# page	item	phrase	span that explains it inline	slug	title	status (open: only one place uses the concept, so no page; promoted: a page exists now)
+docs/spec/capabilities/S05-products.md	S05.R-25	they keep a plain `productId`	they keep a plain `productId`; cleanup follows the `catalog.product_*` events	plain-product-id-reference	Plain productId reference	open
+docs/spec/capabilities/S03-shops-rbac.md	S03.R-17	Seats used	members plus unexpired pending invites	seat	Seat	promoted
+docs/spec/capabilities/S03-shops-rbac.md	S03.R-27	tombstone	(`DELETED`, name `[deleted]`, slug `deleted-<id>`)	shop-tombstone	Shop tombstone	promoted
+docs/spec/capabilities/S03-shops-rbac.md	S03.R-24	acquire timeout	(2 s)	acquire-timeout	Acquire timeout	promoted
+docs/spec/capabilities/S01-auth-sessions.md	S01.R-28	`__Host-csrf` (readable)	(readable)	host-csrf-readable	__Host-csrf cookie	open
+docs/spec/capabilities/S01-auth-sessions.md	S01.R-25	`GET /auth/sessions`	`{sessionId, device, ip, createdAt, lastUsedAt, current}`	get-auth-sessions	GET /auth/sessions	promoted
+docs/spec/capabilities/S01-auth-sessions.md	S01.R-29	The token	a random part plus a keyed MAC over the session ID	csrf-token	CSRF token	promoted
+docs/spec/capabilities/S01-auth-sessions.md	S01.R-32	public parts	(ES256 only, no private member)	jwks-public-parts	JWKS public parts	open
+docs/spec/capabilities/S01-auth-sessions.md	S01.R-37	no role, session or address	only for a configured audience	service-token-claims	Service token claims	open
+docs/spec/capabilities/S10-cart-checkout.md	S10.R-21	A reservation is all or nothing	If any line is short, no stock is held	all-or-nothing-reservation	All-or-nothing reservation	promoted
+docs/spec/capabilities/S10-cart-checkout.md	S10.R-22	`reservedUntil`	15 minutes after reservation	reserved-until	reservedUntil	promoted
+docs/spec/capabilities/S14-ledger-reconciliation.md	S14.R-06	transaction	({{concept:transaction-runner}})	transaction-runner	Transaction runner	promoted
+docs/spec/capabilities/S14-ledger-reconciliation.md	S14.R-18	N	(default 32, setting 1 to 256)	shard-count	Shard count	open
+docs/spec/capabilities/S14-ledger-reconciliation.md	S14.R-39	`Idempotency-Key`	({{concept:idempotency-key}})	idempotency-key	Idempotency-Key header	promoted
+docs/spec/capabilities/S14-ledger-reconciliation.md	S14.R-40	limited per user	({{concept:rate-limit-policy}})	rate-limit-policy	Rate limit policy	promoted
+docs/spec/capabilities/S28-notifications.md	S28.R-02	dedupe identity	source event id (or the owner's own key), recipient and channel	dedupe-identity	Dedupe identity	promoted
+docs/spec/capabilities/S28-notifications.md	S28.R-08	e-mail line	A notification addressed to an e-mail address (an invitation)	email-line	E-mail line	promoted
+docs/spec/capabilities/S28-notifications.md	S28.R-13	Secrets	reset and invite tokens, one-time codes, unsubscribe tokens	secrets-in-messages	Secrets in messages	open
+docs/spec/capabilities/S28-notifications.md	S28.R-19	six-digit code	valid 10 minutes	phone-verification-code	Phone verification code	promoted
+docs/spec/capabilities/S28-notifications.md	S28.R-21	quietStart	`quietStart`, `quietEnd` as `HH:MM`, not equal	quiet-hours	Quiet hours	promoted
+docs/spec/capabilities/S28-notifications.md	S28.R-23	GET /notifications/unsubscribe	MUST only describe the action	get-notifications-unsubscribe	GET /notifications/unsubscribe	open
+docs/spec/capabilities/S51-realtime-push.md	S51.R-05	The `data` line	is one line of JSON that parses back to the original payload	sse-data-line	data line (stream frame)	promoted
+docs/spec/capabilities/S51-realtime-push.md	S51.R-26	`slow`	more than 1 MiB pending	slow-consumer-close	Slow and stalled close reasons	promoted
+docs/spec/capabilities/S51-realtime-push.md	S51.R-26	`stalled`	a write blocked over the stall limit	slow-consumer-close	Slow and stalled close reasons	promoted
+docs/spec/capabilities/S32-product-search.md	S32.R-12	120 per minute per user or address	120 per minute per user or address	rate-limit-policy	Rate limit policy	promoted
+docs/spec/capabilities/S32-product-search.md	S32.R-27	two-way rules	(`a, b`)	synonym-rules	Synonym rules	promoted
+docs/spec/capabilities/S32-product-search.md	S32.R-27	one-way rules	(`a => b`)	synonym-rules	Synonym rules	promoted
+docs/spec/capabilities/S32-product-search.md	S32.R-22	`avgRating`	(mean rounded to two decimals, `null` when nothing matches)	avg-rating-facet	avgRating facet	promoted
+docs/spec/capabilities/S32-product-search.md	S32.R-39	`202` with an empty body	with an empty body	http-202-accepted	202 Accepted	open

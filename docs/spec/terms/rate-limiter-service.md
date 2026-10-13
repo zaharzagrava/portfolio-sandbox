@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [programmatic ratelimiterservice]
 defined_for: S50-rate-limiter
-rules_hash: e3b0c44298fc
+rules_hash: 8d31c94b81b2
 ---
 # RateLimiterService
 ## Definition
@@ -21,10 +21,16 @@ A worker calls `check` 50 times in parallel for one new subject on a token-bucke
 
 ## Used by
 <!-- used-by:start -->
+- [S28](../capabilities/S28-notifications.md): R-31
+- [marketing-cap](marketing-cap.md)
+- [marketing-email](marketing-email.md)
+- [notify-marketing-push](notify-marketing-push.md)
 - [rate-limit-counter-store](rate-limit-counter-store.md)
 - [rate-limit-decorator](rate-limit-decorator.md)
 - [rate-limit-fail-mode](rate-limit-fail-mode.md)
 - [rate-limit-policy](rate-limit-policy.md)
 - [rate-limit-subject](rate-limit-subject.md)
 - [reset-on-success](reset-on-success.md)
+- [transactional-delivery](transactional-delivery.md)
+- [transactional-send](transactional-send.md)
 <!-- used-by:end -->

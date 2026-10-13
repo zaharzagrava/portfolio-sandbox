@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [history]
 defined_for: S32-product-search
-rules_hash: 4ed620d60007
+rules_hash: e361c272a436
 ---
 # Reindex history requirement
 ## Definition

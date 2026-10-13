@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [new index, old index, previous index, product search index]
 defined_for: job-scheduler-lease
-rules_hash: f878570d3f80
+rules_hash: 9de7c1871a3e
 ---
 # Search index
 ## Definition
@@ -26,16 +26,22 @@ after the switch → search.retire-previous-index removes the old index
 
 ## Used by
 <!-- used-by:start -->
-- [S32](../capabilities/S32-product-search.md): R-15, R-20, B-07, B-14, B-15, B-18, B-19
+- [S32](../capabilities/S32-product-search.md): R-15, B-07, B-18, B-19
 - [cutover](cutover.md)
 - [event-replay](event-replay.md)
+- [in-stock-filter](in-stock-filter.md)
 - [no-previous-index](no-previous-index.md)
+- [product-embedding-vector](product-embedding-vector.md)
 - [product-search-route](product-search-route.md)
 - [reindex-rollback](reindex-rollback.md)
 - [reindex-run-status](reindex-run-status.md)
 - [relevance-boost](relevance-boost.md)
 - [sandbox-product](sandbox-product.md)
+- [search-backfill-embeddings-job](search-backfill-embeddings-job.md)
+- [search-document](search-document.md)
 - [search-facets](search-facets.md)
+- [search-projector](search-projector.md)
+- [search-purge-tombstones-job](search-purge-tombstones-job.md)
 - [search-retire-previous-index](search-retire-previous-index.md)
 - [search-synonyms](search-synonyms.md)
 - [search-total-order](search-total-order.md)

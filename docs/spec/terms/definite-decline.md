@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [decline, declines]
 defined_for: S13-payment-intents
-rules_hash: b1b17ae524aa
+rules_hash: 397cbbdcd8de
 ---
 # Definite decline
 ## Definition
@@ -20,7 +20,7 @@ The processor sends the charge for an order and the provider answers that the ca
 
 ## Used by
 <!-- used-by:start -->
-- [S13](../capabilities/S13-payment-intents.md): R-14
+- [S13](../capabilities/S13-payment-intents.md): R-14, B-09
 - [classify-charge](classify-charge.md)
 - [ledger-entry-table](ledger-entry-table.md)
 - [ledger-posting](ledger-posting.md)

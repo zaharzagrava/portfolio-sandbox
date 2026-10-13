@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [ticks]
 defined_for: job-scheduler-lease
-rules_hash: 79731f3c94a6
+rules_hash: 424b3449cc1b
 ---
 # Scheduler tick
 ## Definition
@@ -26,6 +26,8 @@ On one tick, three scheduler instances try the advisory lock and only one gets i
 - [cron-schedule-materialisation](cron-schedule-materialisation.md)
 - [job-enqueue](job-enqueue.md)
 - [jobs-partition-maintenance](jobs-partition-maintenance.md)
+- [ledger-backfill-balances-job](ledger-backfill-balances-job.md)
+- [reseal-sso-secrets-job](reseal-sso-secrets-job.md)
 - [schedule-auto-disable](schedule-auto-disable.md)
 - [schedule-enabled](schedule-enabled.md)
 - [schedule-last-error](schedule-last-error.md)

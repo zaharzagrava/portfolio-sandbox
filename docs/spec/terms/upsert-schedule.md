@@ -21,6 +21,7 @@ rules_hash: e3b0c44298fc
 
 ## Used by
 <!-- used-by:start -->
+- [auth-purge-reset-tokens-job](auth-purge-reset-tokens-job.md)
 - [cron-overlap-policy](cron-overlap-policy.md)
 - [cron-schedule-materialisation](cron-schedule-materialisation.md)
 - [worker-instance](worker-instance.md)

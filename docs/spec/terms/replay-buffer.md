@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [buffer]
 defined_for: realtime-topic-stream
-rules_hash: 5e1a140b165c
+rules_hash: 9e1516fa6c74
 ---
 # Replay buffer
 ## Definition
@@ -21,7 +21,7 @@ A browser watching `user:{userId}` loses its connection for a few minutes. When 
 
 ## Used by
 <!-- used-by:start -->
-- [S51](../capabilities/S51-realtime-push.md): R-08, R-13, B-05, B-12, B-15
+- [S51](../capabilities/S51-realtime-push.md): R-13, R-34, B-05, B-12, B-15
 - [realtime-topic-stream](../concepts/realtime-topic-stream.md): C-08
 - [baseline-frame](baseline-frame.md)
 - [realtime-backplane](realtime-backplane.md)

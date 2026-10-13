@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [tenant set]
 defined_for: tenant-shop-rbac
-rules_hash: d855f5d69f32
+rules_hash: 3999635b1aa5
 ---
 # Tenant setting
 ## Definition
@@ -23,6 +23,7 @@ Request 1 for shop A sets the tenant, runs its queries and commits. Request 2 fo
 - [S03](../capabilities/S03-shops-rbac.md): R-19
 - [tenant-shop-rbac](../concepts/tenant-shop-rbac.md): C-07
 - [cross-tenant-bypass](cross-tenant-bypass.md)
+- [pooled-database](pooled-database.md)
 - [request-context](request-context.md)
 - [shop-guard](shop-guard.md)
 - [shop-tenant](shop-tenant.md)

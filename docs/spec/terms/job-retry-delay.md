@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [backoff, retry delay]
 defined_for: S49-job-scheduler
-rules_hash: ade38ef26bd7
+rules_hash: a29ffb02b41a
 ---
 # Job retry delay
 ## Definition
@@ -22,6 +22,7 @@ A handler throws on attempt 1. The cap is `min(15 min, 1 s × 2^1)` = 2 s. So th
 ## Used by
 <!-- used-by:start -->
 - [S49](../capabilities/S49-job-scheduler.md): B-05
+- [delivery-line](delivery-line.md)
 - [jitter](jitter.md)
 - [job-claim](job-claim.md)
 - [job-lease](job-lease.md)
@@ -29,4 +30,6 @@ A handler throws on attempt 1. The cap is `min(15 min, 1 s × 2^1)` = 2 s. So th
 - [job-run-at](job-run-at.md)
 - [non-retryable-broker-error](non-retryable-broker-error.md)
 - [pending-row](pending-row.md)
+- [provider-timeout](provider-timeout.md)
+- [transient-failure](transient-failure.md)
 <!-- used-by:end -->

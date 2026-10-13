@@ -30,4 +30,5 @@ later: enqueue(type, payload, { idempotencyKey: "K" }) → { id, created: true }
 - [job-cancel](job-cancel.md)
 - [job-type](job-type.md)
 - [jobs-partition-maintenance](jobs-partition-maintenance.md)
+- [notifications-wake-delivery-job](notifications-wake-delivery-job.md)
 <!-- used-by:end -->

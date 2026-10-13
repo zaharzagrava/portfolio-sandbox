@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [shop search route]
 defined_for: S32-product-search
-rules_hash: e3b0c44298fc
+rules_hash: ac5fd93fb9e2
 ---
 # GET /shops/:shopId/products/search
 ## Definition
@@ -28,6 +28,7 @@ GET /shops/shop_123/products/search?q=airpods
 - [identical-not-found](identical-not-found.md)
 - [rate-limit-policy](rate-limit-policy.md)
 - [search-index](search-index.md)
+- [shop-search-q-parameter](shop-search-q-parameter.md)
 - [shop-search-table](shop-search-table.md)
 - [shop-status-gate](shop-status-gate.md)
 <!-- used-by:end -->

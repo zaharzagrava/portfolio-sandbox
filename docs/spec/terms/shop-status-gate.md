@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [status gate]
 defined_for: tenant-shop-rbac
-rules_hash: 7af11f803f5d
+rules_hash: 6865a89176c9
 ---
 # Shop status gate
 ## Definition
@@ -21,11 +21,15 @@ An [`OWNER`](shop-role.md) of a `SUSPENDED` shop can still export the shop's dat
 ## Used by
 <!-- used-by:start -->
 - [S03](../capabilities/S03-shops-rbac.md): R-04
+- [S10](../capabilities/S10-cart-checkout.md): R-39
 - [tenant-shop-rbac](../concepts/tenant-shop-rbac.md): C-03
+- [delete-shop-sso](delete-shop-sso.md)
+- [get-shop-sso](get-shop-sso.md)
 - [insufficient-role](insufficient-role.md)
 - [invite-not-found](invite-not-found.md)
 - [permission-denied](permission-denied.md)
 - [product-command-service](product-command-service.md)
+- [put-shops-sso](put-shops-sso.md)
 - [session-cookie](session-cookie.md)
 - [shop-access-service](shop-access-service.md)
 - [shop-guard](shop-guard.md)

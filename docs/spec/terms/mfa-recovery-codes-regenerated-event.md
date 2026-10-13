@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [identity.mfa_recovery_codes_regenerated]
 defined_for: S02-mfa-oidc
-rules_hash: e3b0c44298fc
+rules_hash: f239b2bd46d1
 ---
 # identity.mfa_recovery_codes_regenerated event
 ## Definition
@@ -21,6 +21,7 @@ A user with an [enabled factor](mfa-state.md) calls `POST /auth/mfa/recovery-cod
 
 ## Used by
 <!-- used-by:start -->
+- [S02](../capabilities/S02-mfa-oidc.md): B-21
 - [identity-domain](identity-domain.md)
 - [mfa-recovery-code-regenerate](mfa-recovery-code-regenerate.md)
 - [mfa-recovery-code](mfa-recovery-code.md)

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [one total order, total order]
 defined_for: search-index
-rules_hash: 35e5f31d79c1
+rules_hash: c9ab9c119c1f
 ---
 # Total order (search results)
 ## Definition
@@ -21,7 +21,7 @@ A buyer searches for "mug". Two mugs get the same relevance score (illustrative)
 
 ## Used by
 <!-- used-by:start -->
-- [S32](../capabilities/S32-product-search.md): R-09, B-03, B-06
+- [S32](../capabilities/S32-product-search.md): R-09, R-35, B-06, B-23
 - [S34](../capabilities/S34-recommendations.md): R-18, B-08
 - [browse-mode](browse-mode.md)
 - [cutover](cutover.md)

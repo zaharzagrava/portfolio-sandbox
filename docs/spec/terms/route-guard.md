@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [guard]
 defined_for: W01-auth-account
-rules_hash: 4422737661a4
+rules_hash: 3427238dd08f
 ---
 # Route guard
 ## Definition
@@ -26,6 +26,7 @@ In the other direction, a signed-in member who opens `/login`, `/register`, `/fo
 - [domain-api-origin](domain-api-origin.md)
 - [protected-route](protected-route.md)
 - [query-keys-auth-session](query-keys-auth-session.md)
+- [service-auth-guard](service-auth-guard.md)
 - [session-cookie](session-cookie.md)
 - [session-store](session-store.md)
 <!-- used-by:end -->

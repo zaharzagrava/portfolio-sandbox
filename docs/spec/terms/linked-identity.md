@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [explicit linking, identities, linked user]
 defined_for: S02-mfa-oidc
-rules_hash: 594162e1c972
+rules_hash: 7f39077ccc94
 ---
 # Linked identity
 ## Definition
@@ -21,12 +21,13 @@ A linked identity is a [`FederatedIdentity`](federated-identity.md) record that 
 
 ## Used by
 <!-- used-by:start -->
-- [S02](../capabilities/S02-mfa-oidc.md): B-17, B-19, B-20
+- [S02](../capabilities/S02-mfa-oidc.md): B-19, B-20
 - [caller-scoping](caller-scoping.md)
 - [identical-not-found](identical-not-found.md)
 - [identity-link](identity-link.md)
 - [link-conflict](link-conflict.md)
 - [oidc-account-link](oidc-account-link.md)
+- [passwordless-account](passwordless-account.md)
 - [provider-subject](provider-subject.md)
 - [soft-deleted-user](soft-deleted-user.md)
 <!-- used-by:end -->

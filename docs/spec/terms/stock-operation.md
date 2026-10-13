@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [operation]
 defined_for: order-reservation
-rules_hash: 5324f31b8da3
+rules_hash: ff711119b988
 ---
 # Stock operation
 ## Definition
@@ -25,8 +25,8 @@ orders:ord_123:reserve:prod_42
 
 ## Used by
 <!-- used-by:start -->
-- [S05](../capabilities/S05-products.md): B-14, B-18
-- [S10](../capabilities/S10-cart-checkout.md): R-20, R-24
+- [S05](../capabilities/S05-products.md): R-24, B-14, B-18
+- [S10](../capabilities/S10-cart-checkout.md): R-24
 - [acceptance-scenario](acceptance-scenario.md)
 - [cart-line](cart-line.md)
 - [catalog-stock-command](catalog-stock-command.md)
@@ -34,6 +34,7 @@ orders:ord_123:reserve:prod_42
 - [pending-order-recovery](pending-order-recovery.md)
 - [product-stock-service](product-stock-service.md)
 - [reservation-status](reservation-status.md)
+- [shop-deleted-event](shop-deleted-event.md)
 - [stock-operation-id](stock-operation-id.md)
 - [stock-operation-ordering](stock-operation-ordering.md)
 - [stock-release](stock-release.md)

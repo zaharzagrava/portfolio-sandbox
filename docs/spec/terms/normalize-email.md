@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [normalised address, normalised email]
 defined_for: S01-auth-sessions
-rules_hash: b7d0f929d2ba
+rules_hash: 84dc53378753
 ---
 # normalizeEmail
 ## Definition
@@ -21,6 +21,7 @@ Registering `" New@Example.COM "` creates one [`USER` account](principal.md) sto
 
 ## Used by
 <!-- used-by:start -->
+- [S28](../capabilities/S28-notifications.md): R-43
 - [S33](../capabilities/S33-autocomplete.md): R-09
 - [identical-registration-response](identical-registration-response.md)
 - [password-problem](password-problem.md)

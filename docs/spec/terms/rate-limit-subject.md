@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [subject]
 defined_for: rate-limit-policy
-rules_hash: d4fd08a74411
+rules_hash: 8e7ea12678e7
 ---
 # Rate limit subject
 ## Definition
@@ -20,8 +20,7 @@ A rate limit subject is the thing whose usage a [policy](rate-limit-policy.md) c
 
 ## Used by
 <!-- used-by:start -->
-- [S10](../capabilities/S10-cart-checkout.md): R-09
-- [S32](../capabilities/S32-product-search.md): R-12
+- [S01](../capabilities/S01-auth-sessions.md): R-41
 - [S33](../capabilities/S33-autocomplete.md): R-16
 - [S50](../capabilities/S50-rate-limiter.md): R-03, R-15, B-01, B-07, B-09, B-13, B-14
 - [rate-limit-policy](../concepts/rate-limit-policy.md): C-02, C-04

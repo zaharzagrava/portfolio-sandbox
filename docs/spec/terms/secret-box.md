@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: []
 defined_for: S01-auth-sessions
-rules_hash: 71441ea07856
+rules_hash: 8885a97d1326
 ---
 # SecretBox
 ## Definition
@@ -25,6 +25,13 @@ Illustrative: a domain that must store a secret, such as an MFA factor secret, w
 
 ## Used by
 <!-- used-by:start -->
+- [S01](../capabilities/S01-auth-sessions.md): R-36
+- [S02](../capabilities/S02-mfa-oidc.md): R-34
+- [S03](../capabilities/S03-shops-rbac.md): R-22
 - [identity-domain](identity-domain.md)
 - [master-key](master-key.md)
+- [put-shops-sso](put-shops-sso.md)
+- [reseal-sso-secrets-job](reseal-sso-secrets-job.md)
+- [resolve-as-unknown](resolve-as-unknown.md)
+- [seal-context](seal-context.md)
 <!-- used-by:end -->

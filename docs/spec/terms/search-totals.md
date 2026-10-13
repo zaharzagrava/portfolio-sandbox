@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [total]
 defined_for: search-index
-rules_hash: 7019446fb810
+rules_hash: 023cf4d3e65c
 ---
 # Search totals
 ## Definition
@@ -21,7 +21,7 @@ A buyer searches for "mug" (illustrative). [The index](search-index.md) matches 
 
 ## Used by
 <!-- used-by:start -->
-- [S32](../capabilities/S32-product-search.md): R-06, B-17
+- [S32](../capabilities/S32-product-search.md): R-06, R-22, B-17
 - [W02](../capabilities/W02-storefront-discovery.md): B-06
 - [h1-heading](h1-heading.md)
 - [sandbox-product](sandbox-product.md)

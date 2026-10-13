@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [protected routes]
 defined_for: S01-auth-sessions
-rules_hash: 5953b6e7bae5
+rules_hash: e884e8375ea6
 ---
 # Protected route
 ## Definition
@@ -25,7 +25,7 @@ X-User-Id: 42        ← ignored
 
 ## Used by
 <!-- used-by:start -->
-- [S01](../capabilities/S01-auth-sessions.md): B-17
+- [S01](../capabilities/S01-auth-sessions.md): R-19, B-17
 - [W01](../capabilities/W01-auth-account.md): R-20
 - [access-token](access-token.md)
 - [host-access-cookie](host-access-cookie.md)

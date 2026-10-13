@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: []
 defined_for: job-scheduler-lease
-rules_hash: e3b0c44298fc
+rules_hash: b973725f0ead
 ---
 # search.backfill-shop-state job
 ## Definition
@@ -21,6 +21,8 @@ Illustrative: S32 enqueues `search.backfill-shop-state` for one shop, and a work
 
 ## Used by
 <!-- used-by:start -->
+- [S05](../capabilities/S05-products.md): B-22
+- [catalog-product-events](catalog-product-events.md)
 - [idempotency-key](idempotency-key.md)
 - [job-enqueue](job-enqueue.md)
 - [job-lease](job-lease.md)

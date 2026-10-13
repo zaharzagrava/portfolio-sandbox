@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [flush, view flush]
 defined_for: S05-products
-rules_hash: dc6e41f3c2fe
+rules_hash: 217756b2c9ac
 ---
 # View count flush
 ## Definition
@@ -20,7 +20,13 @@ A product at `version: 3` (illustrative) is read five times, then the flush runs
 
 ## Used by
 <!-- used-by:start -->
-- [S05](../capabilities/S05-products.md): B-17
+- [S05](../capabilities/S05-products.md): R-21, B-17, B-19
+- [concurrent-flush](concurrent-flush.md)
 - [l2-cache](l2-cache.md)
+- [pending-count-member](pending-count-member.md)
+- [product-view-batch-marker](product-view-batch-marker.md)
+- [products-flush-view-counts-job](products-flush-view-counts-job.md)
 - [shop-status](shop-status.md)
+- [view-count-chunk](view-count-chunk.md)
+- [view-count-claim](view-count-claim.md)
 <!-- used-by:end -->

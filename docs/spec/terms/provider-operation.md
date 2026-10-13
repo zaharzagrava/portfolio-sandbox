@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [provider operations]
 defined_for: S13-payment-intents
-rules_hash: 64b3182dc4b8
+rules_hash: b765eb2481c9
 ---
 # Provider operation
 ## Definition
@@ -25,9 +25,11 @@ cancel: cancel:<paymentId>
 
 ## Used by
 <!-- used-by:start -->
-- [S13](../capabilities/S13-payment-intents.md): R-19
+- [S13](../capabilities/S13-payment-intents.md): R-10, R-12, R-19
+- [charge-outcome](charge-outcome.md)
 - [circuit-breaker-probe](circuit-breaker-probe.md)
 - [payment-provider](payment-provider.md)
 - [provider-idempotency-reference](provider-idempotency-reference.md)
 - [provider-lookup](provider-lookup.md)
+- [provider-raw-answer-kind](provider-raw-answer-kind.md)
 <!-- used-by:end -->

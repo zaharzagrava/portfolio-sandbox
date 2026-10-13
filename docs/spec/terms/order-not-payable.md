@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [order_not_payable]
 defined_for: S13-payment-intents
-rules_hash: e3b0c44298fc
+rules_hash: b1256fbbfea8
 ---
 # order_not_payable (409)
 ## Definition
@@ -23,6 +23,7 @@ reservedUntil = 2026-10-13T12:00:00Z, request arrives at 12:00:00Z   (illustrati
 
 ## Used by
 <!-- used-by:start -->
+- [S13](../capabilities/S13-payment-intents.md): R-12
 - [all-or-nothing-reservation](all-or-nothing-reservation.md)
 - [payment-processor](payment-processor.md)
 <!-- used-by:end -->

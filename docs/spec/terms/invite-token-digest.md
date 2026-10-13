@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [digestinvitetoken]
 defined_for: S03-shops-rbac
-rules_hash: e3b0c44298fc
+rules_hash: 4beee6db4470
 ---
 # Invite token digest
 ## Definition
@@ -22,6 +22,7 @@ The invitee sends the token to `POST /shop-invites/accept`, and the invite is ac
 
 ## Used by
 <!-- used-by:start -->
+- [S03](../capabilities/S03-shops-rbac.md): R-14
 - [invite-manager](invite-manager.md)
 - [invite-token](invite-token.md)
 <!-- used-by:end -->

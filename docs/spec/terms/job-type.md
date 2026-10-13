@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [type, types]
 defined_for: S49-job-scheduler
-rules_hash: a69c4574b68f
+rules_hash: 318878410ce3
 ---
 # Job type
 ## Definition
@@ -29,4 +29,5 @@ A job type is the name that says what kind of work a job is. A domain registers 
 - [job-payload-contract](job-payload-contract.md)
 - [job-type-registry](job-type-registry.md)
 - [job](job.md)
+- [ledger-backfill-balances-job](ledger-backfill-balances-job.md)
 <!-- used-by:end -->

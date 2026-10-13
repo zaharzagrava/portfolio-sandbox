@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [click logs]
 defined_for: S32-product-search
-rules_hash: 8edcd16a6c6f
+rules_hash: ae1f47360fd3
 ---
 # Click log
 ## Definition
@@ -23,6 +23,7 @@ The click log is [S32](../capabilities/S32-product-search.md)'s store of recorde
 
 ## Used by
 <!-- used-by:start -->
+- [S32](../capabilities/S32-product-search.md): B-31
 - [W02](../capabilities/W02-storefront-discovery.md): R-15
 - [click-through-rate](click-through-rate.md)
 - [get-admin-search-quality](get-admin-search-quality.md)

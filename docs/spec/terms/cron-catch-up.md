@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [catch-up]
 defined_for: S49-job-scheduler
-rules_hash: b18d2653f9e5
+rules_hash: ab8b98adef8b
 ---
 # Cron catch-up
 ## Definition
@@ -20,8 +20,15 @@ All instances are down for 3 days over a daily schedule. When they come back, th
 
 ## Used by
 <!-- used-by:start -->
+- [S14](../capabilities/S14-ledger-reconciliation.md): R-33
 - [S49](../capabilities/S49-job-scheduler.md): B-16, B-20
 - [cron-fires-skipped-total](cron-fires-skipped-total.md)
+- [payments-reconcile-daily-job](payments-reconcile-daily-job.md)
+- [provider-unavailable-failed-run](provider-unavailable-failed-run.md)
+- [reconciliation-run-transition](reconciliation-run-transition.md)
+- [reconciliation-run-uniqueness](reconciliation-run-uniqueness.md)
+- [reconciliation-run](reconciliation-run.md)
+- [reconciliation-schedule](reconciliation-schedule.md)
 - [schedule-auto-disable](schedule-auto-disable.md)
 - [schedule-enabled](schedule-enabled.md)
 <!-- used-by:end -->

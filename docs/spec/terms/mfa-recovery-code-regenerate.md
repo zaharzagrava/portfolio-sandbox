@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [regenerate]
 defined_for: S02-mfa-oidc
-rules_hash: f573320c38f7
+rules_hash: 9152fbd03bf6
 ---
 # Recovery code regenerate
 ## Definition
@@ -21,8 +21,10 @@ Alice has used most of her recovery codes. She calls `POST /auth/mfa/recovery-co
 
 ## Used by
 <!-- used-by:start -->
+- [S02](../capabilities/S02-mfa-oidc.md): B-21
 - [mfa-challenge-token](mfa-challenge-token.md)
 - [mfa-management-endpoint](mfa-management-endpoint.md)
+- [mfa-not-enabled](mfa-not-enabled.md)
 - [mfa-recovery-code](mfa-recovery-code.md)
 - [mfa-recovery-codes-regenerated-event](mfa-recovery-codes-regenerated-event.md)
 - [session-cookie](session-cookie.md)

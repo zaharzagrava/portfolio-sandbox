@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [capability page, capability's specification]
 defined_for: S05-products
-rules_hash: 33b4a8d3bb80
+rules_hash: f299acdc0f0e
 ---
 # Capability
 ## Definition
@@ -31,16 +31,20 @@ A capability is one numbered part of the system specification that covers one ar
 - [known-gaps](known-gaps.md)
 - [media-host-setting](media-host-setting.md)
 - [membership-query-service](membership-query-service.md)
+- [notification-secret](notification-secret.md)
 - [payment-succeeded-event](payment-succeeded-event.md)
 - [post-bff-session-logout](post-bff-session-logout.md)
 - [product-lifecycle](product-lifecycle.md)
 - [products-events-topic](products-events-topic.md)
 - [server-rendered-search](server-rendered-search.md)
+- [service-contract](service-contract.md)
 - [shop-cell](shop-cell.md)
 - [shop-provisioning-service](shop-provisioning-service.md)
 - [shop-query-service](shop-query-service.md)
 - [shop-sso-config](shop-sso-config.md)
+- [shop-tombstone](shop-tombstone.md)
 - [sso-controller](sso-controller.md)
+- [structured-logs](structured-logs.md)
 - [tenancy-domain-layer](tenancy-domain-layer.md)
 - [trending-configuration](trending-configuration.md)
 - [video-host-setting](video-host-setting.md)

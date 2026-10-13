@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [text score]
 defined_for: S32-product-search
-rules_hash: 6dea31287505
+rules_hash: 589c8718a1a6
 ---
 # Text relevance
 ## Definition
@@ -27,4 +27,5 @@ Text relevance is the score the [search engine](search-engine.md) gives a produc
 - [field-weights](field-weights.md)
 - [fuzzy-matching](fuzzy-matching.md)
 - [search-engine](search-engine.md)
+- [search-ranking-signals](search-ranking-signals.md)
 <!-- used-by:end -->

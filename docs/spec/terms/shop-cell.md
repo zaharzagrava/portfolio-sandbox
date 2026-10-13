@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [cells]
 defined_for: S03-shops-rbac
-rules_hash: e6b0202a810e
+rules_hash: 230757c73626
 ---
 # Cell (shop cell)
 ## Definition
@@ -21,8 +21,19 @@ Shop `shop_123` (illustrative) lives in cell `cell-a` (illustrative). A request 
 
 ## Used by
 <!-- used-by:start -->
+- [S03](../capabilities/S03-shops-rbac.md): R-24
+- [allowed-region](allowed-region.md)
 - [capability](capability.md)
 - [connection-routing](connection-routing.md)
+- [directory-row-version](directory-row-version.md)
+- [directory-row](directory-row.md)
+- [directory-version](directory-version.md)
+- [platform-admin](platform-admin.md)
+- [pooled-database](pooled-database.md)
+- [pooled-placement](pooled-placement.md)
+- [shop-cell-directory-row](shop-cell-directory-row.md)
+- [shop-cell-move](shop-cell-move.md)
 - [shop-cell-service](shop-cell-service.md)
 - [tenancy-domain-layer](tenancy-domain-layer.md)
+- [unknown-cell](unknown-cell.md)
 <!-- used-by:end -->

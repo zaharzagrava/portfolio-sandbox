@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: []
 defined_for: S10-cart-checkout
-rules_hash: 3e0932a3117c
+rules_hash: baa0ee6560bb
 ---
 # Fulfilment
 ## Definition
@@ -21,7 +21,6 @@ After `order.paid`, `startFulfilment` moves the order from `PAID` to `FULFILLING
 
 ## Used by
 <!-- used-by:start -->
-- [S10](../capabilities/S10-cart-checkout.md): R-34
 - [deliver-order](deliver-order.md)
 - [order-command](order-command.md)
 - [order-fulfilment-changed-event](order-fulfilment-changed-event.md)

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: []
 defined_for: idempotency-key
-rules_hash: 9d43819a51eb
+rules_hash: 24c8087857d8
 ---
 # Guest cart
 ## Definition
@@ -21,12 +21,15 @@ A shopper who is not logged in adds two [cart lines](cart-line.md) to a guest ca
 
 ## Used by
 <!-- used-by:start -->
-- [S10](../capabilities/S10-cart-checkout.md): R-01, R-02, B-01, B-02, B-03
+- [S10](../capabilities/S10-cart-checkout.md): R-01, B-01, B-04
 - [W03](../capabilities/W03-cart-checkout-orders.md): B-05, B-06
+- [added-at](added-at.md)
 - [cart-line-limit](cart-line-limit.md)
 - [cart-line](cart-line.md)
 - [distinct-buyers-threshold](distinct-buyers-threshold.md)
 - [dropped-lines](dropped-lines.md)
 - [get-cart](get-cart.md)
 - [guest-cart-token](guest-cart-token.md)
+- [line-expiry](line-expiry.md)
+- [put-cart-items](put-cart-items.md)
 <!-- used-by:end -->

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [password policy]
 defined_for: S01-auth-sessions
-rules_hash: 6878d8d4e806
+rules_hash: 51ff5cccedaf
 ---
 # passwordProblem
 ## Definition
@@ -21,7 +21,9 @@ rules_hash: 6878d8d4e806
 
 ## Used by
 <!-- used-by:start -->
+- [S01](../capabilities/S01-auth-sessions.md): B-27
 - [breached-password-check](breached-password-check.md)
 - [normalize-email](normalize-email.md)
+- [password-reset-token](password-reset-token.md)
 - [post-auth-register](post-auth-register.md)
 <!-- used-by:end -->

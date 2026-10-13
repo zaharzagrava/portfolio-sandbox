@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [duplicate, ignored, stale]
 defined_for: projection-and-replay
-rules_hash: 0a7073071b6f
+rules_hash: bd2c79cac64e
 ---
 # Consumer outcomes (duplicate, stale, ignored)
 ## Definition
@@ -21,13 +21,18 @@ A consumer with stored version 5 for an aggregate receives three events: version
 
 ## Used by
 <!-- used-by:start -->
-- [S05](../capabilities/S05-products.md): R-18
-- [S32](../capabilities/S32-product-search.md): R-13, R-14, B-07, B-12
 - [S53](../capabilities/S53-events-projections.md): R-19
 - [cache-invalidator](cache-invalidator.md)
 - [cache-miss](cache-miss.md)
+- [known-unmapped-type](known-unmapped-type.md)
+- [monotonic-version](monotonic-version.md)
+- [notification-version-check](notification-version-check.md)
 - [orders-events-topic](orders-events-topic.md)
 - [post-webhooks-stripe](post-webhooks-stripe.md)
+- [search-projector](search-projector.md)
+- [shop-onboarding-submitted-event](shop-onboarding-submitted-event.md)
+- [shop-status-consumer](shop-status-consumer.md)
 - [sponsorship-event](sponsorship-event.md)
 - [subscription-plan-changed-event](subscription-plan-changed-event.md)
+- [webhook-redelivery](webhook-redelivery.md)
 <!-- used-by:end -->

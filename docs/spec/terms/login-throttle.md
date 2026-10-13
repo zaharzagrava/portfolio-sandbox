@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [login counter]
 defined_for: S01-auth-sessions
-rules_hash: 17182521e380
+rules_hash: 8460efd4c0e6
 ---
 # Login throttle
 ## Definition

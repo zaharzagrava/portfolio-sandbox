@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [sorted by ascending product id]
 defined_for: order-reservation
-rules_hash: 513f3bb78474
+rules_hash: df7cd1e21a30
 ---
 # Stock operation ordering
 ## Definition

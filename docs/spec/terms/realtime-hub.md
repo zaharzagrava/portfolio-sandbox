@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [hub]
 defined_for: realtime-topic-stream
-rules_hash: 4d20e7b8bb9b
+rules_hash: 239d8727c983
 ---
 # Realtime hub
 ## Definition
@@ -20,7 +20,9 @@ S13 publishes `payment.status` to the owner's topic. The hub fans that event out
 
 ## Used by
 <!-- used-by:start -->
-- [S51](../capabilities/S51-realtime-push.md): R-10, R-11, R-26, B-14
+- [S10](../capabilities/S10-cart-checkout.md): R-43
+- [S28](../capabilities/S28-notifications.md): R-41
+- [S51](../capabilities/S51-realtime-push.md): R-10, R-11, R-26, R-31, B-14
 - [realtime-topic-stream](../concepts/realtime-topic-stream.md): C-05
 - [best-effort-push](best-effort-push.md)
 - [connection-admission](connection-admission.md)
@@ -29,11 +31,13 @@ S13 publishes `payment.status` to the owner's topic. The hub fans that event out
 - [encode-cursor](encode-cursor.md)
 - [event-payload](event-payload.md)
 - [invalid-topics](invalid-topics.md)
+- [orders-realtime-failed-total](orders-realtime-failed-total.md)
 - [realtime-backplane](realtime-backplane.md)
 - [realtime-config](realtime-config.md)
 - [realtime-instance-limit](realtime-instance-limit.md)
 - [realtime-listener](realtime-listener.md)
 - [realtime-revoke](realtime-revoke.md)
+- [realtime-route](realtime-route.md)
 - [realtime-topic-access-rule](realtime-topic-access-rule.md)
 - [realtime-topic](realtime-topic.md)
 - [realtime-unavailable](realtime-unavailable.md)
@@ -49,6 +53,7 @@ S13 publishes `payment.status` to the owner's topic. The hub fans that event out
 - [sse-event-type-line](sse-event-type-line.md)
 - [stream-connection](stream-connection.md)
 - [stream-frame](stream-frame.md)
+- [topics-with-subscribers](topics-with-subscribers.md)
 - [unusable-cursor-entry](unusable-cursor-entry.md)
 - [user-connection-cap](user-connection-cap.md)
 <!-- used-by:end -->

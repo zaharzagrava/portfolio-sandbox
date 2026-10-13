@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [store fault]
 defined_for: realtime-topic-stream
-rules_hash: 9650fa4a89c4
+rules_hash: 2968a3625e4f
 ---
 # Realtime store
 ## Definition
@@ -20,7 +20,7 @@ S13 publishes `payment.status`. The store is down, so `publish` resolves `{ publ
 
 ## Used by
 <!-- used-by:start -->
-- [S51](../capabilities/S51-realtime-push.md): R-20, B-13
+- [S51](../capabilities/S51-realtime-push.md): R-20, R-32, B-13
 - [realtime-topic-stream](../concepts/realtime-topic-stream.md): C-06
 - [realtime-backplane](realtime-backplane.md)
 - [realtime-publish-limit](realtime-publish-limit.md)

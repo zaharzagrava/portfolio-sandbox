@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [cap, connection cap]
 defined_for: realtime-topic-stream
-rules_hash: 928f2e05d716
+rules_hash: e3b0c44298fc
 ---
 # Per-user connection cap
 ## Definition
@@ -21,7 +21,6 @@ A shopper has 20 tabs open, and each tab holds a stream connection for `user:{us
 
 ## Used by
 <!-- used-by:start -->
-- [S51](../capabilities/S51-realtime-push.md): R-24
 - [realtime-hub](realtime-hub.md)
 - [realtime-instance-limit](realtime-instance-limit.md)
 - [stream-connection](stream-connection.md)

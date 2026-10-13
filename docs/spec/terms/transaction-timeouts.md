@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [lock timeout, statement timeout]
 defined_for: transaction-runner
-rules_hash: 31611af9599c
+rules_hash: 7f667654228b
 ---
 # Statement and lock timeouts
 ## Definition
@@ -21,8 +21,10 @@ Illustrative: a statement timeout of `5000` ms is accepted. The values `0`, `1.5
 
 ## Used by
 <!-- used-by:start -->
+- [S14](../capabilities/S14-ledger-reconciliation.md): R-21
 - [S54](../capabilities/S54-platform-toolkit.md): R-16
 - [transaction-runner](../concepts/transaction-runner.md): C-06
+- [ledger-busy](ledger-busy.md)
 - [serializable-scope](serializable-scope.md)
 - [transaction-scope](transaction-scope.md)
 <!-- used-by:end -->

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: []
 defined_for: payment-lifecycle
-rules_hash: ee970cc73648
+rules_hash: 56ed3ae9720e
 ---
 # Order copy
 ## Definition

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [session]
 defined_for: access-token-session
-rules_hash: e3a0bd8c6b20
+rules_hash: 8671da3b1a1b
 ---
 # Session lifetime
 ## Definition
@@ -20,18 +20,22 @@ A user signs in on 2026-01-01 and their client refreshes regularly. The session 
 
 ## Used by
 <!-- used-by:start -->
-- [S01](../capabilities/S01-auth-sessions.md): R-01, R-13, R-22, B-06, B-09, B-12
-- [S02](../capabilities/S02-mfa-oidc.md): B-04, B-19
-- [S10](../capabilities/S10-cart-checkout.md): R-08, R-10
+- [S01](../capabilities/S01-auth-sessions.md): R-01, R-13, R-22, R-25, R-27, B-06, B-09, B-12, B-18, B-26
+- [S02](../capabilities/S02-mfa-oidc.md): R-28
+- [S10](../capabilities/S10-cart-checkout.md): R-08
 - [S48](../capabilities/S48-bff.md): B-18
 - [W01](../capabilities/W01-auth-account.md): R-18, B-15
 - [access-token-session](../concepts/access-token-session.md): C-06
 - [account-unavailable](account-unavailable.md)
 - [clock-skew-tolerance](clock-skew-tolerance.md)
 - [cookie-delivery](cookie-delivery.md)
+- [get-auth-sessions](get-auth-sessions.md)
 - [linked-query-param](linked-query-param.md)
 - [mfa-challenge](mfa-challenge.md)
 - [post-auth-register](post-auth-register.md)
 - [service-to-service-token](service-to-service-token.md)
+- [session-created-at](session-created-at.md)
+- [session-last-used-at](session-last-used-at.md)
+- [session-limit](session-limit.md)
 - [token-refresh](token-refresh.md)
 <!-- used-by:end -->

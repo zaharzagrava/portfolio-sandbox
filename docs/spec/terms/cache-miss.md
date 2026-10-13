@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [outcome]
 defined_for: cache-layers
-rules_hash: 2e222093b3df
+rules_hash: aed778c519d8
 ---
 # Cache miss and outcomes
 ## Definition
@@ -21,7 +21,6 @@ Two requests for the same product page arrive in one S05 process while the key i
 
 ## Used by
 <!-- used-by:start -->
-- [S05](../capabilities/S05-products.md): B-08
 - [S52](../capabilities/S52-cache-toolkit.md): R-06, R-07, R-12, B-05, B-08
 - [cache-layers](../concepts/cache-layers.md): C-08
 - [consumer-outcomes](consumer-outcomes.md)

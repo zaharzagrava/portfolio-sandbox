@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [closed set]
 defined_for: S02-mfa-oidc
-rules_hash: c10127afeda0
+rules_hash: 86ea5056aa1b
 ---
 # Closed error code
 ## Definition
@@ -28,8 +28,11 @@ Referrer-Policy: no-referrer
 ## Used by
 <!-- used-by:start -->
 - [S02](../capabilities/S02-mfa-oidc.md): B-11
+- [S51](../capabilities/S51-realtime-push.md): R-34
+- [account-unknown](account-unknown.md)
 - [email-not-verified](email-not-verified.md)
 - [oauth-callback](oauth-callback.md)
 - [oidc-callback](oidc-callback.md)
+- [oidc-issuer](oidc-issuer.md)
 - [oidc-login-error](oidc-login-error.md)
 <!-- used-by:end -->

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [shopssoconfig]
 defined_for: S03-shops-rbac
-rules_hash: 239cdf3070a6
+rules_hash: 7cca068aac27
 ---
 # ShopSsoConfig table
 ## Definition
@@ -25,7 +25,20 @@ GET /shops/by-slug/acme-tools/sso    (anonymous)           → 200
 
 ## Used by
 <!-- used-by:start -->
+- [S03](../capabilities/S03-shops-rbac.md): B-24, B-26
 - [capability](capability.md)
+- [delete-shop-sso](delete-shop-sso.md)
+- [get-shop-export](get-shop-export.md)
+- [get-shop-sso](get-shop-sso.md)
+- [oidc-provider-resolver](oidc-provider-resolver.md)
+- [provider-default-role](provider-default-role.md)
+- [reseal-sso-secrets-job](reseal-sso-secrets-job.md)
+- [resolve-as-unknown](resolve-as-unknown.md)
+- [seal-context](seal-context.md)
+- [shop-purge-job](shop-purge-job.md)
+- [shop-purge](shop-purge.md)
+- [shop-tombstone](shop-tombstone.md)
 - [sso-controller](sso-controller.md)
+- [sso-issuer-errors](sso-issuer-errors.md)
 - [tenancy-tables](tenancy-tables.md)
 <!-- used-by:end -->

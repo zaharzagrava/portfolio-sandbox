@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [ties]
 defined_for: S10-cart-checkout
-rules_hash: 60a601fa758c
+rules_hash: 0454aab9dcf8
 ---
 # Discount tie-break by line position
 ## Definition
@@ -20,6 +20,7 @@ Illustrative values: a discount of `100` is split over three lines that each gro
 
 ## Used by
 <!-- used-by:start -->
+- [S10](../capabilities/S10-cart-checkout.md): R-15
 - [S35](../capabilities/S35-trending.md): B-04
 - [cart-line](cart-line.md)
 - [line-position](line-position.md)

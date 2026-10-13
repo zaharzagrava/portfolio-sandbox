@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [attempt, attempts]
 defined_for: job-scheduler-lease
-rules_hash: 7cf174d1006b
+rules_hash: 54b210905732
 ---
 # Job attempt
 ## Definition
@@ -20,9 +20,13 @@ After a job's 3rd attempt throws, the retry delay is a random value between 0 an
 ## Used by
 <!-- used-by:start -->
 - [S13](../capabilities/S13-payment-intents.md): B-15
+- [S14](../capabilities/S14-ledger-reconciliation.md): B-13
+- [S28](../capabilities/S28-notifications.md): R-31
 - [S49](../capabilities/S49-job-scheduler.md): R-11, B-11
 - [job-scheduler-lease](../concepts/job-scheduler-lease.md): C-04
 - [attempt-fencing](attempt-fencing.md)
+- [failover-timeline-entry](failover-timeline-entry.md)
+- [fallback-provider](fallback-provider.md)
 - [job-due](job-due.md)
 - [job-lease](job-lease.md)
 - [job-max-attempts](job-max-attempts.md)
@@ -30,4 +34,12 @@ After a job's 3rd attempt throws, the retry delay is a random value between 0 an
 - [job-reaper](job-reaper.md)
 - [job-retries](job-retries.md)
 - [job-retry-outcome](job-retry-outcome.md)
+- [ledger-ensure-partitions](ledger-ensure-partitions.md)
+- [mail-provider](mail-provider.md)
+- [provider-timeout](provider-timeout.md)
+- [provider-unavailable-failed-run](provider-unavailable-failed-run.md)
+- [send-budget](send-budget.md)
+- [stripe-statement-adapter](stripe-statement-adapter.md)
+- [transient-error](transient-error.md)
+- [transient-failure](transient-failure.md)
 <!-- used-by:end -->

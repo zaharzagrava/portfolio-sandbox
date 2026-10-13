@@ -50,6 +50,7 @@ If the store fails during `invalidate`, the call does not throw. It resolves wit
 - [lock-unavailable](lock-unavailable.md)
 - [max-entry-bytes](max-entry-bytes.md)
 - [might-contain](might-contain.md)
+- [pending-count-member](pending-count-member.md)
 - [product-view-count](product-view-count.md)
 - [recompute-lock](recompute-lock.md)
 - [redis-bloom-filter](redis-bloom-filter.md)

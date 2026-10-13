@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [stream, stream connections]
 defined_for: realtime-topic-stream
-rules_hash: 60a39393059d
+rules_hash: fd4f644af570
 ---
 # Stream connection
 ## Definition
@@ -27,7 +27,7 @@ After that, `payment.status` events published by S13 arrive on this connection. 
 
 ## Used by
 <!-- used-by:start -->
-- [S51](../capabilities/S51-realtime-push.md): B-14
+- [S51](../capabilities/S51-realtime-push.md): B-09
 - [W03](../capabilities/W03-cart-checkout-orders.md): B-20
 - [cart-badge](cart-badge.md)
 - [create-event-stream](create-event-stream.md)

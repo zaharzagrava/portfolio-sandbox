@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: []
 defined_for: search-index
-rules_hash: e3b0c44298fc
+rules_hash: c6b950514ab0
 ---
 # invalid_transition
 ## Definition
@@ -25,5 +25,5 @@ The HTTP status and the other body members are not stated in the facts, so they 
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [domain-layer](domain-layer.md)
 <!-- used-by:end -->

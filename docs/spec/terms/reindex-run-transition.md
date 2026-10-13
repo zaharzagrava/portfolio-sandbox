@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [legal pairs, run state machine]
 defined_for: S32-product-search
-rules_hash: 1a407069409b
+rules_hash: 043778af73a1
 ---
 # Reindex run transitions
 ## Definition

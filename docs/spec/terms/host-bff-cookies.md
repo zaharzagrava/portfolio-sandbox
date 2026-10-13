@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [__host-bff-csrf, __host-bff-mfa, __host-bff-session]
 defined_for: W01-auth-account
-rules_hash: 3f47f4cb3563
+rules_hash: d4a551d638dc
 ---
 # __Host-bff-* cookies
 ## Definition
@@ -26,6 +26,7 @@ X-CSRF-Token: abc123
 
 ## Used by
 <!-- used-by:start -->
+- [S01](../capabilities/S01-auth-sessions.md): R-31, B-20, B-22
 - [get-api-bff-session](get-api-bff-session.md)
 - [post-bff-session-logout](post-bff-session-logout.md)
 - [post-bff-session-refresh](post-bff-session-refresh.md)

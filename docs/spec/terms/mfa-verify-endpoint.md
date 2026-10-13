@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [verify endpoint]
 defined_for: S02-mfa-oidc
-rules_hash: 8ce034864bfe
+rules_hash: 7ceedca2040c
 ---
 # MFA verify endpoint
 ## Definition
@@ -20,10 +20,12 @@ A user with MFA enabled logs in with a password and gets a challenge. They then 
 
 ## Used by
 <!-- used-by:start -->
-- [S02](../capabilities/S02-mfa-oidc.md): R-15
+- [S02](../capabilities/S02-mfa-oidc.md): R-15, B-04
 - [S48](../capabilities/S48-bff.md): B-16
 - [W01](../capabilities/W01-auth-account.md): B-14
 - [cookie-delivery](cookie-delivery.md)
+- [invalid-mfa-challenge](invalid-mfa-challenge.md)
+- [mfa-challenge-spent-burned](mfa-challenge-spent-burned.md)
 - [mfa-challenge](mfa-challenge.md)
 - [mfa-code](mfa-code.md)
 - [mfa-recovery-code-spend](mfa-recovery-code-spend.md)

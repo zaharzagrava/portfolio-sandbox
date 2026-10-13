@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [errors]
 defined_for: bff-aggregate
-rules_hash: 6e80893ee8ce
+rules_hash: 0a119b45481f
 ---
 # Errors entry
 ## Definition
@@ -30,6 +30,7 @@ Other codes include [`BUDGET_EXCEEDED`](page-deadline.md), [`CIRCUIT_OPEN` ↗](
 - [budget-exceeded](budget-exceeded.md)
 - [chat-unread](chat-unread.md)
 - [graphql-errors-array](graphql-errors-array.md)
+- [invalid-synonym-rules](invalid-synonym-rules.md)
 - [not-found-error](not-found-error.md)
 - [page-aggregate](page-aggregate.md)
 - [page-deadline](page-deadline.md)
@@ -38,6 +39,7 @@ Other codes include [`BUDGET_EXCEEDED`](page-deadline.md), [`CIRCUIT_OPEN` ↗](
 - [section-budget](section-budget.md)
 - [section](section.md)
 - [shop-id-param](shop-id-param.md)
+- [synonym-cycle](synonym-cycle.md)
 - [upstream-in-flight-limit](upstream-in-flight-limit.md)
 - [upstream-timeout](upstream-timeout.md)
 - [upstream](upstream.md)

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [code, current code]
 defined_for: S02-mfa-oidc
-rules_hash: 60572ff7fa71
+rules_hash: fc1d1ca9c0ab
 ---
 # MFA code
 ## Definition
@@ -19,7 +19,6 @@ A user in state `pending` sends the code their app currently shows to `POST /aut
 
 ## Used by
 <!-- used-by:start -->
-- [S02](../capabilities/S02-mfa-oidc.md): B-02
 - [W01](../capabilities/W01-auth-account.md): R-14
 - [invalid-code](invalid-code.md)
 - [invalid-mfa-code](invalid-mfa-code.md)

@@ -31,6 +31,7 @@ To check this rule, find the tests that carry `AS-10`, `AS-11` and `AS-20`. Rule
 - [decisions](decisions.md)
 - [known-gaps](known-gaps.md)
 - [navbar-unavailable-state](navbar-unavailable-state.md)
+- [notifications-reconcile-unread-job](notifications-reconcile-unread-job.md)
 - [recorded-decision](recorded-decision.md)
 - [reindex-history](reindex-history.md)
 - [section](section.md)

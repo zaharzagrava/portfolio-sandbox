@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [simultaneous requests]
 defined_for: S05-products
-rules_hash: fb73e6454cf4
+rules_hash: 37f47d190f69
 ---
 # Optimistic concurrency (one winner)
 ## Definition
@@ -19,10 +19,17 @@ Two members both read a product at `version: 5`. Both send `PATCH` with `expecte
 
 ## Used by
 <!-- used-by:start -->
+- [S01](../capabilities/S01-auth-sessions.md): R-02, R-40
+- [S02](../capabilities/S02-mfa-oidc.md): R-19
+- [S03](../capabilities/S03-shops-rbac.md): R-10
 - [S05](../capabilities/S05-products.md): R-07
-- [S13](../capabilities/S13-payment-intents.md): B-03
+- [S14](../capabilities/S14-ledger-reconciliation.md): R-40
+- [S32](../capabilities/S32-product-search.md): R-29
+- [directory-row-version](directory-row-version.md)
 - [guarded-update](guarded-update.md)
 - [mfa-not-pending](mfa-not-pending.md)
 - [oidc-state](oidc-state.md)
 - [order-version](order-version.md)
+- [post-auth-refresh](post-auth-refresh.md)
+- [put-admin-search-synonyms](put-admin-search-synonyms.md)
 <!-- used-by:end -->

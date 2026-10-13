@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [as-10, scenario, scenario id]
 defined_for: S05-products
-rules_hash: 67b5e6ad42b0
+rules_hash: 64c6dc189576
 ---
 # Acceptance scenario
 ## Definition
@@ -29,12 +29,17 @@ Behavior [`S05.B-14`](behavior.md) cites `[proof: S05 AS-53]`: with stock 5 and 
 - [capability](capability.md)
 - [cart-badge-display-ceiling](cart-badge-display-ceiling.md)
 - [dataset-t](dataset-t.md)
+- [delivery-timeline](delivery-timeline.md)
 - [exact-top-k](exact-top-k.md)
+- [get-payments](get-payments.md)
 - [hot-key](hot-key.md)
 - [in-process-port](in-process-port.md)
+- [injected-clock](injected-clock.md)
 - [known-gaps](known-gaps.md)
 - [popularity-floor](popularity-floor.md)
+- [queue-refusal](queue-refusal.md)
 - [reset-on-success](reset-on-success.md)
+- [resumable-fan-out](resumable-fan-out.md)
 - [robots-list](robots-list.md)
 - [rule-proof](rule-proof.md)
 - [seeded-stream](seeded-stream.md)

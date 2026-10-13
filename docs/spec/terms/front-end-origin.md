@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [front end origin]
 defined_for: S02-mfa-oidc
-rules_hash: bd8a04c87db0
+rules_hash: e962faab0ddc
 ---
 # Front-end origin
 ## Definition
@@ -27,6 +27,7 @@ Location: https://shop.example/login?error=oidc_denied
 
 ## Used by
 <!-- used-by:start -->
+- [S02](../capabilities/S02-mfa-oidc.md): R-18
 - [cookie-delivery](cookie-delivery.md)
 - [linked-query-param](linked-query-param.md)
 - [oauth-callback](oauth-callback.md)

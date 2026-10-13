@@ -26,4 +26,7 @@ A caller enqueues a job with a payload that has a missing field. Enqueue rejects
 - [job-claim](job-claim.md)
 - [job-enqueue](job-enqueue.md)
 - [job-type](job-type.md)
+- [ledger-backfill-balances-job](ledger-backfill-balances-job.md)
+- [ledger-jobs](ledger-jobs.md)
+- [notifications-wake-delivery-job](notifications-wake-delivery-job.md)
 <!-- used-by:end -->

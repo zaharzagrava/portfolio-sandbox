@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [member, members]
 defined_for: S03-shops-rbac
-rules_hash: f688e37768f0
+rules_hash: 1c84b440242e
 ---
 # Shop member
 ## Definition
@@ -19,11 +19,15 @@ A user who sends [`POST /shops`](post-shops.md) becomes the `OWNER` member of th
 
 ## Used by
 <!-- used-by:start -->
-- [S03](../capabilities/S03-shops-rbac.md): B-03
+- [S05](../capabilities/S05-products.md): B-05
+- [S32](../capabilities/S32-product-search.md): R-33
 - [already-member-flag](already-member-flag.md)
 - [checkout-review-step](checkout-review-step.md)
+- [get-order-by-id](get-order-by-id.md)
+- [hot-copy](hot-copy.md)
 - [invite-acceptance](invite-acceptance.md)
 - [invite-manager](invite-manager.md)
+- [is-sandbox](is-sandbox.md)
 - [member-view](member-view.md)
 - [pending-invite](pending-invite.md)
 - [realtime-topic](realtime-topic.md)

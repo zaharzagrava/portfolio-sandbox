@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [leader]
 defined_for: job-scheduler-lease
-rules_hash: 00497a8c4a99
+rules_hash: f19ef943cdbe
 ---
 # Scheduler leader
 ## Definition
@@ -26,7 +26,11 @@ Three scheduler instances wake on the same tick, and all try the advisory lock. 
 - [cron-fires-skipped-total](cron-fires-skipped-total.md)
 - [cron-schedule-materialisation](cron-schedule-materialisation.md)
 - [job-enqueue](job-enqueue.md)
+- [ledger-ensure-partitions](ledger-ensure-partitions.md)
+- [ledger-verify-invariants](ledger-verify-invariants.md)
+- [reset-token-jobs](reset-token-jobs.md)
 - [schedule-auto-disable](schedule-auto-disable.md)
 - [schedule-enabled](schedule-enabled.md)
 - [scheduler-tick](scheduler-tick.md)
+- [search-purge-tombstones-job](search-purge-tombstones-job.md)
 <!-- used-by:end -->

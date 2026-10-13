@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [semantic results, semantic_query]
 defined_for: search-index
-rules_hash: 0aa06e3a17a2
+rules_hash: e743cf3dafd9
 ---
 # Semantic search
 ## Definition
@@ -20,10 +20,16 @@ A buyer searches for "warm winter jacket" (illustrative). The semantic results m
 
 ## Used by
 <!-- used-by:start -->
+- [S32](../capabilities/S32-product-search.md): R-06
 - [W02](../capabilities/W02-storefront-discovery.md): B-11, B-12
 - [search-index](../concepts/search-index.md): C-04
 - [embedding-budget](embedding-budget.md)
+- [embedding-provider](embedding-provider.md)
 - [h1-heading](h1-heading.md)
+- [lexical-search](lexical-search.md)
+- [pending-embedding](pending-embedding.md)
+- [price-only-update](price-only-update.md)
+- [product-embedding-vector](product-embedding-vector.md)
 - [relevance-boost](relevance-boost.md)
 - [sandbox-product](sandbox-product.md)
 - [search-mode](search-mode.md)
@@ -32,5 +38,7 @@ A buyer searches for "warm winter jacket" (illustrative). The semantic results m
 - [search-totals](search-totals.md)
 - [search-view-url-state](search-view-url-state.md)
 - [search-visibility](search-visibility.md)
+- [semantic-requires-query](semantic-requires-query.md)
 - [shop-status](shop-status.md)
+- [unsupported-combination](unsupported-combination.md)
 <!-- used-by:end -->

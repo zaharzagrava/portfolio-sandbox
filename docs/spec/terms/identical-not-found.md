@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [identical 404]
 defined_for: S03-shops-rbac
-rules_hash: f5c3512af440
+rules_hash: 198a10177715
 ---
 # Identical 404 (no existence leak)
 ## Definition
@@ -21,14 +21,21 @@ A user who is not a member calls `GET /shops/shop_123` (id illustrative). They g
 ## Used by
 <!-- used-by:start -->
 - [S03](../capabilities/S03-shops-rbac.md): B-15
-- [S13](../capabilities/S13-payment-intents.md): R-04, B-20
+- [S05](../capabilities/S05-products.md): R-04, R-06
+- [S10](../capabilities/S10-cart-checkout.md): R-35
+- [S32](../capabilities/S32-product-search.md): R-33
 - [S34](../capabilities/S34-recommendations.md): R-03
-- [S51](../capabilities/S51-realtime-push.md): R-15
 - [S53](../capabilities/S53-events-projections.md): B-19
 - [W03](../capabilities/W03-cart-checkout-orders.md): R-17
+- [balance-controller](balance-controller.md)
 - [default-deny-topic](default-deny-topic.md)
+- [get-order-by-id](get-order-by-id.md)
+- [get-shop-balance](get-shop-balance.md)
 - [invite-acceptance](invite-acceptance.md)
+- [is-publicly-visible](is-publicly-visible.md)
+- [is-sandbox](is-sandbox.md)
 - [linked-identity](linked-identity.md)
+- [session-not-found](session-not-found.md)
 - [shop-membership](shop-membership.md)
 - [shop-product-search-route](shop-product-search-route.md)
 - [shop-sso-lookup](shop-sso-lookup.md)

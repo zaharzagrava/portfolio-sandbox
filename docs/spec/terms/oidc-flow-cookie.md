@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [flow, flow cookie]
 defined_for: S02-mfa-oidc
-rules_hash: 64f49e82b9b9
+rules_hash: e42ea085afed
 ---
 # OIDC flow cookie
 ## Definition
@@ -21,7 +21,7 @@ A visitor calls `POST /auth/oidc/google/start` and receives a `Set-Cookie: __Hos
 
 ## Used by
 <!-- used-by:start -->
-- [S02](../capabilities/S02-mfa-oidc.md): B-09
+- [S02](../capabilities/S02-mfa-oidc.md): R-19, B-09, B-25
 - [oidc-callback](oidc-callback.md)
 - [oidc-start](oidc-start.md)
 - [oidc-state](oidc-state.md)

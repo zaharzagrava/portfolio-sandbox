@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [journal]
 defined_for: S13-payment-intents
-rules_hash: 066f8dedb905
+rules_hash: dd3f74dd3c3a
 ---
 # Reversing journal
 ## Definition
@@ -23,8 +23,13 @@ A reversing journal is the set of new ledger records that cancel out the entries
 ## Used by
 <!-- used-by:start -->
 - [S13](../capabilities/S13-payment-intents.md): B-18
+- [S14](../capabilities/S14-ledger-reconciliation.md): R-03
+- [ledger-entry-partition](ledger-entry-partition.md)
 - [ledger-entry-table](ledger-entry-table.md)
+- [ledger-journal](ledger-journal.md)
 - [ledger-posting](ledger-posting.md)
+- [ledger-store](ledger-store.md)
+- [ledger](ledger.md)
 - [orders-refund-requested-event](orders-refund-requested-event.md)
 - [refund](refund.md)
 <!-- used-by:end -->

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [stock command]
 defined_for: order-reservation
-rules_hash: 94a2e20dbe9c
+rules_hash: 4b8c4bd154d3
 ---
 # Catalog stock command
 ## Definition
@@ -31,6 +31,7 @@ orders:ord_123:reserve:prod_42
 - [capability](capability.md)
 - [cart-line](cart-line.md)
 - [checkout-unavailable](checkout-unavailable.md)
+- [domain-boundary-rules](domain-boundary-rules.md)
 - [orders-domain](orders-domain.md)
 - [pending-order-recovery](pending-order-recovery.md)
 - [stock-operation-ordering](stock-operation-ordering.md)

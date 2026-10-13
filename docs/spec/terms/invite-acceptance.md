@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [accept, accepts]
 defined_for: S03-shops-rbac
-rules_hash: 8a43839051a8
+rules_hash: 74069656ebad
 ---
 # Invite acceptance
 ## Definition
@@ -25,9 +25,10 @@ If two accepts with the same valid token arrive at the same time, one gets `201`
 
 ## Used by
 <!-- used-by:start -->
-- [S03](../capabilities/S03-shops-rbac.md): R-15, R-18
+- [S03](../capabilities/S03-shops-rbac.md): R-15, B-11, B-12
 - [identical-not-found](identical-not-found.md)
 - [invite-not-found](invite-not-found.md)
+- [invite-purge-job](invite-purge-job.md)
 - [invite-token](invite-token.md)
 - [rate-limit](rate-limit.md)
 - [shop-member](shop-member.md)

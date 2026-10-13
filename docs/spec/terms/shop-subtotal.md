@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [subtotal]
 defined_for: S10-cart-checkout
-rules_hash: e5c155343e46
+rules_hash: 640315e80e4c
 ---
 # Shop subtotal
 ## Definition
@@ -20,10 +20,11 @@ A [seller discount](seller-discount.md) of 300 on a shop grossing 2000 gives a s
 
 ## Used by
 <!-- used-by:start -->
-- [S10](../capabilities/S10-cart-checkout.md): B-10
+- [S10](../capabilities/S10-cart-checkout.md): R-14, R-39, R-41, B-10
 - [W03](../capabilities/W03-cart-checkout-orders.md): R-05
 - [discount-tie-break](discount-tie-break.md)
 - [expected-total-minor](expected-total-minor.md)
+- [line-total-minor](line-total-minor.md)
 - [minor-units](minor-units.md)
 - [order-total](order-total.md)
 - [seller-discount](seller-discount.md)

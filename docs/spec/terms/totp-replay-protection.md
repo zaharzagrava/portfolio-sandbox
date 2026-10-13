@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [replay, replayed code]
 defined_for: S02-mfa-oidc
-rules_hash: f66753651909
+rules_hash: 9b8a8eb61691
 ---
 # TOTP replay protection
 ## Definition
@@ -20,7 +20,7 @@ Alice's code is accepted at step T during one login. An attacker who captured th
 
 ## Used by
 <!-- used-by:start -->
-- [S02](../capabilities/S02-mfa-oidc.md): R-09, B-06
+- [S02](../capabilities/S02-mfa-oidc.md): R-09
 - [durable-conditional-write](durable-conditional-write.md)
 - [guarded-update](guarded-update.md)
 - [invalid-mfa-code](invalid-mfa-code.md)

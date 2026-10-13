@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [semantic mode]
 defined_for: S32-product-search
-rules_hash: 4a2453bf7ed7
+rules_hash: 466a253ac068
 ---
 # Search mode
 ## Definition
@@ -23,9 +23,12 @@ The search mode tells what kind of search produced a response, and it is returne
 - [browse-mode](browse-mode.md)
 - [business-score](business-score.md)
 - [degraded](degraded.md)
+- [embedding-provider](embedding-provider.md)
 - [pagination-cursor](pagination-cursor.md)
 - [product-search-route](product-search-route.md)
 - [search-budget](search-budget.md)
+- [semantic-requires-query](semantic-requires-query.md)
 - [semantic-search](semantic-search.md)
+- [unsupported-combination](unsupported-combination.md)
 - [zero-result-rate](zero-result-rate.md)
 <!-- used-by:end -->

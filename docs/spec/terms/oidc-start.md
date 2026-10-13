@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [oidc]
 defined_for: S02-mfa-oidc
-rules_hash: 7355b3a96554
+rules_hash: 40e024b1a1bb
 ---
 # OIDC start
 ## Definition
@@ -26,7 +26,7 @@ An unknown provider gets [`404 oidc_provider_not_found`](oidc-login-error.md), a
 
 ## Used by
 <!-- used-by:start -->
-- [S02](../capabilities/S02-mfa-oidc.md): R-17
+- [S02](../capabilities/S02-mfa-oidc.md): R-17, B-09
 - [front-end-origin](front-end-origin.md)
 - [get-auth-oidc-providers](get-auth-oidc-providers.md)
 - [oidc-flow-cookie](oidc-flow-cookie.md)

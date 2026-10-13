@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [query_index_unavailable]
 defined_for: S33-autocomplete
-rules_hash: e3b0c44298fc
+rules_hash: 6e8780f9058a
 ---
 # degraded marker
 ## Definition
@@ -24,5 +24,6 @@ The other value seen is `catalog_timeout`, returned when the engine never answer
 
 ## Used by
 <!-- used-by:start -->
+- [lexical-search](lexical-search.md)
 - [suggestion-source](suggestion-source.md)
 <!-- used-by:end -->

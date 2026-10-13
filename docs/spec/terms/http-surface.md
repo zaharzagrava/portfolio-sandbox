@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [over http]
 defined_for: S50-rate-limiter
-rules_hash: a65cd8f37c13
+rules_hash: 2fdd9e1e1147
 ---
 # HTTP surface (rate limiting)
 ## Definition
@@ -29,6 +29,7 @@ When `p` is used up, the same route answers `429` problem+json. The body names n
 - [concurrency-lease-release](concurrency-lease-release.md)
 - [configure-http-app](configure-http-app.md)
 - [default-rate-limit-policies](default-rate-limit-policies.md)
+- [finance-reconciliation-api](finance-reconciliation-api.md)
 - [rate-limit-cost-resolver](rate-limit-cost-resolver.md)
 - [rate-limit-policy](rate-limit-policy.md)
 - [rate-limit-response-headers](rate-limit-response-headers.md)

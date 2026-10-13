@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [confirm]
 defined_for: S02-mfa-oidc
-rules_hash: 41f0e34c0852
+rules_hash: 45c73eaf6898
 ---
 # MFA confirm
 ## Definition
@@ -20,7 +20,7 @@ A user in state `pending` sends `{ "code": "123456" }` (illustrative) and gets `
 
 ## Used by
 <!-- used-by:start -->
-- [S02](../capabilities/S02-mfa-oidc.md): R-04
+- [S02](../capabilities/S02-mfa-oidc.md): R-04, R-05, B-02, B-03
 - [durable-conditional-write](durable-conditional-write.md)
 - [mfa-not-pending](mfa-not-pending.md)
 - [mfa-pending-expiry](mfa-pending-expiry.md)

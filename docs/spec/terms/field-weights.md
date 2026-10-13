@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [field weight]
 defined_for: S32-product-search
-rules_hash: a15c617c1e83
+rules_hash: 08dce371287e
 ---
 # Field weights
 ## Definition
@@ -21,6 +21,7 @@ For [`q=iphone`](autocomplete-q-parameter.md), a product with "iPhone" in its ti
 <!-- used-by:start -->
 - [S32](../capabilities/S32-product-search.md): R-05
 - [business-score](business-score.md)
+- [lexical-search](lexical-search.md)
 - [search-query-sanitisation](search-query-sanitisation.md)
 - [text-relevance](text-relevance.md)
 <!-- used-by:end -->

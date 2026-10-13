@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [heartbeat]
 defined_for: S49-job-scheduler
-rules_hash: 17606beffcc7
+rules_hash: 8cb622bfbcb6
 ---
 # Job heartbeat
 ## Definition
@@ -21,6 +21,7 @@ A handler's lease runs out partway through its work, but its heartbeats keep suc
 
 ## Used by
 <!-- used-by:start -->
+- [S14](../capabilities/S14-ledger-reconciliation.md): R-29
 - [S49](../capabilities/S49-job-scheduler.md): B-08
 - [job-handler](job-handler.md)
 - [job-lease-ms](job-lease-ms.md)
@@ -28,5 +29,9 @@ A handler's lease runs out partway through its work, but its heartbeats keep suc
 - [job-max-runtime](job-max-runtime.md)
 - [job-reaper](job-reaper.md)
 - [job-retries](job-retries.md)
+- [lazy-statement-stream](lazy-statement-stream.md)
+- [ledger-ensure-partitions](ledger-ensure-partitions.md)
+- [ledger-jobs](ledger-jobs.md)
+- [payments-reconcile-daily-job](payments-reconcile-daily-job.md)
 - [realtime-config](realtime-config.md)
 <!-- used-by:end -->

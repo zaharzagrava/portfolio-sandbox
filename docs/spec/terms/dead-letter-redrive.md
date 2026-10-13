@@ -31,7 +31,10 @@ Each of the four events goes back to its source topic, for example `orders.event
 - [event-consumer](event-consumer.md)
 - [event-key](event-key.md)
 - [event-sink](event-sink.md)
+- [exhausted](exhausted.md)
+- [malformed-queue-message](malformed-queue-message.md)
 - [non-retryable-broker-error](non-retryable-broker-error.md)
 - [operator](operator.md)
 - [redrive-count-header](redrive-count-header.md)
+- [render-failure](render-failure.md)
 <!-- used-by:end -->

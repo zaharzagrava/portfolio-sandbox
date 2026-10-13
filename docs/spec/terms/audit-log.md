@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: []
 defined_for: S49-job-scheduler
-rules_hash: f9a5dc27a012
+rules_hash: 9ebef49f4568
 ---
 # Audit log
 ## Definition
@@ -20,8 +20,17 @@ An operator calls [`JobsAdminService.retryDead`](jobs-admin-service-retry-dead.m
 
 ## Used by
 <!-- used-by:start -->
+- [S01](../capabilities/S01-auth-sessions.md): R-42
+- [S02](../capabilities/S02-mfa-oidc.md): R-36
+- [S32](../capabilities/S32-product-search.md): R-32
 - [S49](../capabilities/S49-job-scheduler.md): B-14
+- [actor-id](actor-id.md)
+- [auth-events-total](auth-events-total.md)
 - [job-retry-outcome](job-retry-outcome.md)
 - [jobs-admin-service-retry-dead](jobs-admin-service-retry-dead.md)
 - [operator](operator.md)
+- [put-admin-search-synonyms](put-admin-search-synonyms.md)
+- [synonym-history](synonym-history.md)
+- [synonym-rule-count](synonym-rule-count.md)
+- [synonyms-unchanged-flag](synonyms-unchanged-flag.md)
 <!-- used-by:end -->

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [catalogue, catalogue text]
 defined_for: problem-json-errors
-rules_hash: bfc3042587c1
+rules_hash: ac911e29ba95
 ---
 # Error catalogue (fixed detail text)
 ## Definition
@@ -27,6 +27,7 @@ A repository throws an error whose message includes a failing SQL statement. The
 - [error-code-registration](error-code-registration.md)
 - [error-code](error-code.md)
 - [form-alert](form-alert.md)
+- [get-shop-sso](get-shop-sso.md)
 - [idempotency-unavailable](idempotency-unavailable.md)
 - [identity-not-found](identity-not-found.md)
 - [internal-error](internal-error.md)

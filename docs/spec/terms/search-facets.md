@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [facet]
 defined_for: job-scheduler-lease
-rules_hash: 32e9ff4a06cf
+rules_hash: d46b1a60ba84
 ---
 # Search facets
 ## Definition
@@ -21,16 +21,22 @@ Illustrative only. A search for "running shoes" returns results plus facets such
 
 ## Used by
 <!-- used-by:start -->
-- [S32](../capabilities/S32-product-search.md): R-06
+- [S32](../capabilities/S32-product-search.md): R-06, R-45, B-22
 - [W02](../capabilities/W02-storefront-discovery.md): R-08, R-10, B-12
 - [search-index](../concepts/search-index.md): C-04
+- [avg-rating-facet](avg-rating-facet.md)
+- [barrel-export](barrel-export.md)
 - [business-score](business-score.md)
 - [category-shortcuts](category-shortcuts.md)
+- [facet-group](facet-group.md)
+- [facet-self-exclusion](facet-self-exclusion.md)
 - [filter-chip](filter-chip.md)
+- [in-stock-filter](in-stock-filter.md)
 - [parse-search-view](parse-search-view.md)
 - [product-search-route](product-search-route.md)
 - [relevance-boost](relevance-boost.md)
 - [sandbox-product](sandbox-product.md)
+- [search-document](search-document.md)
 - [search-filters](search-filters.md)
 - [search-index](search-index.md)
 - [search-page](search-page.md)

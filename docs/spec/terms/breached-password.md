@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [breached]
 defined_for: S01-auth-sessions
-rules_hash: d2ff542f1a62
+rules_hash: 1dc69f7c2833
 ---
 # Breached password
 ## Definition
@@ -21,6 +21,6 @@ Someone registers with a password from a public leak, such as `password1234` (il
 
 ## Used by
 <!-- used-by:start -->
-- [S01](../capabilities/S01-auth-sessions.md): B-05
+- [S01](../capabilities/S01-auth-sessions.md): R-04, B-05
 - [weak-password](weak-password.md)
 <!-- used-by:end -->

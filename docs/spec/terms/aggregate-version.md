@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: []
 defined_for: projection-and-replay
-rules_hash: 74f35cf12fc0
+rules_hash: 6517e5927f45
 ---
 # aggregateVersion
 ## Definition
@@ -21,10 +21,15 @@ The stored version for a product is 7. An event with `aggregateVersion: 8` is ap
 ## Used by
 <!-- used-by:start -->
 - [S03](../capabilities/S03-shops-rbac.md): B-18
+- [S10](../capabilities/S10-cart-checkout.md): R-42
+- [S32](../capabilities/S32-product-search.md): B-14
 - [S53](../capabilities/S53-events-projections.md): B-01
 - [search-index](../concepts/search-index.md): C-02, C-03
 - [event-consumer](event-consumer.md)
 - [guarded-update](guarded-update.md)
+- [monotonic-version](monotonic-version.md)
+- [notification-version-check](notification-version-check.md)
+- [notified-version](notified-version.md)
 - [search-visibility](search-visibility.md)
 - [terminal-payment-status](terminal-payment-status.md)
 <!-- used-by:end -->

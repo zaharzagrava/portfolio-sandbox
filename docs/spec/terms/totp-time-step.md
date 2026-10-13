@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [step t, time step]
 defined_for: S02-mfa-oidc
-rules_hash: a8bab9e1a025
+rules_hash: 5b484f688fbe
 ---
 # TOTP time step
 ## Definition
@@ -20,7 +20,7 @@ A user's authenticator app shows `482913` (illustrative) during step T. The serv
 
 ## Used by
 <!-- used-by:start -->
-- [S02](../capabilities/S02-mfa-oidc.md): R-08, B-06
+- [S02](../capabilities/S02-mfa-oidc.md): R-08, R-34, B-06
 - [durable-conditional-write](durable-conditional-write.md)
 - [mfa-code](mfa-code.md)
 - [second-factor-model](second-factor-model.md)

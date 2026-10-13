@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [item]
 defined_for: search-index
-rules_hash: 88a2a3caba8d
+rules_hash: 6899751155af
 ---
 # Search items
 ## Definition
@@ -21,7 +21,7 @@ A buyer searches for "mug" (illustrative). The index matches three mugs, and one
 
 ## Used by
 <!-- used-by:start -->
-- [S32](../capabilities/S32-product-search.md): R-06
+- [S32](../capabilities/S32-product-search.md): B-21
 - [image-url](image-url.md)
 - [product-search-response-schema](product-search-response-schema.md)
 - [sandbox-product](sandbox-product.md)

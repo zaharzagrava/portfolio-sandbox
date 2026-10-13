@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: []
 defined_for: W07-app-shell
-rules_hash: e3b0c44298fc
+rules_hash: 9d910bb53b6b
 ---
 # Backend API
 ## Definition
@@ -21,6 +21,7 @@ A browser blocks a script that the [Content Security Policy ↗](../sw-external-
 
 ## Used by
 <!-- used-by:start -->
+- [barrel-export](barrel-export.md)
 - [platform-toolkit](platform-toolkit.md)
 - [static-security-headers](static-security-headers.md)
 - [validated-config-module](validated-config-module.md)

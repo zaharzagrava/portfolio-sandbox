@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [extra field]
 defined_for: S02-mfa-oidc
-rules_hash: c56708ae458c
+rules_hash: 111b9a70f9ed
 ---
 # Unknown body field rejection
 ## Definition
@@ -24,8 +24,8 @@ POST /auth/mfa/confirm
 
 ## Used by
 <!-- used-by:start -->
+- [S01](../capabilities/S01-auth-sessions.md): R-03
 - [S02](../capabilities/S02-mfa-oidc.md): B-03
-- [S13](../capabilities/S13-payment-intents.md): R-01
 - [S34](../capabilities/S34-recommendations.md): R-22
 - [checkout-request-schema](checkout-request-schema.md)
 - [mfa-confirm](mfa-confirm.md)

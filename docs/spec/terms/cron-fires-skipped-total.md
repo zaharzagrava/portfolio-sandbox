@@ -21,6 +21,7 @@ A daily schedule uses the [overlap policy `skip`](cron-overlap-policy.md), and i
 
 ## Used by
 <!-- used-by:start -->
+- [auth-purge-reset-tokens-job](auth-purge-reset-tokens-job.md)
 - [cron-catch-up](cron-catch-up.md)
 - [cron-overlap-policy](cron-overlap-policy.md)
 - [cron-schedule-materialisation](cron-schedule-materialisation.md)

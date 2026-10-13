@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [share one loader call]
 defined_for: cache-layers
-rules_hash: d080be936cfe
+rules_hash: f59d3ce43060
 ---
 # Single-flight (miss coalescing)
 ## Definition
@@ -19,7 +19,6 @@ Suppose 50 requests (illustrative) for the same product page reach S05 just afte
 
 ## Used by
 <!-- used-by:start -->
-- [S05](../capabilities/S05-products.md): R-15, B-09
 - [cache-layers](../concepts/cache-layers.md): C-03
 - [cache-entry](cache-entry.md)
 - [cache-miss](cache-miss.md)

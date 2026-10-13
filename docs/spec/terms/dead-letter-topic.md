@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [<consumer>.dlq, dlq]
 defined_for: S53-events-projections
-rules_hash: a2c89f25e53d
+rules_hash: 4026f7c1d2cb
 ---
 # Dead-letter topic (<consumer>.dlq)
 ## Definition
@@ -21,11 +21,36 @@ A consumer gets a batch of 5 events, and the third one fails its schema. The thi
 
 ## Used by
 <!-- used-by:start -->
+- [S14](../capabilities/S14-ledger-reconciliation.md): R-16, R-25
+- [S28](../capabilities/S28-notifications.md): R-01, R-13, B-04
+- [S32](../capabilities/S32-product-search.md): R-17, R-40
+- [auctions-source-family](auctions-source-family.md)
+- [balance-projector](balance-projector.md)
+- [billing-source-family](billing-source-family.md)
+- [catalog-template](catalog-template.md)
 - [consumer-attempt-budget](consumer-attempt-budget.md)
+- [contact-data](contact-data.md)
 - [dead-letter-redrive](dead-letter-redrive.md)
+- [dead-letter-without-body](dead-letter-without-body.md)
+- [dedicated-confirmation-text](dedicated-confirmation-text.md)
+- [device-token](device-token.md)
 - [event-sink](event-sink.md)
+- [exhausted](exhausted.md)
+- [generic-fallback-text](generic-fallback-text.md)
 - [handler-failed](handler-failed.md)
+- [known-unmapped-type](known-unmapped-type.md)
+- [malformed-queue-message](malformed-queue-message.md)
+- [notification-rendering](notification-rendering.md)
 - [partition-pause](partition-pause.md)
+- [provider-timeout](provider-timeout.md)
 - [redrive-count-header](redrive-count-header.md)
+- [render-failure](render-failure.md)
+- [search-projector](search-projector.md)
+- [settled-sale](settled-sale.md)
+- [settlement-consumer](settlement-consumer.md)
+- [side-effects](side-effects.md)
 - [source-topic](source-topic.md)
+- [template-redaction](template-redaction.md)
+- [tenancy-invite-requested-queue](tenancy-invite-requested-queue.md)
+- [transient-failure](transient-failure.md)
 <!-- used-by:end -->

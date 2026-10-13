@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [unverified, verification]
 defined_for: S03-shops-rbac
-rules_hash: 501597685e40
+rules_hash: c18a821fec65
 ---
 # Shop verification
 ## Definition
@@ -21,11 +21,15 @@ Shop verification is a [lifecycle ↗](../sw-external-terms.md#state-machine) th
 
 ## Used by
 <!-- used-by:start -->
-- [S03](../capabilities/S03-shops-rbac.md): B-01
+- [S03](../capabilities/S03-shops-rbac.md): R-28
 - [apply-verification](apply-verification.md)
 - [payouts-enabled](payouts-enabled.md)
 - [post-shops](post-shops.md)
+- [shop-onboarding-submitted-event](shop-onboarding-submitted-event.md)
+- [shop-rejected-event](shop-rejected-event.md)
 - [shop-status](shop-status.md)
 - [shop-tenant](shop-tenant.md)
 - [shop-verification-changed-event](shop-verification-changed-event.md)
+- [shop-verified-event](shop-verified-event.md)
+- [verification-decision-ordering](verification-decision-ordering.md)
 <!-- used-by:end -->

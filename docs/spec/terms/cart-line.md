@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: []
 defined_for: order-reservation
-rules_hash: 1217902d3c46
+rules_hash: 6ef88a7bed5d
 ---
 # Cart line
 ## Definition
@@ -21,7 +21,7 @@ A cart holds two lines: 3 × `prod_42` and 1 × `prod_07` (illustrative). Suppos
 
 ## Used by
 <!-- used-by:start -->
-- [S10](../capabilities/S10-cart-checkout.md): R-04, R-05, R-18, B-02, B-04
+- [S10](../capabilities/S10-cart-checkout.md): R-04, R-05, R-18, B-02
 - [W03](../capabilities/W03-cart-checkout-orders.md): B-03
 - [all-or-nothing-reservation](all-or-nothing-reservation.md)
 - [basket](basket.md)
@@ -37,4 +37,5 @@ A cart holds two lines: 3 × `prod_42` and 1 × `prod_07` (illustrative). Suppos
 - [seller-discount](seller-discount.md)
 - [stock-operation-ordering](stock-operation-ordering.md)
 - [stock-operation](stock-operation.md)
+- [unit-price-minor](unit-price-minor.md)
 <!-- used-by:end -->

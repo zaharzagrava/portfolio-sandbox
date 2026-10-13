@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [event]
 defined_for: S51-realtime-push
-rules_hash: 926411eee18c
+rules_hash: 998c4930b86d
 ---
 # Realtime event
 ## Definition
@@ -24,11 +24,22 @@ await publish("user:<A>", "price", { price: 3 });
 
 ## Used by
 <!-- used-by:start -->
-- [S51](../capabilities/S51-realtime-push.md): R-04
+- [S28](../capabilities/S28-notifications.md): B-01
+- [S51](../capabilities/S51-realtime-push.md): B-08
+- [done-marker](done-marker.md)
 - [format-frame](format-frame.md)
+- [inbox-item](inbox-item.md)
+- [notification-bell](notification-bell.md)
+- [notification-channel](notification-channel.md)
+- [payment-method-token](payment-method-token.md)
+- [post-notifications-read](post-notifications-read.md)
 - [realtime-topic](realtime-topic.md)
+- [render-failure](render-failure.md)
 - [replay-buffer](replay-buffer.md)
 - [replay-cursor](replay-cursor.md)
 - [replayable-event](replayable-event.md)
+- [security-events](security-events.md)
+- [side-effects](side-effects.md)
 - [sse-data-line](sse-data-line.md)
+- [unread-count](unread-count.md)
 <!-- used-by:end -->

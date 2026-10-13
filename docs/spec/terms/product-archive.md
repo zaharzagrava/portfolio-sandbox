@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [archive, archived, restore]
 defined_for: S05-products
-rules_hash: 842f4fcb28e5
+rules_hash: 029f4581cddc
 ---
 # Archived product
 ## Definition
@@ -21,10 +21,11 @@ An archived product has the status `ARCHIVED`. A member with [`products.write`](
 
 ## Used by
 <!-- used-by:start -->
-- [S05](../capabilities/S05-products.md): B-05
+- [S05](../capabilities/S05-products.md): R-07, B-05
 - [S10](../capabilities/S10-cart-checkout.md): B-09
-- [S32](../capabilities/S32-product-search.md): R-06, B-09
+- [S32](../capabilities/S32-product-search.md): R-06, B-09, B-28
 - [W02](../capabilities/W02-storefront-discovery.md): R-18
+- [batch-products-lookup](batch-products-lookup.md)
 - [expected-version](expected-version.md)
 - [product-status-history](product-status-history.md)
 - [upsert-from-external](upsert-from-external.md)

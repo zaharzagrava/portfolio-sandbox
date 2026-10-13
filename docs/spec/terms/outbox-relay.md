@@ -46,6 +46,7 @@ If the send fails, it waits a [full-jitter backoff](jitter.md) (base 1 s, cap 60
 - [inbox-table](inbox-table.md)
 - [jitter](jitter.md)
 - [job-lease](job-lease.md)
+- [ledger-events-topic](ledger-events-topic.md)
 - [non-retryable-broker-error](non-retryable-broker-error.md)
 - [non-retryable-job-error](non-retryable-job-error.md)
 - [outbox-append-task](outbox-append-task.md)

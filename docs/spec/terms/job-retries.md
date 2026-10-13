@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [retry]
 defined_for: idempotency-key
-rules_hash: add33f5f774d
+rules_hash: 5379fe22004a
 ---
 # Job retries
 ## Definition
@@ -21,8 +21,7 @@ A job is [enqueued](job-enqueue.md) and gets [`created: true`](enqueue-created-f
 
 ## Used by
 <!-- used-by:start -->
-- [S02](../capabilities/S02-mfa-oidc.md): B-14
-- [S10](../capabilities/S10-cart-checkout.md): R-18, R-23, B-18
+- [S10](../capabilities/S10-cart-checkout.md): R-18, R-23
 - [S49](../capabilities/S49-job-scheduler.md): R-12, B-05, B-06
 - [order-reservation](../concepts/order-reservation.md): C-05
 - [idempotency-key](idempotency-key.md)
@@ -34,8 +33,10 @@ A job is [enqueued](job-enqueue.md) and gets [`created: true`](enqueue-created-f
 - [job-max-runtime](job-max-runtime.md)
 - [job-status](job-status.md)
 - [non-retryable-job-error](non-retryable-job-error.md)
+- [payments-reconcile-daily-job](payments-reconcile-daily-job.md)
 - [per-aggregate-ordering](per-aggregate-ordering.md)
 - [search-backfill-shop-state](search-backfill-shop-state.md)
 - [search-retire-previous-index](search-retire-previous-index.md)
 - [stock-release](stock-release.md)
+- [stripe-statement-adapter](stripe-statement-adapter.md)
 <!-- used-by:end -->

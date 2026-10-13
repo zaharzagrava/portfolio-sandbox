@@ -23,4 +23,5 @@ Three requests reach a protected route through the stock verifier: one token has
 - [S01](../capabilities/S01-auth-sessions.md): B-17
 - [clock-skew-tolerance](clock-skew-tolerance.md)
 - [protected-route](protected-route.md)
+- [verifier-key-cache](verifier-key-cache.md)
 <!-- used-by:end -->

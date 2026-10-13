@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [recovered]
 defined_for: order-reservation
-rules_hash: c2cc8624cf1b
+rules_hash: 9c11bbc1e2cc
 ---
 # Pending order recovery
 ## Definition
@@ -21,7 +21,7 @@ Order `42` (illustrative) has been `PENDING` for 90 s. Recovery resends `orders:
 
 ## Used by
 <!-- used-by:start -->
-- [S10](../capabilities/S10-cart-checkout.md): R-24
+- [S10](../capabilities/S10-cart-checkout.md): R-22
 - [order-reservation](../concepts/order-reservation.md): C-06
 - [all-or-nothing-reservation](all-or-nothing-reservation.md)
 - [catalog-stock-command](catalog-stock-command.md)

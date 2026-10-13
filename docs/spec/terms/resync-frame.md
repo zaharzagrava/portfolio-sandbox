@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [resync]
 defined_for: realtime-topic-stream
-rules_hash: 86ab2fbeea96
+rules_hash: 0f2b592e7dff
 ---
 # resync frame
 ## Definition
@@ -26,7 +26,7 @@ data: {"reason":"replay-gap"}
 
 ## Used by
 <!-- used-by:start -->
-- [S51](../capabilities/S51-realtime-push.md): R-11, B-05
+- [S51](../capabilities/S51-realtime-push.md): R-11, R-34, B-05
 - [realtime-topic-stream](../concepts/realtime-topic-stream.md): C-05
 - [realtime-hub](realtime-hub.md)
 - [replay-buffer](replay-buffer.md)

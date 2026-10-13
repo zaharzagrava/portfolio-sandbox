@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [/webhooks/stripe]
 defined_for: S10-cart-checkout
-rules_hash: 581faa0ce274
+rules_hash: d53466f1f472
 ---
 # POST /webhooks/stripe
 ## Definition
@@ -25,6 +25,7 @@ A signed body that is not JSON, or has no `id` and `type`, gets [`400 invalid_pa
 
 ## Used by
 <!-- used-by:start -->
+- [S10](../capabilities/S10-cart-checkout.md): R-44
 - [consumer-outcomes](consumer-outcomes.md)
 - [event-consumer](event-consumer.md)
 - [guarded-update](guarded-update.md)

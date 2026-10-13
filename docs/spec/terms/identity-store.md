@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [store]
 defined_for: S02-mfa-oidc
-rules_hash: f52c5d706c58
+rules_hash: c3135b16f6ec
 ---
 # Identity store
 ## Definition

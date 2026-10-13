@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [refund request]
 defined_for: payment-lifecycle
-rules_hash: 04eabaf1c729
+rules_hash: 46ead9c4202a
 ---
 # Refund
 ## Definition
@@ -23,6 +23,7 @@ The buyer's payment for an order is `COMPLETED`, and the order is `PAID`. A refu
 <!-- used-by:start -->
 - [S10](../capabilities/S10-cart-checkout.md): B-19
 - [S13](../capabilities/S13-payment-intents.md): R-23
+- [S14](../capabilities/S14-ledger-reconciliation.md): B-06
 - [payment-lifecycle](../concepts/payment-lifecycle.md): C-08
 - [checkout-attempt](checkout-attempt.md)
 - [decide-payment-status](decide-payment-status.md)

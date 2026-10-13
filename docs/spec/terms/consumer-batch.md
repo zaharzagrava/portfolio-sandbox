@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [batch]
 defined_for: projection-and-replay
-rules_hash: 0ef0be79ffda
+rules_hash: e95af9fd65ff
 ---
 # Consumer batch
 ## Definition
@@ -21,11 +21,13 @@ The search index consumer receives a batch of catalog events (count illustrative
 
 ## Used by
 <!-- used-by:start -->
-- [S32](../capabilities/S32-product-search.md): B-14, B-15
+- [S28](../capabilities/S28-notifications.md): R-04
 - [S53](../capabilities/S53-events-projections.md): B-09, B-12
 - [projection-and-replay](../concepts/projection-and-replay.md): C-07
 - [at-least-once-delivery](at-least-once-delivery.md)
 - [consumer-effects](consumer-effects.md)
 - [event-backbone](event-backbone.md)
+- [exported-service](exported-service.md)
 - [schema-invalid](schema-invalid.md)
+- [side-effects](side-effects.md)
 <!-- used-by:end -->

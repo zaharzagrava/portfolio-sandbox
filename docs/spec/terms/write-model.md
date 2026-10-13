@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [write-model]
 defined_for: S53-events-projections
-rules_hash: 4755e184f856
+rules_hash: ad4856a09192
 ---
 # Write model
 ## Definition
@@ -24,6 +24,7 @@ A projection has stopped at version 6, and a client requests `[minVersion](min-v
 <!-- used-by:start -->
 - [S53](../capabilities/S53-events-projections.md): B-16
 - [aggregate-id](aggregate-id.md)
+- [authoritative-balance](authoritative-balance.md)
 - [event-backbone](event-backbone.md)
 - [event-row](event-row.md)
 - [pending-read-mode](pending-read-mode.md)

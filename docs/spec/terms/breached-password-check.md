@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [breached password]
 defined_for: S01-auth-sessions
-rules_hash: ce100ea99dfd
+rules_hash: 7bc2f5317e34
 ---
 # Breached-password check
 ## Definition
@@ -21,7 +21,7 @@ The breached-password check runs during registration. It asks whether the chosen
 
 ## Used by
 <!-- used-by:start -->
-- [S01](../capabilities/S01-auth-sessions.md): R-04, R-05
+- [S01](../capabilities/S01-auth-sessions.md): R-05
 - [auth-breach-check-skipped-total](auth-breach-check-skipped-total.md)
 - [password-problem](password-problem.md)
 - [post-auth-register](post-auth-register.md)

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [published log]
 defined_for: S33-autocomplete
-rules_hash: 995b8d1f0f2d
+rules_hash: c92b471cdcad
 ---
 # Query log
 ## Definition
@@ -21,6 +21,7 @@ One searcher types `iphone case` 100 times. The build counts one searcher, so th
 
 ## Used by
 <!-- used-by:start -->
+- [S32](../capabilities/S32-product-search.md): R-42
 - [S33](../capabilities/S33-autocomplete.md): B-01
 - [autocomplete-blocklist](autocomplete-blocklist.md)
 - [autocomplete-build](autocomplete-build.md)
@@ -31,5 +32,6 @@ One searcher types `iphone case` 100 times. The build counts one searcher, so th
 - [event-id](event-id.md)
 - [popularity-floor](popularity-floor.md)
 - [query-snapshot](query-snapshot.md)
+- [redacted-query](redacted-query.md)
 - [search-performed-event](search-performed-event.md)
 <!-- used-by:end -->

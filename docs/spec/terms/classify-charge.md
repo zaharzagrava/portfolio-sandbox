@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: []
 defined_for: S13-payment-intents
-rules_hash: e3b0c44298fc
+rules_hash: 53e404798755
 ---
 # classifyCharge
 ## Definition
@@ -23,6 +23,7 @@ The processor sends a charge whose [provider idempotency reference](provider-ide
 
 ## Used by
 <!-- used-by:start -->
+- [S13](../capabilities/S13-payment-intents.md): R-27
 - [definite-decline](definite-decline.md)
 - [payment-processor](payment-processor.md)
 - [payments-domain-layer](payments-domain-layer.md)

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [deduplication mode, deduplication modes]
 defined_for: outbox-task-queue
-rules_hash: 7f1ee560e402
+rules_hash: 09609fba18d8
 ---
 # Consumer deduplication mode
 ## Definition
@@ -21,6 +21,7 @@ A consumer of [S05](../capabilities/S05-products.md) product events declares `ve
 
 ## Used by
 <!-- used-by:start -->
+- [S10](../capabilities/S10-cart-checkout.md): R-31
 - [S34](../capabilities/S34-recommendations.md): B-13
 - [projection-and-replay](../concepts/projection-and-replay.md): C-05
 - [at-least-once-delivery](at-least-once-delivery.md)
@@ -28,6 +29,7 @@ A consumer of [S05](../capabilities/S05-products.md) product events declares `ve
 - [consumer-group](consumer-group.md)
 - [event-backbone](event-backbone.md)
 - [event-consumer](event-consumer.md)
+- [inbox-item](inbox-item.md)
 - [inbox-table](inbox-table.md)
 - [natural-idempotency](natural-idempotency.md)
 - [outbox-relay](outbox-relay.md)

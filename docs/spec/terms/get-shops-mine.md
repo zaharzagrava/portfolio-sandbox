@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [shops/mine]
 defined_for: S03-shops-rbac
-rules_hash: e3b0c44298fc
+rules_hash: 7e8d3d6909f2
 ---
 # GET /shops/mine
 ## Definition
@@ -26,6 +26,7 @@ GET /shops/mine?limit=2&<cursor param>=<opaque>
 
 ## Used by
 <!-- used-by:start -->
+- [S05](../capabilities/S05-products.md): R-10
 - [pagination-cursor](pagination-cursor.md)
 - [sandbox-shop](sandbox-shop.md)
 <!-- used-by:end -->

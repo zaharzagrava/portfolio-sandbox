@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [terminal]
 defined_for: payment-lifecycle
-rules_hash: fd3091792724
+rules_hash: 024c4c04d6b6
 ---
 # Terminal payment status
 ## Definition
@@ -21,12 +21,12 @@ The [processor](payment-processor.md) re-checks the order before calling the pro
 
 ## Used by
 <!-- used-by:start -->
-- [S10](../capabilities/S10-cart-checkout.md): R-30
 - [S13](../capabilities/S13-payment-intents.md): R-20
 - [aggregate-version](aggregate-version.md)
 - [decide-payment-status](decide-payment-status.md)
 - [guarded-update](guarded-update.md)
 - [payment-command](payment-command.md)
+- [payment-method-token](payment-method-token.md)
 - [payment-processor](payment-processor.md)
 - [payment-provider](payment-provider.md)
 - [payment-status](payment-status.md)

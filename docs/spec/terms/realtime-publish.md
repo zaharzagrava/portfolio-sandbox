@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: []
 defined_for: realtime-topic-stream
-rules_hash: 7df6744bd6af
+rules_hash: 8884d0a405b7
 ---
 # publish
 ## Definition
@@ -24,8 +24,8 @@ The payment transition still commits, because a push failure must not affect it.
 
 ## Used by
 <!-- used-by:start -->
-- [S13](../capabilities/S13-payment-intents.md): R-24
-- [S51](../capabilities/S51-realtime-push.md): R-19, B-13
+- [S13](../capabilities/S13-payment-intents.md): R-28
+- [client-secret](client-secret.md)
 - [realtime-publish-limit](realtime-publish-limit.md)
 - [realtime-store](realtime-store.md)
 - [realtime-topic](realtime-topic.md)

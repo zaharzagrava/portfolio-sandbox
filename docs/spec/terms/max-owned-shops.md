@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: []
 defined_for: S03-shops-rbac
-rules_hash: e3b0c44298fc
+rules_hash: 9ed275472427
 ---
 # MAX_OWNED_SHOPS
 ## Definition
@@ -25,6 +25,7 @@ No shop, membership or [`tenancy.shop_created` event](shop-created-event.md) is 
 
 ## Used by
 <!-- used-by:start -->
+- [S03](../capabilities/S03-shops-rbac.md): R-12
 - [ensure-sandbox-shop](ensure-sandbox-shop.md)
 - [legacy-seller](legacy-seller.md)
 - [sandbox-shop](sandbox-shop.md)

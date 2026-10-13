@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: []
 defined_for: S50-rate-limiter
-rules_hash: e3b0c44298fc
+rules_hash: 5fdde744c547
 ---
 # retryAfterMs
 ## Definition
@@ -24,6 +24,8 @@ Over HTTP this becomes `503` with `Retry-After: 1`.
 
 ## Used by
 <!-- used-by:start -->
+- [S28](../capabilities/S28-notifications.md): R-31
 - [concurrency-limit](concurrency-limit.md)
 - [rate-limit-check](rate-limit-check.md)
+- [send-budget](send-budget.md)
 <!-- used-by:end -->

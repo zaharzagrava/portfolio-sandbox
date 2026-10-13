@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [runner]
 defined_for: transaction-runner
-rules_hash: e3b0c44298fc
+rules_hash: fb7eb3f26fb6
 ---
 # Transaction runner
 ## Definition
@@ -21,6 +21,8 @@ S13 writes four rows in one run: the payment, its history row, the charge comman
 
 ## Used by
 <!-- used-by:start -->
+- [S14](../capabilities/S14-ledger-reconciliation.md): R-06
+- [S28](../capabilities/S28-notifications.md): R-55
 - [active-transaction](active-transaction.md)
 - [outbox-append-task](outbox-append-task.md)
 - [platform-toolkit](platform-toolkit.md)

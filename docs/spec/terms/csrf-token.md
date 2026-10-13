@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [__host-bff-csrf cookie]
 defined_for: bff-aggregate
-rules_hash: e3b0c44298fc
+rules_hash: 986745bf7652
 ---
 # CSRF token
 ## Definition
@@ -25,5 +25,6 @@ The values match, so the request goes ahead. If `X-CSRF-Token` were missing, the
 
 ## Used by
 <!-- used-by:start -->
+- [S01](../capabilities/S01-auth-sessions.md): R-29
 - [session-cookie](session-cookie.md)
 <!-- used-by:end -->

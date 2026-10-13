@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [append, outbox.append]
 defined_for: outbox-task-queue
-rules_hash: 8f6fa1505652
+rules_hash: 1b47e5585f27
 ---
 # Outbox append
 ## Definition
@@ -26,16 +26,24 @@ await outbox.append(paymentSucceededEvent); // commits with the status change
 
 ## Used by
 <!-- used-by:start -->
+- [S05](../capabilities/S05-products.md): R-20
+- [S14](../capabilities/S14-ledger-reconciliation.md): R-37
 - [S53](../capabilities/S53-events-projections.md): R-01, B-01
 - [catalog-product-deleted-event](catalog-product-deleted-event.md)
+- [catalog-product-events](catalog-product-events.md)
 - [catalog-product-updated-event](catalog-product-updated-event.md)
+- [client-secret](client-secret.md)
 - [domain](domain.md)
 - [event-backbone](event-backbone.md)
 - [inbox-table](inbox-table.md)
+- [ledger-reconciliation-completed-event](ledger-reconciliation-completed-event.md)
+- [order-unavailable](order-unavailable.md)
 - [outbox-relay](outbox-relay.md)
 - [outbox-rollback](outbox-rollback.md)
+- [password-changed-event](password-changed-event.md)
 - [payment-succeeded-event](payment-succeeded-event.md)
 - [product-lifecycle](product-lifecycle.md)
+- [security-events](security-events.md)
 - [shop-cell-moved-event](shop-cell-moved-event.md)
 - [unregistered-aggregate-type-error](unregistered-aggregate-type-error.md)
 <!-- used-by:end -->

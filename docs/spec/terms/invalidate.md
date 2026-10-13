@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: []
 defined_for: cache-layers
-rules_hash: 936b893ad3eb
+rules_hash: 75f14259079f
 ---
 # invalidate
 ## Definition
@@ -24,7 +24,6 @@ const result = await cache.invalidate(productKey); // names illustrative
 
 ## Used by
 <!-- used-by:start -->
-- [S05](../capabilities/S05-products.md): R-18
 - [S52](../capabilities/S52-cache-toolkit.md): B-11
 - [cache-entry](cache-entry.md)
 - [cache-toolkit](cache-toolkit.md)
@@ -32,5 +31,6 @@ const result = await cache.invalidate(productKey); // names illustrative
 - [l1-cache](l1-cache.md)
 - [l1-ttl-ms](l1-ttl-ms.md)
 - [l2-cache](l2-cache.md)
+- [recipient-view](recipient-view.md)
 - [version-conflict](version-conflict.md)
 <!-- used-by:end -->

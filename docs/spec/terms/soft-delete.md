@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [soft-deleted]
 defined_for: S01-auth-sessions
-rules_hash: b6989fee0a5b
+rules_hash: 496e946af480
 ---
 # Soft delete
 ## Definition
@@ -21,7 +21,7 @@ User C is soft-deleted. When C's client presents its refresh token to `POST /aut
 
 ## Used by
 <!-- used-by:start -->
-- [S01](../capabilities/S01-auth-sessions.md): B-13
+- [S01](../capabilities/S01-auth-sessions.md): B-13, B-15
 - [S53](../capabilities/S53-events-projections.md): B-08
 - [find-by-email](find-by-email.md)
 - [get-users-by-ids](get-users-by-ids.md)

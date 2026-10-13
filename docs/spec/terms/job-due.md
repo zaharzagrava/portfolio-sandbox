@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [due]
 defined_for: S49-job-scheduler
-rules_hash: 3634535bf33f
+rules_hash: c32e04f84d7c
 ---
 # Due job
 ## Definition
@@ -20,6 +20,7 @@ A job enqueued at 10:00Z with `runAt` 20:00Z is not due when a worker polls at 1
 
 ## Used by
 <!-- used-by:start -->
+- [S03](../capabilities/S03-shops-rbac.md): R-27
 - [S49](../capabilities/S49-job-scheduler.md): B-03
 - [job-attempt](job-attempt.md)
 - [job-claim](job-claim.md)

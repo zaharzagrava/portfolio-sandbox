@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [cold requests]
 defined_for: S35-trending
-rules_hash: 330780b8dfe7
+rules_hash: 0335cef12e28
 ---
 # Cold request
 ## Definition
@@ -20,6 +20,7 @@ Fifty buyers open the home page at the same moment, just after the [`category=al
 
 ## Used by
 <!-- used-by:start -->
+- [S05](../capabilities/S05-products.md): B-08
 - [S35](../capabilities/S35-trending.md): R-12
 - [trending-aggregate](trending-aggregate.md)
 - [trending-ranking-cache](trending-ranking-cache.md)

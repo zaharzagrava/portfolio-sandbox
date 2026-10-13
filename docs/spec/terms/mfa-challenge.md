@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [challenge]
 defined_for: S01-auth-sessions
-rules_hash: 1e49b970dbc6
+rules_hash: c41b4feb9b40
 ---
 # MFA challenge
 ## Definition
@@ -25,14 +25,17 @@ After this response, the user has no session.
 ## Used by
 <!-- used-by:start -->
 - [S01](../capabilities/S01-auth-sessions.md): R-14
-- [S02](../capabilities/S02-mfa-oidc.md): R-12, B-04
+- [S02](../capabilities/S02-mfa-oidc.md): R-12, R-29, R-34, B-04, B-08
 - [W01](../capabilities/W01-auth-account.md): R-13, B-13
+- [invalid-mfa-challenge](invalid-mfa-challenge.md)
 - [invalid-mfa-code](invalid-mfa-code.md)
 - [login-mfa-page](login-mfa-page.md)
 - [login-page](login-page.md)
 - [login-throttle](login-throttle.md)
+- [mfa-challenge-spent-burned](mfa-challenge-spent-burned.md)
 - [mfa-recovery-code-used-event](mfa-recovery-code-used-event.md)
 - [mfa-verify-endpoint](mfa-verify-endpoint.md)
+- [platform-admin](platform-admin.md)
 - [post-auth-login](post-auth-login.md)
 - [second-factor-model](second-factor-model.md)
 - [session-lifetime](session-lifetime.md)

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [ledgerentry]
 defined_for: S13-payment-intents
-rules_hash: e3b0c44298fc
+rules_hash: bfe656e5d37d
 ---
 # LedgerEntry table
 ## Definition
@@ -22,7 +22,9 @@ If the card is declined instead, the payment becomes `FAILED(card_declined)` and
 
 ## Used by
 <!-- used-by:start -->
+- [S14](../capabilities/S14-ledger-reconciliation.md): R-03, R-22, R-36
 - [definite-decline](definite-decline.md)
+- [hot-copy](hot-copy.md)
 - [idempotency-stored-answer](idempotency-stored-answer.md)
 - [ledger-posting](ledger-posting.md)
 - [reversing-journal](reversing-journal.md)

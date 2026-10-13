@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [read your writes]
 defined_for: outbox-task-queue
-rules_hash: 34551c0227ea
+rules_hash: bcb17fdb7b61
 ---
 # Read-your-writes
 ## Definition
@@ -21,6 +21,7 @@ Illustrative, not taken from the spec: a shop owner renames a product in [S05](.
 
 ## Used by
 <!-- used-by:start -->
+- [S13](../capabilities/S13-payment-intents.md): B-06
 - [checkpoint-lookup](checkpoint-lookup.md)
 - [event-backbone](event-backbone.md)
 - [event-consumer](event-consumer.md)

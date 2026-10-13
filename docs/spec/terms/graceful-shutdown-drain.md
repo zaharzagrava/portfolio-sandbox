@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [drain]
 defined_for: S54-platform-toolkit
-rules_hash: 49ff0ad5c9d4
+rules_hash: f58ea0d5fedf
 ---
 # Drain delay
 ## Definition
@@ -19,6 +19,7 @@ The drain delay is a wait in the [graceful shutdown sequence](shutdown-sequence.
 
 ## Used by
 <!-- used-by:start -->
+- [S51](../capabilities/S51-realtime-push.md): R-31
 - [S54](../capabilities/S54-platform-toolkit.md): B-10
 - [create-graceful-shutdown](create-graceful-shutdown.md)
 - [hard-shutdown-timeout](hard-shutdown-timeout.md)

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [checkpoint]
 defined_for: tenant-shop-rbac
-rules_hash: 385c40f2aef1
+rules_hash: 8cda6689f506
 ---
 # Checkpoint lookup
 ## Definition
@@ -26,6 +26,7 @@ Tenant B reads an aggregate that belongs to tenant A and passes `minVersion=1`. 
 - [aggregate-id](aggregate-id.md)
 - [read-wait-timeout](read-wait-timeout.md)
 - [read-your-writes](read-your-writes.md)
+- [resumable-fan-out](resumable-fan-out.md)
 - [shop-not-found](shop-not-found.md)
 - [tenant](tenant.md)
 <!-- used-by:end -->

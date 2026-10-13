@@ -27,6 +27,7 @@ Illustrative: the `11:20–11:21` window has already been merged. An `add_to_car
 - [event-consumer](event-consumer.md)
 - [idempotency-key](idempotency-key.md)
 - [late-event-horizon](late-event-horizon.md)
+- [posted-at](posted-at.md)
 - [trending-aggregate](trending-aggregate.md)
 - [trending-minute-window](trending-minute-window.md)
 - [trending-window](trending-window.md)

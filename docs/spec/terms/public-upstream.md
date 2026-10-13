@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [public upstreams]
 defined_for: S48-bff
-rules_hash: 5d6edd77a1b6
+rules_hash: a85742c5c55f
 ---
 # Public upstream
 ## Definition
@@ -21,6 +21,7 @@ A public [upstream](upstream.md) is an upstream that the [BFF ↗](../sw-externa
 
 ## Used by
 <!-- used-by:start -->
+- [S03](../capabilities/S03-shops-rbac.md): R-02
 - [S48](../capabilities/S48-bff.md): B-05
 - [section](section.md)
 - [upstream](upstream.md)

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [one attempt]
 defined_for: idempotency-key
-rules_hash: ddb109c1eb30
+rules_hash: 666b38f2d745
 ---
 # Attempt (one checkout try)
 ## Definition
@@ -20,7 +20,7 @@ A user presses "Place order", presses it again, then reloads the page and submit
 
 ## Used by
 <!-- used-by:start -->
-- [S13](../capabilities/S13-payment-intents.md): R-16, R-21, B-16
+- [S13](../capabilities/S13-payment-intents.md): R-16, R-21
 - [W03](../capabilities/W03-cart-checkout-orders.md): R-09, B-15
 - [idempotency-key](../concepts/idempotency-key.md): C-06
 - [payment-lifecycle](../concepts/payment-lifecycle.md): C-08

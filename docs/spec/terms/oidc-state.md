@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [state]
 defined_for: S02-mfa-oidc
-rules_hash: d8e4c74adecc
+rules_hash: f445c9c2245a
 ---
 # OIDC state
 ## Definition

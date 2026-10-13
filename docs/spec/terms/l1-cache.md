@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [l1]
 defined_for: cache-layers
-rules_hash: 36b8541ea842
+rules_hash: 60af55c83faa
 ---
 # L1 cache (per-process)
 ## Definition
@@ -29,6 +29,7 @@ With default settings, an instance holds up to 10,000 entries or 64 MiB in L1. W
 - [cache-penetration](cache-penetration.md)
 - [cache-toolkit](cache-toolkit.md)
 - [corrupt-entry](corrupt-entry.md)
+- [directory-row](directory-row.md)
 - [get-or-load](get-or-load.md)
 - [hot-key](hot-key.md)
 - [invalid-cache-options](invalid-cache-options.md)

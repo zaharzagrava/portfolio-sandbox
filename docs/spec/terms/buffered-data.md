@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [buffered work, buffered writes]
 defined_for: S54-platform-toolkit
-rules_hash: e3b0c44298fc
+rules_hash: f040f229bf5e
 ---
 # Buffered data
 ## Definition
@@ -21,6 +21,7 @@ A worker with no HTTP server gets [SIGTERM ↗](../sw-external-terms.md#terminat
 
 ## Used by
 <!-- used-by:start -->
+- [S14](../capabilities/S14-ledger-reconciliation.md): R-29
 - [event-consumer](event-consumer.md)
 - [hard-shutdown-timeout](hard-shutdown-timeout.md)
 - [shutdown-flush](shutdown-flush.md)

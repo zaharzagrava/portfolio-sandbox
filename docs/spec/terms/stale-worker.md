@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [stale]
 defined_for: job-scheduler-lease
-rules_hash: e81c72abb5fa
+rules_hash: 46d832de20c9
 ---
 # Stale worker
 ## Definition
@@ -24,7 +24,6 @@ These values are illustrative:
 
 ## Used by
 <!-- used-by:start -->
-- [S32](../capabilities/S32-product-search.md): B-20
 - [S49](../capabilities/S49-job-scheduler.md): R-11
 - [attempt-fencing](attempt-fencing.md)
 - [job-claim](job-claim.md)

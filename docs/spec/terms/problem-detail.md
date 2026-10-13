@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [detail text]
 defined_for: problem-json-errors
-rules_hash: 260bf6c0007d
+rules_hash: 993901d60baa
 ---
 # detail (problem body member)
 ## Definition
@@ -26,8 +26,10 @@ The SQL stays in the server logs, and support can find it there by [`requestId`]
 
 ## Used by
 <!-- used-by:start -->
+- [S13](../capabilities/S13-payment-intents.md): R-28
 - [S48](../capabilities/S48-bff.md): R-06
 - [request-context](../concepts/request-context.md): C-03
 - [error-catalogue](error-catalogue.md)
+- [provider-secret](provider-secret.md)
 - [retry-after-seconds](retry-after-seconds.md)
 <!-- used-by:end -->

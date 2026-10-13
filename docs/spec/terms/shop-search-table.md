@@ -32,5 +32,6 @@ GET /shops/shop_123/products/search?q=airpods
 - [search-index](search-index.md)
 - [shop-member](shop-member.md)
 - [shop-product-search-route](shop-product-search-route.md)
+- [shop-search-freshness](shop-search-freshness.md)
 - [zero-downtime-reindexing](zero-downtime-reindexing.md)
 <!-- used-by:end -->

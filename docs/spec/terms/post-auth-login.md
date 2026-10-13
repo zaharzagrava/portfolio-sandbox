@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [/auth/login]
 defined_for: S01-auth-sessions
-rules_hash: e3b0c44298fc
+rules_hash: 5ff884cefd7b
 ---
 # POST /auth/login
 ## Definition
@@ -23,6 +23,7 @@ A user with a stored bcrypt hash logs in successfully, and their hash is replace
 
 ## Used by
 <!-- used-by:start -->
+- [S02](../capabilities/S02-mfa-oidc.md): B-04
 - [cookie-delivery](cookie-delivery.md)
 - [mfa-challenge](mfa-challenge.md)
 - [mfa-state](mfa-state.md)

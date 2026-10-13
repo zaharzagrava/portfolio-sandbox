@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [/products/search]
 defined_for: S32-product-search
-rules_hash: e3b0c44298fc
+rules_hash: b3c56a43ed20
 ---
 # GET /products/search
 ## Definition
@@ -28,6 +28,7 @@ GET /products/search?q=iphnoe
 
 ## Used by
 <!-- used-by:start -->
+- [S32](../capabilities/S32-product-search.md): R-01
 - [fuzzy-matching](fuzzy-matching.md)
 - [live-index-alias](live-index-alias.md)
 - [pagination-cursor](pagination-cursor.md)

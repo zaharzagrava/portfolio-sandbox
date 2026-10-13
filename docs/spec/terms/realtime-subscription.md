@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [subscriptions]
 defined_for: S51-realtime-push
-rules_hash: b3be058ddbd7
+rules_hash: 0a81decc4c05
 ---
 # Realtime subscription
 ## Definition
@@ -20,7 +20,10 @@ A browser calls `GET /api/streams?topics=user:<A>,user:<A>`. The hub creates one
 
 ## Used by
 <!-- used-by:start -->
-- [S51](../capabilities/S51-realtime-push.md): R-02, R-27
+- [S03](../capabilities/S03-shops-rbac.md): B-07
+- [S51](../capabilities/S51-realtime-push.md): R-02, R-27, B-10, B-11, B-16
 - [invalid-query](invalid-query.md)
 - [invalid-topics](invalid-topics.md)
+- [realtime-route](realtime-route.md)
+- [topics-with-subscribers](topics-with-subscribers.md)
 <!-- used-by:end -->

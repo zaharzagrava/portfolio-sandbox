@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: []
 defined_for: cache-layers
-rules_hash: c2c779ab6890
+rules_hash: cc6fcae86d59
 ---
 # Writers only delete (invalidation-only writes)
 ## Definition
@@ -21,6 +21,7 @@ After a shop changes a product's price, the [S05](../capabilities/S05-products.m
 ## Used by
 <!-- used-by:start -->
 - [S05](../capabilities/S05-products.md): R-17
+- [S28](../capabilities/S28-notifications.md): R-20
 - [S52](../capabilities/S52-cache-toolkit.md): R-20
 - [cache-layers](../concepts/cache-layers.md): C-07
 - [authorization-cache](authorization-cache.md)

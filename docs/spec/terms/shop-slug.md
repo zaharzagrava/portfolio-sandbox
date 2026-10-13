@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [slug, slugs]
 defined_for: S03-shops-rbac
-rules_hash: 4ed180e9b681
+rules_hash: aa00aae92319
 ---
 # Shop slug
 ## Definition
@@ -22,9 +22,12 @@ Later, `PATCH /shops/:shopId` with `{"slug": "acme"}` answers [`400 validation_f
 
 ## Used by
 <!-- used-by:start -->
-- [S03](../capabilities/S03-shops-rbac.md): R-13, B-15
+- [S03](../capabilities/S03-shops-rbac.md): R-13, R-26, B-01, B-15, B-25
 - [batch-shops-lookup](batch-shops-lookup.md)
 - [check-slug](check-slug.md)
+- [confirmation-mismatch](confirmation-mismatch.md)
 - [reserved-slug](reserved-slug.md)
+- [shop-offboarding](shop-offboarding.md)
+- [shop-tombstone](shop-tombstone.md)
 - [slug-policy](slug-policy.md)
 <!-- used-by:end -->

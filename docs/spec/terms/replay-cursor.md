@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [cursor]
 defined_for: realtime-topic-stream
-rules_hash: 52f6d4b23f59
+rules_hash: 6468eed85c82
 ---
 # Replay cursor
 ## Definition
@@ -21,7 +21,7 @@ A browser watches `user:{userId}` for the notification bell. The connection drop
 
 ## Used by
 <!-- used-by:start -->
-- [S51](../capabilities/S51-realtime-push.md): R-06, R-12, B-01, B-02, B-06, B-18
+- [S51](../capabilities/S51-realtime-push.md): R-06, R-12, R-29, B-02, B-06
 - [realtime-topic-stream](../concepts/realtime-topic-stream.md): C-04
 - [baseline-frame](baseline-frame.md)
 - [create-event-stream](create-event-stream.md)

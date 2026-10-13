@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [admitted, refusal]
 defined_for: realtime-topic-stream
-rules_hash: 8623240366c4
+rules_hash: 9c60a0f1c99d
 ---
 # Connection admission
 ## Definition
@@ -21,7 +21,7 @@ The user-level and instance-level connection limits can also refuse a connection
 
 ## Used by
 <!-- used-by:start -->
-- [S51](../capabilities/S51-realtime-push.md): R-14, R-17, R-21, R-27
+- [S51](../capabilities/S51-realtime-push.md): R-14, R-21, R-31
 - [realtime-topic-stream](../concepts/realtime-topic-stream.md): C-03
 - [default-deny-topic](default-deny-topic.md)
 - [event-payload](event-payload.md)

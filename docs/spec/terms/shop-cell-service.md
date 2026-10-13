@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: []
 defined_for: S03-shops-rbac
-rules_hash: e3b0c44298fc
+rules_hash: 22f6a4c11e6e
 ---
 # ShopCellService
 ## Definition
@@ -21,6 +21,7 @@ Possible use (the facts do not link these steps to this service): a shop is move
 
 ## Used by
 <!-- used-by:start -->
+- [S03](../capabilities/S03-shops-rbac.md): R-25
 - [connection-routing](connection-routing.md)
 - [shop-cell](shop-cell.md)
 <!-- used-by:end -->

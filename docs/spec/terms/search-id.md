@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: []
 defined_for: S32-product-search
-rules_hash: e3b0c44298fc
+rules_hash: 81ca88de3a86
 ---
 # searchId
 ## Definition
@@ -25,6 +25,7 @@ The client later calls `POST /search/clicks` with that `searchId` and the clicke
 
 ## Used by
 <!-- used-by:start -->
+- [S32](../capabilities/S32-product-search.md): R-39
 - [click-through-rate](click-through-rate.md)
 - [mrr](mrr.md)
 <!-- used-by:end -->

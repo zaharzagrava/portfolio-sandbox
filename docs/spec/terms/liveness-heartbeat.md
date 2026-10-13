@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [heartbeat, silent heartbeat]
 defined_for: S54-platform-toolkit
-rules_hash: 98db50544236
+rules_hash: 8d12e22582c3
 ---
 # Liveness heartbeat
 ## Definition
@@ -19,6 +19,7 @@ The heartbeat stops updating, for example because the process is [wedged ↗](..
 
 ## Used by
 <!-- used-by:start -->
+- [S51](../capabilities/S51-realtime-push.md): R-30
 - [S54](../capabilities/S54-platform-toolkit.md): R-18
 - [event-loop-lag](event-loop-lag.md)
 - [health-probes](health-probes.md)

@@ -26,6 +26,7 @@ In the other direction, if the catalog returns 1 title for `q=iph`, its 2 unused
 - [autocomplete-source-duration-seconds](autocomplete-source-duration-seconds.md)
 - [blended-suggestions](blended-suggestions.md)
 - [catalog-completions](catalog-completions.md)
+- [delivery-id](delivery-id.md)
 - [failures-only-policy](failures-only-policy.md)
 - [query-index](query-index.md)
 - [suggest-limit](suggest-limit.md)

@@ -25,4 +25,6 @@ A `PATCH /shops/:shopId/products/:productId` sends `[expectedVersion](expected-v
 - [minor-units](minor-units.md)
 - [no-op-update](no-op-update.md)
 - [outbox-append](outbox-append.md)
+- [price-only-update](price-only-update.md)
+- [product-embedding-vector](product-embedding-vector.md)
 <!-- used-by:end -->

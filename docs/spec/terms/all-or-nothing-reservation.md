@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [reservation]
 defined_for: order-reservation
-rules_hash: 30e247a3ca0e
+rules_hash: f73bf8a9618b
 ---
 # All-or-nothing reservation
 ## Definition
@@ -21,14 +21,15 @@ The cart asks for 2 of `prod_07` (5 in stock) and 3 of `prod_42` (only 1 in stoc
 ## Used by
 <!-- used-by:start -->
 - [S05](../capabilities/S05-products.md): R-19
-- [S10](../capabilities/S10-cart-checkout.md): R-21, B-14
-- [S13](../capabilities/S13-payment-intents.md): B-01
+- [S10](../capabilities/S10-cart-checkout.md): R-21, B-05, B-14
 - [order-reservation](../concepts/order-reservation.md): C-02
 - [apply-stock-delta](apply-stock-delta.md)
 - [cart-line](cart-line.md)
 - [catalog-stock-command](catalog-stock-command.md)
+- [in-stock-filter](in-stock-filter.md)
 - [insufficient-stock](insufficient-stock.md)
 - [order-not-payable](order-not-payable.md)
+- [order-unavailable](order-unavailable.md)
 - [out-of-stock-error](out-of-stock-error.md)
 - [pending-order-recovery](pending-order-recovery.md)
 - [reservation-status](reservation-status.md)

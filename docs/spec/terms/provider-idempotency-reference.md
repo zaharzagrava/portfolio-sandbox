@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [idempotency reference]
 defined_for: S13-payment-intents
-rules_hash: 75d5b64ac90f
+rules_hash: de5c278c39b3
 ---
 # Provider idempotency reference
 ## Definition
@@ -22,7 +22,9 @@ For order `ord_42` and payment `pay_7` (illustrative), the references are `ord_4
 
 ## Used by
 <!-- used-by:start -->
+- [S10](../capabilities/S10-cart-checkout.md): R-36
 - [S13](../capabilities/S13-payment-intents.md): R-11
+- [S14](../capabilities/S14-ledger-reconciliation.md): R-30
 - [classify-charge](classify-charge.md)
 - [orders-refund-requested-event](orders-refund-requested-event.md)
 - [payment-cancel](payment-cancel.md)
@@ -31,6 +33,9 @@ For order `ord_42` and payment `pay_7` (illustrative), the references are `ord_4
 - [payment-provider](payment-provider.md)
 - [provider-lookup](provider-lookup.md)
 - [provider-operation](provider-operation.md)
+- [reconciliation-issue-reference](reconciliation-issue-reference.md)
+- [reconciliation](reconciliation.md)
 - [refund](refund.md)
 - [requires-action](requires-action.md)
+- [statement-line-matching](statement-line-matching.md)
 <!-- used-by:end -->

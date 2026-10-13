@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [throttle]
 defined_for: W02-storefront-discovery
-rules_hash: 332f7de3914d
+rules_hash: d6a676ae9d03
 ---
 # Request throttle
 ## Definition
@@ -22,6 +22,8 @@ The box sends at most one suggestion request for that stretch of typing (W02.R-0
 
 ## Used by
 <!-- used-by:start -->
+- [S01](../capabilities/S01-auth-sessions.md): R-19
+- [S02](../capabilities/S02-mfa-oidc.md): R-15
 - [rate-limit](rate-limit.md)
 - [search-box](search-box.md)
 - [stale-response-discard](stale-response-discard.md)

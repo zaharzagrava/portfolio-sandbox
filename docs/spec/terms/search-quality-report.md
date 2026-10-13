@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [search quality]
 defined_for: S32-product-search
-rules_hash: beba2e9f494d
+rules_hash: 273a5cc782c4
 ---
 # Search quality report
 ## Definition
@@ -25,9 +25,11 @@ All field names and values here are illustrative. The spec gives no response sha
 
 ## Used by
 <!-- used-by:start -->
+- [S32](../capabilities/S32-product-search.md): B-32
 - [click-through-rate](click-through-rate.md)
 - [get-admin-search-quality](get-admin-search-quality.md)
 - [mrr](mrr.md)
 - [search-log](search-log.md)
+- [search-surface](search-surface.md)
 - [zero-result-rate](zero-result-rate.md)
 <!-- used-by:end -->

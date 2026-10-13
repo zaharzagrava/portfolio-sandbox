@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [upper bound]
 defined_for: S05-products
-rules_hash: 50cd88b2051a
+rules_hash: b81086792ba3
 ---
 # Stock upper bound
 ## Definition
@@ -23,6 +23,7 @@ Stock is 999,999,999 (illustrative), and a [stock operation](stock-operation.md)
 <!-- used-by:start -->
 - [apply-delta](apply-delta.md)
 - [apply-stock-delta](apply-stock-delta.md)
+- [domain-layer](domain-layer.md)
 - [insufficient-stock](insufficient-stock.md)
 - [stock-delta](stock-delta.md)
 - [stock-operation](stock-operation.md)

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [envelope, envelope json, serialized envelope]
 defined_for: outbox-task-queue
-rules_hash: 4892253b2b8a
+rules_hash: 4f3b9d3509e3
 ---
 # Event envelope
 ## Definition
@@ -23,12 +23,13 @@ value:   { …envelope JSON… }
 
 ## Used by
 <!-- used-by:start -->
-- [S32](../capabilities/S32-product-search.md): R-13, R-17
 - [S53](../capabilities/S53-events-projections.md): R-03
 - [outbox-task-queue](../concepts/outbox-task-queue.md): C-02
 - [search-index](../concepts/search-index.md): C-06
 - [aggregate-type-events-topic](aggregate-type-events-topic.md)
 - [event-row](event-row.md)
 - [event-too-large-error](event-too-large-error.md)
+- [mfa-disabled-event](mfa-disabled-event.md)
 - [outbox-relay](outbox-relay.md)
+- [security-events](security-events.md)
 <!-- used-by:end -->

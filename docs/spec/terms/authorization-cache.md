@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: []
 defined_for: S03-shops-rbac
-rules_hash: e3b0c44298fc
+rules_hash: 8f483675f430
 ---
 # Authorization cache
 ## Definition
@@ -21,6 +21,7 @@ An owner demotes a member with `PATCH /shops/:shopId/members/:userId` and gets `
 
 ## Used by
 <!-- used-by:start -->
+- [S03](../capabilities/S03-shops-rbac.md): B-22
 - [cache-entry](cache-entry.md)
 - [invalidation-only-writes](invalidation-only-writes.md)
 - [l2-cache](l2-cache.md)

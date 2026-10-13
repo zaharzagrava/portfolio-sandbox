@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [x-shop-id, x-tenant-id, x-user-id, x-user-role]
 defined_for: bff-aggregate
-rules_hash: e3f203baa577
+rules_hash: f1f936834de6
 ---
 # Identity headers
 ## Definition

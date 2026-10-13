@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: []
 defined_for: S33-autocomplete
-rules_hash: b478e854f0a6
+rules_hash: 78b338f6426c
 ---
 # Popularity floor
 ## Definition
@@ -21,6 +21,7 @@ One searcher types the same query 100 times. That query has one distinct searche
 
 ## Used by
 <!-- used-by:start -->
+- [S32](../capabilities/S32-product-search.md): B-04
 - [acceptance-scenario](acceptance-scenario.md)
 - [autocomplete-build](autocomplete-build.md)
 - [distinct-searchers](distinct-searchers.md)

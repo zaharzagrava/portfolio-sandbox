@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [inbox, inbox tables, outbox table]
 defined_for: outbox-task-queue
-rules_hash: 8fe1ad821992
+rules_hash: 22ebd2988fb6
 ---
 # Outbox and inbox tables
 ## Definition
@@ -21,6 +21,7 @@ S13 appends its payment event through S53's outbox service inside its transactio
 ## Used by
 <!-- used-by:start -->
 - [S13](../capabilities/S13-payment-intents.md): R-22, B-01
+- [S14](../capabilities/S14-ledger-reconciliation.md): R-24
 - [S53](../capabilities/S53-events-projections.md): R-08, R-16, R-19
 - [outbox-task-queue](../concepts/outbox-task-queue.md): C-03
 - [payment-lifecycle](../concepts/payment-lifecycle.md): C-07
@@ -36,8 +37,13 @@ S13 appends its payment event through S53's outbox service inside its transactio
 - [event-id](event-id.md)
 - [event-too-large-error](event-too-large-error.md)
 - [guarded-update](guarded-update.md)
+- [inbox-item](inbox-item.md)
 - [job-lease](job-lease.md)
 - [job-retries](job-retries.md)
+- [journal-posted-event](journal-posted-event.md)
+- [ledger-events-topic](ledger-events-topic.md)
+- [ledger-journal-posted-event](ledger-journal-posted-event.md)
+- [ledger-reconciliation-issue-opened-event](ledger-reconciliation-issue-opened-event.md)
 - [natural-idempotency](natural-idempotency.md)
 - [no-active-transaction-error](no-active-transaction-error.md)
 - [outbox-append-task](outbox-append-task.md)
@@ -52,6 +58,7 @@ S13 appends its payment event through S53's outbox service inside its transactio
 - [payment-status-history](payment-status-history.md)
 - [payment-status](payment-status.md)
 - [products-events-topic](products-events-topic.md)
+- [provider-secret](provider-secret.md)
 - [relay-poller-mode](relay-poller-mode.md)
 - [shop-created-event](shop-created-event.md)
 - [shop-verification-changed-event](shop-verification-changed-event.md)

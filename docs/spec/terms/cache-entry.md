@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [entries, entry]
 defined_for: cache-layers
-rules_hash: 31e20f79c5e4
+rules_hash: 37b9bfc51a0f
 ---
 # Cache entry
 ## Definition
@@ -20,7 +20,7 @@ A product entry is past its soft expiry but still inside `swrMs`. [`getOrLoad`](
 ## Used by
 <!-- used-by:start -->
 - [S03](../capabilities/S03-shops-rbac.md): B-06
-- [S05](../capabilities/S05-products.md): R-08, R-14, B-12
+- [S05](../capabilities/S05-products.md): R-08, R-14, R-21, R-23
 - [S33](../capabilities/S33-autocomplete.md): R-15, B-12
 - [S34](../capabilities/S34-recommendations.md): R-12, R-19
 - [S52](../capabilities/S52-cache-toolkit.md): R-04, R-12
@@ -44,10 +44,14 @@ A product entry is past its soft expiry but still inside `swrMs`. [`getOrLoad`](
 - [product-stock-service](product-stock-service.md)
 - [product-version](product-version.md)
 - [reduced-prefix](reduced-prefix.md)
+- [shop-status-changed-event](shop-status-changed-event.md)
+- [shop-status-consumer](shop-status-consumer.md)
 - [single-flight](single-flight.md)
 - [soft-expiry](soft-expiry.md)
 - [source-of-truth](source-of-truth.md)
 - [stale-if-error](stale-if-error.md)
 - [stale-while-revalidate](stale-while-revalidate.md)
+- [tenancy-shop-events](tenancy-shop-events.md)
+- [view-count-chunk](view-count-chunk.md)
 - [xfetch](xfetch.md)
 <!-- used-by:end -->

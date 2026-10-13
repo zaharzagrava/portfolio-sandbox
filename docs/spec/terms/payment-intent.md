@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [intent, payment intents, post /payments/intents]
 defined_for: idempotency-key
-rules_hash: b81390af6a5b
+rules_hash: c30f3e208b03
 ---
 # Payment intent (POST /payments/intents)
 ## Definition
@@ -27,11 +27,12 @@ Location: <status URL, not given in the spec>
 
 ## Used by
 <!-- used-by:start -->
-- [S13](../capabilities/S13-payment-intents.md): B-17
+- [S13](../capabilities/S13-payment-intents.md): B-12
 - [check-payment-money](check-payment-money.md)
 - [order-reserved-event](order-reserved-event.md)
 - [orders-events-topic](orders-events-topic.md)
 - [payment-cancel](payment-cancel.md)
+- [payment-method-token](payment-method-token.md)
 - [payment-provider](payment-provider.md)
 - [payments-domain-layer](payments-domain-layer.md)
 - [provider-idempotency-reference](provider-idempotency-reference.md)

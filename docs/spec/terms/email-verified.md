@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: []
 defined_for: S02-mfa-oidc
-rules_hash: e3b0c44298fc
+rules_hash: 416b8ec25e0f
 ---
 # email_verified
 ## Definition
@@ -19,6 +19,7 @@ This allows linking to an existing password account with that e-mail. The same t
 
 ## Used by
 <!-- used-by:start -->
+- [S02](../capabilities/S02-mfa-oidc.md): B-15, B-24
 - [dynamic-provider](dynamic-provider.md)
 - [oidc-callback](oidc-callback.md)
 <!-- used-by:end -->

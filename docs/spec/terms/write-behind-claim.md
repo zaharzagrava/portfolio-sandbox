@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [claim, claim lifetime, claims]
 defined_for: S52-cache-toolkit
-rules_hash: 583e68e58c0c
+rules_hash: 1cc8038fc3c8
 ---
 # claim (write-behind batch)
 ## Definition
@@ -26,6 +26,8 @@ commit(batch)             // on failure: release(batch)
 
 ## Used by
 <!-- used-by:start -->
+- [S05](../capabilities/S05-products.md): R-21
+- [never-send-twice-guard](never-send-twice-guard.md)
 - [shutdown-flush](shutdown-flush.md)
 - [write-behind-in-flight-batch](write-behind-in-flight-batch.md)
 - [write-behind-reclaim-expired](write-behind-reclaim-expired.md)

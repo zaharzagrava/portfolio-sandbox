@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [best-effort]
 defined_for: S13-payment-intents
-rules_hash: e3b0c44298fc
+rules_hash: e261bb1cb54b
 ---
 # Best-effort push
 ## Definition
@@ -21,10 +21,16 @@ The processor moves a payment from `PENDING` to `COMPLETED` through the [guarded
 
 ## Used by
 <!-- used-by:start -->
+- [S10](../capabilities/S10-cart-checkout.md): R-43
+- [S13](../capabilities/S13-payment-intents.md): R-24
+- [S28](../capabilities/S28-notifications.md): R-41
 - [at-least-once-delivery](at-least-once-delivery.md)
+- [delivery-status](delivery-status.md)
 - [guarded-update](guarded-update.md)
 - [inbox-table](inbox-table.md)
+- [orders-realtime-failed-total](orders-realtime-failed-total.md)
 - [payment-status-event](payment-status-event.md)
+- [provider-secret](provider-secret.md)
 - [realtime-hub](realtime-hub.md)
 - [realtime-topic](realtime-topic.md)
 <!-- used-by:end -->

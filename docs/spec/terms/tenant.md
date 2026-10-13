@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [tenants, x-tenant-id]
 defined_for: idempotency-key
-rules_hash: 15948d22ca14
+rules_hash: 66caa56ddd9a
 ---
 # Tenant
 ## Definition
@@ -29,9 +29,11 @@ X-Tenant-Id: tenant-123   (illustrative value)
 - [checkpoint-lookup](checkpoint-lookup.md)
 - [connection-routing](connection-routing.md)
 - [cross-tenant-bypass](cross-tenant-bypass.md)
+- [get-shop-export](get-shop-export.md)
 - [identity-headers](identity-headers.md)
 - [job-fairness](job-fairness.md)
 - [legacy-seller](legacy-seller.md)
+- [pooled-database](pooled-database.md)
 - [shop-order](shop-order.md)
 - [shop-tenant](shop-tenant.md)
 - [tenancy-tables](tenancy-tables.md)

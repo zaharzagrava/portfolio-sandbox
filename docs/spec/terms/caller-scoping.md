@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [scoped to the caller]
 defined_for: S02-mfa-oidc
-rules_hash: 6afdae4d39dd
+rules_hash: d669f8d17eb0
 ---
 # Caller scoping
 ## Definition
@@ -17,6 +17,9 @@ A user with two linked identities calls `GET /auth/identities` and sees only tho
 ## Used by
 <!-- used-by:start -->
 - [S02](../capabilities/S02-mfa-oidc.md): R-24
-- [S13](../capabilities/S13-payment-intents.md): B-05
+- [S28](../capabilities/S28-notifications.md): R-40
 - [linked-identity](linked-identity.md)
+- [mark-all-read](mark-all-read.md)
+- [post-notifications-read](post-notifications-read.md)
+- [unauthenticated-endpoint](unauthenticated-endpoint.md)
 <!-- used-by:end -->

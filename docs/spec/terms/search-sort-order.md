@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [newest, price-asc, price-desc]
 defined_for: S32-product-search
-rules_hash: a836c759dd46
+rules_hash: fe54dfd8707b
 ---
 # Search sort order
 ## Definition
@@ -20,6 +20,7 @@ Products priced 100, 100, 250, 500 and 900 are searched with `sort=price-asc`. T
 
 ## Used by
 <!-- used-by:start -->
+- [S32](../capabilities/S32-product-search.md): R-09
 - [W02](../capabilities/W02-storefront-discovery.md): B-07
 - [browse-mode](browse-mode.md)
 - [known-gaps](known-gaps.md)

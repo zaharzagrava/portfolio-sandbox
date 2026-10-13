@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [frozen, topicregistryfrozenerror]
 defined_for: S51-realtime-push
-rules_hash: e3b0c44298fc
+rules_hash: b42b0597f482
 ---
 # Registry freeze
 ## Definition
@@ -20,6 +20,7 @@ During module initialization, a domain calls `define(...)` for its `user:` route
 
 ## Used by
 <!-- used-by:start -->
+- [realtime-route](realtime-route.md)
 - [realtime-topic-access-rule](realtime-topic-access-rule.md)
 - [realtime-topic](realtime-topic.md)
 - [topic-registry](topic-registry.md)

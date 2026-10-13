@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [sandbox shops]
 defined_for: S03-shops-rbac
-rules_hash: 88c4554e7b9c
+rules_hash: 6dc7a90ee920
 ---
 # Sandbox shop
 ## Definition
@@ -21,13 +21,18 @@ A sandbox shop is an extra shop that belongs to a seller's real, public shop. [`
 
 ## Used by
 <!-- used-by:start -->
-- [S03](../capabilities/S03-shops-rbac.md): B-14, B-17
+- [S03](../capabilities/S03-shops-rbac.md): R-22, B-14, B-17
+- [S05](../capabilities/S05-products.md): R-12, R-26
+- [S32](../capabilities/S32-product-search.md): R-36
 - [batch-shops-lookup](batch-shops-lookup.md)
 - [ensure-sandbox-shop](ensure-sandbox-shop.md)
 - [get-shops-mine](get-shops-mine.md)
+- [is-sandbox](is-sandbox.md)
 - [live-shop](live-shop.md)
 - [max-owned-shops](max-owned-shops.md)
+- [resolve-as-unknown](resolve-as-unknown.md)
 - [seat](seat.md)
 - [shop-limit-reached](shop-limit-reached.md)
 - [shop-provisioning-service](shop-provisioning-service.md)
+- [shop-search-freshness](shop-search-freshness.md)
 <!-- used-by:end -->

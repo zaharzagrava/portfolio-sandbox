@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [out of order, out-of-order answers]
 defined_for: W02-storefront-discovery
-rules_hash: cef0fcd1614b
+rules_hash: dc6790b810b2
 ---
 # Stale response discard
 ## Definition
@@ -27,6 +27,7 @@ The list keeps showing the suggestions for `ipho`, and the late `iph` answer is 
 - [request-throttle](request-throttle.md)
 - [search-box](search-box.md)
 - [server-rendered-search](server-rendered-search.md)
+- [shop-version](shop-version.md)
 - [suggest-prefix](suggest-prefix.md)
 - [use-suggestions](use-suggestions.md)
 <!-- used-by:end -->

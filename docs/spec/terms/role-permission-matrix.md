@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [matrix]
 defined_for: tenant-shop-rbac
-rules_hash: ef5132fb446c
+rules_hash: 6dcb531c5cef
 ---
 # Role permission matrix
 ## Definition
@@ -22,7 +22,9 @@ A [`SUSPENDED` shop](shop-status.md) still allows only `shop.read`, `members.rea
 ## Used by
 <!-- used-by:start -->
 - [S03](../capabilities/S03-shops-rbac.md): R-06
+- [S28](../capabilities/S28-notifications.md): B-13
 - [tenant-shop-rbac](../concepts/tenant-shop-rbac.md): C-04
+- [get-shop-export](get-shop-export.md)
 - [pending-invite](pending-invite.md)
 - [permission-denied](permission-denied.md)
 - [permission](permission.md)

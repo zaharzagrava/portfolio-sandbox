@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [cancel:<paymentid>]
 defined_for: S13-payment-intents
-rules_hash: 416370a1fc71
+rules_hash: 34a0ad06e864
 ---
 # Payment cancel
 ## Definition
@@ -20,7 +20,6 @@ A payment is `PENDING` with [`requiresAction`](requires-action.md), and `order.c
 
 ## Used by
 <!-- used-by:start -->
-- [S13](../capabilities/S13-payment-intents.md): R-11
 - [checkout-attempt](checkout-attempt.md)
 - [payment-intent](payment-intent.md)
 - [provider-idempotency-reference](provider-idempotency-reference.md)

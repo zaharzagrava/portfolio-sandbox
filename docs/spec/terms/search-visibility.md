@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [hidden, hide]
 defined_for: search-index
-rules_hash: 25426101fa0e
+rules_hash: 43907ed9b899
 ---
 # Search visibility (hidden products)
 ## Definition
@@ -21,8 +21,8 @@ A product is deleted at version 7. A delayed update event for the same product t
 
 ## Used by
 <!-- used-by:start -->
-- [S05](../capabilities/S05-products.md): R-12, B-13
-- [S32](../capabilities/S32-product-search.md): R-01, R-14, R-16, B-01, B-09, B-10
+- [S05](../capabilities/S05-products.md): B-13
+- [S32](../capabilities/S32-product-search.md): R-16, R-45, B-01, B-09, B-10
 - [S33](../capabilities/S33-autocomplete.md): R-11
 - [S34](../capabilities/S34-recommendations.md): R-06, R-13, B-04, B-10
 - [S35](../capabilities/S35-trending.md): R-08, R-11, B-06
@@ -30,6 +30,7 @@ A product is deleted at version 7. A delayed update event for the same product t
 - [W02](../capabilities/W02-storefront-discovery.md): R-18
 - [search-index](../concepts/search-index.md): C-03, C-05
 - [aggregate-version](aggregate-version.md)
+- [batch-products-lookup](batch-products-lookup.md)
 - [catalog-category](catalog-category.md)
 - [catalog-domain-layer](catalog-domain-layer.md)
 - [catalog-title-source-adapter](catalog-title-source-adapter.md)
@@ -38,6 +39,7 @@ A product is deleted at version 7. A delayed update event for the same product t
 - [no-padding](no-padding.md)
 - [not-found-error](not-found-error.md)
 - [origin-request](origin-request.md)
+- [pending-embedding](pending-embedding.md)
 - [product-title-suggester](product-title-suggester.md)
 - [products-ids-query](products-ids-query.md)
 - [recommendation-rail](recommendation-rail.md)

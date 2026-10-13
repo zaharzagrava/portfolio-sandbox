@@ -29,4 +29,5 @@ It never returns a list of digests. (The response shape is illustrative.)
 - [mfa-state](mfa-state.md)
 - [normalise-recovery-code](normalise-recovery-code.md)
 - [otpauth-uri](otpauth-uri.md)
+- [raw-token](raw-token.md)
 <!-- used-by:end -->

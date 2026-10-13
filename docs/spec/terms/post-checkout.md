@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: []
 defined_for: idempotency-key
-rules_hash: 033ed0c709c7
+rules_hash: f60eb5f41d87
 ---
 # POST /checkout
 ## Definition
@@ -26,7 +26,6 @@ If the user presses "Place order" twice, both requests carry this key and only o
 
 ## Used by
 <!-- used-by:start -->
-- [S10](../capabilities/S10-cart-checkout.md): B-06
 - [cart-badge](cart-badge.md)
 - [checkout-request-schema](checkout-request-schema.md)
 - [checkout-review-step](checkout-review-step.md)

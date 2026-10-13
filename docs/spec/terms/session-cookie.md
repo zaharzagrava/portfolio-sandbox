@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [cookie-authenticated, session store]
 defined_for: bff-aggregate
-rules_hash: 0b66692d3742
+rules_hash: 2df26f6e1460
 ---
 # Session cookie
 ## Definition
@@ -23,8 +23,7 @@ The BFF hashes the value, finds the encrypted record in Redis, and calls [upstre
 
 ## Used by
 <!-- used-by:start -->
-- [S01](../capabilities/S01-auth-sessions.md): B-06
-- [S02](../capabilities/S02-mfa-oidc.md): B-05
+- [S01](../capabilities/S01-auth-sessions.md): B-20, B-21
 - [S48](../capabilities/S48-bff.md): R-11, B-14, B-19
 - [W01](../capabilities/W01-auth-account.md): R-04
 - [bff-aggregate](../concepts/bff-aggregate.md): C-06
@@ -33,6 +32,7 @@ The BFF hashes the value, finds the encrypted record in Redis, and calls [upstre
 - [credential](credential.md)
 - [csrf-token](csrf-token.md)
 - [host-bff-mfa-cookie](host-bff-mfa-cookie.md)
+- [logout-all](logout-all.md)
 - [mfa-management-endpoint](mfa-management-endpoint.md)
 - [mfa-recovery-code-regenerate](mfa-recovery-code-regenerate.md)
 - [origin-not-allowed](origin-not-allowed.md)

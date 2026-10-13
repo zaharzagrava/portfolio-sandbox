@@ -23,5 +23,8 @@ A daily schedule's previous job is still `RUNNING` when the next fire comes due.
 - [S49](../capabilities/S49-job-scheduler.md): R-18
 - [cron-fires-skipped-total](cron-fires-skipped-total.md)
 - [cron-schedule-materialisation](cron-schedule-materialisation.md)
+- [product-maintenance-jobs](product-maintenance-jobs.md)
+- [products-flush-view-counts-job](products-flush-view-counts-job.md)
+- [tenancy-purge-deleted-shops-job](tenancy-purge-deleted-shops-job.md)
 - [upsert-schedule](upsert-schedule.md)
 <!-- used-by:end -->

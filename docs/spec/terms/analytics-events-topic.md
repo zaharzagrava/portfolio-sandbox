@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [analytics.events]
 defined_for: S35-trending
-rules_hash: db4ec23dd31c
+rules_hash: b981fbda60d4
 ---
 # analytics.events topic
 ## Definition
@@ -33,6 +33,7 @@ This adds a view of weight 1 to the product's 11:00 window. A `page_view` event 
 - [received-at](received-at.md)
 - [trending-events](trending-events.md)
 - [trending-window](trending-window.md)
+- [user-hash](user-hash.md)
 - [visitor](visitor.md)
 - [watermark](watermark.md)
 <!-- used-by:end -->

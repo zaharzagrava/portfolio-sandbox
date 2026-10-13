@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [token]
 defined_for: access-token-session
-rules_hash: d44898e655d0
+rules_hash: 18bfa5645e38
 ---
 # Access token
 ## Definition
@@ -25,26 +25,37 @@ If the token says [`alg: none` ↗](../sw-external-terms.md#jwt-alg), has an unk
 
 ## Used by
 <!-- used-by:start -->
-- [S01](../capabilities/S01-auth-sessions.md): B-10
+- [S01](../capabilities/S01-auth-sessions.md): R-32, B-01, B-10
 - [S48](../capabilities/S48-bff.md): R-13, B-18
 - [W01](../capabilities/W01-auth-account.md): R-01
+- [allowed-callers-decorator](allowed-callers-decorator.md)
 - [chat-unread](chat-unread.md)
 - [clock-skew-tolerance](clock-skew-tolerance.md)
+- [current-session-marker](current-session-marker.md)
 - [edge-stripping](edge-stripping.md)
 - [host-access-cookie](host-access-cookie.md)
 - [identity-headers](identity-headers.md)
+- [internal-endpoint](internal-endpoint.md)
 - [invalid-token-error](invalid-token-error.md)
+- [logout-all](logout-all.md)
 - [mfa-challenge-token](mfa-challenge-token.md)
 - [mfa-management-endpoint](mfa-management-endpoint.md)
 - [page-upstream-sections](page-upstream-sections.md)
+- [post-auth-logout](post-auth-logout.md)
+- [post-auth-refresh](post-auth-refresh.md)
 - [post-bff-session-refresh](post-bff-session-refresh.md)
 - [principal](principal.md)
 - [protected-route](protected-route.md)
 - [sensitive-route](sensitive-route.md)
+- [service-auth-guard](service-auth-guard.md)
 - [service-to-service-token](service-to-service-token.md)
 - [session-controller](session-controller.md)
 - [session-cookie](session-cookie.md)
+- [session-id](session-id.md)
 - [session-revocation-service](session-revocation-service.md)
 - [session-revocation](session-revocation.md)
+- [signing-key-states](signing-key-states.md)
+- [stock-jwt-verifier](stock-jwt-verifier.md)
+- [token-exchange](token-exchange.md)
 - [token-refresh](token-refresh.md)
 <!-- used-by:end -->

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [operation id]
 defined_for: order-reservation
-rules_hash: 27460481678d
+rules_hash: b5d492d7eee4
 ---
 # Stock operation ID
 ## Definition
@@ -23,7 +23,9 @@ orders:ord_123:reserve:prod_07
 
 ## Used by
 <!-- used-by:start -->
+- [S10](../capabilities/S10-cart-checkout.md): R-20
 - [apply-delta](apply-delta.md)
+- [domain-boundary-rules](domain-boundary-rules.md)
 - [hold-expired](hold-expired.md)
 - [order-id](order-id.md)
 - [order-status](order-status.md)

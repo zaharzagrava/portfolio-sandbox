@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [view, view counted, viewcount]
 defined_for: S05-products
-rules_hash: 065a8112990b
+rules_hash: 1a0041fa66bf
 ---
 # Product view count
 ## Definition
@@ -21,7 +21,7 @@ A product is read five times and then the flush job runs. The stored `viewCount`
 
 ## Used by
 <!-- used-by:start -->
-- [S05](../capabilities/S05-products.md): B-11
+- [S05](../capabilities/S05-products.md): B-11, B-19
 - [S35](../capabilities/S35-trending.md): R-18, B-07
 - [batch-shops-lookup](batch-shops-lookup.md)
 - [l2-cache](l2-cache.md)

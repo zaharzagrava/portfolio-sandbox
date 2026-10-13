@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: []
 defined_for: order-reservation
-rules_hash: 932c3f7965a0
+rules_hash: 648b96dede62
 ---
 # Orders domain
 ## Definition
@@ -33,6 +33,8 @@ The order moves from `PENDING` to `RESERVED`, and then to `PAID` when a matching
 - [order-copy](order-copy.md)
 - [order-fulfilment-changed-event](order-fulfilment-changed-event.md)
 - [order-status](order-status.md)
+- [orders-backfill-item-titles-job](orders-backfill-item-titles-job.md)
+- [orders-realtime-failed-total](orders-realtime-failed-total.md)
 - [outbox-rollback](outbox-rollback.md)
 - [realtime-topic](realtime-topic.md)
 - [reservation-status](reservation-status.md)

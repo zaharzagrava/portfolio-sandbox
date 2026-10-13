@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [synonym]
 defined_for: job-scheduler-lease
-rules_hash: 02d1fd89d6a4
+rules_hash: 0d4cfec07224
 ---
 # Search synonyms
 ## Definition
@@ -21,6 +21,7 @@ Illustrative only. A shopper searches for "sneakers". A synonym entry links "sne
 
 ## Used by
 <!-- used-by:start -->
+- [S32](../capabilities/S32-product-search.md): R-31, B-26
 - [relevance-boost](relevance-boost.md)
 - [search-facets](search-facets.md)
 - [search-index](search-index.md)

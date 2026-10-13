@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [build]
 defined_for: S33-autocomplete
-rules_hash: fc5def4c0b29
+rules_hash: c20f0b1db157
 ---
 # Query index build
 ## Definition
@@ -20,6 +20,7 @@ The search log has one buyer typing `iphone case` 100 times. The build counts on
 
 ## Used by
 <!-- used-by:start -->
+- [S32](../capabilities/S32-product-search.md): B-20
 - [S33](../capabilities/S33-autocomplete.md): B-17
 - [distinct-searchers](distinct-searchers.md)
 - [event-id](event-id.md)

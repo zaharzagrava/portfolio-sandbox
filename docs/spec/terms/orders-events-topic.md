@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [orders.events]
 defined_for: S13-payment-intents
-rules_hash: d1fe44c40731
+rules_hash: ad0ec72be023
 ---
 # orders.events topic
 ## Definition
@@ -28,4 +28,5 @@ Here `order.cancelled` arrives on `orders.events` for a [`PENDING`](payment-stat
 - [orders-events-consumer](orders-events-consumer.md)
 - [payment-intent](payment-intent.md)
 - [per-aggregate-ordering](per-aggregate-ordering.md)
+- [settlement-consumer](settlement-consumer.md)
 <!-- used-by:end -->

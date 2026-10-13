@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [later tasks]
 defined_for: S54-platform-toolkit
-rules_hash: 8f6686ba6c45
+rules_hash: 9af7832c805a
 ---
 # Shutdown task
 ## Definition
@@ -21,6 +21,7 @@ In a worker, the shutdown steps are: stop the consumer, [flush](shutdown-flush.m
 
 ## Used by
 <!-- used-by:start -->
+- [S13](../capabilities/S13-payment-intents.md): R-30
 - [S54](../capabilities/S54-platform-toolkit.md): B-12
 - [graceful-shutdown-drain](graceful-shutdown-drain.md)
 - [shutdown-flush](shutdown-flush.md)

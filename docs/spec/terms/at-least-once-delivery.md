@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [at least once, publication]
 defined_for: outbox-task-queue
-rules_hash: cbc299157bf3
+rules_hash: 8737ce783493
 ---
 # At-least-once publication
 ## Definition
@@ -19,7 +19,7 @@ A relay instance claims a row under its 30 s lease, sends the row to Kafka, and 
 
 ## Used by
 <!-- used-by:start -->
-- [S32](../capabilities/S32-product-search.md): B-08
+- [S03](../capabilities/S03-shops-rbac.md): R-23
 - [S34](../capabilities/S34-recommendations.md): R-14
 - [S53](../capabilities/S53-events-projections.md): R-11, R-20
 - [outbox-task-queue](../concepts/outbox-task-queue.md): C-05, C-08

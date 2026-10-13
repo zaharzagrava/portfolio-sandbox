@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [natural]
 defined_for: outbox-task-queue
-rules_hash: a697a1a047ab
+rules_hash: e3b0c44298fc
 ---
 # natural idempotency
 ## Definition
@@ -20,7 +20,6 @@ Here is an illustrative consumer. It handles an order-status event by [upserting
 
 ## Used by
 <!-- used-by:start -->
-- [S10](../capabilities/S10-cart-checkout.md): B-17
 - [consumer-deduplication-mode](consumer-deduplication-mode.md)
 - [event-consumer](event-consumer.md)
 - [inbox-table](inbox-table.md)

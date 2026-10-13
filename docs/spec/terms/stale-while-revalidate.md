@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [swr, swrms]
 defined_for: cache-layers
-rules_hash: 2260d140ffb3
+rules_hash: dcb78d85500f
 ---
 # Stale-while-revalidate (swrMs)
 ## Definition

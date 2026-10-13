@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [fuzzy, typos]
 defined_for: S32-product-search
-rules_hash: a070c4180e35
+rules_hash: d292d3120874
 ---
 # Fuzzy matching
 ## Definition
@@ -21,8 +21,10 @@ Fuzzy matching lets text search find products even when the caller misspells a w
 ## Used by
 <!-- used-by:start -->
 - [S32](../capabilities/S32-product-search.md): R-05
+- [lexical-search](lexical-search.md)
 - [product-search-route](product-search-route.md)
 - [search-total-order](search-total-order.md)
+- [suggest-titles-fuzzy](suggest-titles-fuzzy.md)
 - [text-relevance](text-relevance.md)
 - [zero-result-rate](zero-result-rate.md)
 <!-- used-by:end -->

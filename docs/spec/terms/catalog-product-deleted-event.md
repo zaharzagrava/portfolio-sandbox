@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [catalog.product_deleted]
 defined_for: S05-products
-rules_hash: e3b0c44298fc
+rules_hash: a48e0535aace
 ---
 # catalog.product_deleted event
 ## Definition
@@ -26,4 +26,5 @@ The cache invalidator receives `catalog.product_deleted` for a product whose cac
 - [outbox-append](outbox-append.md)
 - [product-version](product-version.md)
 - [products-events-topic](products-events-topic.md)
+- [shop-deleted-event](shop-deleted-event.md)
 <!-- used-by:end -->

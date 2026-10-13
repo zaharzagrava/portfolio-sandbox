@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [resolution]
 defined_for: S13-payment-intents
-rules_hash: 869b6faffc5c
+rules_hash: ddba7136595e
 ---
 # Unknown payment resolution
 ## Definition
@@ -21,7 +21,7 @@ A charge timed out, so the payment is `UNKNOWN(provider_timeout)`. On the next s
 
 ## Used by
 <!-- used-by:start -->
-- [S13](../capabilities/S13-payment-intents.md): B-12
+- [S13](../capabilities/S13-payment-intents.md): R-17, B-12
 - [crash-recovery](crash-recovery.md)
 - [decide-payment-status](decide-payment-status.md)
 - [find-mismatch](find-mismatch.md)

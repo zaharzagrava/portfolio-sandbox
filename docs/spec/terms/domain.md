@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [domain]
 defined_for: S53-events-projections
-rules_hash: e77c9a22f2e2
+rules_hash: 90ea34e80275
 ---
 # Domain (writing domain)
 ## Definition
@@ -20,7 +20,14 @@ In S53.B-01, the writing domain updates [aggregate A](aggregate-id.md) from vers
 
 ## Used by
 <!-- used-by:start -->
+- [S51](../capabilities/S51-realtime-push.md): B-12, B-13
 - [aggregate-id](aggregate-id.md)
+- [api-layer](api-layer.md)
+- [application-layer](application-layer.md)
+- [boundary-finding](boundary-finding.md)
+- [boundary-review](boundary-review.md)
+- [domain-boundary-rules](domain-boundary-rules.md)
+- [exported-service](exported-service.md)
 - [inbox-table](inbox-table.md)
 - [media-controller](media-controller.md)
 - [outbox-append](outbox-append.md)

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [recovery codes, set]
 defined_for: S02-mfa-oidc
-rules_hash: 3b037c31bd15
+rules_hash: 53710702b25d
 ---
 # Recovery code
 ## Definition
@@ -20,8 +20,9 @@ Alice has the code `K7QPM-4XZ2R` (illustrative). She types ` k7qpm4xz2r ` at ver
 
 ## Used by
 <!-- used-by:start -->
-- [S02](../capabilities/S02-mfa-oidc.md): R-10, R-11, B-02, B-07
+- [S02](../capabilities/S02-mfa-oidc.md): R-10, R-11, R-25, R-34, B-02, B-07, B-21, B-22
 - [W01](../capabilities/W01-auth-account.md): R-15
+- [invalid-mfa-challenge](invalid-mfa-challenge.md)
 - [login-mfa-page](login-mfa-page.md)
 - [mfa-already-enabled](mfa-already-enabled.md)
 - [mfa-challenge-token](mfa-challenge-token.md)

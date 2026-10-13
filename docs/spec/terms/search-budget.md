@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [1 s search budget]
 defined_for: S32-product-search
-rules_hash: cc8949331825
+rules_hash: 57d885f9d15d
 ---
 # Search budget
 ## Definition
@@ -27,6 +27,7 @@ Retry-After: 1
 
 ## Used by
 <!-- used-by:start -->
+- [S32](../capabilities/S32-product-search.md): R-11
 - [S34](../capabilities/S34-recommendations.md): R-13
 - [S35](../capabilities/S35-trending.md): R-13
 - [embedding-budget](embedding-budget.md)

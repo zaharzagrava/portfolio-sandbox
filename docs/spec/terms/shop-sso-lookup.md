@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [shops/by-slug]
 defined_for: S03-shops-rbac
-rules_hash: e3b0c44298fc
+rules_hash: ea4c66bc0600
 ---
 # GET /shops/by-slug/:slug/sso
 ## Definition
@@ -25,5 +25,6 @@ GET /shops/by-slug/no-such-shop/sso    → 404 (same answer as any other miss)
 
 ## Used by
 <!-- used-by:start -->
+- [S03](../capabilities/S03-shops-rbac.md): B-15
 - [identical-not-found](identical-not-found.md)
 <!-- used-by:end -->

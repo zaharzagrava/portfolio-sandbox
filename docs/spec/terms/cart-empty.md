@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [cart_empty]
 defined_for: S10-cart-checkout
-rules_hash: e3b0c44298fc
+rules_hash: bd1221615132
 ---
 # cart_empty (422)
 ## Definition
@@ -20,6 +20,7 @@ A buyer with an empty cart sends `POST /checkout` with a valid [`Idempotency-Key
 
 ## Used by
 <!-- used-by:start -->
+- [S10](../capabilities/S10-cart-checkout.md): B-09
 - [cart-line](cart-line.md)
 - [error-code](error-code.md)
 - [idempotency-key](idempotency-key.md)

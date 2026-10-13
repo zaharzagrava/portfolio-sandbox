@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [event order per aggregate]
 defined_for: outbox-task-queue
-rules_hash: 1aace548a6ce
+rules_hash: f4d5ef029c5c
 ---
 # Per-aggregate event ordering
 ## Definition
@@ -20,6 +20,7 @@ For product `prod_123` (illustrative), "price changed" fails to send and goes in
 ## Used by
 <!-- used-by:start -->
 - [S34](../capabilities/S34-recommendations.md): B-13
+- [S51](../capabilities/S51-realtime-push.md): B-15
 - [S53](../capabilities/S53-events-projections.md): R-05, R-12, B-05
 - [outbox-task-queue](../concepts/outbox-task-queue.md): C-04, C-06
 - [aggregate-id](aggregate-id.md)

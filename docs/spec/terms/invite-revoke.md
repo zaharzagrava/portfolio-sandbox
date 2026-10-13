@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [revoked]
 defined_for: S03-shops-rbac
-rules_hash: 6195e1e93ee3
+rules_hash: ce603b033b44
 ---
 # Invite revoke
 ## Definition
@@ -24,9 +24,11 @@ POST /shop-invites/accept { "token": "<old token>" } → 404 invite_not_found
 
 ## Used by
 <!-- used-by:start -->
-- [S03](../capabilities/S03-shops-rbac.md): B-13
+- [S03](../capabilities/S03-shops-rbac.md): R-15, B-13
+- [invite-lifecycle](invite-lifecycle.md)
 - [invite-manager](invite-manager.md)
 - [invite-not-found](invite-not-found.md)
+- [invite-purge-job](invite-purge-job.md)
 - [invite-token](invite-token.md)
 - [pending-invite](pending-invite.md)
 - [seat](seat.md)

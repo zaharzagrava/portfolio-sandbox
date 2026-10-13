@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [worker]
 defined_for: S33-autocomplete
-rules_hash: 7d03cda76692
+rules_hash: f1a20985a5e7
 ---
 # Worker instance
 ## Definition
@@ -20,17 +20,22 @@ Two worker instances are running. The hourly schedule fires, one instance claims
 
 ## Used by
 <!-- used-by:start -->
+- [S13](../capabilities/S13-payment-intents.md): R-30
+- [S28](../capabilities/S28-notifications.md): R-44
 - [S33](../capabilities/S33-autocomplete.md): B-17
 - [S34](../capabilities/S34-recommendations.md): B-19
 - [S49](../capabilities/S49-job-scheduler.md): R-08, B-03, B-17
+- [S51](../capabilities/S51-realtime-push.md): B-10, B-11
 - [autocomplete-build-total](autocomplete-build-total.md)
 - [blocklist-reload](blocklist-reload.md)
 - [entry-point](entry-point.md)
 - [fleet-concurrency](fleet-concurrency.md)
 - [job-lease](job-lease.md)
 - [job-run-at](job-run-at.md)
+- [ledger-worker-module](ledger-worker-module.md)
 - [partition-owner](partition-owner.md)
 - [realtime-listener](realtime-listener.md)
 - [serving-node](serving-node.md)
+- [structured-logs](structured-logs.md)
 - [upsert-schedule](upsert-schedule.md)
 <!-- used-by:end -->

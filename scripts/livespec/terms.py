@@ -356,14 +356,15 @@ def claim_term(slug):
 
 def link_first(text, phrase, url, cue=''):
     """Link the first occurrence of `phrase` that is not already inside a markdown link. -> (new text, linked?)"""
-    spans = [m.span() for m in common.MD_LINK.finditer(text)]
+    # never inside a link already there, nor inside a [proof: ...] / [code: ...] reference (a link there would break the file path or the test id)
+    spans = [m.span() for m in common.MD_LINK.finditer(text)] + [m.span() for m in re.finditer(r'\[(?:proof|code):[^\]]*\]', text)]
     start = 0
     while True:
         i = text.find(phrase, start)
         if i < 0:
             return text, False
         j = i + len(phrase)
-        if not any(a <= i < b for a, b in spans):
+        if not any(a < j and i < b for a, b in spans):
             return text[:i] + f'[{phrase}{cue}]({url})' + text[j:], True
         start = j
 

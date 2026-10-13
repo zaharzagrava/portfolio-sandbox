@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: []
 defined_for: S49-job-scheduler
-rules_hash: e3b0c44298fc
+rules_hash: fb0c7df52b48
 ---
 # jobs.partition-maintenance schedule
 ## Definition
@@ -24,6 +24,7 @@ cron:jobs.partition-maintenance:2026-10-14T03:15:00.000Z
 
 ## Used by
 <!-- used-by:start -->
+- [S14](../capabilities/S14-ledger-reconciliation.md): B-15
 - [cron-fire-key](cron-fire-key.md)
 - [dedupe-period](dedupe-period.md)
 - [job-enqueue-key](job-enqueue-key.md)

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [is-admin.ts]
 defined_for: W07-app-shell
-rules_hash: e3b0c44298fc
+rules_hash: 8f483675f430
 ---
 # isAdmin
 ## Definition
@@ -21,6 +21,7 @@ Rule W07.R-05 points to `isAdmin` in `packages/web/lib/admin/is-admin.ts`. For a
 
 ## Used by
 <!-- used-by:start -->
+- [S03](../capabilities/S03-shops-rbac.md): B-22
 - [navbar-menu-entry](navbar-menu-entry.md)
 - [navbar](navbar.md)
 - [presentation-only](presentation-only.md)

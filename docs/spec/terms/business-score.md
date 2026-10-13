@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [ranking score]
 defined_for: S32-product-search
-rules_hash: be64aae7b876
+rules_hash: 918a37036f27
 ---
 # Business score
 ## Definition
@@ -21,7 +21,7 @@ The business score is a ranking value that reflects commercial signals for a pro
 
 ## Used by
 <!-- used-by:start -->
-- [S32](../capabilities/S32-product-search.md): B-03
+- [S32](../capabilities/S32-product-search.md): B-03, B-04
 - [S34](../capabilities/S34-recommendations.md): R-17
 - [S35](../capabilities/S35-trending.md): B-01
 - [browse-mode](browse-mode.md)

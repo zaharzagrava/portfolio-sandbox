@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [aggregate]
 defined_for: outbox-task-queue
-rules_hash: ee8476e2987b
+rules_hash: a49e62a69a55
 ---
 # aggregateId
 ## Definition
@@ -19,6 +19,7 @@ rules_hash: ee8476e2987b
 
 ## Used by
 <!-- used-by:start -->
+- [S28](../capabilities/S28-notifications.md): R-05
 - [S53](../capabilities/S53-events-projections.md): R-07, R-16, B-01, B-19
 - [tenant-shop-rbac](../concepts/tenant-shop-rbac.md)
 - [aggregate-type](aggregate-type.md)
@@ -27,7 +28,9 @@ rules_hash: ee8476e2987b
 - [domain](domain.md)
 - [event-backbone](event-backbone.md)
 - [event-consumer](event-consumer.md)
+- [monotonic-version](monotonic-version.md)
 - [non-retryable-broker-error](non-retryable-broker-error.md)
+- [notification-family](notification-family.md)
 - [outbox-relay](outbox-relay.md)
 - [page-aggregate](page-aggregate.md)
 - [pending-row](pending-row.md)

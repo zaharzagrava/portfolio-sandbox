@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [password verification]
 defined_for: S01-auth-sessions
-rules_hash: 005ac9429e3e
+rules_hash: 5adab6288f6f
 ---
 # Password hash
 ## Definition
@@ -20,11 +20,13 @@ A user whose stored hash is bcrypt logs in with the right password. Login succee
 
 ## Used by
 <!-- used-by:start -->
-- [S01](../capabilities/S01-auth-sessions.md): R-06, R-08
+- [S01](../capabilities/S01-auth-sessions.md): R-06, R-08, B-28
 - [concurrency-limit](concurrency-limit.md)
 - [hash-queue-limit](hash-queue-limit.md)
 - [identical-registration-response](identical-registration-response.md)
 - [invalid-credentials](invalid-credentials.md)
+- [log-capture](log-capture.md)
+- [password-changed-event](password-changed-event.md)
 - [password-hasher](password-hasher.md)
 - [secret-fields](secret-fields.md)
 <!-- used-by:end -->

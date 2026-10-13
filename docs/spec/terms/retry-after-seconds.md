@@ -30,4 +30,5 @@ Content-Type: application/problem+json
 - [S50](../capabilities/S50-rate-limiter.md): R-09
 - [extension-members](extension-members.md)
 - [problem-detail](problem-detail.md)
+- [queue-delay](queue-delay.md)
 <!-- used-by:end -->

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [probe]
 defined_for: rate-limit-policy
-rules_hash: ca6965c37c3e
+rules_hash: d4273f5776f3
 ---
 # Circuit breaker probe
 ## Definition
@@ -22,11 +22,15 @@ The store goes down and three requests in a row fail against it, so the breaker 
 ## Used by
 <!-- used-by:start -->
 - [S13](../capabilities/S13-payment-intents.md): B-13
+- [S28](../capabilities/S28-notifications.md): R-32
 - [S33](../capabilities/S33-autocomplete.md): R-14
 - [S50](../capabilities/S50-rate-limiter.md): R-19
 - [S52](../capabilities/S52-cache-toolkit.md): B-17
 - [rate-limit-policy](../concepts/rate-limit-policy.md): C-08
 - [cache-store-circuit-breaker](cache-store-circuit-breaker.md)
+- [fallback-provider](fallback-provider.md)
+- [mail-provider](mail-provider.md)
+- [provider-chain](provider-chain.md)
 - [provider-operation](provider-operation.md)
 - [rate-limit-bucket](rate-limit-bucket.md)
 - [rate-limit-counter-store](rate-limit-counter-store.md)
