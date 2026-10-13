@@ -101,8 +101,9 @@ with the links that prove it: backticked file paths and commit hashes. For a `pr
 ## L-012 A fix verified on a warm environment
 - **Rule:** Verify a fix on a fresh stack (`scripts/qa/fresh-run.sh`), not on a warm one: the failing environment starts empty.
 - **Symptom:** I debugged against a warm local stack for hours while the cloud machine, which starts fresh, kept failing. **Cause:** the reproduction did not match the
-  environment where it failed. **Prevention missing:** a one-command "fresh stack, whole suite once" (`scripts/qa/fresh-run.sh`, the script used on 2026-10-12 lives
-  only in the session scratch directory); make it a repository script.
+  environment where it failed. **Prevention:** `scripts/qa/fresh-run.sh` (fresh throwaway stack, whole suite once) is a repository script. On the cloud runner use `scripts/qa/fresh-run.sh --here`: the runner's own
+  dev stack started empty when the machine booted, a second stack cannot start next to it, and the `payment_system_*` containers must never be stopped there. A task that asks for
+  an "empty-stack run" is closed with `--here` plus the checks it lists (S19 T072 was blocked for a night waiting for a person to stop the stack, 2026-10-13).
 
 ## L-013 A benchmark that measured its own leftovers
 - **Rule:** A test that damages the system on purpose must clean up what it damaged before the next measurement, or the next run reports the old damage as a new finding.
