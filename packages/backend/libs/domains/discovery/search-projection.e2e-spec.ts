@@ -372,25 +372,32 @@ describe('Search index projection', () => {
       );
       const t0 = t.clock.now().getTime();
 
-      await send(t.app).shops(offboardingStarted(shopId, new Date(t0 + 1_000)));
+      await send(t.app).shops(
+        offboardingStarted(shopId, 2, new Date(t0 + 1_000)),
+      );
       expect(await visibleIds()).toEqual([]);
       await send(t.app).shops(
-        offboardingCancelled(shopId, new Date(t0 + 2_000)),
+        offboardingCancelled(shopId, 3, new Date(t0 + 2_000)),
       );
       expect(await visibleIds()).toEqual([p1]);
 
-      // reordered: the cancel (later) arrives first, the start (earlier) afterwards
+      // reordered: the cancel (version 3) arrives first, the start (version 2) afterwards. The start carries the LATER
+      // envelope time, so only the shop version can keep it from hiding the shop again.
       const s2 = newId();
       const p2 = newId();
       await send(t.app).products(
         productEvent('created', snapshot({ productId: p2, shopId: s2 })),
       );
-      await send(t.app).shops(offboardingCancelled(s2, new Date(t0 + 20_000)));
-      await send(t.app).shops(offboardingStarted(s2, new Date(t0 + 10_000)));
+      await send(t.app).shops(
+        offboardingCancelled(s2, 3, new Date(t0 + 10_000)),
+      );
+      await send(t.app).shops(
+        offboardingStarted(s2, 2, new Date(t0 + 20_000)),
+      );
       expect(await visibleIds()).toContain(p2);
 
       const before = ignored('shop_deleted');
-      await send(t.app).shops(shopDeleted(shopId, new Date(t0 + 30_000)));
+      await send(t.app).shops(shopDeleted(shopId, 5, new Date(t0 + 30_000)));
       expect(await t.doc(p1)).toBeNull();
       expect(await shopRow(p1)).toBeUndefined();
 
@@ -403,7 +410,7 @@ describe('Search index projection', () => {
       expect(await shopRow(late)).toBeUndefined();
 
       await expect(
-        send(t.app).shops(shopDeleted(shopId, new Date(t0 + 31_000))),
+        send(t.app).shops(shopDeleted(shopId, 5, new Date(t0 + 31_000))),
       ).resolves.toBeDefined(); // a repeat changes nothing
       expect(await t.doc(p1)).toBeNull();
     });

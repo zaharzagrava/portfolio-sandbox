@@ -13,6 +13,7 @@ export class SearchAudit {
     action: string;
     runId?: string;
     version?: number;
+    ruleCount?: number;
   }): void {
     this.logger.log({ event: 'search.admin', ...fields });
   }

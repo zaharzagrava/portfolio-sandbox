@@ -5,13 +5,18 @@ import {
   Param,
   ParseUUIDPipe,
   Post,
+  Put,
+  Body,
   Query,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import {
   reindexListQuerySchema,
+  synonymsPutRequestSchema,
   type ReindexRun,
   type SearchIndexStatus,
+  type SearchQualityReport,
+  type Synonyms,
 } from '@marketplace-sandbox/contracts';
 import { Firewall, Role, User } from '@app/domains/identity';
 import type { AuthenticatedUser } from '@app/domains/identity';
@@ -26,6 +31,11 @@ import {
   type AcceptedRun,
 } from '../application/reindex/start-reindex.service';
 import { SearchIndexStatusService } from '../application/search-index-status.service';
+import { SearchQualityService } from '../application/search-quality.service';
+import {
+  SynonymsService,
+  type SynonymsPutResult,
+} from '../application/synonyms.service';
 import { SearchValidationError } from '../domain/search-errors';
 
 /**
@@ -40,6 +50,8 @@ export class SearchIndexAdminController {
     private readonly start: StartReindexService,
     private readonly cancelRun: CancelReindexService,
     private readonly runs: GetRunsService,
+    private readonly synonymSet: SynonymsService,
+    private readonly qualityReport: SearchQualityService,
   ) {}
 
   @Firewall({ roles: [Role.ADMIN] })
@@ -91,6 +103,41 @@ export class SearchIndexAdminController {
     @Param('runId', ParseUUIDPipe) runId: string,
   ): Promise<ReindexRun> {
     return toRunView(await this.cancelRun.cancel(runId, user.id));
+  }
+
+  @Firewall({ roles: [Role.ADMIN] })
+  @RateLimit('discovery.search-admin')
+  @Get('quality')
+  quality(@Query() query: Record<string, unknown>): Promise<SearchQualityReport> {
+    return this.qualityReport.report(query);
+  }
+
+  @Firewall({ roles: [Role.ADMIN] })
+  @RateLimit('discovery.search-admin')
+  @Get('synonyms')
+  synonyms(): Promise<Synonyms> {
+    return this.synonymSet.get();
+  }
+
+  @Firewall({ roles: [Role.ADMIN] })
+  @RateLimit('discovery.search-admin')
+  @Put('synonyms')
+  putSynonyms(
+    @User() user: AuthenticatedUser,
+    @Body() body: unknown,
+  ): Promise<SynonymsPutResult> {
+    const parsed = synonymsPutRequestSchema.safeParse(body);
+    if (!parsed.success)
+      throw new SearchValidationError([
+        ...new Set(
+          parsed.error.issues.flatMap((i) =>
+            i.code === 'unrecognized_keys'
+              ? i.keys
+              : [String(i.path[0] ?? 'body')],
+          ),
+        ),
+      ]);
+    return this.synonymSet.put(parsed.data, user.id);
   }
 
   @Firewall({ roles: [Role.ADMIN] })

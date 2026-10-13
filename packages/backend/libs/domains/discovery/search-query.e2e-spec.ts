@@ -312,8 +312,8 @@ describe('Public product search API', () => {
       );
       await deliver(t.app).shops(
         shopStatusEvent(shops.suspended, 'SUSPENDED', 2, t.clock.now()),
-        offboardingStarted(shops.deleting, t.clock.now()),
-        shopDeleted(shops.deleted, t.clock.now()),
+        offboardingStarted(shops.deleting, 2, t.clock.now()),
+        shopDeleted(shops.deleted, 2, t.clock.now()),
       );
       await t.refresh();
 
@@ -433,7 +433,7 @@ describe('Public product search API', () => {
       await t.refresh();
       expect((await ok({ q: 'trial' })).items.map((i) => i.id)).toEqual([live]);
 
-      await deliver(t.app).shops(shopDeleted(shopId, t.clock.now()));
+      await deliver(t.app).shops(shopDeleted(shopId, 2, t.clock.now()));
       await t.refresh();
       const body = await ok({ q: 'trial' });
       expect(body.items).toEqual([]);

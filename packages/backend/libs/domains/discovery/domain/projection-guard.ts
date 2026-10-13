@@ -88,8 +88,8 @@ export interface IncomingShopState {
 }
 
 /**
- * Shop state: `shopVersion` when both sides carry one, else the envelope time against the stored `lastEventAt`
- * (offboarding events have no version).
+ * Shop state: `shopVersion` when both sides carry one (every tenancy event does since S03), else the envelope time
+ * against the stored `lastEventAt` (a copy written before a version was known).
  */
 export function decideShopState(
   stored: StoredShopState | null,

@@ -6,8 +6,6 @@ import { StoryCacheInvalidator, StoryCacheModule } from '@app/domains/content';
 import {
   TrendingProjectorModule,
   RecommendationsProjectorModule,
-  SearchClicksProjector,
-  SearchQueriesProjector,
   SearchProjectorModule,
 } from '@app/domains/discovery';
 import { PurchaseEventsProjector } from '@app/domains/experimentation';
@@ -92,9 +90,7 @@ import { CacheModule } from '@app/infrastructure/cache/cache.module';
         FeedFanoutConsumer,
         ProductFeedProjector,
         LinkClicksProjector,
-        SearchQueriesProjector,
         PickupAvailabilityProjector,
-        SearchClicksProjector,
         ...RecommendationsProjectorModule.projectors,
         ...NotificationsProjectorModule.projectors,
         LiveCommentsProjector,

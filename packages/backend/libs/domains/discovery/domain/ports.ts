@@ -39,6 +39,12 @@ export interface ProductIndexPort {
     size: number,
     signal?: AbortSignal,
   ): Promise<string[]>;
+  /** Like `suggestTitles`, tolerant of typos in the words (edit distance by length, first letter fixed). */
+  suggestTitlesFuzzy(
+    prefix: string,
+    size: number,
+    signal?: AbortSignal,
+  ): Promise<string[]>;
   /** Stamps the shop state on every document of the shop whose stamp is older (waits for pending writes to be searchable). */
   stampShop(shopId: string, stamp: ShopStampWrite): Promise<void>;
   /** Removes every document of a shop (shop deleted). */
@@ -69,6 +75,17 @@ export interface EngineSearchRequest {
   /** Results wanted; the engine returns one more to tell whether another page exists. */
   limit: number;
   after: (string | number)[] | null;
+  /** Also compute the facets (each ignoring its own filter) in the same engine query. */
+  facets?: boolean;
+  /** Nearest-neighbour mode: the vector of `q`; filters apply before neighbours are chosen, `limit` is `k`. */
+  vector?: number[];
+}
+
+export interface FacetCounts {
+  categories: { key: string; count: number }[];
+  brands: { key: string; count: number }[];
+  priceRanges: { key: string; count: number }[];
+  avgRating: number | null;
 }
 
 export interface EngineSearchHit {
@@ -81,6 +98,7 @@ export interface EngineSearchHit {
 export interface EngineSearchResult {
   hits: EngineSearchHit[];
   total: { value: number; exact: boolean };
+  facets?: FacetCounts;
 }
 
 /** What the engine says about a concrete index (from its `_meta`). */
@@ -182,6 +200,33 @@ export interface ShopSearchRepository {
   ): Promise<void>;
   purgeShop(shopId: string): Promise<void>;
   purgeTombstones(before: Date): Promise<number>;
+  /**
+   * The seller's search (S32 US7): every query carries the `shopId` predicate. Full text first, the per-word trigram
+   * fallback when it finds nothing; `mode` pins the cursor to the way the first page was answered. Returns up to
+   * `limit` rows (callers ask for one more to know whether a page follows).
+   */
+  search(request: ShopSearchRequest): Promise<ShopSearchRow[]>;
+}
+
+export interface ShopSearchRequest {
+  shopId: string;
+  /** Normalised query text. */
+  q: string;
+  status?: 'ACTIVE' | 'ARCHIVED';
+  limit: number;
+  /** Keyset position of the last row of the previous page, and the mode that page was answered in. */
+  after: { mode: 'fts' | 'trgm'; rank: number; id: string } | null;
+}
+
+export interface ShopSearchRow {
+  id: string;
+  title: string;
+  priceMinor: number;
+  currency: string;
+  quantity: number;
+  status: 'ACTIVE' | 'ARCHIVED';
+  rank: number;
+  mode: 'fts' | 'trgm';
 }
 
 export interface EmbeddingProvider {
@@ -292,6 +337,26 @@ export interface SynonymSetSnapshot {
 export interface SynonymSetRepository {
   /** The committed set (seeded at version 1 by the migration; recreated when missing). */
   current(): Promise<SynonymSetSnapshot>;
+  /**
+   * Claims the right to move the set from `expectedVersion` to the next: a conditional update that succeeds for exactly
+   * one caller while no other fresh claim is in flight (a claim older than `staleBefore` is abandoned).
+   */
+  claim(
+    expectedVersion: number,
+    rules: string[],
+    now: Date,
+    staleBefore: Date,
+  ): Promise<boolean>;
+  /** True while a claim newer than `staleBefore` is waiting for its engine push. */
+  claimInFlight(staleBefore: Date): Promise<boolean>;
+  /** The engine accepted the claimed rules: they become the committed set, the history is written and pruned. */
+  commit(
+    version: number,
+    actorId: string,
+    now: Date,
+  ): Promise<SynonymSetSnapshot>;
+  /** The engine refused the claimed rules: drop the claim, the committed set stays. */
+  release(version: number): Promise<void>;
 }
 
 /**
@@ -334,8 +399,17 @@ export interface SearchPerformedRecord {
   subject: string;
 }
 
+/** A verified click on a result (the query is the one the signed search id carried). */
+export interface SearchClickRecord {
+  searchId: string;
+  query: string;
+  productId: string;
+  position: number;
+}
+
 export interface SearchEventPublisher {
   performed(record: SearchPerformedRecord): void;
+  clicked(record: SearchClickRecord): void;
 }
 
 export const INDEX_MANAGER = Symbol('IndexManagerPort');

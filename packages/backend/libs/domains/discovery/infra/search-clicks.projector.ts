@@ -26,6 +26,7 @@ export class SearchClicksProjector implements Projector {
         .filter((e): e is NonNullable<typeof e> => !!e)
         .map((e) => ({
           event_id: e.eventId,
+          search_id: e.payload.searchId,
           query: e.payload.query,
           product_id: e.payload.productId,
           position: e.payload.position,

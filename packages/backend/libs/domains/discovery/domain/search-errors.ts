@@ -15,6 +15,8 @@ export const SEARCH_PROBLEM_CODES = [
   'run_not_found',
   'invalid_transition',
   'no_previous_index',
+  'invalid_synonym_rules',
+  'synonyms_version_conflict',
 ] as const;
 export type SearchProblemCode = (typeof SEARCH_PROBLEM_CODES)[number];
 
@@ -159,6 +161,36 @@ export class ReindexInProgressError extends AppError {
         {
           extensions: { runId },
         },
+      ),
+    );
+  }
+}
+
+/** The submitted rules break the grammar; `errors` name each rule by index and class (AS-55). */
+export class InvalidSynonymRulesError extends AppError {
+  constructor(readonly errors: { index: number; code: string }[]) {
+    super(
+      problem(
+        422,
+        'invalid_synonym_rules',
+        'Unprocessable entity',
+        'The synonym rules are not valid.',
+        { extensions: { errors } },
+      ),
+    );
+  }
+}
+
+/** The set moved on since the administrator read it (AS-56). */
+export class SynonymsVersionConflictError extends AppError {
+  constructor(readonly currentVersion: number) {
+    super(
+      problem(
+        409,
+        'synonyms_version_conflict',
+        'Conflict',
+        'The synonym set was changed by someone else.',
+        { extensions: { currentVersion } },
       ),
     );
   }

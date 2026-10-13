@@ -3,7 +3,16 @@ import { InjectConnection } from '@nestjs/sequelize';
 import { QueryTypes } from 'sequelize';
 import { Sequelize } from 'sequelize-typescript';
 import { TransactionRunner } from '@app/infrastructure/context';
-import type { ShopProductRow, ShopSearchRepository } from '../../domain/ports';
+import type {
+  ShopProductRow,
+  ShopSearchRepository,
+  ShopSearchRequest,
+  ShopSearchRow,
+} from '../../domain/ports';
+
+const MAX_FALLBACK_WORDS = 8;
+/** Average per-word trigram similarity a title must reach to be listed by the fallback. */
+const TRIGRAM_THRESHOLD = 0.3;
 
 type Upsert = ShopProductRow & {
   kind: 'created' | 'updated' | 'archived' | 'restored';
@@ -108,6 +117,74 @@ export class SequelizeShopSearchRepository implements ShopSearchRepository {
         ],
       },
     );
+  }
+
+  async search(request: ShopSearchRequest): Promise<ShopSearchRow[]> {
+    const { after } = request;
+    if (after) return this.run(after.mode, request);
+    const fts = await this.run('fts', request);
+    return fts.length > 0 ? fts : this.run('trgm', request);
+  }
+
+  /**
+   * One statement per mode, bind parameters only. The rank is cast to `float8` inside the inner query so the keyset
+   * comparison of the next page sees exactly the value the previous page returned.
+   */
+  private async run(
+    mode: 'fts' | 'trgm',
+    r: ShopSearchRequest,
+  ): Promise<ShopSearchRow[]> {
+    // each query word is scored against its best-matching title word; eight words at most for the fallback
+    const tokens = r.q
+      .toLowerCase()
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, MAX_FALLBACK_WORDS);
+    if (mode === 'trgm' && tokens.length === 0) return [];
+    const inner =
+      mode === 'fts'
+        ? `SELECT p."productId" AS id, p."title", p."priceMinor", p."currency", p."quantity", p."status",
+                  ts_rank_cd(p."searchVector", query)::float8 AS rank
+             FROM "SearchShopProduct" p, websearch_to_tsquery('simple', $2) query
+            WHERE p."shopId" = $1 AND p."deletedAt" IS NULL AND p."searchVector" @@ query
+              AND ($3::text IS NULL OR p."status" = $3)`
+        : `SELECT p."productId" AS id, p."title", p."priceMinor", p."currency", p."quantity", p."status",
+                  s.rank::float8 AS rank
+             FROM "SearchShopProduct" p
+             CROSS JOIN LATERAL (SELECT avg(word_similarity(t, p."title")) AS rank FROM unnest($2::text[]) t) s
+            WHERE p."shopId" = $1 AND p."deletedAt" IS NULL AND s.rank >= ${TRIGRAM_THRESHOLD}
+              AND ($3::text IS NULL OR p."status" = $3)`;
+    const rows = await this.sequelize.query<{
+      id: string;
+      title: string;
+      priceMinor: string | number;
+      currency: string;
+      quantity: number;
+      status: 'ACTIVE' | 'ARCHIVED';
+      rank: number;
+    }>(
+      `SELECT * FROM (${inner}) r
+        WHERE $4::float8 IS NULL OR r.rank < $4::float8 OR (r.rank = $4::float8 AND r.id > $5::uuid)
+        ORDER BY r.rank DESC, r.id ASC
+        LIMIT $6`,
+      {
+        type: QueryTypes.SELECT,
+        bind: [
+          r.shopId,
+          mode === 'fts' ? r.q : tokens,
+          r.status ?? null,
+          r.after?.rank ?? null,
+          r.after?.id ?? null,
+          r.limit,
+        ],
+      },
+    );
+    return rows.map((row) => ({
+      ...row,
+      priceMinor: Number(row.priceMinor),
+      rank: Number(row.rank),
+      mode,
+    }));
   }
 
   async purgeShop(shopId: string): Promise<void> {

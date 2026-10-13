@@ -37,6 +37,9 @@ describe('Search administration access and status', () => {
     ['get', `/api/admin/search/reindex/${randomUUID()}`],
     ['post', `/api/admin/search/reindex/${randomUUID()}/cancel`],
     ['post', '/api/admin/search/rollback'],
+    ['get', '/api/admin/search/synonyms'],
+    ['put', '/api/admin/search/synonyms'],
+    ['get', '/api/admin/search/quality'],
   ];
   const call = (
     user: { bearer: string } | null,

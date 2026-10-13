@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { ApiConfigModule } from '@app/common/config';
 import { ElasticsearchModule } from '@app/infrastructure/elasticsearch/elasticsearch.module';
+import { ProductTitleSuggester } from './application/title-suggester.service';
 import {
   INDEX_MANAGER,
   PROJECTION_LAG,
@@ -56,6 +57,7 @@ import { SearchSettings } from './infra/search-settings';
     IndexBootstrapService,
     SearchIndexRegistry,
     { provide: PRODUCT_INDEX, useClass: ProductIndexAdapter },
+    ProductTitleSuggester,
     { provide: SHOP_STATE_REPOSITORY, useClass: SequelizeShopStateRepository },
     {
       provide: SHOP_SEARCH_REPOSITORY,
@@ -81,6 +83,7 @@ import { SearchSettings } from './infra/search-settings';
     IndexBootstrapService,
     SearchIndexRegistry,
     PRODUCT_INDEX,
+    ProductTitleSuggester,
     SHOP_STATE_REPOSITORY,
     SHOP_SEARCH_REPOSITORY,
     REINDEX_RUN_REPOSITORY,

@@ -1,9 +1,11 @@
 import { createHmac } from 'node:crypto';
 import { Injectable, Logger } from '@nestjs/common';
 import { EventPublisher } from '@app/infrastructure/events/event-publisher';
+import { SearchResultClicked } from '../application/events/search-click-events';
 import { SearchPerformed } from '../application/events/search-query-events';
 import { logForm } from '../domain/query-text';
 import type {
+  SearchClickRecord,
   SearchEventPublisher,
   SearchPerformedRecord,
 } from '../domain/ports';
@@ -23,6 +25,21 @@ export class SearchEventPublisherAdapter implements SearchEventPublisher {
     private readonly publisher: EventPublisher,
     private readonly settings: SearchSettings,
   ) {}
+
+  clicked(record: SearchClickRecord): void {
+    try {
+      const event = SearchResultClicked.create(record.searchId, 0, record);
+      void this.publisher.publish(event).catch((error: Error) => {
+        searchEventsDroppedCounter.add(1, { type: 'search.result_clicked' });
+        this.logger.warn(`search.result_clicked dropped: ${error.message}`);
+      });
+    } catch (error) {
+      searchEventsDroppedCounter.add(1, { type: 'search.result_clicked' });
+      this.logger.warn(
+        `search.result_clicked dropped: ${(error as Error).message}`,
+      );
+    }
+  }
 
   performed(record: SearchPerformedRecord): void {
     try {

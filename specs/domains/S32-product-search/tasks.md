@@ -131,17 +131,17 @@ User stories: US1 public search (P1 route) · US2 facets (P2) · US3 semantic (P
 
 **Independent test**: facet cases of `search-facets-semantic.e2e-spec.ts` green.
 
-- [ ] T065 [US2] `D/search-facets-semantic.e2e-spec.ts` (describe `Search facets and semantic mode`) facet cases: AS-15 (counts over all matches, top 20, four price keys, average rounded, sums), AS-16 (category/brand/price selections keep sibling counts; `inStock` applies to all), AS-17 (absent unless `facets=true`, empty, more than 20 categories).
-- [ ] T066 [US2] Facet aggregations in `D/infra/product-index.adapter.ts`: each facet computed with its own filter excluded, top 20, keyword brand fallback, `avgRating` rounded, price range keys; wire `facets=true` through `ProductSearchService` and the response mapper.
-- [ ] T067 [US2] Run `../../scripts/sdd/test-spec.sh libs/domains/discovery/search-facets-semantic -t "AS-1[5-7]"` until green.
+- [X] T065 [US2] `D/search-facets-semantic.e2e-spec.ts` (describe `Search facets and semantic mode`) facet cases: AS-15 (counts over all matches, top 20, four price keys, average rounded, sums), AS-16 (category/brand/price selections keep sibling counts; `inStock` applies to all), AS-17 (absent unless `facets=true`, empty, more than 20 categories).
+- [X] T066 [US2] Facet aggregations in `D/infra/product-index.adapter.ts`: each facet computed with its own filter excluded, top 20, keyword brand fallback, `avgRating` rounded, price range keys; wire `facets=true` through `ProductSearchService` and the response mapper.
+- [X] T067 [US2] Run `../../scripts/sdd/test-spec.sh libs/domains/discovery/search-facets-semantic -t "AS-1[5-7]"` until green.
 
 ---
 
 ## Phase 6: US3 — Semantic search (P2)
 
-- [ ] T068 [US3] Same file `search-facets-semantic.e2e-spec.ts`: AS-18 (parka found for a paraphrase; 10 of 60 with filter), AS-19 (422 `semantic_requires_query`, `unsupported_combination` with facets or cursor, vector missing, hidden excluded), AS-20 (gated provider timeout → lexical, `degraded`, `search_degraded_total`, event field), AS-21 (embedding created; price-only update does not call the provider (spy); title update recomputes; provider failure sets `embeddingPending`, backfill job fixes it).
-- [ ] T069 [US3] Semantic mode in `ProductIndexPort.search`: k-NN with visibility and filters inside the knn filter, `k` ≥ limit, no lexical match-all; `ProductSearchService` embeds `q` within `embedding_budget_ms` else degrades to lexical labelled `degraded`; validation rules of AS-19.
-- [ ] T070 [US3] Run `../../scripts/sdd/test-spec.sh libs/domains/discovery/search-facets-semantic` until the whole file is green.
+- [X] T068 [US3] Same file `search-facets-semantic.e2e-spec.ts`: AS-18 (parka found for a paraphrase; 10 of 60 with filter), AS-19 (422 `semantic_requires_query`, `unsupported_combination` with facets or cursor, vector missing, hidden excluded), AS-20 (gated provider timeout → lexical, `degraded`, `search_degraded_total`, event field), AS-21 (embedding created; price-only update does not call the provider (spy); title update recomputes; provider failure sets `embeddingPending`, backfill job fixes it).
+- [X] T069 [US3] Semantic mode in `ProductIndexPort.search`: k-NN with visibility and filters inside the knn filter, `k` ≥ limit, no lexical match-all; `ProductSearchService` embeds `q` within `embedding_budget_ms` else degrades to lexical labelled `degraded`; validation rules of AS-19.
+- [X] T070 [US3] Run `../../scripts/sdd/test-spec.sh libs/domains/discovery/search-facets-semantic` until the whole file is green.
 
 ---
 
@@ -174,15 +174,15 @@ User stories: US1 public search (P1 route) · US2 facets (P2) · US3 semantic (P
 
 ### Tests first
 
-- [ ] T084 [US6] `D/search-synonyms.e2e-spec.ts` (describe `Search synonyms administration`): AS-53 (before/after search, 200 `{version, ruleCount, updatedAt, unchanged}`, same index, no run, no rewrite, effective ≤ 5 s), AS-54 (one-way, two-way, multi-word), AS-55 (one request per error class → 422 `invalid_synonym_rules {errors:[{index, code}]}`, state unchanged; body shape 400).
-- [ ] T085 [US6] Same file: AS-56 (`Promise.all` of two edits → one 200 one 409 `synonyms_version_conflict {currentVersion}`, winner's rules, stale 409), AS-57 (same body twice → `unchanged`, stale version with identical rules, no engine call), AS-58 (engine failure via fault proxy → 503, rules and version unchanged, later success), AS-59 (rules survive a reindex), AS-60 (GET body, audit line, history pruned to 20 versions and 90 days, never below current).
+- [X] T084 [US6] `D/search-synonyms.e2e-spec.ts` (describe `Search synonyms administration`): AS-53 (before/after search, 200 `{version, ruleCount, updatedAt, unchanged}`, same index, no run, no rewrite, effective ≤ 5 s), AS-54 (one-way, two-way, multi-word), AS-55 (one request per error class → 422 `invalid_synonym_rules {errors:[{index, code}]}`, state unchanged; body shape 400).
+- [X] T085 [US6] Same file: AS-56 (`Promise.all` of two edits → one 200 one 409 `synonyms_version_conflict {currentVersion}`, winner's rules, stale 409), AS-57 (same body twice → `unchanged`, stale version with identical rules, no engine call), AS-58 (engine failure via fault proxy → 503, rules and version unchanged, later success), AS-59 (rules survive a reindex), AS-60 (GET body, audit line, history pruned to 20 versions and 90 days, never below current).
 
 ### Implementation
 
-- [ ] T086 [US6] `D/infra/repositories/synonym-set.repository.ts`: conditional claim (`pendingVersion` where `version = :expected`), commit `n+1` or clear pending; prune version table to 20 rows / 90 days.
-- [ ] T087 [US6] `D/application/synonyms.service.ts`: parse with `synonym-rules`, claim → push to the engine synonyms set via `SearchEngineClient` (no DB transaction around the call) → commit; idempotent no-op path; `search_unavailable` on engine failure with state unchanged.
-- [ ] T088 [US6] Add `GET/PUT /admin/search/synonyms` to `D/api/search-admin.controller.ts` with `synonymsPutRequestSchema`; audit line `{actorId, action, version}`.
-- [ ] T089 [US6] Run `../../scripts/sdd/test-spec.sh libs/domains/discovery/search-synonyms` until green.
+- [X] T086 [US6] `D/infra/repositories/synonym-set.repository.ts`: conditional claim (`pendingVersion` where `version = :expected`), commit `n+1` or clear pending; prune version table to 20 rows / 90 days.
+- [X] T087 [US6] `D/application/synonyms.service.ts`: parse with `synonym-rules`, claim → push to the engine synonyms set via `SearchEngineClient` (no DB transaction around the call) → commit; idempotent no-op path; `search_unavailable` on engine failure with state unchanged.
+- [X] T088 [US6] Add `GET/PUT /admin/search/synonyms` to `D/api/search-admin.controller.ts` with `synonymsPutRequestSchema`; audit line `{actorId, action, version}`.
+- [X] T089 [US6] Run `../../scripts/sdd/test-spec.sh libs/domains/discovery/search-synonyms` until green.
 
 ---
 
@@ -190,14 +190,14 @@ User stories: US1 public search (P1 route) · US2 facets (P2) · US3 semantic (P
 
 ### Tests first
 
-- [ ] T090 [US7] `D/shop-product-search.e2e-spec.ts` (describe `Shop product search`): AS-61 (member lists, archived with status, status filter, shape parses `shopProductSearchResponseSchema`), AS-62 (typo trigram fallback, garbage, word cap), AS-63 (other shop's member → 404 identical to unknown, same titles in two shops stay separate), AS-64 (401, viewer 200, suspended `403 shop_suspended`, deleting `409 shop_offboarding`, deleted `404`; follows S03's implemented `ShopScoped` behaviour — record any difference in `gaps.md` before touching the spec).
-- [ ] T091 [US7] Same file: AS-65 (table-driven validation incl. missing `q`, cursor misuse 422 `invalid_cursor`), AS-66 (25/25/10 paging, tie-break by id), AS-67 (create, rename, archive, restore, delete visible within 5 s; sandbox shop; shop deleted → 404), AS-68 (eight hostile strings, table intact), AS-69 (429 `discovery.shop-search`, isolation by user+shop, limiter down fails open).
+- [X] T090 [US7] `D/shop-product-search.e2e-spec.ts` (describe `Shop product search`): AS-61 (member lists, archived with status, status filter, shape parses `shopProductSearchResponseSchema`), AS-62 (typo trigram fallback, garbage, word cap), AS-63 (other shop's member → 404 identical to unknown, same titles in two shops stay separate), AS-64 (401, viewer 200, suspended `403 shop_suspended`, deleting `409 shop_offboarding`, deleted `404`; follows S03's implemented `ShopScoped` behaviour — record any difference in `gaps.md` before touching the spec).
+- [X] T091 [US7] Same file: AS-65 (table-driven validation incl. missing `q`, cursor misuse 422 `invalid_cursor`), AS-66 (25/25/10 paging, tie-break by id), AS-67 (create, rename, archive, restore, delete visible within 5 s; sandbox shop; shop deleted → 404), AS-68 (eight hostile strings, table intact), AS-69 (429 `discovery.shop-search`, isolation by user+shop, limiter down fails open).
 
 ### Implementation
 
-- [ ] T092 [US7] Read side in `D/infra/repositories/shop-search.repository.ts`: `shopId` tenant predicate in every query, `deletedAt IS NULL`, full-text rank then trigram fallback with bind parameters only, keyset on `(rank, productId)`, status filter, price as `priceMinor` bigint.
-- [ ] T093 [US7] Rewrite `D/application/shop-product-search.service.ts` on `ShopSearchRepository` (delete raw SQL on `"Product"`, the empty-`q` list branch and `slice(0,100)`); `D/api/shop-product-search.controller.ts` with `ShopScoped('products.read')` and `@RateLimit('discovery.shop-search')`; remove the shop-search route from the old controller; use `ShopAccessService`/`ShopQueryService`/`MembershipQueryService` only where tenancy data is needed (S03 follow-up).
-- [ ] T094 [US7] Run `../../scripts/sdd/test-spec.sh libs/domains/discovery/shop-product-search` until green.
+- [X] T092 [US7] Read side in `D/infra/repositories/shop-search.repository.ts`: `shopId` tenant predicate in every query, `deletedAt IS NULL`, full-text rank then trigram fallback with bind parameters only, keyset on `(rank, productId)`, status filter, price as `priceMinor` bigint.
+- [X] T093 [US7] Rewrite `D/application/shop-product-search.service.ts` on `ShopSearchRepository` (delete raw SQL on `"Product"`, the empty-`q` list branch and `slice(0,100)`); `D/api/shop-product-search.controller.ts` with `ShopScoped('products.read')` and `@RateLimit('discovery.shop-search')`; remove the shop-search route from the old controller; use `ShopAccessService`/`ShopQueryService`/`MembershipQueryService` only where tenancy data is needed (S03 follow-up).
+- [X] T094 [US7] Run `../../scripts/sdd/test-spec.sh libs/domains/discovery/shop-product-search` until green.
 
 ---
 
@@ -205,33 +205,33 @@ User stories: US1 public search (P1 route) · US2 facets (P2) · US3 semantic (P
 
 ### Tests first
 
-- [ ] T095 [US8] `D/search-measurement.e2e-spec.ts` (describe `Search click-through measurement`): AS-70 (202 empty body, `search.result_clicked`, click row), AS-71 (forged, altered, expired `searchId` → 422 `invalid_search_id`; bad fields 400; 429 `discovery.search-click`), AS-72 (consumer duplicate → one row, invalid → DLQ).
-- [ ] T096 [US8] Same file: AS-73 (exact CTR/MRR/zero-result numbers, window, ordering, `limit`, parameter errors 400), AS-74 (email, digits, card, short query redacted; hash stability; no ids; 90-day expiry setting), AS-75 (stream down via fault proxy → search 200 / click 202 and drop counter), AS-76 (each mode and filter set parses with `searchEventSchemas`).
+- [X] T095 [US8] `D/search-measurement.e2e-spec.ts` (describe `Search click-through measurement`): AS-70 (202 empty body, `search.result_clicked`, click row), AS-71 (forged, altered, expired `searchId` → 422 `invalid_search_id`; bad fields 400; 429 `discovery.search-click`), AS-72 (consumer duplicate → one row, invalid → DLQ).
+- [X] T096 [US8] Same file: AS-73 (exact CTR/MRR/zero-result numbers, window, ordering, `limit`, parameter errors 400), AS-74 (email, digits, card, short query redacted; hash stability; no ids; 90-day expiry setting), AS-75 (stream down via fault proxy → search 200 / click 202 and drop counter), AS-76 (each mode and filter set parses with `searchEventSchemas`).
 
 ### Implementation
 
-- [ ] T097 [US8] `D/application/search-click.service.ts` + `D/api/search-click.controller.ts` (`POST /search/clicks`, anonymous, `@RateLimit('discovery.search-click')`, verify signed `searchId`, publish event, never fail on stream error).
-- [ ] T098 [US8] Update `D/infra/search-clicks.projector.ts` and `D/infra/search-queries.projector.ts`: zod validation, invalid → DLQ (no silent filter), dedup by `eventId`, new ClickHouse columns; keep both out of the barrel.
-- [ ] T099 [US8] `D/application/search-quality.service.ts`: validated `days` (1–90) and `limit` (1–100) without silent clamping; add `GET /admin/search/quality` to `search-admin.controller.ts`.
-- [ ] T100 [US8] Run `../../scripts/sdd/test-spec.sh libs/domains/discovery/search-measurement` until green.
+- [X] T097 [US8] `D/application/search-click.service.ts` + `D/api/search-click.controller.ts` (`POST /search/clicks`, anonymous, `@RateLimit('discovery.search-click')`, verify signed `searchId`, publish event, never fail on stream error).
+- [X] T098 [US8] Update `D/infra/search-clicks.projector.ts` and `D/infra/search-queries.projector.ts`: zod validation, invalid → DLQ (no silent filter), dedup by `eventId`, new ClickHouse columns; keep both out of the barrel.
+- [X] T099 [US8] `D/application/search-quality.service.ts`: validated `days` (1–90) and `limit` (1–100) without silent clamping; add `GET /admin/search/quality` to `search-admin.controller.ts`.
+- [X] T100 [US8] Run `../../scripts/sdd/test-spec.sh libs/domains/discovery/search-measurement` until green.
 
 ---
 
 ## Phase 11: US9 — Platform, exported services, boundaries (P3)
 
-- [ ] T101 [US9] `D/search-platform.e2e-spec.ts` (describe `Search exported services and module boundary`): AS-78 (test module importing only `@app/domains/discovery`; `ProductSearchService.search` same visibility, `limit ≤ 20`, `surface: 'internal'`, no cursor/facets), AS-79 (`ProductTitleSuggester.suggestTitles` visible only, size ≤ 10, abort via signal, typed `SuggestionTimeoutError`), AS-80 (`check:boundaries` and `check:table-ownership --strict` report zero findings for discovery search code; an app boots loading only `ProductSearchModule`, `SearchProjectorModule`, `SearchWorkerModule`; grep gate: no `ProductModel|ShopModel|ShopMembershipModel|MembershipService` and no `sequelize.query` on foreign tables in `D/`).
-- [ ] T102 [US9] `D/application/title-suggester.service.ts` (`ProductTitleSuggester` over `ProductIndexPort` with the visibility filter); change `D/application/autocomplete.service.ts` to use it instead of `ElasticsearchService.suggestTitles` (edit only that call site).
-- [ ] T103 [US9] Narrow `D/index.ts`: export `ProductSearchModule`, `SearchProjectorModule`, `SearchWorkerModule`, `ProductSearchService`, `ProductTitleSuggester`, DTO types, `SearchPerformed`, `SearchResultClicked`, `SearchReindexCompleted`; remove `SearchAdminModule`, `SearchReindexWorkerModule`, `SearchQueryLogger`, `SearchClicksProjector`, `SearchQueriesProjector`; keep `OrderBasketsProjector`, `TrendingConsumer` and existing S33–S35 exports.
-- [ ] T104 [US9] Update `apps/projector/src/projector.module.ts`, `apps/core/src/core.module.ts`, `apps/worker/src/worker.module.ts` to import the three modules instead of the removed exports.
-- [ ] T105 [US9] Run `../../scripts/sdd/test-spec.sh libs/domains/discovery/search-platform` until green.
+- [X] T101 [US9] `D/search-platform.e2e-spec.ts` (describe `Search exported services and module boundary`): AS-78 (test module importing only `@app/domains/discovery`; `ProductSearchService.search` same visibility, `limit ≤ 20`, `surface: 'internal'`, no cursor/facets), AS-79 (`ProductTitleSuggester.suggestTitles` visible only, size ≤ 10, abort via signal, typed `SuggestionTimeoutError`), AS-80 (`check:boundaries` and `check:table-ownership --strict` report zero findings for discovery search code; an app boots loading only `ProductSearchModule`, `SearchProjectorModule`, `SearchWorkerModule`; grep gate: no `ProductModel|ShopModel|ShopMembershipModel|MembershipService` and no `sequelize.query` on foreign tables in `D/`).
+- [X] T102 [US9] `D/application/title-suggester.service.ts` (`ProductTitleSuggester` over `ProductIndexPort` with the visibility filter); change `D/application/autocomplete.service.ts` to use it instead of `ElasticsearchService.suggestTitles` (edit only that call site).
+- [X] T103 [US9] Narrow `D/index.ts`: export `ProductSearchModule`, `SearchProjectorModule`, `SearchWorkerModule`, `ProductSearchService`, `ProductTitleSuggester`, DTO types, `SearchPerformed`, `SearchResultClicked`, `SearchReindexCompleted`; remove `SearchAdminModule`, `SearchReindexWorkerModule`, `SearchQueryLogger`, `SearchClicksProjector`, `SearchQueriesProjector`; keep `OrderBasketsProjector`, `TrendingConsumer` and existing S33–S35 exports.
+- [X] T104 [US9] Update `apps/projector/src/projector.module.ts`, `apps/core/src/core.module.ts`, `apps/worker/src/worker.module.ts` to import the three modules instead of the removed exports.
+- [X] T105 [US9] Run `../../scripts/sdd/test-spec.sh libs/domains/discovery/search-platform` until green.
 
 ---
 
 ## Phase 12: Polish and cross-cutting
 
-- [ ] T106 [P] Web W02 port: `packages/web/lib/api/catalog.ts` types from contracts (`items`, `total.exact`, `degraded`, `nextCursor`, facet keys), `packages/web/app/search/page.tsx` sends `limit`/`cursor` (no `from`), URL state for `q`, filters, `sort`, `cursor`, sends `searchId` with each click; remove the `test.fail` "Near Me" case in `packages/web/tests/search.spec.ts:37-44`; add the happy-path journeys of `test-plan.md` (search, sort, price filter, facets, sibling remain, click) and the `seller.spec.ts` inventory search journey if that file exists.
-- [ ] T107 Remove the old search cases of `catalog/product.e2e-spec.ts:66-150` if S05 left them (touch only those lines) after T057 proves them; otherwise report "already removed".
-- [ ] T108 Delete the product methods and `types.ts` left in `libs/infrastructure/elasticsearch/elasticsearch.service.ts` and `SearchQueryLogger` if unreferenced; re-run `grep -rn "sequelize.transaction" packages/backend/libs/domains/discovery` to confirm no direct site was added.
+- [X] T106 [P] Web W02 port: `packages/web/lib/api/catalog.ts` types from contracts (`items`, `total.exact`, `degraded`, `nextCursor`, facet keys), `packages/web/app/search/page.tsx` sends `limit`/`cursor` (no `from`), URL state for `q`, filters, `sort`, `cursor`, sends `searchId` with each click; remove the `test.fail` "Near Me" case in `packages/web/tests/search.spec.ts:37-44`; add the happy-path journeys of `test-plan.md` (search, sort, price filter, facets, sibling remain, click) and the `seller.spec.ts` inventory search journey if that file exists.
+- [X] T107 Remove the old search cases of `catalog/product.e2e-spec.ts:66-150` if S05 left them (touch only those lines) after T057 proves them; otherwise report "already removed".
+- [X] T108 Delete the product methods and `types.ts` left in `libs/infrastructure/elasticsearch/elasticsearch.service.ts` and `SearchQueryLogger` if unreferenced; re-run `grep -rn "sequelize.transaction" packages/backend/libs/domains/discovery` to confirm no direct site was added.
 - [ ] T109 Sibling-spec follow-ups: verify `gaps.md` "## Sibling-spec follow-ups" lists S05, S53, S03, S29, S36, S33, S19, S46, S50, W02/S48 and add `- **<id>**: …` bullets for anything new found while building (for example S05 leftovers from T051, T063, T107).
 - [ ] T110 Unverified criteria: confirm `quickstart.md` "Ops artifacts" lists SC-001, SC-002, SC-003 (load part), SC-006, SC-010 and that the five S32 rows exist in `specs/UNVERIFIED.md` with status `not run` (they already do); add a row for any further SC no test proves. Never describe them as verified.
 - [ ] T111 Static gates: `npx tsc --noEmit -p packages/backend`, `npx tsc --noEmit -p packages/contracts`, `pnpm --dir packages/backend check:boundaries`, `pnpm --dir packages/backend check:table-ownership --strict` (zero findings for discovery search code; paste exact output into `gaps.md` section C). ESLint/prettier are blocked in this sandbox — say so in the report.

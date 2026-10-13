@@ -22,7 +22,6 @@ import {
 import {
   TrendingModule,
   RecommendationsModule,
-  SearchAdminModule,
   ProductSearchModule,
   AutocompleteModule,
 } from '@app/domains/discovery';
@@ -135,7 +134,6 @@ import { OutboxPublisherModule } from '@app/infrastructure/outbox/outbox-publish
     ShareLinksModule,
     AutocompleteModule,
     PickupModule,
-    SearchAdminModule,
     RecommendationsModule,
     NotificationsModule,
     LiveModule,

@@ -20,6 +20,7 @@ import type { GuardOutcome } from '../domain/projection-guard';
 import type {
   EngineSearchRequest,
   EngineSearchResult,
+  FacetCounts,
   ProductIndexPort,
   ShopStampWrite,
 } from '../domain/ports';
@@ -44,6 +45,18 @@ const LIST_FIELDS = [
   'sponsored',
 ];
 const CONFLICT = 'version_conflict_engine_exception';
+const FACET_SIZE = 20;
+type Selection = 'category' | 'brand' | 'price';
+const PRICE_RANGE_KEYS = ['under_25', '25_to_50', '50_to_100', 'over_100'];
+
+interface FacetAggregations {
+  categories?: { top?: { buckets: { key: string; doc_count: number }[] } };
+  brands?: { top?: { buckets: { key: string; doc_count: number }[] } };
+  priceRanges?: {
+    top?: { buckets: Record<string, { doc_count: number } | undefined> };
+  };
+  rating?: { avg?: { value: number | null } };
+}
 
 interface MgetDoc {
   _id: string;
@@ -180,6 +193,8 @@ export class ProductIndexAdapter implements ProductIndexPort {
   }
 
   async search(request: EngineSearchRequest): Promise<EngineSearchResult> {
+    if (request.vector) return this.searchNearest(request, request.vector);
+    const facets = request.facets === true;
     const res = await this.engine.search(
       {
         index: PRODUCTS_ALIAS,
@@ -187,7 +202,16 @@ export class ProductIndexAdapter implements ProductIndexPort {
         track_total_hits: TOTAL_HITS_CAP + 1,
         timeout: `${Math.max(100, this.settings.searchBudgetMs - 100)}ms`,
         _source: LIST_FIELDS,
-        query: this.queryOf(request),
+        // with facets the selections move out of the query into a post filter, so the facets see all matches
+        query: this.queryOf(request, !facets),
+        ...(facets
+          ? {
+              post_filter: {
+                bool: { filter: this.selectionClauses(request.filters) },
+              },
+              aggs: this.facetAggregations(request.filters),
+            }
+          : {}),
         sort: this.sortOf(request),
         ...(request.after ? { search_after: request.after } : {}),
       },
@@ -206,13 +230,86 @@ export class ProductIndexAdapter implements ProductIndexPort {
         value: Math.min(total.value, TOTAL_HITS_CAP),
         exact: total.relation === 'eq' && total.value <= TOTAL_HITS_CAP,
       },
+      ...(facets ? { facets: this.facetsOf(res.aggregations) } : {}),
     };
   }
 
-  async suggestTitles(
+  /** k-NN over the visible, filtered documents that have a vector; no lexical clause, no paging. */
+  private async searchNearest(
+    request: EngineSearchRequest,
+    vector: number[],
+  ): Promise<EngineSearchResult> {
+    const k = request.limit;
+    const res = await this.engine.search(
+      {
+        index: PRODUCTS_ALIAS,
+        size: k,
+        timeout: `${Math.max(100, this.settings.searchBudgetMs - 100)}ms`,
+        _source: LIST_FIELDS,
+        knn: {
+          field: 'embedding',
+          query_vector: vector,
+          k,
+          num_candidates: Math.max(100, k * 10),
+          filter: {
+            bool: {
+              filter: [
+                ...visibilityFilter(),
+                ...this.alwaysClauses(request.filters),
+                ...this.selectionClauses(request.filters),
+              ],
+            },
+          },
+        },
+      },
+      { timeoutMs: this.settings.searchBudgetMs, maxRetries: 0 },
+    );
+    const hits = (res.hits?.hits ?? []) as { _id: string; _source: object }[];
+    return {
+      hits: hits.map((h) => ({ id: h._id, sort: [], source: h._source })),
+      total: { value: hits.length, exact: true },
+    };
+  }
+
+  suggestTitles(
     prefix: string,
     size: number,
     signal?: AbortSignal,
+  ): Promise<string[]> {
+    return this.titlesMatching(
+      { 'title.autocomplete': { query: prefix, operator: 'and' } },
+      size,
+      signal,
+    );
+  }
+
+  suggestTitlesFuzzy(
+    prefix: string,
+    size: number,
+    signal?: AbortSignal,
+  ): Promise<string[]> {
+    // every word may carry a typo, the last one is still being typed
+    return this.titlesMatching(
+      {
+        title: {
+          query: prefix,
+          operator: 'and',
+          fuzziness: 'AUTO',
+          prefix_length: 1,
+          max_expansions: 50,
+        },
+      },
+      size,
+      signal,
+      'match_bool_prefix',
+    );
+  }
+
+  private async titlesMatching(
+    match: object,
+    size: number,
+    signal?: AbortSignal,
+    clause: 'match' | 'match_bool_prefix' = 'match',
   ): Promise<string[]> {
     const res = await this.engine.search(
       {
@@ -222,13 +319,7 @@ export class ProductIndexAdapter implements ProductIndexPort {
         query: {
           bool: {
             filter: visibilityFilter(),
-            must: [
-              {
-                match: {
-                  'title.autocomplete': { query: prefix, operator: 'and' },
-                },
-              },
-            ],
+            must: [{ [clause]: match }],
           },
         },
       },
@@ -239,16 +330,30 @@ export class ProductIndexAdapter implements ProductIndexPort {
       .filter((t): t is string => typeof t === 'string' && t.length > 0);
   }
 
-  private queryOf(request: EngineSearchRequest): object {
-    const f = request.filters;
-    const filter: object[] = [...visibilityFilter()];
-    if (f.category) filter.push({ term: { category: f.category } });
-    if (f.brand) filter.push({ term: { 'brand.keyword': f.brand } });
-    if (f.inStock !== undefined) filter.push({ term: { inStock: f.inStock } });
+  /** Filters that narrow every facet too (stock and rating). */
+  private alwaysClauses(f: EngineSearchRequest['filters']): object[] {
+    const out: object[] = [];
+    if (f.inStock !== undefined) out.push({ term: { inStock: f.inStock } });
     if (f.minRating !== undefined)
-      filter.push({ range: { rating: { gte: f.minRating } } });
-    if (f.minPriceMinor !== undefined || f.maxPriceMinor !== undefined)
-      filter.push({
+      out.push({ range: { rating: { gte: f.minRating } } });
+    return out;
+  }
+
+  /** The filters picked in the facet panel; `except` leaves one group out (the facet of that group). */
+  private selectionClauses(
+    f: EngineSearchRequest['filters'],
+    except?: Selection,
+  ): object[] {
+    const out: object[] = [];
+    if (f.category && except !== 'category')
+      out.push({ term: { category: f.category } });
+    if (f.brand && except !== 'brand')
+      out.push({ term: { 'brand.keyword': f.brand } });
+    if (
+      (f.minPriceMinor !== undefined || f.maxPriceMinor !== undefined) &&
+      except !== 'price'
+    )
+      out.push({
         range: {
           priceMinor: {
             ...(f.minPriceMinor !== undefined && { gte: f.minPriceMinor }),
@@ -256,6 +361,70 @@ export class ProductIndexAdapter implements ProductIndexPort {
           },
         },
       });
+    return out;
+  }
+
+  /** One `filter` aggregation per facet holding every selection except its own. */
+  private facetAggregations(f: EngineSearchRequest['filters']): object {
+    const scoped = (except: Selection | undefined, aggs: object) => ({
+      filter: { bool: { filter: this.selectionClauses(f, except) } },
+      aggs,
+    });
+    const top = (field: string) => ({
+      terms: {
+        field,
+        size: FACET_SIZE,
+        shard_size: FACET_SIZE * 5,
+        order: [{ _count: 'desc' }, { _key: 'asc' }],
+      },
+    });
+    return {
+      categories: scoped('category', { top: top('category') }),
+      brands: scoped('brand', { top: top('brand.keyword') }),
+      priceRanges: scoped('price', {
+        top: {
+          range: {
+            field: 'priceMinor',
+            keyed: true,
+            ranges: [
+              { key: 'under_25', to: 2_500 },
+              { key: '25_to_50', from: 2_500, to: 5_000 },
+              { key: '50_to_100', from: 5_000, to: 10_000 },
+              { key: 'over_100', from: 10_000 },
+            ],
+          },
+        },
+      }),
+      rating: scoped(undefined, { avg: { avg: { field: 'rating' } } }),
+    };
+  }
+
+  private facetsOf(aggs: FacetAggregations | undefined): FacetCounts {
+    const buckets = (name: 'categories' | 'brands') =>
+      (aggs?.[name]?.top?.buckets ?? []).map((b) => ({
+        key: String(b.key),
+        count: b.doc_count,
+      }));
+    const ranges = aggs?.priceRanges?.top?.buckets ?? {};
+    const avg = aggs?.rating?.avg?.value;
+    return {
+      categories: buckets('categories'),
+      brands: buckets('brands'),
+      priceRanges: PRICE_RANGE_KEYS.map((key) => ({
+        key,
+        count: ranges[key]?.doc_count ?? 0,
+      })),
+      avgRating: typeof avg === 'number' ? Math.round(avg * 100) / 100 : null,
+    };
+  }
+
+  private queryOf(request: EngineSearchRequest, withSelections: boolean): object {
+    const f = request.filters;
+    const filter: object[] = [
+      ...visibilityFilter(),
+      ...this.alwaysClauses(f),
+      ...(withSelections ? this.selectionClauses(f) : []),
+    ];
     if (request.q === null) return { bool: { filter } };
     // The text goes into a plain `multi_match` string, never `query_string`: operators and wildcards are words.
     return {

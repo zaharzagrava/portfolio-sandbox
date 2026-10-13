@@ -74,17 +74,26 @@ discovery  (4)
 
 The reindex, admin and worker `ProductModel`/`forFeature([Product])` lines and the `ShopModel` in `search-reindex.e2e-spec.ts` listed when the spec was written are gone (no longer reported).
 
-## Deferred until a later pass
+## Passes
 
-P1 pass done: Setup, Foundational, US4 (index projection), US1 (public search), US5 (reindex). Deferred (not failed):
+- **P1 pass**: Setup, Foundational, US4 (index projection), US1 (public search), US5 (reindex).
+- **P2/P3 pass (this one)**: US2 facets (AS-15–AS-17), US3 semantic (AS-18–AS-21), US6 synonyms (AS-53–AS-60), US7 shop product search (AS-61–AS-69), US8 measurement (AS-70–AS-76), US9 platform (AS-78–AS-80) and the polish tasks. Nothing is deferred.
+- Still waiting on other capabilities (not blocking): S29 (`media.gallery_changed`, `MediaQueryService.getReadyMediaByIds`: items carry `imageUrl: null` via the null resolver) and S36 (`marketing.product_sponsorship_changed`: no product is sponsored). The S03 follow-up (`shopVersion` on the three offboarding events) is adopted: the shop-state projection orders every tenancy event by `shopVersion`, and the shared test helper `discovery/testing/search-events.ts` now takes real versions instead of zeros (AS-29 proves that a lower version with a later envelope time cannot hide a shop again).
 
-- **US2 facets (P2)**, AS-15–AS-17, T065–T067: wait for nothing external; next pass.
-- **US3 semantic (P2)**, AS-18–AS-21, T068–T070: next pass.
-- **US6 synonyms (P2)**, AS-53–AS-60 (the `unit` AS-83 grammar is done), T084–T089: next pass. `GET/PUT /admin/search/synonyms` routes are not mounted yet, so AS-52 covers the reindex/index/rollback admin routes only.
-- **US7 shop product search (P2)**, AS-61–AS-69, T090–T094: next pass; closes the remaining S32 raw-SQL line in section C. Needs S03's `ShopScoped` (built).
-- **US8 measurement (P3)**, AS-70–AS-76 e2e parts, T095–T100, and **US9 platform (P3)**, AS-78–AS-80, T101–T105: later pass. (Click-related AS-70/AS-71 tests already present from earlier work are not ticked.)
-- **Polish T106–T113**: final pass.
-- Waits on other capabilities, not blocking P1: S29 (`media.gallery_changed`, `MediaQueryService.getReadyMediaByIds`: items carry `imageUrl: null` via the null resolver), S36 (`marketing.product_sponsorship_changed`: no product is sponsored), S03 (`shopVersion` on offboarding events: ordered by `occurredAt`).
+## Differences found while building (recorded before touching the spec)
+
+- **AS-65, malformed shop id**: the spec says a `shopId` that is not a UUID answers `400 validation_failed`. S03's `ShopGuard` runs first and answers `404` (same body as an unknown shop, by design: no existence oracle). `shop-product-search.e2e-spec.ts` follows S03 (`404`). The spec text is not edited; the living-spec page lists the difference under "Known gaps".
+- **AS-64, closed shops**: S03's `ShopScoped('products.read')` does answer `403 shop_suspended`, `409 shop_offboarding` and `404` for `DELETED` (`products.read` is not in S03's `WHILE_SUSPENDED` / `WHILE_DELETING` lists). No difference.
+- **AS-71, missing `searchId`**: answered `422 invalid_search_id` (a missing or non-string token is a bad token), while every other malformed field answers `400`. The spec words it the same way; both are tested.
+- **AS-19, `parameters`**: `422 unsupported_combination` carries `parameters: ["semantic", "facets"]` or `["semantic", "cursor"]` (the pair), so W02's degrade code, which drops the names it finds in the list, drops `semantic` and keeps the rest of the request.
+- **Contract shape of the quality report**: `GET /admin/search/quality` answers `{rows: [...]}` (the contract written in the P1 pass), not a bare array.
+- **T108**: `libs/infrastructure/elasticsearch/elasticsearch.service.ts` and `types.ts` stay. They are still referenced by `assistant/application/assistant-tools.ts` (`searchProducts`, S46), `infrastructure/health/health.module.ts`, `projections/versioned-sinks.e2e-spec.ts` and `fulfilment/pickup.e2e-spec.ts` (as a client). The service no longer creates an index or a synonym set at startup. `SearchQueryLogger` was unreferenced and is deleted. No direct `sequelize.transaction` exists in `libs/domains/discovery` (grep: none).
+- **Contracts package**: `packages/contracts` has no `tsconfig.json` of its own; its sources are type-checked through `tsc --noEmit -p packages/backend`.
+
+## Spec changes
+
+- `docs/spec/capabilities/S32-product-search.md` (the living page) was edited first: rules R-22 to R-47 and behaviors B-21 to B-32 added for facets, semantic mode, synonyms, shop search, measurement and the exported services; entry points, owned policies and "Known gaps" brought up to date. No `*.reviewed.json` exists for it, so nothing a human signed changed. `python3 scripts/livespec/check.py`: 0 errors (style warnings for long sentences only).
+- `specs/domains/S32-product-search/spec.md`, `test-plan.md` and `questions.md` were not edited.
 
 ## Gate repairs
 
@@ -108,13 +117,15 @@ P1 pass done: Setup, Foundational, US4 (index projection), US1 (public search), 
 
 Things other capabilities must adopt because of what S32 changes or assumes. Their specs are not edited from here.
 
-- **S05**: stop calling `ElasticsearchService.searchProducts` from `catalog/application/product.service.ts` and delete the catalog search routes and DTO (`product.controller.ts`, `product.dto.ts:68-137`) once `/products/search` is served by `ProductSearchModule`; delete the `search` entry of `RESERVED_PRODUCT_SEGMENTS` (`api/product-id.pipe.ts:12`) after that; move the old search cases of `product.e2e-spec.ts:66-150` out (S32 re-proves them in `search-query.e2e-spec.ts`); drop `Product.embedding` and `searchVector` only after S32 is live (contract step).
+- **S05**: stop calling `ElasticsearchService.searchProducts` from `catalog/application/product.service.ts` and delete the catalog search routes and DTO (`product.controller.ts`, `product.dto.ts:68-137`) once `/products/search` is served by `ProductSearchModule`; delete the `search` entry of `RESERVED_PRODUCT_SEGMENTS` (`api/product-id.pipe.ts:12`) after that; the old search cases of `product.e2e-spec.ts` were left in the catalog's spec by S05; S32 removed them (T107, only those cases and the `ElasticsearchService` set-up they needed) after `search-query.e2e-spec.ts` re-proved them over HTTP; drop `Product.embedding` and `searchVector` only after S32 is live (contract step).
 - **S53**: `products.events` must keep the latest event per `productId` (compaction), including deletes, and `productVersion` must rise strictly per product including on delete (reindex replay and tombstones rely on it).
-- **S03**: add `shopVersion` to `tenancy.shop_offboarding_started`, `tenancy.shop_offboarding_cancelled` and `tenancy.shop_deleted` (S32 orders them by `occurredAt` until then); `ShopQueryService.getShopsByIds` must return `status`, `shopVersion` and `plan` (S32 uses it only in `search.backfill-shop-state`).
+- **S03**: done on S03's side and adopted here: `shopVersion` is in `tenancy.shop_offboarding_started`, `…_cancelled` and `…_deleted`, S32 orders every tenancy event by it, and `ShopQueryService.getShopsByIds` returns `status`, `shopVersion` and `plan` (used only in `search.backfill-shop-state`). One difference for S03 to know: `ShopScoped` answers a `shopId` that is not a UUID with `404`, where S32's AS-65 expected `400 validation_failed`.
 - **S29**: publish `media.gallery_changed v1 {productId, shopId, mediaIds, galleryVersion}` and export `MediaQueryService.getReadyMediaByIds(ids ≤ 500)` returning `urls.thumb`; the media module must be loadable in `apps/projector`. Until then S32 binds a null image resolver (items carry `imageUrl: null`) and consumes a locally defined schema.
 - **S36**: publish `marketing.product_sponsorship_changed v1 {productId, shopId, sponsored, sponsorshipVersion}`; until then no product is sponsored.
-- **S33**: read visible titles only through `ProductTitleSuggester` (replace `ElasticsearchService.suggestTitles` in `application/autocomplete.service.ts`); `search.performed` is keyed by `searchId` (no per-query ordering) and `suggestions` no longer exists in the search response.
+- **S33**: done on S32's side: `ProductTitleSuggester` (`suggestTitles`, `suggestTitlesFuzzy`, size 1 to 10, typed `SuggestionTimeoutError`) is exported through `ProductSearchModule` and the barrel, and `infra/catalog-title-source.adapter.ts` now wraps it (the typo method no longer rejects, so `typo_fallback_unavailable` is no longer produced by the adapter). S33 may now import the suggester through the barrel instead of the adapter. `search.performed` is keyed by `searchId` (no per-query ordering) and `suggestions` no longer exists in the search response. `search_queries` rows now carry `search_id`, `mode`, `degraded`, `surface` (`'http'` or `'internal'`; `''` only for rows written before S32) and `filters`.
 - **S19**: `fulfilment/infra/pickup-availability.projector.ts` and `availability-index.ts` move from `ElasticsearchService` to the generic `SearchEngineClient` (S32 makes this code edit to keep the build green); no shared index or filter.
-- **S46**: assistant product search uses `ProductSearchService.search` (`limit ≤ 20`, `surface: "internal"`).
+- **S46**: assistant product search uses `ProductSearchService.search` (`limit ≤ 20`, `surface: "internal"`, exported through `@app/domains/discovery`; numbers and booleans are accepted as typed values). It still calls `ElasticsearchService.searchProducts` (`assistant/application/assistant-tools.ts:126`), which queries the `products` alias with the pre-S32 document shape (`price`, `priceMax`) while the index now holds `priceMinor`: its price filter and `price` output no longer match. Until S46 switches, that tool returns hits without a working price filter.
+- **W07**: `GET /api/shops/:shopId/products/search` exists again (`ShopScoped('products.read')`, `q` 1 to 100, `status`, `limit` 1 to 50, `cursor`, answer `{items: [{id, title, priceMinor, currency, quantity, status, rank}], nextCursor}`); the inventory search may use it instead of filtering the first 50 products in the browser.
+- **S50**: the admin policy `discovery.search-admin` now also guards `GET /admin/search/synonyms`, `PUT /admin/search/synonyms` and `GET /admin/search/quality`.
 - **S50**: `catalogRatePolicies` keeps declaring `search.query` for its other call sites (`experimentation/api/analytics.controller.ts:31`, `catalog-sync/api/sync.controller.ts:63`, `fulfilment/api/pickup.controller.ts:79,92`, `discovery/api/recommendations.controller.ts:21`); those owners replace it with their own names (G-35). The four `discovery.*` policies are declared by S32.
 - **W02 / S48**: the search page sends `limit` and `cursor` (no `from`), sends the `searchId` with each click, reads `items`, `total.exact`, `degraded` and the facet keys; the BFF does not compose search.

@@ -1,39 +1,36 @@
 import { Injectable } from '@nestjs/common';
+import {
+  searchQualityQuerySchema,
+  type SearchQualityReport,
+} from '@marketplace-sandbox/contracts';
 import { ClickHouseService } from '@app/infrastructure/clickhouse/clickhouse.service';
-import { KafkaProducerService } from '@app/infrastructure/kafka/kafka-producer.service';
-import { normaliseQuery } from '../domain/query-text';
-
-const normalizeQuery = (q: string): string => normaliseQuery(q).toLowerCase();
-import { SearchResultClicked } from './events/search-click-events';
+import { SearchValidationError } from '../domain/search-errors';
 
 /**
- * Relevance is measured, not guessed: result clicks + query logs (SD-12) give
- * CTR, mean reciprocal rank and zero-result rate per query - the numbers you
- * look at before and after changing boosts or synonyms.
+ * Relevance is measured, not guessed: result clicks + query logs (SD-12) give CTR, mean reciprocal rank and
+ * zero-result rate per query - the numbers you look at before and after changing boosts or synonyms (S32 FR-054).
+ * Parameters outside their range are refused, never clamped.
  */
 @Injectable()
 export class SearchQualityService {
-  constructor(
-    private readonly producer: KafkaProducerService,
-    private readonly clickhouse: ClickHouseService,
-  ) {}
+  constructor(private readonly clickhouse: ClickHouseService) {}
 
-  recordClick(query: string, productId: string, position: number): void {
-    const q = normalizeQuery(query);
-    const event = SearchResultClicked.create(q, 0, {
-      query: q,
-      productId,
-      position,
-    });
-    void this.producer
-      .send({ topic: SearchResultClicked.topic, key: q, value: event })
-      .catch(() => undefined);
-  }
-
-  async report(days = 7, limit = 50) {
-    return this.clickhouse.query<{
+  async report(rawQuery: Record<string, unknown>): Promise<SearchQualityReport> {
+    const parsed = searchQualityQuerySchema.safeParse(rawQuery);
+    if (!parsed.success)
+      throw new SearchValidationError([
+        ...new Set(
+          parsed.error.issues.flatMap((issue) =>
+            issue.code === 'unrecognized_keys'
+              ? issue.keys
+              : [String(issue.path[0] ?? 'query')],
+          ),
+        ),
+      ]);
+    const { days, limit } = parsed.data;
+    const rows = await this.clickhouse.query<{
       query: string;
-      searches: string;
+      searches: string | number;
       ctr: number;
       mrr: number;
       zeroResultRate: number;
@@ -50,8 +47,17 @@ export class SearchQualityService {
               round(coalesce(c.rr, 0) / s.searches, 3) AS mrr,
               round(s.zero / s.searches, 3) AS zeroResultRate
        FROM s LEFT JOIN c USING (query)
-       ORDER BY s.searches DESC LIMIT {limit:UInt32}`,
+       ORDER BY s.searches DESC, s.query ASC LIMIT {limit:UInt32}`,
       { days, limit },
     );
+    return {
+      rows: rows.map((row) => ({
+        query: row.query,
+        searches: Number(row.searches),
+        ctr: Number(row.ctr),
+        mrr: Number(row.mrr),
+        zeroResultRate: Number(row.zeroResultRate),
+      })),
+    };
   }
 }

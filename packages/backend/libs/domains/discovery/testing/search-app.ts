@@ -11,6 +11,7 @@ import {
   testKafka,
 } from '@app/test/utils/kafka-test';
 import type { EventEnvelope } from '@app/infrastructure/events/event-envelope';
+import { KAFKA_CLIENT_OVERRIDES } from '@app/infrastructure/kafka/kafka-client.options';
 import { SearchEngineClient } from '@app/infrastructure/elasticsearch/search-engine.client';
 import {
   createCatalogApp,
@@ -19,7 +20,11 @@ import {
 import { TcpFaultProxy } from '@app/test/fakes/tcp-fault-proxy';
 import { EMBEDDING_PROVIDER, REINDEX_PROBE } from '../domain/ports';
 import type { IndexedDocument } from '../domain/index-document';
-import { IndexBootstrapService } from '../infra/index-bootstrap.service';
+import {
+  IndexBootstrapService,
+  SYNONYMS_SET_ID,
+} from '../infra/index-bootstrap.service';
+import { DEFAULT_SYNONYM_RULES } from '../infra/repositories/synonym-set.repository';
 import { SearchIndexRegistry } from '../infra/search-index-registry';
 import { ProductSearchModule } from '../product-search.module';
 import { SearchProjectorModule } from '../search-projector.module';
@@ -38,6 +43,8 @@ export interface SearchTestApp extends CatalogTestApp {
   proxy: TcpFaultProxy | null;
   /** In front of Redis, when `redisProxy: true`. */
   redisProxy: TcpFaultProxy | null;
+  /** In front of the event stream, when `kafkaProxy: true` (every Kafka connection of the app goes through it). */
+  kafkaProxy: TcpFaultProxy | null;
   embeddings: TestEmbeddingProvider;
   /** Pause points of reindex runs; `reset` between tests. */
   probe: TestReindexProbe;
@@ -75,6 +82,8 @@ export async function createSearchApp(
     engineProxy?: boolean;
     /** A fault proxy in front of Redis (the rate limiter's store), to prove the limiter fails open. */
     redisProxy?: boolean;
+    /** A fault proxy in front of the broker, to prove logging and clicks never hurt a search. */
+    kafkaProxy?: boolean;
     env?: Record<string, string>;
   } = {},
 ): Promise<SearchTestApp> {
@@ -88,6 +97,14 @@ export async function createSearchApp(
     : null;
   const redisProxy = options.redisProxy
     ? await TcpFaultProxy.start({ host: 'localhost', port: 6400 })
+    : null;
+  const kafkaProxy = options.kafkaProxy
+    ? await TcpFaultProxy.start({
+        host: 'localhost',
+        port: Number(
+          (process.env.KAFKA_BROKER ?? 'localhost:9192').split(':')[1],
+        ),
+      })
     : null;
   const base = await createCatalogApp({
     ...(redisProxy
@@ -104,6 +121,14 @@ export async function createSearchApp(
     overrides: [
       { provide: EMBEDDING_PROVIDER, useValue: embeddings },
       { provide: REINDEX_PROBE, useValue: probe },
+      ...(kafkaProxy
+        ? [
+            {
+              provide: KAFKA_CLIENT_OVERRIDES,
+              useValue: { socketFactory: kafkaProxy.kafkaSocketFactory() },
+            },
+          ]
+        : []),
       ...(options.overrides ?? []),
     ],
     env: {
@@ -126,6 +151,7 @@ export async function createSearchApp(
     engine,
     proxy,
     redisProxy,
+    kafkaProxy,
     embeddings,
     probe,
     worker: base.app.get(JobWorker, { strict: false }),
@@ -151,7 +177,7 @@ export async function createSearchApp(
     },
     sequelize,
     async resetSearch() {
-      for (const p of [proxy, redisProxy])
+      for (const p of [proxy, redisProxy, kafkaProxy])
         if (p) {
           p.mode = 'pass';
           p.delayMs = 0;
@@ -171,6 +197,21 @@ export async function createSearchApp(
       );
       if (names.length > 0)
         await es.indices.delete({ index: names, ignore_unavailable: true });
+      // the seeds keep the synonym tables (their migration seeds them): put them back to version 1 and let the next
+      // bootstrap push that version to the engine again
+      await sequelize.query(`DELETE FROM "SearchSynonymVersion"`);
+      await sequelize.query(
+        `INSERT INTO "SearchSynonymSet" ("id", "version", "rules", "updatedAt")
+         VALUES (1, 1, $1::text[], now())
+         ON CONFLICT ("id") DO UPDATE SET "version" = 1, "rules" = EXCLUDED."rules", "updatedBy" = NULL,
+           "updatedAt" = now(), "pendingVersion" = NULL, "pendingRules" = NULL, "pendingAt" = NULL`,
+        { bind: [DEFAULT_SYNONYM_RULES] },
+      );
+      await es.synonyms
+        .deleteSynonym({ id: SYNONYMS_SET_ID })
+        .catch((e: { statusCode?: number }) =>
+          e.statusCode === 404 ? undefined : Promise.reject(e),
+        );
       base.app.get(SearchIndexRegistry, { strict: false }).invalidate();
       await base.app
         .get(IndexBootstrapService, { strict: false })
@@ -218,6 +259,7 @@ export async function createSearchApp(
       await es.close();
       await proxy?.close();
       await redisProxy?.close();
+      await kafkaProxy?.close();
     },
   };
   return app;

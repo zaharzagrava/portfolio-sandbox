@@ -29,8 +29,9 @@ import { guarded, recordLag, stampOf, UUID } from './projection-support';
 const PLANS = ['STARTER', 'PRO', 'ENTERPRISE'] as const;
 
 /**
- * `tenancy.shop_*` into the shop-state copy and the shop stamp on the shop's index documents (S32 FR-022). Events with
- * a `shopVersion` are ordered by it, the offboarding events (which have none yet) by their envelope time. The copy is
+ * `tenancy.shop_*` into the shop-state copy and the shop stamp on the shop's index documents (S32 FR-022). Every event
+ * carries the shop's `shopVersion` (offboarding started and cancelled and deletion since S03), which orders them; the
+ * envelope time only orders against a copy written before any version was known. The copy is
  * written first (version guard), then the index documents are stamped; a shop deletion removes the shop's documents
  * and shop-table rows.
  */
@@ -71,7 +72,6 @@ export class ShopStateProjectionService {
   }
 
   private parse(envelope: EventEnvelope): ShopStateChange | null {
-    const occurredAt = new Date(envelope.occurredAt);
     try {
       switch (envelope.type) {
         case ShopStatusChanged.type: {
@@ -94,25 +94,24 @@ export class ShopStateProjectionService {
           const p = this.match(ShopOffboardingStarted, envelope);
           return this.change(p.shopId, envelope, {
             offboarding: true,
-            shopVersion: null,
+            shopVersion: p.shopVersion,
           });
         }
         case ShopOffboardingCancelled.type: {
           const p = this.match(ShopOffboardingCancelled, envelope);
           return this.change(p.shopId, envelope, {
             offboarding: false,
-            shopVersion: null,
+            shopVersion: p.shopVersion,
           });
         }
         case ShopDeleted.type: {
           const p = this.match(ShopDeleted, envelope);
           return this.change(p.shopId, envelope, {
             status: 'DELETED',
-            shopVersion: null,
+            shopVersion: p.shopVersion,
           });
         }
         default:
-          void occurredAt;
           searchIgnoredCounter.add(1, { reason: 'unknown_type' });
           return null;
       }

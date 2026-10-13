@@ -4,6 +4,7 @@ import {
   productSearchQuerySchema,
   type ProductSearchQuery,
   type ProductSearchResponse,
+  type SearchFacets,
 } from '@marketplace-sandbox/contracts';
 import { CLOCK, type Clock } from '@app/common/core/clock';
 import {
@@ -18,6 +19,7 @@ import {
 import {
   InvalidPriceRangeError,
   SearchUnavailableError,
+  SemanticRequiresQueryError,
   SearchValidationError,
   UnsupportedCombinationError,
 } from '../domain/search-errors';
@@ -28,13 +30,17 @@ import {
   normaliseQuery,
 } from '../domain/query-text';
 import {
+  EMBEDDING_PROVIDER,
   PRODUCT_INDEX,
   SEARCH_EVENT_PUBLISHER,
+  type EmbeddingProvider,
   type EngineSearchRequest,
   type ProductIndexPort,
   type SearchEventPublisher,
 } from '../domain/ports';
+import { withBudget } from '../infra/with-budget';
 import {
+  searchDegradedCounter,
   searchDuration,
   searchRequestsCounter,
   searchUnavailableCounter,
@@ -73,6 +79,7 @@ export class ProductSearchService {
     @Inject(PRODUCT_INDEX) private readonly index: ProductIndexPort,
     @Inject(SEARCH_EVENT_PUBLISHER)
     private readonly events: SearchEventPublisher,
+    @Inject(EMBEDDING_PROVIDER) private readonly embeddings: EmbeddingProvider,
     private readonly settings: SearchSettings,
     @Inject(CLOCK) private readonly clock: Clock,
   ) {}
@@ -83,7 +90,12 @@ export class ProductSearchService {
     let mode: ProductSearchResponse['mode'] = 'browse';
     try {
       const { query, q, fingerprint, after } = request;
-      mode = q === null ? 'browse' : 'lexical';
+      const degraded: string[] = [];
+      const vector =
+        query.semantic === true && q !== null
+          ? await this.embedQuery(q, degraded)
+          : undefined;
+      mode = vector ? 'semantic' : q === null ? 'browse' : 'lexical';
       const engine: EngineSearchRequest = {
         q,
         filters: {
@@ -101,12 +113,15 @@ export class ProductSearchService {
         sort: query.sort ?? 'relevance',
         limit: query.limit,
         after,
+        ...(query.facets === true && { facets: true }),
+        ...(vector && { vector }),
       };
       const result = await this.index.search(engine);
       const page = result.hits.slice(0, query.limit);
       const last = page[page.length - 1];
+      // a semantic request has no cursor, also when it degraded to lexical
       const nextCursor =
-        result.hits.length > query.limit && last
+        query.semantic !== true && result.hits.length > query.limit && last
           ? encodeSearchCursor({ sv: last.sort, id: last.id }, fingerprint)
           : null;
 
@@ -138,7 +153,8 @@ export class ProductSearchService {
         }),
         total: result.total,
         nextCursor,
-        degraded: [],
+        ...(result.facets && { facets: result.facets as SearchFacets }),
+        degraded,
       };
       searchRequestsCounter.add(1, { mode, status: 'ok' });
       if (logged !== null)
@@ -148,7 +164,7 @@ export class ProductSearchService {
           results: result.total.value,
           mode,
           filters: FILTER_NAMES.filter((n) => query[n] !== undefined),
-          degraded: [],
+          degraded,
           surface: call.surface,
           subject: call.subject,
         });
@@ -170,6 +186,27 @@ export class ProductSearchService {
     }
   }
 
+  /** The vector of `q` within the embedding budget; on any failure the search degrades to lexical and says so (AS-20). */
+  private async embedQuery(
+    q: string,
+    degraded: string[],
+  ): Promise<number[] | undefined> {
+    const budget = this.settings.embeddingBudgetMs;
+    try {
+      return await withBudget(
+        this.embeddings.embed(q, AbortSignal.timeout(budget)),
+        budget,
+      );
+    } catch (error) {
+      this.logger.warn(
+        `embedding unavailable, answering lexically: ${error instanceof Error ? error.name : 'error'}`,
+      );
+      degraded.push('semantic_unavailable');
+      searchDegradedCounter.add(1, { reason: 'semantic_unavailable' });
+      return undefined;
+    }
+  }
+
   /** Everything that can be refused without asking the engine (FR-001, FR-007 to FR-009, AS-10). */
   private validate(call: SearchCall): {
     query: ProductSearchQuery;
@@ -177,7 +214,18 @@ export class ProductSearchService {
     fingerprint: string;
     after: (string | number)[] | null;
   } {
-    const parsed = productSearchQuerySchema.safeParse(call.query);
+    // an in-process caller passes numbers and booleans; the schema is the one of the query string
+    const raw = Object.fromEntries(
+      Object.entries(call.query)
+        .filter(([, value]) => value !== undefined)
+        .map(([key, value]) => [
+          key,
+          typeof value === 'number' || typeof value === 'boolean'
+            ? String(value)
+            : value,
+        ]),
+    );
+    const parsed = productSearchQuerySchema.safeParse(raw);
     if (!parsed.success) {
       const fields = new Set<string>();
       for (const issue of parsed.error.issues) {
@@ -207,13 +255,15 @@ export class ProductSearchService {
       if (query.facets !== undefined)
         throw new SearchValidationError(['facets']);
     }
-    // Facets (US2) and semantic mode (US3) are not served yet: refuse rather than silently answer without them.
-    if (query.facets === true)
-      throw new UnsupportedCombinationError(['facets']);
-    if (query.semantic === true)
-      throw new UnsupportedCombinationError(['semantic']);
-
     const q = text === '' ? null : text;
+    const semantic = query.semantic === true;
+    if (semantic) {
+      if (q === null) throw new SemanticRequiresQueryError();
+      if (query.facets === true)
+        throw new UnsupportedCombinationError(['semantic', 'facets']);
+      if (query.cursor !== undefined)
+        throw new UnsupportedCombinationError(['semantic', 'cursor']);
+    }
     const mode = q === null ? 'browse' : 'lexical';
     const sort = query.sort ?? 'relevance';
     const fingerprint = searchFingerprint({

@@ -106,29 +106,40 @@ export const shopPlanEvent = (
     occurredAt,
   );
 
-export const offboardingStarted = (shopId: string, occurredAt?: Date) =>
+// `shopVersion` is in these three payloads since S03; the projection orders them by it.
+export const offboardingStarted = (
+  shopId: string,
+  shopVersion: number,
+  occurredAt?: Date,
+) =>
   ShopOffboardingStarted.create(
     shopId,
-    0,
+    shopVersion,
     {
       shopId,
       purgeAt: new Date(Date.now() + 86_400_000).toISOString(),
-      shopVersion: 0,
+      shopVersion,
     },
     occurredAt,
   );
 
-// `shopVersion` joined these three payloads in S03; S32 still orders them by `occurredAt` (its follow-up adopts it).
-export const offboardingCancelled = (shopId: string, occurredAt?: Date) =>
+export const offboardingCancelled = (
+  shopId: string,
+  shopVersion: number,
+  occurredAt?: Date,
+) =>
   ShopOffboardingCancelled.create(
     shopId,
-    0,
-    { shopId, shopVersion: 0 },
+    shopVersion,
+    { shopId, shopVersion },
     occurredAt,
   );
 
-export const shopDeleted = (shopId: string, occurredAt?: Date) =>
-  ShopDeleted.create(shopId, 0, { shopId, shopVersion: 0 }, occurredAt);
+export const shopDeleted = (
+  shopId: string,
+  shopVersion: number,
+  occurredAt?: Date,
+) => ShopDeleted.create(shopId, shopVersion, { shopId, shopVersion }, occurredAt);
 
 export const galleryEvent = (
   productId: string,

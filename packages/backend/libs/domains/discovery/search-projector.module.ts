@@ -1,4 +1,5 @@
 import { Module, type Type } from '@nestjs/common';
+import { ClickHouseModule } from '@app/infrastructure/clickhouse/clickhouse.module';
 import type { Projector } from '@app/infrastructure/projections/projector';
 import { ProductProjectionService } from './application/projection/product-projection.service';
 import { ShopStateProjectionService } from './application/projection/shop-state-projection.service';
@@ -9,6 +10,8 @@ import {
   MediaProjector,
   SponsorshipProjector,
 } from './infra/projectors/signal.projectors';
+import { SearchClicksProjector } from './infra/search-clicks.projector';
+import { SearchQueriesProjector } from './infra/search-queries.projector';
 import { SearchIndexModule } from './search-index.module';
 
 /**
@@ -16,7 +19,7 @@ import { SearchIndexModule } from './search-index.module';
  * `ProjectionsModule.forProjectors` and imports this module for what they inject (S32 US4).
  */
 @Module({
-  imports: [SearchIndexModule],
+  imports: [SearchIndexModule, ClickHouseModule],
   providers: [
     ProductProjectionService,
     ShopStateProjectionService,
@@ -25,12 +28,18 @@ import { SearchIndexModule } from './search-index.module';
     ShopStateProjector,
     MediaProjector,
     SponsorshipProjector,
+    SearchClicksProjector,
+    SearchQueriesProjector,
   ],
   exports: [
+    // the clicks and queries projectors are built inside `ProjectionsModule`, which needs this module's ClickHouse
+    ClickHouseModule,
     ProductIndexProjector,
     ShopStateProjector,
     MediaProjector,
     SponsorshipProjector,
+    SearchClicksProjector,
+    SearchQueriesProjector,
     ProductProjectionService,
     ShopStateProjectionService,
     SignalProjectionService,
@@ -42,5 +51,7 @@ export class SearchProjectorModule {
     ShopStateProjector,
     MediaProjector,
     SponsorshipProjector,
+    SearchClicksProjector,
+    SearchQueriesProjector,
   ];
 }

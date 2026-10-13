@@ -26,8 +26,14 @@ export class SearchQueriesProjector implements Projector {
         .filter((e): e is NonNullable<typeof e> => !!e)
         .map((e) => ({
           event_id: e.eventId,
+          search_id: e.payload.searchId ?? '',
           query: e.payload.query,
           results: e.payload.results,
+          // events written before S32 carry none of these; the reader treats '' as typing (S33)
+          mode: e.payload.mode ?? '',
+          degraded: e.payload.degraded ?? [],
+          surface: e.payload.surface ?? '',
+          filters: e.payload.filters ?? [],
           user_hash: e.payload.userHash,
           ts: e.occurredAt.replace('Z', ''),
         })),
