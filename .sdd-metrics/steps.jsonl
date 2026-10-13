@@ -32,3 +32,4 @@
 {"run":"20261013T160745Z","capability":"S19","step":"implement-2","start":"2026-10-13T16:08:11Z","end":"2026-10-13T16:08:36Z","seconds":25,"result":"ok","attempt":1,"reason":"ok"}
 {"run":"20261013T160745Z","capability":"S19","step":"doctor-1","start":"2026-10-13T16:08:36Z","end":"2026-10-13T16:08:52Z","seconds":16,"result":"ok","attempt":1,"reason":"ok","code_changed":false}
 {"run":"20261013T160745Z","capability":"S19","step":"blocked","start":"2026-10-13T16:08:52Z","end":"2026-10-13T16:08:52Z","seconds":0,"result":"blocked","attempt":1,"reason":"needs a human: DOCTOR: needs human: approve or run `/opt/sdd/repo/scripts/qa/fresh-run.sh --here` (the harness blocks it for the agent) and check off T072 if it passes."}
+{"run":"20261013T160745Z","capability":"S25","step":"plan","start":"2026-10-13T16:08:55Z","end":"2026-10-13T16:09:15Z","seconds":20,"result":"ok","attempt":1,"reason":"ok"}
