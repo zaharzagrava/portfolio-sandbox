@@ -106,7 +106,8 @@ step_outcome() {
 # code_fingerprint: a hash of the code (packages, scripts; tracked and untracked files, not ignored ones). Equal before and after a repair
 # means the repair changed no code (only specs, docs or nothing): a gate that then passes was a flake.
 code_fingerprint() {
-  git -C "${ROOT:-.}" ls-files -z -c -o --exclude-standard -- packages scripts | (cd "${ROOT:-.}" && xargs -0 sha1sum 2>/dev/null) | sha1sum | cut -d' ' -f1
+  # a file that is tracked but deleted (exactly what the integrity gate reports) makes sha1sum fail and xargs exit 123; under `set -e` that ended the whole run (2026-10-13)
+  git -C "${ROOT:-.}" ls-files -z -c -o --exclude-standard -- packages scripts | (cd "${ROOT:-.}" && { xargs -0 sha1sum 2>/dev/null || true; }) | sha1sum | cut -d' ' -f1
 }
 
 # deadline_left: seconds until RUN_DEADLINE (epoch), empty when no deadline is set.
@@ -136,7 +137,7 @@ notify() {
   local kind="$1" title="$2" body="$3" sound="" urgency=normal prio=3 tag=white_check_mark
   case "$kind" in
     ok)    sound=complete;       urgency=normal;   prio=3; tag=white_check_mark ;;
-    info)  sound="";             urgency=low;      prio=2; tag=information_source ;;
+    info)  sound="";             urgency=low;      prio=3; tag=information_source ;;   # prio 3 (default): ntfy shows it; the old 2 (low) is hidden or silent in many clients
     warn)  sound=dialog-warning; urgency=normal;   prio=4; tag=warning ;;
     limit) sound=bell;           urgency=critical; prio=5; tag=hourglass ;;
     fail)  sound=dialog-warning; urgency=critical; prio=5; tag=x ;;

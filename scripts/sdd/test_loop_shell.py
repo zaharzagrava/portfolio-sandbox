@@ -1,0 +1,32 @@
+#!/usr/bin/env python3
+"""Two shell mistakes that stopped or blinded a cloud run on 2026-10-13, kept from coming back.
+1. code_fingerprint() failed when a tracked file was deleted (xargs exits 123, pipefail, set -e): the whole loop ended instead of starting the repair agent.
+2. A backtick inside the double-quoted prompt of extra_context() ran `[proof: ...]` as a command ("command not found") and dropped that instruction from every prompt."""
+import os, re, subprocess, tempfile, unittest
+
+ROOT = subprocess.run(['git', 'rev-parse', '--show-toplevel'], capture_output=True, text=True, cwd=os.path.dirname(os.path.abspath(__file__))).stdout.strip()
+
+
+class LoopShell(unittest.TestCase):
+    def test_code_fingerprint_survives_a_deleted_tracked_file(self):
+        d = tempfile.mkdtemp()
+        env = {**os.environ, 'GIT_AUTHOR_NAME': 't', 'GIT_AUTHOR_EMAIL': 't@t', 'GIT_COMMITTER_NAME': 't', 'GIT_COMMITTER_EMAIL': 't@t'}
+        for cmd in (['git', 'init', '-q'], ['sh', '-c', 'mkdir -p packages scripts && echo a > packages/a.ts && echo b > packages/b.ts'], ['git', 'add', '-A'], ['git', 'commit', '-qm', 'x'], ['rm', 'packages/a.ts']):
+            subprocess.run(cmd, cwd=d, check=True, env=env)
+        r = subprocess.run(['bash', '-c', f'set -euo pipefail; ROOT="{d}"; source "{ROOT}/scripts/sdd/lib.sh"; ROOT="{d}"; fp="$(code_fingerprint)"; echo "fp=$fp"; echo reached-the-next-line'],
+                           capture_output=True, text=True)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn('reached-the-next-line', r.stdout)
+
+    def test_extra_context_keeps_the_backticked_text_and_runs_no_command(self):
+        text = open(os.path.join(ROOT, 'scripts/sdd/implement-specs.sh'), encoding='utf-8').read()
+        m = re.search(r'^extra_context\(\) \{.*?^\}', text, re.M | re.S)
+        self.assertTrue(m)
+        r = subprocess.run(['bash', '-c', f'set -euo pipefail; ROOT="{ROOT}"; LESSONS=""; decisions_to_apply() {{ :; }}; {m.group(0)}\nextra_context S01'], capture_output=True, text=True)
+        self.assertNotIn('command not found', r.stderr)
+        self.assertIn('[proof: ...]', r.stdout)
+        self.assertIn('[code: ...]', r.stdout)
+
+
+if __name__ == '__main__':
+    unittest.main()
