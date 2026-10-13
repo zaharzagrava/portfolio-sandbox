@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [cancelled, completed, pending, unknown]
 defined_for: payment-lifecycle
-rules_hash: a92fad1a24a7
+rules_hash: cfb071ac6ecc
 ---
 # Payment status
 ## Definition

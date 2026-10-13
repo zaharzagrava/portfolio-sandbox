@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [bypass]
 defined_for: S03-shops-rbac
-rules_hash: 4616faf16dca
+rules_hash: e2aefa30e372
 ---
 # Cross-tenant bypass
 ## Definition

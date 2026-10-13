@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [batch, in-flight batch]
 defined_for: S52-cache-toolkit
-rules_hash: e3b0c44298fc
+rules_hash: 1712bb99b441
 ---
 # In-flight batch (write-behind)
 ## Definition

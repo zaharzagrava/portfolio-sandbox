@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [payment provider hosts]
 defined_for: W07-app-shell
-rules_hash: 53658101e3c7
+rules_hash: bff0fda714e8
 ---
 # Payment provider hosts (CSP)
 ## Definition

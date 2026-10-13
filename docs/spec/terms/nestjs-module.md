@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [modules]
 defined_for: S50-rate-limiter
-rules_hash: e3b0c44298fc
+rules_hash: f9c2d316757f
 ---
 # Module
 ## Definition

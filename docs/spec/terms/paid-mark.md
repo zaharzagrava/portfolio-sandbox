@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [paid]
 defined_for: order-reservation
-rules_hash: e3b0c44298fc
+rules_hash: ef625d8c9ba4
 ---
 # Paid mark
 ## Definition

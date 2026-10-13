@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: []
 defined_for: S48-bff
-rules_hash: e3b0c44298fc
+rules_hash: 8c4b994809e8
 ---
 # Web rewrite
 ## Definition

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: []
 defined_for: W07-app-shell
-rules_hash: ba876859687d
+rules_hash: 101d1dff0580
 ---
 # Signed-in areas
 ## Definition

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [?tab=discussions, tab]
 defined_for: W02-storefront-discovery
-rules_hash: e3b0c44298fc
+rules_hash: abd6b93602f2
 ---
 # Product page tabs (?tab=)
 ## Definition

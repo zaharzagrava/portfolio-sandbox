@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [idempotency_unavailable]
 defined_for: S54-platform-toolkit
-rules_hash: 76419e390481
+rules_hash: 04d6537d507f
 ---
 # Idempotency store
 ## Definition

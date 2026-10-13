@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [merge, merges, post /cart/merge]
 defined_for: S10-cart-checkout
-rules_hash: 47aa6237f5e4
+rules_hash: c2496bc4af58
 ---
 # Cart merge
 ## Definition

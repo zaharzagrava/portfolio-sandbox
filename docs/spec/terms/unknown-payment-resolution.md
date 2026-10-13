@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [resolution]
 defined_for: S13-payment-intents
-rules_hash: ae472ac9f679
+rules_hash: 869b6faffc5c
 ---
 # Unknown payment resolution
 ## Definition

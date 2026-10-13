@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [subtotal]
 defined_for: S10-cart-checkout
-rules_hash: e7a90cf7e41d
+rules_hash: e5c155343e46
 ---
 # Shop subtotal
 ## Definition

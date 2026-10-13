@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [1 s search budget]
 defined_for: S32-product-search
-rules_hash: 51e7d71b871b
+rules_hash: cc8949331825
 ---
 # Search budget
 ## Definition

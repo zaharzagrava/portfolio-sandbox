@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [cutover]
 defined_for: search-index
-rules_hash: 15c02226a055
+rules_hash: 33e36004da0d
 ---
 # Cutover (reindex)
 ## Definition

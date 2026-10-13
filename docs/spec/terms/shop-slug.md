@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [slug, slugs]
 defined_for: S03-shops-rbac
-rules_hash: 01d5112da492
+rules_hash: 4ed180e9b681
 ---
 # Shop slug
 ## Definition

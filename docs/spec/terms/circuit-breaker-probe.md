@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [probe]
 defined_for: rate-limit-policy
-rules_hash: 540fd8609ac2
+rules_hash: ca6965c37c3e
 ---
 # Circuit breaker probe
 ## Definition

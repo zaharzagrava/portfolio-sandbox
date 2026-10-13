@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [loaders run at once]
 defined_for: S52-cache-toolkit
-rules_hash: 532067fdbc3c
+rules_hash: 83327520fc54
 ---
 # Loader concurrency limit
 ## Definition

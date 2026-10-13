@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [presentation only]
 defined_for: W07-app-shell
-rules_hash: 3abb59f83f61
+rules_hash: 31e1d569a939
 ---
 # Presentation only (not access control)
 ## Definition

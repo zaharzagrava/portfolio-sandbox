@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [rollback]
 defined_for: outbox-task-queue
-rules_hash: 2ff5c4dafd23
+rules_hash: ccc2f1ad956c
 ---
 # Rollback leaves no outbox row
 ## Definition

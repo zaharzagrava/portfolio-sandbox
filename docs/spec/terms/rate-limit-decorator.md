@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [decorator, route decorator]
 defined_for: S50-rate-limiter
-rules_hash: 25a1afe3e62e
+rules_hash: 08fd7deca632
 ---
 # Rate limit decorator
 ## Definition

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [regenerate]
 defined_for: S02-mfa-oidc
-rules_hash: e3b0c44298fc
+rules_hash: f573320c38f7
 ---
 # Recovery code regenerate
 ## Definition

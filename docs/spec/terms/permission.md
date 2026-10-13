@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [members.read, permissions, shop.read]
 defined_for: tenant-shop-rbac
-rules_hash: 2bb9abbc6a40
+rules_hash: 3ef2601d357c
 ---
 # Permission
 ## Definition

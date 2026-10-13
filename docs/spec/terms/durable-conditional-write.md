@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [conditional write, durable]
 defined_for: S02-mfa-oidc
-rules_hash: e3b0c44298fc
+rules_hash: dab3290e1f7e
 ---
 # Durable conditional write
 ## Definition

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [pause, pauses]
 defined_for: S53-events-projections
-rules_hash: e3ae0a82742c
+rules_hash: c7b4165eb832
 ---
 # Partition pause
 ## Definition

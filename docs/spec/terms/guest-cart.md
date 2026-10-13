@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: []
 defined_for: idempotency-key
-rules_hash: 99943cc92551
+rules_hash: 9d43819a51eb
 ---
 # Guest cart
 ## Definition

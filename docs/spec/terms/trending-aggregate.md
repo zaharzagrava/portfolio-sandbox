@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [aggregate, aggregate store]
 defined_for: S35-trending
-rules_hash: 0184228e0c9d
+rules_hash: 36e8a32efed9
 ---
 # Trending aggregate
 ## Definition

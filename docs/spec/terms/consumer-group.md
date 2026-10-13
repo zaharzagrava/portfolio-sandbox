@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [group name, group names]
 defined_for: projection-and-replay
-rules_hash: 0b138197e82d
+rules_hash: 4cc3788446bc
 ---
 # Consumer group
 ## Definition

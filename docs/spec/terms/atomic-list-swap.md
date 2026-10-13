@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [full old or full new list]
 defined_for: S34-recommendations
-rules_hash: cfaff3be9ec1
+rules_hash: 260c220c0355
 ---
 # Atomic list swap
 ## Definition

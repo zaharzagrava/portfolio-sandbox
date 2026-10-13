@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [gains 1]
 defined_for: S35-trending
-rules_hash: 21929f315ec5
+rules_hash: f7b8df6a801a
 ---
 # Per-visitor view cap
 ## Definition

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [guard]
 defined_for: W01-auth-account
-rules_hash: 2b697dbd5fbd
+rules_hash: 4422737661a4
 ---
 # Route guard
 ## Definition

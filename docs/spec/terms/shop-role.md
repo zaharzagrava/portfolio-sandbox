@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [admin, owner, roles, staff]
 defined_for: tenant-shop-rbac
-rules_hash: 74c9fae60943
+rules_hash: 1eb2be1460a9
 ---
 # Shop role
 ## Definition

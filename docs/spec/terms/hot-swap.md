@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [hot-swap]
 defined_for: S33-autocomplete
-rules_hash: e3b0c44298fc
+rules_hash: ca9ec2f4381d
 ---
 # Hot swap
 ## Definition

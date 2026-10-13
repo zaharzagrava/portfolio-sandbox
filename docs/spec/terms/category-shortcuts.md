@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [category shortcut]
 defined_for: W02-storefront-discovery
-rules_hash: bca75cfc34eb
+rules_hash: db944b27c76a
 ---
 # Category shortcuts
 ## Definition

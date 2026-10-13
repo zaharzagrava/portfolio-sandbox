@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [merge, merges, replayed merge]
 defined_for: S35-trending
-rules_hash: b307fc45df38
+rules_hash: 6c885f38db04
 ---
 # Window merge
 ## Definition

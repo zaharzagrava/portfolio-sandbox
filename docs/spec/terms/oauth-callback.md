@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [the callback]
 defined_for: S02-mfa-oidc
-rules_hash: b32faf4a71f3
+rules_hash: be11dc35c683
 ---
 # OAuth callback
 ## Definition

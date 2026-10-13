@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [x-forwarded-for]
 defined_for: S01-auth-sessions
-rules_hash: 79d43c451612
+rules_hash: 440a5a603acb
 ---
 # Forwarding headers
 ## Definition

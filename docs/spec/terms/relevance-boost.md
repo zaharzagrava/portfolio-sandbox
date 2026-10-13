@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [boost, boosts]
 defined_for: job-scheduler-lease
-rules_hash: 77f69af06968
+rules_hash: 260e289648ee
 ---
 # Relevance boosts
 ## Definition

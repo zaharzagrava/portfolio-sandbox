@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [ready]
 defined_for: S33-autocomplete
-rules_hash: 05b750e56096
+rules_hash: 85ebc874dc5f
 ---
 # Node readiness
 ## Definition

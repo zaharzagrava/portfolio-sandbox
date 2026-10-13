@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [outcome, outcomes]
 defined_for: S10-cart-checkout
-rules_hash: e3b0c44298fc
+rules_hash: 3f254174c5cf
 ---
 # Payment event outcome
 ## Definition

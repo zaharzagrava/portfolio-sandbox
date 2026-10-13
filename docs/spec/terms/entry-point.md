@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [entry points]
 defined_for: S49-job-scheduler
-rules_hash: e3b0c44298fc
+rules_hash: 27fac4d25609
 ---
 # Entry point
 ## Definition

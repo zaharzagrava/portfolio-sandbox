@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: []
 defined_for: access-token-session
-rules_hash: 357e868e1869
+rules_hash: b33cb8bebc81
 ---
 # Principal
 ## Definition

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [transaction_conflict]
 defined_for: transaction-runner
-rules_hash: c13df93fe55e
+rules_hash: c003f30fc11f
 ---
 # transaction_conflict (503)
 ## Definition

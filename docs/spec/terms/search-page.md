@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [/search]
 defined_for: W02-storefront-discovery
-rules_hash: e3b0c44298fc
+rules_hash: af5e3c44bf01
 ---
 # Search page (/search)
 ## Definition

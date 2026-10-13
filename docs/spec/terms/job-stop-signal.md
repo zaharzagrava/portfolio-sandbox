@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [abort signal]
 defined_for: S49-job-scheduler
-rules_hash: f298644ddd99
+rules_hash: 579c9faeb8c6
 ---
 # Job stop signal
 ## Definition

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [foreign secret, freshly issued token, signed cookie]
 defined_for: S10-cart-checkout
-rules_hash: c4f00623cd47
+rules_hash: b2a02a15b4b5
 ---
 # Guest cart token
 ## Definition

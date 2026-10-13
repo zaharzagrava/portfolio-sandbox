@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: []
 defined_for: W07-app-shell
-rules_hash: 1fce27274438
+rules_hash: 48548fb6488e
 ---
 # Loading route
 ## Definition

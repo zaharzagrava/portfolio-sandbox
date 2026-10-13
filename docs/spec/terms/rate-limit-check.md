@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [check]
 defined_for: rate-limit-policy
-rules_hash: f2e17602c94b
+rules_hash: 3782c1dbcf65
 ---
 # check (rate limit check)
 ## Definition

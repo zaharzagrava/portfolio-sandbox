@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [one attempt]
 defined_for: idempotency-key
-rules_hash: 6caebd3aede0
+rules_hash: ddb109c1eb30
 ---
 # Attempt (one checkout try)
 ## Definition

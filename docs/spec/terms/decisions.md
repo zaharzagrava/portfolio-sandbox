@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: []
 defined_for: S52-cache-toolkit
-rules_hash: e3b0c44298fc
+rules_hash: f47d2afb5d65
 ---
 # Decisions
 ## Definition

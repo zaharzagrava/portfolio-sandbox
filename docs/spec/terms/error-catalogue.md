@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [catalogue, catalogue text]
 defined_for: problem-json-errors
-rules_hash: 4a7af643743d
+rules_hash: bfc3042587c1
 ---
 # Error catalogue (fixed detail text)
 ## Definition

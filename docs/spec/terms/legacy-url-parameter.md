@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [legacy parameters]
 defined_for: W02-storefront-discovery
-rules_hash: eb05e5afe275
+rules_hash: cd58fcfca8dd
 ---
 # Legacy parameter
 ## Definition

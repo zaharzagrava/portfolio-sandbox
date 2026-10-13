@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: []
 defined_for: order-reservation
-rules_hash: 426fe6450e1a
+rules_hash: 1217902d3c46
 ---
 # Cart line
 ## Definition

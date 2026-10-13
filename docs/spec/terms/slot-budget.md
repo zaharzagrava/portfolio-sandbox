@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [slot, slots, unused slots]
 defined_for: S33-autocomplete
-rules_hash: e3b0c44298fc
+rules_hash: c4376172c9f4
 ---
 # Slot budget
 ## Definition

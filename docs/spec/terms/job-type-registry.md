@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [registered type]
 defined_for: S49-job-scheduler
-rules_hash: b9b2a5f47a47
+rules_hash: 4c44a706cd6e
 ---
 # Job type registry
 ## Definition

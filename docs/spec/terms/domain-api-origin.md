@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [configured domain-api origin]
 defined_for: bff-aggregate
-rules_hash: debbeb6de6fe
+rules_hash: 37c0ef244a31
 ---
 # Domain-API origin
 ## Definition

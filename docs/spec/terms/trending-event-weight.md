@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [view 1, add-to-cart 5, weighted counts]
 defined_for: S35-trending
-rules_hash: 6d70ebc64134
+rules_hash: abc3e5255490
 ---
 # Trending event weight
 ## Definition

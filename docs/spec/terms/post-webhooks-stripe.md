@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [/webhooks/stripe]
 defined_for: S10-cart-checkout
-rules_hash: e3b0c44298fc
+rules_hash: 581faa0ce274
 ---
 # POST /webhooks/stripe
 ## Definition

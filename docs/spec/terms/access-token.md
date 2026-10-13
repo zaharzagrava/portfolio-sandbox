@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [token]
 defined_for: access-token-session
-rules_hash: 94c2286a6f75
+rules_hash: d44898e655d0
 ---
 # Access token
 ## Definition

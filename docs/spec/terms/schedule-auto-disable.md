@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [disabled]
 defined_for: S49-job-scheduler
-rules_hash: 3fca08eb27ba
+rules_hash: f8ffaea39c98
 ---
 # Schedule auto-disable
 ## Definition

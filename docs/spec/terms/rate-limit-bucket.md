@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [bucket, buckets]
 defined_for: rate-limit-policy
-rules_hash: 98a2f668daa4
+rules_hash: e5e17f419100
 ---
 # Rate limit bucket
 ## Definition

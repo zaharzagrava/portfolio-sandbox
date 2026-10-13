@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [enterprise, plan, pro, starter]
 defined_for: tenant-shop-rbac
-rules_hash: a1068945f6fc
+rules_hash: 24141fcc2b64
 ---
 # Plan limit
 ## Definition

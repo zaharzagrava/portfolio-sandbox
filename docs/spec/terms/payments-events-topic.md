@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [payments.events]
 defined_for: S10-cart-checkout
-rules_hash: e3b0c44298fc
+rules_hash: 233d700dc830
 ---
 # payments.events topic
 ## Definition

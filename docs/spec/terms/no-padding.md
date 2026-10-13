@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [padded]
 defined_for: S34-recommendations
-rules_hash: 317780b122d4
+rules_hash: 693e99176eff
 ---
 # No padding of neighbour lists
 ## Definition

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [pending, pending rows]
 defined_for: S53-events-projections
-rules_hash: e3b0c44298fc
+rules_hash: 5347088b89e4
 ---
 # Pending row (outbox)
 ## Definition

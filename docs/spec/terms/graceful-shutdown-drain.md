@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [drain]
 defined_for: S54-platform-toolkit
-rules_hash: 70ffd404cadb
+rules_hash: 49ff0ad5c9d4
 ---
 # Drain delay
 ## Definition

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [dependent section, optional section, product section, sections]
 defined_for: bff-aggregate
-rules_hash: bcce1039c772
+rules_hash: 734add40fdff
 ---
 # Section
 ## Definition

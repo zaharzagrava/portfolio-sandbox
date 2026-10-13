@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [/login/mfa]
 defined_for: W01-auth-account
-rules_hash: e3b0c44298fc
+rules_hash: f79efdec7f3f
 ---
 # Login MFA page (/login/mfa)
 ## Definition

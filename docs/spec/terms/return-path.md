@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [return paths]
 defined_for: S02-mfa-oidc
-rules_hash: 367e3af05e0b
+rules_hash: 1c5c30f4e3f0
 ---
 # Return path
 ## Definition

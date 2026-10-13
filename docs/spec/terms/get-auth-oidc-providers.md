@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [/auth/oidc/providers]
 defined_for: S02-mfa-oidc
-rules_hash: e3b0c44298fc
+rules_hash: ddf8efa82615
 ---
 # GET /auth/oidc/providers
 ## Definition

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [handlers]
 defined_for: S49-job-scheduler
-rules_hash: b4c335631655
+rules_hash: d13431b071ad
 ---
 # Job handler
 ## Definition

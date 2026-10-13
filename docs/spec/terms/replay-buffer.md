@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [buffer]
 defined_for: realtime-topic-stream
-rules_hash: 93e0441344b0
+rules_hash: 5e1a140b165c
 ---
 # Replay buffer
 ## Definition

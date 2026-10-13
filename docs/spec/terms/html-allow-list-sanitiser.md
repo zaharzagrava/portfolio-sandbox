@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [allow-list, sanitiser]
 defined_for: W02-storefront-discovery
-rules_hash: d3e33f40684a
+rules_hash: bd4c56d96e27
 ---
 # Allow-list sanitiser
 ## Definition

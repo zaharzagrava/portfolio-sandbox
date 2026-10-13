@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [sandbox shops]
 defined_for: S03-shops-rbac
-rules_hash: ecb8174dfe9b
+rules_hash: 88c4554e7b9c
 ---
 # Sandbox shop
 ## Definition

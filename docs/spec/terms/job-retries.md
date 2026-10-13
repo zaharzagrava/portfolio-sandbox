@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [retry]
 defined_for: idempotency-key
-rules_hash: 57f0c72a9f6b
+rules_hash: add33f5f774d
 ---
 # Job retries
 ## Definition

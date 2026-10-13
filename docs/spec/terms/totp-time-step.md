@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [step t, time step]
 defined_for: S02-mfa-oidc
-rules_hash: e0846f56fa2a
+rules_hash: a8bab9e1a025
 ---
 # TOTP time step
 ## Definition

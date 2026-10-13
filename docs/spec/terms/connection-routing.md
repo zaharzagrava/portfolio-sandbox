@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [routing]
 defined_for: S03-shops-rbac
-rules_hash: e3b0c44298fc
+rules_hash: 7d656e262cae
 ---
 # Connection routing
 ## Definition

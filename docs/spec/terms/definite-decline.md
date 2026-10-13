@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [decline, declines]
 defined_for: S13-payment-intents
-rules_hash: 615c95f3a23c
+rules_hash: b1b17ae524aa
 ---
 # Definite decline
 ## Definition

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [co-occurrence]
 defined_for: projection-and-replay
-rules_hash: 5f327507dcbb
+rules_hash: a24ef6b2ec53
 ---
 # Co-occurrence graph
 ## Definition

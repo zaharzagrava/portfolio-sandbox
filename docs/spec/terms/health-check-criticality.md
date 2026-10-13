@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [critical check, pod-local, shared checks]
 defined_for: S54-platform-toolkit
-rules_hash: 66ef0dedc3df
+rules_hash: 052c2547559d
 ---
 # Critical pod-local check
 ## Definition

@@ -94,6 +94,17 @@ class TermsTest(unittest.TestCase):
         self.assertIn('[hold](../terms/hold.md)', open(second).read())
         self.assertTrue(all(r['status'] == 'promoted' for r in t.load_inline()))
 
+    def test_a_changed_definition_makes_the_terms_it_links_stale(self):
+        c = self.common
+        os.makedirs(os.path.join(self.d, 'docs/spec/terms'))
+        w = lambda n, body: open(os.path.join(self.d, f'docs/spec/terms/{n}.md'), 'w').write(f'---\nid: {n}\ntitle: {n}\nkind: term\nstatus: draft\n---\n# {n}\n## Definition\n{body}\n')   # noqa: E731
+        w('a', 'A leans on [b](b.md).')
+        w('b', 'B is plain.')
+        h1 = c.hash_of_items([], c.term_definition_index(c.pages('term')).get('b', ()))
+        w('a', 'A leans on [b](b.md), and now says more.')
+        h2 = c.hash_of_items([], c.term_definition_index(c.pages('term')).get('b', ()))
+        self.assertNotEqual(h1, h2)                       # b is only used by a term, and still notices that a changed
+
     def test_link_first_skips_existing_links(self):
         import terms
         t, ok = terms.link_first('see [section](a.md) and section', 'section', 'b.md')

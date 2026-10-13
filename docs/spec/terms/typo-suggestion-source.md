@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [typo]
 defined_for: S33-autocomplete
-rules_hash: b7d0f929d2ba
+rules_hash: 9af348cd94b9
 ---
 # Typo suggestion source
 ## Definition

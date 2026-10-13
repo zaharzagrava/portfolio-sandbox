@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [cancel, deliver, markpaid, order commands, reserve, ship, startfulfilment]
 defined_for: S10-cart-checkout
-rules_hash: e3b0c44298fc
+rules_hash: d8bcc966c03d
 ---
 # Order command
 ## Definition

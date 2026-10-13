@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [hidden, hide]
 defined_for: search-index
-rules_hash: 24f075beed46
+rules_hash: 25426101fa0e
 ---
 # Search visibility (hidden products)
 ## Definition

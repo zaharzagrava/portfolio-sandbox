@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [store skipped]
 defined_for: S52-cache-toolkit
-rules_hash: 19c669d1a1cd
+rules_hash: 0b8def0ab431
 ---
 # Cache store circuit breaker
 ## Definition

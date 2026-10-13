@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [major unit]
 defined_for: W02-storefront-discovery
-rules_hash: f59e49621fa4
+rules_hash: 2c6421bb6b6a
 ---
 # Major units (price)
 ## Definition

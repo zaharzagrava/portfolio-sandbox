@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [heavy hitter]
 defined_for: S35-trending
-rules_hash: e3b0c44298fc
+rules_hash: 515465e88154
 ---
 # Heavy hitters
 ## Definition

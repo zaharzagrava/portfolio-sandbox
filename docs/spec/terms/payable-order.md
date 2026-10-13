@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [payable order]
 defined_for: S13-payment-intents
-rules_hash: e9dd69a3d713
+rules_hash: 90d16811877f
 ---
 # PayableOrder
 ## Definition

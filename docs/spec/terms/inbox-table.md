@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [inbox, inbox tables, outbox table]
 defined_for: outbox-task-queue
-rules_hash: c1f7b68892ff
+rules_hash: 8fe1ad821992
 ---
 # Outbox and inbox tables
 ## Definition

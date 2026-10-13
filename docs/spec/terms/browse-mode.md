@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [browse-mode, mode: "browse"]
 defined_for: S32-product-search
-rules_hash: 6c50180e6403
+rules_hash: 490a8fdb6fe8
 ---
 # Browse mode
 ## Definition

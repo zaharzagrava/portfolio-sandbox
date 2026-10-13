@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [tasks]
 defined_for: S54-platform-toolkit
-rules_hash: 70ffd404cadb
+rules_hash: f7da6ba2da67
 ---
 # Shutdown tasks
 ## Definition

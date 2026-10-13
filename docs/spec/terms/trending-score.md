@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [score]
 defined_for: S35-trending
-rules_hash: 4ef07d4dbca0
+rules_hash: 235601502032
 ---
 # Trending score
 ## Definition

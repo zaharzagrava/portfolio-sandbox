@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [shop_limit_reached]
 defined_for: S03-shops-rbac
-rules_hash: e3b0c44298fc
+rules_hash: c76e286d8114
 ---
 # shop_limit_reached (409)
 ## Definition

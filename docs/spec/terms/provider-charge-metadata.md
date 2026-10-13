@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [orderid metadata]
 defined_for: payment-lifecycle
-rules_hash: b9e0f2b5a786
+rules_hash: d3edfca52332
 ---
 # Provider charge metadata
 ## Definition

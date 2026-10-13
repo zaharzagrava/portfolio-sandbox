@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [update that equals the stored values]
 defined_for: S05-products
-rules_hash: 65e6f131252a
+rules_hash: e85aeb88fb04
 ---
 # No-op update
 ## Definition

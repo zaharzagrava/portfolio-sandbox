@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [shops]
 defined_for: tenant-shop-rbac
-rules_hash: d1b0ad0cc9b4
+rules_hash: ef4f172a2d6a
 ---
 # Shop
 ## Definition

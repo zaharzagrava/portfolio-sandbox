@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [batched array body]
 defined_for: S48-bff
-rules_hash: 396835a8cd2d
+rules_hash: 30c006f4732a
 ---
 # batching_not_supported
 ## Definition

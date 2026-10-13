@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: []
 defined_for: S54-platform-toolkit
-rules_hash: e3b0c44298fc
+rules_hash: 9a18f8f24145
 ---
 # Management listener
 ## Definition

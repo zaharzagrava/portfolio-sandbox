@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [policy registry]
 defined_for: S50-rate-limiter
-rules_hash: e3b0c44298fc
+rules_hash: 2fd78e866160
 ---
 # Rate limit policy registry
 ## Definition

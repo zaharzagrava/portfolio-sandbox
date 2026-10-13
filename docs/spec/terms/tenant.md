@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [tenants, x-tenant-id]
 defined_for: idempotency-key
-rules_hash: f6e1efcb46ac
+rules_hash: 15948d22ca14
 ---
 # Tenant
 ## Definition

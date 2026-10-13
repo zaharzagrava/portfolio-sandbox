@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [index]
 defined_for: S33-autocomplete
-rules_hash: d76ffd4be15e
+rules_hash: ea03f5c2e398
 ---
 # Suggest index
 ## Definition

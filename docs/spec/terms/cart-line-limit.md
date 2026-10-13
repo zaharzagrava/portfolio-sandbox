@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [50 lines]
 defined_for: S10-cart-checkout
-rules_hash: bd9e8637689b
+rules_hash: 0ac9a7ecf31c
 ---
 # Cart line limit
 ## Definition

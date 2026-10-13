@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [effect]
 defined_for: projection-and-replay
-rules_hash: e3bf9a409675
+rules_hash: 56b73896cfba
 ---
 # Consumer effects
 ## Definition

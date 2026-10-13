@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [queue limit]
 defined_for: S01-auth-sessions
-rules_hash: 567659e9dc57
+rules_hash: 771c3b3eddd5
 ---
 # Hash queue limit
 ## Definition

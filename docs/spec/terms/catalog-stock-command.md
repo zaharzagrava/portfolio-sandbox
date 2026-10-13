@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [stock command]
 defined_for: order-reservation
-rules_hash: 85756310bcfe
+rules_hash: 94a2e20dbe9c
 ---
 # Catalog stock command
 ## Definition

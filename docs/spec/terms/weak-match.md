@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [exact match, exact text match]
 defined_for: S32-product-search
-rules_hash: e3b0c44298fc
+rules_hash: 6dea31287505
 ---
 # Weak match
 ## Definition

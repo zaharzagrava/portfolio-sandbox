@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [aggregate types, registered aggregate type]
 defined_for: S53-events-projections
-rules_hash: e3b0c44298fc
+rules_hash: ca3f25afbdf7
 ---
 # Aggregate type
 ## Definition

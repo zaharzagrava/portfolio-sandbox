@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [badge]
 defined_for: W03-cart-checkout-orders
-rules_hash: db85a73c948f
+rules_hash: 30493193d1ab
 ---
 # Cart badge
 ## Definition

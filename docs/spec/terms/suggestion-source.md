@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [source, source failure, sources]
 defined_for: S33-autocomplete
-rules_hash: 1d5cfdff1c5b
+rules_hash: 9c51d88fafe8
 ---
 # Suggestion source
 ## Definition

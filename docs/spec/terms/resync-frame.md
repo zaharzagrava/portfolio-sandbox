@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [resync]
 defined_for: realtime-topic-stream
-rules_hash: 37c560224559
+rules_hash: 86ab2fbeea96
 ---
 # resync frame
 ## Definition

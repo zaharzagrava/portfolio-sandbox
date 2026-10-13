@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [ticks]
 defined_for: job-scheduler-lease
-rules_hash: 0412df7e4fec
+rules_hash: 79731f3c94a6
 ---
 # Scheduler tick
 ## Definition

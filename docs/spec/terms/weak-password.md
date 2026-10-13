@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [weak_password]
 defined_for: S01-auth-sessions
-rules_hash: e3b0c44298fc
+rules_hash: 9a4750154f9a
 ---
 # weak_password (422)
 ## Definition

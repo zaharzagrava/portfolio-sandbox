@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [fuzzy, typos]
 defined_for: S32-product-search
-rules_hash: c263c491d18d
+rules_hash: a070c4180e35
 ---
 # Fuzzy matching
 ## Definition

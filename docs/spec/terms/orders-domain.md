@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: []
 defined_for: order-reservation
-rules_hash: e3b0c44298fc
+rules_hash: 932c3f7965a0
 ---
 # Orders domain
 ## Definition

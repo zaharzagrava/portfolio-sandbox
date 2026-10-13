@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [conflict]
 defined_for: problem-json-errors
-rules_hash: 7c2f29e77eb4
+rules_hash: 9265904f4a2f
 ---
 # conflict error (409)
 ## Definition

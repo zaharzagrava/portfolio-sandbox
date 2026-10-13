@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: []
 defined_for: idempotency-key
-rules_hash: e3b0c44298fc
+rules_hash: d8cd0901397c
 ---
 # Rate-limit response headers
 ## Definition

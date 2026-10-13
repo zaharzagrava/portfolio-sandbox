@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: []
 defined_for: projection-and-replay
-rules_hash: 77a3d92c7734
+rules_hash: 74f35cf12fc0
 ---
 # aggregateVersion
 ## Definition

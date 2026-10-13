@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [watermarks]
 defined_for: S35-trending
-rules_hash: 06562ee7c5ce
+rules_hash: c2bfb3ddcc32
 ---
 # Watermark
 ## Definition

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [minute boundary, one-minute windows]
 defined_for: S35-trending
-rules_hash: 6d70ebc64134
+rules_hash: ee8c9e817381
 ---
 # Trending minute window
 ## Definition

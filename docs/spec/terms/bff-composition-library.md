@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [composition library, libs/composition/bff]
 defined_for: W01-auth-account
-rules_hash: e3b0c44298fc
+rules_hash: 84877a38102e
 ---
 # BFF composition library
 ## Definition

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [optional upstream, upstream call]
 defined_for: bff-aggregate
-rules_hash: 12d6ce41dc63
+rules_hash: ba386d956fac
 ---
 # Upstream
 ## Definition

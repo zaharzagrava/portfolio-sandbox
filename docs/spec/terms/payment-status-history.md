@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [history row]
 defined_for: payment-lifecycle
-rules_hash: 4c9502771949
+rules_hash: d3d7f6193988
 ---
 # Payment status history
 ## Definition

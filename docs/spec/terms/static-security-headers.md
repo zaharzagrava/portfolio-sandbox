@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: []
 defined_for: W07-app-shell
-rules_hash: 52b3cba349db
+rules_hash: f5fbc77cf51b
 ---
 # Static security headers
 ## Definition

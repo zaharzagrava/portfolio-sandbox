@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [route template]
 defined_for: S54-platform-toolkit
-rules_hash: 66d9004c635b
+rules_hash: e0434d272d40
 ---
 # Sensitive path parameter
 ## Definition

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [eligible queries]
 defined_for: S33-autocomplete
-rules_hash: 59f64738c6c6
+rules_hash: 674b153833cf
 ---
 # Eligible query
 ## Definition

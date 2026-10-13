@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [confirm]
 defined_for: S02-mfa-oidc
-rules_hash: 0c76d4bc15d8
+rules_hash: 41f0e34c0852
 ---
 # MFA confirm
 ## Definition

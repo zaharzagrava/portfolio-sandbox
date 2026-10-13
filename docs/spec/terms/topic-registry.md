@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [define, topicregistry]
 defined_for: S51-realtime-push
-rules_hash: 41ec2a15a5b5
+rules_hash: 1bfd57235811
 ---
 # Topic registry
 ## Definition

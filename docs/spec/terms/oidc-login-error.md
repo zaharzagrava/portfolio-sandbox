@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [oidc_denied, oidc_exchange_failed, oidc_provider_unavailable]
 defined_for: S02-mfa-oidc
-rules_hash: e3b0c44298fc
+rules_hash: 074620d8fae6
 ---
 # OIDC login error codes
 ## Definition

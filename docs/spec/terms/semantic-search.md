@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [semantic results, semantic_query]
 defined_for: search-index
-rules_hash: 64a0e5bb7b73
+rules_hash: 0aa06e3a17a2
 ---
 # Semantic search
 ## Definition

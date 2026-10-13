@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [secret field]
 defined_for: S01-auth-sessions
-rules_hash: d35627c9c64f
+rules_hash: e7279712bdf1
 ---
 # Secret fields
 ## Definition

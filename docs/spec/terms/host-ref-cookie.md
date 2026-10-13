@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [__host-ref]
 defined_for: W03-cart-checkout-orders
-rules_hash: 3b74548a57b9
+rules_hash: 8c73230fb00d
 ---
 # __Host-ref cookie
 ## Definition

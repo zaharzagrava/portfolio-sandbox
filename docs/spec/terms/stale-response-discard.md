@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [out of order, out-of-order answers]
 defined_for: W02-storefront-discovery
-rules_hash: 1aa03b26da3a
+rules_hash: cef0fcd1614b
 ---
 # Stale response discard
 ## Definition

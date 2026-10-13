@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [job without a shop, jobs without a shop]
 defined_for: job-scheduler-lease
-rules_hash: a3aac515bad3
+rules_hash: c6d29b345cf8
 ---
 # Shopless job
 ## Definition

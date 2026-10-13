@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [tenant set]
 defined_for: tenant-shop-rbac
-rules_hash: 84a0675216e3
+rules_hash: d855f5d69f32
 ---
 # Tenant setting
 ## Definition

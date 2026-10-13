@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [static ids, static providers]
 defined_for: S02-mfa-oidc
-rules_hash: e3b0c44298fc
+rules_hash: fb8a3c6e1972
 ---
 # Static provider configuration
 ## Definition

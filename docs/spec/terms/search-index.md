@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [new index, old index, previous index, product search index]
 defined_for: job-scheduler-lease
-rules_hash: 8e32aab141e1
+rules_hash: f878570d3f80
 ---
 # Search index
 ## Definition

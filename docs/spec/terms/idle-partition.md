@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [partition]
 defined_for: S35-trending
-rules_hash: 9d4731a83034
+rules_hash: 9249f22572c2
 ---
 # Idle partition
 ## Definition

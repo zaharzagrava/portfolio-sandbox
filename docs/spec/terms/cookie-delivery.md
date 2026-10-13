@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: []
 defined_for: S02-mfa-oidc
-rules_hash: 1553bef921d3
+rules_hash: 818137fb314a
 ---
 # Cookie delivery
 ## Definition

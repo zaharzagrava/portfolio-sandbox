@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [prefix]
 defined_for: S33-autocomplete
-rules_hash: 8a59e36114e5
+rules_hash: b3a36ad28664
 ---
 # prefix (suggest response member)
 ## Definition

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [known gaps section]
 defined_for: S05-products
-rules_hash: e3b0c44298fc
+rules_hash: 17d132071ad4
 ---
 # Known gaps
 ## Definition

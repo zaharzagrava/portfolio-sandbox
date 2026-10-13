@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [policy]
 defined_for: rate-limit-policy
-rules_hash: 67dfc67db207
+rules_hash: b7bbd82fcf48
 ---
 # Rate limit policy
 ## Definition

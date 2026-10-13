@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [independent fields]
 defined_for: S48-bff
-rules_hash: 36289b557fc3
+rules_hash: 980d27c69508
 ---
 # Partial response
 ## Definition

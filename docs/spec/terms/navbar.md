@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [navbar account slot]
 defined_for: W01-auth-account
-rules_hash: 8cc2a2761e88
+rules_hash: 2f733264a12c
 ---
 # Navbar
 ## Definition

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [negative entries, negativettlms]
 defined_for: cache-layers
-rules_hash: d80e14c89561
+rules_hash: 02c5ac73717f
 ---
 # Negative caching (negativeTtlMs)
 ## Definition

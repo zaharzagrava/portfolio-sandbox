@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [attempt budget]
 defined_for: S53-events-projections
-rules_hash: e3b0c44298fc
+rules_hash: 07799db0c7fb
 ---
 # Consumer attempt budget
 ## Definition

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [ctr]
 defined_for: S32-product-search
-rules_hash: e3b0c44298fc
+rules_hash: 265ca6dc7941
 ---
 # Click-through rate
 ## Definition

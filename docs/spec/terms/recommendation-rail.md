@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [rails]
 defined_for: S34-recommendations
-rules_hash: 5c593a3090c7
+rules_hash: a3316ea3f5f2
 ---
 # Recommendation rail
 ## Definition

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [config module]
 defined_for: W07-app-shell
-rules_hash: e3b0c44298fc
+rules_hash: 570e276d9707
 ---
 # Validated config module
 ## Definition

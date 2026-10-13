@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [fleet, not per worker, whole fleet]
 defined_for: job-scheduler-lease
-rules_hash: d96eaca31dca
+rules_hash: e8e4fc77d8e0
 ---
 # Fleet-wide limit
 ## Definition

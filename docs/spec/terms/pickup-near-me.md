@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [available for pickup near me, pickup near me tab]
 defined_for: W02-storefront-discovery
-rules_hash: e3b0c44298fc
+rules_hash: f2777823b5de
 ---
 # Pickup near me
 ## Definition

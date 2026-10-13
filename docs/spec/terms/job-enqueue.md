@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [enqueue, enqueue calls]
 defined_for: idempotency-key
-rules_hash: 11112f769004
+rules_hash: 2013e9020631
 ---
 # Job enqueue
 ## Definition

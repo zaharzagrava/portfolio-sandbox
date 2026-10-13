@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [allowlist, allowlisted documents, trusted documents]
 defined_for: S48-bff
-rules_hash: e3b0c44298fc
+rules_hash: 29c37d7bac21
 ---
 # Trusted-document allowlist
 ## Definition

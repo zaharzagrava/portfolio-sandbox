@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [subscriptions]
 defined_for: S51-realtime-push
-rules_hash: 5af320f4b07a
+rules_hash: b3be058ddbd7
 ---
 # Realtime subscription
 ## Definition

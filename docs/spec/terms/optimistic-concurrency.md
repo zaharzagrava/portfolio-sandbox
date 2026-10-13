@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [simultaneous requests]
 defined_for: S05-products
-rules_hash: cf97369dee95
+rules_hash: fb73e6454cf4
 ---
 # Optimistic concurrency (one winner)
 ## Definition

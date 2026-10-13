@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [referral data]
 defined_for: W03-cart-checkout-orders
-rules_hash: e3b0c44298fc
+rules_hash: 14cb0512ce59
 ---
 # Referral code
 ## Definition

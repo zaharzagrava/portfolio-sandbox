@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [management endpoints]
 defined_for: S02-mfa-oidc
-rules_hash: 58c332282444
+rules_hash: d07ceb42eb06
 ---
 # MFA management endpoint
 ## Definition

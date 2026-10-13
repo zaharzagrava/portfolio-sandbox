@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [discount]
 defined_for: S10-cart-checkout
-rules_hash: 49cd92762b67
+rules_hash: 239eff677771
 ---
 # Seller discount
 ## Definition

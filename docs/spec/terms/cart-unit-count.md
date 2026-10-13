@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [unit count]
 defined_for: W03-cart-checkout-orders
-rules_hash: a45b97a4868a
+rules_hash: 24749a4d6f10
 ---
 # Unit count (cart badge)
 ## Definition

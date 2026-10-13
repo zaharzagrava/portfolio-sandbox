@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [read-model]
 defined_for: S53-events-projections
-rules_hash: e87511822287
+rules_hash: bf0f527411ad
 ---
 # Read model
 ## Definition

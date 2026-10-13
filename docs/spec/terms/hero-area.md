@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [hero]
 defined_for: W02-storefront-discovery
-rules_hash: e3b0c44298fc
+rules_hash: a22dfdf40630
 ---
 # Hero area
 ## Definition

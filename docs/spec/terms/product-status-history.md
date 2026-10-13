@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [status history]
 defined_for: S05-products
-rules_hash: e3b0c44298fc
+rules_hash: 13b77c6534cb
 ---
 # ProductStatusHistory
 ## Definition

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [map tile hosts]
 defined_for: W07-app-shell
-rules_hash: 53658101e3c7
+rules_hash: 639ff875e789
 ---
 # Map tile hosts (CSP)
 ## Definition

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [errors[]]
 defined_for: S48-bff
-rules_hash: ebf2d1aecd1b
+rules_hash: 80707558e6de
 ---
 # GraphQL errors array
 ## Definition

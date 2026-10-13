@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [flush, flushes]
 defined_for: S54-platform-toolkit
-rules_hash: 8fb4f60a10e5
+rules_hash: a6b335923fdf
 ---
 # Shutdown flush
 ## Definition

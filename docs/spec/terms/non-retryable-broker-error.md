@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [non-retryable]
 defined_for: S53-events-projections
-rules_hash: 37d74690ccb5
+rules_hash: dd496503aeff
 ---
 # Non-retryable broker error
 ## Definition

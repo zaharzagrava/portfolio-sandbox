@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [<consumer>.dlq, dlq]
 defined_for: S53-events-projections
-rules_hash: e3b0c44298fc
+rules_hash: a2c89f25e53d
 ---
 # Dead-letter topic (<consumer>.dlq)
 ## Definition

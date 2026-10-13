@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [pointer]
 defined_for: S33-autocomplete
-rules_hash: 6fcbedf744b2
+rules_hash: e0225d74038f
 ---
 # Autocomplete pointer
 ## Definition

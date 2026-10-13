@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [published]
 defined_for: S33-autocomplete
-rules_hash: e13ca746f26d
+rules_hash: 2ce83f73083a
 ---
 # Publishing a snapshot
 ## Definition

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [zeroresultrate]
 defined_for: S32-product-search
-rules_hash: e3b0c44298fc
+rules_hash: 716dc1bb2b9b
 ---
 # Zero-result rate
 ## Definition

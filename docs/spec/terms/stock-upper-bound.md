@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [upper bound]
 defined_for: S05-products
-rules_hash: e3b0c44298fc
+rules_hash: 50cd88b2051a
 ---
 # Stock upper bound
 ## Definition

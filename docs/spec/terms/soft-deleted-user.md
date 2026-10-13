@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [soft-deleted linked user]
 defined_for: S02-mfa-oidc
-rules_hash: de429a9ea2db
+rules_hash: dc91e0cb8864
 ---
 # Soft-deleted user
 ## Definition

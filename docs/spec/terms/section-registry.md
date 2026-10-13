@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [section-registry.ts]
 defined_for: bff-aggregate
-rules_hash: e3b0c44298fc
+rules_hash: f8c9d05c64b6
 ---
 # Section registry
 ## Definition

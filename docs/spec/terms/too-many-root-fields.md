@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [root fields]
 defined_for: bff-aggregate
-rules_hash: 396835a8cd2d
+rules_hash: 857b76401d5f
 ---
 # TOO_MANY_ROOT_FIELDS
 ## Definition

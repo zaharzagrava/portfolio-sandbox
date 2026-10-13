@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [event definition, typed definition]
 defined_for: outbox-task-queue
-rules_hash: 4ce13d1f1aa3
+rules_hash: 7be27ebd0383
 ---
 # Typed event definition
 ## Definition

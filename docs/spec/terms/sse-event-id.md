@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [id:]
 defined_for: S51-realtime-push
-rules_hash: e3b0c44298fc
+rules_hash: d707f1793b8a
 ---
 # id: line (event id)
 ## Definition

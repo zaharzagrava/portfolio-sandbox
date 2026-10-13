@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [search quality]
 defined_for: S32-product-search
-rules_hash: e3b0c44298fc
+rules_hash: beba2e9f494d
 ---
 # Search quality report
 ## Definition

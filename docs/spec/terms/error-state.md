@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: []
 defined_for: W07-app-shell
-rules_hash: 5a01db430bcc
+rules_hash: 0f41c2d5d1b1
 ---
 # Error state
 ## Definition

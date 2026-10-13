@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [newest, price-asc, price-desc]
 defined_for: S32-product-search
-rules_hash: ec225b771b08
+rules_hash: a836c759dd46
 ---
 # Search sort order
 ## Definition

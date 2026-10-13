@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [event-loop, p99]
 defined_for: S54-platform-toolkit
-rules_hash: 98db50544236
+rules_hash: cb5d49be9711
 ---
 # Event-loop p99 lag
 ## Definition

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [deadline]
 defined_for: bff-aggregate
-rules_hash: f88382216fbb
+rules_hash: b48695dba087
 ---
 # Page deadline
 ## Definition

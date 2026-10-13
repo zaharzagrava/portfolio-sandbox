@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [operators, wildcards]
 defined_for: S32-product-search
-rules_hash: 5bc37c57eb88
+rules_hash: c449efa0932d
 ---
 # Plain-word query matching
 ## Definition

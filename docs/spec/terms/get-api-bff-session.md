@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [/api/bff/session, session check]
 defined_for: W01-auth-account
-rules_hash: e3b0c44298fc
+rules_hash: 974096ff0f3a
 ---
 # GET /api/bff/session
 ## Definition

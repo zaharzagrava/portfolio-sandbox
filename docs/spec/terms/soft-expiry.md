@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [exp]
 defined_for: cache-layers
-rules_hash: d1cb46d082c9
+rules_hash: 7be231eba6bc
 ---
 # Soft expiry
 ## Definition

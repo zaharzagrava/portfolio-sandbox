@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [live alias, live name]
 defined_for: S32-product-search
-rules_hash: a44241b79a17
+rules_hash: 2d7dcf88f2a3
 ---
 # Live index name (alias)
 ## Definition

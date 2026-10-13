@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [toolkit]
 defined_for: cache-layers
-rules_hash: d2274bff45f2
+rules_hash: a2607f4728ed
 ---
 # Cache toolkit
 ## Definition

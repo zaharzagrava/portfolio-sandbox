@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [consumer]
 defined_for: outbox-task-queue
-rules_hash: 5af347419afc
+rules_hash: b69112baa71b
 ---
 # Event consumer
 ## Definition

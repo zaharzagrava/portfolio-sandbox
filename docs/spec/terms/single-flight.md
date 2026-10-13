@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [share one loader call]
 defined_for: cache-layers
-rules_hash: 11a24fa81d10
+rules_hash: d080be936cfe
 ---
 # Single-flight (miss coalescing)
 ## Definition

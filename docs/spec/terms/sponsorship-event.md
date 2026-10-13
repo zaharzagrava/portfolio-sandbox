@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [sponsored]
 defined_for: S32-product-search
-rules_hash: d89d3cf7fa75
+rules_hash: b4c3aec40636
 ---
 # Sponsorship event
 ## Definition

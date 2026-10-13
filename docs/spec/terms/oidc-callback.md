@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [callback response]
 defined_for: S02-mfa-oidc
-rules_hash: 833896e65870
+rules_hash: 091d4037d86b
 ---
 # OIDC callback
 ## Definition

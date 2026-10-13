@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [failure count]
 defined_for: S33-autocomplete
-rules_hash: ac932223c7c8
+rules_hash: 55a0431841a7
 ---
 # Failure counter
 ## Definition

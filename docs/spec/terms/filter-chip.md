@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [chips]
 defined_for: W02-storefront-discovery
-rules_hash: 0951e51cd517
+rules_hash: b260b63d8df8
 ---
 # Filter chip
 ## Definition

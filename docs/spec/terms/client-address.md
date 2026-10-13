@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [client address, resolved address]
 defined_for: S50-rate-limiter
-rules_hash: f63fb6d00d40
+rules_hash: 5888718e7c57
 ---
 # Client address (resolved by the platform)
 ## Definition

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [buyers]
 defined_for: S34-recommendations
-rules_hash: 5b68a4d15a8b
+rules_hash: 2a9900fb8894
 ---
 # Distinct buyers threshold
 ## Definition

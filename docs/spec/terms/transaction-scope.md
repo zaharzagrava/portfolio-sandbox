@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [scope, serializable scope]
 defined_for: transaction-runner
-rules_hash: ef5457d856d0
+rules_hash: c15c6c34cae5
 ---
 # Transaction scope
 ## Definition

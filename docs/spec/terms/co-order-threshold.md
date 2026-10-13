@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [co-orders, noise threshold]
 defined_for: S34-recommendations
-rules_hash: e3b0c44298fc
+rules_hash: 44f2a08d8d94
 ---
 # Co-order threshold
 ## Definition

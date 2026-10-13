@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [search.result_clicked]
 defined_for: S32-product-search
-rules_hash: e3b0c44298fc
+rules_hash: a9d60e57bd55
 ---
 # search.result_clicked event
 ## Definition

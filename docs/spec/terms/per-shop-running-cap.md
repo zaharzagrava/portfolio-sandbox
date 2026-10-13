@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [per-shop cap]
 defined_for: job-scheduler-lease
-rules_hash: dbf9051c5b59
+rules_hash: 6056de3f90a5
 ---
 # Per-shop running job cap
 ## Definition

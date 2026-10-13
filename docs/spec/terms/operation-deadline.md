@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [operation deadline]
 defined_for: S48-bff
-rules_hash: e3b0c44298fc
+rules_hash: bd5cc2ea6457
 ---
 # GraphQL operation deadline
 ## Definition

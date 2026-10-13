@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [published, published rows]
 defined_for: S53-events-projections
-rules_hash: e3b0c44298fc
+rules_hash: 4644f6fa6f6b
 ---
 # Published row (outbox)
 ## Definition

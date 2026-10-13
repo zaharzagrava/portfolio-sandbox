@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [key]
 defined_for: S53-events-projections
-rules_hash: 0c98a2781522
+rules_hash: 1639a78c2bff
 ---
 # Event key (partitioning key)
 ## Definition

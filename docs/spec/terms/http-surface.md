@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [over http]
 defined_for: S50-rate-limiter
-rules_hash: e1338b55596a
+rules_hash: a65cd8f37c13
 ---
 # HTTP surface (rate limiting)
 ## Definition

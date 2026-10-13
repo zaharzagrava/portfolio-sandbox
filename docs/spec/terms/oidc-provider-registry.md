@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [registry]
 defined_for: S02-mfa-oidc
-rules_hash: e3b0c44298fc
+rules_hash: 455ad194ce5d
 ---
 # OidcProviderRegistry
 ## Definition

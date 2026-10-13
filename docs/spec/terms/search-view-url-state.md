@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [address, address bar]
 defined_for: W02-storefront-discovery
-rules_hash: 7472346a6855
+rules_hash: dd0da6b0bb2e
 ---
 # Search view URL state
 ## Definition

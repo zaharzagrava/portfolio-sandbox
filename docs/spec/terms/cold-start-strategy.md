@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [cold start, cold-start]
 defined_for: projection-and-replay
-rules_hash: e3b0c44298fc
+rules_hash: dfe4a8c679ad
 ---
 # Cold-start strategy
 ## Definition

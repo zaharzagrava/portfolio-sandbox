@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [limit, route's rate limit]
 defined_for: idempotency-key
-rules_hash: 112d5f2b0d21
+rules_hash: 44f78899ae3a
 ---
 # Rate limit
 ## Definition

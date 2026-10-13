@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [published log]
 defined_for: S33-autocomplete
-rules_hash: f69438637d65
+rules_hash: 995b8d1f0f2d
 ---
 # Query log
 ## Definition

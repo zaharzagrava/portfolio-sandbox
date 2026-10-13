@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [stored answers, stored error answers]
 defined_for: S10-cart-checkout
-rules_hash: 8751cce5a147
+rules_hash: c81dc935612a
 ---
 # Stored answer
 ## Definition

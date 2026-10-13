@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [spend, spent token]
 defined_for: access-token-session
-rules_hash: 6fbe15b0a560
+rules_hash: 0dc7df2fb2d4
 ---
 # Refresh token rotation (spent token)
 ## Definition

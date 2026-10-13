@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [shop orders]
 defined_for: order-reservation
-rules_hash: b17613f744e6
+rules_hash: 4132d84aa3e7
 ---
 # Shop order
 ## Definition

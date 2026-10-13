@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [session]
 defined_for: access-token-session
-rules_hash: cb8fde2ee610
+rules_hash: e3a0bd8c6b20
 ---
 # Session lifetime
 ## Definition

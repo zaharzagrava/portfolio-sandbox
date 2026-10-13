@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [deadline]
 defined_for: S35-trending
-rules_hash: 4e81219e176b
+rules_hash: efe0535c790f
 ---
 # Shutdown deadline
 ## Definition

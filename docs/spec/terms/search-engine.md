@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [engine]
 defined_for: S33-autocomplete
-rules_hash: 75c5638447bd
+rules_hash: 1fd97cf3b8ae
 ---
 # Search engine
 ## Definition

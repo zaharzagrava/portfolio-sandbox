@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [catalog completion, completions]
 defined_for: S33-autocomplete
-rules_hash: 5baf0fba764e
+rules_hash: 7108e4818c71
 ---
 # Catalog completions
 ## Definition

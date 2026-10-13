@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [roundcoords, rounding, rounds them]
 defined_for: W02-storefront-discovery
-rules_hash: e3b0c44298fc
+rules_hash: 5f8783c78227
 ---
 # Coordinate rounding
 ## Definition

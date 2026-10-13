@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [currentversion, version]
 defined_for: S05-products
-rules_hash: 969b1689344f
+rules_hash: c693d5eb2c3a
 ---
 # Product version
 ## Definition

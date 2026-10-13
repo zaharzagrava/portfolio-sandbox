@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [category]
 defined_for: S35-trending
-rules_hash: 4a084e0e2a90
+rules_hash: 90c997fe4121
 ---
 # Catalog category
 ## Definition

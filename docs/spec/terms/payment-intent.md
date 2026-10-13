@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [intent, payment intents, post /payments/intents]
 defined_for: idempotency-key
-rules_hash: 3743e33911c5
+rules_hash: b81390af6a5b
 ---
 # Payment intent (POST /payments/intents)
 ## Definition

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [session_unavailable]
 defined_for: bff-aggregate
-rules_hash: b90f6d554331
+rules_hash: 15038432dbbb
 ---
 # Session store
 ## Definition

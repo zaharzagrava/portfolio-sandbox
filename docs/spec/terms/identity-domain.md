@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [identity]
 defined_for: S01-auth-sessions
-rules_hash: 32ad269f51b4
+rules_hash: 44d27b45c41e
 ---
 # Identity domain
 ## Definition

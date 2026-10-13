@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [event order per aggregate]
 defined_for: outbox-task-queue
-rules_hash: 0e6ffeaef8f4
+rules_hash: 1aace548a6ce
 ---
 # Per-aggregate event ordering
 ## Definition

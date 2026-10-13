@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: []
 defined_for: S33-autocomplete
-rules_hash: 16857a208ea3
+rules_hash: 768fcb8a54be
 ---
 # Build window
 ## Definition

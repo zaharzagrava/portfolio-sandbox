@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [as-10, scenario, scenario id]
 defined_for: S05-products
-rules_hash: 79f9704ad970
+rules_hash: 67b5e6ad42b0
 ---
 # Acceptance scenario
 ## Definition

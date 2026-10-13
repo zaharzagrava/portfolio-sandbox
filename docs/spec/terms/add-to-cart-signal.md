@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [add-to-cart]
 defined_for: S35-trending
-rules_hash: 0ce5cdae5344
+rules_hash: c855f87ffbd8
 ---
 # Add-to-cart signal
 ## Definition

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: []
 defined_for: S05-products
-rules_hash: f3ec6fe11893
+rules_hash: 269d8e19c136
 ---
 # Platform currency
 ## Definition

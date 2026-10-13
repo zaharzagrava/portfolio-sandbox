@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [legacy sellers]
 defined_for: S03-shops-rbac
-rules_hash: 713aa0fd6cd0
+rules_hash: dd97684dc068
 ---
 # Legacy seller
 ## Definition

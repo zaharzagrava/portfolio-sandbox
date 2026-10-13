@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [/api/graphql]
 defined_for: S48-bff
-rules_hash: e3b0c44298fc
+rules_hash: fae5644c17eb
 ---
 # POST /api/graphql
 ## Definition

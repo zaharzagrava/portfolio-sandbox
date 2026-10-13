@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [l1]
 defined_for: cache-layers
-rules_hash: a38867ef4c3c
+rules_hash: 36b8541ea842
 ---
 # L1 cache (per-process)
 ## Definition

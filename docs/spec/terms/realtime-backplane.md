@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [backplane]
 defined_for: realtime-topic-stream
-rules_hash: 0e040bec281c
+rules_hash: 82862ba13949
 ---
 # Realtime backplane
 ## Definition

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [8 kb, allowed body size, body size limit]
 defined_for: S48-bff
-rules_hash: e3b0c44298fc
+rules_hash: 16b3f12b3e0c
 ---
 # GraphQL body size limit
 ## Definition

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [ledger entry]
 defined_for: S13-payment-intents
-rules_hash: dab737251ed7
+rules_hash: dd602b111fb5
 ---
 # Ledger posting
 ## Definition

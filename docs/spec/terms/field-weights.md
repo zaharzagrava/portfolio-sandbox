@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [field weight]
 defined_for: S32-product-search
-rules_hash: c263c491d18d
+rules_hash: a15c617c1e83
 ---
 # Field weights
 ## Definition

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [status gate]
 defined_for: tenant-shop-rbac
-rules_hash: f1e507806f2c
+rules_hash: 7af11f803f5d
 ---
 # Shop status gate
 ## Definition

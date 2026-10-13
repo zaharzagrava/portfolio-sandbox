@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [allowlisted reason]
 defined_for: S03-shops-rbac
-rules_hash: 4616faf16dca
+rules_hash: 3b8ef274123f
 ---
 # Bypass reason allowlist
 ## Definition

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [normalised prefix]
 defined_for: S33-autocomplete
-rules_hash: 11ffe7c487b2
+rules_hash: 79349a6aebf5
 ---
 # Reduced prefix
 ## Definition

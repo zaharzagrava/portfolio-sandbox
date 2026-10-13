@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [[code], [proof], proofs, rules]
 defined_for: S05-products
-rules_hash: e3b0c44298fc
+rules_hash: 5a021f915c77
 ---
 # Rule and proof
 ## Definition

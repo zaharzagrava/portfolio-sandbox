@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [frames]
 defined_for: realtime-topic-stream
-rules_hash: 2c47e70e9d6d
+rules_hash: aa179e8d9426
 ---
 # Stream frame
 ## Definition

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [invite, invites]
 defined_for: tenant-shop-rbac
-rules_hash: ca4d0218b749
+rules_hash: 837d6a26b032
 ---
 # Pending invite
 ## Definition

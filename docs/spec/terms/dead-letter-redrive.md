@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [redrive]
 defined_for: S53-events-projections
-rules_hash: 0c98a2781522
+rules_hash: 2c9e158336d3
 ---
 # Dead-letter redrive
 ## Definition

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [wait budget]
 defined_for: S53-events-projections
-rules_hash: 094505283bf1
+rules_hash: c95be6d65e7d
 ---
 # Read wait timeout
 ## Definition

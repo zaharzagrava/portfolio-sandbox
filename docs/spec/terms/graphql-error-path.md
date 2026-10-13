@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [path]
 defined_for: S48-bff
-rules_hash: e3b0c44298fc
+rules_hash: 8f4772adba6f
 ---
 # Error path
 ## Definition

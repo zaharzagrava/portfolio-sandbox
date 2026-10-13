@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [anonymous viewer, authenticated viewer]
 defined_for: realtime-topic-stream
-rules_hash: 8a50b49bd348
+rules_hash: d1df4ec36415
 ---
 # Viewer
 ## Definition

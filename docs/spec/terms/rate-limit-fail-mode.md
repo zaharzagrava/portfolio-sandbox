@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [fail mode]
 defined_for: idempotency-key
-rules_hash: 6b77b8bd32da
+rules_hash: d3514e023340
 ---
 # Rate limit fail mode
 ## Definition

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [write-model]
 defined_for: S53-events-projections
-rules_hash: 094505283bf1
+rules_hash: 4755e184f856
 ---
 # Write model
 ## Definition

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [reindex, reindexing]
 defined_for: job-scheduler-lease
-rules_hash: b595dfa2da56
+rules_hash: 8a36e4564f64
 ---
 # Zero-downtime reindexing
 ## Definition

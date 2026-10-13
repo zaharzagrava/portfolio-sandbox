@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [accept, accepts]
 defined_for: S03-shops-rbac
-rules_hash: 8436fad709b6
+rules_hash: 8a43839051a8
 ---
 # Invite acceptance
 ## Definition

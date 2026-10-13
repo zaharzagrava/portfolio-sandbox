@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [payments domain]
 defined_for: S13-payment-intents
-rules_hash: e3b0c44298fc
+rules_hash: de2714240cda
 ---
 # Payments domain layer
 ## Definition

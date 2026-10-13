@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [backoff, retry delay]
 defined_for: S49-job-scheduler
-rules_hash: f89e078f051b
+rules_hash: ade38ef26bd7
 ---
 # Job retry delay
 ## Definition

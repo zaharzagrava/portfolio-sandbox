@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: []
 defined_for: S05-products
-rules_hash: e3b0c44298fc
+rules_hash: a32bc0460c1a
 ---
 # Cache invalidator
 ## Definition

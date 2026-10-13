@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [cached ranking, ranking]
 defined_for: S35-trending
-rules_hash: 2d7dffab7f2e
+rules_hash: 8fa35b4974e3
 ---
 # Trending ranking cache
 ## Definition

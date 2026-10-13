@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [facet]
 defined_for: job-scheduler-lease
-rules_hash: 7fa48066c6a9
+rules_hash: 32e9ff4a06cf
 ---
 # Search facets
 ## Definition

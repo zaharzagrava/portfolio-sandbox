@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [payload]
 defined_for: realtime-topic-stream
-rules_hash: 2d9f1d3a49ee
+rules_hash: b8944efb8c4a
 ---
 # Event payload
 ## Definition

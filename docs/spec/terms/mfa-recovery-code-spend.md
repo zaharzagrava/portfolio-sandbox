@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [spend, spent]
 defined_for: S02-mfa-oidc
-rules_hash: e3b0c44298fc
+rules_hash: 03e256aaea9e
 ---
 # Recovery code spend
 ## Definition

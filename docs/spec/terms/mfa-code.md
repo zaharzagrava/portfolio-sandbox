@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [code, current code]
 defined_for: S02-mfa-oidc
-rules_hash: 04abae6c5edd
+rules_hash: 60572ff7fa71
 ---
 # MFA code
 ## Definition

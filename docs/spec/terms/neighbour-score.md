@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [entry score, seed score]
 defined_for: S34-recommendations
-rules_hash: e268d95ad5b7
+rules_hash: 4b3162210cff
 ---
 # Neighbour score
 ## Definition

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [event row]
 defined_for: transaction-runner
-rules_hash: d0486ecf594b
+rules_hash: 3cadddb55c0a
 ---
 # Event row (outbox)
 ## Definition

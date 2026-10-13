@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [task rows]
 defined_for: transaction-runner
-rules_hash: e3b0c44298fc
+rules_hash: d5ed6215c3d4
 ---
 # Task row (outbox)
 ## Definition

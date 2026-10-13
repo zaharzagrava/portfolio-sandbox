@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [history row]
 defined_for: S10-cart-checkout
-rules_hash: f6fc62b83b5a
+rules_hash: a1cbbd639284
 ---
 # Order status history
 ## Definition

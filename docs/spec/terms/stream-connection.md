@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [stream, stream connections]
 defined_for: realtime-topic-stream
-rules_hash: 04f91b89830a
+rules_hash: 60a39393059d
 ---
 # Stream connection
 ## Definition

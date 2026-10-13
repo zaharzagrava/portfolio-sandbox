@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [default policy, default.write]
 defined_for: S50-rate-limiter
-rules_hash: e3b0c44298fc
+rules_hash: 02c1dcf410a1
 ---
 # Default rate limit policies
 ## Definition

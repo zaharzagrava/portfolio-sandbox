@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [cancelled, order statuses]
 defined_for: order-reservation
-rules_hash: e0adb4be1d6d
+rules_hash: a326534431d3
 ---
 # Order status
 ## Definition

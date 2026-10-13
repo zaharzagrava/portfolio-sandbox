@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [direct neighbours, neighbours]
 defined_for: projection-and-replay
-rules_hash: f425fb8f576c
+rules_hash: 42c9c848019f
 ---
 # Direct neighbour
 ## Definition

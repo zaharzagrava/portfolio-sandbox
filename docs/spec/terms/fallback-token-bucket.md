@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [fallback bucket]
 defined_for: S50-rate-limiter
-rules_hash: f7231eb00f99
+rules_hash: 00754797732b
 ---
 # In-process fallback token bucket
 ## Definition

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [x-shop-id]
 defined_for: tenant-shop-rbac
-rules_hash: f3455655a5f5
+rules_hash: 420fc16ffa62
 ---
 # X-Shop-Id header
 ## Definition

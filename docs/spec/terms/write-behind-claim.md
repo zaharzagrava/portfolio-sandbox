@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [claim, claim lifetime, claims]
 defined_for: S52-cache-toolkit
-rules_hash: e3b0c44298fc
+rules_hash: 583e68e58c0c
 ---
 # claim (write-behind batch)
 ## Definition

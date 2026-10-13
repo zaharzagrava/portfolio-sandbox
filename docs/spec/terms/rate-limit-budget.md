@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [budget]
 defined_for: S50-rate-limiter
-rules_hash: b82e3dd25f55
+rules_hash: 515b6106d9ee
 ---
 # Rate limit budget
 ## Definition

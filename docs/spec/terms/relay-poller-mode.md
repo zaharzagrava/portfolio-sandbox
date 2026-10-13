@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [poller, poller mode]
 defined_for: S53-events-projections
-rules_hash: c72d882b1bd9
+rules_hash: 57a638bd8eb1
 ---
 # Poller relay mode
 ## Definition

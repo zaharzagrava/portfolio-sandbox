@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [legal transitions, status]
 defined_for: job-scheduler-lease
-rules_hash: 6d2d215ce2d6
+rules_hash: bb3ed4c06990
 ---
 # Job status
 ## Definition

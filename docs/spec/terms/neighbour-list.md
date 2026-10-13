@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [lists, neighbour lists]
 defined_for: S34-recommendations
-rules_hash: e3b0c44298fc
+rules_hash: d14cc3818b40
 ---
 # Neighbour list
 ## Definition

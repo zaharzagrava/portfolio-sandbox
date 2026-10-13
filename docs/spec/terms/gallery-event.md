@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [mediaids]
 defined_for: S32-product-search
-rules_hash: d5328e760f38
+rules_hash: ec86821e1d02
 ---
 # Gallery event
 ## Definition

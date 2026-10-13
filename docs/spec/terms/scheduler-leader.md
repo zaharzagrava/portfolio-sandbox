@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [leader]
 defined_for: job-scheduler-lease
-rules_hash: 61d48ece92ba
+rules_hash: 00497a8c4a99
 ---
 # Scheduler leader
 ## Definition

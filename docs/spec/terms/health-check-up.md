@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [gauge]
 defined_for: S54-platform-toolkit
-rules_hash: e3b0c44298fc
+rules_hash: 653486f106b5
 ---
 # health_check_up
 ## Definition

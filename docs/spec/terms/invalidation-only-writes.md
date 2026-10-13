@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: []
 defined_for: cache-layers
-rules_hash: 96247d730719
+rules_hash: c2c779ab6890
 ---
 # Writers only delete (invalidation-only writes)
 ## Definition

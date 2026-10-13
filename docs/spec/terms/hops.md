@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [hop]
 defined_for: S34-recommendations
-rules_hash: 9ebc67422f2d
+rules_hash: 6e6bea55d744
 ---
 # hops
 ## Definition

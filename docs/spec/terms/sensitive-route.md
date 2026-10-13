@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [ordinary route, sensitive routes]
 defined_for: access-token-session
-rules_hash: 844600309d44
+rules_hash: 0eb980d4bff7
 ---
 # Sensitive route
 ## Definition

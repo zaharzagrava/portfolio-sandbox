@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [extra field]
 defined_for: S02-mfa-oidc
-rules_hash: 0e41efda20c8
+rules_hash: c56708ae458c
 ---
 # Unknown body field rejection
 ## Definition

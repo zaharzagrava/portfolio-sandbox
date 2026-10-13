@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [recorded decisions]
 defined_for: S05-products
-rules_hash: e3b0c44298fc
+rules_hash: 5b10a1db6aa0
 ---
 # Recorded decision
 ## Definition

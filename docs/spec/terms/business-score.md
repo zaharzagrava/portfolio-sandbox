@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [ranking score]
 defined_for: S32-product-search
-rules_hash: ba63da7eb3bc
+rules_hash: be64aae7b876
 ---
 # Business score
 ## Definition

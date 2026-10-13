@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: []
 defined_for: S13-payment-intents
-rules_hash: e3b0c44298fc
+rules_hash: d1de5cbd5aad
 ---
 # payment.status event
 ## Definition

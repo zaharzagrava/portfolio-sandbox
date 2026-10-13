@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [origin]
 defined_for: S34-recommendations
-rules_hash: da9a918ce520
+rules_hash: 407692ee9597
 ---
 # Origin request
 ## Definition

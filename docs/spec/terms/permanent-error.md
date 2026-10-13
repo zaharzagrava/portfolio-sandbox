@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [permanent errors]
 defined_for: S53-events-projections
-rules_hash: f4cd5588b163
+rules_hash: db0f780ca484
 ---
 # Permanent error
 ## Definition

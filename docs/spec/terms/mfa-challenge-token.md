@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [challenge token]
 defined_for: S02-mfa-oidc
-rules_hash: 58c332282444
+rules_hash: 24897f3ee6b2
 ---
 # MFA challenge token
 ## Definition

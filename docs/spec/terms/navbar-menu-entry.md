@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [entry, menu entries, mobile menu entries]
 defined_for: W01-auth-account
-rules_hash: 0feeaa0b1daf
+rules_hash: bdfa39c63245
 ---
 # Mobile menu entry
 ## Definition

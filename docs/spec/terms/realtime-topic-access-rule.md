@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [access rules]
 defined_for: realtime-topic-stream
-rules_hash: 0a5121124d3e
+rules_hash: c844f7dc95f6
 ---
 # Topic access rule
 ## Definition

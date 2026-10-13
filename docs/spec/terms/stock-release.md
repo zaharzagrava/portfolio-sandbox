@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [release, stock return]
 defined_for: order-reservation
-rules_hash: 8d335ec01671
+rules_hash: 6fef0ce00865
 ---
 # Stock release
 ## Definition

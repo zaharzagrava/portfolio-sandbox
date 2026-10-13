@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [idempotency key, idempotency-key, the key]
 defined_for: idempotency-key
-rules_hash: 49d4ea32107c
+rules_hash: 49dd241caadb
 ---
 # Idempotency-Key header
 ## Definition

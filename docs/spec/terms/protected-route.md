@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [protected routes]
 defined_for: S01-auth-sessions
-rules_hash: bf6b05fd9c04
+rules_hash: 5953b6e7bae5
 ---
 # Protected route
 ## Definition

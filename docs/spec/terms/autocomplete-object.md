@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [autocomplete/<version>]
 defined_for: S33-autocomplete
-rules_hash: e3b0c44298fc
+rules_hash: f003bd53dc79
 ---
 # Autocomplete object
 ## Definition

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [products(ids:)]
 defined_for: S48-bff
-rules_hash: e3b0c44298fc
+rules_hash: 471f67fcb0aa
 ---
 # products(ids:) query
 ## Definition

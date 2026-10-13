@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: []
 defined_for: job-scheduler-lease
-rules_hash: 943eb7b18821
+rules_hash: 683602fcb8b9
 ---
 # maxAttempts
 ## Definition

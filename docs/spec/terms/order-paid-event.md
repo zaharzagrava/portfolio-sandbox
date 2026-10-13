@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [order.paid]
 defined_for: projection-and-replay
-rules_hash: 85da240f3609
+rules_hash: d32613bfda5d
 ---
 # order.paid event
 ## Definition

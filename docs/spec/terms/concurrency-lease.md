@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [lease]
 defined_for: S50-rate-limiter
-rules_hash: 012a9291973f
+rules_hash: 0ee20365c27c
 ---
 # Concurrency lease
 ## Definition

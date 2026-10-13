@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [window, windows]
 defined_for: S35-trending
-rules_hash: 4ede39d29dc3
+rules_hash: 8d6e066154ad
 ---
 # Trending window
 ## Definition

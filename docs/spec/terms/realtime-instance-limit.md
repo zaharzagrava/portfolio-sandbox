@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [instance at its limit]
 defined_for: realtime-topic-stream
-rules_hash: 22dfea9be34c
+rules_hash: 7a62e364b849
 ---
 # Instance connection limit
 ## Definition

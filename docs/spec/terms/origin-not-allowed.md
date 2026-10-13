@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [origin_not_allowed]
 defined_for: S02-mfa-oidc
-rules_hash: e3b0c44298fc
+rules_hash: e281a1c38a0c
 ---
 # origin_not_allowed (403)
 ## Definition

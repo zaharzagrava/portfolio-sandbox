@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [terminal]
 defined_for: payment-lifecycle
-rules_hash: 36d151d9fc8c
+rules_hash: fd3091792724
 ---
 # Terminal payment status
 ## Definition

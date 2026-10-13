@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [provider subject]
 defined_for: S02-mfa-oidc
-rules_hash: e3b0c44298fc
+rules_hash: 03c98b5f0df0
 ---
 # (provider, subject) pair
 ## Definition

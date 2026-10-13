@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: []
 defined_for: S33-autocomplete
-rules_hash: 4e875b341d08
+rules_hash: 08241217358a
 ---
 # Serve time
 ## Definition

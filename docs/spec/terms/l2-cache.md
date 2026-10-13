@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [l2]
 defined_for: cache-layers
-rules_hash: d1f9f2fc919a
+rules_hash: 43d0694f62d4
 ---
 # L2 cache (shared store)
 ## Definition

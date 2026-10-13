@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [recovered]
 defined_for: order-reservation
-rules_hash: 14b04e0cb0b3
+rules_hash: c2cc8624cf1b
 ---
 # Pending order recovery
 ## Definition

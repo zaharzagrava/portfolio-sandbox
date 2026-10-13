@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [managers]
 defined_for: S03-shops-rbac
-rules_hash: 602ab492bff4
+rules_hash: 285bbb9ce74d
 ---
 # Manager (invite management)
 ## Definition

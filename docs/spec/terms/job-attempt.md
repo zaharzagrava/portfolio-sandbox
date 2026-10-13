@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [attempt, attempts]
 defined_for: job-scheduler-lease
-rules_hash: b931f9f23cb3
+rules_hash: 7cf174d1006b
 ---
 # Job attempt
 ## Definition

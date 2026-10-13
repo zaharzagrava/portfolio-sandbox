@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [source, sources]
 defined_for: idempotency-key
-rules_hash: e3b0c44298fc
+rules_hash: 3a2ce4b8f93b
 ---
 # Job source
 ## Definition

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [dependent sections]
 defined_for: bff-aggregate
-rules_hash: 0ae6774893c1
+rules_hash: 1f2957ebcfde
 ---
 # Dependent section
 ## Definition

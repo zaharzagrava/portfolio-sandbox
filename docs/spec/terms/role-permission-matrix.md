@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [matrix]
 defined_for: tenant-shop-rbac
-rules_hash: b79e3d98ce04
+rules_hash: ef5132fb446c
 ---
 # Role permission matrix
 ## Definition

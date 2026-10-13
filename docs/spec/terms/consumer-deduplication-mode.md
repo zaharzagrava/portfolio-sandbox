@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [deduplication mode, deduplication modes]
 defined_for: outbox-task-queue
-rules_hash: 9b4f5f8edd25
+rules_hash: 7f1ee560e402
 ---
 # Consumer deduplication mode
 ## Definition

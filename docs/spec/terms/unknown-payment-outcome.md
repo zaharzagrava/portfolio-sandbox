@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [unknown outcome]
 defined_for: idempotency-key
-rules_hash: ae472ac9f679
+rules_hash: d567c3c7a63a
 ---
 # Unknown payment outcome
 ## Definition

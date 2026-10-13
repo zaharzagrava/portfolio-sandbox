@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [reserved handle, slug_reserved]
 defined_for: S03-shops-rbac
-rules_hash: d510f29ae9bd
+rules_hash: 0f33dbdf30cd
 ---
 # Reserved slug (slug_reserved)
 ## Definition

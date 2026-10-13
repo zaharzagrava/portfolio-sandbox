@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: []
 defined_for: S33-autocomplete
-rules_hash: 47ee3fc3ea30
+rules_hash: fda7056cc80b
 ---
 # Operator
 ## Definition

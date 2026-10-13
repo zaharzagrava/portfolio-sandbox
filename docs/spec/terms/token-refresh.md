@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [exchange, refresh token]
 defined_for: access-token-session
-rules_hash: 2ac624578d32
+rules_hash: f7df5db0d28f
 ---
 # Token refresh
 ## Definition

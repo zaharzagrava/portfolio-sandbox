@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [member]
 defined_for: S05-products
-rules_hash: 849ce05e7ebc
+rules_hash: 213a7dd75ff9
 ---
 # Shop membership (non-member)
 ## Definition

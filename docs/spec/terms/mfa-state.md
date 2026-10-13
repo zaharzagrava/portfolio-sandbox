@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [enabled, pending, second-factor state, state `pending`]
 defined_for: S02-mfa-oidc
-rules_hash: 740df1d18a2b
+rules_hash: 6e2fcae3e68b
 ---
 # MFA state (none, pending, enabled)
 ## Definition

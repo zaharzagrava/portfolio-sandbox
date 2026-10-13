@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [configured idle timeout]
 defined_for: S35-trending
-rules_hash: e3b0c44298fc
+rules_hash: 0b35eded4ce5
 ---
 # Idle timeout
 ## Definition

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [topic]
 defined_for: realtime-topic-stream
-rules_hash: f2b40a3c0927
+rules_hash: bae94f445b3a
 ---
 # Realtime topic
 ## Definition

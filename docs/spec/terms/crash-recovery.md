@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: []
 defined_for: S13-payment-intents
-rules_hash: e3b0c44298fc
+rules_hash: efb5fe8e93be
 ---
 # crash_recovery
 ## Definition

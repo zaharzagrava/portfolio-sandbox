@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [instance clock, store's clock]
 defined_for: rate-limit-policy
-rules_hash: fefad8b6cef2
+rules_hash: cdf7673a4d04
 ---
 # Store clock
 ## Definition

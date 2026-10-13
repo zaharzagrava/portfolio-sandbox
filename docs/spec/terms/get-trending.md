@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [/api/trending, trending endpoint]
 defined_for: S35-trending
-rules_hash: 60902448bbc7
+rules_hash: a0bbeafb5146
 ---
 # GET /api/trending
 ## Definition

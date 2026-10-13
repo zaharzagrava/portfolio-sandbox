@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [cursor, nextcursor]
 defined_for: S03-shops-rbac
-rules_hash: b11d5533c929
+rules_hash: d5c41912858b
 ---
 # Pagination cursor (nextCursor)
 ## Definition

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [explicit linking, identities, linked user]
 defined_for: S02-mfa-oidc
-rules_hash: 155575b373b3
+rules_hash: 594162e1c972
 ---
 # Linked identity
 ## Definition

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [cron]
 defined_for: idempotency-key
-rules_hash: d51d1c384797
+rules_hash: 3f3fcf426380
 ---
 # Time-zone-aware cron
 ## Definition

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [seats]
 defined_for: tenant-shop-rbac
-rules_hash: 4f8e6b9a2061
+rules_hash: da9f0ecf371e
 ---
 # Seat
 ## Definition

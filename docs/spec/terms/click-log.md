@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [click logs]
 defined_for: S32-product-search
-rules_hash: 6a3e2e166793
+rules_hash: 8edcd16a6c6f
 ---
 # Click log
 ## Definition

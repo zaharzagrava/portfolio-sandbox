@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [payment commands]
 defined_for: payment-lifecycle
-rules_hash: 0cd2b76c79b0
+rules_hash: d13ad9693625
 ---
 # Payment command
 ## Definition

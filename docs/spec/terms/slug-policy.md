@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: []
 defined_for: S03-shops-rbac
-rules_hash: e3b0c44298fc
+rules_hash: 141c45fa7347
 ---
 # Slug policy
 ## Definition

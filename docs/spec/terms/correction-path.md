@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [correction]
 defined_for: S35-trending
-rules_hash: c188b2eaa058
+rules_hash: ec8d6ec738f9
 ---
 # Correction path
 ## Definition

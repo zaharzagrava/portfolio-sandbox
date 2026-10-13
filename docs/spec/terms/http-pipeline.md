@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [pipeline, shared pipeline]
 defined_for: S54-platform-toolkit
-rules_hash: e3b0c44298fc
+rules_hash: 2c17411b0bde
 ---
 # HTTP pipeline
 ## Definition

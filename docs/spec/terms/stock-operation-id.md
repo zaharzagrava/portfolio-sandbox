@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [operation id]
 defined_for: order-reservation
-rules_hash: e3b0c44298fc
+rules_hash: 27460481678d
 ---
 # Stock operation ID
 ## Definition

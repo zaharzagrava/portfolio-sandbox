@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [at least once, publication]
 defined_for: outbox-task-queue
-rules_hash: bd5f4bf85e4b
+rules_hash: cbc299157bf3
 ---
 # At-least-once publication
 ## Definition

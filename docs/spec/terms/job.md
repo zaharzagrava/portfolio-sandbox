@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [jobs]
 defined_for: S49-job-scheduler
-rules_hash: 45cfe5c815ee
+rules_hash: e785aaef9218
 ---
 # Job (scheduler job)
 ## Definition

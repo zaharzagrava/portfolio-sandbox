@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [allow-list, allowed origins]
 defined_for: S02-mfa-oidc
-rules_hash: 88227126b99a
+rules_hash: 007421941e9e
 ---
 # Origin allow-list
 ## Definition

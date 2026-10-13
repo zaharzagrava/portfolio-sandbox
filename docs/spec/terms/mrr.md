@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [mean reciprocal rank]
 defined_for: S32-product-search
-rules_hash: e3b0c44298fc
+rules_hash: 265ca6dc7941
 ---
 # MRR (mean reciprocal rank)
 ## Definition

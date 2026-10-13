@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [recovery codes, set]
 defined_for: S02-mfa-oidc
-rules_hash: 3f2786d21cbc
+rules_hash: 3b037c31bd15
 ---
 # Recovery code
 ## Definition

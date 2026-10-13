@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [throttle]
 defined_for: W02-storefront-discovery
-rules_hash: e3b0c44298fc
+rules_hash: 332f7de3914d
 ---
 # Request throttle
 ## Definition

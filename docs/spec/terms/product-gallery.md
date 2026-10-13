@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [gallery, mediaids]
 defined_for: W02-storefront-discovery
-rules_hash: 59bbfe827a6c
+rules_hash: 4b6b077068e1
 ---
 # Product gallery
 ## Definition

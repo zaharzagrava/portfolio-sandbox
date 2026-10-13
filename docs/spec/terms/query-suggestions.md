@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [suggestions]
 defined_for: S33-autocomplete
-rules_hash: 983bf90a43f7
+rules_hash: 0f124ab7732a
 ---
 # Query suggestions (autocomplete)
 ## Definition

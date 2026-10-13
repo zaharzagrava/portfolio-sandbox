@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [refund request]
 defined_for: payment-lifecycle
-rules_hash: 933355395997
+rules_hash: 04eabaf1c729
 ---
 # Refund
 ## Definition

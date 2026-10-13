@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [semantic mode]
 defined_for: S32-product-search
-rules_hash: e3b0c44298fc
+rules_hash: 4a2453bf7ed7
 ---
 # Search mode
 ## Definition

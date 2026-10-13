@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [replay, replayed code]
 defined_for: S02-mfa-oidc
-rules_hash: 78d095bbc332
+rules_hash: f66753651909
 ---
 # TOTP replay protection
 ## Definition

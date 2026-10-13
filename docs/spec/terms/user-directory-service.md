@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [user-directory export, user-directory.service.ts]
 defined_for: S01-auth-sessions
-rules_hash: e3b0c44298fc
+rules_hash: 3f9e07f0f139
 ---
 # UserDirectoryService
 ## Definition

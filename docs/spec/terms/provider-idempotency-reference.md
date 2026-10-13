@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [idempotency reference]
 defined_for: S13-payment-intents
-rules_hash: de97590e0aad
+rules_hash: 75d5b64ac90f
 ---
 # Provider idempotency reference
 ## Definition

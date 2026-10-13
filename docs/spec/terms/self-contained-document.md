@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [self-contained document]
 defined_for: W07-app-shell
-rules_hash: 7dcaac2caeed
+rules_hash: 47a3cf458a40
 ---
 # Self-contained error document
 ## Definition

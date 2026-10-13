@@ -209,6 +209,7 @@ def main(argv):
     all_pages = cap_pages + con_pages + term_pages
     page_terms = {p['path']: common.term_slugs_linked(p) for p in all_pages}
     inv = common.term_index(cap_pages + con_pages)
+    defs_inv = common.term_definition_index(term_pages)
     for page in all_pages:
         for text, target in common.spec_links(page):
             if not os.path.isfile(target) and os.path.commonpath([target, common.SPEC]) == common.SPEC:
@@ -221,11 +222,11 @@ def main(argv):
         users = used_by_terms(slug, page, page_terms, inv, all_pages)
         block = '\n'.join(users) or '_nobody yet_'
         # no drift: (1) the rules that use the word are fingerprinted; a changed rule asks for the definition to be read again (terms.py accept <slug> after reading it)
-        stored, current = page['front'].get('rules_hash'), common.hash_of_items(inv.get(slug, []))
+        stored, current = page['front'].get('rules_hash'), common.hash_of_items(inv.get(slug, []), defs_inv.get(slug, ()))
         if users and not stored:
             rep.warn(page['rel'], 'no `rules_hash`: run scripts/livespec/terms.py accept ' + slug)
         elif users and stored != 'pending' and stored != current:
-            rep.warn(page['rel'], 'a rule that uses this word changed (or a new rule uses it) since the definition was written: read it again, then run scripts/livespec/terms.py accept ' + slug)
+            rep.warn(page['rel'], 'a rule or a definition that uses this word changed (or a new one uses it) since this definition was written: read it again, then run scripts/livespec/terms.py accept ' + slug)
         # (2) no second copy of a fact: a number in the definition must be stated by a rule that links the term, or it will silently go wrong when the rule changes
         m_def = re.search(r'^## Definition\n(.*?)(?=^## |\Z)', page['body'], re.M | re.S)
         if m_def and inv.get(slug) and terms_cfg().get('numbers_in_definitions', 'forbid') == 'forbid':

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [tenancy table]
 defined_for: tenant-shop-rbac
-rules_hash: 84a0675216e3
+rules_hash: 3abf1c77a3fc
 ---
 # Tenancy tables
 ## Definition

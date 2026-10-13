@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [flow, flow cookie]
 defined_for: S02-mfa-oidc
-rules_hash: 39e8c00498a1
+rules_hash: 64f49e82b9b9
 ---
 # OIDC flow cookie
 ## Definition

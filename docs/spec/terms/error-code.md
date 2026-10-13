@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [code]
 defined_for: problem-json-errors
-rules_hash: e9c583839224
+rules_hash: 7dd1ab67b372
 ---
 # Error code (code member)
 ## Definition

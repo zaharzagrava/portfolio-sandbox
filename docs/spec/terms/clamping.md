@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [clamped]
 defined_for: S35-trending
-rules_hash: 8c3ab7d9f1a1
+rules_hash: 4d9d771d8c0d
 ---
 # Clamping (no silent adjustment of out-of-range values)
 ## Definition

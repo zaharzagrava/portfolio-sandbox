@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [blocklist]
 defined_for: S33-autocomplete
-rules_hash: 67565b50a3c9
+rules_hash: 8edbcff1e46e
 ---
 # Suggestion blocklist
 ## Definition

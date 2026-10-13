@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [health probe]
 defined_for: idempotency-key
-rules_hash: 52a0779ea4f7
+rules_hash: d3ba84d61b19
 ---
 # Health probes
 ## Definition

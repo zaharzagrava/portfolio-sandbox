@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [item]
 defined_for: search-index
-rules_hash: 56e14038bb22
+rules_hash: 88a2a3caba8d
 ---
 # Search items
 ## Definition

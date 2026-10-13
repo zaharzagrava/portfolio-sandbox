@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [toast notification]
 defined_for: W01-auth-account
-rules_hash: 85061c6fdf38
+rules_hash: 41d3e0b2c853
 ---
 # Toast
 ## Definition

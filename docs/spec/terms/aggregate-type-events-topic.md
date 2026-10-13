@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [<aggregatetype>.events]
 defined_for: S53-events-projections
-rules_hash: e3b0c44298fc
+rules_hash: fd0e65cd15ff
 ---
 # <aggregateType>.events topic
 ## Definition

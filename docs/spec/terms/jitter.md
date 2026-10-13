@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: []
 defined_for: cache-layers
-rules_hash: 18b149c1a99b
+rules_hash: 4474a3d100e1
 ---
 # Jitter
 ## Definition

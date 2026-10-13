@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [forced shutdown, hard timeout]
 defined_for: S54-platform-toolkit
-rules_hash: cb390b5da2a3
+rules_hash: b02b5277e212
 ---
 # Hard shutdown timeout
 ## Definition

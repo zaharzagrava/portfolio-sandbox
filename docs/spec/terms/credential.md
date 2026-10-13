@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [any credential, credentials]
 defined_for: S48-bff
-rules_hash: a1b21e9fe567
+rules_hash: 71e390b29ae0
 ---
 # Credential (request)
 ## Definition

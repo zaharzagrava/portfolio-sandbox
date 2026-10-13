@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [accountslot, slot]
 defined_for: W01-auth-account
-rules_hash: c97994f7dab4
+rules_hash: 18e13d27dac0
 ---
 # Account slot
 ## Definition

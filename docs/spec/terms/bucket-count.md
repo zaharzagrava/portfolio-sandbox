@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [bucket, buckets]
 defined_for: S34-recommendations
-rules_hash: 512693eb81ed
+rules_hash: ab252f415575
 ---
 # Bucket count
 ## Definition

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [tenancy domain]
 defined_for: S03-shops-rbac
-rules_hash: e3b0c44298fc
+rules_hash: 7e7d2a5c3cb0
 ---
 # Tenancy domain layer
 ## Definition

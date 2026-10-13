@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [build]
 defined_for: S33-autocomplete
-rules_hash: 276673a797b2
+rules_hash: fc5def4c0b29
 ---
 # Query index build
 ## Definition

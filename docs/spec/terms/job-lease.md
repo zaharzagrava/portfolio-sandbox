@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [lease, leases]
 defined_for: job-scheduler-lease
-rules_hash: 81384a2d2f21
+rules_hash: 8bbe54f9d010
 ---
 # Job lease
 ## Definition

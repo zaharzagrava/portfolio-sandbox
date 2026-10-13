@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [invite tokens]
 defined_for: S03-shops-rbac
-rules_hash: afda943d82d3
+rules_hash: 43cecc66901d
 ---
 # Invite token
 ## Definition

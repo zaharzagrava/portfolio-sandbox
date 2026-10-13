@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [serving modules]
 defined_for: S33-autocomplete
-rules_hash: e3b0c44298fc
+rules_hash: fd0f7f5774f3
 ---
 # Serving node
 ## Definition

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [strict bodies]
 defined_for: S05-products
-rules_hash: 0395aae726db
+rules_hash: 0d0d8411a8ef
 ---
 # Strict request body
 ## Definition

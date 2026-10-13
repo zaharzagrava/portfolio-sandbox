@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [contract, payload]
 defined_for: S49-job-scheduler
-rules_hash: b1568e2477e6
+rules_hash: 5657da6b904b
 ---
 # Job payload contract
 ## Definition

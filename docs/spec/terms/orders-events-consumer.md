@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [orders events consumer]
 defined_for: S13-payment-intents
-rules_hash: e3b0c44298fc
+rules_hash: 197083c8f6bd
 ---
 # OrdersEventsConsumer
 ## Definition

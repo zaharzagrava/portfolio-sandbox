@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [fire, schedules]
 defined_for: job-scheduler-lease
-rules_hash: 312d9e7927c6
+rules_hash: 2a57d5781065
 ---
 # Schedule materialisation
 ## Definition

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [relay]
 defined_for: outbox-task-queue
-rules_hash: 7ee5adda7fb9
+rules_hash: 5d842d8c945f
 ---
 # Outbox relay
 ## Definition

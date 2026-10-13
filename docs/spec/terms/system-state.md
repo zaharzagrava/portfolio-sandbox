@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [loading state, not found state, system states]
 defined_for: W07-app-shell
-rules_hash: e3b0c44298fc
+rules_hash: 7d8b6ccdf48b
 ---
 # System state
 ## Definition

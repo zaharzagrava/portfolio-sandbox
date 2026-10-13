@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [bought-together]
 defined_for: projection-and-replay
-rules_hash: c95ad40fc12d
+rules_hash: 6eb5b1887077
 ---
 # Bought together
 ## Definition

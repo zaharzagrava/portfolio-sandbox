@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: []
 defined_for: W07-app-shell
-rules_hash: 7dcaac2caeed
+rules_hash: 2ce99d9c923d
 ---
 # Root layout
 ## Definition

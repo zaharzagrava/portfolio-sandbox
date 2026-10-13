@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [frame]
 defined_for: W07-app-shell
-rules_hash: 9f8be7def689
+rules_hash: 548ef90abdbc
 ---
 # Page frame
 ## Definition

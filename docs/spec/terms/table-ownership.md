@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [owned tables]
 defined_for: S13-payment-intents
-rules_hash: e3500297bf8c
+rules_hash: 889cabbf5473
 ---
 # Table ownership
 ## Definition

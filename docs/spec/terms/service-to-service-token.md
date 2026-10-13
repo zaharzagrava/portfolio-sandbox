@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [service tokens]
 defined_for: access-token-session
-rules_hash: e3b0c44298fc
+rules_hash: 0ea47a6d51a3
 ---
 # Service-to-service token
 ## Definition

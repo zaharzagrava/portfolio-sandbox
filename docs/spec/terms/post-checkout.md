@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: []
 defined_for: idempotency-key
-rules_hash: e9d3aeb9f944
+rules_hash: 033ed0c709c7
 ---
 # POST /checkout
 ## Definition

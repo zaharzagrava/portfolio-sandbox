@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [catalog domain]
 defined_for: S05-products
-rules_hash: e3b0c44298fc
+rules_hash: 0155cc1e9a05
 ---
 # Catalog domain layer
 ## Definition

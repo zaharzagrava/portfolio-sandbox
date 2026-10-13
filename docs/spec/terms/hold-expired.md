@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [hold expiry]
 defined_for: order-reservation
-rules_hash: 6df23cccce7d
+rules_hash: e3016ec1406f
 ---
 # hold_expired cancellation
 ## Definition

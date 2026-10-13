@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [reserved prefix]
 defined_for: S02-mfa-oidc
-rules_hash: e3b0c44298fc
+rules_hash: 47175efc1169
 ---
 # Reserved provider prefix
 ## Definition

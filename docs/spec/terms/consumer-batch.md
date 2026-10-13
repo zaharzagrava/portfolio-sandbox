@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [batch]
 defined_for: projection-and-replay
-rules_hash: 0c61f7204504
+rules_hash: 0ef0be79ffda
 ---
 # Consumer batch
 ## Definition

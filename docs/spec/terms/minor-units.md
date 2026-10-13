@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [minor unit]
 defined_for: S05-products
-rules_hash: c722571bc31a
+rules_hash: b4a4da20be42
 ---
 # Minor units (price)
 ## Definition

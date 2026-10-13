@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [proxy]
 defined_for: W07-app-shell
-rules_hash: 82f0327d26eb
+rules_hash: 6dbb63341465
 ---
 # Proxy (web proxy)
 ## Definition

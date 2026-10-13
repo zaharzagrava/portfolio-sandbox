@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [aggregate]
 defined_for: bff-aggregate
-rules_hash: f5907ebae909
+rules_hash: efacf8ddf995
 ---
 # Page aggregate
 ## Definition

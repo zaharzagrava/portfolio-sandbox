@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [version]
 defined_for: S33-autocomplete
-rules_hash: 502f7a16c271
+rules_hash: 3633c6cb87b2
 ---
 # Published version
 ## Definition

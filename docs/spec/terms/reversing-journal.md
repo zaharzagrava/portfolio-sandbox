@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [journal]
 defined_for: S13-payment-intents
-rules_hash: 5b76faec64c4
+rules_hash: 066f8dedb905
 ---
 # Reversing journal
 ## Definition

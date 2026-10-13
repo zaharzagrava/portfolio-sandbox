@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [/batch/shops]
 defined_for: S03-shops-rbac
-rules_hash: ec237d3438da
+rules_hash: 6d6feb80ae5c
 ---
 # Batch shops lookup (GET /batch/shops)
 ## Definition

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [sandbox products]
 defined_for: search-index
-rules_hash: 40195b7b27b4
+rules_hash: 94769af82af8
 ---
 # Sandbox product
 ## Definition

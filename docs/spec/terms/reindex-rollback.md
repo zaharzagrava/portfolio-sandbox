@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [rollback]
 defined_for: search-index
-rules_hash: 51880f870d7f
+rules_hash: f222e09ffed9
 ---
 # Reindex rollback
 ## Definition

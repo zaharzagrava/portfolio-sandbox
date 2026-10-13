@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [categories, category]
 defined_for: S35-trending
-rules_hash: 92eb979e5ecb
+rules_hash: 85ce1074e456
 ---
 # Category tracking
 ## Definition

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [`saferequest`, outbound http client]
 defined_for: transaction-runner
-rules_hash: f0d33b2295d5
+rules_hash: dbf294353281
 ---
 # safeGet and safeRequest
 ## Definition

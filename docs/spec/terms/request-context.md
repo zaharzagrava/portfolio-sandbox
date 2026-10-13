@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [request context and transactions]
 defined_for: idempotency-key
-rules_hash: e8e4b7de590f
+rules_hash: 7469882f1241
 ---
 # Request context
 ## Definition

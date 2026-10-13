@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [worker]
 defined_for: S33-autocomplete
-rules_hash: a050013da633
+rules_hash: 7d03cda76692
 ---
 # Worker instance
 ## Definition

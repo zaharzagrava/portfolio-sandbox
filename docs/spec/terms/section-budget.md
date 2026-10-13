@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [budget]
 defined_for: S48-bff
-rules_hash: 30ce581644bc
+rules_hash: 1a008fd0d04f
 ---
 # Section budget
 ## Definition

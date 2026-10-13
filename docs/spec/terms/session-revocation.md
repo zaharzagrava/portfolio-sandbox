@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [revoke the session, revoked]
 defined_for: access-token-session
-rules_hash: c6bf0c6f25d4
+rules_hash: 21a09050a385
 ---
 # Session revocation
 ## Definition

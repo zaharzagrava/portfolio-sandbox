@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: []
 defined_for: W07-app-shell
-rules_hash: e3b0c44298fc
+rules_hash: 826ee57e0f5f
 ---
 # buildCsp
 ## Definition

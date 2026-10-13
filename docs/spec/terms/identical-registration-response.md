@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [byte-identical]
 defined_for: S01-auth-sessions
-rules_hash: 561f2135cbbd
+rules_hash: 825fc0c6d7ec
 ---
 # Identical registration response
 ## Definition

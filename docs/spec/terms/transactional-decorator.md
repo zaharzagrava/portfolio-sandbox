@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [@transactional]
 defined_for: transaction-runner
-rules_hash: e744f42ffa19
+rules_hash: 407404e7c973
 ---
 # @Transactional decorator
 ## Definition

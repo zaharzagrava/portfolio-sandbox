@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [read your writes]
 defined_for: outbox-task-queue
-rules_hash: e3b0c44298fc
+rules_hash: 34551c0227ea
 ---
 # Read-your-writes
 ## Definition

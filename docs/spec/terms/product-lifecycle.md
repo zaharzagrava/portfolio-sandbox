@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [lifecycle]
 defined_for: S05-products
-rules_hash: e3b0c44298fc
+rules_hash: 4ac43ffe37c4
 ---
 # Product lifecycle
 ## Definition

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [stale-if-error, staleiferrorms]
 defined_for: cache-layers
-rules_hash: 20557e3367c1
+rules_hash: 725f19b9e524
 ---
 # Stale-if-error (staleIfErrorMs)
 ## Definition

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [cells]
 defined_for: S03-shops-rbac
-rules_hash: e3b0c44298fc
+rules_hash: e6b0202a810e
 ---
 # Cell (shop cell)
 ## Definition

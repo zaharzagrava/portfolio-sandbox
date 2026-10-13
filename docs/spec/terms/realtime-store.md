@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [store fault]
 defined_for: realtime-topic-stream
-rules_hash: dbe3bb437a80
+rules_hash: 9650fa4a89c4
 ---
 # Realtime store
 ## Definition

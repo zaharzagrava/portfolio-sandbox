@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [dynamic providers]
 defined_for: S02-mfa-oidc
-rules_hash: e3b0c44298fc
+rules_hash: c649b178f161
 ---
 # Dynamic provider
 ## Definition

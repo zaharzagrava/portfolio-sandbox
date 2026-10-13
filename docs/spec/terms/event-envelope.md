@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [envelope, envelope json, serialized envelope]
 defined_for: outbox-task-queue
-rules_hash: f8c35f2ecabf
+rules_hash: 4892253b2b8a
 ---
 # Event envelope
 ## Definition

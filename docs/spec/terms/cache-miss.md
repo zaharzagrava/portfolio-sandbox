@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [outcome]
 defined_for: cache-layers
-rules_hash: da224a375d14
+rules_hash: 2e222093b3df
 ---
 # Cache miss and outcomes
 ## Definition

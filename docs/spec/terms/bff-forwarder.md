@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [/api/bff/f/*]
 defined_for: S48-bff
-rules_hash: 2621070584e6
+rules_hash: 7383dde7625f
 ---
 # /api/bff/f/* forwarder
 ## Definition

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [unreferenced objects]
 defined_for: S33-autocomplete
-rules_hash: 2b4ad23be2c3
+rules_hash: 9d87cc4d6768
 ---
 # Unreferenced object
 ## Definition

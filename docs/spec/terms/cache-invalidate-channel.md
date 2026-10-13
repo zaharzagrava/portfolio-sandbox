@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [cache:invalidate]
 defined_for: S52-cache-toolkit
-rules_hash: e3b0c44298fc
+rules_hash: 5840d0bb7073
 ---
 # cache:invalidate channel
 ## Definition

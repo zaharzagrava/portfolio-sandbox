@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [problem body member]
 defined_for: W07-app-shell
-rules_hash: e3b0c44298fc
+rules_hash: 6366f4c4fd53
 ---
 # Problem body
 ## Definition

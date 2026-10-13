@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [errors]
 defined_for: bff-aggregate
-rules_hash: 90dd8fca533c
+rules_hash: 6e80893ee8ce
 ---
 # Errors entry
 ## Definition

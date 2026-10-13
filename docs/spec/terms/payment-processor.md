@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [processor]
 defined_for: payment-lifecycle
-rules_hash: 4846ddbf619e
+rules_hash: 878af4f06678
 ---
 # Payment processor
 ## Definition

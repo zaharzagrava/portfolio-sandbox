@@ -261,8 +261,26 @@ def term_index(pages):
     return inv
 
 
-def hash_of_items(pairs):
-    return hashlib.sha256('\n'.join(f'{i}\t{t}' for i, t in sorted((it['id'], it['norm']) for _, it in pairs)).encode()).hexdigest()[:12]
+def definition_text(page):
+    m = re.search(r'^## Definition\n(.*?)(?=^## |\Z)', page['body'], re.M | re.S)
+    return re.sub(r'\s+', ' ', m.group(1)).strip() if m else ''
+
+
+def term_definition_index(term_pages):
+    """-> {slug: [(linking term, its definition text)]}: a term was written with the definitions that use it as part of its context, so when one of those changes it may be stale too."""
+    inv = {}
+    for p in term_pages:
+        text = definition_text(p)
+        for slug in definition_links(p):
+            inv.setdefault(slug, []).append((slug_of(p), text))
+    return inv
+
+
+def hash_of_items(pairs, defs=()):
+    """Fingerprint of everything a term was written from: the rules that link it, and the definitions of the terms that link it. The term graph is acyclic, so a change travels
+    down it one step at a time, as each flagged definition is read again (and perhaps edited)."""
+    lines = [f'{i}\t{t}' for i, t in sorted((it['id'], it['norm']) for _, it in pairs)] + [f'def:{s}\t{t}' for s, t in sorted(defs)]
+    return hashlib.sha256('\n'.join(lines).encode()).hexdigest()[:12]
 
 
 def term_rules_hash(slug, pages):

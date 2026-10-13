@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [searchers]
 defined_for: S33-autocomplete
-rules_hash: 02d751dc3807
+rules_hash: d04332d3f4ad
 ---
 # Distinct searchers
 ## Definition

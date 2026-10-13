@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [held, release_pending]
 defined_for: order-reservation
-rules_hash: e3b0c44298fc
+rules_hash: 15d9bd2bd2cc
 ---
 # Reservation status
 ## Definition

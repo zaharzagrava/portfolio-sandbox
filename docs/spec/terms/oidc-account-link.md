@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [link, linked]
 defined_for: S02-mfa-oidc
-rules_hash: 1c38aec5417f
+rules_hash: d9df7b5f8bbc
 ---
 # OIDC account link
 ## Definition

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [member, members]
 defined_for: S03-shops-rbac
-rules_hash: 0bff6b52b652
+rules_hash: f688e37768f0
 ---
 # Shop member
 ## Definition

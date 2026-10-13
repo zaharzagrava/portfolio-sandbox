@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [building, catching_up, completed, queued]
 defined_for: S32-product-search
-rules_hash: e3b0c44298fc
+rules_hash: 7f670c01178f
 ---
 # Reindex run status
 ## Definition

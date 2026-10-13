@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [`aftercommit`, aftercommit callbacks]
 defined_for: transaction-runner
-rules_hash: fedb0c6586dd
+rules_hash: 71eb8de580d7
 ---
 # afterCommit callback
 ## Definition

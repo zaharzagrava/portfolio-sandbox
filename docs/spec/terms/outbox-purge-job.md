@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [purge job]
 defined_for: S53-events-projections
-rules_hash: bb3526d8152e
+rules_hash: c5c4ee12bfe2
 ---
 # Outbox purge job
 ## Definition

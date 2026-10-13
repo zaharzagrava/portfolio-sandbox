@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [gate]
 defined_for: S32-product-search
-rules_hash: 4ed620d60007
+rules_hash: 4d0dd3e8efd6
 ---
 # Verification gate
 ## Definition

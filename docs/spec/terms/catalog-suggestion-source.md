@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [catalog]
 defined_for: S33-autocomplete
-rules_hash: b7d0f929d2ba
+rules_hash: 8fd46a9a47e9
 ---
 # Catalog suggestion source
 ## Definition

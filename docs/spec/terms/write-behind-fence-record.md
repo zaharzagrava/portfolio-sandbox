@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [fence, fence record, fence records]
 defined_for: S52-cache-toolkit
-rules_hash: e3b0c44298fc
+rules_hash: 5da5d0f8dce0
 ---
 # Fence record (write-behind)
 ## Definition

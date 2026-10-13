@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [domain]
 defined_for: S53-events-projections
-rules_hash: e3b0c44298fc
+rules_hash: e77c9a22f2e2
 ---
 # Domain (writing domain)
 ## Definition

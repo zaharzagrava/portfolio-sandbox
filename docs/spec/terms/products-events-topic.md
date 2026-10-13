@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [products.events]
 defined_for: S05-products
-rules_hash: e3b0c44298fc
+rules_hash: af06360dadc5
 ---
 # products.events topic
 ## Definition

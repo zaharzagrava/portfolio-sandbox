@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [version]
 defined_for: S10-cart-checkout
-rules_hash: f6fc62b83b5a
+rules_hash: d27d9c664abf
 ---
 # Order version
 ## Definition

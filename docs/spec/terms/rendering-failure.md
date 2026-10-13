@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [error boundary]
 defined_for: W07-app-shell
-rules_hash: 4b83de3dc1d7
+rules_hash: 172a281df863
 ---
 # Rendering failure (error boundary)
 ## Definition

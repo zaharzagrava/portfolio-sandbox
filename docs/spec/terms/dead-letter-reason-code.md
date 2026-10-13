@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [reason code]
 defined_for: S53-events-projections
-rules_hash: e3b0c44298fc
+rules_hash: a40f4e29a3df
 ---
 # Dead-letter reason code
 ## Definition

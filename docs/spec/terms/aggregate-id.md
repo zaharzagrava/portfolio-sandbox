@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [aggregate]
 defined_for: outbox-task-queue
-rules_hash: 192ba4f2aabd
+rules_hash: ee8476e2987b
 ---
 # aggregateId
 ## Definition

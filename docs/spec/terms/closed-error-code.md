@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [closed set]
 defined_for: S02-mfa-oidc
-rules_hash: a3086848c08f
+rules_hash: c10127afeda0
 ---
 # Closed error code
 ## Definition

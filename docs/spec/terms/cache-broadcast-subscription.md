@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [broadcast subscription]
 defined_for: S52-cache-toolkit
-rules_hash: d41730f60dab
+rules_hash: dec08b27803a
 ---
 # Broadcast subscription (cache invalidation)
 ## Definition

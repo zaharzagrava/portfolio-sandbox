@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [fan-out, ref-counted]
 defined_for: realtime-topic-stream
-rules_hash: ba2032824b18
+rules_hash: 6981d634ebc0
 ---
 # Ref-counted fan-out
 ## Definition

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [checkpoint]
 defined_for: tenant-shop-rbac
-rules_hash: 230c06a34527
+rules_hash: 385c40f2aef1
 ---
 # Checkpoint lookup
 ## Definition

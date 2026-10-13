@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [front end origin]
 defined_for: S02-mfa-oidc
-rules_hash: e3b0c44298fc
+rules_hash: bd8a04c87db0
 ---
 # Front-end origin
 ## Definition

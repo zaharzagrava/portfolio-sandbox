@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [anonymous]
 defined_for: W01-auth-account
-rules_hash: d8a23ed87e71
+rules_hash: 5411a50d700f
 ---
 # Anonymous state
 ## Definition

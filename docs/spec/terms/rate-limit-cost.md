@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [cost]
 defined_for: rate-limit-policy
-rules_hash: 9f68df4f9038
+rules_hash: 9899cb48634f
 ---
 # Rate limit cost
 ## Definition

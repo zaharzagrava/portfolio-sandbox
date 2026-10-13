@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [enroll, re-enrolling]
 defined_for: S02-mfa-oidc
-rules_hash: 4f31622936d3
+rules_hash: 797be81c839b
 ---
 # MFA enrolment
 ## Definition

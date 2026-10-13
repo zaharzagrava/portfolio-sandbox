@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [__host-bff-csrf, __host-bff-mfa, __host-bff-session]
 defined_for: W01-auth-account
-rules_hash: e3b0c44298fc
+rules_hash: 3f47f4cb3563
 ---
 # __Host-bff-* cookies
 ## Definition

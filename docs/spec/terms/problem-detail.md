@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [detail text]
 defined_for: problem-json-errors
-rules_hash: 18e2e8610706
+rules_hash: 260bf6c0007d
 ---
 # detail (problem body member)
 ## Definition

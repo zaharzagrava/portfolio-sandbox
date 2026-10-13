@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [in-flight limit, upstream_overloaded]
 defined_for: bff-aggregate
-rules_hash: 7e7c9b9735e4
+rules_hash: 80de37156b86
 ---
 # Upstream in-flight limit
 ## Definition

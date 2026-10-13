@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [query cost, query depth]
 defined_for: bff-aggregate
-rules_hash: c2ae91bb0b59
+rules_hash: 6ce1bb197db6
 ---
 # GraphQL query depth and cost limits
 ## Definition

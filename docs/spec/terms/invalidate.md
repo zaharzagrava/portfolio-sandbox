@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: []
 defined_for: cache-layers
-rules_hash: 09ae9c3a381f
+rules_hash: 936b893ad3eb
 ---
 # invalidate
 ## Definition

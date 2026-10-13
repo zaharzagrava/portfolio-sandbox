@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [requestid, x-request-id]
 defined_for: problem-json-errors
-rules_hash: 0b9cd4ac88e3
+rules_hash: e43c14d3454a
 ---
 # requestId / X-Request-Id
 ## Definition

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: []
 defined_for: S33-autocomplete
-rules_hash: e3b0c44298fc
+rules_hash: b478e854f0a6
 ---
 # Popularity floor
 ## Definition

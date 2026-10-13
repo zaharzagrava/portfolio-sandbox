@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [fallback, fallback counter]
 defined_for: S50-rate-limiter
-rules_hash: f7fa766b33f0
+rules_hash: 886766a20b6e
 ---
 # Subject fallback counter
 ## Definition

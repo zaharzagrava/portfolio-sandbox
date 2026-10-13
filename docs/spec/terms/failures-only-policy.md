@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [count failures only, failures only]
 defined_for: S50-rate-limiter
-rules_hash: 47c4a7a0e67d
+rules_hash: 4cfc4efed6d0
 ---
 # Failures-only policy
 ## Definition

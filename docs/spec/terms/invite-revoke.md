@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [revoked]
 defined_for: S03-shops-rbac
-rules_hash: 602ab492bff4
+rules_hash: 6195e1e93ee3
 ---
 # Invite revoke
 ## Definition

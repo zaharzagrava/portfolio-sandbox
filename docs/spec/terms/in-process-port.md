@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [port]
 defined_for: S32-product-search
-rules_hash: e3b0c44298fc
+rules_hash: d434a44b2aef
 ---
 # In-process port
 ## Definition

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: []
 defined_for: S54-platform-toolkit
-rules_hash: e3b0c44298fc
+rules_hash: ce9c999cad66
 ---
 # blocked_address
 ## Definition

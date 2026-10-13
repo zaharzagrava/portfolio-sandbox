@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [image-processing queue, media-processing]
 defined_for: W02-storefront-discovery
-rules_hash: e3b0c44298fc
+rules_hash: 0b8de65217a5
 ---
 # media-processing queue
 ## Definition

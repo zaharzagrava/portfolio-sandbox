@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [shared transaction, transaction is active]
 defined_for: transaction-runner
-rules_hash: b0da890c5a89
+rules_hash: 0a5c00f5c5c4
 ---
 # Active transaction
 ## Definition

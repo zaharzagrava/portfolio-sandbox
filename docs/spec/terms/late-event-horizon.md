@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [horizon]
 defined_for: S35-trending
-rules_hash: c188b2eaa058
+rules_hash: b4f80c3082b2
 ---
 # Late-event horizon
 ## Definition

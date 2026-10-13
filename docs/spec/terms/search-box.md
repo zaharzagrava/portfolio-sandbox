@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [search box (variant `hero`)]
 defined_for: W02-storefront-discovery
-rules_hash: e3b0c44298fc
+rules_hash: 756555a8b9ec
 ---
 # Search box
 ## Definition

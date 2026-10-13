@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [exception filter, filter]
 defined_for: problem-json-errors
-rules_hash: c2bfced7b2d6
+rules_hash: 746658b210a2
 ---
 # Problem exception filter
 ## Definition

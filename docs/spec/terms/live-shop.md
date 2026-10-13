@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [live shops]
 defined_for: S03-shops-rbac
-rules_hash: 8c45f6c98680
+rules_hash: 30586e136314
 ---
 # Live shop
 ## Definition

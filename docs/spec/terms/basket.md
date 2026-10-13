@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [basket store, baskets]
 defined_for: projection-and-replay
-rules_hash: 8540e5dc372f
+rules_hash: 554c9cbb7e78
 ---
 # Basket (order basket)
 ## Definition

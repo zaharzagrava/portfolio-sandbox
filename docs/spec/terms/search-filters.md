@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [filter]
 defined_for: S32-product-search
-rules_hash: 2feb73266d1c
+rules_hash: bacaa4dfee45
 ---
 # Search filters
 ## Definition

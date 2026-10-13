@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [data line]
 defined_for: S51-realtime-push
-rules_hash: 035d2ec4dfb3
+rules_hash: 8a7d6a4b8fd7
 ---
 # data line (stream frame)
 ## Definition

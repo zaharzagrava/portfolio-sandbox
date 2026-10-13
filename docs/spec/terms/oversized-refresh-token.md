@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [bad request, oversized value]
 defined_for: access-token-session
-rules_hash: eb99957d0011
+rules_hash: a467e78c209f
 ---
 # Oversized refresh token rejection
 ## Definition

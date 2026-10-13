@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [cookie-authenticated, session store]
 defined_for: bff-aggregate
-rules_hash: 48e04ba52a6d
+rules_hash: 0b66692d3742
 ---
 # Session cookie
 ## Definition

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [heap]
 defined_for: S35-trending
-rules_hash: a3fd2a7089a8
+rules_hash: c3685d9b8cea
 ---
 # Top-k heap
 ## Definition

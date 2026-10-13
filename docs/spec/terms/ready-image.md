@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [ready, ready images]
 defined_for: W02-storefront-discovery
-rules_hash: e3b0c44298fc
+rules_hash: fa9ce0e527de
 ---
 # Ready image
 ## Definition

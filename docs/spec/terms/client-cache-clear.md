@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [cache is cleared]
 defined_for: W01-auth-account
-rules_hash: c2737fd930f1
+rules_hash: 78b94033dfde
 ---
 # Client cache clear on sign-out
 ## Definition

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [one total order, total order]
 defined_for: search-index
-rules_hash: 678baba15539
+rules_hash: 35e5f31d79c1
 ---
 # Total order (search results)
 ## Definition

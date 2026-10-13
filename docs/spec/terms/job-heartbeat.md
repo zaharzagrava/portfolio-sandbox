@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [heartbeat]
 defined_for: S49-job-scheduler
-rules_hash: 523828360cb9
+rules_hash: 17606beffcc7
 ---
 # Job heartbeat
 ## Definition

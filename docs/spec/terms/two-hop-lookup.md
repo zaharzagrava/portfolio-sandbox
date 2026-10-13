@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [2-hop, two-hop]
 defined_for: projection-and-replay
-rules_hash: 8d3ddb18599a
+rules_hash: fc2463626360
 ---
 # 2-hop lookup
 ## Definition

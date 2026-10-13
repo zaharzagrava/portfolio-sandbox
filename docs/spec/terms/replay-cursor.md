@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [cursor]
 defined_for: realtime-topic-stream
-rules_hash: 73b011ba9860
+rules_hash: 52f6d4b23f59
 ---
 # Replay cursor
 ## Definition

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [user cart]
 defined_for: S10-cart-checkout
-rules_hash: e8e8bfded4cb
+rules_hash: 7f89cbcacbee
 ---
 # Cart
 ## Definition

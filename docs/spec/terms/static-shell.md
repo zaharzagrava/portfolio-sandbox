@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [shell]
 defined_for: W02-storefront-discovery
-rules_hash: bca75cfc34eb
+rules_hash: a9059efc8dad
 ---
 # Static shell
 ## Definition

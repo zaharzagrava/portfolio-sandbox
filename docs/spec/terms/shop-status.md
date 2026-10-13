@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [`deleted`, `deleting`, deleted, deleting, suspended]
 defined_for: search-index
-rules_hash: b3e053258306
+rules_hash: e996e3d6679b
 ---
 # Shop status
 ## Definition

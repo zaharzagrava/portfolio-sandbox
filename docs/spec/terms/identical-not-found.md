@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [identical 404]
 defined_for: S03-shops-rbac
-rules_hash: 15a498afb1ac
+rules_hash: f5c3512af440
 ---
 # Identical 404 (no existence leak)
 ## Definition

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: []
 defined_for: idempotency-key
-rules_hash: 267308a8d20f
+rules_hash: dff0b4de8dce
 ---
 # Payment provider
 ## Definition

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [sink]
 defined_for: S53-events-projections
-rules_hash: e3ae0a82742c
+rules_hash: e90efb4b893a
 ---
 # Sink (event consumer)
 ## Definition

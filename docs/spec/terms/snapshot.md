@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [snapshots]
 defined_for: S33-autocomplete
-rules_hash: ac932223c7c8
+rules_hash: 5735535a1e09
 ---
 # Snapshot
 ## Definition

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [lock timeout, statement timeout]
 defined_for: transaction-runner
-rules_hash: 6cdc5e934364
+rules_hash: 31611af9599c
 ---
 # Statement and lock timeouts
 ## Definition

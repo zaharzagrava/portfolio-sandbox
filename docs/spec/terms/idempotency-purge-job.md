@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [purge job]
 defined_for: idempotency-key
-rules_hash: 82a0fc576a83
+rules_hash: 5db6e2ea0b29
 ---
 # Idempotency key purge job
 ## Definition

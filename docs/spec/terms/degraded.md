@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: []
 defined_for: S33-autocomplete
-rules_hash: e3b0c44298fc
+rules_hash: ce70ccb37ad2
 ---
 # degraded
 ## Definition

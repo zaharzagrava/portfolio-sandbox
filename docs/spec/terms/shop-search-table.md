@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: []
 defined_for: S32-product-search
-rules_hash: e3b0c44298fc
+rules_hash: beae75ecd227
 ---
 # Shop search table
 ## Definition

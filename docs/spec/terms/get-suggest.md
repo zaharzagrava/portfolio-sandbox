@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [/suggest]
 defined_for: S33-autocomplete
-rules_hash: 8a59e36114e5
+rules_hash: 02b7672ce610
 ---
 # GET /suggest
 ## Definition

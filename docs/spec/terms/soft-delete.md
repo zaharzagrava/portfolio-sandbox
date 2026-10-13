@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [soft-deleted]
 defined_for: S01-auth-sessions
-rules_hash: 6f8892d6b4cc
+rules_hash: b6989fee0a5b
 ---
 # Soft delete
 ## Definition

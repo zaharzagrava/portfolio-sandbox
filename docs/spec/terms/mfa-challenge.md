@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [challenge]
 defined_for: S01-auth-sessions
-rules_hash: cd0781f2f539
+rules_hash: 1e49b970dbc6
 ---
 # MFA challenge
 ## Definition

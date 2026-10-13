@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [rejected]
 defined_for: order-reservation
-rules_hash: e3b0c44298fc
+rules_hash: dbef190c9f0d
 ---
 # REJECTED payment event
 ## Definition

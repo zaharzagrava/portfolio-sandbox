@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [counter store, store that holds its counters]
 defined_for: idempotency-key
-rules_hash: 2b43f48aa772
+rules_hash: f73cb0e105be
 ---
 # Rate limit counter store
 ## Definition

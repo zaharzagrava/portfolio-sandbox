@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [carries]
 defined_for: S53-events-projections
-rules_hash: e3b0c44298fc
+rules_hash: da14931be355
 ---
 # carries: state
 ## Definition

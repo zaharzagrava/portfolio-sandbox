@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [window]
 defined_for: payment-lifecycle
-rules_hash: 6a42edfc0911
+rules_hash: 276ccbad38b8
 ---
 # Provider lookup window
 ## Definition

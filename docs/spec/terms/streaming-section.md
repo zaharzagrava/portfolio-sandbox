@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [stream in behind same-size skeletons, streams]
 defined_for: W02-storefront-discovery
-rules_hash: bca75cfc34eb
+rules_hash: ac1ef9d4aaa2
 ---
 # Streaming in behind skeletons
 ## Definition

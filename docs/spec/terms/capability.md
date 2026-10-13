@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [capability page, capability's specification]
 defined_for: S05-products
-rules_hash: 8f3e1bfe8e7c
+rules_hash: 33b4a8d3bb80
 ---
 # Capability
 ## Definition

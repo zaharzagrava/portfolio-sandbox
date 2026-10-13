@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [park, parked]
 defined_for: outbox-task-queue
-rules_hash: 807cc663cfee
+rules_hash: d52d755a5d5d
 ---
 # Parked row
 ## Definition

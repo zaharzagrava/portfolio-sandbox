@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [pointer]
 defined_for: S33-autocomplete
-rules_hash: e33d775cb13d
+rules_hash: c10b0f6cfc31
 ---
 # Version pointer
 ## Definition

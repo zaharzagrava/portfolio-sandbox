@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [sequence]
 defined_for: S54-platform-toolkit
-rules_hash: 66c0603098e5
+rules_hash: 2f48f45f577b
 ---
 # Shutdown sequence
 ## Definition

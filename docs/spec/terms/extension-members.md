@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [extension member]
 defined_for: problem-json-errors
-rules_hash: 4ce84aa7d9a8
+rules_hash: d39080784614
 ---
 # Extension members
 ## Definition

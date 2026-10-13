@@ -405,6 +405,7 @@ def set_hashes(slugs):
     """Record the fingerprint of the rules that use each term (check.py warns when it changes)."""
     pages = common.pages('capability') + common.pages('concept')
     inv = common.term_index(pages)
+    defs_inv = common.term_definition_index(common.pages('term'))
     n = 0
     for slug in slugs:
         path = os.path.join(TERMS, slug + '.md')
@@ -412,7 +413,7 @@ def set_hashes(slugs):
             continue
         with open(path, encoding='utf-8') as f:
             text = f.read()
-        h = common.hash_of_items(inv.get(slug, []))
+        h = common.hash_of_items(inv.get(slug, []), defs_inv.get(slug, ()))
         new = re.sub(r'^rules_hash:.*$', f'rules_hash: {h}', text, count=1, flags=re.M)
         if new == text and 'rules_hash:' not in text:
             new = text.replace('\n---\n', f'\nrules_hash: {h}\n---\n', 1)

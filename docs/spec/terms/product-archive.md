@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [archive, archived, restore]
 defined_for: S05-products
-rules_hash: 640f8771db6c
+rules_hash: 842f4fcb28e5
 ---
 # Archived product
 ## Definition

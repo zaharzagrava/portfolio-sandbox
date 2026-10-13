@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: []
 defined_for: idempotency-key
-rules_hash: e3b0c44298fc
+rules_hash: da137f559a1f
 ---
 # Load shedding
 ## Definition

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [reservation deadline]
 defined_for: order-reservation
-rules_hash: 9a5da9bfacb9
+rules_hash: 5eef8487bc3e
 ---
 # reservedUntil
 ## Definition

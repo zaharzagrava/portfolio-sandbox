@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [shared event backbone]
 defined_for: outbox-task-queue
-rules_hash: 99d6b0b88454
+rules_hash: 313b51ac0bcd
 ---
 # Event backbone
 ## Definition

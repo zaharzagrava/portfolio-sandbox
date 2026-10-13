@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [unverified, verification]
 defined_for: S03-shops-rbac
-rules_hash: 710651a37961
+rules_hash: 501597685e40
 ---
 # Shop verification
 ## Definition

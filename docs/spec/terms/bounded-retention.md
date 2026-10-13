@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [retention]
 defined_for: S35-trending
-rules_hash: e3b0c44298fc
+rules_hash: 955ef9d7cd46
 ---
 # Bounded retention
 ## Definition

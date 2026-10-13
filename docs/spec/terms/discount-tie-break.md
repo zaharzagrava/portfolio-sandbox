@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [ties]
 defined_for: S10-cart-checkout
-rules_hash: 3568432ac3ee
+rules_hash: 60a601fa758c
 ---
 # Discount tie-break by line position
 ## Definition

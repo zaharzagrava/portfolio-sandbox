@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [duplicate, ignored, stale]
 defined_for: projection-and-replay
-rules_hash: 3c7d501c5f5a
+rules_hash: 0a7073071b6f
 ---
 # Consumer outcomes (duplicate, stale, ignored)
 ## Definition

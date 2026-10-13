@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [reserved member]
 defined_for: problem-json-errors
-rules_hash: 4ce84aa7d9a8
+rules_hash: 8ae09483869a
 ---
 # Reserved members
 ## Definition

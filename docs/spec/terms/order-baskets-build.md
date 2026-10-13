@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [build, run]
 defined_for: S34-recommendations
-rules_hash: 0ff02813d6ea
+rules_hash: b09409a2a9e6
 ---
 # Order baskets build
 ## Definition

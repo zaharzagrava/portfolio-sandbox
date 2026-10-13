@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [recompute lock]
 defined_for: cache-layers
-rules_hash: 81a8cb740600
+rules_hash: c34d42d941a0
 ---
 # Per-key recompute lock
 ## Definition

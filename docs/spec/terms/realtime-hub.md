@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [hub]
 defined_for: realtime-topic-stream
-rules_hash: 9b7317720de4
+rules_hash: 4d20e7b8bb9b
 ---
 # Realtime hub
 ## Definition

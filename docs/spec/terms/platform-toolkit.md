@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [toolkit]
 defined_for: idempotency-key
-rules_hash: e3b0c44298fc
+rules_hash: 6dc459d3a1d1
 ---
 # Platform toolkit
 ## Definition

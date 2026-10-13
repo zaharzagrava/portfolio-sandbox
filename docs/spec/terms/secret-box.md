@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: []
 defined_for: S01-auth-sessions
-rules_hash: e3b0c44298fc
+rules_hash: 71441ea07856
 ---
 # SecretBox
 ## Definition

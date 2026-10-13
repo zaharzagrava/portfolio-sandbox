@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [entries, entry]
 defined_for: cache-layers
-rules_hash: 0c730f7bcf4d
+rules_hash: 31e20f79c5e4
 ---
 # Cache entry
 ## Definition

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [verify endpoint]
 defined_for: S02-mfa-oidc
-rules_hash: c60cce1c773a
+rules_hash: 8ce034864bfe
 ---
 # MFA verify endpoint
 ## Definition

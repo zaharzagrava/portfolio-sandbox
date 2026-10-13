@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [append, outbox.append]
 defined_for: outbox-task-queue
-rules_hash: c577534032ae
+rules_hash: 8f6fa1505652
 ---
 # Outbox append
 ## Definition

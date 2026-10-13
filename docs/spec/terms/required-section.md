@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [optional section, required]
 defined_for: bff-aggregate
-rules_hash: ff5d3c7aec01
+rules_hash: e0f7d38b19d1
 ---
 # Required section
 ## Definition

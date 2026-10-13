@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [merge]
 defined_for: S35-trending
-rules_hash: 9edb3c2df62b
+rules_hash: 8778022fa954
 ---
 # Partition window merge
 ## Definition

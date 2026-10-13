@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [/products/:productid/gallery, gallery route]
 defined_for: W02-storefront-discovery
-rules_hash: e3b0c44298fc
+rules_hash: de57f360d92a
 ---
 # GET /products/:productId/gallery
 ## Definition

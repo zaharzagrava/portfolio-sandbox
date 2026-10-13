@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: []
 defined_for: S35-trending
-rules_hash: 48225308dd83
+rules_hash: 8fc1b62d61af
 ---
 # Aggregate store
 ## Definition

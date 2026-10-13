@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: []
 defined_for: S03-shops-rbac
-rules_hash: e3b0c44298fc
+rules_hash: f578e8773fce
 ---
 # Source of truth
 ## Definition

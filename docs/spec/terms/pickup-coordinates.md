@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: []
 defined_for: W02-storefront-discovery
-rules_hash: b9d315210b66
+rules_hash: 39d0087db165
 ---
 # Pickup coordinates
 ## Definition

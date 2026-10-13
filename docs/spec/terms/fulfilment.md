@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: []
 defined_for: S10-cart-checkout
-rules_hash: 0770978515e8
+rules_hash: 3e0932a3117c
 ---
 # Fulfilment
 ## Definition

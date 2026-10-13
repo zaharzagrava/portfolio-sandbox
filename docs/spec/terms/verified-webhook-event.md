@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [webhook event]
 defined_for: order-reservation
-rules_hash: fdced9370786
+rules_hash: 4adc8b3e473e
 ---
 # Verified webhook event
 ## Definition

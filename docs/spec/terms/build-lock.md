@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [lock]
 defined_for: S34-recommendations
-rules_hash: e3b0c44298fc
+rules_hash: b4e3cee931a1
 ---
 # Build lock
 ## Definition

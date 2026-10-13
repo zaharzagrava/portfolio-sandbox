@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: []
 defined_for: S35-trending
-rules_hash: e3b0c44298fc
+rules_hash: 855b8020cec4
 ---
 # Ranking span
 ## Definition

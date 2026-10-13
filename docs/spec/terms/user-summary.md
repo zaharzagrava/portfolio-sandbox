@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [summary]
 defined_for: S01-auth-sessions
-rules_hash: df8840bf15a1
+rules_hash: 86202df4816c
 ---
 # User summary
 ## Definition

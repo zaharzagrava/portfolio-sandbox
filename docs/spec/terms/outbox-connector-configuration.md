@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [connector, connector configuration]
 defined_for: S53-events-projections
-rules_hash: 1e446a3cae15
+rules_hash: db739c8f3a51
 ---
 # Outbox connector configuration
 ## Definition

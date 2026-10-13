@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [reservation]
 defined_for: order-reservation
-rules_hash: 3afab8d9126c
+rules_hash: 30e247a3ca0e
 ---
 # All-or-nothing reservation
 ## Definition

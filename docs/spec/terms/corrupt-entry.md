@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [corrupt]
 defined_for: cache-layers
-rules_hash: 043540380d4d
+rules_hash: e88f5c418904
 ---
 # Corrupt entry
 ## Definition

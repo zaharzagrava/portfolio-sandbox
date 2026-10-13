@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [fenced]
 defined_for: job-scheduler-lease
-rules_hash: ed0ee4cb95d7
+rules_hash: 2926e0621b25
 ---
 # Attempt fencing
 ## Definition

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [latest-per-key]
 defined_for: S53-events-projections
-rules_hash: e3b0c44298fc
+rules_hash: 5e128ab23963
 ---
 # latest-per-key topic
 ## Definition

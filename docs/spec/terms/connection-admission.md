@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [admitted, refusal]
 defined_for: realtime-topic-stream
-rules_hash: 7ad5f06397cf
+rules_hash: 8623240366c4
 ---
 # Connection admission
 ## Definition

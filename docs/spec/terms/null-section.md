@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [null sections]
 defined_for: S48-bff
-rules_hash: e3b0c44298fc
+rules_hash: 492bbb65a55d
 ---
 # Null section
 ## Definition

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [cancel:<paymentid>]
 defined_for: S13-payment-intents
-rules_hash: de97590e0aad
+rules_hash: 416370a1fc71
 ---
 # Payment cancel
 ## Definition

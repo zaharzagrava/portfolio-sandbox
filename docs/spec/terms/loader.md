@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [loader call, loader error]
 defined_for: cache-layers
-rules_hash: e0f1036c6513
+rules_hash: b6e999f076cf
 ---
 # Loader
 ## Definition

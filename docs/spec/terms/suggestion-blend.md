@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [blend]
 defined_for: S33-autocomplete
-rules_hash: a3da46523d06
+rules_hash: 225baae75ef9
 ---
 # Suggestion blend
 ## Definition

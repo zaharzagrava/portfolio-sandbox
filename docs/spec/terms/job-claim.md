@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [claim]
 defined_for: job-scheduler-lease
-rules_hash: c82378c49c5a
+rules_hash: 8cbeab198f2d
 ---
 # Job claim
 ## Definition

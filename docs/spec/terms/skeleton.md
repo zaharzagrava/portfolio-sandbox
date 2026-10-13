@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [skeleton, skeletons]
 defined_for: W02-storefront-discovery
-rules_hash: bca75cfc34eb
+rules_hash: 04f7852a1dbb
 ---
 # Skeleton (same-size placeholder)
 ## Definition

@@ -5,7 +5,7 @@ kind: term
 status: draft
 aliases: [normalised, normalized text]
 defined_for: S33-autocomplete
-rules_hash: e3b0c44298fc
+rules_hash: 23f9a1f80e45
 ---
 # Normalised text
 ## Definition
