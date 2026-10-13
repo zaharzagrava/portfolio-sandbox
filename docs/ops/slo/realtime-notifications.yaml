@@ -8,7 +8,7 @@ sli:
   type: availability
   metric: http_server_request_duration_seconds
   selector: 'service="core", http_route=~"/api/launch-events/.*/holds"'
-runbook: docs/runbooks/APIErrorBudgetFastBurn.md
+runbook: docs/ops/runbooks/APIErrorBudgetFastBurn.md
 k6:
   threshold: 'http_req_failed{journey:launch}: rate<0.001'
 ---
@@ -23,7 +23,7 @@ sli:
   thresholdSeconds: 60
   metric: projection_lag_seconds
   selector: 'projector!=""'
-runbook: docs/runbooks/ProjectionLagHigh.md
+runbook: docs/ops/runbooks/ProjectionLagHigh.md
 ---
 name: realtime-gateway
 journey: Notifications & realtime
@@ -35,4 +35,4 @@ sli:
   type: availability
   metric: http_server_request_duration_seconds
   selector: 'service="sse-gateway"'
-runbook: docs/runbooks/APIErrorBudgetFastBurn.md
+runbook: docs/ops/runbooks/APIErrorBudgetFastBurn.md

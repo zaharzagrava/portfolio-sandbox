@@ -6,7 +6,7 @@
 
 **Status**: Draft
 
-**Input**: User description: "Cross-domain journey J01: Buyer pays for a multi-shop order; order paid → ledger journals → settlement → seller payout → monthly statement; buyer and sellers notified." Sources: constitution v3.1.0 (IV, VII, IX.7), `docs/architecture/domain-map.md`, `docs/architecture/debt-register.md` (D-11), the specs S10, S13, S14, S15, S16, S28, `interview-prep/10-system-design/07-commerce-and-transactions.md` §19–20, `interview-prep/06-distributed-systems/02-consistency-sagas-and-data-sync.md` §2 and §5, and the current code (see `gaps.md`).
+**Input**: User description: "Cross-domain journey J01: Buyer pays for a multi-shop order; order paid → ledger journals → settlement → seller payout → monthly statement; buyer and sellers notified." Sources: constitution v3.1.0 (IV, VII, IX.7), `docs/work/architecture/domain-map.md`, `docs/work/architecture/debt-register.md` (D-11), the specs S10, S13, S14, S15, S16, S28, `interview-prep/10-system-design/07-commerce-and-transactions.md` §19–20, `interview-prep/06-distributed-systems/02-consistency-sagas-and-data-sync.md` §2 and §5, and the current code (see `gaps.md`).
 
 ## Scope
 

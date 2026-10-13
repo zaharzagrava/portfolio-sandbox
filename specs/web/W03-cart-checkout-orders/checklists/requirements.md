@@ -31,7 +31,7 @@
 
 ## Pattern map coverage
 
-- [x] Every `docs/architecture/pattern-map.md` row whose Specs column names W03 appears as requirements and scenarios: P0414 (FR-011, FR-020–FR-022, FR-054; AS-17 to AS-22, AS-31, AS-38, AS-47), P0901 (FR-001, FR-050–FR-057; AS-04, AS-39, AS-53, AS-58, AS-70, AS-71)
+- [x] Every `docs/work/architecture/pattern-map.md` row whose Specs column names W03 appears as requirements and scenarios: P0414 (FR-011, FR-020–FR-022, FR-054; AS-17 to AS-22, AS-31, AS-38, AS-47), P0901 (FR-001, FR-050–FR-057; AS-04, AS-39, AS-53, AS-58, AS-70, AS-71)
 - [x] Every contract earlier specs require from W03 is honoured or raised as `[CONTRACT]`: S10 (screens, problem codes, polling or push), S13 (pay step, 3-D Secure, payment history composition), S28 (`/orders/<id>` link, popover and bell), S35/S39 (`add_to_cart`, `checkout_step`), S51 (stream handling), W01 (merge call, guards, session-ended flow), W02 (`AddToCartButton`, `track`, `newIdempotencyKey`, `getRefCode`), S11 and S31 questions
 
 ## Notes

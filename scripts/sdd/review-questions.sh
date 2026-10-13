@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Step 3 helper (docs/architecture/sdd-runbook.md): the defaults the spec agents chose, highest impact first.
+# Step 3 helper (docs/work/architecture/sdd-runbook.md): the defaults the spec agents chose, highest impact first.
 # Prints [BREAKING] and [CONTRACT] lines from every questions.md, grouped by capability. [LOCAL] lines are
 # counted, not printed. Files written before the tags existed are printed in full and marked untagged.
 #

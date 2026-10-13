@@ -98,7 +98,7 @@ the next checkpoint runs them:
 Still missing: a test that follows one payment from `PENDING` to `COMPLETED` through the relay, the real queue and the worker, and a browser journey that
 requires "Order confirmed" (follow-ups 1 and 2 in the runbook).
 
-## What would have prevented it (follow-ups, in `docs/architecture/sdd-runbook.md`)
+## What would have prevented it (follow-ups, in `docs/work/architecture/sdd-runbook.md`)
 1. The checkout journey must require "Order confirmed", with the "never claims success early" case as a separate test.
 2. A scripted end-to-end flow at every checkpoint that waits for the order to be PAID.
 3. A check that every queue the code uses exists in the infrastructure file, and an API that refuses to report ready while one is missing.

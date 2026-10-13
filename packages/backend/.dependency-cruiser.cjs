@@ -1,6 +1,6 @@
 /**
  * Boundary rules from constitution v3.1.0 §X (X.4 entry points, X.5 dependency directions, X.8 composition).
- * Run: pnpm check:boundaries   (errors fail; warnings are recorded debt, see docs/architecture/debt-register.md)
+ * Run: pnpm check:boundaries   (errors fail; warnings are recorded debt, see docs/work/architecture/debt-register.md)
  *
  * Paths are relative to packages/backend. Spec files (*.spec.ts, *.e2e-spec.ts) are tests: they may use the
  * harness in test/ and wire apps, so they're exempt from the production-only rules.

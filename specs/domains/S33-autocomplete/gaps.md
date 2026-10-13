@@ -42,7 +42,7 @@ What exists: `api/autocomplete.controller.ts` (one route), `application/autocomp
 | D-16 (X.3, X.7) | `libs/infrastructure/elasticsearch` is a product-index adapter | Autocomplete stops using `ElasticsearchService.suggestTitles` and the infrastructure import; it reaches the engine only through S32's `ProductTitleSuggester` | R1-style port inside the domain (same domain, exported application service), after S32 splits the client |
 | D-7, D-12 (IX.4) | Other domains' models and raw SQL on other owners' tables | This capability has none (see section C) | — |
 
-No row of `docs/architecture/debt-register.md` names S33 explicitly; the rows above name `discovery`.
+No row of `docs/work/architecture/debt-register.md` names S33 explicitly; the rows above name `discovery`.
 
 ## C. `pnpm --dir packages/backend check:table-ownership` lines for `discovery` (autocomplete part)
 
@@ -65,7 +65,7 @@ The command was **not run** while writing this spec: the sandbox required an app
 7. Module and barrel: drop `@Global`, drop `SearchQueryLogger` and `AutocompleteService` exports, update `apps/core` and `apps/worker` composition if needed (A17, D-8, D-15, D-16).
 8. Metrics and configuration validation (A18, AS-50, AS-51); run `check:boundaries` and `check:table-ownership --strict` (AS-49).
 9. Web (W02 delivers, listed for coordination): new response type, debounce, abort, stale-answer guard, client cache, Playwright step (A23, AS-55, AS-56). Delete `suggestionsFrom` and `SuggestResponse` of the old shape.
-10. Record the green runs of the four e2e files and the unit specs (VII.9); update `docs/architecture/pattern-map.md` P1101 status only if the evidence changes it.
+10. Record the green runs of the four e2e files and the unit specs (VII.9); update `docs/work/architecture/pattern-map.md` P1101 status only if the evidence changes it.
 
 ## Sibling-spec follow-ups
 

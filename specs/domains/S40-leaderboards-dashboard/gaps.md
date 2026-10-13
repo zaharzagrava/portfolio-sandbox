@@ -60,7 +60,7 @@ Note on section C: `pnpm --dir packages/backend check:table-ownership` could not
 | A50 | The `leaderboard.lua.ts` script is one string with positional `ARGV` packing (quadruples); no test of the script at the boundary values, no `sealed` check | `infra/leaderboard.lua.ts:1-27` | FR-003, FR-005, FR-006 |
 | A51 | `scripts/load-tests/seller-stats.test.js` and the web client call the old route and old field names | `packages/backend/scripts/load-tests/seller-stats.test.js`, `packages/web/lib/api/shops.ts:59-61` | BREAKING (route, names) |
 
-## B. Debt register rows (`docs/architecture/debt-register.md`) that name `seller-insights` or apply to it
+## B. Debt register rows (`docs/work/architecture/debt-register.md`) that name `seller-insights` or apply to it
 
 | Row | What | In this domain | Replaced by |
 |---|---|---|---|

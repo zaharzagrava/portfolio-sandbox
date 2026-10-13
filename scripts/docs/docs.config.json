@@ -69,8 +69,8 @@
     "system": "claude-sonnet-5-5"
   },
   "contextFiles": [
-    "docs/architecture/domain-map.md",
-    "docs/architecture/pattern-map.md"
+    "docs/work/architecture/domain-map.md",
+    "docs/work/architecture/pattern-map.md"
   ],
   "conventions": {
     "eventDefiner": "defineEvent",

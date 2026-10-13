@@ -2,7 +2,7 @@
 
 **Branch**: `004-phase2-batch3-domains` (work is on `master`, uncommitted, stacked on Phase 1 and batches
 1–2) | **Date**: 2026-10-04 | **Spec**: there is no `spec.md`. The input is the `/speckit-plan` request plus
-[`docs/architecture/domain-map.md`](../../docs/architecture/domain-map.md) and
+[`docs/work/architecture/domain-map.md`](../../docs/work/architecture/domain-map.md) and
 [batch 2](../003-phase2-batch2-domains/plan.md).
 
 **Status**: **Executed.** Eight new domains and every gate item is green. `libs/common/src/models/` now
@@ -95,7 +95,7 @@ packages/backend/libs/common/src/   (legacy, 24 folders left)
 ├── utils/test-utils/             # Phase 3
 └── … batch 4–5 folders, seeds/, bff/batch-read.controller.ts, types.ts, index.ts
 packages/backend/scripts/refactor/phase2-batch3-moves.tsv   # NEW
-docs/architecture/domain-map.md                             # bis-utils row corrected (orders → payments)
+docs/work/architecture/domain-map.md                             # bis-utils row corrected (orders → payments)
 ```
 
 ## Execution (what was run)

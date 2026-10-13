@@ -76,7 +76,7 @@ The implementation agent's to-do list. Paths are under `packages/backend/` unles
 | F2 | The k6 presign script and the 1,000-image throughput script named in SD-10 are not in `scripts/load-tests/` | `scripts/load-tests` | AS-61 |
 | F3 | Bucket lifecycle (30 days IA, 180 days archive, abort incomplete uploads) and the media origin header policy (`nosniff`, immutable, no cookies) are claimed in SD-10 but must be verified in `infra/modules/s3_cloudfront` and given a post-deploy check | `infra/modules/s3_cloudfront/main.tf` | AS-60 |
 
-## B. Debt register rows (`docs/architecture/debt-register.md`) that name `media` or S29
+## B. Debt register rows (`docs/work/architecture/debt-register.md`) that name `media` or S29
 
 | Row | What applies to `media` | Mechanism that pays it | Closed by |
 |---|---|---|---|

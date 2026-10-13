@@ -1,4 +1,4 @@
-# SDD capability catalog: one row = one spec (docs/architecture/sdd-runbook.md).
+# SDD capability catalog: one row = one spec (docs/work/architecture/sdd-runbook.md).
 # Order = execution order: backend capabilities (S, money path first), then the web app (W, after the
 # backend capabilities it calls), then cross-domain journeys (J, last: they exercise everything).
 # Specs land in specs/domains|web|journeys/<id>-<slug>/ (domain column `web` → specs/web, `journeys` → specs/journeys).

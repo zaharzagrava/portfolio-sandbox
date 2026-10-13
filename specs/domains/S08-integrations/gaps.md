@@ -62,7 +62,7 @@ Paths are relative to `packages/backend/libs/domains/catalog-sync/` unless noted
 | D-8 | Barrels export infrastructure internals (apps wire projectors directly) | `index.ts` exports `IntegrationsModule`, `IntegrationsWorkerModule`, `IntegrationsProjectorModule`; `apps/projector` imports the module, not `StockPushProjector` | A42 |
 | D-10 | Order export routes and the `kind: 'export'` worker branch still live in catalog-sync | S12 (and S07's cleanup); no integrations file is involved, nothing for S08 to do | — |
 
-No other open row of `docs/architecture/debt-register.md` names `catalog-sync` or S08 (searched `catalog-sync`, `S08`, `integrations`: D-6, D-7, D-8, D-10, D-12 as above; D-11, D-15, D-16, D-17 concern other domains).
+No other open row of `docs/work/architecture/debt-register.md` names `catalog-sync` or S08 (searched `catalog-sync`, `S08`, `integrations`: D-6, D-7, D-8, D-10, D-12 as above; D-11, D-15, D-16, D-17 concern other domains).
 
 ## C. `pnpm --dir packages/backend check:table-ownership` lines for this domain (reconstructed by reading the code; the command could not be run in this session, so run the real check first and reconcile)
 

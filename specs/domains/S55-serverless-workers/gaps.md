@@ -12,7 +12,7 @@ The implementation agent's to-do list: what the current code gets wrong or lacks
 - **G-06** `apps/lambdas/src/handlers/webhook-delivery.ts:90,106-109` imports `WebhooksCoreModule`, `WebhookDeliverer`, `WebhookDelivery` from the developer-platform barrel → D-8 (S43 stops exporting them). Replace with `WebhooksLambdaModule` and `WebhookDeliveryHandler` (R1).
 - **G-07** Table ownership (`pnpm --dir packages/backend check:table-ownership`): the command could not be run in this session (the sandbox required approval for it). Static inspection found: no `InjectModel`, `forFeature`, `sequelize.query` or model import in `libs/infrastructure/sqs`, `libs/infrastructure/idempotency`, `libs/infrastructure/aws` or `apps/lambdas`; the only SQL in the capability's code is the raw `pool.query` calls in `media-processing.ts:20,25,26,29`, which pass a generic executor into the media domain (the SQL strings are media's own). **Re-run the command before closing this gap** and attach the lines for `apps/lambdas`; any line naming a table not owned by the function's domain is paid by R1 (exported service) or R3 (read model) in the owning capability (D-7, D-12 list), never by S55.
 
-## B. Debt register rows (docs/architecture/debt-register.md)
+## B. Debt register rows (docs/work/architecture/debt-register.md)
 
 No row names `S55`. Open rows that touch this capability's code:
 
@@ -75,7 +75,7 @@ No row names `S55`. Open rows that touch this capability's code:
 - **G-53** `scripts/build-lambdas.mjs`: no dead-letter entries, no bundle checks (single copy of DI core and metadata polyfill, no top-level `await`, handler export, size limit), and `manifest.json` is written from the compiled manifest without validation (FR-072, FR-073, AS-48, AS-49, AS-52). `format: 'cjs'` is already right (P0107) and stays; add the checks as `bundling/build-lambdas.e2e-spec.ts`.
 - **G-54** `package.json:73` `start:lambda-local` runs `nest build lambda-local` then the compiled app; the new launcher needs the bundles first (`pnpm build:lambdas`) and the `--redrive` subcommand.
 - **G-55** Tests: `shared/sqs-batch.spec.ts` covers 2 of the 12 batch scenarios; `shared/idempotency.e2e-spec.ts` covers AS-14, AS-15, AS-16 and part of AS-17 with real sleeps; nothing exists for the runner, manifest, bundles, dead letters, nest-context or telemetry. All of `test-plan.md` is the to-do list.
-- **G-56** `docs/showcase/sections/SD-03-serverless-lambdas.md` says "specs written, not run"; after the implementation, update its implementation notes (the lambda-local heartbeat sentence is wrong after G-40) and `docs/architecture/pattern-map.md` rows P0107, P0604, P0706, P0809 stay `implemented` only once the scenarios above are green.
+- **G-56** `docs/showcase/sections/SD-03-serverless-lambdas.md` says "specs written, not run"; after the implementation, update its implementation notes (the lambda-local heartbeat sentence is wrong after G-40) and `docs/work/architecture/pattern-map.md` rows P0107, P0604, P0706, P0809 stay `implemented` only once the scenarios above are green.
 
 ## H. Contracts to honour from other specs
 

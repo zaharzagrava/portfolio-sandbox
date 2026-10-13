@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Sequential implementation (docs/architecture/sdd-runbook.md, step 4). For each written spec, in the order of
+# Sequential implementation (docs/work/architecture/sdd-runbook.md, step 4). For each written spec, in the order of
 # scripts/sdd/orders/$ORDER.txt (by-layer, the default: platform, identity, money chain, ..., web, journeys; or by-flow: vertical slices with checkpoints): plan → tasks → analyze → implement → converge
 # (→ implement again if converge added tasks), then a hard gate for that kind of capability. Stops at the
 # first failure so a human can step in; re-running resumes, because finished specs carry `.implemented`.
@@ -262,7 +262,7 @@ extra_context() { # $1 = capability id
   printf ' %s' "Cross-spec rules. (0) The living specification in docs/spec says what the system does today. A change of behavior starts in the page of the capability (docs/spec/capabilities/<ID>-*.md): edit its rules and behaviors first, keep every `[proof: ...]` and `[code: ...]` true (python3 scripts/livespec/check.py checks them), and never create or edit a *.reviewed.json file (human sign-offs); if you change something a human signed, say so under '## Spec changes' in gaps.md. (1) Sibling follow-ups: if your work changes something another capability's spec relies on (a name, header, status code, contract), do not edit that spec; add a bullet '- **<their id>**: <what they must adopt>' under a '## Sibling-spec follow-ups' heading in this spec's gaps.md. (2) Unverified criteria: every success criterion (SC-nnn) that no automated test proves goes under 'Ops artifacts' in quickstart.md and as one row in specs/UNVERIFIED.md (spec, criterion, how to run it, status 'not run'); never describe it as verified. (3) Undoing work: never use git checkout, restore, reset, stash or clean (they are not available and could discard other work in the same file); to undo a change edit the file by hand and keep every other change in it, and if a task says to revert a file, restore only the lines it names. (4) Transactions: use TransactionRunner.run or @Transactional (S54 toolkit); when you touch a file that opens a transaction directly with sequelize.transaction, migrate that site and delete its '// S54 T037 audit' comment; never add a new direct sequelize.transaction (the gate fails if the count of direct sites in your domain rises)."
   if [[ -n "$LESSONS" ]]; then printf ' %s' "$LESSONS"; fi
   local dec; dec="$(decisions_to_apply "$1")"
-  if [[ -n "$dec" ]]; then printf ' %s\n%s' "Decisions the owner changed after reading the defaults you recorded (docs/decisions/$1.md); they override any default in questions.md, so apply them, test them, update the living page, and mention them in your report:" "$dec"; fi
+  if [[ -n "$dec" ]]; then printf ' %s\n%s' "Decisions the owner changed after reading the defaults you recorded (docs/work/decisions/$1.md); they override any default in questions.md, so apply them, test them, update the living page, and mention them in your report:" "$dec"; fi
   if [[ -n "$fu" ]]; then printf ' %s\n%s' "Follow-ups left for this capability by specs that are already built; treat each as a requirement, plan it, test it, and mention it in your report:" "$fu"; fi
 }
 
@@ -417,7 +417,7 @@ ordered_capabilities "$@" | while IFS=$'\t' read -r id domain slug title sources
       [[ -n "$page" ]] && python3 scripts/livespec/terms.py expand "$page" --max-depth 8 --max-calls 200 >"$dir/.terms.log" 2>&1 || echo "  (the term pages could not be written; see $dir/.terms.log)"
     fi
   fi
-  if [[ -f scripts/decisions/triage.py && ! -f "docs/decisions/$id.md" ]]; then
+  if [[ -f scripts/decisions/triage.py && ! -f "docs/work/decisions/$id.md" ]]; then
     python3 scripts/decisions/triage.py generate "$id" >"$dir/.decisions.log" 2>&1 || echo "  (the decision list could not be generated; see $dir/.decisions.log)"
   fi
   if [[ -f "$dir/.repaired-by-agent" ]]; then

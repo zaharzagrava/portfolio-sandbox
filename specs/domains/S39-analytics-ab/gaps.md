@@ -44,7 +44,7 @@ Files in scope (under `packages/backend/libs/domains/experimentation/` unless no
 | D-15 (X.5) | `experimentation` is a member of the strongly connected set {catalog, discovery, experimentation, orders, payments}, formed with D-11 and D-12 | S39 adds no domain edge. Its edge to `orders` is the `OrderPaid` event contract (R3 projector, `purchase-events.projector.ts:6`); discovery's edge to it is the `ANALYTICS_TOPIC` constant (R3 stream, S35). Neither is removed by S39; closing D-11 and D-12 (S05, S10, S13, S32) breaks the set | R3 (stream and projector); nothing replaced here |
 | D-7 (IX.4) and D-12 (IX.4) | No row names `experimentation`; the live list is the `MODEL` / `SQL` output of `pnpm --dir packages/backend check:table-ownership` | See the next section | — |
 
-No other open row of `docs/architecture/debt-register.md` names `experimentation` or S39 (rows D-1 … D-6, D-8 … D-11, D-13, D-14, D-16, D-17 do not mention it).
+No other open row of `docs/work/architecture/debt-register.md` names `experimentation` or S39 (rows D-1 … D-6, D-8 … D-11, D-13, D-14, D-16, D-17 do not mention it).
 
 ## `check:table-ownership` lines for `experimentation`
 

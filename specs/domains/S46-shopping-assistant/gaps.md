@@ -134,4 +134,4 @@ The assistant's own stores are not Postgres tables: conversations (Scylla, `assi
 4. Turn pipeline: moderation, idempotency, atomic persistence, concurrent-reply cap, breaker, deadlines, liveness, shutdown (G1–G12, G19–G28, G35, G38–G41, G46).
 5. Tools through R1 services, privacy and injection tests (G29–G34, G36–G37).
 6. Projector DLQ and metrics (G52–G54); update the web client (G59) and rewrite `assistant.e2e-spec.ts` into the spec files of `test-plan.md` (G58).
-7. Close D-6, D-8, D-14 in `docs/architecture/debt-register.md` with the actual commit; leave D-7/D-12 notes for S47.
+7. Close D-6, D-8, D-14 in `docs/work/architecture/debt-register.md` with the actual commit; leave D-7/D-12 notes for S47.

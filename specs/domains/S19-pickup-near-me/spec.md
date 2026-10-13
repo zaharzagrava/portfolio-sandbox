@@ -6,7 +6,7 @@
 
 **Status**: Draft
 
-**Input**: User description: "Pickup points, local stock, 'available near me' search, map clustering (domain `fulfilment`)". Sources: `docs/showcase/sections/SD-13-pickup-near-me.md`, note 10-System-Design/05-social-and-content.md §13 (proximity search), pattern P0328 of `docs/architecture/pattern-map.md`. Constitution v3.1.0.
+**Input**: User description: "Pickup points, local stock, 'available near me' search, map clustering (domain `fulfilment`)". Sources: `docs/showcase/sections/SD-13-pickup-near-me.md`, note 10-System-Design/05-social-and-content.md §13 (proximity search), pattern P0328 of `docs/work/architecture/pattern-map.md`. Constitution v3.1.0.
 
 ## Scope
 

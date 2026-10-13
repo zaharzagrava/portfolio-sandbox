@@ -13,8 +13,8 @@ The per-capability specs already prove each domain's own rules, so this spec cov
 Read first:
 1. `.specify/memory/constitution.md`: IV (communication: outbox, idempotent consumers, ordering), IX.7 (the only
    approved cross-domain data paths), VII (testing mandate).
-2. `docs/architecture/domain-map.md` (who owns what, who emits which event) and
-   `docs/architecture/debt-register.md` (known coupling, e.g. D-11 orders ↔ payments).
+2. `docs/work/architecture/domain-map.md` (who owns what, who emits which event) and
+   `docs/work/architecture/debt-register.md` (known coupling, e.g. D-11 orders ↔ payments).
 3. The capability specs this journey spans: {{SOURCES}} (Interview-Prep paths are under
    `interview-prep/`).
 4. The current code of the domains involved, to find the real events, topics, queues, and jobs.

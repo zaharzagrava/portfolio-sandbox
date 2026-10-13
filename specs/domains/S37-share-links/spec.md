@@ -6,7 +6,7 @@
 
 **Status**: Draft
 
-**Input**: Capability S37 of `scripts/sdd/capabilities.tsv` (domain `marketing`). Sources: `docs/showcase/sections/SD-08-share-links.md` and `10-System-Design/05-social-and-content.md` §8 (URL shortener), read from the Interview-Prep copy at `.specify/memory/Interview-Prep/` (the notes win over the code). Pattern rows: P0320 (ID-range leases) and P1109 (Base62 + Feistel bijection) of `docs/architecture/pattern-map.md`.
+**Input**: Capability S37 of `scripts/sdd/capabilities.tsv` (domain `marketing`). Sources: `docs/showcase/sections/SD-08-share-links.md` and `10-System-Design/05-social-and-content.md` §8 (URL shortener), read from the Interview-Prep copy at `.specify/memory/Interview-Prep/` (the notes win over the code). Pattern rows: P0320 (ID-range leases) and P1109 (Base62 + Feistel bijection) of `docs/work/architecture/pattern-map.md`.
 
 ## Scope
 

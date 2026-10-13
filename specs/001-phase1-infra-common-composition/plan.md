@@ -2,7 +2,7 @@
 
 **Branch**: `001-phase1-infra-common-composition` (work is on `master`; no branch was created) |
 **Date**: 2026-10-04 | **Spec**: there is no `spec.md`. The input is the `/speckit-plan` request plus
-[`docs/architecture/domain-map.md`](../../docs/architecture/domain-map.md) §1.2, §1.3, and §5.
+[`docs/work/architecture/domain-map.md`](../../docs/work/architecture/domain-map.md) §1.2, §1.3, and §5.
 
 **Status**: **Executed.** The moves, import rewrites, and config changes are applied in the working
 tree (not committed). Verification results are under [Validation](#validation).

@@ -47,7 +47,7 @@ No `NEEDS CLARIFICATION` remains; decisions are in [research.md](research.md) (R
 | 7 | Web (VI) | PASS | W02 port only: types from `packages/contracts`, calls stay in `lib/api/catalog.ts`, URL state carries `q`, filters, `sort`, `cursor`; no new client store |
 | 8 | Tests (VII) | PASS | Nine e2e files + six unit files per `test-plan.md`; each consumer has duplicate + invalid payload tests; every degradation path (engine down, embedding timeout, stream down, limiter down) has a forcing test; green run recorded at the end (VII.9) |
 | 9 | Operational (VIII) | PASS | Metrics list of FR-059 on the S54 registry; logs carry `requestId`/`runId`, no raw query; config validated at startup (`search_log_secret`, `search_id_signing_key`, budgets); jobs single-run via S49 and idempotent |
-| 10 | DB isolation (IX) | PASS | Six new objects registered in `db/ownership.ts` and `docs/architecture/domain-map.md` in the same change; no `ProductModel`/`ShopModel` injection, no raw SQL on foreign tables; foreign data only via R3 events, `ShopQueryService.getShopsByIds` and `MediaQueryService.getReadyMediaByIds` (R1); `check:table-ownership --strict` must report zero for discovery search code |
+| 10 | DB isolation (IX) | PASS | Six new objects registered in `db/ownership.ts` and `docs/work/architecture/domain-map.md` in the same change; no `ProductModel`/`ShopModel` injection, no raw SQL on foreign tables; foreign data only via R3 events, `ShopQueryService.getShopsByIds` and `MediaQueryService.getReadyMediaByIds` (R1); `check:table-ownership --strict` must report zero for discovery search code |
 | 11 | Monorepo (X) | PASS | Generic engine client stays in `libs/infrastructure/elasticsearch`; product knowledge moves to `discovery/infra`; barrel exports modules, services and event contracts only; no new top-level folder; no new app (all work fits `core`, `projector`, `worker`) |
 
 After Phase 1 design: all eleven gates still PASS. Items that look like violations and are not: the shop-state `update_by_query` and the product write are two idempotent steps against two different stores (not one transaction across owners); the reindex `CATCHING_UP → COMPLETED` transaction writes only discovery tables plus the allowlisted outbox (IX.6).
@@ -134,7 +134,7 @@ packages/backend/libs/domains/discovery/
                              # shop-product-search, search-measurement, search-admin, search-platform
 
 packages/backend/migrations/    # expand-only, lock_timeout: six tables, synonym seed v1, indexes; db/clickhouse TTL migration
-packages/backend/db/ownership.ts, docs/architecture/domain-map.md   # registry entries
+packages/backend/db/ownership.ts, docs/work/architecture/domain-map.md   # registry entries
 packages/web/{lib/api/catalog.ts, app/search/page.tsx, tests/search.spec.ts}   # W02 port (contracts types, cursor, searchId on click)
 ```
 

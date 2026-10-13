@@ -17,7 +17,7 @@ const checkout: SloDefinition = {
     metric: 'http_server_request_duration_seconds',
     selector: 'service="core"',
   },
-  runbook: 'docs/runbooks/APIErrorBudgetFastBurn.md',
+  runbook: 'docs/ops/runbooks/APIErrorBudgetFastBurn.md',
   k6: { threshold: 'http_req_failed{journey:checkout}: rate<0.0005' },
 };
 

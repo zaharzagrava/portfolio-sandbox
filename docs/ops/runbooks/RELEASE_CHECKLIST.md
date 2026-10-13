@@ -9,7 +9,7 @@ Before merging to master (which deploys to demo automatically) and before dispat
 
 **Rollout**
 - [ ] Risky behaviour is behind a flag (SD-38), default off, with a kill switch; rollout plan written in the PR.
-- [ ] Error budget of the affected journeys is > 0 (`docs/slo/README.md` policy); if 0-50%, the PR names the rollback plan.
+- [ ] Error budget of the affected journeys is > 0 (`docs/ops/slo/README.md` policy); if 0-50%, the PR names the rollback plan.
 - [ ] Prod: deploy outside the launch-event / flash-sale calendar; on-call aware.
 
 **Verification**

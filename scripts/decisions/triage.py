@@ -3,14 +3,14 @@
 
 Every capability the loop builds leaves specs/<kind>/<id>-<slug>/questions.md: the defaults the agent chose instead of asking you (hundreds of lines in
 total). Nobody can read them all, so this script reads them for you and keeps the few that are YOURS to decide (money, privacy, security, visible behavior,
-compatibility, cost) in docs/decisions/<id>.md, with the default taken, the alternatives and the cost of a wrong default. The rest is counted and archived.
+compatibility, cost) in docs/work/decisions/<id>.md, with the default taken, the alternatives and the cost of a wrong default. The rest is counted and archived.
 
-  triage.py generate [ID ...] [--force] [--jobs N]    write docs/decisions/<id>.md for built capabilities (all, or the ones named) that have none (or --force)
+  triage.py generate [ID ...] [--force] [--jobs N]    write docs/work/decisions/<id>.md for built capabilities (all, or the ones named) that have none (or --force)
   triage.py status                                    open / keep / change counts per capability; exit 1 when a file is malformed
   triage.py open                                      the open decisions, one line each (what to read first)
 
 You answer by editing the `status:` line under a decision: `status: keep` (the default stands) or `status: change: <what you want instead>`.
-A `change` is picked up by the next loop run as a task (scripts/sdd/implement-specs.sh reads docs/decisions, "decisions to apply"); `scripts/decisions/triage.py status`
+A `change` is picked up by the next loop run as a task (scripts/sdd/implement-specs.sh reads docs/work/decisions, "decisions to apply"); `scripts/decisions/triage.py status`
 shows what is still open. The model is called with no tools, in a scratch directory, with the questions and the living page as its only input.
 """
 import concurrent.futures as cf
@@ -25,7 +25,7 @@ import common  # noqa: E402
 import generate  # noqa: E402
 
 ROOT = common.ROOT
-OUT = os.path.join(ROOT, 'docs', 'decisions')
+OUT = os.path.join(ROOT, 'docs', 'work', 'decisions')
 ITEM = re.compile(r'^- \*\*([A-Z0-9]+\.D-\d+)\*\*\s*(.*)$')
 STATUS = re.compile(r'^\s+- status:\s*(open|keep|change:\s*\S.*)\s*$')
 MAX_DECISIONS = 8

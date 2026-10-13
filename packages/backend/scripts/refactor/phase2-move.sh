@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Phase 2: legacy folders → libs/domains/<d>/{api,application,domain,infra}, one batch per move map
-# (constitution I.1, X.2; docs/architecture/domain-map.md §1.1).
+# (constitution I.1, X.2; docs/work/architecture/domain-map.md §1.1).
 #
 #   bash scripts/refactor/phase2-move.sh <batch-moves.tsv>            # rewrite imports, then git mv
 #   bash scripts/refactor/phase2-move.sh <batch-moves.tsv> --dry-run  # report only

@@ -6,7 +6,7 @@
 
 **Status**: Draft
 
-**Input**: User description: "Cross-domain journey J05: A buyer follows a shop, sees its new product in the feed, discusses it, shares an affiliate link that converts, and the purchase shows up in recommendations, trending, and A/B experiment results." Sources: constitution v3.1.0 (IV, VII, IX.7), `docs/architecture/domain-map.md`, `docs/architecture/debt-register.md` (D-7, D-8, D-12), the specs S26, S25, S37, S34, S35, S39, S10, S28 and the sibling journeys J01–J04, `interview-prep/10-system-design/05-social-and-content.md` §8–§11 (short links, hybrid fan-out feed, comments), `09-data-and-infrastructure.md` §31–§32 (server-side conversion events through the outbox, top-K), and the current code of the domains `community`, `marketing`, `discovery`, `experimentation`, `orders`, `catalog` (see `gaps.md`).
+**Input**: User description: "Cross-domain journey J05: A buyer follows a shop, sees its new product in the feed, discusses it, shares an affiliate link that converts, and the purchase shows up in recommendations, trending, and A/B experiment results." Sources: constitution v3.1.0 (IV, VII, IX.7), `docs/work/architecture/domain-map.md`, `docs/work/architecture/debt-register.md` (D-7, D-8, D-12), the specs S26, S25, S37, S34, S35, S39, S10, S28 and the sibling journeys J01–J04, `interview-prep/10-system-design/05-social-and-content.md` §8–§11 (short links, hybrid fan-out feed, comments), `09-data-and-infrastructure.md` §31–§32 (server-side conversion events through the outbox, top-K), and the current code of the domains `community`, `marketing`, `discovery`, `experimentation`, `orders`, `catalog` (see `gaps.md`).
 
 ## Scope
 

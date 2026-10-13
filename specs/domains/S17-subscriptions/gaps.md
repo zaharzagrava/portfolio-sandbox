@@ -37,7 +37,7 @@ What the current code gets wrong or lacks against [`spec.md`](spec.md). This is 
 
 ## B. Open debt-register rows naming `billing` (or applying to it)
 
-Source: `docs/architecture/debt-register.md`. The only open row that names billing is D-14; D-6, D-7 and D-8 apply to every domain and are listed because billing exhibits them.
+Source: `docs/work/architecture/debt-register.md`. The only open row that names billing is D-14; D-6, D-7 and D-8 apply to every domain and are listed because billing exhibits them.
 
 | Debt | What in billing | Mechanism that replaces it |
 |---|---|---|

@@ -6,7 +6,7 @@
 
 **Status**: Draft
 
-**Input**: User description: "Cross-domain journey J03: Launch day: waiting room and seat booking, flash-sale purchase without overselling, live stream comments, an auction closing with the winner's checkout, and the notifications each triggers." Sources: constitution v3.1.0 (IV, VII, IX.7), `docs/architecture/domain-map.md`, `docs/architecture/debt-register.md` (D-7, D-8, D-11, D-12), the specs S22, S11, S23, S21, S28 and the sibling journeys J01 and J02, `interview-prep/10-system-design/07-commerce-and-transactions.md` §19, §21, §22 (admission and fencing, conditional updates, exactly-once close, server clock), and the current code of the domains `launch-events`, `orders`, `auctions`, `notifications` (see `gaps.md`).
+**Input**: User description: "Cross-domain journey J03: Launch day: waiting room and seat booking, flash-sale purchase without overselling, live stream comments, an auction closing with the winner's checkout, and the notifications each triggers." Sources: constitution v3.1.0 (IV, VII, IX.7), `docs/work/architecture/domain-map.md`, `docs/work/architecture/debt-register.md` (D-7, D-8, D-11, D-12), the specs S22, S11, S23, S21, S28 and the sibling journeys J01 and J02, `interview-prep/10-system-design/07-commerce-and-transactions.md` §19, §21, §22 (admission and fencing, conditional updates, exactly-once close, server clock), and the current code of the domains `launch-events`, `orders`, `auctions`, `notifications` (see `gaps.md`).
 
 ## Scope
 

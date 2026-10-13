@@ -70,7 +70,7 @@ lessons_block() {
   return 0
 }
 
-# ---- Metrics (docs/architecture/sdd-runbook.md, "Metrics"): one JSON line per step in .sdd-metrics/steps.jsonl, read by scripts/sdd/report.py.
+# ---- Metrics (docs/work/architecture/sdd-runbook.md, "Metrics"): one JSON line per step in .sdd-metrics/steps.jsonl, read by scripts/sdd/report.py.
 # Never an error: a metrics problem must not stop a build.
 SDD_METRICS_DIR="${SDD_METRICS_DIR:-${ROOT:-.}/.sdd-metrics}"
 SDD_RUN_ID="${SDD_RUN_ID:-$(date -u +%Y%m%dT%H%M%SZ)}"   # one id per process start: a resumed run is a new run
@@ -227,10 +227,10 @@ ordered_capabilities() {
   '
 }
 
-# decisions_to_apply <capability id>: the owner's `status: change: ...` answers in docs/decisions/<id>.md (scripts/decisions/triage.py), as prompt lines.
+# decisions_to_apply <capability id>: the owner's `status: change: ...` answers in docs/work/decisions/<id>.md (scripts/decisions/triage.py), as prompt lines.
 # An answer overrides the default the agent chose earlier; a requirement for the next pass over that capability.
 decisions_to_apply() {
-  local f="${ROOT:-.}/docs/decisions/$1.md"; [[ -f "$f" ]] || return 0
+  local f="${ROOT:-.}/docs/work/decisions/$1.md"; [[ -f "$f" ]] || return 0
   python3 - "$f" <<'P' 2>/dev/null || true
 import re, sys
 text = open(sys.argv[1]).read(); cur = None
@@ -245,6 +245,6 @@ P
 # open_decisions: how many decisions wait for the owner, as a short sentence (empty when none).
 open_decisions() {
   local n; n="$(python3 "${ROOT:-.}/scripts/decisions/triage.py" open 2>/dev/null | wc -l)"
-  (( n > 0 )) && echo "$n decision(s) wait for you in docs/decisions (python3 scripts/decisions/triage.py open)."
+  (( n > 0 )) && echo "$n decision(s) wait for you in docs/work/decisions (python3 scripts/decisions/triage.py open)."
   return 0
 }

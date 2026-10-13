@@ -6,7 +6,7 @@
 
 **Status**: Draft
 
-**Input**: User description: "Cross-domain journey J04: A shop imports its catalog (bulk file and Shopify), products become searchable and available near me, an offline store device sells stock, and the stock change syncs back to Shopify." Sources: constitution v3.1.0 (IV, VII, IX.7), `docs/architecture/domain-map.md`, `docs/architecture/debt-register.md` (D-7, D-8, D-10, D-12, D-15, D-16), the specs S05, S07, S08, S09, S19, S32, the sibling journeys J01 and J02 (control surface, hop-table style), the `interview-prep/` notes on events, projections and offline sync, and the current code (see `gaps.md`).
+**Input**: User description: "Cross-domain journey J04: A shop imports its catalog (bulk file and Shopify), products become searchable and available near me, an offline store device sells stock, and the stock change syncs back to Shopify." Sources: constitution v3.1.0 (IV, VII, IX.7), `docs/work/architecture/domain-map.md`, `docs/work/architecture/debt-register.md` (D-7, D-8, D-10, D-12, D-15, D-16), the specs S05, S07, S08, S09, S19, S32, the sibling journeys J01 and J02 (control surface, hop-table style), the `interview-prep/` notes on events, projections and offline sync, and the current code (see `gaps.md`).
 
 ## Scope
 

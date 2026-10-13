@@ -3,7 +3,7 @@
 ## Where things stand
 - The loop built 21 capabilities (backend up to S48, web W01, W02, W03, W07) and the checkpoint `buy-ui` passed on the cloud machine (`c390b4b`).
 - Hand-testing the buy flow found two defects that every automated check had missed; both are fixed and the flow now completes locally
-  (incident report: `docs/runbooks/incidents/2026-10-12-payment-stuck-pending.md`; fixes `6886cde`, `77a6f03`, tests `f2b4a7c`).
+  (incident report: `docs/ops/incidents/2026-10-12-payment-stuck-pending.md`; fixes `6886cde`, `77a6f03`, tests `f2b4a7c`).
 - The living specification exists as a draft (`docs/spec/`: 21 capability pages, 16 concept pages, 4 models; all `draft`, none reviewed) with its
   verification scripts, wired into the gate and the checkpoint (`cb72c90`). Commands: `README_ME.md`, "Living specification".
 
@@ -31,7 +31,7 @@ to zero is *finding the same class of bug by hand twice*. Trust in the automatio
 5. **The lessons loop (about 45 minutes).** Design below; `docs/lessons.md` is already seeded with today's failures.
 6. **Metrics (60 to 90 minutes).** Design below.
 7. **The repair agent for a failed checkpoint and the flake signal (60 to 90 minutes together):** see the runbook, "Follow-ups for the build loop".
-Total: about 7 hours of work, plus waiting for runs (the docs, which are the same kind of work, took about an hour). After 2 to 6, stop adding machinery: ship one finished flow and a short write-up with real numbers (`docs/architecture/sdd-runbook.md`, "Harness roadmap").
+Total: about 7 hours of work, plus waiting for runs (the docs, which are the same kind of work, took about an hour). After 2 to 6, stop adding machinery: ship one finished flow and a short write-up with real numbers (`docs/work/architecture/sdd-runbook.md`, "Harness roadmap").
 
 ## Design: the QA agent
 **What:** a separate agent with a fresh context that uses the running product like a person and reports defects with evidence. It never edits code.
@@ -161,7 +161,7 @@ Built, in this order, on branch `harness/overnight` (not merged to master, not c
   this was written (see `scripts/qa/benchmark-*.md`). Three charters (cart-odd, account, discover) never run.
 - The chain find, verify, test: `scripts/qa/verify.sh` (skeptical second session), `pipeline.sh`, `regress.sh`; wired into `checkpoint.sh` as `CHECKPOINT_QA` (runs once per checkpoint; failing tests in
   `packages/web/tests/qa/` make the checkpoint fail; the checkpoint repair prompt knows they mean the product is wrong). **Never run end to end yet**: first real test is a QA run with a seeded bug.
-- Decisions: `scripts/decisions/triage.py` turned the 67 `questions.md` files (about 2900 lines) into `docs/decisions/<id>.md` for the 21 built capabilities: 151 open decisions, at most 8 per capability.
+- Decisions: `scripts/decisions/triage.py` turned the 67 `questions.md` files (about 2900 lines) into `docs/work/decisions/<id>.md` for the 21 built capabilities: 151 open decisions, at most 8 per capability.
   The loop generates one after each build, lists the open count in the final notification, and feeds `status: change:` answers back into the next pass of that capability.
 - Mutation testing: `scripts/mutation/mutate.py` and `changed.sh` (in-house, no dependencies; Stryker was the alternative). Tried on `common/core/backoff.ts`: 5 killed, 1 survived.
 - README_ME.md: a full section at the top ("The agentic delivery loop"); README.md: a short section "How it is built".

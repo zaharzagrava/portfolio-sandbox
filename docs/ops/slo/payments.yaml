@@ -8,7 +8,7 @@ sli:
   type: availability
   metric: http_server_request_duration_seconds
   selector: 'service="payment-processor"'
-runbook: docs/runbooks/StripeCircuitOpen.md
+runbook: docs/ops/runbooks/StripeCircuitOpen.md
 ---
 name: payments-end-to-end
 journey: Payments
@@ -21,4 +21,4 @@ sli:
   thresholdSeconds: 5
   metric: projection_lag_seconds
   selector: 'projector=~".*balance.*|.*payment.*"'
-runbook: docs/runbooks/ProjectionLagHigh.md
+runbook: docs/ops/runbooks/ProjectionLagHigh.md

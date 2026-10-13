@@ -7,7 +7,7 @@ Requirements: Node 24+, pnpm 12, Docker.
 ## The agentic delivery loop: what it is, how to set it up, how to run it every day
 
 This is the one place that says how the whole machine fits together. Details of each part are in the sections further down and in
-[`docs/architecture/sdd-runbook.md`](docs/architecture/sdd-runbook.md).
+[`docs/work/architecture/sdd-runbook.md`](docs/work/architecture/sdd-runbook.md).
 
 ### What it is, in one picture
 
@@ -31,7 +31,7 @@ This is the one place that says how the whole machine fits together. Details of 
  around it:  living spec (what the system does today, checked against code and tests)    docs/spec, scripts/livespec
              lessons    (every failure → a rule the agents read + a check)                docs/lessons.md, scripts/lessons
              metrics    (one JSON line per step → a report with trends)                   .sdd-metrics, scripts/sdd/report.py
-             decisions  (the defaults the agents chose, triaged to the few that are yours) docs/decisions, scripts/decisions
+             decisions  (the defaults the agents chose, triaged to the few that are yours) docs/work/decisions, scripts/decisions
              QA agent   (an exploratory tester with a benchmark of known bugs)            scripts/qa
              mutation   (do the unit tests fail when the code is wrong?)                  scripts/mutation
 ```
@@ -60,7 +60,7 @@ Builders (they write the product):
 
 Documenters (they write words, never product code):
 6. **Living page writer** - `scripts/livespec/generate.py`, run by the build loop after a capability passes its gate. One session with no tools, fed only facts extracted by the script, writes the first draft of `docs/spec/capabilities/<id>-*.md`. You review and sign it later (`reviewed.json`, a human-only action).
-7. **Decision triage** - `scripts/decisions/triage.py generate <id>`, also run after a capability is built. Reads the dozens of defaults the builders recorded in `questions.md` and writes at most 8, ranked, into `docs/decisions/<id>.md`. Your answers (`change: ...`) are given to the next builder pass.
+7. **Decision triage** - `scripts/decisions/triage.py generate <id>`, also run after a capability is built. Reads the dozens of defaults the builders recorded in `questions.md` and writes at most 8, ranked, into `docs/work/decisions/<id>.md`. Your answers (`change: ...`) are given to the next builder pass.
 
 Spec vocabulary (every word of a rule is defined once; `scripts/livespec/terms.py`, details in `docs/spec/README.md`):
 - **Term finder** (`terms.py expand <page>`): reads the rules in chunks and lists the phrases a junior engineer would have to guess. Two kinds: a word of THIS system (or an everyday word with a special meaning here: "section", "errors entry") gets its own page in `docs/spec/terms/`; a general software word (HttpOnly, CSRF, JWT) gets NO page: it is linked, with an arrow, to the one glossary `docs/spec/sw-external-terms.md`, which only points at an authoritative reference (MDN, an RFC, OWASP) that the script opened and checked.
@@ -100,7 +100,7 @@ Not agents (plain scripts you should know by name):
    4. the flow script `checkpoints/<label>.sh`, which includes the live doctor before and after;
    5. only when `CHECKPOINT_QA` is set: the QA chain (below).
 6. **Checkpoint failed:** checkpoint repair agent (5), then the checkpoint runs again. Passed after a repair that changed no code: recorded as a **flake** (`specs/.checkpoints/<label>.flakes.md`) and listed in your phone message. Passed: a marker file is committed, so a fresh machine does not stop here again, and the run ends with a message.
-7. **Morning:** you read the phone message, `git fetch && git checkout sdd/auto`, run `scripts/sdd/report.py`, read BLOCKED files, answer the top decisions in `docs/decisions`, sign living pages (details in "The morning routine").
+7. **Morning:** you read the phone message, `git fetch && git checkout sdd/auto`, run `scripts/sdd/report.py`, read BLOCKED files, answer the top decisions in `docs/work/decisions`, sign living pages (details in "The morning routine").
 
 #### The QA chain inside the checkpoint (step 5.5 above)
 
@@ -176,7 +176,7 @@ checkpoint; `auto`: draft missing charters and run only those whose capabilities
 
 1. Read the phone message, then `git fetch origin && git checkout sdd/auto`.
 2. `python3 scripts/sdd/report.py --stdout | less`: per capability passes, repairs, gate failures, **flakes**, checkpoint failures, interventions, the QA section, trends.
-3. `python3 scripts/decisions/triage.py open | head -20`: the defaults only you can judge. Edit `status:` in `docs/decisions/<id>.md` to `keep` or `change: <what you want>`;
+3. `python3 scripts/decisions/triage.py open | head -20`: the defaults only you can judge. Edit `status:` in `docs/work/decisions/<id>.md` to `keep` or `change: <what you want>`;
    the next run applies every `change`. Never read `questions.md` files directly (hundreds of lines each): they are the raw input of the triage.
 4. `cat scripts/qa/findings.tsv | tail`, `python3 scripts/qa/tally.py`: what the QA agent found and what the skeptic decided. Overrule a verdict with `tally.py set`.
 5. Start the local stack (see the setup) and try the product for 10 minutes: `scripts/sdd/checkpoints/buy-ui.sh` (11 s) and `scripts/infra/doctor-live.sh`. Judgment stays with you.
@@ -226,7 +226,7 @@ consumer, a missing search index) and checks the agent reports each, then one ru
 - `scripts/vps/` the cloud runner. `scripts/qa/` QA agent, pipeline, charters, mutations, benchmark, throwaway stack. `scripts/infra/` doctors. `scripts/livespec`, `scripts/lessons`,
   `scripts/decisions`, `scripts/mutation`.
 - `specs/` per-capability spec folders (spec, plan, tasks, `questions.md`, `gaps.md`, `BLOCKED.md`), `specs/.checkpoints/` pass markers, `specs/.qa/` QA reports.
-- `docs/spec/` the living specification. `docs/lessons.md`. `docs/decisions/`. `docs/runbooks/incidents/`. `docs/reports/`. `docs/architecture/sdd-runbook.md` (why each part exists).
+- `docs/spec/` the living specification. `docs/lessons.md`. `docs/work/decisions/`. `docs/ops/incidents/`. `docs/reports/`. `docs/work/architecture/sdd-runbook.md` (why each part exists).
 
 ## Run the e2e specs (verified path)
 
@@ -339,7 +339,7 @@ Suggested order:
 5. Review the questions.md files.
 ```
 
-Full unattended run (after the pilot; details in [`docs/architecture/sdd-runbook.md`](docs/architecture/sdd-runbook.md)):
+Full unattended run (after the pilot; details in [`docs/work/architecture/sdd-runbook.md`](docs/work/architecture/sdd-runbook.md)):
 
 ```bash
 # 1. Commit, then write all 67 specs (55 backend S, 7 web W, 5 journeys J). Takes roughly 13–17 hours.
@@ -416,7 +416,7 @@ How the run behaves (details in the runbook):
 
 `scripts/vps/` creates a machine per run, runs the loop there, pushes `sdd/auto`, notifies your phone and deletes the machine.
 Setup and use are in [`scripts/vps/README.md`](scripts/vps/README.md); the design is in
-[`docs/architecture/vps-runner-plan.md`](docs/architecture/vps-runner-plan.md). In short, after the one-time setup:
+[`docs/work/architecture/vps-runner-plan.md`](docs/work/architecture/vps-runner-plan.md). In short, after the one-time setup:
 
 ```bash
 git push origin master                           # the machine only sees what is on GitHub
@@ -598,7 +598,7 @@ Folders in the vault:
 | ------------------------------------------------ | --------------------- | ------------------------------------------------------------------------------------------- |
 | `docs/humans/`                                   | the docs generator    | Rewritten on every run. Do not hand-edit; any other `.md` file in it is deleted.            |
 | `interview-prep/`                                | you                   | Hand-written theory notes. `interview-prep/my-practice/` is gitignored (private exercises). |
-| `docs/architecture/`, `docs/runbooks/`, `specs/` | you / the SDD scripts | Hand-written or agent-written, committed.                                                   |
+| `docs/work/architecture/`, `docs/ops/runbooks/`, `specs/` | you / the SDD scripts | Hand-written or agent-written, committed.                                                   |
 
 ### Codebase map (`scripts/docs`)
 
@@ -653,7 +653,7 @@ git diff interview-prep           # review: read the model's one-sentence "how" 
 
 Bulk spec writing and implementation on top of spec-kit, driven by the 67-row catalog in
 [`scripts/sdd/capabilities.tsv`](scripts/sdd/capabilities.tsv). Full procedure:
-[`docs/architecture/sdd-runbook.md`](docs/architecture/sdd-runbook.md).
+[`docs/work/architecture/sdd-runbook.md`](docs/work/architecture/sdd-runbook.md).
 
 ```sh
 DRY_RUN=1 scripts/sdd/write-specs.sh S10       # print the prompt for one capability, run nothing

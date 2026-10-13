@@ -8,7 +8,7 @@
 
 **Status**: Draft
 
-**Input**: "App shell and cross-cutting UI: navbar, footer, legal pages, developer docs, error/not-found/loading states, responsive layout, accessibility, CSP and security headers". Sources: constitution V, VI, VII.7; `packages/web/AGENTS.md` and the Next.js guides *Content Security Policy*, *Proxy*, `error.js`, `not-found.js`, `loading.js`, *Streaming*, *Production checklist*; `docs/architecture/pattern-map.md` rows P0502, P0902, P0903; notes 09/03 and 05/01; the web specs W01–W06 and domain specs S39, S42, S44, S48 that name W07.
+**Input**: "App shell and cross-cutting UI: navbar, footer, legal pages, developer docs, error/not-found/loading states, responsive layout, accessibility, CSP and security headers". Sources: constitution V, VI, VII.7; `packages/web/AGENTS.md` and the Next.js guides *Content Security Policy*, *Proxy*, `error.js`, `not-found.js`, `loading.js`, *Streaming*, *Production checklist*; `docs/work/architecture/pattern-map.md` rows P0502, P0902, P0903; notes 09/03 and 05/01; the web specs W01–W06 and domain specs S39, S42, S44, S48 that name W07.
 
 Companion files: [`questions.md`](questions.md) (decisions taken unattended, tagged), [`test-plan.md`](test-plan.md) (one row per scenario), [`gaps.md`](gaps.md) (what today's code lacks, missing backend endpoints, test tooling), [`checklists/requirements.md`](checklists/requirements.md).
 

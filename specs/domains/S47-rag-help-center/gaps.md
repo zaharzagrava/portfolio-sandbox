@@ -122,4 +122,4 @@ The hydration query joins `KnowledgeChunk` and `KnowledgeDocument` (`infra/retri
 7. Lifecycle consumers in `KnowledgeProjectorModule` with inbox, zod validation and DLQ (G23).
 8. Eval harness on `KnowledgeSearchService` with exit codes (G39); configuration schema and startup guards (G40, G41); metrics and log hygiene (G42).
 9. Tests per `test-plan.md`: split `knowledge.e2e-spec.ts`, move RRF to `domain/rrf.spec.ts`, add the missing rows (G43, G44); web `AskProduct` update (G45, W02).
-10. Close D-6, D-7, D-8, D-12, D-14 rows in `docs/architecture/debt-register.md` with the actual commit, once `pnpm check:table-ownership --strict` and `pnpm check:boundaries` are green for this domain.
+10. Close D-6, D-7, D-8, D-12, D-14 rows in `docs/work/architecture/debt-register.md` with the actual commit, once `pnpm check:table-ownership --strict` and `pnpm check:boundaries` are green for this domain.

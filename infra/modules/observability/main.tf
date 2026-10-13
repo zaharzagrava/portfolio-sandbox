@@ -115,7 +115,7 @@ resource "aws_cloudwatch_metric_alarm" "worker_errors" {
 resource "aws_cloudwatch_metric_alarm" "dlq" {
   for_each            = var.dlq_names
   alarm_name          = "${local.name}-dlq-${each.key}"
-  alarm_description   = "DLQ not empty - runbook docs/runbooks/DLQNotEmpty.md"
+  alarm_description   = "DLQ not empty - runbook docs/ops/runbooks/DLQNotEmpty.md"
   namespace           = "AWS/SQS"
   metric_name         = "ApproximateNumberOfMessagesVisible"
   dimensions          = { QueueName = each.value }

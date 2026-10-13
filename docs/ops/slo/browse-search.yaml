@@ -11,7 +11,7 @@ sli:
   thresholdSeconds: 0.3
   metric: http_server_request_duration_seconds
   selector: 'service="core", http_route=~"/api/products(/search|/:id)?"'
-runbook: docs/runbooks/APIErrorBudgetFastBurn.md
+runbook: docs/ops/runbooks/APIErrorBudgetFastBurn.md
 k6:
   threshold: 'http_req_duration{journey:browse}: p(99)<300'
 ---
@@ -25,6 +25,6 @@ sli:
   type: availability
   metric: http_server_request_duration_seconds
   selector: 'service="core", http_route=~"/api/products(/search|/:id)?"'
-runbook: docs/runbooks/APIErrorBudgetFastBurn.md
+runbook: docs/ops/runbooks/APIErrorBudgetFastBurn.md
 k6:
   threshold: 'http_req_failed{journey:browse}: rate<0.001'

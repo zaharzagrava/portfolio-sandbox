@@ -8,7 +8,7 @@
 
 **Domain**: `content` (capability S27 of `scripts/sdd/capabilities.tsv`)
 
-**Input**: Write the specification for capability S27 — Brand stories CMS: versioned multi-locale stories, scheduled publish, preview, cache tags, sitemap. Sources: `docs/showcase/sections/SD-05-cms-brand-stories.md`, `10-System-Design/04-web-platform-architectures.md` §5 (Content site / CMS), the constitution v3.1.0, `docs/architecture/domain-map.md` (`content`), and `docs/architecture/pattern-map.md` rows P0207, P0410, P0501 and P0904.
+**Input**: Write the specification for capability S27 — Brand stories CMS: versioned multi-locale stories, scheduled publish, preview, cache tags, sitemap. Sources: `docs/showcase/sections/SD-05-cms-brand-stories.md`, `10-System-Design/04-web-platform-architectures.md` §5 (Content site / CMS), the constitution v3.1.0, `docs/work/architecture/domain-map.md` (`content`), and `docs/work/architecture/pattern-map.md` rows P0207, P0410, P0501 and P0904.
 
 ## Scope
 

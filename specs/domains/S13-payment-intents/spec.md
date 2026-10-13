@@ -6,7 +6,7 @@
 
 **Status**: Draft
 
-**Input**: User description: "Payment intents, idempotency, unknown outcomes, PSP circuit breaker, outbox, saga with orders (domain `payments`)". Sources: `README.md` (Interview-Prep), `docs/showcase/sections/SD-20-payments-ledger-reconciliation.md`, note 10-System-Design/07 §19 (payment flow, saga) and §20 (exactly-once effect, unknown outcomes), note 06-Distributed-Systems/03 §1–§3 (timeouts, retries, circuit breaker), constitution v3.1.0, `docs/architecture/domain-map.md` (`payments`), `docs/architecture/pattern-map.md` (rows naming S13: P0311, P0407, P0414, P0611, P0617), the written specs S10, S11 and S05 (contracts they require from this capability).
+**Input**: User description: "Payment intents, idempotency, unknown outcomes, PSP circuit breaker, outbox, saga with orders (domain `payments`)". Sources: `README.md` (Interview-Prep), `docs/showcase/sections/SD-20-payments-ledger-reconciliation.md`, note 10-System-Design/07 §19 (payment flow, saga) and §20 (exactly-once effect, unknown outcomes), note 06-Distributed-Systems/03 §1–§3 (timeouts, retries, circuit breaker), constitution v3.1.0, `docs/work/architecture/domain-map.md` (`payments`), `docs/work/architecture/pattern-map.md` (rows naming S13: P0311, P0407, P0414, P0611, P0617), the written specs S10, S11 and S05 (contracts they require from this capability).
 
 ## Scope
 

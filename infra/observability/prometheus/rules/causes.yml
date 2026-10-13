@@ -1,5 +1,5 @@
 # SD-33 / O-01 cause-based alerts: things that WILL become user-visible soon.
-# Symptom (SLO burn-rate) alerts are generated from docs/slo/*.yaml → slo.generated.yml.
+# Symptom (SLO burn-rate) alerts are generated from docs/ops/slo/*.yaml → slo.generated.yml.
 # Every alert links its runbook; severity routes in alertmanager.yml.
 groups:
   - name: data-stores
@@ -10,7 +10,7 @@ groups:
         labels: { severity: page }
         annotations:
           summary: 'Postgres connections at {{ $value | humanizePercentage }} of max_connections'
-          runbook: docs/runbooks/PostgresConnectionsHigh.md
+          runbook: docs/ops/runbooks/PostgresConnectionsHigh.md
 
       - alert: DbPoolWaiting
         expr: max by (service) (db_client_connection_pending_requests) > 5
@@ -18,7 +18,7 @@ groups:
         labels: { severity: ticket }
         annotations:
           summary: '{{ $labels.service }}: requests queueing for a DB connection'
-          runbook: docs/runbooks/PostgresConnectionsHigh.md
+          runbook: docs/ops/runbooks/PostgresConnectionsHigh.md
 
       - alert: RedisMemoryHigh
         expr: max(redis_memory_used_bytes) / max(redis_memory_max_bytes > 0) > 0.85
@@ -26,7 +26,7 @@ groups:
         labels: { severity: page }
         annotations:
           summary: 'Redis memory at {{ $value | humanizePercentage }} of maxmemory (evictions next)'
-          runbook: docs/runbooks/RedisMemoryHigh.md
+          runbook: docs/ops/runbooks/RedisMemoryHigh.md
 
   - name: async-pipelines
     rules:
@@ -36,7 +36,7 @@ groups:
         labels: { severity: page }
         annotations:
           summary: 'Consumer group {{ $labels.consumergroup }} is {{ $value }} messages behind'
-          runbook: docs/runbooks/KafkaConsumerLagHigh.md
+          runbook: docs/ops/runbooks/KafkaConsumerLagHigh.md
 
       - alert: ProjectionLagHigh
         expr: histogram_quantile(0.95, sum by (le, projector) (rate(projection_lag_seconds_bucket[5m]))) > 30
@@ -44,7 +44,7 @@ groups:
         labels: { severity: ticket }
         annotations:
           summary: 'Read model {{ $labels.projector }} p95 freshness {{ $value | humanizeDuration }}'
-          runbook: docs/runbooks/ProjectionLagHigh.md
+          runbook: docs/ops/runbooks/ProjectionLagHigh.md
 
       - alert: DLQNotEmpty
         expr: max by (queue) (sqs_queue_messages{dlq="true", state="visible"}) > 0
@@ -52,7 +52,7 @@ groups:
         labels: { severity: ticket }
         annotations:
           summary: 'Dead-letter queue {{ $labels.queue }} has {{ $value }} messages'
-          runbook: docs/runbooks/DLQNotEmpty.md
+          runbook: docs/ops/runbooks/DLQNotEmpty.md
 
       - alert: JobQueueLagging
         expr: max(job_queue_lag_seconds) > 300
@@ -60,7 +60,7 @@ groups:
         labels: { severity: ticket }
         annotations:
           summary: 'Scheduled jobs are running {{ $value | humanizeDuration }} late'
-          runbook: docs/runbooks/DLQNotEmpty.md
+          runbook: docs/ops/runbooks/DLQNotEmpty.md
 
   - name: business-invariants
     rules:
@@ -69,14 +69,14 @@ groups:
         labels: { severity: page }
         annotations:
           summary: 'Flash sale stock drift of {{ $value }} units at reconciliation (Redis lost writes)'
-          runbook: docs/runbooks/FlashSaleOversellDetected.md
+          runbook: docs/ops/runbooks/FlashSaleOversellDetected.md
 
       - alert: LedgerInvariantViolated
         expr: increase(ledger_invariant_violations_total[15m]) > 0
         labels: { severity: page }
         annotations:
           summary: 'Ledger invariant violated - money may be misbooked'
-          runbook: docs/runbooks/APIErrorBudgetFastBurn.md
+          runbook: docs/ops/runbooks/APIErrorBudgetFastBurn.md
 
       - alert: StripeCircuitOpen
         expr: max(circuit_breaker_open{breaker="stripe.create_payment_intent"}) == 1
@@ -84,7 +84,7 @@ groups:
         labels: { severity: page }
         annotations:
           summary: 'Stripe circuit breaker open - payments are failing fast'
-          runbook: docs/runbooks/StripeCircuitOpen.md
+          runbook: docs/ops/runbooks/StripeCircuitOpen.md
 
   - name: runtime
     rules:
@@ -94,7 +94,7 @@ groups:
         labels: { severity: ticket }
         annotations:
           summary: '{{ $labels.service }}: event loop p99 delay {{ $value }} ms (load shedding kicks in at 250)'
-          runbook: docs/runbooks/APIErrorBudgetFastBurn.md
+          runbook: docs/ops/runbooks/APIErrorBudgetFastBurn.md
 
       - alert: TelemetryTargetDown
         expr: up{job="apps"} == 0

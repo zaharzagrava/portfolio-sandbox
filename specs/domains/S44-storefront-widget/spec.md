@@ -3,7 +3,7 @@
 **Feature Directory**: `specs/domains/S44-storefront-widget`
 **Created**: 2026-10-06
 **Status**: Draft
-**Input**: Capability S44 of `scripts/sdd/capabilities.tsv`: "Embeddable storefront widget: site keys bound to origins, frame-ancestors, identity hand-off, kill switch". Sources: `docs/showcase/sections/SD-01-storefront-widget.md`, `interview-prep/10-system-design/04-web-platform-architectures.md` §1 (embeddable widget), `interview-prep/05-security/01-web-security-xss-csrf-csp.md` §2 (CSP, `frame-ancestors`) and §3 (CSRF, `SameSite=None`). Patterns from `docs/architecture/pattern-map.md`: **P0502** (CSP strict with nonce, `frame-ancestors` per site) and **P0504** (CSRF for cookie-authenticated mutations, widget part). Where the existing code and the notes disagree, the notes win (gaps are in `gaps.md`).
+**Input**: Capability S44 of `scripts/sdd/capabilities.tsv`: "Embeddable storefront widget: site keys bound to origins, frame-ancestors, identity hand-off, kill switch". Sources: `docs/showcase/sections/SD-01-storefront-widget.md`, `interview-prep/10-system-design/04-web-platform-architectures.md` §1 (embeddable widget), `interview-prep/05-security/01-web-security-xss-csrf-csp.md` §2 (CSP, `frame-ancestors`) and §3 (CSRF, `SameSite=None`). Patterns from `docs/work/architecture/pattern-map.md`: **P0502** (CSP strict with nonce, `frame-ancestors` per site) and **P0504** (CSRF for cookie-authenticated mutations, widget part). Where the existing code and the notes disagree, the notes win (gaps are in `gaps.md`).
 
 ## Overview
 

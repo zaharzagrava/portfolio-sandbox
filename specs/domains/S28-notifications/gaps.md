@@ -103,7 +103,7 @@ Not named but relevant: D-3 (topic registry) is resolved; this capability regist
 
 Cross-domain event reads (`@app/domains/orders`, `auctions`, `billing` event classes imported at `infra/notification-router.projector.ts:6-8`) are event contracts, not table access (X.4 allows event contracts); they are replaced by the `packages/contracts` event schemas of each producer (R3), so the domain no longer depends on those domains' entry points at all.
 
-## 4. Pattern-map rows to move (`docs/architecture/pattern-map.md`)
+## 4. Pattern-map rows to move (`docs/work/architecture/pattern-map.md`)
 
 P0104 (quiet hours), P0419 (provider status callbacks), P0601 (router, queue versus log), P0618 (per-channel queues) are `implemented`; this spec moves them to `spec'd`, and the implementation loop moves them to `verified` when AS-30–AS-34, AS-67–AS-75, AS-01–AS-05 and AS-40–AS-41 pass.
 

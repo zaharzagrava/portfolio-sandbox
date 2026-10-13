@@ -6,7 +6,7 @@
 
 **Status**: Draft
 
-**Input**: User description: "Seller leaderboards (ties, my rank, period snapshots), live sales dashboard, seller stats (domain `seller-insights`)". Sources: `docs/showcase/sections/SD-18-leaderboard-live-dashboard.md`, note 10-System-Design/06 §18 (real-time leaderboard and live dashboard), pattern P0323 of `docs/architecture/pattern-map.md` (Redis structures: sorted sets), constitution v3.1.0 (VII, IX, X), and the specs already written for S03, S05, S10, S13, S14 and S16.
+**Input**: User description: "Seller leaderboards (ties, my rank, period snapshots), live sales dashboard, seller stats (domain `seller-insights`)". Sources: `docs/showcase/sections/SD-18-leaderboard-live-dashboard.md`, note 10-System-Design/06 §18 (real-time leaderboard and live dashboard), pattern P0323 of `docs/work/architecture/pattern-map.md` (Redis structures: sorted sets), constitution v3.1.0 (VII, IX, X), and the specs already written for S03, S05, S10, S13, S14 and S16.
 
 ## Scope
 

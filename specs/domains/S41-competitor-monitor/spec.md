@@ -6,7 +6,7 @@
 
 **Status**: Draft
 
-**Input**: User description: "Competitor price monitor: polite crawling, robots, SSRF-safe fetch, price extraction, alerts (domain `seller-insights`)". Sources: `docs/showcase/sections/SD-35-competitor-price-monitor.md`, note 10-System-Design/09 §35 (web crawler), patterns P0507 (SSRF guard), P1103 (Bloom filter) and P1104 (SimHash change detection) of `docs/architecture/pattern-map.md`, constitution v3.1.0 (VII, IX, X), and the specs already written for S03, S05, S18, S28 and S40.
+**Input**: User description: "Competitor price monitor: polite crawling, robots, SSRF-safe fetch, price extraction, alerts (domain `seller-insights`)". Sources: `docs/showcase/sections/SD-35-competitor-price-monitor.md`, note 10-System-Design/09 §35 (web crawler), patterns P0507 (SSRF guard), P1103 (Bloom filter) and P1104 (SimHash change detection) of `docs/work/architecture/pattern-map.md`, constitution v3.1.0 (VII, IX, X), and the specs already written for S03, S05, S18, S28 and S40.
 
 ## Scope
 

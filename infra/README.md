@@ -34,7 +34,7 @@ infra/
 ```
 
 ## Principles
-- **One source per schema:** DynamoDB tables from the JSON files, Keyspaces tables from the CQL files, SQS queues mirrored in ElasticMQ, Lambda specs from the build manifest, Prometheus rules generated from `docs/slo`.
+- **One source per schema:** DynamoDB tables from the JSON files, Keyspaces tables from the CQL files, SQS queues mirrored in ElasticMQ, Lambda specs from the build manifest, Prometheus rules generated from `docs/ops/slo`.
 - **No secrets in tfvars or state:** secret *containers* only (`marketplace/<env>/app`); RDS manages its own master password; Keyspaces credentials and API keys are put out-of-band. Provider credentials come from env vars.
 - **Least privilege:** instance roles per app (HTTP apps produce to SQS, workers consume); the deploy role only works from the protected GitHub environment of its env; IMDSv2 only; SSM Session Manager instead of SSH.
 - **Network tiers:** ALB in public subnets; apps in private subnets (egress through NAT / endpoints); data stores in data subnets with no internet route; security groups by tier.

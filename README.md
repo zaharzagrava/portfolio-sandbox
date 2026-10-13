@@ -38,11 +38,11 @@ Claude sessions, while I sleep. What I actually work on is the **harness around 
   (a page "processing" for 30 s, a parked outbox row, a dead-letter queue that is not empty). A second, skeptical session must reproduce every finding before it counts, and a regression test
   must fail on the current build before anyone is asked to fix anything.
 - **Lessons, metrics, decisions.** Every failure becomes a rule that the agents read and a check that runs (`docs/lessons.md`). Every step is measured (`scripts/sdd/report.py`). The
-  hundreds of defaults the agents chose without asking are triaged into the few decisions that are mine (`docs/decisions`).
+  hundreds of defaults the agents chose without asking are triaged into the few decisions that are mine (`docs/work/decisions`).
 - **Mutation testing.** A small tool changes the code on purpose and checks that the unit tests notice.
 
 **Why I built it.** The first end-to-end test of the buy flow by hand found a payment stuck at "processing". Every automated check had passed: the code asked a standard queue for a message
-group, which only FIFO queues accept, so the charge request was never delivered. I wrote the incident down ([`docs/runbooks/incidents`](docs/runbooks/incidents/2026-10-12-payment-stuck-pending.md)), then built
+group, which only FIFO queues accept, so the charge request was never delivered. I wrote the incident down ([`docs/ops/incidents`](docs/ops/incidents/2026-10-12-payment-stuck-pending.md)), then built
 the harness so that class of bug is found by a machine first. Putting that bug (and three similar ones) back on purpose is the benchmark for the QA agent.
 
 **Where it stands, honestly.** The loop, the gate, the repair agent and the checkpoints ran for real in the cloud (more than 20 capabilities built so far, one checkpoint passed after several repairs).
@@ -57,7 +57,7 @@ status in [`README_ME.md`](README_ME.md#where-it-stands-honest). I would rather 
 
 Each section is a problem a real team has, and how I designed the solution: the architecture, not a tutorial.
 
-> **What this is, honestly:** this repo shows how I **architect** systems, not a finished product. It is built spec-first: every section below is a designed solution with a spec (linked), and each spec has a `gaps.md` listing exactly where the code still differs. Most capabilities have a first-pass implementation, but the spec-driven implementation is not fully run yet. Some details below are ahead of the code. Parts that already run and pass: see [Run it yourself](#run-it-yourself-5-minutes). The only thing between the specs and a complete implementation is my time and AI usage limits, not the design. Per-capability progress is in [`pattern-map.md`](docs/architecture/pattern-map.md).
+> **What this is, honestly:** this repo shows how I **architect** systems, not a finished product. It is built spec-first: every section below is a designed solution with a spec (linked), and each spec has a `gaps.md` listing exactly where the code still differs. Most capabilities have a first-pass implementation, but the spec-driven implementation is not fully run yet. Some details below are ahead of the code. Parts that already run and pass: see [Run it yourself](#run-it-yourself-5-minutes). The only thing between the specs and a complete implementation is my time and AI usage limits, not the design. Per-capability progress is in [`pattern-map.md`](docs/work/architecture/pattern-map.md).
 
 **Money**
 

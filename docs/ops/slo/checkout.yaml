@@ -8,7 +8,7 @@ sli:
   type: availability
   metric: http_server_request_duration_seconds
   selector: 'service="core", http_route=~"/api/(orders/)?checkout.*"'
-runbook: docs/runbooks/APIErrorBudgetFastBurn.md
+runbook: docs/ops/runbooks/APIErrorBudgetFastBurn.md
 k6:
   threshold: 'http_req_failed{journey:checkout}: rate<0.0005'
 ---
@@ -23,6 +23,6 @@ sli:
   thresholdSeconds: 0.75
   metric: http_server_request_duration_seconds
   selector: 'service="core", http_route=~"/api/(orders/)?checkout.*"'
-runbook: docs/runbooks/APIErrorBudgetFastBurn.md
+runbook: docs/ops/runbooks/APIErrorBudgetFastBurn.md
 k6:
   threshold: 'http_req_duration{journey:checkout}: p(99)<750'

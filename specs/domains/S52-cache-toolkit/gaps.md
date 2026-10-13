@@ -42,7 +42,7 @@ Callers to update for the BREAKING lines of `questions.md` (read-only list; the 
 - Keys in use (`auth:user:v1:<id>`, `experiments:running`, `launch-event:v1:<id>`, `api:pinned:<shop>`, `product:v1:<id>`) satisfy the key rules; the helper-built keys (`membershipCacheKey`, `recipientKey`, `entitlementsKey`, `siteKey`, `endpointKey`, `shopEndpointsKey`, `linkCacheKey`) must be checked by the implementation, and parts that can contain `:` or `{` move to `cacheKey()`.
 - `domains/experimentation/application/analytics.service.ts:` `getOrLoad('experiments:running', () => this.sequelize.query(...))` runs SQL inside the loader; that SQL belongs to S39 (not a toolkit concern).
 
-## B. Debt register (`docs/architecture/debt-register.md`)
+## B. Debt register (`docs/work/architecture/debt-register.md`)
 
 Open rows that name `infrastructure` or S52, and what S52 does about each:
 

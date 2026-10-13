@@ -6,7 +6,7 @@
 
 **Status**: Draft
 
-**Input**: User description: "Capability S25 — Product discussion boards: posts, nested comments, votes, hot/top/new/best ranking, abuse controls, safe markdown (domain `community`)." Sources: `docs/showcase/sections/SD-11-product-discussions.md`; notes `10-System-Design/05-social-and-content.md` §11 (comments, voting and ranking) and §9 (deletes and privacy at hydration); notes `05-Security/01-web-security-xss-csrf-csp.md` §1 (XSS, sanitising user markdown), §3 (CSRF), §5 (safe errors); constitution v3.1.0; `docs/architecture/domain-map.md` (`community`, decision D5); `docs/architecture/pattern-map.md` rows P0320, P0323, P0501, P1108.
+**Input**: User description: "Capability S25 — Product discussion boards: posts, nested comments, votes, hot/top/new/best ranking, abuse controls, safe markdown (domain `community`)." Sources: `docs/showcase/sections/SD-11-product-discussions.md`; notes `10-System-Design/05-social-and-content.md` §11 (comments, voting and ranking) and §9 (deletes and privacy at hydration); notes `05-Security/01-web-security-xss-csrf-csp.md` §1 (XSS, sanitising user markdown), §3 (CSRF), §5 (safe errors); constitution v3.1.0; `docs/work/architecture/domain-map.md` (`community`, decision D5); `docs/work/architecture/pattern-map.md` rows P0320, P0323, P0501, P1108.
 
 Companion files: [`questions.md`](questions.md) (decisions taken unattended, tagged), [`test-plan.md`](test-plan.md) (constitution VII.8 table), [`gaps.md`](gaps.md) (what today's code lacks, debt rows, IX.7 replacements).
 

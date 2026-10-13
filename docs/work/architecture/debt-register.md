@@ -5,7 +5,7 @@ place spec writing reads debt from: `scripts/sdd/spec-prompt.md` copies each dom
 that capability's `gaps.md`, and the implementation loop pays them under test.
 
 - **Resolved by** is either a Phase 3 step ([`sdd-runbook.md`](sdd-runbook.md) §1c) or capability IDs
-  from [`scripts/sdd/capabilities.tsv`](../../scripts/sdd/capabilities.tsv).
+  from [`scripts/sdd/capabilities.tsv`](../../../scripts/sdd/capabilities.tsv).
 - **Origin** is the plan that found the item (`specs/00N-*/plan.md`).
 - Close a row by setting **Status** to `resolved (<where>)`. Don't delete it.
 

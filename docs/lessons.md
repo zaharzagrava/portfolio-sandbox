@@ -1,7 +1,7 @@
 # Lessons from failures
 
 One entry per failure that taught something: what happened, the cause, and the check, test or rule that now prevents it. `prevented` means the prevention
-exists and runs; `open` means it does not yet (and is on the roadmap in `docs/architecture/sdd-runbook.md`). The classes: `wiring` (components that do not fit
+exists and runs; `open` means it does not yet (and is on the roadmap in `docs/work/architecture/sdd-runbook.md`). The classes: `wiring` (components that do not fit
 together), `config` (infrastructure that does not match the code), `test-hollow` (a test that cannot fail), `state-leak` (shared state between tests or runs),
 `timing`, `resources`, `process`. A new lesson in a class that already has one is a **repeat**: count them.
 
@@ -30,7 +30,7 @@ with the links that prove it: backticked file paths and commit hashes. For a `pr
   the relay failed on every attempt and parked the row after ten, with nothing visible.
 - **Prevention:** the outbox validates queue options when the task is created (`append-with-executor.ts`, `task-row.spec.ts`); each caller has a test that runs the
   real check (`payment-intent.service.spec.ts`, `refund-command.adapter.spec.ts`), verified to fail with the old mistake. Evidence:
-  `docs/runbooks/incidents/2026-10-12-payment-stuck-pending.md`, `77a6f03`, `f2b4a7c`.
+  `docs/ops/incidents/2026-10-12-payment-stuck-pending.md`, `77a6f03`, `f2b4a7c`.
 
 ## L-002 A queue the code uses but the local infrastructure does not define
 - **Rule:** Every queue the code names must be defined in `elasticmq.conf`, and readiness must fail while a consumed queue is missing.
@@ -65,7 +65,7 @@ with the links that prove it: backticked file paths and commit hashes. For a `pr
 - **Rule:** A test that needs a known state creates its own data and never relies on what ran before it; run the browser suite once on an empty stack.
 - **Symptom:** product-page layout failed after other tests had recorded trending events; search pagination and suggestions failed on a fresh stack. **Cause:** shared
   state (a ranking rebuilt from a store a test cannot clear, a catalogue smaller than a page, a search history). **Prevention:** a test needing a known state creates its own
-  data; the whole browser suite is run on an empty stack before a checkpoint. Evidence: `d600ba3`, `docs/architecture/sdd-runbook.md`.
+  data; the whole browser suite is run on an empty stack before a checkpoint. Evidence: `d600ba3`, `docs/work/architecture/sdd-runbook.md`.
 
 ## L-007 Assertions timed out on a loaded machine
 - **Rule:** Use the runner timeouts (`PW_EXPECT_TIMEOUT_MS`, 2 workers) and never wait on a load that a redirect aborts; a loaded machine is slower than a laptop.
@@ -110,5 +110,5 @@ with the links that prove it: backticked file paths and commit hashes. For a `pr
 ## L-014 Hundreds of recorded defaults that nobody reads
 - **Rule:** A list that agents write and a person is meant to read must be short and ranked; anything longer is not read, so it is not a control.
 - **Symptom:** every build left a `questions.md` (about 2900 lines in 67 files); none was ever read. **Cause:** the output grew with the number of specs, the reader did not.
-- **Prevention missing:** `scripts/decisions/triage.py` reduces them to at most 8 ranked decisions per capability in `docs/decisions` (151 open for 21 capabilities); it counts only if the
+- **Prevention missing:** `scripts/decisions/triage.py` reduces them to at most 8 ranked decisions per capability in `docs/work/decisions` (151 open for 21 capabilities); it counts only if the
   decisions get answered (`triage.py status`). Mark this lesson prevented when the open count has gone down in a real morning routine.

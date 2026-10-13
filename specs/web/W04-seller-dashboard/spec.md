@@ -8,7 +8,7 @@
 
 **Status**: Draft
 
-**Input**: "Seller dashboard: shop overview, live sales numbers, inventory management, developer settings (API keys, webhook endpoints) (the Next.js app in `packages/web`)". Sources: constitution V, VI, VII.7; `packages/web/AGENTS.md` and the Next.js guides *Authentication with Cache Components* and `instant`; `docs/architecture/pattern-map.md` (rows naming W04: P0406, P0901); backend specs S03, S05, S40, S42, S43 (and S10, S32, S48, S51 where they define a shape W04 consumes); the specs already written for W01, W02, W03; the current draft in `app/dashboard/seller`.
+**Input**: "Seller dashboard: shop overview, live sales numbers, inventory management, developer settings (API keys, webhook endpoints) (the Next.js app in `packages/web`)". Sources: constitution V, VI, VII.7; `packages/web/AGENTS.md` and the Next.js guides *Authentication with Cache Components* and `instant`; `docs/work/architecture/pattern-map.md` (rows naming W04: P0406, P0901); backend specs S03, S05, S40, S42, S43 (and S10, S32, S48, S51 where they define a shape W04 consumes); the specs already written for W01, W02, W03; the current draft in `app/dashboard/seller`.
 
 Companion files: [`questions.md`](questions.md) (decisions taken unattended, tagged, BREAKING first), [`test-plan.md`](test-plan.md) (one row per scenario), [`gaps.md`](gaps.md) (what today's code lacks, missing backend endpoints, test tooling), [`checklists/requirements.md`](checklists/requirements.md).
 

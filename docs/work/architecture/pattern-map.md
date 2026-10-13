@@ -6,7 +6,7 @@ capability spec must prove it, and how far it has got. It supersedes the per-les
 
 - **Where**: the owning domain (`libs/domains/<d>`), infrastructure / common lib, composition lib, app, or
   ops artifact. Domain names, not file paths, so the map survives moves.
-- **Specs**: capability IDs from [`scripts/sdd/capabilities.tsv`](../../scripts/sdd/capabilities.tsv).
+- **Specs**: capability IDs from [`scripts/sdd/capabilities.tsv`](../../../scripts/sdd/capabilities.tsv).
   `/speckit-specify` for that capability must turn the pattern into requirements and acceptance scenarios
   (see [`sdd-runbook.md`](sdd-runbook.md)). `S…` = backend, `W…` = web app, `J…` = cross-domain journey;
   `ops` = proven by an ops artifact, not an e2e spec.
@@ -170,9 +170,9 @@ capability spec must prove it, and how far it has got. It supersedes the per-les
 
 | ID | Pattern | Notes | Where | Specs | Status |
 |---|---|---|---|---|---|
-| P0701 | SLI / SLO definitions, error budgets and policy | 07/01 | docs/slo | ops | implemented |
+| P0701 | SLI / SLO definitions, error budgets and policy | 07/01 | docs/ops/slo | ops | implemented |
 | P0702 | Burn-rate alerts, cause-based thresholds | 07/01 | generated alert rules | ops | implemented |
-| P0703 | Runbooks, incident process, postmortems | 07/01 | docs/runbooks | ops | implemented |
+| P0703 | Runbooks, incident process, postmortems | 07/01 | docs/ops/runbooks | ops | implemented |
 | P0704 | Metric types, RED / USE, cardinality caps | 07/02 §2 | common/telemetry | S54 | implemented |
 | P0705 | Structured logs (pino), redaction, correlation IDs | 07/02 §3 | common/logging | S54 | implemented |
 | P0706 | Tracing (OTel) with context propagation across Kafka / SQS | 07/02 §4 | common/telemetry; infrastructure/events (`traceparent`); apps/lambdas | S53, S55 | implemented |
@@ -231,5 +231,5 @@ Every capability in `capabilities.tsv` should own at least one pattern row, and 
 non-`skipped` row should name at least one capability. To list the capabilities a pattern ID maps to:
 
 ```bash
-grep -E '^\| P[0-9]+ ' docs/architecture/pattern-map.md | awk -F'|' '{print $2, $(NF-2)}'
+grep -E '^\| P[0-9]+ ' docs/work/architecture/pattern-map.md | awk -F'|' '{print $2, $(NF-2)}'
 ```

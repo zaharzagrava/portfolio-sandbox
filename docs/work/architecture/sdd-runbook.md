@@ -8,10 +8,10 @@ The order of work after the domain map and constitution v3.1.0. Run the steps in
 | [`domain-map.md`](domain-map.md)                                         | target domains and table ownership                                              |
 | [`pattern-map.md`](pattern-map.md)                                       | every Interview-Prep pattern → where it lives → which capability spec proves it |
 | [`debt-register.md`](debt-register.md)                                   | every open constitution violation (D-1…D-15) and what pays it                   |
-| [`scripts/sdd/capabilities.tsv`](../../scripts/sdd/capabilities.tsv)     | 67 capabilities, one spec each, in execution order: 55 backend (S), 7 web (W), 5 journeys (J) |
-| [`scripts/sdd/spec-prompt.md`](../../scripts/sdd/spec-prompt.md)         | the `/speckit-specify` prompt template (backend); `spec-prompt-web.md`, `spec-prompt-journey.md` for W and J |
-| [`scripts/sdd/write-specs.sh`](../../scripts/sdd/write-specs.sh)         | step 2: writes all specs, headless, sequentially                                |
-| [`scripts/sdd/implement-specs.sh`](../../scripts/sdd/implement-specs.sh) | step 4: plan → tasks → analyze → implement → converge → gate, per spec          |
+| [`scripts/sdd/capabilities.tsv`](../../../scripts/sdd/capabilities.tsv)     | 67 capabilities, one spec each, in execution order: 55 backend (S), 7 web (W), 5 journeys (J) |
+| [`scripts/sdd/spec-prompt.md`](../../../scripts/sdd/spec-prompt.md)         | the `/speckit-specify` prompt template (backend); `spec-prompt-web.md`, `spec-prompt-journey.md` for W and J |
+| [`scripts/sdd/write-specs.sh`](../../../scripts/sdd/write-specs.sh)         | step 2: writes all specs, headless, sequentially                                |
+| [`scripts/sdd/implement-specs.sh`](../../../scripts/sdd/implement-specs.sh) | step 4: plan → tasks → analyze → implement → converge → gate, per spec          |
 
 ---
 
@@ -24,7 +24,7 @@ apps build, 52 e2e specs listed, 0 deep `@app/domains/<d>/` imports.
 ### 1a. Batch 4 — social, discovery, insights (about 120 files)
 
 ```text
-/speckit.plan Continue Phase 2 with Batch 4, using the same pipeline (phase2-batch4-moves.tsv → phase2-move.sh → phase2-entrypoints.ts). Read docs/architecture/domain-map.md and the constitution first.
+/speckit.plan Continue Phase 2 with Batch 4, using the same pipeline (phase2-batch4-moves.tsv → phase2-move.sh → phase2-entrypoints.ts). Read docs/work/architecture/domain-map.md and the constitution first.
 
 Domains to create:
 - community ← discussions + feed (D5: zero Postgres tables, ScyllaDB/Redis only)
@@ -39,7 +39,7 @@ Rules: the same as batch 3 (I.1 layout, events in application/events/, single in
 ### 1b. Batch 5 — platform and growth (about 100 files; empties all domain folders)
 
 ```text
-/speckit.plan Continue Phase 2 with Batch 5, the last move batch, using the same pipeline (phase2-batch5-moves.tsv → phase2-move.sh → phase2-entrypoints.ts). Read docs/architecture/domain-map.md and the constitution first.
+/speckit.plan Continue Phase 2 with Batch 5, the last move batch, using the same pipeline (phase2-batch5-moves.tsv → phase2-move.sh → phase2-entrypoints.ts). Read docs/work/architecture/domain-map.md and the constitution first.
 
 Domains to create:
 - developer-platform ← public-api + webhooks + widget (widget owns the WidgetSite table, so it's a domain, not composition)
@@ -56,13 +56,13 @@ pick this up through their gaps.md.
 libs/common/core rather than into experimentation. Append that sentence when you paste the batch 5 prompt.
 ```
 
-**Batch 5 is done ([specs/006](../../specs/006-phase2-batch5-domains/plan.md)), including D-13: `murmur3` moved to
+**Batch 5 is done ([specs/006](../../../specs/006-phase2-batch5-domains/plan.md)), including D-13: `murmur3` moved to
 `libs/common/core`. D-12 and every other open item now live in [`debt-register.md`](debt-register.md).**
 
 ### 1c. Phase 3 — cleanup and enforcement (not a move batch)
 
 ```text
-/speckit.plan Execute Phase 3: retire libs/common/src and turn on boundary enforcement. Read docs/architecture/domain-map.md, the constitution, and docs/architecture/debt-register.md (rows D-1…D-5 and D-9 are this phase's; mark each `resolved (Phase 3)` when done).
+/speckit.plan Execute Phase 3: retire libs/common/src and turn on boundary enforcement. Read docs/work/architecture/domain-map.md, the constitution, and docs/work/architecture/debt-register.md (rows D-1…D-5 and D-9 are this phase's; mark each `resolved (Phase 3)` when done).
 
 Steps, in this order, with the verification gate after each:
 1. D-1: remove every infrastructure → domain import (elasticsearch → catalog, kafka/outbox → payments; cassandra/dynamo/redis → utils/test-utils cleanup registry becomes an infrastructure port, with the registry itself moving to test/).
@@ -83,7 +83,7 @@ tests, so each capability's `gaps.md` picks up its domain's register rows plus i
 `pnpm check:table-ownership` lines, and the implementation loop (step 4) pays them down. Once that report
 is empty, add `pnpm check:table-ownership --strict` to the gate in `scripts/sdd/implement-specs.sh`.
 
-**Phase 3 is done ([specs/007](../../specs/007-phase3-cleanup/plan.md)).** **Then commit.** Step 2 onward assumes a clean tree, and `implement-specs.sh` can commit per capability.
+**Phase 3 is done ([specs/007](../../../specs/007-phase3-cleanup/plan.md)).** **Then commit.** Step 2 onward assumes a clean tree, and `implement-specs.sh` can commit per capability.
 
 ---
 

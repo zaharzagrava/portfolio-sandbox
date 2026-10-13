@@ -35,7 +35,7 @@ The whole existing implementation is one 99-line service, `libs/domains/orders/a
 
 ## B. Debt-register rows that name `orders` or S12
 
-Open rows of `docs/architecture/debt-register.md` that name `orders` or `S12`, and what this capability does about each.
+Open rows of `docs/work/architecture/debt-register.md` that name `orders` or `S12`, and what this capability does about each.
 
 | Row | What | S12's share and the IX.7 mechanism |
 |---|---|---|

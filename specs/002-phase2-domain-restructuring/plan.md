@@ -2,7 +2,7 @@
 
 **Branch**: `002-phase2-domain-restructuring` (work is on `master`, uncommitted, on top of the uncommitted
 Phase 1) | **Date**: 2026-10-04 | **Spec**: there is no `spec.md`. The input is the `/speckit-plan` request
-plus [`docs/architecture/domain-map.md`](../../docs/architecture/domain-map.md) §1.1, §2, §3.
+plus [`docs/work/architecture/domain-map.md`](../../docs/work/architecture/domain-map.md) §1.1, §2, §3.
 
 **Status**: **Executed** for batch 1 (`identity`, `tenancy`, `catalog`). The ownership registry covers
 **all** tables. The remaining 22 domains follow the same scripts in later batches
