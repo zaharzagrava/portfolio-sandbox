@@ -17,7 +17,6 @@ import {
   IsString,
   IsUUID,
   Matches,
-  Max,
   MaxLength,
   Min,
 } from 'class-validator';
@@ -29,9 +28,9 @@ import { ShopProductSearchService } from '../application/shop-product-search.ser
 import { SearchQualityService } from '../application/search-quality.service';
 
 export class SearchClickDto {
-  @ApiProperty() @IsString() @MaxLength(2_000) searchId: string;
+  @ApiProperty() @IsString() @MaxLength(100) query: string;
   @ApiProperty() @IsUUID() productId: string;
-  @ApiProperty() @IsInt() @Min(0) @Max(99) position: number;
+  @ApiProperty() @IsInt() @Min(0) position: number;
 }
 
 export class SynonymsDto {
@@ -65,7 +64,7 @@ export class SearchAdminController {
   @HttpCode(202)
   @Post('search/clicks')
   click(@Body() body: SearchClickDto) {
-    this.quality.recordClick(body.searchId, body.productId, body.position);
+    this.quality.recordClick(body.query, body.productId, body.position);
   }
 
   @Firewall({ roles: [Role.ADMIN] })

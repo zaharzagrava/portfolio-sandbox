@@ -2,9 +2,6 @@ import { Injectable } from '@nestjs/common';
 import { ClickHouseService } from '@app/infrastructure/clickhouse/clickhouse.service';
 import { KafkaProducerService } from '@app/infrastructure/kafka/kafka-producer.service';
 import { normaliseQuery } from '../domain/query-text';
-import { InvalidSearchIdError } from '../domain/search-errors';
-import { verifySearchId } from '../domain/search-id';
-import { SearchSettings } from '../infra/search-settings';
 
 const normalizeQuery = (q: string): string => normaliseQuery(q).toLowerCase();
 import { SearchResultClicked } from './events/search-click-events';
@@ -19,18 +16,10 @@ export class SearchQualityService {
   constructor(
     private readonly producer: KafkaProducerService,
     private readonly clickhouse: ClickHouseService,
-    private readonly settings: SearchSettings,
   ) {}
 
-  /** The query comes from the signed `searchId` the search response carried, never from the caller. */
-  recordClick(searchId: string, productId: string, position: number): void {
-    const verdict = verifySearchId(
-      this.settings.signingKey,
-      searchId,
-      Date.now(),
-    );
-    if (!verdict.ok) throw new InvalidSearchIdError();
-    const q = normalizeQuery(verdict.payload.q);
+  recordClick(query: string, productId: string, position: number): void {
+    const q = normalizeQuery(query);
     const event = SearchResultClicked.create(q, 0, {
       query: q,
       productId,
