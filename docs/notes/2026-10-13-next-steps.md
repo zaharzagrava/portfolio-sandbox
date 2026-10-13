@@ -150,3 +150,23 @@ What was not done or not verified
 Worth reading first in the morning
 - The 23 topics in the runbook, and `shop.events` (consumed by tenancy, "provisional") against `shops.events` (registered by seller-onboarding).
 - `python3 scripts/sdd/checkpoint-repair.sh --dry-run buy-ui` shows the repair prompt as the agent would get it.
+
+## Day result (2026-10-13), built after the overnight branch
+Built, in this order, on branch `harness/overnight` (not merged to master, not committed unless noted in git):
+- The scripted buy flow `scripts/sdd/checkpoints/buy-ui.sh` (11 s), verified to fail with `groupId` back (500 at "create the payment") and with the queue deleted (names the queue); JC-2 requires "Order confirmed".
+- The live doctor `scripts/infra/doctor-live.sh`, run first and last by the buy flow and by every QA run.
+- The throwaway stack `scripts/qa/stack-up.sh` / `stack-down.sh`; `fresh-run.sh` rewritten on top of it (NOT yet run end to end: L-012 stays open until it is).
+- The QA agent: `scripts/qa/run.sh`, `prompt.md`, four charters, the findings ledger `findings.tsv` with `tally.py`, the report section. First run on the buy charter: 2 confirmed (`/orders` is a
+  not-yet-built page = gap; a CSP console-error flood = pending a verdict). Benchmark: groupid FOUND, queue-missing FOUND, worker-silent FOUND; search-index-gone and the clean run were still pending when
+  this was written (see `scripts/qa/benchmark-*.md`). Three charters (cart-odd, account, discover) never run.
+- The chain find, verify, test: `scripts/qa/verify.sh` (skeptical second session), `pipeline.sh`, `regress.sh`; wired into `checkpoint.sh` as `CHECKPOINT_QA` (runs once per checkpoint; failing tests in
+  `packages/web/tests/qa/` make the checkpoint fail; the checkpoint repair prompt knows they mean the product is wrong). **Never run end to end yet**: first real test is a QA run with a seeded bug.
+- Decisions: `scripts/decisions/triage.py` turned the 67 `questions.md` files (about 2900 lines) into `docs/decisions/<id>.md` for the 21 built capabilities: 151 open decisions, at most 8 per capability.
+  The loop generates one after each build, lists the open count in the final notification, and feeds `status: change:` answers back into the next pass of that capability.
+- Mutation testing: `scripts/mutation/mutate.py` and `changed.sh` (in-house, no dependencies; Stryker was the alternative). Tried on `common/core/backoff.ts`: 5 killed, 1 survived.
+- README_ME.md: a full section at the top ("The agentic delivery loop"); README.md: a short section "How it is built".
+
+Next, in order: run `fresh-run.sh` once; run the QA pipeline with a seeded bug and see the whole chain work (find, verify, failing test, repair, passing test); the other three charters; the trending-cache
+mutation; first real VM run with `CHECKPOINT_QA="buy"`; then the memory growth and the two unexplained browser flakes (runbook, follow-ups 3 and 4).
+- First mutation run on real code, `payment-intent.service.ts` (7 changes tried): 4 killed, 3 survived (score 57%). The unit spec does not check that the first charge request carries `attempt: 0`, the stored
+  `version: 1`, or the counter increment. Worth adding those assertions; then run `scripts/mutation/changed.sh` over the money and identity code.

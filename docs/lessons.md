@@ -10,7 +10,7 @@ Each entry is `## L-nnn title`, then a `**Rule:**` line (one sentence agents rea
 with the links that prove it: backticked file paths and commit hashes. For a `prevented` lesson every link must exist.
 
 - L-001 2026-10-12 wiring prevented
-- L-002 2026-10-12 config open
+- L-002 2026-10-12 config prevented
 - L-003 2026-10-12 test-hollow open
 - L-004 2026-10-12 wiring prevented
 - L-005 2026-10-12 state-leak prevented
@@ -21,6 +21,8 @@ with the links that prove it: backticked file paths and commit hashes. For a `pr
 - L-010 2026-10-12 wiring prevented
 - L-011 2026-10-12 config open
 - L-012 2026-10-12 process open
+- L-013 2026-10-13 process prevented
+- L-014 2026-10-13 process open
 
 ## L-001 A message option the queue refuses, found only by hand
 - **Rule:** A queue option must be validated where the message is created, not discovered when the relay fails (FIFO-only options like `groupId` never go to a standard queue).
@@ -34,8 +36,10 @@ with the links that prove it: backticked file paths and commit hashes. For a `pr
 - **Rule:** Every queue the code names must be defined in `elasticmq.conf`, and readiness must fail while a consumed queue is missing.
 - **Symptom:** the same stuck payment. **Cause:** `payments-charge`, `orders-refund-requested`, `tenancy-invite-requested` were missing from `elasticmq.conf`; the only
   signal was a repeated log line while `/health/ready` said ready.
-- **Fixed by** `6886cde`. **Prevention missing:** the static check exists (`scripts/infra/doctor.py`, tested in `scripts/infra/test_doctor.py`) but is not run by the gate or the
-  checkpoint yet; a readiness check that fails while a consumed queue is missing is still to be built (roadmap: "the infrastructure doctor").
+- **Fixed by** `6886cde`. **Prevention:** the static check `scripts/infra/doctor.py` (queues: none missing today; tested in `scripts/infra/test_doctor.py`); the live check
+  `scripts/infra/doctor-live.sh` (a task waiting for a queue the queue server does not have, parked or stale outbox rows, dead-letter queues, readiness checks that are down)
+  runs first and last in the scripted buy flow `scripts/sdd/checkpoints/buy-ui.sh` (a checkpoint step), which was verified to fail with the queue deleted and with `groupId` put back,
+  and in every QA agent run (`scripts/qa/run.sh`). Not done: `/health/ready` itself still says ready; readiness is read through the doctor.
 
 ## L-003 A test that passes whether or not the feature works
 - **Rule:** A test must be able to fail: never assert "A or B" where one branch means the feature does not work; report an environment limit as blocked.
@@ -96,3 +100,15 @@ with the links that prove it: backticked file paths and commit hashes. For a `pr
 - **Symptom:** I debugged against a warm local stack for hours while the cloud machine, which starts fresh, kept failing. **Cause:** the reproduction did not match the
   environment where it failed. **Prevention missing:** a one-command "fresh stack, whole suite once" (`scripts/qa/fresh-run.sh`, the script used on 2026-10-12 lives
   only in the session scratch directory); make it a repository script.
+
+## L-013 A benchmark that measured its own leftovers
+- **Rule:** A test that damages the system on purpose must clean up what it damaged before the next measurement, or the next run reports the old damage as a new finding.
+- **Symptom:** the "clean build" run of the QA benchmark reported a parked payment and an unhealthy stack. **Cause:** the earlier mutations (a deleted queue, a bad message option) left
+  parked and stale outbox rows behind. The agent was right; the benchmark was wrong. Also, benchmark runs wrote their findings into the ledger of real findings.
+- **Prevention:** `scripts/qa/benchmark.sh` deletes unpublished outbox rows after each mutation and checks `scripts/infra/doctor-live.sh` before the clean run; benchmark runs (`--out` elsewhere) never write the ledger (`scripts/qa/run.sh`).
+
+## L-014 Hundreds of recorded defaults that nobody reads
+- **Rule:** A list that agents write and a person is meant to read must be short and ranked; anything longer is not read, so it is not a control.
+- **Symptom:** every build left a `questions.md` (about 2900 lines in 67 files); none was ever read. **Cause:** the output grew with the number of specs, the reader did not.
+- **Prevention missing:** `scripts/decisions/triage.py` reduces them to at most 8 ranked decisions per capability in `docs/decisions` (151 open for 21 capabilities); it counts only if the
+  decisions get answered (`triage.py status`). Mark this lesson prevented when the open count has gone down in a real morning routine.

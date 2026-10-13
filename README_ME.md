@@ -4,6 +4,122 @@ The short version for visitors is in [README.md](README.md). This file has every
 
 Requirements: Node 24+, pnpm 12, Docker.
 
+## The agentic delivery loop: what it is, how to set it up, how to run it every day
+
+This is the one place that says how the whole machine fits together. Details of each part are in the sections further down and in
+[`docs/architecture/sdd-runbook.md`](docs/architecture/sdd-runbook.md).
+
+### What it is, in one picture
+
+```
+ idea ──► SPECS (67 capabilities: spec, plan, tasks, test plan, questions)         scripts/sdd/write-specs.sh
+              │
+              ▼
+        BUILD LOOP (fresh-context Claude passes, one capability at a time)         scripts/sdd/implement-specs.sh
+              │   each capability: plan → tasks → implement → GATE
+              │   GATE = type check, lint, unit tests, database-backed e2e tests, scenario check, living-spec check
+              │   gate fails → REPAIR AGENT (fresh context, ≤5 tries, shared 60 min budget) → gate again
+              ▼
+        CHECKPOINT (a regression sweep at a !STOP line of the order file)         scripts/sdd/checkpoint.sh
+              │   all backend suites, the whole browser suite, living-spec checks,
+              │   a scripted buy flow (buy-ui.sh), the live infrastructure doctor,
+              │   optionally the QA PIPELINE:  find ─► verify ─► write a failing test
+              │   checkpoint fails → CHECKPOINT REPAIR AGENT (≤5 tries) → checkpoint again
+              ▼
+        you: morning routine (below)  ◄── notifications to your phone (ntfy)
+
+ around it:  living spec (what the system does today, checked against code and tests)    docs/spec, scripts/livespec
+             lessons    (every failure → a rule the agents read + a check)                docs/lessons.md, scripts/lessons
+             metrics    (one JSON line per step → a report with trends)                   .sdd-metrics, scripts/sdd/report.py
+             decisions  (the defaults the agents chose, triaged to the few that are yours) docs/decisions, scripts/decisions
+             QA agent   (an exploratory tester with a benchmark of known bugs)            scripts/qa
+             mutation   (do the unit tests fail when the code is wrong?)                  scripts/mutation
+```
+
+Rules the machine keeps (so you can trust a morning result): agents never edit a `*.reviewed.json` (only you sign the living pages); a test is never
+weakened to make a gate pass; a failure that goes away with unchanged code is recorded as a flake, not as a fix; nothing is pushed to `master` by the runner
+(it pushes `sdd/auto`, a safety snapshot on `sdd/wip`, logs on `sdd/logs`).
+
+### One-time setup
+
+1. Requirements on the laptop: Node 24+, pnpm 12, Docker, `claude` (Claude Code CLI), `hcloud` (Hetzner CLI), `jq`, Python 3, `gh` (optional).
+2. `pnpm install`. Local stacks: `moon run infra-test-up` (test stack, e2e specs) and `moon run infra-setup` + `moon run dev-monolith` + `pnpm --filter web dev`
+   (dev stack). Never start compose with `-d` here: stacks run in the foreground in their own terminals. The test and dev stacks cannot both run on one laptop (Scylla needs
+   `fs.aio-max-nr`).
+3. The cloud runner (all values in ONE file, `~/.config/sdd-vps/config.env`): Hetzner token, SSH key, GitHub deploy key (write access), Claude token from
+   `claude setup-token`, ntfy topic for your phone. Step by step: [`scripts/vps/README.md`](scripts/vps/README.md). Never set `ANTHROPIC_API_KEY` (it would bill the API instead of your subscription).
+4. Images (once, a few cents, rebuild after big dependency changes): `scripts/vps/build-snapshot.sh` (backend, cpx42) and the front-end image with Chromium and the dev stack (ccx33, 32 GB).
+   `run-remote.sh --image be|fe` picks one; `fe` is automatic when the target starts with `W`.
+5. Once per project: write the specs (`scripts/sdd/write-specs.sh`, 13 to 17 hours, resumable), choose an order file in `scripts/sdd/orders/` (`by-flow.txt` reaches a working
+   buy flow early; `!STOP <label>` lines are checkpoints), and run `python3 scripts/sdd/check-order.py` after editing it.
+
+### Running a build, every time
+
+```bash
+git push origin master                              # the runner only sees GitHub
+scripts/vps/run-remote.sh --image fe --hours 10     # next checkpoint, or add --until S48:P1 to stop earlier
+scripts/vps/attach.sh                               # optional: watch the tmux session (Ctrl-b d to leave)
+# close the laptop; your phone gets: created, working, 25/50/75 %, problems (each with a "recovered"), and one final message
+git fetch origin && git checkout sdd/auto           # when it ends (the machine deletes itself)
+```
+
+How a run ends (the phone message says which): finished or checkpoint reached (everything pushed); time budget used (exit 76, run the same command again, it resumes);
+out of Claude budget (exit 75, run again after the reset); login failed (exit 77, `claude setup-token`, update the config); finished with blocked capabilities (exit 78, each has a `BLOCKED.md`);
+runner FAILED (the machine stays 2 hours for you to look). A new run resumes from the newest of `sdd/auto` and `sdd/wip` and merges `master` first. Hard stop: `--hours` + 1.
+
+Useful knobs (environment variables of the loop): `UNTIL` (stop after a capability), `ORDER`, `COMMIT=1`, `MAX_GATE_REPAIRS` (5), `MAX_REPAIRS_PER_SPEC` (3), `REPAIR_BUDGET_MIN` (60),
+`MAX_CHECKPOINT_REPAIRS` (= `MAX_GATE_REPAIRS`), `MAX_IMPLEMENT_PASSES` (10), `STEP_MAX_BUDGET_USD`, `PASS_TIMEOUT_S`, `CHECKPOINT_QA` (e.g. `"buy account"`: run the QA pipeline at the
+checkpoint), `MAX_QA_FIXES` (3), `CHECKPOINT_BASE`, `PW_WORKERS`, `PW_EXPECT_TIMEOUT_MS`.
+
+### The morning routine (15 to 30 minutes)
+
+1. Read the phone message, then `git fetch origin && git checkout sdd/auto`.
+2. `python3 scripts/sdd/report.py --stdout | less`: per capability passes, repairs, gate failures, **flakes**, checkpoint failures, interventions, the QA section, trends.
+3. `python3 scripts/decisions/triage.py open | head -20`: the defaults only you can judge. Edit `status:` in `docs/decisions/<id>.md` to `keep` or `change: <what you want>`;
+   the next run applies every `change`. Never read `questions.md` files directly (hundreds of lines each): they are the raw input of the triage.
+4. `cat scripts/qa/findings.tsv | tail`, `python3 scripts/qa/tally.py`: what the QA agent found and what the skeptic decided. Overrule a verdict with `tally.py set`.
+5. Start the local stack (see the setup) and try the product for 10 minutes: `scripts/sdd/checkpoints/buy-ui.sh` (11 s) and `scripts/infra/doctor-live.sh`. Judgment stays with you.
+6. Review living pages when you have time (`docs/spec/REVIEW.md`, start with S13, S10, S01), then sign: `python3 scripts/livespec/sign.py sign S13 --reviewer "<your name>"` (`sign.py status` shows what is signed).
+7. Anything you found by hand: `scripts/sdd/note-intervention.sh "found by hand: ..."` and, if it taught something, a lesson in `docs/lessons.md`.
+8. Merge when happy (the loop never merges): `git checkout master && git merge --ff-only sdd/auto && git push origin master`.
+
+### Local checks you can run any time
+
+- Is the stack healthy (readiness, parked outbox rows, queues tasks wait for, dead-letter queues, search)? `scripts/infra/doctor-live.sh`. Static: `python3 scripts/infra/doctor.py`.
+- The buy flow through the API, with a diagnosis when it fails: `scripts/sdd/checkpoints/buy-ui.sh`.
+- A brand-new stack, the whole browser suite once, then removed (what a new machine sees): `scripts/qa/fresh-run.sh`. A throwaway stack for your own experiments:
+  `WITH_WEB=1 scripts/qa/stack-up.sh`, then `scripts/qa/stack-down.sh <dir>`.
+- Living spec: `python3 scripts/livespec/check.py` (+ `models.py check`, `test_livespec.py`). Lessons: `python3 scripts/lessons/check.py`. All unit tests of the tooling:
+  `for t in scripts/lessons/test_lessons.py scripts/sdd/test_sdd.py scripts/infra/test_doctor.py scripts/livespec/test_livespec.py scripts/decisions/test_triage.py scripts/mutation/test_mutate.py; do python3 $t; done`.
+- Do the unit tests catch wrong code? `scripts/mutation/changed.sh [REF]` or `python3 scripts/mutation/mutate.py <file.ts>` (survivors = untested lines).
+
+### The QA pipeline and how far to trust it
+
+`scripts/qa/pipeline.sh buy` does three things with no person in the middle: **find** (a fresh Claude session uses the running product like a person, guided by a charter in
+`scripts/qa/charters/*.md`, with generic oracles and the living-spec rules), **verify** (a second skeptical session tries to reproduce each confirmed finding from its steps alone
+and checks it against the spec and its "Known gaps"), **write the test** (a third session turns a reproduced finding into `packages/web/tests/qa/<charter>-<id>.spec.ts`, which is
+run and kept only if it fails now). Failing tests make the checkpoint fail, and the checkpoint repair agent fixes the product. Suspicious findings are never acted on.
+Trust is earned by `scripts/qa/benchmark.sh`: it puts back defects that really happened (`scripts/qa/mutations/*.sh`: `groupId` on a standard queue, a missing queue, a silent
+consumer, a missing search index) and checks the agent reports each, then one run on a clean build. State of the evidence: see "Where it stands" below.
+
+### Where it stands (honest)
+
+- Built and verified on real runs: the build loop with gate and repair agent; checkpoints with the batched backend sweep and the browser sweep; the living spec (21 pages, 0 errors); the
+  scripted buy flow (fails correctly with `groupId` back and with a queue missing); the live doctor; the QA agent on the buy charter (found 2 real findings on its first run).
+- Built and tested only on fakes or fixtures, first real run pending: the checkpoint repair agent, the flake signal, the metrics report on real data, the QA pipeline's verify and
+  test-writing steps wired into the checkpoint, the decision triage in the loop.
+- Not done: the other three QA charters have not been run; the trending-cache defect is not in the benchmark; the memory growth behind the backend sweep crashes and two
+  unexplained browser flakes (product-page focus order, search at 320 px) are open (runbook, follow-ups); the living pages are drafts until you sign them.
+- Cost reference: about $0.22 to $0.33 per machine hour (cpx42 / ccx33); a 10 hour run is a few dollars plus the Claude subscription usage.
+
+### Where things live
+
+- `scripts/sdd/` the loop (`implement-specs.sh`, `checkpoint.sh`, `checkpoint-repair.sh`, `lib.sh`, `failures.py`, `report.py`, order files, checkpoint scripts in `checkpoints/`).
+- `scripts/vps/` the cloud runner. `scripts/qa/` QA agent, pipeline, charters, mutations, benchmark, throwaway stack. `scripts/infra/` doctors. `scripts/livespec`, `scripts/lessons`,
+  `scripts/decisions`, `scripts/mutation`.
+- `specs/` per-capability spec folders (spec, plan, tasks, `questions.md`, `gaps.md`, `BLOCKED.md`), `specs/.checkpoints/` pass markers, `specs/.qa/` QA reports.
+- `docs/spec/` the living specification. `docs/lessons.md`. `docs/decisions/`. `docs/incidents/`. `docs/reports/`. `docs/architecture/sdd-runbook.md` (why each part exists).
+
 ## Run the e2e specs (verified path)
 
 The e2e specs run against a separate test stack (`docker-compose.test.yaml`, ports shifted so it can run next to the dev stack). Every `up` starts from a clean slate.
@@ -297,6 +413,19 @@ python3 scripts/infra/test_doctor.py               # its tests (19), including a
 
 - What it finds today and what it cannot see: runbook, "The infrastructure doctor (static half)". It exits 1 on this repository (23 topics that nothing creates), so it is not part of the gate yet.
 - A new queue, topic, bucket or table needs a definition in the stack file named in the `MISSING` line; the doctor only reads, it never fixes.
+
+### QA agent, scripted buy flow and the live doctor (`scripts/qa`, `scripts/sdd/checkpoints`, `scripts/infra/doctor-live.sh`)
+- A throwaway stack (own compose project, empty volumes, seeded): `WITH_WEB=1 scripts/qa/stack-up.sh` prints `QA_DIR=<dir>` when the API (and the web server)
+  answer; `scripts/qa/stack-down.sh <dir>` removes everything of it. It refuses to run while your own dev stack is up (same ports). About 4 minutes.
+- The scripted buy flow, through the API only (register, product, cart, checkout, pay, wait for `PAID`; about 11 s): `scripts/sdd/checkpoints/buy-ui.sh`. Exit 0 = the flow works.
+  The checkpoint `buy-ui` runs it. On failure it names the stuck step and what is behind it (payment, order, outbox rows, a missing queue).
+- Is the running stack healthy (readiness checks, parked or stale outbox rows, queues that tasks wait for, dead-letter queues, search)?  `scripts/infra/doctor-live.sh`.
+- The whole browser suite on a fresh stack, then everything removed (about 8 minutes): `scripts/qa/fresh-run.sh [playwright args]`.
+- The QA agent (a fresh Claude session that uses the product like a person; it never edits the repository):
+  `scripts/qa/run.sh buy` (charters: `scripts/qa/charters/*.md`: buy, cart-odd, account, discover; `--minutes N`). Reports: `specs/.qa/<date>-<charter>.md`, with the
+  Playwright scripts it used next to it. Exit 1 if a report holds a CONFIRMED defect. It needs the stack and the web server up.
+- Does the agent find real defects? `scripts/qa/benchmark.sh`: puts back defects that happened (`scripts/qa/mutations/*.sh`), runs the agent on each, then once on a clean build;
+  writes `scripts/qa/benchmark-<date>.md`. Needs `packages/backend` clean (it restores files with `git checkout`).
 
 ## Developer tooling
 

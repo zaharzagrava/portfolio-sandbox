@@ -323,7 +323,7 @@ Then, in order of payoff:
 
 4. Repair agent for a failed checkpoint (follow-up 1 below), the flake signal (2), the unstubbed buy flow and the journey that must end in "Order confirmed",
    the infrastructure doctor with a readiness check that fails loudly. About 2.5 to 3.5 hours together.
-5. Mutation testing on the money and identity code, so "every scenario's test can fail" is measured. About 1 to 2 hours.
+5. Mutation testing on the money and identity code, so "every scenario's test can fail" is measured. Built as `scripts/mutation/mutate.py` and `changed.sh` (2026-10-13, in-house); still to do: run it on the money and identity code and fix the survivors.
 6. The memory growth in the backend e2e suites (follow-up 3), the unexplained browser flakes (follow-up 4). About 2 to 4 hours.
 
 Total: roughly 10 to 14 hours of work (the scripts of the living specification, the same kind of work, took about an hour). Items 1 to 3 are about 5 to 6 hours and carry most of the value. More tooling after that has little
