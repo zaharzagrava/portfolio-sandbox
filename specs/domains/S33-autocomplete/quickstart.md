@@ -19,6 +19,6 @@ Smoke: trigger `search.build-autocomplete` once, then `GET /suggest?q=iph` → `
 
 - **SC-001**: `loadtest:suggest` at 50,000 rps with a realistic prefix mix and the edge cache in front; p99 ≤ 100 ms.
 - **SC-003**: on a deployed worker and node, a query reaching 5 distinct searchers is suggested within 65 minutes (the e2e proves build and hot swap, not the hourly wall clock).
-- **SC-007**: 20 single-typo fixture searches against the real engine, at least 18 correct (needs S32's fuzzy method).
+- **SC-007**: 20 single-typo fixture searches against the real engine, at least 18 correct.
 - **SC-008**: a 200,000-query index uses ≤ 400 MB per serving node (AS-54 proves a scaled bound only).
 - Edge cache honours `Cache-Control`, keys on the full URL and forwards no credentials for `/suggest`.

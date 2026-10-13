@@ -41,6 +41,11 @@ describe('Autocomplete source budgets and typo fallback', () => {
   });
   afterEach(() => jest.restoreAllMocks());
 
+  const isFuzzy = (params: unknown) =>
+    JSON.stringify(params).includes('fuzziness');
+  /** Engine calls made for the catalog prefix source; the speculative typo call is a separate source. */
+  const catalogCalls = () =>
+    engine.mock.calls.filter(([params]) => !isFuzzy(params)).length;
   const get = (q: string) => t.http().get('/api/suggest').query({ q });
   const body = async (q: string) => {
     const res = await get(q).expect(200);
@@ -55,7 +60,7 @@ describe('Autocomplete source budgets and typo fallback', () => {
       (_params: unknown, options?: { signal?: AbortSignal }) =>
         new Promise((_, reject) =>
           options?.signal?.addEventListener('abort', () => {
-            aborted.push(true);
+            if (!isFuzzy(_params)) aborted.push(true); // only the catalog call is under test here
             reject(new Error('aborted'));
           }),
         ),
@@ -122,12 +127,12 @@ describe('Autocomplete source budgets and typo fallback', () => {
       { text: 'Lumen desk lamp', source: 'catalog' },
     ]);
     expect(answer.degraded).toEqual([]);
-    expect(engine).toHaveBeenCalledTimes(1);
+    expect(catalogCalls()).toBe(1);
 
     engine.mockClear();
     const { body: one } = await body('l');
     expect(one.suggestions).toEqual([]);
-    expect(engine).not.toHaveBeenCalled();
+    expect(catalogCalls()).toBe(0);
   });
 
   it('S33 AS-16: a catalog slower than its budget costs only its entries: 200 within 250 ms, catalog_timeout, no-store, call aborted, metric +1', async () => {
@@ -208,16 +213,16 @@ describe('Autocomplete source budgets and typo fallback', () => {
     failWith(() => new Error('down'));
     for (const q of ['aa', 'ab', 'ac', 'ad', 'ae'])
       expect((await body(q)).body.degraded).toEqual(['catalog_unavailable']);
-    expect(engine).toHaveBeenCalledTimes(5);
+    expect(catalogCalls()).toBe(5);
 
     expect((await body('af')).body.degraded).toEqual(['catalog_unavailable']);
-    expect(engine).toHaveBeenCalledTimes(5); // skipped, not called
+    expect(catalogCalls()).toBe(5); // skipped, not called
 
     t.clock.advance(10_000);
     expect((await body('ag')).body.degraded).toEqual(['catalog_unavailable']); // the probe fails: open again
-    expect(engine).toHaveBeenCalledTimes(6);
+    expect(catalogCalls()).toBe(6);
     expect((await body('ah')).body.degraded).toEqual(['catalog_unavailable']);
-    expect(engine).toHaveBeenCalledTimes(6);
+    expect(catalogCalls()).toBe(6);
 
     t.clock.advance(10_000);
     engine.mockImplementation(async () => {
@@ -227,7 +232,7 @@ describe('Autocomplete source budgets and typo fallback', () => {
     const [x, y] = await Promise.all([get('lamp1'), get('lamp2')]);
     const answers = [x, y].map((r) => suggestResponseSchema.parse(r.body));
     expect(answers.filter((a) => a.degraded.length > 0)).toHaveLength(1);
-    expect(engine).toHaveBeenCalledTimes(7); // one probe, the other call skipped
+    expect(catalogCalls()).toBe(7); // one probe, the other call skipped
 
     const closed = await body('lamp3'); // recovered
     expect(closed.body.degraded).toEqual([]);
@@ -242,19 +247,105 @@ describe('Autocomplete source budgets and typo fallback', () => {
     await seedProducts(t, newId(), [{ title: 'Cacheable probe' }]);
     engine.mockClear();
     for (const q of ['cac', 'cac', 'cac', 'CAC']) await body(q);
-    expect(engine).toHaveBeenCalledTimes(1);
+    expect(catalogCalls()).toBe(1);
 
     t.clock.advance(59_000);
     await body('cac');
-    expect(engine).toHaveBeenCalledTimes(1);
+    expect(catalogCalls()).toBe(1);
     t.clock.advance(1_000);
     await body('cac');
-    expect(engine).toHaveBeenCalledTimes(2);
+    expect(catalogCalls()).toBe(2);
 
     engine.mockClear();
     failWith(() => new Error('down'));
     await body('fail');
     await body('fail');
-    expect(engine).toHaveBeenCalledTimes(2); // the failure was not remembered
+    expect(catalogCalls()).toBe(2); // the failure was not remembered
+  });
+
+  describe('typo fallback', () => {
+    /** Counts fuzzy engine calls and lets `onFuzzy` decide what they do; every other call reaches the real engine. */
+    const watchFuzzy = (onFuzzy?: () => Promise<unknown>) => {
+      // `t.engine.search` is the spy itself: reach the real method through the prototype
+      const real = Object.getPrototypeOf(t.engine).search.bind(t.engine);
+      let count = 0;
+      engine.mockImplementation(((params: unknown, options?: unknown) => {
+        if (isFuzzy(params)) {
+          count += 1;
+          if (onFuzzy) return onFuzzy();
+        }
+        return real(params as never, options as never);
+      }) as never);
+      return () => count;
+    };
+
+    it('S33 AS-22: a double miss returns one typo entry', async () => {
+      await seedProducts(t, newId(), [{ title: 'iPhone 15 Pro' }]);
+      await t.refresh();
+      const calls = watchFuzzy();
+      const { body: answer } = await body('iphnoe');
+      expect(answer.suggestions).toEqual([
+        { text: 'iPhone 15 Pro', source: 'typo' },
+      ]);
+      expect(answer.degraded).toEqual([]);
+      expect(calls()).toBe(1);
+    });
+
+    it('S33 AS-23: a prefix that matches somewhere never yields a typo entry', async () => {
+      watchFuzzy(async () => ({
+        hits: { hits: [{ _source: { title: 'Guess title' } }] },
+      }));
+      const { body: answer } = await body('iph');
+      expect(answer.suggestions.map((s) => s.source)).toEqual(['query']);
+    });
+
+    it('S33 AS-24: when the catalog prefix call answers, a fuzzy answer is discarded', async () => {
+      await seedProducts(t, newId(), [
+        { title: 'Lumen desk lamp' },
+        { title: 'Lumen reading light' },
+      ]);
+      await t.refresh();
+      watchFuzzy(async () => ({
+        hits: { hits: [{ _source: { title: 'Lumen typo guess' } }] },
+      }));
+      const { body: answer } = await body('lumen');
+      expect(answer.suggestions.length).toBeGreaterThan(0);
+      expect(answer.suggestions.every((s) => s.source === 'catalog')).toBe(
+        true,
+      );
+    });
+
+    it('S33 AS-25: below three characters the typo source is not called', async () => {
+      const calls = watchFuzzy();
+      const { body: answer } = await body('zz');
+      expect(answer.suggestions).toEqual([]);
+      expect(calls()).toBe(0);
+    });
+
+    it('S33 AS-26: a slow typo source is typo_fallback_timeout, a failing one typo_fallback_unavailable', async () => {
+      watchFuzzy(() => new Promise(() => undefined));
+      const slow = await body('qwx1');
+      expect(slow.body.degraded).toEqual(['typo_fallback_timeout']);
+      expect(slow.res.headers['cache-control']).toBe('no-store');
+
+      watchFuzzy(() => Promise.reject(new Error('SECRET-ENGINE-TEXT')));
+      const broken = await body('qwx2');
+      expect(broken.body.degraded).toEqual(['typo_fallback_unavailable']);
+      expect(broken.res.text).not.toContain('SECRET-ENGINE-TEXT');
+    });
+
+    it('S33 AS-26: a failing typo source nobody needed changes nothing', async () => {
+      watchFuzzy(() => Promise.reject(new Error('down')));
+      const { res, body: answer } = await body('iph');
+      expect(answer.degraded).toEqual([]);
+      expect(res.headers['cache-control']).toContain('max-age=60');
+    });
+
+    it('S33 AS-27: nothing found anywhere is a cacheable 200 with an empty list', async () => {
+      const { res, body: answer } = await body('zzzzqq');
+      expect(answer.suggestions).toEqual([]);
+      expect(answer.degraded).toEqual([]);
+      expect(res.headers['cache-control']).toContain('max-age=60');
+    });
   });
 });

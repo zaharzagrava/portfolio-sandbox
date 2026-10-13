@@ -63,8 +63,8 @@ E2E keys: K=`autocomplete-suggest`, D=`autocomplete-sources`, B=`autocomplete-sn
 
 **Independent test**: D rows AS-22–AS-27.
 
-- [ ] T033 [US3] Extend `DISC/autocomplete-sources.e2e-spec.ts` with AS-22 (`iphnoe` on double miss → one `typo` entry), AS-23 (`iph` → fuzzy spy 0), AS-24 (catalog prefix wins, fuzzy discarded), AS-25 (`zz` → fuzzy spy 0), AS-26 (timeout → `typo_fallback_timeout`; reject → `typo_fallback_unavailable`; unused failing source changes nothing), AS-27 (`zzzzqq` → 200 empty, cacheable). Run; must fail
-- [ ] T034 [US3] In `DISC/application/suggest.service.ts` start the fuzzy call speculatively in parallel with the catalog call (prefix ≥ 3 chars, 40 ms budget, ≤ 5 entries, `source: 'typo'`), use it only when query index and catalog prefix both return nothing, record typo degraded reasons; run until AS-22–AS-27 green (A8)
+- [X] T033 [US3] Extend `DISC/autocomplete-sources.e2e-spec.ts` with AS-22 (`iphnoe` on double miss → one `typo` entry), AS-23 (`iph` → fuzzy spy 0), AS-24 (catalog prefix wins, fuzzy discarded), AS-25 (`zz` → fuzzy spy 0), AS-26 (timeout → `typo_fallback_timeout`; reject → `typo_fallback_unavailable`; unused failing source changes nothing), AS-27 (`zzzzqq` → 200 empty, cacheable). Run; must fail
+- [X] T034 [US3] In `DISC/application/suggest.service.ts` start the fuzzy call speculatively in parallel with the catalog call (prefix ≥ 3 chars, 40 ms budget, ≤ 5 entries, `source: 'typo'`), use it only when query index and catalog prefix both return nothing, record typo degraded reasons; run until AS-22–AS-27 green (A8)
 
 ## Phase 6: User Story 4 — Hourly safe build (P1)
 
@@ -88,20 +88,20 @@ E2E keys: K=`autocomplete-suggest`, D=`autocomplete-sources`, B=`autocomplete-sn
 
 **Independent test**: P rows AS-49–AS-51 (unit AS-52–54 done in Phase 2).
 
-- [ ] T043 [US6] Create `DISC/autocomplete-platform.e2e-spec.ts` (describe `Autocomplete module boundary, metrics and configuration`): AS-49 (runs `pnpm check:boundaries` and `pnpm check:table-ownership --strict`; imports `@app/domains/discovery` and asserts the barrel exports `AutocompleteModule` and `AutocompleteWorkerModule` only), AS-50 (after each traffic kind the listed series and labels exist; no label holds query text), AS-51 (each invalid config value fails startup naming the key; valid values start). Run; must fail
-- [ ] T044 [US6] Update `DISC/index.ts`: drop `SearchQueryLogger` and projector exports as S32 permits, export only the two autocomplete modules (D-8, D-15)
-- [ ] T045 [US6] Run `pnpm --dir packages/backend check:boundaries` and `check:table-ownership --strict`; fix any additional `discovery` autocomplete lines (A16, A17); run `test-spec.sh autocomplete-platform` until green
+- [X] T043 [US6] Create `DISC/autocomplete-platform.e2e-spec.ts` (describe `Autocomplete module boundary, metrics and configuration`): AS-49 (runs `pnpm check:boundaries` and `pnpm check:table-ownership --strict`; imports `@app/domains/discovery` and asserts the barrel exports `AutocompleteModule` and `AutocompleteWorkerModule` only), AS-50 (after each traffic kind the listed series and labels exist; no label holds query text), AS-51 (each invalid config value fails startup naming the key; valid values start). Run; must fail
+- [X] T044 [US6] Update `DISC/index.ts`: drop `SearchQueryLogger` and projector exports as S32 permits, export only the two autocomplete modules (D-8, D-15)
+- [X] T045 [US6] Run `pnpm --dir packages/backend check:boundaries` and `check:table-ownership --strict`; fix any additional `discovery` autocomplete lines (A16, A17); run `test-spec.sh autocomplete-platform` until green
 
 ## Phase 9: User Story 7 — Search page typing (P2, owned by W02)
 
-- [ ] T046 [US7] Do not edit `packages/web`. Confirm W02's obligations (A23, AS-55, AS-56, FR-042) are recorded under "Sibling-spec follow-ups" in `specs/domains/S33-autocomplete/gaps.md` (W02, S32, S50, S05 bullets exist); add a W02 note that `suggestions` no longer exists in the search response if missing
+- [X] T046 [US7] Do not edit `packages/web`. Confirm W02's obligations (A23, AS-55, AS-56, FR-042) are recorded under "Sibling-spec follow-ups" in `specs/domains/S33-autocomplete/gaps.md` (W02, S32, S50, S05 bullets exist); add a W02 note that `suggestions` no longer exists in the search response if missing
 
 ## Phase 10: Polish and cross-cutting
 
-- [ ] T047 Keep the **S32** bullet in `specs/domains/S33-autocomplete/gaps.md` current (`suggestTitlesFuzzy`, `surface` column) once T022/T032 settle what S32 still owes
-- [ ] T048 Verify `quickstart.md` "Ops artifacts" lists SC-001, SC-003, SC-007, SC-008 and the edge-cache item, and that `specs/UNVERIFIED.md` rows 70–73 read "not run" (already present); never describe them as verified
-- [ ] T049 Final gates from `packages/backend`: `pnpm exec tsc --noEmit`, ESLint for `packages/backend` and `packages/contracts`; run all four e2e files plus the domain unit specs once (fallback paths AS-16, 17, 19, 26, 31, 42, 44 forced, VII.9); confirm no `sequelize.transaction` was added in the discovery domain
-- [ ] T050 Report the follow-ups with their satisfying tasks: S32 `ProductTitleSuggester` / `searchId` keying / `suggestions` removal (T022, T032, T039, T046); S49 `declareJobType`, `InvalidScheduleError`, `JobsService.cancel` (T037); S33 `maxRuntimeMs` (T037, T038)
+- [X] T047 Keep the **S32** bullet in `specs/domains/S33-autocomplete/gaps.md` current (`suggestTitlesFuzzy`, `surface` column) once T022/T032 settle what S32 still owes
+- [X] T048 Verify `quickstart.md` "Ops artifacts" lists SC-001, SC-003, SC-007, SC-008 and the edge-cache item, and that `specs/UNVERIFIED.md` rows 70–73 read "not run" (already present); never describe them as verified
+- [X] T049 Final gates from `packages/backend`: `pnpm exec tsc --noEmit`, ESLint for `packages/backend` and `packages/contracts`; run all four e2e files plus the domain unit specs once (fallback paths AS-16, 17, 19, 26, 31, 42, 44 forced, VII.9); confirm no `sequelize.transaction` was added in the discovery domain
+- [X] T050 Report the follow-ups with their satisfying tasks: S32 `ProductTitleSuggester` / `searchId` keying / `suggestions` removal (T022, T032, T039, T046); S49 `declareJobType`, `InvalidScheduleError`, `JobsService.cancel` (T037); S33 `maxRuntimeMs` (T037, T038)
 
 ## Dependencies and order
 

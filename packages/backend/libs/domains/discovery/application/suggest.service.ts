@@ -16,7 +16,11 @@ import { CatalogCircuit } from '../domain/catalog-circuit';
 import { containsBlocked } from '../domain/query-eligibility';
 import { normaliseQuery } from '../domain/query-text';
 import { SearchValidationError } from '../domain/search-errors';
-import { blendSuggestions, CATALOG_CAP } from '../domain/suggestion-blend';
+import {
+  blendSuggestions,
+  CATALOG_CAP,
+  TYPO_CAP,
+} from '../domain/suggestion-blend';
 import { AutocompleteSettings } from '../infra/autocomplete-config';
 import {
   autocompleteCircuitState,
@@ -27,6 +31,7 @@ import {
 import { QueryIndexService } from './query-index.service';
 
 const MIN_CATALOG_PREFIX = 2;
+const MIN_TYPO_PREFIX = 3;
 /** Titles asked of the catalog per prefix: enough to survive the blocklist and the de-duplication. */
 const CATALOG_FETCH = 2 * CATALOG_CAP;
 const CACHE_TTL_MS = 60_000;
@@ -38,6 +43,13 @@ const INDEX_FETCH = SUGGEST_LIMITS.limit.max;
 type CatalogResult =
   | { titles: string[]; failure?: undefined }
   | { titles: []; failure: 'catalog_timeout' | 'catalog_unavailable' };
+
+type TypoResult =
+  | { titles: string[]; failure?: undefined }
+  | {
+      titles: [];
+      failure: 'typo_fallback_timeout' | 'typo_fallback_unavailable';
+    };
 
 const TIMED_OUT = Symbol('timed out');
 
@@ -88,15 +100,33 @@ export class SuggestService {
     );
     if (!this.index.loaded) degraded.push('query_index_unavailable');
 
+    // the typo call runs in parallel with the catalog call, but only when the index has nothing for this prefix
+    const typoCall =
+      queries.length === 0 && [...prefix].length >= MIN_TYPO_PREFIX
+        ? this.typoTitles(prefix)
+        : undefined;
+
     const catalog = await catalogCall;
     if (catalog.failure) degraded.push(catalog.failure);
+    const catalogTitles = catalog.titles.filter(
+      (t) => !containsBlocked(t, this.settings.blocklist),
+    );
+
+    // a typo guess answers only a double miss: nothing from the index, the catalog healthy and empty
+    let typoTitles: string[] = [];
+    if (typoCall && !catalog.failure && catalogTitles.length === 0) {
+      const typo = await typoCall;
+      if (typo.failure) degraded.push(typo.failure);
+      typoTitles = typo.titles.filter(
+        (t) => !containsBlocked(t, this.settings.blocklist),
+      );
+    }
 
     const suggestions = blendSuggestions({
       limit,
       queries,
-      catalog: catalog.titles.filter(
-        (t) => !containsBlocked(t, this.settings.blocklist),
-      ),
+      catalog: catalogTitles,
+      typo: typoTitles,
     });
     return this.finish(prefix, suggestions, degraded, [...prefix].length);
   }
@@ -203,6 +233,45 @@ export class SuggestService {
       autocompleteSourceDuration.record(
         Number(process.hrtime.bigint() - started) / 1e9,
         { source: 'catalog' },
+      );
+    }
+  }
+
+  /** Fuzzy titles within their own budget. Never rejects, so a call nobody waits for cannot become an unhandled rejection. */
+  private async typoTitles(prefix: string): Promise<TypoResult> {
+    const abort = new AbortController();
+    let timer: NodeJS.Timeout | undefined;
+    const budget = new Promise<typeof TIMED_OUT>((resolve) => {
+      timer = setTimeout(() => {
+        abort.abort();
+        resolve(TIMED_OUT);
+      }, this.settings.typoBudgetMs);
+    });
+    const started = process.hrtime.bigint();
+    const call = this.catalog.suggestTitlesFuzzy(
+      prefix,
+      TYPO_CAP,
+      abort.signal,
+    );
+    call.catch(() => undefined);
+    try {
+      const outcome = await Promise.race([call, budget]);
+      if (outcome === TIMED_OUT)
+        return { titles: [], failure: 'typo_fallback_timeout' };
+      return { titles: outcome };
+    } catch (error) {
+      return {
+        titles: [],
+        failure:
+          error instanceof CatalogTimeoutError
+            ? 'typo_fallback_timeout'
+            : 'typo_fallback_unavailable',
+      };
+    } finally {
+      clearTimeout(timer);
+      autocompleteSourceDuration.record(
+        Number(process.hrtime.bigint() - started) / 1e9,
+        { source: 'typo' },
       );
     }
   }

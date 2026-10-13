@@ -288,20 +288,23 @@ export class ProductIndexAdapter implements ProductIndexPort {
     size: number,
     signal?: AbortSignal,
   ): Promise<string[]> {
-    // every word may carry a typo, the last one is still being typed
+    // every word may carry a typo, the last one is still being typed. `match_bool_prefix` alone leaves the last word a
+    // plain prefix (no typo allowed), so a single misspelled word needs the fuzzy `match` alongside it.
+    const title = {
+      query: prefix,
+      operator: 'and',
+      fuzziness: 'AUTO',
+      prefix_length: 1,
+      max_expansions: 50,
+    };
     return this.titlesMatching(
       {
-        title: {
-          query: prefix,
-          operator: 'and',
-          fuzziness: 'AUTO',
-          prefix_length: 1,
-          max_expansions: 50,
-        },
+        should: [{ match_bool_prefix: { title } }, { match: { title } }],
+        minimum_should_match: 1,
       },
       size,
       signal,
-      'match_bool_prefix',
+      'bool',
     );
   }
 
@@ -309,7 +312,7 @@ export class ProductIndexAdapter implements ProductIndexPort {
     match: object,
     size: number,
     signal?: AbortSignal,
-    clause: 'match' | 'match_bool_prefix' = 'match',
+    clause: 'match' | 'match_bool_prefix' | 'bool' = 'match',
   ): Promise<string[]> {
     const res = await this.engine.search(
       {
@@ -418,7 +421,10 @@ export class ProductIndexAdapter implements ProductIndexPort {
     };
   }
 
-  private queryOf(request: EngineSearchRequest, withSelections: boolean): object {
+  private queryOf(
+    request: EngineSearchRequest,
+    withSelections: boolean,
+  ): object {
     const f = request.filters;
     const filter: object[] = [
       ...visibilityFilter(),

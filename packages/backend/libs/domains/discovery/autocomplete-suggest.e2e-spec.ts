@@ -226,7 +226,12 @@ describe('Search autocomplete API', () => {
     }
     // exactly 100 characters is fine
     await get('a'.repeat(100)).expect(200);
-    expect(engineCalls.mock.calls.length).toBeLessThanOrEqual(1);
+    // invalid requests reach no source; the one valid request makes one catalog call (and a speculative typo call)
+    const catalogCalls = engineCalls.mock.calls.filter(
+      ([params]) => !JSON.stringify(params).includes('fuzziness'),
+    );
+    expect(catalogCalls.length).toBeLessThanOrEqual(1);
+    expect(engineCalls.mock.calls.length).toBeLessThanOrEqual(2);
   });
 
   it('S33 AS-07: hostile text is an ordinary answer, never an engine error or a wildcard expansion', async () => {
