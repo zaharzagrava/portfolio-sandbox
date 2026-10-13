@@ -184,6 +184,15 @@ checkpoint; `auto`: draft missing charters and run only those whose capabilities
 7. Anything you found by hand: `scripts/sdd/note-intervention.sh "found by hand: ..."` and, if it taught something, a lesson in `docs/lessons.md`.
 8. Merge when happy (the loop never merges): `git checkout master && git merge --ff-only sdd/auto && git push origin master`.
 
+#### After the first run with the new harness (started 2026-10-13, `--qa auto`)
+
+This run is the real test of everything built that day, so read it as an experiment, in this order:
+- The boot check: the runner started the API in 30 seconds this time (the run before died because two modules were wired wrongly, lesson L-015). Every backend gate and every checkpoint now begins with `scripts/infra/boot-check.sh`. If a capability is BLOCKED with "the monolith is NOT ready", the Nest error is in its `.gate.log`.
+- The `buy-ui` checkpoint should fail first: the scripted buy flow ends with the payment stuck in `PENDING` because the charge worker's ledger posting fails with `JournalInvalid` (the API log line `[payments-charge] message ... failed: JournalInvalid` is printed by the diagnosis). Whether the checkpoint repair agent fixes it is the best single test of the harness: look for `ckrepair-buy-ui-N` in `specs/.checkpoints/` and the line `CHECKPOINT-REPAIR: fixed`.
+- The QA agent in the checkpoint (`CHECKPOINT_QA=auto`): `specs/.qa/` (reports), `scripts/qa/findings.tsv` (what each finding turned out to be), `packages/web/tests/qa/` (the failing tests it wrote and that the repair agent had to turn green). Expect a handful of findings per checkpoint, not zero: it covers only the charters whose capabilities changed, within about 30 minutes. New draft charters it wrote are in `scripts/qa/charters/` (`status: draft`); read them when you can.
+- `python3 scripts/sdd/report.py --stdout`: the "QA agent" section has the ledger counts and precision; repairs and flakes have their own lines.
+- Then, to take it: `git fetch origin && git checkout master && git merge --ff-only origin/sdd/auto` (it works only while nobody commits to master; if you did, `git merge origin/sdd/auto`).
+
 ### Local checks you can run any time
 
 - Is the stack healthy (readiness, parked outbox rows, queues tasks wait for, dead-letter queues, search)? `scripts/infra/doctor-live.sh`. Static: `python3 scripts/infra/doctor.py`.
@@ -210,12 +219,29 @@ run and kept only if it fails now). Failing tests make the checkpoint fail, and 
 Trust is earned by `scripts/qa/benchmark.sh`: it puts back defects that really happened (`scripts/qa/mutations/*.sh`: `groupId` on a standard queue, a missing queue, a silent
 consumer, a missing search index) and checks the agent reports each, then one run on a clean build. State of the evidence: see "Where it stands" below.
 
+### Learning the codebase while a run goes
+
+- `docs/spec/` is the source of truth for what each capability does today (rules and behaviors, each with the test that proves it). Start with `docs/spec/README.md`, then the page of a capability (`capabilities/S13-payment-intents.md`).
+- Every word that a rule uses with a special meaning is a link. A link to `docs/spec/terms/<word>.md` is a word of this system, defined once (a term page may link finer terms; the definitions never form a cycle). A link with an arrow, [HttpOnly ↗], is a general software word: it goes to the glossary `docs/spec/sw-external-terms.md`, which only points at MDN, an RFC or OWASP. A term page says "Used by" at the bottom: the rules that use it.
+- `docs/humans/` is the generated map of the code (units, flows, events, jobs); each unit page ends with the spec pages that cover it. Spec = what should be true; humans = what is in the code.
+- `docs/ops/` holds runbooks, SLOs and incident reports; `docs/work/` holds architecture notes, plans, the decision list and the notes of the day; `docs/showcase/` is the portfolio text; `docs/lessons.md` every failure turned into a rule.
+- This file, the top section ("The map: every script, every agent, who starts whom"), is the one to read after a long break.
+
+### Open items for you
+
+- Read about 15 term pages and say if the number of pages is right (1,500 of them is a lot): `upstream`, `idempotency-key`, `event-consumer`, `inbox-table`, `loader`, `outbox-relay`, `published-version`, `search-facets`, `can-advance`, `decode-snapshot`, `replay-false`, `category-tracking`, `host-bff-cookies`, `combined-business-multiplier`, `rate-limit-policy`. If it is too many: `granularity` in `scripts/livespec/terms.config.json` (strict) and `terms.py consolidate --apply`; if too few, the other way. The levers are listed in `docs/spec/README.md`, "Levers".
+- Sign the living pages, starting with S13, S10, S01 (`python3 scripts/livespec/sign.py sign S13 --reviewer "<your name>"`). Until then everything in `docs/spec` is a draft written by a model.
+- Answer the top decisions in `docs/work/decisions/` (`triage.py open`).
+- Weak spot found on 2026-10-13: the test-integrity guard of the gate compares with `HEAD`. The loop commits unfinished work as `wip(sdd)` when a run ends, so a test file deleted by a build pass became part of `HEAD` and the next run's gate no longer saw the deletion (S34's `recommendations.e2e-spec.ts`). Fix to make: compare with the last commit that is not a `wip(sdd)` one (`scripts/sdd/check-tests.py integrity`). Until then, after a run ends with a `wip` commit, check `git show --stat <wip commit>` for deleted `*spec.ts` files.
+- Never push `sdd/auto` while a runner machine is alive: it pushes the branch itself every 15 minutes and at the end, and a push of yours makes its final push non-fast-forward (it then fails and the work stays on the machine).
+- Later: an Opus second opinion on the word finder (it found a fifth to a third more phrases than Sonnet in a trial, many low value), the memory growth behind the backend sweep crashes, two unexplained browser flakes, `docs:check` (about 190 generated pages differ from the cache) and `pnpm slo:generate` (module resolution) which were already broken.
+
 ### Where it stands (honest)
 
 - Built and verified on real runs: the build loop with gate and repair agent; checkpoints with the batched backend sweep and the browser sweep; the living spec (21 pages, 0 errors); the
   scripted buy flow (fails correctly with `groupId` back and with a queue missing); the live doctor; the QA agent on the buy charter (found 2 real findings on its first run).
-- Built and tested only on fakes or fixtures, first real run pending: the checkpoint repair agent, the flake signal, the metrics report on real data, the QA pipeline's verify and
-  test-writing steps wired into the checkpoint, the decision triage in the loop.
+- Proven locally on 2026-10-13 (not yet on the cloud): the whole chain through the real loop code (`implement-specs.sh` -> `checkpoint.sh` -> `pipeline.sh` -> failing test -> checkpoint repair agent -> checkpoint passes), charter selection by change, drafted charters, deduplication of findings, the QA benchmark (4 of 4 seeded defects found; the clean-build run reported 5 findings, all real gaps of the unfinished product).
+- Built and tested only on fakes or fixtures, first real cloud run pending: the flake signal, the metrics report on real data, the decision triage in the loop, `CHECKPOINT_QA=auto` over a whole run, the boot check on the runner.
 - Not done: the other three QA charters have not been run; the trending-cache defect is not in the benchmark; the memory growth behind the backend sweep crashes and two
   unexplained browser flakes (product-page focus order, search at 320 px) are open (runbook, follow-ups); the living pages are drafts until you sign them.
 - Cost reference: about $0.22 to $0.33 per machine hour (cpx42 / ccx33); a 10 hour run is a few dollars plus the Claude subscription usage.
