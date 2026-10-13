@@ -41,5 +41,5 @@ Cause-based alerts (`rules/causes.yml`) page only for imminent, user-visible fai
 1. **Budget > 50%:** ship freely; experiments and risky migrations are allowed.
 2. **Budget 0–50%:** every deploy touching the journey needs a rollback plan and canary (O-02). Reliability items get priority in planning.
 3. **Budget exhausted:** feature freeze on the owning team's services for the rest of the window. Only fixes, reliability work and security patches ship. The owning team lead and on-call agree when the freeze lifts (budget back above 10%, or root causes fixed).
-4. **One incident eats > 20% of a budget:** a postmortem is mandatory (template in `docs/incidents/`), with action items tracked to completion.
+4. **One incident eats > 20% of a budget:** a postmortem is mandatory (template in `docs/runbooks/incidents/`), with action items tracked to completion.
 5. **Disputes:** the SLO owner (YAML `owner`) and the engineering manager decide. If an SLO is consistently met with large margin or missed by design, change the YAML, not the policy.

@@ -3,7 +3,7 @@
 ## Where things stand
 - The loop built 21 capabilities (backend up to S48, web W01, W02, W03, W07) and the checkpoint `buy-ui` passed on the cloud machine (`c390b4b`).
 - Hand-testing the buy flow found two defects that every automated check had missed; both are fixed and the flow now completes locally
-  (incident report: `docs/incidents/2026-10-12-payment-stuck-pending.md`; fixes `6886cde`, `77a6f03`, tests `f2b4a7c`).
+  (incident report: `docs/runbooks/incidents/2026-10-12-payment-stuck-pending.md`; fixes `6886cde`, `77a6f03`, tests `f2b4a7c`).
 - The living specification exists as a draft (`docs/spec/`: 21 capability pages, 16 concept pages, 4 models; all `draft`, none reviewed) with its
   verification scripts, wired into the gate and the checkpoint (`cb72c90`). Commands: `README_ME.md`, "Living specification".
 

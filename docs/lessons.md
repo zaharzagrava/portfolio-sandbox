@@ -30,7 +30,7 @@ with the links that prove it: backticked file paths and commit hashes. For a `pr
   the relay failed on every attempt and parked the row after ten, with nothing visible.
 - **Prevention:** the outbox validates queue options when the task is created (`append-with-executor.ts`, `task-row.spec.ts`); each caller has a test that runs the
   real check (`payment-intent.service.spec.ts`, `refund-command.adapter.spec.ts`), verified to fail with the old mistake. Evidence:
-  `docs/incidents/2026-10-12-payment-stuck-pending.md`, `77a6f03`, `f2b4a7c`.
+  `docs/runbooks/incidents/2026-10-12-payment-stuck-pending.md`, `77a6f03`, `f2b4a7c`.
 
 ## L-002 A queue the code uses but the local infrastructure does not define
 - **Rule:** Every queue the code names must be defined in `elasticmq.conf`, and readiness must fail while a consumed queue is missing.

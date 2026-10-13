@@ -62,6 +62,15 @@ Documenters (they write words, never product code):
 6. **Living page writer** - `scripts/livespec/generate.py`, run by the build loop after a capability passes its gate. One session with no tools, fed only facts extracted by the script, writes the first draft of `docs/spec/capabilities/<id>-*.md`. You review and sign it later (`reviewed.json`, a human-only action).
 7. **Decision triage** - `scripts/decisions/triage.py generate <id>`, also run after a capability is built. Reads the dozens of defaults the builders recorded in `questions.md` and writes at most 8, ranked, into `docs/decisions/<id>.md`. Your answers (`change: ...`) are given to the next builder pass.
 
+Spec vocabulary (every word of a rule is defined once; `scripts/livespec/terms.py`, details in `docs/spec/README.md`):
+- **Term finder** (`terms.py expand <page>`): reads the rules in chunks and lists the phrases a junior engineer would have to guess. Two kinds: a word of THIS system (or an everyday word with a special meaning here: "section", "errors entry") gets its own page in `docs/spec/terms/`; a general software word (HttpOnly, CSRF, JWT) gets NO page: it is linked, with an arrow, to the one glossary `docs/spec/sw-external-terms.md`, which only points at an authoritative reference (MDN, an RFC, OWASP) that the script opened and checked.
+- **Term writer** (same command): writes the pages of the new terms (Definition, Example, Known gaps), six per call, then reads each new definition the same way, recursively, until nothing new comes up. The model never rewrites a rule: the script inserts the links.
+- **Consolidator** (`terms.py consolidate [--apply]`): merges pages that are the same concept under two names, and drops single-use pages that only restate their rule.
+- **Cycle breaker** (`terms.py break-cycles`): definitions may not be circular (links inside a Definition form a directed acyclic graph; "Used by", Example and Known gaps may point anywhere). A fundamental term that leaned on a peripheral one is rewritten in plain words.
+- The levers (granularity, how eagerly pages are merged or inlined, models, speed, limits) are in `scripts/livespec/terms.config.json`; tell me which one to turn, or edit it and run the command named in `docs/spec/README.md`, "Levers".
+- Regenerate one term in about half a minute: `terms.py redo <slug> --note "what you dislike"`; one page: `terms.py expand <page> --fresh`; promote a concept that a second place needs: `terms.py promote`.
+- Drift is checked mechanically by `python3 scripts/livespec/check.py` (a second): a rule that uses a term changed and the term was not read again (`terms.py accept <slug>` records that you did), a number in a definition that no rule states, a link to a missing page, a circular definition, a bare use of a distinctive term, an inline explanation that duplicates a term page. Limit: a term that only other terms use has no rule fingerprint, so a change deep in the graph is not detected.
+
 The QA chain (it uses the finished product like a person and writes tests from what it finds):
 8. **Explorer** - `scripts/qa/run.sh <charter>`. A session with a browser (Playwright) and curl, a time limit and a charter (a short briefing: what to try and break). Writes a report `specs/.qa/<date>-<charter>.md` with lines `DEFECT D1 CONFIRMED|SUSPICIOUS <severity>: <title>`, and the scripts it used next to it. It can never edit the repository.
 9. **Skeptic** (verify) - `scripts/qa/verify.sh <report> <D-id>`. A second session that has NOT seen the first one. It follows only the written steps of one finding, twice, with a fresh account, checks the living spec ("Known gaps"?) and writes `VERDICT: reproduced | not-reproduced | gap | not-a-defect`. If it writes no verdict, it is asked once more.
@@ -217,7 +226,7 @@ consumer, a missing search index) and checks the agent reports each, then one ru
 - `scripts/vps/` the cloud runner. `scripts/qa/` QA agent, pipeline, charters, mutations, benchmark, throwaway stack. `scripts/infra/` doctors. `scripts/livespec`, `scripts/lessons`,
   `scripts/decisions`, `scripts/mutation`.
 - `specs/` per-capability spec folders (spec, plan, tasks, `questions.md`, `gaps.md`, `BLOCKED.md`), `specs/.checkpoints/` pass markers, `specs/.qa/` QA reports.
-- `docs/spec/` the living specification. `docs/lessons.md`. `docs/decisions/`. `docs/incidents/`. `docs/reports/`. `docs/architecture/sdd-runbook.md` (why each part exists).
+- `docs/spec/` the living specification. `docs/lessons.md`. `docs/decisions/`. `docs/runbooks/incidents/`. `docs/reports/`. `docs/architecture/sdd-runbook.md` (why each part exists).
 
 ## Run the e2e specs (verified path)
 

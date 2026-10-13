@@ -2,7 +2,7 @@
 # The QA agent: a fresh Claude session that uses the running product like a person and reports defects with evidence. It never edits the repository.
 #   scripts/qa/run.sh <charter>... [--minutes N] [--out DIR]        charters: scripts/qa/charters/*.md (default: buy)
 # The stack and the web server must be up (scripts/qa/stack-up.sh with WITH_WEB=1, or your dev stack + API + web). Exit 1 if a report holds a CONFIRMED defect.
-# Reports: specs/.qa/<date>-<charter>.md (with the Playwright scripts it used next to it). Design: docs/notes/2026-10-13-next-steps.md, "the QA agent".
+# Reports: specs/.qa/<date>-<charter>.md (with the Playwright scripts it used next to it). Design: docs/work/2026-10-13-next-steps.md, "the QA agent".
 set -uo pipefail
 ROOT="$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel)"; cd "$ROOT"
 source scripts/sdd/lib.sh

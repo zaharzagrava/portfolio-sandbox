@@ -42,7 +42,7 @@ Claude sessions, while I sleep. What I actually work on is the **harness around 
 - **Mutation testing.** A small tool changes the code on purpose and checks that the unit tests notice.
 
 **Why I built it.** The first end-to-end test of the buy flow by hand found a payment stuck at "processing". Every automated check had passed: the code asked a standard queue for a message
-group, which only FIFO queues accept, so the charge request was never delivered. I wrote the incident down ([`docs/incidents`](docs/incidents/2026-10-12-payment-stuck-pending.md)), then built
+group, which only FIFO queues accept, so the charge request was never delivered. I wrote the incident down ([`docs/runbooks/incidents`](docs/runbooks/incidents/2026-10-12-payment-stuck-pending.md)), then built
 the harness so that class of bug is found by a machine first. Putting that bug (and three similar ones) back on purpose is the benchmark for the QA agent.
 
 **Where it stands, honestly.** The loop, the gate, the repair agent and the checkpoints ran for real in the cloud (more than 20 capabilities built so far, one checkpoint passed after several repairs).

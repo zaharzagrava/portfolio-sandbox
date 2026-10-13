@@ -2,7 +2,7 @@
 
 **Date:** 2026-08-09
 **Status:** Approved for planning
-**Roadmap source:** `docs/superpowers/plans/2026-08-02-feature-roadmap.md`
+**Roadmap source:** `docs/work/plans/2026-08-02-feature-roadmap.md`
 
 ## Summary
 

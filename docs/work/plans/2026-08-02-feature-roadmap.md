@@ -190,7 +190,7 @@ Needs, roughly in order:
 
 ## Next
 
-Pick one chunk to brainstorm into a full design spec (`docs/superpowers/specs/`) and implementation plan. Candidates, by how close each is to a visible win:
+Pick one chunk to brainstorm into a full design spec (`docs/work/designs/`) and implementation plan. Candidates, by how close each is to a visible win:
 
 - **D (make search real)** — smallest gap between "looks done" and "is done"; the fastest visible win.
 - **A (outbox mailman)** — the project's headline demo (chaos/fault-tolerance) and the roadmap's original stated priority; needs a schema change first.
