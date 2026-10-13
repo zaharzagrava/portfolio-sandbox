@@ -1,3 +1,5 @@
+import { DEV_DISCUSSIONS_CURSOR_SECRET } from './discussions-config';
+
 /** Read access to the configuration values a rule looks at, plus whether the app runs in production. */
 export interface RuleContext {
   get(key: string): unknown;
@@ -263,7 +265,21 @@ export const validateOidcConfig: RuleCheck = (ctx) => {
 };
 
 /** Rules owned by the platform toolkit itself. */
+/** In production the cursor secret must be set explicitly: the development default is public and would let cursors be forged. */
+const discussionsCursorSecretRule: RuleCheck = (ctx) =>
+  ctx.production &&
+  ctx.get('discussions_cursor_secret') === DEV_DISCUSSIONS_CURSOR_SECRET
+    ? [
+        'discussions_cursor_secret (DISCUSSIONS_CURSOR_SECRET) must be set in production',
+      ]
+    : [];
+
 export const platformRules: ConfigRule[] = [
+  {
+    owner: 'discussions',
+    keys: ['discussions_cursor_secret'],
+    validate: discussionsCursorSecretRule,
+  },
   { owner: 'platform', keys: ['platform_currency'], validate: currencyRule },
   {
     owner: 'platform',

@@ -7,6 +7,8 @@
 export { DiscussionsWorkerModule } from './discussions-worker.module';
 export { DiscussionsModule } from './discussions.module';
 export { communityRatePolicies } from './rate-limit-policies';
+export { DiscussionQueryService } from './application/discussion-query.service';
+export type { PostSummaryDto } from './application/discussion-query.service';
 export { FeedPublisherModule } from './feed-publisher.module';
 export { FeedModule } from './feed.module';
 export { FeedFanoutConsumer } from './infra/fanout.consumer';

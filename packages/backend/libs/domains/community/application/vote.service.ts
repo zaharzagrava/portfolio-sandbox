@@ -1,238 +1,302 @@
+import { Inject, Injectable, Logger } from '@nestjs/common';
+import type { VoteResult } from '@marketplace-sandbox/contracts';
+import { ApiConfigService } from '@app/common/config';
+import { CLOCK, Clock } from '@app/common/core/clock';
+import { evaluateAnomaly } from '../domain/anomaly';
 import {
-  ConflictException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
-import { types } from 'cassandra-driver';
-import { CassandraService } from '@app/infrastructure/cassandra/cassandra.service';
-import { RedisService } from '@app/infrastructure/redis/redis.service';
-import { WriteBehindCounter } from '@app/infrastructure/cache/write-behind-counter';
-import { hotScore, wilsonLowerBound } from '../domain/ranking';
-import { boardKey, scoreKey } from './discussion.service';
+  selfVoteNotAllowed,
+  serviceUnavailable,
+  targetDeleted,
+  targetNotFound,
+  voteInProgress,
+} from '../domain/discussion-errors';
+import { DiscussionVoteAnomalyDetected } from '../domain/discussion-events';
+import {
+  discussionAnomalyCounter,
+  discussionVoteCounter,
+} from '../domain/discussions-metrics';
+import { isTimeUuid } from '../domain/ids';
+import {
+  ACCOUNT_DIRECTORY,
+  ANOMALY_TRACKER,
+  CacheUnavailableError,
+  COMMENT_STORE,
+  COUNT_CACHE,
+  EVENT_STORE,
+  POST_STORE,
+  SHADOW_STORE,
+  VOTE_DELTA_BUFFER,
+  VOTE_STORE,
+  type AccountDirectory,
+  type AnomalyTracker,
+  type CommentStore,
+  type CountCache,
+  type EventStore,
+  type PostStore,
+  type ShadowStore,
+  type TargetType,
+  type VoteDeltaBuffer,
+  type VoteStore,
+} from '../domain/ports';
+import {
+  isNoop,
+  voteDelta,
+  type VoteCounts,
+  type VoteDelta,
+  type VoteRecord,
+} from '../domain/vote-transition';
+import { voteWeight } from '../domain/vote-weight';
+import { CountsService, swallowCache } from './counts.service';
+import { DiscussionIds, recordEvent } from './discussion-support';
+import { RankingService } from './ranking.service';
 
 export type VoteValue = -1 | 0 | 1;
-export const VOTE_DELTAS = 'vote-deltas';
+
+interface Resolved {
+  type: TargetType;
+  postId: string;
+  boardId: string;
+  /** Posts and top-level comments are ranked; replies are not. */
+  rankedAs: 'post' | 'root' | null;
+  createdAt: Date;
+}
+
+const MAX_ATTEMPTS = 2;
 
 /**
- * One vote per user per target, changeable (lesson 10/05 #11):
- *  - the previous vote is read and the new one written under a short
- *    per-(user, target) Redis lock, so a double click can't apply a delta twice,
- *  - the DELTA (+1, -1, ±2 when flipping) goes to a Redis score hash (live,
- *    atomic HINCRBY - no hot counter row) and to a write-behind buffer flushed
- *    to Scylla counters every few seconds,
- *  - hot/top/best rankings are recomputed from the live score.
+ * Votes (S25 US3, R-1): one record per (user, target) changed by compare-and-set; the displayed counts follow the
+ * committed `(previous, next)` pair, so they equal a recount of the records. There is no lock: the store arbitrates.
  */
 @Injectable()
 export class VoteService {
-  private readonly deltas: WriteBehindCounter;
+  private readonly logger = new Logger(VoteService.name);
 
   constructor(
-    private readonly cassandra: CassandraService,
-    private readonly redis: RedisService,
-  ) {
-    this.deltas = new WriteBehindCounter(redis, VOTE_DELTAS);
-  }
+    @Inject(POST_STORE) private readonly posts: PostStore,
+    @Inject(COMMENT_STORE) private readonly comments: CommentStore,
+    @Inject(VOTE_STORE) private readonly votes: VoteStore,
+    @Inject(COUNT_CACHE) private readonly cache: CountCache,
+    @Inject(VOTE_DELTA_BUFFER) private readonly buffer: VoteDeltaBuffer,
+    @Inject(SHADOW_STORE) private readonly shadow: ShadowStore,
+    @Inject(ACCOUNT_DIRECTORY) private readonly directory: AccountDirectory,
+    @Inject(ANOMALY_TRACKER) private readonly anomalies: AnomalyTracker,
+    @Inject(EVENT_STORE) private readonly events: EventStore,
+    @Inject(CLOCK) private readonly clock: Clock,
+    private readonly ids: DiscussionIds,
+    private readonly counts: CountsService,
+    private readonly ranking: RankingService,
+    private readonly config: ApiConfigService,
+  ) {}
 
   async vote(
     userId: string,
-    targetType: 'post' | 'comment',
     targetId: string,
     value: VoteValue,
-  ) {
-    const lockKey = `vote-lock:${userId}:${targetId}`;
-    if ((await this.redis.client.set(lockKey, '1', 'PX', 3_000, 'NX')) !== 'OK')
-      throw new ConflictException('Vote in progress');
-    try {
-      const context = await this.context(targetType, targetId);
-      const previous =
-        (
-          await this.cassandra.execute(
-            'SELECT value FROM votes_by_user WHERE user_id = ? AND target_id = ?',
-            [userId, targetId],
-          )
-        ).rows[0]?.value ?? 0;
-      if (previous === value) return this.score(targetId);
+  ): Promise<VoteResult> {
+    const target = await this.resolve(userId, targetId);
+    await this.requireCache(targetId);
 
-      if (value === 0) {
-        await Promise.all([
-          this.cassandra.execute(
-            'DELETE FROM votes_by_user WHERE user_id = ? AND target_id = ?',
-            [userId, targetId],
-          ),
-          this.cassandra.execute(
-            'DELETE FROM votes_by_target WHERE target_id = ? AND user_id = ?',
-            [targetId, userId],
-          ),
-        ]);
-      } else {
-        await Promise.all([
-          this.cassandra.execute(
-            'INSERT INTO votes_by_user (user_id, target_id, value) VALUES (?, ?, ?)',
-            [userId, targetId, value],
-          ),
-          this.cassandra.execute(
-            'INSERT INTO votes_by_target (target_id, user_id, value) VALUES (?, ?, ?)',
-            [targetId, userId, value],
-          ),
-        ]);
+    for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+      const current = await this.votes.get(targetId, userId);
+      if ((current?.value ?? 0) === value) {
+        // Replay or no-op retraction: nothing changes, the answer is the same complete result.
+        discussionVoteCounter.add(1, { outcome: 'replayed' });
+        const counts = await this.counts.voteCounts(targetId);
+        return this.format(targetId, target.type, counts, value);
       }
-
-      const upsDelta = (value === 1 ? 1 : 0) - (previous === 1 ? 1 : 0);
-      const downsDelta = (value === -1 ? 1 : 0) - (previous === -1 ? 1 : 0);
-      const [ups, downs] = await this.applyDelta(
+      const next: VoteRecord | null =
+        value === 0 ? null : { value, weight: await this.weightFor(userId) };
+      const committed = await this.votes.cas(
         targetId,
-        upsDelta,
-        downsDelta,
+        userId,
+        target.type,
+        current,
+        next,
+        this.clock.now(),
       );
-      await this.rerank(targetType, targetId, context, ups, downs);
-      return { ups, downs, myVote: value };
-    } finally {
-      await this.redis.client.del(lockKey);
+      if (!committed) continue;
+
+      const delta = voteDelta(
+        current ? { value: current.value, weight: current.weight } : null,
+        next,
+      );
+      const counts = await this.apply(targetId, delta);
+      discussionVoteCounter.add(1, {
+        outcome:
+          next === null ? 'retracted' : current === null ? 'cast' : 'changed',
+      });
+      await this.afterCommit(targetId, target, counts, delta, next);
+      return this.format(targetId, target.type, counts, value);
     }
+    discussionVoteCounter.add(1, { outcome: 'busy' });
+    throw voteInProgress();
   }
 
-  async score(targetId: string) {
-    const [ups, downs] = await this.redis.client.hmget(
-      scoreKey(targetId),
-      'ups',
-      'downs',
-    );
-    return { ups: Number(ups ?? 0), downs: Number(downs ?? 0) };
+  // ---- steps -----------------------------------------------------------------------------------------------------
+
+  /** Server-side target resolution (FR-021): post or comment, visibility, own-content and tombstone rules. */
+  private async resolve(userId: string, targetId: string): Promise<Resolved> {
+    if (!isTimeUuid(targetId)) throw targetNotFound();
+    const post = await this.posts.get(targetId);
+    if (post) {
+      if (post.deleted || (post.shadow && post.authorId !== userId))
+        throw targetNotFound();
+      if (post.authorId === userId) throw selfVoteNotAllowed();
+      return {
+        type: 'post',
+        postId: post.postId,
+        boardId: post.boardId,
+        rankedAs: 'post',
+        createdAt: post.createdAt,
+      };
+    }
+    const loc = await this.comments.getLocator(targetId);
+    if (!loc) throw targetNotFound();
+    const row = await this.comments.getRow(loc.postId, loc.bucket, loc.path);
+    if (!row) throw targetNotFound();
+    if (row.deleted) throw targetDeleted();
+    if (row.shadow && row.authorId !== userId) throw targetNotFound();
+    if (row.authorId === userId) throw selfVoteNotAllowed();
+    const parent = await this.posts.get(row.postId);
+    if (!parent || parent.deleted) throw targetNotFound();
+    return {
+      type: 'comment',
+      postId: row.postId,
+      boardId: parent.boardId,
+      rankedAs: row.depth === 0 ? 'root' : null,
+      createdAt: row.createdAt,
+    };
   }
 
-  /** Drains the write-behind buffer into Scylla counters (one UPDATE per target per flush). */
-  async flushToCounters(): Promise<number> {
-    const drained = await this.deltas.drain();
-    const byTarget = new Map<string, { ups: number; downs: number }>();
-    for (const [member, delta] of drained) {
-      const [targetId, field] = member.split('|') as [string, 'ups' | 'downs'];
-      const entry = byTarget.get(targetId) ?? { ups: 0, downs: 0 };
-      entry[field] += delta;
-      byTarget.set(targetId, entry);
-    }
+  /** Counting without the cache could double a delta: refuse the vote before anything is recorded (AS-51). */
+  private async requireCache(targetId: string): Promise<void> {
     try {
-      for (const [targetId, d] of byTarget) {
-        await this.cassandra.client.execute(
-          'UPDATE vote_counts SET ups = ups + ?, downs = downs + ? WHERE target_id = ?',
-          [types_long(d.ups), types_long(d.downs), targetId],
-          {
-            prepare: true,
-            isIdempotent: false, // counter updates must never be retried by the driver
-          },
-        );
-      }
+      await this.cache.votes(targetId);
     } catch (error) {
-      await this.deltas.restore(drained);
+      if (error instanceof CacheUnavailableError) {
+        discussionVoteCounter.add(1, { outcome: 'unavailable' });
+        throw serviceUnavailable();
+      }
       throw error;
     }
-    return byTarget.size;
   }
 
-  /**
-   * Exact recount from `votes_by_target` (counters are at-least-once and can
-   * drift by a retried batch) - repairs the live Redis score that ranking reads.
-   */
-  async recount(targetId: string): Promise<{ ups: number; downs: number }> {
-    let ups = 0;
-    let downs = 0;
-    let pageState: string | undefined;
-    do {
-      const page = await this.cassandra.execute(
-        'SELECT value FROM votes_by_target WHERE target_id = ?',
-        [targetId],
-        { fetchSize: 5_000, pageState },
-      );
-      for (const row of page.rows) row.value === 1 ? ups++ : downs++;
-      pageState = page.pageState ?? undefined;
-    } while (pageState);
-    await this.redis.client.hset(
-      scoreKey(targetId),
-      'ups',
-      ups,
-      'downs',
-      downs,
-    );
-    return { ups, downs };
-  }
-
-  private async applyDelta(
-    targetId: string,
-    upsDelta: number,
-    downsDelta: number,
-  ): Promise<[number, number]> {
-    const tx = this.redis.client
-      .multi()
-      .hincrby(scoreKey(targetId), 'ups', upsDelta)
-      .hincrby(scoreKey(targetId), 'downs', downsDelta);
-    const results = await tx.exec();
-    if (upsDelta) await this.deltas.increment(`${targetId}|ups`, upsDelta);
-    if (downsDelta)
-      await this.deltas.increment(`${targetId}|downs`, downsDelta);
-    return [Number(results![0][1]), Number(results![1][1])];
-  }
-
-  private async context(
-    targetType: 'post' | 'comment',
-    targetId: string,
-  ): Promise<{ boardId?: string; createdAt?: number; postId?: string }> {
-    if (targetType === 'post') {
-      const [boardId, createdAt] = await this.redis.client.hmget(
-        `post-meta:${targetId}`,
-        'boardId',
-        'createdAt',
-      );
-      if (!boardId) {
-        const row = (
-          await this.cassandra.execute(
-            'SELECT board_id, created_at FROM posts WHERE post_id = ?',
-            [targetId],
-          )
-        ).rows[0];
-        if (!row) throw new NotFoundException('Post not found');
-        return { boardId: row.board_id, createdAt: row.created_at.getTime() };
-      }
-      return { boardId, createdAt: Number(createdAt) };
+  /** Ranking weight of a new or changed vote: 0 for a shadow-banned, young or unresolved account (FR-025). */
+  private async weightFor(userId: string): Promise<0 | 1> {
+    const shadowBanned = await this.shadow.isBanned(userId);
+    let createdAt: Date | null = null;
+    try {
+      createdAt =
+        (await this.directory.lookup([userId])).get(userId)?.createdAt ?? null;
+    } catch {
+      this.logger.warn('account lookup failed: vote weight set to 0');
     }
-    const loc = (
-      await this.cassandra.execute(
-        'SELECT post_id FROM comment_locator WHERE comment_id = ?',
-        [targetId],
-      )
-    ).rows[0];
-    if (!loc) throw new NotFoundException('Comment not found');
-    return { postId: loc.post_id.toString() };
+    return voteWeight({
+      createdAt,
+      shadowBanned,
+      now: this.clock.now(),
+      minAgeHours: this.config.get('discussions_account_age_hours'),
+    });
   }
 
-  private async rerank(
-    targetType: 'post' | 'comment',
-    targetId: string,
-    ctx: { boardId?: string; createdAt?: number; postId?: string },
-    ups: number,
-    downs: number,
-  ) {
-    if (targetType === 'post') {
-      await this.redis.client
-        .multi()
-        .zadd(
-          boardKey(ctx.boardId!, 'hot'),
-          hotScore(ups, downs, new Date(ctx.createdAt!)),
-          targetId,
-        )
-        .zadd(boardKey(ctx.boardId!, 'top'), ups - downs, targetId)
-        .exec();
-    } else {
-      // Only top-level comments live in the "best" set (XX: never add replies).
-      await this.redis.client.zadd(
-        `post:{${ctx.postId}}:best`,
-        'XX',
-        wilsonLowerBound(ups, downs),
-        targetId,
-      );
+  /** Applies the delta to the cached counts; a lost entry is rebuilt from the records (which include this vote). */
+  private async apply(targetId: string, delta: VoteDelta): Promise<VoteCounts> {
+    try {
+      const updated = await this.cache.applyVoteDelta(targetId, delta);
+      return updated ?? (await this.counts.recountVotes(targetId));
+    } catch (error) {
+      if (error instanceof CacheUnavailableError) throw serviceUnavailable();
+      throw error;
     }
   }
-}
 
-/** Counter columns are bigint; the driver needs Long for them. */
-function types_long(n: number) {
-  return types.Long.fromNumber(n);
+  private async afterCommit(
+    targetId: string,
+    target: Resolved,
+    counts: VoteCounts,
+    delta: VoteDelta,
+    next: VoteRecord | null,
+  ): Promise<void> {
+    if (!isNoop(delta))
+      await this.buffer
+        .add(targetId, {
+          ups: delta.dUps,
+          downs: delta.dDowns,
+          wups: delta.dWups,
+          wdowns: delta.dWdowns,
+        })
+        .catch(swallowCache);
+    try {
+      if (target.rankedAs === 'post')
+        await this.ranking.place(
+          {
+            postId: targetId,
+            boardId: target.boardId,
+            createdAt: target.createdAt,
+          },
+          counts,
+        );
+      else if (target.rankedAs === 'root')
+        await this.ranking.placeRoot(target.postId, targetId, counts);
+    } catch (error) {
+      swallowCache(error);
+    }
+    if (next && next.weight === 0) await this.noteZeroWeight(targetId, target);
+  }
+
+  /** FR-053: ten zero-weight votes inside ten minutes record one anomaly event per target per hour. */
+  private async noteZeroWeight(
+    targetId: string,
+    target: Resolved,
+  ): Promise<void> {
+    try {
+      const nowMs = this.clock.nowMs();
+      const windowSeconds = this.config.get(
+        'discussions_anomaly_window_seconds',
+      );
+      const seen = await this.anomalies.note(targetId, nowMs, windowSeconds);
+      const verdict = evaluateAnomaly({
+        timestamps: seen.timestamps,
+        now: nowMs,
+        lastSentAt: seen.lastSentAt,
+        threshold: this.config.get('discussions_anomaly_threshold'),
+        windowSeconds,
+      });
+      if (!verdict.fire) return;
+      await this.anomalies.markSent(targetId, nowMs);
+      discussionAnomalyCounter.add(1);
+      await this.events.record(
+        recordEvent(
+          DiscussionVoteAnomalyDetected,
+          target.postId,
+          {
+            targetId,
+            targetType: target.type,
+            boardId: target.boardId,
+            zeroWeightVotes: verdict.count,
+            windowSeconds: verdict.windowSeconds,
+          },
+          this.ids.now(),
+        ),
+      );
+    } catch (error) {
+      this.logger.warn(`anomaly check skipped cause=${(error as Error).name}`);
+    }
+  }
+
+  private format(
+    targetId: string,
+    type: TargetType,
+    c: VoteCounts,
+    myVote: VoteValue,
+  ): VoteResult {
+    return {
+      targetId,
+      targetType: type,
+      ups: c.ups,
+      downs: c.downs,
+      score: c.ups - c.downs,
+      myVote,
+    };
+  }
 }

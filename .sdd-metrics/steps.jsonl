@@ -38,3 +38,14 @@
 {"run":"20261013T163357Z","capability":"S19","step":"converge-1","start":"2026-10-13T16:34:22Z","end":"2026-10-13T16:34:47Z","seconds":25,"result":"ok","attempt":1,"reason":"ok"}
 {"run":"20261013T163357Z","capability":"S19","step":"gate","start":"2026-10-13T16:34:48Z","end":"2026-10-13T16:38:31Z","seconds":223,"result":"pass","attempt":1,"reason":""}
 {"run":"20261013T163357Z","capability":"S19","step":"built","start":"2026-10-13T16:33:57Z","end":"2026-10-13T16:38:31Z","seconds":274,"result":"ok","attempt":1,"reason":"Pickup points, local stock, \"available near me\" search, map clustering"}
+{"run":"20261013T163357Z","capability":"S25","step":"tasks","start":"2026-10-13T16:38:51Z","end":"2026-10-13T16:40:51Z","seconds":120,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261013T163357Z","capability":"S25","step":"analyze","start":"2026-10-13T16:40:51Z","end":"2026-10-13T16:42:01Z","seconds":70,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261013T163357Z","capability":"S25","step":"implement-1","start":"2026-10-13T16:42:01Z","end":"2026-10-13T17:41:49Z","seconds":3588,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261013T163357Z","capability":"S25","step":"implement-2","start":"2026-10-13T17:41:49Z","end":"2026-10-13T17:42:14Z","seconds":25,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261013T163357Z","capability":"S25","step":"converge-2","start":"2026-10-13T17:42:14Z","end":"2026-10-13T17:43:14Z","seconds":60,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261013T163357Z","capability":"S25","step":"implement-3","start":"2026-10-13T17:43:14Z","end":"2026-10-13T17:44:04Z","seconds":50,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261013T163357Z","capability":"S25","step":"converge-3","start":"2026-10-13T17:44:04Z","end":"2026-10-13T17:44:29Z","seconds":25,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261013T163357Z","capability":"S25","step":"gate","start":"2026-10-13T17:44:29Z","end":"2026-10-13T17:44:31Z","seconds":2,"result":"fail","attempt":1,"reason":"test integrity: packages/backend/libs/domains/community/discussions.e2e-spec.ts: test file deleted, and it carried no scenario id, so nothing proves that another test replaces it (add the scenario id "}
+{"run":"20261013T163357Z","capability":"S25","step":"repair-1","start":"2026-10-13T17:44:32Z","end":"2026-10-13T17:45:57Z","seconds":85,"result":"ok","attempt":1,"reason":"ok","code_changed":true}
+{"run":"20261013T163357Z","capability":"S25","step":"gate","start":"2026-10-13T17:45:57Z","end":"2026-10-13T17:50:35Z","seconds":278,"result":"pass","attempt":2,"reason":""}
+{"run":"20261013T163357Z","capability":"S25","step":"built","start":"2026-10-13T16:38:50Z","end":"2026-10-13T17:50:35Z","seconds":4305,"result":"ok","attempt":1,"reason":"Product discussion boards: posts, nested comments, votes, hot/top/new/best ranking, abuse controls, safe markdown"}

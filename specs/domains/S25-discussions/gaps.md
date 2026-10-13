@@ -126,3 +126,33 @@ S25's own code issues no Sequelize or SQL access. Its cross-domain edges are `@a
 | Rate-limit profile names `discussion.write`, `discussion.vote` become S25-only; media and share links get their own | **S50**, **S29**, **S37** | `libs/infrastructure/rate-limit/rate-limit.types.ts:49-50` |
 | Feed consumes `discussion.post_created` / `discussion.post_deleted` and hydrates through `DiscussionQueryService.getPostsByIds` | **S26** | `application/feed-publisher.service.ts:14` (`'post'` kind) |
 | Reply notifications consume `discussion.comment_created` | **S28** | (absent) |
+
+## 5. Sibling-spec follow-ups
+
+- **S26**: consume `discussion.post_created` and `discussion.post_deleted` from topic `discussion.events` (payloads in `contracts/events.md`, schemas `discussionPostCreatedPayloadSchema` / `discussionPostDeletedPayloadSchema` in `packages/contracts/src/community/events.ts`), and hydrate feed `post` items with `DiscussionQueryService.getPostsByIds` (exported from `@app/domains/community`) so deleted and shadow posts vanish. S25 no longer calls `FeedPublisher`; the old `discussion.service.ts` is gone and `feed-publisher.service.ts` is untouched.
+- **S28**: switch the import of the `discussion.comment_created` schema to `discussionCommentCreatedPayloadSchema` (`packages/contracts/src/community/events.ts`); the field names are the ones S28 consumes (`postId`, `authorId`, `parentAuthorId`, `postAuthorId`, `preview`).
+- **S48**: done. `boardPostsPageSchema` in `packages/contracts/src/bff/upstream.ts` is now a re-export of S25's `postPageSchema` (same exported name and type name `BoardPostsPage`); the BFF fixture uses the real `PostView` (`postId`, not `id`).
+- **W02** (web): send `Idempotency-Key` on post and comment creation, use the product UUID as the board id (the `product-<id>` prefix and brand boards now answer `400`), read `{items, nextCursor}`, send `{value}` only on votes, re-sanitise `bodyHtml` before insertion, de-duplicate list items by `postId`, render titles as text, and read the `degraded` flag. `DELETE /posts/:postId` (B-4) and `GET /comments/:commentId/replies` (B-5) are built.
+- **S29 / S37 / S50**: the media upload route (`media.controller.ts:28`) and the share-link route (`share-links.controller.ts:21`) still borrow the rate-limit policy `discussion.write`; each must adopt its own policy so a user's uploads stop eating their post budget. S25 did not edit those files.
+- **S50**: S25 adopts the structured `RateLimit` / `RateLimit-Policy` headers and `503 rate_limiter_unavailable` through `@RateLimit('discussion.write')`; the policy numbers stay in `rate-limit-policies.ts` (`definePolicies` / `forFeature`). Anonymous reads no longer opt out of the platform's default read limit.
+- **S05**: S25 does not read `Product`; it asks `ProductQueryService.getProductsByIds` on writes only (the follow-up to consume `catalog.product_*` events does not apply: the only catalog fact S25 needs is whether a board's product is `ACTIVE`, and it is read on the write path).
+
+## 6. Spec changes
+
+Nothing a human signed changed: `docs/spec/capabilities/S25-discussions.md` is new (status `draft`) and no `*.reviewed.json` was created or edited. The topic registry needed no change: `DiscussionsWorkerModule` registers the aggregate type `discussion` (`discussion.events`, full history) with `EventsModule.forAggregates`.
+
+## 7. Implementation notes and deviations
+
+- **Platform error codes win over the spec's names.** A missing credential answers the identity code `invalid_token` (spec: `unauthorized`), a request in flight answers `idempotency_in_flight` (spec: `request_in_progress`), and a malformed `Idempotency-Key` answers `idempotency_key_invalid`; the platform idempotency interceptor owns these. All other S25 codes are as specified.
+- **AS-18 row bound.** The thread page reads at most `limit + 1` rows of the root index (`top_comments_by_post`, one extra to know whether a next page exists) plus one range read per root of at most `embedded + 1 = 6` rows of `comments_by_post` (the root and its first 5 descendants): at most `limit x 6` rows of the comment partitions, as the scenario asks. The "more replies" flag is a monotone column on the root row, set by the reply creation that makes the subtree exceed 5 descendants, so no peek read is needed.
+- **Top windows are one ZSET per window** (`dsc:rank:{board}:top-day|week|month|year|all`), filtered again on read by the creation time embedded in the member, so a post that aged out of a window stops being listed without a rewrite.
+- **A write during a cache outage** marks its ranking (and thread page) stale in the instance that missed it; the next read of that instance rebuilds it from the durable store. Another instance falls back to the expiry (5 s for a thread page, 6 h for a ranking).
+- **The delete of a post or comment is a conditional update followed by a batch** (index rows and event). A crash between the two leaves a deleted entity without its event; the claim-based idempotency of creates does not cover deletes. The risk is accepted: a lost `post_deleted` leaves a feed item that S26 hides anyway when hydrating through `getPostsByIds`.
+- **A repeated delete of a comment tombstone answers `204` to any signed-in user**, because the tombstone no longer names its author.
+- **Real broker.** The relay is proven against a spy of the event bus (switchable failure); the started worker proves that the module graph, the schedules and the topic registration resolve. No broker round trip was run in this change (see `quickstart.md`, smoke step 4).
+- **Test fixtures** live in `testing/discussions-fixtures.ts` and `testing/xss-corpus.ts` (the plan named `discussions.fixtures.ts`); `test/utils/catalog-app.ts` gained two optional parameters (`customize`, `structuredLogger`) used by them.
+- **Cursor secret.** `DISCUSSIONS_CURSOR_SECRET` has a development default; production must set it.
+
+## Gate repairs
+
+- **Test integrity (`discussions.e2e-spec.ts` deleted, no scenario id).** The first spec was deleted with `discussion.service.ts` (its stem does not match, so the gate did not see the subject go) and carried no scenario id. It is recreated at the same path as a smoke pass over its four behaviours through the real HTTP API, with S25 ids in the titles: thread order (AS-14), vote flip and 100 concurrent voters (AS-24, AS-29), a double-clicked vote (AS-30), hot board and best comments by Wilson score (AS-33, AS-42). The detailed scenarios stay in the `discussions-*.e2e-spec.ts` files. No product code changed. Run: 4 passed; `check-tests.py integrity` clean; `tsc --noEmit` clean.

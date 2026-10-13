@@ -74,6 +74,8 @@
     "loadtest:flash-sale": "k6 run scripts/load-tests/flash-sale.test.js",
     "loadtest:launch-event": "k6 run scripts/load-tests/launch-event.test.js",
     "loadtest:auction": "k6 run scripts/load-tests/auction.test.js",
+    "loadtest:discussions": "k6 run scripts/load-tests/discussions.test.js",
+    "loadtest:seed:discussions": "node scripts/load-tests/seed/discussions-thread.js",
     "start:dev:collab": "NODE_ENV=local PORT=8004 nest start collab --watch",
     "start:dev:public-api": "NODE_ENV=local PORT=8005 nest start public-api --watch",
     "start:dev:bff": "NODE_ENV=local PORT=8006 BFF_LOCAL_DEV=true BFF_UPSTREAM_URL=http://localhost:8000 BFF_ALLOWED_ORIGINS=http://localhost:3000 BFF_SESSION_KEYS=AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQE= BFF_CSRF_KEY=AgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgI= nest start bff --watch",

@@ -17,6 +17,7 @@ import { searchConfigKeys } from './search-config';
 import { autocompleteConfigKeys } from './autocomplete-config';
 import { recommendationsConfigKeys } from './recommendations-config';
 import { trendingConfigKeys } from './trending-config';
+import { discussionsConfigKeys } from './discussions-config';
 import { bffConfigKeys } from './bff-config';
 
 dotenv.config({
@@ -598,6 +599,7 @@ export class ApiConfigService {
           ...autocompleteConfigKeys,
           ...recommendationsConfigKeys,
           ...trendingConfigKeys,
+          ...discussionsConfigKeys,
           ...bffConfigKeys,
           payments_cursor_secret: {
             verify: joi.string().optional().allow(''),

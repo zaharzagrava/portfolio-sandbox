@@ -1,6 +1,7 @@
 import { IntersectionType } from '@nestjs/swagger';
 import { Environment } from '@app/common/types';
 import type { BffConfig } from './bff-config';
+import type { DiscussionsConfig } from './discussions-config';
 
 /**
  * @description - config that should always be present in environment variables where application is run
@@ -398,6 +399,6 @@ export class SecretsManagerConfig {
 
 /** S48: BFF settings; keys, defaults and cross-checks in `bff-config.ts`. */
 // eslint-disable-next-line @typescript-eslint/no-unsafe-declaration-merging, @typescript-eslint/no-empty-object-type
-export interface SecretsManagerConfig extends BffConfig {}
+export interface SecretsManagerConfig extends BffConfig, DiscussionsConfig {}
 
 export class Config extends IntersectionType(EnvConfig, SecretsManagerConfig) {}

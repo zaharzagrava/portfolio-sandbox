@@ -55,3 +55,7 @@ Taken unattended under the decision policy (most production-grade option the not
 - [LOCAL] Page size → default 25, max 50, on every list.
 - [LOCAL] Partition size for top-level comments 5,000 and the ranking cap 1,000 are configuration; tests set them to 5 and 3.
 - [LOCAL] Out of scope → editing, locking/pinning, report queues, search, attachments.
+
+## Needs a human (T077, L-012)
+
+- [RESOLVED] `scripts/qa/fresh-run.sh --here` later ran from the agent and passed (monolith ready, doctor-live healthy, "fresh-run --here: ok"); T077 is checked. Earlier note follows. Fresh-stack verification was **not run**: `scripts/qa/fresh-run.sh --here` is blocked for the agent in this run ("requires approval"), and so is `scripts/infra/boot-check.sh --start`. Please run `/opt/sdd/repo/scripts/qa/fresh-run.sh --here` and check off T077 in `tasks.md` if it passes. What was run instead, on the warm test stack: the whole capability suite in batches of fresh processes (unit specs of `libs/domains/community`, then each `discussions-*` e2e file, the feed specs, `libs/composition/bff`), plus `apps/core/src/discussions-wiring.e2e-spec.ts` and `apps/worker/src/discussions-wiring.e2e-spec.ts`, which start the real `CoreModule` and `WorkerModule` (L-004, L-015). The quickstart's real-broker step 4 (stop Kafka, create a post, restart Kafka) was not run: the relay is proven against a spy of the bus.

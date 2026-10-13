@@ -144,6 +144,21 @@ describe('S54 configuration rules (U-CFG)', () => {
     );
   });
 
+  describe('S25 AS-39 discussions cursor secret', () => {
+    it('production refuses the development default; a real secret or non-production starts', () => {
+      const dev = 'dev-only-discussions-cursor-secret';
+      expect(
+        platform({ discussions_cursor_secret: dev }, true).join(' '),
+      ).toMatch(/discussions_cursor_secret/);
+      expect(
+        platform({ discussions_cursor_secret: 'x'.repeat(32) }, true).join(' '),
+      ).not.toMatch(/discussions/);
+      expect(
+        platform({ discussions_cursor_secret: dev }, false).join(' '),
+      ).not.toMatch(/discussions/);
+    });
+  });
+
   describe('AS-143 platform settings', () => {
     it.each(['usd', 'US', 'USDX', '12A', ''])(
       'platform_currency %j is rejected',

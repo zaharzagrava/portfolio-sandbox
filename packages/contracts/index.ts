@@ -15,6 +15,7 @@ export * from './src/media/gallery.ts';
 export * from './src/platform/index.ts';
 export * from './src/fulfilment/pickup.ts';
 export * from './src/community/discussions.ts';
+export * from './src/community/events.ts';
 export * from './src/assistant/ask.ts';
 export * from './src/marketing/share.ts';
 export * from './src/marketing/ads.ts';

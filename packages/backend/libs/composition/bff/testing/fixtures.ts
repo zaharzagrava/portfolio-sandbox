@@ -120,11 +120,30 @@ export const chatUnreadFixture = () =>
 export const postsFixture = () =>
   boardPostsPageSchema.parse({
     items: [
-      { id: 'p1', title: 'Great sound', score: 12 },
-      { id: 'p2', title: 'Comfortable', score: 9 },
+      postViewFixture(
+        '0190a1b2-0000-7000-8000-000000000001',
+        'Great sound',
+        12,
+      ),
+      postViewFixture('0190a1b2-0000-7000-8000-000000000002', 'Comfortable', 9),
     ],
     nextCursor: null,
   });
+
+/** A post as discussions (S25) answers it: `postId`, counts and `myVote`. */
+const postViewFixture = (postId: string, title: string, score: number) => ({
+  postId,
+  boardId: '0190a1b2-0000-7000-8000-0000000000b0',
+  authorId: '0190a1b2-0000-7000-8000-0000000000a0',
+  title,
+  bodyHtml: `<p>${title}</p>`,
+  createdAt: '2026-10-10T12:00:00.000Z',
+  ups: score,
+  downs: 0,
+  score,
+  commentCount: 2,
+  myVote: null,
+});
 
 export const videosFixture = () =>
   productVideosSchema.parse({ items: [{ videoId: 'v1', title: 'Unboxing' }] });

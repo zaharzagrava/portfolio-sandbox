@@ -1,9 +1,11 @@
 import type { INestApplication } from '@nestjs/common';
+import type { TestingModuleBuilder } from '@nestjs/testing';
 import { getModelToken } from '@nestjs/sequelize';
 import { GetCommand } from '@aws-sdk/lib-dynamodb';
 import supertest from 'supertest';
 import { CLOCK, FakeClock } from '@app/common/core/clock';
 import { DynamoService } from '@app/infrastructure/dynamo/dynamo.service';
+import { LoggingModule } from '@app/common/logging/logging.module';
 import { configureHttpApp } from '@app/infrastructure/platform/bootstrap-http';
 import { generateTestingModule } from '@app/test/utils/global-modules';
 import { SeedsModule } from '@app/test/seeds/seeds.module';
@@ -40,7 +42,12 @@ export interface CatalogTestApp {
   reset(): Promise<void>;
   close(): Promise<void>;
   /** A seeded user with a real session (access token signed by the production signer). */
-  newUser(options?: { role?: Role; email?: string }): Promise<TestUser>;
+  newUser(options?: {
+    role?: Role;
+    email?: string;
+    /** The account creation time (default: now): age-based rules read it. */
+    createdAt?: Date;
+  }): Promise<TestUser>;
   /** A new session for a user whose token expired because the test moved the clock; updates `user.bearer`. */
   reauth(user: TestUser): Promise<TestUser>;
   /** The stored session record, as the session store holds it. */
@@ -66,6 +73,10 @@ export async function createCatalogApp(
     /** Modules registered before the catalog's, so their routes are matched first (S32 mounts /products/search). */
     prependImports?: unknown[];
     overrides?: Array<{ provide: unknown; useValue: unknown }>;
+    /** The production structured (pino) logger instead of the quiet test logger; a spec captures stdout to read it. */
+    structuredLogger?: boolean;
+    /** Further builder changes after the clock and `overrides` (a provider override that needs `useFactory`). */
+    customize?: (builder: TestingModuleBuilder) => TestingModuleBuilder;
     redisUrl?: string;
     env?: Record<string, string>;
   } = {},
@@ -87,6 +98,7 @@ export async function createCatalogApp(
         AuthApiModule,
         SeedsModule,
         ...(options.prependImports ?? []),
+        ...(options.structuredLogger ? [LoggingModule] : []),
         ProductModule,
         ProductBatchReadModule,
         ...(options.extraImports ?? []),
@@ -97,13 +109,13 @@ export async function createCatalogApp(
           let b = builder.overrideProvider(CLOCK).useValue(clock);
           for (const o of options.overrides ?? [])
             b = b.overrideProvider(o.provide).useValue(o.useValue);
-          return b;
+          return options.customize ? options.customize(b) : b;
         },
       },
     );
     app = moduleRef.createNestApplication({ bufferLogs: false });
     configureHttpApp(app, {
-      useStructuredLogger: false,
+      useStructuredLogger: options.structuredLogger ?? false,
       processHandlers: false,
     });
     await app.listen(0, '127.0.0.1');
@@ -129,6 +141,7 @@ export async function createCatalogApp(
         email: opts.email ?? `user-${++counter}-${Date.now()}@example.com`,
         passwordHash: null,
         role: opts.role ?? Role.USER,
+        ...(opts.createdAt && { createdAt: opts.createdAt }),
       });
       const session = await issueSession(app, { id: user.id, role: user.role });
       return {

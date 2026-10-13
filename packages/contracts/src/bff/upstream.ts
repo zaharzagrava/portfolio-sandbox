@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { postPageSchema, type PostPage } from '../community/discussions.ts';
 import { pickupPointsNearResponseSchema } from '../fulfilment/pickup.ts';
 
 /**
@@ -27,13 +28,9 @@ export const chatUnreadPageSchema = z.object({
 });
 export type ChatUnreadPage = z.infer<typeof chatUnreadPageSchema>;
 
-/** S25 `GET /api/boards/:productId/posts`: `{items: PostView[], nextCursor, degraded?}`. */
-export const boardPostsPageSchema = z.looseObject({
-  items: z.array(z.looseObject({ id: z.string() })),
-  nextCursor: z.string().nullable(),
-  degraded: z.literal(true).optional(),
-});
-export type BoardPostsPage = z.infer<typeof boardPostsPageSchema>;
+/** S25 `GET /api/boards/:productId/posts`: S25 published its own schema, the BFF validates with it (name kept). */
+export const boardPostsPageSchema = postPageSchema;
+export type BoardPostsPage = PostPage;
 
 /** S30 `GET /api/products/:productId/videos`. */
 export const productVideosSchema = z.looseObject({

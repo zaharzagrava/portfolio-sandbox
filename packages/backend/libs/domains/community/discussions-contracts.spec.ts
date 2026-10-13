@@ -5,58 +5,45 @@ import {
   postViewSchema,
   voteResultSchema,
 } from '@marketplace-sandbox/contracts';
-import type {
-  CommentView as ServiceCommentView,
-  PostView as ServicePostView,
-} from './application/discussion.service';
+import type { CommentView, PostView } from '@marketplace-sandbox/contracts';
 
 const ok = (
   s: { safeParse: (v: unknown) => { success: boolean } },
   v: unknown,
 ) => s.safeParse(v).success;
 
-// Typed with the real service views: the fields both share must keep their names and types.
-const servicePost: ServicePostView = {
+// Typed with the contracts views the services return: a drift in a field name or type fails `tsc`.
+const servicePost: PostView = {
   postId: '0b5f6f0e-1111-4222-8333-444455556666',
   boardId: '1c5f6f0e-1111-4222-8333-444455556666',
   authorId: '2d5f6f0e-1111-4222-8333-444455556666',
   title: 'Does it work with USB-C?',
   bodyHtml: '<p>Planning to use it with a <strong>laptop</strong>.</p>',
-  createdAt: new Date('2026-10-10T12:00:00.000Z'),
+  createdAt: '2026-10-10T12:00:00.000Z',
   ups: 3,
   downs: 1,
-  comments: 2,
+  score: 2,
+  commentCount: 2,
+  myVote: null,
 };
-const serviceComment: ServiceCommentView = {
+const serviceComment: CommentView = {
   commentId: '3e5f6f0e-1111-4222-8333-444455556666',
+  postId: servicePost.postId,
   parentId: null,
-  path: '0001',
   depth: 0,
   authorId: servicePost.authorId,
   bodyHtml: '<p>Yes.</p>',
-  createdAt: new Date('2026-10-10T12:05:00.000Z'),
+  createdAt: '2026-10-10T12:05:00.000Z',
   ups: 1,
   downs: 0,
-  deleted: false,
-};
-
-const { comments: _c, ...postShared } = servicePost;
-const post = {
-  ...postShared,
-  createdAt: servicePost.createdAt.toISOString(),
-  score: servicePost.ups - servicePost.downs,
-  commentCount: servicePost.comments,
-  myVote: null,
-};
-const { path: _p, ...commentShared } = serviceComment;
-const comment = {
-  ...commentShared,
-  postId: servicePost.postId,
-  createdAt: serviceComment.createdAt.toISOString(),
   score: 1,
   myVote: 1,
+  deleted: false,
   replyCount: 0,
 };
+
+const post = servicePost;
+const comment = serviceComment;
 
 describe('W02 B-7: discussion contracts', () => {
   it('W02 B-7: a board page built from the real post view parses, with and without degraded', () => {
