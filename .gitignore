@@ -38,5 +38,10 @@ specs/**/.*.log
 .sdd-monitor/
 specs/.checkpoints/*.log
 
-# Python bytecode of the scripts (scripts/livespec/__pycache__ was committed earlier and stays as it is)
+# Python bytecode of the scripts
 __pycache__/
+
+# QA agent: the reports (*.md) and the scripts it wrote stay in git (the ledger and select.py read them); screenshots and traces do not
+specs/.qa/**/*.png
+specs/.qa/**/*.webm
+specs/.qa/**/*.zip

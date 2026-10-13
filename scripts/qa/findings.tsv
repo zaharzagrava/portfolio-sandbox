@@ -2,3 +2,8 @@
 2026-10-13-0810	buy	D1	CONFIRMED	medium	gap	`/orders` (my orders) is a 404 page; the history only exists at `/dashboard/orders` (story not built yet)
 2026-10-13-0810	buy	D2	CONFIRMED	low	pending	browser console error flood, inline styles blocked by the Content Security Policy (about 170-200 per flow)
 
+2026-10-13-1102	buy	D1	CONFIRMED	high	gap	"View order" on the confirmation page and the `/orders` and `/orders/{id}` pages answer 404, so the buyer cannot reach order detail
+2026-10-13-1102	buy	D2	CONFIRMED	medium	real	clicking a product in the search results fires POST /api/search/clicks that always fails with 400 (browser console error)
+2026-10-13-1102	buy	D3	SUSPICIOUS	low	pending	browser analytics event posts get 403 csrf_invalid
+2026-10-13-1102	buy	D4	SUSPICIOUS	low	pending	every page logs dozens of CSP console errors; plus `<main>` nested inside `<main>` on dashboard
+2026-10-13-1102	buy	D5	SUSPICIOUS	low	pending	short order number "#01A13485" is the timestamp prefix of a UUIDv7, so orders created in the same ~minute show the same number

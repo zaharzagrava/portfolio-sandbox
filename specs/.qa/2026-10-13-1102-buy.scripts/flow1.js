@@ -1,0 +1,25 @@
+const { chromium } = require('/home/zagrava/workspace/personal-projects/portfolio-sandbox/packages/web/node_modules/@playwright/test');
+const S = '/tmp/tmp.8jkDSSNS4j/shots/';
+const email = `qa${Date.now()}@example.com`;
+const txt = async (p, n = 1200) => (await p.innerText('body')).slice(0, n);
+(async () => {
+  const b = await chromium.launch();
+  const page = await (await b.newContext()).newPage();
+  page.on('console', m => { if (m.type() === 'error' && !/Content Security Policy/.test(m.text())) console.log('CONSOLE', m.text().slice(0, 200)); });
+  page.on('pageerror', e => console.log('PAGEERROR', e.message));
+  page.on('response', r => { const u = r.url(); if (/api/.test(u) && !/_next/.test(u)) console.log('API', r.status(), r.request().method(), u.replace('http://localhost:3000', '')); });
+  await page.goto('http://localhost:3000/search');
+  await page.getByText('Mechanical Keyboard Cherry MX Brown').first().click();
+  await page.waitForTimeout(1500);
+  console.log('PDP', page.url()); console.log(await txt(page, 700));
+  await page.screenshot({ path: S + 'pdp.png' });
+  await page.getByRole('button', { name: /add to cart/i }).click();
+  await page.waitForTimeout(1500);
+  console.log('AFTER ADD', await txt(page, 400));
+  await page.goto('http://localhost:3000/cart');
+  await page.waitForTimeout(1500);
+  console.log('CART', await txt(page, 900));
+  await page.screenshot({ path: S + 'cart.png' });
+  console.log('BUTTONS', await page.getByRole('button').allInnerTexts(), await page.getByRole('link').allInnerTexts());
+  await b.close();
+})();

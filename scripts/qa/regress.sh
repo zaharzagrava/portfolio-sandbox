@@ -13,7 +13,7 @@ verdict="$(awk -F'\t' -v s="$stamp" -v c="$charter" -v i="$ID" '$1==s && $2==c &
 SCRIPTS="${REPORT%.md}.scripts"; OUTSPEC="packages/web/tests/qa/${charter}-${ID}.spec.ts"; mkdir -p packages/web/tests/qa
 prompt="You write one regression test. Read the QA report $ROOT/$REPORT (defect $ID only) and the Playwright scripts the QA agent saved in $ROOT/$SCRIPTS.
 Write $ROOT/$OUTSPEC as a Playwright test in the style of the other specs in $ROOT/packages/web/tests (imports from ../helpers, uses createIsolatedProduct, register and the other helpers; every test creates its own data).
-The test title MUST start with 'QA-$charter-$ID:' and then say what must be true. It must reproduce the steps of the defect and assert the EXPECTED behavior, so that it FAILS while the defect exists and passes once fixed.
+The test title MUST start with 'QA-$charter-$ID:' and then say what must be true. It must reproduce the steps of the defect and assert the EXPECTED behavior, so that it FAILS while the defect exists and passes once fixed. Never read a response body inside an assertion message (await res.text() throws on an empty 202 and turns a passing test into a failing one): assert on the status or read the body only inside a failure branch.
 Keep it small and deterministic (no fixed sleeps: poll with expect.poll or toBeVisible with a timeout). Write nothing else.
 $(lessons_block)"
 NOTES_DIR="$ROOT/packages/web/tests" SPEC_TOOLS=(Read Glob Grep Write) run_claude "$(mktemp)" "$prompt" || { echo "the agent failed" >&2; exit 1; }

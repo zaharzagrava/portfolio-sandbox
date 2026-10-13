@@ -27,6 +27,12 @@ Rules: 'reproduced' needs the defect to happen in your own run, both times. If y
 
 $(cat "$work/finding.md")"
 SPEC_TOOLS=(Read Glob Grep Write 'Bash(curl:*)' 'Bash(jq:*)' 'Bash(node:*)' 'Bash(docker exec:*)' 'Bash(docker logs:*)' 'Bash(tail:*)' 'Bash(grep:*)' 'Bash(ls:*)' 'Bash(cat:*)' 'Bash(sleep:*)' "Bash($ROOT/scripts/infra/doctor-live.sh:*)")
-( cd "$work" && NOTES_DIR="$(dirname "$REPORT")" PASS_TIMEOUT_S="${VERIFY_TIMEOUT_S:-1200}" run_claude "$work/claude.log" "$prompt" ) >/dev/null 2>&1
-v="$(sed -n '1s/^VERDICT: *//p' "$OUTF" 2>/dev/null | tr -d '[:space:]')"
+# a session sometimes ends without writing the file or with another first line (seen once, on a finding it then judged fine on the second go): read the verdict from any line, and ask once more
+v=""
+for attempt in 1 2; do
+  ( cd "$work" && NOTES_DIR="$(dirname "$REPORT")" PASS_TIMEOUT_S="${VERIFY_TIMEOUT_S:-1200}" run_claude "$work/claude.log" "$prompt" ) >/dev/null 2>&1
+  v="$(grep -m1 -iE '^[*# ]*VERDICT:' "$OUTF" 2>/dev/null | sed -E 's/^[*# ]*VERDICT:[ *]*//I' | awk '{print $1}' | tr -d '*[:space:]')"
+  case "$v" in reproduced|not-reproduced|gap|not-a-defect) break ;; esac
+  rm -f "$OUTF"
+done
 case "$v" in reproduced|not-reproduced|gap|not-a-defect) echo "$v" ;; *) echo "no-verdict" ;; esac

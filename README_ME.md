@@ -68,8 +68,8 @@ out of Claude budget (exit 75, run again after the reset); login failed (exit 77
 runner FAILED (the machine stays 2 hours for you to look). A new run resumes from the newest of `sdd/auto` and `sdd/wip` and merges `master` first. Hard stop: `--hours` + 1.
 
 Useful knobs (environment variables of the loop): `UNTIL` (stop after a capability), `ORDER`, `COMMIT=1`, `MAX_GATE_REPAIRS` (5), `MAX_REPAIRS_PER_SPEC` (3), `REPAIR_BUDGET_MIN` (60),
-`MAX_CHECKPOINT_REPAIRS` (= `MAX_GATE_REPAIRS`), `MAX_IMPLEMENT_PASSES` (10), `STEP_MAX_BUDGET_USD`, `PASS_TIMEOUT_S`, `CHECKPOINT_QA` (e.g. `"buy account"`: run the QA pipeline at the
-checkpoint), `MAX_QA_FIXES` (3), `CHECKPOINT_BASE`, `PW_WORKERS`, `PW_EXPECT_TIMEOUT_MS`.
+`MAX_CHECKPOINT_REPAIRS` (= `MAX_GATE_REPAIRS`), `MAX_IMPLEMENT_PASSES` (10), `STEP_MAX_BUDGET_USD`, `PASS_TIMEOUT_S`, `CHECKPOINT_QA` (e.g. `"buy account"`: run those charters at the
+checkpoint; `auto`: draft missing charters and run only those whose capabilities changed, see below), `QA_BUDGET_MIN` (30), `MAX_NEW_CHARTERS` (2), `MAX_QA_FIXES` (3), `CHECKPOINT_BASE`, `PW_WORKERS`, `PW_EXPECT_TIMEOUT_MS`.
 
 ### The morning routine (15 to 30 minutes)
 
@@ -92,6 +92,13 @@ checkpoint), `MAX_QA_FIXES` (3), `CHECKPOINT_BASE`, `PW_WORKERS`, `PW_EXPECT_TIM
 - Living spec: `python3 scripts/livespec/check.py` (+ `models.py check`, `test_livespec.py`). Lessons: `python3 scripts/lessons/check.py`. All unit tests of the tooling:
   `for t in scripts/lessons/test_lessons.py scripts/sdd/test_sdd.py scripts/infra/test_doctor.py scripts/livespec/test_livespec.py scripts/decisions/test_triage.py scripts/mutation/test_mutate.py; do python3 $t; done`.
 - Do the unit tests catch wrong code? `scripts/mutation/changed.sh [REF]` or `python3 scripts/mutation/mutate.py <file.ts>` (survivors = untested lines).
+
+### Which charters run: selection, drafted charters, the full pass
+
+The QA agent cannot cover the whole product in a build, so with `CHECKPOINT_QA=auto` it covers what changed:
+- `scripts/qa/select.py --explain`: a charter is due when a commit touched the `scope:` paths of one of its capabilities (`specs:` line) after the charter's last report in `specs/.qa`; a charter that never ran is due once its capabilities are built. Most changed capabilities first, then the longest without a run, until `QA_BUDGET_MIN` (default 30; a charter costs its minutes plus 6) is used. The first is always taken; the rest wait for a later checkpoint.
+- `scripts/qa/make-charters.sh`: for built capabilities that no charter lists, a fresh session drafts one from the living page (`status: draft`, at most `MAX_NEW_CHARTERS` per checkpoint), or answers that there is no flow to walk (internal hubs) and the id goes to `scripts/qa/charters/.no-flow`. Read the drafts when you can; verify protects against a weak one.
+- `scripts/qa/full.sh`: every charter, no budget, about 20 minutes each, so hours. Not part of the build loop: run it by hand or on a machine of its own before a release. It writes failing regression tests; the next checkpoint's repair agent fixes them.
 
 ### The QA pipeline and how far to trust it
 
