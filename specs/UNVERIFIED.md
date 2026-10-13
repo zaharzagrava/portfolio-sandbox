@@ -112,3 +112,7 @@ interviews) until its status says so. The implementation loop appends here (rule
 | S19 | SC-001: 99% of near-me searches and map views answer in under 80 ms server time at 20,000 rps | `specs/domains/S19-pickup-near-me/quickstart.md`, "Ops artifacts" (load test on a production-sized index) | not run |
 | S19 | SC-002: a stock, point, product or shop change is visible within 5 s for 95% and 30 s for 99.9% of changes | same file (continuous stock stream, `pickup_index_lag_seconds` percentiles) | not run |
 | S19 | SC-006: at most 1 in 1,000 shown offers is found short at the exact check | same file (shown offers vs `checkAvailability` over a day of traffic) | not run |
+| S25 | SC-001: a buyer posts a question and sees it on the board in under 5 seconds; a double click never creates two posts | `specs/domains/S25-discussions/quickstart.md`, "Ops artifacts" (timed browser run; the double-click part is proven by AS-06) | not run |
+| S25 | SC-002: at 10,000 votes per second no vote is lost or double-counted; reconciliation finds zero drift | same file (`pnpm --dir packages/backend loadtest:discussions`, vote storm, then `discussions.reconcile`) | not run |
+| S25 | SC-003: board pages and thread first pages at 50,000 reads/s with p99 < 50 ms; vote p99 < 30 ms | same file (k6 `discussions.test.js`) | not run |
+| S25 | SC-005: a 50,000-comment thread loads its first page reading at most one page of roots plus their first replies | same file (seed 50,000 comments, read the first page; AS-18 proves the row bound at a small partition size) | not run |
