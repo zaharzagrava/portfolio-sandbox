@@ -1,0 +1,27 @@
+---
+id: audit-log
+title: Audit log
+kind: term
+status: draft
+aliases: []
+defined_for: S49-job-scheduler
+rules_hash: 2ff814d1f131
+---
+# Audit log
+## Definition
+The audit log is a record of [operator](operator.md) actions on jobs. When an operator retries a [`DEAD`](job-status.md) job, the system writes one audit log line next to the status change. The line lets people see later who brought a dead job back and when. That purpose is design intent (not stated in the spec).
+
+## Example
+An operator calls [`JobsAdminService.retryDead`](jobs-admin-service-retry-dead.md) on a `DEAD` job. The job becomes [`QUEUED`](job-status.md) with [`attempts = 0`](job-attempt.md), and one audit log line is written (S49.B-14).
+
+## Known gaps
+- The spec does not say where the audit log is stored or which fields a line contains.
+- The spec does not say whether other admin actions, such as `cancel` or `setScheduleEnabled`, also write audit lines.
+
+## Used by
+<!-- used-by:start -->
+- [S49](../capabilities/S49-job-scheduler.md): B-14
+- [job-retry-outcome](job-retry-outcome.md)
+- [jobs-admin-service-retry-dead](jobs-admin-service-retry-dead.md)
+- [operator](operator.md)
+<!-- used-by:end -->

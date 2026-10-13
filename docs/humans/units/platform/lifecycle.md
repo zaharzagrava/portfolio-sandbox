@@ -35,3 +35,11 @@ files: 2
 **Imports from:** [common/core](../common/core.md) (1), [platform/health](health.md) (1)
 
 **Imported by:** [app/payment-processor](../app/payment-processor.md) (1), [app/sse-gateway](../app/sse-gateway.md) (1), [domain/auctions](../domain/auctions.md) (1), [domain/catalog](../domain/catalog.md) (1), [domain/experimentation](../domain/experimentation.md) (1), [domain/launch-events](../domain/launch-events.md) (1), [platform/cache](cache.md) (1), [platform/cassandra](cassandra.md) (1), [platform/health](health.md) (1), [platform/jobs](jobs.md) (2), [platform/platform](platform.md) (1), [platform/projections](projections.md) (1), [platform/redis](redis.md) (1)
+
+<!-- spec-links:start -->
+## Specification
+
+The living specification is the source of truth for what this unit does; this page is generated from the code and may lag behind it.
+
+- [S54 Platform toolkit: problem+json errors, request context and transactions, health ](../../../spec/capabilities/S54-platform-toolkit.md)
+<!-- spec-links:end -->

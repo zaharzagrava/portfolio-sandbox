@@ -86,3 +86,27 @@ Database ownership registry enforcing which domain owns each table.
 **Imports from:** [app/bff](../app/bff.md) (1), [app/collab](../app/collab.md) (1), [app/core](../app/core.md) (1), [app/local-monolith](../app/local-monolith.md) (1), [app/payment-processor](../app/payment-processor.md) (1), [app/projector](../app/projector.md) (1), [app/public-api](../app/public-api.md) (1), [app/sse-gateway](../app/sse-gateway.md) (1), [app/worker](../app/worker.md) (1), [common/config](../common/config.md) (2), [common/telemetry](../common/telemetry.md) (1), [domain/assistant](../domain/assistant.md) (1), [platform/redis](../platform/redis.md) (1)
 
 **Imported by:** _none_
+
+<!-- spec-links:start -->
+## Specification
+
+The living specification is the source of truth for what this unit does; this page is generated from the code and may lag behind it.
+
+- [S01 Registration, password login, sessions, refresh-token rotation, JWKS, service-to](../../../spec/capabilities/S01-auth-sessions.md)
+- [S02 TOTP MFA with recovery codes, Google OIDC login (PKCE), account linking](../../../spec/capabilities/S02-mfa-oidc.md)
+- [S03 Shops as tenants: memberships, roles and permissions, invites, per-shop SSO, cel](../../../spec/capabilities/S03-shops-rbac.md)
+- [S05 Product CRUD, pricing, stock fields, product cache and invalidation, product vie](../../../spec/capabilities/S05-products.md)
+- [S10 Cart (guest + merge), idempotent checkout, stock reservation, multi-shop split, ](../../../spec/capabilities/S10-cart-checkout.md)
+- [S13 Payment intents, idempotency, unknown outcomes, PSP circuit breaker, outbox, sag](../../../spec/capabilities/S13-payment-intents.md)
+- [S33 Search autocomplete: query-log top-K trie, catalog completions, per-source budge](../../../spec/capabilities/S33-autocomplete.md)
+- [S34 "Bought together" recommendations: co-occurrence graph, normalisation, 2-hop col](../../../spec/capabilities/S34-recommendations.md)
+- [S35 Trending products: windowed approximate top-K per category](../../../spec/capabilities/S35-trending.md)
+- [S48 BFF composition: product-page aggregate with budgets and partial errors, GraphQL](../../../spec/capabilities/S48-bff.md)
+- [S50 Rate limiting: token bucket, sliding window, concurrency limits, fail modes, hea](../../../spec/capabilities/S50-rate-limiter.md)
+- [S51 Realtime push hub: topic SSE, Last-Event-ID replay, per-topic policies, ref-coun](../../../spec/capabilities/S51-realtime-push.md)
+- [S52 Cache toolkit: L1/L2, single-flight, XFetch, SWR, negative cache, write-behind c](../../../spec/capabilities/S52-cache-toolkit.md)
+- [S54 Platform toolkit: problem+json errors, request context and transactions, health ](../../../spec/capabilities/S54-platform-toolkit.md)
+- [W01 Sign up, log in, forgot password, MFA step-up, session cookie via BFF, CSRF, log](../../../spec/capabilities/W01-auth-account.md)
+- [W02 Home, search (autocomplete, filters, facets, sort, URL state), trending and reco](../../../spec/capabilities/W02-storefront-discovery.md)
+- [W07 App shell and cross-cutting UI: navbar, footer, legal pages, developer docs, err](../../../spec/capabilities/W07-app-shell.md)
+<!-- spec-links:end -->

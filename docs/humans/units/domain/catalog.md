@@ -98,3 +98,13 @@ See [event catalog](../../catalog/events.md) and [job catalog](../../catalog/job
 **Imports from:** [common/config](../common/config.md) (3), [common/errors](../common/errors.md) (2), [common/types](../common/types.md) (1), [domain/discovery](discovery.md) (1), [domain/identity](identity.md) (7), [domain/tenancy](tenancy.md) (3), [platform/cache](../platform/cache.md) (6), [platform/database](../platform/database.md) (2), [platform/dynamo](../platform/dynamo.md) (3), [platform/elasticsearch](../platform/elasticsearch.md) (3), [platform/events](../platform/events.md) (2), [platform/jobs](../platform/jobs.md) (2), [platform/lifecycle](../platform/lifecycle.md) (1), [platform/outbox](../platform/outbox.md) (8), [platform/platform](../platform/platform.md) (1), [platform/projections](../platform/projections.md) (3), [platform/rate-limit](../platform/rate-limit.md) (1), [platform/redis](../platform/redis.md) (4), [platform/storage](../platform/storage.md) (4)
 
 **Imported by:** [app/collab](../app/collab.md) (1), [app/core](../app/core.md) (1), [app/projector](../app/projector.md) (1), [app/worker](../app/worker.md) (1), [domain/assistant](assistant.md) (2), [domain/chat](chat.md) (3), [domain/community](community.md) (1), [domain/developer-platform](developer-platform.md) (3), [domain/discovery](discovery.md) (5), [domain/fulfilment](fulfilment.md) (1), [domain/orders](orders.md) (4), [domain/seller-insights](seller-insights.md) (2)
+
+<!-- spec-links:start -->
+## Specification
+
+The living specification is the source of truth for what this unit does; this page is generated from the code and may lag behind it.
+
+- [S05 Product CRUD, pricing, stock fields, product cache and invalidation, product vie](../../../spec/capabilities/S05-products.md)
+- [S50 Rate limiting: token bucket, sliding window, concurrency limits, fail modes, hea](../../../spec/capabilities/S50-rate-limiter.md)
+- [S54 Platform toolkit: problem+json errors, request context and transactions, health ](../../../spec/capabilities/S54-platform-toolkit.md)
+<!-- spec-links:end -->

@@ -43,3 +43,11 @@ Implements RFC 7807 standard error responses with class hierarchy for Fatal, Tra
 **Imports from:** [common/config](config.md) (2), [common/types](types.md) (1)
 
 **Imported by:** [app/bff](../app/bff.md) (1), [app/core](../app/core.md) (1), [app/public-api](../app/public-api.md) (1), [app/sse-gateway](../app/sse-gateway.md) (1), [common/exceptions-filter](exceptions-filter.md) (1), [domain/assistant](../domain/assistant.md) (1), [domain/catalog](../domain/catalog.md) (2), [domain/chat](../domain/chat.md) (1), [domain/identity](../domain/identity.md) (2), [domain/payments](../domain/payments.md) (3), [platform/aws](../platform/aws.md) (2), [platform/outbox](../platform/outbox.md) (1), [platform/rate-limit](../platform/rate-limit.md) (1), [platform/stripe](../platform/stripe.md) (4)
+
+<!-- spec-links:start -->
+## Specification
+
+The living specification is the source of truth for what this unit does; this page is generated from the code and may lag behind it.
+
+- [S54 Platform toolkit: problem+json errors, request context and transactions, health ](../../../spec/capabilities/S54-platform-toolkit.md)
+<!-- spec-links:end -->

@@ -34,3 +34,11 @@ files: 5
 **Imports from:** [common/config](../common/config.md) (3), [common/core](../common/core.md) (1)
 
 **Imported by:** [app/projector](../app/projector.md) (1), [app/sse-gateway](../app/sse-gateway.md) (1), [app/worker](../app/worker.md) (1), [domain/assistant](../domain/assistant.md) (3), [domain/catalog-sync](../domain/catalog-sync.md) (7), [domain/chat](../domain/chat.md) (2), [domain/developer-platform](../domain/developer-platform.md) (7), [domain/fulfilment](../domain/fulfilment.md) (3), [domain/media](../domain/media.md) (5), [domain/notifications](../domain/notifications.md) (3), [domain/orders](../domain/orders.md) (1), [domain/seller-onboarding](../domain/seller-onboarding.md) (2), [domain/shop-functions](../domain/shop-functions.md) (3)
+
+<!-- spec-links:start -->
+## Specification
+
+The living specification is the source of truth for what this unit does; this page is generated from the code and may lag behind it.
+
+- [S54 Platform toolkit: problem+json errors, request context and transactions, health ](../../../spec/capabilities/S54-platform-toolkit.md)
+<!-- spec-links:end -->

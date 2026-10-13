@@ -42,3 +42,11 @@ files: 8
 **Imports from:** [common/config](../common/config.md) (4), [common/errors](../common/errors.md) (1), [common/types](../common/types.md) (1), [platform/database](database.md) (4), [platform/jobs](jobs.md) (2), [platform/kafka](kafka.md) (2)
 
 **Imported by:** [app/core](../app/core.md) (1), [domain/catalog](../domain/catalog.md) (8), [domain/catalog-sync](../domain/catalog-sync.md) (8), [domain/community](../domain/community.md) (1), [domain/developer-platform](../domain/developer-platform.md) (5), [domain/orders](../domain/orders.md) (1), [domain/payments](../domain/payments.md) (8), [platform/events](events.md) (2), [platform/kafka](kafka.md) (4)
+
+<!-- spec-links:start -->
+## Specification
+
+The living specification is the source of truth for what this unit does; this page is generated from the code and may lag behind it.
+
+- [S54 Platform toolkit: problem+json errors, request context and transactions, health ](../../../spec/capabilities/S54-platform-toolkit.md)
+<!-- spec-links:end -->

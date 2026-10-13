@@ -50,3 +50,11 @@ Central manifest defining all Lambda functions with configuration for deployment
 **Imports from:** [common/config](../common/config.md) (2), [domain/assistant](../domain/assistant.md) (1), [domain/developer-platform](../domain/developer-platform.md) (2), [domain/media](../domain/media.md) (1), [domain/seller-onboarding](../domain/seller-onboarding.md) (1), [platform/database](../platform/database.md) (2), [platform/platform](../platform/platform.md) (2), [platform/redis](../platform/redis.md) (2)
 
 **Imported by:** [app/lambda-local](lambda-local.md) (3)
+
+<!-- spec-links:start -->
+## Specification
+
+The living specification is the source of truth for what this unit does; this page is generated from the code and may lag behind it.
+
+- [S54 Platform toolkit: problem+json errors, request context and transactions, health ](../../../spec/capabilities/S54-platform-toolkit.md)
+<!-- spec-links:end -->

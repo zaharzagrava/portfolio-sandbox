@@ -10,14 +10,14 @@ defined_by: S10
 An order turns a cart into a hold on stock. Checkout creates one order, splits it into one shop order per seller, and reserves stock for 15 minutes. The reservation is all or nothing. Stock changes only through the catalog stock command. An unpaid hold expires and returns its stock once. Only the payment provider's verified webhook marks an order paid. Capabilities that read order statuses or react to order events can rely on these guarantees.
 
 ## Rules
-- **order-reservation.C-01** Stock MUST change only through the catalog stock command, with operations sorted by ascending product ID, one per product, with IDs `orders:<orderId>:reserve:<productId>`.
-- **order-reservation.C-02** A reservation MUST be all or nothing: if any line is short, no stock is held, the order is `CANCELLED(out_of_stock)`, and the buyer gets `422 out_of_stock`.
+- **order-reservation.C-01** Stock MUST change only through the [catalog stock command](../terms/catalog-stock-command.md), with [operations sorted by ascending product ID](../terms/stock-operation-ordering.md), one per product, with IDs [`orders:<orderId>:reserve:<productId>`](../terms/stock-operation-id.md).
+- **order-reservation.C-02** A reservation MUST be [all or nothing](../terms/all-or-nothing-reservation.md): if any line is short, no stock is held, the order is [`CANCELLED(out_of_stock)`](../terms/order-status.md), and the buyer gets [`422 out_of_stock`](../terms/out-of-stock-error.md).
 - **order-reservation.C-03** Stock MUST NOT go below 0.
-- **order-reservation.C-04** An unpaid `RESERVED` order MUST be cancelled with reason `hold_expired` at `reservedUntil`, 15 minutes after reservation, and its stock MUST return once.
-- **order-reservation.C-05** Cancelling MUST move `HELD` reservations to `RELEASE_PENDING` in the same transaction, and a retry job MUST release failures.
-- **order-reservation.C-06** An order stuck in `PENDING` for more than 60 s MUST be recovered by repeating the same stock operations.
-- **order-reservation.C-07** Only a verified webhook event whose payment status, amount and currency match the order MUST mark it `PAID`; a mismatch is stored as `REJECTED`.
-- **order-reservation.C-08** The order statuses are `PENDING`, `RESERVED`, `PAID`, `FULFILLING`, `SHIPPED`, `DELIVERED`, `CANCELLED` and `REFUNDED`; the backend moves them and the web app MUST only show them.
+- **order-reservation.C-04** An unpaid [`RESERVED`](../terms/order-status.md) order MUST be cancelled with reason [`hold_expired`](../terms/hold-expired.md) at [`reservedUntil`](../terms/reserved-until.md), 15 minutes after reservation, and [its stock MUST return once](../terms/stock-release.md).
+- **order-reservation.C-05** Cancelling MUST move [`HELD`](../terms/reservation-status.md) reservations to [`RELEASE_PENDING`](../terms/reservation-status.md) in the same transaction, and a [retry job](../terms/job-retries.md) MUST release failures.
+- **order-reservation.C-06** An order stuck in [`PENDING`](../terms/order-status.md) for more than 60 s MUST be [recovered by repeating the same stock operations](../terms/pending-order-recovery.md).
+- **order-reservation.C-07** Only a [verified webhook event](../terms/verified-webhook-event.md) whose payment status, amount and currency match the order MUST mark it [`PAID`](../terms/order-status.md); a mismatch is stored as [`REJECTED`](../terms/rejected-payment-event.md).
+- **order-reservation.C-08** The [order statuses](../terms/order-status.md) are `PENDING`, `RESERVED`, `PAID`, `FULFILLING`, `SHIPPED`, `DELIVERED`, `CANCELLED` and `REFUNDED`; the backend moves them and the web app MUST only show them.
 
 ## How the capabilities use it
 - {{cap:S05}} owns the stock fields and the exported stock command. Other domains change stock only through it. No line in its page links this concept.

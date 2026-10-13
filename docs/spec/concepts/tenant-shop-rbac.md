@@ -10,14 +10,14 @@ defined_by: S03
 A shop is the tenant of the marketplace: a seller organisation with a team, a plan and a status. This concept decides who may do what inside a shop and keeps shops apart. It guarantees that one shop never sees or disturbs another. A non-member gets the same answer as for a missing shop. Each role has a fixed set of permissions. Other capabilities rely on membership, role and tenant isolation.
 
 ## Rules
-- **tenant-shop-rbac.C-01** A non-member, an unknown shop, a malformed identifier and a deleted shop MUST all answer the same `404 shop_not_found`; the same rule applies to reads of another tenant's aggregate.
-- **tenant-shop-rbac.C-02** The shop MUST come from the path or the `X-Shop-Id` header, never from the body; a path and header that differ MUST answer `400 shop_mismatch`.
-- **tenant-shop-rbac.C-03** Answers MUST follow this order: `401 invalid_token`, `404`, `403 permission_denied`, then the status gate. A `SUSPENDED` shop MUST allow only `shop.read`, `members.read` and `shop.export`.
-- **tenant-shop-rbac.C-04** The permissions of each role MUST equal the matrix of FR-020, and a lower role MUST hold a subset of the permissions of the adjacent higher role. An unknown role or permission MUST be denied.
-- **tenant-shop-rbac.C-05** Only an `OWNER` MAY assign, change or remove `OWNER` or `ADMIN`; an `ADMIN` MAY manage `STAFF` and `VIEWER` only. Violations MUST answer `403 insufficient_role`.
-- **tenant-shop-rbac.C-06** A shop MUST always keep at least one `OWNER`; a change that removes the last one MUST answer `409 last_owner`, also under concurrent changes.
-- **tenant-shop-rbac.C-07** Tenancy tables MUST be unreadable without a tenant set, and the tenant setting MUST NOT leak between transactions on one connection.
-- **tenant-shop-rbac.C-08** Seats used (members plus unexpired pending invites) MUST NOT exceed the plan limit: `STARTER` 5, `PRO` 25, `ENTERPRISE` 250.
+- **[tenant](../terms/tenant.md)-shop-rbac.C-01** A non-member, an unknown shop, a malformed identifier and a deleted shop MUST all answer the same [`404 shop_not_found`](../terms/shop-not-found.md); the same rule applies to reads of another [tenant's aggregate](../terms/aggregate-id.md).
+- **tenant-shop-rbac.C-02** The shop MUST come from the path or the [`X-Shop-Id` header](../terms/x-shop-id-header.md), never from the body; a path and header that differ MUST answer [`400 shop_mismatch`](../terms/shop-mismatch.md).
+- **tenant-shop-rbac.C-03** Answers MUST follow this order: [`401 invalid_token`](../terms/invalid-token-error.md), `404`, [`403 permission_denied`](../terms/permission-denied.md), then the [status gate](../terms/shop-status-gate.md). A [`SUSPENDED`](../terms/shop-status.md) shop MUST allow only `shop.read`, `members.read` and [`shop.export`](../terms/permission.md).
+- **tenant-shop-rbac.C-04** The [permissions](../terms/permission.md) of each [role](../terms/shop-role.md) MUST equal the [matrix of FR-020](../terms/role-permission-matrix.md), and a lower role MUST hold a subset of the permissions of the adjacent higher role. An unknown role or permission MUST be denied.
+- **tenant-shop-rbac.C-05** Only an [`OWNER`](../terms/shop-role.md) MAY assign, change or remove `OWNER` or `ADMIN`; an `ADMIN` MAY manage `STAFF` and `VIEWER` only. Violations MUST answer [`403 insufficient_role`](../terms/insufficient-role.md).
+- **tenant-shop-rbac.C-06** A shop MUST always keep at least one `OWNER`; a change that removes the last one MUST answer [`409 last_owner`](../terms/last-owner.md), also under [concurrent changes ↗](../sw-external-terms.md#race-condition).
+- **tenant-shop-rbac.C-07** [Tenancy tables](../terms/tenancy-tables.md) MUST be unreadable without a tenant set, and the [tenant setting](../terms/tenant-setting.md) MUST NOT leak between [transactions ↗](../sw-external-terms.md#database-transaction) on one connection.
+- **tenant-shop-rbac.C-08** [Seats used](../terms/seat.md) (members plus [unexpired pending invites](../terms/pending-invite.md)) MUST NOT exceed the [plan limit](../terms/plan-limit.md): `STARTER` 5, `PRO` 25, `ENTERPRISE` 250.
 
 ## How the capabilities use it
 - {{cap:S03}} defines the concept: memberships, roles, permissions, invites, plan seat limits, slugs, and the tenant isolation of data.

@@ -92,3 +92,12 @@ See [event catalog](../../catalog/events.md) and [job catalog](../../catalog/job
 ## Flows it takes part in
 
 - [auction-closed](../../flows/auction-closed.md)
+
+<!-- spec-links:start -->
+## Specification
+
+The living specification is the source of truth for what this unit does; this page is generated from the code and may lag behind it.
+
+- [S51 Realtime push hub: topic SSE, Last-Event-ID replay, per-topic policies, ref-coun](../../../spec/capabilities/S51-realtime-push.md)
+- [S54 Platform toolkit: problem+json errors, request context and transactions, health ](../../../spec/capabilities/S54-platform-toolkit.md)
+<!-- spec-links:end -->

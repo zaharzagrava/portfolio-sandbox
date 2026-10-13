@@ -121,3 +121,12 @@ See [event catalog](../../catalog/events.md) and [job catalog](../../catalog/job
 **Imports from:** [common/config](../common/config.md) (4), [domain/identity](identity.md) (4), [domain/payments](payments.md) (2), [domain/tenancy](tenancy.md) (1), [platform/cache](../platform/cache.md) (2), [platform/clickhouse](../platform/clickhouse.md) (5), [platform/dynamo](../platform/dynamo.md) (1), [platform/events](../platform/events.md) (2), [platform/jobs](../platform/jobs.md) (3), [platform/kafka](../platform/kafka.md) (5), [platform/projections](../platform/projections.md) (2), [platform/rate-limit](../platform/rate-limit.md) (1), [platform/redis](../platform/redis.md) (3)
 
 **Imported by:** [app/core](../app/core.md) (1), [app/projector](../app/projector.md) (1), [app/worker](../app/worker.md) (1)
+
+<!-- spec-links:start -->
+## Specification
+
+The living specification is the source of truth for what this unit does; this page is generated from the code and may lag behind it.
+
+- [S50 Rate limiting: token bucket, sliding window, concurrency limits, fail modes, hea](../../../spec/capabilities/S50-rate-limiter.md)
+- [S54 Platform toolkit: problem+json errors, request context and transactions, health ](../../../spec/capabilities/S54-platform-toolkit.md)
+<!-- spec-links:end -->

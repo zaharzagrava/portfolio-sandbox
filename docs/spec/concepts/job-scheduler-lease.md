@@ -10,14 +10,14 @@ defined_by: S49
 Scheduled jobs and leases let a domain run background and recurring work without owning queues, locks or retry logic. Jobs live in the database. Workers lease them with row-lock skip-locked claims. Failures retry with backoff. One elected leader turns time-zone-aware cron schedules into jobs. A per-shop cap stops one shop from starving the others. The guarantee: each job runs under one live lease, and a stale worker changes nothing.
 
 ## Rules
-- **job-scheduler-lease.C-01** A job MUST have exactly one status of `QUEUED`, `RUNNING`, `SUCCEEDED`, `DEAD` or `CANCELLED`, and MUST move only along the legal transitions.
-- **job-scheduler-lease.C-02** Enqueue MUST join the caller's open transaction, so the job exists if and only if the caller commits. Without a transaction, it MUST commit before the call returns.
-- **job-scheduler-lease.C-03** Enqueue with an existing idempotency key MUST create nothing and return the original id with `created: false`. A key reused with a different job type MUST fail with `IdempotencyKeyConflictError`.
-- **job-scheduler-lease.C-04** Two workers MUST NOT claim the same job. Every write that ends or changes an attempt MUST be fenced by worker and attempt number.
-- **job-scheduler-lease.C-05** A thrown error MUST re-queue the job with a full-jitter delay of at most `min(15 min, 1 s × 2^attempts)`. At `maxAttempts`, or on `NonRetryableJobError`, the job MUST become `DEAD`.
-- **job-scheduler-lease.C-06** The reaper MUST re-queue (or, at `maxAttempts`, kill) `RUNNING` jobs with expired leases exactly once, even with several reaper instances, and MUST NOT alter `attempts`.
-- **job-scheduler-lease.C-07** A shop MUST NOT have more running jobs than the per-shop cap (default 5) fleet-wide. Jobs without a shop MUST NOT be capped.
-- **job-scheduler-lease.C-08** Only one leader, chosen per tick by an advisory lock, MUST materialise schedules. Each fire MUST use the key `cron:<name>:<fireAt ISO-8601 UTC with milliseconds>`.
+- **job-scheduler-lease.C-01** A job MUST have exactly one [status](../terms/job-status.md) of `QUEUED`, `RUNNING`, `SUCCEEDED`, `DEAD` or `CANCELLED`, and MUST move only along the [legal transitions](../terms/job-status.md).
+- **job-scheduler-lease.C-02** [Enqueue](../terms/job-enqueue.md) MUST join the caller's [open transaction](../terms/request-context.md), so the job exists if and only if the caller commits. Without a transaction, it MUST commit before the call returns.
+- **job-scheduler-lease.C-03** Enqueue with an existing [idempotency key](../terms/idempotency-key.md) MUST create nothing and return the original id with [`created: false`](../terms/enqueue-created-flag.md). A key reused with a different job type MUST fail with [`IdempotencyKeyConflictError`](../terms/idempotency-key.md).
+- **job-scheduler-lease.C-04** Two workers MUST NOT [claim](../terms/job-claim.md) the same job. Every write that ends or changes an [attempt](../terms/job-attempt.md) MUST be [fenced by worker and attempt number](../terms/attempt-fencing.md).
+- **job-scheduler-lease.C-05** A thrown error MUST re-queue the job with a [full-jitter](../terms/jitter.md) delay of at most `min(15 min, 1 s × 2^attempts)`. At [`maxAttempts`](../terms/job-max-attempts.md), or on [`NonRetryableJobError`](../terms/non-retryable-job-error.md), the job MUST become [`DEAD`](../terms/job-status.md).
+- **job-scheduler-lease.C-06** The [reaper](../terms/job-reaper.md) MUST re-queue (or, at `maxAttempts`, kill) `RUNNING` jobs with expired [leases](../terms/job-lease.md) exactly once, even with several reaper instances, and MUST NOT alter `attempts`.
+- **job-scheduler-lease.C-07** A shop MUST NOT have more running jobs than the [per-shop cap](../terms/per-shop-running-cap.md) (default 5) [fleet-wide](../terms/per-shop-running-cap.md). Jobs without a shop MUST NOT be capped.
+- **job-scheduler-lease.C-08** Only one [leader](../terms/scheduler-leader.md), chosen per tick by an [advisory lock ↗](../sw-external-terms.md#advisory-lock), MUST [materialise schedules](../terms/cron-schedule-materialisation.md). Each fire MUST use the key [`cron:<name>:<fireAt ISO-8601 UTC with milliseconds>`](../terms/cron-fire-key.md).
 
 ## How the capabilities use it
 - {{cap:S13}} runs a periodic sweep every 60 s that resolves due `UNKNOWN` payments.

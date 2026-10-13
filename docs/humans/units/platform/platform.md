@@ -36,3 +36,12 @@ files: 3
 **Imports from:** [common/config](../common/config.md) (1), [common/load-shedding](../common/load-shedding.md) (1), [common/logging](../common/logging.md) (1), [platform/context](context.md) (2), [platform/health](health.md) (1), [platform/lifecycle](lifecycle.md) (1)
 
 **Imported by:** [app/bff](../app/bff.md) (2), [app/collab](../app/collab.md) (2), [app/core](../app/core.md) (2), [app/lambdas](../app/lambdas.md) (2), [app/local-monolith](../app/local-monolith.md) (1), [app/projector](../app/projector.md) (2), [app/public-api](../app/public-api.md) (2), [app/sse-gateway](../app/sse-gateway.md) (2), [app/worker](../app/worker.md) (2), [domain/catalog](../domain/catalog.md) (1), [domain/tenancy](../domain/tenancy.md) (1)
+
+<!-- spec-links:start -->
+## Specification
+
+The living specification is the source of truth for what this unit does; this page is generated from the code and may lag behind it.
+
+- [S54 Platform toolkit: problem+json errors, request context and transactions, health ](../../../spec/capabilities/S54-platform-toolkit.md)
+- [W07 App shell and cross-cutting UI: navbar, footer, legal pages, developer docs, err](../../../spec/capabilities/W07-app-shell.md)
+<!-- spec-links:end -->

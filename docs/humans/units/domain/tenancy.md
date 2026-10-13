@@ -95,3 +95,14 @@ See [event catalog](../../catalog/events.md) and [job catalog](../../catalog/job
 **Imports from:** [common/config](../common/config.md) (2), [domain/identity](identity.md) (7), [platform/cache](../platform/cache.md) (4), [platform/context](../platform/context.md) (3), [platform/jobs](../platform/jobs.md) (2), [platform/platform](../platform/platform.md) (1), [platform/realtime](../platform/realtime.md) (2)
 
 **Imported by:** [app/collab](../app/collab.md) (1), [app/core](../app/core.md) (1), [app/projector](../app/projector.md) (1), [app/public-api](../app/public-api.md) (1), [app/sse-gateway](../app/sse-gateway.md) (1), [app/worker](../app/worker.md) (1), [domain/asset-library](asset-library.md) (1), [domain/assistant](assistant.md) (1), [domain/auctions](auctions.md) (2), [domain/billing](billing.md) (1), [domain/catalog](catalog.md) (3), [domain/catalog-sync](catalog-sync.md) (3), [domain/content](content.md) (1), [domain/developer-platform](developer-platform.md) (3), [domain/discovery](discovery.md) (1), [domain/fulfilment](fulfilment.md) (2), [domain/launch-events](launch-events.md) (3), [domain/marketing](marketing.md) (1), [domain/media](media.md) (2), [domain/notifications](notifications.md) (1), [domain/orders](orders.md) (2), [domain/payments](payments.md) (3), [domain/seller-insights](seller-insights.md) (2), [domain/seller-onboarding](seller-onboarding.md) (1), [domain/shop-functions](shop-functions.md) (1), [domain/statements](statements.md) (1)
+
+<!-- spec-links:start -->
+## Specification
+
+The living specification is the source of truth for what this unit does; this page is generated from the code and may lag behind it.
+
+- [S03 Shops as tenants: memberships, roles and permissions, invites, per-shop SSO, cel](../../../spec/capabilities/S03-shops-rbac.md)
+- [S51 Realtime push hub: topic SSE, Last-Event-ID replay, per-topic policies, ref-coun](../../../spec/capabilities/S51-realtime-push.md)
+- [S52 Cache toolkit: L1/L2, single-flight, XFetch, SWR, negative cache, write-behind c](../../../spec/capabilities/S52-cache-toolkit.md)
+- [S54 Platform toolkit: problem+json errors, request context and transactions, health ](../../../spec/capabilities/S54-platform-toolkit.md)
+<!-- spec-links:end -->

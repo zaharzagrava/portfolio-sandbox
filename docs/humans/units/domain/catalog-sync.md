@@ -91,3 +91,13 @@ See [event catalog](../../catalog/events.md) and [job catalog](../../catalog/job
 **Imports from:** [common/config](../common/config.md) (2), [common/core](../common/core.md) (1), [common/types](../common/types.md) (1), [domain/identity](identity.md) (6), [domain/orders](orders.md) (3), [domain/tenancy](tenancy.md) (3), [platform/events](../platform/events.md) (1), [platform/http-client](../platform/http-client.md) (1), [platform/jobs](../platform/jobs.md) (3), [platform/outbox](../platform/outbox.md) (8), [platform/projections](../platform/projections.md) (1), [platform/rate-limit](../platform/rate-limit.md) (5), [platform/realtime](../platform/realtime.md) (4), [platform/sqs](../platform/sqs.md) (7), [platform/storage](../platform/storage.md) (2)
 
 **Imported by:** [app/core](../app/core.md) (1), [app/projector](../app/projector.md) (1), [app/sse-gateway](../app/sse-gateway.md) (1), [app/worker](../app/worker.md) (1)
+
+<!-- spec-links:start -->
+## Specification
+
+The living specification is the source of truth for what this unit does; this page is generated from the code and may lag behind it.
+
+- [S50 Rate limiting: token bucket, sliding window, concurrency limits, fail modes, hea](../../../spec/capabilities/S50-rate-limiter.md)
+- [S51 Realtime push hub: topic SSE, Last-Event-ID replay, per-topic policies, ref-coun](../../../spec/capabilities/S51-realtime-push.md)
+- [S54 Platform toolkit: problem+json errors, request context and transactions, health ](../../../spec/capabilities/S54-platform-toolkit.md)
+<!-- spec-links:end -->

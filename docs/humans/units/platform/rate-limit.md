@@ -37,3 +37,11 @@ files: 8
 **Imports from:** [common/errors](../common/errors.md) (1), [platform/redis](redis.md) (2)
 
 **Imported by:** [app/core](../app/core.md) (2), [app/public-api](../app/public-api.md) (1), [app/sse-gateway](../app/sse-gateway.md) (1), [domain/assistant](../domain/assistant.md) (7), [domain/auctions](../domain/auctions.md) (1), [domain/catalog](../domain/catalog.md) (1), [domain/catalog-sync](../domain/catalog-sync.md) (5), [domain/community](../domain/community.md) (1), [domain/developer-platform](../domain/developer-platform.md) (2), [domain/discovery](../domain/discovery.md) (1), [domain/experimentation](../domain/experimentation.md) (1), [domain/fulfilment](../domain/fulfilment.md) (1), [domain/identity](../domain/identity.md) (2), [domain/launch-events](../domain/launch-events.md) (2), [domain/marketing](../domain/marketing.md) (1), [domain/media](../domain/media.md) (1), [domain/notifications](../domain/notifications.md) (2), [domain/orders](../domain/orders.md) (1), [domain/statements](../domain/statements.md) (1)
+
+<!-- spec-links:start -->
+## Specification
+
+The living specification is the source of truth for what this unit does; this page is generated from the code and may lag behind it.
+
+- [S50 Rate limiting: token bucket, sliding window, concurrency limits, fail modes, hea](../../../spec/capabilities/S50-rate-limiter.md)
+<!-- spec-links:end -->

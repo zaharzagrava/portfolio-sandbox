@@ -33,3 +33,12 @@ files: 4
 **Imports from:** [common/config](../common/config.md) (2)
 
 **Imported by:** [app/sse-gateway](../app/sse-gateway.md) (1), [domain/asset-library](../domain/asset-library.md) (2), [domain/assistant](../domain/assistant.md) (2), [domain/catalog](../domain/catalog.md) (4), [domain/catalog-sync](../domain/catalog-sync.md) (2), [domain/discovery](../domain/discovery.md) (4), [domain/media](../domain/media.md) (4), [domain/orders](../domain/orders.md) (1), [domain/seller-insights](../domain/seller-insights.md) (2), [domain/seller-onboarding](../domain/seller-onboarding.md) (5)
+
+<!-- spec-links:start -->
+## Specification
+
+The living specification is the source of truth for what this unit does; this page is generated from the code and may lag behind it.
+
+- [S33 Search autocomplete: query-log top-K trie, catalog completions, per-source budge](../../../spec/capabilities/S33-autocomplete.md)
+- [S54 Platform toolkit: problem+json errors, request context and transactions, health ](../../../spec/capabilities/S54-platform-toolkit.md)
+<!-- spec-links:end -->

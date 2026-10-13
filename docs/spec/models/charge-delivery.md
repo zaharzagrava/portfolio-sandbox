@@ -22,7 +22,7 @@ checked in which configuration and what the expected result is:
   "charge only while `PENDING`" is what makes this true.
 - **`parkedIsVisible`** (visibility): *violated* in `today`, the system as it was on 2026-10-12, where every send was rejected, the row was parked after the
   retries and nothing told an operator. It holds in `loud`, where a parked row is surfaced (a health check turns unready, an alert fires). That the `today` run is
-  expected to find the violation documents a known gap: see the incident `docs/incidents/2026-10-12-payment-stuck-pending.md`.
+  expected to find the violation documents a known gap: see the incident `docs/runbooks/incidents/2026-10-12-payment-stuck-pending.md`.
 
 ## What to build from it
 - A parked outbox row must make the readiness check fail or raise an alert (the `loud` configuration). Today it does neither.

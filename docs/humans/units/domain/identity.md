@@ -111,3 +111,16 @@ See [event catalog](../../catalog/events.md) and [job catalog](../../catalog/job
 **Imports from:** [common/config](../common/config.md) (11), [common/errors](../common/errors.md) (2), [common/scripts](../common/scripts.md) (1), [common/types](../common/types.md) (4), [platform/aws](../platform/aws.md) (1), [platform/cache](../platform/cache.md) (2), [platform/database](../platform/database.md) (1), [platform/dynamo](../platform/dynamo.md) (2), [platform/firebase](../platform/firebase.md) (1), [platform/jobs](../platform/jobs.md) (3), [platform/rate-limit](../platform/rate-limit.md) (2), [platform/realtime](../platform/realtime.md) (2), [platform/redis](../platform/redis.md) (3), [platform/stripe](../platform/stripe.md) (1)
 
 **Imported by:** [app/core](../app/core.md) (5), [app/sse-gateway](../app/sse-gateway.md) (10), [app/worker](../app/worker.md) (1), [domain/asset-library](asset-library.md) (2), [domain/assistant](assistant.md) (4), [domain/auctions](auctions.md) (2), [domain/billing](billing.md) (2), [domain/catalog](catalog.md) (7), [domain/catalog-sync](catalog-sync.md) (6), [domain/chat](chat.md) (7), [domain/community](community.md) (4), [domain/content](content.md) (2), [domain/developer-platform](developer-platform.md) (8), [domain/discovery](discovery.md) (8), [domain/experimentation](experimentation.md) (4), [domain/fulfilment](fulfilment.md) (4), [domain/launch-events](launch-events.md) (6), [domain/marketing](marketing.md) (4), [domain/media](media.md) (4), [domain/notifications](notifications.md) (2), [domain/orders](orders.md) (4), [domain/payments](payments.md) (4), [domain/seller-insights](seller-insights.md) (5), [domain/seller-onboarding](seller-onboarding.md) (4), [domain/shop-functions](shop-functions.md) (1), [domain/statements](statements.md) (2), [domain/tenancy](tenancy.md) (7)
+
+<!-- spec-links:start -->
+## Specification
+
+The living specification is the source of truth for what this unit does; this page is generated from the code and may lag behind it.
+
+- [S01 Registration, password login, sessions, refresh-token rotation, JWKS, service-to](../../../spec/capabilities/S01-auth-sessions.md)
+- [S02 TOTP MFA with recovery codes, Google OIDC login (PKCE), account linking](../../../spec/capabilities/S02-mfa-oidc.md)
+- [S50 Rate limiting: token bucket, sliding window, concurrency limits, fail modes, hea](../../../spec/capabilities/S50-rate-limiter.md)
+- [S51 Realtime push hub: topic SSE, Last-Event-ID replay, per-topic policies, ref-coun](../../../spec/capabilities/S51-realtime-push.md)
+- [S54 Platform toolkit: problem+json errors, request context and transactions, health ](../../../spec/capabilities/S54-platform-toolkit.md)
+- [W01 Sign up, log in, forgot password, MFA step-up, session cookie via BFF, CSRF, log](../../../spec/capabilities/W01-auth-account.md)
+<!-- spec-links:end -->

@@ -76,3 +76,11 @@ See [event catalog](../../catalog/events.md) and [job catalog](../../catalog/job
 **Imports from:** [common/config](../common/config.md) (1), [domain/identity](identity.md) (2), [domain/tenancy](tenancy.md) (1), [platform/jobs](../platform/jobs.md) (3), [platform/storage](../platform/storage.md) (2)
 
 **Imported by:** [app/core](../app/core.md) (1), [app/worker](../app/worker.md) (1)
+
+<!-- spec-links:start -->
+## Specification
+
+The living specification is the source of truth for what this unit does; this page is generated from the code and may lag behind it.
+
+- [S51 Realtime push hub: topic SSE, Last-Event-ID replay, per-topic policies, ref-coun](../../../spec/capabilities/S51-realtime-push.md)
+<!-- spec-links:end -->

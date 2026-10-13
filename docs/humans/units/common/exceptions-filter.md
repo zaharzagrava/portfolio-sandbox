@@ -36,3 +36,11 @@ Global NestJS exception filter that normalizes errors and integrates with OpenTe
 **Imports from:** [common/errors](errors.md) (1)
 
 **Imported by:** [app/bff](../app/bff.md) (1), [app/core](../app/core.md) (1), [app/public-api](../app/public-api.md) (1), [app/sse-gateway](../app/sse-gateway.md) (1)
+
+<!-- spec-links:start -->
+## Specification
+
+The living specification is the source of truth for what this unit does; this page is generated from the code and may lag behind it.
+
+- [S54 Platform toolkit: problem+json errors, request context and transactions, health ](../../../spec/capabilities/S54-platform-toolkit.md)
+<!-- spec-links:end -->

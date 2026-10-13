@@ -80,3 +80,12 @@ files: 15
 **Imports from:** [common/config](../common/config.md) (7), [common/errors](../common/errors.md) (1), [common/exceptions-filter](../common/exceptions-filter.md) (1), [common/telemetry](../common/telemetry.md) (1), [common/types](../common/types.md) (2), [domain/assistant](../domain/assistant.md) (1), [domain/auctions](../domain/auctions.md) (1), [domain/catalog-sync](../domain/catalog-sync.md) (1), [domain/chat](../domain/chat.md) (1), [domain/experimentation](../domain/experimentation.md) (1), [domain/fulfilment](../domain/fulfilment.md) (1), [domain/identity](../domain/identity.md) (10), [domain/launch-events](../domain/launch-events.md) (3), [domain/orders](../domain/orders.md) (1), [domain/payments](../domain/payments.md) (2), [domain/tenancy](../domain/tenancy.md) (1), [platform/cache](../platform/cache.md) (1), [platform/database](../platform/database.md) (2), [platform/dynamo](../platform/dynamo.md) (1), [platform/jobs](../platform/jobs.md) (1), [platform/lifecycle](../platform/lifecycle.md) (1), [platform/platform](../platform/platform.md) (2), [platform/rate-limit](../platform/rate-limit.md) (1), [platform/realtime](../platform/realtime.md) (5), [platform/redis](../platform/redis.md) (6), [platform/sqs](../platform/sqs.md) (1), [platform/storage](../platform/storage.md) (1)
 
 **Imported by:** [package/backend](../package/backend.md) (1), [app/local-monolith](local-monolith.md) (1)
+
+<!-- spec-links:start -->
+## Specification
+
+The living specification is the source of truth for what this unit does; this page is generated from the code and may lag behind it.
+
+- [S51 Realtime push hub: topic SSE, Last-Event-ID replay, per-topic policies, ref-coun](../../../spec/capabilities/S51-realtime-push.md)
+- [S54 Platform toolkit: problem+json errors, request context and transactions, health ](../../../spec/capabilities/S54-platform-toolkit.md)
+<!-- spec-links:end -->

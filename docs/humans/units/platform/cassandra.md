@@ -35,3 +35,11 @@ files: 2
 **Imports from:** [common/config](../common/config.md) (2), [common/testing](../common/testing.md) (1), [platform/health](health.md) (1), [platform/lifecycle](lifecycle.md) (1)
 
 **Imported by:** [app/projector](../app/projector.md) (1), [domain/assistant](../domain/assistant.md) (2), [domain/community](../domain/community.md) (9), [domain/notifications](../domain/notifications.md) (3), [platform/projections](projections.md) (1)
+
+<!-- spec-links:start -->
+## Specification
+
+The living specification is the source of truth for what this unit does; this page is generated from the code and may lag behind it.
+
+- [S54 Platform toolkit: problem+json errors, request context and transactions, health ](../../../spec/capabilities/S54-platform-toolkit.md)
+<!-- spec-links:end -->

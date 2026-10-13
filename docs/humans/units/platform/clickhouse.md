@@ -35,3 +35,11 @@ files: 2
 **Imports from:** [common/config](../common/config.md) (2)
 
 **Imported by:** [app/core](../app/core.md) (1), [app/projector](../app/projector.md) (1), [domain/assistant](../domain/assistant.md) (3), [domain/billing](../domain/billing.md) (4), [domain/developer-platform](../domain/developer-platform.md) (3), [domain/discovery](../domain/discovery.md) (9), [domain/experimentation](../domain/experimentation.md) (3), [domain/marketing](../domain/marketing.md) (5), [domain/seller-insights](../domain/seller-insights.md) (7), [domain/seller-onboarding](../domain/seller-onboarding.md) (1), [platform/projections](projections.md) (1)
+
+<!-- spec-links:start -->
+## Specification
+
+The living specification is the source of truth for what this unit does; this page is generated from the code and may lag behind it.
+
+- [S54 Platform toolkit: problem+json errors, request context and transactions, health ](../../../spec/capabilities/S54-platform-toolkit.md)
+<!-- spec-links:end -->

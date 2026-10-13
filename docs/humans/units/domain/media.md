@@ -77,3 +77,12 @@ files: 13
 **Imports from:** [common/config](../common/config.md) (2), [domain/identity](identity.md) (4), [domain/tenancy](tenancy.md) (2), [platform/events](../platform/events.md) (1), [platform/rate-limit](../platform/rate-limit.md) (1), [platform/sqs](../platform/sqs.md) (5), [platform/storage](../platform/storage.md) (4)
 
 **Imported by:** [app/core](../app/core.md) (1), [app/lambdas](../app/lambdas.md) (1), [app/worker](../app/worker.md) (1)
+
+<!-- spec-links:start -->
+## Specification
+
+The living specification is the source of truth for what this unit does; this page is generated from the code and may lag behind it.
+
+- [S54 Platform toolkit: problem+json errors, request context and transactions, health ](../../../spec/capabilities/S54-platform-toolkit.md)
+- [W02 Home, search (autocomplete, filters, facets, sort, URL state), trending and reco](../../../spec/capabilities/W02-storefront-discovery.md)
+<!-- spec-links:end -->

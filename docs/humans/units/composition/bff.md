@@ -52,3 +52,13 @@ files: 10
 **Imports from:** [common/config](../common/config.md) (3), [common/types](../common/types.md) (1), [platform/http-client](../platform/http-client.md) (1)
 
 **Imported by:** [app/bff](../app/bff.md) (1)
+
+<!-- spec-links:start -->
+## Specification
+
+The living specification is the source of truth for what this unit does; this page is generated from the code and may lag behind it.
+
+- [S48 BFF composition: product-page aggregate with budgets and partial errors, GraphQL](../../../spec/capabilities/S48-bff.md)
+- [W01 Sign up, log in, forgot password, MFA step-up, session cookie via BFF, CSRF, log](../../../spec/capabilities/W01-auth-account.md)
+- [W02 Home, search (autocomplete, filters, facets, sort, URL state), trending and reco](../../../spec/capabilities/W02-storefront-discovery.md)
+<!-- spec-links:end -->

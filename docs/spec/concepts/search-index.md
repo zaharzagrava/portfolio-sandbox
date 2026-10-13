@@ -10,14 +10,14 @@ defined_by: S32
 The product search index is a read model for text search over products. It is built only from catalog events; the catalog's table is never read. It gives every capability one guarantee: search answers hide archived, sandbox and deleted products and products of suspended shops, and each answer follows one total order. Events carry versions, so late or repeated events cannot overwrite newer data.
 
 ## Rules
-- **search-index.C-01** The index MUST be built only from catalog events, and MUST NOT read the catalog's table.
-- **search-index.C-02** The index MUST apply an incoming product event when its version is at least the stored version, and MUST ignore and count it when lower.
-- **search-index.C-03** A deleted product MUST stay hidden when late events arrive with a version at or below the delete version.
-- **search-index.C-04** Archived, sandbox and deleted products, and products of `SUSPENDED`, `DELETING` or `DELETED` shops, MUST NOT appear in items, totals, facets or semantic results.
-- **search-index.C-05** A suspended or offboarding shop MUST hide all its products, including products created later.
-- **search-index.C-06** The index MUST dead-letter invalid or unsupported-version messages and MUST NOT change the index for them.
-- **search-index.C-07** At most one reindex run MUST be active; a second start or rollback MUST answer `409 reindex_in_progress`.
-- **search-index.C-08** A reindex run MUST fail with `verification_failed` when the new index holds fewer documents than the history requires, and the live index MUST stay untouched.
+- **search-index.C-01** The index MUST be built only from [catalog events](../terms/event-definition.md), and MUST NOT read the catalog's table.
+- **search-index.C-02** The index MUST apply an incoming [product event](../terms/event-definition.md) when its [version](../terms/aggregate-version.md) is at least the stored version, and MUST ignore and count it when lower.
+- **search-index.C-03** A deleted product MUST [stay hidden](../terms/search-visibility.md) when [late events](../terms/aggregate-version.md) arrive with a version at or below the delete version.
+- **search-index.C-04** Archived, [sandbox](../terms/sandbox-product.md) and deleted products, and products of [`SUSPENDED`](../terms/shop-status.md), `DELETING` or `DELETED` shops, MUST NOT appear in items, totals, [facets](../terms/search-facets.md) or [semantic results](../terms/semantic-search.md).
+- **search-index.C-05** A suspended or [offboarding shop](../terms/shop-status.md) MUST [hide all its products](../terms/search-visibility.md), including products created later.
+- **search-index.C-06** The index MUST [dead-letter ↗](../sw-external-terms.md#dead-letter-queue) invalid or [unsupported-version messages](../terms/event-envelope.md) and MUST NOT change the index for them.
+- **search-index.C-07** At most one [reindex run](../terms/zero-downtime-reindexing.md) MUST be active; a second start or [rollback](../terms/reindex-rollback.md) MUST answer [`409 reindex_in_progress`](../terms/reindex-in-progress.md).
+- **search-index.C-08** A reindex run MUST fail with [`verification_failed`](../terms/verification-failed.md) when the new index holds fewer documents than [the history](../terms/event-replay.md) requires, and the live index MUST stay untouched.
 
 ## How the capabilities use it
 - {{cap:S32}} defines the index, projects catalog events into it, and serves buyer and seller search over it, including paging, ranking, filters and reindex runs.

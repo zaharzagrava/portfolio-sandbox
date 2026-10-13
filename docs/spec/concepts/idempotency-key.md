@@ -10,13 +10,13 @@ defined_by: S54
 An idempotency key is a client-chosen string of 8 to 128 characters. It lets a client repeat a write request and get one effect. The platform toolkit (S54) declares it per route with `@Idempotent` and purges old keys with a job. Checkout, payment start and job enqueue use it. A retry with the same key creates no second order, charge or job. The client keeps one key for all retries of one attempt.
 
 ## Rules
-- **idempotency-key.C-01** A route declared with `@Idempotent` MUST require an `Idempotency-Key` header, and `POST /checkout` MUST answer `422 idempotency_key_required` when the key is missing.
+- **idempotency-key.C-01** A route declared with [`@Idempotent`](../terms/idempotent-decorator.md) MUST require an `Idempotency-Key` header, and `POST /checkout` MUST answer `422 idempotency_key_required` when the key is missing.
 - **idempotency-key.C-02** An `Idempotency-Key` on `POST /checkout` MUST have 8 to 128 characters.
-- **idempotency-key.C-03** `POST /payments/intents` MUST require an `Idempotency-Key`, answer `202` with `Location`, and MUST NOT call the payment provider.
-- **idempotency-key.C-04** Job enqueue with an existing key MUST create nothing and MUST return the original id with `created: false`.
-- **idempotency-key.C-05** Under 20 concurrent enqueue calls with one key, exactly one call MUST see `created: true`.
-- **idempotency-key.C-06** The UI MUST reuse the same key for every retry of one attempt, including after a reload, by keeping the attempt in the tab's session storage.
-- **idempotency-key.C-07** A repeated request with the same key MUST still count against the route's rate limit, so the fourth of four identical requests at a limit of 3 gets `429`.
+- **idempotency-key.C-03** `POST /payments/intents` MUST require an `Idempotency-Key`, answer [`202` ↗](../sw-external-terms.md#http-202-accepted) with [`Location` ↗](../sw-external-terms.md#location-header), and MUST NOT call the [payment provider](../terms/payment-provider.md).
+- **idempotency-key.C-04** [Job enqueue](../terms/job-enqueue.md) with an existing key MUST create nothing and MUST return the original id with [`created: false`](../terms/enqueue-created-flag.md).
+- **idempotency-key.C-05** Under 20 [concurrent enqueue calls](../terms/job-enqueue.md) with one key, exactly one call MUST see [`created: true`](../terms/enqueue-created-flag.md).
+- **idempotency-key.C-06** The UI MUST reuse the same key for every retry of one [attempt](../terms/checkout-attempt.md), including after a reload, by keeping the attempt in the tab's [session storage ↗](../sw-external-terms.md#session-storage).
+- **idempotency-key.C-07** A repeated request with the same key MUST still count against the route's [rate limit](../terms/rate-limit.md), so the fourth of four identical requests at a limit of 3 gets [`429` ↗](../sw-external-terms.md#http-429-too-many-requests).
 
 ## How the capabilities use it
 - {{cap:S10}} requires the key on `POST /checkout` (8 to 128 characters) and answers `422 idempotency_key_required` without it.
