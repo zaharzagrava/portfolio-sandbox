@@ -22,11 +22,8 @@ const DIRS = [
   'libs/domains/marketing/domain',
   'libs/domains/marketing/application',
 ];
-/** S36 ads code inside the same folders still reads the wall clock (its migration is S36's). */
-const EXEMPT = [
-  'libs/domains/marketing/domain/click-token.ts',
-  'libs/domains/marketing/application/ads.service.ts',
-];
+/** No exemptions remain: S36's ads code reads time only through the injected clock too. */
+const EXEMPT: string[] = [];
 const FORBIDDEN =
   /\bDate\.now\s*\(|\bnew Date\s*\(\s*\)|\bperformance\.now\s*\(/;
 

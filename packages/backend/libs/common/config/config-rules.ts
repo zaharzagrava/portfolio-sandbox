@@ -277,7 +277,7 @@ const discussionsCursorSecretRule: RuleCheck = (ctx) =>
 /** Every other secret the app configures; the share-link keys must differ from each of them and from each other. */
 const SHARE_LINK_DISTINCT_FROM = [
   'jwt_secret',
-  'share_link_secret',
+  'ads_click_secret',
   'cart_cookie_secret',
   'notification_secret',
   'ledger_cursor_secret',

@@ -43,11 +43,12 @@ locals {
     "bulk-stock-updates"      = { visibility_seconds = 120, max_receive = 5 }
   }
 
-  domain_aggregates = ["api", "auctions", "billing", "chat", "courier", "feed", "ledger", "links", "live", "llm", "media", "orders", "pickup", "products", "search", "shops", "stories", "usage"]
+  domain_aggregates = ["api", "auctions", "billing", "chat", "courier", "feed", "ledger", "links", "live", "llm", "marketing", "media", "orders", "pickup", "products", "search", "shops", "stories", "usage"]
   kafka_topics = merge(
     { "payments.requests" = var.kafka_partitions.payments, "payments.responses" = var.kafka_partitions.payments, "payments.dlq" = 1 },
     { for a in local.domain_aggregates : "${a}.events" => var.kafka_partitions.domain },
-    { "analytics.events" = var.kafka_partitions.domain, "ads.clicks" = var.kafka_partitions.domain, "ads.click-aggregates" = var.kafka_partitions.domain },
+    # S36: 64 partitions in production so a viral campaign's 10 salted keys spread (SC-008); the click DLQ is low volume.
+    { "analytics.events" = var.kafka_partitions.domain, "ads.clicks" = 64, "ads.click-aggregates" = var.kafka_partitions.domain, "ads.clicks.dlq" = 1 },
   )
 
   lambda_manifest = try(jsondecode(file(var.lambda_manifest_path)), [])

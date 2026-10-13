@@ -19,6 +19,7 @@ import { recommendationsConfigKeys } from './recommendations-config';
 import { trendingConfigKeys } from './trending-config';
 import { discussionsConfigKeys } from './discussions-config';
 import { shareLinksConfigKeys } from './share-links-config';
+import { adsConfigKeys } from './ads-config';
 import './media-config'; // registers the S29 media startup rules
 import { videoConfigKeys } from './video-config'; // also registers the S30 video startup rule
 import { bffConfigKeys } from './bff-config';
@@ -512,10 +513,6 @@ export class ApiConfigService {
             verify: joi.string().optional().allow(''),
             name: 'DB_READ_HOST',
           },
-          share_link_secret: {
-            verify: joi.string().optional().allow(''),
-            name: 'SHARE_LINK_SECRET',
-          },
           notification_secret: {
             verify: joi.string().optional().allow(''),
             name: 'NOTIFICATION_SECRET',
@@ -605,6 +602,7 @@ export class ApiConfigService {
           ...trendingConfigKeys,
           ...discussionsConfigKeys,
           ...shareLinksConfigKeys,
+          ...adsConfigKeys,
           ...bffConfigKeys,
           payments_cursor_secret: {
             verify: joi.string().optional().allow(''),

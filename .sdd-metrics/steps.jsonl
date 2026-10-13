@@ -77,3 +77,13 @@
 {"run":"20261013T163357Z","capability":"S30","step":"implement-2","start":"2026-10-13T21:29:55Z","end":"2026-10-13T21:30:15Z","seconds":20,"result":"ok","attempt":1,"reason":"ok"}
 {"run":"20261013T163357Z","capability":"S30","step":"doctor-1","start":"2026-10-13T21:30:15Z","end":"2026-10-13T21:30:40Z","seconds":25,"result":"ok","attempt":1,"reason":"ok","code_changed":false}
 {"run":"20261013T163357Z","capability":"S30","step":"blocked","start":"2026-10-13T21:30:40Z","end":"2026-10-13T21:30:40Z","seconds":0,"result":"blocked","attempt":1,"reason":"needs a human: DOCTOR: needs human: install ffmpeg and ffprobe (>= 5) on the runner so T064 and T065 can be proven, because package installation was denied to the agent."}
+{"run":"20261013T163357Z","capability":"S36","step":"plan","start":"2026-10-13T21:30:44Z","end":"2026-10-13T21:38:49Z","seconds":485,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261013T163357Z","capability":"S36","step":"tasks","start":"2026-10-13T21:38:49Z","end":"2026-10-13T21:41:29Z","seconds":160,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261013T163357Z","capability":"S36","step":"analyze","start":"2026-10-13T21:41:29Z","end":"2026-10-13T21:41:59Z","seconds":30,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261013T163357Z","capability":"S36","step":"implement-1","start":"2026-10-13T21:41:59Z","end":"2026-10-13T22:44:03Z","seconds":3724,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261013T163357Z","capability":"S36","step":"implement-2","start":"2026-10-13T22:44:03Z","end":"2026-10-13T22:44:28Z","seconds":25,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261013T163357Z","capability":"S36","step":"doctor-1","start":"2026-10-13T22:44:28Z","end":"2026-10-13T22:45:18Z","seconds":50,"result":"ok","attempt":1,"reason":"ok","code_changed":true}
+{"run":"20261013T163357Z","capability":"S36","step":"implement-1","start":"2026-10-13T22:45:19Z","end":"2026-10-13T22:45:49Z","seconds":30,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261013T163357Z","capability":"S36","step":"implement-2","start":"2026-10-13T22:45:49Z","end":"2026-10-13T22:46:19Z","seconds":30,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261013T163357Z","capability":"S36","step":"doctor-2","start":"2026-10-13T22:46:19Z","end":"2026-10-13T22:46:55Z","seconds":36,"result":"ok","attempt":1,"reason":"ok","code_changed":false}
+{"run":"20261013T163357Z","capability":"S36","step":"blocked","start":"2026-10-13T22:46:55Z","end":"2026-10-13T22:46:55Z","seconds":0,"result":"blocked","attempt":2,"reason":"needs a human: DOCTOR: needs human: the sandbox denies starting the real apps/projector, apps/core and apps/worker, so T060 needs a human or an approved run to boot them and check the registration log lines."}

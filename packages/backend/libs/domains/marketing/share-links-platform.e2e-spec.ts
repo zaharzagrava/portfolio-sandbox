@@ -47,7 +47,7 @@ function startup(
     {
       front_host: 'https://shop.example',
       jwt_secret: JWT,
-      share_link_secret: AD_SECRET,
+      ads_click_secret: AD_SECRET,
       ...parsed,
       ...values,
     },
@@ -119,7 +119,7 @@ describe('Share links: operations and boundaries', () => {
         /share_link_code_key must differ from jwt_secret/,
       );
       expect(startup({ SHARE_LINK_CODE_KEY: AD_SECRET }).join(' ')).toMatch(
-        /share_link_code_key must differ from share_link_secret/,
+        /share_link_code_key must differ from ads_click_secret/,
       );
       expect(startup({ SHARE_LINK_EDGE_SECRET: CODE_KEY }).join(' ')).toMatch(
         /share_link_code_key must differ from share_link_edge_secret|share_link_edge_secret must differ/,
@@ -128,7 +128,7 @@ describe('Share links: operations and boundaries', () => {
       expect(
         startup(
           { SHARE_LINK_CODE_KEY: undefined },
-          { share_link_secret: AD_SECRET },
+          { ads_click_secret: AD_SECRET },
         ).join(' '),
       ).toContain('share_link_code_key');
     });
@@ -362,9 +362,16 @@ describe('Share links: operations and boundaries', () => {
       expect(Object.keys(barrel).sort()).toEqual(
         [
           'AdsModule',
+          'AdsProjectorModule',
           'AdsWorkerModule',
           'AttributionUnavailableError',
+          // S36 sponsored listings: the event definitions (S32 consumes the sponsorship signal)
+          'CampaignCreated',
+          'CampaignEnded',
+          'CampaignPaused',
+          'CampaignResumed',
           'LinkAttributionService',
+          'ProductSponsorshipChanged',
           'ShareLinksModule',
           'ShareLinksProjectorModule',
           'ShareLinksWorkerModule',

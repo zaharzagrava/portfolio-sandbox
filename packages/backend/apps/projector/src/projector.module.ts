@@ -33,7 +33,10 @@ import {
 import { DynamoModule } from '@app/infrastructure/dynamo/dynamo.module';
 import { NotificationsProjectorModule } from '@app/domains/notifications';
 import { ShopMembershipModel as ShopMembership } from '@app/domains/tenancy';
-import { ShareLinksProjectorModule } from '@app/domains/marketing';
+import {
+  AdsProjectorModule,
+  ShareLinksProjectorModule,
+} from '@app/domains/marketing';
 import { MediaProjectorModule, VideoProjectorModule } from '@app/domains/media';
 import {
   FeedFanoutConsumer,
@@ -91,6 +94,7 @@ import { CacheModule } from '@app/infrastructure/cache/cache.module';
         FeedFanoutConsumer,
         ProductFeedProjector,
         ...ShareLinksProjectorModule.projectors,
+        ...AdsProjectorModule.projectors,
         ...MediaProjectorModule.projectors,
         ...VideoProjectorModule.projectors,
         ...PickupProjectorModule.projectors,
@@ -116,6 +120,7 @@ import { CacheModule } from '@app/infrastructure/cache/cache.module';
         RecommendationsProjectorModule,
         PickupProjectorModule,
         ShareLinksProjectorModule,
+        AdsProjectorModule,
         MediaProjectorModule,
         VideoProjectorModule,
         LedgerProjectorModule,

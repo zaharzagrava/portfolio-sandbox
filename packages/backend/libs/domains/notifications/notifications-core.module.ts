@@ -6,6 +6,7 @@ import { CacheModule } from '@app/infrastructure/cache/cache.module';
 import { SqsModule } from '@app/infrastructure/sqs/sqs.module';
 import { JobsModule } from '@app/infrastructure/jobs/jobs.module';
 import { AuthModule } from '@app/domains/identity';
+import { TenancyModule } from '@app/domains/tenancy';
 import { PreferencesService } from './application/preferences.service';
 import { SettingsService } from './application/settings.service';
 import { DeviceService } from './application/device.service';
@@ -114,6 +115,7 @@ const PORT_PROVIDERS: Provider[] = PORTS;
     SqsModule,
     JobsModule,
     AuthModule,
+    TenancyModule,
   ],
   providers: [
     ...PORT_PROVIDERS,

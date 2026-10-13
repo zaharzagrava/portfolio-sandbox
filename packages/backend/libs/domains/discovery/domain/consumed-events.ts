@@ -1,32 +1,17 @@
-import { z } from 'zod';
-import { defineEvent } from '@app/infrastructure/events/define-event';
+import type { z } from 'zod';
+import { productSponsorshipChangedPayloadSchema } from '@marketplace-sandbox/contracts';
 
 /**
- * Contracts of events this domain consumes but whose owners have not published them yet (research R-04/R-06). Owned
- * locally until S36 (marketing) exports its own; then that import is replaced. `media.gallery_changed` is now exported
- * by S29 (media), which registers the one definition of `media.gallery_changed@1` a process may hold: S32 re-exports it
- * here instead of defining it a second time (a second `defineEvent` of the same pair fails at import).
- * The guard value of each is the payload version below, never the envelope's `aggregateVersion` of another source.
+ * Contracts of events this domain consumes whose owners export the definition (research R-04/R-06): a process may hold
+ * one definition of each `type@version` (a second `defineEvent` fails at import), so S32 re-exports the owners' instead
+ * of defining its own. `media.gallery_changed` comes from S29 (media), `marketing.product_sponsorship_changed` from S36
+ * (marketing). The guard value of each is the payload version, never the envelope's `aggregateVersion` of another source.
  */
-const id = z.string().uuid();
-
 export { MediaGalleryChanged } from '@app/domains/media';
 
-export const productSponsorshipChangedSchema = z.object({
-  productId: id,
-  shopId: id,
-  sponsored: z.boolean(),
-  sponsorshipVersion: z.number().int().nonnegative(),
-});
+export { ProductSponsorshipChanged } from '@app/domains/marketing';
+export const productSponsorshipChangedSchema =
+  productSponsorshipChangedPayloadSchema;
 export type ProductSponsorshipChanged = z.infer<
-  typeof productSponsorshipChangedSchema
+  typeof productSponsorshipChangedPayloadSchema
 >;
-
-/** `marketing.events`, key = productId. */
-export const ProductSponsorshipChanged = defineEvent(
-  'marketing.product_sponsorship_changed',
-  'marketing',
-  1,
-  productSponsorshipChangedSchema,
-  { carries: 'state' },
-);

@@ -178,6 +178,14 @@ export const OWNERSHIP = {
   // marketing
   AdCampaign: 'domain:marketing',
   AdBillingRun: 'domain:marketing',
+  // S36 sponsored listings
+  AdCampaignHistory: 'domain:marketing',
+  AdProductSponsorship: 'domain:marketing',
+  AdShopQuota: 'domain:marketing',
+  AdProductSnapshot: 'domain:marketing',
+  AdShopSnapshot: 'domain:marketing',
+  AdBillingAdjustment: 'domain:marketing',
+  AdReconciliationRun: 'domain:marketing',
   // experimentation
   FeatureFlag: 'domain:experimentation',
   FlagAudit: 'domain:experimentation',

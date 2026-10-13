@@ -56,3 +56,10 @@ Nothing was asked; each line is a default already applied in `spec.md`. Sorted b
 - [LOCAL] Statement range at most 92 days → bounded reads.
 - [LOCAL] Per-shop active campaign limit 50 → bounds the serving candidate set.
 - [LOCAL] Candidate set for one serving request ≤ 50 campaigns per category before the one-per-shop cut → bounded work.
+
+## Blocker: T060 (real app start)
+- `scripts/qa/fresh-run.sh` ran with `--here` and reported ok (boot-check monolith ready, doctor-live healthy); it judged the already-running stack, not an empty one.
+- Starting `apps/projector`, `apps/core` and `apps/worker` by hand was refused by the sandbox (approval needed), so route, aggregator, job and consumer registration are not confirmed in this run.
+- Earlier run: projector failed on a pre-existing S28 error (`NotificationsCoreModule` lacks `MembershipQueryService`/`TenancyModule`); core resolved DI and then hit EADDRINUSE on :8000; worker booted with the ads jobs.
+- Doctor check: `nest build projector` compiles; `TenancyModule` is already imported in `NotificationsCoreModule`, so the S28 DI error should be gone. Running `node dist/apps/projector/main.js` was again refused by the sandbox, so it is still unproven.
+- Needed: a human (or an approved run) starts the three apps and checks the log lines. T060 stays unchecked.

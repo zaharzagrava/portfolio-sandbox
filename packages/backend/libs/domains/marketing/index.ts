@@ -7,7 +7,17 @@
  * Share links (S37) export modules, the R1 attribution lookup with its errors, DTO types and the click event
  * contract; the click consumer and every service stay inside the domain.
  */
-export { AdsModule, AdsWorkerModule } from './ads.module';
+export { AdsModule } from './ads.module';
+export { AdsWorkerModule } from './ads-worker.module';
+export { AdsProjectorModule } from './ads-projector.module';
+// Event definitions of sponsored listings (S36): S32 consumes the sponsorship signal; a process holds one definition.
+export {
+  CampaignCreated,
+  CampaignEnded,
+  CampaignPaused,
+  CampaignResumed,
+  ProductSponsorshipChanged,
+} from './application/events/ads-events';
 export { ShareLinksModule } from './share-links.module';
 export { ShareLinksWorkerModule } from './share-links-worker.module';
 export { ShareLinksProjectorModule } from './share-links-projector.module';

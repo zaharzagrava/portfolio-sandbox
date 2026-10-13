@@ -11,6 +11,11 @@ TOPICS=(
   "payments.responses"
   "payments.dlq"
   "products.events"
+  # S36 sponsored listings (L-002, L-011: every topic the code names must exist)
+  "marketing.events"
+  "ads.clicks"
+  "ads.click-aggregates"
+  "ads.clicks.dlq"
 )
 
 if ! docker inspect "${KAFKA_CONTAINER}" >/dev/null 2>&1; then

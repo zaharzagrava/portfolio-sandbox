@@ -40,7 +40,7 @@ const isSet = (value: unknown): boolean =>
 const OTHER_SECRETS = [
   'jwt_secret',
   'cart_cookie_secret',
-  'share_link_secret',
+  'ads_click_secret',
   'share_link_code_key',
   'share_link_edge_secret',
   'ledger_cursor_secret',
