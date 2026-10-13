@@ -5,9 +5,11 @@ import {
   CompleteMultipartUploadCommand,
   CreateMultipartUploadCommand,
   DeleteObjectCommand,
+  DeleteObjectsCommand,
   GetObjectCommand,
   HeadObjectCommand,
   ListObjectsV2Command,
+  ListPartsCommand,
   S3Client,
   UploadPartCommand,
 } from '@aws-sdk/client-s3';
@@ -24,6 +26,7 @@ import {
   PresignPostOptions,
   PutOptions,
   StorageCallOptions,
+  StoredPart,
 } from './object-storage.port';
 
 @Injectable()
@@ -157,10 +160,80 @@ export class S3ObjectStorage extends ObjectStorage {
     return { uploadId: UploadId!, key, partUrls };
   }
 
+  async startMultipartUpload(
+    key: string,
+    contentType: string,
+    options: StorageCallOptions = {},
+  ) {
+    const { UploadId } = await this.client.send(
+      new CreateMultipartUploadCommand({
+        Bucket: this.bucket,
+        Key: key,
+        ContentType: contentType,
+      }),
+      this.abort(options),
+    );
+    return { uploadId: UploadId! };
+  }
+
+  presignUploadPart(
+    key: string,
+    uploadId: string,
+    partNumber: number,
+    contentLength: number,
+    expiresInSec = 3600,
+  ) {
+    return getSignedUrl(
+      this.client,
+      new UploadPartCommand({
+        Bucket: this.bucket,
+        Key: key,
+        UploadId: uploadId,
+        PartNumber: partNumber,
+        ContentLength: contentLength,
+      }),
+      { expiresIn: expiresInSec, signableHeaders: new Set(['content-length']) },
+    );
+  }
+
+  async listParts(
+    key: string,
+    uploadId: string,
+    options: StorageCallOptions = {},
+  ): Promise<StoredPart[] | null> {
+    const out: StoredPart[] = [];
+    let marker: string | undefined;
+    try {
+      do {
+        const res = await this.client.send(
+          new ListPartsCommand({
+            Bucket: this.bucket,
+            Key: key,
+            UploadId: uploadId,
+            PartNumberMarker: marker,
+          }),
+          this.abort(options),
+        );
+        for (const p of res.Parts ?? [])
+          out.push({
+            partNumber: p.PartNumber ?? 0,
+            size: Number(p.Size ?? 0),
+            etag: p.ETag ?? '',
+          });
+        marker = res.IsTruncated ? res.NextPartNumberMarker : undefined;
+      } while (marker);
+    } catch (error) {
+      if ((error as { name?: string }).name === 'NoSuchUpload') return null;
+      throw error;
+    }
+    return out;
+  }
+
   async completeMultipartUpload(
     key: string,
     uploadId: string,
     parts: { partNumber: number; etag: string }[],
+    options: StorageCallOptions = {},
   ) {
     await this.client.send(
       new CompleteMultipartUploadCommand({
@@ -173,16 +246,22 @@ export class S3ObjectStorage extends ObjectStorage {
             .map((p) => ({ PartNumber: p.partNumber, ETag: p.etag })),
         },
       }),
+      this.abort(options),
     );
   }
 
-  async abortMultipartUpload(key: string, uploadId: string) {
+  async abortMultipartUpload(
+    key: string,
+    uploadId: string,
+    options: StorageCallOptions = {},
+  ) {
     await this.client.send(
       new AbortMultipartUploadCommand({
         Bucket: this.bucket,
         Key: key,
         UploadId: uploadId,
       }),
+      this.abort(options),
     );
   }
 
@@ -252,6 +331,7 @@ export class S3ObjectStorage extends ObjectStorage {
       return {
         size: Number(res.ContentLength ?? 0),
         contentType: res.ContentType,
+        cacheControl: res.CacheControl,
       };
     } catch (error) {
       if ((error as { name?: string }).name === 'NotFound') return null;
@@ -263,6 +343,41 @@ export class S3ObjectStorage extends ObjectStorage {
     await this.client.send(
       new DeleteObjectCommand({ Bucket: this.bucket, Key: key }),
     );
+  }
+
+  async deletePrefix(
+    prefix: string,
+    options: StorageCallOptions & { limit?: number } = {},
+  ) {
+    const limit = options.limit ?? 1000;
+    let removed = 0;
+    let token: string | undefined;
+    do {
+      const res = await this.client.send(
+        new ListObjectsV2Command({
+          Bucket: this.bucket,
+          Prefix: prefix,
+          ContinuationToken: token,
+          MaxKeys: Math.min(1000, limit - removed),
+        }),
+        this.abort(options),
+      );
+      const keys = (res.Contents ?? []).flatMap((o) =>
+        o.Key ? [{ Key: o.Key }] : [],
+      );
+      if (keys.length) {
+        await this.client.send(
+          new DeleteObjectsCommand({
+            Bucket: this.bucket,
+            Delete: { Objects: keys, Quiet: true },
+          }),
+          this.abort(options),
+        );
+        removed += keys.length;
+      }
+      token = res.IsTruncated ? res.NextContinuationToken : undefined;
+    } while (token && removed < limit);
+    return removed;
   }
 
   async list(prefix: string) {

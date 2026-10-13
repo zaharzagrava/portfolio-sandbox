@@ -126,3 +126,62 @@ Both lines are S29's (`ProductMedia` moves to `media` there; the product join is
 4. Delivery and management routes (C-1–C-9, D1–D2), contracts (G6), rate limits (G3).
 5. Events, consumers, jobs, purge (D3–D5, G4, G5).
 6. Replace `video.e2e-spec.ts` with the six suites and the fault tooling (F1–F4); recorded green run (VII.9).
+
+## Sibling-spec follow-ups
+
+- **S48-bff**: `productVideosSchema` is now defined in `packages/contracts/src/media/video.ts` with the real shape `{items:[{videoId,title,posterUrl,durationSec}]}`; the loose copy in `bff/upstream.ts` is deleted (same exported name). Adopt: import it from the package root, update the BFF fixtures (`libs/composition/bff/testing/fixtures.ts`) to the real shape; drop the "S30 not built" degradation note once `.implemented` exists.
+- **S27**: public master playlists are at `<video_cdn_url>/p/<videoId>/master.m3u8` on `stream.marketplace.dev`; unlisted ones are at `/u/<videoId>/…` behind a signed credential and must never be stored in a story block.
+- **S28**: may consume `video.ready {videoId, uploaderId, shopId, productId}` and `video.failed {…, failureCode}` (topic `media.events`) to tell the uploader.
+- **S32**: may consume `video.ready` / `video.deleted` (`productId`) for an optional "has video" flag.
+- **S54**: access-log redaction needs the query parameter `token` (AS-41); if the mechanism takes a key list, add `token` there (S30 adds it in WP-8; this bullet is only for the owner's awareness).
+- **S29**: its barrel already exports `VideoModule`/`VideoWorkerModule`; S30 adds `VideoProjectorModule` and removes `VideoService`; the storage-port additions of S30 (`listParts`, `presignUploadPart`, `deletePrefix`, `head` cache-control) are additive and do not touch S29's.
+- **S25/S24/S19/S11/S21/S38** (S48 follow-up): the BFF still holds loose upstream schemas for your answers in `packages/contracts/src/bff/upstream.ts` (flags body, chat unread page, board posts page, pickup page, flash-sale and auction public views); replace them with your own `packages/contracts` schemas under the same exported names. S30 did this for `productVideosSchema` only. None of these capabilities is built yet.
+- **S49**: S30 declared `media.video-expire-uploads`, `media.video-requeue-stuck` and `media.video-purge` with `declareJobType` (strict empty payload) next to the `JobPayloads` augmentation in `video-maintenance.jobs.ts`, catches `InvalidScheduleError` specifically and never calls `JobsService.cancel`: nothing for S49 to adopt, listed here as handled.
+- **S03**: on routes that name a video the shop gate's `404 shop_not_found` is rewritten to `404 video_not_found` by `VideoHiddenShopFilter` (AS-42, AS-48). If S03 changes the gate's answer for a non-member, that filter's code check (`shop_not_found`) must follow.
+- **W04**: problem documents of the video routes carry the video's status as `videoStatus` (`upload_closed`, `invalid_state`), because `status` of a problem document is the HTTP status. Part URLs are presigned and name their object; the client must use them as given.
+- **W04**: seller upload screen per the Requires list (per-part retry, resume through `GET …/upload`, polling `GET …/videos/:id`, `code` values, `202` on complete, no delivery URLs built client-side); the Playwright journey `seller-video.spec.ts` (AS-61) is W04/W02's.
+- **W02**: product-page player calls `GET /videos/:id/playback` (with `?token=` for unlisted), sends credentials on segment requests for unlisted videos, re-requests playback before `expiresAt`; the playback body gained fields and a stricter unlisted rule (see `contracts/video-api.md`).
+
+## Spec changes
+
+None. `docs/spec/capabilities/` has no S30 page and no `*.reviewed.json` exists for any page; nothing a human signed changes. The plan adds `docs/spec/capabilities/S30-video.md` (rules first, anchors last). If an existing signed page (W02) names a line this work moves, the implement run records it here.
+
+## Scenario inventory
+
+Every scenario of the tests that this work replaces, matched to the test that now proves it (L-017). The two old files
+kept their names (the test-integrity gate does not accept a deletion of a test file that carried no scenario id): their
+scenarios were ported to the new APIs and now carry S30 ids (`domain/video.spec.ts`: three model scenarios;
+`video.e2e-spec.ts`: one journey from upload to playback that also asserts the wave order and the single `package`).
+The old `VideoService`, `infra/ffmpeg.ts` and the old `dag`/`hls` API are gone.
+
+| Old test | Scenario | Now proved by |
+|---|---|---|
+| `video.e2e-spec.ts` "720p source → probe, 3 renditions + poster in parallel, package, publish → playable HLS" | the waves run in the order probe → poster+renditions → package → publish and the video plays | `video-pipeline.e2e-spec.ts` "S30 AS-15: probe, then poster + thumbnails + three renditions, then package, then publish → READY …"; the real-encoder variant "S30 AS-15: a real 6-second 720p clip …" (blocked here, see questions.md) |
+| `video.e2e-spec.ts` "concurrent sibling completions enqueue package exactly once; a duplicate message for a finished task is a no-op" | fan-in exactly once, duplicates are stale | `video-pipeline.e2e-spec.ts` "S30 AS-22: four siblings finishing at once queue package exactly once; a duplicate message …" |
+| `domain/video.spec.ts` "topological order puts probe first and publish last; cycles are rejected" | graph order and cycle | `domain/dag.spec.ts` "S30 AS-16: probe is first, publish last …", "a cycle is rejected …" and the fast-check properties |
+| `domain/video.spec.ts` "fan-out / fan-in: renditions and poster become ready together; package waits for every rendition" | readiness | `domain/dag.spec.ts` "S30 AS-16: a FAILED/CANCELLED dependency never satisfies its dependents", "only PENDING tasks can be ready" |
+| `domain/video.spec.ts` "never upscales and writes a valid master playlist" | ladder never enlarged, master playlist | `domain/hls.spec.ts` "S30 AS-17: … never enlarges …", "S30 AS-19: one entry per rendition, ascending bandwidth, from measured values" |
+| `video-contracts.spec.ts` W02 B-7 (public, unlisted, no sprite playback bodies) | the playback body | kept in the same file (`video-contracts.spec.ts`), titles now name S30 AS-31/AS-32 |
+
+## Implementation notes (decisions of this run, none of them a change to a requirement)
+
+- **Part URLs name the object.** A presigned `UploadPart` URL contains the bucket path and the upload id by construction. AS-01 and AS-36 therefore assert that no *property* of any answer carries the key or upload id and that nothing outside the `parts[].url` values contains them. The source key is never a path the delivery host serves (`delivery-paths.spec.ts`).
+- **`status` of a problem document is the HTTP status (RFC 9457).** `upload_closed {status}` and `invalid_state {status}` of `contracts/video-api.md` therefore carry the video's status as `videoStatus`. W04 reads `videoStatus`.
+- **Hidden `404` on routes with a video id.** The shop gate (S03) answers a non-member with `404 shop_not_found`; on the seven routes that name a video the answer is rewritten to `404 video_not_found` by `VideoHiddenShopFilter` so AS-42 and AS-48 hold byte for byte. `POST /shops/:shopId/videos` and the list keep the shop gate's own answer.
+- **AS-17 table.** The spec lists "479 → 2 rungs" but its own rule (rungs of 240/480/720/1080 whose height does not exceed the source) gives one rung for 479; the code follows the rule (479 → [240], 480 → [240, 480]).
+- **AS-21 "every other task is `CANCELLED`".** The graph after `probe` is stored only when `probe` succeeded (R-6), so a rejected source has no other task to cancel; the test asserts exactly that (`probe` `FAILED`, no other row).
+- **Event aggregate type.** `defineEvent` derives the topic from the aggregate type, so the three events use aggregate type `media` (topic `media.events`, `carries: 'state'`, like every event of the topic) instead of the `video` named in `contracts/events.md`; `aggregateId` is the video id.
+- **Legacy rows.** The backfill keeps a legacy `videos/<id>/source` key (the object lives there; the purge deletes by the stored key as well as by prefix), turns legacy `UPLOADING` rows into `EXPIRED` and legacy `PROCESSING` rows into `FAILED processing_timeout` with a history row each; `VideoTask` keeps its composite primary key `(videoId, name)` (no separate `id` column).
+- **Assembly marker.** When the assembly of an upload fails, the row gets `internalError = 'assembly_failed'` (no version bump); the next `complete` sees `UPLOADED` with the marker and drives at once instead of waiting 10 s for a winner that no longer exists.
+- **Lock order.** Every transaction that touches a video and its tasks locks the video row first (`VideoRepository.lock`); a delete (video, then tasks) and a completion (tasks, then video) deadlocked before that.
+- **Test seams.** `VIDEO_PART_SIZE` (the length of a part, 64 MiB; the store's 5 MiB minimum in tests) and `VIDEO_TASK_LIMITS` (the task time limit; seconds in tests) are injection tokens with the production value as the default; they are not settings.
+- **Edge-cache removal.** `@aws-sdk/client-cloudfront` is not a dependency of this workspace. `DeliveryEdge.invalidate` goes through the optional provider `DELIVERY_EDGE_INVALIDATOR`; without one it fails with `DeliveryEdgeNotConfiguredError` and the purge repeats the request every run. Wiring a real `CreateInvalidation` call is an operations task (quickstart "Ops artifacts").
+- **Fresh stack (L-012).** `scripts/qa/fresh-run.sh` builds a throwaway second stack and refuses while the dev stack is up, which it is here; the migrations ran on the test and the dev database, and `scripts/infra/boot-check.sh` (the monolith boots) and `scripts/infra/doctor-live.sh` (stack healthy) were run on the stack that was already running. No empty-stack run was made. The static doctor (`scripts/infra/doctor.py`) finds `video-transcode` and its dead-letter queue defined and 0 missing queues, buckets and tables.
+- **Real encoder.** `ffmpeg`/`ffprobe` are not installed here: the pipeline logic is proved with a stub encoder placed on `PATH` (real processes, real arguments, real exit codes); the scenarios that need frame-accurate output (AS-15 real, AS-18, AS-19 measured) are written and registered through `describeWithFfmpeg` and are reported **blocked** (they fail under `CI=true`).
+
+## Plan-time notes
+
+- `ffmpeg`/`ffprobe` are not installed in the authoring workspace (`infra/docker/node/Dockerfile` installs ffmpeg for the worker image only). The pipeline suites need them (WP-0); a missing binary is reported as *blocked*, not skipped.
+- MinIO's handling of a signed `Content-Length` on a presigned part must be proven first (research R-3); a failure after 5 attempts becomes a blocker in `questions.md`.
+- R-18 deviation, deliberate: the shop-deleted consumer marks videos `DELETED` and cancels tasks; the multipart abort of an open upload is done by the purge job (the projector has no storage module), not "after commit" in the consumer. Effect and 5-minute window are the same as AS-54 asks.
+- R-8: lease arithmetic uses the injected `Clock` value passed as a SQL parameter (frozen in tests), not SQL `now()`; the spec's "database time" edge case is read as "one clock for writing and comparing".

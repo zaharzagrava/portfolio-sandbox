@@ -35,6 +35,13 @@ export interface StorageCallOptions {
   timeoutMs?: number;
 }
 
+/** One part already stored for a multipart upload. */
+export interface StoredPart {
+  partNumber: number;
+  size: number;
+  etag: string;
+}
+
 export interface PutOptions extends StorageCallOptions {
   cacheControl?: string;
 }
@@ -86,8 +93,36 @@ export abstract class ObjectStorage {
     key: string,
     uploadId: string,
     parts: { partNumber: number; etag: string }[],
+    options?: StorageCallOptions,
   ): Promise<void>;
-  abstract abortMultipartUpload(key: string, uploadId: string): Promise<void>;
+  abstract abortMultipartUpload(
+    key: string,
+    uploadId: string,
+    options?: StorageCallOptions,
+  ): Promise<void>;
+  /** Opens a multipart upload without signing any part (S30: parts are signed one by one with an exact length). */
+  abstract startMultipartUpload(
+    key: string,
+    contentType: string,
+    options?: StorageCallOptions,
+  ): Promise<{ uploadId: string }>;
+  /**
+   * Presigned `UploadPart` URL whose signature covers the body length: storage refuses a body one byte longer or
+   * shorter, and a URL of one part cannot store another part's bytes.
+   */
+  abstract presignUploadPart(
+    key: string,
+    uploadId: string,
+    partNumber: number,
+    contentLength: number,
+    expiresInSec?: number,
+  ): Promise<string>;
+  /** The parts storage holds for an upload (all pages), or `null` when the upload no longer exists. */
+  abstract listParts(
+    key: string,
+    uploadId: string,
+    options?: StorageCallOptions,
+  ): Promise<StoredPart[] | null>;
   abstract getStream(
     key: string,
     options?: StorageCallOptions,
@@ -101,8 +136,17 @@ export abstract class ObjectStorage {
   abstract head(
     key: string,
     options?: StorageCallOptions,
-  ): Promise<{ size: number; contentType?: string } | null>;
+  ): Promise<{
+    size: number;
+    contentType?: string;
+    cacheControl?: string;
+  } | null>;
   abstract delete(key: string): Promise<void>;
+  /** Removes up to `limit` objects under `prefix` (default 1000); returns how many were removed. Missing is fine. */
+  abstract deletePrefix(
+    prefix: string,
+    options?: StorageCallOptions & { limit?: number },
+  ): Promise<number>;
   /** Objects whose key starts with `prefix`, with their last-modified instant (all pages). */
   abstract list(
     prefix: string,

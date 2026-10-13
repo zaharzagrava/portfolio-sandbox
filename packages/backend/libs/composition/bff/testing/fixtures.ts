@@ -146,7 +146,16 @@ const postViewFixture = (postId: string, title: string, score: number) => ({
 });
 
 export const videosFixture = () =>
-  productVideosSchema.parse({ items: [{ videoId: 'v1', title: 'Unboxing' }] });
+  productVideosSchema.parse({
+    items: [
+      {
+        videoId: 'v1',
+        title: 'Unboxing',
+        posterUrl: 'https://stream.marketplace.dev/videos/v1/poster.jpg',
+        durationSec: 42.5,
+      },
+    ],
+  });
 
 export const galleryFixture = () => {
   const mediaId = randomUUID();

@@ -6,7 +6,11 @@
 export { MediaModule } from './media.module';
 export { MediaWorkerModule } from './media-worker.module';
 export { MediaProjectorModule } from './media-projector.module';
-export { VideoModule, VideoWorkerModule } from './video.module';
+export { VideoModule } from './video.module';
+export { VideoWorkerModule } from './video-worker.module';
+export { VideoProjectorModule } from './video-projector.module';
+export { VideoReady, VideoFailed, VideoDeleted } from './domain/video-events';
+export { videoEventSchemas } from '@marketplace-sandbox/contracts';
 export { MediaQueryService } from './application/media-query.service';
 export type { MediaDto } from './application/media-view';
 export { createMediaProcessor } from './infra/media-processor';

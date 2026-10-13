@@ -58,3 +58,14 @@ Each line: `question → default → why`. Sorted by impact: BREAKING first (cha
 - [LOCAL] Encoder runner stays in `infra/ffmpeg.ts` (domain-specific, X.7); the DAG, ladder, playlist, probe rules, delivery paths, timeouts and status table are pure in `domain/` → I.3, table-driven unit tests.
 - [LOCAL] Shop status copy `VideoShopState` → a table of `{shopId, suspended, shopVersion}`; absent row means active → a shop that never changed status has no event.
 - [LOCAL] Seller reads are not rate limited beyond the global limits → low volume; writes are.
+
+## Blocked
+
+- [BLOCKED] `ffmpeg`/`ffprobe` are not installed in this runner (`which ffmpeg ffprobe` → exit 1, checked 2026-10-13). Tests that need a real encoder (AS-15, AS-18, AS-19, AS-21 end to end, AS-28 sprite, AS-30 real packaging, AS-75 etc. as marked in test-plan.md) are registered through `describeWithFfmpeg` (`M/testing/require-ffmpeg.ts`): they fail under `CI=true` and are reported BLOCKED locally, never passed. Everything else uses the stub encoder or the in-memory transcoder port.
+
+## Notes from the implement run (none blocks; each is recorded in gaps.md "Implementation notes")
+
+- [SPEC] AS-17 lists "479 → 2 rungs" but its own rule (rungs of 240/480/720/1080 with height ≤ the source) gives 1 rung for 479; the code follows the rule. If the table is right, the rule needs an exception for sources just below a rung.
+- [SPEC] `contracts/events.md` names the envelope `aggregateType: "video"`; the topic is derived from the aggregate type, so the events use `media` to stay on `media.events`.
+- [SPEC] `contracts/video-api.md` puts `{status}` on `upload_closed` and `invalid_state`; in a problem document `status` is the HTTP status, so the field is `videoStatus`.
+- [GATE] `scripts/sdd/check-tests.py scenarios` reports **AS-61** (the UI journey `packages/web/tests/seller-video.spec.ts`) as a scenario with no test. No video screen exists in `packages/web` (W04 and W02 own them), so there is nothing a browser test could drive; a placeholder test would be hollow (L-003) and `.skip`/`.todo` are forbidden. AS-61 is listed in `specs/UNVERIFIED.md` (status "not run"). The test plan row either moves to W04/W02 or the gate needs an exception for scenarios owned by an unbuilt screen; a human decides.

@@ -169,16 +169,20 @@ uses to get other domains' data.
 - **Responsibility**: photo upload and processing (malware scan, EXIF strip, sRGB, three WebP variants,
   duplicate flag), product galleries (ordered, versioned), video upload, transcoding DAG, and HLS
   packaging. Consumers reference media by ID.
-- **Owns**: `Media`, `MediaStatusHistory`, `ProductMedia`, `ProductGallery`, `Video`, `VideoTask`.
+- **Owns**: `Media`, `MediaStatusHistory`, `ProductMedia`, `ProductGallery`, `Video`, `VideoTask`,
+  `VideoStatusHistory`, `VideoShopState`.
 - **Emits**: `media.ready`, `media.rejected`, `media.deleted`, `media.gallery_changed`,
-  `media.duplicate_suspected` (outbox, topic `media.events`).
-- **Consumes**: `catalog.product_deleted` (drops the gallery), `tenancy.shop_deleted` (deletes the shop's
-  photos and galleries).
-- **Hosted by**: core (HTTP, `MediaQueryService`), worker (expire, re-drive, purge jobs), projector
-  (the two consumers), lambdas (`createMediaProcessor`).
-- **Exports (R1)**: `MediaQueryService.getReadyMediaByIds`; (R2) `GET /batch/media`.
-- **Depends on**: catalog (R1 `getProductsByIds` for the gallery), tenancy (R1 `ShopAccessService`,
-  `getShopsByIds`).
+  `media.duplicate_suspected`, `video.ready`, `video.failed`, `video.deleted` (outbox, topic `media.events`).
+- **Consumes**: `catalog.product_deleted` (drops the gallery; clears the product link of videos),
+  `tenancy.shop_deleted` (deletes the shop's photos, galleries and videos), `tenancy.shop_status_changed`
+  (S30: local copy of the shop's suspension, `VideoShopState`).
+- **Hosted by**: core (HTTP, `MediaQueryService`, `VideoModule`), worker (expire, re-drive, purge jobs;
+  `VideoWorkerModule`: transcoding queue `video-transcode`, `media.video-*` jobs), projector (the photo
+  consumers and `VideoProjectorModule`), lambdas (`createMediaProcessor`).
+- **Exports (R1)**: `MediaQueryService.getReadyMediaByIds`; (R2) `GET /batch/media`,
+  `GET /products/:productId/videos`, `GET /videos/:id/playback`.
+- **Depends on**: catalog (R1 `getProductsByIds` for the gallery and the video product link), tenancy
+  (R1 `ShopAccessService`, `getShopsByIds`, `ShopScoped`).
 
 ### orders
 - **Responsibility**: cart, checkout, stock reservation, flash-sale stock, the order state

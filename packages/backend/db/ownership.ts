@@ -99,6 +99,8 @@ export const OWNERSHIP = {
   ProductGallery: 'domain:media',
   Video: 'domain:media',
   VideoTask: 'domain:media',
+  VideoStatusHistory: 'domain:media',
+  VideoShopState: 'domain:media',
   // orders (ExportJob: decision D2, order export belongs to orders)
   BisOrder: 'domain:orders',
   BisOrderItem: 'domain:orders',

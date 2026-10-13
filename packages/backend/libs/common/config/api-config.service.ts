@@ -20,6 +20,7 @@ import { trendingConfigKeys } from './trending-config';
 import { discussionsConfigKeys } from './discussions-config';
 import { shareLinksConfigKeys } from './share-links-config';
 import './media-config'; // registers the S29 media startup rules
+import { videoConfigKeys } from './video-config'; // also registers the S30 video startup rule
 import { bffConfigKeys } from './bff-config';
 
 dotenv.config({
@@ -587,6 +588,7 @@ export class ApiConfigService {
             verify: joi.boolean().optional(),
             name: 'MEDIA_SCANNER_DISABLED',
           },
+          ...videoConfigKeys,
           ...eventsConfigKeys,
           ...jobsConfigKeys,
           ...ordersConfigKeys,

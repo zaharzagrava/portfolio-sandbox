@@ -7,6 +7,7 @@ import {
   PresignPostOptions,
   PutOptions,
   StorageCallOptions,
+  StoredPart,
 } from './object-storage.port';
 
 /** Test double: keeps objects in a Map, returns fake but well-formed signed URLs. */
@@ -80,8 +81,78 @@ export class InMemoryObjectStorage extends ObjectStorage {
     };
   }
 
-  async completeMultipartUpload() {}
-  async abortMultipartUpload() {}
+  /** Parts of open multipart uploads, keyed by upload id (test double only; tests may fill it). */
+  readonly parts = new Map<string, Map<number, Buffer>>();
+
+  startMultipartUpload(
+    key: string,
+    _contentType?: string,
+  ): Promise<{ uploadId: string }> {
+    const uploadId = `upload-${key}-${this.parts.size + 1}`;
+    this.parts.set(uploadId, new Map());
+    return Promise.resolve({ uploadId });
+  }
+
+  presignUploadPart(
+    key: string,
+    uploadId: string,
+    partNumber: number,
+    contentLength: number,
+  ): Promise<string> {
+    return Promise.resolve(
+      `http://storage.test/${encodeURIComponent(key)}?uploadId=${encodeURIComponent(uploadId)}&part=${partNumber}&len=${contentLength}`,
+    );
+  }
+
+  listParts(_key: string, uploadId: string): Promise<StoredPart[] | null> {
+    const held = this.parts.get(uploadId);
+    if (!held) return Promise.resolve(null);
+    return Promise.resolve(
+      [...held.entries()]
+        .sort(([a], [b]) => a - b)
+        .map(([partNumber, body]) => ({
+          partNumber,
+          size: body.length,
+          etag: `"${partNumber}-${body.length}"`,
+        })),
+    );
+  }
+
+  completeMultipartUpload(
+    key: string,
+    uploadId: string,
+    parts: { partNumber: number; etag: string }[] = [],
+  ): Promise<void> {
+    const held = this.parts.get(uploadId);
+    if (held) {
+      const bodies = [...parts]
+        .sort((a, b) => a.partNumber - b.partNumber)
+        .map((p) => held.get(p.partNumber) ?? Buffer.alloc(0));
+      this.objects.set(key, {
+        body: Buffer.concat(bodies),
+        contentType: 'application/octet-stream',
+        modifiedAt: new Date(),
+      });
+      this.parts.delete(uploadId);
+    }
+    return Promise.resolve();
+  }
+
+  abortMultipartUpload(_key: string, uploadId: string): Promise<void> {
+    this.parts.delete(uploadId);
+    return Promise.resolve();
+  }
+
+  deletePrefix(
+    prefix: string,
+    options: StorageCallOptions & { limit?: number } = {},
+  ): Promise<number> {
+    const keys = [...this.objects.keys()]
+      .filter((key) => key.startsWith(prefix))
+      .slice(0, options.limit ?? 1000);
+    for (const key of keys) this.objects.delete(key);
+    return Promise.resolve(keys.length);
+  }
 
   async getStream(key: string) {
     const obj = this.objects.get(key);
@@ -110,7 +181,13 @@ export class InMemoryObjectStorage extends ObjectStorage {
   head(key: string, _options?: StorageCallOptions) {
     const obj = this.objects.get(key);
     return Promise.resolve(
-      obj ? { size: obj.body.length, contentType: obj.contentType } : null,
+      obj
+        ? {
+            size: obj.body.length,
+            contentType: obj.contentType,
+            ...(obj.cacheControl && { cacheControl: obj.cacheControl }),
+          }
+        : null,
     );
   }
 

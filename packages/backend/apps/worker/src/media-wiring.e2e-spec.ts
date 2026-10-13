@@ -44,7 +44,7 @@ describe('Media wiring in the real worker application', () => {
     const schedules = await app
       .get(Sequelize)
       .query<{ name: string }>(
-        `SELECT "name" FROM "JobSchedule" WHERE "name" LIKE 'media.%' ORDER BY "name"`,
+        `SELECT "name" FROM "JobSchedule" WHERE "name" LIKE 'media.%' AND "name" NOT LIKE 'media.video-%' ORDER BY "name"`,
         { type: QueryTypes.SELECT },
       );
     expect(schedules.map((s) => s.name)).toEqual([

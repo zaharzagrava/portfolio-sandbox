@@ -34,7 +34,7 @@ import { DynamoModule } from '@app/infrastructure/dynamo/dynamo.module';
 import { NotificationsProjectorModule } from '@app/domains/notifications';
 import { ShopMembershipModel as ShopMembership } from '@app/domains/tenancy';
 import { ShareLinksProjectorModule } from '@app/domains/marketing';
-import { MediaProjectorModule } from '@app/domains/media';
+import { MediaProjectorModule, VideoProjectorModule } from '@app/domains/media';
 import {
   FeedFanoutConsumer,
   ProductFeedProjector,
@@ -92,6 +92,7 @@ import { CacheModule } from '@app/infrastructure/cache/cache.module';
         ProductFeedProjector,
         ...ShareLinksProjectorModule.projectors,
         ...MediaProjectorModule.projectors,
+        ...VideoProjectorModule.projectors,
         ...PickupProjectorModule.projectors,
         ...RecommendationsProjectorModule.projectors,
         ...NotificationsProjectorModule.projectors,
@@ -116,6 +117,7 @@ import { CacheModule } from '@app/infrastructure/cache/cache.module';
         PickupProjectorModule,
         ShareLinksProjectorModule,
         MediaProjectorModule,
+        VideoProjectorModule,
         LedgerProjectorModule,
         IntegrationsCoreModule,
         StoryCacheModule,

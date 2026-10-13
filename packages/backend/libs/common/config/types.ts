@@ -76,8 +76,13 @@ export class SecretsManagerConfig {
   google_api_key: string;
   replicate_api_token: string;
 
+  /** CloudFront key pair used to sign unlisted-video cookies (S30); required in production, unset elsewhere → 503 for unlisted. */
   cloudfront_key_pair_id: string;
   cloudfront_private_key: string;
+  /** Video delivery origin, an https URL on a different site from the app and the API, e.g. https://stream.marketplace.dev (S30 AS-58). */
+  video_cdn_url?: string;
+  /** Parent cookie domain containing both the API host and the delivery host, e.g. .marketplace.dev (S30 FR-042). */
+  video_cookie_domain?: string;
 
   stripe_secret_key: string;
   stripe_publishable_key: string;
@@ -399,7 +404,7 @@ export class SecretsManagerConfig {
 }
 
 /** S48: BFF settings; keys, defaults and cross-checks in `bff-config.ts`. */
-// eslint-disable-next-line @typescript-eslint/no-unsafe-declaration-merging, @typescript-eslint/no-empty-object-type
+// eslint-disable-next-line @typescript-eslint/no-unsafe-declaration-merging
 export interface SecretsManagerConfig
   extends BffConfig, DiscussionsConfig, ShareLinksConfig {}
 

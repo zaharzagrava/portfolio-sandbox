@@ -11,4 +11,5 @@ export {
   originsDiffer,
   requireTogether,
 } from './config-rules';
+export { videoProductionRule, cookieDomainContains } from './video-config';
 export type { ConfigRule, RuleCheck, RuleContext } from './config-rules';

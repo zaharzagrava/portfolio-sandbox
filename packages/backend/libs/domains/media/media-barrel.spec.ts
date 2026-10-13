@@ -15,8 +15,13 @@ describe('S29 AS-59: what the media domain exports and owns', () => {
         'MediaRejected',
         'MediaWorkerModule',
         'TransientProcessingError',
+        'VideoDeleted',
+        'VideoFailed',
         'VideoModule',
+        'VideoProjectorModule',
+        'VideoReady',
         'VideoWorkerModule',
+        'videoEventSchemas',
         'createMediaProcessor',
         'createTx',
         'isOriginalKey',
@@ -28,8 +33,20 @@ describe('S29 AS-59: what the media domain exports and owns', () => {
       'Sql',
       'MEDIA_QUEUE',
       'MediaService',
+      'VideoService',
+      'VIDEO_QUEUE',
     ])
       expect(media).not.toHaveProperty(forbidden);
+  });
+
+  it('S30 AS-59: the four video tables belong to the media domain in the ownership registry', () => {
+    for (const table of [
+      'Video',
+      'VideoTask',
+      'VideoStatusHistory',
+      'VideoShopState',
+    ])
+      expect(ownerOf(table)).toBe('domain:media');
   });
 
   it('S29 AS-59: the four photo tables belong to the media domain in the ownership registry', () => {

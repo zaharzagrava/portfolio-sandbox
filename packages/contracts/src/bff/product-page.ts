@@ -1,9 +1,9 @@
-import { z } from 'zod';
-import { productPublicSchema } from '../catalog/index.ts';
-import { productGallerySchema } from '../media/gallery.ts';
-import { recommendationsResponseSchema } from '../search/recommendations.ts';
-import { trendingResponseSchema } from '../search/trending.ts';
-import { shopSummarySchema } from '../tenancy/index.ts';
+import { z } from "zod";
+import { productPublicSchema } from "../catalog/index.ts";
+import { productGallerySchema } from "../media/gallery.ts";
+import { recommendationsResponseSchema } from "../search/recommendations.ts";
+import { trendingResponseSchema } from "../search/trending.ts";
+import { shopSummarySchema } from "../tenancy/index.ts";
 import {
   auctionPublicSchema,
   boardPostsPageSchema,
@@ -11,36 +11,36 @@ import {
   flagsResponseSchema,
   flashSalePublicSchema,
   pickupPageSchema,
-  productVideosSchema,
-} from './upstream.ts';
+} from "./upstream.ts";
+import { productVideosSchema } from "../media/video.ts";
 
 /** Closed set of section outcomes (S48 FR-005); also the GraphQL `extensions.code` of a degraded field. */
 export const BFF_SECTION_CODES = [
-  'UPSTREAM_TIMEOUT',
-  'UPSTREAM_UNAVAILABLE',
-  'UPSTREAM_NOT_FOUND',
-  'UPSTREAM_RATE_LIMITED',
-  'UPSTREAM_INVALID',
-  'UPSTREAM_OVERLOADED',
-  'CIRCUIT_OPEN',
-  'BUDGET_EXCEEDED',
+  "UPSTREAM_TIMEOUT",
+  "UPSTREAM_UNAVAILABLE",
+  "UPSTREAM_NOT_FOUND",
+  "UPSTREAM_RATE_LIMITED",
+  "UPSTREAM_INVALID",
+  "UPSTREAM_OVERLOADED",
+  "CIRCUIT_OPEN",
+  "BUDGET_EXCEEDED",
 ] as const;
 export const sectionCodeSchema = z.enum(BFF_SECTION_CODES);
 export type SectionCode = z.infer<typeof sectionCodeSchema>;
 
 export const BFF_SECTIONS = [
-  'product',
-  'shop',
-  'recommendations',
-  'trending',
-  'flags',
-  'chatUnread',
-  'discussions',
-  'videos',
-  'gallery',
-  'pickup',
-  'flashSale',
-  'auction',
+  "product",
+  "shop",
+  "recommendations",
+  "trending",
+  "flags",
+  "chatUnread",
+  "discussions",
+  "videos",
+  "gallery",
+  "pickup",
+  "flashSale",
+  "auction",
 ] as const;
 export const sectionNameSchema = z.enum(BFF_SECTIONS);
 export type SectionName = z.infer<typeof sectionNameSchema>;
@@ -81,7 +81,7 @@ export const BFF_PAGE_LIMITS = {
 const coordinate = (max: number) =>
   z
     .string()
-    .regex(/^-?\d{1,3}(\.\d{1,8})?$/, 'must be a decimal number')
+    .regex(/^-?\d{1,3}(\.\d{1,8})?$/, "must be a decimal number")
     .transform(Number)
     .refine((n) => n >= -max && n <= max, `must be between -${max} and ${max}`);
 
@@ -92,19 +92,19 @@ export const pageQuerySchema = z
     lng: coordinate(180).optional(),
     radiusKm: z
       .string()
-      .regex(/^\d{1,3}$/, 'must be an integer')
+      .regex(/^\d{1,3}$/, "must be an integer")
       .transform(Number)
       .refine(
         (n) =>
           n >= BFF_PAGE_LIMITS.radiusKm.min &&
           n <= BFF_PAGE_LIMITS.radiusKm.max,
-        'must be 1..100',
+        "must be 1..100",
       )
       .default(BFF_PAGE_LIMITS.radiusKm.default),
   })
   .strict()
   .refine((q) => (q.lat === undefined) === (q.lng === undefined), {
-    message: 'lat and lng must be given together',
-    path: ['lat'],
+    message: "lat and lng must be given together",
+    path: ["lat"],
   });
 export type PageQuery = z.infer<typeof pageQuerySchema>;

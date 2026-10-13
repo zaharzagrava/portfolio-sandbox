@@ -20,6 +20,9 @@ output "app_config" {
     MEDIA_BUCKET             = module.storage.media_bucket
     CDN_DOMAIN               = module.storage.cdn_domain
     MEDIA_CDN_URL            = "https://${module.storage.cdn_domain}" # S29: the media origin, a different site from the app and the API
+    # S30: the video delivery host; VIDEO_COOKIE_DOMAIN (a parent of the API host and this host), CLOUDFRONT_KEY_PAIR_ID and
+    # CLOUDFRONT_PRIVATE_KEY come with the app secret (production refuses to start without them).
+    VIDEO_CDN_URL            = "https://${module.storage.video_cdn_domain}"
     # CLAMAV_HOST (the malware scanner) is required in production by the S29 startup rules; the demo stack supplies it with the app secret.
     SQS_QUEUE_URL_PREFIX     = replace(values(module.sqs.queue_urls)[0], "/[^/]+$/", "${var.env}-")
     DYNAMO_TABLE_PREFIX      = "${var.env}_"

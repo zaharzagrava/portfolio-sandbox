@@ -1,67 +1,83 @@
-import {
-  Injectable,
-  Logger,
-  Module,
-  OnApplicationBootstrap,
-  OnModuleDestroy,
-} from '@nestjs/common';
+import { Module } from '@nestjs/common';
+import { ApiConfigModule, ApiConfigService } from '@app/common/config';
+import { ProblemCatalogModule } from '@app/common/errors';
+import { ErrorUtilsModule } from '@app/common/errors/error-utils/error-utils.module';
 import { AuthModule } from '@app/domains/identity';
-import { StorageModule } from '@app/infrastructure/storage/storage.module';
+import { ProductModule } from '@app/domains/catalog';
+import { TenancyModule } from '@app/domains/tenancy';
+import { DeliveryEdgeModule } from '@app/infrastructure/delivery-edge';
+import { RateLimitModule } from '@app/infrastructure/rate-limit';
 import { SqsModule } from '@app/infrastructure/sqs/sqs.module';
-import { TaskQueue } from '@app/infrastructure/sqs/task-queue.port';
-import { VIDEO_QUEUE, VideoService } from './application/video.service';
+import { StorageModule } from '@app/infrastructure/storage/storage.module';
 import { VideoController } from './api/video.controller';
-
-/** SD-26 API (core). */
-@Module({
-  imports: [AuthModule, StorageModule, SqsModule],
-  providers: [VideoService],
-  exports: [VideoService],
-  controllers: [VideoController],
-})
-export class VideoModule {}
+import { VideoPlaybackController } from './api/video-playback.controller';
+import { VideoFinalizeService } from './application/video-finalize.service';
+import { VideoManageService } from './application/video-manage.service';
+import { VideoPlaybackService } from './application/video-playback.service';
+import { VideoUploadService } from './application/video-upload.service';
+import { VIDEO_PROBLEMS } from './domain/video-errors';
+import { VideoLogger, VideoMetrics, VideoStore } from './domain/video-ports';
+import {
+  NestVideoLogger,
+  RegistryVideoMetrics,
+} from './infra/video-observability';
+import { SequelizeVideoStore } from './infra/video-store';
+import { PART_SIZE } from './domain/video-limits';
+import {
+  VIDEO_COOKIE_DOMAIN,
+  VIDEO_ORIGIN,
+  VIDEO_PART_SIZE,
+} from './video.constants';
+import { videoRatePolicies } from './video-rate-limit-policies';
 
 /**
- * Transcoding workers (apps/worker, on CPU-heavy spot instances in AWS; not
- * Lambda - a 1080p rendition of a long video runs past 15 min). Concurrency 2
- * per instance: ffmpeg already uses every core. AWS Elemental MediaConvert is
- * the managed alternative (ADR in the section doc).
+ * Product videos, core side (S30): upload, management and delivery routes. The transcoding itself runs in
+ * `VideoWorkerModule` (apps/worker), the three event consumers in `VideoProjectorModule`. `media` reads no table of
+ * another domain: the product check is catalog R1, membership and the shop gate are tenancy's, the shop's suspension is
+ * a local copy kept by event (`VideoShopState`).
  */
-@Injectable()
-class VideoWorker implements OnApplicationBootstrap, OnModuleDestroy {
-  private readonly logger = new Logger(VideoWorker.name);
-  private readonly abort = new AbortController();
-  private stop?: () => Promise<void>;
-
-  constructor(
-    private readonly queue: TaskQueue,
-    private readonly videos: VideoService,
-  ) {}
-
-  onApplicationBootstrap() {
-    this.stop = this.queue.consume<{ videoId: string; task: string }>(
-      VIDEO_QUEUE,
-      async ({ body }) =>
-        void (await this.videos.runTask(
-          body.videoId,
-          body.task,
-          this.abort.signal,
-        )),
-      {
-        concurrency: 2,
-        visibilityTimeoutSec: 900,
-      },
-    );
-  }
-
-  async onModuleDestroy() {
-    this.abort.abort(); // kills running ffmpeg; the task is re-queued and redelivered
-    await this.stop?.();
-  }
-}
-
 @Module({
-  imports: [StorageModule, SqsModule],
-  providers: [VideoService, VideoWorker],
+  imports: [
+    ApiConfigModule,
+    AuthModule,
+    ProductModule,
+    TenancyModule,
+    StorageModule,
+    SqsModule,
+    DeliveryEdgeModule,
+    ErrorUtilsModule, // for `VideoHiddenShopFilter`, which delegates to the platform filter
+    ProblemCatalogModule.forFeature(VIDEO_PROBLEMS),
+    RateLimitModule.forFeature(videoRatePolicies),
+  ],
+  providers: [
+    { provide: VideoStore, useClass: SequelizeVideoStore },
+    { provide: VideoMetrics, useClass: RegistryVideoMetrics },
+    { provide: VideoLogger, useClass: NestVideoLogger },
+    {
+      provide: VIDEO_ORIGIN,
+      inject: [ApiConfigService],
+      useFactory: (config: ApiConfigService): string => {
+        // No fallback to the storage endpoint or the photo origin: a missing host must not silently expose the bucket.
+        const origin = config.get('video_cdn_url');
+        if (!origin)
+          throw new Error(
+            'video_cdn_url is required (the host every video URL is built on)',
+          );
+        return origin;
+      },
+    },
+    {
+      provide: VIDEO_COOKIE_DOMAIN,
+      inject: [ApiConfigService],
+      useFactory: (config: ApiConfigService): string | null =>
+        config.get('video_cookie_domain') ?? null,
+    },
+    { provide: VIDEO_PART_SIZE, useValue: { value: PART_SIZE } },
+    VideoFinalizeService,
+    VideoUploadService,
+    VideoManageService,
+    VideoPlaybackService,
+  ],
+  controllers: [VideoController, VideoPlaybackController],
 })
-export class VideoWorkerModule {}
+export class VideoModule {}
