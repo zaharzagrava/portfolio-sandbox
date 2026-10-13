@@ -1,0 +1,4 @@
+# date-time	charter	id	oracle-kind	severity	verdict	title     (verdict: pending | real | gap (not built yet) | false | noise ; set by a person: scripts/qa/tally.py set <stamp> <charter> <id> <verdict>)
+2026-10-13-0810	buy	D1	CONFIRMED	medium	gap	`/orders` (my orders) is a 404 page; the history only exists at `/dashboard/orders` (story not built yet)
+2026-10-13-0810	buy	D2	CONFIRMED	low	pending	browser console error flood, inline styles blocked by the Content Security Policy (about 170-200 per flow)
+
