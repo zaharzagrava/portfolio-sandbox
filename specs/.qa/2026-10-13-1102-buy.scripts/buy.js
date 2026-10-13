@@ -1,0 +1,30 @@
+// usage: node buy.js <normal|reload|double> ; requires /tmp/tmp.8jkDSSNS4j/state2.json (signed in)
+const { chromium } = require('/home/zagrava/workspace/personal-projects/portfolio-sandbox/packages/web/node_modules/@playwright/test');
+const mode = process.argv[2] || 'normal';
+const S = '/tmp/tmp.8jkDSSNS4j/shots/';
+const txt = async (p, n = 1000) => (await p.innerText('body')).replace(/\n+/g, ' | ').slice(0, n);
+(async () => {
+  const b = await chromium.launch();
+  const ctx = await b.newContext({ storageState: '/tmp/tmp.8jkDSSNS4j/state2.json' });
+  const page = await ctx.newPage();
+  page.on('console', m => { if (m.type() === 'error' && !/Content Security Policy/.test(m.text())) console.log('CONSOLE', m.text().slice(0, 200)); });
+  page.on('pageerror', e => console.log('PAGEERROR', e.message));
+  page.on('response', async r => { const u = r.url(); if (/\/api\//.test(u) && !/bff\/session|api\/cart$|streams/.test(u)) { let body = ''; if (r.request().method() !== 'GET' || r.status() >= 400) { try { body = (await r.text()).slice(0, 250); } catch (e) {} } console.log(new Date().toISOString().slice(14, 23), 'API', r.status(), r.request().method(), u.replace('http://localhost:3000', ''), body); } });
+  await page.goto('http://localhost:3000/products/01a1345b-5be1-740e-ba12-15f4fa6a1c0f');
+  await page.getByRole('button', { name: /add to cart/i }).click();
+  await page.waitForTimeout(1500);
+  await page.goto('http://localhost:3000/checkout');
+  await page.waitForTimeout(1500);
+  console.log('REVIEW', await txt(page, 400));
+  const place = page.getByRole('button', { name: /place order/i });
+  if (mode === 'double') await place.dblclick(); else await place.click();
+  await page.waitForURL(/checkout\/pay\//, { timeout: 15000 });
+  console.log('PAY URL', page.url());
+  await page.waitForTimeout(2000);
+  console.log('PAYPAGE', await txt(page, 900));
+  await page.screenshot({ path: S + `pay-${mode}.png` });
+  console.log('INPUTS', await page.locator('input,select').evaluateAll(els => els.map(e => [e.name, e.type, e.getAttribute('aria-label'), e.value])));
+  console.log('RADIOS', await page.getByRole('radio').evaluateAll(els => els.map(e => e.parentElement.innerText)));
+  console.log('BTNS', await page.getByRole('button').allInnerTexts());
+  await b.close();
+})();

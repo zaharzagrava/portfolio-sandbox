@@ -49,7 +49,7 @@ The implementation agent's to-do list. Paths are under `packages/backend/libs/in
 | # | Gap | Where | Spec |
 |---|---|---|---|
 | G-28 | No `InboxService`. The webhook controller runs raw SQL `INSERT INTO "ProcessedWebhookEvent" … ON CONFLICT DO NOTHING` (IX.6: only the owning lib's service may). The table has no status, attempts or claim time. **[BREAKING]** | `domains/orders/api/stripe-webhook.controller.ts:49`, `db/ownership.ts:170` | FR-041, AS-44 to AS-47 |
-| G-29 | Ownership registry names the owner `infrastructure:idempotency`; the domain-map names `infrastructure:inbox`. No migration adds the columns, no purge job exists. | `db/ownership.ts:170`, `docs/architecture/domain-map.md:375` | FR-041, FR-042, AS-48 |
+| G-29 | Ownership registry names the owner `infrastructure:idempotency`; the domain-map names `infrastructure:inbox`. No migration adds the columns, no purge job exists. | `db/ownership.ts:170`, `docs/work/architecture/domain-map.md:375` | FR-041, FR-042, AS-48 |
 | G-30 | No consumer-side inbox (`recordOnce` in the caller's transaction), so every consumer that needs it hand-rolls or has none | (missing) | FR-031, FR-042, AS-28, AS-49 |
 
 ## E. Versioned sinks

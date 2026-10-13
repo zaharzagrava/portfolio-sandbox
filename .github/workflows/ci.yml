@@ -34,7 +34,7 @@ jobs:
               - 'infra/docker/node/**'
             observability:
               - 'infra/observability/**'
-              - 'docs/slo/**'
+              - 'docs/ops/slo/**'
 
   checks:
     needs: changes

@@ -89,7 +89,7 @@ def load_page(path):
 
 
 def pages(kind):
-    folder = {'capability': 'capabilities', 'concept': 'concepts', 'model': 'models'}[kind]
+    folder = {'capability': 'capabilities', 'concept': 'concepts', 'model': 'models', 'term': 'terms'}[kind]
     return [load_page(p) for p in sorted(glob.glob(os.path.join(SPEC, folder, '*.md')))]
 
 
@@ -160,8 +160,145 @@ VAGUE = ['appropriate', 'appropriately', 'proper', 'properly', 'correct', 'corre
 MAX_WORDS = 30
 
 
+MD_LINK = re.compile(r'(?<!\!)\[([^\]\[]+)\]\(([^)\s]+)\)')
+
+
+def spec_links(page):
+    """-> [(text, target path or None)] for every relative markdown link of a page that points at another markdown file; the target is made absolute.
+    Links to terms are how a rule says what a word means: [section](../terms/page-section.md)."""
+    out = []
+    for m in MD_LINK.finditer(re.sub(r'`[^`]*`', '', page['text'])):
+        target = m.group(2).split('#')[0]
+        if not target.endswith('.md') or re.match(r'^[a-z]+:', target):
+            continue
+        out.append((m.group(1), os.path.normpath(os.path.join(os.path.dirname(page['path']), target))))
+    return out
+
+
+def term_slugs_linked(page):
+    terms_dir = os.path.join(SPEC, 'terms')
+    return {os.path.splitext(os.path.basename(t))[0] for _, t in spec_links(page) if os.path.dirname(t) == terms_dir}
+
+
+def linking_items(slug, pages):
+    """-> [(item id, normalized text)] of the rules and behaviors of `pages` that link the term `slug`."""
+    out = []
+    for p in pages:
+        for it in p['items']:
+            if slug in term_slugs_linked({'path': p['path'], 'text': it['text']}):
+                out.append((it['id'], it['norm']))
+    return sorted(out)
+
+
+def definition_links(page):
+    """The terms that a term's own Definition section links: the edges of the dependency graph. (Example, Known gaps and Used by may point anywhere: they explain nothing.)"""
+    m = re.search(r'^## Definition\n(.*?)(?=^## |\Z)', page['body'], re.M | re.S)
+    if not m:
+        return set()
+    return term_slugs_linked({'path': page['path'], 'text': m.group(1)}) - {os.path.splitext(os.path.basename(page['path']))[0]}
+
+
+def term_graph(term_pages):
+    return {slug_of(p): definition_links(p) for p in term_pages}
+
+
+def find_cycles(graph):
+    """Strongly connected components with more than one term (Tarjan, iterative). A definition that needs a word whose definition needs the first is circular. -> [[slug, ...]]"""
+    index, low, on, stack, out, counter = {}, {}, set(), [], [], [0]
+    for root in graph:
+        if root in index:
+            continue
+        work = [(root, iter(sorted(graph.get(root, ()))))]
+        index[root] = low[root] = counter[0]; counter[0] += 1; stack.append(root); on.add(root)
+        while work:
+            v, it = work[-1]
+            adv = False
+            for w in it:
+                if w not in graph:
+                    continue
+                if w not in index:
+                    index[w] = low[w] = counter[0]; counter[0] += 1; stack.append(w); on.add(w)
+                    work.append((w, iter(sorted(graph.get(w, ())))))
+                    adv = True
+                    break
+                if w in on:
+                    low[v] = min(low[v], index[w])
+            if adv:
+                continue
+            work.pop()
+            if work:
+                low[work[-1][0]] = min(low[work[-1][0]], low[v])
+            if low[v] == index[v]:
+                comp = []
+                while True:
+                    w = stack.pop(); on.discard(w); comp.append(w)
+                    if w == v:
+                        break
+                if len(comp) > 1:
+                    out.append(sorted(comp))
+    return out
+
+
+def reaches(graph, start, target):
+    seen, todo = set(), [start]
+    while todo:
+        v = todo.pop()
+        if v == target:
+            return True
+        if v in seen:
+            continue
+        seen.add(v); todo.extend(graph.get(v, ()))
+    return False
+
+
+def term_index(pages):
+    """-> {slug: [(page, item)]} for every rule or behavior that links a term, built in one pass (the per-term search was quadratic and took minutes)."""
+    inv = {}
+    for p in pages:
+        for it in p['items']:
+            for slug in term_slugs_linked({'path': p['path'], 'text': it['text']}):
+                inv.setdefault(slug, []).append((p, it))
+    return inv
+
+
+def definition_text(page):
+    m = re.search(r'^## Definition\n(.*?)(?=^## |\Z)', page['body'], re.M | re.S)
+    return re.sub(r'\s+', ' ', m.group(1)).strip() if m else ''
+
+
+def term_definition_index(term_pages):
+    """-> {slug: [(linking term, its definition text)]}: a term was written with the definitions that use it as part of its context, so when one of those changes it may be stale too."""
+    inv = {}
+    for p in term_pages:
+        text = definition_text(p)
+        for slug in definition_links(p):
+            inv.setdefault(slug, []).append((slug_of(p), text))
+    return inv
+
+
+def hash_of_items(pairs, defs=()):
+    """Fingerprint of everything a term was written from: the rules that link it, and the definitions of the terms that link it. The term graph is acyclic, so a change travels
+    down it one step at a time, as each flagged definition is read again (and perhaps edited)."""
+    lines = [f'{i}\t{t}' for i, t in sorted((it['id'], it['norm']) for _, it in pairs)] + [f'def:{s}\t{t}' for s, t in sorted(defs)]
+    return hashlib.sha256('\n'.join(lines).encode()).hexdigest()[:12]
+
+
+def term_rules_hash(slug, pages):
+    """A fingerprint of the rules that use a term. A term page records it when it is written; when a rule that uses the word changes, or a new rule starts using it,
+    the fingerprint differs and check.py asks for the definition to be read again (the same idea as a signed rule, without a person's signature)."""
+    return hashlib.sha256('\n'.join(f'{i}\t{t}' for i, t in linking_items(slug, pages)).encode()).hexdigest()[:12]
+
+
+NUMBER = re.compile(r'(?<![\w.])\d[\d,]*(?:\.\d+)?(?![\w])')
+
+
+def numbers_in(text):
+    return {n.replace(',', '') for n in NUMBER.findall(text)} - {'0', '1', '2', '3'}
+
+
 def strip_refs(text):
-    return re.sub(r'\{\{[^}]*\}\}|\[(?:proof|code):[^\]]*\]', '', text)
+    text = re.sub(r'\{\{[^}]*\}\}|\[(?:proof|code):[^\]]*\]', '', text)
+    return MD_LINK.sub(r'\1', text)
 
 
 def style_problems(text):

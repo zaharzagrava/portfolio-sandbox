@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Bulk spec writing (docs/architecture/sdd-runbook.md, step 2): runs `/speckit-specify` headless, one capability at
+# Bulk spec writing (docs/work/architecture/sdd-runbook.md, step 2): runs `/speckit-specify` headless, one capability at
 # a time, in catalog order. Built to run unattended for hours:
 #   - a capability is done only when spec.md, test-plan.md, gaps.md and questions.md all exist; the script then
 #     writes a `.spec-done` marker. Anything without the marker (interrupted, partial) is cleared and redone.

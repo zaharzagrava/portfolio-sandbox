@@ -101,7 +101,7 @@ The reindex, admin and worker `ProductModel`/`forFeature([Product])` lines and t
 
 ## D. Ordered work list for the implementation agent
 
-1. Register the new tables in `db/ownership.ts` and update `docs/architecture/domain-map.md` (A: shop search, shop state, reindex runs, synonym sets); write migrations with `lock_timeout` (expand only).
+1. Register the new tables in `db/ownership.ts` and update `docs/work/architecture/domain-map.md` (A: shop search, shop state, reindex runs, synonym sets); write migrations with `lock_timeout` (expand only).
 2. Contracts: add the schemas of FR-060 to `packages/contracts`; port W02 types (`packages/web/lib/api/catalog.ts`) after the backend lands.
 3. Split `libs/infrastructure/elasticsearch` into a generic client and the discovery adapter (D-16); introduce the domain ports (D-6).
 4. Pure domain first, test-first: `projection-guard`, `reindex-run-status`, `synonym-rules`, `search-cursor`, `query-text`, `popularity-bucket` (AS-81–AS-86).

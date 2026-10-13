@@ -94,7 +94,7 @@ The implementation agent's to-do list: what today's code gets wrong or lacks aga
 
 ## 2. Open debt rows that name `content` or S27
 
-Source: `docs/architecture/debt-register.md`. No row names `content` or S27 explicitly; the generic rows below apply to this domain's code (checked against the findings of §3). D-1 to D-5, D-9 to D-11 and D-13 to D-17 do not.
+Source: `docs/work/architecture/debt-register.md`. No row names `content` or S27 explicitly; the generic rows below apply to this domain's code (checked against the findings of §3). D-1 to D-5, D-9 to D-11 and D-13 to D-17 do not.
 
 | Debt | What in this capability | Where | Replaced by |
 |---|---|---|---|

@@ -87,6 +87,6 @@ Target state: `check:table-ownership --strict` reports nothing for `launch-event
 - Migration: add `LiveStream.pin jsonb NULL`, `LiveStream.pinVersion int NOT NULL DEFAULT 0`; new table `LiveMute` (no foreign key to `User`; `streamId` FK to `LiveStream` allowed, same owner); register `LiveMute` in `db/ownership.ts` (`LiveStream` is registered at `:118`). Remove nothing from `LiveStream`.
 - DynamoDB `LiveComments`: no key change; items gain `removed`, `removedReason` through upserts; keep TTL attribute.
 - `packages/contracts`: add the schemas named in `spec.md` (Provides) and `live-reducer.ts`; event schemas for `live.comment_removed` v2, `live.reactions_aggregated`, `live.stream_started`, `live.stream_ended`.
-- `docs/architecture/domain-map.md` `launch-events` "Emits": add the new events and v2.
+- `docs/work/architecture/domain-map.md` `launch-events` "Emits": add the new events and v2.
 - S22 coordination: remove the `stream` prefix from the shared topics file; keep `LaunchEventTopicsModule` for `event` and `queue`.
 - S51 coordination: `TopicSubscriber` export from the infrastructure realtime lib (until then the gateway module keeps a local adapter behind the same interface).

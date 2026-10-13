@@ -7,7 +7,7 @@ Read first, in this order:
    only), V (API contracts the UI consumes).
 2. `packages/web/AGENTS.md`. This Next.js version differs from what you know, so read the relevant guide in
    `packages/web/node_modules/next/dist/docs/` before describing rendering, caching, or routing behaviour.
-3. `docs/architecture/pattern-map.md`: every row whose **Specs** column contains `{{ID}}` must appear as
+3. `docs/work/architecture/pattern-map.md`: every row whose **Specs** column contains `{{ID}}` must appear as
    requirements and scenarios here.
 4. Sources (backend `spec.md` files define what the API guarantees; Interview-Prep paths are under
    `interview-prep/`): {{SOURCES}}

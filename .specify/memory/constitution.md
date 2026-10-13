@@ -17,7 +17,7 @@ Sync Impact Report
 - Follow-up TODOs (code, not governance):
   * Move libs/common/src/bff → libs/composition/bff and the widget orchestration →
     libs/composition/widget. Split bff/batch-read.controller into the owning domains' api/.
-  * Update docs/architecture/domain-map.md §1.1 / §2 / §5 D1 (bff is no longer a domain).
+  * Update docs/work/architecture/domain-map.md §1.1 / §2 / §5 D1 (bff is no longer a domain).
   * Add @app/composition/* alias and X.8 rules to the X.6 dependency check.
 - Templates requiring updates: none modified.
 -->

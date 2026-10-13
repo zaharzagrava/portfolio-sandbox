@@ -44,7 +44,7 @@ Order of work suggested at the end (section F).
 
 ## B. Open debt-register rows that name `payments` or S13
 
-Source: `docs/architecture/debt-register.md`. Rows with status "open" that name `payments` or S13 (or whose resolver list includes S13). Each row says which IX.7 mechanism replaces the access.
+Source: `docs/work/architecture/debt-register.md`. Rows with status "open" that name `payments` or S13 (or whose resolver list includes S13). Each row says which IX.7 mechanism replaces the access.
 
 | Row | Rule | What touches this capability | Replacement (IX.7) |
 |---|---|---|---|

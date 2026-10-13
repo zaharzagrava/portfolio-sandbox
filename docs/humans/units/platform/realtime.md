@@ -33,3 +33,11 @@ files: 4
 **Imports from:** [platform/redis](redis.md) (1)
 
 **Imported by:** [app/sse-gateway](../app/sse-gateway.md) (5), [domain/auctions](../domain/auctions.md) (6), [domain/catalog-sync](../domain/catalog-sync.md) (4), [domain/chat](../domain/chat.md) (5), [domain/experimentation](../domain/experimentation.md) (3), [domain/fulfilment](../domain/fulfilment.md) (5), [domain/identity](../domain/identity.md) (2), [domain/launch-events](../domain/launch-events.md) (11), [domain/notifications](../domain/notifications.md) (2), [domain/orders](../domain/orders.md) (6), [domain/seller-insights](../domain/seller-insights.md) (3), [domain/tenancy](../domain/tenancy.md) (2)
+
+<!-- spec-links:start -->
+## Specification
+
+The living specification is the source of truth for what this unit does; this page is generated from the code and may lag behind it.
+
+- [S51 Realtime push hub: topic SSE, Last-Event-ID replay, per-topic policies, ref-coun](../../../spec/capabilities/S51-realtime-push.md)
+<!-- spec-links:end -->

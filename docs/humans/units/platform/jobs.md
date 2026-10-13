@@ -50,3 +50,11 @@ See [event catalog](../../catalog/events.md) and [job catalog](../../catalog/job
 **Imports from:** [common/config](../common/config.md) (2), [common/core](../common/core.md) (2), [common/types](../common/types.md) (1), [platform/context](context.md) (1), [platform/lifecycle](lifecycle.md) (2)
 
 **Imported by:** [app/sse-gateway](../app/sse-gateway.md) (1), [app/worker](../app/worker.md) (1), [domain/asset-library](../domain/asset-library.md) (3), [domain/auctions](../domain/auctions.md) (4), [domain/billing](../domain/billing.md) (5), [domain/catalog](../domain/catalog.md) (2), [domain/catalog-sync](../domain/catalog-sync.md) (3), [domain/community](../domain/community.md) (3), [domain/content](../domain/content.md) (3), [domain/developer-platform](../domain/developer-platform.md) (6), [domain/discovery](../domain/discovery.md) (10), [domain/fulfilment](../domain/fulfilment.md) (3), [domain/identity](../domain/identity.md) (3), [domain/launch-events](../domain/launch-events.md) (3), [domain/marketing](../domain/marketing.md) (3), [domain/notifications](../domain/notifications.md) (3), [domain/orders](../domain/orders.md) (6), [domain/payments](../domain/payments.md) (8), [domain/seller-insights](../domain/seller-insights.md) (6), [domain/seller-onboarding](../domain/seller-onboarding.md) (3), [domain/statements](../domain/statements.md) (5), [domain/tenancy](../domain/tenancy.md) (2), [platform/outbox](outbox.md) (2)
+
+<!-- spec-links:start -->
+## Specification
+
+The living specification is the source of truth for what this unit does; this page is generated from the code and may lag behind it.
+
+- [S54 Platform toolkit: problem+json errors, request context and transactions, health ](../../../spec/capabilities/S54-platform-toolkit.md)
+<!-- spec-links:end -->

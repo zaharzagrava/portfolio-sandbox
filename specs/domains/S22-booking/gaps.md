@@ -75,7 +75,7 @@ What the current code gets wrong or lacks versus [`spec.md`](spec.md), the open 
 
 ## 2. Open debt-register rows that touch this capability
 
-`docs/architecture/debt-register.md` has no row that names `launch-events` or `S22` by ID. The generic open rows below apply to every capability of every domain, so they apply here:
+`docs/work/architecture/debt-register.md` has no row that names `launch-events` or `S22` by ID. The generic open rows below apply to every capability of every domain, so they apply here:
 
 | Debt | Where in `launch-events` (S22 part) | Mechanism that replaces it |
 |---|---|---|
@@ -107,4 +107,4 @@ Goal state: zero findings for `launch-events` under `--strict` after S22 and S23
 5. Jobs (`expire-hold`, `open-sales`, `close-event`, `reconcile-seats`) and the admitter; outbox events and the voucher command.
 6. Rewrite the e2e specs per `test-plan.md`; update the k6 script.
 7. Trim the barrel and module exports; run `check:boundaries`, `check:table-ownership --strict`, `check:module-graph`, `check:model-registry`.
-8. Update `docs/architecture/domain-map.md` ("Emits" for `launch-events`) and the S22 row of `docs/architecture/pattern-map.md` if statuses change.
+8. Update `docs/work/architecture/domain-map.md` ("Emits" for `launch-events`) and the S22 row of `docs/work/architecture/pattern-map.md` if statuses change.

@@ -3,7 +3,7 @@
 **Feature Directory**: `specs/domains/S43-webhooks`
 **Created**: 2026-10-06
 **Status**: Draft
-**Input**: Capability S43 of `scripts/sdd/capabilities.tsv`: "Webhook delivery to shops: subscriptions, signing with dual secrets, per-endpoint ordering, retries, auto-disable, replay". Sources: `docs/showcase/sections/SD-30-webhook-delivery.md`, `interview-prep/04-api-design/03-idempotency-pagination-rate-limiting-webhooks.md` §5 (providing webhooks), `04-api-design/02-api-versioning-and-deprecation.md` §8. Patterns from `docs/architecture/pattern-map.md`: P0112, P0413, P0418, P0507, P0518, P0604, P0608, P0617. Where the existing code and the notes disagree, the notes win (gaps are in `gaps.md`).
+**Input**: Capability S43 of `scripts/sdd/capabilities.tsv`: "Webhook delivery to shops: subscriptions, signing with dual secrets, per-endpoint ordering, retries, auto-disable, replay". Sources: `docs/showcase/sections/SD-30-webhook-delivery.md`, `interview-prep/04-api-design/03-idempotency-pagination-rate-limiting-webhooks.md` §5 (providing webhooks), `04-api-design/02-api-versioning-and-deprecation.md` §8. Patterns from `docs/work/architecture/pattern-map.md`: P0112, P0413, P0418, P0507, P0518, P0604, P0608, P0617. Where the existing code and the notes disagree, the notes win (gaps are in `gaps.md`).
 
 ## Overview
 

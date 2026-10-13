@@ -67,7 +67,7 @@ The implementation agent's to-do list. Paths are under `packages/web` unless sta
 - W01 AS-62 ("prerenders its static shell") must be reworded to "the shell streams first" (Q1).
 - W06 and W01 must agree that the Admin entry is rendered by W01's account components (Q2).
 - S44 must state the final bundle address (Q3); S54 must list `POST /api/csp-reports` (Q5); S42 must list the same-origin description route (Q6).
-- `docs/architecture/pattern-map.md` P0502/P0903 rows say "implemented" while the code has neither a CSP nor a proxy: set to `planned` until this spec is built.
+- `docs/work/architecture/pattern-map.md` P0502/P0903 rows say "implemented" while the code has neither a CSP nor a proxy: set to `planned` until this spec is built.
 
 ## Sibling-spec follow-ups
 

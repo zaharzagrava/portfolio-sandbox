@@ -8,7 +8,7 @@
 
 **Status**: Draft
 
-**Input**: "Home, search (autocomplete, filters, facets, sort, URL state), trending and recommendation rails, product page (product, shop, pickup near me, discussions, ask this product, share link)". Sources: constitution VI, VII.7, V; `packages/web/AGENTS.md` and the Next.js guides *Caching*, *Fetching data*, *Streaming / loading*, *Error handling*, *Linking and navigating* (History API integration), *Client-side data fetching with TanStack Query*, *JSON-LD*, *Backend for Frontend*; `docs/architecture/pattern-map.md` rows P0402, P0901, P0902; backend specs S32, S33, S34, S35, S19, S25, S47, S48 and the contract lines that S05, S29, S30, S36, S37, S39 and W01 address to W02; notes 09/01 and 09/02.
+**Input**: "Home, search (autocomplete, filters, facets, sort, URL state), trending and recommendation rails, product page (product, shop, pickup near me, discussions, ask this product, share link)". Sources: constitution VI, VII.7, V; `packages/web/AGENTS.md` and the Next.js guides *Caching*, *Fetching data*, *Streaming / loading*, *Error handling*, *Linking and navigating* (History API integration), *Client-side data fetching with TanStack Query*, *JSON-LD*, *Backend for Frontend*; `docs/work/architecture/pattern-map.md` rows P0402, P0901, P0902; backend specs S32, S33, S34, S35, S19, S25, S47, S48 and the contract lines that S05, S29, S30, S36, S37, S39 and W01 address to W02; notes 09/01 and 09/02.
 
 Companion files: [`questions.md`](questions.md) (decisions taken unattended, tagged), [`test-plan.md`](test-plan.md) (one row per scenario), [`gaps.md`](gaps.md) (what today's code lacks, missing backend endpoints, test tooling), [`checklists/requirements.md`](checklists/requirements.md).
 

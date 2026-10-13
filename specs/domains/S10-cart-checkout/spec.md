@@ -6,7 +6,7 @@
 
 **Status**: Draft
 
-**Input**: User description: "Cart (guest + merge), idempotent checkout, stock reservation, multi-shop split, order state machine, payment webhook (domain `orders`)". Sources: `docs/showcase/sections/SD-19-checkout-inventory.md`, note 10-System-Design/07 §19 (checkout and inventory), note 04-API-Design/03 §1 and §5 (idempotency keys, webhooks as consumer), constitution v3.1.0, `docs/architecture/domain-map.md` (`orders`), `docs/architecture/pattern-map.md` (rows naming S10: P0103, P0110, P0303, P0311, P0313, P0407, P0414, P0419, P0611, P1110).
+**Input**: User description: "Cart (guest + merge), idempotent checkout, stock reservation, multi-shop split, order state machine, payment webhook (domain `orders`)". Sources: `docs/showcase/sections/SD-19-checkout-inventory.md`, note 10-System-Design/07 §19 (checkout and inventory), note 04-API-Design/03 §1 and §5 (idempotency keys, webhooks as consumer), constitution v3.1.0, `docs/work/architecture/domain-map.md` (`orders`), `docs/work/architecture/pattern-map.md` (rows naming S10: P0103, P0110, P0303, P0311, P0313, P0407, P0414, P0419, P0611, P1110).
 
 ## Scope
 

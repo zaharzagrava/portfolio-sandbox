@@ -1,0 +1,20 @@
+const { chromium } = require('/home/zagrava/workspace/personal-projects/portfolio-sandbox/packages/web/node_modules/@playwright/test');
+(async () => {
+  const b = await chromium.launch();
+  const ctx = await b.newContext({ storageState: '/tmp/tmp.8jkDSSNS4j/state2.json' });
+  const page = await ctx.newPage();
+  page.on('console', m => { if (m.type() === 'error' && !/Content Security Policy/.test(m.text())) console.log('CONSOLE', m.text().slice(0, 200)); });
+  page.on('pageerror', e => console.log('PAGEERROR', e.message));
+  page.on('response', r => { if (/\/api\//.test(r.url()) && r.status() >= 400) console.log('API', r.status(), r.url()); });
+  await page.goto('http://localhost:3000/orders');
+  await page.waitForTimeout(2500);
+  console.log((await page.locator('main').innerText()).replace(/\n+/g, ' | '));
+  await page.screenshot({ path: '/tmp/tmp.8jkDSSNS4j/shots/orders.png' });
+  await page.getByRole('link', { name: /view|#01A/i }).first().click().catch(e => console.log('no link'));
+  await page.waitForTimeout(2500);
+  console.log(page.url(), (await page.locator('main').innerText()).replace(/\n+/g, ' | ').slice(0, 600));
+  await page.goto('http://localhost:3000/orders/not-a-uuid');
+  await page.waitForTimeout(1500);
+  console.log('MALFORMED', (await page.innerText('body')).replace(/\n+/g, ' | ').slice(0, 200));
+  await b.close();
+})();

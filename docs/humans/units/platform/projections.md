@@ -43,3 +43,11 @@ files: 9
 **Imports from:** [common/config](../common/config.md) (2), [common/core](../common/core.md) (4), [platform/cassandra](cassandra.md) (1), [platform/clickhouse](clickhouse.md) (1), [platform/dynamo](dynamo.md) (1), [platform/events](events.md) (4), [platform/kafka](kafka.md) (1), [platform/lifecycle](lifecycle.md) (1), [platform/redis](redis.md) (2)
 
 **Imported by:** [app/projector](../app/projector.md) (1), [domain/assistant](../domain/assistant.md) (2), [domain/billing](../domain/billing.md) (2), [domain/catalog](../domain/catalog.md) (3), [domain/catalog-sync](../domain/catalog-sync.md) (1), [domain/chat](../domain/chat.md) (1), [domain/community](../domain/community.md) (2), [domain/content](../domain/content.md) (1), [domain/developer-platform](../domain/developer-platform.md) (3), [domain/discovery](../domain/discovery.md) (6), [domain/experimentation](../domain/experimentation.md) (2), [domain/fulfilment](../domain/fulfilment.md) (2), [domain/launch-events](../domain/launch-events.md) (2), [domain/marketing](../domain/marketing.md) (2), [domain/notifications](../domain/notifications.md) (1), [domain/orders](../domain/orders.md) (2), [domain/payments](../domain/payments.md) (3), [domain/seller-insights](../domain/seller-insights.md) (4)
+
+<!-- spec-links:start -->
+## Specification
+
+The living specification is the source of truth for what this unit does; this page is generated from the code and may lag behind it.
+
+- [S54 Platform toolkit: problem+json errors, request context and transactions, health ](../../../spec/capabilities/S54-platform-toolkit.md)
+<!-- spec-links:end -->

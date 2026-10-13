@@ -8,7 +8,7 @@
 
 **Status**: Draft
 
-**Input**: "Sign up, log in, forgot password, MFA step-up, session cookie via BFF, CSRF, logout, account state in the navbar". Sources: constitution VI, VII.7, V; `packages/web/AGENTS.md` and the Next.js guides *Authentication*, *Authentication with Cache Components*, *Backend for Frontend*, *Proxy*; `docs/architecture/pattern-map.md` rows P0504, P0512, P0903; backend specs S01, S02, S48; notes 09/03 and 05/02.
+**Input**: "Sign up, log in, forgot password, MFA step-up, session cookie via BFF, CSRF, logout, account state in the navbar". Sources: constitution VI, VII.7, V; `packages/web/AGENTS.md` and the Next.js guides *Authentication*, *Authentication with Cache Components*, *Backend for Frontend*, *Proxy*; `docs/work/architecture/pattern-map.md` rows P0504, P0512, P0903; backend specs S01, S02, S48; notes 09/03 and 05/02.
 
 Companion files: [`questions.md`](questions.md) (decisions taken unattended, tagged), [`test-plan.md`](test-plan.md) (one row per scenario), [`gaps.md`](gaps.md) (what today's code lacks, missing backend endpoints, test tooling), [`checklists/requirements.md`](checklists/requirements.md).
 

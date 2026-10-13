@@ -99,3 +99,12 @@ See [event catalog](../../catalog/events.md) and [job catalog](../../catalog/job
 **Imports from:** [common/config](../common/config.md) (2), [common/errors](../common/errors.md) (1), [domain/catalog](catalog.md) (3), [domain/identity](identity.md) (7), [domain/notifications](notifications.md) (2), [platform/cache](../platform/cache.md) (3), [platform/database](../platform/database.md) (2), [platform/events](../platform/events.md) (2), [platform/projections](../platform/projections.md) (1), [platform/realtime](../platform/realtime.md) (5), [platform/redis](../platform/redis.md) (2), [platform/redis-pubsub](../platform/redis-pubsub.md) (2), [platform/sqs](../platform/sqs.md) (2)
 
 **Imported by:** [app/core](../app/core.md) (1), [app/projector](../app/projector.md) (1), [app/sse-gateway](../app/sse-gateway.md) (1), [app/worker](../app/worker.md) (1)
+
+<!-- spec-links:start -->
+## Specification
+
+The living specification is the source of truth for what this unit does; this page is generated from the code and may lag behind it.
+
+- [S51 Realtime push hub: topic SSE, Last-Event-ID replay, per-topic policies, ref-coun](../../../spec/capabilities/S51-realtime-push.md)
+- [S54 Platform toolkit: problem+json errors, request context and transactions, health ](../../../spec/capabilities/S54-platform-toolkit.md)
+<!-- spec-links:end -->

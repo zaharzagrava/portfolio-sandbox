@@ -10,14 +10,14 @@ defined_by: S53
 The outbox is the shared event backbone. A domain writes each event to an outbox row in the same database transaction as its state change. A relay then publishes the row to Kafka at least once. Consumers apply each event once in effect, using an inbox, a version guard or a natural key. No event is lost, and a rolled-back change leaves no event. Domains react to each other without sharing a table. Capability {{cap:S53}} owns the outbox and inbox tables.
 
 ## Rules
-- **outbox-task-queue.C-01** A domain MUST append events through the outbox in the caller's transaction; without an active transaction, `append` MUST reject with `NoActiveTransactionError`, and a rollback MUST leave no outbox row.
-- **outbox-task-queue.C-02** Every event MUST come from a typed definition whose payload passes its schema, and a serialized envelope above 256 KiB MUST be rejected with `EventTooLargeError`.
-- **outbox-task-queue.C-03** No domain code MAY access the outbox or inbox tables except through the exported services of {{cap:S53}}; a CI check enforces this.
-- **outbox-task-queue.C-04** The relay MUST publish the envelope JSON keyed by `aggregateId`, with headers `eventId`, `type`, `version`, `traceparent`, and MUST keep event order per aggregate.
-- **outbox-task-queue.C-05** Publication MUST be at least once: a crash between send and mark MUST yield a duplicate with the same `eventId`, never a loss.
-- **outbox-task-queue.C-06** The relay MUST claim rows with a 30 s lease and retry failures with full-jitter backoff (base 1 s, cap 60 s), holding back later rows of the same aggregate.
-- **outbox-task-queue.C-07** A row MUST be parked after 10 failed attempts, or at once on a non-retryable broker error, and a parked row MUST NOT block its aggregate.
-- **outbox-task-queue.C-08** A consumer MUST declare `inbox`, `versionGuard` or `natural`, and MUST commit offsets only after its effects, so redelivery never loses an event.
+- **[outbox ↗](../sw-external-terms.md#transactional-outbox)-task-queue.C-01** A domain MUST append events through the outbox in the caller's transaction; without an active transaction, `append` MUST reject with [`NoActiveTransactionError`](../terms/no-active-transaction-error.md), and a [rollback](../terms/outbox-rollback.md) MUST leave no outbox row.
+- **outbox-task-queue.C-02** Every event MUST come from a [typed definition](../terms/event-definition.md) whose payload passes its schema, and a [serialized envelope](../terms/event-envelope.md) above 256 KiB MUST be rejected with [`EventTooLargeError`](../terms/event-too-large-error.md).
+- **outbox-task-queue.C-03** No domain code MAY access the [outbox or inbox tables](../terms/inbox-table.md) except through the exported services of [{{cap:S53}}](../capabilities/S53-events-projections.md); a CI check enforces this.
+- **outbox-task-queue.C-04** The [relay](../terms/outbox-relay.md) MUST publish the envelope JSON keyed by [`aggregateId`](../terms/aggregate-id.md), with headers [`eventId`](../terms/event-id.md), `type`, `version`, [`traceparent` ↗](../sw-external-terms.md#traceparent), and MUST [keep event order per aggregate](../terms/per-aggregate-ordering.md).
+- **outbox-task-queue.C-05** Publication MUST be [at least once](../terms/at-least-once-delivery.md): a crash between [send and mark](../terms/outbox-relay.md) MUST yield a duplicate with the same `eventId`, never a loss.
+- **outbox-task-queue.C-06** The relay MUST claim rows with a [30 s lease](../terms/job-lease.md) and retry failures with [full-jitter backoff](../terms/jitter.md) (base 1 s, cap 60 s), [holding back later rows of the same aggregate](../terms/per-aggregate-ordering.md).
+- **outbox-task-queue.C-07** A row MUST be [parked](../terms/parked-row.md) after 10 failed attempts, or at once on a [non-retryable broker error](../terms/non-retryable-job-error.md), and a parked row MUST NOT block its aggregate.
+- **outbox-task-queue.C-08** A consumer MUST declare [`inbox`](../terms/inbox-table.md), [`versionGuard`](../terms/version-guard.md) or [`natural`](../terms/natural-idempotency.md), and MUST [commit offsets ↗](../sw-external-terms.md#kafka-offset-commit) only after its effects, so [redelivery](../terms/at-least-once-delivery.md) never loses an event.
 
 ## How the capabilities use it
 - {{cap:S05}} writes one versioned product event in the same transaction as every committed product change (S05.R-20).

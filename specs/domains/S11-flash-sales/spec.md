@@ -6,7 +6,7 @@
 
 **Status**: Draft
 
-**Input**: User description: "Capability S11 — Flash sales: bucketed Redis stock, admission, never oversell, async reconciliation to Postgres (domain `orders`)." Sources: SD-19 (checkout and inventory, flash-sale half), SD-21 (admission and per-user limits, reused ideas), note 03/04 (Redis: hot keys, stampede, avalanche, eviction, locks), constitution v3.1.0 (III.6, III.3, IV.4–IV.6, V, VII, IX, X), `docs/architecture/pattern-map.md` rows P0324 and P0619, and the contracts of the already written specs S05, S10 (and mentions in S08).
+**Input**: User description: "Capability S11 — Flash sales: bucketed Redis stock, admission, never oversell, async reconciliation to Postgres (domain `orders`)." Sources: SD-19 (checkout and inventory, flash-sale half), SD-21 (admission and per-user limits, reused ideas), note 03/04 (Redis: hot keys, stampede, avalanche, eviction, locks), constitution v3.1.0 (III.6, III.3, IV.4–IV.6, V, VII, IX, X), `docs/work/architecture/pattern-map.md` rows P0324 and P0619, and the contracts of the already written specs S05, S10 (and mentions in S08).
 
 ## Scope
 

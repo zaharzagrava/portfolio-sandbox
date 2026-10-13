@@ -2,11 +2,11 @@
 
 **Branch**: `006-phase2-batch5-domains` (work is on `master`, uncommitted, stacked on Phase 1 and batches
 1–4) | **Date**: 2026-10-04 | **Spec**: there is no `spec.md`. The input is the `/speckit-plan` request,
-[`docs/architecture/domain-map.md`](../../docs/architecture/domain-map.md), and the runbook note on D-13.
+[`docs/work/architecture/domain-map.md`](../../docs/work/architecture/domain-map.md), and the runbook note on D-13.
 
 **Status**: **Executed.** All 25 domains now exist. `libs/common/src` holds exactly the six allowed legacy
 items. The whole verification gate passed on the first run. Debt is now tracked in
-[`docs/architecture/debt-register.md`](../../docs/architecture/debt-register.md).
+[`docs/work/architecture/debt-register.md`](../../docs/work/architecture/debt-register.md).
 
 ## Summary
 
@@ -31,7 +31,7 @@ items. The whole verification gate passed on the first run. Debt is now tracked 
   table and every `*Model` imported from another domain's barrel. Today it finds 87 accesses in 21
   domains. This is the first version of the constitution IX.5 check; `--strict` exits 1, ready to gate
   CI once the debt is paid ([R3](research.md#r3)).
-- **New debt register.** `docs/architecture/debt-register.md` consolidates D-1…D-15 (previously spread
+- **New debt register.** `docs/work/architecture/debt-register.md` consolidates D-1…D-15 (previously spread
   over five plans). The spec prompt now reads it, together with the ownership report, when it writes
   each capability's `gaps.md`.
 
@@ -75,7 +75,7 @@ packages/backend/libs/
 ├── infrastructure/ (25)   composition/bff   common/{config,core(+murmur3),errors,…}
 └── common/src/     legacy, exactly: bff/batch-read.controller.ts index.ts models/all-models.ts seeds/ types.ts utils/test-utils/
 packages/backend/scripts/check-table-ownership.ts      # NEW (pnpm check:table-ownership)
-docs/architecture/debt-register.md                     # NEW
+docs/work/architecture/debt-register.md                     # NEW
 ```
 
 ## Execution

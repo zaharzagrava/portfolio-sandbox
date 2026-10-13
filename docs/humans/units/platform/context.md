@@ -34,3 +34,11 @@ files: 5
 **Imports from:** [common/core](../common/core.md) (1), [common/request-context](../common/request-context.md) (2)
 
 **Imported by:** [domain/auctions](../domain/auctions.md) (1), [domain/billing](../domain/billing.md) (1), [domain/developer-platform](../domain/developer-platform.md) (1), [domain/fulfilment](../domain/fulfilment.md) (1), [domain/orders](../domain/orders.md) (2), [domain/tenancy](../domain/tenancy.md) (3), [platform/jobs](jobs.md) (1), [platform/platform](platform.md) (2)
+
+<!-- spec-links:start -->
+## Specification
+
+The living specification is the source of truth for what this unit does; this page is generated from the code and may lag behind it.
+
+- [S54 Platform toolkit: problem+json errors, request context and transactions, health ](../../../spec/capabilities/S54-platform-toolkit.md)
+<!-- spec-links:end -->

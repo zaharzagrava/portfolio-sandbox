@@ -46,7 +46,7 @@ Files in scope (under `packages/backend/libs/domains/marketing/` unless noted): 
 | L6 | `ShareLinksModule` imports `AuthModule` for the guard only and relies on global Redis, Dynamo and Cache modules | `share-links.module.ts` | IV.1 | Declare dependencies explicitly; add the worker and projector modules |
 | L7 | Ownership of this capability's stores is implicit: the `Links` table, `link_clicks*` tables, Redis keys `share-links:*` and `link:v1:*`, topic `links.events` | `dynamodb/Links.json`, `clickhouse/020_link_clicks.sql` | I.4, IX.1 | Record the owner (`marketing`) in each store's definition and in the check script's non-Postgres list if one exists |
 
-## Open rows of `docs/architecture/debt-register.md` that name `marketing` or S37
+## Open rows of `docs/work/architecture/debt-register.md` that name `marketing` or S37
 
 The register contains no row that names `S37` or `marketing` in its **Resolved by** column. The open rows below touch this domain's share-link code; each is settled by this capability as stated.
 

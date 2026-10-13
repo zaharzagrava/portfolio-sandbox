@@ -89,3 +89,11 @@ See [event catalog](../../catalog/events.md) and [job catalog](../../catalog/job
 ## Flows it takes part in
 
 - [stories-publish](../../flows/stories-publish.md)
+
+<!-- spec-links:start -->
+## Specification
+
+The living specification is the source of truth for what this unit does; this page is generated from the code and may lag behind it.
+
+- [S54 Platform toolkit: problem+json errors, request context and transactions, health ](../../../spec/capabilities/S54-platform-toolkit.md)
+<!-- spec-links:end -->

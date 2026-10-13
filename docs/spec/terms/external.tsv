@@ -1,0 +1,217 @@
+# slug	title	url	source	aliases   (general concepts: linked to an authoritative reference instead of explained here; checked when written)
+http-202-accepted	202 Accepted	https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/202	MDN	202 accepted
+location-header	Location header	https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Location	MDN	location
+session-storage	sessionStorage	https://developer.mozilla.org/en-US/docs/Web/API/Window/sessionStorage	MDN	tab's session storage
+authorization-bearer	Authorization: Bearer	https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Authorization	MDN	bearer token,authorization header
+jwt-alg	JWT alg header	https://datatracker.ietf.org/doc/html/rfc7518	RFC 7518	alg: none,forged algorithm
+http-429-too-many-requests	429 Too Many Requests	https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/429	MDN	429
+jwt-kid	JWT kid (key ID)	https://datatracker.ietf.org/doc/html/rfc7515	RFC 7515	kid
+cache-control	Cache-Control	https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Cache-Control	MDN	cache-control
+server-timing	Server-Timing	https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Server-Timing	MDN	server-timing header
+circuit-breaker	Circuit breaker	https://martinfowler.com/bliki/CircuitBreaker.html	martinfowler.com	breaker,circuit breaker,circuit_open
+bff	Backend for Frontend (BFF)	https://learn.microsoft.com/en-us/azure/architecture/patterns/backends-for-frontends	Microsoft Learn	bff,backend for frontend
+jwt-typ	JWT typ header	https://datatracker.ietf.org/doc/html/rfc7519	RFC 7519	typ
+jwt-exp	JWT exp claim	https://datatracker.ietf.org/doc/html/rfc7519	RFC 7519	exp
+lru-eviction	Least recently used (LRU) eviction	https://en.wikipedia.org/wiki/Cache_replacement_policies	Wikipedia	lru
+csrf-token	CSRF token	https://owasp.org/www-community/attacks/csrf	OWASP	csrf,x-csrf-token,csrf_invalid
+race-condition	Race condition (concurrent exchange)	https://en.wikipedia.org/wiki/Race_condition	Wikipedia	simultaneous exchanges
+httponly	HttpOnly cookie	https://developer.mozilla.org/en-US/docs/Web/HTTP/Cookies	MDN	httponly session cookie
+cache-control-no-store	Cache-Control: no-store	https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Cache-Control	MDN	no-store,cache-control
+idempotency	Idempotency	https://developer.mozilla.org/en-US/docs/Glossary/Idempotent	MDN	idempotent,idempotency
+jwt-sub	JWT sub claim	https://datatracker.ietf.org/doc/html/rfc7519	RFC 7519	sub
+transactional-outbox	Transactional outbox	https://microservices.io/patterns/data/transactional-outbox.html	microservices.io	outbox
+jwt-nbf	JWT nbf claim	https://datatracker.ietf.org/doc/html/rfc7519	RFC 7519	nbf
+jwt-iat	JWT iat claim	https://datatracker.ietf.org/doc/html/rfc7519	RFC 7519	iat
+distributed-lock	Distributed lock	https://en.wikipedia.org/wiki/Lock_(computer_science)	Wikipedia	distributed lock
+www-authenticate	WWW-Authenticate header	https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/WWW-Authenticate	MDN	www-authenticate
+token-bucket	Token bucket	https://en.wikipedia.org/wiki/Token_bucket	Wikipedia	token bucket
+sliding-window	Sliding window	https://en.wikipedia.org/wiki/Sliding_window_protocol	Wikipedia	sliding window
+sha-256	SHA-256	https://en.wikipedia.org/wiki/SHA-2	Wikipedia	sha-256 hash
+problem-json	Problem Details (problem+json)	https://datatracker.ietf.org/doc/html/rfc9457	IETF RFC 9457	problem+json errors
+graceful-shutdown	Graceful shutdown	https://en.wikipedia.org/wiki/Graceful_exit	Wikipedia	
+jwks	JWKS (JSON Web Key Set)	https://datatracker.ietf.org/doc/html/rfc7517	IETF RFC 7517	jwks
+saga	Saga	https://microservices.io/patterns/data/saga.html	microservices.io	saga with orders
+advisory-lock	Advisory lock	https://www.postgresql.org/docs/current/explicit-locking.html	PostgreSQL docs	
+skip-locked-lease	SKIP LOCKED lease	https://www.postgresql.org/docs/current/sql-select.html	PostgreSQL docs	skip locked,leases
+bloom-filter	Bloom filter	https://en.wikipedia.org/wiki/Bloom_filter	Wikipedia	
+write-behind-counters	Write-behind counters	https://en.wikipedia.org/wiki/Cache_(computing)	Wikipedia	write-behind
+http-validators	HTTP validators	https://developer.mozilla.org/en-US/docs/Web/HTTP/Conditional_requests	MDN	validators
+mfa-step-up	MFA step-up	https://en.wikipedia.org/wiki/Multi-factor_authentication	Wikipedia	mfa,step-up
+traceparent	traceparent header	https://www.w3.org/TR/trace-context/	W3C	traceparent
+kafka-offset-commit	Kafka offset commit	https://kafka.apache.org/documentation/#consumerconfigs_enable.auto.commit	Apache Kafka	offsets,commit offsets
+fail-open-fail-closed	Fail open and fail closed	https://en.wikipedia.org/wiki/Fail-safe	Wikipedia	fail closed,fails closed,fail-open,fail-closed
+database-transaction	Database transaction	https://www.postgresql.org/docs/current/tutorial-transactions.html	PostgreSQL docs	transaction
+deadlock	Deadlock	https://en.wikipedia.org/wiki/Deadlock_(computer_science)	Wikipedia	deadlock each other
+kafka-headers	Kafka headers	https://kafka.apache.org/documentation/	Apache Kafka docs	kafka header
+starvation	Starvation	https://en.wikipedia.org/wiki/Starvation_(computer_science)	Wikipedia	starving,starve
+kafka-message	Kafka message	https://kafka.apache.org/documentation/	Apache Kafka docs	kafka
+round-robin	Round-robin scheduling	https://en.wikipedia.org/wiki/Round-robin_scheduling	Wikipedia	round robin
+iso-8601	ISO 8601 timestamp	https://en.wikipedia.org/wiki/ISO_8601	Wikipedia	iso-8601 utc
+change-data-capture	Change data capture (CDC)	https://en.wikipedia.org/wiki/Change_data_capture	Wikipedia	cdc
+cron-expression	Cron expression	https://en.wikipedia.org/wiki/Cron	Wikipedia	cron,cron schedule
+daylight-saving-time	Daylight saving time	https://en.wikipedia.org/wiki/Daylight_saving_time	Wikipedia	daylight saving,daylight-saving change
+iana-time-zone	IANA time zone name	https://en.wikipedia.org/wiki/Tz_database	Wikipedia	iana name,iana time zone
+atomic-increment	Atomic increment	https://redis.io/docs/latest/commands/incr/	Redis docs	atomic increments
+external-versioning	External versioning	https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-index_.html#index-versioning	Elastic	external version
+knn-search	k-NN search	https://en.wikipedia.org/wiki/K-nearest_neighbors_algorithm	Wikipedia	k-nn,knn
+retry-after	Retry-After header	https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Retry-After	MDN	retry-after
+upsert	Upsert	https://www.postgresql.org/docs/current/sql-insert.html	PostgreSQL docs	upsert
+dead-letter-queue	Dead-letter queue	https://en.wikipedia.org/wiki/Dead_letter_queue	Wikipedia	dead-letter rule
+projection	Projection (event sourcing)	https://martinfowler.com/eaaDev/EventSourcing.html	martinfowler.com	projection-and-replay
+unique-violation	Unique violation	https://www.postgresql.org/docs/current/errcodes-appendix.html	PostgreSQL docs	unique violation
+fail-fast	Fail fast	https://en.wikipedia.org/wiki/Fail-fast_system	Wikipedia	fail startup
+uuidv7	UUIDv7	https://datatracker.ietf.org/doc/html/rfc9562	RFC 9562	uuid v7
+distributed-trace	Distributed trace	https://opentelemetry.io/docs/concepts/signals/traces/	OpenTelemetry	trace,tracing system
+trace-sampling	Trace sampling	https://opentelemetry.io/docs/concepts/sampling/	OpenTelemetry	sampling
+no-op	No-op	https://en.wikipedia.org/wiki/NOP_(code)	Wikipedia	silent no-op
+nestjs-exception-filter	Exception filter	https://docs.nestjs.com/exception-filters	NestJS docs	exception filter
+server-sent-events	Server-sent events (text/event-stream)	https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events/Using_server-sent_events	MDN	text/event-stream,sse
+last-event-id	Last-Event-ID	https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events/Using_server-sent_events	MDN	last-event-id
+postgres-serialization-errors	Serialization failure and deadlock error codes	https://www.postgresql.org/docs/current/errcodes-appendix.html	PostgreSQL docs	`40p01`
+sql-injection	SQL injection	https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html	OWASP	sql interpolation
+state-machine	State machine	https://en.wikipedia.org/wiki/Finite-state_machine	Wikipedia	finite-state machine
+row-lock	Row lock	https://www.postgresql.org/docs/current/explicit-locking.html	PostgreSQL docs	row-level lock
+row-level-security	Row-level security	https://www.postgresql.org/docs/current/ddl-rowsecurity.html	PostgreSQL docs	rls
+load-balancer	Load balancer	https://en.wikipedia.org/wiki/Load_balancing_(computing)	Wikipedia	load balancing
+connection-pool	Connection pool	https://en.wikipedia.org/wiki/Connection_pool	Wikipedia	pooled connection,connection pooling
+bound-parameters	Bound (parameterized) queries	https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html	OWASP	parameterized query,bound parameter
+etag	ETag	https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/ETag	MDN	etag
+if-none-match	If-None-Match	https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/If-None-Match	MDN	if-none-match
+argon2id	Argon2id	https://en.wikipedia.org/wiki/Argon2	Wikipedia	argon2id hash
+bcrypt	bcrypt	https://en.wikipedia.org/wiki/Bcrypt	Wikipedia	
+mfa	Second factor (MFA)	https://en.wikipedia.org/wiki/Multi-factor_authentication	Wikipedia	mfa,multi-factor authentication
+totp	TOTP (time-based one-time password)	https://datatracker.ietf.org/doc/html/rfc6238	IETF	totp,totp code
+sso	Single sign-on (SSO)	https://en.wikipedia.org/wiki/Single_sign-on	Wikipedia	single sign-on
+origin-header	Origin header	https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Origin	MDN	origin
+referrer-policy	Referrer-Policy	https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Referrer-Policy	MDN	referrer-policy
+protocol-relative-url	Protocol-relative URL	https://developer.mozilla.org/en-US/docs/Web/URI/Reference/Authority	MDN	protocol-relative
+jwt-amr	JWT amr claim (authentication methods)	https://datatracker.ietf.org/doc/html/rfc8176	IETF RFC 8176	amr
+jwt-aud	JWT aud (audience) claim	https://datatracker.ietf.org/doc/html/rfc7519	IETF RFC 7519	audience,aud
+pkce	PKCE (Proof Key for Code Exchange)	https://datatracker.ietf.org/doc/html/rfc7636	IETF RFC 7636	pkce
+oidc-id-token	OIDC ID token	https://openid.net/specs/openid-connect-core-1_0.html#IDToken	OpenID Connect Core	id token,id_token
+oidc-nonce	OIDC nonce	https://openid.net/specs/openid-connect-core-1_0.html#IDToken	OpenID Connect Core	nonce
+jwt-iss	JWT iss (issuer) claim	https://datatracker.ietf.org/doc/html/rfc7519	IETF RFC 7519	iss,issuer
+oauth-access-denied	OAuth access_denied error	https://datatracker.ietf.org/doc/html/rfc6749#section-4.1.2.1	IETF RFC 6749	access_denied
+oauth-token-endpoint	OAuth token endpoint	https://datatracker.ietf.org/doc/html/rfc6749#section-3.2	IETF RFC 6749	token endpoint
+http-422-unprocessable-content	422 Unprocessable Content	https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/422	MDN	422
+reverse-proxy	Reverse proxy	https://en.wikipedia.org/wiki/Reverse_proxy	Wikipedia	
+optimistic-concurrency-control	Optimistic concurrency control	https://en.wikipedia.org/wiki/Optimistic_concurrency_control	Wikipedia	optimistic concurrency
+one-way-hash	One-way hash	https://en.wikipedia.org/wiki/Cryptographic_hash_function	Wikipedia	hash
+salted-hash	Salt and pepper (salted or keyed hash)	https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html	OWASP	salted,keyed
+http-304-not-modified	304 Not Modified	https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/304	MDN	304
+identity-provider	Identity provider	https://en.wikipedia.org/wiki/Identity_provider	Wikipedia	identity provider
+authorization-code	OAuth authorization code	https://datatracker.ietf.org/doc/html/rfc6749#section-4.1.2	RFC 6749	code
+oidc	OpenID Connect (OIDC)	https://openid.net/specs/openid-connect-core-1_0.html	OpenID Connect Core	oidc flow
+open-redirect	Open redirect	https://cheatsheetseries.owasp.org/cheatsheets/Unvalidated_Redirects_and_Forwards_Cheat_Sheet.html	OWASP	open redirect
+http-patch	PATCH method	https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/PATCH	MDN	patch
+unique-constraint	Unique constraint	https://www.postgresql.org/docs/current/ddl-constraints.html	PostgreSQL docs	
+application-service	Application service	https://martinfowler.com/eaaCatalog/serviceLayer.html	martinfowler.com	service layer
+base32	Base32 encoding	https://datatracker.ietf.org/doc/html/rfc4648	RFC 4648	base32
+largest-remainder-method	Largest-remainder method	https://en.wikipedia.org/wiki/Largest_remainder_method	Wikipedia	largest remainder
+constant-time-comparison	Constant-time comparison	https://en.wikipedia.org/wiki/Timing_attack	Wikipedia	constant time
+exponential-backoff	Exponential backoff	https://en.wikipedia.org/wiki/Exponential_backoff	Wikipedia	backoff
+http-413-content-too-large	413 Content Too Large	https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/413	MDN	413
+set-cookie	Set-Cookie	https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie	MDN	set-cookie
+http-302-found	302 Found redirect	https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/302	MDN	302
+mutual-exclusion	Mutual exclusion	https://en.wikipedia.org/wiki/Mutual_exclusion	Wikipedia	mutually exclusive
+redirect-uri	Redirect URI	https://datatracker.ietf.org/doc/html/rfc6749#section-3.1.2	RFC 6749	redirect_uri
+ssrf	SSRF (server-side request forgery)	https://cheatsheetseries.owasp.org/cheatsheets/Server_Side_Request_Forgery_Prevention_Cheat_Sheet.html	OWASP	ssrf
+atomicity	Atomicity	https://en.wikipedia.org/wiki/Atomicity_(database_systems)	Wikipedia	atomic,atomically
+vary-header	Vary header	https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Vary	MDN	vary
+checksum	Checksum	https://en.wikipedia.org/wiki/Checksum	Wikipedia	
+single-flight	Single-flight (miss coalescing)	https://en.wikipedia.org/wiki/Cache_stampede	Wikipedia	
+fullwidth-forms	Fullwidth forms	https://en.wikipedia.org/wiki/Halfwidth_and_fullwidth_forms	Wikipedia	
+boolean-operators	Boolean operators	https://en.wikipedia.org/wiki/Boolean_algebra	Wikipedia	
+edit-distance	Edit distance	https://en.wikipedia.org/wiki/Edit_distance	Wikipedia	levenshtein distance
+append-only	Append-only	https://en.wikipedia.org/wiki/Append-only	Wikipedia	append only
+digital-signature	Signature (signed token)	https://datatracker.ietf.org/doc/html/rfc7515	IETF RFC 7515 (JWS)	signed,signature
+trie	Trie	https://en.wikipedia.org/wiki/Trie	Wikipedia	trie,top-k trie
+webhook-signature	Webhook signature verification	https://docs.stripe.com/webhooks#verify-manually	Stripe docs	signature,signatures
+event-time	Event time	https://en.wikipedia.org/wiki/Event_stream_processing	Wikipedia	event time
+wall-clock	Wall clock	https://en.wikipedia.org/wiki/Elapsed_real_time	Wikipedia	wall-clock time
+count-min-sketch	Count-Min Sketch	https://en.wikipedia.org/wiki/Count%E2%80%93min_sketch	Wikipedia	count-min sketch
+saturating-counter	Saturating counter	https://en.wikipedia.org/wiki/Saturation_arithmetic	Wikipedia	saturate,saturation
+unicode-compatibility-folding	Unicode compatibility folding	https://en.wikipedia.org/wiki/Unicode_equivalence	Wikipedia	compatibility folding
+object-storage	Object storage	https://en.wikipedia.org/wiki/Object_storage	Wikipedia	
+cosine-similarity	Cosine similarity	https://en.wikipedia.org/wiki/Cosine_similarity	Wikipedia	cosine score
+shared-cache	Shared cache	https://developer.mozilla.org/en-US/docs/Web/HTTP/Caching#shared_cache	MDN	shared cache
+full-text-search	Full-text search	https://www.postgresql.org/docs/current/textsearch-intro.html	PostgreSQL docs	full-text search
+deterministic-build	Deterministic	https://en.wikipedia.org/wiki/Deterministic_algorithm	Wikipedia	deterministic
+time-to-live	Time-to-live (TTL)	https://redis.io/docs/latest/commands/expire/	Redis docs	ttl
+kafka-partition	Kafka partition	https://kafka.apache.org/documentation/	Apache Kafka docs	partitions
+http-caching	HTTP caching	https://developer.mozilla.org/en-US/docs/Web/HTTP/Caching	MDN	cacheable
+counter-metric	Counter metric	https://opentelemetry.io/docs/concepts/signals/metrics/	OpenTelemetry	counter,metric
+hash-collision	Hash collision	https://en.wikipedia.org/wiki/Hash_collision	Wikipedia	collisions,share a counter
+redis-sorted-set	Redis sorted set	https://redis.io/docs/latest/develop/data-types/sorted-sets/	Redis docs	sorted sets
+kafka-rebalance	Kafka consumer group rebalance	https://kafka.apache.org/documentation/	Apache Kafka docs	rebalance
+abort-signal	AbortSignal	https://developer.mozilla.org/en-US/docs/Web/API/AbortSignal	MDN	signal,aborts
+termination-signal	Termination signal (SIGTERM)	https://en.wikipedia.org/wiki/Signal_(IPC)	Wikipedia	sigterm
+min-heap	Min-heap	https://en.wikipedia.org/wiki/Heap_(data_structure)	Wikipedia	heap
+graphql	GraphQL	https://graphql.org/learn/	graphql.org	
+kafka-topic	Kafka topic	https://kafka.apache.org/documentation/	Apache Kafka	topic
+infrastructure-adapter	Infrastructure adapter (ports and adapters)	https://en.wikipedia.org/wiki/Hexagonal_architecture_(software)	Wikipedia	adapter
+graphql-introspection	GraphQL introspection	https://graphql.org/learn/introspection/	graphql.org	introspection,__schema
+nan	NaN	https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/NaN	MDN	nan
+table-partitioning	Table partitioning	https://www.postgresql.org/docs/current/ddl-partitioning.html	PostgreSQL docs	partition,partitions,default partition
+percent-encoding	Percent-encoding	https://developer.mozilla.org/en-US/docs/Glossary/Percent-encoding	MDN	
+shard	Shard	https://en.wikipedia.org/wiki/Shard_(database_architecture)	Wikipedia	shards
+atomic-script	Atomic script	https://redis.io/docs/latest/develop/interact/programmability/eval-intro/	Redis docs	multi-key script
+kafka-log-compaction	Kafka log compaction	https://kafka.apache.org/documentation/#compaction	Apache Kafka docs	compaction,coalescing,cleanup.policy=compact
+safe-http-method	Safe HTTP method	https://developer.mozilla.org/en-US/docs/Glossary/Safe/HTTP	MDN	safe methods
+http-403-forbidden	403 Forbidden	https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/403	MDN	403
+brute-force-attack	Brute-force attack	https://owasp.org/www-community/attacks/Brute_force_attack	OWASP	brute-force
+rolling-upgrade	Rolling upgrade	https://en.wikipedia.org/wiki/Rolling_release	Wikipedia	rolling deployment
+bulkhead	Bulkhead	https://learn.microsoft.com/en-us/azure/architecture/patterns/bulkhead	Microsoft Learn	bulkheads
+event-source	EventSource	https://developer.mozilla.org/en-US/docs/Web/API/EventSource	MDN	eventsource
+allow-header	Allow header	https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Allow	MDN	allow
+unhandled-rejection	Unhandled rejection	https://developer.mozilla.org/en-US/docs/Web/API/Window/unhandledrejection_event	MDN	uncaught exception
+aria-busy	aria-busy	https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Attributes/aria-busy	MDN	aria-busy
+history-replace	History replace	https://developer.mozilla.org/en-US/docs/Web/API/History/replaceState	MDN	history replaced
+javascript-url-xss	javascript: URL (XSS)	https://owasp.org/www-community/attacks/xss/	OWASP	javascript:
+content-type	Content-Type header	https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Type	MDN	content-type
+media-type	Media type (MIME type)	https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/MIME_types	MDN	media types,mime type
+cache-penetration-concept	Cache penetration	https://en.wikipedia.org/wiki/Cache_stampede	Wikipedia	
+same-origin-policy	Same-origin policy	https://developer.mozilla.org/en-US/docs/Web/Security/Same-origin_policy	MDN	same-origin
+query-string	Query parameter	https://en.wikipedia.org/wiki/Query_string	Wikipedia	query string
+percentile	Percentile (p99)	https://en.wikipedia.org/wiki/Percentile	Wikipedia	p99
+event-loop	Event loop	https://en.wikipedia.org/wiki/Event_loop	Wikipedia	event loop
+gauge-metric	Gauge metric	https://opentelemetry.io/docs/concepts/signals/metrics/	OpenTelemetry	gauge
+aria-combobox	ARIA combobox pattern	https://www.w3.org/WAI/ARIA/apg/patterns/combobox/	W3C	combobox
+aria-expanded	aria-expanded	https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Attributes/aria-expanded	MDN	aria-expanded
+aria-controls	aria-controls	https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Attributes/aria-controls	MDN	aria-controls
+aria-activedescendant	aria-activedescendant	https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Attributes/aria-activedescendant	MDN	aria-activedescendant
+broadcast-channel	BroadcastChannel	https://developer.mozilla.org/en-US/docs/Web/API/BroadcastChannel	MDN	broadcastchannel
+exit-code	Exit code	https://en.wikipedia.org/wiki/Exit_status	Wikipedia	exits with code 1,exit status
+metric-labels	Metric labels (attributes)	https://opentelemetry.io/docs/concepts/signals/metrics/	OpenTelemetry	label,attributes
+dns-rebinding	DNS rebinding	https://en.wikipedia.org/wiki/DNS_rebinding	Wikipedia	dns-rebinding tricks
+tanstack-query-key	TanStack Query key	https://en.wikipedia.org/wiki/Cache_(computing)	Wikipedia	query key
+access-control	Access control (security control)	https://owasp.org/www-community/Access_Control	OWASP	security control
+cross-site-scripting	Script injection (XSS)	https://owasp.org/www-community/attacks/xss/	OWASP	xss,cross-site scripting
+dom	DOM (Document Object Model)	https://developer.mozilla.org/en-US/docs/Web/API/Document_Object_Model	MDN	dom
+uncaught-exception	Uncaught exception	https://en.wikipedia.org/wiki/Exception_handling	Wikipedia	uncaughtexception
+stderr	stderr	https://en.wikipedia.org/wiki/Standard_streams	Wikipedia	standard error
+http-308-permanent-redirect	308 Permanent Redirect	https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/308	MDN	308
+aria-status-role	ARIA status role	https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Roles/status_role	MDN	role="status"
+content-security-policy	Content-Security-Policy	https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy	MDN	content-security-policy,policy,csp
+csp-nonce	CSP nonce	https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy/script-src	MDN	nonce
+csp-host-source-wildcard	CSP host-source wildcard	https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy/Sources	MDN	wildcard
+x-content-type-options	X-Content-Type-Options	https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Content-Type-Options	MDN	nosniff
+x-frame-options	X-Frame-Options	https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Frame-Options	MDN	x-frame-options
+sticky-header	Sticky header	https://developer.mozilla.org/en-US/docs/Web/CSS/position	MDN	sticky
+reporting-endpoints	Reporting-Endpoints header	https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Reporting-Endpoints	MDN	reporting-endpoints
+csp-directive	CSP directive	https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy	MDN	directive
+csp-violation-report	CSP violation report	https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Reporting-Endpoints	MDN	report
+next-image-component	Next.js Image component	https://nextjs.org/docs/app/api-reference/components/image	Next.js docs	image component
+image-optimiser	Image optimiser	https://nextjs.org/docs/app/api-reference/components/image	Next.js docs	optimiser,optimizer
+cache-tag	Cache tag	https://nextjs.org/docs/app/api-reference/functions/revalidateTag	Next.js docs	cache tag
+navigation-landmark	Navigation landmark	https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Roles/navigation_role	MDN	landmark
+rounding-modes	Rounding modes (half-up, half-even, truncation)	https://en.wikipedia.org/wiki/Rounding	Wikipedia	half-up,truncation,rounding mode
+debounce	Debounce	https://developer.mozilla.org/en-US/docs/Glossary/Debounce	MDN	debounce
+react-hook	React hook	https://nextjs.org/docs/app/building-your-application/rendering/client-components	Next.js	hooks
+skip-link	Skip link	https://developer.mozilla.org/en-US/docs/Web/Accessibility/Guides/Understanding_WCAG/Operable	MDN	skiplink
+assistive-technology	Assistive technology	https://en.wikipedia.org/wiki/Assistive_technology	Wikipedia	
+server-rendering	Server rendering	https://nextjs.org/docs/app/building-your-application/rendering/server-components	Next.js docs	server-rendered page,server rendering
+csp-report-only	Report-only mode	https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy-Report-Only	MDN	report-only
+main-element	main element	https://developer.mozilla.org/en-US/docs/Web/HTML/Element/main	MDN	<main>
+http-404-not-found	404 Not Found	https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404	MDN	404,not-found http status
+web-crawler	Web crawler	https://en.wikipedia.org/wiki/Web_crawler	Wikipedia	crawler,crawlers

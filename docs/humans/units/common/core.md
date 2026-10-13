@@ -35,3 +35,11 @@ files: 6
 **Imports from:** _none_
 
 **Imported by:** [domain/catalog-sync](../domain/catalog-sync.md) (1), [domain/community](../domain/community.md) (1), [domain/discovery](../domain/discovery.md) (1), [domain/experimentation](../domain/experimentation.md) (2), [domain/fulfilment](../domain/fulfilment.md) (1), [domain/launch-events](../domain/launch-events.md) (1), [domain/orders](../domain/orders.md) (1), [platform/cache](../platform/cache.md) (1), [platform/context](../platform/context.md) (1), [platform/http-client](../platform/http-client.md) (1), [platform/jobs](../platform/jobs.md) (2), [platform/lifecycle](../platform/lifecycle.md) (1), [platform/projections](../platform/projections.md) (4), [platform/sqs](../platform/sqs.md) (1)
+
+<!-- spec-links:start -->
+## Specification
+
+The living specification is the source of truth for what this unit does; this page is generated from the code and may lag behind it.
+
+- [S54 Platform toolkit: problem+json errors, request context and transactions, health ](../../../spec/capabilities/S54-platform-toolkit.md)
+<!-- spec-links:end -->

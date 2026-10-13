@@ -36,3 +36,11 @@ Defines request-scoped context store interface and header constant for passing i
 **Imports from:** _none_
 
 **Imported by:** [common/logging](logging.md) (1), [platform/context](../platform/context.md) (2)
+
+<!-- spec-links:start -->
+## Specification
+
+The living specification is the source of truth for what this unit does; this page is generated from the code and may lag behind it.
+
+- [S54 Platform toolkit: problem+json errors, request context and transactions, health ](../../../spec/capabilities/S54-platform-toolkit.md)
+<!-- spec-links:end -->

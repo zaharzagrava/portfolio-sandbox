@@ -37,7 +37,7 @@ The implementation agent's to-do list. Paths are under `packages/backend/libs/do
 
 ## B. Open debt-register rows naming `orders` or S11
 
-`docs/architecture/debt-register.md` has no row that names S11. These open rows name `orders`; for each, which part is S11's and the IX.7 mechanism that replaces it:
+`docs/work/architecture/debt-register.md` has no row that names S11. These open rows name `orders`; for each, which part is S11's and the IX.7 mechanism that replaces it:
 
 | Debt | What | S11's share | Mechanism |
 |---|---|---|---|

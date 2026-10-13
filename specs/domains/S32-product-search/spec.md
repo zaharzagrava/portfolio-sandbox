@@ -393,7 +393,7 @@ Specs already written were searched (`grep` over `specs/domains` for `S32` and `
 - Modules for the apps: `ProductSearchModule` (core: HTTP, R1 service, port), `SearchProjectorModule` (projector: product, shop, media, sponsorship consumers; click and query projectors), `SearchWorkerModule` (worker: reindex, retirement, popularity, backfills, tombstone purge). Nothing else is exported (no model, repository, projector or logger).
 - Rate-limit policies (declared in S50's registry): `discovery.search.query` 120/minute per user or address (fail open); `discovery.shop-search` 120/minute per user and shop (fail open); `discovery.search-click` 300/minute per address (fail open); `discovery.search-admin` 30/minute per administrator (fail closed).
 - Scheduled jobs (registered with S49, single-run): `search.reindex` (enqueued by the admin route), `search.retire-previous-index` (hourly), `search.refresh-popularity` (every 15 minutes), `search.backfill-shop-state` (resumable), `search.backfill-embeddings` (every 10 minutes while any `embedding_pending`), `search.purge-tombstones` (daily).
-- Ownership (IX.3, for `docs/architecture/domain-map.md` and `db/ownership.ts`): `discovery` now owns four small relational tables (shop product search, shop state copy, reindex runs with history, synonym sets with history) in addition to its indices and analytics tables (a `[CONTRACT]` question).
+- Ownership (IX.3, for `docs/work/architecture/domain-map.md` and `db/ownership.ts`): `discovery` now owns four small relational tables (shop product search, shop state copy, reindex runs with history, synonym sets with history) in addition to its indices and analytics tables (a `[CONTRACT]` question).
 
 **Requires**:
 

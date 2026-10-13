@@ -11,7 +11,7 @@ Constitution VII.8 table: one row per acceptance scenario in [`spec.md`](spec.md
 - Unit specs sit beside the code under `domain/`, are table-driven (`it.each`), and exist only for pure logic (VII.5). Money and counting invariants also get `fast-check` properties (AS-23, AS-24, AS-42, AS-57, AS-67). Randomised inputs use a fixed seed. No unit tests for controllers, repositories, consumers, job handlers or glue.
 - UI journeys (Playwright, happy path only, owned by the web capabilities; no edge case from the API layer is repeated): W02 `packages/web/tests/sponsored-listing.spec.ts`, W04 `packages/web/tests/ad-campaign.spec.ts`. Their owners do not exist yet (`questions.md`, CONTRACT).
 - Static gates (VII.1, AS-80): `tsc --noEmit` and ESLint for `packages/backend` and `packages/contracts`; `pnpm check:boundaries`; `pnpm check:module-graph`; `pnpm check:model-registry`; `pnpm check:table-ownership --strict`.
-- The capacity proof of AS-83 and SC-008 is an operations artifact (`loadtest:ads-clicks`), not an e2e row. Drift alert routing (SC-007) is an ops artifact (runbook `docs/runbooks/AdReconciliationDrift.md`); the metric itself is asserted in AS-65.
+- The capacity proof of AS-83 and SC-008 is an operations artifact (`loadtest:ads-clicks`), not an e2e row. Drift alert routing (SC-007) is an ops artifact (runbook `docs/ops/runbooks/AdReconciliationDrift.md`); the metric itself is asserted in AS-65.
 - Fallback paths (VII.9) each have a test that forces them: spend counters down (AS-21), dedupe/filter store down (AS-35), click publish down (AS-34), aggregator crash and zombie (AS-44, AS-45), ledger busy and crash after posting (AS-52), raw log down (AS-64).
 
 Abbreviations for the e2e files (all under `libs/domains/marketing/`):

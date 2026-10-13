@@ -6,7 +6,7 @@
 
 **Status**: Draft
 
-**Input**: User description: "Streamed shopping assistant: read-only tools, resumable streams, quotas, fallback model, moderation (domain `assistant`)". Sources: `docs/showcase/sections/SD-42-shopping-assistant-llm.md`, note `10-System-Design/10-ai-applications.md` §42, patterns P0102, P0208, P0209, P0417, P0617, P0620 of `docs/architecture/pattern-map.md`. Constitution v3.1.0. Where the SD-42 section and the constitution disagree on a status code or a boundary, the constitution wins (see `questions.md`).
+**Input**: User description: "Streamed shopping assistant: read-only tools, resumable streams, quotas, fallback model, moderation (domain `assistant`)". Sources: `docs/showcase/sections/SD-42-shopping-assistant-llm.md`, note `10-System-Design/10-ai-applications.md` §42, patterns P0102, P0208, P0209, P0417, P0617, P0620 of `docs/work/architecture/pattern-map.md`. Constitution v3.1.0. Where the SD-42 section and the constitution disagree on a status code or a boundary, the constitution wins (see `questions.md`).
 
 ## Scope
 

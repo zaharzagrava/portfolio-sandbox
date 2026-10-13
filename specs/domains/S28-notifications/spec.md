@@ -6,7 +6,7 @@
 
 **Status**: Draft
 
-**Input**: User description: "Capability S28 — Notification routing: preferences, quiet hours, caps, per-channel queues, provider failover, inbox, suppression (domain `notifications`)." Sources: `docs/showcase/sections/SD-17-notifications.md`; `10-System-Design/02-worked-examples.md` (Example 4); `10-System-Design/06-realtime-and-collaboration.md` (§17). Patterns that must be proven here (`docs/architecture/pattern-map.md`): **P0104** dates and time zones (quiet hours), **P0419** webhooks as consumer (provider status callbacks), **P0601** queue versus log, fan-out versus competing consumers (the router), **P0618** bulkheads (per-channel queues).
+**Input**: User description: "Capability S28 — Notification routing: preferences, quiet hours, caps, per-channel queues, provider failover, inbox, suppression (domain `notifications`)." Sources: `docs/showcase/sections/SD-17-notifications.md`; `10-System-Design/02-worked-examples.md` (Example 4); `10-System-Design/06-realtime-and-collaboration.md` (§17). Patterns that must be proven here (`docs/work/architecture/pattern-map.md`): **P0104** dates and time zones (quiet hours), **P0419** webhooks as consumer (provider status callbacks), **P0601** queue versus log, fan-out versus competing consumers (the router), **P0618** bulkheads (per-channel queues).
 
 Companion files: [`questions.md`](questions.md) (decisions taken unattended, tagged), [`test-plan.md`](test-plan.md) (constitution VII.8 table), [`gaps.md`](gaps.md) (what today's code lacks, debt rows, IX.7 replacements), [`checklists/requirements.md`](checklists/requirements.md).
 

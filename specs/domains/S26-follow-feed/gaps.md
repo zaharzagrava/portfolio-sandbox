@@ -66,7 +66,7 @@ The implementation agent's to-do list: what today's code gets wrong or lacks aga
 
 ## 2. Open debt rows that name `community` or S26
 
-Source: `docs/architecture/debt-register.md`. Rows D-6, D-7, D-8 and D-12 name this domain; D-15 and D-17 do not.
+Source: `docs/work/architecture/debt-register.md`. Rows D-6, D-7, D-8 and D-12 name this domain; D-15 and D-17 do not.
 
 | Debt | What in this capability | Where | Replaced by |
 |---|---|---|---|

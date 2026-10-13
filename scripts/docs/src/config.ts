@@ -59,7 +59,7 @@ export const DEFAULT_CONFIG: DocsConfig = {
     system: 'claude-sonnet-5-5',
     theory: 'claude-sonnet-5-5',
   },
-  theory: { dir: 'interview-prep', exclude: ['my-practice', 'README.md'], patternMap: 'docs/architecture/pattern-map.md', conceptsPerSection: 6, filesPerSection: 6 },
+  theory: { dir: 'interview-prep', exclude: ['my-practice', 'README.md'], patternMap: 'docs/work/architecture/pattern-map.md', conceptsPerSection: 6, filesPerSection: 6 },
   maxFileChars: 24000,
   maxConceptChars: 36000,
   maxConceptUses: 8,

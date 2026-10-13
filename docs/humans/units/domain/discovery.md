@@ -109,3 +109,15 @@ See [event catalog](../../catalog/events.md) and [job catalog](../../catalog/job
 - [search-performed](../../flows/search-performed.md)
 - [search-reindex-products](../../flows/search-reindex-products.md)
 - [search-result-clicked](../../flows/search-result-clicked.md)
+
+<!-- spec-links:start -->
+## Specification
+
+The living specification is the source of truth for what this unit does; this page is generated from the code and may lag behind it.
+
+- [S33 Search autocomplete: query-log top-K trie, catalog completions, per-source budge](../../../spec/capabilities/S33-autocomplete.md)
+- [S34 "Bought together" recommendations: co-occurrence graph, normalisation, 2-hop col](../../../spec/capabilities/S34-recommendations.md)
+- [S35 Trending products: windowed approximate top-K per category](../../../spec/capabilities/S35-trending.md)
+- [S50 Rate limiting: token bucket, sliding window, concurrency limits, fail modes, hea](../../../spec/capabilities/S50-rate-limiter.md)
+- [S54 Platform toolkit: problem+json errors, request context and transactions, health ](../../../spec/capabilities/S54-platform-toolkit.md)
+<!-- spec-links:end -->

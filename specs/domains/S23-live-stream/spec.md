@@ -6,7 +6,7 @@
 
 **Status**: Draft
 
-**Input**: User description: "Capability S23 — Live launch stream comments and reactions: sampling, batching, moderation, pinned commerce (domain `launch-events`)." Sources: `docs/showcase/sections/SD-15-live-launch-stream.md`; note `10-System-Design/06-realtime-and-collaboration.md` §15 (live comments / reactions); constitution v3.1.0; `docs/architecture/domain-map.md` (`launch-events`); `docs/architecture/pattern-map.md` row P1106 (reservoir sampling, the only row naming S23); the current code of `packages/backend/libs/domains/launch-events/` (live part only: `live*.module.ts`, `api/live.controller.ts`, `application/live.service.ts`, `domain/reservoir.ts`, `domain/moderation.ts`, `infra/live-*.ts`) and the delivery tier in `packages/backend/apps/sse-gateway/src/live/`. The booking part of the domain is S22.
+**Input**: User description: "Capability S23 — Live launch stream comments and reactions: sampling, batching, moderation, pinned commerce (domain `launch-events`)." Sources: `docs/showcase/sections/SD-15-live-launch-stream.md`; note `10-System-Design/06-realtime-and-collaboration.md` §15 (live comments / reactions); constitution v3.1.0; `docs/work/architecture/domain-map.md` (`launch-events`); `docs/work/architecture/pattern-map.md` row P1106 (reservoir sampling, the only row naming S23); the current code of `packages/backend/libs/domains/launch-events/` (live part only: `live*.module.ts`, `api/live.controller.ts`, `application/live.service.ts`, `domain/reservoir.ts`, `domain/moderation.ts`, `infra/live-*.ts`) and the delivery tier in `packages/backend/apps/sse-gateway/src/live/`. The booking part of the domain is S22.
 
 ## Scope
 

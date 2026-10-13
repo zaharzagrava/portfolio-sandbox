@@ -83,7 +83,7 @@ The implementation agent's to-do list. Paths are under `packages/backend/` unles
 
 ## C. Debt-register rows and ownership-check lines for this domain
 
-Open rows of `docs/architecture/debt-register.md` that name `media` or `S30` (or every capability of every domain), and what replaces each:
+Open rows of `docs/work/architecture/debt-register.md` that name `media` or `S30` (or every capability of every domain), and what replaces each:
 
 | Row | Applies to S30 as | Replaced by |
 |---|---|---|
@@ -113,7 +113,7 @@ Both lines are S29's (`ProductMedia` moves to `media` there; the product join is
 | G4 | Jobs `media.video-expire-uploads`, `media.video-requeue-stuck`, `media.video-purge` registered with S49 | S49 | FR-036, FR-060, FR-061 |
 | G5 | Consumers on S53's framework; outbox append; trace attribute on queue messages | S53 | FR-062, FR-070, FR-071 |
 | G6 | `packages/contracts` schemas listed under Provides | `packages/contracts` | FR-074 |
-| G7 | Domain map update: `media` emits `video.*` and depends on tenancy and catalog | `docs/architecture/domain-map.md` | CONTRACT in `questions.md` |
+| G7 | Domain map update: `media` emits `video.*` and depends on tenancy and catalog | `docs/work/architecture/domain-map.md` | CONTRACT in `questions.md` |
 | G8 | Edge/CDN infrastructure code: separate video host, public and unlisted behaviors, signature requirement on the unlisted path only, immutable cache and `nosniff` headers, CORS with credentials on the unlisted path, lifecycle rule aborting incomplete multipart uploads after 2 days, infrequent-access tiering of sources | infrastructure repo | AS-60 |
 | G9 | CI image has `ffmpeg` and `ffprobe`; the suites fail in CI when they are missing | CI | test-plan |
 | G10 | W04 seller upload screen and W02 product page player per the Requires list | `packages/web` | AS-61 |

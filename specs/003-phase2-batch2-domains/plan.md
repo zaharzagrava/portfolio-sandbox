@@ -2,7 +2,7 @@
 
 **Branch**: `003-phase2-batch2-domains` (work is on `master`, uncommitted, stacked on Phase 1 and batch 1) |
 **Date**: 2026-10-04 | **Spec**: there is no `spec.md`. The input is the `/speckit-plan` request plus
-[`docs/architecture/domain-map.md`](../../docs/architecture/domain-map.md) and
+[`docs/work/architecture/domain-map.md`](../../docs/work/architecture/domain-map.md) and
 [batch 1](../002-phase2-domain-restructuring/plan.md).
 
 **Status**: **Executed.** `orders`, `payments`, `chat`, `fulfilment`, and `seller-onboarding` live in

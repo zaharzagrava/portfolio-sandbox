@@ -1,0 +1,23 @@
+const { chromium } = require('/home/zagrava/workspace/personal-projects/portfolio-sandbox/packages/web/node_modules/@playwright/test');
+const fs = require('fs');
+const S = '/tmp/tmp.8jkDSSNS4j/shots/';
+const email = fs.readFileSync('/tmp/tmp.8jkDSSNS4j/email.txt', 'utf8');
+const PW = 'SuperSecurePassword123!';
+const txt = async (p, n = 1000) => (await p.innerText('body')).replace(/\n+/g, ' | ').slice(0, n);
+(async () => {
+  const b = await chromium.launch();
+  const ctx = await b.newContext({ storageState: '/tmp/tmp.8jkDSSNS4j/state.json' });
+  const page = await ctx.newPage();
+  page.on('console', m => { if (m.type() === 'error' && !/Content Security Policy/.test(m.text())) console.log('CONSOLE', m.text().slice(0, 200)); });
+  page.on('pageerror', e => console.log('PAGEERROR', e.message));
+  page.on('response', async r => { const u = r.url(); if (/\/api\//.test(u) && !/bff\/session|api\/cart$/.test(u)) { let body = ''; if (r.request().method() !== 'GET' || r.status() >= 400) { try { body = (await r.text()).slice(0, 300); } catch (e) {} } console.log('API', r.status(), r.request().method(), u.replace('http://localhost:3000', ''), body); } });
+  await page.goto('http://localhost:3000/login?returnTo=%2Fcheckout');
+  await page.locator('input[name=email]').fill(email);
+  await page.locator('input[name=password]').fill(PW);
+  await page.getByRole('button', { name: /^sign in$/i }).click();
+  await page.waitForTimeout(4000);
+  console.log('AFTER LOGIN', page.url(), await txt(page, 900));
+  await page.screenshot({ path: S + 'checkout.png' });
+  await ctx.storageState({ path: '/tmp/tmp.8jkDSSNS4j/state2.json' });
+  await b.close();
+})();

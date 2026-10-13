@@ -8,6 +8,8 @@
 #     --hours N       hard end of the run (default RUN_HOURS from the config)
 #     --image be|fe   be = test stack only (default, cheap machine); fe = also dev stack, API and Chromium for the W* specs
 #                     (default fe when --until or an ID starts with W)
+#     --qa MODE       run the QA agent at each checkpoint: auto (draft missing charters, run those whose capabilities changed, within QA_BUDGET_MIN)
+#                     or a list such as "buy account". Needs --image fe. Off by default.
 #     --keep          never delete the machine (debugging; you must delete it yourself)
 #     --force         start even if another runner machine exists
 #     --dry-run       print what would be created, with secrets masked
@@ -17,13 +19,14 @@ set -euo pipefail
 ROOT="$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel)"
 source "$ROOT/scripts/vps/lib.sh"
 
-UNTIL=""; IMAGE=""; ORDER=by-flow; HOURS=""; KEEP=""; FORCE=""; IDS=()
+UNTIL=""; QA=""; IMAGE=""; ORDER=by-flow; HOURS=""; KEEP=""; FORCE=""; IDS=()
 while (( $# )); do
   case "$1" in
     --until) UNTIL="$2"; shift 2 ;;
     --order) ORDER="$2"; shift 2 ;;
     --hours) HOURS="$2"; shift 2 ;;
     --image) IMAGE="$2"; shift 2 ;;
+    --qa) QA="$2"; shift 2 ;;
     --keep) KEEP=1; shift ;;
     --force) FORCE=1; shift ;;
     --dry-run) DRY_RUN=1; shift ;;
@@ -84,10 +87,10 @@ ud="$(mktemp)"; trap 'rm -f "$ud"' EXIT
   echo 'mkdir -p /etc/sdd /root/.ssh /var/log/sdd'
   echo "cat > /etc/sdd/env <<'SDD_ENV'"
   for v in HCLOUD_TOKEN HCLOUD_SERVER_TYPE CLAUDE_CODE_OAUTH_TOKEN NTFY_TOPIC NTFY_SERVER HEARTBEAT_URL REPO_SSH_URL BASE_BRANCH PUSH_BRANCH \
-           PASS_TIMEOUT_S FAILURE_KEEP_MIN SNAPSHOT_MIN REPAIR_BUDGET_MIN MAX_REPAIRS_PER_SPEC MAX_GATE_REPAIRS GIT_AUTHOR_NAME GIT_AUTHOR_EMAIL; do
+           PASS_TIMEOUT_S QA_BUDGET_MIN MAX_QA_FIXES MAX_NEW_CHARTERS FAILURE_KEEP_MIN SNAPSHOT_MIN REPAIR_BUDGET_MIN MAX_REPAIRS_PER_SPEC MAX_GATE_REPAIRS GIT_AUTHOR_NAME GIT_AUTHOR_EMAIL; do
     printf '%s=%q\n' "$v" "${!v:-}"
   done
-  printf '%s=%q\n' SDD_IMAGE "$IMAGE" SDD_ORDER "$ORDER" SDD_UNTIL "$UNTIL" SDD_ARGS "${IDS[*]:-}" SDD_HOURS "$HOURS" SDD_KEEP "$KEEP"
+  printf '%s=%q\n' SDD_IMAGE "$IMAGE" SDD_ORDER "$ORDER" SDD_UNTIL "$UNTIL" SDD_ARGS "${IDS[*]:-}" SDD_HOURS "$HOURS" SDD_KEEP "$KEEP" SDD_QA "$QA"
   echo 'SDD_ENV'
   echo "base64 -d > /root/.ssh/sdd_deploy <<'SDD_KEY'"
   base64 -w0 "$DEPLOY_KEY_FILE"; echo

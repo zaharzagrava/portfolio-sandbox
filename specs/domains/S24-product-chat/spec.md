@@ -6,7 +6,7 @@
 
 **Status**: Draft
 
-**Input**: User description: "Capability S24 — Product chat: channels, idempotent send, per-channel sequence, sync on reconnect, unread, receipts, presence, offline push (domain `chat`)." Sources: `docs/showcase/sections/SD-14-chat-guarantees.md`; repository `README.md` (chat gateway sections); note `10-System-Design/06-realtime-and-collaboration.md` §14 (chat app); constitution v3.1.0; `docs/architecture/domain-map.md` (`chat`); `docs/architecture/pattern-map.md` rows P0318 (table partitioning, chat monthly) and P0607 (per-key ordering), the two rows naming S24; the current code of `packages/backend/libs/domains/chat/` and its two e2e specs; the already-written specs S01, S03, S05, S23 that name chat or S24.
+**Input**: User description: "Capability S24 — Product chat: channels, idempotent send, per-channel sequence, sync on reconnect, unread, receipts, presence, offline push (domain `chat`)." Sources: `docs/showcase/sections/SD-14-chat-guarantees.md`; repository `README.md` (chat gateway sections); note `10-System-Design/06-realtime-and-collaboration.md` §14 (chat app); constitution v3.1.0; `docs/work/architecture/domain-map.md` (`chat`); `docs/work/architecture/pattern-map.md` rows P0318 (table partitioning, chat monthly) and P0607 (per-key ordering), the two rows naming S24; the current code of `packages/backend/libs/domains/chat/` and its two e2e specs; the already-written specs S01, S03, S05, S23 that name chat or S24.
 
 Companion files: [`questions.md`](questions.md) (decisions taken unattended, tagged), [`test-plan.md`](test-plan.md) (constitution VII.8 table), [`gaps.md`](gaps.md) (what today's code lacks, debt rows, IX.7 replacements).
 

@@ -34,7 +34,7 @@ What exists: `api/recommendations.controller.ts` (one route), `application/recom
 | A24 | Barrel exports `OrderBasketsProjector`; `apps/projector` wires it directly | `index.ts:15`, `apps/projector/src/projector.module.ts:3` | FR-027, AS-50 |
 | A25 | No Playwright journey for the rail; no BFF composition test for 503, 404 and invalid body | `packages/web/tests/` | AS-48, AS-49 |
 
-## B. Open rows of `docs/architecture/debt-register.md` that name `discovery` or S34
+## B. Open rows of `docs/work/architecture/debt-register.md` that name `discovery` or S34
 
 | Debt | What | Where (this capability) | Replaced by |
 |---|---|---|---|

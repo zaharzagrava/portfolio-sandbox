@@ -54,7 +54,7 @@ Order of work suggested at the end (section F). Questions behind each row are in
 
 ## B. Debt register rows that name `orders` or S10
 
-| ID | What (from `docs/architecture/debt-register.md`) | What S10 does | Mechanism |
+| ID | What (from `docs/work/architecture/debt-register.md`) | What S10 does | Mechanism |
 |---|---|---|---|
 | D-6 (I.2) | `api/` and `application/` import `infra/` directly | Repository ports in `domain/` (order, cart, reservation, inbox, history), adapters in `infra/`; DTOs no longer import `infra`; controllers call one service | I.2 layering (A32, A33) |
 | D-7 (IX.4) | Other domains import `BisOrderModel` etc.; orders imports `ProductModel`, `UserModel`, `PaymentModel` | Orders stops importing foreign models (section C rows 1–12). The `BisOrderModel`, `BisOrderItemModel`, `ShopOrderModel`, `StockReservationModel`, `FlashSaleModel` exports are **removed from the barrel last**, after S13, S16, S21, S31, S42, S43 have migrated to the exports below | R1 exports (`OrderQueryService`, `OrderFulfilmentService`) and R3 events |

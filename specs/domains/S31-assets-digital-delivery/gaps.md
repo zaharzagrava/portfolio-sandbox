@@ -81,7 +81,7 @@ After this capability: `pnpm --dir packages/backend check:table-ownership --stri
 
 ## D. Open debt-register rows that name `asset-library` or S31
 
-The register (`docs/architecture/debt-register.md`) has no row that names `asset-library` or `S31` explicitly. Rows that apply to this domain through "every capability of the domain" or through the consuming-domain rule:
+The register (`docs/work/architecture/debt-register.md`) has no row that names `asset-library` or `S31` explicitly. Rows that apply to this domain through "every capability of the domain" or through the consuming-domain rule:
 
 | Row | Applies how | Paid by | Mechanism |
 |---|---|---|---|

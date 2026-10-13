@@ -100,7 +100,7 @@ Implementation to-do list. Paths are relative to `packages/backend/libs/domains/
 
 ## B. Open debt-register rows naming `identity` or S01
 
-(`docs/architecture/debt-register.md`; rows D-1…D-5, D-9, D-13 are resolved and not listed.)
+(`docs/work/architecture/debt-register.md`; rows D-1…D-5, D-9, D-13 are resolved and not listed.)
 
 | ID | Rule | What applies to S01 | Resolution | IX.7 mechanism |
 |---|---|---|---|---|

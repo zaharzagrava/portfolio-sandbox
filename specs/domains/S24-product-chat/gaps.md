@@ -105,4 +105,4 @@ D-1…D-5, D-9, D-10, D-13 are resolved and D-11, D-14…D-17 do not touch chat.
 4. Application and API: channels and membership (G-01…G-04), moderation (G-05, G-06, G-12), send/sync/history/unread/read/presence (G-07, G-09…G-14, G-19…G-25), ticket (G-08), rate limits.
 5. Consumers and jobs: offline scheduler and check worker (G-27…G-29), shop purge (G-30), partition job (G-16), metrics (G-34).
 6. Barrel and modules (G-32); tests per `test-plan.md`; update `chat.e2e-spec.ts` and `chat-sync.e2e-spec.ts`; notify S03 that its backfill job can be deleted (G-31), S28 of the new event, W05 of the client rules (G-35).
-7. Gates: `tsc`, ESLint, `check:boundaries`, `check:table-ownership --strict`, `check:module-graph`, `check:model-registry`, all chat e2e green, recorded (VII.9). Correct the P0318 status in `docs/architecture/pattern-map.md` once AS-28 and AS-29 pass.
+7. Gates: `tsc`, ESLint, `check:boundaries`, `check:table-ownership --strict`, `check:module-graph`, `check:model-registry`, all chat e2e green, recorded (VII.9). Correct the P0318 status in `docs/work/architecture/pattern-map.md` once AS-28 and AS-29 pass.

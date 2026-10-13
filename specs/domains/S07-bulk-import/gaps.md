@@ -49,7 +49,7 @@ The implementation agent's to-do list. Paths are under `packages/backend/` unles
 | D-6 | `api/` and `application/` import `infra/` directly (open, every capability) | The new code uses ports in `domain/` (`ImportRepository`, `ImportStorage`, `UploadScanner`, `ImportQueue`) with adapters in `infra/`; `application/catalog-import.service.ts:14` currently imports `../infra/clamav` | A7 |
 | D-8 | Barrels export infrastructure internals (apps wire projectors directly) | `index.ts` exports the four modules named in Provides; apps import `CatalogImportWorkerModule` and `CatalogImportProjectorModule` rather than classes | A30 |
 
-No other open row of `docs/architecture/debt-register.md` names `catalog-sync` or S07 (searched `catalog-sync`, `catalog-import`, `S07`: one hit, D-10).
+No other open row of `docs/work/architecture/debt-register.md` names `catalog-sync` or S07 (searched `catalog-sync`, `catalog-import`, `S07`: one hit, D-10).
 
 ## C. `pnpm check:table-ownership` lines for this domain (reconstructed; run the real check and reconcile)
 

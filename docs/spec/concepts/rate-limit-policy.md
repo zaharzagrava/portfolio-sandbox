@@ -10,14 +10,14 @@ defined_by: S50
 A rate-limit policy is a named rule that caps how often one subject (address, user, API key, shop, hashed e-mail) can use a route or a code path. It declares an algorithm (token bucket, sliding window or concurrency), a `limit`, a `windowMs` and a `failMode` (`open` or `closed`). Every capability that limits traffic gets the same decisions, headers and errors. Each decision is atomic in the shared store, so admitted units never exceed the budget across instances. Subjects and policies never share a budget.
 
 ## Rules
-- **rate-limit-policy.C-01** Every policy MUST declare an algorithm, a `limit`, a `windowMs` and a `failMode` of `open` or `closed`.
-- **rate-limit-policy.C-02** Buckets of different subjects, and of one subject on different policies, MUST be independent.
-- **rate-limit-policy.C-03** Each decision MUST be one atomic step in the shared store and MUST use the store's clock only, never an instance clock.
-- **rate-limit-policy.C-04** A denied request MUST answer `429` problem+json with `Retry-After`, without the policy name or the subject in its fields.
-- **rate-limit-policy.C-05** A `cost` MUST be a positive integer; `check` MUST throw `InvalidRateLimitCostError` otherwise, and a `cost` above the `limit` MUST answer `422` `rate_limit_cost_exceeded`.
-- **rate-limit-policy.C-06** Under fail closed, a store failure MUST answer `503` `rate_limiter_unavailable` with `Retry-After: 1`.
-- **rate-limit-policy.C-07** Under fail open, an in-process fallback token bucket of capacity `max(1, floor(limit ÷ fleetSize))` MUST decide, keeping at most 50,000 subjects.
-- **rate-limit-policy.C-08** The circuit breaker MUST open after 3 consecutive store failures, skip the store for 2 s, then allow one probe.
+- **rate-limit-policy.C-01** Every policy MUST declare an [algorithm](../terms/rate-limit.md), a `limit`, a [`windowMs`](../terms/rate-limit.md) and a [`failMode`](../terms/rate-limit-fail-mode.md) of `open` or `closed`.
+- **rate-limit-policy.C-02** [Buckets](../terms/rate-limit-bucket.md) of different [subjects](../terms/rate-limit-subject.md), and of one subject on different policies, MUST be independent.
+- **rate-limit-policy.C-03** Each decision MUST be one [atomic step ↗](../sw-external-terms.md#atomic-increment) in the [shared store](../terms/rate-limit-counter-store.md) and MUST use the store's clock only, never an [instance clock](../terms/store-clock.md).
+- **rate-limit-policy.C-04** A denied request MUST answer [`429` problem+json ↗](../sw-external-terms.md#problem-json) with [`Retry-After` ↗](../sw-external-terms.md#retry-after), without the policy name or the [subject](../terms/rate-limit-subject.md) in its fields.
+- **rate-limit-policy.C-05** A [`cost`](../terms/rate-limit-cost.md) MUST be a positive integer; `check` MUST throw [`InvalidRateLimitCostError`](../terms/invalid-rate-limit-cost-error.md) otherwise, and a `cost` above the `limit` MUST answer `422` [`rate_limit_cost_exceeded`](../terms/rate-limit-cost-exceeded.md).
+- **rate-limit-policy.C-06** Under [fail closed](../terms/rate-limit-fail-mode.md), a store failure MUST answer `503` [`rate_limiter_unavailable`](../terms/rate-limiter-unavailable.md) with [`Retry-After: 1` ↗](../sw-external-terms.md#retry-after).
+- **rate-limit-policy.C-07** Under [fail open](../terms/rate-limit-fail-mode.md), an in-process [fallback token bucket ↗](../sw-external-terms.md#token-bucket) of capacity `max(1, floor(limit ÷ fleetSize))` MUST decide, keeping at most 50,000 subjects.
+- **rate-limit-policy.C-08** The [circuit breaker ↗](../sw-external-terms.md#circuit-breaker) MUST open after 3 consecutive store failures, skip the store for 2 s, then allow [one probe](../terms/circuit-breaker-probe.md).
 
 ## How the capabilities use it
 - {{cap:S01}} relies on the policies `auth.register.ip`, `auth.login.ip`, `auth.login.account`, `auth.refresh.ip`, `auth.reset.ip` and `auth.reset.account`.

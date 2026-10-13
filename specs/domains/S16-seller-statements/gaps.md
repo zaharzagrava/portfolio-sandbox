@@ -54,7 +54,7 @@ What the current code gets wrong or lacks against [`spec.md`](spec.md). This is 
 
 ## C. Cross-domain access and debt rows
 
-`docs/architecture/debt-register.md` rows naming `statements` or `S16`: **D-12** (open): "statements reads orders and catalog tables … Reports → ClickHouse via CDC (statements)". D-7 (model imports) names no `statements` file; the only model import in this domain is in its test (see C3). The `check:table-ownership` output could not be produced here (see the note above); the rows below are derived by reading.
+`docs/work/architecture/debt-register.md` rows naming `statements` or `S16`: **D-12** (open): "statements reads orders and catalog tables … Reports → ClickHouse via CDC (statements)". D-7 (model imports) names no `statements` file; the only model import in this domain is in its test (see C3). The `check:table-ownership` output could not be produced here (see the note above); the rows below are derived by reading.
 
 | # | Finding (debt) | Where | Mechanism that replaces it |
 |---|---|---|---|
@@ -63,7 +63,7 @@ What the current code gets wrong or lacks against [`spec.md`](spec.md). This is 
 | C3 | **D-7, MODEL.** The domain's spec imports `ShopModel` from tenancy and creates shops through it; seeds `BisOrder` and inserts `BisOrderItem` by SQL | `statements.e2e-spec.ts:10, 45, 47-60` | Test fixtures: shops from the S03 R1 test double; facts by delivering events to the consumers (no model, no SQL on other domains' tables) |
 | C4 | Payout and ledger facts have no path at all (no consumer) although S15 and S14 name this capability as a consumer | (absent) | **R3**: consumers for `payout.paid` and `ledger.journal_posted`; no R1 call to `LedgerService` for monthly sums (per-call, unbatched, and not a point-in-time view) |
 | C5 | Shop existence for shop-specific rates is not checked; a typo creates an orphan rate | `application/commission-rate.service.ts:40-73` | **R1** `ShopQueryService.getShopsByIds` (S03), batch of one per request |
-| C6 | `docs/architecture/domain-map.md` §statements and the S10/S14 contracts still say "ClickHouse via CDC" | `docs/architecture/domain-map.md:215-216, 388`; `debt-register.md:25` | Update to "R3 events into a statements-owned store; ClickHouse optional for heavy analytics" in the same PR |
+| C6 | `docs/work/architecture/domain-map.md` §statements and the S10/S14 contracts still say "ClickHouse via CDC" | `docs/work/architecture/domain-map.md:215-216, 388`; `debt-register.md:25` | Update to "R3 events into a statements-owned store; ClickHouse optional for heavy analytics" in the same PR |
 | C7 | S10's `OrderQueryService.getOrderLines` consumer list names S16 | `specs/domains/S10-cart-checkout/spec.md` (Provides, `OrderQueryService`) | Remove S16 from that list (R1 per-order calls cannot price a month) |
 
 ## D. Contract dependencies the implementation must see land first

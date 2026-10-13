@@ -10,14 +10,14 @@ defined_by: S54
 Every backend error reaches the client as one `application/problem+json` document with a stable `code`. The members are fixed, and the body never leaks internals. Clients choose their behaviour by `code`, never by message text. Every error carries a `requestId`, so a client report can be matched to the logs. Capability S54 defines the format and the filter that renders it.
 
 ## Rules
-- **problem-json-errors.C-01** Every error response MUST be `application/problem+json` with exactly the members `type`, `title`, `status`, `detail`, `instance`, `code`, `requestId`, plus `traceId` when a trace is active.
-- **problem-json-errors.C-02** For status 500 and above, `detail` MUST be the fixed catalogue text; thrown messages, wrapped causes, SQL and stack traces MUST NOT reach the body in any environment.
-- **problem-json-errors.C-03** Validation failures MUST return `400 validation_failed`, list every failing field at once, and MUST NOT echo input values.
-- **problem-json-errors.C-04** A raw database unique violation MUST render as `409 conflict` with generic text and no column, constraint or value.
-- **problem-json-errors.C-05** Extension members MUST NOT override a reserved member; `retryAfterSeconds` MUST produce a `Retry-After` header.
-- **problem-json-errors.C-06** Two registrations of one `code` with different definitions MUST fail startup and name both owners.
-- **problem-json-errors.C-07** The filter MUST NOT write after headers are sent and MUST NOT throw; if rendering fails it MUST emit a minimal `500 internal_error`.
-- **problem-json-errors.C-08** An inbound `X-Request-Id` MUST be kept only when it has 8 to 128 characters of letters, digits, `.`, `_`, `-` and appears once; otherwise a UUIDv7 replaces it.
+- **problem-json-errors.C-01** Every error response MUST be [`application/problem+json` ↗](../sw-external-terms.md#problem-json) with exactly the members `type`, `title`, `status`, `detail`, `instance`, [`code`](../terms/error-code.md), [`requestId`](../terms/request-id.md), plus [`traceId`](../terms/trace-id.md) when a trace is active.
+- **problem-json-errors.C-02** For status 500 and above, `detail` MUST be the [fixed catalogue text](../terms/error-catalogue.md); thrown messages, wrapped causes, SQL and stack traces MUST NOT reach the body in any environment.
+- **problem-json-errors.C-03** Validation failures MUST return [`400 validation_failed`](../terms/validation-failed-error.md), list every failing field at once, and MUST NOT echo input values.
+- **problem-json-errors.C-04** A raw database [unique violation ↗](../sw-external-terms.md#unique-violation) MUST render as [`409 conflict`](../terms/conflict-error.md) with generic text and no column, constraint or value.
+- **problem-json-errors.C-05** [Extension members](../terms/extension-members.md) MUST NOT override a [reserved member](../terms/reserved-members.md); [`retryAfterSeconds`](../terms/retry-after-seconds.md) MUST produce a [`Retry-After` header ↗](../sw-external-terms.md#retry-after).
+- **problem-json-errors.C-06** Two [registrations](../terms/error-code-registration.md) of one `code` with different definitions MUST [fail startup ↗](../sw-external-terms.md#fail-fast) and name both owners.
+- **problem-json-errors.C-07** [The filter](../terms/problem-exception-filter.md) MUST NOT write after headers are sent and MUST NOT throw; if rendering fails it MUST emit a minimal [`500 internal_error`](../terms/internal-error.md).
+- **problem-json-errors.C-08** An inbound [`X-Request-Id`](../terms/request-id.md) MUST be kept only when it has 8 to 128 characters of letters, digits, `.`, `_`, `-` and appears once; otherwise a [UUIDv7 ↗](../sw-external-terms.md#uuidv7) replaces it.
 
 ## How the capabilities use it
 - {{cap:S01}} returns its errors in this format, with stable codes.

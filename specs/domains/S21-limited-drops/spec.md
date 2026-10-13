@@ -6,7 +6,7 @@
 
 **Status**: Draft
 
-**Input**: User description: "Capability S21 — English auctions: proxy bids, anti-sniping, reserve, exactly-once close, second chance, shill guard (domain `auctions`)." Sources: note `10-System-Design/07-commerce-and-transactions.md` §22 (online auction); `docs/showcase/sections/SD-22-limited-drop-auctions.md` (listed in `scripts/sdd/capabilities.tsv` but **not present** at `~/workspace/notes/Interview-Prep/docs/showcase/sections/` when this spec was written, so the note §22 and the current code are the only sources; see `questions.md`); constitution v3.1.0 (III.3, III.4, III.6, III.7, III.9, III.10, IV.3–IV.6, V.4, V.6, VII, VIII.6, IX, X); `docs/architecture/pattern-map.md` rows P0110, P0311, P0318, P0414, P0607, P0615; `docs/architecture/domain-map.md` (`auctions`); the contracts of the already written specs S05, S10, S11, S17, S18 and S03.
+**Input**: User description: "Capability S21 — English auctions: proxy bids, anti-sniping, reserve, exactly-once close, second chance, shill guard (domain `auctions`)." Sources: note `10-System-Design/07-commerce-and-transactions.md` §22 (online auction); `docs/showcase/sections/SD-22-limited-drop-auctions.md` (listed in `scripts/sdd/capabilities.tsv` but **not present** at `~/workspace/notes/Interview-Prep/docs/showcase/sections/` when this spec was written, so the note §22 and the current code are the only sources; see `questions.md`); constitution v3.1.0 (III.3, III.4, III.6, III.7, III.9, III.10, IV.3–IV.6, V.4, V.6, VII, VIII.6, IX, X); `docs/work/architecture/pattern-map.md` rows P0110, P0311, P0318, P0414, P0607, P0615; `docs/work/architecture/domain-map.md` (`auctions`); the contracts of the already written specs S05, S10, S11, S17, S18 and S03.
 
 ## Scope
 

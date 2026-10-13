@@ -1,6 +1,6 @@
 /**
  * SLO → Prometheus rules (SD-33 / O-01). Pure, unit-tested; driven by
- * `pnpm slo:generate` over docs/slo/*.yaml.
+ * `pnpm slo:generate` over docs/ops/slo/*.yaml.
  *
  * Multi-window, multi-burn-rate alerting (Google SRE workbook ch. 5): a long
  * window proves the burn is significant, a short one proves it is still

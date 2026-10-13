@@ -7,7 +7,7 @@
  * Enforced by `db/ownership.spec.ts` against the migrations and every model's `tableName`.
  * Partition children (`<Table>_default`, monthly partitions) and migration staging names
  * (`<Table>_new`) belong to their parent and are not listed. Seeded from
- * docs/architecture/domain-map.md §2–§3.
+ * docs/work/architecture/domain-map.md §2–§3.
  */
 
 export const DOMAINS = [

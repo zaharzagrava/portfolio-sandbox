@@ -37,3 +37,12 @@ files: 8
 **Imports from:** [common/config](../common/config.md) (2), [common/core](../common/core.md) (1), [platform/lifecycle](lifecycle.md) (1), [platform/redis](redis.md) (3)
 
 **Imported by:** [app/core](../app/core.md) (1), [app/projector](../app/projector.md) (1), [app/sse-gateway](../app/sse-gateway.md) (1), [domain/assistant](../domain/assistant.md) (1), [domain/billing](../domain/billing.md) (2), [domain/catalog](../domain/catalog.md) (6), [domain/chat](../domain/chat.md) (3), [domain/community](../domain/community.md) (1), [domain/developer-platform](../domain/developer-platform.md) (8), [domain/discovery](../domain/discovery.md) (2), [domain/experimentation](../domain/experimentation.md) (2), [domain/identity](../domain/identity.md) (2), [domain/launch-events](../domain/launch-events.md) (1), [domain/marketing](../domain/marketing.md) (2), [domain/notifications](../domain/notifications.md) (3), [domain/seller-insights](../domain/seller-insights.md) (2), [domain/tenancy](../domain/tenancy.md) (4)
+
+<!-- spec-links:start -->
+## Specification
+
+The living specification is the source of truth for what this unit does; this page is generated from the code and may lag behind it.
+
+- [S52 Cache toolkit: L1/L2, single-flight, XFetch, SWR, negative cache, write-behind c](../../../spec/capabilities/S52-cache-toolkit.md)
+- [S54 Platform toolkit: problem+json errors, request context and transactions, health ](../../../spec/capabilities/S54-platform-toolkit.md)
+<!-- spec-links:end -->

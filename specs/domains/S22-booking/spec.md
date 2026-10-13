@@ -6,7 +6,7 @@
 
 **Status**: Draft
 
-**Input**: User description: "Capability S22 — Launch-event booking: waiting room, admission tokens, seat holds, booking confirm, seat map, ticket limits (domain `launch-events`)." Sources: `docs/showcase/sections/SD-21-launch-event-booking.md`; note `10-System-Design/07-commerce-and-transactions.md` §21 (ticket booking); constitution v3.1.0; `docs/architecture/domain-map.md` (`launch-events`); `docs/architecture/pattern-map.md` rows P0110, P0304, P0311, P0312, P0323, P0326, P0414, P0619; the current code of `packages/backend/libs/domains/launch-events/` (booking part only; the live stream is S23).
+**Input**: User description: "Capability S22 — Launch-event booking: waiting room, admission tokens, seat holds, booking confirm, seat map, ticket limits (domain `launch-events`)." Sources: `docs/showcase/sections/SD-21-launch-event-booking.md`; note `10-System-Design/07-commerce-and-transactions.md` §21 (ticket booking); constitution v3.1.0; `docs/work/architecture/domain-map.md` (`launch-events`); `docs/work/architecture/pattern-map.md` rows P0110, P0304, P0311, P0312, P0323, P0326, P0414, P0619; the current code of `packages/backend/libs/domains/launch-events/` (booking part only; the live stream is S23).
 
 ## Scope
 

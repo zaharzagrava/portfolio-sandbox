@@ -6,7 +6,7 @@
 
 **Status**: Draft
 
-**Input**: User description: "Capability S42 — Seller public API: API keys, scopes, sandbox, date-pinned versions, deprecation headers, batch, request logs (domain `developer-platform`)." Sources: `docs/showcase/sections/SD-07-seller-public-api.md`; `interview-prep/04-api-design/02-api-versioning-and-deprecation.md`; `interview-prep/10-system-design/04-web-platform-architectures.md` (§7); the constitution (v3.1.0); `docs/architecture/pattern-map.md` rows P0214, P0403, P0404, P0411, P0412, P0414, P0516, P0519; the current code of `libs/domains/developer-platform` (an imperfect draft: where it disagrees with the notes, the notes win).
+**Input**: User description: "Capability S42 — Seller public API: API keys, scopes, sandbox, date-pinned versions, deprecation headers, batch, request logs (domain `developer-platform`)." Sources: `docs/showcase/sections/SD-07-seller-public-api.md`; `interview-prep/04-api-design/02-api-versioning-and-deprecation.md`; `interview-prep/10-system-design/04-web-platform-architectures.md` (§7); the constitution (v3.1.0); `docs/work/architecture/pattern-map.md` rows P0214, P0403, P0404, P0411, P0412, P0414, P0516, P0519; the current code of `libs/domains/developer-platform` (an imperfect draft: where it disagrees with the notes, the notes win).
 
 Companion files: [`questions.md`](questions.md) (decisions taken unattended, tagged, BREAKING first), [`test-plan.md`](test-plan.md) (constitution VII.8 table), [`gaps.md`](gaps.md) (what today's code lacks, debt rows, IX.7 replacements), [`checklists/requirements.md`](checklists/requirements.md).
 

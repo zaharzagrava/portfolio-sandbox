@@ -41,7 +41,7 @@ The implementation agent's to-do list. Paths are under `packages/backend/libs/do
 
 ## B. Open debt-register rows naming `auctions` or S21
 
-`docs/architecture/debt-register.md` has no row that names `auctions` or S21. These open rows apply to this domain through the ownership check or the code above; for each, which part is S21's and the IX.7 mechanism that replaces it:
+`docs/work/architecture/debt-register.md` has no row that names `auctions` or S21. These open rows apply to this domain through the ownership check or the code above; for each, which part is S21's and the IX.7 mechanism that replaces it:
 
 | Debt | What | S21's share | Mechanism |
 |---|---|---|---|

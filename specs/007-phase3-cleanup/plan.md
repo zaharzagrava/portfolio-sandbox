@@ -2,7 +2,7 @@
 
 **Branch**: `007-phase3-cleanup` (work is on `master`, uncommitted, on top of commit `723a746 phase 2`) |
 **Date**: 2026-10-04 | **Spec**: there is no `spec.md`. Inputs: the `/speckit-plan` request,
-[`docs/architecture/debt-register.md`](../../docs/architecture/debt-register.md) (rows D-1…D-5 and D-9), the
+[`docs/work/architecture/debt-register.md`](../../docs/work/architecture/debt-register.md) (rows D-1…D-5 and D-9), the
 domain map, and the constitution.
 
 **Status**: **Executed.** All 8 steps are done, each followed by the verification gate. `libs/common/src` no
@@ -86,7 +86,7 @@ packages/backend/
 
 ## Remaining debt
 
-See the [debt register](../../docs/architecture/debt-register.md).
+See the [debt register](../../docs/work/architecture/debt-register.md).
 - **Open from before:** D-6, D-7, D-8, D-10, D-11 (mitigated), D-12, D-14, D-15.
 - **New:** D-16 (the Elasticsearch lib is a product-index adapter) and D-17 (file cycles inside one lib, plus an identity `application → api` type import).
 

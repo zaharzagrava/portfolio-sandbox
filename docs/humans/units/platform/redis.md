@@ -36,3 +36,11 @@ files: 3
 **Imports from:** [common/config](../common/config.md) (2), [common/testing](../common/testing.md) (1), [platform/health](health.md) (1), [platform/lifecycle](lifecycle.md) (1)
 
 **Imported by:** [package/backend](../package/backend.md) (1), [app/collab](../app/collab.md) (1), [app/core](../app/core.md) (2), [app/lambdas](../app/lambdas.md) (2), [app/projector](../app/projector.md) (1), [app/public-api](../app/public-api.md) (1), [app/sse-gateway](../app/sse-gateway.md) (6), [app/worker](../app/worker.md) (1), [domain/assistant](../domain/assistant.md) (4), [domain/auctions](../domain/auctions.md) (3), [domain/catalog](../domain/catalog.md) (4), [domain/chat](../domain/chat.md) (2), [domain/community](../domain/community.md) (5), [domain/content](../domain/content.md) (1), [domain/developer-platform](../domain/developer-platform.md) (5), [domain/discovery](../domain/discovery.md) (6), [domain/experimentation](../domain/experimentation.md) (2), [domain/fulfilment](../domain/fulfilment.md) (4), [domain/identity](../domain/identity.md) (3), [domain/launch-events](../domain/launch-events.md) (6), [domain/marketing](../domain/marketing.md) (3), [domain/notifications](../domain/notifications.md) (3), [domain/orders](../domain/orders.md) (1), [domain/payments](../domain/payments.md) (2), [domain/seller-insights](../domain/seller-insights.md) (8), [domain/seller-onboarding](../domain/seller-onboarding.md) (1), [domain/shop-functions](../domain/shop-functions.md) (1), [platform/cache](cache.md) (3), [platform/idempotency](idempotency.md) (1), [platform/projections](projections.md) (2), [platform/rate-limit](rate-limit.md) (2), [platform/realtime](realtime.md) (1)
+
+<!-- spec-links:start -->
+## Specification
+
+The living specification is the source of truth for what this unit does; this page is generated from the code and may lag behind it.
+
+- [S54 Platform toolkit: problem+json errors, request context and transactions, health ](../../../spec/capabilities/S54-platform-toolkit.md)
+<!-- spec-links:end -->

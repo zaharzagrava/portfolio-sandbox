@@ -41,7 +41,7 @@ Format: `[TAG] question → default taken → why`. BREAKING first, then CONTRAC
 - [CONTRACT] S28 → may consume `assets.entitlement_granted` for "your download is ready"; the mail must not contain a download URL, the buyer opens "My purchases" → grants are short-lived and bound to a request.
 - [CONTRACT] S54 → config key `usercontent_origin` (a separate origin for share and buyer downloads) shared with S29 and S30 if they serve user content; startup validation fails in production when it equals the app origin; request logs must record route templates, not path parameters, for the token routes.
 - [CONTRACT] Web owners → no web capability owns the library browser, share dialog, share landing page, "My purchases" or the sync client (W03's order history and W04's dashboard do not name them) → W03 should host "My purchases → Download" and W04 the library and share dialog; until they say so the UI column of `test-plan.md` records journeys as "owner to be named".
-- [CONTRACT] `docs/architecture/domain-map.md` lists owned tables and `Depends on` for asset-library → update to the new owned tables, `Depends on: orders (events), catalog (R1 + event), tenancy (events), realtime`, and drop the "replaces the BisOrder reads" wording once done.
+- [CONTRACT] `docs/work/architecture/domain-map.md` lists owned tables and `Depends on` for asset-library → update to the new owned tables, `Depends on: orders (events), catalog (R1 + event), tenancy (events), realtime`, and drop the "replaces the BisOrder reads" wording once done.
 - [CONTRACT] S18 (usage entitlements) → may later supply a per-plan quota; until then the default is a constant → no dependency on an unwritten spec.
 
 ## LOCAL (internals of this capability)

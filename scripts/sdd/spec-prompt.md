@@ -4,8 +4,8 @@ Write the specification for capability {{ID}} — {{TITLE}} (domain `{{DOMAIN}}`
 
 Read first, in this order:
 1. `.specify/memory/constitution.md` (binding rules: testing mandate VII, data ownership IX, boundaries X).
-2. `docs/architecture/domain-map.md` (what `{{DOMAIN}}` owns and depends on).
-3. `docs/architecture/pattern-map.md`: every row whose **Specs** column contains `{{ID}}`. Each of those
+2. `docs/work/architecture/domain-map.md` (what `{{DOMAIN}}` owns and depends on).
+3. `docs/work/architecture/pattern-map.md`: every row whose **Specs** column contains `{{ID}}`. Each of those
    patterns MUST appear as functional requirements and acceptance scenarios in this spec.
 4. Sources (Interview-Prep paths are under `interview-prep/`): {{SOURCES}}
 5. The current code of the domain (`packages/backend/libs/domains/{{DOMAIN}}/`, or the infrastructure /
@@ -42,7 +42,7 @@ Also write these two files next to `spec.md` (spec.md itself stays implementatio
   `Scenario | API e2e (deep layer) | UI journey (happy path only) | Unit (pure logic only)`. Each edge case
   in exactly one row, at the lowest layer that proves it. Name the e2e spec file each row belongs in.
 - `{{DIR}}/gaps.md`: what the current code gets wrong or lacks versus this spec (file:line references
-  allowed), plus every open row of `docs/architecture/debt-register.md` that names `{{DOMAIN}}` or `{{ID}}`
+  allowed), plus every open row of `docs/work/architecture/debt-register.md` that names `{{DOMAIN}}` or `{{ID}}`
   and this domain's lines from `pnpm --dir packages/backend check:table-ownership` (cross-domain SQL and
   model access, debt D-7/D-12): for each, say which IX.7 mechanism replaces it. This is the implementation
   agent's to-do list.

@@ -6,7 +6,7 @@
 
 **Status**: Draft
 
-**Input**: Capability S38 of `scripts/sdd/capabilities.tsv` (domain `experimentation`). Sources: `docs/showcase/sections/SD-38-feature-flags.md` and `10-System-Design/09-data-and-infrastructure.md` §38, read from the Interview-Prep copy at `.specify/memory/Interview-Prep/` (the notes win over the code; the original at `~/workspace/notes/Interview-Prep/` was outside the session's allowed directories). Supporting notes: `10-System-Design/02-worked-examples.md` Example 2 (assignment hashing) and `08-DevOps-Cloud/01` §5 (decouple deploy from release). Pattern rows: P0802 (deployment strategies: canary and flags) and P0811 (deterministic hash assignment shared with analytics) of `docs/architecture/pattern-map.md`.
+**Input**: Capability S38 of `scripts/sdd/capabilities.tsv` (domain `experimentation`). Sources: `docs/showcase/sections/SD-38-feature-flags.md` and `10-System-Design/09-data-and-infrastructure.md` §38, read from the Interview-Prep copy at `.specify/memory/Interview-Prep/` (the notes win over the code; the original at `~/workspace/notes/Interview-Prep/` was outside the session's allowed directories). Supporting notes: `10-System-Design/02-worked-examples.md` Example 2 (assignment hashing) and `08-DevOps-Cloud/01` §5 (decouple deploy from release). Pattern rows: P0802 (deployment strategies: canary and flags) and P0811 (deterministic hash assignment shared with analytics) of `docs/work/architecture/pattern-map.md`.
 
 ## Scope
 

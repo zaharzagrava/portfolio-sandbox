@@ -103,7 +103,7 @@ Every node's cache entry stores a fingerprint: `hash(prompt version + its own so
 - Change a prompt or output shape: bump that level in `PROMPT_VERSION` (`src/nodes.ts`) and everything at that level regenerates.
 - Model output is untrusted: JSON is validated, symbols and file paths the model invents are dropped and reported, and an invalid reply is retried once before the node is marked failed (the old summary is kept, flagged stale).
 
-The output folder is owned by the generator: `render` rewrites it and deletes any `.md` file it does not produce. Keep hand-written docs elsewhere (e.g. `docs/architecture/`).
+The output folder is owned by the generator: `render` rewrites it and deletes any `.md` file it does not produce. Keep hand-written docs elsewhere (e.g. `docs/work/architecture/`).
 
 ## Suggested CI
 

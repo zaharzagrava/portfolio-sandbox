@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Sequential implementation (docs/architecture/sdd-runbook.md, step 4). For each written spec, in the order of
+# Sequential implementation (docs/work/architecture/sdd-runbook.md, step 4). For each written spec, in the order of
 # scripts/sdd/orders/$ORDER.txt (by-layer, the default: platform, identity, money chain, ..., web, journeys; or by-flow: vertical slices with checkpoints): plan → tasks → analyze → implement → converge
 # (→ implement again if converge added tasks), then a hard gate for that kind of capability. Stops at the
 # first failure so a human can step in; re-running resumes, because finished specs carry `.implemented`.
@@ -19,12 +19,13 @@ set -euo pipefail
 
 ROOT="$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel)"
 source "$ROOT/scripts/sdd/lib.sh"
+source "$ROOT/scripts/sdd/checkpoint-repair.sh"   # checkpoint repair, the flake signal, the metrics of a step
 cd "$ROOT"
 
 # How the run ended, for the notification. The build loop runs in a pipeline subshell, so its verdict goes through a file.
 STATE_FILE="$(mktemp)"
 on_exit() {
-  local code=$? state; state="$(cat "$STATE_FILE" 2>/dev/null)"; rm -f "$STATE_FILE"
+  local code=$? state flakes; state="$(cat "$STATE_FILE" 2>/dev/null)"; flakes="$(cat "$STATE_FILE.flakes" 2>/dev/null | tr '\n' ' ' || true)"; rm -f "$STATE_FILE" "$STATE_FILE.flakes"
   if [[ "$state" == deadline:* ]]; then
     echo "TIME BUDGET USED  ${state#deadline:}. Everything committed so far is kept; start another run to continue." >&2
     notify warn "SDD loop: time budget used" "${state#deadline:}. Progress is committed; start another run to continue."
@@ -38,14 +39,15 @@ on_exit() {
     echo "FINISHED WITH BLOCKED CAPABILITIES  ${state#blocked:}  (see BLOCKED.md in each spec folder)" >&2
     notify warn "SDD loop: finished, but some capabilities are blocked" "${state#blocked:}. Each has a BLOCKED.md that says why; everything else is built and pushed."
   elif [[ "$state" == Checkpoint* ]] && (( code == 0 )); then
-    notify ok "SDD loop: checkpoint reached" "$state"
+    notify ok "SDD loop: checkpoint reached" "$state $(open_decisions)${flakes:+ Flaky, passed after a repair that changed no code: $flakes}"
   elif (( code == 0 )); then
-    notify ok "SDD loop: finished" "${state:-All requested specs are built.}"
+    notify ok "SDD loop: finished" "${state:-All requested specs are built.} $(open_decisions)${flakes:+ Flaky, passed after a repair that changed no code: $flakes}"
   else
     notify fail "SDD loop: stopped" "${state:-Exit code $code.} See the terminal."
   fi
 }
 trap on_exit EXIT
+metric_step - run-start "$(date +%s)" "$(date +%s)" ok 1 "commit=$(git rev-parse --short HEAD 2>/dev/null) MAX_GATE_REPAIRS=${MAX_GATE_REPAIRS:-5} MAX_REPAIRS_PER_SPEC=${MAX_REPAIRS_PER_SPEC:-3} REPAIR_BUDGET_MIN=${REPAIR_BUDGET_MIN:-60} MAX_IMPLEMENT_PASSES=${MAX_IMPLEMENT_PASSES:-10}"
 API_URL="${API_URL:-http://localhost:8000}"
 
 # Implementation needs to build and run tests, on top of the file tools in lib.sh.
@@ -210,7 +212,8 @@ step() { # $1 = dir, $2 = step name, $3 = prompt
       touch "$1/.$2.done"; echo "  $2 (done earlier: tasks are already ticked)"; return 0
     fi ;; esac
   echo "  $2"
-  local rc=0 try
+  local rc=0 try t0 fp0=""
+  t0=$(date +%s); case "$2" in repair-*|doctor-*|ckrepair-*) fp0="$(code_fingerprint)" ;; esac
   for try in 1 2; do
     rc=0; run_claude "$1/.$2.log" "$3" "${IMPL_TOOLS[@]}" || rc=$?
     (( rc == 0 || rc == 124 || rc == 125 )) && break
@@ -218,6 +221,7 @@ step() { # $1 = dir, $2 = step name, $3 = prompt
     hit_usage_limit "$1/.$2.log" && break
     (( try == 1 )) && { echo "  $2 failed; retrying once (transient errors happen)"; sleep 20; }
   done
+  step_metric "$1" "$2" "$t0" "$rc" "$try" "$fp0"
   # A pass that hit the time limit is not a failure: the next implement pass resumes at the first open task.
   if (( rc == 124 )) && [[ "$2" == implement-* ]]; then echo "  $2 hit the pass timeout; the next pass resumes"; return 0; fi
   if (( rc == 125 )); then echo "deadline:$(basename "$1") at $2" > "$STATE_FILE"; exit 76; fi
@@ -249,10 +253,16 @@ repair_prompt() {
   printf '%s\n%s' "The hard gate for this capability FAILED. Find the cause and fix it so the whole gate passes. Rules: never weaken, skip or delete a test; a test that fails outside this capability's own files is still a real failure (the code under it may be wrong, e.g. it can depend on the machine's time zone): fix the code and note it under a '## Gate repairs' heading in this spec's gaps.md; a scenario that test-plan.md says has a test must get a real test whose title starts with this capability's ID and the scenario (for example it('S53 AS-27: ...')), not just a tag; change nothing unrelated. Before editing anything, decide whether the failure is a fault of the ENVIRONMENT or of the code: many tests failing the same way at a 30 s timeout, an HTTP 503 or 5xx from an endpoint the failing tests only wait on, a missing browser (browserType.launch), a container that is down or an empty or stale search index are environment faults. For those run 'bash scripts/sdd/stack-fix.sh smoke' (it says what is wrong and what to run: 'browser', 'reindex') and 'bash scripts/sdd/stack-fix.sh <action>'; read the API log (/var/log/sdd/api.log on the runner) for the real error; if the root cause is a defect in product or backend code (for example a start-up hook that creates a resource with an old definition), fix THAT code, not the tests, and say so under '## Gate repairs' in gaps.md. Never change a test or a page to get around a broken environment. Re-run the failing check yourself before you stop (scripts/sdd/test-spec.sh for e2e specs, npx tsc --noEmit, python3 scripts/sdd/check-tests.py ...). Gate output, digested:" "$(gate_digest "$1")"
 }
 
+# The digest of docs/lessons.md goes into every prompt that builds, plans or repairs (extra_context, doctor_prompt).
+LESSONS="$(lessons_block)"
+
 # Rules that apply to every capability, plus follow-ups that already-built specs left for this one.
 extra_context() { # $1 = capability id
   local fu; fu="$("$ROOT/scripts/sdd/followups.sh" "$1" 2>/dev/null || true)"
   printf ' %s' "Cross-spec rules. (0) The living specification in docs/spec says what the system does today. A change of behavior starts in the page of the capability (docs/spec/capabilities/<ID>-*.md): edit its rules and behaviors first, keep every `[proof: ...]` and `[code: ...]` true (python3 scripts/livespec/check.py checks them), and never create or edit a *.reviewed.json file (human sign-offs); if you change something a human signed, say so under '## Spec changes' in gaps.md. (1) Sibling follow-ups: if your work changes something another capability's spec relies on (a name, header, status code, contract), do not edit that spec; add a bullet '- **<their id>**: <what they must adopt>' under a '## Sibling-spec follow-ups' heading in this spec's gaps.md. (2) Unverified criteria: every success criterion (SC-nnn) that no automated test proves goes under 'Ops artifacts' in quickstart.md and as one row in specs/UNVERIFIED.md (spec, criterion, how to run it, status 'not run'); never describe it as verified. (3) Undoing work: never use git checkout, restore, reset, stash or clean (they are not available and could discard other work in the same file); to undo a change edit the file by hand and keep every other change in it, and if a task says to revert a file, restore only the lines it names. (4) Transactions: use TransactionRunner.run or @Transactional (S54 toolkit); when you touch a file that opens a transaction directly with sequelize.transaction, migrate that site and delete its '// S54 T037 audit' comment; never add a new direct sequelize.transaction (the gate fails if the count of direct sites in your domain rises)."
+  if [[ -n "$LESSONS" ]]; then printf ' %s' "$LESSONS"; fi
+  local dec; dec="$(decisions_to_apply "$1")"
+  if [[ -n "$dec" ]]; then printf ' %s\n%s' "Decisions the owner changed after reading the defaults you recorded (docs/work/decisions/$1.md); they override any default in questions.md, so apply them, test them, update the living page, and mention them in your report:" "$dec"; fi
   if [[ -n "$fu" ]]; then printf ' %s\n%s' "Follow-ups left for this capability by specs that are already built; treat each as a requirement, plan it, test it, and mention it in your report:" "$fu"; fi
 }
 
@@ -271,7 +281,7 @@ doctor_prompt() { # $1 = id, $2 = spec dir, $3 = what failed
   if [[ -n "$log" ]]; then
     if [[ "$log" == *.gate.log ]]; then digest="$(gate_digest "$log")"; else digest="$(tail -c 5000 "$log")"; fi
   fi
-  printf '%s\n%s' "You are the repair agent of an unattended build loop. A step failed for capability $1 and the loop cannot continue until it is fixed. What failed: $3. Find the root cause and fix it so the step can be retried. Work in the spec folder $2 (spec.md, plan.md, tasks.md, test-plan.md, gaps.md, questions.md) and in the code. Typical causes: (a) an analysis finding marked CRITICAL: fix the artifacts it points at (add the missing task, align spec, plan and tasks, resolve the contradiction); never delete or weaken a requirement or a test just to make the analysis pass; (b) two requirements that contradict each other: decide it as the constitution and the spec's own intent require, record the decision under a '## RESOLVED (agent decision)' heading in questions.md, and update spec.md and test-plan.md consistently; (c) a step that crashed or produced nothing: re-run the underlying command yourself and find the cause; (d) an implement pass that closed no task: do the blocked task yourself, or record why it needs a human. Rules: never use git to undo work (edit files by hand and keep every other change in them); never skip, weaken or delete a test; change nothing unrelated. End your final message with exactly one line: 'DOCTOR: fixed' if the loop can retry, or 'DOCTOR: needs human: <one sentence why>' if a human decision or access is needed. The end of the failing log follows." "$digest"
+  printf '%s\n%s' "You are the repair agent of an unattended build loop. A step failed for capability $1 and the loop cannot continue until it is fixed. What failed: $3. Find the root cause and fix it so the step can be retried. Work in the spec folder $2 (spec.md, plan.md, tasks.md, test-plan.md, gaps.md, questions.md) and in the code. Typical causes: (a) an analysis finding marked CRITICAL: fix the artifacts it points at (add the missing task, align spec, plan and tasks, resolve the contradiction); never delete or weaken a requirement or a test just to make the analysis pass; (b) two requirements that contradict each other: decide it as the constitution and the spec's own intent require, record the decision under a '## RESOLVED (agent decision)' heading in questions.md, and update spec.md and test-plan.md consistently; (c) a step that crashed or produced nothing: re-run the underlying command yourself and find the cause; (d) an implement pass that closed no task: do the blocked task yourself, or record why it needs a human. Rules: never use git to undo work (edit files by hand and keep every other change in them); never skip, weaken or delete a test; change nothing unrelated. End your final message with exactly one line: 'DOCTOR: fixed' if the loop can retry, or 'DOCTOR: needs human: <one sentence why>' if a human decision or access is needed. $LESSONS The end of the failing log follows." "$digest"
 }
 
 block_spec() { # $1 = id, $2 = spec dir, $3 = reason
@@ -289,7 +299,7 @@ block_spec() { # $1 = id, $2 = spec dir, $3 = reason
     [[ -n "$last" ]] && tail -c 3500 "$last"
     echo '```'
   } > "$f"
-  printf '%s\t%s\n' "$1" "$3" >> "$BLOCKED_LIST"
+  printf '%s\t%s\n' "$1" "$3" >> "$BLOCKED_LIST"; metric_step "$1" blocked "$(date +%s)" "$(date +%s)" blocked "${repair_tries:-0}" "$3"
   if [[ -n "${COMMIT:-}" ]]; then git add -A && git commit -q -m "blocked($1): $3" -m "See $f"; push_branch; fi
   notify warn "SDD: $1 BLOCKED, needs you" "$3. The repair agent could not fix it (or its budget is used up), so the loop moved on to the next capability. Read $f when you can; nothing else is lost."
   echo "BLOCKED  $1: $3"
@@ -300,7 +310,7 @@ ordered_capabilities "$@" | while IFS=$'\t' read -r id domain slug title sources
     marker="$ROOT/specs/.checkpoints/$domain"
     if [[ -f "$marker" ]]; then echo "pass  checkpoint $domain"; continue; fi
     # Before pausing: every earlier capability must still work (full e2e sweep) and the flow script, if any, must pass.
-    if ! "$ROOT/scripts/sdd/checkpoint.sh" "$domain"; then
+    if ! checkpoint_with_repair "$domain"; then
       echo "Checkpoint $domain FAILED its regression sweep or flow script (specs/.checkpoints/$domain.log)." > "$STATE_FILE"; exit 1
     fi
     mkdir -p "$ROOT/specs/.checkpoints"; date -u +%FT%TZ > "$marker"
@@ -342,7 +352,7 @@ ordered_capabilities "$@" | while IFS=$'\t' read -r id domain slug title sources
     if { MAX_PRIORITY="$limit" gate_extras "$id" "$domain" "$dir" && MAX_PRIORITY="$limit" gate "$domain"; } >"$dir/.gate.log" 2>&1; then echo "GATE OK    $id${limit:+ ($limit)}"; else echo "GATE FAIL  $id (see $dir/.gate.log)"; fi
     exit 0
   fi
-  echo "build $id${limit:+ ($limit only)} — $title"
+  echo "build $id${limit:+ ($limit only)} — $title"; cap_t0=$(date +%s)
   if [[ "$(kind_of "$domain")" == backend && ! -f "$dir/.ownership.baseline" ]]; then ownership_count "$domain" > "$dir/.ownership.baseline"; fi
   if [[ "$(kind_of "$domain")" == backend && ! -f "$dir/.tx.baseline" ]]; then tx_count "$domain" > "$dir/.tx.baseline"; fi
   printf '{\n  "feature_directory": "%s"\n}\n' "$dir" > .specify/feature.json
@@ -385,11 +395,11 @@ ordered_capabilities "$@" | while IFS=$'\t' read -r id domain slug title sources
 
   # The gate is a hard check, but a failing gate is usually fixable (a missing test, a lint error, a bug the capability exposed):
   # hand the failure to the agent, then run the gate again. MAX_GATE_REPAIRS (default 5) bounds the attempts.
-  attempt=0
+  attempt=0; GATE_FP=""
   while :; do
-    echo "  gate"
-    if { MAX_PRIORITY="$limit" gate_extras "$id" "$domain" "$dir" && MAX_PRIORITY="$limit" gate "$domain"; } >"$dir/.gate.log" 2>&1; then break; fi
-    attempt=$((attempt + 1))
+    echo "  gate"; g0=$(date +%s)
+    if { MAX_PRIORITY="$limit" gate_extras "$id" "$domain" "$dir" && MAX_PRIORITY="$limit" gate "$domain"; } >"$dir/.gate.log" 2>&1; then gate_passed "$id" "$dir" "$g0" "$((attempt + 1))"; break; fi
+    attempt=$((attempt + 1)); gate_failed "$id" "$dir" "$g0" "$attempt"
     if (( attempt > ${MAX_GATE_REPAIRS:-5} )); then
       echo "FAIL  $id: gate (see $dir/.gate.log)" >&2; echo "$id gate failed" > "$STATE_FILE"; exit 20
     fi
@@ -397,10 +407,18 @@ ordered_capabilities "$@" | while IFS=$'\t' read -r id domain slug title sources
     : > "$dir/.repaired-by-agent"
     step "$dir" "repair-$attempt" "/speckit-implement $CONTEXT $(repair_prompt "$dir/.gate.log") $LIMIT_TEXT"
   done
-  date -u +%FT%TZ > "$done_marker"
+  date -u +%FT%TZ > "$done_marker"; metric_step "$id" built "$cap_t0" "$(date +%s)" ok 1 "$title"
   if [[ -f scripts/livespec/generate.py ]] && ! ls docs/spec/capabilities/"$id"-*.md >/dev/null 2>&1; then
     echo "  living spec page"
     python3 scripts/livespec/generate.py --only "$id" >"$dir/.livespec.log" 2>&1 || echo "  (the living page could not be generated; see $dir/.livespec.log)"
+    # every word of a rule gets its own explanation page, recursively, until it is self-explanatory (scripts/livespec/terms.py)
+    if [[ -f scripts/livespec/terms.py ]]; then
+      page="$(ls docs/spec/capabilities/"$id"-*.md 2>/dev/null | head -1)"
+      [[ -n "$page" ]] && python3 scripts/livespec/terms.py expand "$page" --max-depth 8 --max-calls 200 >"$dir/.terms.log" 2>&1 || echo "  (the term pages could not be written; see $dir/.terms.log)"
+    fi
+  fi
+  if [[ -f scripts/decisions/triage.py && ! -f "docs/work/decisions/$id.md" ]]; then
+    python3 scripts/decisions/triage.py generate "$id" >"$dir/.decisions.log" 2>&1 || echo "  (the decision list could not be generated; see $dir/.decisions.log)"
   fi
   if [[ -f "$dir/.repaired-by-agent" ]]; then
     rm -f "$dir/.repaired-by-agent"

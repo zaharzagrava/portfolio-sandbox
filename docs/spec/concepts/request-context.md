@@ -11,12 +11,12 @@ Request context is one isolated store of values for each HTTP request, consumer 
 
 ## Rules
 - **request-context.C-01** Each HTTP request, consumer message and job run MUST get its own context, and concurrent requests MUST NOT see each other's context values.
-- **request-context.C-02** An inbound `X-Request-Id` MUST be kept only when it has 8 to 128 characters of letters, digits, `.`, `_`, `-` and appears once; otherwise a UUIDv7 replaces it.
-- **request-context.C-03** The request ID MUST appear in the response header, the logs, the context and every error body.
-- **request-context.C-04** Once `shopId` is set in a context, setting a different value MUST fail as a programmer error.
+- **request-context.C-02** An inbound [`X-Request-Id`](../terms/request-id.md) MUST be kept only when it has 8 to 128 characters of letters, digits, `.`, `_`, `-` and appears once; otherwise a [UUIDv7 ↗](../sw-external-terms.md#uuidv7) replaces it.
+- **request-context.C-03** The [request ID](../terms/request-id.md) MUST appear in the response header, the logs, the context and every [error body](../terms/problem-detail.md).
+- **request-context.C-04** Once [`shopId`](../terms/identity-headers.md) is set in a context, setting a different value MUST fail as a programmer error.
 - **request-context.C-05** Reading the context outside a run MUST return `undefined` and MUST NOT throw.
-- **request-context.C-06** An error body MUST include `traceId` when a trace is active.
-- **request-context.C-07** A consumer span MUST have the same trace ID as the active span at `append` when the event is relayed and consumed.
+- **request-context.C-06** An error body MUST include [`traceId`](../terms/trace-id.md) when a trace is active.
+- **request-context.C-07** A [consumer span ↗](../sw-external-terms.md#distributed-trace) MUST have the same trace ID as the active span at [`append`](../terms/outbox-append.md) when the event is [relayed](../terms/outbox-relay.md) and consumed.
 
 ## How the capabilities use it
 - {{cap:S53}} relies on the trace ID surviving from `append` through the relay to the consumer's span (S53.B-20).

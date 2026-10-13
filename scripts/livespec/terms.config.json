@@ -1,0 +1,31 @@
+{
+  "_comment": "The levers of scripts/livespec/terms.py. Change a value, then run the command it affects (the right-hand note says which). Environment variables TERMS_<NAME> and command-line flags override this file.",
+
+  "find_model": "claude-sonnet-5-5",
+  "define_model": "claude-opus-5-5",
+  "consolidate_model": "claude-opus-5-5",
+
+  "granularity": "normal",
+  "_granularity": "strict | normal | loose: how readily a word gets its own page. strict = only words a junior engineer would certainly misread; loose = also named things (codes, headers, limits). Affects expand/deepen.",
+
+  "merge_synonyms": "conservative",
+  "_merge_synonyms": "off | conservative | aggressive: how eagerly consolidate merges two pages that may be one concept.",
+
+  "prune_single_use": "conservative",
+  "_prune_single_use": "off | conservative | aggressive: how eagerly consolidate inlines a page that only one rule uses and that only restates it.",
+
+  "definition_max_sentences": 5,
+  "definition_max_words_per_sentence": 25,
+  "numbers_in_definitions": "forbid",
+  "_numbers_in_definitions": "forbid | allow: forbid = a definition may not copy a number from a rule (the rule holds it); check.py warns when one does.",
+
+  "find_chunk_items": 10,
+  "define_batch_terms": 6,
+  "workers": 3,
+  "max_depth": 8,
+  "max_calls": 300,
+  "_speed": "find_chunk_items, define_batch_terms and workers trade speed against load on the account; max_depth and max_calls stop the recursion (reported as NOT FINISHED).",
+
+  "extra_reference_hosts": [],
+  "_extra_reference_hosts": "hosts that may be linked from sw-external-terms.md in addition to the built-in list (MDN, RFCs, OWASP, vendor docs...)."
+}

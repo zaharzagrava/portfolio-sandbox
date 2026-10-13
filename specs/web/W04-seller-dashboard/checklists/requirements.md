@@ -31,7 +31,7 @@
 
 ## Pattern map coverage
 
-- [x] Every `docs/architecture/pattern-map.md` row whose Specs column names W04 appears as requirements and scenarios: P0406 (FR-020 to FR-024, FR-045; AS-19 to AS-25, AS-27), P0901 (FR-003 to FR-005, FR-010; AS-12, AS-29, AS-30, AS-70, AS-73, AS-92)
+- [x] Every `docs/work/architecture/pattern-map.md` row whose Specs column names W04 appears as requirements and scenarios: P0406 (FR-020 to FR-024, FR-045; AS-19 to AS-25, AS-27), P0901 (FR-003 to FR-005, FR-010; AS-12, AS-29, AS-30, AS-70, AS-73, AS-92)
 - [x] Every contract earlier specs require from W04 is honoured or raised as `[CONTRACT]`: S03 (switcher, team, roles matrix, `/invites/<token>`; SSO and offboarding deferred), S05 (inventory), S10 (seller orders), S32 (shop search), S40 (rank, today, stats, live frames), S42 (keys, version, logs, usage), S43 (webhook screens), S51 (stream handling), W01 (guards, `useAuth`, refresh, problem rendering), W02 (`formatMoney`), W03 (buyer table leaves the dashboard, topic stream); S04, S06, S07, S08, S09, S12, S14, S15, S29, S30, S36, S44, S47 are deferred with a `[CONTRACT]` line and a plug-in point (navigation registry, shop context, reveal dialog)
 
 ## Notes

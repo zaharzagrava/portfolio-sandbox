@@ -6,7 +6,7 @@
 
 **Status**: Draft
 
-**Input**: User description: "Cross-domain journey J02: New seller registers, creates a shop, passes onboarding/KYC, subscribes to a plan, lists a product that becomes searchable, sells it, receives the order webhook, and appears on the leaderboard." Sources: constitution v3.1.0 (IV, VII, IX.7), `docs/architecture/domain-map.md`, `docs/architecture/debt-register.md` (D-7, D-8, D-11, D-12, D-15, D-16), the specs S01, S03, S04, S05, S17, S18, S32, S40, S43 and the sibling journey J01, `interview-prep/` notes on events and projections (outbox, idempotent consumers, read models) and the current code (see `gaps.md`).
+**Input**: User description: "Cross-domain journey J02: New seller registers, creates a shop, passes onboarding/KYC, subscribes to a plan, lists a product that becomes searchable, sells it, receives the order webhook, and appears on the leaderboard." Sources: constitution v3.1.0 (IV, VII, IX.7), `docs/work/architecture/domain-map.md`, `docs/work/architecture/debt-register.md` (D-7, D-8, D-11, D-12, D-15, D-16), the specs S01, S03, S04, S05, S17, S18, S32, S40, S43 and the sibling journey J01, `interview-prep/` notes on events and projections (outbox, idempotent consumers, read models) and the current code (see `gaps.md`).
 
 ## Scope
 

@@ -43,7 +43,7 @@ Note on section C: `pnpm --dir packages/backend check:table-ownership` could not
 | A33 | `contracts` has no schemas for the routes or the event | `packages/contracts` (none found) | FR-034, AS-43 |
 | A34 | ClickHouse DDL has no deduplication and no counter column; the 2-year TTL is expressed but not tested | `clickhouse/090_competitor_prices.sql` | FR-023, AS-41, AS-54 |
 
-## B. Debt register rows (`docs/architecture/debt-register.md`) that name `seller-insights` or apply to it
+## B. Debt register rows (`docs/work/architecture/debt-register.md`) that name `seller-insights` or apply to it
 
 | Row | What | In this capability | Replaced by |
 |---|---|---|---|

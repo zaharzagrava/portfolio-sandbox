@@ -46,4 +46,4 @@ Images < 200 MB, cold start of a new ASG instance < 90 s (pre-pulled base AMI la
   - `stop.sh`: runs after CodeDeploy deregistered the instance and waited out the deregistration delay; `docker stop --time 35` → SIGTERM → F-01 shutdown.
   - `start.sh`: memory capped at 85% of the host, awslogs driver, config from Secrets Manager inside the app, uniform `METRICS_PORT=9464`.
   - `validate.sh`: `/health/ready` must turn 200 within 3 min, or the deployment fails and blue keeps serving.
-- **Release checklist:** `docs/runbooks/RELEASE_CHECKLIST.md` (expand/contract, flags, error budget, rollback paths).
+- **Release checklist:** `docs/ops/runbooks/RELEASE_CHECKLIST.md` (expand/contract, flags, error budget, rollback paths).

@@ -18,7 +18,7 @@ Rules every section follows, so 40+ features read like one codebase.
 | k6 load tests | `packages/backend/scripts/load-tests/<name>.test.js` + `pnpm loadtest:<name>` script |
 | Manual request examples | `packages/backend/http/<section>.http` |
 | Terraform | `infra/modules/<module>/` + `infra/envs/{demo,prod}/` |
-| Runbooks / SLOs | `docs/runbooks/`, `docs/slo/` |
+| Runbooks / SLOs | `docs/ops/runbooks/`, `docs/ops/slo/` |
 
 ## Code style
 

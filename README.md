@@ -15,11 +15,49 @@ If you want to see how production-grade code, edge-case failure handling and arc
 
 ---
 
+# How it is built: an agent loop that checks its own work
+
+The code in this repository was not typed by hand. I specified **67 capabilities** (the spec documents were drafted by agents from my architecture notes, and the choices they made without asking are triaged for me to review), and an unattended loop on a cloud machine builds them one capability at a time, in fresh-context
+Claude sessions, while I sleep. What I actually work on is the **harness around the model**: the part that decides whether the result can be trusted.
+
+```
+ specs ─► build loop ─► gate ─► repair agent ─► checkpoint ─► QA agent ─► skeptic ─► failing test ─► repair ─► ... ─► morning report
+ (67)     (per          (types,   (fresh         (whole       (explores   (tries to    (regression
+          capability)   lint,     context,       regression   the app     reproduce    test that
+                        e2e)      ≤5 tries)      sweep)       like a      each find)   must fail
+                                                              person)                   first)
+```
+
+**What each part does**
+- **Gate and repair agent.** A capability is "built" only when type check, lint, unit tests and database-backed end-to-end tests pass. When they fail, a repair agent with a clean context
+  gets the failure and fixes the cause. It may not weaken a test.
+- **Checkpoints.** After a flow is complete, the whole backend suite, the whole browser suite, a scripted buy flow and a live infrastructure check run on a fresh stack. A failure has its own repair agent.
+- **Living specification.** `docs/spec` says what the system does today (rules, behaviors, state machines, a Quint model of the payment delivery). Every claim links to the test that
+  proves it and the code it describes; a script fails the build if a link is broken. A person signs each page; agents cannot.
+- **QA agent.** A separate Claude session drives a real browser like a tester, with a charter ("buy a product as a new customer, then reload while paying") and oracles that need no spec
+  (a page "processing" for 30 s, a parked outbox row, a dead-letter queue that is not empty). A second, skeptical session must reproduce every finding before it counts, and a regression test
+  must fail on the current build before anyone is asked to fix anything.
+- **Lessons, metrics, decisions.** Every failure becomes a rule that the agents read and a check that runs (`docs/lessons.md`). Every step is measured (`scripts/sdd/report.py`). The
+  hundreds of defaults the agents chose without asking are triaged into the few decisions that are mine (`docs/work/decisions`).
+- **Mutation testing.** A small tool changes the code on purpose and checks that the unit tests notice.
+
+**Why I built it.** The first end-to-end test of the buy flow by hand found a payment stuck at "processing". Every automated check had passed: the code asked a standard queue for a message
+group, which only FIFO queues accept, so the charge request was never delivered. I wrote the incident down ([`docs/ops/incidents`](docs/ops/incidents/2026-10-12-payment-stuck-pending.md)), then built
+the harness so that class of bug is found by a machine first. Putting that bug (and three similar ones) back on purpose is the benchmark for the QA agent.
+
+**Where it stands, honestly.** The loop, the gate, the repair agent and the checkpoints ran for real in the cloud (more than 20 capabilities built so far, one checkpoint passed after several repairs).
+The QA agent found both defects of its first benchmark pass and two real findings on its first free run; the second benchmark pass and the other parts that are new this week are listed with their
+status in [`README_ME.md`](README_ME.md#where-it-stands-honest). I would rather show what is measured than claim what is not.
+
+**Run it yourself:** [`README_ME.md`](README_ME.md#the-agentic-delivery-loop-what-it-is-how-to-set-it-up-how-to-run-it-every-day) has the setup (a Hetzner project, a Claude token, a phone topic) and the morning routine.
+
+---
+
 # What I can build for you
 
 Each section is a problem a real team has, and how I designed the solution: the architecture, not a tutorial.
 
-> **What this is, honestly:** this repo shows how I **architect** systems, not a finished product. It is built spec-first: every section below is a designed solution with a spec (linked), and each spec has a `gaps.md` listing exactly where the code still differs. Most capabilities have a first-pass implementation, but the spec-driven implementation is not fully run yet. Some details below are ahead of the code. Parts that already run and pass: see [Run it yourself](#run-it-yourself-5-minutes). The only thing between the specs and a complete implementation is my time and AI usage limits, not the design. Per-capability progress is in [`pattern-map.md`](docs/architecture/pattern-map.md).
+> **What this is, honestly:** this repo shows how I **architect** systems, not a finished product. It is built spec-first: every section below is a designed solution with a spec (linked), and each spec has a `gaps.md` listing exactly where the code still differs. Most capabilities have a first-pass implementation, but the spec-driven implementation is not fully run yet. Some details below are ahead of the code. Parts that already run and pass: see [Run it yourself](#run-it-yourself-5-minutes). The only thing between the specs and a complete implementation is my time and AI usage limits, not the design. Per-capability progress is in [`pattern-map.md`](docs/work/architecture/pattern-map.md).
 
 **Money**
 

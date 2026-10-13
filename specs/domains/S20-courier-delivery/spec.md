@@ -6,7 +6,7 @@
 
 **Status**: Draft
 
-**Input**: User description: "Same-day courier dispatch: location ingest, offers with timeout, delivery state machine, live tracking (domain `fulfilment`)". Sources: `docs/showcase/sections/SD-23-same-day-courier-delivery.md`, note 10-System-Design/07-commerce-and-transactions.md §23 (ride-hailing / food delivery), patterns P0110, P0323, P0328, P1105 of `docs/architecture/pattern-map.md`. Constitution v3.1.0.
+**Input**: User description: "Same-day courier dispatch: location ingest, offers with timeout, delivery state machine, live tracking (domain `fulfilment`)". Sources: `docs/showcase/sections/SD-23-same-day-courier-delivery.md`, note 10-System-Design/07-commerce-and-transactions.md §23 (ride-hailing / food delivery), patterns P0110, P0323, P0328, P1105 of `docs/work/architecture/pattern-map.md`. Constitution v3.1.0.
 
 ## Scope
 

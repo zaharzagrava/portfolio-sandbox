@@ -66,7 +66,7 @@ Existing tests: `shop-functions.e2e-spec.ts` (3 tests: judge verdicts, own-shop 
 
 ## 2. Open debt-register rows touching this capability
 
-`docs/architecture/debt-register.md` has no open row that names `shop-functions` or S45 explicitly. The generic open rows apply to this domain as follows:
+`docs/work/architecture/debt-register.md` has no open row that names `shop-functions` or S45 explicitly. The generic open rows apply to this domain as follows:
 
 | Row | Rule | What applies here | Replaced by |
 |---|---|---|---|

@@ -29,7 +29,7 @@
 - [x] Feature meets measurable outcomes defined in Success Criteria
 - [x] No implementation details leak into specification
 
-## Pattern coverage (`docs/architecture/pattern-map.md`, Specs column contains S25)
+## Pattern coverage (`docs/work/architecture/pattern-map.md`, Specs column contains S25)
 
 - [x] P0320 time-based IDs → FR-003; AS-01, AS-19, AS-55
 - [x] P0323 ranking structures (sorted sets, hashes) as derived, expiring, rebuildable state → FR-024, FR-030, FR-035, FR-036; AS-38, AS-43, AS-49, AS-50, AS-51

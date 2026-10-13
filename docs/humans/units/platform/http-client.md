@@ -39,3 +39,12 @@ files: 5
 **Imports from:** [common/core](../common/core.md) (1)
 
 **Imported by:** [composition/bff](../composition/bff.md) (1), [domain/catalog-sync](../domain/catalog-sync.md) (1), [domain/content](../domain/content.md) (1)
+
+<!-- spec-links:start -->
+## Specification
+
+The living specification is the source of truth for what this unit does; this page is generated from the code and may lag behind it.
+
+- [S48 BFF composition: product-page aggregate with budgets and partial errors, GraphQL](../../../spec/capabilities/S48-bff.md)
+- [S54 Platform toolkit: problem+json errors, request context and transactions, health ](../../../spec/capabilities/S54-platform-toolkit.md)
+<!-- spec-links:end -->

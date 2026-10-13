@@ -122,6 +122,7 @@ if [[ "${SDD_IMAGE:-be}" == fe && -z "${SDD_SKIP_STACK:-}" ]]; then
   done
   grep -q "dev stack is up and migrated" "$LOG/dev-stack.log" || fail_and_wait "the dev stack did not come up in 30 minutes (see $LOG/dev-stack.log)"
   say "starting the API"
+  export API_LOG="$LOG/api.log"   # read by the QA agent (scripts/qa/run.sh) when a checkpoint runs it
   pnpm --filter api run start:dev:monolith >"$LOG/api.log" 2>&1 &
   API_PID=$!
   for _ in $(seq 1 120); do curl -sf http://localhost:8000/health/ready >/dev/null && break; kill -0 "$API_PID" 2>/dev/null || fail_and_wait "the API exited during start-up (see $LOG/api.log)"; sleep 5; done
@@ -134,6 +135,7 @@ say "test stack ready; memory: $(free -h | awk 'NR==2{print $3" used of "$2}')"
 export PW_WORKERS="${PW_WORKERS:-2}" PW_EXPECT_TIMEOUT_MS="${PW_EXPECT_TIMEOUT_MS:-20000}"   # the machine runs two stacks next to the browsers: fewer workers, longer waits   # Playwright workers on the 8-core machine (the config default is 2)
 export ORDER="$SDD_ORDER" COMMIT=1 PUSH_BRANCH PASS_TIMEOUT_S NTFY_TOPIC NTFY_SERVER HEARTBEAT_URL
 [[ -n "${SDD_UNTIL:-}" ]] && export UNTIL="$SDD_UNTIL"
+[[ -n "${SDD_QA:-}" ]] && export CHECKPOINT_QA="$SDD_QA" QA_BUDGET_MIN MAX_QA_FIXES MAX_NEW_CHARTERS   # the QA agent at the checkpoints (scripts/qa)
 export RUN_DEADLINE=$(( $(date +%s) + SDD_HOURS * 3600 ))
 # shellcheck disable=SC2086
 scripts/sdd/monitor.sh ${SDD_ARGS:-} >"$LOG/monitor.out" 2>&1 &
