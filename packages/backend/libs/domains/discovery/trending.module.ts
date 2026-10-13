@@ -4,6 +4,7 @@ import { ProductModule } from '@app/domains/catalog';
 import { AuthModule } from '@app/domains/identity';
 import { TenancyModule } from '@app/domains/tenancy';
 import { CacheModule } from '@app/infrastructure/cache/cache.module';
+import { KAFKA_CONSUMER_OVERRIDES } from '@app/infrastructure/kafka/kafka-client.options';
 import { KafkaProducerModule } from '@app/infrastructure/kafka/kafka-producer.module';
 import { DeadLetterWriter } from '@app/infrastructure/projections/dead-letter';
 import { RateLimitModule } from '@app/infrastructure/rate-limit';
@@ -85,6 +86,8 @@ export class TrendingModule {}
       useValue: (code: number) => process.exit(code),
     },
     { provide: TRENDING_RANDOM, useValue: Math.random },
+    // Empty in production; specs bind a socket factory to cut or delay the consumer's connection (AS-40).
+    { provide: KAFKA_CONSUMER_OVERRIDES, useValue: {} },
   ],
 })
 export class TrendingProjectorModule {}

@@ -149,16 +149,16 @@
 
 ### Tests first (`D/trending-platform.e2e-spec.ts`, `describe('Trending degradation, metrics and boundary')`)
 
-- [ ] T052 [US6] Create the file with AS-36 (all metrics from T011 exist after scenarios, labels are fixed enums, `trending_last_merge_timestamp_seconds` moves on a merge, no visitor/buyer/order ids, raw bodies or unbounded label values in logs or `/metrics`) (T35, FR-025, SC-008).
-- [ ] T053 [US6] Add AS-37 boot test (start with one invalid `TRENDING_*` value → startup fails naming the key) and AS-39 (every aggregate and merge key has a TTL ≤ retention (3 h max), key names equal `trending-keys.ts` output, the reader touches only the 60 horizon keys, no `KEYS`/`SCAN` command observed) (T31, T34).
-- [ ] T054 [US6] Add AS-38 (runs `check:boundaries` and `check:table-ownership --strict` as child processes, inspects `index.ts` exports: only `TrendingModule` and `TrendingProjectorModule`, grep that `application/` and `api/` import nothing from `infra/`) (T50, T51, D-6, D-7, D-8, FR-024).
-- [ ] T055 [US6] Add AS-40 (broker down at start: readiness false, connect failures counted, retry with backoff, no silent run; loop failure/crash → not ready and the injected `ProcessExit` spy called; ready after subscribe) (T32, FR-023).
+- [X] T052 [US6] Create the file with AS-36 (all metrics from T011 exist after scenarios, labels are fixed enums, `trending_last_merge_timestamp_seconds` moves on a merge, no visitor/buyer/order ids, raw bodies or unbounded label values in logs or `/metrics`) (T35, FR-025, SC-008).
+- [X] T053 [US6] Add AS-37 boot test (start with one invalid `TRENDING_*` value → startup fails naming the key) and AS-39 (every aggregate and merge key has a TTL ≤ retention (3 h max), key names equal `trending-keys.ts` output, the reader touches only the 60 horizon keys, no `KEYS`/`SCAN` command observed) (T31, T34).
+- [X] T054 [US6] Add AS-38 (runs `check:boundaries` and `check:table-ownership --strict` as child processes, inspects `index.ts` exports: only `TrendingModule` and `TrendingProjectorModule`, grep that `application/` and `api/` import nothing from `infra/`) (T50, T51, D-6, D-7, D-8, FR-024).
+- [X] T055 [US6] Add AS-40 (broker down at start: readiness false, connect failures counted, retry with backoff, no silent run; loop failure/crash → not ready and the injected `ProcessExit` spy called; ready after subscribe) (T32, FR-023).
 
 ### Implementation
 
-- [ ] T056 [US6] (D-8, T51) Change `D/index.ts:13-19` to export `TrendingModule` and `TrendingProjectorModule` only; remove `TrendingService`, `TrendingConsumer`, `TrendingConsumerModule` exports.
-- [ ] T057 [US6] (T50) `apps/projector/src/projector.module.ts:3,51` import `TrendingProjectorModule` instead of `TrendingConsumerModule`; `apps/core/src/core.module.ts:10,141` keep `TrendingModule`; fix any other importer found by `grep -rn "TrendingConsumer\|TrendingService" packages/backend`.
-- [ ] T058 [US6] Run `test-spec.sh trending-platform` to green; fix gaps found in metrics, readiness, boundary.
+- [X] T056 [US6] (D-8, T51) Change `D/index.ts:13-19` to export `TrendingModule` and `TrendingProjectorModule` only; remove `TrendingService`, `TrendingConsumer`, `TrendingConsumerModule` exports.
+- [X] T057 [US6] (T50) `apps/projector/src/projector.module.ts:3,51` import `TrendingProjectorModule` instead of `TrendingConsumerModule`; `apps/core/src/core.module.ts:10,141` keep `TrendingModule`; fix any other importer found by `grep -rn "TrendingConsumer\|TrendingService" packages/backend`.
+- [X] T058 [US6] Run `test-spec.sh trending-platform` to green; fix gaps found in metrics, readiness, boundary.
 
 ---
 
@@ -166,18 +166,18 @@
 
 **Goal**: in-repo callers compile and tests pass on the new envelope; the rest is sibling work. **Independent test**: `test-spec.sh libs/composition/bff`, `tsc --noEmit` for web.
 
-- [ ] T059 [US7] (T53) Adapt `libs/composition/bff/product-page.service.ts:15,41,69` to type `trending` with the contract type from `trendingResponseSchema` (pass-through, 200 ms optional budget unchanged) and update the stub at `libs/composition/bff/bff.e2e-spec.ts:32` to the envelope; run `test-spec.sh libs/composition/bff` green. The AS-42 composition test stays S48's.
-- [ ] T060 [US7] (T54) Adapt `packages/web/app/page.tsx:185-247`: import the item/response type from contracts instead of the hand-written `TrendingItem`, read `items`, render money from `priceMinor`/`currency` and `title` as text, fall back to the catalogue on empty `items`, `429`, `503`; remove the "Powered by Count-Min Sketch + top-K heap (SD-32)" copy. Type-check `packages/web`.
-- [ ] T061 [US7] (T55, T56, AS-41, AS-42) No code here: confirm `gaps.md` "Sibling-spec follow-ups" already lists S48, W02, W02/W03, S39, S50, S36, S33 bullets; add any bullet missing after T059–T060 (e.g. S39: topic key stays `anonymous_id`, `storedAnalyticsEventSchema` was added here if T005 added it). Do not edit sibling specs.
+- [X] T059 [US7] (T53) Adapt `libs/composition/bff/product-page.service.ts:15,41,69` to type `trending` with the contract type from `trendingResponseSchema` (pass-through, 200 ms optional budget unchanged) and update the stub at `libs/composition/bff/bff.e2e-spec.ts:32` to the envelope; run `test-spec.sh libs/composition/bff` green. The AS-42 composition test stays S48's.
+- [X] T060 [US7] (T54) Adapt `packages/web/app/page.tsx:185-247`: import the item/response type from contracts instead of the hand-written `TrendingItem`, read `items`, render money from `priceMinor`/`currency` and `title` as text, fall back to the catalogue on empty `items`, `429`, `503`; remove the "Powered by Count-Min Sketch + top-K heap (SD-32)" copy. Type-check `packages/web`.
+- [X] T061 [US7] (T55, T56, AS-41, AS-42) No code here: confirm `gaps.md` "Sibling-spec follow-ups" already lists S48, W02, W02/W03, S39, S50, S36, S33 bullets; add any bullet missing after T059–T060 (e.g. S39: topic key stays `anonymous_id`, `storedAnalyticsEventSchema` was added here if T005 added it). Do not edit sibling specs.
 
 ---
 
 ## Phase 10: Polish & cross-cutting
 
-- [ ] T062 [P] Ops artifacts: confirm `quickstart.md` "Ops artifacts" lists SC-001, SC-006, SC-007, SC-008, SC-009 (none proven by an automated test; SC-002 proven by U8, SC-003 by R, SC-004 by S, SC-005 by U7) and that `specs/UNVERIFIED.md` already has the five S35 rows with status `not run` (rows at lines 77-81). Add nothing as verified; fix wording only if missing.
-- [ ] T063 Run static gates from `packages/backend`: `pnpm exec tsc --noEmit` (also `packages/contracts`, `packages/web`), ESLint on touched files, `pnpm check:boundaries`, `pnpm check:table-ownership --strict` (no trending line, AS-38). Confirm `grep -rn "sequelize.transaction" D/*trending* ` and the `// S54 T037 audit` marker count in the domain did not rise.
-- [ ] T064 Run the whole capability suite once (VII.9): `test-spec.sh libs/domains/discovery/domain`, `trending-stream`, `trending-read`, `trending-platform`, `libs/domains/marketing/ads`, `libs/composition/bff`. Record results honestly; any failure after 5 attempts goes into `questions.md`.
-- [ ] T065 Final report: list the S05 and S50 follow-ups and how each was handled (T050, T044 for S05; T010, T045 for S50 with "nothing to rename"), remaining unverified criteria, and sibling follow-ups.
+- [X] T062 [P] Ops artifacts: confirm `quickstart.md` "Ops artifacts" lists SC-001, SC-006, SC-007, SC-008, SC-009 (none proven by an automated test; SC-002 proven by U8, SC-003 by R, SC-004 by S, SC-005 by U7) and that `specs/UNVERIFIED.md` already has the five S35 rows with status `not run` (rows at lines 77-81). Add nothing as verified; fix wording only if missing.
+- [X] T063 Run static gates from `packages/backend`: `pnpm exec tsc --noEmit` (also `packages/contracts`, `packages/web`), ESLint on touched files, `pnpm check:boundaries`, `pnpm check:table-ownership --strict` (no trending line, AS-38). Confirm `grep -rn "sequelize.transaction" D/*trending* ` and the `// S54 T037 audit` marker count in the domain did not rise.
+- [X] T064 Run the whole capability suite once (VII.9): `test-spec.sh libs/domains/discovery/domain`, `trending-stream`, `trending-read`, `trending-platform`, `libs/domains/marketing/ads`, `libs/composition/bff`. Record results honestly; any failure after 5 attempts goes into `questions.md`.
+- [X] T065 Final report: list the S05 and S50 follow-ups and how each was handled (T050, T044 for S05; T010, T045 for S50 with "nothing to rename"), remaining unverified criteria, and sibling follow-ups.
 
 ---
 
