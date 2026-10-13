@@ -25,6 +25,7 @@ with the links that prove it: backticked file paths and commit hashes. For a `pr
 - L-014 2026-10-13 process open
 - L-015 2026-10-13 wiring prevented
 - L-016 2026-10-13 config prevented
+- L-017 2026-10-13 process prevented
 
 ## L-001 A message option the queue refuses, found only by hand
 - **Rule:** A queue option must be validated where the message is created, not discovered when the relay fails (FIFO-only options like `groupId` never go to a standard queue).
@@ -124,3 +125,8 @@ with the links that prove it: backticked file paths and commit hashes. For a `pr
 - **Rule:** The code that handles a failure must itself survive that failure. A helper that the repair path calls may not exit non-zero on the very condition the gate reports.
 - **Symptom:** the third cloud run of 2026-10-13 ended with exit code 123, 16 minutes in, right after the gate of S34 said "test file deleted"; no repair agent started and no message said why. **Cause:** `code_fingerprint` (the flake signal, which the repair path calls) hashes every tracked file; a deleted one makes `sha1sum` fail, `xargs` exit 123, and `set -e -o pipefail` ended the script. A second, silent one: backticks inside the double-quoted prompt of `extra_context` ran `[proof: ...]` as a command, so that instruction never reached any agent.
 - **Prevention:** `code_fingerprint` ignores a failing `sha1sum`; the backticks are escaped; `scripts/sdd/test_loop_shell.py` covers both (it fails on the old code). A gate repair attempt now sends a phone message ("repair attempt N of 5"), and the `info` priority is 3 (the old 2 is hidden in many ntfy clients).
+
+## L-017 "Never delete a test" is the wrong rule: never lose a scenario
+- **Rule:** Tests are replaced, split, merged and renamed all the time. The thing that must not disappear is a scenario (the behavior a test proves), not a file.
+- **Symptom:** S34 (recommendations) replaced its old journey test `recommendations.e2e-spec.ts` by five focused files that carry the same scenario ids; the gate still failed with "test file deleted", and the repair prompt told the agent to never delete a test. **Cause:** the integrity guard counted files and `it(`/`expect(` calls, and the prompts said "never delete a test".
+- **Prevention:** `scripts/sdd/check-tests.py integrity` now fails a deleted or shrunk test file only when a scenario id it carried (`S34 AS-12`) is in no test any more and is not retired in `specs/<capability>/retired-scenarios.md`; a deleted file that carried no scenario id is still a finding. The three repair prompts say "never lose a scenario" instead. Tests in `scripts/sdd/test_check_tests.py`.

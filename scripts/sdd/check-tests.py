@@ -6,8 +6,11 @@
       "proven by another capability" column) must have a test under the scope whose title line carries both the capability and the scenario ID,
       e.g. it('S13 AS-12: ...') (IDs like AS-01 repeat across capabilities, so both are required).
   check-tests.py integrity <scope-dir>...
-      Tests that already exist at HEAD must not lose `it(`/`test(`/`expect(` calls, and no `.skip`, `xit`,
-      `xdescribe`, `it.todo` may be added. Guards against "making the test pass" by weakening it.
+      No `.skip`, `xit`, `xdescribe`, `it.todo` may be added, and a test must not be weakened. Tests may be replaced, split, merged, renamed
+      or deleted: what must not disappear is a SCENARIO. Every scenario id (`S34 AS-12`) that a test file carried at HEAD must still be carried by
+      some test file after the change, or be retired in the spec folder's `retired-scenarios.md` (one line: `S34 AS-12: why`).
+      A file that loses `it(`/`expect(` calls is a finding only when it also loses a scenario id that no other file now carries; a file without scenario ids
+      is judged by its call counts, and may be deleted only with its subject.
 Exit 1 with a list of findings, else 0.
 """
 import os, re, subprocess, sys
@@ -91,8 +94,39 @@ def git_show(path):
     r = subprocess.run(['git', 'show', f'HEAD:{path}'], capture_output=True, text=True)
     return r.stdout if r.returncode == 0 else None
 
+SCENARIO = re.compile(r"\b([SWJ]\d{2})((?:\s+AS-\d+)+)")
+
+
+def scenario_ids(text):
+    """'S34 AS-01 AS-13: ...' -> {'S34 AS-01', 'S34 AS-13'}"""
+    out = set()
+    for m in SCENARIO.finditer(text):
+        out |= {f'{m.group(1)} {a}' for a in re.findall(r'AS-\d+', m.group(2))}
+    return out
+
+
+def retired(scopes):
+    """Scenario ids that a spec folder declares retired: `retired-scenarios.md` next to spec.md, lines like `S34 AS-12: why it no longer applies`."""
+    out = set()
+    for f in Path('specs').rglob('retired-scenarios.md'):
+        out |= scenario_ids(f.read_text(errors='ignore'))
+    return out
+
+
+def tree_scenarios(scopes, exclude=()):
+    ids = set()
+    for f in test_files(scopes):
+        if str(f) in exclude:
+            continue
+        ids |= scenario_ids(f.read_text(errors='ignore'))
+    return ids
+
+
 def integrity(scopes):
     bad = []
+    r = subprocess.run(['git', 'diff', '--name-only', '--diff-filter=D', 'HEAD', '--', *scopes], capture_output=True, text=True)
+    deleted = set(r.stdout.split())
+    kept = tree_scenarios(scopes) | retired(scopes)
     for f in test_files(scopes):
         now = f.read_text(errors='ignore')
         before = git_show(str(f))
@@ -101,15 +135,25 @@ def integrity(scopes):
         if before is None:
             continue
         if len(COUNT.findall(now)) < len(COUNT.findall(before)):
-            bad.append(f'{f}: fewer it()/expect() calls than at HEAD ({len(COUNT.findall(now))} < {len(COUNT.findall(before))})')
-    # tests deleted outright
-    r = subprocess.run(['git', 'diff', '--name-only', '--diff-filter=D', 'HEAD', '--', *scopes], capture_output=True, text=True)
-    deleted = set(r.stdout.split())
-    # a test may go with the module it tested (foo.test.ts next to a deleted foo.ts); a test deleted alone is still a finding
+            lost = scenario_ids(before) - kept
+            if lost or not scenario_ids(before):
+                bad.append(f'{f}: fewer it()/expect() calls than at HEAD ({len(COUNT.findall(now))} < {len(COUNT.findall(before))})'
+                           + (f'; scenarios no test carries any more: {", ".join(sorted(lost))}' if lost else ''))
+    # a test file may go with the module it tested (foo.test.ts next to a deleted foo.ts), or be replaced: then every scenario id it carried is carried elsewhere
     def subject_deleted(p):
         stem = TEST_FILE.sub('', p)
         return any(stem + ext in deleted for ext in ('.ts', '.tsx'))
-    bad += [f'{p}: test file deleted' for p in sorted(deleted) if TEST_FILE.search(p) and not subject_deleted(p)]
+    for p in sorted(deleted):
+        if not TEST_FILE.search(p) or subject_deleted(p):
+            continue
+        before = git_show(p) or ''
+        ids = scenario_ids(before)
+        if not ids:
+            bad.append(f'{p}: test file deleted, and it carried no scenario id, so nothing proves that another test replaces it (add the scenario id to the replacing test titles, or delete it together with its subject)')
+            continue
+        lost = ids - kept
+        if lost:
+            bad.append(f'{p}: test file deleted and these scenarios are in no test any more: {", ".join(sorted(lost))} (carry them in the replacing tests, or retire them in specs/<capability>/retired-scenarios.md with a reason)')
     if bad:
         print('test integrity: ' + '; '.join(bad))
         return 1
