@@ -41,6 +41,8 @@ const OTHER_SECRETS = [
   'jwt_secret',
   'cart_cookie_secret',
   'share_link_secret',
+  'share_link_code_key',
+  'share_link_edge_secret',
   'ledger_cursor_secret',
   'payments_cursor_secret',
   'revalidate_secret',

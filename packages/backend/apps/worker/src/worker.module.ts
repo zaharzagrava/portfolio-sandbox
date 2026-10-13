@@ -14,7 +14,10 @@ import {
 import { VideoWorkerModule } from '@app/domains/media';
 import { AssetsWorkerModule } from '@app/domains/asset-library';
 import { StoriesWorkerModule } from '@app/domains/content';
-import { AdsWorkerModule } from '@app/domains/marketing';
+import {
+  AdsWorkerModule,
+  ShareLinksWorkerModule,
+} from '@app/domains/marketing';
 import { FlagsSdkModule } from '@app/domains/experimentation';
 import {
   WebhooksWorkerModule,
@@ -85,6 +88,7 @@ import { AuthWorkerModule } from '@app/domains/identity';
     BillingWorkerModule,
     StatementsWorkerModule,
     DiscussionsWorkerModule,
+    ShareLinksWorkerModule,
     AutocompleteWorkerModule,
     SearchWorkerModule,
     RecommendationsWorkerModule,

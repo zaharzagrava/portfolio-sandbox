@@ -3,7 +3,8 @@
   "AttributeDefinitions": [
     { "AttributeName": "code", "AttributeType": "S" },
     { "AttributeName": "ownerId", "AttributeType": "S" },
-    { "AttributeName": "createdAt", "AttributeType": "S" }
+    { "AttributeName": "createdAt", "AttributeType": "S" },
+    { "AttributeName": "sk", "AttributeType": "S" }
   ],
   "KeySchema": [{ "AttributeName": "code", "KeyType": "HASH" }],
   "GlobalSecondaryIndexes": [
@@ -14,12 +15,29 @@
         { "AttributeName": "createdAt", "KeyType": "RANGE" }
       ],
       "Projection": { "ProjectionType": "ALL" }
+    },
+    {
+      "IndexName": "byOwnerV2",
+      "KeySchema": [
+        { "AttributeName": "ownerId", "KeyType": "HASH" },
+        { "AttributeName": "sk", "KeyType": "RANGE" }
+      ],
+      "Projection": { "ProjectionType": "ALL" }
     }
   ],
-  "TimeToLiveAttribute": "expiresAtEpoch",
+  "TimeToLiveAttribute": "purgeAtEpoch",
   "_design": {
+    "owner": "marketing (S37)",
     "pattern": "pure key-value (SD-08)",
-    "accessPatterns": ["redirect: GetItem code", "create alias: PutItem IF attribute_not_exists(code)", "my links: Query byOwner"],
+    "accessPatterns": [
+      "redirect: GetItem code",
+      "create: TransactWriteItems Put IF attribute_not_exists(code) + owner counter ADD activeCount (IF activeCount < limit)",
+      "change / disable: UpdateItem IF ownerId = :o AND status = ACTIVE AND not expired",
+      "my links: Query byOwnerV2 (sk = createdAt#code) descending, keyset",
+      "attribution: BatchGetItem <= 100 codes",
+      "filter rebuild: Scan in pages"
+    ],
+    "retention": "purgeAtEpoch = (expiresAt or disabledAt) + 13 months; rows without expiry or disable have none, so a code is never recycled while old posts may carry it. Expand-only for deployed tables: add the index and attribute first, switch the TTL attribute last. expiresAtEpoch stays readable on legacy rows and is never written again.",
     "why": "100:1 reads, pure key lookups, billions of rows over years: no joins, uniform hash keys, on-demand capacity"
   }
 }

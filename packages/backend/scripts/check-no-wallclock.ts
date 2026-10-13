@@ -18,6 +18,14 @@ const DIRS = [
   'libs/infrastructure/idempotency',
   'libs/infrastructure/context',
   'libs/infrastructure/jobs',
+  // S37 AS-65: the share-link rules read time only through the injected clock
+  'libs/domains/marketing/domain',
+  'libs/domains/marketing/application',
+];
+/** S36 ads code inside the same folders still reads the wall clock (its migration is S36's). */
+const EXEMPT = [
+  'libs/domains/marketing/domain/click-token.ts',
+  'libs/domains/marketing/application/ads.service.ts',
 ];
 const FORBIDDEN =
   /\bDate\.now\s*\(|\bnew Date\s*\(\s*\)|\bperformance\.now\s*\(/;
@@ -32,7 +40,10 @@ const offenders: string[] = [];
 for (const d of DIRS.map((x) => join(BACKEND, x)).filter(existsSync)) {
   for (const file of walk(d).filter(
     (f) =>
-      f.endsWith('.ts') && !/spec\.ts$/.test(f) && !f.endsWith('/clock.ts'),
+      f.endsWith('.ts') &&
+      !/spec\.ts$/.test(f) &&
+      !f.endsWith('/clock.ts') &&
+      !EXEMPT.some((e) => f.endsWith(e)),
   )) {
     readFileSync(file, 'utf8')
       .split('\n')

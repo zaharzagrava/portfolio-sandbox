@@ -83,6 +83,7 @@ beforeEach(async () => {
 		KAFKA_BROKER: 'broker.test',
 		JWT_PUBLIC_KEY: await exportSPKI(keys.publicKey),
 		REALTIME_ORIGIN: ORIGIN,
+		SHARE_LINK_EDGE_SECRET: 'edge-secret-edge-secret-edge-secret-0',
 	};
 	edgeRateLimitStats.failOpen = 0;
 	vi.stubGlobal('fetch', async (input: RequestInfo | URL, init?: RequestInit) => {

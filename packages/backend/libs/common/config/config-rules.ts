@@ -274,7 +274,69 @@ const discussionsCursorSecretRule: RuleCheck = (ctx) =>
       ]
     : [];
 
+/** Every other secret the app configures; the share-link keys must differ from each of them and from each other. */
+const SHARE_LINK_DISTINCT_FROM = [
+  'jwt_secret',
+  'share_link_secret',
+  'cart_cookie_secret',
+  'notification_secret',
+  'ledger_cursor_secret',
+  'payments_cursor_secret',
+  'discussions_cursor_secret',
+  'revalidate_secret',
+  'api_key_pepper',
+];
+
+const shareLinkSecretsRule: RuleCheck = (ctx) => {
+  const found: string[] = [];
+  for (const key of ['share_link_code_key', 'share_link_edge_secret']) {
+    const value = ctx.get(key);
+    if (!isSet(value)) continue;
+    for (const other of SHARE_LINK_DISTINCT_FROM)
+      if (ctx.get(other) === value)
+        found.push(`${key} must differ from ${other}`);
+  }
+  if (
+    isSet(ctx.get('share_link_code_key')) &&
+    ctx.get('share_link_code_key') === ctx.get('share_link_edge_secret')
+  )
+    found.push('share_link_code_key must differ from share_link_edge_secret');
+  return found;
+};
+
+/** The storefront origin every destination is checked against: an absolute origin without path, https (http only for localhost). */
+const frontHostOriginRule: RuleCheck = (ctx) => {
+  const value = ctx.get('front_host');
+  if (!isSet(value)) return [];
+  let url: URL;
+  try {
+    url = new URL(String(value));
+  } catch {
+    return ['front_host must be an absolute URL'];
+  }
+  const found = httpsUrl('front_host', { allowLocalhost: true })(ctx);
+  if (
+    (url.pathname !== '/' && url.pathname !== '') ||
+    url.search ||
+    url.hash ||
+    url.username ||
+    url.password
+  )
+    found.push('front_host must be an origin without path, query or user-info');
+  return found;
+};
+
 export const platformRules: ConfigRule[] = [
+  {
+    owner: 'share-links',
+    keys: ['share_link_code_key', 'share_link_edge_secret', 'jwt_secret'],
+    validate: shareLinkSecretsRule,
+  },
+  {
+    owner: 'share-links',
+    keys: ['front_host'],
+    validate: frontHostOriginRule,
+  },
   {
     owner: 'discussions',
     keys: ['discussions_cursor_secret'],

@@ -83,3 +83,35 @@ marketing  (1)
 7. Management and statistics (G18 – G20).
 8. Edge worker (G16) and its spec.
 9. Barrel, modules, app wiring (L3, L6, L7); replace `share-links.e2e-spec.ts` with the five e2e files (G25); run `check:boundaries`, `check:module-graph`, `check:model-registry`, `check:table-ownership --strict`.
+
+## Spec changes
+
+None. `docs/spec/capabilities/` has no page for S37 and no `*.reviewed.json` exists for it; nothing a human signed is changed. The implementation adds `docs/spec/capabilities/S37-share-links.md` as its last task.
+
+## Sibling-spec follow-ups
+
+- **S25**: `discussion.write` is now used by community only (S37 declares `share-link.create`); no S25 change beyond its own gaps list.
+- **S36**: S37 removes `share_link_secret` from the share-link path and requires `share_link_code_key`; the ad click token must not read either as a fallback, and its config check keeps the two secrets distinct (S36 AS-77). `libs/common/config/notifications-config.ts:43` also lists `share_link_secret`; drop it once nobody reads it.
+- **W02**: set `__Host-ref` from the landing URL's `ref` through `POST /api/attribution/ref`; `SITE_URL` must equal the backend `front_host` origin; the share action calls `POST /api/links` with an `Idempotency-Key` and reads `shortUrl` from the new response (no `ownerId`, `201` + `Location`); `GET /api/links` is now `{items, nextCursor}`.
+- **S10**: validate the cookie's `ref` with `LinkAttributionService.resolveAttributions` (batch ≤ 100, may refuse self-referrals by `ownerId`); `EXPIRED` refs stay resolvable until purge.
+- **S50**: `share-link.create` is registered by `marketing` (`definePolicies('marketing', …)`); the share-link row of G-35 is closed.
+- **S39**: may subscribe to `links.events` (`link.clicked` v1, origin-only referer); the version is `1`, not `0`.
+- **S54**: the platform answers a bad `Idempotency-Key` with `422 idempotency_key_required|invalid`; S37 puts a route guard in front to keep `400 validation_failed` (AS-02). If S54 wants one behaviour for all routes, it must say so.
+- **S54**: the problem code `service_unavailable` is raised by S25, S19 and S37, each with its own wording, and the catalog refuses two different definitions, so S37 does not register it; a `5xx` body takes the detail of whoever registered the code first (S25's "discussions" text in `apps/core`). Make it a platform code with one generic wording.
+- **S53**: the consumer framework skips an event type the consumer does not handle (AS-44 asks for a dead letter); S37 asserts "no effect" and says so in its spec page. A dead letter for an unhandled type on a single-type topic would need a framework option. Framework-level rejections count in `dlq_total{consumer="link-clicks"}`; S37's own `link_click_dead_lettered_total` counts the rejections its consumer makes (code format, `ts` in the future).
+- **S36**: `share_link_secret` stays a declared optional key because `application/ads.service.ts` and `notifications-config.ts` still read it; once S36 moves to its own key, delete it from `types.ts`, `api-config.service.ts` and `OTHER_SECRETS`. `check-no-wallclock.ts` exempts `ads.service.ts` and `click-token.ts` until then.
+- **edge-be**: `packages/edge-be/test/index.spec.ts` is the unmodified "Hello World" template and fails; it predates S37 and is not touched.
+
+## Gate repairs
+
+- The gate scans `packages/backend` for scenario ids, so AS-41, AS-42 and AS-66 were reported as untested although `packages/edge-be/test/short-link.spec.ts` carries `S37 AS-41` / `S37 AS-42` (the edge half). Added the origin half in `share-links-redirect.e2e-spec.ts` (`S37 AS-41`, `S37 AS-42`) and the API half of the journey as `S37 AS-66` in the new `share-links.e2e-spec.ts` (which also replaces the five behaviors of the deleted file of that name as `smoke:` tests). The browser half of AS-66 (the "Share" button, W02) is a row in `specs/UNVERIFIED.md`.
+
+## Implementation notes (S37 implement run)
+
+- Test stack, found missing and prepared by hand (L-011, now also done by the e2e fixture for ClickHouse): the `link_clicks*` tables, and the `byOwnerV2` index of `test_Links` (the table was dropped and created from `dynamodb/Links.json`). A fresh stack gets both from the repository scripts.
+- AS-05 releases the 1,000 creates in ten waves of 100 after a warm-up: one Node process plays the three instances, and 1,000 requests at the same tick starve the 150 ms store timers (813 timeouts in the experiment). The first use of an instance outlasts the timers; the measured property (1,000 distinct stored codes through three leases) is unchanged.
+- AS-13: the independence of the `discussion.write` budget is asserted structurally (the policy table of `marketing` holds `share-link.create` only, 20 a minute, fail closed); S25's route is not part of this app.
+- AS-44: an unknown event type is skipped by the framework (see S53 above); the other nine invalid payloads are dead-lettered with `x-dlq-reason` and have no row.
+- AS-63: the log scan covers the structured stdout of a run with a refused publish; the HTTP access log of the platform is S54's.
+- AS-64: the table-ownership strict check lists 49 cross-domain accesses in 15 domains (none for share links; the only `marketing` line is `ads.service.ts`, S36).
+- T067 smoke on a live API: `scripts/infra/boot-check.sh --start` started the monolith against the dev stack and it became ready (core, worker and projector modules included); the sign-in and `curl` smoke of the quickstart was not run by hand because the suite proves each step against the real engines.

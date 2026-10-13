@@ -17,7 +17,7 @@ export * from './src/fulfilment/pickup.ts';
 export * from './src/community/discussions.ts';
 export * from './src/community/events.ts';
 export * from './src/assistant/ask.ts';
-export * from './src/marketing/share.ts';
+export * from './src/marketing/share-links.ts';
 export * from './src/marketing/ads.ts';
 export * from './src/media/video.ts';
 export * from './src/events/client-events.ts';

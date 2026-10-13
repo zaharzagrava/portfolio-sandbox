@@ -28,6 +28,8 @@
 	 * Environment Variables
 	 * https://developers.cloudflare.com/workers/wrangler/configuration/#environment-variables
 	 * Note: Use secrets to store sensitive data.
+	 * S37: SHARE_LINK_EDGE_SECRET is a Worker secret (`wrangler secret put SHARE_LINK_EDGE_SECRET`), the same value as the
+	 * origin's `share_link_edge_secret`; without it the origin ignores `x-edge-click-recorded` and counts the click itself.
 	 * https://developers.cloudflare.com/workers/configuration/secrets/
 	 */
 	// "vars": {  "MY_VARIABLE": "production_value" }

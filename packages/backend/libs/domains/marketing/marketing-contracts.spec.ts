@@ -3,7 +3,7 @@ import {
   shortLinkSchema,
   sponsoredSlotsResponseSchema,
 } from '@marketplace-sandbox/contracts';
-import type { ShortLink as StoredShortLink } from './application/share-link.service';
+import type { StoredLink as StoredShortLink } from './domain/ports';
 
 const ok = (
   s: { safeParse: (v: unknown) => { success: boolean } },
@@ -15,7 +15,11 @@ const stored: StoredShortLink = {
   code: 'aB3dE9x',
   destination: 'https://shop.example/p/iphone-17?color=blue',
   ownerId: 'user-1',
+  kind: 'generated',
+  status: 'ACTIVE',
   createdAt: '2026-10-10T12:00:00.000Z',
+  updatedAt: '2026-10-10T12:00:00.000Z',
+  expiresAt: null,
 };
 const link = {
   code: stored.code,

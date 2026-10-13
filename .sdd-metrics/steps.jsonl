@@ -49,3 +49,13 @@
 {"run":"20261013T163357Z","capability":"S25","step":"repair-1","start":"2026-10-13T17:44:32Z","end":"2026-10-13T17:45:57Z","seconds":85,"result":"ok","attempt":1,"reason":"ok","code_changed":true}
 {"run":"20261013T163357Z","capability":"S25","step":"gate","start":"2026-10-13T17:45:57Z","end":"2026-10-13T17:50:35Z","seconds":278,"result":"pass","attempt":2,"reason":""}
 {"run":"20261013T163357Z","capability":"S25","step":"built","start":"2026-10-13T16:38:50Z","end":"2026-10-13T17:50:35Z","seconds":4305,"result":"ok","attempt":1,"reason":"Product discussion boards: posts, nested comments, votes, hot/top/new/best ranking, abuse controls, safe markdown"}
+{"run":"20261013T163357Z","capability":"S37","step":"plan","start":"2026-10-13T17:50:55Z","end":"2026-10-13T17:55:10Z","seconds":255,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261013T163357Z","capability":"S37","step":"tasks","start":"2026-10-13T17:55:10Z","end":"2026-10-13T17:57:40Z","seconds":150,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261013T163357Z","capability":"S37","step":"analyze","start":"2026-10-13T17:57:40Z","end":"2026-10-13T17:58:25Z","seconds":45,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261013T163357Z","capability":"S37","step":"implement-1","start":"2026-10-13T17:58:25Z","end":"2026-10-13T18:39:12Z","seconds":2447,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261013T163357Z","capability":"S37","step":"implement-2","start":"2026-10-13T18:39:12Z","end":"2026-10-13T18:39:38Z","seconds":26,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261013T163357Z","capability":"S37","step":"converge-2","start":"2026-10-13T18:39:38Z","end":"2026-10-13T18:41:08Z","seconds":90,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261013T163357Z","capability":"S37","step":"gate","start":"2026-10-13T18:41:08Z","end":"2026-10-13T18:41:10Z","seconds":2,"result":"fail","attempt":1,"reason":"scenarios in test-plan.md with no test carrying their ID (name tests it('S37 AS-NN: ...')): AS-41, AS-42, AS-66"}
+{"run":"20261013T163357Z","capability":"S37","step":"repair-1","start":"2026-10-13T18:41:10Z","end":"2026-10-13T18:45:55Z","seconds":285,"result":"ok","attempt":1,"reason":"ok","code_changed":true}
+{"run":"20261013T163357Z","capability":"S37","step":"gate","start":"2026-10-13T18:45:55Z","end":"2026-10-13T18:49:44Z","seconds":229,"result":"pass","attempt":2,"reason":""}
+{"run":"20261013T163357Z","capability":"S37","step":"built","start":"2026-10-13T17:50:54Z","end":"2026-10-13T18:49:44Z","seconds":3530,"result":"ok","attempt":1,"reason":"Share and affiliate short links: code generation, custom aliases, redirects, click attribution"}

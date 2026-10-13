@@ -33,7 +33,7 @@ import {
 import { DynamoModule } from '@app/infrastructure/dynamo/dynamo.module';
 import { NotificationsProjectorModule } from '@app/domains/notifications';
 import { ShopMembershipModel as ShopMembership } from '@app/domains/tenancy';
-import { LinkClicksProjector } from '@app/domains/marketing';
+import { ShareLinksProjectorModule } from '@app/domains/marketing';
 import {
   FeedFanoutConsumer,
   ProductFeedProjector,
@@ -89,7 +89,7 @@ import { CacheModule } from '@app/infrastructure/cache/cache.module';
         UsageProjector,
         FeedFanoutConsumer,
         ProductFeedProjector,
-        LinkClicksProjector,
+        ...ShareLinksProjectorModule.projectors,
         ...PickupProjectorModule.projectors,
         ...RecommendationsProjectorModule.projectors,
         ...NotificationsProjectorModule.projectors,
@@ -112,6 +112,7 @@ import { CacheModule } from '@app/infrastructure/cache/cache.module';
         SearchProjectorModule,
         RecommendationsProjectorModule,
         PickupProjectorModule,
+        ShareLinksProjectorModule,
         LedgerProjectorModule,
         IntegrationsCoreModule,
         StoryCacheModule,

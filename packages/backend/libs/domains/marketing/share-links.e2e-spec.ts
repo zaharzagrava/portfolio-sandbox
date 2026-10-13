@@ -1,97 +1,117 @@
-import { INestApplication } from '@nestjs/common';
-import request from 'supertest';
-import { v4 } from 'uuid';
-import { generateTestingModule } from '@app/test/utils/global-modules';
-import { inParallel } from '@app/test/utils/async-helpers';
-import { SeedsModule } from '@app/test/seeds/seeds.module';
-import { SeedsService } from '@app/test/seeds/seeds.service';
-import { CacheModule } from '@app/infrastructure/cache/cache.module';
-import { RateLimitModule } from '@app/infrastructure/rate-limit/rate-limit.module';
-import { ApiConfigService } from '@app/common/config';
-import { KafkaProducerService } from '@app/infrastructure/kafka/kafka-producer.service';
-import { ShareLinksModule } from './share-links.module';
-import { ShareLinkService } from './application/share-link.service';
+import { linkStatsSchema } from '@marketplace-sandbox/contracts';
+import { inParallel, waitFor } from '@app/test/utils/async-helpers';
+import type { TestUser } from '@app/test/utils/catalog-app';
+import {
+  createShareLinksApp,
+  type ShareLinksTestApp,
+} from './testing/share-links.fixtures';
 
-/** SD-08 against real DynamoDB Local + Redis (Kafka produce spied). */
-describe('Share links (e2e)', () => {
-  let app: INestApplication;
-  let seeds: SeedsService;
-  let links: ShareLinkService;
-  let send: jest.SpyInstance;
-  let front: string;
+/** The end-to-end smoke of the whole feature; the detailed scenarios live in the share-links-*.e2e-spec.ts files. */
+describe('Share links: the share journey (API half)', () => {
+  let t: ShareLinksTestApp;
+  let u1: TestUser;
 
   beforeAll(async () => {
-    const moduleRef = await generateTestingModule(
-      [ShareLinksModule, CacheModule, RateLimitModule, SeedsModule],
-      { stores: ['redis', 'dynamo'] },
-    );
-    app = moduleRef.createNestApplication();
-    app.setGlobalPrefix('api');
-    await app.init();
-    seeds = app.get(SeedsService);
-    links = app.get(ShareLinkService);
-    front = app.get(ApiConfigService).get('front_host');
-    send = jest
-      .spyOn(app.get(KafkaProducerService), 'send')
-      .mockResolvedValue(undefined as never);
+    t = await createShareLinksApp({ consumer: true });
   });
-
   afterAll(async () => {
-    await app.close();
+    await t.close();
   });
-
   beforeEach(async () => {
-    await seeds.clean();
-    send.mockClear();
+    await t.reset();
+    u1 = await t.user();
   });
 
-  it('create → 302 to the destination with ?ref=<code>; the click is recorded asynchronously', async () => {
-    const link = await links.create(v4(), `${front}/p/iphone-17?color=blue`);
-    expect(link.code).toMatch(/^[0-9A-Za-z]{7}$/);
+  // The "Share" button and copy control belong to W02; they are a row in specs/UNVERIFIED.md.
+  it('S37 AS-66: a signed-in buyer creates a link, a visitor without a session lands on the product with ?ref=<code>, and the owner sees the click', async () => {
+    const destination = t.destination('/p/shared-product');
+    const code = await t.newLink(u1, { destination });
 
-    const res = await request(app.getHttpServer())
-      .get(`/api/l/${link.code}`)
-      .expect(302);
+    const res = await t.follow(code);
+
+    expect(res.status).toBe(302);
+    expect(res.headers['set-cookie']).toBeUndefined();
+    expect(res.headers.location).toBe(`${destination}?ref=${code}`);
+    await waitFor(async () => t.eventsFor(code)[0]);
+    // the Kafka hop is a spy in this fixture: hand the published event to the real consumer
+    await t.deliver([t.eventsFor(code)[0].value], code);
+    const total = await waitFor(
+      async () => {
+        const body = (await t.as(u1).get(`/api/links/${code}/stats?range=24h`))
+          .body;
+        const parsed = linkStatsSchema.parse(body);
+        return parsed.total > 0 ? parsed.total : null;
+      },
+      {
+        description: `a click in the statistics of ${code}`,
+        timeoutMs: 30_000,
+      },
+    );
+    expect(total).toBe(1);
+  });
+
+  it('smoke: create answers 201 with a 7-character code and the redirect carries the exact cache header and an empty body', async () => {
+    const created = await t.create(u1, {
+      destination: t.destination('/p/iphone-17?color=blue'),
+    });
+    expect(created.status).toBe(201);
+    const code = created.body.code as string;
+    expect(code).toMatch(/^[0-9A-Za-z]{7}$/);
+
+    const res = await t.follow(code);
+
+    expect(res.status).toBe(302);
     expect(res.headers.location).toBe(
-      `${front}/p/iphone-17?color=blue&ref=${link.code}`,
+      `${t.destination('/p/iphone-17?color=blue')}&ref=${code}`,
     );
-    expect(res.headers['cache-control']).toBe('public, s-maxage=10');
-    expect(send).toHaveBeenCalledWith(
-      expect.objectContaining({ topic: 'links.events', key: link.code }),
-    );
+    expect(res.headers['cache-control']).toBe('public, max-age=0, s-maxage=10');
+    expect(res.text).toBe('');
   });
 
-  it('edge-served clicks are not double counted', async () => {
-    const link = await links.create(v4(), `${front}/p/x`);
-    await request(app.getHttpServer())
-      .get(`/api/l/${link.code}`)
-      .set('x-edge-click-recorded', '1')
-      .expect(302);
-    expect(send).not.toHaveBeenCalled();
+  it('smoke: a click the edge already counted is not counted again here', async () => {
+    const code = await t.newLink(u1);
+    const res = await t.follow(code, {
+      'x-edge-click-recorded': '1',
+      'x-edge-credential': t.config.get('share_link_edge_secret'),
+    });
+    expect(res.status).toBe(302);
+    await new Promise((r) => setTimeout(r, 300));
+    expect(t.eventsFor(code)).toHaveLength(0);
+    expect(t.published).toEqual([]);
   });
 
-  it('custom alias: concurrent claims → exactly one owner', async () => {
-    const alias = `drop-${v4().slice(0, 6)}`;
+  it('smoke: ten concurrent claims of one alias leave exactly one owner', async () => {
+    const alias = t.alias('drop');
     const results = await inParallel(10, () =>
-      links.create(v4(), `${front}/drops/sneakers`, alias),
+      t.create(u1, { destination: t.destination('/drops/sneakers'), alias }),
     );
-    expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(1);
+    const statuses = results.map(
+      (r) => (r as PromiseFulfilledResult<{ status: number }>).value.status,
+    );
+    expect(statuses.filter((s) => s === 201)).toHaveLength(1);
+    expect(statuses.filter((s) => s !== 201 && s !== 409)).toEqual([]);
+    expect((await t.follow(alias)).status).toBe(302);
   });
 
-  it('unknown codes 404 (Bloom filter short-circuit); off-marketplace destinations are rejected (no open redirect)', async () => {
-    await request(app.getHttpServer()).get('/api/l/Zz9Zz9Z').expect(404);
-    await expect(
-      links.create(v4(), 'https://evil.example/phish'),
-    ).rejects.toMatchObject({ status: 422 });
-    await expect(
-      links.create(v4(), 'javascript:alert(1)'),
-    ).rejects.toMatchObject({ status: 422 });
+  it('smoke: unknown codes answer 404 and destinations outside the marketplace are rejected', async () => {
+    expect((await t.follow('Zz9Zz9Z')).status).toBe(404);
+    for (const destination of [
+      'https://evil.example/phish',
+      'javascript:alert(1)',
+    ]) {
+      const res = await t.create(u1, { destination });
+      expect(res.status).toBe(422);
+      expect(JSON.stringify(res.body)).not.toContain('evil');
+    }
   });
 
-  it('a just-claimed alias is not shadowed by a cached "not found"', async () => {
-    const alias = `late-${v4().slice(0, 6)}`;
-    expect(await links.resolve(alias)).toBeNull(); // negative-cached
-    await links.create(v4(), `${front}/p/y`, alias);
-    expect(await links.resolve(alias)).toMatchObject({ code: alias });
+  it('smoke: an alias that was looked up before it existed answers 302 as soon as it is claimed', async () => {
+    const alias = t.alias('late');
+    expect((await t.follow(alias)).status).toBe(404);
+    expect(
+      (await t.create(u1, { destination: t.destination('/p/y'), alias }))
+        .status,
+    ).toBe(201);
+    expect((await t.follow(alias)).status).toBe(302);
   });
 });

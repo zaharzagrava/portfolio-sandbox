@@ -1,4 +1,6 @@
 -- SD-08 click analytics (never written in the redirect path; arrives via Kafka `links.events`).
+-- Owner: marketing (S37, share-link half). Derived from the log; no other capability reads or writes these tables.
+-- Statistics count `uniqExact(click_id)` at read time, so counts are exact before any merge.
 CREATE TABLE IF NOT EXISTS link_clicks
 (
     click_id    String,

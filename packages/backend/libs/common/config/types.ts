@@ -2,6 +2,7 @@ import { IntersectionType } from '@nestjs/swagger';
 import { Environment } from '@app/common/types';
 import type { BffConfig } from './bff-config';
 import type { DiscussionsConfig } from './discussions-config';
+import type { ShareLinksConfig } from './share-links-config';
 
 /**
  * @description - config that should always be present in environment variables where application is run
@@ -318,10 +319,8 @@ export class SecretsManagerConfig {
   projection_promotion_max_lag: number;
   topic_default_partitions: number;
   topic_hot_partitions: number;
-  /** SD-08 Feistel key for short codes (falls back to JWT_SECRET). */
+  /** S36 ad click token secret (S37 uses `share_link_code_key`; this key leaves with S36's migration). */
   share_link_secret?: string;
-  /** SD-08 public short-link base, e.g. https://mkt.to (falls back to BACKEND_HOST/api/l). */
-  share_link_base_url?: string;
   /** HMAC for unsubscribe tokens (SD-17). */
   notification_secret?: string;
   /** Verified SES sender; unset → SMTP only. */
@@ -399,6 +398,7 @@ export class SecretsManagerConfig {
 
 /** S48: BFF settings; keys, defaults and cross-checks in `bff-config.ts`. */
 // eslint-disable-next-line @typescript-eslint/no-unsafe-declaration-merging, @typescript-eslint/no-empty-object-type
-export interface SecretsManagerConfig extends BffConfig, DiscussionsConfig {}
+export interface SecretsManagerConfig
+  extends BffConfig, DiscussionsConfig, ShareLinksConfig {}
 
 export class Config extends IntersectionType(EnvConfig, SecretsManagerConfig) {}

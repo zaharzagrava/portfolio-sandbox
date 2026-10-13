@@ -1,4 +1,5 @@
 import { createHmac } from 'node:crypto';
+import { CodeRangeError } from './link-errors';
 
 const ALPHABET =
   '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
@@ -42,7 +43,7 @@ function round(key: string, r: number, half: number): number {
  */
 export function scramble(id: number, key: string): number {
   if (!Number.isSafeInteger(id) || id < 0 || id >= 2 ** (2 * HALF_BITS))
-    throw new RangeError('id out of 40-bit range');
+    throw new CodeRangeError();
   let left = Math.floor(id / 2 ** HALF_BITS);
   let right = id % 2 ** HALF_BITS;
   for (let r = 0; r < ROUNDS; r++)
@@ -58,4 +59,5 @@ export function unscramble(value: number, key: string): number {
   return left * 2 ** HALF_BITS + right;
 }
 
-export const CUSTOM_ALIAS = /^[A-Za-z0-9][A-Za-z0-9-]{3,31}$/;
+/** Largest number the bijection accepts (exclusive): 2^40. */
+export const CODE_SPACE = 2 ** (2 * HALF_BITS);

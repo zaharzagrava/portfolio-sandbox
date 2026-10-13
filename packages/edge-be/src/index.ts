@@ -12,6 +12,8 @@ export interface Env {
 	KAFKA_API_KEY?: string;
 	KAFKA_API_SECRET?: string;
 	REALTIME_ORIGIN: string;
+	/** S37: shared with the origin (`share_link_edge_secret`, at least 32 bytes). A Worker secret: `wrangler secret put SHARE_LINK_EDGE_SECRET`. */
+	SHARE_LINK_EDGE_SECRET: string;
 }
 
 const RATE_LIMIT_WINDOW_SECONDS = 60;
@@ -224,38 +226,108 @@ async function produceToKafka(env: Env, topic: string, key: string, value: unkno
 	if (!res.ok) throw new Error(`kafka produce ${topic}: ${res.status}`);
 }
 
-/**
- * Short-link redirects never reach the origin when hot (lesson 10/05 #8):
- *  - the click is recorded HERE, fire-and-forget (`waitUntil` - the visitor's
- *    302 doesn't wait for Kafka), as the same event envelope the backend emits;
- *  - the 302 is cached at the edge for the origin's `s-maxage` (10 s), so a viral
- *    link costs the origin one request per PoP per 10 s;
- *  - origin calls carry `x-edge-click-recorded` so the click isn't counted twice.
- */
-async function shortLinkRedirect(code: string, request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
-	const now = new Date().toISOString();
-	const clickId = crypto.randomUUID();
+/** The clock the age of a cached redirect is read from; tests move it (S37 AS-42). */
+let edgeNow: () => number = () => Date.now();
+export function setEdgeClock(clock: () => number): void {
+	edgeNow = clock;
+}
+
+/** A cached 302 is served for less than the origin's `s-maxage` (S37 FR-064). */
+const SHORT_LINK_TTL_MS = 10_000;
+const CACHED_AT = 'x-edge-cached-at';
+
+/** UUID version 7: 48-bit millisecond timestamp first, so click ids sort by time (the same scheme as the origin). */
+function uuidv7(ms: number): string {
+	const bytes = crypto.getRandomValues(new Uint8Array(16));
+	let t = BigInt(ms);
+	for (let i = 5; i >= 0; i--) {
+		bytes[i] = Number(t & 0xffn);
+		t >>= 8n;
+	}
+	bytes[6] = (bytes[6] & 0x0f) | 0x70;
+	bytes[8] = (bytes[8] & 0x3f) | 0x80;
+	const hex = [...bytes].map((b) => b.toString(16).padStart(2, '0')).join('');
+	return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+}
+
+/** Two upper-case letters, never Cloudflare's `XX` (unknown) or `T1` (Tor); anything else is "" (mirrors the origin). */
+function cleanCountry(raw: string | null): string {
+	return raw !== null && /^[A-Z]{2}$/.test(raw) && raw !== 'XX' ? raw : '';
+}
+
+/** Origin (scheme, host, port) of the Referer, at most 300 characters; never path, query or credentials. */
+function refererOrigin(raw: string | null): string {
+	if (!raw) return '';
+	try {
+		const url = new URL(raw);
+		if (url.protocol !== 'https:' && url.protocol !== 'http:') return '';
+		return url.origin.length <= 300 ? url.origin : '';
+	} catch {
+		return '';
+	}
+}
+
+/** One `link.clicked` v1 record, field for field what the backend emits (`contracts/events.md`). */
+function recordClick(code: string, request: Request, env: Env, ctx: ExecutionContext): void {
+	const ms = edgeNow();
+	const at = new Date(ms).toISOString();
+	const clickId = uuidv7(ms);
 	ctx.waitUntil(
 		produceToKafka(env, 'links.events', code, {
 			eventId: clickId,
-			eventName: 'link.clicked',
+			type: 'link.clicked',
+			version: 1,
 			aggregateType: 'links',
 			aggregateId: code,
-			version: 0,
-			occurredAt: now,
-			schemaVersion: 1,
-			payload: { clickId, code, ts: now, country: request.headers.get('CF-IPCountry') ?? '', referer: (request.headers.get('Referer') ?? '').slice(0, 300), viaEdge: true },
-		}).catch((e) => console.error('click event dropped', e)),
+			aggregateVersion: 1,
+			occurredAt: at,
+			payload: {
+				clickId,
+				code,
+				ts: at,
+				country: cleanCountry(request.headers.get('CF-IPCountry')),
+				referer: refererOrigin(request.headers.get('Referer')),
+				viaEdge: true,
+			},
+		}).catch((e) => console.error('click event dropped', e instanceof Error ? e.name : 'error')),
 	);
+}
 
+/**
+ * Short-link redirects never reach the origin when hot (lesson 10/05 #8):
+ *  - a click is recorded HERE only for a 302 this Worker actually serves (a cache hit or an origin 302), fire-and-forget
+ *    (`waitUntil` - the visitor's 302 doesn't wait for Kafka); 404, 410 and 5xx record nothing and are never cached;
+ *  - the 302 is cached for at most the origin's `s-maxage` (10 s, read from an injectable clock), so a viral link
+ *    costs the origin one request per PoP per 10 s;
+ *  - origin calls carry `x-edge-click-recorded` and the shared credential, which is the only thing that makes the
+ *    origin believe the flag (S37 FR-063).
+ */
+async function shortLinkRedirect(code: string, request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
 	const cache = caches.default;
 	const cacheKey = new Request(`${env.REALTIME_ORIGIN}/api/l/${code}`, { method: 'GET' });
 	const cached = await cache.match(cacheKey);
-	if (cached) return cached;
+	if (cached) {
+		const cachedAt = Number(cached.headers.get(CACHED_AT));
+		if (Number.isFinite(cachedAt) && edgeNow() - cachedAt < SHORT_LINK_TTL_MS) {
+			const response = new Response(null, cached);
+			response.headers.delete(CACHED_AT);
+			recordClick(code, request, env, ctx);
+			return response;
+		}
+	}
 
-	const upstream = await fetch(cacheKey.url, { redirect: 'manual', headers: { 'x-edge-click-recorded': '1' } });
+	const upstream = await fetch(cacheKey.url, {
+		redirect: 'manual',
+		headers: { 'x-edge-click-recorded': '1', 'x-edge-credential': env.SHARE_LINK_EDGE_SECRET },
+	});
 	const response = new Response(upstream.body, upstream);
-	if (upstream.status === 302) ctx.waitUntil(cache.put(cacheKey, response.clone()));
+	if (upstream.status === 302) {
+		recordClick(code, request, env, ctx);
+		const stored = new Response(null, upstream);
+		stored.headers.set(CACHED_AT, String(edgeNow()));
+		stored.headers.set('Cache-Control', 'public, s-maxage=10');
+		ctx.waitUntil(cache.put(cacheKey, stored));
+	}
 	return response;
 }
 

@@ -18,6 +18,7 @@ import { autocompleteConfigKeys } from './autocomplete-config';
 import { recommendationsConfigKeys } from './recommendations-config';
 import { trendingConfigKeys } from './trending-config';
 import { discussionsConfigKeys } from './discussions-config';
+import { shareLinksConfigKeys } from './share-links-config';
 import { bffConfigKeys } from './bff-config';
 
 dotenv.config({
@@ -513,10 +514,6 @@ export class ApiConfigService {
             verify: joi.string().optional().allow(''),
             name: 'SHARE_LINK_SECRET',
           },
-          share_link_base_url: {
-            verify: joi.string().optional().allow(''),
-            name: 'SHARE_LINK_BASE_URL',
-          },
           notification_secret: {
             verify: joi.string().optional().allow(''),
             name: 'NOTIFICATION_SECRET',
@@ -600,6 +597,7 @@ export class ApiConfigService {
           ...recommendationsConfigKeys,
           ...trendingConfigKeys,
           ...discussionsConfigKeys,
+          ...shareLinksConfigKeys,
           ...bffConfigKeys,
           payments_cursor_secret: {
             verify: joi.string().optional().allow(''),
