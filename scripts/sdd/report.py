@@ -236,10 +236,31 @@ def render(events, bad=0, source='.sdd-metrics/steps.jsonl', date=None):
     for i in interventions:
         L.append(f'- {i["date"]} {i["cap"]}: {i["text"]}')
     L.append('')
+    L.append('## QA agent')
+    L += qa_lines() or ['- no QA agent run recorded (`scripts/qa/run.sh`)']
+    L.append('')
     L.append('## Trend over runs')
     L += trend_lines(runs) or ['- no run recorded yet']
     L.append('')
     return '\n'.join(L)
+
+
+def qa_lines():
+    """The QA agent's ledger (scripts/qa/findings.tsv) and the latest benchmark result (scripts/qa/benchmark-*.md), as report lines."""
+    import collections, glob
+    out = []
+    path = os.path.join(ROOT, 'scripts', 'qa', 'findings.tsv')
+    if os.path.exists(path):
+        rows = [l.rstrip('\n').split('\t') for l in open(path) if l.strip() and not l.startswith('#')]
+        tot = collections.Counter(r[5] for r in rows if len(r) > 5)
+        judged = sum(v for k, v in tot.items() if k != 'pending')
+        out.append(f'- findings reported by the QA agent: {len(rows)} (' + ', '.join(f'{k} {v}' for k, v in sorted(tot.items())) + ')'
+                   + (f'; precision on the {judged} judged: {tot["real"] / judged:.0%} real' if judged else ''))
+    bench = sorted(glob.glob(os.path.join(ROOT, 'scripts', 'qa', 'benchmark-*.md')))
+    if bench:
+        res = [l.strip() for l in open(bench[-1]) if l.startswith('- result') or l.startswith('- clean build')]
+        out.append(f'- latest benchmark ({os.path.basename(bench[-1])}): ' + '; '.join(x.lstrip('- ') for x in res))
+    return out
 
 
 def main(argv=None):

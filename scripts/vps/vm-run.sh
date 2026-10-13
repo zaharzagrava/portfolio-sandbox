@@ -122,6 +122,7 @@ if [[ "${SDD_IMAGE:-be}" == fe && -z "${SDD_SKIP_STACK:-}" ]]; then
   done
   grep -q "dev stack is up and migrated" "$LOG/dev-stack.log" || fail_and_wait "the dev stack did not come up in 30 minutes (see $LOG/dev-stack.log)"
   say "starting the API"
+  export API_LOG="$LOG/api.log"   # read by the QA agent (scripts/qa/run.sh) when a checkpoint runs it
   pnpm --filter api run start:dev:monolith >"$LOG/api.log" 2>&1 &
   API_PID=$!
   for _ in $(seq 1 120); do curl -sf http://localhost:8000/health/ready >/dev/null && break; kill -0 "$API_PID" 2>/dev/null || fail_and_wait "the API exited during start-up (see $LOG/api.log)"; sleep 5; done

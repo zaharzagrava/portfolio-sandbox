@@ -39,9 +39,9 @@ on_exit() {
     echo "FINISHED WITH BLOCKED CAPABILITIES  ${state#blocked:}  (see BLOCKED.md in each spec folder)" >&2
     notify warn "SDD loop: finished, but some capabilities are blocked" "${state#blocked:}. Each has a BLOCKED.md that says why; everything else is built and pushed."
   elif [[ "$state" == Checkpoint* ]] && (( code == 0 )); then
-    notify ok "SDD loop: checkpoint reached" "$state${flakes:+ Flaky, passed after a repair that changed no code: $flakes}"
+    notify ok "SDD loop: checkpoint reached" "$state $(open_decisions)${flakes:+ Flaky, passed after a repair that changed no code: $flakes}"
   elif (( code == 0 )); then
-    notify ok "SDD loop: finished" "${state:-All requested specs are built.}${flakes:+ Flaky, passed after a repair that changed no code: $flakes}"
+    notify ok "SDD loop: finished" "${state:-All requested specs are built.} $(open_decisions)${flakes:+ Flaky, passed after a repair that changed no code: $flakes}"
   else
     notify fail "SDD loop: stopped" "${state:-Exit code $code.} See the terminal."
   fi
@@ -261,6 +261,8 @@ extra_context() { # $1 = capability id
   local fu; fu="$("$ROOT/scripts/sdd/followups.sh" "$1" 2>/dev/null || true)"
   printf ' %s' "Cross-spec rules. (0) The living specification in docs/spec says what the system does today. A change of behavior starts in the page of the capability (docs/spec/capabilities/<ID>-*.md): edit its rules and behaviors first, keep every `[proof: ...]` and `[code: ...]` true (python3 scripts/livespec/check.py checks them), and never create or edit a *.reviewed.json file (human sign-offs); if you change something a human signed, say so under '## Spec changes' in gaps.md. (1) Sibling follow-ups: if your work changes something another capability's spec relies on (a name, header, status code, contract), do not edit that spec; add a bullet '- **<their id>**: <what they must adopt>' under a '## Sibling-spec follow-ups' heading in this spec's gaps.md. (2) Unverified criteria: every success criterion (SC-nnn) that no automated test proves goes under 'Ops artifacts' in quickstart.md and as one row in specs/UNVERIFIED.md (spec, criterion, how to run it, status 'not run'); never describe it as verified. (3) Undoing work: never use git checkout, restore, reset, stash or clean (they are not available and could discard other work in the same file); to undo a change edit the file by hand and keep every other change in it, and if a task says to revert a file, restore only the lines it names. (4) Transactions: use TransactionRunner.run or @Transactional (S54 toolkit); when you touch a file that opens a transaction directly with sequelize.transaction, migrate that site and delete its '// S54 T037 audit' comment; never add a new direct sequelize.transaction (the gate fails if the count of direct sites in your domain rises)."
   if [[ -n "$LESSONS" ]]; then printf ' %s' "$LESSONS"; fi
+  local dec; dec="$(decisions_to_apply "$1")"
+  if [[ -n "$dec" ]]; then printf ' %s\n%s' "Decisions the owner changed after reading the defaults you recorded (docs/decisions/$1.md); they override any default in questions.md, so apply them, test them, update the living page, and mention them in your report:" "$dec"; fi
   if [[ -n "$fu" ]]; then printf ' %s\n%s' "Follow-ups left for this capability by specs that are already built; treat each as a requirement, plan it, test it, and mention it in your report:" "$fu"; fi
 }
 
@@ -409,6 +411,9 @@ ordered_capabilities "$@" | while IFS=$'\t' read -r id domain slug title sources
   if [[ -f scripts/livespec/generate.py ]] && ! ls docs/spec/capabilities/"$id"-*.md >/dev/null 2>&1; then
     echo "  living spec page"
     python3 scripts/livespec/generate.py --only "$id" >"$dir/.livespec.log" 2>&1 || echo "  (the living page could not be generated; see $dir/.livespec.log)"
+  fi
+  if [[ -f scripts/decisions/triage.py && ! -f "docs/decisions/$id.md" ]]; then
+    python3 scripts/decisions/triage.py generate "$id" >"$dir/.decisions.log" 2>&1 || echo "  (the decision list could not be generated; see $dir/.decisions.log)"
   fi
   if [[ -f "$dir/.repaired-by-agent" ]]; then
     rm -f "$dir/.repaired-by-agent"

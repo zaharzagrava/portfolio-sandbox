@@ -226,3 +226,25 @@ ordered_capabilities() {
     }
   '
 }
+
+# decisions_to_apply <capability id>: the owner's `status: change: ...` answers in docs/decisions/<id>.md (scripts/decisions/triage.py), as prompt lines.
+# An answer overrides the default the agent chose earlier; a requirement for the next pass over that capability.
+decisions_to_apply() {
+  local f="${ROOT:-.}/docs/decisions/$1.md"; [[ -f "$f" ]] || return 0
+  python3 - "$f" <<'P' 2>/dev/null || true
+import re, sys
+text = open(sys.argv[1]).read(); cur = None
+for line in text.split('\n'):
+    m = re.match(r'^- \*\*([A-Z0-9]+\.D-\d+)\*\*\s*(.*)$', line)
+    if m: cur = (m.group(1), m.group(2)); continue
+    s = re.match(r'^\s+- status:\s*change:\s*(\S.*)$', line)
+    if s and cur: print(f'- {cur[0]} ({cur[1]}) -> the owner decided: {s.group(1)}')
+P
+}
+
+# open_decisions: how many decisions wait for the owner, as a short sentence (empty when none).
+open_decisions() {
+  local n; n="$(python3 "${ROOT:-.}/scripts/decisions/triage.py" open 2>/dev/null | wc -l)"
+  (( n > 0 )) && echo "$n decision(s) wait for you in docs/decisions (python3 scripts/decisions/triage.py open)."
+  return 0
+}

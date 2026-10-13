@@ -60,5 +60,20 @@ if [[ -x "$script" ]]; then
   "$script" >>"$log" 2>&1 || { echo "  flow script FAILED"; fail=1; }
 fi
 
+# Opt-in: the QA agent (a Claude session that uses the product like a person), e.g. CHECKPOINT_QA="buy account". Needs the web server on :3000 and the API.
+qa_marker="$ROOT/specs/.checkpoints/$label.qa-done"   # the agent runs once per checkpoint; after a repair only the tests it left behind run again
+if [[ -n "${CHECKPOINT_QA:-}" && -x "$ROOT/scripts/qa/pipeline.sh" && ! -f "$qa_marker" ]]; then
+  echo "  checkpoint $label: QA agent ($CHECKPOINT_QA)"
+  web_pid=""
+  if ! curl -sf localhost:3000 >/dev/null; then   # the sweeps start the web server themselves and stop it; the agent needs one that stays up
+    (cd "$ROOT/packages/web" && NEXT_PUBLIC_PAYMENTS_SANDBOX=true setsid pnpm run dev >>"$log" 2>&1 & echo $! >"$ROOT/.qa-web.pid"); web_pid="$(cat "$ROOT/.qa-web.pid")"
+    for _ in $(seq 1 60); do curl -sf localhost:3000 >/dev/null && break; sleep 3; done
+  fi
+  API_LOG="${API_LOG:-$ROOT/.sdd-api.log}" "$ROOT/scripts/qa/pipeline.sh" $CHECKPOINT_QA >>"$log" 2>&1 || { echo "  QA pipeline left failing regression tests in packages/web/tests/qa (or could not run); see specs/.qa"; fail=1; }
+  : > "$qa_marker"
+  [[ -n "$web_pid" ]] && { kill -- "-$web_pid" 2>/dev/null || kill "$web_pid" 2>/dev/null; rm -f "$ROOT/.qa-web.pid"; }
+fi
+
+(( fail )) || rm -f "$qa_marker"   # a passing checkpoint ends the QA round
 if (( fail )); then echo "checkpoint $label failed; see $log"; tail -n 25 "$log" | cut -c1-200; fi
 exit "$fail"
