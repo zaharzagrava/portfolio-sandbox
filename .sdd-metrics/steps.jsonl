@@ -33,3 +33,8 @@
 {"run":"20261013T160745Z","capability":"S19","step":"doctor-1","start":"2026-10-13T16:08:36Z","end":"2026-10-13T16:08:52Z","seconds":16,"result":"ok","attempt":1,"reason":"ok","code_changed":false}
 {"run":"20261013T160745Z","capability":"S19","step":"blocked","start":"2026-10-13T16:08:52Z","end":"2026-10-13T16:08:52Z","seconds":0,"result":"blocked","attempt":1,"reason":"needs a human: DOCTOR: needs human: approve or run `/opt/sdd/repo/scripts/qa/fresh-run.sh --here` (the harness blocks it for the agent) and check off T072 if it passes."}
 {"run":"20261013T160745Z","capability":"S25","step":"plan","start":"2026-10-13T16:08:55Z","end":"2026-10-13T16:09:15Z","seconds":20,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261013T163357Z","capability":"-","step":"run-start","start":"2026-10-13T16:33:57Z","end":"2026-10-13T16:33:57Z","seconds":0,"result":"ok","attempt":1,"reason":"commit=d69f9d6 MAX_GATE_REPAIRS=5 MAX_REPAIRS_PER_SPEC=3 REPAIR_BUDGET_MIN=60 MAX_IMPLEMENT_PASSES=10"}
+{"run":"20261013T163357Z","capability":"S19","step":"implement-1","start":"2026-10-13T16:33:57Z","end":"2026-10-13T16:34:22Z","seconds":25,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261013T163357Z","capability":"S19","step":"converge-1","start":"2026-10-13T16:34:22Z","end":"2026-10-13T16:34:47Z","seconds":25,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261013T163357Z","capability":"S19","step":"gate","start":"2026-10-13T16:34:48Z","end":"2026-10-13T16:38:31Z","seconds":223,"result":"pass","attempt":1,"reason":""}
+{"run":"20261013T163357Z","capability":"S19","step":"built","start":"2026-10-13T16:33:57Z","end":"2026-10-13T16:38:31Z","seconds":274,"result":"ok","attempt":1,"reason":"Pickup points, local stock, \"available near me\" search, map clustering"}
