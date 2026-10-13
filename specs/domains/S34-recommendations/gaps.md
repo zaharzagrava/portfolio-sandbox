@@ -75,15 +75,16 @@ Target: `check:table-ownership --strict` reports zero lines for the recommendati
 - **W02**: adopt the new response shape in `packages/web/lib/api/catalog.ts` (`Recommendation`, `recommendationToCard`) and `packages/web/app/products/[slug]/page.tsx` (envelope `{type, items}`, money from `priceMinor`/`currency`, section hidden on empty/404/429/503); add the Playwright journey `packages/web/tests/product-recommendations.spec.ts` (AS-48, A25). S34 only keeps the in-repo callers compiling.
 - **S48**: `libs/composition/bff/product-page.service.ts` and `bff/graphql/product.resolver.ts` adopt `recommendationsResponseSchema` (validate the body; `recommendations: null` plus a partial-error entry on timeout/503/404/invalid body), and `bff.e2e-spec.ts` gains the AS-49 cases (A25).
 - **S50**: policy `discovery.recommendations` (600/min per address, fail open) is declared in `discovery/rate-limit-policies.ts`; it replaces the `search.query` reuse and must appear in the registry listing.
+- **S10**: keep `userId` and `orderVersion` on `order.paid` (the basket projector reads `orderId`, `userId`, `paidAt`, `orderVersion`, `lines[].productId`).
 - **S49**: `recommendations.build-bought-together` now declares a strict payload contract, `fleetConcurrency: 1`, and `leaseMs`/`maxRuntimeMs` of 1 h; nothing further to adopt.
 
 ## Deferred until a later pass
 
-P1 stories (US1 to US6) and the Setup and Foundational phases are built; AS-01 to AS-44 have tests. Not started in this pass:
+Nothing is deferred in code. Notes from the final pass:
 
-- **US7 (P2)**: T057 to T059 stay unticked (P2), but the gate demanded tests carrying AS-45, AS-46, AS-47, AS-50 and AS-51, so they were built in the gate repair below. Still open for the final pass: tick T057 to T059 after review, and the barrel still exports older discovery exports besides the three modules (AS-50 asserts only that no projector, job, model or key helper is exported).
-- **US8 (P2)**: AS-48 (W02, Playwright) and AS-49 (S48, BFF composition), T060 to T062. They wait for **W02** and **S48**. `bff.e2e-spec.ts` still passes because it does not read this endpoint's body; the web and BFF code still parse the old bare-array shape.
-- **Polish and convergence (T063 to T069)**: `042_drop_order_baskets.sql` (operator step after the replay), the static-gate task list and the final report. `check:boundaries` and `tsc --noEmit` are clean and `check:table-ownership --strict` shows no line for the recommendations files; those were run as checks, the tasks stay open.
+- The web and BFF callers (`lib/product/parse-page.ts`, `bff/upstream/endpoints/discovery.ts`, `product.resolver.ts`) already parse `recommendationsResponseSchema`; T060 and T061 needed no further change.
+- The contract step is `packages/backend/clickhouse/operator/042_drop_order_baskets.sql`, not in `clickhouse/`: `scripts/clickhouse/migrate.ts` applies every top-level `.sql` file, which would drop `order_baskets` before the replay. It is an operator step (quickstart, "Ops artifacts").
+- The old `recommendations.e2e-spec.ts` was deleted; its cases are AS-01 and AS-10 (read) and AS-13 (cold-start).
 
 Nothing in the P1 stories calls a capability that is not built: the product and shop facts come from S05 and S03 (built), the jobs from S49, the rate limiter from S50, and the order events from S10.
 

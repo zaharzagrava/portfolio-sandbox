@@ -102,25 +102,25 @@
 
 **Independent test**: `recommendations-platform` e2e green.
 
-- [ ] T057 [US7] e2e `D/recommendations-platform.e2e-spec.ts` (`describe('Recommendations degradation, metrics and boundary')`): AS-45 store down and slow → `503 recommendations_unavailable`, `Retry-After: 5`, `no-store`, no leak, no in-request retry; AS-46 product or shop lookup failure/timeout → same 503, never an unfiltered list; AS-47 metrics set and log content (no buyer ids); AS-50 module exports only the three modules and ownership registry check; AS-51 invalid config fails startup naming the key
-- [ ] T058 [US7] Add typed `RecommendationsUnavailableError` (503, `Retry-After: 5`) in `D/domain/` mapped by the global filter; wrap store and R1 calls with `withBudget` in the service and adapters; increment `recommendations_requests_total{result}`, `_hops_total`, `_bad_entries_total`; run T057 green
-- [ ] T059 [US7] Tighten `D/index.ts` barrel to `RecommendationsModule`, `RecommendationsWorkerModule`, `RecommendationsProjectorModule` only; `CoOccurrenceJobs` not exported (D-8)
+- [X] T057 [US7] e2e `D/recommendations-platform.e2e-spec.ts` (`describe('Recommendations degradation, metrics and boundary')`): AS-45 store down and slow → `503 recommendations_unavailable`, `Retry-After: 5`, `no-store`, no leak, no in-request retry; AS-46 product or shop lookup failure/timeout → same 503, never an unfiltered list; AS-47 metrics set and log content (no buyer ids); AS-50 module exports only the three modules and ownership registry check; AS-51 invalid config fails startup naming the key
+- [X] T058 [US7] Add typed `RecommendationsUnavailableError` (503, `Retry-After: 5`) in `D/domain/` mapped by the global filter; wrap store and R1 calls with `withBudget` in the service and adapters; increment `recommendations_requests_total{result}`, `_hops_total`, `_bad_entries_total`; run T057 green
+- [X] T059 [US7] Tighten `D/index.ts` barrel to `RecommendationsModule`, `RecommendationsWorkerModule`, `RecommendationsProjectorModule` only; `CoOccurrenceJobs` not exported (D-8)
 
 ## Phase 9: US8 — In-repo consumers of the new shape (P2; W02/S48 own the rest)
 
-- [ ] T060 [US8] Adapt `packages/backend/libs/composition/bff/product-page.service.ts` and `libs/composition/bff/graphql/product.resolver.ts` to the `{type, items}` envelope and `priceMinor`/`currency` (parse with `recommendationsResponseSchema`) so they compile and `bff.e2e-spec.ts` stays green (A23)
-- [ ] T061 [P] [US8] Adapt `packages/web/lib/api/catalog.ts` (`Recommendation`, `recommendationToCard`) and `packages/web/app/products/[slug]/page.tsx` to the new shape so `tsc` and web tests pass; hide section on empty/404/429/503 (A23, FR-030)
-- [ ] T062 [US8] Add `## Sibling-spec follow-ups` bullets in `gaps.md` (verify existing W02, S48, S50, S49 bullets; add **S10**: keep `userId` and `orderVersion` on `order.paid`) covering A23, A25 consumer work (Playwright `packages/web/tests/product-recommendations.spec.ts`, BFF AS-48/AS-49 cases)
+- [X] T060 [US8] Adapt `packages/backend/libs/composition/bff/product-page.service.ts` and `libs/composition/bff/graphql/product.resolver.ts` to the `{type, items}` envelope and `priceMinor`/`currency` (parse with `recommendationsResponseSchema`) so they compile and `bff.e2e-spec.ts` stays green (A23)
+- [X] T061 [P] [US8] Adapt `packages/web/lib/api/catalog.ts` (`Recommendation`, `recommendationToCard`) and `packages/web/app/products/[slug]/page.tsx` to the new shape so `tsc` and web tests pass; hide section on empty/404/429/503 (A23, FR-030)
+- [X] T062 [US8] Add `## Sibling-spec follow-ups` bullets in `gaps.md` (verify existing W02, S48, S50, S49 bullets; add **S10**: keep `userId` and `orderVersion` on `order.paid`) covering A23, A25 consumer work (Playwright `packages/web/tests/product-recommendations.spec.ts`, BFF AS-48/AS-49 cases)
 
 ## Phase 10: Contract step, gaps, ops, polish
 
-- [ ] T063 Add `packages/backend/clickhouse/042_drop_order_baskets.sql` (contract step, applied only after replay of `orders.events`; document as operator step) (R-3)
-- [ ] T064 Delete the old `D/recommendations.e2e-spec.ts` once its two cases are covered by R/J files (A20, A21)
-- [ ] T065 Verify `// S54 T037 audit` / `sequelize.transaction` count in S34 files is still 0 (`.tx.baseline`) and nothing is added (R-14)
-- [ ] T066 Verify the S05, S10, S49 follow-ups: no `ProductModel`/`JOIN "Product"` left in recommendations files; `order.paid` consumed with `userId`, `orderVersion` only; `declareJobType` / `fleetConcurrency: 1` / `maxRuntimeMs` ≥ lease present; mention each in the final report
-- [ ] T067 Confirm `quickstart.md` "Ops artifacts" lists SC-001, SC-007, SC-009, edge-cache check and replay step, and `specs/UNVERIFIED.md` rows for S34 SC-001/SC-007/SC-009 exist with status "not run" (already present; do not mark verified)
-- [ ] T068 Run gates from `packages/backend`: `pnpm check:boundaries`, `pnpm check:table-ownership --strict` (zero lines for recommendations files), `pnpm exec tsc --noEmit` (backend, contracts, web), ESLint on touched packages
-- [ ] T069 Run the whole capability suite once: `/opt/sdd/repo/scripts/sdd/test-spec.sh libs/domains/discovery/domain` and `recommendations-` e2e files (read, cold-start, baskets, build, platform) plus `bff.e2e-spec.ts`; if a test still fails after 5 fix attempts, stop and write the blocker, attempts and hypothesis to `questions.md`
+- [X] T063 Add `packages/backend/clickhouse/042_drop_order_baskets.sql` (contract step, applied only after replay of `orders.events`; document as operator step) (R-3)
+- [X] T064 Delete the old `D/recommendations.e2e-spec.ts` once its two cases are covered by R/J files (A20, A21)
+- [X] T065 Verify `// S54 T037 audit` / `sequelize.transaction` count in S34 files is still 0 (`.tx.baseline`) and nothing is added (R-14)
+- [X] T066 Verify the S05, S10, S49 follow-ups: no `ProductModel`/`JOIN "Product"` left in recommendations files; `order.paid` consumed with `userId`, `orderVersion` only; `declareJobType` / `fleetConcurrency: 1` / `maxRuntimeMs` ≥ lease present; mention each in the final report
+- [X] T067 Confirm `quickstart.md` "Ops artifacts" lists SC-001, SC-007, SC-009, edge-cache check and replay step, and `specs/UNVERIFIED.md` rows for S34 SC-001/SC-007/SC-009 exist with status "not run" (already present; do not mark verified)
+- [X] T068 Run gates from `packages/backend`: `pnpm check:boundaries`, `pnpm check:table-ownership --strict` (zero lines for recommendations files), `pnpm exec tsc --noEmit` (backend, contracts, web), ESLint on touched packages
+- [X] T069 Run the whole capability suite once: `/opt/sdd/repo/scripts/sdd/test-spec.sh libs/domains/discovery/domain` and `recommendations-` e2e files (read, cold-start, baskets, build, platform) plus `bff.e2e-spec.ts`; if a test still fails after 5 fix attempts, stop and write the blocker, attempts and hypothesis to `questions.md`
 
 ## Gap coverage
 

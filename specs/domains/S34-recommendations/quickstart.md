@@ -22,4 +22,4 @@ Smoke: deliver a few `order.paid` envelopes (three buyers, two shared products),
 - **SC-007**: one build run on the 1-billion-order-line fixture finishes in under 60 minutes; no list older than 3 days.
 - **SC-009**: the alert "no `recommendations_build_last_success_timestamp` advance for 36 hours" exists in the monitoring stack and fires in a drill (the e2e proves the metric moves on success and not on failure, not the alert rule).
 - Edge cache honours `Cache-Control`, keys on the full URL and forwards no credentials for `/api/products/*/recommendations`.
-- Replay before cut-over: replay `orders.events` into `recommendation_baskets`, then enable the build and apply `042_drop_order_baskets.sql` (operator step).
+- Replay before cut-over: replay `orders.events` into `recommendation_baskets`, then enable the build and apply `clickhouse/operator/042_drop_order_baskets.sql` (operator step).
