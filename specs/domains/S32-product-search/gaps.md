@@ -95,6 +95,14 @@ The reindex, admin and worker `ProductModel`/`forFeature([Product])` lines and t
 - `docs/spec/capabilities/S32-product-search.md` (the living page) was edited first: rules R-22 to R-47 and behaviors B-21 to B-32 added for facets, semantic mode, synonyms, shop search, measurement and the exported services; entry points, owned policies and "Known gaps" brought up to date. No `*.reviewed.json` exists for it, so nothing a human signed changed. `python3 scripts/livespec/check.py`: 0 errors (style warnings for long sentences only).
 - `specs/domains/S32-product-search/spec.md`, `test-plan.md` and `questions.md` were not edited.
 
+## Final gates (T111, T112)
+
+- `pnpm --dir packages/backend exec tsc --noEmit -p .`: no output (clean). `npx tsc` resolves a newer compiler that rejects `baseUrl`; use the backend's own. `packages/contracts` has no tsconfig (see above), so it is covered by that run.
+- `pnpm --dir packages/backend check:boundaries`: `✔ no dependency violations found (2158 modules, 11257 dependencies cruised)`.
+- `pnpm --dir packages/backend check:table-ownership --strict`: `50 cross-domain data accesses in 16 domains`, exit 1. **Zero lines for `discovery`**; the 16 domains are asset-library, assistant, auctions, catalog-sync, chat, community, content, developer-platform, fulfilment, launch-events, marketing, media, orders, seller-insights, seller-onboarding, statements (not S32's). The fulfilment line is `pickup-availability.projector.ts` reading `ProductModel` (S19's).
+- ESLint and prettier are blocked in this sandbox and were not run.
+- Suites (VII.9): `libs/domains/discovery` 21 suites, 270 tests passed; `libs/infrastructure/projections/versioned-sinks` 11 passed; `libs/domains/fulfilment/pickup` 3 passed.
+
 ## Gate repairs
 
 - Gate failure "no test carrying their ID: AS-67, AS-74". Both are cited by P1 stories (AS-27 in US4, AS-04 in US1), so they are not deferred. Added to `search-query.e2e-spec.ts`: `S32 AS-74` (email, digit run and card query logged as `[redacted]` with `results` kept; one-character query not logged; `userHash` stable per caller, different across callers, differs from a hash under the session secret; event keys carry no ids) and `S32 AS-67` (sandbox product absent from public search; `tenancy.shop_deleted` empties public search). The seller-search parts of AS-67 (sandbox product found in its own shop's search, shop search answers `404` after deletion) and the 90-day expiry part of AS-74 stay with US7 and US8 (T091, T096) in the next passes.
