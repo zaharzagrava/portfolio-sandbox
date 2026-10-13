@@ -450,9 +450,9 @@ _L1 + L2 · stampede protection · versioned invalidation_
 ### Push to the browser with replay after reconnect
 
 - Topic SSE with per-topic authorization, validation and limits. Topic names are checked at compile time and at startup
-- `Last-Event-ID` replay from a capped stream with no gaps or duplicates
+- `Last-Event-ID` replay from a capped, expiring stream with no gaps or duplicates; a gap the buffer cannot cover is announced with `resync`, never silently skipped
 - Ref-counted fan-out across instances; behaviour defined for backplane loss and recovery
-- Revocation closes open subscriptions. Heartbeats, slow-consumer drops, graceful shutdown
+- Revocation closes open subscriptions within seconds, fleet-wide. Heartbeats, jittered reconnect, connection lifetime, slow-consumer drops, graceful shutdown spread over a drain window
 
 → Spec: [S51](specs/domains/S51-realtime-push/spec.md) · Where code differs: [S51](specs/domains/S51-realtime-push/gaps.md) · [First-pass code](packages/backend/libs/infrastructure/realtime)
 

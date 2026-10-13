@@ -95,8 +95,8 @@ User-story map: US1 stream basics (AS-01–06) · US2 replay (AS-07–20) · US3
 
 **Goal**: heartbeat, jitter, lifetime, drain. **Independent test**: LIFE e2e.
 
-- [ ] T037 [US7] Write failing `$L/realtime-lifecycle.e2e-spec.ts`: `: ping` heartbeats and timer cleared on close (AS-50); `retry:` in 2000–5000 over 200 connections with spread (AS-51); lifetime and credential-expiry end with clean resume from cursor (AS-52); graceful shutdown drains with a jittered window and ends connections (AS-53).
-- [ ] T038 [US7] Implement per-connection jittered `retry:` (`topics.ts` jitter), max lifetime 30 min and end at `credentialExpiresAt` when the principal provides it, and drain on shutdown via the S54 shutdown registry (jittered 10 s window), subscriber graceful quit after drain (G-16, G-17). Run T037 green.
+- [X] T037 [US7] Write failing `$L/realtime-lifecycle.e2e-spec.ts`: `: ping` heartbeats and timer cleared on close (AS-50); `retry:` in 2000–5000 over 200 connections with spread (AS-51); lifetime and credential-expiry end with clean resume from cursor (AS-52); graceful shutdown drains with a jittered window and ends connections (AS-53).
+- [X] T038 [US7] Implement per-connection jittered `retry:` (`topics.ts` jitter), max lifetime 30 min and end at `credentialExpiresAt` when the principal provides it, and drain on shutdown via the S54 shutdown registry (jittered 10 s window), subscriber graceful quit after drain (G-16, G-17). Run T037 green.
 
 ## Phase 11: US8 — Revocation incl. S03 follow-up (P1)
 
@@ -111,9 +111,9 @@ User-story map: US1 stream basics (AS-01–06) · US2 replay (AS-07–20) · US3
 
 **Independent test**: SUB e2e.
 
-- [ ] T043 [US9] Write failing `$L/realtime-subscriber.e2e-spec.ts`: in-process subscribe shares the subscription (AS-59); `topicsWithSubscribers` sorted, route-exact, across two apps (AS-60); discovery cap 10,000 and outage → `RealtimeUnavailableError` (AS-61); idempotent unsubscribe (AS-39); throwing listener isolated (AS-41).
-- [ ] T044 [US9] Implement `$L/hub/topic-subscriber.service.ts` (`subscribe(topic, handler): Promise<() => Promise<void>>`) and `$L/hub/realtime-subscriptions.service.ts` `topicsWithSubscribers(prefix, suffix?)` via the backplane channel list (`PUBSUB CHANNELS`, 1 s timeout, sorted, ≤ 10,000) (G-09). Run T043 green.
-- [ ] T045 [US9] Switch `$APP/live/live-batcher.service.ts` (lines ~64, 171) from `SubscriptionHub` to `TopicSubscriber` (G-02; S23).
+- [X] T043 [US9] Write failing `$L/realtime-subscriber.e2e-spec.ts`: in-process subscribe shares the subscription (AS-59); `topicsWithSubscribers` sorted, route-exact, across two apps (AS-60); discovery cap 10,000 and outage → `RealtimeUnavailableError` (AS-61); idempotent unsubscribe (AS-39); throwing listener isolated (AS-41).
+- [X] T044 [US9] Implement `$L/hub/topic-subscriber.service.ts` (`subscribe(topic, handler): Promise<() => Promise<void>>`) and `$L/hub/realtime-subscriptions.service.ts` `topicsWithSubscribers(prefix, suffix?)` via the backplane channel list (`PUBSUB CHANNELS`, 1 s timeout, sorted, ≤ 10,000) (G-09). Run T043 green.
+- [X] T045 [US9] Switch `$APP/live/live-batcher.service.ts` (lines ~64, 171) from `SubscriptionHub` to `TopicSubscriber` (G-02; S23).
 
 ## Phase 13: US11 — Recovery (P1)
 
@@ -126,20 +126,20 @@ User-story map: US1 stream basics (AS-01–06) · US2 replay (AS-07–20) · US3
 
 **Independent test**: OBS e2e.
 
-- [ ] T048 [US12] Write failing `$L/realtime-observability.e2e-spec.ts`: metrics registry values for connections, subscriptions, events, drops, resyncs, revokes, listener errors, publish outcomes, with closed label sets (no topic/user/cursor labels) (AS-69); structured logs for open/close/drop/revoke/fault without payload or credentials (AS-70).
-- [ ] T049 [US12] Implement `$L/metrics/realtime-metrics.ts` (S54 metrics registry) and logs per FR-054/FR-055; gauges for channels/connections replacing `listenerCount` (G-33). Run T048 green.
+- [X] T048 [US12] Write failing `$L/realtime-observability.e2e-spec.ts`: metrics registry values for connections, subscriptions, events, drops, resyncs, revokes, listener errors, publish outcomes, with closed label sets (no topic/user/cursor labels) (AS-69); structured logs for open/close/drop/revoke/fault without payload or credentials (AS-70).
+- [X] T049 [US12] Implement `$L/metrics/realtime-metrics.ts` (S54 metrics registry) and logs per FR-054/FR-055; gauges for channels/connections replacing `listenerCount` (G-33). Run T048 green.
 
 ## Phase 15: Polish, cleanup, ops, gaps
 
-- [ ] T050 Delete fixed sleeps in the files S51 owns (old `$APP/topic-stream/topic-stream.e2e-spec.ts` goes with the move); do not edit `live/live.e2e-spec.ts` (S23's): record its sleeps (`:57,79,93,109,111`) in gaps.md "Sibling-spec follow-ups" under **S23** (G-27).
-- [ ] T051 Cleanup G-03/G-04: if S13 and S24 have landed, delete `libs/infrastructure/redis-pubsub`, `$APP/redis-pubsub`, `payment-stream`, `realtime-notifier`, and dead `ThrottlerModule`/Sequelize wiring in `sse-gateway.module.ts` (`grep -rn redis-pubsub packages/backend` empty); otherwise leave them and record the state in the report and gaps.md.
-- [ ] T052 [P] Web (G-32): `packages/web/lib/api/sse.ts` handles `resync` and `revoked` regardless of the page's `types` list and recreates the stream after a final `401`/`403`; `packages/web/hooks/use-event-stream.ts` effect key stable; add tests where the web package has them.
-- [ ] T053 [P] Load script (G-35): add a reconnect-storm case to `packages/backend/scripts/load-tests/sse.test.js`; do NOT claim results.
-- [ ] T054 [P] Docs (G-36): update README showcase text for #24, #30 and the F-03 section paths to `libs/infrastructure/realtime`.
-- [ ] T055 [P] Ops artifacts: confirm `quickstart.md` "Ops artifacts" lists SC-001, SC-002 (100 reps), SC-005 (10,000 cycles), SC-007, SC-008 (under load) and that `specs/UNVERIFIED.md` has one S51 row each with status "not run" (already present; verify, never describe as verified).
-- [ ] T056 Sibling-spec follow-ups: ensure gaps.md `## Sibling-spec follow-ups` lists S01, S50, S54, S03, S07/S12, S13, S24, S23, S40, S22/S31/S38/S20, W03/W04/W05, plus any added by T033/T050/T051.
-- [ ] T057 Gates: `tsc --noEmit` (backend, contracts, web), ESLint, `pnpm --dir packages/backend check:boundaries`, `pnpm --dir packages/backend check:table-ownership --strict` (0 lines for `infrastructure/realtime` and `redis-pubsub`; paste result), direct `sequelize.transaction` count unchanged vs T001.
-- [ ] T058 Run the whole suite once: `/opt/sdd/repo/scripts/sdd/test-spec.sh libs/infrastructure/realtime` and `libs/domains/tenancy/member-revocation.e2e-spec.ts`; report SC-009 coverage and the S03 follow-up (T040/T042) in the final report.
+- [X] T050 Delete fixed sleeps in the files S51 owns (old `$APP/topic-stream/topic-stream.e2e-spec.ts` goes with the move); do not edit `live/live.e2e-spec.ts` (S23's): record its sleeps (`:57,79,93,109,111`) in gaps.md "Sibling-spec follow-ups" under **S23** (G-27).
+- [X] T051 Cleanup G-03/G-04: if S13 and S24 have landed, delete `libs/infrastructure/redis-pubsub`, `$APP/redis-pubsub`, `payment-stream`, `realtime-notifier`, and dead `ThrottlerModule`/Sequelize wiring in `sse-gateway.module.ts` (`grep -rn redis-pubsub packages/backend` empty); otherwise leave them and record the state in the report and gaps.md.
+- [X] T052 [P] Web (G-32): `packages/web/lib/api/sse.ts` handles `resync` and `revoked` regardless of the page's `types` list and recreates the stream after a final `401`/`403`; `packages/web/hooks/use-event-stream.ts` effect key stable; add tests where the web package has them.
+- [X] T053 [P] Load script (G-35): add a reconnect-storm case to `packages/backend/scripts/load-tests/sse.test.js`; do NOT claim results.
+- [X] T054 [P] Docs (G-36): update README showcase text for #24, #30 and the F-03 section paths to `libs/infrastructure/realtime`.
+- [X] T055 [P] Ops artifacts: confirm `quickstart.md` "Ops artifacts" lists SC-001, SC-002 (100 reps), SC-005 (10,000 cycles), SC-007, SC-008 (under load) and that `specs/UNVERIFIED.md` has one S51 row each with status "not run" (already present; verify, never describe as verified).
+- [X] T056 Sibling-spec follow-ups: ensure gaps.md `## Sibling-spec follow-ups` lists S01, S50, S54, S03, S07/S12, S13, S24, S23, S40, S22/S31/S38/S20, W03/W04/W05, plus any added by T033/T050/T051.
+- [X] T057 Gates: `tsc --noEmit` (backend, contracts, web), ESLint, `pnpm --dir packages/backend check:boundaries`, `pnpm --dir packages/backend check:table-ownership --strict` (0 lines for `infrastructure/realtime` and `redis-pubsub`; paste result), direct `sequelize.transaction` count unchanged vs T001.
+- [X] T058 Run the whole suite once: `/opt/sdd/repo/scripts/sdd/test-spec.sh libs/infrastructure/realtime` and `libs/domains/tenancy/member-revocation.e2e-spec.ts`; report SC-009 coverage and the S03 follow-up (T040/T042) in the final report.
 
 ## Dependencies & Execution Order
 

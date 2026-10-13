@@ -14,6 +14,6 @@ export class TopicSubscriber {
     topic: RealtimeTopic,
     handler: (message: RealtimeMessage) => void,
   ): Promise<() => Promise<void>> {
-    return this.hub.subscribe(topic, handler);
+    return this.hub.subscribe(topic, (message) => handler(message));
   }
 }

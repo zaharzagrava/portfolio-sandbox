@@ -67,6 +67,12 @@ Domains need to push events to browsers and to other processes. This capability 
 - **S51.R-26** The hub MUST close a connection with more than 1 MiB pending (`slow`) or a write blocked over the stall limit (`stalled`). [proof: S51 AS-44, S51 AS-45]
 - **S51.R-27** `revoke` MUST end matching subscriptions fleet-wide with a `revoked` frame, MUST NOT ban the user from reconnecting, and MUST apply to a connection still being admitted. [proof: S51 AS-54, S51 AS-56, S51 AS-58]
 - **S51.R-28** Two definitions of the same route MUST fail the boot, and `define` after startup MUST throw `TopicRegistryFrozenError`. [proof: S51 AS-63, S51 AS-65]
+- **S51.R-29** A connection MUST end normally after its maximum lifetime (30 min), or at the credential expiry when the principal supplies one and it comes sooner, so a reconnect with the cursor loses nothing and a stale credential answers `401`. [proof: S51 AS-52] [code: packages/backend/libs/infrastructure/realtime/stream/connection.ts#StreamConnection]
+- **S51.R-30** An idle connection MUST receive a `: ping` comment every heartbeat interval, and the first frame MUST carry a `retry:` between 2000 and 5000 ms drawn per connection. [proof: S51 AS-50, S51 AS-51]
+- **S51.R-31** On shutdown the hub MUST stop admitting streams, end every connection at a random point of the drain window with complete frames, and close the backplane connection after the drain. [proof: S51 AS-53] [code: packages/backend/libs/infrastructure/realtime/stream/stream.service.ts#StreamService]
+- **S51.R-32** `topicsWithSubscribers(prefix, suffix?)` MUST return the sorted topics of exactly that route that have a listener on any instance, capped at 10,000 with a warning, and MUST reject `RealtimeUnavailableError` within 1 s when the store is unreachable. [proof: S51 AS-60, S51 AS-61] [code: packages/backend/libs/infrastructure/realtime/hub/realtime-subscriptions.service.ts#RealtimeSubscriptions]
+- **S51.R-33** An in-process subscriber MUST receive replayable and live-only events as `{ id, topic, type, data }`, share the ref-counted subscription with HTTP viewers, and stop receiving after an idempotent release. [proof: S51 AS-39, S51 AS-59]
+- **S51.R-34** The hub MUST record connections, subscriptions, delivered events, publish results, closes, refusals, resyncs, revocations, ignored cursors, listener errors, replay overflows and delivery latency with label values from closed lists only, and MUST log one structured line at open and one at close with the request id and without any cookie, token, cursor or payload. Replayed events are not sampled in the delivery latency. [proof: S51 AS-69, S51 AS-70] [code: packages/backend/libs/infrastructure/realtime/metrics/realtime-metrics.ts#RealtimeMetrics]
 
 ## Behaviors
 - **S51.B-01** Given a public topic, when a client connects and a domain publishes two events, then the client receives both in order with a cursor `id:`. [proof: S51 AS-01]
@@ -109,9 +115,7 @@ No status model exists. A connection is open until the client, the lifetime limi
 - Revocation closes open connections but does not ban, because refusing new ones is the job of the rule ({{cap:S03}}).
 
 ## Known gaps
-- No test carries the ids AS-14, AS-52, AS-53, AS-59, AS-60, AS-61, AS-69 and AS-70. Rules for the lifetime, shutdown drain, in-process subscriber, topic discovery, metrics and logs are unproven.
-- AS-14 (reconnect after a baseline) has no test.
+- No authenticator supplies `credentialExpiresAt` yet ({{cap:S01}} must); the credential-expiry end is proven with an injected principal only.
 - AS-34 and AS-31 are compile-time and validation tests. The proof list has them, but this page states no rule on publish validation or topic types.
-- The heartbeat (AS-50) has no tagged test.
-- Tests AS-18, AS-12, AS-37 and AS-42 are tagged too. This page lists no rule for AS-12, AS-42, AS-43, AS-62 and AS-64 (grammar), so those are unstated.
-- The files list contains legacy code such as `live-batcher.service.ts`. The removal of the legacy Redis relays is not verified.
+- This page lists no rule for AS-12, AS-42, AS-43, AS-62 and AS-64 (grammar), so those are unstated.
+- The raw `libs/infrastructure/redis-pubsub` is still used by chat; the gateway-local relays, `payment-stream` and `realtime-notifier` are gone.

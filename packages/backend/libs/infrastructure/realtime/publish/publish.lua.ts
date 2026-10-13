@@ -43,7 +43,7 @@ if maxRemoved then
   redis.call('XSETID', KEYS[1], id, 'MAXDELETEDID', maxRemoved)
 end
 redis.call('PEXPIRE', KEYS[1], ARGV[5])
-redis.call('PUBLISH', KEYS[2], '{"id":"' .. id .. '","topic":' .. cjson.encode(ARGV[1]) .. ',"type":' .. cjson.encode(ARGV[2]) .. ',"data":' .. ARGV[3] .. '}')
+redis.call('PUBLISH', KEYS[2], '{"id":"' .. id .. '","topic":' .. cjson.encode(ARGV[1]) .. ',"type":' .. cjson.encode(ARGV[2]) .. ',"data":' .. ARGV[3] .. ',"ts":' .. nowMs .. '}')
 return id
 `;
 

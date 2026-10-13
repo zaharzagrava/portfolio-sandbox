@@ -1,6 +1,6 @@
 import {
   cartPageResponseSchema,
-  notificationEventSchema,
+  notificationRealtimeEventSchema,
   orderPageResponseSchema,
   userStreamEventSchema,
 } from '@marketplace-sandbox/contracts';
@@ -89,10 +89,12 @@ describe('W03 contracts (cart page, order page, user stream)', () => {
       title: 'Confirmed',
       body: 'Thanks',
       link: '/orders/x',
-      unread: 2,
+      unread: true,
       createdAt: '2026-01-01T00:00:00.000Z',
     };
-    expect(notificationEventSchema.safeParse(notification).success).toBe(true);
+    expect(
+      notificationRealtimeEventSchema.safeParse(notification).success,
+    ).toBe(true);
     expect(
       userStreamEventSchema.safeParse({
         type: 'notification',

@@ -19,8 +19,8 @@ Today `apps/sse-gateway` streams payment status only. Booking seat maps, auction
 | Publisher API in `libs/common` (`RealtimePublisher.publish(topic, event)`) used by all domains | — |
 
 ## Steps
-- [x] `libs/common/src/realtime/` — `RealtimePublisher` (XADD + PUBLISH), topic naming helper with template-literal types (`user:${string}` | `auction:${string}` ...).
-- [x] `apps/sse-gateway/src/topic-stream/` — `GET /streams?topics=...` SSE endpoint, Last-Event-ID replay, heartbeats, per-connection bounded queue.
+- [x] `libs/infrastructure/realtime/` — `RealtimePublisher` (XADD + PUBLISH), topic naming helper with template-literal types (`user:${string}` | `auction:${string}` ...).
+- [x] `libs/infrastructure/realtime/stream/` — `GET /streams?topics=...` SSE endpoint, Last-Event-ID replay, heartbeats, per-connection bounded queue.
 - [x] Topic authorization policy registry (each domain registers `canSubscribe(user, topic)`).
 - [ ] Keep payment-stream working (migrate it onto the hub). → kept as-is for now (works, owner check is payment-specific); new features use the hub. Its per-viewer unsubscribe bug is avoided in the hub (ref-counting).
 - [x] e2e (real Redis): publish 5 events, reconnect with Last-Event-ID=2 → receives 3..5; unauthorised topic → 403.
@@ -36,8 +36,8 @@ Today `apps/sse-gateway` streams payment status only. Booking seat maps, auction
 - Proof: k6 `loadtest:sse` 5k connections × 10 events/s; thresholds: delivery p99 < 500 ms, 0 dropped for healthy consumers.
 
 ## Implementation notes (2026-10-01)
-- `libs/common/src/realtime/`: `topics.ts` (template-literal `RealtimeTopic`, validation, multi-topic cursor encode/decode for Last-Event-ID), `RealtimePublisher` (XADD capped `rt:stream:{topic}` + PUBLISH `rt:ch:topic`), `TopicPolicies` (prefix → policy; unknown prefixes denied), `RealtimeModule`.
-- `apps/sse-gateway/src/topic-stream/`: `SubscriptionHub` (one subscriber connection, ref-counted channels), `TopicStreamController` `GET /api/streams?topics=` (subscribe → buffer → replay gap via XRANGE → flush without duplicates; heartbeats 15 s; `X-Accel-Buffering: no`; slow consumers dropped at 1 MB buffered).
-- Spec `topic-stream.e2e-spec.ts` (replay exactness, live delivery, private topic authz) + `utils/test-utils/sse-client.ts`.
+- `libs/infrastructure/realtime/` (S51 moved everything here from `libs/common/src/realtime/` and `apps/sse-gateway/src/topic-stream/`): `topics.ts` (template-literal `RealtimeTopic`, route resolution, multi-topic cursor encode/decode for Last-Event-ID, resync decision), `publish/` (`RealtimePublisher`: one atomic script, capped and expiring `rt:s:<topic>` + `rt:c:<topic>`), `topic-registry.ts` (one rule per route; unknown routes denied), `hub/` (`SubscriptionHub` ref-counted channels, `TopicSubscriber`, `RealtimeSubscriptions`), `stream/` (`TopicStreamController` `GET /api/streams?topics=` and `StreamService`: subscribe → buffer → paged replay → flush without duplicates, `resync` when the gap cannot be covered; heartbeats 15 s; `X-Accel-Buffering: no`; slow consumers dropped at 1 MiB buffered; lifetime and drain).
+- The gateway app only composes `RealtimeStreamModule` (`apps/sse-gateway/src/sse-gateway.module.ts`).
+- Specs: the 12 `*.e2e-spec.ts` files beside the engine (scenario → file map in `specs/domains/S51-realtime-push/test-plan.md`), the gateway composition spec `apps/sse-gateway/src/topic-stream/topic-stream.e2e-spec.ts`, and `packages/backend/test/utils/sse-client.ts`.
 - k6 `scripts/load-tests/sse.test.js` (`pnpm loadtest:sse`, needs xk6-sse): viewers + Redis publisher measuring delivery latency.
 - Found: legacy `payment-stream` unsubscribes the Redis channel per viewer (second viewer of the same payment stops receiving when the first leaves). Left untouched, logged as Q18.

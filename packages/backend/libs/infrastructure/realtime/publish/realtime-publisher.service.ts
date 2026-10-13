@@ -111,7 +111,7 @@ export class RealtimePublisher {
   ): Promise<string | null> {
     await this.redis.client.publish(
       channelName(topic),
-      `{"id":"${LIVE_ONLY_ID}","topic":${JSON.stringify(topic)},"type":${JSON.stringify(type)},"data":${payload}}`,
+      `{"id":"${LIVE_ONLY_ID}","topic":${JSON.stringify(topic)},"type":${JSON.stringify(type)},"data":${payload},"ts":${Date.now()}}`,
     );
     return null;
   }

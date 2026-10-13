@@ -15,6 +15,7 @@ export interface ConnectionPrincipal {
   userId?: string;
   roles: string[];
   address: string;
+  credentialExpiresAt?: number;
 }
 
 /**
@@ -37,9 +38,12 @@ export class StreamConnection {
   needsAnotherPass = false;
   delivered = 0;
   readonly openedAt = Date.now();
+  /** The opening request's id, kept so the close line (written outside the request context) carries it too. */
+  requestId?: string;
 
   private heartbeat?: NodeJS.Timeout;
   private stall?: NodeJS.Timeout;
+  private lifetime?: NodeJS.Timeout;
 
   constructor(
     readonly id: number,
@@ -69,6 +73,14 @@ export class StreamConnection {
       this.limits.heartbeatMs,
     );
     this.heartbeat.unref?.();
+  }
+
+  /** Ends the response normally after `ms` (maximum lifetime or credential expiry); the client resumes from its cursor. */
+  startLifetime(ms: number, reason: ClosedReason = 'lifetime') {
+    if (this.closed) return;
+    if (this.lifetime) clearTimeout(this.lifetime);
+    this.lifetime = setTimeout(() => this.close(reason), Math.max(0, ms));
+    this.lifetime.unref?.();
   }
 
   /**
@@ -127,7 +139,8 @@ export class StreamConnection {
     this.closed = true;
     if (this.heartbeat) clearInterval(this.heartbeat);
     if (this.stall) clearTimeout(this.stall);
-    this.heartbeat = this.stall = undefined;
+    if (this.lifetime) clearTimeout(this.lifetime);
+    this.heartbeat = this.stall = this.lifetime = undefined;
     this.buffered = [];
     for (const topic of this.topics.values()) {
       void topic.release?.().catch(() => undefined);

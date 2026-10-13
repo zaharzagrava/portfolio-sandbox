@@ -2,7 +2,14 @@ import { Injectable } from '@nestjs/common';
 import { MetricsRegistry } from '@app/common/telemetry/metrics-registry';
 
 export type ClosedReason =
-  'client' | 'slow' | 'stalled' | 'lifetime' | 'shutdown' | 'revoked' | 'error';
+  | 'client'
+  | 'slow'
+  | 'stalled'
+  | 'lifetime'
+  | 'expired'
+  | 'shutdown'
+  | 'revoked'
+  | 'error';
 export type RefusedReason =
   | 'invalid'
   | 'unauthenticated'

@@ -7,7 +7,8 @@ import { CHANNEL_PREFIX, CONTROL_CHANNEL, channelName } from '../keys';
 import { RealtimeMetrics } from '../metrics/realtime-metrics';
 import type { RealtimeMessage } from '../topics';
 
-export type Listener = (message: RealtimeMessage) => void;
+/** `publishedAt`: the publisher's clock in epoch ms (delivery-latency metric); in-process subscribers never see it. */
+export type Listener = (message: RealtimeMessage, publishedAt?: number) => void;
 
 export interface RevocationNotice {
   userId?: string;
@@ -201,15 +202,16 @@ export class SubscriptionHub implements OnModuleDestroy {
     if (!channel.startsWith(CHANNEL_PREFIX)) return;
     const entry = this.channels.get(channel);
     if (!entry) return;
-    let message: RealtimeMessage;
+    let message: RealtimeMessage & { ts?: number };
     try {
-      message = JSON.parse(raw) as RealtimeMessage;
+      message = JSON.parse(raw) as RealtimeMessage & { ts?: number };
     } catch {
       return;
     }
+    const { ts, ...delivered } = message;
     for (const listener of [...entry.listeners]) {
       try {
-        listener(message);
+        listener(delivered, typeof ts === 'number' ? ts : undefined);
       } catch (error) {
         this.metrics.listenerErrors.add(1);
         this.logger.warn(

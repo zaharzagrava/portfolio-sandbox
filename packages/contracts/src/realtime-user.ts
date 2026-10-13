@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { orderStatusSchema } from './orders/order.ts';
 import { paymentStatusSchema } from './payments/payment.ts';
-import { notificationItemSchema } from './notifications/index.ts';
+import { notificationRealtimeEventSchema } from './notifications/index.ts';
 
 /**
  * Payloads on the `user:<id>` stream topic. The SSE `event:` name is the discriminator (`type`); the payload is
@@ -22,17 +22,15 @@ export const paymentStatusEventSchema = z.object({
 });
 export type PaymentStatusEvent = z.infer<typeof paymentStatusEventSchema>;
 
-export const notificationEventSchema = notificationItemSchema
-  .omit({ read: true })
-  .extend({ unread: z.number().int().nonnegative(), createdAt: z.string() });
-export type NotificationEvent = z.infer<typeof notificationEventSchema>;
-
 export const userStreamEventSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('order.status'), data: orderStatusEventSchema }),
   z.object({
     type: z.literal('payment.status'),
     data: paymentStatusEventSchema,
   }),
-  z.object({ type: z.literal('notification'), data: notificationEventSchema }),
+  z.object({
+    type: z.literal('notification'),
+    data: notificationRealtimeEventSchema,
+  }),
 ]);
 export type UserStreamEvent = z.infer<typeof userStreamEventSchema>;

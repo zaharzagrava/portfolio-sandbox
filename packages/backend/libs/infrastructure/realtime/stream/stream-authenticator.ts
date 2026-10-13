@@ -4,6 +4,8 @@ import { Injectable } from '@nestjs/common';
 export interface StreamPrincipal {
   userId: string;
   roles: string[];
+  /** Epoch ms at which the credential stops being valid, when the platform knows it: the stream ends then (FR-037). */
+  credentialExpiresAt?: number;
 }
 
 /** The credential presented with the request did not verify (invalid, expired, wrongly scoped): answered `401`. */

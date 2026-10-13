@@ -7,7 +7,11 @@ import {
 } from '@nestjs/common';
 import { streamQuerySchema } from '@marketplace-sandbox/contracts';
 import type { Request, Response } from 'express';
+import { hostname } from 'node:os';
+import { ClsServiceManager } from 'nestjs-cls';
 import { CLOCK, Clock } from '@app/common/core/clock';
+import type { AppClsStore } from '@app/common/request-context';
+import { ShutdownRegistry } from '@app/infrastructure/lifecycle';
 import { RedisService } from '@app/infrastructure/redis/redis.service';
 import { RealtimeConfig } from '../config/realtime.config';
 import {
@@ -57,6 +61,8 @@ import {
   type StreamPrincipal,
 } from './stream-authenticator';
 
+const INSTANCE = hostname();
+
 const refusalOf = (error: unknown): RefusedReason =>
   error instanceof StreamInvalidTopicsError ||
   error instanceof StreamInvalidQueryError
@@ -94,6 +100,7 @@ export class StreamService implements OnModuleDestroy {
   private nextId = 1;
   private controlReady?: Promise<void>;
   private resubscribeOff?: () => void;
+  private draining = false;
 
   constructor(
     private readonly registry: TopicRegistry,
@@ -103,7 +110,38 @@ export class StreamService implements OnModuleDestroy {
     private readonly config: RealtimeConfig,
     private readonly metrics: RealtimeMetrics,
     @Optional() @Inject(CLOCK) private readonly clock?: Clock,
-  ) {}
+    @Optional() shutdown?: ShutdownRegistry,
+  ) {
+    // Long-lived streams end during the HTTP drain, spread over the window; the hub's own quit runs later (order 85).
+    shutdown?.register({
+      name: 'realtime.stream.drain',
+      phase: 'drain',
+      order: 30,
+      timeoutMs: this.config.get('drainMs') + 2_000,
+      run: () => this.drain(),
+    });
+  }
+
+  /** Stops admitting and ends every open connection at a random point of the drain window (FR-038). */
+  async drain(): Promise<void> {
+    this.draining = true;
+    const window = this.config.get('drainMs');
+    await Promise.all(
+      [...this.connections].map(
+        (conn) =>
+          new Promise<void>((resolve) => {
+            const timer = setTimeout(
+              () => {
+                conn.close('shutdown');
+                resolve();
+              },
+              Math.floor(Math.random() * window),
+            );
+            timer.unref?.();
+          }),
+      ),
+    );
+  }
 
   private now(): number {
     return this.clock ? this.clock.now().getTime() : Date.now();
@@ -172,6 +210,7 @@ export class StreamService implements OnModuleDestroy {
     principal: StreamPrincipal | null,
     topics: string[],
   ): StreamConnection {
+    if (this.draining) throw new StreamUnavailableError();
     if (this.connections.size >= this.config.get('instanceCapacity')) {
       throw new StreamCapacityError(1 + Math.floor(Math.random() * 5));
     }
@@ -193,11 +232,25 @@ export class StreamService implements OnModuleDestroy {
 
     const conn = new StreamConnection(
       this.nextId++,
-      { userId, roles: principal?.roles ?? [], address },
+      {
+        userId,
+        roles: principal?.roles ?? [],
+        address,
+        credentialExpiresAt: principal?.credentialExpiresAt,
+      },
       res,
       this.config.values,
       (reason) => this.onClosed(conn, reason, counter, key),
     );
+    const cls = ClsServiceManager.getClsService<AppClsStore>();
+    conn.requestId = cls?.isActive() ? cls.get('requestId') : undefined;
+    this.logger.log({
+      event: 'realtime.stream.open',
+      requestId: conn.requestId,
+      topics: topics.length,
+      principal: userId ? 'user' : 'anonymous',
+      instance: INSTANCE,
+    });
     for (const topic of topics) conn.topics.set(topic, { state: 'admitting' });
     this.connections.add(conn);
     this.metrics.connections.set(this.connections.size);
@@ -219,9 +272,14 @@ export class StreamService implements OnModuleDestroy {
     this.metrics.connections.set(this.connections.size);
     if (reason !== 'refused') {
       this.metrics.closed.add(1, { reason });
-      this.logger.log(
-        `realtime stream closed reason=${reason} events=${conn.delivered} durationMs=${Date.now() - conn.openedAt}`,
-      );
+      // Never a cookie, token, cursor or payload (FR-055).
+      this.logger.log({
+        event: 'realtime.stream.close',
+        requestId: conn.requestId,
+        reason,
+        events: conn.delivered,
+        durationMs: Date.now() - conn.openedAt,
+      });
     }
   }
 
@@ -289,6 +347,14 @@ export class StreamService implements OnModuleDestroy {
     );
     if (baselined.length) conn.write(formatBaseline(encodeCursor(conn.cursor)));
     conn.startHeartbeat(HEARTBEAT_FRAME);
+    // Ends at the earlier of the maximum lifetime and the credential expiry; the client resumes from its cursor.
+    const expiresAt = conn.principal.credentialExpiresAt;
+    const untilExpiry =
+      expiresAt === undefined ? Infinity : expiresAt - this.now();
+    conn.startLifetime(
+      Math.min(this.config.get('maxLifetimeMs'), untilExpiry),
+      untilExpiry < this.config.get('maxLifetimeMs') ? 'expired' : 'lifetime',
+    );
 
     // A revocation that arrived while the connection was being admitted applies now (FR-040).
     for (const [topic, state] of [...conn.topics])
@@ -341,8 +407,8 @@ export class StreamService implements OnModuleDestroy {
   private async subscribeAll(conn: StreamConnection, topics: string[]) {
     const results = await Promise.allSettled(
       topics.map(async (topic) => {
-        const release = await this.hub.subscribe(topic, (message) =>
-          this.onLive(conn, message),
+        const release = await this.hub.subscribe(topic, (message, at) =>
+          this.onLive(conn, message, at),
         );
         const entry = conn.topics.get(topic)!;
         entry.release = release;
@@ -377,8 +443,16 @@ export class StreamService implements OnModuleDestroy {
 
   // ---- live path ----------------------------------------------------------------------------------------------
 
-  private onLive(conn: StreamConnection, message: RealtimeMessage) {
+  /** Publisher timestamps of messages that may sit in a replay buffer before they are written. */
+  private readonly publishedAt = new WeakMap<RealtimeMessage, number>();
+
+  private onLive(
+    conn: StreamConnection,
+    message: RealtimeMessage,
+    publishedAt?: number,
+  ) {
     if (conn.closed) return;
+    if (publishedAt !== undefined) this.publishedAt.set(message, publishedAt);
     const topic = conn.topics.get(message.topic);
     if (!topic || topic.state === 'revoked') return;
     if (conn.replaying) {
@@ -429,6 +503,10 @@ export class StreamService implements OnModuleDestroy {
     if (!conn.write(frame)) return;
     conn.delivered++;
     this.metrics.delivered.add(1, { kind });
+    // Replayed events are old by design; their age is not a delivery latency.
+    const publishedAt = this.publishedAt.get(message);
+    if (origin === 'live' && publishedAt !== undefined)
+      this.metrics.latency.record(Math.max(0, Date.now() - publishedAt) / 1000);
   }
 
   // ---- replay -------------------------------------------------------------------------------------------------
