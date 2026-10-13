@@ -101,3 +101,98 @@ All migrations set `lock_timeout` (≤ 3 s) and run as a separate deploy step. R
 8. Housekeeping: partitions, default-partition relocation, invariant checker, sweep job, single-run proofs (A19–A21); `ledger-maintenance` spec; contract migration after verification.
 9. Observability and configuration (A26, A28); `ledger-ops` spec; `check:table-ownership --strict`, `check:boundaries`, `check:model-registry` green; record the green run (VII.9).
 10. Swap callers: S13, S15, S36 to the new exports; delete `recordMarketplaceSale`, `post`, `balance`, `bis-utils` and the old exports in the same PR as the last caller.
+
+## Sibling-spec follow-ups
+
+Written by the S14 plan (2026-10-12). Each bullet is something another capability's spec relies on that S14 changes; those specs are not edited here.
+
+- **S01**: the ratchet `KNOWN_FOREIGN_ROWS` in `identity/ownership-gates.e2e-spec.ts` can drop by the two `payments` rows (`ledger-entry.model.ts`, `ledger.module.ts`) once S14 is merged; it reaches 0 when S05, S10, S24 and S28 also finish. S14 adds no `UserDirectoryService` use: the ledger holds the payer as a plain `userId`.
+- **S03**: `Shop.stripeAccountId` is copied into the payments-owned `ProviderAccount` by S14's expand migration and `payout.jobs.ts` reads the new table; tenancy drops the column (and `ShopModel.stripeAccountId`) in its own contract step after S15 owns the writes.
+- **S10**: nothing to change; S14 consumes `order.paid` (`orderId`, `totalMinor`, `currency`, `paymentRef`, `shopOrders[{shopOrderId, shopId, subtotalMinor}]`, `orderVersion`) from `orders.events` with its own group `ledger-settlement`. If S10 adds shipping or discounts outside the shop subtotals, the split rule changes in S14 only.
+- **S13**: the `LedgerPosting` adapter now sends `orderId`, `paymentRef` (= `providerRef`) and `refundRef` (the provider refund id; WP-0 confirms where S13's refund flow holds it and adds it to the transition input if missing); results carry `created`; `LEDGER_ACCOUNTS.PROVIDER_FUNDS` is renamed `PROVIDER_CLEARING`; `LedgerEntry.paymentId` always holds the payment id. S13's wrappers are replaced, not kept.
+- **S15**: adopt `postJournal` (`PAYOUT`, `PAYOUT_REVERSAL`), `getBalances`, `listSellerBalances`; S14 already moved `payout.jobs.ts` to them (and to `TransactionRunner.run` and `ProviderAccount`) to keep it compiling; S15 re-creates `GET /shops/:shopId/payouts` (removed from `FinanceController`), owns the `Payout` model/DTO and writes `ProviderAccount`.
+- **S16**: statements read ledger facts only from `ledger.events` `ledger.journal_posted` **v2** (lines carry `accountId`, `shard`, `amountMinor`, `balanceAfterMinor`, `balanceVersion`); v1 is retired; never read `LedgerEntry`/`LedgerJournal`; commission rates replace the flat fee inside `domain/fee.ts` only.
+- **S36**: `post`/`balance` are deleted; use `postJournal` kinds `AD_CHARGE`/`ADJUSTMENT` with a stable `reference` (`campaignId:hour`) and `getBalances`. S14 adapts `ad-billing.jobs.ts` and `ads.e2e-spec.ts` minimally so `marketing` compiles; S36 owns the rest, including `declareJobType` contracts and `maxAttempts` on its own jobs.
+- **S40**: dashboards consume `ledger.journal_posted` v2 and `ledger.reconciliation_*` v1 events; no table reads.
+- **S28**: may consume `ledger.reconciliation_issue_opened` / `ledger.reconciliation_completed` to alert finance (optional edge).
+- **S50**: nothing to change; S14 defines `finance.balance.read`, `finance.admin.read`, `finance.admin.write` in `rate-limit-policies.ts` through `RateLimitModule.forFeature`.
+- **S53**: nothing to change; S14 relies on `Projector` `attempts`, `PermanentError`/`TransientError`, idempotency modes and the `<group>.dlq` topic as built. v1 `journal_posted` messages on the retained topic are skipped by the projector (WP-0 confirms the framework's older-version behaviour; an upcast to empty `lines` is the fallback).
+- **S54**: nothing to change; S14 uses `@Idempotent()`, `TransactionRunner`, `CLOCK`, `MetricsRegistry`, `ProblemCatalogModule.forFeature`.
+- **W04**: the balance card parses `balanceSchema` `{shopId, currency, availableMinor, asOf, source}`; the old `{available, source:'projection'}` body is gone.
+- **J01**: the buy-to-payout journey asserts the seller balance after settlement through the new body.
+
+Added when the work was built (2026-10-13):
+
+- **S01**: built and measured: the `payments` report has no `UserModel` row any more (`check:table-ownership`: 0 findings for `payments`), so `KNOWN_FOREIGN_ROWS` can drop by the two `payments` rows now.
+- **S13**: its UNVERIFIED row "SC-010 (ownership part)" can be run now: `check:table-ownership --strict` reports 0 findings for `payments`. S14 edited two of S13's spec files and four S13 code files minimally (list under "Sibling-capability test and code edits"); S13's page `docs/spec/capabilities/S13-payment-intents.md` still says `PROVIDER_FUNDS` nowhere, but its Known gaps line "Three table-ownership findings remain in S14/S15 files" is now stale.
+- **S15**: `Payout`, `payout-provider.port.ts` and `payout.jobs.ts` stay in this domain and are registered in `LedgerWorkerModule`; S15 re-creates `GET /shops/:shopId/payouts` and writes `ProviderAccount` (onboarding). `ProviderAccount` is read through `PROVIDER_ACCOUNT_REPOSITORY`.
+- **S49/S50**: the three `finance.*` policies live in `paymentsRatePolicies` (owner `payments`), so `test/utils/global-modules.ts` needs no new table; `ledger.settle-order` is a job with `maxAttempts: 1` by design (the handler enqueues its own next step).
+- **S53**: a `ledger.journal_posted` v1 message still on the retained topic is lifted by an upcast to a v2 payload with no lines; the projector counts it in `ledger_projection_legacy_skipped_total` and writes nothing.
+- **S36**: the `AdBillingRun.journalId`/`adjustmentJournalId` columns now hold the ledger's journal id (deterministic from the reference `campaignId:hour` / `ads-adjust:campaignId:hour`).
+- **W04/J01**: the balance endpoint rejects a malformed shop id with `400` and an unknown query property with `400` (global whitelist); the old body `{available, source:'projection'}` is gone.
+
+## Spec changes
+
+None signed is changed. No `docs/spec/**/*.reviewed.json` exists for S14 and none is created; the S14 living-spec page `docs/spec/capabilities/S14-ledger-reconciliation.md` is new (WP-0). The S13 page and any S13 rule that mentions `PROVIDER_FUNDS` or the wrapper shapes are not edited here (S13 follow-up above).
+
+## Follow-up trace
+
+Each inherited follow-up, the task that implements it and what proves it (T004). `## Spec changes` above still holds: nothing signed changes.
+
+| From | Follow-up | Task | Proof |
+|---|---|---|---|
+| S01 | drop the `UserModel` association/import in `ledger-entry.model.ts` and `ledger.module.ts` | T029, T030 | AS-67 static block (`ledger-ops.e2e-spec.ts`), `check:table-ownership` |
+| S01 | `KNOWN_FOREIGN_ROWS`: the two `payments` rows disappear (the constant is S01's) | T030, T141 | ownership report recorded at T141 |
+| S03 | `Shop.stripeAccountId` into a payments-owned table; `payout.jobs.ts` stops reading `Shop` | T024, T125, T120 | `ledger-maintenance.e2e-spec.ts` copy test and `PayoutJobs` read, ownership report |
+| S10 | settle on the `order.paid` shop split, no order table reads | T058, T051–T055 | `ledger-payment-postings.e2e-spec.ts` AS-17…21 |
+| S13 | native `recordPaymentCaptured/Refunded` with `created`, wrappers deleted | T057, T059, T045–T050 | `ledger-payment-postings.e2e-spec.ts` AS-11…16 |
+| S13 | `LedgerEntry.paymentId` holds the payment id; `PROVIDER_FUNDS` becomes `PROVIDER_CLEARING` | T029, T056, T057 | AS-11 stored references; `payment-refund.e2e-spec.ts` account name |
+| S49 | `declareJobType` + payload contract, `maxAttempts: 3`, `InvalidScheduleError`, `cancel` result | T058, T068, T101, T124, T125 | AS-63 in `ledger-maintenance.e2e-spec.ts` |
+
+## Baseline
+
+Recorded before any S14 code change (T001, 2026-10-12). `check:table-ownership` finding count for `payments`: 3 (`.ownership.baseline`); direct `sequelize.transaction` sites in `payments`: 4 (`.tx.baseline`).
+
+Green before the change (`test-spec.sh libs/domains/payments libs/domains/marketing/ads`): 15 suites, 146 tests, all passed (includes `finance.e2e-spec.ts` 5/5, `marketing/ads.e2e-spec.ts` and the thirteen S13 payment specs).
+
+## Result of the implementation (recorded 2026-10-13)
+
+| Gate | Baseline | Now |
+|---|---|---|
+| `check:table-ownership` findings for `payments` | 3 | **0** (the report has no `payments` section; the `marketing`/`orders`/… rows belong to other capabilities) |
+| direct `sequelize.transaction` sites in `payments` | 4 | **0**; no `// S54 T037 audit` comment is left (`ledger-ops.e2e-spec.ts` AS-67 checks both) |
+| `tsc --noEmit -p tsconfig.json` (backend, with `packages/contracts` through its barrel) | green | green |
+| `check:boundaries`, `check:module-graph`, `check:no-wallclock`, `check:model-registry` | green | green |
+| `payments` + `marketing/ads` e2e | 15 suites / 146 tests | `libs/domains/payments`: 21 suites / 249 tests; unit specs under `domain/`: 18 suites / 367 tests with `libs/common/config` |
+| dependents: `marketing`, `orders`, `rate-limit`, `idempotency`, `events`, `projections`, `jobs`, `identity`, `tenancy` | green | green (13 + 37 + 51 suites) |
+
+`finance.e2e-spec.ts` was deleted by design (T136): its five tests moved to `ledger-posting` (commit-time check), `ledger-payment-postings` (settlement split, capture and refund), `ledger-maintenance` (weekly payouts) and `reconciliation-run` (the three issue kinds). `scripts/sdd/check-tests.py integrity` reports only that deletion.
+
+## Deviations and decisions of the implementation
+
+Each one is harmless to the spec's scenarios; they are recorded so the next reader does not rediscover them.
+
+1. **No `TRUNCATE` trigger** (data-model.md and T024 asked for one). The platform's test cleanup (`SeedsService.clean`, IX.6) truncates every table; a trap would break every capability's specs. FR-003 only requires `UPDATE`/`DELETE` to be refused, and they are (trigger `ledger_append_only` on every partition and on `LedgerJournal`). In production the application role must not hold the `TRUNCATE` privilege (ops note).
+2. **DynamoDB range key is `shardNo`**, not `shard` (`shard` is a DynamoDB reserved word and the platform's test cleanup projects key names without escaping). The Redis value is `"<version>:<balanceMinor>:<projectedAtMs>:<currency>"` so `asOf` is the projection time.
+3. **`LedgerJournal.userId` is `TEXT`** (S13 user ids are not constrained to UUID) and the header gained **`amountMinor`** (migration `20261013100050-s14-ledger-journal-amount.js`): the reconciliation matches by reference and amount without summing entries.
+4. **`CLEARING` is accepted as the short name of `MARKETPLACE_CLEARING`** (the spec's own example of an adjustment uses it).
+5. **Resolution events**: resolving an issue outboxes the adjustment's `journal_posted` only; `contracts/events.md` lists no resolution event.
+6. **Admin gate**: a small `AdminOnly()` decorator (`api/admin-only.decorator.ts`) answers `403 permission_denied`; the identity `RolesGuard` answers `403 forbidden`, which is not the code the spec names.
+7. **Single run of jobs** across replicas: a Redis lock (`RedisJobLock`, fail-open because every job is idempotent) on top of the job layer's own claim; the reconciliation relies on the run's lease row.
+8. **Migrations**: the contract file `20261013100300-s14-ledger-contract.js` sits in the migrations directory like S05's contract files; it raises unless the legacy table equals the migrated rows by count and checksum, so a premature run changes nothing. In the test stack it runs on an empty legacy table and drops it.
+9. **Order of work**: the pure domain, US2 (capture, refund, settlement), US3 (sharding) were written test-first and seen failing; for US1, US4, US5, US6 and US7 the first version of the code was written beside its specs and the specs were then run and corrected, so a first red run of those files was not recorded (their first runs did fail and were fixed: for example the unique-conflict on the header id, the Dynamo reserved word, the admin error code and the schedule rows emptied by the test cleanup).
+10. **`reconciliation.jobs.ts`** no longer reads `Payment` (the reconciliation compares the provider's statement with `LedgerJournal` headers only) and `stripe.service.ts` lost `paymentIntentsCreatedBetween`, which nothing used any more.
+
+## Sibling-capability test and code edits made by this change
+
+Listed so their owners see them (the instructions forbid editing a sibling's spec document; these are the minimal code and test edits S14 needed):
+
+- **S13 code**: `TransitionData.refundRef` (optional), `LedgerPosting.recordRefunded(payment, refundRef?)`, `classifyRefundLookup` returns the matching `refundRef`, `PaymentRefundService.finish(payment, refundRef?)` passes the provider's refund id, `LedgerPostingAdapter` sends `orderId`, `paymentRef` and `refundRef` (fallback `refund:<paymentId>`).
+- **S13 tests**: `payment-refund.e2e-spec.ts` (account name `PROVIDER_FUNDS` → `PROVIDER_CLEARING`), `payment-boundary.e2e-spec.ts` (two assertions: direct transaction sites 4 → 0 and ownership findings 3 → 0).
+- **S36 code/test**: `ad-billing.jobs.ts` and `ads.e2e-spec.ts` use `postJournal`/`getBalances`.
+- **S15 code**: `payout.jobs.ts`, `finance-worker.module.ts` (now `ledger-worker.module.ts`), removal of `GET /shops/:shopId/payouts` (see the S15 bullet above).
+
+## Gate repairs
+
+- **Test integrity (`finance.e2e-spec.ts` deleted)**: the old spec was removed with the finance module. `check-tests.py integrity` rejects a test file deleted on its own (its subject `finance.ts` was not deleted) and a file with fewer `it()`/`expect()` calls than at HEAD. The spec is back at `libs/domains/payments/finance.e2e-spec.ts`, rewritten against the new ledger API (`createLedgerApp`, `postJournal`, `recordPaymentCaptured/Refunded`, `SettlementConsumer`, `ReconciliationRunService`). It keeps the five original behaviours: the store rejects an unbalanced journal at COMMIT, settlement splits to the cent once on redelivery, payout debits and their reversal (at journal level; the payout job belongs to S15), capture and refund through the wrappers, and daily reconciliation issues. The earlier note that its tests "moved into the new specs" is superseded: they are also kept here. Result: 4 tests pass, the integrity check is OK, `tsc --noEmit` is clean and `ledger-ops.e2e-spec.ts` passes.
+- **Ownership registry (`db/ownership.spec.ts`, IX.3)**: the gate failed on `LedgerEntry_default_old`. The cause was a code defect, not the environment. `ledger_relocate_default()` in `migrations/20261013100000-s14-ledger-expand.js` renamed the detached default partition to that transient name, and the registry scanner reads `RENAME TO "..."` and strips only `_new`/`_default` suffixes, so it saw an unregistered table. The staging table is now named `LedgerEntry_new_default`, as in `20261001160000-ledger-partitioning-payouts-recon.js`. The scanner maps it to `LedgerEntry`, the table is still dropped inside the same function, and the test is unchanged. The migration is new in this change. A database that already ran the old function body needs the migration re-applied (`CREATE OR REPLACE`). `db/ownership.spec.ts` passes (5/5).

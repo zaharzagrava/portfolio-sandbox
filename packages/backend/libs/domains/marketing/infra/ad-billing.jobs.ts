@@ -177,16 +177,25 @@ export class AdBillingJobs implements OnApplicationBootstrap {
         },
       );
       if (!inserted || amount === 0) return 0;
-      await this.ledger.post(
+      // One charge per (campaign, hour): the reference is the ledger's idempotency key (S14 postJournal).
+      const posted = await this.ledger.postJournal(
         {
-          journalId,
           kind: 'AD_CHARGE',
+          reference: `${campaignId}:${hour.toISOString()}`,
+          currency: 'EUR',
           lines: [
-            { accountId: shopAccount(c.shopId), amount: -amount },
-            { accountId: LEDGER_ACCOUNTS.PLATFORM_FEES, amount },
+            { accountId: shopAccount(c.shopId), amountMinor: -amount },
+            { accountId: LEDGER_ACCOUNTS.PLATFORM_FEES, amountMinor: amount },
           ],
         },
         transaction,
+      );
+      await this.sequelize.query(
+        `UPDATE "AdBillingRun" SET "journalId" = :journalId WHERE "campaignId" = :campaignId AND hour = :hour`,
+        {
+          replacements: { journalId: posted.journalId, campaignId, hour },
+          transaction,
+        },
       );
       return amount;
     });
@@ -222,16 +231,24 @@ export class AdBillingJobs implements OnApplicationBootstrap {
         },
       );
       if (!updated || delta === 0) return;
-      await this.ledger.post(
+      const posted = await this.ledger.postJournal(
         {
-          journalId,
           kind: 'ADJUSTMENT',
+          reference: `ads-adjust:${campaignId}:${hour.toISOString()}`,
+          currency: 'EUR',
           lines: [
-            { accountId: shopAccount(c.shopId), amount: -delta },
-            { accountId: LEDGER_ACCOUNTS.PLATFORM_FEES, amount: delta },
+            { accountId: shopAccount(c.shopId), amountMinor: -delta },
+            { accountId: LEDGER_ACCOUNTS.PLATFORM_FEES, amountMinor: delta },
           ],
         },
         transaction,
+      );
+      await this.sequelize.query(
+        `UPDATE "AdBillingRun" SET "adjustmentJournalId" = :journalId WHERE "campaignId" = :campaignId AND hour = :hour`,
+        {
+          replacements: { journalId: posted.journalId, campaignId, hour },
+          transaction,
+        },
       );
       this.logger.log(
         `ad billing reconciled ${campaignId} ${hour.toISOString()}: ${billedClicks} → ${exactClicks}`,

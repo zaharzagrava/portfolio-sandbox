@@ -12,6 +12,8 @@ export class LedgerPostingAdapter implements LedgerPosting {
     await this.ledger.recordPaymentCaptured(
       {
         paymentId: payment.id,
+        orderId: payment.orderId,
+        paymentRef: payment.providerRef ?? '',
         userId: payment.userId,
         amountMinor: payment.amountMinor,
         currency: payment.currency,
@@ -20,10 +22,15 @@ export class LedgerPostingAdapter implements LedgerPosting {
     );
   }
 
-  async recordRefunded(payment: PaymentRecord): Promise<void> {
+  async recordRefunded(
+    payment: PaymentRecord,
+    refundRef?: string,
+  ): Promise<void> {
     await this.ledger.recordPaymentRefunded(
       {
         paymentId: payment.id,
+        // The provider's refund id when the caller has it; else the deterministic reference S13 sent it (R-11).
+        refundRef: refundRef ?? `refund:${payment.id}`,
         amountMinor: payment.amountMinor,
         currency: payment.currency,
       },

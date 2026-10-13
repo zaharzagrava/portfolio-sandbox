@@ -162,7 +162,8 @@ export interface PaymentProvider {
 export interface LedgerPosting {
   /** Inside the caller's transaction; idempotent per payment. */
   recordCaptured(payment: PaymentRecord): Promise<void>;
-  recordRefunded(payment: PaymentRecord): Promise<void>;
+  /** `refundRef`: the provider's id of the refund when the caller has it. */
+  recordRefunded(payment: PaymentRecord, refundRef?: string): Promise<void>;
 }
 
 export interface RealtimePort {

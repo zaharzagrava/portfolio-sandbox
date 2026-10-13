@@ -222,19 +222,81 @@ export class StripeService {
     return result.data[0] ?? null;
   }
 
-  /** Streams every PaymentIntent created in [from, to) - auto-pagination with backpressure (`for await`). */
-  public async *paymentIntentsCreatedBetween(
-    from: Date,
-    to: Date,
-  ): AsyncGenerator<PaymentIntent> {
-    for await (const intent of this.stripe.paymentIntents.list({
-      created: {
-        gte: Math.floor(from.getTime() / 1000),
-        lt: Math.floor(to.getTime() / 1000),
+  /**
+   * One page of the account's balance transactions created in [from, to) (S14 statement). `source` is expanded so a
+   * charge, refund or dispute line carries its own id and, for a charge, the payment intent. No retry: the caller
+   * (the reconciliation job layer) owns retries; `timeoutMs` bounds the call.
+   */
+  public async listBalanceTransactions(params: {
+    fromInclusive: Date;
+    toExclusive: Date;
+    startingAfter?: string;
+    limit: number;
+    timeoutMs: number;
+  }): Promise<{ data: Stripe.BalanceTransaction[]; hasMore: boolean }> {
+    const page = await this.stripe.balanceTransactions.list(
+      {
+        created: {
+          gte: Math.floor(params.fromInclusive.getTime() / 1000),
+          lt: Math.floor(params.toExclusive.getTime() / 1000),
+        },
+        limit: params.limit,
+        ...(params.startingAfter && { starting_after: params.startingAfter }),
+        expand: ['data.source'],
       },
-      limit: 100,
-    })) {
-      yield intent;
+      { timeout: params.timeoutMs, maxNetworkRetries: 0 },
+    );
+    return { data: page.data, hasMore: page.has_more };
+  }
+
+  /**
+   * The balance transaction of a payment intent (`pi_…`), a refund (`re_…`) or a dispute (`dp_…`) by our stored
+   * reference, wherever in time it happened; `null` when the provider has no such object.
+   */
+  public async retrieveBalanceTransactionByReference(
+    reference: string,
+    timeoutMs: number,
+  ): Promise<Stripe.BalanceTransaction | null> {
+    const options = { timeout: timeoutMs, maxNetworkRetries: 0 };
+    try {
+      if (reference.startsWith('pi_')) {
+        const intent = await this.stripe.paymentIntents.retrieve(
+          reference,
+          { expand: ['latest_charge.balance_transaction'] },
+          options,
+        );
+        const charge = intent.latest_charge;
+        const transaction =
+          charge && typeof charge === 'object'
+            ? charge.balance_transaction
+            : null;
+        return transaction && typeof transaction === 'object'
+          ? transaction
+          : null;
+      }
+      if (reference.startsWith('re_')) {
+        const refund = await this.stripe.refunds.retrieve(
+          reference,
+          { expand: ['balance_transaction'] },
+          options,
+        );
+        const transaction = refund.balance_transaction;
+        return transaction && typeof transaction === 'object'
+          ? transaction
+          : null;
+      }
+      if (reference.startsWith('dp_')) {
+        const dispute = await this.stripe.disputes.retrieve(
+          reference,
+          { expand: ['balance_transactions'] },
+          options,
+        );
+        return dispute.balance_transactions?.[0] ?? null;
+      }
+      return null;
+    } catch (error) {
+      if ((error as { code?: string }).code === 'resource_missing') return null;
+      throw error;
     }
   }
 

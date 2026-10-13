@@ -1,0 +1,23 @@
+{
+  "TableName": "LedgerBalanceView",
+  "AttributeDefinitions": [
+    { "AttributeName": "accountId", "AttributeType": "S" },
+    { "AttributeName": "shardNo", "AttributeType": "N" }
+  ],
+  "KeySchema": [
+    { "AttributeName": "accountId", "KeyType": "HASH" },
+    { "AttributeName": "shardNo", "KeyType": "RANGE" }
+  ],
+  "_design": {
+    "pattern": "durable copy of the ledger's running balances (S14 balance read model)",
+    "items": {
+      "balance": "accountId=<account> shardNo=<n> | currency, balanceMinor, version, projectedAt (ISO)"
+    },
+    "accessPatterns": [
+      "project a journal line: PutItem IF attribute_not_exists(version) OR version < :v (absolute value, version-guarded)",
+      "read a seller balance: GetItem accountId + shardNo 0; read a logical account: Query accountId (all shards)",
+      "note: the range key is `shardNo`, not `shard`: `shard` is a DynamoDB reserved word and the platform's test cleanup projects key names unescaped"
+    ],
+    "why": "absolute value plus a version makes replay, duplication and reordering harmless; no TTL: the copy survives a loss of the hot store and is rebuilt from the topic or from AccountBalance"
+  }
+}

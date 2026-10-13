@@ -1,12 +1,34 @@
-import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
-import { InjectConnection } from '@nestjs/sequelize';
-import { QueryTypes, Sequelize } from 'sequelize';
+import {
+  Inject,
+  Injectable,
+  Logger,
+  OnApplicationBootstrap,
+} from '@nestjs/common';
+import { z } from 'zod';
+import { ApiConfigService } from '@app/common/config';
+import { CLOCK, Clock } from '@app/common/core/clock';
 import { JobHandler } from '@app/infrastructure/jobs/job-handler.decorator';
 import { JobsService } from '@app/infrastructure/jobs/jobs.service';
-import { StripeService } from '@app/infrastructure/stripe/stripe.service';
-
-import { z } from 'zod';
 import { declareJobType } from '@app/infrastructure/jobs/job-type-registry';
+import {
+  NonRetryableJobError,
+  type JobContext,
+} from '@app/infrastructure/jobs/job-types';
+import {
+  RECONCILIATION_PROVIDER,
+  ReconciliationRunService,
+  type RunOutcome,
+} from '../application/reconciliation-run.service';
+import {
+  RECONCILIATION_STORE,
+  type ReconciliationStore,
+} from '../domain/ledger-ports';
+import {
+  RECONCILIATION_MAX_ATTEMPTS,
+  catchUpDays,
+  validateDay,
+} from '../domain/reconciliation-window';
+import { upsertLedgerSchedule } from './schedule-bootstrap';
 
 declare module '@app/infrastructure/jobs/job-types' {
   interface JobPayloads {
@@ -17,30 +39,30 @@ declare module '@app/infrastructure/jobs/job-types' {
 declareJobType({
   name: 'payments.reconcile-daily',
   contract: z.object({ day: z.string().optional() }),
+  maxAttempts: RECONCILIATION_MAX_ATTEMPTS,
 });
 
-type IssueKind =
-  'MISSING_IN_LEDGER' | 'MISSING_AT_PROVIDER' | 'AMOUNT_MISMATCH';
+const DAY_MS = 86_400_000;
 
 /**
- * Daily reconciliation (lesson 06/02 §5): what Stripe says we charged vs what
- * our ledger booked, matched by OUR idempotency key. Streams the provider side
- * (constant memory), loads our side for the day, diffs, and records issues for
- * the finance queue. Idempotent per (provider, day) - re-running a finished day
- * is a no-op; re-running a crashed one starts that day over.
+ * The daily reconciliation job (S14 FR-032…FR-034): with a `day` it reconciles exactly that closed UTC day; without
+ * one it runs yesterday and catches up the days of the last week without a `COMPLETED` run, oldest first. The clock
+ * is injected. A provider failure fails the run and the job (the job layer retries, at most three attempts).
  */
 @Injectable()
 export class ReconciliationJobs implements OnApplicationBootstrap {
   private readonly logger = new Logger(ReconciliationJobs.name);
 
   constructor(
-    @InjectConnection() private readonly sequelize: Sequelize,
-    private readonly stripe: StripeService,
+    private readonly runs: ReconciliationRunService,
+    @Inject(RECONCILIATION_STORE) private readonly store: ReconciliationStore,
     private readonly jobs: JobsService,
+    private readonly config: ApiConfigService,
+    @Inject(CLOCK) private readonly clock: Clock,
   ) {}
 
-  async onApplicationBootstrap() {
-    await this.jobs.upsertSchedule({
+  async onApplicationBootstrap(): Promise<void> {
+    await upsertLedgerSchedule(this.jobs, this.logger, {
       name: 'payments.reconcile-daily',
       cron: '30 2 * * *',
       jobType: 'payments.reconcile-daily',
@@ -50,102 +72,42 @@ export class ReconciliationJobs implements OnApplicationBootstrap {
 
   @JobHandler('payments.reconcile-daily', { concurrency: 1, leaseMs: 600_000 })
   async reconcile(
-    { day }: { day?: string },
-    ctx?: { heartbeat(): Promise<void> },
-  ): Promise<void> {
-    const target =
-      day ?? new Date(Date.now() - 86_400_000).toISOString().slice(0, 10);
-    const from = new Date(`${target}T00:00:00.000Z`);
-    const to = new Date(from.getTime() + 86_400_000);
-
-    const [run] = await this.sequelize.query<{
-      id: string;
-      finishedAt: Date | null;
-    }>(
-      `INSERT INTO "ReconciliationRun" (provider, day) VALUES ('stripe', :day)
-       ON CONFLICT (provider, day) DO UPDATE SET provider = EXCLUDED.provider
-       RETURNING id, "finishedAt"`,
-      { type: QueryTypes.SELECT, replacements: { day: target } },
-    );
-    if (run.finishedAt) return;
-    await this.sequelize.query(
-      `DELETE FROM "ReconciliationIssue" WHERE "runId" = :runId`,
-      { replacements: { runId: run.id } },
-    );
-
-    const ours = new Map(
-      (
-        await this.sequelize.query<{ idempotencyKey: string; amount: string }>(
-          `SELECT "idempotencyKey", amount FROM "Payment" WHERE status = 'COMPLETED' AND "createdAt" >= :from AND "createdAt" < :to`,
-          { type: QueryTypes.SELECT, replacements: { from, to } },
-        )
-      ).map((p) => [p.idempotencyKey, Number(p.amount)]),
-    );
-
-    const issues: { kind: IssueKind; reference: string; details: object }[] =
-      [];
-    let matched = 0;
-    let seen = 0;
-    for await (const intent of this.stripe.paymentIntentsCreatedBetween(
-      from,
-      to,
-    )) {
-      if (++seen % 1_000 === 0) await ctx?.heartbeat();
-      if (intent.status !== 'succeeded') continue;
-      const key = intent.metadata?.idempotencyKey;
-      if (!key) continue;
-
-      const ourAmount = ours.get(key);
-      if (ourAmount === undefined)
-        issues.push({
-          kind: 'MISSING_IN_LEDGER',
-          reference: key,
-          details: { intent: intent.id, amount: intent.amount },
-        });
-      else if (ourAmount !== intent.amount)
-        issues.push({
-          kind: 'AMOUNT_MISMATCH',
-          reference: key,
-          details: { ours: ourAmount, provider: intent.amount },
-        });
-      else matched++;
-      ours.delete(key);
+    payload: { day?: string },
+    ctx?: Pick<JobContext, 'heartbeat' | 'signal'>,
+  ): Promise<RunOutcome[]> {
+    const now = this.clock.now();
+    let days: string[];
+    if (payload.day !== undefined) {
+      const checked = validateDay(payload.day, now);
+      if (!checked.ok) throw new NonRetryableJobError(checked.code);
+      days = [checked.day];
+    } else {
+      const span = this.config.get('reconciliation_catchup_days');
+      const today = new Date(now.getTime());
+      today.setUTCHours(0, 0, 0, 0);
+      const from = new Date(today.getTime() - span * DAY_MS)
+        .toISOString()
+        .slice(0, 10);
+      const done = new Set(
+        await this.store.completedDays(
+          RECONCILIATION_PROVIDER,
+          from,
+          today.toISOString().slice(0, 10),
+        ),
+      );
+      days = catchUpDays(now, done, span);
     }
-    for (const [key, amount] of ours)
-      issues.push({
-        kind: 'MISSING_AT_PROVIDER',
-        reference: key,
-        details: { amount },
+
+    const outcomes: RunOutcome[] = [];
+    for (const day of days) {
+      const outcome = await this.runs.runDay(day, {
+        heartbeat: ctx?.heartbeat,
+        signal: ctx?.signal,
       });
-
-    // S54 T037 audit: explicit unit of work, opens its own transaction by design; no network I/O inside.
-    await this.sequelize.transaction(async (transaction) => {
-      for (const issue of issues) {
-        await this.sequelize.query(
-          `INSERT INTO "ReconciliationIssue" ("runId", kind, reference, details) VALUES (:runId, :kind, :reference, CAST(:details AS JSONB))`,
-          {
-            replacements: {
-              runId: run.id,
-              kind: issue.kind,
-              reference: issue.reference,
-              details: JSON.stringify(issue.details),
-            },
-            transaction,
-          },
-        );
-      }
-      await this.sequelize.query(
-        `UPDATE "ReconciliationRun" SET matched = :matched, issues = :issues, "finishedAt" = now() WHERE id = :id`,
-        {
-          replacements: { matched, issues: issues.length, id: run.id },
-          transaction,
-        },
-      );
-    });
-
-    if (issues.length)
-      this.logger.warn(
-        `reconciliation ${target}: ${issues.length} issues (${matched} matched)`,
-      );
+      outcomes.push(outcome);
+      this.logger.log(`reconciliation ${day}: ${outcome.outcome}`);
+      if (outcome.outcome === 'interrupted') break;
+    }
+    return outcomes;
   }
 }

@@ -11,6 +11,7 @@ import { eventsConfigKeys } from './events-config';
 import { jobsConfigKeys } from './jobs-config';
 import { ordersConfigKeys } from './orders-config';
 import { paymentsConfigKeys } from './payments-config';
+import { ledgerConfigKeys } from './ledger-config';
 import { searchConfigKeys } from './search-config';
 import { autocompleteConfigKeys } from './autocomplete-config';
 import { recommendationsConfigKeys } from './recommendations-config';
@@ -586,6 +587,11 @@ export class ApiConfigService {
           ...jobsConfigKeys,
           ...ordersConfigKeys,
           ...paymentsConfigKeys,
+          ...ledgerConfigKeys,
+          ledger_cursor_secret: {
+            verify: joi.string().optional().allow(''),
+            name: 'LEDGER_CURSOR_SECRET',
+          },
           ...searchConfigKeys,
           ...autocompleteConfigKeys,
           ...recommendationsConfigKeys,

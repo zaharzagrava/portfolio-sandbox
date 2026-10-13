@@ -58,19 +58,16 @@ describe('Payments: domain boundaries', () => {
     expect(matching(/KafkaConsumerService/)).toEqual([]);
   });
 
-  it('S13 AS-64: the count of direct sequelize.transaction sites in payments did not rise (4, all in the ledger, payout and reconciliation code of S14 and S15)', () => {
+  it('S13 AS-64: the count of direct sequelize.transaction sites in payments did not rise (S14 moved all four to TransactionRunner.run: none is left)', () => {
     const sites = matching(/\bsequelize\.transaction\(/);
-    expect(sites.sort()).toEqual([
-      'infra/payout.jobs.ts',
-      'infra/reconciliation.jobs.ts',
-    ]);
+    expect(sites.sort()).toEqual([]);
     const count = sources
       .map((f) => (text(f).match(/\bsequelize\.transaction\(/g) ?? []).length)
       .reduce((a, b) => a + b, 0);
-    expect(count).toBe(4);
+    expect(count).toBe(0);
   });
 
-  it('S13 AS-64: the table-ownership findings left for payments are the three in S14 and S15 files', () => {
+  it('S13 AS-64: no table-ownership finding is left for payments (S14 removed the three in the ledger and payout files)', () => {
     const out = execFileSync('pnpm', ['check:table-ownership'], {
       cwd: BACKEND,
       encoding: 'utf8',
@@ -83,10 +80,6 @@ describe('Payments: domain boundaries', () => {
       .map((l) => l.trim().split(/\s+/).pop())
       .filter(Boolean)
       .sort();
-    expect(files).toEqual([
-      'libs/domains/payments/finance-worker.module.ts',
-      'libs/domains/payments/infra/models/ledger-entry.model.ts',
-      'libs/domains/payments/infra/payout.jobs.ts',
-    ]);
+    expect(files).toEqual([]);
   });
 });

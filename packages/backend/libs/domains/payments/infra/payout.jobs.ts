@@ -1,17 +1,29 @@
-import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  Logger,
+  OnApplicationBootstrap,
+} from '@nestjs/common';
 import { InjectConnection, InjectModel } from '@nestjs/sequelize';
 import { QueryTypes, Sequelize } from 'sequelize';
-import Payout from './models/payout.model';
-import { ShopModel as Shop } from '@app/domains/tenancy';
+import { z } from 'zod';
+import { CLOCK, Clock } from '@app/common/core/clock';
+import { TransactionRunner } from '@app/infrastructure/context';
 import { JobHandler } from '@app/infrastructure/jobs/job-handler.decorator';
 import { JobsService } from '@app/infrastructure/jobs/jobs.service';
-import { LedgerService } from '../application/ledger.service';
-import { LEDGER_ACCOUNTS, shopAccount } from '../domain/accounts';
-import { PayoutProvider } from './payout-provider.port';
-import { v5 as uuidv5 } from 'uuid';
-
-import { z } from 'zod';
 import { declareJobType } from '@app/infrastructure/jobs/job-type-registry';
+import { LedgerService } from '../application/ledger.service';
+import { LEDGER_ACCOUNTS, shopAccount } from '../domain/account';
+import {
+  PROVIDER_ACCOUNT_REPOSITORY,
+  type ProviderAccountRepository,
+} from '../domain/ledger-ports';
+import Payout from './models/payout.model';
+import { PayoutProvider } from './payout-provider.port';
+import {
+  LEDGER_JOB_ATTEMPTS,
+  upsertLedgerSchedule,
+} from './schedule-bootstrap';
 
 declare module '@app/infrastructure/jobs/job-types' {
   interface JobPayloads {
@@ -23,14 +35,17 @@ declare module '@app/infrastructure/jobs/job-types' {
 declareJobType({
   name: 'payouts.run-weekly',
   contract: z.object({ periodStart: z.string().optional() }),
+  maxAttempts: LEDGER_JOB_ATTEMPTS,
 });
 declareJobType({
   name: 'payouts.send',
   contract: z.object({ payoutId: z.string() }),
+  maxAttempts: LEDGER_JOB_ATTEMPTS,
 });
 
 const MIN_PAYOUT_MINOR = 10_00;
-const PAYOUTS_SENT = 'PAYOUTS_SENT';
+const CURRENCY = 'EUR';
+const PAGE = 200;
 
 /**
  * Weekly seller payouts (lesson 10/02 Ex1 - money leaving the platform):
@@ -40,6 +55,8 @@ const PAYOUTS_SENT = 'PAYOUTS_SENT';
  *  2. send: Stripe Connect transfer with idempotency key = payout id; success
  *     → PAYOUT_CLEARING → PAYOUTS_SENT; definite failure → reversal journal
  *     back to the shop's balance. One slow/failed shop never blocks the others.
+ * S14 moved this file onto the ledger's exports (`postJournal`, `listSellerBalances`), the payments-owned
+ * `ProviderAccount` and the transaction runner; its behaviour is unchanged (S15 owns the rest).
  */
 @Injectable()
 export class PayoutJobs implements OnApplicationBootstrap {
@@ -47,15 +64,18 @@ export class PayoutJobs implements OnApplicationBootstrap {
 
   constructor(
     @InjectModel(Payout) private readonly payoutModel: typeof Payout,
-    @InjectModel(Shop) private readonly shopModel: typeof Shop,
     @InjectConnection() private readonly sequelize: Sequelize,
     private readonly ledger: LedgerService,
     private readonly jobs: JobsService,
     private readonly provider: PayoutProvider,
+    private readonly transactions: TransactionRunner,
+    @Inject(CLOCK) private readonly clock: Clock,
+    @Inject(PROVIDER_ACCOUNT_REPOSITORY)
+    private readonly providerAccounts: ProviderAccountRepository,
   ) {}
 
   async onApplicationBootstrap() {
-    await this.jobs.upsertSchedule({
+    await upsertLedgerSchedule(this.jobs, this.logger, {
       name: 'payouts.run-weekly',
       cron: '0 6 * * 1',
       timezone: 'Europe/Warsaw',
@@ -66,89 +86,102 @@ export class PayoutJobs implements OnApplicationBootstrap {
 
   @JobHandler('payouts.run-weekly', { concurrency: 1, leaseMs: 600_000 })
   async run({ periodStart }: { periodStart?: string }): Promise<void> {
-    const week = periodStart ?? mondayOf(new Date());
-    const balances = await this.sequelize.query<{
-      accountId: string;
-      balance: string;
-    }>(
-      `SELECT "accountId", sum(amount)::bigint AS balance FROM "LedgerEntry"
-       WHERE "accountId" LIKE 'SHOP\\_%' GROUP BY "accountId" HAVING sum(amount) >= :min`,
-      { type: QueryTypes.SELECT, replacements: { min: MIN_PAYOUT_MINOR } },
-    );
-
-    for (const { accountId, balance } of balances) {
-      const shopId = accountId.slice('SHOP_'.length);
-      const amount = Number(balance);
-      // S54 T037 audit: explicit unit of work, opens its own transaction by design; no network I/O inside.
-      await this.sequelize.transaction(async (tx) => {
-        const created = await this.sequelize.query<{ id: string }>(
-          `INSERT INTO "Payout" ("shopId", amount, "periodStart") VALUES (:shopId, :amount, :week)
-           ON CONFLICT ("shopId", "periodStart") DO NOTHING RETURNING id`,
-          {
-            type: QueryTypes.SELECT,
-            replacements: { shopId, amount, week },
-            transaction: tx,
-          },
-        );
-        if (created.length === 0) return;
-        const payoutId = created[0].id;
-
-        await this.ledger.post(
-          {
-            journalId: payoutId,
-            kind: 'PAYOUT',
-            lines: [
-              { accountId, amount: -amount },
-              { accountId: LEDGER_ACCOUNTS.PAYOUT_CLEARING, amount },
-            ],
-          },
-          tx,
-        );
-        await this.jobs.enqueue(
-          'payouts.send',
-          { payoutId },
-          { idempotencyKey: `payout-send:${payoutId}`, shopId },
-        );
+    const week = periodStart ?? mondayOf(this.clock.now());
+    let after: string | undefined;
+    do {
+      const page = await this.ledger.listSellerBalances({
+        currency: CURRENCY,
+        minMinor: MIN_PAYOUT_MINOR,
+        limit: PAGE,
+        after,
       });
-    }
+      for (const { shopId, balanceMinor } of page.items)
+        await this.payoutOne(shopId, balanceMinor, week);
+      after = page.next ?? undefined;
+    } while (after);
+  }
+
+  private async payoutOne(
+    shopId: string,
+    amount: number,
+    week: string,
+  ): Promise<void> {
+    await this.transactions.run(async (tx) => {
+      const created = await this.sequelize.query<{ id: string }>(
+        `INSERT INTO "Payout" ("shopId", amount, "periodStart") VALUES (:shopId, :amount, :week)
+         ON CONFLICT ("shopId", "periodStart") DO NOTHING RETURNING id`,
+        {
+          type: QueryTypes.SELECT,
+          replacements: { shopId, amount, week },
+          transaction: tx,
+        },
+      );
+      if (created.length === 0) return;
+      const payoutId = created[0].id;
+
+      await this.ledger.postJournal(
+        {
+          kind: 'PAYOUT',
+          reference: `payout:${payoutId}`,
+          currency: CURRENCY,
+          lines: [
+            { accountId: shopAccount(shopId), amountMinor: -amount },
+            { accountId: LEDGER_ACCOUNTS.PAYOUT_CLEARING, amountMinor: amount },
+          ],
+        },
+        tx,
+      );
+      await this.jobs.enqueue(
+        'payouts.send',
+        { payoutId },
+        {
+          idempotencyKey: `payout-send:${payoutId}`,
+          shopId,
+          maxAttempts: LEDGER_JOB_ATTEMPTS,
+        },
+      );
+    });
   }
 
   @JobHandler('payouts.send', { concurrency: 20 })
   async send({ payoutId }: { payoutId: string }): Promise<void> {
     const payout = await this.payoutModel.findByPk(payoutId);
     if (!payout || payout.status !== 'PENDING') return;
-    const shop = await this.shopModel.findByPk(payout.shopId, {
-      attributes: ['stripeAccountId'],
-    });
+    const destination = await this.providerAccounts.findAccountId(
+      payout.shopId,
+    );
 
     try {
-      if (!shop?.stripeAccountId)
+      if (!destination)
         throw Object.assign(new Error('shop has no payout account'), {
           definite: true,
         });
       const { providerRef } = await this.provider.transfer({
         amount: Number(payout.amount),
         currency: payout.currency,
-        destination: shop.stripeAccountId,
+        destination,
         idempotencyKey: payout.id,
       });
-      // S54 T037 audit: explicit unit of work, opens its own transaction by design; no network I/O inside.
-      await this.sequelize.transaction(async (tx) => {
+      await this.transactions.run(async (tx) => {
         const [updated] = await this.payoutModel.update(
           { status: 'PAID', providerRef },
           { where: { id: payout.id, status: 'PENDING' }, transaction: tx },
         );
         if (updated === 0) return;
-        await this.ledger.post(
+        await this.ledger.postJournal(
           {
-            journalId: deriveJournalId(payout.id, 'sent'),
             kind: 'PAYOUT',
+            reference: `payout-sent:${payout.id}`,
+            currency: CURRENCY,
             lines: [
               {
                 accountId: LEDGER_ACCOUNTS.PAYOUT_CLEARING,
-                amount: -Number(payout.amount),
+                amountMinor: -Number(payout.amount),
               },
-              { accountId: PAYOUTS_SENT, amount: Number(payout.amount) },
+              {
+                accountId: LEDGER_ACCOUNTS.PAYOUTS_SENT,
+                amountMinor: Number(payout.amount),
+              },
             ],
           },
           tx,
@@ -163,25 +196,25 @@ export class PayoutJobs implements OnApplicationBootstrap {
       // Network/5xx → let the job retry (same idempotency key, no double transfer). Definite rejection → reverse.
       if (!err.definite && err.type !== 'StripeInvalidRequestError')
         throw error;
-      // S54 T037 audit: explicit unit of work, opens its own transaction by design; no network I/O inside.
-      await this.sequelize.transaction(async (tx) => {
+      await this.transactions.run(async (tx) => {
         const [updated] = await this.payoutModel.update(
           { status: 'FAILED', failureReason: err.message.slice(0, 500) },
           { where: { id: payout.id, status: 'PENDING' }, transaction: tx },
         );
         if (updated === 0) return;
-        await this.ledger.post(
+        await this.ledger.postJournal(
           {
-            journalId: deriveJournalId(payout.id, 'reversal'),
             kind: 'PAYOUT_REVERSAL',
+            reference: `payout-reversal:${payout.id}`,
+            currency: CURRENCY,
             lines: [
               {
                 accountId: LEDGER_ACCOUNTS.PAYOUT_CLEARING,
-                amount: -Number(payout.amount),
+                amountMinor: -Number(payout.amount),
               },
               {
                 accountId: shopAccount(payout.shopId),
-                amount: Number(payout.amount),
+                amountMinor: Number(payout.amount),
               },
             ],
           },
@@ -200,13 +233,4 @@ export function mondayOf(date: Date): string {
   );
   d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7));
   return d.toISOString().slice(0, 10);
-}
-
-/** Deterministic follow-up journal ids per payout (sent / reversal) so retries can't double-post. */
-const PAYOUT_NS = '5b1f6d1e-2c0a-4e8e-b3a7-8f1d2e6c4a90';
-export function deriveJournalId(
-  payoutId: string,
-  step: 'sent' | 'reversal',
-): string {
-  return uuidv5(`${payoutId}:${step}`, PAYOUT_NS);
 }

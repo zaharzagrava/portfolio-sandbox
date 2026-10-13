@@ -206,6 +206,17 @@ export class SecretsManagerConfig {
   payments_page_max: number;
   payments_cursor_secret?: string;
 
+  /** S14: ledger and reconciliation settings, defaults in `ledger-config.ts`. */
+  ledger_fee_minor: number;
+  ledger_shards: number;
+  ledger_lock_timeout_ms: number;
+  ledger_statement_timeout_ms: number;
+  reconciliation_page_size: number;
+  reconciliation_catchup_days: number;
+  ledger_read_hot_timeout_ms: number;
+  ledger_read_durable_timeout_ms: number;
+  ledger_cursor_secret?: string;
+
   /** S32: search settings, defaults in `search-config.ts`. */
   search_budget_ms: number;
   embedding_budget_ms: number;

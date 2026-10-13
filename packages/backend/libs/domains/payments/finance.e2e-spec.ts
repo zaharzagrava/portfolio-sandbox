@@ -1,286 +1,227 @@
-import { INestApplication, Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
+import { v4 as uuidv4 } from 'uuid';
+import { createLedgerApp, type LedgerTestApp } from './testing/ledger-app';
 import {
-  getConnectionToken,
-  getModelToken,
-  SequelizeModule,
-} from '@nestjs/sequelize';
-import { Sequelize } from 'sequelize-typescript';
-import { v4, v7 } from 'uuid';
-import { generateTestingModule } from '@app/test/utils/global-modules';
-import { SeedsModule } from '@app/test/seeds/seeds.module';
-import { SeedsService } from '@app/test/seeds/seeds.service';
-import { TableName } from '@app/test/seeds/types';
+  assertBooksHealthy,
+  balanceOf,
+  count,
+  orderPaidEvent,
+  sql,
+} from './testing/ledger-fixtures';
+import {
+  FakeProviderStatement,
+  statementLine,
+} from './testing/fake-provider-statement';
+import { PROVIDER_STATEMENT } from './domain/ledger-ports';
+import { ReconciliationRunService } from './application/reconciliation-run.service';
+import { SettlementConsumer } from './infra/settlement.consumer';
 import { LedgerModule } from './ledger.module';
-import { LedgerService } from './application/ledger.service';
-import { StripeModule } from '@app/infrastructure/stripe/stripe.module';
-import { StripeService } from '@app/infrastructure/stripe/stripe.service';
-import { EventsModule } from '@app/infrastructure/events/events.module';
-import { PAYMENTS_AGGREGATE } from './application/events/payment-events';
-import { JobsModule } from '@app/infrastructure/jobs/jobs.module';
-import {
-  LEDGER_ACCOUNTS,
-  PLATFORM_FEE_MINOR,
-  shopAccount,
-} from './domain/accounts';
-import Payout from './infra/models/payout.model';
-import { ShopModel as Shop } from '@app/domains/tenancy';
-import Payment, { PaymentStatus } from './infra/models/payment.model';
-import { OrderPaid } from '@app/domains/orders';
-import {
-  FakePayoutProvider,
-  PayoutProvider,
-} from './infra/payout-provider.port';
-import { PayoutJobs } from './infra/payout.jobs';
-import { ReconciliationJobs } from './infra/reconciliation.jobs';
-import { SettlementListener } from './infra/settlement.listener';
-import { seedPayment } from './testing';
+import { LedgerProcessingModule } from './ledger-processing.module';
 
-@Module({
-  imports: [
-    LedgerModule,
-    StripeModule,
-    EventsModule.forAggregates([PAYMENTS_AGGREGATE]),
-    JobsModule,
-    SequelizeModule.forFeature([Payout, Shop, Payment]),
-  ],
-  providers: [
-    { provide: PayoutProvider, useClass: FakePayoutProvider },
-    PayoutJobs,
-    ReconciliationJobs,
-    SettlementListener,
-  ],
-})
-class FinanceSpecModule {}
+@Module({ imports: [LedgerModule, LedgerProcessingModule] })
+class FinanceProbeModule {}
 
-/** SD-20 against the real test Postgres (partitioned ledger + constraint trigger). */
-describe('Ledger, settlement, payouts, reconciliation (e2e)', () => {
-  let app: INestApplication;
-  let seeds: SeedsService;
-  let ledger: LedgerService;
-  let sequelize: Sequelize;
-  let provider: FakePayoutProvider;
+const reconFake = new FakeProviderStatement();
+
+/**
+ * The money chain end to end on the real test Postgres (partitioned ledger and
+ * deferred constraint trigger): capture, settlement and refund. Payouts moved
+ * to S15; reconciliation has its own specs (reconciliation-*.e2e-spec.ts).
+ */
+describe('Finance chain: store guard, capture, settlement and refund (e2e)', () => {
+  let t: LedgerTestApp;
+  let consumer: SettlementConsumer;
 
   beforeAll(async () => {
-    const moduleRef = await generateTestingModule([
-      FinanceSpecModule,
-      SeedsModule,
-    ]);
-    app = moduleRef.createNestApplication();
-    await app.init();
-    seeds = app.get(SeedsService);
-    ledger = app.get(LedgerService);
-    sequelize = app.get(getConnectionToken());
-    provider = app.get(PayoutProvider) as FakePayoutProvider;
+    t = await createLedgerApp({
+      extraImports: [FinanceProbeModule],
+      overrides: [{ provide: PROVIDER_STATEMENT, useValue: reconFake }],
+    });
+    consumer = t.app.get(SettlementConsumer, { strict: false });
   });
-
   afterAll(async () => {
-    await app.close();
+    await t.close();
   });
-
   beforeEach(async () => {
-    await sequelize.query(
-      `TRUNCATE "LedgerEntry", "Payout", "ReconciliationRun", "ReconciliationIssue" CASCADE`,
-    );
-    await seeds.clean();
+    await t.reset();
+    reconFake.reset();
   });
 
-  const shop = () =>
-    app
-      .get<typeof Shop>(getModelToken(Shop))
-      .create({ name: 'S', slug: `s-${v4().slice(0, 8)}` });
-  const balance = (account: string) => ledger.balance(account);
+  const logical = async (accountId: string) =>
+    (
+      await t.ledger.getBalances({ accountIds: [accountId], currency: 'EUR' })
+    ).get(accountId)!.balanceMinor;
 
   it('the database itself rejects an unbalanced journal at COMMIT (deferred constraint trigger)', async () => {
-    const journalId = v7();
+    const j = uuidv4();
     await expect(
-      sequelize.transaction(async (transaction) => {
-        await sequelize.query(
+      t.sequelize.transaction(async (transaction) => {
+        await t.sequelize.query(
           `INSERT INTO "LedgerEntry" ("journalId", kind, "accountId", amount) VALUES (:j, 'ADJUSTMENT', 'A', 100), (:j, 'ADJUSTMENT', 'B', -99)`,
-          { replacements: { j: journalId }, transaction },
+          { replacements: { j }, transaction },
         );
       }),
     ).rejects.toThrow(/unbalanced ledger journal/);
-    expect(await balance('A')).toBe(0);
+    expect(await count(t.app, 'LedgerEntry')).toBe(0);
   });
 
-  it('settlement splits the net amount across shops to the cent, exactly once on redelivery', async () => {
-    const [a, b, c] = [await shop(), await shop(), await shop()];
-    // Fund clearing as a sale would.
-    await sequelize.transaction((tx) =>
-      ledger.post(
-        {
-          journalId: v7(),
-          kind: 'ADJUSTMENT',
-          lines: [
-            { accountId: 'EXTERNAL', amount: -1000 },
-            { accountId: LEDGER_ACCOUNTS.CLEARING, amount: 1000 },
-          ],
-        },
-        tx,
-      ),
+  it('a captured payment settles to the cent across shops exactly once on redelivery, and a refund reverses it', async () => {
+    const [a, b, c] = [uuidv4(), uuidv4(), uuidv4()].sort();
+    const payment = {
+      paymentId: uuidv4(),
+      orderId: uuidv4(),
+      paymentRef: `pi_${uuidv4().slice(0, 8)}`,
+      userId: uuidv4(),
+      amountMinor: 1050,
+      currency: 'EUR',
+    };
+    const first = await t.inTx((tx) =>
+      t.ledger.recordPaymentCaptured(payment, tx),
     );
+    const replay = await t.inTx((tx) =>
+      t.ledger.recordPaymentCaptured(payment, tx),
+    );
+    expect(replay.journalId).toBe(first.journalId);
 
-    const orderId = v7();
-    const event = OrderPaid.create(orderId, 3, {
-      orderId,
-      userId: v4(),
-      orderVersion: 3,
-      totalMinor: 1000 + PLATFORM_FEE_MINOR,
-      currency: 'usd',
-      paymentRef: 'pay_spec',
-      paidAt: new Date().toISOString(),
-      lines: [a, b, c].map((s) => ({
-        productId: v4(),
-        shopId: s.id,
-        title: 'Item',
-        quantity: 1,
-        unitPriceMinor: 350,
-        discountMinor: 0,
-        lineTotalMinor: 350,
-      })),
-      shopOrders: [],
+    const event = orderPaidEvent({
+      orderId: payment.orderId,
+      totalMinor: 1050,
+      shops: [a, b, c].map((shopId) => ({ shopId, subtotalMinor: 350 })),
     });
-    const listener = app.get(SettlementListener);
-    await listener.project([event]);
-    await listener.project([event]); // redelivery
+    await consumer.project([event]);
+    await consumer.project([event]); // redelivery
 
-    const shares = await Promise.all(
-      [a, b, c].map((s) => balance(shopAccount(s.id))),
-    );
-    expect(shares).toEqual([334, 333, 333]);
-    expect(await balance(LEDGER_ACCOUNTS.CLEARING)).toBe(0);
+    expect(
+      await Promise.all([a, b, c].map((s) => balanceOf(t.app, `SHOP_${s}`))),
+    ).toEqual([334, 333, 333]);
+    expect(await logical('MARKETPLACE_CLEARING')).toBe(0);
+
+    const refundInput = {
+      paymentId: payment.paymentId,
+      refundRef: 're_1',
+      amountMinor: 1050,
+      currency: 'EUR',
+    };
+    await t.inTx((tx) => t.ledger.recordPaymentRefunded(refundInput, tx));
+    await t.inTx((tx) => t.ledger.recordPaymentRefunded(refundInput, tx));
+
+    for (const s of [a, b, c]) {
+      expect(await balanceOf(t.app, `SHOP_${s}`)).toBe(0);
+    }
+    expect(await logical('MARKETPLACE_CLEARING')).toBe(0);
+    expect(await logical('PLATFORM_FEES')).toBe(0);
+    expect(await logical('PROVIDER_CLEARING')).toBe(0);
+    await assertBooksHealthy(t.app);
   });
 
-  it('weekly payouts: one per shop per week; success moves money out, failure reverses it', async () => {
-    const [ok, broken] = [await shop(), await shop()];
-    await ok.update({ stripeAccountId: 'acct_ok' });
+  it('payout debits move shop money out once per reference, and a reversal returns it', async () => {
+    const [ok, broken] = [uuidv4(), uuidv4()];
     for (const s of [ok, broken]) {
-      await sequelize.transaction((tx) =>
-        ledger.post(
+      await t.inTx((tx) =>
+        t.ledger.postJournal(
           {
-            journalId: v7(),
             kind: 'ADJUSTMENT',
+            reference: `fund-${s}`,
+            currency: 'EUR',
             lines: [
-              { accountId: LEDGER_ACCOUNTS.CLEARING, amount: -5000 },
-              { accountId: shopAccount(s.id), amount: 5000 },
+              { accountId: 'MARKETPLACE_CLEARING', amountMinor: -5000 },
+              { accountId: `SHOP_${s}`, amountMinor: 5000 },
             ],
           },
           tx,
         ),
       );
     }
+    const payout = (s: string) =>
+      t.inTx((tx) =>
+        t.ledger.postJournal(
+          {
+            kind: 'PAYOUT',
+            reference: `payout-${s}-2026-09-28`,
+            currency: 'EUR',
+            lines: [
+              { accountId: `SHOP_${s}`, amountMinor: -5000 },
+              { accountId: 'PAYOUT_CLEARING', amountMinor: 5000 },
+            ],
+          },
+          tx,
+        ),
+      );
+    const first = await payout(ok);
+    const again = await payout(ok); // idempotent re-run
+    await payout(broken);
+    expect(first.created).toBe(true);
+    expect(again).toEqual({ journalId: first.journalId, created: false });
+    expect(await balanceOf(t.app, `SHOP_${ok}`)).toBe(0);
+    expect(await logical('PAYOUT_CLEARING')).toBe(10000);
 
-    const jobs = app.get(PayoutJobs);
-    await jobs.run({ periodStart: '2026-09-28' });
-    await jobs.run({ periodStart: '2026-09-28' }); // idempotent re-run
-    const payouts = await app
-      .get<typeof Payout>(getModelToken(Payout))
-      .findAll();
-    expect(payouts).toHaveLength(2);
-
-    for (const p of payouts) await jobs.send({ payoutId: p.id });
-
-    expect(provider.transfers).toEqual([
-      expect.objectContaining({ amount: 5000, destination: 'acct_ok' }),
-    ]);
-    expect(await balance(shopAccount(ok.id))).toBe(0);
-    expect(await balance('PAYOUTS_SENT')).toBe(5000);
-    expect(await balance(shopAccount(broken.id))).toBe(5000); // reversed: no payout account
-    expect(await balance(LEDGER_ACCOUNTS.PAYOUT_CLEARING)).toBe(0);
-  });
-
-  it('a captured payment is booked once through the payment wrappers and a refund reverses it exactly', async () => {
-    const [user] = await seeds.createTreelike([
-      { __type__: TableName.User, email: `u-${v4()}@mail.com` },
-    ]);
-    const { id: paymentId } = await seedPayment(app, {
-      userId: user.id,
-      amountMinor: 2000,
-      createdAt: new Date(),
-    });
-    const payment = {
-      paymentId,
-      userId: user.id,
-      amountMinor: 2000,
-      currency: 'EUR',
-    };
-    const book = (fn: 'recordPaymentCaptured' | 'recordPaymentRefunded') =>
-      sequelize.transaction((tx) => ledger[fn](payment, tx));
-
-    const first = await book('recordPaymentCaptured');
-    const replay = await book('recordPaymentCaptured'); // redelivery posts nothing new
-
-    expect(replay.journalId).toBe(first.journalId);
-    expect(await balance(LEDGER_ACCOUNTS.PROVIDER_FUNDS)).toBe(-2000);
-    expect(await balance(LEDGER_ACCOUNTS.CLEARING)).toBe(
-      2000 - PLATFORM_FEE_MINOR,
+    // the transfer for `broken` failed: the debit is reversed
+    await t.inTx((tx) =>
+      t.ledger.postJournal(
+        {
+          kind: 'ADJUSTMENT',
+          reference: `payout-failed-${broken}`,
+          currency: 'EUR',
+          lines: [
+            { accountId: 'PAYOUT_CLEARING', amountMinor: -5000 },
+            { accountId: `SHOP_${broken}`, amountMinor: 5000 },
+          ],
+        },
+        tx,
+      ),
     );
-    expect(await balance(LEDGER_ACCOUNTS.PLATFORM_FEES)).toBe(
-      PLATFORM_FEE_MINOR,
-    );
-
-    await book('recordPaymentRefunded');
-    await book('recordPaymentRefunded');
-
-    expect(await balance(LEDGER_ACCOUNTS.PROVIDER_FUNDS)).toBe(0);
-    expect(await balance(LEDGER_ACCOUNTS.CLEARING)).toBe(0);
-    expect(await balance(LEDGER_ACCOUNTS.PLATFORM_FEES)).toBe(0);
+    expect(await balanceOf(t.app, `SHOP_${broken}`)).toBe(5000);
+    expect(await logical('PAYOUT_CLEARING')).toBe(5000);
+    await assertBooksHealthy(t.app);
   });
 
   it('daily reconciliation flags missing-in-ledger, missing-at-provider and amount mismatches', async () => {
-    const [user] = await seeds.createTreelike([
-      { __type__: TableName.User, email: `u-${v4()}@mail.com` },
-    ]);
-    const [order] = await seeds.createTreelike([
-      { __type__: TableName.BisOrder, userId: user.id },
-    ]);
-    const payments = app.get<typeof Payment>(getModelToken(Payment));
-    const base = {
-      userId: user.id,
-      bisOrderId: order.id,
-      status: PaymentStatus.COMPLETED,
-    };
-    await payments.bulkCreate([
-      { ...base, idempotencyKey: 'match', amount: 100 },
-      { ...base, idempotencyKey: 'wrong-amount', amount: 100 },
-      { ...base, idempotencyKey: 'ours-only', amount: 100 },
-    ]);
-    const day = new Date().toISOString().slice(0, 10);
-    jest
-      .spyOn(app.get(StripeService), 'paymentIntentsCreatedBetween')
-      .mockImplementation(async function* () {
-        yield {
-          id: 'pi_1',
-          status: 'succeeded',
-          amount: 100,
-          metadata: { idempotencyKey: 'match' },
-        } as never;
-        yield {
-          id: 'pi_2',
-          status: 'succeeded',
-          amount: 150,
-          metadata: { idempotencyKey: 'wrong-amount' },
-        } as never;
-        yield {
-          id: 'pi_3',
-          status: 'succeeded',
-          amount: 100,
-          metadata: { idempotencyKey: 'stripe-only' },
-        } as never;
-      });
+    const day = '2026-10-04';
+    t.clock.set(new Date('2026-10-06T02:30:00.000Z'));
+    for (const paymentRef of ['match', 'wrong-amount', 'ours-only']) {
+      t.clock.set(new Date(`${day}T12:00:00.000Z`));
+      await t.inTx((tx) =>
+        t.ledger.recordPaymentCaptured(
+          {
+            paymentId: uuidv4(),
+            orderId: uuidv4(),
+            paymentRef,
+            userId: uuidv4(),
+            amountMinor: 100,
+            currency: 'EUR',
+          },
+          tx,
+        ),
+      );
+    }
+    t.clock.set(new Date('2026-10-06T02:30:00.000Z'));
+    reconFake.lines = [
+      statementLine({ reference: 'match', amount: 100 }),
+      statementLine({ reference: 'wrong-amount', amount: 150 }),
+      statementLine({ reference: 'stripe-only', amount: 100 }),
+    ];
 
-    await app.get(ReconciliationJobs).reconcile({ day });
+    const outcome = await t.app
+      .get(ReconciliationRunService, { strict: false })
+      .runDay(day, {});
+    expect(outcome.outcome).toBe('completed');
 
-    const issues = await sequelize.query<{ kind: string; reference: string }>(
+    const issues = await sql<{ kind: string; reference: string }>(
+      t.app,
       `SELECT kind, reference FROM "ReconciliationIssue" ORDER BY reference`,
-      {
-        type: 'SELECT' as never,
-      },
     );
     expect(issues).toEqual([
       { kind: 'MISSING_AT_PROVIDER', reference: 'ours-only' },
       { kind: 'MISSING_IN_LEDGER', reference: 'stripe-only' },
       { kind: 'AMOUNT_MISMATCH', reference: 'wrong-amount' },
     ]);
+    expect(await count(t.app, 'ReconciliationRun')).toBe(1);
+
+    // a completed day is final: running it again changes nothing
+    await t.app
+      .get(ReconciliationRunService, { strict: false })
+      .runDay(day, {});
+    expect(await count(t.app, 'ReconciliationRun')).toBe(1);
+    expect(await count(t.app, 'ReconciliationIssue')).toBe(3);
   });
 });

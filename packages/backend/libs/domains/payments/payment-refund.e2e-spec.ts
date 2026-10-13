@@ -128,7 +128,7 @@ describe('Payments: refund commands', () => {
           ),
         ),
       ).toEqual({
-        PROVIDER_FUNDS: 0,
+        PROVIDER_CLEARING: 0,
         MARKETPLACE_CLEARING: 0,
         PLATFORM_FEES: 0,
       });

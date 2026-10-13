@@ -34,6 +34,7 @@ A projection is a read model built only from the event log, never from another d
 ## Used by
 <!-- used-by:start -->
 - {{cap:S05}} Product CRUD, pricing, stock fields, product cache and invalidation, product views
+- {{cap:S14}} Double-entry ledger, balanced journals, hot-account sharding, balance read model, daily PSP reconciliation
 - {{cap:S32}} Product search: index sync with external versioning, zero-downtime reindex, relevance boosts, synonyms, facets, k-NN
 - {{cap:S34}} "Bought together" recommendations: co-occurrence graph, normalisation, 2-hop cold start
 - {{cap:S35}} Trending products: windowed approximate top-K per category

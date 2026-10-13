@@ -38,6 +38,13 @@ describe('Trending & sponsored clicks (e2e)', () => {
   let clickhouse: ClickHouseService;
   let produced: jest.SpyInstance;
 
+  const balanceOf = async (accountId: string) =>
+    (
+      await app
+        .get(LedgerService)
+        .getBalances({ accountIds: [accountId], currency: 'EUR' })
+    ).get(accountId)!.balanceMinor;
+
   beforeAll(async () => {
     const moduleRef = await generateTestingModule([SpecModule, SeedsModule], {
       stores: ['redis'],
@@ -148,9 +155,7 @@ describe('Trending & sponsored clicks (e2e)', () => {
     expect(
       await app.get(AdBillingJobs).billHour({ hour: hour.toISOString() }),
     ).toEqual({ campaigns: 1, amountCents: 0 });
-    expect(await app.get(LedgerService).balance(shopAccount(shopId))).toBe(
-      -1_000,
-    );
+    expect(await balanceOf(shopAccount(shopId))).toBe(-1_000);
   });
 
   it('daily reconciliation recomputes from deduplicated raw clicks and posts the difference', async () => {
@@ -196,9 +201,7 @@ describe('Trending & sponsored clicks (e2e)', () => {
         .get(AdBillingJobs)
         .reconcileDay({ day: hour.toISOString().slice(0, 10) }),
     ).toBe(1);
-    expect(await app.get(LedgerService).balance(shopAccount(shopId))).toBe(
-      -10 * 25,
-    ); // 12 billed → corrected to 10
+    expect(await balanceOf(shopAccount(shopId))).toBe(-10 * 25); // 12 billed → corrected to 10
     expect(
       await app
         .get(AdBillingJobs)

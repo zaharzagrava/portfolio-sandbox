@@ -38,6 +38,8 @@ import './payment.job-types';
 export interface TransitionData {
   providerRef?: string;
   clientSecret?: string;
+  /** The provider's id of the refund, for the ledger's `REFUND` journal (S14); the ledger falls back to `refund:<paymentId>`. */
+  refundRef?: string;
 }
 
 export type TransitionResult =
@@ -174,7 +176,7 @@ export class PaymentTransitionService {
           actor,
           at: now,
         });
-      await this.propagate(updated, now);
+      await this.propagate(updated, now, data);
       paymentTransitionsCounter.add(1, {
         from: current.status,
         to: decision.to,
@@ -251,7 +253,11 @@ export class PaymentTransitionService {
   }
 
   /** Ledger, outbox events and the resolution job of one applied move; all inside the transaction. */
-  private async propagate(payment: PaymentRecord, now: Date): Promise<void> {
+  private async propagate(
+    payment: PaymentRecord,
+    now: Date,
+    data: TransitionData,
+  ): Promise<void> {
     const events = paymentEvents();
     const base = {
       paymentId: payment.id,
@@ -288,7 +294,7 @@ export class PaymentTransitionService {
         );
         return;
       case 'REFUNDED':
-        await this.ledger.recordRefunded(payment);
+        await this.ledger.recordRefunded(payment, data.refundRef);
         await this.outbox.append(
           events.refunded.create(payment.id, payment.version, {
             ...base,

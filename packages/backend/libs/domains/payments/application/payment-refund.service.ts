@@ -169,7 +169,7 @@ export class PaymentRefundService {
       await this.provider.findRefunds(payment.providerRef),
       payment.amountMinor,
     );
-    if (lookup.kind === 'exists') return this.finish(payment);
+    if (lookup.kind === 'exists') return this.finish(payment, lookup.refundRef);
     if (lookup.kind === 'retry') return this.retryLater(payment, requestedAt);
 
     const response = await this.provider.createRefund(
@@ -179,6 +179,10 @@ export class PaymentRefundService {
     const outcome = classifyRefund(response);
     switch (outcome.kind) {
       case 'done':
+        return this.finish(
+          payment,
+          response.kind === 'refund' ? response.refund.id : undefined,
+        );
       case 'already_refunded':
         return this.finish(payment);
       case 'refused':
@@ -191,11 +195,15 @@ export class PaymentRefundService {
     }
   }
 
-  private async finish(payment: PaymentRecord): Promise<RefundResult> {
+  private async finish(
+    payment: PaymentRecord,
+    refundRef?: string,
+  ): Promise<RefundResult> {
     await this.transitions.apply(
       payment.id,
       { type: 'refundSucceeded' },
       ACTOR,
+      refundRef ? { refundRef } : {},
     );
     return 'refunded';
   }

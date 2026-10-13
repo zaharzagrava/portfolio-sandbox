@@ -119,6 +119,15 @@ export const OWNERSHIP = {
   Payout: 'domain:payments',
   ReconciliationRun: 'domain:payments',
   ReconciliationIssue: 'domain:payments',
+  // S14 ledger and reconciliation
+  LedgerJournal: 'domain:payments',
+  AccountBalance: 'domain:payments',
+  LedgerCheckpoint: 'domain:payments',
+  LedgerBackfillCursor: 'domain:payments',
+  ReconciliationIssueHistory: 'domain:payments',
+  ReconciliationStaging: 'domain:payments',
+  ReconciliationSeen: 'domain:payments',
+  ProviderAccount: 'domain:payments',
   // statements
   CommissionRate: 'domain:statements',
   StatementSnapshot: 'domain:statements',

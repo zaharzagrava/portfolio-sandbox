@@ -1,235 +1,164 @@
+import { Inject, Injectable } from '@nestjs/common';
+import type { Transaction } from 'sequelize';
+import { ApiConfigService } from '@app/common/config';
+import { CLOCK, Clock } from '@app/common/core/clock';
+import { Fatal_BadRequestError } from '@app/common/errors';
+import { parseAccountId, shopIdOf } from '../domain/account';
+import { CALLER_KINDS, type JournalLineInput } from '../domain/journal';
+import { JournalInvalid } from '../domain/ledger-errors';
 import {
-  BadRequestException,
-  Injectable,
-  InternalServerErrorException,
-  Logger,
-  NotFoundException,
-  Optional,
-} from '@nestjs/common';
-import { QueryTypes } from 'sequelize';
-import { LedgerJournalKind } from '../infra/models/ledger-entry.model';
-import { OutboxService } from '@app/infrastructure/outbox/outbox.service';
-import { JournalPosted } from './events/ledger-events';
-import { InjectModel } from '@nestjs/sequelize';
-import LedgerEntry from '../infra/models/ledger-entry.model';
-import { Transaction } from 'sequelize';
-import { DbUtilsService } from '@app/infrastructure/database/db-utils/db-utils.service';
-import { v5 as uuidv5 } from 'uuid';
-import { LEDGER_ACCOUNTS, PLATFORM_FEE_MINOR } from '../domain/accounts';
+  decodeLedgerCursor,
+  encodeLedgerCursor,
+  isAccountCursor,
+} from '../domain/ledger-cursor';
+import { BALANCE_STORE, type BalanceStore } from '../domain/ledger-ports';
+import { ledgerCursorSecret } from './cursor-secret';
+import { JournalPostingService } from './journal-posting.service';
+import {
+  PaymentPostingsService,
+  type CaptureInput,
+  type RefundInput,
+} from './payment-postings.service';
 
-/** Namespace of the deterministic journal ids of captured and refunded payments. */
-const PAYMENT_NS = '5d1a2f7e-6c1b-4a58-9b38-2f3a7d0c8e44';
+export type CallerJournalKind = (typeof CALLER_KINDS)[number];
 
+export interface PostJournalInput {
+  kind: CallerJournalKind;
+  reference: string;
+  currency: string;
+  lines: JournalLineInput[];
+}
+
+export interface PostedJournal {
+  journalId: string;
+  created: boolean;
+}
+
+const MAX_ACCOUNTS = 500;
+const MAX_SELLER_PAGE = 200;
+
+/**
+ * The R1 facade of the ledger (S14 contracts/services.md): plain values in and out, no model, no HTTP type. Every
+ * posting joins the caller's transaction. Reads never sum entries: they read the running balances.
+ */
 @Injectable()
 export class LedgerService {
-  private readonly l = new Logger(LedgerService.name);
-
   constructor(
-    @InjectModel(LedgerEntry)
-    private readonly ledgerEntryModel: typeof LedgerEntry,
-    private readonly dbUtilsService: DbUtilsService,
-    @Optional() private readonly domainEvents?: OutboxService,
+    private readonly posting: JournalPostingService,
+    private readonly payments: PaymentPostingsService,
+    @Inject(BALANCE_STORE) private readonly balances: BalanceStore,
+    @Inject(CLOCK) private readonly clock: Clock,
+    private readonly config: ApiConfigService,
   ) {}
 
-  public async recordMarketplaceSale({
-    paymentId,
-    buyerAccountId,
-    merchantAccountId,
-    platformRevenueAccountId,
-    totalAmount,
-    feeAmount,
-    tx,
-  }: {
-    paymentId: string;
-    buyerAccountId: string;
-    merchantAccountId: string;
-    platformRevenueAccountId: string;
-    totalAmount: number;
-    feeAmount: number;
-    tx: Transaction;
-  }): Promise<void> {
-    await this.dbUtilsService.wrapInTransaction(async (tx) => {
-      if (totalAmount < feeAmount) {
-        throw new InternalServerErrorException(
-          'CRITICAL: Total amount is less than fee amount.',
-        );
-      }
-
-      const buyerDebit = -Math.abs(totalAmount);
-      const merchantCredit = Math.abs(totalAmount - feeAmount);
-      const platformCredit = Math.abs(feeAmount);
-
-      if (buyerDebit + merchantCredit + platformCredit !== 0) {
-        // If this throws, the outer Postgres transaction automatically rolls back.
-        throw new InternalServerErrorException(
-          'CRITICAL: Ledger entry mathematically invalid. Amounts do not sum to zero.',
-        );
-      }
-
-      // One SALE journal per payment (journalId = paymentId). SD-20: posted through
-      // `post()` so the balanced-journal invariant + balance events apply uniformly.
-      await this.post(
-        {
-          journalId: paymentId,
-          kind: 'SALE',
-          paymentId,
-          lines: [
-            { accountId: buyerAccountId, amount: buyerDebit }, // Usually a system account tracking Stripe's incoming FBO balance
-            { accountId: merchantAccountId, amount: merchantCredit }, // Clearing until settled to shops (SD-20)
-            { accountId: platformRevenueAccountId, amount: platformCredit }, // You
-          ],
-        },
-        tx,
-      );
-    }, tx);
+  /**
+   * Books a captured payment (FR-013): one `SALE` journal per payment, in the caller's transaction. A repeat returns
+   * the existing journal; the same payment with another amount is a `JournalConflict`.
+   */
+  recordPaymentCaptured(
+    input: CaptureInput,
+    tx: Transaction,
+  ): Promise<PostedJournal> {
+    return this.payments.capture(input, tx);
   }
 
-  /**
-   * Books a captured payment (S13 CONTRACT 8; S14 replaces the internals, the name and shape stay): one SALE journal
-   * per payment, id `uuidv5('sale:' + paymentId)`, so a repeat finds it and does nothing. Runs in the caller's
-   * transaction. The buyer side is the provider-funds account, never an account named after the user.
-   */
-  public async recordPaymentCaptured(
-    payment: {
-      paymentId: string;
-      userId: string;
-      amountMinor: number;
-      currency: string;
-    },
+  /** The exact reversal of a sale (FR-014), including the shops' shares when the order was settled. */
+  recordPaymentRefunded(
+    input: RefundInput,
     tx: Transaction,
-  ): Promise<{ journalId: string }> {
-    const journalId = uuidv5(`sale:${payment.paymentId}`, PAYMENT_NS);
-    if (await this.journalExists(journalId, tx)) return { journalId };
-    const fee = Math.min(PLATFORM_FEE_MINOR, payment.amountMinor);
-    await this.post(
+  ): Promise<PostedJournal> {
+    return this.payments.refund(input, tx);
+  }
+
+  /** For the four kinds callers own: `PAYOUT`, `PAYOUT_REVERSAL`, `AD_CHARGE`, `ADJUSTMENT` (FR-008). */
+  async postJournal(
+    input: PostJournalInput,
+    tx: Transaction,
+  ): Promise<PostedJournal> {
+    const { journalId, created } = await this.posting.post(
       {
-        journalId,
-        kind: 'SALE',
-        paymentId: payment.paymentId,
-        lines: [
-          {
-            accountId: LEDGER_ACCOUNTS.PROVIDER_FUNDS,
-            amount: -payment.amountMinor,
-          },
-          {
-            accountId: LEDGER_ACCOUNTS.CLEARING,
-            amount: payment.amountMinor - fee,
-          },
-          { accountId: LEDGER_ACCOUNTS.PLATFORM_FEES, amount: fee },
-        ],
+        kind: input.kind,
+        reference: input.reference,
+        currency: input.currency,
+        lines: input.lines,
+        fromCaller: true,
       },
       tx,
     );
-    return { journalId };
+    return { journalId, created };
   }
 
-  /** The reversal of `recordPaymentCaptured`, id `uuidv5('refund:' + paymentId)`; idempotent the same way. */
-  public async recordPaymentRefunded(
-    payment: { paymentId: string; amountMinor: number; currency: string },
-    tx: Transaction,
-  ): Promise<{ journalId: string }> {
-    const journalId = uuidv5(`refund:${payment.paymentId}`, PAYMENT_NS);
-    if (await this.journalExists(journalId, tx)) return { journalId };
-    const fee = Math.min(PLATFORM_FEE_MINOR, payment.amountMinor);
-    await this.post(
-      {
-        journalId,
-        kind: 'REFUND',
-        paymentId: payment.paymentId,
-        lines: [
-          {
-            accountId: LEDGER_ACCOUNTS.PROVIDER_FUNDS,
-            amount: payment.amountMinor,
-          },
-          {
-            accountId: LEDGER_ACCOUNTS.CLEARING,
-            amount: -(payment.amountMinor - fee),
-          },
-          { accountId: LEDGER_ACCOUNTS.PLATFORM_FEES, amount: -fee },
-        ],
-      },
+  /** Authoritative balances of up to 500 accounts; an account without a row is `0`. Honours the caller's `tx`. */
+  async getBalances(
+    input: { accountIds: string[]; currency: string },
+    tx?: Transaction,
+  ): Promise<Map<string, { balanceMinor: number; asOf: Date }>> {
+    if (!/^[A-Z]{3}$/.test(input.currency))
+      throw new JournalInvalid('currency_invalid');
+    const wanted = [...new Set(input.accountIds)];
+    if (wanted.length > MAX_ACCOUNTS)
+      throw new JournalInvalid('too_many_accounts');
+    const canonical = wanted.map((id) => parseAccountId(id)?.id ?? id);
+    const stored = await this.balances.read(
+      [...new Set(canonical)],
+      input.currency,
       tx,
     );
-    return { journalId };
+    const asOf = this.clock.now();
+    return new Map(
+      wanted.map((id, i) => [
+        id,
+        { balanceMinor: stored.get(canonical[i]) ?? 0, asOf },
+      ]),
+    );
   }
 
-  private async journalExists(
-    journalId: string,
-    tx: Transaction,
-  ): Promise<boolean> {
-    // The advisory lock serialises two postings of the same journal; the check then sees the first one.
-    await this.ledgerEntryModel.sequelize!.query(
-      `SELECT pg_advisory_xact_lock(hashtext(:journalId))`,
-      { replacements: { journalId }, transaction: tx },
-    );
-    const [{ exists }] = await this.ledgerEntryModel.sequelize!.query<{
-      exists: boolean;
-    }>(
-      `SELECT EXISTS (SELECT 1 FROM "LedgerEntry" WHERE "journalId" = :journalId) AS exists`,
-      {
-        type: QueryTypes.SELECT,
-        replacements: { journalId },
-        transaction: tx,
-      },
-    );
-    return exists;
-  }
-
-  /**
-   * Posts one balanced journal (double-entry, lesson 10/02 Ex1): validated here
-   * (fast feedback) AND by the deferred `ledger_balanced` constraint trigger at
-   * COMMIT (the database is the last line of defense). Emits `ledger.journal_posted`
-   * through the outbox in the same transaction for the balance read model.
-   */
-  public async post(
-    journal: {
-      journalId: string;
-      kind: LedgerJournalKind;
-      paymentId?: string | null;
-      lines: { accountId: string; amount: number }[];
-    },
-    tx: Transaction,
-  ): Promise<void> {
-    const sum = journal.lines.reduce((acc, l) => acc + l.amount, 0);
+  /** Seller accounts with at least `minMinor`, by keyset on the account id with a signed cursor (FR-023). */
+  async listSellerBalances(input: {
+    currency: string;
+    minMinor: number;
+    limit: number;
+    after?: string;
+  }): Promise<{
+    items: { shopId: string; balanceMinor: number }[];
+    next: string | null;
+  }> {
+    if (!/^[A-Z]{3}$/.test(input.currency))
+      throw new JournalInvalid('currency_invalid');
     if (
-      sum !== 0 ||
-      journal.lines.some((l) => !Number.isSafeInteger(l.amount))
-    ) {
-      throw new InternalServerErrorException(
-        `CRITICAL: unbalanced journal ${journal.journalId} (sum ${sum})`,
-      );
-    }
-
-    await this.ledgerEntryModel.bulkCreate(
-      journal.lines
-        .filter((l) => l.amount !== 0)
-        .map((l) => ({
-          journalId: journal.journalId,
-          kind: journal.kind,
-          paymentId: journal.paymentId ?? null,
-          accountId: l.accountId,
-          amount: BigInt(l.amount),
-        })),
-      { transaction: tx, validate: true },
-    );
-
-    await this.domainEvents?.append(
-      JournalPosted.create(journal.journalId, 1, {
-        kind: journal.kind,
-        lines: journal.lines,
-      }),
-      tx,
-    );
+      !Number.isInteger(input.limit) ||
+      input.limit < 1 ||
+      input.limit > MAX_SELLER_PAGE ||
+      !Number.isSafeInteger(input.minMinor)
+    )
+      throw new Fatal_BadRequestError({
+        detail: `limit must be an integer from 1 to ${MAX_SELLER_PAGE}`,
+      });
+    const secret = this.cursorSecret();
+    const after =
+      input.after === undefined
+        ? undefined
+        : decodeLedgerCursor(input.after, secret, isAccountCursor).a;
+    const rows = await this.balances.listSellers({
+      currency: input.currency,
+      minMinor: input.minMinor,
+      limit: input.limit + 1,
+      after,
+    });
+    const page = rows.slice(0, input.limit);
+    return {
+      items: page.map((r) => ({
+        shopId: shopIdOf(r.accountId)!,
+        balanceMinor: r.balanceMinor,
+      })),
+      next:
+        rows.length > input.limit
+          ? encodeLedgerCursor({ a: page[page.length - 1].accountId }, secret)
+          : null,
+    };
   }
 
-  /** Authoritative balance (sum of entries) - the Redis projection is the fast path; this is the fallback/rebuild. */
-  public async balance(accountId: string, tx?: Transaction): Promise<number> {
-    const [row] = await this.ledgerEntryModel.sequelize!.query<{
-      balance: string;
-    }>(
-      `SELECT coalesce(sum(amount), 0)::bigint AS balance FROM "LedgerEntry" WHERE "accountId" = :accountId`,
-      { replacements: { accountId }, transaction: tx, type: QueryTypes.SELECT },
-    );
-    return Number(row.balance);
+  private cursorSecret(): string {
+    return ledgerCursorSecret(this.config);
   }
 }

@@ -43,11 +43,11 @@ export function classifyRefund(response: ProviderResponse): RefundOutcome {
 export function classifyRefundLookup(
   response: ProviderResponse,
   amountMinor: number,
-): { kind: 'exists' } | { kind: 'none' } | { kind: 'retry' } {
+):
+  { kind: 'exists'; refundRef: string } | { kind: 'none' } | { kind: 'retry' } {
   if (response.kind !== 'refunds') return { kind: 'retry' };
-  return response.refunds.some(
+  const found = response.refunds.find(
     (r) => holdsMoney(r.status) && r.amountMinor === amountMinor,
-  )
-    ? { kind: 'exists' }
-    : { kind: 'none' };
+  );
+  return found ? { kind: 'exists', refundRef: found.id } : { kind: 'none' };
 }

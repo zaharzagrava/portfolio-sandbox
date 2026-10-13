@@ -37,7 +37,7 @@ import { StatementsWorkerModule } from '@app/domains/statements';
 import { BillingWorkerModule } from '@app/domains/billing';
 import { AuctionsWorkerModule } from '@app/domains/auctions';
 import {
-  FinanceWorkerModule,
+  LedgerWorkerModule,
   PaymentProcessorModule,
 } from '@app/domains/payments';
 import { OrdersWorkerModule } from '@app/domains/orders';
@@ -78,7 +78,7 @@ import { AuthWorkerModule } from '@app/domains/identity';
     AuthWorkerModule,
     TenancyWorkerModule,
     OrdersWorkerModule,
-    FinanceWorkerModule,
+    LedgerWorkerModule,
     PaymentProcessorModule,
     LaunchEventsWorkerModule,
     AuctionsWorkerModule,
