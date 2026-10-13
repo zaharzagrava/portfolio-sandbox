@@ -78,7 +78,18 @@ say "starting from $start_ref ($(git rev-parse --short HEAD))"
 # --- dependencies and the files git does not carry
 pnpm install --frozen-lockfile --prefer-offline >"$LOG/install.log" 2>&1 || fail_and_wait "pnpm install failed (see $LOG/install.log)"
 if [[ "${SDD_IMAGE:-be}" == fe ]]; then
-  (cd packages/web && pnpm exec playwright install chromium >"$LOG/playwright-install.log" 2>&1) || fail_and_wait "playwright install chromium failed (see $LOG/playwright-install.log)"
+  # The browser comes from a CDN that can crawl (2026-10-13: 20% in 11 minutes from the Hetzner network) and the installer has no time limit: each attempt gets 150 s, then the next
+  # mirror is tried.
+  chromium_ok=""
+  hosts=("" "https://playwright.azureedge.net" "https://playwright-akamai.azureedge.net" "https://playwright-verizon.azureedge.net")
+  : >"$LOG/playwright-install.log"
+  for attempt in 1 2 3 4 5 6 7 8; do
+    host="${hosts[$(( (attempt - 1) % ${#hosts[@]} ))]}"
+    say "installing Chromium (attempt $attempt${host:+, mirror $host})"
+    if (cd packages/web && env ${host:+PLAYWRIGHT_DOWNLOAD_HOST="$host"} timeout 150 pnpm exec playwright install chromium >>"$LOG/playwright-install.log" 2>&1); then chromium_ok=1; break; fi
+    pkill -f "playwright install" 2>/dev/null || true; rm -rf /root/.cache/ms-playwright/__dirlock; sleep 3
+  done
+  [[ -n "$chromium_ok" ]] || fail_and_wait "playwright install chromium failed 8 times (see $LOG/playwright-install.log)"
 fi
 [[ -f packages/backend/.env.test ]] || cp packages/backend/env/test.env.example packages/backend/.env.test
 if [[ ! -f packages/backend/creds/jwtRS256.key ]]; then
