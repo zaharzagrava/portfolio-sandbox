@@ -11,3 +11,7 @@
 {"run":"20261013T130233Z","capability":"S34","step":"implement-1","start":"2026-10-13T13:52:41Z","end":"2026-10-13T13:57:16Z","seconds":275,"result":"ok","attempt":1,"reason":"ok"}
 {"run":"20261013T130233Z","capability":"S34","step":"converge-1","start":"2026-10-13T13:57:16Z","end":"2026-10-13T13:58:36Z","seconds":80,"result":"ok","attempt":1,"reason":"ok"}
 {"run":"20261013T130233Z","capability":"S34","step":"gate","start":"2026-10-13T13:58:36Z","end":"2026-10-13T13:58:40Z","seconds":4,"result":"fail","attempt":1,"reason":"test integrity: packages/backend/libs/domains/discovery/recommendations.e2e-spec.ts: test file deleted"}
+{"run":"20261013T143334Z","capability":"-","step":"run-start","start":"2026-10-13T14:33:34Z","end":"2026-10-13T14:33:34Z","seconds":0,"result":"ok","attempt":1,"reason":"commit=af349f8 MAX_GATE_REPAIRS=5 MAX_REPAIRS_PER_SPEC=3 REPAIR_BUDGET_MIN=60 MAX_IMPLEMENT_PASSES=10"}
+{"run":"20261013T143334Z","capability":"S34","step":"converge-1","start":"2026-10-13T14:33:35Z","end":"2026-10-13T14:35:00Z","seconds":85,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261013T143334Z","capability":"S34","step":"gate","start":"2026-10-13T14:35:00Z","end":"2026-10-13T14:43:36Z","seconds":516,"result":"pass","attempt":1,"reason":""}
+{"run":"20261013T143334Z","capability":"S34","step":"built","start":"2026-10-13T14:33:34Z","end":"2026-10-13T14:43:36Z","seconds":602,"result":"ok","attempt":1,"reason":"\"Bought together\" recommendations: co-occurrence graph, normalisation, 2-hop cold start"}
