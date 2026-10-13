@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { pickupPointsNearResponseSchema } from '../fulfilment/pickup.ts';
 
 /**
  * Bodies of upstream capabilities that publish no schema in this package yet (S48 gaps C2/C3). Each one names the
@@ -40,19 +41,8 @@ export const productVideosSchema = z.looseObject({
 });
 export type ProductVideos = z.infer<typeof productVideosSchema>;
 
-/** S19 `GET /api/pickup-points/near`: `{items: [{id, shopId, name, address, lat, lng, distanceM, openingHours, quantity?}], nextCursor}`. */
-export const pickupPageSchema = z.object({
-  items: z.array(
-    z.looseObject({
-      id: z.string(),
-      shopId: z.string(),
-      name: z.string(),
-      distanceM: z.number(),
-      quantity: z.number().int().optional(),
-    }),
-  ),
-  nextCursor: z.string().nullable(),
-});
+/** S19 `GET /api/pickup-points/near`: the capability's own schema (S19 published it; the name stays for the BFF). */
+export const pickupPageSchema = pickupPointsNearResponseSchema;
 export type PickupPage = z.infer<typeof pickupPageSchema>;
 
 /** S11 `GET /api/flash-sales?productIds=`: at most one public view per product. */

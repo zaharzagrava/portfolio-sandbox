@@ -17,7 +17,7 @@ Shops register **physical stores & pickup points** with local stock. Buyers sear
 ## Steps
 - [x] Migration: `PickupPoint(shopId, name, location geography, openingHours jsonb)`, `PickupStock(pickupPointId, productId, quantity)`; GiST index.
 - [x] ES mapping update (nested pickup locations + stock flag) and projector.
-- [x] `GET /search?q=&near=lat,lng&radiusKm=` and `GET /pickup-points?bbox=` (geohash_grid clusters).
+- [x] `GET /search/near?q=&lat=&lng=&radiusKm=` (S19) and `GET /pickup-points/clusters?bbox=&zoom=` (geotile_grid clusters), plus the exact `GET /pickup-points/near`.
 - [x] e2e: product with stock at a point 3 km away appears for radius 5 km, not for 2 km; zero-stock point excluded.
 
 ## Scale
@@ -34,3 +34,11 @@ Shops register **physical stores & pickup points** with local stock. Buyers sear
 - `PickupAvailabilityProjector` (apps/projector): coalesced per (point, product), external_gte versions, quantity 0 → versioned delete.
 - Endpoints: `POST /api/shops/:shopId/pickup-points`, `PUT .../pickup-points/:pointId/stock/:productId`, `GET /api/search/near?q=&lat=&lng=&radiusKm=`, `GET /api/pickup-points/near`, `GET /api/pickup-points/clusters?bbox=&zoom=`.
 - Spec `pickup/pickup.e2e-spec.ts` (radius correctness, ordering, out-of-order safety).
+
+## Rebuilt by S19 (2026-10-13)
+Specified in `specs/domains/S19-pickup-near-me`, behavior in `docs/spec/capabilities/S19-pickup-near-me.md`. What changed against the notes above:
+- Seller API with limits, optimistic versions and idempotent adjustments; points and stock carry their own `version`; `pickup.stock_changed` and `pickup.point_changed` are state events of topic `pickup.events`.
+- The index `pickup_availability_v2` is private to the capability and built from four consumers (stock, point, product, shop) over a pure function of the exact store and two copy tables, so a replay in any order gives the same documents.
+- Search pages with `search_after`; the engine refuses `collapse` together with it, so the one-item-per-product rule is applied by reading documents in sort order and keeping each product's first one.
+- Responses are `{items, nextCursor}` with `priceMinor` + `currency`; clusters are `{cells, truncated}` with `cellId`; the old bare arrays and `tile` are gone.
+- No foreign key leaves the pickup tables; the catalog is read through `ProductQueryService` and its events.

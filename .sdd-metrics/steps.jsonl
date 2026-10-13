@@ -19,3 +19,11 @@
 {"run":"20261013T143334Z","capability":"S35","step":"converge-1","start":"2026-10-13T14:54:24Z","end":"2026-10-13T14:58:24Z","seconds":240,"result":"ok","attempt":1,"reason":"ok"}
 {"run":"20261013T143334Z","capability":"S35","step":"gate","start":"2026-10-13T14:58:24Z","end":"2026-10-13T15:07:14Z","seconds":530,"result":"pass","attempt":1,"reason":""}
 {"run":"20261013T143334Z","capability":"S35","step":"built","start":"2026-10-13T14:43:38Z","end":"2026-10-13T15:07:14Z","seconds":1416,"result":"ok","attempt":1,"reason":"Trending products: windowed approximate top-K per category"}
+{"run":"20261013T143334Z","capability":"S19","step":"plan","start":"2026-10-13T15:07:17Z","end":"2026-10-13T15:10:57Z","seconds":220,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261013T143334Z","capability":"S19","step":"tasks","start":"2026-10-13T15:10:57Z","end":"2026-10-13T15:13:52Z","seconds":175,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261013T143334Z","capability":"S19","step":"analyze","start":"2026-10-13T15:13:52Z","end":"2026-10-13T15:14:57Z","seconds":65,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261013T143334Z","capability":"S19","step":"implement-1","start":"2026-10-13T15:14:57Z","end":"2026-10-13T15:55:49Z","seconds":2452,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261013T143334Z","capability":"S19","step":"implement-2","start":"2026-10-13T15:55:49Z","end":"2026-10-13T15:56:20Z","seconds":31,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261013T143334Z","capability":"S19","step":"implement-3","start":"2026-10-13T15:56:20Z","end":"2026-10-13T15:56:35Z","seconds":15,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261013T143334Z","capability":"S19","step":"doctor-1","start":"2026-10-13T15:56:35Z","end":"2026-10-13T15:56:45Z","seconds":10,"result":"ok","attempt":1,"reason":"ok","code_changed":false}
+{"run":"20261013T143334Z","capability":"S19","step":"blocked","start":"2026-10-13T15:56:45Z","end":"2026-10-13T15:56:45Z","seconds":0,"result":"blocked","attempt":1,"reason":"needs a human: DOCTOR: needs human: stop the `payment_system_*` dev stack so `scripts/qa/fresh-run.sh` can run on an empty stack and close T072."}

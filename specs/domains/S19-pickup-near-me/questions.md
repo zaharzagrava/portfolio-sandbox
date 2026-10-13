@@ -46,3 +46,13 @@ Decided without asking (decision policy: most production-grade option the notes 
 - [LOCAL] Exact browse reads the exact store → the only shopper read that does; capped by rate limit, limit and statement timeout.
 - [LOCAL] No reconcile job → replay (AS-31) is the repair path.
 - [LOCAL] Cursor encodes the last sort tuple and a hash of the query → opaque, tamper-evident.
+
+## Findings during implementation (2026-10-13), for a human to confirm
+
+- [CONTRACT] AS-11 says a `shopId` that is not a UUID answers `400 validation_failed`; the S03 shop gate answers `404 shop_not_found` for it before any pipe runs (it addresses no shop). Kept S03's behavior (no existence leak either way, nothing is written); the test asserts the `404`. If the `400` is wanted, S03's gate must change, not S19.
+- [LOCAL] `collapse` and `search_after` cannot be combined on another sort in Elasticsearch (the plan's R-1 assumed they can). The one-item-per-product rule is applied in the index adapter: documents are read in sort order after the cursor and a document is kept only if it is its product's first (one extra `collapse` query per batch without `search_after`). Same contract, same order, keyset cursor; costs two engine calls per page.
+- [LOCAL] Cluster ties at the 500-cell cut are exact while the viewport holds at most 5 000 cells (the engine is asked for that many); beyond that, equal-offer cells at the cut are chosen by the engine's order. `truncated` stays correct.
+- [LOCAL] The index is `pickup_availability_v2` (strict mapping, one shard) so the draft's index with the old mapping is never reused.
+- [LOCAL] The projector rebuilds every touched document on each delivery (applied or not), so a crash between the copy write and the index write is repaired by the redelivery; duplicates cost an idempotent rewrite.
+- [LOCAL] The pickup tables' tests seed the shop copy through `tenancy.shop_created` fixtures (fail closed: a shop with no copy is invisible); production shops reach it through the same event.
+- [LOCAL] `ProjectorModule` as a whole does not start in this environment because of `NotificationsCoreModule` (S28), see `gaps.md` "Sibling-spec follow-ups".

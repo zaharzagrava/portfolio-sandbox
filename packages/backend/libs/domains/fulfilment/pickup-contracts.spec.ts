@@ -3,16 +3,18 @@ import {
   pickupNearSearchResponseSchema,
   pickupPointsNearResponseSchema,
 } from '@marketplace-sandbox/contracts';
-import type { PickupPointNear } from './application/pickup.service';
-import type { NearbyProduct } from './infra/availability-index';
+import type {
+  PickupNearItem,
+  PickupPointNear,
+} from '@marketplace-sandbox/contracts';
 
 const ok = (
   s: { safeParse: (v: unknown) => { success: boolean } },
   v: unknown,
 ) => s.safeParse(v).success;
 
-// Typed with the real service/index views so a renamed or retyped shared field fails compilation.
-const point: PickupPointNear = {
+// Typed with the contract types so a renamed or retyped shared field fails compilation.
+const point: Omit<PickupPointNear, 'openingHours'> = {
   id: '0b5f6f0e-1111-4222-8333-444455556666',
   shopId: '1c5f6f0e-1111-4222-8333-444455556666',
   name: 'Corner kiosk',
@@ -21,10 +23,11 @@ const point: PickupPointNear = {
   lng: 13.4,
   distanceM: 420,
 };
-const nearby: NearbyProduct = {
+const nearby: PickupNearItem = {
   productId: '2d5f6f0e-1111-4222-8333-444455556666',
   title: 'AirPods',
-  price: 12900,
+  priceMinor: 12900,
+  currency: 'EUR',
   nearest: { pickupPointId: point.id, distanceM: 420, quantity: 3 },
 };
 
@@ -77,8 +80,8 @@ describe('W02 B-7: pickup contracts', () => {
     const item = {
       productId: nearby.productId,
       title: nearby.title,
-      priceMinor: nearby.price,
-      currency: 'EUR',
+      priceMinor: nearby.priceMinor,
+      currency: nearby.currency,
       nearest: { ...nearby.nearest, name: 'Corner kiosk' },
     };
     const body = { items: [item], nextCursor: 'abc' };

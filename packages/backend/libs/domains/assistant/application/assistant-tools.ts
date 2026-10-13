@@ -3,7 +3,7 @@ import type Anthropic from '@anthropic-ai/sdk';
 import { z } from 'zod';
 import { ProductService } from '@app/domains/catalog';
 import { ElasticsearchService } from '@app/infrastructure/elasticsearch/elasticsearch.service';
-import { AvailabilityIndex } from '@app/domains/fulfilment';
+import { PickupSearchService } from '@app/domains/fulfilment';
 
 export interface ToolContext {
   /** From the request (device location), never from the model - it can't invent where the user is. */
@@ -110,7 +110,7 @@ export class AssistantToolExecutor {
   constructor(
     private readonly products: ProductService,
     private readonly search: ElasticsearchService,
-    private readonly availability: AvailabilityIndex,
+    private readonly availability: PickupSearchService,
   ) {}
 
   async run(
@@ -166,14 +166,15 @@ export class AssistantToolExecutor {
               content: 'The user has not shared a location.',
               isError: true,
             };
-          const hits = await this.availability.searchNear({
-            q: args.data.query,
+          // S19's search answers `{items, nextCursor}`; the model sees the five nearest hits
+          const { items } = await this.availability.searchNear({
+            q: args.data.query.trim().slice(0, 100) || undefined,
             lat: ctx.location.lat,
             lng: ctx.location.lng,
             radiusKm: args.data.radius_km ?? 10,
-            size: 5,
+            limit: 5,
           });
-          return ok({ hits });
+          return ok({ hits: items });
         }
         default:
           return { content: `Unknown tool ${name}`, isError: true };

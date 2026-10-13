@@ -107,6 +107,9 @@ export const OWNERSHIP = {
   // fulfilment
   PickupPoint: 'domain:fulfilment',
   PickupStock: 'domain:fulfilment',
+  // S19: read-model copies built from catalog and tenancy events (R3), never from their tables
+  PickupProductCopy: 'domain:fulfilment',
+  PickupShopCopy: 'domain:fulfilment',
   Courier: 'domain:fulfilment',
   Delivery: 'domain:fulfilment',
   DeliveryEvent: 'domain:fulfilment',

@@ -159,7 +159,10 @@ export const pickupFixture = () =>
         lat: 50.45,
         lng: 30.52,
         distanceM: 420,
-        openingHours: 'Mon-Fri 9-18',
+        openingHours: {
+          timezone: 'Europe/Kyiv',
+          weekly: { mon: [{ open: '09:00', close: '18:00' }] },
+        },
         quantity: 3,
       },
     ],

@@ -109,3 +109,6 @@ interviews) until its status says so. The implementation loop appends here (rule
 | S28 | SC-006: zero marketing cap violations in a 1,000,000-user simulation | same file (CapStore simulation driver; atomic rule proven by AS-36) | not run |
 | S28 | SC-009: inbox list p99 < 150 ms and unread count p99 < 50 ms at 30,000 requests/s | same file (k6 `notifications-inbox.test.js`) | not run |
 | S28 | W03 journeys: bell (live `1`, mark all read), preferences and unsubscribe in a browser | same file (`pnpm --dir packages/web test:e2e tests/notifications.spec.ts`, only when the full stack is available) | not run |
+| S19 | SC-001: 99% of near-me searches and map views answer in under 80 ms server time at 20,000 rps | `specs/domains/S19-pickup-near-me/quickstart.md`, "Ops artifacts" (load test on a production-sized index) | not run |
+| S19 | SC-002: a stock, point, product or shop change is visible within 5 s for 95% and 30 s for 99.9% of changes | same file (continuous stock stream, `pickup_index_lag_seconds` percentiles) | not run |
+| S19 | SC-006: at most 1 in 1,000 shown offers is found short at the exact check | same file (shown offers vs `checkAvailability` over a day of traffic) | not run |

@@ -16,7 +16,7 @@ import {
 } from '@app/domains/developer-platform';
 import {
   CourierTrackProjector,
-  PickupAvailabilityProjector,
+  PickupProjectorModule,
 } from '@app/domains/fulfilment';
 import { ChatOfflineScheduler } from '@app/domains/chat';
 import { SqsModule } from '@app/infrastructure/sqs/sqs.module';
@@ -90,7 +90,7 @@ import { CacheModule } from '@app/infrastructure/cache/cache.module';
         FeedFanoutConsumer,
         ProductFeedProjector,
         LinkClicksProjector,
-        PickupAvailabilityProjector,
+        ...PickupProjectorModule.projectors,
         ...RecommendationsProjectorModule.projectors,
         ...NotificationsProjectorModule.projectors,
         LiveCommentsProjector,
@@ -111,6 +111,7 @@ import { CacheModule } from '@app/infrastructure/cache/cache.module';
         ProductProjectorModule,
         SearchProjectorModule,
         RecommendationsProjectorModule,
+        PickupProjectorModule,
         LedgerProjectorModule,
         IntegrationsCoreModule,
         StoryCacheModule,
