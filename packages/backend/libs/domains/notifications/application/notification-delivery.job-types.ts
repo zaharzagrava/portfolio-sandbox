@@ -1,41 +1,28 @@
 import { z } from 'zod';
 import { declareJobType } from '@app/infrastructure/jobs/job-type-registry';
-import { NOTIFICATION_TYPES } from '../domain/catalog';
-import type { DeliveryMessage } from '../domain/types';
 
-// Kept apart from the handler (infra/notification-workers.service.ts) so an app that only enqueues loads the
-// declaration without the worker code.
+// Kept apart from the handlers (application/wake-delivery.service.ts, the unread reconciliation) so an app that only
+// enqueues loads the declaration without the worker code.
 declare module '@app/infrastructure/jobs/job-types' {
   interface JobPayloads {
-    /** Quiet-hours delays longer than SQS's 15-minute max. */
-    'notifications.deliver': { queue: string; message: DeliveryMessage };
+    /** S28: one job per delivery held beyond the queue delay (quiet hours); the worker re-checks it at wake time. */
+    'notifications.wake-delivery': { deliveryId: string };
+    /** S28: every 5 minutes, rebuilds the unread counters of users marked dirty. */
+    'notifications.reconcile-unread': Record<string, never>;
   }
 }
 
-type NotificationTypeName = DeliveryMessage['type'];
+/** Retry budget of the S28 jobs (contracts/services.md "Jobs"). */
+export const WAKE_DELIVERY_MAX_ATTEMPTS = 3;
 
 declareJobType({
-  name: 'notifications.deliver',
-  contract: z.object({
-    queue: z.string(),
-    message: z.object({
-      deliveryId: z.string(),
-      userId: z.string(),
-      type: z.enum(
-        Object.keys(NOTIFICATION_TYPES) as [
-          NotificationTypeName,
-          ...NotificationTypeName[],
-        ],
-      ),
-      channel: z.enum(['email', 'sms', 'push']),
-      priority: z.enum(['transactional', 'marketing']),
-      to: z.array(z.string()),
-      subject: z.string(),
-      html: z.string(),
-      title: z.string(),
-      body: z.string(),
-      link: z.string(),
-      unsubscribeUrl: z.string().optional(),
-    }),
-  }),
+  name: 'notifications.wake-delivery',
+  contract: z.object({ deliveryId: z.string().min(1).max(200) }).strict(),
+  maxAttempts: WAKE_DELIVERY_MAX_ATTEMPTS,
+});
+
+declareJobType({
+  name: 'notifications.reconcile-unread',
+  contract: z.object({}).strict() as z.ZodType<Record<string, never>>,
+  maxAttempts: 3,
 });

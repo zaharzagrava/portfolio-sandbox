@@ -2,15 +2,28 @@
 
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient, type InfiniteData, type QueryClient } from '@tanstack/react-query';
 import {
+  deviceListSchema,
+  deviceSchema,
   notificationPageSchema,
+  notificationPreferencesSchema,
+  UNREAD_COUNT_BOUND,
   unreadCountSchema,
+  unsubscribeResultSchema,
+  type Device,
+  type DeviceList,
   type MarkReadRequest,
-  type NotificationEvent,
+  type NotificationRealtimeEvent,
   type NotificationItem,
   type NotificationPage,
+  type NotificationPreferences,
+  type RegisterDeviceRequest,
   type UnreadCount,
+  type UpdatePreferenceRequest,
+  type UpdateSettingsRequest,
 } from '@marketplace-sandbox/contracts';
+import type { ZodType } from 'zod';
 import { queryKeys } from '@/lib/query-keys';
+import { formatWait } from '@/lib/auth/retry-after';
 import { endSession } from '@/lib/auth/session-ended';
 import { apiClient } from './client';
 import { problemFromError } from './errors';
@@ -18,7 +31,7 @@ import { retryUnlessClientError } from './orders';
 import { parseBody } from './parse';
 import { believesSignedIn } from './session-presence';
 
-export type { NotificationItem, NotificationPage, UnreadCount };
+export type { Device, DeviceList, NotificationItem, NotificationPage, NotificationPreferences, UnreadCount };
 export type InboxData = InfiniteData<NotificationPage, string | null>;
 
 export const INBOX_PAGE_SIZE = 20;
@@ -148,19 +161,20 @@ export function useMarkAllRead() {
 
 /**
  * Applies a live `notification` event (AS-66). Returns false for an `id` already known (nothing changes). A new item is
- * prepended to the loaded first page; the unread count becomes the event's `unread`, which is the server's own count
- * after storing the item.
+ * prepended to the loaded first page. The event carries no count (`unread` is the item's own flag), so a known count
+ * grows by one when the item arrives unread; focus and reconnect re-read the server's count.
  */
-export function applyNotificationEvent(client: QueryClient, event: NotificationEvent): boolean {
+export function applyNotificationEvent(client: QueryClient, event: NotificationRealtimeEvent): boolean {
   const inbox = client.getQueryData<InboxData>(queryKeys.notifications.inbox());
   if (inboxItems(inbox).some((item) => item.id === event.id)) return false;
   const { unread, ...fields } = event;
-  const item: NotificationItem = { ...fields, read: false };
+  const item: NotificationItem = { ...fields, read: !unread };
   if (inbox && inbox.pages.length > 0) {
     const [first, ...rest] = inbox.pages;
     client.setQueryData<InboxData>(queryKeys.notifications.inbox(), { ...inbox, pages: [{ ...first, items: [item, ...first.items] }, ...rest] });
   }
-  client.setQueryData<UnreadCount>(queryKeys.notifications.unreadCount(), { unread });
+  const count = client.getQueryData<UnreadCount>(queryKeys.notifications.unreadCount());
+  if (unread && count) client.setQueryData<UnreadCount>(queryKeys.notifications.unreadCount(), { unread: Math.min(UNREAD_COUNT_BOUND, count.unread + 1) });
   return true;
 }
 
@@ -172,4 +186,139 @@ export function inboxErrorKind(error: unknown): InboxErrorKind {
   if (problem.status === 401) return { kind: 'unauthenticated' };
   if (problem.status === 429) return { kind: 'rate_limited', ...(problem.retryAfterSeconds !== undefined ? { retryAfterSeconds: problem.retryAfterSeconds } : {}) };
   return { kind: 'failed' };
+}
+
+// --- preferences, settings, phone, devices, unsubscribe ----------------------------------------------------------------
+
+async function send<T>(schema: ZodType<T>, request: Promise<{ data: unknown }>): Promise<T> {
+  try {
+    const { data } = await request;
+    return parseBody(schema, data);
+  } catch (error) {
+    return handOffUnauthorised(error);
+  }
+}
+
+export const fetchPreferences = () => send(notificationPreferencesSchema, apiClient.get<unknown>('/api/notifications/preferences'));
+
+export const putPreference = (request: UpdatePreferenceRequest) =>
+  send(notificationPreferencesSchema, apiClient.put<unknown>('/api/notifications/preferences', request));
+
+export const putSettings = (request: UpdateSettingsRequest) =>
+  send(notificationPreferencesSchema, apiClient.put<unknown>('/api/notifications/settings', request));
+
+/** Asks for a new 6-digit code by SMS to the stored phone: `202 {}`. */
+export async function postPhoneCode(): Promise<void> {
+  try {
+    await apiClient.post<unknown>('/api/notifications/settings/phone/code');
+  } catch (error) {
+    handOffUnauthorised(error);
+  }
+}
+
+export const postPhoneVerify = (code: string) =>
+  send(notificationPreferencesSchema, apiClient.post<unknown>('/api/notifications/settings/phone/verify', { code }));
+
+export const listDevices = (): Promise<DeviceList> => send(deviceListSchema, apiClient.get<unknown>('/api/notifications/devices'));
+
+/** `201` for a new token, `200` for a known one; never carries the token back. */
+export const registerDevice = (request: RegisterDeviceRequest): Promise<Device> =>
+  send(deviceSchema, apiClient.post<unknown>('/api/notifications/devices', request));
+
+export async function removeDevice(deviceId: string): Promise<void> {
+  try {
+    await apiClient.delete(`/api/notifications/devices/${encodeURIComponent(deviceId)}`);
+  } catch (error) {
+    handOffUnauthorised(error);
+  }
+}
+
+/** Anonymous: the signed token is the whole proof. `GET` only describes (the page does that on the server); this performs it. */
+export async function postUnsubscribe(token: string): Promise<string> {
+  const { data } = await apiClient.post<unknown>('/api/notifications/unsubscribe', null, { params: { token }, anonymous: true });
+  return parseBody(unsubscribeResultSchema, data).unsubscribed;
+}
+
+export function usePreferences(enabled = true) {
+  return useQuery({
+    queryKey: queryKeys.notifications.preferences(),
+    queryFn: fetchPreferences,
+    enabled,
+    retry: retryUnlessClientError,
+  });
+}
+
+/** One cell: flips at once, the server's whole matrix wins on success, the previous matrix returns on failure (AS-15, AS-18). */
+export function useUpdatePreference() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: putPreference,
+    onMutate: async ({ category, channel, enabled }: UpdatePreferenceRequest) => {
+      await client.cancelQueries({ queryKey: queryKeys.notifications.preferences() });
+      const previous = client.getQueryData<NotificationPreferences>(queryKeys.notifications.preferences());
+      if (previous) {
+        client.setQueryData<NotificationPreferences>(queryKeys.notifications.preferences(), {
+          ...previous,
+          preferences: previous.preferences.map((row) => (row.category === category ? { ...row, channels: { ...row.channels, [channel]: enabled } } : row)),
+        });
+      }
+      return { previous };
+    },
+    onError: (_error, _request, context) => {
+      if (context?.previous) client.setQueryData(queryKeys.notifications.preferences(), context.previous);
+    },
+    onSuccess: (matrix) => client.setQueryData(queryKeys.notifications.preferences(), matrix),
+  });
+}
+
+export function useUpdateSettings() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: putSettings,
+    onSuccess: (matrix) => client.setQueryData(queryKeys.notifications.preferences(), matrix),
+  });
+}
+
+export function useRequestPhoneCode() {
+  return useMutation({ mutationFn: postPhoneCode });
+}
+
+export function useVerifyPhone() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: postPhoneVerify,
+    onSuccess: (matrix) => client.setQueryData(queryKeys.notifications.preferences(), matrix),
+  });
+}
+
+/** The visible text of a failed settings, preference or phone call, from the stable `code` and status only. */
+export function settingsErrorText(error: unknown): string {
+  const problem = problemFromError(error);
+  const wait = formatWait(problem.retryAfterSeconds);
+  switch (problem.code) {
+    case 'phone_not_verified':
+      return 'Verify your phone number before turning on text messages.';
+    case 'quiet_hours_incomplete':
+      return 'Set both the start and the end of quiet hours, or clear both.';
+    case 'quiet_hours_invalid':
+      return 'Quiet hours cannot start and end at the same time.';
+    case 'code_invalid':
+      return 'That code is not right. Check the message and try again.';
+    case 'code_expired':
+      return 'That code has expired. Request a new one.';
+    case 'code_not_requested':
+      return 'Request a code first.';
+    case 'phone_missing':
+      return 'Add a phone number first.';
+    case 'phone_unreachable':
+      return "We can't send text messages to that number.";
+    case 'verification_locked':
+      return wait ? `Too many wrong codes. Try again in ${wait}.` : 'Too many wrong codes. Try again later.';
+    case 'validation_failed':
+      return 'Check the values and try again.';
+    default:
+  }
+  if (problem.status === 429) return wait ? `Too many requests. Try again in ${wait}.` : 'Too many requests. Try again later.';
+  if (problem.status === 0) return "You're offline. Check your connection and try again.";
+  return 'Something went wrong. Try again.';
 }

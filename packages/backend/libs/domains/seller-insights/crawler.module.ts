@@ -17,9 +17,10 @@ import { ClickHouseModule } from '@app/infrastructure/clickhouse/clickhouse.modu
 import { JobsModule } from '@app/infrastructure/jobs/jobs.module';
 import { JobsService } from '@app/infrastructure/jobs/jobs.service';
 import { JobHandler } from '@app/infrastructure/jobs/job-handler.decorator';
-import { NotificationsCoreModule } from '@app/domains/notifications';
+import { EventsModule } from '@app/infrastructure/events/events.module';
 import { ShopScoped } from '@app/domains/tenancy';
 import { CrawlerService } from './application/crawler.service';
+import { SELLER_INSIGHTS_AGGREGATE } from './application/events/seller-insights-events';
 
 import { z } from 'zod';
 import { declareJobType } from '@app/infrastructure/jobs/job-type-registry';
@@ -55,7 +56,11 @@ export class CompetitorController {
   }
 }
 
-const IMPORTS = [StorageModule, ClickHouseModule, NotificationsCoreModule];
+const IMPORTS = [
+  StorageModule,
+  ClickHouseModule,
+  EventsModule.forAggregates([SELLER_INSIGHTS_AGGREGATE]),
+];
 
 /** SD-35 API (core). */
 @Module({

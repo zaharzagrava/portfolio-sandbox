@@ -9,6 +9,7 @@
  *   node scripts/load-tests/seed/index.js search       [--users=100000] [--sellers=1000] [--products=50000]
  *   node scripts/load-tests/seed/index.js seller-stats [--users=100000] [--sellers=5000] [--products-per-seller=10] [--sales-per-seller=500]
  *   node scripts/load-tests/seed/index.js chat         [--users=100000] [--channels=100]
+ *   node scripts/load-tests/seed/index.js notifications [--users=100000]
  *   node scripts/load-tests/seed/index.js clean <flow>
  *
  * Each flow first deletes whatever its previous run created (accounts are
@@ -42,7 +43,7 @@ const {
   deleteIndexedLoadtestProducts,
 } = require('./catalog');
 
-const FLOWS = ['payment', 'search', 'seller-stats', 'chat'];
+const FLOWS = ['payment', 'search', 'seller-stats', 'chat', 'notifications'];
 
 function parseArgs(argv) {
   const [command, ...rest] = argv;
@@ -222,6 +223,17 @@ async function seedChat(pool, flags) {
   });
 }
 
+/** Accounts only: the inbox items come from the burst script's events (or from a previous burst run). */
+async function seedNotifications(pool, flags) {
+  const userCount = flags.users ?? 100_000;
+  const passwordHash = await hashPassword();
+  const users = await seedUsers(pool, { flow: 'notifications', role: 'USER', count: userCount, passwordHash });
+  writeData('notifications.json', {
+    password: LOADTEST_PASSWORD,
+    users: users.map((u) => ({ id: u.userId, email: u.email })),
+  });
+}
+
 // --- --- --- --- --- Infra clients --- --- --- --- --- //
 
 function createEsClient() {
@@ -251,6 +263,7 @@ const SEEDERS = {
   search: seedSearch,
   'seller-stats': seedSellerStats,
   chat: seedChat,
+  notifications: seedNotifications,
 };
 
 async function main() {

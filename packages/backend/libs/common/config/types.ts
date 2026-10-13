@@ -206,6 +206,10 @@ export class SecretsManagerConfig {
   payments_page_max: number;
   payments_cursor_secret?: string;
 
+  /** S28: line concurrency of the delivery workers, defaults in `notifications-config.ts`. */
+  notifications_tx_concurrency: number;
+  notifications_marketing_concurrency: number;
+
   /** S14: ledger and reconciliation settings, defaults in `ledger-config.ts`. */
   ledger_fee_minor: number;
   ledger_shards: number;

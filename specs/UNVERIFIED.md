@@ -101,3 +101,11 @@ interviews) until its status says so. The implementation loop appends here (rule
 | W03 | SC-010 (real provider part): card data is only inside the provider's frames | same file (Stripe test keys, DevTools check) | not run |
 | S14 | SC-004: balance page p99 under 100 ms with 100 million entries stored, no request sums history | `specs/domains/S14-ledger-reconciliation/quickstart.md`, "Ops artifacts" (100 M-entry k6 run, incl. Redis down and both stores down) | not run |
 | S14 | SC-005 (percentile): a balance change is visible within 5 s at the 99th percentile under production-like load | same file (200 captures/s with real relay; poll and read `ledger_balance_projection_lag_seconds`) | not run |
+| S28 | SC-001: inbox item visible within 2 s (p99) at 115 events/s average and 2,000/s peak | `specs/domains/S28-notifications/quickstart.md`, "Ops artifacts" (k6 `notifications-burst.test.js`) | not run |
+| S28 | SC-002 (volume part): zero duplicates when every event is delivered 3 times and 10 % of deliveries crash | same file (burst script with crash injection; per-crash-point proof is AS-03) | not run |
+| S28 | SC-003: while one provider is down, other channels stay within 1.5x of normal p99 | same file (burst script, SMS provider hung) | not run |
+| S28 | SC-004: primary e-mail provider transient failure delays messages under 15 s (p99), none lost | same file (primary provider 5xx for 60 s) | not run |
+| S28 | SC-005: during a 20,000/s marketing burst transactional sends are under 1 s later (p99) | same file (burst script with transactional probe) | not run |
+| S28 | SC-006: zero marketing cap violations in a 1,000,000-user simulation | same file (CapStore simulation driver; atomic rule proven by AS-36) | not run |
+| S28 | SC-009: inbox list p99 < 150 ms and unread count p99 < 50 ms at 30,000 requests/s | same file (k6 `notifications-inbox.test.js`) | not run |
+| S28 | W03 journeys: bell (live `1`, mark all read), preferences and unsubscribe in a browser | same file (`pnpm --dir packages/web test:e2e tests/notifications.spec.ts`, only when the full stack is available) | not run |

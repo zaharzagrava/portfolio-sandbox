@@ -1,4 +1,4 @@
-import { INestApplication, Module } from '@nestjs/common';
+import { INestApplication, Injectable, Module } from '@nestjs/common';
 import {
   getConnectionToken,
   getModelToken,
@@ -24,16 +24,30 @@ import { ApiConfigService } from '@app/common/config';
 import { JobsTestProbe } from '@app/infrastructure/jobs';
 import { ShopMembershipModel as ShopMembership } from '@app/domains/tenancy';
 import { OrderPaid } from '@app/domains/orders';
-import { AuctionLeaderChanged } from '@app/domains/auctions';
+import { envelope } from './testing';
 import { NotificationsModule } from './notifications.module';
 import { NotificationsWorkerModule } from './notifications-worker.module';
 import { NotificationsCoreModule } from './notifications-core.module';
-import { NotificationRouterProjector } from './infra/notification-router.projector';
+import { EventRoutingService } from './application/event-routing.service';
+import type { EventEnvelope } from '@app/infrastructure/events/event-envelope';
 import { EMAIL_PROVIDERS, ChannelProvider } from './domain/provider-ports';
 import { LogPushProvider } from './infra/providers/log.providers';
 import { PUSH_PROVIDERS } from './domain/provider-ports';
 import { SnsVerifier } from './api/sns-verifier';
 import { DeliveryMessage } from './domain/types';
+import {
+  DELIVERY_TIMELINE_STORE,
+  type DeliveryTimelineStore,
+} from './domain/ports';
+
+/** Stands in for the Kafka consumer: hands a batch of order events to the routing service. */
+@Injectable()
+class NotificationRouterProjector {
+  constructor(private readonly routing: EventRoutingService) {}
+  project(events: EventEnvelope[]) {
+    return this.routing.consume('orders', events);
+  }
+}
 
 @Module({
   imports: [
@@ -256,27 +270,41 @@ describe('Notifications (e2e)', () => {
       .post('/api/notifications/devices')
       .set(u.auth)
       .send({ token: `tok-${v4()}`, platform: 'ios' })
-      .expect(204);
+      .expect(201);
 
     const auctionId = v4();
     await router.project([
-      AuctionLeaderChanged.create(auctionId, 7, {
-        previousLeaderId: u.id,
-        leaderId: v4(),
-        price: 50_000,
-      }),
+      envelope(
+        'auction.leader_changed',
+        {
+          auctionId,
+          previousLeaderId: u.id,
+          priceMinor: 50_000,
+          currency: 'USD',
+          auctionVersion: 7,
+        },
+        { aggregateId: auctionId, aggregateVersion: 7 },
+      ),
     ]);
 
-    const [job] = await new JobsTestProbe(
-      app.get<Sequelize>(getConnectionToken()),
-    ).find('notifications.deliver', { message: { userId: u.id } });
-    expect((job.payload as { message: DeliveryMessage }).message).toMatchObject(
-      {
-        channel: 'push',
-        type: 'auction.outbid',
-        title: "You've been outbid",
+    // A hold longer than the queue delay becomes a wake-up job per delivery; the delivery itself waits as `delayed`.
+    const probe = new JobsTestProbe(app.get<Sequelize>(getConnectionToken()));
+    const [job] = await waitFor(
+      async () => {
+        const jobs = await probe.find('notifications.wake-delivery');
+        return jobs.length > 0 && jobs;
       },
+      { description: 'wake-up job' },
     );
+    const held = await app
+      .get<DeliveryTimelineStore>(DELIVERY_TIMELINE_STORE)
+      .find((job.payload as { deliveryId: string }).deliveryId);
+    expect(held).toMatchObject({
+      userId: u.id,
+      channel: 'push',
+      type: 'auction.outbid',
+      status: 'delayed',
+    });
     expect(
       Math.abs(new Date(job.runAt).getTime() - end.getTime()),
     ).toBeLessThan(61_000);
@@ -284,7 +312,10 @@ describe('Notifications (e2e)', () => {
     expect(
       (await http().get('/api/notifications').set(u.auth).expect(200)).body
         .items[0],
-    ).toMatchObject({ type: 'auction.outbid' });
+    ).toMatchObject({
+      type: 'auction.outbid',
+      title: "You've been outbid",
+    });
   });
 
   it('one-click unsubscribe stops that category by email only; GET never unsubscribes', async () => {
@@ -395,13 +426,20 @@ describe('Notifications (e2e)', () => {
       }),
     }).expect(401);
     await post(sns(TOPIC, complaint)).expect(200);
-    const prefs = (
-      await http().get('/api/notifications/preferences').set(u.auth)
-    ).body.preferences;
-    expect(
-      prefs.find((p: { category: string }) => p.category === 'marketing')
-        .channels.email,
-    ).toBe(false);
+    // The callback is queued and applied by the callback worker, so the preference turns off shortly after the 200.
+    const marketingEmail = await waitFor(
+      async () => {
+        const prefs = (
+          await http().get('/api/notifications/preferences').set(u.auth)
+        ).body.preferences;
+        const email = prefs.find(
+          (p: { category: string }) => p.category === 'marketing',
+        ).channels.email;
+        return email === false ? { email } : false;
+      },
+      { description: 'marketing e-mail switched off' },
+    );
+    expect(marketingEmail.email).toBe(false);
 
     await router.project([paid(u.id)]);
     await waitFor(

@@ -6,13 +6,15 @@ import { ApiConfigService } from '@app/common/config';
 import { RedisService } from '@app/infrastructure/redis/redis.service';
 import { ObjectStorage } from '@app/infrastructure/storage/object-storage.port';
 import { ClickHouseService } from '@app/infrastructure/clickhouse/clickhouse.service';
-import { NotificationRouter, formatMoney } from '@app/domains/notifications';
+import { TransactionRunner } from '@app/infrastructure/context';
+import { OutboxService } from '@app/infrastructure/outbox/outbox.service';
 import { Environment } from '@app/common/types';
 import {
   checkSafeUrl,
   safeGet,
   SafeRequestError,
 } from '@app/infrastructure/net';
+import { CompetitorPriceDropped } from './events/seller-insights-events';
 import { Frontier } from '../infra/frontier';
 import { normalizeUrl } from '../domain/url';
 import { isAllowed, parseRobots, RobotsRules } from '../domain/robots';
@@ -45,7 +47,8 @@ export class CrawlerService {
     private readonly redis: RedisService,
     private readonly storage: ObjectStorage,
     private readonly clickhouse: ClickHouseService,
-    private readonly notifications: NotificationRouter,
+    private readonly outbox: OutboxService,
+    private readonly transactions: TransactionRunner,
     private readonly config: ApiConfigService,
   ) {
     this.frontier = new Frontier(redis);
@@ -71,8 +74,7 @@ export class CrawlerService {
       );
     }
     const host = new URL(url).host;
-    // S54 T037 audit: explicit unit of work, opens its own transaction by design; no network I/O inside.
-    return this.sequelize.transaction(async (transaction) => {
+    return this.transactions.run(async (transaction) => {
       const [target] = await this.sequelize.query<{ id: string }>(
         `INSERT INTO "CrawlTarget" (url, host) VALUES (:url, :host) ON CONFLICT (url) DO UPDATE SET "nextCheckAt" = LEAST("CrawlTarget"."nextCheckAt", now()) RETURNING id`,
         { type: QueryTypes.SELECT, replacements: { url, host }, transaction },
@@ -279,20 +281,21 @@ export class CrawlerService {
         replacements: { targetId: target.id, priceMinor },
       },
     );
-    await this.notifications.dispatch(
-      watchers.map((w) => ({
-        type: 'competitor.price_drop' as const,
-        userId: w.ownerId,
-        dedupeKey: `competitor:${w.watchId}:${priceMinor}`,
-        data: {
-          product: w.title,
-          host: target.host,
-          competitorPrice: formatMoney(priceMinor, currency, 'en-US'),
-          yourPrice: formatMoney(Number(w.price), 'usd', 'en-US'),
+    // What happened, once per watch; telling the owner is somebody else's business.
+    await this.outbox.appendStandalone(
+      watchers.map((w) =>
+        CompetitorPriceDropped.create(w.watchId, 0, {
+          watchId: w.watchId,
           shopId: w.shopId,
           productId: w.productId,
-        },
-      })),
+          productTitle: w.title,
+          host: target.host,
+          competitorPriceMinor: priceMinor,
+          yourPriceMinor: Number(w.price),
+          currency,
+          ownerId: w.ownerId,
+        }),
+      ),
     );
   }
 

@@ -78,6 +78,8 @@ describe('queryKeys', () => {
     expect(queryKeys.notifications.all).toEqual(['notifications']);
     expect(queryKeys.notifications.unreadCount()).toEqual(['notifications', 'unreadCount']);
     expect(queryKeys.notifications.inbox()).toEqual(['notifications', 'inbox']);
+    expect(queryKeys.notifications.preferences()).toEqual(['notifications', 'preferences']);
+    expect(queryKeys.notifications.devices()).toEqual(['notifications', 'devices']);
   });
 
   it('W03 AS-71: the cart key does not include a user id, and every cart key sits under the cart prefix', () => {

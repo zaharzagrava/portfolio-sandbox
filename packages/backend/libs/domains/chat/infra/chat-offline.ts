@@ -13,8 +13,11 @@ import {
   TaskMessage,
 } from '@app/infrastructure/sqs/task-queue.port';
 import { RedisService } from '@app/infrastructure/redis/redis.service';
-import { NotificationRouter } from '@app/domains/notifications';
-import { ChatMessagePosted } from '../application/events/chat-events';
+import { OutboxService } from '@app/infrastructure/outbox/outbox.service';
+import {
+  ChatMessageEscalated,
+  ChatMessagePosted,
+} from '../application/events/chat-events';
 import { ChatSyncService } from '../application/chat-sync.service';
 
 export const CHAT_OFFLINE_QUEUE = 'chat-offline-notify';
@@ -100,7 +103,7 @@ export class ChatOfflineWorker
     private readonly queue: TaskQueue,
     private readonly redis: RedisService,
     private readonly chat: ChatSyncService,
-    private readonly router: NotificationRouter,
+    private readonly outbox: OutboxService,
   ) {}
 
   onApplicationBootstrap() {
@@ -123,17 +126,15 @@ export class ChatOfflineWorker
     const [state] = await this.sequelize.query<{
       lastReadSeq: number;
       title: string;
-      sender: string;
     }>(
-      `SELECT mem."lastReadSeq"::int AS "lastReadSeq", c.title, split_part(u.email, '@', 1) AS sender
-       FROM "ChatChannelMember" mem JOIN "ChatChannel" c ON c.id = mem."channelId" JOIN "User" u ON u.id = :authorId
+      `SELECT mem."lastReadSeq"::int AS "lastReadSeq", c.title
+       FROM "ChatChannelMember" mem JOIN "ChatChannel" c ON c.id = mem."channelId"
        WHERE mem."channelId" = :channelId AND mem."userId" = :recipientId`,
       {
         type: QueryTypes.SELECT,
         replacements: {
           channelId: m.channelId,
           recipientId: m.recipientId,
-          authorId: m.authorId,
         },
       },
     );
@@ -150,19 +151,16 @@ export class ChatOfflineWorker
     )
       return 'coalesced';
 
-    await this.router.dispatch([
-      {
-        type: 'chat.message',
-        userId: m.recipientId,
+    // Chat says what happened; who is told, and how, is not chat's business.
+    await this.outbox.appendStandalone(
+      ChatMessageEscalated.create(m.channelId, m.seq, {
+        recipientId: m.recipientId,
+        channelId: m.channelId,
+        channelTitle: state.title,
+        preview: m.preview,
         dedupeKey: `chat:${m.messageId}`,
-        data: {
-          sender: state.sender,
-          preview: m.preview,
-          channelId: m.channelId,
-          channelTitle: state.title,
-        },
-      },
-    ]);
+      }),
+    );
     return 'notified';
   }
 }

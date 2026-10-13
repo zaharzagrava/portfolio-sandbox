@@ -56,6 +56,8 @@ const nextConfig: NextConfig = {
     return [
       { source: "/admin", destination: "/admin/feature-flags", permanent: false },
       { source: "/account", destination: "/account/security", permanent: false },
+      // The link inside notifications (S28 catalog) points at /settings/notifications; the screen lives under /account.
+      { source: "/settings/notifications", destination: "/account/notifications", permanent: false },
       // The old second-step route (it carried the challenge in the URL) is gone; the pending sign-in lives in a cookie now.
       { source: "/mfa", destination: "/login", permanent: false },
     ];

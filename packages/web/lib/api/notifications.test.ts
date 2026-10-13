@@ -176,13 +176,13 @@ describe('notifications api', () => {
 });
 
 describe('applyNotificationEvent', () => {
-  const event = (n: number, unread: number) => ({ id: id(n), type: 'order', category: 'orders', title: `T${n}`, body: `B${n}`, link: null, unread, createdAt: '2026-10-11T10:00:00.000Z' });
+  const event = (n: number) => ({ id: id(n), type: 'order', category: 'orders', title: `T${n}`, body: `B${n}`, link: null, unread: true, createdAt: '2026-10-11T10:00:00.000Z' });
 
-  it('W03 AS-66: a new id is prepended to the loaded inbox and the unread count follows the event', () => {
+  it('S28 AS-01: a new id is prepended to the loaded inbox and a known unread count grows by one', () => {
     const { client } = wrapper();
     seedInbox(client);
     client.setQueryData(queryKeys.notifications.unreadCount(), { unread: 2 });
-    expect(applyNotificationEvent(client, event(9, 3))).toBe(true);
+    expect(applyNotificationEvent(client, event(9))).toBe(true);
     const items = inboxItems(client.getQueryData<InboxData>(queryKeys.notifications.inbox()));
     expect(items.map((i) => i.id)).toEqual([id(9), id(1), id(2), id(3)]);
     expect(items[0]).toMatchObject({ read: false, title: 'T9' });
@@ -193,19 +193,19 @@ describe('applyNotificationEvent', () => {
     const { client } = wrapper();
     seedInbox(client);
     client.setQueryData(queryKeys.notifications.unreadCount(), { unread: 2 });
-    expect(applyNotificationEvent(client, event(1, 5))).toBe(false);
+    expect(applyNotificationEvent(client, event(1))).toBe(false);
     expect(inboxItems(client.getQueryData<InboxData>(queryKeys.notifications.inbox()))).toHaveLength(3);
     expect(client.getQueryData(queryKeys.notifications.unreadCount())).toEqual({ unread: 2 });
   });
 
-  it('W03 AS-66: with no inbox loaded only the count changes; an unknown count is seeded from the event', () => {
+  it('S28 AS-01: with no inbox loaded only the count changes; an unknown count stays unknown (focus re-reads it)', () => {
     const { client } = wrapper();
     client.setQueryData(queryKeys.notifications.unreadCount(), { unread: 1 });
-    expect(applyNotificationEvent(client, event(4, 2))).toBe(true);
+    expect(applyNotificationEvent(client, event(4))).toBe(true);
     expect(client.getQueryData(queryKeys.notifications.inbox())).toBeUndefined();
     expect(client.getQueryData(queryKeys.notifications.unreadCount())).toEqual({ unread: 2 });
     const other = wrapper().client;
-    applyNotificationEvent(other, event(4, 2));
-    expect(other.getQueryData(queryKeys.notifications.unreadCount())).toEqual({ unread: 2 });
+    applyNotificationEvent(other, event(4));
+    expect(other.getQueryData(queryKeys.notifications.unreadCount())).toBeUndefined();
   });
 });

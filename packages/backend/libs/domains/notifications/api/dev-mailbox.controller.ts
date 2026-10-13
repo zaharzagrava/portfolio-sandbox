@@ -1,6 +1,6 @@
 import { Controller, Get, NotFoundException, Query } from '@nestjs/common';
 import { ApiExcludeController } from '@nestjs/swagger';
-import { memoryMailbox } from '../infra/providers/memory-email.provider';
+import { memoryMailbox } from '../domain/mailbox';
 
 /** Available only outside production and only when `DEV_MAILBOX_ENABLED=true`; evaluated per request. */
 export const devMailboxEnabled = (

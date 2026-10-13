@@ -1,170 +1,61 @@
 import {
-  Inject,
   Injectable,
-  Logger,
   OnApplicationBootstrap,
   OnModuleDestroy,
 } from '@nestjs/common';
-import { RedisService } from '@app/infrastructure/redis/redis.service';
-import {
-  TaskQueue,
-  TaskMessage,
-} from '@app/infrastructure/sqs/task-queue.port';
-import { RateLimiterService } from '@app/infrastructure/rate-limit';
-import { JobHandler } from '@app/infrastructure/jobs/job-handler.decorator';
-import '../application/notification-delivery.job-types';
-import { SuppressionService } from '../application/suppression.service';
-import { DeliveryLogService } from './delivery-log.service';
-import { NotificationPreferencesService } from '../application/preferences.service';
-import { ChannelSender } from './providers/channel-sender';
-import {
-  EMAIL_PROVIDERS,
-  PUSH_PROVIDERS,
-  SMS_PROVIDERS,
-  ChannelProvider,
-} from '../domain/provider-ports';
-import {
-  DeliveryMessage,
-  NOTIFICATION_QUEUES,
-  PermanentDeliveryError,
-} from '../domain/types';
-
-const sentKey = (deliveryId: string) => `notif:sent:${deliveryId}`;
+import { ApiConfigService } from '@app/common/config';
+import { TaskQueue } from '@app/infrastructure/sqs/task-queue.port';
+import { DeliveryWorkerService } from '../application/delivery-worker.service';
+import { readNotificationsSettings } from '../application/notifications-settings';
+import { concurrencyOf, DELIVERY_LINES } from './delivery-lines';
 
 /**
- * SQS consumers, one per channel queue + the marketing queue (drained with low
- * concurrency so a 20k/s campaign never starves "your order shipped").
- * Scale signal: queue depth (ASG / Lambda event source mapping).
- *
- * Per message: dedupe → suppression → provider rate limit → send with
- * failover → record. Transient failures throw → SQS redelivers after the
- * visibility timeout → DLQ after maxReceiveCount.
+ * How long a received message stays hidden. The consumer extends it while the handler runs, so a short value only
+ * bounds how long a message waits when its worker disappears (or a receive is abandoned at shutdown).
+ */
+export const LINE_VISIBILITY_S = 5;
+
+/**
+ * One consumer per delivery line (the six queues of `delivery-lines.ts`), each with its own concurrency: transactional
+ * 10, marketing 3 by default, so a campaign never starves "your order shipped". Scale signal: queue depth. What happens
+ * to a message is `DeliveryWorkerService`'s; the wake-up of a message held for quiet hours is `WakeDeliveryService`'s
+ * (job `notifications.wake-delivery`), which hands it back to its line.
  */
 @Injectable()
 export class NotificationWorkers
   implements OnApplicationBootstrap, OnModuleDestroy
 {
-  private readonly logger = new Logger(NotificationWorkers.name);
-  private readonly senders: Record<DeliveryMessage['channel'], ChannelSender>;
+  private readonly txConcurrency: number;
+  private readonly marketingConcurrency: number;
   private stops: (() => Promise<void>)[] = [];
 
   constructor(
     private readonly queue: TaskQueue,
-    private readonly redis: RedisService,
-    private readonly rateLimiter: RateLimiterService,
-    private readonly suppression: SuppressionService,
-    private readonly deliveryLog: DeliveryLogService,
-    private readonly preferences: NotificationPreferencesService,
-    @Inject(EMAIL_PROVIDERS) email: ChannelProvider[],
-    @Inject(SMS_PROVIDERS) sms: ChannelProvider[],
-    @Inject(PUSH_PROVIDERS) push: ChannelProvider[],
+    private readonly delivery: DeliveryWorkerService,
+    config: ApiConfigService,
   ) {
-    this.senders = {
-      email: new ChannelSender(email),
-      sms: new ChannelSender(sms),
-      push: new ChannelSender(push),
-    };
+    const settings = readNotificationsSettings(config);
+    this.txConcurrency = settings.txConcurrency;
+    this.marketingConcurrency = settings.marketingConcurrency;
   }
 
   onApplicationBootstrap() {
-    const consume = (queue: string, concurrency: number) =>
-      this.queue.consume<DeliveryMessage>(
-        queue,
-        (msg) => this.process(queue, msg),
-        { concurrency, visibilityTimeoutSec: 60 },
-      );
-    this.stops = [
-      consume(NOTIFICATION_QUEUES.email, 20),
-      consume(NOTIFICATION_QUEUES.sms, 10),
-      consume(NOTIFICATION_QUEUES.push, 50),
-      consume(NOTIFICATION_QUEUES.marketing, 5),
-    ];
+    this.stops = DELIVERY_LINES.map((spec) =>
+      this.queue.consume<unknown>(
+        spec.queue,
+        (msg) => this.delivery.process(spec.queue, msg),
+        {
+          concurrency: concurrencyOf(spec, {
+            txConcurrency: this.txConcurrency,
+            marketingConcurrency: this.marketingConcurrency,
+          }),
+          visibilityTimeoutSec: LINE_VISIBILITY_S,
+        },
+      ),
+    );
   }
 
   async onModuleDestroy() {
     await Promise.all(this.stops.map((stop) => stop()));
-  }
-
-  async process(
-    queue: string,
-    { body: m }: Pick<TaskMessage<DeliveryMessage>, 'body'>,
-  ): Promise<void> {
-    if (await this.redis.client.exists(sentKey(m.deliveryId))) return;
-    const log = {
-      deliveryId: m.deliveryId,
-      userId: m.userId,
-      channel: m.channel,
-      type: m.type,
-    };
-
-    const to: string[] = [];
-    for (const address of m.to)
-      if (!(await this.suppression.isSuppressed(m.channel, address)))
-        to.push(address);
-    if (to.length === 0) {
-      await this.deliveryLog.record({ ...log, status: 'suppressed' });
-      return;
-    }
-
-    const decision = await this.rateLimiter.check(
-      `notify.${m.channel}`,
-      'provider',
-    );
-    if (!decision.allowed) {
-      // Over the provider's send rate: put it back with a delay instead of burning a receive (and a DLQ strike).
-      await this.queue.enqueue(queue, m, {
-        delaySeconds: Math.min(
-          Math.ceil((decision.retryAfterMs ?? 0) / 1000) || 1,
-          900,
-        ),
-      });
-      return;
-    }
-
-    try {
-      const result = await this.senders[m.channel].send({ ...m, to });
-      if (result.invalidTokens?.length)
-        await this.preferences.removeDevices(result.invalidTokens);
-      await this.redis.client.set(sentKey(m.deliveryId), '1', 'EX', 7 * 86_400);
-      await this.deliveryLog.record({
-        ...log,
-        status: 'sent',
-        provider: result.provider,
-        providerMessageId: result.providerMessageId,
-      });
-    } catch (error) {
-      if (error instanceof PermanentDeliveryError) {
-        if (m.channel === 'push')
-          await this.preferences.removeDevices(error.suppress);
-        else if (error.suppress.length)
-          await this.suppression.suppress(
-            m.channel,
-            error.suppress,
-            'provider-permanent',
-          );
-        await this.deliveryLog.record({
-          ...log,
-          status: 'failed',
-          detail: error.message,
-        });
-        return;
-      }
-      this.logger.warn(
-        `${m.channel} delivery ${m.deliveryId} failed, will retry: ${(error as Error).message}`,
-      );
-      throw error;
-    }
-  }
-
-  /** Quiet-hours delays beyond SQS's 15 minutes come back through the job scheduler. */
-  @JobHandler('notifications.deliver', { concurrency: 20 })
-  async deliverLater({
-    queue,
-    message,
-  }: {
-    queue: string;
-    message: DeliveryMessage;
-  }) {
-    await this.queue.enqueue(queue, message);
   }
 }

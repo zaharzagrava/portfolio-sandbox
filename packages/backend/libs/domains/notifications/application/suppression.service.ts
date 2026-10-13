@@ -1,55 +1,51 @@
-import { Injectable } from '@nestjs/common';
-import { InjectConnection } from '@nestjs/sequelize';
-import { QueryTypes, Sequelize } from 'sequelize';
-import { CacheService } from '@app/infrastructure/cache/cache.service';
-import { cacheKey } from '@app/infrastructure/cache/cache-key';
-
-// An address can contain any character (spaces, braces, colons): cacheKey() encodes it (S52 AS-09).
-const key = (channel: string, address: string) =>
-  cacheKey('notif-supp', 1, channel, address.toLowerCase());
+import { Inject, Injectable } from '@nestjs/common';
+import { CLOCK, type Clock } from '@app/common/core/clock';
+import type { Channel } from '../domain/catalog';
+import { suppressedCounter } from '../domain/metrics';
+import {
+  SUPPRESSION_REPOSITORY,
+  type SuppressionRepository,
+} from '../domain/ports';
+import type { SuppressionReason } from '../domain/types';
 
 /**
- * Addresses we must never contact again (hard bounce, spam complaint, carrier
- * STOP, dead push token). Postgres is the record; checks go through the cache
- * with negative caching, because almost every check is a "not suppressed" miss.
- * Sending to known-bad addresses is how a sender's SES reputation gets suspended.
+ * Addresses we must never contact again (hard bounce, spam complaint, carrier STOP, dead push token), per channel and
+ * normalized address (FR-042). Every check reads the repository: a suppression is in effect for the very next send, and
+ * mandatory notices obey it too. Sending to known-bad addresses is how a sender's reputation gets suspended.
  */
 @Injectable()
 export class SuppressionService {
   constructor(
-    @InjectConnection() private readonly sequelize: Sequelize,
-    private readonly cache: CacheService,
+    @Inject(SUPPRESSION_REPOSITORY)
+    private readonly repository: SuppressionRepository,
+    @Inject(CLOCK) private readonly clock: Clock,
   ) {}
 
-  async isSuppressed(channel: string, address: string): Promise<boolean> {
-    const hit = await this.cache.getOrLoad<{ reason: string }>(
-      key(channel, address),
-      async () => {
-        const [row] = await this.sequelize.query<{ reason: string }>(
-          `SELECT reason FROM "NotificationSuppression" WHERE channel = :channel AND address = :address`,
-          {
-            type: QueryTypes.SELECT,
-            replacements: { channel, address: address.toLowerCase() },
-          },
-        );
-        return row ?? null;
-      },
-      { ttlMs: 600_000, negativeTtlMs: 600_000, l1: 'never' },
-    );
-    return !!hit;
+  /** E-mail: trimmed and lower-cased; phone: E.164 digits only (no spaces, dashes or brackets); push tokens are opaque. */
+  normalize(channel: Channel, address: string): string {
+    if (channel === 'email') return address.trim().toLowerCase();
+    if (channel === 'sms') return address.replace(/[^\d+]/g, '');
+    return address;
   }
 
+  async isSuppressed(channel: Channel, address: string): Promise<boolean> {
+    const normalized = this.normalize(channel, address);
+    return (await this.repository.suppressedAmong(channel, [normalized])).has(
+      normalized,
+    );
+  }
+
+  /** Idempotent: suppressing an address twice stores one row. */
   async suppress(
-    channel: string,
+    channel: Channel,
     addresses: string[],
-    reason: string,
+    reason: SuppressionReason,
   ): Promise<void> {
-    for (const address of addresses) {
-      await this.sequelize.query(
-        `INSERT INTO "NotificationSuppression" (channel, address, reason) VALUES (:channel, :address, :reason) ON CONFLICT DO NOTHING`,
-        { replacements: { channel, address: address.toLowerCase(), reason } },
-      );
-    }
-    await this.cache.invalidate(addresses.map((a) => key(channel, a)));
+    const now = this.clock.now();
+    for (const address of new Set(
+      addresses.map((a) => this.normalize(channel, a)),
+    ))
+      if (await this.repository.add(channel, address, reason, now))
+        suppressedCounter.add(1, { channel, reason });
   }
 }

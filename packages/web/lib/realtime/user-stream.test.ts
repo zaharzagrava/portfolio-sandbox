@@ -83,7 +83,7 @@ describe('user stream', () => {
       source.open();
       source.emit('order.status', frame(`user:${USER}`, { orderId: ORDER, status: 'PAID', orderVersion: 3 }));
       source.emit('payment.status', frame(`user:${USER}`, { paymentId: PAYMENT, orderId: ORDER, status: 'COMPLETED', version: 2 }));
-      const note = { id: PAYMENT, type: 'order', category: 'orders', title: 'Hi', body: 'B', link: null, unread: 2, createdAt: '2026-10-11T10:00:00.000Z' };
+      const note = { id: PAYMENT, type: 'order', category: 'orders', title: 'Hi', body: 'B', link: null, unread: true, createdAt: '2026-10-11T10:00:00.000Z' };
       source.emit('notification', frame(`user:${USER}`, note));
       for (const h of [first, second]) {
         expect(h.onEvent.mock.calls.map(([e]) => e.type)).toEqual(['order.status', 'payment.status', 'notification']);

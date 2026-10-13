@@ -1,16 +1,14 @@
 /**
  * Public entry point of the `notifications` domain (constitution X.4). Code outside this domain imports only
- * from `@app/domains/notifications`. Generated from actual cross-domain usage in Phase 2 (later batches append); extend
- * it by hand when a new export is needed. Models exported here are transitional (IX.4 debt): other
- * domains must stop injecting them.
+ * from `@app/domains/notifications`. The domain is reached through events: it exports the Nest modules the apps mount
+ * and nothing else (no router to call, no models, no formatter). Other domains publish what happened; notifications
+ * consumes it.
  */
-export { formatMoney } from './domain/templates';
-export { NotificationsCoreModule } from './notifications-core.module';
-export { NotificationsWorkerModule } from './notifications-worker.module';
 export { NotificationsModule } from './notifications.module';
+export { NotificationsWorkerModule } from './notifications-worker.module';
+export { NotificationsProjectorModule } from './notifications-projector.module';
 export { TransactionalMailModule } from './transactional-mail.module';
-export { DevMailboxController } from './api/dev-mailbox.controller';
-export { memoryMailbox } from './infra/providers/memory-email.provider';
+/** The rate-limit policy numbers, registered by the shared test module like every domain's. */
 export { notificationsRatePolicies } from './rate-limit-policies';
-export { NotificationRouter } from './application/notification-router.service';
-export { NotificationRouterProjector } from './infra/notification-router.projector';
+/** Test support of identity's password-reset specs: the in-memory mailbox the dev/test e-mail provider writes to. */
+export { memoryMailbox } from './domain/mailbox';

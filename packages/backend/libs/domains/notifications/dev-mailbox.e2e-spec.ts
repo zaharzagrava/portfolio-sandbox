@@ -1,9 +1,10 @@
 import { INestApplication, Module } from '@nestjs/common';
 import request from 'supertest';
+import { ApiConfigService } from '@app/common/config';
 import { generateTestingModule } from '@app/test/utils/global-modules';
 import { DevMailboxController } from './api/dev-mailbox.controller';
 import { TransactionalMailService } from './application/transactional-mail.service';
-import { memoryMailbox } from './infra/providers/memory-email.provider';
+import { memoryMailbox } from './domain/mailbox';
 import { TransactionalMailModule } from './transactional-mail.module';
 
 @Module({
@@ -74,6 +75,38 @@ describe('Dev mailbox', () => {
       links: ['http://localhost:3000/reset-password#token=tok-1'],
     });
     expect(res.body.messages[0].text).toContain('tok-1');
+  });
+
+  it('S28 AS-09: the reset mail is rendered from the catalog: the link is the front base plus the catalog path, whatever host the caller named', async () => {
+    const front = app
+      .get(ApiConfigService)
+      .get('front_host')
+      .replace(/\/$/, '');
+    await mail.sendResetLink({
+      to: 'a@example.com',
+      link: 'https://evil.example/anything#token=tok-2',
+      expiresAt: new Date(Date.now() + 30 * 60_000),
+    });
+    const res = await mailbox().expect(200);
+    expect(res.body.messages).toHaveLength(1);
+    expect(res.body.messages[0]).toMatchObject({
+      subject: 'Reset your password',
+      links: [`${front}/reset-password#token=tok-2`],
+    });
+    expect(res.body.messages[0].text).toMatch(/expires in about 30 minutes/);
+    expect(res.body.messages[0].text).not.toContain('evil.example');
+  });
+
+  it('S28 AS-09: a reset link without a token is refused and nothing is sent', async () => {
+    await expect(
+      mail.sendResetLink({
+        to: 'a@example.com',
+        link: 'http://localhost:3000/reset-password',
+        expiresAt: new Date(Date.now() + 30 * 60_000),
+      }),
+    ).rejects.toThrow('reset link carries no token');
+    const res = await mailbox().expect(200);
+    expect(res.body.messages).toEqual([]);
   });
 
   it('dev-mailbox: NODE_ENV=production is 404 even when the flag is on', async () => {

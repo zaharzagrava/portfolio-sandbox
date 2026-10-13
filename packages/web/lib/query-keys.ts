@@ -77,6 +77,8 @@ export const queryKeys = {
     all: ['notifications'] as const,
     unreadCount: () => ['notifications', 'unreadCount'] as const,
     inbox: () => ['notifications', 'inbox'] as const,
+    preferences: () => ['notifications', 'preferences'] as const,
+    devices: () => ['notifications', 'devices'] as const,
   },
   seller: {
     dashboard: (shopId: string) => ['seller', shopId, 'dashboard'],

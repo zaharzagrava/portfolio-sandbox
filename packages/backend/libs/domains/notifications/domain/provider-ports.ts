@@ -5,6 +5,8 @@ export interface SendResult {
   providerMessageId: string;
   /** Push only: tokens the provider reported as unregistered. */
   invalidTokens?: string[];
+  /** True when a provider earlier in the chain failed transiently and this one took over (timeline `failover`). */
+  failover?: boolean;
 }
 
 /**

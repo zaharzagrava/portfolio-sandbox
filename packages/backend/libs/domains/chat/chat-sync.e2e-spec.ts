@@ -7,7 +7,7 @@ import { inParallel } from '@app/test/utils/async-helpers';
 import { SeedsModule } from '@app/test/seeds/seeds.module';
 import { SeedsService } from '@app/test/seeds/seeds.service';
 import { TableName } from '@app/test/seeds/types';
-import { NotificationRouter } from '@app/domains/notifications';
+import { outboxRowsFor } from '@app/common/testing';
 import { ChatSyncModule } from './chat-sync.module';
 import { ChatOfflineWorkerModule } from './chat-offline-worker.module';
 import { ChatSyncService } from './application/chat-sync.service';
@@ -170,9 +170,10 @@ describe('Chat sync, receipts, presence, offline push (e2e)', () => {
   it('offline push: only unread + offline recipients, coalesced per channel', async () => {
     const { channelId, seller, buyer } = await channel();
     await rustInsert(channelId, seller, 'Yes, unlocked');
-    const dispatch = jest
-      .spyOn(app.get(NotificationRouter), 'dispatch')
-      .mockResolvedValue();
+    const escalations = async () =>
+      (await outboxRowsFor(app, channelId)).filter(
+        (row) => row.type === 'chat.message_escalated',
+      );
     const worker = app.get(ChatOfflineWorker);
     const check = (seq: number) =>
       worker.check({
@@ -187,14 +188,28 @@ describe('Chat sync, receipts, presence, offline push (e2e)', () => {
       });
 
     expect(await check(1)).toBe('notified');
-    expect(dispatch).toHaveBeenCalledWith([
-      expect.objectContaining({
-        type: 'chat.message',
-        userId: buyer,
-        data: expect.objectContaining({ channelId, preview: 'Yes, unlocked' }),
-      }),
-    ]);
+    const [escalated, ...rest] = await escalations();
+    expect(rest).toHaveLength(0);
+    expect(escalated).toMatchObject({
+      kind: 'event',
+      status: 'pending',
+      topic: 'chat.events',
+      aggregateType: 'chat',
+      payload: {
+        type: 'chat.message_escalated',
+        payload: {
+          recipientId: buyer,
+          channelId,
+          channelTitle: 'iPhone 17',
+          preview: 'Yes, unlocked',
+          dedupeKey: expect.stringMatching(/^chat:/),
+        },
+      },
+    });
+    // The event names no author: chat says what happened, not who sent it.
+    expect(JSON.stringify(escalated.payload)).not.toContain(seller);
     expect(await check(1)).toBe('coalesced');
+    expect(await escalations()).toHaveLength(1);
 
     await chat.markRead(channelId, buyer, 1);
     expect(await check(1)).toBe('read');
@@ -202,5 +217,6 @@ describe('Chat sync, receipts, presence, offline push (e2e)', () => {
     await rustInsert(channelId, seller, 'Still there?');
     await chat.heartbeat(buyer);
     expect(await check(2)).toBe('online');
+    expect(await escalations()).toHaveLength(1);
   });
 });

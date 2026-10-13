@@ -12,6 +12,7 @@ import { generateTestingModule } from '@app/test/utils/global-modules';
 import { SeedsModule } from '@app/test/seeds/seeds.module';
 import { SeedsService } from '@app/test/seeds/seeds.service';
 import { ApiConfigService } from '@app/common/config';
+import { outboxRowsFor } from '@app/common/testing';
 import { JobsTestProbe } from '@app/infrastructure/jobs';
 import { ShopModel as Shop } from '@app/domains/tenancy';
 import { OrderPaid } from '@app/domains/orders';
@@ -184,6 +185,43 @@ describe('Webhooks (e2e)', () => {
     expect(await deliverer.replay(await shop(), ep.id, msg.eventId)).toBe(
       'skipped',
     ); // another shop can't replay it
+  });
+
+  it('an endpoint failing for 3 days is disabled and a fact is published: the endpoint, the shop and the host, never the URL', async () => {
+    const shopId = await shop();
+    const ep = await endpoints.create(shopId, {
+      url: `${receiverUrl}?secret=hunter2`,
+      events: ['order.paid'],
+    });
+    const msg = await deliveryFor(shopId, ep.id);
+    respondWith = 500;
+    const sequelize = app.get<Sequelize>(getConnectionToken());
+    await sequelize.query(
+      `UPDATE "WebhookEndpoint" SET "failingSince" = now() - interval '73 hours' WHERE id = :id`,
+      { replacements: { id: ep.id } },
+    );
+
+    await deliverer.deliver(msg, 5);
+    await deliverer.deliver(msg, 5); // a second failure after the disable publishes nothing more
+
+    const facts = (await outboxRowsFor(app, ep.id)).filter(
+      (row) => row.type === 'developerplatform.webhook_endpoint_disabled',
+    );
+    expect(facts).toHaveLength(1);
+    expect(facts[0]).toMatchObject({
+      kind: 'event',
+      topic: 'developer_platform.events',
+      aggregateType: 'developer_platform',
+      payload: {
+        payload: {
+          endpointId: ep.id,
+          shopId,
+          host: new URL(receiverUrl).host,
+          failingSince: expect.any(String),
+        },
+      },
+    });
+    expect(JSON.stringify(facts[0].payload)).not.toContain('hunter2');
   });
 
   it('SSRF: private / metadata / non-https targets are refused at creation', async () => {

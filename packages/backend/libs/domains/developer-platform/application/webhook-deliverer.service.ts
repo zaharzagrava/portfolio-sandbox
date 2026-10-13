@@ -3,10 +3,9 @@ import { GetCommand, PutCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
 import { RedisService } from '@app/infrastructure/redis/redis.service';
 import { DynamoService } from '@app/infrastructure/dynamo/dynamo.service';
 import { JobsService } from '@app/infrastructure/jobs/jobs.service';
-import { NotificationRouter } from '@app/domains/notifications';
-import { InjectConnection } from '@nestjs/sequelize';
-import { QueryTypes, Sequelize } from 'sequelize';
+import { OutboxService } from '@app/infrastructure/outbox/outbox.service';
 import { SafeRequestError } from '@app/infrastructure/net';
+import { WebhookEndpointDisabled } from './events/webhook-events';
 import { WebhookEndpointsService } from './webhook-endpoints.service';
 import { postWebhook, SendResult } from '../infra/http-sender';
 import { signWebhook, SIGNATURE_HEADER } from '../domain/signature';
@@ -65,8 +64,7 @@ export class WebhookDeliverer {
     private readonly redis: RedisService,
     private readonly dynamo: DynamoService,
     private readonly jobs: JobsService,
-    private readonly notifications: NotificationRouter,
-    @InjectConnection() private readonly sequelize: Sequelize,
+    private readonly outbox: OutboxService,
   ) {}
 
   async deliver(
@@ -212,20 +210,15 @@ export class WebhookDeliverer {
       'failing for 3 days',
     );
     if (disabled) {
-      const owners = await this.sequelize.query<{ userId: string }>(
-        `SELECT "userId" FROM "ShopMembership" WHERE "shopId" = :shopId AND role IN ('OWNER', 'ADMIN')`,
-        {
-          type: QueryTypes.SELECT,
-          replacements: { shopId: disabled.shopId },
-        },
-      );
-      await this.notifications.dispatch(
-        owners.map(({ userId }) => ({
-          type: 'webhooks.endpoint_disabled' as const,
-          userId,
-          dedupeKey: `wh-disabled:${endpointId}:${failingSince.toISOString()}`,
-          data: { url: disabled.url, shopId: disabled.shopId, endpointId },
-        })),
+      // What happened, once per endpoint outage; telling the shop is somebody else's business. Host only: the URL
+      // can carry a secret.
+      await this.outbox.appendStandalone(
+        WebhookEndpointDisabled.create(endpointId, 0, {
+          endpointId,
+          shopId: disabled.shopId,
+          host: new URL(disabled.url).host,
+          failingSince: failingSince.toISOString(),
+        }),
       );
       this.logger.warn(
         `webhook endpoint ${endpointId} disabled after 3 days of failures`,

@@ -1,6 +1,8 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
+import { useQueryClient } from '@tanstack/react-query';
 import { Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -10,38 +12,64 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { useUserEvents, type UserEventHandler } from '@/hooks/use-user-stream';
+import {
+  applyNotificationEvent,
+  inboxErrorKind,
+  inboxItems,
+  useInbox,
+  useMarkAllRead,
+  useMarkRead,
+  useUnreadCount,
+  type NotificationItem,
+} from '@/lib/api/notifications';
+import { formatWait } from '@/lib/auth/retry-after';
+import { queryKeys } from '@/lib/query-keys';
+import { safeNotificationLink } from '@/lib/safe-link';
 import { formatDistanceToNow } from 'date-fns';
 
-export interface Notification {
-  id: string;
-  message: string;
-  createdAt: string;
-  read: boolean;
+function ItemBody({ item }: { item: NotificationItem }) {
+  return (
+    <>
+      <p className={`text-sm leading-tight mb-1 ${item.read ? '' : 'font-semibold'}`}>{item.title}</p>
+      {item.body && <p className="text-xs text-muted-foreground mb-1">{item.body}</p>}
+      <p className="text-xs text-muted-foreground">{formatDistanceToNow(new Date(item.createdAt), { addSuffix: true })}</p>
+    </>
+  );
 }
 
 export function NotificationsPopover() {
-  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const client = useQueryClient();
   const [isOpen, setIsOpen] = useState(false);
+  const count = useUnreadCount();
+  const inbox = useInbox(isOpen);
+  const markRead = useMarkRead();
+  const markAll = useMarkAllRead();
 
   const handler = useMemo<UserEventHandler>(
     () => ({
       onEvent: (event) => {
-        if (event.type !== 'notification') return;
-        const { id, title, createdAt } = event.data;
-        setNotifications((prev) => (prev.some((n) => n.id === id) ? prev : [{ id, message: title, createdAt, read: false }, ...prev]));
+        if (event.type === 'notification') applyNotificationEvent(client, event.data);
       },
+      onResync: () => void client.invalidateQueries({ queryKey: queryKeys.notifications.unreadCount() }),
     }),
-    [],
+    [client],
   );
-
   useUserEvents(handler);
 
-  const unreadCount = notifications.filter((n) => !n.read).length;
+  useEffect(() => {
+    const reread = () => void client.invalidateQueries({ queryKey: queryKeys.notifications.unreadCount() });
+    window.addEventListener('focus', reread);
+    return () => window.removeEventListener('focus', reread);
+  }, [client]);
 
-  const markAllAsRead = () => {
-    setNotifications((prev) =>
-      prev.map((n) => ({ ...n, read: true }))
-    );
+  // A failed count read leaves the bell without a badge (AS-65).
+  const unreadCount = count.data?.unread ?? 0;
+  const items = inboxItems(inbox.data);
+  const error = inbox.isError ? inboxErrorKind(inbox.error) : null;
+
+  const open = (item: NotificationItem) => {
+    if (!item.read) markRead.mutate([item.id]);
+    setIsOpen(false);
   };
 
   return (
@@ -59,7 +87,7 @@ export function NotificationsPopover() {
               variant="destructive"
               className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 rounded-full text-xs"
             >
-              {unreadCount}
+              {unreadCount > 99 ? '99+' : unreadCount}
             </Badge>
           )}
         </Button>
@@ -72,36 +100,61 @@ export function NotificationsPopover() {
               variant="ghost"
               size="sm"
               className="text-xs h-auto py-1 px-2"
-              onClick={markAllAsRead}
+              disabled={markAll.isPending}
+              onClick={() => markAll.mutate()}
             >
               Mark all read
             </Button>
           )}
         </div>
         <div className="max-h-[300px] overflow-y-auto">
-          {notifications.length === 0 ? (
+          {error?.kind === 'unauthenticated' ? null : error ? (
+            <div role="alert" className="px-4 py-6 text-center text-sm text-muted-foreground">
+              <p>
+                {error.kind === 'rate_limited'
+                  ? formatWait(error.retryAfterSeconds)
+                    ? `Try again in ${formatWait(error.retryAfterSeconds)}.`
+                    : 'Try again later.'
+                  : "We couldn't load notifications."}
+              </p>
+              <Button variant="outline" size="sm" className="mt-2" onClick={() => void inbox.refetch()}>
+                Try again
+              </Button>
+            </div>
+          ) : inbox.isPending && items.length === 0 ? (
+            <div className="px-4 py-8 text-center text-sm text-muted-foreground" aria-busy="true">
+              Loading…
+            </div>
+          ) : items.length === 0 ? (
             <div className="px-4 py-8 text-center text-sm text-muted-foreground">
               No notifications yet
             </div>
           ) : (
-            <div className="flex flex-col">
-              {notifications.map((notification) => (
-                <div
-                  key={notification.id}
-                  className={`px-4 py-3 text-sm border-b last:border-0 ${
-                    !notification.read ? 'bg-muted/50' : ''
-                  }`}
-                >
-                  <p className="text-sm font-medium leading-none mb-1">
-                    {notification.message}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {formatDistanceToNow(new Date(notification.createdAt), {
-                      addSuffix: true,
-                    })}
-                  </p>
-                </div>
-              ))}
+            <ul className="flex flex-col">
+              {items.map((item) => {
+                const href = safeNotificationLink(item.link);
+                const style = `block w-full px-4 py-3 text-left border-b hover:bg-muted ${item.read ? '' : 'bg-muted/50'}`;
+                return (
+                  <li key={item.id} data-read={item.read}>
+                    {href ? (
+                      <Link href={href} className={style} onClick={() => open(item)}>
+                        <ItemBody item={item} />
+                      </Link>
+                    ) : (
+                      <button type="button" className={style} onClick={() => open(item)}>
+                        <ItemBody item={item} />
+                      </button>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+          {!error && inbox.hasNextPage && (
+            <div className="p-2 text-center">
+              <Button variant="ghost" size="sm" disabled={inbox.isFetchingNextPage} onClick={() => void inbox.fetchNextPage()}>
+                Show older
+              </Button>
             </div>
           )}
         </div>

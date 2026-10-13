@@ -1,4 +1,10 @@
-import { notificationEventSchema, orderStatusEventSchema, paymentStatusEventSchema, type UserStreamEvent } from '@marketplace-sandbox/contracts';
+import {
+  notificationRealtimeEventSchema,
+  orderStatusEventSchema,
+  paymentStatusEventSchema,
+  type NotificationRealtimeEvent,
+  type UserStreamEvent as ContractUserStreamEvent,
+} from '@marketplace-sandbox/contracts';
 import { openUserStreamSource } from '@/lib/api/user-stream-source';
 import { sessionApi } from '@/lib/api/session';
 import { endSession } from '@/lib/auth/session-ended';
@@ -11,7 +17,10 @@ import { FALLBACK_SILENCE_MS, nextPollDelay } from '@/lib/checkout/polling';
  * subscribers decide what an event invalidates.
  */
 
-export type UserHealth = 'connected' | 'reconnecting' | 'closed';
+/** The `notification` payload is S28's (`unread` is the item's own flag, there is no count); the other two are W03's. */
+export type UserStreamEvent = Exclude<ContractUserStreamEvent, { type: 'notification' }> | { type: 'notification'; data: NotificationRealtimeEvent };
+
+export type UserHealth ='connected' | 'reconnecting' | 'closed';
 export type PollState = 'idle' | 'polling' | 'stopped';
 
 export type UserEventHandler = {
@@ -131,7 +140,7 @@ function userEvent(type: (typeof USER_EVENT_TYPES)[number], data: unknown): User
     const parsed = paymentStatusEventSchema.safeParse(data);
     return parsed.success ? { type, data: parsed.data } : null;
   }
-  const parsed = notificationEventSchema.safeParse(data);
+  const parsed = notificationRealtimeEventSchema.safeParse(data);
   return parsed.success ? { type, data: parsed.data } : null;
 }
 

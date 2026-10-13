@@ -16,7 +16,7 @@ import { TableName } from '@app/test/seeds/types';
 import { ApiConfigService } from '@app/common/config';
 import { ClickHouseService } from '@app/infrastructure/clickhouse/clickhouse.service';
 import { RedisService } from '@app/infrastructure/redis/redis.service';
-import { NotificationRouter } from '@app/domains/notifications';
+import { outboxRowsFor } from '@app/common/testing';
 import {
   ShopModel as Shop,
   ShopMembershipModel as ShopMembership,
@@ -39,7 +39,20 @@ describe('Competitor price crawler (e2e)', () => {
   let base: string;
   let competitorPrice = 899.0;
   const hits: string[] = [];
-  let dispatch: jest.SpyInstance;
+
+  /** The undercut events the crawl published for the watches of a target (what the owner is told is not this domain's concern). */
+  const priceDrops = async (targetId: string) => {
+    const watches = await db.query<{ id: string }>(
+      `SELECT id FROM "CompetitorWatch" WHERE "targetId" = :targetId`,
+      { type: QueryTypes.SELECT, replacements: { targetId } },
+    );
+    const rows = await Promise.all(
+      watches.map((w) => outboxRowsFor(app, w.id)),
+    );
+    return rows
+      .flat()
+      .filter((row) => row.type === 'sellerinsights.competitor_price_dropped');
+  };
 
   beforeAll(async () => {
     site = http.createServer((req, res) => {
@@ -73,9 +86,6 @@ describe('Competitor price crawler (e2e)', () => {
     seeds = app.get(SeedsService);
     crawler = app.get(CrawlerService);
     db = app.get(getConnectionToken());
-    dispatch = jest
-      .spyOn(app.get(NotificationRouter), 'dispatch')
-      .mockResolvedValue();
     await applyClickHouseDdl(
       app.get(ClickHouseService),
       '090_competitor_prices.sql',
@@ -90,7 +100,6 @@ describe('Competitor price crawler (e2e)', () => {
   beforeEach(async () => {
     await seeds.clean();
     hits.length = 0;
-    dispatch.mockClear();
     competitorPrice = 899;
     const redis = app.get(RedisService).client;
     const keys = await redis.keys('crawl:*');
@@ -144,13 +153,24 @@ describe('Competitor price crawler (e2e)', () => {
       lastStatus: 'ok',
       lastPriceMinor: '89900',
     });
-    expect(dispatch).toHaveBeenCalledWith([
-      expect.objectContaining({
-        type: 'competitor.price_drop',
-        userId: mine.ownerId,
-        data: expect.objectContaining({ competitorPrice: '$899.00' }),
-      }),
-    ]);
+    const drops = await priceDrops(targetId);
+    expect(drops).toHaveLength(1);
+    expect(drops[0]).toMatchObject({
+      kind: 'event',
+      topic: 'seller_insights.events',
+      aggregateType: 'seller_insights',
+      payload: {
+        type: 'sellerinsights.competitor_price_dropped',
+        payload: {
+          shopId: mine.shopId,
+          productId: mine.productId,
+          ownerId: mine.ownerId,
+          competitorPriceMinor: 89_900,
+          yourPriceMinor: 99_900,
+          host: new URL(base).host,
+        },
+      },
+    });
     const [{ n }] = await app
       .get(ClickHouseService)
       .query<{ n: string }>(
@@ -159,14 +179,13 @@ describe('Competitor price crawler (e2e)', () => {
       );
     expect(Number(n)).toBe(1);
 
-    dispatch.mockClear();
     competitorPrice = 1_099; // a one-token change: SimHash alone would call this page "unchanged"
     await crawler.crawl(targetId);
     expect(await target(targetId)).toMatchObject({
       lastStatus: 'ok',
       lastPriceMinor: '109900',
     }); // the price change is NOT missed
-    expect(dispatch).not.toHaveBeenCalled(); // raised, not undercutting
+    expect(await priceDrops(targetId)).toHaveLength(1); // raised, not undercutting: nothing new
   });
 
   it('robots.txt: disallowed paths are never fetched', async () => {

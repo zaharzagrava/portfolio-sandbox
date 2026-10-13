@@ -25,7 +25,7 @@ capability spec must prove it, and how far it has got. It supersedes the per-les
 | P0101 | Bounded concurrency, `allSettled` for partial responses | 01/01 promises | common/core (promise-pool); composition/bff; community (feed hydration) | S48, S26 | implemented |
 | P0102 | Async iteration / generators over paged and streamed sources | 01/01 | payments (PSP pagination); orders (export); assistant (LLM stream) | S14, S12, S46 | implemented |
 | P0103 | Money in integer minor units, largest-remainder allocation, explicit rounding | 01/01 money | common/money; orders; billing | S10, S17 | implemented |
-| P0104 | Dates and time zones (UTC storage, Luxon, DST, month-end anchors) | 01/01 | infrastructure/jobs (cron tz); notifications (quiet hours); billing (anchors) | S49, S28, S17 | implemented |
+| P0104 | Dates and time zones (UTC storage, Luxon, DST, month-end anchors) | 01/01 | infrastructure/jobs (cron tz); notifications (quiet hours); billing (anchors) | S49, S28, S17 | spec'd |
 | P0105 | Closures and leaks: bounded maps, listener cleanup | 01/01 | infrastructure/realtime (per-connection buffers); infrastructure/cache (bounded L1) | S51, S52 | implemented |
 | P0106 | Workers / SharedArrayBuffer / Atomics | 01/01 | none | — | skipped (D6) |
 | P0107 | ESM vs CJS bundling | 01/01 | apps/lambdas (esbuild) | S55 | implemented |
@@ -115,7 +115,7 @@ capability spec must prove it, and how far it has got. It supersedes the per-les
 | P0416 | Rate limiting as provider (algorithms, `RateLimit` headers, 429) | 04/03 §3 | infrastructure/rate-limit; edge-be | S50 | verified |
 | P0417 | Consuming rate-limited APIs (token bucket per credential, `Retry-After`) | 04/03 §4 | catalog-sync (integrations); assistant (LLM provider) | S08, S46 | implemented |
 | P0418 | Webhooks as provider (signing, retries, auto-disable) | 04/03 §5 | developer-platform | S43 | implemented |
-| P0419 | Webhooks as consumer (verify raw body, fast 2xx, dedupe event ID) | 04/03 §5 | orders (Stripe); notifications (provider status); catalog-sync (Shopify) | S10, S28, S08 | implemented |
+| P0419 | Webhooks as consumer (verify raw body, fast 2xx, dedupe event ID) | 04/03 §5 | orders (Stripe); notifications (provider status); catalog-sync (Shopify) | S10, S28, S08 | spec'd |
 
 ## 05 · Security
 
@@ -145,7 +145,7 @@ capability spec must prove it, and how far it has got. It supersedes the per-les
 
 | ID | Pattern | Notes | Where | Specs | Status |
 |---|---|---|---|---|---|
-| P0601 | Queue vs log; fan-out vs competing consumers (Kafka → SQS bridge) | 06/01 §1 | notifications (router); infrastructure/events | S28, S53, J01 | implemented |
+| P0601 | Queue vs log; fan-out vs competing consumers (Kafka → SQS bridge) | 06/01 §1 | notifications (router); infrastructure/events | S28, S53, J01 | spec'd |
 | P0602 | SNS → SQS fan-out | 06/01 §1.2 | prod topology (Terraform) | ops | implemented |
 | P0603 | Idempotent producer, Kafka transactions (exactly-once in Kafka) | 06/01 §2 | infrastructure/events; marketing (click aggregator) | S53, S36 | implemented |
 | P0604 | SQS standard vs FIFO, `MessageGroupId`, dedup IDs, visibility, DLQ / redrive, partial batch failures | 06/01 §3 | developer-platform (webhooks); apps/lambdas | S43, S55 | implemented |
@@ -162,7 +162,7 @@ capability spec must prove it, and how far it has got. It supersedes the per-les
 | P0615 | Clocks and ordering (server time authority, HLC) | 06/02 §6 | auctions; catalog-sync (offline sync) | S21, S09 | implemented |
 | P0616 | Timeouts, retries with jitter, retry budgets | 06/03 §1–2 | infrastructure/http-client | S54 | implemented |
 | P0617 | Circuit breakers (per dependency / per endpoint) | 06/03 §3 | infrastructure/stripe; developer-platform (webhooks); assistant | S13, S43, S46 | implemented |
-| P0618 | Bulkheads | 06/03 §4 | notifications (per-channel queues); tenancy (noisy neighbours) | S28, S03 | implemented |
+| P0618 | Bulkheads | 06/03 §4 | notifications (per-channel queues); tenancy (noisy neighbours) | S28, S03 | spec'd |
 | P0619 | Load shedding and admission control | 06/03 §5 | common/load-shedding; launch-events (waiting room); orders (flash-sale admission) | S54, S22, S11 | implemented |
 | P0620 | Fallbacks / graceful degradation (tested) | 06/03 §6 | composition/bff (partial); shop-functions (no-discount); assistant (fallback model) | S48, S45, S46 | implemented |
 

@@ -19,6 +19,15 @@ locals {
     "notifications-sms"       = { visibility_seconds = 60, max_receive = 5 }
     "notifications-push"      = { visibility_seconds = 60, max_receive = 5 }
     "notifications-marketing" = { visibility_seconds = 120, max_receive = 3 }
+    # S28 delivery lines (replace the four queues above once they are drained): one per channel, marketing apart.
+    "notify-email"            = { visibility_seconds = 60, max_receive = 5 }
+    "notify-sms"              = { visibility_seconds = 60, max_receive = 5 }
+    "notify-push"             = { visibility_seconds = 60, max_receive = 5 }
+    "notify-marketing-email"  = { visibility_seconds = 120, max_receive = 5 }
+    "notify-marketing-sms"    = { visibility_seconds = 120, max_receive = 5 }
+    "notify-marketing-push"   = { visibility_seconds = 120, max_receive = 5 }
+    # S28 accepted provider callbacks (SNS / Twilio), applied by the callback worker.
+    "notifications-callbacks" = { visibility_seconds = 60, max_receive = 5 }
     "delivery-offer-timeouts" = { visibility_seconds = 30, max_receive = 5 }
     "chat-offline-notify"     = { visibility_seconds = 30, max_receive = 3 }
     "webhook-deliveries.fifo" = { visibility_seconds = 180, max_receive = 8, fifo = true } # ≥ 6 × Lambda timeout (30 s)

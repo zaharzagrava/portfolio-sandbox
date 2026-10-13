@@ -2,6 +2,11 @@ import { Module } from '@nestjs/common';
 import { RateLimitModule } from '@app/infrastructure/rate-limit';
 import { notificationsRatePolicies } from './rate-limit-policies';
 import { NotificationsCoreModule } from './notifications-core.module';
+import { DeliveryWorkerService } from './application/delivery-worker.service';
+import { WakeDeliveryService } from './application/wake-delivery.service';
+import { UnreadReconcileService } from './application/unread-reconcile.service';
+import { CallbackWorkerService } from './application/callback-worker.service';
+import { CallbackWorkers } from './infra/callback-queue';
 import { NotificationWorkers } from './infra/notification-workers.service';
 import { NOTIFICATION_PROVIDERS } from './infra/notification-providers';
 
@@ -11,7 +16,15 @@ import { NOTIFICATION_PROVIDERS } from './infra/notification-providers';
     NotificationsCoreModule,
     RateLimitModule.forFeature(notificationsRatePolicies),
   ],
-  providers: [NotificationWorkers, ...NOTIFICATION_PROVIDERS],
+  providers: [
+    DeliveryWorkerService,
+    NotificationWorkers,
+    CallbackWorkerService,
+    CallbackWorkers,
+    WakeDeliveryService,
+    UnreadReconcileService,
+    ...NOTIFICATION_PROVIDERS,
+  ],
   exports: [NotificationWorkers],
 })
 export class NotificationsWorkerModule {}

@@ -33,10 +33,7 @@ import {
   LiveCoreModule,
 } from '@app/domains/launch-events';
 import { DynamoModule } from '@app/infrastructure/dynamo/dynamo.module';
-import {
-  NotificationRouterProjector,
-  NotificationsCoreModule,
-} from '@app/domains/notifications';
+import { NotificationsProjectorModule } from '@app/domains/notifications';
 import { ShopMembershipModel as ShopMembership } from '@app/domains/tenancy';
 import { LinkClicksProjector } from '@app/domains/marketing';
 import {
@@ -99,7 +96,7 @@ import { CacheModule } from '@app/infrastructure/cache/cache.module';
         PickupAvailabilityProjector,
         SearchClicksProjector,
         ...RecommendationsProjectorModule.projectors,
-        NotificationRouterProjector,
+        ...NotificationsProjectorModule.projectors,
         LiveCommentsProjector,
         LiveModerationConsumer,
         LeaderboardProjector,
@@ -125,7 +122,7 @@ import { CacheModule } from '@app/infrastructure/cache/cache.module';
         SqsModule,
         LiveCoreModule,
         DynamoModule,
-        NotificationsCoreModule,
+        NotificationsProjectorModule,
         SequelizeModule.forFeature([ShopMembership]),
         CassandraModule,
         KafkaProducerModule,

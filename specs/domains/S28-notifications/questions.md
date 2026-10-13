@@ -43,6 +43,8 @@ Decided unattended under the decision policy (most production-grade option the n
 - [CONTRACT] `payments.payment_refunded` is not consumed; `order.refunded` (S10) is the buyer notice → one refund notice, not two. `payments.payment_succeeded` is not consumed; `order.paid` confirms → same reason. `delivery.status_changed` `DELIVERED` is not notified; `order.fulfilment_changed DELIVERED` is → courier delivery also moves the order, two notices would double.
 - [CONTRACT] Shop-targeted notices go to OWNERs only → S03's role names (`OWNER`) used as in S03's spec; widening is a catalog change.
 
+- [CONTRACT] (found at T081) Three spec'd event names cannot be emitted: `launch_events.*`, `seller_insights.*`, `developer_platform.*` break S53's type pattern and the `Outbox` CHECK (no `_` in the first segment) → S28 consumes both the spec'd name and the same name without the first segment's underscores (`launchevents.*`, `sellerinsights.*`, `developerplatform.*`), one contract and one mapping; the S41 and S43 emitters written in S28's CT-1 edit use the second name. The alternative (widening S53's pattern with a migration, or renaming the events in seven sibling specs) belongs to S53 and the owners; either way S28 needs no change. Recorded in gaps.md "Sibling-spec follow-ups".
+
 ## LOCAL
 
 - [LOCAL] Dedupe memory and version guards live in the fast store for 7 days → notes ("dedupe table with TTL"); deterministic ids make a lost memory harmless for the inbox and the delivery log.
