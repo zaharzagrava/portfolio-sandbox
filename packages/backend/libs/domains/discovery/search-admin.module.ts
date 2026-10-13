@@ -5,6 +5,7 @@ import { ClickHouseModule } from '@app/infrastructure/clickhouse/clickhouse.modu
 import { KafkaProducerModule } from '@app/infrastructure/kafka/kafka-producer.module';
 import { ShopProductSearchService } from './application/shop-product-search.service';
 import { SearchQualityService } from './application/search-quality.service';
+import { SearchIndexModule } from './search-index.module';
 import { SearchAdminController } from './api/search-admin.controller';
 
 /** SD-37 (core). */
@@ -14,6 +15,7 @@ import { SearchAdminController } from './api/search-admin.controller';
     ElasticsearchModule,
     ClickHouseModule,
     KafkaProducerModule,
+    SearchIndexModule,
   ],
   providers: [ShopProductSearchService, SearchQualityService],
   controllers: [SearchAdminController],
