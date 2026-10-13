@@ -411,6 +411,11 @@ ordered_capabilities "$@" | while IFS=$'\t' read -r id domain slug title sources
   if [[ -f scripts/livespec/generate.py ]] && ! ls docs/spec/capabilities/"$id"-*.md >/dev/null 2>&1; then
     echo "  living spec page"
     python3 scripts/livespec/generate.py --only "$id" >"$dir/.livespec.log" 2>&1 || echo "  (the living page could not be generated; see $dir/.livespec.log)"
+    # every word of a rule gets its own explanation page, recursively, until it is self-explanatory (scripts/livespec/terms.py)
+    if [[ -f scripts/livespec/terms.py ]]; then
+      page="$(ls docs/spec/capabilities/"$id"-*.md 2>/dev/null | head -1)"
+      [[ -n "$page" ]] && python3 scripts/livespec/terms.py expand "$page" --max-depth 8 --max-calls 200 >"$dir/.terms.log" 2>&1 || echo "  (the term pages could not be written; see $dir/.terms.log)"
+    fi
   fi
   if [[ -f scripts/decisions/triage.py && ! -f "docs/decisions/$id.md" ]]; then
     python3 scripts/decisions/triage.py generate "$id" >"$dir/.decisions.log" 2>&1 || echo "  (the decision list could not be generated; see $dir/.decisions.log)"

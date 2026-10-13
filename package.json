@@ -9,8 +9,8 @@
     "infra-clean": "docker stop $(docker ps -a -q) || true && docker rm $(docker ps -a -q) || true && docker volume prune -f && docker network prune -f",
     "docs:extract": "node scripts/docs/cli.ts extract",
     "docs:plan": "node scripts/docs/cli.ts plan",
-    "docs:generate": "node scripts/docs/cli.ts generate",
-    "docs:render": "node scripts/docs/cli.ts render",
+    "docs:generate": "node scripts/docs/cli.ts generate && python3 scripts/livespec/humans_links.py",
+    "docs:render": "node scripts/docs/cli.ts render && python3 scripts/livespec/humans_links.py",
     "docs:check": "node scripts/docs/cli.ts check",
     "docs:test": "node --test scripts/docs/test/*.test.ts",
     "docs:theory": "node scripts/docs/cli.ts theory"
