@@ -17,6 +17,9 @@ for c in "${CHARTERS[@]}"; do
   stamp="$(date +%Y-%m-%d-%H%M)"; report="$OUT/$stamp-$c.md"; scripts_dir="$OUT/$stamp-$c.scripts"; mkdir -p "$scripts_dir"
   work="$(mktemp -d)"; mkdir -p "$work/spec"; cp -r docs/spec/concepts "$work/spec/"   # copies: the agent can write only in its scratch directory and the report folder
   pages=""; for id in $(sed -n 's/^specs: *//p' "$f" | head -1); do p="$(ls docs/spec/capabilities/${id}-*.md 2>/dev/null | head -1)"; [[ -n "$p" ]] && { cp "$p" "$work/spec/"; pages+=" $work/spec/$(basename "$p")"; }; done
+  known=""   # what is already settled (scripts/qa/tally.py known): do not report it again. Not for benchmark runs (--out elsewhere): they must be free to find known bugs.
+  if [[ "$OUT" == "$ROOT/specs/.qa" ]]; then k="$(scripts/qa/tally.py known | cut -f1-4,5 | sed 's/\t/  /g')"; [[ -n "$k" ]] && known="# Already known (do NOT list these as DEFECT again; if you meet one, write one line under '## Seen again' with its id and move on to something new)
+$k"; fi
   apilog="${API_LOG:-$(ls -t /tmp/tmp.*/api.log 2>/dev/null | head -1)}"
   prompt="$(sed "s#<REPO>#$ROOT#g" scripts/qa/prompt.md)
 
@@ -30,7 +33,8 @@ SCRIPTS_DIR=$scripts_dir
 API_LOG=${apilog:-unknown (use the dev terminal output, or skip log checks)}
 Scratch directory (screenshots, notes): $work
 
-$(lessons_block)"
+$(lessons_block)
+$known"
   echo "== QA charter $c ($mins min) -> $report"
   # only these tools: reads, writes in the scratch directory and the report folder, and read-only-by-instruction commands against the throwaway stack
   SPEC_TOOLS=(Read Glob Grep Write 'Bash(curl:*)' 'Bash(jq:*)' 'Bash(node:*)' 'Bash(docker exec:*)' 'Bash(docker logs:*)' 'Bash(tail:*)' 'Bash(grep:*)' 'Bash(ls:*)' 'Bash(cat:*)' 'Bash(sleep:*)' "Bash($ROOT/scripts/infra/doctor-live.sh:*)" "Bash($ROOT/scripts/sdd/checkpoints/buy-ui.sh:*)")

@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { createIsolatedProduct } from '../helpers';
 
-test('QA-buy-D2: clicking a product in the search results sends a click event the API accepts (2xx)', async ({ page }) => {
+test('QA-buy-2026-10-13-1102-D2: clicking a product in the search results sends a click event the API accepts (2xx)', async ({ page }) => {
   const { title } = await createIsolatedProduct();
   await page.goto(`/search?q=${encodeURIComponent(title)}`);
   const card = page.getByTestId('product-card').filter({ hasText: title }).first();

@@ -72,7 +72,7 @@ def due(name, c):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--budget", type=int, default=int(os.environ.get("QA_BUDGET_MIN", "30")))
+    ap.add_argument("--budget", type=int, default=int(os.environ.get("QA_BUDGET_MIN") or 30))
     ap.add_argument("--explain", action="store_true"); ap.add_argument("--all", action="store_true"); ap.add_argument("--uncovered", action="store_true")
     a = ap.parse_args(); ch = charters()
     if a.all: print(" ".join(ch)); return

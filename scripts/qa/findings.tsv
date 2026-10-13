@@ -7,3 +7,6 @@
 2026-10-13-1102	buy	D3	SUSPICIOUS	low	pending	browser analytics event posts get 403 csrf_invalid
 2026-10-13-1102	buy	D4	SUSPICIOUS	low	pending	every page logs dozens of CSP console errors; plus `<main>` nested inside `<main>` on dashboard
 2026-10-13-1102	buy	D5	SUSPICIOUS	low	pending	short order number "#01A13485" is the timestamp prefix of a UUIDv7, so orders created in the same ~minute show the same number
+2026-10-13-1126	discover	D1	CONFIRMED	high	dup	Result click record is always rejected with 400 (searchId is "unknown_property")
+2026-10-13-1126	discover	D2	CONFIRMED	high	pending	every search page request calls the API with `facets=true`, which the API rejects with 422 (no facet panel is ever shown)
+2026-10-13-1126	discover	D3	SUSPICIOUS	low	pending	anonymous visitors get a 401 console error on every page

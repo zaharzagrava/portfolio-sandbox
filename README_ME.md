@@ -40,6 +40,98 @@ Rules the machine keeps (so you can trust a morning result): agents never edit a
 weakened to make a gate pass; a failure that goes away with unchanged code is recorded as a flake, not as a fix; nothing is pushed to `master` by the runner
 (it pushes `sdd/auto`, a safety snapshot on `sdd/wip`, logs on `sdd/logs`).
 
+### The map: every script, every agent, who starts whom (read this first after a long break)
+
+There are only two kinds of things in this machine, and mixing them up is what makes it feel complicated.
+
+- **Scripts** (bash and Python) are the managers. They are dumb and predictable: they decide what runs next, run the tests, count attempts, watch the clock, and send you phone messages. They never write product code.
+- **Agents** are fresh Claude sessions (`claude -p ...`, started through `run_claude` in `scripts/sdd/lib.sh`). An agent has no memory of any earlier agent: it gets a prompt, a small set of allowed tools, does one job, and ends with one line that a script can read. Every "retry" is a NEW agent that reads the failure from a file, never a continuation.
+
+A script starts an agent; an agent never starts another agent. So you can always read the picture as a tree: a script on top, agents at the leaves.
+
+#### The agents (11 jobs, each is a fresh session)
+
+Builders (they write the product):
+1. **Spec writer** - `scripts/sdd/write-specs.sh`. One session per capability, command `/speckit-specify`. Writes `spec.md`, plan, tasks, test plan and `questions.md` into `specs/<domain>/<id>-<slug>/`. Runs once per project, 13 to 17 hours for 67 capabilities, resumable.
+2. **Builder passes** - `scripts/sdd/implement-specs.sh`. For each capability, in this order: `plan`, `tasks`, `analyze`, then `implement-1`, `implement-2`, ... (each pass is a fresh session; a big spec does not fit into one) and `converge` when the passes added tasks. Ends when `tasks.md` has no open checkbox (at most `MAX_IMPLEMENT_PASSES`, 10).
+3. **Gate repair agent** - same script, steps named `repair-1` to `repair-5`. Started when the gate (types, lint, unit tests, e2e tests, scenario check, living-spec check) fails. It gets the gate log and fixes the code. At most `MAX_GATE_REPAIRS` (5) tries.
+4. **Doctor** (capability repair agent) - same script, steps `doctor-1` to `doctor-3`. The bigger hammer: started when a capability still fails after its gate repairs are used up, or its tasks stay open after the last builder pass (the capability step ends with exit 20). It decides what is wrong and either fixes it (the capability is retried) or ends with `DOCTOR: needs human: <why>`. At most `MAX_REPAIRS_PER_SPEC` (3) tries per capability, at most 25 minutes each, and all repair agents of a run share `REPAIR_BUDGET_MIN` (60 minutes). If the doctor gives up or the time is gone, the capability is written to `BLOCKED.md` in its spec folder and the loop moves on to the next capability that does not depend on it.
+5. **Checkpoint repair agent** - `scripts/sdd/checkpoint-repair.sh`, steps `ckrepair-<label>-1` and up. Started when a checkpoint (the big regression run) fails. It gets the failing tests, the page snapshots Playwright saved and the log. It decides first whether the environment or the code is at fault; a failing test in `packages/web/tests/qa/` means the product is wrong (the QA chain wrote it). At most `MAX_CHECKPOINT_REPAIRS` (= 5) tries inside the shared 60 minutes. It ends with `CHECKPOINT-REPAIR: fixed`, `flake` (the failure did not come back and it changed nothing) or `needs human`.
+
+Documenters (they write words, never product code):
+6. **Living page writer** - `scripts/livespec/generate.py`, run by the build loop after a capability passes its gate. One session with no tools, fed only facts extracted by the script, writes the first draft of `docs/spec/capabilities/<id>-*.md`. You review and sign it later (`reviewed.json`, a human-only action).
+7. **Decision triage** - `scripts/decisions/triage.py generate <id>`, also run after a capability is built. Reads the dozens of defaults the builders recorded in `questions.md` and writes at most 8, ranked, into `docs/decisions/<id>.md`. Your answers (`change: ...`) are given to the next builder pass.
+
+The QA chain (it uses the finished product like a person and writes tests from what it finds):
+8. **Explorer** - `scripts/qa/run.sh <charter>`. A session with a browser (Playwright) and curl, a time limit and a charter (a short briefing: what to try and break). Writes a report `specs/.qa/<date>-<charter>.md` with lines `DEFECT D1 CONFIRMED|SUSPICIOUS <severity>: <title>`, and the scripts it used next to it. It can never edit the repository.
+9. **Skeptic** (verify) - `scripts/qa/verify.sh <report> <D-id>`. A second session that has NOT seen the first one. It follows only the written steps of one finding, twice, with a fresh account, checks the living spec ("Known gaps"?) and writes `VERDICT: reproduced | not-reproduced | gap | not-a-defect`. If it writes no verdict, it is asked once more.
+10. **Test writer** - `scripts/qa/regress.sh <report> <D-id>`. A third session that turns a reproduced finding into `packages/web/tests/qa/<charter>-<stamp>-<id>.spec.ts` (the report's time stamp keeps two runs' `D1` apart). The pipeline then RUNS that test and keeps it only if it fails now (a test that passes does not prove the bug).
+11. **Charter drafter** - `scripts/qa/make-charters.sh`. For a built capability that no charter covers, writes a draft charter (`status: draft`) from its living page, or answers that there is nothing a person could walk through (the id goes into `scripts/qa/charters/.no-flow`).
+
+Not agents (plain scripts you should know by name):
+- `scripts/sdd/checkpoint.sh` - the regression run; the only place the QA chain is called from the loop.
+- `scripts/qa/pipeline.sh` - runs agents 8, 9, 10 in a row for the given charters.
+- `scripts/qa/select.py` - picks which charters run (below).
+- `scripts/sdd/checkpoints/<label>.sh` (for example `buy-ui.sh`) - a scripted walk of one flow through the API, no AI.
+- `scripts/infra/doctor-live.sh` - looks for stuck payments, parked outbox rows, dead-letter queues.
+- `scripts/qa/benchmark.sh` - the QA agent's exam (re-introduces known bugs, checks the agent finds them).
+- `scripts/mutation/mutate.py` - mutation testing, run by hand.
+- `scripts/vps/run-remote.sh` and `vm-run.sh` - start and run the cloud machine; the loop itself is the same `implement-specs.sh`.
+
+#### What happens in one run, step by step (with the script that does each step)
+
+1. You run `scripts/vps/run-remote.sh --image fe --hours 10` (laptop). It creates a Hetzner machine from a snapshot, the machine clones the repo from GitHub, starts the dev stack and API, and runs `implement-specs.sh` on the order file. You can close the laptop. The machine deletes itself at the end.
+2. `implement-specs.sh` reads the order file (`scripts/sdd/orders/by-flow.txt`) and walks it line by line. A capability line means "build it". A `!STOP <label>` line means "checkpoint".
+3. **Build a capability:** builder passes (agent 2) until the tasks are done, then the **gate**. Gate fails: gate repair agent (3), gate again, up to 5 times. Still failing: the capability fails hard, the **doctor** (4) tries, the capability is retried. Doctor gives up or the budget is gone: **BLOCKED**, next capability.
+4. **Capability passed:** the living page is drafted (6), the decision list is written (7), the work is committed to `sdd/auto` (and logs to `sdd/logs`, a snapshot to `sdd/wip`), and your phone gets a message.
+5. **Checkpoint line reached:** `checkpoint_with_repair` (in `checkpoint-repair.sh`) runs `checkpoint.sh`:
+   1. all backend e2e suites, in batches of 12, each batch a fresh process;
+   2. the whole browser suite (Playwright);
+   3. the living-spec checks;
+   4. the flow script `checkpoints/<label>.sh`, which includes the live doctor before and after;
+   5. only when `CHECKPOINT_QA` is set: the QA chain (below).
+6. **Checkpoint failed:** checkpoint repair agent (5), then the checkpoint runs again. Passed after a repair that changed no code: recorded as a **flake** (`specs/.checkpoints/<label>.flakes.md`) and listed in your phone message. Passed: a marker file is committed, so a fresh machine does not stop here again, and the run ends with a message.
+7. **Morning:** you read the phone message, `git fetch && git checkout sdd/auto`, run `scripts/sdd/report.py`, read BLOCKED files, answer the top decisions in `docs/decisions`, sign living pages (details in "The morning routine").
+
+#### The QA chain inside the checkpoint (step 5.5 above)
+
+`CHECKPOINT_QA="buy account"` runs exactly those charters. `CHECKPOINT_QA=auto` is the selective mode and is the one to use:
+
+1. `make-charters.sh` (agent 11): at most `MAX_NEW_CHARTERS` (2) drafts for built capabilities that no charter lists.
+2. `select.py`: a charter is due when a commit touched the `scope:` paths of one of its capabilities after the charter's last report in `specs/.qa` (or it never ran and its capability is built). Most changed first, then the longest without a run, until `QA_BUDGET_MIN` (30; a charter counts its minutes plus 6). The first one is always taken. `select.py --explain` shows why each charter ran or was skipped.
+3. `pipeline.sh <charters>`: for each charter run the explorer (8). The explorer is told what is already settled (`scripts/qa/tally.py known`: gap, false, noise, and real ones that have a test) and not to report it again. For each CONFIRMED defect, `scripts/qa/dedupe.sh` first asks a short session whether it is the same defect as a settled one (the explorer words the same bug differently every time, so word matching fails); if so it is marked `dup` in the ledger and goes no further, and it does not use up the fix quota. A match with a still-pending finding does not count: it must still be handled. Then, at most `MAX_QA_FIXES` (3) per checkpoint: skeptic (9). Only `reproduced` goes on: test writer (10), then the test is run; a passing test is thrown away, a failing test is kept.
+   SUSPICIOUS findings are only ever written to the report and the ledger. Nobody acts on them automatically.
+4. The ledger `scripts/qa/findings.tsv` gets every finding with its verdict (`pending`, `real`, `gap`, `false`, `noise`). You can overrule any verdict: `scripts/qa/tally.py set <stamp> <charter> <id> <verdict>`. `scripts/qa/tally.py` shows counts and precision; `report.py` shows the same.
+5. If `pipeline.sh` left a failing test, the checkpoint FAILS, and the checkpoint repair agent (5) fixes the product until that test passes. That is the whole "find, verify, test, fix" loop. After a repair the QA agent does not run again in that checkpoint (marker `specs/.checkpoints/<label>.qa-done`); only the tests it left behind run again.
+
+The full pass (every charter, hours) is not part of the loop: `scripts/qa/full.sh`, by hand, before a release.
+
+#### Where to look when something went wrong
+
+- Phone message first: it names the capability or checkpoint and what failed.
+- One builder step: `specs/<domain>/<id>-<slug>/.<step>.log` (for example `.implement-2.log`, `.repair-1.log`, `.doctor-1.log`); the gate: `.gate.log` in the same folder; why it was blocked: `BLOCKED.md`.
+- A checkpoint: `specs/.checkpoints/<label>.log`, the repair agent's log `specs/.checkpoints/.ckrepair-<label>-<n>.log`, flakes in `<label>.flakes.md`.
+- The QA chain: reports and scripts in `specs/.qa/`, the skeptic's notes `<report>.verify-<D-id>.md`, the tests in `packages/web/tests/qa/`, the ledger `scripts/qa/findings.tsv`.
+- Numbers over time: `.sdd-metrics` and `python3 scripts/sdd/report.py`.
+- The cloud machine: branch `sdd/logs`, and `scripts/vps/README.md` for how to look at a running machine.
+
+#### Words I will forget
+
+- **Gate**: the checks one capability must pass before it counts as built.
+- **Checkpoint**: the regression run at a `!STOP` line; every earlier capability must still work.
+- **Charter**: a short briefing for the explorer (name, which capabilities, minutes, what to try). `scripts/qa/charters/*.md`.
+- **Oracle**: how the explorer decides something is a bug. Generic (a 5xx, a console error, something pending more than 30 s, a parked outbox row, a dead-letter queue) beats the spec's rules, which beat its own opinion (those are only ever SUSPICIOUS).
+- **Ledger**: the table of everything the QA agent ever reported and what turned out to be true.
+- **Flake**: a failure that disappeared while the code stayed the same. Recorded, never counted as a fix.
+- **Blocked**: the loop gave up on one capability (and everything that depends on it) and moved on.
+- **Layer 1, 2, 3 of tests**: 1 = ordinary Jest and Playwright tests the builders write for every capability (this is where coverage comes from); 2 = "AI compiled once, self-healing scripts", which I decided not to build; 3 = the exploratory QA agent, which only looks for what nobody wrote a test for.
+
+#### What is proven and what is not (updated at the end of the 2026-10-13 session)
+
+- Proven by a real run: the builder loop and both gate levels (earlier runs, S01 to S51); the QA explorer finds all four re-introduced bugs (`groupId`, missing queue, silent consumer, missing search index); on a real product bug (search clicks answered 400) verify said `reproduced`, the test writer produced a test that failed, a repair agent fixed the endpoint and the test passed.
+- Proven only in pieces: the chain was driven step by step by hand; the first run through `implement-specs.sh` -> `checkpoint.sh` -> `pipeline.sh` -> repair agent was started on 2026-10-13 (see "Where it stands").
+- Not proven: any of it on the cloud machine; `CHECKPOINT_QA=auto` over a whole night; the other charters; how well deduplication holds over many nights (tested on one pair: the same search-click bug reported by two charters was matched, a different bug was not).
+
 ### One-time setup
 
 1. Requirements on the laptop: Node 24+, pnpm 12, Docker, `claude` (Claude Code CLI), `hcloud` (Hetzner CLI), `jq`, Python 3, `gh` (optional).
@@ -104,7 +196,7 @@ The QA agent cannot cover the whole product in a build, so with `CHECKPOINT_QA=a
 
 `scripts/qa/pipeline.sh buy` does three things with no person in the middle: **find** (a fresh Claude session uses the running product like a person, guided by a charter in
 `scripts/qa/charters/*.md`, with generic oracles and the living-spec rules), **verify** (a second skeptical session tries to reproduce each confirmed finding from its steps alone
-and checks it against the spec and its "Known gaps"), **write the test** (a third session turns a reproduced finding into `packages/web/tests/qa/<charter>-<id>.spec.ts`, which is
+and checks it against the spec and its "Known gaps"), **write the test** (a third session turns a reproduced finding into `packages/web/tests/qa/<charter>-<stamp>-<id>.spec.ts` (the report's time stamp keeps two runs' `D1` apart), which is
 run and kept only if it fails now). Failing tests make the checkpoint fail, and the checkpoint repair agent fixes the product. Suspicious findings are never acted on.
 Trust is earned by `scripts/qa/benchmark.sh`: it puts back defects that really happened (`scripts/qa/mutations/*.sh`: `groupId` on a standard queue, a missing queue, a silent
 consumer, a missing search index) and checks the agent reports each, then one run on a clean build. State of the evidence: see "Where it stands" below.
