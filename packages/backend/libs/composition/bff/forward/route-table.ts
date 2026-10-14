@@ -36,8 +36,16 @@ const isCredentialRoute = (segments: string[]): boolean => {
 
 const STREAMING_BODY = new Set(['assets', 'uploads']);
 
+const hasForbiddenChar = (value: string): boolean => {
+  for (let i = 0; i < value.length; i++) {
+    const code = value.charCodeAt(i);
+    if (code === 0x5c || code <= 0x1f || code === 0x7f) return true;
+  }
+  return false;
+};
+
 export function resolveForwardTarget(rest: string): ForwardTarget {
-  if (rest === '' || /[\\\u0000-\u001f\u007f]/.test(rest)) return BLOCKED;
+  if (rest === '' || hasForbiddenChar(rest)) return BLOCKED;
   const raw = rest.split('/');
   const segments: string[] = [];
   for (const part of raw) {

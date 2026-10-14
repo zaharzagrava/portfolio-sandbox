@@ -29,10 +29,9 @@ export class SearchClickService {
   record(body: unknown): void {
     const parsed = searchClickRequestSchema.safeParse(body);
     if (!parsed.success) {
-      const record = (typeof body === 'object' && body !== null ? body : {}) as Record<
-        string,
-        unknown
-      >;
+      const record = (
+        typeof body === 'object' && body !== null ? body : {}
+      ) as Record<string, unknown>;
       const fields = [
         ...new Set(
           parsed.error.issues.flatMap((issue) =>

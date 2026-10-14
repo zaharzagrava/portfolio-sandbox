@@ -108,6 +108,7 @@ export const OWNERSHIP = {
   OrderEvent: 'domain:orders',
   StockReservation: 'domain:orders',
   FlashSale: 'domain:orders',
+  FlashSaleHistory: 'domain:orders',
   ExportJob: 'domain:orders',
   // fulfilment
   PickupPoint: 'domain:fulfilment',
@@ -153,11 +154,13 @@ export const OWNERSHIP = {
   LiveStream: 'domain:launch-events',
   // auctions
   Auction: 'domain:auctions',
+  AuctionHistory: 'domain:auctions',
   Bid: 'domain:auctions',
   // chat
   ChatChannel: 'domain:chat',
   ChatChannelMember: 'domain:chat',
   ChatMessage: 'domain:chat',
+  ChatMessageIndex: 'domain:chat',
   // community: no Postgres tables (ScyllaDB/Redis only: decision D5)
   // content
   Story: 'domain:content',
@@ -199,8 +202,12 @@ export const OWNERSHIP = {
   // developer-platform
   ApiKey: 'domain:developer-platform',
   ShopApiSettings: 'domain:developer-platform',
+  ApiBulkJob: 'domain:developer-platform',
+  ApiBulkChunk: 'domain:developer-platform',
+  ApiUsageBucket: 'domain:developer-platform',
   WebhookEndpoint: 'domain:developer-platform',
   WidgetSite: 'domain:developer-platform',
+  WidgetSiteChange: 'domain:developer-platform',
   // shop-functions
   ShopFunction: 'domain:shop-functions',
   ShopFunctionVersion: 'domain:shop-functions',

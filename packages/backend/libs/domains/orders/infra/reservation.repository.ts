@@ -9,7 +9,7 @@ import type {
 } from '../domain/ports';
 
 const SELECT = `SELECT r."id", r."bisOrderId" AS "orderId", r."productId", i."shopId", r."quantity", r."status",
-                       r."releaseAttempts"
+                       r."releaseAttempts", r."source", r."sourceRef", r."flashSaleId"
                 FROM "StockReservation" r
                 JOIN "BisOrderItem" i ON i."bisOrderId" = r."bisOrderId" AND i."productId" = r."productId"`;
 

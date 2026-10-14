@@ -1,22 +1,15 @@
 import { Module } from '@nestjs/common';
-import { RealtimeModule } from '@app/infrastructure/realtime';
-import { CacheModule } from '@app/infrastructure/cache/cache.module';
 import { SqsModule } from '@app/infrastructure/sqs/sqs.module';
-import { EventsModule } from '@app/infrastructure/events/events.module';
-import { ChatSyncService } from './application/chat-sync.service';
-import { ChatOfflineWorker } from './infra/chat-offline';
+import { ChatJobsModule } from './chat-jobs.module';
+import { ChatOfflineModule } from './chat-offline.module';
+import { ChatOfflineWorker } from './infra/chat-offline.worker';
 
-/** SD-14 offline checks (apps/worker): an unread message for an offline recipient becomes the event `chat.message_escalated`. */
+/**
+ * Background side (apps/worker): the partition job, and the consumer of the delayed offline checks. An unread message
+ * for an offline recipient becomes the event `chat.message_escalated` (S28 notifies; chat never calls it).
+ */
 @Module({
-  imports: [
-    RealtimeModule,
-    CacheModule,
-    SqsModule,
-    EventsModule.forAggregates([
-      { aggregateType: 'chat', retention: 'full-history' },
-    ]),
-  ],
-  providers: [ChatSyncService, ChatOfflineWorker],
-  exports: [ChatOfflineWorker],
+  imports: [ChatJobsModule, ChatOfflineModule, SqsModule],
+  providers: [ChatOfflineWorker],
 })
 export class ChatOfflineWorkerModule {}

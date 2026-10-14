@@ -1,3 +1,15 @@
+/** Roles and statuses of a channel member (moved out of the model, G-37: `api/` and `application/` import these). */
+export enum ChatChannelMemberRole {
+  OWNER = 'OWNER',
+  MODERATOR = 'MODERATOR',
+  MEMBER = 'MEMBER',
+}
+
+export enum ChatChannelMemberStatus {
+  ACTIVE = 'ACTIVE',
+  BANNED = 'BANNED',
+}
+
 /**
  * Redis pub/sub topology shared with the Rust chat-gateway
  * (packages/hft-platform/src/redis_bus.rs). Keep these in sync manually -
@@ -44,6 +56,9 @@ export interface ChatChannelEvent {
   channelId: string;
   messageId?: string;
 }
+
+/** The delayed offline checks (`chat-offline-notify` in elasticmq.conf / the stack; a standard queue, so no FIFO-only options, L-001). */
+export const CHAT_OFFLINE_QUEUE = 'chat-offline-notify';
 
 /** Claim `typ` distinguishing short-lived WS tickets from normal access JWTs. */
 export const CHAT_WS_TICKET_TYPE = 'ws';

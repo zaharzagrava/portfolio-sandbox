@@ -72,6 +72,14 @@ export interface ReservationRecord {
   quantity: number;
   status: ReservationStatus;
   releaseAttempts: number;
+  /**
+   * Where the units come from: the catalog's stock, a flash sale's fast store (S11), or another capability that holds
+   * them itself (`EXTERNAL`, S21: an auction's unit; releasing such a row makes no stock operation).
+   */
+  source: 'CATALOG' | 'FLASH' | 'POSTGRES' | 'EXTERNAL';
+  /** `FLASH`: the claim id. `EXTERNAL`: the holder's reference (the auction id). */
+  sourceRef: string | null;
+  flashSaleId: string | null;
 }
 
 export interface HistoryRecord {
@@ -92,9 +100,19 @@ export interface NewOrder {
   currency: string;
   now: Date;
   items: Array<
-    OrderItemRecord & { title: string; lineTotalMinor: number; shopId: string }
+    OrderItemRecord & {
+      title: string;
+      lineTotalMinor: number;
+      shopId: string;
+      /** A drop line: its units are already claimed in the fast store; the reservation row starts `HELD` (S11). */
+      flash?: { flashSaleId: string; claimId: string };
+      /** Units held by another capability (S21): the reservation row starts `HELD` with source `EXTERNAL` and this reference. */
+      external?: { ref: string };
+    }
   >;
   shopOrders: Array<{ shopId: string; subtotalMinor: number }>;
+  /** When the holds of a drop line or an external line expire (the order's hold window); only read for those lines. */
+  flashExpiresAt?: Date;
 }
 
 // ---------------------------------------------------------------- repositories
@@ -175,6 +193,11 @@ export interface ShopOrderRepository {
     limit: number,
     after: { createdAt: string; id: string } | null,
   ): Promise<ShopOrderListRecord[]>;
+  /** One slice by id, only if it belongs to `shopId` (one statement); `null` for another shop's or an unknown id. */
+  oneForShop(
+    shopId: string,
+    shopOrderId: string,
+  ): Promise<ShopOrderListRecord | null>;
   /** Item lines of the orders in one statement; `shopId` restricts them to one shop's lines. */
   lines(orderIds: string[], shopId: string | null): Promise<OrderLineRecord[]>;
   forOrder(orderId: string): Promise<ShopOrderRecord[]>;

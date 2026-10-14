@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { config } from '@/lib/config';
 
-const link = 'inline-flex min-h-11 items-center text-sm font-medium text-muted-foreground underline-offset-4 hover:underline lg:min-h-0';
+const link = 'inline-flex min-h-11 min-w-11 items-center text-sm font-medium text-muted-foreground underline-offset-4 hover:underline lg:min-h-0 lg:min-w-0';
 
 export function Footer() {
   const year = new Date().getFullYear();

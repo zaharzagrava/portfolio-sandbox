@@ -1,5 +1,7 @@
 export * from './cart.ts';
 export * from './checkout.ts';
+export * from './flash-sale.ts';
+export * from './flash-sale-events.ts';
 export * from './order.ts';
 export * from './order-events.ts';
 export * from './payment-events.ts';

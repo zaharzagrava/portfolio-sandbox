@@ -10,6 +10,14 @@ export { OrdersWorkerModule } from './orders-worker.module';
 export { OrdersModule } from './orders.module';
 export { OrderQueryService } from './application/order-query.service';
 export type { OrderLineDto, PayableOrderDto } from './domain/order-views';
+export { OrderCommandService } from './application/order-command.service';
+export { OrderCommandModule } from './order-command.module';
+export { OrderCommandRejectedError } from './domain/order-command';
+export type {
+  FixedPriceOrderAnswer,
+  FixedPriceOrderCommand,
+  OrderCommandRejectionCode,
+} from './domain/order-command';
 export { OrderFulfilmentService } from './application/order-fulfilment.service';
 export type { FulfilmentCommand } from './application/order-fulfilment.service';
 export {
@@ -43,7 +51,6 @@ export {
   BisOrderScope,
 } from './infra/models/bis-order.model';
 export type { BisOrderWithAllFilters } from './infra/models/bis-order.model';
-export { default as FlashSaleModel } from './infra/flash/flash-sale.model';
 export { default as ShopOrderModel } from './infra/models/shop-order.model';
 export { default as StockReservationModel } from './infra/models/stock-reservation.model';
 export { CheckoutDiscounts } from './domain/checkout-discounts.port';
@@ -52,5 +59,4 @@ export { ORDER_MODELS } from './orders-models';
 export { CreateBisOrderDto } from './api/bis-order.dto';
 export { OrderExportService } from './application/order-export.service';
 export { OrderService } from './application/order.service';
-export { FlashStockService } from './infra/flash/flash-stock.service';
 export { ExportJobTopicsModule } from './realtime-topics.module';

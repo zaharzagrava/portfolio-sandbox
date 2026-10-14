@@ -71,6 +71,36 @@ groups:
           summary: 'Flash sale stock drift of {{ $value }} units at reconciliation (Redis lost writes)'
           runbook: docs/ops/runbooks/FlashSaleOversellDetected.md
 
+      - alert: AuctionCloseOverdue
+        expr: max(auction_open_overdue) > 0
+        for: 1m
+        labels: { severity: page }
+        annotations:
+          summary: '{{ $value }} auction(s) still OPEN more than 60 s after their end (lost close job and sweeper)'
+          runbook: docs/ops/runbooks/AuctionCloseOverdue.md
+
+      - alert: AuctionOrderRequestDeadLettered
+        expr: increase(auction_order_request_failed_total{kind="dead_letter"}[10m]) > 0
+        labels: { severity: page }
+        annotations:
+          summary: 'A winner order request to orders dead-lettered: the winner cannot pay'
+          runbook: docs/ops/runbooks/AuctionOrderRequestDeadLettered.md
+
+      - alert: AuctionSettlementAnomaly
+        expr: increase(auction_settlement_anomaly_total[10m]) > 0
+        labels: { severity: ticket }
+        annotations:
+          summary: 'A payment arrived for an auction order that had already been given up: refund needed'
+          runbook: docs/ops/runbooks/AuctionSettlementAnomaly.md
+
+      - alert: AuctionBidDefaultPartition
+        expr: max(auction_bid_default_partition_rows) > 0
+        for: 10m
+        labels: { severity: ticket }
+        annotations:
+          summary: '{{ $value }} bids sit in the default partition: a monthly Bid partition is missing'
+          runbook: docs/ops/runbooks/AuctionBidDefaultPartition.md
+
       - alert: LedgerInvariantViolated
         expr: increase(ledger_invariant_violations_total[15m]) > 0
         labels: { severity: page }

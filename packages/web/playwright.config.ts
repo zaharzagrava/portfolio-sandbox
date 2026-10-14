@@ -7,7 +7,7 @@ export const PROD_PORT = 3100;
 // it, or with W07_PROD=1.
 const namesSpecFile = process.argv.some((arg) => /\.spec\.ts|(^|\/)tests\//.test(arg));
 const needsProdServer =
-  process.env.W07_PROD === '1' || !namesSpecFile || process.argv.some((arg) => /security-headers|widget-embed/.test(arg));
+  process.env.W07_PROD === '1' || !namesSpecFile || process.argv.some((arg) => /security-headers|widget-embed|app-shell\.prod/.test(arg));
 
 /**
  * See https://playwright.dev/docs/test-configuration.

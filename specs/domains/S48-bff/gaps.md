@@ -116,10 +116,28 @@ Added by the first implementation pass (2026-10-10):
 - **S38, S24, S25, S30, S19, S11, S21**: none of these capabilities is built yet (no `.implemented` marker). Their sections degrade exactly as the spec requires (`UPSTREAM_NOT_FOUND` or `UPSTREAM_UNAVAILABLE` in `errors`, page still `200`). Their response schemas in `packages/contracts/src/bff/upstream.ts` are written from the shapes in their specs (`looseObject` where the shape is not fixed yet); the owners replace them.
 - **S05**: `productPublicSchema` requires a `shopId`, so the case "the product has no `shopId`" of AS-04 cannot arise from a contract-valid answer; the section registry still skips the shop call when `shopId` is missing, and AS-04 is proven for the hidden-shop case.
 
-## Deferred until a later pass
+## Final pass (US5 and Phase 9)
+
+- **US5 / AS-64 built**: `bff-boundary.e2e-spec.ts` now proves the booted app has no database, queue or event provider, no request-scoped application provider (Nest's own `REQUEST` token excluded), and that the schema snapshot and registered routes carry no mutation, payment, search or checkout surface. AS-39 and AS-63 were already green.
+- **Gates (run in this pass)**: `pnpm check:boundaries` no violations (3003 modules); `pnpm check:no-request-scope` OK; `pnpm check:table-ownership --strict` exits 1 because of other domains' accesses (27 in 10 domains), none naming `composition/bff`; `tsc --noEmit` clean in `packages/backend` (it covers `packages/contracts`, which has no tsconfig of its own) and in `packages/web`; no `sequelize.transaction` or `S54 T037 audit` in `libs/composition`.
+- **Whole capability**: `test-spec.sh libs/composition/bff`: 6 suites, 231 tests passed.
+- **Not run**: SC-008 (load profile) stays `not run` in `specs/UNVERIFIED.md`; ESLint was not run in this pass.
+
+## Deferred until a later pass (superseded: US5 and Phase 9 are done, see above)
 
 This pass built Setup, Foundational, US1 (P1), US2 (P1), US3 (P1), US4 (P1) and the in-repo web consumers (Phase 8). Not started:
 
 - **US5 composition boundary (P2)**: AS-64 (the booted application has no database, queue or event-bus provider and no request-scoped provider; schema and routes expose no cart, order, payment or search surface; `check:table-ownership --strict` and `check:boundaries` recorded) waits for the final pass. Tasks T044 and T045 are open; their other scenarios (AS-39 allow-list integrity, AS-63 startup validation) already have tests in `bff-boundary.e2e-spec.ts`. Waits for: nothing outside this capability.
 - **Polish (Phase 9, T052–T055)**: the whole-capability run, the full gate sweep and the sibling-follow-up sweep wait for the final pass.
-- **Capabilities not built yet** (S38, S24, S25, S30, S19, S11, S21): the BFF side of their sections is built and tested against contract-valid stubs; the real answers appear when they are built. No stub of theirs was written into their domains.
+- **Capabilities S38, S24, S25, S30, S19, S11, S21 are now built** (each has `.implemented`): `testing/fixtures.ts` parses every stub with the owner's real schema, and no "not built" degradation wording remains in the code. (Superseded note: the BFF side was first tested against contract-valid stubs; the real answers appear when they are built.) No stub of theirs was written into their domains.
+
+## Decisions (final pass 2)
+
+- **W02 H9, `sendBeacon` to `POST /api/events`**: the loss is accepted. A signed-in visitor's beacon carries no `X-CSRF-Token`, so the forwarder answers `403 csrf_invalid`; exempting a route from the CSRF check would add a hole to the one rule that protects every cookie-authenticated write. Proven by `forward/bff-forward.e2e-spec.ts` ("S48 W02-H9"). W02 can send queued events with `fetch` + `keepalive: true` and the header instead.
+
+## Spec changes
+
+Human-signed text that no longer matches the code (a human must update it; the signed `spec.md` was not edited):
+
+- **FR-040 / AS-48**: say `__Host-bff-mfa` has `Path=/api/bff/session`; the shipped cookie is `Path=/` (browsers reject a `__Host-` cookie with another path; W01 change).
+- **Guest cart token alphabet** (new): `guest:<uuid>.<signature>`, matching `^[A-Za-z0-9._~:-]{1,1024}$` (`upstream/upstream-client.ts`).

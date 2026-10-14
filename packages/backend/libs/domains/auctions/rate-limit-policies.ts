@@ -12,6 +12,14 @@ export const auctionsRatePolicies = definePolicies('auctions', {
     key: 'user',
     failMode: 'closed',
   },
+  /** S21 FR-033: anonymous public reads of an auction and its bid history, per address. */
+  'auctions.read.ip': {
+    algorithm: 'slidingWindow',
+    limit: 600,
+    windowMs: 60_000,
+    key: 'ip',
+    failMode: 'open',
+  },
 } as const);
 
 declare module '@app/infrastructure/rate-limit/rate-limit.types' {

@@ -77,7 +77,8 @@ The session record has three statuses: `PENDING_MFA`, `ACTIVE`, `ENDED`. Login s
 ## Owns
 - No table, queue, topic or event. The BFF talks to domains over HTTP only.
 - Redis data: session records (key = SHA-256 of cookie value, encrypted), pending-MFA state, refresh locks, shaped-response cache, rate limits.
-- Cookies: `__Host-bff-session`, `__Host-bff-csrf`, `__Host-bff-mfa`.
+- Cookies: `__Host-bff-session`, `__Host-bff-csrf`, `__Host-bff-mfa` (all `Path=/`; browsers reject a `__Host-` cookie with another path).
+- Guest cart token: the BFF forwards the orders domain's `guest:<uuid>.<signature>` token only if it matches `^[A-Za-z0-9._~:-]{1,1024}$`. [code: packages/backend/libs/composition/bff/upstream/upstream-client.ts]
 - Configuration: upstream origin, session encryption keys, allowed origins, budgets, limits, trusted-document allowlist. Missing or invalid values stop the process. [code: packages/backend/libs/common/config/bff-config.ts#parseBffSettings]
 
 ## Decisions
@@ -91,6 +92,7 @@ The session record has three statuses: `PENDING_MFA`, `ACTIVE`, `ENDED`. Login s
 - Money is `priceMinor` (a lossless integer) plus `currency`; no floating-point money field exists.
 
 ## Known gaps
+- `navigator.sendBeacon` to `POST /api/events` from a signed-in visitor carries no `X-CSRF-Token` and is refused `403 csrf_invalid` by the forwarder; the loss is accepted (no CSRF exemption). [proof: S48 W02-H9]
 - AS-64 (P2, boundary checks) has no test with a scenario id in this list.
 - Rule 15 cache TTL limit (30 s) and the `private`/`no-store` upstream cases are only partly tied to AS-19.
 - AS-37 (trusted documents), AS-39 (allowlist startup check), AS-41 (schema snapshot), AS-42 (GraphQL credentials and CSRF), AS-45 (login relay), AS-46 (X-Forwarded-For), AS-47 (re-login), AS-49, AS-51, AS-52, AS-57 and AS-24 (keep-alive reuse) are covered by tests but are not in a rule or behavior above.

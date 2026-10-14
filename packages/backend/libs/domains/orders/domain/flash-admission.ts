@@ -37,7 +37,8 @@ export function admit(
     elapsedMs: nowMs - current.updatedAtMs,
   });
   const updatedAtMs = Math.max(nowMs, current.updatedAtMs);
-  if (tokens >= 1) return { admitted: true, state: { tokens: tokens - 1, updatedAtMs } };
+  if (tokens >= 1)
+    return { admitted: true, state: { tokens: tokens - 1, updatedAtMs } };
   return { admitted: false, state: { tokens, updatedAtMs } };
 }
 

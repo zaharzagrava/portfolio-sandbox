@@ -59,6 +59,65 @@ export function secretMatches(
   return a.length === b.length && timingSafeEqual(a, b);
 }
 
+export interface MintedApiKey {
+  key: string;
+  prefix: string;
+  secret: string;
+}
+
+/** Mints a key whose prefix is not taken; at most 5 attempts (data-model `ApiKey.prefix`). */
+export async function generateUniqueApiKey(
+  livemode: boolean,
+  prefixExists: (prefix: string) => Promise<boolean>,
+): Promise<MintedApiKey> {
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    const minted = generateApiKey(livemode);
+    if (!(await prefixExists(minted.prefix))) return minted;
+  }
+  throw new Error('Could not mint an unused API key prefix');
+}
+
+export interface Peppers {
+  current: string;
+  previous?: string;
+}
+
+/** `hashVersion` 1 = current pepper, 0 = previous pepper (labels; the values live in config, G-01). */
+export function hashSecretWithVersion(
+  secret: string,
+  peppers: Peppers,
+  hashVersion: number,
+): string {
+  const pepper = hashVersion === 1 ? peppers.current : peppers.previous;
+  if (pepper === undefined) throw new Error('No pepper for this hash version');
+  return hashSecret(secret, pepper);
+}
+
+/** Constant-time check against the stored hash; `rehash` tells the caller to store it under the current pepper. */
+export function verifySecret(
+  secret: string,
+  storedHash: string,
+  hashVersion: number,
+  peppers: Peppers,
+): { ok: boolean; rehash: boolean } {
+  // the pepper the row says it was hashed with first, then the other one: a rotation of the pepper does not need a
+  // data migration (rows written before it still carry label 1 but were hashed with what is now the previous pepper)
+  const order: Array<{ pepper: string | undefined; current: boolean }> =
+    hashVersion === 1
+      ? [
+          { pepper: peppers.current, current: true },
+          { pepper: peppers.previous, current: false },
+        ]
+      : [
+          { pepper: peppers.previous, current: false },
+          { pepper: peppers.current, current: true },
+        ];
+  for (const { pepper, current } of order)
+    if (pepper !== undefined && secretMatches(secret, storedHash, pepper))
+      return { ok: true, rehash: !current };
+  return { ok: false, rehash: false };
+}
+
 export const API_SCOPES = [
   'products:read',
   'products:write',

@@ -12,13 +12,14 @@ import { AnalyticsProjectorModule } from '@app/domains/experimentation';
 import {
   WebhookRouterProjector,
   WebhooksCoreModule,
-  ApiRequestsProjector,
+  PublicApiProjectorModule,
+  WidgetProjectorModule,
 } from '@app/domains/developer-platform';
 import {
   CourierTrackProjector,
   PickupProjectorModule,
 } from '@app/domains/fulfilment';
-import { ChatOfflineScheduler } from '@app/domains/chat';
+import { ChatProjectorModule } from '@app/domains/chat';
 import { SqsModule } from '@app/infrastructure/sqs/sqs.module';
 import {
   LeaderboardProjector,
@@ -111,9 +112,10 @@ import { CacheModule } from '@app/infrastructure/cache/cache.module';
         LeaderboardProjector,
         ShopLiveProjector,
         ShopSalesProjector,
-        ChatOfflineScheduler,
+        ...ChatProjectorModule.projectors,
         CourierTrackProjector,
-        ApiRequestsProjector,
+        ...PublicApiProjectorModule.projectors,
+        ...WidgetProjectorModule.projectors,
         WebhookRouterProjector,
         ...AnalyticsProjectorModule.projectors,
         StoryCacheInvalidator,
@@ -130,12 +132,15 @@ import { CacheModule } from '@app/infrastructure/cache/cache.module';
         AdsProjectorModule,
         MediaProjectorModule,
         VideoProjectorModule,
+        ChatProjectorModule,
         KnowledgeProjectorModule,
         LedgerProjectorModule,
         AnalyticsProjectorModule,
         IntegrationsCoreModule,
         StoryCacheModule,
         WebhooksCoreModule,
+        PublicApiProjectorModule,
+        WidgetProjectorModule,
         SqsModule,
         LiveCoreModule,
         DynamoModule,

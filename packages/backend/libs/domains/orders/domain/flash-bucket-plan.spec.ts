@@ -37,7 +37,13 @@ describe('S11 AS-44: flash bucket plan', () => {
   describe('planDraw', () => {
     it.each([
       ['one bucket suffices', [5, 5], 2, 0, [{ bucket: 0, take: 2 }]],
-      ['start bucket rotates the order', [5, 5], 2, 1, [{ bucket: 1, take: 2 }]],
+      [
+        'start bucket rotates the order',
+        [5, 5],
+        2,
+        1,
+        [{ bucket: 1, take: 2 }],
+      ],
       [
         'combines two buckets (1+1, q=2)',
         [1, 1],
@@ -68,7 +74,13 @@ describe('S11 AS-44: flash bucket plan', () => {
           { bucket: 0, take: 1 },
         ],
       ],
-      ['negative bucket counts as empty', [-3, 2], 2, 0, [{ bucket: 1, take: 2 }]],
+      [
+        'negative bucket counts as empty',
+        [-3, 2],
+        2,
+        0,
+        [{ bucket: 1, take: 2 }],
+      ],
     ])('S11 AS-44: %s', (_name, contents, q, start, draws) => {
       expect(planDraw(contents, q, start)).toEqual({ kind: 'ok', draws });
     });
@@ -78,7 +90,10 @@ describe('S11 AS-44: flash bucket plan', () => {
       ['all empty', [0, 0, 0], 1, 0],
       ['negative only', [-1, -5], 1, 0],
     ])('S11 AS-44: insufficient when %s', (_name, contents, q, available) => {
-      expect(planDraw(contents, q, 0)).toEqual({ kind: 'insufficient', available });
+      expect(planDraw(contents, q, 0)).toEqual({
+        kind: 'insufficient',
+        available,
+      });
     });
 
     it('S11 AS-44: all-or-nothing, never negative or above available; start bucket changes order only', () => {
@@ -103,7 +118,9 @@ describe('S11 AS-44: flash bucket plan', () => {
             expect(plan.draws.reduce((s, d) => s + d.take, 0)).toBe(q);
             for (const d of plan.draws) {
               expect(d.take).toBeGreaterThan(0);
-              expect(d.take).toBeLessThanOrEqual(Math.max(0, contents[d.bucket]));
+              expect(d.take).toBeLessThanOrEqual(
+                Math.max(0, contents[d.bucket]),
+              );
             }
             expect(new Set(plan.draws.map((d) => d.bucket)).size).toBe(
               plan.draws.length,

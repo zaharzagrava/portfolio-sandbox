@@ -25,7 +25,10 @@ describe('Search synonyms administration', () => {
   afterEach(() => jest.restoreAllMocks());
 
   const put = (body: unknown) =>
-    t.as(adminUser).put('/api/admin/search/synonyms').send(body as object);
+    t
+      .as(adminUser)
+      .put('/api/admin/search/synonyms')
+      .send(body as object);
   const get = () => t.as(adminUser).get('/api/admin/search/synonyms');
   const found = async (q: string) =>
     productSearchResponseSchema
@@ -81,7 +84,11 @@ describe('Search synonyms administration', () => {
         { title: 'USB-C cable' },
       ]);
       await put({
-        rules: ['tv => television', 'sneakers, trainers', 'usb c, usb-c, type c'],
+        rules: [
+          'tv => television',
+          'sneakers, trainers',
+          'usb c, usb-c, type c',
+        ],
         expectedVersion: 1,
       }).expect(200);
 
@@ -113,9 +120,9 @@ describe('Search synonyms administration', () => {
           code,
         );
         expect(res.body.errors[0]).toHaveProperty('index');
-        expect(synonymsSchema.parse((await get().expect(200)).body).version).toBe(
-          1,
-        );
+        expect(
+          synonymsSchema.parse((await get().expect(200)).body).version,
+        ).toBe(1);
       },
     );
 
@@ -152,9 +159,7 @@ describe('Search synonyms administration', () => {
       expect(loser.body.currentVersion).toBe(3);
       const current = synonymsSchema.parse((await get().expect(200)).body);
       expect(current.version).toBe(3);
-      expect(current.rules).toEqual(
-        winner === one ? ['c, d'] : ['e, f'],
-      );
+      expect(current.rules).toEqual(winner === one ? ['c, d'] : ['e, f']);
 
       const stale = await put({ rules: ['g, h'], expectedVersion: 2 }).expect(
         409,
@@ -182,7 +187,9 @@ describe('Search synonyms administration', () => {
   describe('failure, survival, read and audit (AS-58 to AS-60)', () => {
     it('S32 AS-58: an unavailable engine answers 503 and keeps the previous rules and version; a later PUT succeeds', async () => {
       await seedProducts(t, shopId, [{ title: 'AirPods Pro' }]);
-      await put({ rules: ['airpods, earbuds'], expectedVersion: 1 }).expect(200);
+      await put({ rules: ['airpods, earbuds'], expectedVersion: 1 }).expect(
+        200,
+      );
       t.proxy!.mode = 'refuse';
       t.proxy!.sever();
 
@@ -209,7 +216,9 @@ describe('Search synonyms administration', () => {
 
     it('S32 AS-59: rules survive a reindex', async () => {
       await seedProducts(t, shopId, [{ title: 'AirPods Pro' }]);
-      await put({ rules: ['airpods, earbuds'], expectedVersion: 1 }).expect(200);
+      await put({ rules: ['airpods, earbuds'], expectedVersion: 1 }).expect(
+        200,
+      );
       await t.resetHistory();
       const before = Object.keys(await t.indices());
 
@@ -230,7 +239,9 @@ describe('Search synonyms administration', () => {
         .mockImplementation((message: unknown) => {
           lines.push(message);
         });
-      const res = await put({ rules: ['a, b'], expectedVersion: 1 }).expect(200);
+      const res = await put({ rules: ['a, b'], expectedVersion: 1 }).expect(
+        200,
+      );
       expect(res.body.version).toBe(2);
       const body = synonymsSchema.parse((await get().expect(200)).body);
       expect(body).toMatchObject({

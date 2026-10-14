@@ -18,7 +18,7 @@ import {
 export class IdempotencyKeyModel extends Model {
   @PrimaryKey @Column(DataType.UUID) declare id: string;
   @Column(DataType.STRING(160)) declare scope: string;
-  @Column(DataType.STRING(128)) declare key: string;
+  @Column(DataType.STRING(255)) declare key: string;
   @Column(DataType.CHAR(64)) declare fingerprint: string;
   @Column(DataType.STRING(16)) declare state: 'in_flight' | 'completed';
   @Column({ type: DataType.UUID, field: 'claim_token' })

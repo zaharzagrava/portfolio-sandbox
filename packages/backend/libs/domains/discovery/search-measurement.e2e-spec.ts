@@ -29,7 +29,9 @@ const counter = (name: string, labels: Record<string, string> = {}) =>
   MetricsRegistry.value(name, labels) ?? 0;
 
 const truncate = (clickhouse: ClickHouseService, table: string) =>
-  clickhouse.getClient().command({ query: `TRUNCATE TABLE IF EXISTS ${table}` });
+  clickhouse
+    .getClient()
+    .command({ query: `TRUNCATE TABLE IF EXISTS ${table}` });
 
 type Published = {
   type: string;
@@ -80,7 +82,10 @@ describe('Search click-through measurement', () => {
   const searched = async (query: Record<string, string | number>) =>
     productSearchResponseSchema.parse((await search(query).expect(200)).body);
   const click = (body: unknown) =>
-    t.http().post('/api/search/clicks').send(body as object);
+    t
+      .http()
+      .post('/api/search/clicks')
+      .send(body as object);
   const rowCount = async (table: string, where = '1') =>
     Number(
       (
@@ -91,11 +96,13 @@ describe('Search click-through measurement', () => {
     );
 
   describe('the click endpoint (AS-70, AS-71)', () => {
-    it('S32 AS-70: a valid click answers 202 with an empty body, emits search.result_clicked with the search\'s query, and projects to one row', async () => {
+    it("S32 AS-70: a valid click answers 202 with an empty body, emits search.result_clicked with the search's query, and projects to one row", async () => {
       const [p1] = await seedProducts(t, shopId, [{ title: 'iPhone 17 Case' }]);
       const { searchId } = await searched({ q: 'iphone' });
 
-      const res = await click({ searchId, productId: p1, position: 0 }).expect(202);
+      const res = await click({ searchId, productId: p1, position: 0 }).expect(
+        202,
+      );
 
       expect(res.text).toBe('');
       const [event] = emitted('search.result_clicked');
@@ -105,7 +112,10 @@ describe('Search click-through measurement', () => {
         productId: p1,
         position: 0,
       });
-      expect(searchEventSchemas['search.result_clicked'].safeParse(wire(event)).success).toBe(true);
+      expect(
+        searchEventSchemas['search.result_clicked'].safeParse(wire(event))
+          .success,
+      ).toBe(true);
 
       await t.app.get(SearchClicksProjector).project([event as never]);
       expect(await rowCount('search_clicks', `product_id = '${p1}'`)).toBe(1);
@@ -128,7 +138,11 @@ describe('Search click-through measurement', () => {
       }
 
       t.clock.advance(SEARCH_ID_TTL_MS + 1_000);
-      const expired = await click({ searchId, productId: p1, position: 0 }).expect(422);
+      const expired = await click({
+        searchId,
+        productId: p1,
+        position: 0,
+      }).expect(422);
       expect(expired.body.code).toBe('invalid_search_id');
       expect(emitted('search.result_clicked')).toEqual([]);
     });
@@ -142,7 +156,9 @@ describe('Search click-through measurement', () => {
     ] as [string, Record<string, unknown>][])(
       'S32 AS-71: %s answers 400 validation_failed',
       async (_name, patch) => {
-        const [p1] = await seedProducts(t, shopId, [{ title: 'iPhone 17 Case' }]);
+        const [p1] = await seedProducts(t, shopId, [
+          { title: 'iPhone 17 Case' },
+        ]);
         const { searchId } = await searched({ q: 'iphone' });
         const res = await click({
           searchId,
@@ -158,7 +174,8 @@ describe('Search click-through measurement', () => {
     it('S32 AS-71: past 300 clicks a minute from one address the answer is 429 with Retry-After', async () => {
       const [p1] = await seedProducts(t, shopId, [{ title: 'iPhone 17 Case' }]);
       const { searchId } = await searched({ q: 'iphone' });
-      let limited: { status: number; headers: Record<string, string> } | undefined;
+      let limited:
+        { status: number; headers: Record<string, string> } | undefined;
       for (let i = 0; i < 305 && !limited; i++) {
         const res = await click({ searchId, productId: p1, position: i % 50 });
         if (res.status === 429) limited = res;
@@ -172,23 +189,33 @@ describe('Search click-through measurement', () => {
     const at = (daysAgo: number) =>
       new Date(Date.now() - daysAgo * 86_400_000 - 60_000);
     const performedAt = (query: string, results: number, when: Date) =>
-      SearchPerformed.create(randomUUID(), 0, {
-        searchId: randomUUID(),
-        query,
-        results,
-        mode: 'lexical',
-        userHash: 'h',
-        filters: [],
-        degraded: [],
-        surface: 'http',
-      } as never, when);
+      SearchPerformed.create(
+        randomUUID(),
+        0,
+        {
+          searchId: randomUUID(),
+          query,
+          results,
+          mode: 'lexical',
+          userHash: 'h',
+          filters: [],
+          degraded: [],
+          surface: 'http',
+        } as never,
+        when,
+      );
     const clickedAt = (query: string, position: number, when: Date) =>
-      SearchResultClicked.create(randomUUID(), 0, {
-        searchId: randomUUID(),
-        query,
-        productId: randomUUID(),
-        position,
-      }, when);
+      SearchResultClicked.create(
+        randomUUID(),
+        0,
+        {
+          searchId: randomUUID(),
+          query,
+          productId: randomUUID(),
+          position,
+        },
+        when,
+      );
     const report = (query: Record<string, string | number>, admin = true) =>
       (admin ? t.as(adminUser) : t.http())
         .get('/api/admin/search/quality')
@@ -287,7 +314,15 @@ describe('Search click-through measurement', () => {
         { title: 'Alpine Parka', category: 'coats', brand: 'Acme' },
       ]);
       await searched({ q: 'parka' });
-      await searched({ q: 'parka', category: 'coats', brand: 'Acme', inStock: 'true', minRating: 0, minPriceMinor: 1, maxPriceMinor: 99_999 });
+      await searched({
+        q: 'parka',
+        category: 'coats',
+        brand: 'Acme',
+        inStock: 'true',
+        minRating: 0,
+        minPriceMinor: 1,
+        maxPriceMinor: 99_999,
+      });
       await searched({ q: 'winter coat', semantic: 'true' });
       t.embeddings.failing = true;
       await searched({ q: 'winter coat', semantic: 'true' });
@@ -295,7 +330,9 @@ describe('Search click-through measurement', () => {
       const events = emitted('search.performed');
       expect(events).toHaveLength(4);
       for (const event of events)
-        expect(searchEventSchemas['search.performed'].safeParse(wire(event)).success).toBe(true);
+        expect(
+          searchEventSchemas['search.performed'].safeParse(wire(event)).success,
+        ).toBe(true);
       expect(events.map((e) => e.payload.mode)).toEqual([
         'lexical',
         'lexical',
@@ -303,11 +340,20 @@ describe('Search click-through measurement', () => {
         'lexical',
       ]);
       expect(events[1].payload.filters).toEqual(
-        expect.arrayContaining(['category', 'brand', 'inStock', 'minRating', 'minPriceMinor', 'maxPriceMinor']),
+        expect.arrayContaining([
+          'category',
+          'brand',
+          'inStock',
+          'minRating',
+          'minPriceMinor',
+          'maxPriceMinor',
+        ]),
       );
       expect(JSON.stringify(events[1].payload)).not.toContain('Acme');
       expect(events[3].payload.degraded).toEqual(['semantic_unavailable']);
-      expect(events.every((e) => e.aggregateId === e.payload.searchId)).toBe(true);
+      expect(events.every((e) => e.aggregateId === e.payload.searchId)).toBe(
+        true,
+      );
     });
   });
 

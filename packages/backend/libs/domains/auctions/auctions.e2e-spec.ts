@@ -1,223 +1,180 @@
-import { INestApplication, Module } from '@nestjs/common';
-import { getModelToken, SequelizeModule } from '@nestjs/sequelize';
-import { v4 } from 'uuid';
-import { QueryTypes } from 'sequelize';
-import { generateTestingModule } from '@app/test/utils/global-modules';
-import { inParallel } from '@app/test/utils/async-helpers';
-import { SeedsModule } from '@app/test/seeds/seeds.module';
-import { SeedsService } from '@app/test/seeds/seeds.service';
-import { TableName } from '@app/test/seeds/types';
-import { CacheModule } from '@app/infrastructure/cache/cache.module';
+import { randomUUID } from 'node:crypto';
+import { addMember } from '@app/test/utils/tenancy-fixtures';
+import type { TestUser } from '@app/test/utils/catalog-app';
 import {
-  TenancyModule,
-  ShopModel as Shop,
-  ShopMembershipModel as ShopMembership,
-} from '@app/domains/tenancy';
-import { RedisService } from '@app/infrastructure/redis/redis.service';
-import { UserModel as User } from '@app/domains/identity';
-import Auction from './infra/models/auction.model';
-import {
-  BisOrderModel as BisOrder,
-  FlashStockService,
-  OrderService,
-  ORDER_MODELS,
-} from '@app/domains/orders';
-import { AuctionsModule } from './auctions.module';
-import {
-  AuctionService,
-  bidStreamKey,
-  BID_RELAY_GROUP,
-  stateKey,
-} from './application/auction.service';
-import { AuctionJobs } from './infra/auction.jobs';
-import { BidRelay } from './infra/bid-relay.service';
-import { EventsModule } from '@app/infrastructure/events/events.module';
+  createAuctionsApp,
+  fastStoreOf,
+  rows,
+  seedAuction,
+  seedSeller,
+  type AuctionTestApp,
+  type FastStore,
+} from './testing/auction-app';
 
-@Module({
-  imports: [
-    EventsModule.forAggregates([
-      { aggregateType: 'auctions', retention: 'full-history' },
-    ]),
-    SequelizeModule.forFeature([Auction, ...ORDER_MODELS]),
-  ],
-  providers: [AuctionJobs, BidRelay, OrderService, FlashStockService],
-})
-class AuctionsWorkerSpecModule {}
+// Smoke of the behaviors the first auctions spec guarded (L-017), now through the HTTP surface and the jobs of the
+// Postgres-first design. The full matrices live in auction-bidding, -anti-sniping, -shill-guard and -close.
+const SEC = 1000;
+const MIN = 60 * SEC;
+const T = new Date('2026-10-14T12:00:00.000Z');
+const E = new Date(T.getTime() + 60 * MIN);
 
-/** SD-22 against real Redis (Lua) + Postgres. */
-describe('Auctions (e2e)', () => {
-  let app: INestApplication;
-  let seeds: SeedsService;
-  let auctions: AuctionService;
-  let redis: RedisService;
-  let shop: Shop;
-  let productId: string;
+describe('Auctions (e2e smoke)', () => {
+  let t: AuctionTestApp;
+  let fast: FastStore;
 
   beforeAll(async () => {
-    const moduleRef = await generateTestingModule(
-      [
-        AuctionsModule,
-        AuctionsWorkerSpecModule,
-        TenancyModule,
-        CacheModule,
-        SeedsModule,
-      ],
-      { stores: ['redis', 'dynamo'] },
-    );
-    app = moduleRef.createNestApplication();
-    await app.init();
-    await app.get(BidRelay).stop(); // flushed by hand in specs
-    seeds = app.get(SeedsService);
-    auctions = app.get(AuctionService);
-    redis = app.get(RedisService);
+    t = await createAuctionsApp();
+    fast = fastStoreOf(t.app);
   });
-
-  afterAll(async () => {
-    await app.close();
-  });
-
+  afterAll(() => t.close());
   beforeEach(async () => {
-    await seeds.clean();
-    shop = await app
-      .get<typeof Shop>(getModelToken(Shop))
-      .create({ name: 'Sneakers', slug: `s-${v4().slice(0, 8)}` });
-    const [product] = await seeds.createTreelike([
-      { __type__: TableName.Product, quantity: 1, shopId: shop.id },
-    ]);
-    productId = product.id;
+    await t.reset();
+    await fast.clearRateLimits();
+    await t.setTime(T);
   });
 
-  const users = (n: number) =>
-    app.get<typeof User>(getModelToken(User)).bulkCreate(
-      Array.from({ length: n }, () => ({ email: `u-${v4()}@mail.com` })),
-      { returning: true },
+  const dataset = async () => {
+    const s = await seedSeller(t, [{ priceMinor: 20_000, quantity: 3 }]);
+    const id = await seedAuction(t.app, {
+      shopId: s.shop.id,
+      productId: s.products[0].id,
+      startsAt: T,
+      endsAt: E,
+    });
+    return { s, id };
+  };
+  const bid = (user: TestUser, id: string, max: number, key?: string) =>
+    t
+      .as(user)
+      .post(`/api/auctions/${id}/bids`)
+      .set('Idempotency-Key', key ?? `bid-${randomUUID()}`)
+      .send({ maxAmountMinor: max });
+  const bidders = async (n: number) => {
+    const out: TestUser[] = [];
+    for (let i = 0; i < n; i++) out.push(await t.user());
+    return out;
+  };
+  const auction = async (id: string) =>
+    (
+      await rows<{
+        status: string;
+        winnerId: string | null;
+        endsAt: Date;
+      }>(
+        t.app,
+        `SELECT "status", "winnerId", "endsAt" FROM "Auction" WHERE "id" = :id`,
+        { id },
+      )
+    )[0];
+  const bidRows = (id: string) =>
+    rows<{ sequence: number }>(
+      t.app,
+      `SELECT "sequence" FROM "Bid" WHERE "auctionId" = :id ORDER BY "sequence"`,
+      { id },
     );
-  const open = (endsInMs = 3_600_000, reservePrice?: number) =>
-    auctions.create(shop.id, {
-      productId,
-      title: 'Signed #001/100',
-      startingPrice: 10,
-      minIncrement: 5,
-      reservePrice,
-      startsAt: new Date(),
-      endsAt: new Date(Date.now() + endsInMs),
-    });
 
-  it('proxy bidding: the visible price is second-highest max + increment, capped by the leader max', async () => {
-    const auction = await open();
-    const [a, b, c] = await users(3);
+  it('S21 AS-11: proxy bidding: the visible price is the second-highest maximum plus the increment, capped by the leader maximum', async () => {
+    const { id } = await dataset();
+    const [u1, u2] = await bidders(2);
+    const a = await bid(u1, id, 10_000);
+    const b = await bid(u2, id, 5000);
 
-    expect(await auctions.placeBid(auction.id, a.id, 100)).toMatchObject({
-      outcome: 'leading',
-      price: 10,
-      leaderId: a.id,
-    });
-    expect(await auctions.placeBid(auction.id, b.id, 50)).toMatchObject({
+    expect(a.status).toBe(200);
+    expect(a.body).toMatchObject({ outcome: 'leading', priceMinor: 1000 });
+    expect(b.status).toBe(200);
+    expect(b.body).toMatchObject({
       outcome: 'outbid',
-      price: 55,
-      leaderId: a.id,
-    });
-    expect(await auctions.placeBid(auction.id, c.id, 120)).toMatchObject({
-      outcome: 'leading',
-      price: 105,
-      leaderId: c.id,
-    });
-    expect(await auctions.placeBid(auction.id, a.id, 104)).toMatchObject({
-      outcome: 'too_low',
+      priceMinor: 5500,
+      youAreLeading: false,
     });
   });
 
-  it('50 concurrent bids: the highest max wins at (second max + increment), state never regresses', async () => {
-    const auction = await open();
-    const bidders = await users(50);
-    await inParallel(50, (i) =>
-      auctions.placeBid(auction.id, bidders[i].id, 100 + i * 10),
-    ); // maxima 100..590
+  it('S21 AS-19: concurrent bids: the highest maximum leads at second maximum + increment, sequences gapless, nothing lost', async () => {
+    const { id } = await dataset();
+    const users = await bidders(5);
+    const maxes = [5000, 6000, 7000, 8000, 9000];
+    const results = await Promise.all(
+      users.map((u, i) => Promise.resolve(bid(u, id, maxes[i]))),
+    );
 
-    const view = await auctions.view(auction.id);
-    expect(view.leaderId).toBe(bidders[49].id);
-    expect(view.price).toBe(585); // 580 + 5
+    // a bid that lands after a higher one may be below the new minimum: that is refused, never lost silently
+    const accepted = results.flatMap((r, i) => (r.status === 200 ? [i] : []));
+    for (const r of results.filter((x) => x.status !== 200)) {
+      expect(r.status).toBe(422);
+      expect(r.body.code).toBe('bid_too_low');
+    }
+    expect(results[4].status).toBe(200);
+    const log = await bidRows(id);
+    expect(log.map((r) => r.sequence)).toEqual(accepted.map((_, i) => i + 1));
+    // the price is the highest accepted other maximum + increment
+    const secondMax = Math.max(
+      ...accepted.slice(0, -1).map((i) => maxes[i]),
+      0,
+    );
+    const view = await t.as(users[0]).get(`/api/auctions/${id}`);
+    expect(view.status).toBe(200);
+    expect(view.body.priceMinor).toBe(
+      secondMax === 0 ? 1000 : Math.min(9000, secondMax + 500),
+    );
   });
 
-  it('anti-sniping: a bid in the final 2 minutes extends the end', async () => {
-    const auction = await open(30_000);
-    const [a] = await users(1);
-    const result = await auctions.placeBid(auction.id, a.id, 50);
-    expect(result.endsAt).toBeGreaterThanOrEqual(Date.now() + 110_000);
+  it('S21 AS-24: anti-sniping: a bid in the final 2 minutes extends the end', async () => {
+    const { id } = await dataset();
+    const [u1] = await bidders(1);
+    await t.setTime(new Date(E.getTime() - 90 * SEC));
+    const res = await bid(u1, id, 5000);
+
+    expect(res.status).toBe(200);
+    expect(res.body.endsAt).toBe(
+      new Date(E.getTime() + 30 * SEC).toISOString(),
+    );
+    expect((await auction(id)).endsAt.getTime()).toBe(E.getTime() + 30 * SEC);
   });
 
-  it("the selling shop's members can't bid (shill bidding)", async () => {
-    const auction = await open();
-    const [staff] = await users(1);
-    await app
-      .get<typeof ShopMembership>(getModelToken(ShopMembership))
-      .create({ shopId: shop.id, userId: staff.id, role: 'STAFF' });
-    await expect(
-      auctions.placeBid(auction.id, staff.id, 50),
-    ).rejects.toMatchObject({ status: 403 });
+  it("S21 AS-40: the selling shop's members cannot bid (shill bidding)", async () => {
+    const { s, id } = await dataset();
+    const staff = await t.user();
+    await addMember(t.app, s.shop.id, staff.id, 'STAFF');
+
+    for (const member of [s.owner, staff]) {
+      const res = await bid(member, id, 5000);
+      expect(res.status).toBe(403);
+      expect(res.body.code).toBe('shill_bid_forbidden');
+    }
+    expect(await bidRows(id)).toEqual([]);
   });
 
-  it('bid relay: stream → Postgres in batches, idempotent on redelivery', async () => {
-    const auction = await open();
-    const bidders = await users(5);
-    for (let i = 0; i < 5; i++)
-      await auctions.placeBid(auction.id, bidders[i].id, 100 + i * 10);
+  it('S21 AS-18: no lost or doubled bid: the same Idempotency-Key replays one row', async () => {
+    const { id } = await dataset();
+    const [u1] = await bidders(1);
+    const key = `bid-${randomUUID()}`;
+    const first = await bid(u1, id, 5000, key);
+    const second = await bid(u1, id, 5000, key);
 
-    const res = (await redis.client.xreadgroup(
-      'GROUP',
-      BID_RELAY_GROUP,
-      'spec',
-      'COUNT',
-      100,
-      'STREAMS',
-      bidStreamKey(auction.id),
-      '>',
-    )) as [string, [string, string[]][]][];
-    const relay = app.get(BidRelay);
-    await relay.flush(bidStreamKey(auction.id), res[0][1]);
-    await relay.flush(bidStreamKey(auction.id), res[0][1]); // crash-before-ack redelivery
-
-    const [{ count }] = await app
-      .get<typeof Auction>(getModelToken(Auction))
-      .sequelize!.query<{ count: number }>(
-        `SELECT count(*)::int AS count FROM "Bid" WHERE "auctionId" = :id`,
-        { replacements: { id: auction.id }, type: QueryTypes.SELECT },
-      );
-    expect(count).toBe(5);
-    const row = await app
-      .get<typeof Auction>(getModelToken(Auction))
-      .findByPk(auction.id);
-    expect(row!.leaderId).toBe(bidders[4].id);
-    expect(row!.version).toBe(5);
+    expect(first.status).toBe(200);
+    expect(second.status).toBe(200);
+    expect(await bidRows(id)).toHaveLength(1);
   });
 
-  it('close: exactly once, winner gets a RESERVED order; an extended auction is re-scheduled instead of closed', async () => {
-    const auction = await open(60_000);
-    const [a] = await users(1);
-    await auctions.placeBid(auction.id, a.id, 80);
+  it('S21 AS-27: close exactly once with the winner; AS-26: an extended auction is left OPEN by the original close job', async () => {
+    const { id } = await dataset();
+    const [u1] = await bidders(1);
+    expect((await bid(u1, id, 5000)).status).toBe(200);
 
-    const jobs = app.get(AuctionJobs);
-    await jobs.close({ auctionId: auction.id }); // not yet ended (and extended by anti-snipe)
-    expect(
-      (await app
-        .get<typeof Auction>(getModelToken(Auction))
-        .findByPk(auction.id))!.status,
-    ).toBe('OPEN');
-
-    await redis.client.hset(stateKey(auction.id), 'endsAt', Date.now() - 1);
-    await inParallel(3, () => jobs.close({ auctionId: auction.id }));
-
-    const closed = await app
-      .get<typeof Auction>(getModelToken(Auction))
-      .findByPk(auction.id);
-    expect(closed).toMatchObject({ status: 'CLOSED', winnerId: a.id });
-    const orders = await app
-      .get<typeof BisOrder>(getModelToken(BisOrder))
-      .findAll({ where: { userId: a.id } });
-    expect(orders).toHaveLength(1);
-    expect(orders[0]).toMatchObject({
-      status: 'RESERVED',
-      idempotencyKey: `auction:${auction.id}`,
+    await t.setTime(E);
+    await t.jobs.close({ auctionId: id });
+    await t.jobs.close({ auctionId: id });
+    expect(await auction(id)).toMatchObject({
+      status: 'CLOSED',
+      winnerId: u1.id,
     });
+
+    const second = await dataset();
+    const [u2] = await bidders(1);
+    await t.setTime(new Date(E.getTime() - 90 * SEC));
+    expect((await bid(u2, second.id, 5000)).status).toBe(200);
+    await t.setTime(E);
+    await t.jobs.close({ auctionId: second.id });
+    expect((await auction(second.id)).status).toBe('OPEN');
   });
 });

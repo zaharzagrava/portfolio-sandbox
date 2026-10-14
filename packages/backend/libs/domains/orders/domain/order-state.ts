@@ -71,8 +71,12 @@ export function decide(status: OrderStatus, command: OrderCommand): Decision {
       return PAID_OR_LATER.includes(status) ? SAME : INVALID;
     case 'cancel':
       if (status === 'CANCELLED') return SAME;
+      // `out_of_stock` is the checkout's refusal (from PENDING) and, since S11, the oversell remediation of a flash sale
+      // (from RESERVED): the newest unpaid orders beyond the sale size are cancelled with this reason.
       if (command.reason === 'out_of_stock')
-        return status === 'PENDING' ? APPLY('CANCELLED') : INVALID;
+        return status === 'PENDING' || status === 'RESERVED'
+          ? APPLY('CANCELLED')
+          : INVALID;
       return status === 'RESERVED' ? APPLY('CANCELLED') : INVALID;
     case 'startFulfilment':
       return status === 'PAID' ? APPLY('FULFILLING') : INVALID;

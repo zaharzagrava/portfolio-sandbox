@@ -1,4 +1,10 @@
-import { buildGraph, readyTasks, topoSort, type TaskNode, type TaskStatus } from './dag';
+import {
+  buildGraph,
+  readyTasks,
+  topoSort,
+  type TaskNode,
+  type TaskStatus,
+} from './dag';
 import { buildMasterPlaylist, ladderFor, type MeasuredRendition } from './hls';
 
 /**
@@ -17,7 +23,9 @@ describe('video pipeline model', () => {
     const order = topoSort(nodes);
     expect(order[0]).toBe('probe');
     expect(order[order.length - 1]).toBe('publish');
-    expect(order.indexOf('package')).toBeGreaterThan(order.indexOf('transcode:720'));
+    expect(order.indexOf('package')).toBeGreaterThan(
+      order.indexOf('transcode:720'),
+    );
     expect(() =>
       topoSort([
         { name: 'a', deps: ['b'] },
@@ -30,21 +38,44 @@ describe('video pipeline model', () => {
     const nodes = buildGraph([240, 480, 720]);
     expect(readyTasks(withStatus(nodes, []))).toEqual(['probe']);
     expect(readyTasks(withStatus(nodes, ['probe'])).sort()).toEqual(
-      ['poster', 'thumbnails', 'transcode:240', 'transcode:480', 'transcode:720'].sort(),
+      [
+        'poster',
+        'thumbnails',
+        'transcode:240',
+        'transcode:480',
+        'transcode:720',
+      ].sort(),
     );
     expect(
-      readyTasks(withStatus(nodes, ['probe', 'poster', 'thumbnails', 'transcode:240', 'transcode:480'])),
+      readyTasks(
+        withStatus(nodes, [
+          'probe',
+          'poster',
+          'thumbnails',
+          'transcode:240',
+          'transcode:480',
+        ]),
+      ),
     ).toEqual(['transcode:720']);
     expect(
       readyTasks(
-        withStatus(nodes, ['probe', 'poster', 'thumbnails', 'transcode:240', 'transcode:480', 'transcode:720']),
+        withStatus(nodes, [
+          'probe',
+          'poster',
+          'thumbnails',
+          'transcode:240',
+          'transcode:480',
+          'transcode:720',
+        ]),
       ),
     ).toEqual(['package']);
   });
 
   it('S30 AS-17: never upscales and writes a valid master playlist', () => {
     expect(ladderFor(640, 360).map((r) => r.height)).toEqual([240]);
-    expect(ladderFor(1920, 1080).map((r) => r.height)).toEqual([240, 480, 720, 1080]);
+    expect(ladderFor(1920, 1080).map((r) => r.height)).toEqual([
+      240, 480, 720, 1080,
+    ]);
     const measured: MeasuredRendition[] = ladderFor(1280, 720).map((r, i) => ({
       name: r.name,
       width: r.width,

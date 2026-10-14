@@ -93,13 +93,21 @@ describe('S11 AS-45: flash sale state machine', () => {
       ['RECONCILED', startsAt, 0, 'ENDED'],
       ['CANCELLED', before, null, null],
       ['START_FAILED', before, null, null],
-    ] as const)('S11 AS-45: %s at %s remaining %s is %s', (status, now, remaining, expected) => {
-      expect(publicState({ ...sale, status }, now, remaining)).toBe(expected);
-    });
+    ] as const)(
+      'S11 AS-45: %s at %s remaining %s is %s',
+      (status, now, remaining, expected) => {
+        expect(publicState({ ...sale, status }, now, remaining)).toBe(expected);
+      },
+    );
 
     it('S11 AS-45: a sale that starts more than 24 h away is hidden', () => {
-      const far = { startsAt: new Date(Date.now() + 30 * hour), endsAt: new Date(Date.now() + 31 * hour) };
-      expect(publicState({ ...far, status: 'SCHEDULED' }, new Date(), null)).toBeNull();
+      const far = {
+        startsAt: new Date(Date.now() + 30 * hour),
+        endsAt: new Date(Date.now() + 31 * hour),
+      };
+      expect(
+        publicState({ ...far, status: 'SCHEDULED' }, new Date(), null),
+      ).toBeNull();
       expect(
         publicState(
           { ...far, status: 'SCHEDULED' },
@@ -110,7 +118,9 @@ describe('S11 AS-45: flash sale state machine', () => {
     });
 
     it('S11 AS-45: LIVE with an unknown remaining count stays LIVE', () => {
-      expect(publicState({ ...sale, status: 'LOADED' }, startsAt, null)).toBe('LIVE');
+      expect(publicState({ ...sale, status: 'LOADED' }, startsAt, null)).toBe(
+        'LIVE',
+      );
     });
   });
 });

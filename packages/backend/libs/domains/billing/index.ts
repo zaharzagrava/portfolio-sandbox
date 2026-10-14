@@ -16,5 +16,5 @@ export {
   RequiresShopEntitlement,
 } from './application/entitlements.service';
 export { InvoicePaymentFailed } from './application/events/billing-events';
-export { UsageService } from './application/usage.service';
+export { UsageRecorded, UsageService } from './application/usage.service';
 export { UsageProjector } from './infra/usage.projector';

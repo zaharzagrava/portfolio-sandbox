@@ -9,12 +9,20 @@ describe('S11 AS-46: flash admission allowance', () => {
     [100, 100, 50, 1000, 100],
     [100, 100, 99.5, 10, 100],
     [2000, 2000, 0, 1, 2],
-  ])('S11 AS-46: rate %i burst %i tokens %f elapsed %i ms -> %f', (rate, burst, tokens, elapsedMs, expected) => {
-    expect(allowance({ rate, burst, tokens, elapsedMs }).tokens).toBeCloseTo(expected, 9);
-  });
+  ])(
+    'S11 AS-46: rate %i burst %i tokens %f elapsed %i ms -> %f',
+    (rate, burst, tokens, elapsedMs, expected) => {
+      expect(allowance({ rate, burst, tokens, elapsedMs }).tokens).toBeCloseTo(
+        expected,
+        9,
+      );
+    },
+  );
 
   it('S11 AS-46: a clock that moves backwards mints no tokens', () => {
-    expect(allowance({ rate: 100, burst: 100, tokens: 3, elapsedMs: -5000 }).tokens).toBe(3);
+    expect(
+      allowance({ rate: 100, burst: 100, tokens: 3, elapsedMs: -5000 }).tokens,
+    ).toBe(3);
   });
 
   it('S11 AS-46: allowance stays within [0, burst] and refills linearly', () => {

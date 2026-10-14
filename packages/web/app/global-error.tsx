@@ -2,6 +2,8 @@
 
 import './globals.css';
 import { useEffect, useRef } from 'react';
+import { track } from '@/lib/analytics/track';
+import { ERROR_PAGE } from '@/lib/routes/page-name';
 
 const GENERIC_TEXT = 'We hit an unexpected problem. Try again, and if it keeps happening come back in a few minutes.';
 const DARK = '[@media(prefers-color-scheme:dark)]';
@@ -17,6 +19,8 @@ export default function GlobalError({ error, retry }: { error: Error & { digest?
   useEffect(() => {
     console.error(error);
     heading.current?.focus();
+    // The layout (and its PageView) is gone: this is the one page view of a root error (AS-35).
+    track({ name: 'page_view', page: ERROR_PAGE });
   }, [error]);
 
   return (

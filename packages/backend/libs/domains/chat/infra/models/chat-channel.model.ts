@@ -1,61 +1,19 @@
 import {
-  BelongsTo,
   Column,
   CreatedAt,
   DataType,
-  ForeignKey,
   Model,
   PrimaryKey,
-  Scopes,
   Table,
   UpdatedAt,
 } from 'sequelize-typescript';
-import { Includeable, Sequelize, WhereOptions } from 'sequelize';
-import { ProductModel as Product } from '@app/domains/catalog';
-import { UserModel as User } from '@app/domains/identity';
+import { Sequelize } from 'sequelize';
 
-export enum ChatChannelScope {
-  WithAll = 'WithAll',
-}
-
-export interface ChatChannelWithAllFilters {
-  id?: string | string[];
-  productId?: string | string[];
-  sellerId?: string | string[];
-  isArchived?: boolean;
-  attributes?: string[];
-  limit?: number;
-}
-
-@Scopes(() => ({
-  [ChatChannelScope.WithAll]: ({
-    id,
-    productId,
-    sellerId,
-    isArchived,
-    attributes,
-    limit,
-  }: ChatChannelWithAllFilters = {}) => {
-    const findOptions: {
-      where: WhereOptions;
-      include?: Includeable[];
-      attributes?: string[];
-      limit?: number;
-    } = {
-      where: {
-        ...(id && { id }),
-        ...(productId && { productId }),
-        ...(sellerId && { sellerId }),
-        ...(isArchived !== undefined && { isArchived }),
-      },
-      include: [],
-      attributes,
-      limit,
-    };
-
-    return findOptions;
-  },
-}))
+/**
+ * Registers the table with the connection (ownership registry, migrations). Every reference to another owner
+ * (`productId`, `shopId`, `sellerId`) is a plain id: no association, no foreign key (IX.4). The application reads
+ * and writes through the repositories' parameterised SQL, not through this model.
+ */
 @Table({
   modelName: 'ChatChannel',
   tableName: 'ChatChannel',
@@ -69,25 +27,16 @@ export default class ChatChannel extends Model<
   @Column({ type: DataType.UUID, defaultValue: Sequelize.literal('uuidv7()') })
   declare id: string;
 
-  /** One channel per product for v1 - enforced via a unique index. */
-  @ForeignKey(() => Product)
+  /** One channel per product - enforced via a unique index. */
   @Column({ type: DataType.UUID, allowNull: false, unique: true })
   declare productId: string;
 
-  @BelongsTo(() => Product, { foreignKey: 'productId' })
-  declare product: Product;
+  @Column({ type: DataType.UUID, allowNull: false })
+  declare shopId: string;
 
-  /**
-   * Denormalized copy of Product.sellerId at creation time, so the hot
-   * authorization path (both here and in the Rust gateway) never has to
-   * join through Product to know who owns the channel.
-   */
-  @ForeignKey(() => User)
+  /** The creating user. */
   @Column({ type: DataType.UUID, allowNull: false })
   declare sellerId: string;
-
-  @BelongsTo(() => User, { foreignKey: 'sellerId' })
-  declare seller: User;
 
   @Column({ type: DataType.STRING, allowNull: false })
   declare title: string;
@@ -97,6 +46,21 @@ export default class ChatChannel extends Model<
 
   @Column({ type: DataType.DATE, allowNull: true })
   declare archivedAt: Date | null;
+
+  /** The channel's sequence counter, advanced by the insert trigger of `ChatMessage`. */
+  @Column({ type: DataType.BIGINT, allowNull: false, defaultValue: 0 })
+  declare lastSeq: string;
+
+  @Column({ type: DataType.DATE, allowNull: true })
+  declare lastMessageAt: Date | null;
+
+  /** Kept by the `chat_member_count` trigger. */
+  @Column({ type: DataType.INTEGER, allowNull: false, defaultValue: 0 })
+  declare activeMemberCount: number;
+
+  /** Incremented in the transaction of a message delete; part of the recent-window cache key. */
+  @Column({ type: DataType.BIGINT, allowNull: false, defaultValue: 0 })
+  declare deleteEpoch: string;
 
   @CreatedAt
   declare createdAt: Date;

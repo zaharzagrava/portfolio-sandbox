@@ -88,7 +88,20 @@ After S11: no flash-sale file has a finding; `pnpm --dir packages/backend check:
 - **S05**: an archived product at load answers `unavailable`; S11 maps it to `START_FAILED(product_unavailable)` (one extra status reason beyond the spec's three).
 - **S50**: the registry gains `orders.flash-reserve.user` and `orders.flash-sale-read.ip` (declared in `ordersRatePolicies`; no registry code change).
 - **S49**: job type `flash-sale.start` is renamed `flash-sale.load`; a one-release alias handler drains in-flight `flash-sale.start` jobs.
+- **S53 / S28 / S40 / S36 / J01** (consumers of `orders.events`): the S11 event types are `flashsale.loaded|ended|reconciled|cancelled|start_failed|sold_out|oversold`, not `flash_sale.*` (the platform's event-type pattern allows no `_` in the first segment); `FLASH_SALE_EVENT_ALIASES` in `packages/contracts` maps the names.
+- **S10**: `cancel(out_of_stock)` is now legal from `RESERVED` as well as `PENDING` (oversell remediation); the order-status model page was edited to match. `OutOfStockError` takes an optional `flashSaleId` and is then not final for the idempotency key. The checkout skips its early `findByKey` while a drop is open.
+- **S10 / S50**: the route policy `checkout.create` (10 per minute and buyer) is stricter than `orders.flash-reserve.user` (30 per minute and sale); the per-buyer flash allowance can only trigger after other routes consume it. Decide whether `checkout.create` should be raised.
+- **auctions** (SD-22): `AuctionsWorkerModule` and its e2e spec no longer list the removed `FlashStockService` as a provider (it was never used by them).
+- **S13**: nothing to build for payments (the follow-up "payments no longer touches `Product.quantity`" is satisfied; `convert` runs after S10's `markPaid`).
+
+## Implementation status of the gap map (T071)
+
+A1–A19, A21–A26, A28 and B (D-6, D-7, D-8, D-12) are closed by the code and the specs named in `tasks.md`; A20 by the counters, log fields and spans of `flash-sale-observability.e2e-spec.ts`; A22 by the deleted `infra/flash/`; A27 by the rewritten k6 script (not run: `specs/UNVERIFIED.md`). C: `pnpm check:table-ownership --strict` reports no finding in a flash file (the remaining `orders` finding is S12's `order-export.service.ts`); the S10-owned lines were not touched. Not closed by a run: T026 (legacy-row migration), T069 (real application start), SC-002 (k6).
 
 ## Spec changes
 
 No `*.reviewed.json` exists under `docs/spec` today, so nothing a human signed is changed. WP-0 of the plan edits `docs/spec/capabilities/S10-cart-checkout.md` (the legacy flash-sale route and legacy-jobs lines) and adds `docs/spec/capabilities/S11-flash-sales.md`. If a sign-off file appears before then, list the changed items here.
+
+## Gate repairs
+
+- `check-tests.py integrity` reported `flash-sale-legacy.e2e-spec.ts: test file deleted, and it carried no scenario id`. Cause: the checker accepts a deleted test without ids only when `<stem>.ts` is deleted too, and the subject was `flash-sale-legacy.module.ts` plus `infra/flash/*`. Repair: the spec file is kept and rewritten (not deleted) against the S11 route and jobs; its three tests carry `S11 AS-20 AS-21`, `S11 AS-22`, `S11 AS-25` and keep the call counts of the old file. The old file passes no more through `FlashSaleJobs` from `infra/flash/` (deleted); no product code was wrong and the gate script was not changed.

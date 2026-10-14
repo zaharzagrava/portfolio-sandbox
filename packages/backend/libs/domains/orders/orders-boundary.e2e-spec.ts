@@ -42,7 +42,6 @@ const TRANSITIONAL_ALLOWED = [
   'BisOrderModel',
   'BisOrderScope',
   'BisOrderWithAllFilters',
-  'FlashSaleModel',
   'ShopOrderModel',
   'StockReservationModel',
   'CheckoutDiscounts',
@@ -51,7 +50,6 @@ const TRANSITIONAL_ALLOWED = [
   'CreateBisOrderDto',
   'OrderExportService',
   'OrderService',
-  'FlashStockService',
   'ExportJobTopicsModule',
 ];
 

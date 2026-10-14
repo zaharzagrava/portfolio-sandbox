@@ -59,10 +59,12 @@ export function transition(
       if (status === 'SCHEDULED') return applied('LOADED');
       return status === 'LOADED' ? ALREADY : ILLEGAL;
     case 'fail':
-      if (status === 'SCHEDULED') return applied('START_FAILED', command.reason);
+      if (status === 'SCHEDULED')
+        return applied('START_FAILED', command.reason);
       return status === 'START_FAILED' ? ALREADY : ILLEGAL;
     case 'cancel':
-      if (status === 'SCHEDULED') return applied('CANCELLED', 'cancelled_by_shop');
+      if (status === 'SCHEDULED')
+        return applied('CANCELLED', 'cancelled_by_shop');
       if (status === 'LOADED')
         return now.getTime() < sale.startsAt.getTime()
           ? applied('CANCELLED', 'cancelled_by_shop')
@@ -71,7 +73,8 @@ export function transition(
     case 'end':
       if (status === 'LOADED') return applied('ENDED');
       // A sale that never loaded can no longer be sold: its window has passed.
-      if (status === 'SCHEDULED') return applied('START_FAILED', 'window_missed');
+      if (status === 'SCHEDULED')
+        return applied('START_FAILED', 'window_missed');
       return status === 'ENDED' || status === 'RECONCILED' ? ALREADY : ILLEGAL;
     case 'reconcile':
       if (status === 'ENDED') return applied('RECONCILED');

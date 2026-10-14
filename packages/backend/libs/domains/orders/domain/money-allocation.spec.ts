@@ -139,3 +139,50 @@ describe('S10 AS-25: priceCart money invariants', () => {
     );
   });
 });
+
+describe('S11 AS-04: a drop line takes no part of a shop discount', () => {
+  it('S11 AS-04: the discount is allocated over the shop lines that are not drop lines only', () => {
+    const r = priceCart({
+      lines: [
+        {
+          productId: 'drop',
+          shopId: 's1',
+          unitPriceMinor: 49_900,
+          quantity: 2,
+          noDiscount: true,
+        },
+        {
+          productId: 'regular',
+          shopId: 's1',
+          unitPriceMinor: 1_000,
+          quantity: 3,
+        },
+      ],
+      shopDiscounts: [{ shopId: 's1', discountMinor: 500 }],
+    });
+    expect(
+      r.lines.map((l) => [l.productId, l.discountMinor, l.lineTotalMinor]),
+    ).toEqual([
+      ['drop', 0, 99_800],
+      ['regular', 500, 2_500],
+    ]);
+    expect(r.shops).toEqual([{ shopId: 's1', subtotalMinor: 102_300 }]);
+    expect(r.totalMinor).toBe(102_300);
+  });
+
+  it('S11 AS-04: a shop with only drop lines has no discount to share', () => {
+    const r = priceCart({
+      lines: [
+        {
+          productId: 'drop',
+          shopId: 's1',
+          unitPriceMinor: 49_900,
+          quantity: 1,
+          noDiscount: true,
+        },
+      ],
+      shopDiscounts: [],
+    });
+    expect(r.totalMinor).toBe(49_900);
+  });
+});

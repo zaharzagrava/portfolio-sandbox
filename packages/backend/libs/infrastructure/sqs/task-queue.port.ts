@@ -54,6 +54,14 @@ export abstract class TaskQueue {
     queue: string,
     bodies: { body: T; options?: EnqueueOptions }[],
   ): Promise<BatchResult>;
+  /**
+   * Whether the queue is defined, for a readiness check of a consumed queue (S42 L-002). Rejects when the answer cannot
+   * be had (the broker is down), so a check never reads an outage as "missing". The in-memory queue has every queue.
+   */
+  queueExists(queue: string): Promise<boolean> {
+    void queue;
+    return Promise.resolve(true);
+  }
   /** Starts a long-polling consumer; resolves the returned `stop()` once in-flight messages finish. */
   abstract consume<T>(
     queue: string,

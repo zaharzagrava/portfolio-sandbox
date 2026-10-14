@@ -96,14 +96,24 @@ export class MixedCurrencyError extends AppError {
 
 /** Final per key: the idempotency facility stores and replays it. */
 export class OutOfStockError extends AppError {
-  constructor(readonly productIds: string[]) {
+  /**
+   * A drop refusal (`flashSaleId` set) happens before any order exists and leaves the key unused (S11 contracts/http.md):
+   * the buyer may retry with the same key once units come back.
+   */
+  constructor(
+    readonly productIds: string[],
+    readonly flashSaleId?: string,
+  ) {
     super(
       domainError(
         HttpStatus.UNPROCESSABLE_ENTITY,
         'out_of_stock',
         'Unprocessable Entity',
         'Some products are out of stock.',
-        { extensions: { productIds }, idempotencyFinal: true },
+        {
+          extensions: { productIds, ...(flashSaleId && { flashSaleId }) },
+          idempotencyFinal: flashSaleId === undefined,
+        },
       ),
     );
   }

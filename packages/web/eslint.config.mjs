@@ -80,6 +80,11 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Build outputs: the production build for the e2e specs and the widget checkout bundle (a minified script).
+    ".next-prod/**",
+    ".widget/**",
+    "playwright-report/**",
+    "test-results/**",
   ]),
 ]);
 

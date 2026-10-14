@@ -4,150 +4,143 @@ import {
   Injectable,
   NestInterceptor,
   SetMetadata,
-  BadRequestException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import type { Request, Response } from 'express';
-import { Observable, from, map, switchMap, finalize, tap } from 'rxjs';
-import { randomUUID } from 'node:crypto';
-import { InjectConnection } from '@nestjs/sequelize';
-import { QueryTypes, Sequelize } from 'sequelize';
-import { KafkaProducerService } from '@app/infrastructure/kafka/kafka-producer.service';
-import { CacheService } from '@app/infrastructure/cache/cache.service';
-import type { VerifiedKey } from '../application/api-keys.service';
-import { ApiRequestLogged } from '../application/events/api-events';
+import { Observable, map } from 'rxjs';
+import { ApiConfigService, PlatformSettings } from '@app/common/config';
+import type { VerifiedKey } from '../application/key-verifier.service';
+import { apiMetrics } from '../application/metrics';
+import {
+  ORDER_FIELD_SAMPLE,
+  PRODUCT_FIELD_SAMPLE,
+} from '../domain/public-views';
+import { parseExpand, parseFields, pickFields } from '../domain/sparse-fields';
 import {
   ApiResourceType,
-  ApiVersion,
-  DEPRECATED_ROUTES,
-  isApiVersion,
-  LATEST_VERSION,
-  transformForVersion,
+  downgradeResponse,
+  fieldNamesAt,
+  upgradeProductWrite,
 } from '../domain/versioning';
+import {
+  latestVersion,
+  type VersionResource,
+} from '../domain/version-registry';
+import type { ApiRequest } from './request-context.middleware';
 
 const RESOURCE = 'publicApi:resource';
+
+export interface ApiResourceMeta {
+  type: ApiResourceType;
+  itemType?: VersionResource;
+  /** The request body is a product write of an older version: upgrade it before validation. */
+  upgrade?: 'productWrite';
+}
+
 export const ApiResource = (
   type: ApiResourceType,
-  itemType?: Exclude<ApiResourceType, 'list'>,
-) => SetMetadata(RESOURCE, { type, itemType });
+  itemType?: VersionResource,
+  options: { upgrade?: 'productWrite' } = {},
+) =>
+  SetMetadata(RESOURCE, {
+    type,
+    itemType,
+    ...options,
+  } satisfies ApiResourceMeta);
+
+export type ResourceRequest = ApiRequest & {
+  apiKey?: VerifiedKey;
+  apiVersion?: string;
+  /** `expand` as parsed before the handler ran. */
+  apiExpand?: string[];
+};
+
+const SAMPLES: Record<VersionResource, Record<string, unknown>> = {
+  product: PRODUCT_FIELD_SAMPLE,
+  order: ORDER_FIELD_SAMPLE,
+};
 
 /**
- * Cross-cutting public-API behaviour in one place:
- *  1. version = `Marketplace-Version` header, else the shop's pinned version, else latest;
- *  2. response downgraded to that version's shape (handlers only know the latest);
- *  3. `Deprecation` / `Sunset` / `Link` headers on deprecated routes;
- *  4. `Request-Id` header + an async request-log event (Kafka → ClickHouse) -
- *     never blocking the response.
+ * What the version and the query decide about a response, around the handler (FR-026, FR-027, FR-037): the request body
+ * of an older version is upgraded to the latest shape before validation, `fields` and `expand` are checked against the
+ * requested version's names before any work, and the response is downgraded to the requested version and trimmed.
+ * Handlers only know the latest shape.
  */
 @Injectable()
 export class PublicApiInterceptor implements NestInterceptor {
+  private readonly currency: string;
+
   constructor(
     private readonly reflector: Reflector,
-    private readonly producer: KafkaProducerService,
-    private readonly cache: CacheService,
-    @InjectConnection() private readonly sequelize: Sequelize,
-  ) {}
+    config: ApiConfigService,
+  ) {
+    this.currency = new PlatformSettings(config).currency;
+  }
 
   intercept(ctx: ExecutionContext, next: CallHandler): Observable<unknown> {
-    const req = ctx
-      .switchToHttp()
-      .getRequest<Request & { apiKey?: VerifiedKey }>();
+    const req = ctx.switchToHttp().getRequest<ResourceRequest>();
     const res = ctx.switchToHttp().getResponse<Response>();
-    const started = Date.now();
-    const requestId =
-      (req.headers['x-request-id'] as string) ||
-      `req_${randomUUID().replace(/-/g, '')}`;
-    res.setHeader('Request-Id', requestId);
+    const meta = this.reflector.get<ApiResourceMeta | undefined>(
+      RESOURCE,
+      ctx.getHandler(),
+    );
+    const version = req.apiVersion ?? latestVersion();
+    // the limiter answered before this point; no `RateLimit` header on an authenticated call means its store was down
+    // and the call was served on the instance's own share (FR-052)
+    if (req.apiKey && !res.getHeader('RateLimit'))
+      apiMetrics.rateLimitDegraded().add(1);
 
-    const routeKey = `${req.method} ${(req.route as { path?: string } | undefined)?.path ?? req.path}`;
-    const deprecation = DEPRECATED_ROUTES[routeKey];
-    if (deprecation) {
-      res.setHeader(
-        'Deprecation',
-        `@${Math.floor(Date.parse(deprecation.deprecatedAt) / 1000)}`,
+    if (
+      meta?.upgrade === 'productWrite' &&
+      version !== latestVersion() &&
+      req.body &&
+      typeof req.body === 'object'
+    )
+      req.body = upgradeProductWrite(
+        req.body as Record<string, unknown>,
+        version,
+        {
+          currency: this.currency,
+        },
       );
-      res.setHeader('Sunset', new Date(deprecation.sunset).toUTCString());
-      res.setHeader(
-        'Link',
-        `<${deprecation.replacement}>; rel="successor-version", <https://docs.marketplace.dev/api/deprecations>; rel="deprecation"`,
-      );
-    }
-    const resource = this.reflector.get<
-      | { type: ApiResourceType; itemType?: Exclude<ApiResourceType, 'list'> }
-      | undefined
-    >(RESOURCE, ctx.getHandler());
-    let version: ApiVersion = LATEST_VERSION;
-    let failedStatus: number | null = null;
 
-    return from(this.resolveVersion(req)).pipe(
-      switchMap((resolved) => {
-        version = resolved;
-        res.setHeader('Marketplace-Version', version);
-        return next.handle();
-      }),
-      map((body) =>
-        resource
-          ? transformForVersion(resource.type, body, version, resource.itemType)
-          : body,
-      ),
-      // On errors the exception filter writes the status AFTER this pipeline ends - capture it here.
-      tap({
-        error: (error: { status?: number; getStatus?: () => number }) =>
-          (failedStatus = error.getStatus?.() ?? error.status ?? 500),
-      }),
-      finalize(() => {
-        const key = req.apiKey;
-        if (!key) return;
-        const event = ApiRequestLogged.create(requestId, 0, {
-          requestId,
-          shopId: key.ownerShopId,
-          keyId: key.id,
-          livemode: key.livemode,
-          version,
-          method: req.method,
-          route: routeKey.split(' ')[1],
-          status: failedStatus ?? res.statusCode,
-          durationMs: Date.now() - started,
-          deprecated: !!deprecation,
-        });
-        void this.producer
-          .send({
-            topic: ApiRequestLogged.topic,
-            key: key.ownerShopId,
-            value: event,
-          })
-          .catch(() => undefined);
+    const item =
+      meta?.type === 'list'
+        ? meta.itemType
+        : (meta?.type as VersionResource | undefined);
+    const expand =
+      meta && item ? parseExpand(this.single(req.query.expand)) : [];
+    req.apiExpand = expand;
+    const rawFields = meta && item ? this.single(req.query.fields) : undefined;
+    const fields = item
+      ? parseFields(rawFields, [
+          ...fieldNamesAt(item, version, SAMPLES[item]),
+          ...(expand.includes('shop') ? ['shop'] : []),
+        ])
+      : null;
+
+    return next.handle().pipe(
+      map((body) => {
+        if (!meta) return body;
+        const down = downgradeResponse(meta.type, body, version, meta.itemType);
+        if (!fields) return down;
+        // a trimmed resource still says what it is
+        const keep = [
+          'id',
+          'object',
+          ...fields,
+          ...(expand.includes('shop') ? ['shop'] : []),
+        ];
+        if (meta.type === 'list') {
+          const l = down as { data: Record<string, unknown>[] };
+          return { ...l, data: l.data.map((i) => pickFields(i, keep)) };
+        }
+        return pickFields(down as Record<string, unknown>, keep);
       }),
     );
   }
 
-  private async resolveVersion(
-    req: Request & { apiKey?: VerifiedKey },
-  ): Promise<ApiVersion> {
-    const header = req.headers['marketplace-version'] as string | undefined;
-    if (header !== undefined) {
-      if (!isApiVersion(header))
-        throw new BadRequestException({
-          type: 'invalid_version',
-          message: `Unknown version ${header}`,
-        });
-      return header;
-    }
-    if (!req.apiKey) return LATEST_VERSION;
-    const pinned = await this.cache.getOrLoad<{ v: string }>(
-      `api:pinned:${req.apiKey.ownerShopId}`,
-      async () => {
-        const [row] = await this.sequelize.query<{ pinnedVersion: string }>(
-          `SELECT "pinnedVersion" FROM "ShopApiSettings" WHERE "shopId" = :shopId`,
-          {
-            type: QueryTypes.SELECT,
-            replacements: { shopId: req.apiKey!.ownerShopId },
-          },
-        );
-        return row ? { v: row.pinnedVersion } : null;
-      },
-      { ttlMs: 300_000, negativeTtlMs: 300_000, l1: 'always', l1TtlMs: 5_000 },
-    );
-    return pinned && isApiVersion(pinned.v) ? pinned.v : LATEST_VERSION;
+  private single(value: Request['query'][string]): string | undefined {
+    return typeof value === 'string' ? value : undefined;
   }
 }

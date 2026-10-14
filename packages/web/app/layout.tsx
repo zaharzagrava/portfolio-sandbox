@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
 import { Suspense } from 'react';
+import { PageView } from '@/components/analytics/page-view';
 import { SessionBootstrap } from '@/components/auth/session-bootstrap';
 import { Footer } from '@/components/layout/footer';
 import { Navbar } from '@/components/layout/navbar';
@@ -55,6 +56,9 @@ export default function RootLayout({
           </main>
           <Footer />
           <RouteFocus />
+          <Suspense fallback={null}>
+            <PageView />
+          </Suspense>
         </NonceProviders>
       </body>
     </html>

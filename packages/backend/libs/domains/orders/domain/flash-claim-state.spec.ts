@@ -30,14 +30,16 @@ describe('S11 flash claim state machine (AS-31, AS-33, AS-34)', () => {
     ['SOLD', { type: 'release', mode: 'discard' }, 'noop:not_held'],
   ])('S11: %s + %j -> %s', (state, command, expected) => {
     const r = claimTransition(state, command);
-    const label =
-      r.kind === 'applied' ? `applied:${r.to}` : `noop:${r.answer}`;
+    const label = r.kind === 'applied' ? `applied:${r.to}` : `noop:${r.answer}`;
     expect(label).toBe(expected);
   });
 
   it('S11: the full life of a claim that is bought and one that is returned', () => {
     let s: ClaimState = 'CLAIMED';
-    for (const c of [{ type: 'commit' }, { type: 'convert' }] as ClaimCommand[]) {
+    for (const c of [
+      { type: 'commit' },
+      { type: 'convert' },
+    ] as ClaimCommand[]) {
       const r = claimTransition(s, c);
       expect(r.kind).toBe('applied');
       if (r.kind === 'applied') s = r.to;

@@ -102,6 +102,14 @@ test.describe('W07 security headers', () => {
     }
   });
 
+  test('W07 AS-41: /health answers ok, uncached, without the document policy', async ({ request }) => {
+    const res = await request.get('/health');
+    expect(res.status()).toBe(200);
+    expect(await res.json()).toEqual({ status: 'ok' });
+    expect(res.headers()['cache-control']).toBe('no-store');
+    expect(res.headers()['content-security-policy']).toBeUndefined();
+  });
+
   test('W07 AS-21: the policy names the same-origin report endpoint', async ({ request }) => {
     const { headers } = await headersOf(request, '/');
     expect(headers['content-security-policy']).toContain('report-uri /api/csp-reports');

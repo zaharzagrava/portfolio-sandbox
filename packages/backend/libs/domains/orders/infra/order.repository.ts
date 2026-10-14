@@ -148,18 +148,30 @@ export class SequelizeOrderRepository implements OrderRepository {
         },
       },
     );
+    // Catalog lines are requested; a drop line's units were claimed before the order, so its row is already held.
     await this.sequelize.query(
-      `INSERT INTO "StockReservation" ("id", "bisOrderId", "productId", "quantity", "source", "status", "expiresAt", "createdAt")
-       SELECT uuidv7(), :orderId, r."productId"::uuid, r."quantity", 'CATALOG', 'REQUESTED', :now, :now
-       FROM jsonb_to_recordset(CAST(:reservations AS jsonb)) AS r("productId" text, "quantity" int)`,
+      `INSERT INTO "StockReservation" ("id", "bisOrderId", "productId", "quantity", "source", "sourceRef", "flashSaleId",
+                                       "status", "expiresAt", "createdAt")
+       SELECT uuidv7(), :orderId, r."productId"::uuid, r."quantity",
+              CASE WHEN r."claimId" IS NOT NULL THEN 'FLASH' WHEN r."externalRef" IS NOT NULL THEN 'EXTERNAL' ELSE 'CATALOG' END,
+              COALESCE(r."claimId", r."externalRef"), r."flashSaleId"::uuid,
+              CASE WHEN r."claimId" IS NULL AND r."externalRef" IS NULL THEN 'REQUESTED' ELSE 'HELD' END,
+              CASE WHEN r."claimId" IS NULL AND r."externalRef" IS NULL THEN CAST(:now AS timestamptz)
+                   ELSE CAST(:flashExpiresAt AS timestamptz) END, :now
+       FROM jsonb_to_recordset(CAST(:reservations AS jsonb)) AS r(
+         "productId" text, "quantity" int, "claimId" text, "flashSaleId" text, "externalRef" text)`,
       {
         replacements: {
           orderId: order.id,
           now: order.now,
+          flashExpiresAt: order.flashExpiresAt ?? order.now,
           reservations: JSON.stringify(
             order.items.map((i) => ({
               productId: i.productId,
               quantity: i.quantity,
+              claimId: i.flash?.claimId ?? null,
+              flashSaleId: i.flash?.flashSaleId ?? null,
+              externalRef: i.external?.ref ?? null,
             })),
           ),
         },

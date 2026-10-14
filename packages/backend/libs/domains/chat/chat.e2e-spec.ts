@@ -1,168 +1,203 @@
-import { INestApplication } from '@nestjs/common';
-import request from 'supertest';
-import { randomUUID as v4 } from 'crypto';
-import { generateTestingModule } from '@app/test/utils/global-modules';
-import { SeedsModule } from '@app/test/seeds/seeds.module';
-import { SeedsService } from '@app/test/seeds/seeds.service';
-import { RateLimitModule } from '@app/infrastructure/rate-limit/rate-limit.module';
-import { CacheModule } from '@app/infrastructure/cache/cache.module';
-import { UserModel as User } from '@app/domains/identity';
-import { issueSession } from '@app/test/seeds/session.fixture';
-import { getModelToken } from '@nestjs/sequelize';
-import { ProductModel as Product } from '@app/domains/catalog';
-import { TableName } from '@app/test/seeds/types';
-import { ChatModule } from './chat.module';
-import * as jwt from 'jsonwebtoken';
-import { ApiConfigService } from '@app/common/config';
+import {
+  chatChannelSchema,
+  chatChannelSyncSchema,
+  chatUnreadPageSchema,
+  chatWsTicketSchema,
+} from '@marketplace-sandbox/contracts';
+import { z } from 'zod';
+import {
+  clearRateLimits,
+  createChatApp,
+  openChannel,
+  rows,
+  seedWorld,
+  sendMessage,
+  type ChatTestApp,
+} from './testing/chat-app';
 
-describe('Chat (e2e)', () => {
-  let app: INestApplication;
-  let seedsService: SeedsService;
-  let configService: ApiConfigService;
-  let userModel: typeof User;
-  let productModel: typeof Product;
+const T = new Date('2026-10-14T12:00:00.000Z');
+
+/**
+ * The journey across the routes (the old `chat.e2e-spec.ts` smoke, rebuilt over the new contracts): what a seller and a
+ * buyer do in one conversation, each step through HTTP only. The detail of every step is proven in the scenario files
+ * of `test-plan.md`; this file proves they work together.
+ */
+describe('Product chat: one conversation from the first question to the last read', () => {
+  let t: ChatTestApp;
 
   beforeAll(async () => {
-    const moduleRef = await generateTestingModule(
-      [ChatModule, RateLimitModule, CacheModule, SeedsModule],
-      { stores: ['redis', 'dynamo'] },
-    );
-    app = moduleRef.createNestApplication({ rawBody: true });
-    app.setGlobalPrefix('api');
-    await app.init();
-    seedsService = app.get(SeedsService);
-    configService = app.get(ApiConfigService);
-    userModel = app.get(getModelToken(User));
-    productModel = app.get(getModelToken(Product));
+    t = await createChatApp();
   });
-
   afterAll(async () => {
-    await app.close();
+    await t.close();
   });
-
   beforeEach(async () => {
-    await seedsService.clean();
+    await t.reset();
+    await clearRateLimits(t.app);
+    await t.setTime(T);
   });
 
-  it('mints a valid websocket ticket for the user', async () => {
-    const user = await userModel.create({ email: `test-${v4()}@mail.com` });
-    const { accessToken: token } = await issueSession(app, user);
-
-    const res = await request(app.getHttpServer())
-      .post('/api/chat/ws-ticket')
-      .set('Authorization', `Bearer ${token}`)
-      .expect(201);
-
-    expect(res.body.ticket).toBeDefined();
-
-    // Verify ticket
-    const decoded = jwt.verify(
-      res.body.ticket,
-      configService.get('jwt_secret'),
-    ) as any;
-    expect(decoded.sub).toBe(user.id);
-    expect(decoded.typ).toBe('ws');
-  });
-
-  it('allows a seller to create a channel for their product', async () => {
-    const seller = await userModel.create({ email: `seller-${v4()}@mail.com` });
-    const { accessToken: token } = await issueSession(app, seller);
-
-    const [product] = await seedsService.createTreelike([
-      { __type__: TableName.Product, sellerId: seller.id },
-    ]);
-
-    const res = await request(app.getHttpServer())
+  it('S24 AS-09: the seller opens the chat, the buyer joins and asks, the seller answers, and the buyer catches up, reads and is current', async () => {
+    const w = await seedWorld(t, { title: 'Phone 17' });
+    const opened = await t
+      .as(w.owner)
       .post('/api/chat/channels')
-      .set('Authorization', `Bearer ${token}`)
-      .send({ productId: product.id, title: 'Support Chat' })
-      .expect(201);
+      .send({ productId: w.product.id });
+    expect(opened.status).toBe(201);
+    const channel = chatChannelSchema.parse(opened.body);
+    expect(channel).toMatchObject({
+      title: 'Phone 17',
+      myRole: 'OWNER',
+      shopId: w.shop.id,
+    });
 
-    expect(res.body.id).toBeDefined();
-    expect(res.body.productId).toBe(product.id);
-    expect(res.body.myRole).toBe('OWNER');
+    const buyer = await t.user();
+    const found = await t
+      .as(buyer)
+      .get(`/api/chat/channels/by-product/${w.product.id}`);
+    expect(found.status).toBe(200);
+    expect(found.body.myRole).toBeNull();
+    const joined = await t
+      .as(buyer)
+      .post(`/api/chat/channels/${channel.id}/join`);
+    expect(joined.status).toBe(200);
+    expect(joined.body.myRole).toBe('MEMBER');
+
+    const question = await sendMessage(t, buyer, channel.id, 'Is it unlocked?');
+    expect(question.status).toBe(201);
+    expect(question.body.message.seq).toBe(1);
+    const answer = await sendMessage(
+      t,
+      w.owner,
+      channel.id,
+      'Yes, any network.',
+      {
+        replyToId: question.body.message.id,
+      },
+    );
+    expect(answer.status).toBe(201);
+    expect(answer.body.message).toMatchObject({
+      seq: 2,
+      replyToId: question.body.message.id,
+    });
+
+    // the buyer reconnects with the highest sequence they hold and gets the answer
+    const synced = z.array(chatChannelSyncSchema).parse(
+      (
+        await t
+          .as(buyer)
+          .post('/api/chat/sync')
+          .send({ cursors: { [channel.id]: 1 } })
+      ).body,
+    );
+    expect(synced).toHaveLength(1);
+    expect(synced[0].messages.map((m) => m.body)).toEqual([
+      'Yes, any network.',
+    ]);
+    expect(synced[0]).toMatchObject({ lastSeq: 2, hasMore: false });
+
+    const before = chatUnreadPageSchema.parse(
+      (await t.as(buyer).get('/api/chat/unread')).body,
+    );
+    expect(before.items).toEqual([
+      { channelId: channel.id, unread: 1, lastSeq: 2 },
+    ]);
+    const read = await t
+      .as(buyer)
+      .post(`/api/chat/channels/${channel.id}/read`)
+      .send({ seq: 2 });
+    expect(read.body).toEqual({ lastReadSeq: 2, unread: 0 });
+    expect(
+      t.realtime.published.filter(
+        (p) => p.type === 'read' && p.topic === `chat:${channel.id}`,
+      ),
+    ).toHaveLength(1);
+    const after = chatUnreadPageSchema.parse(
+      (await t.as(buyer).get('/api/chat/unread')).body,
+    );
+    expect(after.items[0].unread).toBe(0);
+    // posting moved the seller's own position to their answer, so nothing is unread for them (AS-31)
+    const sellerUnread = chatUnreadPageSchema.parse(
+      (await t.as(w.owner).get('/api/chat/unread')).body,
+    );
+    expect(sellerUnread.items[0].unread).toBe(0);
+
+    const stored = await rows<{ seq: string; body: string }>(
+      t.app,
+      `SELECT seq, body FROM "ChatMessage" WHERE "channelId" = :id ORDER BY seq`,
+      { id: channel.id },
+    );
+    expect(stored.map((m) => [m.seq, m.body])).toEqual([
+      ['1', 'Is it unlocked?'],
+      ['2', 'Yes, any network.'],
+    ]);
   });
 
-  it('prevents non-sellers from creating a channel', async () => {
-    const seller = await userModel.create({ email: `seller-${v4()}@mail.com` });
-    const buyer = await userModel.create({ email: `buyer-${v4()}@mail.com` });
-    const { accessToken: buyerToken } = await issueSession(app, buyer);
+  it('S24 AS-55: a signed-in user gets a gateway ticket for the realtime socket', async () => {
+    const user = await t.user();
+    const res = await t.as(user).post('/api/chat/ws-ticket');
+    expect(res.status).toBe(201);
+    const ticket = chatWsTicketSchema.parse(res.body);
+    expect(ticket.ticket.split('.')).toHaveLength(3);
+    expect(ticket.expiresAt).toBe(new Date(T.getTime() + 60_000).toISOString());
+  });
 
-    const [product] = await seedsService.createTreelike([
-      { __type__: TableName.Product, sellerId: seller.id },
-    ]);
-
-    await request(app.getHttpServer())
+  it("S24 AS-02: a user who is not in the seller's shop cannot open a chat for the product", async () => {
+    const w = await seedWorld(t);
+    const stranger = await t.user();
+    const res = await t
+      .as(stranger)
       .post('/api/chat/channels')
-      .set('Authorization', `Bearer ${buyerToken}`)
-      .send({ productId: product.id, title: 'Support Chat' })
-      .expect(403);
+      .send({ productId: w.product.id });
+    expect(res.status).toBe(403);
+    expect(res.body.code).toBe('permission_denied');
   });
 
-  it('allows owner to mute a member', async () => {
-    const seller = await userModel.create({ email: `seller-${v4()}@mail.com` });
-    const member = await userModel.create({ email: `member-${v4()}@mail.com` });
-    const { accessToken: sellerToken } = await issueSession(app, seller);
-
-    const [product] = await seedsService.createTreelike([
-      { __type__: TableName.Product, sellerId: seller.id },
-    ]);
-
-    // Create channel
-    const channelRes = await request(app.getHttpServer())
-      .post('/api/chat/channels')
-      .set('Authorization', `Bearer ${sellerToken}`)
-      .send({ productId: product.id })
-      .expect(201);
-
-    const channelId = channelRes.body.id;
-
-    // Mute member
-    await request(app.getHttpServer())
-      .post(`/api/chat/channels/${channelId}/members/mute`)
-      .set('Authorization', `Bearer ${sellerToken}`)
-      .send({ userId: member.id, minutes: 10 })
-      .expect(201);
+  it('S24 AS-51: the owner mutes a member, who can read but not write until the mute lapses', async () => {
+    const w = await seedWorld(t);
+    const channel = await openChannel(t, w);
+    const buyer = await t.user();
+    await t.as(buyer).post(`/api/chat/channels/${channel.id}/join`);
+    const muted = await t
+      .as(w.owner)
+      .post(`/api/chat/channels/${channel.id}/members/mute`)
+      .send({ userId: buyer.id, minutes: 5 });
+    expect(muted.status).toBe(204);
+    const blocked = await sendMessage(t, buyer, channel.id, 'hello?');
+    expect(blocked.status).toBe(403);
+    expect(blocked.body.code).toBe('muted');
+    expect(
+      (await t.as(buyer).get(`/api/chat/channels/${channel.id}/messages`))
+        .status,
+    ).toBe(200);
+    await t.setTime(new Date(T.getTime() + 6 * 60_000));
+    expect((await sendMessage(t, buyer, channel.id, 'hello?')).status).toBe(
+      201,
+    );
   });
 
-  it('buyers join a product chat; joining is idempotent and a ban sticks', async () => {
-    const seller = await userModel.create({ email: `seller-${v4()}@mail.com` });
-    const buyer = await userModel.create({ email: `buyer-${v4()}@mail.com` });
-    const sellerAuth = {
-      Authorization: (await issueSession(app, seller)).bearer,
-    };
-    const buyerAuth = {
-      Authorization: (await issueSession(app, buyer)).bearer,
-    };
-    const [product] = await seedsService.createTreelike([
-      { __type__: TableName.Product, sellerId: seller.id },
-    ]);
-    const channelId = (
-      await request(app.getHttpServer())
-        .post('/api/chat/channels')
-        .set(sellerAuth)
-        .send({ productId: product.id })
-        .expect(201)
-    ).body.id;
-
-    const joined = await request(app.getHttpServer())
-      .post(`/api/chat/channels/${channelId}/join`)
-      .set(buyerAuth)
-      .expect(200);
-    expect(joined.body.id).toBe(channelId);
-    await request(app.getHttpServer())
-      .post(`/api/chat/channels/${channelId}/join`)
-      .set(buyerAuth)
-      .expect(200);
-
-    await request(app.getHttpServer())
-      .post(`/api/chat/channels/${channelId}/members/ban`)
-      .set(sellerAuth)
-      .send({ userId: buyer.id })
-      .expect(201);
-    await request(app.getHttpServer())
-      .post(`/api/chat/channels/${channelId}/join`)
-      .set(buyerAuth)
-      .expect(403);
+  it('S24 AS-06: joining twice is harmless and a ban sticks', async () => {
+    const w = await seedWorld(t);
+    const channel = await openChannel(t, w);
+    const buyer = await t.user();
+    expect(
+      (await t.as(buyer).post(`/api/chat/channels/${channel.id}/join`)).status,
+    ).toBe(200);
+    expect(
+      (await t.as(buyer).post(`/api/chat/channels/${channel.id}/join`)).status,
+    ).toBe(200);
+    expect(
+      (
+        await t
+          .as(w.owner)
+          .post(`/api/chat/channels/${channel.id}/members/ban`)
+          .send({ userId: buyer.id })
+      ).status,
+    ).toBe(204);
+    const again = await t
+      .as(buyer)
+      .post(`/api/chat/channels/${channel.id}/join`);
+    expect(again.status).toBe(403);
+    expect(again.body.code).toBe('banned');
   });
 });

@@ -15,6 +15,15 @@ scope:
   - packages/web/components/layout/**
   - packages/web/lib/api/**
   - packages/web/lib/security/**
+  - packages/web/app/developers/docs/**
+  - packages/web/app/privacy/**
+  - packages/web/app/terms/**
+  - packages/web/app/health/**
+  - packages/web/app/widget/**
+  - packages/web/components/legal/**
+  - packages/web/components/widget/**
+  - packages/web/lib/widget/**
+  - packages/contracts/src/developer-platform/openapi-document.ts
 ---
 # W07 - App shell and cross-cutting UI
 ## Purpose
@@ -22,8 +31,11 @@ Every visitor of the web app sees the same frame around each page: header, foote
 
 ## Entry points
 - Page `/terms`: static "Terms of service" page with seven sections. [code: packages/web/app/terms/page.tsx#TermsPage]
-- Page `/privacy`: legal page for privacy. No file of this page is in the facts.
-- Page `/developers/docs`: public API reference. No file of this page is in the facts.
+- Page `/privacy`: static "Privacy policy" page with five sections and the list of everything the app keeps in the browser. [code: packages/web/app/privacy/page.tsx#PrivacyPage]
+- Page `/developers/docs`: public API reference, static text and a read-only client leaf over the same-origin description. [code: packages/web/app/developers/docs/page.tsx#ApiDocsPage]
+- Document `/robots.txt`: allows public pages, disallows the private areas. [code: packages/web/app/robots.ts#robots]
+- Probe `/health`: liveness of the web process. [code: packages/web/app/health/route.ts#GET]
+- Script `/widget/v1/app.js`: the checkout application that the storefront widget's embed document loads from another origin. [code: packages/web/app/widget/v1/app.js/route.ts#GET]
 - Root layout: renders the skip link, header, `<main>`, footer, toast area and offline notice around every page. [code: packages/web/app/layout.tsx#RootLayout]
 - Not-found state, shown for an unknown address. [code: packages/web/app/not-found.tsx#NotFound]
 - Error state, contained to `<main>`. [code: packages/web/app/error.tsx#ErrorPage]
@@ -49,10 +61,28 @@ Every visitor of the web app sees the same frame around each page: header, foote
 - **W07.R-14** While the browser is [offline](../terms/offline-notice.md), a [`role="status"` ↗](../sw-external-terms.md#aria-status-role) notice MUST show "You're offline…". [proof: W07 AS-14] [code: packages/web/components/layout/offline-notice.tsx#OfflineNotice]
 - **W07.R-15** The app MUST have one [toast area](../terms/toast.md), with at most 3 toasts visible. [proof: W07 AS-15] [code: packages/web/components/ui/sonner.tsx]
 - **W07.R-16** Every HTML response MUST carry a [`Content-Security-Policy` ↗](../sw-external-terms.md#content-security-policy) header with a fresh [nonce ↗](../sw-external-terms.md#csp-nonce) per response. [proof: W07 AS-16] [code: packages/web/lib/security/csp.ts#buildCsp]
-- **W07.R-17** [Payment provider hosts](../terms/payment-provider-hosts.md) MUST be added to the policy only on [`/checkout/pay/*`](../terms/checkout-pay-route.md). [Map tile hosts](../terms/map-tile-hosts.md) MUST NOT be [wildcards ↗](../sw-external-terms.md#csp-host-source-wildcard). [proof: W07 AS-18] [code: packages/web/lib/security/csp.ts#buildCsp]
+- **W07.R-17** [Payment provider hosts](../terms/payment-provider-hosts.md) MUST be added to the policy only on [`/checkout/pay/*`](../terms/checkout-pay-route.md). [Map tile hosts](../terms/map-tile-hosts.md) (also allowed to `fetch`, with `blob:` workers) MUST NOT be [wildcards ↗](../sw-external-terms.md#csp-host-source-wildcard). [proof: W07 AS-18] [code: packages/web/lib/security/csp.ts#buildCsp]
 - **W07.R-18** Every response MUST carry the [static security headers](../terms/static-security-headers.md), including [`X-Content-Type-Options: nosniff` ↗](../sw-external-terms.md#x-content-type-options) and [`X-Frame-Options: DENY` ↗](../sw-external-terms.md#x-frame-options). [proof: W07 AS-19] [code: packages/web/lib/security/headers.ts#staticSecurityHeaders]
 - **W07.R-19** [Signed-in areas](../terms/signed-in-areas.md) MUST carry [`Cache-Control: no-store` ↗](../sw-external-terms.md#cache-control-no-store). [proof: W07 AS-20] [code: packages/web/lib/security/headers.ts#noStorePaths]
 - **W07.R-20** [`POST /api/csp-reports`](../terms/post-csp-reports.md) MUST answer `204` for any body or content type. [proof: W07 AS-21] [code: packages/backend/libs/infrastructure/platform/csp-reports.controller.ts#CspReportsController]
+
+- **W07.R-21** `/privacy` MUST show one `h1` "Privacy policy", "Last updated: {date}" and the sections What we store, Cookies and browser storage, Who receives data, Your choices and Contact, and the cookie section MUST list every key of the browser-storage list. [proof: W07 AS-23] [code: packages/web/app/privacy/page.tsx#PrivacyPage]
+- **W07.R-22** Legal pages MUST show an "On this page" navigation (a sticky rail from 1024 px, a collapsed disclosure below) whose links move focus to the heading of the chosen section. [proof: W07 AS-25] [code: packages/web/components/legal/on-this-page.tsx#OnThisPage]
+- **W07.R-23** Legal page titles MUST be "Privacy policy · Marketplace" and "Terms of service · Marketplace", and the pages MUST be indexable. [proof: W07 AS-26] [code: packages/web/app/privacy/page.tsx#metadata]
+- **W07.R-24** `/developers/docs` MUST show, inside the frame, the `h1` "API documentation", the Authentication, Errors and Deprecation texts and the operations of the API description grouped by tag, each expandable by a button with `aria-expanded`, with the required scope and a Deprecated mark with sunset and replacement. [proof: W07 AS-27, W07 AS-30] [code: packages/web/app/developers/docs/reference.tsx#Reference]
+- **W07.R-25** While the description loads the reference area MUST be a placeholder with `aria-busy`; when it cannot be fetched or is not an OpenAPI 3.x document the area MUST say "The API reference is temporarily unavailable." with **Try again** that replaces the area in place, and the reference line only when a `requestId` exists. [proof: W07 AS-28] [code: packages/web/lib/api/developers.ts#getOpenApiDocument]
+- **W07.R-26** The developer docs MUST be read-only: no "Try it out", no form, one data request (the description, same origin), copyable examples that announce "Copied". [proof: W07 AS-29]
+- **W07.R-27** `GET /robots.txt` MUST disallow exactly the no-store paths, and the same private areas MUST also answer with `X-Robots-Tag: noindex`. [proof: W07 AS-34] [code: packages/web/app/robots.ts#robots]
+- **W07.R-28** Each navigation MUST emit one `page_view` named by route template (never the address, query or fragment); an unmatched address is `/not-found`, a root error `/error`. [proof: W07 AS-35] [code: packages/web/lib/routes/page-name.ts#pageNameFor]
+- **W07.R-29** The browser query client MUST be one per tab and one per server request; queries retry at most twice for network errors and `5xx`, never for `400`, `401`, `403`, `404`, `409` or `422`; mutations never retry; failed active queries are fetched once when the connection returns. [proof: W07 AS-36] [code: packages/web/lib/query-client.ts#shouldRetryQuery]
+- **W07.R-30** Every query key MUST be an array that starts with its domain name. [proof: W07 AS-36] [code: packages/web/lib/query-keys.ts#queryKeys]
+- **W07.R-31** At 320 px no page scrolls sideways and the header, sheet and footer targets are at least 44 × 44 px. [proof: W07 AS-31]
+- **W07.R-32** The keyboard order of the frame MUST be skip link, logo, main navigation, search, assistant, theme, cart, account, page content, footer, and menus MUST return focus on Escape. [proof: W07 AS-32]
+- **W07.R-33** The frame and the W07 pages MUST have no serious or critical accessibility violation at 320, 390 and 1280 px in both colour schemes. [proof: W07 AS-33]
+- **W07.R-34** The widget checkout application MUST be served with `Content-Type: application/javascript`, `Cache-Control: public, max-age=31536000, immutable`, `Cross-Origin-Resource-Policy: cross-origin` and `nosniff`. [proof: W07 AS-39] [code: packages/web/app/widget/v1/app.js/route.ts#GET]
+- **W07.R-35** The widget checkout application MUST post only `marketplace:need-identity` and `marketplace:close`, only to its parent window with the host's origin as target (never `"*"`), and MUST accept `marketplace:identity` only from the parent window and that origin. [proof: W07 AS-40] [code: packages/web/lib/widget/messages.ts#acceptIdentityMessage]
+- **W07.R-36** `GET /health` MUST answer `200 {"status":"ok"}` with `Cache-Control: no-store`, without calling the backend and without the document policy. [proof: W07 AS-41] [code: packages/web/app/health/route.ts#GET]
+- **W07.R-37** Header slots that follow the session (the visitor's log-in icon, the member's bell) MUST take the server's reading of the session cookie as a prop and use it while the browser has no answer, so the server markup and the first client render agree. [proof: W07 AS-01] [code: packages/web/components/layout/session-slots.tsx#MemberSlot]
 
 ## Behaviors
 - **W07.B-01** Given a page at 1024 px or wider, when it renders, then the [sticky header ↗](../sw-external-terms.md#sticky-header) shows the logo, the "Main" navigation, search, theme, cart and [account slot](../terms/account-slot.md). [proof: W07 AS-01]
@@ -89,8 +119,8 @@ None. The capability has no status that changes.
 - Other capabilities reference the accessibility baseline here instead of restating it.
 
 ## Known gaps
-- No test carries an id for AS-23 (`/privacy`), AS-25 (legal page layout), AS-26 (legal titles), AS-27 to AS-30 (developer docs), AS-35 (page-view events), AS-36 (query client), AS-37 (no cross-origin requests) or AS-41 (`/health`). Their behavior is not stated as rules here.
-- AS-39 and AS-40 (widget bundle and identity messages, P3) have no test and no code in the facts.
-- AS-33 (contrast, reduced motion) and AS-34 (document metadata, robots) have tests, but this page states no rule for them. AS-31, AS-32 and AS-38 are likewise not stated as rules.
+- The widget checkout application (R-34, R-35) cannot yet identify a customer against the real S44 routes: the embed document's policy is `default-src 'none'` with no `connect-src`, so the browser refuses its call to `identify`, and `identify` answers `403 origin_not_allowed` to the embed document's own origin. The two end-to-end tests that need that call are marked blocked and switch on when S44 allows it (see `specs/web/W07-app-shell/questions.md`).
+- Not shown by any screenshot or journey, because the app cannot be made to show them without a test hook: the error page, the root-error page, the access-denied and 503 states of `ErrorState` (no page uses them yet), toasts, and the header while its slots stream. They are covered by component tests (AS-10, AS-11, AS-13, AS-15).
+- The API reference reads the description in the browser (one same-origin request, cached by the query client for 5 minutes and by the HTTP cache), not on the server with `"use cache"`: the placeholder and **Try again** states of AS-28 need the request to be the browser's.
 - R-15 names the toast area with a proof (AS-15) but the code file `sonner.tsx` has no listed export.
-- The code for `/privacy`, `/developers/docs` and the footer's Source code link (`SOURCE_CODE_URL`) is not in the facts, so these entry points are unchecked.
+- Only the account security page is walked with Back after sign-out (R-19's proof); the other signed-in areas rely on the same header rule.

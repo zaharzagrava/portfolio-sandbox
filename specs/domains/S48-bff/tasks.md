@@ -112,8 +112,8 @@ description: "Task list for S48 BFF composition"
 **Goal**: boundary and startup guarantees.
 **Independent test**: `test-spec.sh libs/composition/bff/bff-boundary.e2e-spec.ts`.
 
-- [ ] T044 [US5] Failing B tests (new `B/bff-boundary.e2e-spec.ts`, describe `BFF composition boundary`): AS-39 boot with a bad hash / invalid document → startup rejects naming the entry; AS-63 startup fails without upstream URL or with bad session keys; AS-64 booted app has no DB/queue/event provider and no request-scoped provider; GraphQL schema and REST routes expose no mutation, cart, order, payment (S10, S13) or search (S32) surface.
-- [ ] T045 [US5] Make T044 green (adjust `B/bff.module.ts`, `B/index.ts` exporting `BffModule` only, `apps/bff` bootstrap); run `pnpm check:boundaries`, `pnpm check:no-request-scope`, `pnpm check:table-ownership --strict` and record the lines in `SD/gaps.md`. Closes the debt-table check.
+- [X] T044 [US5] Failing B tests (new `B/bff-boundary.e2e-spec.ts`, describe `BFF composition boundary`): AS-39 boot with a bad hash / invalid document → startup rejects naming the entry; AS-63 startup fails without upstream URL or with bad session keys; AS-64 booted app has no DB/queue/event provider and no request-scoped provider; GraphQL schema and REST routes expose no mutation, cart, order, payment (S10, S13) or search (S32) surface.
+- [X] T045 [US5] Make T044 green (adjust `B/bff.module.ts`, `B/index.ts` exporting `BffModule` only, `apps/bff` bootstrap); run `pnpm check:boundaries`, `pnpm check:no-request-scope`, `pnpm check:table-ownership --strict` and record the lines in `SD/gaps.md`. Closes the debt-table check.
 
 ---
 
@@ -130,10 +130,10 @@ description: "Task list for S48 BFF composition"
 
 ## Phase 9: Polish, gates and records
 
-- [ ] T052 Add the "Sibling-spec follow-ups" entries still missing in `SD/gaps.md` as `- **<id>**: <what they must adopt>` bullets (S01, S02, S24/S25/S19/S11/S21/S30/S38, S50 helper export, S54, W01, W02, W03 already listed; add any new finding from T014, T049, T051).
-- [ ] T053 Confirm `SD/quickstart.md` "Ops artifacts" lists SC-008 (present) and `specs/UNVERIFIED.md` row for S48 SC-008 reads status `not run` (present at line 82). Do not describe SC-008 as verified.
-- [ ] T054 Gates from `packages/backend`: `pnpm exec tsc --noEmit` (also in `packages/contracts` and `packages/web`), ESLint, `pnpm check:boundaries`, `pnpm check:no-request-scope`, `pnpm check:table-ownership --strict`; confirm no `sequelize.transaction` in `libs/composition` and no `// S54 T037 audit` comment left in touched files.
-- [ ] T055 Run the whole capability once: `/opt/sdd/repo/scripts/sdd/test-spec.sh libs/composition/bff` (unit + P + G + S + B). Fix failures (max 5 attempts per test, then write the blocker into `SD/questions.md`). Report which follow-ups from S01, S02, S05, S10, S13, S32, S34, S35, S50 were implemented and where.
+- [X] T052 Add the "Sibling-spec follow-ups" entries still missing in `SD/gaps.md` as `- **<id>**: <what they must adopt>` bullets (S01, S02, S24/S25/S19/S11/S21/S30/S38, S50 helper export, S54, W01, W02, W03 already listed; add any new finding from T014, T049, T051).
+- [X] T053 Confirm `SD/quickstart.md` "Ops artifacts" lists SC-008 (present) and `specs/UNVERIFIED.md` row for S48 SC-008 reads status `not run` (present at line 82). Do not describe SC-008 as verified.
+- [X] T054 Gates from `packages/backend`: `pnpm exec tsc --noEmit` (also in `packages/contracts` and `packages/web`), ESLint, `pnpm check:boundaries`, `pnpm check:no-request-scope`, `pnpm check:table-ownership --strict`; confirm no `sequelize.transaction` in `libs/composition` and no `// S54 T037 audit` comment left in touched files.
+- [X] T055 Run the whole capability once: `/opt/sdd/repo/scripts/sdd/test-spec.sh libs/composition/bff` (unit + P + G + S + B). Fix failures (max 5 attempts per test, then write the blocker into `SD/questions.md`). Report which follow-ups from S01, S02, S05, S10, S13, S32, S34, S35, S50 were implemented and where.
 
 ---
 
@@ -152,3 +152,12 @@ description: "Task list for S48 BFF composition"
 ## Implementation strategy
 
 MVP = Phase 1 + 2 + US1 (a correct, validated product-page aggregate on the new upstream layer). Then US2 (resilience), US4 (session, security-critical), US3 (GraphQL), US5 and web/gates.
+
+---
+
+## Phase 10: Convergence
+
+- [X] T056 Fix the two ESLint errors in `libs/composition/bff`: prettier formatting at `bff-boundary.e2e-spec.ts:110` and `no-control-regex` at `forward/route-table.ts:40` (explicit char-code check or a justified one-line disable); re-run `pnpm exec eslint libs/composition/bff --quiet` until it exits 0, then `test-spec.sh libs/composition/bff` per T054 (partial)
+- [X] T057 Decide and test the W02 follow-up for `navigator.sendBeacon` to `POST /api/events` through the forwarder: exempt anonymous-id ingestion from the CSRF check, or record the loss as accepted in `gaps.md` and under Known gaps in `docs/spec/capabilities/S48-bff.md`; add an e2e case in `forward/bff-forward.e2e-spec.ts` proving the choice per the W02 follow-up (missing)
+- [X] T058 Replace the stale `gaps.md` note "S38, S24, S25, S30, S19, S11, S21 not built yet" (they now have `.implemented`); confirm `testing/fixtures.ts` and the stub use each owner's real schema and drop the "not built" degradation wording per the S30/S11/S21/S24/S19/S38 follow-ups (partial)
+- [X] T059 Add the guest cart token alphabet (`guest:<uuid>.<signature>`) and the `__Host-bff-mfa` `Path=/` correction to `docs/spec/capabilities/S48-bff.md` (rules first, keep `[proof:]`/`[code:]` true, run `python3 scripts/livespec/check.py`); list the `spec.md` FR-040/AS-48 text under '## Spec changes' in `gaps.md` for a human per the W03 and W01 follow-ups (partial)

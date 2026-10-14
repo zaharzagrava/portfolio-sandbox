@@ -61,6 +61,37 @@ export class SequelizeShopOrderRepository implements ShopOrderRepository {
     }));
   }
 
+  async oneForShop(
+    shopId: string,
+    shopOrderId: string,
+  ): Promise<ShopOrderListRecord | null> {
+    const [r] = await this.sequelize.query<{
+      id: string;
+      orderId: string;
+      status: ShopOrderStatus;
+      subtotal: string | number;
+      currency: string;
+      buyerId: string;
+      createdAt: Date;
+    }>(
+      `SELECT so."id", so."bisOrderId" AS "orderId", so."status", so."subtotal", o."currency", o."userId" AS "buyerId", so."createdAt"
+       FROM "ShopOrder" so JOIN "BisOrder" o ON o."id" = so."bisOrderId"
+       WHERE so."shopId" = :shopId AND so."id" = CAST(:shopOrderId AS uuid)`,
+      { type: QueryTypes.SELECT, replacements: { shopId, shopOrderId } },
+    );
+    return r
+      ? {
+          id: r.id,
+          orderId: r.orderId,
+          status: r.status,
+          subtotalMinor: safeNumber(r.subtotal),
+          currency: r.currency,
+          buyerId: r.buyerId,
+          createdAt: r.createdAt,
+        }
+      : null;
+  }
+
   async lines(
     orderIds: string[],
     shopId: string | null,

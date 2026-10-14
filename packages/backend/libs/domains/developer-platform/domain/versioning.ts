@@ -1,87 +1,134 @@
-/**
- * Date-based API versions (Stripe-style, 04/02 §2). The handlers always
- * produce the LATEST shape; for an older version, the response walks back
- * through each change newer than the requested version and undoes it. Adding
- * a breaking change = one entry here, nothing else forks.
- */
-export const API_VERSIONS = ['2026-01-15', '2026-10-01'] as const;
-export type ApiVersion = (typeof API_VERSIONS)[number];
-export const LATEST_VERSION: ApiVersion = '2026-10-01';
+import { ApiError } from './errors';
+import {
+  apiVersions,
+  API_VERSIONS,
+  DEPRECATED_ROUTES,
+  LATEST_VERSION,
+  latestVersion,
+  UpgradeContext,
+  VERSION_REGISTRY,
+  VersionEntry,
+  VersionResource,
+} from './version-registry';
 
-export type ApiResourceType = 'product' | 'order' | 'list';
+export { API_VERSIONS, DEPRECATED_ROUTES, LATEST_VERSION, VERSION_REGISTRY };
+export type ApiVersion = string;
+export type ApiResourceType = VersionResource | 'list';
 
-interface VersionChange {
-  version: ApiVersion;
-  description: string;
-  /** Converts a resource FROM this version's shape TO the previous version's shape. */
-  downgrade: Partial<
-    Record<
-      Exclude<ApiResourceType, 'list'>,
-      (resource: Record<string, unknown>) => Record<string, unknown>
-    >
-  >;
-}
-
-export const VERSION_CHANGES: VersionChange[] = [
-  {
-    version: '2026-10-01',
-    description:
-      'Product `price` became a money object {amount, currency}; `quantity` renamed to `stock`. Order `total` became a money object.',
-    downgrade: {
-      product: ({ price, stock, ...rest }) => ({
-        ...rest,
-        price: (price as { amount: number } | undefined)?.amount,
-        quantity: stock,
-      }),
-      order: ({ total, ...rest }) => ({
-        ...rest,
-        total: (total as { amount: number } | undefined)?.amount,
-        currency: (total as { currency: string } | undefined)?.currency,
-      }),
-    },
-  },
-];
+type Json = Record<string, unknown>;
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
 export function isApiVersion(value: string | undefined): value is ApiVersion {
-  return !!value && (API_VERSIONS as readonly string[]).includes(value);
+  return !!value && apiVersions().includes(value);
 }
 
-/** Applies every downgrade for changes newer than `target`, newest first. Lists transform each item in `data`. */
-export function transformForVersion(
+/**
+ * Header → shop pin → latest (FR-025). A header that is not a registered date answers `400 invalid_version` listing
+ * the supported versions; a retired one is refused later by the deprecation gate (`410 version_retired`).
+ */
+export function resolveVersion(input: {
+  header: string | undefined;
+  pin: string | undefined;
+}): ApiVersion {
+  if (input.header !== undefined) {
+    if (!ISO_DATE.test(input.header) || !isApiVersion(input.header))
+      throw new ApiError(
+        'invalid_version',
+        'Unsupported Marketplace-Version.',
+        {
+          errors: [{ field: 'Marketplace-Version', code: 'unsupported' }],
+          extensions: { supported: [...apiVersions()] },
+        },
+      );
+    return input.header;
+  }
+  return input.pin && isApiVersion(input.pin) ? input.pin : latestVersion();
+}
+
+/** Walks the changes newer than `target`, newest first, undoing each (FR-026). */
+export function downgradeResource(
+  type: VersionResource,
+  resource: Json,
+  target: ApiVersion,
+): Json {
+  let out = resource;
+  for (const entry of [...VERSION_REGISTRY].reverse()) {
+    if (entry.version <= target) break;
+    out = entry.change ? entry.change.downgrade[type](out) : out;
+  }
+  return out;
+}
+
+/** Response of a resource or of a list (each item of `data` is transformed). */
+export function downgradeResponse(
   type: ApiResourceType,
   body: unknown,
   target: ApiVersion,
-  itemType?: Exclude<ApiResourceType, 'list'>,
+  itemType?: VersionResource,
 ): unknown {
-  if (target === LATEST_VERSION || body === null || typeof body !== 'object')
+  if (target === latestVersion() || body === null || typeof body !== 'object')
     return body;
   if (type === 'list') {
-    const list = body as { data: Record<string, unknown>[] };
+    const list = body as { data: Json[] };
     return {
       ...list,
-      data: list.data.map((item) =>
-        transformForVersion(itemType!, item, target),
-      ),
+      data: list.data.map((item) => downgradeResource(itemType!, item, target)),
     };
   }
-  let resource = body as Record<string, unknown>;
-  for (const change of [...VERSION_CHANGES].sort((a, b) =>
-    b.version.localeCompare(a.version),
-  )) {
-    if (change.version <= target) break;
-    resource = change.downgrade[type]?.(resource) ?? resource;
-  }
-  return resource;
+  return downgradeResource(type, body as Json, target);
 }
 
-/** Endpoints on their way out: announced via headers (RFC 8594 Sunset, RFC 9745 Deprecation) on every call. */
-export const DEPRECATED_ROUTES: Record<
-  string,
-  { deprecatedAt: string; sunset: string; replacement: string }
-> = {
-  'GET /v1/products/:id/stock': {
-    deprecatedAt: '2026-10-01',
-    sunset: '2027-04-01',
-    replacement: '/v1/stock/{productId}',
-  },
-};
+/** Webhook payload code (S43) still calls this name. */
+export const transformForVersion = (
+  type: ApiResourceType,
+  body: unknown,
+  target: ApiVersion,
+  itemType?: VersionResource,
+): unknown => downgradeResponse(type, body, target, itemType);
+
+/** Product create/update body of an older version → the latest shape the handlers accept (FR-026). */
+export function upgradeProductWrite(
+  body: Json,
+  from: ApiVersion,
+  ctx: UpgradeContext,
+): Json {
+  let out = body;
+  for (const entry of VERSION_REGISTRY) {
+    if (entry.version <= from) continue;
+    if (entry.change) out = entry.change.upgradeProductWrite(out, ctx);
+  }
+  return out;
+}
+
+/** Every field name of a resource at `version` (what `fields=` may name), found by downgrading an all-fields sample. */
+export function fieldNamesAt(
+  type: VersionResource,
+  version: ApiVersion,
+  latestSample: Json,
+): string[] {
+  return Object.keys(downgradeResource(type, latestSample, version));
+}
+
+/** Startup validation (FR-024, FR-031 of the registry): order, latest not retired, downgrade completeness. */
+export function assertVersionRegistryValid(
+  registry: readonly VersionEntry[],
+): void {
+  registry.forEach((e, i) => {
+    if (!ISO_DATE.test(e.version))
+      throw new Error(`Version "${e.version}" is not an ISO date`);
+    if (i > 0 && registry[i - 1].version >= e.version)
+      throw new Error(
+        `Versions must be in strictly ascending order (${e.version} after ${registry[i - 1].version})`,
+      );
+    if (i > 0) {
+      for (const type of ['product', 'order'] as const)
+        if (typeof e.change?.downgrade[type] !== 'function')
+          throw new Error(`Version ${e.version} lacks a downgrade for ${type}`);
+      if (typeof e.change?.upgradeProductWrite !== 'function')
+        throw new Error(`Version ${e.version} lacks a request upgrader`);
+    }
+  });
+  const latest = registry[registry.length - 1];
+  if (latest.lifecycle.status === 'retired')
+    throw new Error('The latest version can never be retired');
+}

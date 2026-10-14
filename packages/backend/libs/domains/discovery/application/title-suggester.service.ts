@@ -28,7 +28,12 @@ export class ProductTitleSuggester {
     size: number,
     signal?: AbortSignal,
   ): Promise<string[]> {
-    return this.run((text) => this.index.suggestTitles(text, size, signal), prefix, size, signal);
+    return this.run(
+      (text) => this.index.suggestTitles(text, size, signal),
+      prefix,
+      size,
+      signal,
+    );
   }
 
   suggestTitlesFuzzy(
@@ -54,7 +59,8 @@ export class ProductTitleSuggester {
       throw new SearchValidationError(['size']);
     const text = normaliseQuery(prefix);
     if (text === '') return [];
-    if (signal?.aborted) throw new SuggestionTimeoutError(this.settings.searchBudgetMs);
+    if (signal?.aborted)
+      throw new SuggestionTimeoutError(this.settings.searchBudgetMs);
     try {
       return await call(text);
     } catch (error) {

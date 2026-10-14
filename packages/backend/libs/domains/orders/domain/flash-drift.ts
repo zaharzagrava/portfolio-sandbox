@@ -5,11 +5,7 @@
  */
 
 export type DriftKind =
-  | 'none'
-  | 'redis_low'
-  | 'redis_high'
-  | 'phantom_stock'
-  | 'oversold';
+  'none' | 'redis_low' | 'redis_high' | 'phantom_stock' | 'oversold';
 
 export interface DriftInput {
   units: number;

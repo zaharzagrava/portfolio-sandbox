@@ -1,132 +1,46 @@
 import {
-  BadRequestException,
   Body,
   Controller,
   Get,
-  HttpCode,
+  Header,
   Param,
-  ParseUUIDPipe,
   Patch,
   Post,
   Query,
   Req,
+  Res,
   UseInterceptors,
 } from '@nestjs/common';
-import {
-  ApiBearerAuth,
-  ApiProperty,
-  ApiPropertyOptional,
-  ApiTags,
-} from '@nestjs/swagger';
-import { Type } from 'class-transformer';
-import {
-  ArrayMaxSize,
-  ArrayMinSize,
-  IsArray,
-  IsIn,
-  IsInt,
-  IsObject,
-  IsOptional,
-  IsString,
-  IsUUID,
-  Length,
-  Matches,
-  Min,
-  ValidateNested,
-} from 'class-validator';
-import { RateLimit } from '@app/infrastructure/rate-limit';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import type { Request, Response } from 'express';
 import { Idempotent } from '@app/infrastructure/idempotency';
+import { RateLimit } from '@app/infrastructure/rate-limit';
+import type { ShopOrderStatus } from '@app/domains/orders';
 import { ApiKeyAuth } from './api-key.guard';
-import type { ApiKeyRequest } from './api-key.guard';
-import { ApiResource, PublicApiInterceptor } from './public-api.interceptor';
+import { contextOf, IDEMPOTENT_WIRE } from './api-support';
 import {
-  pickFields,
-  PublicCatalogService,
-} from '../application/public-catalog.service';
+  CreateProductDto,
+  ListOrdersQuery,
+  ListProductsQuery,
+  UpdateProductDto,
+} from './dto';
+import { ApiResource, PublicApiInterceptor } from './public-api.interceptor';
+import type { ResourceRequest } from './public-api.interceptor';
+import { PublicCatalogService } from '../application/public-catalog.service';
 import { PublicOrdersService } from '../application/public-orders.service';
+import { ApiError } from '../domain/errors';
+import { parseIfMatch } from '../domain/request-rules';
 
-export class CreateProductBody {
-  @ApiProperty() @IsString() @Length(1, 200) title: string;
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsString()
-  @Length(0, 10_000)
-  description?: string;
-  @ApiProperty({ description: 'Minor units (cents)' })
-  @IsInt()
-  @Min(0)
-  price: number;
-  @ApiPropertyOptional() @IsOptional() @IsInt() @Min(0) stock?: number;
-  @ApiProperty() @IsString() @Length(1, 60) category: string;
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsString()
-  @Length(0, 60)
-  brand?: string;
-}
-
-export class UpdateProductBody {
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsString()
-  @Length(1, 200)
-  title?: string;
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsString()
-  @Length(0, 10_000)
-  description?: string;
-  @ApiPropertyOptional() @IsOptional() @IsInt() @Min(0) price?: number;
-  @ApiPropertyOptional() @IsOptional() @IsInt() @Min(0) stock?: number;
-}
-
-class StockItem {
-  @ApiProperty() @IsUUID() productId: string;
-  @ApiProperty() @IsInt() @Min(0) stock: number;
-}
-
-export class BulkStockBody {
-  @ApiProperty({ type: [StockItem] })
-  @IsArray()
-  @ArrayMinSize(1)
-  @ArrayMaxSize(10_000)
-  @ValidateNested({ each: true })
-  @Type(() => StockItem)
-  items: StockItem[];
-}
-
-class BatchOperation {
-  @ApiProperty({ enum: ['GET', 'POST', 'PATCH'] })
-  @IsIn(['GET', 'POST', 'PATCH'])
-  method: 'GET' | 'POST' | 'PATCH';
-  @ApiProperty({ example: '/v1/products/0190…' })
-  @Matches(/^\/v1\/[\w/-]+$/)
-  path: string;
-  @ApiPropertyOptional() @IsOptional() @IsObject() body?: Record<
-    string,
-    unknown
-  >;
-}
-
-export class BatchBody {
-  @ApiProperty({ type: [BatchOperation] })
-  @IsArray()
-  @ArrayMinSize(1)
-  @ArrayMaxSize(50)
-  @ValidateNested({ each: true })
-  @Type(() => BatchOperation)
-  operations: BatchOperation[];
-}
-
-const expandOf = (expand?: string) =>
-  expand ? expand.split(',').map((e) => e.trim()) : [];
+const etag = (res: Response, version: number): void => {
+  res.setHeader('ETag', `"${version}"`);
+};
 
 /**
- * Public REST API v1 (apps/public-api). Auth = API key only; tenant = the
- * key's shop; POSTs are idempotent with `Idempotency-Key`; responses are
- * shaped for the caller's API version by PublicApiInterceptor.
+ * The public API (FR-035…FR-042, apps/public-api): thin adapters from HTTP to the application services. The shop comes
+ * only from the key; the version, the headers and the problem documents are the interceptor's, the guards' and the
+ * filter's. Bulk stock and the batch have their own controllers.
  */
-@ApiTags('public-api v1')
+@ApiTags('public-api')
 @ApiBearerAuth()
 @UseInterceptors(PublicApiInterceptor)
 @Controller('v1')
@@ -140,19 +54,8 @@ export class V1Controller {
   @RateLimit('public-api.default')
   @ApiResource('list', 'product')
   @Get('products')
-  async listProducts(
-    @Req() req: ApiKeyRequest,
-    @Query('cursor') cursor?: string,
-    @Query('limit') limit?: string,
-    @Query('expand') expand?: string,
-    @Query('fields') fields?: string,
-  ) {
-    const list = await this.catalog.list(req.shopId!, {
-      cursor,
-      limit: limit ? Number(limit) : undefined,
-      expand: expandOf(expand),
-    });
-    return { ...list, data: list.data.map((p) => pickFields(p, fields)) };
+  listProducts(@Req() req: ResourceRequest, @Query() query: ListProductsQuery) {
+    return this.catalog.list(contextOf(req), query, req.apiExpand ?? []);
   }
 
   @ApiKeyAuth('products:read')
@@ -160,168 +63,108 @@ export class V1Controller {
   @ApiResource('product')
   @Get('products/:id')
   async getProduct(
-    @Req() req: ApiKeyRequest,
-    @Param('id', ParseUUIDPipe) id: string,
-    @Query('expand') expand?: string,
-    @Query('fields') fields?: string,
+    @Req() req: ResourceRequest,
+    @Res({ passthrough: true }) res: Response,
+    @Param('id') id: string,
   ) {
-    return pickFields(
-      await this.catalog.get(req.shopId!, id, expandOf(expand)),
-      fields,
+    const product = await this.catalog.get(
+      contextOf(req),
+      id,
+      req.apiExpand ?? [],
     );
+    etag(res, product.version);
+    return product;
   }
 
   @ApiKeyAuth('products:write')
   @RateLimit('public-api.default')
-  @ApiResource('product')
-  @Idempotent({ required: false })
+  @ApiResource('product', undefined, { upgrade: 'productWrite' })
+  @Idempotent({
+    required: true,
+    scope: (req) =>
+      `shop:${(req as ResourceRequest).apiKey?.shopId}:POST /v1/products`,
+    wire: IDEMPOTENT_WIRE,
+  })
   @Post('products')
-  createProduct(@Req() req: ApiKeyRequest, @Body() body: CreateProductBody) {
-    return this.catalog.create(req.shopId!, req.apiKey!.createdBy, body);
+  @Header('Cache-Control', 'no-store')
+  async createProduct(
+    @Req() req: ResourceRequest,
+    @Res({ passthrough: true }) res: Response,
+    @Body() body: CreateProductDto,
+  ) {
+    const product = await this.catalog.create(contextOf(req), body);
+    res.status(201);
+    res.setHeader('Location', `/v1/products/${product.id}`);
+    etag(res, product.version);
+    return product;
   }
 
   @ApiKeyAuth('products:write')
   @RateLimit('public-api.default')
-  @ApiResource('product')
-  @Idempotent({ required: false })
+  @ApiResource('product', undefined, { upgrade: 'productWrite' })
   @Patch('products/:id')
-  updateProduct(
-    @Req() req: ApiKeyRequest,
-    @Param('id', ParseUUIDPipe) id: string,
-    @Body() body: UpdateProductBody,
+  async updateProduct(
+    @Req() req: ResourceRequest,
+    @Res({ passthrough: true }) res: Response,
+    @Param('id') id: string,
+    @Body() body: UpdateProductDto,
   ) {
-    return this.catalog.update(req.shopId!, id, body);
-  }
-
-  /** Deprecated (see DEPRECATED_ROUTES): returns Deprecation/Sunset/Link headers. Use GET /v1/stock/:productId. */
-  @ApiKeyAuth('products:read')
-  @RateLimit('public-api.default')
-  @Get('products/:id/stock')
-  async legacyStock(
-    @Req() req: ApiKeyRequest,
-    @Param('id', ParseUUIDPipe) id: string,
-  ) {
-    return {
-      product_id: id,
-      stock: (await this.catalog.get(req.shopId!, id)).stock,
-    };
+    const expectedVersion = parseIfMatch(
+      req.headers['if-match'] as string | undefined,
+    );
+    if (Object.keys(body).length === 0)
+      throw new ApiError(
+        'validation_failed',
+        'At least one field to change is required.',
+        {
+          errors: [{ field: 'body', code: 'empty' }],
+        },
+      );
+    const product = await this.catalog.update(
+      contextOf(req),
+      id,
+      body,
+      expectedVersion,
+    );
+    etag(res, product.version);
+    return product;
   }
 
   @ApiKeyAuth('products:read')
   @RateLimit('public-api.default')
   @Get('stock/:productId')
-  async stock(
-    @Req() req: ApiKeyRequest,
-    @Param('productId', ParseUUIDPipe) productId: string,
+  stock(
+    @Req() req: Request & ResourceRequest,
+    @Param('productId') productId: string,
   ) {
-    const p = await this.catalog.get(req.shopId!, productId);
-    return {
-      object: 'stock',
-      product_id: p.id,
-      stock: p.stock,
-      updated_at: p.updated_at,
-    };
+    return this.catalog.stock(contextOf(req), productId);
   }
 
-  @ApiKeyAuth('stock:write')
+  /** Deprecated 2026-10-01, sunset 2027-04-01: the announcement and the 410 are the middleware's. */
+  @ApiKeyAuth('products:read')
   @RateLimit('public-api.default')
-  @Idempotent({ required: false })
-  @Post('stock/bulk')
-  @HttpCode(202)
-  bulkStock(@Req() req: ApiKeyRequest, @Body() body: BulkStockBody) {
-    return this.catalog.bulkStock(req.shopId!, body.items);
-  }
-
-  @ApiKeyAuth('stock:write')
-  @RateLimit('public-api.default')
-  @Get('stock/bulk/:jobId')
-  bulkStockStatus(@Req() req: ApiKeyRequest, @Param('jobId') jobId: string) {
-    return this.catalog.bulkStockStatus(req.shopId!, jobId);
+  @Get('products/:id/stock')
+  deprecatedStock(@Req() req: ResourceRequest, @Param('id') id: string) {
+    return this.catalog.stock(contextOf(req), id);
   }
 
   @ApiKeyAuth('orders:read')
   @RateLimit('public-api.default')
   @ApiResource('list', 'order')
   @Get('orders')
-  listOrders(
-    @Req() req: ApiKeyRequest,
-    @Query('cursor') cursor?: string,
-    @Query('limit') limit?: string,
-  ) {
-    return this.orders.list(req.shopId!, cursor, limit ? Number(limit) : 20);
+  listOrders(@Req() req: ResourceRequest, @Query() query: ListOrdersQuery) {
+    return this.orders.list(contextOf(req), {
+      limit: query.limit,
+      cursor: query.cursor,
+      status: query.status as ShopOrderStatus | undefined,
+    });
   }
 
   @ApiKeyAuth('orders:read')
   @RateLimit('public-api.default')
   @ApiResource('order')
   @Get('orders/:id')
-  getOrder(@Req() req: ApiKeyRequest, @Param('id', ParseUUIDPipe) id: string) {
-    return this.orders.get(req.shopId!, id);
-  }
-
-  /**
-   * Up to 50 operations in one round trip (04/01 §2.5). Executed in order,
-   * each with its own result - not one transaction (a failed op doesn't undo
-   * earlier ones; ERPs retry the failed ones with their own Idempotency-Keys).
-   * Each op still needs the key's scope for that operation.
-   */
-  @ApiKeyAuth()
-  @RateLimit('public-api.default')
-  @Idempotent({ required: false })
-  @Post('batch')
-  @HttpCode(200)
-  async batch(@Req() req: ApiKeyRequest, @Body() body: BatchBody) {
-    const results: { status: number; body: unknown }[] = [];
-    for (const op of body.operations) {
-      try {
-        results.push({
-          status: op.method === 'POST' ? 201 : 200,
-          body: await this.runOperation(req, op),
-        });
-      } catch (error) {
-        const e = error as {
-          getStatus?: () => number;
-          getResponse?: () => unknown;
-          message: string;
-        };
-        results.push({
-          status: e.getStatus?.() ?? 500,
-          body: e.getResponse?.() ?? { message: 'Internal error' },
-        });
-      }
-    }
-    return { object: 'batch', results };
-  }
-
-  private runOperation(req: ApiKeyRequest, op: BatchOperation) {
-    const scopes = req.apiKey!.scopes;
-    const need = (scope: (typeof scopes)[number]) => {
-      if (!scopes.includes(scope))
-        throw new BadRequestException({
-          type: 'insufficient_scope',
-          message: `Key lacks scope ${scope}`,
-        });
-    };
-    const product = /^\/v1\/products\/([0-9a-f-]{36})$/.exec(op.path);
-    if (op.method === 'GET' && product)
-      return (need('products:read'), this.catalog.get(req.shopId!, product[1]));
-    if (op.method === 'PATCH' && product)
-      return (
-        need('products:write'),
-        this.catalog.update(req.shopId!, product[1], op.body ?? {})
-      );
-    if (op.method === 'POST' && op.path === '/v1/products')
-      return (
-        need('products:write'),
-        this.catalog.create(
-          req.shopId!,
-          req.apiKey!.createdBy,
-          op.body as unknown as CreateProductBody,
-        )
-      );
-    throw new BadRequestException({
-      type: 'unsupported_operation',
-      message: `${op.method} ${op.path} is not batchable`,
-    });
+  getOrder(@Req() req: ResourceRequest, @Param('id') id: string) {
+    return this.orders.get(contextOf(req), id);
   }
 }

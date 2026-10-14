@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { ProjectionsModule } from '@app/infrastructure/projections/projections.module';
-import { FlashSaleLegacyJobsModule } from './flash-sale-legacy.module';
+import { FlashSaleWorkerModule } from './flash-sale-worker.module';
 import { OrderJobs } from './infra/order.jobs';
 import { PaymentsEventsConsumer } from './infra/payments-events.consumer';
 import { ORDER_MODELS } from './orders-models';
@@ -11,7 +11,7 @@ import { OrdersCoreModule } from './orders-core.module';
 @Module({
   imports: [
     OrdersCoreModule,
-    FlashSaleLegacyJobsModule,
+    FlashSaleWorkerModule,
     SequelizeModule.forFeature(ORDER_MODELS),
   ],
   providers: [OrderJobs],

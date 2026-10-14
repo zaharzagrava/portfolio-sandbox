@@ -202,16 +202,36 @@ export const pickupFixture = () =>
 
 export const flashSaleFixture = (productId: string) =>
   flashSalePublicSchema.parse({
+    saleId: '0192f3a0-0000-7000-8000-0000000000f1',
     productId,
     priceMinor: 3_900,
+    currency: 'EUR',
+    perUserLimit: 2,
+    startsAt: '2026-01-01T00:00:00.000Z',
     endsAt: '2026-01-02T00:00:00.000Z',
+    state: 'LIVE',
+    remainingApprox: 120,
+    serverTime: '2026-01-01T12:00:00.000Z',
   });
 
 export const auctionFixture = (productId: string) =>
   auctionPublicSchema.parse({
+    auctionId: '0192f3a0-0000-7000-8000-0000000000a1',
     productId,
-    currentBidMinor: 1_000,
+    shopId: '0192f3a0-0000-7000-8000-0000000000a2',
+    title: 'Signed #001/100',
+    currency: 'EUR',
+    status: 'OPEN',
+    startsAt: '2026-01-01T00:00:00.000Z',
     endsAt: '2026-01-02T00:00:00.000Z',
+    priceMinor: 1_000,
+    minimumNextMaxMinor: 1_500,
+    bidCount: 0,
+    hasReserve: false,
+    reserveMet: false,
+    leaderAlias: null,
+    version: 0,
+    serverTime: '2026-01-01T12:00:00.000Z',
   });
 
 let sessionCounter = 0;

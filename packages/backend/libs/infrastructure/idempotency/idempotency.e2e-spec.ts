@@ -164,6 +164,36 @@ class IdemController {
     });
   }
 
+  /** S42 profile: key scoped by an explicit scope string, own wire names and key format. */
+  @Post('scoped')
+  @Idempotent({
+    scope: (req) => `shop:${String(req.headers['x-shop'])}:POST /idem/scoped`,
+    wire: {
+      keyPattern: /^[\x21-\x7e]{1,255}$/,
+      invalidKey: { status: 400, code: 'validation_failed' },
+      replayHeader: 'Idempotent-Replayed',
+      codes: {
+        reuse: 'idempotency_key_reused',
+        inFlight: 'request_in_progress',
+      },
+      storeClientErrors: true,
+    },
+  })
+  async scoped(@Body() body: unknown) {
+    const n = bump('scoped');
+    if ((body as { refuse?: number })?.refuse)
+      throw new AppError({
+        code: 'refused_on_purpose',
+        status: (body as { refuse: number }).refuse,
+        title: 'Refused',
+        detail: 'Refused on purpose',
+        area: ErrorArea.DOMAIN,
+      });
+    if (n === 1 && (body as { slow?: boolean })?.slow)
+      await new Promise((r) => setTimeout(r, 500));
+    return { n };
+  }
+
   @Post('big') @Idempotent() big() {
     bump('big');
     return { data: 'x'.repeat(300 * 1024) };
@@ -509,6 +539,67 @@ describe('idempotency (IDEM)', () => {
       { type: 'SELECT' },
     )) as { n: number }[];
     expect(left[0].n).toBe(6);
+  });
+
+  describe('S42 T026: scope and wire options of @Idempotent', () => {
+    const scoped = (shop: string, k: string, body: object = {}) =>
+      post(app, 'scoped', k).set('x-shop', shop).send(body);
+
+    it('S42 AS-53: the same key text in two scopes runs twice, in one scope it replays with Idempotent-Replayed', async () => {
+      const k = key('scope');
+      const a1 = await scoped('A', k).expect(201);
+      const b1 = await scoped('B', k).expect(201);
+      expect(a1.body.n).toBe(1);
+      expect(b1.body.n).toBe(2);
+      const a2 = await scoped('A', k).expect(201);
+      expect(a2.body).toEqual(a1.body);
+      expect(a2.headers['idempotent-replayed']).toBe('true');
+      expect(a2.headers['idempotency-replayed']).toBeUndefined();
+      expect(calls.scoped).toBe(2);
+    });
+
+    it('S42 AS-53: a different body answers 422 idempotency_key_reused, an in-flight duplicate 409 request_in_progress with Retry-After', async () => {
+      const k = key('wire');
+      const first = scoped('A', k, { slow: true }).then((r) => r);
+      await new Promise((r) => setTimeout(r, 150));
+      const dup = await scoped('A', k, { slow: true }).expect(409);
+      expect(dup.body.code).toBe('request_in_progress');
+      expect(dup.headers['retry-after']).toBe('1');
+      expect((await first).status).toBe(201);
+      const reused = await scoped('A', k, { other: 1 }).expect(422);
+      expect(reused.body.code).toBe('idempotency_key_reused');
+    });
+
+    it('S42 AS-53: keys of 1 to 255 printable characters are accepted; longer or with control characters answer 400', async () => {
+      await scoped('A', key('ok')).expect(201);
+      await scoped('A', key('long').padEnd(255, 'z')).expect(201);
+      const tooLong = await scoped('A', 'y'.repeat(256)).expect(400);
+      expect(tooLong.body.code).toBe('validation_failed');
+      await scoped('A', 'bad\tkey').expect(400);
+    });
+
+    it('S42 AS-53: a 4xx answer is stored and replayed, a 5xx is released so a retry runs again', async () => {
+      const k = key('client-error');
+      const first = await scoped('A', k, { refuse: 404 }).expect(404);
+      const replay = await scoped('A', k, { refuse: 404 }).expect(404);
+      expect(replay.body.code).toBe(first.body.code);
+      expect(replay.headers['idempotent-replayed']).toBe('true');
+      expect(calls.scoped).toBe(1);
+
+      const k5 = key('server-error');
+      await scoped('A', k5, { refuse: 500 }).expect(500);
+      await scoped('A', k5, { refuse: 500 }).expect(500);
+      expect(calls.scoped).toBe(3);
+    });
+
+    it('S42 AS-53: a missing key still answers 422 idempotency_key_required and nothing runs', async () => {
+      const r = await post(app, 'scoped')
+        .set('x-shop', 'A')
+        .send({})
+        .expect(422);
+      expect(r.body.code).toBe('idempotency_key_required');
+      expect(calls.scoped).toBeUndefined();
+    });
   });
 
   it('S54 AS-130: two instances on one database run the handler once for 20 concurrent requests with one key', async () => {

@@ -1,79 +1,25 @@
 import {
-  BelongsTo,
   Column,
   CreatedAt,
   DataType,
-  ForeignKey,
   Model,
   PrimaryKey,
-  Scopes,
   Table,
   UpdatedAt,
 } from 'sequelize-typescript';
-import { Includeable, Sequelize, WhereOptions } from 'sequelize';
-import ChatChannel from './chat-channel.model';
-import { UserModel as User } from '@app/domains/identity';
+import { Sequelize } from 'sequelize';
+import {
+  ChatChannelMemberRole,
+  ChatChannelMemberStatus,
+} from '../../domain/chat.constants';
 
-export enum ChatChannelMemberRole {
-  OWNER = 'OWNER',
-  MODERATOR = 'MODERATOR',
-  MEMBER = 'MEMBER',
-}
+const ROLES = Object.values(ChatChannelMemberRole);
+const STATUSES = Object.values(ChatChannelMemberStatus);
 
-export const ChatChannelMemberRoles = Object.values(ChatChannelMemberRole);
-
-export enum ChatChannelMemberStatus {
-  ACTIVE = 'ACTIVE',
-  BANNED = 'BANNED',
-}
-
-export const ChatChannelMemberStatuses = Object.values(ChatChannelMemberStatus);
-
-export enum ChatChannelMemberScope {
-  WithAll = 'WithAll',
-}
-
-export interface ChatChannelMemberWithAllFilters {
-  id?: string | string[];
-  channelId?: string | string[];
-  userId?: string | string[];
-  role?: ChatChannelMemberRole | ChatChannelMemberRole[];
-  status?: ChatChannelMemberStatus | ChatChannelMemberStatus[];
-  attributes?: string[];
-  limit?: number;
-}
-
-@Scopes(() => ({
-  [ChatChannelMemberScope.WithAll]: ({
-    id,
-    channelId,
-    userId,
-    role,
-    status,
-    attributes,
-    limit,
-  }: ChatChannelMemberWithAllFilters = {}) => {
-    const findOptions: {
-      where: WhereOptions;
-      include?: Includeable[];
-      attributes?: string[];
-      limit?: number;
-    } = {
-      where: {
-        ...(id && { id }),
-        ...(channelId && { channelId }),
-        ...(userId && { userId }),
-        ...(role && { role }),
-        ...(status && { status }),
-      },
-      include: [],
-      attributes,
-      limit,
-    };
-
-    return findOptions;
-  },
-}))
+/**
+ * Registers the table with the connection. `userId` is a plain id (no association to the identity owner, IX.4); the
+ * Rust gateway reads and creates rows of this table with its own statements, so the shape is a contract (AS-58).
+ */
 @Table({
   modelName: 'ChatChannelMember',
   tableName: 'ChatChannelMember',
@@ -87,29 +33,21 @@ export default class ChatChannelMember extends Model<
   @Column({ type: DataType.UUID, defaultValue: Sequelize.literal('uuidv7()') })
   declare id: string;
 
-  @ForeignKey(() => ChatChannel)
   @Column({ type: DataType.UUID, allowNull: false })
   declare channelId: string;
 
-  @BelongsTo(() => ChatChannel, { foreignKey: 'channelId' })
-  declare channel: ChatChannel;
-
-  @ForeignKey(() => User)
   @Column({ type: DataType.UUID, allowNull: false })
   declare userId: string;
 
-  @BelongsTo(() => User, { foreignKey: 'userId' })
-  declare user: User;
-
   @Column({
-    type: DataType.ENUM(...ChatChannelMemberRoles),
+    type: DataType.ENUM(...ROLES),
     allowNull: false,
     defaultValue: ChatChannelMemberRole.MEMBER,
   })
   declare role: ChatChannelMemberRole;
 
   @Column({
-    type: DataType.ENUM(...ChatChannelMemberStatuses),
+    type: DataType.ENUM(...STATUSES),
     allowNull: false,
     defaultValue: ChatChannelMemberStatus.ACTIVE,
   })
@@ -118,6 +56,9 @@ export default class ChatChannelMember extends Model<
   /** Temporary mute - the Rust gateway rejects sends while this is in the future. */
   @Column({ type: DataType.DATE, allowNull: true })
   declare mutedUntil: Date | null;
+
+  @Column({ type: DataType.BIGINT, allowNull: false, defaultValue: 0 })
+  declare lastReadSeq: string;
 
   @Column({ type: DataType.DATE, allowNull: true })
   declare lastReadAt: Date | null;

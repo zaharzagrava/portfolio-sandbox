@@ -40,6 +40,7 @@ export function securityHeaderRules(production: boolean): HeaderRule[] {
     // Every path except the no-referrer ones gets the general policy.
     { source: '/((?!reset-password|invites(?:/|$)).*)', headers: [{ key: 'Referrer-Policy', value: GENERAL_REFERRER_POLICY }] },
     ...noReferrerPaths.map((source) => ({ source, headers: [{ key: 'Referrer-Policy', value: 'no-referrer' }] })),
-    ...noStoreSources().map((source) => ({ source, headers: [{ key: 'Cache-Control', value: 'no-store' }] })),
+    // The same private areas are also kept out of search results (robots.ts lists them too).
+    ...noStoreSources().map((source) => ({ source, headers: [{ key: 'Cache-Control', value: 'no-store' }, { key: 'X-Robots-Tag', value: 'noindex' }] })),
   ];
 }

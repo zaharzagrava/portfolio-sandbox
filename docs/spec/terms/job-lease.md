@@ -45,7 +45,6 @@ Worker A claims `recommendations.build-bought-together` on attempt 2 (illustrati
 - [outbox-relay](outbox-relay.md)
 - [reconciliation-run-service](reconciliation-run-service.md)
 - [reconciliation-run-uniqueness](reconciliation-run-uniqueness.md)
-- [scheduler-leader](scheduler-leader.md)
 - [search-backfill-shop-state](search-backfill-shop-state.md)
 - [search-refresh-popularity](search-refresh-popularity.md)
 - [search-retire-previous-index](search-retire-previous-index.md)

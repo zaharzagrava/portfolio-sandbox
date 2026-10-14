@@ -6,6 +6,7 @@ import type { ShareLinksConfig } from './share-links-config';
 import type { FlagsConfig } from './flags-config';
 import type { KnowledgeConfig } from './knowledge-config';
 import type { AdsConfig } from './ads-config';
+import type { DeveloperPlatformConfig } from './developer-platform-config';
 
 /**
  * @description - config that should always be present in environment variables where application is run
@@ -318,6 +319,34 @@ export class SecretsManagerConfig {
   orders_clear_cart_max_attempts: number;
   orders_inbox_retention_days: number;
   orders_webhook_body_limit_bytes: number;
+  /** S11: flash-sale settings, defaults in `orders-config.ts`. */
+  orders_flash_load_lead_seconds: number;
+  orders_flash_min_lead_seconds: number;
+  orders_flash_max_window_seconds: number;
+  orders_flash_claim_window_seconds: number;
+  orders_flash_order_margin_seconds: number;
+  orders_flash_verify_interval_seconds: number;
+  orders_flash_sweep_interval_seconds: number;
+  orders_flash_call_timeout_ms: number;
+  orders_flash_public_cache_ms: number;
+  orders_flash_reconcile_wait_alert_seconds: number;
+  orders_flash_key_ttl_jitter: number;
+  /** S21: auction settings, defaults in `auctions-config.ts`. */
+  auctions_snipe_window_ms: number;
+  auctions_snipe_extension_ms: number;
+  auctions_snipe_cap_ms: number;
+  auctions_sweep_interval_s: number;
+  auctions_hold_deadline_s: number;
+  auctions_min_lead_s: number;
+  auctions_min_duration_s: number;
+  auctions_max_duration_s: number;
+  auctions_winner_window_h: number;
+  auctions_offer_window_h: number;
+  auctions_view_cache_ms: number;
+  auctions_order_max_attempts: number;
+  auctions_max_amount_minor: number;
+  auctions_partition_months_ahead: number;
+  auctions_alias_secret?: string;
   consumer_batch: number;
   consumer_max_attempts: number;
   consumer_backoff_min_ms: number;
@@ -347,8 +376,6 @@ export class SecretsManagerConfig {
   /** This collab instance's externally reachable ws(s):// base URL (SD-16 ring routing). */
   collab_public_url?: string;
   collab_instance_id?: string;
-  /** Server-side secret mixed into API key hashes (SD-07): a leaked DB dump alone can't be brute-forced offline. */
-  api_key_pepper?: string;
   /** Comma list of hosts webhooks may reach over http / private IPs - local & test only, ignored in production (SD-30). */
   webhooks_allow_private_hosts?: string;
   /** CDN purge-by-tag (SD-05); unset → purges are logged only. */
@@ -410,6 +437,7 @@ export interface SecretsManagerConfig
     ShareLinksConfig,
     FlagsConfig,
     KnowledgeConfig,
-    AdsConfig {}
+    AdsConfig,
+    DeveloperPlatformConfig {}
 
 export class Config extends IntersectionType(EnvConfig, SecretsManagerConfig) {}

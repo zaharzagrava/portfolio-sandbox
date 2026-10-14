@@ -131,7 +131,9 @@ export class SynonymsService {
   private async claim(
     expectedVersion: number,
     rules: string[],
-  ): Promise<{ unchanged: false } | { unchanged: true; current: SynonymSetSnapshot }> {
+  ): Promise<
+    { unchanged: false } | { unchanged: true; current: SynonymSetSnapshot }
+  > {
     const started = Date.now();
     for (;;) {
       const current = await this.sets.current();

@@ -3,13 +3,19 @@ import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ApiConfigService } from '@app/common/config';
 import { configureHttpApp } from '@app/infrastructure/platform';
+import { publicApiRequestContext } from '@app/domains/developer-platform';
 import { PublicApiAppModule } from './public-api-app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(PublicApiAppModule, {
     bufferLogs: true,
   });
-  configureHttpApp(app, { globalPrefix: false });
+  // server-to-server: no origin is ever granted, a browser preflight is answered like any unknown method (S42 AS-69)
+  configureHttpApp(app, {
+    globalPrefix: false,
+    cors: false,
+    beforeBodyParsing: [publicApiRequestContext(app)],
+  });
   // OpenAPI is the contract (and the source for SDK generation).
   const document = SwaggerModule.createDocument(
     app,

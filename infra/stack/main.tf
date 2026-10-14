@@ -29,7 +29,7 @@ locals {
     # S28 accepted provider callbacks (SNS / Twilio), applied by the callback worker.
     "notifications-callbacks" = { visibility_seconds = 60, max_receive = 5 }
     "delivery-offer-timeouts" = { visibility_seconds = 30, max_receive = 5 }
-    "chat-offline-notify"     = { visibility_seconds = 30, max_receive = 3 }
+    "chat-offline-notify"     = { visibility_seconds = 30, max_receive = 5 }
     "webhook-deliveries.fifo" = { visibility_seconds = 180, max_receive = 8, fifo = true } # ≥ 6 × Lambda timeout (30 s)
     "media-processing"        = { visibility_seconds = 360, max_receive = 3 }              # 6 × 60 s
     "catalog-imports"         = { visibility_seconds = 300, max_receive = 3 }
@@ -41,6 +41,7 @@ locals {
     "knowledge-ingest"        = { visibility_seconds = 300, max_receive = 5 }
     "onboarding-documents"    = { visibility_seconds = 720, max_receive = 5 } # 6 × 120 s
     "bulk-stock-updates"      = { visibility_seconds = 120, max_receive = 5 }
+    "public-api-bulk-chunk"   = { visibility_seconds = 120, max_receive = 5 } # S42: one message = one chunk of 100 stock deltas
   }
 
   domain_aggregates = ["api", "auctions", "billing", "chat", "courier", "feed", "flags", "ledger", "links", "live", "llm", "marketing", "media", "orders", "pickup", "products", "search", "shops", "stories", "usage"]

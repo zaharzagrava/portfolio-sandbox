@@ -45,6 +45,17 @@ import {
 import { priceCart, type PricedCart } from '../domain/money-allocation';
 import { userCartId } from '../domain/guest-cart-token';
 import { withTimeout } from '../domain/with-timeout';
+import {
+  FLASH_CRASH_POINT,
+  FLASH_RESERVATION,
+  SimulatedCrash,
+  type CrashPoint,
+  type FlashHold,
+  type FlashReservationPort,
+  type OpenSale,
+} from '../domain/flash-ports';
+import { FlashSaleLimitExceededError } from '../domain/flash-errors';
+import { OrderLifecycleService } from './order-lifecycle.service';
 import { OrderReservationService } from './order-reservation.service';
 
 import './order.job-types';
@@ -76,7 +87,10 @@ export class CheckoutService {
     @Inject(PRODUCT_CATALOG) private readonly catalog: ProductCatalogPort,
     @Inject(SHOP_DIRECTORY) private readonly shops: ShopDirectoryPort,
     @Inject(SHOP_DISCOUNTS) private readonly discounts: ShopDiscountsPort,
+    @Inject(FLASH_RESERVATION) private readonly flash: FlashReservationPort,
+    @Inject(FLASH_CRASH_POINT) private readonly crash: CrashPoint,
     private readonly reservation: OrderReservationService,
+    private readonly lifecycle: OrderLifecycleService,
     private readonly runner: TransactionRunner,
     private readonly jobs: JobsService,
     private readonly config: ApiConfigService,
@@ -89,8 +103,12 @@ export class CheckoutService {
     request: CheckoutRequest,
   ): Promise<CheckoutResponse> {
     const requestHash = this.hashOf(request);
-    const existing = await this.orders.findByKey(userId, idempotencyKey);
-    if (existing) return this.resolveExisting(existing, requestHash);
+    // While a drop is open the early lookup is skipped: a refused drop attempt must cost no relational statement
+    // (S11 AS-06). A replay then meets its order at the write below (`ON CONFLICT DO NOTHING` → the winner).
+    if (!(await this.dropOpen())) {
+      const existing = await this.orders.findByKey(userId, idempotencyKey);
+      if (existing) return this.resolveExisting(existing, requestHash);
+    }
 
     const token = await this.lock.acquire(userId);
     if (!token) {
@@ -101,6 +119,15 @@ export class CheckoutService {
       return await this.run(userId, idempotencyKey, request, requestHash);
     } finally {
       await this.lock.release(userId, token);
+    }
+  }
+
+  /** Any drop open right now? A failing directory counts as "no": the regular path is the safe default. */
+  private async dropOpen(): Promise<boolean> {
+    try {
+      return await this.flash.anyOpen(this.clock.now());
+    } catch {
+      return false;
     }
   }
 
@@ -129,6 +156,13 @@ export class CheckoutService {
     let consumed: Array<{ productId: string; quantity: number }>;
     let titles: Map<string, string>;
     let currency: string;
+    // Drop lines (S11): their units are claimed in the fast store before the order exists (BEFORE_ORDER).
+    let holds: FlashHold[] = [];
+    let claimedAtMs = 0;
+    const flashByProduct = new Map<
+      string,
+      { flashSaleId: string; claimId: string }
+    >();
     try {
       const lines = await within(() => this.cart.list(cartId, now));
       if (lines.length === 0) throw new CartEmptyError();
@@ -136,6 +170,54 @@ export class CheckoutService {
         productId: l.productId,
         quantity: l.quantity,
       }));
+
+      // Sales open now come from the cached directory (no Redis, no relational statement). Admission is the first
+      // thing a drop attempt pays for: before the catalog and shop reads, which only admitted buyers cost.
+      const sales = await within(() =>
+        this.flash.openSales(
+          lines.map((l) => l.productId),
+          now,
+        ),
+      );
+      if (sales.size > 0)
+        await within(() => this.flash.admit(userId, [...sales.values()]));
+
+      // All-or-nothing across the drop lines, right after admission: a sold-out drop is refused with a few fast-store
+      // round trips and no relational statement, and creates no order. The refusal leaves the idempotency key unused.
+      const dropLines = lines.filter((l) => sales.has(l.productId));
+      if (dropLines.length > 0) {
+        const reserved = await within(() =>
+          this.flash.reserve(
+            userId,
+            idempotencyKey,
+            dropLines.map((l) => ({
+              sale: sales.get(l.productId) as OpenSale,
+              productId: l.productId,
+              quantity: l.quantity,
+            })),
+          ),
+        );
+        if (reserved.kind === 'rejected')
+          throw reserved.code === 'out_of_stock'
+            ? new OutOfStockError([reserved.productId], reserved.flashSaleId)
+            : new FlashSaleLimitExceededError(
+                reserved.limit as number,
+                reserved.flashSaleId,
+              );
+        claimedAtMs = this.clock.nowMs();
+        holds = reserved.holds.map((h) => ({
+          saleId: h.flashSaleId,
+          claimId: h.sourceRef,
+          productId: h.productId,
+          quantity: h.quantity,
+          unitPriceMinor: h.unitPriceMinor,
+        }));
+        for (const h of reserved.holds)
+          flashByProduct.set(h.productId, {
+            flashSaleId: h.flashSaleId,
+            claimId: h.sourceRef,
+          });
+      }
 
       const products = await within(() =>
         this.catalog.getProducts(lines.map((l) => l.productId)),
@@ -171,18 +253,25 @@ export class CheckoutService {
       currency = [...currencies][0];
       titles = new Map([...products].map(([id, p]) => [id, p.title]));
 
+      const dropPrice = new Map(
+        holds.map((h) => [h.productId, h.unitPriceMinor]),
+      );
+
       const priceLines = lines.map((l) => {
         const p = products.get(l.productId) as CatalogProduct;
+        const drop = dropPrice.get(l.productId);
         return {
           productId: l.productId,
           shopId: p.shopId as string,
-          unitPriceMinor: p.priceMinor,
+          // The drop price is final: no catalogue price, no discount.
+          unitPriceMinor: drop ?? p.priceMinor,
           quantity: l.quantity,
           category: p.category,
+          noDiscount: drop !== undefined,
         };
       });
       const shopDiscounts = await this.shopDiscounts(
-        priceLines,
+        priceLines.filter((l) => !l.noDiscount),
         started,
         budgetMs,
       );
@@ -200,38 +289,67 @@ export class CheckoutService {
           })),
         );
     } catch (error) {
+      await this.giveBackHolds(holds, error);
       throw this.preOrderFailure(error);
     }
 
     // Tx 1: the order, its snapshots, its shop orders and its reservation requests, atomically.
     const orderId = uuidv7();
-    const created = await this.runner.run(() =>
-      this.orders.createPending({
-        id: orderId,
-        userId,
-        idempotencyKey,
-        requestHash,
-        refCode: request.refCode ?? null,
-        totalMinor: priced.totalMinor,
-        currency,
-        now,
-        items: priced.lines.map((l) => ({
-          productId: l.productId,
-          shopId: l.shopId,
-          title: titles.get(l.productId) ?? '',
-          quantity: l.quantity,
-          unitPriceMinor: l.unitPriceMinor,
-          discountMinor: l.discountMinor,
-          lineTotalMinor: l.lineTotalMinor,
-        })),
-        shopOrders: priced.shops,
-      }),
-    );
+    let created: OrderRecord | null;
+    try {
+      await this.crash.hit('checkout:before-order-write');
+      // Too little of the claim window left to write the order safely: give the units back (S11 FR-025).
+      if (
+        holds.length > 0 &&
+        this.clock.nowMs() - claimedAtMs >
+          (this.config.get('orders_flash_claim_window_seconds') -
+            this.config.get('orders_flash_order_margin_seconds')) *
+            1000
+      ) {
+        checkoutCounter.add(1, { outcome: 'unavailable' satisfies Outcome });
+        throw new CheckoutUnavailableError();
+      }
+      created = await this.runner.run(() =>
+        this.orders.createPending({
+          id: orderId,
+          userId,
+          idempotencyKey,
+          requestHash,
+          refCode: request.refCode ?? null,
+          totalMinor: priced.totalMinor,
+          currency,
+          now,
+          flashExpiresAt: new Date(
+            now.getTime() + this.config.get('orders_hold_seconds') * 1000,
+          ),
+          items: priced.lines.map((l) => ({
+            productId: l.productId,
+            shopId: l.shopId,
+            title: titles.get(l.productId) ?? '',
+            quantity: l.quantity,
+            unitPriceMinor: l.unitPriceMinor,
+            discountMinor: l.discountMinor,
+            lineTotalMinor: l.lineTotalMinor,
+            flash: flashByProduct.get(l.productId),
+          })),
+          shopOrders: priced.shops,
+        }),
+      );
+    } catch (error) {
+      await this.giveBackHolds(holds, error);
+      throw error;
+    }
     if (!created) {
-      // another request with this key wrote its order between our check and our insert
+      // another request with this key wrote its order between our check and our insert; the claims are its too
       const winner = await this.orders.findByKey(userId, idempotencyKey);
       if (winner) return this.resolveExisting(winner, requestHash);
       throw new CheckoutUnavailableError();
+    }
+
+    // The order exists and holds the drop rows: the claims are committed (the sweeper does it if this call is lost).
+    if (holds.length > 0) {
+      await this.crash.hit('checkout:after-order-write');
+      await this.commitHolds(orderId, holds);
     }
 
     // The stock step; an unknown outcome leaves the order PENDING for the recovery job.
@@ -301,6 +419,43 @@ export class CheckoutService {
     if (request.refCode !== undefined) fingerprint.refCode = request.refCode;
     const canonical = JSON.stringify(fingerprint);
     return createHash('sha256').update(canonical).digest('hex');
+  }
+
+  /** A checkout that fails before its order exists returns the drop units it claimed (a dead process would not). */
+  private async giveBackHolds(
+    holds: FlashHold[],
+    error: unknown,
+  ): Promise<void> {
+    if (holds.length === 0 || error instanceof SimulatedCrash) return;
+    await this.flash.release(holds);
+  }
+
+  /**
+   * `COMMITTED` after the order write. A claim that is no longer held (the sweeper gave it back first) means the units
+   * are gone: the order is cancelled and the buyer retries. A failed call is only logged: the claim stays in the
+   * sweeper's set, which finds the durable row and commits it.
+   */
+  private async commitHolds(
+    orderId: string,
+    holds: FlashHold[],
+  ): Promise<void> {
+    let held: boolean;
+    try {
+      held = await this.flash.commit(holds);
+    } catch (error) {
+      this.logger.warn(
+        `order ${orderId}: commit of drop claims failed (${(error as Error).name}); the sweeper commits them`,
+      );
+      return;
+    }
+    if (held) return;
+    await this.lifecycle.transition(
+      orderId,
+      { type: 'cancel', reason: 'out_of_stock' },
+      { actor: 'system:checkout' },
+    );
+    checkoutCounter.add(1, { outcome: 'unavailable' satisfies Outcome });
+    throw new CheckoutUnavailableError();
   }
 
   /** Failures before an order exists: the domain's own problems pass through, a collaborator's silence is a 503. */

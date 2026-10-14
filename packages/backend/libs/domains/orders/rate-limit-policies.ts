@@ -35,6 +35,22 @@ export const ordersRatePolicies = definePolicies('orders', {
     key: 'ip',
     failMode: 'open',
   },
+  /** S11 FR-012: attempts to take drop units, per buyer and sale; called by the flash source, fail closed. */
+  'orders.flash-reserve.user': {
+    algorithm: 'slidingWindow',
+    limit: 30,
+    windowMs: 60_000,
+    key: 'custom',
+    failMode: 'closed',
+  },
+  /** S11 FR-030: anonymous public reads of a sale, per address. */
+  'orders.flash-sale-read.ip': {
+    algorithm: 'slidingWindow',
+    limit: 600,
+    windowMs: 60_000,
+    key: 'ip',
+    failMode: 'open',
+  },
 } as const);
 
 declare module '@app/infrastructure/rate-limit/rate-limit.types' {

@@ -44,10 +44,6 @@ export function ApiKeysView() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasCopied, setHasCopied] = useState(false);
 
-  useEffect(() => {
-    fetchKeys();
-  }, [shopId]);
-
   const fetchKeys = async () => {
     try {
       const data = await developersApi.listKeys(shopId);
@@ -58,6 +54,12 @@ export function ApiKeysView() {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- loads the list when the shop changes (W04 moves it to a query)
+    fetchKeys();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- reload when the shop changes
+  }, [shopId]);
 
   const handleGenerateKey = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -234,7 +236,7 @@ export function ApiKeysView() {
               </TableRow>
             ) : (
               keys.map((key) => (
-                <TableRow key={key.id} data-testid="api-key-row" className={key.revokedAt ? 'opacity-50' : undefined}>
+                <TableRow key={key.id} data-testid="api-key-row" className={key.status === 'revoked' ? 'opacity-50' : undefined}>
                   <TableCell className="font-medium">
                     <div className="flex items-center space-x-2">
                       <KeyIcon className="h-4 w-4 text-muted-foreground" />
@@ -255,7 +257,7 @@ export function ApiKeysView() {
                     {key.lastUsedAt ? format(new Date(key.lastUsedAt), 'MMM d, yyyy') : 'Never'}
                   </TableCell>
                   <TableCell className="text-right">
-                    {key.revokedAt ? (
+                    {key.status === 'revoked' ? (
                       <span className="text-sm text-muted-foreground">Revoked</span>
                     ) : (
                     <div className="flex items-center justify-end space-x-2">

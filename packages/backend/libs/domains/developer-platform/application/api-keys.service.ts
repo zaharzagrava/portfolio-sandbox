@@ -1,253 +1,278 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectConnection } from '@nestjs/sequelize';
-import { QueryTypes, Sequelize } from 'sequelize';
-import { ApiConfigService } from '@app/common/config';
-import { RedisService } from '@app/infrastructure/redis/redis.service';
+import { Inject, Injectable } from '@nestjs/common';
+import { CLOCK, Clock } from '@app/common/core/clock';
+import {
+  API_KEY_LIMITS,
+  type ApiKeyListItem,
+  type CreatedApiKey,
+} from '@marketplace-sandbox/contracts';
 import {
   ApiScope,
-  generateApiKey,
-  hashSecret,
-  parseApiKey,
-  secretMatches,
+  generateUniqueApiKey,
+  hashSecretWithVersion,
+  MintedApiKey,
 } from '../domain/api-key-format';
+import { ApiError, resourceMissing } from '../domain/errors';
+import { assertTransition, deriveKeyStatus } from '../domain/key-status';
+import {
+  ApiKeyRecord,
+  ApiKeyRepository,
+  KeyCache,
+  NewApiKey,
+} from '../domain/ports';
+import { latestVersion } from '../domain/version-registry';
+import { KeyPeppers } from './key-peppers';
 
-export interface VerifiedKey {
-  id: string;
-  /** The shop the key acts on: the real shop, or its sandbox shadow for test keys. */
-  shopId: string;
-  ownerShopId: string;
-  /** The staff member who created the key: becomes the `sellerId` of products created through it. */
-  createdBy: string;
+const DAY_MS = 86_400_000;
+const MAX_MINT_ATTEMPTS = 5;
+const PAGE_DEFAULT = 20;
+const PAGE_MAX = 100;
+
+/** Who acts: the signed-in manager (`amr` comes from verified token claims). */
+export interface KeyActor {
+  userId: string;
+  amr: readonly string[];
+}
+
+export interface CreateKeyInput {
+  name: string;
   scopes: ApiScope[];
   livemode: boolean;
+  expiresAt?: Date;
 }
 
-interface CachedKey extends VerifiedKey {
-  hash: string;
-  expiresAt: number | null;
-  revoked: boolean;
-}
-
-const cacheKey = (prefix: string) => `apikey:${prefix}`;
-const CACHE_TTL_SEC = 60;
-const LAST_USED = 'apikey:lastused';
-const ROTATION_OVERLAP_MS = 24 * 3600_000;
+const iso = (d: Date | null): string | null => (d ? d.toISOString() : null);
 
 /**
- * Keys are looked up by their public prefix and verified by hash on EVERY
- * request (the cache stores the hash, never "this secret is valid"), with a
- * 60 s Redis cache so the hot path has no Postgres read. Revocation deletes
- * the cache entry immediately; `lastUsedAt` is write-behind (a ZSET flushed
- * by a worker) instead of an UPDATE per request.
+ * Dashboard side of the keys (FR-001…FR-012): create under the per-shop limit, conditional rotate, idempotent revoke,
+ * list with the derived status. The clock is injected; secrets exist only in the response of create and rotate.
  */
 @Injectable()
 export class ApiKeysService {
   constructor(
-    @InjectConnection() private readonly sequelize: Sequelize,
-    private readonly redis: RedisService,
-    private readonly config: ApiConfigService,
+    private readonly keys: ApiKeyRepository,
+    private readonly cache: KeyCache,
+    private readonly peppers: KeyPeppers,
+    @Inject(CLOCK) private readonly clock: Clock,
   ) {}
-
-  private get pepper() {
-    return this.config.get('api_key_pepper') || this.config.get('jwt_secret');
-  }
 
   async create(
     shopId: string,
-    userId: string,
-    name: string,
-    scopes: ApiScope[],
-    livemode: boolean,
-    expiresAt?: Date,
-  ) {
-    const { key, prefix, secret } = generateApiKey(livemode);
-    const [row] = await this.sequelize.query<{ id: string; createdAt: Date }>(
-      `INSERT INTO "ApiKey" ("shopId", prefix, hash, name, scopes, livemode, "createdBy", "expiresAt") VALUES (:shopId, :prefix, :hash, :name, CAST(:scopes AS text[]), :livemode, :userId, :expiresAt)
-       RETURNING id, "createdAt"`,
-      {
-        type: QueryTypes.SELECT,
-        replacements: {
-          shopId,
-          prefix,
-          hash: hashSecret(secret, this.pepper),
-          name,
-          scopes: `{${scopes.join(',')}}`,
-          livemode,
-          userId,
-          expiresAt: expiresAt ?? null,
-        },
-      },
-    );
-    // The only time the full key exists outside the client.
-    return {
-      id: row.id,
-      key,
-      prefix,
-      name,
-      scopes,
-      livemode,
-      createdAt: row.createdAt,
-    };
+    actor: KeyActor,
+    input: CreateKeyInput,
+  ): Promise<CreatedApiKey> {
+    const now = this.clock.now();
+    this.assertExpiry(input.expiresAt, now);
+    this.assertStepUp(input.livemode, actor);
+    for (let attempt = 0; attempt < MAX_MINT_ATTEMPTS; attempt += 1) {
+      const minted = await this.mint(input.livemode);
+      const result = await this.keys.createWithLimit({
+        key: this.newKey(shopId, actor.userId, minted, input),
+        now,
+        limit: API_KEY_LIMITS.perShop,
+        latestVersion: latestVersion(),
+      });
+      if (result.outcome === 'prefix_taken') continue;
+      if (result.outcome === 'limit_reached')
+        throw new ApiError(
+          'key_limit_reached',
+          `A shop can have at most ${API_KEY_LIMITS.perShop} active API keys.`,
+        );
+      return this.toCreated(result.record, minted.key, now);
+    }
+    throw new Error('Could not mint an unused API key prefix');
   }
 
-  list(shopId: string) {
-    return this.sequelize.query(
-      `SELECT id, prefix, name, scopes, livemode, "expiresAt", "revokedAt", "lastUsedAt", "createdAt" FROM "ApiKey" WHERE "shopId" = :shopId ORDER BY "createdAt" DESC`,
-      { type: QueryTypes.SELECT, replacements: { shopId } },
-    );
+  async rotate(
+    shopId: string,
+    keyId: string,
+    actor: KeyActor,
+    overlapHours: number = API_KEY_LIMITS.overlapHours.default,
+  ): Promise<CreatedApiKey & { previousExpiresAt: string | null }> {
+    const existing = await this.keys.findForShop(shopId, keyId);
+    if (!existing) throw resourceMissing();
+    this.assertStepUp(existing.livemode, actor);
+    const now = this.clock.now();
+    for (let attempt = 0; attempt < MAX_MINT_ATTEMPTS; attempt += 1) {
+      const minted = await this.mint(existing.livemode);
+      const result = await this.keys.rotate({
+        shopId,
+        keyId,
+        successor: this.newKey(shopId, actor.userId, minted, {
+          name: existing.name,
+          scopes: existing.scopes,
+          livemode: existing.livemode,
+          expiresAt: undefined,
+        }),
+        overlapHours,
+        now,
+        actorId: actor.userId,
+      });
+      switch (result.outcome) {
+        case 'prefix_taken':
+          continue;
+        case 'not_found':
+          throw resourceMissing();
+        case 'illegal':
+          assertTransition(deriveKeyStatus(result.current, now), 'rotate');
+          throw new ApiError(
+            'key_already_rotating',
+            'The key cannot be rotated.',
+          );
+        case 'rotated':
+          // the old key's expiry changed: every instance re-reads it
+          await this.cache.invalidate(result.old.prefix).catch(() => undefined);
+          return {
+            ...this.toCreated(result.successor, minted.key, now),
+            previousExpiresAt: iso(result.old.expiresAt),
+          };
+      }
+    }
+    throw new Error('Could not mint an unused API key prefix');
   }
 
-  /** New key with the same scopes; the old one keeps working for 24 h so deployments can switch over. */
-  async rotate(shopId: string, keyId: string, userId: string) {
-    const old = await this.find(shopId, keyId);
-    const replacement = await this.create(
+  /** Idempotent: a repeat answers the same and emits nothing (FR-007). */
+  async revoke(shopId: string, keyId: string, actor: KeyActor): Promise<void> {
+    const result = await this.keys.revoke({
       shopId,
-      userId,
-      `${old.name} (rotated)`,
-      old.scopes,
-      old.livemode,
-    );
-    await this.sequelize.query(
-      `UPDATE "ApiKey" SET "expiresAt" = LEAST(coalesce("expiresAt", 'infinity'), now() + interval '24 hours') WHERE id = :keyId`,
-      { replacements: { keyId } },
-    );
-    await this.redis.client.del(cacheKey(old.prefix));
+      keyId,
+      now: this.clock.now(),
+      actorId: actor.userId,
+      reason: 'manual',
+    });
+    if (result.outcome === 'not_found') throw resourceMissing();
+    // after the commit: no verification that started before it may bring the key back (tombstone outlives every entry)
+    await this.cache.tombstone(result.record.prefix);
+  }
+
+  async list(
+    shopId: string,
+    options: { limit?: number; cursor?: string } = {},
+  ): Promise<{ items: ApiKeyListItem[]; nextCursor: string | null }> {
+    const limit = options.limit ?? PAGE_DEFAULT;
+    if (!Number.isInteger(limit) || limit < 1 || limit > PAGE_MAX)
+      throw new ApiError('validation_failed', 'limit must be 1 to 100.', {
+        errors: [{ field: 'limit', code: 'range' }],
+      });
+    const after = options.cursor ? this.decodeCursor(options.cursor) : null;
+    const found = await this.keys.list(shopId, limit + 1, after);
+    const page = found.slice(0, limit);
+    const last = page[page.length - 1];
+    const now = this.clock.now();
     return {
-      ...replacement,
-      previousExpiresAt: new Date(Date.now() + ROTATION_OVERLAP_MS),
+      items: page.map((k) => ({
+        id: k.id,
+        prefix: k.prefix,
+        name: k.name,
+        scopes: k.scopes,
+        livemode: k.livemode,
+        status: deriveKeyStatus(k, now),
+        expiresAt: iso(k.expiresAt),
+        lastUsedAt: iso(k.lastUsedAt),
+        createdBy: k.createdBy,
+        createdAt: k.createdAt.toISOString(),
+        ...(k.successorId ? { successorId: k.successorId } : {}),
+      })),
+      nextCursor:
+        found.length > limit && last
+          ? this.encodeCursor({
+              createdAt: last.createdAt.toISOString(),
+              id: last.id,
+            })
+          : null,
     };
   }
 
-  async revoke(shopId: string, keyId: string) {
-    const key = await this.find(shopId, keyId);
-    await this.sequelize.query(
-      `UPDATE "ApiKey" SET "revokedAt" = now() WHERE id = :keyId AND "revokedAt" IS NULL`,
-      { replacements: { keyId } },
-    );
-    await this.redis.client.del(cacheKey(key.prefix));
-  }
+  // ---------------------------------------------------------------- internals
 
-  async verify(raw: string): Promise<VerifiedKey | null> {
-    const parsed = parseApiKey(raw);
-    if (!parsed) return null;
-    let cached: CachedKey | null = null;
-    const hit = await this.redis.client.get(cacheKey(parsed.prefix));
-    if (hit) cached = hit === 'none' ? null : (JSON.parse(hit) as CachedKey);
-    else {
-      cached = await this.load(parsed.prefix);
-      await this.redis.client.set(
-        cacheKey(parsed.prefix),
-        cached ? JSON.stringify(cached) : 'none',
-        'EX',
-        CACHE_TTL_SEC,
+  private assertExpiry(expiresAt: Date | undefined, now: Date): void {
+    if (!expiresAt) return;
+    const t = expiresAt.getTime();
+    if (t <= now.getTime())
+      throw new ApiError(
+        'validation_failed',
+        'expiresAt must be in the future.',
+        {
+          errors: [{ field: 'expiresAt', code: 'must_be_future' }],
+        },
       );
-    }
-    if (!cached || cached.revoked || cached.livemode !== parsed.livemode)
-      return null;
-    if (cached.expiresAt && cached.expiresAt < Date.now()) return null;
-    if (!secretMatches(parsed.secret, cached.hash, this.pepper)) return null;
-
-    void this.redis.client
-      .zadd(LAST_USED, Date.now(), cached.id)
-      .catch(() => undefined);
-    const { hash: _h, expiresAt: _e, revoked: _r, ...key } = cached;
-    return key;
+    if (t > now.getTime() + API_KEY_LIMITS.expiresInDaysMax * DAY_MS)
+      throw new ApiError(
+        'validation_failed',
+        `expiresAt must be at most ${API_KEY_LIMITS.expiresInDaysMax} days away.`,
+        { errors: [{ field: 'expiresAt', code: 'too_far' }] },
+      );
   }
 
-  /** Worker: write-behind of lastUsedAt, one statement for all keys used since the last flush. */
-  async flushLastUsed(): Promise<number> {
-    const entries = await this.redis.client.zrange(
-      LAST_USED,
-      0,
-      -1,
-      'WITHSCORES',
-    );
-    if (entries.length === 0) return 0;
-    const ids: string[] = [];
-    const ts: string[] = [];
-    for (let i = 0; i < entries.length; i += 2) {
-      ids.push(entries[i]);
-      ts.push(new Date(Number(entries[i + 1])).toISOString());
-    }
-    await this.sequelize.query(
-      `UPDATE "ApiKey" k SET "lastUsedAt" = u.ts FROM unnest(CAST(:ids AS uuid[]), CAST(:ts AS timestamptz[])) AS u(id, ts)
-       WHERE k.id = u.id AND (k."lastUsedAt" IS NULL OR k."lastUsedAt" < u.ts)`,
-      {
-        replacements: {
-          ids: `{${ids.join(',')}}`,
-          ts: `{${ts.map((t) => `"${t}"`).join(',')}}`,
-        },
-      },
-    );
-    // Remove only what we flushed (scores ≤ our snapshot) - newer uses stay for the next run.
-    await this.redis.client.zremrangebyscore(
-      LAST_USED,
-      '-inf',
-      Math.max(...ts.map((t) => Date.parse(t))),
-    );
-    return ids.length;
+  /** Creating or rotating a live key needs a session that passed a second factor (FR-011). */
+  private assertStepUp(livemode: boolean, actor: KeyActor): void {
+    if (livemode && !actor.amr.includes('mfa'))
+      throw new ApiError(
+        'mfa_required',
+        'A second factor is required to create or rotate a live key.',
+      );
   }
 
-  /** Sandbox shadow shop for test keys, created on first use (idempotent via the partial unique index on sandboxOf). */
-  async sandboxShopFor(shopId: string): Promise<string> {
-    await this.sequelize.query(
-      `INSERT INTO "Shop" (id, name, slug, "sandboxOf", "createdAt", "updatedAt")
-       SELECT uuidv7(), s.name || ' (sandbox)', s.slug || '-sandbox', s.id, now(), now() FROM "Shop" s WHERE s.id = :shopId
-       ON CONFLICT ("sandboxOf") WHERE "sandboxOf" IS NOT NULL DO NOTHING`,
-      { replacements: { shopId } },
+  private mint(livemode: boolean): Promise<MintedApiKey> {
+    return generateUniqueApiKey(livemode, (prefix) =>
+      this.keys.prefixExists(prefix),
     );
-    const [row] = await this.sequelize.query<{ id: string }>(
-      `SELECT id FROM "Shop" WHERE "sandboxOf" = :shopId`,
-      { type: QueryTypes.SELECT, replacements: { shopId } },
-    );
-    return row.id;
   }
 
-  private async load(prefix: string): Promise<CachedKey | null> {
-    const [row] = await this.sequelize.query<{
-      id: string;
-      shopId: string;
-      createdBy: string;
-      scopes: ApiScope[];
-      livemode: boolean;
-      hash: string;
-      expiresAt: Date | null;
-      revokedAt: Date | null;
-    }>(
-      `SELECT id, "shopId", "createdBy", scopes, livemode, hash, "expiresAt", "revokedAt" FROM "ApiKey" WHERE prefix = :prefix`,
-      { type: QueryTypes.SELECT, replacements: { prefix } },
-    );
-    if (!row) return null;
-    const shopId = row.livemode
-      ? row.shopId
-      : await this.sandboxShopFor(row.shopId);
+  private newKey(
+    shopId: string,
+    createdBy: string,
+    minted: MintedApiKey,
+    input: CreateKeyInput,
+  ): NewApiKey {
     return {
-      id: row.id,
       shopId,
-      ownerShopId: row.shopId,
-      createdBy: row.createdBy,
-      scopes: row.scopes,
-      livemode: row.livemode,
-      hash: row.hash,
-      expiresAt: row.expiresAt ? new Date(row.expiresAt).getTime() : null,
-      revoked: !!row.revokedAt,
+      createdBy,
+      name: input.name,
+      scopes: input.scopes,
+      livemode: input.livemode,
+      expiresAt: input.expiresAt ?? null,
+      prefix: minted.prefix,
+      hash: hashSecretWithVersion(minted.secret, this.peppers.current, 1),
     };
   }
 
-  private async find(shopId: string, keyId: string) {
-    const [row] = await this.sequelize.query<{
-      prefix: string;
-      name: string;
-      scopes: ApiScope[];
-      livemode: boolean;
-    }>(
-      `SELECT prefix, name, scopes, livemode FROM "ApiKey" WHERE id = :keyId AND "shopId" = :shopId`,
-      {
-        type: QueryTypes.SELECT,
-        replacements: { keyId, shopId },
-      },
-    );
-    if (!row) throw new NotFoundException('API key not found');
-    return row;
+  private toCreated(
+    record: ApiKeyRecord,
+    key: string,
+    now: Date,
+  ): CreatedApiKey {
+    return {
+      id: record.id,
+      key,
+      prefix: record.prefix,
+      name: record.name,
+      scopes: record.scopes,
+      livemode: record.livemode,
+      status: deriveKeyStatus(record, now),
+      expiresAt: iso(record.expiresAt),
+      createdAt: record.createdAt.toISOString(),
+    };
+  }
+
+  private encodeCursor(c: { createdAt: string; id: string }): string {
+    return Buffer.from(JSON.stringify({ v: 1, ...c })).toString('base64url');
+  }
+
+  private decodeCursor(raw: string): { createdAt: string; id: string } {
+    try {
+      const c = JSON.parse(Buffer.from(raw, 'base64url').toString('utf8'));
+      if (
+        c?.v === 1 &&
+        typeof c.createdAt === 'string' &&
+        !Number.isNaN(Date.parse(c.createdAt)) &&
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+          c.id,
+        )
+      )
+        return { createdAt: c.createdAt, id: c.id };
+    } catch {
+      // falls through
+    }
+    throw new ApiError('invalid_cursor', 'The cursor is not valid.');
   }
 }

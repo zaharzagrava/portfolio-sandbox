@@ -15,7 +15,9 @@ import { SearchValidationError } from '../domain/search-errors';
 export class SearchQualityService {
   constructor(private readonly clickhouse: ClickHouseService) {}
 
-  async report(rawQuery: Record<string, unknown>): Promise<SearchQualityReport> {
+  async report(
+    rawQuery: Record<string, unknown>,
+  ): Promise<SearchQualityReport> {
     const parsed = searchQualityQuerySchema.safeParse(rawQuery);
     if (!parsed.success)
       throw new SearchValidationError([

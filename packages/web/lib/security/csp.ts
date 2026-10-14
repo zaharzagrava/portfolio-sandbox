@@ -25,6 +25,8 @@ const PAYMENT_PATH = /^\/checkout\/pay\/[^/]+/;
 export function buildCsp({ nonce, pathname, isDev, hosts }: CspInput): string {
   const payment = PAYMENT_PATH.test(pathname) ? hosts.paymentProviderHosts : [];
   const self = "'self'";
+  // MapLibre loads raster tiles with `fetch` and runs a worker from a `blob:` URL; hls.js loads playlists and segments with `fetch`.
+  const fetched = [...(hosts.mapTileHost ? [hosts.mapTileHost] : []), ...hosts.videoHosts];
 
   const directives: Record<string, string[]> = {
     'default-src': [self],
@@ -35,7 +37,8 @@ export function buildCsp({ nonce, pathname, isDev, hosts }: CspInput): string {
     'font-src': [self],
     'img-src': [self, 'data:', 'blob:', ...hosts.mediaHosts, ...(hosts.mapTileHost ? [hosts.mapTileHost] : [])],
     'media-src': [self, 'blob:', ...hosts.videoHosts],
-    'connect-src': [self, ...(isDev ? ['ws:', 'wss:'] : []), ...payment],
+    'connect-src': [self, ...(isDev ? ['ws:', 'wss:'] : []), ...fetched, ...payment],
+    ...(fetched.length > 0 ? { 'worker-src': [self, 'blob:'] } : {}),
     'frame-src': payment.length > 0 ? payment : ["'none'"],
     'object-src': ["'none'"],
     'frame-ancestors': ["'none'"],

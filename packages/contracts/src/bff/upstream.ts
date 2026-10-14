@@ -14,18 +14,9 @@ import { pickupPointsNearResponseSchema } from "../fulfilment/pickup.ts";
 export const flagsResponseSchema = clientFlagsSchema;
 export type FlagsResponse = z.infer<typeof flagsResponseSchema>;
 
-/** S24 `GET /api/chat/unread`: `{items: [{channelId, unread, lastSeq}], nextCursor}`. */
-export const chatUnreadPageSchema = z.object({
-  items: z.array(
-    z.object({
-      channelId: z.string(),
-      unread: z.number().int().nonnegative(),
-      lastSeq: z.number().int().nonnegative(),
-    }),
-  ),
-  nextCursor: z.string().nullable(),
-});
-export type ChatUnreadPage = z.infer<typeof chatUnreadPageSchema>;
+/** S24 `GET /api/chat/unread`: S24 published its own schema (the names stay for the BFF). */
+export { chatUnreadPageSchema } from '../chat/unread.ts';
+export type { ChatUnreadPage } from '../chat/unread.ts';
 
 /** S25 `GET /api/boards/:productId/posts`: S25 published its own schema, the BFF validates with it (name kept). */
 export const boardPostsPageSchema = postPageSchema;
@@ -37,12 +28,11 @@ export type BoardPostsPage = PostPage;
 export const pickupPageSchema = pickupPointsNearResponseSchema;
 export type PickupPage = z.infer<typeof pickupPageSchema>;
 
-/** S11 `GET /api/flash-sales?productIds=`: at most one public view per product. */
-export const flashSalePublicSchema = z.looseObject({ productId: z.string() });
-export const flashSalesResponseSchema = z.array(flashSalePublicSchema);
-export type FlashSalePublic = z.infer<typeof flashSalePublicSchema>;
+/** S11 `GET /api/flash-sales?productIds=`: S11 published its own schema (the name stays for the BFF). */
+export { flashSalePublicSchema } from '../orders/flash-sale.ts';
+export { flashSalesResponseSchema } from '../orders/flash-sale.ts';
+export type { FlashSalePublic } from '../orders/flash-sale.ts';
 
-/** S21 `GET /api/auctions?productIds=`. */
-export const auctionPublicSchema = z.looseObject({ productId: z.string() });
-export const auctionsResponseSchema = z.array(auctionPublicSchema);
-export type AuctionPublic = z.infer<typeof auctionPublicSchema>;
+/** S21 `GET /api/auctions?productIds=`: S21 published its own schema (the names stay for the BFF). */
+export { auctionPublicSchema, auctionsResponseSchema } from '../auctions/auction.ts';
+export type { AuctionPublic } from '../auctions/auction.ts';

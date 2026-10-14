@@ -91,4 +91,4 @@ Other: `EDGE` = `packages/edge-be/test/collect.spec.ts` (`Edge collector (S39)`,
 | AS-54 metrics | OPS: drive AS-01 – AS-11 and assert every metric and label | — | — |
 | AS-55 logs | OPS: capture log output across ingest, assignment and admin requests; assert JSON, `requestId`, no props, user ids, tokens | — | — |
 | AS-56 ownership and boundaries | OPS: static gates `check:table-ownership --strict`, `check:boundaries`; registry assertion for the new tables | — | — |
-| AS-57 exposure once per render | — | UI: product page renders variant, exactly one `exposure` request even after re-render | — |
+| AS-57 exposure once per render (UI journey owned by W02 in `storefront-discovery.spec.ts`: product page renders variant, exactly one `exposure` request even after re-render; not proven here, see UNVERIFIED.md) | — | — | — |

@@ -1,0 +1,6 @@
+/* The Next.js dev server's indicator is not part of the product; it would end up in every baseline taken against it. */
+nextjs-portal,
+[data-nextjs-toast],
+[data-nextjs-dev-tools-button] {
+  display: none !important;
+}

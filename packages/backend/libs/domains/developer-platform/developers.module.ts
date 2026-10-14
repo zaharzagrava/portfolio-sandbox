@@ -1,14 +1,19 @@
 import { Module } from '@nestjs/common';
 import { AuthModule } from '@app/domains/identity';
-import { ClickHouseModule } from '@app/infrastructure/clickhouse/clickhouse.module';
-import { CacheModule } from '@app/infrastructure/cache/cache.module';
-import { ApiKeysService } from './application/api-keys.service';
 import { ApiKeysController } from './api/api-keys.controller';
+import { ApiVersionController } from './api/api-version.controller';
+import { DashboardOpenApiController } from './api/dashboard-openapi.controller';
+import { LogsUsageController } from './api/logs-usage.controller';
+import { DeveloperPlatformCoreModule } from './developer-platform-core.module';
 
-/** SD-07 dashboard side (core): keys, version pinning, logs, usage. */
+/** The dashboard side (apps/core): keys, version pin, request logs, usage. Sessions only, never an API key. */
 @Module({
-  imports: [AuthModule, ClickHouseModule, CacheModule],
-  providers: [ApiKeysService],
-  controllers: [ApiKeysController],
+  imports: [AuthModule, DeveloperPlatformCoreModule],
+  controllers: [
+    ApiKeysController,
+    ApiVersionController,
+    LogsUsageController,
+    DashboardOpenApiController,
+  ],
 })
 export class DevelopersModule {}

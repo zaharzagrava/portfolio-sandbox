@@ -77,6 +77,13 @@ export interface HttpAppOptions {
   useStructuredLogger?: boolean;
   /** false = routes at the root (public API: /v1/...). */
   globalPrefix?: string | false;
+  /**
+   * Handlers mounted after load shedding, security headers, the client address and compression, and before body parsing:
+   * a request the parser refuses (too large, not parseable) has still met them (S42 AS-59, AS-66).
+   */
+  beforeBodyParsing?: RequestHandler[];
+  /** false = no CORS at all: a server-to-server API (the public API) grants no origin and answers no preflight (S42 AS-69). Default true. */
+  cors?: boolean;
   /** false = do not install process signal/crash handlers (e2e specs running inside the jest process). */
   processHandlers?: boolean;
   /** Overrides for the shutdown and server timings on top of configuration. */
@@ -143,7 +150,7 @@ export function configureHttpApp(
   const embedHeaders = headers('cross-origin');
   app.use((req: Request, res: Response, next: NextFunction) => {
     res.setHeader('Content-Security-Policy', CSP);
-    (policyOf(req) === 'public-embed' ? embedHeaders : strictHeaders)(
+    (policyOf(req) !== undefined ? embedHeaders : strictHeaders)(
       req,
       res,
       next,
@@ -171,13 +178,29 @@ export function configureHttpApp(
     exposedHeaders: CORS_EXPOSED_HEADERS,
     maxAge: CORS_MAX_AGE_SECONDS,
   };
-  app.enableCors(
-    (
-      req: Request,
-      callback: (error: Error | null, options?: CorsOptions) => void,
-    ) =>
-      callback(null, policyOf(req) === 'public-embed' ? embedCors : strictCors),
-  );
+  // `widget-site` (S44): the owner answers per site; this policy adds no header and lets `OPTIONS` through to its handler.
+  const siteCors: CorsOptions = {
+    origin: false,
+    credentials: false,
+    preflightContinue: true,
+  };
+  if (options.cors !== false)
+    app.enableCors(
+      (
+        req: Request,
+        callback: (error: Error | null, options?: CorsOptions) => void,
+      ) => {
+        const policy = policyOf(req);
+        callback(
+          null,
+          policy === 'public-embed'
+            ? embedCors
+            : policy === 'widget-site'
+              ? siteCors
+              : strictCors,
+        );
+      },
+    );
 
   app.getHttpAdapter().getInstance().disable('x-powered-by');
   // Validators come from the cache toolkit's VersionEtagInterceptor / withEtag only (S52 FR-036, FR-039): Express'
@@ -206,6 +229,8 @@ export function configureHttpApp(
       ) && compression.filter(req, res),
   });
   app.use(skipEventStreams);
+
+  for (const handler of options.beforeBodyParsing ?? []) app.use(handler);
 
   // 6. Body parsing: 1 MiB, and the exact received bytes stay available to signature-verifying handlers.
   const keepRawBody = (req: Request, _res: Response, buffer: Buffer) => {

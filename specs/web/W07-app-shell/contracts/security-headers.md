@@ -10,7 +10,8 @@
 | `font-src` | `'self'` |
 | `img-src` | `'self' data: blob:` + `MEDIA_HOST` + `MAP_TILE_HOST` (when configured) |
 | `media-src` | `'self' blob:` + `VIDEO_HOST` |
-| `connect-src` | `'self'` (+ `ws:`/`wss:` of this origin in dev only) ; on `/checkout/pay/*` + payment hosts |
+| `connect-src` | `'self'` (+ `ws:`/`wss:` of this origin in dev only) + `MAP_TILE_HOST` and `VIDEO_HOST` (MapLibre and hls.js load with `fetch`); on `/checkout/pay/*` + payment hosts |
+| `worker-src` | only when a map tile or video host is configured: `'self' blob:` (MapLibre's worker) |
 | `frame-src` | `'none'`; on `/checkout/pay/*` + payment hosts |
 | `object-src` `frame-ancestors` | `'none'` |
 | `base-uri` `form-action` | `'self'` |

@@ -54,17 +54,23 @@ export const IDEMPOTENCY_PROBLEMS: ProblemCatalogEntry[] = [
 
 type IdempotencyCode = (typeof IDEMPOTENCY_PROBLEMS)[number]['code'];
 
+export interface IdempotencyErrorExtra {
+  retryAfterSeconds?: number;
+  /** A route's own wire name (and status) for this problem; the title and detail stay the platform's. */
+  as?: { code: string; status?: number };
+}
+
 export function idempotencyError(
   code: IdempotencyCode,
-  extra: { retryAfterSeconds?: number } = {},
+  extra: IdempotencyErrorExtra = {},
 ): AppError {
   const entry = IDEMPOTENCY_PROBLEMS.find((p) => p.code === code)!;
   return new AppError({
-    code: entry.code,
-    status: entry.status,
+    code: extra.as?.code ?? entry.code,
+    status: extra.as?.status ?? entry.status,
     title: entry.title,
     detail: entry.detail,
     area: ErrorArea.DOMAIN,
-    ...extra,
+    retryAfterSeconds: extra.retryAfterSeconds,
   });
 }

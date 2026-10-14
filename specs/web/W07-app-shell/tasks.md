@@ -146,13 +146,13 @@
 **Independent test**: page tests + footer journeys.
 
 ### Tests
-- [ ] T065 [P] [US4] Write failing `packages/web/app/privacy/page.test.tsx` and `app/terms/page.test.tsx` (AS-23, AS-24, AS-26): one `h1` ("Privacy policy"/terms title), "Last updated: {date}" constant, sections with `h2` and anchor ids (privacy: What we store, Cookies and browser storage, Who receives data, Your choices, Contact — copy per spec AS-23), `metadata.title` "{Page} · Marketplace", indexable.
-- [ ] T066 [P] [US4] Write failing `packages/web/app/privacy/cookies.test.ts` (AS-23, FR-053): every cookie and storage key in `lib/browser-storage-keys.ts` appears in the privacy cookie section.
-- [ ] T067 [P] [US4] Write failing `packages/web/components/legal/on-this-page.test.tsx` (AS-25): link per section, focus + hash go to the heading, disclosure collapsed at mobile markup.
-- [ ] T068 [P] [US4] Add failing journeys to `packages/web/tests/app-shell.spec.ts`: "privacy page reachable from the footer", "terms page reachable from the footer".
+- [X] T065 [P] [US4] Write failing `packages/web/app/privacy/page.test.tsx` and `app/terms/page.test.tsx` (AS-23, AS-24, AS-26): one `h1` ("Privacy policy"/terms title), "Last updated: {date}" constant, sections with `h2` and anchor ids (privacy: What we store, Cookies and browser storage, Who receives data, Your choices, Contact — copy per spec AS-23), `metadata.title` "{Page} · Marketplace", indexable.
+- [X] T066 [P] [US4] Write failing `packages/web/app/privacy/cookies.test.ts` (AS-23, FR-053): every cookie and storage key in `lib/browser-storage-keys.ts` appears in the privacy cookie section.
+- [X] T067 [P] [US4] Write failing `packages/web/components/legal/on-this-page.test.tsx` (AS-25): link per section, focus + hash go to the heading, disclosure collapsed at mobile markup.
+- [X] T068 [P] [US4] Add failing journeys to `packages/web/tests/app-shell.spec.ts`: "privacy page reachable from the footer", "terms page reachable from the footer".
 
 ### Implementation
-- [ ] T069 [US4] Implement `packages/web/components/legal/on-this-page.tsx` (sticky rail desktop, disclosure mobile) and rewrite `packages/web/app/privacy/page.tsx` and `app/terms/page.tsx` as static Server Components (no data request, no new dependency, no MDX). Make T065–T067 pass. Content must be true for the running system (FR-053).
+- [X] T069 [US4] Implement `packages/web/components/legal/on-this-page.tsx` (sticky rail desktop, disclosure mobile) and rewrite `packages/web/app/privacy/page.tsx` and `app/terms/page.tsx` as static Server Components (no data request, no new dependency, no MDX). Make T065–T067 pass. Content must be true for the running system (FR-053).
 
 ---
 
@@ -162,25 +162,25 @@
 **Independent test**: `tests/developer-docs.spec.ts`, `reference.test.tsx`, backend openapi e2e.
 
 ### Tests
-- [ ] T070 [P] [US5] Write failing backend e2e `packages/backend/test/developers-openapi.e2e-spec.ts` (pattern `openapi`): `GET /api/developers/openapi.json` → `200 application/json`, parsed by `openApiDocumentSchema` (`openapi` starts with `3.`, `paths` object); error → problem+json via the global filter; anonymous.
-- [ ] T071 [P] [US5] Add `openApiDocumentSchema` to `packages/contracts/src/` and export (zod; passthrough of unknown fields; `info`, `paths`, `tags?`, per-operation `x-scope`/`security`, `deprecated`).
-- [ ] T072 [P] [US5] Write failing `packages/web/app/developers/docs/reference.test.tsx` (AS-27..AS-30; MSW fixture): sections grouped by tag, scopes, deprecated mark with sunset and replacement, one `h1`, heading nesting; placeholder `aria-busy`; failure and invalid-body states with **Try again** replacing in place; reference line only with `requestId`; no "Try it out", no form, **Copy** announces "Copied"; expanders are buttons with `aria-expanded`; "Operations" navigation labelled; description markdown rendered without raw HTML, links validated to `http:`/`https:`.
-- [ ] T073 [P] [US5] Write failing `packages/web/tests/developer-docs.spec.ts` (suite `W07 developer docs`): "operations are listed, expand and collapse"; "page makes one data request and has no try-it-out" (request log); "viewer chunk is not downloaded by other pages" (visit `/`, assert no request for it, SC-007). Use `page.route` fixture only for unavailable-state tests (R-07).
-- [ ] T074 [P] [US5] Write failing unit test for `getOpenApiDocument` in `packages/web/lib/api/developers.test.ts`: same-origin URL `/api/developers/openapi.json`, validated with the contracts schema, invalid body → typed failure, no absolute API address.
+- [X] T070 [P] [US5] Write failing backend e2e `packages/backend/test/developers-openapi.e2e-spec.ts` (pattern `openapi`): `GET /api/developers/openapi.json` → `200 application/json`, parsed by `openApiDocumentSchema` (`openapi` starts with `3.`, `paths` object); error → problem+json via the global filter; anonymous.
+- [X] T071 [P] [US5] Add `openApiDocumentSchema` to `packages/contracts/src/` and export (zod; passthrough of unknown fields; `info`, `paths`, `tags?`, per-operation `x-scope`/`security`, `deprecated`).
+- [X] T072 [P] [US5] Write failing `packages/web/app/developers/docs/reference.test.tsx` (AS-27..AS-30; MSW fixture): sections grouped by tag, scopes, deprecated mark with sunset and replacement, one `h1`, heading nesting; placeholder `aria-busy`; failure and invalid-body states with **Try again** replacing in place; reference line only with `requestId`; no "Try it out", no form, **Copy** announces "Copied"; expanders are buttons with `aria-expanded`; "Operations" navigation labelled; description markdown rendered without raw HTML, links validated to `http:`/`https:`.
+- [X] T073 [P] [US5] Write failing `packages/web/tests/developer-docs.spec.ts` (suite `W07 developer docs`): "operations are listed, expand and collapse"; "page makes one data request and has no try-it-out" (request log); "viewer chunk is not downloaded by other pages" (visit `/`, assert no request for it, SC-007). Use `page.route` fixture only for unavailable-state tests (R-07).
+- [X] T074 [P] [US5] Write failing unit test for `getOpenApiDocument` in `packages/web/lib/api/developers.test.ts`: same-origin URL `/api/developers/openapi.json`, validated with the contracts schema, invalid body → typed failure, no absolute API address.
 
 ### Implementation
-- [ ] T075 [US5] Implement `GET /api/developers/openapi.json` in `packages/backend` (public API area/core app so the dev stack at :8000 answers; same content as public-api `docs-json`; global filter for errors). Make T070 pass: `/opt/sdd/repo/scripts/sdd/test-spec.sh openapi`; wait for `/health/ready`.
-- [ ] T076 [US5] Add `getOpenApiDocument()` to `packages/web/lib/api/developers.ts` (server cache ≤ 5 min via `"use cache"` with explicit lifetime, validated before use); use `queryKeys.developers.openapi`. Make T074 pass.
-- [ ] T077 [US5] Create read-only viewer `packages/web/app/developers/docs/reference.tsx` (client leaf, dynamic import on this route only; `react-markdown` without raw HTML; link scheme validation). Rewrite `packages/web/app/developers/docs/page.tsx` as a Server Component (no nested `<main>`/`<header>`, no hard-coded origin, title "API reference · Marketplace" or per spec AS-27). Remove `swagger-ui-react` from `packages/web/package.json` and delete its imports/CSS. Make T072, T073 pass.
-- [ ] T078 [US5] Run `pnpm exec playwright test tests/developer-docs.spec.ts` and `pnpm exec vitest run app/developers lib/api`.
+- [X] T075 [US5] Implement `GET /api/developers/openapi.json` in `packages/backend` (public API area/core app so the dev stack at :8000 answers; same content as public-api `docs-json`; global filter for errors). Make T070 pass: `/opt/sdd/repo/scripts/sdd/test-spec.sh openapi`; wait for `/health/ready`.
+- [X] T076 [US5] Add `getOpenApiDocument()` to `packages/web/lib/api/developers.ts` (server cache ≤ 5 min via `"use cache"` with explicit lifetime, validated before use); use `queryKeys.developers.openapi`. Make T074 pass.
+- [X] T077 [US5] Create read-only viewer `packages/web/app/developers/docs/reference.tsx` (client leaf, dynamic import on this route only; `react-markdown` without raw HTML; link scheme validation). Rewrite `packages/web/app/developers/docs/page.tsx` as a Server Component (no nested `<main>`/`<header>`, no hard-coded origin, title "API reference · Marketplace" or per spec AS-27). Remove `swagger-ui-react` from `packages/web/package.json` and delete its imports/CSS. Make T072, T073 pass.
+- [X] T078 [US5] Run `pnpm exec playwright test tests/developer-docs.spec.ts` and `pnpm exec vitest run app/developers lib/api`.
 
 ---
 
 ## Phase 9: User Story 7 (rest) — Document metadata and robots (P2, plan P6)
 
-- [ ] T079 [P] [US7] Write failing `packages/web/app/robots.test.ts` (AS-34, FR-052): disallow list equals `noStorePaths`; private areas and not-found send `noindex`.
-- [ ] T080 [US7] Implement `packages/web/app/robots.ts` from `noStorePaths` and `config.siteUrl`. Make T079 pass.
-- [ ] T081 [US7] Add failing then passing journeys to `packages/web/tests/app-shell.spec.ts`: "titles follow the pattern and robots lists private areas" (`/`, `/privacy`, 404; `GET /robots.txt`), "navigating the site reports page names, never addresses" (intercept `/api/events`; `/`, `/products/:slug`, `/invites/:token`, `/not-found`), "Back after sign-out shows no private content" (AS-20, reuse W01 `signOut`).
+- [X] T079 [P] [US7] Write failing `packages/web/app/robots.test.ts` (AS-34, FR-052): disallow list equals `noStorePaths`; private areas and not-found send `noindex`.
+- [X] T080 [US7] Implement `packages/web/app/robots.ts` from `noStorePaths` and `config.siteUrl`. Make T079 pass.
+- [X] T081 [US7] Add failing then passing journeys to `packages/web/tests/app-shell.spec.ts`: "titles follow the pattern and robots lists private areas" (`/`, `/privacy`, 404; `GET /robots.txt`), "navigating the site reports page names, never addresses" (intercept `/api/events`; `/`, `/products/:slug`, `/invites/:token`, `/not-found`), "Back after sign-out shows no private content" (AS-20, reuse W01 `signOut`).
 
 ---
 
@@ -194,21 +194,21 @@
 ## Phase 11: User Story 8 — Widget checkout application (P3, plan P5)
 
 ### Tests
-- [ ] T084 [P] [US8] Write failing `packages/web/lib/widget/messages.test.ts` (AS-40): table — wrong source, wrong origin, malformed payload ignored silently; `targetOrigin` is the registered host origin, never `"*"`; `marketplace:identity { token }` accepted only if `event.source === window.parent` and `event.origin === registeredHostOrigin`; `marketplace:need-identity` and `marketplace:close` posted to the registered origin.
-- [ ] T085 [P] [US8] Write failing `packages/web/components/widget/checkout-app.test.tsx` (AS-40): states "Checking your details…" (`aria-busy`) → "Signed in as {email}" (e-mail as text) · "Continue as guest" · failure text "We couldn't open checkout. Close this window and try again." for `422`, `410`, `403`, `404`; Close and Escape post `marketplace:close`.
-- [ ] T086 [P] [US8] Write failing `packages/web/tests/widget-embed.spec.ts` (suite `W07 widget checkout application`): "bundle is served cross-origin with correct headers" (`Content-Type: application/javascript`, `Cache-Control: public, max-age=31536000, immutable`, `Cross-Origin-Resource-Policy: cross-origin`, `X-Content-Type-Options: nosniff`); "iframe application identifies the customer and closes" (test host page).
+- [X] T084 [P] [US8] Write failing `packages/web/lib/widget/messages.test.ts` (AS-40): table — wrong source, wrong origin, malformed payload ignored silently; `targetOrigin` is the registered host origin, never `"*"`; `marketplace:identity { token }` accepted only if `event.source === window.parent` and `event.origin === registeredHostOrigin`; `marketplace:need-identity` and `marketplace:close` posted to the registered origin.
+- [X] T085 [P] [US8] Write failing `packages/web/components/widget/checkout-app.test.tsx` (AS-40): states "Checking your details…" (`aria-busy`) → "Signed in as {email}" (e-mail as text) · "Continue as guest" · failure text "We couldn't open checkout. Close this window and try again." for `422`, `410`, `403`, `404`; Close and Escape post `marketplace:close`.
+- [X] T086 [P] [US8] Write failing `packages/web/tests/widget-embed.spec.ts` (suite `W07 widget checkout application`): "bundle is served cross-origin with correct headers" (`Content-Type: application/javascript`, `Cache-Control: public, max-age=31536000, immutable`, `Cross-Origin-Resource-Policy: cross-origin`, `X-Content-Type-Options: nosniff`); "iframe application identifies the customer and closes" (test host page).
 
 ### Implementation
-- [ ] T087 [US8] Implement `packages/web/lib/widget/messages.ts` (pure, no `eval`). Make T084 pass.
-- [ ] T088 [US8] Implement `packages/web/components/widget/checkout-app.tsx` (client leaf) using S44 `identify`. Make T085 pass.
-- [ ] T089 [US8] Add the esbuild script `build:widget` in `packages/web/package.json` and `app/widget/v1/app.js/route.ts` serving the built script with the T086 headers; URL from `config.widgetAppBundleUrl`; excluded from the proxy matcher. Make T086 pass.
+- [X] T087 [US8] Implement `packages/web/lib/widget/messages.ts` (pure, no `eval`). Make T084 pass.
+- [X] T088 [US8] Implement `packages/web/components/widget/checkout-app.tsx` (client leaf) using S44 `identify`. Make T085 pass.
+- [X] T089 [US8] Add the esbuild script `build:widget` in `packages/web/package.json` and `app/widget/v1/app.js/route.ts` serving the built script with the T086 headers; URL from `config.widgetAppBundleUrl`; excluded from the proxy matcher. Make T086 pass.
 
 ---
 
 ## Phase 12: User Story 9 — Liveness (P3)
 
-- [ ] T090 [P] [US9] Write failing `packages/web/app/health/route.test.ts` (AS-41): `200 {"status":"ok"}`, `Cache-Control: no-store`, no outbound call.
-- [ ] T091 [US9] Implement `packages/web/app/health/route.ts`. Make T090 pass.
+- [X] T090 [P] [US9] Write failing `packages/web/app/health/route.test.ts` (AS-41): `200 {"status":"ok"}`, `Cache-Control: no-store`, no outbound call.
+- [X] T091 [US9] Implement `packages/web/app/health/route.ts`. Make T090 pass.
 
 ---
 

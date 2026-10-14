@@ -174,12 +174,6 @@ async function main() {
   });
   await db.connect();
   try {
-    // Products created before the catalog writer mirrored "createdBy" into the legacy "sellerId" column (which chat,
-    // not converted yet, still reads) get it now; a no-op on a fresh database.
-    await db.query(
-      `UPDATE "Product" SET "sellerId" = "createdBy" WHERE "sellerId" IS NULL AND "createdBy" IS NOT NULL`,
-    );
-
     // Restock: reservations of earlier runs hold units until they lapse, so the demo products never fall below their
     // seed quantity. Direct write for the same reason as the admin role: no API sets stock for a demo database.
     for (const p of PRODUCTS)
