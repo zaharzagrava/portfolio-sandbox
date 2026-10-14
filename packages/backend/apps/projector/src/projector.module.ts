@@ -59,6 +59,7 @@ import { Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { OpenTelemetryModule } from 'nestjs-otel';
 import { ApiConfigModule } from '@app/common/config';
+import { ErrorUtilsModule } from '@app/common/errors/error-utils/error-utils.module';
 import { PlatformModule } from '@app/infrastructure/platform';
 import { DatabaseModule } from '@app/infrastructure/database';
 import { RedisModule } from '@app/infrastructure/redis/redis.module';
@@ -79,6 +80,8 @@ import { CacheModule } from '@app/infrastructure/cache/cache.module';
 @Module({
   imports: [
     ApiConfigModule,
+    // bootstrap-http looks up RouteTable; Nest aborts the process when it is missing (the try/catch there cannot stop it), so the standalone projector did not boot
+    ErrorUtilsModule,
     PlatformModule,
     DatabaseModule,
     RedisModule,

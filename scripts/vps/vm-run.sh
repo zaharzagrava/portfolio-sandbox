@@ -91,6 +91,11 @@ if [[ "${SDD_IMAGE:-be}" == fe ]]; then
   done
   [[ -n "$chromium_ok" ]] || fail_and_wait "playwright install chromium failed 8 times (see $LOG/playwright-install.log)"
 fi
+# ffmpeg and ffprobe (>= 5) for the video capability (S30 T064/T065 were blocked for a night: "package installation was denied to the agent"); best effort, a minute at most
+if ! command -v ffprobe >/dev/null 2>&1; then
+  say "installing ffmpeg"
+  (export DEBIAN_FRONTEND=noninteractive; timeout 240 apt-get install -y -qq ffmpeg >"$LOG/ffmpeg-install.log" 2>&1 || { timeout 120 apt-get update -qq >>"$LOG/ffmpeg-install.log" 2>&1; timeout 240 apt-get install -y -qq ffmpeg >>"$LOG/ffmpeg-install.log" 2>&1; }) || say "WARN: ffmpeg did not install (see $LOG/ffmpeg-install.log)"
+fi
 [[ -f packages/backend/.env.test ]] || cp packages/backend/env/test.env.example packages/backend/.env.test
 if [[ ! -f packages/backend/creds/jwtRS256.key ]]; then
   mkdir -p packages/backend/creds

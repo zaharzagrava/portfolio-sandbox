@@ -10,7 +10,7 @@ export DEBIAN_FRONTEND=noninteractive
 
 echo "== packages"
 apt-get update -y
-apt-get install -y ca-certificates curl git jq tmux unzip build-essential python3 python3-pip openssl xz-utils
+apt-get install -y ca-certificates curl git jq tmux unzip build-essential python3 python3-pip openssl xz-utils ffmpeg
 
 echo "== docker"
 command -v docker >/dev/null || curl -fsSL https://get.docker.com | sh

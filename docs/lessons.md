@@ -26,6 +26,7 @@ with the links that prove it: backticked file paths and commit hashes. For a `pr
 - L-015 2026-10-13 wiring prevented
 - L-016 2026-10-13 config prevented
 - L-017 2026-10-13 process prevented
+- L-018 2026-10-14 wiring prevented
 
 ## L-001 A message option the queue refuses, found only by hand
 - **Rule:** A queue option must be validated where the message is created, not discovered when the relay fails (FIFO-only options like `groupId` never go to a standard queue).
@@ -103,6 +104,8 @@ with the links that prove it: backticked file paths and commit hashes. For a `pr
 - **Symptom:** I debugged against a warm local stack for hours while the cloud machine, which starts fresh, kept failing. **Cause:** the reproduction did not match the
   environment where it failed. **Prevention:** `scripts/qa/fresh-run.sh` (fresh throwaway stack, whole suite once) is a repository script. On the cloud runner use `scripts/qa/fresh-run.sh --here`: the runner's own
   dev stack started empty when the machine booted, a second stack cannot start next to it, and the `payment_system_*` containers must never be stopped there. A task that asks for
+  "the real `apps/projector` / `apps/core` / `apps/worker` boot" is closed with `scripts/infra/boot-app.sh <app>` (starts that one app on its own port, shows its consumer and job log lines, stops it); an
+  agent cannot approve a command, so every command a task needs is on the allow-list in `implement-specs.sh` (S36, S39, S47 were blocked a night for lack of it). A task that asks for
   an "empty-stack run" is closed with `--here` plus the checks it lists (S19 T072 was blocked for a night waiting for a person to stop the stack, 2026-10-13).
 
 ## L-013 A benchmark that measured its own leftovers
@@ -131,3 +134,8 @@ with the links that prove it: backticked file paths and commit hashes. For a `pr
 - **Rule:** Tests are replaced, split, merged and renamed all the time. The thing that must not disappear is a scenario (the behavior a test proves), not a file.
 - **Symptom:** S34 (recommendations) replaced its old journey test `recommendations.e2e-spec.ts` by five focused files that carry the same scenario ids; the gate still failed with "test file deleted", and the repair prompt told the agent to never delete a test. **Cause:** the integrity guard counted files and `it(`/`expect(` calls, and the prompts said "never delete a test".
 - **Prevention:** `scripts/sdd/check-tests.py integrity` now fails a deleted or shrunk test file only when a scenario id it carried (`S34 AS-12`) is in no test any more and is not retired in `specs/<capability>/retired-scenarios.md`; a deleted file that carried no scenario id is still a finding. The three repair prompts say "never lose a scenario" instead. Tests in `scripts/sdd/test_check_tests.py`.
+
+## L-018 The monolith booted, the applications it is made of did not
+- **Rule:** Every deployable app must boot on its own, not only inside the monolith that hosts them all. The monolith supplies modules and settings that a standalone app lacks.
+- **Symptom:** three capabilities (S36, S39, S47) stopped on a task "the real `apps/projector`, `apps/core`, `apps/worker` boot" that the unattended agent could not run; when it was run (2026-10-14), `apps/projector` aborted at start (Nest cannot find `RouteTable`; the `try/catch` around the lookup cannot stop Nest's abort), `apps/payment-processor` still does not boot (missing imports), and the dev `.env` lacked five settings that capabilities had made required. **Cause:** the gates and the boot check start only the monolith or small test modules.
+- **Prevention:** `scripts/infra/boot-app.sh <app>` boots one real app on its own port and shows its consumers and jobs; it is on the agents' allow-list; `projector` and the dev `.env` are fixed. Not covered yet: `payment-processor`; boot-app is not part of the gate (only the monolith boot check is).

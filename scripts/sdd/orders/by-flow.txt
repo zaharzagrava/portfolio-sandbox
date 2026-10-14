@@ -47,7 +47,7 @@ W07:P1  # needs: S48
 W01:P1  # needs: S01 S02 S48
 W02:P1  # needs: S03 S05 S32 S33 S34 S35 S48
 W03:P1  # needs: S10 S13 S48 S51
-!STOP buy-ui  Browser flow: open the storefront, find a product by search, open its page, add it to the cart, sign in, pay, see the success page. Pages show only what P1 covers.
+# (checkpoint removed on 2026-10-14: buy-ui; the one checkpoint is at the end of this file)
 
 # 5. Second pass: finish the specs above (P2/P3 stories), providers before the specs that call them
 S01
@@ -82,7 +82,7 @@ W07
 W01
 W02
 W03
-!STOP storefront-complete  Storefront complete: discussions, ask-this-product, share links, pickup near me, videos, sponsored cards, order history, notification bell, developer docs.
+# (checkpoint removed on 2026-10-14: storefront-complete; the one checkpoint is at the end of this file)
 
 # 6. Featured on the resume: webhooks, LLM provider port, integrations, offline sync
 S43
@@ -96,7 +96,7 @@ S16
 S17
 S18
 J01
-!STOP payout-journey  Buy-to-payout journey (J01): order paid, ledger, settlement, seller payout, monthly statement.
+# (checkpoint removed on 2026-10-14: payout-journey; the one checkpoint is at the end of this file)
 
 # 8. Commerce, onboarding, content
 S12
@@ -126,3 +126,6 @@ J02
 J03
 J04
 J05
+
+# 99. The one checkpoint: every capability above is built; now the regression sweep, the scripted flows, the QA agent and the checkpoint repair agent run once.
+!STOP final  Everything is built: regression sweep of all backend suites and the browser suite, the scripted buy flow, the QA agent (CHECKPOINT_QA), checkpoint repair when something fails.
