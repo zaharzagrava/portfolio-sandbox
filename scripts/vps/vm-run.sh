@@ -128,7 +128,7 @@ fi
 DEV_PID=""; API_PID=""
 if [[ "${SDD_IMAGE:-be}" == fe && -z "${SDD_SKIP_STACK:-}" ]]; then
   say "starting the dev stack"
-  bash scripts/infra/make-dev-env.sh >/dev/null
+  FORCE=1 bash scripts/infra/make-dev-env.sh >/dev/null   # always rewrite: the .env of the image is old, and capabilities add required settings (2026-10-14: five missing, the API did not start)
   scripts/infra/stack.sh dev setup >"$LOG/dev-stack.log" 2>&1 &
   DEV_PID=$!
   for _ in $(seq 1 360); do
@@ -141,7 +141,7 @@ if [[ "${SDD_IMAGE:-be}" == fe && -z "${SDD_SKIP_STACK:-}" ]]; then
   export API_LOG="$LOG/api.log"   # read by the QA agent (scripts/qa/run.sh) when a checkpoint runs it
   pnpm --filter api run start:dev:monolith >"$LOG/api.log" 2>&1 &
   API_PID=$!
-  api_cause() { sed 's/\x1b\[[0-9;]*m//g' "$LOG/api.log" | grep -m2 -E "UnknownDependenciesException|Nest can't resolve|error TS[0-9]+|Cannot find module" | cut -c1-260 | tr '\n' ' '; }
+  api_cause() { sed 's/\x1b\[[0-9;]*m//g' "$LOG/api.log" | grep -m2 -E "UnknownDependenciesException|Nest can't resolve|error TS[0-9]+|Cannot find module|Config validation error" | cut -c1-260 | tr '\n' ' '; }
   for _ in $(seq 1 120); do
     curl -sf http://localhost:8000/health/ready >/dev/null && break
     kill -0 "$API_PID" 2>/dev/null || fail_and_wait "the API exited during start-up: $(api_cause)(see $LOG/api.log)"

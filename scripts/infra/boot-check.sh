@@ -22,7 +22,7 @@ fi
 echo "boot-check: the monolith is NOT ready after ${WAIT}s${log:+ (log: $log)}" >&2
 if [[ -n "$log" && -f "$log" ]]; then
   # the first error is the cause; what follows is noise
-  sed 's/\x1b\[[0-9;]*m//g' "$log" | grep -m6 -E "UnknownDependenciesException|Nest can't resolve|ERROR \[|error TS[0-9]+|Cannot find module|Error: " | cut -c1-400 >&2
+  sed 's/\x1b\[[0-9;]*m//g' "$log" | grep -m6 -E "UnknownDependenciesException|Nest can't resolve|ERROR \[|error TS[0-9]+|Cannot find module|Config validation error|Error: " | cut -c1-400 >&2
 fi
 [[ -n "$pid" ]] && { kill -- "-$pid" 2>/dev/null || kill "$pid" 2>/dev/null; }
 exit 1
