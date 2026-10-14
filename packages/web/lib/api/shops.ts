@@ -2,7 +2,9 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from './client';
-import { fuzzyMatches } from '../fuzzy';
+
+/** The longest search text `GET /api/shops/:shopId/products/search` accepts (S32). */
+const SHOP_SEARCH_MAX = 100;
 
 /** Multi-tenant shops (SD-02). Opening a shop makes the owner a SELLER (on the next token refresh). */
 export interface MyShop {
@@ -68,14 +70,12 @@ export function useShopProducts(shopId: string | undefined, q = '') {
     queryKey: ['shop-products', shopId, q],
     enabled: !!shopId,
     queryFn: async () => {
-      // The shop list has no text search (S-catalog): fetch the shop's products and match typo-tolerantly here.
-      const { data } = await apiClient.get<{ items: { id: string; title: string; priceMinor: number; quantity: number }[] }>(
-        `/api/shops/${shopId}/products`,
-        { params: { limit: 50 } },
-      );
-      return data.items
-        .filter((item) => fuzzyMatches(item.title, q))
-        .map((item): ShopProduct => ({ id: item.id, title: item.title, price: item.priceMinor, quantity: item.quantity }));
+      const text = q.trim().slice(0, SHOP_SEARCH_MAX);
+      // S32: typo-tolerant, shop-scoped search on the server; the plain list when there is nothing to search for.
+      const { data } = text
+        ? await apiClient.get<{ items: { id: string; title: string; priceMinor: number; quantity: number }[] }>(`/api/shops/${shopId}/products/search`, { params: { q: text, limit: 50 } })
+        : await apiClient.get<{ items: { id: string; title: string; priceMinor: number; quantity: number }[] }>(`/api/shops/${shopId}/products`, { params: { limit: 50 } });
+      return data.items.map((item): ShopProduct => ({ id: item.id, title: item.title, price: item.priceMinor, quantity: item.quantity }));
     },
   });
 }

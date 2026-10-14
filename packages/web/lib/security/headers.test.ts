@@ -52,6 +52,12 @@ describe('W07 security headers (lib/security/headers.ts)', () => {
     }
   });
 
+  it('W07 AS-34: private areas send noindex, public pages do not', () => {
+    const noindex = (path: string) => securityHeaderRules(true).some((rule) => matchesSource(rule.source, path) && rule.headers.some((h) => h.key === 'X-Robots-Tag' && h.value === 'noindex'));
+    for (const path of ['/dashboard/orders', '/account/security', '/checkout/pay/x', '/cart', '/chat', '/admin/feature-flags', '/invites/tok', '/api/orders']) expect(noindex(path), path).toBe(true);
+    for (const path of ['/', '/privacy', '/terms', '/products/abc', '/search', '/developers/docs']) expect(noindex(path), path).toBe(false);
+  });
+
   it('W07 AS-20: noStorePaths equal the robots disallow list (plus /api/)', () => {
     expect(noStorePaths).toEqual(['/dashboard/', '/account/', '/checkout/', '/cart', '/chat', '/admin/', '/invites/', '/api/']);
   });

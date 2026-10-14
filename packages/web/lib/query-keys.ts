@@ -80,6 +80,9 @@ export const queryKeys = {
     preferences: () => ['notifications', 'preferences'] as const,
     devices: () => ['notifications', 'devices'] as const,
   },
+  developers: {
+    openapi: ['developers', 'openapi'] as const,
+  },
   seller: {
     dashboard: (shopId: string) => ['seller', shopId, 'dashboard'],
     products: (shopId: string) => ['seller', shopId, 'products'],

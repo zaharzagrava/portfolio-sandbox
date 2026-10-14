@@ -16,6 +16,11 @@ const bellMounts = { count: 0 };
 vi.mock('next/navigation', () => ({ usePathname: () => mockPathname, useRouter: () => ({ push: vi.fn() }) }));
 vi.mock('@/hooks/use-auth', () => ({ useAuth: () => ({ isAuthenticated: mockAuthenticated, user: null, isLoading: false }) }));
 vi.mock('@/components/layout/mobile-menu', () => ({ MobileMenu: () => <button type="button" aria-label="Open menu" data-testid="mobile-menu" /> }));
+// The real slots are async Server Components (they read the session cookie); here they gate on the mocked session.
+vi.mock('@/components/layout/session-slots', () => ({
+  MobileLoginSlot: () => null,
+  MemberSlot: ({ children }: { children: React.ReactNode }) => (mockAuthenticated ? <>{children}</> : null),
+}));
 vi.mock('@/components/layout/search-row', () => ({ SearchRow: () => <button type="button" aria-label="Search" data-testid="search-row" /> }));
 vi.mock('@/components/layout/theme-control', () => ({
   ThemeControl: () => {
@@ -47,7 +52,7 @@ vi.mock('@/components/cart/cart-badge', () => ({
     );
   },
 }));
-vi.mock('@/components/notifications-popover', async () => {
+vi.mock('@/components/notifications/notifications-popover', async () => {
   const { useEffect } = await import('react');
   return {
     NotificationsPopover: () => {

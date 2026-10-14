@@ -4,7 +4,7 @@ import { Menu } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
-import { MobileAccountEntries, MobileLoginLink } from '@/components/auth/account-menu';
+import { MobileAccountEntries } from '@/components/auth/account-menu';
 import { AssistantLauncher } from '@/components/chat/assistant-launcher';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
@@ -86,7 +86,6 @@ export function MobileMenu() {
         </div>
       </SheetContent>
     </Sheet>
-    <MobileLoginLink />
     </>
   );
 }

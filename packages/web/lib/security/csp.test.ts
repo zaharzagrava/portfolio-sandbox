@@ -34,7 +34,8 @@ describe('W07 CSP builder (lib/security/csp.ts)', () => {
       'font-src': ["'self'"],
       'img-src': ["'self'", 'data:', 'blob:', ...HOSTS.mediaHosts, 'https://tiles.example.com'],
       'media-src': ["'self'", 'blob:', 'https://video.example.com'],
-      'connect-src': ["'self'"],
+      'connect-src': ["'self'", 'https://tiles.example.com', 'https://video.example.com'],
+      'worker-src': ["'self'", 'blob:'],
       'frame-src': ["'none'"],
       'object-src': ["'none'"],
       'frame-ancestors': ["'none'"],
@@ -58,7 +59,7 @@ describe('W07 CSP builder (lib/security/csp.ts)', () => {
     const prod = csp({ hosts: HOSTS });
     const dev = csp({ isDev: true, hosts: HOSTS });
     expect(dev['script-src']).toEqual([...prod['script-src'], "'unsafe-eval'"]);
-    expect(dev['connect-src']).toEqual(["'self'", 'ws:', 'wss:']);
+    expect(dev['connect-src']).toEqual(["'self'", 'ws:', 'wss:', 'https://tiles.example.com', 'https://video.example.com']);
     expect(dev['upgrade-insecure-requests']).toBeUndefined();
     const { 'script-src': _a, 'connect-src': _b, 'upgrade-insecure-requests': _c, ...restDev } = dev;
     const { 'script-src': _d, 'connect-src': _e, 'upgrade-insecure-requests': _f, ...restProd } = prod;
@@ -70,6 +71,21 @@ describe('W07 CSP builder (lib/security/csp.ts)', () => {
     const policy = buildCsp({ nonce: 'abc', pathname: '/', isDev: false, hosts: NO_HOSTS });
     expect(policy).toContain("'nonce-abc'");
     expect(policy).not.toMatch(/\n/);
+  });
+
+  it('W07 AS-18: the map tile host and the video hosts are also in connect-src (MapLibre and hls.js load with fetch), and blob: is allowed for workers, only when one is configured', () => {
+    const none = csp();
+    expect(none['connect-src']).toEqual(["'self'"]);
+    expect(none['worker-src']).toBeUndefined();
+    const map = csp({ hosts: { ...NO_HOSTS, mapTileHost: 'https://tiles.example.com' } });
+    expect(map['connect-src']).toEqual(["'self'", 'https://tiles.example.com']);
+    expect(map['worker-src']).toEqual(["'self'", 'blob:']);
+    const video = csp({ hosts: { ...NO_HOSTS, videoHosts: ['https://video.example.com', 'https://video2.example.com:8443'] } });
+    expect(video['connect-src']).toEqual(["'self'", 'https://video.example.com', 'https://video2.example.com:8443']);
+    expect(video['worker-src']).toEqual(["'self'", 'blob:']);
+    // blob: never reaches script-src
+    expect(video['script-src']).not.toContain('blob:');
+    expect(map['script-src']).not.toContain('blob:');
   });
 
   it('W07 AS-18: map host is in img-src only when configured', () => {

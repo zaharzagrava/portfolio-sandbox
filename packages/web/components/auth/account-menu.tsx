@@ -134,9 +134,12 @@ function AccountArea() {
 }
 
 /** Header icon link for visitors below 1024 px, where the desktop slot is hidden (nothing for members or while unknown). */
-export function MobileLoginLink() {
+export function MobileLoginLink({ initialAnonymous }: { initialAnonymous?: boolean } = {}) {
   const { status } = useAuth();
-  if (status !== 'anonymous') return null;
+  // `initialAnonymous` is what the server read from the cookie (`MobileLoginSlot`): while the browser's session query has no
+  // answer, it decides, so the server's markup and the first client render agree whether or not the server's cache had the session.
+  const anonymous = status === 'loading' && initialAnonymous !== undefined ? initialAnonymous : status === 'anonymous';
+  if (!anonymous) return null;
   return (
     <Button asChild variant="ghost" size="icon-lg" className="size-11 lg:hidden">
       <Link href="/login" aria-label="Log in">
