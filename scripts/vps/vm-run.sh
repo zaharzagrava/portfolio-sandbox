@@ -48,6 +48,12 @@ fail_and_wait() { # a setup problem or an unexpected loop failure: keep the mach
 
 say "runner starting: order=$SDD_ORDER until=${SDD_UNTIL:-none} ids='${SDD_ARGS:-}' hours=$SDD_HOURS branch=$PUSH_BRANCH"
 
+# Ubuntu's nightly job (apt-daily-upgrade -> unattended-upgrades -> needrestart) restarted THIS service twice on 2026-10-14 (08:42 and 19:00 UTC): "Stopped sdd-run.service, Started
+# sdd-run.service" killed the loop in the middle of a pass. A disposable build machine needs no unattended upgrades: switch the job off before anything else runs.
+systemctl stop apt-daily.timer apt-daily-upgrade.timer unattended-upgrades.service 2>/dev/null || true
+systemctl mask apt-daily.timer apt-daily-upgrade.timer apt-daily.service apt-daily-upgrade.service unattended-upgrades.service 2>/dev/null || true
+mkdir -p /etc/needrestart/conf.d 2>/dev/null && echo "\$nrconf{restart} = 'l';" > /etc/needrestart/conf.d/90-sdd.conf 2>/dev/null || true   # list services to restart, never restart them
+
 # --- git: work on PUSH_BRANCH (resume it if it exists on origin, else start from BASE_BRANCH), never on BASE_BRANCH
 # identity through the environment, never through `git config --global`: that would overwrite the identity of whoever runs this
 # script by hand (it happened once on a laptop while rehearsing)
@@ -58,9 +64,15 @@ git fetch -q origin || fail_and_wait "git fetch failed (deploy key?)"
 # where to start: the newest of PUSH_BRANCH and the safety snapshot sdd/wip (a crashed run leaves the snapshot newer, with its
 # uncommitted work); a branch that does not exist yet starts from BASE_BRANCH
 pick_start_ref() {
-  local auto="" wip="" wt at=0
+  local auto="" wip="" wt at=0 lt ref_t
   git rev-parse -q --verify "refs/remotes/origin/$PUSH_BRANCH" >/dev/null && auto="origin/$PUSH_BRANCH"
   git rev-parse -q --verify "refs/remotes/origin/sdd/wip" >/dev/null && wip="origin/sdd/wip"
+  if [[ -n "${LOCAL_WIP:-}" ]]; then
+    lt="$(git log -1 --format=%ct "$LOCAL_WIP")"; ref_t=0
+    [[ -n "$wip" ]] && ref_t="$(git log -1 --format=%ct "$wip")"
+    [[ -n "$auto" ]] && { at="$(git log -1 --format=%ct "$auto")"; (( at > ref_t )) && ref_t=$at; }
+    (( lt >= ref_t )) && { echo "$LOCAL_WIP"; return; }
+  fi
   if [[ -n "$wip" ]]; then
     wt="$(git log -1 --format=%ct "$wip")"
     [[ -n "$auto" ]] && at="$(git log -1 --format=%ct "$auto")"
@@ -68,6 +80,12 @@ pick_start_ref() {
   fi
   [[ -n "$auto" ]] && echo "$auto" || echo "origin/$BASE_BRANCH"
 }
+# A restart on a machine that already worked (the service was killed, not ended): keep what the tree holds, or the checkout below refuses ("local changes would be overwritten")
+# and the run is lost. The commit takes part in the choice of the start, like the snapshot.
+if [[ -n "$(git status --porcelain 2>/dev/null)" ]]; then
+  git add -A && git commit -q -m "wip(sdd): work in progress when the runner restarted" && say "saved the working tree of the interrupted run ($(git rev-parse --short HEAD))"
+  LOCAL_WIP="$(git rev-parse HEAD)"
+fi
 start_ref="$(pick_start_ref)"
 git checkout -q -B "$PUSH_BRANCH" "$start_ref" || fail_and_wait "cannot check out $start_ref"
 if [[ "$start_ref" != "origin/$BASE_BRANCH" ]]; then

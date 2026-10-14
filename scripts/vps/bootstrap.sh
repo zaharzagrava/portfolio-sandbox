@@ -11,6 +11,9 @@ export DEBIAN_FRONTEND=noninteractive
 echo "== packages"
 apt-get update -y
 apt-get install -y ca-certificates curl git jq tmux unzip build-essential python3 python3-pip openssl xz-utils ffmpeg
+# a build machine needs no unattended upgrades: the nightly job restarted the runner service in the middle of a run (2026-10-14)
+systemctl mask apt-daily.timer apt-daily-upgrade.timer apt-daily.service apt-daily-upgrade.service unattended-upgrades.service 2>/dev/null || true
+mkdir -p /etc/needrestart/conf.d && echo "\$nrconf{restart} = 'l';" > /etc/needrestart/conf.d/90-sdd.conf
 
 echo "== docker"
 command -v docker >/dev/null || curl -fsSL https://get.docker.com | sh
