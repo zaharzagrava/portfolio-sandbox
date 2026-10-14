@@ -124,8 +124,8 @@
 ### Tests first (`M/video-pipeline.e2e-spec.ts`, describe `Video transcoding pipeline`)
 
 - [X] T063 [US2] AS-15 happy path: real 6 s 720p clip → wave order probe → poster ∥ thumbnails ∥ rungs → package → publish, `READY`, master with 3 renditions, VOD playlists, poster, sprite, one `video.ready`, history rows, all tasks `DONE`.
-- [ ] T064 [US2] AS-18 renditions line up: sources at 24/25/30/50/60 fps → equal segment counts and boundaries, keyframe at each start, ≤ 4.5 s, VOD, end-of-list, target 4.
-- [ ] T065 [US2] AS-19 master accuracy: measured peak/average vs segments, real resolution, frame rate, codecs; audio-less source has no audio codec.
+- [X] T064 [US2] AS-18 renditions line up: sources at 24/25/30/50/60 fps → equal segment counts and boundaries, keyframe at each start, ≤ 4.5 s, VOD, end-of-list, target 4.
+- [X] T065 [US2] AS-19 master accuracy: measured peak/average vs segments, real resolution, frame rate, codecs; audio-less source has no audio codec.
 - [X] T066 [US2] AS-21 rejection end to end: text file, audio-only, truncated MP4 → `FAILED` with code, one attempt, other tasks `CANCELLED`, no outputs, one `video.failed`, no decoder text in `GET`.
 - [X] T067 [US2] AS-22 fan-in exactly once: four siblings finish via `Promise.all` → one `package` claim and message; duplicate messages for finished tasks are stale no-ops.
 - [X] T068 [US2] AS-23 one runner per task: same message to two workers at once → one runs, one "busy" with no attempt; lease expiry takeover counts an attempt.
@@ -298,3 +298,8 @@ Phases 1–3 (US1): resumable upload end to end. The first useful release is US1
 ## Notes
 
 - Total: 135 tasks. Per phase: Setup 5, Foundational 36, US1 21, US2 18, US3 14, US4 10, US5 12, US6 10, Polish 9.
+
+## Phase 10: Convergence
+
+- [X] T136 Add `@aws-sdk/client-cloudfront`, provide `DELIVERY_EDGE_INVALIDATOR` (a `CreateInvalidation` call) in the worker app, and prove with a test that a deleted public video's `edgePurgedAt` is set; if the package cannot be installed in the runner, record the blocker in questions.md per SC-008 (partial)
+- [X] T137 Add rows to `specs/UNVERIFIED.md` (spec, criterion, how to run, status `not run`) for the two quickstart "Ops artifacts" items that have none: the missing production edge invalidator and the unplanned `aws_cloudfront_distribution.video` / `vsrc/` lifecycle rule, per SC-008 / AS-60 (partial)

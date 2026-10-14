@@ -116,3 +116,14 @@
 {"run":"20261013T163357Z","capability":"S11","step":"tasks","start":"2026-10-14T02:27:18Z","end":"2026-10-14T02:29:03Z","seconds":105,"result":"ok","attempt":1,"reason":"ok"}
 {"run":"20261013T163357Z","capability":"S11","step":"analyze","start":"2026-10-14T02:29:03Z","end":"2026-10-14T02:29:43Z","seconds":40,"result":"ok","attempt":1,"reason":"ok"}
 {"run":"20261013T163357Z","capability":"S11","step":"implement-1","start":"2026-10-14T02:29:43Z","end":"2026-10-14T02:34:03Z","seconds":260,"result":"stopped","attempt":1,"reason":"deadline"}
+{"run":"20261014T072348Z","capability":"-","step":"run-start","start":"2026-10-14T07:23:48Z","end":"2026-10-14T07:23:48Z","seconds":0,"result":"ok","attempt":1,"reason":"commit=4e20d92e MAX_GATE_REPAIRS=5 MAX_REPAIRS_PER_SPEC=3 REPAIR_BUDGET_MIN=60 MAX_IMPLEMENT_PASSES=10"}
+{"run":"20261014T072348Z","capability":"S30","step":"implement-1","start":"2026-10-14T07:23:49Z","end":"2026-10-14T07:26:19Z","seconds":150,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261014T072348Z","capability":"S30","step":"converge-1","start":"2026-10-14T07:26:19Z","end":"2026-10-14T07:26:59Z","seconds":40,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261014T072348Z","capability":"S30","step":"implement-2","start":"2026-10-14T07:26:59Z","end":"2026-10-14T07:29:20Z","seconds":141,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261014T072348Z","capability":"S30","step":"converge-2","start":"2026-10-14T07:29:20Z","end":"2026-10-14T07:29:50Z","seconds":30,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261014T072348Z","capability":"S30","step":"gate","start":"2026-10-14T07:29:50Z","end":"2026-10-14T07:29:52Z","seconds":2,"result":"fail","attempt":1,"reason":"scenarios in test-plan.md with no test carrying their ID (name tests it('S30 AS-NN: ...')): AS-61"}
+{"run":"20261014T072348Z","capability":"S30","step":"repair-1","start":"2026-10-14T07:29:53Z","end":"2026-10-14T07:30:43Z","seconds":50,"result":"ok","attempt":1,"reason":"ok","code_changed":false}
+{"run":"20261014T072348Z","capability":"S30","step":"gate","start":"2026-10-14T07:30:43Z","end":"2026-10-14T07:37:12Z","seconds":389,"result":"fail","attempt":2,"reason":"FAIL libs/domains/media/video-management.e2e-spec.ts (7.226 s)"}
+{"run":"20261014T072348Z","capability":"S30","step":"repair-2","start":"2026-10-14T07:37:12Z","end":"2026-10-14T07:42:18Z","seconds":306,"result":"ok","attempt":1,"reason":"ok","code_changed":true}
+{"run":"20261014T072348Z","capability":"S30","step":"gate","start":"2026-10-14T07:42:18Z","end":"2026-10-14T07:48:18Z","seconds":360,"result":"pass","attempt":3,"reason":""}
+{"run":"20261014T072348Z","capability":"S30","step":"built","start":"2026-10-14T07:23:48Z","end":"2026-10-14T07:48:18Z","seconds":1470,"result":"ok","attempt":1,"reason":"Product video and VOD: resumable upload, transcoding DAG, HLS ladder, signed delivery"}

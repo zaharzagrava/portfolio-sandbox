@@ -5,6 +5,7 @@ import {
   DeliveryEdge,
   DeliveryEdgeNotConfiguredError,
 } from './delivery-edge.port';
+import { createCloudFrontInvalidator } from './cloudfront-invalidator';
 import { UnconfiguredDeliveryEdge } from './unconfigured-delivery-edge';
 
 /** Optional override: sends invalidations to the CDN. Without it `invalidate` fails with the typed error. */
@@ -27,15 +28,18 @@ export const DELIVERY_EDGE_INVALIDATOR = Symbol('DELIVERY_EDGE_INVALIDATOR');
         const keyPairId = config.get('cloudfront_key_pair_id');
         const privateKey = config.get('cloudfront_private_key');
         if (!keyPairId || !privateKey) return new UnconfiguredDeliveryEdge();
+        const distributionId = config.get('video_cloudfront_distribution_id');
         return new CloudFrontDeliveryEdge({
           keyPairId,
           privateKey,
           invalidate:
             invalidate ??
-            (() =>
-              Promise.reject(
-                new DeliveryEdgeNotConfiguredError('invalidation path'),
-              )),
+            (distributionId
+              ? createCloudFrontInvalidator({ distributionId })
+              : () =>
+                  Promise.reject(
+                    new DeliveryEdgeNotConfiguredError('invalidation path'),
+                  )),
         });
       },
     },

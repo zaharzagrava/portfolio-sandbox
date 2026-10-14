@@ -117,7 +117,7 @@ describe('Video management API', () => {
         width: 1280,
         height: 720,
         shareToken: (await row(ok.id)).shareToken,
-        posterUrl: `https://stream.localhost/u/${ok.id}/poster/a1/poster.jpg`,
+        posterUrl: `${(process.env.VIDEO_CDN_URL || 'https://stream.localhost').replace(/\/+$/, '')}/u/${ok.id}/poster/a1/poster.jpg`,
         spriteUrl: null,
         version: 1,
       });

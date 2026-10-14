@@ -52,7 +52,12 @@ const OUTPUTS: VideoOutputs = {
     },
   ],
 };
-const ORIGIN = 'https://stream.localhost';
+// The video host and cookie domain come from the test environment (.env.test), not from a literal.
+const ORIGIN = (
+  process.env.VIDEO_CDN_URL || 'https://stream.localhost'
+).replace(/\/+$/, '');
+const COOKIE_DOMAIN = process.env.VIDEO_COOKIE_DOMAIN || 'localhost';
+const ORIGIN_HOST = new URL(ORIGIN).hostname.replace(/\./g, '\\.');
 const STATUSES = [
   'UPLOADING',
   'UPLOADED',
@@ -150,7 +155,7 @@ describe('Video playback and delivery API', () => {
         expect(line).toContain('HttpOnly');
         expect(line).toContain('SameSite=None');
         expect(line).toContain(`Path=/u/${v.id}/`);
-        expect(line).toContain('Domain=localhost');
+        expect(line).toContain(`Domain=${COOKIE_DOMAIN}`);
         expect(line).toContain(`Expires=${expires.toUTCString()}`);
       }
       const value = (name: string) =>
@@ -258,7 +263,7 @@ describe('Video playback and delivery API', () => {
       expect(res.body.code).toBe('service_unavailable');
       expect(cookies(res)).toEqual([]);
       expect(JSON.stringify(res.body)).not.toMatch(
-        /stream\.localhost|master\.m3u8|key/i,
+        new RegExp(`${ORIGIN_HOST}|master\\.m3u8|key`, 'i'),
       );
       // public playback is unaffected
       await playback((await ready()).id).expect(200);

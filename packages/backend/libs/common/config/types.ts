@@ -86,6 +86,8 @@ export class SecretsManagerConfig {
   video_cdn_url?: string;
   /** Parent cookie domain containing both the API host and the delivery host, e.g. .marketplace.dev (S30 FR-042). */
   video_cookie_domain?: string;
+  /** CloudFront distribution that serves video; with it the worker requests edge-cache removal of deleted public videos (S30 SC-008). */
+  video_cloudfront_distribution_id?: string;
 
   stripe_secret_key: string;
   stripe_publishable_key: string;

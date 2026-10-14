@@ -41,7 +41,7 @@ Run the six e2e files in separate processes (L-008); a batch without a summary l
 | AS-61: seller picks a file, upload with an interrupted part resumes, product page plays, share link plays anonymously | Playwright journey `packages/web/tests/seller-video.spec.ts` once W04/W02 ship the screens (none exist today) | not run |
 
 | AS-15 (real clip), AS-18, AS-19: real-encoder scenarios; the tests exist and are BLOCKED where `ffmpeg`/`ffprobe` are missing | install ffmpeg >= 5 and ffprobe, run `scripts/sdd/test-spec.sh libs/domains/media/video-pipeline.e2e-spec.ts` | not run |
-| Edge-cache removal of a deleted public video: `@aws-sdk/client-cloudfront` is not installed, so `DeliveryEdge.invalidate` has no production provider yet | provide `DELIVERY_EDGE_INVALIDATOR` (a `CreateInvalidation` call) in the worker app, then delete a public video and watch `edgePurgedAt` | not run |
+| Edge-cache removal against the real CDN: `createCloudFrontInvalidator` (a `CreateInvalidation` call) is the default provider when `video_cloudfront_distribution_id` is set; a unit test proves the call shape with a stub client, never a real distribution | set `video_cloudfront_distribution_id` on the worker, delete a public video, watch `edgePurgedAt` and the CDN `404` | not run |
 | The video distribution (`aws_cloudfront_distribution.video`) and the `vsrc/` lifecycle rule were written without `terraform plan` (no terraform in this runner) | `terraform plan` on `infra/stack`, then `bash scripts/ops/check-video-edge.sh <host> <publicId> <unlistedId>` (the script's exec bit could not be set by the harness: `chmod +x`) | not run |
 
-Each of the first seven rows has a matching line in `specs/UNVERIFIED.md`; the last two are operations steps tied to the edge row.
+Each of the first seven rows, and the two edge rows, has a matching line in `specs/UNVERIFIED.md`; the last two are operations steps tied to the edge row.

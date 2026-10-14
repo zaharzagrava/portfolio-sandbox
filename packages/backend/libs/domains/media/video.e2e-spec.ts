@@ -76,13 +76,24 @@ describe('Video journey, from upload to playback', () => {
     }
     expect(waves).toEqual([
       ['probe'],
-      ['poster', 'thumbnails', 'transcode:240', 'transcode:480', 'transcode:720'],
+      [
+        'poster',
+        'thumbnails',
+        'transcode:240',
+        'transcode:480',
+        'transcode:720',
+      ],
       ['package'], // the four siblings finished together and queued it once
       ['publish'],
     ]);
 
     const owner = videoOwnerSchema.parse(
-      (await t.as(w.viewer).get(`/api/shops/${w.shop.id}/videos/${started.videoId}`).expect(200)).body,
+      (
+        await t
+          .as(w.viewer)
+          .get(`/api/shops/${w.shop.id}/videos/${started.videoId}`)
+          .expect(200)
+      ).body,
     );
     expect(owner).toMatchObject({
       status: 'READY',
@@ -90,12 +101,24 @@ describe('Video journey, from upload to playback', () => {
       progress: { tasksDone: 8, tasksTotal: 8 },
     });
     const playback = videoPlaybackSchema.parse(
-      (await t.http().get(`/api/videos/${started.videoId}/playback`).expect(200)).body,
+      (
+        await t
+          .http()
+          .get(`/api/videos/${started.videoId}/playback`)
+          .expect(200)
+      ).body,
     );
-    expect(playback.masterUrl).toBe(`https://stream.localhost/p/${started.videoId}/master.m3u8`);
-    expect(playback.renditions.map((r) => r.name)).toEqual(['240p', '480p', '720p']);
+    expect(playback.masterUrl).toBe(
+      `${(process.env.VIDEO_CDN_URL || 'https://stream.localhost').replace(/\/+$/, '')}/p/${started.videoId}/master.m3u8`,
+    );
+    expect(playback.renditions.map((r) => r.name)).toEqual([
+      '240p',
+      '480p',
+      '720p',
+    ]);
     const listed = productVideosSchema.parse(
-      (await t.http().get(`/api/products/${product.id}/videos`).expect(200)).body,
+      (await t.http().get(`/api/products/${product.id}/videos`).expect(200))
+        .body,
     );
     expect(listed.items.map((i) => i.videoId)).toEqual([started.videoId]);
     expect(await t.outbox('video.ready')).toHaveLength(1);

@@ -88,5 +88,5 @@ Unit files: `domain/dag.spec.ts` (`task graph`), `domain/hls.spec.ts` (`HLS ladd
 | AS-58 configuration | E: boot with each missing or invalid setting → exit naming it; non-production unsigned mode → 503 for unlisted | — | — |
 | AS-59 boundary and ownership | E: runs `check:table-ownership --strict` and `check:boundaries`; registry entries; no foreign key (catalog query on the migrated schema); `VideoModule` boots from a test module importing only the barrel | — | — |
 | AS-60 delivery and storage operations | — (operations artifact: infrastructure code plus a post-deploy check; not an API test) | — | — |
-| AS-61 UI journey | — | `seller-video.spec.ts`: upload with an interrupted part, processing state, product page plays, share link plays for an anonymous visitor | — |
+| AS-61 UI journey (operations artifact: no seller or product video screen exists in `packages/web`; W04/W02 own the screens and the Playwright journey `seller-video.spec.ts`; listed in `specs/UNVERIFIED.md`, status "not run") | — | — | — |
 | AS-62 graceful shutdown | E: stub encoder running three tasks, close the app → encoders killed, tasks `QUEUED` with unchanged attempts, pools closed last, exit within 30 s | — | — |
