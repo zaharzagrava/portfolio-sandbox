@@ -8,7 +8,7 @@ import {
   RecommendationsProjectorModule,
   SearchProjectorModule,
 } from '@app/domains/discovery';
-import { PurchaseEventsProjector } from '@app/domains/experimentation';
+import { AnalyticsProjectorModule } from '@app/domains/experimentation';
 import {
   WebhookRouterProjector,
   WebhooksCoreModule,
@@ -112,7 +112,7 @@ import { CacheModule } from '@app/infrastructure/cache/cache.module';
         CourierTrackProjector,
         ApiRequestsProjector,
         WebhookRouterProjector,
-        PurchaseEventsProjector,
+        ...AnalyticsProjectorModule.projectors,
         StoryCacheInvalidator,
         StockPushProjector,
         LlmCallsProjector,
@@ -129,6 +129,7 @@ import { CacheModule } from '@app/infrastructure/cache/cache.module';
         VideoProjectorModule,
         KnowledgeProjectorModule,
         LedgerProjectorModule,
+        AnalyticsProjectorModule,
         IntegrationsCoreModule,
         StoryCacheModule,
         WebhooksCoreModule,

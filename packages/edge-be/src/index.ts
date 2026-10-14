@@ -1,4 +1,13 @@
 import { loaderScript } from './widget-loader';
+import {
+	INGEST_LIMITS,
+	readEnvelope,
+	sanitizeCountry,
+	sanitizePlatform,
+	toStoredMessage,
+	validateIngestBatch,
+	type StoredEventMessage,
+} from '../../contracts/src/analytics/ingest-rules';
 import { createRemoteJWKSet, decodeProtectedHeader, importSPKI, jwtVerify, type JWTPayload } from 'jose';
 
 export interface Env {
@@ -333,59 +342,69 @@ async function shortLinkRedirect(code: string, request: Request, env: Env, ctx: 
 
 // --- --- --- --- --- SD-31 analytics ingest at the edge --- --- --- --- --- //
 
-/** Mirrors packages/backend/libs/common/src/analytics/event-schema.ts (kept in sync by hand - no shared package across runtimes). */
-const EVENT_NAMES = new Set(['page_view', 'product_view', 'search', 'add_to_cart', 'checkout_step', 'exposure', 'click']);
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const MAX_EVENT_AGE_MS = 7 * 86_400_000;
-const MAX_CLOCK_SKEW_MS = 10 * 60_000;
+/** Events that could not be produced after every attempt, since this isolate started (no metrics pipeline at the edge). */
+export const edgeProduceStats = { failedEvents: 0 };
 
-type RawEvent = { event_id?: unknown; name?: unknown; anonymous_id?: unknown; ts?: unknown; page?: unknown; props?: unknown };
+/** Sleep and random source of the produce retry; tests replace them so nothing really waits. */
+export const collectHooks = {
+	sleep: (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms)),
+	random: (): number => Math.random(),
+};
 
-const chTime = (ms: number) => new Date(ms).toISOString().replace('T', ' ').replace('Z', '');
+const PRODUCE_ATTEMPTS = 3;
+const BACKOFF_BASE_MS = 100;
+const BACKOFF_CAP_MS = 1000;
+
+function problem(status: number, code: string, title: string): Response {
+	return new Response(JSON.stringify({ status, code, title }), { status, headers: { 'Content-Type': 'application/problem+json' } });
+}
+
+/** Produces every message (keyed by anonymous_id), retrying the whole group up to 3 times with full-jitter backoff. */
+async function produceAnalytics(env: Env, messages: StoredEventMessage[]): Promise<void> {
+	for (let attempt = 0; attempt < PRODUCE_ATTEMPTS; attempt++) {
+		try {
+			await Promise.all(messages.map((m) => produceToKafka(env, 'analytics.events', m.anonymous_id, m)));
+			return;
+		} catch {
+			if (attempt < PRODUCE_ATTEMPTS - 1) {
+				await collectHooks.sleep(collectHooks.random() * Math.min(BACKOFF_CAP_MS, BACKOFF_BASE_MS * 2 ** attempt));
+			}
+		}
+	}
+	edgeProduceStats.failedEvents += messages.length;
+	console.error(JSON.stringify({ event: 'edge_analytics_produce_failed', events: messages.length }));
+}
 
 /**
- * POST /collect - the browser's `navigator.sendBeacon` target (text/plain, no
- * preflight). Validates, enriches (country from Cloudflare, user from the JWT
- * if present), answers 202 immediately and produces to Kafka in `waitUntil`:
- * 200k events/s never reach the origin.
+ * POST /collect - the browser's `navigator.sendBeacon` target (text/plain, no preflight). Judges the batch with the
+ * rules shared with the backend fallback (packages/contracts/src/analytics/ingest-rules.ts, pinned by
+ * ingest-vectors.json), enriches (country from Cloudflare, user from the JWT if present), answers 202 immediately and
+ * produces to Kafka in `waitUntil`: 200k events/s never reach the origin.
  */
 async function collect(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
-	let body: { events?: RawEvent[] };
+	const decision = await checkRateLimit(await rateLimitSubject(request, env), env);
+	if (!decision.allowed) return rateLimitResponse(decision, request);
+
+	const text = await request.text();
+	if (new TextEncoder().encode(text).byteLength > INGEST_LIMITS.bodyBytes) return problem(413, 'payload_too_large', 'Payload Too Large');
+	let events: unknown[] | null;
 	try {
-		body = JSON.parse(await request.text());
+		events = readEnvelope(JSON.parse(text));
 	} catch {
-		return new Response('invalid json', { status: 400 });
+		events = null;
 	}
-	const events = Array.isArray(body.events) ? body.events.slice(0, 50) : [];
-	const now = Date.now();
-	const userId = (await tryGetUserId(request, env)) ?? '';
-	const country = request.headers.get('CF-IPCountry') ?? '';
-	const platform = request.headers.get('X-Client-Platform') ?? 'web';
+	if (!events) return problem(400, 'validation_failed', 'Bad Request');
 
-	const valid = events.flatMap((e) => {
-		if (typeof e.event_id !== 'string' || !UUID_RE.test(e.event_id)) return [];
-		if (typeof e.name !== 'string' || !EVENT_NAMES.has(e.name)) return [];
-		if (typeof e.anonymous_id !== 'string' || e.anonymous_id.length < 8 || e.anonymous_id.length > 64) return [];
-		if (typeof e.ts !== 'number' || e.ts < now - MAX_EVENT_AGE_MS) return [];
-		const props = e.props && typeof e.props === 'object' ? Object.entries(e.props as Record<string, unknown>).slice(0, 30) : [];
-		return [
-			{
-				event_id: e.event_id,
-				name: e.name,
-				anonymous_id: e.anonymous_id,
-				user_id: userId,
-				ts: chTime(e.ts > now + MAX_CLOCK_SKEW_MS ? now : e.ts),
-				received_at: chTime(now),
-				country,
-				platform,
-				page: typeof e.page === 'string' ? e.page.slice(0, 500) : '',
-				props: Object.fromEntries(props.map(([k, v]) => [k.slice(0, 64), String(v).slice(0, 500)])),
-			},
-		];
-	});
-
-	if (valid.length) ctx.waitUntil(Promise.all(valid.map((e) => produceToKafka(env, 'analytics.events', e.anonymous_id, e))).catch((err) => console.error('analytics produce failed', err)));
-	return new Response(JSON.stringify({ accepted: valid.length, rejected: events.length - valid.length }), { status: 202, headers: { 'Content-Type': 'application/json' } });
+	const { accepted, rejected } = validateIngestBatch(events, { now: Date.now() });
+	if (accepted.length) {
+		const meta = {
+			userId: (await tryGetUserId(request, env)) ?? '',
+			country: sanitizeCountry(request.headers.get('CF-IPCountry')),
+			platform: sanitizePlatform(request.headers.get('X-Client-Platform')),
+		};
+		ctx.waitUntil(produceAnalytics(env, accepted.map((event) => toStoredMessage(event, meta))));
+	}
+	return new Response(JSON.stringify({ accepted: accepted.length, rejected }), { status: 202, headers: { 'Content-Type': 'application/json' } });
 }
 
 export default {

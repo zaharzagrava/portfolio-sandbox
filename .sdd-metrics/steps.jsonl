@@ -105,3 +105,10 @@
 {"run":"20261013T163357Z","capability":"S38","step":"repair-2","start":"2026-10-14T01:06:47Z","end":"2026-10-14T01:08:02Z","seconds":75,"result":"ok","attempt":1,"reason":"ok","code_changed":true}
 {"run":"20261013T163357Z","capability":"S38","step":"gate","start":"2026-10-14T01:08:02Z","end":"2026-10-14T01:11:18Z","seconds":196,"result":"pass","attempt":3,"reason":""}
 {"run":"20261013T163357Z","capability":"S38","step":"built","start":"2026-10-14T00:13:20Z","end":"2026-10-14T01:11:18Z","seconds":3478,"result":"ok","attempt":1,"reason":"Feature flags and remote config: targeting, % rollout, local evaluation, kill switches, audit"}
+{"run":"20261013T163357Z","capability":"S39","step":"plan","start":"2026-10-14T01:11:40Z","end":"2026-10-14T01:17:30Z","seconds":350,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261013T163357Z","capability":"S39","step":"tasks","start":"2026-10-14T01:17:30Z","end":"2026-10-14T01:20:30Z","seconds":180,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261013T163357Z","capability":"S39","step":"analyze","start":"2026-10-14T01:20:30Z","end":"2026-10-14T01:21:40Z","seconds":70,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261013T163357Z","capability":"S39","step":"implement-1","start":"2026-10-14T01:21:40Z","end":"2026-10-14T02:20:54Z","seconds":3554,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261013T163357Z","capability":"S39","step":"implement-2","start":"2026-10-14T02:20:54Z","end":"2026-10-14T02:21:09Z","seconds":15,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261013T163357Z","capability":"S39","step":"doctor-1","start":"2026-10-14T02:21:09Z","end":"2026-10-14T02:21:24Z","seconds":15,"result":"ok","attempt":1,"reason":"ok","code_changed":false}
+{"run":"20261013T163357Z","capability":"S39","step":"blocked","start":"2026-10-14T02:21:24Z","end":"2026-10-14T02:21:24Z","seconds":0,"result":"blocked","attempt":1,"reason":"needs a human: DOCTOR: needs human: T063 and T064 need an approved real start of `apps/core` and `apps/projector` and an approved `scripts/qa/fresh-run.sh` on the shared dev stack, which the sandbox denies."}

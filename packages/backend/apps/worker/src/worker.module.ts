@@ -19,6 +19,7 @@ import {
   ShareLinksWorkerModule,
 } from '@app/domains/marketing';
 import {
+  AnalyticsWorkerModule,
   FlagsSdkModule,
   FlagsWorkerModule,
 } from '@app/domains/experimentation';
@@ -104,6 +105,7 @@ import { AuthWorkerModule } from '@app/domains/identity';
     WebhooksWorkerModule,
     FlagsSdkModule,
     FlagsWorkerModule,
+    AnalyticsWorkerModule,
     AdsWorkerModule,
     StoriesWorkerModule,
     CatalogImportWorkerModule,

@@ -191,6 +191,7 @@ export const OWNERSHIP = {
   FlagAudit: 'domain:experimentation',
   FlagRuleset: 'domain:experimentation',
   Experiment: 'domain:experimentation',
+  ExperimentAudit: 'domain:experimentation',
   // seller-insights
   LeaderboardSnapshot: 'domain:seller-insights',
   CompetitorWatch: 'domain:seller-insights',

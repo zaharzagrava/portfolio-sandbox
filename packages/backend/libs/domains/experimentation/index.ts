@@ -17,5 +17,7 @@ export { RequireFlag } from './api/flags.guard';
 export { bucketOf } from './domain/bucket';
 export type { EvalContext, Evaluation, FlagValue } from './domain/evaluator';
 export { flagChangedEventSchema } from './domain/flag-events';
-export { PurchaseEventsProjector } from './infra/purchase-events.projector';
 export { FlagTopicsModule } from './realtime-topics.module';
+export { AnalyticsProjectorModule } from './analytics-projector.module';
+export { AnalyticsWorkerModule } from './analytics-worker.module';
+export { analyticsRatePolicies } from './rate-limit-policies';

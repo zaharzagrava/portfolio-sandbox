@@ -1,13 +1,18 @@
 import { clientEventBatchSchema } from '@marketplace-sandbox/contracts';
-import { ClientBatch, ClientEvent } from './domain/event-schema';
+import { judgeEvents, readEnvelope } from './domain/event-schema';
 
 const ok = (
   s: { safeParse: (v: unknown) => { success: boolean } },
   v: unknown,
 ) => s.safeParse(v).success;
 
-// Typed with the backend's input type: drift in a shared field fails compilation.
-const event: ClientEvent = {
+// The server's rules (S39 `ingest-rules.ts`), judged at the event's own time so only the shape is under test.
+const serverAccepts = (body: unknown, now = 1_790_000_000_000): boolean => {
+  const events = readEnvelope(body);
+  return !!events && judgeEvents(events, now).rejected.length === 0;
+};
+
+const event = {
   event_id: '0b5f6f0e-1111-4222-8333-444455556666',
   name: 'product_view',
   anonymous_id: 'AbCdEfGhIjKlMnOpQrStUv',
@@ -22,7 +27,7 @@ describe('W02 B-7: client event batch contract', () => {
       events: [event, { ...event, name: 'video_view', props: undefined }],
     };
     expect(ok(clientEventBatchSchema, { events: [event] })).toBe(true);
-    expect(ok(ClientBatch, { events: [event] })).toBe(true);
+    expect(serverAccepts({ events: [event] })).toBe(true);
     expect(ok(clientEventBatchSchema, batch)).toBe(true);
   });
 

@@ -1,31 +1,43 @@
-import { murmur3 } from '@app/common/core/murmur3';
+import { bucketOf } from './bucket';
+import type { RunningExperiment } from './experiment-types';
 
-export interface ExperimentDef {
-  key: string;
-  status: 'DRAFT' | 'RUNNING' | 'STOPPED';
-  variants: { key: string; weight: number }[];
-  layer: string;
-  layerFrom: number;
-  layerTo: number;
+/**
+ * Two independent hashes through the one assignment hash of the domain (`bucketOf`, S38; P0811):
+ *   layer bucket   = bucketOf("layer:<layer>", unit)  → whether the unit is in the experiment at all (the layer's range)
+ *   variant bucket = bucketOf("exp:<key>", unit)      → which variant, by cumulative integer weight
+ * Weights are integers that sum to 10,000, so there is no floating-point arithmetic and no rounding fallback: the
+ * boundaries are exact. Pure: no clock, no store. Draft and stopped experiments never reach this function.
+ */
+export function assign(exp: RunningExperiment, unit: string): string | null {
+  if (!unit) return null;
+  const layerBucket = bucketOf(`layer:${exp.layer}`, unit);
+  if (layerBucket < exp.layerFrom || layerBucket >= exp.layerTo) return null;
+  const bucket = bucketOf(`exp:${exp.key}`, unit);
+  let cumulative = 0;
+  for (const variant of exp.variants) {
+    cumulative += variant.weight;
+    if (bucket < cumulative) return variant.key;
+  }
+  throw new Error(
+    `experiment ${exp.key}: variant weights sum to ${cumulative}, not 10,000`,
+  );
 }
 
 /**
- * Two independent hashes (10/02 Ex2):
- *   layer bucket   = murmur3("layer:<layer>:<unit>")  → which experiment of the layer (if any) owns the user
- *   variant bucket = murmur3("exp:<key>:<unit>")      → which variant inside that experiment
- * Same murmur3 as the flag SDK, so web/mobile/edge can compute assignments identically.
+ * The variants of every running experiment for one caller: a `user` experiment is assigned from the authenticated user id
+ * only, a `visitor` experiment from the anonymous id only (FR-024, FR-030). An experiment without its unit is absent.
  */
-export function assign(exp: ExperimentDef, unit: string): string | null {
-  if (exp.status !== 'RUNNING' || !unit) return null;
-  const layerBucket = murmur3(`layer:${exp.layer}:${unit}`) % 10_000;
-  if (layerBucket < exp.layerFrom || layerBucket >= exp.layerTo) return null;
-  const total = exp.variants.reduce((s, v) => s + v.weight, 0);
-  const bucket =
-    (murmur3(`exp:${exp.key}:${unit}`) % 10_000) * (total / 10_000);
-  let cumulative = 0;
-  for (const v of exp.variants) {
-    cumulative += v.weight;
-    if (bucket < cumulative) return v.key;
+export function assignAll(
+  running: readonly RunningExperiment[],
+  ids: { userId?: string; anonymousId?: string },
+): Record<string, { variant: string }> {
+  const result: Record<string, { variant: string }> = {};
+  for (const exp of running) {
+    const variant = assign(
+      exp,
+      (exp.unit === 'user' ? ids.userId : ids.anonymousId) ?? '',
+    );
+    if (variant !== null) result[exp.key] = { variant };
   }
-  return exp.variants[exp.variants.length - 1].key;
+  return result;
 }

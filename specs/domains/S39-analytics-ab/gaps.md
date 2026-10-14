@@ -54,6 +54,7 @@ The command (`pnpm --dir packages/backend check:table-ownership`) could not be r
 - The raw SQL string in `analytics.service.ts:51` uses `"layerFrom"`, `"layerTo"` and `metric`; after B1 the SQL moves to the repository and uses only `Experiment` and `ExperimentAudit`.
 - The ClickHouse queries (`analytics_events`) are outside the Postgres registry; they remain inside the owning domain after B1.
 - **First action of the implementation agent:** run the command, copy any `experimentation` lines into this table, and for each name the mechanism: lookups of users or shops → R1 (`identity`/`tenancy` exported service); anything searched or combined across domains → R3; client screens → R2. Expected result: none.
+- **Result (2026-10-14, implementation):** `pnpm check:table-ownership` was run before any change and again at the end: 44 cross-domain accesses in 12 domains, **none** in `experimentation` (no `MODEL` and no `SQL` line), so no IX.7 mechanism (R1/R2/R3) is needed for any line. `ExperimentAudit` is registered `domain:experimentation` in `db/ownership.ts`; the only other domains reached are `identity` (`Firewall`, `Role`, `User`) and `orders` (the `OrderPaid` event contract, R3, debt D-15 unchanged). The same gate is asserted by `analytics-ops.e2e-spec.ts` (AS-56).
 
 ## Suggested order
 
@@ -66,3 +67,41 @@ The command (`pnpm --dir packages/backend check:table-ownership`) could not be r
 7. Results (G7) with the new statistics (G17).
 8. Purchase projector (G12), remove `logExposure` (G13), exports (B4).
 9. Replace the old e2e with the files in `test-plan.md` (G16); run the static gates; record the green run (VII.9).
+
+## Added by the plan (2026-10-14)
+
+- **G18** `packages/contracts/src/events/client-events.ts` (W02's) already defines `CLIENT_EVENT_NAMES`, `clientEventSchema` and `clientEventBatchSchema`, and `packages/web/lib/api/events.ts` already posts batches; the browser schema is looser than the server (`anonymous_id` characters). Not an S39 edit; drift test and W02 follow-up (research R-19).
+- **G19** `storedAnalyticsEventSchema` already exists (`contracts/src/analytics/stored-event.ts`, added by S35); the plan extends it additively instead of creating it (plan follow-up 1, research R-15).
+- **G20** The spec's "Requires" names the `order.paid` amount `total` and the payment reference `paymentId`; the contract in code is `totalMinor` and `paymentRef`. The projector follows the code; the stored prop stays `total` (research R-13).
+- **G21** The edge worker already has a 120/min sliding-window limiter (S50) applied only to proxied reads; `POST /collect` joins it (research R-9). The line numbers in G11 moved: the collector is at `edge-be/src/index.ts:334-389`.
+- **G22** `PurchaseEventsProjector` is registered directly in `apps/projector/src/projector.module.ts:11,115`; it moves behind `AnalyticsProjectorModule.projectors` (research R-14, D-8).
+
+## Sibling-spec follow-ups
+
+- **W02**: the browser contract `packages/contracts/src/events/client-events.ts` and `lib/api/events.ts` should tighten `anonymous_id` to `[A-Za-z0-9_-]` (8–64) and may read `rejected[].code`; the server now rejects other characters with `invalid_anonymous_id`. W02 owns the journey that proves AS-57 (one `exposure` per render), `packages/web/tests/storefront-discovery.spec.ts`, which does not exist yet.
+- **W03**: emit `product_view` and `add_to_cart` with `props.product_id` (UUID) and `props.category` (catalog slug) as flat values, one `event_id` per event reused on retry, and treat `503 ingest_unavailable` as retryable with `Retry-After`.
+- **S30**: `video_view` with `props.video_id` is in the closed name set (it already is in `client-events.ts`).
+- **S35**: the shared `storedAnalyticsEventSchema` name enum gains `video_view` and `purchase` (`purchase` never travels on the topic); `normalise` must ignore names it does not count instead of dead-lettering them. `anonymous_id` stays 8–64 characters on the topic.
+- **S37**: `link.clicked` is `v1` on `links.events` with an origin-only referer; S39 does not subscribe (research R-12). A later link-analytics capability starts from that fact.
+- **S38**: S39 keeps using `bucketOf(salt, unit)` from the domain barrel with salts `"layer:" + layer` and `"exp:" + key`; S38 must keep its signature and murmur3 reference vectors. `PurchaseEventsProjector` leaves the barrel (D-8) behind `AnalyticsProjectorModule`.
+- **S48**: the BFF forwards the session and `X-Anonymous-Id` to `GET /api/experiments/assignments` and never caches the answer in a shared cache (`Cache-Control: private, no-store`, `Vary: Authorization, X-Anonymous-Id`).
+- **S50**: the four S39 policies (`analytics.ingest`, `experiments.assignments`, `experiments.admin.write`, `experiments.results`) are declared by `experimentation`; the G-35 `search.query` row for `analytics.controller.ts:18` and the G-34 `skipThrottle` row for `:17` are closed by this capability.
+- **S10**: keep emitting `order.paid` v1 with `userId`, `totalMinor` and `currency`; the projector dead-letters anything else.
+- **J05**: creates a `unit: "user"`, metric `purchase` experiment and polls `GET /api/admin/experiments/:key/results` for up to 60 s after the purchase (FR-044).
+
+## Findings of the implementation (2026-10-14)
+
+- **Invalid JSON under `application/json`** is answered by the platform body parser (S54) as `400 malformed_body` before the ingest route runs; `400 validation_failed` is what the route itself answers (a `text/plain` body that is not JSON, a missing or oversized `events` list). Both are stable problem+json codes; AS-04 is tested with that distinction. If a single code is wanted, S54 has to let a route read its own body (as it already does for the CSP report endpoint).
+- **Purchase projector.** The consumer framework validates the `order.paid` payload and dead-letters a bad one before `project` runs; the projector's own validation is a second line. The framework's `dlq_total{consumer="analytics-purchases"}` is the counter of what the framework dead-lettered; `analytics_dead_letter_total{source="purchase-projector"}` counts what the projector itself dead-letters.
+- **Store dead letters** are counted by a scheduled job (`StoreDeadLetterWatcher`, `AnalyticsWorkerModule` in `apps/worker`) because the stream engine writes them without the application's knowledge. This added one module to `apps/worker/src/worker.module.ts` (the pattern of `FlagsWorkerModule`).
+- **Running-set memory layer** is 5 s, the toolkit's maximum, not 10 s: the staleness bound is tighter than the spec's 15 s.
+- **`client-events-contracts.spec.ts`** (W02 B-7, in this domain's folder) imported the removed `ClientBatch`/`ClientEvent`; it now judges the same events with the shared rules (`readEnvelope`, `judgeEvents`). Its three scenario titles are unchanged.
+- **Real process start.** `apps/core`, `apps/worker` and the projector composition start through `NestFactory` in `apps/*/src/analytics-wiring.e2e-spec.ts` (policies declared, routes answer, schedule registered, consumer group registered). A start of the built binaries (`node dist/main`) and `scripts/qa/fresh-run.sh` were not run by this agent (recorded under T063/T064 in `questions.md`).
+
+## Green run (2026-10-14, end of the implementation)
+
+Each file in its own process: `analytics-ingest` 50, `analytics-store` 9, `experiments-assignment` 10, `experiments-admin` 78, `experiments-results` 19, `analytics-ops` 4, `analytics-wiring` (core, worker, projector composition) 3 suites 4 tests; unit specs `pnpm test libs/domains/experimentation` 11 suites 364 tests (event-schema 138, experiments, experiment-definition, experiment-lifecycle, stats, results, plus S38's); edge `vitest run test/collect.spec.ts test/index.spec.ts test/short-link.spec.ts` 103 tests; sibling regressions `flags` 10 suites 115 tests and `trending` 3 suites 43 tests. Gates: `tsc --noEmit` backend and edge-be, eslint without errors and prettier clean on the touched files, `check:boundaries`, `check:module-graph`, `check:model-registry`, `check:no-wallclock`, `check:table-ownership` (no `experimentation` line), `python3 scripts/livespec/check.py` (0 errors). Not run: T063 (built binaries) and T064 (fresh stack), see `questions.md`.
+
+## Spec changes
+
+None. No page for S39 existed under `docs/spec/capabilities/`; the first implementation task created `docs/spec/capabilities/S39-analytics-ab.md` (status draft), and no `*.reviewed.json` was created or edited. Nothing a human signed changes.
