@@ -1,6 +1,7 @@
 import {
   apiKeyPepperRule,
   developerPlatformConfigKeys,
+  widgetTokenKeyRule,
 } from './developer-platform-config';
 import { ConfigRuleSet } from './config-rules';
 
@@ -76,5 +77,37 @@ describe('developer-platform config (S42 AS-21)', () => {
     ).toEqual([
       '[developer-platform] api_key_pepper must differ from jwt_secret',
     ]);
+  });
+});
+
+describe('developer-platform config (S44 FR-020, FR-025)', () => {
+  const key = developerPlatformConfigKeys.widget_token_key;
+  const bundle = developerPlatformConfigKeys.widget_app_bundle_url.verify;
+
+  it('S44 AS-23: the widget token key is required, at least 32 bytes, and names its variable', () => {
+    expect(key.name).toBe('WIDGET_TOKEN_KEY');
+    expect(key.verify.validate(undefined).error?.message).toMatch(/required/);
+    expect(key.verify.validate('short').error).toBeDefined();
+    expect(key.verify.validate(PEPPER).error).toBeUndefined();
+  });
+
+  it('S44 AS-23: the widget token key must differ from every other secret', () => {
+    const run = (values: Record<string, unknown>) =>
+      widgetTokenKeyRule({ get: (k: string) => values[k], production: false });
+    expect(run({ widget_token_key: PEPPER, jwt_secret: PEPPER })).toEqual([
+      'widget_token_key must differ from jwt_secret',
+    ]);
+    expect(run({ widget_token_key: PEPPER, api_key_pepper: PEPPER })).toEqual([
+      'widget_token_key must differ from api_key_pepper',
+    ]);
+    expect(run({ widget_token_key: PEPPER, jwt_secret: OTHER })).toEqual([]);
+  });
+
+  it('S44 AS-34: the bundle address is a path or an HTTPS URL, never plain http', () => {
+    expect(bundle.validate(undefined).error).toBeUndefined();
+    expect(bundle.validate('/widget/v1/app.js').error).toBeUndefined();
+    expect(bundle.validate('https://cdn.example/app.js').error).toBeUndefined();
+    expect(bundle.validate('http://cdn.example/app.js').error).toBeDefined();
+    expect(bundle.validate('javascript:alert(1)').error).toBeDefined();
   });
 });

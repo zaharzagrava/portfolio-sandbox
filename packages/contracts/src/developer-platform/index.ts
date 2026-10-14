@@ -3,5 +3,6 @@ export * from './keys.ts';
 export * from './bulk.ts';
 export * from './logs.ts';
 export * from './events.ts';
+export * from './widget.ts';
 export * as publicApiV20261001 from './v2026-10-01/resources.ts';
 export * as publicApiV20260115 from './v2026-01-15/resources.ts';

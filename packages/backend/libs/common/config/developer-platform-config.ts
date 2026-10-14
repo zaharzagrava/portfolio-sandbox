@@ -10,6 +10,12 @@ export interface DeveloperPlatformConfig {
   api_key_pepper: string;
   /** The pepper before a rotation: keys hashed with it re-hash on their next use; optional, at least 32 bytes. */
   api_key_pepper_previous?: string;
+  /** S44: signs and verifies widget session tokens only; at least 32 bytes, distinct from every other secret. */
+  widget_token_key: string;
+  /** S44: address of the checkout bundle the embed document loads; default `/widget/v1/app.js`; absolute values are HTTPS. */
+  widget_app_bundle_url?: string;
+  /** S44: the `checkoutUrl` of the widget configuration; HTTPS; default `<front_host>/embed/checkout`. */
+  widget_checkout_url?: string;
 }
 
 type Key = { name: string; verify: joi.AnySchema };
@@ -62,10 +68,45 @@ ConfigRules.register({
   validate: apiKeyPepperRule,
 });
 
+const httpsOrRelative = (name: string): Key => ({
+  name,
+  verify: joi
+    .string()
+    .allow('')
+    .custom((value: string, helpers) => {
+      if (value === '' || value.startsWith('/')) return value;
+      try {
+        return new URL(value).protocol === 'https:'
+          ? value
+          : helpers.error('string.uri');
+      } catch {
+        return helpers.error('string.uri');
+      }
+    }),
+});
+
+/** S44 FR-020: the widget token key is its own secret: it must not equal any other configured secret. */
+export const widgetTokenKeyRule: RuleCheck = (ctx) => {
+  const value = ctx.get('widget_token_key');
+  if (!isSet(value)) return [];
+  return [...OTHER_SECRETS, 'api_key_pepper', 'api_key_pepper_previous']
+    .filter((other) => ctx.get(other) === value)
+    .map((other) => `widget_token_key must differ from ${other}`);
+};
+
+ConfigRules.register({
+  owner: 'developer-platform',
+  keys: ['widget_token_key', 'api_key_pepper', 'api_key_pepper_previous'],
+  validate: widgetTokenKeyRule,
+});
+
 export const developerPlatformConfigKeys: Record<
   keyof DeveloperPlatformConfig,
   Key
 > = {
   api_key_pepper: pepper('API_KEY_PEPPER', true),
   api_key_pepper_previous: pepper('API_KEY_PEPPER_PREVIOUS', false),
+  widget_token_key: pepper('WIDGET_TOKEN_KEY', true),
+  widget_app_bundle_url: httpsOrRelative('WIDGET_APP_BUNDLE_URL'),
+  widget_checkout_url: httpsOrRelative('WIDGET_CHECKOUT_URL'),
 };

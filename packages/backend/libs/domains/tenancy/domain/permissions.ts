@@ -26,6 +26,7 @@ const ADMIN: ShopPermission[] = [
   'api-keys.manage',
   'webhooks.manage',
   'integrations.manage',
+  'widget.manage',
 ];
 
 export const ROLE_PERMISSIONS = {
@@ -46,6 +47,7 @@ export const SENSITIVE_PERMISSIONS: readonly ShopPermission[] = [
   'payouts.read',
   'api-keys.manage',
   'webhooks.manage',
+  'widget.manage',
 ];
 
 export function can(role: ShopRole, permission: ShopPermission): boolean {

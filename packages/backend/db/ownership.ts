@@ -207,6 +207,7 @@ export const OWNERSHIP = {
   ApiUsageBucket: 'domain:developer-platform',
   WebhookEndpoint: 'domain:developer-platform',
   WidgetSite: 'domain:developer-platform',
+  WidgetSiteChange: 'domain:developer-platform',
   // shop-functions
   ShopFunction: 'domain:shop-functions',
   ShopFunctionVersion: 'domain:shop-functions',

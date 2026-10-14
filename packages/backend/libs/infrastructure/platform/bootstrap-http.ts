@@ -150,7 +150,7 @@ export function configureHttpApp(
   const embedHeaders = headers('cross-origin');
   app.use((req: Request, res: Response, next: NextFunction) => {
     res.setHeader('Content-Security-Policy', CSP);
-    (policyOf(req) === 'public-embed' ? embedHeaders : strictHeaders)(
+    (policyOf(req) !== undefined ? embedHeaders : strictHeaders)(
       req,
       res,
       next,
@@ -178,16 +178,28 @@ export function configureHttpApp(
     exposedHeaders: CORS_EXPOSED_HEADERS,
     maxAge: CORS_MAX_AGE_SECONDS,
   };
+  // `widget-site` (S44): the owner answers per site; this policy adds no header and lets `OPTIONS` through to its handler.
+  const siteCors: CorsOptions = {
+    origin: false,
+    credentials: false,
+    preflightContinue: true,
+  };
   if (options.cors !== false)
     app.enableCors(
       (
         req: Request,
         callback: (error: Error | null, options?: CorsOptions) => void,
-      ) =>
+      ) => {
+        const policy = policyOf(req);
         callback(
           null,
-          policyOf(req) === 'public-embed' ? embedCors : strictCors,
-        ),
+          policy === 'public-embed'
+            ? embedCors
+            : policy === 'widget-site'
+              ? siteCors
+              : strictCors,
+        );
+      },
     );
 
   app.getHttpAdapter().getInstance().disable('x-powered-by');

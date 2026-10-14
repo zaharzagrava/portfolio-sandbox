@@ -21,6 +21,7 @@ export const SHOP_PERMISSIONS = [
   'api-keys.manage',
   'webhooks.manage',
   'integrations.manage',
+  'widget.manage',
   'sso.manage',
 ] as const;
 export type ShopPermission = (typeof SHOP_PERMISSIONS)[number];

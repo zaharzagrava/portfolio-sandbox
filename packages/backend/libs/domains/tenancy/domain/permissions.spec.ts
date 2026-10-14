@@ -30,6 +30,7 @@ const LOWEST_ROLE: Record<ShopPermission, keyof typeof ROLES_FROM> = {
   'api-keys.manage': 'ADMIN',
   'webhooks.manage': 'ADMIN',
   'integrations.manage': 'ADMIN',
+  'widget.manage': 'ADMIN',
   'shop.delete': 'OWNER',
   'shop.export': 'OWNER',
   'billing.manage': 'OWNER',
@@ -79,6 +80,7 @@ describe('S03 AS-16 permission matrix', () => {
         'payouts.read',
         'api-keys.manage',
         'webhooks.manage',
+        'widget.manage',
       ].sort(),
     );
   });

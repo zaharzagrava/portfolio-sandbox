@@ -29,6 +29,36 @@ export const developerPlatformRatePolicies = definePolicies(
       key: 'ip',
       failMode: 'closed',
     },
+    // S44 (specs/domains/S44-storefront-widget/contracts/rate-limits-config.md). The public read stays up when the
+    // limiter store fails; token minting and management do not.
+    'widget.config.ip': {
+      algorithm: 'slidingWindow',
+      limit: 600,
+      windowMs: 60_000,
+      key: 'ip',
+      failMode: 'open',
+    },
+    'widget.identify.ip': {
+      algorithm: 'slidingWindow',
+      limit: 30,
+      windowMs: 60_000,
+      key: 'ip',
+      failMode: 'closed',
+    },
+    'widget.identify.site': {
+      algorithm: 'slidingWindow',
+      limit: 1200,
+      windowMs: 60_000,
+      key: 'custom',
+      failMode: 'closed',
+    },
+    'widget.manage.shop': {
+      algorithm: 'slidingWindow',
+      limit: 60,
+      windowMs: 60_000,
+      key: 'shop',
+      failMode: 'closed',
+    },
   } as const,
 );
 
