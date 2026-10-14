@@ -220,3 +220,9 @@
 {"run":"20261014T084403Z","capability":"S44","step":"repair-3","start":"2026-10-14T17:04:12Z","end":"2026-10-14T17:04:37Z","seconds":25,"result":"ok","attempt":1,"reason":"ok","code_changed":true}
 {"run":"20261014T084403Z","capability":"S44","step":"gate","start":"2026-10-14T17:04:37Z","end":"2026-10-14T17:10:59Z","seconds":382,"result":"pass","attempt":4,"reason":""}
 {"run":"20261014T084403Z","capability":"S44","step":"built","start":"2026-10-14T16:52:38Z","end":"2026-10-14T17:10:59Z","seconds":1101,"result":"ok","attempt":1,"reason":"Embeddable storefront widget: site keys bound to origins, frame-ancestors, identity hand-off, kill switch"}
+{"run":"20261014T084403Z","capability":"S48","step":"implement-1","start":"2026-10-14T17:11:20Z","end":"2026-10-14T17:13:50Z","seconds":150,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261014T084403Z","capability":"S48","step":"converge-1","start":"2026-10-14T17:13:50Z","end":"2026-10-14T17:15:55Z","seconds":125,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261014T084403Z","capability":"S48","step":"implement-2","start":"2026-10-14T17:15:55Z","end":"2026-10-14T17:18:26Z","seconds":151,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261014T084403Z","capability":"S48","step":"converge-2","start":"2026-10-14T17:18:26Z","end":"2026-10-14T17:19:36Z","seconds":70,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261014T084403Z","capability":"S48","step":"gate","start":"2026-10-14T17:19:36Z","end":"2026-10-14T17:23:04Z","seconds":208,"result":"pass","attempt":1,"reason":""}
+{"run":"20261014T084403Z","capability":"S48","step":"built","start":"2026-10-14T17:11:19Z","end":"2026-10-14T17:23:04Z","seconds":705,"result":"ok","attempt":1,"reason":"BFF composition: product-page aggregate with budgets and partial errors, GraphQL with DataLoaders and limits, session handling"}

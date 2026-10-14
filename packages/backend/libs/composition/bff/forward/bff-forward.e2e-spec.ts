@@ -164,6 +164,18 @@ describe('BFF forwarder (authenticated pass-through of /api/*)', () => {
     );
   });
 
+  it('S48 W02-H9: POST /api/events from a signed-in visitor without X-CSRF-Token (sendBeacon at unload) is refused csrf_invalid; no CSRF exemption exists (loss accepted)', async () => {
+    const who = await signIn(ctx, stub);
+    stub.onUnknown((_c, _r, res) => json(res, 202, {}));
+    const res = await post(
+      'events',
+      { events: [] },
+      { Cookie: who.cookie, Origin: ALLOWED_ORIGIN },
+    ).expect(403);
+    expect(problemDetailsSchema.parse(res.body).code).toBe('csrf_invalid');
+    expect(stub.calls.filter((c) => c.path === '/api/events')).toHaveLength(0);
+  });
+
   it('bff-forward: a state-changing request with a session cookie and a foreign Origin is 403 origin_not_allowed', async () => {
     const who = await signIn(ctx, stub);
     stub.onUnknown((_c, _r, res) => json(res, 200, {}));

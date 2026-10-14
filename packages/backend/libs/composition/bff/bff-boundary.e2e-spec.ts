@@ -1,4 +1,6 @@
 import { createHash, randomBytes } from 'node:crypto';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { createBffApp } from './testing/app-factory';
 import { StubUpstream } from './testing/stub-upstream';
 import { PERSISTED_QUERIES } from './graphql/persisted-queries.allowlist';
@@ -90,6 +92,76 @@ describe('BFF composition boundary', () => {
       );
       expect(await failureOf(start({ BFF_ALLOWED_ORIGINS: '' }))).toMatch(
         /bff_allowed_origins/,
+      );
+    });
+  });
+
+  describe('S48 AS-64 composition boundary', () => {
+    type Entry = { scope?: number; name?: unknown };
+    let bff: Awaited<ReturnType<typeof createBffApp>>;
+    beforeAll(async () => {
+      bff = await createBffApp({ upstreamUrl: stub.url });
+    });
+    afterAll(async () => bff.close());
+
+    const providers = (): Entry[] => {
+      const container = (
+        bff.app as unknown as {
+          container: {
+            getModules(): Map<string, { providers: Map<unknown, Entry> }>;
+          };
+        }
+      ).container;
+      return [...container.getModules().values()].flatMap((m) => [
+        ...m.providers.values(),
+      ]);
+    };
+    const nameOf = (p: Entry) =>
+      String(typeof p.name === 'symbol' ? p.name.description : p.name);
+
+    it('S48 AS-64: the booted application has no database, queue or event provider', () => {
+      const forbidden = providers()
+        .map(nameOf)
+        .filter((n) =>
+          /^(Sequelize|SqsService|SqsClient|OutboxRelay|EventBus|EventPublisher)$/i.test(
+            n,
+          ),
+        );
+      expect(forbidden).toEqual([]);
+    });
+
+    it('S48 AS-64: no provider is request-scoped', () => {
+      // Scope.DEFAULT = 0, TRANSIENT = 1, REQUEST = 2
+      // `REQUEST` is Nest's own injection token for the current request, not an application provider.
+      expect(
+        providers()
+          .filter((p) => p.scope === 2 && nameOf(p) !== 'REQUEST')
+          .map(nameOf),
+      ).toEqual([]);
+    });
+
+    it('S48 AS-64: the GraphQL schema exposes no mutation, cart, order, payment or search field', () => {
+      const sdl = readFileSync(
+        join(__dirname, 'graphql', 'schema.snapshot.graphql'),
+        'utf8',
+      );
+      expect(sdl).not.toMatch(/type (Mutation|Subscription)/);
+      expect(sdl).not.toMatch(
+        /\b(cart|orders?|payments?|search|checkout)\b\s*[({:]/i,
+      );
+    });
+
+    it('S48 AS-64: the registered routes expose no payment, search or checkout surface', () => {
+      type Layer = { route?: { path: string } };
+      const server = bff.app.getHttpAdapter().getInstance() as {
+        router?: { stack: Layer[] };
+        _router?: { stack: Layer[] };
+      };
+      const stack = (server.router ?? server._router)?.stack ?? [];
+      const paths = stack.flatMap((l) => (l.route ? [l.route.path] : []));
+      expect(paths.length).toBeGreaterThan(0);
+      expect(paths.filter((p) => /payment|search|checkout/i.test(p))).toEqual(
+        [],
       );
     });
   });
