@@ -27,6 +27,16 @@ class LoopShell(unittest.TestCase):
         self.assertIn('[proof: ...]', r.stdout)
         self.assertIn('[code: ...]', r.stdout)
 
+    def test_no_prompt_line_runs_a_backticked_word_as_a_command(self):
+        """A backtick inside a double-quoted printf is command substitution: `--reporter=line` ran as a command on the runner (2026-10-14) and its text never reached the agent."""
+        import glob
+        bad = []
+        for f in glob.glob(os.path.join(ROOT, 'scripts/sdd/*.sh')):
+            for n, line in enumerate(open(f, encoding='utf-8'), 1):
+                if 'printf' in line and '"' in line and re.search(r'(?<!\\)`', line):
+                    bad.append(f'{os.path.basename(f)}:{n}')
+        self.assertEqual(bad, [], 'unescaped backticks in a double-quoted prompt: ' + ', '.join(bad))
+
 
 if __name__ == '__main__':
     unittest.main()
