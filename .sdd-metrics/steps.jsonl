@@ -147,3 +147,6 @@
 {"run":"20261014T080720Z","capability":"S36","step":"repair-2","start":"2026-10-14T08:12:52Z","end":"2026-10-14T08:15:18Z","seconds":146,"result":"ok","attempt":1,"reason":"ok","code_changed":false}
 {"run":"20261014T080720Z","capability":"S36","step":"gate","start":"2026-10-14T08:15:18Z","end":"2026-10-14T08:20:07Z","seconds":289,"result":"pass","attempt":3,"reason":""}
 {"run":"20261014T080720Z","capability":"S36","step":"built","start":"2026-10-14T08:07:21Z","end":"2026-10-14T08:20:07Z","seconds":766,"result":"ok","attempt":1,"reason":"Sponsored listings: signed click tokens, exact dedupe, click-spam filter, reconciled billing"}
+{"run":"20261014T080720Z","capability":"S47","step":"converge-1","start":"2026-10-14T08:20:27Z","end":"2026-10-14T08:20:57Z","seconds":30,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261014T080720Z","capability":"S47","step":"gate","start":"2026-10-14T08:20:57Z","end":"2026-10-14T08:25:40Z","seconds":283,"result":"pass","attempt":1,"reason":""}
+{"run":"20261014T080720Z","capability":"S47","step":"built","start":"2026-10-14T08:20:26Z","end":"2026-10-14T08:25:40Z","seconds":314,"result":"ok","attempt":1,"reason":"\"Ask this product\" and shop help center: ingestion, hybrid retrieval with in-query permissions, citations"}
