@@ -5,17 +5,29 @@
  */
 let handler: (() => void) | null = null;
 let ended = false;
+let pending = false;
 
+/** A session end seen before the handler existed (a 401 that beats hydration under load) runs when it registers. */
 export function setSessionEndHandler(next: (() => void) | null): void {
   handler = next;
+  if (next && pending) {
+    pending = false;
+    ended = true;
+    next();
+  }
 }
 
 export function endSession(): void {
   if (ended) return;
+  if (!handler) {
+    pending = true;
+    return;
+  }
   ended = true;
-  handler?.();
+  handler();
 }
 
 export function rearmSessionEnd(): void {
   ended = false;
+  pending = false;
 }

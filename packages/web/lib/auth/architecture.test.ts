@@ -28,11 +28,7 @@ const appFiles = walk(path.join(root, 'app')).filter(source);
 
 describe('W01 architecture rules', () => {
   it('W01 AS-63: every page.tsx and layout.tsx under (auth) and account is a Server Component', () => {
-    // Pages of deferred stories (P2/P3) that still are the old client pages; the pass that builds them removes the entry.
-    const deferred = ['app/(auth)/forgot-password/page.tsx'];
-    const entries = [...walk(path.join(root, 'app/(auth)')), ...walk(path.join(root, 'app/account'))].filter(
-      (file) => /(?:^|\/)(?:page|layout)\.tsx$/.test(file) && !deferred.includes(rel(file)),
-    );
+    const entries = [...walk(path.join(root, 'app/(auth)')), ...walk(path.join(root, 'app/account'))].filter((file) => /(?:^|\/)(?:page|layout)\.tsx$/.test(file));
     expect(entries.length).toBeGreaterThan(0);
     expect(entries.filter((file) => hasDirective(read(file), 'use client')).map(rel)).toEqual([]);
   });

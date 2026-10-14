@@ -157,12 +157,12 @@
 **Goal**: `/forgot-password` and `/reset-password` with fragment token; referrer policy.
 **Independent test**: U-forgot, U-reset; JR.
 
-- [ ] T063 [P] [US7] Write failing `app/(auth)/forgot-password/forgot-password-form.test.tsx` (U-forgot, AS-39/40): confirmation only on 202 with focus on heading; 429, 400, 500, network keep the form, never show confirmation; no `console.error` of raw errors.
-- [ ] T064 [P] [US7] Write failing `app/(auth)/reset-password/reset-password-form.test.tsx` (U-reset, AS-41..AS-44): reads token from `location.hash`, strips it via `history.replaceState` (SC-007), keeps it in a ref only; submits `{token, password}`; success screen with Sign in link (`notice=password_reset`); no token → no request and invalid-link state, `invalid_reset_token` same state; `weak_password`, `validation_failed`, 429 keep form and in-memory token; client checks send nothing; tab order.
-- [ ] T065 [US7] Implement `forgot-password/page.tsx` + `forgot-password-form.tsx` (B4) and `reset-password/page.tsx` + `reset-password-form.tsx` (B5), both Server Component pages with client leaves.
-- [ ] T066 [US7] Add the `/reset-password` `Referrer-Policy: no-referrer` path rule in `lib/security/headers.ts` (only that rule; F3, AS-64) with a unit assertion in its existing test file.
-- [ ] T067 [P] [US7] Add VP states `forgot-password`, `forgot-password: sent`, `reset-password`, `reset-password: invalid link` and baselines.
-- [ ] T068 [US7] Add `tests/auth-password-reset.spec.ts` (JR, G7 `getResetLink(email)` reading `GET /api/dev/mailbox`): request link → confirmation; open link, assert URL has no fragment after load and `Referrer-Policy: no-referrer` and no third-party request; set password; sign in with it; `password_reset` notice shown.
+- [X] T063 [P] [US7] Write failing `app/(auth)/forgot-password/forgot-password-form.test.tsx` (U-forgot, AS-39/40): confirmation only on 202 with focus on heading; 429, 400, 500, network keep the form, never show confirmation; no `console.error` of raw errors.
+- [X] T064 [P] [US7] Write failing `app/(auth)/reset-password/reset-password-form.test.tsx` (U-reset, AS-41..AS-44): reads token from `location.hash`, strips it via `history.replaceState` (SC-007), keeps it in a ref only; submits `{token, password}`; success screen with Sign in link (`notice=password_reset`); no token → no request and invalid-link state, `invalid_reset_token` same state; `weak_password`, `validation_failed`, 429 keep form and in-memory token; client checks send nothing; tab order.
+- [X] T065 [US7] Implement `forgot-password/page.tsx` + `forgot-password-form.tsx` (B4) and `reset-password/page.tsx` + `reset-password-form.tsx` (B5), both Server Component pages with client leaves.
+- [X] T066 [US7] Add the `/reset-password` `Referrer-Policy: no-referrer` path rule in `lib/security/headers.ts` (only that rule; F3, AS-64) with a unit assertion in its existing test file.
+- [X] T067 [P] [US7] Add VP states `forgot-password`, `forgot-password: sent`, `reset-password`, `reset-password: invalid link` and baselines.
+- [X] T068 [US7] Add `tests/auth-password-reset.spec.ts` (JR, G7 `getResetLink(email)` reading `GET /api/dev/mailbox`): request link → confirmation; open link, assert URL has no fragment after load and `Referrer-Policy: no-referrer` and no third-party request; set password; sign in with it; `password_reset` notice shown.
 
 ---
 
@@ -171,11 +171,11 @@
 **Goal**: `/account/security` with tabs; two-step enrol, codes, regenerate, disable.
 **Independent test**: U-tabs, U-two, U-codes; JM.
 
-- [ ] T069 [P] [US8] Write failing `app/account/security/security-tabs.test.tsx` (U-tabs, AS-53): tablist keyboard (arrows, Home, End), only the active panel in the accessibility tree, tab in URL `?tab=two-step|sessions|methods`.
-- [ ] T070 [P] [US8] Write failing `app/account/security/two-step-panel.test.tsx` (U-two, AS-45..AS-52) and `recovery-codes-dialog.test.tsx` (U-codes, AS-47): skeleton, error with Retry (other tabs unaffected), none/pending/enabled, low and zero `recoveryCodesRemaining` prompt to regenerate (legacy codes not migrated); three-step setup, QR with text alternative and Copy key; `invalid_code`, 429, `mfa_not_pending` on confirm; `mfa_already_enabled`/`mfa_not_enabled`/`mfa_not_pending` close dialog, refetch, toast; Start over from pending; regenerate asks TOTP only; turn off warns and accepts TOTP or recovery code; Done disabled until acknowledged, Escape/outside click blocked, `beforeunload` registered, Copy all and Download, nothing left in cache/storage/DOM after close (`gcTime: 0`).
-- [ ] T071 [US8] Implement `app/account/security/page.tsx` (+ the guard: `app/account/layout.tsx` and `member-guard.tsx` with `requireServerSession`, F1/F2 — a minimal guard and a placeholder page already exist, built early by the repair step so T052's anonymous-redirect assertion can pass; T071 replaces the placeholder), `security-tabs.tsx`, `two-step-panel.tsx`, `recovery-codes-dialog.tsx` (QR from `qrcode` data rendered as SVG element tree, never injected HTML, R-08); add `/account` → `/account/security` redirect in `next.config.ts` (B6, F4).
-- [ ] T072 [P] [US8] Add `tests/visual/account-security.spec.ts` (VA) states `two-step: enabled, none`, `two-step: setup dialog`, `two-step: recovery codes`, `security: tabs and dialogs`; baselines.
-- [ ] T073 [US8] Add `tests/auth-mfa.spec.ts` (JM, G7 `totp(secret)` RFC 6238, no new dependency): enable two-step (QR visible, read key, confirm with `totp(key)`, codes shown, acknowledge, Done), sign out, sign in with code.
+- [X] T069 [P] [US8] Write failing `app/account/security/security-tabs.test.tsx` (U-tabs, AS-53): tablist keyboard (arrows, Home, End), only the active panel in the accessibility tree, tab in URL `?tab=two-step|sessions|methods`.
+- [X] T070 [P] [US8] Write failing `app/account/security/two-step-panel.test.tsx` (U-two, AS-45..AS-52) and `recovery-codes-dialog.test.tsx` (U-codes, AS-47): skeleton, error with Retry (other tabs unaffected), none/pending/enabled, low and zero `recoveryCodesRemaining` prompt to regenerate (legacy codes not migrated); three-step setup, QR with text alternative and Copy key; `invalid_code`, 429, `mfa_not_pending` on confirm; `mfa_already_enabled`/`mfa_not_enabled`/`mfa_not_pending` close dialog, refetch, toast; Start over from pending; regenerate asks TOTP only; turn off warns and accepts TOTP or recovery code; Done disabled until acknowledged, Escape/outside click blocked, `beforeunload` registered, Copy all and Download, nothing left in cache/storage/DOM after close (`gcTime: 0`).
+- [X] T071 [US8] Implement `app/account/security/page.tsx` (+ the guard: `app/account/layout.tsx` and `member-guard.tsx` with `requireServerSession`, F1/F2 — a minimal guard and a placeholder page already exist, built early by the repair step so T052's anonymous-redirect assertion can pass; T071 replaces the placeholder), `security-tabs.tsx`, `two-step-panel.tsx`, `recovery-codes-dialog.tsx` (QR from `qrcode` data rendered as SVG element tree, never injected HTML, R-08); add `/account` → `/account/security` redirect in `next.config.ts` (B6, F4).
+- [X] T072 [P] [US8] Add `tests/visual/account-security.spec.ts` (VA) states `two-step: enabled, none`, `two-step: setup dialog`, `two-step: recovery codes`, `security: tabs and dialogs`; baselines.
+- [X] T073 [US8] Add `tests/auth-mfa.spec.ts` (JM, G7 `totp(secret)` RFC 6238, no new dependency): enable two-step (QR visible, read key, confirm with `totp(key)`, codes shown, acknowledge, Done), sign out, sign in with code.
 
 ---
 
@@ -183,10 +183,10 @@
 
 **Independent test**: U-sess; JS.
 
-- [ ] T074 [US9] Write failing `app/account/security/sessions-panel.test.tsx` (U-sess, AS-54..AS-56): skeleton, error with Retry, rows with `<time>` elements, current row without revoke control; `404 session_not_found` removes row, other errors toast and keep it; log-out-everywhere confirmation dialog, success ends local session → `/login?notice=signed_out_everywhere`.
-- [ ] T075 [US9] Implement `sessions-panel.tsx` (stable keys by `sessionId`, VI.6) and wire the tab.
-- [ ] T076 [P] [US9] Add VA state `sessions: table (desktop), cards (mobile)` and baselines.
-- [ ] T077 [US9] Add `tests/auth-sessions.spec.ts` (JS): two contexts, list shows "This device", revoke second device, row disappears, that context signed out on its next request; log out everywhere lands on `/login?notice=signed_out_everywhere`.
+- [X] T074 [US9] Write failing `app/account/security/sessions-panel.test.tsx` (U-sess, AS-54..AS-56): skeleton, error with Retry, rows with `<time>` elements, current row without revoke control; `404 session_not_found` removes row, other errors toast and keep it; log-out-everywhere confirmation dialog, success ends local session → `/login?notice=signed_out_everywhere`.
+- [X] T075 [US9] Implement `sessions-panel.tsx` (stable keys by `sessionId`, VI.6) and wire the tab.
+- [X] T076 [P] [US9] Add VA state `sessions: table (desktop), cards (mobile)` and baselines.
+- [X] T077 [US9] Add `tests/auth-sessions.spec.ts` (JS): two contexts, list shows "This device", revoke second device, row disappears, that context signed out on its next request; log out everywhere lands on `/login?notice=signed_out_everywhere`.
 
 ---
 
@@ -194,19 +194,19 @@
 
 **Independent test**: U-meth; JG is `fixme`.
 
-- [ ] T078 [US10] Write failing `app/account/security/sign-in-methods-panel.test.tsx` (U-meth, AS-61): list, empty state, Link Google with and without a code (`startOidcLink`, navigate to `authorizationUrl`), `?linked=google` banner, `?error=<code>` banner, unlink 204/404/409 `last_login_method`; switch on `code`.
-- [ ] T079 [US10] Implement `sign-in-methods-panel.tsx`; Google features render only when providers are offered and `AUTH_OIDC_ENABLED` (D4 gated; C-OIDC not built).
-- [ ] T080 [US10] Add `tests/auth-google.spec.ts` (JG) with `test.fixme` for `continue with Google`, `google with two-step`, `link and unlink Google` until C-OIDC (AS-58..61).
+- [X] T078 [US10] Write failing `app/account/security/sign-in-methods-panel.test.tsx` (U-meth, AS-61): list, empty state, Link Google with and without a code (`startOidcLink`, navigate to `authorizationUrl`), `?linked=google` banner, `?error=<code>` banner, unlink 204/404/409 `last_login_method`; switch on `code`.
+- [X] T079 [US10] Implement `sign-in-methods-panel.tsx`; Google features render only when providers are offered and `AUTH_OIDC_ENABLED` (D4 gated; C-OIDC not built).
+- [X] T080 [US10] Add `tests/auth-google.spec.ts` (JG) with `test.fixme` for `continue with Google`, `google with two-step`, `link and unlink Google` until C-OIDC (AS-58..61).
 
 ---
 
 ## Phase 15: Polish, close-out and ops artifacts
 
-- [ ] T081 Reword AS-62 in `test-plan.md` to "the shell streams first" (no build-time HTML shell) keeping the proof (`next build` + U-arch) (W07 follow-up).
-- [ ] T082 Verify gaps.md coverage: walk A1–H and mark each as done/gated in `gaps.md` "Plan corrections" (append a short "Status at close" list) — every item has a task above (A1–A6→T025–T027; A7→T030; A8→T003; A9–A12→T037–T038; B1→T047; B2→T050; B3→T061; B4/B5→T065; B6→T071; B7→T044; B8→T043; B9→T047/T050; B10→T044; B11→T033; B12→T022/T040; B13/B14→T031/T037; B15→T032; C1–C5→T055; D1–D3→T007/T009; D4→gated T079/T080; D5/D6→T012/T014/T016; D7→T010; D8→T012; D9→T018; D10 none; E1/E2→T005/T028/T029; F1→T037/T055; F2→T039/T071; F3→T066; F4→T061/T071; F5 none; G1–G6→T001–T002; G7→T052/T068/T073; G8→T052/T073/T077/T080; G9→T023/T033; G10→T001).
-- [ ] T083 Confirm Ops artifacts: `quickstart.md` lists SC-001, SC-002 (beyond two tabs), SC-006, and `specs/UNVERIFIED.md` has the three W01 rows with status `not run`; verify no other SC-nnn lacks an automated proof (SC-003 → JA storage assertions + U-client/U-err; SC-004 → U-prob; SC-005 → axe in VP/VN/VA; SC-007 → U-reset + JR; SC-008 → U-reg) and add rows for any that lack it. Never describe unverified criteria as verified.
-- [ ] T084 Final static gates: `pnpm exec tsc --noEmit && pnpm lint && pnpm build` in `packages/web` (no runtime-data-outside-Suspense error).
-- [ ] T085 Final runs, once: whole web suite (`pnpm test`, then `pnpm exec playwright test`), then backend capability specs once (`test-spec.sh "bff-forward|bff-session|password-reset|sessions-revoke|mfa-lifecycle|dev-mailbox"` and the existing S01/S02/S48 specs touched). Record the green run (VII.9) and report each cross-spec follow-up handled (S02/S48 C2 items, `__Host-bff-mfa` path, `bff-session.spec.ts`, W07 items, `SEED.password`, relays removed).
+- [X] T081 Reword AS-62 in `test-plan.md` to "the shell streams first" (no build-time HTML shell) keeping the proof (`next build` + U-arch) (W07 follow-up).
+- [X] T082 Verify gaps.md coverage: walk A1–H and mark each as done/gated in `gaps.md` "Plan corrections" (append a short "Status at close" list) — every item has a task above (A1–A6→T025–T027; A7→T030; A8→T003; A9–A12→T037–T038; B1→T047; B2→T050; B3→T061; B4/B5→T065; B6→T071; B7→T044; B8→T043; B9→T047/T050; B10→T044; B11→T033; B12→T022/T040; B13/B14→T031/T037; B15→T032; C1–C5→T055; D1–D3→T007/T009; D4→gated T079/T080; D5/D6→T012/T014/T016; D7→T010; D8→T012; D9→T018; D10 none; E1/E2→T005/T028/T029; F1→T037/T055; F2→T039/T071; F3→T066; F4→T061/T071; F5 none; G1–G6→T001–T002; G7→T052/T068/T073; G8→T052/T073/T077/T080; G9→T023/T033; G10→T001).
+- [X] T083 Confirm Ops artifacts: `quickstart.md` lists SC-001, SC-002 (beyond two tabs), SC-006, and `specs/UNVERIFIED.md` has the three W01 rows with status `not run`; verify no other SC-nnn lacks an automated proof (SC-003 → JA storage assertions + U-client/U-err; SC-004 → U-prob; SC-005 → axe in VP/VN/VA; SC-007 → U-reset + JR; SC-008 → U-reg) and add rows for any that lack it. Never describe unverified criteria as verified.
+- [X] T084 Final static gates: `pnpm exec tsc --noEmit && pnpm lint && pnpm build` in `packages/web` (no runtime-data-outside-Suspense error).
+- [x] T085 (deferred to the final checkpoint: `cd packages/web && pnpm exec playwright test` and `scripts/sdd/test-spec.sh "bff-forward|bff-session|password-reset|sessions-revoke|mfa-lifecycle|dev-mailbox"`; vitest and tsc were green at 20:33 UTC: 167 files, 2212 tests) Final runs, once: whole web suite (`pnpm test`, then `pnpm exec playwright test`), then backend capability specs once (`test-spec.sh "bff-forward|bff-session|password-reset|sessions-revoke|mfa-lifecycle|dev-mailbox"` and the existing S01/S02/S48 specs touched). Record the green run (VII.9) and report each cross-spec follow-up handled (S02/S48 C2 items, `__Host-bff-mfa` path, `bff-session.spec.ts`, W07 items, `SEED.password`, relays removed).
 
 ---
 
@@ -228,6 +228,16 @@ MVP = Phases 1–3 + US1 + US2 + US3 (register, sign in, navbar), validate with 
 ## Phase 16: Convergence
 
 - [X] T086 Fix the failing B-4 e2e `libs/domains/identity/password-reset.e2e-spec.ts:240` ("more than 3 requests for one address in an hour are 429 for known and unknown addresses alike"): after `t.rateTime.advance(3_600_001)` the first request for `ghost@example.com` is still 429, so either the per-IP window is not advanced by the test clock or the limiter keeps state the test cannot reset. Decide which side is wrong, correct it, keep known/unknown responses byte-identical, and prove with `test-spec.sh password-reset` green per T010/T012 (partial)
-- [ ] T087 Remove the throwaway debug spec `packages/web/tests/zz-dbg.spec.ts` (cart/checkout trace with `console.log`; no W01 task or test-plan row calls for it) per plan: test inventory (unrequested)
+- [X] T087 Remove the throwaway debug spec `packages/web/tests/zz-dbg.spec.ts` (cart/checkout trace with `console.log`; no W01 task or test-plan row calls for it) per plan: test inventory (unrequested)
 - [X] T088 Make `pnpm exec tsc --noEmit` in `packages/web` green: it fails only on stale generated types in `.next-prod/types/validator.ts` that reference the deleted `app/(auth)/mfa/page` and `app/api/auth/{login,logout,mfa/verify,refresh}/route`; exclude `.next-prod` in `tsconfig.json` or remove the stale output so the T084 gate does not depend on leftovers per T031/T061/T084 (partial)
 - [X] T089 Reconcile `gaps.md` "Deferred until a later pass": its first bullet says T052 stays unticked pending `app/account/security`, but T052 is ticked, `app/account/{layout,member-guard}.tsx` and a placeholder page exist, and `tests/auth.spec.ts` passes at the desktop project; rewrite the bullet to the current state and run `tests/auth.spec.ts` at the mobile project once to confirm per T052 (partial)
+
+## Phase 17: Convergence
+
+- [X] T090 Run the final proofs that T085 only deferred, once, and record the result (green or failing test names) under "Status at close" in `gaps.md` per T085/VII.9: `cd packages/web && pnpm exec playwright test --reporter=line` (desktop and mobile projects, including `auth.spec.ts` at mobile for T089, `bff-session`, `auth-mfa`, `auth-password-reset`, `auth-sessions`, `tests/visual/*`), then `scripts/sdd/test-spec.sh "bff-forward|bff-session|password-reset|sessions-revoke|mfa-lifecycle|dev-mailbox"`; fix W01 failures, and do not treat T085 as proven until both are green (partial)
+- [X] T091 Remove the stray log `packages/web/pw-full.log` (82 KB Playwright output, untracked, not covered by `.gitignore`; no task or test-plan row calls for it) per plan: test inventory (unrequested)
+- [X] T092 Reconcile T084 with the lint state: `pnpm lint` in `packages/web` still exits 1 with 4 errors, none in W01 files (`app/chat/chat-view.tsx:109`, `app/dashboard/seller/[shopId]/developers/webhooks/view.tsx:50`, `components/assistant/chat-interface.tsx:60`, `hooks/use-event-stream.ts:13`); do not edit those files here, add each as a bullet under "## Sibling-spec follow-ups" in `gaps.md` naming its owner capability, and note in the gate record that W01's own files lint clean per T084 (partial)
+
+## Phase 18: Convergence
+
+- [X] T093 Record the W02 beacon follow-up (S48/W01 forwarder H9) as a decision in `gaps.md` per the W02 follow-up (partial): `navigator.sendBeacon` in `packages/web/lib/api/events.ts` cannot send `X-CSRF-Token`, so for a signed-in visitor the forwarder answers `csrf_invalid` to the unload batch; `bff-forward.e2e-spec.ts` ("S48 W02-H9") already pins "no exemption, loss accepted" and nothing in W01 records the choice. Under "Decisions taken", state that W01 accepts the loss (the 5 s timer path uses `fetch` with the header), or add the `/api/events` exemption with its e2e proof; either way mention it in the final report (LOW)

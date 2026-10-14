@@ -1,5 +1,9 @@
+import path from 'node:path';
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
+
+// The dev server's indicator ("Cache disabled") is not part of the product; the newer states keep it out of their baselines.
+const stylePath = path.join(__dirname, 'hide-dev-overlay.css');
 
 /**
  * VP rows of W01 (AS-05, AS-08, AS-14, AS-15, AS-38, AS-66): the auth pages' layout states at the phone (390 x 844) and
@@ -102,6 +106,46 @@ test.describe('Auth pages layout', () => {
     await expect(page.getByRole('heading', { level: 1, name: 'Two-step verification' })).toBeVisible();
     await expect(page.getByLabel('Authentication code')).toBeVisible();
     await expect(main(page)).toHaveScreenshot('mfa.png');
+    await expectAccessibleAndContained(page);
+  });
+
+  test('W01 AS-44 VP forgot-password: structure and layout', async ({ page }) => {
+    await page.goto('/forgot-password');
+    await expect(page).toHaveTitle('Forgot password · Marketplace');
+    await expect(page.getByRole('heading', { level: 1, name: 'Forgot password' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Send reset link' })).toBeVisible();
+    await expect(main(page)).toHaveScreenshot('forgot-password.png', { stylePath });
+    await expectAccessibleAndContained(page);
+  });
+
+  test('W01 AS-39 VP forgot-password: sent', async ({ page }) => {
+    await page.route('**/api/auth/password-reset/request', (route) =>
+      route.fulfill({ status: 202, contentType: 'application/json', body: JSON.stringify({ status: 'accepted' }) }),
+    );
+    await page.goto('/forgot-password');
+    await hydrated(page);
+    await page.getByLabel('Email').fill('someone@example.com');
+    await page.getByRole('button', { name: 'Send reset link' }).click();
+    await expect(page.getByRole('heading', { name: 'Check your inbox' })).toBeFocused();
+    await expect(main(page)).toHaveScreenshot('forgot-password-sent.png', { stylePath });
+    await expectAccessibleAndContained(page);
+  });
+
+  test('W01 AS-41 VP reset-password: structure and layout', async ({ page }) => {
+    await page.goto('/reset-password#token=layout-only');
+    await expect(page).toHaveTitle('Reset password · Marketplace');
+    await expect(page.getByRole('heading', { level: 1, name: 'Reset password' })).toBeVisible();
+    await expect(page.getByLabel('New password', { exact: true })).toBeVisible();
+    await expect(page.getByLabel('Confirm new password')).toBeVisible();
+    await expect(main(page)).toHaveScreenshot('reset-password.png', { stylePath });
+    await expectAccessibleAndContained(page);
+  });
+
+  test('W01 AS-42 VP reset-password: invalid link', async ({ page }) => {
+    await page.goto('/reset-password');
+    await expect(page.getByText('This reset link is invalid or has expired.')).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Request a new link' })).toBeVisible();
+    await expect(main(page)).toHaveScreenshot('reset-password-invalid-link.png', { stylePath });
     await expectAccessibleAndContained(page);
   });
 });

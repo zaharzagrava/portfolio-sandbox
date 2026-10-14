@@ -226,7 +226,7 @@ How these pages are rendered and guarded, and the accessibility baseline all of 
 
 **Acceptance Scenarios**:
 
-1. **AS-62** — **Given** the production build, **Then** every W01 page prerenders its static shell (card, heading, description) and streams the parts that read the session or the URL behind `<Suspense>` boundaries with fallbacks of the same size; the session is never read at the top level of a layout or inside a plain `"use cache"` function; the build reports no "runtime data outside Suspense" error.
+1. **AS-62** — **Given** the production build, **Then** the shell of every W01 page (card, heading, description) streams first, with no build-time HTML shell, and the parts that read the session or the URL follow behind `<Suspense>` boundaries with fallbacks of the same size; the session is never read at the top level of a layout or inside a plain `"use cache"` function; the build reports no "runtime data outside Suspense" error.
 2. **AS-63** — **Given** the W01 source, **Then** every `page.tsx` and `layout.tsx` is a Server Component; `"use client"` appears only on leaf components that use state, effects, event handlers or browser APIs (forms, dialogs, tabs, the account menu).
 3. **AS-64** — **Given** `/reset-password`, **Then** its response carries `Referrer-Policy: no-referrer` and the page loads no third-party resource.
 4. **AS-65** — **Given** the app, **Then** there is no `proxy.ts` that makes an authorization decision; guards in layouts only redirect for convenience (`requireServerSession`), and every data request is authorized again by the BFF and the owning API: when one answers `401` the UI follows AS-26, when `403` or `404` it shows the FR-040 copy, never data from a cache. (Constitution VI.5; S48 AS-51; S01 AS-29.)

@@ -118,7 +118,7 @@ Constitution VII.8 table: one row per acceptance scenario in [`spec.md`](spec.md
 | AS-59 Google sign-in lands signed in | JG › same test (fixme) | — | — | S02 AS-31, AS-66 |
 | AS-60 Google plus second step | JG › `google with two-step` (fixme) | — | — | S02 AS-54 |
 | AS-61 sign-in methods tab | JG › `link and unlink Google` (fixme) | U-meth › `list, empty state, Link Google with and without a code, ?linked=google banner, ?error banner, unlink 204 / 404 / 409 last_login_method` | — | S02 AS-49, AS-50, AS-51, AS-52 |
-| AS-62 static shell and Suspense boundaries | — | static: `next build` succeeds with Cache Components (no runtime-data-outside-Suspense error); U-arch › `no layout reads the session at top level; no "use cache" function imports the session reader` | — | — |
+| AS-62 the shell streams first; Suspense boundaries | — | static: `next build` succeeds with Cache Components (no runtime-data-outside-Suspense error); U-arch › `no layout reads the session at top level; no "use cache" function imports the session reader` | — | — |
 | AS-63 Server Components by default | — | static: U-arch › `every page.tsx and layout.tsx under (auth) and account has no "use client"; client files are leaves` | — | — |
 | AS-64 reset page referrer policy | JR › same test (response header `Referrer-Policy: no-referrer`; no third-party request) | — | — | — |
 | AS-65 authorization not only in proxy; API re-authorizes | — | static: U-arch › `no proxy.ts or middleware.ts makes an auth decision`; U-guard › `guards only redirect`; U-client › `401/403/404 handling (see AS-26)` | — | S48 AS-51; S01 AS-29 |

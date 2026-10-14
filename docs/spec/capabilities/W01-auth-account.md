@@ -25,9 +25,9 @@ Visitors and members need to create an account, sign in, recover a password, fin
 - `/register`: creates an account from e-mail and password. [code: packages/web/app/(auth)/register/page.tsx#Page]
 - `/login`: signs in; reads `returnTo`, `notice` and `error`; shows **Continue with Google** only when offered. [code: packages/web/app/(auth)/login/page.tsx#Page]
 - `/login/mfa`: second step at sign-in with an authenticator code or a recovery code. [code: packages/web/app/(auth)/login/mfa/page.tsx#Page]
-- `/forgot-password`: requests a reset link by e-mail.
-- `/reset-password#token=…`: sets a new password from the link token.
-- `/account/security`: tabs for two-step verification, active sessions and sign-in methods. [code: packages/web/app/account/security/page.tsx#SecurityPage]
+- `/forgot-password`: requests a reset link by e-mail. [code: packages/web/app/(auth)/forgot-password/page.tsx#Page]
+- `/reset-password#token=…`: sets a new password from the link token. [code: packages/web/app/(auth)/reset-password/page.tsx#Page]
+- `/account/security`: tabs for two-step verification, active sessions and sign-in methods; `?tab=two-step|sessions|methods`, `?linked=google`, `?error=<code>`. [code: packages/web/app/account/security/page.tsx#SecurityPage]
 - `POST /api/bff/session`: sign-in through the BFF. [code: packages/backend/libs/composition/bff/session/session.controller.ts#SessionController]
 - `POST /api/bff/session/mfa`: second step through the BFF.
 - `GET /api/bff/session`: the session check that feeds the navbar.
@@ -57,6 +57,13 @@ Visitors and members need to create an account, sign in, recover a password, fin
 - **W01.R-18** A [session check](../terms/session-lifetime.md) failing with `503` or no network MUST show the "unavailable" state, not the anonymous state. [proof: W01 AS-20] [code: packages/web/components/auth/account-menu.tsx#AccountSlotClient]
 - **W01.R-19** No browser console output from W01 code MUST contain a password, code, token, recovery code, [setup key](../terms/manual-entry-key.md) or request body. [proof: W01 AS-67] [code: packages/web/components/auth/problem-alert.tsx#ProblemAlert]
 - **W01.R-20** [Guards](../terms/protected-route.md) MUST only redirect for convenience; [the BFF ↗](../sw-external-terms.md#bff) and the [owning API](../terms/capability.md) MUST authorize every data request again. [proof: W01 AS-65] [code: packages/web/lib/auth/session.server.ts#requireServerSession]
+- **W01.R-21** The reset token MUST be read from the URL fragment, removed from the address bar and history at once with `history.replaceState`, and kept only in memory; the page MUST answer `Referrer-Policy: no-referrer`. [proof: W01 AS-41] [proof: W01 AS-64] [code: packages/web/app/(auth)/reset-password/reset-password-form.tsx#ResetPasswordForm]
+- **W01.R-22** The reset-request confirmation MUST appear only after a `202`; any other outcome keeps the form and the typed address, and the raw error MUST NOT be logged. [proof: W01 AS-40] [code: packages/web/app/(auth)/forgot-password/forgot-password-form.tsx#ForgotPasswordForm]
+- **W01.R-23** Recovery codes MUST exist only in the dialog's component state, never in the query cache, storage, URL or DOM after it closes; the dialog MUST NOT close on Escape or an outside click until the member confirms they saved the codes, and leaving the page meanwhile MUST trigger the browser prompt. [proof: W01 AS-47] [code: packages/web/app/account/security/recovery-codes-dialog.tsx#RecoveryCodesDialog]
+- **W01.R-24** Changing the second factor (turn on, new recovery codes, turn off, link Google) MUST ask for a fresh code; new recovery codes accept an authenticator code only; a `409` of `mfa_already_enabled`, `mfa_not_enabled` or `mfa_not_pending` MUST close the dialog, re-read the status and toast the real situation. [proof: W01 AS-49] [proof: W01 AS-51] [code: packages/web/app/account/security/two-step-panel.tsx#TwoStepPanel]
+- **W01.R-25** Only the selected tab's panel MUST be mounted; the selected tab MUST be mirrored in `?tab=` and an unknown value MUST be ignored. [proof: W01 AS-53] [code: packages/web/app/account/security/security-tabs.tsx#SecurityTabs]
+- **W01.R-26** The enrolment QR code MUST be an SVG element tree built from the module matrix, never injected HTML, with a text alternative. [proof: W01 AS-46] [code: packages/web/app/account/security/qr-code.tsx#QrCode]
+- **W01.R-27** Log out of all devices MUST end the BFF session as well as every server session, so `/login` does not treat the visitor as signed in. [proof: W01 AS-56] [code: packages/web/app/account/security/sessions-panel.tsx#SessionsPanel]
 
 ## Behaviors
 - **W01.B-01** Given a visitor on [`/register`](../terms/register-page.md) with a valid e-mail, a password of 12 to 128 characters, a matching confirmation and the terms ticked, when they press **Create account**, then one request goes out with `email` and `password` and the browser goes to [`/login?notice=registered`](../terms/login-notice.md). [proof: W01 AS-01]
@@ -80,6 +87,22 @@ Visitors and members need to create an account, sign in, recover a password, fin
 - **W01.B-19** Given the member opens a shop and becomes a seller, when the page requests a [session refresh](../terms/token-refresh.md), then the menu shows the new role without a reload. [proof: W01 AS-23]
 - **W01.B-20** Given a member chooses **Log out**, when the request succeeds, then the browser goes to [`/login?notice=signed_out`](../terms/signed-out-notice.md) and [the cache is cleared](../terms/client-cache-clear.md). [proof: W01 AS-24]
 - **W01.B-21** Given an [anonymous visitor](../terms/visitor.md) opens `/account/security`, when [the guard](../terms/route-guard.md) runs, then they land on [`/login?returnTo=%2Faccount%2Fsecurity`](../terms/return-to.md). [proof: W01 AS-27]
+- **W01.B-22** Given `/forgot-password` and a well-formed address, when the server answers `202`, then the form is replaced by "Check your inbox" with a **Back to sign in** link and focus on the heading, identical for every address. [proof: W01 AS-39] [code: packages/web/app/(auth)/forgot-password/forgot-password-form.tsx#ForgotPasswordForm]
+- **W01.B-23** Given the reset request answers `429`, `400`, `5xx` or there is no network, when the form is submitted, then the form stays with the matching message and the confirmation is not shown. [proof: W01 AS-40]
+- **W01.B-24** Given `/reset-password#token=…` and a valid new password, when the server answers `204`, then the page shows "Password updated" with a **Sign in** link to `/login?notice=password_reset`. [proof: W01 AS-41]
+- **W01.B-25** Given no token in the fragment or `400 invalid_reset_token`, when the page loads or the form is submitted, then it shows "This reset link is invalid or has expired." with **Request a new link**, and a missing token makes no request. [proof: W01 AS-42]
+- **W01.B-26** Given `422 weak_password`, `400 validation_failed` or `429` on the reset form, when it is submitted, then the form stays, the token stays in memory and the message appears under **New password**; client checks send nothing. [proof: W01 AS-43]
+- **W01.B-27** Given the **Two-step verification** tab, when it loads, then it shows a skeleton, an error with **Retry**, or the state `none`, `pending` or `enabled` with the recovery-code count and the low and zero prompts. [proof: W01 AS-45] [code: packages/web/app/account/security/two-step-panel.tsx#TwoStepPanel]
+- **W01.B-28** Given state `none`, when the member presses **Set up**, then a dialog shows the QR code and the setup key with **Copy key**, then asks for the 6-digit code, then shows the recovery codes. [proof: W01 AS-46]
+- **W01.B-29** Given recovery codes from confirm or regenerate, when they are shown, then **Done** stays disabled until "I've saved these codes" is ticked, and **Copy all** and **Download .txt** are offered. [proof: W01 AS-47]
+- **W01.B-30** Given the confirm step answers `422 invalid_code`, `429` or `409 mfa_not_pending`, when the code is submitted, then the field is cleared and focused with the wrong-code message, the wait message is shown, or setup closes with "Setup timed out. Start again." [proof: W01 AS-48]
+- **W01.B-31** Given state `pending` after a reload, when the member presses **Start over**, then a new enrolment begins with a new key. [proof: W01 AS-50]
+- **W01.B-32** Given state `enabled`, when the member presses **Get new recovery codes** and enters an authenticator code, then the new codes are shown. [proof: W01 AS-51]
+- **W01.B-33** Given state `enabled`, when the member presses **Turn off** and enters an authenticator or recovery code, then on `204` the tab shows `none` and a toast says "Two-step verification is off." [proof: W01 AS-52]
+- **W01.B-34** Given the **Active sessions** tab, when it loads, then sessions are listed newest first with `<time>` elements, the current one labelled "This device" without a revoke control; at 1024 px and up they are a table, below it cards. [proof: W01 AS-54] [code: packages/web/app/account/security/sessions-panel.tsx#SessionsPanel]
+- **W01.B-35** Given another device's row, when the member presses **Log out**, then on `204` or `404 session_not_found` the row disappears with "Device signed out."; other errors toast and keep the row. [proof: W01 AS-55]
+- **W01.B-36** Given the member presses **Log out of all devices** and confirms, when the request succeeds, then the local session ends and the browser goes to `/login?notice=signed_out_everywhere`. [proof: W01 AS-56]
+- **W01.B-37** Given the **Sign-in methods** tab, when it loads, then linked identities are listed with **Unlink** (`204` removes, `404 identity_not_found` removes silently, `409 last_login_method` explains), **Link Google** appears only when offered and `AUTH_OIDC_ENABLED` is on, and `?linked=google` and a known `?error=` show their banner. [proof: W01 AS-61] [code: packages/web/app/account/security/sign-in-methods-panel.tsx#SignInMethodsPanel]
 
 ## Lifecycles
 The account slot moves between four states: loading, anonymous, signed in and unavailable. The session check moves it: `401` gives anonymous, a user gives signed in, and `503` or no network gives unavailable. A sign-out or session end moves it to anonymous. No model is listed.
@@ -101,11 +124,7 @@ The account slot moves between four states: loading, anonymous, signed in and un
 - Continue with Google appears only when the provider list contains `google` and `AUTH_OIDC_ENABLED` is true (FR-045).
 
 ## Known gaps
-- Forgot password and reset password (AS-40 to AS-44) have no test with their ids; only AS-39 (`auth.test.ts`) does.
-- `/account/security` is a stub in the excerpt that shows only the heading "Security". The tabs, dialogs and sessions list (AS-45 to AS-57) are not visible in the code facts; only AS-45, AS-46, AS-55 and AS-58 have tests (`account.test.ts`).
-- Recovery-code display, regenerate and turn-off dialogs (AS-47 to AS-52), the sessions table and cards (AS-53, AS-57) and "log out of all devices" (AS-56) have no test id.
-- Google callback and sign-in methods (AS-59 to AS-61) have no test id.
-- Prerender and Suspense structure (AS-62) is tested only through `architecture.test.ts`; the `Referrer-Policy: no-referrer` header on `/reset-password` (AS-64) has no test.
-- The responsive layouts of AS-05, AS-14 and AS-38 rely on `auth-pages.spec.ts`; the P2 layout scenarios AS-44 and AS-53 have no test.
-- `/forgot-password` and `/reset-password` page files are not in the file list, so their code is not verified here.
+- Google sign-in end to end (AS-58 to AS-60) waits for contract C-OIDC (the callback must create the BFF session and the federated second step must end at `POST /api/bff/session/mfa`); the journeys in `tests/auth-google.spec.ts` are `test.fixme`. The Google button and the Link Google flow are built and unit-tested behind `AUTH_OIDC_ENABLED`.
+- A session revoked from another device is not noticed by `GET /api/bff/session` (the BFF check is local): the next forwarded call answers `401`, the session-ended toast shows and the navbar turns anonymous, but a server guard still passes, so a guarded page does not redirect until the BFF session ends (recorded for S48).
+- Prerender and Suspense structure (AS-62) is proved by `architecture.test.ts` and a clean `next build`; the layout states of AS-44, AS-53 and AS-57 live in `tests/visual/auth-pages.spec.ts` and `tests/visual/account-security.spec.ts`.
 - The tests for AS-01 and AS-04 sit in `auth.test.ts`, which also covers the API layer; whether they exercise the form itself is not confirmed.

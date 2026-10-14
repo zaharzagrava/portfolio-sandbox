@@ -22,4 +22,13 @@ describe('session ended', () => {
   it('W01 AS-26: does nothing without a registered handler', () => {
     expect(() => endSession()).not.toThrow();
   });
+
+  it('W01 AS-26: an end seen before the handler registers runs once when it does', () => {
+    const handler = vi.fn();
+    endSession();
+    setSessionEndHandler(handler);
+    expect(handler).toHaveBeenCalledTimes(1);
+    setSessionEndHandler(handler);
+    expect(handler).toHaveBeenCalledTimes(1);
+  });
 });

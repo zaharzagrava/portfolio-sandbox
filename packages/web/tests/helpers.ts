@@ -1,3 +1,4 @@
+import { createHmac } from 'node:crypto';
 import { createRequire } from 'node:module';
 import path from 'node:path';
 import { expect, type APIRequestContext, type Page } from '@playwright/test';
@@ -79,6 +80,42 @@ export async function register(page: Page, email = uniqueEmail()) {
   await expect(page).toHaveURL('http://localhost:3000/login?notice=registered');
   await login(page, email, password);
   return { email, password };
+}
+
+/**
+ * The reset link the dev stack "e-mailed" to `email` (`GET /api/dev/mailbox`, W01 B-7); polls until the mail is there.
+ * Returns the path and fragment on the site under test (the mail may name another origin).
+ */
+export async function getResetLink(email: string): Promise<string> {
+  let found = '';
+  await expect
+    .poll(
+      async () => {
+        const response = await fetch(`${API_URL}/api/dev/mailbox?to=${encodeURIComponent(email)}`);
+        if (!response.ok) return '';
+        const { messages } = (await response.json()) as { messages: { links: string[] }[] };
+        const link = messages.flatMap((message) => message.links).find((candidate) => candidate.includes('/reset-password'));
+        found = link ? new URL(link).pathname + new URL(link).hash : '';
+        return found;
+      },
+      { message: `reset link for ${email}`, timeout: 15_000 },
+    )
+    .not.toBe('');
+  return found;
+}
+
+/** RFC 6238 code (HMAC-SHA1, 6 digits, 30 s step) for a base32 secret, with no dependency beyond `node:crypto`. */
+export function totp(secret: string, at: number = Date.now()): string {
+  const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+  let bits = '';
+  for (const char of secret.replace(/[\s=-]/g, '').toUpperCase()) bits += alphabet.indexOf(char).toString(2).padStart(5, '0');
+  const key = Buffer.from(bits.match(/.{8}/g)?.map((byte) => parseInt(byte, 2)) ?? []);
+  const counter = Buffer.alloc(8);
+  counter.writeBigUInt64BE(BigInt(Math.floor(at / 1000 / 30)));
+  const digest = createHmac('sha1', key).update(counter).digest();
+  const offset = digest[digest.length - 1] & 0x0f;
+  const code = (digest.readUInt32BE(offset) & 0x7fffffff) % 1_000_000;
+  return String(code).padStart(6, '0');
 }
 
 const viewportWidth = (page: Page) => page.viewportSize()?.width ?? 1280;

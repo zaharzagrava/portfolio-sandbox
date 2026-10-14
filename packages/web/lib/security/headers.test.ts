@@ -43,6 +43,13 @@ describe('W07 security headers (lib/security/headers.ts)', () => {
     expect(effective('/invites/tok123/accept')).toEqual(['no-referrer']);
   });
 
+  it('W01 AS-64: the reset page answers Referrer-Policy: no-referrer and nothing else for that header', () => {
+    const values = securityHeaderRules(true)
+      .filter((rule) => matchesSource(rule.source, '/reset-password'))
+      .flatMap((rule) => rule.headers.filter((header) => header.key === 'Referrer-Policy').map((header) => header.value));
+    expect(values).toEqual(['no-referrer']);
+  });
+
   it('W07 AS-20: no-store paths cover every signed-in area', () => {
     for (const path of ['/dashboard/orders', '/account/security', '/checkout/pay/x', '/cart', '/chat', '/admin/feature-flags', '/invites/tok', '/api/orders']) {
       expect(securityHeaderRules(true).some((rule) => matchesSource(rule.source, path) && rule.headers.some((h) => h.key === 'Cache-Control' && h.value === 'no-store')), path).toBe(true);

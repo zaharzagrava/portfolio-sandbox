@@ -243,3 +243,15 @@
 {"run":"20261014T190657Z","capability":"W07","step":"repair-2","start":"2026-10-14T19:46:02Z","end":"2026-10-14T19:49:42Z","seconds":220,"result":"ok","attempt":1,"reason":"ok","code_changed":true}
 {"run":"20261014T190657Z","capability":"W07","step":"gate","start":"2026-10-14T19:49:42Z","end":"2026-10-14T20:00:28Z","seconds":646,"result":"pass","attempt":3,"reason":""}
 {"run":"20261014T190657Z","capability":"W07","step":"built","start":"2026-10-14T19:06:57Z","end":"2026-10-14T20:00:28Z","seconds":3211,"result":"ok","attempt":1,"reason":"App shell and cross-cutting UI: navbar, footer, legal pages, developer docs, error/not-found/loading states, responsive layout, accessibility, CSP and security headers"}
+{"run":"20261014T190657Z","capability":"W01","step":"implement-1","start":"2026-10-14T20:00:31Z","end":"2026-10-14T20:28:17Z","seconds":1666,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261014T190657Z","capability":"W01","step":"implement-2","start":"2026-10-14T20:28:17Z","end":"2026-10-14T20:32:08Z","seconds":231,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261014T190657Z","capability":"W01","step":"doctor-1","start":"2026-10-14T20:32:08Z","end":"2026-10-14T20:33:33Z","seconds":85,"result":"ok","attempt":1,"reason":"ok","code_changed":false}
+{"run":"20261014T190657Z","capability":"W01","step":"converge-1","start":"2026-10-14T20:33:34Z","end":"2026-10-14T20:34:49Z","seconds":75,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261014T190657Z","capability":"W01","step":"implement-2","start":"2026-10-14T20:34:49Z","end":"2026-10-14T20:44:25Z","seconds":576,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261014T190657Z","capability":"W01","step":"converge-2","start":"2026-10-14T20:44:25Z","end":"2026-10-14T20:46:35Z","seconds":130,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261014T190657Z","capability":"W01","step":"implement-3","start":"2026-10-14T20:46:35Z","end":"2026-10-14T20:46:55Z","seconds":20,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261014T190657Z","capability":"W01","step":"converge-3","start":"2026-10-14T20:46:55Z","end":"2026-10-14T20:47:55Z","seconds":60,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261014T190657Z","capability":"W01","step":"gate","start":"2026-10-14T20:47:55Z","end":"2026-10-14T20:57:17Z","seconds":562,"result":"fail","attempt":1,"reason":""}
+{"run":"20261014T190657Z","capability":"W01","step":"repair-1","start":"2026-10-14T20:57:18Z","end":"2026-10-14T21:00:38Z","seconds":200,"result":"ok","attempt":1,"reason":"ok","code_changed":true}
+{"run":"20261014T190657Z","capability":"W01","step":"gate","start":"2026-10-14T21:00:38Z","end":"2026-10-14T21:09:58Z","seconds":560,"result":"pass","attempt":2,"reason":""}
+{"run":"20261014T190657Z","capability":"W01","step":"built","start":"2026-10-14T20:33:34Z","end":"2026-10-14T21:09:58Z","seconds":2184,"result":"ok","attempt":1,"reason":"Sign up, log in, forgot password, MFA step-up, session cookie via BFF, CSRF, logout, account state in the navbar"}

@@ -25,6 +25,8 @@ export function CodeInput({
   id,
   disabled,
   readOnly,
+  label,
+  hint,
   ref,
 }: {
   mode: 'totp' | 'recovery';
@@ -34,6 +36,10 @@ export function CodeInput({
   id?: string;
   disabled?: boolean;
   readOnly?: boolean;
+  /** Overrides the default label ("Authentication code" / "Recovery code"). */
+  label?: string;
+  /** Hint under the field; defaults to the recovery-code format in `recovery` mode and to none otherwise. */
+  hint?: string;
   ref?: Ref<HTMLInputElement>;
 }) {
   const generated = useId();
@@ -41,7 +47,8 @@ export function CodeInput({
   const hintId = `${inputId}-hint`;
   const errorId = `${inputId}-error`;
   const recovery = mode === 'recovery';
-  const described = [recovery ? hintId : null, error ? errorId : null].filter(Boolean).join(' ');
+  const hintText = hint ?? (recovery ? 'Format: XXXXX-XXXXX' : undefined);
+  const described = [hintText ? hintId : null, error ? errorId : null].filter(Boolean).join(' ');
   const handle = (event: ChangeEvent<HTMLInputElement>) => {
     const raw = event.target.value;
     // Recovery codes keep what is typed (the form normalises on submit) so the caret never jumps while typing.
@@ -55,7 +62,7 @@ export function CodeInput({
   };
   return (
     <div className="grid gap-2">
-      <Label htmlFor={inputId}>{recovery ? 'Recovery code' : 'Authentication code'}</Label>
+      <Label htmlFor={inputId}>{label ?? (recovery ? 'Recovery code' : 'Authentication code')}</Label>
       <Input
         ref={ref}
         id={inputId}
@@ -76,9 +83,9 @@ export function CodeInput({
         aria-describedby={described || undefined}
         className={`h-11 sm:h-9 ${recovery ? 'font-mono tracking-wider' : 'text-center text-lg tracking-[0.4em] sm:text-base'}`}
       />
-      {recovery && (
+      {hintText && (
         <p id={hintId} className="text-sm text-muted-foreground">
-          Format: XXXXX-XXXXX
+          {hintText}
         </p>
       )}
       {error && (
