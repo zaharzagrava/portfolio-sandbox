@@ -11,7 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { AuthBootstrap, useAuth, type SessionUser } from '@/hooks/use-auth';
+import { AuthBootstrap, useAuth, useHydrated, type AuthStatus, type SessionUser } from '@/hooks/use-auth';
 import { useLogout } from '@/hooks/use-auth-actions';
 import { isAdmin } from '@/lib/admin/is-admin';
 import { queryKeys } from '@/lib/query-keys';
@@ -101,13 +101,19 @@ export function AccountSlotClient({ initialUser }: { initialUser?: SessionUser |
   return (
     <>
       {initialUser !== undefined && <AuthBootstrap user={initialUser} />}
-      <AccountArea />
+      <AccountArea initialUser={initialUser} />
     </>
   );
 }
 
-function AccountArea() {
-  const { user, status } = useAuth();
+function AccountArea({ initialUser }: { initialUser?: SessionUser | null }) {
+  const live = useAuth();
+  const hydrated = useHydrated();
+  // Until hydration is done the server's answer decides, so the first client render equals the server's markup even when
+  // the browser's own session query answered first.
+  const hinted = initialUser !== undefined && !hydrated;
+  const user = hinted ? initialUser : live.user;
+  const status: AuthStatus = hinted ? (initialUser ? 'authenticated' : 'anonymous') : live.status;
   if (status === 'loading') return <AccountSlotSkeleton />;
   if (status === 'unavailable') {
     // Never "anonymous"; a member who was already shown keeps the last known menu.
@@ -138,7 +144,9 @@ export function MobileLoginLink({ initialAnonymous }: { initialAnonymous?: boole
   const { status } = useAuth();
   // `initialAnonymous` is what the server read from the cookie (`MobileLoginSlot`): while the browser's session query has no
   // answer, it decides, so the server's markup and the first client render agree whether or not the server's cache had the session.
-  const anonymous = status === 'loading' && initialAnonymous !== undefined ? initialAnonymous : status === 'anonymous';
+  const hydrated = useHydrated();
+  const hinted = initialAnonymous !== undefined && (!hydrated || status === 'loading');
+  const anonymous = hinted ? initialAnonymous : status === 'anonymous';
   if (!anonymous) return null;
   return (
     <Button asChild variant="ghost" size="icon-lg" className="size-11 lg:hidden">

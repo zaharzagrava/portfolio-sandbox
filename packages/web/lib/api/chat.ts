@@ -39,7 +39,8 @@ export function mergeMessages(current: ChatMessage[], incoming: ChatMessage[]): 
 }
 
 export const chatApi = {
-  myChannels: async (): Promise<{ channelId: string; unread: number; lastSeq: number }[]> => (await apiClient.get('/api/chat/unread')).data,
+  myChannels: async (): Promise<{ channelId: string; unread: number; lastSeq: number }[]> =>
+    (await apiClient.get<{ items: { channelId: string; unread: number; lastSeq: number }[] }>('/api/chat/unread')).data.items,
   channel: async (channelId: string): Promise<ChatChannel> => (await apiClient.get(`/api/chat/channels/${channelId}`)).data,
   byProduct: async (productId: string): Promise<ChatChannel> => (await apiClient.get(`/api/chat/channels/by-product/${productId}`)).data,
   create: async (productId: string): Promise<ChatChannel> => (await apiClient.post('/api/chat/channels', { productId })).data,

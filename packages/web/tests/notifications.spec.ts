@@ -92,11 +92,13 @@ function unsubscribeToken(userId: string, category: string, secret: string): str
 
 test.describe('Unsubscribe', () => {
   test('a link that is not valid shows the friendly state and no button', async ({ page }) => {
+    // `main` only: Next's own route announcer is also a `role="alert"` once the page has hydrated.
+    const alert = page.getByRole('main').getByRole('alert');
     await page.goto('/unsubscribe?token=not-a-real-token');
-    await expect(page.getByRole('alert')).toContainText('This unsubscribe link is not valid.');
+    await expect(alert).toContainText('This unsubscribe link is not valid.');
     await expect(page.getByRole('button', { name: 'Unsubscribe' })).toHaveCount(0);
     await page.goto('/unsubscribe');
-    await expect(page.getByRole('alert')).toContainText('This unsubscribe link is not valid.');
+    await expect(alert).toContainText('This unsubscribe link is not valid.');
   });
 
   test('opening the link only describes the change; the button performs it', async ({ page }) => {

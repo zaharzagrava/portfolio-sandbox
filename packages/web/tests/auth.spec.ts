@@ -77,7 +77,8 @@ test.describe('Authentication', () => {
       }));
       expect(exposed.local).toEqual([]);
       expect(exposed.session).toEqual([]);
-      expect(exposed.cookie.split(';').map((entry) => entry.trim().split('=')[0])).toEqual(['__Host-bff-csrf']);
+      // the page view (W02) sets `anonymous_id`, a random visitor id that is not a credential; the only other cookie is the CSRF one
+      expect(exposed.cookie.split(';').map((entry) => entry.trim().split('=')[0]).sort()).toEqual(['__Host-bff-csrf', 'anonymous_id']);
       // (the dev server's own `__next_debug_channel` database is not ours)
       expect(exposed.databases.filter((name) => /token|auth|session|bearer|credential/i.test(name ?? ''))).toEqual([]);
       expect(exposed.url).not.toMatch(/token|bearer|eyJ/i);

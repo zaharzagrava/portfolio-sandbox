@@ -227,7 +227,7 @@ export class SqsTaskQueue extends TaskQueue {
       } catch (error) {
         // Not deleting = message becomes visible again after the timeout → retry; DLQ after maxReceiveCount.
         this.logger.error(
-          `[${queue}] message ${raw.MessageId} failed: ${(error as Error).name}`,
+          `[${queue}] message ${raw.MessageId} failed: ${(error as Error).name}${(error as { reason?: string }).reason ? ` (${(error as { reason?: string }).reason})` : ''}`,
         );
         return false;
       } finally {

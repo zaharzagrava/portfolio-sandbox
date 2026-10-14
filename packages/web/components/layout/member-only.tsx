@@ -1,7 +1,7 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import { useAuth } from '@/hooks/use-auth';
+import { useAuth, useHydrated } from '@/hooks/use-auth';
 
 /**
  * Renders its children for signed-in members only, so a visitor mounts (and requests) nothing.
@@ -12,6 +12,8 @@ import { useAuth } from '@/hooks/use-auth';
  */
 export function MemberOnly({ children, initialMember }: { children: ReactNode; initialMember?: boolean }) {
   const { isAuthenticated, status } = useAuth();
-  const member = status === 'loading' && initialMember !== undefined ? initialMember : isAuthenticated;
+  const hydrated = useHydrated();
+  const hinted = initialMember !== undefined && (!hydrated || status === 'loading');
+  const member = hinted ? initialMember : isAuthenticated;
   return member ? <>{children}</> : null;
 }

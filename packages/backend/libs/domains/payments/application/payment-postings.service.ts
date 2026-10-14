@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type { Transaction } from 'sequelize';
-import { ApiConfigService } from '@app/common/config';
+import { ApiConfigService, PlatformSettings } from '@app/common/config';
 import { LEDGER_ACCOUNTS, shopIdOf } from '../domain/account';
 import { splitCapture } from '../domain/fee';
 import {
@@ -39,7 +39,6 @@ export interface PaymentJournalResult {
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const SUPPORTED_CURRENCY = 'EUR';
 
 /**
  * Capture and refund of a payment (S14 FR-013, FR-014, research R-7): the rules of the sale and its exact reversal,
@@ -52,7 +51,12 @@ export class PaymentPostingsService {
     private readonly posting: JournalPostingService,
     @Inject(JOURNAL_STORE) private readonly journals: JournalStore,
     private readonly config: ApiConfigService,
-  ) {}
+  ) {
+    // The ledger books in the one platform currency, the one every product, order and payment is priced in.
+    this.currency = new PlatformSettings(config).currency;
+  }
+
+  private readonly currency: string;
 
   async capture(
     input: CaptureInput,
@@ -62,7 +66,7 @@ export class PaymentPostingsService {
       throw this.invalid('reference_invalid');
     if (typeof input.paymentRef !== 'string' || input.paymentRef.length === 0)
       throw this.invalid('reference_invalid');
-    if (input.currency !== SUPPORTED_CURRENCY)
+    if (input.currency !== this.currency)
       throw this.invalid('currency_unsupported');
     let split;
     try {

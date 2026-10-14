@@ -3,7 +3,7 @@ import { productId, register } from './helpers';
 
 /** Product page community features: discussions + votes (SD-11) and "ask this product" (SD-43). */
 test.describe('Product community', () => {
-  test('start a discussion, upvote it, and ask the product a question', async ({ page }) => {
+  test('start a discussion, upvote it, and ask the product a question', async ({ page, browser }) => {
     const id = await productId('Portable SSD 2TB');
     await register(page);
     await page.goto(`/products/${id}`);
@@ -18,8 +18,20 @@ test.describe('Product community', () => {
     const post = page.getByTestId('discussion-post').filter({ hasText: title });
     await expect(post).toBeVisible();
     await expect(post.locator('strong')).toHaveText('laptop'); // markdown rendered server-side, sanitized
-    await post.getByRole('button', { name: 'Upvote' }).click();
-    await expect(post.getByTestId('post-score')).toHaveText('1');
+    // Voting on your own post is refused (S25: self_vote_not_allowed), so a second account upvotes it.
+    const voterContext = await browser.newContext();
+    try {
+      const voter = await voterContext.newPage();
+      await register(voter);
+      await voter.goto(`/products/${id}`);
+      await voter.getByRole('tab', { name: 'Discussions' }).click();
+      const theirView = voter.getByTestId('discussion-post').filter({ hasText: title });
+      await expect(theirView).toBeVisible();
+      await theirView.getByRole('button', { name: 'Upvote' }).click();
+      await expect(theirView.getByTestId('post-score')).toHaveText('1');
+    } finally {
+      await voterContext.close();
+    }
 
     // Grounded Q&A: answers come only from the shop's documents - with none uploaded it says so instead of guessing.
     // (The product page's tabs open their content on demand; T088 rewrites this journey for the new panels.)

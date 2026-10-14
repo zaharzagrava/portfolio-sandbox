@@ -160,4 +160,47 @@ W07 touched none of these files; each is left to its owner.
 - **W01**: `app/(auth)/forgot-password/page.tsx` lines 54 and 90 fail `react/no-unescaped-entities` (`pnpm lint` errors).
 - **W05**: `app/chat/chat-view.tsx:109` (setState synchronously in an effect), `hooks/use-event-stream.ts:13` (ref read during render) and `components/assistant/chat-interface.tsx:60` (unescaped `'`) fail `pnpm lint`.
 - **seller (W04/S42)**: `app/dashboard/seller/[shopId]/developers/webhooks/view.tsx:50` uses a variable before it is declared (`pnpm lint` error); `api-keys/view.tsx` and `webhooks/view.tsx` have unused `error` catch bindings (warnings).
+
+## Gate repairs (pass 4: the Playwright run, 17 failures on both projects)
+
+`bash scripts/sdd/stack-fix.sh smoke` said the environment was fine (API ready, search 200, Chromium installed), so each failure was read as code or a test that had drifted. Backend 5679/5679 passed.
+
+Fixed in product code:
+
+- **Chat page crashed (`mine.map is not a function`)** (`tests/chat.spec.ts`): `lib/api/chat.ts` `myChannels` read `GET /api/chat/unread` as an array; S24 answers `{items, nextCursor}` (`chatUnreadPageSchema`). It now reads `.items`.
+- **Discussions never posted or listed** (`tests/product-community.spec.ts`): `components/product/product-discussions.tsx` followed the pre-S25 contract. It now addresses the board by product id (`boards/:productId`), sends the mandatory `Idempotency-Key` (one key per unchanged form), lists `items`, shows `score` and `commentCount`, and sends the vote as `{ value }` (strict body).
+- **Hydration mismatch in the header** (the follow-up left by W01; the cause of the `AS-18`/`AS-19` flake): `MobileLoginLink`, `MemberOnly` and the desktop `AccountArea` decided from the browser's session query on their first client render, so when the query answered before their Suspense boundary hydrated, React threw the server markup away and remounted the header. Each now uses the server's hint until `useHydrated()` (new, `hooks/use-auth.tsx`, a `useSyncExternalStore` that is `false` through hydration) is true.
+- **Welcome item missed by the bell** (`tests/notifications.spec.ts:14`, mobile and desktop): the count is read before the live stream opens and the hub replays nothing, so an item created in that window was never shown. `components/notifications-popover.tsx` reads the count again 2 s and 6 s after the stream connects (a reconnect already re-reads through `onResync`). The S28 AS-01 counts (initial, focus, reconnect) are unchanged; their unit tests pass.
+- `packages/backend/libs/infrastructure/sqs/sqs-task-queue.ts`: the failed-message log line now includes the `reason` of a `JournalInvalid` (it only named the class, which hid the next item).
+
+Tests changed (each scenario id and each assertion kept, and each can still fail):
+
+- `tests/auth.spec.ts` AS-29: the cookie list is now `['__Host-bff-csrf', 'anonymous_id']`. `anonymous_id` is the W02 visitor id that the page view creates; it is a random id, not a credential, and is listed in `lib/browser-storage-keys.ts` and the privacy policy.
+- `tests/product-community.spec.ts`: S25 refuses a vote on your own post (`422 self_vote_not_allowed`), so a second account does the upvote. Same expectations (score `1`).
+- `tests/notifications.spec.ts:94`: the alert is looked up inside `main`; Next's route announcer is also a `role="alert"` once the page has hydrated, so the bare query matched two elements.
+- `tests/visual/auth-navbar.spec.ts` (W01 AS-18, AS-19): the stubbed member session now also stubs the bell's `unread-count` and the live stream. The real API answers `401` to a session it never issued, the app correctly takes that as "the session ended" and signed the stubbed member out again (the screenshot then showed Log in / Sign up).
+- `tests/visual/home.spec.ts` (hero) and `tests/visual/search.spec.ts` (filters): their baselines had been taken on a stack with no category row and no facets. The hero now removes the Categories row from the layout instead of masking it (a mask keeps the row's height, which depends on the catalogue), and the four baselines were regenerated: `home-hero.png` and `filters-panel.png` / `filters-sheet.png` (the search `espresso` now shows its Category, Brand and price-band facets, which is what W02 specifies). The search baselines still depend on the seeded espresso product.
+
+**Not fixed, needs a decision:** `tests/cart-checkout.spec.ts` › JC-2 (both projects). See `questions.md` › "Blockers (gate repair, pass 4)".
+
+## Spec changes
+
+None: no `*.reviewed.json` file was touched and no signed rule changed meaning.
+
+## Sibling-spec follow-ups (pass 4)
+
+- **S14 / S05 / S13**: the platform currency is `USD` (S05 refuses `EUR` products, the web shows `$`), S13 accepts `EUR`, `USD` and `GBP`, and S14 books a capture only in `EUR` (`payment-postings.service.ts`, `currency_unsupported`). Every real checkout is therefore refused at the ledger and the payment never becomes `COMPLETED`. S14 must either book in the platform currency or the platform must run in `EUR`.
+- **S24 (chat)**: no change needed; the web now follows `GET /api/chat/unread`.
+- **S51 (realtime)**: a stream that has just opened misses an event published a moment before the hub takes the subscription. The web re-reads after 2 s and 6 s; a replay of the last events on first connect would remove the need.
 - **W03**: three AS-34 tests fail (`lib/api/checkout.test.ts` twice, `app/checkout/actions.test.ts` once): the request body still carries `refCode` although the test expects it omitted while `checkoutRequestSchema` does not declare it.
+
+## Gate repairs (pass 5: `cart-checkout.spec.ts` JC-2, "Order confirmed" never shown)
+
+- **Cause (backend code, not the environment):** the API log showed `[payments-charge] message … failed: JournalInvalid (currency_unsupported)`. `PaymentPostingsService.capture` (S14) accepted only a hard-coded `EUR`, but the platform currency (`PlatformSettings.currency`, default `USD`) is the currency of every product, order and payment. The capture is posted inside the payment's transition transaction, so the failure rolled the transition back: the order never became PAID and the success page never showed. The environment was healthy (`stack-fix.sh smoke`: ok).
+- **Fix:** `packages/backend/libs/domains/payments/application/payment-postings.service.ts` now compares the capture's currency with `new PlatformSettings(config).currency` instead of the constant. The refund path already compares with the sale's currency.
+- **Verified:** `npx tsc --noEmit` in packages/backend is clean; `tests/cart-checkout.spec.ts` passes on both projects (8 passed), including JC-2.
+- **Not verified:** `libs/domains/payments/ledger-payment-postings.e2e-spec.ts` could not start here (the test config lacks the `share_link_*`, `ads_*`, `api_key_pepper`, `widget_token_key` settings, so the app fails before any test runs; this is independent of this change).
+
+## Sibling-spec follow-ups (pass 5)
+
+- **S14-ledger-reconciliation**: the ledger now books in the platform currency, not a fixed `EUR`. `ledger-payment-postings.e2e-spec.ts` (the `[{ currency: 'USD' }, 'currency_unsupported']` row of the S14 AS-13 table) and the `'EUR'` defaults in `payments/testing/fixtures.ts` and `ledger-fixtures.ts` assume EUR; adopt the platform currency (use a non-platform code such as `JPY` for the refusal case). Other `EUR` constants (`balance-query.service.ts`, `hot-account-sweep.service.ts`, `payout.jobs.ts`, `ledger.dto.ts`, `balance.projector.ts`) still assume EUR and are outside this repair.

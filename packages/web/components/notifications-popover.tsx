@@ -11,7 +11,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import { useUserEvents, type UserEventHandler } from '@/hooks/use-user-stream';
+import { useUserEvents, useUserStream, type UserEventHandler } from '@/hooks/use-user-stream';
 import {
   applyNotificationEvent,
   inboxErrorKind,
@@ -26,6 +26,9 @@ import { formatWait } from '@/lib/auth/retry-after';
 import { queryKeys } from '@/lib/query-keys';
 import { safeNotificationLink } from '@/lib/safe-link';
 import { formatDistanceToNow } from 'date-fns';
+
+/** When, after the stream connects, the bell reads its count again (see `NotificationsPopover`). */
+const STREAM_CATCH_UP_MS = [2_000, 6_000] as const;
 
 function ItemBody({ item }: { item: NotificationItem }) {
   return (
@@ -55,6 +58,19 @@ export function NotificationsPopover() {
     [client],
   );
   useUserEvents(handler);
+
+  // The count was read over HTTP before the stream opened, and the stream replays nothing from before it opened or from
+  // the moment between its `open` and the hub taking the subscription: an item created in that window (a new account's
+  // welcome) would stay unseen until the next focus. Read the count again shortly after the first connect (a reconnect
+  // already re-reads through `onResync`).
+  const { health } = useUserStream();
+  const connected = health === 'connected';
+  useEffect(() => {
+    if (!connected) return;
+    const reread = () => void client.invalidateQueries({ queryKey: queryKeys.notifications.unreadCount() });
+    const timers = STREAM_CATCH_UP_MS.map((ms) => setTimeout(reread, ms));
+    return () => timers.forEach(clearTimeout);
+  }, [connected, client]);
 
   useEffect(() => {
     const reread = () => void client.invalidateQueries({ queryKey: queryKeys.notifications.unreadCount() });

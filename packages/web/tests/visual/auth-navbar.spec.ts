@@ -11,6 +11,14 @@ import { expect, test, type Page } from '@playwright/test';
 const MEMBER = { user: { id: 'u1', email: 'long.address.for.wrapping@example.com', role: 'SELLER' }, expiresAt: '2099-01-01T00:00:00.000Z' };
 
 async function stubSession(page: Page, member: typeof MEMBER | null) {
+  if (member) {
+    // A member's header also asks for the bell's count and opens the live stream. The real API answers 401 to a session it
+    // never issued, which the app rightly takes as "the session ended" and signs the stubbed member out again.
+    await page.route('**/api/notifications/unread-count', (route) =>
+      route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ unread: 0 }) }),
+    );
+    await page.route('**/api/streams**', (route) => route.fulfill({ status: 200, contentType: 'text/event-stream', body: ': ok\n\n' }));
+  }
   await page.route('**/api/bff/session', (route) => {
     if (route.request().method() !== 'GET') return route.fallback();
     return member

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import Link from 'next/link';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ThumbsDown, ThumbsUp } from 'lucide-react';
@@ -11,6 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/hooks/use-auth';
 import { apiClient } from '@/lib/api/client';
 import { apiErrorMessage } from '@/lib/api/errors';
+import { newIdempotencyKey } from '@/lib/api/idempotency';
 
 export interface PostView {
   postId: string;
@@ -19,11 +20,12 @@ export interface PostView {
   createdAt: string;
   ups: number;
   downs: number;
-  comments: number;
+  score: number;
+  commentCount: number;
 }
 
-/** Each product has its own discussion board (SD-11): `product-<productId>`. */
-export const productBoardId = (productId: string) => `product-${productId}`;
+/** Each product has its own discussion board (SD-11), addressed by the product id. */
+export const productBoardId = (productId: string) => productId;
 
 export function ProductDiscussions({ productId }: { productId: string }) {
   const board = productBoardId(productId);
@@ -35,12 +37,18 @@ export function ProductDiscussions({ productId }: { productId: string }) {
 
   const posts = useQuery({
     queryKey: ['discussions', board],
-    queryFn: async () => (await apiClient.get<{ posts: PostView[] }>(`/api/boards/${board}/posts`, { params: { sort: 'new' } })).data.posts,
+    queryFn: async () => (await apiClient.get<{ items: PostView[] }>(`/api/boards/${board}/posts`, { params: { sort: 'new' } })).data.items,
   });
 
+  // One key per unchanged form: a retry or a double press creates one post.
+  const attemptKey = useRef<string | null>(null);
   const create = useMutation({
-    mutationFn: () => apiClient.post(`/api/boards/${board}/posts`, { title: title.trim(), body: body.trim() }),
+    mutationFn: () => {
+      attemptKey.current ??= newIdempotencyKey();
+      return apiClient.post(`/api/boards/${board}/posts`, { title: title.trim(), body: body.trim() }, { headers: { 'Idempotency-Key': attemptKey.current } });
+    },
     onSuccess: () => {
+      attemptKey.current = null;
       setTitle('');
       setBody('');
       setComposing(false);
@@ -51,7 +59,7 @@ export function ProductDiscussions({ productId }: { productId: string }) {
   });
 
   const vote = useMutation({
-    mutationFn: ({ postId, value }: { postId: string; value: 1 | -1 }) => apiClient.put(`/api/votes/${postId}`, { targetType: 'post', value }),
+    mutationFn: ({ postId, value }: { postId: string; value: 1 | -1 }) => apiClient.put(`/api/votes/${postId}`, { value }),
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['discussions', board] }),
     onError: (error) => toast.error(apiErrorMessage(error, 'Could not vote.')),
   });
@@ -79,8 +87,8 @@ export function ProductDiscussions({ productId }: { productId: string }) {
             create.mutate();
           }}
         >
-          <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Title" aria-label="Discussion title" minLength={3} maxLength={300} required />
-          <Textarea value={body} onChange={(e) => setBody(e.target.value)} placeholder="What would you like to discuss?" aria-label="Discussion body" rows={4} />
+          <Input value={title} onChange={(e) => { attemptKey.current = null; setTitle(e.target.value); }} placeholder="Title" aria-label="Discussion title" minLength={3} maxLength={300} required />
+          <Textarea value={body} onChange={(e) => { attemptKey.current = null; setBody(e.target.value); }} placeholder="What would you like to discuss?" aria-label="Discussion body" rows={4} />
           <Button type="submit" disabled={create.isPending || title.trim().length < 3}>
             {create.isPending ? 'Posting…' : 'Post'}
           </Button>
@@ -97,7 +105,7 @@ export function ProductDiscussions({ productId }: { productId: string }) {
                 <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Upvote" disabled={!isAuthenticated} onClick={() => vote.mutate({ postId: post.postId, value: 1 })}>
                   <ThumbsUp className="w-4 h-4" />
                 </Button>
-                <span className="text-sm font-medium" data-testid="post-score">{post.ups - post.downs}</span>
+                <span className="text-sm font-medium" data-testid="post-score">{post.score}</span>
                 <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Downvote" disabled={!isAuthenticated} onClick={() => vote.mutate({ postId: post.postId, value: -1 })}>
                   <ThumbsDown className="w-4 h-4" />
                 </Button>
@@ -107,7 +115,7 @@ export function ProductDiscussions({ productId }: { productId: string }) {
                 {/* bodyHtml is rendered from markdown and sanitized on the server (allow-list, SD-11). */}
                 <div className="text-sm prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: post.bodyHtml }} />
                 <div className="text-xs text-muted-foreground mt-2">
-                  {new Date(post.createdAt).toLocaleDateString()} · {post.comments} comments
+                  {new Date(post.createdAt).toLocaleDateString()} · {post.commentCount} comments
                 </div>
               </div>
             </div>

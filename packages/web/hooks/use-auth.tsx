@@ -1,7 +1,7 @@
 'use client';
 
 import { useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useState, useSyncExternalStore } from 'react';
 import { sessionApi, type SessionRole, type SessionView } from '@/lib/api/session';
 import { queryKeys } from '@/lib/query-keys';
 import { endSession } from '@/lib/auth/session-ended';
@@ -50,6 +50,17 @@ export function useAuth(): { user: SessionUser | null; status: AuthStatus; isAut
   else if (query.data === undefined) status = 'loading';
   else status = user ? 'authenticated' : 'anonymous';
   return { user, status, isAuthenticated: user !== null, isLoading: status === 'loading' };
+}
+
+const noSubscription = () => () => {};
+
+/**
+ * `false` on the server and during hydration, `true` from the first commit after it. A client leaf that was handed what the
+ * server read (`initialAnonymous`, `initialMember`) uses that hint until then, so its first render always equals the server's
+ * markup even when the browser's session query answered before this part of the page hydrated.
+ */
+export function useHydrated(): boolean {
+  return useSyncExternalStore(noSubscription, () => true, () => false);
 }
 
 /**
