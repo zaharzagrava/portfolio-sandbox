@@ -135,6 +135,43 @@ The full pass (every charter, hours) is not part of the loop: `scripts/qa/full.s
 - **Blocked**: the loop gave up on one capability (and everything that depends on it) and moved on.
 - **Layer 1, 2, 3 of tests**: 1 = ordinary Jest and Playwright tests the builders write for every capability (this is where coverage comes from); 2 = "AI compiled once, self-healing scripts", which I decided not to build; 3 = the exploratory QA agent, which only looks for what nobody wrote a test for.
 
+#### Why a capability gets blocked, and how the doctor, the stack and the lessons fit together
+
+Written on 2026-10-14 after three runs in a row were blocked by the same kind of problem. Read it before you touch the lessons or the doctor.
+
+**How a capability is built, and who is called when**
+1. A fresh agent each for `plan`, `tasks`, `analyze` (once per capability), then `implement` passes (each one a fresh agent; it ticks tasks in `tasks.md`; up to 10 passes until none is open), then `converge`.
+2. `converge` compares the spec, the plan, the tasks and the code and appends anything unbuilt as NEW tasks. It also reads the lessons digest. This is where unexpected tasks come from.
+3. The gate (plain scripts, no model): scenario ids in tests, test integrity, living-spec check, lint, type check, the monolith boot check, then the capability's tests. Fails: the **gate repair agent** (up to 5 attempts, phone message "repair attempt N of 5").
+4. The **doctor** is the second level and is called only when the capability is stuck (an implement pass closes no task, tasks stay open after the last pass, or the gate still fails after its repairs). It reads the log and answers `DOCTOR: fixed` (the capability is built again) or `DOCTOR: needs human: <why>`, and then the capability is BLOCKED (`BLOCKED.md` in its spec folder), skipped with everything that depends on it, and the loop goes on. At most 3 doctor attempts per capability, one shared repair budget of 60 minutes per run.
+5. Gate passes: living page, term pages, decision list, commit, push. The checkpoint (now one, at the very end of the order file) runs the sweep, the flow scripts, the QA agent and the checkpoint repair agent.
+
+**Why a task can demand a proof that cannot be given**
+- Every agent reads a digest of `docs/lessons.md`. Lessons L-012 ("verify on a fresh stack"), L-015 and L-018 ("the real apps must boot on their own") are written as rules, so `converge` turns them into tasks such as "T061 HIGH: prove the real apps boot on an empty stack". Nobody asked for that in the spec; it is the lessons, applied literally.
+- An unattended agent cannot approve anything. It may run only what is on the allow-list `IMPL_TOOLS` in `scripts/sdd/implement-specs.sh`. A task that needs a command that is not listed (starting a server, installing a package, a script) ends in "needs human". Every command a task may need must be listed, and have a script that does it.
+
+**The stack, empty and warm**
+- The dev stack (PostgreSQL, Redis, Kafka, Elasticsearch, ClickHouse, Scylla, the queue server, MinIO and the API) is created ONCE per run, when the machine boots. At that moment it is empty: new volumes, nothing in it. The test stack for the e2e suites is separate. Neither is recreated between capabilities.
+- A **warm** stack is one that has been running and holds leftovers (products, orders, indexes, queue messages, caches) from earlier tests and agents. Leftovers can make a broken thing work. On 2026-10-12 a fix was debugged on a warm stack for hours while the cloud machine, which always starts empty, kept failing (L-012).
+- On the runner the stack is empty only for the first minutes. After that no task can be satisfied by "run it on an empty stack": the stack cannot be emptied without destroying what the whole run uses (`fresh-run.sh` refuses next to it: same container names and ports). `scripts/qa/fresh-run.sh --here` judges the running stack instead (boot check, live doctor), and is chosen by itself on the runner.
+
+**The rule that came out of it (L-019)**
+- Runtime proofs (the real apps boot on their own, an empty-stack run, the browser suite) belong to the final checkpoint and are done by scripts (`scripts/sdd/checkpoints/final.sh`: `boot-app.sh core|projector|worker`, `fresh-run.sh --here`, the buy flow). A builder or converge pass must not add a task for them.
+- A task that still asks for one is ticked with "deferred to the final checkpoint: <command>" and one line in `specs/deferred-checks.md`. The doctor is told to do exactly this and answer `DOCTOR: fixed` instead of blocking a capability whose code and tests are green.
+- Tests may be replaced, split or deleted; a scenario may not disappear (L-017).
+
+**What went wrong on 2026-10-13 and 14, in order, and what fixed each**
+- API never ready at start (two modules wired wrongly, L-015): re-exports; `boot-check.sh` in the gate, the checkpoint and the runner.
+- Every login a 500 on the local dev stack: a descending query on a DynamoDB index that Scylla 6.2 cannot answer (`ScanIndexForward: false`); read ascending and reversed.
+- Loop ended with exit 123 after a gate finding (L-016): `code_fingerprint` crashed on a deleted file; also backticks in a prompt line ran as a command.
+- "Test file deleted" false alarm and the wrong rule "never delete a test" (L-017): the guard follows scenario ids.
+- S19 blocked: `fresh-run.sh` refuses next to the runner's own stack (`--here`), then the script was not on the allow-list (allow-list).
+- Runner stuck in `playwright install chromium` (the CDN crawled): 150 s per attempt, three mirrors. Open: bake Chromium and ffmpeg into the image (needs the runner stopped: Hetzner's dedicated-core limit allows no second big machine).
+- S30 blocked, no `ffmpeg` on the runner: installed at boot (and in the image build, next rebuild).
+- S36, S39, S47 blocked, "boot the real apps": `boot-app.sh` and its allow-list entry; it found that `apps/projector` aborted at boot (fixed), `apps/payment-processor` does not boot (open), and the dev `.env` lacked five settings (fixed).
+- API not ready at the next start: the `.env` baked into the image is old and the script left it alone; the runner now rewrites it every boot (`FORCE=1`), and a config error ends the wait at once with its cause.
+- S36 and S47 blocked again on "prove it on an empty stack" tasks: L-019.
+
 #### What is proven and what is not (updated at the end of the 2026-10-13 session)
 
 - Proven by a real run: the builder loop and both gate levels (earlier runs, S01 to S51); the QA explorer finds all four re-introduced bugs (`groupId`, missing queue, silent consumer, missing search index); on a real product bug (search clicks answered 400) verify said `reproduced`, the test writer produced a test that failed, a repair agent fixed the endpoint and the test passed.
