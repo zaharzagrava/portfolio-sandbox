@@ -127,3 +127,10 @@
 {"run":"20261014T072348Z","capability":"S30","step":"repair-2","start":"2026-10-14T07:37:12Z","end":"2026-10-14T07:42:18Z","seconds":306,"result":"ok","attempt":1,"reason":"ok","code_changed":true}
 {"run":"20261014T072348Z","capability":"S30","step":"gate","start":"2026-10-14T07:42:18Z","end":"2026-10-14T07:48:18Z","seconds":360,"result":"pass","attempt":3,"reason":""}
 {"run":"20261014T072348Z","capability":"S30","step":"built","start":"2026-10-14T07:23:48Z","end":"2026-10-14T07:48:18Z","seconds":1470,"result":"ok","attempt":1,"reason":"Product video and VOD: resumable upload, transcoding DAG, HLS ladder, signed delivery"}
+{"run":"20261014T072348Z","capability":"S36","step":"implement-1","start":"2026-10-14T07:48:36Z","end":"2026-10-14T07:48:56Z","seconds":20,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261014T072348Z","capability":"S36","step":"implement-2","start":"2026-10-14T07:48:56Z","end":"2026-10-14T07:49:32Z","seconds":36,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261014T072348Z","capability":"S36","step":"doctor-1","start":"2026-10-14T07:49:32Z","end":"2026-10-14T07:52:37Z","seconds":185,"result":"ok","attempt":1,"reason":"ok","code_changed":false}
+{"run":"20261014T072348Z","capability":"S36","step":"converge-1","start":"2026-10-14T07:52:39Z","end":"2026-10-14T07:53:19Z","seconds":40,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261014T072348Z","capability":"S36","step":"implement-2","start":"2026-10-14T07:53:19Z","end":"2026-10-14T07:53:49Z","seconds":30,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261014T072348Z","capability":"S36","step":"doctor-2","start":"2026-10-14T07:53:49Z","end":"2026-10-14T07:54:19Z","seconds":30,"result":"ok","attempt":1,"reason":"ok","code_changed":false}
+{"run":"20261014T072348Z","capability":"S36","step":"blocked","start":"2026-10-14T07:54:19Z","end":"2026-10-14T07:54:19Z","seconds":0,"result":"blocked","attempt":2,"reason":"needs a human: DOCTOR: needs human: T061 needs the three real apps started (`scripts/infra/boot-app.sh projector|worker|core`), and the sandbox refuses to run them without approval."}

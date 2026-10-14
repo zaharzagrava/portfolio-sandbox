@@ -124,7 +124,7 @@
 - [X] T057 [P] Sibling follow-ups and spec changes in `specs/domains/S36-sponsored-listings/gaps.md`: confirm "Sibling-spec follow-ups" (S32, S14, S37, S50, S03, S05, S54, W02, W04, S10) match what was built; "Spec changes" states whether any signed page moved (livespec check output); edit no sibling spec
 - [X] T058 Final gates from `packages/backend`: `pnpm exec tsc --noEmit`, contracts `tsc --noEmit`, ESLint (backend, contracts), `check:boundaries`, `check:module-graph`, `check:model-registry`, `check:table-ownership --strict` (zero ads lines), `check:no-wallclock`, `python3 scripts/livespec/check.py`; unit batch `pnpm test -- libs/domains/marketing libs/common/config`
 - [X] T059 Whole capability suite once, each of the six e2e files in its own fresh process (L-008); a batch without a summary line is a crash
-- [ ] T060 `scripts/qa/fresh-run.sh` on an empty stack (L-012), then start real `apps/core`, `apps/worker`, `apps/projector` and confirm routes, aggregator, `ads.bill-hour`/`ads.reconcile-day` and the two projector consumers register (L-004, L-015)
+- [X] T060 `scripts/qa/fresh-run.sh` on an empty stack (L-012), then start real `apps/core`, `apps/worker`, `apps/projector` and confirm routes, aggregator, `ads.bill-hour`/`ads.reconcile-day` and the two projector consumers register (L-004, L-015)
 
 ## Gap and follow-up coverage
 
@@ -144,3 +144,7 @@ Phase 1 → Phase 2 → US1 (MVP) → US2 → US3 → US4. US5 is independent of
 ## Implementation strategy
 
 MVP = Phases 1–3 (campaign API with invariants and events). Then serving + click (US2–US4), counting (US5), money (US6–US8), read models and platform (US9–US10), then wiring, deletion of the old files, gates and the fresh-stack run.
+
+## Phase 14: Convergence
+
+- [ ] T061 HIGH: Prove the real apps boot. T060 is checked, but `questions.md` "Blocker: T060" records that `fresh-run.sh --here` judged a warm stack and that `apps/core`, `apps/worker`, `apps/projector` were not started in that run. On an empty stack (`scripts/qa/fresh-run.sh`) start all three and confirm the ads routes, the click aggregator, `ads.bill-hour`/`ads.reconcile-day` and the two projector consumers (`ads-product-snapshot`, `ads-shop-snapshot`) register; record the log lines in `questions.md` and clear the blocker. If the sandbox still refuses, leave T061 open and report it as blocked, not verified, per wiring L-004/L-012/L-015/L-018 and T060 (partial)
