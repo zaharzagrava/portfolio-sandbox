@@ -29,6 +29,7 @@ with the links that prove it: backticked file paths and commit hashes. For a `pr
 - L-018 2026-10-14 wiring prevented
 - L-019 2026-10-14 process prevented
 - L-020 2026-10-14 config prevented
+- L-021 2026-10-14 config prevented
 
 ## L-001 A message option the queue refuses, found only by hand
 - **Rule:** A queue option must be validated where the message is created, not discovered when the relay fails (FIFO-only options like `groupId` never go to a standard queue).
@@ -151,3 +152,8 @@ with the links that prove it: backticked file paths and commit hashes. For a `pr
 - **Rule:** A capability that adds a queue must also reload the queue server, and an unattended agent must have a command for it.
 - **Symptom:** S42 (seller public API) was code-complete and the gate failed four times on readiness (`"queue:public-api-bulk-chunk":"down"`); each repair agent correctly edited `infra/docker/elasticmq/elasticmq.conf` and then could not restart the queue server (`docker restart` was not on its allow-list), so the same failure came back. **Cause:** ElasticMQ reads its config only at start.
 - **Prevention:** `scripts/infra/reload-queues.sh` restarts only the dev stack's queue server and waits for readiness; it is on the allow-list. Fixed live on the runner at 17:50 local by restarting the container.
+
+## L-021 The operating system restarted the build service in the middle of a pass
+- **Rule:** A disposable build machine runs nothing that changes it behind the loop's back, and a restart of the runner must keep the work in the tree.
+- **Symptom:** twice in one day (08:42 and 19:00 UTC) the journal shows `Stopped sdd-run.service` and `Started sdd-run.service` with no one at the keyboard; the first time the loop recovered, the second time the run failed ("cannot check out origin/sdd/wip": local changes would be overwritten). **Cause:** Ubuntu's nightly `apt-daily-upgrade` / `unattended-upgrades` job (with `needrestart`) restarts services that use upgraded libraries, including our transient service; the restart then started the script over a dirty working tree.
+- **Prevention:** `scripts/vps/vm-run.sh` stops and masks the upgrade timers and sets needrestart to list-only before anything else, and a restart commits the working tree (`wip(sdd): work in progress when the runner restarted`) and lets it take part in the choice of the start; `scripts/vps/bootstrap.sh` does the same for the image.
