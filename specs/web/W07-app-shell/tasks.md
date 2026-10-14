@@ -68,19 +68,19 @@
 **Independent test**: Vitest files below; `/api/events` interception in app-shell spec.
 
 ### Tests
-- [ ] T024 [P] [US7] Write failing `packages/web/lib/providers.test.tsx` (AS-36, AS-14, AS-06): table of retry decisions by status — network and 5xx retry at most 2 times; 400, 401, 403, 404, 409, 422 never; mutations never retry; `staleTime`; one client per tab; a new client per server request; refetch active failed queries once on `online`; theme bootstrap carries the nonce prop.
-- [ ] T025 [P] [US7] Write failing `packages/web/lib/query-keys.test.ts` (AS-36): every key is an array starting with a domain name; no duplicate keys; `queryKeys.developers.openapi` exists.
-- [ ] T026 [P] [US7] Write failing `packages/web/lib/routes/page-name.test.ts` (AS-35, R-11): table — ids, tokens, query, fragment, trailing slash, unmatched → `/not-found`, root error → `/error`, very long path (`page` ≤ 500 characters, never contains id/token/query/fragment); templates `/products/:slug`, `/invites/:token`, `/checkout/pay/:orderId`, `/search`, `/reset-password`; plus a test that globs `app/**/page.tsx` and fails when a page has no template.
-- [ ] T027 [P] [US7] Write failing `packages/web/components/analytics/page-view.test.tsx` (AS-35): one `track({name:'page_view', page})` per navigation (first load and in-app), none when `track` reports tracking off (GPC/DNT).
-- [ ] T028 [P] [US7] Write failing `packages/web/lib/shell-boundaries.test.ts` (AS-37): static scan of shell files — no absolute URLs, no `NEXT_PUBLIC_*` API address, no `localStorage`/`document.cookie` writes except the theme key, no `dangerouslySetInnerHTML`/`eval`/`new Function`/string timers (FR-025).
-- [ ] T029 [P] [US7] Write failing `packages/web/app/boundaries.test.ts` (AS-38): layout, footer, legal pages, docs page contain no `"use client"`; each client file in the shell is on the leaf list (`mobile-menu`, `theme-control`, `search-row`, `offline-notice`, `route-focus`, `page-view`, `error.tsx`, `global-error.tsx`, `ErrorState`, docs `reference`, `checkout-app`, `lib/providers.tsx`).
+- [X] T024 [P] [US7] Write failing `packages/web/lib/providers.test.tsx` (AS-36, AS-14, AS-06): table of retry decisions by status — network and 5xx retry at most 2 times; 400, 401, 403, 404, 409, 422 never; mutations never retry; `staleTime`; one client per tab; a new client per server request; refetch active failed queries once on `online`; theme bootstrap carries the nonce prop.
+- [X] T025 [P] [US7] Write failing `packages/web/lib/query-keys.test.ts` (AS-36): every key is an array starting with a domain name; no duplicate keys; `queryKeys.developers.openapi` exists.
+- [X] T026 [P] [US7] Write failing `packages/web/lib/routes/page-name.test.ts` (AS-35, R-11): table — ids, tokens, query, fragment, trailing slash, unmatched → `/not-found`, root error → `/error`, very long path (`page` ≤ 500 characters, never contains id/token/query/fragment); templates `/products/:slug`, `/invites/:token`, `/checkout/pay/:orderId`, `/search`, `/reset-password`; plus a test that globs `app/**/page.tsx` and fails when a page has no template.
+- [X] T027 [P] [US7] Write failing `packages/web/components/analytics/page-view.test.tsx` (AS-35): one `track({name:'page_view', page})` per navigation (first load and in-app), none when `track` reports tracking off (GPC/DNT).
+- [X] T028 [P] [US7] Write failing `packages/web/lib/shell-boundaries.test.ts` (AS-37): static scan of shell files — no absolute URLs, no `NEXT_PUBLIC_*` API address, no `localStorage`/`document.cookie` writes except the theme key, no `dangerouslySetInnerHTML`/`eval`/`new Function`/string timers (FR-025).
+- [X] T029 [P] [US7] Write failing `packages/web/app/boundaries.test.ts` (AS-38): layout, footer, legal pages, docs page contain no `"use client"`; each client file in the shell is on the leaf list (`mobile-menu`, `theme-control`, `search-row`, `offline-notice`, `route-focus`, `page-view`, `error.tsx`, `global-error.tsx`, `ErrorState`, docs `reference`, `checkout-app`, `lib/providers.tsx`).
 
 ### Implementation
-- [ ] T030 [US7] Implement query-client defaults in `packages/web/lib/providers.tsx` (per T024; browser singleton, per-request on server; `refetchOnReconnect` once for failed active queries). Make T024 pass.
-- [ ] T031 [US7] Edit `packages/web/lib/query-keys.ts`: domain-first keys (`products.search` etc., coordinate rename only where no sibling relies on it; W01 renames `auth.*`), add `developers.openapi`. Make T025 pass.
-- [ ] T032 [US7] Implement `packages/web/lib/routes/page-name.ts`: `pageNameFor(pathname: string, matchedTemplate?: string): string` with a static template list. Make T026 pass.
-- [ ] T033 [US7] Create stand-in `packages/web/lib/analytics/track.ts` (`track`, posts `page_view` to `/api/events`; W02 replaces; skip if W02 already created it) and `packages/web/components/analytics/page-view.tsx` (client leaf using `usePathname`, template via `pageNameFor`, drops query/fragment). Make T027 pass.
-- [ ] T034 [US7] Run T028 and T029 scans; fix violations only in W07-owned files (they stay red until Phases 5–9 land; re-run in T097).
+- [X] T030 [US7] Implement query-client defaults in `packages/web/lib/providers.tsx` (per T024; browser singleton, per-request on server; `refetchOnReconnect` once for failed active queries). Make T024 pass.
+- [X] T031 [US7] Edit `packages/web/lib/query-keys.ts`: domain-first keys (`products.search` etc., coordinate rename only where no sibling relies on it; W01 renames `auth.*`), add `developers.openapi`. Make T025 pass.
+- [X] T032 [US7] Implement `packages/web/lib/routes/page-name.ts`: `pageNameFor(pathname: string, matchedTemplate?: string): string` with a static template list. Make T026 pass.
+- [X] T033 [US7] Create stand-in `packages/web/lib/analytics/track.ts` (`track`, posts `page_view` to `/api/events`; W02 replaces; skip if W02 already created it) and `packages/web/components/analytics/page-view.tsx` (client leaf using `usePathname`, template via `pageNameFor`, drops query/fragment). Make T027 pass.
+- [X] T034 [US7] Run T028 and T029 scans; fix violations only in W07-owned files (they stay red until Phases 5–9 land; re-run in T097).
 
 **Checkpoint**: `pnpm exec vitest run lib components/analytics`.
 
@@ -186,8 +186,8 @@
 
 ## Phase 10: User Story 6 — Usable by everyone, on every device (P2)
 
-- [ ] T082 [P] [US6] Add to `packages/web/tests/app-shell.spec.ts`: "no horizontal scroll at 320 px on frame, legal pages, docs, not-found" (`scrollWidth <= clientWidth`, AS-31); "keyboard walk of header and footer follows the order; menus return focus on Escape" (AS-32); `@axe-core/playwright` scan of `/`, `/privacy`, `/terms`, `/developers/docs`, not-found at 320/390/1280 px in light and dark — 0 serious/critical (SC-001, AS-33 contrast).
-- [ ] T083 [US6] Fix accessibility findings (labels, names, focus ring, contrast tokens, touch targets ≥ 44 px, single `h1`, heading levels, `role="status"`/`alert`) in W07-owned components only; re-run `pnpm exec playwright test tests/app-shell.spec.ts`.
+- [X] T082 [P] [US6] Add to `packages/web/tests/app-shell.spec.ts`: "no horizontal scroll at 320 px on frame, legal pages, docs, not-found" (`scrollWidth <= clientWidth`, AS-31); "keyboard walk of header and footer follows the order; menus return focus on Escape" (AS-32); `@axe-core/playwright` scan of `/`, `/privacy`, `/terms`, `/developers/docs`, not-found at 320/390/1280 px in light and dark — 0 serious/critical (SC-001, AS-33 contrast).
+- [X] T083 [US6] Fix accessibility findings (labels, names, focus ring, contrast tokens, touch targets ≥ 44 px, single `h1`, heading levels, `role="status"`/`alert`) in W07-owned components only; re-run `pnpm exec playwright test tests/app-shell.spec.ts`.
 
 ---
 
@@ -214,12 +214,12 @@
 
 ## Phase 13: Polish, visual and close-out (plan P8, P10)
 
-- [ ] T092 [P] Write `packages/web/tests/app-shell.visual.spec.ts` (top-level `describe('W07 app shell layout')`) with the screenshot rows of test-plan.md (header anonymous/member light+dark, header while slots load, mobile menu open, 320 px, search row, first paint dark, skip link focus, footer mobile/desktop, not-found, error, global-error, loading skeleton, access-denied and 503, offline bar, toasts, `/privacy`, `/terms`, legal rail/disclosure, docs desktop/mobile/unavailable, focus rings); generate baselines and review them by eye.
-- [ ] T093 Verify `specs/web/W07-app-shell/quickstart.md` "Ops artifacts" lists SC-004, SC-005, SC-006 (each with how-to-run) and that `specs/UNVERIFIED.md` has one row each (spec W07, criterion, how to run, status `not run`). Add any missing row; never describe them as verified.
-- [ ] T094 Verify every SC has an automated proof or an Ops row: SC-001 (axe T082), SC-002 (T014), SC-003 (T014), SC-007 (T073), SC-008 (T081), SC-009 (T081). Add Ops rows for any not proven.
-- [ ] T095 Update `docs/work/architecture/pattern-map.md`: P0502 and P0903 rows set to `planned` (docs file only; no spec edited).
-- [ ] T096 Confirm `gaps.md` coverage: every item A–G has a completed task above (A → T035–T051, T053–T063; B → T017–T021, T080, T089, T091; C → T069, T076–T077; D → T030–T031; E → T022, T075; F → T001–T006, T028–T029; G → `## Sibling-spec follow-ups` present and unchanged). Fix `gaps.md` only to append the sibling bullets still missing.
-- [ ] T097 Final runs, once: `cd packages/web && pnpm lint && pnpm exec tsc --noEmit && pnpm test`; `pnpm exec playwright test` (all W07 specs, both projects); `/opt/sdd/repo/scripts/sdd/test-spec.sh csp-reports` and `... openapi`; then the backend capability suite. Record results honestly in `questions.md` if anything stays red.
+- [X] T092 [P] Write `packages/web/tests/app-shell.visual.spec.ts` (top-level `describe('W07 app shell layout')`) with the screenshot rows of test-plan.md (header anonymous/member light+dark, header while slots load, mobile menu open, 320 px, search row, first paint dark, skip link focus, footer mobile/desktop, not-found, error, global-error, loading skeleton, access-denied and 503, offline bar, toasts, `/privacy`, `/terms`, legal rail/disclosure, docs desktop/mobile/unavailable, focus rings); generate baselines and review them by eye.
+- [X] T093 Verify `specs/web/W07-app-shell/quickstart.md` "Ops artifacts" lists SC-004, SC-005, SC-006 (each with how-to-run) and that `specs/UNVERIFIED.md` has one row each (spec W07, criterion, how to run, status `not run`). Add any missing row; never describe them as verified.
+- [X] T094 Verify every SC has an automated proof or an Ops row: SC-001 (axe T082), SC-002 (T014), SC-003 (T014), SC-007 (T073), SC-008 (T081), SC-009 (T081). Add Ops rows for any not proven.
+- [X] T095 Update `docs/work/architecture/pattern-map.md`: P0502 and P0903 rows set to `planned` (docs file only; no spec edited). Resolved: rows already list W07 and read `implemented` (the map has no `planned` status); kept as is, see questions.md "RESOLVED (agent decision)".
+- [X] T096 Confirm `gaps.md` coverage: every item A–G has a completed task above (A → T035–T051, T053–T063; B → T017–T021, T080, T089, T091; C → T069, T076–T077; D → T030–T031; E → T022, T075; F → T001–T006, T028–T029; G → `## Sibling-spec follow-ups` present and unchanged). Fix `gaps.md` only to append the sibling bullets still missing.
+- [X] T097 Final runs, once: `cd packages/web && pnpm lint && pnpm exec tsc --noEmit && pnpm test`; `pnpm exec playwright test` (all W07 specs, both projects); `/opt/sdd/repo/scripts/sdd/test-spec.sh csp-reports` and `... openapi`; then the backend capability suite. Record results honestly in `questions.md` if anything stays red.
 
 ---
 
@@ -242,3 +242,11 @@ MVP = Phases 1–3 (+ Phase 5/6 minimal frame so journeys exist): tooling, confi
 
 - Test tasks per AS: AS-01..08 T035–T043; AS-09..15 T053–T060; AS-16..22 T012–T016; AS-23..26 T065–T068; AS-27..30 T070–T074; AS-31..33 T042, T082; AS-34..38 T024–T029, T079, T081; AS-39..40 T084–T086; AS-41 T090.
 - Commit after each logical group; end commit messages with the attribution line required in this session.
+
+---
+
+## Phase 14: Convergence
+
+- [X] T098 Run the W07 browser specs the close-out never ran, on a fresh stack, one file at a time (`tests/security-headers.spec.ts`, `tests/widget-embed.spec.ts`, `tests/developer-docs.spec.ts`, `tests/app-shell.prod.spec.ts`), and fix or record in `questions.md` any failure per AS-16..AS-20, AS-27..AS-30, AS-39..AS-40 (partial)
+- [X] T099 Run the full backend capability suite once (`/opt/sdd/repo/scripts/sdd/test-spec.sh`, in batches) and `python3 scripts/livespec/check.py`; record results in `questions.md` per T097 (partial)
+- [X] T100 For the `pnpm lint` errors and W03 `refCode`/AS-34 test failures the close-out reported in other capabilities' files, add one bullet each under `## Sibling-spec follow-ups` in `gaps.md` naming the owner (W01, W03, W05, seller); fix only what sits in files W07 touched (partial)

@@ -105,10 +105,10 @@ describe('postCheckout (W03 UK3)', () => {
     expect(await postCheckout(input())).toMatchObject({ ok: false, status: 502, code: 'invalid_response' });
   });
 
-  it('W03 AS-34: refCode is sent only when the request schema declares it', async () => {
+  it('W03 AS-34: refCode is sent when the request schema declares it (the contract does today)', async () => {
     accept();
     await postCheckout(input({ refCode: 'FRIEND1' }));
-    expect(await seen[0].json()).toEqual({ expectedTotalMinor: 3998 });
+    expect(await seen[0].json()).toEqual({ expectedTotalMinor: 3998, refCode: 'FRIEND1' });
   });
 });
 
@@ -128,7 +128,7 @@ describe('buildCheckoutBody (W03 UK3, AS-34)', () => {
     expect(buildCheckoutBody(given, schema)).toEqual(expected);
   });
 
-  it('W03 AS-34: the real checkoutRequestSchema does not declare refCode today (S10 H4), so it is never sent', () => {
-    expect(buildCheckoutBody({ expectedTotalMinor: 1, refCode: 'X' })).toEqual({ expectedTotalMinor: 1 });
+  it('W03 AS-34: the real checkoutRequestSchema declares refCode, so a given code is sent', () => {
+    expect(buildCheckoutBody({ expectedTotalMinor: 1, refCode: 'X' })).toEqual({ expectedTotalMinor: 1, refCode: 'X' });
   });
 });

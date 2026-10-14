@@ -226,3 +226,12 @@
 {"run":"20261014T084403Z","capability":"S48","step":"converge-2","start":"2026-10-14T17:18:26Z","end":"2026-10-14T17:19:36Z","seconds":70,"result":"ok","attempt":1,"reason":"ok"}
 {"run":"20261014T084403Z","capability":"S48","step":"gate","start":"2026-10-14T17:19:36Z","end":"2026-10-14T17:23:04Z","seconds":208,"result":"pass","attempt":1,"reason":""}
 {"run":"20261014T084403Z","capability":"S48","step":"built","start":"2026-10-14T17:11:19Z","end":"2026-10-14T17:23:04Z","seconds":705,"result":"ok","attempt":1,"reason":"BFF composition: product-page aggregate with budgets and partial errors, GraphQL with DataLoaders and limits, session handling"}
+{"run":"20261014T183044Z","capability":"-","step":"run-start","start":"2026-10-14T18:30:44Z","end":"2026-10-14T18:30:44Z","seconds":0,"result":"ok","attempt":1,"reason":"commit=dc9b0ae3 MAX_GATE_REPAIRS=5 MAX_REPAIRS_PER_SPEC=3 REPAIR_BUDGET_MIN=60 MAX_IMPLEMENT_PASSES=10"}
+{"run":"20261014T183044Z","capability":"W07","step":"implement-1","start":"2026-10-14T18:30:45Z","end":"2026-10-14T18:37:21Z","seconds":396,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261014T183044Z","capability":"W07","step":"implement-2","start":"2026-10-14T18:37:21Z","end":"2026-10-14T18:37:46Z","seconds":25,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261014T183044Z","capability":"W07","step":"doctor-1","start":"2026-10-14T18:37:46Z","end":"2026-10-14T18:38:01Z","seconds":15,"result":"ok","attempt":1,"reason":"ok","code_changed":false}
+{"run":"20261014T183044Z","capability":"W07","step":"converge-1","start":"2026-10-14T18:38:02Z","end":"2026-10-14T18:38:42Z","seconds":40,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261014T183044Z","capability":"W07","step":"implement-2","start":"2026-10-14T18:38:42Z","end":"2026-10-14T18:43:32Z","seconds":290,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261014T183044Z","capability":"W07","step":"converge-2","start":"2026-10-14T18:43:32Z","end":"2026-10-14T18:44:17Z","seconds":45,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261014T183044Z","capability":"W07","step":"gate","start":"2026-10-14T18:44:17Z","end":"2026-10-14T18:48:20Z","seconds":243,"result":"fail","attempt":1,"reason":""}
+{"run":"20261014T183044Z","capability":"W07","step":"repair-1","start":"2026-10-14T18:48:21Z","end":"2026-10-14T18:51:06Z","seconds":165,"result":"ok","attempt":1,"reason":"ok","code_changed":true}

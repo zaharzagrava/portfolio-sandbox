@@ -1,8 +1,8 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { act, render, screen } from '@testing-library/react';
+import { act, cleanup, render, screen } from '@testing-library/react';
 import { hydrateRoot } from 'react-dom/client';
 import { renderToString } from 'react-dom/server';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('next/navigation', () => ({ useRouter: () => ({ replace: vi.fn(), push: vi.fn(), refresh: vi.fn() }), usePathname: () => '/' }));
 
@@ -34,13 +34,23 @@ function hydrates(server: React.ReactElement, browser: React.ReactElement) {
   container.innerHTML = renderToString(server);
   const before = container.innerHTML;
   const errors: unknown[] = [];
+  let root!: ReturnType<typeof hydrateRoot>;
   act(() => {
-    hydrateRoot(container, browser, { onRecoverableError: (error) => errors.push(error) });
+    root = hydrateRoot(container, browser, { onRecoverableError: (error) => errors.push(error) });
   });
   const after = container.innerHTML;
+  act(() => root.unmount());
   container.remove();
   return { errors, before, after };
 }
+
+// React Query batches notifications with a zero-delay timer; let it fire before the environment is torn down.
+afterEach(async () => {
+  cleanup();
+  await act(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 10));
+  });
+});
 
 // The server may or may not have the session in its query cache when it renders the header (the bootstrap streams in its own
 // boundary) while the browser's first render never has it yet. The server tells the slots what it knows by a prop, so both

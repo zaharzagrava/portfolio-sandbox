@@ -24,7 +24,7 @@ vi.mock('@marketplace-sandbox/contracts', async (importOriginal) => {
   return {
     ...actual,
     get checkoutRequestSchema() {
-      return seam.schemaDeclaresRefCode ? withRefCode : actual.checkoutRequestSchema;
+      return seam.schemaDeclaresRefCode ? withRefCode : actual.checkoutRequestSchema.omit({ refCode: true });
     },
   };
 });

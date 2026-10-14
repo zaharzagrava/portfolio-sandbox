@@ -1,5 +1,5 @@
 import type { MetadataRoute } from 'next';
-import { config } from '@/lib/config';
+import { siteUrl } from '@/lib/server/endpoints.server';
 import { noStorePaths } from '@/lib/security/headers';
 
 /**
@@ -9,6 +9,6 @@ import { noStorePaths } from '@/lib/security/headers';
 export default function robots(): MetadataRoute.Robots {
   return {
     rules: [{ userAgent: '*', allow: '/', disallow: [...noStorePaths] }],
-    host: config.siteUrl,
+    host: siteUrl(),
   };
 }
