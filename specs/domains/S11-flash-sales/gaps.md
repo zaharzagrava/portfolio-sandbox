@@ -79,3 +79,16 @@ After S11: no flash-sale file has a finding; `pnpm --dir packages/backend check:
 6. Verification and remediation (AS-27–AS-29), metrics and alerts (AS-42).
 7. Public view and batch route with the shared cache (AS-38–AS-41).
 8. Remove the old route behaviour, `FlashStockService` unit spec, the flash tests in `checkout.e2e-spec.ts`, barrel and module exports; update `scripts/load-tests/flash-sale.test.js` to the new route and to assert zero oversell automatically; run `check:table-ownership --strict` and `check:boundaries`.
+
+## Sibling-spec follow-ups
+
+- **S10**: its `ReservationSource` (catalog, order-first) is unchanged. The text "S11 implements flash sources behind `ReservationSource`" is realised as a second port `FlashReservationPort` (BEFORE_ORDER) plus five edits in S10 services (checkout, order reservation, release, lifecycle convert, reservation repository). S10's page and `contracts/services.md` should list `FlashReservationPort`, the `FLASH` rows that `createPending` writes already `HELD`, and the problem codes `flash_sale_limit_exceeded`, `flash_sale_busy`, `flash_sale_unavailable` (plus `flashSaleId` on `out_of_stock`).
+- **W03**: render the new checkout problem codes (`flash_sale_limit_exceeded` 422, `flash_sale_busy` 429, `flash_sale_unavailable` 503, `out_of_stock` with `flashSaleId`) and honour `Retry-After`; the drop page polls `GET /api/flash-sales/:saleId` every 1–2 s.
+- **S48**: `packages/contracts/src/bff/upstream.ts` re-exports the real `flashSalePublicSchema` (same name); the product-page `flashSale` section must accept `state`, `remainingApprox`, `degraded?` and `serverTime`.
+- **S05**: an archived product at load answers `unavailable`; S11 maps it to `START_FAILED(product_unavailable)` (one extra status reason beyond the spec's three).
+- **S50**: the registry gains `orders.flash-reserve.user` and `orders.flash-sale-read.ip` (declared in `ordersRatePolicies`; no registry code change).
+- **S49**: job type `flash-sale.start` is renamed `flash-sale.load`; a one-release alias handler drains in-flight `flash-sale.start` jobs.
+
+## Spec changes
+
+No `*.reviewed.json` exists under `docs/spec` today, so nothing a human signed is changed. WP-0 of the plan edits `docs/spec/capabilities/S10-cart-checkout.md` (the legacy flash-sale route and legacy-jobs lines) and adds `docs/spec/capabilities/S11-flash-sales.md`. If a sign-off file appears before then, list the changed items here.
