@@ -27,6 +27,7 @@ with the links that prove it: backticked file paths and commit hashes. For a `pr
 - L-016 2026-10-13 config prevented
 - L-017 2026-10-13 process prevented
 - L-018 2026-10-14 wiring prevented
+- L-019 2026-10-14 process prevented
 
 ## L-001 A message option the queue refuses, found only by hand
 - **Rule:** A queue option must be validated where the message is created, not discovered when the relay fails (FIFO-only options like `groupId` never go to a standard queue).
@@ -138,4 +139,9 @@ with the links that prove it: backticked file paths and commit hashes. For a `pr
 ## L-018 The monolith booted, the applications it is made of did not
 - **Rule:** Every deployable app must boot on its own, not only inside the monolith that hosts them all. The monolith supplies modules and settings that a standalone app lacks.
 - **Symptom:** three capabilities (S36, S39, S47) stopped on a task "the real `apps/projector`, `apps/core`, `apps/worker` boot" that the unattended agent could not run; when it was run (2026-10-14), `apps/projector` aborted at start (Nest cannot find `RouteTable`; the `try/catch` around the lookup cannot stop Nest's abort), `apps/payment-processor` still does not boot (missing imports), and the dev `.env` lacked five settings that capabilities had made required. **Cause:** the gates and the boot check start only the monolith or small test modules.
-- **Prevention:** `scripts/infra/boot-app.sh <app>` boots one real app on its own port and shows its consumers and jobs; it is on the agents' allow-list; `projector` and the dev `.env` are fixed. Not covered yet: `payment-processor`; boot-app is not part of the gate (only the monolith boot check is).
+- **Prevention:** `scripts/infra/boot-app.sh` boots one real app on its own port and shows its consumers and jobs; it is on the agents' allow-list; `projector` and the dev `.env` are fixed. Not covered yet: `payment-processor`; boot-app is not part of the gate (only the monolith boot check is).
+
+## L-019 A proof that only the end of the run can give must not be a task
+- **Rule:** Runtime proofs (the real apps boot on their own, an empty-stack run, the browser suite) are done by the final checkpoint, with scripts. A builder or converge pass must NOT add a task that asks for one, and a task that still asks for one is ticked with "deferred to the final checkpoint: <command>".
+- **Symptom:** S36 and S47 had every test green and were BLOCKED for a night and a morning on tasks like "T061 HIGH: prove the real apps boot on an empty stack". **Cause:** lessons L-012, L-015 and L-018 say "verify on a fresh stack / the real apps must boot"; the converge step turns that into a task after each pass. The runner's stack is empty only in the first minutes of a run (it is created once when the machine boots, then warms up), so no task can be met in the middle of a run, and the doctor rightly refused to fake it.
+- **Prevention:** this rule is in the digest every agent reads; the doctor prompt tells it to defer such tasks and answer fixed instead of blocking a finished capability; `scripts/sdd/checkpoints/final.sh` runs `boot-app.sh core|projector|worker`, `fresh-run.sh --here` and the scripted buy flow, and prints the deferred notes (`specs/deferred-checks.md`).
