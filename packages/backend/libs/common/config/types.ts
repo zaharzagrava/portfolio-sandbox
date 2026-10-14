@@ -330,6 +330,22 @@ export class SecretsManagerConfig {
   orders_flash_public_cache_ms: number;
   orders_flash_reconcile_wait_alert_seconds: number;
   orders_flash_key_ttl_jitter: number;
+  /** S21: auction settings, defaults in `auctions-config.ts`. */
+  auctions_snipe_window_ms: number;
+  auctions_snipe_extension_ms: number;
+  auctions_snipe_cap_ms: number;
+  auctions_sweep_interval_s: number;
+  auctions_hold_deadline_s: number;
+  auctions_min_lead_s: number;
+  auctions_min_duration_s: number;
+  auctions_max_duration_s: number;
+  auctions_winner_window_h: number;
+  auctions_offer_window_h: number;
+  auctions_view_cache_ms: number;
+  auctions_order_max_attempts: number;
+  auctions_max_amount_minor: number;
+  auctions_partition_months_ahead: number;
+  auctions_alias_secret?: string;
   consumer_batch: number;
   consumer_max_attempts: number;
   consumer_backoff_min_ms: number;

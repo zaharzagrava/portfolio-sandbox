@@ -42,7 +42,6 @@ export { flashSalePublicSchema } from '../orders/flash-sale.ts';
 export { flashSalesResponseSchema } from '../orders/flash-sale.ts';
 export type { FlashSalePublic } from '../orders/flash-sale.ts';
 
-/** S21 `GET /api/auctions?productIds=`. */
-export const auctionPublicSchema = z.looseObject({ productId: z.string() });
-export const auctionsResponseSchema = z.array(auctionPublicSchema);
-export type AuctionPublic = z.infer<typeof auctionPublicSchema>;
+/** S21 `GET /api/auctions?productIds=`: S21 published its own schema (the names stay for the BFF). */
+export { auctionPublicSchema, auctionsResponseSchema } from '../auctions/auction.ts';
+export type { AuctionPublic } from '../auctions/auction.ts';

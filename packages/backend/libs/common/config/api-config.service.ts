@@ -10,6 +10,7 @@ import { ConfigRules } from './config-rules';
 import { eventsConfigKeys } from './events-config';
 import { jobsConfigKeys } from './jobs-config';
 import { ordersConfigKeys } from './orders-config';
+import { auctionsConfigKeys } from './auctions-config';
 import { paymentsConfigKeys } from './payments-config';
 import { ledgerConfigKeys } from './ledger-config';
 import { notificationsConfigKeys } from './notifications-config';
@@ -591,6 +592,7 @@ export class ApiConfigService {
           ...eventsConfigKeys,
           ...jobsConfigKeys,
           ...ordersConfigKeys,
+          ...auctionsConfigKeys,
           ...paymentsConfigKeys,
           ...ledgerConfigKeys,
           ...notificationsConfigKeys,

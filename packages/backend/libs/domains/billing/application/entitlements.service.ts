@@ -2,6 +2,7 @@ import {
   CanActivate,
   ExecutionContext,
   ForbiddenException,
+  HttpStatus,
   Injectable,
   SetMetadata,
   UseGuards,
@@ -10,6 +11,7 @@ import {
 import { Reflector } from '@nestjs/core';
 import { InjectConnection } from '@nestjs/sequelize';
 import { QueryTypes, Sequelize } from 'sequelize';
+import { AppError, ErrorArea } from '@app/common/errors';
 import { CacheService } from '@app/infrastructure/cache/cache.service';
 import { Entitlements } from '../infra/models/plan.model';
 
@@ -73,6 +75,23 @@ export class EntitlementsService {
 const ENTITLEMENT_METADATA = 'billing:entitlement';
 
 /**
+ * `403 entitlement_required {feature}` (S18 FR-008, contracts as S21 AS-03 uses them): the shop's plan lacks the
+ * feature. The minimal provider side of S18's route guard, added by S21 until S18 is built.
+ */
+export class Domain_EntitlementRequiredError extends AppError {
+  constructor(readonly feature: string) {
+    super({
+      status: HttpStatus.FORBIDDEN,
+      code: 'entitlement_required',
+      title: 'Forbidden',
+      detail: `Your plan doesn't include "${feature}".`,
+      area: ErrorArea.DOMAIN,
+      extensions: { feature },
+    });
+  }
+}
+
+/**
  * `@RequiresShopEntitlement('auctions')` - place it ABOVE `@ShopScoped(...)`:
  * decorators apply bottom-up, so this guard is appended after ShopGuard and
  * sees the resolved `req.shopId`.
@@ -95,7 +114,7 @@ export class ShopEntitlementGuard implements CanActivate {
     // Misconfigured route (no ShopGuard before this guard) → fail closed, never open.
     if (!shopId) throw new ForbiddenException('Shop context required');
     if (!(await this.entitlements.get('SHOP', shopId))[feature])
-      throw new ForbiddenException(`Your plan doesn't include "${feature}"`);
+      throw new Domain_EntitlementRequiredError(feature);
     return true;
   }
 }

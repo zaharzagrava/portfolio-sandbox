@@ -75,10 +75,18 @@ export class ReservationReleaseService {
     orderId: string,
     rows: ReservationRecord[],
   ): Promise<number> {
-    const catalogRows = rows.filter((r) => r.source !== 'FLASH');
+    const catalogRows = rows.filter(
+      (r) => r.source !== 'FLASH' && r.source !== 'EXTERNAL',
+    );
     const flashRows = rows.filter((r) => r.source === 'FLASH');
+    // Units held by another capability (S21): that capability returns them; here the row only leaves `RELEASE_PENDING`.
+    const externalRows = rows.filter((r) => r.source === 'EXTERNAL');
     let released = 0;
     let failure: Error | undefined;
+    for (const r of externalRows) {
+      await this.reservations.markReleased(r.id);
+      released += 1;
+    }
     try {
       released += await this.releaseCatalogRows(orderId, catalogRows);
     } catch (error) {

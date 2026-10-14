@@ -153,11 +153,13 @@ export class SequelizeOrderRepository implements OrderRepository {
       `INSERT INTO "StockReservation" ("id", "bisOrderId", "productId", "quantity", "source", "sourceRef", "flashSaleId",
                                        "status", "expiresAt", "createdAt")
        SELECT uuidv7(), :orderId, r."productId"::uuid, r."quantity",
-              CASE WHEN r."claimId" IS NULL THEN 'CATALOG' ELSE 'FLASH' END, r."claimId", r."flashSaleId"::uuid,
-              CASE WHEN r."claimId" IS NULL THEN 'REQUESTED' ELSE 'HELD' END,
-              CASE WHEN r."claimId" IS NULL THEN CAST(:now AS timestamptz) ELSE CAST(:flashExpiresAt AS timestamptz) END, :now
+              CASE WHEN r."claimId" IS NOT NULL THEN 'FLASH' WHEN r."externalRef" IS NOT NULL THEN 'EXTERNAL' ELSE 'CATALOG' END,
+              COALESCE(r."claimId", r."externalRef"), r."flashSaleId"::uuid,
+              CASE WHEN r."claimId" IS NULL AND r."externalRef" IS NULL THEN 'REQUESTED' ELSE 'HELD' END,
+              CASE WHEN r."claimId" IS NULL AND r."externalRef" IS NULL THEN CAST(:now AS timestamptz)
+                   ELSE CAST(:flashExpiresAt AS timestamptz) END, :now
        FROM jsonb_to_recordset(CAST(:reservations AS jsonb)) AS r(
-         "productId" text, "quantity" int, "claimId" text, "flashSaleId" text)`,
+         "productId" text, "quantity" int, "claimId" text, "flashSaleId" text, "externalRef" text)`,
       {
         replacements: {
           orderId: order.id,
@@ -169,6 +171,7 @@ export class SequelizeOrderRepository implements OrderRepository {
               quantity: i.quantity,
               claimId: i.flash?.claimId ?? null,
               flashSaleId: i.flash?.flashSaleId ?? null,
+              externalRef: i.external?.ref ?? null,
             })),
           ),
         },

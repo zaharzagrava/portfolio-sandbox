@@ -1,27 +1,31 @@
-import { BillingModule } from '@app/domains/billing';
 import { Module } from '@nestjs/common';
-import { SequelizeModule } from '@nestjs/sequelize';
-import Auction from './infra/models/auction.model';
+import { ErrorUtilsModule } from '@app/common/errors/error-utils/error-utils.module';
+import { BillingModule } from '@app/domains/billing';
 import { AuthModule } from '@app/domains/identity';
-import { JobsModule } from '@app/infrastructure/jobs/jobs.module';
-import { RealtimeModule } from '@app/infrastructure/realtime';
-import { AuctionService } from './application/auction.service';
-import { AuctionsController } from './api/auctions.controller';
+import { TenancyModule } from '@app/domains/tenancy';
+import { IdempotencyModule } from '@app/infrastructure/idempotency';
 import { RateLimitModule } from '@app/infrastructure/rate-limit';
+import { AuctionsCoreModule } from './auctions-core.module';
+import { AuctionBidController } from './api/auction-bid.controller';
+import { AuctionPublicController } from './api/auction-public.controller';
+import { AuctionSellerController } from './api/auction-seller.controller';
 import { auctionsRatePolicies } from './rate-limit-policies';
 
-/** SD-22 HTTP side (core). Needs global Redis, Tenancy (membership) modules. */
+/** HTTP side (apps/core): the seller, bidder and public routes. Shares its providers with the worker side. */
 @Module({
   imports: [
+    AuctionsCoreModule,
+    ErrorUtilsModule, // for `AuctionExceptionFilter`, which delegates to the platform filter
     AuthModule,
     BillingModule,
-    JobsModule,
-    RealtimeModule,
+    TenancyModule,
+    IdempotencyModule,
     RateLimitModule.forFeature(auctionsRatePolicies),
-    SequelizeModule.forFeature([Auction]),
   ],
-  providers: [AuctionService],
-  exports: [AuctionService],
-  controllers: [AuctionsController],
+  controllers: [
+    AuctionSellerController,
+    AuctionBidController,
+    AuctionPublicController,
+  ],
 })
 export class AuctionsModule {}

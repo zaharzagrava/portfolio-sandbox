@@ -1,225 +1,198 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { InjectConnection, InjectModel } from '@nestjs/sequelize';
-import { QueryTypes, Sequelize } from 'sequelize';
-import Auction from './models/auction.model';
-import { BisOrderModel as BisOrder, OrderService } from '@app/domains/orders';
-import { RedisService } from '@app/infrastructure/redis/redis.service';
-import { RealtimePublisher } from '@app/infrastructure/realtime';
-import { JobsService } from '@app/infrastructure/jobs/jobs.service';
+import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
+import { ApiConfigService } from '@app/common/config';
+import { InvalidScheduleError } from '@app/infrastructure/jobs/job-errors';
 import { JobHandler } from '@app/infrastructure/jobs/job-handler.decorator';
-import { OutboxService } from '@app/infrastructure/outbox/outbox.service';
-import { TransactionRunner } from '@app/infrastructure/context';
-import { CLOSE_AUCTION } from './place-bid.lua';
-import { ACTIVE_AUCTIONS_KEY, stateKey } from '../application/auction.service';
-import { AuctionClosed } from '../application/events/auction-events';
+import { NonRetryableJobError } from '@app/infrastructure/jobs/job-types';
+import { JobsService } from '@app/infrastructure/jobs/jobs.service';
+import {
+  auctionJobPayloadSchema,
+  requestOrderPayloadSchema,
+  type AuctionJobPayload,
+  type RequestOrderPayload,
+} from '../application/auction.job-types';
+import { AuctionCloseService } from '../application/auction-close.service';
+import { AuctionScheduleService } from '../application/auction-schedule.service';
+import { SettlementService } from '../application/settlement.service';
+import { BidPartitionService } from './bid-partitions.service';
 
-import { z } from 'zod';
-import { declareJobType } from '@app/infrastructure/jobs/job-type-registry';
+/** `<n>` seconds as a six-field cron (seconds first, as the other periodic jobs). */
+const everySeconds = (n: number) =>
+  `*/${Math.max(1, Math.min(59, n))} * * * * *`;
 
-declare module '@app/infrastructure/jobs/job-types' {
-  interface JobPayloads {
-    'auctions.second-chance': { auctionId: string };
-  }
-}
-
-declareJobType({
-  name: 'auctions.second-chance',
-  contract: z.object({ auctionId: z.string() }),
-});
-
-/** Winners get 48 h to pay before the runner-up gets a second-chance offer. */
-export const WINNER_PAYMENT_WINDOW_MS = 48 * 3_600_000;
-
+/**
+ * Job handlers of auctions (S21 contracts/services.md). Thin: parse the payload, make one application call. A malformed
+ * payload or an unknown auction is a dead letter (`NonRetryableJobError`, no side effect, nothing published); a store or
+ * upstream failure propagates and the job retries with backoff. Redelivery is harmless: every step is conditional.
+ */
 @Injectable()
-export class AuctionJobs {
+export class AuctionJobs implements OnApplicationBootstrap {
   private readonly logger = new Logger(AuctionJobs.name);
 
   constructor(
-    @InjectModel(Auction) private readonly auctionModel: typeof Auction,
-    @InjectModel(BisOrder) private readonly orderModel: typeof BisOrder,
-    @InjectConnection() private readonly sequelize: Sequelize,
-    private readonly transactions: TransactionRunner,
-    private readonly redis: RedisService,
-    private readonly realtime: RealtimePublisher,
+    private readonly schedule: AuctionScheduleService,
+    private readonly closing: AuctionCloseService,
+    private readonly settlement: SettlementService,
+    private readonly partitions: BidPartitionService,
     private readonly jobs: JobsService,
-    private readonly events: OutboxService,
-    private readonly orders: OrderService,
+    private readonly config: ApiConfigService,
   ) {}
 
-  /**
-   * Exactly-once close (lesson 10/09 #29): Redis freezes bidding atomically;
-   * the Postgres transition is guarded by `status = 'OPEN'`, so a duplicated
-   * or retried job can't close twice. If anti-sniping moved the end, the job
-   * re-schedules itself at the new end (new idempotency key per end time).
-   */
-  @JobHandler('auctions.close', { concurrency: 20 })
-  async close({ auctionId }: { auctionId: string }): Promise<void> {
-    const result = (await this.redis.client.eval(
-      CLOSE_AUCTION,
-      1,
-      stateKey(auctionId),
-      Date.now(),
-    )) as string[];
-    if (result[0] === 'not_yet') {
-      const endsAt = Number(result[1]);
-      await this.jobs.enqueue(
-        'auctions.close',
-        { auctionId },
-        {
-          runAt: new Date(endsAt),
-          idempotencyKey: `auction-close:${auctionId}:${endsAt}`,
-        },
-      );
-      return;
-    }
-    if (result[0] === 'unknown') return;
-
-    const [price, leader] = [Number(result[1]), result[2] || null];
-    const auction = await this.auctionModel.findByPk(auctionId);
-    if (!auction || auction.status !== 'OPEN') return;
-    const reserveMet =
-      !!leader &&
-      (auction.reservePrice === null || price >= Number(auction.reservePrice));
-
-    await this.transactions.run(async (transaction) => {
-      const [updated] = await this.auctionModel.update(
-        {
-          status: reserveMet ? 'CLOSED' : 'UNSOLD',
-          winnerId: reserveMet ? leader : null,
-          finalPrice: reserveMet ? price : null,
-          currentPrice: price,
-        },
-        { where: { id: auctionId, status: 'OPEN' }, transaction },
-      );
-      if (updated === 0) return;
-
-      if (reserveMet) {
-        await this.createWinnerOrder(auction, leader, price, transaction);
-      } else {
-        await this.sequelize.query(
-          `UPDATE "Product" SET quantity = quantity + 1, version = version + 1 WHERE id = :id`,
-          { replacements: { id: auction.productId }, transaction },
+  async onApplicationBootstrap(): Promise<void> {
+    const schedules = [
+      {
+        name: 'auctions.sweep-due',
+        cron: everySeconds(this.config.get('auctions_sweep_interval_s')),
+      },
+      // daily at 03:17 UTC, off the hour so it does not meet the other nightly jobs
+      { name: 'auctions.ensure-bid-partitions', cron: '0 17 3 * * *' },
+    ] as const;
+    for (const s of schedules) {
+      try {
+        await this.jobs.upsertSchedule({
+          name: s.name,
+          cron: s.cron,
+          jobType: s.name,
+          payload: {},
+          overlap: 'skip',
+        });
+      } catch (error) {
+        if (!(error instanceof InvalidScheduleError)) throw error;
+        this.logger.error(
+          `schedule ${s.name} not registered: ${error.message}`,
         );
       }
-      await this.events.append(
-        AuctionClosed.create(auctionId, auction.version + 1, {
-          shopId: auction.shopId,
-          productId: auction.productId,
-          winnerId: reserveMet ? leader : null,
-          finalPrice: reserveMet ? price : null,
-          reserveMet,
-        }),
-        transaction,
-      );
-    });
-
-    await this.redis.client.expire(stateKey(auctionId), 86_400);
-    await this.realtime.publish(`auction:${auctionId}`, 'closed', {
-      winnerId: reserveMet ? leader : null,
-      finalPrice: reserveMet ? price : null,
-    });
-    // Keep relaying any tail of the bid log for a while, then stop scanning this auction.
-    setTimeout(
-      () => void this.redis.client.srem(ACTIVE_AUCTIONS_KEY, auctionId),
-      60_000,
-    ).unref();
-  }
-
-  /** Winner didn't pay → offer the item to the runner-up at their own maximum bid (eBay "second chance offer"). */
-  @JobHandler('auctions.second-chance', { concurrency: 5 })
-  async secondChance({ auctionId }: { auctionId: string }): Promise<void> {
-    const auction = await this.auctionModel.findByPk(auctionId);
-    if (!auction || auction.status !== 'CLOSED') return;
-    const winnerOrder = await this.orderModel.findOne({
-      where: { idempotencyKey: `auction:${auctionId}` },
-    });
-    if (winnerOrder?.status !== 'CANCELLED') return;
-
-    const [runnerUp] = await this.sequelize.query<{
-      userId: string;
-      max: string;
-    }>(
-      `SELECT "userId", max("maxAmount") AS max FROM "Bid" WHERE "auctionId" = :auctionId AND "userId" <> :winner
-       GROUP BY "userId" ORDER BY max DESC LIMIT 1`,
-      {
-        type: QueryTypes.SELECT,
-        replacements: { auctionId, winner: auction.winnerId },
-      },
-    );
-    await this.transactions.run(async (transaction) => {
-      if (!runnerUp) {
-        await this.sequelize.query(
-          `UPDATE "Product" SET quantity = quantity + 1, version = version + 1 WHERE id = :id`,
-          { replacements: { id: auction.productId }, transaction },
-        );
-        return;
-      }
-      await this.createWinnerOrder(
-        auction,
-        runnerUp.userId,
-        Number(runnerUp.max),
-        transaction,
-        'second-chance',
-      );
-    });
-  }
-
-  private async createWinnerOrder(
-    auction: Auction,
-    userId: string,
-    price: number,
-    transaction: import('sequelize').Transaction,
-    tag = 'winner',
-  ) {
-    const reservedUntil = new Date(Date.now() + WINNER_PAYMENT_WINDOW_MS);
-    const key =
-      tag === 'winner'
-        ? `auction:${auction.id}`
-        : `auction:${auction.id}:${tag}`;
-    const order = await this.orderModel.create(
-      {
-        userId,
-        idempotencyKey: key,
-        total: price,
-        reservedUntil,
-        status: 'PENDING',
-      },
-      { transaction },
-    );
-    await this.sequelize.query(
-      `INSERT INTO "BisOrderItem" (id, "bisOrderId", "productId", quantity, "priceAtPurchase", "shopId", "createdAt", "updatedAt")
-       VALUES (uuidv7(), :orderId, :productId, 1, :price, :shopId, now(), now());
-       INSERT INTO "ShopOrder" ("bisOrderId", "shopId", subtotal) VALUES (:orderId, :shopId, :price);`,
-      {
-        replacements: {
-          orderId: order.id,
-          productId: auction.productId,
-          price,
-          shopId: auction.shopId,
-        },
-        transaction,
-      },
-    );
-    await this.orders.transition(
-      order.id,
-      { type: 'reserve' },
-      `auction ${tag}`,
-      transaction,
-    );
-    await this.jobs.enqueue(
-      'orders.expire-reservation',
-      { orderId: order.id },
-      { runAt: reservedUntil, idempotencyKey: `order-expire:${order.id}` },
-    );
-    if (tag === 'winner') {
-      await this.jobs.enqueue(
-        'auctions.second-chance',
-        { auctionId: auction.id },
-        {
-          runAt: new Date(reservedUntil.getTime() + 60_000),
-          idempotencyKey: `auction-second-chance:${auction.id}`,
-        },
-      );
     }
+  }
+
+  private auctionId(payload: unknown): string {
+    const parsed = auctionJobPayloadSchema.safeParse(payload);
+    if (!parsed.success)
+      throw new NonRetryableJobError('auction job payload is not valid');
+    return parsed.data.auctionId;
+  }
+
+  private unknown(auctionId: string): never {
+    throw new NonRetryableJobError(`auction ${auctionId} does not exist`);
+  }
+
+  /** At creation: the unit leaves regular stock. Up to 5 attempts; the sweeper repairs what is left. */
+  @JobHandler('auctions.hold-stock', { leaseMs: 60_000, concurrency: 20 })
+  async holdStock(payload: AuctionJobPayload): Promise<void> {
+    const id = this.auctionId(payload);
+    const outcome = await this.schedule.holdUnit(id);
+    this.logger.log({
+      event: 'auction.job',
+      job: 'hold-stock',
+      auctionId: id,
+      outcome,
+    });
+    if (outcome === 'unknown') this.unknown(id);
+  }
+
+  /** At `startsAt`: `SCHEDULED → OPEN` once the unit is held. */
+  @JobHandler('auctions.open', { leaseMs: 60_000, concurrency: 20 })
+  async open(payload: AuctionJobPayload): Promise<void> {
+    const id = this.auctionId(payload);
+    const outcome = await this.schedule.open(id);
+    this.logger.log({
+      event: 'auction.job',
+      job: 'open',
+      auctionId: id,
+      outcome,
+    });
+    if (outcome === 'unknown') this.unknown(id);
+  }
+
+  /** After `UNSOLD` or `CANCELLED`: the unit goes back exactly once. Up to 8 attempts, then dead letter and alert. */
+  @JobHandler('auctions.return-stock', { leaseMs: 60_000, concurrency: 20 })
+  async returnStock(payload: AuctionJobPayload): Promise<void> {
+    const id = this.auctionId(payload);
+    const outcome = await this.schedule.returnUnit(id);
+    this.logger.log({
+      event: 'auction.job',
+      job: 'return-stock',
+      auctionId: id,
+      outcome,
+    });
+    if (outcome === 'unknown') this.unknown(id);
+  }
+
+  /** At `endsAt` (and at each moved end): the close is conditional on the stored end, so a stale job re-arms and stops. */
+  @JobHandler('auctions.close', { leaseMs: 60_000, concurrency: 20 })
+  async close(payload: AuctionJobPayload): Promise<void> {
+    const id = this.auctionId(payload);
+    const outcome = await this.closing.closeIfDue(id);
+    this.logger.log({
+      event: 'auction.job',
+      job: 'close',
+      auctionId: id,
+      outcome,
+    });
+    if (outcome === 'unknown') this.unknown(id);
+  }
+
+  /** After `CLOSED` or `SECOND_CHANCE`: the order of the awardee is requested from `orders`, up to 8 attempts. */
+  @JobHandler('auctions.request-order', { leaseMs: 90_000, concurrency: 20 })
+  async requestOrder(
+    payload: RequestOrderPayload,
+    ctx?: { isLastAttempt: boolean },
+  ): Promise<void> {
+    const parsed = requestOrderPayloadSchema.safeParse(payload);
+    if (!parsed.success)
+      throw new NonRetryableJobError('auction order job payload is not valid');
+    const { auctionId, step } = parsed.data;
+    try {
+      const outcome = await this.settlement.requestOrder(auctionId, step);
+      this.logger.log({
+        event: 'auction.job',
+        job: 'request-order',
+        auctionId,
+        step,
+        outcome,
+      });
+      if (outcome === 'unknown') this.unknown(auctionId);
+    } catch (error) {
+      if (!(error instanceof NonRetryableJobError))
+        this.settlement.requestFailed(ctx?.isLastAttempt ?? false);
+      throw error;
+    }
+  }
+
+  /** Every 30 s: the safety net for lost jobs. One run in the fleet at a time. */
+  @JobHandler('auctions.sweep-due', {
+    leaseMs: 120_000,
+    concurrency: 1,
+    fleetConcurrency: 1,
+  })
+  async sweepDue(): Promise<void> {
+    const closed = await this.closing.sweepDue();
+    const holds = await this.schedule.repairHolds();
+    const returns = await this.schedule.repairReturns();
+    const opened = await this.schedule.openDue();
+    const orders = await this.settlement.repairOrders();
+    this.logger.log({
+      event: 'auction.job',
+      job: 'sweep-due',
+      closed,
+      holds,
+      returns,
+      opened,
+      orders,
+    });
+  }
+
+  /** Daily: the current month and the next 3 exist; the default partition is counted. */
+  @JobHandler('auctions.ensure-bid-partitions', {
+    leaseMs: 60_000,
+    concurrency: 1,
+    fleetConcurrency: 1,
+  })
+  async ensureBidPartitions(): Promise<void> {
+    const { defaultRows } = await this.partitions.ensure();
+    this.logger.log({
+      event: 'auction.job',
+      job: 'ensure-bid-partitions',
+      defaultRows,
+    });
   }
 }

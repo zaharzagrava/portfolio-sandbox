@@ -10,6 +10,14 @@ export { OrdersWorkerModule } from './orders-worker.module';
 export { OrdersModule } from './orders.module';
 export { OrderQueryService } from './application/order-query.service';
 export type { OrderLineDto, PayableOrderDto } from './domain/order-views';
+export { OrderCommandService } from './application/order-command.service';
+export { OrderCommandModule } from './order-command.module';
+export { OrderCommandRejectedError } from './domain/order-command';
+export type {
+  FixedPriceOrderAnswer,
+  FixedPriceOrderCommand,
+  OrderCommandRejectionCode,
+} from './domain/order-command';
 export { OrderFulfilmentService } from './application/order-fulfilment.service';
 export type { FulfilmentCommand } from './application/order-fulfilment.service';
 export {

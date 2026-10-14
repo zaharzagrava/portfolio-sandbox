@@ -8,6 +8,7 @@ import { InboxModule } from '@app/infrastructure/inbox';
 import { JobsModule } from '@app/infrastructure/jobs/jobs.module';
 import { RealtimeModule } from '@app/infrastructure/realtime';
 import { ProductModule } from '@app/domains/catalog';
+import { AuthModule } from '@app/domains/identity';
 import { PaymentQueryModule } from '@app/domains/payments';
 import { TenancyModule } from '@app/domains/tenancy';
 import { ORDER_MODELS } from './orders-models';
@@ -33,6 +34,7 @@ import { OrderFulfilmentService } from './application/order-fulfilment.service';
 import { OrderCancellationService } from './application/order-cancellation.service';
 import { OrderLifecycleService } from './application/order-lifecycle.service';
 import { OrderQueryService } from './application/order-query.service';
+import { OrderCommandService } from './application/order-command.service';
 import { ItemBackfillService } from './application/item-backfill.service';
 import { OrderReservationService } from './application/order-reservation.service';
 import { PaymentResultService } from './application/payment-result.service';
@@ -68,6 +70,7 @@ import { SequelizeShopOrderRepository } from './infra/shop-order.repository';
     RealtimeModule,
     ProductModule,
     TenancyModule,
+    AuthModule,
     PaymentQueryModule,
     ProblemCatalogModule.forFeature(ORDERS_PROBLEMS),
     FlashSaleCoreModule,
@@ -100,12 +103,14 @@ import { SequelizeShopOrderRepository } from './infra/shop-order.repository';
     OrderReservationService,
     ReservationRecoveryService,
     OrderQueryService,
+    OrderCommandService,
     OrderCancellationService,
     PaymentResultService,
     WebhookProcessorService,
     ItemBackfillService,
   ],
   exports: [
+    OrderCommandService,
     InboxModule,
     SequelizeModule,
     CART_STORE,

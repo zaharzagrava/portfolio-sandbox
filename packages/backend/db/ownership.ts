@@ -154,6 +154,7 @@ export const OWNERSHIP = {
   LiveStream: 'domain:launch-events',
   // auctions
   Auction: 'domain:auctions',
+  AuctionHistory: 'domain:auctions',
   Bid: 'domain:auctions',
   // chat
   ChatChannel: 'domain:chat',
