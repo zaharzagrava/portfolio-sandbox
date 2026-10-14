@@ -57,7 +57,7 @@ IMPL_TOOLS=("Bash($TEST_SPEC:*)" 'Bash(npx tsc:*)' 'Bash(npx jest:*)' 'Bash(npx 
             'Bash(cd:*)' 'Bash(cat:*)' 'Bash(grep:*)' 'Bash(find:*)' 'Bash(git log:*)'
             # the checks of a fresh-stack task (L-012, S19 T072): an unattended agent cannot approve a command, so each one it needs is listed. fresh-run.sh --here and boot-check judge the
             # running stack; the doctors and the scripted buy flow name a stuck payment or queue; the logs of the API and the stacks say why.
-            'Bash(scripts/qa/fresh-run.sh:*)' 'Bash(bash scripts/qa/fresh-run.sh:*)' 'Bash(scripts/infra/boot-check.sh:*)' 'Bash(scripts/infra/boot-app.sh:*)' 'Bash(scripts/infra/doctor-live.sh:*)' 'Bash(python3 scripts/infra/doctor.py:*)'
+            'Bash(scripts/qa/fresh-run.sh:*)' 'Bash(bash scripts/qa/fresh-run.sh:*)' 'Bash(scripts/infra/boot-check.sh:*)' 'Bash(scripts/infra/boot-app.sh:*)' 'Bash(scripts/infra/reload-queues.sh:*)' 'Bash(scripts/infra/doctor-live.sh:*)' 'Bash(python3 scripts/infra/doctor.py:*)'
             'Bash(scripts/sdd/checkpoints/buy-ui.sh:*)' 'Bash(docker ps:*)' 'Bash(docker logs:*)' 'Bash(docker exec:*)' 'Bash(tail:*)' 'Bash(head:*)' 'Bash(ls:*)' 'Bash(jq:*)' 'Bash(sleep:*)')
 
 # push_branch: with PUSH_BRANCH set, publish HEAD to that branch (best effort; the VPS runner sets it so nothing is lost).

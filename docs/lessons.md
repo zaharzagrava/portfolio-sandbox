@@ -28,6 +28,7 @@ with the links that prove it: backticked file paths and commit hashes. For a `pr
 - L-017 2026-10-13 process prevented
 - L-018 2026-10-14 wiring prevented
 - L-019 2026-10-14 process prevented
+- L-020 2026-10-14 config prevented
 
 ## L-001 A message option the queue refuses, found only by hand
 - **Rule:** A queue option must be validated where the message is created, not discovered when the relay fails (FIFO-only options like `groupId` never go to a standard queue).
@@ -145,3 +146,8 @@ with the links that prove it: backticked file paths and commit hashes. For a `pr
 - **Rule:** Runtime proofs (the real apps boot on their own, an empty-stack run, the browser suite) are done by the final checkpoint, with scripts. A builder or converge pass must NOT add a task that asks for one, and a task that still asks for one is ticked with "deferred to the final checkpoint: <command>".
 - **Symptom:** S36 and S47 had every test green and were BLOCKED for a night and a morning on tasks like "T061 HIGH: prove the real apps boot on an empty stack". **Cause:** lessons L-012, L-015 and L-018 say "verify on a fresh stack / the real apps must boot"; the converge step turns that into a task after each pass. The runner's stack is empty only in the first minutes of a run (it is created once when the machine boots, then warms up), so no task can be met in the middle of a run, and the doctor rightly refused to fake it.
 - **Prevention:** this rule is in the digest every agent reads; the doctor prompt tells it to defer such tasks and answer fixed instead of blocking a finished capability; `scripts/sdd/checkpoints/final.sh` runs `boot-app.sh core|projector|worker`, `fresh-run.sh --here` and the scripted buy flow, and prints the deferred notes (`specs/deferred-checks.md`).
+
+## L-020 A new queue is not a new queue until the queue server restarts
+- **Rule:** A capability that adds a queue must also reload the queue server, and an unattended agent must have a command for it.
+- **Symptom:** S42 (seller public API) was code-complete and the gate failed four times on readiness (`"queue:public-api-bulk-chunk":"down"`); each repair agent correctly edited `infra/docker/elasticmq/elasticmq.conf` and then could not restart the queue server (`docker restart` was not on its allow-list), so the same failure came back. **Cause:** ElasticMQ reads its config only at start.
+- **Prevention:** `scripts/infra/reload-queues.sh` restarts only the dev stack's queue server and waits for readiness; it is on the allow-list. Fixed live on the runner at 17:50 local by restarting the container.
