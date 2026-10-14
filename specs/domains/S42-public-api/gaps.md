@@ -121,3 +121,71 @@ Reconstructed from the code (the command was not run, see the top). Each line sa
 - Asks of other capabilities, tracked in `questions.md` [CONTRACT]: S10 `getShopOrder`; S50 request cost; the shared idempotency scope; S03 concurrency-safe `ensureSandboxShop`.
 - k6 script `scripts/load-tests/public-api-mixed.test.js` (SC-010).
 - W04: the developer-settings journey (`packages/web/e2e/developers.spec.ts`) and its screens use the dashboard contract.
+
+## 5. Follow-ups from already-built specs (each is a requirement; planned in `plan.md`)
+
+| From | Requirement | Where planned |
+|---|---|---|
+| S01 | `Firewall` has no `throttle`/`skipThrottle`; sensitive routes use `Firewall({ sensitive: true })` instead of `@UseGuards(SessionNotRevokedGuard)` | WP-3 (key and pin routes); G-07 |
+| S01 | `SecretBox.seal/open` `context` for new columns | not adopted: no new encrypted column (keys are hashed). Stated so the S01 note is closed. |
+| S03 | replace `ShopModel`, `ShopMembershipModel`, `MembershipService`, raw SQL on tenancy tables with `ShopAccessService`, `ShopQueryService`, `MembershipQueryService`; retest `403 shop_suspended` / `409 shop_offboarding` | WP-4, WP-7 (S42 side: `ShopQueryService`, `ensureSandboxShop`, `ShopScoped`); AS-17; the webhook `ShopMembership` read is S43's |
+| S05 | `ProductCommandService` / `applyStockDelta` replace SQL and event writes; DTOs map from the member view (`priceMinor`, `currency`, `status`) | WP-7; AS-37…AS-40, AS-50…AS-52 |
+| S05 | `ProductService.create` refuses brand of 0 characters, price 0, title over 200; `findById` returns the public view + legacy `price`; empty brand maps to `Unbranded` | WP-7: the public DTO requires `brand` 1…100 at the latest version, the `2026-01-15` upgrader sends `Unbranded` explicitly, calls go to `ProductCommandService` and not to the legacy `ProductService`; AS-39 |
+| S10 | `public-orders.service.ts` moves to `getOrdersForShop` / `getOrderLines` (`…Minor`) | WP-7; AS-42, AS-28 |
+| S50 | policy numbers in the domain with `definePolicies` + `forFeature` (done for `public-api.default`; add cost and `public-api.auth-failure.ip`); structured `RateLimit` / `RateLimit-Policy`; `503 rate_limiter_unavailable` / `422 rate_limit_cost_exceeded` in the contract | WP-9; AS-48, AS-55, AS-56 |
+| S50 | clients of `RateLimit-*` read the structured pair | `contracts/http.md` documents only the structured headers; see "Spec differences found while planning" |
+| S53 / S54 | the shared HTTP idempotency store is S54's | WP-9 (`libs/infrastructure/idempotency`, additive `required` and `scope`) |
+| W07 | list `GET /api/developers/openapi.json` | WP-11; `contracts/http.md` B; AS-67 |
+| Rule 4 (S54) | `TransactionRunner.run`; no new `sequelize.transaction`; delete `// S54 T037 audit` | the domain has 0 direct sites and 0 audit comments (grep 2026-10-14), `.tx.baseline` = 0; all new multi-statement writes use `TransactionRunner.run` |
+| Rule 2 | criteria no test proves | `quickstart.md` "Ops artifacts" and 6 rows in `specs/UNVERIFIED.md` (written in this plan), status `not run` |
+| Rule 0 | living spec first | WP-0 creates `docs/spec/capabilities/S42-public-api.md`; no `*.reviewed.json` is touched |
+
+## Sibling-spec follow-ups
+
+- **S10**: `OrderQueryService.getShopOrder(shopId, shopOrderId): Promise<ShopOrderDto | null>` is added additively by S42's work (one shop-scoped statement, `null` for another shop's order, test in the orders suite); S10's spec should list it among its exports.
+- **S18**: export `checkQuota('SHOP', shopId, 'apiCallsPerMonth'): {allowed, used, limit, resetsAt}` (rejecting `usage_unavailable`) and consume `usage.recorded` v1 `{metric: "api.calls", quantity ≥ 1, ts}` with the deterministic `eventId` per `(shop, metric, minute, sequence)`; until then S42's `QuotaPort` adapter allows and counts.
+- **S43**: import `ApiVersionService` (`supportedVersions`, `latestVersion`, `isSupported`, `getPinnedVersions`) for webhook payload versions; `ApiRequestsProjector` leaves the barrel and `PublicApiProjectorModule` is the app-level import (the webhook exports are untouched); the idempotency store is the S54 one.
+- **S44**: the widget still reads `Shop` and `Product` directly (`widget.service.ts:96-98`); move to `ShopQueryService` / `ProductQueryService`.
+- **S03**: `ensureSandboxShop` must stay safe under concurrent first calls (AS-23 here calls it 10× in parallel); `Shop.sandboxOf` belongs to S03's migrations only (this domain's old migration also added it; the S42 migration does not touch it).
+- **S05**: the product `version` is what S42 sends in `ETag`; `listByShop` keeps its opaque keyset cursor with a unique tiebreaker.
+- **Shared idempotency (`libs/infrastructure/idempotency`)**: gains `IdempotentOptions.required` (`422 idempotency_key_required`) and `IdempotentOptions.scope(req)`; existing routes keep their behavior.
+- **W04**: renders keys, pin, logs and usage from `contracts/http.md` B and shows the full key once.
+- **S28** (optional): may consume `developerplatform.api_key_created|rotated|revoked` (the registered names, see Implementation deviations) for security notices.
+- **S05**: the public-api app imports `ProductModule`, which also maps the catalog's own HTTP routes on that host (spec says every other path is `404`); a controller-free catalog module (services only) would remove them. A foreign cursor answers `400 invalid_cursor`.
+- **S43**: `ApiVersionService` now also needs the `VersionPinCache` port (provided by `DevelopersModule` and `PublicApiModule`).
+- **W07**: `GET /api/developers/openapi.json` is served by `DashboardOpenApiController` in `DevelopersModule` (core app).
+
+## Spec differences found while planning
+
+- `spec.md` FR-051 names the headers `RateLimit-Limit`, `RateLimit-Remaining`, `RateLimit-Reset`; S50 removed them (structured `RateLimit` + `RateLimit-Policy`). The plan implements the structured pair; `spec.md` is not edited by the plan, and the living-spec page (WP-0) states the structured pair.
+- `spec.md` lists two scheduled jobs; the plan adds `public-api.close-usage-minutes` (research R-08) because usage events can only be emitted after the minute closes.
+
+## Plan additions (not in the original gaps)
+
+- Third job `public-api.close-usage-minutes`; queue `public-api-bulk-chunk` (+ DLQ) in `elasticmq.conf` and `infra/stack/main.tf`.
+- Additive options in the shared idempotency module (`required`, `scope`).
+- `QuotaPort` with a not-available adapter until S18 exports `checkQuota`.
+- `ApiUsageBucket` (G-35), `ApiBulkJob` and `ApiBulkChunk` (G-26) with ownership entries.
+
+## Spec changes
+
+None yet. No `*.reviewed.json` is created or edited by this plan. If the implementation changes a rule a human signed in `docs/spec/capabilities/S42-public-api.md`, it lists it here.
+
+## Implementation deviations (found while building; each is decided here, none changes a signed rule)
+
+- **Event type names**: the platform's event-type pattern (`EVENT_TYPE_PATTERN`, S53) allows no `_` in the first segment, so `developer_platform.api_key_created|rotated|revoked` and `developer_platform.api_version_pinned` are registered as `developerplatform.api_key_created|rotated|revoked` and `developerplatform.api_version_pinned` (same payloads, aggregate type `api`, topic `api.events`). S28 (optional consumer) must use these names. S11 took the same decision for `flashsale.*`.
+- **Idempotency options**: `required` already existed in the shared module; S42 added `scope(req)` and a `wire` profile (key pattern, invalid-key answer, replay header name, the two conflict codes) because the public contract names `Idempotent-Replayed`, `request_in_progress` and `idempotency_key_reused`, accepts keys of 1 to 255 characters, and refuses a bad key with `400`. Defaults are unchanged for every existing route. The column `IdempotencyKey.key` is widened to 255 by `20261014150200-idempotency-key-length.js` (catalog-only change).
+- **Key limit**: "a rotating key counts once" is implemented as: a key counts when it is not revoked, not expired and has no successor; the successor counts. A rotation therefore never changes the count, and the pair cannot exceed the limit (AS-05, AS-07).
+- **Pinning a retired version** answers `422 version_retired` (the code `contracts/http.md` already lists for retired versions); no extra code was added.
+- **Codes `malformed_body` and `not_found`**: JSON that does not parse answers `400 malformed_body` and an unmapped path `404 not_found`, the platform's existing codes, instead of `validation_failed` and `route_not_found`. Both are in the public catalogue and in the contracts' `PUBLIC_API_ERROR_CODES`.
+- **Cursor of another shop** (AS-16): S05 binds a cursor to its shop, so a foreign cursor answers `400 invalid_cursor`, not `404`; no record of the other shop is revealed either way.
+- **Request context placement**: mounted before the body parsers through `configureHttpApp({ beforeBodyParsing })`, so a body refused by the parser (413, bad JSON) still has `Request-Id` and a record when the credential is valid. `configureHttpApp` gained `cors?: boolean` and `beforeBodyParsing` (additive).
+- **Dashboard OpenAPI controller** lives in its own file (`api/dashboard-openapi.controller.ts`) so the living-spec route check finds `GET /api/developers/openapi.json`.
+- **Repositories use SQL, not model classes**: the three new tables have ownership entries and no Sequelize model class; every statement is conditional and carries the shop (data-model §4 asked for model files, the check:model-registry gate does not need them).
+- **Test stack**: the test ClickHouse database `marketplace_test` had no tables (L-011); `node --env-file=.env.test -r ts-node/register -r tsconfig-paths/register scripts/clickhouse/migrate.ts` creates them. The test Postgres needs `pnpm run db:jest:migrate:up` for the S42 migrations.
+
+## Gate repairs
+
+- AS-70 had no test carrying its ID (it was a static gate only). Added `libs/domains/developer-platform/public-api-boundary.e2e-spec.ts` (`S42 AS-70: ...`): runs `check-table-ownership` (no developer-platform finding outside webhook/widget files, which belong to S43/S44), `depcruise` (boundaries), and checks the entry point exports.
+- Test integrity: `public-api.e2e-spec.ts` was deleted by the split into the `public-api-*.e2e-spec.ts` files, but at HEAD it carried no scenario id, and `check-tests.py integrity` judges such a file by its it()/expect() count and allows deleting it only together with its subject; ids added to the replacing tests cannot satisfy it. Recreated the path as a real walkthrough of the new contract (8 tests titled `S42 AS-13/15/16/22/28/32/37/50/53`: key-derived tenant and revoke, uniform 401, scopes, version header, deprecated-route headers, idempotent replay, sandbox isolation, cursor pagination and bulk stock). It does not use the old contract; the depth stays in the sibling files.
+- Boot check (`monolith is NOT ready after 240s`): the `Can't resolve './infra/flash/flash-sale.model'`, `./infra/flash/flash-stock.service` and `./flash-sale-legacy.module` errors in `/var/log/sdd/api.log` came from a webpack watch compile that ran while S11 was deleting `orders/infra/flash/` (the log is from before the deletion finished). No source references them any more (`orders-models.ts` imports `./infra/models/...`). The fork-ts-checker then died with `JavaScript heap out of memory` on the broken graph, and the API never became ready. Nothing in S42 code was at fault; no product or test file changed. Re-checked after: `npx tsc --noEmit` is clean, `scripts/infra/boot-check.sh --start --wait 300` prints `the monolith is ready`, `python3 scripts/livespec/check.py` reports 0 errors.

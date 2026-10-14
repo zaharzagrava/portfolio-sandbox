@@ -193,6 +193,11 @@ export interface ShopOrderRepository {
     limit: number,
     after: { createdAt: string; id: string } | null,
   ): Promise<ShopOrderListRecord[]>;
+  /** One slice by id, only if it belongs to `shopId` (one statement); `null` for another shop's or an unknown id. */
+  oneForShop(
+    shopId: string,
+    shopOrderId: string,
+  ): Promise<ShopOrderListRecord | null>;
   /** Item lines of the orders in one statement; `shopId` restricts them to one shop's lines. */
   lines(orderIds: string[], shopId: string | null): Promise<OrderLineRecord[]>;
   forOrder(orderId: string): Promise<ShopOrderRecord[]>;

@@ -71,13 +71,13 @@ export class IdempotencyInterceptor implements NestInterceptor {
     if (!options || req.method === 'GET' || req.method === 'HEAD')
       return next.handle();
 
-    const key = this.readKey(req);
+    const key = this.readKey(req, options);
     if (key === undefined) {
       if (options.required === false) return next.handle();
       throw idempotencyError('idempotency_key_required');
     }
 
-    const scope = this.scopeOf(req);
+    const scope = this.scopeOf(req, options);
     const fingerprint = requestFingerprint({
       method: req.method,
       path: req.path,
@@ -107,12 +107,12 @@ export class IdempotencyInterceptor implements NestInterceptor {
       ),
       mergeMap((claim) => {
         if (!claim.claimed)
-          return this.replay(claim.existing, fingerprint, res);
+          return this.replay(claim.existing, fingerprint, res, options);
         return next.handle().pipe(
           catchError((error) =>
-            from(this.settleFailure(scope, key, claim.token, error)).pipe(
-              mergeMap(() => throwError(() => error)),
-            ),
+            from(
+              this.settleFailure(scope, key, claim.token, error, options),
+            ).pipe(mergeMap(() => throwError(() => error))),
           ),
           mergeMap((body) =>
             from(this.settleSuccess(scope, key, claim.token, res, body)).pipe(
@@ -125,22 +125,33 @@ export class IdempotencyInterceptor implements NestInterceptor {
   }
 
   /** The single valid key, `undefined` when absent; throws `idempotency_key_invalid` for any malformed form. */
-  private readKey(req: Request): string | undefined {
+  private readKey(
+    req: Request,
+    options: IdempotentOptions,
+  ): string | undefined {
     const copies = req.rawHeaders.filter(
       (name, i) => i % 2 === 0 && name.toLowerCase() === 'idempotency-key',
     ).length;
     if (copies === 0) return undefined;
     const value = req.headers['idempotency-key'];
-    if (copies > 1 || typeof value !== 'string' || !KEY_FORMAT.test(value))
-      throw idempotencyError('idempotency_key_invalid');
+    const pattern = options.wire?.keyPattern ?? KEY_FORMAT;
+    if (copies > 1 || typeof value !== 'string' || !pattern.test(value))
+      throw idempotencyError('idempotency_key_invalid', {
+        as: options.wire?.invalidKey,
+      });
     return value;
   }
 
-  private scopeOf(req: IdempotentRequest): string {
+  private scopeOf(req: IdempotentRequest, options: IdempotentOptions): string {
+    if (options.scope) return this.bounded(options.scope(req));
     const principal = req.apiKey?.id ?? this.context.userId ?? req.user?.id;
     const scope = principal
       ? `principal:${principal}`
       : `ip:${this.context.snapshot().clientIp ?? req.clientIp ?? req.ip ?? 'unknown'}`;
+    return this.bounded(scope);
+  }
+
+  private bounded(scope: string): string {
     return scope.length <= MAX_SCOPE_LENGTH
       ? scope
       : `${scope.slice(0, scope.indexOf(':') + 1)}${createHash('sha256').update(scope).digest('hex')}`;
@@ -159,15 +170,22 @@ export class IdempotencyInterceptor implements NestInterceptor {
     existing: IdempotencyRecord,
     fingerprint: string,
     res: Response,
+    options: IdempotentOptions,
   ): Observable<unknown> {
+    const codes = options.wire?.codes;
     if (existing.fingerprint.trim() !== fingerprint)
-      throw idempotencyError('idempotency_key_reuse');
+      throw idempotencyError('idempotency_key_reuse', {
+        as: codes?.reuse ? { code: codes.reuse } : undefined,
+      });
     if (existing.state === 'in_flight')
-      throw idempotencyError('idempotency_in_flight', { retryAfterSeconds: 1 });
+      throw idempotencyError('idempotency_in_flight', {
+        retryAfterSeconds: 1,
+        as: codes?.inFlight ? { code: codes.inFlight } : undefined,
+      });
     if (!existing.bodyStored)
       throw idempotencyError('idempotency_replay_unavailable');
 
-    res.setHeader(REPLAYED_HEADER, 'true');
+    res.setHeader(options.wire?.replayHeader ?? REPLAYED_HEADER, 'true');
     const status = existing.responseStatus ?? 200;
     const stored = existing.responseBody
       ? (JSON.parse(existing.responseBody.toString('utf8')) as unknown)
@@ -230,9 +248,15 @@ export class IdempotencyInterceptor implements NestInterceptor {
     key: string,
     token: string,
     error: unknown,
+    options: IdempotentOptions,
   ): Promise<void> {
     try {
-      if (error instanceof AppError && error.idempotencyFinal) {
+      const final =
+        error instanceof AppError &&
+        (error.idempotencyFinal ||
+          (options.wire?.storeClientErrors === true &&
+            Number(error.status) < 500));
+      if (error instanceof AppError && final) {
         const body = Buffer.from(
           JSON.stringify({
             code: error.code,

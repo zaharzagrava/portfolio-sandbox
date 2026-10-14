@@ -136,6 +136,15 @@ describe('S53 task queue (ElasticMQ)', () => {
     return stop;
   };
 
+  it('S42 L-002: queueExists tells a queue that is there from one that is not, for a readiness check', async () => {
+    const { queue } = await makeQueue('exists');
+    await expect(sqs.queueExists(queue)).resolves.toBe(true);
+    await expect(sqs.queueExists(`s53-missing-${RUN}`)).resolves.toBe(false);
+    await expect(
+      new InMemoryTaskQueue().queueExists(`s53-missing-${RUN}`),
+    ).resolves.toBe(true);
+  });
+
   it('S53 AS-92: a 2 s delay hides the task, then delivers it once', async () => {
     const { queue } = await makeQueue('delay');
     const started = Date.now();

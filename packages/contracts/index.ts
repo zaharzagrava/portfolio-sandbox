@@ -29,3 +29,4 @@ export * from './src/experimentation/experiments.ts';
 export * from './src/media/video.ts';
 export * from './src/media/video-events.ts';
 export * from './src/events/client-events.ts';
+export * from './src/developer-platform/index.ts';

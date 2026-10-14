@@ -6,6 +6,7 @@ import type { ShareLinksConfig } from './share-links-config';
 import type { FlagsConfig } from './flags-config';
 import type { KnowledgeConfig } from './knowledge-config';
 import type { AdsConfig } from './ads-config';
+import type { DeveloperPlatformConfig } from './developer-platform-config';
 
 /**
  * @description - config that should always be present in environment variables where application is run
@@ -375,8 +376,6 @@ export class SecretsManagerConfig {
   /** This collab instance's externally reachable ws(s):// base URL (SD-16 ring routing). */
   collab_public_url?: string;
   collab_instance_id?: string;
-  /** Server-side secret mixed into API key hashes (SD-07): a leaked DB dump alone can't be brute-forced offline. */
-  api_key_pepper?: string;
   /** Comma list of hosts webhooks may reach over http / private IPs - local & test only, ignored in production (SD-30). */
   webhooks_allow_private_hosts?: string;
   /** CDN purge-by-tag (SD-05); unset → purges are logged only. */
@@ -438,6 +437,7 @@ export interface SecretsManagerConfig
     ShareLinksConfig,
     FlagsConfig,
     KnowledgeConfig,
-    AdsConfig {}
+    AdsConfig,
+    DeveloperPlatformConfig {}
 
 export class Config extends IntersectionType(EnvConfig, SecretsManagerConfig) {}

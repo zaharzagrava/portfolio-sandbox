@@ -31,6 +31,7 @@ The product search index is a read model for text search over products. It is bu
 
 ## Used by
 <!-- used-by:start -->
+- {{cap:S19}} Pickup points, local stock, available near me, map clustering
 - {{cap:S32}} Product search: index sync with external versioning, zero-downtime reindex, relevance boosts, synonyms, facets, k-NN
 - {{cap:S33}} Search autocomplete: query-log top-K trie, catalog completions, per-source budgets, typo fallback
 - {{cap:W02}} Home, search (autocomplete, filters, facets, sort, URL state), trending and recommendation rails, product page (product, shop, pickup near me, discussions, ask this product, share link)

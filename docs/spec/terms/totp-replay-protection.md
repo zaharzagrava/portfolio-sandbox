@@ -25,6 +25,7 @@ Alice's code is accepted at step T during one login. An attacker who captured th
 - [guarded-update](guarded-update.md)
 - [invalid-mfa-code](invalid-mfa-code.md)
 - [mfa-code](mfa-code.md)
+- [mfa-recovery-code](mfa-recovery-code.md)
 - [second-factor-model](second-factor-model.md)
 - [totp-time-step](totp-time-step.md)
 - [verify-totp](verify-totp.md)

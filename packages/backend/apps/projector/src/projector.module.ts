@@ -12,7 +12,7 @@ import { AnalyticsProjectorModule } from '@app/domains/experimentation';
 import {
   WebhookRouterProjector,
   WebhooksCoreModule,
-  ApiRequestsProjector,
+  PublicApiProjectorModule,
 } from '@app/domains/developer-platform';
 import {
   CourierTrackProjector,
@@ -113,7 +113,7 @@ import { CacheModule } from '@app/infrastructure/cache/cache.module';
         ShopSalesProjector,
         ...ChatProjectorModule.projectors,
         CourierTrackProjector,
-        ApiRequestsProjector,
+        ...PublicApiProjectorModule.projectors,
         WebhookRouterProjector,
         ...AnalyticsProjectorModule.projectors,
         StoryCacheInvalidator,
@@ -137,6 +137,7 @@ import { CacheModule } from '@app/infrastructure/cache/cache.module';
         IntegrationsCoreModule,
         StoryCacheModule,
         WebhooksCoreModule,
+        PublicApiProjectorModule,
         SqsModule,
         LiveCoreModule,
         DynamoModule,

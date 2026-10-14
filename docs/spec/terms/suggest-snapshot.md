@@ -32,7 +32,6 @@ After a successful build, the object `autocomplete/<version>` exists, the pointe
 - [build-end-states](build-end-states.md)
 - [degraded-response](degraded-response.md)
 - [degraded](degraded.md)
-- [distinct-searchers](distinct-searchers.md)
 - [eligible-query](eligible-query.md)
 - [eligible-searcher](eligible-searcher.md)
 - [failure-counter](failure-counter.md)
@@ -47,6 +46,7 @@ After a successful build, the object `autocomplete/<version>` exists, the pointe
 - [suggest-builder](suggest-builder.md)
 - [suggest-entry-kinds](suggest-entry-kinds.md)
 - [suggest-publish](suggest-publish.md)
+- [suggestion-build](suggestion-build.md)
 - [suggestion-source](suggestion-source.md)
 - [version-pointer](version-pointer.md)
 <!-- used-by:end -->

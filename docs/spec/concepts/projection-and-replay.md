@@ -35,9 +35,17 @@ A projection is a read model built only from the event log, never from another d
 <!-- used-by:start -->
 - {{cap:S05}} Product CRUD, pricing, stock fields, product cache and invalidation, product views
 - {{cap:S14}} Double-entry ledger, balanced journals, hot-account sharding, balance read model, daily PSP reconciliation
+- {{cap:S19}} Pickup points, local stock, available near me, map clustering
+- {{cap:S25}} Product discussions (posts, nested comments, votes, ranking, abuse controls, safe markdown)
 - {{cap:S28}} Notification routing, preferences, quiet hours, caps, per-channel queues, provider failover, inbox, suppression
+- {{cap:S29}} Product and review photos (upload, safe processing, duplicate flag, galleries, cleanup)
+- {{cap:S30}} Product video and VOD (resumable upload, transcoding graph, HLS ladder, signed delivery)
 - {{cap:S32}} Product search: index sync with external versioning, zero-downtime reindex, relevance boosts, synonyms, facets, k-NN
 - {{cap:S34}} "Bought together" recommendations: co-occurrence graph, normalisation, 2-hop cold start
 - {{cap:S35}} Trending products: windowed approximate top-K per category
+- {{cap:S36}} Sponsored listings (campaigns, signed click tokens, click counting, hourly billing, daily reconciliation)
+- {{cap:S37}} Share and affiliate short links (codes, aliases, redirects, click attribution)
+- {{cap:S39}} Analytics ingestion and A/B testing (event schema, dedupe, assignment, exposure, SRM, results)
+- {{cap:S42}} Seller public API: API keys, scopes, sandbox, date-pinned versions, deprecation headers, batch and bulk stock, request logs, usage metering
 - {{cap:S53}} Domain events, outbox/CDC → Kafka, idempotent versioned projections, replay, read-your-writes
 <!-- used-by:end -->

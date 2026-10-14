@@ -438,6 +438,29 @@ describe('Orders: reads, history and tenant isolation', () => {
     ).resolves.toBeInstanceOf(Map);
   });
 
+  it('S42 AS-42: getShopOrder returns the shop slice with only its lines, and null for another shop’s slice or an unknown id', async () => {
+    const buyer = await t.newUser();
+    const { shop: s1, products: p1 } = await seedShopWithProducts(t.app, [
+      { priceMinor: 500, quantity: 100 },
+    ]);
+    const { shop: s2, products: p2 } = await seedShopWithProducts(t.app, [
+      { priceMinor: 700, quantity: 100 },
+    ]);
+    await seedPendingOrder(t.app, {
+      userId: buyer.id,
+      lines: [line(p1[0].id, s1.id, 2), line(p2[0].id, s2.id, 1)],
+    });
+    const page = await queries.getOrdersForShop(s1.id, { limit: 20 });
+    const slice = page.items[0];
+
+    const one = await queries.getShopOrder(s1.id, slice.shopOrderId);
+    expect(one).toEqual(slice);
+    expect(one!.items.map((i) => i.shopId)).toEqual([s1.id]);
+
+    expect(await queries.getShopOrder(s2.id, slice.shopOrderId)).toBeNull();
+    expect(await queries.getShopOrder(s1.id, randomUUID())).toBeNull();
+  });
+
   it('S10 AS-63: getPayableOrder returns the allocation for a live RESERVED order and refuses everything else', async () => {
     const buyer = await t.newUser();
     const other = await t.newUser();

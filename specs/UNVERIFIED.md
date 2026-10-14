@@ -167,3 +167,9 @@ interviews) until its status says so. The implementation loop appends here (rule
 | S24 | SC-005 / SC-006 wall-clock timing (tests use the frozen clock) | same file (manual timing run) | not run |
 | S24 | Fresh-stack drill (L-012) and migration timing on a copy with 10M+ messages (swap lock < 3 s) | same file, `scripts/qa/fresh-run.sh` and the large-table drill | not run |
 | S24 | Drop of `ChatMessage_old` after one release without error | `specs/domains/S24-product-chat/quickstart.md`, "Ops artifacts": the `chat-s24-drop-old` scheduled migration on or after 2026-12-15 | not run |
+| S42 | SC-010: 30,000 requests per second across 100,000 keys, 99% of authenticated reads under 150 ms, per-key limits across instances, logging and metering add no latency | `specs/domains/S42-public-api/quickstart.md`, "Ops artifacts" (k6 `scripts/load-tests/public-api-mixed.test.js`, new) | not run |
+| S42 | SC-009, retention half: request records are kept 30 days and gone after (tests prove search and the declared TTL, not 30 real days) | same file (read the `api_requests` TTL, sample an old record) | not run |
+| S42 | Monthly quota against the real billing store (S18 `checkQuota` is not exported yet; the adapter allows and counts; AS-57 uses a fake port) | same file (after S18: tiny quota, exceed it, expect `429 quota_exceeded`) | not run |
+| S42 | SC-001 and SC-007 at counts above the tests (20 and 200 concurrent) | same file (`REPEAT=1000` on AS-09 and AS-54) | not run |
+| S42 | Application start (L-015, L-004, L-018) of the built `public-api`, `core`, `worker`, `projector`, and the empty-stack run (L-012) | same file, "Start the real apps" (`scripts/infra/boot-app.sh <app>`, `scripts/qa/fresh-run.sh`) | not run |
+| S42 | W04 UI journey `packages/web/e2e/developers.spec.ts` (create, reveal once, rotate, revoke, pin): owner screens may not exist yet | same file (Playwright once W04 ships; API halves are AS-01, AS-06, AS-08, AS-30) | not run |

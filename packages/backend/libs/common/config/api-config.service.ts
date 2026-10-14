@@ -23,6 +23,7 @@ import { shareLinksConfigKeys } from './share-links-config';
 import { flagsConfigKeys } from './flags-config';
 import { knowledgeConfigKeys } from './knowledge-config';
 import { adsConfigKeys } from './ads-config';
+import { developerPlatformConfigKeys } from './developer-platform-config';
 import './media-config'; // registers the S29 media startup rules
 import { videoConfigKeys } from './video-config'; // also registers the S30 video startup rule
 import { bffConfigKeys } from './bff-config';
@@ -556,10 +557,6 @@ export class ApiConfigService {
             verify: joi.string().optional().allow(''),
             name: 'COLLAB_INSTANCE_ID',
           },
-          api_key_pepper: {
-            verify: joi.string().optional().allow(''),
-            name: 'API_KEY_PEPPER',
-          },
           webhooks_allow_private_hosts: {
             verify: joi.string().optional().allow(''),
             name: 'WEBHOOKS_ALLOW_PRIVATE_HOSTS',
@@ -609,6 +606,7 @@ export class ApiConfigService {
           ...flagsConfigKeys,
           ...knowledgeConfigKeys,
           ...adsConfigKeys,
+          ...developerPlatformConfigKeys,
           ...bffConfigKeys,
           payments_cursor_secret: {
             verify: joi.string().optional().allow(''),

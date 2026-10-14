@@ -41,6 +41,7 @@ locals {
     "knowledge-ingest"        = { visibility_seconds = 300, max_receive = 5 }
     "onboarding-documents"    = { visibility_seconds = 720, max_receive = 5 } # 6 × 120 s
     "bulk-stock-updates"      = { visibility_seconds = 120, max_receive = 5 }
+    "public-api-bulk-chunk"   = { visibility_seconds = 120, max_receive = 5 } # S42: one message = one chunk of 100 stock deltas
   }
 
   domain_aggregates = ["api", "auctions", "billing", "chat", "courier", "feed", "flags", "ledger", "links", "live", "llm", "marketing", "media", "orders", "pickup", "products", "search", "shops", "stories", "usage"]

@@ -34,6 +34,8 @@ An order turns a cart into a hold on stock. Checkout creates one order, splits i
 <!-- used-by:start -->
 - {{cap:S05}} Product CRUD, pricing, stock fields, product cache and invalidation, product views
 - {{cap:S10}} Cart (guest + merge), idempotent checkout, stock reservation, multi-shop split, order state machine, payment webhook
+- {{cap:S11}} Flash sales (scheduled drops, bucketed fast stock, admission, never oversell, async reconciliation)
 - {{cap:S13}} Payment intents, idempotency, unknown outcomes, PSP circuit breaker, outbox, saga with orders
+- {{cap:S21}} Limited-drop auctions (proxy bids, anti-sniping, reserve, exactly-once close, second chance, shill guard)
 - {{cap:W03}} Cart (guest and merged on login), checkout with idempotent submit and async payment status, success page, order history, notification popover
 <!-- used-by:end -->

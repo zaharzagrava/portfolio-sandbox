@@ -42,5 +42,4 @@ describe('Product (e2e)', () => {
     expect(res.headers['content-type']).toContain('problem+json');
     expect(res.body.status).toBe(404);
   });
-
 });

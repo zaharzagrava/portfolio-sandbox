@@ -80,7 +80,13 @@ describe('Search exported services and module boundary', () => {
       });
 
       const route = productSearchResponseSchema.parse(
-        (await t.http().get('/api/products/search').query({ q: 'iphone' }).expect(200)).body,
+        (
+          await t
+            .http()
+            .get('/api/products/search')
+            .query({ q: 'iphone' })
+            .expect(200)
+        ).body,
       );
       expect(answer.items.map((i) => i.id)).toEqual([visible]);
       expect(answer.items).toEqual(route.items);
@@ -89,7 +95,10 @@ describe('Search exported services and module boundary', () => {
       const event = published.mock.calls
         .map(([e]) => e as { type: string; payload: Record<string, unknown> })
         .find((e) => e.type === 'search.performed');
-      expect(event?.payload).toMatchObject({ surface: 'internal', query: 'iphone' });
+      expect(event?.payload).toMatchObject({
+        surface: 'internal',
+        query: 'iphone',
+      });
 
       for (const query of [
         { q: 'iphone', limit: 21 },
@@ -106,7 +115,11 @@ describe('Search exported services and module boundary', () => {
       t.proxy!.mode = 'refuse';
       t.proxy!.sever();
       await expect(
-        service.search({ query: { q: 'x' }, surface: 'internal', subject: 's' }),
+        service.search({
+          query: { q: 'x' },
+          surface: 'internal',
+          subject: 's',
+        }),
       ).rejects.toBeInstanceOf(SearchUnavailableError);
     });
   });
@@ -140,9 +153,9 @@ describe('Search exported services and module boundary', () => {
         'Alpine Parka',
       ]);
       for (const size of [0, 11, 1.5])
-        await expect(suggester.suggestTitles('alp', size)).rejects.toBeInstanceOf(
-          SearchValidationError,
-        );
+        await expect(
+          suggester.suggestTitles('alp', size),
+        ).rejects.toBeInstanceOf(SearchValidationError);
     });
 
     it('S32 AS-79: an aborted signal, or an engine that never answers, ends in the typed SuggestionTimeoutError', async () => {
@@ -180,7 +193,9 @@ describe('Search exported services and module boundary', () => {
           'SearchReindexCompleted',
         ]),
       );
-      expect(names.filter((n) => /(Projector|Consumer|Logger|Model)$/.test(n))).toEqual([]);
+      expect(
+        names.filter((n) => /(Projector|Consumer|Logger|Model)$/.test(n)),
+      ).toEqual([]);
       expect(names).not.toContain('SearchAdminModule');
       expect(names).not.toContain('SearchQueryLogger');
     });
@@ -189,11 +204,21 @@ describe('Search exported services and module boundary', () => {
       const offenders: string[] = [];
       for (const file of sources()) {
         const text = code(file);
-        if (/\b(ProductModel|ShopModel|ShopMembershipModel|MembershipService)\b/.test(text))
+        if (
+          /\b(ProductModel|ShopModel|ShopMembershipModel|MembershipService)\b/.test(
+            text,
+          )
+        )
           offenders.push(`${file}: foreign model or service`);
-        if (/@app\/domains\/[a-z-]+\/(infra|application|domain|api)\//.test(text))
+        if (
+          /@app\/domains\/[a-z-]+\/(infra|application|domain|api)\//.test(text)
+        )
           offenders.push(`${file}: deep import of another domain`);
-        if (/(FROM|JOIN|UPDATE|INTO)\s+"(Product|Shop|ShopMembership|BisOrder|ShopOrder)"/i.test(text))
+        if (
+          /(FROM|JOIN|UPDATE|INTO)\s+"(Product|Shop|ShopMembership|BisOrder|ShopOrder)"/i.test(
+            text,
+          )
+        )
           offenders.push(`${file}: SQL on a foreign table`);
       }
       expect(offenders).toEqual([]);
@@ -208,12 +233,17 @@ describe('Search exported services and module boundary', () => {
             ? [path]
             : [];
         });
-      expect(catalogImports(catalog).filter((f) => !/spec\.ts$/.test(f))).toEqual([]);
+      expect(
+        catalogImports(catalog).filter((f) => !/spec\.ts$/.test(f)),
+      ).toEqual([]);
     });
 
     it('S32 AS-80: the generic engine client carries no product knowledge', () => {
       const dir = resolve(BACKEND, 'libs/infrastructure/elasticsearch');
-      for (const name of ['search-engine.client.ts', 'search-engine.errors.ts']) {
+      for (const name of [
+        'search-engine.client.ts',
+        'search-engine.errors.ts',
+      ]) {
         expect(code(join(dir, name))).not.toMatch(
           /product|catalog|embedding|shopId/i,
         );
@@ -226,7 +256,9 @@ describe('Search exported services and module boundary', () => {
         ['--dir', BACKEND, 'check:boundaries'],
         { maxBuffer: 10_000_000 },
       );
-      expect(boundaries.stdout + boundaries.stderr).toMatch(/no dependency violations/i);
+      expect(boundaries.stdout + boundaries.stderr).toMatch(
+        /no dependency violations/i,
+      );
 
       const ownership = await run(
         'pnpm',

@@ -202,8 +202,9 @@ describe('Search facets and semantic mode', () => {
       );
       const bags = kept.filter((s) => s.category === 'bags');
       expect(body.facets!.avgRating).toBe(
-        Math.round((bags.reduce((n, s) => n + s.rating, 0) / bags.length) * 100) /
-          100,
+        Math.round(
+          (bags.reduce((n, s) => n + s.rating, 0) / bags.length) * 100,
+        ) / 100,
       );
     });
 
@@ -225,15 +226,18 @@ describe('Search facets and semantic mode', () => {
       );
 
       expect('facets' in (await ok({ q: 'gadget' }))).toBe(false);
-      expect(
-        'facets' in (await ok({ q: 'gadget', facets: 'false' })),
-      ).toBe(false);
+      expect('facets' in (await ok({ q: 'gadget', facets: 'false' }))).toBe(
+        false,
+      );
 
       const body = await ok({ q: 'gadget', facets: 'true' });
       expect(body.facets!.categories).toHaveLength(20);
       expect(body.facets!.categories[0]).toEqual({ key: 'cat-00', count: 3 });
       expect(body.facets!.categories.slice(1).map((c) => c.key)).toEqual(
-        Array.from({ length: 19 }, (_, i) => `cat-${String(i + 1).padStart(2, '0')}`),
+        Array.from(
+          { length: 19 },
+          (_, i) => `cat-${String(i + 1).padStart(2, '0')}`,
+        ),
       );
 
       const empty = await ok({ q: 'zzzzzz', facets: 'true' });
@@ -328,7 +332,9 @@ describe('Search facets and semantic mode', () => {
     });
 
     it('S32 AS-19: a product without a vector is absent from semantic results and present in lexical ones; hidden products never appear', async () => {
-      const [parka] = await seedProducts(t, shopId, [{ title: 'Alpine Parka' }]);
+      const [parka] = await seedProducts(t, shopId, [
+        { title: 'Alpine Parka' },
+      ]);
       t.embeddings.failing = true;
       const [pending] = await seedProducts(t, shopId, [
         { title: 'Winter coat pending' },
@@ -389,9 +395,7 @@ describe('Search facets and semantic mode', () => {
       await t.refresh();
       const created = await t.doc(productId);
       expect(created!.embedding).toHaveLength(64);
-      expect(JSON.stringify(await ok({ q: 'parka' }))).not.toMatch(
-        /embedding/,
-      );
+      expect(JSON.stringify(await ok({ q: 'parka' }))).not.toMatch(/embedding/);
 
       const callsBefore = t.embeddings.calls.length;
       await deliver(t.app).products(

@@ -30,17 +30,17 @@ describe('Shop product search', () => {
 
   const route = (shopId: string, query: Record<string, string | number>) =>
     t.as(owner).get(`/api/shops/${shopId}/products/search`).query(query);
-  const ok = async (
-    query: Record<string, string | number>,
-    shopId = shop.id,
-  ) =>
+  const ok = async (query: Record<string, string | number>, shopId = shop.id) =>
     shopProductSearchResponseSchema.parse(
       (await route(shopId, query).expect(200)).body,
     );
   const tableCount = async () =>
     Number(
-      (await t.rows<{ n: string }>(`SELECT count(*) AS n FROM "SearchShopProduct"`))[0]
-        .n,
+      (
+        await t.rows<{ n: string }>(
+          `SELECT count(*) AS n FROM "SearchShopProduct"`,
+        )
+      )[0].n,
     );
 
   describe('reading (AS-61 to AS-63)', () => {
@@ -90,12 +90,13 @@ describe('Shop product search', () => {
       ]);
       expect((await ok({ q: 'zz' })).items).toEqual([]);
       // eight good words, then thirty that would pull the average below the threshold if they counted
-      const long = `iphnoe 17 pro cse iphone 17 pro case ${'z '.repeat(30)}`.trim();
+      const long =
+        `iphnoe 17 pro cse iphone 17 pro case ${'z '.repeat(30)}`.trim();
       expect(long.length).toBeLessThanOrEqual(100);
       expect((await ok({ q: long })).items.map((i) => i.id)).toEqual([id]);
     });
 
-    it('S32 AS-63: another shop\'s member gets the unknown-shop 404; only the shop\'s own products ever appear', async () => {
+    it("S32 AS-63: another shop's member gets the unknown-shop 404; only the shop's own products ever appear", async () => {
       const other = await t.newUser();
       const otherShop = await createShop(t.app, other);
       const [mine] = await seedProducts(t, shop.id, [
@@ -105,7 +106,9 @@ describe('Shop product search', () => {
         { title: 'iPhone 17 Pro Case' },
       ]);
 
-      expect((await ok({ q: 'iphone' })).items.map((i) => i.id)).toEqual([mine]);
+      expect((await ok({ q: 'iphone' })).items.map((i) => i.id)).toEqual([
+        mine,
+      ]);
       await route(otherShop.id, { q: 'iphone' }).expect(404); // the owner is no member of the other shop
 
       const asOther = await t
@@ -131,7 +134,11 @@ describe('Shop product search', () => {
 
   describe('access (AS-64)', () => {
     it('S32 AS-64: 401 without credentials, 200 for a viewer, 403 shop_suspended, 409 shop_offboarding, 404 for a deleted shop', async () => {
-      await t.http().get(`/api/shops/${shop.id}/products/search`).query({ q: 'x' }).expect(401);
+      await t
+        .http()
+        .get(`/api/shops/${shop.id}/products/search`)
+        .query({ q: 'x' })
+        .expect(401);
 
       const viewer = await t.newUser();
       await addMember(t.app, shop.id, viewer.id, 'VIEWER');
@@ -173,7 +180,7 @@ describe('Shop product search', () => {
       },
     );
 
-    it('S32 AS-65: a malformed shop id is the guard\'s 404 (S03), and a cursor that was altered, or came from another shop or query, answers 422 invalid_cursor', async () => {
+    it("S32 AS-65: a malformed shop id is the guard's 404 (S03), and a cursor that was altered, or came from another shop or query, answers 422 invalid_cursor", async () => {
       await route('not-a-uuid', { q: 'x' }).expect(404);
 
       await seedProducts(
@@ -185,17 +192,24 @@ describe('Shop product search', () => {
       expect(first.nextCursor).not.toBeNull();
       const cursor = first.nextCursor!;
       await route(shop.id, { q: 'cable', limit: 2, cursor }).expect(200);
-      await route(shop.id, { q: 'cable', limit: 2, cursor: `${cursor}x` }).expect(
-        422,
-      );
+      await route(shop.id, {
+        q: 'cable',
+        limit: 2,
+        cursor: `${cursor}x`,
+      }).expect(422);
       await route(shop.id, { q: 'plug', limit: 2, cursor }).expect(422);
-      await route(shop.id, { q: 'cable', status: 'ACTIVE', limit: 2, cursor }).expect(
-        422,
-      );
+      await route(shop.id, {
+        q: 'cable',
+        status: 'ACTIVE',
+        limit: 2,
+        cursor,
+      }).expect(422);
       const second = await createShop(t.app, owner);
-      const res = await route(second.id, { q: 'cable', limit: 2, cursor }).expect(
-        422,
-      );
+      const res = await route(second.id, {
+        q: 'cable',
+        limit: 2,
+        cursor,
+      }).expect(422);
       expect(res.body.code).toBe('invalid_cursor');
     });
 
@@ -208,7 +222,11 @@ describe('Shop product search', () => {
       const pages: Awaited<ReturnType<typeof ok>>[] = [];
       let cursor: string | undefined;
       do {
-        const page = await ok({ q: 'cable', limit: 25, ...(cursor && { cursor }) });
+        const page = await ok({
+          q: 'cable',
+          limit: 25,
+          ...(cursor && { cursor }),
+        });
         pages.push(page);
         cursor = page.nextCursor ?? undefined;
       } while (cursor);
@@ -270,9 +288,9 @@ describe('Shop product search', () => {
       const [inSandbox] = await seedProducts(t, sandbox.id, [
         { title: 'Sandbox Lamp', isSandbox: true },
       ]);
-      expect((await ok({ q: 'lamp' }, sandbox.id)).items.map((i) => i.id)).toEqual([
-        inSandbox,
-      ]);
+      expect(
+        (await ok({ q: 'lamp' }, sandbox.id)).items.map((i) => i.id),
+      ).toEqual([inSandbox]);
       const publicRes = await t
         .http()
         .get('/api/products/search')
@@ -289,9 +307,12 @@ describe('Shop product search', () => {
           doomed.id,
         ]),
       ).toEqual([]);
-      await t.sequelize.query(`UPDATE "Shop" SET "status" = 'DELETED' WHERE "id" = $1`, {
-        bind: [doomed.id],
-      });
+      await t.sequelize.query(
+        `UPDATE "Shop" SET "status" = 'DELETED' WHERE "id" = $1`,
+        {
+          bind: [doomed.id],
+        },
+      );
       const fresh = await t.newUser();
       await addMember(t.app, doomed.id, fresh.id, 'OWNER', 'owner');
       await t
@@ -327,7 +348,8 @@ describe('Shop product search', () => {
       await addMember(t.app, shop.id, other.id, 'STAFF');
       const second = await createShop(t.app, owner);
 
-      let limited: { status: number; headers: Record<string, string> } | undefined;
+      let limited:
+        { status: number; headers: Record<string, string> } | undefined;
       for (let i = 0; i < 125 && !limited; i++) {
         const res = await route(shop.id, { q: 'x' });
         if (res.status === 429) limited = res;

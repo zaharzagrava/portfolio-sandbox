@@ -108,7 +108,9 @@ export class SearchIndexAdminController {
   @Firewall({ roles: [Role.ADMIN] })
   @RateLimit('discovery.search-admin')
   @Get('quality')
-  quality(@Query() query: Record<string, unknown>): Promise<SearchQualityReport> {
+  quality(
+    @Query() query: Record<string, unknown>,
+  ): Promise<SearchQualityReport> {
     return this.qualityReport.report(query);
   }
 

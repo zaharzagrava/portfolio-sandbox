@@ -34,6 +34,7 @@ cfg.update({
     'SHARE_LINK_EDGE_SECRET': 'dev-share-link-edge-secret-bbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
     'SHARE_LINK_BASE_URL': 'https://mkt.to',
     'ADS_CLICK_SECRET': 'dev-ads-click-secret-cccccccccccccccccccccccccccccccccccc',
+    'API_KEY_PEPPER': 'dev-api-key-pepper-dddddddddddddddddddddddddddddddd',
     'ADS_AGGREGATOR_INSTANCE': 'local-1',
     'IS_LOAD_TEST': 'true',  # binds the fake payment provider: a charge settles at once (the dummy Stripe key cannot)
 })

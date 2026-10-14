@@ -202,6 +202,9 @@ export const OWNERSHIP = {
   // developer-platform
   ApiKey: 'domain:developer-platform',
   ShopApiSettings: 'domain:developer-platform',
+  ApiBulkJob: 'domain:developer-platform',
+  ApiBulkChunk: 'domain:developer-platform',
+  ApiUsageBucket: 'domain:developer-platform',
   WebhookEndpoint: 'domain:developer-platform',
   WidgetSite: 'domain:developer-platform',
   // shop-functions

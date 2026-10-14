@@ -391,9 +391,7 @@ describe('Search index projection', () => {
       await send(t.app).shops(
         offboardingCancelled(s2, 3, new Date(t0 + 10_000)),
       );
-      await send(t.app).shops(
-        offboardingStarted(s2, 2, new Date(t0 + 20_000)),
-      );
+      await send(t.app).shops(offboardingStarted(s2, 2, new Date(t0 + 20_000)));
       expect(await visibleIds()).toContain(p2);
 
       const before = ignored('shop_deleted');

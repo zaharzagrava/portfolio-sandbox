@@ -3,6 +3,7 @@ import {
   ORDER_PAGE_LIMITS,
   type OrderDto,
   type OrderPageDto,
+  type ShopOrderDto,
   type ShopOrderPageDto,
 } from '@marketplace-sandbox/contracts';
 import { CLOCK, type Clock } from '@app/common/core/clock';
@@ -26,6 +27,8 @@ import {
   type PayableOrderDto,
 } from '../domain/order-views';
 import { decodeOrderCursor, encodeOrderCursor } from '../domain/order-cursor';
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
  * Order reads as plain DTOs (no model leaves the domain). Every read is scoped to the principal inside the statement:
@@ -127,6 +130,40 @@ export class OrderQueryService {
               id: last.id,
             })
           : null,
+    };
+  }
+
+  /**
+   * One slice of an order for a shop, in the shape of the seller list; `null` for another shop's slice, an unknown id or
+   * a malformed one (a single shop-scoped statement, never load-then-check).
+   */
+  async getShopOrder(
+    shopId: string,
+    shopOrderId: string,
+  ): Promise<ShopOrderDto | null> {
+    if (!UUID.test(shopOrderId)) return null;
+    const slice = await this.shopOrders.oneForShop(shopId, shopOrderId);
+    if (!slice) return null;
+    const lines = await this.shopOrders.lines([slice.orderId], shopId);
+    return {
+      shopOrderId: slice.id,
+      orderId: slice.orderId,
+      status: slice.status,
+      subtotalMinor: slice.subtotalMinor,
+      currency: slice.currency,
+      buyerId: slice.buyerId,
+      createdAt: slice.createdAt.toISOString(),
+      items: lines
+        .filter((l) => l.shopOrderId === slice.id)
+        .map((l) => ({
+          productId: l.productId,
+          shopId: l.shopId,
+          title: l.title ?? '',
+          quantity: l.quantity,
+          unitPriceMinor: l.unitPriceMinor,
+          discountMinor: l.discountMinor,
+          lineTotalMinor: l.lineTotalMinor ?? l.unitPriceMinor * l.quantity,
+        })),
     };
   }
 

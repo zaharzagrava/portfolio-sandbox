@@ -139,7 +139,8 @@ export const shopDeleted = (
   shopId: string,
   shopVersion: number,
   occurredAt?: Date,
-) => ShopDeleted.create(shopId, shopVersion, { shopId, shopVersion }, occurredAt);
+) =>
+  ShopDeleted.create(shopId, shopVersion, { shopId, shopVersion }, occurredAt);
 
 export const galleryEvent = (
   productId: string,

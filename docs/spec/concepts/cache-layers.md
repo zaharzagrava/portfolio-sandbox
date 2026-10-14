@@ -32,10 +32,16 @@ Layered cache and single-flight is the shared way every domain keeps fast copies
 <!-- used-by:start -->
 - {{cap:S03}} Shops as tenants: memberships, roles and permissions, invites, per-shop SSO, cells, offboarding
 - {{cap:S05}} Product CRUD, pricing, stock fields, product cache and invalidation, product views
+- {{cap:S11}} Flash sales (scheduled drops, bucketed fast stock, admission, never oversell, async reconciliation)
+- {{cap:S21}} Limited-drop auctions (proxy bids, anti-sniping, reserve, exactly-once close, second chance, shill guard)
+- {{cap:S24}} Product chat (channels, idempotent send, per-channel sequence, sync on reconnect, unread, receipts, presence, offline push)
+- {{cap:S25}} Product discussions (posts, nested comments, votes, ranking, abuse controls, safe markdown)
 - {{cap:S28}} Notification routing, preferences, quiet hours, caps, per-channel queues, provider failover, inbox, suppression
 - {{cap:S33}} Search autocomplete: query-log top-K trie, catalog completions, per-source budgets, typo fallback
 - {{cap:S34}} "Bought together" recommendations: co-occurrence graph, normalisation, 2-hop cold start
 - {{cap:S35}} Trending products: windowed approximate top-K per category
+- {{cap:S37}} Share and affiliate short links (codes, aliases, redirects, click attribution)
+- {{cap:S39}} Analytics ingestion and A/B testing (event schema, dedupe, assignment, exposure, SRM, results)
 - {{cap:S48}} BFF composition: product-page aggregate with budgets and partial errors, GraphQL with DataLoaders and limits, session handling
 - {{cap:S52}} Cache toolkit: L1/L2, single-flight, XFetch, SWR, negative cache, write-behind counters, ETags
 - {{cap:W02}} Home, search (autocomplete, filters, facets, sort, URL state), trending and recommendation rails, product page (product, shop, pickup near me, discussions, ask this product, share link)

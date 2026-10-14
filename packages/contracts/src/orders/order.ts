@@ -108,3 +108,5 @@ export const shopOrderPageSchema = z
   .strict();
 
 export type ShopOrderPageDto = z.infer<typeof shopOrderPageSchema>;
+/** One shop's slice of an order, as in the seller list (S42 reads it through `getShopOrder`). */
+export type ShopOrderDto = ShopOrderPageDto['items'][number];

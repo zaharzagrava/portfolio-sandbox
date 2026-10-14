@@ -61,8 +61,6 @@ If this exact request is sent again with the same key, the client still gets one
 - [rate-limit-response-headers](rate-limit-response-headers.md)
 - [rate-limit](rate-limit.md)
 - [request-fingerprint](request-fingerprint.md)
-- [scheduler-leader](scheduler-leader.md)
-- [scheduler-tick](scheduler-tick.md)
 - [search-backfill-shop-state](search-backfill-shop-state.md)
 - [unknown-payment-outcome](unknown-payment-outcome.md)
 <!-- used-by:end -->

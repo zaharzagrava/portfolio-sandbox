@@ -37,5 +37,4 @@ Alice has the code `K7QPM-4XZ2R` (illustrative). She types ` k7qpm4xz2r ` at ver
 - [mfa-verify-endpoint](mfa-verify-endpoint.md)
 - [normalise-recovery-code](normalise-recovery-code.md)
 - [second-factor-model](second-factor-model.md)
-- [totp-replay-protection](totp-replay-protection.md)
 <!-- used-by:end -->

@@ -37,6 +37,12 @@ An idempotency key is a client-chosen string of 8 to 128 characters. It lets a c
 - {{cap:S10}} Cart (guest + merge), idempotent checkout, stock reservation, multi-shop split, order state machine, payment webhook
 - {{cap:S13}} Payment intents, idempotency, unknown outcomes, PSP circuit breaker, outbox, saga with orders
 - {{cap:S14}} Double-entry ledger, balanced journals, hot-account sharding, balance read model, daily PSP reconciliation
+- {{cap:S19}} Pickup points, local stock, available near me, map clustering
+- {{cap:S21}} Limited-drop auctions (proxy bids, anti-sniping, reserve, exactly-once close, second chance, shill guard)
+- {{cap:S24}} Product chat (channels, idempotent send, per-channel sequence, sync on reconnect, unread, receipts, presence, offline push)
+- {{cap:S25}} Product discussions (posts, nested comments, votes, ranking, abuse controls, safe markdown)
+- {{cap:S37}} Share and affiliate short links (codes, aliases, redirects, click attribution)
+- {{cap:S42}} Seller public API: API keys, scopes, sandbox, date-pinned versions, deprecation headers, batch and bulk stock, request logs, usage metering
 - {{cap:S49}} Distributed job scheduler: SKIP LOCKED leases, retries, cron leader, fairness, tz-aware cron
 - {{cap:S50}} Rate limiting: token bucket, sliding window, concurrency limits, fail modes, headers
 - {{cap:S53}} Domain events, outbox/CDC → Kafka, idempotent versioned projections, replay, read-your-writes

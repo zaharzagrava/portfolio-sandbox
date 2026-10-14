@@ -2,7 +2,9 @@ import { Injectable, Logger } from '@nestjs/common';
 import {
   ChangeMessageVisibilityCommand,
   DeleteMessageCommand,
+  GetQueueAttributesCommand,
   Message,
+  QueueDoesNotExist,
   ReceiveMessageCommand,
   SendMessageBatchCommand,
   SendMessageCommand,
@@ -50,6 +52,21 @@ export class SqsTaskQueue extends TaskQueue {
 
   queueUrl(queue: string): string {
     return `${this.urlPrefix}${queue}`;
+  }
+
+  async queueExists(queue: string): Promise<boolean> {
+    try {
+      await this.client.send(
+        new GetQueueAttributesCommand({
+          QueueUrl: this.queueUrl(queue),
+          AttributeNames: ['QueueArn'],
+        }),
+      );
+      return true;
+    } catch (error) {
+      if (error instanceof QueueDoesNotExist) return false;
+      throw error;
+    }
   }
 
   async enqueue<T>(

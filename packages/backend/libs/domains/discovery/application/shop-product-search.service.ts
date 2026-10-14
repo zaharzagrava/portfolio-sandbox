@@ -8,7 +8,10 @@ import {
   encodeSearchCursor,
   searchFingerprint,
 } from '../domain/search-cursor';
-import { InvalidCursorError, SearchValidationError } from '../domain/search-errors';
+import {
+  InvalidCursorError,
+  SearchValidationError,
+} from '../domain/search-errors';
 import { exceedsQueryLimit, normaliseQuery } from '../domain/query-text';
 import {
   SHOP_SEARCH_REPOSITORY,
@@ -44,7 +47,8 @@ export class ShopProductSearchService {
       ]);
     const { q: raw, status, limit, cursor } = parsed.data;
     const q = normaliseQuery(raw);
-    if (q === '' || exceedsQueryLimit(raw)) throw new SearchValidationError(['q']);
+    if (q === '' || exceedsQueryLimit(raw))
+      throw new SearchValidationError(['q']);
 
     const fingerprint = searchFingerprint({
       q,

@@ -1,337 +1,173 @@
+import { Injectable } from '@nestjs/common';
 import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
-import { InjectConnection } from '@nestjs/sequelize';
-import { QueryTypes, Sequelize } from 'sequelize';
-import { v7 as uuidv7 } from 'uuid';
-import { ProductService, productChanged } from '@app/domains/catalog';
-import { OutboxService } from '@app/infrastructure/outbox/outbox.service';
-import { TransactionRunner } from '@app/infrastructure/context';
-import { RedisService } from '@app/infrastructure/redis/redis.service';
-import { TaskQueue } from '@app/infrastructure/sqs/task-queue.port';
+  ProductCommandService,
+  ProductQueryService,
+} from '@app/domains/catalog';
+import { ApiError, resourceMissing } from '../domain/errors';
+import { ShopDirectory } from '../domain/ports';
+import {
+  list,
+  PublicList,
+  PublicProduct,
+  PublicStock,
+  toPublicProduct,
+  toPublicStock,
+} from '../domain/public-views';
+import type { ApiContext } from './api-context';
+import { translateUpstream } from './upstream-errors';
 
-export interface ApiProduct {
-  id: string;
-  object: 'product';
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+export interface CreateProductInput {
   title: string;
-  description: string;
+  description?: string;
   price: { amount: number; currency: string };
-  stock: number;
+  stock?: number;
   category: string;
   brand: string;
-  created_at: string;
-  updated_at: string;
-  shop?: { id: string; name: string };
 }
 
-export interface ApiList<T> {
-  object: 'list';
-  data: T[];
-  has_more: boolean;
-  next_cursor: string | null;
-}
-
-export const BULK_STOCK_QUEUE = 'bulk-stock-updates';
-const SYNC_BULK_LIMIT = 100;
-const ASYNC_CHUNK = 500;
-const PRODUCT_FIELDS = [
-  'id',
-  'object',
-  'title',
-  'description',
-  'price',
-  'stock',
-  'category',
-  'brand',
-  'created_at',
-  'updated_at',
-  'shop',
-];
-
-interface ProductRow {
-  id: string;
-  title: string;
-  description: string;
-  price: string;
-  quantity: number;
-  category: string;
-  brand: string;
-  createdAt: Date;
-  updatedAt: Date;
-  shopName?: string;
-  shopId: string;
-}
-
-const toApi = (p: ProductRow, expandShop: boolean): ApiProduct => ({
-  id: p.id,
-  object: 'product',
-  title: p.title,
-  description: p.description,
-  price: { amount: Number(p.price), currency: 'usd' },
-  stock: p.quantity,
-  category: p.category,
-  brand: p.brand,
-  created_at: new Date(p.createdAt).toISOString(),
-  updated_at: new Date(p.updatedAt).toISOString(),
-  ...(expandShop && { shop: { id: p.shopId, name: p.shopName ?? '' } }),
-});
-
-/** Sparse fieldsets: `fields=id,title,price` (04/01 §2.4) - smaller payloads for ERPs syncing 100k SKUs. */
-export function pickFields<T extends object>(
-  resource: T,
-  fields?: string,
-): Partial<T> {
-  if (!fields) return resource;
-  const wanted = new Set([
-    'id',
-    'object',
-    ...fields.split(',').map((f) => f.trim()),
-  ]);
-  const unknown = [...wanted].filter((f) => !PRODUCT_FIELDS.includes(f));
-  if (unknown.length)
-    throw new BadRequestException({
-      type: 'invalid_fields',
-      message: `Unknown field(s): ${unknown.join(', ')}`,
-    });
-  return Object.fromEntries(
-    Object.entries(resource).filter(([k]) => wanted.has(k)),
-  ) as Partial<T>;
-}
+export type UpdateProductInput = Partial<CreateProductInput>;
 
 /**
- * Products + stock for the public API. Every query is scoped by the key's
- * shopId (never by an id from the URL alone): another shop's product id
- * simply returns 404 (BOLA, OWASP API1).
+ * Products and stock for the public API (FR-035…FR-040), on the catalog capability's exported services only (R1):
+ * no query on `Product` or `Shop`, no event written here. Every lookup carries the key's shop, so another shop's id is
+ * indistinguishable from an unknown one.
  */
 @Injectable()
 export class PublicCatalogService {
   constructor(
-    @InjectConnection() private readonly sequelize: Sequelize,
-    private readonly transactions: TransactionRunner,
-    private readonly products: ProductService,
-    private readonly outbox: OutboxService,
-    private readonly redis: RedisService,
-    private readonly queue: TaskQueue,
+    private readonly commands: ProductCommandService,
+    private readonly queries: ProductQueryService,
+    private readonly directory: ShopDirectory,
   ) {}
 
-  /** Keyset (cursor) pagination on the uuidv7 id: stable under inserts, O(limit) at any depth - no OFFSET. */
   async list(
-    shopId: string,
-    opts: { cursor?: string; limit?: number; expand?: string[] },
-  ): Promise<ApiList<ApiProduct>> {
-    const limit = Math.min(Math.max(opts.limit ?? 20, 1), 100);
-    const after = opts.cursor
-      ? Buffer.from(opts.cursor, 'base64url').toString()
-      : null;
-    const expandShop = !!opts.expand?.includes('shop');
-    const rows = await this.sequelize.query<ProductRow>(
-      `SELECT p.id, p.title, p.description, p.price, p.quantity, p.category, p.brand, p."createdAt", p."updatedAt", p."shopId"${expandShop ? ', s.name AS "shopName"' : ''}
-       FROM "Product" p ${expandShop ? 'JOIN "Shop" s ON s.id = p."shopId"' : ''}
-       WHERE p."shopId" = :shopId ${after ? 'AND p.id > :after' : ''}
-       ORDER BY p.id LIMIT :limit`,
-      {
-        type: QueryTypes.SELECT,
-        replacements: { shopId, after, limit: limit + 1 },
-      },
-    );
-    const page = rows.slice(0, limit);
-    return {
-      object: 'list',
-      data: page.map((r) => toApi(r, expandShop)),
-      has_more: rows.length > limit,
-      next_cursor:
-        rows.length > limit
-          ? Buffer.from(page[page.length - 1].id).toString('base64url')
-          : null,
-    };
+    ctx: ApiContext,
+    query: { limit?: number; cursor?: string },
+    expand: string[],
+  ): Promise<PublicList<PublicProduct>> {
+    try {
+      const page = await this.commands.listByShop(ctx.shopId, {
+        ...(query.limit !== undefined ? { limit: String(query.limit) } : {}),
+        ...(query.cursor ? { cursor: query.cursor } : {}),
+      });
+      const items = page.items.map((p) => toPublicProduct(p, ctx.livemode));
+      await this.expandShop(ctx, items, expand);
+      return list(items, page.nextCursor);
+    } catch (error) {
+      return translateUpstream(error);
+    }
   }
 
   async get(
-    shopId: string,
+    ctx: ApiContext,
     id: string,
-    expand: string[] = [],
-  ): Promise<ApiProduct> {
-    const expandShop = expand.includes('shop');
-    const [row] = await this.sequelize.query<ProductRow>(
-      `SELECT p.id, p.title, p.description, p.price, p.quantity, p.category, p.brand, p."createdAt", p."updatedAt", p."shopId", s.name AS "shopName"
-       FROM "Product" p JOIN "Shop" s ON s.id = p."shopId" WHERE p.id = :id AND p."shopId" = :shopId`,
-      { type: QueryTypes.SELECT, replacements: { id, shopId } },
-    );
-    if (!row)
-      throw new NotFoundException({
-        type: 'resource_missing',
-        message: `No such product: ${id}`,
-      });
-    return toApi(row, expandShop);
+    expand: string[],
+  ): Promise<PublicProduct> {
+    if (!UUID.test(id)) throw resourceMissing();
+    try {
+      const item = toPublicProduct(
+        await this.commands.getForShop(ctx.shopId, id.toLowerCase()),
+        ctx.livemode,
+      );
+      await this.expandShop(ctx, [item], expand);
+      return item;
+    } catch (error) {
+      return translateUpstream(error);
+    }
   }
 
   async create(
-    shopId: string,
-    sellerId: string,
-    body: {
-      title: string;
-      description?: string;
-      price: number;
-      stock?: number;
-      category: string;
-      brand?: string;
-    },
-  ) {
-    const created = await this.products.create(
-      {
-        title: body.title,
-        description: body.description ?? '',
-        price: body.price,
-        quantity: body.stock ?? 0,
-        category: body.category,
-        brand: body.brand ?? '',
-      },
-      sellerId,
-      shopId,
-    );
-    return this.get(shopId, (created as { id: string }).id);
+    ctx: ApiContext,
+    input: CreateProductInput,
+  ): Promise<PublicProduct> {
+    try {
+      const created = await this.commands.create(ctx.shopId, ctx.actorId, {
+        title: input.title,
+        ...(input.description !== undefined
+          ? { description: input.description }
+          : {}),
+        brand: input.brand,
+        category: input.category,
+        priceMinor: input.price.amount,
+        currency: input.price.currency,
+        ...(input.stock !== undefined ? { quantity: input.stock } : {}),
+      });
+      return toPublicProduct(created, ctx.livemode);
+    } catch (error) {
+      return translateUpstream(error);
+    }
   }
 
   async update(
-    shopId: string,
+    ctx: ApiContext,
     id: string,
-    patch: {
-      title?: string;
-      description?: string;
-      price?: number;
-      stock?: number;
-    },
-  ) {
-    await this.transactions.run(async (transaction) => {
-      const [, meta] = await this.sequelize.query(
-        `UPDATE "Product" SET title = coalesce(:title, title), description = coalesce(:description, description), price = coalesce(:price, price),
-                quantity = coalesce(:stock, quantity), version = version + 1, "updatedAt" = now()
-         WHERE id = :id AND "shopId" = :shopId`,
+    input: UpdateProductInput,
+    expectedVersion: number,
+  ): Promise<PublicProduct> {
+    if (!UUID.test(id)) throw resourceMissing();
+    try {
+      const updated = await this.commands.update(
+        ctx.shopId,
+        id.toLowerCase(),
         {
-          replacements: {
-            id,
-            shopId,
-            title: patch.title ?? null,
-            description: patch.description ?? null,
-            price: patch.price ?? null,
-            stock: patch.stock ?? null,
-          },
-          transaction,
+          expectedVersion,
+          ...(input.title !== undefined ? { title: input.title } : {}),
+          ...(input.description !== undefined
+            ? { description: input.description }
+            : {}),
+          ...(input.brand !== undefined ? { brand: input.brand } : {}),
+          ...(input.category !== undefined ? { category: input.category } : {}),
+          ...(input.price !== undefined
+            ? { priceMinor: input.price.amount, currency: input.price.currency }
+            : {}),
+          ...(input.stock !== undefined ? { quantity: input.stock } : {}),
         },
+        ctx.actorId,
       );
-      if (!(meta as { rowCount?: number }).rowCount)
-        throw new NotFoundException({
-          type: 'resource_missing',
-          message: `No such product: ${id}`,
-        });
-      await this.outbox.append(productChanged(id), transaction);
-    });
-    return this.get(shopId, id);
-  }
-
-  /**
-   * ERP stock sync: ≤ 100 items applied synchronously in ONE statement; larger
-   * files (up to 10k) go to SQS in chunks of 500 and are tracked as a job -
-   * one request instead of 10k, and the API process never holds a long transaction.
-   */
-  async bulkStock(
-    shopId: string,
-    items: { productId: string; stock: number }[],
-  ) {
-    if (items.length <= SYNC_BULK_LIMIT) {
-      const updated = await this.applyStock(shopId, items);
-      return {
-        object: 'bulk_stock_update',
-        status: 'succeeded',
-        updated,
-        not_found: items.length - updated,
-      };
+      return toPublicProduct(updated, ctx.livemode);
+    } catch (error) {
+      return translateUpstream(error);
     }
-    const jobId = `bsu_${uuidv7().replace(/-/g, '')}`;
-    const chunks = Math.ceil(items.length / ASYNC_CHUNK);
-    await this.redis.client
-      .multi()
-      .hset(`bulkstock:${jobId}`, {
-        shopId,
-        total: items.length,
-        chunks,
-        done: 0,
-        updated: 0,
-      })
-      .expire(`bulkstock:${jobId}`, 86_400)
-      .exec();
-    for (let i = 0; i < items.length; i += ASYNC_CHUNK) {
-      await this.queue.enqueue(BULK_STOCK_QUEUE, {
-        jobId,
-        shopId,
-        items: items.slice(i, i + ASYNC_CHUNK),
-      });
-    }
-    return {
-      object: 'bulk_stock_update',
-      id: jobId,
-      status: 'processing',
-      total: items.length,
-    };
   }
 
-  async bulkStockStatus(shopId: string, jobId: string) {
-    const job = await this.redis.client.hgetall(`bulkstock:${jobId}`);
-    if (!job.shopId || job.shopId !== shopId)
-      throw new NotFoundException({
-        type: 'resource_missing',
-        message: `No such job: ${jobId}`,
-      });
-    const done = Number(job.done) === Number(job.chunks);
-    return {
-      object: 'bulk_stock_update',
-      id: jobId,
-      status: done ? 'succeeded' : 'processing',
-      total: Number(job.total),
-      updated: Number(job.updated),
-    };
-  }
-
-  /** Worker side of the async path. */
-  async applyChunk(msg: {
-    jobId: string;
-    shopId: string;
-    items: { productId: string; stock: number }[];
-  }) {
-    const updated = await this.applyStock(msg.shopId, msg.items);
-    await this.redis.client
-      .multi()
-      .hincrby(`bulkstock:${msg.jobId}`, 'updated', updated)
-      .hincrby(`bulkstock:${msg.jobId}`, 'done', 1)
-      .exec();
-  }
-
-  private async applyStock(
-    shopId: string,
-    items: { productId: string; stock: number }[],
-  ): Promise<number> {
-    if (items.length === 0) return 0;
-    return this.transactions.run(async (transaction) => {
-      const rows = await this.sequelize.query<{ id: string }>(
-        `UPDATE "Product" p SET quantity = u.stock, version = p.version + 1, "updatedAt" = now()
-         FROM unnest(CAST(:ids AS uuid[]), CAST(:stocks AS int[])) AS u(id, stock)
-         WHERE p.id = u.id AND p."shopId" = :shopId AND p.quantity IS DISTINCT FROM u.stock
-         RETURNING p.id`,
-        {
-          type: QueryTypes.SELECT,
-          replacements: {
-            shopId,
-            ids: `{${items.map((i) => i.productId).join(',')}}`,
-            stocks: `{${items.map((i) => Math.max(0, Math.floor(i.stock))).join(',')}}`,
-          },
-          transaction,
-        },
+  async stock(ctx: ApiContext, id: string): Promise<PublicStock> {
+    if (!UUID.test(id)) throw resourceMissing();
+    try {
+      return toPublicStock(
+        await this.commands.getForShop(ctx.shopId, id.toLowerCase()),
+        ctx.livemode,
       );
-      for (const { id } of rows)
-        await this.outbox.append(productChanged(id), transaction);
-      return rows.length;
-    });
+    } catch (error) {
+      return translateUpstream(error);
+    }
+  }
+
+  /** The products of this shop among `ids`, one statement (the ownership check of bulk stock and batches). */
+  async ownedIds(shopId: string, ids: string[]): Promise<Set<string>> {
+    const valid = ids
+      .filter((id) => UUID.test(id))
+      .map((id) => id.toLowerCase());
+    try {
+      const found = await this.queries.getProductsByIds(valid, { shopId });
+      return new Set(found.keys());
+    } catch (error) {
+      return translateUpstream(error);
+    }
+  }
+
+  /** `expand=shop`: one batch lookup for the whole page (FR-037). */
+  private async expandShop(
+    ctx: ApiContext,
+    items: PublicProduct[],
+    expand: string[],
+  ): Promise<void> {
+    if (!expand.includes('shop') || items.length === 0) return;
+    const shop = (await this.directory.getShops([ctx.shopId])).get(ctx.shopId);
+    if (!shop)
+      throw new ApiError('internal_error', 'The shop could not be read.');
+    for (const item of items)
+      item.shop = { id: shop.id, name: shop.name, slug: shop.slug };
   }
 }
