@@ -21,7 +21,19 @@ const DIRS = [
   // S37 AS-65: the share-link rules read time only through the injected clock
   'libs/domains/marketing/domain',
   'libs/domains/marketing/application',
+  // S47 G50: the knowledge half reads time only through the injected clock (the database clock stays in lease / sweep SQL)
+  'libs/domains/assistant/domain',
 ];
+/** Files of directories that mix owners: the knowledge half of `assistant/application` (S46's files there are not S47's). */
+const FILES = [
+  'ask',
+  'document',
+  'ingest',
+  'knowledge-search',
+  'lifecycle',
+  'reindex',
+  'sweep',
+].map((name) => `libs/domains/assistant/application/${name}.service.ts`);
 /** No exemptions remain: S36's ads code reads time only through the injected clock too. */
 const EXEMPT: string[] = [];
 const FORBIDDEN =
@@ -34,21 +46,25 @@ const walk = (dir: string): string[] =>
   });
 
 const offenders: string[] = [];
-for (const d of DIRS.map((x) => join(BACKEND, x)).filter(existsSync)) {
-  for (const file of walk(d).filter(
-    (f) =>
-      f.endsWith('.ts') &&
-      !/spec\.ts$/.test(f) &&
-      !f.endsWith('/clock.ts') &&
-      !EXEMPT.some((e) => f.endsWith(e)),
-  )) {
-    readFileSync(file, 'utf8')
-      .split('\n')
-      .forEach((line, i) => {
-        if (FORBIDDEN.test(line) && !line.trim().startsWith('//'))
-          offenders.push(`${relative(BACKEND, file)}:${i + 1}  ${line.trim()}`);
-      });
-  }
+const candidates = [
+  ...DIRS.map((x) => join(BACKEND, x))
+    .filter(existsSync)
+    .flatMap(walk),
+  ...FILES.map((x) => join(BACKEND, x)).filter(existsSync),
+];
+for (const file of candidates.filter(
+  (f) =>
+    f.endsWith('.ts') &&
+    !/spec\.ts$/.test(f) &&
+    !f.endsWith('/clock.ts') &&
+    !EXEMPT.some((e) => f.endsWith(e)),
+)) {
+  readFileSync(file, 'utf8')
+    .split('\n')
+    .forEach((line, i) => {
+      if (FORBIDDEN.test(line) && !line.trim().startsWith('//'))
+        offenders.push(`${relative(BACKEND, file)}:${i + 1}  ${line.trim()}`);
+    });
 }
 
 if (offenders.length) {

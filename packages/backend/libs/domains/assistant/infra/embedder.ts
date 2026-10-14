@@ -1,91 +1,103 @@
 import { Logger } from '@nestjs/common';
 import { createHash } from 'node:crypto';
+import {
+  EmbeddingProvider,
+  EmbeddingUnavailableError,
+  EmbedOptions,
+} from '../domain/ports';
 
 export const EMBEDDING_DIMS = 1024;
 
+const REQUEST_TIMEOUT_MS = 30_000;
+
 /**
- * Embedding provider port (D9). `kind` matters for asymmetric models: queries
- * and documents are embedded differently (Voyage `input_type`).
+ * Voyage AI (Anthropic's recommended embeddings provider), 1024-dim output to match `halfvec(1024)`. No retry here:
+ * ingestion retries by queue redelivery and the question path degrades to keywords (S47 FR-006, IV.6). Every failure is
+ * an `EmbeddingUnavailableError` whose message carries no provider text.
  */
-export abstract class Embedder {
-  abstract readonly model: string;
-  abstract embed(
-    texts: string[],
-    kind: 'document' | 'query',
-  ): Promise<number[][]>;
-}
-
-const BATCH = 128;
-const TIMEOUT_MS = 20_000;
-
-/** Voyage AI (Anthropic's recommended embeddings provider), 1024-dim output to match `halfvec(1024)`. */
-export class VoyageEmbedder extends Embedder {
+export class VoyageEmbedder implements EmbeddingProvider {
+  readonly dimensions = EMBEDDING_DIMS;
+  readonly testOnly = false;
   private readonly logger = new Logger(VoyageEmbedder.name);
 
   constructor(
     private readonly apiKey: string,
-    readonly model = 'voyage-3.5',
-  ) {
-    super();
-  }
+    readonly model: string,
+    private readonly batchSize: number,
+  ) {}
 
-  async embed(
-    texts: string[],
-    kind: 'document' | 'query',
-  ): Promise<number[][]> {
+  async embed(texts: string[], options: EmbedOptions): Promise<number[][]> {
     const out: number[][] = [];
-    for (let i = 0; i < texts.length; i += BATCH)
-      out.push(...(await this.batch(texts.slice(i, i + BATCH), kind)));
+    for (let i = 0; i < texts.length; i += this.batchSize)
+      out.push(
+        ...(await this.batch(texts.slice(i, i + this.batchSize), options)),
+      );
     return out;
   }
 
-  /** Retries 429/5xx with exponential backoff + full jitter (embedding a batch is idempotent). */
   private async batch(
     input: string[],
-    kind: 'document' | 'query',
-    attempt = 0,
+    { kind, signal }: EmbedOptions,
   ): Promise<number[][]> {
-    const res = await fetch('https://api.voyageai.com/v1/embeddings', {
-      method: 'POST',
-      headers: {
-        authorization: `Bearer ${this.apiKey}`,
-        'content-type': 'application/json',
-      },
-      body: JSON.stringify({
-        input,
-        model: this.model,
-        input_type: kind,
-        output_dimension: EMBEDDING_DIMS,
-      }),
-      signal: AbortSignal.timeout(TIMEOUT_MS),
-    });
-    if ((res.status === 429 || res.status >= 500) && attempt < 4) {
-      const delay = Math.random() * Math.min(10_000, 500 * 2 ** attempt);
-      this.logger.warn(
-        `voyage ${res.status}, retry in ${Math.round(delay)} ms`,
-      );
-      await new Promise((r) => setTimeout(r, delay));
-      return this.batch(input, kind, attempt + 1);
+    const timeout = AbortSignal.timeout(REQUEST_TIMEOUT_MS);
+    let res: Response;
+    try {
+      res = await fetch('https://api.voyageai.com/v1/embeddings', {
+        method: 'POST',
+        headers: {
+          authorization: `Bearer ${this.apiKey}`,
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          input,
+          model: this.model,
+          input_type: kind,
+          output_dimension: EMBEDDING_DIMS,
+        }),
+        signal: signal ? AbortSignal.any([signal, timeout]) : timeout,
+      });
+    } catch {
+      throw new EmbeddingUnavailableError('embedding request did not complete');
     }
-    if (!res.ok) throw new Error(`embedding request failed: ${res.status}`);
+    if (!res.ok) {
+      this.logger.warn(`voyage answered ${res.status}`);
+      throw new EmbeddingUnavailableError(
+        `embedding request failed: ${res.status}`,
+      );
+    }
     const body = (await res.json()) as {
       data: { embedding: number[]; index: number }[];
     };
-    return body.data.sort((a, b) => a.index - b.index).map((d) => d.embedding);
+    const vectors = body.data
+      .sort((a, b) => a.index - b.index)
+      .map((d) => d.embedding);
+    if (
+      vectors.length !== input.length ||
+      vectors.some((v) => v.length !== EMBEDDING_DIMS)
+    )
+      throw new EmbeddingUnavailableError(
+        'embedding response has the wrong shape',
+      );
+    return vectors;
   }
 }
 
 /**
- * Deterministic feature-hashing embedder for e2e specs and keyless dev:
- * words (lowercased, light plural stripping) and word bigrams hashed into
- * 1024 signed buckets, L2-normalised. Cosine similarity ≈ lexical overlap -
- * enough for "the chunk about eSIM is closer to the eSIM question" without a
- * model or network.
+ * TEST ONLY - refused in production (`KnowledgeConfigGuard`). Deterministic feature-hashing embedder for e2e specs and
+ * keyless development: words (lowercased, light plural stripping) and word bigrams hashed into 1024 signed buckets,
+ * L2-normalised. Cosine similarity ≈ lexical overlap - enough for "the chunk about eSIM is closer to the eSIM question"
+ * without a model or network.
  */
-export class HashingEmbedder extends Embedder {
+export class HashingEmbedder implements EmbeddingProvider {
   readonly model = 'hashing-1024';
+  readonly dimensions = EMBEDDING_DIMS;
+  readonly testOnly = true;
 
-  async embed(texts: string[]): Promise<number[][]> {
+  embed(texts: string[]): Promise<number[][]> {
+    return Promise.resolve(this.hash(texts));
+  }
+
+  private hash(texts: string[]): number[][] {
     return texts.map((t) => {
       const v = new Array<number>(EMBEDDING_DIMS).fill(0);
       const words = t.toLowerCase().match(/[a-z0-9]+/g) ?? [];

@@ -24,6 +24,7 @@ import {
   resolveShutdownConfigFor,
 } from '@app/infrastructure/lifecycle/graceful-shutdown';
 import type { ShutdownConfig } from '@app/infrastructure/lifecycle/shutdown-config';
+import { jsonBodyLimits } from './body-limits';
 import { parseTrustedProxies, resolveClientIp } from './client-ip';
 import {
   SECURITY_POLICY,
@@ -211,6 +212,15 @@ export function configureHttpApp(
     if (Buffer.isBuffer(buffer)) (req as RawBodyRequest).rawBody = buffer;
   };
   const expressApp = app as NestExpressApplication;
+  // Routes that registered a larger limit (body-limits.ts) are read first; the default parser skips a body already read.
+  for (const { match, limit } of jsonBodyLimits.all())
+    expressApp.useBodyParser('json', {
+      limit,
+      verify: keepRawBody,
+      type: (req: Request) =>
+        match.test(req.path) &&
+        /^application\/json\s*(;|$)/i.test(req.headers['content-type'] ?? ''),
+    });
   expressApp.useBodyParser('json', {
     limit: BODY_LIMIT,
     verify: keepRawBody,
@@ -238,7 +248,12 @@ export function configureHttpApp(
   }
 
   // A known path called with the wrong method answers 405 + Allow instead of 404 (AS-07): the filter needs the prefix.
-  app.get(RouteTable, { strict: false })?.setPrefix(prefix);
+  // Apps without ErrorUtilsModule (the projector serves only health) have no RouteTable: get() throws, not returns null.
+  try {
+    app.get(RouteTable, { strict: false }).setPrefix(prefix);
+  } catch {
+    // no table registered: nothing to tell
+  }
 
   // Unknown properties are rejected and types transformed (FR-075). Custom decorators (@User()) return server-side
   // values (the authenticated user), not client input: never validate them.

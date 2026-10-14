@@ -46,7 +46,10 @@ import {
 import { CassandraModule } from '@app/infrastructure/cassandra/cassandra.module';
 import { KafkaProducerModule } from '@app/infrastructure/kafka/kafka-producer.module';
 import { UsageProjector } from '@app/domains/billing';
-import { LlmCallsProjector } from '@app/domains/assistant';
+import {
+  KnowledgeProjectorModule,
+  LlmCallsProjector,
+} from '@app/domains/assistant';
 import { ClickHouseModule } from '@app/infrastructure/clickhouse/clickhouse.module';
 import {
   LedgerProjectorModule,
@@ -113,6 +116,7 @@ import { CacheModule } from '@app/infrastructure/cache/cache.module';
         StoryCacheInvalidator,
         StockPushProjector,
         LlmCallsProjector,
+        ...KnowledgeProjectorModule.projectors,
       ],
       [
         ProductProjectorModule,
@@ -123,6 +127,7 @@ import { CacheModule } from '@app/infrastructure/cache/cache.module';
         AdsProjectorModule,
         MediaProjectorModule,
         VideoProjectorModule,
+        KnowledgeProjectorModule,
         LedgerProjectorModule,
         IntegrationsCoreModule,
         StoryCacheModule,

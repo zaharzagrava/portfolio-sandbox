@@ -3,6 +3,7 @@ import { Environment } from '@app/common/types';
 import type { BffConfig } from './bff-config';
 import type { DiscussionsConfig } from './discussions-config';
 import type { ShareLinksConfig } from './share-links-config';
+import type { KnowledgeConfig } from './knowledge-config';
 import type { AdsConfig } from './ads-config';
 
 /**
@@ -390,12 +391,7 @@ export class SecretsManagerConfig {
   assistant_buyer_tokens_per_month?: number;
   /** Abort the provider call after nobody watched the stream this long. default 10000 */
   assistant_detach_grace_ms?: number;
-  /** SD-43 embeddings. Unset → deterministic hashing embedder (local dev / e2e). */
-  voyage_api_key?: string;
-  /** default voyage-3.5 (1024 dims) */
-  voyage_model?: string;
-  /** Vector hits below this cosine similarity count only when FTS also matches. default 0.3 */
-  rag_min_similarity?: number;
+  /** S47: embeddings (`voyage_*`) and `rag_*` / `knowledge_*` settings live in `knowledge-config.ts`. */
   /** SD-44 first-pass KYC extraction model. default claude-haiku-4-5 */
   onboarding_extraction_model?: string;
   /** Re-read on validation failure. default claude-opus-5-5 */
@@ -405,6 +401,11 @@ export class SecretsManagerConfig {
 /** S48: BFF settings; keys, defaults and cross-checks in `bff-config.ts`. */
 // eslint-disable-next-line @typescript-eslint/no-unsafe-declaration-merging
 export interface SecretsManagerConfig
-  extends BffConfig, DiscussionsConfig, ShareLinksConfig, AdsConfig {}
+  extends
+    BffConfig,
+    DiscussionsConfig,
+    ShareLinksConfig,
+    KnowledgeConfig,
+    AdsConfig {}
 
 export class Config extends IntersectionType(EnvConfig, SecretsManagerConfig) {}

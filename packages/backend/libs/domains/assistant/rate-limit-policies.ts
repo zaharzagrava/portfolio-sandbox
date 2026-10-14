@@ -12,14 +12,6 @@ export const assistantRatePolicies = definePolicies('assistant', {
     key: 'user',
     failMode: 'closed',
   },
-  // SD-43: questions to the docs (anonymous buyers included) - each one is an embedding + a model call.
-  'rag.ask': {
-    algorithm: 'tokenBucket',
-    limit: 10,
-    windowMs: 60_000,
-    key: 'userOrIp',
-    failMode: 'closed',
-  },
   // SD-42: the provider's tokens-per-minute limit, shared by the whole fleet (subject = model). Taken with cost = estimated tokens.
   // Fail open: the store down must not take the assistant down; the provider's own 429 is the backstop.
   'llm.provider.tpm': {

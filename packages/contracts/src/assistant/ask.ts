@@ -8,17 +8,21 @@ export const ragAskRequestSchema = z
     question: z
       .string()
       .min(RAG_QUESTION_LIMITS.min)
-      .max(RAG_QUESTION_LIMITS.max),
+      .max(RAG_QUESTION_LIMITS.max)
+      .refine((v) => v.trim().length >= RAG_QUESTION_LIMITS.min, {
+        message: `question needs at least ${RAG_QUESTION_LIMITS.min} characters besides spaces`,
+      }),
   })
   .strict();
 export type RagAskRequest = z.infer<typeof ragAskRequestSchema>;
 
+/** `n` counts from 0 in retrieval order; `headingPath` is the printable path ("Manual > Connectivity"). */
 export const ragSourceSchema = z.object({
-  n: z.number().int().positive(),
+  n: z.number().int().nonnegative(),
   chunkId: z.string(),
   documentId: z.string(),
   title: z.string(),
-  headingPath: z.array(z.string()),
+  headingPath: z.string(),
   page: z.number().int().nullable(),
 });
 export type RagSource = z.infer<typeof ragSourceSchema>;

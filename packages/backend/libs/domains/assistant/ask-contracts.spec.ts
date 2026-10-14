@@ -27,11 +27,11 @@ describe('W02 B-7: ask contracts', () => {
         mode: 'hybrid',
         items: [
           {
-            n: 1,
+            n: 0,
             chunkId: 'c1',
             documentId: 'd1',
             title: 'Manual',
-            headingPath: ['Setup', 'USB'],
+            headingPath: 'Manual > Setup > USB',
             page: null,
           },
         ],

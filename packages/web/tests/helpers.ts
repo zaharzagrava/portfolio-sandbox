@@ -210,7 +210,7 @@ export async function productWithRecommendations(request: APIRequestContext): Pr
  * together or be recommended there, so its page has none of the optional rails whatever the other tests did to the shared ranking
  * (the ranking is rebuilt from a store a test cannot clear, and events stay in its 60-minute window).
  */
-async function sellerCall(method: string, route: string, body?: unknown, token?: string) {
+export async function sellerCall(method: string, route: string, body?: unknown, token?: string) {
   const res = await fetch(`${API_URL}${route}`, {
     method,
     headers: { 'content-type': 'application/json', ...(token && { authorization: `Bearer ${token}` }) },
@@ -221,7 +221,7 @@ async function sellerCall(method: string, route: string, body?: unknown, token?:
 }
 
 /** The seeded seller's token and shop id (the same real API calls the seed script makes). */
-async function sellerSession(): Promise<{ token: string; shopId: string }> {
+export async function sellerSession(): Promise<{ token: string; shopId: string }> {
   const login = await sellerCall('POST', '/api/auth/login', { email: SEED.seller, password: SEED.password });
   expect(login.status).toBe(200);
   const token: string = login.data.accessToken.token;

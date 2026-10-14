@@ -123,3 +123,40 @@ The hydration query joins `KnowledgeChunk` and `KnowledgeDocument` (`infra/retri
 8. Eval harness on `KnowledgeSearchService` with exit codes (G39); configuration schema and startup guards (G40, G41); metrics and log hygiene (G42).
 9. Tests per `test-plan.md`: split `knowledge.e2e-spec.ts`, move RRF to `domain/rrf.spec.ts`, add the missing rows (G43, G44); web `AskProduct` update (G45, W02).
 10. Close D-6, D-7, D-8, D-12, D-14 rows in `docs/work/architecture/debt-register.md` with the actual commit, once `pnpm check:table-ownership --strict` and `pnpm check:boundaries` are green for this domain.
+
+## Spec changes
+
+Nothing a human signed changes: `docs/spec/capabilities/` has no S47 page and no `*.reviewed.json` exists for it; the plan creates the page (rule 0) and edits no reviewed file. Where the plan departs from the wording of `spec.md` (the spec itself is not edited), the implementation and its tests follow the plan and these deltas are the record:
+
+- **AS-07, limiter store down**: the spec says `503 assistant_unavailable`; S50 (built) answers `503 rate_limiter_unavailable` with `Retry-After`, and the cross-spec rule requires adopting it. The test asserts `rate_limiter_unavailable`. `assistant_unavailable` stays for moderation, the provider budget and the retrieval deadline.
+- **AS-54, startup guards**: a fourth production guard, `moderation_backend` missing, follows from FR-035 (fail closed) because S46 has not supplied a moderation backend yet (plan R-3).
+- **AS-24, hash mismatch**: the closed `failureCode` list has no code for a PDF whose bytes do not match the declared `pdfSha256`; it is reported as `size_mismatch` (plan R-11).
+- **AS-35 / AS-45 "READY"**: passages serve while their document has `chunkCount > 0` and is not `DELETED`, so a document being re-indexed, or whose re-index failed (AS-25), keeps answering (plan R-4).
+- **Event payload of `tenancy.shop_deleted`**: the spec lists `{shopId}`; the built event is `{shopId, shopVersion}`; the consumer uses the real schema.
+- **Contracts package**: `packages/contracts/src/assistant/ask.ts` already exists with `n` positive and `headingPath` as an array; the spec says `n` from 0 and a string. The file is corrected (consumer: W02 `AskProduct`).
+
+Found while implementing (the page `docs/spec/capabilities/S47-rag-help-center.md` states the final rules; no human-signed page changed and no `*.reviewed.json` was touched):
+
+- **AS-19 / `contracts/knowledge-api.md`, permission of list and get**: the contract says `products.read`; S03's status gate lets a `SUSPENDED` shop keep only `shop.read`, and AS-19 wants list and get to stay `200` there. The two routes are guarded by `shop.read`; every role that holds `products.read` holds `shop.read`, so the matrix of AS-19 is unchanged.
+- **AS-02 / AS-14, invalid token on the anonymous route**: S01's optional guard turns a bad token into "no user"; the spec wants `401`. S47 adds a guard of its own after it (`api/knowledge-auth.ts`), and runs request validation after it and before the rate limiter (a guard, not a pipe: pipes run after the limiter), which is the order AS-14 states.
+- **AS-17, inline markdown of exactly 1 MiB**: the platform JSON body limit is 1 MiB, so such a request would be answered `413` before validation. `libs/infrastructure/platform/body-limits.ts` (new, additive) lets a capability register a larger limit for one route; the two document-create routes read up to 2 MiB and the contract schema answers `400` above 1 MiB.
+- **Chunker (AS-34)**: the old chunker could exceed 800 tokens by its overlap (the database check allows 1 to 800), and gave no overlap when a paragraph was longer than the overlap budget. It now carries the last words of such a paragraph and stops a chunk at 800 tokens including the overlap.
+- **Reciprocal rank fusion (AS-44)**: an id repeated inside one list was counted at every position; it now counts once, at its best rank, as the spec says.
+- **Retrieval snapshot (AS-41)**: ranking and text loading read one repeatable-read transaction, so a swap of a document's passages is seen whole; the port is `PassageRepository.retrieve`.
+- **Configuration keys**: `voyage_api_key`, `voyage_model` and `rag_min_similarity` were declared in `types.ts` but never read from the environment, so every environment used the hashing embedder; they are now parsed by `libs/common/config/knowledge-config.ts` with the other `rag_*` and `knowledge_*` keys, and `knowledge_cursor_key` (list cursor signing) is new.
+- **Repository-wide scan of SC-010** (no private text in logs, metrics and traces over the full suite) is not run; AS-53 proves it for the knowledge suites.
+
+## Sibling-spec follow-ups
+
+- **S46**: `libs/infrastructure/llm` (`LlmCallRecorder`, `LlmProvider`, a moderation port with a bindable backend) does not exist yet. S47 owns the ports `AnswerModel`, `CallRecorder`, `Moderator` and binds interim adapters over `assistant/infra/llm`; S46 must export the three so each S47 adapter is replaced in one file, and must keep `llm.call_completed` v1 tolerant of the optional `scopeId` and `outcome` that S47 sends. D-14 closes only then. S46 keeps `llm.messages` and `llm.provider.tpm` in `rate-limit-policies.ts` once `rag.ask` moves to S47's own policies file.
+- **S18**: accept `llm.call_completed` with `metric: "llm.rag.tokens"`, `subjectId: "anonymous"` and outcomes `failed | refused | aborted` (estimated tokens) as platform cost without a per-user allowance; S47 no longer calls `UsageService.record`.
+- **S05**: no new ask; confirm `ProductQueryService.getProductsByIds(ids, {shopId})` leaves out a product of another shop and carries `status` and `shopId`, and that `ProductDeleted` is exported from the `@app/domains/catalog` entry point.
+- **S03**: `ShopQueryService.getShopsByIds` must carry `status`; confirm `ShopDeleted` is exported from the `@app/domains/tenancy` entry point.
+- **S50**: nothing to change; S47 adopts `rag.ingest` (30/min per shop, closed) next to `rag.ask` in its own policies file.
+- **S49**: nothing to change; S47 declares `knowledge.sweep` with a strict empty payload.
+- **W02**: `AskProduct` must read `sources.items`, `grounded`, the statuses `401/404/422/429/503` and in-stream `error`/`refusal` (S47 updates the component itself, G45; W02's spec should adopt the new stream contract).
+- **S01**: offer an optional-authentication guard that refuses a presented but invalid credential (`Firewall({anonymous: true, rejectInvalid: true})` or similar); S47's `AnonymousOrAuthenticated` (`api/knowledge-auth.ts`) can then be deleted. Today `UserAuthOptionalGuard` degrades a bad token to "no user" for every anonymous route.
+- **S54**: `libs/infrastructure/platform/body-limits.ts` and the loop that mounts one JSON parser per registered route in `bootstrap-http.ts` are new and additive; S54's page should name `jsonBodyLimits.register({match, limit})` as the way for a capability to allow a body above 1 MiB. `scripts/check-no-wallclock.ts` now also reads `assistant/domain` and seven S47 files of `assistant/application`.
+- **S53**: `in-memory-task-queue.ts` always reports `receiveCount: 1`, so redelivery counting can only be tested against the real queue. Also, a consumer whose process ends (`--forceExit`) leaves its long poll open at the broker for up to 20 s, and the broker then hands one message to that dead client (invisible for the visibility timeout); S47's queue spec probes until its own consumer answers (`awaitConsumer`), and a graceful stop is not affected.
+- **S46**: `anthropic_api_key` and `assistant_model` are declared in `types.ts` but, like the S47 keys before this run, are never read from the environment, so the scripted provider is bound in every environment; S47's `KnowledgeConfigGuard` refuses it in production only once the key is parsed.
+- **W04**: the seller document screens (create, presigned upload, `uploaded`, polling, `retry`, delete, help-center ask) consume the routes in `contracts/knowledge-api.md`; W04's source list does not name S47 yet. The two S47 journey rows stay skipped until it does.

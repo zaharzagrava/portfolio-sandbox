@@ -29,6 +29,17 @@ that capability's `gaps.md`, and the implementation loop pays them under test.
 | D-16 | X.3, X.7 | `libs/infrastructure/elasticsearch` is a product-index adapter (the `products` index mapping, synonyms, product search queries), not a generic client. Phase 3 only moved `PRODUCT_EMBEDDING_DIMS` into it to cut the catalog import.                                                                                                                                                                                                                                                           | S32: split a generic ES client (infrastructure) from the product index adapter (discovery `infra/`)                                                                                           | Phase 3  | open                                                                                                                |
 | D-17 | X.5      | File-level cycles inside one lib (`pnpm check:boundaries` warnings): payment ↔ ledger-entry models, bis-order ↔ bis-order-item models (mutual Sequelize associations, lazy arrows), and rate-limit decorator ↔ interceptor. Also `identity/application/user-utils.service.ts` imports a type from `identity/api/` (I.2).                                                                                                                                                                        | S13/S14, S10, S50, S01                                                                                                                                                                        | Phase 3  | open                                                                                                                |
 
+## Paid per domain
+
+The rows above name many domains; a row closes when the last one is paid. What each capability has paid, with the check that proves it:
+
+- **S47 (`assistant`, knowledge half), implemented 2026-10-13/14** - the commit that carries `specs/domains/S47-rag-help-center/tasks.md` fully ticked.
+  - **D-6**: the knowledge files in `api/` and `application/` import no `infra/` path and no connection; ports and tokens in `domain/ports.ts`, SQL only in `infra/pg-*.repository.ts` (`pnpm check:boundaries` clean).
+  - **D-7**: the knowledge half imports no foreign model and exports no model; **D-12**: `SELECT … FROM "Product"` replaced by `ProductQueryService.getProductsByIds`, both foreign keys dropped by `20261013160200-knowledge-s47-contract.js`, deletion by the `catalog.product_deleted` and `tenancy.shop_deleted` consumers (`pnpm check:table-ownership --strict` lists no `assistant` row).
+  - **D-8**: the barrel exports the three knowledge modules, `KnowledgeSearchModule`, the search service with its error and scope types and the evaluation maths; the S46 symbols it still exports are listed in its header.
+  - **D-14, partially paid**: the knowledge half uses no `LlmMeter` and no `UsageService` and publishes `llm.call_completed` through `CallRecorder`; `./infra/llm/*` is imported only by the three interim adapters (`answer-model`, `call-recorder`, `moderator`). The row stays open until S46 moves the provider to `libs/infrastructure/llm`.
+  - `.tx.baseline` of the domain reads 0 (the three audited `sequelize.transaction` sites use `TransactionRunner`).
+
 ## Commands
 
 ```bash

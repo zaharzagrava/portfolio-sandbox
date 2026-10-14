@@ -35,7 +35,10 @@ import { TenancyModule } from '@app/domains/tenancy';
  * (debt D-9): domains own their model registration; the harness just loads them all.
  */
 import '@app/domains/asset-library';
-import { assistantRatePolicies } from '@app/domains/assistant';
+import {
+  assistantRatePolicies,
+  knowledgeRatePolicies,
+} from '@app/domains/assistant';
 import { auctionsRatePolicies } from '@app/domains/auctions';
 import '@app/domains/billing';
 import { catalogRatePolicies } from '@app/domains/catalog';
@@ -73,6 +76,7 @@ const ALL_RATE_LIMIT_TABLES = [
   notificationsRatePolicies,
   launchEventsRatePolicies,
   assistantRatePolicies,
+  knowledgeRatePolicies,
   discoveryRatePolicies,
 ];
 

@@ -23,5 +23,11 @@ export const LlmCallCompleted = defineEvent(
     costMicros: z.number().int(),
     stopReason: z.string(),
     toolCalls: z.number().int(),
+    /** S47 (R-2): optional, so v1 consumers keep working. `rag` calls name the metric and the way the call ended. */
+    scopeId: z.string().optional(),
+    metric: z.string().optional(),
+    outcome: z.enum(['completed', 'failed', 'refused', 'aborted']).optional(),
+    /** True when the provider gave no token counts and the counts are `chars / 4` estimates. */
+    usageEstimated: z.boolean().optional(),
   }),
 );

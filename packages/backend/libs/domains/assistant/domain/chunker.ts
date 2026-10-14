@@ -112,6 +112,13 @@ export function pdfSections(pages: string[], title: string): Section[] {
   return sections;
 }
 
+/**
+ * Size of a unit when it is joined to others: its estimated tokens plus one for the `\n\n` that separates it. The sum
+ * over a chunk is therefore never below the estimate of the joined text, so a chunk of units that passed the budget
+ * stays within `maxTokens` (the `KnowledgeChunk.tokens` check allows 1–800).
+ */
+const weigh = (unit: string) => estimateTokens(unit) + 1;
+
 export function chunkSections(
   sections: Section[],
   { minTokens = 300, maxTokens = 800, overlapTokens = 80 }: ChunkOptions = {},
@@ -137,17 +144,38 @@ export function chunkSections(
     };
 
     for (const unit of units) {
-      const t = estimateTokens(unit);
+      const t = weigh(unit);
       if (size + t > maxTokens && current.length) {
         emit();
-        // Overlap: carry the tail units that fit in the overlap budget.
+        // Overlap: carry the tail units that fit in the overlap budget (and leave room for the unit that follows,
+        // so a chunk never grows past `maxTokens` because of its overlap).
         const tail: string[] = [];
         let tailSize = 0;
         for (let i = current.length - 1; i >= 0; i--) {
-          const ut = estimateTokens(current[i]);
-          if (tailSize + ut > overlapTokens) break;
+          const ut = weigh(current[i]);
+          if (tailSize + ut > overlapTokens || tailSize + ut + t > maxTokens)
+            break;
           tail.unshift(current[i]);
           tailSize += ut;
+        }
+        if (!tail.length && overlapTokens > 1 && current.length) {
+          // The last unit is bigger than the overlap budget (a long paragraph): carry its last words instead.
+          const last = current[current.length - 1];
+          const budget = (overlapTokens - 1) * 4;
+          let slice = last.length > budget ? last.slice(-budget) : last;
+          if (last.length > budget) {
+            const boundary = slice.search(/\s/);
+            slice = boundary >= 0 ? slice.slice(boundary) : '';
+          }
+          slice = slice.trim();
+          if (
+            slice &&
+            weigh(slice) <= overlapTokens &&
+            weigh(slice) + t <= maxTokens
+          ) {
+            tail.push(slice);
+            tailSize = weigh(slice);
+          }
         }
         current = tail;
         size = tailSize;

@@ -19,6 +19,7 @@ import { recommendationsConfigKeys } from './recommendations-config';
 import { trendingConfigKeys } from './trending-config';
 import { discussionsConfigKeys } from './discussions-config';
 import { shareLinksConfigKeys } from './share-links-config';
+import { knowledgeConfigKeys } from './knowledge-config';
 import { adsConfigKeys } from './ads-config';
 import './media-config'; // registers the S29 media startup rules
 import { videoConfigKeys } from './video-config'; // also registers the S30 video startup rule
@@ -602,6 +603,7 @@ export class ApiConfigService {
           ...trendingConfigKeys,
           ...discussionsConfigKeys,
           ...shareLinksConfigKeys,
+          ...knowledgeConfigKeys,
           ...adsConfigKeys,
           ...bffConfigKeys,
           payments_cursor_secret: {
