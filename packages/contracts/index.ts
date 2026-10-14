@@ -5,6 +5,7 @@ export * from './src/tenancy/index.ts';
 export * from './src/catalog/index.ts';
 export * from './src/orders/index.ts';
 export * from './src/auctions/index.ts';
+export * from './src/chat/index.ts';
 export * from './src/payments/index.ts';
 export * from './src/realtime.ts';
 export * from './src/realtime-user.ts';

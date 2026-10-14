@@ -7,7 +7,6 @@ utils/db-utils	infrastructure/database/db-utils
 models/migration.model.ts	infrastructure/database/migration.model.ts
 context	infrastructure/context
 redis	infrastructure/redis
-redis-pubsub	infrastructure/redis-pubsub
 kafka	infrastructure/kafka
 sqs	infrastructure/sqs
 dynamo	infrastructure/dynamo

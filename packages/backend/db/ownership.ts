@@ -160,6 +160,7 @@ export const OWNERSHIP = {
   ChatChannel: 'domain:chat',
   ChatChannelMember: 'domain:chat',
   ChatMessage: 'domain:chat',
+  ChatMessageIndex: 'domain:chat',
   // community: no Postgres tables (ScyllaDB/Redis only: decision D5)
   // content
   Story: 'domain:content',

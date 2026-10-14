@@ -1,109 +1,48 @@
 import {
-  BadRequestException,
   Body,
   Controller,
-  Get,
   HttpCode,
-  Param,
-  ParseUUIDPipe,
+  HttpStatus,
   Post,
-  Query,
+  type PipeTransform,
 } from '@nestjs/common';
-import { ApiProperty, ApiPropertyOptional, ApiTags } from '@nestjs/swagger';
+import { ApiTags } from '@nestjs/swagger';
 import {
-  IsInt,
-  IsObject,
-  IsOptional,
-  IsString,
-  IsUUID,
-  Length,
-  Min,
-} from 'class-validator';
-import { Firewall, User, UserRawDto } from '@app/domains/identity';
+  chatSyncRequestSchema,
+  type ChatChannelSync,
+  type ChatSyncRequest,
+} from '@marketplace-sandbox/contracts';
+import { Firewall, User } from '@app/domains/identity';
+import type { AuthenticatedUser } from '@app/domains/identity';
+import { RateLimit } from '@app/infrastructure/rate-limit';
 import { ChatSyncService } from '../application/chat-sync.service';
+import { ChatValidationError, tooManyChannels } from '../domain/errors';
 
-export class SendMessageDto {
-  @ApiProperty() @IsUUID() clientMessageId: string;
-  @ApiProperty() @IsString() @Length(1, 4000) body: string;
-  @ApiPropertyOptional() @IsOptional() @IsUUID() replyToId?: string;
+/** More than 50 channels is `400 too_many_channels`; anything else wrong with the body is `400 validation_failed`. */
+class SyncRequestPipe implements PipeTransform<unknown, ChatSyncRequest> {
+  transform(value: unknown): ChatSyncRequest {
+    const parsed = chatSyncRequestSchema.safeParse(value ?? {});
+    if (parsed.success) return parsed.data;
+    if (parsed.error.issues.some((i) => i.message === 'too_many_channels'))
+      throw tooManyChannels();
+    throw new ChatValidationError(['cursors']);
+  }
 }
 
-export class SyncDto {
-  @ApiProperty({ example: { '0190…channel': 42 } }) @IsObject() cursors: Record<
-    string,
-    number
-  >;
-}
-
-export class ReadDto {
-  @ApiProperty() @IsInt() @Min(0) seq: number;
-}
-
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
+/** `POST /chat/sync` (S24 contracts/http.md): a read, a POST because the cursor map can be large. */
 @ApiTags('chat')
 @Controller('chat')
 export class ChatSyncController {
-  constructor(private readonly chat: ChatSyncService) {}
+  constructor(private readonly sync: ChatSyncService) {}
 
   @Firewall()
-  @Post('channels/:channelId/messages')
-  send(
-    @Param('channelId', ParseUUIDPipe) channelId: string,
-    @User() user: UserRawDto,
-    @Body() body: SendMessageDto,
-  ) {
-    return this.chat.send(
-      channelId,
-      user.id,
-      body.body,
-      body.clientMessageId,
-      body.replyToId,
-    );
-  }
-
-  /** POST because the cursor map can be large; it is a read. */
-  @Firewall()
+  @RateLimit('chat.sync.user')
+  @HttpCode(HttpStatus.OK)
   @Post('sync')
-  @HttpCode(200)
-  sync(@User() user: UserRawDto, @Body() body: SyncDto) {
-    const cursors = Object.fromEntries(
-      Object.entries(body.cursors ?? {})
-        .filter(([id, seq]) => UUID.test(id) && Number.isFinite(Number(seq)))
-        .map(([id, seq]) => [id, Number(seq)]),
-    );
-    return this.chat.sync(user.id, cursors);
-  }
-
-  @Firewall()
-  @Get('unread')
-  unread(@User() user: UserRawDto) {
-    return this.chat.unread(user.id);
-  }
-
-  @Firewall()
-  @Post('channels/:channelId/read')
-  @HttpCode(200)
-  read(
-    @Param('channelId', ParseUUIDPipe) channelId: string,
-    @User() user: UserRawDto,
-    @Body() body: ReadDto,
-  ) {
-    return this.chat.markRead(channelId, user.id, body.seq);
-  }
-
-  @Firewall()
-  @Post('presence/heartbeat')
-  @HttpCode(204)
-  async heartbeat(@User() user: UserRawDto) {
-    await this.chat.heartbeat(user.id);
-  }
-
-  @Firewall()
-  @Get('presence')
-  presence(@Query('userIds') userIds = '') {
-    const ids = userIds.split(',').filter((id) => UUID.test(id));
-    if (ids.length > 100) throw new BadRequestException('max 100 users');
-    return this.chat.presence(ids);
+  run(
+    @User() user: AuthenticatedUser,
+    @Body(new SyncRequestPipe()) body: ChatSyncRequest,
+  ): Promise<ChatChannelSync[]> {
+    return this.sync.sync(user.id, body.cursors);
   }
 }

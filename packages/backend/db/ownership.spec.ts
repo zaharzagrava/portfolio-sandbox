@@ -22,7 +22,8 @@ const walk = (dir: string): string[] =>
   });
 
 /** Partition children and migration staging copies belong to their parent table. */
-const parentTable = (name: string) => name.replace(/(_new)?(_default)?$/, '');
+const parentTable = (name: string) =>
+  name.replace(/(_new|_old)?(_default)?$/, '');
 
 function tablesCreatedByMigrations(): Set<string> {
   const created = new Set<string>();
@@ -31,7 +32,7 @@ function tablesCreatedByMigrations(): Set<string> {
   )) {
     const src = readFileSync(file, 'utf8');
     for (const m of src.matchAll(
-      /createTable\(\s*['"]([A-Za-z_]+)['"]|CREATE TABLE (?:IF NOT EXISTS )?"?([A-Za-z_]+)"?|RENAME TO "([A-Za-z_]+)"/g,
+      /createTable\(\s*['"]([A-Za-z_]+)['"]|CREATE TABLE (?:IF NOT EXISTS )?"?(?!IF\b)([A-Za-z_]+)"?|ALTER TABLE (?:IF EXISTS )?"?[A-Za-z_]+"? RENAME TO "([A-Za-z_]+)"/g,
     )) {
       created.add(parentTable(m[1] ?? m[2] ?? m[3]));
     }

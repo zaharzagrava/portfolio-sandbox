@@ -58,7 +58,6 @@ scope:
   - packages/backend/libs/infrastructure/platform/**
   - packages/backend/libs/infrastructure/projections/**
   - packages/backend/libs/infrastructure/redis/**
-  - packages/backend/libs/infrastructure/redis-pubsub/**
   - packages/backend/libs/infrastructure/sqs/**
   - packages/backend/libs/infrastructure/storage/**
   - packages/backend/libs/infrastructure/stripe/**

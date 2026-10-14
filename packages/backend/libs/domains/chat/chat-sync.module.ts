@@ -1,15 +1,23 @@
 import { Module } from '@nestjs/common';
 import { AuthModule } from '@app/domains/identity';
-import { RealtimeModule } from '@app/infrastructure/realtime';
-import { CacheModule } from '@app/infrastructure/cache/cache.module';
-import { ChatSyncService } from './application/chat-sync.service';
+import { ChatMessageController } from './api/chat-message.controller';
+import { ChatPresenceController } from './api/chat-presence.controller';
+import { ChatReadStateController } from './api/chat-read-state.controller';
 import { ChatSyncController } from './api/chat-sync.controller';
+import { ChatCoreModule } from './chat-core.module';
 
-/** SD-14 (core): send-with-idempotency, sync, unread, receipts, presence. */
+/** Messages, sync, history, unread, receipts and presence (core). */
 @Module({
-  imports: [AuthModule, RealtimeModule, CacheModule],
-  providers: [ChatSyncService],
-  exports: [ChatSyncService],
-  controllers: [ChatSyncController],
+  imports: [
+    // Firewall guards resolve AuthService from this module's injector
+    AuthModule,
+    ChatCoreModule,
+  ],
+  controllers: [
+    ChatMessageController,
+    ChatSyncController,
+    ChatReadStateController,
+    ChatPresenceController,
+  ],
 })
 export class ChatSyncModule {}

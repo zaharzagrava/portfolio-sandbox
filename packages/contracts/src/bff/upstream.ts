@@ -14,18 +14,9 @@ import { pickupPointsNearResponseSchema } from "../fulfilment/pickup.ts";
 export const flagsResponseSchema = clientFlagsSchema;
 export type FlagsResponse = z.infer<typeof flagsResponseSchema>;
 
-/** S24 `GET /api/chat/unread`: `{items: [{channelId, unread, lastSeq}], nextCursor}`. */
-export const chatUnreadPageSchema = z.object({
-  items: z.array(
-    z.object({
-      channelId: z.string(),
-      unread: z.number().int().nonnegative(),
-      lastSeq: z.number().int().nonnegative(),
-    }),
-  ),
-  nextCursor: z.string().nullable(),
-});
-export type ChatUnreadPage = z.infer<typeof chatUnreadPageSchema>;
+/** S24 `GET /api/chat/unread`: S24 published its own schema (the names stay for the BFF). */
+export { chatUnreadPageSchema } from '../chat/unread.ts';
+export type { ChatUnreadPage } from '../chat/unread.ts';
 
 /** S25 `GET /api/boards/:productId/posts`: S25 published its own schema, the BFF validates with it (name kept). */
 export const boardPostsPageSchema = postPageSchema;

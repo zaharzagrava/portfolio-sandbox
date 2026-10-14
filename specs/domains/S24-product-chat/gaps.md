@@ -106,3 +106,70 @@ D-1…D-5, D-9, D-10, D-13 are resolved and D-11, D-14…D-17 do not touch chat.
 5. Consumers and jobs: offline scheduler and check worker (G-27…G-29), shop purge (G-30), partition job (G-16), metrics (G-34).
 6. Barrel and modules (G-32); tests per `test-plan.md`; update `chat.e2e-spec.ts` and `chat-sync.e2e-spec.ts`; notify S03 that its backfill job can be deleted (G-31), S28 of the new event, W05 of the client rules (G-35).
 7. Gates: `tsc`, ESLint, `check:boundaries`, `check:table-ownership --strict`, `check:module-graph`, `check:model-registry`, all chat e2e green, recorded (VII.9). Correct the P0318 status in `docs/work/architecture/pattern-map.md` once AS-28 and AS-29 pass.
+
+## Sibling-spec follow-ups
+
+Written by `/speckit-plan` (nothing edited in their specs).
+
+- **S01**: S24 does not consume `UserDirectoryService.getUsersByIds` (the reads are removed, not replaced); drop S24 from the consumer list. After WP-4 the chat accesses `owned by identity` are 0, so `AS-81`'s `KNOWN_FOREIGN_ROWS` ratchet may drop by the chat rows. `UserModel`/`CreateUserDto` exports can go once S28, S14, S03 and the test seeds have moved.
+- **S03**: no tenancy file references `ChatChannel` any more (checked 2026-10-14), so there is no raw `UPDATE "ChatChannel"` job left to delete; the shop-id backfill is chat's job `chat.backfill-shops`; chat drops its foreign key `ChatChannel.shopId → Shop` (A16) in `chat-s24-contract`.
+- **S05**: chat reads products only through `getProductsByIds`; once S24 lands, the mirror `"sellerId" = createdBy` in `catalog/infra/product.repository.ts:110` and the `sellerId` backfill in `scripts/seed/dev-seed.ts` are not needed (W07 follow-up; planned as WP-9 minimal code edits, S05's spec untouched); `ProductDtoModule`/`ProductDtoService.requestProduct` lose their last chat caller.
+- **S28**: `chat.message_escalated` v1 keeps its shape and adds `messageId`, `seq`, `authorId` (the consumer's schema is not strict); `dedupeKey` is `chat:<messageId>:<recipientId>` (spec AS-45/AS-48; `contracts/events.md` said `chat:<recipientId>:<channelId>:<messageId>`, the spec wins); the event's aggregate is the recipient; no author name; the `NotificationRouter` call and `NotificationsCoreModule` import are gone from chat (S28's CT-1 removed the call; this finishes the module import).
+- **S48**: `chatUnreadPageSchema` in `packages/contracts/src/bff/upstream.ts` becomes a re-export of chat's own schema under the same exported name; the page shape is `{items, nextCursor}`.
+- **S49**: chat declares job types `chat.partition-maintenance` and `chat.backfill-shops` with `declareJobType`.
+- **S50**: `chat_limiter_unavailable_total` is derived from `rate_limit_store_unavailable_total` by the `chat.` policy prefix.
+- **S51**: chat leaves the raw `libs/infrastructure/redis-pubsub` (the library is deleted by S24); `read`/`presence` publish with `replay: false`; S51 must keep `chat:` an allowed topic prefix.
+- **S53**: the chat trigger remains a framework-free outbox writer (exception in `plan.md`, removal 2027-03-31) with a deterministic `eventId` (adopted: the outbox row id equals it); the scheduled checks carry their identity `(eventId, recipientId)` in the message body, **not** as a queue `dedupeId`: S53's `validateEnqueueOptions` refuses `dedupeId` on a standard queue (FIFO only, L-001), and `chat-offline-notify` is a standard queue (a duplicate check is harmless: the coalescing slot and the downstream `dedupeKey` stop a second push); a second CDC connector for `ChatMessage` would let the trigger's outbox insert go.
+- **W05**: list routes are pages (`GET /chat/unread`, `GET /chat/channels/:id/messages`); send must reuse one `clientMessageId` per user action (`packages/web/lib/api/chat.ts:48-49` makes a new one per call); moderation answers `204`; replace hand-written types with the `packages/contracts` chat schemas.
+
+- **W05** (G-35, recorded by T079): the client must generate one `clientMessageId` per user action and reuse it on every retry (the server answers `200 duplicate: true` for an identical replay and `422 idempotency_key_reuse` for another body); treat pushes as hints and sync after every (re)connect with jittered back-off; read `GET /chat/unread` and `GET /chat/channels/:id/messages` as `{items, nextCursor}` pages; moderation answers `204`; import the chat schemas from `packages/contracts` instead of `lib/api/chat.ts`.
+- **S01** (checked after the code landed): `check:table-ownership --strict` reports no `owned by identity` or `owned by catalog` line for `chat` any more; the chat rows of the `KNOWN_FOREIGN_ROWS` ratchet are 0.
+- **S54**: the domain opens no transaction directly (`grep sequelize.transaction libs/domains/chat` is empty; every multi-statement write is `TransactionRunner.run`).
+
+## Implementation status (2026-10-14)
+
+Result of T002 (`pnpm --dir packages/backend check:table-ownership --strict`): before the change 39 cross-domain accesses in 11 domains, of which `chat` had 4 (the `ProductModel`/`UserModel` associations in the three models; the `"User"` join of the old offline worker had already gone with S28's CT-1); after: **35 in 10 domains, `chat` has none**. The rest belong to other domains.
+
+| Rows | Status | Proof |
+|---|---|---|
+| G-01…G-04 | done | `chat-channels.e2e-spec.ts` (AS-01…AS-08; 20 repeats on the two races) |
+| G-05, G-06, G-12 | done | `chat-moderation.e2e-spec.ts` (AS-49…AS-54, authority through the live tenancy membership, no cache) |
+| G-07, G-19…G-21 | done | `chat-sync.e2e-spec.ts` (AS-21…AS-27; three statements for 50 channels cold, one warm) |
+| G-08 | done | AS-55; the route is `Firewall({sensitive: true})` so a revoked session gets no ticket at once |
+| G-09…G-11, G-13, G-14 | done | `chat-messages.e2e-spec.ts` (AS-09…AS-20) |
+| G-15, G-16, G-17 | done | migrations `20261014140000/140100`, `chat-lifecycle.e2e-spec.ts` (AS-28, AS-58), `chat-sync.e2e-spec.ts` (AS-28, AS-29) |
+| G-18 | **recorded exception** | the insert trigger still writes the outbox row (no CDC connector for `ChatMessage`), now with a deterministic `eventId`; removal 2027-03-31 (`plan.md`, research R-03) |
+| G-22, G-23 | done | `chat-read-state.e2e-spec.ts` (AS-30…AS-36) |
+| G-24, G-25 | done | `chat-presence.e2e-spec.ts` (AS-37…AS-41) |
+| G-26 | done | UUID shape check in `api/realtime-topics.ts`; AS-35 delivery and refusal through the real hub |
+| G-27…G-29 | done | `chat-offline-push.e2e-spec.ts` (AS-42…AS-48) |
+| G-30, G-31 | done | `chat-lifecycle.e2e-spec.ts` (AS-56, AS-57) |
+| G-32 | done | barrel pinned by AS-58; `ChatProjectorModule` in `apps/projector` |
+| G-33, G-34 | done | `packages/contracts/src/chat`, `chat-contracts.spec.ts`, `domain/chat-metrics.ts` |
+| G-35 | W05 follow-up | above |
+| G-36, G-37 | done | no `new Date()` in `application/`; ports in `domain/ports.ts`; `check:no-wallclock` green |
+| D-6, D-7, D-8, D-12 | resolved | `check:boundaries`, `check:table-ownership --strict` (no chat line), barrel test |
+
+Deviations from the plan, decided while building (also in `questions.md`):
+
+- The error code for a missing authority is `permission_denied` (spec AS-02, AS-50), not `forbidden` (`contracts/http.md`); `forbidden` stays in the contract's code enum.
+- `ChatExceptionFilter` was not created: every domain error is an `AppError` that the platform filter already renders as problem+json (the auctions domain does the same).
+- The contract migration adds `CHECK ("shopId" IS NOT NULL) NOT VALID` and makes the column `NOT NULL` only when no channel is left without a shop; it does not refuse while legacy channels exist. `chat.backfill-shops` (every 10 minutes) finishes the job and validates the constraint (AS-57).
+- Presence "online" is decided from the stored heartbeat time against the injected clock (the Redis key outlives the 60 s only as garbage collection), because a store TTL cannot be moved by a frozen clock.
+- `chat-offline-notify` now has `maxReceiveCount = 5` (spec FR-039; it was 3) in `infra/docker/elasticmq.conf` and `infra/stack/main.tf`: a running ElasticMQ container needs a restart to pick it up.
+- `ChatMessage_old` is kept after the swap; `migrations-scheduled/20261215000000-chat-s24-drop-old.js` drops it and refuses to run before 2026-12-15 (it is outside `migrations/` on purpose).
+- The old `chat.e2e-spec.ts` was not deleted (T074): `scripts/sdd/check-tests.py integrity` accepts the deletion of a test file without scenario ids only together with its subject, so the file was rebuilt in place as the end-to-end journey across the routes (five tests, each carrying its scenario id).
+- A channel whose product is gone is skipped by the backfill and left for review (counter `chat_backfill_skipped_total`, a warning with the channel id); it is retried by every run.
+- The `.tx.baseline` and `.ownership.baseline` files were not touched; the domain has no direct `sequelize.transaction`.
+
+L-017 checklist (old scenario → where it lives now): old `chat.e2e-spec.ts` ticket → AS-55; create → AS-01; non-seller 403 → AS-02; mute → AS-51; join/ban sticks → AS-05, AS-06, AS-49. Old `chat-sync.e2e-spec.ts` concurrent gap-free sequence and outbox events → AS-14, AS-20; send/replay → AS-09, AS-10; sync small gap / large gap → AS-21, AS-22, AS-23; unread counts (the old expectation of 5 own messages is replaced) → AS-30, AS-31; presence and the first-heartbeat broadcast → AS-37, AS-38; offline push and coalescing → AS-43, AS-44.
+
+## Gate repairs
+
+- `packages/backend/db/ownership.spec.ts` ("lists every table that migrations or models create") failed on `ChatMessage_new_pkey`, `ChatMessage_old`, `ChatMessage_old_pkey`, `ChatMessage_pkey` and `IF`. Cause: the S24 expand/contract migrations are correct, but the spec's table scraper counted `ALTER INDEX … RENAME TO` as a table, did not know the `_old` staging copy, and read `CREATE TABLE IF NOT EXISTS %I` as a table called `IF`. Fix: the scraper now matches only `ALTER TABLE … RENAME TO`, treats `_old` like `_new` as a staging copy of its parent, and skips `IF`. No assertion was weakened: every real table is still checked against the registry, and no migration was changed.
+
+## Spec changes
+
+No `*.reviewed.json` exists for this capability and none was created or edited. The living page `docs/spec/capabilities/S24-product-chat.md` was created (T001) once the code it points at existed, not before: its `[code: …]` anchors cannot resolve earlier (`python3 scripts/livespec/check.py`: 0 errors).
+
+One line of another capability's page changed, and nothing a human signed: `docs/spec/capabilities/S54-platform-toolkit.md` listed `packages/backend/libs/infrastructure/redis-pubsub/**` in its `scope`; the library is deleted (S51 follow-up), the glob matched no file and `check.py` reported it as an error, so the line was removed. **S51** and **S54** should adopt it: S51's "Known gaps" line "The raw `libs/infrastructure/redis-pubsub` is still used by chat" (`docs/spec/capabilities/S51-realtime-push.md:121`) is no longer true.

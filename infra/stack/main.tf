@@ -29,7 +29,7 @@ locals {
     # S28 accepted provider callbacks (SNS / Twilio), applied by the callback worker.
     "notifications-callbacks" = { visibility_seconds = 60, max_receive = 5 }
     "delivery-offer-timeouts" = { visibility_seconds = 30, max_receive = 5 }
-    "chat-offline-notify"     = { visibility_seconds = 30, max_receive = 3 }
+    "chat-offline-notify"     = { visibility_seconds = 30, max_receive = 5 }
     "webhook-deliveries.fifo" = { visibility_seconds = 180, max_receive = 8, fifo = true } # ≥ 6 × Lambda timeout (30 s)
     "media-processing"        = { visibility_seconds = 360, max_receive = 3 }              # 6 × 60 s
     "catalog-imports"         = { visibility_seconds = 300, max_receive = 3 }

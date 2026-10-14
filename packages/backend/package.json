@@ -54,6 +54,7 @@
     "loadtest:search": "k6 run scripts/load-tests/search.test.js",
     "loadtest:seller-stats": "k6 run scripts/load-tests/seller-stats.test.js",
     "loadtest:chat": "k6 run scripts/load-tests/chat.test.js",
+    "loadtest:chat-sync": "k6 run scripts/load-tests/chat-sync.test.js",
     "cql:migrate": "ts-node -r tsconfig-paths/register scripts/cql/migrate.ts",
     "dynamo:create-tables": "ts-node -r tsconfig-paths/register scripts/dynamo/create-tables.ts",
     "start:dev:projector": "NODE_ENV=local PORT=8002 nest start projector --watch",

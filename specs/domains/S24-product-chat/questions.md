@@ -58,3 +58,14 @@ Decided without asking (policy: the most production-grade option the notes and t
 - [LOCAL] `editedAt` is unused; the plan may drop it (expand/contract).
 - [LOCAL] WS ticket stays a 60-second signed credential with `typ: "ws"`; key management stays with S01/S54 configuration.
 - [LOCAL] Log lines carry channel, message and user IDs and body length only.
+
+## Decisions taken while implementing (2026-10-14; none edited by a human, none blocks)
+
+- [CONTRACT] Missing authority is `403 permission_denied` (spec AS-02, AS-50), not `403 forbidden` as `contracts/http.md` has it: the spec is the source of truth and tenancy already uses the same code. `forbidden` stays in the published error-code enum.
+- [CONTRACT] `dedupeKey` of `chat.message_escalated` is `chat:<messageId>:<recipientId>` (spec AS-45, AS-48), not `chat:<recipientId>:<channelId>:<messageId>` as `contracts/events.md` has it. The S28 consumer accepts any string.
+- [CONTRACT] The delayed offline check carries its identity `(eventId, recipientId)` in the message body and not as a queue `dedupeId`: `chat-offline-notify` is a standard queue and S53 refuses `dedupeId` there (FIFO only, lesson L-001). A duplicate check is harmless: the coalescing slot and the downstream `dedupeKey` stop a second push. `maxReceiveCount` of that queue is now 5 (was 3) as FR-039 says.
+- [LOCAL] The contract migration does not refuse while channels without a shop exist: it fills `shopId` from the product where it can, adds `CHECK ("shopId" IS NOT NULL) NOT VALID` (new rows must have a shop) and makes the column NOT NULL only when none is left; `chat.backfill-shops` validates the constraint when the last legacy channel has its shop. Refusing would have blocked every later migration on a database that still holds legacy channels.
+- [LOCAL] "Marked for review" (AS-57, a channel whose product is gone) is a warning log with the channel id plus the counter `chat_backfill_skipped_total`; there is no review table. The channel is looked at again by every run.
+- [LOCAL] Presence "online" is `now - lastHeartbeat < 60 s` by the injected clock; the Redis key lives 600 s and only collects garbage, because a store TTL cannot follow a frozen clock.
+- [LOCAL] `ChatExceptionFilter` (plan T032) is not needed: the domain errors are `AppError`s that the platform filter renders as problem+json.
+- [LOCAL] The ws-ticket route is `Firewall({sensitive: true})`: ordinary routes accept the token of a revoked session until it expires, and AS-55 says no ticket goes to a revoked session.
