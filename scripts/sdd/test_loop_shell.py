@@ -33,7 +33,7 @@ class LoopShell(unittest.TestCase):
         bad = []
         for f in glob.glob(os.path.join(ROOT, 'scripts/sdd/*.sh')):
             for n, line in enumerate(open(f, encoding='utf-8'), 1):
-                if 'printf' in line and '"' in line and re.search(r'(?<!\\)`', line):
+                if ('printf' in line or 'echo "' in line) and not line.lstrip().startswith('#') and re.search(r'(?<!\\)`', line.replace("'```'", '')):
                     bad.append(f'{os.path.basename(f)}:{n}')
         self.assertEqual(bad, [], 'unescaped backticks in a double-quoted prompt: ' + ', '.join(bad))
 
