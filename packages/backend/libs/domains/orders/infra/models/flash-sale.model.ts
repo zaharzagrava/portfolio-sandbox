@@ -6,9 +6,12 @@ import {
   Table,
 } from 'sequelize-typescript';
 import { Sequelize } from 'sequelize';
+import type {
+  FlashSaleStatus,
+  StatusReason,
+} from '../../domain/flash-sale-state';
 
-export type FlashSaleStatus = 'SCHEDULED' | 'LIVE' | 'ENDED' | 'RECONCILED';
-
+/** A drop: `units` of one product at a fixed price inside `[startsAt, endsAt)` (S11 data-model §1). No association. */
 @Table({ modelName: 'FlashSale', tableName: 'FlashSale', timestamps: true })
 export default class FlashSale extends Model<FlashSale, Partial<FlashSale>> {
   @PrimaryKey
@@ -18,11 +21,14 @@ export default class FlashSale extends Model<FlashSale, Partial<FlashSale>> {
   @Column({ type: DataType.UUID, allowNull: false })
   declare productId: string;
 
-  @Column({ type: DataType.UUID, allowNull: true })
-  declare shopId: string | null;
+  @Column({ type: DataType.UUID, allowNull: false })
+  declare shopId: string;
 
   @Column({ type: DataType.BIGINT, allowNull: false })
-  declare price: number;
+  declare priceMinor: number;
+
+  @Column({ type: DataType.TEXT, allowNull: false })
+  declare currency: string;
 
   @Column({ type: DataType.INTEGER, allowNull: false })
   declare units: number;
@@ -34,6 +40,9 @@ export default class FlashSale extends Model<FlashSale, Partial<FlashSale>> {
   @Column({ type: DataType.INTEGER, allowNull: false, defaultValue: 2 })
   declare perUserLimit: number;
 
+  @Column({ type: DataType.INTEGER, allowNull: false, defaultValue: 2000 })
+  declare admissionRatePerSecond: number;
+
   @Column({ type: DataType.DATE, allowNull: false })
   declare startsAt: Date;
 
@@ -42,6 +51,18 @@ export default class FlashSale extends Model<FlashSale, Partial<FlashSale>> {
 
   @Column({ type: DataType.TEXT, allowNull: false, defaultValue: 'SCHEDULED' })
   declare status: FlashSaleStatus;
+
+  @Column({ type: DataType.TEXT, allowNull: true })
+  declare statusReason: StatusReason | null;
+
+  @Column({ type: DataType.INTEGER, allowNull: false, defaultValue: 0 })
+  declare version: number;
+
+  @Column({ type: DataType.DATE, allowNull: true })
+  declare endedAt: Date | null;
+
+  @Column({ type: DataType.DATE, allowNull: true })
+  declare reconciledAt: Date | null;
 
   declare createdAt: Date;
   declare updatedAt: Date;

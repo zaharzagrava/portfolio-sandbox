@@ -57,3 +57,53 @@ export const backfillOrphansGauge = MetricsRegistry.gauge({
   help: 'Order items still without a shop id',
   labels: [],
 });
+
+// ---------------------------------------------------------------- flash sales (S11 AS-42)
+
+export const flashReservationsCounter = MetricsRegistry.counter({
+  name: 'flash_sale_reservations_total',
+  help: 'Drop reservations by result (reserved, sold_out, limit_exceeded, not_open)',
+  labels: ['result'],
+});
+
+export const flashAdmissionRejectedCounter = MetricsRegistry.counter({
+  name: 'flash_sale_admission_rejected_total',
+  help: 'Attempts held back by the sale admission allowance',
+  labels: [],
+});
+
+export const flashStockRemainingGauge = MetricsRegistry.gauge({
+  name: 'flash_sale_stock_remaining',
+  help: 'Units left in the fast store of a loaded sale, refreshed at each verification',
+  labels: ['saleId'],
+});
+
+export const flashStockDriftCounter = MetricsRegistry.counter({
+  name: 'flash_sale_stock_drift_units_total',
+  help: 'Units by which the fast store differed from the durable records at reconciliation (direction low|high)',
+  labels: ['direction'],
+});
+
+export const flashPhantomStockCounter = MetricsRegistry.counter({
+  name: 'flash_sale_phantom_stock_units_total',
+  help: 'Surplus units clamped away from the fast store during a sale',
+  labels: [],
+});
+
+export const flashOversellCounter = MetricsRegistry.counter({
+  name: 'flash_sale_oversell_detected_total',
+  help: 'Units sold beyond the sale size that verification found',
+  labels: [],
+});
+
+export const flashClaimsExpiredCounter = MetricsRegistry.counter({
+  name: 'flash_sale_claims_expired_total',
+  help: 'Abandoned claims the sweeper gave back',
+  labels: [],
+});
+
+export const flashReconcileWaitingGauge = MetricsRegistry.gauge({
+  name: 'flash_sale_reconcile_waiting',
+  help: 'Sales whose reconciliation waits for holds to resolve',
+  labels: [],
+});

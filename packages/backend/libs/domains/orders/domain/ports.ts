@@ -72,6 +72,11 @@ export interface ReservationRecord {
   quantity: number;
   status: ReservationStatus;
   releaseAttempts: number;
+  /** Where the units come from: the catalog's stock, or a flash sale's fast store (S11). */
+  source: 'CATALOG' | 'FLASH' | 'POSTGRES';
+  /** `FLASH`: the claim id. */
+  sourceRef: string | null;
+  flashSaleId: string | null;
 }
 
 export interface HistoryRecord {
@@ -92,9 +97,17 @@ export interface NewOrder {
   currency: string;
   now: Date;
   items: Array<
-    OrderItemRecord & { title: string; lineTotalMinor: number; shopId: string }
+    OrderItemRecord & {
+      title: string;
+      lineTotalMinor: number;
+      shopId: string;
+      /** A drop line: its units are already claimed in the fast store; the reservation row starts `HELD` (S11). */
+      flash?: { flashSaleId: string; claimId: string };
+    }
   >;
   shopOrders: Array<{ shopId: string; subtotalMinor: number }>;
+  /** When the holds of a drop line expire (the order's hold window); only read for drop lines. */
+  flashExpiresAt?: Date;
 }
 
 // ---------------------------------------------------------------- repositories

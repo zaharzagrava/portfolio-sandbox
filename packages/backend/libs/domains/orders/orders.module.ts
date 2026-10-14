@@ -11,7 +11,8 @@ import { TenancyModule } from '@app/domains/tenancy';
 import { IdempotencyModule } from '@app/infrastructure/idempotency';
 import { InboxModule } from '@app/infrastructure/inbox';
 import { RateLimitModule } from '@app/infrastructure/rate-limit';
-import { FlashSaleLegacyModule } from './flash-sale-legacy.module';
+import { FlashSaleCoreModule } from './flash-sale-core.module';
+import { FlashSaleModule } from './flash-sale.module';
 import { OrderService } from './application/order.service';
 import { CartService } from './application/cart.service';
 import { CheckoutService } from './application/checkout.service';
@@ -39,7 +40,8 @@ export { ORDER_MODELS } from './orders-models';
     TenancyModule,
     IdempotencyModule,
     InboxModule,
-    FlashSaleLegacyModule,
+    FlashSaleCoreModule,
+    FlashSaleModule,
     RateLimitModule.forFeature(ordersRatePolicies),
     SequelizeModule.forFeature(ORDER_MODELS),
   ],
@@ -50,7 +52,7 @@ export { ORDER_MODELS } from './orders-models';
     CheckoutService,
     WebhookIntakeService,
   ],
-  exports: [OrdersCoreModule, OrderService, FlashSaleLegacyModule],
+  exports: [OrdersCoreModule, OrderService],
   controllers: [
     CartController,
     CheckoutController,

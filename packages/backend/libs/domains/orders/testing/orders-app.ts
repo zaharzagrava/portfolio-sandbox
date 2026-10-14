@@ -157,6 +157,8 @@ export async function createOrdersApp(
     env?: Record<string, string>;
     /** Address of a fault proxy in front of Redis (rate limiter, checkout lock), read once when the app boots. */
     redisUrl?: string;
+    /** The production structured logger (a spec captures stdout to read the lines). */
+    structuredLogger?: boolean;
   } = {},
 ): Promise<OrdersTestApp> {
   const payments = new FakePaymentStatus();
@@ -164,6 +166,7 @@ export async function createOrdersApp(
   const realtime = new FakeRealtimePublisher();
   const base = await createCatalogApp({
     redisUrl: options.redisUrl,
+    structuredLogger: options.structuredLogger,
     extraImports: [
       JobsModule,
       OrdersModule,

@@ -3,11 +3,7 @@ import { SequelizeModule } from '@nestjs/sequelize';
 import Auction from './infra/models/auction.model';
 import { EventsModule } from '@app/infrastructure/events/events.module';
 import { RealtimeModule } from '@app/infrastructure/realtime';
-import {
-  FlashStockService,
-  OrderService,
-  ORDER_MODELS,
-} from '@app/domains/orders';
+import { OrderService, ORDER_MODELS } from '@app/domains/orders';
 import { AuctionJobs } from './infra/auction.jobs';
 import { BidRelay } from './infra/bid-relay.service';
 
@@ -20,6 +16,6 @@ import { BidRelay } from './infra/bid-relay.service';
     RealtimeModule,
     SequelizeModule.forFeature([Auction, ...ORDER_MODELS]),
   ],
-  providers: [AuctionJobs, BidRelay, OrderService, FlashStockService],
+  providers: [AuctionJobs, BidRelay, OrderService],
 })
 export class AuctionsWorkerModule {}

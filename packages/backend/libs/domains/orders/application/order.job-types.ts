@@ -38,9 +38,13 @@ declare module '@app/infrastructure/jobs/job-types' {
     'orders.process-webhook': ProcessWebhookPayload;
     'orders.purge-webhook-inbox': Record<string, never>;
     'orders.backfill-item-titles': Record<string, never>;
+    'flash-sale.load': { saleId: string };
+    /** Alias of `flash-sale.load` for one release, so jobs enqueued by the old route drain. */
     'flash-sale.start': { saleId: string };
     'flash-sale.end': { saleId: string };
     'flash-sale.reconcile': { saleId: string };
+    'flash-sale.verify': Record<string, never>;
+    'flash-sale.sweep-claims': Record<string, never>;
   }
 }
 
@@ -72,15 +76,27 @@ declareJobType({
   name: 'orders.backfill-item-titles',
   contract: z.object({}),
 });
+// S11 flash-sale lifecycle: `load` (startsAt − 60 s), `end` (endsAt), `reconcile` (after the hold window), two periodic.
+const saleJobPayloadSchema = z.object({ saleId: z.string().uuid() });
+declareJobType({
+  name: 'flash-sale.load',
+  contract: saleJobPayloadSchema,
+  maxAttempts: 8,
+});
 declareJobType({
   name: 'flash-sale.start',
-  contract: z.object({ saleId: z.string() }),
+  contract: saleJobPayloadSchema,
+  maxAttempts: 8,
 });
 declareJobType({
   name: 'flash-sale.end',
-  contract: z.object({ saleId: z.string() }),
+  contract: saleJobPayloadSchema,
+  maxAttempts: 5,
 });
 declareJobType({
   name: 'flash-sale.reconcile',
-  contract: z.object({ saleId: z.string() }),
+  contract: saleJobPayloadSchema,
+  maxAttempts: 20,
 });
+declareJobType({ name: 'flash-sale.verify', contract: z.object({}) });
+declareJobType({ name: 'flash-sale.sweep-claims', contract: z.object({}) });

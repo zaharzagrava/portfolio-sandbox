@@ -202,9 +202,16 @@ export const pickupFixture = () =>
 
 export const flashSaleFixture = (productId: string) =>
   flashSalePublicSchema.parse({
+    saleId: '0192f3a0-0000-7000-8000-0000000000f1',
     productId,
     priceMinor: 3_900,
+    currency: 'EUR',
+    perUserLimit: 2,
+    startsAt: '2026-01-01T00:00:00.000Z',
     endsAt: '2026-01-02T00:00:00.000Z',
+    state: 'LIVE',
+    remainingApprox: 120,
+    serverTime: '2026-01-01T12:00:00.000Z',
   });
 
 export const auctionFixture = (productId: string) =>

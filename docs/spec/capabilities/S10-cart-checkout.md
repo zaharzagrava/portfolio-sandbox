@@ -26,7 +26,7 @@ A buyer fills a cart while signed out or signed in, signs in, and checks out. Ch
 - `POST /orders/:orderId/cancel` lets the buyer cancel a `RESERVED` order. [code: packages/backend/libs/domains/orders/api/orders.controller.ts#OrdersController]
 - `POST /webhooks/stripe` receives signed payment events. No session. It stores and queues the event, then answers `200`. [code: packages/backend/libs/domains/orders/api/stripe-webhook.controller.ts#StripeWebhookController]
 - `GET /shops/:shopId/orders` lists one shop's slice of orders for members with `orders.read`, with keyset pagination and an optional `status`. [code: packages/backend/libs/domains/orders/api/shop-orders.controller.ts#ShopOrdersController]
-- `POST /shops/:shopId/flash-sales` schedules a legacy flash sale. It is not part of the S10 contract and stays until S11 replaces it. It is parked in `infra/flash/` and `FlashSaleLegacyModule`. [code: packages/backend/libs/domains/orders/infra/flash/flash-sale.controller.ts#FlashSaleController]
+- Flash sales (scheduling, drop checkout, load, end, reconcile) belong to {{cap:S11}}. Checkout meets them at one seam: the drop lines of a cart are claimed before the order is written, and the claim is committed after it. [code: packages/backend/libs/domains/orders/application/checkout.service.ts#CheckoutService]
 - Topic `payments.events` (`payments.payment_succeeded`, `payments.payment_failed`, `payments.payment_refunded`) is consumed and converges with the webhook. [code: packages/backend/libs/domains/orders/infra/payments-events.consumer.ts#PaymentsEventsConsumer]
 - Queue `orders-refund-requested` carries refund commands. [code: packages/backend/libs/domains/orders/infra/refund-command.adapter.ts#REFUND_REQUESTED_QUEUE]
 - Events published: `order.reserved`, `order.paid`, `order.cancelled`, `order.refunded`, `order.fulfilment_changed`. [code: packages/backend/libs/domains/orders/application/events/order-events.ts#OrderPaid]
@@ -121,7 +121,7 @@ Statuses: `PENDING`, `RESERVED`, `PAID`, `FULFILLING`, `SHIPPED`, `DELIVERED`, `
 - Only the signed webhook marks an order paid; the route acknowledges first and applies later, so a slow check never causes a provider retry.
 - Stock operations are sorted by product ID to avoid deadlocks.
 - Seller discounts fail safe: a timeout of 250 ms, an error or an invalid answer falls back (no discount).
-- Reservations have a source (`CATALOG` here) so S11 can add flash-sale stock without changing the order flow.
+- Reservations have a source: `CATALOG` (stock held through the catalog) or `FLASH` (units claimed in a flash sale's fast store, see {{cap:S11}}). A drop line's row starts `HELD`; it is released, converted and swept by S11's rules.
 - Each transition is a guarded conditional update, so racing triggers apply a move once.
 
 ## Known gaps
@@ -129,7 +129,6 @@ Statuses: `PENDING`, `RESERVED`, `PAID`, `FULFILLING`, `SHIPPED`, `DELIVERED`, `
 - The rate-limit store failing open for cart writes and the webhook has no test in the list.
 - AS-24 is proven for the discount path only. The fail-safe branch is not tied to a test.
 - The statement that the transition table allows exactly the listed moves (AS-54) is tested only at unit level.
-- The legacy flash-sale route has no scenario; its start and reconcile jobs are tested only for stock moving through the catalog (`flash-sale-legacy.e2e-spec.ts`).
 - The `requestId` and `traceId` on every log line come from the platform logger and are not re-proven in the orders specs (R-44 covers the order ID and the absence of secrets).
 - The platform's own inbox purge (`inbox.purge`, 30 days, all sources) still removes `stripe` events at 30 days, five days before the 35 days of R-45. S53 must exclude that source from it.
 - `OrderService` (auctions compat) still moves orders by its own guarded SQL; it is deleted when S21 creates auction orders through an order-creating command.

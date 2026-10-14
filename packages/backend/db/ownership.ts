@@ -108,6 +108,7 @@ export const OWNERSHIP = {
   OrderEvent: 'domain:orders',
   StockReservation: 'domain:orders',
   FlashSale: 'domain:orders',
+  FlashSaleHistory: 'domain:orders',
   ExportJob: 'domain:orders',
   // fulfilment
   PickupPoint: 'domain:fulfilment',

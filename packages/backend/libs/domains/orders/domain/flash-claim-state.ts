@@ -9,11 +9,7 @@
  */
 
 export type ClaimState =
-  | 'CLAIMED'
-  | 'COMMITTED'
-  | 'SOLD'
-  | 'RETURNING'
-  | 'RETURNED';
+  'CLAIMED' | 'COMMITTED' | 'SOLD' | 'RETURNING' | 'RETURNED';
 
 /** `return` puts the units back into their buckets; `discard` retires them (oversell remediation). */
 export type ReleaseMode = 'return' | 'discard';
@@ -24,14 +20,10 @@ export type ClaimCommand =
   | { type: 'release'; mode: ReleaseMode };
 
 export type ClaimAnswer =
-  | 'already_committed'
-  | 'already_converted'
-  | 'already_released'
-  | 'not_held';
+  'already_committed' | 'already_converted' | 'already_released' | 'not_held';
 
 export type ClaimTransition =
-  | { kind: 'applied'; to: ClaimState }
-  | { kind: 'noop'; answer: ClaimAnswer };
+  { kind: 'applied'; to: ClaimState } | { kind: 'noop'; answer: ClaimAnswer };
 
 const to = (state: ClaimState): ClaimTransition => ({
   kind: 'applied',

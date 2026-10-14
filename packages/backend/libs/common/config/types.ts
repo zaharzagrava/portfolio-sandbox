@@ -318,6 +318,18 @@ export class SecretsManagerConfig {
   orders_clear_cart_max_attempts: number;
   orders_inbox_retention_days: number;
   orders_webhook_body_limit_bytes: number;
+  /** S11: flash-sale settings, defaults in `orders-config.ts`. */
+  orders_flash_load_lead_seconds: number;
+  orders_flash_min_lead_seconds: number;
+  orders_flash_max_window_seconds: number;
+  orders_flash_claim_window_seconds: number;
+  orders_flash_order_margin_seconds: number;
+  orders_flash_verify_interval_seconds: number;
+  orders_flash_sweep_interval_seconds: number;
+  orders_flash_call_timeout_ms: number;
+  orders_flash_public_cache_ms: number;
+  orders_flash_reconcile_wait_alert_seconds: number;
+  orders_flash_key_ttl_jitter: number;
   consumer_batch: number;
   consumer_max_attempts: number;
   consumer_backoff_min_ms: number;

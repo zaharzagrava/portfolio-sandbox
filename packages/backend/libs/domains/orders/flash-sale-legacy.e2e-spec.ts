@@ -1,45 +1,48 @@
 import { randomUUID } from 'node:crypto';
-import { rows, exec } from './testing/orders-app';
-import { FlashSaleJobs } from './infra/flash/flash-sale.jobs';
+import { ProductStockService } from '@app/domains/catalog';
+import { rows, stockOf } from './testing/orders-app';
 import {
-  createOrdersApp,
-  seedShopWithProducts,
-  stockOf,
-  type OrdersTestApp,
-} from './testing/orders-app';
+  createFlashApp,
+  seedSeller,
+  type FlashTestApp,
+} from './testing/flash-kit';
 
-describe('Orders: parked flash-sale jobs move stock only through the catalog (S10 T078)', () => {
-  let t: OrdersTestApp;
-  let jobs: FlashSaleJobs;
+const MIN = 60_000;
+const T = new Date('2026-10-14T12:00:00.000Z');
+const at = (ms: number) => new Date(T.getTime() + ms);
+
+/**
+ * Replaces the S10 T078 spec of the parked flash jobs (deleted with `infra/flash/`, L-017): the same three
+ * behaviors, now proven on the S11 sale created through the route. The full lifecycle is in flash-sale-lifecycle.e2e-spec.ts.
+ */
+describe('Flash sales: stock moves only through the catalog on load and return (replaces S10 T078)', () => {
+  let t: FlashTestApp;
 
   beforeAll(async () => {
-    t = await createOrdersApp();
-    jobs = t.app.get(FlashSaleJobs, { strict: false });
+    t = await createFlashApp();
   });
   afterAll(() => t.close());
-  beforeEach(() => t.reset());
+  beforeEach(async () => {
+    await t.reset();
+    t.clock.set(T);
+  });
 
   const schedule = async (units: number) => {
-    const { shop, products } = await seedShopWithProducts(t.app, [
-      { priceMinor: 1_000, quantity: 20 },
-    ]);
-    const saleId = randomUUID();
-    const now = t.clock.now();
-    await exec(
-      t.app,
-      `INSERT INTO "FlashSale" ("id", "productId", "shopId", "price", "units", "buckets", "perUserLimit", "startsAt", "endsAt", "status", "createdAt", "updatedAt")
-       VALUES (:saleId, :productId, :shopId, 500, :units, 2, 2, :startsAt, :endsAt, 'SCHEDULED', :now, :now)`,
-      {
-        saleId,
-        productId: products[0].id,
-        shopId: shop.id,
+    const s = await seedSeller(t, [{ priceMinor: 1_000, quantity: 20 }]);
+    const res = await t
+      .as(s.owner)
+      .post(`/api/shops/${s.shop.id}/flash-sales`)
+      .send({
+        productId: s.products[0].id,
+        priceMinor: 500,
         units,
-        startsAt: new Date(now.getTime() + 60_000),
-        endsAt: new Date(now.getTime() + 3_600_000),
-        now,
-      },
-    );
-    return { saleId, product: products[0] };
+        buckets: 2,
+        perUserLimit: 2,
+        startsAt: at(10 * MIN).toISOString(),
+        endsAt: at(70 * MIN).toISOString(),
+      });
+    expect(res.status).toBe(201);
+    return { saleId: res.body.id as string, product: s.products[0] };
   };
   const status = async (saleId: string) =>
     (
@@ -56,33 +59,49 @@ describe('Orders: parked flash-sale jobs move stock only through the catalog (S1
       { like: `orders:flash:${saleId}:%` },
     );
 
-  it('S10 T078: start takes the units out under orders:flash:<saleId>:load and a repeat does not take them twice', async () => {
+  it('S11 AS-20 AS-21: the load takes the units out under orders:flash:<saleId>:load and a repeat does not take them twice', async () => {
     const { saleId, product } = await schedule(5);
-    await jobs.start({ saleId });
+    t.clock.set(at(9 * MIN));
+    await t.jobs.load({ saleId });
     expect(await stockOf(t.app, [product.id])).toEqual({ [product.id]: 15 });
-    expect(await status(saleId)).toBe('LIVE');
-    await jobs.start({ saleId }); // LIVE now: nothing to do
+    expect(await status(saleId)).toBe('LOADED');
+    await t.jobs.load({ saleId }); // LOADED now: nothing to do
     expect(await stockOf(t.app, [product.id])).toEqual({ [product.id]: 15 });
     expect((await operations(saleId)).map((o) => o.operationId)).toEqual([
       `orders:flash:${saleId}:load`,
     ]);
   });
 
-  it('S10 T078: a sale that asks for more units than the stock fails without changing it', async () => {
-    const { saleId, product } = await schedule(500);
-    await expect(jobs.start({ saleId })).rejects.toThrow(/not enough stock/);
-    expect(await stockOf(t.app, [product.id])).toEqual({ [product.id]: 20 });
-    expect(await status(saleId)).toBe('SCHEDULED');
+  it('S11 AS-22: a sale that asks for more units than the stock fails without changing it', async () => {
+    const { saleId, product } = await schedule(15);
+    // another sale takes 10 units after the schedule: 10 are left for 15 asked
+    await t.app.get(ProductStockService).applyStockDelta([
+      {
+        operationId: `test:${randomUUID()}`,
+        productId: product.id,
+        shopId: product.shopId,
+        delta: -10,
+        reason: 'test.sale',
+      },
+    ]);
+    t.clock.set(at(9 * MIN));
+    await t.jobs.load({ saleId });
+    expect(await stockOf(t.app, [product.id])).toEqual({ [product.id]: 10 });
+    expect(await status(saleId)).toBe('START_FAILED');
+    expect(await operations(saleId)).toEqual([]);
   });
 
-  it('S10 T078: reconcile returns the unsold units under orders:flash:<saleId>:return, once', async () => {
+  it('S11 AS-25: reconcile returns the unsold units under orders:flash:<saleId>:return, once', async () => {
     const { saleId, product } = await schedule(5);
-    await jobs.start({ saleId });
-    await jobs.end({ saleId });
-    await jobs.reconcile({ saleId });
+    t.clock.set(at(9 * MIN));
+    await t.jobs.load({ saleId });
+    t.clock.set(at(70 * MIN));
+    await t.jobs.end({ saleId });
+    t.clock.set(at(86 * MIN));
+    await t.jobs.reconcile({ saleId });
     expect(await stockOf(t.app, [product.id])).toEqual({ [product.id]: 20 });
     expect(await status(saleId)).toBe('RECONCILED');
-    await jobs.reconcile({ saleId });
+    await t.jobs.reconcile({ saleId });
     expect(await stockOf(t.app, [product.id])).toEqual({ [product.id]: 20 });
     expect((await operations(saleId)).map((o) => o.operationId)).toEqual([
       `orders:flash:${saleId}:load`,

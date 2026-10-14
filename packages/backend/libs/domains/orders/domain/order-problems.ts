@@ -95,4 +95,48 @@ export const ORDERS_PROBLEMS: ProblemCatalogEntry[] = [
     'Bad Request',
     'The webhook payload is not valid.',
   ),
+  // S11 flash sales (contracts/http.md)
+  entry(
+    'flash_sale_busy',
+    429,
+    'Too Many Requests',
+    'The sale is very busy right now; retry shortly.',
+  ),
+  entry(
+    'flash_sale_unavailable',
+    503,
+    'Service Unavailable',
+    'The sale is temporarily unavailable; retry.',
+  ),
+  entry(
+    'flash_sale_limit_exceeded',
+    422,
+    'Unprocessable Entity',
+    'The per-buyer limit of this sale is reached.',
+  ),
+  entry('flash_sale_not_found', 404, 'Not found', 'Flash sale not found.'),
+  entry(
+    'flash_sale_overlap',
+    409,
+    'Conflict',
+    'Another sale of this product overlaps the window.',
+  ),
+  entry(
+    'flash_sale_not_cancellable',
+    409,
+    'Conflict',
+    'The sale can no longer be cancelled.',
+  ),
+  entry(
+    'insufficient_stock',
+    422,
+    'Unprocessable Entity',
+    'The product does not have that many units.',
+  ),
+  entry(
+    'drop_price_above_regular',
+    422,
+    'Unprocessable Entity',
+    'The drop price must not be above the regular price.',
+  ),
 ];

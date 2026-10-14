@@ -51,6 +51,8 @@ export interface PricedLineInput {
   shopId: string;
   unitPriceMinor: number;
   quantity: number;
+  /** A line whose price is final (a flash-sale drop, S11): no part of a shop discount is allocated to it. */
+  noDiscount?: boolean;
 }
 
 export interface PricedCartInput {
@@ -98,7 +100,7 @@ export function priceCart(input: PricedCartInput): PricedCart {
   }));
 
   for (const shopId of shopIds) {
-    const own = priced.filter((l) => l.shopId === shopId);
+    const own = priced.filter((l) => l.shopId === shopId && !l.noDiscount);
     const parts = allocateLargestRemainder(
       discountByShop.get(shopId) ?? 0,
       own.map((l) => l.grossMinor),

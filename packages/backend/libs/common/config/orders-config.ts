@@ -24,6 +24,18 @@ export interface OrdersConfig {
   orders_clear_cart_max_attempts: number;
   orders_inbox_retention_days: number;
   orders_webhook_body_limit_bytes: number;
+  /** S11 flash sales (R-12). */
+  orders_flash_load_lead_seconds: number;
+  orders_flash_min_lead_seconds: number;
+  orders_flash_max_window_seconds: number;
+  orders_flash_claim_window_seconds: number;
+  orders_flash_order_margin_seconds: number;
+  orders_flash_verify_interval_seconds: number;
+  orders_flash_sweep_interval_seconds: number;
+  orders_flash_call_timeout_ms: number;
+  orders_flash_public_cache_ms: number;
+  orders_flash_reconcile_wait_alert_seconds: number;
+  orders_flash_key_ttl_jitter: number;
 }
 
 type Key = {
@@ -64,6 +76,39 @@ export const ordersConfigKeys: Record<keyof OrdersConfig, Key> = {
     'ORDERS_WEBHOOK_BODY_LIMIT_BYTES',
     65_536,
   ),
+  orders_flash_load_lead_seconds: int('ORDERS_FLASH_LOAD_LEAD_SECONDS', 60),
+  orders_flash_min_lead_seconds: int('ORDERS_FLASH_MIN_LEAD_SECONDS', 120),
+  orders_flash_max_window_seconds: int(
+    'ORDERS_FLASH_MAX_WINDOW_SECONDS',
+    86_400,
+  ),
+  orders_flash_claim_window_seconds: int(
+    'ORDERS_FLASH_CLAIM_WINDOW_SECONDS',
+    60,
+  ),
+  orders_flash_order_margin_seconds: int(
+    'ORDERS_FLASH_ORDER_MARGIN_SECONDS',
+    20,
+  ),
+  orders_flash_verify_interval_seconds: int(
+    'ORDERS_FLASH_VERIFY_INTERVAL_SECONDS',
+    30,
+  ),
+  orders_flash_sweep_interval_seconds: int(
+    'ORDERS_FLASH_SWEEP_INTERVAL_SECONDS',
+    10,
+  ),
+  orders_flash_call_timeout_ms: int('ORDERS_FLASH_CALL_TIMEOUT_MS', 100),
+  orders_flash_public_cache_ms: int('ORDERS_FLASH_PUBLIC_CACHE_MS', 1_000),
+  orders_flash_reconcile_wait_alert_seconds: int(
+    'ORDERS_FLASH_RECONCILE_WAIT_ALERT_SECONDS',
+    600,
+  ),
+  orders_flash_key_ttl_jitter: {
+    name: 'ORDERS_FLASH_KEY_TTL_JITTER',
+    verify: joi.number().min(0).max(0.99).required(),
+    postProcess: ((v: unknown) => (v === undefined ? 0.1 : Number(v))) as never,
+  },
 };
 
 const isSet = (value: unknown): boolean =>
@@ -92,6 +137,48 @@ export const ordersSecretsRule: RuleCheck = (ctx) => {
     found.push('stripe_webhook_secret_previous requires stripe_webhook_secret');
   return found;
 };
+
+/** S11 flash-sale start-up rules (R-12): a value missing here falls back to the default of its key. */
+export const ordersFlashRule: RuleCheck = (ctx) => {
+  const num = (key: string, fallback: number): number => {
+    const v = ctx.get(key);
+    return isSet(v) ? Number(v) : fallback;
+  };
+  const found: string[] = [];
+  if (
+    num('orders_flash_order_margin_seconds', 20) >=
+    num('orders_flash_claim_window_seconds', 60)
+  )
+    found.push(
+      'orders_flash_order_margin_seconds must be less than orders_flash_claim_window_seconds',
+    );
+  if (
+    num('orders_flash_load_lead_seconds', 60) >=
+    num('orders_flash_min_lead_seconds', 120)
+  )
+    found.push(
+      'orders_flash_load_lead_seconds must be less than orders_flash_min_lead_seconds',
+    );
+  if (num('orders_flash_call_timeout_ms', 100) > 1000)
+    found.push('orders_flash_call_timeout_ms must be at most 1000');
+  const jitter = num('orders_flash_key_ttl_jitter', 0.1);
+  if (jitter < 0 || jitter >= 1)
+    found.push('orders_flash_key_ttl_jitter must be below 1');
+  return found;
+};
+
+ConfigRules.register({
+  owner: 'orders',
+  keys: [
+    'orders_flash_order_margin_seconds',
+    'orders_flash_claim_window_seconds',
+    'orders_flash_load_lead_seconds',
+    'orders_flash_min_lead_seconds',
+    'orders_flash_call_timeout_ms',
+    'orders_flash_key_ttl_jitter',
+  ],
+  validate: ordersFlashRule,
+});
 
 ConfigRules.register({
   owner: 'orders',

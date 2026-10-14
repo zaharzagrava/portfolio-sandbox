@@ -18,7 +18,6 @@ import { UserModel as User } from '@app/domains/identity';
 import Auction from './infra/models/auction.model';
 import {
   BisOrderModel as BisOrder,
-  FlashStockService,
   OrderService,
   ORDER_MODELS,
 } from '@app/domains/orders';
@@ -40,7 +39,7 @@ import { EventsModule } from '@app/infrastructure/events/events.module';
     ]),
     SequelizeModule.forFeature([Auction, ...ORDER_MODELS]),
   ],
-  providers: [AuctionJobs, BidRelay, OrderService, FlashStockService],
+  providers: [AuctionJobs, BidRelay, OrderService],
 })
 class AuctionsWorkerSpecModule {}
 

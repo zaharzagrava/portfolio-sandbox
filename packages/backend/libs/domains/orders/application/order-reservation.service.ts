@@ -3,10 +3,13 @@ import { ApiConfigService } from '@app/common/config';
 import { CLOCK, type Clock } from '@app/common/core/clock';
 import {
   ORDER_REPOSITORY,
+  RESERVATION_REPOSITORY,
   RESERVATION_SOURCE,
   type OrderRecord,
   type OrderRepository,
+  type ReservationRepository,
   type ReservationSource,
+  type StockOutcome,
 } from '../domain/ports';
 import {
   buildReleaseOperations,
@@ -35,6 +38,8 @@ export class OrderReservationService {
   constructor(
     @Inject(ORDER_REPOSITORY) private readonly orders: OrderRepository,
     @Inject(RESERVATION_SOURCE) private readonly source: ReservationSource,
+    @Inject(RESERVATION_REPOSITORY)
+    private readonly reservations: ReservationRepository,
     private readonly lifecycle: OrderLifecycleService,
     private readonly config: ApiConfigService,
     @Inject(CLOCK) private readonly clock: Clock,
@@ -48,10 +53,13 @@ export class OrderReservationService {
         ? { kind: 'gone' }
         : { kind: 'reserved', order };
 
+    // Only catalog lines need a stock command: drop lines were claimed before the order (S11), and an order of drop
+    // lines alone goes straight to `RESERVED`.
     const lines = await this.stockLines(orderId);
-    const outcome = await this.source.reserve(
-      buildReserveOperations(orderId, lines),
-    );
+    const outcome: StockOutcome =
+      lines.length === 0
+        ? { outcome: 'applied' }
+        : await this.source.reserve(buildReserveOperations(orderId, lines));
 
     if (outcome.outcome === 'rejected') {
       await this.lifecycle.transition(
@@ -85,7 +93,8 @@ export class OrderReservationService {
 
     // The stock is taken but the order cannot be reserved (it was cancelled by another path): give it back.
     try {
-      await this.source.release(buildReleaseOperations(orderId, lines));
+      if (lines.length > 0)
+        await this.source.release(buildReleaseOperations(orderId, lines));
     } catch (error) {
       this.logger.error(
         `order ${orderId} was cancelled after its stock was taken and the release failed: ${(error as Error).name}`,
@@ -94,12 +103,15 @@ export class OrderReservationService {
     return { kind: 'gone' };
   }
 
+  /** The `REQUESTED` catalog rows of the order: the lines this step takes stock for. */
   private async stockLines(orderId: string): Promise<StockLine[]> {
-    const items = await this.orders.items(orderId);
-    return items.map((i) => ({
-      productId: i.productId,
-      shopId: i.shopId!,
-      quantity: i.quantity,
-    }));
+    const rows = await this.reservations.forOrder(orderId);
+    return rows
+      .filter((r) => r.source === 'CATALOG' && r.status === 'REQUESTED')
+      .map((r) => ({
+        productId: r.productId,
+        shopId: r.shopId,
+        quantity: r.quantity,
+      }));
   }
 }

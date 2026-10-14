@@ -7,6 +7,10 @@ import {
   type ReservationRepository,
   type ReservationSource,
 } from '../domain/ports';
+import {
+  FLASH_RESERVATION,
+  type FlashReservationPort,
+} from '../domain/flash-ports';
 import { releasePendingGauge } from '../domain/order-metrics';
 import { buildReleaseOperations } from '../domain/stock-operations';
 
@@ -27,6 +31,7 @@ export class ReservationReleaseService {
     @Inject(RESERVATION_REPOSITORY)
     private readonly reservations: ReservationRepository,
     @Inject(RESERVATION_SOURCE) private readonly source: ReservationSource,
+    @Inject(FLASH_RESERVATION) private readonly flash: FlashReservationPort,
     @Inject(CLOCK) private readonly clock: Clock,
   ) {}
 
@@ -65,7 +70,44 @@ export class ReservationReleaseService {
     return released;
   }
 
+  /** Catalog rows go back in one command; drop rows one by one through their flash sale (S11, idempotent per claim). */
   private async releaseGroup(
+    orderId: string,
+    rows: ReservationRecord[],
+  ): Promise<number> {
+    const catalogRows = rows.filter((r) => r.source !== 'FLASH');
+    const flashRows = rows.filter((r) => r.source === 'FLASH');
+    let released = 0;
+    let failure: Error | undefined;
+    try {
+      released += await this.releaseCatalogRows(orderId, catalogRows);
+    } catch (error) {
+      failure = error as Error;
+    }
+    for (const r of flashRows) {
+      try {
+        // released, already released and "not held" all mean there is nothing left to return for this claim
+        await this.flash.releaseReservation({
+          id: r.id,
+          orderId,
+          productId: r.productId,
+          quantity: r.quantity,
+          status: r.status,
+          sourceRef: r.sourceRef as string,
+          flashSaleId: r.flashSaleId as string,
+        });
+        await this.reservations.markReleased(r.id);
+        released += 1;
+      } catch (error) {
+        await this.retryLater([r]);
+        failure ??= error as Error;
+      }
+    }
+    if (failure) throw failure;
+    return released;
+  }
+
+  private async releaseCatalogRows(
     orderId: string,
     rows: ReservationRecord[],
   ): Promise<number> {
@@ -87,23 +129,27 @@ export class ReservationReleaseService {
           `release of order ${orderId}: catalog rejected ${outcome.unavailable.length} products`,
         );
     } catch (error) {
-      const now = this.clock.now();
-      for (const r of rows) {
-        const attempts = r.releaseAttempts + 1;
-        const delay = Math.min(
-          MAX_BACKOFF_MS,
-          BASE_BACKOFF_MS * 2 ** (attempts - 1),
-        );
-        await this.reservations.scheduleRetry(
-          r.id,
-          attempts,
-          new Date(now.getTime() + delay),
-        );
-      }
+      await this.retryLater(rows);
       throw error;
     }
     for (const r of rows) await this.reservations.markReleased(r.id);
     return rows.length;
+  }
+
+  private async retryLater(rows: ReservationRecord[]): Promise<void> {
+    const now = this.clock.now();
+    for (const r of rows) {
+      const attempts = r.releaseAttempts + 1;
+      const delay = Math.min(
+        MAX_BACKOFF_MS,
+        BASE_BACKOFF_MS * 2 ** (attempts - 1),
+      );
+      await this.reservations.scheduleRetry(
+        r.id,
+        attempts,
+        new Date(now.getTime() + delay),
+      );
+    }
   }
 
   async refreshGauge(): Promise<void> {

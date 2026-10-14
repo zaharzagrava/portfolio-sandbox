@@ -30,7 +30,8 @@ const commands: Array<[string, OrderCommand]> = [
 const APPLY: Record<string, Partial<Record<OrderStatus, OrderStatus>>> = {
   reserve: { PENDING: 'RESERVED' },
   markPaid: { RESERVED: 'PAID' },
-  'cancel(out_of_stock)': { PENDING: 'CANCELLED' },
+  // RESERVED since S11: the oversell remediation cancels the newest unpaid orders of a sale with this reason
+  'cancel(out_of_stock)': { PENDING: 'CANCELLED', RESERVED: 'CANCELLED' },
   'cancel(payment_failed)': { RESERVED: 'CANCELLED' },
   'cancel(hold_expired)': { RESERVED: 'CANCELLED' },
   'cancel(user_cancelled)': { RESERVED: 'CANCELLED' },

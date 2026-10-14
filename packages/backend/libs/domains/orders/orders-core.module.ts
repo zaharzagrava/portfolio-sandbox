@@ -11,6 +11,7 @@ import { ProductModule } from '@app/domains/catalog';
 import { PaymentQueryModule } from '@app/domains/payments';
 import { TenancyModule } from '@app/domains/tenancy';
 import { ORDER_MODELS } from './orders-models';
+import { FlashSaleCoreModule } from './flash-sale-core.module';
 import {
   CART_STORE,
   CHECKOUT_LOCK,
@@ -69,6 +70,7 @@ import { SequelizeShopOrderRepository } from './infra/shop-order.repository';
     TenancyModule,
     PaymentQueryModule,
     ProblemCatalogModule.forFeature(ORDERS_PROBLEMS),
+    FlashSaleCoreModule,
     SequelizeModule.forFeature(ORDER_MODELS),
   ],
   providers: [

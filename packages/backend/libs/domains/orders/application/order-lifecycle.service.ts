@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { CLOCK, type Clock } from '@app/common/core/clock';
 import { TransactionRunner } from '@app/infrastructure/context';
 import { JobsService } from '@app/infrastructure/jobs/jobs.service';
@@ -21,6 +21,10 @@ import {
   type ReservationRepository,
   type ShopOrderRepository,
 } from '../domain/ports';
+import {
+  FLASH_RESERVATION,
+  type FlashReservationPort,
+} from '../domain/flash-ports';
 import {
   OrderCancelled,
   OrderFulfilmentChanged,
@@ -69,8 +73,11 @@ export class OrderLifecycleService {
     private readonly outbox: OutboxService,
     private readonly jobs: JobsService,
     private readonly release: ReservationReleaseService,
+    @Inject(FLASH_RESERVATION) private readonly flash: FlashReservationPort,
     @Inject(CLOCK) private readonly clock: Clock,
   ) {}
+
+  private readonly logger = new Logger(OrderLifecycleService.name);
 
   async transition(
     orderId: string,
@@ -86,10 +93,47 @@ export class OrderLifecycleService {
         orderId,
         result.order.status,
       );
-      if (command.type === 'cancel' && result.previous === 'RESERVED')
+      // A cancel from PENDING can hold drop units too (claimed before the order existed): give them back right away.
+      if (
+        command.type === 'cancel' &&
+        (result.previous === 'RESERVED' || result.previous === 'PENDING')
+      )
         await this.release.releaseOrder(orderId);
+      if (command.type === 'markPaid') await this.convertFlashHolds(orderId);
     }
     return result;
+  }
+
+  /**
+   * After the commit that made the order `PAID` (its drop rows are `CONVERTED`): the claims become permanent. Outside
+   * the transaction (a fast-store call); a failure is logged, never fatal: the durable rows already say sold, and the
+   * reconciliation counts them (S11 FR-023).
+   */
+  private async convertFlashHolds(orderId: string): Promise<void> {
+    try {
+      const rows = (await this.reservations.forOrder(orderId)).filter(
+        (r) => r.source === 'FLASH' && r.status === 'CONVERTED',
+      );
+      for (const r of rows) {
+        const answer = await this.flash.convertReservation({
+          id: r.id,
+          orderId,
+          productId: r.productId,
+          quantity: r.quantity,
+          status: r.status,
+          sourceRef: r.sourceRef as string,
+          flashSaleId: r.flashSaleId as string,
+        });
+        if (answer === 'not_held')
+          this.logger.warn(
+            `order ${orderId}: paid, but the claim of its drop units was not held any more`,
+          );
+      }
+    } catch (error) {
+      this.logger.warn(
+        `order ${orderId}: conversion of drop units failed (${(error as Error).name}); the durable rows stand`,
+      );
+    }
   }
 
   /** Runs inside the caller's transaction when there is one (checkout joins its own writes to the first move). */
@@ -197,7 +241,7 @@ export class OrderLifecycleService {
       }
       case 'cancel': {
         await this.shopOrders.setStatus(order.id, 'CANCELLED', now);
-        if (previous === 'PENDING')
+        if (previous === 'PENDING') {
           await this.reservations.transitionAll(
             order.id,
             ['REQUESTED'],
@@ -206,7 +250,14 @@ export class OrderLifecycleService {
               nextReleaseAt: null,
             },
           );
-        else
+          // Drop units are claimed (and the row held) before the order is reserved: they go back through the release.
+          await this.reservations.transitionAll(
+            order.id,
+            ['HELD'],
+            'RELEASE_PENDING',
+            { nextReleaseAt: now },
+          );
+        } else
           await this.reservations.transitionAll(
             order.id,
             ['REQUESTED', 'HELD'],

@@ -37,10 +37,10 @@ export type BoardPostsPage = PostPage;
 export const pickupPageSchema = pickupPointsNearResponseSchema;
 export type PickupPage = z.infer<typeof pickupPageSchema>;
 
-/** S11 `GET /api/flash-sales?productIds=`: at most one public view per product. */
-export const flashSalePublicSchema = z.looseObject({ productId: z.string() });
-export const flashSalesResponseSchema = z.array(flashSalePublicSchema);
-export type FlashSalePublic = z.infer<typeof flashSalePublicSchema>;
+/** S11 `GET /api/flash-sales?productIds=`: S11 published its own schema (the name stays for the BFF). */
+export { flashSalePublicSchema } from '../orders/flash-sale.ts';
+export { flashSalesResponseSchema } from '../orders/flash-sale.ts';
+export type { FlashSalePublic } from '../orders/flash-sale.ts';
 
 /** S21 `GET /api/auctions?productIds=`. */
 export const auctionPublicSchema = z.looseObject({ productId: z.string() });

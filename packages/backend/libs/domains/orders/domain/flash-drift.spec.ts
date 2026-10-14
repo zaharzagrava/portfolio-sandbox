@@ -4,8 +4,16 @@ import { clampPlan, classify } from './flash-drift';
 describe('S11 AS-46: flash drift classification', () => {
   describe('during the sale', () => {
     it.each([
-      ['consistent', { units: 100, remainingFast: 60, reserved: 40 }, { kind: 'none' }],
-      ['units in flight are not drift', { units: 100, remainingFast: 55, reserved: 40 }, { kind: 'none' }],
+      [
+        'consistent',
+        { units: 100, remainingFast: 60, reserved: 40 },
+        { kind: 'none' },
+      ],
+      [
+        'units in flight are not drift',
+        { units: 100, remainingFast: 55, reserved: 40 },
+        { kind: 'none' },
+      ],
       [
         'restored snapshot: 90 remaining but only 60 possible',
         { units: 100, remainingFast: 90, reserved: 40 },
@@ -33,11 +41,31 @@ describe('S11 AS-46: flash drift classification', () => {
 
   describe('after the sale', () => {
     it.each([
-      ['equal', { units: 3000, remainingFast: 600, reserved: 2400 }, { kind: 'none' }],
-      ['590 vs 600 unsold', { units: 3000, remainingFast: 590, reserved: 2400 }, { kind: 'redis_low', driftUnits: 10 }],
-      ['640 vs 600 unsold', { units: 3000, remainingFast: 640, reserved: 2400 }, { kind: 'redis_high', driftUnits: 40 }],
-      ['everything sold', { units: 10, remainingFast: 0, reserved: 10 }, { kind: 'none' }],
-      ['sold more than units, nothing unsold', { units: 10, remainingFast: 0, reserved: 12 }, { kind: 'none' }],
+      [
+        'equal',
+        { units: 3000, remainingFast: 600, reserved: 2400 },
+        { kind: 'none' },
+      ],
+      [
+        '590 vs 600 unsold',
+        { units: 3000, remainingFast: 590, reserved: 2400 },
+        { kind: 'redis_low', driftUnits: 10 },
+      ],
+      [
+        '640 vs 600 unsold',
+        { units: 3000, remainingFast: 640, reserved: 2400 },
+        { kind: 'redis_high', driftUnits: 40 },
+      ],
+      [
+        'everything sold',
+        { units: 10, remainingFast: 0, reserved: 10 },
+        { kind: 'none' },
+      ],
+      [
+        'sold more than units, nothing unsold',
+        { units: 10, remainingFast: 0, reserved: 12 },
+        { kind: 'none' },
+      ],
     ])('S11 AS-46: %s', (_name, input, expected) => {
       expect(classify({ ...input, phase: 'after' })).toEqual(expected);
     });
@@ -60,7 +88,10 @@ describe('S11 AS-46: flash drift classification', () => {
     it('S11 AS-46: clamp lowers, never raises, and lands on the target', () => {
       fc.assert(
         fc.property(
-          fc.array(fc.integer({ min: -5, max: 500 }), { minLength: 1, maxLength: 64 }),
+          fc.array(fc.integer({ min: -5, max: 500 }), {
+            minLength: 1,
+            maxLength: 64,
+          }),
           fc.integer({ min: 0, max: 5_000 }),
           (contents, target) => {
             const out = clampPlan(contents, target);
