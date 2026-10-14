@@ -150,3 +150,11 @@
 {"run":"20261014T080720Z","capability":"S47","step":"converge-1","start":"2026-10-14T08:20:27Z","end":"2026-10-14T08:20:57Z","seconds":30,"result":"ok","attempt":1,"reason":"ok"}
 {"run":"20261014T080720Z","capability":"S47","step":"gate","start":"2026-10-14T08:20:57Z","end":"2026-10-14T08:25:40Z","seconds":283,"result":"pass","attempt":1,"reason":""}
 {"run":"20261014T080720Z","capability":"S47","step":"built","start":"2026-10-14T08:20:26Z","end":"2026-10-14T08:25:40Z","seconds":314,"result":"ok","attempt":1,"reason":"\"Ask this product\" and shop help center: ingestion, hybrid retrieval with in-query permissions, citations"}
+{"run":"20261014T080720Z","capability":"S39","step":"implement-1","start":"2026-10-14T08:26:00Z","end":"2026-10-14T08:26:20Z","seconds":20,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261014T080720Z","capability":"S39","step":"implement-2","start":"2026-10-14T08:26:20Z","end":"2026-10-14T08:27:00Z","seconds":40,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261014T080720Z","capability":"S39","step":"doctor-1","start":"2026-10-14T08:27:00Z","end":"2026-10-14T08:30:31Z","seconds":211,"result":"ok","attempt":1,"reason":"ok","code_changed":false}
+{"run":"20261014T080720Z","capability":"S39","step":"converge-1","start":"2026-10-14T08:30:32Z","end":"2026-10-14T08:32:22Z","seconds":110,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261014T080720Z","capability":"S39","step":"gate","start":"2026-10-14T08:32:22Z","end":"2026-10-14T08:32:23Z","seconds":1,"result":"fail","attempt":1,"reason":"scenarios in test-plan.md with no test carrying their ID (name tests it('S39 AS-NN: ...')): AS-57"}
+{"run":"20261014T080720Z","capability":"S39","step":"repair-1","start":"2026-10-14T08:32:24Z","end":"2026-10-14T08:33:09Z","seconds":45,"result":"ok","attempt":1,"reason":"ok","code_changed":false}
+{"run":"20261014T080720Z","capability":"S39","step":"gate","start":"2026-10-14T08:33:09Z","end":"2026-10-14T08:35:31Z","seconds":142,"result":"pass","attempt":2,"reason":"","flake":true}
+{"run":"20261014T080720Z","capability":"S39","step":"built","start":"2026-10-14T08:30:31Z","end":"2026-10-14T08:35:31Z","seconds":300,"result":"ok","attempt":1,"reason":"Analytics ingestion and A/B testing: event schema, dedupe, assignment, exposure, SRM, results"}

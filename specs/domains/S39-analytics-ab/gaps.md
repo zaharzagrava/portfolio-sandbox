@@ -105,3 +105,7 @@ Each file in its own process: `analytics-ingest` 50, `analytics-store` 9, `exper
 ## Spec changes
 
 None. No page for S39 existed under `docs/spec/capabilities/`; the first implementation task created `docs/spec/capabilities/S39-analytics-ab.md` (status draft), and no `*.reviewed.json` was created or edited. Nothing a human signed changes.
+
+## Flaky tests (passed after a repair that changed no code)
+- 2026-10-14 S39 gate: failed, then passed after a repair attempt that changed no code. Not a fix: a flake. Failed before:
+  - (no test name could be read from the log)
