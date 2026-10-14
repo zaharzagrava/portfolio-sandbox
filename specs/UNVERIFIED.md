@@ -142,3 +142,5 @@ interviews) until its status says so. The implementation loop appends here (rule
 | S47 | SC-003: recall@6 >= 0.8 on the golden set with the real embedder (the harness maths and exit codes are proven by AS-49) | same file (`pnpm --dir packages/backend rag:eval` with `voyage_api_key`) | not run |
 | S47 | SC-004, 60-second half: a deleted product or shop is invisible to questions within 60 s of the event (the effect after delivery is proven by AS-50/AS-51) | same file (publish `catalog.product_deleted`, poll the ask route, 100 trials) | not run |
 | S47 | SC-006: a 50-page PDF is `READY` within 2 minutes of upload completion in 95% of cases with the real provider | same file (100 timed uploads, real `voyage_api_key`) | not run |
+| S38 | SC-001: the flag evaluator sustains more than 1,000,000 evaluations per second per CPU core | `specs/domains/S38-feature-flags/quickstart.md`, "Ops artifacts" (`pnpm --dir packages/backend bench:flag-evaluator`) | not run |
+| S38 | SC-008: `GET /api/flags` p99 latency under 50 ms at 500 flags | same file (`pnpm --dir packages/backend loadtest:client-flags`) | not run |

@@ -3,6 +3,7 @@ import { Environment } from '@app/common/types';
 import type { BffConfig } from './bff-config';
 import type { DiscussionsConfig } from './discussions-config';
 import type { ShareLinksConfig } from './share-links-config';
+import type { FlagsConfig } from './flags-config';
 import type { KnowledgeConfig } from './knowledge-config';
 import type { AdsConfig } from './ads-config';
 
@@ -405,6 +406,7 @@ export interface SecretsManagerConfig
     BffConfig,
     DiscussionsConfig,
     ShareLinksConfig,
+    FlagsConfig,
     KnowledgeConfig,
     AdsConfig {}
 

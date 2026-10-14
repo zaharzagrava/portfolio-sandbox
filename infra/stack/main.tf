@@ -43,7 +43,7 @@ locals {
     "bulk-stock-updates"      = { visibility_seconds = 120, max_receive = 5 }
   }
 
-  domain_aggregates = ["api", "auctions", "billing", "chat", "courier", "feed", "ledger", "links", "live", "llm", "marketing", "media", "orders", "pickup", "products", "search", "shops", "stories", "usage"]
+  domain_aggregates = ["api", "auctions", "billing", "chat", "courier", "feed", "flags", "ledger", "links", "live", "llm", "marketing", "media", "orders", "pickup", "products", "search", "shops", "stories", "usage"]
   kafka_topics = merge(
     { "payments.requests" = var.kafka_partitions.payments, "payments.responses" = var.kafka_partitions.payments, "payments.dlq" = 1 },
     { for a in local.domain_aggregates : "${a}.events" => var.kafka_partitions.domain },

@@ -915,7 +915,13 @@ describe('BFF session handling', () => {
       const product = seedProduct(stub);
       stub.respond('flags', (call) => ({
         body: {
-          flags: { who: String(call.headers.authorization ?? 'anonymous') },
+          version: 1,
+          flags: {
+            who: {
+              variant: String(call.headers.authorization ?? 'anonymous'),
+              value: true,
+            },
+          },
         },
       }));
       const a = await signIn(ctx, stub, { accessToken: 'token-of-A' });
@@ -931,7 +937,9 @@ describe('BFF session handling', () => {
           who.cookie,
           expected === 'A' ? ctx : second,
         ).expect(200);
-        expect(res.body.flags.flags.who).toBe(`Bearer token-of-${expected}`);
+        expect(res.body.flags.flags.who.variant).toBe(
+          `Bearer token-of-${expected}`,
+        );
       }
       for (const call of [...stub.callsTo('chatUnread')])
         expect(['Bearer token-of-A', 'Bearer token-of-B']).toContain(
@@ -941,7 +949,7 @@ describe('BFF session handling', () => {
         product.id,
         `${BFF_COOKIES.session}=${'D'.repeat(43)}`,
       ).expect(200);
-      expect(forged.body.flags.flags.who).toBe('anonymous');
+      expect(forged.body.flags.flags.who.variant).toBe('anonymous');
       expect(forged.body.chatUnread).toBeNull();
       await ctx
         .http()
@@ -949,7 +957,7 @@ describe('BFF session handling', () => {
         .set({ Cookie: a.cookie, 'X-CSRF-Token': a.csrf })
         .expect(204);
       const loggedOut = await page(product.id, a.cookie).expect(200);
-      expect(loggedOut.body.flags.flags.who).toBe('anonymous');
+      expect(loggedOut.body.flags.flags.who.variant).toBe('anonymous');
     });
 
     it('S48 AS-45: login is rate limited fail closed: with the limiter store down it is refused, not allowed through', async () => {

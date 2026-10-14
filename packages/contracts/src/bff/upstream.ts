@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { clientFlagsSchema } from "../experimentation/flags.ts";
 import { postPageSchema, type PostPage } from "../community/discussions.ts";
 import { pickupPointsNearResponseSchema } from "../fulfilment/pickup.ts";
 
@@ -9,10 +10,8 @@ import { pickupPointsNearResponseSchema } from "../fulfilment/pickup.ts";
  * entry here with a re-export.
  */
 
-/** S38 `GET /api/flags`: the evaluated flags of the caller. */
-export const flagsResponseSchema = z.looseObject({
-  flags: z.record(z.string(), z.unknown()),
-});
+/** S38 `GET /api/flags`: the evaluated flags of the caller (S38 owns the schema; the name stays for the BFF). */
+export const flagsResponseSchema = clientFlagsSchema;
 export type FlagsResponse = z.infer<typeof flagsResponseSchema>;
 
 /** S24 `GET /api/chat/unread`: `{items: [{channelId, unread, lastSeq}], nextCursor}`. */

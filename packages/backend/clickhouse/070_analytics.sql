@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS analytics_events
     page          String,
     props         Map(String, String)
 )
--- Client retries/sendBeacon duplicates share event_id → collapsed at merge time; queries use FINAL or argMax.
+-- Client retries/sendBeacon duplicates share event_id → collapsed at merge time, so queries use FINAL or argMax.
 ENGINE = ReplacingMergeTree(received_at)
 PARTITION BY toYYYYMMDD(ts)                    -- by EVENT time: late events land in their own day
 ORDER BY (name, toDate(ts), event_id)

@@ -139,6 +139,8 @@ export class SeedsService {
     // S32: the synonym set is seeded by its migration (version 1)
     'SearchSynonymSet',
     'SearchSynonymVersion',
+    // S38: the single ruleset-version row (id = 1) is seeded by its migration and only ever grows
+    'FlagRuleset',
   ];
 
   public getModel(modelType: BisOrder | User | Migration | Outbox) {

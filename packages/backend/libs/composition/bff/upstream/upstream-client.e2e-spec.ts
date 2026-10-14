@@ -178,7 +178,7 @@ describe('BFF upstream client', () => {
   });
 
   it('S48 AS-07: aborting the caller reaches the socket (the stub sees the connection cut)', async () => {
-    stub.respond('flags', { body: { flags: {} }, delayMs: 2_000 });
+    stub.respond('flags', { body: { version: 1, flags: {} }, delayMs: 2_000 });
     const controller = new AbortController();
     const pending = failureOf(
       call(flags(), { signal: controller.signal, budgetMs: 5_000 }),
@@ -199,7 +199,7 @@ describe('BFF upstream client', () => {
       'BUDGET_EXCEEDED',
     );
     expect(stub.calls).toHaveLength(0);
-    stub.respond('flags', { body: { flags: {} }, delayMs: 300 });
+    stub.respond('flags', { body: { version: 1, flags: {} }, delayMs: 300 });
     const failure = await failureOf(
       call(flags(), { budgetMs: 80, deadlineLimited: true }),
     );

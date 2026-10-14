@@ -9,13 +9,19 @@ export interface FeatureFlag {
   defaultVariant: string;
   offVariant: string;
   owner: string;
+  /** `enabled`, `disabled`, `killed` or `archived` (S38); `enabled` above is derived from it. */
+  status: 'enabled' | 'disabled' | 'killed' | 'archived';
   version: number;
   updatedAt: string;
 }
 
-/** A plain on/off flag: enabled → "on" for everyone, killed/disabled → "off". */
-export function booleanFlag(description: string, owner: string) {
+/**
+ * A plain on/off flag: enabled → "on" for everyone, killed/disabled → "off". `expectedVersion` is 0 to create and the
+ * flag's current `version` to update it (the API refuses a stale one with 409, S38).
+ */
+export function booleanFlag(description: string, owner: string, expectedVersion = 0) {
   return {
+    expectedVersion,
     description,
     enabled: true,
     variants: [
@@ -31,7 +37,8 @@ export function booleanFlag(description: string, owner: string) {
 
 export const adminApi = {
   async listFlags(): Promise<FeatureFlag[]> {
-    return (await apiClient.get('/api/admin/flags')).data;
+    // S38 lists are pages `{items, nextCursor}`; the console shows the first page (50 flags) until W06 adds paging.
+    return (await apiClient.get('/api/admin/flags')).data.items;
   },
 
   async createFlag(payload: { key: string; description: string; owner: string }): Promise<void> {

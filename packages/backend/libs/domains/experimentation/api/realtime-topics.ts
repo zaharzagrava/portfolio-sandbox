@@ -10,6 +10,7 @@ export class FlagTopics implements OnModuleInit {
     this.topics.define({
       prefix: 'flags',
       singleton: true,
+      owner: 'experimentation',
       policy: (viewer) => viewer.roles?.includes('SERVICE') ?? false,
     });
   }

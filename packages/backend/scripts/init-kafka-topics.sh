@@ -16,6 +16,8 @@ TOPICS=(
   "ads.clicks"
   "ads.click-aggregates"
   "ads.clicks.dlq"
+  # S38 feature flags: one `experimentation.flag_changed` per applied change (outbox relay publishes it here)
+  "flags.events"
 )
 
 if ! docker inspect "${KAFKA_CONTAINER}" >/dev/null 2>&1; then

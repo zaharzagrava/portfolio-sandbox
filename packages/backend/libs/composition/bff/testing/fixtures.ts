@@ -106,7 +106,10 @@ export const trendingFixture = (category = 'audio') =>
   });
 
 export const flagsFixture = () =>
-  flagsResponseSchema.parse({ flags: { 'web-new-header': true } });
+  flagsResponseSchema.parse({
+    version: 1,
+    flags: { 'web-new-header': { variant: 'on', value: true } },
+  });
 
 export const chatUnreadFixture = () =>
   chatUnreadPageSchema.parse({

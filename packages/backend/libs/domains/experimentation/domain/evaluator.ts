@@ -1,4 +1,6 @@
-import { murmur3 } from '@app/common/core/murmur3';
+import { bucketOf } from './bucket';
+
+export { bucketOf };
 
 export type FlagValue = boolean | string | number | Record<string, unknown>;
 
@@ -22,9 +24,10 @@ export interface Rule {
   rollout?: { variant: string; weight: number }[];
 }
 
+/** A flag as the ruleset holds it: archived flags are not in it. */
 export interface FlagDefinition {
   key: string;
-  enabled: boolean;
+  status: 'enabled' | 'disabled' | 'killed';
   variants: Variant[];
   defaultVariant: string;
   offVariant: string;
@@ -43,15 +46,16 @@ export interface Evaluation {
   key: string;
   variant: string;
   value: FlagValue;
-  reason: 'off' | 'rule' | 'rollout' | 'default' | 'unknown_flag';
+  reason:
+    | 'off'
+    | 'killed'
+    | 'rule'
+    | 'rollout'
+    | 'default'
+    | 'unknown_flag'
+    | 'ruleset_unavailable';
   ruleId?: string;
-}
-
-const BUCKETS = 10_000;
-
-/** Stable bucket in [0, 10000) for (flag, unit): the same user always lands in the same bucket of a flag. */
-export function bucketOf(flagKey: string, unit: string): number {
-  return murmur3(`${flagKey}:${unit}`) % BUCKETS;
+  flagVersion: number;
 }
 
 function matches(condition: Condition, ctx: EvalContext): boolean {
@@ -79,96 +83,70 @@ function matches(condition: Condition, ctx: EvalContext): boolean {
   }
 }
 
+/** The answer for a key that is not in the ruleset (unknown or archived): never an error (FR-025). */
+export const unknownFlag = (key: string): Evaluation => ({
+  key,
+  variant: 'off',
+  value: false,
+  reason: 'unknown_flag',
+  flagVersion: 0,
+});
+
+/** The answer before any ruleset has ever been loaded (FR-025). */
+export const rulesetUnavailable = (key: string): Evaluation => ({
+  key,
+  variant: 'off',
+  value: false,
+  reason: 'ruleset_unavailable',
+  flagVersion: 0,
+});
+
 /**
- * Pure, allocation-light evaluation (runs millions of times per second per
- * core, never touches the network):
- *   disabled → off variant; first matching rule wins (targeted variant or
- *   weighted rollout); no rule → default variant.
- * Rollouts pick by cumulative weight over a hash bucket, so widening 5% → 20%
- * only ADDS users (bucket < 500 is also < 2000) - nobody flips back and forth.
- * Without a bucketing unit (anonymous, no userId) a rollout serves its first
- * variant (conservative: usually the control).
+ * Pure, allocation-light evaluation (no clock, no I/O, no randomness; runs millions of times per second per core):
+ *   killed → off variant (reason `killed`); disabled → off variant (reason `off`); first matching rule wins
+ *   (targeted variant or weighted rollout); no rule → default variant.
+ * Rollouts pick by cumulative weight over a hash bucket, so widening 5% → 20% only ADDS users (bucket < 500 is also
+ * < 2000) - nobody flips back and forth. Without a bucketing unit a rollout serves its first slice (usually the control).
  */
 export function evaluate(
   flag: FlagDefinition | undefined,
   ctx: EvalContext,
+  askedKey = '?',
 ): Evaluation {
-  if (!flag)
-    return { key: '?', variant: 'off', value: false, reason: 'unknown_flag' };
+  if (!flag) return unknownFlag(askedKey);
+  const flagVersion = flag.version;
   const value = (variantKey: string) =>
     flag.variants.find((v) => v.key === variantKey)?.value ?? false;
-  if (!flag.enabled)
-    return {
-      key: flag.key,
-      variant: flag.offVariant,
-      value: value(flag.offVariant),
-      reason: 'off',
-    };
+  const served = (
+    variant: string,
+    reason: Evaluation['reason'],
+    ruleId?: string,
+  ): Evaluation => ({
+    key: flag.key,
+    variant,
+    value: value(variant),
+    reason,
+    ...(ruleId !== undefined && { ruleId }),
+    flagVersion,
+  });
+  if (flag.status === 'killed') return served(flag.offVariant, 'killed');
+  if (flag.status !== 'enabled') return served(flag.offVariant, 'off');
 
   for (const rule of flag.rules) {
     if (!rule.conditions.every((c) => matches(c, ctx))) continue;
-    if (rule.variant)
-      return {
-        key: flag.key,
-        variant: rule.variant,
-        value: value(rule.variant),
-        reason: 'rule',
-        ruleId: rule.id,
-      };
+    if (rule.variant) return served(rule.variant, 'rule', rule.id);
     if (rule.rollout?.length) {
       const unit = ctx[flag.bucketBy];
       if (typeof unit !== 'string' || !unit)
-        return {
-          key: flag.key,
-          variant: rule.rollout[0].variant,
-          value: value(rule.rollout[0].variant),
-          reason: 'rollout',
-          ruleId: rule.id,
-        };
+        return served(rule.rollout[0].variant, 'rollout', rule.id);
       const bucket = bucketOf(flag.key, unit);
       let cumulative = 0;
       for (const slice of rule.rollout) {
         cumulative += slice.weight;
         if (bucket < cumulative)
-          return {
-            key: flag.key,
-            variant: slice.variant,
-            value: value(slice.variant),
-            reason: 'rollout',
-            ruleId: rule.id,
-          };
+          return served(slice.variant, 'rollout', rule.id);
       }
     }
   }
-  return {
-    key: flag.key,
-    variant: flag.defaultVariant,
-    value: value(flag.defaultVariant),
-    reason: 'default',
-  };
-}
-
-/** Admin-side validation: weights sum to 10,000, every referenced variant exists. */
-export function validateFlag(flag: Omit<FlagDefinition, 'version'>): string[] {
-  const errors: string[] = [];
-  const keys = new Set(flag.variants.map((v) => v.key));
-  for (const k of [flag.defaultVariant, flag.offVariant])
-    if (!keys.has(k)) errors.push(`unknown variant ${k}`);
-  for (const rule of flag.rules) {
-    if (!rule.variant && !rule.rollout?.length)
-      errors.push(`rule ${rule.id}: needs a variant or a rollout`);
-    if (rule.variant && !keys.has(rule.variant))
-      errors.push(`rule ${rule.id}: unknown variant ${rule.variant}`);
-    if (rule.rollout) {
-      const sum = rule.rollout.reduce((s, r) => s + r.weight, 0);
-      if (sum !== BUCKETS)
-        errors.push(
-          `rule ${rule.id}: rollout weights sum to ${sum}, expected ${BUCKETS}`,
-        );
-      for (const r of rule.rollout)
-        if (!keys.has(r.variant))
-          errors.push(`rule ${rule.id}: unknown variant ${r.variant}`);
-    }
-  }
-  return errors;
+  return served(flag.defaultVariant, 'default');
 }

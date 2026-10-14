@@ -44,4 +44,5 @@ No clarification was requested (unattended run). Each line is a choice made by t
 - [LOCAL] Evaluation counters stay approximate (in-memory, flushed every 30 s, 40-day TTL).
 - [LOCAL] Variant `key` format `^[a-z0-9][a-z0-9_-]{0,31}$`, rule id `^[a-z0-9-]{1,32}$` → bounded identifiers for logs and metrics.
 - [LOCAL] The `flag` metric label is bounded by the 500-flag cap → safe cardinality.
+- [BLOCKED T035/T058, 2026-10-14] Not run: the manual smoke of `quickstart.md` as real processes with the Redis cache stopped, and the rebuild of the shared stack with `scripts/qa/fresh-run.sh` (L-012). Needs a human or an approved run: it stops the shared Redis and rebuilds the stack, which the agent may not do. What was run instead: `apps/core`, `apps/worker` and `apps/sse-gateway` `flags-wiring.e2e-spec.ts` start the real application modules against the test stack, and `flags-sdk.e2e-spec.ts` AS-18/AS-20 prove the SDK's behaviour with both stores down. Nothing here is described as verified beyond that.
 - [LOCAL] Repair job interval 30 s, snapshot TTL 1 h → refreshed by the repair job; short enough to heal, long enough to survive its own outage.

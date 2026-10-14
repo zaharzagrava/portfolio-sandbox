@@ -18,7 +18,10 @@ import {
   AdsWorkerModule,
   ShareLinksWorkerModule,
 } from '@app/domains/marketing';
-import { FlagsSdkModule } from '@app/domains/experimentation';
+import {
+  FlagsSdkModule,
+  FlagsWorkerModule,
+} from '@app/domains/experimentation';
 import {
   WebhooksWorkerModule,
   PublicApiWorkerModule,
@@ -100,6 +103,7 @@ import { AuthWorkerModule } from '@app/domains/identity';
     PublicApiWorkerModule,
     WebhooksWorkerModule,
     FlagsSdkModule,
+    FlagsWorkerModule,
     AdsWorkerModule,
     StoriesWorkerModule,
     CatalogImportWorkerModule,

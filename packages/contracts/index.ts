@@ -22,6 +22,7 @@ export * from './src/assistant/ask.ts';
 export * from './src/assistant/knowledge.ts';
 export * from './src/marketing/share-links.ts';
 export * from './src/marketing/ads.ts';
+export * from './src/experimentation/flags.ts';
 export * from './src/media/video.ts';
 export * from './src/media/video-events.ts';
 export * from './src/events/client-events.ts';

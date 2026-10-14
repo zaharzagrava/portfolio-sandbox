@@ -64,3 +64,28 @@ No line names `experimentation`: the domain has no `MODEL` or `SQL` finding in t
 - Expand: add `status` (`enabled` | `disabled` | `killed` | `archived`, backfilled from `enabled`: true → `enabled`, false → `disabled`), `createdAt`, a ruleset-version store (single row, incremented in the same transaction as every change, seeded from the maximum flag version), `requestId` on `FlagAudit`, a check on `bucketBy`, and a partial index for the non-archived count. Keep `enabled` readable until the code stops reading it; drop it in a later contract migration. `lock_timeout` on every statement. Backfill existing `actorId IS NULL` audit rows with the admin of the change if known; otherwise a reserved system actor, then add `NOT NULL`.
 - The kill/disable ambiguity: existing rows with `enabled = false` become `disabled`, never `killed` (history cannot tell them apart).
 - `FlagAudit` actions in existing rows (`create`, `update`, `kill`) are valid under FR-050.
+
+## Sibling-spec follow-ups
+
+- **W06**: the admin console must send `expectedVersion` on every `PUT /api/admin/flags/:key` (0 to create), read `status` (not only `enabled`), page lists and history with `nextCursor`, and use `kill`, `restore` and `archive`; `packages/web/lib/api/admin.ts` `booleanFlag` follows the new body (only the payload helper is changed by S38).
+- **S39**: assign experiment variants with `bucketOf(salt, unit)` from `@app/domains/experimentation` (experiment id as `salt`) and log exposures as `name: "exposure"`, `props: {flag_key, variant, flag_version}`; `PurchaseEventsProjector` leaves the barrel with S39 (D-8) and its `OrderPaid` import stays S39's edge (D-15).
+- **S48**: `flagsResponseSchema` in `packages/contracts/src/bff/upstream.ts` is now `clientFlagsSchema` under the same name; the BFF must keep forwarding the session, `X-Anonymous-Id` and the edge country header with its credential, and must not cache `GET /api/flags` in a shared cache.
+- **S03**: `GET /api/flags` needs the verified active shop on a public route; if tenancy exports no optional-shop provider, S03 should export one (S38 asks for the membership-checked shop only when a session and `X-Shop-Id` are both present).
+- **S18 / S10 / S11 / S20 / S36**: callers that target on `plan` put it into `EvalContext` themselves; S38 never calls S18.
+- **S51**: nothing to adopt; the `flags` topic stays a `TopicRegistry.define` singleton for the `SERVICE` role.
+- **S03**: resolved without a new export: the client endpoint and the gate use `ShopAccessService.getRole` from tenancy's barrel (a membership check, so a header alone never opens a shop) and honour `req.shopId` when `ShopGuard` already verified it.
+- **S48**: the BFF's own e2e specs and `testing/fixtures.ts` stubbed the flags upstream with `{flags: {k: v}}`; S38 changed those stubs (not the BFF code) to `{version, flags: {k: {variant, value}}}` so they parse with `clientFlagsSchema`. The BFF code needed no change.
+- **W06**: `listFlags` in `packages/web/lib/api/admin.ts` now reads `.items` of the page (50 flags) so the existing console keeps working until W06 adds paging.
+- **Every capability that gates a route**: write `@RequireFlag(key)` above `@Firewall(...)` so the principal is known when the gate decides (guards of one handler run bottom decorator first).
+- **Test harness** (shared): `test/seeds/seeds.service.ts` keeps `FlagRuleset` out of the per-test truncation (like the plan and price tables): the single version row is migration-managed; the write path also re-creates it when absent.
+- **Platform / operations**: the new topic `flags.events` is added to `packages/backend/scripts/init-kafka-topics.sh` and to `domain_aggregates` in `infra/stack/main.tf` (L-002, L-011: every topic the code names must exist).
+- **Operations**: the real-process start with the Redis cache stopped (AS-20 at process level) is not automated; `quickstart.md` keeps it as a manual smoke. The SDK-level proof is in `flags-sdk.e2e-spec.ts`.
+
+## Spec changes
+
+None. `docs/spec/capabilities/` has no S38 page and no `*.reviewed.json` exists for it; the implementation creates the page first (plan, follow-up 5) and nothing a human signed is changed.
+
+## Gate repairs
+
+- `libs/domains/experimentation/flags.e2e-spec.ts` was deleted without a scenario id to prove a replacement (test integrity gate). Recreated it as a four-test journey spec on the new API (S38 AS-14, AS-17, AS-37, AS-48): push, 50% rollout, kill and audit; 422 on an invalid definition and caller fallback; public `/api/flags` shows client-side flags only; stale report. 4 tests pass, `check-tests.py integrity` and `tsc --noEmit` are clean.
+- `packages/backend/clickhouse/070_analytics.sql`: a `;` inside a comment before `ENGINE` made `analytics.e2e-spec.ts` (which slices the DDL at the first `;`) send a statement without `ORDER BY`, so 5 analytics tests failed. Removed the `;` from the comment; no test was changed. `libs/domains/experimentation` now passes (8 suites, 117 tests).

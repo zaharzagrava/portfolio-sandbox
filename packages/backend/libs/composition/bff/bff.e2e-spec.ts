@@ -934,7 +934,13 @@ describe('BFF product page composition', () => {
         const product = seedProduct(stub);
         stub.respond('flags', (call) => ({
           body: {
-            flags: { who: String(call.headers.authorization ?? 'anonymous') },
+            version: 1,
+            flags: {
+              who: {
+                variant: String(call.headers.authorization ?? 'anonymous'),
+                value: true,
+              },
+            },
           },
           headers: { 'cache-control': 'public, s-maxage=5' },
         }));
@@ -953,9 +959,9 @@ describe('BFF product page composition', () => {
           ).body,
         );
         const anon = parsePage((await page(product.id).expect(200)).body);
-        expect(asA.flags?.flags).toEqual({ who: 'Bearer token-A' });
-        expect(asB.flags?.flags).toEqual({ who: 'Bearer token-B' });
-        expect(anon.flags?.flags).toEqual({ who: 'anonymous' });
+        expect(asA.flags?.flags.who.variant).toBe('Bearer token-A');
+        expect(asB.flags?.flags.who.variant).toBe('Bearer token-B');
+        expect(anon.flags?.flags.who.variant).toBe('anonymous');
         expect(stub.callsTo('flags')).toHaveLength(3);
         expect(await bffKeys(ctx.redis, 'bff:cache:flags:*')).toHaveLength(0);
         expect(await bffKeys(ctx.redis, 'bff:cache:chat*')).toHaveLength(0);
