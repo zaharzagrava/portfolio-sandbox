@@ -54,6 +54,8 @@ What the current code gets wrong or lacks against [`spec.md`](spec.md). This is 
 
 ## C. Cross-domain access and debt rows
 
+**`check:table-ownership` output (run 2026-10-15, T001)**: `statements (6)`: SQL `Product` (catalog), `BisOrder` (orders) and `BisOrderItem` (orders), each in `application/statement.service.ts` and `infra/statement-export.ts`. These are exactly C1 and C2; no row beyond those listed below was found.
+
 `docs/work/architecture/debt-register.md` rows naming `statements` or `S16`: **D-12** (open): "statements reads orders and catalog tables … Reports → ClickHouse via CDC (statements)". D-7 (model imports) names no `statements` file; the only model import in this domain is in its test (see C3). The `check:table-ownership` output could not be produced here (see the note above); the rows below are derived by reading.
 
 | # | Finding (debt) | Where | Mechanism that replaces it |
@@ -78,3 +80,20 @@ What the current code gets wrong or lacks against [`spec.md`](spec.md). This is 
 | D6 | `ShopScoped`, `ShopQueryService.getShopsByIds`, admin `Firewall` | S03, S01 | AS-09, AS-23 |
 | D7 | Web statement tab and its Playwright happy paths | W04 (decision in `questions.md`) | AS-14, AS-18, AS-61 |
 | D8 | S14 adoption of `CommissionRateQueryService.getRatesAsOf` for its fee (when it chooses) | S14 | closes expected `fee_mismatch` findings |
+
+## Spec changes
+
+None. No living-spec page for S16 existed when this plan was written (`docs/spec/capabilities/` holds no `S16-*.md`), so nothing a human signed is changed; the first behaviour task creates `docs/spec/capabilities/S16-seller-statements.md` and no `*.reviewed.json` is created or edited.
+
+## Sibling-spec follow-ups
+
+- **S10**: `order.paid` lines must carry `lineId` (stable per order line) and `category` (copied at purchase time), and `shopId` must be non-null for paid lines; add a history re-emit command (D1). Until then statements dead-letters real `order.paid` events as `missing_line_id` (see `research.md` R-1). Also remove S16 from the consumer list of `OrderQueryService.getOrderLines` (C7).
+- **S14**: `SALE` journals must carry `orderId`, per-shop `SHOP_<id>` credits and a `PLATFORM_FEES` credit (D2); until they do, reconciliation skips unlinked journals and counts them. Adopt `CommissionRateQueryService.getRatesAsOf` for the fee when ready (D8); `fee_mismatch` findings are expected until then. `ledger.journal_posted` v1 is not consumed.
+- **S15**: no change needed: `payout.paid` is consumed as published.
+- **S50**: the policy names `statements.read`, `statements.export.concurrent`, `statements.admin.read`, `statements.admin.write` are declared by this domain; once the call sites of other domains stop using `exports.concurrent`, S50 may delete the old name (T048).
+- **S53**: the topic `statements.events` is registered in the topic registry by this capability; consumers S28 and J01 adopt `statements.period_closed` and `statements.adjustment_booked`.
+- **W04 / J01**: the statements tab, the "as known on" picker and the CSV download journeys (D7) are theirs; the API contract is `contracts/http.md`.
+
+## Plan coverage
+
+Every item above (A1–A32, B1–B6, C1–C7, D1–D8) is mapped to a file or decision in `plan.md` ("Gap-to-plan map") and `research.md`. The implementation must still run `pnpm --dir packages/backend check:table-ownership` first, record its `statements` rows here, and add any row not derived by reading (note at the top of section C).

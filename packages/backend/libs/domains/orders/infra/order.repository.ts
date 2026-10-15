@@ -107,12 +107,12 @@ export class SequelizeOrderRepository implements OrderRepository {
 
     await this.sequelize.query(
       `INSERT INTO "BisOrderItem" ("id", "bisOrderId", "productId", "title", "quantity", "priceAtPurchase",
-                                   "discountMinor", "lineTotalMinor", "shopId", "createdAt", "updatedAt")
+                                   "discountMinor", "lineTotalMinor", "shopId", "category", "createdAt", "updatedAt")
        SELECT uuidv7(), :orderId, i."productId"::uuid, i."title", i."quantity", i."unitPrice", i."discount", i."lineTotal",
-              i."shopId"::uuid, :now, :now
+              i."shopId"::uuid, i."category", :now, :now
        FROM jsonb_to_recordset(CAST(:items AS jsonb)) AS i(
          "productId" text, "title" text, "quantity" int, "unitPrice" bigint, "discount" bigint, "lineTotal" bigint,
-         "shopId" text)`,
+         "shopId" text, "category" text)`,
       {
         replacements: {
           orderId: order.id,
@@ -126,6 +126,7 @@ export class SequelizeOrderRepository implements OrderRepository {
               discount: i.discountMinor,
               lineTotal: i.lineTotalMinor,
               shopId: i.shopId,
+              category: i.category ?? null,
             })),
           ),
         },
@@ -293,6 +294,8 @@ export class SequelizeOrderRepository implements OrderRepository {
 
   async items(orderId: string): Promise<OrderItemRecord[]> {
     const rows = await this.select<{
+      lineId: string;
+      category: string | null;
       productId: string;
       shopId: string | null;
       title: string | null;
@@ -301,11 +304,14 @@ export class SequelizeOrderRepository implements OrderRepository {
       discountMinor: string | number;
       lineTotalMinor: string | number | null;
     }>(
-      `SELECT "productId", "shopId", "title", "quantity", "priceAtPurchase", "discountMinor", "lineTotalMinor"
-       FROM "BisOrderItem" WHERE "bisOrderId" = :orderId ORDER BY "productId"`,
+      `SELECT "id" AS "lineId", "category", "productId", "shopId", "title", "quantity", "priceAtPurchase", "discountMinor",
+              "lineTotalMinor"
+       FROM "BisOrderItem" WHERE "bisOrderId" = :orderId ORDER BY "productId", "id"`,
       { orderId },
     );
     return rows.map((r) => ({
+      lineId: r.lineId,
+      category: r.category,
       productId: r.productId,
       shopId: r.shopId,
       title: r.title,

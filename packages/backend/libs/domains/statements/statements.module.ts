@@ -1,22 +1,26 @@
 import { Module } from '@nestjs/common';
 import { AuthModule } from '@app/domains/identity';
-import { JobsModule } from '@app/infrastructure/jobs/jobs.module';
-import { CommissionRateService } from './application/commission-rate.service';
-import { StatementService } from './application/statement.service';
-import { ReportingPool } from './infra/reporting-pool';
-import { StatementsController } from './api/statements.controller';
+import { IdempotencyModule } from '@app/infrastructure/idempotency';
 import { RateLimitModule } from '@app/infrastructure/rate-limit';
+import { AccountingPeriodsController } from './api/accounting-periods.controller';
+import { CommissionRatesController } from './api/commission-rates.controller';
+import { StatementsController } from './api/statements.controller';
 import { statementsRatePolicies } from './rate-limit-policies';
+import { StatementsCoreModule } from './statements-core.module';
 
-/** SD-41 (core). */
+/** HTTP side (apps/core): the seller statement reads and the finance operator routes (S16 contracts/http.md). */
 @Module({
   imports: [
+    StatementsCoreModule,
     AuthModule,
-    JobsModule,
+    IdempotencyModule,
     RateLimitModule.forFeature(statementsRatePolicies),
   ],
-  providers: [CommissionRateService, StatementService, ReportingPool],
-  exports: [CommissionRateService, StatementService],
-  controllers: [StatementsController],
+  controllers: [
+    StatementsController,
+    CommissionRatesController,
+    AccountingPeriodsController,
+  ],
+  exports: [StatementsCoreModule],
 })
 export class StatementsModule {}

@@ -263,6 +263,7 @@ export async function seedPendingOrder(
       quantity: number;
       unitPriceMinor: number;
       title?: string;
+      category?: string;
     }>;
     now?: Date;
     currency?: string;
@@ -273,6 +274,7 @@ export async function seedPendingOrder(
     productId: l.productId,
     shopId: l.shopId,
     title: l.title ?? 'Seeded item',
+    category: l.category ?? null,
     quantity: l.quantity,
     unitPriceMinor: l.unitPriceMinor,
     discountMinor: 0,

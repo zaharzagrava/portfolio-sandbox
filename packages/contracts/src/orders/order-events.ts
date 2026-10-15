@@ -34,6 +34,12 @@ export const orderEventSchemas = {
     paidAt: z.string(),
     lines: z.array(
       z.object({
+        /**
+         * S16: stable id of the order line and the product's category at purchase. Optional in this shared contract
+         * (older consumers and rows predate them); statements requires both and dead-letters a line without.
+         */
+        lineId: z.string().optional(),
+        category: z.string().optional(),
         productId: z.string(),
         shopId: z.string().nullable(),
         title: z.string(),

@@ -129,6 +129,60 @@ describe('Orders: events, realtime, observability and jobs', () => {
       expect(buyer.id).toBeDefined();
     });
 
+    it('S10 AS-64: order.paid lines carry the stable line id and the category kept at purchase (S16 D1)', async () => {
+      const buyer = await t.newUser();
+      const { shop, products } = await seedShopWithProducts(t.app, [
+        { priceMinor: 1_000, quantity: 10 },
+        { priceMinor: 500, quantity: 10 },
+      ]);
+      const order = await seedPendingOrder(t.app, {
+        userId: buyer.id,
+        lines: [
+          {
+            productId: products[0].id,
+            shopId: shop.id,
+            quantity: 1,
+            unitPriceMinor: 1_000,
+            category: 'electronics',
+          },
+          {
+            productId: products[1].id,
+            shopId: shop.id,
+            quantity: 2,
+            unitPriceMinor: 500,
+            category: 'books',
+          },
+        ],
+      });
+      await move(order.id, { type: 'reserve' });
+      await move(order.id, { type: 'markPaid', paymentRef: 'pi_line' });
+
+      const items = await rows<{
+        id: string;
+        productId: string;
+        category: string;
+      }>(
+        t.app,
+        `SELECT "id", "productId", "category" FROM "BisOrderItem" WHERE "bisOrderId" = :orderId`,
+        { orderId: order.id },
+      );
+      const paid = (await events(order.id)).find((r) => r.type === 'order.paid');
+      const payload = orderEventSchemas['order.paid'].parse(
+        (paid!.payload as { payload: unknown }).payload,
+      );
+      expect(payload.lines).toHaveLength(2);
+      for (const line of payload.lines) {
+        const item = items.find((i) => i.productId === line.productId)!;
+        expect(line.lineId).toBe(item.id);
+        expect(line.category).toBe(item.category);
+      }
+      expect(payload.lines.map((l) => l.category).sort()).toEqual([
+        'books',
+        'electronics',
+      ]);
+      expect(new Set(payload.lines.map((l) => l.lineId)).size).toBe(2);
+    });
+
     it('S10 AS-64: when the outbox write fails the whole transition rolls back and the caller gets a retryable 503', async () => {
       const { buyer, order } = await reserved();
       const before = await orderRow(t.app, order.id);

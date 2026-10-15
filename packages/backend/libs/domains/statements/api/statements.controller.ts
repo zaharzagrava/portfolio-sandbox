@@ -1,90 +1,99 @@
 import {
-  BadRequestException,
-  Body,
+  CanActivate,
   Controller,
+  ExecutionContext,
   Get,
-  Header,
-  HttpCode,
+  Injectable,
   Param,
-  ParseUUIDPipe,
-  Post,
   Query,
   Res,
+  UseGuards,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import type { Response } from 'express';
-import { Firewall, Role } from '@app/domains/identity';
 import { ShopScoped } from '@app/domains/tenancy';
 import { RateLimit } from '@app/infrastructure/rate-limit';
-import { CommissionRateService } from '../application/commission-rate.service';
+import { StatementExportService } from '../application/statement-export.service';
 import { StatementService } from '../application/statement.service';
-import { streamStatementCsv } from '../infra/statement-export';
-import { ReportingPool } from '../infra/reporting-pool';
-import { SetCommissionRateDto } from './statements.dto';
+import { sendCsv } from '../infra/streaming-response';
+import { StatementsLifecycle } from '../infra/statements-lifecycle';
+import { validationFailed } from '../domain/errors';
+import {
+  monthParamSchema,
+  sellerListQuerySchema,
+  shopIdParamSchema,
+  statementQuerySchema,
+} from './statements.dto';
+import { ZodPipe } from './zod.pipe';
 
-const MONTH = /^\d{4}-\d{2}$/;
+/** A malformed `shopId` is `400 validation_failed` before the shop guard looks anything up. */
+@Injectable()
+export class ShopIdFormatGuard implements CanActivate {
+  canActivate(ctx: ExecutionContext): boolean {
+    const shopId = ctx
+      .switchToHttp()
+      .getRequest<{ params: { shopId?: string } }>().params.shopId;
+    if (!shopIdParamSchema.safeParse(shopId).success)
+      throw validationFailed(['shopId']);
+    return true;
+  }
+}
 
+/**
+ * The seller's statements (S16 contracts/http.md): a member with `payouts.read` reads their own shop's statements
+ * only; the guard decides who may (`404` for a non-member, `403` for the wrong role). Thin: one service call a route.
+ */
 @ApiTags('statements')
-@Controller()
+@UseGuards(ShopIdFormatGuard)
+@Controller('shops/:shopId/statements')
 export class StatementsController {
   constructor(
     private readonly statements: StatementService,
-    private readonly rates: CommissionRateService,
-    private readonly reporting: ReportingPool,
+    private readonly exports: StatementExportService,
+    private readonly lifecycle: StatementsLifecycle,
   ) {}
 
-  /** `?knownAt=2026-04-01T00:00:00Z` → the statement exactly as we would have produced it then. */
   @ShopScoped('payouts.read')
-  @Get('shops/:shopId/statements/:month')
-  statement(
-    @Param('shopId', ParseUUIDPipe) shopId: string,
-    @Param('month') month: string,
-    @Query('knownAt') knownAt?: string,
+  @RateLimit('statements.read')
+  @Get()
+  list(
+    @Param('shopId') shopId: string,
+    @Query(new ZodPipe(sellerListQuerySchema))
+    query: ReturnType<typeof sellerListQuerySchema.parse>,
   ) {
-    if (!MONTH.test(month))
-      throw new BadRequestException('month must be YYYY-MM');
-    const known = knownAt ? new Date(knownAt) : undefined;
-    if (known && Number.isNaN(known.getTime()))
-      throw new BadRequestException('knownAt must be an ISO date');
-    return this.statements.statement(shopId, `${month}-01`, known);
+    return this.statements.list(shopId.toLowerCase(), query);
   }
 
+  /** The statement as CSV, streamed with back-pressure; at most two at once per shop (fail closed). */
   @ShopScoped('payouts.read')
-  @RateLimit('exports.concurrent')
-  @Header('Content-Type', 'text/csv; charset=utf-8')
-  @Get('shops/:shopId/statements/:month/lines.csv')
+  @RateLimit('statements.read', 'statements.export.concurrent')
+  @Get(':month/lines.csv')
   async export(
-    @Param('shopId', ParseUUIDPipe) shopId: string,
-    @Param('month') month: string,
+    @Param('shopId') shopId: string,
+    @Param('month', new ZodPipe(monthParamSchema)) month: string,
+    @Query(new ZodPipe(statementQuerySchema))
+    query: ReturnType<typeof statementQuerySchema.parse>,
     @Res() res: Response,
-  ) {
-    if (!MONTH.test(month))
-      throw new BadRequestException('month must be YYYY-MM');
-    res.setHeader(
-      'Content-Disposition',
-      `attachment; filename="statement-${month}.csv"`,
-    );
-    res.setHeader('X-Content-Type-Options', 'nosniff');
-    await streamStatementCsv(this.reporting.pool, shopId, `${month}-01`, res);
-  }
-
-  @Firewall({ roles: [Role.ADMIN] })
-  @HttpCode(204)
-  @Post('admin/commission-rates')
-  async setRate(@Body() body: SetCommissionRateDto) {
-    await this.rates.setRate({
-      ...body,
-      validFrom: new Date(body.validFrom),
-      validTo: body.validTo ? new Date(body.validTo) : undefined,
+  ): Promise<void> {
+    const id = shopId.toLowerCase();
+    const plan = await this.exports.prepare(id, month, query.knownAt);
+    await sendCsv(res, plan.chunks, {
+      filename: plan.filename,
+      lifecycle: this.lifecycle,
+      context: { shopId: id, month },
     });
   }
 
-  @Firewall({ roles: [Role.ADMIN] })
-  @Get('admin/commission-rates')
-  history(
-    @Query('shopId') shopId: string | undefined,
-    @Query('category') category = '*',
+  /** `?knownAt=2026-04-01T00:00:00Z` → the statement exactly as we would have produced it then. */
+  @ShopScoped('payouts.read')
+  @RateLimit('statements.read')
+  @Get(':month')
+  statement(
+    @Param('shopId') shopId: string,
+    @Param('month', new ZodPipe(monthParamSchema)) month: string,
+    @Query(new ZodPipe(statementQuerySchema))
+    query: ReturnType<typeof statementQuerySchema.parse>,
   ) {
-    return this.rates.history(shopId ?? null, category);
+    return this.statements.statement(shopId.toLowerCase(), month, query.knownAt);
   }
 }

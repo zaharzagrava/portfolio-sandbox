@@ -155,6 +155,7 @@ export class CheckoutService {
     let priced: PricedCart;
     let consumed: Array<{ productId: string; quantity: number }>;
     let titles: Map<string, string>;
+    let categories: Map<string, string>;
     let currency: string;
     // Drop lines (S11): their units are claimed in the fast store before the order exists (BEFORE_ORDER).
     let holds: FlashHold[] = [];
@@ -252,6 +253,7 @@ export class CheckoutService {
       if (currencies.size > 1) throw new MixedCurrencyError();
       currency = [...currencies][0];
       titles = new Map([...products].map(([id, p]) => [id, p.title]));
+      categories = new Map([...products].map(([id, p]) => [id, p.category]));
 
       const dropPrice = new Map(
         holds.map((h) => [h.productId, h.unitPriceMinor]),
@@ -326,6 +328,7 @@ export class CheckoutService {
             productId: l.productId,
             shopId: l.shopId,
             title: titles.get(l.productId) ?? '',
+            category: categories.get(l.productId) ?? null,
             quantity: l.quantity,
             unitPriceMinor: l.unitPriceMinor,
             discountMinor: l.discountMinor,

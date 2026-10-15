@@ -288,6 +288,8 @@ export class OrderLifecycleService {
             paymentRef: command.paymentRef,
             paidAt: now.toISOString(),
             lines: items.map((i) => ({
+              ...(i.lineId ? { lineId: i.lineId } : {}),
+              ...(i.category ? { category: i.category } : {}),
               productId: i.productId,
               shopId: i.shopId,
               title: i.title ?? '',

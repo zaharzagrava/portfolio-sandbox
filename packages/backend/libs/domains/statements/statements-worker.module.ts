@@ -1,11 +1,11 @@
 import { Module } from '@nestjs/common';
-import { JobsModule } from '@app/infrastructure/jobs/jobs.module';
-import { StatementService } from './application/statement.service';
 import { StatementsJobs } from './infra/statements.jobs';
+import { StatementsCoreModule } from './statements-core.module';
 
-/** SD-41 background side (apps/worker): month close, retroactive adjustments. */
+/** Background side (apps/worker): month close, adjustment and verification job handlers. */
 @Module({
-  imports: [JobsModule],
-  providers: [StatementService, StatementsJobs],
+  imports: [StatementsCoreModule],
+  providers: [StatementsJobs],
+  exports: [StatementsJobs],
 })
 export class StatementsWorkerModule {}

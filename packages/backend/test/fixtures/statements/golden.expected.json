@@ -1,0 +1,23 @@
+{
+  "note": "Worked out by hand from FR-011: commission = floor((lineTotal x bps + 5000) / 10000) per line, summed. Shop y toys are 5% from 2026-03-11.",
+  "snapshots": {
+    "x": { "grossMinor": 25500, "commissionMinor": 2550, "netMinor": 22950, "lineCount": 4, "payoutsPaidMinor": 0 },
+    "y": { "grossMinor": 51955, "commissionMinor": 5134, "netMinor": 46821, "lineCount": 4, "payoutsPaidMinor": 0 },
+    "z": { "grossMinor": 11098, "commissionMinor": 1110, "netMinor": 9988, "lineCount": 4, "payoutsPaidMinor": 0 }
+  },
+  "adjustments": {
+    "x": { "causeKind": "rate_change", "bookedMonth": "2026-04", "grossDeltaMinor": 0, "commissionDeltaMinor": -410, "lineCountDelta": 0, "payoutsPaidDeltaMinor": 0 },
+    "y": { "causeKind": "late_sale", "bookedMonth": "2026-04", "grossDeltaMinor": 2500, "commissionDeltaMinor": 250, "lineCountDelta": 1, "payoutsPaidDeltaMinor": 0 },
+    "z": { "causeKind": "late_payout", "bookedMonth": "2026-04", "grossDeltaMinor": 0, "commissionDeltaMinor": 0, "lineCountDelta": 0, "payoutsPaidDeltaMinor": 6000 }
+  },
+  "corrected": {
+    "x": { "grossMinor": 25500, "commissionMinor": 2140, "netMinor": 23360, "lineCount": 4, "payoutsPaidMinor": 0 },
+    "y": { "grossMinor": 54455, "commissionMinor": 5384, "netMinor": 49071, "lineCount": 5, "payoutsPaidMinor": 0 },
+    "z": { "grossMinor": 11098, "commissionMinor": 1110, "netMinor": 9988, "lineCount": 4, "payoutsPaidMinor": 6000 }
+  },
+  "aprilTotals": {
+    "x": { "grossMinor": 0, "commissionMinor": -410, "netMinor": 410, "lineCount": 0, "payoutsPaidMinor": 0 },
+    "y": { "grossMinor": 2500, "commissionMinor": 250, "netMinor": 2250, "lineCount": 1, "payoutsPaidMinor": 0 },
+    "z": { "grossMinor": 0, "commissionMinor": 0, "netMinor": 0, "lineCount": 0, "payoutsPaidMinor": 6000 }
+  }
+}

@@ -1,194 +1,289 @@
-import { Injectable } from '@nestjs/common';
-import { InjectConnection } from '@nestjs/sequelize';
-import { QueryTypes, Sequelize, Transaction } from 'sequelize';
+import { Inject, Injectable } from '@nestjs/common';
+import { v7 as uuidv7 } from 'uuid';
+import type {
+  CommissionRateAsOf,
+  CommissionRateChangeResult,
+} from '@marketplace-sandbox/contracts';
+import { CLOCK, Clock } from '@app/common/core/clock';
+import { ApiConfigService } from '@app/common/config';
+import { TransactionRunner } from '@app/infrastructure/context';
 import { JobsService } from '@app/infrastructure/jobs/jobs.service';
+import { decodeCursor, encodeCursor } from '../domain/cursor';
+import {
+  defaultRateGap,
+  knownAtInFuture,
+  rateRangeInvalid,
+  shopNotFound,
+} from '../domain/errors';
+import { rateChangesCounter } from '../domain/metrics';
+import { monthBounds } from '../domain/period';
+import {
+  DEFAULT_SHOP_KEY,
+  PERIOD_REPOSITORY,
+  RATE_REPOSITORY,
+  SHOP_DIRECTORY,
+  type PeriodRepository,
+  type RateBeliefRow,
+  type RateRepository,
+  type ShopDirectory,
+} from '../domain/ports';
+import {
+  microsToIso,
+  nextRecordedMicros,
+  trimMicros,
+} from '../domain/recorded-instant';
+import './statements.job-types';
 
-export const DEFAULT_SHOP_KEY = '00000000-0000-0000-0000-000000000000';
-
-import './commission-rate.job-types';
-
-export interface RateRow {
-  id: string;
-  shopKey: string;
+export interface SetRateInput {
+  shopId?: string;
   category: string;
   rateBps: number;
-  validFrom: string;
-  validTo: string | null;
-  recordedFrom: string;
-  recordedTo: string | null;
-  reason: string | null;
+  validFrom: Date;
+  validTo?: Date;
+  reason: string;
+  actorId: string;
 }
 
+export interface HistoryQuery {
+  shopId?: string;
+  category?: string;
+  limit: number;
+  cursor?: string;
+}
+
+const normaliseCategory = (category: string): string =>
+  category.trim().toLowerCase();
+
 /**
- * Bitemporal commission rates (lesson 03/03 §7). Nothing is ever UPDATEd in
- * the business sense: setting a rate closes the recorded period of every
- * current row it overlaps and re-inserts their non-overlapping remainders,
- * then inserts the new row - so "what did we believe on April 1 about March?"
- * stays answerable forever.
+ * Bitemporal commission rates (S16 FR-001..FR-010). Nothing is edited in place: a change closes the recorded period
+ * of every current belief it overlaps, re-records what it does not cover and records the new belief, in one
+ * transaction serialised per (shop, category). Record instants come from the injected clock and strictly increase.
  */
 @Injectable()
 export class CommissionRateService {
   constructor(
-    @InjectConnection() private readonly sequelize: Sequelize,
+    private readonly runner: TransactionRunner,
+    @Inject(RATE_REPOSITORY) private readonly rates: RateRepository,
+    @Inject(PERIOD_REPOSITORY) private readonly periods: PeriodRepository,
+    @Inject(SHOP_DIRECTORY) private readonly shops: ShopDirectory,
     private readonly jobs: JobsService,
+    private readonly config: ApiConfigService,
+    @Inject(CLOCK) private readonly clock: Clock,
   ) {}
 
-  async setRate(input: {
-    shopId?: string;
-    category: string;
-    rateBps: number;
-    validFrom: Date;
-    validTo?: Date;
-    reason: string;
-  }): Promise<void> {
+  async setRate(input: SetRateInput): Promise<CommissionRateChangeResult> {
+    const category = normaliseCategory(input.category);
     const shopKey = input.shopId ?? DEFAULT_SHOP_KEY;
+    if (
+      input.validTo !== undefined &&
+      input.validTo.getTime() <= input.validFrom.getTime()
+    ) {
+      rateChangesCounter.add(1, { outcome: 'refused' });
+      throw rateRangeInvalid();
+    }
+    // The default rate for every category covers all time at all times (FR-005): a bounded window would end it.
+    if (
+      shopKey === DEFAULT_SHOP_KEY &&
+      category === '*' &&
+      input.validTo !== undefined
+    ) {
+      rateChangesCounter.add(1, { outcome: 'refused' });
+      throw defaultRateGap();
+    }
+    if (input.shopId && !(await this.shops.existing([input.shopId])).has(input.shopId)) {
+      rateChangesCounter.add(1, { outcome: 'refused' });
+      throw shopNotFound();
+    }
+
     const from = input.validFrom.toISOString();
     const to = input.validTo?.toISOString() ?? null;
 
-    // S54 T037 audit: explicit unit of work, opens its own transaction by design; no network I/O inside.
-    await this.sequelize.transaction(async (transaction) => {
-      const q = async <T>(
-        sql: string,
-        replacements: Record<string, unknown>,
-      ): Promise<T[]> =>
-        (await this.sequelize.query(sql, {
-          type: QueryTypes.SELECT,
-          replacements,
-          transaction,
-        })) as T[];
-
-      // Serialize writers per (shop, category); readers are never blocked (MVCC).
-      await q(`SELECT pg_advisory_xact_lock(hashtext(:key))`, {
-        key: `${shopKey}:${input.category}`,
-      });
-
-      // Range math stays in SQL (infinite bounds, inclusivity) - JS Dates can't represent ±infinity.
-      const overlapping = await q<{
-        id: string;
-        rateBps: number;
-        lo: string;
-        hi: string | null;
-        hasLeft: boolean;
-        hasRight: boolean;
-        reason: string | null;
-      }>(
-        `SELECT id, "rateBps", lower("validPeriod")::text AS lo, upper("validPeriod")::text AS hi, reason,
-                lower_inf("validPeriod") OR lower("validPeriod") < CAST(:from AS timestamptz) AS "hasLeft",
-                CAST(:to AS timestamptz) IS NOT NULL AND (upper_inf("validPeriod") OR upper("validPeriod") > CAST(:to AS timestamptz)) AS "hasRight"
-         FROM "CommissionRate"
-         WHERE "shopKey" = :shopKey AND category = :category AND upper_inf("recordedPeriod")
-           AND "validPeriod" && tstzrange(CAST(:from AS timestamptz), CAST(:to AS timestamptz)) FOR UPDATE`,
-        { shopKey, category: input.category, from, to },
-      );
-
-      for (const row of overlapping) {
-        await this.exec(
-          `UPDATE "CommissionRate" SET "recordedPeriod" = tstzrange(lower("recordedPeriod"), now()) WHERE id = :id`,
-          { id: row.id },
-          transaction,
-        );
-        // Keep what the new rate doesn't cover, as current knowledge.
-        if (row.hasLeft)
-          await this.insert(
-            shopKey,
-            input.category,
-            row.rateBps,
-            row.lo ?? '-infinity',
-            from,
-            row.reason,
-            transaction,
-          );
-        if (row.hasRight)
-          await this.insert(
-            shopKey,
-            input.category,
-            row.rateBps,
-            to!,
-            row.hi,
-            row.reason,
-            transaction,
-          );
-      }
-      await this.insert(
-        shopKey,
-        input.category,
-        input.rateBps,
-        from,
-        to,
-        input.reason,
-        transaction,
-      );
-
-      // Retroactive change touching closed months → adjustments (closed statements never change).
-      await this.jobs.enqueue('statements.retro-adjust', {
-        shopKey,
-        category: input.category,
-        from,
-        to,
-        reason: input.reason,
-      });
-    });
-  }
-
-  async rateAsOf(
-    shopId: string,
-    category: string,
-    validAt: Date,
-    knownAt: Date = new Date(),
-  ): Promise<number> {
-    const [row] = await this.sequelize.query<{ rateBps: number }>(
-      `SELECT "rateBps" FROM "CommissionRate"
-       WHERE "shopKey" IN (:shopId, :default) AND category IN (:category, '*')
-         AND "validPeriod" @> CAST(:validAt AS timestamptz) AND "recordedPeriod" @> CAST(:knownAt AS timestamptz)
-       ORDER BY ("shopKey" = :default), (category = '*') LIMIT 1`,
-      {
-        type: QueryTypes.SELECT,
-        replacements: {
-          shopId,
-          default: DEFAULT_SHOP_KEY,
+    try {
+      return await this.runner.run(async () => {
+        await this.rates.lockWriters(shopKey, category);
+        const overlapping = await this.rates.findOverlapping(
+          shopKey,
           category,
-          validAt: validAt.toISOString(),
-          knownAt: knownAt.toISOString(),
-        },
-      },
-    );
-    return row?.rateBps ?? 0;
+          from,
+          to,
+          input.rateBps,
+        );
+
+        const same = overlapping.length === 1 && overlapping[0].coversRange;
+        if (same) {
+          rateChangesCounter.add(1, { outcome: 'noop' });
+          return {
+            changeId: overlapping[0].changeId,
+            shopId: input.shopId ?? null,
+            category,
+            rateBps: input.rateBps,
+            validFrom: from,
+            validTo: to,
+            recordedAt:
+              trimMicros(overlapping[0].recordedFrom) ??
+              this.clock.now().toISOString(),
+            changed: false,
+            affectedClosedMonths: [],
+          };
+        }
+
+        const last = await this.rates.lastRecordedMicros(shopKey, category);
+        const recordedMicros = nextRecordedMicros(this.clock.now(), last);
+        const recordedIso = microsToIso(recordedMicros);
+        const changeId = uuidv7();
+
+        for (const belief of overlapping) {
+          await this.rates.closeRecordedPeriod(belief.id, recordedIso);
+          const keep = {
+            changeId: belief.changeId,
+            shopKey,
+            category,
+            rateBps: belief.rateBps,
+            recordedFromIso: recordedIso,
+            reason: belief.reason ?? input.reason,
+            recordedBy: belief.recordedBy,
+          };
+          if (belief.hasLeft)
+            await this.rates.insertBelief({
+              ...keep,
+              validFrom: belief.validLower,
+              validTo: from,
+            });
+          if (belief.hasRight)
+            await this.rates.insertBelief({
+              ...keep,
+              validFrom: to!,
+              validTo: belief.validUpper,
+            });
+        }
+        await this.rates.insertBelief({
+          changeId,
+          shopKey,
+          category,
+          rateBps: input.rateBps,
+          validFrom: from,
+          validTo: to,
+          recordedFromIso: recordedIso,
+          reason: input.reason,
+          recordedBy: input.actorId,
+        });
+
+        if (
+          shopKey === DEFAULT_SHOP_KEY &&
+          category === '*' &&
+          !(await this.rates.defaultCoversAllTime())
+        )
+          throw defaultRateGap();
+
+        const affected = await this.affectedClosedMonths(
+          input.validFrom,
+          input.validTo,
+        );
+        for (const month of affected) {
+          const cause = `rate_change:${changeId}`;
+          await this.jobs.enqueue(
+            'statements.reconcile-month',
+            {
+              month,
+              cause,
+              ...(input.shopId ? { shopId: input.shopId } : {}),
+            },
+            {
+              idempotencyKey: `${cause}:${month}${input.shopId ? `:${input.shopId}` : ''}`,
+              ...(input.shopId ? { shopId: input.shopId } : {}),
+            },
+          );
+        }
+
+        rateChangesCounter.add(1, { outcome: 'recorded' });
+        return {
+          changeId,
+          shopId: input.shopId ?? null,
+          category,
+          rateBps: input.rateBps,
+          validFrom: from,
+          validTo: to,
+          recordedAt: trimMicros(recordedIso)!,
+          changed: true,
+          affectedClosedMonths: affected,
+        };
+      });
+    } catch (error) {
+      rateChangesCounter.add(1, { outcome: 'refused' });
+      throw error;
+    }
   }
 
-  history(shopId: string | null, category: string): Promise<RateRow[]> {
-    return this.sequelize.query<RateRow>(
-      `SELECT id, "shopKey", category, "rateBps", lower("validPeriod") AS "validFrom", upper("validPeriod") AS "validTo",
-              lower("recordedPeriod") AS "recordedFrom", upper("recordedPeriod") AS "recordedTo", reason
-       FROM "CommissionRate" WHERE "shopKey" = :shopKey AND category = :category ORDER BY lower("recordedPeriod"), lower("validPeriod")`,
-      {
-        type: QueryTypes.SELECT,
-        replacements: { shopKey: shopId ?? DEFAULT_SHOP_KEY, category },
-      },
+  async history(query: HistoryQuery): Promise<{
+    items: RateBeliefRow[];
+    nextCursor: string | null;
+  }> {
+    const shopKey = query.shopId ?? DEFAULT_SHOP_KEY;
+    const category =
+      query.category === undefined ? undefined : normaliseCategory(query.category);
+    const scope = `${shopKey}:${category ?? ''}`;
+    const secret = this.cursorSecret();
+    const after = query.cursor
+      ? decodeCursor(query.cursor, 'rates', scope, secret)
+      : null;
+    const rows = await this.rates.history(
+      { shopKey, category },
+      after ? { recordedFrom: after.k, id: after.id! } : null,
+      query.limit + 1,
+    );
+    const items = rows.slice(0, query.limit);
+    const last = items[items.length - 1];
+    return {
+      items,
+      nextCursor:
+        rows.length > query.limit && last
+          ? encodeCursor(
+              {
+                r: 'rates',
+                s: scope,
+                k: last.recordedFrom ?? '-infinity',
+                id: last.id,
+              },
+              secret,
+            )
+          : null,
+    };
+  }
+
+  async asOf(input: {
+    shopId?: string;
+    category: string;
+    validAt: Date;
+    knownAt?: Date;
+  }): Promise<CommissionRateAsOf | null> {
+    const now = this.clock.now();
+    const knownAt = input.knownAt ?? now;
+    if (knownAt.getTime() > now.getTime()) throw knownAtInFuture();
+    return this.rates.asOf(
+      input.shopId ?? null,
+      normaliseCategory(input.category),
+      input.validAt,
+      knownAt,
     );
   }
 
-  private insert(
-    shopKey: string,
-    category: string,
-    rateBps: number,
-    from: string,
-    to: string | null,
-    reason: string | null,
-    transaction: Transaction,
-  ) {
-    return this.exec(
-      `INSERT INTO "CommissionRate" ("shopKey", category, "rateBps", "validPeriod", reason)
-       VALUES (:shopKey, :category, :rateBps, tstzrange(CAST(:from AS timestamptz), CAST(:to AS timestamptz)), :reason)`,
-      { shopKey, category, rateBps, from, to, reason },
-      transaction,
-    );
+  private async affectedClosedMonths(
+    from: Date,
+    to: Date | undefined,
+  ): Promise<string[]> {
+    const months = await this.periods.closingOrClosedMonths();
+    return months
+      .filter((month) => {
+        const bounds = monthBounds(month);
+        return (
+          bounds.end.getTime() > from.getTime() &&
+          (to === undefined || bounds.start.getTime() < to.getTime())
+        );
+      })
+      .sort();
   }
 
-  private exec(
-    sql: string,
-    replacements: Record<string, unknown>,
-    transaction: Transaction,
-  ) {
-    return this.sequelize.query(sql, { replacements, transaction });
+  private cursorSecret(): string {
+    return `${this.config.get('jwt_secret')}`;
   }
 }
