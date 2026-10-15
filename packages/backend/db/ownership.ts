@@ -175,6 +175,7 @@ export const OWNERSHIP = {
   SubscriptionTransition: 'domain:billing',
   InvoiceTransition: 'domain:billing',
   SubjectPlanState: 'domain:billing',
+  UsageSettlement: 'domain:billing',
   // launch-events
   LaunchEvent: 'domain:launch-events',
   Booking: 'domain:launch-events',

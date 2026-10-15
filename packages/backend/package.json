@@ -65,6 +65,7 @@
     "projections:redrive": "ts-node -r tsconfig-paths/register scripts/projections/redrive.ts",
     "catalog-sync:migrate-data": "ts-node -r tsconfig-paths/register scripts/catalog-sync/migrate-integrations-data.ts",
     "outbox:requeue": "ts-node -r tsconfig-paths/register scripts/outbox/requeue.ts",
+    "billing:backfill-usage-settlement": "ts-node -r tsconfig-paths/register scripts/backfill-usage-settlement.ts",
     "slo:generate": "ts-node scripts/slo/generate.ts",
     "rag:eval": "TS_NODE_TRANSPILE_ONLY=1 node -r ./scripts/preload-contracts.cjs -r ts-node/register -r tsconfig-paths/register scripts/rag-eval/rag-eval.ts",
     "loadtest:sse": "k6 run scripts/load-tests/sse.test.js",

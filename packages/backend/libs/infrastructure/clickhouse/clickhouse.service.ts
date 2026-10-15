@@ -48,18 +48,68 @@ export class ClickHouseService implements OnModuleInit, OnModuleDestroy {
   }
 
   /**
+   * Durable insert: resolves only when the server has stored the rows (`wait_for_async_insert`), rejects on any
+   * failure or when `timeoutMs` passes. For callers that must not lose a row (billing usage, S18); fire-and-forget
+   * pipelines use the projection sink instead.
+   */
+  public async insert(
+    table: string,
+    rows: Record<string, unknown>[],
+    options: { timeoutMs?: number } = {},
+  ): Promise<void> {
+    if (rows.length === 0) return;
+    const timeoutMs = options.timeoutMs ?? 5_000;
+    const abort = new AbortController();
+    const timer = setTimeout(() => abort.abort(), timeoutMs);
+    try {
+      await this.getClient().insert({
+        table,
+        values: rows,
+        format: 'JSONEachRow',
+        abort_signal: abort.signal,
+        clickhouse_settings: { async_insert: 1, wait_for_async_insert: 1 },
+      });
+    } catch (error) {
+      if (abort.signal.aborted)
+        throw new Error(`ClickHouse insert timed out after ${timeoutMs} ms`, {
+          cause: error,
+        });
+      throw error;
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  /**
    * Escape hatch for showcase queries (funnels, uniq, ASOF, MVs).
    * // See README.md#adr -> "Why use ClickHouse for analytics?", "Why use the windowFunnel function...", and "Why use HyperLogLog..."
    */
   public async query<T extends Record<string, unknown>>(
     sql: string,
     query_params?: Record<string, unknown>,
+    options: { timeoutMs?: number } = {},
   ): Promise<T[]> {
-    const result = await this.getClient().query({
-      query: sql,
-      query_params,
-      format: 'JSONEachRow',
-    });
-    return result.json<T>();
+    const abort = options.timeoutMs ? new AbortController() : undefined;
+    const timer = abort
+      ? setTimeout(() => abort.abort(), options.timeoutMs)
+      : undefined;
+    try {
+      const result = await this.getClient().query({
+        query: sql,
+        query_params,
+        format: 'JSONEachRow',
+        abort_signal: abort?.signal,
+      });
+      return await result.json<T>();
+    } catch (error) {
+      if (abort?.signal.aborted)
+        throw new Error(
+          `ClickHouse query timed out after ${options.timeoutMs} ms`,
+          { cause: error },
+        );
+      throw error;
+    } finally {
+      clearTimeout(timer);
+    }
   }
 }

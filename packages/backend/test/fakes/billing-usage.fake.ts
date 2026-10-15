@@ -42,6 +42,7 @@ export class FakeUsageLines implements UsageInvoiceLinesProvider {
       return Promise.reject(new Error('usage lines timed out'));
     return Promise.resolve({
       lines: this.lines.get(input.subscriptionId) ?? [],
+      settlement: { entries: [] },
     });
   }
 }

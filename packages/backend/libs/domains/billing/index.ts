@@ -25,10 +25,17 @@ export {
 } from './application/events/billing-events';
 
 // S18 (usage and entitlements): unchanged exports, used by auctions, the assistant and the developer platform.
-export {
-  EntitlementsService,
-  RequiresShopEntitlement,
+export { EntitlementsService } from './application/entitlements.service';
+export { RequiresShopEntitlement } from './application/entitlement.guard';
+export { Domain_EntitlementRequiredError } from './domain/errors';
+export type {
+  EntitlementKey,
+  Entitlements,
+  LimitKey,
+  LimitStatus,
+  QuotaKey,
+  QuotaStatus,
 } from './application/entitlements.service';
-export type { QuotaKey, QuotaStatus } from './application/entitlements.service';
-export { UsageRecorded, UsageService } from './application/usage.service';
-export { UsageProjector } from './infra/usage.projector';
+// The event definition developer-platform produces `usage.recorded` with. Usage enters billing only by events; there
+// is no function another domain can call to write it (S18 FR-016).
+export { UsageRecorded } from './application/events/usage-events';

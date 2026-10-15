@@ -43,4 +43,12 @@ describe('Billing wiring in the real core application', () => {
     ])
       expect(res.status).toBe(401);
   });
+
+  it('S18 T052: the application starts with the entitlement guard validator over every controller and routes the usage reads behind credentials', async () => {
+    const http = () => supertest(app.getHttpServer());
+    expect((await http().get('/health/live')).status).toBe(200);
+    const shop = '00000000-0000-4000-8000-000000000001';
+    expect((await http().get(`/api/shops/${shop}/usage`)).status).toBe(401);
+    expect((await http().get('/api/me/usage')).status).toBe(401);
+  });
 });

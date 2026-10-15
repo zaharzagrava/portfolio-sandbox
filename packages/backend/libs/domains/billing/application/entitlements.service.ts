@@ -1,27 +1,41 @@
+import { Inject, Injectable } from '@nestjs/common';
+import { CLOCK, type Clock } from '@app/common/core/clock';
 import {
-  CanActivate,
-  ExecutionContext,
-  ForbiddenException,
-  HttpStatus,
-  Injectable,
-  SetMetadata,
-  UseGuards,
-  applyDecorators,
-} from '@nestjs/common';
-import { Reflector } from '@nestjs/core';
-import { InjectConnection } from '@nestjs/sequelize';
-import { QueryTypes, Sequelize } from 'sequelize';
-import { AppError, ErrorArea } from '@app/common/errors';
-import { CacheService } from '@app/infrastructure/cache/cache.service';
-import { Entitlements } from '../infra/models/plan.model';
-import { UsageService } from './usage.service';
+  ENTITLEMENT_CACHE,
+  USAGE_STORE,
+  type CachedEntitlements,
+  type EntitlementCachePort,
+  type UsageStorePort,
+} from '../domain/ports';
+import {
+  Domain_EntitlementRequiredError,
+  Domain_UsageUnavailableError,
+  tooManyIds,
+} from '../domain/errors';
+import {
+  ENTITLEMENT_KEYS,
+  assertEntitlementKey,
+  checkLimit as limitOf,
+  freeTier,
+  hasEntitlement as hasKey,
+  quotaLimit,
+  quotaMetric,
+  type EntitlementKey,
+  type Entitlements,
+  type LimitKey,
+  type QuotaKey,
+} from '../domain/entitlements';
+import { entitlementChecksCounter } from '../domain/metrics';
+import type { SubjectType } from '../domain/types';
+import { SubscriptionBasisService } from './subscription-basis.service';
 
-/** Quota keys and the usage metric that counts them (S18 FR-006). */
-const QUOTA_METRICS = {
-  apiCallsPerMonth: 'api.calls',
-  assistantTokensPerMonth: 'llm.assistant.tokens',
-} as const;
-export type QuotaKey = keyof typeof QUOTA_METRICS;
+export type {
+  EntitlementKey,
+  Entitlements,
+  LimitKey,
+  QuotaKey,
+} from '../domain/entitlements';
+export { Domain_EntitlementRequiredError, Domain_UsageUnavailableError };
 
 export interface QuotaStatus {
   allowed: boolean;
@@ -30,155 +44,210 @@ export interface QuotaStatus {
   resetsAt: string;
 }
 
-/** Usage could not be read: the caller decides to fail open or closed (S18 AS-08). */
-export class Domain_UsageUnavailableError extends AppError {
-  constructor() {
-    super({
-      status: HttpStatus.SERVICE_UNAVAILABLE,
-      code: 'usage_unavailable',
-      title: 'Service Unavailable',
-      detail: 'Usage could not be read.',
-      area: ErrorArea.TRANSIENT,
-    });
-  }
+export interface LimitStatus {
+  allowed: boolean;
+  limit: number;
+  remaining: number;
 }
 
-/** Free tier when there's no live subscription. */
-const FREE_SHOP: Entitlements = {
-  maxProducts: 10,
-  seats: 1,
-  auctions: false,
-  apiCallsPerMonth: 1000,
-  assistantTokensPerMonth: 0,
-};
-/** S46 reads `assistantTokensPerMonth` for every buyer and has no local default: the free buyer tier carries it here. */
-const FREE_BUYER: Entitlements = { assistantTokensPerMonth: 200_000 };
+const MAX_IDS = 500;
 
-export const entitlementsKey = (subjectType: string, subjectId: string) =>
-  `entitlements:v1:${subjectType}:${subjectId}`;
+/** The committed subscription the entry was built from; both `null` for the free tier. */
+export interface SubscriptionRef {
+  subscriptionId: string;
+  subscriptionVersion: number;
+}
 
 /**
- * Features/limits derived from the live subscription (lesson 10/07 #24): the
- * app checks entitlements, never plan names - repackaging plans never touches
- * feature code. Cached; invalidated whenever a subscription changes state.
- * PAST_DUE keeps access (grace period); UNPAID/CANCELED fall back to free.
+ * What a subject may do (S18 FR-001 to FR-007): features and limits derived from the live subscription, never a plan
+ * name. The subscription comes only from S17's basis service (committed state); the answer is cached behind a port.
+ * PAST_DUE keeps access (grace period); UNPAID and CANCELED fall back to the free tier. A source that cannot answer
+ * is `entitlements_unavailable`, never "free tier": not knowing is not the same as not paying.
  */
 @Injectable()
 export class EntitlementsService {
   constructor(
-    @InjectConnection() private readonly sequelize: Sequelize,
-    private readonly cache: CacheService,
-    private readonly usage: UsageService,
+    private readonly basis: SubscriptionBasisService,
+    @Inject(ENTITLEMENT_CACHE) private readonly cache: EntitlementCachePort,
+    @Inject(USAGE_STORE) private readonly usage: UsageStorePort,
+    @Inject(CLOCK) private readonly clock: Clock,
   ) {}
 
   async get(
-    subjectType: 'USER' | 'SHOP',
+    subjectType: SubjectType,
     subjectId: string,
   ): Promise<Entitlements> {
-    const loaded = await this.cache.getOrLoad(
-      entitlementsKey(subjectType, subjectId),
-      async () => {
-        const [row] = await this.sequelize.query<{
-          entitlements: Entitlements;
-        }>(
-          `SELECT p.entitlements FROM "Subscription" s JOIN "Price" pr ON pr.id = s."priceId" JOIN "Plan" p ON p.id = pr."planId"
-           WHERE s."subjectType" = :subjectType AND s."subjectId" = :subjectId AND s.status IN ('TRIALING','ACTIVE','PAST_DUE')`,
-          { type: QueryTypes.SELECT, replacements: { subjectType, subjectId } },
+    return this.counted('get', async () => ({
+      ...(await this.entry(subjectType, subjectId)).entitlements,
+    }));
+  }
+
+  /** Up to 500 distinct ids with one batch call to the basis source; never a call per id (FR-004). */
+  async getMany(
+    subjectType: SubjectType,
+    subjectIds: string[],
+  ): Promise<Map<string, Entitlements>> {
+    const ids = [...new Set(subjectIds)];
+    if (ids.length > MAX_IDS) throw tooManyIds();
+    if (ids.length === 0) return new Map();
+    const entries = await this.cache.loadMany(
+      subjectType,
+      ids,
+      async (missing) => {
+        const live = await this.basis.getLiveBasisBySubjectIds(
+          subjectType,
+          missing,
         );
-        return (
-          row?.entitlements ?? (subjectType === 'SHOP' ? FREE_SHOP : FREE_BUYER)
+        return new Map(
+          missing.map((id) => [id, this.entryFrom(subjectType, live.get(id))]),
         );
       },
-      { ttlMs: 300_000, l1: 'hot' },
     );
-    return loaded ?? {};
+    return new Map(
+      [...entries].map(([id, entry]) => [id, { ...entry.entitlements }]),
+    );
+  }
+
+  async hasEntitlement(
+    subjectType: SubjectType,
+    subjectId: string,
+    feature: EntitlementKey,
+  ): Promise<boolean> {
+    assertEntitlementKey(feature);
+    return this.counted('has', async () =>
+      hasKey((await this.entry(subjectType, subjectId)).entitlements, feature),
+    );
+  }
+
+  async checkLimit(
+    subjectType: SubjectType,
+    subjectId: string,
+    key: LimitKey,
+    current: number,
+  ): Promise<LimitStatus> {
+    // the key and the value are checked before anything is read
+    limitOf({}, key, current);
+    return this.counted('limit', async () =>
+      limitOf(
+        (await this.entry(subjectType, subjectId)).entitlements,
+        key,
+        current,
+      ),
+    );
   }
 
   /**
-   * Minimal provider side of S18 `checkQuota` (FR-006), added by S46 until S18 is built: the plan limit against the exact
-   * usage of the current UTC calendar month. Rejects `usage_unavailable` instead of guessing when usage cannot be read.
+   * The plan limit against the exact usage of the current UTC calendar month (FR-006). Rejects `usage_unavailable`
+   * rather than guess when usage cannot be read; the caller decides to fail open or closed.
    */
   async checkQuota(
-    subjectType: 'USER' | 'SHOP',
+    subjectType: SubjectType,
     subjectId: string,
     key: QuotaKey,
-    now: Date = new Date(),
+    now: Date = this.clock.now(),
   ): Promise<QuotaStatus> {
-    const from = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
-    const resetsAt = new Date(
-      Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1),
-    );
-    const limit = (await this.get(subjectType, subjectId))[key] ?? 0;
-    const used = await this.usage
-      .totalFor(subjectId, QUOTA_METRICS[key], from, resetsAt)
-      .catch(() => {
-        throw new Domain_UsageUnavailableError();
+    const metric = quotaMetric(key);
+    return this.counted('quota', async () => {
+      const from = new Date(
+        Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1),
+      );
+      const resetsAt = new Date(
+        Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1),
+      );
+      const limit = quotaLimit(
+        (await this.entry(subjectType, subjectId)).entitlements,
+        key,
+      );
+      const used = await this.usage.total(subjectId, {
+        metric,
+        from,
+        to: resetsAt,
       });
+      return {
+        allowed: used < limit,
+        used,
+        limit,
+        resetsAt: resetsAt.toISOString(),
+      };
+    });
+  }
+
+  /**
+   * Drops the entry after S17 committed a change (FR-011). With the committed `subscription` the drop is version
+   * guarded: a load that began before this change and returns the old state never stores. Rejects
+   * `entitlement_invalidation_failed` when the entry cannot be dropped (FR-014).
+   */
+  async invalidate(
+    subjectType: SubjectType,
+    subjectId: string,
+    subscription?: SubscriptionRef,
+  ): Promise<void> {
+    if (subscription) {
+      await this.cache.invalidateIfOlder(
+        subjectType,
+        subjectId,
+        subscription.subscriptionId,
+        subscription.subscriptionVersion,
+      );
+      return;
+    }
+    await this.cache.invalidate(subjectType, subjectId);
+  }
+
+  private entry(
+    subjectType: SubjectType,
+    subjectId: string,
+  ): Promise<CachedEntitlements> {
+    return this.cache.load(subjectType, subjectId, async () => {
+      const live = await this.basis.getLiveBasisBySubjectIds(subjectType, [
+        subjectId,
+      ]);
+      return this.entryFrom(subjectType, live.get(subjectId));
+    });
+  }
+
+  /** The cache entry for a basis (or none: the free tier of the subject type). */
+  private entryFrom(
+    subjectType: SubjectType,
+    live:
+      | {
+          subscriptionId: string;
+          subscriptionVersion: number;
+          entitlements: Record<string, boolean | number>;
+        }
+      | undefined,
+  ): CachedEntitlements {
+    const loadedAt = this.clock.now().toISOString();
+    if (!live)
+      return {
+        entitlements: freeTier(subjectType),
+        subscriptionId: null,
+        subscriptionVersion: null,
+        loadedAt,
+      };
+    const entitlements: Record<string, boolean | number> = {};
+    for (const key of ENTITLEMENT_KEYS)
+      if (Object.prototype.hasOwnProperty.call(live.entitlements, key))
+        entitlements[key] = live.entitlements[key];
     return {
-      allowed: used < limit,
-      used,
-      limit,
-      resetsAt: resetsAt.toISOString(),
+      entitlements: entitlements as Entitlements,
+      subscriptionId: live.subscriptionId,
+      subscriptionVersion: live.subscriptionVersion,
+      loadedAt,
     };
   }
 
-  async invalidate(
-    subjectType: 'USER' | 'SHOP',
-    subjectId: string,
-  ): Promise<void> {
-    await this.cache.invalidate([entitlementsKey(subjectType, subjectId)]);
+  private async counted<T>(
+    kind: 'get' | 'has' | 'limit' | 'quota',
+    run: () => Promise<T>,
+  ): Promise<T> {
+    try {
+      const result = await run();
+      entitlementChecksCounter.add(1, { kind, outcome: 'ok' });
+      return result;
+    } catch (error) {
+      entitlementChecksCounter.add(1, { kind, outcome: 'unavailable' });
+      throw error;
+    }
   }
 }
-
-const ENTITLEMENT_METADATA = 'billing:entitlement';
-
-/**
- * `403 entitlement_required {feature}` (S18 FR-008, contracts as S21 AS-03 uses them): the shop's plan lacks the
- * feature. The minimal provider side of S18's route guard, added by S21 until S18 is built.
- */
-export class Domain_EntitlementRequiredError extends AppError {
-  constructor(readonly feature: string) {
-    super({
-      status: HttpStatus.FORBIDDEN,
-      code: 'entitlement_required',
-      title: 'Forbidden',
-      detail: `Your plan doesn't include "${feature}".`,
-      area: ErrorArea.DOMAIN,
-      extensions: { feature },
-    });
-  }
-}
-
-/**
- * `@RequiresShopEntitlement('auctions')` - place it ABOVE `@ShopScoped(...)`:
- * decorators apply bottom-up, so this guard is appended after ShopGuard and
- * sees the resolved `req.shopId`.
- */
-@Injectable()
-export class ShopEntitlementGuard implements CanActivate {
-  constructor(
-    private readonly reflector: Reflector,
-    private readonly entitlements: EntitlementsService,
-  ) {}
-
-  async canActivate(context: ExecutionContext): Promise<boolean> {
-    const feature = this.reflector.get<keyof Entitlements>(
-      ENTITLEMENT_METADATA,
-      context.getHandler(),
-    );
-    const shopId = context.switchToHttp().getRequest().shopId as
-      string | undefined;
-    if (!feature) return true;
-    // Misconfigured route (no ShopGuard before this guard) → fail closed, never open.
-    if (!shopId) throw new ForbiddenException('Shop context required');
-    if (!(await this.entitlements.get('SHOP', shopId))[feature])
-      throw new Domain_EntitlementRequiredError(feature);
-    return true;
-  }
-}
-
-export const RequiresShopEntitlement = (feature: keyof Entitlements) =>
-  applyDecorators(
-    SetMetadata(ENTITLEMENT_METADATA, feature),
-    UseGuards(ShopEntitlementGuard),
-  );

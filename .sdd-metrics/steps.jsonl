@@ -380,3 +380,14 @@
 {"run":"20261015T175230Z","capability":"S17","step":"repair-1","start":"2026-10-15T20:09:48Z","end":"2026-10-15T20:11:58Z","seconds":130,"result":"ok","attempt":1,"reason":"ok","code_changed":true}
 {"run":"20261015T175230Z","capability":"S17","step":"gate","start":"2026-10-15T20:11:58Z","end":"2026-10-15T20:17:35Z","seconds":337,"result":"pass","attempt":2,"reason":""}
 {"run":"20261015T175230Z","capability":"S17","step":"built","start":"2026-10-15T18:45:02Z","end":"2026-10-15T20:17:35Z","seconds":5553,"result":"ok","attempt":1,"reason":"Plans, versioned prices, subscription state machine, billing run, proration, dunning"}
+{"run":"20261015T175230Z","capability":"S18","step":"plan","start":"2026-10-15T20:17:54Z","end":"2026-10-15T20:21:14Z","seconds":200,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261015T175230Z","capability":"S18","step":"tasks","start":"2026-10-15T20:21:14Z","end":"2026-10-15T20:22:44Z","seconds":90,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261015T175230Z","capability":"S18","step":"analyze","start":"2026-10-15T20:22:44Z","end":"2026-10-15T20:23:44Z","seconds":60,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261015T175230Z","capability":"S18","step":"implement-1","start":"2026-10-15T20:23:44Z","end":"2026-10-15T21:26:40Z","seconds":3776,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261015T175230Z","capability":"S18","step":"implement-2","start":"2026-10-15T21:26:40Z","end":"2026-10-15T21:27:05Z","seconds":25,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261015T175230Z","capability":"S18","step":"converge-2","start":"2026-10-15T21:27:05Z","end":"2026-10-15T21:27:40Z","seconds":35,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261015T175230Z","capability":"S18","step":"implement-3","start":"2026-10-15T21:27:40Z","end":"2026-10-15T21:28:15Z","seconds":35,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261015T175230Z","capability":"S18","step":"doctor-1","start":"2026-10-15T21:28:16Z","end":"2026-10-15T21:28:36Z","seconds":20,"result":"ok","attempt":1,"reason":"ok","code_changed":false}
+{"run":"20261015T175230Z","capability":"S18","step":"converge-1","start":"2026-10-15T21:28:37Z","end":"2026-10-15T21:29:02Z","seconds":25,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261015T175230Z","capability":"S18","step":"gate","start":"2026-10-15T21:29:02Z","end":"2026-10-15T21:35:45Z","seconds":403,"result":"pass","attempt":1,"reason":""}
+{"run":"20261015T175230Z","capability":"S18","step":"built","start":"2026-10-15T21:28:36Z","end":"2026-10-15T21:35:45Z","seconds":429,"result":"ok","attempt":1,"reason":"Usage metering (late events, adjustments) and entitlement checks used by other domains"}

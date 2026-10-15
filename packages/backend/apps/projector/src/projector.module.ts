@@ -46,7 +46,7 @@ import {
 } from '@app/domains/community';
 import { CassandraModule } from '@app/infrastructure/cassandra/cassandra.module';
 import { KafkaProducerModule } from '@app/infrastructure/kafka/kafka-producer.module';
-import { BillingConsumerModule, UsageProjector } from '@app/domains/billing';
+import { BillingConsumerModule } from '@app/domains/billing';
 import {
   AssistantProjectorModule,
   KnowledgeProjectorModule,
@@ -97,7 +97,6 @@ import { CacheModule } from '@app/infrastructure/cache/cache.module';
         ...ProductProjectorModule.projectors,
         ...SearchProjectorModule.projectors,
         ...paymentsProjectors,
-        UsageProjector,
         ...BillingConsumerModule.projectors,
         FeedFanoutConsumer,
         ProductFeedProjector,

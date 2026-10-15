@@ -17,10 +17,8 @@ import { CancellationService } from './application/cancellation.service';
 import { CatalogService } from './application/catalog.service';
 import { ChangeService } from './application/change.service';
 import { ChargeService } from './application/charge.service';
-import {
-  EntitlementsService,
-  ShopEntitlementGuard,
-} from './application/entitlements.service';
+import { ShopEntitlementGuard } from './application/entitlement.guard';
+import { EntitlementsService } from './application/entitlements.service';
 import { BILLING_AGGREGATE } from './application/events/billing-events';
 import { InvoiceIssuer } from './application/invoice-issuer.service';
 import { InvoiceQueryService } from './application/invoice-query.service';
@@ -32,17 +30,23 @@ import { SubscriptionBasisService } from './application/subscription-basis.servi
 import { SubscriptionQueryService } from './application/subscription-query.service';
 import { SubscriptionTransitions } from './application/subscription-transitions.service';
 import { TenancyLifecycleService } from './application/tenancy-lifecycle.service';
-import { UsageService } from './application/usage.service';
-import { BILLING_PROBLEMS } from './domain/errors';
+import { UsageLinesService } from './application/usage-lines.service';
+import { UsageReadService } from './application/usage-read.service';
+import { UsageReconcileService } from './application/usage-reconcile.service';
+import { UsageSettlementService } from './application/usage-settlement.service';
+import { BILLING_PROBLEMS, USAGE_PROBLEMS } from './domain/errors';
 import {
   BILLING_GATEWAY,
   CATALOG_REPOSITORY,
+  ENTITLEMENT_CACHE,
   INVOICE_REPOSITORY,
   PLAN_STATE_REPOSITORY,
+  SETTLEMENT_REPOSITORY,
   SHOP_DIRECTORY,
   STOP_SIGNAL,
   SUBSCRIPTION_REPOSITORY,
   USAGE_LINES_PROVIDER,
+  USAGE_STORE,
 } from './domain/ports';
 import { BillingLifecycle } from './infra/billing-lifecycle';
 import { SequelizeCatalogRepository } from './infra/catalog.repository';
@@ -55,6 +59,7 @@ import Price from './infra/models/price.model';
 import SubjectPlanState from './infra/models/subject-plan-state.model';
 import SubscriptionTransition from './infra/models/subscription-transition.model';
 import Subscription from './infra/models/subscription.model';
+import UsageSettlement from './infra/models/usage-settlement.model';
 import { SequelizePlanStateRepository } from './infra/plan-state.repository';
 import { TenancyShopDirectoryAdapter } from './infra/shop-directory.adapter';
 import {
@@ -62,7 +67,10 @@ import {
   stripeTransportProvider,
 } from './infra/stripe-billing-gateway';
 import { SequelizeSubscriptionRepository } from './infra/subscription.repository';
-import { UsageServiceLinesAdapter } from './infra/usage-lines.adapter';
+import { ClickHouseUsageStore } from './infra/clickhouse-usage.store';
+import { EntitlementCacheAdapter } from './infra/entitlement-cache.adapter';
+import { SequelizeSettlementRepository } from './infra/usage-settlement.repository';
+import { UsageSettlementBackfill } from './infra/usage-settlement.backfill';
 
 /** Registered so the model registry knows the tables; the billing code itself reads and writes them with SQL. */
 export const BILLING_MODELS = [
@@ -74,6 +82,7 @@ export const BILLING_MODELS = [
   SubscriptionTransition,
   InvoiceTransition,
   SubjectPlanState,
+  UsageSettlement,
 ];
 
 /**
@@ -95,7 +104,7 @@ export const BILLING_MODELS = [
     ClickHouseModule,
     SequelizeModule.forFeature(BILLING_MODELS),
     EventsModule.forAggregates([BILLING_AGGREGATE]),
-    ProblemCatalogModule.forFeature(BILLING_PROBLEMS),
+    ProblemCatalogModule.forFeature([...BILLING_PROBLEMS, ...USAGE_PROBLEMS]),
   ],
   providers: [
     BillingLifecycle,
@@ -111,7 +120,15 @@ export const BILLING_MODELS = [
     { provide: SHOP_DIRECTORY, useClass: TenancyShopDirectoryAdapter },
     stripeTransportProvider,
     { provide: BILLING_GATEWAY, useClass: StripeBillingGateway },
-    { provide: USAGE_LINES_PROVIDER, useClass: UsageServiceLinesAdapter },
+    UsageLinesService,
+    { provide: USAGE_LINES_PROVIDER, useExisting: UsageLinesService },
+    UsageSettlementService,
+    UsageReadService,
+    UsageReconcileService,
+    { provide: USAGE_STORE, useClass: ClickHouseUsageStore },
+    { provide: ENTITLEMENT_CACHE, useClass: EntitlementCacheAdapter },
+    { provide: SETTLEMENT_REPOSITORY, useClass: SequelizeSettlementRepository },
+    UsageSettlementBackfill,
     PlanTierService,
     SubscriptionTransitions,
     InvoiceIssuer,
@@ -131,7 +148,6 @@ export const BILLING_MODELS = [
     // S18 (same domain, until S18 moves them)
     EntitlementsService,
     ShopEntitlementGuard,
-    UsageService,
   ],
   exports: [
     STOP_SIGNAL,
@@ -143,6 +159,10 @@ export const BILLING_MODELS = [
     SHOP_DIRECTORY,
     BILLING_GATEWAY,
     USAGE_LINES_PROVIDER,
+    USAGE_STORE,
+    SETTLEMENT_REPOSITORY,
+    ENTITLEMENT_CACHE,
+    UsageSettlementBackfill,
     BillingLifecycle,
     CatalogService,
     SubscribeService,
@@ -160,7 +180,10 @@ export const BILLING_MODELS = [
     SubscriptionTransitions,
     EntitlementsService,
     ShopEntitlementGuard,
-    UsageService,
+    UsageLinesService,
+    UsageSettlementService,
+    UsageReadService,
+    UsageReconcileService,
   ],
 })
 export class BillingCoreModule {}

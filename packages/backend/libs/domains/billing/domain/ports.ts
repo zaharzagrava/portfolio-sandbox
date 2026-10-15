@@ -1,5 +1,6 @@
 import type { ChargeOutcome, LookupOutcome } from './charge-outcome';
 import type { InvoiceCursor } from './cursor';
+import type { Entitlements } from './entitlements';
 import type { InvoiceStatus } from './invoice-status';
 import type { BillingInterval } from './periods';
 import type { SubscriptionStatus } from './subscription-status';
@@ -15,8 +16,15 @@ import type {
   PriceRow,
   PriceWithPlan,
   Subject,
+  SubjectType,
   SubscriptionView,
 } from './types';
+import type {
+  SettlementPlan,
+  SettlementRow,
+  UsageLine,
+  UsageRecord,
+} from './usage-types';
 
 /**
  * Ports of the billing domain (constitution I.2): the application depends on these shapes, `infra/` binds them to
@@ -266,14 +274,13 @@ export interface ShopDirectory {
   facts(shopId: string): Promise<ShopFacts | null>;
 }
 
-export interface UsageLine {
-  kind: 'USAGE' | 'ADJUSTMENT';
-  description: string;
-  quantity: number;
-  amountMinor: number;
-}
+export type { UsageLine, SettlementPlan, SettlementRow, UsageRecord };
 
-/** S18's contract: the usage lines of a renewal. Read-only, bounded, throws on failure. */
+/**
+ * S18's contract: the usage lines of a renewal and the settlement plan that records what they billed. Read-only,
+ * bounded, throws on failure (`usage_unavailable`, `invalid_input`). The renewal passes `settlement` unchanged to
+ * `UsageSettlementService.settle` inside its invoice transaction.
+ */
 export interface UsageInvoiceLinesProvider {
   linesFor(input: {
     subscriptionId: string;
@@ -283,7 +290,103 @@ export interface UsageInvoiceLinesProvider {
     periodEnd: Date;
     measuredAt: Date;
     timeoutMs: number;
-  }): Promise<{ lines: UsageLine[] }>;
+  }): Promise<{ lines: UsageLine[]; settlement: SettlementPlan }>;
+}
+
+// ---- S18: usage store, settlement ledger, entitlement cache ------------------------------------------------------
+export interface UsageWindow {
+  metric: string;
+  from: Date;
+  to: Date;
+}
+
+/** The analytical usage store. Totals are exact (duplicates collapsed) and bounded in time; failures reject. */
+export interface UsageStorePort {
+  /** Durable: resolves only when the rows are stored. `ingestedAt` is stamped by the caller (injected clock). */
+  insert(records: UsageRecord[], ingestedAt: Date): Promise<void>;
+  /** Exact total of `metric` for the subject in `[from, to)`, by `ts`. Rejects `usage_unavailable`. */
+  total(subjectId: string, window: UsageWindow): Promise<number>;
+  /** Exact totals for several windows of one subject in one round trip, in input order. */
+  totals(subjectId: string, windows: UsageWindow[]): Promise<number[]>;
+  /** Exact total of what had been ingested by `ingestedBy` (the migration's view of an old measurement). */
+  totalIngestedBy(
+    subjectId: string,
+    window: UsageWindow,
+    ingestedBy: Date,
+  ): Promise<number>;
+  /** Exact totals of every metric of the subject in `[from, to)`. */
+  totalsByMetric(
+    subjectId: string,
+    from: Date,
+    to: Date,
+  ): Promise<Map<string, number>>;
+}
+
+export interface SettlementRepository {
+  /** Open (not closed) rows of a subscription, ordered by metric then period start. */
+  findOpen(subscriptionId: string): Promise<SettlementRow[]>;
+  find(
+    subscriptionId: string,
+    periodStart: Date,
+    metric: string,
+  ): Promise<SettlementRow | null>;
+  /** First settlement of a `(period, metric)`; `false` when a row exists already. Joins the caller's transaction. */
+  insertFirst(row: Omit<SettlementRow, 'id'>, now: Date): Promise<boolean>;
+  /**
+   * Moves a row forward only when it still has `fromQuantity`; `false` when someone moved first.
+   * Joins the caller's transaction.
+   */
+  advance(
+    subscriptionId: string,
+    periodStart: Date,
+    metric: string,
+    fromQuantity: number,
+    to: {
+      quantity: number;
+      amountMinor: number;
+      invoiceId: string;
+      closed: boolean;
+    },
+    now: Date,
+  ): Promise<boolean>;
+  /** A page of open rows after `after` (keyset on id), for the reconciliation. */
+  scanOpen(after: string | null, limit: number): Promise<SettlementRow[]>;
+  /** The subject of a subscription, for the reconciliation (usage is keyed by subject). */
+  subjectOf(subscriptionId: string): Promise<string | null>;
+}
+
+/** What the entitlement cache stores for a subject. */
+export interface CachedEntitlements {
+  entitlements: Entitlements;
+  subscriptionId: string | null;
+  subscriptionVersion: number | null;
+  loadedAt: string;
+}
+
+export interface EntitlementCachePort {
+  /** Cache-aside with single flight, stale-on-error; rejects `entitlements_unavailable` when nothing usable exists. */
+  load(
+    subjectType: SubjectType,
+    subjectId: string,
+    loader: () => Promise<CachedEntitlements>,
+  ): Promise<CachedEntitlements>;
+  /** `load` for many subjects: one call of `batchLoader` for the ones not cached. */
+  loadMany(
+    subjectType: SubjectType,
+    subjectIds: string[],
+    batchLoader: (
+      missing: string[],
+    ) => Promise<Map<string, CachedEntitlements>>,
+  ): Promise<Map<string, CachedEntitlements>>;
+  /** Drops the entry; rejects `entitlement_invalidation_failed` when it cannot. */
+  invalidate(subjectType: SubjectType, subjectId: string): Promise<void>;
+  /** Version-guarded drop; same `subscriptionId` and a version not newer than the entry's is ignored. */
+  invalidateIfOlder(
+    subjectType: SubjectType,
+    subjectId: string,
+    subscriptionId: string,
+    subscriptionVersion: number,
+  ): Promise<'applied' | 'stale_event'>;
 }
 
 /** Cooperative stop for long work (S54 shutdown registry): checked between units of work. */
@@ -298,4 +401,7 @@ export const PLAN_STATE_REPOSITORY = Symbol('PLAN_STATE_REPOSITORY');
 export const BILLING_GATEWAY = Symbol('BILLING_GATEWAY');
 export const SHOP_DIRECTORY = Symbol('SHOP_DIRECTORY');
 export const USAGE_LINES_PROVIDER = Symbol('USAGE_LINES_PROVIDER');
+export const USAGE_STORE = Symbol('USAGE_STORE');
+export const SETTLEMENT_REPOSITORY = Symbol('SETTLEMENT_REPOSITORY');
+export const ENTITLEMENT_CACHE = Symbol('ENTITLEMENT_CACHE');
 export const STOP_SIGNAL = Symbol('STOP_SIGNAL');

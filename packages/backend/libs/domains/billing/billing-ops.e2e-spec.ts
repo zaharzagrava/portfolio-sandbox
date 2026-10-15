@@ -106,10 +106,12 @@ describe('Billing: boundaries, secrets, migration and shutdown', () => {
       'SubscriptionBasisService',
       'EntitlementsService',
       'RequiresShopEntitlement',
-      'UsageService',
     ]) {
       expect(Object.keys(barrel)).toContain(name);
     }
+    // S18 AS-56: usage enters only by events; no function of the barrel writes it, and no projector class leaves
+    for (const name of ['UsageService', 'UsageProjector'])
+      expect(Object.keys(barrel)).not.toContain(name);
     const appFiles = [
       'core/src/core.module.ts',
       'worker/src/worker.module.ts',
@@ -129,6 +131,80 @@ describe('Billing: boundaries, secrets, migration and shutdown', () => {
       /\b(ShopModel|ShopMembershipModel|MembershipService)\b/,
     );
     expect(code).not.toMatch(/sequelize\.transaction\(/);
+  });
+
+  it('S18 AS-56: the ledger table is billing’s, the barrel exports only contracted items, nobody provides billing’s services, the module is not global and the application layer names no store', () => {
+    expect((OWNERSHIP as Record<string, string>).UsageSettlement).toBe(
+      'domain:billing',
+    );
+
+    const exported = Object.keys(barrel).sort();
+    // modules, the contracted services and events: no model, projector or consumer class (X.4, D-7, D-8)
+    expect(exported).toEqual(
+      [
+        'BillingConsumerModule',
+        'BillingModule',
+        'BillingWorkerModule',
+        'Domain_EntitlementRequiredError',
+        'EntitlementsService',
+        'InvoicePaid',
+        'InvoicePaymentFailed',
+        'RequiresShopEntitlement',
+        'SubscriptionBasisService',
+        'SubscriptionPlanChanged',
+        'SubscriptionStatusChanged',
+        'USAGE_LINES_PROVIDER',
+        'UsageRecorded',
+        'billingRatePolicies',
+      ].sort(),
+    );
+    expect(
+      exported.filter((name) => /Consumer$|Projector$|Model$/.test(name)),
+    ).toEqual([]);
+
+    // no other domain provides billing's classes itself (D-14): they import the module they use
+    const domains = resolve(__dirname, '..');
+    const offenders: string[] = [];
+    for (const dir of readdirSync(domains)) {
+      if (dir === 'billing') continue;
+      for (const file of sources(join(domains, dir)).concat(
+        readdirSync(join(domains, dir))
+          .filter((f) => /\.module\.ts$/.test(f))
+          .map((f) => join(domains, dir, f)),
+      )) {
+        const text = readFileSync(file, 'utf8');
+        if (
+          /providers:\s*\[[^\]]*\b(EntitlementsService|UsageService|ShopEntitlementGuard|UsageLinesService|UsageSettlementService|UsageReadService)\b/s.test(
+            text,
+          )
+        )
+          offenders.push(file);
+      }
+    }
+    expect(offenders).toEqual([]);
+
+    // BillingModule is no longer global
+    expect(
+      Reflect.getMetadata('__module:global__', barrel.BillingModule),
+    ).toBeFalsy();
+
+    // layering (I.2, D-6): S18's application services import no model, queue client, store client or connection
+    for (const file of [
+      'entitlements.service.ts',
+      'entitlement.guard.ts',
+      'usage-lines.service.ts',
+      'usage-settlement.service.ts',
+      'usage-read.service.ts',
+      'usage-reconcile.service.ts',
+    ]) {
+      const text = readFileSync(join(__dirname, 'application', file), 'utf8');
+      const imports = [...text.matchAll(/from\s+'([^']+)'/g)].map((m) => m[1]);
+      expect(
+        imports.filter((i) =>
+          /\/infra\/|sequelize|kafka|clickhouse|\.model$/i.test(i),
+        ),
+      ).toEqual([]);
+    }
   });
 
   describe('S17 AS-83: no payment data in logs, responses, events or metric labels', () => {

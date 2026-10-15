@@ -46,3 +46,7 @@ Decisions taken unattended under the decision policy (production-grade, notes an
 - [LOCAL] Migration backfills ledger rows from invoices of the last 90 days using the usage that existed at each `usageMeasuredAt` → avoids losing adjustments across the deploy; older periods are final.
 - [LOCAL] No `Idempotency-Key` on the usage read routes → `GET` only (V.5).
 - [LOCAL] No negative adjustments (usage reversal) → events are append-only; credits are operator tooling, out of scope.
+
+## BLOCKED
+
+- [BLOCKED] T055: fresh empty-stack run of `test-spec.sh libs/domains/billing` through `scripts/qa/fresh-run.sh` (L-012, L-006, L-019) was not run. The script refuses to build a throwaway stack while the `payment_system_*` containers are up (they are, and must not be stopped from this session). Its `--here` mode only judges the running stack (boot-check, doctor-live). What exists: T053 ran the whole billing suite on the warm test stack; T054 ran boot-check, doctor-live and the three `billing-wiring` specs. Not verified on an empty stack. Hypothesis: the final checkpoint on a runner with no dev stack up runs `scripts/qa/fresh-run.sh` as is.

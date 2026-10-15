@@ -43,4 +43,22 @@ describe('Billing wiring in the real projector application', () => {
       topics: ['tenancy.events'],
     });
   });
+
+  it('S18 T052: the projector application declares the three usage and entitlement consumers on their topics', async () => {
+    const registry = app.get(ProjectionRegistry, { strict: false });
+    for (const [name, topic] of [
+      ['billing-usage-recorded', 'usage.events'],
+      ['billing-llm-usage', 'llm.events'],
+      ['billing-entitlement-invalidation', 'billing.events'],
+    ] as const) {
+      let declared: Awaited<ReturnType<ProjectionRegistry['get']>> = null;
+      await waitFor(
+        async () => (declared = await registry.get(name)) !== null,
+        {
+          description: `${name} declared by the running projector`,
+        },
+      );
+      expect(declared).toMatchObject({ name, topics: [topic] });
+    }
+  });
 });

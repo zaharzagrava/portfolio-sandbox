@@ -20,6 +20,8 @@ export const manualAttemptPayloadSchema = z.strictObject({
   invoiceId: z.string().uuid(),
   k: z.number().int().min(1).max(100_000),
 });
+/** S18: the daily check of the usage settlement ledger (report only). */
+export const usageReconcilePayloadSchema = z.strictObject({});
 
 declare module '@app/infrastructure/jobs/job-types' {
   interface JobPayloads {
@@ -27,6 +29,7 @@ declare module '@app/infrastructure/jobs/job-types' {
     'billing.charge-invoice': z.infer<typeof chargeInvoicePayloadSchema>;
     'billing.resolve-attempt': z.infer<typeof resolveAttemptPayloadSchema>;
     'billing.manual-attempt': z.infer<typeof manualAttemptPayloadSchema>;
+    'billing.usage-reconcile': z.infer<typeof usageReconcilePayloadSchema>;
   }
 }
 
@@ -45,4 +48,8 @@ declareJobType({
   name: 'billing.manual-attempt',
   contract: manualAttemptPayloadSchema,
   maxAttempts: 3,
+});
+declareJobType({
+  name: 'billing.usage-reconcile',
+  contract: usageReconcilePayloadSchema,
 });

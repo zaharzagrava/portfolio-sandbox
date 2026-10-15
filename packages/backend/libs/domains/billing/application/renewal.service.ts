@@ -15,6 +15,7 @@ import {
   SUBSCRIPTION_REPOSITORY,
   USAGE_LINES_PROVIDER,
   type InvoiceRepository,
+  type SettlementPlan,
   type SubscriptionRepository,
   type UsageInvoiceLinesProvider,
   type UsageLine,
@@ -22,6 +23,7 @@ import {
 import type { InvoiceLineRow, SubscriptionRow } from '../domain/types';
 import { InvoiceIssuer } from './invoice-issuer.service';
 import { SubscriptionTransitions } from './subscription-transitions.service';
+import { UsageSettlementService } from './usage-settlement.service';
 
 type Outcome = 'invoiced' | 'canceled' | 'expired' | 'deferred' | 'skipped';
 
@@ -81,6 +83,7 @@ export class RenewalService {
     private readonly tx: TransactionRunner,
     private readonly issuer: InvoiceIssuer,
     private readonly transitions: SubscriptionTransitions,
+    private readonly settlement: UsageSettlementService,
   ) {}
 
   async run(isStopping: () => boolean = () => false): Promise<RunSummary> {
@@ -133,21 +136,22 @@ export class RenewalService {
       return 'skipped';
     }
 
-    // Outside any transaction: the usage lines of the period that ended (S18, bounded).
+    // Outside any transaction: the usage lines of the period that ended (S18, bounded) and the plan that records them.
     let usageLines: UsageLine[] | null = null;
+    let usageSettlement: SettlementPlan = { entries: [] };
     if (planned === 'renew' && before.subscription.subjectType === 'SHOP') {
       try {
-        usageLines = (
-          await this.usage.linesFor({
-            subscriptionId: id,
-            subjectId: before.subscription.subjectId,
-            priceId: before.subscription.priceId,
-            periodStart: before.subscription.currentPeriodStart,
-            periodEnd: before.subscription.currentPeriodEnd,
-            measuredAt: now,
-            timeoutMs: BILLING_LIMITS.usageTimeoutMs,
-          })
-        ).lines;
+        const usage = await this.usage.linesFor({
+          subscriptionId: id,
+          subjectId: before.subscription.subjectId,
+          priceId: before.subscription.priceId,
+          periodStart: before.subscription.currentPeriodStart,
+          periodEnd: before.subscription.currentPeriodEnd,
+          measuredAt: now,
+          timeoutMs: BILLING_LIMITS.usageTimeoutMs,
+        });
+        usageLines = usage.lines;
+        usageSettlement = usage.settlement;
       } catch (error) {
         renewalDeferredCounter.add(1, { reason: 'usage_unavailable' });
         this.logger.warn(
@@ -244,7 +248,7 @@ export class RenewalService {
         : await this.transitions.keep(view, patch, step);
       if (!updated) return 'skipped';
 
-      const { created } = await this.issuer.issue({
+      const { invoice, created } = await this.issuer.issue({
         subscriptionId: subscription.id,
         kind: 'RENEWAL',
         businessKey: `renewal:${start.toISOString()}`,
@@ -258,6 +262,13 @@ export class RenewalService {
       // A second invoice for this period must never exist: undo the whole renewal rather than half of it.
       if (!created)
         throw new Error('the renewal invoice of this period already exists');
+      // What the usage lines billed is recorded in the transaction of the invoice that carries them (S18 FR-028): a
+      // stale plan (another renewal settled first) rolls the whole renewal back and the next run measures again.
+      await this.settlement.settle({
+        invoiceId: invoice.id,
+        subscriptionId: subscription.id,
+        settlement: usageSettlement,
+      });
       return 'invoiced';
     });
     // Counted after the commit: a rolled-back renewal is not a renewal.

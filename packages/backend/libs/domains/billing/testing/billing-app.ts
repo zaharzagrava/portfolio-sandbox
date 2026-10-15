@@ -4,6 +4,7 @@ import { QueryTypes } from 'sequelize';
 import type { Sequelize } from 'sequelize';
 import { v4 as uuidv4 } from 'uuid';
 import { Role } from '@app/domains/identity';
+import { ClickHouseService } from '@app/infrastructure/clickhouse/clickhouse.service';
 import { TransactionRunner } from '@app/infrastructure/context';
 import { JobsService } from '@app/infrastructure/jobs/jobs.service';
 import { JobsWorkerModule } from '@app/infrastructure/jobs/jobs-worker.module';
@@ -13,6 +14,7 @@ import {
   type CatalogTestApp,
   type TestUser,
 } from '@app/test/utils/catalog-app';
+import { applyClickHouseDdl } from '@app/test/utils/clickhouse-ddl';
 import { addMember, createShop } from '@app/test/utils/tenancy-fixtures';
 import { FakeBillingProvider } from '@app/test/fakes/billing-provider.fake';
 import { FakeUsageLines } from '@app/test/fakes/billing-usage.fake';
@@ -31,6 +33,7 @@ import { BillingModule } from '../billing.module';
 import { BillingWorkerModule } from '../billing-worker.module';
 import { BillingLifecycle } from '../infra/billing-lifecycle';
 import { TenancyLifecycleConsumer } from '../infra/tenancy.consumers';
+import { createRunnerDelivery } from './runner-delivery';
 
 export interface BillingTestApp extends CatalogTestApp {
   sequelize: Sequelize;
@@ -49,6 +52,10 @@ export interface BillingTestApp extends CatalogTestApp {
   fault: RenewalFault;
   /** Real envelopes handed to the real tenancy-lifecycle consumer. */
   tenancy: ReturnType<typeof createDelivery>;
+  /** Real envelopes handed to the real consumer `consumer` (routing, validation, its inbox and store are the real ones). */
+  deliver(
+    consumer: Parameters<typeof createRunnerDelivery>[1],
+  ): ReturnType<typeof createRunnerDelivery>;
   /** Test code may touch every table (IX.6): reads and privileged setup only, never the domain's own writes. */
   sql<T = Record<string, unknown>>(
     text: string,
@@ -102,6 +109,10 @@ export async function createBillingApp(
     env?: Record<string, string>;
     redisUrl?: string;
     structuredLogger?: boolean;
+    /** Keep S18's real `UsageInvoiceLinesProvider` (default: the scripted double of the S17 specs). */
+    realUsage?: boolean;
+    /** Further modules (a fixture controller carrying `RequiresShopEntitlement`, S18 AS-09). */
+    extraImports?: unknown[];
   } = {},
 ): Promise<BillingTestApp> {
   const logChunks: string[] = [];
@@ -124,6 +135,7 @@ export async function createBillingApp(
       BillingWorkerModule,
       BillingConsumerModule,
       JobsWorkerModule.register({ loops: false }),
+      ...(options.extraImports ?? []),
     ],
     customize: (builder) => {
       // The clock exists only after the base app builds its FakeClock: the doubles read it lazily.
@@ -132,17 +144,23 @@ export async function createBillingApp(
         advance: (ms) => base_.clock.advance(ms),
       });
       usage = new FakeUsageLines();
-      return builder
+      const overridden = builder
         .overrideProvider(BILLING_PROVIDER_TRANSPORT)
         .useValue(provider)
-        .overrideProvider(USAGE_LINES_PROVIDER)
-        .useValue(usage)
         .overrideProvider(RENEWAL_FAULT)
         .useValue(fault);
+      return options.realUsage
+        ? overridden
+        : overridden.overrideProvider(USAGE_LINES_PROVIDER).useValue(usage);
     },
   });
   const base_ = base;
   const app: INestApplication = base.app;
+  // The usage store is analytical (ClickHouse): its idempotent DDL is applied like the other specs' (L-011).
+  await applyClickHouseDdl(
+    app.get(ClickHouseService, { strict: false }),
+    '010_usage_events.sql',
+  );
   const sequelize = app.get<Sequelize>(getConnectionToken());
   const sql = <T>(text: string, replacements: Record<string, unknown> = {}) =>
     sequelize.query(text, {
@@ -167,6 +185,7 @@ export async function createBillingApp(
     lifecycle: app.get(BillingLifecycle, { strict: false }),
     fault,
     tenancy: createDelivery(app, TenancyLifecycleConsumer),
+    deliver: (consumer) => createRunnerDelivery(app, consumer),
     sql,
     rawLogs: () => logChunks.join(''),
     async close() {

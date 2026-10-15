@@ -482,6 +482,28 @@ export class CacheService implements OnModuleInit, OnModuleDestroy {
     return { outcome };
   }
 
+  /**
+   * Reads what the store holds for `key` without loading, refreshing or recording a hit (an event consumer that
+   * must compare the cached version with an incoming one). `null` when there is no usable entry; a stale entry
+   * within its hard limit is returned with `fresh: false`. Throws `CacheUnavailable` when the store cannot answer.
+   */
+  async peek<T>(
+    key: string,
+    options: { timeoutMs?: number } = {},
+  ): Promise<{ value: T; fresh: boolean; version: number | null } | null> {
+    validateKey(key);
+    const raw = await this.guard.run(
+      () => this.redis.client.get(key),
+      options.timeoutMs ?? this.cfg.storeTimeoutMs,
+    );
+    const parsed = parseEnvelope<T>(raw);
+    if (parsed.kind !== 'ok') return null;
+    const env = parsed.envelope;
+    const now = this.clock.nowMs();
+    if (env.v === null || now >= env.hard) return null;
+    return { value: env.v, fresh: now < env.exp, version: env.ver ?? null };
+  }
+
   // ---------------------------------------------------------------------------------------------------------
   // Loading
 

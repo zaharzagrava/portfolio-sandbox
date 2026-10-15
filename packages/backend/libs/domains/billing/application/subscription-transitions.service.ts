@@ -135,7 +135,14 @@ export class SubscriptionTransitions {
 
   /** The cache is dropped after the commit, never inside the transaction (S17 FR-011). */
   forgetEntitlements(view: SubscriptionView): void {
-    const { subjectType, subjectId } = view.subscription;
-    afterCommit(() => this.entitlements.invalidate(subjectType, subjectId));
+    const { subjectType, subjectId, id, version } = view.subscription;
+    // version guarded: a load that began before this commit never stores its (older) result; a failure is logged by
+    // `afterCommit` and the status event invalidates again (S18 FR-011, FR-014)
+    afterCommit(() =>
+      this.entitlements.invalidate(subjectType, subjectId, {
+        subscriptionId: id,
+        subscriptionVersion: version,
+      }),
+    );
   }
 }

@@ -41,6 +41,14 @@ export const billingRatePolicies = definePolicies('billing', {
     key: 'custom',
     failMode: 'closed',
   },
+  // S18: the usage reads hit the analytical store; 60 a minute per subject, and a limiter that is down refuses
+  'billing.usage-read.subject': {
+    algorithm: 'slidingWindow',
+    limit: 60,
+    windowMs: 60_000,
+    key: 'custom',
+    failMode: 'closed',
+  },
   'billing.plans.ip': {
     algorithm: 'slidingWindow',
     limit: 120,

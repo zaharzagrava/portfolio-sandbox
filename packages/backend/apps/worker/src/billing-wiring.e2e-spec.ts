@@ -45,4 +45,16 @@ describe('Billing wiring in the real worker application', () => {
     );
     expect(found).toEqual([{ cron: '*/10 * * * *', timezone: 'UTC' }]);
   });
+
+  it('S18 T052: the worker handles the usage reconciliation job and has scheduled it once at 03:15 UTC', async () => {
+    const registry = app.get(JobRegistry, { strict: false });
+    expect(registry.get('billing.usage-reconcile')).toBeDefined();
+    expect(registry.get('billing.usage-reconcile')?.leaseMs).toBe(600_000);
+    const db = app.get<Sequelize>(getConnectionToken(), { strict: false });
+    const found = await db.query<{ cron: string; timezone: string }>(
+      `SELECT "cron", "timezone" FROM "JobSchedule" WHERE "name" = 'billing.usage-reconcile'`,
+      { type: QueryTypes.SELECT },
+    );
+    expect(found).toEqual([{ cron: '15 3 * * *', timezone: 'UTC' }]);
+  });
 });

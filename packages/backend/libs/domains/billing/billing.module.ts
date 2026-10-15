@@ -1,4 +1,6 @@
-import { Global, Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
+import { DiscoveryModule } from '@nestjs/core';
+import { EntitlementGuardValidator } from './application/entitlement.guard';
 import { AuthModule } from '@app/domains/identity';
 import { IdempotencyModule } from '@app/infrastructure/idempotency';
 import { RateLimitModule } from '@app/infrastructure/rate-limit';
@@ -7,17 +9,19 @@ import { BillingApi } from './api/billing-api.service';
 import { BuyerSubscriptionController } from './api/buyer-subscription.controller';
 import { PlansController } from './api/plans.controller';
 import { ShopSubscriptionController } from './api/shop-subscription.controller';
+import { UsageController } from './api/usage.controller';
 import { BillingCoreModule } from './billing-core.module';
 import { billingRatePolicies } from './rate-limit-policies';
 
 /**
  * HTTP side (apps/core): the catalog, the operator's catalog API and the subscription routes of shops and buyers
- * (S17 contracts/http.md). Global: other domains read entitlements (`@RequiresShopEntitlement`) and record usage
- * (S18) through the services this module re-exports from the shared core.
+ * (S17 contracts/http.md) and S18's usage read. Not global (X.4): a module that asks what a plan allows
+ * (`EntitlementsService`, `@RequiresShopEntitlement`) imports this module, which re-exports the shared core. The
+ * start-up check of the entitlement guard lives here, so it sees every controller of the application.
  */
-@Global()
 @Module({
   imports: [
+    DiscoveryModule,
     BillingCoreModule,
     AuthModule,
     IdempotencyModule,
@@ -28,8 +32,9 @@ import { billingRatePolicies } from './rate-limit-policies';
     AdminBillingController,
     ShopSubscriptionController,
     BuyerSubscriptionController,
+    UsageController,
   ],
-  providers: [BillingApi],
+  providers: [BillingApi, EntitlementGuardValidator],
   exports: [BillingCoreModule],
 })
 export class BillingModule {}
