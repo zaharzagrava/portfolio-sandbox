@@ -172,6 +172,9 @@ export const OWNERSHIP = {
   Subscription: 'domain:billing',
   Invoice: 'domain:billing',
   InvoiceLine: 'domain:billing',
+  SubscriptionTransition: 'domain:billing',
+  InvoiceTransition: 'domain:billing',
+  SubjectPlanState: 'domain:billing',
   // launch-events
   LaunchEvent: 'domain:launch-events',
   Booking: 'domain:launch-events',

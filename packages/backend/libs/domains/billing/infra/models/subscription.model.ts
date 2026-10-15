@@ -50,6 +50,15 @@ export default class Subscription extends Model<
     string | null;
   @Column({ type: DataType.INTEGER, allowNull: false, defaultValue: 0 })
   declare version: number;
+  @Column({ type: DataType.DATE, allowNull: false }) declare statusSince: Date;
+  @Column({ type: DataType.DATE, allowNull: true })
+  declare canceledAt: Date | null;
+  @Column({ type: DataType.TEXT, allowNull: true }) declare cancelReason:
+    string | null;
+  @Column({ type: DataType.DATE, allowNull: true })
+  declare offboardingStartedAt: Date | null;
+  @Column({ type: DataType.BIGINT, allowNull: false, defaultValue: 0 })
+  declare creditBalanceMinor: number;
   declare createdAt: Date;
   declare updatedAt: Date;
 }

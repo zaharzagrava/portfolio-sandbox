@@ -233,12 +233,18 @@ uses to get other domains' data.
 ### billing
 - **Responsibility**: plans, versioned prices, subscriptions (Marketplace Plus, shop plans),
   invoices, proration, dunning, usage metering, and entitlements.
-- **Owns**: `Plan`, `Price`, `Subscription`, `Invoice`, `InvoiceLine`.
+- **Owns**: `Plan`, `Price`, `Subscription`, `Invoice`, `InvoiceLine`, `SubscriptionTransition`,
+  `InvoiceTransition`, `SubjectPlanState`.
 - **Other stores**: usage (ClickHouse) and entitlements cache (Redis).
-- **Emits**: `billing.subscription_status_changed`, `billing.invoice_payment_failed`.
+- **Emits**: `billing.subscription_status_changed`, `billing.subscription_plan_changed`,
+  `billing.invoice_payment_failed`, `billing.invoice_paid`.
 - **Hosted by**: core, worker, projector.
-- **Exports (R1)**: `hasEntitlement(subjectId, feature)`.
-- **Depends on**: developer-platform (consumes `usage.recorded`), payments (charge command).
+- **Exports (R1)**: `hasEntitlement(subjectId, feature)`; `SubscriptionBasisService` (the live subscription
+  for entitlements, for S18).
+- **Depends on**: developer-platform (consumes `usage.recorded`), tenancy (R1 `ShopQueryService` for the
+  sandbox flag, `ShopScoped`; R3 events `shop_offboarding_started/cancelled`, `shop_deleted`), the payment
+  provider through `libs/infrastructure/stripe` (billing charges its own invoices; payments' charge command
+  is for orders).
 
 ### launch-events
 - **Responsibility**: brand launch events: waiting room, admission tokens, seat holds, bookings,

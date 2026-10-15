@@ -1,26 +1,54 @@
-import { daysBetween } from './periods';
+import { splitByLargestRemainder } from './allocation';
+import { roundHalfAwayFromZero, toSafeNumber } from './money';
+import { utcDaysBetween } from './periods';
 
 export interface ProrationInput {
   periodStart: Date;
   periodEnd: Date;
   changeAt: Date;
-  /** What the customer paid for the full period on the OLD price (unit × quantity). */
+  /** What the customer paid for the full period on the OLD price (unit x quantity), integer minor units. */
   oldAmount: number;
-  /** What the full period costs on the NEW price/quantity. */
+  /** What the full period costs on the NEW price/quantity, integer minor units. */
   newAmount: number;
 }
 
 export interface ProrationLine {
   kind: 'PRORATION_CREDIT' | 'PRORATION_CHARGE';
   description: string;
+  /** Minor units; negative for the credit line. */
   amount: number;
 }
 
+export interface Proration {
+  lines: ProrationLine[];
+  /** The exact net `(new - old) x remaining / total`, rounded once; the lines add up to it. */
+  net: number;
+  totalDays: number;
+  remainingDays: number;
+}
+
 /**
- * Mid-cycle change (upgrade, downgrade, seats): credit the unused part of the
- * old price, charge the remaining part of the new one, both computed on the
- * same day boundary so they're consistent. Rounding: half away from zero per
- * line, documented, so an invoice can be recomputed bit-for-bit (audits).
+ * Whole UTC calendar days (S17 FR-041): `total = date(end) - date(start)`, `remaining = clamp(date(end) -
+ * date(changeAt), 0, total)`. The day of the change belongs to the new price.
+ */
+export function prorationDays(
+  periodStart: Date,
+  periodEnd: Date,
+  changeAt: Date,
+): { totalDays: number; remainingDays: number } {
+  const totalDays = utcDaysBetween(periodStart, periodEnd);
+  const remainingDays = Math.max(
+    0,
+    Math.min(totalDays, utcDaysBetween(changeAt, periodEnd)),
+  );
+  return { totalDays, remainingDays };
+}
+
+/**
+ * Mid-cycle change (S17 FR-042, AS-63, AS-64): the net is the exact rational `(new - old) x remaining / total`
+ * rounded ONCE, half away from zero; the credit and charge lines are its largest-remainder split (each the floor or
+ * ceiling of its exact value, ties to the credit line). Integer arithmetic only; zero lines are omitted. With no
+ * remaining day, or an empty period, there are no lines.
  */
 export function prorate({
   periodStart,
@@ -28,32 +56,38 @@ export function prorate({
   changeAt,
   oldAmount,
   newAmount,
-}: ProrationInput): ProrationLine[] {
-  const total = daysBetween(periodStart, periodEnd);
-  const remaining = Math.max(
-    0,
-    Math.min(total, daysBetween(changeAt, periodEnd)),
+}: ProrationInput): Proration {
+  const { totalDays, remainingDays } = prorationDays(
+    periodStart,
+    periodEnd,
+    changeAt,
   );
-  if (total <= 0 || remaining === 0) return [];
+  if (totalDays <= 0 || remainingDays === 0)
+    return { lines: [], net: 0, totalDays, remainingDays };
 
-  const credit = roundHalfAwayFromZero((oldAmount * remaining) / total);
-  const charge = roundHalfAwayFromZero((newAmount * remaining) / total);
-  return [
+  const total = BigInt(totalDays);
+  const remaining = BigInt(remainingDays);
+  const old = BigInt(oldAmount);
+  const next = BigInt(newAmount);
+  const net = roundHalfAwayFromZero((next - old) * remaining, total);
+  const [credit, charge] = splitByLargestRemainder(
+    [-old * remaining, next * remaining],
+    total,
+    net,
+  );
+  const lines: ProrationLine[] = [
     {
       kind: 'PRORATION_CREDIT' as const,
-      description: `Unused time on previous plan (${remaining}/${total} days)`,
-      amount: -credit,
+      description: `Unused time on previous plan (${remainingDays}/${totalDays} days)`,
+      amount: toSafeNumber(credit),
     },
     {
       kind: 'PRORATION_CHARGE' as const,
-      description: `Remaining time on new plan (${remaining}/${total} days)`,
-      amount: charge,
+      description: `Remaining time on new plan (${remainingDays}/${totalDays} days)`,
+      amount: toSafeNumber(charge),
     },
-  ].filter((l) => l.amount !== 0);
-}
-
-export function roundHalfAwayFromZero(value: number): number {
-  return Math.sign(value) * Math.round(Math.abs(value));
+  ].filter((line) => line.amount !== 0);
+  return { lines, net: toSafeNumber(net), totalDays, remainingDays };
 }
 
 /** Overage beyond the included quota, priced per 1,000 units, rounded up to whole blocks. */

@@ -98,6 +98,26 @@ export class StripeService {
     return result.data[0] ?? null;
   }
 
+  /**
+   * The intent whose metadata holds every given pair (values are escaped), or null. Billing looks a subscription charge
+   * up by `invoiceId` + `attempt`: its metadata never carries `idempotencyKey`, which the order webhook keys on.
+   * The provider's search is eventually consistent: a just-created intent may not be found yet.
+   */
+  public async findPaymentIntentByMetadataPair(
+    pairs: Record<string, string>,
+    timeoutMs: number,
+  ): Promise<PaymentIntent | null> {
+    const clauses = Object.entries(pairs).map(([key, value]) => {
+      const escaped = value.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+      return `metadata['${key}']:'${escaped}'`;
+    });
+    const result = await this.stripe.paymentIntents.search(
+      { query: clauses.join(' AND '), limit: 1 },
+      { timeout: timeoutMs, maxNetworkRetries: 0 },
+    );
+    return result.data[0] ?? null;
+  }
+
   public cancelPaymentIntent(
     intentId: string,
     idempotencyKey: string,

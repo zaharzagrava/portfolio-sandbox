@@ -31,3 +31,4 @@ export * from './src/events/client-events.ts';
 export * from './src/developer-platform/index.ts';
 export * from './src/catalog-sync/index.ts';
 export * from './src/statements/index.ts';
+export * from './src/billing/index.ts';

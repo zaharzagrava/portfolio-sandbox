@@ -32,6 +32,20 @@ export default class Invoice extends Model<Invoice, Partial<Invoice>> {
   declare nextAttemptAt: Date | null;
   @Column({ type: DataType.DATE, allowNull: true })
   declare usageMeasuredAt: Date | null;
+  @Column({ type: DataType.TEXT, allowNull: false })
+  declare businessKey: string;
+  @Column({ type: DataType.DATE, allowNull: true })
+  declare attemptStartedAt: Date | null;
+  @Column({ type: DataType.TEXT, allowNull: true })
+  declare attemptRef: string | null;
+  @Column({ type: DataType.BOOLEAN, allowNull: false, defaultValue: false })
+  declare attemptUnknown: boolean;
+  @Column({ type: DataType.INTEGER, allowNull: false, defaultValue: 0 })
+  declare manualAttempts: number;
+  @Column({ type: DataType.DATE, allowNull: true })
+  declare firstFailedAt: Date | null;
+  @Column({ type: DataType.DATE, allowNull: true })
+  declare paidAt: Date | null;
   @HasMany(() => InvoiceLine, { foreignKey: 'invoiceId' })
   declare lines: InvoiceLine[];
   declare createdAt: Date;

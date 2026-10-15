@@ -43,4 +43,5 @@ export {
   ShopStatusChanged,
   ShopUpdated,
   ShopVerificationChanged,
+  SubscriptionPlanChanged,
 } from './domain/events';

@@ -1,321 +1,83 @@
-import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
-import { InjectConnection, InjectModel } from '@nestjs/sequelize';
-import { Op, Sequelize } from 'sequelize';
-import Subscription from './models/subscription.model';
-import Price from './models/price.model';
-import Plan from './models/plan.model';
-import Invoice from './models/invoice.model';
-import { JobHandler } from '@app/infrastructure/jobs/job-handler.decorator';
-import { JobsService } from '@app/infrastructure/jobs/jobs.service';
-import { OutboxService } from '@app/infrastructure/outbox/outbox.service';
-import { TransactionRunner } from '@app/infrastructure/context';
-import { BillingService } from '../application/billing.service';
-import { BillingGateway } from './billing-gateway.port';
-import { EntitlementsService } from '../application/entitlements.service';
-import { UsageService } from '../application/usage.service';
-import { addPeriod } from '../domain/periods';
-import { overage } from '../domain/proration';
 import {
-  InvoicePaymentFailed,
-  SubscriptionStatusChanged,
-} from '../application/events/billing-events';
+  Inject,
+  Injectable,
+  Logger,
+  OnApplicationBootstrap,
+} from '@nestjs/common';
+import { JobHandler } from '@app/infrastructure/jobs/job-handler.decorator';
+import type { JobContext } from '@app/infrastructure/jobs/job-types';
+import { JobsService } from '@app/infrastructure/jobs/jobs.service';
+import { AttemptResolutionService } from '../application/attempt-resolution.service';
+import { ChargeService } from '../application/charge.service';
+import { RenewalService } from '../application/renewal.service';
+import '../application/billing.job-types';
+import { STOP_SIGNAL, type StopSignal } from '../domain/ports';
 
-import { z } from 'zod';
-import { declareJobType } from '@app/infrastructure/jobs/job-type-registry';
-
-declare module '@app/infrastructure/jobs/job-types' {
-  interface JobPayloads {
-    'billing.run': Record<string, never>;
-  }
-}
-
-declareJobType({
+/** The renewal run: every ten minutes, UTC, one run per slot across replicas (S49 claiming), lease 600 s. */
+export const BILLING_RUN_SCHEDULE = {
   name: 'billing.run',
-  contract: z.object({}),
-});
+  cron: '*/10 * * * *',
+  timezone: 'UTC',
+} as const;
 
-/** Dunning: retry 1, 3 and 7 days after the first failure, then give up (lesson 10/07 #24). */
-export const DUNNING_DAYS = [1, 3, 7];
-
+/**
+ * Thin job handlers (S17 contracts/jobs.md, I.2): parse is done by the job registry from the declared contract, then
+ * one call to a use case. A provider outcome is never a job error; only infrastructure failures throw and retry.
+ * The schedule is registered once at boot (idempotent upsert, safe from every replica).
+ */
 @Injectable()
 export class BillingJobs implements OnApplicationBootstrap {
   private readonly logger = new Logger(BillingJobs.name);
 
   constructor(
-    @InjectModel(Subscription)
-    private readonly subscriptionModel: typeof Subscription,
-    @InjectModel(Invoice) private readonly invoiceModel: typeof Invoice,
-    @InjectConnection() private readonly sequelize: Sequelize,
-    private readonly billing: BillingService,
-    private readonly gateway: BillingGateway,
-    private readonly entitlements: EntitlementsService,
-    private readonly usage: UsageService,
     private readonly jobs: JobsService,
-    private readonly events: OutboxService,
-    private readonly runner: TransactionRunner,
+    private readonly renewals: RenewalService,
+    private readonly charges: ChargeService,
+    private readonly resolution: AttemptResolutionService,
+    @Inject(STOP_SIGNAL) private readonly stop: StopSignal,
   ) {}
 
-  async onApplicationBootstrap() {
+  async onApplicationBootstrap(): Promise<void> {
     await this.jobs.upsertSchedule({
-      name: 'billing.run',
-      cron: '*/10 * * * *',
+      ...BILLING_RUN_SCHEDULE,
       jobType: 'billing.run',
       payload: {},
+      overlap: 'skip',
+      maxAttempts: 1,
     });
   }
 
-  /**
-   * Renews every due subscription: one transaction each = renewal invoice
-   * (plan + overage for the period just ended + late usage from the one
-   * before + unapplied credit notes) + period advanced. Idempotent: the
-   * invoice is unique per (subscription, periodStart) and the period only
-   * advances once. Anchors keep "31st" subscriptions on month ends.
-   */
   @JobHandler('billing.run', { concurrency: 1, leaseMs: 600_000 })
-  async run(): Promise<number> {
-    const due = await this.subscriptionModel.findAll({
-      where: {
-        status: { [Op.in]: ['TRIALING', 'ACTIVE'] },
-        currentPeriodEnd: { [Op.lte]: new Date() },
-      },
-      include: [{ model: Price, include: [Plan] }],
-      limit: 500,
-    });
-    for (const subscription of due)
-      await this.renew(subscription).catch((e) =>
-        this.logger.error(`renew ${subscription.id}: ${e.message}`),
-      );
-    return due.length;
-  }
-
-  private async renew(subscription: Subscription) {
-    if (subscription.cancelAtPeriodEnd) {
-      await this.setStatus(subscription, 'CANCELED');
-      return;
-    }
-    const start = subscription.currentPeriodEnd;
-    const end = addPeriod(
-      start,
-      subscription.price.interval,
-      subscription.billingAnchorDay,
+  async run(_payload: Record<string, never>, ctx: Pick<JobContext, 'signal'>) {
+    const summary = await this.renewals.run(
+      () => this.stop.isStopping() || ctx.signal.aborted,
     );
-    const measuredAt = new Date();
-    const lines = [
-      {
-        kind: 'PLAN',
-        description: subscription.price.plan.name,
-        quantity: subscription.quantity,
-        amount:
-          Number(subscription.price.unitAmount) *
-          (subscription.price.perSeat ? subscription.quantity : 1),
-      },
-      ...(await this.usageLines(subscription, measuredAt)),
-      ...(await this.creditLines(subscription)),
-    ];
-
-    await this.runner.run(async (transaction) => {
-      const [advanced] = await this.subscriptionModel.update(
-        {
-          currentPeriodStart: start,
-          currentPeriodEnd: end,
-          status: 'ACTIVE',
-          trialEndsAt: null,
-          version: subscription.version + 1,
-        },
-        {
-          where: { id: subscription.id, version: subscription.version },
-          transaction,
-        },
-      );
-      if (advanced === 0) return; // renewed concurrently
-      await this.billing.createInvoice(
-        subscription,
-        'RENEWAL',
-        start,
-        end,
-        lines,
-        transaction,
-        measuredAt,
-      );
-      await this.invoiceModel.update(
-        { status: 'PAID' },
-        {
-          where: {
-            subscriptionId: subscription.id,
-            kind: 'PRORATION',
-            status: 'OPEN',
-            total: { [Op.lt]: 0 },
-          },
-          transaction,
-        },
-      );
-    });
+    this.logger.log(
+      `billing run: ${summary.examined} examined, ${summary.invoiced} invoiced, ${summary.canceled + summary.expired} ended, ` +
+        `${summary.deferred} deferred, ${summary.skipped} skipped, ${summary.failed} failed`,
+    );
   }
 
-  /** Overage for the period that just ended, plus late events for the period invoiced before it. */
-  private async usageLines(subscription: Subscription, measuredAt: Date) {
-    if (subscription.subjectType !== 'SHOP') return [];
-    const lines: {
-      kind: string;
-      description: string;
-      quantity: number;
-      amount: number;
-    }[] = [];
-    const previous = await this.invoiceModel.findOne({
-      where: { subscriptionId: subscription.id, kind: 'RENEWAL' },
-      order: [['periodStart', 'DESC']],
-    });
-
-    for (const [metric, included] of Object.entries(
-      subscription.price.includedUsage ?? {},
-    )) {
-      const per1000 = subscription.price.overagePer1000?.[metric] ?? 0;
-      const used = await this.usage.totalFor(
-        subscription.subjectId,
-        metric,
-        subscription.currentPeriodStart,
-        subscription.currentPeriodEnd,
-      );
-      const o = overage(used, included, per1000);
-      if (o.amount > 0)
-        lines.push({
-          kind: 'USAGE',
-          description: `${metric} over ${included} (${o.units})`,
-          quantity: o.units,
-          amount: o.amount,
-        });
-
-      if (previous?.usageMeasuredAt) {
-        const late = await this.usage.lateFor(
-          subscription.subjectId,
-          metric,
-          previous.periodStart,
-          previous.periodEnd,
-          previous.usageMeasuredAt,
-        );
-        // Late units are priced at the overage rate; a closed invoice is never edited (adjustment instead, lesson 06/02 §5).
-        if (late > 0)
-          lines.push({
-            kind: 'ADJUSTMENT',
-            description: `${metric}: ${late} late events from previous period`,
-            quantity: late,
-            amount: Math.ceil(late / 1000) * per1000,
-          });
-      }
-    }
-    return lines;
-  }
-
-  private async creditLines(subscription: Subscription) {
-    const credits = await this.invoiceModel.findAll({
-      where: {
-        subscriptionId: subscription.id,
-        kind: 'PRORATION',
-        status: 'OPEN',
-        total: { [Op.lt]: 0 },
-      },
-    });
-    return credits.map((c) => ({
-      kind: 'CREDIT',
-      description: `Credit from plan change on ${c.periodStart.toISOString().slice(0, 10)}`,
-      quantity: 1,
-      amount: Number(c.total),
-    }));
-  }
-
-  @JobHandler('billing.charge-invoice', { concurrency: 20 })
+  @JobHandler('billing.charge-invoice', { concurrency: 8 })
   async charge({ invoiceId }: { invoiceId: string }): Promise<void> {
-    const invoice = await this.invoiceModel.findByPk(invoiceId);
-    if (!invoice || invoice.status !== 'OPEN' || Number(invoice.total) <= 0)
-      return;
-    const subscription = await this.subscriptionModel.findByPk(
-      invoice.subscriptionId,
-    );
-    if (!subscription) return;
-
-    const attempt = invoice.attempts + 1;
-    const result = subscription.paymentMethodRef
-      ? await this.gateway.charge({
-          amount: Number(invoice.total),
-          currency: invoice.currency,
-          paymentMethodRef: subscription.paymentMethodRef,
-          idempotencyKey: `${invoice.id}:${attempt}`,
-        })
-      : ({ ok: false, definite: true, reason: 'no payment method' } as const);
-
-    if (result.ok) {
-      await invoice.update({
-        status: 'PAID',
-        attempts: attempt,
-        nextAttemptAt: null,
-      });
-      if (subscription.status === 'PAST_DUE')
-        await this.setStatus(subscription, 'ACTIVE');
-      return;
-    }
-    if (!result.definite)
-      throw new Error(`charge outcome unknown: ${result.reason}`); // job retry, same idempotency key
-
-    const nextDays = DUNNING_DAYS[attempt - 1];
-    const nextAttemptAt =
-      nextDays !== undefined
-        ? new Date(Date.now() + nextDays * 86_400_000)
-        : null;
-    // The state change and its event commit together (S53 outbox contract).
-    await this.runner.run(async () => {
-      await invoice.update({
-        attempts: attempt,
-        nextAttemptAt,
-        status: nextAttemptAt ? 'OPEN' : 'UNCOLLECTIBLE',
-      });
-      await this.events.append(
-        InvoicePaymentFailed.create(invoice.id, attempt, {
-          subscriptionId: subscription.id,
-          subjectType: subscription.subjectType,
-          subjectId: subscription.subjectId,
-          attempt,
-          nextAttemptAt: nextAttemptAt?.toISOString() ?? null,
-        }),
-      );
-    });
-
-    if (nextAttemptAt) {
-      if (subscription.status !== 'PAST_DUE')
-        await this.setStatus(subscription, 'PAST_DUE');
-      await this.jobs.enqueue(
-        'billing.charge-invoice',
-        { invoiceId },
-        {
-          runAt: nextAttemptAt,
-          idempotencyKey: `invoice-charge:${invoice.id}:${attempt + 1}`,
-        },
-      );
-    } else {
-      await this.setStatus(subscription, 'UNPAID'); // → entitlements fall back to free
-    }
+    await this.charges.chargeInvoice(invoiceId);
   }
 
-  private async setStatus(
-    subscription: Subscription,
-    status: Subscription['status'],
-  ) {
-    await this.runner.run(async () => {
-      await subscription.update({ status, version: subscription.version + 1 });
-      await this.events.append(
-        SubscriptionStatusChanged.create(
-          subscription.id,
-          subscription.version,
-          {
-            subjectType: subscription.subjectType,
-            subjectId: subscription.subjectId,
-            status,
-          },
-        ),
-      );
-    });
-    await this.entitlements.invalidate(
-      subscription.subjectType,
-      subscription.subjectId,
+  @JobHandler('billing.resolve-attempt', { concurrency: 4 })
+  async resolve(payload: {
+    invoiceId: string;
+    attempt: string;
+    round?: number;
+  }): Promise<void> {
+    await this.resolution.resolve(
+      payload.invoiceId,
+      payload.attempt,
+      payload.round ?? 0,
     );
+  }
+
+  @JobHandler('billing.manual-attempt', { concurrency: 4 })
+  async manual(payload: { invoiceId: string; k: number }): Promise<void> {
+    await this.charges.manualAttempt(payload.invoiceId, payload.k);
   }
 }

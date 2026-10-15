@@ -36,6 +36,10 @@ export default class Price extends Model<Price, Partial<Price>> {
   declare includedUsage: Record<string, number>;
   @Column({ type: DataType.JSONB, allowNull: false })
   declare overagePer1000: Record<string, number>;
+  @Column({ type: DataType.INTEGER, allowNull: false, defaultValue: 1 })
+  declare version: number;
+  @Column({ type: DataType.INTEGER, allowNull: false, defaultValue: 0 })
+  declare trialDays: number;
   @Column({ type: DataType.BOOLEAN, allowNull: false }) declare active: boolean;
   declare createdAt: Date;
 }

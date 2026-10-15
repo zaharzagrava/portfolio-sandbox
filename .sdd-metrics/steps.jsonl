@@ -370,3 +370,13 @@
 {"run":"20261015T175230Z","capability":"S16","step":"repair-1","start":"2026-10-15T18:37:18Z","end":"2026-10-15T18:39:13Z","seconds":115,"result":"ok","attempt":1,"reason":"ok","code_changed":true}
 {"run":"20261015T175230Z","capability":"S16","step":"gate","start":"2026-10-15T18:39:13Z","end":"2026-10-15T18:44:43Z","seconds":330,"result":"pass","attempt":2,"reason":""}
 {"run":"20261015T175230Z","capability":"S16","step":"built","start":"2026-10-15T17:52:30Z","end":"2026-10-15T18:44:43Z","seconds":3133,"result":"ok","attempt":1,"reason":"Bitemporal commission rates, monthly statements, period close, adjustments, as-of reports, CSV export"}
+{"run":"20261015T175230Z","capability":"S17","step":"plan","start":"2026-10-15T18:45:03Z","end":"2026-10-15T18:49:44Z","seconds":281,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261015T175230Z","capability":"S17","step":"tasks","start":"2026-10-15T18:49:44Z","end":"2026-10-15T18:51:44Z","seconds":120,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261015T175230Z","capability":"S17","step":"analyze","start":"2026-10-15T18:51:44Z","end":"2026-10-15T18:52:29Z","seconds":45,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261015T175230Z","capability":"S17","step":"implement-1","start":"2026-10-15T18:52:29Z","end":"2026-10-15T20:01:10Z","seconds":4121,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261015T175230Z","capability":"S17","step":"implement-2","start":"2026-10-15T20:01:10Z","end":"2026-10-15T20:07:21Z","seconds":371,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261015T175230Z","capability":"S17","step":"converge-2","start":"2026-10-15T20:07:21Z","end":"2026-10-15T20:09:41Z","seconds":140,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261015T175230Z","capability":"S17","step":"gate","start":"2026-10-15T20:09:41Z","end":"2026-10-15T20:09:48Z","seconds":7,"result":"fail","attempt":1,"reason":"test integrity: packages/backend/libs/domains/billing/billing.e2e-spec.ts: test file deleted, and it carried no scenario id, so nothing proves that another test replaces it (add the scenario id to the"}
+{"run":"20261015T175230Z","capability":"S17","step":"repair-1","start":"2026-10-15T20:09:48Z","end":"2026-10-15T20:11:58Z","seconds":130,"result":"ok","attempt":1,"reason":"ok","code_changed":true}
+{"run":"20261015T175230Z","capability":"S17","step":"gate","start":"2026-10-15T20:11:58Z","end":"2026-10-15T20:17:35Z","seconds":337,"result":"pass","attempt":2,"reason":""}
+{"run":"20261015T175230Z","capability":"S17","step":"built","start":"2026-10-15T18:45:02Z","end":"2026-10-15T20:17:35Z","seconds":5553,"result":"ok","attempt":1,"reason":"Plans, versioned prices, subscription state machine, billing run, proration, dunning"}

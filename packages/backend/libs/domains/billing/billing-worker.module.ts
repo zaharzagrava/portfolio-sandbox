@@ -1,40 +1,11 @@
 import { Module } from '@nestjs/common';
-import { SequelizeModule } from '@nestjs/sequelize';
-import { JobsModule } from '@app/infrastructure/jobs/jobs.module';
-import { EventsModule } from '@app/infrastructure/events/events.module';
-import { StripeModule } from '@app/infrastructure/stripe/stripe.module';
-import { KafkaProducerModule } from '@app/infrastructure/kafka/kafka-producer.module';
-import { ClickHouseModule } from '@app/infrastructure/clickhouse/clickhouse.module';
-import { CacheModule } from '@app/infrastructure/cache/cache.module';
-import { BillingService } from './application/billing.service';
-import { EntitlementsService } from './application/entitlements.service';
-import { UsageService } from './application/usage.service';
-import {
-  BillingGateway,
-  StripeBillingGateway,
-} from './infra/billing-gateway.port';
+import { BillingCoreModule } from './billing-core.module';
 import { BillingJobs } from './infra/billing.jobs';
-import { BILLING_MODELS } from './billing.module';
 
-/** SD-24 background side (apps/worker): renewals, charges, dunning. */
+/** Background side (apps/worker): the billing run, the charge, resolution and manual-attempt jobs, and the schedule. */
 @Module({
-  imports: [
-    JobsModule,
-    EventsModule.forAggregates([
-      { aggregateType: 'billing', retention: 'full-history' },
-    ]),
-    StripeModule,
-    KafkaProducerModule,
-    ClickHouseModule,
-    CacheModule,
-    SequelizeModule.forFeature(BILLING_MODELS),
-  ],
-  providers: [
-    BillingService,
-    EntitlementsService,
-    UsageService,
-    { provide: BillingGateway, useClass: StripeBillingGateway },
-    BillingJobs,
-  ],
+  imports: [BillingCoreModule],
+  providers: [BillingJobs],
+  exports: [BillingJobs],
 })
 export class BillingWorkerModule {}
