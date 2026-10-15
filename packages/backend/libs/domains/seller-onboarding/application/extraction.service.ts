@@ -8,11 +8,11 @@ import { ObjectStorage } from '@app/infrastructure/storage/object-storage.port';
 import { SecretBox } from '@app/domains/identity';
 import {
   LLM_PROVIDER,
-  LlmTurnResult,
+  LlmCallRecorder,
+  LlmResult,
   textOf,
-  LlmMeter,
-} from '@app/domains/assistant';
-import type { LlmProvider } from '@app/domains/assistant';
+} from '@app/infrastructure/llm';
+import type { LlmProvider } from '@app/infrastructure/llm';
 import { Answers, DocumentKind } from '../domain/questionnaire';
 import {
   EXTRACTION_SYSTEM,
@@ -68,7 +68,7 @@ export class ExtractionService {
   constructor(
     @InjectConnection() private readonly sequelize: Sequelize,
     @Inject(LLM_PROVIDER) private readonly llm: LlmProvider,
-    private readonly meter: LlmMeter,
+    private readonly recorder: LlmCallRecorder,
     private readonly storage: ObjectStorage,
     private readonly secrets: SecretBox,
     private readonly verification: VerificationService,
@@ -148,19 +148,22 @@ export class ExtractionService {
         maxTokens: 2_000,
         effort: 'low',
         outputSchema: jsonSchemaFor(doc.kind),
+        // The queue is this job's retry layer (AS-77): one attempt, bounded.
+        timeoutMs: 45_000,
+        maxRetries: 0,
       });
-      void this.meter
-        .record({
-          subjectId: doc.shopId,
-          scopeId: doc.id,
-          callId: `${doc.id}:${attempt}`,
-          purpose: 'extraction',
-          requestedModel: model,
-          result,
-          ttftMs: null,
-          durationMs: Date.now() - started,
-        })
-        .catch(() => undefined);
+      await this.recorder.record({
+        subjectId: doc.shopId,
+        scopeId: doc.id,
+        callId: `${doc.id}:${attempt}`,
+        purpose: 'extraction',
+        metric: 'llm.extraction.tokens',
+        requestedModel: model,
+        outcome: result.stopReason === 'refusal' ? 'refused' : 'completed',
+        result,
+        ttftMs: null,
+        durationMs: Date.now() - started,
+      });
 
       const { extraction, issues } = this.evaluate(
         doc.kind,
@@ -205,7 +208,7 @@ export class ExtractionService {
   /** Model output → zod → rules. Pure apart from `now`; exported behaviour is covered by the e2e spec. */
   evaluate(
     kind: DocumentKind,
-    result: LlmTurnResult,
+    result: LlmResult,
     answers: Answers | null,
   ): { extraction: Extraction | null; issues: Issue[] } {
     if (result.stopReason === 'refusal')

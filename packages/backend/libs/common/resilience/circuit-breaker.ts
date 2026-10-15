@@ -23,6 +23,11 @@ export interface CircuitBreakerOptions {
   openDurationMs: number;
   /** Trial calls admitted while HALF_OPEN; all must succeed to close the circuit. */
   halfOpenCalls: number;
+  /**
+   * Run-length mode: open after this many failures in a row (a success resets the run). When set, the rolling window
+   * and rate above are not consulted. Unset keeps the rate behaviour.
+   */
+  consecutiveFailures?: number;
   /** Decides whether a thrown error counts as a failure. Default: every error does (the client excludes `4xx`). */
   isFailure?: (error: unknown) => boolean;
 }
@@ -67,6 +72,7 @@ export class CircuitBreaker {
   private current: CircuitState = 'CLOSED';
   private openedAt = 0;
   private outcomes: { at: number; failure: boolean }[] = [];
+  private run = 0;
   private trialsStarted = 0;
   private trialsSucceeded = 0;
   private readonly stateGauge: GaugeHandle;
@@ -122,10 +128,15 @@ export class CircuitBreaker {
     try {
       value = await fn();
     } catch (error) {
-      this.record(
-        this.options.isFailure ? this.options.isFailure(error) : true,
-        state,
-      );
+      const failure = this.options.isFailure
+        ? this.options.isFailure(error)
+        : true;
+      // In run-length mode an error that is not a failure (an abort, a refusal) neither extends nor breaks the run.
+      const neutral =
+        !failure &&
+        this.options.consecutiveFailures !== undefined &&
+        state === 'CLOSED';
+      if (!neutral) this.record(failure, state);
       throw error;
     }
     const slow =
@@ -157,6 +168,11 @@ export class CircuitBreaker {
       return;
     }
     if (this.current !== 'CLOSED') return;
+    if (this.options.consecutiveFailures !== undefined) {
+      this.run = failure ? this.run + 1 : 0;
+      if (this.run >= this.options.consecutiveFailures) this.open(now);
+      return;
+    }
     this.outcomes.push({ at: now, failure });
     this.outcomes = this.outcomes.filter(
       (o) => now - o.at < this.options.windowMs,
@@ -173,6 +189,7 @@ export class CircuitBreaker {
   private open(now: number): void {
     this.openedAt = now;
     this.outcomes = [];
+    this.run = 0;
     this.transition('OPEN');
   }
 

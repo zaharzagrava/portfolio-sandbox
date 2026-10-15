@@ -1,3 +1,4 @@
+import * as fc from 'fast-check';
 import { FakeClock } from '@app/common/core/clock';
 import { CircuitBreaker, CircuitOpenError } from './circuit-breaker';
 
@@ -181,5 +182,126 @@ describe('CircuitBreaker (U-CB)', () => {
       value: 'ok',
       degraded: false,
     });
+  });
+});
+
+describe('CircuitBreaker consecutiveFailures mode (S46 AS-46)', () => {
+  const consecutive = () =>
+    build({
+      consecutiveFailures: 5,
+      minimumCalls: 5,
+      failureRateThreshold: 1,
+      windowMs: 120_000,
+      openDurationMs: 30_000,
+      halfOpenCalls: 1,
+    });
+
+  it.each([
+    ['4 failures stay closed', [false, false, false, false], 'CLOSED'],
+    ['5 failures in a row open', [false, false, false, false, false], 'OPEN'],
+    [
+      'a success resets the run',
+      [false, false, false, false, true, false, false, false, false],
+      'CLOSED',
+    ],
+    [
+      '5 failures after a reset open',
+      [false, false, true, false, false, false, false, false],
+      'OPEN',
+    ],
+  ])('S46 AS-46: %s', async (_name, outcomes, expected) => {
+    const { breaker } = consecutive();
+    for (const success of outcomes)
+      await breaker.execute(success ? ok : boom).catch(() => undefined);
+    expect(breaker.state()).toBe(expected);
+  });
+
+  it('S46 AS-46: errors that isFailure rejects neither count nor break the run', async () => {
+    const { breaker } = build({
+      consecutiveFailures: 2,
+      isFailure: (e) => !(e instanceof RangeError),
+    });
+    const aborted = async () => {
+      throw new RangeError('aborted');
+    };
+    await breaker.execute(boom).catch(() => undefined);
+    await breaker.execute(aborted).catch(() => undefined);
+    expect(breaker.state()).toBe('CLOSED');
+    await breaker.execute(boom).catch(() => undefined);
+    expect(breaker.state()).toBe('OPEN');
+  });
+
+  it('S46 AS-46: open -> half-open after the cooldown; a good probe closes; a failed probe reopens for another cooldown', async () => {
+    const { breaker, clock } = consecutive();
+    await drive(breaker, 5, 0);
+    expect(breaker.state()).toBe('OPEN');
+    clock.advance(29_999);
+    expect(breaker.state()).toBe('OPEN');
+    clock.advance(1);
+    expect(breaker.state()).toBe('HALF_OPEN');
+    await breaker.execute(ok);
+    expect(breaker.state()).toBe('CLOSED');
+    // closing clears the run: four more failures stay closed
+    await drive(breaker, 4, 0);
+    expect(breaker.state()).toBe('CLOSED');
+    await drive(breaker, 1, 0);
+    expect(breaker.state()).toBe('OPEN');
+    clock.advance(30_000);
+    await breaker.execute(boom).catch(() => undefined);
+    expect(breaker.state()).toBe('OPEN');
+    clock.advance(29_999);
+    expect(breaker.state()).toBe('OPEN');
+    clock.advance(1);
+    expect(breaker.state()).toBe('HALF_OPEN');
+  });
+
+  it('S46 AS-46: without the option 5 failures do not open the default breaker', async () => {
+    const { breaker } = build();
+    await drive(breaker, 5, 0);
+    expect(breaker.state()).toBe('CLOSED');
+  });
+
+  it('S46 AS-46: property - never two concurrent half-open probes', async () => {
+    await fc.assert(
+      fc.asyncProperty(
+        fc.integer({ min: 2, max: 12 }),
+        fc.boolean(),
+        async (callers, probeSucceeds) => {
+          const { breaker, clock } = consecutive();
+          await drive(breaker, 5, 0);
+          clock.advance(30_000);
+          let inFlight = 0;
+          let maxInFlight = 0;
+          let started = 0;
+          let release!: () => void;
+          const gate = new Promise<void>((r) => (release = r));
+          const probe = async () => {
+            started++;
+            inFlight++;
+            maxInFlight = Math.max(maxInFlight, inFlight);
+            await gate;
+            inFlight--;
+            if (!probeSucceeds) throw new Error('probe failed');
+            return 'ok';
+          };
+          const results = Array.from({ length: callers }, () =>
+            breaker.execute(probe).then(
+              () => 'ran',
+              (e: unknown) =>
+                e instanceof CircuitOpenError ? 'refused' : 'failed',
+            ),
+          );
+          await Promise.resolve();
+          release();
+          const outcomes = await Promise.all(results);
+          expect(started).toBe(1);
+          expect(maxInFlight).toBe(1);
+          expect(outcomes.filter((o) => o === 'refused')).toHaveLength(
+            callers - 1,
+          );
+        },
+      ),
+      { numRuns: 50 },
+    );
   });
 });

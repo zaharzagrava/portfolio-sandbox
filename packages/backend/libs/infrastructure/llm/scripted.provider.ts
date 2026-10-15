@@ -3,9 +3,10 @@ import { randomUUID } from 'node:crypto';
 import {
   LlmAbortedError,
   LlmProvider,
+  LlmRejectedError,
+  LlmRequest,
+  LlmResult,
   LlmStreamOptions,
-  LlmTurnRequest,
-  LlmTurnResult,
   LlmUnavailableError,
 } from './llm-provider';
 
@@ -21,6 +22,8 @@ export interface ScriptedTurn {
   citations?: number[];
   /** Fail before the first token (fallback-model specs). */
   unavailable?: boolean;
+  /** Fail with a non-transient provider answer (400/401). */
+  rejected?: boolean;
   delayMs?: number;
 }
 
@@ -36,16 +39,20 @@ const sleep = (ms: number, signal: AbortSignal) =>
   });
 
 /**
- * Deterministic provider for e2e specs and keyless local dev: replays queued
- * turns and records every request + abort, so specs assert on what the
- * service SENT (history, tools, model) and that a disconnect really cancelled
- * the call. With an empty queue it echoes, which keeps local dev usable.
+ * Deterministic provider for e2e specs and keyless local dev: replays queued turns and records every request + abort,
+ * so specs assert on what the service SENT (history, tools, model) and that a disconnect really cancelled the call.
+ * With an empty queue it echoes, which keeps local dev usable. Refused when `NODE_ENV=production` (AS-74).
  */
 export class ScriptedLlmProvider implements LlmProvider {
   readonly name = 'scripted';
-  readonly requests: LlmTurnRequest[] = [];
+  readonly requests: LlmRequest[] = [];
   aborted = 0;
   private queue: ScriptedTurn[] = [];
+
+  constructor() {
+    if (process.env.NODE_ENV === 'production')
+      throw new Error('llm_provider: the scripted provider is not allowed in production');
+  }
 
   script(...turns: ScriptedTurn[]) {
     this.queue.push(...turns);
@@ -58,15 +65,16 @@ export class ScriptedLlmProvider implements LlmProvider {
   }
 
   async streamTurn(
-    request: LlmTurnRequest,
+    request: LlmRequest,
     { signal, onText }: LlmStreamOptions,
-  ): Promise<LlmTurnResult> {
+  ): Promise<LlmResult> {
     this.requests.push(structuredClone(request));
     const turn = this.queue.shift() ?? {
       text: `echo: ${lastUserText(request)}`,
     };
     if (turn.unavailable)
       throw new LlmUnavailableError('scripted overload', null);
+    if (turn.rejected) throw new LlmRejectedError('scripted rejection', 400);
     try {
       const text = turn.text ?? '';
       const pieces = splitInto(
@@ -88,16 +96,19 @@ export class ScriptedLlmProvider implements LlmProvider {
     }
   }
 
-  async complete(request: LlmTurnRequest): Promise<LlmTurnResult> {
+  async complete(request: LlmRequest): Promise<LlmResult> {
     this.requests.push(structuredClone(request));
     const turn = this.queue.shift() ?? {
       text: `summary of ${request.messages.length} messages`,
     };
+    if (turn.unavailable)
+      throw new LlmUnavailableError('scripted overload', null);
+    if (turn.rejected) throw new LlmRejectedError('scripted rejection', 400);
     return this.result(request, turn, turn.text ?? '');
   }
 
   async countTokens(
-    request: Omit<LlmTurnRequest, 'maxTokens' | 'effort'>,
+    request: Omit<LlmRequest, 'maxTokens' | 'effort'>,
   ): Promise<number> {
     return Math.ceil(
       JSON.stringify([request.system, request.tools, request.messages]).length /
@@ -106,10 +117,10 @@ export class ScriptedLlmProvider implements LlmProvider {
   }
 
   private result(
-    request: LlmTurnRequest,
+    request: LlmRequest,
     turn: ScriptedTurn,
     text: string,
-  ): LlmTurnResult {
+  ): LlmResult {
     const content = [
       ...(text
         ? [
@@ -146,7 +157,7 @@ export class ScriptedLlmProvider implements LlmProvider {
 }
 
 /** Mirrors what the API returns for a citation of the i-th search_result block in the last user message. */
-const searchResultCitation = (request: LlmTurnRequest, index: number) => {
+const searchResultCitation = (request: LlmRequest, index: number) => {
   const last = request.messages[request.messages.length - 1];
   const blocks = (typeof last.content === 'string' ? [] : last.content).filter(
     (b): b is Anthropic.Beta.BetaSearchResultBlockParam =>
@@ -172,7 +183,7 @@ const splitInto = (text: string, n: number): string[] => {
   );
 };
 
-const lastUserText = (request: LlmTurnRequest): string => {
+const lastUserText = (request: LlmRequest): string => {
   const last = [...request.messages].reverse().find((m) => m.role === 'user');
   if (!last) return '';
   if (typeof last.content === 'string') return last.content;

@@ -135,3 +135,18 @@ The assistant's own stores are not Postgres tables: conversations (Scylla, `assi
 5. Tools through R1 services, privacy and injection tests (G29–G34, G36–G37).
 6. Projector DLQ and metrics (G52–G54); update the web client (G59) and rewrite `assistant.e2e-spec.ts` into the spec files of `test-plan.md` (G58).
 7. Close D-6, D-8, D-14 in `docs/work/architecture/debt-register.md` with the actual commit; leave D-7/D-12 notes for S47.
+
+## Spec changes
+
+No human-signed page exists for S46 (`docs/spec/capabilities/S46-*.md` and any `*.reviewed.json` are absent), so nothing signed is changed. The plan adds `docs/spec/capabilities/S46-shopping-assistant.md` as its first task. Two wording changes versus `spec.md`, both recorded in `plan.md`: the near-me service is the built `PickupSearchService` (not a new `PickupNearMeService`), and the shared `CircuitBreaker` gains an additive `consecutiveFailures` option (S54-owned file; default behaviour unchanged).
+
+## Sibling-spec follow-ups
+
+- **S54**: `CircuitBreaker` (`@app/common/resilience`) gains the optional `consecutiveFailures` option and its spec rows; the S54 page should list it. No existing caller changes.
+- **S19**: `PickupSearchService.searchNear` is the in-process near-me contract the assistant relies on (`{items: {productId, title, category, priceMinor, currency, nearest: {pickupPointId, name, distanceM, quantity}}[]}`); keep the shape and the export. The S46 spec text says `PickupNearMeService`; the built name wins.
+- **S18**: consume `llm.call_completed` v1 with the call-unique `aggregateId` (identity `llm:<aggregateId>`), `billableTokens`, `subjectId`, `metric`. The producer is now `@app/infrastructure/llm` for chat, summary, rag and extraction. The assistant no longer calls `UsageService`.
+- **S04**: import `LLM_PROVIDER`, `LlmUnavailableError`, `LlmRejectedError`, `LlmCallRecorder` from `@app/infrastructure/llm`; pass `maxRetries: 0`, `timeoutMs: 45000`, `callId = "<documentId>:<attempt>"`, `purpose: "extraction"`. S46 changes only the import paths in `seller-onboarding`; behaviour changes stay with S04.
+- **S47**: `infra/call-recorder.adapter.ts`, `infra/answer-model.adapter.ts` and `infra/moderator.adapter.ts` delegate to `@app/infrastructure/llm` and the assistant moderation backend; S46 edits those three files only for imports and delegation. `anthropic_api_key` and `assistant_model` are now parsed, so `KnowledgeConfigGuard` refuses the scripted provider in production.
+- **W05**: send `Idempotency-Key` per message; handle `input_rejected`, `too_many_active_turns`, `assistant_unavailable`, `idempotency_in_flight`, `quota_exceeded` (`resetsAt`), `invalid_last_event_id`; replace shown text on `refusal {source: "moderation"}`; resume with `Last-Event-ID`; `done` has no cost fields and now has `allowance`. S46 updates `packages/web/hooks/use-assistant-chat.ts` and `lib/api/assistant.ts` minimally to keep the build and the happy-path journeys green; the screens stay W05's.
+- **S50**: `llm.messages` and `llm.provider.tpm` stay in `assistant/rate-limit-policies.ts`; the assistant adopts the `RateLimit` headers, `503 rate_limiter_unavailable` and `422 rate_limit_cost_exceeded`.
+- **S05 / S32**: the assistant now uses `ProductQueryService.getProductsByIds` and `ProductSearchService.search` only; the pre-S32 `ElasticsearchService.searchProducts` call is gone.

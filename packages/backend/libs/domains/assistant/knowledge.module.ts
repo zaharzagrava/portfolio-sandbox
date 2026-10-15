@@ -37,7 +37,7 @@ import {
   KnowledgeShopDeletedConsumer,
 } from './infra/knowledge-lifecycle.projectors';
 import { KnowledgeSweepJobs } from './infra/knowledge-sweep.jobs';
-import { LlmModule } from './infra/llm/llm.module';
+import { LlmModule } from '@app/infrastructure/llm';
 import {
   MODERATION_BACKEND,
   ModeratorAdapter,
@@ -57,9 +57,8 @@ jsonBodyLimits.register({
 });
 
 /**
- * The model, the recorder, the moderator and the catalog/tenancy lookups behind their port tokens. Interim adapters
- * (S47 R-2, R-3): S46's `@app/infrastructure/llm` will replace `AnswerModelAdapter`, `CallRecorderAdapter` and
- * `ModeratorAdapter`, one file each.
+ * The model, the recorder, the moderator and the catalog/tenancy lookups behind their port tokens. The model and the
+ * recorder adapters delegate to `@app/infrastructure/llm` (S46); the moderator keeps the backend slot (S47 R-2, R-3).
  */
 const ASK_PORTS = [
   { provide: PRODUCT_DIRECTORY, useExisting: CatalogAdapter },

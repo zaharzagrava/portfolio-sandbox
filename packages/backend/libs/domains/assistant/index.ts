@@ -6,9 +6,8 @@
  * rate-limit policies, and the document DTO types (from `@marketplace-sandbox/contracts`). No repository, embedder,
  * parser, answer class or model is exported.
  *
- * Shopping assistant half (S46, still transitional): `AssistantModule`, `assistantRatePolicies`, and the model-provider
- * symbols other domains import today (`LlmMeter`, `LLM_PROVIDER`, `LlmUnavailableError`, `textOf`, `LlmModule`,
- * `ScriptedLlmProvider`, `LlmCallsProjector`). They move to `@app/infrastructure/llm` when S46 lands (debt D-14).
+ * Shopping assistant half (S46, still transitional): `AssistantModule`, `assistantRatePolicies`, `LlmCallsProjector`, and
+ * thin aliases of the model-provider symbols that now live in `@app/infrastructure/llm` (D-14).
  */
 export {
   KnowledgeModule,
@@ -31,12 +30,12 @@ export { knowledgeRatePolicies } from './knowledge-rate-limit-policies';
 export { AssistantModule } from './assistant.module';
 export { assistantRatePolicies } from './rate-limit-policies';
 export { LlmCallsProjector } from './infra/llm-calls.projector';
-export { LlmMeter } from './infra/llm/llm-meter';
+// Thin aliases of the shared lib, kept until the shopping-half rewrite removes them (S46 T117); import the lib directly.
 export {
   LLM_PROVIDER,
+  LlmModule,
   LlmUnavailableError,
+  ScriptedLlmProvider,
   textOf,
-} from './infra/llm/llm-provider';
-export type { LlmProvider, LlmTurnResult } from './infra/llm/llm-provider';
-export { LlmModule } from './infra/llm/llm.module';
-export { ScriptedLlmProvider } from './infra/llm/scripted.provider';
+} from '@app/infrastructure/llm';
+export type { LlmProvider, LlmTurnResult } from '@app/infrastructure/llm';

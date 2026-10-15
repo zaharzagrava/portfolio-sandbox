@@ -15,6 +15,10 @@ export {
   EntitlementsService,
   RequiresShopEntitlement,
 } from './application/entitlements.service';
+export type {
+  QuotaKey,
+  QuotaStatus,
+} from './application/entitlements.service';
 export { InvoicePaymentFailed } from './application/events/billing-events';
 export { UsageRecorded, UsageService } from './application/usage.service';
 export { UsageProjector } from './infra/usage.projector';

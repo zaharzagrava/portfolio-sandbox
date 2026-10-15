@@ -1,46 +1,33 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { KafkaProducerService } from '@app/infrastructure/kafka/kafka-producer.service';
-import { LlmCallCompleted } from '../application/events/assistant-events';
+import { Injectable } from '@nestjs/common';
+import { LlmCallRecorder } from '@app/infrastructure/llm';
 import type { CallRecord, CallRecorder } from '../domain/ports';
-import { costMicros } from './llm/pricing';
 
 /**
- * INTERIM adapter (S47 R-2): publishes `llm.call_completed` (purpose `rag`, metric `llm.rag.tokens`) for every attempted
- * model call, failed, refused and aborted ones included. It does NOT call `UsageService`: billing (S18) consumes the
- * event. S46's `LlmCallRecorder` replaces this one file. Metering never fails a user-facing call.
+ * S47 `CallRecorder` port over S46's `LlmCallRecorder` (purpose `rag`, metric `llm.rag.tokens`): every attempted model
+ * call, failed, refused and aborted ones included, becomes one `llm.call_completed` outbox record that billing (S18)
+ * consumes. The recorder never throws, so metering cannot fail a user-facing call.
  */
 @Injectable()
 export class CallRecorderAdapter implements CallRecorder {
-  private readonly logger = new Logger(CallRecorderAdapter.name);
-
-  constructor(private readonly producer: KafkaProducerService) {}
+  constructor(private readonly recorder: LlmCallRecorder) {}
 
   async record(call: CallRecord): Promise<void> {
-    const model = call.model ?? call.requestedModel;
-    const event = LlmCallCompleted.create(call.callId, 0, {
-      userId: call.subjectId,
-      conversationId: call.scopeId,
-      messageId: call.callId,
+    await this.recorder.record({
+      subjectId: call.subjectId,
+      scopeId: call.scopeId,
+      callId: call.callId,
       purpose: 'rag',
+      metric: 'llm.rag.tokens',
       requestedModel: call.requestedModel,
-      model,
+      outcome: call.outcome,
+      result: {
+        model: call.model,
+        usage: call.usage,
+        stopReason: call.stopReason,
+      },
       ttftMs: call.ttftMs,
       durationMs: call.durationMs,
-      ...call.usage,
-      costMicros: costMicros(model, call.usage),
-      stopReason: call.stopReason,
-      toolCalls: 0,
-      scopeId: call.scopeId,
-      metric: 'llm.rag.tokens',
-      outcome: call.outcome,
       usageEstimated: call.usageEstimated,
     });
-    await this.producer
-      .send({
-        topic: LlmCallCompleted.topic,
-        key: call.subjectId,
-        value: event,
-      })
-      .catch((e) => this.logger.warn(`llm metrics dropped: ${e.message}`));
   }
 }

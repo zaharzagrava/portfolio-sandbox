@@ -16,8 +16,7 @@ import { ApiConfigService } from '@app/common/config';
 import { MockApiConfigService } from '@app/common/config/api-config.service.mock';
 import { AssistantModule } from './assistant.module';
 import { ConversationStore } from './infra/conversation.store';
-import { LLM_PROVIDER } from './infra/llm/llm-provider';
-import { ScriptedLlmProvider } from './infra/llm/scripted.provider';
+import { LLM_PROVIDER, ScriptedLlmProvider } from '@app/infrastructure/llm';
 import { compareStreamIds } from './infra/generation-buffer';
 import { types } from 'cassandra-driver';
 

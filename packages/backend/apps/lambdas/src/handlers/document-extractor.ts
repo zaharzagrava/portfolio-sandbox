@@ -7,7 +7,7 @@ import {
   OnboardingExtractionModule,
   ExtractionService,
 } from '@app/domains/seller-onboarding';
-import { LlmUnavailableError } from '@app/domains/assistant';
+import { LlmUnavailableError } from '@app/infrastructure/llm';
 import { nestContext } from '../shared/nest-context';
 import { processBatch, SqsBatchResponse, SqsEvent } from '../shared/sqs-batch';
 import { metric } from '../shared/telemetry';

@@ -5,6 +5,7 @@ import type { DiscussionsConfig } from './discussions-config';
 import type { ShareLinksConfig } from './share-links-config';
 import type { FlagsConfig } from './flags-config';
 import type { KnowledgeConfig } from './knowledge-config';
+import type { LlmConfig } from '@app/infrastructure/llm/llm-config';
 import type { AdsConfig } from './ads-config';
 import type { DeveloperPlatformConfig } from './developer-platform-config';
 
@@ -415,20 +416,9 @@ export class SecretsManagerConfig {
   google_oidc_issuer?: string;
   /** Public base URL of this API for OIDC redirect URIs, e.g. https://api.mkt.dev */
   auth_redirect_base_url?: string;
-  /** SD-42. Unset → scripted LLM provider (local dev / e2e). */
-  anthropic_api_key?: string;
-  /** default claude-opus-5-5 */
-  assistant_model?: string;
-  /** Used when the main model is overloaded before the first token. default claude-sonnet-5-5 */
-  assistant_fallback_model?: string;
-  /** Conversation compaction. default claude-haiku-4-5 */
-  assistant_summary_model?: string;
-  /** default low (chat) - the main cost/quality lever after caching. */
-  assistant_effort?: 'low' | 'medium' | 'high' | 'xhigh' | 'max';
+  /** SD-42. Provider and assistant model keys live in `@app/infrastructure/llm/llm-config.ts` (`LlmConfig`). */
   /** Monthly allowance when the buyer's plan sets none. default 200000 */
   assistant_buyer_tokens_per_month?: number;
-  /** Abort the provider call after nobody watched the stream this long. default 10000 */
-  assistant_detach_grace_ms?: number;
   /** S47: embeddings (`voyage_*`) and `rag_*` / `knowledge_*` settings live in `knowledge-config.ts`. */
   /** SD-44 first-pass KYC extraction model. default claude-haiku-4-5 */
   onboarding_extraction_model?: string;
@@ -445,6 +435,7 @@ export interface SecretsManagerConfig
     ShareLinksConfig,
     FlagsConfig,
     KnowledgeConfig,
+    LlmConfig,
     AdsConfig,
     DeveloperPlatformConfig {}
 

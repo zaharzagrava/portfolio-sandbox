@@ -22,7 +22,7 @@ import {
   ShopModel as Shop,
   ShopMembershipModel as ShopMembership,
 } from '@app/domains/tenancy';
-import { LLM_PROVIDER, ScriptedLlmProvider } from '@app/domains/assistant';
+import { LLM_PROVIDER, ScriptedLlmProvider } from '@app/infrastructure/llm';
 import {
   OnboardingExtractionModule,
   OnboardingModule,

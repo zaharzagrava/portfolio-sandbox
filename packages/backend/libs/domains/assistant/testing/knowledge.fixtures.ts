@@ -40,8 +40,7 @@ import type {
 } from '../domain/ports';
 import { CallRecorderAdapter } from '../infra/call-recorder.adapter';
 import { HashingEmbedder } from '../infra/embedder';
-import { LLM_PROVIDER } from '../infra/llm/llm-provider';
-import { ScriptedLlmProvider } from '../infra/llm/scripted.provider';
+import { LLM_PROVIDER, ScriptedLlmProvider } from '@app/infrastructure/llm';
 import {
   MODERATION_BACKEND,
   type ModerationBackend,

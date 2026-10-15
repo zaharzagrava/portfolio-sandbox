@@ -3,7 +3,7 @@ import { ragStreamEventSchema } from '@marketplace-sandbox/contracts';
 import type { TestUser } from '@app/test/utils/catalog-app';
 import { RateLimiterService } from '@app/infrastructure/rate-limit';
 import { readSse, type SseResult } from '@app/test/utils/sse-client';
-import { createTopics, readTopic } from '@app/test/utils/kafka-test';
+import { outboxRowsFor } from '@app/common/testing/outbox-rows';
 import { KnowledgeSearchService } from './application/knowledge-search.service';
 import { LlmCallCompleted } from './application/events/assistant-events';
 import { RAG_INSTRUCTIONS } from './domain/prompt';
@@ -40,9 +40,6 @@ describe('RAG: ask this product and the shop help center', () => {
 
   beforeAll(async () => {
     t = await createKnowledgeApp();
-    await createTopics([{ topic: LlmCallCompleted.topic }]).catch(
-      () => undefined,
-    );
   }, 180_000);
   afterAll(() => t.close());
   beforeEach(async () => {
@@ -161,14 +158,14 @@ describe('RAG: ask this product and the shop help center', () => {
       await t.askProduct(s.product.id, QUESTION, cam);
 
       const callId = t.recorder.records[0].callId;
+      // The recorder appends to the outbox (S46 D-14); the relay publishes it, which is S53's to prove.
       let found: Record<string, any> | undefined;
       await until(async () => {
-        const messages = await readTopic(LlmCallCompleted.topic);
-        found = messages
-          .map((m) => m.json<Record<string, any>>())
-          .find((e) => e.payload?.messageId === callId);
+        const rows = await outboxRowsFor(t.db, callId);
+        found = rows.find((r) => r.type === LlmCallCompleted.type)?.payload;
         return !!found;
       }, 20_000);
+      expect(found!.aggregateId).toBe(callId);
       expect(found!.payload).toMatchObject({
         purpose: 'rag',
         metric: 'llm.rag.tokens',

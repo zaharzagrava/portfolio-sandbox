@@ -20,21 +20,23 @@ import {
 } from './assistant-tools';
 import { AssistantQuotaService } from './assistant-quota.service';
 import { ASSISTANT_SYSTEM, SUMMARY_SYSTEM } from './assistant.prompt';
-import { LlmMeter } from '../infra/llm/llm-meter';
 import {
   Domain_AssistantTurnInProgress,
   Domain_ConversationFull,
 } from './assistant-errors';
 import {
+  billableTokens,
+  costMicros,
+  estimateTokens,
   LLM_PROVIDER,
   LlmAbortedError,
-  LlmTurnRequest,
-  LlmTurnResult,
+  LlmCallRecorder,
+  LlmRequest,
+  LlmResult,
   LlmUnavailableError,
   textOf,
-} from '../infra/llm/llm-provider';
-import type { LlmProvider } from '../infra/llm/llm-provider';
-import { costMicros, estimateTokens } from '../infra/llm/pricing';
+} from '@app/infrastructure/llm';
+import type { LlmProvider } from '@app/infrastructure/llm';
 
 type MessageParam = Anthropic.Beta.BetaMessageParam;
 
@@ -63,6 +65,8 @@ interface TurnContext {
   conversation: ConversationRow;
   messageId: string;
   input: TurnInput;
+  /** Model calls made so far in this turn; `callId = "<messageId>:<n>"` (the summary is `:0`). */
+  calls?: number;
 }
 
 /**
@@ -82,7 +86,7 @@ export class AssistantService {
   private readonly model: string;
   private readonly fallbackModel: string;
   private readonly summaryModel: string;
-  private readonly effort: NonNullable<LlmTurnRequest['effort']>;
+  private readonly effort: NonNullable<LlmRequest['effort']>;
 
   constructor(
     @Inject(LLM_PROVIDER) private readonly llm: LlmProvider,
@@ -90,20 +94,19 @@ export class AssistantService {
     private readonly buffer: GenerationBuffer,
     private readonly tools: AssistantToolExecutor,
     private readonly quota: AssistantQuotaService,
-    private readonly meterSvc: LlmMeter,
+    private readonly recorder: LlmCallRecorder,
     private readonly redis: RedisService,
     private readonly config: ApiConfigService,
   ) {
-    this.model = config.get('assistant_model') ?? 'claude-opus-5-5';
-    this.fallbackModel =
-      config.get('assistant_fallback_model') ?? 'claude-sonnet-5-5';
-    this.summaryModel =
-      config.get('assistant_summary_model') ?? 'claude-haiku-4-5';
-    this.effort = config.get('assistant_effort') ?? 'low';
+    // Defaults and the price-table check live in the llm config (validated at startup).
+    this.model = config.get('assistant_model');
+    this.fallbackModel = config.get('assistant_fallback_model');
+    this.summaryModel = config.get('assistant_summary_model');
+    this.effort = config.get('assistant_effort');
   }
 
   private get detachGraceMs() {
-    return Number(this.config.get('assistant_detach_grace_ms') ?? 10_000);
+    return this.config.get('assistant_detach_grace_ms');
   }
 
   createConversation(userId: string, title?: string) {
@@ -175,7 +178,10 @@ export class AssistantService {
       // Rough size of what we're about to send; the precise count happens only near the compaction threshold.
       await this.quota.takeProviderBudget(
         this.model,
-        estimateTokens([ASSISTANT_SYSTEM, ASSISTANT_TOOLS, input.text]) +
+        estimateTokens(
+          JSON.stringify([ASSISTANT_SYSTEM, ASSISTANT_TOOLS, input.text])
+            .length,
+        ) +
           COMPACT_AT_TOKENS / 4 +
           OUTPUT_ALLOWANCE_FOR_BUDGET,
       );
@@ -325,8 +331,8 @@ export class AssistantService {
     lastRound: boolean,
     signal: AbortSignal,
     onText: (d: string) => void,
-  ): Promise<LlmTurnResult> {
-    const request = (model: string): LlmTurnRequest => ({
+  ): Promise<LlmResult> {
+    const request = (model: string): LlmRequest => ({
       model,
       system: ASSISTANT_SYSTEM,
       tools: ASSISTANT_TOOLS,
@@ -418,7 +424,9 @@ export class AssistantService {
     ];
     if (!stored.length) return history;
 
-    let size = estimateTokens([ASSISTANT_SYSTEM, ASSISTANT_TOOLS, history]);
+    let size = estimateTokens(
+      JSON.stringify([ASSISTANT_SYSTEM, ASSISTANT_TOOLS, history]).length,
+    );
     if (size > COMPACT_AT_TOKENS * 0.8) {
       size = await this.llm
         .countTokens({
@@ -495,27 +503,33 @@ export class AssistantService {
     return textOf(result.content);
   }
 
-  /** Monthly quota (Redis) + billing usage and observability via LlmMeter, per model call. */
+  /** Monthly quota (Redis) + the durable `llm.call_completed` record (outbox, S18 charges from it), per model call. */
   private async meter(
     turn: TurnContext,
     purpose: 'chat' | 'summary',
     requestedModel: string,
-    result: LlmTurnResult,
+    result: LlmResult,
     ttftMs: number | null,
     durationMs: number,
   ) {
-    const { tokens } = await this.meterSvc.record({
+    const n = purpose === 'summary' ? 0 : (turn.calls = (turn.calls ?? 0) + 1);
+    // The outbox append is its own transaction (hundreds of ms under load) and never throws: it must not delay the
+    // reply, so it runs beside it. The turn rewrite makes it part of the turn's durable finish.
+    void this.recorder.record({
       subjectId: turn.userId,
       scopeId: turn.conversation.id,
-      callId: turn.messageId,
+      callId: `${turn.messageId}:${n}`,
+      messageId: turn.messageId,
       purpose,
+      metric: 'llm.assistant.tokens',
       requestedModel,
+      outcome: result.stopReason === 'refusal' ? 'refused' : 'completed',
       result,
       ttftMs,
       durationMs,
     });
     await this.quota
-      .charge(turn.userId, tokens)
+      .charge(turn.userId, billableTokens(result.usage))
       .catch((e) => this.logger.warn(`quota charge failed: ${e.message}`));
   }
 
@@ -565,7 +579,7 @@ export class AssistantService {
     ];
   }
 
-  private addTotals(totals: Record<string, number>, result: LlmTurnResult) {
+  private addTotals(totals: Record<string, number>, result: LlmResult) {
     totals.inputTokens += result.usage.inputTokens;
     totals.outputTokens += result.usage.outputTokens;
     totals.cacheReadTokens += result.usage.cacheReadTokens;

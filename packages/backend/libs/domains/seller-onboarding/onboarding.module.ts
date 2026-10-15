@@ -4,10 +4,7 @@ import { StorageModule } from '@app/infrastructure/storage/storage.module';
 import { SqsModule } from '@app/infrastructure/sqs/sqs.module';
 import { EventsModule } from '@app/infrastructure/events/events.module';
 import { JobsModule } from '@app/infrastructure/jobs/jobs.module';
-import { KafkaProducerModule } from '@app/infrastructure/kafka/kafka-producer.module';
-import { ClickHouseModule } from '@app/infrastructure/clickhouse/clickhouse.module';
-import { UsageService } from '@app/domains/billing';
-import { LlmModule, LlmMeter } from '@app/domains/assistant';
+import { LlmModule } from '@app/infrastructure/llm';
 import { OnboardingSessionService } from './application/onboarding-session.service';
 import { OnboardingDocumentsService } from './application/onboarding-documents.service';
 import { VerificationService } from './application/verification.service';
@@ -53,16 +50,8 @@ export class OnboardingModule {}
       { aggregateType: 'shops', retention: 'full-history' },
     ]),
     JobsModule,
-    KafkaProducerModule,
-    ClickHouseModule,
   ],
-  providers: [
-    ExtractionService,
-    VerificationService,
-    LlmMeter,
-    UsageService,
-    SecretBox,
-  ],
+  providers: [ExtractionService, VerificationService, SecretBox],
   exports: [ExtractionService],
 })
 export class OnboardingExtractionModule {}

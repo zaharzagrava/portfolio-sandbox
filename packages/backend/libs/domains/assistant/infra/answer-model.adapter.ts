@@ -13,13 +13,10 @@ import {
   LLM_PROVIDER,
   LlmAbortedError,
   LlmUnavailableError,
-} from './llm/llm-provider';
-import type { LlmProvider } from './llm/llm-provider';
+} from '@app/infrastructure/llm';
+import type { LlmProvider } from '@app/infrastructure/llm';
 
-/**
- * INTERIM adapter (S47 R-2): binds the `AnswerModel` port to the existing `LLM_PROVIDER`. S46's
- * `@app/infrastructure/llm` replaces this one file; nothing else in the knowledge half imports `./llm/*`.
- */
+/** Binds the S47 `AnswerModel` port to the shared `LLM_PROVIDER` of `@app/infrastructure/llm` (S46). */
 @Injectable()
 export class AnswerModelAdapter implements AnswerModel {
   constructor(@Inject(LLM_PROVIDER) private readonly llm: LlmProvider) {}

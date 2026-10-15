@@ -9,7 +9,7 @@ import { ClickHouseModule } from '@app/infrastructure/clickhouse/clickhouse.modu
 import { ProductModule } from '@app/domains/catalog';
 import { ElasticsearchModule } from '@app/infrastructure/elasticsearch/elasticsearch.module';
 import { PickupModule } from '@app/domains/fulfilment';
-import { EntitlementsService, UsageService } from '@app/domains/billing';
+import { EntitlementsService } from '@app/domains/billing';
 import { ConversationStore } from './infra/conversation.store';
 import { GenerationBuffer } from './infra/generation-buffer';
 import { AssistantToolExecutor } from './application/assistant-tools';
@@ -17,8 +17,7 @@ import { AssistantQuotaService } from './application/assistant-quota.service';
 import { AssistantService } from './application/assistant.service';
 import { AssistantStreamer } from './api/assistant-stream';
 import { AssistantController } from './api/assistant.controller';
-import { LlmModule } from './infra/llm/llm.module';
-import { LlmMeter } from './infra/llm/llm-meter';
+import { LlmModule } from '@app/infrastructure/llm';
 
 /** SD-42 (sse-gateway: thousands of held-open streams, I/O bound - the same resource profile as the topic streams). */
 @Module({
@@ -42,8 +41,6 @@ import { LlmMeter } from './infra/llm/llm-meter';
     AssistantService,
     AssistantStreamer,
     EntitlementsService,
-    UsageService,
-    LlmMeter,
   ],
   controllers: [AssistantController],
   exports: [AssistantService],

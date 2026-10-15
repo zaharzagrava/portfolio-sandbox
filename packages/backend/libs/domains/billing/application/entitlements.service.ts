@@ -14,6 +14,34 @@ import { QueryTypes, Sequelize } from 'sequelize';
 import { AppError, ErrorArea } from '@app/common/errors';
 import { CacheService } from '@app/infrastructure/cache/cache.service';
 import { Entitlements } from '../infra/models/plan.model';
+import { UsageService } from './usage.service';
+
+/** Quota keys and the usage metric that counts them (S18 FR-006). */
+const QUOTA_METRICS = {
+  apiCallsPerMonth: 'api.calls',
+  assistantTokensPerMonth: 'llm.assistant.tokens',
+} as const;
+export type QuotaKey = keyof typeof QUOTA_METRICS;
+
+export interface QuotaStatus {
+  allowed: boolean;
+  used: number;
+  limit: number;
+  resetsAt: string;
+}
+
+/** Usage could not be read: the caller decides to fail open or closed (S18 AS-08). */
+export class Domain_UsageUnavailableError extends AppError {
+  constructor() {
+    super({
+      status: HttpStatus.SERVICE_UNAVAILABLE,
+      code: 'usage_unavailable',
+      title: 'Service Unavailable',
+      detail: 'Usage could not be read.',
+      area: ErrorArea.TRANSIENT,
+    });
+  }
+}
 
 /** Free tier when there's no live subscription. */
 const FREE_SHOP: Entitlements = {
@@ -39,6 +67,7 @@ export class EntitlementsService {
   constructor(
     @InjectConnection() private readonly sequelize: Sequelize,
     private readonly cache: CacheService,
+    private readonly usage: UsageService,
   ) {}
 
   async get(
@@ -62,6 +91,36 @@ export class EntitlementsService {
       { ttlMs: 300_000, l1: 'hot' },
     );
     return loaded ?? {};
+  }
+
+  /**
+   * Minimal provider side of S18 `checkQuota` (FR-006), added by S46 until S18 is built: the plan limit against the exact
+   * usage of the current UTC calendar month. Rejects `usage_unavailable` instead of guessing when usage cannot be read.
+   */
+  async checkQuota(
+    subjectType: 'USER' | 'SHOP',
+    subjectId: string,
+    key: QuotaKey,
+    now: Date = new Date(),
+  ): Promise<QuotaStatus> {
+    const from = new Date(
+      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1),
+    );
+    const resetsAt = new Date(
+      Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1),
+    );
+    const limit = (await this.get(subjectType, subjectId))[key] ?? 0;
+    const used = await this.usage
+      .totalFor(subjectId, QUOTA_METRICS[key], from, resetsAt)
+      .catch(() => {
+        throw new Domain_UsageUnavailableError();
+      });
+    return {
+      allowed: used < limit,
+      used,
+      limit,
+      resetsAt: resetsAt.toISOString(),
+    };
   }
 
   async invalidate(
