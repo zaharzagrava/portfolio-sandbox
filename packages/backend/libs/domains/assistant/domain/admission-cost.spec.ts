@@ -17,9 +17,18 @@ describe('S46 AS-37: weighted admission cost', () => {
     [7_932_000, 0, 0, 2_000_000],
     [7_931_996, 0, 0, 1_999_999],
     [5_000_000, 5_000_000, 5_000_000, 2_000_000],
-  ])('S46 AS-37: system %s + tools %s + text %s chars -> %s', (system, tools, text, cost) => {
-    expect(admissionCost({ systemChars: system, toolsChars: tools, textChars: text })).toBe(cost);
-  });
+  ])(
+    'S46 AS-37: system %s + tools %s + text %s chars -> %s',
+    (system, tools, text, cost) => {
+      expect(
+        admissionCost({
+          systemChars: system,
+          toolsChars: tools,
+          textChars: text,
+        }),
+      ).toBe(cost);
+    },
+  );
 
   it('S46 AS-37: the cap is the provider budget', () => {
     expect(PROVIDER_TPM_BUDGET).toBe(2_000_000);
@@ -46,8 +55,16 @@ describe('S46 AS-06: admission order', () => {
 
   it.each<[string, AdmissionStep[], AdmissionStep | null]>([
     ['nothing failing', [], null],
-    ['exhausted allowance + busy conversation', ['conversation_lock', 'quota'], 'quota'],
-    ['foreign conversation + exhausted allowance', ['quota', 'ownership'], 'ownership'],
+    [
+      'exhausted allowance + busy conversation',
+      ['conversation_lock', 'quota'],
+      'quota',
+    ],
+    [
+      'foreign conversation + exhausted allowance',
+      ['quota', 'ownership'],
+      'ownership',
+    ],
     ['rate + moderation', ['input_moderation', 'rate'], 'rate'],
     ['everything', [...ADMISSION_STEPS].reverse(), 'authentication'],
     ['breakers alone', ['breakers'], 'breakers'],

@@ -17,7 +17,7 @@ Run from `packages/backend` unless noted. Specs go through `/opt/sdd/repo/script
 | 4 Provider port | `test-spec.sh libs/infrastructure/llm/llm-provider.e2e-spec.ts` | AS-50, AS-77 |
 | 5 Turn and history | `test-spec.sh assistant-turn.e2e-spec.ts` | AS-01…09, 63…67 |
 | 6 Tools | `test-spec.sh assistant-tools.e2e-spec.ts` | AS-11…21 |
-| 7 Resume, cancel, crash | `test-spec.sh assistant-resume.e2e-spec.ts` | AS-22…31 (includes the 50-trial and 100-run loops) |
+| 7 Resume, cancel, crash | `test-spec.sh assistant.e2e-spec.ts` | AS-22…31 (includes the 50-trial and 100-run loops) |
 | 8 Limits | `test-spec.sh assistant-limits.e2e-spec.ts` | AS-06, 32…42 |
 | 9 Resilience | `test-spec.sh assistant-resilience.e2e-spec.ts` | AS-38, 43…49, 51 |
 | 10 Safety | `test-spec.sh assistant-moderation.e2e-spec.ts` | AS-52…57 |
@@ -25,7 +25,7 @@ Run from `packages/backend` unless noted. Specs go through `/opt/sdd/repo/script
 | 12 Metering | `test-spec.sh assistant-metering.e2e-spec.ts` | AS-68…71, 73 |
 | 13 Platform | `test-spec.sh assistant-platform.e2e-spec.ts` | AS-74…76 (runs `pnpm check:boundaries` and `pnpm check:table-ownership --strict`) |
 | 14 S47 stays green | `test-spec.sh libs/domains/assistant/knowledge` and `libs/domains/seller-onboarding` | the moved provider and recorder |
-| 15 Web | `pnpm --dir ../web test:e2e assistant` (empty stack, runner timeouts, 2 workers) | four happy-path journeys |
+| 15 Web | `pnpm --dir ../web test:e2e assistant` (empty stack, runner timeouts, 2 workers) | two happy-path journeys (ask, resume after a cut stream); the web unit tests cover the client (`lib/api/assistant.test.ts`, `hooks/use-assistant-chat.test.tsx`) |
 | 16 Boot | start `apps/core`, `apps/sse-gateway`, `apps/projector` each on its own and call `GET /api/assistant/usage` (401 without a session) | L-004, L-015, L-018 |
 
 Expected outcome: all green, zero findings from the two static checks, `assistant_active_streams` back to 0 after the suite, no key under `assistant:lock:*` or `assistant:slots:*` left by rejected sends.

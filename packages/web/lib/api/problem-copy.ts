@@ -17,6 +17,8 @@ export type Surface =
   | 'discussions-write'
   | 'vote'
   | 'ask'
+  // S46 shopping assistant: sending a message and resuming a reply.
+  | 'assistant'
   | 'share'
   | 'video'
   // W03 (FR-081): cart, checkout, pay step, orders, notification inbox.
@@ -57,6 +59,7 @@ const RATE_SUBJECT: Partial<Record<Surface, string>> = {
   'discussions-write': "You're posting too fast",
   vote: "You're voting too fast",
   ask: "You've asked a lot of questions",
+  assistant: "You're sending messages too fast",
   share: 'Too many share links created',
 };
 
@@ -235,6 +238,31 @@ function byCode(surface: Surface, problem: Problem, target: 'post' | 'comment'):
         return 'The assistant is unavailable right now. Try again later.';
       case 'validation_failed':
         return 'Questions must be between 3 and 500 characters.';
+      default:
+    }
+  }
+  if (surface === 'assistant') {
+    switch (code) {
+      case 'input_rejected':
+        return "I can't help with that message. Try rephrasing it.";
+      case 'too_many_active_turns':
+        return waitSentence('Wait for your other answers to finish', problem.retryAfterSeconds);
+      case 'assistant_busy':
+        return waitSentence('The assistant is busy right now', problem.retryAfterSeconds);
+      case 'assistant_unavailable':
+        return 'The assistant is unavailable right now. Try again later.';
+      case 'quota_exceeded':
+        return "You've used this month's assistant allowance.";
+      case 'conversation_full':
+        return 'This chat is full. Start a new one.';
+      case 'turn_in_progress':
+        return 'The assistant is still answering. Wait for it to finish.';
+      case 'idempotency_key_required':
+      case 'idempotency_key_reuse':
+      case 'invalid_last_event_id':
+        return RELOAD;
+      case 'validation_failed':
+        return 'Messages must be between 1 and 4000 characters.';
       default:
     }
   }

@@ -51,7 +51,8 @@ const FREE_SHOP: Entitlements = {
   apiCallsPerMonth: 1000,
   assistantTokensPerMonth: 0,
 };
-const FREE_BUYER: Entitlements = {};
+/** S46 reads `assistantTokensPerMonth` for every buyer and has no local default: the free buyer tier carries it here. */
+const FREE_BUYER: Entitlements = { assistantTokensPerMonth: 200_000 };
 
 export const entitlementsKey = (subjectType: string, subjectId: string) =>
   `entitlements:v1:${subjectType}:${subjectId}`;
@@ -103,9 +104,7 @@ export class EntitlementsService {
     key: QuotaKey,
     now: Date = new Date(),
   ): Promise<QuotaStatus> {
-    const from = new Date(
-      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1),
-    );
+    const from = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
     const resetsAt = new Date(
       Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1),
     );

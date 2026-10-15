@@ -8,7 +8,7 @@ Spec files (all under `packages/backend/libs/domains/assistant/` unless a path i
 |---|---|---|
 | TURN | `assistant-turn.e2e-spec.ts` | `Shopping assistant: turns, conversations, idempotency` |
 | TOOLS | `assistant-tools.e2e-spec.ts` | `Shopping assistant: read-only tools` |
-| RESUME | `assistant-resume.e2e-spec.ts` | `Shopping assistant: resumable streams, cancel, abort, shutdown` |
+| RESUME | `assistant.e2e-spec.ts` | `Shopping assistant: resumable streams, cancel, abort, shutdown` |
 | LIMITS | `assistant-limits.e2e-spec.ts` | `Shopping assistant: quotas and limits` |
 | RESIL | `assistant-resilience.e2e-spec.ts` | `Shopping assistant: fallback model, breaker, timeouts` |
 | MODER | `assistant-moderation.e2e-spec.ts` | `Shopping assistant: moderation and data hygiene` |

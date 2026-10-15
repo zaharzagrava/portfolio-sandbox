@@ -28,7 +28,7 @@ export const LLM_CONFIG = Symbol('LLM_CONFIG');
       useFactory: (config: ApiConfigService): LlmConfig =>
         assertLlmConfig(
           (key) => config.get(key as never),
-          config.get('node_env') === 'production',
+          String(config.get('node_env')) === 'production',
         ),
     },
     {

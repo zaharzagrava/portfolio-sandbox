@@ -1,5 +1,5 @@
 import { Inject, Injectable, Logger, Optional } from '@nestjs/common';
-import { metrics } from '@opentelemetry/api';
+import { MetricsRegistry } from '@app/common/telemetry/metrics-registry';
 import { createHash } from 'node:crypto';
 import { fullJitterBackoff, sleep } from '@app/common/core/backoff';
 import { getActiveTransaction } from '@app/infrastructure/context';
@@ -19,7 +19,9 @@ import { costMicros, isPriced } from './pricing';
  * instead of the UUIDv5 the contract text names; it carries no timestamp, ordering comes from `occurredAt`.
  */
 export const eventIdForCall = (callId: string): string => {
-  const h = createHash('sha256').update(`llm.call_completed:${callId}`).digest('hex');
+  const h = createHash('sha256')
+    .update(`llm.call_completed:${callId}`)
+    .digest('hex');
   const variant = '89ab'[parseInt(h[16], 16) & 3];
   return `${h.slice(0, 8)}-${h.slice(8, 12)}-7${h.slice(13, 16)}-${variant}${h.slice(17, 20)}-${h.slice(20, 32)}`;
 };
@@ -75,9 +77,11 @@ const DEFAULTS: LlmCallRecorderOptions = {
 @Injectable()
 export class LlmCallRecorder {
   private readonly logger = new Logger(LlmCallRecorder.name);
-  private readonly failures = metrics
-    .getMeter('llm')
-    .createCounter('assistant_metering_failures_total');
+  private readonly failures = MetricsRegistry.counter({
+    name: 'assistant_metering_failures_total',
+    help: 'Model-call records lost after every append retry (re-create them from the log line)',
+    labels: ['purpose'],
+  });
   private readonly options: LlmCallRecorderOptions;
 
   constructor(

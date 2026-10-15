@@ -53,7 +53,11 @@ function containsIban(text: string): boolean {
   for (const match of text.match(IBAN_CANDIDATE) ?? []) {
     const compact = match.replace(/ /g, '').toUpperCase();
     const length = IBAN_LENGTH[compact.slice(0, 2)];
-    if (length && compact.length >= length && ibanValid(compact.slice(0, length)))
+    if (
+      length &&
+      compact.length >= length &&
+      ibanValid(compact.slice(0, length))
+    )
       return true;
   }
   return false;

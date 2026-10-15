@@ -1,4 +1,9 @@
-import { createServer, IncomingMessage, Server, ServerResponse } from 'node:http';
+import {
+  createServer,
+  IncomingMessage,
+  Server,
+  ServerResponse,
+} from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { AnthropicLlmProvider } from './anthropic.provider';
 import {
@@ -9,10 +14,7 @@ import {
 import { LlmCallRecorder } from './llm-call-recorder';
 
 /** One scripted reaction of the local HTTP double to one request. */
-type Step = (
-  req: IncomingMessage,
-  res: ServerResponse,
-) => void | Promise<void>;
+type Step = (req: IncomingMessage, res: ServerResponse) => void | Promise<void>;
 
 interface Seen {
   url: string;
@@ -136,7 +138,9 @@ describe('LLM provider port and Anthropic adapter', () => {
         void step(req, res);
       });
     });
-    await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
+    await new Promise<void>((resolve) =>
+      server.listen(0, '127.0.0.1', resolve),
+    );
   });
 
   afterAll(async () => {

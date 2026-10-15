@@ -105,6 +105,15 @@ export class CircuitBreaker {
     return this.current;
   }
 
+  /** Milliseconds until an OPEN circuit admits a trial call; 0 in every other state. */
+  openRemainingMs(): number {
+    if (this.state() !== 'OPEN') return 0;
+    return Math.max(
+      0,
+      this.openedAt + this.options.openDurationMs - this.options.clock.nowMs(),
+    );
+  }
+
   async execute<T>(
     fn: () => Promise<T>,
     options: ExecuteOptions<T> = {},

@@ -62,7 +62,10 @@ describe('LlmCallRecorder', () => {
 
     const charged = await recorderFor(box).record(call());
 
-    expect(charged).toEqual({ billableTokens: 1_000 + 10 + 200 + 10, costMicros: 8_069 });
+    expect(charged).toEqual({
+      billableTokens: 1_000 + 10 + 200 + 10,
+      costMicros: 8_069,
+    });
     expect(box.appended).toHaveLength(1);
     // The outbox validates the envelope: the deterministic id must be one it accepts.
     expect(eventEnvelopeSchema.safeParse(box.appended[0]).success).toBe(true);

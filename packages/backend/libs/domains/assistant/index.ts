@@ -6,8 +6,10 @@
  * rate-limit policies, and the document DTO types (from `@marketplace-sandbox/contracts`). No repository, embedder,
  * parser, answer class or model is exported.
  *
- * Shopping assistant half (S46, still transitional): `AssistantModule`, `assistantRatePolicies`, `LlmCallsProjector`, and
- * thin aliases of the model-provider symbols that now live in `@app/infrastructure/llm` (D-14).
+ * Shopping assistant half (S46): `AssistantModule` (sse-gateway, core), `AssistantProjectorModule` (projector) and the
+ * rate-limit policies. The model-provider port, adapters, price table and call recorder live in
+ * `@app/infrastructure/llm` (D-14); the event `llm.call_completed` is defined there. No store, tool executor, model or
+ * provider class is exported.
  */
 export {
   KnowledgeModule,
@@ -29,13 +31,4 @@ export { knowledgeRatePolicies } from './knowledge-rate-limit-policies';
 
 export { AssistantModule } from './assistant.module';
 export { assistantRatePolicies } from './rate-limit-policies';
-export { LlmCallsProjector } from './infra/llm-calls.projector';
-// Thin aliases of the shared lib, kept until the shopping-half rewrite removes them (S46 T117); import the lib directly.
-export {
-  LLM_PROVIDER,
-  LlmModule,
-  LlmUnavailableError,
-  ScriptedLlmProvider,
-  textOf,
-} from '@app/infrastructure/llm';
-export type { LlmProvider, LlmTurnResult } from '@app/infrastructure/llm';
+export { AssistantProjectorModule } from './assistant-projector.module';

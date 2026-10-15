@@ -300,3 +300,18 @@
 {"run":"20261014T190657Z","capability":"S46","step":"analyze","start":"2026-10-15T04:43:35Z","end":"2026-10-15T04:44:25Z","seconds":50,"result":"ok","attempt":1,"reason":"ok"}
 {"run":"20261014T190657Z","capability":"S46","step":"implement-1","start":"2026-10-15T04:44:25Z","end":"2026-10-15T05:01:46Z","seconds":1041,"result":"ok","attempt":1,"reason":"ok"}
 {"run":"20261014T190657Z","capability":"S46","step":"implement-2","start":"2026-10-15T05:01:46Z","end":"2026-10-15T05:07:02Z","seconds":316,"result":"stopped","attempt":1,"reason":"deadline"}
+{"run":"20261015T071833Z","capability":"-","step":"run-start","start":"2026-10-15T07:18:33Z","end":"2026-10-15T07:18:33Z","seconds":0,"result":"ok","attempt":1,"reason":"commit=245a021d MAX_GATE_REPAIRS=5 MAX_REPAIRS_PER_SPEC=3 REPAIR_BUDGET_MIN=60 MAX_IMPLEMENT_PASSES=10"}
+{"run":"20261015T071833Z","capability":"S46","step":"implement-1","start":"2026-10-15T07:18:34Z","end":"2026-10-15T08:28:55Z","seconds":4221,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261015T071833Z","capability":"S46","step":"implement-2","start":"2026-10-15T08:28:55Z","end":"2026-10-15T08:41:26Z","seconds":751,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261015T071833Z","capability":"S46","step":"doctor-1","start":"2026-10-15T08:41:26Z","end":"2026-10-15T08:44:22Z","seconds":176,"result":"ok","attempt":1,"reason":"ok","code_changed":false}
+{"run":"20261015T071833Z","capability":"S46","step":"converge-1","start":"2026-10-15T08:44:23Z","end":"2026-10-15T08:45:08Z","seconds":45,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261015T071833Z","capability":"S46","step":"implement-2","start":"2026-10-15T08:45:08Z","end":"2026-10-15T08:46:53Z","seconds":105,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261015T071833Z","capability":"S46","step":"doctor-2","start":"2026-10-15T08:46:54Z","end":"2026-10-15T08:47:19Z","seconds":25,"result":"ok","attempt":1,"reason":"ok","code_changed":false}
+{"run":"20261015T071833Z","capability":"S46","step":"converge-1","start":"2026-10-15T08:47:20Z","end":"2026-10-15T08:47:55Z","seconds":35,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261015T071833Z","capability":"S46","step":"implement-2","start":"2026-10-15T08:47:55Z","end":"2026-10-15T08:51:15Z","seconds":200,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261015T071833Z","capability":"S46","step":"doctor-3","start":"2026-10-15T08:51:16Z","end":"2026-10-15T08:51:41Z","seconds":25,"result":"ok","attempt":1,"reason":"ok","code_changed":false}
+{"run":"20261015T071833Z","capability":"S46","step":"converge-1","start":"2026-10-15T08:51:42Z","end":"2026-10-15T08:52:07Z","seconds":25,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261015T071833Z","capability":"S46","step":"gate","start":"2026-10-15T08:52:07Z","end":"2026-10-15T08:52:13Z","seconds":6,"result":"fail","attempt":1,"reason":"test integrity: packages/backend/libs/domains/assistant/assistant.e2e-spec.ts: test file deleted, and it carried no scenario id, so nothing proves that another test replaces it (add the scenario id to"}
+{"run":"20261015T071833Z","capability":"S46","step":"repair-1","start":"2026-10-15T08:52:13Z","end":"2026-10-15T08:55:34Z","seconds":201,"result":"ok","attempt":1,"reason":"ok","code_changed":true}
+{"run":"20261015T071833Z","capability":"S46","step":"gate","start":"2026-10-15T08:55:34Z","end":"2026-10-15T09:08:27Z","seconds":773,"result":"pass","attempt":2,"reason":""}
+{"run":"20261015T071833Z","capability":"S46","step":"built","start":"2026-10-15T08:51:41Z","end":"2026-10-15T09:08:27Z","seconds":1006,"result":"ok","attempt":1,"reason":"Streamed shopping assistant: read-only tools, resumable streams, quotas, fallback model, moderation"}

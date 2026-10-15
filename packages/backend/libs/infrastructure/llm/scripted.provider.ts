@@ -8,6 +8,7 @@ import {
   LlmResult,
   LlmStreamOptions,
   LlmUnavailableError,
+  LlmUsage,
 } from './llm-provider';
 
 export interface ScriptedTurn {
@@ -24,6 +25,16 @@ export interface ScriptedTurn {
   unavailable?: boolean;
   /** Fail with a non-transient provider answer (400/401). */
   rejected?: boolean;
+  /** Fail as a provider 429 before the first token; `null` = no `Retry-After` header. */
+  rateLimited?: { retryAfterMs: number | null };
+  /** Stream the text, then fail as a transient provider error (no fallback is possible after the first token). */
+  failAfterText?: boolean;
+  /** A thinking block before the text: it must come back byte for byte in the next request's history. */
+  thinking?: string;
+  /** Only a call to this model consumes the turn (primary/fallback specs); other calls skip it. */
+  model?: string;
+  /** Usage reported for the call (defaults: 100 input tokens, one output token per four characters). */
+  usage?: Partial<LlmUsage>;
   delayMs?: number;
 }
 
@@ -51,7 +62,15 @@ export class ScriptedLlmProvider implements LlmProvider {
 
   constructor() {
     if (process.env.NODE_ENV === 'production')
-      throw new Error('llm_provider: the scripted provider is not allowed in production');
+      throw new Error(
+        'llm_provider: the scripted provider is not allowed in production',
+      );
+  }
+
+  /** The first queued turn meant for this model (or for any model). */
+  private take(model: string): ScriptedTurn | undefined {
+    const index = this.queue.findIndex((t) => !t.model || t.model === model);
+    return index < 0 ? undefined : this.queue.splice(index, 1)[0];
   }
 
   script(...turns: ScriptedTurn[]) {
@@ -69,11 +88,17 @@ export class ScriptedLlmProvider implements LlmProvider {
     { signal, onText }: LlmStreamOptions,
   ): Promise<LlmResult> {
     this.requests.push(structuredClone(request));
-    const turn = this.queue.shift() ?? {
+    const turn = this.take(request.model) ?? {
       text: `echo: ${lastUserText(request)}`,
     };
     if (turn.unavailable)
       throw new LlmUnavailableError('scripted overload', null);
+    if (turn.rateLimited)
+      throw new LlmUnavailableError(
+        'scripted rate limit',
+        turn.rateLimited.retryAfterMs,
+        true,
+      );
     if (turn.rejected) throw new LlmRejectedError('scripted rejection', 400);
     try {
       const text = turn.text ?? '';
@@ -85,6 +110,11 @@ export class ScriptedLlmProvider implements LlmProvider {
         await sleep(turn.delayMs ?? 5, signal);
         onText(piece);
       }
+      if (turn.failAfterText)
+        throw new LlmUnavailableError(
+          'scripted failure after the first token',
+          null,
+        );
       while (turn.hang) {
         await sleep(turn.delayMs ?? 50, signal);
         onText('.');
@@ -96,9 +126,10 @@ export class ScriptedLlmProvider implements LlmProvider {
     }
   }
 
+  // eslint-disable-next-line @typescript-eslint/require-await -- async so that a scripted failure is a rejection
   async complete(request: LlmRequest): Promise<LlmResult> {
     this.requests.push(structuredClone(request));
-    const turn = this.queue.shift() ?? {
+    const turn = this.take(request.model) ?? {
       text: `summary of ${request.messages.length} messages`,
     };
     if (turn.unavailable)
@@ -107,6 +138,7 @@ export class ScriptedLlmProvider implements LlmProvider {
     return this.result(request, turn, turn.text ?? '');
   }
 
+  // eslint-disable-next-line @typescript-eslint/require-await -- the port is async
   async countTokens(
     request: Omit<LlmRequest, 'maxTokens' | 'effort'>,
   ): Promise<number> {
@@ -122,6 +154,15 @@ export class ScriptedLlmProvider implements LlmProvider {
     text: string,
   ): LlmResult {
     const content = [
+      ...(turn.thinking
+        ? [
+            {
+              type: 'thinking',
+              thinking: turn.thinking,
+              signature: `sig-${turn.thinking.length}`,
+            },
+          ]
+        : []),
       ...(text
         ? [
             {
@@ -151,6 +192,7 @@ export class ScriptedLlmProvider implements LlmProvider {
         outputTokens: Math.max(1, Math.ceil(text.length / 4)),
         cacheReadTokens: 0,
         cacheWriteTokens: 0,
+        ...turn.usage,
       },
     };
   }

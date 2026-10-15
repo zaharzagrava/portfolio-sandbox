@@ -1,6 +1,9 @@
 import { monthKey, monthResetsAt, retryAfterSeconds } from './month';
 
-const at = (iso: string) => ({ now: () => new Date(iso), nowMs: () => new Date(iso).getTime() });
+const at = (iso: string) => ({
+  now: () => new Date(iso),
+  nowMs: () => new Date(iso).getTime(),
+});
 
 describe('S46 AS-34: UTC month key and reset instant', () => {
   it.each([

@@ -5,7 +5,7 @@ import type { DiscussionsConfig } from './discussions-config';
 import type { ShareLinksConfig } from './share-links-config';
 import type { FlagsConfig } from './flags-config';
 import type { KnowledgeConfig } from './knowledge-config';
-import type { LlmConfig } from '@app/infrastructure/llm/llm-config';
+import type { LlmConfig } from './llm-config';
 import type { AdsConfig } from './ads-config';
 import type { DeveloperPlatformConfig } from './developer-platform-config';
 
@@ -416,7 +416,7 @@ export class SecretsManagerConfig {
   google_oidc_issuer?: string;
   /** Public base URL of this API for OIDC redirect URIs, e.g. https://api.mkt.dev */
   auth_redirect_base_url?: string;
-  /** SD-42. Provider and assistant model keys live in `@app/infrastructure/llm/llm-config.ts` (`LlmConfig`). */
+  /** SD-42. Provider and assistant model keys live in `llm-config.ts` (`LlmConfig`). */
   /** Monthly allowance when the buyer's plan sets none. default 200000 */
   assistant_buyer_tokens_per_month?: number;
   /** S47: embeddings (`voyage_*`) and `rag_*` / `knowledge_*` settings live in `knowledge-config.ts`. */

@@ -30,7 +30,7 @@ export { billableTokens, estimateTokens } from './billable-tokens';
 export { costMicros, isPriced, UnknownModelError } from './pricing';
 export { retryDelayMs } from './backoff';
 export { LlmCallCompleted } from './llm-call-completed';
-export { LlmCallRecorder } from './llm-call-recorder';
+export { eventIdForCall, LlmCallRecorder } from './llm-call-recorder';
 export type { LlmCallRecord } from './llm-call-recorder';
 export {
   assertLlmConfig,

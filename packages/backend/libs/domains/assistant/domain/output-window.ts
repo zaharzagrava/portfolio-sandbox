@@ -8,6 +8,11 @@ export const OUTPUT_WINDOW_CHARS = 256;
 export class OutputWindow {
   private tail = '';
 
+  /** The 256 characters published before the next chunk. */
+  context(): string {
+    return this.tail;
+  }
+
   textToCheck(chunk: string): string {
     return this.tail + chunk;
   }

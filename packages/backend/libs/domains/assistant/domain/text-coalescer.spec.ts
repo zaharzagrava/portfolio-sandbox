@@ -3,13 +3,18 @@ import { TextCoalescer } from './text-coalescer';
 const clock = { now: () => new Date(Date.now()), nowMs: () => Date.now() };
 
 describe('S46 AS-10: text coalescing', () => {
-  beforeEach(() => jest.useFakeTimers({ now: new Date('2026-10-15T10:00:00.000Z') }));
+  beforeEach(() =>
+    jest.useFakeTimers({ now: new Date('2026-10-15T10:00:00.000Z') }),
+  );
   afterEach(() => jest.useRealTimers());
 
   it('S46 AS-10: 400 one-character deltas within 200 ms give at most one event per 40 ms, order kept', () => {
     const events: { at: number; text: string }[] = [];
     const t0 = Date.now();
-    const coalescer = new TextCoalescer((text) => events.push({ at: Date.now() - t0, text }), { clock });
+    const coalescer = new TextCoalescer(
+      (text) => events.push({ at: Date.now() - t0, text }),
+      { clock },
+    );
     const expected: string[] = [];
     for (let ms = 0; ms < 200; ms++) {
       for (let k = 0; k < 2; k++) {

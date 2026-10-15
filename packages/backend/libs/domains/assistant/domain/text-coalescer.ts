@@ -41,10 +41,13 @@ export class TextCoalescer {
       this.drain(now);
       return;
     }
-    this.timer ??= setTimeout(() => {
-      this.timer = undefined;
-      this.drain(this.options.clock.nowMs());
-    }, this.lastEmitAt + this.intervalMs - now);
+    this.timer ??= setTimeout(
+      () => {
+        this.timer = undefined;
+        this.drain(this.options.clock.nowMs());
+      },
+      this.lastEmitAt + this.intervalMs - now,
+    );
   }
 
   /** Sends everything pending and closes the coalescer. */

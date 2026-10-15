@@ -1,122 +1,137 @@
 import {
   Body,
   Controller,
-  ForbiddenException,
+  Delete,
   Get,
   Headers,
   HttpCode,
-  NotFoundException,
+  Inject,
   Param,
   Post,
-  Req,
+  Query,
   Res,
 } from '@nestjs/common';
-import { ApiProperty, ApiPropertyOptional, ApiTags } from '@nestjs/swagger';
+import { ApiTags } from '@nestjs/swagger';
+import type { Response } from 'express';
 import {
-  IsLatitude,
-  IsLongitude,
-  IsOptional,
-  IsString,
-  Length,
-  Matches,
-} from 'class-validator';
-import type { Request, Response } from 'express';
+  assistantConversationIdSchema,
+  assistantConversationListQuerySchema,
+  assistantCreateConversationRequestSchema,
+  assistantIdempotencyKeySchema,
+  assistantLastEventIdSchema,
+  assistantSendMessageRequestSchema,
+  type AssistantConversationListQuery,
+  type AssistantCreateConversationRequest,
+  type AssistantSendMessageRequest,
+} from '@marketplace-sandbox/contracts';
 import { Firewall, User, UserRawDto } from '@app/domains/identity';
-import { RateLimit } from '@app/infrastructure/rate-limit';
-import { AssistantService } from '../application/assistant.service';
+import {
+  GENERATION_STORE,
+  type GenerationStore,
+} from '../domain/assistant-ports';
+import { isTimeUuid } from '../domain/conversation-cursor';
+import { AllowanceService } from '../application/allowance.service';
+import {
+  Domain_GenerationNotFound,
+  Domain_IdempotencyKeyRequired,
+  Domain_InvalidLastEventId,
+} from '../application/assistant-errors';
+import { AssistantTurnService } from '../application/assistant-turn.service';
+import { ConversationService } from '../application/conversation.service';
+import { GenerationService } from '../application/generation.service';
 import { AssistantStreamer } from './assistant-stream';
-import { AssistantQuotaService } from '../application/assistant-quota.service';
-import { GenerationBuffer } from '../infra/generation-buffer';
-import { AssistantRetryLaterError } from '../application/assistant-errors';
+import { ZodPipe } from './zod.pipe';
 
-const TIME_UUID =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-1[0-9a-f]{3}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const STREAM_ID = /^\d+-\d+$/;
+const idPipe = new ZodPipe(assistantConversationIdSchema, 'id');
 
-export class CreateConversationDto {
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsString()
-  @Length(1, 120)
-  title?: string;
-}
-
-export class SendAssistantMessageDto {
-  @ApiProperty() @IsString() @Length(1, 4000) text: string;
-  /** Device location, only when the shopper shared it (pickup_near_me tool). */
-  @ApiPropertyOptional() @IsOptional() @IsLatitude() lat?: number;
-  @ApiPropertyOptional() @IsOptional() @IsLongitude() lng?: number;
-}
-
-class ConversationParam {
-  @Matches(TIME_UUID) id: string;
-}
-
+/**
+ * The shopping assistant API (contracts/http-api.md). Every route needs a signed-in user and every lookup carries the
+ * caller's id, so another user's conversation or reply is a plain `404`. Bodies, headers and parameters are validated
+ * with the shared contract schemas before anything is touched.
+ */
 @ApiTags('assistant')
 @Controller('assistant')
 export class AssistantController {
   constructor(
-    private readonly assistant: AssistantService,
+    private readonly conversations: ConversationService,
+    private readonly turns: AssistantTurnService,
+    private readonly generations: GenerationService,
+    private readonly allowance: AllowanceService,
     private readonly streamer: AssistantStreamer,
-    private readonly buffer: GenerationBuffer,
-    private readonly quota: AssistantQuotaService,
+    @Inject(GENERATION_STORE) private readonly store: GenerationStore,
   ) {}
 
   @Firewall()
   @Post('conversations')
-  create(@User() user: UserRawDto, @Body() body: CreateConversationDto) {
-    return this.assistant.createConversation(user.id, body.title);
+  create(
+    @User() user: UserRawDto,
+    @Body(new ZodPipe(assistantCreateConversationRequestSchema))
+    body: AssistantCreateConversationRequest,
+  ) {
+    return this.conversations.create(user.id, body.title);
   }
 
   @Firewall()
   @Get('conversations')
-  list(@User() user: UserRawDto) {
-    return this.assistant.listConversations(user.id);
+  list(
+    @User() user: UserRawDto,
+    @Query(new ZodPipe(assistantConversationListQuerySchema))
+    query: AssistantConversationListQuery,
+  ) {
+    return this.conversations.list(user.id, query);
   }
 
   @Firewall()
   @Get('conversations/:id/messages')
-  history(@User() user: UserRawDto, @Param() params: ConversationParam) {
-    return this.assistant.history(user.id, params.id);
+  history(@User() user: UserRawDto, @Param('id', idPipe) id: string) {
+    return this.conversations.history(user.id, id);
+  }
+
+  @Firewall()
+  @HttpCode(204)
+  @Delete('conversations/:id')
+  async remove(@User() user: UserRawDto, @Param('id', idPipe) id: string) {
+    await this.conversations.remove(user.id, id);
   }
 
   @Firewall()
   @Get('usage')
-  usage(@User() user: UserRawDto) {
-    return this.quota.usage(user.id);
+  async usage(@User() user: UserRawDto) {
+    const { used, limit, resetsAt } = await this.allowance.current(user.id);
+    return { used, limit, resetsAt: resetsAt.toISOString() };
   }
 
   /**
-   * Send a message; the response IS the reply, as text/event-stream:
-   * `meta` {messageId} → `text` {t}… / `tool` {name,status}… → `done` | `refusal` | `error`.
-   * Errors before the stream starts (404, 409 turn in progress, 429 quota) are normal JSON responses.
-   * Lost the connection? GET /assistant/messages/:messageId/stream with Last-Event-ID.
+   * Send a message; the response IS the reply, as text/event-stream (`meta`, `text`/`tool`…, one of `done`/`refusal`/
+   * `error`). Errors before the stream starts are normal problem responses. A repeated `Idempotency-Key` with the same
+   * body replays the stored reply.
    */
   @Firewall()
-  @RateLimit('llm.messages')
   @Post('conversations/:id/messages')
   async send(
     @User() user: UserRawDto,
-    @Param() params: ConversationParam,
-    @Body() body: SendAssistantMessageDto,
-    @Req() req: Request,
+    @Param('id', idPipe) id: string,
+    @Body(new ZodPipe(assistantSendMessageRequestSchema))
+    body: AssistantSendMessageRequest,
+    @Headers('idempotency-key') rawKey: string | undefined,
     @Res() res: Response,
   ) {
-    const location =
-      body.lat !== undefined && body.lng !== undefined
-        ? { lat: Number(body.lat), lng: Number(body.lng) }
-        : null;
-    const { messageId } = await this.assistant
-      .startTurn(user.id, params.id, { text: body.text, location })
-      .catch((error) => {
-        if (error instanceof AssistantRetryLaterError)
-          res.setHeader(
-            'Retry-After',
-            String(Math.max(1, Math.ceil(error.retryAfterMs / 1000))),
-          );
-        throw error;
-      });
-    await this.streamer.pipe(messageId, null, req, res);
+    if (rawKey === undefined || rawKey.trim() === '')
+      throw new Domain_IdempotencyKeyRequired();
+    const idempotencyKey = new ZodPipe(
+      assistantIdempotencyKeySchema,
+      'Idempotency-Key',
+    ).transform(rawKey);
+    const result = await this.turns.send(user.id, id, {
+      idempotencyKey,
+      text: body.text,
+      lat: body.lat,
+      lng: body.lng,
+    });
+    await this.streamer.pipe(user.id, result.messageId, undefined, res, {
+      ...result.headers,
+      ...(result.kind === 'replay' && { 'Idempotent-Replay': 'true' }),
+    });
   }
 
   @Firewall()
@@ -125,19 +140,18 @@ export class AssistantController {
     @User() user: UserRawDto,
     @Param('messageId') messageId: string,
     @Headers('last-event-id') lastEventId: string | undefined,
-    @Req() req: Request,
     @Res() res: Response,
   ) {
-    await this.assertOwner(user.id, messageId);
-    await this.streamer.pipe(
-      messageId,
-      lastEventId && STREAM_ID.test(lastEventId) ? lastEventId : null,
-      req,
-      res,
-    );
+    if (
+      lastEventId !== undefined &&
+      !assistantLastEventIdSchema.safeParse(lastEventId).success
+    )
+      throw new Domain_InvalidLastEventId();
+    await this.assertGeneration(user.id, messageId);
+    await this.streamer.pipe(user.id, messageId, lastEventId, res);
   }
 
-  /** Stop button: aborts the provider call wherever the generation runs. */
+  /** The stop button: aborts the provider call wherever the generation runs. */
   @Firewall()
   @HttpCode(202)
   @Post('messages/:messageId/cancel')
@@ -145,15 +159,14 @@ export class AssistantController {
     @User() user: UserRawDto,
     @Param('messageId') messageId: string,
   ) {
-    await this.assertOwner(user.id, messageId);
-    await this.assistant.cancel(user.id, messageId);
-    return { cancelling: true };
+    await this.assertGeneration(user.id, messageId);
+    await this.generations.cancel(user.id, messageId);
+    return { cancelling: true as const };
   }
 
-  private async assertOwner(userId: string, messageId: string) {
-    if (!TIME_UUID.test(messageId)) throw new NotFoundException();
-    const owner = await this.buffer.owner(messageId);
-    if (!owner) throw new NotFoundException('Generation not found or expired');
-    if (owner.userId !== userId) throw new ForbiddenException();
+  /** Unknown, expired and foreign generations are the same `404`: the user id is part of the lookup key. */
+  private async assertGeneration(userId: string, messageId: string) {
+    if (!isTimeUuid(messageId) || !(await this.store.meta(userId, messageId)))
+      throw new Domain_GenerationNotFound();
   }
 }

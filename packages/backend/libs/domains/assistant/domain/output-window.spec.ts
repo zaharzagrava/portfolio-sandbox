@@ -12,7 +12,9 @@ describe('S46 AS-54: output moderation window', () => {
   it('S46 AS-54: a later chunk is checked with the accepted text before it, so a split phrase is whole', () => {
     const w = new OutputWindow();
     w.accept('some text that ends with a forbi');
-    expect(w.textToCheck('dden phrase')).toBe('some text that ends with a forbidden phrase');
+    expect(w.textToCheck('dden phrase')).toBe(
+      'some text that ends with a forbidden phrase',
+    );
   });
 
   it('S46 AS-54: only the last 256 accepted characters are kept', () => {
@@ -43,9 +45,12 @@ describe('S46 AS-54: output moderation window', () => {
     [255, 255],
     [256, 256],
     [257, 256],
-  ])('S46 AS-54: after %s accepted characters the context is %s long', (n, ctx) => {
-    const w = new OutputWindow();
-    w.accept('q'.repeat(n));
-    expect(w.textToCheck('').length).toBe(ctx);
-  });
+  ])(
+    'S46 AS-54: after %s accepted characters the context is %s long',
+    (n, ctx) => {
+      const w = new OutputWindow();
+      w.accept('q'.repeat(n));
+      expect(w.textToCheck('').length).toBe(ctx);
+    },
+  );
 });

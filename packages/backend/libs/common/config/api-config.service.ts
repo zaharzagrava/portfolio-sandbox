@@ -22,7 +22,7 @@ import { discussionsConfigKeys } from './discussions-config';
 import { shareLinksConfigKeys } from './share-links-config';
 import { flagsConfigKeys } from './flags-config';
 import { knowledgeConfigKeys } from './knowledge-config';
-import { llmConfigKeys } from '@app/infrastructure/llm/llm-config';
+import { llmConfigKeys } from './llm-config';
 import { adsConfigKeys } from './ads-config';
 import { developerPlatformConfigKeys } from './developer-platform-config';
 import './media-config'; // registers the S29 media startup rules

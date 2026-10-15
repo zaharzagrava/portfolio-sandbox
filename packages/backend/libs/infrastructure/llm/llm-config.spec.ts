@@ -1,4 +1,8 @@
-import { assertLlmConfig, LlmConfigError, llmConfigViolations } from './llm-config';
+import {
+  assertLlmConfig,
+  LlmConfigError,
+  llmConfigViolations,
+} from './llm-config';
 
 const VALID: Record<string, unknown> = {
   llm_provider: 'anthropic',
@@ -28,23 +32,84 @@ describe('LLM startup configuration', () => {
   });
 
   it.each([
-    ['the real provider without an API key', { anthropic_api_key: '' }, false, 'anthropic_api_key'],
-    ['the real provider by default without an API key', { llm_provider: undefined, anthropic_api_key: undefined }, false, 'anthropic_api_key'],
-    ['the scripted provider in production', { llm_provider: 'scripted' }, true, 'llm_provider'],
-    ['an unpriced primary model', { assistant_model: 'claude-unknown-9' }, false, 'assistant_model'],
-    ['an unpriced fallback model', { assistant_fallback_model: 'nope' }, false, 'assistant_fallback_model'],
-    ['an unpriced summary model', { assistant_summary_model: 'nope' }, false, 'assistant_summary_model'],
-    ['a negative limit', { assistant_max_active_turns: -1 }, false, 'assistant_max_active_turns'],
-    ['a non-integer timeout', { assistant_call_timeout_ms: 1.5 }, false, 'assistant_call_timeout_ms'],
-    ['a heartbeat above 25 s', { assistant_heartbeat_ms: 25_001 }, false, 'assistant_heartbeat_ms'],
-    ['a fallback equal to the primary in production', { assistant_fallback_model: 'claude-opus-5-5' }, true, 'assistant_fallback_model'],
-    ['a fallback equal to the primary when required', { assistant_fallback_model: 'claude-opus-5-5', assistant_require_distinct_fallback: true }, false, 'assistant_fallback_model'],
-  ])('S46 AS-74: %s fails startup naming the key', (_name, over, production, key) => {
-    const found = check(over, production);
+    [
+      'the real provider without an API key',
+      { anthropic_api_key: '' },
+      false,
+      'anthropic_api_key',
+    ],
+    [
+      'the real provider by default without an API key',
+      { llm_provider: undefined, anthropic_api_key: undefined },
+      false,
+      'anthropic_api_key',
+    ],
+    [
+      'the scripted provider in production',
+      { llm_provider: 'scripted' },
+      true,
+      'llm_provider',
+    ],
+    [
+      'an unpriced primary model',
+      { assistant_model: 'claude-unknown-9' },
+      false,
+      'assistant_model',
+    ],
+    [
+      'an unpriced fallback model',
+      { assistant_fallback_model: 'nope' },
+      false,
+      'assistant_fallback_model',
+    ],
+    [
+      'an unpriced summary model',
+      { assistant_summary_model: 'nope' },
+      false,
+      'assistant_summary_model',
+    ],
+    [
+      'a negative limit',
+      { assistant_max_active_turns: -1 },
+      false,
+      'assistant_max_active_turns',
+    ],
+    [
+      'a non-integer timeout',
+      { assistant_call_timeout_ms: 1.5 },
+      false,
+      'assistant_call_timeout_ms',
+    ],
+    [
+      'a heartbeat above 25 s',
+      { assistant_heartbeat_ms: 25_001 },
+      false,
+      'assistant_heartbeat_ms',
+    ],
+    [
+      'a fallback equal to the primary in production',
+      { assistant_fallback_model: 'claude-opus-5-5' },
+      true,
+      'assistant_fallback_model',
+    ],
+    [
+      'a fallback equal to the primary when required',
+      {
+        assistant_fallback_model: 'claude-opus-5-5',
+        assistant_require_distinct_fallback: true,
+      },
+      false,
+      'assistant_fallback_model',
+    ],
+  ])(
+    'S46 AS-74: %s fails startup naming the key',
+    (_name, over, production, key) => {
+      const found = check(over, production);
 
-    expect(found).toHaveLength(1);
-    expect(found[0]).toContain(key);
-  });
+      expect(found).toHaveLength(1);
+      expect(found[0]).toContain(key);
+    },
+  );
 
   it('S46 AS-74: the scripted provider is allowed outside production when chosen, and needs no key', () => {
     expect(
@@ -56,7 +121,10 @@ describe('LLM startup configuration', () => {
     expect(check({ assistant_fallback_model: 'claude-opus-5-5' })).toEqual([]);
     expect(
       check(
-        { assistant_fallback_model: 'claude-opus-5-5', assistant_require_distinct_fallback: false },
+        {
+          assistant_fallback_model: 'claude-opus-5-5',
+          assistant_require_distinct_fallback: false,
+        },
         true,
       ),
     ).toEqual([]);

@@ -58,3 +58,19 @@ Decisions taken unattended under the decision policy (production-grade, notes an
 - [LOCAL] Opaque per-user hash sent as the provider's end-user id → abuse tracking at the provider without sending the user id.
 - [LOCAL] Metering outbox append retries 3 times with full jitter, then counts and logs `callId`, `subjectId`, `billableTokens` → the log line lets operations re-create the record; never fail the turn for metering.
 - [LOCAL] Edge cases dropped as not worth a scenario: stream trimming at the 20,000-event cap (a maximal turn emits far fewer), per-token (uncoalesced) events, attachments.
+
+## T056 final checkpoint: partly run (blocked on approvals)
+
+- Run and green: livespec check (0 errors), `tsc --noEmit`, `pnpm check:boundaries`, ESLint on assistant/llm/resilience (0 errors), every assistant e2e spec in its own process (turn 42, tools 12, resume 22, limits 26, resilience 15, moderation 14, context 13, metering 6, platform 16), `assistant/knowledge` (223), `seller-onboarding` (12), `infrastructure/llm` (27), assistant domain + resilience unit specs (319). `nest build core|sse-gateway|projector` compile.
+- `pnpm check:table-ownership --strict` exits 1 on 25 cross-domain accesses in 9 domains (e.g. statements reading BisOrderItem); none mentions assistant or llm, so it is not S46's.
+- NOT run: standalone boot of `apps/core`, `apps/sse-gateway`, `apps/projector` (approval to start the built servers was refused in this session), `scripts/qa/fresh-run.sh`, `pnpm --dir ../web test:e2e assistant`, and the `assistant_active_streams` / leftover-key check. Run these by hand; T056 stays unchecked.
+
+## T118 runtime proofs: partly run (blocked on approvals)
+
+- Run and green (2026-10-15): `scripts/qa/fresh-run.sh --here` (monolith ready, live doctor clean) against the stack already running; `GET /api/assistant/usage` without a session answers 401 on the running monolith; `nest build core|sse-gateway|projector` compile.
+- NOT run: standalone start of `dist/apps/core`, `dist/apps/sse-gateway`, `dist/apps/projector` and `pnpm --dir packages/web test:e2e assistant` (approval to run them was refused again in this session), and the `assistant_active_streams` / `assistant:lock:*` / `assistant:slots:*` leftover check. Run by hand: `NODE_ENV=local PORT=810x node dist/apps/<app>/main.js` per app (look for Nest dependency errors), then `PW_EXPECT_TIMEOUT_MS=20000 API_URL=http://localhost:8000 pnpm exec playwright test --workers=2 assistant` from packages/web. T118 stays unchecked.
+
+## T119 runtime proofs: boots run, browser suite blocked on approvals (2026-10-15)
+
+- Run and green: `scripts/infra/boot-app.sh core` UP ("Nest application successfully started"), `sse-gateway` UP (same line), `projector` started and registered its consumers (no Nest dependency-resolution error in any of the three). L-015/L-018 satisfied for the three apps.
+- NOT run (approval refused for `pnpm … playwright test` in this session, both the `pnpm exec` and `pnpm --dir ../web test:e2e` forms) : the assistant browser suite on an empty stack, and the `assistant_active_streams` = 0 / `assistant:lock:*` / `assistant:slots:*` leftover check (redis-cli / metrics commands also need approval). Nothing here is claimed verified. Run by hand from packages/web: `PW_EXPECT_TIMEOUT_MS=20000 API_URL=http://localhost:8000 pnpm exec playwright test --workers=2 assistant`, then check the gauge and keys. T056, T118 and T119 stay open for these items only.

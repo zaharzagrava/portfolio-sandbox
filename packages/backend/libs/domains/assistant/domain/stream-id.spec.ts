@@ -1,4 +1,9 @@
-import { compareStreamIds, formatStreamId, isStreamId, parseStreamId } from './stream-id';
+import {
+  compareStreamIds,
+  formatStreamId,
+  isStreamId,
+  parseStreamId,
+} from './stream-id';
 
 describe('S46 stream ids', () => {
   it.each([
@@ -38,9 +43,12 @@ describe('S46 stream ids', () => {
     ['5-1', '5-1', 0],
     ['0-0', '0-1', -1],
     ['1700000000000-2', '1700000000000-10', -1],
-  ])('S46 AS-22: compareStreamIds(%s, %s) is numeric, not lexical -> %s', (a, b, expected) => {
-    expect(Math.sign(compareStreamIds(a, b))).toBe(expected);
-  });
+  ])(
+    'S46 AS-22: compareStreamIds(%s, %s) is numeric, not lexical -> %s',
+    (a, b, expected) => {
+      expect(Math.sign(compareStreamIds(a, b))).toBe(expected);
+    },
+  );
 
   it('S46 AS-24: comparing a malformed id throws', () => {
     expect(() => compareStreamIds('x', '1-1')).toThrow();

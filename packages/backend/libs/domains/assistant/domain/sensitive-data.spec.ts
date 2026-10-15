@@ -69,7 +69,10 @@ describe('S46 AS-53: sensitive data in input (30 positive / 30 negative)', () =>
     ['pem openssh', '-----BEGIN OPENSSH PRIVATE KEY-----'],
     ['bearer header', 'Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.abc.def'],
     ['bearer lowercase', 'bearer abcdefghijklmnop1234'],
-    ['card inside a sentence', 'Hi, my number is 4012 8888 8888 1881, can you check my order?'],
+    [
+      'card inside a sentence',
+      'Hi, my number is 4012 8888 8888 1881, can you check my order?',
+    ],
   ])('S46 AS-53: positive: %s', (_n, text) => {
     expect(containsSensitiveData(text)).toBe(true);
   });
@@ -112,13 +115,18 @@ describe('S46 AS-53: sensitive data in input (30 positive / 30 negative)', () =>
   it('S46 AS-53: property - any 13-19 digit Luhn-valid number is flagged, with spaces or dashes', () => {
     fc.assert(
       fc.property(
-        fc.array(fc.integer({ min: 0, max: 9 }), { minLength: 12, maxLength: 18 }),
+        fc.array(fc.integer({ min: 0, max: 9 }), {
+          minLength: 12,
+          maxLength: 18,
+        }),
         fc.constantFrom('', ' ', '-'),
         (digits, sep) => {
           const payload = digits.join('');
           const number = payload + luhnCheckDigit(payload);
           const grouped = number.match(/.{1,4}/g)!.join(sep);
-          expect(containsSensitiveData(`my number ${grouped} thanks`)).toBe(true);
+          expect(containsSensitiveData(`my number ${grouped} thanks`)).toBe(
+            true,
+          );
         },
       ),
     );
@@ -127,7 +135,10 @@ describe('S46 AS-53: sensitive data in input (30 positive / 30 negative)', () =>
   it('S46 AS-53: property - the same numbers with a wrong check digit are not flagged', () => {
     fc.assert(
       fc.property(
-        fc.array(fc.integer({ min: 0, max: 9 }), { minLength: 12, maxLength: 18 }),
+        fc.array(fc.integer({ min: 0, max: 9 }), {
+          minLength: 12,
+          maxLength: 18,
+        }),
         fc.integer({ min: 1, max: 9 }),
         (digits, shift) => {
           const payload = digits.join('');

@@ -1,4 +1,5 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, OnModuleDestroy } from '@nestjs/common';
+import type Redis from 'ioredis';
 import { EventEmitter } from 'node:events';
 import { ApiConfigService } from '@app/common/config';
 import { RedisService } from '@app/infrastructure/redis/redis.service';
@@ -16,6 +17,7 @@ export const ALIVE_TTL_MS = 5_000;
 /** The longest a generation runs plus slack: the stream and meta outlive the turn deadline by the replay window. */
 const RUNNING_RETENTION_MS = 6 * 60_000;
 const STREAM_MAX_LEN = '20000';
+const MAX_IDLE_BLOCKING = 64;
 
 /** Hash tag keeps every key of one generation in one cluster slot, so the Lua guards stay atomic. */
 const tag = (userId: string, messageId: string) => `{${userId}:${messageId}}`;
@@ -60,9 +62,10 @@ const toStored = ([id, fields]: [string, string[]]): StoredEvent => ({
  * message id is a plain miss (G2). Events are XADDed to a per-generation stream whose entry id is the SSE id.
  */
 @Injectable()
-export class RedisGenerationStore implements GenerationStore {
+export class RedisGenerationStore implements GenerationStore, OnModuleDestroy {
   private readonly emitter = new EventEmitter().setMaxListeners(0);
   private readonly local = new Set<string>();
+  private readonly idleBlocking: Redis[] = [];
 
   constructor(
     private readonly redis: RedisService,
@@ -87,12 +90,7 @@ export class RedisGenerationStore implements GenerationStore {
         startedAt: String(Date.now()),
       })
       .pexpire(meta, RUNNING_RETENTION_MS + this.replayWindowMs)
-      .set(
-        aliveKey(userId, messageId),
-        '1',
-        'PX',
-        ALIVE_TTL_MS,
-      )
+      .set(aliveKey(userId, messageId), '1', 'PX', ALIVE_TTL_MS)
       .exec();
     this.local.add(`${userId}:${messageId}`);
   }
@@ -170,24 +168,33 @@ export class RedisGenerationStore implements GenerationStore {
     blockMs: number,
   ): Promise<StoredEvent[] | null> {
     const key = `${userId}:${messageId}`;
-    const first = await this.read(userId, messageId, afterId, 500);
-    if (first === null || first.length) return first;
-    if (this.local.has(key)) {
-      // The generator is on this instance: wake on its append instead of polling Redis.
-      await new Promise<void>((resolve) => {
-        const timer = setTimeout(done, blockMs);
-        const done = () => {
-          clearTimeout(timer);
-          this.emitter.off(key, done);
-          resolve();
-        };
-        this.emitter.once(key, done);
-      });
-      return this.read(userId, messageId, afterId, 500);
+    const local = this.local.has(key);
+    // Listen before reading, so an append between the read and the wait still wakes this viewer at once.
+    let wake: () => void = () => undefined;
+    const woken = new Promise<void>((resolve) => (wake = resolve));
+    if (local) this.emitter.once(key, wake);
+    try {
+      const first = await this.read(userId, messageId, afterId, 500);
+      if (first === null || first.length) return first;
+      if (local) {
+        // The generator is on this instance: wake on its append instead of polling Redis.
+        let timer: NodeJS.Timeout | undefined;
+        await Promise.race([
+          woken,
+          new Promise<void>(
+            (resolve) => (timer = setTimeout(resolve, blockMs)),
+          ),
+        ]);
+        clearTimeout(timer);
+        return await this.read(userId, messageId, afterId, 500);
+      }
+    } finally {
+      if (local) this.emitter.off(key, wake);
     }
     // Another instance owns the generator: one blocking read on a short-lived connection (a blocked connection cannot
     // serve other commands), not a poll every 300 ms per viewer.
-    const blocking = this.redis.client.duplicate();
+    const blocking = this.acquireBlocking();
+    let healthy = true;
     try {
       await blocking.xread(
         'BLOCK',
@@ -197,12 +204,38 @@ export class RedisGenerationStore implements GenerationStore {
         afterId,
       );
       return await this.read(userId, messageId, afterId, 500);
+    } catch (error) {
+      healthy = false;
+      throw error;
     } finally {
-      blocking.disconnect();
+      if (healthy && this.idleBlocking.length < MAX_IDLE_BLOCKING)
+        this.idleBlocking.push(blocking);
+      else blocking.disconnect();
     }
   }
 
-  async meta(userId: string, messageId: string): Promise<GenerationMeta | null> {
+  /** A connection dedicated to blocking reads: a blocked connection cannot serve other commands. Reused between waits. */
+  private acquireBlocking(): Redis {
+    return (
+      this.idleBlocking.pop() ??
+      this.redis.client.duplicate({
+        // The shared client fails fast while Redis is down; a fresh duplicate must queue until it is connected.
+        enableOfflineQueue: true,
+        enableAutoPipelining: false,
+        maxRetriesPerRequest: 2,
+      })
+    );
+  }
+
+  onModuleDestroy() {
+    for (const connection of this.idleBlocking.splice(0))
+      connection.disconnect();
+  }
+
+  async meta(
+    userId: string,
+    messageId: string,
+  ): Promise<GenerationMeta | null> {
     const [fields, cancel] = await Promise.all([
       this.redis.client.hgetall(metaKey(userId, messageId)),
       this.redis.client.exists(cancelKey(userId, messageId)),
@@ -263,6 +296,14 @@ export class RedisGenerationStore implements GenerationStore {
       .zadd(key, Date.now() + VIEWER_TTL_MS, viewerId)
       .pexpire(key, RUNNING_RETENTION_MS + this.replayWindowMs)
       .exec();
+  }
+
+  async dropViewer(
+    userId: string,
+    messageId: string,
+    viewerId: string,
+  ): Promise<void> {
+    await this.redis.client.zrem(viewersKey(userId, messageId), viewerId);
   }
 
   async hasViewers(userId: string, messageId: string): Promise<boolean> {

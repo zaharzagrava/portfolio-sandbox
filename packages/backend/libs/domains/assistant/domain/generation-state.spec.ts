@@ -21,14 +21,24 @@ describe('S46 generation state machine', () => {
     ['error', 'done', false],
     ['error', 'refusal', false],
     ['error', 'error', false],
-  ])('S46 AS-30: %s -> %s allowed=%s (terminal states are final)', (from, to, ok) => {
-    if (ok) expect(transitionGeneration(from, to)).toBe(to);
-    else expect(() => transitionGeneration(from, to)).toThrow(GenerationStateError);
-  });
+  ])(
+    'S46 AS-30: %s -> %s allowed=%s (terminal states are final)',
+    (from, to, ok) => {
+      if (ok) expect(transitionGeneration(from, to)).toBe(to);
+      else
+        expect(() => transitionGeneration(from, to)).toThrow(
+          GenerationStateError,
+        );
+    },
+  );
 
   it('S46 AS-30: only done, refusal and error are terminal', () => {
     expect(isTerminalState('running')).toBe(false);
-    expect(['done', 'refusal', 'error'].every((s) => isTerminalState(s as GenerationState))).toBe(true);
+    expect(
+      ['done', 'refusal', 'error'].every((s) =>
+        isTerminalState(s as GenerationState),
+      ),
+    ).toBe(true);
   });
 
   it('S46 AS-29: the error code set is the data-model set', () => {

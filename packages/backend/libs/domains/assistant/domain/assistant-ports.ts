@@ -1,7 +1,4 @@
-import type {
-  GenerationErrorCode,
-  GenerationState,
-} from './generation-state';
+import type { GenerationErrorCode, GenerationState } from './generation-state';
 
 /**
  * Ports of the S46 conversation half (plan D-6, G55). `api/` and `application/` inject these tokens only; `infra/`
@@ -57,12 +54,19 @@ export interface ConversationPage {
 
 export interface ConversationRepository {
   create(userId: string, title: string): Promise<ConversationRecord>;
-  find(userId: string, conversationId: string): Promise<ConversationRecord | null>;
+  find(
+    userId: string,
+    conversationId: string,
+  ): Promise<ConversationRecord | null>;
   list(
     userId: string,
     page: { limit: number; after?: string },
   ): Promise<ConversationPage>;
-  rename(userId: string, conversationId: string, title: string): Promise<boolean>;
+  rename(
+    userId: string,
+    conversationId: string,
+    title: string,
+  ): Promise<boolean>;
   /** Removes the conversation and all its messages; false when it does not exist. */
   remove(userId: string, conversationId: string): Promise<boolean>;
   /** Messages in order; `afterMessageId` skips everything up to and including it (compaction marker). */
@@ -93,11 +97,28 @@ export interface ConversationRepository {
 
 export type GenerationEvent =
   | { type: 'meta'; data: { messageId: string; conversationId: string } }
-  | { type: 'text'; data: { text: string } }
-  | { type: 'tool'; data: { name: string; status: 'started' | 'finished'; [k: string]: unknown } }
-  | { type: 'done'; data: Record<string, unknown> }
-  | { type: 'refusal'; data: { category: string; source: string } }
-  | { type: 'error'; data: { code: GenerationErrorCode; message?: string } };
+  | { type: 'text'; data: { t: string } }
+  | {
+      type: 'tool';
+      data: { id: string; name: string; status: 'running' | 'done' | 'failed' };
+    }
+  | {
+      type: 'done';
+      data: {
+        stopReason: string;
+        truncated: boolean;
+        usage: { inputTokens: number; outputTokens: number };
+        allowance: { used: number; limit: number };
+      };
+    }
+  | {
+      type: 'refusal';
+      data: { category: string; source: 'provider' | 'moderation' };
+    }
+  | {
+      type: 'error';
+      data: { code: GenerationErrorCode; retryAfterMs?: number };
+    };
 
 export const TERMINAL_EVENT_TYPES = ['done', 'refusal', 'error'] as const;
 
@@ -117,14 +138,26 @@ export interface GenerationMeta {
 
 export interface GenerationStore {
   /** Creates the generation (meta + stream). Idempotent per `messageId`. */
-  start(userId: string, messageId: string, conversationId: string): Promise<void>;
+  start(
+    userId: string,
+    messageId: string,
+    conversationId: string,
+  ): Promise<void>;
   /** Appends a non-terminal event; returns its id. Ids strictly increase. */
-  append(userId: string, messageId: string, event: GenerationEvent): Promise<string>;
+  append(
+    userId: string,
+    messageId: string,
+    event: GenerationEvent,
+  ): Promise<string>;
   /**
    * Appends the terminal event exactly once (atomic guard): returns the stored entry, or null when a terminal event
    * already exists (a racing reporter lost).
    */
-  finish(userId: string, messageId: string, event: GenerationEvent): Promise<StoredEvent | null>;
+  finish(
+    userId: string,
+    messageId: string,
+    event: GenerationEvent,
+  ): Promise<StoredEvent | null>;
   /** Events after `afterId` (exclusive; absent = from the start), at most `limit`. Foreign/unknown/expired -> null. */
   read(
     userId: string,
@@ -141,11 +174,24 @@ export interface GenerationStore {
   ): Promise<StoredEvent[] | null>;
   meta(userId: string, messageId: string): Promise<GenerationMeta | null>;
   /** Marks a cancel request; returns the state seen (so the caller answers 409 on a terminal one). */
-  requestCancel(userId: string, messageId: string): Promise<GenerationState | null>;
+  requestCancel(
+    userId: string,
+    messageId: string,
+  ): Promise<GenerationState | null>;
   /** Generator liveness, refreshed every second. */
   heartbeat(userId: string, messageId: string): Promise<void>;
   /** Viewer presence for the grace period (AS-26); returns whether any viewer is attached. */
-  touchViewer(userId: string, messageId: string, viewerId: string): Promise<void>;
+  touchViewer(
+    userId: string,
+    messageId: string,
+    viewerId: string,
+  ): Promise<void>;
+  /** Removes a viewer at once when its connection closes (the 5 s presence TTL only covers a crash). */
+  dropViewer(
+    userId: string,
+    messageId: string,
+    viewerId: string,
+  ): Promise<void>;
   hasViewers(userId: string, messageId: string): Promise<boolean>;
   /** True when neither liveness nor a terminal event exists (the generator is gone). */
   isLost(userId: string, messageId: string): Promise<boolean>;
@@ -158,13 +204,13 @@ export interface GenerationStore {
 // ---------------------------------------------------------------- moderation
 
 export type ModerationVerdict =
-  | { flagged: false }
-  | { flagged: true; category: string };
+  { flagged: false } | { flagged: true; category: string };
 
 export interface ModerationPort {
   /** Rejects with a typed unavailable error when the backend cannot answer (fail closed, AS-55). */
   checkInput(text: string): Promise<ModerationVerdict>;
-  checkOutput(text: string): Promise<ModerationVerdict>;
+  /** `context` is the published text before the chunk (at most 256 characters). */
+  checkOutput(text: string, context: string): Promise<ModerationVerdict>;
 }
 
 // ---------------------------------------------------------------- allowance
@@ -189,8 +235,7 @@ export interface IdempotencyRecord {
 }
 
 export type IdempotencyClaim =
-  | { kind: 'claimed' }
-  | { kind: 'existing'; record: IdempotencyRecord };
+  { kind: 'claimed' } | { kind: 'existing'; record: IdempotencyRecord };
 
 export interface AdmissionStore {
   /** `SET NX` of the key with the request fingerprint and the new message id. */
@@ -200,7 +245,11 @@ export interface AdmissionStore {
     record: IdempotencyRecord,
   ): Promise<IdempotencyClaim>;
   /** Compare-and-delete on the message id ("released when rejected before generating"). */
-  releaseIdempotency(userId: string, key: string, messageId: string): Promise<void>;
+  releaseIdempotency(
+    userId: string,
+    key: string,
+    messageId: string,
+  ): Promise<void>;
   /** One reply per conversation; false when held. */
   acquireLock(
     userId: string,
@@ -208,7 +257,13 @@ export interface AdmissionStore {
     messageId: string,
     ttlMs: number,
   ): Promise<boolean>;
-  releaseLock(userId: string, conversationId: string, messageId: string): Promise<void>;
+  releaseLock(
+    userId: string,
+    conversationId: string,
+    messageId: string,
+  ): Promise<void>;
+  /** Message id of the reply holding the conversation, if any. */
+  lockHolder(userId: string, conversationId: string): Promise<string | null>;
   /** Active replies per user, capped atomically; false when the cap is reached. */
   acquireSlot(
     userId: string,
@@ -217,6 +272,8 @@ export interface AdmissionStore {
     ttlMs: number,
   ): Promise<boolean>;
   releaseSlot(userId: string, messageId: string): Promise<void>;
+  /** Message ids of the live replies of the user (the slots in use). */
+  slotMembers(userId: string): Promise<string[]>;
   /** Fleet-wide "not before" per model after a provider 429 (`Retry-After`). */
   setCooldown(model: string, durationMs: number): Promise<void>;
   /** Milliseconds until the model may be called again; 0 when free. */
@@ -233,6 +290,11 @@ export interface ToolDefinition {
 }
 
 export interface ToolContext {
+  /** Correlation ids of the log lines a tool writes (never its arguments). */
+  messageId: string;
+  requestId?: string;
+  /** The model call that asked for the tool. */
+  callId?: string;
   userId: string;
   conversationId: string;
   signal: AbortSignal;
@@ -240,18 +302,23 @@ export interface ToolContext {
 }
 
 export type ToolResult =
-  | { ok: true; content: unknown }
-  | { ok: false; error: string };
+  { ok: true; content: unknown } | { ok: false; error: string };
 
 export interface ToolCatalog {
   definitions(): ToolDefinition[];
   /** Never throws for a tool failure: the error is returned to the model as a tool result. */
-  execute(name: string, input: unknown, context: ToolContext): Promise<ToolResult>;
+  execute(
+    name: string,
+    input: unknown,
+    context: ToolContext,
+  ): Promise<ToolResult>;
 }
 
 // ---------------------------------------------------------------- tokens
 
-export const CONVERSATION_REPOSITORY = Symbol('ASSISTANT_CONVERSATION_REPOSITORY');
+export const CONVERSATION_REPOSITORY = Symbol(
+  'ASSISTANT_CONVERSATION_REPOSITORY',
+);
 export const GENERATION_STORE = Symbol('ASSISTANT_GENERATION_STORE');
 export const MODERATION_PORT = Symbol('ASSISTANT_MODERATION_PORT');
 export const QUOTA_COUNTER = Symbol('ASSISTANT_QUOTA_COUNTER');

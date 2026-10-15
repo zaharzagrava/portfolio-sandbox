@@ -1,503 +1,447 @@
-import { INestApplication } from '@nestjs/common';
-import { AddressInfo } from 'node:net';
-import request from 'supertest';
-import { v4 } from 'uuid';
-import { generateTestingModule } from '@app/test/utils/global-modules';
-import { readSse, SseEvent } from '@app/test/utils/sse-client';
-import { waitFor } from '@app/test/utils/async-helpers';
-import { SeedsModule } from '@app/test/seeds/seeds.module';
-import { SeedsService } from '@app/test/seeds/seeds.service';
-import { TableName } from '@app/test/seeds/types';
-import { AuthApiModule, UserModel as User } from '@app/domains/identity';
-import { issueSession } from '@app/test/seeds/session.fixture';
-import { getModelToken } from '@nestjs/sequelize';
-import { RedisService } from '@app/infrastructure/redis/redis.service';
-import { ApiConfigService } from '@app/common/config';
-import { MockApiConfigService } from '@app/common/config/api-config.service.mock';
-import { AssistantModule } from './assistant.module';
-import { ConversationStore } from './infra/conversation.store';
-import { LLM_PROVIDER, ScriptedLlmProvider } from '@app/infrastructure/llm';
-import { compareStreamIds } from './infra/generation-buffer';
 import { types } from 'cassandra-driver';
+import { OutboxService } from '@app/infrastructure/outbox/outbox.service';
+import { waitFor } from '@app/test/utils/async-helpers';
+import { openSse, readSse, type SseEvent } from '@app/test/utils/sse-client';
+import { compareStreamIds } from './domain/stream-id';
+import {
+  bootAssistant,
+  data,
+  TERMINAL,
+  textOf,
+  type Harness,
+  type TestUser,
+} from './testing/assistant.harness';
 
-const TERMINAL = ['done', 'error', 'refusal'];
-const data = (e: SseEvent) => JSON.parse(e.data ?? '{}');
-const textOf = (events: SseEvent[]) =>
-  events
-    .filter((e) => e.event === 'text')
-    .map((e) => data(e).t)
-    .join('');
-
-/**
- * SD-42 against real Redis (turn lock, stream buffer, quotas), Scylla
- * (transcript) and Postgres (product_details tool); the model is the scripted
- * provider, so specs assert exactly what was SENT to it.
- */
-describe('Shopping assistant (e2e)', () => {
-  let app: INestApplication;
-  let baseUrl: string;
-  let seeds: SeedsService;
-  let llm: ScriptedLlmProvider;
-  let redis: RedisService;
-  let config: MockApiConfigService;
-  const http = () => request(app.getHttpServer());
+describe('Shopping assistant: resumable streams, cancel, abort, shutdown', () => {
+  let h: Harness;
+  let secondApp: Harness | undefined;
 
   beforeAll(async () => {
-    const moduleRef = await generateTestingModule(
-      [AssistantModule, AuthApiModule, SeedsModule],
-      { stores: ['redis', 'cassandra'] },
-    );
-    app = moduleRef.createNestApplication();
-    app.setGlobalPrefix('api');
-    await app.listen(0);
-    baseUrl = `http://127.0.0.1:${(app.getHttpServer().address() as AddressInfo).port}/api`;
-    seeds = app.get(SeedsService);
-    llm = app.get(LLM_PROVIDER);
-    redis = app.get(RedisService);
-    config = app.get(ApiConfigService) as MockApiConfigService;
+    h = await bootAssistant();
   });
-
   afterAll(async () => {
-    await app.close();
+    await h.close();
+    await secondApp?.close();
   });
-
   beforeEach(async () => {
-    await seeds.clean();
-    llm.reset();
-    config.reset();
+    await h.reset();
+    // A generation outlives its first viewer in most of these specs; the abort specs set their own grace.
+    h.config.set('assistant_detach_grace_ms', 60_000);
   });
 
-  const user = async () => {
-    const created = await app
-      .get<typeof User>(getModelToken(User))
-      .create({ email: `a-${v4()}@mail.com` });
-    const { bearer } = await issueSession(app, created);
-    expect(bearer).toMatch(/^Bearer /);
-    return {
-      id: created.id,
-      auth: { Authorization: bearer },
-    };
-  };
-
-  const conversation = async (u: { auth: Record<string, string> }) =>
-    (
-      await http()
-        .post('/api/assistant/conversations')
-        .set(u.auth)
-        .send({})
-        .expect(201)
-    ).body.id as string;
-
-  const ask = (
-    u: { auth: Record<string, string> },
-    conversationId: string,
-    body: object,
+  const streamUrl = (g: string) =>
+    `${h.baseUrl}/assistant/messages/${g}/stream`;
+  const resume = (
+    u: TestUser,
+    g: string,
+    lastId?: string,
     opts: { count?: number; timeoutMs?: number } = {},
   ) =>
-    readSse(`${baseUrl}/assistant/conversations/${conversationId}/messages`, {
-      method: 'POST',
-      body,
-      headers: u.auth,
+    readSse(streamUrl(g), {
+      headers: { ...u.auth, ...(lastId && { 'Last-Event-ID': lastId }) },
       count: opts.count ?? 1_000,
       until: TERMINAL,
       timeoutMs: opts.timeoutMs ?? 10_000,
     });
-
-  it('streams the reply in order (meta → text… → done) and persists the turn', async () => {
-    const u = await user();
-    const c = await conversation(u);
-    llm.script({
-      text: 'The Pixel 10 has the best camera under €800.',
-      chunks: 6,
+  const attach = (u: TestUser, g: string, lastId?: string) =>
+    openSse(streamUrl(g), {
+      headers: { ...u.auth, ...(lastId && { 'Last-Event-ID': lastId }) },
     });
+  const state = async (u: TestUser, g: string) =>
+    (await h.generations.meta(u.id, g))?.state;
+  const terminalEvents = async (u: TestUser, g: string) =>
+    ((await h.generations.read(u.id, g, undefined, 10_000)) ?? []).filter((e) =>
+      TERMINAL.includes(e.event.type),
+    );
+  const cancel = (u: TestUser, g: string) =>
+    h.http().post(`/api/assistant/messages/${g}/cancel`).set(u.auth);
+  const messageIdOf = (events: SseEvent[]) =>
+    data(events[0]).messageId as string;
 
-    const { status, events } = await ask(u, c, {
-      text: 'Best camera phone under 800?',
-    });
+  it('S46 AS-22: reconnect with Last-Event-ID resumes exactly once, in order', async () => {
+    const u = await h.user();
+    const c = await h.conversation(u);
+    const text = Array.from({ length: 30 }, (_, i) => `w${i} `).join('');
+    h.llm.script({ text, chunks: 30, delayMs: 60 });
 
-    expect(status).toBe(200);
-    expect(events[0].event).toBe('meta');
-    expect(events.at(-1)!.event).toBe('done');
-    expect(textOf(events)).toBe('The Pixel 10 has the best camera under €800.');
-    // Every event carries a stream id, strictly increasing: what Last-Event-ID resumes from.
-    const ids = events.map((e) => e.id!);
-    expect([...ids].sort(compareStreamIds)).toEqual(ids);
+    // read meta + the first 12 text events, then the connection drops
+    const first = await h.ask(u, c, { text: 'go' }, { count: 13 });
+    const g = messageIdOf(first.events);
+    const lastId = first.events.at(-1)!.id!;
+    const rest = await resume(u, g, lastId);
 
-    const history = (
-      await http()
-        .get(`/api/assistant/conversations/${c}/messages`)
-        .set(u.auth)
-        .expect(200)
-    ).body;
-    expect(
-      history.messages.map((m: { role: string; text: string }) => [
-        m.role,
-        m.text,
-      ]),
-    ).toEqual([
-      ['user', 'Best camera phone under 800?'],
-      ['assistant', 'The Pixel 10 has the best camera under €800.'],
-    ]);
+    expect(rest.events.at(-1)!.event).toBe('done');
+    expect(rest.events[0].event).toBe('text');
+    expect(compareStreamIds(rest.events[0].id!, lastId)).toBeGreaterThan(0);
+    const all = [...first.events, ...rest.events];
+    expect(new Set(all.map((e) => e.id)).size).toBe(all.length);
+    expect(textOf(all)).toBe(text);
+    for (let i = 1; i < all.length; i++)
+      expect(compareStreamIds(all[i - 1].id!, all[i].id!)).toBeLessThan(0);
   });
 
-  it('tool loop: product_details runs against the catalogue, its result goes back in one user message, then the model answers', async () => {
-    const u = await user();
-    const c = await conversation(u);
-    const [product] = await seeds.createTreelike([
-      {
-        __type__: TableName.Product,
-        title: 'Pixel 10 Pro',
-        price: 79_900,
-        quantity: 3,
-      },
-    ]);
-    llm.script(
-      {
-        toolUses: [
-          { name: 'product_details', input: { product_id: product.id } },
-          {
-            name: 'pickup_near_me',
-            input: { query: 'pixel', radius_km: null },
-          },
-        ],
-      },
-      { text: 'Pixel 10 Pro is €799 and in stock.' },
-    );
-
-    const { events } = await ask(u, c, { text: 'Tell me about it' });
-
-    expect(
-      events
-        .filter((e) => e.event === 'tool')
-        .map((e) => [data(e).name, data(e).status]),
-    ).toEqual(
-      expect.arrayContaining([
-        ['product_details', 'running'],
-        ['product_details', 'done'],
-        ['pickup_near_me', 'failed'],
-      ]),
-    );
-    expect(events.at(-1)!.event).toBe('done');
-
-    const second = llm.requests[1].messages;
-    const toolResults = second.at(-1)!;
-    expect(toolResults.role).toBe('user');
-    const blocks = toolResults.content as {
-      type: string;
-      content: string;
-      is_error?: boolean;
-    }[];
-    expect(blocks.map((b) => b.type)).toEqual(['tool_result', 'tool_result']);
-    expect(JSON.parse(blocks[0].content)).toMatchObject({
-      id: product.id,
-      title: 'Pixel 10 Pro',
-      inStock: true,
-    });
-    // No location in the request → the tool refuses instead of guessing where the user is.
-    expect(blocks[1]).toMatchObject({
-      is_error: true,
-      content: 'The user has not shared a location.',
-    });
-  });
-
-  it('malformed tool input is returned as an error tool_result, never executed', async () => {
-    const u = await user();
-    const c = await conversation(u);
-    llm.script(
-      {
-        toolUses: [
-          { name: 'product_details', input: { product_id: 'not-a-uuid' } },
-        ],
-      },
-      { text: 'Sorry.' },
-    );
-
-    await ask(u, c, { text: 'x' });
-
-    const result = (
-      llm.requests[1].messages.at(-1)!.content as {
-        content: string;
-        is_error: boolean;
-      }[]
-    )[0];
-    expect(result.is_error).toBe(true);
-    expect(JSON.parse(result.content)).toHaveProperty('INVALID_INPUT');
-  });
-
-  it('the next turn replays the history byte-identically (append-only: cache prefix + thinking blocks stay valid); system and tools never change', async () => {
-    const u = await user();
-    const c = await conversation(u);
-    const [product] = await seeds.createTreelike([
-      { __type__: TableName.Product, title: 'Kindle' },
-    ]);
-    llm.script(
-      {
-        toolUses: [
-          { name: 'product_details', input: { product_id: product.id } },
-        ],
-      },
-      { text: 'It is a Kindle.' },
-      { text: 'Yes, it is waterproof.' },
-    );
-
-    await ask(u, c, { text: 'What is it?' });
-    await ask(u, c, { text: 'Waterproof?' });
-
-    const [first, second, third] = llm.requests;
-    expect(second.messages.slice(0, first.messages.length)).toEqual(
-      first.messages,
-    );
-    expect(
-      third.messages.slice(0, second.messages.length + 1).map((m) => m.role),
-    ).toEqual([...second.messages.map((m) => m.role), 'assistant']);
-    expect(
-      JSON.stringify(third.messages.slice(0, second.messages.length)),
-    ).toBe(JSON.stringify(second.messages));
-    for (const r of [second, third]) {
-      expect(JSON.stringify(r.system)).toBe(JSON.stringify(first.system));
-      expect(JSON.stringify(r.tools)).toBe(JSON.stringify(first.tools));
+  it('S46 AS-22: 50 randomized resumes against a generator at full speed lose and repeat nothing', async () => {
+    const text = Array.from({ length: 600 }, (_, i) => `[${i}]`).join('');
+    for (let trial = 0; trial < 50; trial++) {
+      const u = await h.user();
+      const c = await h.conversation(u);
+      h.llm.script({ text, chunks: 600, delayMs: 1 });
+      // the 40 ms coalescing leaves some twenty events; the first read takes a random few of them
+      const take = 2 + Math.floor(Math.random() * 8);
+      const first = await h.ask(u, c, { text: 'go' }, { count: take });
+      const rest = await resume(
+        u,
+        messageIdOf(first.events),
+        first.events.at(-1)!.id!,
+      );
+      const all = [...first.events, ...rest.events];
+      expect([trial, rest.status, rest.body]).toEqual([trial, 200, undefined]);
+      expect(rest.events.at(-1)!.event).toBe('done');
+      expect(new Set(all.map((e) => e.id)).size).toBe(all.length);
+      expect(textOf(all)).toBe(text);
     }
-  });
+  }, 170_000);
 
-  it('client disconnect aborts the provider call after the grace period and frees the conversation', async () => {
-    config.set('assistant_detach_grace_ms', 500);
-    const u = await user();
-    const c = await conversation(u);
-    llm.script({ text: 'Let me think', hang: true, delayMs: 20 });
+  it('S46 AS-23: replays the whole generation without Last-Event-ID; the terminal id returns an empty stream', async () => {
+    const u = await h.user();
+    const c = await h.conversation(u);
+    h.llm.script({ text: 'one two three', chunks: 3 });
+    const original = await h.ask(u, c, { text: 'go' });
+    const g = messageIdOf(original.events);
 
-    await ask(u, c, { text: 'long answer please' }, { count: 3 }); // reads 3 events, then hangs up
+    const replay = await resume(u, g);
+    expect(replay.events.map((e) => [e.id, e.event, e.data])).toEqual(
+      original.events.map((e) => [e.id, e.event, e.data]),
+    );
 
-    await waitFor(async () => llm.aborted === 1, {
-      description: 'provider call aborted',
+    const started = Date.now();
+    const after = await resume(u, g, original.events.at(-1)!.id!, {
       timeoutMs: 5_000,
     });
-    llm.script({ text: 'ok' });
-    const next = await waitFor(
-      async () => {
-        const r = await ask(u, c, { text: 'again' });
-        return r.status === 200 && r;
-      },
-      { description: 'turn lock released' },
-    );
-    expect(next.events.at(-1)!.event).toBe('done');
-    // The aborted partial answer is not part of the history.
-    const history = (
-      await http()
-        .get(`/api/assistant/conversations/${c}/messages`)
-        .set(u.auth)
-        .expect(200)
-    ).body;
-    expect(
-      history.messages
-        .filter((m: { role: string }) => m.role === 'assistant')
-        .map((m: { text: string }) => m.text),
-    ).toEqual(['ok']);
+    expect(after.status).toBe(200);
+    expect(after.events).toEqual([]);
+    expect(Date.now() - started).toBeLessThan(2_000);
   });
 
-  it('reconnect with Last-Event-ID resumes without gaps or duplicates; the stop button cancels', async () => {
-    config.set('assistant_detach_grace_ms', 5_000);
-    const u = await user();
-    const c = await conversation(u);
-    llm.script({ text: 'abcdefghij', chunks: 10, delayMs: 30, hang: true });
-
-    const first = await ask(u, c, { text: 'go' }, { count: 4 });
-    const messageId = data(first.events[0]).messageId as string;
-    const lastId = first.events.at(-1)!.id!;
-
-    const resumed = readSse(
-      `${baseUrl}/assistant/messages/${messageId}/stream`,
-      {
-        headers: { ...u.auth, 'last-event-id': lastId },
-        count: 1_000,
-        until: TERMINAL,
-        timeoutMs: 8_000,
+  describe('S46 AS-24: a malformed Last-Event-ID is a 400, a newer one waits for live events', () => {
+    it.each(['abc', '12', '12-', '-3', '1_2', '1-2-3', '1-2x'])(
+      '%j is rejected',
+      async (bad) => {
+        const u = await h.user();
+        const c = await h.conversation(u);
+        h.llm.script({ text: 'x' });
+        const g = messageIdOf((await h.ask(u, c, { text: 'go' })).events);
+        const res = await resume(u, g, bad);
+        expect(res.status).toBe(400);
+        expect(res.body.code).toBe('invalid_last_event_id');
       },
     );
-    await new Promise((r) => setTimeout(r, 600));
-    await http()
-      .post(`/api/assistant/messages/${messageId}/cancel`)
-      .set(u.auth)
-      .expect(202);
-    const { events } = await resumed;
 
-    const all = [...first.events, ...events];
-    expect(new Set(all.map((e) => e.id)).size).toBe(all.length);
-    expect(textOf(all).startsWith('abcdefghij')).toBe(true);
-    expect(events.at(-1)).toMatchObject({ event: 'error' });
-    expect(data(events.at(-1)!)).toEqual({ code: 'CANCELLED' });
-    expect(llm.aborted).toBe(1);
+    it('an id newer than the newest event gives an empty replay, then live events', async () => {
+      const u = await h.user();
+      const c = await h.conversation(u);
+      h.llm.script({ text: 'a b c d e f', chunks: 6, delayMs: 300 });
+      const first = await h.ask(u, c, { text: 'go' }, { count: 2 });
+      const g = messageIdOf(first.events);
+      const [ms] = first.events.at(-1)!.id!.split('-').map(Number);
+
+      const res = await resume(u, g, `${ms + 1}-0`);
+      expect(res.events.length).toBeGreaterThan(0);
+      for (const e of res.events)
+        expect(compareStreamIds(e.id!, `${ms + 1}-0`)).toBeGreaterThan(0);
+      expect(res.events.at(-1)!.event).toBe('done');
+      // the events before the cursor were not replayed
+      expect(res.events.length).toBeLessThan(first.events.length + 6 + 1);
+    });
   });
 
-  it('isolation: another user gets 404 for the conversation and 403 for the generation stream', async () => {
-    const [alice, bob] = [await user(), await user()];
-    const c = await conversation(alice);
-    llm.script({ text: 'hi' });
-    const { events } = await ask(alice, c, { text: 'hello' });
-    const messageId = data(events[0]).messageId;
+  it('S46 AS-25: a generation is gone after the replay window; the answer stays in the history', async () => {
+    const u = await h.user();
+    const c = await h.conversation(u);
+    h.config.set('assistant_replay_window_ms', 400);
+    h.llm.script({ text: 'kept' });
+    const g = messageIdOf((await h.ask(u, c, { text: 'go' })).events);
+    expect((await resume(u, g)).status).toBe(200);
 
-    expect((await ask(bob, c, { text: 'hello' })).status).toBe(404);
-    await http()
+    await waitFor(async () => (await h.generations.meta(u.id, g)) === null, {
+      description: 'replay window passes',
+    });
+    const gone = await resume(u, g);
+    expect(gone.status).toBe(404);
+    expect(gone.body.code).toBe('generation_not_found');
+    const unknown = await resume(u, '11111111-1111-1111-8111-111111111111');
+    expect(unknown.status).toBe(404);
+    expect(unknown.body.code).toBe('generation_not_found');
+    const history = await h
+      .http()
       .get(`/api/assistant/conversations/${c}/messages`)
-      .set(bob.auth)
-      .expect(404);
-    expect(
-      (
-        await readSse(`${baseUrl}/assistant/messages/${messageId}/stream`, {
-          headers: bob.auth,
-          count: 1,
-        })
-      ).status,
-    ).toBe(403);
-    await http()
-      .post(`/api/assistant/messages/${messageId}/cancel`)
-      .set(bob.auth)
-      .expect(403);
-  });
-
-  it('one reply at a time per conversation: a second message while generating is 409', async () => {
-    config.set('assistant_detach_grace_ms', 5_000);
-    const u = await user();
-    const c = await conversation(u);
-    llm.script({ text: 'slow', hang: true });
-
-    const first = await ask(u, c, { text: 'one' }, { count: 2 });
-    const second = await ask(u, c, { text: 'two' });
-
-    expect(second.status).toBe(409);
-    expect(second.body.code).toBe('assistant_turn_in_progress');
-    await http()
-      .post(`/api/assistant/messages/${data(first.events[0]).messageId}/cancel`)
       .set(u.auth)
-      .expect(202);
-  });
-
-  it('monthly allowance used up → 429 before the provider is called; usage is charged per turn', async () => {
-    const u = await user();
-    const c = await conversation(u);
-    llm.script({ text: 'answer' });
-    await ask(u, c, { text: 'q' });
-    const usage = (
-      await http().get('/api/assistant/usage').set(u.auth).expect(200)
-    ).body;
-    expect(usage.used).toBeGreaterThan(0);
-
-    const month = `${new Date().getUTCFullYear()}${String(new Date().getUTCMonth() + 1).padStart(2, '0')}`;
-    await redis.client.set(
-      `assistant:tokens:{${u.id}}:${month}`,
-      String(usage.allowance),
-    );
-    const calls = llm.requests.length;
-
-    const res = await ask(u, c, { text: 'q2' });
-    expect(res.status).toBe(429);
-    expect(res.body.code).toBe('assistant_quota_exceeded');
-    expect(llm.requests.length).toBe(calls);
-  });
-
-  it('requests per minute per user are limited (llm.messages policy)', async () => {
-    const u = await user();
-    const c = await conversation(u);
-    let limited: number | undefined;
-    for (let i = 0; i < 25 && !limited; i++) {
-      llm.script({ text: `a${i}` });
-      const r = await ask(u, c, { text: `q${i}` });
-      if (r.status === 429) limited = i;
-    }
-    expect(limited).toBe(20);
-  });
-
-  it('refusal: a refusal event, and the declined output never enters the history', async () => {
-    const u = await user();
-    const c = await conversation(u);
-    llm.script({ text: '', stopReason: 'refusal' });
-
-    const { events } = await ask(u, c, { text: 'something disallowed' });
-
-    expect(events.at(-1)).toMatchObject({ event: 'refusal' });
-    const history = (
-      await http()
-        .get(`/api/assistant/conversations/${c}/messages`)
-        .set(u.auth)
-        .expect(200)
-    ).body;
-    expect(history.messages.map((m: { role: string }) => m.role)).toEqual([
-      'user',
+      .expect(200);
+    expect(history.body.messages.map((m: { text: string }) => m.text)).toEqual([
+      'go',
+      'kept',
     ]);
   });
 
-  it('primary model overloaded before the first token → the fallback model answers', async () => {
-    const u = await user();
-    const c = await conversation(u);
-    llm.script({ unavailable: true }, { text: 'from the fallback' });
+  describe('S46 AS-26: abort when nobody watches', () => {
+    it('aborts the provider call after the grace period and frees the conversation', async () => {
+      const u = await h.user();
+      const c = await h.conversation(u);
+      h.config.set('assistant_detach_grace_ms', 300);
+      h.llm.script({ text: 'streaming', hang: true, delayMs: 20 });
 
-    const { events } = await ask(u, c, { text: 'hi' });
+      const first = await h.ask(u, c, { text: 'go' }, { count: 2 });
+      const g = messageIdOf(first.events);
+      await waitFor(async () => h.llm.aborted === 1, {
+        timeoutMs: 4_000,
+        description: 'provider call aborted',
+      });
 
-    expect(textOf(events)).toBe('from the fallback');
-    expect(llm.requests.map((r) => r.model)).toEqual([
-      'claude-opus-5-5',
-      'claude-sonnet-5-5',
-    ]);
-  });
+      await waitFor(async () => (await state(u, g)) === 'error', {
+        timeoutMs: 4_000,
+      });
+      const [terminal] = await terminalEvents(u, g);
+      expect(terminal.event).toEqual({
+        type: 'error',
+        data: { code: 'CANCELLED' },
+      });
+      expect(await h.repository.messages(u.id, c)).toHaveLength(0);
+      expect(await h.admission.lockHolder(u.id, c)).toBeNull();
+      expect(await h.admission.slotMembers(u.id)).toEqual([]);
 
-  it('tool loop is bounded: the 5th round runs with tools disabled', async () => {
-    const u = await user();
-    const c = await conversation(u);
-    const search = {
-      name: 'search_products',
-      input: { query: 'x', max_price: null, category: null, limit: null },
-    };
-    llm.script(...Array.from({ length: 4 }, () => ({ toolUses: [search] })), {
-      text: 'Here is what I found.',
+      h.llm.script({ text: 'second try' });
+      const again = await h.ask(u, c, { text: 'go again' });
+      expect(again.status).toBe(200);
+      expect(again.events.at(-1)!.event).toBe('done');
     });
 
-    const { events } = await ask(u, c, { text: 'find everything' });
+    it('does not abort when the viewer reconnects within the grace period', async () => {
+      const u = await h.user();
+      const c = await h.conversation(u);
+      h.config.set('assistant_detach_grace_ms', 1_500);
+      h.llm.script({ text: 'streaming', hang: true, delayMs: 20 });
+      const first = await h.ask(u, c, { text: 'go' }, { count: 2 });
+      const g = messageIdOf(first.events);
 
-    expect(events.at(-1)!.event).toBe('done');
-    expect(llm.requests.map((r) => !!r.toolsDisabled)).toEqual([
-      false,
-      false,
-      false,
-      false,
-      true,
-    ]);
+      const viewer = await attach(u, g, first.events.at(-1)!.id!);
+      await new Promise((r) => setTimeout(r, 2_500));
+      expect(h.llm.aborted).toBe(0);
+      expect(await state(u, g)).toBe('running');
+      expect(viewer.events.length).toBeGreaterThan(0);
+      viewer.close();
+      await cancel(u, g);
+    });
   });
 
-  it('a long conversation is compacted into ONE summary at the start of a turn; nothing before it is replayed again', async () => {
-    const u = await user();
-    const c = await conversation(u);
-    const store = app.get(ConversationStore);
-    const filler = 'x'.repeat(30_000);
-    for (let i = 0; i < 10; i++) {
-      await store.append(c, types.TimeUuid.now().toString(), [
-        {
-          role: 'user',
-          content: [{ type: 'text', text: `question ${i} ${filler}` }],
-        },
-        { role: 'assistant', content: [{ type: 'text', text: `answer ${i}` }] },
+  describe('S46 AS-27: several viewers, and a viewer on another process', () => {
+    it('a second tab keeps the generation alive after the first one leaves', async () => {
+      const u = await h.user();
+      const c = await h.conversation(u);
+      h.config.set('assistant_detach_grace_ms', 300);
+      h.llm.script({
+        text: Array.from({ length: 20 }, (_, i) => `t${i} `).join(''),
+        chunks: 20,
+        delayMs: 120,
+      });
+
+      const first = await h.ask(u, c, { text: 'go' }, { count: 2 });
+      const g = messageIdOf(first.events);
+      const tabB = await attach(u, g);
+      await tabB.waitFor(
+        (frames) => frames.some((f) => f.event === 'done'),
+        15_000,
+      );
+
+      expect(h.llm.aborted).toBe(0);
+      const received = tabB.events.map((e) => e.id);
+      expect(new Set(received).size).toBe(received.length);
+      expect(textOf(tabB.events)).toBe(
+        Array.from({ length: 20 }, (_, i) => `t${i} `).join(''),
+      );
+      tabB.close();
+    });
+
+    it('a viewer on a second app instance sees the same events and keeps the generation alive', async () => {
+      // Both apps share the process's model classes; the second app is closed in `afterAll`, after the first.
+      const second = (secondApp = await bootAssistant());
+      {
+        const u = await h.user();
+        const c = await h.conversation(u);
+        h.config.set('assistant_detach_grace_ms', 400);
+        h.llm.script({ text: 'streaming', hang: true, delayMs: 50 });
+        const first = await h.ask(u, c, { text: 'go' }, { count: 2 });
+        const g = messageIdOf(first.events);
+
+        const remote = await openSse(
+          `${second.baseUrl}/assistant/messages/${g}/stream`,
+          {
+            headers: await second.sessionFor(u.id),
+          },
+        );
+        expect([remote.status, remote.body]).toEqual([200, undefined]);
+        await remote.waitFor(
+          (frames) => frames.filter((f) => f.event === 'text').length >= 3,
+          5_000,
+        );
+        await new Promise((r) => setTimeout(r, 1_500));
+        expect(h.llm.aborted).toBe(0);
+        expect(remote.events[0].event).toBe('meta');
+        expect(data(remote.events[0]).messageId).toBe(g);
+
+        remote.close();
+        await waitFor(async () => h.llm.aborted === 1, {
+          timeoutMs: 5_000,
+          description: 'aborted after the remote viewer left',
+        });
+      }
+    });
+  });
+
+  it('S46 AS-28: cancel aborts within 1 s, answers 202 twice, persists nothing', async () => {
+    const u = await h.user();
+    const c = await h.conversation(u);
+    h.llm.script({ text: 'streaming', hang: true, delayMs: 20 });
+    const first = await h.ask(u, c, { text: 'go' }, { count: 2 });
+    const g = messageIdOf(first.events);
+    // metering is slow, so the generation stays visible as "running" for a while after the abort
+    const outbox = h.app.get(OutboxService);
+    const append = outbox.appendStandalone.bind(outbox);
+    const slow = jest
+      .spyOn(outbox, 'appendStandalone')
+      .mockImplementation(async (...args) => {
+        await new Promise((r) => setTimeout(r, 600));
+        return append(...args);
+      });
+    try {
+      const started = Date.now();
+      const a = await cancel(u, g);
+      const b = await cancel(u, g);
+      expect([a.status, a.body, b.status, b.body]).toEqual([
+        202,
+        { cancelling: true },
+        202,
+        { cancelling: true },
       ]);
+      await waitFor(async () => h.llm.aborted === 1, {
+        timeoutMs: 1_000,
+        description: 'abort within 1 s',
+      });
+      expect(Date.now() - started).toBeLessThan(1_000);
+      await waitFor(async () => (await state(u, g)) === 'error', {
+        timeoutMs: 5_000,
+      });
+    } finally {
+      slow.mockRestore();
     }
-    llm.script(
-      { text: 'Shopper wants a phone under €800.' },
-      { text: 'Sure.' },
-    );
-
-    const { events } = await ask(u, c, { text: 'and cases?' });
-
-    expect(events.at(-1)!.event).toBe('done');
-    const [summaryCall, chat] = llm.requests;
-    expect(summaryCall.model).toBe('claude-haiku-4-5');
-    expect(chat.messages).toHaveLength(2);
-    expect(JSON.stringify(chat.messages[0])).toContain(
-      '<conversation_summary>\\nShopper wants a phone under €800.',
-    );
-    expect(JSON.stringify(chat.messages[1])).toContain('and cases?');
-
-    // Next turn: summary + post-compaction turns only.
-    llm.script({ text: 'Yes.' });
-    await ask(u, c, { text: 'more?' });
-    expect(llm.requests[2].messages.slice(0, 3)).toEqual([
-      ...chat.messages,
-      expect.objectContaining({ role: 'assistant' }),
+    const terminals = await terminalEvents(u, g);
+    expect(terminals.map((e) => e.event)).toEqual([
+      { type: 'error', data: { code: 'CANCELLED' } },
     ]);
+    expect(await h.repository.messages(u.id, c)).toHaveLength(0);
+    expect(await h.admission.lockHolder(u.id, c)).toBeNull();
   });
+
+  it('S46 AS-29: cancel of a finished generation is 409 and does not change the outcome', async () => {
+    const u = await h.user();
+    const c = await h.conversation(u);
+    h.llm.script({ text: 'finished' });
+    const events = (await h.ask(u, c, { text: 'go' })).events;
+    const g = messageIdOf(events);
+
+    const res = await cancel(u, g);
+    expect(res.status).toBe(409);
+    expect(res.body.code).toBe('generation_finished');
+    expect(await state(u, g)).toBe('done');
+    expect((await terminalEvents(u, g)).map((e) => e.event.type)).toEqual([
+      'done',
+    ]);
+
+    h.config.set('assistant_replay_window_ms', 200);
+    h.llm.script({ text: 'second' });
+    const g2 = messageIdOf((await h.ask(u, c, { text: 'again' })).events);
+    await waitFor(async () => (await h.generations.meta(u.id, g2)) === null, {
+      description: 'generation expires',
+    });
+    const gone = await cancel(u, g2);
+    expect(gone.status).toBe(404);
+    expect(gone.body.code).toBe('generation_not_found');
+  });
+
+  describe('S46 AS-30: a lost generator', () => {
+    /** A generation whose process has disappeared: it holds the lock and a slot, but nothing refreshes its liveness. */
+    const orphan = async (u: TestUser, c: string) => {
+      const g = types.TimeUuid.now().toString();
+      await h.generations.start(u.id, g, c);
+      await h.generations.append(u.id, g, {
+        type: 'meta',
+        data: { messageId: g, conversationId: c },
+      });
+      expect(await h.admission.acquireLock(u.id, c, g, 300_000)).toBe(true);
+      expect(await h.admission.acquireSlot(u.id, g, 3, 300_000)).toBe(true);
+      await h.redis.client.del(`assistant:gen:{${u.id}:${g}}:alive`);
+      return g;
+    };
+
+    it('yields exactly one GENERATION_LOST, reclaims the lock and slot, and the next send succeeds', async () => {
+      const u = await h.user();
+      const c = await h.conversation(u);
+      const g = await orphan(u, c);
+
+      const started = Date.now();
+      const res = await resume(u, g);
+      expect(Date.now() - started).toBeLessThan(15_000);
+      expect(res.events.map((e) => e.event)).toEqual(['meta', 'error']);
+      expect(data(res.events[1])).toEqual({ code: 'GENERATION_LOST' });
+      expect(await h.admission.lockHolder(u.id, c)).toBeNull();
+      expect(await h.admission.slotMembers(u.id)).toEqual([]);
+      expect(await h.repository.messages(u.id, c)).toHaveLength(0);
+
+      h.llm.script({ text: 'works again' });
+      expect((await h.ask(u, c, { text: 'hello' })).events.at(-1)!.event).toBe(
+        'done',
+      );
+    });
+
+    it('two viewers racing to report it write one terminal event', async () => {
+      const u = await h.user();
+      const c = await h.conversation(u);
+      const g = await orphan(u, c);
+
+      const [a, b] = await Promise.all([resume(u, g), resume(u, g)]);
+      expect(a.events.at(-1)!.event).toBe('error');
+      expect(b.events.at(-1)!.event).toBe('error');
+      expect(a.events.at(-1)!.id).toBe(b.events.at(-1)!.id);
+      expect(await terminalEvents(u, g)).toHaveLength(1);
+    });
+
+    it('a send reclaims the lock of a lost generation even when nobody watches it', async () => {
+      const u = await h.user();
+      const c = await h.conversation(u);
+      await orphan(u, c);
+      h.llm.script({ text: 'reclaimed' });
+      const res = await h.ask(u, c, { text: 'hello' });
+      expect(res.status).toBe(200);
+      expect(res.events.at(-1)!.event).toBe('done');
+    });
+  });
+
+  it('S46 AS-31: the next send right after a terminal event is never 409 (100 runs)', async () => {
+    for (let run = 0; run < 100; run++) {
+      await h.resetBudget();
+      const u = await h.user();
+      const c = await h.conversation(u);
+      // the last scripted turn of every other run is a refusal: any terminal event frees the conversation
+      h.llm.script(
+        { text: 'first' },
+        run % 2 ? { text: '', stopReason: 'refusal' } : { text: 'second' },
+        { text: 'third' },
+      );
+      const one = await h.ask(u, c, { text: 'one' });
+      expect(one.events.at(-1)!.event).toBe('done');
+      const two = await h.ask(u, c, { text: 'two' });
+      expect(two.status).toBe(200);
+      const three = await h.ask(u, c, { text: 'three' });
+      expect(three.status).toBe(200);
+    }
+  }, 170_000);
 });
