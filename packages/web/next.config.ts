@@ -44,7 +44,7 @@ const nextConfig: NextConfig = {
       { source: "/api/graphql", destination: `${config.bffUrl}/api/graphql` },
       { source: "/api/bff/:path*", destination: `${config.bffUrl}/api/bff/:path*` },
       // Everything else goes through the BFF forwarder (W01 C-FWD): it turns the session cookie into the bearer token on
-      // the server and routes long-lived streams (/api/streams, /api/live/:id/events, /api/payment/stream,
+      // the server and routes long-lived streams (/api/streams, /api/live/:id/events,
       // /api/assistant/*) to the SSE gateway and the rest to the core API. The browser never holds a token.
       { source: "/api/:path*", destination: `${config.bffUrl}/api/bff/f/:path*` },
     ];
@@ -60,6 +60,8 @@ const nextConfig: NextConfig = {
       { source: "/settings/notifications", destination: "/account/notifications", permanent: false },
       // The old second-step route (it carried the challenge in the URL) is gone; the pending sign-in lives in a cookie now.
       { source: "/mfa", destination: "/login", permanent: false },
+      // The buyer's order history moved out of the dashboard (W03 AS-60); old bookmarks and links keep working.
+      { source: "/dashboard/orders", destination: "/orders", permanent: true },
     ];
   },
 

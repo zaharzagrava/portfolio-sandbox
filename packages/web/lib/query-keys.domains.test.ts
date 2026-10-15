@@ -26,6 +26,7 @@ const samples: Record<string, unknown[]> = {
   'cart.lines': [],
   'cart.page': [],
   'cart.lastMerge': [],
+  'cart.buyAgainFailures': [],
   'auth.session': [],
   'auth.mfaStatus': [],
   'auth.sessions': [],

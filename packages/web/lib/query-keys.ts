@@ -52,6 +52,7 @@ export const queryKeys = {
     lines: () => ['cart', 'lines'] as const,
     page: () => ['cart', 'page'] as const,
     lastMerge: () => ['cart', 'lastMerge'] as const,
+    buyAgainFailures: () => ['cart', 'buyAgainFailures'] as const,
   },
   auth: {
     session: () => ['auth', 'session'] as const,

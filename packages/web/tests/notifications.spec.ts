@@ -1,6 +1,6 @@
 import { createHmac } from 'node:crypto';
 import { test, expect, type Page } from '@playwright/test';
-import { register } from './helpers';
+import { bellCount, createIsolatedProduct, payWithSandboxCard, register } from './helpers';
 
 /**
  * S28 journeys against the real dev stack: the bell (live item, Mark all read), the preferences screen (a toggle that
@@ -17,16 +17,73 @@ test.describe('Notification bell', () => {
 
     await bell(page, 'Notifications, 1 unread').click();
     await expect(page.getByRole('listitem').filter({ hasText: 'Welcome aboard' })).toBeVisible();
-    await page.getByRole('button', { name: 'Mark all read' }).click();
+    await page.getByRole('button', { name: 'Mark all as read' }).click();
 
     await expect(bell(page, 'Notifications')).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Mark all read' })).toHaveCount(0);
-    await expect(page.getByRole('listitem').filter({ hasText: 'Welcome aboard' })).toHaveAttribute('data-read', 'true');
+    await expect(page.getByRole('button', { name: 'Mark all as read' })).toHaveCount(0);
+    await expect(page.getByRole('listitem').filter({ hasText: 'Welcome aboard' }).getByText('Unread')).toHaveCount(0);
 
     // The server agrees: a reload shows no badge.
     await page.reload();
     await expect(bell(page, 'Notifications')).toBeVisible();
     await expect(bell(page, /unread/)).toHaveCount(0);
+  });
+});
+
+test.describe('Notifications after an order (W03 JN-1)', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() => {
+      navigator.sendBeacon = () => false;
+    });
+    await page.route('**/api/events', (route) => route.fulfill({ status: 202, contentType: 'application/json', body: '{}' }));
+  });
+
+  async function paidOrder(page: Page) {
+    const { id } = await createIsolatedProduct({ quantity: 200 });
+    await register(page);
+    // The welcome item is read first, so the count below is about the order.
+    await expect(bell(page, 'Notifications, 1 unread')).toBeVisible({ timeout: 20_000 });
+    await bell(page, 'Notifications, 1 unread').click();
+    await page.getByRole('button', { name: 'Mark all as read' }).click();
+    await page.keyboard.press('Escape');
+    await expect.poll(() => bellCount(page)).toBe(0);
+    await page.goto(`/products/${id}`);
+    await page.getByRole('button', { name: 'Add to cart' }).click();
+    await expect(page.getByText('Added to cart')).toBeVisible();
+    await page.goto('/checkout');
+    await page.getByRole('button', { name: 'Place order' }).click();
+    await expect(page).toHaveURL(/\/checkout\/pay\/[0-9a-f-]{36}$/);
+    const orderId = page.url().split('/').pop() as string;
+    await payWithSandboxCard(page);
+    await expect(page.getByRole('heading', { name: 'Order confirmed' })).toBeVisible({ timeout: 60_000 });
+    return orderId;
+  }
+
+  test('JN-1 pay: the order item reaches the bell, leads to the order, and following it lowers the count', async ({ page }) => {
+    test.setTimeout(150_000); // the dev stack settles the payment through its fake provider
+    const orderId = await paidOrder(page);
+    // The page is reloaded between reads: the count is what the server says (the live push is the fixme below).
+    await expect
+      .poll(async () => {
+        await page.reload();
+        await page.waitForLoadState('networkidle');
+        return bellCount(page);
+      }, { timeout: 60_000 })
+      .toBeGreaterThan(0);
+    const before = await bellCount(page);
+    await bell(page, /^Notifications, \d+ unread$/).click();
+    const item = page.getByRole('link').filter({ hasText: 'Order confirmed' }).first();
+    await expect(item).toHaveAttribute('href', new RegExp(`/orders/${orderId}`));
+    await item.click();
+    await expect(page).toHaveURL(new RegExp(`/orders/${orderId}$`));
+    await expect.poll(() => bellCount(page)).toBeLessThan(before);
+  });
+
+  // Blocked, not weakened: through the Next dev server the stream answers 200 but sends no byte (not even a heartbeat) for
+  // 20 s while the order is paid or cancelled, so the push cannot be observed on this stack (questions.md, UNVERIFIED.md).
+  test.fixme('JN-1 live: the bell count rises without a reload when the order is paid', async ({ page }) => {
+    await paidOrder(page);
+    await expect.poll(() => bellCount(page), { timeout: 30_000 }).toBeGreaterThan(0);
   });
 });
 

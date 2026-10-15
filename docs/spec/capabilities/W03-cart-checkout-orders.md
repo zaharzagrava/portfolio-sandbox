@@ -47,6 +47,12 @@ A visitor fills a cart without an account, signs in, and the guest cart follows.
 - **W03.R-18** When the payment is [`COMPLETED`](../terms/payment-status.md) and the order is still [`RESERVED`](../terms/order-status.md), the page MUST show "Payment received. Confirming your order…" and MUST NOT show "confirmed". [proof: W03 AS-46]
 - **W03.R-19** When the payment is [`UNKNOWN`](../terms/payment-status.md), the page MUST show no **Pay** button. [proof: W03 AS-42]
 - **W03.R-20** **Cancel** MUST be offered only for `RESERVED` orders, **Pay now** only for `RESERVED`, and **Buy these items again** only for [`CANCELLED`](../terms/order-status.md). [proof: W03 AS-51, W03 AS-54, W03 AS-59]
+- **W03.R-21** The order history MUST show one keyset page per URL: the cursor lives in `?cursor=`, **Older orders** appears only when a next cursor exists, **Newest orders** on every page after the first, and a refused cursor shows "This page of orders is no longer available." with **Newest orders**. [proof: W03 AS-53]
+- **W03.R-22** An order status MUST always be shown as text (`Awaiting payment`, `Paid`, …), never by colour alone, in the history and on the detail page. [proof: W03 AS-51, W03 AS-55]
+- **W03.R-23** The detail page MUST show the payment panel only when the order aggregate carries a payment or a `payment` error; with the error it MUST read "Payment details are unavailable right now." with **Reload** and the rest of the page MUST still render. [proof: W03 AS-56]
+- **W03.R-24** `/dashboard/orders` MUST redirect permanently to `/orders`. [proof: W03 AS-60]
+- **W03.R-25** A notification title, body and link MUST be rendered as plain text, and a link MUST be followed only when it starts with exactly one `/` and has no scheme; otherwise the item is text and not a tab stop. [proof: W03 AS-62, W03 AS-63]
+- **W03.R-26** A live notification MUST be announced as "New notification: {title}" at most once every 5 seconds, and focus MUST NOT move. [proof: W03 AS-66]
 
 ## Behaviors
 - **W03.B-01** Given a visitor with no cart, when they open `/cart`, then they see "Your cart is empty" with **Browse products** and no [badge number](../terms/cart-badge.md). [proof: W03 AS-01]
@@ -69,6 +75,12 @@ A visitor fills a cart without an account, signs in, and the guest cart follows.
 - **W03.B-18** Given a [`PAID` order](../terms/order-status.md), then the success page shows "Order confirmed", "Order #{SHORT}" and the lines. [proof: W03 AS-48, W03 AS-49]
 - **W03.B-19** Given a [`CANCELLED` order](../terms/order-status.md), then the buyer sees "This order was cancelled" with the reason; **Buy these items again** refills the cart. [proof: W03 AS-43, W03 AS-59]
 - **W03.B-20** Given [the stream delivers `order.status`](../terms/stream-connection.md), then the list or detail page re-reads and shows the new status. [proof: W03 AS-58]
+- **W03.B-21** Given a member with orders, when they open `/orders`, then the orders show newest first, each with "Order #{SHORT}", the placed date, a status badge, the total and **View**, with **Pay now** and **Cancel** on `RESERVED` orders; with no orders the page reads "You haven't placed any orders yet." and offers **Browse products**. [proof: W03 AS-51, W03 AS-52]
+- **W03.B-22** Given a `RESERVED` order, when the buyer presses **Cancel**, then a dialog "Cancel this order?" opens with focus on **Keep order**; confirming shows "Cancelling…", the toast "Order cancelled" and returns focus to the order's link; `409 order_not_cancellable` and `404 order_not_found` close it with a toast and re-read the list. [proof: W03 AS-54]
+- **W03.B-23** Given `/orders/{orderId}` of the member's order, then the page shows the number, status, placed date, the timeline oldest first, the lines by shop with each shop's subtotal and status, the total, the payment panel and the actions that fit the status; a malformed, unknown or foreign id shows the not-found page. [proof: W03 AS-55, W03 AS-57]
+- **W03.B-24** Given a `CANCELLED` order, when the buyer presses **Buy these items again**, then each line is put back (current quantity plus the order's, at most 20), the cart opens with the toast "Items added to your cart", and lines that could not be added are listed on the cart page as "Couldn't add: {titles}.". [proof: W03 AS-59]
+- **W03.B-25** Given a signed-in member, then the bell is named "Notifications, {n} unread" with a badge (`99+` above 99, none at 0 or while unknown); pressing it opens a panel titled "Notifications" with the newest 20 items, **Mark all as read**, **Show older**, "You're all caught up." when empty, and the failure forms "We couldn't load notifications." / "Try again in {wait}.". [proof: W03 AS-61, W03 AS-62, W03 AS-64, W03 AS-65, W03 AS-67]
+- **W03.B-26** Given the stream drops, then the panel header says "Live updates paused. Reconnecting…" and on reconnect or `resync` the count and the first page are read again; `revoked` shows nothing. [proof: W03 AS-68]
 
 ## Lifecycles
 No model is listed. Order statuses and their text: `PENDING` "Processing", `RESERVED` "Awaiting payment", `PAID` "Paid", `FULFILLING` "Preparing", `SHIPPED` "Shipped", `DELIVERED` "Delivered", `CANCELLED` "Cancelled", `REFUNDED` "Refunded". The backend moves them; this capability shows them (see {{concept:order-reservation}}, {{concept:payment-lifecycle}}). The pay step has phases `idle | tokenizing | submitting | processing | actionRequired | confirming | unknown | failed | completed | expired`, changed only by a pure reducer.
@@ -87,10 +99,9 @@ No model is listed. Order statuses and their text: `PENDING` "Processing", `RESE
 - Order-lag after payment shows "Confirming" rather than "confirmed", so the page does not overstate.
 
 ## Known gaps
-- No test carries an id for AS-09 error and partial forms in the cart (AS-09 is covered only by a review test whose name differs), AS-52, AS-56, AS-60, AS-67, AS-69, AS-74.
+- No test carries an id for the cart's loading, error and partial forms in a dedicated test (AS-09 is covered by a review test whose name differs).
 - AS-09 and AS-08 proofs exist, but they sit in tests for other components; the cart loading, error and partial states are not asserted by proof here.
 - Rules for AS-36 (countdown), AS-39 (polling after 10 seconds), AS-40 (3-D Secure) and AS-45 (stream banner) have tests, but no rule above states them; they are not described in detail.
 - AS-73 (text and money rendering), AS-71 and AS-72 (browser secrets) have tests, but are not stated as rules.
-- AS-62 to AS-66 (notification inbox) have tests, but the behaviors are not written here.
-- AS-74 accessibility and AS-69 layout have no test.
+- AS-69 (panel width and keyboard) and AS-74 (accessibility baseline) are proven by Playwright visual specs (`tests/visual/notifications.spec.ts`, `tests/visual/orders.spec.ts`) that carry no scenario id; the live arrival of a notification (AS-66) is not proven in a browser because the dev stack's stream delivers nothing (see `specs/UNVERIFIED.md`).
 - Rules R-01 to R-20 carry no `` clause because the UI source files are not in the file list.

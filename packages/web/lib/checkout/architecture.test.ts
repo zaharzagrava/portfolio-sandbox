@@ -38,18 +38,17 @@ const renderFiles = [
   ...under('components/cart', 'components/checkout', 'components/orders', 'components/notifications'),
   ...named(
     'components/add-to-cart-button.tsx',
-    'components/notifications-popover.tsx',
     'hooks/use-user-stream.ts',
     'hooks/use-online.ts',
     'hooks/use-pay-flow.ts',
   ),
 ];
 /** Pages, layouts and route files of the W03 routes. */
-const pageFiles = under('app/cart', 'app/checkout', 'app/orders', 'app/dashboard/orders');
+const pageFiles = under('app/cart', 'app/checkout', 'app/orders');
 const routePages = pageFiles.filter((file) => /(?:^|\/)page\.tsx$/.test(rel(file)));
 /** Libraries and server modules. */
 const libFiles = [
-  ...under('lib/checkout', 'lib/cart', 'lib/realtime'),
+  ...under('lib/checkout', 'lib/cart', 'lib/orders', 'lib/realtime'),
   ...named(
     'lib/api/cart.ts',
     'lib/api/checkout.ts',

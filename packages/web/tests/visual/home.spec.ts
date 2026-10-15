@@ -84,12 +84,18 @@ test.describe('Home layout', () => {
     await expectNoHorizontalScroll(page);
   });
 
-  test('home: the hero', async ({ page }) => {
-    await page.goto('/');
-    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
-    // The shortcut row depends on the catalogue's categories, and so does its height: a mask would still move everything below it,
-    // so the row is taken out of the layout and the screenshot is the same on an empty stack and on a used one.
-    await page.addStyleTag({ content: 'nav[aria-label="Categories"] { display: none !important; }' });
-    await expect(page.locator('main section').first()).toHaveScreenshot('home-hero.png');
+  test.describe('hero', () => {
+    // The page's CSP (style-src 'self' + nonce) refuses a style tag added from the test; only this screenshot test lifts it,
+    // so every other test in the file still runs against the real policy.
+    test.use({ bypassCSP: true });
+
+    test('home: the hero', async ({ page }) => {
+      await page.goto('/');
+      await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+      // The shortcut row depends on the catalogue's categories, and so does its height: a mask would still move everything below it,
+      // so the row is taken out of the layout and the screenshot is the same on an empty stack and on a used one.
+      await page.addStyleTag({ content: 'nav[aria-label="Categories"] { display: none !important; }' });
+      await expect(page.locator('main section').first()).toHaveScreenshot('home-hero.png');
+    });
   });
 });

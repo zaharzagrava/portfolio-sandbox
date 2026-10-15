@@ -268,3 +268,13 @@
 {"run":"20261014T190657Z","capability":"W02","step":"repair-4","start":"2026-10-15T00:09:26Z","end":"2026-10-15T00:14:17Z","seconds":291,"result":"ok","attempt":1,"reason":"ok","code_changed":true}
 {"run":"20261014T190657Z","capability":"W02","step":"gate","start":"2026-10-15T00:14:17Z","end":"2026-10-15T00:25:31Z","seconds":674,"result":"pass","attempt":5,"reason":""}
 {"run":"20261014T190657Z","capability":"W02","step":"built","start":"2026-10-14T21:10:00Z","end":"2026-10-15T00:25:31Z","seconds":11731,"result":"ok","attempt":1,"reason":"Home, search (autocomplete, filters, facets, sort, URL state), trending and recommendation rails, product page (product, shop, pickup near me, discussions, ask this product, share link)"}
+{"run":"20261014T190657Z","capability":"W03","step":"implement-1","start":"2026-10-15T00:25:34Z","end":"2026-10-15T01:00:11Z","seconds":2077,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261014T190657Z","capability":"W03","step":"implement-2","start":"2026-10-15T01:00:11Z","end":"2026-10-15T01:03:27Z","seconds":196,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261014T190657Z","capability":"W03","step":"doctor-1","start":"2026-10-15T01:03:27Z","end":"2026-10-15T01:03:47Z","seconds":20,"result":"ok","attempt":1,"reason":"ok","code_changed":false}
+{"run":"20261014T190657Z","capability":"W03","step":"converge-1","start":"2026-10-15T01:03:48Z","end":"2026-10-15T01:05:53Z","seconds":125,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261014T190657Z","capability":"W03","step":"gate","start":"2026-10-15T01:05:53Z","end":"2026-10-15T01:22:11Z","seconds":978,"result":"fail","attempt":1,"reason":""}
+{"run":"20261014T190657Z","capability":"W03","step":"repair-1","start":"2026-10-15T01:22:11Z","end":"2026-10-15T01:37:12Z","seconds":901,"result":"ok","attempt":1,"reason":"ok","code_changed":true}
+{"run":"20261014T190657Z","capability":"W03","step":"gate","start":"2026-10-15T01:37:12Z","end":"2026-10-15T01:50:52Z","seconds":820,"result":"fail","attempt":2,"reason":""}
+{"run":"20261014T190657Z","capability":"W03","step":"repair-2","start":"2026-10-15T01:50:52Z","end":"2026-10-15T01:52:23Z","seconds":91,"result":"ok","attempt":1,"reason":"ok","code_changed":true}
+{"run":"20261014T190657Z","capability":"W03","step":"gate","start":"2026-10-15T01:52:23Z","end":"2026-10-15T02:05:57Z","seconds":814,"result":"pass","attempt":3,"reason":""}
+{"run":"20261014T190657Z","capability":"W03","step":"built","start":"2026-10-15T01:03:47Z","end":"2026-10-15T02:05:57Z","seconds":3730,"result":"ok","attempt":1,"reason":"Cart (guest and merged on login), checkout with idempotent submit and async payment status, success page, order history, notification popover"}

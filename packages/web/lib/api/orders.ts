@@ -66,8 +66,8 @@ export function useCancelOrder() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (orderId: string) => cancelOrder(orderId),
-    onSuccess: () => {
-      // The list and the detail both show the status; the prefix covers every cached page and aggregate.
+    onSettled: () => {
+      // A refused cancel (409, 404) changes what the screens show too; the prefix covers every cached page and aggregate.
       void queryClient.invalidateQueries({ queryKey: queryKeys.orders.all });
     },
   });

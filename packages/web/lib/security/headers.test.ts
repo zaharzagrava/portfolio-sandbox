@@ -51,7 +51,7 @@ describe('W07 security headers (lib/security/headers.ts)', () => {
   });
 
   it('W07 AS-20: no-store paths cover every signed-in area', () => {
-    for (const path of ['/dashboard/orders', '/account/security', '/checkout/pay/x', '/cart', '/chat', '/admin/feature-flags', '/invites/tok', '/api/orders']) {
+    for (const path of ['/dashboard/orders', '/orders', '/orders/abc', '/account/security', '/checkout/pay/x', '/cart', '/chat', '/admin/feature-flags', '/invites/tok', '/api/orders']) {
       expect(securityHeaderRules(true).some((rule) => matchesSource(rule.source, path) && rule.headers.some((h) => h.key === 'Cache-Control' && h.value === 'no-store')), path).toBe(true);
     }
     for (const path of ['/', '/privacy', '/terms', '/products/abc', '/search', '/developers/docs']) {
@@ -66,7 +66,7 @@ describe('W07 security headers (lib/security/headers.ts)', () => {
   });
 
   it('W07 AS-20: noStorePaths equal the robots disallow list (plus /api/)', () => {
-    expect(noStorePaths).toEqual(['/dashboard/', '/account/', '/checkout/', '/cart', '/chat', '/admin/', '/invites/', '/api/']);
+    expect(noStorePaths).toEqual(['/dashboard/', '/account/', '/checkout/', '/cart', '/orders', '/chat', '/admin/', '/invites/', '/api/']);
   });
 });
 

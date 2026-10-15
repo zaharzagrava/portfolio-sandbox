@@ -20,7 +20,6 @@ const BLOCKED = { kind: 'blocked' } as const;
 const isSse = (segments: string[]): boolean => {
   const [first, , third] = segments;
   if (first === 'streams' || first === 'assistant') return true;
-  if (first === 'payment' && segments[1] === 'stream') return true;
   return first === 'live' && third === 'events';
 };
 

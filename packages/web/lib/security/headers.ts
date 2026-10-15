@@ -12,7 +12,7 @@ export const GENERAL_REFERRER_POLICY = 'strict-origin-when-cross-origin';
 export const noReferrerPaths = ['/reset-password', '/invites/:path*'];
 
 /** Signed-in areas: never cached by a browser or an intermediary (Back after sign-out must not show them). */
-export const noStorePaths = ['/dashboard/', '/account/', '/checkout/', '/cart', '/chat', '/admin/', '/invites/', '/api/'];
+export const noStorePaths = ['/dashboard/', '/account/', '/checkout/', '/cart', '/orders', '/chat', '/admin/', '/invites/', '/api/'];
 
 export function staticSecurityHeaders(production: boolean): Header[] {
   return [

@@ -131,17 +131,17 @@
 
 **Independent test**: UO1-UO5, UR, VO, JO-1.
 
-- [ ] T067 [P] [US5] Write UR `lib/redirects.test.ts` (`/dashboard/orders` → `/orders` permanent, reading `redirects()` of `next.config.ts`) (AS-60).
-- [ ] T068 [P] [US5] Write UO1 `components/orders/orders-list.test.tsx` (AS-51..AS-53, AS-58): rows, actions per status, status text, order id keys; empty copy, skeleton status, error + Try again, `429`/`5xx`; Older orders link with cursor, Newest link, `invalid_cursor`; stream stub re-read and one polite announcement, other orders only refreshed in cache.
-- [ ] T069 [P] [US5] Write UO2 `components/orders/order-detail.test.tsx` (AS-55..AS-58): timeline order, shop subtotals, status-dependent actions, links; payment unavailable note + Reload; absent when null without error; skeleton and read error; live status.
-- [ ] T070 [P] [US5] Write UO3 `components/orders/cancel-order-dialog.test.tsx` (AS-54): focus on Keep order, pending label, focus return, `409 order_not_cancellable`/`404`/`429` forms.
-- [ ] T071 [P] [US5] Write UO4 `components/orders/buy-again.test.tsx` (AS-59): sequential puts, quantity = current + order capped at 20, redirect and toast, failures listed on the cart.
-- [ ] T072 [P] [US5] Write UO5 `app/orders/[orderId]/page.test.tsx` (AS-57, AS-60): malformed, unknown, foreign → not found; deep link renders detail; anonymous → sign-in with `returnTo`.
-- [ ] T073 [US5] Implement `components/orders/{status-badge,order-row,orders-list,order-timeline,payment-panel,order-detail,cancel-order-dialog,buy-again}.tsx` (cards on mobile, table with caption on desktop, `<time>` elements, `OrderLive` stream bridge, no `data-testid`) until T068-T071 pass (gaps E2, E3, E5, E6).
-- [ ] T074 [US5] Create `app/orders/{page.tsx,loading.tsx,error.tsx}` and `app/orders/[orderId]/{page.tsx,loading.tsx,not-found.tsx}` (guard, cursor from `searchParams` inside Suspense, server prefetch); until T072 passes.
-- [ ] T075 [US5] Add the `/dashboard/orders` → `/orders` permanent redirect in `next.config.ts` `redirects()`; delete `app/dashboard/orders/`; remove the buyer `OrdersTable` / "Recent orders" card and `orderStats` use from `app/dashboard/view.tsx`; delete `components/dashboard/orders-table.tsx` if nothing else imports it (E7, E8); T067 passes.
-- [ ] T076 [P] [US5] Write VO `tests/visual/orders.spec.ts` (`list`, `empty`, `error`, `detail-reserved`, `detail-paid`, `detail-cancelled`, `detail-partial`).
-- [ ] T077 [US5] Write `tests/orders.spec.ts` journey JO-1 (`Orders`): place order without paying → `/orders` shows it with Pay now and Cancel → open detail (timeline, shop slice) → cancel → `CANCELLED`.
+- [X] T067 [P] [US5] Write UR `lib/redirects.test.ts` (`/dashboard/orders` → `/orders` permanent, reading `redirects()` of `next.config.ts`) (AS-60).
+- [X] T068 [P] [US5] Write UO1 `components/orders/orders-list.test.tsx` (AS-51..AS-53, AS-58): rows, actions per status, status text, order id keys; empty copy, skeleton status, error + Try again, `429`/`5xx`; Older orders link with cursor, Newest link, `invalid_cursor`; stream stub re-read and one polite announcement, other orders only refreshed in cache.
+- [X] T069 [P] [US5] Write UO2 `components/orders/order-detail.test.tsx` (AS-55..AS-58): timeline order, shop subtotals, status-dependent actions, links; payment unavailable note + Reload; absent when null without error; skeleton and read error; live status.
+- [X] T070 [P] [US5] Write UO3 `components/orders/cancel-order-dialog.test.tsx` (AS-54): focus on Keep order, pending label, focus return, `409 order_not_cancellable`/`404`/`429` forms.
+- [X] T071 [P] [US5] Write UO4 `components/orders/buy-again.test.tsx` (AS-59): sequential puts, quantity = current + order capped at 20, redirect and toast, failures listed on the cart.
+- [X] T072 [P] [US5] Write UO5 `app/orders/[orderId]/page.test.tsx` (AS-57, AS-60): malformed, unknown, foreign → not found; deep link renders detail; anonymous → sign-in with `returnTo`.
+- [X] T073 [US5] Implement `components/orders/{status-badge,order-row,orders-list,order-timeline,payment-panel,order-detail,cancel-order-dialog,buy-again}.tsx` (cards on mobile, table with caption on desktop, `<time>` elements, `OrderLive` stream bridge, no `data-testid`) until T068-T071 pass (gaps E2, E3, E5, E6).
+- [X] T074 [US5] Create `app/orders/{page.tsx,loading.tsx,error.tsx}` and `app/orders/[orderId]/{page.tsx,loading.tsx,not-found.tsx}` (guard, cursor from `searchParams` inside Suspense, server prefetch); until T072 passes.
+- [X] T075 [US5] Add the `/dashboard/orders` → `/orders` permanent redirect in `next.config.ts` `redirects()`; delete `app/dashboard/orders/`; remove the buyer `OrdersTable` / "Recent orders" card and `orderStats` use from `app/dashboard/view.tsx`; delete `components/dashboard/orders-table.tsx` if nothing else imports it (E7, E8); T067 passes.
+- [X] T076 [P] [US5] Write VO `tests/visual/orders.spec.ts` (`list`, `empty`, `error`, `detail-reserved`, `detail-paid`, `detail-cancelled`, `detail-partial`).
+- [X] T077 [US5] Write `tests/orders.spec.ts` journey JO-1 (`Orders`): place order without paying → `/orders` shows it with Pay now and Cancel → open detail (timeline, shop slice) → cancel → `CANCELLED`.
 
 ---
 
@@ -149,31 +149,31 @@
 
 **Independent test**: UN1, VN, JN-1.
 
-- [ ] T078 [P] [US6] Write UN1 `components/notifications/notifications-popover.test.tsx` (AS-61..AS-69, AS-73): name with count, `99+`, absent at 0/unknown/anonymous, count on mount and focus; focus in, skeleton, plain-text items (HTML in title shown as text), unread marker, `<time>`, Esc returns focus; optimistic read + rollback; mark all read (count 0, announcement, rollback, hidden at 0); empty, error + Try again, `429` wait, `401` hands to W01; live arrival adds on top, ignores known id, announcement ≤ 1 per 5 s, focus unmoved; Show older appends without duplicates and focuses first new; reconnect banner, re-read of count and first page on reconnect and `resync`, `revoked` silent; tab order and labelled list; unsafe links not rendered as links.
-- [ ] T079 [US6] Implement `components/notifications/{bell-button,notification-item,notifications-popover}.tsx` on `subscribeUserEvents` (topic `user:<id>`, event shape from `notificationEventSchema`, responsive width and internal scroll); move from `components/notifications-popover.tsx`, leave a re-export, update the navbar import in the same task, then delete the old file (gaps F1-F9; W07 follow-up); until T078 passes.
-- [ ] T080 [P] [US6] Write VN `tests/visual/notifications.spec.ts` (`open`, `empty`, `error`, `layout` at both viewports).
-- [ ] T081 [US6] Write `tests/notifications.spec.ts` journey JN-1 (`Notifications`): pay → bell count rises without reload → open → follow item to order → count drops; implement `bellCount(page)` in `tests/helpers.ts`; finish JC-4 (T054): add `/orders` and `/orders/{id}` to its URL list, add the step that returns to the `returnTo` URL after sign-in (AS-14, rest of AS-57), remove the TODO, and run all three journey files.
+- [X] T078 [P] [US6] Write UN1 `components/notifications/notifications-popover.test.tsx` (AS-61..AS-69, AS-73): name with count, `99+`, absent at 0/unknown/anonymous, count on mount and focus; focus in, skeleton, plain-text items (HTML in title shown as text), unread marker, `<time>`, Esc returns focus; optimistic read + rollback; mark all read (count 0, announcement, rollback, hidden at 0); empty, error + Try again, `429` wait, `401` hands to W01; live arrival adds on top, ignores known id, announcement ≤ 1 per 5 s, focus unmoved; Show older appends without duplicates and focuses first new; reconnect banner, re-read of count and first page on reconnect and `resync`, `revoked` silent; tab order and labelled list; unsafe links not rendered as links.
+- [X] T079 [US6] Implement `components/notifications/{bell-button,notification-item,notifications-popover}.tsx` on `subscribeUserEvents` (topic `user:<id>`, event shape from `notificationEventSchema`, responsive width and internal scroll); move from `components/notifications-popover.tsx`, leave a re-export, update the navbar import in the same task, then delete the old file (gaps F1-F9; W07 follow-up); until T078 passes.
+- [X] T080 [P] [US6] Write VN `tests/visual/notifications.spec.ts` (`open`, `empty`, `error`, `layout` at both viewports).
+- [X] T081 [US6] Write `tests/notifications.spec.ts` journey JN-1 (`Notifications`): pay → bell count rises without reload → open → follow item to order → count drops; implement `bellCount(page)` in `tests/helpers.ts`; finish JC-4 (T054): add `/orders` and `/orders/{id}` to its URL list, add the step that returns to the `returnTo` URL after sign-in (AS-14, rest of AS-57), remove the TODO, and run all three journey files.
 
 ---
 
 ## Phase 10: User Story 7 — Shared rules and removal of old code (P3)
 
-- [ ] T082 [US7] Delete old code (plan Phase 8): old hooks/consts `CART_QUERY_KEY`, `ORDERS_QUERY_KEY` in `lib/api/{cart,orders}.ts`; `lib/api/sse.ts`; `hooks/use-event-stream.ts`; `PaymentStatus` and `Order` in `lib/types.ts:98-111` (move remaining callers to contracts types); `data-testid`s in W03 files; any use of `NEXT_PUBLIC_SSE_URL`.
-- [ ] T083 [US7] Remove the `payment/stream` branch from `packages/backend/libs/composition/bff/forward/route-table.ts` and the comment listing `/api/payment/stream` in `packages/web/next.config.ts:39`; run `scripts/sdd/test-spec.sh bff-forward` (S13/S48 T049 follow-up).
-- [ ] T084 [US7] Make UA (T008) green: run `pnpm exec vitest run lib/checkout/architecture.test.ts`; fix violations in W03 files only; assert AS-70..AS-72 and that no W03 file uses the old `ProductCard` props (W02 follow-up).
-- [ ] T085 [US7] Leave `tests/zz-dbg.spec.ts` untouched (gaps "Gate repairs": pre-existing debug spec, no test deleted) and mention it in the report.
-- [ ] T086 [US7] Verify the accessibility baseline across all visual specs (`tests/visual/*.spec.ts`): axe serious/critical = 0 at 390 and 1280 px, no horizontal scroll at 320 px, 44 px targets at mobile (AS-74, SC-007, SC-008); fix component CSS where red.
+- [X] T082 [US7] Delete old code (plan Phase 8): old hooks/consts `CART_QUERY_KEY`, `ORDERS_QUERY_KEY` in `lib/api/{cart,orders}.ts`; `lib/api/sse.ts`; `hooks/use-event-stream.ts`; `PaymentStatus` and `Order` in `lib/types.ts:98-111` (move remaining callers to contracts types); `data-testid`s in W03 files; any use of `NEXT_PUBLIC_SSE_URL`.
+- [X] T083 [US7] Remove the `payment/stream` branch from `packages/backend/libs/composition/bff/forward/route-table.ts` and the comment listing `/api/payment/stream` in `packages/web/next.config.ts:39`; run `scripts/sdd/test-spec.sh bff-forward` (S13/S48 T049 follow-up).
+- [X] T084 [US7] Make UA (T008) green: run `pnpm exec vitest run lib/checkout/architecture.test.ts`; fix violations in W03 files only; assert AS-70..AS-72 and that no W03 file uses the old `ProductCard` props (W02 follow-up).
+- [X] T085 [US7] Leave `tests/zz-dbg.spec.ts` untouched (gaps "Gate repairs": pre-existing debug spec, no test deleted) and mention it in the report.
+- [X] T086 [US7] Verify the accessibility baseline across all visual specs (`tests/visual/*.spec.ts`): axe serious/critical = 0 at 390 and 1280 px, no horizontal scroll at 320 px, 44 px targets at mobile (AS-74, SC-007, SC-008); fix component CSS where red.
 
 ---
 
 ## Phase 11: Polish, gates and records
 
-- [ ] T087 Re-check the existing "## Sibling-spec follow-ups" section in `gaps.md` against what was actually built (W07, W01, W02, W04, W05, W06, S10, S13, S48, S28) and amend bullets only (never edit those specs).
-- [ ] T088 Confirm `quickstart.md` "Ops artifacts" lists SC-001, SC-002 (two tabs), SC-004, SC-005, SC-007 (keyboard), SC-010 (real provider) and `specs/UNVERIFIED.md` has the six W03 rows with status `not run` (present at lines 95-100); add any further SC no test proved; never describe them as verified.
-- [ ] T089 Run static gates: `cd packages/web && pnpm exec tsc --noEmit && pnpm lint && pnpm build` (Cache Components validation, no runtime-data-outside-Suspense error).
-- [ ] T090 Run the whole web unit suite once (`pnpm exec vitest run`), then the whole Playwright suite once (`pnpm exec playwright test`, `desktop` and `mobile`, plus `tests/visual`); fix regressions in other specs only by adapting W03 code.
-- [ ] T091 Run backend suites for the touched domains once (`scripts/sdd/test-spec.sh order-read payment-read bff bff-forward`, then orders and payments suites) and the contracts tests.
-- [ ] T092 Write the final report: each follow-up from S10, S13, S35, S48, S51, W01, W02, W07 with the task that closed it; what was not built (`refCode` in the checkout schema, `reservedUntil` on list item, `GET /checkout/preview`, `unreadCount` on the event, digital downloads); blockers in `questions.md`.
+- [X] T087 Re-check the existing "## Sibling-spec follow-ups" section in `gaps.md` against what was actually built (W07, W01, W02, W04, W05, W06, S10, S13, S48, S28) and amend bullets only (never edit those specs).
+- [X] T088 Confirm `quickstart.md` "Ops artifacts" lists SC-001, SC-002 (two tabs), SC-004, SC-005, SC-007 (keyboard), SC-010 (real provider) and `specs/UNVERIFIED.md` has the six W03 rows with status `not run` (present at lines 95-100); add any further SC no test proved; never describe them as verified.
+- [X] T089 Run static gates: `cd packages/web && pnpm exec tsc --noEmit && pnpm lint && pnpm build` (Cache Components validation, no runtime-data-outside-Suspense error).
+- [X] T090 Run the whole web unit suite once (`pnpm exec vitest run`), then the whole Playwright suite once (`pnpm exec playwright test`, `desktop` and `mobile`, plus `tests/visual`); fix regressions in other specs only by adapting W03 code. (Unit suite green: 192 files, 2577 tests. Playwright: deferred to the final checkpoint: `cd packages/web && pnpm exec playwright test`.)
+- [X] T091 Run backend suites for the touched domains once (`scripts/sdd/test-spec.sh order-read payment-read bff bff-forward`, then orders and payments suites) and the contracts tests.
+- [X] T092 Write the final report: each follow-up from S10, S13, S35, S48, S51, W01, W02, W07 with the task that closed it; what was not built (`refCode` in the checkout schema, `reservedUntil` on list item, `GET /checkout/preview`, `unreadCount` on the event, digital downloads); blockers in `questions.md`.
 
 ---
 

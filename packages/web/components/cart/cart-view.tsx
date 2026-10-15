@@ -13,6 +13,7 @@ import { searchHref } from '@/lib/routes';
 import { LINE_COLUMNS } from './cart-line';
 import { CartFrame, CartSkeleton } from './cart-skeleton';
 import { CartSummary } from './cart-summary';
+import { BuyAgainNotice } from './buy-again-notice';
 import { MergeNotice } from './merge-notice';
 import { ShopGroup } from './shop-group';
 
@@ -78,6 +79,7 @@ export function CartView() {
   return (
     <CartFrame headingRef={heading}>
       <MergeNotice />
+      <BuyAgainNotice />
       {detailsUnavailable ? (
         <div role="status" className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-muted px-4 py-3 text-sm">
           <p>Some product details couldn&apos;t be loaded.</p>

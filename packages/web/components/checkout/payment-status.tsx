@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useEffect, useId, useRef, type ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 import { orderHref, ordersHref } from '@/lib/routes';
-import { BuyAgainButton, type BuyAgainItem } from './buy-again';
+import { BuyAgainButton, type BuyAgainItem } from '@/components/orders/buy-again';
 import { withOrdersLink } from './problem-alerts';
 
 /** AS-41: one sentence per failure code of the closed list; any other or missing code gets the last one. */

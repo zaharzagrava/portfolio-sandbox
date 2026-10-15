@@ -10,6 +10,7 @@ vi.mock('sonner', () => ({ toast }));
 const api = vi.hoisted(() => ({ fetchCartLines: vi.fn(), writeCartLine: vi.fn() }));
 vi.mock('@/lib/api/cart', () => ({ ...api, MAX_LINE_QUANTITY: 20 }));
 
+import { queryKeys } from '@/lib/query-keys';
 import { BuyAgainButton } from './buy-again';
 
 const A = '11111111-1111-4111-8111-111111111111';
@@ -17,11 +18,12 @@ const B = '22222222-2222-4222-8222-222222222222';
 
 function renderButton(items: { productId: string; title: string; quantity: number }[]) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return render(
+  render(
     <QueryClientProvider client={client}>
       <BuyAgainButton items={items} />
     </QueryClientProvider>,
   );
+  return { client };
 }
 
 describe('W03 buy again', () => {
@@ -46,18 +48,36 @@ describe('W03 buy again', () => {
     expect(toast.success).toHaveBeenCalledWith('Items added to your cart');
   });
 
-  it('W03 AS-59: failed lines are listed, with a cart link, and the buyer stays', async () => {
+  it('W03 AS-59: failed lines are kept for the cart page, the other lines still go in and the cart opens', async () => {
     const user = userEvent.setup();
     api.writeCartLine.mockRejectedValueOnce(new Error('x')).mockResolvedValue({ lines: [] });
-    renderButton([
+    const { client } = renderButton([
       { productId: A, title: 'Headphones', quantity: 1 },
       { productId: B, title: 'Speaker', quantity: 1 },
     ]);
     await user.click(screen.getByRole('button', { name: 'Buy these items again' }));
-    const alert = await screen.findByRole('alert');
-    expect(alert).toHaveTextContent("Couldn't add: Headphones.");
-    expect(screen.getByRole('link', { name: 'View cart' })).toHaveAttribute('href', '/cart');
-    expect(router.push).not.toHaveBeenCalled();
+    await waitFor(() => expect(router.push).toHaveBeenCalledWith('/cart'));
+    expect(client.getQueryData(queryKeys.cart.buyAgainFailures())).toEqual(['Headphones']);
     expect(api.writeCartLine).toHaveBeenCalledTimes(2);
+    expect(toast.success).toHaveBeenCalledWith('Items added to your cart');
+  });
+
+  it('W03 AS-59: when no line could be added there is no success toast, the cart still opens with the list', async () => {
+    const user = userEvent.setup();
+    api.writeCartLine.mockRejectedValue(new Error('x'));
+    const { client } = renderButton([{ productId: A, title: 'Headphones', quantity: 1 }]);
+    await user.click(screen.getByRole('button', { name: 'Buy these items again' }));
+    await waitFor(() => expect(router.push).toHaveBeenCalledWith('/cart'));
+    expect(client.getQueryData(queryKeys.cart.buyAgainFailures())).toEqual(['Headphones']);
+    expect(toast.success).not.toHaveBeenCalled();
+  });
+
+  it('W03 AS-59: a successful run clears an older failure list', async () => {
+    const user = userEvent.setup();
+    const { client } = renderButton([{ productId: B, title: 'Speaker', quantity: 1 }]);
+    client.setQueryData(queryKeys.cart.buyAgainFailures(), ['Old']);
+    await user.click(screen.getByRole('button', { name: 'Buy these items again' }));
+    await waitFor(() => expect(router.push).toHaveBeenCalledWith('/cart'));
+    expect(client.getQueryData(queryKeys.cart.buyAgainFailures())).toEqual([]);
   });
 });

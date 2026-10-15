@@ -1,9 +1,9 @@
 import { test, expect } from '@playwright/test';
-import { SEED, createIsolatedProduct, payWithSandboxCard, productId, register } from './helpers';
+import { SEED, createIsolatedProduct, login, payWithSandboxCard, productId, register, signOut } from './helpers';
 
 /**
- * W03 journeys JC-1 and JC-3 against the real dev stack: a guest adds to the cart, signs up and keeps it; the last line is
- * removed. The purchase path (JC-2) and the sign-in redirects (JC-4) are added with the pay and success pages.
+ * W03 journeys JC-1 to JC-4 against the real dev stack: a guest adds to the cart, signs up and keeps it; the purchase path; the
+ * sign-in redirects of every guarded URL and the way back; the last line is removed.
  */
 test.describe('Cart & checkout', () => {
   // The journeys really add to the cart, so the browser sends `add_to_cart`. The request is still made (and observed below),
@@ -71,8 +71,7 @@ test.describe('Cart & checkout', () => {
 
   test('W03 AS-14: JC-4 anonymous visitors are sent to sign-in with returnTo from the checkout URLs', async ({ page }) => {
     const orderId = '00000000-0000-4000-8000-000000000001';
-    // TODO(T081): add `/orders` and `/orders/{id}` when the orders pages exist (user story 5).
-    for (const path of ['/checkout', `/checkout/pay/${orderId}`, `/checkout/success/${orderId}`]) {
+    for (const path of ['/checkout', `/checkout/pay/${orderId}`, `/checkout/success/${orderId}`, '/orders', `/orders/${orderId}`]) {
       // Start from a blank page: the sign-in page of the previous round can still be navigating itself, which aborts the next navigation
       // (net::ERR_ABORTED) and leaves the browser on the old URL. The destination is what is asserted.
       await page.goto('about:blank');
@@ -81,6 +80,17 @@ test.describe('Cart & checkout', () => {
       });
       await expect(page).toHaveURL(new RegExp(`/login\\?returnTo=${encodeURIComponent(path).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`));
     }
+  });
+
+  test('W03 AS-14: JC-4 after signing in, the member lands back on the guarded URL they asked for', async ({ page }) => {
+    const { email, password } = await register(page);
+    await signOut(page);
+    await page.goto('/orders', { waitUntil: 'commit' }).catch((error: Error) => {
+      if (!/ERR_ABORTED/.test(error.message)) throw error;
+    });
+    await expect(page).toHaveURL(/\/login\?returnTo=%2Forders/);
+    await login(page, email, password, '/orders');
+    await expect(page.getByRole('heading', { level: 1, name: 'Your orders' })).toBeVisible();
   });
 
   test('JC-3 removing the last line empties the cart', async ({ page }) => {

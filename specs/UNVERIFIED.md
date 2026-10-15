@@ -101,6 +101,7 @@ interviews) until its status says so. The implementation loop appends here (rule
 | W03 | SC-005: a cart change is correct again within 1 s after the server answer for 95 % of cases | same file (100 scripted changes) | not run |
 | W03 | SC-007 (keyboard part): each journey is completable by keyboard alone | same file (manual keyboard walk) | not run |
 | W03 | SC-010 (real provider part): card data is only inside the provider's frames | same file (Stripe test keys, DevTools check) | not run |
+| W03 | AS-66 (live arrival in a browser): the bell count rises without a reload after the order is paid | `specs/web/W03-cart-checkout-orders/quickstart.md`, "Ops artifacts" (un-fixme `JN-1 live` on a stack whose stream delivers) | not run |
 | S14 | SC-004: balance page p99 under 100 ms with 100 million entries stored, no request sums history | `specs/domains/S14-ledger-reconciliation/quickstart.md`, "Ops artifacts" (100 M-entry k6 run, incl. Redis down and both stores down) | not run |
 | S14 | SC-005 (percentile): a balance change is visible within 5 s at the 99th percentile under production-like load | same file (200 captures/s with real relay; poll and read `ledger_balance_projection_lag_seconds`) | not run |
 | S28 | SC-001: inbox item visible within 2 s (p99) at 115 events/s average and 2,000/s peak | `specs/domains/S28-notifications/quickstart.md`, "Ops artifacts" (k6 `notifications-burst.test.js`) | not run |

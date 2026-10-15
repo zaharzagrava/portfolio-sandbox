@@ -181,3 +181,8 @@ export async function mergeGuestCart(queryClient?: QueryClient): Promise<MergeRe
 export function useLastMerge(): MergeResult | undefined {
   return useQuery<MergeResult>({ queryKey: queryKeys.cart.lastMerge(), queryFn: () => ({ droppedLines: 0 }), enabled: false, staleTime: Infinity }).data;
 }
+
+/** Titles of the lines the last Buy these items again could not put in the cart (W03 AS-59); empty or `undefined` when none. */
+export function useBuyAgainFailures(): string[] | undefined {
+  return useQuery<string[]>({ queryKey: queryKeys.cart.buyAgainFailures(), queryFn: () => [], enabled: false, staleTime: Infinity }).data;
+}

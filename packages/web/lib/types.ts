@@ -65,38 +65,6 @@ export interface Cart {
   currency: string;
 }
 
-export type PaymentStatus =
-  | "PENDING"
-  | "PROCESSING"
-  | "SUCCESS"
-  | "FAILED"
-  | "REFUNDED";
-
-export interface Order {
-  id: string;
-  status: OrderStatus;
-  items: OrderItem[];
-  totalCents: number;
-  currency: string;
-  paymentStatus: PaymentStatus;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export type OrderStatus =
-  | "CREATED"
-  | "PAID"
-  | "SHIPPED"
-  | "DELIVERED"
-  | "CANCELLED";
-
-export interface OrderItem {
-  productId: string;
-  productName: string;
-  quantity: number;
-  priceCents: number;
-}
-
 // ---------- Chat ----------
 
 export interface ChatChannel {

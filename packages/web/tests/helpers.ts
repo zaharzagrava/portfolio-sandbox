@@ -396,3 +396,10 @@ export async function startDiscussion(page: Page, productId: string, title: stri
   await expect(article).toBeVisible();
   return article;
 }
+
+/** The number on the notification bell: 0 when it has no badge. Reads the accessible name ("Notifications, {n} unread"). */
+export async function bellCount(page: Page): Promise<number> {
+  const name = await page.getByRole('button', { name: /^Notifications/ }).first().getAttribute('aria-label');
+  const match = /^Notifications, (\d+) unread$/.exec(name ?? '');
+  return match ? Number(match[1]) : 0;
+}

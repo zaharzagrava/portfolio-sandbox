@@ -1,1 +1,2 @@
 W01 T085: full Playwright suite (`cd packages/web && pnpm exec playwright test`) and backend capability specs (`scripts/sdd/test-spec.sh "bff-forward|bff-session|password-reset|sessions-revoke|mfa-lifecycle|dev-mailbox"`), run once at the final checkpoint; record the green run (VII.9) and the cross-spec follow-ups then.
+W03 T090: full Playwright suite (desktop, mobile, tests/visual): `cd packages/web && pnpm exec playwright test`, run once at the final checkpoint; fix W03 regressions then.

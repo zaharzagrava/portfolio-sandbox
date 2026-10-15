@@ -91,7 +91,7 @@ test.describe('W07 security headers', () => {
   });
 
   test('W07 AS-20: signed-in areas are no-store; public pages are not', async ({ request }) => {
-    for (const path of ['/dashboard', '/dashboard/orders', '/account/security', '/checkout', '/cart', '/chat', '/admin/feature-flags', '/invites/tok']) {
+    for (const path of ['/dashboard', '/orders', '/account/security', '/checkout', '/cart', '/chat', '/admin/feature-flags', '/invites/tok']) {
       const { headers } = await headersOf(request, path);
       expect(headers['cache-control'], path).toContain('no-store');
     }

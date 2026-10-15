@@ -69,6 +69,7 @@ describe('queryKeys', () => {
     expect(queryKeys.cart.lines()).toEqual(['cart', 'lines']);
     expect(queryKeys.cart.page()).toEqual(['cart', 'page']);
     expect(queryKeys.cart.lastMerge()).toEqual(['cart', 'lastMerge']);
+    expect(queryKeys.cart.buyAgainFailures()).toEqual(['cart', 'buyAgainFailures']);
     expect(queryKeys.orders.all).toEqual(['orders']);
     expect(queryKeys.orders.list({ cursor: 'tok' })).toEqual(['orders', 'list', { cursor: 'tok' }]);
     expect(queryKeys.orders.list({})).toEqual(['orders', 'list', {}]);
