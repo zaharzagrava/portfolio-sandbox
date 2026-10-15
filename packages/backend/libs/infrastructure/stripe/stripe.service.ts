@@ -300,24 +300,76 @@ export class StripeService {
     }
   }
 
-  /** Stripe Connect transfer to a shop's connected account; idempotent by our payout id. */
-  public async transfer(params: {
-    amount: number;
+  /**
+   * Stripe Connect transfer to a shop's connected account, idempotent by our payout id (the key, the transfer group and
+   * the metadata all carry it). Thin: no retry (`maxNetworkRetries: 0`), `timeoutMs` bounds the call, and the
+   * payout adapter classifies every error.
+   */
+  public async createTransfer(params: {
+    amountMinor: number;
     currency: string;
     destination: string;
     idempotencyKey: string;
-  }): Promise<{ id: string }> {
+    transferGroup: string;
+    timeoutMs: number;
+  }): Promise<TransferRecord> {
     if (this.configService.get('is_load_test'))
-      return { id: `tr_loadtest_${params.idempotencyKey}` };
-    const transfer = await this.stripe.transfers.create(
-      {
-        amount: params.amount,
+      return {
+        id: `tr_loadtest_${params.idempotencyKey}`,
+        amount: params.amountMinor,
         currency: params.currency.toLowerCase(),
         destination: params.destination,
+        reversed: false,
+      };
+    const transfer = await this.stripe.transfers.create(
+      {
+        amount: params.amountMinor,
+        currency: params.currency.toLowerCase(),
+        destination: params.destination,
+        transfer_group: params.transferGroup,
         metadata: { payoutId: params.idempotencyKey },
       },
-      { idempotencyKey: params.idempotencyKey },
+      {
+        idempotencyKey: params.idempotencyKey,
+        timeout: params.timeoutMs,
+        maxNetworkRetries: 0,
+      },
     );
-    return { id: transfer.id };
+    return toTransferRecord(transfer);
   }
+
+  /** The transfers of a transfer group (our payout id), at most three: more than one is an alarm for the caller. */
+  public async listTransfersByGroup(
+    group: string,
+    timeoutMs: number,
+  ): Promise<TransferRecord[]> {
+    if (this.configService.get('is_load_test')) return [];
+    const page = await this.stripe.transfers.list(
+      { transfer_group: group, limit: 3 },
+      { timeout: timeoutMs, maxNetworkRetries: 0 },
+    );
+    return page.data.map(toTransferRecord);
+  }
+}
+
+/** A transfer as the payout adapter needs it: plain values, never the SDK object. */
+export interface TransferRecord {
+  id: string;
+  amount: number;
+  currency: string;
+  destination: string;
+  reversed: boolean;
+}
+
+function toTransferRecord(t: Stripe.Transfer): TransferRecord {
+  return {
+    id: t.id,
+    amount: t.amount,
+    currency: t.currency,
+    destination:
+      typeof t.destination === 'string'
+        ? t.destination
+        : (t.destination?.id ?? ''),
+    reversed: t.reversed,
+  };
 }

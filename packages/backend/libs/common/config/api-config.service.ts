@@ -13,6 +13,7 @@ import { ordersConfigKeys } from './orders-config';
 import { auctionsConfigKeys } from './auctions-config';
 import { paymentsConfigKeys } from './payments-config';
 import { ledgerConfigKeys } from './ledger-config';
+import { payoutConfigKeys } from './payout-config';
 import { notificationsConfigKeys } from './notifications-config';
 import { searchConfigKeys } from './search-config';
 import { autocompleteConfigKeys } from './autocomplete-config';
@@ -619,6 +620,11 @@ export class ApiConfigService {
           ...auctionsConfigKeys,
           ...paymentsConfigKeys,
           ...ledgerConfigKeys,
+          ...payoutConfigKeys,
+          payout_cursor_secret: {
+            verify: joi.string().optional().allow(''),
+            name: 'PAYOUT_CURSOR_SECRET',
+          },
           ...notificationsConfigKeys,
           ledger_cursor_secret: {
             verify: joi.string().optional().allow(''),

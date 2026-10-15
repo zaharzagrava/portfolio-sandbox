@@ -343,3 +343,18 @@
 {"run":"20261015T071833Z","capability":"S09","step":"converge-1","start":"2026-10-15T13:29:18Z","end":"2026-10-15T13:31:14Z","seconds":116,"result":"ok","attempt":1,"reason":"ok"}
 {"run":"20261015T071833Z","capability":"S09","step":"gate","start":"2026-10-15T13:31:14Z","end":"2026-10-15T13:36:34Z","seconds":320,"result":"pass","attempt":1,"reason":""}
 {"run":"20261015T071833Z","capability":"S09","step":"built","start":"2026-10-15T13:29:18Z","end":"2026-10-15T13:36:35Z","seconds":437,"result":"ok","attempt":1,"reason":"Offline-first inventory sync for store devices (op idempotency, deltas, per-field LWW, conflicts)"}
+{"run":"20261015T071833Z","capability":"S15","step":"plan","start":"2026-10-15T13:36:56Z","end":"2026-10-15T13:44:12Z","seconds":436,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261015T071833Z","capability":"S15","step":"tasks","start":"2026-10-15T13:44:12Z","end":"2026-10-15T13:46:52Z","seconds":160,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261015T071833Z","capability":"S15","step":"analyze","start":"2026-10-15T13:46:52Z","end":"2026-10-15T13:47:57Z","seconds":65,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261015T071833Z","capability":"S15","step":"implement-1","start":"2026-10-15T13:47:57Z","end":"2026-10-15T14:34:01Z","seconds":2764,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261015T071833Z","capability":"S15","step":"implement-2","start":"2026-10-15T14:34:01Z","end":"2026-10-15T15:01:53Z","seconds":1672,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261015T071833Z","capability":"S15","step":"implement-3","start":"2026-10-15T15:01:53Z","end":"2026-10-15T15:38:06Z","seconds":2173,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261015T071833Z","capability":"S15","step":"converge-3","start":"2026-10-15T15:38:06Z","end":"2026-10-15T15:38:51Z","seconds":45,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261015T071833Z","capability":"S15","step":"implement-4","start":"2026-10-15T15:38:51Z","end":"2026-10-15T15:39:37Z","seconds":46,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261015T071833Z","capability":"S15","step":"implement-5","start":"2026-10-15T15:39:37Z","end":"2026-10-15T15:40:12Z","seconds":35,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261015T071833Z","capability":"S15","step":"doctor-1","start":"2026-10-15T15:40:12Z","end":"2026-10-15T15:40:27Z","seconds":15,"result":"ok","attempt":1,"reason":"ok","code_changed":false}
+{"run":"20261015T071833Z","capability":"S15","step":"converge-1","start":"2026-10-15T15:40:28Z","end":"2026-10-15T15:40:58Z","seconds":30,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261015T071833Z","capability":"S15","step":"gate","start":"2026-10-15T15:40:59Z","end":"2026-10-15T15:50:12Z","seconds":553,"result":"fail","attempt":1,"reason":"FAIL libs/domains/payments/payment-breaker.e2e-spec.ts (71.285 s)"}
+{"run":"20261015T071833Z","capability":"S15","step":"repair-1","start":"2026-10-15T15:50:13Z","end":"2026-10-15T15:57:34Z","seconds":441,"result":"ok","attempt":1,"reason":"ok","code_changed":true}
+{"run":"20261015T071833Z","capability":"S15","step":"gate","start":"2026-10-15T15:57:34Z","end":"2026-10-15T16:06:09Z","seconds":515,"result":"pass","attempt":2,"reason":""}
+{"run":"20261015T071833Z","capability":"S15","step":"built","start":"2026-10-15T15:40:28Z","end":"2026-10-15T16:06:09Z","seconds":1541,"result":"ok","attempt":1,"reason":"Seller payouts: weekly run, reserves, provider transfer with idempotency, payout states"}

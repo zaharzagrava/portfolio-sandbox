@@ -20,6 +20,12 @@ class AdminRoleGuard implements CanActivate {
   }
 }
 
-/** Session first (`401`), then the role (`403`). */
-export const AdminOnly = () =>
-  applyDecorators(Firewall(), UseGuards(AdminRoleGuard));
+/**
+ * Session first (`401`), then the role (`403`). `sensitive: true` (S01 follow-up) makes the route check revocation on
+ * every call: the finance writes use it, so a revoked admin session is refused at once.
+ */
+export const AdminOnly = (options: { sensitive?: boolean } = {}) =>
+  applyDecorators(
+    options.sensitive ? Firewall({ sensitive: true }) : Firewall(),
+    UseGuards(AdminRoleGuard),
+  );

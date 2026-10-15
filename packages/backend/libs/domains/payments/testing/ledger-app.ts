@@ -38,7 +38,11 @@ export async function createLedgerApp(
     redisUrl: options.redisUrl,
     extraImports: [LedgerModule, ...(options.extraImports ?? [])],
     overrides: options.overrides,
-    env: { LEDGER_CURSOR_SECRET: KIT_LEDGER_CURSOR_SECRET, ...options.env },
+    env: {
+      LEDGER_CURSOR_SECRET: KIT_LEDGER_CURSOR_SECRET,
+      PLATFORM_CURRENCY: 'EUR',
+      ...options.env,
+    },
   });
   const runner = base.app.get(TransactionRunner);
   return {

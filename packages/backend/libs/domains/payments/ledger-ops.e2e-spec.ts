@@ -457,6 +457,8 @@ describe('Ledger: observability, secrets, configuration and shutdown', () => {
           'PaymentQueryModule',
           'PaymentQueryService',
           'PaymentStatusView',
+          'PayoutsModule',
+          'PayoutsWorkerModule',
           'CreatePaymentDto',
           'paymentsProjectors',
           'paymentsRatePolicies',

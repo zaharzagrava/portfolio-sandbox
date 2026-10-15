@@ -19,5 +19,9 @@ export {
   type ProviderOp,
   type ProviderStep,
 } from './fake-payment-provider';
+export * from './payout-app';
+export * from './payout-fixtures';
+export * from './fake-payout-provider';
+export * from './fake-shop-summary';
 export * from './fixtures';
 export * from './flows';

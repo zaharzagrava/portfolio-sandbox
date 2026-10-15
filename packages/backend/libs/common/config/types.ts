@@ -238,6 +238,18 @@ export class SecretsManagerConfig {
   ledger_read_durable_timeout_ms: number;
   ledger_cursor_secret?: string;
 
+  /** S15: seller payout settings, defaults in `payout-config.ts`. */
+  payout_default_reserve_bps: number;
+  payout_min_minor: number;
+  payout_cap_minor: number;
+  payout_destination_cooling_hours: number;
+  payout_provider_timeout_ms: number;
+  payout_send_max_attempts: number;
+  payout_resolver_max_resends: number;
+  payout_stale_sending_ms: number;
+  payout_in_doubt_after_hours: number;
+  payout_cursor_secret?: string;
+
   /** S32: search settings, defaults in `search-config.ts`. */
   search_budget_ms: number;
   embedding_budget_ms: number;

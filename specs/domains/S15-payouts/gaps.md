@@ -82,3 +82,58 @@ What the current code gets wrong or lacks against [`spec.md`](spec.md). This is 
 8. Remove `PayoutModel`, `FinanceModule`, `FinanceWorkerModule` from the barrel; update apps and seeds that import them; delete `deriveJournalId` and the namespace constant.
 9. Coordinate: S03 drops `Shop.stripeAccountId` after the backfill (contract step); S14 removes its payouts route and exports; S28 and S16 subscribe to `payouts.events`.
 10. Run the static gates (`tsc`, ESLint, `check:boundaries`, `check:table-ownership --strict` for the payout files, `check:model-registry`) and the four e2e specs, and record the green run (VII.9).
+
+## Sibling-spec follow-ups
+
+- **S03**: after S15's expand migration has copied `Shop.stripeAccountId` into `PayoutDestination` (verified by S15 AS-53), tenancy may drop the column in its contract step and stop selecting it. S15 reads shop facts only through `ShopQueryService.getShopsByIds` (`status`, `payoutsEnabled`); a change to those `ShopSummaryDto` fields or to the `ACTIVE` status value breaks the eligibility gate.
+- **S14**: `ProviderAccount` (with `PROVIDER_ACCOUNT_REPOSITORY` and `SequelizeProviderAccountRepository`) is superseded by S15's `PayoutDestination`; nothing reads it after S15 and S15's contract migration drops it, so S14 should add no readers. Two S14-owned specs reference the moved payout classes (`ledger-maintenance.e2e-spec.ts` probe module imports `PayoutJobs`/`FakePayoutProvider`/`Payout`; `payment-boundary.e2e-spec.ts` lists `PayoutModel` among removed exports): S15 edits only those imports and reports it. The S14 living page names `payout.jobs.ts` among the ledger's entry points: S14 should repoint it.
+- **S16**: consume `payout.paid` from topic `payouts.events` (key `payoutId`, schema in `packages/contracts/src/payments/payout-events.ts`); discard by `payoutVersion`; amounts are `amountMinor`, the paid day is `paidAt`.
+- **S28**: switch the import of the payout schemas from `contracts/src/notifications/consumed-events.ts` to `packages/contracts/src/payments/payout-events.ts` (same field names); topic `payouts.events`; also consume `payout.in_doubt` and `payout.discrepancy_detected` for the finance alert.
+- **S43**: `webhookPayoutEventSchemas` may import the shared `payout.paid` / `payout.failed` schemas from `packages/contracts/src/payments/payout-events.ts` (a superset of what S43 declares); topic name and key are fixed.
+- **W04 / J01**: the seller payouts page calls `GET /shops/:shopId/payouts` (new `payoutPageSchema`, public statuses `PENDING | IN_TRANSIT | PAID | FAILED | CANCELLED`, keyset `nextCursor`) and `GET /shops/:shopId/payouts/upcoming` (`upcomingPayoutSchema`); the old unpaged array body no longer exists.
+- **S49**: S15 relies on `JobContext.attempt` being incremented by every claim, including a lease-reaped redelivery (`job-claim.sql.ts`, `job-reaper.service.ts`). If that behaviour changes, S15's attempt fence (research R-3) must be revisited.
+- **S54**: S15 relies on "a request that failed validation does not consume its `Idempotency-Key`" and on `Idempotency-Replayed` (AS-41).
+
+- **S03** (retest result, new): tenancy's status gate refuses every permission outside its short allow-list (`shop.read`, `members.read`, `shop.export`) on a closed shop, so `payouts.read` answers `403 shop_suspended` on a suspended shop and `409 shop_offboarding` on a deleting one (S15 `payout-api.e2e-spec.ts` AS-34 pins it). If sellers should still read their payouts while suspended, tenancy adds `payouts.read` to `WHILE_SUSPENDED`; S15 needs no change. W04/J01 must show those two codes.
+- **S14**: S15 edited four S14-owned files in `payments/`, same owner and import-level: `ledger-worker.module.ts` (payout providers moved to `PayoutsWorkerModule`), `ledger-maintenance.e2e-spec.ts` (the probe module and the weekly-payout half of the ProviderAccount copy test left; those scenarios are now `payout-run` AS-01/AS-02 and `payout-transfer` AS-17/AS-23, L-017), `api/admin-only.decorator.ts` (`AdminOnly({ sensitive: true })`, default unchanged) and `api/balance.controller.ts` (`ShopIdFormatGuard` is exported). `finance.e2e-spec.ts` had no payout block left (S14 had rewritten it to ledger-level postings), so A23 needed no edit there. The S14 living page still lists `Payout` and `ProviderAccount` among its tables and `payout.jobs.ts` among its entry points: S14 should repoint them to `docs/spec/capabilities/S15-payouts.md`.
+- **S54 / config**: `PAYOUT_*` settings and the `payouts` config rules are registered in `libs/common/config` (`payout-config.ts`); nothing else in config changed.
+
+## Ownership check output (T001)
+
+`pnpm check:table-ownership` (no `--strict`) before any change: **0 findings for `payments`** (S14 had already removed the `Shop` rows; the 23 findings listed belong to other domains: seller-onboarding, statements, ...). `.tx.baseline` = 0 direct `sequelize.transaction` sites in the payments domain, and still 0 after S15 (`payout-ops` AS-52 scans the payout files for it).
+
+## Baseline (T002)
+
+Before any S15 change `finance.e2e-spec.ts` had 2 failing tests of 4 (`a captured payment settles ...` and `daily reconciliation flags ...`, both `JournalInvalid: The currency is not supported` in `PaymentPostingsService.capture`): not an S15 test and not touched. S15 did not change their result.
+
+## Runtime proofs (T095, T096)
+
+- `nest build worker` and `nest build core` compile; `core` booted alone (`PayoutsController` and `PayoutsAdminController` mapped, `/health/ready` `200`, both payout route families `401` without a session); `worker` booted alone (`PayoutsCoreModule` and `PayoutsWorkerModule` initialized, the four `payouts.*` handlers in the `JobRegistry` line, no refused schedule logged).
+- `check:module-graph` passes for `core`, `worker` and `local-monolith` (the monolith composes the two), and `apps/local-monolith` wiring specs are part of the dependents run below.
+- The built `local-monolith` bundle was started once on port 8011 with the `start:dev:monolith` environment: it printed its banner and the Kafka partitioner notice and had not reached "successfully started" when the 100 s limit ended it, while an older monolith process that this run did not start was already holding port 8000. That start is therefore **inconclusive, not a pass**; it is listed in `specs/UNVERIFIED.md`-style follow-up below, not described as verified. A second attempt (T100) could not launch the bundle (the command was not permitted in this session), so the proof is recorded as `not run` in `specs/UNVERIFIED.md` and in quickstart "Ops artifacts" (T101). A monolith that this run did not start answers `/health/ready` 200 on port 8000, but it is not proven to run this build.
+- The `JobSchedule` rows (`payouts.run-weekly` at `0 6 * * 1 Europe/Warsaw`, and the resolver and audit schedules) are proven by `payout-run.e2e-spec.ts` AS-14 (registered twice, one row; the DST week's next fire at `2026-10-26T05:00:00.000Z`).
+
+## Deviations from the plan, and why
+
+- The provider port returns the **raw answer** (`{kind:'answered', answer}`) and `validateProviderAnswer` runs in `PayoutTransferService` (application), not in the Stripe adapter: the double sits behind the port, so the wrong-amount/garbage cases of AS-25 can only be tested if validation is on the application side of it. Behaviour is the spec's.
+- `listSellerBalances` already returns the balances, so the run makes no extra page-level `getBalances` prefilter; the authoritative read is the one inside the creation transaction (research R-2). AS-12 counts the three listing pages and the three tenancy calls.
+- The contract spec of the event schemas lives in `libs/domains/payments/payout-contracts.spec.ts` (the `contracts` package has no jest runner); the contract migration is in `migrations/contract/` so `db:migrate` does not run it with the expand step (its guard would pass on an empty table and drop `amount`).
+- `PayoutsCoreModule` (shared providers of the two modules, the pattern of `PaymentsCoreModule`) is internal and not exported from the barrel.
+- AS-15 and AS-55 stop the run with the job signal (and the shutdown registry task) rather than killing the process; a killed process leaves the run `RUNNING`, and the next execution restarts it the same way.
+- No topic/doctor list names the new tables (the doctor derives them from the migrations; `seeds.clean` truncates every table); no queue-server reload is needed (no SQS queue added). Topic `payouts.events` is registered by `EventsModule.forAggregates([PAYOUTS_AGGREGATE])`.
+
+## Final run (T096–T098)
+
+- T097: the runner's stack is the one that started empty (`fresh-run.sh --here`: monolith ready, doctor-live healthy); on it `payout-run` 27/27 and `payout-ops` 23/23 pass. A throwaway second stack cannot run beside the `payment_system_*` containers, so a from-zero stack of our own was not built.
+- Payments, fresh processes per batch: `payout-*` 4 suites / 101 tests green. `ledger-*`: 4 of 6 suites fail, `payment-*`: 11 of 13 suites fail, `finance` + `reconciliation-*`: 2 of 3 suites fail. Cause of 40 of the 44 `payment-*` failures and of every sampled `ledger-*`/`finance`/`reconciliation-*` failure: `JournalInvalid: The currency is not supported` (the platform currency defaults to USD, those S13/S14 specs book EUR; also noted in W07 questions.md); the rest of the `payment-*` ones are a 60 s hook timeout, `database went away`/`Revocation check unavailable` under load and knock-on assertions after the first throw. None is in an S15 file; S13/S14 own them.
+- One S15-caused failure found and fixed: `ledger-ops` S14 AS-67 pins the payments barrel; the two new exports `PayoutsModule` and `PayoutsWorkerModule` were added to its list (passes now).
+- Dependents: `tenancy` 208/208, `jobs` 97/97, `idempotency`+`rate-limit`+`outbox`+`events` 197 passed/1 skipped, `stripe` has no e2e specs (0 matches, nothing to run). `marketing`+`identity`: 20 failures in 3 marketing S37/S38 suites (`link-filter timeout`, ioredis offline) under load; those 3 suites alone: 114/114 green. `developer-platform`+`notifications`: 10 failed / 678 passed in 5 suites. The 8 S42 failures (`public-api-logs-usage`, `public-api-limits`, `developer-platform-consumers`) are `Unknown table expression identifier 'api_requests'` from ClickHouse: the test stack lacks that table (L-011, the doctor should compare it); the 2 S28 failures (`notifications-inbox` AS-56, `notifications-catalog` AS-87) were not read in detail. None touches a file S15 changed; S42/S28 should confirm.
+- Topic `payouts.events` is registered by `EventsModule.forAggregates([PAYOUTS_AGGREGATE])` (bootstrap, not on demand); no queue added.
+
+## Spec changes
+
+None. S15 creates `docs/spec/capabilities/S15-payouts.md` (a new living-spec page; no `*.reviewed.json` is created or edited) and changes nothing a human signed.
+
+## Gate repairs
+
+- The gate failed in S13/S14 payment specs (`payment-breaker`, `payment-intent`, `payment-unknown`, `payment-ops`, `ledger-*`, `reconciliation-run`, `finance`) with `JournalInvalid: currency_unsupported`. Cause: the ledger books in the platform currency (`PlatformSettings.currency`, default `USD`, introduced by W07), while those specs and the payments fixtures price everything in `EUR`. Code is right; the payments test harnesses (`testing/ledger-app.ts`, `payments-app.ts`, `payout-app.ts`) did not set `PLATFORM_CURRENCY`. They now pass `PLATFORM_CURRENCY: 'EUR'` (a spec's own `env` still overrides). No test was changed or weakened. Re-run: `libs/domains/payments` 26 suites / 354 tests pass; `npx tsc --noEmit` clean.

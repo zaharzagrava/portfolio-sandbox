@@ -1,5 +1,4 @@
-import { Logger, Module } from '@nestjs/common';
-import { SequelizeModule, getModelToken } from '@nestjs/sequelize';
+import { Logger } from '@nestjs/common';
 import { v4 as uuidv4 } from 'uuid';
 import { MetricsRegistry } from '@app/common/telemetry/metrics-registry';
 import { JobsService } from '@app/infrastructure/jobs/jobs.service';
@@ -28,16 +27,9 @@ import { LedgerProjectorModule } from './ledger-projector.module';
 import { LedgerJobs } from './infra/ledger.jobs';
 import { ReconciliationJobs } from './infra/reconciliation.jobs';
 import { BalanceProjector } from './infra/balance.projector';
-import { PayoutJobs } from './infra/payout.jobs';
-import {
-  FakePayoutProvider,
-  PayoutProvider,
-} from './infra/payout-provider.port';
-import Payout from './infra/models/payout.model';
 import { PartitionMaintenanceService } from './application/partition-maintenance.service';
 import { InvariantCheckService } from './application/invariant-check.service';
 import { BalanceBackfillService } from './application/balance-backfill.service';
-import { LedgerService } from './application/ledger.service';
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const contractMigration = require('../../../migrations/20261013100300-s14-ledger-contract.js');
@@ -46,16 +38,6 @@ const expandMigration = require('../../../migrations/20261013100000-s14-ledger-e
 
 const metric = (name: string, labels: Record<string, string> = {}) =>
   MetricsRegistry.value(name, labels) ?? 0;
-
-@Module({
-  imports: [LedgerModule, SequelizeModule.forFeature([Payout])],
-  providers: [
-    { provide: PayoutProvider, useClass: FakePayoutProvider },
-    PayoutJobs,
-  ],
-  exports: [PayoutJobs, PayoutProvider],
-})
-class PayoutsProbeModule {}
 
 const fake = new FakeProviderStatement();
 const DAY_MS = 86_400_000;
@@ -74,11 +56,7 @@ describe('Ledger: partitions, invariant checker, jobs and backfill', () => {
 
   beforeAll(async () => {
     t = await createLedgerApp({
-      extraImports: [
-        LedgerProcessingModule,
-        LedgerProjectorModule,
-        PayoutsProbeModule,
-      ],
+      extraImports: [LedgerProcessingModule, LedgerProjectorModule],
       overrides: [{ provide: PROVIDER_STATEMENT, useValue: fake }],
     });
     partitions = t.app.get(PartitionMaintenanceService, { strict: false });
@@ -730,43 +708,9 @@ describe('Ledger: partitions, invariant checker, jobs and backfill', () => {
     expect(again).toBeDefined();
     expect(await count(t.app, 'ProviderAccount')).toBe(1);
 
-    // weekly payouts: one per shop per week; success moves money out to the copied account, failure reverses it
-    const broken = uuidv4();
-    for (const id of [shopId, broken]) {
-      if (id === broken)
-        await sql(
-          t.app,
-          `INSERT INTO "Shop" (id, name, slug, "createdAt", "updatedAt") VALUES (:id, 'B', :slug, now(), now()) RETURNING id`,
-          { id, slug: `s-${id.slice(0, 8)}` },
-        );
-      await post([
-        { accountId: 'MARKETPLACE_CLEARING', amountMinor: -5_000 },
-        { accountId: `SHOP_${id}`, amountMinor: 5_000 },
-      ]);
-    }
-    const payouts = t.app.get(PayoutJobs, { strict: false });
-    const provider = t.app.get(PayoutProvider, {
-      strict: false,
-    }) as FakePayoutProvider;
-    await payouts.run({ periodStart: '2026-09-28' });
-    await payouts.run({ periodStart: '2026-09-28' }); // idempotent
-    const rows = await t.app
-      .get<typeof Payout>(getModelToken(Payout))
-      .findAll();
-    expect(rows).toHaveLength(2);
-    for (const p of rows) await payouts.send({ payoutId: p.id });
-    expect(provider.transfers).toEqual([
-      expect.objectContaining({ amount: 5_000, destination: 'acct_copy' }),
-    ]);
-    const bal = (id: string) =>
-      t.app
-        .get(LedgerService)
-        .getBalances({ accountIds: [`SHOP_${id}`], currency: 'EUR' })
-        .then((m) => m.get(`SHOP_${id}`)!.balanceMinor);
-    expect(await bal(shopId)).toBe(0);
-    expect(await bal(broken)).toBe(5_000);
-    expect(await balanceOf(t.app, 'PAYOUTS_SENT')).toBe(5_000);
-    expect(await balanceOf(t.app, 'PAYOUT_CLEARING')).toBe(0);
+    // The weekly payout scenarios that used to follow (one per shop per week, success to the copied account,
+    // reversal without an account) moved to S15: payout-run.e2e-spec.ts AS-01/AS-02 and payout-transfer.e2e-spec.ts
+    // AS-17/AS-23.
     await assertBooksHealthy(t.app);
   });
 });

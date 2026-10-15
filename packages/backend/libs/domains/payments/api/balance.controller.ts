@@ -23,7 +23,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
  * (contracts/http.md). It runs before the shop guard, so a malformed id never reaches the membership lookup.
  */
 @Injectable()
-class ShopIdFormatGuard implements CanActivate {
+export class ShopIdFormatGuard implements CanActivate {
   canActivate(ctx: ExecutionContext): boolean {
     const shopId = ctx
       .switchToHttp()

@@ -27,6 +27,14 @@ export const paymentsRatePolicies = definePolicies('payments', {
     key: 'user',
     failMode: 'open',
   },
+  // S15: the seller payouts reads (contracts/http.md "Rate-limit policies").
+  'finance.payouts.read': {
+    algorithm: 'slidingWindow',
+    limit: 120,
+    windowMs: 60_000,
+    key: 'user',
+    failMode: 'open',
+  },
   'finance.admin.read': {
     algorithm: 'slidingWindow',
     limit: 120,

@@ -47,6 +47,7 @@ import { AuctionsWorkerModule } from '@app/domains/auctions';
 import {
   LedgerWorkerModule,
   PaymentProcessorModule,
+  PayoutsWorkerModule,
 } from '@app/domains/payments';
 import { OrdersWorkerModule } from '@app/domains/orders';
 import { Module } from '@nestjs/common';
@@ -87,6 +88,7 @@ import { AuthWorkerModule } from '@app/domains/identity';
     TenancyWorkerModule,
     OrdersWorkerModule,
     LedgerWorkerModule,
+    PayoutsWorkerModule,
     PaymentProcessorModule,
     LaunchEventsWorkerModule,
     AuctionsWorkerModule,

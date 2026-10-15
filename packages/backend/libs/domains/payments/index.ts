@@ -8,6 +8,8 @@ export type { JournalKind as LedgerJournalKind } from './domain/journal';
 export { JournalPosted } from './application/events/ledger-events';
 export { LedgerModule } from './ledger.module';
 export { LedgerWorkerModule } from './ledger-worker.module';
+export { PayoutsModule } from './payouts.module';
+export { PayoutsWorkerModule } from './payouts-worker.module';
 export { LedgerProjectorModule } from './ledger-projector.module';
 export { PaymentModule } from './payment.module';
 export { PaymentProcessorModule } from './payment-processor.module';

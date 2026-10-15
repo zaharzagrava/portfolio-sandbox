@@ -44,7 +44,11 @@ import { FeedModule, DiscussionsModule } from '@app/domains/community';
 import { StatementsModule } from '@app/domains/statements';
 import { BillingModule } from '@app/domains/billing';
 import { AuctionsModule } from '@app/domains/auctions';
-import { LedgerModule, PaymentModule } from '@app/domains/payments';
+import {
+  LedgerModule,
+  PaymentModule,
+  PayoutsModule,
+} from '@app/domains/payments';
 import { OrdersModule } from '@app/domains/orders';
 import { ShopBatchReadModule, TenancyModule } from '@app/domains/tenancy';
 import { Module } from '@nestjs/common';
@@ -125,6 +129,7 @@ import { OutboxPublisherModule } from '@app/infrastructure/outbox/outbox-publish
     OrdersModule,
     PaymentModule,
     LedgerModule,
+    PayoutsModule,
     LaunchEventsModule,
     AuctionsModule,
     BillingModule,

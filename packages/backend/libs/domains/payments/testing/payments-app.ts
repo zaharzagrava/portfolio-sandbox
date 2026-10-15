@@ -118,6 +118,7 @@ export async function createPaymentsApp(
     ],
     env: {
       PAYMENTS_CURSOR_SECRET: KIT_PAYMENTS_CURSOR_SECRET,
+      PLATFORM_CURRENCY: 'EUR',
       ...options.env,
     },
   });
