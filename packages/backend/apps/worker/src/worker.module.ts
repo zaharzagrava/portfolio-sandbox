@@ -10,6 +10,7 @@ import {
 import {
   IntegrationsWorkerModule,
   CatalogImportWorkerModule,
+  OfflineSyncWorkerModule,
 } from '@app/domains/catalog-sync';
 import { MediaWorkerModule, VideoWorkerModule } from '@app/domains/media';
 import { AssetsWorkerModule } from '@app/domains/asset-library';
@@ -113,6 +114,7 @@ import { AuthWorkerModule } from '@app/domains/identity';
     VideoWorkerModule,
     MediaWorkerModule,
     IntegrationsWorkerModule,
+    OfflineSyncWorkerModule,
     CrawlerWorkerModule,
     FunctionJudgeModule,
     KnowledgeWorkerModule,

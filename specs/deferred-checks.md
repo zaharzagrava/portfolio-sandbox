@@ -9,3 +9,5 @@ S08 T041: Playwright journey `pnpm --dir packages/web test:e2e seller-integratio
 S08 T045: standalone boot of apps/local-monolith with /health, plus `scripts/qa/fresh-run.sh --here` on an empty stack; core, worker and projector already boot standalone.
 S08 T047: browser and monolith parts of quickstart scenarios 1-16 and the completion report, run once at the final checkpoint after T041/T045.
 S08 T051: Playwright journey `pnpm --dir packages/web test:e2e seller-integrations` (2 workers, PW_EXPECT_TIMEOUT_MS=20000), run once at the final checkpoint after W04 ships the seller-integrations page and spec; the SC-010 row in specs/UNVERIFIED.md stays `not run` until it passes.
+S09 T056: standalone boot of apps/local-monolith (scripts/infra/boot-app.sh local-monolith) with /health and GET /shops/:id/sync/pull; core, worker and projector already boot standalone in their offline-sync-wiring e2e specs.
+S09 T057: `scripts/qa/fresh-run.sh --here` on an empty stack plus the browser suite, run once at the final checkpoint; domain unit specs and every S09 e2e file already pass in separate batches.

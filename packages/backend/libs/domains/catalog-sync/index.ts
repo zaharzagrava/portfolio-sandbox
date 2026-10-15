@@ -13,6 +13,10 @@ export {
   IntegrationsProjectorModule,
   IntegrationsWorkerModule,
 } from './integrations.module';
-export { OfflineSyncModule } from './sync.module';
+export {
+  OfflineSyncModule,
+  OfflineSyncProjectorModule,
+  OfflineSyncWorkerModule,
+} from './sync.module';
 export { catalogSyncRatePolicies } from './rate-limit-policies';
 export { ImportJobTopicsModule } from './realtime-topics.module';

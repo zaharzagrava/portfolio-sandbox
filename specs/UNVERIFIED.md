@@ -201,3 +201,4 @@ interviews) until its status says so. The implementation loop appends here (rule
 | S08 | SC-006: provider never sees more than N calls per window for any number of workers (tests prove two instances) | same file, multi-instance run reading the fake's request log | not run |
 | S08 | SC-010: first products visible within 5 min of returning to the dashboard (1,000-variant store) | same file, benchmark with the W04 page | not run |
 | S08 | The throwaway empty-stack run (L-012, step 14) and the W04 browser journey (step 16; the W04 page does not exist yet) | same file, steps 14, 16 | not run |
+| S09 | SC-003: push of up to 50 operations p99 < 1 s and pull page p99 < 200 ms at 10,000 requests/s; committed product change visible to pull within 5 s p99 | `specs/domains/S09-offline-sync/quickstart.md`, "Ops artifacts" (k6 mix of push and pull, read `catalog_sync_offline_feed_lag_seconds`) | not run |

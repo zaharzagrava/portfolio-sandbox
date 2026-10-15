@@ -58,6 +58,28 @@ export const catalogSyncRatePolicies = definePolicies('catalog-sync', {
     key: 'custom',
     failMode: 'closed',
   },
+  // S09 FR-034: per device and shop (`shopId:deviceId` composed by the route's subject resolver).
+  'catalog-sync.sync-push.device': {
+    algorithm: 'slidingWindow',
+    limit: 30,
+    windowMs: 60_000,
+    key: 'custom',
+    failMode: 'closed',
+  },
+  'catalog-sync.sync-pull.device': {
+    algorithm: 'slidingWindow',
+    limit: 120,
+    windowMs: 60_000,
+    key: 'custom',
+    failMode: 'closed',
+  },
+  'catalog-sync.conflict-write.shop': {
+    algorithm: 'slidingWindow',
+    limit: 60,
+    windowMs: 60_000,
+    key: 'shop',
+    failMode: 'closed',
+  },
   'catalog-sync.webhook.integration': {
     algorithm: 'slidingWindow',
     limit: 1_200,

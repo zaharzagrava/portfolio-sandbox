@@ -3,6 +3,7 @@ import {
   integrationAttentionRequiredPayloadSchema,
   integrationConnectedPayloadSchema,
   integrationStatusChangedPayloadSchema,
+  offlineConflictOpenedPayloadSchema,
   reconciliationCompletedPayloadSchema,
   stockConflictOpenedPayloadSchema,
 } from '@marketplace-sandbox/contracts';
@@ -45,6 +46,14 @@ export const StockConflictOpened = defineEvent(
   CATALOG_SYNC_AGGREGATE_TYPE,
   1,
   stockConflictOpenedPayloadSchema,
+);
+
+/** S09: written once, in the transaction that records the conflicting result of an offline operation (key = opId). */
+export const OfflineConflictOpened = defineEvent(
+  'catalogsync.offline_conflict_opened',
+  CATALOG_SYNC_AGGREGATE_TYPE,
+  1,
+  offlineConflictOpenedPayloadSchema,
 );
 
 export const ReconciliationCompleted = defineEvent(

@@ -17,5 +17,8 @@ export const CATALOG_SYNC_PROBLEM_CODES = [
   'invalid_store_url',
   'provider_credentials_rejected',
   'provider_unavailable',
+  // S09 offline sync (`validation_failed`, `payload_too_large` and `invalid_cursor` are platform codes).
+  'resync_required',
+  'sync_unavailable',
 ] as const;
 export type CatalogSyncProblemCode = (typeof CATALOG_SYNC_PROBLEM_CODES)[number];

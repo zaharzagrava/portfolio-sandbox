@@ -427,6 +427,8 @@ describe('Catalog-sync integrations module boundary', () => {
         'IntegrationsProjectorModule',
         'IntegrationsWorkerModule',
         'OfflineSyncModule',
+        'OfflineSyncProjectorModule',
+        'OfflineSyncWorkerModule',
         'catalogSyncRatePolicies',
       ].sort(),
     );

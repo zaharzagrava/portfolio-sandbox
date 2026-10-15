@@ -1,104 +1,74 @@
 import {
-  BadRequestException,
   Body,
   Controller,
   Get,
-  Headers,
-  Param,
-  ParseUUIDPipe,
+  HttpCode,
   Post,
   Query,
+  Param,
+  Res,
 } from '@nestjs/common';
-import { ApiProperty, ApiTags } from '@nestjs/swagger';
-import { ArrayMaxSize, IsArray } from 'class-validator';
-import { z } from 'zod';
+import { ApiTags } from '@nestjs/swagger';
+import type { Response } from 'express';
+import {
+  syncPullQuerySchema,
+  syncPushEnvelopeSchema,
+  type SyncPullResponse,
+  type SyncPushResponse,
+} from '@marketplace-sandbox/contracts';
+import { User, UserRawDto } from '@app/domains/identity';
 import { ShopScoped } from '@app/domains/tenancy';
 import { RateLimit } from '@app/infrastructure/rate-limit';
-import { SyncService } from '../application/sync.service';
-import type { SyncOp } from '../domain/merge';
+import { SyncPullService } from '../application/sync-pull.service';
+import { SyncPushService } from '../application/sync-push.service';
+import { DeviceId, deviceSubject } from './device-id.pipe';
+import { UuidParamPipe, ZodPipe } from './zod.pipe';
 
-const Op = z.discriminatedUnion('type', [
-  z.object({
-    type: z.literal('stock.adjust'),
-    opId: z.string().uuid(),
-    hlc: z.string(),
-    productId: z.string().uuid(),
-    delta: z.number().int().min(-100_000).max(100_000),
-    reason: z.enum(['received', 'sold', 'damaged', 'returned', 'other']),
-  }),
-  z.object({
-    type: z.literal('stock.count'),
-    opId: z.string().uuid(),
-    hlc: z.string(),
-    productId: z.string().uuid(),
-    counted: z.number().int().min(0),
-    base: z.number().int(),
-  }),
-  z.object({
-    type: z.literal('product.update'),
-    opId: z.string().uuid(),
-    hlc: z.string(),
-    productId: z.string().uuid(),
-    fields: z
-      .object({
-        title: z.string().min(1).max(200).optional(),
-        price: z.number().int().min(0).optional(),
-        description: z.string().max(10_000).optional(),
-      })
-      .strict(),
-  }),
-]);
+const pushBody = new ZodPipe(syncPushEnvelopeSchema);
+const pullQuery = new ZodPipe(syncPullQuerySchema);
 
-export class PushDto {
-  @ApiProperty() @IsArray() @ArrayMaxSize(500) ops: unknown[];
-}
-
+/**
+ * Offline sync routes (contracts/http-api.md). Thin: the envelope and the query are validated by contract schemas, the
+ * shop comes from the path after the membership check, the user from the session and the device from `X-Device-Id`
+ * (FR-033). Operations are validated one by one inside the service, so one bad operation never fails the request.
+ */
 @ApiTags('offline-sync')
 @Controller('shops/:shopId/sync')
 export class SyncController {
-  constructor(private readonly sync: SyncService) {}
+  constructor(
+    private readonly push: SyncPushService,
+    private readonly pull: SyncPullService,
+  ) {}
 
-  /** `X-Device-Id` identifies the device (stable per install); ops are processed in the order given. */
   @ShopScoped('products.write')
-  @RateLimit('search.query')
+  @RateLimit({
+    policy: 'catalog-sync.sync-push.device',
+    subject: deviceSubject,
+  })
+  @HttpCode(200)
   @Post('push')
-  async push(
-    @Param('shopId', ParseUUIDPipe) shopId: string,
-    @Headers('x-device-id') deviceId: string | undefined,
-    @Body() body: PushDto,
-  ) {
-    if (!deviceId || !/^[\w-]{4,64}$/.test(deviceId))
-      throw new BadRequestException('X-Device-Id required');
-    const ops: SyncOp[] = [];
-    for (const [index, raw] of (body.ops ?? []).entries()) {
-      const parsed = Op.safeParse(raw);
-      if (!parsed.success)
-        throw new BadRequestException({
-          message: `op ${index} invalid`,
-          issues: parsed.error.issues.slice(0, 5),
-        });
-      ops.push(parsed.data);
-    }
-    return this.sync.push(shopId, deviceId, ops);
+  pushOperations(
+    @Param('shopId', UuidParamPipe) shopId: string,
+    @DeviceId() deviceId: string,
+    @User() user: UserRawDto,
+    @Body(pushBody) body: { ops: unknown[] },
+  ): Promise<SyncPushResponse> {
+    return this.push.push({ shopId, userId: user.id, deviceId }, body.ops);
   }
 
   @ShopScoped('products.read')
+  @RateLimit({
+    policy: 'catalog-sync.sync-pull.device',
+    subject: deviceSubject,
+  })
   @Get('pull')
-  pull(
-    @Param('shopId', ParseUUIDPipe) shopId: string,
-    @Query('cursor') cursor = '0',
-    @Query('limit') limit = '500',
-  ) {
-    return this.sync.pull(
-      shopId,
-      Math.max(0, Number(cursor) || 0),
-      Number(limit) || 500,
-    );
-  }
-
-  @ShopScoped('products.read')
-  @Get('conflicts')
-  conflicts(@Param('shopId', ParseUUIDPipe) shopId: string) {
-    return this.sync.conflicts(shopId);
+  async pullChanges(
+    @Param('shopId', UuidParamPipe) shopId: string,
+    @DeviceId() _deviceId: string,
+    @Query(pullQuery) query: { cursor?: string; limit: number },
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<SyncPullResponse> {
+    res.setHeader('Cache-Control', 'no-store');
+    return this.pull.pull(shopId, query);
   }
 }

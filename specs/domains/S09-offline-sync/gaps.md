@@ -75,3 +75,44 @@ The implementation agent's to-do list. Paths are under `packages/backend/` unles
 9. **Rewrite tests** to the seven e2e files and four unit files of `test-plan.md`; delete `sync.e2e-spec.ts`; no model injection; frozen clock (A24, A25).
 10. **Remove** the raw SQL, the trigger, the foreign key, the `SyncService` export, and models from specs (A1–A4, A17, A23, A28); update `apps/core`, add the worker and projector modules to their apps; run `check:table-ownership --strict` and `check:boundaries` (AS-53).
 11. **Hand-offs to confirm with other capabilities:** S05 exports `applyStockDelta`, `ProductCommandService.update` with `ProductValidationError`, `listByShop`, and the `catalog.product_*` events (see `questions.md` CONTRACT lines); S50 and S49 register the policies and jobs; J04 asserts the offline sale reaches search, pickup and the provider.
+
+## E. Plan additions (2026-10-15, from `/speckit-plan`)
+
+| # | Item | Where decided |
+|---|---|---|
+| E1 | Living-spec page `docs/spec/capabilities/S09-offline-sync.md` does not exist; create it first (rules/behaviors, `[proof:]`/`[code:]`), never a `*.reviewed.json` | plan.md phase 0, research R-19 |
+| E2 | S05 follow-up "repair step" in legacy `applyOp` is replaced, not kept; the legacy `sync.e2e-spec.ts` case "selling the last unit twice is a reviewable conflict" survives as AS-08/AS-09 in `sync-push.e2e-spec.ts` (L-017) | research R-03 |
+| E3 | S49 follow-ups: `declareJobType` next to the `JobPayloads` augmentation for the three jobs (+ internal backfill); no `JobsService.cancel`; catch `InvalidScheduleError` | contracts/events-and-jobs.md |
+| E4 | `ProductEditLock` is a session-level advisory lock on a dedicated connection, not `sequelize.transaction` (baseline of direct sites stays 0; `.tx.baseline` = 0) | research R-04 |
+| E5 | Rate-limit key `device`: check how S50 keys policies (`shop\|user\|ip\|apiKey`); if no device key exists, compose `shopId:deviceId` through the resolver S50 offers, else raise an S50 extension request here | research R-11 |
+| E6 | `ProductValidationError` of S05 carries `errors: [{field, code: 'invalid'}]`; map to `invalid_field` from that list without parsing messages | research R-04 |
+| E7 | Legacy `ProductFieldClock` rows with `price` are renamed `priceMinor`; rows without a derivable shop are deleted in the data step | data-model.md |
+| E8 | Boot proofs (L-004/L-015/L-018) for `apps/core`, worker, `apps/projector`, `apps/local-monolith`; fresh-stack run (L-012) | quickstart.md #12–13 |
+| E9 | SC-003 has no automated proof: Ops artifacts in quickstart.md and a row in `specs/UNVERIFIED.md` | quickstart.md |
+
+## Spec changes
+
+None. No `*.reviewed.json` exists for S09 and the plan edits no human-signed page. The new living-spec page is created from scratch by the implementation.
+
+## Sibling-spec follow-ups
+
+- **S08**: `integration-boundary.e2e-spec.ts` (AS-80) pins the exact export list of `@app/domains/catalog-sync`; S09 adds `OfflineSyncWorkerModule` and `OfflineSyncProjectorModule` and removes nothing S08 exports. S08 must accept those two names in the pinned list (S09 edits only that list when it lands). S08's AS-80 note about `application/sync.service.ts` being a remaining `check:table-ownership` finding becomes obsolete once S09 deletes the file.
+- **S05**: add S09 as consumer of `ProductCommandService.update` and `listByShop`; the `'offline'` source of `ProductImportService.upsertFromExternal` is unused by S09 and may be dropped. `catalog.product_*` payloads must keep `shopId`, `title`, `description`, `priceMinor`, `currency`, `quantity`, `status`, `productVersion` (the feed copies them).
+- **S50**: three policies are declared in `catalogSyncRatePolicies` (`catalog-sync.sync-push.device`, `catalog-sync.sync-pull.device`, `catalog-sync.conflict-write.shop`). No per-device key was needed (E5 resolved): the two device policies use `key: 'custom'` and the route's `subject` resolver returns `<shopId>:<X-Device-Id>`. S50's registry document, if it lists policies by hand, must add the three names.
+- **S49**: nothing to change; the internal job `catalog-sync.backfill-change-log` (payload `{shopId}`) is declared next to the three scheduled ones.
+- **S28 / S43 / S40 / W04** (optional consumers of the conflict event): the event is registered as `catalogsync.offline_conflict_opened` on topic `catalogsync.events` (the S53 topic pattern allows no `-` and no `_` in the first segment, as for the S08 events), key `opId`; the spec text `catalog_sync.offline_conflict_opened` / `catalog-sync.events` is the same event.
+- **J04**: the step "an offline store device sells stock" is AS-01 plus AS-52; the journey may assert the offline sale reaches search, pickup and the provider.
+- **W04 / device app (phase 2)**: the routes and schemas in `packages/contracts/src/catalog-sync/offline-sync.ts` are the whole contract (priceMinor, opaque cursor, `X-Device-Id` on pull, `replayed`, `retry` results).
+- **S05**: `ProductValidationError` is not exported from `@app/domains/catalog` (its pinned list would have to change); S09 recognises the catalog's refusal by the problem code `validation_failed` and its `errors: [{field, code}]` extension instead. If S05 exports a typed class later, `infra/sync-catalog.adapter.ts#invalidFields` can use it.
+
+## Implementation notes (S09 build, 2026-10-15)
+
+- **Handled follow-ups of built specs**: S05/S08 (stock only through `applyStockDelta`, fields only through `ProductCommandService.update`, `priceMinor`, no `catalog.product_changed`, no `INSERT/UPDATE "Product"`, the legacy `applyOp` repair step deleted with `application/sync.service.ts`); S49 (`declareJobType` with `.strict()` contracts next to the `JobPayloads` augmentation in `infra/offline-sync.jobs.ts`, `InvalidScheduleError` caught at boot, `JobsService.cancel` never called).
+- **Feed build**: `ShopSyncState.generation = 0` means the feed was not built by this capability (legacy trigger rows, or events that arrived before any read). The first pull of such a shop (`SyncLifecycleService.ensureFeedBuilt`) starts generation 1, deletes the version-less legacy rows and appends one entry per product from `ProductCommandService.listByShop` (ACTIVE then ARCHIVED); the same code is the job `catalog-sync.backfill-change-log`. A shop with very many products pays this once, inline in its first pull.
+- **Pull without a cursor** returns the newest entry of every product (`latestOnly`) and a cursor from which ordinary pulls (all versions, in order) continue.
+- **Compaction horizon**: `horizonSeq` is the highest removed `seq`; a cursor below it is `410`. Entries age by the event's `occurredAt`.
+- **Rejections recorded**: after the claim, catalog-derived rejections (`unknown_product`, `product_unavailable`, `invalid_field`) are stored with the result so a replay returns them. Schema failures (`invalid_op`) and clock failures (`invalid_hlc`, `hlc_node_mismatch`, `op_expired`, `clock_implausible`) are answered but not stored, so a device that fixes its clock and resends the same id is not `op_id_reused`.
+- **Server clock** only receives device clocks that are within the drift limit, so a skewed stock operation (accepted, FR-021) never drags the server clock ahead.
+- **Clamp plan**: before the second catalog command of an oversold delta the decided amount is saved on the pending row (`detail.plan.clampDelta`), so a takeover repeats that decision instead of making a new one against changed stock.
+- **Rate-limit window in tests** is moved with `ManualTimeSource` (the limiter reads the store's clock, not the injected one).
+- **Migrations**: `20261015300000-offline-sync-expand.js` and `20261015300100-offline-sync-contract.js`; the data step of the expand reads the product table once to fill `ProductFieldClock.shopId`.

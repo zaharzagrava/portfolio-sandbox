@@ -89,6 +89,7 @@ export const OWNERSHIP = {
   SyncQuarantine: 'domain:catalog-sync',
   ShopSyncState: 'domain:catalog-sync',
   SyncOperation: 'domain:catalog-sync',
+  SyncConflict: 'domain:catalog-sync',
   ShopChangeLog: 'domain:catalog-sync',
   ProductFieldClock: 'domain:catalog-sync',
   IntegrationHistory: 'domain:catalog-sync',

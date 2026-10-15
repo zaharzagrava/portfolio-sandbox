@@ -39,8 +39,19 @@ export function receive(local: Hlc, remote: Hlc, now: number): Hlc {
   return { physical, logical, node: local.node };
 }
 
-/** A device clock far in the future would win every LWW race forever - cap the drift we accept. */
-export const MAX_DRIFT_MS = 60_000;
-export function plausible(hlc: Hlc, now: number): boolean {
-  return hlc.physical <= now + MAX_DRIFT_MS;
+/** Total order of clocks: physical time, then counter, then node id (the deterministic tie-break). */
+export function compareHlc(a: Hlc, b: Hlc): number {
+  if (a.physical !== b.physical) return a.physical - b.physical;
+  if (a.logical !== b.logical) return a.logical - b.logical;
+  return a.node < b.node ? -1 : a.node > b.node ? 1 : 0;
+}
+
+/** A device clock far in the future would win every LWW race forever: refuse a lead above `driftMs` (FR-021). */
+export function plausible(hlc: Hlc, now: number, driftMs: number): boolean {
+  return hlc.physical <= now + driftMs;
+}
+
+/** An operation whose clock is more than `maxAgeMs` behind the server can no longer meet its record (FR-010). */
+export function expired(hlc: Hlc, now: number, maxAgeMs: number): boolean {
+  return now - hlc.physical > maxAgeMs;
 }

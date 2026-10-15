@@ -1,4 +1,7 @@
-import { IntegrationsProjectorModule } from '@app/domains/catalog-sync';
+import {
+  IntegrationsProjectorModule,
+  OfflineSyncProjectorModule,
+} from '@app/domains/catalog-sync';
 import { StoryCacheInvalidator, StoryCacheModule } from '@app/domains/content';
 import {
   TrendingProjectorModule,
@@ -116,6 +119,7 @@ import { CacheModule } from '@app/infrastructure/cache/cache.module';
         ...AnalyticsProjectorModule.projectors,
         StoryCacheInvalidator,
         ...IntegrationsProjectorModule.projectors,
+        ...OfflineSyncProjectorModule.projectors,
         ...AssistantProjectorModule.projectors,
         ...KnowledgeProjectorModule.projectors,
       ],
@@ -134,6 +138,7 @@ import { CacheModule } from '@app/infrastructure/cache/cache.module';
         LedgerProjectorModule,
         AnalyticsProjectorModule,
         IntegrationsProjectorModule,
+        OfflineSyncProjectorModule,
         StoryCacheModule,
         WebhooksProjectorModule,
         PublicApiProjectorModule,

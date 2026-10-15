@@ -14,6 +14,16 @@ const DEFINITIONS = {
     'Bad Request',
     'The cursor is not valid for this list.',
   ],
+  resync_required: [
+    HttpStatus.GONE,
+    'Resync required',
+    'The cursor is too old for this feed. Pull again without a cursor.',
+  ],
+  sync_unavailable: [
+    HttpStatus.SERVICE_UNAVAILABLE,
+    'Sync unavailable',
+    'The service is temporarily unavailable. Retry the same request.',
+  ],
   invalid_oauth_callback: [
     HttpStatus.BAD_REQUEST,
     'Invalid OAuth callback',

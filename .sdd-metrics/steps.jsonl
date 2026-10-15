@@ -334,3 +334,12 @@
 {"run":"20261015T071833Z","capability":"S08","step":"repair-2","start":"2026-10-15T12:26:19Z","end":"2026-10-15T12:28:09Z","seconds":110,"result":"ok","attempt":1,"reason":"ok","code_changed":true}
 {"run":"20261015T071833Z","capability":"S08","step":"gate","start":"2026-10-15T12:28:09Z","end":"2026-10-15T12:33:02Z","seconds":293,"result":"pass","attempt":3,"reason":""}
 {"run":"20261015T071833Z","capability":"S08","step":"built","start":"2026-10-15T12:18:50Z","end":"2026-10-15T12:33:02Z","seconds":852,"result":"ok","attempt":1,"reason":"Shopify/WooCommerce catalog and stock sync (incremental, bidirectional stock, reconciliation, quarantine)"}
+{"run":"20261015T071833Z","capability":"S09","step":"plan","start":"2026-10-15T12:33:22Z","end":"2026-10-15T12:37:32Z","seconds":250,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261015T071833Z","capability":"S09","step":"tasks","start":"2026-10-15T12:37:33Z","end":"2026-10-15T12:39:48Z","seconds":135,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261015T071833Z","capability":"S09","step":"analyze","start":"2026-10-15T12:39:48Z","end":"2026-10-15T12:40:33Z","seconds":45,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261015T071833Z","capability":"S09","step":"implement-1","start":"2026-10-15T12:40:33Z","end":"2026-10-15T13:28:12Z","seconds":2859,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261015T071833Z","capability":"S09","step":"implement-2","start":"2026-10-15T13:28:12Z","end":"2026-10-15T13:28:52Z","seconds":40,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261015T071833Z","capability":"S09","step":"doctor-1","start":"2026-10-15T13:28:52Z","end":"2026-10-15T13:29:18Z","seconds":26,"result":"ok","attempt":1,"reason":"ok","code_changed":false}
+{"run":"20261015T071833Z","capability":"S09","step":"converge-1","start":"2026-10-15T13:29:18Z","end":"2026-10-15T13:31:14Z","seconds":116,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261015T071833Z","capability":"S09","step":"gate","start":"2026-10-15T13:31:14Z","end":"2026-10-15T13:36:34Z","seconds":320,"result":"pass","attempt":1,"reason":""}
+{"run":"20261015T071833Z","capability":"S09","step":"built","start":"2026-10-15T13:29:18Z","end":"2026-10-15T13:36:35Z","seconds":437,"result":"ok","attempt":1,"reason":"Offline-first inventory sync for store devices (op idempotency, deltas, per-field LWW, conflicts)"}

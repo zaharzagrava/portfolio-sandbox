@@ -8,4 +8,8 @@ export { SequelizeReceiptRepository } from './sequelize-receipt.repository';
 export { SequelizeReconciliationRepository } from './sequelize-reconciliation.repository';
 export { SequelizeInstallRepository } from './sequelize-install.repository';
 export { SequelizeShopPurgeRepository } from './sequelize-shop-purge.repository';
+export { SequelizeSyncOperationRepository } from './sequelize-sync-operation.repository';
+export { SequelizeSyncFeedRepository } from './sequelize-sync-feed.repository';
+export { SequelizeFieldClockRepository } from './sequelize-field-clock.repository';
+export { SequelizeSyncConflictRepository } from './sequelize-sync-conflict.repository';
 export { KeysetCursorCodec } from './keyset-cursor';

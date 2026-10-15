@@ -23,6 +23,15 @@ export interface CatalogSyncConfig {
   integration_breaker_failures?: number;
   /** How long the breaker stays open (default 5 min). */
   integration_breaker_open_ms?: number;
+  /** S09 offline sync numbers (defaults in the capability's `domain/sync-config.ts`); all optional. */
+  offline_sync_max_ops?: number;
+  offline_sync_body_limit_bytes?: number;
+  offline_sync_push_budget_ms?: number;
+  offline_sync_claim_lease_ms?: number;
+  offline_sync_recovery_after_ms?: number;
+  offline_sync_clock_drift_ms?: number;
+  offline_sync_max_op_age_ms?: number;
+  offline_sync_retention_ms?: number;
 }
 
 type Key = {
@@ -99,6 +108,14 @@ export const catalogSyncConfigKeys: Record<keyof CatalogSyncConfig, Key> = {
   integration_backfill_budget_ms: positiveInt('INTEGRATION_BACKFILL_BUDGET_MS'),
   integration_breaker_failures: positiveInt('INTEGRATION_BREAKER_FAILURES'),
   integration_breaker_open_ms: positiveInt('INTEGRATION_BREAKER_OPEN_MS'),
+  offline_sync_max_ops: positiveInt('OFFLINE_SYNC_MAX_OPS'),
+  offline_sync_body_limit_bytes: positiveInt('OFFLINE_SYNC_BODY_LIMIT_BYTES'),
+  offline_sync_push_budget_ms: positiveInt('OFFLINE_SYNC_PUSH_BUDGET_MS'),
+  offline_sync_claim_lease_ms: positiveInt('OFFLINE_SYNC_CLAIM_LEASE_MS'),
+  offline_sync_recovery_after_ms: positiveInt('OFFLINE_SYNC_RECOVERY_AFTER_MS'),
+  offline_sync_clock_drift_ms: positiveInt('OFFLINE_SYNC_CLOCK_DRIFT_MS'),
+  offline_sync_max_op_age_ms: positiveInt('OFFLINE_SYNC_MAX_OP_AGE_MS'),
+  offline_sync_retention_ms: positiveInt('OFFLINE_SYNC_RETENTION_MS'),
 };
 
 export interface CatalogSyncSettings {
