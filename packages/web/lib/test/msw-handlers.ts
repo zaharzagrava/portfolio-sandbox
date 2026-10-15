@@ -1,9 +1,15 @@
 import { HttpResponse } from 'msw';
 import {
+  pickupClustersResponseSchema,
+  pickupNearSearchResponseSchema,
+  pickupPointsNearResponseSchema,
   productSearchResponseSchema,
   recommendationsResponseSchema,
   suggestResponseSchema,
   trendingResponseSchema,
+  type PickupClustersResponse,
+  type PickupNearSearchResponse,
+  type PickupPointsNearResponse,
   type ProductSearchResponse,
   type RecommendationsResponse,
   type SuggestResponse,
@@ -101,6 +107,57 @@ export function recommendationsBody(overrides: Partial<RecommendationsResponse> 
   return recommendationsResponseSchema.parse({
     type: 'bought-together',
     items: [{ productId: PRODUCT_ID, title: 'Case', priceMinor: 1500, currency: 'USD', score: 0.9, hops: 1 }],
+    ...overrides,
+  });
+}
+
+export const POINT_ID = '5d0e6f7a-1b2c-4d3e-8f4a-5b6c7d8e9f01';
+
+/** `GET /api/search/near` (S19): one hit per product with its nearest pickup point. */
+export function pickupNearBody(overrides: Partial<PickupNearSearchResponse> = {}): PickupNearSearchResponse {
+  return pickupNearSearchResponseSchema.parse({
+    items: [
+      {
+        productId: PRODUCT_ID,
+        title: 'iPhone 17',
+        category: 'phones',
+        priceMinor: 89999,
+        currency: 'USD',
+        nearest: { pickupPointId: POINT_ID, name: 'Mitte Locker', distanceM: 850, quantity: 3 },
+      },
+    ],
+    nextCursor: null,
+    ...overrides,
+  });
+}
+
+/** A pickup point of `GET /api/pickup-points/near`. */
+export function pickupPoint(n: number, overrides: Record<string, unknown> = {}) {
+  return {
+    id: `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`,
+    shopId: SHOP_ID,
+    name: `Point ${n}`,
+    address: `${n} Example Street, Berlin`,
+    lat: 52.52,
+    lng: 13.405,
+    distanceM: 850 + n * 100,
+    openingHours: {},
+    quantity: 4,
+    ...overrides,
+  };
+}
+
+export function pickupPointsBody(items: Record<string, unknown>[] = [pickupPoint(1)], nextCursor: string | null = null): PickupPointsNearResponse {
+  return pickupPointsNearResponseSchema.parse({ items, nextCursor });
+}
+
+export function clustersBody(overrides: Partial<PickupClustersResponse> = {}): PickupClustersResponse {
+  return pickupClustersResponseSchema.parse({
+    cells: [
+      { cellId: 'c1', offers: 12, pickupPoints: 3, lat: 52.52, lng: 13.4 },
+      { cellId: 'c2', offers: 2, pickupPoints: 1, lat: 52.51, lng: 13.38, pickupPointId: '00000000-0000-4000-8000-000000000001' },
+    ],
+    truncated: false,
     ...overrides,
   });
 }

@@ -107,7 +107,7 @@ packages/web/
 │   ├── loading.tsx? (kept)  error.tsx (kept, FR-161 copy)
 │   ├── search/{page.tsx,loading.tsx,error.tsx}    # Server Component; first view + HydrationBoundary
 │   ├── products/[productId]/{page.tsx,loading.tsx,error.tsx}   # renamed from [slug]
-│   ├── p/[productId]/page.tsx                     # permanentRedirect (308), query kept
+│   ├── p/[productId]/route.ts                     # Route Handler: 308, query kept (a page's redirect would arrive after the 200)
 │   └── api/attribution/ref/route.ts               # sets __Host-ref (R-13)
 ├── components/
 │   ├── search/{search-box.tsx,suggestion-list.tsx,search-results.tsx,filter-panel.tsx,filter-sheet.tsx,filter-chips.tsx,

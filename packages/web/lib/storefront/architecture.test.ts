@@ -36,8 +36,8 @@ const named = (...files: string[]) => files.map((file) => path.join(root, file))
 
 /** Pages that still hold the old direct reads; the task named in the comment rebuilds each and deletes its entry. */
 const PENDING_PAGES: string[] = [];
-/** Old components replaced by the story that owns them (T087 discussions, T092 ask). */
-const PENDING_COMPONENTS = ['components/product/product-discussions.tsx', 'components/product/ask-product.tsx'];
+/** Old components replaced by the story that owns them (none left: T092 replaced the ask component). */
+const PENDING_COMPONENTS: string[] = [];
 
 const isPending = (file: string) => [...PENDING_PAGES, ...PENDING_COMPONENTS].includes(rel(file));
 

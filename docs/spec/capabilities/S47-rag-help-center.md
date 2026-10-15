@@ -31,7 +31,8 @@ scope:
   - packages/backend/libs/domains/assistant/infra/knowledge-*.ts
   - packages/backend/scripts/rag-eval/rag-eval.ts
   - packages/contracts/src/assistant/**
-  - packages/web/components/product/ask-product.tsx
+  - packages/web/components/product/ask-panel.tsx
+  - packages/web/lib/api/ask.ts
 ---
 # S47 - Ask this product and the shop help center
 ## Purpose

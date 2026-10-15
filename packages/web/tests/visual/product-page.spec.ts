@@ -28,6 +28,8 @@ test.describe('Product page layout', () => {
       expect(t.x).toBeGreaterThanOrEqual(g.x + g.width - 1); // title right of the gallery
       expect(Math.abs(g.width - t.width)).toBeLessThan(80); // two halves
     }
+    // Share is disabled until hydration and the session lookup finish, then fades to its enabled colours: measure contrast after that.
+    await expect(page.getByRole('button', { name: 'Share' }).first()).toBeEnabled();
     await expectNoSeriousViolations(page);
   });
 
@@ -89,6 +91,28 @@ test.describe('Product page layout', () => {
       expect(barBox.y + barBox.height).toBeLessThanOrEqual(page.viewportSize()!.height + 1);
     } else {
       await expect(bar).toBeHidden();
+    }
+  });
+
+  test('product: the mobile bottom bar fits the viewport width', async ({ page }) => {
+    const id = await productId();
+    await page.goto(`/products/${id}`);
+    await expect(page.getByTestId('purchase-area')).toBeVisible();
+    await page.addStyleTag({ content: '[role="tabpanel"] { min-height: 1800px; }' });
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+    const bar = page.getByTestId('mobile-purchase-bar');
+    if (!mobile(page)) {
+      await expect(bar).toBeHidden(); // the bar is a phone-width control
+      return;
+    }
+    await expect(bar).toBeVisible();
+    await expectMainFitsWidth(page);
+    for (const width of [390, 320]) {
+      await page.setViewportSize({ width, height: 700 });
+      const right = (await bar.boundingBox())!;
+      expect(right.x + right.width).toBeLessThanOrEqual(width + 0.5);
+      const button = (await bar.getByRole('button', { name: /add to cart/i }).boundingBox())!;
+      expect(button.x + button.width).toBeLessThanOrEqual(width + 0.5);
     }
   });
 

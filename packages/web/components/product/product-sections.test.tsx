@@ -9,8 +9,17 @@ vi.mock('next/navigation', () => ({
 vi.mock('@/components/add-to-cart-button', () => ({
   AddToCartButton: ({ disabled }: { disabled?: boolean }) => <button disabled={disabled}>{disabled ? 'Out of stock' : 'Add to cart'}</button>,
 }));
-vi.mock('@/components/product/ask-product', () => ({ AskProduct: () => <p>ask panel</p> }));
-vi.mock('@/components/product/product-discussions', () => ({ ProductDiscussions: () => <p>discussions panel</p> }));
+vi.mock('@/components/product/share-popover', () => ({
+  SharePopover: ({ destination }: { destination: string }) => <button data-destination={destination}>Share</button>,
+}));
+vi.mock('@/components/analytics/product-view', () => ({
+  ProductView: ({ productId, category }: { productId: string; category: string }) => <i data-testid="product-view-mark" data-product={productId} data-category={category} />,
+}));
+vi.mock('@/components/product/video-section', () => ({
+  VideoSection: ({ items }: { items: { title: string }[] }) => <section aria-label="Videos">{items.map((item) => item.title).join(',')}</section>,
+}));
+vi.mock('@/components/product/ask-panel', () => ({ AskPanel: () => <p>ask panel</p> }));
+vi.mock('@/components/product/discussions/discussions-panel', () => ({ DiscussionsPanel: () => <p>discussions panel</p> }));
 
 import { ProductSections } from '@/components/product/product-sections';
 import { SectionBoundary } from '@/components/product/section-boundary';
@@ -42,10 +51,43 @@ const core = () => {
 };
 
 describe('ProductSections', () => {
-  // Deferred stories: S37 (POST /links) and S30 playback are not built, so the controls degrade to absent, not faked.
-  it('W02 AS-60: no Share control is offered until the link service exists (S37 not built)', () => {
+  it('W02 AS-60: Share is offered in the purchase area with the product address built from the site address', () => {
     show();
-    expect(screen.queryByRole('button', { name: 'Share' })).not.toBeInTheDocument();
+    const share = screen.getByRole('button', { name: 'Share' });
+    expect(share).toHaveAttribute('data-destination', `https://shop.example.com/products/${PRODUCT_ID}`);
+    expect(share.closest('[data-testid="purchase-area"]')).not.toBeNull();
+  });
+
+  it('W02 AS-60: a site address with a trailing slash does not double the slash', () => {
+    const page = parseProductPage(body());
+    render(<ProductSections page={page!} siteUrl="https://shop.example.com/" />);
+    expect(screen.getByRole('button', { name: 'Share' })).toHaveAttribute('data-destination', `https://shop.example.com/products/${PRODUCT_ID}`);
+  });
+
+  it('W02 AS-67: the page carries one product view mark for this product and its category', () => {
+    show();
+    expect(screen.getByTestId('product-view-mark')).toHaveAttribute('data-product', PRODUCT_ID);
+    expect(screen.getByTestId('product-view-mark')).toHaveAttribute('data-category', 'kitchen');
+  });
+
+  it('W02 AS-65: videos in the aggregate mount the Videos group in the Details tab', () => {
+    show({ videos: { items: [{ videoId: '8a1f0c52-1111-4e6f-9a7b-1c2d3e4f5a01', title: 'Unboxing', posterUrl: null, durationSec: 125 }] } });
+    const group = screen.getByRole('region', { name: 'Videos' });
+    expect(group).toHaveTextContent('Unboxing');
+    expect(group.closest('[role="tabpanel"]')).not.toBeNull();
+    expect(screen.getByRole('tabpanel', { name: 'Details' })).toContainElement(group);
+  });
+
+  it('W02 AS-65: an empty videos section mounts nothing, and an invalid one does not break the page', () => {
+    show({ videos: { items: [] } });
+    expect(screen.queryByRole('region', { name: 'Videos' })).toBeNull();
+    core();
+  });
+
+  it('W02 AS-34: an unparsable videos section is treated as missing', () => {
+    show({ videos: { items: 'nope' } });
+    expect(screen.queryByRole('region', { name: 'Videos' })).toBeNull();
+    core();
   });
 
   it('W02 AS-65: with no videos section there is no Videos group and no player', () => {
@@ -65,9 +107,9 @@ describe('ProductSections', () => {
     expect(document.querySelector('script[type="application/ld+json"]')).not.toBeNull();
   });
 
-  it('W02 AS-34: the tabs are Details, Ask about this product and Discussions, Details first', () => {
+  it('W02 AS-40: the tabs are Details, Pickup near me, Ask about this product and Discussions, in that order', () => {
     show();
-    expect(screen.getAllByRole('tab').map((tab) => tab.textContent)).toEqual(['Details', 'Ask about this product', 'Discussions']);
+    expect(screen.getAllByRole('tab').map((tab) => tab.textContent)).toEqual(['Details', 'Pickup near me', 'Ask about this product', 'Discussions']);
   });
 
   it('W02 AS-34: a missing shop hides the shop line only', () => {

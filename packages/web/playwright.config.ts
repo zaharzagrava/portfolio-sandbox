@@ -46,7 +46,12 @@ export default defineConfig({
   webServer: [
     {
       command: 'pnpm run dev',
-      env: { NEXT_PUBLIC_PAYMENTS_SANDBOX: 'true' }, // W03: the pay step shows the sandbox card picker (never in production builds)
+      env: {
+        NEXT_PUBLIC_PAYMENTS_SANDBOX: 'true', // W03: the pay step shows the sandbox card picker (never in production builds)
+        // W02: a tile source for the pickup map; the journeys answer its requests with a stub tile (no third-party host is ever called).
+        NEXT_PUBLIC_MAP_TILE_URL: 'https://tiles.test.local/{z}/{x}/{y}.png',
+        MAP_TILE_HOST: 'https://tiles.test.local',
+      },
       url: 'http://localhost:3000',
       reuseExistingServer: !process.env.CI,
       timeout: 120 * 1000, // Give Next.js time to compile

@@ -48,6 +48,15 @@ describe('W02 B-7: client event batch contract', () => {
     expect(bad({ event_id: 'not-a-uuid' })).toBe(false);
     expect(bad({ anonymous_id: 'short' })).toBe(false);
     expect(bad({ ts: 1.5 })).toBe(false);
+    // The server's alphabet (S39 `invalid_anonymous_id`): the contract refuses what ingestion would reject.
+    for (const anonymous_id of ['anon 12345678', 'anon.12345678', 'anon:12345678', 'ünicode-12345678', 'a'.repeat(65)]) {
+      expect(bad({ anonymous_id })).toBe(false);
+      expect(serverAccepts({ events: [{ ...event, anonymous_id }] })).toBe(false);
+    }
+    for (const anonymous_id of ['a'.repeat(8), 'a'.repeat(64), 'AbC-_9xYz1234']) {
+      expect(bad({ anonymous_id })).toBe(true);
+      expect(serverAccepts({ events: [{ ...event, anonymous_id }] })).toBe(true);
+    }
     expect(bad({ page: 'x'.repeat(501) })).toBe(false);
     expect(
       bad({

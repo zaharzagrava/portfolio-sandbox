@@ -58,13 +58,13 @@ afterEach(() => {
 type Seed = ReturnType<typeof searchResponse>;
 
 /** Renders the results at `address`, optionally with the server's first answer already in the cache. */
-function setup(address: string, seed?: Seed) {
+function setup(address: string, seed?: Seed, props: { adsEnabled?: boolean } = {}) {
   realReplace(null, '', address);
   const client = applyQueryDefaults(new QueryClient({ defaultOptions: { queries: { staleTime: 60_000, retry: 1 } } }));
   if (seed) client.setQueryData(queryKeys.search.results(parseSearchView(new URLSearchParams(window.location.search)).view), seed);
   render(
     <QueryClientProvider client={client}>
-      <SearchResults />
+      <SearchResults {...props} />
     </QueryClientProvider>,
   );
   return { client, user: userEvent.setup() };
@@ -87,6 +87,54 @@ describe('SearchResults', () => {
     expect(screen.getByRole('region', { name: 'Search results' })).toHaveAttribute('aria-busy', 'false');
     await new Promise((resolve) => setTimeout(resolve, 100));
     expect(requests).toBe(0);
+  });
+
+  describe('sponsored slot', () => {
+    const ad = {
+      campaignId: 'c0000000-0000-4000-8000-000000000001',
+      productId: 'd0000000-0000-4000-8000-000000000001',
+      shopId: 'e0000000-0000-4000-8000-000000000001',
+      title: 'Promoted kettle',
+      priceMinor: 4500,
+      currency: 'USD',
+      sponsored: true,
+      clickUrl: '/api/ads/click/tok.sig',
+      expiresAt: '2026-10-14T12:30:00.000Z',
+    };
+    let adRequests: URL[] = [];
+    beforeEach(() => {
+      adRequests = [];
+      server.use(
+        http.get('*/api/ads/sponsored', ({ request }) => {
+          adRequests.push(new URL(request.url));
+          return HttpResponse.json({ items: [ad], generatedAt: '2026-10-14T12:00:00.000Z' });
+        }),
+      );
+    });
+
+    it('W02 AS-66: with the flag on, the first page shows the slot above the results, for the selected category', async () => {
+      setup('/search?category=kitchen', searchResponse(), { adsEnabled: true });
+      const slot = await screen.findByRole('region', { name: 'Sponsored' });
+      expect(slot).toHaveTextContent('Promoted kettle');
+      expect(adRequests).toHaveLength(1);
+      expect(adRequests[0]!.searchParams.get('category')).toBe('kitchen');
+      const grid = screen.getByRole('link', { name: /iPhone 17/ });
+      expect(slot.compareDocumentPosition(grid) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    });
+
+    it('W02 AS-66: the flag is off by default: no request and no slot', async () => {
+      setup('/search?q=espresso', searchResponse());
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      expect(adRequests).toHaveLength(0);
+      expect(screen.queryByRole('region', { name: 'Sponsored' })).toBeNull();
+    });
+
+    it('W02 AS-66: a later page has no slot and no request', async () => {
+      setup('/search?q=espresso&cursor=abc', searchResponse(), { adsEnabled: true });
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      expect(adRequests).toHaveLength(0);
+      expect(screen.queryByRole('region', { name: 'Sponsored' })).toBeNull();
+    });
   });
 
   it.each([

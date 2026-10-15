@@ -1,5 +1,6 @@
 import { execSync } from 'node:child_process';
 import { API_URL, resetRateLimits } from './helpers';
+import { checkSeeds } from './seeds';
 
 /**
  * UI journeys run against the local dev stack (moon run :infra-up, :infra-setup, :dev-monolith, :dev-web), not a
@@ -16,6 +17,8 @@ async function globalSetup() {
     // Specs that need no demo data (W07's shell, headers) still run; the ones that do fail with their own message.
     console.error('WARNING: seed:dev failed - specs that need the demo admin/seller/catalog will fail.');
   }
+  // W02 B-6: fail fast, naming the seed, when the stack cannot offer what a journey builds on.
+  await checkSeeds();
 }
 
 export default globalSetup;

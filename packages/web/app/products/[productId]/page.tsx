@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
+import { RefCapture } from '@/components/analytics/ref-capture';
 import { ProductSections } from '@/components/product/product-sections';
 import { ProductSkeleton } from '@/components/product/product-skeleton';
 import { ProductUnavailable } from '@/components/product/product-unavailable';
@@ -53,6 +54,10 @@ async function ProductContent({ params }: Props) {
 export default function ProductPage(props: Props) {
   return (
     <div className="container mx-auto max-w-7xl px-4 py-8">
+      {/* Reads the address on the client (AS-63); its own boundary keeps the rest of the page static. */}
+      <Suspense fallback={null}>
+        <RefCapture />
+      </Suspense>
       <Suspense fallback={<ProductSkeleton />}>
         <ProductContent {...props} />
       </Suspense>

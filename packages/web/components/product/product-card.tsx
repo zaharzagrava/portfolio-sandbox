@@ -43,6 +43,7 @@ function ProductCardView({ card, className }: { card: CardModel; className?: str
             </p>
           ) : null}
           <p className="mt-auto pt-2 text-lg font-semibold">{formatMoney(card.priceMinor, card.currency)}</p>
+          {card.note ? <p className="text-sm text-muted-foreground">{card.note}</p> : null}
           {card.inStock === false ? <p className="text-sm font-medium text-destructive">Out of stock</p> : null}
         </div>
       </Link>

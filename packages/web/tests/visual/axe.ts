@@ -13,9 +13,10 @@ export async function seriousViolations(page: Page, selector?: string): Promise<
         .map((a) => a.finished.catch(() => undefined)),
     ),
   );
-  const builder = new AxeBuilder({ page });
+  // The Next.js dev server's indicator (nextjs-portal) is not part of the product; its "compiling" toast shows on a loaded machine.
+  const builder = new AxeBuilder({ page }).exclude('nextjs-portal');
   const { violations } = await (selector ? builder.include(selector) : builder).analyze();
-  return violations.filter((v) => v.impact === 'serious' || v.impact === 'critical').map((v) => `${v.id}: ${v.help} (${v.nodes.length})`);
+  return violations.filter((v) => v.impact === 'serious' || v.impact === 'critical').map((v) => `${v.id}: ${v.help} (${v.nodes.length}) ${v.nodes.map((n) => `${n.target.join(' ')} ${JSON.stringify(n.any[0]?.data ?? {}).slice(0, 200)}`).join(' | ')}`);
 }
 
 /** Asserts serious/critical = 0 for the whole page, or for one region. */

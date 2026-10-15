@@ -284,6 +284,80 @@ export async function createIsolatedProduct(options: { quantity?: number } = {})
   return { id: await productId(title), title };
 }
 
+/** The position the journeys give the browser (`geolocation` of the test context) and put the pickup seed next to. */
+export const FAKE_LOCATION = { latitude: 52.52, longitude: 13.405 };
+export const PICKUP_POINT_NAME = 'Journey Locker';
+
+/**
+ * W02 B-6 pickup seed, built through the real seller API: an isolated product, a pickup point of the seed shop 400 m from
+ * `FAKE_LOCATION` that is open all week, and 7 units in stock there. Waits until the pickup index answers for it; returns
+ * `null` when it never does (the journey then `fixme`s itself, see questions.md Q-W02-6).
+ */
+export async function createPickupSeed(): Promise<{ productId: string; title: string; pointName: string } | null> {
+  const product = await createIsolatedProduct();
+  const session = await sellerSession();
+  const allDay = [{ open: '00:00', close: '23:59' }];
+  const point = await sellerCall(
+    'POST',
+    `/api/shops/${session.shopId}/pickup-points`,
+    {
+      name: PICKUP_POINT_NAME,
+      address: '1 Journey Street, Berlin',
+      lat: FAKE_LOCATION.latitude + 0.0036,
+      lng: FAKE_LOCATION.longitude,
+      openingHours: { timezone: 'UTC', weekly: { mon: allDay, tue: allDay, wed: allDay, thu: allDay, fri: allDay, sat: allDay, sun: allDay } },
+    },
+    session.token,
+  );
+  if (point.status !== 201) return null;
+  const stock = await sellerCall('PUT', `/api/shops/${session.shopId}/pickup-points/${point.data.id}/stock/${product.id}`, { quantity: 7 }, session.token);
+  if (stock.status >= 300) return null;
+  // Both read models (the point list and the product search) are projections: wait for both.
+  const where = `lat=${FAKE_LOCATION.latitude}&lng=${FAKE_LOCATION.longitude}&radiusKm=5`;
+  const indexed = async (route: string, hit: (body: { items?: { name?: string; productId?: string }[] }) => boolean) => {
+    const res = await fetch(`${API_URL}${route}`);
+    return res.ok && hit((await res.json()) as { items?: { name?: string; productId?: string }[] });
+  };
+  for (let attempt = 0; attempt < 45; attempt++) {
+    const points = await indexed(`/api/pickup-points/near?${where}&productId=${product.id}`, (body) => body.items?.some((item) => item.name === PICKUP_POINT_NAME) === true);
+    const search = await indexed(`/api/search/near?${where}&q=${encodeURIComponent(product.title)}`, (body) => body.items?.some((item) => item.productId === product.id) === true);
+    if (points && search) return { productId: product.id, title: product.title, pointName: PICKUP_POINT_NAME };
+    await new Promise((r) => setTimeout(r, 1_000));
+  }
+  return null;
+}
+
+export const ASK_DOCUMENT_TITLE = 'Lantern manual';
+export const ASK_QUESTION = 'Does the lantern battery last 40 hours?';
+
+/**
+ * W02 B-6 ask seed, built through the real seller API: one PUBLIC knowledge document for `productId`, processed by the dev
+ * stack's scripted embedder. Waits until the document is READY; answers `false` when it never is (no worker, or no knowledge
+ * API), and the journey then marks itself `fixme` (questions.md Q-W02-7).
+ */
+export async function addAskDocument(productId: string): Promise<boolean> {
+  const session = await sellerSession();
+  const created = await sellerCall(
+    'POST',
+    `/api/shops/${session.shopId}/knowledge/documents`,
+    {
+      title: ASK_DOCUMENT_TITLE,
+      visibility: 'PUBLIC',
+      productId,
+      markdown: '# Battery\nThe lantern battery lasts 40 hours on one charge.',
+    },
+    session.token,
+  );
+  if (created.status !== 201) return false;
+  const documentId: string = created.data.document.id;
+  for (let attempt = 0; attempt < 60; attempt++) {
+    const read = await sellerCall('GET', `/api/shops/${session.shopId}/knowledge/documents/${documentId}`, undefined, session.token);
+    if (read.data?.status === 'READY') return true;
+    await new Promise((r) => setTimeout(r, 1_000));
+  }
+  return false;
+}
+
 /**
  * Makes sure the catalogue holds at least `min` searchable products (a fresh stack has 12 seeded ones, and a search page holds 24),
  * by creating the missing ones through the real API in a category of their own, then waits until search reports them.
@@ -304,4 +378,21 @@ export async function ensureCatalogueSize(min: number): Promise<void> {
     await new Promise((r) => setTimeout(r, 1_000));
   }
   throw new Error(`the catalogue never reached ${min} searchable products`);
+}
+
+/**
+ * W02 discussions: opens the product's Discussions tab (when it is not open yet), starts a discussion through the form and
+ * waits until the new post is listed. Returns the post's article.
+ */
+export async function startDiscussion(page: Page, productId: string, title: string, details = '') {
+  if (!page.url().includes(`/products/${productId}`)) await page.goto(`/products/${productId}?tab=discussions`);
+  const panel = page.getByRole('tabpanel', { name: 'Discussions' });
+  const form = panel.getByRole('form', { name: 'Start a discussion' });
+  if (!(await form.isVisible())) await panel.getByRole('button', { name: 'Start a discussion' }).click();
+  await form.getByRole('textbox', { name: 'Title' }).fill(title);
+  if (details) await form.getByRole('textbox', { name: 'Details (optional)' }).fill(details);
+  await form.getByRole('button', { name: 'Post', exact: true }).click();
+  const article = panel.getByRole('article', { name: title });
+  await expect(article).toBeVisible();
+  return article;
 }

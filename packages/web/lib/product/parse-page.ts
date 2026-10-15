@@ -1,11 +1,13 @@
 import {
   productGallerySchema,
   productPublicSchema,
+  productVideosSchema,
   recommendationsResponseSchema,
   shopSummarySchema,
   trendingResponseSchema,
   type ProductGalleryItem,
   type ProductPublicView,
+  type ProductVideos,
   type RecommendationItem,
   type TrendingItem,
 } from '@marketplace-sandbox/contracts';
@@ -20,6 +22,8 @@ export type ProductPage = {
   recommendations: RecommendationItem[] | null;
   /** Without the product itself, at most eight. */
   trending: TrendingItem[] | null;
+  /** Public ready videos (S30), newest first; `null` when missing, invalid or empty. */
+  videos: ProductVideos['items'] | null;
   /** The aggregate reported a section error or a section did not parse: do not keep it long. */
   degraded: boolean;
 };
@@ -50,12 +54,15 @@ export function parseProductPage(body: unknown): ProductPage | null {
   const trendingAll = section(raw.trending, (v) => trendingResponseSchema.safeParse(v))?.items ?? null;
   const trending = trendingAll?.filter((item) => item.productId !== product.data.id).slice(0, TRENDING_RAIL_SIZE) ?? null;
 
+  const videos = section(raw.videos, (v) => productVideosSchema.safeParse(v))?.items ?? null;
+
   return {
     product: product.data,
     shop,
     gallery,
     recommendations: recommendations && recommendations.length > 0 ? recommendations : null,
     trending: trending && trending.length > 0 ? trending : null,
+    videos: videos && videos.length > 0 ? videos : null,
     degraded,
   };
 }

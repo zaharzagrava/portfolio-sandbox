@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 vi.mock('@/lib/api/events', () => ({ sendEvents: vi.fn() }));
 
 import { sendEvents } from '@/lib/api/events';
-import { __resetTrackForTests, track } from './track';
+import { __resetTrackForTests, getAnonymousId, track } from './track';
 
 const send = vi.mocked(sendEvents);
 const ok = { ok: true } as const;
@@ -275,6 +275,49 @@ describe('track identity and privacy', () => {
     setPrivacy('gpc');
     await vi.advanceTimersByTimeAsync(5000);
     expect(send).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['Audio', 'audio'],
+    ['Home & Garden', 'home-garden'],
+    ['  Toys / Games ', 'toys-games'],
+    ['café', 'cafe'],
+    ['already-ok', 'already-ok'],
+    ['x'.repeat(40), 'x'.repeat(40)],
+  ])('W02 AS-67: product_view and add_to_cart send category %j as %j (S35 alphabet)', async (given, sent) => {
+    track({ name: 'product_view', props: { product_id: 'p', category: given } });
+    track({ name: 'add_to_cart', props: { product_id: 'p', category: given } });
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(batches()[0].map((event) => event.props?.category)).toEqual([sent, sent]);
+  });
+
+  it.each(['', '   ', '&&&', 'x'.repeat(41), 42])('W02 AS-67: category %j cannot be a slug, so it is left out and product_id stays', async (given) => {
+    track({ name: 'product_view', props: { product_id: 'p', category: given as string } });
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(batches()[0][0].props).toEqual({ product_id: 'p' });
+  });
+
+  it('W02 AS-67: other events keep their category as given', async () => {
+    track({ name: 'click', props: { category: 'Home & Garden' } });
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(batches()[0][0].props).toEqual({ category: 'Home & Garden' });
+  });
+
+  it('W02 AS-66: the anonymous id for the sponsored request is the event cookie id, created when missing', () => {
+    document.cookie = 'anonymous_id=abcdefghijklmnopqrstuv; Path=/';
+    expect(getAnonymousId()).toBe('abcdefghijklmnopqrstuv');
+    clearCookies();
+    const created = getAnonymousId();
+    expect(created).toMatch(/^[A-Za-z0-9_-]{22}$/);
+    expect(getAnonymousId()).toBe(created);
+  });
+
+  it('W02 AS-66: with Global Privacy Control or Do Not Track there is no anonymous id and no cookie', () => {
+    setPrivacy('gpc');
+    expect(getAnonymousId()).toBeUndefined();
+    setPrivacy('dnt');
+    expect(getAnonymousId()).toBeUndefined();
+    expect(document.cookie).not.toContain('anonymous_id');
   });
 
   it('W02 AS-68: a reset forgets queued events and pending timers', async () => {

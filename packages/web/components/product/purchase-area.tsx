@@ -4,12 +4,13 @@ import Link from 'next/link';
 import { MessagesSquare } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { AddToCartButton } from '@/components/add-to-cart-button';
+import { SharePopover } from '@/components/product/share-popover';
 import { Button } from '@/components/ui/button';
 import { formatMoney } from '@/lib/utils';
 
 /**
  * The buying controls of a product (W02 FR-057, AS-37): **Add to cart** (W03's control, given the product id, its
- * category and `disabled`) and the **Chat with seller** link (W05). At 640 px and below a bar fixed to the bottom repeats
+ * category and `disabled`), the **Chat with seller** link (W05) and **Share** (AS-60). At 640 px and below a bar fixed to the bottom repeats
  * the price and Add to cart while this area is out of view, and never covers the element that has focus.
  */
 export function PurchaseArea({
@@ -18,12 +19,15 @@ export function PurchaseArea({
   inStock,
   priceMinor,
   currency,
+  shareDestination,
 }: {
   productId: string;
   category: string;
   inStock: boolean;
   priceMinor: number;
   currency: string;
+  /** The product's public address (`{site address}/products/{id}`), built on the server (W02 FR-120). */
+  shareDestination: string;
 }) {
   const main = useRef<HTMLDivElement>(null);
   const bar = useRef<HTMLDivElement>(null);
@@ -63,6 +67,7 @@ export function PurchaseArea({
             Chat with seller
           </Link>
         </Button>
+        <SharePopover productId={productId} destination={shareDestination} />
       </div>
 
       {showBar ? (
@@ -72,7 +77,10 @@ export function PurchaseArea({
           className="fixed inset-x-0 bottom-0 z-40 flex items-center justify-between gap-3 border-t bg-background px-4 py-3 sm:hidden"
         >
           <p className="text-lg font-semibold">{formatMoney(priceMinor, currency)}</p>
-          <AddToCartButton productId={productId} category={category} disabled={!inStock} />
+          {/* The button is w-full: inside this row it must fill the space left by the price, not the whole bar. */}
+          <div className="min-w-0 flex-1">
+            <AddToCartButton productId={productId} category={category} disabled={!inStock} />
+          </div>
         </div>
       ) : null}
     </>

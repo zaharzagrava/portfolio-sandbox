@@ -8,14 +8,16 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { FilterChips, chipsOf } from '@/components/search/filter-chips';
 import { FilterPanel, type FilterPatch } from '@/components/search/filter-panel';
 import { FilterSheet } from '@/components/search/filter-sheet';
+import { LocationNotice, PickupResults, PickupSwitch, RadiusControl, usePickupMode } from '@/components/search/pickup-mode';
 import { ResultsGrid } from '@/components/search/results-grid';
+import { SponsoredSlot } from '@/components/search/sponsored-slot';
 import { SortControl } from '@/components/search/sort-control';
 import { navigateTo, useSearchView } from '@/hooks/use-search-view';
 import { fetchSearch } from '@/lib/api/search';
 import { problemFromError } from '@/lib/api/errors';
 import { queryKeys } from '@/lib/query-keys';
 import { searchHref } from '@/lib/routes';
-import { clearFilters, firstPage, withChange, withoutPickup, type SearchView } from '@/lib/search/search-view';
+import { clearFilters, DEFAULT_RADIUS_KM, firstPage, withChange, withoutPickup, type SearchView } from '@/lib/search/search-view';
 import { cn } from '@/lib/utils';
 
 const FIRST_PAGE_NOTICE = 'That page is no longer available. Showing the first page.';
@@ -55,24 +57,27 @@ const isPlainClick =(event: MouseEvent) => event.button === 0 && !event.metaKey 
  * already in the query cache (no skeleton), a later change keeps the previous results dimmed and busy until the new ones
  * arrive, and every failure is one alert with the catalogue's text.
  */
-export function SearchResults() {
+export function SearchResults({ adsEnabled = false }: { adsEnabled?: boolean } = {}) {
   const { view, change, set } = useSearchView();
   const headingRef = useRef<HTMLHeadingElement>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
-  // Pickup mode (`near`) belongs to a later story: the search itself ignores it.
+  // Pickup mode (`near`) has its own request (`PickupResults`); the ordinary search keeps its last answer for the paused controls.
   const effective = useMemo(() => withoutPickup(view), [view]);
+  const pickup = usePickupMode(view, set);
+  const near = pickup.near;
 
   const query = useQuery({
     queryKey: queryKeys.search.results(effective),
     queryFn: ({ signal }) => fetchSearch(effective, { signal }),
     placeholderData: keepPreviousData,
     retry: false,
+    enabled: !near,
   });
 
   const data = query.data;
-  const problem = query.isError ? problemFromError(query.error) : undefined;
-  const busy = query.isFetching && query.isPlaceholderData;
+  const problem = !near && query.isError ? problemFromError(query.error) : undefined;
+  const busy = !near && query.isFetching && query.isPlaceholderData;
   const currency = data?.items[0]?.currency ?? 'USD';
   const chips = chipsOf(view, currency);
 
@@ -135,13 +140,13 @@ export function SearchResults() {
   };
 
   const showError = problem && fixed === null;
-  const heading = view.q ? `Results for “${view.q}”` : 'All products';
+  const heading = near ? 'Pickup near you' : view.q ? `Results for “${view.q}”` : 'All products';
   const degradedSemantic = data?.degraded.includes('semantic_unavailable') === true;
   const items = data?.items ?? [];
   const nextHref = data?.nextCursor && !view.semantic ? searchHref({ ...view, cursor: data.nextCursor }) : undefined;
 
   const panel = (
-    <FilterPanel view={view} facets={data?.facets} currency={currency} onChange={apply} onClearAll={clearAll} />
+    <FilterPanel view={view} facets={data?.facets} currency={currency} onChange={apply} onClearAll={clearAll} disabled={near} />
   );
 
   return (
@@ -156,9 +161,10 @@ export function SearchResults() {
         </h1>
 
         <div role="status" className="min-h-5 text-sm text-muted-foreground">
-          {data ? countLine(data.total) : null}
+          {data && !near ? countLine(data.total) : null}
         </div>
-        {view.semantic && data ? <p className="text-sm text-muted-foreground">Showing the closest matches</p> : null}
+        {near && view.q ? <p className="text-sm text-muted-foreground">{`Matching “${view.q}”`}</p> : null}
+        {view.semantic && data && !near ? <p className="text-sm text-muted-foreground">Showing the closest matches</p> : null}
         {notice ? (
           <p role="status" className="mt-2 rounded-md border bg-muted/50 px-3 py-2 text-sm">
             {notice}
@@ -174,12 +180,20 @@ export function SearchResults() {
           <FilterSheet activeCount={chips.length} resultLabel={data ? countLine(data.total) : 'results'} onClearAll={clearAll}>
             {panel}
           </FilterSheet>
-          <SortControl view={view} onChange={(sort) => apply({ sort })} />
+          <SortControl view={view} onChange={(sort) => apply({ sort })} disabled={near} />
+          <PickupSwitch near={near} onToggle={pickup.toggle} />
+          {near ? (
+            <RadiusControl
+              value={view.radiusKm ?? DEFAULT_RADIUS_KM}
+              onChange={(radiusKm) => apply({ radiusKm: radiusKm === DEFAULT_RADIUS_KM ? undefined : radiusKm })}
+            />
+          ) : null}
           {view.q ? (
             <button
               type="button"
               role="switch"
               aria-checked={view.semantic === true}
+              disabled={near}
               onClick={() => apply({ semantic: view.semantic ? undefined : true })}
               className="inline-flex min-h-9 items-center gap-2 rounded-md px-2 text-sm hover:bg-accent focus-visible:outline-2 focus-visible:outline-ring max-sm:min-h-11"
             >
@@ -191,12 +205,32 @@ export function SearchResults() {
           ) : null}
         </div>
 
+        <div className="mt-2">
+          <LocationNotice status={pickup.location.status} message={pickup.location.message} canRetry={pickup.location.canRetry} onRetry={pickup.retry} />
+        </div>
+
         <div className="mt-3">
           <FilterChips view={view} currency={currency} onRemove={remove} onClearAll={clearAll} />
         </div>
 
+        {/* The sponsored slot (AS-66): the first page only, never in pickup mode; off unless the deploy enables it. */}
+        <div className="mt-4 empty:hidden">
+          <SponsoredSlot enabled={adsEnabled && !near && !view.cursor} category={view.category} />
+        </div>
+
         <div className={cn('mt-4 transition-opacity motion-reduce:transition-none', busy && 'opacity-60')}>
-          {showError ? (
+          {near ? (
+            <PickupResults
+              view={view}
+              coords={pickup.ready ? pickup.location.coords : null}
+              asking={pickup.location.status === 'asking' || pickup.location.status === 'idle'}
+              onNavigate={(href) => {
+                setNotice(null);
+                navigateTo(href);
+                focusHeading();
+              }}
+            />
+          ) : showError ? (
             <div className="space-y-3">
               <ProblemAlert problem={problem} surface="search" />
               {offline ? (
@@ -220,7 +254,7 @@ export function SearchResults() {
           )}
         </div>
 
-        {data && items.length > 0 && (nextHref || view.cursor) ? (
+        {!near && data && items.length > 0 && (nextHref || view.cursor) ? (
           <nav aria-label="Pages" className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-between">
             {view.cursor ? (
                

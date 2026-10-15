@@ -43,12 +43,33 @@ function privacySignal(): boolean {
   return nav.globalPrivacyControl === true || nav.doNotTrack === '1' || nav.msDoNotTrack === '1' || (typeof window !== 'undefined' && (window as unknown as { doNotTrack?: string }).doNotTrack === '1');
 }
 
-function cleanProps(props: TrackEvent['props']): ClientEventInput['props'] {
+/** S35 counts a category only in this alphabet (and treats anything else as `all`), so it is normalised here, not by the caller. */
+const CATEGORY_PATTERN = /^[a-z0-9-]{1,40}$/;
+const CATEGORY_EVENTS = new Set<string>(['product_view', 'add_to_cart']);
+
+/** Lower case, accents dropped, every run of other characters one hyphen; `undefined` when no valid slug remains. */
+function categorySlug(value: unknown): string | undefined {
+  if (typeof value !== 'string') return undefined;
+  const slug = value
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+  return CATEGORY_PATTERN.test(slug) ? slug : undefined;
+}
+
+function cleanProps(props: TrackEvent['props'], name: string): ClientEventInput['props'] {
   if (!props || typeof props !== 'object') return undefined;
   const clean: Record<string, string | number | boolean> = {};
   for (const [key, value] of Object.entries(props)) {
     if (Object.keys(clean).length >= MAX_PROPS) break;
     if (!KEY_PATTERN.test(key) || FORBIDDEN_KEYS.test(key)) continue;
+    if (key === 'category' && CATEGORY_EVENTS.has(name)) {
+      const slug = categorySlug(value);
+      if (slug) clean[key] = slug;
+      continue;
+    }
     if (typeof value === 'string') clean[key] = value.length > MAX_VALUE ? value.slice(0, MAX_VALUE) : value;
     else if (typeof value === 'number' && Number.isFinite(value)) clean[key] = value;
     else if (typeof value === 'boolean') clean[key] = value;
@@ -83,6 +104,19 @@ function anonymousId(): string {
   const secure = window.location.protocol === 'https:' ? '; Secure' : '';
   document.cookie = `${COOKIE}=${id}; Path=/; Max-Age=${COOKIE_MAX_AGE}; SameSite=Lax${secure}`;
   return id;
+}
+
+/**
+ * The visitor's anonymous id for a request that identifies the viewer (the sponsored slot's `X-Anonymous-Id`, S36): the
+ * same first-party cookie as the events. `undefined` on the server and under a privacy signal (no id, no cookie).
+ */
+export function getAnonymousId(): string | undefined {
+  try {
+    if (typeof window === 'undefined' || typeof document === 'undefined' || privacySignal()) return undefined;
+    return anonymousId();
+  } catch {
+    return undefined;
+  }
 }
 
 async function deliver(batch: ClientEventInput[], beacon: boolean, attempt: number, epoch: number): Promise<void> {
@@ -144,7 +178,7 @@ export function track(event: TrackEvent): void {
   try {
     if (typeof window === 'undefined' || typeof document === 'undefined') return;
     if (!event || !names.has(event.name) || privacySignal()) return;
-    const props = cleanProps(event.props);
+    const props = cleanProps(event.props, event.name);
     const page = cleanPage(event.page);
     queue.push({
       event_id: crypto.randomUUID(),

@@ -255,3 +255,16 @@
 {"run":"20261014T190657Z","capability":"W01","step":"repair-1","start":"2026-10-14T20:57:18Z","end":"2026-10-14T21:00:38Z","seconds":200,"result":"ok","attempt":1,"reason":"ok","code_changed":true}
 {"run":"20261014T190657Z","capability":"W01","step":"gate","start":"2026-10-14T21:00:38Z","end":"2026-10-14T21:09:58Z","seconds":560,"result":"pass","attempt":2,"reason":""}
 {"run":"20261014T190657Z","capability":"W01","step":"built","start":"2026-10-14T20:33:34Z","end":"2026-10-14T21:09:58Z","seconds":2184,"result":"ok","attempt":1,"reason":"Sign up, log in, forgot password, MFA step-up, session cookie via BFF, CSRF, logout, account state in the navbar"}
+{"run":"20261014T190657Z","capability":"W02","step":"implement-1","start":"2026-10-14T21:10:01Z","end":"2026-10-14T21:22:46Z","seconds":765,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261014T190657Z","capability":"W02","step":"implement-2","start":"2026-10-14T21:22:46Z","end":"2026-10-14T23:12:38Z","seconds":6592,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261014T190657Z","capability":"W02","step":"converge-2","start":"2026-10-14T23:12:38Z","end":"2026-10-14T23:14:53Z","seconds":135,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261014T190657Z","capability":"W02","step":"gate","start":"2026-10-14T23:14:53Z","end":"2026-10-14T23:14:56Z","seconds":3,"result":"fail","attempt":1,"reason":""}
+{"run":"20261014T190657Z","capability":"W02","step":"repair-1","start":"2026-10-14T23:14:57Z","end":"2026-10-14T23:15:27Z","seconds":30,"result":"ok","attempt":1,"reason":"ok","code_changed":false}
+{"run":"20261014T190657Z","capability":"W02","step":"gate","start":"2026-10-14T23:15:27Z","end":"2026-10-14T23:30:07Z","seconds":880,"result":"fail","attempt":2,"reason":""}
+{"run":"20261014T190657Z","capability":"W02","step":"repair-2","start":"2026-10-14T23:30:07Z","end":"2026-10-14T23:31:42Z","seconds":95,"result":"ok","attempt":1,"reason":"ok","code_changed":true}
+{"run":"20261014T190657Z","capability":"W02","step":"gate","start":"2026-10-14T23:31:42Z","end":"2026-10-14T23:43:59Z","seconds":737,"result":"fail","attempt":3,"reason":""}
+{"run":"20261014T190657Z","capability":"W02","step":"repair-3","start":"2026-10-14T23:43:59Z","end":"2026-10-14T23:58:06Z","seconds":847,"result":"ok","attempt":1,"reason":"ok","code_changed":true}
+{"run":"20261014T190657Z","capability":"W02","step":"gate","start":"2026-10-14T23:58:06Z","end":"2026-10-15T00:09:26Z","seconds":680,"result":"fail","attempt":4,"reason":""}
+{"run":"20261014T190657Z","capability":"W02","step":"repair-4","start":"2026-10-15T00:09:26Z","end":"2026-10-15T00:14:17Z","seconds":291,"result":"ok","attempt":1,"reason":"ok","code_changed":true}
+{"run":"20261014T190657Z","capability":"W02","step":"gate","start":"2026-10-15T00:14:17Z","end":"2026-10-15T00:25:31Z","seconds":674,"result":"pass","attempt":5,"reason":""}
+{"run":"20261014T190657Z","capability":"W02","step":"built","start":"2026-10-14T21:10:00Z","end":"2026-10-15T00:25:31Z","seconds":11731,"result":"ok","attempt":1,"reason":"Home, search (autocomplete, filters, facets, sort, URL state), trending and recommendation rails, product page (product, shop, pickup near me, discussions, ask this product, share link)"}

@@ -22,8 +22,7 @@ const eslintConfig = defineConfig([
   // W02 (AS-70, AS-72): no NEXT_PUBLIC API base URL, and HTML is injected only from the sanitizer and the JSON-LD component.
   {
     files: ["app/**/*.{ts,tsx}", "components/**/*.{ts,tsx}", "hooks/**/*.{ts,tsx}", "lib/**/*.{ts,tsx}"],
-    // components/product/product-discussions.tsx is the old discussions block that T087 deletes.
-    ignores: ["**/*.test.{ts,tsx}", "components/seo/json-ld.tsx", "components/product/discussions/safe-body.tsx", "components/product/product-discussions.tsx"],
+    ignores: ["**/*.test.{ts,tsx}", "components/seo/json-ld.tsx", "components/product/discussions/safe-body.tsx"],
     rules: {
       "no-restricted-syntax": [
         "error",

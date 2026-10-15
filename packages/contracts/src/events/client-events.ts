@@ -18,7 +18,7 @@ export const CLIENT_EVENT_NAMES = [
 export const clientEventSchema = z.object({
   event_id: z.uuid(),
   name: z.enum(CLIENT_EVENT_NAMES),
-  anonymous_id: z.string().min(8).max(64),
+  anonymous_id: z.string().regex(/^[A-Za-z0-9_-]{8,64}$/),
   ts: z.number().int(),
   page: z.string().max(500).optional(),
   props: z

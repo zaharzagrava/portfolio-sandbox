@@ -46,6 +46,8 @@ const CLIENT_LEAVES: Record<string, string> = {
   'components/layout/route-error.tsx': 'error boundary body',
   'components/layout/system-states.tsx': 'ErrorState: focus, retry timer',
   'components/analytics/page-view.tsx': 'usePathname + track',
+  'components/analytics/product-view.tsx': 'effect + track (W02 AS-67)',
+  'components/analytics/ref-capture.tsx': 'useSearchParams + same-origin POST (W02 AS-63)',
   'components/legal/on-this-page.tsx': 'moves focus to the heading of the chosen section',
   'components/widget/checkout-app.tsx': 'postMessage, state',
   'app/error.tsx': 'error boundary',

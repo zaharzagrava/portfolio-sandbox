@@ -1,8 +1,10 @@
 import type {
+  PickupNearItem,
   ProductSearchItem,
   RecommendationItem,
   TrendingItem,
 } from '@marketplace-sandbox/contracts';
+import { formatDistance } from '@/lib/pickup/format';
 import { productHref } from '@/lib/routes';
 import { safeHttpsUrl } from '@/lib/safe-url';
 
@@ -24,6 +26,8 @@ export type CardModel = {
   sponsored?: boolean;
   rank?: number;
   category?: string;
+  /** One extra line under the price (pickup search: "850 m away · Point · 3 available"). */
+  note?: string;
   href: string;
 };
 
@@ -41,6 +45,21 @@ export function searchItemToCard(item: ProductSearchItem): CardModel {
     sponsored: item.sponsored,
     category: item.category,
     href: productHref(item.id),
+  };
+}
+
+/** A pickup search hit (S19): the product with its nearest point, "{distance} away · {point} · {quantity} available". */
+export function pickupItemToCard(item: PickupNearItem): CardModel {
+  const { nearest } = item;
+  const parts = [`${formatDistance(nearest.distanceM)} away`, nearest.name, `${nearest.quantity} available`].filter(Boolean);
+  return {
+    id: item.productId,
+    title: item.title || 'Untitled product',
+    priceMinor: item.priceMinor,
+    currency: item.currency,
+    category: item.category,
+    note: parts.join(' · '),
+    href: productHref(item.productId),
   };
 }
 

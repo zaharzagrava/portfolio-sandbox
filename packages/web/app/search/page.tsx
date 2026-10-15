@@ -5,6 +5,7 @@ import { CanonicalUrl } from '@/components/search/canonical-url';
 import { SearchBox } from '@/components/search/search-box';
 import { SearchResults } from '@/components/search/search-results';
 import { SearchShellSkeleton } from '@/components/search/search-skeleton';
+import { config } from '@/lib/config';
 import { getSearchFirstView } from '@/lib/server/search.server';
 import { queryKeys } from '@/lib/query-keys';
 import { parseSearchView, withoutPickup, type RawSearchParams } from '@/lib/search/search-view';
@@ -29,12 +30,13 @@ export async function generateMetadata({ searchParams }: { searchParams: SearchP
 async function FirstView({ searchParams }: { searchParams: SearchParams }) {
   const { view } = parseSearchView(await searchParams);
   const effective = withoutPickup(view);
-  const first = await getSearchFirstView(effective);
+  // Pickup mode needs the visitor's position, which only the browser has: nothing to read on the server.
+  const first = view.near ? null : await getSearchFirstView(effective);
   const client = new QueryClient();
   if (first) client.setQueryData(queryKeys.search.results(effective), first);
   return (
     <HydrationBoundary state={dehydrate(client)}>
-      <SearchResults />
+      <SearchResults adsEnabled={config.adsEnabled} />
       <CanonicalUrl />
     </HydrationBoundary>
   );

@@ -1,10 +1,18 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { act, render, screen } from '@testing-library/react';
+import { act, render, screen, within } from '@testing-library/react';
 
 vi.mock('@/components/add-to-cart-button', () => ({
   AddToCartButton: ({ productId, category, disabled }: { productId: string; category?: string; disabled?: boolean }) => (
     <button type="button" disabled={disabled} data-product={productId} data-category={category}>
       {disabled ? 'Out of stock' : 'Add to cart'}
+    </button>
+  ),
+}));
+
+vi.mock('@/components/product/share-popover', () => ({
+  SharePopover: ({ productId, destination }: { productId: string; destination: string }) => (
+    <button type="button" data-product={productId} data-destination={destination}>
+      Share
     </button>
   ),
 }));
@@ -35,9 +43,25 @@ afterEach(() => {
 });
 
 const ID = '3f2b8c1e-5a4d-4e6f-9a7b-1c2d3e4f5a6b';
-const props = { productId: ID, category: 'phones', inStock: true, priceMinor: 89999, currency: 'USD' };
+const props = { productId: ID, category: 'phones', inStock: true, priceMinor: 89999, currency: 'USD', shareDestination: `https://shop.example.com/products/${ID}` };
 
 describe('PurchaseArea', () => {
+  it('W02 AS-60: Share follows Chat with seller and is given the product id and its public address', () => {
+    render(<PurchaseArea {...props} />);
+    const main = screen.getByTestId('purchase-area');
+    const labels = [...main.querySelectorAll('button, a')].map((node) => node.textContent);
+    expect(labels).toEqual(['Add to cart', 'Chat with seller', 'Share']);
+    const share = screen.getByRole('button', { name: 'Share' });
+    expect(share).toHaveAttribute('data-product', ID);
+    expect(share).toHaveAttribute('data-destination', `https://shop.example.com/products/${ID}`);
+  });
+
+  it('W02 AS-37: the bottom bar does not repeat Share', () => {
+    render(<PurchaseArea {...props} />);
+    act(() => notify({ isIntersecting: false }));
+    expect(within(screen.getByTestId('mobile-purchase-bar')).queryByRole('button', { name: 'Share' })).toBeNull();
+  });
+
   it('W02 AS-37: holds Add to cart then Chat with seller, in that order', () => {
     render(<PurchaseArea {...props} />);
     const main = screen.getByTestId('purchase-area');
