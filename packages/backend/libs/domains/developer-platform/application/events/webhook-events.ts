@@ -24,3 +24,32 @@ export const WebhookEndpointDisabled = defineEvent(
     failingSince: z.string(),
   }),
 );
+
+export const WEBHOOK_CHANGES = [
+  'created',
+  'url_changed',
+  'events_changed',
+  'api_version_changed',
+  'enabled',
+  'disabled',
+  'secret_rotated',
+  'previous_secret_expired',
+  'deleted',
+] as const;
+export type WebhookChange = (typeof WEBHOOK_CHANGES)[number];
+
+/**
+ * One event per committed change of an endpoint, in the transaction of the change (FR-011). Never a secret, a URL, a path
+ * or a query. Emitted as `developerplatform.webhook_endpoint_changed` for the same reason as the event above.
+ */
+export const WebhookEndpointChanged = defineEvent(
+  'developerplatform.webhook_endpoint_changed',
+  'developer_platform',
+  1,
+  z.object({
+    endpointId: z.string(),
+    shopId: z.string(),
+    change: z.enum(WEBHOOK_CHANGES),
+    actorId: z.string().optional(),
+  }),
+);

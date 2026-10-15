@@ -59,6 +59,29 @@ export const developerPlatformRatePolicies = definePolicies(
       key: 'shop',
       failMode: 'closed',
     },
+    // S43 FR-054 (specs/domains/S43-webhooks/contracts/http.md). Managing endpoints, replaying and pinging change what the
+    // platform sends to a shop's servers: when the counter cannot be read the call is refused, never allowed for free.
+    'webhooks.manage.shop': {
+      algorithm: 'slidingWindow',
+      limit: 120,
+      windowMs: 60_000,
+      key: 'shop',
+      failMode: 'closed',
+    },
+    'webhooks.replay.shop': {
+      algorithm: 'slidingWindow',
+      limit: 30,
+      windowMs: 60_000,
+      key: 'shop',
+      failMode: 'closed',
+    },
+    'webhooks.ping.endpoint': {
+      algorithm: 'slidingWindow',
+      limit: 10,
+      windowMs: 60_000,
+      key: 'custom',
+      failMode: 'closed',
+    },
   } as const,
 );
 

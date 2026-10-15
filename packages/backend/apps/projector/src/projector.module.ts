@@ -10,8 +10,7 @@ import {
 } from '@app/domains/discovery';
 import { AnalyticsProjectorModule } from '@app/domains/experimentation';
 import {
-  WebhookRouterProjector,
-  WebhooksCoreModule,
+  WebhooksProjectorModule,
   PublicApiProjectorModule,
   WidgetProjectorModule,
 } from '@app/domains/developer-platform';
@@ -116,7 +115,7 @@ import { CacheModule } from '@app/infrastructure/cache/cache.module';
         CourierTrackProjector,
         ...PublicApiProjectorModule.projectors,
         ...WidgetProjectorModule.projectors,
-        WebhookRouterProjector,
+        ...WebhooksProjectorModule.projectors,
         ...AnalyticsProjectorModule.projectors,
         StoryCacheInvalidator,
         StockPushProjector,
@@ -138,7 +137,7 @@ import { CacheModule } from '@app/infrastructure/cache/cache.module';
         AnalyticsProjectorModule,
         IntegrationsCoreModule,
         StoryCacheModule,
-        WebhooksCoreModule,
+        WebhooksProjectorModule,
         PublicApiProjectorModule,
         WidgetProjectorModule,
         SqsModule,

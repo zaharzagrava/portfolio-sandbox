@@ -70,6 +70,7 @@
     "start:dev:worker": "NODE_ENV=local PORT=8003 nest start worker --watch",
     "build:worker": "nest build worker",
     "loadtest:jobs": "node scripts/load-tests/jobs-drain.js",
+    "loadtest:webhooks": "k6 run scripts/load-tests/webhooks-flood.test.js",
     "loadtest:ratelimit": "k6 run scripts/load-tests/ratelimit.test.js",
     "loadtest:client-flags": "k6 run scripts/load-tests/client-flags.test.js",
     "bench:flag-evaluator": "TS_NODE_TRANSPILE_ONLY=1 node -r ts-node/register -r tsconfig-paths/register scripts/bench-flag-evaluator.ts",

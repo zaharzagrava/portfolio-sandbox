@@ -8,137 +8,225 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Query,
 } from '@nestjs/common';
-import { ApiProperty, ApiPropertyOptional, ApiTags } from '@nestjs/swagger';
+import { ApiTags } from '@nestjs/swagger';
+import { z } from 'zod';
 import {
-  ArrayMinSize,
-  IsArray,
-  IsBoolean,
-  IsIn,
-  IsOptional,
-  IsString,
-  IsUrl,
-} from 'class-validator';
-import { v7 as uuidv7 } from 'uuid';
+  createWebhookEndpointRequestSchema,
+  rotateWebhookSecretRequestSchema,
+  updateWebhookEndpointRequestSchema,
+  webhookAttemptsQuerySchema,
+  webhookEndpointListQuerySchema,
+  WEBHOOK_LIMITS,
+} from '@marketplace-sandbox/contracts';
+import { User, type AuthenticatedUser } from '@app/domains/identity';
 import { ShopScoped } from '@app/domains/tenancy';
-import { API_VERSIONS } from '../domain/versioning';
+import {
+  Idempotent,
+  type IdempotentWireOptions,
+} from '@app/infrastructure/idempotency';
+import { RateLimit } from '@app/infrastructure/rate-limit';
+import type {
+  CreateWebhookEndpointRequest,
+  RotateWebhookSecretRequest,
+  UpdateWebhookEndpointRequest,
+} from '../application/dto/webhook-endpoint.dto';
 import { WebhookEndpointsService } from '../application/webhook-endpoints.service';
-import { WebhookDeliverer } from '../application/webhook-deliverer.service';
-import { WebhookRouterProjector } from '../infra/webhook-router.projector';
-import { WEBHOOK_EVENT_TYPES } from '../domain/webhook-events';
-import type { WebhookEventType } from '../domain/webhook-events';
+import { WebhookReplayService } from '../application/webhook-replay.service';
+import { ZodBodyPipe } from './zod-body.pipe';
 
-export class CreateEndpointDto {
-  @ApiProperty()
-  @IsUrl({ require_tld: false, require_protocol: true })
-  url: string;
-  @ApiProperty({ enum: WEBHOOK_EVENT_TYPES, isArray: true })
-  @IsArray()
-  @ArrayMinSize(1)
-  @IsIn(WEBHOOK_EVENT_TYPES, { each: true })
-  events: WebhookEventType[];
-  @ApiPropertyOptional({ enum: API_VERSIONS })
-  @IsOptional()
-  @IsIn(API_VERSIONS)
-  apiVersion?: string;
-}
+/** A rotate call may carry no body at all: that is the same as `{}` (24 h overlap). */
+const rotateBody = new ZodBodyPipe(
+  z.preprocess((v) => v ?? {}, rotateWebhookSecretRequestSchema),
+);
 
-export class UpdateEndpointDto {
-  @ApiPropertyOptional() @IsOptional() @IsString() url?: string;
-  @ApiPropertyOptional({ enum: WEBHOOK_EVENT_TYPES, isArray: true })
-  @IsOptional()
-  @IsArray()
-  @IsIn(WEBHOOK_EVENT_TYPES, { each: true })
-  events?: WebhookEventType[];
-  @ApiPropertyOptional() @IsOptional() @IsBoolean() enabled?: boolean;
-}
+/** Replay answers `Idempotent-Replayed: true` on a repeat (contracts/http.md); a malformed key is an ordinary `400`. */
+const REPLAY_IDEMPOTENCY: IdempotentWireOptions = {
+  replayHeader: 'Idempotent-Replayed',
+  invalidKey: { status: 400, code: 'validation_failed' },
+};
 
+/**
+ * Dashboard routes of the webhook endpoints (FR-001 to FR-015, FR-045 to FR-047, contracts/http.md): `webhooks.manage` on
+ * every route (OWNER and ADMIN), mutations limited per shop (`webhooks.manage.shop`, fail closed; replay and ping have
+ * their own policies). Calls the application services only; every lookup there carries the shop, so another shop's id is
+ * an unknown id. The CSRF check of cookie sessions is the platform's guard (S01); bearer calls need none.
+ */
 @ApiTags('developers')
 @Controller('shops/:shopId/developers/webhooks')
 export class WebhooksController {
   constructor(
     private readonly endpoints: WebhookEndpointsService,
-    private readonly deliverer: WebhookDeliverer,
-    private readonly router: WebhookRouterProjector,
+    private readonly replays: WebhookReplayService,
   ) {}
 
-  @ShopScoped('shop.manage')
+  @ShopScoped('webhooks.manage')
+  @RateLimit('webhooks.manage.shop')
   @Post()
   create(
     @Param('shopId', ParseUUIDPipe) shopId: string,
-    @Body() body: CreateEndpointDto,
+    @User() user: AuthenticatedUser,
+    @Body(new ZodBodyPipe(createWebhookEndpointRequestSchema))
+    body: CreateWebhookEndpointRequest,
   ) {
-    return this.endpoints.create(shopId, body);
+    return this.endpoints.create(shopId, user.id, body);
   }
 
-  @ShopScoped('shop.read')
+  @ShopScoped('webhooks.manage')
   @Get()
-  list(@Param('shopId', ParseUUIDPipe) shopId: string) {
-    return this.endpoints.list(shopId);
+  list(
+    @Param('shopId', ParseUUIDPipe) shopId: string,
+    @Query(new ZodBodyPipe(webhookEndpointListQuerySchema))
+    query: { limit: number; cursor?: string },
+  ) {
+    return this.endpoints.list(shopId, query);
   }
 
-  @ShopScoped('shop.manage')
+  @ShopScoped('webhooks.manage')
+  @Get(':id')
+  get(
+    @Param('shopId', ParseUUIDPipe) shopId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.endpoints.get(shopId, id);
+  }
+
+  @ShopScoped('webhooks.manage')
+  @RateLimit('webhooks.manage.shop')
   @Patch(':id')
-  @HttpCode(204)
   update(
     @Param('shopId', ParseUUIDPipe) shopId: string,
     @Param('id', ParseUUIDPipe) id: string,
-    @Body() body: UpdateEndpointDto,
+    @User() user: AuthenticatedUser,
+    @Body(new ZodBodyPipe(updateWebhookEndpointRequestSchema))
+    body: UpdateWebhookEndpointRequest,
   ) {
-    return this.endpoints.update(shopId, id, body);
+    return this.endpoints.update(shopId, id, user.id, body);
   }
 
-  @ShopScoped('shop.manage')
+  @ShopScoped('webhooks.manage')
+  @RateLimit('webhooks.manage.shop')
+  @Post(':id/enable')
+  @HttpCode(200)
+  enable(
+    @Param('shopId', ParseUUIDPipe) shopId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+    @User() user: AuthenticatedUser,
+  ) {
+    return this.endpoints.enable(shopId, id, user.id);
+  }
+
+  @ShopScoped('webhooks.manage')
+  @RateLimit('webhooks.manage.shop')
+  @Post(':id/disable')
+  @HttpCode(200)
+  disable(
+    @Param('shopId', ParseUUIDPipe) shopId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+    @User() user: AuthenticatedUser,
+  ) {
+    return this.endpoints.disable(shopId, id, user.id);
+  }
+
+  @ShopScoped('webhooks.manage')
+  @RateLimit('webhooks.manage.shop')
   @Post(':id/rotate-secret')
   rotate(
     @Param('shopId', ParseUUIDPipe) shopId: string,
     @Param('id', ParseUUIDPipe) id: string,
+    @User() user: AuthenticatedUser,
+    @Body(rotateBody) body: RotateWebhookSecretRequest,
   ) {
-    return this.endpoints.rotateSecret(shopId, id);
+    return this.endpoints.rotateSecret(
+      shopId,
+      id,
+      user.id,
+      body.overlapHours ?? WEBHOOK_LIMITS.overlapHours.default,
+    );
   }
 
-  @ShopScoped('shop.manage')
-  @Delete(':id')
-  @HttpCode(204)
-  remove(
+  @ShopScoped('webhooks.manage')
+  @RateLimit('webhooks.manage.shop')
+  @Post(':id/expire-previous-secret')
+  @HttpCode(200)
+  expirePreviousSecret(
     @Param('shopId', ParseUUIDPipe) shopId: string,
     @Param('id', ParseUUIDPipe) id: string,
+    @User() user: AuthenticatedUser,
   ) {
-    return this.endpoints.remove(shopId, id);
+    return this.endpoints.expirePreviousSecret(shopId, id, user.id);
   }
 
-  @ShopScoped('shop.read')
+  // ------------------------------------------------------------ log, replay, test event
+
+  @ShopScoped('webhooks.manage')
   @Get(':id/attempts')
-  async attempts(
+  attempts(
     @Param('shopId', ParseUUIDPipe) shopId: string,
     @Param('id', ParseUUIDPipe) id: string,
+    @Query(new ZodBodyPipe(webhookAttemptsQuerySchema))
+    query: {
+      eventId?: string;
+      ok?: 'true' | 'false';
+      limit: number;
+      cursor?: string;
+    },
   ) {
-    const endpoint = await this.endpoints.get(id);
-    return endpoint?.shopId === shopId ? this.deliverer.attempts(id) : [];
+    return this.replays.listAttempts(shopId, id, query);
   }
 
-  @ShopScoped('shop.manage')
-  @Post(':id/events/:eventId/replay')
-  async replay(
+  @ShopScoped('webhooks.manage')
+  @Get(':id/events/:eventId')
+  event(
     @Param('shopId', ParseUUIDPipe) shopId: string,
     @Param('id', ParseUUIDPipe) id: string,
     @Param('eventId') eventId: string,
   ) {
-    return { outcome: await this.deliverer.replay(shopId, id, eventId) };
+    return this.replays.eventDetail(shopId, id, eventId);
   }
 
-  /** Sends a `webhook.ping` to every endpoint subscribed to it - "test this endpoint" button. */
-  @ShopScoped('shop.manage')
-  @Post('ping')
-  async ping(@Param('shopId', ParseUUIDPipe) shopId: string) {
-    const queued = await this.router.fanOut({
-      shopId,
-      type: 'webhook.ping',
-      eventId: `evt_${uuidv7().replace(/-/g, '')}`,
-      created: new Date().toISOString(),
-      resource: 'product',
-      object: { object: 'ping' },
-    });
-    return { queued };
+  @ShopScoped('webhooks.manage')
+  @RateLimit('webhooks.replay.shop')
+  @Idempotent({
+    required: true,
+    ttlSeconds: WEBHOOK_LIMITS.idempotencyTtlHours * 3600,
+    scope: (req) => `shop:${req.params.shopId}:webhooks.replay`,
+    wire: REPLAY_IDEMPOTENCY,
+  })
+  @Post(':id/events/:eventId/replay')
+  @HttpCode(202)
+  replay(
+    @Param('shopId', ParseUUIDPipe) shopId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('eventId') eventId: string,
+  ) {
+    return this.replays.replay(shopId, id, eventId);
+  }
+
+  @ShopScoped('webhooks.manage')
+  @RateLimit({
+    policy: 'webhooks.ping.endpoint',
+    subject: (req) => String(req.params.id),
+  })
+  @Post(':id/ping')
+  @HttpCode(202)
+  ping(
+    @Param('shopId', ParseUUIDPipe) shopId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.replays.ping(shopId, id);
+  }
+
+  @ShopScoped('webhooks.manage')
+  @RateLimit('webhooks.manage.shop')
+  @Delete(':id')
+  @HttpCode(204)
+  async remove(
+    @Param('shopId', ParseUUIDPipe) shopId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+    @User() user: AuthenticatedUser,
+  ): Promise<void> {
+    await this.endpoints.remove(shopId, id, user.id);
   }
 }

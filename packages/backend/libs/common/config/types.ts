@@ -378,6 +378,14 @@ export class SecretsManagerConfig {
   collab_instance_id?: string;
   /** Comma list of hosts webhooks may reach over http / private IPs - local & test only, ignored in production (SD-30). */
   webhooks_allow_private_hosts?: string;
+  /** S43 webhook delivery numbers (strings from the environment, validated by `resolveWebhookSettings`). */
+  webhooks_attempt_timeout_ms?: string;
+  webhooks_worker_concurrency?: string;
+  webhooks_visibility_timeout_sec?: string;
+  webhooks_retry_delays_minutes?: string;
+  webhooks_jitter?: string;
+  /** "true": order.cancelled / order.refunded without `shopIds` (S10 field not shipped) are completed through the orders service. */
+  webhooks_order_shops_fallback?: string;
   /** CDN purge-by-tag (SD-05); unset → purges are logged only. */
   cloudflare_zone_id?: string;
   cloudflare_api_token?: string;

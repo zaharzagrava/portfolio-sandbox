@@ -12,12 +12,14 @@
   "_design": {
     "pattern": "per-endpoint delivery log + replayable bodies (SD-30)",
     "items": {
-      "body": "PK=EP#<endpointId> SK=EVT#<eventId> | type, body (exact signed JSON), createdAt, expiresAtEpoch",
-      "attempt": "PK=EP#<endpointId> SK=ATT#<isoTs>#<eventId>#<attempt> | eventId, status (http code or 0), ok, durationMs, error, responseSnippet (≤ 1 KB), expiresAtEpoch"
+      "delivery": "PK=endpoint#<endpointId> SK=delivery#<eventId> | shopId, eventId, deliveryId, type, kind (event|replay|ping), state, attempt (the number the next attempt carries), nextAttemptAt, claimedAt, claimedAtMs, cancelReason, failureReason, body (exact signed JSON, <= 256 KiB), createdAt, expiresAtEpoch",
+      "attempt": "PK=endpoint#<endpointId> SK=attempt#<startedAtIso>#<attemptId> | attemptId, deliveryId, eventId, type, attempt, startedAt, durationMs, status (http code or null), ok, error, responseSnippet (<= 1 KiB), replay, expiresAtEpoch"
     },
     "accessPatterns": [
-      "dashboard log: Query PK=EP#e AND begins_with(SK, 'ATT#') ScanIndexForward=false",
-      "replay: GetItem PK=EP#e SK=EVT#<eventId>, re-enqueue the stored body"
+      "dashboard log: Query PK=endpoint#e AND begins_with(SK, 'attempt#') ScanIndexForward=false; the cursor is ExclusiveStartKey (startedAt, attemptId)",
+      "event detail and replay: GetItem PK=endpoint#e SK=delivery#<eventId>, re-send the stored body",
+      "claim: conditional UpdateItem on the delivery item (state, attempt); result: TransactWriteItems of the attempt item and the delivery state",
+      "reads filter expiresAtEpoch > now themselves: the TTL sweep is lazy (AS-60, AS-67)"
     ],
     "why": "write-heavy append log (every attempt), read by endpoint, expiring after 30 days - no reason to bloat Postgres with it"
   }

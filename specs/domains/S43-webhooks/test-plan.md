@@ -4,9 +4,9 @@ Constitution VII.8 table: one row per acceptance scenario in [`spec.md`](spec.md
 
 ## Layout and rules
 
-- API e2e files live in `packages/backend/libs/domains/developer-platform/`, boot the real `WebhooksModule`, `WebhooksWorkerModule`, `WebhooksProjectorModule` and the Lambda-hosting module (plus the tenancy, identity, orders, catalog and rate-limit modules they import) with the production prefix (`/api`), pipe, filter and interceptors, and call through `supertest`. The old `webhooks.e2e-spec.ts` is split into the files below and deleted.
+- API e2e files live in `packages/backend/libs/domains/developer-platform/`, boot the real `WebhooksModule`, `WebhooksWorkerModule`, `WebhooksProjectorModule` and the Lambda-hosting module (plus the tenancy, identity, orders, catalog and rate-limit modules they import) with the production prefix (`/api`), pipe, filter and interceptors, and call through `supertest`. The old `webhooks.e2e-spec.ts` is split into the files below; its path is kept by the signing and rotation file (its two signing and rotation ideas), so the test-integrity gate sees a replacement.
   - `webhook-endpoints.e2e-spec.ts` — describe "Webhooks: endpoint management (dashboard)"
-  - `webhook-secrets.e2e-spec.ts` — describe "Webhooks: signing and secret rotation"
+  - `webhooks.e2e-spec.ts` — describe "Webhooks: signing and secret rotation"
   - `webhook-routing.e2e-spec.ts` — describe "Webhooks: routing of domain events (consumers)" (includes the VII.4 duplicate-delivery and invalid-payload tests of the router and of the shop-deleted consumer)
   - `webhook-delivery.e2e-spec.ts` — describe "Webhooks: delivery, ordering, retries and circuit breaker" (includes the worker and Lambda-handler entry points, duplicate queue message, poison message)
   - `webhook-ssrf.e2e-spec.ts` — describe "Webhooks: address guard at delivery"
@@ -42,13 +42,13 @@ Constitution VII.8 table: one row per acceptance scenario in [`spec.md`](spec.md
 | AS-13 auth, role, tenant isolation | `webhook-endpoints.e2e-spec.ts` (every route × anonymous / STAFF / other shop / cross-shop ID) | — | — |
 | AS-14 event-type catalogue | `webhook-endpoints.e2e-spec.ts` | — | — |
 | AS-15 management rate limit, limiter down | `webhook-endpoints.e2e-spec.ts` (`429`, then fail-closed `503`) | — | — |
-| AS-16 signature on a real delivery | `webhook-secrets.e2e-spec.ts` (receiver verifies raw body) | — | `signature.spec.ts` (HMAC over `t.body`) |
+| AS-16 signature on a real delivery | `webhooks.e2e-spec.ts` (receiver verifies raw body) | — | `signature.spec.ts` (HMAC over `t.body`) |
 | AS-17 verifier rules | — | — | `signature.spec.ts` (table: tolerance edges 300/301 s, malformed headers, many `v1`) |
-| AS-18 rotation | `webhook-secrets.e2e-spec.ts` | W04 `developers.spec.ts` (rotate) | — |
-| AS-19 overlap boundary | `webhook-secrets.e2e-spec.ts` (frozen clock at expiry −1 ms and 0) | — | `signature.spec.ts` (active-secret selection at the instant) |
-| AS-20 rotation state rules, concurrent | `webhook-secrets.e2e-spec.ts` (`Promise.all`) | — | — |
-| AS-21 overlap option | `webhook-secrets.e2e-spec.ts` | — | — |
-| AS-22 secret hygiene | `webhook-secrets.e2e-spec.ts` (scan rows, cache, outbox, log items, captured logs, metrics) | — | — |
+| AS-18 rotation | `webhooks.e2e-spec.ts` | W04 `developers.spec.ts` (rotate) | — |
+| AS-19 overlap boundary | `webhooks.e2e-spec.ts` (frozen clock at expiry −1 ms and 0) | — | `signature.spec.ts` (active-secret selection at the instant) |
+| AS-20 rotation state rules, concurrent | `webhooks.e2e-spec.ts` (`Promise.all`) | — | — |
+| AS-21 overlap option | `webhooks.e2e-spec.ts` | — | — |
+| AS-22 secret hygiene | `webhooks.e2e-spec.ts` (scan rows, cache, outbox, log items, captured logs, metrics) | — | — |
 | AS-23 multi-shop order slice | `webhook-routing.e2e-spec.ts` | — | `webhook-event-mapper.spec.ts` (slice table + property) |
 | AS-24 pinned versions | `webhook-routing.e2e-spec.ts` | — | — |
 | AS-25 subscription filter | `webhook-routing.e2e-spec.ts` | — | — |

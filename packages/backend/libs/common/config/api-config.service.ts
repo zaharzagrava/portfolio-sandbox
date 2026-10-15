@@ -561,6 +561,31 @@ export class ApiConfigService {
             verify: joi.string().optional().allow(''),
             name: 'WEBHOOKS_ALLOW_PRIVATE_HOSTS',
           },
+          // S43: the numbers of webhook delivery are configuration; unset keys take the defaults of `webhook-settings.ts`.
+          webhooks_attempt_timeout_ms: {
+            verify: joi.string().optional().allow(''),
+            name: 'WEBHOOKS_ATTEMPT_TIMEOUT_MS',
+          },
+          webhooks_worker_concurrency: {
+            verify: joi.string().optional().allow(''),
+            name: 'WEBHOOKS_WORKER_CONCURRENCY',
+          },
+          webhooks_visibility_timeout_sec: {
+            verify: joi.string().optional().allow(''),
+            name: 'WEBHOOKS_VISIBILITY_TIMEOUT_SEC',
+          },
+          webhooks_retry_delays_minutes: {
+            verify: joi.string().optional().allow(''),
+            name: 'WEBHOOKS_RETRY_DELAYS_MINUTES',
+          },
+          webhooks_jitter: {
+            verify: joi.string().optional().allow(''),
+            name: 'WEBHOOKS_JITTER',
+          },
+          webhooks_order_shops_fallback: {
+            verify: joi.string().optional().allow(''),
+            name: 'WEBHOOKS_ORDER_SHOPS_FALLBACK',
+          },
           cloudflare_zone_id: {
             verify: joi.string().optional().allow(''),
             name: 'CLOUDFLARE_ZONE_ID',

@@ -206,6 +206,8 @@ export const OWNERSHIP = {
   ApiBulkChunk: 'domain:developer-platform',
   ApiUsageBucket: 'domain:developer-platform',
   WebhookEndpoint: 'domain:developer-platform',
+  WebhookEndpointHistory: 'domain:developer-platform', // S43: append-only state-change history, kept 400 days
+  WebhookShopCounter: 'domain:developer-platform', // S43: endpoints per shop, CHECK 0..20 (store-held limit)
   WidgetSite: 'domain:developer-platform',
   WidgetSiteChange: 'domain:developer-platform',
   // shop-functions

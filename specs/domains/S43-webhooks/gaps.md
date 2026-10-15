@@ -116,3 +116,108 @@ Existing tests: `webhooks.e2e-spec.ts` (4 tests: verified signature and version-
 3. Endpoint API with its e2e (AS-01–AS-15, AS-18–AS-22).
 4. Router and consumers (AS-23–AS-34, AS-66), then delivery (AS-35–AS-54), then lifecycle (AS-55–AS-59, AS-67), log and replay (AS-60–AS-65), observability and contract (AS-68–AS-69).
 5. Remove the notifications import, the barrel exports and the SQL (AS-70) once S05, S10 and S28 provide their parts; until then keep a feature-flagged adapter only if the owning capability has not shipped (record it in the Complexity Tracking table of `plan.md`).
+
+## Gap to task map (T086, 2026-10-15)
+
+Every gap of section 1 has its tests and implementation in these tasks (`tasks.md`); all of them are closed by green suites except G-17 (docs page, see W07 below).
+
+| Gap | Tasks | Gap | Tasks |
+|---|---|---|---|
+| G-01 | T035, T039 | G-23 | T022, T049 |
+| G-02 | T027, T035, T037, T039 | G-24 | T051, T053 |
+| G-03 | T014, T031, T038 | G-25 | T051, T053 |
+| G-04 | T006, T017, T031, T037 | G-26 | T059, T064 |
+| G-05 | T015, T034, T037 | G-27 | T063, T064 |
+| G-06 | T007, T018, T033, T037, T039 | G-28 | T008, T019, T060 |
+| G-07 | T030, T037 | G-29 | T061, T064 |
+| G-08 | T032, T037 | G-30 | T009, T020, T062 |
+| G-09 | T025, T039 | G-31 | T061, T064 |
+| G-10 | T015, T027, T037 | G-32 | T061, T065 |
+| G-11 | T029, T036 | G-33 | T059, T064 |
+| G-12 | T014, T038, T081, T082 | G-34 | T060, T065 |
+| G-13 | T043, T045 | G-35 | T066, T081, T082 |
+| G-14 | T013, T024, T042, T045 | G-36 | T070, T071 |
+| G-15 | T037, T044 | G-37 | T070, T071 |
+| G-16 | T013, T024 | G-38 | T074, T077 |
+| G-17 | T014 (export done), T046 (docs page open, W07) | G-39 | T075, T077 |
+| G-18 | T050, T054 | G-40 | T076, T077 |
+| G-19 | T011, T022, T048, T053 | G-41 | T073, T077 |
+| G-20 | T025, T049, T054 | G-42 | T052, T054 |
+| G-21 | T010, T021 | G-43 | T079, T080 |
+| G-22 | T049, T053 | G-44 | T012, T023 |
+
+## Sibling-spec follow-ups
+
+- **S42**: export a pure `ApiVersionService.transformResource(type, resource, targetVersion)` (today only `isSupported`, `getPinnedVersions`, `supportedVersions`, `latestVersion` exist; the table is `domain/versioning.ts` `transformForVersion`/`downgradeResource`). S43 calls it for webhook bodies; until it exists S43 imports the same in-domain function, not a copy.
+- **S10**: `order.cancelled` and `order.refunded` in `packages/contracts/src/orders/order-events.ts` need the additive `shopIds: ShopId[]` (today only `order.reserved` has it). Until then S43 uses the R1 fallback `OrderQueryService.getOrderLines` (never raw SQL); the fallback is deleted when `shopIds` ships.
+- **S15**: S43 consumes `payout.paid` and `payout.failed` with `payoutVersion` and `periodStart`; the only schemas in the repo are S28's consumer copies in `contracts/src/notifications/consumed-events.ts`. S15 should publish its schemas in `packages/contracts` so both consumers share them.
+- **S28**: the alert event is emitted as `developerplatform.webhook_endpoint_disabled` v1 (the S53 pattern forbids `_` in the first segment); the spec name `developer_platform.webhook_endpoint_disabled` is a logical alias. S28 keeps consuming the emitted name; S53 may rename later. `webhook_endpoint_changed` has the same constraint and is emitted as `developerplatform.webhook_endpoint_changed`.
+- **W04**: adopt the schemas of `contracts/http.md` (paginated list and attempts, `POST enable|disable`, replay `202` with `Idempotency-Key`, per-endpoint ping, `webhooks.manage` for all routes, `422 endpoint_url_rejected` reasons).
+- **S54**: `safeRequest` failure kinds are mapped to the attempt `error` values in one place, `infra/safe-outbound-http.adapter.ts`; a renamed kind changes only that file. The save-time check maps `checkSafeUrl` failures to the `details.reason` list in one place too, `infra/safe-address.guard.ts`.
+- **W07**: the developer docs page (`packages/web/app/developers/docs/page.tsx`) needs a Webhooks section with the reference verifier of `contracts/outbound.md` (`parseSignatureHeader` and `verifySignatureWith` from `@marketplace-sandbox/contracts`, or the Node function `verifyWebhook`); its page test pins the section list (`Authentication`, `Errors`, `Deprecation`) and must change with it (S43 T046).
+- **S03**: `ShopScoped('webhooks.manage')` puts the status gate on every route including reads: a suspended shop answers `403 shop_suspended` and an offboarding shop `409 shop_offboarding` also on `GET` list and read (S03's gate allows only `shop.read`, `members.read`, `shop.export` there). The S43 tests assert the write routes only (AS-13); say if reads of closed shops should stay open to `webhooks.manage`, which needs a gate change in S03.
+- **S10**: until `shopIds` ships on `order.cancelled` and `order.refunded`, production deployments of the projector must set `WEBHOOKS_ORDER_SHOPS_FALLBACK=true`, or those two events are dead-lettered as invalid (AS-31). Removal: delete the flag, the `OrderCommandModule` import of `WebhooksProjectorModule` and the fallback branch of `shopsOf` in `infra/webhook-consumers.ts`, and make `shopIds` required in `webhookOrderEventSchemas`.
+- **S15**: the payout consumer subscribes to `payouts.events` and parses `payout.paid`/`payout.failed` with the schemas S43 declares in `packages/contracts` (`webhookPayoutEventSchemas`); the topic name is the one `contracts/events.md` fixes and no producer exists in the repo yet.
+- **S53**: the projection runner hands a consumer the payload parsed by the declared definition's schema, which strips fields the schema does not name. A consumer that needs a field its producer's definition lacks must declare its own definition of the type (done here, see the first Phase 5 and 6 decision).
+
+## Spec changes
+
+No `*.reviewed.json` exists for S43 and none is created. The living page `docs/spec/capabilities/S43-webhooks.md` was created by T001 (2026-10-15, `[proof: none]` on the rules whose end-to-end suites are not written yet; they get their proofs as each story lands). If it is signed later, any rule edit is listed here.
+
+## Plan decisions that refine this file (see `plan.md`, `research.md`)
+
+- G-04/G-05: unique index plus `WebhookShopCounter` (CHECK ≤ 20) instead of a conditional count.
+- G-29/G-31: delivery state lives in the `WebhookAttempts` store with a transactional write of attempt and state; the SQS message carries no body.
+- G-23: until S42 exports `transformResource`, the in-domain `transformForVersion` is reused (one registry).
+- Section 5 item 5 exception (feature-flagged adapter) is recorded in the plan's Complexity Tracking (S10 `shopIds`).
+
+## Decisions taken in Phase 1 and 2 (T001 to T029)
+
+- Reference verifier (FR-016, G-17): `packages/contracts` exports the strict header parser `parseSignatureHeader` and `verifySignatureWith(hmac, equal, input)` with the HMAC injected, so the package stays free of Node built-ins (the web app imports it); the Node reference function the tests and the docs use is `verifyWebhook` in `domain/signature.ts`, which composes the two.
+- `localhost` (and any name under it) is refused with `details.reason: blocked_address`, because `localhost` is not in the closed reason list and is a blocked target; an unparseable address and an address over 2,048 characters are `400 validation_failed` (AS-02).
+- `product.stock_low` "nothing for a second qualifying snapshot of the day" is realised by the deterministic event id (`sha256('stock_low:' product ':' utcDay)`): the rule emits the same id again and the delivery record, created with a conditional put on `(endpoint, event)`, makes the second a no-op. T053 must create deliveries with `createDelivery` and treat `exists` as done; the S53 inbox receipt is keyed by the source event id and cannot dedupe two different source events of one day.
+- FIFO deduplication id = digest of endpoint id, event id, attempt kind and attempt number (not the event id alone): the event id is per (source event, shop), so two endpoints of one shop share it and the queue deduplicates queue-wide.
+- The `since` field of the event catalogue uses the two registered API versions (`2026-01-15`, `2026-10-01`) because the spec fixes no values.
+- `WebhookEndpoint` gets a transitional trigger (`WebhookEndpoint_compat_trg`) so the code that still writes `enabled` and no `urlNormalized` keeps working until T037; the drop migration is listed there.
+- Grandfathering (questions.md): duplicates keep the oldest row's address and the later rows get `#grandfathered-<id>` appended to `urlNormalized`; a shop above 20 endpoints gets counter 20; both are printed by the migration (0 rows on the test stack).
+
+## Decisions taken in Phase 3 and 4 (T030 to T047)
+
+- Default and explicit `apiVersion` (AS-04): no explicit value takes `ApiVersionService.getPinnedVersions` (the pin, else the concrete latest date); the contract schema also allows `latest`, which is resolved to the concrete latest date at write time, so a stored endpoint always carries a date and a later deploy of a newer version never moves it.
+- Dashboard `breaker` field: `open` while the circuit is open or probing, `closed` otherwise (`BreakerStore.isOpen`); a store failure reads as closed.
+- `hasPreviousSecret` and `previousSecretExpiresAt` of a read describe a previous secret that is still valid at the injected clock; once its expiry has passed the DTO shows none, although the sealed value stays stored until the next rotation or `expire-previous-secret` (which answers `409 no_previous_secret` for an already-expired one).
+- Events `developerplatform.webhook_endpoint_changed` are written with aggregate version 0 (an endpoint has no version column); one event and one history row per changed facet; history `fromValue`/`toValue` carry the host for URL facets, the status for `status`, the comma list for `events`, the version for `api_version`, and nothing for secret facets.
+- Values sealed before this change carry no context (`v1`); `WebhookEndpointLookup` still opens them without a context, new ones are `v2` bound to `webhook-endpoint:<id>`. A sweep that re-seals old rows is not part of this feature.
+- The routes `GET …/attempts`, `POST …/events/:eventId/replay` and `POST …/ping` of the old controller are gone with the rewrite (the old forms are `[BREAKING]` and have no wired replacement before T073 to T077); the web dashboard (W04) calls them until then.
+- The real-delivery tests of `webhooks.e2e-spec.ts` first drove `WebhookDeliverer.deliver` (the only sender that existed); since T064/T067 they send through the routed event and the worker's handler (see T041, T067).
+
+## Decisions taken in Phase 5 and 6 (T048 to T068)
+
+- Consumer contracts: each consumer declares its source events as plain `EventDefinition` objects built in `infra/webhook-consumers.ts` from the schemas of `packages/contracts` (`webhookOrderEventSchemas`, `productEventSchemas`, `webhookPayoutEventSchemas`, `webhookShopDeletedSchema`), not registered in the event registry (the owning domain registers its own definition of the same type and `defineEvent` refuses a duplicate). This keeps `shopIds` of `order.cancelled`/`order.refunded`, which the owner's schema does not yet declare and `z.object` would strip.
+- Receipts: `RoutingReceipts` is the inbox (`InboxService.claim` / `markStatus`) keyed `(consumer group, source event id)`. A concurrent handler of the same event waits (poll 50 ms, up to 15 s) for the first and takes over if it failed; a failed handling leaves `FAILED` (re-claimed at once) and `PROCESSED` is written only after the lane accepted every message. A repeat of a failed handling (`attempts > 1`) re-enqueues the deliveries that exist and are still `queued`; a repeat of a handled event, or the second low-stock event of one UTC day (same deterministic id), enqueues nothing.
+- Delivery plan: a lane message names the attempt it was queued for; the ordered lane shows the same message again for attempts 2 and 3, so an older number inside the lane is the delivery's current attempt. A message older than that outside the lane is a duplicate (acknowledged), except for a `retry_scheduled` delivery, whose job is scheduled again with its deterministic key (the worker may have died between recording and scheduling). An in-doubt claim is taken over after the attempt deadline plus 5 s (`attemptTimeoutMs + 5_000`) and consumes the next attempt number.
+- Breaker hold: a claimed attempt is given back with `DeliveryLog.release` (`delivering -> retry_scheduled`, same attempt number) and a `webhooks.retry` job at the close time. The job key and the FIFO deduplication id carry the scheduled instant (`DeliveryMessage.scheduledFor`), otherwise a delivery put off again with an unchanged attempt number would be dropped as a repeat inside the queue's 5-minute window. After winning the probe lease the delivery reads the breaker once more and stands down if a probe that finished in between re-opened it.
+- Replay and ping (`kind` other than `event`) already take the same path with one difference: a failure ends `failed` (no retry, no breaker, no failure window). The state of the replayed event's original record is the replay story's to define (T077).
+- Health effects after the outcome is durable (breaker, `markHealthy`, `markFailing`) are best effort: a failing side store never turns a recorded attempt into a redelivery. Auto-disable by a failing attempt and the sweep belong to T071; this phase only starts the failure window.
+- Lambda host: `handleRecord` parses the body with `deliveryMessageSchema` and rejects a body that is not a delivery (`InvalidDeliveryMessageError`); a lane failure rejects with `WebhookRedeliverError`. The queue's redrive policy (`maxReceiveCount = 5`) does the dead-lettering for the Lambda path; the SQS consumer of the worker sends a schema-invalid body to the dead-letter queue at once (`bodySchema`).
+- A rendered body over about 380,000 bytes cannot be stored in DynamoDB (400 KB item limit): the routing refuses it with `PermanentError` (dead letter) instead of looping on a storage error. Bodies between 256 KiB and that limit are stored and end `failed (payload_too_large)` at delivery (AS-53).
+
+## Decisions taken in Phase 7 to 10 (T069 to T082)
+
+- Auto-disable: a failing attempt calls `WebhookLifecycleService.autoDisable` right after `markFailing` returned the window start (inclusive, `failingSince <= now - 3 d`); the sweep job `webhooks.disable-failing-endpoints` (every 15 minutes, `overlap: skip`) calls the same method for endpoints no attempt reaches. The conditional update, the history row (actor null) and the outbox events (`developerplatform.webhook_endpoint_disabled` and `..._changed` with `disabled`) are one `TransactionRunner.run`; the cache invalidation and the cancellation of pending deliveries (`DeliveryLog.cancelPending`, reason `endpoint_disabled`) follow the commit and are repeated by the sweep or done lazily by the next attempt if they fail. An error in the attempt path never fails the message (the sweep completes it).
+- The history retention job is `webhooks.purge-history` (daily 03:17, single run); a row is deleted when `createdAt <= now - 400 d` (`deleteOlderThan` now inclusive, symmetric with the log's 30-day cut-off).
+- Replay delivery record: a replay re-sends the event id of the original, so it gets its own log item keyed `<eventId>#replay#<deliveryId>` (`deliveryKey` in `domain/webhook-ports.ts`); pings have a fresh event id and need no suffix. Event detail always reads the original (an event id must match `evt_` plus 32 hex, so a crafted id cannot reach a replay item). The detail's `attempts` counts every attempt of the event id, replays included. The FIFO deduplication id of a replay or ping also carries the delivery id.
+- Replay idempotency uses the platform store (`@Idempotent`, scope `shop:<shopId>:webhooks.replay`, 24 h, header `Idempotent-Replayed`); a malformed key is `400 validation_failed`; failures other than final ones release the key. A queue failure on replay or ping answers `503 service_unavailable` with `Retry-After: 1`; the `queued` record stays inert until its expiry.
+- Ping rate limit subject is the endpoint id (`webhooks.ping.endpoint`, `subject` option of `@RateLimit`).
+- Observability: one structured line per attempt (`action: webhook.attempt`, `requestId` = `webhook-attempt:<deliveryId>:<attempt>` because an attempt has no HTTP request, delivery, endpoint, event, kind, attempt, status, error, outcome, durationMs, host). `webhook_lane_age_seconds` is set when a worker claims a delivery (age since queued, or since its retry was due); `webhook_endpoints_breaker_open` is the count of endpoints this process saw open and not closed since; `webhook_dead_lettered_total{lane}` counts lane `delivery` for a body refused by the queue's schema and for the receive that reaches `DELIVERY_MAX_RECEIVES` (5) in the worker and the Lambda host, and lane `router` once per source event for a `PermanentError` raised by a consumer. Schema-invalid envelopes are dead-lettered by the consumer framework before a consumer runs and show only as its `dlq_total`; counting them under `lane=router` needs a hook in S53 (sibling follow-up below).
+- `webhookProblemSchema` joins `CT/webhooks.ts` (problem document with `details` and `errors`).
+
+### Sibling-spec follow-ups added in Phase 7 to 10
+
+- **S53**: a dead-letter hook (or the consumer name and reason in a callback) on `ProjectionRunner.deadLetter` so a domain can count `webhook_dead_lettered_total{lane=router}` for envelopes the framework refuses before the consumer runs.
+- **S28**: the disabled-endpoint event is still emitted as `developerplatform.webhook_endpoint_disabled` (name pattern), payload `{endpointId, shopId, host, failingSince}` with `failingSince` as an ISO instant.
+
+## Gate repairs
+
+- Test integrity: the gate refused the deletion of `developer-platform/webhooks.e2e-spec.ts` (it carried no scenario id and its subject `webhooks.ts` never existed). The signing and rotation file `webhook-secrets.e2e-spec.ts` (AS-16, AS-18 to AS-22; many more `it`/`expect` calls than the old file's 24) now lives at that path; its content is unchanged. The old five ideas map to: signed POST (AS-16), FIFO then job lane and replay (AS-40, AS-62), auto-disable fact (AS-55, AS-58), SSRF at creation (AS-03), rotation (AS-18, AS-19). References in `test-plan.md`, `plan.md`, `quickstart.md`, `tasks.md` follow the new name.
+- Environment fault, not code: the 7 failures in `public-api-logs-usage.e2e-spec.ts` and `developer-platform-consumers.e2e-spec.ts` (all S42 scenarios, AS-60, AS-62, AS-63, AS-35) were `Unknown table expression identifier 'api_requests'`. The test ClickHouse database `marketplace_test` (port 8223) had no tables (L-011, same as S42 gaps). Fix: `node --env-file=.env.test -r ts-node/register -r tsconfig-paths/register scripts/clickhouse/migrate.ts` from `packages/backend` applied all 16 files. Both specs pass afterwards (27 and 9 tests). No product code or test was changed.

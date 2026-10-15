@@ -1,2 +1,4 @@
 W01 T085: full Playwright suite (`cd packages/web && pnpm exec playwright test`) and backend capability specs (`scripts/sdd/test-spec.sh "bff-forward|bff-session|password-reset|sessions-revoke|mfa-lifecycle|dev-mailbox"`), run once at the final checkpoint; record the green run (VII.9) and the cross-spec follow-ups then.
 W03 T090: full Playwright suite (desktop, mobile, tests/visual): `cd packages/web && pnpm exec playwright test`, run once at the final checkpoint; fix W03 regressions then.
+S43 T090: fresh-stack run `scripts/qa/fresh-run.sh --here` and Lambda host boot (WebhooksLambdaModule as apps/lambdas boots it), run once at the final checkpoint; core, worker and projector boots already pass.
+S43 T046: docs page Webhooks section (W07-owned packages/web/app/developers/docs/page.tsx), done with the W07 follow-up in specs/domains/S43-webhooks/gaps.md.
