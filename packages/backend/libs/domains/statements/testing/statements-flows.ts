@@ -40,7 +40,9 @@ export async function closeMonth(
     .post(`/api/admin/accounting-periods/${month}/close`)
     .set('Idempotency-Key', uuidv4());
   if (res.status !== 202)
-    throw new Error(`close ${month} answered ${res.status}: ${JSON.stringify(res.body)}`);
+    throw new Error(
+      `close ${month} answered ${res.status}: ${JSON.stringify(res.body)}`,
+    );
   await t.drainJobs();
   return { runId: res.body.runId };
 }
@@ -84,9 +86,13 @@ export async function readStatement(
   query = '',
 ): Promise<Statement> {
   const owner = await t.member(shopId, 'OWNER');
-  const res = await t.as(owner).get(`/api/shops/${shopId}/statements/${month}${query}`);
+  const res = await t
+    .as(owner)
+    .get(`/api/shops/${shopId}/statements/${month}${query}`);
   if (res.status !== 200)
-    throw new Error(`statement ${month} answered ${res.status}: ${JSON.stringify(res.body)}`);
+    throw new Error(
+      `statement ${month} answered ${res.status}: ${JSON.stringify(res.body)}`,
+    );
   return res.body as Statement;
 }
 

@@ -47,7 +47,8 @@ export class AdjustmentService {
     private readonly runner: TransactionRunner,
     @Inject(PERIOD_REPOSITORY) private readonly periods: PeriodRepository,
     @Inject(SNAPSHOT_REPOSITORY) private readonly snapshots: SnapshotRepository,
-    @Inject(ADJUSTMENT_REPOSITORY) private readonly adjustments: AdjustmentRepository,
+    @Inject(ADJUSTMENT_REPOSITORY)
+    private readonly adjustments: AdjustmentRepository,
     @Inject(STATEMENT_READER) private readonly reader: StatementReader,
     @Inject(RATE_REPOSITORY) private readonly rates: RateRepository,
     private readonly outbox: OutboxService,
@@ -55,7 +56,8 @@ export class AdjustmentService {
     @Inject(STATEMENTS_CONFIG) private readonly config: StatementsConfig,
     @Inject(STOP_SIGNAL) private readonly stop: StopSignal,
     @Inject(CLOCK) private readonly clock: Clock,
-    @Inject(RECONCILE_FAULT) private readonly fault: { before?: ReconcileFault },
+    @Inject(RECONCILE_FAULT)
+    private readonly fault: { before?: ReconcileFault },
   ) {}
 
   /**
@@ -85,7 +87,10 @@ export class AdjustmentService {
       if (page.length === 0) break;
       for (const snapshot of page) {
         try {
-          if ((await this.reconcileShop(snapshot.shopId, month, cause)) === 'booked')
+          if (
+            (await this.reconcileShop(snapshot.shopId, month, cause)) ===
+            'booked'
+          )
             booked++;
         } catch (error) {
           failed++;
@@ -128,7 +133,10 @@ export class AdjustmentService {
       const now = this.clock.now();
       const [snapshot, earlier, fresh] = await Promise.all([
         this.snapshots.find(shopId, month, { primary: true }),
-        this.adjustments.forShop(shopId, { refersToMonth: month, primary: true }),
+        this.adjustments.forShop(shopId, {
+          refersToMonth: month,
+          primary: true,
+        }),
         this.reader.aggregate({ shopId, month, knownAt: now }),
       ]);
       const frozen: OwnFigures = snapshot
@@ -180,11 +188,18 @@ export class AdjustmentService {
     return month;
   }
 
-  private async reasonFor(cause: string, parsed: ReturnType<typeof parseCause>) {
+  private async reasonFor(
+    cause: string,
+    parsed: ReturnType<typeof parseCause>,
+  ) {
     if (cause.startsWith('close:')) return 'found by the close of the month';
     if (parsed.kind === 'late_sale') return `late sale ${parsed.ref}`;
     if (parsed.kind === 'late_payout') return `late payout ${parsed.ref}`;
-    if (parsed.ref.startsWith('legacy:')) return parsed.ref.slice('legacy:'.length);
-    return (await this.rates.reasonOfChange(parsed.ref)) ?? `rate change ${parsed.ref}`;
+    if (parsed.ref.startsWith('legacy:'))
+      return parsed.ref.slice('legacy:'.length);
+    return (
+      (await this.rates.reasonOfChange(parsed.ref)) ??
+      `rate change ${parsed.ref}`
+    );
   }
 }

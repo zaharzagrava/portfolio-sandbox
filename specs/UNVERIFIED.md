@@ -209,3 +209,4 @@ interviews) until its status says so. The implementation loop appends here (rule
 | S16 | SC-004: closing a month for 100,000 shops with sales takes under 5 minutes in batches of at most 10,000 | `specs/domains/S16-seller-statements/quickstart.md`, "Ops artifacts" (`scripts/bench/statements-close-100k.ts` in the performance job) | not run |
 | S16 | SC-005: closed-month reads p95 < 300 ms and p99 < 2 s with 5 years of history | same file (k6 read script on a seeded database) | not run |
 | S16 | SC-007: a sale shows on the live statement within 60 s at p95 | same file (staging measurement of ingestion lag) | not run |
+| S16 | UI journeys W04 statements tab ("as known on" picker, CSV download) and J01 seller step: the owner screens do not exist yet | same file (Playwright `packages/web/tests/seller-statements.spec.ts` once W04/J01 ship; API halves: AS-14, AS-18, AS-61) | not run |

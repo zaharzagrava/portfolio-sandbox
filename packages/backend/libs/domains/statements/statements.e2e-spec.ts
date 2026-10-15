@@ -1,204 +1,120 @@
-import { INestApplication } from '@nestjs/common';
-import { getConnectionToken, getModelToken } from '@nestjs/sequelize';
-import { Sequelize } from 'sequelize-typescript';
-import { Writable } from 'node:stream';
-import { v4 } from 'uuid';
-import { generateTestingModule } from '@app/test/utils/global-modules';
-import { SeedsModule } from '@app/test/seeds/seeds.module';
-import { SeedsService } from '@app/test/seeds/seeds.service';
-import { TableName } from '@app/test/seeds/types';
-import { ShopModel as Shop } from '@app/domains/tenancy';
-import { StatementsModule } from './statements.module';
-import { StatementService } from './application/statement.service';
-import { CommissionRateService } from './application/commission-rate.service';
-import { ReportingPool } from './infra/reporting-pool';
-import { streamStatementCsv } from './infra/statement-export';
+import { orderPaid } from '@app/test/fixtures/statements';
+import {
+  createStatementsApp,
+  type StatementsTestApp,
+} from './testing/statements-app';
+import {
+  adjustmentsOf,
+  closeMonth,
+  createShops,
+  rc1,
+  readStatement,
+  seedDs1,
+  setClock,
+  setRate,
+  type Shops,
+} from './testing/statements-flows';
 
-/** SD-41 against the real test Postgres (tstzrange, GiST exclusion constraint, LATERAL as-of lookups). */
-describe('Statements & bitemporal commission rates (e2e)', () => {
-  let app: INestApplication;
-  let seeds: SeedsService;
-  let sequelize: Sequelize;
-  let statements: StatementService;
-  let rates: CommissionRateService;
-  let shopId: string;
+/**
+ * One journey across the whole capability (replaces the retired SD-41 spec, L-017): sale facts, the close, a retroactive
+ * rate change, the correction and the seller's views. The detailed rules live in the eight focused specs next to it.
+ */
+describe('Statements: closed-month journey', () => {
+  let t: StatementsTestApp;
+  let shops: Shops;
 
   beforeAll(async () => {
-    const moduleRef = await generateTestingModule([
-      StatementsModule,
-      SeedsModule,
-    ]);
-    app = moduleRef.createNestApplication();
-    await app.init();
-    seeds = app.get(SeedsService);
-    sequelize = app.get(getConnectionToken());
-    statements = app.get(StatementService);
-    rates = app.get(CommissionRateService);
+    t = await createStatementsApp();
   });
-
   afterAll(async () => {
-    await app.close();
+    await t.close();
   });
-
   beforeEach(async () => {
-    await sequelize.query(
-      `TRUNCATE "StatementSnapshot", "StatementAdjustment", "AccountingPeriod"`,
-    );
-    await sequelize.query(
-      `DELETE FROM "CommissionRate" WHERE reason <> 'initial default'`,
-    );
-    await sequelize.query(
-      `UPDATE "CommissionRate" SET "recordedPeriod" = tstzrange('-infinity', NULL)`,
-    );
-    await seeds.clean();
-    shopId = (
-      await app
-        .get<typeof Shop>(getModelToken(Shop))
-        .create({ name: 'S', slug: `s-${v4().slice(0, 8)}` })
-    ).id;
-
-    const [product] = await seeds.createTreelike([
-      { __type__: TableName.Product, category: 'electronics', shopId },
-    ]);
-    const [formula] = await seeds.createTreelike([
-      {
-        __type__: TableName.Product,
-        category: '=HYPERLINK("http://evil")',
-        shopId,
-      },
-    ]);
-    const [user] = await seeds.createTreelike([
-      { __type__: TableName.User, email: `u-${v4()}@mail.com` },
-    ]);
-    for (const [productId, price] of [
-      [product.id, 10_000],
-      [product.id, 20_000],
-      [formula.id, 500],
-    ] as const) {
-      const [order] = await seeds.createTreelike([
-        { __type__: TableName.BisOrder, userId: user.id },
-      ]);
-      await sequelize.query(
-        `UPDATE "BisOrder" SET status = 'PAID', "createdAt" = '2026-03-15T12:00:00Z' WHERE id = :id`,
-        { replacements: { id: order.id } },
-      );
-      await sequelize.query(
-        `INSERT INTO "BisOrderItem" (id, "bisOrderId", "productId", quantity, "priceAtPurchase", "shopId", "createdAt", "updatedAt") VALUES (uuidv7(), :o, :p, 1, :price, :shop, now(), now())`,
-        { replacements: { o: order.id, p: productId, price, shop: shopId } },
-      );
-    }
+    await t.reset();
+    setClock(t, '2026-04-01T00:30:00Z');
+    shops = await createShops(t);
   });
 
-  it('closed months never change: a retroactive rate cut becomes an adjustment; "as known at" still answers the old truth', async () => {
-    const live = await statements.statement(shopId, '2026-03-01');
-    expect(live).toMatchObject({
-      source: 'live',
-      gross: 30_500,
-      commission: 3_050,
-    }); // 10% default
+  const csv = async (shopId: string, month: string) => {
+    const owner = await t.member(shopId, 'OWNER');
+    const res = await t
+      .as(owner)
+      .get(`/api/shops/${shopId}/statements/${month}/lines.csv`)
+      .buffer(true)
+      .parse((r, cb) => {
+        let data = '';
+        r.setEncoding('utf8');
+        r.on('data', (chunk: string) => (data += chunk));
+        r.on('end', () => cb(null, data));
+      });
+    return { status: res.status, body: String(res.body) };
+  };
 
-    await statements.closeMonth('2026-03-01');
-    const beforeChange = new Date();
-    await new Promise((r) => setTimeout(r, 20));
+  it('S16 AS-16 AS-17 AS-18 AS-40: a retroactive rate cut leaves the closed month alone, books an adjustment, and "as known at" still answers the old truth', async () => {
+    await seedDs1(t, shops);
+    await closeMonth(t, '2026-03', '2026-04-02T02:00:00Z');
+    setClock(t, '2026-04-03T10:00:00Z');
+    const closed = await readStatement(t, shops.a, '2026-03');
+    const closedCsv = await csv(shops.a, '2026-03');
+    expect(closed.status).toBe('CLOSED');
+    expect(closed.own.commissionMinor).toBe(3050);
+    expect(closedCsv.status).toBe(200);
 
-    // In April finance decides: this shop's electronics fee is 7% since March 1st.
-    await rates.setRate({
-      shopId,
-      category: 'electronics',
-      rateBps: 700,
-      validFrom: new Date('2026-03-01T00:00:00Z'),
-      reason: 'promo-2026-03',
+    const change = await setRate(t, rc1(shops.a), '2026-04-05T09:00:00Z');
+    expect(change.affectedClosedMonths).toEqual(['2026-03']);
+    await t.drainJobs();
+    setClock(t, '2026-04-20T10:00:00Z');
+
+    // the closed month never changes, in the statement or in the file
+    const after = await readStatement(t, shops.a, '2026-03');
+    expect(after.own).toEqual(closed.own);
+    expect((await csv(shops.a, '2026-03')).body).toBe(closedCsv.body);
+
+    // the correction is one adjustment booked in the next month
+    const booked = await adjustmentsOf(t, shops.a);
+    expect(booked).toHaveLength(1);
+    expect(booked[0]).toMatchObject({
+      refersToMonth: '2026-03',
+      bookedMonth: '2026-04',
+      causeKind: 'rate_change',
+      causeRef: change.changeId,
     });
-    await statements.retroAdjust({
-      shopKey: shopId,
-      from: '2026-03-01T00:00:00Z',
-      to: null,
-      reason: 'promo-2026-03',
-    });
-    await statements.retroAdjust({
-      shopKey: shopId,
-      from: '2026-03-01T00:00:00Z',
-      to: null,
-      reason: 'promo-2026-03',
-    }); // job retry
+    expect(Number(booked[0].commission)).toBe(-900);
+    const april = await readStatement(t, shops.a, '2026-04');
+    expect(april.total.commissionMinor).toBe(-900);
 
-    const closed = await statements.statement(shopId, '2026-03-01');
-    expect(closed.source).toBe('snapshot');
-    expect(closed.commission).toBe(3_050); // untouched
-    expect(closed.adjustments).toEqual([
-      expect.objectContaining({ commissionDelta: -900 }),
-    ]); // 30_000 × 3%
-
-    expect(
-      (await statements.statement(shopId, '2026-03-01', beforeChange))
-        .commission,
-    ).toBe(3_050);
-    expect(
-      (await statements.statement(shopId, '2026-03-01', new Date())).commission,
-    ).toBe(2_150);
-  });
-
-  it('bitemporal history: the superseded belief is kept with a closed recorded period', async () => {
-    await rates.setRate({
-      category: 'electronics',
-      rateBps: 800,
-      validFrom: new Date('2026-01-01T00:00:00Z'),
-      reason: 'electronics default',
-    });
-    const t1 = new Date();
-    await new Promise((r) => setTimeout(r, 20));
-    await rates.setRate({
-      category: 'electronics',
-      rateBps: 750,
-      validFrom: new Date('2026-06-01T00:00:00Z'),
-      reason: 'summer cut',
-    });
-
-    const history = await rates.history(null, 'electronics');
-    expect(history.filter((h) => h.recordedTo !== null)).toHaveLength(1); // the 8% belief from Jan, superseded
-    expect(
-      await rates.rateAsOf(v4(), 'electronics', new Date('2026-07-01'), t1),
-    ).toBe(800);
-    expect(
-      await rates.rateAsOf(v4(), 'electronics', new Date('2026-07-01')),
-    ).toBe(750);
-    expect(
-      await rates.rateAsOf(v4(), 'electronics', new Date('2026-03-01')),
-    ).toBe(800);
-  });
-
-  it('the database rejects two current rates with overlapping validity (exclusion constraint)', async () => {
-    await expect(
-      sequelize.query(
-        `INSERT INTO "CommissionRate" ("shopKey", category, "rateBps", "validPeriod") VALUES (:shop, 'x', 100, tstzrange('2026-01-01', '2026-03-01')), (:shop, 'x', 200, tstzrange('2026-02-01', NULL))`,
-        { replacements: { shop: shopId } },
-      ),
-    ).rejects.toMatchObject({
-      name: 'SequelizeExclusionConstraintError',
-      constraint: 'CommissionRate_no_overlap_current',
-    });
-  });
-
-  it('CSV export streams rows and neutralizes spreadsheet formula injection', async () => {
-    let csv = '';
-    const sink = new Writable({
-      write(chunk, _enc, done) {
-        csv += chunk.toString();
-        done();
-      },
-    });
-    await streamStatementCsv(
-      app.get(ReportingPool).pool,
-      shopId,
-      '2026-03-01',
-      sink,
+    // what was believed before the change is still answerable
+    const before = await readStatement(
+      t,
+      shops.a,
+      '2026-03',
+      '?knownAt=2026-04-01T00:00:00Z',
     );
-
-    const lines = csv.trim().split('\n');
-    expect(lines[0]).toBe(
-      'orderId,orderedAt,productId,category,quantity,unitPrice,lineTotal',
+    expect(before.source).toBe('as_known_at');
+    expect(before.own.commissionMinor).toBe(3050);
+    const later = await readStatement(
+      t,
+      shops.a,
+      '2026-03',
+      '?knownAt=2026-04-06T00:00:00Z',
     );
-    expect(lines).toHaveLength(4);
-    expect(csv).toContain(`"'=HYPERLINK(""http://evil"")"`);
+    expect(later.own.commissionMinor).toBe(2150);
+  });
+
+  it('S16 AS-61 AS-64: the CSV of the month lists the sales and neutralises spreadsheet formulas', async () => {
+    await t.sales.deliver(
+      orderPaid({
+        paidAt: '2026-03-10T10:00:00Z',
+        lines: [
+          { shopId: shops.a, unitPriceMinor: 1000, category: '=cmd|calc' },
+        ],
+      }),
+    );
+    const res = await csv(shops.a, '2026-03');
+    expect(res.status).toBe(200);
+    const lines = res.body.trim().split('\n');
+    expect(lines).toHaveLength(2);
+    expect(res.body).toContain("'=cmd|calc");
+    expect(res.body).not.toMatch(/(^|,)"?=cmd/m);
   });
 });

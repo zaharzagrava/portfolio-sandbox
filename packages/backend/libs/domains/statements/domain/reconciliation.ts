@@ -40,11 +40,16 @@ export function netFindings(
 ): FindingDraft[] {
   return rows
     .filter((r) => r.expectedMinor !== r.actualMinor)
-    .map((r) => draft('net_mismatch', r.shopId, r.expectedMinor, r.actualMinor));
+    .map((r) =>
+      draft('net_mismatch', r.shopId, r.expectedMinor, r.actualMinor),
+    );
 }
 
 /** The commission the books froze against the fees the ledger credited to the platform, in total. */
-export function feeFindings(expectedMinor: number, actualMinor: number): FindingDraft[] {
+export function feeFindings(
+  expectedMinor: number,
+  actualMinor: number,
+): FindingDraft[] {
   return expectedMinor === actualMinor
     ? []
     : [draft('fee_mismatch', null, expectedMinor, actualMinor)];
@@ -81,7 +86,12 @@ export function completenessFinding(
   ];
   for (const [delta, expected] of measures)
     if (delta !== 0)
-      return draft('completeness_violation', shopId, expected, expected - delta);
+      return draft(
+        'completeness_violation',
+        shopId,
+        expected,
+        expected - delta,
+      );
   return null;
 }
 

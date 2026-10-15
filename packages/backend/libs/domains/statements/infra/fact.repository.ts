@@ -165,7 +165,8 @@ export class SequelizeFactRepository implements FactRepository {
     const result = Object.fromEntries(
       FACT_STREAMS.map((s) => [s, null]),
     ) as Record<FactStream, Date | null>;
-    for (const row of rows) result[row.stream] = row.at ? new Date(row.at) : null;
+    for (const row of rows)
+      result[row.stream] = row.at ? new Date(row.at) : null;
     return result;
   }
 }

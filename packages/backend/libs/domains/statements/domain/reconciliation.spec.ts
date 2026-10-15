@@ -27,7 +27,13 @@ const recompute = (world: World): OwnFigures => {
   let gross = 0;
   let commission = 0;
   for (const sale of world.sales) {
-    const rate = lookupRate(world.beliefs, SHOP, sale.category, sale.paidAt, known);
+    const rate = lookupRate(
+      world.beliefs,
+      SHOP,
+      sale.category,
+      sale.paidAt,
+      known,
+    );
     gross += sale.total;
     commission += rate ? commissionOf(sale.total, rate.rateBps) : 0;
   }
@@ -56,7 +62,10 @@ const op = fc.oneof(
     category: fc.constantFrom('a', 'b'),
     total: fc.integer({ min: 0, max: 5_000_000 }),
   }),
-  fc.record({ type: fc.constant('payout' as const), amount: fc.integer({ min: 1, max: 1_000_000 }) }),
+  fc.record({
+    type: fc.constant('payout' as const),
+    amount: fc.integer({ min: 1, max: 1_000_000 }),
+  }),
   fc.record({ type: fc.constant('again' as const) }),
 );
 
@@ -122,7 +131,11 @@ describe('S16 AS-47 completeness of closed months', () => {
             });
             reconcile(`rate_change:r${i}`);
           } else if (step.type === 'sale') {
-            world.sales.push({ category: step.category, total: step.total, paidAt: MARCH });
+            world.sales.push({
+              category: step.category,
+              total: step.total,
+              paidAt: MARCH,
+            });
             reconcile(`late_sale:o${i}`);
           } else if (step.type === 'payout') {
             world.payouts.push(step.amount);
@@ -144,9 +157,13 @@ describe('S16 AS-47 completeness of closed months', () => {
           );
           const fresh = recompute(world);
           expect(snapshot.grossMinor + total.gross).toBe(fresh.grossMinor);
-          expect(snapshot.commissionMinor + total.commission).toBe(fresh.commissionMinor);
+          expect(snapshot.commissionMinor + total.commission).toBe(
+            fresh.commissionMinor,
+          );
           expect(snapshot.lineCount + total.lines).toBe(fresh.lineCount);
-          expect(snapshot.payoutsPaidMinor + total.payouts).toBe(fresh.payoutsPaidMinor);
+          expect(snapshot.payoutsPaidMinor + total.payouts).toBe(
+            fresh.payoutsPaidMinor,
+          );
         });
       }),
       { numRuns: 200 },
@@ -154,12 +171,23 @@ describe('S16 AS-47 completeness of closed months', () => {
   });
 
   it('S16 AS-42: a second change with the same reason is a second residual, not a collapsed one', () => {
-    const snapshot = { grossMinor: 30500, commissionMinor: 3050, lineCount: 3, payoutsPaidMinor: 0 };
-    const first = residualOf({ ...snapshot, commissionMinor: 2150 }, snapshot, []);
+    const snapshot = {
+      grossMinor: 30500,
+      commissionMinor: 3050,
+      lineCount: 3,
+      payoutsPaidMinor: 0,
+    };
+    const first = residualOf(
+      { ...snapshot, commissionMinor: 2150 },
+      snapshot,
+      [],
+    );
     expect(first.commissionDeltaMinor).toBe(-900);
-    const second = residualOf({ ...snapshot, commissionMinor: 1850 }, snapshot, [
-      { ...first },
-    ]);
+    const second = residualOf(
+      { ...snapshot, commissionMinor: 1850 },
+      snapshot,
+      [{ ...first }],
+    );
     expect(second.commissionDeltaMinor).toBe(-300);
   });
 

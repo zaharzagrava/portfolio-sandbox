@@ -56,8 +56,7 @@ describe('S16 AS-04 rate precedence and boundaries', () => {
         ?.rateBps,
     ).toBe(1000);
     expect(
-      lookupRate(rows, SHOP_A, 'x', at('2026-03-01T00:00:00Z'), known)
-        ?.rateBps,
+      lookupRate(rows, SHOP_A, 'x', at('2026-03-01T00:00:00Z'), known)?.rateBps,
     ).toBe(800);
   });
 

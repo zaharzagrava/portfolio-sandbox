@@ -90,7 +90,10 @@ export class CommissionRateService {
       rateChangesCounter.add(1, { outcome: 'refused' });
       throw defaultRateGap();
     }
-    if (input.shopId && !(await this.shops.existing([input.shopId])).has(input.shopId)) {
+    if (
+      input.shopId &&
+      !(await this.shops.existing([input.shopId])).has(input.shopId)
+    ) {
       rateChangesCounter.add(1, { outcome: 'refused' });
       throw shopNotFound();
     }
@@ -220,7 +223,9 @@ export class CommissionRateService {
   }> {
     const shopKey = query.shopId ?? DEFAULT_SHOP_KEY;
     const category =
-      query.category === undefined ? undefined : normaliseCategory(query.category);
+      query.category === undefined
+        ? undefined
+        : normaliseCategory(query.category);
     const scope = `${shopKey}:${category ?? ''}`;
     const secret = this.cursorSecret();
     const after = query.cursor

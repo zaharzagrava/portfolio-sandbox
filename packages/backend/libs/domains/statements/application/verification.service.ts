@@ -59,7 +59,8 @@ export class VerificationService {
     private readonly runner: TransactionRunner,
     @Inject(PERIOD_REPOSITORY) private readonly periods: PeriodRepository,
     @Inject(SNAPSHOT_REPOSITORY) private readonly snapshots: SnapshotRepository,
-    @Inject(ADJUSTMENT_REPOSITORY) private readonly adjustments: AdjustmentRepository,
+    @Inject(ADJUSTMENT_REPOSITORY)
+    private readonly adjustments: AdjustmentRepository,
     @Inject(STATEMENT_READER) private readonly reader: StatementReader,
     @Inject(FINDING_REPOSITORY) private readonly findings: FindingRepository,
     private readonly config: ApiConfigService,
@@ -74,12 +75,16 @@ export class VerificationService {
     const comparison = await this.findings.ledgerComparison(month);
     const graceOver =
       period.closedAt !== null &&
-      now.getTime() >= period.closedAt.getTime() + this.settings.ledgerGraceHours * 3_600_000;
+      now.getTime() >=
+        period.closedAt.getTime() + this.settings.ledgerGraceHours * 3_600_000;
 
     const drafts: FindingDraft[] = [
       ...netFindings(comparison.net),
       ...(comparison.fees
-        ? feeFindings(comparison.fees.expectedMinor, comparison.fees.actualMinor)
+        ? feeFindings(
+            comparison.fees.expectedMinor,
+            comparison.fees.actualMinor,
+          )
         : []),
       ...(graceOver ? missingInLedgerFindings(comparison.unjournalled) : []),
       ...missingInStatementFindings(comparison.journalsWithoutSale),
@@ -114,14 +119,19 @@ export class VerificationService {
       try {
         if ((await this.verifyPeriod(row.month)) !== 'skipped') verified++;
       } catch (error) {
-        this.logger.error(`verification of ${row.month} failed: ${(error as Error).name}`);
+        this.logger.error(
+          `verification of ${row.month} failed: ${(error as Error).name}`,
+        );
       }
     }
     return verified;
   }
 
   /** Snapshot plus the adjustments that refer to the month against a recomputation now, per shop (FR-029). */
-  private async completeness(month: string, now: Date): Promise<FindingDraft[]> {
+  private async completeness(
+    month: string,
+    now: Date,
+  ): Promise<FindingDraft[]> {
     const drafts: FindingDraft[] = [];
     let after: string | null = null;
     for (;;) {
@@ -129,8 +139,15 @@ export class VerificationService {
       if (page.length === 0) break;
       for (const snapshot of page) {
         const [fresh, earlier] = await Promise.all([
-          this.reader.aggregate({ shopId: snapshot.shopId, month, knownAt: now }),
-          this.adjustments.forShop(snapshot.shopId, { refersToMonth: month, primary: true }),
+          this.reader.aggregate({
+            shopId: snapshot.shopId,
+            month,
+            knownAt: now,
+          }),
+          this.adjustments.forShop(snapshot.shopId, {
+            refersToMonth: month,
+            primary: true,
+          }),
         ]);
         const residual = residualOf(
           fresh,
@@ -181,7 +198,10 @@ export class VerificationService {
       items,
       nextCursor:
         rows.length > query.limit && last
-          ? encodeCursor({ r: 'findings', s: month, k: last.openedAt, id: last.id }, secret)
+          ? encodeCursor(
+              { r: 'findings', s: month, k: last.openedAt, id: last.id },
+              secret,
+            )
           : null,
     };
   }

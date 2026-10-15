@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectConnection } from '@nestjs/sequelize';
-import { QueryTypes, Sequelize } from 'sequelize';
+import { QueryTypes, Sequelize, type Transaction } from 'sequelize';
 import { monthBounds, monthToDate } from '../domain/period';
 import {
   DEFAULT_SHOP_KEY,
@@ -90,19 +90,33 @@ export class SequelizeStatementReader implements StatementReader {
   }
 
   async aggregate(request: AggregateRequest): Promise<Aggregate> {
-    const rows = await this.primary.query<FigureRow>(
-      `WITH shops AS (SELECT CAST(:shopId AS uuid) AS "shopId") ${FIGURES}`,
-      {
-        type: QueryTypes.SELECT,
-        replacements: {
-          shopId: request.shopId,
-          ...this.bounds(request.month),
-          knownAt: request.knownAt.toISOString(),
-          appliedBy: request.appliedBy === true,
-          default: DEFAULT_SHOP_KEY,
+    const run = (transaction?: Transaction) =>
+      this.primary.query<FigureRow>(
+        `WITH shops AS (SELECT CAST(:shopId AS uuid) AS "shopId") ${FIGURES}`,
+        {
+          type: QueryTypes.SELECT,
+          transaction,
+          replacements: {
+            shopId: request.shopId,
+            ...this.bounds(request.month),
+            knownAt: request.knownAt.toISOString(),
+            appliedBy: request.appliedBy === true,
+            default: DEFAULT_SHOP_KEY,
+          },
         },
-      },
-    );
+      );
+    const rows =
+      request.timeoutMs === undefined
+        ? await run()
+        : await this.primary.transaction(async (transaction) => {
+            // `SET LOCAL` takes no bind parameter; the value is an integer clamped here.
+            const timeout = Math.max(1, Math.floor(request.timeoutMs!));
+            await this.primary.query(
+              `SET LOCAL statement_timeout = ${timeout}`,
+              { transaction },
+            );
+            return run(transaction);
+          });
     return toAggregate(rows[0]);
   }
 

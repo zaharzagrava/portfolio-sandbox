@@ -6,7 +6,10 @@ import {
 } from '@marketplace-sandbox/contracts';
 import { MetricsRegistry } from '@app/common/telemetry/metrics-registry';
 import type { TestUser } from '@app/test/utils/catalog-app';
-import { createStatementsApp, type StatementsTestApp } from './testing/statements-app';
+import {
+  createStatementsApp,
+  type StatementsTestApp,
+} from './testing/statements-app';
 
 const ZERO = '00000000-0000-0000-0000-000000000000';
 const metric = (name: string, labels: Record<string, string> = {}) =>
@@ -45,7 +48,8 @@ describe('Statements: bitemporal commission rates', () => {
     let req = who
       ? t.as(who).post('/api/admin/commission-rates')
       : t.http().post('/api/admin/commission-rates');
-    if (options.key !== null) req = req.set('Idempotency-Key', options.key ?? uuidv4());
+    if (options.key !== null)
+      req = req.set('Idempotency-Key', options.key ?? uuidv4());
     return req.send(body);
   };
   const get = (url: string, who: TestUser | null = admin) =>
@@ -96,7 +100,9 @@ describe('Statements: bitemporal commission rates', () => {
       affectedClosedMonths: [],
     });
     expect(Date.parse(body.validFrom)).toBe(Date.parse('2026-03-01T00:00:00Z'));
-    expect(Date.parse(body.recordedAt)).toBe(Date.parse('2026-04-01T09:00:00Z'));
+    expect(Date.parse(body.recordedAt)).toBe(
+      Date.parse('2026-04-01T09:00:00Z'),
+    );
 
     const added = await rows(`"shopKey" = '${shopA}'`);
     expect(added).toHaveLength(1);
@@ -108,12 +114,16 @@ describe('Statements: bitemporal commission rates', () => {
       recordedBy: admin.id,
       recordedTo: null,
     });
-    expect(Date.parse(added[0].recordedFrom)).toBe(Date.parse('2026-04-01T09:00:00Z'));
+    expect(Date.parse(added[0].recordedFrom)).toBe(
+      Date.parse('2026-04-01T09:00:00Z'),
+    );
     expect(await total()).toBe(before + 1);
     const defaults = await rows(`"shopKey" = '${ZERO}'`);
     expect(defaults).toHaveLength(1);
     expect(defaults[0].recordedTo).toBeNull();
-    expect(metric('statements_rate_changes_total', { outcome: 'recorded' })).toBeGreaterThan(0);
+    expect(
+      metric('statements_rate_changes_total', { outcome: 'recorded' }),
+    ).toBeGreaterThan(0);
   });
 
   describe('lookup and history on both axes', () => {
@@ -143,9 +153,27 @@ describe('Statements: bitemporal commission rates', () => {
     });
 
     it.each([
-      ['2026-07-01T00:00:00Z', '2026-04-01T00:00:00Z', 'electronics', 800, 'default_category'],
-      ['2026-07-01T00:00:00Z', undefined, 'electronics', 750, 'default_category'],
-      ['2026-03-01T00:00:00Z', undefined, 'electronics', 800, 'default_category'],
+      [
+        '2026-07-01T00:00:00Z',
+        '2026-04-01T00:00:00Z',
+        'electronics',
+        800,
+        'default_category',
+      ],
+      [
+        '2026-07-01T00:00:00Z',
+        undefined,
+        'electronics',
+        750,
+        'default_category',
+      ],
+      [
+        '2026-03-01T00:00:00Z',
+        undefined,
+        'electronics',
+        800,
+        'default_category',
+      ],
       ['2025-12-01T00:00:00Z', undefined, 'electronics', 1000, 'default_any'],
     ])(
       'S16 AS-02: validAt %s knownAt %s resolves to %i by %s',
@@ -165,16 +193,32 @@ describe('Statements: bitemporal commission rates', () => {
       expect(res.status).toBe(200);
       const page = commissionRateHistoryPageSchema.parse(res.body);
       expect(page.items).toHaveLength(3);
-      const original = page.items.find((i) => i.rateBps === 800 && i.recordedTo !== null)!;
-      const remainder = page.items.find((i) => i.rateBps === 800 && i.recordedTo === null)!;
+      const original = page.items.find(
+        (i) => i.rateBps === 800 && i.recordedTo !== null,
+      )!;
+      const remainder = page.items.find(
+        (i) => i.rateBps === 800 && i.recordedTo === null,
+      )!;
       const summer = page.items.find((i) => i.rateBps === 750)!;
-      expect(Date.parse(original.recordedFrom!)).toBe(Date.parse('2026-01-01T00:00:00Z'));
-      expect(Date.parse(original.recordedTo!)).toBe(Date.parse('2026-04-10T00:00:00Z'));
+      expect(Date.parse(original.recordedFrom!)).toBe(
+        Date.parse('2026-01-01T00:00:00Z'),
+      );
+      expect(Date.parse(original.recordedTo!)).toBe(
+        Date.parse('2026-04-10T00:00:00Z'),
+      );
       expect(original.validTo).toBeNull();
-      expect(Date.parse(remainder.validFrom!)).toBe(Date.parse('2026-01-01T00:00:00Z'));
-      expect(Date.parse(remainder.validTo!)).toBe(Date.parse('2026-06-01T00:00:00Z'));
-      expect(Date.parse(remainder.recordedFrom!)).toBe(Date.parse('2026-04-10T00:00:00Z'));
-      expect(Date.parse(summer.validFrom!)).toBe(Date.parse('2026-06-01T00:00:00Z'));
+      expect(Date.parse(remainder.validFrom!)).toBe(
+        Date.parse('2026-01-01T00:00:00Z'),
+      );
+      expect(Date.parse(remainder.validTo!)).toBe(
+        Date.parse('2026-06-01T00:00:00Z'),
+      );
+      expect(Date.parse(remainder.recordedFrom!)).toBe(
+        Date.parse('2026-04-10T00:00:00Z'),
+      );
+      expect(Date.parse(summer.validFrom!)).toBe(
+        Date.parse('2026-06-01T00:00:00Z'),
+      );
       expect(summer.validTo).toBeNull();
       expect(original.changeId).toBe(remainder.changeId);
       expect(summer.changeId).not.toBe(original.changeId);
@@ -182,7 +226,13 @@ describe('Statements: bitemporal commission rates', () => {
   });
 
   it('S16 AS-05: the store itself refuses a second current belief with overlapping validity', async () => {
-    const first = await post(electronicsBody({ category: 'x', validTo: '2026-03-01T00:00:00Z', validFrom: '2026-01-01T00:00:00Z' }));
+    const first = await post(
+      electronicsBody({
+        category: 'x',
+        validTo: '2026-03-01T00:00:00Z',
+        validFrom: '2026-01-01T00:00:00Z',
+      }),
+    );
     expect(first.status).toBe(201);
     const before = await total();
     await expect(
@@ -198,8 +248,17 @@ describe('Statements: bitemporal commission rates', () => {
   it('S16 AS-06: two admins changing overlapping ranges are serialised with distinct record instants', async () => {
     const other = await t.admin();
     const [one, two] = await Promise.all([
-      post(electronicsBody({ rateBps: 600, validFrom: '2026-03-01T00:00:00Z', validTo: '2026-05-01T00:00:00Z' })),
-      post(electronicsBody({ rateBps: 650, validFrom: '2026-04-01T00:00:00Z' }), { who: other }),
+      post(
+        electronicsBody({
+          rateBps: 600,
+          validFrom: '2026-03-01T00:00:00Z',
+          validTo: '2026-05-01T00:00:00Z',
+        }),
+      ),
+      post(
+        electronicsBody({ rateBps: 650, validFrom: '2026-04-01T00:00:00Z' }),
+        { who: other },
+      ),
     ]);
     expect([one.status, two.status]).toEqual([201, 201]);
     const ids = [one.body.changeId, two.body.changeId];
@@ -211,23 +270,33 @@ describe('Statements: bitemporal commission rates', () => {
         WHERE upper_inf(a."recordedPeriod") AND upper_inf(b."recordedPeriod")`,
     );
     expect(overlaps.n).toBe('0');
-    const mine = await rows(`"shopKey" = '${shopA}' AND category = 'electronics'`);
+    const mine = await rows(
+      `"shopKey" = '${shopA}' AND category = 'electronics'`,
+    );
     expect(mine.every((r) => !r.empty)).toBe(true);
-    const recordedForChange = ids.map((id) =>
-      mine.find((r) => r.changeId === id)!.recordedFrom,
+    const recordedForChange = ids.map(
+      (id) => mine.find((r) => r.changeId === id)!.recordedFrom,
     );
     expect(new Set(recordedForChange).size).toBe(2);
     const history = commissionRateHistoryPageSchema.parse(
-      (await get(`/admin/commission-rates?shopId=${shopA}&category=electronics`)).body,
+      (
+        await get(
+          `/admin/commission-rates?shopId=${shopA}&category=electronics`,
+        )
+      ).body,
     );
-    expect(ids.every((id) => history.items.some((i) => i.changeId === id))).toBe(true);
+    expect(
+      ids.every((id) => history.items.some((i) => i.changeId === id)),
+    ).toBe(true);
   });
 
   it('S16 AS-07: two changes at one frozen instant are recorded a microsecond apart', async () => {
     const first = await post(electronicsBody({ rateBps: 600 }));
     const second = await post(electronicsBody({ rateBps: 650 }));
     expect([first.status, second.status]).toEqual([201, 201]);
-    const mine = await rows(`"shopKey" = '${shopA}' AND category = 'electronics'`);
+    const mine = await rows(
+      `"shopKey" = '${shopA}' AND category = 'electronics'`,
+    );
     expect(mine).toHaveLength(2);
     expect(mine.every((r) => !r.empty)).toBe(true);
     const [gap] = await t.sql<{ micros: string }>(
@@ -241,18 +310,30 @@ describe('Statements: bitemporal commission rates', () => {
   it('S16 AS-08: the same change again is a no-op that writes nothing', async () => {
     expect((await post(electronicsBody())).status).toBe(201);
     const before = await total();
-    const [{ jobs: jobsBefore }] = await t.sql<{ jobs: string }>(`SELECT count(*)::text AS jobs FROM "Job"`);
-    const [{ events: eventsBefore }] = await t.sql<{ events: string }>(`SELECT count(*)::text AS events FROM "Outbox"`);
+    const [{ jobs: jobsBefore }] = await t.sql<{ jobs: string }>(
+      `SELECT count(*)::text AS jobs FROM "Job"`,
+    );
+    const [{ events: eventsBefore }] = await t.sql<{ events: string }>(
+      `SELECT count(*)::text AS events FROM "Outbox"`,
+    );
 
     const res = await post(electronicsBody());
     expect(res.status).toBe(200);
-    expect(commissionRateChangeResultSchema.parse(res.body).changed).toBe(false);
+    expect(commissionRateChangeResultSchema.parse(res.body).changed).toBe(
+      false,
+    );
     expect(await total()).toBe(before);
-    const [{ jobs }] = await t.sql<{ jobs: string }>(`SELECT count(*)::text AS jobs FROM "Job"`);
-    const [{ events }] = await t.sql<{ events: string }>(`SELECT count(*)::text AS events FROM "Outbox"`);
+    const [{ jobs }] = await t.sql<{ jobs: string }>(
+      `SELECT count(*)::text AS jobs FROM "Job"`,
+    );
+    const [{ events }] = await t.sql<{ events: string }>(
+      `SELECT count(*)::text AS events FROM "Outbox"`,
+    );
     expect(jobs).toBe(jobsBefore);
     expect(events).toBe(eventsBefore);
-    expect(metric('statements_rate_changes_total', { outcome: 'noop' })).toBeGreaterThan(0);
+    expect(
+      metric('statements_rate_changes_total', { outcome: 'noop' }),
+    ).toBeGreaterThan(0);
   });
 
   describe('S16 AS-09 validation', () => {
@@ -269,17 +350,22 @@ describe('Statements: bitemporal commission rates', () => {
       ['201-character reason', { reason: 'r'.repeat(201) }],
       ['shopId that is not a UUID', { shopId: 'abc' }],
       ['an unknown field', { surprise: true }],
-    ])('S16 AS-09: %s is 400 validation_failed and writes nothing', async (_name, patch) => {
-      const before = await total();
-      const res = await post(electronicsBody(patch));
-      expect(res.status).toBe(400);
-      expect(res.body.code).toBe('validation_failed');
-      expect(await total()).toBe(before);
-    });
+    ])(
+      'S16 AS-09: %s is 400 validation_failed and writes nothing',
+      async (_name, patch) => {
+        const before = await total();
+        const res = await post(electronicsBody(patch));
+        expect(res.status).toBe(400);
+        expect(res.body.code).toBe('validation_failed');
+        expect(await total()).toBe(before);
+      },
+    );
 
     it('S16 AS-09: validTo not after validFrom is 422 rate_range_invalid', async () => {
       const before = await total();
-      const res = await post(electronicsBody({ validTo: '2026-03-01T00:00:00Z' }));
+      const res = await post(
+        electronicsBody({ validTo: '2026-03-01T00:00:00Z' }),
+      );
       expect(res.status).toBe(422);
       expect(res.body.code).toBe('rate_range_invalid');
       expect(await total()).toBe(before);
@@ -308,7 +394,9 @@ describe('Statements: bitemporal commission rates', () => {
     expect(await rows()).toEqual(before);
 
     // a shop-level rate may leave gaps: lookups fall back to the default
-    const shop = await post(electronicsBody({ category: '*', validTo: '2026-06-01T00:00:00Z' }));
+    const shop = await post(
+      electronicsBody({ category: '*', validTo: '2026-06-01T00:00:00Z' }),
+    );
     expect(shop.status).toBe(201);
   });
 
@@ -318,7 +406,12 @@ describe('Statements: bitemporal commission rates', () => {
       expect((await post(electronicsBody(), { who: null })).status).toBe(401);
       expect((await get('/admin/commission-rates', null)).status).toBe(401);
       expect(
-        (await get('/admin/commission-rates/as-of?category=x&validAt=2026-01-01T00:00:00Z', null)).status,
+        (
+          await get(
+            '/admin/commission-rates/as-of?category=x&validAt=2026-01-01T00:00:00Z',
+            null,
+          )
+        ).status,
       ).toBe(401);
       expect(await total()).toBe(before);
     });
@@ -330,7 +423,12 @@ describe('Statements: bitemporal commission rates', () => {
       expect(res.body.code).toBe('permission_denied');
       expect((await get('/admin/commission-rates', owner)).status).toBe(403);
       expect(
-        (await get('/admin/commission-rates/as-of?category=x&validAt=2026-01-01T00:00:00Z', owner)).status,
+        (
+          await get(
+            '/admin/commission-rates/as-of?category=x&validAt=2026-01-01T00:00:00Z',
+            owner,
+          )
+        ).status,
       ).toBe(403);
       expect(await total()).toBe(before);
     });
@@ -359,7 +457,10 @@ describe('Statements: bitemporal commission rates', () => {
       const holder = t.sequelize.transaction(async (tx) => {
         await t.sequelize.query(
           `SELECT pg_advisory_xact_lock(hashtextextended(:k, 0))`,
-          { replacements: { k: `statements:rate:${shopA}:electronics` }, transaction: tx },
+          {
+            replacements: { k: `statements:rate:${shopA}:electronics` },
+            transaction: tx,
+          },
         );
         locked();
         await held;
@@ -408,7 +509,9 @@ describe('Statements: bitemporal commission rates', () => {
     let cursor: string | null = null;
     const sizes: number[] = [];
     for (let page = 0; page < 3; page++) {
-      const res = await get(cursor ? `${base}&cursor=${encodeURIComponent(cursor)}` : base);
+      const res = await get(
+        cursor ? `${base}&cursor=${encodeURIComponent(cursor)}` : base,
+      );
       expect(res.status).toBe(200);
       const body = commissionRateHistoryPageSchema.parse(res.body);
       sizes.push(body.items.length);
@@ -419,12 +522,19 @@ describe('Statements: bitemporal commission rates', () => {
     expect(cursor).toBeNull();
     expect(new Set(seen.map((i) => i.id)).size).toBe(45);
     for (let i = 1; i < seen.length; i++)
-      expect(Date.parse(seen[i - 1].recordedFrom!) >= Date.parse(seen[i].recordedFrom!)).toBe(true);
+      expect(
+        Date.parse(seen[i - 1].recordedFrom!) >=
+          Date.parse(seen[i].recordedFrom!),
+      ).toBe(true);
 
-    const tooMany = await get(`/admin/commission-rates?shopId=${shopA}&limit=101`);
+    const tooMany = await get(
+      `/admin/commission-rates?shopId=${shopA}&limit=101`,
+    );
     expect(tooMany.status).toBe(400);
     expect(tooMany.body.code).toBe('validation_failed');
-    const tampered = await get(`${base}&cursor=${encodeURIComponent(`${cursor ?? 'x'}abc.def`)}`);
+    const tampered = await get(
+      `${base}&cursor=${encodeURIComponent(`${cursor ?? 'x'}abc.def`)}`,
+    );
     expect(tampered.status).toBe(400);
     expect(tampered.body.code).toBe('invalid_cursor');
 
@@ -444,9 +554,15 @@ describe('Statements: bitemporal commission rates', () => {
       return r.n;
     };
     const before = await count();
-    expect((await get(`/admin/commission-rates?shopId=${shopA}`)).status).toBe(200);
+    expect((await get(`/admin/commission-rates?shopId=${shopA}`)).status).toBe(
+      200,
+    );
     expect(
-      (await get('/admin/commission-rates/as-of?category=electronics&validAt=2026-03-02T00:00:00Z')).status,
+      (
+        await get(
+          '/admin/commission-rates/as-of?category=electronics&validAt=2026-03-02T00:00:00Z',
+        )
+      ).status,
     ).toBe(200);
     expect(await count()).toBe(before);
   });

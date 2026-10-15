@@ -71,7 +71,9 @@ export class SequelizeAdjustmentRepository implements AdjustmentRepository {
             type: QueryTypes.SELECT,
             replacements: {
               shopId,
-              booked: filter.bookedMonth ? monthToDate(filter.bookedMonth) : null,
+              booked: filter.bookedMonth
+                ? monthToDate(filter.bookedMonth)
+                : null,
               refers: filter.refersToMonth
                 ? monthToDate(filter.refersToMonth)
                 : null,

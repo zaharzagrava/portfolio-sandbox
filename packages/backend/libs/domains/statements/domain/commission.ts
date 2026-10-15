@@ -11,9 +11,7 @@ export function commissionOf(lineTotalMinor: number, rateBps: number): number {
     throw new RangeError('lineTotalMinor must be a non-negative integer');
   if (!Number.isInteger(rateBps) || rateBps < 0 || rateBps > MAX_RATE_BPS)
     throw new RangeError('rateBps must be an integer from 0 to 10000');
-  return Number(
-    (BigInt(lineTotalMinor) * BigInt(rateBps) + 5000n) / 10_000n,
-  );
+  return Number((BigInt(lineTotalMinor) * BigInt(rateBps) + 5000n) / 10_000n);
 }
 
 export interface PricedLine {

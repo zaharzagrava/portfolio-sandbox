@@ -6,8 +6,7 @@ import { invalidCursor } from './errors';
  * platform secret. The route is inside the signed payload, so a cursor issued for one list cannot drive another; a
  * tampered, unsigned or foreign cursor answers `400 invalid_cursor` and is never followed.
  */
-export type CursorRoute =
-  'statements' | 'rates' | 'periods' | 'findings';
+export type CursorRoute = 'statements' | 'rates' | 'periods' | 'findings';
 
 export interface Cursor {
   /** Route the cursor belongs to. */

@@ -12,7 +12,10 @@ import { StatementsLifecycle } from './infra/statements-lifecycle';
 import { STATEMENTS_CONFIG, type StatementsConfig } from './domain/config';
 import { EXPORT_SOURCE, type ExportSource } from './domain/ports';
 import { CSV_HEADER } from './domain/csv';
-import { createStatementsApp, type StatementsTestApp } from './testing/statements-app';
+import {
+  createStatementsApp,
+  type StatementsTestApp,
+} from './testing/statements-app';
 import {
   closeMonth,
   createShops,
@@ -88,14 +91,23 @@ describe('Statements: streamed CSV export', () => {
   });
 
   const owner = (shopId: string) => t.member(shopId, 'OWNER');
-  const csv = async (shopId: string, month: string, query = '', who?: TestUser) => {
+  const csv = async (
+    shopId: string,
+    month: string,
+    query = '',
+    who?: TestUser,
+  ) => {
     const user = who ?? (await owner(shopId));
-    return t.as(user).get(`/api/shops/${shopId}/statements/${month}/lines.csv${query}`).buffer(true).parse((res, cb) => {
-      let data = '';
-      res.setEncoding('utf8');
-      res.on('data', (chunk: string) => (data += chunk));
-      res.on('end', () => cb(null, data));
-    });
+    return t
+      .as(user)
+      .get(`/api/shops/${shopId}/statements/${month}/lines.csv${query}`)
+      .buffer(true)
+      .parse((res, cb) => {
+        let data = '';
+        res.setEncoding('utf8');
+        res.on('data', (chunk: string) => (data += chunk));
+        res.on('end', () => cb(null, data));
+      });
   };
   const text = (res: { body: unknown }) => String(res.body);
   const tableCounts = async () =>
@@ -107,7 +119,10 @@ describe('Statements: streamed CSV export', () => {
     )[0].n;
   const sums = (rows: string[][]) =>
     rows.slice(1).reduce(
-      (acc, r) => ({ gross: acc.gross + Number(r[8] || 0), commission: acc.commission + Number(r[10] || 0) }),
+      (acc, r) => ({
+        gross: acc.gross + Number(r[8] || 0),
+        commission: acc.commission + Number(r[10] || 0),
+      }),
       { gross: 0, commission: 0 },
     );
   const closeDs1 = async () => {
@@ -132,7 +147,9 @@ describe('Statements: streamed CSV export', () => {
     const res = await csv(shops.a, '2026-03');
     expect(res.status).toBe(200);
     expect(res.headers['content-type']).toBe('text/csv; charset=utf-8');
-    expect(res.headers['content-disposition']).toBe(`attachment; filename="statement-${shops.a}-2026-03.csv"`);
+    expect(res.headers['content-disposition']).toBe(
+      `attachment; filename="statement-${shops.a}-2026-03.csv"`,
+    );
     expect(res.headers['x-content-type-options']).toBe('nosniff');
     expect(res.headers['cache-control']).toBe('no-store');
     const body = text(res);
@@ -142,13 +159,18 @@ describe('Statements: streamed CSV export', () => {
     );
     const rows = parseCsv(body);
     expect(rows).toHaveLength(4);
-    expect(rows.slice(1).map((r) => [r[0], r[1], r[2], r[8], r[9], r[10]])).toEqual([
+    expect(
+      rows.slice(1).map((r) => [r[0], r[1], r[2], r[8], r[9], r[10]]),
+    ).toEqual([
       ['sale', DS1.o1, DS1.l1, '10000', '1000', '1000'],
       ['sale', DS1.o2, DS1.l2, '20000', '1000', '2000'],
       ['sale', DS1.o3, DS1.l3, '500', '1000', '50'],
     ]);
     const statement = await readStatement(t, shops.a, '2026-03');
-    expect(sums(rows)).toEqual({ gross: statement.total.grossMinor, commission: statement.total.commissionMinor });
+    expect(sums(rows)).toEqual({
+      gross: statement.total.grossMinor,
+      commission: statement.total.commissionMinor,
+    });
     expect(await tableCounts()).toBe(before);
   });
 
@@ -163,10 +185,26 @@ describe('Statements: streamed CSV export', () => {
     const april = parseCsv(text(await csv(shops.a, '2026-04')));
     expect(april).toHaveLength(2);
     expect(april[1]).toEqual([
-      'adjustment', '', '', '', '', '', '', '', '0', '', '-900', '2026-03', '2026-04', `rate_change:${change.changeId}`,
+      'adjustment',
+      '',
+      '',
+      '',
+      '',
+      '',
+      '',
+      '',
+      '0',
+      '',
+      '-900',
+      '2026-03',
+      '2026-04',
+      `rate_change:${change.changeId}`,
     ]);
     const statement = await readStatement(t, shops.a, '2026-04');
-    expect(sums(april)).toEqual({ gross: statement.total.grossMinor, commission: statement.total.commissionMinor });
+    expect(sums(april)).toEqual({
+      gross: statement.total.grossMinor,
+      commission: statement.total.commissionMinor,
+    });
   });
 
   it('S16 AS-63: knownAt prices the lines as known then, adds no adjustment rows, and validates like the statement', async () => {
@@ -174,15 +212,31 @@ describe('Statements: streamed CSV export', () => {
     await setRate(t, rc1(shops.a), '2026-04-05T09:00:00Z');
     await t.drainJobs();
     setClock(t, '2026-04-20T10:00:00Z');
-    const rows = parseCsv(text(await csv(shops.a, '2026-03', '?knownAt=2026-04-06T00:00:00Z')));
+    const rows = parseCsv(
+      text(await csv(shops.a, '2026-03', '?knownAt=2026-04-06T00:00:00Z')),
+    );
     expect(rows.slice(1).map((r) => r[0])).toEqual(['sale', 'sale', 'sale']);
     const electronics = rows.slice(1).filter((r) => r[5] === 'electronics');
     expect(electronics.map((r) => r[9])).toEqual(['700', '700']);
-    const statement = await readStatement(t, shops.a, '2026-03', '?knownAt=2026-04-06T00:00:00Z');
-    expect(sums(rows)).toEqual({ gross: statement.own.grossMinor, commission: statement.own.commissionMinor });
+    const statement = await readStatement(
+      t,
+      shops.a,
+      '2026-03',
+      '?knownAt=2026-04-06T00:00:00Z',
+    );
+    expect(sums(rows)).toEqual({
+      gross: statement.own.grossMinor,
+      commission: statement.own.commissionMinor,
+    });
 
-    expect((await csv(shops.a, '2026-03', '?knownAt=yesterday')).status).toBe(400);
-    const future = await csv(shops.a, '2026-03', '?knownAt=2030-01-01T00:00:00Z');
+    expect((await csv(shops.a, '2026-03', '?knownAt=yesterday')).status).toBe(
+      400,
+    );
+    const future = await csv(
+      shops.a,
+      '2026-03',
+      '?knownAt=2030-01-01T00:00:00Z',
+    );
     expect(future.status).toBe(422);
   });
 
@@ -190,7 +244,10 @@ describe('Statements: streamed CSV export', () => {
     const evil = ['=HYPERLINK("http://evil")', '+1+1', '-2+3', '@SUM(A1)'];
     await t.sales.deliver(
       ...evil.map((category) =>
-        orderPaid({ paidAt: '2026-03-10T10:00:00Z', lines: [{ shopId: shops.a, unitPriceMinor: 1000, category }] }),
+        orderPaid({
+          paidAt: '2026-03-10T10:00:00Z',
+          lines: [{ shopId: shops.a, unitPriceMinor: 1000, category }],
+        }),
       ),
     );
     const body = text(await csv(shops.a, '2026-03'));
@@ -199,11 +256,24 @@ describe('Statements: streamed CSV export', () => {
     expect(body).toContain('"\'+1+1"');
     expect(body).toContain('"\'-2+3"');
     expect(body).toContain('"\'@sum(a1)"');
-    const cells = parseCsv(body).slice(1).map((r) => r[5]).sort();
+    const cells = parseCsv(body)
+      .slice(1)
+      .map((r) => r[5])
+      .sort();
     expect(cells).toEqual(evil.map((c) => `'${c.toLowerCase()}`).sort());
 
     await closeMonth(t, '2026-03', '2026-04-02T02:00:00Z');
-    await setRate(t, { shopId: shops.a, category: '=hyperlink("http://evil")', rateBps: 500, validFrom: '2026-03-01T00:00:00Z', reason: 'neg' }, '2026-04-05T09:00:00Z');
+    await setRate(
+      t,
+      {
+        shopId: shops.a,
+        category: '=hyperlink("http://evil")',
+        rateBps: 500,
+        validFrom: '2026-03-01T00:00:00Z',
+        reason: 'neg',
+      },
+      '2026-04-05T09:00:00Z',
+    );
     await t.drainJobs();
     setClock(t, '2026-04-20T10:00:00Z');
     const april = text(await csv(shops.a, '2026-04'));
@@ -246,7 +316,12 @@ describe('Statements: streamed CSV export', () => {
         let answered = false;
         http
           .get(
-            { host: '127.0.0.1', port, path: `/api/shops/${shopId}/statements/${month}/lines.csv`, headers: { Authorization: user.bearer } },
+            {
+              host: '127.0.0.1',
+              port,
+              path: `/api/shops/${shopId}/statements/${month}/lines.csv`,
+              headers: { Authorization: user.bearer },
+            },
             (res) => {
               answered = true;
               resolve(res);
@@ -317,7 +392,9 @@ describe('Statements: streamed CSV export', () => {
       expect(whileStalled).toBeLessThan(120_000);
       expect(fetched.calls).toBeLessThan(120);
       gc();
-      expect(process.memoryUsage().heapUsed - heapBefore).toBeLessThan(50 * 1024 * 1024);
+      expect(process.memoryUsage().heapUsed - heapBefore).toBeLessThan(
+        50 * 1024 * 1024,
+      );
       await new Promise<void>((resolve) => {
         res.on('end', resolve);
         res.resume();
@@ -325,7 +402,9 @@ describe('Statements: streamed CSV export', () => {
       expect(newlines).toBe(200_001);
       expect(fetched.rows).toBe(200_000);
       gc();
-      expect(process.memoryUsage().heapUsed - heapBefore).toBeLessThan(50 * 1024 * 1024);
+      expect(process.memoryUsage().heapUsed - heapBefore).toBeLessThan(
+        50 * 1024 * 1024,
+      );
     }, 180_000);
 
     it('S16 AS-66: a client that leaves after the first chunk frees the database and logs no server error', async () => {
@@ -358,7 +437,9 @@ describe('Statements: streamed CSV export', () => {
         if (++calls === 2) throw new Error('replica connection lost');
         return real(req);
       });
-      const before = metric('statements_export_aborted_total', { reason: 'db_error' });
+      const before = metric('statements_export_aborted_total', {
+        reason: 'db_error',
+      });
       const user = await owner(shops.a);
       const res = await open(shops.a, '2026-03', user);
       let completed = false;
@@ -373,8 +454,12 @@ describe('Statements: streamed CSV export', () => {
       expect(completed).toBe(false);
       expect(res.complete).toBe(false);
       expect(received).toBeGreaterThanOrEqual(0);
-      expect(metric('statements_export_aborted_total', { reason: 'db_error' })).toBe(before + 1);
-      const logged = warnings.mock.calls.map((c) => String(c[0])).filter((m) => m.includes('export aborted'));
+      expect(
+        metric('statements_export_aborted_total', { reason: 'db_error' }),
+      ).toBe(before + 1);
+      const logged = warnings.mock.calls
+        .map((c) => String(c[0]))
+        .filter((m) => m.includes('export aborted'));
       expect(logged).toHaveLength(1);
       expect(logged[0]).toContain(shops.a);
       expect(logged[0]).not.toMatch(/line-\d+/);
@@ -390,7 +475,10 @@ describe('Statements: streamed CSV export', () => {
       let locked!: () => void;
       const lockTaken = new Promise<void>((resolve) => (locked = resolve));
       const locker = t.sequelize.transaction(async (tx) => {
-        await t.sequelize.query(`LOCK TABLE "StatementSaleFact" IN ACCESS EXCLUSIVE MODE`, { transaction: tx });
+        await t.sequelize.query(
+          `LOCK TABLE "StatementSaleFact" IN ACCESS EXCLUSIVE MODE`,
+          { transaction: tx },
+        );
         locked();
         await hold;
       });
@@ -404,7 +492,10 @@ describe('Statements: streamed CSV export', () => {
         if (calls === 2) {
           // the next statement waits on a lock another session holds past the export timeout
           const second = t.sequelize.transaction(async (tx) => {
-            await t.sequelize.query(`LOCK TABLE "StatementSaleFact" IN ACCESS EXCLUSIVE MODE`, { transaction: tx });
+            await t.sequelize.query(
+              `LOCK TABLE "StatementSaleFact" IN ACCESS EXCLUSIVE MODE`,
+              { transaction: tx },
+            );
             await sleep(4000);
           });
           await sleep(300);
@@ -417,7 +508,9 @@ describe('Statements: streamed CSV export', () => {
         return real(req);
       });
       await lockTaken;
-      const before = metric('statements_export_aborted_total', { reason: 'timeout' });
+      const before = metric('statements_export_aborted_total', {
+        reason: 'timeout',
+      });
       const user = await owner(shops.a);
       const res = await open(shops.a, '2026-03', user);
       let completed = false;
@@ -428,7 +521,9 @@ describe('Statements: streamed CSV export', () => {
         res.on('error', () => undefined);
       });
       expect(completed).toBe(false);
-      expect(metric('statements_export_aborted_total', { reason: 'timeout' })).toBe(before + 1);
+      expect(
+        metric('statements_export_aborted_total', { reason: 'timeout' }),
+      ).toBe(before + 1);
     }, 120_000);
 
     it('S16 AS-68: a third concurrent export is 429 with Retry-After and takes no database connection', async () => {
@@ -439,15 +534,22 @@ describe('Statements: streamed CSV export', () => {
         return real(req);
       });
       const [a, b] = [await owner(shops.a), await owner(shops.a)];
-      const slow = [csv(shops.a, '2026-03', '', a), csv(shops.a, '2026-03', '', b)];
+      const slow = [
+        csv(shops.a, '2026-03', '', a),
+        csv(shops.a, '2026-03', '', b),
+      ];
       await sleep(400);
       const calls = (source.saleBatch as jest.Mock).mock.calls.length;
       const third = await csv(shops.a, '2026-03', '', await owner(shops.a));
       expect(third.status).toBe(429);
-      expect(third.body.code ?? JSON.parse(text(third)).code).toBe('rate_limited');
+      expect(third.body.code ?? JSON.parse(text(third)).code).toBe(
+        'rate_limited',
+      );
       expect(third.headers['retry-after']).toBeDefined();
       expect((source.saleBatch as jest.Mock).mock.calls.length).toBe(calls);
-      expect((await Promise.all(slow)).map((r) => r.status)).toEqual([200, 200]);
+      expect((await Promise.all(slow)).map((r) => r.status)).toEqual([
+        200, 200,
+      ]);
     }, 120_000);
 
     it('S16 AS-80: an export still streaming when the service stops finishes inside the drain time or is cut', async () => {
@@ -455,10 +557,17 @@ describe('Statements: streamed CSV export', () => {
       const lifecycle = t.app.get(StatementsLifecycle, { strict: false });
       const user = await owner(shops.a);
       const res = await open(shops.a, '2026-03', user);
-      await new Promise<void>((resolve) => res.once('data', () => { res.pause(); resolve(); }));
+      await new Promise<void>((resolve) =>
+        res.once('data', () => {
+          res.pause();
+          resolve();
+        }),
+      );
       expect(lifecycle.activeExports).toBe(1);
       config.drainMs = 1000;
-      const before = metric('statements_export_aborted_total', { reason: 'shutdown' });
+      const before = metric('statements_export_aborted_total', {
+        reason: 'shutdown',
+      });
       const drained = lifecycle.drainExports(); // the reader is stalled: the drain time runs out and the export is cut
       await drained;
       let completed = false;
@@ -469,7 +578,9 @@ describe('Statements: streamed CSV export', () => {
         res.resume();
       });
       expect(completed).toBe(false);
-      expect(metric('statements_export_aborted_total', { reason: 'shutdown' })).toBe(before + 1);
+      expect(
+        metric('statements_export_aborted_total', { reason: 'shutdown' }),
+      ).toBe(before + 1);
       expect(lifecycle.activeExports).toBe(0);
       (lifecycle as unknown as { stopping: boolean }).stopping = false;
     }, 120_000);
@@ -478,8 +589,13 @@ describe('Statements: streamed CSV export', () => {
   // Last in the file: it boots a second app, with the limiter store behind a proxy.
   it('S16 AS-68: with the limiter store down the export is refused with 503 and nothing is streamed', async () => {
     const redis = new URL(process.env.REDIS_URL ?? 'redis://localhost:6400/0');
-    const proxy = await TcpFaultProxy.start({ host: redis.hostname, port: Number(redis.port || 6379) });
-    const own = await createStatementsApp({ redisUrl: `redis://127.0.0.1:${proxy.port}/0` });
+    const proxy = await TcpFaultProxy.start({
+      host: redis.hostname,
+      port: Number(redis.port || 6379),
+    });
+    const own = await createStatementsApp({
+      redisUrl: `redis://127.0.0.1:${proxy.port}/0`,
+    });
     try {
       await own.reset();
       const { shopId } = await own.shopWithOwner();
@@ -487,7 +603,9 @@ describe('Statements: streamed CSV export', () => {
       proxy.mode = 'refuse';
       proxy.sever();
       await sleep(300);
-      const res = await own.as(reader).get(`/api/shops/${shopId}/statements/2026-03/lines.csv`);
+      const res = await own
+        .as(reader)
+        .get(`/api/shops/${shopId}/statements/2026-03/lines.csv`);
       expect(res.status).toBe(503);
       expect(res.headers['content-type']).not.toContain('text/csv');
     } finally {

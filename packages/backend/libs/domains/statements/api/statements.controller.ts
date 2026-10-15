@@ -94,6 +94,10 @@ export class StatementsController {
     @Query(new ZodPipe(statementQuerySchema))
     query: ReturnType<typeof statementQuerySchema.parse>,
   ) {
-    return this.statements.statement(shopId.toLowerCase(), month, query.knownAt);
+    return this.statements.statement(
+      shopId.toLowerCase(),
+      month,
+      query.knownAt,
+    );
   }
 }

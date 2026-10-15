@@ -10,6 +10,7 @@ Read by `domain/config.ts` (zod) at module initialisation; an invalid value fail
 | `STATEMENTS_CLOSE_MARGIN_MIN` | 10 | ≥ 0 | minutes past month end the watermarks must pass |
 | `STATEMENTS_EXPORT_CONCURRENCY` | 2 | ≥ 1 | per shop; the `statements.export.concurrent` policy limit |
 | `STATEMENTS_EXPORT_TIMEOUT_MS` | 120000 | ≥ 1000 | `SET LOCAL statement_timeout` for the export transaction |
+| `STATEMENTS_READ_TIMEOUT_MS` | 10000 | ≥ 100 | `SET LOCAL statement_timeout` for the live statement query on the request path (AS-81) |
 | `STATEMENTS_JOB_TIMEOUT_MS` | 600000 | ≥ 1000 | per job attempt |
 | `STATEMENTS_CLOSE_SCHEDULE` / `STATEMENTS_CLOSE_SCHEDULE_TZ` | `0 2 2 * *` / `UTC` | valid cron / IANA zone | validated with S49 `schedule-validation` |
 | `STATEMENTS_RETENTION_YEARS` | 10 | ≥ 10 | stated only; no purge is built |

@@ -13,7 +13,12 @@ import {
 } from '@app/test/utils/catalog-app';
 import { addMember, createShop } from '@app/test/utils/tenancy-fixtures';
 import { createDelivery } from '@app/test/fixtures/statements';
-import { FACT_STREAMS, STREAM_LAG, type FactStream, type StreamLag } from '../domain/ports';
+import {
+  FACT_STREAMS,
+  STREAM_LAG,
+  type FactStream,
+  type StreamLag,
+} from '../domain/ports';
 import {
   LedgerFactProjector,
   PayoutFactProjector,
@@ -39,8 +44,8 @@ export class FakeStreamLag implements StreamLag {
   set(stream: FactStream, caughtUp: boolean): void {
     this.caught.set(stream, caughtUp);
   }
-  async isCaughtUp(stream: FactStream): Promise<boolean> {
-    return this.caught.get(stream) ?? false;
+  isCaughtUp(stream: FactStream): Promise<boolean> {
+    return Promise.resolve(this.caught.get(stream) ?? false);
   }
 }
 
@@ -64,6 +69,8 @@ export interface StatementsTestApp extends CatalogTestApp {
     shopId: string,
     role: 'OWNER' | 'ADMIN' | 'STAFF' | 'VIEWER',
   ): Promise<TestUser>;
+  /** Captured stdout of the structured logger (only with `structuredLogger: true`). */
+  rawLogs(): string;
   /** Runs the queued jobs through the real worker (the S49 handler registration) until none is due. */
   drainJobs(): Promise<number>;
 }
@@ -75,10 +82,24 @@ export interface StatementsTestApp extends CatalogTestApp {
  * lag (S16 test-plan.md); facts arrive through the real consumers, delivered by the in-memory harness.
  */
 export async function createStatementsApp(
-  options: { env?: Record<string, string>; redisUrl?: string } = {},
+  options: {
+    env?: Record<string, string>;
+    redisUrl?: string;
+    structuredLogger?: boolean;
+  } = {},
 ): Promise<StatementsTestApp> {
   const lag = new FakeStreamLag();
+  const logChunks: string[] = [];
+  const stdoutSpy = options.structuredLogger
+    ? jest
+        .spyOn(process.stdout, 'write')
+        .mockImplementation((chunk: unknown) => {
+          logChunks.push(String(chunk));
+          return true;
+        })
+    : null;
   const base = await createCatalogApp({
+    structuredLogger: options.structuredLogger,
     redisUrl: options.redisUrl,
     extraImports: [
       StatementsModule,
@@ -109,6 +130,11 @@ export async function createStatementsApp(
     payouts: createDelivery(app, PayoutFactProjector),
     ledger: createDelivery(app, LedgerFactProjector),
     sql,
+    rawLogs: () => logChunks.join(''),
+    async close() {
+      stdoutSpy?.mockRestore();
+      await base.close();
+    },
     async reset() {
       await reset();
       lag.reset();

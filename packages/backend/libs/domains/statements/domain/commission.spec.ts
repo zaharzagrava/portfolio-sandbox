@@ -23,7 +23,12 @@ describe('S16 commission of a line (FR-011)', () => {
 
   it('S16 AS-43: a shop total is rounded per line and summed, not per order', () => {
     // 2745 = 900 + 1800 + 45; rounding the 30500 total once would give 2745 as well, but two halves differ:
-    expect(sumCommission([{ lineTotalMinor: 5, rateBps: 1000 }, { lineTotalMinor: 5, rateBps: 1000 }])).toBe(2);
+    expect(
+      sumCommission([
+        { lineTotalMinor: 5, rateBps: 1000 },
+        { lineTotalMinor: 5, rateBps: 1000 },
+      ]),
+    ).toBe(2);
     expect(commissionOf(10, 1000)).toBe(1);
     expect(
       sumCommission([

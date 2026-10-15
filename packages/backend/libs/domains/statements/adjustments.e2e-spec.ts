@@ -1,15 +1,14 @@
 import { v4 as uuidv4 } from 'uuid';
 import { MetricsRegistry } from '@app/common/telemetry/metrics-registry';
-import {
-  DS1,
-  lateSaleL4,
-  payoutPaid,
-} from '@app/test/fixtures/statements';
+import { DS1, lateSaleL4, payoutPaid } from '@app/test/fixtures/statements';
 import { RECONCILE_FAULT } from './application/adjustment.service';
 import { CLOSE_FAULT } from './application/period-close.service';
 import { SNAPSHOT_REPOSITORY, type SnapshotRepository } from './domain/ports';
 import { StatementsJobs } from './infra/statements.jobs';
-import { createStatementsApp, type StatementsTestApp } from './testing/statements-app';
+import {
+  createStatementsApp,
+  type StatementsTestApp,
+} from './testing/statements-app';
 import {
   adjustmentsOf,
   closeMonth,
@@ -80,7 +79,11 @@ describe('Statements: adjustments and corrections', () => {
       lines: 0,
       reason: 'promo-2026-03',
     });
-    expect([num(booked[0].gross), num(booked[0].commission), num(booked[0].payouts)]).toEqual([0, -900, 0]);
+    expect([
+      num(booked[0].gross),
+      num(booked[0].commission),
+      num(booked[0].payouts),
+    ]).toEqual([0, -900, 0]);
     const sent = await events('statements.adjustment_booked');
     expect(sent).toHaveLength(1);
     expect(sent[0].payload.payload).toMatchObject({
@@ -90,16 +93,25 @@ describe('Statements: adjustments and corrections', () => {
       causeKind: 'rate_change',
     });
     expect(await snapshots()).toEqual(frozen);
-    expect(metric('statements_adjustments_booked_total', { cause: 'rate_change' })).toBeGreaterThan(0);
+    expect(
+      metric('statements_adjustments_booked_total', { cause: 'rate_change' }),
+    ).toBeGreaterThan(0);
   });
 
   it('S16 AS-41: the same adjustment work delivered again, and at the same moment, books once', async () => {
     await closeDs1();
     const change = await setRate(t, rc1(shops.a), '2026-04-05T09:00:00Z');
-    const payload = { month: '2026-03', cause: `rate_change:${change.changeId}`, shopId: shops.a };
+    const payload = {
+      month: '2026-03',
+      cause: `rate_change:${change.changeId}`,
+      shopId: shops.a,
+    };
     await jobs.reconcileMonth(payload, ctx());
     await jobs.reconcileMonth(payload, ctx());
-    await Promise.all([jobs.reconcileMonth(payload, ctx()), jobs.reconcileMonth(payload, ctx())]);
+    await Promise.all([
+      jobs.reconcileMonth(payload, ctx()),
+      jobs.reconcileMonth(payload, ctx()),
+    ]);
     await t.drainJobs();
     expect(await adjustmentsOf(t)).toHaveLength(1);
     expect(await events('statements.adjustment_booked')).toHaveLength(1);
@@ -114,7 +126,10 @@ describe('Statements: adjustments and corrections', () => {
 
     const booked = await adjustmentsOf(t);
     expect(booked.map((b) => num(b.commission))).toEqual([-900, -300]);
-    expect(booked.map((b) => b.reason)).toEqual(['promo-2026-03', 'promo-2026-03']);
+    expect(booked.map((b) => b.reason)).toEqual([
+      'promo-2026-03',
+      'promo-2026-03',
+    ]);
     const march = await readStatement(t, shops.a, '2026-03');
     expect(march.own.commissionMinor).toBe(3050);
     expect(march.corrected.commissionMinor).toBe(1850);
@@ -131,24 +146,40 @@ describe('Statements: adjustments and corrections', () => {
       }
     };
     const pageSizes: number[] = [];
-    const repo = t.app.get<SnapshotRepository>(SNAPSHOT_REPOSITORY, { strict: false });
+    const repo = t.app.get<SnapshotRepository>(SNAPSHOT_REPOSITORY, {
+      strict: false,
+    });
     const page = repo.page.bind(repo);
     jest.spyOn(repo, 'page').mockImplementation(async (month, after, limit) => {
       pageSizes.push(limit);
       return page(month, after, limit);
     });
 
-    await setRate(t, { category: '*', rateBps: 900, validFrom: '2026-03-01T00:00:00Z', reason: 'default-900' }, '2026-04-05T09:00:00Z');
+    await setRate(
+      t,
+      {
+        category: '*',
+        rateBps: 900,
+        validFrom: '2026-03-01T00:00:00Z',
+        reason: 'default-900',
+      },
+      '2026-04-05T09:00:00Z',
+    );
     await t.drainJobs();
     expect(failures).toEqual([shops.b]);
     let booked = await adjustmentsOf(t);
-    expect(booked.map((b) => [b.shopId, num(b.commission)])).toEqual([[shops.a, -305]]);
+    expect(booked.map((b) => [b.shopId, num(b.commission)])).toEqual([
+      [shops.a, -305],
+    ]);
 
     setClock(t, '2026-04-05T09:02:00Z'); // the retry of the failed shop is due
     await t.drainJobs();
     booked = await adjustmentsOf(t);
     expect(booked.map((b) => [b.shopId, num(b.commission)]).sort()).toEqual(
-      [[shops.a, -305], [shops.b, -41]].sort(),
+      [
+        [shops.a, -305],
+        [shops.b, -41],
+      ].sort(),
     );
     expect(booked.some((b) => b.shopId === shops.c)).toBe(false);
     expect(Math.max(...pageSizes)).toBeLessThanOrEqual(1000);
@@ -156,12 +187,19 @@ describe('Statements: adjustments and corrections', () => {
 
   it('S16 AS-44: a change that touches no closed month queues nothing; one that changes no figure books nothing', async () => {
     await closeDs1();
-    const forward = await setRate(t, rc1(shops.a, { validFrom: '2026-04-01T00:00:00Z' }), '2026-04-05T09:00:00Z');
+    const forward = await setRate(
+      t,
+      rc1(shops.a, { validFrom: '2026-04-01T00:00:00Z' }),
+      '2026-04-05T09:00:00Z',
+    );
     expect(forward.affectedClosedMonths).toEqual([]);
     await t.drainJobs();
     expect(await adjustmentsOf(t)).toHaveLength(0);
 
-    const noSales = await setRate(t, rc1(shops.a, { category: 'toys', rateBps: 500 }));
+    const noSales = await setRate(
+      t,
+      rc1(shops.a, { category: 'toys', rateBps: 500 }),
+    );
     expect(noSales.affectedClosedMonths).toEqual(['2026-03']);
     await t.drainJobs();
     expect(await adjustmentsOf(t)).toHaveLength(0);
@@ -184,9 +222,15 @@ describe('Statements: adjustments and corrections', () => {
       causeRef: DS1.o4,
       lines: 1,
     });
-    expect([num(booked[0].gross), num(booked[0].commission)]).toEqual([1000, 100]);
+    expect([num(booked[0].gross), num(booked[0].commission)]).toEqual([
+      1000, 100,
+    ]);
     const march = await readStatement(t, shops.a, '2026-03');
-    expect(march.own).toMatchObject({ grossMinor: 30500, commissionMinor: 3050, lineCount: 3 });
+    expect(march.own).toMatchObject({
+      grossMinor: 30500,
+      commissionMinor: 3050,
+      lineCount: 3,
+    });
     expect(march.corrected).toEqual({
       grossMinor: 31500,
       commissionMinor: 3150,
@@ -200,12 +244,23 @@ describe('Statements: adjustments and corrections', () => {
     await closeDs1();
     setClock(t, '2026-04-04T10:00:00Z');
     const payoutId = uuidv4();
-    await t.payouts.deliver(payoutPaid({ payoutId, shopId: shops.a, amountMinor: 25000, paidAt: '2026-03-30T10:00:00Z' }));
+    await t.payouts.deliver(
+      payoutPaid({
+        payoutId,
+        shopId: shops.a,
+        amountMinor: 25000,
+        paidAt: '2026-03-30T10:00:00Z',
+      }),
+    );
     await t.drainJobs();
 
     const booked = await adjustmentsOf(t);
     expect(booked).toHaveLength(1);
-    expect(booked[0]).toMatchObject({ causeKind: 'late_payout', causeRef: payoutId, bookedMonth: '2026-04' });
+    expect(booked[0]).toMatchObject({
+      causeKind: 'late_payout',
+      causeRef: payoutId,
+      bookedMonth: '2026-04',
+    });
     expect(num(booked[0].payouts)).toBe(25000);
     const march = await readStatement(t, shops.a, '2026-03');
     expect(march.own.payoutsPaidMinor).toBe(0);
@@ -218,33 +273,62 @@ describe('Statements: adjustments and corrections', () => {
     await t.drainJobs();
     setClock(t, '2026-04-06T10:00:00Z');
     await t.sales.deliver(lateSaleL4(shops.a));
-    await t.payouts.deliver(payoutPaid({ shopId: shops.b, amountMinor: 3000, paidAt: '2026-03-31T12:00:00Z' }));
-    await setRate(t, { category: '*', rateBps: 800, validFrom: '2026-03-01T00:00:00Z', reason: 'default-800' });
+    await t.payouts.deliver(
+      payoutPaid({
+        shopId: shops.b,
+        amountMinor: 3000,
+        paidAt: '2026-03-31T12:00:00Z',
+      }),
+    );
+    await setRate(t, {
+      category: '*',
+      rateBps: 800,
+      validFrom: '2026-03-01T00:00:00Z',
+      reason: 'default-800',
+    });
     await t.drainJobs();
 
     for (const shop of [shops.a, shops.b]) {
       const closed = await readStatement(t, shop, '2026-03');
-      const now = await readStatement(t, shop, '2026-03', `?knownAt=${encodeURIComponent(t.clock.now().toISOString())}`);
+      const now = await readStatement(
+        t,
+        shop,
+        '2026-03',
+        `?knownAt=${encodeURIComponent(t.clock.now().toISOString())}`,
+      );
       expect(now.source).toBe('as_known_at');
       expect(closed.corrected).toEqual(now.own);
     }
     // nothing is left to book: another pass for every cause finds no difference
     const before = await adjustmentsOf(t);
-    await jobs.reconcileMonth({ month: '2026-03', cause: 'close:again' }, ctx());
+    await jobs.reconcileMonth(
+      { month: '2026-03', cause: 'close:again' },
+      ctx(),
+    );
     expect(await adjustmentsOf(t)).toEqual(before);
   });
 
   it('S16 AS-48: a change recorded after the cutoff but before the month turns CLOSED is booked by the close itself', async () => {
     setClock(t, '2026-04-02T02:00:00Z');
     const admin = await t.admin();
-    const accepted = await t.as(admin).post('/api/admin/accounting-periods/2026-03/close').set('Idempotency-Key', uuidv4());
+    const accepted = await t
+      .as(admin)
+      .post('/api/admin/accounting-periods/2026-03/close')
+      .set('Idempotency-Key', uuidv4());
     expect(accepted.status).toBe(202);
     const runId = accepted.body.runId as string;
 
     setClock(t, '2026-04-02T02:05:00Z');
     const change = await setRate(t, rc1(shops.a));
     expect(change.affectedClosedMonths).toEqual(['2026-03']); // the month is CLOSING
-    await jobs.reconcileMonth({ month: '2026-03', cause: `rate_change:${change.changeId}`, shopId: shops.a }, ctx());
+    await jobs.reconcileMonth(
+      {
+        month: '2026-03',
+        cause: `rate_change:${change.changeId}`,
+        shopId: shops.a,
+      },
+      ctx(),
+    );
     expect(await adjustmentsOf(t)).toHaveLength(0); // nothing frozen yet: skipped
 
     await jobs.closeMonth({ month: '2026-03', runId }, ctx());

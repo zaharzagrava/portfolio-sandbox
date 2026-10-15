@@ -27,11 +27,7 @@ export interface RateMatch {
   belief: RateBelief;
 }
 
-const covers = (
-  from: Date | null,
-  to: Date | null,
-  instant: Date,
-): boolean =>
+const covers = (from: Date | null, to: Date | null, instant: Date): boolean =>
   (from === null || from.getTime() <= instant.getTime()) &&
   (to === null || instant.getTime() < to.getTime());
 

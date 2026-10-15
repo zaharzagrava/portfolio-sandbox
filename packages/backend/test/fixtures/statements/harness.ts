@@ -22,7 +22,10 @@ export type FactProjectorClass = new (...args: never[]) => Projector;
  * and records the dead letters the runner would write. It can deliver the same message twice, concurrently, out of
  * order or again after a "rebuild"; the projector, its inbox and its store are the real ones.
  */
-export function createDelivery(app: INestApplication, projector: FactProjectorClass) {
+export function createDelivery(
+  app: INestApplication,
+  projector: FactProjectorClass,
+) {
   const consumer = app.get(projector, { strict: false });
 
   async function one(envelope: EventEnvelope, into: Delivered): Promise<void> {
@@ -48,7 +51,10 @@ export function createDelivery(app: INestApplication, projector: FactProjectorCl
       } else into.counts.applied++;
     } catch (error) {
       if (error instanceof PermanentError)
-        into.deadLetters.push({ code: 'HANDLER_FAILED', reason: error.message });
+        into.deadLetters.push({
+          code: 'HANDLER_FAILED',
+          reason: error.message,
+        });
       else throw error;
     }
   }
@@ -68,7 +74,9 @@ export function createDelivery(app: INestApplication, projector: FactProjectorCl
       return into;
     },
     /** The same deliveries at the same moment (`Promise.all`). */
-    async deliverConcurrently(...envelopes: EventEnvelope[]): Promise<Delivered> {
+    async deliverConcurrently(
+      ...envelopes: EventEnvelope[]
+    ): Promise<Delivered> {
       const into = empty();
       await Promise.all(envelopes.map((envelope) => one(envelope, into)));
       return into;

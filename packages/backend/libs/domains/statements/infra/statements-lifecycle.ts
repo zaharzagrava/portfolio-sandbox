@@ -23,8 +23,9 @@ export class StatementsLifecycle implements StopSignal, OnModuleInit {
     this.shutdown?.register({
       name: 'statements-stop-work',
       order: 10,
-      run: async () => {
+      run: () => {
         this.stopping = true;
+        return Promise.resolve();
       },
     });
     this.shutdown?.register({

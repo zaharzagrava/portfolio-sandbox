@@ -37,7 +37,12 @@ describe('S16 statement composition (FR-013)', () => {
   });
 
   it('S16 AS-17: an adjustment booked into an empty month moves net the other way', () => {
-    const zero = { grossMinor: 0, commissionMinor: 0, lineCount: 0, payoutsPaidMinor: 0 };
+    const zero = {
+      grossMinor: 0,
+      commissionMinor: 0,
+      lineCount: 0,
+      payoutsPaidMinor: 0,
+    };
     const view = compose(zero, [adjustment({})], [], false);
     expect(view.total.commissionMinor).toBe(-900);
     expect(view.total.netMinor).toBe(900);
@@ -48,8 +53,17 @@ describe('S16 statement composition (FR-013)', () => {
       own,
       [],
       [
-        adjustment({ grossDeltaMinor: 1000, commissionDeltaMinor: 100, lineCountDelta: 1, causeKind: 'late_sale' }),
-        adjustment({ commissionDeltaMinor: 0, payoutsPaidDeltaMinor: 25000, causeKind: 'late_payout' }),
+        adjustment({
+          grossDeltaMinor: 1000,
+          commissionDeltaMinor: 100,
+          lineCountDelta: 1,
+          causeKind: 'late_sale',
+        }),
+        adjustment({
+          commissionDeltaMinor: 0,
+          payoutsPaidDeltaMinor: 25000,
+          causeKind: 'late_payout',
+        }),
       ],
       false,
     );
@@ -63,7 +77,12 @@ describe('S16 statement composition (FR-013)', () => {
   });
 
   it('S16 AS-18: as known at, own already carries the corrections, so corrected equals own', () => {
-    const view = compose({ ...own, commissionMinor: 2150 }, [], [adjustment({})], true);
+    const view = compose(
+      { ...own, commissionMinor: 2150 },
+      [],
+      [adjustment({})],
+      true,
+    );
     expect(view.corrected).toEqual(view.own);
   });
 });

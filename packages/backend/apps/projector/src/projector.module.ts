@@ -3,6 +3,7 @@ import {
   OfflineSyncProjectorModule,
 } from '@app/domains/catalog-sync';
 import { StoryCacheInvalidator, StoryCacheModule } from '@app/domains/content';
+import { StatementsProjectorModule } from '@app/domains/statements';
 import {
   TrendingProjectorModule,
   RecommendationsProjectorModule,
@@ -122,6 +123,7 @@ import { CacheModule } from '@app/infrastructure/cache/cache.module';
         ...OfflineSyncProjectorModule.projectors,
         ...AssistantProjectorModule.projectors,
         ...KnowledgeProjectorModule.projectors,
+        ...StatementsProjectorModule.projectors,
       ],
       [
         ProductProjectorModule,
@@ -135,6 +137,7 @@ import { CacheModule } from '@app/infrastructure/cache/cache.module';
         ChatProjectorModule,
         AssistantProjectorModule,
         KnowledgeProjectorModule,
+        StatementsProjectorModule,
         LedgerProjectorModule,
         AnalyticsProjectorModule,
         IntegrationsProjectorModule,

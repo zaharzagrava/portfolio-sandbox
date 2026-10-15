@@ -13,14 +13,11 @@ describe('S16 AS-07 strictly increasing record instants', () => {
     ['an earlier instant', t - 5_000_000n, t],
     ['the same instant', t, t + 1n],
     ['an instant ahead of the clock', t + 10n, t + 11n],
-  ])(
-    'S16 AS-07: with %s the record instant is %p',
-    (_name, last, expected) => {
-      expect(nextRecordedMicros(new Date('2026-04-01T09:00:00.000Z'), last)).toBe(
-        expected,
-      );
-    },
-  );
+  ])('S16 AS-07: with %s the record instant is %p', (_name, last, expected) => {
+    expect(nextRecordedMicros(new Date('2026-04-01T09:00:00.000Z'), last)).toBe(
+      expected,
+    );
+  });
 
   it('S16 AS-07: two changes at one frozen instant never give an empty recorded period', () => {
     const now = new Date('2026-04-01T09:00:00.000Z');

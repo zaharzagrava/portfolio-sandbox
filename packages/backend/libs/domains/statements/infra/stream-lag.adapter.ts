@@ -24,7 +24,10 @@ const CACHE_MS = 3_000;
  */
 @Injectable()
 export class KafkaStreamLag implements StreamLag {
-  private readonly cache = new Map<FactStream, { at: number; value: boolean }>();
+  private readonly cache = new Map<
+    FactStream,
+    { at: number; value: boolean }
+  >();
 
   constructor(
     private readonly lag: ConsumerLag,

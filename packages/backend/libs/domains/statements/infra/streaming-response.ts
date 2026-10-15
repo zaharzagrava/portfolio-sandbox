@@ -9,7 +9,11 @@ let active = 0;
 
 /** SQLSTATE 57014: the database cancelled the statement at its timeout. */
 const isStatementTimeout = (error: unknown): boolean => {
-  const e = error as { parent?: { code?: string }; original?: { code?: string }; code?: string };
+  const e = error as {
+    parent?: { code?: string };
+    original?: { code?: string };
+    code?: string;
+  };
   return (
     e?.parent?.code === '57014' ||
     e?.original?.code === '57014' ||
@@ -47,13 +51,20 @@ export const abortReasonOf = (error: unknown): AbortReason =>
 export async function sendCsv(
   res: Response,
   chunks: AsyncGenerator<string>,
-  options: { filename: string; lifecycle: StatementsLifecycle; context: Record<string, string> },
+  options: {
+    filename: string;
+    lifecycle: StatementsLifecycle;
+    context: Record<string, string>;
+  },
 ): Promise<void> {
   const first = await chunks.next();
 
   res.status(200);
   res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-  res.setHeader('Content-Disposition', `attachment; filename="${options.filename}"`);
+  res.setHeader(
+    'Content-Disposition',
+    `attachment; filename="${options.filename}"`,
+  );
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('Cache-Control', 'no-store');
   // The head goes out now: a failure later destroys a response the client already saw start, so it reads as a failed

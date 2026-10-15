@@ -17,18 +17,90 @@ interface Line {
 }
 
 const LINES: Line[] = [
-  { shop: 'x', lineId: 'g-01', category: 'electronics', priceMinor: 12000, paidAt: '2026-03-05T10:00:00Z' },
-  { shop: 'x', lineId: 'g-02', category: 'electronics', priceMinor: 8500, paidAt: '2026-03-18T10:00:00Z' },
-  { shop: 'x', lineId: 'g-03', category: 'books', priceMinor: 1999, paidAt: '2026-03-20T10:00:00Z' },
-  { shop: 'x', lineId: 'g-04', category: 'books', priceMinor: 3001, paidAt: '2026-03-31T23:00:00Z' },
-  { shop: 'y', lineId: 'g-05', category: 'electronics', priceMinor: 5005, paidAt: '2026-03-02T10:00:00Z' },
-  { shop: 'y', lineId: 'g-06', category: 'toys', priceMinor: 700, paidAt: '2026-03-10T10:00:00Z' },
-  { shop: 'y', lineId: 'g-07', category: 'toys', priceMinor: 1250, paidAt: '2026-03-12T10:00:00Z' },
-  { shop: 'y', lineId: 'g-08', category: 'electronics', priceMinor: 45000, paidAt: '2026-03-29T10:00:00Z' },
-  { shop: 'z', lineId: 'g-09', category: 'books', priceMinor: 333, paidAt: '2026-03-03T10:00:00Z' },
-  { shop: 'z', lineId: 'g-10', category: 'books', priceMinor: 666, paidAt: '2026-03-22T10:00:00Z' },
-  { shop: 'z', lineId: 'g-11', category: 'electronics', priceMinor: 9999, paidAt: '2026-03-25T10:00:00Z' },
-  { shop: 'z', lineId: 'g-12', category: 'toys', priceMinor: 100, paidAt: '2026-03-30T10:00:00Z' },
+  {
+    shop: 'x',
+    lineId: 'g-01',
+    category: 'electronics',
+    priceMinor: 12000,
+    paidAt: '2026-03-05T10:00:00Z',
+  },
+  {
+    shop: 'x',
+    lineId: 'g-02',
+    category: 'electronics',
+    priceMinor: 8500,
+    paidAt: '2026-03-18T10:00:00Z',
+  },
+  {
+    shop: 'x',
+    lineId: 'g-03',
+    category: 'books',
+    priceMinor: 1999,
+    paidAt: '2026-03-20T10:00:00Z',
+  },
+  {
+    shop: 'x',
+    lineId: 'g-04',
+    category: 'books',
+    priceMinor: 3001,
+    paidAt: '2026-03-31T23:00:00Z',
+  },
+  {
+    shop: 'y',
+    lineId: 'g-05',
+    category: 'electronics',
+    priceMinor: 5005,
+    paidAt: '2026-03-02T10:00:00Z',
+  },
+  {
+    shop: 'y',
+    lineId: 'g-06',
+    category: 'toys',
+    priceMinor: 700,
+    paidAt: '2026-03-10T10:00:00Z',
+  },
+  {
+    shop: 'y',
+    lineId: 'g-07',
+    category: 'toys',
+    priceMinor: 1250,
+    paidAt: '2026-03-12T10:00:00Z',
+  },
+  {
+    shop: 'y',
+    lineId: 'g-08',
+    category: 'electronics',
+    priceMinor: 45000,
+    paidAt: '2026-03-29T10:00:00Z',
+  },
+  {
+    shop: 'z',
+    lineId: 'g-09',
+    category: 'books',
+    priceMinor: 333,
+    paidAt: '2026-03-03T10:00:00Z',
+  },
+  {
+    shop: 'z',
+    lineId: 'g-10',
+    category: 'books',
+    priceMinor: 666,
+    paidAt: '2026-03-22T10:00:00Z',
+  },
+  {
+    shop: 'z',
+    lineId: 'g-11',
+    category: 'electronics',
+    priceMinor: 9999,
+    paidAt: '2026-03-25T10:00:00Z',
+  },
+  {
+    shop: 'z',
+    lineId: 'g-12',
+    category: 'toys',
+    priceMinor: 100,
+    paidAt: '2026-03-30T10:00:00Z',
+  },
 ];
 
 const orderId = (n: number) =>
@@ -81,7 +153,14 @@ export const goldenLateSale = (shops: Record<GoldenShop, string>) =>
   orderPaid({
     orderId: GOLDEN.lateOrderId,
     paidAt: '2026-03-31T22:00:00Z',
-    lines: [{ lineId: 'g-13', shopId: shops.y, category: 'electronics', unitPriceMinor: 2500 }],
+    lines: [
+      {
+        lineId: 'g-13',
+        shopId: shops.y,
+        category: 'electronics',
+        unitPriceMinor: 2500,
+      },
+    ],
   });
 
 export const goldenLatePayout = (shops: Record<GoldenShop, string>) =>

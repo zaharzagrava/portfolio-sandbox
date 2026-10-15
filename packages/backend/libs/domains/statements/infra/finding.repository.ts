@@ -53,7 +53,11 @@ export class SequelizeFindingRepository implements FindingRepository {
     const orders = `SELECT DISTINCT f."orderId" FROM "StatementSaleFact" f
                      WHERE f."paidAt" >= CAST(:start AS timestamptz) AND f."paidAt" < CAST(:end AS timestamptz)`;
 
-    const net = await this.select<{ shopId: string; expected: string; actual: string }>(
+    const net = await this.select<{
+      shopId: string;
+      expected: string;
+      actual: string;
+    }>(
       `WITH credited AS (
          SELECT substring(c."accountId" from 6) AS shop, sum(c."amountMinor") AS amount
            FROM "StatementLedgerCredit" c JOIN "StatementLedgerFact" j ON j."journalId" = c."journalId"
@@ -66,7 +70,11 @@ export class SequelizeFindingRepository implements FindingRepository {
       params,
     );
 
-    const [fees] = await this.select<{ linked: string; expected: string; actual: string }>(
+    const [fees] = await this.select<{
+      linked: string;
+      expected: string;
+      actual: string;
+    }>(
       `SELECT (SELECT count(*) FROM "StatementLedgerFact" j WHERE j."orderId" IN (${orders}))::text AS linked,
               coalesce((SELECT sum(s."commission") FROM "StatementSnapshot" s WHERE s."month" = CAST(:month AS date)), 0)::text AS expected,
               coalesce((SELECT sum(c."amountMinor") FROM "StatementLedgerCredit" c
@@ -102,7 +110,10 @@ export class SequelizeFindingRepository implements FindingRepository {
       })),
       fees:
         Number(fees.linked) > 0
-          ? { expectedMinor: Number(fees.expected), actualMinor: Number(fees.actual) }
+          ? {
+              expectedMinor: Number(fees.expected),
+              actualMinor: Number(fees.actual),
+            }
           : null,
       unjournalled: unjournalled.map((r) => ({
         shopId: r.shopId,
@@ -161,7 +172,10 @@ export class SequelizeFindingRepository implements FindingRepository {
     return drafts.filter((d) => !before.has(`${d.kind}:${d.shopId ?? '-'}`));
   }
 
-  private async openKeys(month: string, kinds: FindingKind[]): Promise<string[]> {
+  private async openKeys(
+    month: string,
+    kinds: FindingKind[],
+  ): Promise<string[]> {
     const rows = await this.select<{ key: string }>(
       `SELECT ("kind" || ':' || coalesce("shopId"::text, '-')) AS key FROM "StatementFinding"
         WHERE "month" = CAST(:month AS date) AND "status" = 'OPEN' AND "kind" = ANY(CAST(:kinds AS text[]))`,

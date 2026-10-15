@@ -38,7 +38,8 @@ export class ExportStopped extends Error {
 export class StatementExportService {
   constructor(
     @Inject(EXPORT_SOURCE) private readonly source: ExportSource,
-    @Inject(ADJUSTMENT_REPOSITORY) private readonly adjustments: AdjustmentRepository,
+    @Inject(ADJUSTMENT_REPOSITORY)
+    private readonly adjustments: AdjustmentRepository,
     @Inject(PERIOD_REPOSITORY) private readonly periods: PeriodRepository,
     @Inject(STATEMENTS_CONFIG) private readonly config: StatementsConfig,
     @Inject(STOP_SIGNAL) private readonly stop: StopSignal,
@@ -71,7 +72,8 @@ export class StatementExportService {
     appliedBy: boolean,
     knownAt: Date | undefined,
   ): AsyncGenerator<string> {
-    let after: { paidAt: string; orderId: string; lineId: string } | null = null;
+    let after: { paidAt: string; orderId: string; lineId: string } | null =
+      null;
     let header = true;
     for (;;) {
       if (this.stop.isStopping()) throw new ExportStopped();
@@ -106,7 +108,11 @@ export class StatementExportService {
       if (chunk) yield chunk;
       if (rows.length < this.config.exportBatch) break;
       const last = rows[rows.length - 1];
-      after = { paidAt: last.paidAt, orderId: last.orderId, lineId: last.lineId };
+      after = {
+        paidAt: last.paidAt,
+        orderId: last.orderId,
+        lineId: last.lineId,
+      };
     }
 
     const booked = await this.adjustments.forShop(shopId, {

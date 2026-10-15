@@ -13,9 +13,15 @@ import { AccountingPeriodService } from './application/accounting-period.service
 import { CommissionRateQueryService } from './application/commission-rate-query.service';
 import { CommissionRateService } from './application/commission-rate.service';
 import { STATEMENTS_AGGREGATE } from './application/events/statements-events';
-import { AdjustmentService, RECONCILE_FAULT } from './application/adjustment.service';
+import {
+  AdjustmentService,
+  RECONCILE_FAULT,
+} from './application/adjustment.service';
 import { FactIngestionService } from './application/fact-ingestion.service';
-import { CLOSE_FAULT, PeriodCloseService } from './application/period-close.service';
+import {
+  CLOSE_FAULT,
+  PeriodCloseService,
+} from './application/period-close.service';
 import { StatementExportService } from './application/statement-export.service';
 import { StatementService } from './application/statement.service';
 import { VerificationService } from './application/verification.service';

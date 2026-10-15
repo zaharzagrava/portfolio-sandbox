@@ -6,7 +6,10 @@
  */
 export const toMicros = (date: Date): bigint => BigInt(date.getTime()) * 1000n;
 
-export function nextRecordedMicros(now: Date, lastMicros: bigint | null): bigint {
+export function nextRecordedMicros(
+  now: Date,
+  lastMicros: bigint | null,
+): bigint {
   const wanted = toMicros(now);
   return lastMicros !== null && lastMicros >= wanted ? lastMicros + 1n : wanted;
 }

@@ -77,7 +77,9 @@ export class FactIngestionService {
     return this.runner.run(async () => {
       const counts: SinkCounts = { applied: 0, duplicate: 0, stale: 0 };
       for (const envelope of envelopes) {
-        if (!(await this.inbox.recordOnce(CONSUMERS[stream], envelope.eventId))) {
+        if (
+          !(await this.inbox.recordOnce(CONSUMERS[stream], envelope.eventId))
+        ) {
           counts.duplicate++;
           this.count(stream, 'duplicate');
           continue;
@@ -137,8 +139,9 @@ export class FactIngestionService {
         envelope,
       );
     }
-    const payload = (parsed as { data: ReturnType<typeof payoutPaidSchema.parse> })
-      .data;
+    const payload = (
+      parsed as { data: ReturnType<typeof payoutPaidSchema.parse> }
+    ).data;
     if (payload.currency !== 'EUR')
       this.reject('payouts', 'currency_not_eur', envelope);
     const now = this.clock.now();
@@ -176,8 +179,9 @@ export class FactIngestionService {
     }
     const parsed = journalPostedV2Schema.safeParse(payload);
     if (!parsed.success) this.reject('ledger', 'invalid_payload', envelope);
-    const journal = (parsed as { data: ReturnType<typeof journalPostedV2Schema.parse> })
-      .data;
+    const journal = (
+      parsed as { data: ReturnType<typeof journalPostedV2Schema.parse> }
+    ).data;
     const now = this.clock.now();
     const occurredAt = new Date(envelope.occurredAt);
     await this.facts.advanceWatermark('ledger', occurredAt, now);

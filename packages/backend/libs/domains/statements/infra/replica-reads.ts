@@ -1,4 +1,11 @@
-import { Inject, Injectable, Logger, Module, OnApplicationShutdown, Optional } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  Logger,
+  Module,
+  OnApplicationShutdown,
+  Optional,
+} from '@nestjs/common';
 import { InjectConnection } from '@nestjs/sequelize';
 import { Sequelize } from 'sequelize';
 import { ApiConfigModule } from '@app/common/config';
@@ -17,10 +24,20 @@ const CONNECTION_ERRORS = new Set([
   'SequelizeConnectionTimedOutError',
   'SequelizeConnectionAcquireTimeoutError',
 ]);
-const NETWORK_CODES = new Set(['ECONNREFUSED', 'ECONNRESET', 'ETIMEDOUT', 'ENOTFOUND', 'EHOSTUNREACH']);
+const NETWORK_CODES = new Set([
+  'ECONNREFUSED',
+  'ECONNRESET',
+  'ETIMEDOUT',
+  'ENOTFOUND',
+  'EHOSTUNREACH',
+]);
 
 export function isConnectionFailure(error: unknown): boolean {
-  const e = error as { name?: string; parent?: { code?: string }; code?: string };
+  const e = error as {
+    name?: string;
+    parent?: { code?: string };
+    code?: string;
+  };
   return (
     CONNECTION_ERRORS.has(e?.name ?? '') ||
     NETWORK_CODES.has(e?.parent?.code ?? '') ||
@@ -55,7 +72,9 @@ export class ReplicaReads {
     } catch (error) {
       if (!isConnectionFailure(error)) throw error;
       replicaFallbackCounter.add();
-      this.logger.warn('reporting replica unreachable: reading from the primary once');
+      this.logger.warn(
+        'reporting replica unreachable: reading from the primary once',
+      );
       return read(this.primary);
     }
   }

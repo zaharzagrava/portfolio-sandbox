@@ -1,5 +1,5 @@
-import { z } from 'zod';
-import { statementPeriodStatusSchema } from './statements.ts';
+import { z } from "zod";
+import { statementPeriodStatusSchema } from "./statements.ts";
 
 /** S16 accounting-period HTTP contracts (contracts/http.md): operator side, platform admin only. */
 const isoDateTime = z.string().datetime({ offset: true });
@@ -11,11 +11,7 @@ export const periodWatermarksSchema = z.strictObject({
   ledger: isoDateTime.nullable(),
 });
 
-export const periodRunStatusSchema = z.enum([
-  'RUNNING',
-  'COMPLETED',
-  'FAILED',
-]);
+export const periodRunStatusSchema = z.enum(["RUNNING", "COMPLETED", "FAILED"]);
 
 export const accountingPeriodSchema = z.strictObject({
   month: z.string().regex(/^\d{4}-\d{2}$/),
@@ -33,7 +29,7 @@ export const accountingPeriodSchema = z.strictObject({
       finishedAt: isoDateTime.nullable(),
     })
     .nullable(),
-  reconciliation: z.enum(['clean', 'findings', 'unverified']),
+  reconciliation: z.enum(["clean", "findings", "unverified"]),
 });
 export type AccountingPeriod = z.infer<typeof accountingPeriodSchema>;
 
@@ -44,7 +40,7 @@ export const accountingPeriodPageSchema = z.strictObject({
 
 export const periodCloseAcceptedSchema = z.strictObject({
   month: z.string().regex(/^\d{4}-\d{2}$/),
-  status: z.literal('CLOSING'),
+  status: z.literal("CLOSING"),
   runId: uuid,
 });
 export type PeriodCloseAccepted = z.infer<typeof periodCloseAcceptedSchema>;

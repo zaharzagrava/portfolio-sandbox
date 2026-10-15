@@ -33,8 +33,7 @@ export interface OrderPaidFact {
 }
 
 export type OrderPaidResult =
-  | { ok: true; fact: OrderPaidFact }
-  | { ok: false; reason: OrderPaidRejection };
+  { ok: true; fact: OrderPaidFact } | { ok: false; reason: OrderPaidRejection };
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const ISO_WITH_OFFSET =
@@ -110,8 +109,7 @@ export function parseOrderPaid(payload: unknown): OrderPaidResult {
       lineTotalMinor,
     });
   }
-  if (lines.length === 0 && currency !== 'EUR')
-    reason ??= 'currency_not_eur';
+  if (lines.length === 0 && currency !== 'EUR') reason ??= 'currency_not_eur';
   if (reason) return fail(reason);
   return {
     ok: true,

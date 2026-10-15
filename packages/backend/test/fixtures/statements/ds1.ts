@@ -27,22 +27,50 @@ export function ds1Orders(shops: { a: string; b: string }): OrderPaidInput[] {
     {
       orderId: DS1.o1,
       paidAt: DS1.paidA,
-      lines: [{ lineId: DS1.l1, shopId: shops.a, category: 'electronics', unitPriceMinor: 10000 }],
+      lines: [
+        {
+          lineId: DS1.l1,
+          shopId: shops.a,
+          category: 'electronics',
+          unitPriceMinor: 10000,
+        },
+      ],
     },
     {
       orderId: DS1.o2,
       paidAt: DS1.paidA,
-      lines: [{ lineId: DS1.l2, shopId: shops.a, category: 'electronics', unitPriceMinor: 20000 }],
+      lines: [
+        {
+          lineId: DS1.l2,
+          shopId: shops.a,
+          category: 'electronics',
+          unitPriceMinor: 20000,
+        },
+      ],
     },
     {
       orderId: DS1.o3,
       paidAt: DS1.paidA,
-      lines: [{ lineId: DS1.l3, shopId: shops.a, category: 'books', unitPriceMinor: 500 }],
+      lines: [
+        {
+          lineId: DS1.l3,
+          shopId: shops.a,
+          category: 'books',
+          unitPriceMinor: 500,
+        },
+      ],
     },
     {
       orderId: DS1.o5,
       paidAt: DS1.paidB,
-      lines: [{ lineId: DS1.l5, shopId: shops.b, category: 'electronics', unitPriceMinor: 4005 }],
+      lines: [
+        {
+          lineId: DS1.l5,
+          shopId: shops.b,
+          category: 'electronics',
+          unitPriceMinor: 4005,
+        },
+      ],
     },
   ];
 }
@@ -79,5 +107,7 @@ export const lateSaleL4 = (shopId: string) =>
   orderPaid({
     orderId: DS1.o4,
     paidAt: DS1.paidL4,
-    lines: [{ lineId: DS1.l4, shopId, category: 'books', unitPriceMinor: 1000 }],
+    lines: [
+      { lineId: DS1.l4, shopId, category: 'books', unitPriceMinor: 1000 },
+    ],
   });

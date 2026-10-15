@@ -163,7 +163,9 @@ export interface PeriodRepository {
   ): Promise<void>;
   lastRun(month: string): Promise<RunRow | null>;
   /** `findings` while one is open, `clean` after a verification with none, `unverified` before any. */
-  reconciliationState(month: string): Promise<'clean' | 'findings' | 'unverified'>;
+  reconciliationState(
+    month: string,
+  ): Promise<'clean' | 'findings' | 'unverified'>;
 }
 
 // ---------------------------------------------------------------------- facts (R3)
@@ -324,6 +326,8 @@ export interface AggregateRequest {
   knownAt: Date;
   /** Snapshots only: also require the fact to have been applied by `knownAt`, so a resumed run is deterministic. */
   appliedBy?: boolean;
+  /** Request-path reads: the statement is cut after this many milliseconds (`SET LOCAL statement_timeout`). */
+  timeoutMs?: number;
 }
 
 export interface Aggregate {

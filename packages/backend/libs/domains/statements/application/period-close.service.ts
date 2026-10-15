@@ -140,7 +140,10 @@ export class PeriodCloseService {
    * closed yet (facts incomplete: tried again later with backoff, never closed early). A month already being closed
    * by another worker is skipped; a `CLOSING` month left by a crash is resumed.
    */
-  async closeDue(month: string | undefined, signalStop: () => boolean): Promise<void> {
+  async closeDue(
+    month: string | undefined,
+    signalStop: () => boolean,
+  ): Promise<void> {
     const now = this.clock.now();
     if (month && !hasEnded(month, now)) throw periodNotEnded();
     for (let guard = 0; guard < 200; guard++) {
@@ -152,7 +155,9 @@ export class PeriodCloseService {
       if (period?.status === 'CLOSED') return;
       if (period?.status !== 'CLOSING') {
         try {
-          runId = (await this.request(target, 'system:schedule', { enqueue: false })).runId;
+          runId = (
+            await this.request(target, 'system:schedule', { enqueue: false })
+          ).runId;
         } catch (error) {
           const code = (error as { code?: string }).code;
           if (code === 'period_closing' || code === 'period_closed') return;
@@ -217,7 +222,13 @@ export class PeriodCloseService {
       );
       if (rows.length === 0) break;
       await this.runner.run(async () => {
-        await this.snapshots.writeBatch(month, rows, cutoff, runId, this.clock.now());
+        await this.snapshots.writeBatch(
+          month,
+          rows,
+          cutoff,
+          runId,
+          this.clock.now(),
+        );
         await this.periods.progressRun(runId, batches + 1, shops + rows.length);
       });
       batches++;
@@ -273,7 +284,9 @@ export class PeriodCloseService {
     if ('skipped' in closed) return 'skipped';
     periodCloseCounter.add(1, { status: 'completed' });
     periodCloseDuration.record((this.clock.nowMs() - startedAt) / 1000);
-    this.logger.log(`closed ${month} run ${runId}: ${shops} shops in ${batches} batches`);
+    this.logger.log(
+      `closed ${month} run ${runId}: ${shops} shops in ${batches} batches`,
+    );
     return 'completed';
   }
 
@@ -305,7 +318,10 @@ export class PeriodCloseService {
   private async blockingMonth(month: string): Promise<string | null> {
     const earliest = await this.periods.earliestFactMonth();
     if (!earliest || earliest >= month) return null;
-    const states = await this.periods.statesBetween(earliest, previousMonth(month));
+    const states = await this.periods.statesBetween(
+      earliest,
+      previousMonth(month),
+    );
     for (let m = earliest; m < month; m = nextMonth(m))
       if ((states.get(m) ?? 'OPEN') !== 'CLOSED') return m;
     return null;

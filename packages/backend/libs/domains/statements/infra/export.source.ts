@@ -39,7 +39,9 @@ export class SequelizeExportSource implements ExportSource {
       db.transaction(async (transaction) => {
         // `SET LOCAL` takes no bind parameter; the value is an integer clamped here.
         const timeout = Math.max(1, Math.floor(request.timeoutMs));
-        await db.query(`SET LOCAL statement_timeout = ${timeout}`, { transaction });
+        await db.query(`SET LOCAL statement_timeout = ${timeout}`, {
+          transaction,
+        });
         return db.query<Row>(
           `SELECT f."orderId", f."lineId", ${iso('f."paidAt"')} AS "paidAt", f."productId", f."category", f."quantity",
                   f."unitPriceMinor"::text AS "unitPriceMinor", f."lineTotalMinor"::text AS "lineTotalMinor",

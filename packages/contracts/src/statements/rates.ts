@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from "zod";
 
 /**
  * S16 commission-rate HTTP contracts (specs/domains/S16-seller-statements/contracts/http.md). Request bodies are strict
@@ -8,10 +8,10 @@ const isoDateTime = z.string().datetime({ offset: true });
 const uuid = z.string().uuid();
 
 export const commissionRateRuleSchema = z.enum([
-  'shop_category',
-  'shop_any',
-  'default_category',
-  'default_any',
+  "shop_category",
+  "shop_any",
+  "default_category",
+  "default_any",
 ]);
 export type CommissionRateRule = z.infer<typeof commissionRateRuleSchema>;
 

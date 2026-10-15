@@ -1,5 +1,5 @@
-import { z } from 'zod';
-import { adjustmentCauseKindSchema } from './statements.ts';
+import { z } from "zod";
+import { adjustmentCauseKindSchema } from "./statements.ts";
 
 /**
  * S16 events (contracts/events.md). Produced: `statements.period_closed`, `statements.adjustment_booked` on
@@ -37,8 +37,8 @@ export const adjustmentBookedSchema = z.strictObject({
 export type AdjustmentBookedPayload = z.infer<typeof adjustmentBookedSchema>;
 
 export const statementsEventSchemas = {
-  'statements.period_closed': periodClosedSchema,
-  'statements.adjustment_booked': adjustmentBookedSchema,
+  "statements.period_closed": periodClosedSchema,
+  "statements.adjustment_booked": adjustmentBookedSchema,
 } as const;
 
 const nonNegative = z.number().int().nonnegative();

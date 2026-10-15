@@ -33,6 +33,10 @@ that capability's `gaps.md`, and the implementation loop pays them under test.
 
 The rows above name many domains; a row closes when the last one is paid. What each capability has paid, with the check that proves it:
 
+- **S16 (`statements`), implemented 2026-10-15** - the commit that carries `specs/domains/S16-seller-statements/tasks.md` fully ticked.
+  - **D-12**: statements read no order, catalog, tenancy or ledger table; sale, payout and ledger facts arrive as `order.paid`, `payout.paid` and `ledger.journal_posted` v2 events into statements-owned tables, shops through `ShopQueryService` (`pnpm check:table-ownership --strict` lists no `statements` row; `domain/boundaries.spec.ts` pins it).
+  - **D-6/D-7**: layers `api/ application/ domain/ infra/`, SQL only in `infra/`, no foreign model. `.tx.baseline` of the domain reads 0 (both audited `sequelize.transaction` sites use `TransactionRunner`).
+
 - **S47 (`assistant`, knowledge half), implemented 2026-10-13/14** - the commit that carries `specs/domains/S47-rag-help-center/tasks.md` fully ticked.
   - **D-6**: the knowledge files in `api/` and `application/` import no `infra/` path and no connection; ports and tokens in `domain/ports.ts`, SQL only in `infra/pg-*.repository.ts` (`pnpm check:boundaries` clean).
   - **D-7**: the knowledge half imports no foreign model and exports no model; **D-12**: `SELECT … FROM "Product"` replaced by `ProductQueryService.getProductsByIds`, both foreign keys dropped by `20261013160200-knowledge-s47-contract.js`, deletion by the `catalog.product_deleted` and `tenancy.shop_deleted` consumers (`pnpm check:table-ownership --strict` lists no `assistant` row).

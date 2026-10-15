@@ -61,11 +61,12 @@ describe('S16 AS-34 period transitions', () => {
   const states: PeriodStatus[] = ['OPEN', 'CLOSING', 'CLOSED'];
   const allowed = new Set(['OPEN>CLOSING', 'CLOSING>CLOSED', 'CLOSING>OPEN']);
 
-  it.each(
-    states.flatMap((from) => states.map((to) => [from, to] as const)),
-  )('S16 AS-34: %s -> %s', (from, to) => {
-    expect(canTransition(from, to)).toBe(allowed.has(`${from}>${to}`));
-  });
+  it.each(states.flatMap((from) => states.map((to) => [from, to] as const)))(
+    'S16 AS-34: %s -> %s',
+    (from, to) => {
+      expect(canTransition(from, to)).toBe(allowed.has(`${from}>${to}`));
+    },
+  );
 });
 
 describe('S16 AS-49 booking month', () => {
@@ -75,9 +76,12 @@ describe('S16 AS-49 booking month', () => {
     ['2026-04-30T23:59:59Z', '2026-04'],
     ['2026-05-01T00:00:00Z', '2026-05'],
     ['2026-12-31T23:59:59Z', '2026-12'],
-  ])('S16 AS-49: instant %s books in %s when that month is open', (at, month) => {
-    expect(bookingMonth(new Date(at), none)).toBe(month);
-  });
+  ])(
+    'S16 AS-49: instant %s books in %s when that month is open',
+    (at, month) => {
+      expect(bookingMonth(new Date(at), none)).toBe(month);
+    },
+  );
 
   it.each<[PeriodStatus, string]>([
     ['CLOSING', '2026-05'],

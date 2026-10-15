@@ -41,7 +41,8 @@ export class WatermarkService {
       if (caughtUp && (current === null || current.getTime() < idle.getTime()))
         result[stream] = idle;
       const mark = result[stream];
-      const behindMs = mark === null ? now.getTime() : now.getTime() - mark.getTime();
+      const behindMs =
+        mark === null ? now.getTime() : now.getTime() - mark.getTime();
       ingestionLagGauge.set(Math.max(0, behindMs) / 1000, { stream });
     }
     return result;

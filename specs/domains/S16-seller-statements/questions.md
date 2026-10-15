@@ -50,3 +50,8 @@ Decisions taken unattended under the decision policy (production-grade, notes an
 - [LOCAL] Rate categories are trimmed and lower-cased on write and on ingest; `*` is reserved for "any" → one comparison rule.
 - [LOCAL] First supported month `2020-01` → bounds validation.
 - [LOCAL] Statement store engine and partitioning (month-partitioned facts) → decided in `plan.md` with pool arithmetic (III.12).
+
+## Found during implementation
+
+- [CONTRACT] AS-81 says a statement over its timeout fails with `500 internal_error`; the platform error mapper (S54, `error-utils.service.ts`) answers SQLSTATE 57014 as `503 database_timeout` with a generic, retryable detail → kept the platform mapping (a per-domain override would split the error contract), test and living page assert `503 database_timeout`; the intent (generic detail, no SQL, connection released) holds. Not blocking.
+- [LOCAL] The live statement query had no explicit timeout (T039) and the test pool has no platform `statement_timeout`, so a locked table hung a read for minutes → added `STATEMENTS_READ_TIMEOUT_MS` (default 10000, ≥ 100) applied with `SET LOCAL statement_timeout` to the request-path live aggregate; jobs (close, reconcile, verify) keep the job timeout, reads on the replica keep the platform replica `statement_timeout`.

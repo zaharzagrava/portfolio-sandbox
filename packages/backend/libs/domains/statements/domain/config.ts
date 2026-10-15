@@ -21,6 +21,7 @@ export const statementsConfigSchema = z
     STATEMENTS_CLOSE_MARGIN_MIN: int(10, 0),
     STATEMENTS_EXPORT_CONCURRENCY: int(2, 1),
     STATEMENTS_EXPORT_TIMEOUT_MS: int(120_000, 1000),
+    STATEMENTS_READ_TIMEOUT_MS: int(10_000, 100),
     STATEMENTS_JOB_TIMEOUT_MS: int(600_000, 1000),
     STATEMENTS_CLOSE_SCHEDULE: z.string().default('0 2 2 * *'),
     STATEMENTS_CLOSE_SCHEDULE_TZ: z.string().default('UTC'),
@@ -56,6 +57,7 @@ export interface StatementsConfig {
   closeMarginMin: number;
   exportConcurrency: number;
   exportTimeoutMs: number;
+  readTimeoutMs: number;
   jobTimeoutMs: number;
   closeSchedule: string;
   closeScheduleTz: string;
@@ -85,6 +87,7 @@ export function loadStatementsConfig(
     closeMarginMin: v.STATEMENTS_CLOSE_MARGIN_MIN,
     exportConcurrency: v.STATEMENTS_EXPORT_CONCURRENCY,
     exportTimeoutMs: v.STATEMENTS_EXPORT_TIMEOUT_MS,
+    readTimeoutMs: v.STATEMENTS_READ_TIMEOUT_MS,
     jobTimeoutMs: v.STATEMENTS_JOB_TIMEOUT_MS,
     closeSchedule: v.STATEMENTS_CLOSE_SCHEDULE,
     closeScheduleTz: v.STATEMENTS_CLOSE_SCHEDULE_TZ,

@@ -192,7 +192,11 @@ export class SequelizePeriodRepository implements PeriodRepository {
     );
   }
 
-  async progressRun(runId: string, batches: number, shops: number): Promise<void> {
+  async progressRun(
+    runId: string,
+    batches: number,
+    shops: number,
+  ): Promise<void> {
     await this.sequelize.query(
       `UPDATE "StatementPeriodRun" SET "batchesWritten" = :batches, "shopsWritten" = :shops WHERE "runId" = :runId`,
       { replacements: { runId, batches, shops } },

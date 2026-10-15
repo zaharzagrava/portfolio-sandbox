@@ -171,7 +171,13 @@ const entry = (
   status: number,
   title: string,
   detail: string,
-): ProblemCatalogEntry => ({ code, status, title, detail, owner: 'statements' });
+): ProblemCatalogEntry => ({
+  code,
+  status,
+  title,
+  detail,
+  owner: 'statements',
+});
 
 export const STATEMENTS_PROBLEMS: ProblemCatalogEntry[] = [
   entry(

@@ -221,10 +221,14 @@ uses to get other domains' data.
 ### statements
 - **Responsibility**: bitemporal commission rates, monthly statements, period close, adjustments,
   and as-of reporting.
-- **Owns**: `CommissionRate`, `StatementSnapshot`, `StatementAdjustment`, `AccountingPeriod`.
-- **Hosted by**: core, worker.
-- **Depends on**: payments and orders through **R3**: ledger and order facts are read from
-  ClickHouse (CDC), never by joining `BisOrder` or `LedgerEntry`.
+- **Owns**: `CommissionRate`, `StatementSnapshot`, `StatementAdjustment`, `AccountingPeriod`,
+  `StatementSaleFact`, `StatementPayoutFact`, `StatementLedgerFact`, `StatementLedgerCredit`,
+  `StatementStreamWatermark`, `StatementPeriodRun`, `StatementPeriodHistory`, `StatementFinding`.
+- **Hosted by**: core, worker, projector.
+- **Depends on**: payments and orders through **R3 events** (`order.paid`, `payout.paid`,
+  `ledger.journal_posted` v2) copied into statements-owned tables by three projectors, never by
+  joining `BisOrder` or `LedgerEntry`; ClickHouse stays optional for heavy analytics, not for the
+  exact figures (the as-of pricing needs one store and integers).
 
 ### billing
 - **Responsibility**: plans, versioned prices, subscriptions (Marketplace Plus, shop plans),
@@ -398,7 +402,7 @@ during the move.
 | Table (owner) | Referenced by | Replacement |
 |---|---|---|
 | `Product` (catalog) | ads, assets, auctions, catalog-import, crawler, feed, integrations, knowledge, leaderboards, media, offline-sync, orders, payment, pickup, public-api, recommendations, search-admin, statements, tenancy, trending, webhooks, widget | Writes go through R1 catalog commands. Reads use R1 `getProductsByIds`, or an R3 read model for lists and search. |
-| `BisOrder`, `BisOrderItem`, `ShopOrder` (orders) | assets, auctions, catalog-import, ledger, public-api, statements, webhooks | R1 `orders` exports. statements uses R3 via ClickHouse. asset-library and payments consume order events. |
+| `BisOrder`, `BisOrderItem`, `ShopOrder` (orders) | assets, auctions, catalog-import, ledger, public-api, statements, webhooks | R1 `orders` exports. statements uses R3 events into its own fact store. asset-library and payments consume order events. |
 | `Shop` (tenancy) | finance, leaderboards, onboarding, product, public-api, stories, widget | R1 `getShopsByIds` |
 | `ShopMembership` (tenancy) | collab, crawler, live, notifications, webhooks | R1 `assertMember` |
 | `User` (identity) | admin*, chat-sync, ledger, notifications, tenancy | R1 identity exports. *`admin` merges into identity, so it stops being a violation. |

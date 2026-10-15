@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from "zod";
 
 /** S16 seller statement HTTP contracts (contracts/http.md). Money is an integer in minor units, named `…Minor`. */
 const isoDateTime = z.string().datetime({ offset: true });
@@ -7,9 +7,9 @@ const month = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/);
 const minor = z.number().int();
 
 export const statementPeriodStatusSchema = z.enum([
-  'OPEN',
-  'CLOSING',
-  'CLOSED',
+  "OPEN",
+  "CLOSING",
+  "CLOSED",
 ]);
 export type StatementPeriodStatus = z.infer<typeof statementPeriodStatusSchema>;
 
@@ -23,9 +23,9 @@ export const statementTotalsSchema = z.strictObject({
 export type StatementTotals = z.infer<typeof statementTotalsSchema>;
 
 export const adjustmentCauseKindSchema = z.enum([
-  'rate_change',
-  'late_sale',
-  'late_payout',
+  "rate_change",
+  "late_sale",
+  "late_payout",
 ]);
 export type AdjustmentCauseKind = z.infer<typeof adjustmentCauseKindSchema>;
 
@@ -48,9 +48,9 @@ export type StatementAdjustment = z.infer<typeof statementAdjustmentSchema>;
 export const statementSchema = z.strictObject({
   shopId: uuid,
   month,
-  currency: z.literal('EUR'),
+  currency: z.literal("EUR"),
   status: statementPeriodStatusSchema,
-  source: z.enum(['live', 'snapshot', 'as_known_at']),
+  source: z.enum(["live", "snapshot", "as_known_at"]),
   knownAt: isoDateTime,
   dataAsOf: isoDateTime.nullable(),
   own: statementTotalsSchema,
