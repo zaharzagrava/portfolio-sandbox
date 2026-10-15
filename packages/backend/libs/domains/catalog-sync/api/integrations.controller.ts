@@ -1,91 +1,149 @@
 import {
   Body,
   Controller,
+  Delete,
+  Get,
   HttpCode,
   Param,
-  ParseUUIDPipe,
   Post,
-  Req,
-  UnauthorizedException,
+  Query,
+  Res,
 } from '@nestjs/common';
-import { ApiExcludeEndpoint, ApiProperty, ApiTags } from '@nestjs/swagger';
-import type { Request } from 'express';
-import { IsIn, IsObject, IsString, Length } from 'class-validator';
-import { Firewall } from '@app/domains/identity';
-import { ShopScoped } from '@app/domains/tenancy';
-import { TaskQueue } from '@app/infrastructure/sqs/task-queue.port';
+import { ApiTags } from '@nestjs/swagger';
+import type { Response } from 'express';
 import {
-  IntegrationSyncService,
-  SYNC_QUEUE,
-} from '../application/integration-sync.service';
+  integrationInstallRequestSchema,
+  integrationListQuerySchema,
+  integrationSyncRequestSchema,
+  wooConnectRequestSchema,
+  type Integration,
+  type IntegrationInstallResponse,
+  type IntegrationPage,
+  type IntegrationSyncRequest,
+  type WooConnectRequest,
+} from '@marketplace-sandbox/contracts';
+import { User, UserRawDto } from '@app/domains/identity';
+import { ShopScoped } from '@app/domains/tenancy';
+import { RateLimit } from '@app/infrastructure/rate-limit';
+import { ConnectService } from '../application/connect.service';
+import { IntegrationAdminService } from '../application/integration-admin.service';
+import { OAuthService } from '../application/oauth.service';
+import { UuidParamPipe, ZodPipe } from './zod.pipe';
 
-export class ConnectDto {
-  @ApiProperty({ enum: ['shopify', 'woocommerce', 'fake'] })
-  @IsIn(['shopify', 'woocommerce', 'fake'])
-  provider: 'shopify' | 'woocommerce' | 'fake';
-  @ApiProperty({ example: 'my-store.myshopify.com' })
-  @IsString()
-  @Length(3, 200)
-  externalShop: string;
-  @ApiProperty({
-    description:
-      'OAuth access token, webhook secret, location id - sealed at rest',
-  })
-  @IsObject()
-  credentials: Record<string, string>;
-}
+const installBody = new ZodPipe(integrationInstallRequestSchema);
+const wooBody = new ZodPipe(wooConnectRequestSchema);
+const syncBody = new ZodPipe(integrationSyncRequestSchema);
+const listQuery = new ZodPipe(integrationListQuerySchema);
 
+/**
+ * Shop-scoped integration routes (contracts/http-api.md). Permission `integrations.manage` (OWNER, ADMIN), never
+ * `shop.manage` (A15); writes share the `catalog-sync.integration-write.shop` policy. The anonymous OAuth callback is on
+ * its own controller.
+ */
 @ApiTags('integrations')
-@Controller()
+@Controller('shops/:shopId/integrations')
 export class IntegrationsController {
   constructor(
-    private readonly sync: IntegrationSyncService,
-    private readonly queue: TaskQueue,
+    private readonly oauth: OAuthService,
+    private readonly connect: ConnectService,
+    private readonly admin: IntegrationAdminService,
   ) {}
 
-  @ShopScoped('shop.manage')
-  @Post('shops/:shopId/integrations')
-  connect(
-    @Param('shopId', ParseUUIDPipe) shopId: string,
-    @Body() body: ConnectDto,
-  ) {
-    return this.sync.connect(
-      shopId,
-      body.provider,
-      body.externalShop,
-      body.credentials,
-    );
+  @ShopScoped('integrations.manage')
+  @RateLimit('catalog-sync.integration-write.shop')
+  @HttpCode(200)
+  @Post('shopify/install')
+  install(
+    @Param('shopId', UuidParamPipe) shopId: string,
+    @User() user: UserRawDto,
+    @Body(installBody) body: { shopDomain: string },
+  ): Promise<IntegrationInstallResponse> {
+    return this.oauth.startInstall(shopId, user.id, body.shopDomain);
   }
 
-  /**
-   * Provider webhook: verify HMAC over the RAW body, enqueue, answer 200
-   * immediately (providers retry/disable slow endpoints). The worker then
-   * fetches the CURRENT state - webhook payloads can arrive out of order.
-   */
-  @ApiExcludeEndpoint()
-  @Firewall({ anonymous: true })
-  @Post('integrations/:integrationId/webhooks')
+  @ShopScoped('integrations.manage')
+  @Get()
+  list(
+    @Param('shopId', UuidParamPipe) shopId: string,
+    @Query(listQuery)
+    query: ReturnType<(typeof integrationListQuerySchema)['parse']>,
+  ): Promise<IntegrationPage> {
+    return this.admin.list(shopId, query);
+  }
+
+  @ShopScoped('integrations.manage')
+  @Get(':integrationId')
+  get(
+    @Param('shopId', UuidParamPipe) shopId: string,
+    @Param('integrationId', UuidParamPipe) integrationId: string,
+  ): Promise<Integration> {
+    return this.admin.get(shopId, integrationId);
+  }
+
+  @ShopScoped('integrations.manage')
+  @RateLimit('catalog-sync.integration-write.shop')
   @HttpCode(200)
-  async webhook(
-    @Param('integrationId', ParseUUIDPipe) integrationId: string,
-    @Req() req: Request & { rawBody?: Buffer },
-  ) {
-    const raw = req.rawBody ?? Buffer.from(JSON.stringify(req.body ?? {}));
-    if (
-      !(await this.sync.verifyWebhook(
-        integrationId,
-        raw,
-        req.headers as Record<string, string | undefined>,
-      ))
-    )
-      throw new UnauthorizedException();
-    const externalId = String((req.body as { id?: unknown })?.id ?? '');
-    if (externalId)
-      await this.queue.enqueue(SYNC_QUEUE, {
-        integrationId,
-        kind: 'one',
-        externalId,
-      });
-    return { received: true };
+  @Post(':integrationId/pause')
+  pause(
+    @Param('shopId', UuidParamPipe) shopId: string,
+    @Param('integrationId', UuidParamPipe) integrationId: string,
+    @User() user: UserRawDto,
+  ): Promise<Integration> {
+    return this.admin.pause(shopId, integrationId, user.id);
+  }
+
+  @ShopScoped('integrations.manage')
+  @RateLimit('catalog-sync.integration-write.shop')
+  @HttpCode(200)
+  @Post(':integrationId/resume')
+  resume(
+    @Param('shopId', UuidParamPipe) shopId: string,
+    @Param('integrationId', UuidParamPipe) integrationId: string,
+    @User() user: UserRawDto,
+  ): Promise<Integration> {
+    return this.admin.resume(shopId, integrationId, user.id);
+  }
+
+  @ShopScoped('integrations.manage')
+  @RateLimit('catalog-sync.integration-write.shop')
+  @HttpCode(204)
+  @Delete(':integrationId')
+  async disconnect(
+    @Param('shopId', UuidParamPipe) shopId: string,
+    @Param('integrationId', UuidParamPipe) integrationId: string,
+    @User() user: UserRawDto,
+  ): Promise<void> {
+    await this.admin.disconnect(shopId, integrationId, user.id);
+  }
+
+  /** The 1/min (backfill 1/h) limits are charged by the service once a message is about to be queued. */
+  @ShopScoped('integrations.manage')
+  @HttpCode(202)
+  @Post(':integrationId/sync')
+  sync(
+    @Param('shopId', UuidParamPipe) shopId: string,
+    @Param('integrationId', UuidParamPipe) integrationId: string,
+    @Body(syncBody) body: IntegrationSyncRequest,
+  ): Promise<{ enqueued: boolean; reason?: 'breaker_open' }> {
+    return this.admin.syncNow(shopId, integrationId, body);
+  }
+
+  /** `201` for a new integration, `200` with the same id for a repeat connect (L-010). */
+  @ShopScoped('integrations.manage')
+  @RateLimit('catalog-sync.integration-write.shop')
+  @Post()
+  async connectWoo(
+    @Param('shopId', UuidParamPipe) shopId: string,
+    @User() user: UserRawDto,
+    @Body(wooBody) body: WooConnectRequest,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<Integration> {
+    const { integration, created } = await this.connect.connectWoo(
+      shopId,
+      user.id,
+      body,
+    );
+    res.status(created ? 201 : 200);
+    return integration;
   }
 }

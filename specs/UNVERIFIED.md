@@ -193,3 +193,11 @@ interviews) until its status says so. The implementation loop appends here (rule
 | S46 | SC-010: 5,000 concurrent streams per instance; 230 msg/s average, 3,000 msg/s peak over 10 instances | same file (k6 SSE load test) | not run |
 | S46 | Application start (L-004, L-015, L-018) of `core`, `sse-gateway`, `projector` and the empty-stack run (L-012) | same file, step 16 and `scripts/qa/fresh-run.sh` | not run |
 | S46 | Web journeys of the assistant sheet (ask, resume after a cut stream) in a browser on an empty stack, 2 workers, runner timeouts; the stop-button journey needs a slow provider and is covered by the hook unit test only | `pnpm --dir packages/web test:e2e assistant` after `scripts/qa/fresh-run.sh` | not run |
+| S08 | SC-001: 50,000 variants visible within 15 min while a small shop's sync is delayed at most 1 min | `specs/domains/S08-integrations/quickstart.md` (Ops artifacts), load run against the fake Shopify | not run |
+| S08 | SC-002: change visible within 30 s p99 with webhooks and within 6 min with every webhook lost | same file, timed webhook and no-webhook runs on the real queues | not run |
+| S08 | SC-003: 1,000 interleaved stock changes on both sides converge, no ping-pong, push within 30 s p99 | same file, randomized soak against both fakes | not run |
+| S08 | SC-004: 50 random worker kills during a 20,000-variant sync end identical to an uninterrupted run | same file, kill/restart loop script | not run |
+| S08 | SC-005: one malformed item among 100,000 never reduces applied good items, each quarantined exactly once | same file, scale run | not run |
+| S08 | SC-006: provider never sees more than N calls per window for any number of workers (tests prove two instances) | same file, multi-instance run reading the fake's request log | not run |
+| S08 | SC-010: first products visible within 5 min of returning to the dashboard (1,000-variant store) | same file, benchmark with the W04 page | not run |
+| S08 | The throwaway empty-stack run (L-012, step 14) and the W04 browser journey (step 16; the W04 page does not exist yet) | same file, steps 14, 16 | not run |

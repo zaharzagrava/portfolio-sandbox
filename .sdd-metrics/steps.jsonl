@@ -315,3 +315,22 @@
 {"run":"20261015T071833Z","capability":"S46","step":"repair-1","start":"2026-10-15T08:52:13Z","end":"2026-10-15T08:55:34Z","seconds":201,"result":"ok","attempt":1,"reason":"ok","code_changed":true}
 {"run":"20261015T071833Z","capability":"S46","step":"gate","start":"2026-10-15T08:55:34Z","end":"2026-10-15T09:08:27Z","seconds":773,"result":"pass","attempt":2,"reason":""}
 {"run":"20261015T071833Z","capability":"S46","step":"built","start":"2026-10-15T08:51:41Z","end":"2026-10-15T09:08:27Z","seconds":1006,"result":"ok","attempt":1,"reason":"Streamed shopping assistant: read-only tools, resumable streams, quotas, fallback model, moderation"}
+{"run":"20261015T071833Z","capability":"S08","step":"plan","start":"2026-10-15T09:08:51Z","end":"2026-10-15T09:12:31Z","seconds":220,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261015T071833Z","capability":"S08","step":"tasks","start":"2026-10-15T09:12:31Z","end":"2026-10-15T09:14:32Z","seconds":121,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261015T071833Z","capability":"S08","step":"analyze","start":"2026-10-15T09:14:32Z","end":"2026-10-15T09:15:02Z","seconds":30,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261015T071833Z","capability":"S08","step":"implement-1","start":"2026-10-15T09:15:02Z","end":"2026-10-15T09:53:25Z","seconds":2303,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261015T071833Z","capability":"S08","step":"implement-2","start":"2026-10-15T09:53:25Z","end":"2026-10-15T11:53:30Z","seconds":7205,"result":"timeout","attempt":1,"reason":"pass-timeout"}
+{"run":"20261015T071833Z","capability":"S08","step":"implement-3","start":"2026-10-15T11:53:30Z","end":"2026-10-15T11:58:00Z","seconds":270,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261015T071833Z","capability":"S08","step":"implement-4","start":"2026-10-15T11:58:00Z","end":"2026-10-15T11:58:25Z","seconds":25,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261015T071833Z","capability":"S08","step":"doctor-1","start":"2026-10-15T11:58:26Z","end":"2026-10-15T12:06:32Z","seconds":486,"result":"ok","attempt":1,"reason":"ok","code_changed":false}
+{"run":"20261015T071833Z","capability":"S08","step":"converge-1","start":"2026-10-15T12:06:32Z","end":"2026-10-15T12:08:03Z","seconds":91,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261015T071833Z","capability":"S08","step":"implement-2","start":"2026-10-15T12:08:03Z","end":"2026-10-15T12:18:08Z","seconds":605,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261015T071833Z","capability":"S08","step":"implement-3","start":"2026-10-15T12:18:09Z","end":"2026-10-15T12:18:29Z","seconds":20,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261015T071833Z","capability":"S08","step":"doctor-2","start":"2026-10-15T12:18:29Z","end":"2026-10-15T12:18:49Z","seconds":20,"result":"ok","attempt":1,"reason":"ok","code_changed":false}
+{"run":"20261015T071833Z","capability":"S08","step":"converge-1","start":"2026-10-15T12:18:50Z","end":"2026-10-15T12:19:25Z","seconds":35,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261015T071833Z","capability":"S08","step":"gate","start":"2026-10-15T12:19:25Z","end":"2026-10-15T12:19:31Z","seconds":6,"result":"fail","attempt":1,"reason":"test integrity: packages/backend/libs/domains/catalog-sync/integrations.e2e-spec.ts: test file deleted, and it carried no scenario id, so nothing proves that another test replaces it (add the scenario"}
+{"run":"20261015T071833Z","capability":"S08","step":"repair-1","start":"2026-10-15T12:19:31Z","end":"2026-10-15T12:21:17Z","seconds":106,"result":"ok","attempt":1,"reason":"ok","code_changed":true}
+{"run":"20261015T071833Z","capability":"S08","step":"gate","start":"2026-10-15T12:21:17Z","end":"2026-10-15T12:26:18Z","seconds":301,"result":"fail","attempt":2,"reason":"FAIL libs/domains/catalog-sync/integration-boundary.e2e-spec.ts"}
+{"run":"20261015T071833Z","capability":"S08","step":"repair-2","start":"2026-10-15T12:26:19Z","end":"2026-10-15T12:28:09Z","seconds":110,"result":"ok","attempt":1,"reason":"ok","code_changed":true}
+{"run":"20261015T071833Z","capability":"S08","step":"gate","start":"2026-10-15T12:28:09Z","end":"2026-10-15T12:33:02Z","seconds":293,"result":"pass","attempt":3,"reason":""}
+{"run":"20261015T071833Z","capability":"S08","step":"built","start":"2026-10-15T12:18:50Z","end":"2026-10-15T12:33:02Z","seconds":852,"result":"ok","attempt":1,"reason":"Shopify/WooCommerce catalog and stock sync (incremental, bidirectional stock, reconciliation, quarantine)"}

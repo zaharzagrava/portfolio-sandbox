@@ -91,6 +91,12 @@ export const OWNERSHIP = {
   SyncOperation: 'domain:catalog-sync',
   ShopChangeLog: 'domain:catalog-sync',
   ProductFieldClock: 'domain:catalog-sync',
+  IntegrationHistory: 'domain:catalog-sync',
+  IntegrationInstall: 'domain:catalog-sync',
+  SyncRun: 'domain:catalog-sync',
+  StockConflict: 'domain:catalog-sync',
+  WebhookReceipt: 'domain:catalog-sync',
+  CatalogReconciliationRun: 'domain:catalog-sync',
   // media
   Media: 'domain:media',
   MediaStatusHistory: 'domain:media',

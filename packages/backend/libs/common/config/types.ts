@@ -8,6 +8,7 @@ import type { KnowledgeConfig } from './knowledge-config';
 import type { LlmConfig } from './llm-config';
 import type { AdsConfig } from './ads-config';
 import type { DeveloperPlatformConfig } from './developer-platform-config';
+import type { CatalogSyncConfig } from './catalog-sync-config';
 
 /**
  * @description - config that should always be present in environment variables where application is run
@@ -437,6 +438,7 @@ export interface SecretsManagerConfig
     KnowledgeConfig,
     LlmConfig,
     AdsConfig,
-    DeveloperPlatformConfig {}
+    DeveloperPlatformConfig,
+    CatalogSyncConfig {}
 
 export class Config extends IntersectionType(EnvConfig, SecretsManagerConfig) {}

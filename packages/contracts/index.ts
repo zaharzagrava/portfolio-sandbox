@@ -29,3 +29,4 @@ export * from './src/media/video.ts';
 export * from './src/media/video-events.ts';
 export * from './src/events/client-events.ts';
 export * from './src/developer-platform/index.ts';
+export * from './src/catalog-sync/index.ts';

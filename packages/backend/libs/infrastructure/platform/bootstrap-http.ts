@@ -24,7 +24,7 @@ import {
   resolveShutdownConfigFor,
 } from '@app/infrastructure/lifecycle/graceful-shutdown';
 import type { ShutdownConfig } from '@app/infrastructure/lifecycle/shutdown-config';
-import { jsonBodyLimits } from './body-limits';
+import { jsonBodyLimits, rawBodyRoutes } from './body-limits';
 import { parseTrustedProxies, resolveClientIp } from './client-ip';
 import {
   SECURITY_POLICY,
@@ -237,6 +237,13 @@ export function configureHttpApp(
     if (Buffer.isBuffer(buffer)) (req as RawBodyRequest).rawBody = buffer;
   };
   const expressApp = app as NestExpressApplication;
+  // Routes that registered a raw body (signed webhooks) are read as bytes first; the other parsers skip a body already read.
+  for (const { match, limit } of rawBodyRoutes.all())
+    expressApp.useBodyParser('raw', {
+      limit,
+      verify: keepRawBody,
+      type: (req: Request) => req.method === 'POST' && match.test(req.path),
+    });
   // Routes that registered a larger limit (body-limits.ts) are read first; the default parser skips a body already read.
   for (const { match, limit } of jsonBodyLimits.all())
     expressApp.useBodyParser('json', {

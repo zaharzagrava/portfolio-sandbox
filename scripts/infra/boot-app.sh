@@ -2,12 +2,12 @@
 # Start ONE real application of packages/backend/apps on its own (not the monolith), wait until it is up, show what it logged about its consumers and jobs, stop it.
 # An unattended agent cannot approve "start a long-running server", so a task like "the real apps/projector boots and logs its registrations" (S19 T072, S36 T060, S39 T063) is
 # closed with this script. The dev stack must be up (the runner's own, or scripts/qa/stack-up.sh).
-#   scripts/infra/boot-app.sh <core|projector|worker|payment-processor|sse-gateway|collab|public-api|bff> [--wait SECONDS]
+#   scripts/infra/boot-app.sh <core|projector|worker|payment-processor|sse-gateway|collab|public-api|bff|local-monolith> [--wait SECONDS]
 #   prints: "boot-app <app>: UP" and the log lines that mention consumers, jobs, mappings and registrations (the evidence a task asks for); the full log path is printed too.
 #   exit 1 and the first Nest/TypeScript error when it does not come up.
 set -uo pipefail
 ROOT="$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel)"; cd "$ROOT/packages/backend"
-APP="${1:?usage: boot-app.sh <core|projector|worker|payment-processor|sse-gateway|collab|public-api|bff> [--wait SECONDS]}"; shift
+APP="${1:?usage: boot-app.sh <core|projector|worker|payment-processor|sse-gateway|collab|public-api|bff|local-monolith>[--wait SECONDS]}"; shift
 WAIT=150; [[ "${1:-}" == "--wait" ]] && WAIT="$2"
 case "$APP" in
   core)              SCRIPT=start:dev;                   PORT_=8010; EXTRA="PORT=8010" ;;
@@ -18,6 +18,7 @@ case "$APP" in
   collab)            SCRIPT=start:dev:collab;            PORT_=8004; EXTRA="" ;;
   public-api)        SCRIPT=start:dev:public-api;        PORT_=8005; EXTRA="" ;;
   bff)               SCRIPT=start:dev:bff;               PORT_=8006; EXTRA="" ;;
+  local-monolith)    SCRIPT=start:dev:monolith;          PORT_=8012; EXTRA="PORT=8012" ;;
   *) echo "unknown app $APP" >&2; exit 2 ;;
 esac
 LOG="$(mktemp -t "boot-$APP.XXXXXX.log")"

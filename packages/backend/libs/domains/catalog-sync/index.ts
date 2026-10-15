@@ -9,10 +9,9 @@ export {
   CatalogImportWorkerModule,
 } from './catalog-import.module';
 export {
-  IntegrationsCoreModule,
   IntegrationsModule,
+  IntegrationsProjectorModule,
   IntegrationsWorkerModule,
-  StockPushProjector,
 } from './integrations.module';
 export { OfflineSyncModule } from './sync.module';
 export { catalogSyncRatePolicies } from './rate-limit-policies';

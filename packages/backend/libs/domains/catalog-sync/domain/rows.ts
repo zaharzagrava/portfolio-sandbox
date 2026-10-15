@@ -26,9 +26,14 @@ export const CatalogRow = z.object({
 });
 export type CatalogRow = z.infer<typeof CatalogRow>;
 
+const BOM = String.fromCharCode(0xfeff);
+
 /** First bytes decide the parser (never the file extension); binary is refused. */
 export function sniff(head: Buffer): 'jsonl' | 'csv' | 'binary' {
   if (head.includes(0)) return 'binary';
-  const text = head.toString('utf8').replace(/^﻿/, '').trimStart();
+  const decoded = head.toString('utf8');
+  const text = (
+    decoded.startsWith(BOM) ? decoded.slice(1) : decoded
+  ).trimStart();
   return text.startsWith('{') ? 'jsonl' : 'csv';
 }
