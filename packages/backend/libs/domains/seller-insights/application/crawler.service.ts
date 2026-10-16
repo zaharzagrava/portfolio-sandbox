@@ -14,6 +14,8 @@ import {
   safeGet,
   SafeRequestError,
 } from '@app/infrastructure/net';
+import { ProductQueryService, type ProductDto } from '@app/domains/catalog';
+import { MembershipQueryService } from '@app/domains/tenancy';
 import { CompetitorPriceDropped } from './events/seller-insights-events';
 import { Frontier } from '../infra/frontier';
 import { normalizeUrl } from '../domain/url';
@@ -27,6 +29,8 @@ const BASE_INTERVAL_H = 6;
 const MAX_INTERVAL_H = 48;
 const MIN_DELAY_MS = 1_000;
 const UNCHANGED_BITS = 3;
+/** Most ids the product and membership R1 reads take per call. */
+const READ_BATCH = 500;
 
 interface Target {
   id: string;
@@ -50,6 +54,8 @@ export class CrawlerService {
     private readonly outbox: OutboxService,
     private readonly transactions: TransactionRunner,
     private readonly config: ApiConfigService,
+    private readonly products: ProductQueryService,
+    private readonly members: MembershipQueryService,
   ) {
     this.frontier = new Frontier(redis);
   }
@@ -79,15 +85,10 @@ export class CrawlerService {
         `INSERT INTO "CrawlTarget" (url, host) VALUES (:url, :host) ON CONFLICT (url) DO UPDATE SET "nextCheckAt" = LEAST("CrawlTarget"."nextCheckAt", now()) RETURNING id`,
         { type: QueryTypes.SELECT, replacements: { url, host }, transaction },
       );
-      const [owned] = await this.sequelize.query(
-        `SELECT 1 FROM "Product" WHERE id = :productId AND "shopId" = :shopId`,
-        {
-          type: QueryTypes.SELECT,
-          replacements: { productId, shopId },
-          transaction,
-        },
-      );
-      if (!owned)
+      const owned = await this.products.getProductsByIds([productId], {
+        shopId,
+      });
+      if (owned.size === 0)
         throw new BadRequestException('Product not found in this shop');
       await this.sequelize.query(
         `INSERT INTO "CompetitorWatch" ("shopId", "productId", "targetId") VALUES (:shopId, :productId, :targetId) ON CONFLICT DO NOTHING`,
@@ -265,22 +266,42 @@ export class CrawlerService {
     priceMinor: number,
     currency: string,
   ) {
-    const watchers = await this.sequelize.query<{
+    const watches = await this.sequelize.query<{
       watchId: string;
       shopId: string;
       productId: string;
-      title: string;
-      price: string;
-      ownerId: string;
     }>(
-      `SELECT w.id AS "watchId", w."shopId", w."productId", p.title, p.price, m."userId" AS "ownerId"
-       FROM "CompetitorWatch" w JOIN "Product" p ON p.id = w."productId" JOIN "ShopMembership" m ON m."shopId" = w."shopId" AND m.role = 'OWNER'
-       WHERE w."targetId" = :targetId AND p.price > :priceMinor`,
-      {
-        type: QueryTypes.SELECT,
-        replacements: { targetId: target.id, priceMinor },
-      },
+      `SELECT w.id AS "watchId", w."shopId", w."productId"
+       FROM "CompetitorWatch" w
+       WHERE w."targetId" = :targetId`,
+      { type: QueryTypes.SELECT, replacements: { targetId: target.id } },
     );
+    // Products and owners belong to catalog and tenancy: read them through their R1 services, in batches of 500.
+    const products = new Map<string, ProductDto>();
+    const owners = new Map<string, Array<{ userId: string }>>();
+    const productIds = [...new Set(watches.map((w) => w.productId))];
+    const shopIds = [...new Set(watches.map((w) => w.shopId))];
+    for (let i = 0; i < productIds.length; i += READ_BATCH)
+      for (const [id, p] of await this.products.getProductsByIds(
+        productIds.slice(i, i + READ_BATCH),
+      ))
+        products.set(id, p);
+    for (let i = 0; i < shopIds.length; i += READ_BATCH)
+      for (const [id, members] of await this.members.getMembersByShopIds(
+        shopIds.slice(i, i + READ_BATCH),
+        ['OWNER'],
+      ))
+        owners.set(id, members);
+    const watchers = watches.flatMap((w) => {
+      const product = products.get(w.productId);
+      if (!product || product.priceMinor <= priceMinor) return [];
+      return (owners.get(w.shopId) ?? []).map((m) => ({
+        ...w,
+        title: product.title,
+        price: product.priceMinor,
+        ownerId: m.userId,
+      }));
+    });
     // What happened, once per watch; telling the owner is somebody else's business.
     await this.outbox.appendStandalone(
       watchers.map((w) =>

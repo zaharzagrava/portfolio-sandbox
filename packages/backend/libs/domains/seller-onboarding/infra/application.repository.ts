@@ -11,7 +11,7 @@ import { count, json, one } from './sql';
 
 const COLUMNS = `"shopId", "answers", "submittedBy", "submittedAt", "status", "submissionNo", "verifiedAt", "rejectedAt", "rejectionReasonCode"`;
 
-/** `ShopOnboarding` (own table). Never touches "Shop" (IX.4). */
+/** `ShopOnboarding` (own table). Never touches the shop table (IX.4). */
 @Injectable()
 export class SequelizeApplicationRepository implements ApplicationRepository {
   constructor(@InjectConnection() private readonly db: Sequelize) {}

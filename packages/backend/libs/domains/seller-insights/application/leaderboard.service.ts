@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectConnection } from '@nestjs/sequelize';
 import { QueryTypes, Sequelize } from 'sequelize';
+import { ShopQueryService } from '@app/domains/tenancy';
 import { RedisService } from '@app/infrastructure/redis/redis.service';
 import { CacheService } from '@app/infrastructure/cache/cache.service';
 import {
@@ -29,6 +30,7 @@ export class LeaderboardService {
     private readonly redis: RedisService,
     private readonly cache: CacheService,
     @InjectConnection() private readonly sequelize: Sequelize,
+    private readonly shops: ShopQueryService,
   ) {}
 
   async top(
@@ -96,12 +98,19 @@ export class LeaderboardService {
     board: string,
     limit: number,
   ): Promise<LeaderboardEntry[]> {
-    return this.sequelize.query<LeaderboardEntry>(
-      `SELECT l.rank, l."shopId", coalesce(s.name, 'Unknown shop') AS name, l.revenue::bigint::float8 AS revenue
-       FROM "LeaderboardSnapshot" l LEFT JOIN "Shop" s ON s.id = l."shopId"
+    const rows = await this.sequelize.query<Omit<LeaderboardEntry, 'name'>>(
+      `SELECT l.rank, l."shopId", l.revenue::bigint::float8 AS revenue
+       FROM "LeaderboardSnapshot" l
        WHERE l.period = :periodId AND l.board = :board ORDER BY l.rank LIMIT :limit`,
       { type: QueryTypes.SELECT, replacements: { periodId, board, limit } },
     );
+    const names = await this.shopNames(rows.map((r) => r.shopId));
+    return rows.map((r) => ({ ...r, name: names.get(r.shopId)! }));
+  }
+
+  private async shopName(id: string): Promise<{ name: string } | null> {
+    const shop = (await this.shops.getShopsByIds([id])).get(id);
+    return shop ? { name: shop.name } : null;
   }
 
   private async shopNames(ids: string[]): Promise<Map<string, string>> {
@@ -110,12 +119,7 @@ export class LeaderboardService {
         this.cache.getOrLoad<{ name: string }>(
           `shop:name:${id}`,
           async () =>
-            (
-              await this.sequelize.query<{ name: string }>(
-                `SELECT name FROM "Shop" WHERE id = :id`,
-                { type: QueryTypes.SELECT, replacements: { id } },
-              )
-            )[0] ?? null,
+            this.shopName(id),
           {
             ttlMs: 3_600_000,
             negativeTtlMs: 60_000,

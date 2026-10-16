@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { AuthModule, SecretBox } from '@app/domains/identity';
+import { ShopQueryModule } from '@app/domains/tenancy';
 import { StorageModule } from '@app/infrastructure/storage/storage.module';
 import { SqsModule } from '@app/infrastructure/sqs/sqs.module';
 import { EventsModule } from '@app/infrastructure/events/events.module';
@@ -45,6 +46,7 @@ import {
       { aggregateType: 'shops', retention: 'full-history' },
     ]),
     JobsModule,
+    ShopQueryModule,
   ],
   providers: [
     OnboardingSessionService,

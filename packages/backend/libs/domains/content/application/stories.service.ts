@@ -11,6 +11,7 @@ import { RedisService } from '@app/infrastructure/redis/redis.service';
 import { JobsService } from '@app/infrastructure/jobs/jobs.service';
 import { OutboxService } from '@app/infrastructure/outbox/outbox.service';
 import { TransactionRunner } from '@app/infrastructure/context';
+import { ShopQueryService } from '@app/domains/tenancy';
 import { Blocks, localeChain, Seo } from '../domain/blocks';
 import { StoryPublished } from './events/story-events';
 
@@ -41,7 +42,10 @@ export interface PublicStory {
   publishedAt: string;
 }
 
-const readKey = (shopSlug: string, slug: string) =>
+/** `ShopQueryService.getShopsByIds` takes at most this many ids. */
+const SHOP_QUERY_MAX_IDS = 500;
+
+const readKey =(shopSlug: string, slug: string) =>
   `story:{${shopSlug}}:${slug}`;
 
 @Injectable()
@@ -53,6 +57,7 @@ export class StoriesService {
     private readonly jobs: JobsService,
     private readonly events: OutboxService,
     private readonly config: ApiConfigService,
+    private readonly shops: ShopQueryService,
   ) {}
 
   async create(shopId: string, slug: string, defaultLocale = 'en') {
@@ -181,11 +186,10 @@ export class StoriesService {
       );
       return { ...story, locales: locales.map((l) => l.locale) };
     });
-    const [shop] = await this.sequelize.query<{ slug: string }>(
-      `SELECT slug FROM "Shop" WHERE id = :id`,
-      { type: QueryTypes.SELECT, replacements: { id: published.shopId } },
+    const shop = (await this.shops.getShopsByIds([published.shopId])).get(
+      published.shopId,
     );
-    await this.redis.client.del(readKey(shop.slug, published.slug));
+    if (shop) await this.redis.client.del(readKey(shop.slug, published.slug));
     return {
       status: 'PUBLISHED',
       version: published.version,
@@ -205,6 +209,8 @@ export class StoriesService {
   ): Promise<PublicStory> {
     let all = await this.redis.client.hgetall(readKey(shopSlug, slug));
     if (!all || Object.keys(all).length === 0) {
+      const shop = await this.shops.getShopBySlug(shopSlug);
+      if (!shop) throw new NotFoundException('Story not found');
       const rows = await this.sequelize.query<{
         id: string;
         shopId: string;
@@ -217,9 +223,9 @@ export class StoriesService {
         defaultLocale: string;
       }>(
         `SELECT s.id, s."shopId", v.version, v.locale, v.title, v.blocks, v.seo, s."publishedAt", s."defaultLocale"
-         FROM "Story" s JOIN "Shop" sh ON sh.id = s."shopId" JOIN "StoryVersion" v ON v."storyId" = s.id AND v.version = s."publishedVersion"
-         WHERE sh.slug = :shopSlug AND s.slug = :slug AND s.status = 'PUBLISHED'`,
-        { type: QueryTypes.SELECT, replacements: { shopSlug, slug } },
+         FROM "Story" s JOIN "StoryVersion" v ON v."storyId" = s.id AND v.version = s."publishedVersion"
+         WHERE s."shopId" = :shopId AND s.slug = :slug AND s.status = 'PUBLISHED'`,
+        { type: QueryTypes.SELECT, replacements: { shopId: shop.id, slug } },
       );
       if (rows.length === 0) throw new NotFoundException('Story not found');
       all = Object.fromEntries([
@@ -317,14 +323,14 @@ export class StoriesService {
     while (emitted < pageSize) {
       const rows = await this.sequelize.query<{
         id: string;
-        shopSlug: string;
+        shopId: string;
         slug: string;
         locales: string[];
         publishedAt: Date;
       }>(
-        `SELECT s.id, sh.slug AS "shopSlug", s.slug, s."publishedAt",
+        `SELECT s.id, s."shopId", s.slug, s."publishedAt",
                 (SELECT array_agg(locale) FROM "StoryVersion" v WHERE v."storyId" = s.id AND v.version = s."publishedVersion") AS locales
-         FROM "Story" s JOIN "Shop" sh ON sh.id = s."shopId"
+         FROM "Story" s
          WHERE s.status = 'PUBLISHED' AND s.id ${first ? '>=' : '>'} :after ORDER BY s.id LIMIT :limit`,
         {
           type: QueryTypes.SELECT,
@@ -332,7 +338,23 @@ export class StoriesService {
         },
       );
       if (rows.length === 0) return;
-      for (const r of rows) yield r;
+      const slugs = new Map<string, string>();
+      const shopIds = [...new Set(rows.map((r) => r.shopId))];
+      for (let i = 0; i < shopIds.length; i += SHOP_QUERY_MAX_IDS)
+        for (const s of (
+          await this.shops.getShopsByIds(shopIds.slice(i, i + SHOP_QUERY_MAX_IDS))
+        ).values())
+          slugs.set(s.id, s.slug);
+      for (const r of rows) {
+        const shopSlug = slugs.get(r.shopId);
+        if (shopSlug)
+          yield {
+            shopSlug,
+            slug: r.slug,
+            locales: r.locales,
+            publishedAt: r.publishedAt,
+          };
+      }
       emitted += rows.length;
       after = rows[rows.length - 1].id;
       first = false;

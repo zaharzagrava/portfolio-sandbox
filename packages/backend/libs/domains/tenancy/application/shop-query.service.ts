@@ -23,4 +23,10 @@ export class ShopQueryService {
     const found = await this.shops.findByIds(unique);
     return new Map(found.map((s) => [s.id, toShopSummary(s)]));
   }
+
+  /** The shop with this slug, or `null`. */
+  async getShopBySlug(slug: string): Promise<ShopSummaryDto | null> {
+    const found = await this.shops.findBySlug(slug);
+    return found ? toShopSummary(found) : null;
+  }
 }

@@ -22,6 +22,8 @@ import {
   ShopModel as Shop,
   ShopMembershipModel as ShopMembership,
 } from '@app/domains/tenancy';
+import { outboxRowsFor } from '@app/common/testing';
+import { followVerificationEvents } from '@app/domains/tenancy/testing/verification-follower';
 import { LLM_PROVIDER, ScriptedLlmProvider } from '@app/infrastructure/llm';
 import {
   OnboardingExtractionModule,
@@ -198,13 +200,19 @@ describe('Seller onboarding: staged questionnaire + KYC extraction (e2e)', () =>
     return res as { document: { id: string }; deduplicated: boolean };
   };
 
-  const shopRow = async (shopId: string) =>
-    (
+  /**
+   * The shop's verification status belongs to tenancy, which follows this domain's `shop.*` events in its worker
+   * (S03 AS-72). The spec plays that consumer: it applies the events the shop's outbox holds, then reads the shop.
+   */
+  const shopRow = async (shopId: string) => {
+    await followVerificationEvents(app, await outboxRowsFor(app, shopId));
+    return (
       await db.query<{ verificationStatus: string; payoutsEnabled: boolean }>(
         `SELECT "verificationStatus", "payoutsEnabled" FROM "Shop" WHERE id = :shopId`,
         { type: QueryTypes.SELECT, replacements: { shopId } },
       )
     )[0];
+  };
   const docStatus = async (id: string) =>
     (
       await db.query<{ status: string }>(
@@ -384,7 +392,7 @@ describe('Seller onboarding: staged questionnaire + KYC extraction (e2e)', () =>
     );
     expect(row.fields.fields.iban.value).toBe('DE89 •••• 3000');
     expect(row.sealedFields).not.toContain('3704');
-    expect(row.sealedFields).toMatch(/^v1\./);
+    expect(row.sealedFields).toMatch(/^v2\./);
   });
 
   it('a misread fixed by escalation: low-confidence IBAN from the cheap model → the strong model re-reads → accepted', async () => {

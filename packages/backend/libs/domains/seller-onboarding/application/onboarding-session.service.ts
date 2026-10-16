@@ -97,13 +97,7 @@ export class OnboardingSessionService {
         },
       );
       if (!row) return false;
-      await this.sequelize.query(
-        `UPDATE "Shop" SET "verificationStatus" = 'PENDING', "updatedAt" = now() WHERE id = :shopId AND "verificationStatus" = 'UNVERIFIED'`,
-        {
-          transaction,
-          replacements: { shopId },
-        },
-      );
+      // The shop's verification status follows `shop.onboarding_submitted` in tenancy (S03 AS-72).
       await this.events.append(
         OnboardingSubmitted.create(shopId, 1, {
           shopId,

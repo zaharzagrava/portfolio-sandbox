@@ -7,7 +7,7 @@ import { SeedsModule } from '@app/test/seeds/seeds.module';
 import { SeedsService } from '@app/test/seeds/seeds.service';
 import { TableName } from '@app/test/seeds/types';
 import { RedisService } from '@app/infrastructure/redis/redis.service';
-import { ProductModel as Product } from '@app/domains/catalog';
+import { ProductQueryModule } from '@app/domains/catalog';
 import { ShopModel as Shop } from '@app/domains/tenancy';
 import { OrderPaid, OrderReserved } from '@app/domains/orders';
 import { LeaderboardsModule } from './leaderboards.module';
@@ -20,7 +20,7 @@ import { boardKey, revenueKey, ALL } from './infra/leaderboard-keys';
 import { periodOf } from './domain/periods';
 
 @Module({
-  imports: [SequelizeModule.forFeature([Product, Shop])],
+  imports: [SequelizeModule.forFeature([Shop]), ProductQueryModule],
   providers: [LeaderboardProjector, ShopLiveProjector],
 })
 class ProjectorsSpecModule {}

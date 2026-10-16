@@ -237,6 +237,16 @@ export class SequelizeOrderRepository implements OrderRepository {
     }));
   }
 
+  async hasPaidItem(userId: string, productId: string): Promise<boolean> {
+    const found = await this.select<{ one: number }>(
+      `SELECT 1 AS one FROM "BisOrderItem" i JOIN "BisOrder" o ON o.id = i."bisOrderId"
+       WHERE i."productId" = :productId AND o."userId" = :userId
+         AND o.status IN ('PAID', 'FULFILLING', 'SHIPPED', 'DELIVERED') LIMIT 1`,
+      { userId, productId },
+    );
+    return found.length > 0;
+  }
+
   async itemsMissingSnapshot(limit: number): Promise<ItemSnapshotGap[]> {
     const found = await this.select<{
       id: string;

@@ -1,5 +1,6 @@
 import { Injectable, Module } from '@nestjs/common';
 import { AuthModule } from '@app/domains/identity';
+import { ShopQueryModule } from '@app/domains/tenancy';
 import { EventsModule } from '@app/infrastructure/events/events.module';
 import { JobsModule } from '@app/infrastructure/jobs/jobs.module';
 import { JobHandler } from '@app/infrastructure/jobs/job-handler.decorator';
@@ -18,6 +19,7 @@ import {
       { aggregateType: 'stories', retention: 'full-history' },
     ]),
     JobsModule,
+    ShopQueryModule,
   ],
   providers: [StoriesService],
   exports: [StoriesService],
@@ -42,6 +44,7 @@ export class StoriesJobs {
       { aggregateType: 'stories', retention: 'full-history' },
     ]),
     JobsModule,
+    ShopQueryModule,
   ],
   providers: [StoriesService, StoriesJobs],
 })

@@ -4,6 +4,7 @@
  */
 export { ProductBatchReadModule } from './batch-read.module';
 export { ProductModule } from './product.module';
+export { ProductQueryModule } from './product-query.module';
 export { ProductProjectorModule } from './product-projector.module';
 export { ProductWorkerModule } from './product-worker.module';
 export { catalogRatePolicies } from './rate-limit-policies';

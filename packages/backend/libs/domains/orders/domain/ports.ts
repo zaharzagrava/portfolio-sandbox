@@ -156,6 +156,8 @@ export interface OrderRepository {
     limit: number,
     after: { createdAt: string; id: string } | null,
   ): Promise<OrderListRecord[]>;
+  /** Whether the buyer has a paid (not cancelled or refunded) order with a line for the product. */
+  hasPaidItem(userId: string, productId: string): Promise<boolean>;
   /** Items that still lack a title or a line total (orders from before the snapshot columns), by id, at most `limit`. */
   itemsMissingSnapshot(limit: number): Promise<ItemSnapshotGap[]>;
   /** Fills only what is still empty, so two runs of the backfill agree. */

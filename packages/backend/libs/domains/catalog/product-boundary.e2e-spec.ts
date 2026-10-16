@@ -22,6 +22,7 @@ const PINNED_EXPORTS = [
   'ProductBatchReadModule',
   'ProductModule',
   'ProductProjectorModule',
+  'ProductQueryModule',
   'ProductWorkerModule',
   // R1 services
   'ProductCommandService',
