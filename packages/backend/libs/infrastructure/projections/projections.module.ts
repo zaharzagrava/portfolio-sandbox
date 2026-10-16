@@ -16,6 +16,7 @@ import { Projector } from './projector';
 import { CONSUMER_RANDOM, ProjectionRunner } from './projection-runner.service';
 import { ProjectionCheckpoints } from './read-your-writes';
 import { ConsumerLag } from './consumer-lag';
+import { ConsumerPauseFlags } from './consumer-pause';
 import { ProjectionActivation } from './projection-activation';
 import { ProjectionAdmin } from './projection-admin.service';
 import { ProjectionRegistry } from './projection-registry';
@@ -56,6 +57,7 @@ export class ProjectionsModule implements OnApplicationBootstrap {
       ],
       providers: [
         ProjectionRunner,
+        ConsumerPauseFlags,
         ProjectionCheckpoints,
         ReadYourWrites,
         ProjectionRegistry,

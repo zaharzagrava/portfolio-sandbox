@@ -114,7 +114,6 @@ export class SecretsManagerConfig {
   clickhouse_password: string;
   clickhouse_database: string;
 
-  is_load_test?: boolean;
 
   // Showcase program (docs/showcase) - optional, defaults applied where used
   /** Event-loop p99 lag (ms) above which new requests are shed with 503. Default 200. */
@@ -222,13 +221,13 @@ export class SecretsManagerConfig {
   payments_page_default: number;
   payments_page_max: number;
   payments_cursor_secret?: string;
+  provider_doubles?: string;
 
   /** S28: line concurrency of the delivery workers, defaults in `notifications-config.ts`. */
   notifications_tx_concurrency: number;
   notifications_marketing_concurrency: number;
 
   /** S14: ledger and reconciliation settings, defaults in `ledger-config.ts`. */
-  ledger_fee_minor: number;
   ledger_shards: number;
   ledger_lock_timeout_ms: number;
   ledger_statement_timeout_ms: number;
@@ -237,6 +236,9 @@ export class SecretsManagerConfig {
   ledger_read_hot_timeout_ms: number;
   ledger_read_durable_timeout_ms: number;
   ledger_cursor_secret?: string;
+
+  /** S54: `enabled` switches on the controllable clock (never in production), see `clock-config.ts`. */
+  clock_control?: string;
 
   /** S15: seller payout settings, defaults in `payout-config.ts`. */
   payout_default_reserve_bps: number;

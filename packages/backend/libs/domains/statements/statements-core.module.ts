@@ -11,6 +11,7 @@ import { ClockModule } from '@app/infrastructure/platform/clock.module';
 import { ConsumerLag } from '@app/infrastructure/projections/consumer-lag';
 import { AccountingPeriodService } from './application/accounting-period.service';
 import { CommissionRateQueryService } from './application/commission-rate-query.service';
+import { CommissionRatesModule } from './commission-rates.module';
 import { CommissionRateService } from './application/commission-rate.service';
 import { STATEMENTS_AGGREGATE } from './application/events/statements-events';
 import {
@@ -42,7 +43,6 @@ import {
   STREAM_LAG,
 } from './domain/ports';
 import { SequelizeAdjustmentRepository } from './infra/adjustment.repository';
-import { SequelizeCommissionRateRepository } from './infra/commission-rate.repository';
 import { SequelizeExportSource } from './infra/export.source';
 import { SequelizeFactRepository } from './infra/fact.repository';
 import { SequelizeFindingRepository } from './infra/finding.repository';
@@ -64,6 +64,7 @@ import { KafkaStreamLag } from './infra/stream-lag.adapter';
   imports: [
     ApiConfigModule,
     ClockModule,
+    CommissionRatesModule,
     InboxModule,
     JobsModule,
     OutboxModule,
@@ -81,7 +82,6 @@ import { KafkaStreamLag } from './infra/stream-lag.adapter';
     { provide: STOP_SIGNAL, useExisting: StatementsLifecycle },
     { provide: CLOSE_FAULT, useValue: {} },
     { provide: RECONCILE_FAULT, useValue: {} },
-    { provide: RATE_REPOSITORY, useClass: SequelizeCommissionRateRepository },
     { provide: PERIOD_REPOSITORY, useClass: SequelizePeriodRepository },
     { provide: FACT_REPOSITORY, useClass: SequelizeFactRepository },
     { provide: SNAPSHOT_REPOSITORY, useClass: SequelizeSnapshotRepository },
@@ -92,7 +92,6 @@ import { KafkaStreamLag } from './infra/stream-lag.adapter';
     { provide: SHOP_DIRECTORY, useClass: TenancyShopDirectoryAdapter },
     { provide: STREAM_LAG, useClass: KafkaStreamLag },
     CommissionRateService,
-    CommissionRateQueryService,
     FactIngestionService,
     WatermarkService,
     StatementService,
@@ -113,7 +112,7 @@ import { KafkaStreamLag } from './infra/stream-lag.adapter';
     StatementsLifecycle,
     STOP_SIGNAL,
     CLOSE_FAULT,
-    RATE_REPOSITORY,
+    CommissionRatesModule, // RATE_REPOSITORY and CommissionRateQueryService
     PERIOD_REPOSITORY,
     FACT_REPOSITORY,
     SNAPSHOT_REPOSITORY,
@@ -122,7 +121,6 @@ import { KafkaStreamLag } from './infra/stream-lag.adapter';
     SHOP_DIRECTORY,
     STREAM_LAG,
     CommissionRateService,
-    CommissionRateQueryService,
     FactIngestionService,
     WatermarkService,
     StatementService,

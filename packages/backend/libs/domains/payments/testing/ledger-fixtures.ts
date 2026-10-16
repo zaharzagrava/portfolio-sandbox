@@ -13,16 +13,17 @@ export const newShopAccount = (): string => `SHOP_${uuidv4()}`;
 /** A contract-valid `order.paid` for the settlement consumer (built from `packages/contracts`, like the producer). */
 export function orderPaidEvent(input: {
   orderId: string;
-  shops: { shopId: string; subtotalMinor: number }[];
+  /** One line per shop worth its subtotal, in `category` (none = the line carries none). */
+  shops: { shopId: string; subtotalMinor: number; category?: string }[];
   totalMinor?: number;
   currency?: string;
   paymentRef?: string;
   version?: number;
+  paidAt?: Date;
 }) {
   const version = input.version ?? 3;
   const total =
-    input.totalMinor ??
-    input.shops.reduce((s, x) => s + x.subtotalMinor, 0) + 50;
+    input.totalMinor ?? input.shops.reduce((s, x) => s + x.subtotalMinor, 0);
   return orderEvents().paid.create(input.orderId, version, {
     orderId: input.orderId,
     userId: uuidv4(),
@@ -30,8 +31,18 @@ export function orderPaidEvent(input: {
     totalMinor: total,
     currency: input.currency ?? 'EUR',
     paymentRef: input.paymentRef ?? 'pi_1',
-    paidAt: new Date().toISOString(),
-    lines: [],
+    paidAt: (input.paidAt ?? new Date()).toISOString(),
+    lines: input.shops.map((s) => ({
+      lineId: uuidv4(),
+      ...(s.category ? { category: s.category } : {}),
+      productId: uuidv4(),
+      shopId: s.shopId,
+      title: 'Line',
+      quantity: 1,
+      unitPriceMinor: s.subtotalMinor,
+      discountMinor: 0,
+      lineTotalMinor: s.subtotalMinor,
+    })),
     shopOrders: input.shops.map((s) => ({
       shopOrderId: uuidv4(),
       shopId: s.shopId,

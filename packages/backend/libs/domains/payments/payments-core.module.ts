@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
 import { ApiConfigModule, ApiConfigService } from '@app/common/config';
-import { LoadTestPaymentProvider } from './infra/load-test-payment-provider';
+import { ScriptedPaymentProvider } from './infra/scripted-payment-provider';
 import { ProblemCatalogModule } from '@app/common/errors';
 import { EventsModule } from '@app/infrastructure/events/events.module';
 import { JobsModule } from '@app/infrastructure/jobs/jobs.module';
@@ -68,20 +68,14 @@ import {
     { provide: ORDER_COPY_REPOSITORY, useClass: SequelizeOrderCopyRepository },
     { provide: PROVIDER_TRANSPORT, useExisting: StripeService },
     StripePaymentProvider,
-    LoadTestPaymentProvider,
     {
-      // The load-test environment gets a provider that always succeeds; no other environment can reach it.
+      // `PROVIDER_DOUBLES=enabled` (refused in production by the config rules) binds the scripted provider (S13.R-31).
       provide: PAYMENT_PROVIDER,
-      inject: [
-        ApiConfigService,
-        StripePaymentProvider,
-        LoadTestPaymentProvider,
-      ],
-      useFactory: (
-        config: ApiConfigService,
-        stripe: StripePaymentProvider,
-        loadTest: LoadTestPaymentProvider,
-      ) => (config.get('is_load_test') ? loadTest : stripe),
+      inject: [ApiConfigService, StripePaymentProvider],
+      useFactory: (config: ApiConfigService, stripe: StripePaymentProvider) =>
+        config.get('provider_doubles') === 'enabled'
+          ? new ScriptedPaymentProvider()
+          : stripe,
     },
     { provide: LEDGER_POSTING, useClass: LedgerPostingAdapter },
     { provide: REALTIME_PORT, useClass: RealtimeAdapter },

@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
-import { ApiConfigModule } from '@app/common/config';
+import { ApiConfigModule, ApiConfigService } from '@app/common/config';
 import { ProblemCatalogModule } from '@app/common/errors';
 import { TenancyModule } from '@app/domains/tenancy';
 import { EventsModule } from '@app/infrastructure/events/events.module';
@@ -41,6 +41,7 @@ import { SequelizePayoutDestinationRepository } from './infra/payout-destination
 import { SequelizePayoutReserveRepository } from './infra/payout-reserve.repository';
 import { SequelizePayoutRunRepository } from './infra/payout-run.repository';
 import { SequelizePayoutRepository } from './infra/payout.repository';
+import { ScriptedPayoutProvider } from './infra/scripted-payout-provider';
 import { StripePayoutProviderAdapter } from './infra/stripe-payout-provider.adapter';
 import { TenancyShopSummaryAdapter } from './infra/tenancy-shop-summary.adapter';
 import { LedgerModule } from './ledger.module';
@@ -82,7 +83,19 @@ import { PAYOUT_MODELS } from './payments-models';
     },
     { provide: SHOP_SUMMARY_PORT, useClass: TenancyShopSummaryAdapter },
     { provide: PAYOUT_LEDGER, useClass: LedgerPayoutAdapter },
-    { provide: PAYOUT_PROVIDER, useClass: StripePayoutProviderAdapter },
+    StripePayoutProviderAdapter,
+    {
+      // `PROVIDER_DOUBLES=enabled` (refused in production by the config rules) binds the scripted provider (S15.R-27).
+      provide: PAYOUT_PROVIDER,
+      inject: [ApiConfigService, StripePayoutProviderAdapter],
+      useFactory: (
+        config: ApiConfigService,
+        stripe: StripePayoutProviderAdapter,
+      ) =>
+        config.get('provider_doubles') === 'enabled'
+          ? new ScriptedPayoutProvider()
+          : stripe,
+    },
     { provide: PAYOUT_JOBS, useClass: JobsPayoutAdapter },
     { provide: PAYOUT_EVENTS, useClass: OutboxPayoutEvents },
     { provide: RANDOM, useValue: Math.random },

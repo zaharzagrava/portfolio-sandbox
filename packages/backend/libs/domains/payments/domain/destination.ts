@@ -4,8 +4,15 @@
  */
 const FORMAT = /^acct_[A-Za-z0-9]{8,64}$/;
 
+/** The ids the scripted payout provider answers by (S15.R-27): without them the operator could never choose a double. */
+const SCRIPTED_DOUBLES: ReadonlySet<string> = new Set([
+  'acct_test_ok',
+  'acct_test_reject',
+  'acct_test_timeout',
+]);
+
 export const validateDestination = (id: string): boolean =>
-  typeof id === 'string' && FORMAT.test(id);
+  typeof id === 'string' && (FORMAT.test(id) || SCRIPTED_DOUBLES.has(id));
 
 /** The first 5 and the last 3 characters: enough for support to recognise it, nothing a thief can use. */
 export const maskDestination = (id: string): string =>

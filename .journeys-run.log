@@ -1,0 +1,527 @@
+$ NODE_OPTIONS=--experimental-vm-modules jest --config jest-journeys.json --runInBand
+(node:400899) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+  console.error
+    restoreAll: login admin: 503 {"type":"https://errors.marketplace.invalid/service_overloaded","title":"Service Unavailable","status":503,"detail":"The server could not complete the request. Please try again later.","instance":"/api/auth/login","code":"service_overloaded","requestId":"01a14236-1c5f-71c9-a927-1a0479b2757b","traceId":"043cce24dd759ed8e4596e7a5549a8d8"}; login admin: 503 {"type":"https://errors.marketplace.invalid/service_overloaded","title":"Service Unavailable","status":503,"detail":"The server could not complete the request. Please try again later.","instance":"/api/auth/login","code":"service_overloaded","requestId":"01a14236-1c61-734e-aa03-7fa7bdd85cd1","traceId":"1c37822aacbf46feb2593a0511a4d81e"}; login admin: 503 {"type":"https://errors.marketplace.invalid/service_overloaded","title":"Service Unavailable","status":503,"detail":"The server could not complete the request. Please try again later.","instance":"/api/auth/login","code":"service_overloaded","requestId":"01a14236-1c64-71de-8b21-f8adce25f926","traceId":"1c6745ef79ac5ed0c9ad215841de3fe3"}; login admin: 503 {"type":"https://errors.marketplace.invalid/service_overloaded","title":"Service Unavailable","status":503,"detail":"The server could not complete the request. Please try again later.","instance":"/api/auth/login","code":"service_overloaded","requestId":"01a14236-1c67-736b-9fa3-240283bf37f7","traceId":"6ea8293db3c54c44fbb60c4d7c7bbe68"}; login admin: 503 {"type":"https://errors.marketplace.invalid/service_overloaded","title":"Service Unavailable","status":503,"detail":"The server could not complete the request. Please try again later.","instance":"/api/auth/login","code":"service_overloaded","requestId":"01a14236-1c69-731a-a721-6a41a04298a1","traceId":"368b4516836290a5c7df46e48c863190"}; login admin: 503 {"type":"https://errors.marketplace.invalid/service_overloaded","title":"Service Unavailable","status":503,"detail":"The server could not complete the request. Please try again later.","instance":"/api/auth/login","code":"service_overloaded","requestId":"01a14236-1c6b-70dc-8d04-7f648dc8706f","traceId":"56eb36b77404b451bf05a13b05c0af40"}; login admin: 503 {"type":"https://errors.marketplace.invalid/service_overloaded","title":"Service Unavailable","status":503,"detail":"The server could not complete the request. Please try again later.","instance":"/api/auth/login","code":"service_overloaded","requestId":"01a14236-1c6e-745a-b4f0-7757666c1ade","traceId":"28736be5f1a897be1852918316e6d5fe"}; login admin: 503 {"type":"https://errors.marketplace.invalid/service_overloaded","title":"Service Unavailable","status":503,"detail":"The server could not complete the request. Please try again later.","instance":"/api/auth/login","code":"service_overloaded","requestId":"01a14236-1c70-77cc-8571-bf042bcc2e0b","traceId":"7735172118dd2c99e2df851af31a2412"}
+
+      203 |       failures.push((error as Error).message);
+      204 |     }
+    > 205 |     if (failures.length) console.error(`restoreAll: ${failures.join('; ')}`);
+          |                                  ^
+      206 |   }
+      207 | }
+      208 |
+
+      at ControlSurface.restoreAll (test/journeys/support/control-surface.ts:205:34)
+      at Object.<anonymous> (test/journeys/buy-to-payout.journey-spec.ts:55:5)
+
+FAIL test/journeys/buy-to-payout.journey-spec.ts (9.38 s)
+  ● Journey J01: buy to payout › US1: the buyer pays once › J01 AS-01: a buyer pays a two-shop order; the order is PAID once, in order, with stock taken
+
+    uploaded BANK_STATEMENT: 503 {"type":"https://errors.marketplace.invalid/service_overloaded","title":"Service Unavailable","status":503,"detail":"The server could not complete the request. Please try again later.","instance":"/api/shops/01a14236-17cc-7588-8c7a-c18c6f03ca30/onboarding/documents/01a14236-18ba-779d-bee5-c90c0689870f/uploaded","code":"service_overloaded","requestId":"01a14236-18c7-765b-b369-4fd219a4b97a","traceId":"b3702954df6bf00eecaeab01e72317a9"}
+
+      66 |   }
+      67 |   const done = await owner.post(`/api/shops/${shopId}/onboarding/documents/${requested.body.document.id}/uploaded`);
+    > 68 |   if (done.status !== 200) throw new Error(`uploaded ${kind}: ${done.status} ${JSON.stringify(done.body)}`);
+         |                                  ^
+      69 | }
+      70 |
+      71 | /** Drives S04 to a verified, payout-enabled shop through public routes only (the extractor double reads the marker). */
+
+      at upload (test/journeys/support/seller-fixture.ts:68:34)
+      at verifyShop (test/journeys/support/seller-fixture.ts:103:3)
+      at createSeller (test/journeys/support/seller-fixture.ts:193:3)
+          at async Promise.all (index 1)
+      at marketplace (test/journeys/buy-to-payout.journey-spec.ts:60:29)
+      at Object.<anonymous> (test/journeys/buy-to-payout.journey-spec.ts:70:39)
+
+  ● Journey J01: buy to payout › US1: the buyer pays once › J01 AS-02: a signed webhook once and ten times at once after success changes nothing
+
+    register owner: 503 {"type":"https://errors.marketplace.invalid/service_overloaded","title":"Service Unavailable","status":503,"detail":"The server could not complete the request. Please try again later.","instance":"/api/auth/register","code":"service_overloaded","requestId":"01a14236-18ea-743b-a168-e014285a4d66","traceId":"830a29319270850d0b9eea357525b5d9"}
+
+      58 |     const client = new JourneyClient(`${unique(label)}@example.com`, label);
+      59 |     const registered = await client.call('POST', '/api/auth/register', { body: { email: client.email, password: JOURNEY_PASSWORD } });
+    > 60 |     if (registered.status !== 202) throw new Error(`register ${label}: ${registered.status} ${JSON.stringify(registered.body)}`);
+         |                                          ^
+      61 |     await client.signIn(JOURNEY_PASSWORD);
+      62 |     return client;
+      63 |   }
+
+      at JourneyClient.signUp (test/journeys/support/journey-client.ts:60:42)
+      at createSeller (test/journeys/support/seller-fixture.ts:190:17)
+          at async Promise.all (index 1)
+      at marketplace (test/journeys/buy-to-payout.journey-spec.ts:60:29)
+      at Object.<anonymous> (test/journeys/buy-to-payout.journey-spec.ts:105:28)
+
+  ● Journey J01: buy to payout › US1: the buyer pays once › J01 AS-03: a webhook before the payment completes leaves the order RESERVED, then it becomes PAID once
+
+    register buyer: 503 {"type":"https://errors.marketplace.invalid/service_overloaded","title":"Service Unavailable","status":503,"detail":"The server could not complete the request. Please try again later.","instance":"/api/auth/register","code":"service_overloaded","requestId":"01a14236-1900-72fc-9113-383c50ff652c","traceId":"a7e6e7059263ccf1afc9e134939be35c"}
+
+      58 |     const client = new JourneyClient(`${unique(label)}@example.com`, label);
+      59 |     const registered = await client.call('POST', '/api/auth/register', { body: { email: client.email, password: JOURNEY_PASSWORD } });
+    > 60 |     if (registered.status !== 202) throw new Error(`register ${label}: ${registered.status} ${JSON.stringify(registered.body)}`);
+         |                                          ^
+      61 |     await client.signIn(JOURNEY_PASSWORD);
+      62 |     return client;
+      63 |   }
+
+      at JourneyClient.signUp (test/journeys/support/journey-client.ts:60:42)
+          at async Promise.all (index 2)
+      at marketplace (test/journeys/buy-to-payout.journey-spec.ts:60:29)
+      at Object.<anonymous> (test/journeys/buy-to-payout.journey-spec.ts:123:28)
+
+  ● Journey J01: buy to payout › US1: the buyer pays once › J01 AS-04: with payments-order-copy paused the intent is 404; after resume the same key gets 202 and one payment
+
+    register owner: 503 {"type":"https://errors.marketplace.invalid/service_overloaded","title":"Service Unavailable","status":503,"detail":"The server could not complete the request. Please try again later.","instance":"/api/auth/register","code":"service_overloaded","requestId":"01a14236-1913-730d-89ec-75037098ca82","traceId":"c8ac05fc8ad673194a410010c1eeea02"}
+
+      58 |     const client = new JourneyClient(`${unique(label)}@example.com`, label);
+      59 |     const registered = await client.call('POST', '/api/auth/register', { body: { email: client.email, password: JOURNEY_PASSWORD } });
+    > 60 |     if (registered.status !== 202) throw new Error(`register ${label}: ${registered.status} ${JSON.stringify(registered.body)}`);
+         |                                          ^
+      61 |     await client.signIn(JOURNEY_PASSWORD);
+      62 |     return client;
+      63 |   }
+
+      at JourneyClient.signUp (test/journeys/support/journey-client.ts:60:42)
+      at createSeller (test/journeys/support/seller-fixture.ts:190:17)
+          at async Promise.all (index 1)
+      at marketplace (test/journeys/buy-to-payout.journey-spec.ts:60:29)
+      at Object.<anonymous> (test/journeys/buy-to-payout.journey-spec.ts:138:28)
+
+  ● Journey J01: buy to payout › US3: the notices › J01 AS-08: the buyer and each shop owner get exactly one notice for the paid order, staff none, and the stream carries it
+
+    register owner: 503 {"type":"https://errors.marketplace.invalid/service_overloaded","title":"Service Unavailable","status":503,"detail":"The server could not complete the request. Please try again later.","instance":"/api/auth/register","code":"service_overloaded","requestId":"01a14236-1926-70d5-ac81-799005a395de","traceId":"27fd7776b6cc8abab62eae4e2291f244"}
+
+      58 |     const client = new JourneyClient(`${unique(label)}@example.com`, label);
+      59 |     const registered = await client.call('POST', '/api/auth/register', { body: { email: client.email, password: JOURNEY_PASSWORD } });
+    > 60 |     if (registered.status !== 202) throw new Error(`register ${label}: ${registered.status} ${JSON.stringify(registered.body)}`);
+         |                                          ^
+      61 |     await client.signIn(JOURNEY_PASSWORD);
+      62 |     return client;
+      63 |   }
+
+      at JourneyClient.signUp (test/journeys/support/journey-client.ts:60:42)
+      at createSeller (test/journeys/support/seller-fixture.ts:190:17)
+          at async Promise.all (index 0)
+      at marketplace (test/journeys/buy-to-payout.journey-spec.ts:60:29)
+      at Object.<anonymous> (test/journeys/buy-to-payout.journey-spec.ts:211:39)
+
+  ● Journey J01: buy to payout › US3: the notices › J01 AS-09: a declined card tells the buyer once and the sellers nothing, and there is no order.confirmed
+
+    register owner: 503 {"type":"https://errors.marketplace.invalid/service_overloaded","title":"Service Unavailable","status":503,"detail":"The server could not complete the request. Please try again later.","instance":"/api/auth/register","code":"service_overloaded","requestId":"01a14236-1937-763b-be28-39fda184161a","traceId":"bce04478cf63816c1abc8ed24025c72b"}
+
+      58 |     const client = new JourneyClient(`${unique(label)}@example.com`, label);
+      59 |     const registered = await client.call('POST', '/api/auth/register', { body: { email: client.email, password: JOURNEY_PASSWORD } });
+    > 60 |     if (registered.status !== 202) throw new Error(`register ${label}: ${registered.status} ${JSON.stringify(registered.body)}`);
+         |                                          ^
+      61 |     await client.signIn(JOURNEY_PASSWORD);
+      62 |     return client;
+      63 |   }
+
+      at JourneyClient.signUp (test/journeys/support/journey-client.ts:60:42)
+      at createSeller (test/journeys/support/seller-fixture.ts:190:17)
+          at async Promise.all (index 0)
+      at marketplace (test/journeys/buy-to-payout.journey-spec.ts:60:29)
+      at Object.<anonymous> (test/journeys/buy-to-payout.journey-spec.ts:250:39)
+
+  ● Journey J01: buy to payout › US4: the weekly payout › J01 AS-20: the weekly run pays S1 its balance less the reserve, the balance drops to the reserve, the statement shows the payout
+
+    register owner: 503 {"type":"https://errors.marketplace.invalid/service_overloaded","title":"Service Unavailable","status":503,"detail":"The server could not complete the request. Please try again later.","instance":"/api/auth/register","code":"service_overloaded","requestId":"01a14236-194a-7730-9d20-da3a76e465d3","traceId":"05298130dc882709398957c0c9935659"}
+
+      58 |     const client = new JourneyClient(`${unique(label)}@example.com`, label);
+      59 |     const registered = await client.call('POST', '/api/auth/register', { body: { email: client.email, password: JOURNEY_PASSWORD } });
+    > 60 |     if (registered.status !== 202) throw new Error(`register ${label}: ${registered.status} ${JSON.stringify(registered.body)}`);
+         |                                          ^
+      61 |     await client.signIn(JOURNEY_PASSWORD);
+      62 |     return client;
+      63 |   }
+
+      at JourneyClient.signUp (test/journeys/support/journey-client.ts:60:42)
+      at createSeller (test/journeys/support/seller-fixture.ts:190:17)
+          at async Promise.all (index 0)
+      at Object.<anonymous> (test/journeys/buy-to-payout.journey-spec.ts:298:35)
+
+  ● Journey J01: buy to payout › US4: the weekly payout › J01 AS-21: three more runs, one after another and two at once, leave one payout and the balance unchanged
+
+    register owner: 503 {"type":"https://errors.marketplace.invalid/service_overloaded","title":"Service Unavailable","status":503,"detail":"The server could not complete the request. Please try again later.","instance":"/api/auth/register","code":"service_overloaded","requestId":"01a14236-194a-7730-9d20-da3a76e465d3","traceId":"05298130dc882709398957c0c9935659"}
+
+      58 |     const client = new JourneyClient(`${unique(label)}@example.com`, label);
+      59 |     const registered = await client.call('POST', '/api/auth/register', { body: { email: client.email, password: JOURNEY_PASSWORD } });
+    > 60 |     if (registered.status !== 202) throw new Error(`register ${label}: ${registered.status} ${JSON.stringify(registered.body)}`);
+         |                                          ^
+      61 |     await client.signIn(JOURNEY_PASSWORD);
+      62 |     return client;
+      63 |   }
+
+      at JourneyClient.signUp (test/journeys/support/journey-client.ts:60:42)
+      at createSeller (test/journeys/support/seller-fixture.ts:190:17)
+          at async Promise.all (index 0)
+      at Object.<anonymous> (test/journeys/buy-to-payout.journey-spec.ts:298:35)
+
+  ● Journey J01: buy to payout › US4: the weekly payout › J01 AS-22: a shop below the minimum is not paid and is told why
+
+    register owner: 503 {"type":"https://errors.marketplace.invalid/service_overloaded","title":"Service Unavailable","status":503,"detail":"The server could not complete the request. Please try again later.","instance":"/api/auth/register","code":"service_overloaded","requestId":"01a14236-194a-7730-9d20-da3a76e465d3","traceId":"05298130dc882709398957c0c9935659"}
+
+      58 |     const client = new JourneyClient(`${unique(label)}@example.com`, label);
+      59 |     const registered = await client.call('POST', '/api/auth/register', { body: { email: client.email, password: JOURNEY_PASSWORD } });
+    > 60 |     if (registered.status !== 202) throw new Error(`register ${label}: ${registered.status} ${JSON.stringify(registered.body)}`);
+         |                                          ^
+      61 |     await client.signIn(JOURNEY_PASSWORD);
+      62 |     return client;
+      63 |   }
+
+      at JourneyClient.signUp (test/journeys/support/journey-client.ts:60:42)
+      at createSeller (test/journeys/support/seller-fixture.ts:190:17)
+          at async Promise.all (index 0)
+      at Object.<anonymous> (test/journeys/buy-to-payout.journey-spec.ts:298:35)
+
+  ● Journey J01: buy to payout › US4: the weekly payout › J01 AS-10: payout.paid reaches the owner of the paid shop only; payout.failed the owner of the rejected one
+
+    register owner: 503 {"type":"https://errors.marketplace.invalid/service_overloaded","title":"Service Unavailable","status":503,"detail":"The server could not complete the request. Please try again later.","instance":"/api/auth/register","code":"service_overloaded","requestId":"01a14236-194a-7730-9d20-da3a76e465d3","traceId":"05298130dc882709398957c0c9935659"}
+
+      58 |     const client = new JourneyClient(`${unique(label)}@example.com`, label);
+      59 |     const registered = await client.call('POST', '/api/auth/register', { body: { email: client.email, password: JOURNEY_PASSWORD } });
+    > 60 |     if (registered.status !== 202) throw new Error(`register ${label}: ${registered.status} ${JSON.stringify(registered.body)}`);
+         |                                          ^
+      61 |     await client.signIn(JOURNEY_PASSWORD);
+      62 |     return client;
+      63 |   }
+
+      at JourneyClient.signUp (test/journeys/support/journey-client.ts:60:42)
+      at createSeller (test/journeys/support/seller-fixture.ts:190:17)
+          at async Promise.all (index 0)
+      at Object.<anonymous> (test/journeys/buy-to-payout.journey-spec.ts:298:35)
+
+  ● Journey J01: buy to payout › US4: the weekly payout › J01 AS-23: a rejected transfer fails the payout, gives the balance back, tells the owner, and the shop is paid once the destination is fixed
+
+    register owner: 503 {"type":"https://errors.marketplace.invalid/service_overloaded","title":"Service Unavailable","status":503,"detail":"The server could not complete the request. Please try again later.","instance":"/api/auth/register","code":"service_overloaded","requestId":"01a14236-194a-7730-9d20-da3a76e465d3","traceId":"05298130dc882709398957c0c9935659"}
+
+      58 |     const client = new JourneyClient(`${unique(label)}@example.com`, label);
+      59 |     const registered = await client.call('POST', '/api/auth/register', { body: { email: client.email, password: JOURNEY_PASSWORD } });
+    > 60 |     if (registered.status !== 202) throw new Error(`register ${label}: ${registered.status} ${JSON.stringify(registered.body)}`);
+         |                                          ^
+      61 |     await client.signIn(JOURNEY_PASSWORD);
+      62 |     return client;
+      63 |   }
+
+      at JourneyClient.signUp (test/journeys/support/journey-client.ts:60:42)
+      at createSeller (test/journeys/support/seller-fixture.ts:190:17)
+          at async Promise.all (index 0)
+      at Object.<anonymous> (test/journeys/buy-to-payout.journey-spec.ts:298:35)
+
+  ● Journey J01: buy to payout › US6: the compensations › J01 AS-17: a declined card cancels the order (payment_failed), gives the stock back, moves no money, and a second intent is refused
+
+    register owner: 503 {"type":"https://errors.marketplace.invalid/service_overloaded","title":"Service Unavailable","status":503,"detail":"The server could not complete the request. Please try again later.","instance":"/api/auth/register","code":"service_overloaded","requestId":"01a14236-195f-7678-a23f-2282bb73dd7e","traceId":"4a4da031bec06e956e117f35e2a45797"}
+
+      58 |     const client = new JourneyClient(`${unique(label)}@example.com`, label);
+      59 |     const registered = await client.call('POST', '/api/auth/register', { body: { email: client.email, password: JOURNEY_PASSWORD } });
+    > 60 |     if (registered.status !== 202) throw new Error(`register ${label}: ${registered.status} ${JSON.stringify(registered.body)}`);
+         |                                          ^
+      61 |     await client.signIn(JOURNEY_PASSWORD);
+      62 |     return client;
+      63 |   }
+
+      at JourneyClient.signUp (test/journeys/support/journey-client.ts:60:42)
+      at createSeller (test/journeys/support/seller-fixture.ts:190:17)
+          at async Promise.all (index 0)
+      at marketplace (test/journeys/buy-to-payout.journey-spec.ts:60:29)
+      at Object.<anonymous> (test/journeys/buy-to-payout.journey-spec.ts:543:36)
+
+  ● Journey J01: buy to payout › US6: the compensations › J01 AS-18: cancelling while the charge is in flight refunds the late success; the order stays CANCELLED and the stock returns once
+
+    register owner: 503 {"type":"https://errors.marketplace.invalid/service_overloaded","title":"Service Unavailable","status":503,"detail":"The server could not complete the request. Please try again later.","instance":"/api/auth/register","code":"service_overloaded","requestId":"01a14236-196e-7769-999a-f708f0358594","traceId":"19a06c936d551320ee1bc13547677b88"}
+
+      58 |     const client = new JourneyClient(`${unique(label)}@example.com`, label);
+      59 |     const registered = await client.call('POST', '/api/auth/register', { body: { email: client.email, password: JOURNEY_PASSWORD } });
+    > 60 |     if (registered.status !== 202) throw new Error(`register ${label}: ${registered.status} ${JSON.stringify(registered.body)}`);
+         |                                          ^
+      61 |     await client.signIn(JOURNEY_PASSWORD);
+      62 |     return client;
+      63 |   }
+
+      at JourneyClient.signUp (test/journeys/support/journey-client.ts:60:42)
+      at createSeller (test/journeys/support/seller-fixture.ts:190:17)
+          at async Promise.all (index 0)
+      at marketplace (test/journeys/buy-to-payout.journey-spec.ts:60:29)
+      at Object.<anonymous> (test/journeys/buy-to-payout.journey-spec.ts:568:36)
+
+  ● Journey J01: buy to payout › US6: the compensations › J01 AS-19: an unpaid hold that ends is cancelled (hold_expired), the stock returns, the intent is refused, and no money moved
+
+    register owner: 503 {"type":"https://errors.marketplace.invalid/service_overloaded","title":"Service Unavailable","status":503,"detail":"The server could not complete the request. Please try again later.","instance":"/api/auth/register","code":"service_overloaded","requestId":"01a14236-197d-77ec-8fed-c675c23f3eed","traceId":"27eecc259e8530165ff19bcd97c3f0ad"}
+
+      58 |     const client = new JourneyClient(`${unique(label)}@example.com`, label);
+      59 |     const registered = await client.call('POST', '/api/auth/register', { body: { email: client.email, password: JOURNEY_PASSWORD } });
+    > 60 |     if (registered.status !== 202) throw new Error(`register ${label}: ${registered.status} ${JSON.stringify(registered.body)}`);
+         |                                          ^
+      61 |     await client.signIn(JOURNEY_PASSWORD);
+      62 |     return client;
+      63 |   }
+
+      at JourneyClient.signUp (test/journeys/support/journey-client.ts:60:42)
+      at createSeller (test/journeys/support/seller-fixture.ts:190:17)
+          at async Promise.all (index 0)
+      at marketplace (test/journeys/buy-to-payout.journey-spec.ts:60:29)
+      at Object.<anonymous> (test/journeys/buy-to-payout.journey-spec.ts:593:36)
+
+  ● Journey J01: buy to payout › US7: duplicates, replay and out-of-order signals › J01 AS-24: the same key five times at once and again later, one webhook ten times: one order, one payment, one of everything
+
+    register owner: 503 {"type":"https://errors.marketplace.invalid/service_overloaded","title":"Service Unavailable","status":503,"detail":"The server could not complete the request. Please try again later.","instance":"/api/auth/register","code":"service_overloaded","requestId":"01a14236-198e-70f1-bd63-4dfcc64fa4d0","traceId":"e8529810ec5c6cf7a46731406b48f246"}
+
+      58 |     const client = new JourneyClient(`${unique(label)}@example.com`, label);
+      59 |     const registered = await client.call('POST', '/api/auth/register', { body: { email: client.email, password: JOURNEY_PASSWORD } });
+    > 60 |     if (registered.status !== 202) throw new Error(`register ${label}: ${registered.status} ${JSON.stringify(registered.body)}`);
+         |                                          ^
+      61 |     await client.signIn(JOURNEY_PASSWORD);
+      62 |     return client;
+      63 |   }
+
+      at JourneyClient.signUp (test/journeys/support/journey-client.ts:60:42)
+      at createSeller (test/journeys/support/seller-fixture.ts:190:17)
+          at async Promise.all (index 0)
+      at marketplace (test/journeys/buy-to-payout.journey-spec.ts:60:29)
+      at Object.<anonymous> (test/journeys/buy-to-payout.journey-spec.ts:621:32)
+
+  ● Journey J01: buy to payout › US7: duplicates, replay and out-of-order signals › J01 AS-25: replaying the topics for the six consumer groups changes no observable
+
+    register owner: 503 {"type":"https://errors.marketplace.invalid/service_overloaded","title":"Service Unavailable","status":503,"detail":"The server could not complete the request. Please try again later.","instance":"/api/auth/register","code":"service_overloaded","requestId":"01a14236-19a1-719e-ba1f-258f82bd9f43","traceId":"5db948635116a193b123977b5a8cc575"}
+
+      58 |     const client = new JourneyClient(`${unique(label)}@example.com`, label);
+      59 |     const registered = await client.call('POST', '/api/auth/register', { body: { email: client.email, password: JOURNEY_PASSWORD } });
+    > 60 |     if (registered.status !== 202) throw new Error(`register ${label}: ${registered.status} ${JSON.stringify(registered.body)}`);
+         |                                          ^
+      61 |     await client.signIn(JOURNEY_PASSWORD);
+      62 |     return client;
+      63 |   }
+
+      at JourneyClient.signUp (test/journeys/support/journey-client.ts:60:42)
+      at createSeller (test/journeys/support/seller-fixture.ts:190:17)
+      at Object.<anonymous> (test/journeys/buy-to-payout.journey-spec.ts:681:18)
+
+  ● Journey J01: buy to payout › US7: duplicates, replay and out-of-order signals › J01 AS-26: a payment_failed signal that arrives after the success changes nothing
+
+    register owner: 503 {"type":"https://errors.marketplace.invalid/service_overloaded","title":"Service Unavailable","status":503,"detail":"The server could not complete the request. Please try again later.","instance":"/api/auth/register","code":"service_overloaded","requestId":"01a14236-19bb-7715-abcf-bc2212f153e0","traceId":"6bdfccd6255a2d7af575c3777df7e35b"}
+
+      58 |     const client = new JourneyClient(`${unique(label)}@example.com`, label);
+      59 |     const registered = await client.call('POST', '/api/auth/register', { body: { email: client.email, password: JOURNEY_PASSWORD } });
+    > 60 |     if (registered.status !== 202) throw new Error(`register ${label}: ${registered.status} ${JSON.stringify(registered.body)}`);
+         |                                          ^
+      61 |     await client.signIn(JOURNEY_PASSWORD);
+      62 |     return client;
+      63 |   }
+
+      at JourneyClient.signUp (test/journeys/support/journey-client.ts:60:42)
+      at createSeller (test/journeys/support/seller-fixture.ts:190:17)
+          at async Promise.all (index 1)
+      at marketplace (test/journeys/buy-to-payout.journey-spec.ts:60:29)
+      at Object.<anonymous> (test/journeys/buy-to-payout.journey-spec.ts:727:32)
+
+  ● Journey J01: buy to payout › US8: a consumer is down › J01 AS-27: with the settlement consumer down the order is PAID and notified but the balance waits; a payout run pays only what is settled; resume credits once
+
+    register owner: 503 {"type":"https://errors.marketplace.invalid/service_overloaded","title":"Service Unavailable","status":503,"detail":"The server could not complete the request. Please try again later.","instance":"/api/auth/register","code":"service_overloaded","requestId":"01a14236-19c9-7453-ae94-ce593309307b","traceId":"f988b998e43c9b1425919870393a47f1"}
+
+      58 |     const client = new JourneyClient(`${unique(label)}@example.com`, label);
+      59 |     const registered = await client.call('POST', '/api/auth/register', { body: { email: client.email, password: JOURNEY_PASSWORD } });
+    > 60 |     if (registered.status !== 202) throw new Error(`register ${label}: ${registered.status} ${JSON.stringify(registered.body)}`);
+         |                                          ^
+      61 |     await client.signIn(JOURNEY_PASSWORD);
+      62 |     return client;
+      63 |   }
+
+      at JourneyClient.signUp (test/journeys/support/journey-client.ts:60:42)
+      at createSeller (test/journeys/support/seller-fixture.ts:190:17)
+      at Object.<anonymous> (test/journeys/buy-to-payout.journey-spec.ts:757:18)
+
+  ● Journey J01: buy to payout › US2: the books follow the payment › J01 AS-05: both shop balances equal net(s); nets plus the fee equal 2500; asOf is not before paidAt; cross-shop is 404
+
+    register owner: 503 {"type":"https://errors.marketplace.invalid/service_overloaded","title":"Service Unavailable","status":503,"detail":"The server could not complete the request. Please try again later.","instance":"/api/auth/register","code":"service_overloaded","requestId":"01a14236-19df-754a-85dd-e7ab331c0188","traceId":"78fa0e583f3368828c5ced97090f6574"}
+
+      58 |     const client = new JourneyClient(`${unique(label)}@example.com`, label);
+      59 |     const registered = await client.call('POST', '/api/auth/register', { body: { email: client.email, password: JOURNEY_PASSWORD } });
+    > 60 |     if (registered.status !== 202) throw new Error(`register ${label}: ${registered.status} ${JSON.stringify(registered.body)}`);
+         |                                          ^
+      61 |     await client.signIn(JOURNEY_PASSWORD);
+      62 |     return client;
+      63 |   }
+
+      at JourneyClient.signUp (test/journeys/support/journey-client.ts:60:42)
+      at createSeller (test/journeys/support/seller-fixture.ts:190:17)
+          at async Promise.all (index 0)
+      at marketplace (test/journeys/buy-to-payout.journey-spec.ts:60:29)
+      at Object.<anonymous> (test/journeys/buy-to-payout.journey-spec.ts:803:39)
+
+  ● Journey J01: buy to payout › US2: the books follow the payment › J01 AS-06: a declined order credits nobody
+
+    register buyer: 503 {"type":"https://errors.marketplace.invalid/service_overloaded","title":"Service Unavailable","status":503,"detail":"The server could not complete the request. Please try again later.","instance":"/api/auth/register","code":"service_overloaded","requestId":"01a14236-19fa-76bd-bd24-2f6ae06a8dda","traceId":"67299c5f4246aa03040f5a4250b6802d"}
+
+      58 |     const client = new JourneyClient(`${unique(label)}@example.com`, label);
+      59 |     const registered = await client.call('POST', '/api/auth/register', { body: { email: client.email, password: JOURNEY_PASSWORD } });
+    > 60 |     if (registered.status !== 202) throw new Error(`register ${label}: ${registered.status} ${JSON.stringify(registered.body)}`);
+         |                                          ^
+      61 |     await client.signIn(JOURNEY_PASSWORD);
+      62 |     return client;
+      63 |   }
+
+      at JourneyClient.signUp (test/journeys/support/journey-client.ts:60:42)
+          at async Promise.all (index 2)
+      at marketplace (test/journeys/buy-to-payout.journey-spec.ts:60:29)
+      at Object.<anonymous> (test/journeys/buy-to-payout.journey-spec.ts:829:39)
+
+  ● Journey J01: buy to payout › US2: the books follow the payment › J01 AS-07: the statement net equals the ledger credit and the findings hold no mismatch
+
+    register buyer: 503 {"type":"https://errors.marketplace.invalid/service_overloaded","title":"Service Unavailable","status":503,"detail":"The server could not complete the request. Please try again later.","instance":"/api/auth/register","code":"service_overloaded","requestId":"01a14236-1a0e-751a-8c0e-d0b1bb12cd4b","traceId":"4d32098574f82553bb362d0554e17536"}
+
+      58 |     const client = new JourneyClient(`${unique(label)}@example.com`, label);
+      59 |     const registered = await client.call('POST', '/api/auth/register', { body: { email: client.email, password: JOURNEY_PASSWORD } });
+    > 60 |     if (registered.status !== 202) throw new Error(`register ${label}: ${registered.status} ${JSON.stringify(registered.body)}`);
+         |                                          ^
+      61 |     await client.signIn(JOURNEY_PASSWORD);
+      62 |     return client;
+      63 |   }
+
+      at JourneyClient.signUp (test/journeys/support/journey-client.ts:60:42)
+          at async Promise.all (index 2)
+      at marketplace (test/journeys/buy-to-payout.journey-spec.ts:60:29)
+      at Object.<anonymous> (test/journeys/buy-to-payout.journey-spec.ts:842:32)
+
+  ● Journey J01: buy to payout › US5: the statement and the month close › J01 AS-13: the live statement follows the sale and, after the payout, the paid amount; the other shop never appears
+
+    register owner: 503 {"type":"https://errors.marketplace.invalid/service_overloaded","title":"Service Unavailable","status":503,"detail":"The server could not complete the request. Please try again later.","instance":"/api/auth/register","code":"service_overloaded","requestId":"01a14236-1a23-76b9-b324-c8695087782e","traceId":"8cae2bf2746ac06ff279b615feb9a6f1"}
+
+      58 |     const client = new JourneyClient(`${unique(label)}@example.com`, label);
+      59 |     const registered = await client.call('POST', '/api/auth/register', { body: { email: client.email, password: JOURNEY_PASSWORD } });
+    > 60 |     if (registered.status !== 202) throw new Error(`register ${label}: ${registered.status} ${JSON.stringify(registered.body)}`);
+         |                                          ^
+      61 |     await client.signIn(JOURNEY_PASSWORD);
+      62 |     return client;
+      63 |   }
+
+      at JourneyClient.signUp (test/journeys/support/journey-client.ts:60:42)
+      at createSeller (test/journeys/support/seller-fixture.ts:190:17)
+          at async Promise.all (index 1)
+      at Object.<anonymous> (test/journeys/buy-to-payout.journey-spec.ts:445:31)
+
+  ● Journey J01: buy to payout › US5: the statement and the month close › J01 AS-14: closing the month freezes it: CLOSED, the snapshot equals the live numbers, a second close is 409
+
+    register owner: 503 {"type":"https://errors.marketplace.invalid/service_overloaded","title":"Service Unavailable","status":503,"detail":"The server could not complete the request. Please try again later.","instance":"/api/auth/register","code":"service_overloaded","requestId":"01a14236-1a23-76b9-b324-c8695087782e","traceId":"8cae2bf2746ac06ff279b615feb9a6f1"}
+
+      58 |     const client = new JourneyClient(`${unique(label)}@example.com`, label);
+      59 |     const registered = await client.call('POST', '/api/auth/register', { body: { email: client.email, password: JOURNEY_PASSWORD } });
+    > 60 |     if (registered.status !== 202) throw new Error(`register ${label}: ${registered.status} ${JSON.stringify(registered.body)}`);
+         |                                          ^
+      61 |     await client.signIn(JOURNEY_PASSWORD);
+      62 |     return client;
+      63 |   }
+
+      at JourneyClient.signUp (test/journeys/support/journey-client.ts:60:42)
+      at createSeller (test/journeys/support/seller-fixture.ts:190:17)
+          at async Promise.all (index 1)
+      at Object.<anonymous> (test/journeys/buy-to-payout.journey-spec.ts:445:31)
+
+  ● Journey J01: buy to payout › US5: the statement and the month close › J01 AS-15: the books tie out for the month: no mismatch finding for the shops of the journey
+
+    register owner: 503 {"type":"https://errors.marketplace.invalid/service_overloaded","title":"Service Unavailable","status":503,"detail":"The server could not complete the request. Please try again later.","instance":"/api/auth/register","code":"service_overloaded","requestId":"01a14236-1a23-76b9-b324-c8695087782e","traceId":"8cae2bf2746ac06ff279b615feb9a6f1"}
+
+      58 |     const client = new JourneyClient(`${unique(label)}@example.com`, label);
+      59 |     const registered = await client.call('POST', '/api/auth/register', { body: { email: client.email, password: JOURNEY_PASSWORD } });
+    > 60 |     if (registered.status !== 202) throw new Error(`register ${label}: ${registered.status} ${JSON.stringify(registered.body)}`);
+         |                                          ^
+      61 |     await client.signIn(JOURNEY_PASSWORD);
+      62 |     return client;
+      63 |   }
+
+      at JourneyClient.signUp (test/journeys/support/journey-client.ts:60:42)
+      at createSeller (test/journeys/support/seller-fixture.ts:190:17)
+          at async Promise.all (index 1)
+      at Object.<anonymous> (test/journeys/buy-to-payout.journey-spec.ts:445:31)
+
+  ● Journey J01: buy to payout › US8: the notification and statements consumers are down › J01 AS-28: inboxes stay empty and the statement behind while they are down, the close is refused naming the stream; after resume one notice each and the close succeeds
+
+    login admin: 503 {"type":"https://errors.marketplace.invalid/service_overloaded","title":"Service Unavailable","status":503,"detail":"The server could not complete the request. Please try again later.","instance":"/api/auth/login","code":"service_overloaded","requestId":"01a14236-1a30-7750-b6ce-ec0a26f3538e","traceId":"7325bbc56d5ab126389e5615363aaec7"}
+
+      92 |       signedInAgain: true,
+      93 |     });
+    > 94 |     if (login.status !== 200) throw new Error(`login ${this.label}: ${login.status} ${JSON.stringify(login.body)}`);
+         |                                     ^
+      95 |     this.token = login.body.accessToken.token;
+      96 |     const payload = JSON.parse(Buffer.from(this.token.split('.')[1], 'base64url').toString('utf8')) as { sub: string; sid?: string };
+      97 |     this.userId = payload.sub;
+
+      at JourneyClient.signIn (test/journeys/support/journey-client.ts:94:37)
+      at test/journeys/support/journey-client.ts:80:9
+      at JourneyClient.renew (test/journeys/support/journey-client.ts:85:23)
+      at JourneyClient.call (test/journeys/support/journey-client.ts:110:7)
+      at ControlSurface.reset (test/journeys/support/control-surface.ts:114:19)
+      at ControlSurface.alignToOpenMonth (test/journeys/support/control-surface.ts:136:5)
+      at Object.<anonymous> (test/journeys/buy-to-payout.journey-spec.ts:866:21)
+
+  ● Journey J01: buy to payout › US9: every hop is observable › J01 AS-30: the counters of every hop moved during the run, every journey consumer reports lag 0, the log lines carry ids and no secret
+
+    expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 1
+    + Received  + 1
+
+      Array [
+        "orders paid",
+    -   true,
+    +   false,
+      ]
+
+      945 |         ['notifications created', 'notifications_inbox_created_total', {}],
+      946 |       ];
+    > 947 |       for (const [what, name, labels] of counters) expect([what, moved(name, labels) > 0]).toEqual([what, true]);
+          |                                                                                            ^
+      948 |
+      949 |       for (const group of JOURNEY_CONSUMER_GROUPS) {
+      950 |         const view = await control.waitCaughtUp(group);
+
+      at Object.<anonymous> (test/journeys/buy-to-payout.journey-spec.ts:947:92)
+
+
+  ● Test suite failed to run
+
+    login admin: 503 {"type":"https://errors.marketplace.invalid/service_overloaded","title":"Service Unavailable","status":503,"detail":"The server could not complete the request. Please try again later.","instance":"/api/auth/login","code":"service_overloaded","requestId":"01a14236-1951-757c-810a-12b26ff4cb49","traceId":"f6d6abd5b6c40409837f0f86af6b1135"}
+
+      92 |       signedInAgain: true,
+      93 |     });
+    > 94 |     if (login.status !== 200) throw new Error(`login ${this.label}: ${login.status} ${JSON.stringify(login.body)}`);
+         |                                     ^
+      95 |     this.token = login.body.accessToken.token;
+      96 |     const payload = JSON.parse(Buffer.from(this.token.split('.')[1], 'base64url').toString('utf8')) as { sub: string; sid?: string };
+      97 |     this.userId = payload.sub;
+
+      at JourneyClient.signIn (test/journeys/support/journey-client.ts:94:37)
+      at test/journeys/support/journey-client.ts:80:9
+      at JourneyClient.renew (test/journeys/support/journey-client.ts:85:23)
+      at JourneyClient.call (test/journeys/support/journey-client.ts:110:7)
+      at ControlSurface.reset (test/journeys/support/control-surface.ts:114:19)
+      at ControlSurface.rebase (test/journeys/support/control-surface.ts:125:18)
+      at Object.<anonymous> (test/journeys/buy-to-payout.journey-spec.ts:319:7)
+
+  ● Test suite failed to run
+
+    login admin: 503 {"type":"https://errors.marketplace.invalid/service_overloaded","title":"Service Unavailable","status":503,"detail":"The server could not complete the request. Please try again later.","instance":"/api/auth/login","code":"service_overloaded","requestId":"01a14236-1a2b-700d-8605-6cdc08685488","traceId":"6df0393735ac9253e57dad7a236805e7"}
+
+      92 |       signedInAgain: true,
+      93 |     });
+    > 94 |     if (login.status !== 200) throw new Error(`login ${this.label}: ${login.status} ${JSON.stringify(login.body)}`);
+         |                                     ^
+      95 |     this.token = login.body.accessToken.token;
+      96 |     const payload = JSON.parse(Buffer.from(this.token.split('.')[1], 'base64url').toString('utf8')) as { sub: string; sid?: string };
+      97 |     this.userId = payload.sub;
+
+      at JourneyClient.signIn (test/journeys/support/journey-client.ts:94:37)
+      at test/journeys/support/journey-client.ts:80:9
+      at JourneyClient.renew (test/journeys/support/journey-client.ts:85:23)
+      at JourneyClient.call (test/journeys/support/journey-client.ts:110:7)
+      at ControlSurface.reset (test/journeys/support/control-surface.ts:114:19)
+      at ControlSurface.rebase (test/journeys/support/control-surface.ts:125:18)
+      at Object.<anonymous> (test/journeys/buy-to-payout.journey-spec.ts:462:7)
+
+Test Suites: 1 failed, 1 total
+Tests:       26 failed, 26 total
+Snapshots:   0 total
+Time:        9.61 s, estimated 10 s
+Ran all test suites.
+global teardown: could not restore the stack (admin login 503)
+[ELIFECYCLE] Command failed with exit code 1.

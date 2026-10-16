@@ -34,6 +34,13 @@ export class ProjectionRegistry {
     );
   }
 
+  async all(): Promise<ProjectionDeclaration[]> {
+    const raw = await this.redis.client.hgetall(KEY);
+    return Object.values(raw).map(
+      (v) => JSON.parse(v) as ProjectionDeclaration,
+    );
+  }
+
   async get(name: string): Promise<ProjectionDeclaration | null> {
     const raw = await this.redis.client.hget(KEY, name);
     return raw ? (JSON.parse(raw) as ProjectionDeclaration) : null;

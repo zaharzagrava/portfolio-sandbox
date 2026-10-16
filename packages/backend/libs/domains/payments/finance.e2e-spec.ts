@@ -93,7 +93,8 @@ describe('Finance chain: store guard, capture, settlement and refund (e2e)', () 
 
     expect(
       await Promise.all([a, b, c].map((s) => balanceOf(t.app, `SHOP_${s}`))),
-    ).toEqual([334, 333, 333]);
+    ).toEqual([315, 315, 315]); // 350 less the 10 % commission (35), from the S16 default rate
+    expect(await logical('PLATFORM_FEES')).toBe(105);
     expect(await logical('MARKETPLACE_CLEARING')).toBe(0);
 
     const refundInput = {

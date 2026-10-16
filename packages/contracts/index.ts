@@ -32,3 +32,4 @@ export * from './src/developer-platform/index.ts';
 export * from './src/catalog-sync/index.ts';
 export * from './src/statements/index.ts';
 export * from './src/billing/index.ts';
+export * from './src/admin/index.ts';

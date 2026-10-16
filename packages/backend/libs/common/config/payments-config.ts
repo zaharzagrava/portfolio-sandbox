@@ -37,6 +37,8 @@ export interface PaymentsConfig {
   payments_refresh_min_interval_ms: number;
   payments_page_default: number;
   payments_page_max: number;
+  /** `enabled` binds the scripted payment and payout providers (local/test profile only, S13.R-31, S15.R-27). */
+  provider_doubles?: string;
 }
 
 type Key = {
@@ -106,7 +108,17 @@ export const paymentsConfigKeys: Record<keyof PaymentsConfig, Key> = {
   ),
   payments_page_default: int('PAYMENTS_PAGE_DEFAULT', 20),
   payments_page_max: int('PAYMENTS_PAGE_MAX', 100),
+  provider_doubles: {
+    name: 'PROVIDER_DOUBLES',
+    verify: joi.string().valid('enabled').optional().allow(''),
+  },
 };
+
+/** The provider doubles answer without a provider: production must never run them. */
+export const providerDoublesRule: RuleCheck = (ctx) =>
+  ctx.production && ctx.get('provider_doubles') === 'enabled'
+    ? ['provider_doubles must not be enabled in production']
+    : [];
 
 const isSet = (value: unknown): boolean =>
   value !== undefined && value !== null && value !== '';
@@ -130,4 +142,10 @@ ConfigRules.register({
   owner: 'payments',
   keys: ['payments_cursor_secret', 'jwt_secret'],
   validate: paymentsSecretsRule,
+});
+
+ConfigRules.register({
+  owner: 'payments',
+  keys: ['provider_doubles'],
+  validate: providerDoublesRule,
 });

@@ -333,14 +333,6 @@ export class StripeService {
     transferGroup: string;
     timeoutMs: number;
   }): Promise<TransferRecord> {
-    if (this.configService.get('is_load_test'))
-      return {
-        id: `tr_loadtest_${params.idempotencyKey}`,
-        amount: params.amountMinor,
-        currency: params.currency.toLowerCase(),
-        destination: params.destination,
-        reversed: false,
-      };
     const transfer = await this.stripe.transfers.create(
       {
         amount: params.amountMinor,
@@ -363,7 +355,6 @@ export class StripeService {
     group: string,
     timeoutMs: number,
   ): Promise<TransferRecord[]> {
-    if (this.configService.get('is_load_test')) return [];
     const page = await this.stripe.transfers.list(
       { transfer_group: group, limit: 3 },
       { timeout: timeoutMs, maxNetworkRetries: 0 },

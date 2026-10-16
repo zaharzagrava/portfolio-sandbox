@@ -19,6 +19,13 @@ describe('destination format and masking (S15 AS-38)', () => {
     ['', false],
     ['  ', false],
     ['acct_é2345678', false],
+    // the three scripted-double ids of S15.R-27 are accepted as they are; near misses are not
+    ['acct_test_ok', true],
+    ['acct_test_reject', true],
+    ['acct_test_timeout', true],
+    ['acct_test_okay', false],
+    ['acct_test_ok\n', false],
+    ['xacct_test_ok', false],
   ])('S15 AS-38: %j is %s', (value, valid) => {
     expect(validateDestination(value)).toBe(valid);
   });

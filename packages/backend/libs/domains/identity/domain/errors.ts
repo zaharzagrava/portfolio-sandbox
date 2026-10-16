@@ -228,6 +228,62 @@ export class Domain_JobNotFoundError extends AppError {
   }
 }
 
+/** A body that is not the documented shape (field names only, never values). */
+export class Domain_ValidationFailedError extends AppError {
+  constructor(fields: string[]) {
+    super({
+      status: HttpStatus.BAD_REQUEST,
+      code: 'validation_failed',
+      title: 'Bad Request',
+      detail: 'The request is not valid.',
+      area: ErrorArea.DOMAIN,
+      extensions: {
+        errors: fields.map((field) => ({ field, code: 'invalid' })),
+      },
+    });
+  }
+}
+
+export class Domain_JobTypeNotAllowedError extends AppError {
+  constructor() {
+    super({
+      status: HttpStatus.UNPROCESSABLE_ENTITY,
+      code: 'job_type_not_allowed',
+      title: 'Unprocessable Entity',
+      detail: 'This job type cannot be requested over HTTP.',
+      area: ErrorArea.DOMAIN,
+    });
+  }
+}
+
+export class Domain_InvalidJobPayloadError extends AppError {
+  constructor(fields: string[]) {
+    super({
+      status: HttpStatus.UNPROCESSABLE_ENTITY,
+      code: 'invalid_payload',
+      title: 'Unprocessable Entity',
+      detail: 'The payload does not match the job type.',
+      area: ErrorArea.DOMAIN,
+      extensions: {
+        errors: fields.map((field) => ({ field, code: 'invalid' })),
+      },
+    });
+  }
+}
+
+/** The job layer's own key (kept after the HTTP record expires) already belongs to a job of another type. */
+export class Domain_JobKeyReuseError extends AppError {
+  constructor() {
+    super({
+      status: HttpStatus.UNPROCESSABLE_ENTITY,
+      code: 'idempotency_key_reuse',
+      title: 'Idempotency key reused',
+      detail: 'This Idempotency-Key was already used with a different request.',
+      area: ErrorArea.DOMAIN,
+    });
+  }
+}
+
 export class Domain_ScheduleNotFoundError extends AppError {
   constructor() {
     super({

@@ -496,6 +496,32 @@ describe('Statements: fact ingestion (R3 consumers)', () => {
     expect(await count('StatementLedgerFact')).toBe(1);
   });
 
+  it('S16 AS-57: a SETTLEMENT journal is one fact with the shop credits and the commission (J01 G-10)', async () => {
+    const orderId = uuidv4();
+    const journalId = uuidv4();
+    const settlement = ledgerJournal({
+      kind: 'SETTLEMENT',
+      journalId,
+      orderId,
+      postedAt: '2026-03-15T12:00:31Z',
+      lines: [
+        ['MARKETPLACE_CLEARING', -2500],
+        [`SHOP_${shopA}`, 2250],
+        ['PLATFORM_FEES', 250],
+      ],
+    });
+    expect((await t.ledger.deliver(settlement)).counts.applied).toBe(1);
+    expect((await t.ledger.deliver(settlement)).counts.duplicate).toBe(1);
+    const credits = await t.sql<{ accountId: string; amountMinor: string }>(
+      `SELECT "accountId", "amountMinor"::text FROM "StatementLedgerCredit" WHERE "journalId" = :journalId ORDER BY "accountId"`,
+      { journalId },
+    );
+    expect(credits).toEqual([
+      { accountId: 'PLATFORM_FEES', amountMinor: '250' },
+      { accountId: `SHOP_${shopA}`, amountMinor: '2250' },
+    ]);
+  });
+
   it('S16 AS-58: each stream has a watermark, a stream more than 60 s behind raises the lag metric and nothing fails', async () => {
     const marks = t.app.get(WatermarkService);
     await t.sales.deliver(

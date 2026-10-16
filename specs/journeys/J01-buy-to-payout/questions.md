@@ -41,3 +41,12 @@ Decisions taken unattended under the decision policy (production-grade, constitu
 - [LOCAL] Assertions are relational (sums, equalities with `commission(s)`), not literal commission numbers → rates are configurable.
 - [LOCAL] The journey suite resets the clock and resumes consumers in `afterAll` and in a global `finally` → a failed run must not poison the stack.
 - [LOCAL] Journey file layout: one `describe` per user story inside `buy-to-payout.journey-spec.ts`, helpers in `test/journeys/support/` → traceability to the test plan.
+
+## Found while building (resolved in favor of the capability pages, no stop needed)
+
+- [CONTRACT] **AS-19 reason**: the spec says the refused intent carries `reason: "hold_expired"`. `S13.R-03` defines three reasons: `hold_expired` only while payments' order copy still says `RESERVED` but the deadline has passed; once `order.cancelled` reached the copy (H1) the reason is `order_cancelled`. The journey waits for the settled answer `order_cancelled` and asserts every earlier answer is already `409 order_not_payable`.
+- [CONTRACT] **AS-17 second intent**: `409 payment_already_exists` is the answer until payments' order copy has seen the cancellation, `409 order_not_payable` after. The journey polls (H1) for the latter; any other status fails it.
+- [CONTRACT] **AS-08 unread count**: a new account also holds its `account.welcome` notice, so `unread-count` is not `1`. The journey asserts the count equals the unread items of the inbox and that the only other item is `order.confirmed`.
+- [CONTRACT] **S15 destination ids**: `S15.R-16` allowed only `acct_` + 8..64 alphanumerics, so the scripted doubles of `S15.R-27` (`acct_test_ok|reject|timeout`) could never be set through the operator route. The page now accepts those three ids; everything else keeps the old rule.
+- [LOCAL] **AS-14 is permanent**: closing a month cannot be undone (immutability triggers). `ControlSurface.alignToOpenMonth()` moves the clock to the 10th of the first month that is still open when the stack's real month is already closed, so the file can run again on the same stack; `rebase()` returns there. US5 is declared last in the file because its close freezes the month the other stories read.
+- [LOCAL] **Sessions under a moved clock**: sessions created while the clock is ahead are dated in the future; the limit of 20 active sessions per user then evicts every real sign-in of that account (`session_limit`). The final `restoreAll({ endAdminSessions: true })` revokes the operator's sessions before the clock is set back.

@@ -8,4 +8,9 @@ export { StatementsWorkerModule } from './statements-worker.module';
 export { StatementsProjectorModule } from './statements-projector.module';
 export { StatementsModule } from './statements.module';
 export { statementsRatePolicies } from './rate-limit-policies';
-export { CommissionRateQueryService } from './application/commission-rate-query.service';
+export {
+  CommissionRateQueryService,
+  type PriceLineInput,
+  type PricedLineDto,
+} from './application/commission-rate-query.service';
+export { CommissionRatesModule } from './commission-rates.module';

@@ -228,6 +228,19 @@ class RealRepositoryTests(unittest.TestCase):
             self.assertIn(q, ok)
             self.assertIn(q + '-dlq', ok)
 
+    def test_j01_g27_the_journey_event_topics_are_created_and_no_legacy_payment_topic_is(self):
+        rows = {r[1]: r for r in doctor.check_topics(doctor.ROOT)}
+        for t in ('orders.events', 'payments.events', 'ledger.events', 'payouts.events', 'statements.events'):
+            self.assertIn(t, rows, f'{t} is not used by any code the doctor reads')
+            self.assertTrue(rows[t][3], f'{t} is not created by init-kafka-topics.sh')
+        names, _ = doctor.defined_topics(doctor.ROOT)
+        for legacy in ('payments.requests', 'payments.responses', 'payments.dlq'):
+            self.assertNotIn(legacy, names)
+
+    def test_j01_g27_every_queue_named_in_code_and_its_dead_letter_queue_is_defined(self):
+        missing = [r[1] for r in doctor.check_queues(doctor.ROOT) if not r[3]]
+        self.assertEqual(missing, [])
+
     def test_the_doctor_runs_on_the_whole_repository(self):
         rows = doctor.run(doctor.ROOT)
         self.assertEqual(set(rows), set(doctor.KINDS))

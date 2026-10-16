@@ -58,6 +58,7 @@ A buyer with a reserved order pays for it. The platform records one payment per 
 - **S13.R-28** The payment method token, the provider secret and the customer-action [`clientSecret`](../terms/client-secret.md) MUST NOT appear in logs, [outbox payloads](../terms/event-payload.md), events, [realtime pushes](../terms/realtime-publish.md) or error bodies, and a `5xx` answer carries only a [generic `detail`](../terms/problem-detail.md). [proof: S13 AS-63]
 - **S13.R-29** [Startup MUST fail](../terms/startup-validation.md), naming the setting and no value, when the provider key is missing or any payments limit is not a positive integer. [proof: S13 AS-65]
 - **S13.R-30** On the [stop signal ↗](../sw-external-terms.md#termination-signal) the [charge worker](../terms/worker-instance.md) and the refund worker stop taking commands first ([shutdown task order](../terms/shutdown-task.md) 10, 9 s limit) and the provider call in flight finishes and is recorded; a forced kill follows the [crash-recovery path](../terms/crash-recovery.md). [proof: S13 AS-66] [code: packages/backend/libs/domains/payments/infra/charge-command.worker.ts#ChargeCommandWorker]
+- **S13.R-31** With `PROVIDER_DOUBLES=enabled` (local and test profiles only; production startup MUST fail naming `provider_doubles`) the payment provider port is bound to a scripted adapter chosen by `paymentMethodId`: `pm_test_visa` succeeds, `pm_test_declined` is a definite decline (`FAILED(card_declined)`, order cancelled with `payment_failed`), `pm_test_slow` succeeds after 8 s on a clock-independent timer, `pm_test_timeout` never answers (`UNKNOWN(provider_timeout)`); any other id succeeds. The charge uses the order's currency, and a status lookup answers consistently with the script (slow is pending until 8 s elapsed, then succeeded). No global load-test switch selects the provider. [proof: J01 G-17] [code: packages/backend/libs/domains/payments/infra/scripted-payment-provider.ts#ScriptedPaymentProvider]
 
 ## Behaviors
 - **S13.B-01** Given a [reserved order](../terms/order-status.md) and a [new key](../terms/idempotency-key.md), when the buyer posts `{orderId, paymentMethodId}`, then the answer is `202` with [`Location` ↗](../sw-external-terms.md#location-header), status [`PENDING`](../terms/payment-status.md), and one [charge command](../terms/payment-command.md) in the [outbox](../terms/inbox-table.md). [proof: S13 AS-01]
@@ -89,7 +90,7 @@ Statuses: `PENDING`, `UNKNOWN`, `COMPLETED`, `FAILED`, `CANCELLED`, `REFUND_PEND
 - Tables: `Payment`, `PaymentHistory`, `PayableOrder` (the order copy), `LedgerEntry`.
 - Queues: `payments-charge`, `orders-refund-requested` (with a dead-letter queue).
 - Events: `payments.payment_succeeded`, `payments.payment_failed`, `payments.payment_refunded`; realtime `payment.status`.
-- Configuration: provider key and secrets, timeouts, breaker thresholds, retry and backoff parameters, rate limits ([code: packages/backend/libs/common/config/payments-config.ts#PaymentsConfig]).
+- Configuration: provider key and secrets, timeouts, breaker thresholds, retry and backoff parameters, rate limits, `PROVIDER_DOUBLES` ([code: packages/backend/libs/common/config/payments-config.ts#PaymentsConfig]).
 
 ## Decisions
 - The accept path reads a local order copy, so payment does not call orders and works when orders is slow.

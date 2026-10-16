@@ -78,7 +78,7 @@ describe('Payments: guarded transitions and races', () => {
         expect.objectContaining({ version: 3, fromStatus: 'UNKNOWN' }),
       ]);
       const journal = await ledgerOf(t.app, id);
-      expect(journal).toHaveLength(3);
+      expect(journal).toHaveLength(2);
       expect(journal.reduce((s, l) => s + Number(l.amount), 0)).toBe(0);
       expect(new Set(journal.map((l) => l.journalId)).size).toBe(1);
       expect(await eventsOf(id, 'payments.payment_succeeded')).toHaveLength(1);

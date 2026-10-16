@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { EventsModule } from '@app/infrastructure/events/events.module';
 import { JobsModule } from '@app/infrastructure/jobs/jobs.module';
+import { CommissionRatesModule } from '@app/domains/statements';
 import { StripeModule } from '@app/infrastructure/stripe/stripe.module';
 import { LedgerModule } from './ledger.module';
 import { BalanceBackfillService } from './application/balance-backfill.service';
@@ -31,6 +32,7 @@ import { StripeStatementAdapter } from './infra/stripe-statement.adapter';
 @Module({
   imports: [
     LedgerModule,
+    CommissionRatesModule,
     JobsModule,
     StripeModule,
     EventsModule.forAggregates([

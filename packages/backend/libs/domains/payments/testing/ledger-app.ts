@@ -5,6 +5,10 @@ import {
   createCatalogApp,
   type CatalogTestApp,
 } from '@app/test/utils/catalog-app';
+import {
+  resetCommissionRates,
+  setCommissionBelief,
+} from '@app/test/fixtures/commission-rates';
 import { LedgerService } from '../application/ledger.service';
 import { LedgerModule } from '../ledger.module';
 
@@ -18,6 +22,13 @@ export interface LedgerTestApp extends CatalogTestApp {
   runner: TransactionRunner;
   /** Runs `fn` in a transaction the way a caller does (commit on return, rollback on throw). */
   inTx<T>(fn: (tx: Transaction) => Promise<T>): Promise<T>;
+  /** Records a commission belief for a shop (and category) valid from `validFrom`, known at every instant of the fake clock. */
+  setCommission(rate: {
+    shopId: string;
+    category?: string;
+    rateBps: number;
+    validFrom: Date;
+  }): Promise<void>;
 }
 
 /**
@@ -45,11 +56,18 @@ export async function createLedgerApp(
     },
   });
   const runner = base.app.get(TransactionRunner);
+  const sequelize = base.app.get(Sequelize);
+  const reset = base.reset.bind(base);
   return {
     ...base,
     ledger: base.app.get(LedgerService),
-    sequelize: base.app.get(Sequelize),
+    sequelize,
     runner,
     inTx: (fn) => runner.run(fn),
+    async reset() {
+      await reset();
+      await resetCommissionRates(sequelize); // the settlement prices with the default 10 % (S16)
+    },
+    setCommission: (rate) => setCommissionBelief(sequelize, rate),
   };
 }

@@ -19,7 +19,7 @@ CODE = re.compile(r'\[code:\s*([^\]]*)\]')
 CONCEPT = re.compile(r'\{\{concept:([a-z0-9-]+)\}\}')
 CAP = re.compile(r'\{\{cap:([SWJ]\d{2})\}\}')
 TEST_FILE = re.compile(r'\.(e2e-spec|spec|test|journey-spec)\.tsx?$')
-CITE = re.compile(r'''['"`]([SWJ]\d{2}) (AS-\d+)\b''')
+CITE = re.compile(r'''['"`]([SWJ]\d{2}) ((?:AS|G)-\d+)\b''')
 SKIP_DIRS = {'node_modules', 'dist', '.next', '.git', 'test-results', 'playwright-report', '.cache'}
 
 

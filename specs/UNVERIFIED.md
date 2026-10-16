@@ -219,3 +219,5 @@ interviews) until its status says so. The implementation loop appends here (rule
 | S18 | SC-004: usage visible within 30 s in 99% of cases | `specs/domains/S18-usage-entitlements/quickstart.md`, "Ops artifacts" (staging stream of 1,000 events, poll the usage read) | not run |
 | S18 | SC-006: cached check p99 under 20 ms; fails closed with cache and source down | same file (k6 against a guarded route, then stop Redis and the basis source) | not run |
 | S18 | SC-009: migration on a populated database blocks writes no longer than `lock_timeout` | same file (production-size copy with concurrent writers) | not run |
+| J01 | SC-001: 99% of runs show the order paid within 5 s of the payment | `specs/journeys/J01-buy-to-payout/quickstart.md`, "Ops artifacts" (100-run loop, p99 of H3) | not run |
+| J01 | SC-007: clean stack to green in under 10 minutes with 0 fixed sleeps | same file (`fresh-run.sh` + `pnpm test:journeys`, sleep grep) | not run |

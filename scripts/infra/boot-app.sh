@@ -27,7 +27,7 @@ stop() { kill -- "-$PID" 2>/dev/null || kill "$PID" 2>/dev/null; sleep 1; pkill 
 up=""
 for ((i = 0; i < WAIT; i += 3)); do
   curl -sf "http://localhost:$PORT_/health/ready" >/dev/null 2>&1 && { up=1; break; }
-  sed 's/\x1b\[[0-9;]*m//g' "$LOG" | grep -qE "application successfully started|Nest application successfully|Application is running|listening on" && { up=1; break; }
+  sed 's/\x1b\[[0-9;]*m//g' "$LOG" | grep -qE "application successfully started|Nest application successfully|Nest microservice successfully started|Application is running|listening on" && { up=1; break; }
   sed 's/\x1b\[[0-9;]*m//g' "$LOG" | grep -qE "UnknownDependenciesException|Nest can't resolve|error TS[0-9]+|Cannot find module" && break
   sleep 3
 done

@@ -10,6 +10,12 @@ export const checkoutCounter = MetricsRegistry.counter({
   labels: ['outcome'],
 });
 
+export const orderPaidCounter = MetricsRegistry.counter({
+  name: 'orders_paid_total',
+  help: 'Orders that became PAID (counted after the commit of the move)',
+  labels: [],
+});
+
 export const reservationExpiredCounter = MetricsRegistry.counter({
   name: 'orders_reservation_expired_total',
   help: 'Holds cancelled because they expired',

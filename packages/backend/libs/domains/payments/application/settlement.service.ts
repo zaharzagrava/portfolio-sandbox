@@ -5,7 +5,8 @@ import { JobsService } from '@app/infrastructure/jobs/jobs.service';
 import type { orderEventSchemas } from '@marketplace-sandbox/contracts';
 import type { z } from 'zod';
 import { LEDGER_ACCOUNTS, shopAccount } from '../domain/account';
-import { settlementShops } from '../domain/settlement-payload';
+import { CommissionRateQueryService } from '@app/domains/statements';
+import { settlementLines } from '../domain/settlement-payload';
 import { nextSettlementStep } from '../domain/settlement-retry';
 import { splitSettlement } from '../domain/settlement-split';
 import { JOURNAL_STORE, type JournalStore } from '../domain/ledger-ports';
@@ -28,8 +29,9 @@ export type SettleOutcome =
   | 'currency_mismatch';
 
 /**
- * `order.paid` -> one `SETTLEMENT` journal (S14 FR-015…FR-017, research R-6): the clearing credit of the sale is split
- * over the shops of the order by largest remainder and credited to their accounts. Idempotent per order (the journal
+ * `order.paid` -> one `SETTLEMENT` journal (S14 FR-015…FR-017, research R-6, J01 G-10): the clearing credit of the sale
+ * goes to the shops of the order (their lines less commission) and to `PLATFORM_FEES` (the commission, priced by S16
+ * as of `paidAt`). Idempotent per order (the journal
  * id is deterministic), serialized with the refund of the same payment, and deferred while the sale is not recorded.
  */
 @Injectable()
@@ -40,11 +42,13 @@ export class SettlementService {
     @Inject(JOURNAL_STORE) private readonly journals: JournalStore,
     private readonly jobs: JobsService,
     @Inject(CLOCK) private readonly clock: Clock,
+    private readonly rates: CommissionRateQueryService,
   ) {}
 
   async settle(paid: OrderPaidPayload): Promise<SettleOutcome> {
-    const shops = settlementShops(paid.shopOrders);
-    if (!shops) return 'invalid_payload';
+    const lines = settlementLines(paid.lines, paid.shopOrders, paid.totalMinor);
+    const paidAt = new Date(paid.paidAt);
+    if (!lines || Number.isNaN(paidAt.getTime())) return 'invalid_payload';
 
     return this.transactions.run(async (tx) => {
       const sale = await this.journals.findSaleByOrder(paid.orderId, tx);
@@ -60,11 +64,13 @@ export class SettlementService {
       if (await this.journals.findSettlementByOrder(paid.orderId, tx))
         return 'duplicate';
 
+      // The sale booked the whole captured amount to clearing; the event's lines must add up to exactly that.
       const net = sale.clearingMinor ?? 0;
-      if (net <= 0) return 'invalid_payload';
-      const shares = splitSettlement(net, shops).filter(
-        (s) => s.shareMinor > 0,
-      );
+      if (net <= 0 || net !== paid.totalMinor) return 'invalid_payload';
+      // The commission of S16, line by line, with the rate in force on `paidAt`: the same pricing the statement shows.
+      const priced = await this.rates.priceLines(lines, paidAt);
+      const split = splitSettlement(priced);
+      const shares = split.shares.filter((s) => s.shareMinor > 0);
       const result = await this.posting.post(
         {
           kind: 'SETTLEMENT',
@@ -78,6 +84,14 @@ export class SettlementService {
               accountId: shopAccount(s.shopId),
               amountMinor: s.shareMinor,
             })),
+            ...(split.commissionMinor > 0
+              ? [
+                  {
+                    accountId: LEDGER_ACCOUNTS.PLATFORM_FEES,
+                    amountMinor: split.commissionMinor,
+                  },
+                ]
+              : []),
           ],
           links: {
             paymentId: sale.paymentId,

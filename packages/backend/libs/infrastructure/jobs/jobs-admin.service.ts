@@ -132,6 +132,16 @@ export class JobsAdminService {
     };
   }
 
+  /** One job as a DTO (never the payload); `undefined` for an unknown id. `id` must be a UUID. */
+  async getJob(id: string): Promise<JobDto | undefined> {
+    const [row] = await this.sequelize.query<JobDto>(
+      `SELECT id, type, status, "runAt", attempts, "maxAttempts", "shopId", "lastError", "createdAt", "finishedAt"
+       FROM "Job" WHERE id = CAST(:id AS uuid) LIMIT 1`,
+      { type: QueryTypes.SELECT, replacements: { id } },
+    );
+    return row;
+  }
+
   /** Per job type: counts by status, the oldest due job and the lag in seconds. */
   async getStats(): Promise<JobTypeStats[]> {
     const now = this.clock.now();

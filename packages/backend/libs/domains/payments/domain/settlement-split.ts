@@ -1,6 +1,8 @@
-export interface ShopSubtotal {
+export interface SettlementLine {
   shopId: string;
-  subtotalMinor: number;
+  lineTotalMinor: number;
+  /** Commission of this line (S16.R-04, priced by `CommissionRateQueryService.priceLines`). */
+  commissionMinor: number;
 }
 
 export interface ShopShare {
@@ -8,51 +10,45 @@ export interface ShopShare {
   shareMinor: number;
 }
 
+export interface SettlementSplit {
+  /** One entry per shop, ascending shop id; may be zero. */
+  shares: ShopShare[];
+  /** What the platform keeps: the sum of the lines' commissions. */
+  commissionMinor: number;
+}
+
 /**
- * Largest-remainder split of the net over the shops' subtotals (FR-015). Shops are taken in ascending id order, so
- * ties in the remainders go to the lowest shop id whatever the input order. Exact for any safe-integer inputs
- * (BigInt arithmetic: `net x subtotal` can pass 2^53). The shares sum to `netMinor`.
+ * What an order's settlement books (S14.R-11, R-15): each shop is owed the totals of its lines less their commission,
+ * the platform keeps the commission, so shares plus commission equal the lines exactly and no rounding is left over.
+ * Throws `RangeError` for a malformed line (negative or fractional money, a commission above its line, no lines).
  */
 export function splitSettlement(
-  netMinor: number,
-  shops: readonly ShopSubtotal[],
-): ShopShare[] {
-  if (!Number.isSafeInteger(netMinor) || netMinor < 0)
-    throw new RangeError('net must be a non-negative safe integer');
-  if (shops.length === 0) throw new RangeError('no shops');
-  const ordered = [...shops].sort((a, b) =>
-    a.shopId < b.shopId ? -1 : a.shopId > b.shopId ? 1 : 0,
-  );
-  let total = 0n;
-  for (const s of ordered) {
-    if (!Number.isSafeInteger(s.subtotalMinor) || s.subtotalMinor < 0)
-      throw new RangeError('subtotals must be non-negative safe integers');
-    total += BigInt(s.subtotalMinor);
+  lines: readonly SettlementLine[],
+): SettlementSplit {
+  if (lines.length === 0) throw new RangeError('no lines');
+  const byShop = new Map<string, number>();
+  let commissionMinor = 0;
+  for (const line of lines) {
+    if (
+      !Number.isSafeInteger(line.lineTotalMinor) ||
+      !Number.isSafeInteger(line.commissionMinor) ||
+      line.lineTotalMinor < 0 ||
+      line.commissionMinor < 0 ||
+      line.commissionMinor > line.lineTotalMinor
+    )
+      throw new RangeError(
+        'line amounts must be whole, non-negative, commission within the line',
+      );
+    byShop.set(
+      line.shopId,
+      (byShop.get(line.shopId) ?? 0) +
+        line.lineTotalMinor -
+        line.commissionMinor,
+    );
+    commissionMinor += line.commissionMinor;
   }
-  if (total === 0n) throw new RangeError('subtotals sum to zero');
-
-  const net = BigInt(netMinor);
-  const rows = ordered.map((s, index) => {
-    const product = net * BigInt(s.subtotalMinor);
-    return { index, floor: product / total, remainder: product % total };
-  });
-  let left = net - rows.reduce((a, r) => a + r.floor, 0n);
-  const byRemainder = [...rows].sort((a, b) =>
-    a.remainder === b.remainder
-      ? a.index - b.index
-      : a.remainder > b.remainder
-        ? -1
-        : 1,
-  );
-  const shares = rows.map((r) => r.floor);
-  for (const r of byRemainder) {
-    if (left === 0n) break;
-    // a shop with a zero subtotal has a zero remainder and is never ahead of one with a positive remainder
-    shares[r.index] += 1n;
-    left -= 1n;
-  }
-  return ordered.map((s, i) => ({
-    shopId: s.shopId,
-    shareMinor: Number(shares[i]),
-  }));
+  const shares = [...byShop.entries()]
+    .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+    .map(([shopId, shareMinor]) => ({ shopId, shareMinor }));
+  return { shares, commissionMinor };
 }

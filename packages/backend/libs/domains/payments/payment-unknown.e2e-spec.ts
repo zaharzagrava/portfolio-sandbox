@@ -119,7 +119,7 @@ describe('Payments: unknown outcomes and resolution', () => {
         providerRef: 'pi_1',
         nextResolveAt: null,
       });
-      expect(await ledgerOf(t.app, id)).toHaveLength(3);
+      expect(await ledgerOf(t.app, id)).toHaveLength(2);
       expect(await eventsOf(id, 'payments.payment_succeeded')).toHaveLength(1);
       expect(t.realtime.published).toHaveLength(1);
       expect(t.provider.count('create')).toBe(1);

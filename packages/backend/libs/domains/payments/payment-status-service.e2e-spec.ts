@@ -135,7 +135,7 @@ describe('Payments: exported status service and provider refresh', () => {
         subject: 'pi_1',
         timeoutMs: 2_000,
       });
-      expect(await ledgerOf(t.app, p.id)).toHaveLength(3);
+      expect(await ledgerOf(t.app, p.id)).toHaveLength(2);
       expect(
         (await outboxRowsFor(t.app, p.id)).filter(
           (r) => r.type === 'payments.payment_succeeded',
@@ -166,7 +166,7 @@ describe('Payments: exported status service and provider refresh', () => {
         status: 'COMPLETED',
         version: 3,
       });
-      expect(await ledgerOf(t.app, p.id)).toHaveLength(3);
+      expect(await ledgerOf(t.app, p.id)).toHaveLength(2);
       expect(t.realtime.published).toHaveLength(1);
       expect(await query.getPaymentStatus('pi_race')).toMatchObject({
         status: 'COMPLETED',

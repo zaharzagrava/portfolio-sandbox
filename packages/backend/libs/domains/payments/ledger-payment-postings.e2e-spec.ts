@@ -106,7 +106,7 @@ describe('Ledger: payment capture, refund and settlement', () => {
   const settle = (event: ReturnType<typeof orderPaidEvent>) =>
     consumer.project([event]);
 
-  it('S14 AS-11: a capture posts SALE -2500 / +2450 / +50 on one shard and records the references as plain ids', async () => {
+  it('S14 AS-11: a capture posts SALE -2500 / +2500 (no fee: the commission is taken at settlement) on one shard and records the references as plain ids', async () => {
     const input = captureInput({ paymentRef: 'pi_1' });
     const result = await capture(input);
     expect(result).toEqual({
@@ -118,13 +118,7 @@ describe('Ledger: payment capture, refund and settlement', () => {
       {
         accountId: 'MARKETPLACE_CLEARING',
         shard,
-        amount: '2450',
-        paymentId: input.paymentId,
-      },
-      {
-        accountId: 'PLATFORM_FEES',
-        shard,
-        amount: '50',
+        amount: '2500',
         paymentId: input.paymentId,
       },
       {
@@ -144,7 +138,7 @@ describe('Ledger: payment capture, refund and settlement', () => {
       orderId: input.orderId,
       paymentRef: 'pi_1',
       userId: input.userId,
-      clearingMinor: '2450',
+      clearingMinor: '2500',
     });
     expect(
       await count(t.app, 'AccountBalance', `"accountId" LIKE :p`, {
@@ -209,20 +203,19 @@ describe('Ledger: payment capture, refund and settlement', () => {
     expect(
       many.every((r) => !r.created && r.journalId === first.journalId),
     ).toBe(true);
-    expect(await count(t.app, 'LedgerEntry')).toBe(3);
+    expect(await count(t.app, 'LedgerEntry')).toBe(2);
     expect(await journalEvents(t.app)).toHaveLength(1);
     await expect(
       capture({ ...input, amountMinor: 2600 }),
     ).rejects.toBeInstanceOf(JournalConflict);
-    expect(await count(t.app, 'LedgerEntry')).toBe(3);
+    expect(await count(t.app, 'LedgerEntry')).toBe(2);
     await assertBooksHealthy(t.app);
   });
 
   it.each([
-    [{ amountMinor: 50 }, 'amount_not_above_fee'],
-    [{ amountMinor: 49 }, 'amount_not_above_fee'],
-    [{ amountMinor: 0 }, 'amount_not_above_fee'],
+    [{ amountMinor: 0 }, 'line_amount_invalid'],
     [{ amountMinor: -1 }, 'line_amount_invalid'],
+    [{ amountMinor: 1.5 }, 'line_amount_invalid'],
     [{ currency: 'USD' }, 'currency_unsupported'],
     [{ orderId: '' }, 'reference_invalid'],
     [{ paymentRef: '' }, 'reference_invalid'],
@@ -238,7 +231,7 @@ describe('Ledger: payment capture, refund and settlement', () => {
     },
   );
 
-  it('S14 AS-14: a refund of an unsettled sale reverses the three accounts on the same shards', async () => {
+  it('S14 AS-14: a refund of an unsettled sale reverses the two accounts on the same shards', async () => {
     const input = captureInput();
     const sale = await capture(input);
     const result = await refund({
@@ -254,13 +247,7 @@ describe('Ledger: payment capture, refund and settlement', () => {
       {
         accountId: 'MARKETPLACE_CLEARING',
         shard,
-        amount: '-2450',
-        paymentId: input.paymentId,
-      },
-      {
-        accountId: 'PLATFORM_FEES',
-        shard,
-        amount: '-50',
+        amount: '-2500',
         paymentId: input.paymentId,
       },
       {
@@ -273,12 +260,12 @@ describe('Ledger: payment capture, refund and settlement', () => {
     expect(
       (await netPerAccount(input.paymentId)).every((r) => r.net === '0'),
     ).toBe(true);
-    expect(await lines(sale.journalId)).toHaveLength(3);
+    expect(await lines(sale.journalId)).toHaveLength(2);
     expect(await journalEvents(t.app)).toHaveLength(2);
     await assertBooksHealthy(t.app);
   });
 
-  it('S14 AS-15: a refund of a settled sale reverses the shops shares, not the clearing, and records the settlement', async () => {
+  it('S14 AS-15: a refund of a settled sale reverses the shops shares and the commission, not the clearing, and records the settlement', async () => {
     const [a, b] = [uuidv4(), uuidv4()].sort();
     const input = captureInput({ amountMinor: 2500 });
     await capture(input);
@@ -286,11 +273,12 @@ describe('Ledger: payment capture, refund and settlement', () => {
       orderPaidEvent({
         orderId: input.orderId,
         shops: [
-          { shopId: a, subtotalMinor: 1 },
-          { shopId: b, subtotalMinor: 1 },
+          { shopId: a, subtotalMinor: 1250 },
+          { shopId: b, subtotalMinor: 1250 },
         ],
       }),
     );
+    // 10 % commission: each shop keeps 1125, the platform 250
     // shop a is paid out before the refund, so the refund takes its account below zero
     await t.inTx((tx) =>
       t.ledger.postJournal(
@@ -299,8 +287,8 @@ describe('Ledger: payment capture, refund and settlement', () => {
           reference: 'payout-a',
           currency: 'EUR',
           lines: [
-            { accountId: `SHOP_${a}`, amountMinor: -1225 },
-            { accountId: 'PAYOUT_CLEARING', amountMinor: 1225 },
+            { accountId: `SHOP_${a}`, amountMinor: -1125 },
+            { accountId: 'PAYOUT_CLEARING', amountMinor: 1125 },
           ],
         },
         tx,
@@ -309,13 +297,14 @@ describe('Ledger: payment capture, refund and settlement', () => {
     const result = await refund({ paymentId: input.paymentId });
     const refundLines = await lines(result.journalId);
     expect(refundLines.map((l) => [l.accountId, l.amount])).toEqual([
-      ['PLATFORM_FEES', '-50'],
+      ['PLATFORM_FEES', '-250'],
       ['PROVIDER_CLEARING', '2500'],
-      [`SHOP_${a}`, '-1225'],
-      [`SHOP_${b}`, '-1225'],
+      [`SHOP_${a}`, '-1125'],
+      [`SHOP_${b}`, '-1125'],
     ]);
     expect(await logical('MARKETPLACE_CLEARING')).toBe(0);
-    expect(await balanceOf(t.app, `SHOP_${a}`)).toBe(-1225);
+    expect(await logical('PLATFORM_FEES')).toBe(0);
+    expect(await balanceOf(t.app, `SHOP_${a}`)).toBe(-1125);
     expect(await balanceOf(t.app, `SHOP_${b}`)).toBe(0);
     const [header] = await sql<{ reversesJournalId: string }>(
       t.app,
@@ -358,7 +347,7 @@ describe('Ledger: payment capture, refund and settlement', () => {
     await assertBooksHealthy(t.app);
   });
 
-  it('S14 AS-17: order.paid settles the sale into the shops by largest remainder, once', async () => {
+  it('S14 AS-17: order.paid settles the sale once: each shop gets its lines less the 10 % commission, the platform the commission', async () => {
     const [a, b, c] = [uuidv4(), uuidv4(), uuidv4()].sort();
     const input = captureInput({ amountMinor: 1050 });
     await capture(input);
@@ -373,20 +362,70 @@ describe('Ledger: payment capture, refund and settlement', () => {
     const rows = await lines(id);
     expect(rows.map((r) => [r.accountId, r.amount, r.paymentId])).toEqual(
       [
-        ['MARKETPLACE_CLEARING', '-1000', input.paymentId],
-        [`SHOP_${a}`, '334', input.paymentId],
-        [`SHOP_${b}`, '333', input.paymentId],
-        [`SHOP_${c}`, '333', input.paymentId],
+        ['MARKETPLACE_CLEARING', '-1050', input.paymentId],
+        ['PLATFORM_FEES', '105', input.paymentId],
+        [`SHOP_${a}`, '315', input.paymentId],
+        [`SHOP_${b}`, '315', input.paymentId],
+        [`SHOP_${c}`, '315', input.paymentId],
       ].sort((x, y) => (x[0] as string).localeCompare(y[0] as string)),
     );
     expect(await logical('MARKETPLACE_CLEARING')).toBe(0);
-    expect(await journalEvents(t.app)).toHaveLength(2);
+    expect(await logical('PLATFORM_FEES')).toBe(105);
+    const events = await journalEvents(t.app);
+    expect(events).toHaveLength(2);
+    // J01 G-13: both journals name their payment and order, so a consumer (statements) joins them without a query
+    expect(
+      events.map((e) => [
+        e.payload.kind,
+        e.payload.paymentId,
+        e.payload.orderId,
+      ]),
+    ).toEqual(
+      expect.arrayContaining([
+        ['SALE', input.paymentId, input.orderId],
+        ['SETTLEMENT', input.paymentId, input.orderId],
+      ]),
+    );
+    await assertBooksHealthy(t.app);
+  });
+
+  it('S14 AS-17: the commission is rounded half up per line and uses the rate of the shop and category in force on paidAt', async () => {
+    const [a, b] = [uuidv4(), uuidv4()].sort();
+    const paidAt = new Date('2026-05-10T12:00:00Z');
+    // a: 5 % for category "phones" since before the sale; b: a new 50 % rate that only starts after the sale
+    await t.setCommission({
+      shopId: a,
+      category: 'phones',
+      rateBps: 500,
+      validFrom: new Date('2026-05-01T00:00:00Z'),
+    });
+    await t.setCommission({
+      shopId: b,
+      rateBps: 5000,
+      validFrom: new Date('2026-05-11T00:00:00Z'),
+    });
+    const input = captureInput({ amountMinor: 2010 });
+    await capture(input);
+    await settle(
+      orderPaidEvent({
+        orderId: input.orderId,
+        paidAt,
+        shops: [
+          { shopId: a, subtotalMinor: 1005, category: 'Phones' },
+          { shopId: b, subtotalMinor: 1005 },
+        ],
+      }),
+    );
+    // a: 1005 x 5 % = 50.25 -> 50; b: default 10 % = 100.5 -> 101 (half up), not the later 50 %
+    expect(await balanceOf(t.app, `SHOP_${a}`)).toBe(955);
+    expect(await balanceOf(t.app, `SHOP_${b}`)).toBe(904);
+    expect(await logical('PLATFORM_FEES')).toBe(151);
     await assertBooksHealthy(t.app);
   });
 
   it('S14 AS-18: five simultaneous deliveries and a later one give one journal, one event, shares unchanged', async () => {
     const [a, b] = [uuidv4(), uuidv4()].sort();
-    const input = captureInput({ amountMinor: 1050 });
+    const input = captureInput({ amountMinor: 1000 });
     await capture(input);
     const event = orderPaidEvent({
       orderId: input.orderId,
@@ -401,13 +440,13 @@ describe('Ledger: payment capture, refund and settlement', () => {
       1,
     );
     expect(await journalEvents(t.app)).toHaveLength(2);
-    expect(await balanceOf(t.app, `SHOP_${a}`)).toBe(600);
-    expect(await balanceOf(t.app, `SHOP_${b}`)).toBe(400);
+    expect(await balanceOf(t.app, `SHOP_${a}`)).toBe(540);
+    expect(await balanceOf(t.app, `SHOP_${b}`)).toBe(360);
     await assertBooksHealthy(t.app);
   });
 
-  it('S14 AS-19: nine classes of invalid order.paid are dead-lettered with a reason, write nothing, and the next message is processed', async () => {
-    const input = captureInput({ amountMinor: 1050 });
+  it('S14 AS-19: twelve classes of invalid order.paid are dead-lettered with a reason, write nothing, and the next message is processed', async () => {
+    const input = captureInput({ amountMinor: 1000 });
     await capture(input);
     const shop = uuidv4();
     const good = () =>
@@ -468,6 +507,25 @@ describe('Ledger: payment capture, refund and settlement', () => {
         tamper((p) => (p.totalMinor = 'lots')),
         'invalid_payload',
       ],
+      [
+        'lines that do not add up to the total',
+        tamper((p) => (p.lines[0].lineTotalMinor = 900)),
+        'invalid_payload',
+      ],
+      [
+        'a shop subtotal that disagrees with its lines',
+        tamper((p) => (p.shopOrders[0].subtotalMinor = 900)),
+        'invalid_payload',
+      ],
+      [
+        'a total that is not the captured amount',
+        tamper((p) => {
+          p.totalMinor = 900;
+          p.lines[0].lineTotalMinor = 900;
+          p.shopOrders[0].subtotalMinor = 900;
+        }),
+        'invalid_payload',
+      ],
     ];
     for (const [name, event, reason] of cases) {
       const before = metric('ledger_consumer_dead_lettered_total', { reason });
@@ -493,7 +551,7 @@ describe('Ledger: payment capture, refund and settlement', () => {
 
   it('S14 AS-20: a settlement before the sale is deferred on a 30/60/120/180/210 s chain, settles after the capture, or dead-letters after the 6th attempt', async () => {
     const shop = uuidv4();
-    const input = captureInput({ amountMinor: 1050 });
+    const input = captureInput({ amountMinor: 1000 });
     const deferredBefore = metric('ledger_settlement_deferred_total');
     const event = orderPaidEvent({
       orderId: input.orderId,
@@ -529,7 +587,7 @@ describe('Ledger: payment capture, refund and settlement', () => {
     expect(await count(t.app, 'LedgerJournal', `"kind" = 'SETTLEMENT'`)).toBe(
       1,
     );
-    expect(await balanceOf(t.app, `SHOP_${shop}`)).toBe(1000);
+    expect(await balanceOf(t.app, `SHOP_${shop}`)).toBe(900);
 
     // an order whose sale never comes: the chain of waits, then the dead letter on attempt 6
     const lonely = orderPaidEvent({
@@ -571,9 +629,9 @@ describe('Ledger: payment capture, refund and settlement', () => {
   it('S14 AS-21: a refund first means no shop is credited; settle then refund claws back; a race ends one way or the other', async () => {
     // (a) refund already posted
     const shopA = uuidv4();
-    const a = captureInput({ amountMinor: 1050 });
+    const a = captureInput({ amountMinor: 1000 });
     await capture(a);
-    await refund({ paymentId: a.paymentId, amountMinor: 1050 });
+    await refund({ paymentId: a.paymentId, amountMinor: 1000 });
     const skippedBefore = metric('ledger_settlement_skipped_total', {
       reason: 'refunded',
     });
@@ -594,7 +652,7 @@ describe('Ledger: payment capture, refund and settlement', () => {
     // (c) the two racing, 50 times
     for (let round = 0; round < 50; round++) {
       const shop = uuidv4();
-      const p = captureInput({ amountMinor: 1050 });
+      const p = captureInput({ amountMinor: 1000 });
       await capture(p);
       await Promise.all([
         settle(
@@ -603,7 +661,7 @@ describe('Ledger: payment capture, refund and settlement', () => {
             shops: [{ shopId: shop, subtotalMinor: 1000 }],
           }),
         ),
-        refund({ paymentId: p.paymentId, amountMinor: 1050 }),
+        refund({ paymentId: p.paymentId, amountMinor: 1000 }),
       ]);
       const net = await netPerAccount(p.paymentId);
       expect(net.every((r) => r.net === '0')).toBe(true);

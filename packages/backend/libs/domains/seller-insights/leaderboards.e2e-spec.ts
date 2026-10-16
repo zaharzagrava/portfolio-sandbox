@@ -74,6 +74,7 @@ describe('Leaderboards & live dashboard (e2e)', () => {
     price: number,
     at: Date,
     quantity = 1,
+    discountMinor = 0,
   ) => {
     const orderId = v4();
     return OrderPaid.create(
@@ -83,7 +84,7 @@ describe('Leaderboards & live dashboard (e2e)', () => {
         orderId,
         userId: v4(),
         orderVersion: 2,
-        totalMinor: price * quantity,
+        totalMinor: price * quantity - discountMinor,
         currency: 'usd',
         paymentRef: v4(),
         paidAt: at.toISOString(),
@@ -94,8 +95,8 @@ describe('Leaderboards & live dashboard (e2e)', () => {
             title: 'Item',
             quantity,
             unitPriceMinor: price,
-            discountMinor: 0,
-            lineTotalMinor: price * quantity,
+            discountMinor,
+            lineTotalMinor: price * quantity - discountMinor,
           },
         ],
         shopOrders: [],
@@ -159,6 +160,25 @@ describe('Leaderboards & live dashboard (e2e)', () => {
           .expect(200)
       ).body,
     ).toMatchObject({ rank: 2, of: 2, topPercent: 100, revenue: 10_000 });
+  });
+
+  it('J01 G-25: a discounted line counts what was paid (lineTotalMinor), not price times quantity', async () => {
+    const alpha = await shop('Alpha');
+    const [phone] = await seeds.createTreelike([
+      { __type__: TableName.Product, title: 'Phone', category: 'electronics' },
+    ]);
+    await projector.project([
+      sale(alpha, phone.id, 10_000, new Date(), 2, 3_000), // 2 x 100.00 less 30.00
+    ]);
+    const board = (
+      await http().get('/api/leaderboards?period=week').expect(200)
+    ).body;
+    expect(
+      board.entries.map((e: { name: string; revenue: number }) => [
+        e.name,
+        e.revenue,
+      ]),
+    ).toEqual([['Alpha', 17_000]]);
   });
 
   it('a closed period is served from the Postgres snapshot after Redis forgets it', async () => {

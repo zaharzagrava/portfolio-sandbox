@@ -14,6 +14,7 @@ import { auctionsConfigKeys } from './auctions-config';
 import { paymentsConfigKeys } from './payments-config';
 import { ledgerConfigKeys } from './ledger-config';
 import { payoutConfigKeys } from './payout-config';
+import { clockConfigKeys } from './clock-config';
 import { notificationsConfigKeys } from './notifications-config';
 import { searchConfigKeys } from './search-config';
 import { autocompleteConfigKeys } from './autocomplete-config';
@@ -301,11 +302,6 @@ export class ApiConfigService {
           stripe_secret_key: {
             verify: joi.string().required(),
             name: 'STRIPE_SECRET_KEY',
-          },
-
-          is_load_test: {
-            verify: joi.boolean().optional(),
-            name: 'IS_LOAD_TEST',
           },
 
           // Showcase program (docs/showcase) - optional, defaults applied where used
@@ -621,6 +617,7 @@ export class ApiConfigService {
           ...paymentsConfigKeys,
           ...ledgerConfigKeys,
           ...payoutConfigKeys,
+          ...clockConfigKeys,
           payout_cursor_secret: {
             verify: joi.string().optional().allow(''),
             name: 'PAYOUT_CURSOR_SECRET',

@@ -117,7 +117,7 @@ import { OutboxPublisherModule } from '@app/infrastructure/outbox/outbox-publish
     ScheduleModule.forRoot(),
     ErrorUtilsModule,
     AuthApiModule,
-    IdentityOpsModule,
+    IdentityOpsModule, // the operator routes: jobs, consumers and (CLOCK_CONTROL=enabled) the clock
     SentryModule.forRoot(),
     // before the catalog: GET /products/search must be matched before GET /products/:id
     ProductSearchModule,

@@ -54,6 +54,14 @@ groups:
           summary: 'Dead-letter queue {{ $labels.queue }} has {{ $value }} messages'
           runbook: docs/ops/runbooks/DLQNotEmpty.md
 
+      - alert: ConsumerDlqNotEmpty
+        expr: max by (group) (consumer_dlq_depth) > 0
+        for: 5m
+        labels: { severity: ticket }
+        annotations:
+          summary: 'Consumer group {{ $labels.group }} has {{ $value }} dead letters waiting for a redrive'
+          runbook: docs/ops/runbooks/DLQNotEmpty.md
+
       - alert: JobQueueLagging
         expr: max(job_queue_lag_seconds) > 300
         for: 10m

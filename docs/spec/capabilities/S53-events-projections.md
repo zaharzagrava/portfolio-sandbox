@@ -25,6 +25,7 @@ Domains need to say "this happened" and let other domains react without sharing 
 - Read-your-writes helper: a read route accepts `minVersion` and answers `200`, `202` or `400`.
 - Purge jobs for published outbox rows and for terminal inbox rows (single-run jobs, see {{cap:S49}}).
 - Operator commands: `pnpm projections:rebuild` [code: packages/backend/scripts/projections/rebuild.ts], `pnpm projections:promote`, `pnpm projections:redrive` [code: packages/backend/scripts/projections/redrive.ts#parseRedriveArgs], `pnpm check:table-ownership --technical-only` [code: packages/backend/scripts/check-table-ownership.ts].
+- Consumer admin routes (platform `admin` role and a sensitive session): `GET /api/admin/consumers/:group`, `POST /api/admin/consumers/:group/pause`, `/resume`, `/replay {since}` and `/dlq/redrive {limit?}`. The service lives in `libs/infrastructure/projections`; the HTTP controller is mounted by the identity operator module, because infrastructure may not import the auth guards. [code: packages/backend/libs/infrastructure/projections/consumer-admin.service.ts#ConsumerAdminService] [code: packages/backend/libs/domains/identity/api/consumers-admin.controller.ts#ConsumersAdminController]
 - Task queue `enqueue`, `enqueueBatch` and `consume`; transactional consume-transform-produce pipeline; `ConsumerLag.read(group)`.
 
 ## Rules
@@ -48,6 +49,10 @@ Domains need to say "this happened" and let other domains react without sharing 
 - **S53.R-18** A `versionGuard` consumer MUST apply an event only when its [`aggregateVersion`](../terms/aggregate-version.md) is higher than the stored one; equal counts [`duplicate`](../terms/consumer-outcomes.md), lower counts [`stale`](../terms/consumer-outcomes.md). [proof: S53 AS-29, S53 AS-33, S53 AS-34, S53 AS-71]
 - **S53.R-19** [The inbox](../terms/inbox-table.md) MUST record `(consumer, eventId)` in [the effect's transaction](../terms/consumer-effects.md), so [concurrent duplicates](../terms/consumer-outcomes.md) yield one effect. [proof: S53 AS-28, S53 AS-31, S53 AS-32, S53 AS-49]
 - **S53.R-20** [Offsets MUST be committed ↗](../sw-external-terms.md#kafka-offset-commit) only after the effects, so a disconnect causes [redelivery](../terms/at-least-once-delivery.md) and never loss. [proof: S53 AS-36, S53 AS-37]
+- **S53.R-21** A consumer group MUST be addressable by its canonical name (`payments-order-copy`, `orders-payment-results`, `ledger-settlement`, `ledger-balances`, `statements-facts`, `notification-router`) or by the name it declared; the canonical `statements-facts` stands for the three `statements-*` groups and `notification-router` for the `notifications-*` groups, and an unknown name answers `404 consumer_not_found`. [proof: J01 G-31] [code: packages/backend/libs/infrastructure/projections/consumer-groups.ts#CANONICAL_CONSUMER_GROUPS]
+- **S53.R-22** A pause MUST be one Redis flag `consumer:pause:<group>` that every process running the group reads; each runner MUST stop fetching within 2 s of the flag appearing and resume within 2 s of its removal; pausing a paused group, or resuming a running one, changes nothing and answers `200`. [proof: J01 G-31] [code: packages/backend/libs/infrastructure/projections/consumer-pause.ts#ConsumerPauseFlags]
+- **S53.R-23** A replay MUST answer `202`, refuse a `since` that is malformed or in the future with `422`, pause the group, move each partition to the offset of the first message at or after `since`, and then resume it. [proof: J01 G-31]
+- **S53.R-24** A consumer view MUST report `state`, `lag` (the sum over partitions of end offset minus committed offset), `lastProcessedAt` and `dlqDepth` (dead letters not yet redriven); the gauge `consumer_dlq_depth{group}` carries the depth and the alert `ConsumerDlqNotEmpty` fires on it. `POST .../dlq/redrive` re-queues dead letters to their source topic and answers `202 {requeued}`. [proof: J01 G-26] [code: infra/observability/prometheus/rules/causes.yml]
 
 ## Behaviors
 - **S53.B-01** Given [aggregate A](../terms/aggregate-id.md) at [version 3](../terms/aggregate-version.md), when a transaction updates it to version 4 and [appends](../terms/outbox-append.md) [`fixtures.item_changed`](../terms/event-definition.md) and commits, then exactly one [pending outbox row](../terms/event-row.md) exists. [proof: S53 AS-01]
@@ -77,8 +82,9 @@ Domains need to say "this happened" and let other domains react without sharing 
 
 ## Owns
 - Tables: the outbox table (events and tasks) and the inbox tables (`recordOnce` records and `claim` rows).
-- Topics: `<aggregateType>.events` per registered aggregate type; `<consumer>.dlq` per consumer; the `<consumer>.redrive` group.
-- Metrics: `outbox_pending`, `outbox_parked`, `dlq_total`, `dlq_write_failures_total`, `consumer_events_total`, `read_your_writes_total`.
+- Topics: `<aggregateType>.events` per registered aggregate type (`orders|payments|ledger|payouts|statements.events` are created by `scripts/init-kafka-topics.sh`; the stack doctor fails while one is missing); `<consumer>.dlq` per consumer; the `<consumer>.redrive` group.
+- Metrics: `outbox_pending`, `outbox_parked`, `dlq_total`, `dlq_write_failures_total`, `consumer_events_total`, `consumer_dlq_depth{group}`, `read_your_writes_total`.
+- Redis keys: `projection:registry` (hash, group to declaration); `consumer:pause:<group>` (string `{pausedAt, by}`, no expiry, deleted by resume); `consumer:replay:<group>` (hash `topic|partition` to target offset, 10 minute expiry, emptied by the runner that owns the partition); `consumer:last-processed:<group>` (ISO time of the last finished batch, 90 day expiry).
 - Configuration: relay mode (`poller` or `cdc`), lease (30 s), backoff, retention (7 days outbox, 30 days inbox), read budget (500 ms default, 2,000 ms max), checkpoint expiry (24 h), consumer attempt budget (3), handler timeout (30 s), concurrency cap (500). It validates all of them at startup.
 - Code: `infra/debezium/outbox-connector.json`, `packages/contracts/src/events/`.
 

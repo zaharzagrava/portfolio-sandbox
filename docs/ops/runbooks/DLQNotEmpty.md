@@ -16,5 +16,8 @@ Messages failed `maxReceiveCount` times and were parked. That work (webhook deli
 - **Downstream outage** (provider down): wait for recovery, then redrive.
 - Jobs lagging (`job_queue_lag_seconds`): scale workers; check one job type isn't hogging (per-type concurrency caps).
 
+## Kafka consumer groups (`ConsumerDlqNotEmpty`)
+`consumer_dlq_depth{group}` is the number of dead letters in `<group>.dlq` not yet redriven. Read the group: `GET /api/admin/consumers/<group>` (admin and a sensitive session; `dlqDepth`, `lag`, `state`). Fix the cause, then `POST /api/admin/consumers/<group>/dlq/redrive {"limit": 100}` (or `pnpm projections:redrive --consumer <group>`); a letter redriven 3 times stays for a human. The group can be paused and resumed from the same routes.
+
 ## Verify
 DLQ visible = 0; source queue drains; no new DLQ arrivals for 1 h.

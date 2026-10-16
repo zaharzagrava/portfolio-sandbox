@@ -153,6 +153,15 @@ describe('Ledger: observability, secrets, configuration and shutdown', () => {
         Array.from({ length: 10 }, () => capture().done),
       );
       expect(sales).toHaveLength(10);
+      // the commission is taken at settlement: that posting is what touches PLATFORM_FEES
+      const settled = capture({ amountMinor: 1000 });
+      await settled.done;
+      await consumer.project([
+        orderPaidEvent({
+          orderId: settled.input.orderId,
+          shops: [{ shopId: uuidv4(), subtotalMinor: 1000 }],
+        }),
+      ]);
       // AS-30: the projector: stale and legacy messages
       const events = await outbox();
       await projector.project(events);
@@ -196,7 +205,7 @@ describe('Ledger: observability, secrets, configuration and shutdown', () => {
       await consumer.project([
         orderPaidEvent({
           orderId: paid.input.orderId,
-          shops: [{ shopId: uuidv4(), subtotalMinor: 1000 }],
+          shops: [{ shopId: uuidv4(), subtotalMinor: 1050 }],
         }),
       ]);
       const lonely = orderPaidEvent({
@@ -521,7 +530,6 @@ describe('Ledger: observability, secrets, configuration and shutdown', () => {
     const boot = () => new ApiConfigService(new ConfigUtilsService()).init();
 
     it.each([
-      ['LEDGER_FEE_MINOR', 'ledger_fee_minor', ['0', '-5', 'abc']],
       ['LEDGER_SHARDS', 'ledger_shards', ['0', '257', 'abc']],
       ['LEDGER_LOCK_TIMEOUT_MS', 'ledger_lock_timeout_ms', ['0', '-1', 'abc']],
       [
@@ -567,7 +575,6 @@ describe('Ledger: observability, secrets, configuration and shutdown', () => {
 
     it('S14 AS-68: the defaults apply when nothing is set', async () => {
       for (const variable of [
-        'LEDGER_FEE_MINOR',
         'LEDGER_SHARDS',
         'LEDGER_LOCK_TIMEOUT_MS',
         'LEDGER_STATEMENT_TIMEOUT_MS',
@@ -578,13 +585,12 @@ describe('Ledger: observability, secrets, configuration and shutdown', () => {
       const config = new ApiConfigService(new ConfigUtilsService());
       await config.init();
       expect([
-        config.get('ledger_fee_minor'),
         config.get('ledger_shards'),
         config.get('ledger_lock_timeout_ms'),
         config.get('ledger_statement_timeout_ms'),
         config.get('reconciliation_page_size'),
         config.get('reconciliation_catchup_days'),
-      ]).toEqual([50, 32, 2_000, 5_000, 100, 7]);
+      ]).toEqual([32, 2_000, 5_000, 100, 7]);
     });
   });
 

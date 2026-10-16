@@ -195,6 +195,7 @@ describe('Payment webhook: signature, dedupe, async processing and out-of-order 
 
       t.realtime.published.length = 0;
       const before = await orderRow(t.app, orderId);
+      const paidBefore = MetricsRegistry.value('orders_paid_total') ?? 0;
       await run('evt_41');
       const after = await orderRow(t.app, orderId);
       expect([after.status, after.version, after.paymentRef]).toEqual([
@@ -202,6 +203,8 @@ describe('Payment webhook: signature, dedupe, async processing and out-of-order 
         before.version + 1,
         'pi_41',
       ]);
+      // J01 AS-30: the move to PAID is counted once
+      expect(MetricsRegistry.value('orders_paid_total')).toBe(paidBefore + 1);
       expect(
         (await reservationsOf(t.app, orderId)).map((r) => r.status),
       ).toEqual(['CONVERTED']);

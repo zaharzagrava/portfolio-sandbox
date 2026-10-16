@@ -57,7 +57,7 @@ export class ShopLiveProjector implements Projector {
         for (const line of paid.payload.lines) {
           if (!line.shopId) continue;
           add(line.shopId, 'units', line.quantity);
-          add(line.shopId, 'revenue', line.unitPriceMinor * line.quantity);
+          add(line.shopId, 'revenue', line.lineTotalMinor); // what was paid, discount included
         }
         for (const shopId of new Set(
           paid.payload.lines

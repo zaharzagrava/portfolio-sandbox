@@ -42,6 +42,7 @@ scope:
   - packages/backend/libs/infrastructure/cache/**
   - packages/backend/libs/infrastructure/cassandra/**
   - packages/backend/libs/infrastructure/clickhouse/**
+  - packages/backend/libs/infrastructure/clock/**
   - packages/backend/libs/infrastructure/context/**
   - packages/backend/libs/infrastructure/database/**
   - packages/backend/libs/infrastructure/dynamo/**
@@ -80,6 +81,7 @@ Every backend app needs the same operating base: one error format, a per-request
 - Resilient HTTP client, `safeGet` and `safeRequest`: outbound calls. [code: packages/backend/libs/infrastructure/http-client/resilient-http-client.ts#ResilientHttpClient] [code: packages/backend/libs/infrastructure/net/pinned-request.ts#safeRequest]
 - `@Idempotent` route declaration and the purge job ({{concept:idempotency-key}}). [code: packages/backend/libs/infrastructure/idempotency/idempotent.decorator.ts#Idempotent]
 - `bootstrapApp` and `configureHttpApp`: startup and HTTP pipeline for every app. [code: packages/backend/libs/infrastructure/lifecycle/startup.ts#bootstrapApp]
+- `GET|PUT /api/admin/clock`: admin-only view and control of the platform clock, present only when `CLOCK_CONTROL=enabled`. [code: packages/backend/libs/domains/identity/api/clock-admin.controller.ts#ClockAdminController]
 
 ## Rules
 - **S54.R-01** Every error response MUST be [`application/problem+json` ↗](../sw-external-terms.md#problem-json) with exactly the members [`type`, `title`, `status`, `detail`, `instance`, `code`, `requestId`](../terms/exact-body-members.md), plus [`traceId`](../terms/trace-id.md) when a trace is active. [proof: S54 AS-01, S54 AS-15] [code: packages/backend/libs/common/exceptions-filter/problem-document.ts#buildProblemDocument]
@@ -102,6 +104,8 @@ Every backend app needs the same operating base: one error format, a per-request
 - **S54.R-18** [`/health/live`](../terms/health-probes.md) MUST NOT touch any external store and MUST fail only on [event-loop p99](../terms/event-loop-lag.md) above 10 000 ms or a [silent heartbeat](../terms/liveness-heartbeat.md). [proof: S54 AS-41, S54 AS-52, S54 AS-53]
 - **S54.R-19** [Readiness](../terms/readiness.md) MUST return 503 while starting, while shutting down, or when a [critical pod-local check](../terms/health-check-criticality.md) fails; failing shared checks are reported but MUST NOT fail readiness. [proof: S54 AS-42, S54 AS-43, S54 AS-45, S54 AS-47]
 - **S54.R-20** [Probe bodies](../terms/health-probes.md) MUST list check names and `up` or `down` only; error text goes to logs and the gauge [`health_check_up`](../terms/health-check-up.md). [proof: S54 AS-50, S54 AS-55]
+- **S54.R-21** The platform clock (`CLOCK`, implemented by `ClockService`) returns the real time plus a forward offset kept in Redis key `clock:offsetSeconds`, which every process reads (local cache 200 ms, so a change is visible everywhere within 1 s). The offset exists only when `CLOCK_CONTROL=enabled`; otherwise the clock is the real time and `/api/admin/clock` answers `404 not_found`. Startup MUST fail naming `clock_control` when it is enabled with `NODE_ENV=production`. [proof: J01 G-32] [code: packages/backend/libs/infrastructure/clock/clock.service.ts#ClockService]
+- **S54.R-22** `GET /api/admin/clock` (admin) returns `{now, mode, offsetSeconds}`; `PUT` with `{advanceSeconds}` (integer 1 to 31 536 000) adds to the offset, any other body (zero, negative, fractional, above the maximum, unknown members) is `422 invalid_clock_update` and changes nothing; `PUT {mode:"real"}` deletes the offset and is idempotent. Non-admins get `403`, no token `401`. [proof: J01 G-32]
 
 ## Behaviors
 - **S54.B-01** Given a route throws a [domain error](../terms/error-code.md) `order_not_found` with status 404, when a client calls it, then it receives a 404 [problem+json ↗](../sw-external-terms.md#problem-json) with [`code: order_not_found`](../terms/order-not-found.md). [proof: S54 AS-01]
@@ -131,7 +135,8 @@ Readiness moves from not-ready to ready when startup ends and to not-ready when 
 ## Owns
 - Table `IdempotencyKey`, owned by `infrastructure:idempotency`. [code: packages/backend/libs/infrastructure/idempotency/idempotency-key.model.ts#IdempotencyKeyModel]
 - Metrics: `platform_ready`, `health_check_up`, `nodejs_eventloop_lag_p99_ms`, `http_requests_shed_total`, `network_call_in_transaction_total`, `http_client_retry_budget_exhausted_total`.
-- Configuration: problem base URL, shutdown timings, server timeouts, pool settings, trusted proxies, CORS allowlist, management port, replica URL, shedding threshold and in-flight cap.
+- Redis key `clock:offsetSeconds` (integer seconds, forward only, present only while the clock is advanced).
+- Configuration: `CLOCK_CONTROL`, problem base URL, shutdown timings, server timeouts, pool settings, trusted proxies, CORS allowlist, management port, replica URL, shedding threshold and in-flight cap.
 
 ## Decisions
 - Shared outages do not fail readiness, so one store outage does not remove every pod.

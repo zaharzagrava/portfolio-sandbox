@@ -7,9 +7,12 @@ KAFKA_CONTAINER="${KAFKA_CONTAINER:-payment_system_kafka}"
 # partition at a time). Only applies to topics that don't exist yet.
 KAFKA_PARTITIONS="${KAFKA_PARTITIONS:-1}"
 TOPICS=(
-  "payments.requests"
-  "payments.responses"
-  "payments.dlq"
+  # J01 G-27: one topic per aggregate type of the buy-to-payout chain (keyed by aggregateId by the relay)
+  "orders.events"
+  "payments.events"
+  "ledger.events"
+  "payouts.events"
+  "statements.events"
   "products.events"
   # S36 sponsored listings (L-002, L-011: every topic the code names must exist)
   "marketing.events"

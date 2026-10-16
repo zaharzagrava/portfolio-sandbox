@@ -3,8 +3,8 @@ import { SequelizeModule } from '@nestjs/sequelize';
 import { ApiConfigService, ApiConfigModule } from '@app/common/config';
 
 import { Environment } from '@app/common/types';
-import { ClockModule } from '@app/infrastructure/platform';
-import { HealthModule } from '@app/infrastructure/health';
+import { PlatformModule } from '@app/infrastructure/platform';
+import { TenancyModule } from '@app/domains/tenancy';
 import { JobsModule } from '@app/infrastructure/jobs/jobs.module';
 import { RedisModule } from '@app/infrastructure/redis/redis.module';
 import { SqsModule } from '@app/infrastructure/sqs/sqs.module';
@@ -33,8 +33,8 @@ import { PaymentProcessorModule as PaymentProcessorDomainModule } from '@app/dom
         }),
       }),
     }),
-    ClockModule,
-    HealthModule,
+    PlatformModule,
+    TenancyModule,
     RedisModule,
     SqsModule,
     JobsModule,

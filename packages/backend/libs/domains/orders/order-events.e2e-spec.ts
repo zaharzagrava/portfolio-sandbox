@@ -166,7 +166,9 @@ describe('Orders: events, realtime, observability and jobs', () => {
         `SELECT "id", "productId", "category" FROM "BisOrderItem" WHERE "bisOrderId" = :orderId`,
         { orderId: order.id },
       );
-      const paid = (await events(order.id)).find((r) => r.type === 'order.paid');
+      const paid = (await events(order.id)).find(
+        (r) => r.type === 'order.paid',
+      );
       const payload = orderEventSchemas['order.paid'].parse(
         (paid!.payload as { payload: unknown }).payload,
       );

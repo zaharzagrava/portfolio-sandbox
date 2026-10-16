@@ -7,8 +7,10 @@ import {
   assertBooksHealthy,
   count,
   newShopAccount,
+  orderPaidEvent,
   sql,
 } from './testing/ledger-fixtures';
+import { SettlementService } from './application/settlement.service';
 import { LedgerProcessingModule } from './ledger-processing.module';
 import { LedgerJobs } from './infra/ledger.jobs';
 import { HotAccountSweepService } from './application/hot-account-sweep.service';
@@ -19,10 +21,12 @@ describe('Ledger: hot-account sharding, sweep and lock order', () => {
   let t: LedgerTestApp;
   let sweep: HotAccountSweepService;
   let jobs: LedgerJobs;
+  let settlement: SettlementService;
 
   beforeAll(async () => {
     t = await createLedgerApp({ extraImports: [LedgerProcessingModule] });
     sweep = t.app.get(HotAccountSweepService, { strict: false });
+    settlement = t.app.get(SettlementService, { strict: false });
     jobs = t.app.get(LedgerJobs, { strict: false });
   });
   afterAll(async () => {
@@ -32,12 +36,14 @@ describe('Ledger: hot-account sharding, sweep and lock order', () => {
     await t.reset();
   });
 
-  const capture = (amountMinor = 250) =>
-    t.inTx((tx) =>
+  /** A sale and its settlement (10 %: 25 of every 250 reach `PLATFORM_FEES`); the result is the sale's. */
+  const capture = async (amountMinor = 250) => {
+    const orderId = uuidv4();
+    const sale = await t.inTx((tx) =>
       t.ledger.recordPaymentCaptured(
         {
           paymentId: uuidv4(),
-          orderId: uuidv4(),
+          orderId,
           paymentRef: `pi_${uuidv4().slice(0, 8)}`,
           userId: uuidv4(),
           amountMinor,
@@ -46,6 +52,14 @@ describe('Ledger: hot-account sharding, sweep and lock order', () => {
         tx,
       ),
     );
+    await settlement.settle(
+      orderPaidEvent({
+        orderId,
+        shops: [{ shopId: uuidv4(), subtotalMinor: amountMinor }],
+      }).payload as never,
+    );
+    return sale;
+  };
   const logical = async (accountId: string) =>
     (
       await t.ledger.getBalances({ accountIds: [accountId], currency: 'EUR' })
@@ -68,16 +82,18 @@ describe('Ledger: hot-account sharding, sweep and lock order', () => {
         Array.from({ length: 200 }, () => capture(250)),
       );
       expect(results.every((r) => r.created)).toBe(true);
-      expect(await logical('PLATFORM_FEES')).toBe(10_000);
+      expect(await logical('PLATFORM_FEES')).toBe(5_000);
       expect(await logical('PROVIDER_CLEARING')).toBe(-50_000);
-      expect(await logical('MARKETPLACE_CLEARING')).toBe(40_000);
+      expect(await logical('MARKETPLACE_CLEARING')).toBe(0); // in with the sale, out with the settlement
       for (const account of HOT) {
         const rows = await shardRows(account);
         expect(
           rows.filter((r) => Number(r.balance) !== 0).length,
         ).toBeGreaterThan(8);
-        // one touch per capture: the versions across the shards add up to the number of postings
-        expect(rows.reduce((s, r) => s + Number(r.version), 0)).toBe(200);
+        // one touch per posting: the versions across the shards add up to the number of postings (clearing: sale and settlement)
+        expect(rows.reduce((s, r) => s + Number(r.version), 0)).toBe(
+          account === 'MARKETPLACE_CLEARING' ? 400 : 200,
+        );
       }
       expect(
         MetricsRegistry.histogramValue('ledger_lock_wait_seconds', {
@@ -101,7 +117,7 @@ describe('Ledger: hot-account sharding, sweep and lock order', () => {
     } finally {
       spy.mockRestore();
     }
-    expect(await logical('PLATFORM_FEES')).toBe(6_000);
+    expect(await logical('PLATFORM_FEES')).toBe(3_000);
     expect(await logical('PROVIDER_CLEARING')).toBe(-30_000);
     const usedHigh = (await shardRows('PLATFORM_FEES')).some(
       (r) => r.shard >= 32,
@@ -155,7 +171,7 @@ describe('Ledger: hot-account sharding, sweep and lock order', () => {
     const sweeping = sweep.sweepAll('2026-10-12T15:00:00.000Z');
     await Promise.all([...inFlight, sweeping]);
     expect(await logical('PLATFORM_FEES')).toBe(
-      before.PLATFORM_FEES + 100 * 50,
+      before.PLATFORM_FEES + 100 * 25,
     );
     expect(await logical('PROVIDER_CLEARING')).toBe(
       before.PROVIDER_CLEARING - 100 * 250,

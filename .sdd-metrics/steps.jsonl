@@ -391,3 +391,20 @@
 {"run":"20261015T175230Z","capability":"S18","step":"converge-1","start":"2026-10-15T21:28:37Z","end":"2026-10-15T21:29:02Z","seconds":25,"result":"ok","attempt":1,"reason":"ok"}
 {"run":"20261015T175230Z","capability":"S18","step":"gate","start":"2026-10-15T21:29:02Z","end":"2026-10-15T21:35:45Z","seconds":403,"result":"pass","attempt":1,"reason":""}
 {"run":"20261015T175230Z","capability":"S18","step":"built","start":"2026-10-15T21:28:36Z","end":"2026-10-15T21:35:45Z","seconds":429,"result":"ok","attempt":1,"reason":"Usage metering (late events, adjustments) and entitlement checks used by other domains"}
+{"run":"20261015T175230Z","capability":"J01","step":"plan","start":"2026-10-15T21:36:04Z","end":"2026-10-15T21:40:44Z","seconds":280,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261015T175230Z","capability":"J01","step":"tasks","start":"2026-10-15T21:40:44Z","end":"2026-10-15T21:42:09Z","seconds":85,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261015T175230Z","capability":"J01","step":"analyze","start":"2026-10-15T21:42:10Z","end":"2026-10-15T21:43:05Z","seconds":55,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261015T175230Z","capability":"J01","step":"implement-1","start":"2026-10-15T21:43:05Z","end":"2026-10-15T22:02:02Z","seconds":1137,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261015T175230Z","capability":"J01","step":"implement-2","start":"2026-10-15T22:02:02Z","end":"2026-10-15T22:02:37Z","seconds":35,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261015T175230Z","capability":"J01","step":"doctor-1","start":"2026-10-15T22:02:37Z","end":"2026-10-15T22:03:07Z","seconds":30,"result":"ok","attempt":1,"reason":"ok","code_changed":false}
+{"run":"20261015T175230Z","capability":"J01","step":"implement-1","start":"2026-10-15T22:03:09Z","end":"2026-10-15T22:20:10Z","seconds":1021,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261015T175230Z","capability":"J01","step":"implement-2","start":"2026-10-15T22:20:10Z","end":"2026-10-15T22:21:55Z","seconds":105,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261015T175230Z","capability":"J01","step":"doctor-2","start":"2026-10-15T22:21:56Z","end":"2026-10-15T22:36:27Z","seconds":871,"result":"ok","attempt":1,"reason":"ok","code_changed":true}
+{"run":"20261015T175230Z","capability":"J01","step":"implement-1","start":"2026-10-15T22:36:28Z","end":"2026-10-15T22:41:59Z","seconds":331,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261015T175230Z","capability":"J01","step":"implement-2","start":"2026-10-15T22:41:59Z","end":"2026-10-15T22:56:50Z","seconds":891,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261015T175230Z","capability":"J01","step":"implement-3","start":"2026-10-15T22:56:50Z","end":"2026-10-16T00:56:56Z","seconds":7206,"result":"timeout","attempt":1,"reason":"pass-timeout"}
+{"run":"20261015T175230Z","capability":"J01","step":"implement-4","start":"2026-10-16T00:56:56Z","end":"2026-10-16T01:02:26Z","seconds":330,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261015T175230Z","capability":"J01","step":"doctor-3","start":"2026-10-16T01:02:27Z","end":"2026-10-16T01:06:07Z","seconds":220,"result":"ok","attempt":1,"reason":"ok","code_changed":false}
+{"run":"20261015T175230Z","capability":"J01","step":"implement-1","start":"2026-10-16T01:06:08Z","end":"2026-10-16T01:16:29Z","seconds":621,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261015T175230Z","capability":"J01","step":"implement-2","start":"2026-10-16T01:16:29Z","end":"2026-10-16T01:22:20Z","seconds":351,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261015T175230Z","capability":"J01","step":"blocked","start":"2026-10-16T01:22:20Z","end":"2026-10-16T01:22:20Z","seconds":0,"result":"blocked","attempt":4,"reason":"J01: implement stuck at pass 2"}

@@ -46,7 +46,7 @@ describe('Payments: duplicate delivery and no charge for an unpayable order (e2e
         version: 2,
       });
       const lines = await ledgerOf(t.app, id);
-      expect(lines).toHaveLength(3);
+      expect(lines).toHaveLength(2);
       expect(balanced(lines)).toBe(0);
       expect(await eventsOf(id, 'payments.payment_succeeded')).toHaveLength(1);
       expect(await historyOf(t.app, id)).toHaveLength(2);
@@ -62,7 +62,7 @@ describe('Payments: duplicate delivery and no charge for an unpayable order (e2e
 
       expect(t.provider.count('create')).toBe(1);
       expect(await paymentRow(t.app, id)).toEqual(before);
-      expect(await ledgerOf(t.app, id)).toHaveLength(3);
+      expect(await ledgerOf(t.app, id)).toHaveLength(2);
       expect(await eventsOf(id, 'payments.payment_succeeded')).toHaveLength(1);
     });
 

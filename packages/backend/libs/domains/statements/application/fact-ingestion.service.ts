@@ -168,7 +168,10 @@ export class FactIngestionService {
     return outcome;
   }
 
-  /** `ledger.journal_posted` v2: only kind `SALE` is stored, its credit lines only, and never a shard. */
+  /**
+   * `ledger.journal_posted` v2: only kinds `SALE` and `SETTLEMENT` are stored (the settlement credits the shops and the
+   * commission), their credit lines only, and never a shard.
+   */
   async applyJournalPosted(
     envelope: EventEnvelope,
   ): Promise<ApplyOutcome | 'ignored' | 'legacy'> {
@@ -185,7 +188,7 @@ export class FactIngestionService {
     const now = this.clock.now();
     const occurredAt = new Date(envelope.occurredAt);
     await this.facts.advanceWatermark('ledger', occurredAt, now);
-    if (journal.kind !== 'SALE') {
+    if (journal.kind !== 'SALE' && journal.kind !== 'SETTLEMENT') {
       this.count('ledger', 'ignored');
       return 'ignored';
     }

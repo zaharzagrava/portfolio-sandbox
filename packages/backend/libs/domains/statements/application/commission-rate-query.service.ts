@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type { CommissionRateRule } from '@marketplace-sandbox/contracts';
 import { CLOCK, Clock } from '@app/common/core/clock';
+import { commissionOf } from '../domain/commission';
 import { TooManyQueriesError } from '../domain/errors';
 import { RATE_REPOSITORY, type RateRepository } from '../domain/ports';
 
@@ -10,6 +11,17 @@ export interface RateAsOfQueryDto {
   shopId: string;
   category: string;
   validAt: Date;
+}
+
+export interface PriceLineInput {
+  shopId: string;
+  category: string;
+  lineTotalMinor: number;
+}
+
+export interface PricedLineDto extends PriceLineInput {
+  rateBps: number;
+  commissionMinor: number;
 }
 
 export interface RateAsOfDto extends RateAsOfQueryDto {
@@ -27,6 +39,28 @@ export class CommissionRateQueryService {
     @Inject(RATE_REPOSITORY) private readonly rates: RateRepository,
     @Inject(CLOCK) private readonly clock: Clock,
   ) {}
+
+  /**
+   * Rate and commission of each sale line as of the sale's `paidAt` (the answer has the length and order of the input):
+   * the one pricing the ledger books at settlement and the statement reports, `commissionOf` per line (S16.R-04).
+   */
+  async priceLines(
+    lines: PriceLineInput[],
+    paidAt: Date,
+  ): Promise<PricedLineDto[]> {
+    const rates = await this.getRatesAsOf(
+      lines.map((l) => ({
+        shopId: l.shopId,
+        category: l.category,
+        validAt: paidAt,
+      })),
+    );
+    return lines.map((l, i) => ({
+      ...l,
+      rateBps: rates[i].rateBps,
+      commissionMinor: commissionOf(l.lineTotalMinor, rates[i].rateBps),
+    }));
+  }
 
   async getRatesAsOf(
     queries: RateAsOfQueryDto[],

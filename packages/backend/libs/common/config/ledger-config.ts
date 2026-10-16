@@ -7,7 +7,6 @@ import { ConfigRules, RuleCheck } from './config-rules';
  * (`stripe_secret_key`) is required by the base config; the cursor secret is checked by `ledgerSecretsRule`.
  */
 export interface LedgerConfig {
-  ledger_fee_minor: number;
   ledger_shards: number;
   ledger_lock_timeout_ms: number;
   ledger_statement_timeout_ms: number;
@@ -34,7 +33,6 @@ const int = (name: string, fallback: number, min = 1, max?: number): Key => ({
 });
 
 export const ledgerConfigKeys: Record<keyof LedgerConfig, Key> = {
-  ledger_fee_minor: int('LEDGER_FEE_MINOR', 50),
   ledger_shards: int('LEDGER_SHARDS', 32, 1, 256),
   ledger_lock_timeout_ms: int('LEDGER_LOCK_TIMEOUT_MS', 2_000),
   ledger_statement_timeout_ms: int('LEDGER_STATEMENT_TIMEOUT_MS', 5_000),

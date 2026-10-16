@@ -6,6 +6,7 @@ import {
 } from '@marketplace-sandbox/contracts';
 import { MetricsRegistry } from '@app/common/telemetry/metrics-registry';
 import type { TestUser } from '@app/test/utils/catalog-app';
+import { CommissionRateQueryService } from './application/commission-rate-query.service';
 import {
   createStatementsApp,
   type StatementsTestApp,
@@ -565,5 +566,28 @@ describe('Statements: bitemporal commission rates', () => {
       ).status,
     ).toBe(200);
     expect(await count()).toBe(before);
+  });
+
+  it('S16 AS-43: priceLines prices each line with the rate in force on paidAt, half up, and normalises the category', async () => {
+    expect((await post(electronicsBody())).status).toBe(201); // 700 bps from 2026-03-01
+    const pricing = t.app.get(CommissionRateQueryService, { strict: false });
+    const lines = [
+      { shopId: shopA, category: ' Electronics ', lineTotalMinor: 1005 },
+      { shopId: shopA, category: 'books', lineTotalMinor: 1005 },
+    ];
+    const march = await pricing.priceLines(
+      lines,
+      new Date('2026-03-15T00:00:00Z'),
+    );
+    expect(march.map((l) => [l.rateBps, l.commissionMinor])).toEqual([
+      [700, 70], // 1005 x 700 / 10000 = 70.35
+      [1000, 101], // 100.5 rounds half up
+    ]);
+    const february = await pricing.priceLines(
+      lines,
+      new Date('2026-02-15T00:00:00Z'),
+    );
+    expect(february.map((l) => l.commissionMinor)).toEqual([101, 101]);
+    expect(await pricing.priceLines([], new Date())).toEqual([]);
   });
 });

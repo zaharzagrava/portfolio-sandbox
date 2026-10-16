@@ -13,6 +13,7 @@ import { useRefreshSession } from '@/hooks/use-auth-actions';
 import { apiErrorMessage } from '@/lib/api/errors';
 import { SHOP_SLUG, slugify, useCreateShop, useMyShops, useSellerStats } from '@/lib/api/shops';
 import { formatMoney } from '@/lib/utils';
+import { BalanceCard } from './[shopId]/balance-card';
 
 /** Buyers open a shop here; that makes them a SELLER, and the page turns into the seller overview. */
 function OpenShop() {
@@ -109,6 +110,12 @@ export function SellerOverviewView() {
             <Link href="/dashboard/seller/inventory">Inventory</Link>
           </Button>
           <Button variant="outline" asChild>
+            <Link href={`/dashboard/seller/${shop.id}/payouts`}>Payouts</Link>
+          </Button>
+          <Button variant="outline" asChild>
+            <Link href={`/dashboard/seller/${shop.id}/statements`}>Statements</Link>
+          </Button>
+          <Button variant="outline" asChild>
             <Link href={`/dashboard/seller/${shop.id}/developers/api-keys`}>API keys</Link>
           </Button>
           <Button variant="outline" asChild>
@@ -129,6 +136,7 @@ export function SellerOverviewView() {
             </CardContent>
           </Card>
         ))}
+        <BalanceCard shopId={shop.id} />
       </div>
 
       <Card>

@@ -9,87 +9,90 @@ import {
 const id = (n: number) =>
   `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
 
-describe('Settlement split (largest remainder, ties to the lowest shop id)', () => {
-  it.each([
-    [1000, [1, 1, 1], [334, 333, 333]],
-    [2450, [1500, 1000], [1470, 980]],
-    [100, [1, 1, 1], [34, 33, 33]],
-    [5, [1, 1], [3, 2]],
-    [1, [1, 1, 1], [1, 0, 0]],
-    [0, [5, 5], [0, 0]],
-    [7, [0, 7], [0, 7]],
-    [99_999_999, [3, 3, 3], [33_333_333, 33_333_333, 33_333_333]],
-  ])(
-    'S14 AS-17: net %d over subtotals %j gives %j',
-    (net, subtotals, expected) => {
-      const shops = subtotals.map((s, i) => ({
-        shopId: id(i + 1),
-        subtotalMinor: s,
-      }));
-      expect(splitSettlement(net, shops).map((s) => s.shareMinor)).toEqual(
-        expected,
-      );
-    },
-  );
-
-  it('S14 AS-17: ties go to the lowest shop id whatever the input order', () => {
-    const shops = [
-      { shopId: id(3), subtotalMinor: 1 },
-      { shopId: id(1), subtotalMinor: 1 },
-      { shopId: id(2), subtotalMinor: 1 },
-    ];
-    expect(splitSettlement(1000, shops)).toEqual([
-      { shopId: id(1), shareMinor: 334 },
-      { shopId: id(2), shareMinor: 333 },
-      { shopId: id(3), shareMinor: 333 },
+describe('Settlement split (shop share = lines less commission, commission to the platform)', () => {
+  it('S14 AS-17: two shops, lines at 10 %: each shop gets its lines less commission and the platform the rest', () => {
+    const split = splitSettlement([
+      { shopId: id(1), lineTotalMinor: 2000, commissionMinor: 200 },
+      { shopId: id(2), lineTotalMinor: 500, commissionMinor: 50 },
     ]);
+    expect(split.shares).toEqual([
+      { shopId: id(1), shareMinor: 1800 },
+      { shopId: id(2), shareMinor: 450 },
+    ]);
+    expect(split.commissionMinor).toBe(250);
   });
 
-  it('S14 AS-17: is exact beyond 2^53 intermediate products', () => {
-    const shops = [
-      { shopId: id(1), subtotalMinor: 99_999_999 },
-      { shopId: id(2), subtotalMinor: 99_999_998 },
+  it('S14 AS-17: lines of one shop add up before the share is taken, and the order of the input does not matter', () => {
+    const lines = [
+      { shopId: id(2), lineTotalMinor: 1005, commissionMinor: 70 },
+      { shopId: id(1), lineTotalMinor: 100, commissionMinor: 10 },
+      { shopId: id(2), lineTotalMinor: 1005, commissionMinor: 101 },
     ];
-    const shares = splitSettlement(99_999_999, shops).map((s) => s.shareMinor);
-    expect(shares[0] + shares[1]).toBe(99_999_999);
+    const split = splitSettlement(lines);
+    expect(split.shares).toEqual([
+      { shopId: id(1), shareMinor: 90 },
+      { shopId: id(2), shareMinor: 1839 },
+    ]);
+    expect(split.commissionMinor).toBe(181);
+    expect(splitSettlement([...lines].reverse())).toEqual(split);
   });
 
-  it('S14 AS-17: shares sum to the net, are never negative and ignore input order (property)', () => {
+  it('S14 AS-17: a shop whose lines carry no money gets no share line, a zero commission gives zero', () => {
+    const split = splitSettlement([
+      { shopId: id(1), lineTotalMinor: 0, commissionMinor: 0 },
+      { shopId: id(2), lineTotalMinor: 300, commissionMinor: 0 },
+    ]);
+    expect(split.shares).toEqual([
+      { shopId: id(1), shareMinor: 0 },
+      { shopId: id(2), shareMinor: 300 },
+    ]);
+    expect(split.commissionMinor).toBe(0);
+  });
+
+  it.each([
+    [{ lineTotalMinor: -1, commissionMinor: 0 }],
+    [{ lineTotalMinor: 10, commissionMinor: 11 }],
+    [{ lineTotalMinor: 10, commissionMinor: -1 }],
+    [{ lineTotalMinor: 1.5, commissionMinor: 0 }],
+  ])('S14 AS-17: refuses the malformed line %j', (line) => {
+    expect(() => splitSettlement([{ shopId: id(1), ...line }])).toThrow(
+      RangeError,
+    );
+  });
+
+  it('S14 AS-17: refuses an order without lines', () => {
+    expect(() => splitSettlement([])).toThrow(RangeError);
+  });
+
+  it('S14 AS-17: shares and commission always add up to the lines, none is negative (property)', () => {
     fc.assert(
       fc.property(
-        fc.integer({ min: 0, max: 99_999_999 }),
-        fc.uniqueArray(
-          fc.record({
-            n: fc.integer({ min: 1, max: 1_000_000 }),
-            subtotalMinor: fc.integer({ min: 0, max: 99_999_999 }),
-          }),
-          { minLength: 1, maxLength: 30, selector: (r) => r.n },
+        fc.array(
+          fc
+            .record({
+              n: fc.integer({ min: 1, max: 5 }),
+              total: fc.integer({ min: 0, max: 99_999_999 }),
+              bps: fc.integer({ min: 0, max: 10_000 }),
+            })
+            .map((r) => ({
+              shopId: id(r.n),
+              lineTotalMinor: r.total,
+              commissionMinor: Math.floor((r.total * r.bps) / 10_000),
+            })),
+          { minLength: 1, maxLength: 30 },
         ),
-        (net, rows) => {
-          fc.pre(rows.some((r) => r.subtotalMinor > 0));
-          const shops = rows.map((r) => ({
-            shopId: id(r.n),
-            subtotalMinor: r.subtotalMinor,
-          }));
-          const a = splitSettlement(net, shops);
-          const b = splitSettlement(net, [...shops].reverse());
+        (lines) => {
+          const split = splitSettlement(lines);
+          const sum = (xs: number[]) => xs.reduce((a, b) => a + b, 0);
           return (
-            a.reduce((s, x) => s + x.shareMinor, 0) === net &&
-            a.every((x) => x.shareMinor >= 0) &&
-            JSON.stringify(a) === JSON.stringify(b)
+            sum(split.shares.map((s) => s.shareMinor)) +
+              split.commissionMinor ===
+              sum(lines.map((l) => l.lineTotalMinor)) &&
+            split.shares.every((s) => s.shareMinor >= 0)
           );
         },
       ),
     );
-  });
-
-  it('S14 AS-17: refuses subtotals that sum to zero', () => {
-    expect(() =>
-      splitSettlement(10, [
-        { shopId: id(1), subtotalMinor: 0 },
-        { shopId: id(2), subtotalMinor: 0 },
-      ]),
-    ).toThrow();
   });
 });
 

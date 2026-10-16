@@ -20,6 +20,7 @@ Domains need to run background work and recurring work (cron) without owning que
 - Handler decorator (`@JobHandler`): a domain registers a handler for a job type. Handlers are discovered at boot.
 - Worker claim loop, reaper and cron materialiser: background loops in the worker app. [code: packages/backend/apps/worker/src/worker.module.ts#WorkerModule]
 - `JobsAdminService`: operator functions `listJobs`, `getStats`, `retryDead`, `cancel`, `listSchedules`, `setScheduleEnabled`.
+- `JobsAdminService.getJob(id)`: one job as a DTO (no payload), or nothing. Together with `JobsService.enqueue`, it backs the administrator's job requests that S01 hosts (`POST /admin/jobs`, `GET /admin/jobs/:jobId`).
 - Daily schedule `jobs.partition-maintenance` (`15 3 * * *` UTC, concurrency 1): creates and drops partitions and expires idempotency keys.
 - Metrics: `job_queue_lag_seconds`, `job_outcomes_total`, `job_duration_ms`, `job_lease_expired_total`, `cron_fires_skipped_total`, `job_default_partition_rows`.
 

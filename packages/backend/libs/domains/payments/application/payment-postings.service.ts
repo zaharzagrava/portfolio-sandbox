@@ -1,8 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type { Transaction } from 'sequelize';
 import { ApiConfigService, PlatformSettings } from '@app/common/config';
-import { LEDGER_ACCOUNTS, shopIdOf } from '../domain/account';
-import { splitCapture } from '../domain/fee';
+import { LEDGER_ACCOUNTS } from '../domain/account';
 import {
   JournalInvalid,
   TransactionRequired,
@@ -68,17 +67,9 @@ export class PaymentPostingsService {
       throw this.invalid('reference_invalid');
     if (input.currency !== this.currency)
       throw this.invalid('currency_unsupported');
-    let split;
-    try {
-      split = splitCapture(
-        input.amountMinor,
-        this.config.get('ledger_fee_minor'),
-      );
-    } catch (error) {
-      if (error instanceof JournalInvalid)
-        postRejectedCounter.add(1, { reason: error.reason });
-      throw error;
-    }
+    // The whole captured amount goes to clearing; the commission is taken at settlement (S14.R-11).
+    if (!Number.isSafeInteger(input.amountMinor) || input.amountMinor <= 0)
+      throw this.invalid('line_amount_invalid');
     const result = await this.posting.post(
       {
         kind: 'SALE',
@@ -89,15 +80,11 @@ export class PaymentPostingsService {
         lines: [
           {
             accountId: LEDGER_ACCOUNTS.PROVIDER_CLEARING,
-            amountMinor: split.providerMinor,
+            amountMinor: -input.amountMinor,
           },
           {
             accountId: LEDGER_ACCOUNTS.CLEARING,
-            amountMinor: split.clearingMinor,
-          },
-          {
-            accountId: LEDGER_ACCOUNTS.PLATFORM_FEES,
-            amountMinor: split.feeMinor,
+            amountMinor: input.amountMinor,
           },
         ],
         links: {
@@ -105,7 +92,7 @@ export class PaymentPostingsService {
           orderId: input.orderId,
           paymentRef: input.paymentRef,
           userId: input.userId || null,
-          clearingMinor: split.clearingMinor,
+          clearingMinor: input.amountMinor,
           amountMinor: input.amountMinor,
         },
       },
@@ -136,10 +123,11 @@ export class PaymentPostingsService {
     const clearing = saleLines.find(
       (l) => l.accountId === LEDGER_ACCOUNTS.CLEARING,
     );
-    const fees = saleLines.find(
+    if (!provider || !clearing) throw this.invalid('sale_not_found');
+    // Sales posted before the commission moved to settlement carry a fee line of their own: reverse it with the sale.
+    const legacyFee = saleLines.find(
       (l) => l.accountId === LEDGER_ACCOUNTS.PLATFORM_FEES,
     );
-    if (!provider || !clearing || !fees) throw this.invalid('sale_not_found');
     if (input.currency !== sale.currency)
       throw this.invalid('journal_currency_mismatch');
     if (input.amountMinor !== -provider.amountMinor)
@@ -158,13 +146,14 @@ export class PaymentPostingsService {
       : null;
     const lines: { accountId: string; amountMinor: number; shard: number }[] = [
       { ...at(provider), amountMinor: -provider.amountMinor },
-      { ...at(fees), amountMinor: -fees.amountMinor },
     ];
+    if (legacyFee)
+      lines.push({ ...at(legacyFee), amountMinor: -legacyFee.amountMinor });
     if (settlement) {
-      // Settled: the clearing was already emptied; take the shops' shares back instead.
-      for (const share of await this.journals.entriesOf(settlement.id, tx))
-        if (shopIdOf(share.accountId) && share.amountMinor > 0)
-          lines.push({ ...at(share), amountMinor: -share.amountMinor });
+      // Settled: the clearing was already emptied; take back what the settlement paid out, the shops' shares and the commission.
+      for (const credit of await this.journals.entriesOf(settlement.id, tx))
+        if (credit.amountMinor > 0)
+          lines.push({ ...at(credit), amountMinor: -credit.amountMinor });
     } else {
       lines.push({ ...at(clearing), amountMinor: -clearing.amountMinor });
     }

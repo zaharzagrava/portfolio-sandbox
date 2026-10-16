@@ -111,7 +111,7 @@ describe('Payments: refund commands', () => {
         version: 4,
       });
       const lines = await ledgerOf(t.app, id);
-      expect(lines.filter((l) => l.kind === 'REFUND')).toHaveLength(3);
+      expect(lines.filter((l) => l.kind === 'REFUND')).toHaveLength(2);
       for (const kind of ['SALE', 'REFUND'])
         expect(
           lines
@@ -130,7 +130,6 @@ describe('Payments: refund commands', () => {
       ).toEqual({
         PROVIDER_CLEARING: 0,
         MARKETPLACE_CLEARING: 0,
-        PLATFORM_FEES: 0,
       });
       const events = await eventsOf(id, 'payments.payment_refunded');
       expect(events).toHaveLength(1);
@@ -176,7 +175,7 @@ describe('Payments: refund commands', () => {
       });
       expect(
         (await ledgerOf(t.app, id)).filter((l) => l.kind === 'REFUND'),
-      ).toHaveLength(3);
+      ).toHaveLength(2);
       expect(await eventsOf(id, 'payments.payment_refunded')).toHaveLength(1);
       expect(await refundJobs(id)).toHaveLength(1);
     });

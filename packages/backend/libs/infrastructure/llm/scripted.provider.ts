@@ -130,7 +130,9 @@ export class ScriptedLlmProvider implements LlmProvider {
   async complete(request: LlmRequest): Promise<LlmResult> {
     this.requests.push(structuredClone(request));
     const turn = this.take(request.model) ?? {
-      text: `summary of ${request.messages.length} messages`,
+      text:
+        embeddedReply(request) ??
+        `summary of ${request.messages.length} messages`,
     };
     if (turn.unavailable)
       throw new LlmUnavailableError('scripted overload', null);
@@ -223,6 +225,30 @@ const splitInto = (text: string, n: number): string[] => {
   return Array.from({ length: Math.ceil(text.length / size) }, (_, i) =>
     text.slice(i * size, (i + 1) * size),
   );
+};
+
+const REPLY_MARKER = 'SCRIPTED-REPLY:';
+
+/**
+ * The reply a local document carries for itself: the rest of the line after `SCRIPTED-REPLY:` in a base64 document or
+ * text block of the last user message. It lets a black-box journey pass document extraction on a keyless stack, where
+ * nothing can queue a turn (J01 G-33). Only reachable through this provider, which is refused in production.
+ */
+const embeddedReply = (request: LlmRequest): string | undefined => {
+  const last = [...request.messages].reverse().find((m) => m.role === 'user');
+  if (!last || typeof last.content === 'string') return undefined;
+  for (const block of last.content) {
+    const raw =
+      block.type === 'document' && block.source.type === 'base64'
+        ? Buffer.from(block.source.data, 'base64').toString('latin1')
+        : block.type === 'text'
+          ? block.text
+          : '';
+    const at = raw.indexOf(REPLY_MARKER);
+    if (at >= 0)
+      return raw.slice(at + REPLY_MARKER.length).split(/\r?\n/, 1)[0].trim();
+  }
+  return undefined;
 };
 
 const lastUserText = (request: LlmRequest): string => {

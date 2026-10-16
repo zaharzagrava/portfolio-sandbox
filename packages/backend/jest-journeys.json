@@ -20,6 +20,7 @@
     "^@app/common/(.*)$": "<rootDir>/libs/common/$1",
     "^@app/(core|bff|sse-gateway|worker|projector|collab|public-api|payment-processor)/(.*)$": "<rootDir>/apps/$1/src/$2"
   },
+  "globalTeardown": "<rootDir>/test/journeys/support/global-teardown.ts",
   "testTimeout": 180000,
   "maxWorkers": 1,
   "passWithNoTests": true

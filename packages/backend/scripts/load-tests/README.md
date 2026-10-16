@@ -17,7 +17,7 @@ then does that flow's work.
    - To give the payment consumers more than one partition: `KAFKA_PARTITIONS=6 pnpm kafka:topics:init` (only affects topics that don't exist yet).
 2. `creds/jwtRS256.key(.pub)` exist (`node scripts/auth/generate-keys.js`). The edge's `JWT_PUBLIC_KEY` must hold the same public key.
 3. In `packages/backend/.env` for load tests:
-   - `IS_LOAD_TEST=true`: Stripe is stubbed with a successful response.
+   - `PROVIDER_DOUBLES=enabled`: the payment and payout providers are scripted doubles (unknown ids succeed).
    - The rate limiter (S50) applies `default.read` (300/min) and `default.write` (60/min) per user or address, plus each route's own policy. Every k6 VU shares one address, so set `TRUSTED_PROXIES` to the load generator's address and send a distinct `X-Forwarded-For` per virtual user (the default limit is then per virtual user), or the run measures the limiter instead of the system.
 4. Services for the flow you're running:
    - all flows: core (`pnpm start:dev`, port from `PORT`, default in these scripts `http://localhost:8000`)

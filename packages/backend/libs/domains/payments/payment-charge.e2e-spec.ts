@@ -101,7 +101,7 @@ describe('Payments: charge processing and outcomes', () => {
       }),
     ]);
     const lines = await ledgerOf(t.app, id);
-    expect(lines).toHaveLength(3);
+    expect(lines).toHaveLength(2); // PROVIDER_CLEARING out, MARKETPLACE_CLEARING in: the commission is taken at settlement
     expect(lines.reduce((s, l) => s + Number(l.amount), 0)).toBe(0);
 
     const events = await eventsOf(id, 'payments.payment_succeeded');

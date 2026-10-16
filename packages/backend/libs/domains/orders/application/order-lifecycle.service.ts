@@ -32,6 +32,7 @@ import {
   OrderRefunded,
   OrderReserved,
 } from './events/order-events';
+import { orderPaidCounter } from '../domain/order-metrics';
 import { ReservationReleaseService } from './reservation-release.service';
 
 import './order.job-types';
@@ -99,7 +100,10 @@ export class OrderLifecycleService {
         (result.previous === 'RESERVED' || result.previous === 'PENDING')
       )
         await this.release.releaseOrder(orderId);
-      if (command.type === 'markPaid') await this.convertFlashHolds(orderId);
+      if (command.type === 'markPaid') {
+        orderPaidCounter.add();
+        await this.convertFlashHolds(orderId);
+      }
     }
     return result;
   }

@@ -62,3 +62,35 @@ Existing journey tests: none. `test/journeys/` holds only `README.md`; `jest-jou
 3. G-09, G-10, G-12, G-13, G-20 (books and balances).
 4. G-14 to G-17, G-33 (payouts), then G-18, G-19, G-36 (statements), then G-21, G-22 (notifications).
 5. G-25, G-26 (replay safety), G-34 (the journey itself), `pnpm test:journeys` green on a fresh stack.
+
+## 5. Status after the plan audit (2026-10-15)
+
+`research.md` §1 re-checked every row against the code at `272ef4b8`. Still open: G-10, G-17, G-27, G-30, G-31, G-32, G-34, G-37, W04 screens. Partly done, to verify by running the journey slice: G-01 (real-topic e2e), G-03, G-11, G-12, G-20, G-21, G-23, G-25, G-26, G-33. All others are DONE and are only exercised by the journey.
+
+### Status at the end of the build (2026-10-16)
+
+Every G-row is built and exercised by the journey (US1–US9) except the browser part of W04 (balance card, payouts page, statements tab with the "as known on" picker and CSV download), now built in `packages/web` (`lib/api/finance.ts`, `app/dashboard/seller/[shopId]/{balance-card.tsx,payouts,statements}`) and covered by `packages/web/tests/buy-to-payout.spec.ts` (AS-29). Static gates (AS-31): `tsc --noEmit`, ESLint (no error), `check:boundaries`, `check:module-graph`, `check:model-registry` are green. `check:table-ownership --strict` still lists 17 cross-domain accesses in `asset-library`, `catalog-sync`, `community`, `content`, `launch-events`, `orders` (`order-export.service.ts` reads `Product`), `seller-insights` and `seller-onboarding`; none is in `payments` or `statements`, and none was added by this journey (debt D-7/D-12, owned by those domains). The D-11 rule holds: payments does not import `BisOrderModel`, orders does not import `PaymentModel`.
+
+## Spec changes
+
+Edited so far (no `*.reviewed.json` exists for them, none touched):
+
+- `docs/spec/capabilities/S14-ledger-reconciliation.md` (G-10): R-11, R-13, R-14, R-15, B-05, B-07 and the configuration line. The flat fee (`LEDGER_FEE_MINOR`, `fee.ts`) is gone; a capture books the whole amount to clearing; settlement credits each shop its lines less commission and `PLATFORM_FEES` the commission, with the rate per line as of `paidAt` from S16; a settled refund takes back the shares and the commission. `S14 AS-11/-14/-15/-17/-18/-19/-20/-21` tests were updated in the same change.
+- `docs/spec/capabilities/S16-seller-statements.md` (G-10): the export now includes `priceLines` and `CommissionRatesModule`; R-05 says statements stores `SETTLEMENT` journals as well as `SALE` (the shop credits and the commission now live in the settlement journal).
+
+Planned behavior changes (the capability page is edited first; no `*.reviewed.json` touched): S14 (commission at settlement, refund reversal), S13 and S15 (provider doubles), S49/S53/S54 (admin jobs, consumer admin, clock). Any page with a human sign-off is listed here when the edit is made.
+
+## Sibling-spec follow-ups
+
+- **S14**: DONE in code and page (see Spec changes). Its feature folder (`specs/domains/S14-ledger-reconciliation/`: tasks, quickstart, services.md, research.md) still names `LEDGER_FEE_MINOR`, the flat fee, the 3-line `SALE` journal and largest-remainder settlement; those documents are theirs to refresh. The `ledger-balances` dedupe is a version guard (`idempotency: 'versionGuard'`, proven by S14 AS-30), not Redis `SET NX` as G-13 assumed.
+- **S16**: DONE (`priceLines`, `CommissionRatesModule`, `SETTLEMENT` journals stored). Its feature folder should adopt both; `ledger.journal_posted` facts of kind `SETTLEMENT` now carry the shop credits and `PLATFORM_FEES`, `SALE` carries none.
+- **S01 / S54**: the operator routes `GET|PUT /api/admin/clock` now live in `libs/domains/identity/api/clock-admin.controller.ts` (`IdentityOpsModule`, next to `jobs` and `consumers`) because infrastructure may not import a domain's guards (`x5-infrastructure-is-domain-agnostic`); the S54 page's `[code:]` was updated. The clock service stays in `libs/infrastructure/clock`. The two operator specs moved with their controllers (`libs/domains/identity/{clock,consumers}-admin.e2e-spec.ts`).
+- **S10**: new counter `orders_paid_total` (one per order that became `PAID`, after the commit); page R-44 and `payment-webhook.e2e-spec.ts` AS-41 updated. J01 AS-30 needs it.
+- **S10/S13 (stack config)**: `make-dev-env.sh` now writes `PLATFORM_CURRENCY=EUR`. Without it the platform currency defaults to `USD`, orders and the ledger book in USD, and `GET /shops/:id/balance?currency=EUR` reads `0`; the API must be restarted after `FORCE=1 scripts/infra/make-dev-env.sh` (or add the line to `packages/backend/.env`).
+- **S01/onboarding (stack)**: the journeys need the `document-extractor` local lambda (`pnpm --filter api start:lambda-local document-extractor`) running next to the monolith; without it no shop is ever verified (documented in `quickstart.md`).
+- **S53**: consumer admin routes (lag, pause, resume, replay, DLQ redrive), explicit creation of the `orders|payments|ledger|payouts|statements.events` topics, relay-shape e2e on a real topic message.
+- **S54**: controllable clock (`CLOCK_CONTROL`); domains' time reads go through it.
+- **S49**: `POST/GET /api/admin/jobs` with allow-list and idempotency key.
+- **W04**: balance card, payouts page (`payoutPageSchema`, `upcomingPayoutSchema`), statements tab with "as known on" picker and CSV download.
+- **S40**: has no capability page under `docs/spec/capabilities`. Its `leaderboard`, `shop-live` and `shop-sales` projectors counted `unitPriceMinor × quantity` and ignored line discounts; they now count `lineTotalMinor` (what the buyer paid, as the ledger and the statements do). Its page, when written, must say so.
+- **S28, S34, S39, S40, S43**: same-message-twice and invalid-payload tests for their `orders.events` consumers; adopt `flashsale.*` names.

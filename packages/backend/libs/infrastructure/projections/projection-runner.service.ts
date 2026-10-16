@@ -26,6 +26,8 @@ import {
 } from '@app/infrastructure/kafka/kafka-client.options';
 import { ShutdownRegistry } from '@app/infrastructure/lifecycle';
 import { coalesceLatest } from './coalesce';
+import { aliasesOf } from './consumer-groups';
+import { ConsumerPauseFlags, PAUSE_POLL_MS } from './consumer-pause';
 import { ConsumerDeclarations } from './consumer-declaration';
 import {
   classifyConsumerError,
@@ -140,6 +142,16 @@ interface ConsumerState {
   pauses: Map<string, number>;
   /** Pending resumes, cancelled on stop. */
   resumeTimers: Set<NodeJS.Timeout>;
+  /** Pause flags this consumer obeys: its own group and the canonical aliases that cover it (S53 R-22). */
+  flagNames: string[];
+  /** The operator's pause flag was set at the last look: no batch is started and the topics are not fetched. */
+  flagged: boolean;
+  /** Looks at the flag and the replay request every `PAUSE_POLL_MS`. */
+  watcher?: NodeJS.Timeout;
+  syncing: boolean;
+  touching: boolean;
+  /** Partitions this member owns right now, per topic (replay seeks only its own). */
+  assignment: Record<string, number[]>;
 }
 
 const MAX_PARTITIONS_AT_ONCE = 8;
@@ -178,6 +190,7 @@ export class ProjectionRunner implements OnModuleDestroy {
     @Inject(KAFKA_CONSUMER_OVERRIDES)
     overrides: KafkaClientOverrides = {},
     @Optional() shutdown?: ShutdownRegistry,
+    @Optional() private readonly flags?: ConsumerPauseFlags,
   ) {
     this.kafka = createKafka(config, 'projection-runner', overrides);
     shutdown?.register({
@@ -217,7 +230,15 @@ export class ProjectionRunner implements OnModuleDestroy {
       active: 0,
       pauses: new Map(),
       resumeTimers: new Set(),
+      flagNames: [projector.name, ...aliasesOf(projector.name)],
+      flagged: false,
+      syncing: false,
+      touching: false,
+      assignment: {},
     };
+    consumer.on(consumer.events.GROUP_JOIN, (event) => {
+      state.assignment = event.payload.memberAssignment;
+    });
     // Operator tools read the declaration (topics, replayable) from outside the process; Redis being down must not
     // keep a consumer from starting.
     await this.registry
@@ -241,6 +262,14 @@ export class ProjectionRunner implements OnModuleDestroy {
       eachBatch: (payload) => this.handleBatch(state, payload),
     });
     this.states.push(state);
+    if (this.flags) {
+      await this.syncFlags(state);
+      state.watcher = setInterval(
+        () => void this.syncFlags(state),
+        PAUSE_POLL_MS,
+      );
+      state.watcher.unref();
+    }
     this.logger.log(
       `consumer ${projector.name} started on ${projector.topics.join(', ')} (${projector.idempotency})`,
     );
@@ -253,6 +282,11 @@ export class ProjectionRunner implements OnModuleDestroy {
     const { batch, resolveOffset, heartbeat, isRunning, isStale } = payload;
     const { projector } = state;
     if (!isRunning() || isStale() || state.stopping) return;
+    if (state.flagged) {
+      // Paused by an operator: leave the batch unresolved so it is read again after the resume.
+      this.holdTopics(state);
+      return;
+    }
     // A batch delivered while nothing else runs belongs to the current generation.
     if (state.active === 0) state.rebalancing = false;
     state.active++;
@@ -388,6 +422,13 @@ export class ProjectionRunner implements OnModuleDestroy {
           `checkpoint store unavailable (${(error as Error).name}), read-your-writes falls back`,
         ),
       );
+    if (this.flags && !state.touching) {
+      state.touching = true;
+      await this.flags
+        .touch(state.projector.name, new Date(this.clock.nowMs()).toISOString())
+        .catch(() => undefined)
+        .finally(() => (state.touching = false));
+    }
     const now = this.clock.nowMs();
     for (const d of deliveries)
       lagSeconds.record(
@@ -420,6 +461,65 @@ export class ProjectionRunner implements OnModuleDestroy {
   ): Promise<void> {
     for (let waited = 0; state.active > 0 && waited < timeoutMs; waited += 10)
       await sleep(10);
+  }
+
+  private holdTopics(state: ConsumerState): void {
+    try {
+      state.consumer.pause(state.projector.topics.map((topic) => ({ topic })));
+    } catch (error) {
+      this.logger.warn(
+        `could not pause ${state.projector.name}: ${(error as Error).message}`,
+      );
+    }
+  }
+
+  /**
+   * Follows the operator's pause flag (Redis, so every process running the group obeys it within one poll), and
+   * carries out a pending replay: on a paused group with nothing in flight, each owned partition is moved to its
+   * target offset and the offset is committed (S53 R-22, R-23). A Redis outage keeps the last known state.
+   */
+  private async syncFlags(state: ConsumerState): Promise<void> {
+    if (!this.flags || state.stopping || state.syncing) return;
+    state.syncing = true;
+    try {
+      const paused = await this.flags.isPaused(state.flagNames);
+      if (paused !== state.flagged) {
+        state.flagged = paused;
+        if (paused) this.holdTopics(state);
+        else
+          state.consumer.resume(
+            state.projector.topics.map((topic) => ({ topic })),
+          );
+        this.logger.log(
+          `consumer ${state.projector.name} ${paused ? 'paused' : 'resumed'} by operator`,
+        );
+      }
+      if (paused && state.active === 0) await this.applyReplay(state);
+    } catch (error) {
+      this.logger.warn(
+        `pause flag of ${state.projector.name} unreadable (${(error as Error).name}), keeping the last state`,
+      );
+    } finally {
+      state.syncing = false;
+    }
+  }
+
+  private async applyReplay(state: ConsumerState): Promise<void> {
+    const flags = this.flags!;
+    const pending = await flags.pendingReplay(state.projector.name);
+    for (const [field, offset] of Object.entries(pending)) {
+      const [topic, partitionText] = field.split('|');
+      const partition = Number(partitionText);
+      if (!state.assignment[topic]?.includes(partition)) continue; // another member owns it
+      state.consumer.seek({ topic, partition, offset: String(offset) });
+      await state.consumer.commitOffsets([
+        { topic, partition, offset: String(offset) },
+      ]);
+      await flags.replayDone(state.projector.name, field);
+      this.logger.log(
+        `consumer ${state.projector.name} rewound ${field} to ${offset}`,
+      );
+    }
   }
 
   private heartbeatMs(): number {
@@ -798,6 +898,7 @@ export class ProjectionRunner implements OnModuleDestroy {
     const states = this.states.splice(0);
     for (const state of states) {
       state.stopping = true;
+      if (state.watcher) clearInterval(state.watcher);
       for (const timer of state.resumeTimers) clearTimeout(timer);
       state.resumeTimers.clear();
     }
