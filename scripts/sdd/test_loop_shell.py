@@ -46,6 +46,20 @@ class LoopShell(unittest.TestCase):
             self.assertTrue(m, fn)
             self.assertIn('UNATTENDED_RULES', m.group(0), fn)
 
+    def test_converge_runtime_proof_tasks_are_deferred_not_looped(self):
+        """J01 2026-10-16: converge added 'record the runtime proofs' after every pass, the agent could not run them, the doctor deferred them, converge added another."""
+        import tempfile
+        d = tempfile.mkdtemp()
+        t, c = os.path.join(d, 'tasks.md'), os.path.join(d, 'deferred.md')
+        open(t, 'w').write('- [ ] T080 HIGH: record the runtime proofs that T073 only deferred. Run `scripts/qa/fresh-run.sh --here`\n- [ ] T081 Fix the fresh-run.sh bug that kills the stack\n- [ ] T082 Run `pnpm test:journeys` and record the result\n- [ ] T083 HIGH: make AS-30 pass\n')
+        r = subprocess.run(['python3', os.path.join(ROOT, 'scripts/sdd/defer-runtime.py'), t, 'J01', c], capture_output=True, text=True)
+        self.assertEqual(r.stdout.split(), ['T080', 'T082'], r.stderr)
+        left = [l for l in open(t).read().split('\n') if l.startswith('- [ ]')]
+        self.assertEqual([l.split()[3] for l in left], ['T081', 'T083'])
+        self.assertIn('J01 T080', open(c).read())
+        r = subprocess.run(['python3', os.path.join(ROOT, 'scripts/sdd/defer-runtime.py'), t, 'J01', c], capture_output=True, text=True)
+        self.assertEqual(r.stdout.strip(), '')
+
 
 if __name__ == '__main__':
     unittest.main()

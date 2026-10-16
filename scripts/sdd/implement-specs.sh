@@ -273,7 +273,7 @@ LESSONS="$(lessons_block)"
 extra_context() { # $1 = capability id
   local fu; fu="$("$ROOT/scripts/sdd/followups.sh" "$1" 2>/dev/null || true)"
   printf ' %s' "Cross-spec rules. (0) The living specification in docs/spec says what the system does today. A change of behavior starts in the page of the capability (docs/spec/capabilities/<ID>-*.md): edit its rules and behaviors first, keep every \`[proof: ...]\` and \`[code: ...]\` true (python3 scripts/livespec/check.py checks them), and never create or edit a *.reviewed.json file (human sign-offs); if you change something a human signed, say so under '## Spec changes' in gaps.md. (1) Sibling follow-ups: if your work changes something another capability's spec relies on (a name, header, status code, contract), do not edit that spec; add a bullet '- **<their id>**: <what they must adopt>' under a '## Sibling-spec follow-ups' heading in this spec's gaps.md. (2) Unverified criteria: every success criterion (SC-nnn) that no automated test proves goes under 'Ops artifacts' in quickstart.md and as one row in specs/UNVERIFIED.md (spec, criterion, how to run it, status 'not run'); never describe it as verified. (3) Undoing work: never use git checkout, restore, reset, stash or clean (they are not available and could discard other work in the same file); to undo a change edit the file by hand and keep every other change in it, and if a task says to revert a file, restore only the lines it names. (4) Transactions: use TransactionRunner.run or @Transactional (S54 toolkit); when you touch a file that opens a transaction directly with sequelize.transaction, migrate that site and delete its '// S54 T037 audit' comment; never add a new direct sequelize.transaction (the gate fails if the count of direct sites in your domain rises)."
-  printf ' %s' "$UNATTENDED_RULES"
+  printf ' %s' "$UNATTENDED_RULES CONVERGE: a task ticked 'deferred to the final checkpoint' is done. Never add a task that runs, records or proves a runtime check (fresh-stack run, standalone boots, the journey or browser suite, test_doctor): this machine cannot run them, and a loop that adds one after every pass never ends. Add tasks only for code, tests and docs that are missing."
   if [[ -n "$LESSONS" ]]; then printf ' %s' "$LESSONS"; fi
   local dec; dec="$(decisions_to_apply "$1")"
   if [[ -n "$dec" ]]; then printf ' %s\n%s' "Decisions the owner changed after reading the defaults you recorded (docs/work/decisions/$1.md); they override any default in questions.md, so apply them, test them, update the living page, and mention them in your report:" "$dec"; fi
@@ -393,6 +393,8 @@ ordered_capabilities "$@" | while IFS=$'\t' read -r id domain slug title sources
     open=$(open_tasks)
     if (( open == 0 )); then
       step "$dir" "converge-$pass" "/speckit-converge $CONTEXT $LIMIT_TEXT"
+      deferred="$(python3 "$ROOT/scripts/sdd/defer-runtime.py" "$dir/tasks.md" "$id" specs/deferred-checks.md)"   # tasks that only ask for a runtime proof wait for the final checkpoint (L-022)
+      [[ -n "$deferred" ]] && echo "  converge asked for runtime proofs ($deferred): deferred to the final checkpoint"
       open=$(open_tasks)
       (( open == 0 )) && break
       echo "  converge added tasks: $open open"
