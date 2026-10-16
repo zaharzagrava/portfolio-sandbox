@@ -1,5 +1,14 @@
+import { Readable } from 'node:stream';
+import type { S3Client } from '@aws-sdk/client-s3';
+import type { ApiConfigService } from '@app/common/config';
 import { InMemoryObjectStorage } from './in-memory-object-storage';
-import { contentTypeCondition } from './object-storage.port';
+import {
+  attachmentDisposition,
+  contentTypeCondition,
+  StorageAbortedError,
+  StorageStalledError,
+} from './object-storage.port';
+import { S3ObjectStorage } from './s3-object-storage';
 
 describe('object storage port options (S29 R-4)', () => {
   it('S29 AS-06: one content type becomes an exact condition', () => {
@@ -113,5 +122,180 @@ describe('object storage port additions (S30 G1)', () => {
     const url = await storage.presignUploadPart('k', 'u1', 3, 1234);
     expect(url).toContain('part=3');
     expect(url).toContain('len=1234');
+  });
+});
+
+describe('S12 storage extension (A20)', () => {
+  const config = {
+    get: (k: string) =>
+      (
+        ({
+          s3_endpoint: 'http://s3.internal:9000',
+          media_bucket: 'media',
+          aws_access_key_id: 'ak',
+          aws_secret_access_key: 'sk',
+          aws_region: 'eu-central-1',
+          usercontent_origin: 'https://files.example.com',
+        }) as Record<string, string>
+      )[k],
+  } as unknown as ApiConfigService;
+
+  it('S12 AS-33: in-memory put honours an already-aborted signal and leaves nothing behind', async () => {
+    const storage = new InMemoryObjectStorage();
+    const ac = new AbortController();
+    ac.abort();
+    await expect(
+      storage.put('k', Readable.from([Buffer.from('a')]), 'text/csv', {
+        signal: ac.signal,
+      }),
+    ).rejects.toBeInstanceOf(StorageAbortedError);
+    expect(storage.objects.size).toBe(0);
+    expect(storage.parts.size).toBe(0);
+  });
+
+  it('S12 AS-33: in-memory put aborted mid-stream discards the parts and writes no object', async () => {
+    const storage = new InMemoryObjectStorage();
+    const ac = new AbortController();
+    const source = new Readable({ read() {} });
+    source.push(Buffer.from('partial'));
+    const put = storage.put('k', source, 'text/csv', { signal: ac.signal });
+    await new Promise((r) => setTimeout(r, 20));
+    ac.abort();
+    await expect(put).rejects.toBeInstanceOf(StorageAbortedError);
+    expect(storage.objects.size).toBe(0);
+    expect(storage.parts.size).toBe(0);
+  });
+
+  it('S12 AS-38: in-memory put aborts a stalled source after inactivityTimeoutMs', async () => {
+    const storage = new InMemoryObjectStorage();
+    const source = new Readable({ read() {} });
+    source.push(Buffer.from('partial'));
+    await expect(
+      storage.put('k', source, 'text/csv', { inactivityTimeoutMs: 50 }),
+    ).rejects.toBeInstanceOf(StorageStalledError);
+    expect(storage.objects.size).toBe(0);
+    expect(storage.parts.size).toBe(0);
+  });
+
+  it('S12 AS-38: in-memory put does not time out a source that keeps producing', async () => {
+    const storage = new InMemoryObjectStorage();
+    async function* slow() {
+      for (const c of ['a', 'b', 'c']) {
+        await new Promise((r) => setTimeout(r, 30));
+        yield Buffer.from(c);
+      }
+    }
+    await storage.put('k', Readable.from(slow()), 'text/csv', {
+      inactivityTimeoutMs: 150,
+    });
+    expect(storage.objects.get('k')!.body.toString()).toBe('abc');
+    expect(storage.parts.size).toBe(0);
+  });
+
+  it('S12 AS-33: in-memory abortMultipartUpload really discards the staged parts', async () => {
+    const storage = new InMemoryObjectStorage();
+    const { uploadId } = await storage.startMultipartUpload('k', 'text/csv');
+    storage.parts.get(uploadId)!.set(1, Buffer.from('x'));
+    await storage.abortMultipartUpload('k', uploadId);
+    expect(storage.parts.has(uploadId)).toBe(false);
+    expect(await storage.listParts('k', uploadId)).toBeNull();
+  });
+
+  describe('S3 adapter', () => {
+    const MB = 1024 * 1024;
+    function s3WithFakeClient() {
+      const storage = new S3ObjectStorage(config);
+      const sent: string[] = [];
+      jest
+        .spyOn((storage as unknown as { client: S3Client }).client, 'send')
+        .mockImplementation(((command: { constructor: { name: string } }) => {
+          const name = command.constructor.name;
+          sent.push(name);
+          if (name === 'CreateMultipartUploadCommand')
+            return Promise.resolve({ UploadId: 'u1' });
+          if (name === 'UploadPartCommand')
+            return Promise.resolve({ ETag: '"e"' });
+          return Promise.resolve({});
+        }) as never);
+      return { storage, sent };
+    }
+
+    it('S12 AS-33: put aborts the multipart upload when the signal fires and stores no object', async () => {
+      const { storage, sent } = s3WithFakeClient();
+      const ac = new AbortController();
+      const source = new Readable({ read() {} });
+      source.push(Buffer.alloc(9 * MB));
+      const put = storage.put('k', source, 'text/csv', { signal: ac.signal });
+      await new Promise((r) => setTimeout(r, 300));
+      ac.abort();
+      await expect(put).rejects.toBeInstanceOf(StorageAbortedError);
+      expect(sent).toContain('CreateMultipartUploadCommand');
+      expect(sent).toContain('AbortMultipartUploadCommand');
+      expect(sent).not.toContain('CompleteMultipartUploadCommand');
+    });
+
+    it('S12 AS-38: put aborts a stalled source after inactivityTimeoutMs', async () => {
+      const { storage, sent } = s3WithFakeClient();
+      const source = new Readable({ read() {} });
+      source.push(Buffer.alloc(9 * MB));
+      await expect(
+        storage.put('k', source, 'text/csv', { inactivityTimeoutMs: 400 }),
+      ).rejects.toBeInstanceOf(StorageStalledError);
+      expect(sent).toContain('AbortMultipartUploadCommand');
+      expect(sent).not.toContain('CompleteMultipartUploadCommand');
+    });
+
+    it('S12 AS-50: presignGet sets attachment, RFC 6266 quoted filename, text/csv and the user-content origin', async () => {
+      const storage = new S3ObjectStorage(config);
+      const url = new URL(
+        await storage.presignGet('exports/a/b.csv', {
+          downloadName: 'orders-123.csv',
+          contentType: 'text/csv',
+          userContent: true,
+        }),
+      );
+      expect(url.origin).toBe('https://files.example.com');
+      expect(url.searchParams.get('response-content-disposition')).toBe(
+        'attachment; filename="orders-123.csv"',
+      );
+      expect(url.searchParams.get('response-content-type')).toBe('text/csv');
+    });
+
+    it('S12 AS-50: presignGet keeps the storage origin without userContent and quotes the filename instead of percent-encoding it', async () => {
+      const storage = new S3ObjectStorage(config);
+      const url = new URL(
+        await storage.presignGet('k', { downloadName: 'a "b".csv' }),
+      );
+      expect(url.origin).toBe('http://s3.internal:9000');
+      expect(url.searchParams.get('response-content-disposition')).toBe(
+        'attachment; filename="a _b_.csv"; filename*=UTF-8\'\'a%20%22b%22.csv',
+      );
+    });
+  });
+
+  it('S12 AS-50: in-memory presignGet mirrors disposition, content type and origin', async () => {
+    const storage = new InMemoryObjectStorage();
+    const url = new URL(
+      await storage.presignGet('exports/x.csv', {
+        downloadName: 'orders-9.csv',
+        contentType: 'text/csv',
+        userContent: true,
+      }),
+    );
+    expect(url.origin).toBe('http://usercontent.storage.test');
+    expect(url.searchParams.get('response-content-disposition')).toBe(
+      'attachment; filename="orders-9.csv"',
+    );
+    expect(url.searchParams.get('response-content-type')).toBe('text/csv');
+  });
+
+  it('S12 AS-50: attachmentDisposition quotes per RFC 6266', () => {
+    expect(attachmentDisposition()).toBe('attachment');
+    expect(attachmentDisposition('orders-1.csv')).toBe(
+      'attachment; filename="orders-1.csv"',
+    );
+    expect(attachmentDisposition('é.csv')).toBe(
+      'attachment; filename="_.csv"; filename*=UTF-8\'\'%C3%A9.csv',
+    );
   });
 });

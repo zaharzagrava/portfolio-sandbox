@@ -21,7 +21,6 @@ import {
 import { ShopScoped } from '@app/domains/tenancy';
 import { User, UserRawDto } from '@app/domains/identity';
 import { CatalogImportService } from '../application/catalog-import.service';
-import { OrderExportService } from '@app/domains/orders';
 
 export class StartImportDto {
   @ApiProperty() @IsString() @Length(1, 200) fileName: string;
@@ -49,10 +48,7 @@ export class CompleteImportDto {
 @ApiTags('catalog-import')
 @Controller('shops/:shopId')
 export class CatalogImportController {
-  constructor(
-    private readonly imports: CatalogImportService,
-    private readonly exports: OrderExportService,
-  ) {}
+  constructor(private readonly imports: CatalogImportService) {}
 
   @ShopScoped('products.write')
   @Post('imports')
@@ -82,23 +78,5 @@ export class CatalogImportController {
     @Param('jobId', ParseUUIDPipe) jobId: string,
   ) {
     return this.imports.status(shopId, jobId);
-  }
-
-  @ShopScoped('orders.manage')
-  @Post('exports/orders')
-  export(
-    @Param('shopId', ParseUUIDPipe) shopId: string,
-    @User() user: UserRawDto,
-  ) {
-    return this.exports.request(shopId, user.id);
-  }
-
-  @ShopScoped('orders.manage')
-  @Get('exports/:jobId')
-  exportStatus(
-    @Param('shopId', ParseUUIDPipe) shopId: string,
-    @Param('jobId', ParseUUIDPipe) jobId: string,
-  ) {
-    return this.exports.status(shopId, jobId);
   }
 }

@@ -33,7 +33,6 @@ import {
 } from '@app/domains/launch-events';
 import { DynamoModule } from '@app/infrastructure/dynamo/dynamo.module';
 import { NotificationsProjectorModule } from '@app/domains/notifications';
-import { ShopMembershipModel as ShopMembership } from '@app/domains/tenancy';
 import {
   AdsProjectorModule,
   ShareLinksProjectorModule,
@@ -151,7 +150,6 @@ import { CacheModule } from '@app/infrastructure/cache/cache.module';
         LiveCoreModule,
         DynamoModule,
         NotificationsProjectorModule,
-        SequelizeModule.forFeature([ShopMembership]),
         CassandraModule,
         KafkaProducerModule,
         FeedPublisherModule,

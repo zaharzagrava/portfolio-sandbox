@@ -89,8 +89,14 @@ export class SequelizeFlashSaleRepository implements FlashSaleRepository {
         );
         await this.sequelize.query(
           `INSERT INTO "FlashSaleHistory" ("saleId", "fromStatus", "toStatus", "reason", "actor", "at")
-           VALUES (:id, NULL, 'SCHEDULED', NULL, :actor, now())`,
-          { replacements: { id, actor: `shop:${sale.shopId}` } },
+           VALUES (:id, NULL, 'SCHEDULED', NULL, :actor, COALESCE(:at::timestamptz, now()))`,
+          {
+            replacements: {
+              id,
+              actor: `shop:${sale.shopId}`,
+              at: sale.at ?? null,
+            },
+          },
         );
         return inserted;
       });

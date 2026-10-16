@@ -22,6 +22,8 @@ export interface NewFlashSale {
   admissionRatePerSecond: number;
   startsAt: Date;
   endsAt: Date;
+  /** The application clock at creation: the first history row shares the time source of later transitions. */
+  at?: Date;
 }
 
 export interface FlashSaleRecord {

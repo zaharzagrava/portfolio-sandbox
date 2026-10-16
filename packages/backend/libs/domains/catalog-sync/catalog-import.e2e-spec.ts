@@ -16,14 +16,14 @@ import { RealtimePublisher } from '@app/infrastructure/realtime';
 import { TaskQueue } from '@app/infrastructure/sqs/task-queue.port';
 import { ShopModel as Shop } from '@app/domains/tenancy';
 import { CatalogImportModule } from './catalog-import.module';
+import { CatalogImportController } from './api/catalog-import.controller';
 import { CatalogImportService } from './application/catalog-import.service';
-import { OrderExportService } from '@app/domains/orders';
 
 @Module({ imports: [CatalogImportModule, SequelizeModule.forFeature([Shop])] })
 class SpecModule {}
 
 /** SD-27 against real Postgres + Redis + MinIO (the worker's `process` called directly; S3 multipart is MinIO-native). */
-describe('Bulk catalog import & export (e2e)', () => {
+describe('Bulk catalog import (e2e)', () => {
   let app: INestApplication;
   let seeds: SeedsService;
   let imports: CatalogImportService;
@@ -178,15 +178,18 @@ describe('Bulk catalog import & export (e2e)', () => {
     expect((await imports.status(shopId, jobId)).status).toBe('FAILED');
   });
 
-  it('order export streams to S3 and returns a presigned attachment download', async () => {
-    const { shopId, userId } = await setup();
-    const exports = app.get(OrderExportService);
-    const { jobId } = await exports.request(shopId, userId);
-    expect(await exports.run(jobId)).toBe(0);
-    const status = await exports.status(shopId, jobId);
-    expect(status.status).toBe('DONE');
-    expect(status.downloadUrl).toContain(
-      'response-content-disposition=attachment',
+  // The order-export case that stood here moved to S12 (`orders/order-export.e2e-spec.ts`, AS-04 and AS-05): export is
+  // no longer served by this domain, and this module must not bring it back.
+  it('serves no order export: neither the service nor an export route is part of the import module', () => {
+    expect(() => app.get('OrderExportService', { strict: false })).toThrow();
+    const routes = Reflect.getMetadata(
+      'path',
+      CatalogImportController,
+    ) as string;
+    expect(String(routes)).not.toMatch(/export/i);
+    const handlers = Object.getOwnPropertyNames(
+      CatalogImportController.prototype,
     );
+    expect(handlers.filter((h) => /export/i.test(h))).toEqual([]);
   });
 });

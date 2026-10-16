@@ -29,7 +29,7 @@ Constitution VII.8 table: one row per acceptance scenario in [`spec.md`](spec.md
 | AS-09 batch boundaries | `order-export-streaming.e2e-spec.ts`: 2,500 identical timestamps; 0, 1,000, 1,001; straddling shop order; each line once, documented order | — | — |
 | AS-10 orders change during the run | `order-export-streaming.e2e-spec.ts`: gated storage, new order and status change; `pg_stat_activity` shows no open transaction or held connection; file contents | — | — |
 | AS-11 backpressure | `order-export-streaming.e2e-spec.ts`: 50,000 lines, storage held, ≤ 3,000 read; release, completes once | — | — |
-| AS-12 constant memory (benchmark) | not e2e: `scripts/bench/order-export-bench.ts` generates 1,000,000 lines, runs the real pipeline, records time and heap at 100k and 1M; output attached to the PR | — | — |
+| AS-12 constant memory (benchmark) | `order-export-streaming.e2e-spec.ts` (scaled: 3k vs 30k lines, heap under 200 MB and flat); the full 100k/1M measurement stays `scripts/bench/order-export-bench.ts`, output attached to the PR | — | — |
 | AS-13 CSV encoding | — | — | `domain/export-csv.spec.ts` (`it.each` over the cell table: commas, quotes, CR, LF, padding, Unicode, empty, 10,000 characters; CRLF; determinism) |
 | AS-14 formula guard | — | — | `domain/export-csv.spec.ts` (`it.each` over `= + - @ TAB CR` and neutral starts; numeric columns untouched) |
 | AS-15 progress | `order-export-progress.e2e-spec.ts`: 25,000 lines, ticking clock, 25 `progress` events then `done`, stored counters equal, replay of `done` only | — | — |

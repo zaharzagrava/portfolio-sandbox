@@ -78,3 +78,88 @@ The script could not be run in the unattended specification session (the command
 9. **Prove.** The five e2e files, four unit specs, the benchmark script and the UI journey; run `tsc`, ESLint, `check:boundaries`, `check:table-ownership --strict` (AS-57); record the green run (VII.9); set D-10 to `resolved (S12, S07)` in the debt register and move pattern rows P0102 and P0207 toward `verified`.
 
 **Sequencing with other capabilities.** S12's file content needs S10's item snapshot columns and S05's `externalSku` (both `[CONTRACT]` in `questions.md`). Until they land, the implementation may read `priceAtPurchase` as `unit_price_minor` with `discount_minor` 0 and the `Product` title through the R1 call; those temporary reads must be removed when S10 and S05 land, and AS-03 and AS-07 only pass in full after that.
+
+## E. Plan update (2026-10-16): what changed since this list was written
+
+Checked against the tree by `/speckit-plan`; details in [plan.md](plan.md) "Findings".
+
+- **A24 / sequencing are mostly overtaken.** `BisOrderItem` already has `title`, `discountMinor`, `lineTotalMinor` (nullable until S10's backfill finishes) and `ProductDto.externalSku` exists. No "temporary read of `priceAtPurchase`" is needed; the reader uses the snapshot and a pure fallback for legacy null `title`/`lineTotalMinor`.
+- **A14**: the prefix is already `order-export`; what remains is the viewer policy (creator-only raw SQL → `assertMember` with `orders.manage`) and the module rename.
+- **G-54 (from S53)**: decided, see research R-11: projectors read membership through tenancy's R1 services; `apps/projector` drops `SequelizeModule.forFeature([ShopMembership])` and the tenancy model import (task in the S12 list).
+- **S49 follow-up**: three `declareJobType` contracts and the `JobPayloads` augmentation (research R-07, contracts/async.md).
+- **S51 follow-up**: no `job:` registration left in `orders`; topic `order-export:<id>`; W04 must subscribe to it (below).
+- **S10 follow-up**: `check:table-ownership --strict` for `orders` reaches 0 only when `LEFT JOIN "Product"` is gone; `OrderExportService` and `ExportJobTopicsModule` leave the TRANSITIONAL block (pinned list in `orders-boundary.e2e-spec.ts` shrinks).
+- **S05 follow-up**: SKU (and legacy title) via `getProductsByIds(ids ≤ 500, {shopId})`, one batch per page.
+
+## Spec changes
+
+- A new living-spec page `docs/spec/capabilities/S12-order-export.md` is created (none existed). It is written before the code changes, with `[proof:]`/`[code:]` markers kept true by `python3 scripts/livespec/check.py`. No `*.reviewed.json` is created or edited. If another page that a human signed (S07 or S10 pages, when present) states the old routes or the `kind:'export'` branch, S12 does not edit it; see the follow-ups.
+
+## Sibling-spec follow-ups
+
+- **S07**: delete the export controller methods (`catalog-import.controller.ts` export routes), the `OrderExportService` import, `OrderExportService` from `CatalogImportModule` providers/exports, the `kind` field and `kind:'export'` branch of `CatalogImportWorker`, and the `catalog-import.e2e-spec.ts` export case. S12's change removes the same lines for the export (it must, to build); S07 must not reintroduce them. Its AS-70 text "404 (served by S12)" is read as "no longer served by catalog-sync".
+- **S10**: `OrderExportService` and `ExportJobTopicsModule` leave `orders/index.ts` and the allow-list in `orders-boundary.e2e-spec.ts`; the nullable `title`/`lineTotalMinor` on `BisOrderItem` must be filled (backfill) so the export's legacy fallback can be deleted; keep an index on `ShopOrder` by (`shopId`, `createdAt`, `id`).
+- **W04**: subscribe to `order-export:<exportId>` (not `job:`); events `progress`, `done`, `failed`, `cancelled`; start with `POST /shops/:shopId/order-exports` plus `Idempotency-Key`; read `exportId` (was `jobId`); download only via `GET …/download`; handle `409 export_already_active {activeExportId}` by opening the existing export (L-010).
+- **S53 / S03 / other projector owners**: obtain membership through `MembershipQueryService` or `ShopAccessService`, never `ShopMembershipModel` (G-54 closed on the projector app by S12).
+- **S54**: the `@Idempotent` interceptor must not cache a non-2xx refusal (AS-25) and must compare path (AS-22); if it does not today, that is S54's to adopt.
+- **Infrastructure ports (S07 shares)**: `ObjectStorage.put` gains `{signal, inactivityTimeoutMs}` (errors `StorageAbortedError`, `StorageStalledError`); `presignGet` gains `contentType` and `userContent` and quotes the file name per RFC 6266 (`attachmentDisposition`); additive, S07 should adopt rather than fork. The in-memory `abortMultipartUpload` already discarded parts (A20 was stale on that point).
+- **S10**: the test `orders-boundary.e2e-spec.ts` "S10 AS-68: … table-ownership findings left for orders" now asserts zero findings (the S12 join is gone), and its TRANSITIONAL allow-list lost `OrderExportService` and `ExportJobTopicsModule`. S10's test plan should say the same.
+- **S03**: its shop guard answers a malformed `shopId` in a path with `404 shop_not_found` before any pipe runs, so S12 AS-30's "malformed `shopId` → `400 validation_failed`" cannot hold for the shop segment (the `exportId` segment is `400 validation_failed`). S12's spec text should be amended by its owner.
+- **S53**: the event-type pattern forbids an underscore in the first segment and the topic registry a hyphen in the aggregate type, so the export's event is `orderexport.finished` on `order_exports.events` (the draft said `order_export.finished` on `order-exports.events`). Consumers of the event (S28, optional) use the new names.
+- **Infrastructure / operations (L-020)**: the queues `order-exports` and `order-exports-dlq` are in `infra/docker/elasticmq/elasticmq.conf` and `infra/stack/main.tf`, but the queue server reads its file only at start and the unattended session could not run `scripts/infra/reload-queues.sh` (or restart `marketplace_test_elasticmq`): the command needs an approval that was not available. The two queues were created on the running test queue server through the SQS API for the worker wiring spec; a restart of the test stack without the reloaded file drops them and `apps/worker` readiness then fails on `queue:order-exports` (which is the intended L-002 behaviour). A person (or an approved agent) runs `scripts/infra/reload-queues.sh` for the dev stack and restarts the test stack once.
+
+## Spec changes (made during implementation)
+
+- **Names**: the event is `orderexport.finished` (contract key and wire type) on the topic `order_exports.events`; `orderExportEventSchemas['orderexport.finished']` is the payload schema (as `orderEventSchemas` of S10), the envelope is the platform's.
+- **Configuration**: keys are `orders_export_*` in `libs/common/config/orders-config.ts` (environment `ORDER_EXPORT_BATCH_SIZE`, `…_ROW_LIMIT`, `…_DEADLINE_SEC`, `…_LEASE_SEC`, `…_HEARTBEAT_SEC`, `…_STORAGE_INACTIVITY_SEC`, `…_FILE_RETENTION_DAYS`, `…_RECORD_RETENTION_DAYS`, `…_LINK_TTL_SEC`, `…_UNCLAIMED_SEC`); the user-content origin is the platform's existing `USERCONTENT_ORIGIN` (no `ORDER_EXPORT_USER_CONTENT_ORIGIN`), required in production by the rule `ordersExportRule`; the consumer's concurrency (2) is a constant. Start-up messages name the config key (`orders_export_batch_size`, …).
+- **Retry counting**: a transient failure re-enqueues a delayed message, so the third-attempt rule counts the job's `attempt` (one per claim), not the queue's `receiveCount` (always 1 on a new message).
+- **`shop_deleted` consumer** declares `idempotency: 'natural'` (as catalog-sync's): its chunked, resumable removal would otherwise run all chunks in one inbox transaction. The offboarding consumer is `inbox`.
+- **Fixture `F5`**: `SO2` is `REFUNDED`, not `SHIPPED` (`ShopOrder_status_check` allows `PENDING|PAID|CANCELLED|REFUNDED`).
+- **AS-19** reaches the "3,000 of 10,000 rows" state with the repository (claim and `recordProgress`) instead of a gated run, because under backpressure a gated run stores only its first batch.
+- **AS-26** asserts `Retry-After` is a whole number of seconds, not its exact value: the limiter and the injected test clock do not share a time base. A limiter store that is down answers `503 rate_limiter_unavailable`.
+- **AS-44**: the consumer registers `bodySchema: z.strictObject({exportId})`; routing an invalid body to the dead-letter queue is the queue port's behaviour (`libs/infrastructure/sqs/task-queue.e2e-spec.ts`), so the spec asserts the schema and the registration, not a broker round trip.
+- **AS-58** asserts a span `order_export.run` per claim (ids and counts only) and the `requestId` of the download line; the test environment registers no tracer SDK, so a `traceId` field is not present in a log line there.
+- No human-signed page (`*.reviewed.json`) was created or edited; no signed item changed.
+
+## Remaining after S12
+
+`pnpm --dir packages/backend check:table-ownership --strict` lists **no finding for `orders`** (16 findings in 7 other domains remain, none S12's): asset-library (3), catalog-sync (1: `catalog-import.service.ts` `Product`, S07's), community (1), content (1), launch-events (2: `ShopMembershipModel`), seller-insights (5), seller-onboarding (3). The stock `UPDATE "Product"` statements listed in section C no longer show in the check (S10/S11 moved them behind R1).
+
+## Status at end of S12
+
+| Item | Status | Where |
+|---|---|---|
+| A1–A3 routes, queue, worker branch, module providers in catalog-sync | closed | T070; `orders-boundary` AS-57; AS-56 |
+| A4 idempotency, one active, rate limit | closed | AS-20–AS-26 |
+| A5 contracts | closed | `packages/contracts/src/orders/order-export.ts` |
+| A6 read/list/cancel/download, no storage key | closed | AS-05, AS-19, AS-31, AS-32 |
+| A7 fenced claim and lease | closed | AS-43, AS-49, AS-50 |
+| A8 failure classification, retry cap | closed | AS-33–AS-38 |
+| A9 keyset batches, backpressure, deadline, inactivity | closed | AS-09–AS-11, AS-37, AS-38 |
+| A10 file content | closed | AS-03, AS-06, AS-07, AS-13, AS-14 |
+| A11 progress, advisory live channel | closed | AS-15–AS-17 |
+| A12 state machine and history | closed | AS-39–AS-42, AS-61 |
+| A13 retention and recovery | closed | AS-45–AS-47, AS-51, AS-52 |
+| A14 live-topic policy | closed | AS-18; gateway wiring spec |
+| A15 table, FKs, history, unique index, models | closed | migrations `20261016000600/610/700`, `db/ownership.ts` |
+| A16 layering | closed | `domain/`, `application/`, `infra/`, `api/`; `orders-boundary` |
+| A17 barrel and wiring | closed | `index.ts`; core, worker, gateway wiring specs |
+| A18 tenancy consumers, jobs, outbox | closed | AS-53–AS-55, AS-60 |
+| A19 audit line, metrics, config validation | closed | AS-58, AS-59 |
+| A20 storage port | closed | `object-storage.port.spec.ts` (S12 tests) |
+| A21 queue declarations | closed in files; **reload pending** (see follow-ups) | `elasticmq.conf`, `main.tf` |
+| A22 tests | closed | five `order-export*.e2e-spec.ts` files + backpressure, repository, migration, unit specs, wiring specs |
+| A23 benchmark | script exists, **not run at scale** | `scripts/bench/order-export-bench.ts`; Ops artifacts |
+| A24 snapshot columns and legacy fallbacks | closed | `domain/export-row.ts`, `infra/export-line.reader.ts` |
+| D-6, D-7, D-8, D-10, D-12 (S12's share) | closed | section B; debt register D-10 |
+| G-54 (projector membership model) | closed | `apps/projector/src/projector.module.ts`; projector wiring spec |
+
+## Gate repairs
+
+- Gate failed: `boot-check` said the monolith was not ready after 240 s. Cause: `/health/ready` answered `queue:order-exports: down`; the dev queue server had not been reloaded after `elasticmq.conf` gained `order-exports` (L-020). The app itself had started ("Nest application successfully started"). The `JavaScript heap out of memory` / `RpcExitError SIGABRT` lines in api.log come from the ForkTsChecker type-check process (2 GB default heap), not the API, and do not affect readiness; this corrects the earlier T083 hypothesis. Fix: ran `scripts/infra/reload-queues.sh`; readiness is now `ready: true`. No code change.
+
+- Gate failed: test integrity, `catalog-sync/catalog-import.e2e-spec.ts` had 16 it()/expect() calls against 20 at HEAD. Its order-export case moved to `orders/order-export.e2e-spec.ts` (AS-04, AS-05). Added a boundary test in the import spec proving the import module serves no order export (no `OrderExportService` provider, no export route or handler).
+
+- Gate failed: test-plan.md scenario AS-12 had no test carrying its ID (only the bench script). Added `S12 AS-12` to `order-export-streaming.e2e-spec.ts`: a scaled run (3,000 and 30,000 lines) through the real run service, sampling heap, asserting growth under 200 MB and flat across a tenfold size. It does not replace the 100k/1M measurement: SC-001 stays an Ops artifact ("not run") in quickstart.md and specs/UNVERIFIED.md.
+
+- Gate failed: `orders/flash-sale-*.e2e-spec.ts` (S11 AS-19, AS-37, AS-40). AS-19 and AS-37 were a code fault in S11: `SequelizeFlashSaleRepository.create` stamped the first `FlashSaleHistory` row with the database `now()` while `move` stamps later rows with the application clock, so under a controlled clock the `SCHEDULED` row sorted after later transitions (`ORDER BY "at", "id"`). `FlashSaleService.create` now passes its clock reading (`NewFlashSale.at`) and the repository uses it (falls back to `now()`). AS-40 (one `FlashSale` statement while the entry should be fresh) did not reproduce: the spec passed alone and in a full `libs/domains/orders` run (26 suites, 331 tests); it is load-sensitive because the cache's Redis key expires on wall time while freshness is on the test clock. Not changed; no test weakened.

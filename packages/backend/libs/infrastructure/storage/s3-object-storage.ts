@@ -18,14 +18,19 @@ import { createPresignedPost } from '@aws-sdk/s3-presigned-post';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import type { Readable } from 'node:stream';
 import { ApiConfigService } from '@app/common/config';
+import { Transform } from 'node:stream';
 import {
+  attachmentDisposition,
   contentTypeCondition,
   MultipartUploadInit,
   ObjectStorage,
   PresignedPost,
+  PresignGetOptions,
   PresignPostOptions,
   PutOptions,
+  StorageAbortedError,
   StorageCallOptions,
+  StorageStalledError,
   StoredPart,
 } from './object-storage.port';
 
@@ -33,6 +38,8 @@ import {
 export class S3ObjectStorage extends ObjectStorage {
   private readonly client: S3Client;
   private readonly bucket: string;
+  /** Signs `presignGet({userContent: true})` for the separate user-content origin; the edge forwards that host. */
+  private readonly userContentClient?: S3Client;
 
   constructor(config: ApiConfigService) {
     super();
@@ -48,6 +55,14 @@ export class S3ObjectStorage extends ObjectStorage {
       ...(endpoint && { endpoint, forcePathStyle: true }),
       ...(accessKeyId && { credentials: { accessKeyId, secretAccessKey } }),
     });
+    const userContentOrigin = config.get('usercontent_origin');
+    if (userContentOrigin)
+      this.userContentClient = new S3Client({
+        region: config.get('aws_region') || 'eu-central-1',
+        endpoint: userContentOrigin,
+        forcePathStyle: true,
+        ...(accessKeyId && { credentials: { accessKeyId, secretAccessKey } }),
+      });
   }
 
   /**
@@ -115,15 +130,20 @@ export class S3ObjectStorage extends ObjectStorage {
     {
       expiresInSec = 300,
       downloadName,
-    }: { expiresInSec?: number; downloadName?: string } = {},
+      contentType,
+      userContent,
+    }: PresignGetOptions = {},
   ) {
     return getSignedUrl(
-      this.client,
+      userContent && this.userContentClient
+        ? this.userContentClient
+        : this.client,
       new GetObjectCommand({
         Bucket: this.bucket,
         Key: key,
         // User files are always served as attachments so an uploaded HTML/SVG can't execute as our origin.
-        ResponseContentDisposition: `attachment${downloadName ? `; filename="${encodeURIComponent(downloadName)}"` : ''}`,
+        ResponseContentDisposition: attachmentDisposition(downloadName),
+        ...(contentType && { ResponseContentType: contentType }),
       }),
       { expiresIn: expiresInSec },
     );
@@ -299,12 +319,44 @@ export class S3ObjectStorage extends ObjectStorage {
       );
       return;
     }
+    if (options.signal?.aborted) {
+      body.destroy();
+      throw new StorageAbortedError();
+    }
+    // Pass the source through a stream that notes every chunk, so a stalled source can be told from a slow one.
+    let reason: Error | undefined;
+    let timer: NodeJS.Timeout | undefined;
+    const arm = () => {
+      if (!options.inactivityTimeoutMs) return;
+      clearTimeout(timer);
+      timer = setTimeout(
+        () => stop(new StorageStalledError()),
+        options.inactivityTimeoutMs,
+      );
+    };
+    const piped = new Transform({
+      transform(chunk, _encoding, callback) {
+        arm();
+        callback(null, chunk);
+      },
+    });
+    const stop = (error: Error) => {
+      reason ??= error;
+      void upload.abort();
+      body.destroy();
+      piped.destroy();
+    };
+    body.on('error', (error) => stop(error));
+    body.pipe(piped);
+    arm();
+    const onAbort = () => stop(new StorageAbortedError());
+    options.signal?.addEventListener('abort', onAbort, { once: true });
     const upload = new Upload({
       client: this.client,
       params: {
         Bucket: this.bucket,
         Key: key,
-        Body: body,
+        Body: piped,
         ContentType: contentType,
         ...(options.cacheControl && { CacheControl: options.cacheControl }),
       },
@@ -315,7 +367,20 @@ export class S3ObjectStorage extends ObjectStorage {
       AbortSignal.timeout(options.timeoutMs).addEventListener('abort', () => {
         void upload.abort();
       });
-    await upload.done();
+    try {
+      await upload.done();
+    } catch (error) {
+      // lib-storage only aborts the multipart upload itself when a part fails; with a stalled source nothing fails,
+      // so abort it explicitly (idempotent) and report why we stopped, not its generic abort error.
+      if (reason)
+        await (upload as unknown as { markUploadAsAborted(): Promise<void> })
+          .markUploadAsAborted()
+          .catch(() => undefined);
+      throw reason ?? error;
+    } finally {
+      clearTimeout(timer);
+      options.signal?.removeEventListener('abort', onAbort);
+    }
   }
 
   private abort({ timeoutMs }: StorageCallOptions) {

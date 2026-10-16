@@ -26,7 +26,7 @@ import { FlagTopicsModule } from '@app/domains/experimentation';
 import { ChatTopicsModule } from '@app/domains/chat';
 import { DeliveryTopicsModule } from '@app/domains/fulfilment';
 import { ImportJobTopicsModule } from '@app/domains/catalog-sync';
-import { ExportJobTopicsModule } from '@app/domains/orders';
+import { OrderExportTopicsModule } from '@app/domains/orders';
 import { AssistantModule } from '@app/domains/assistant';
 import { AssetTopicsModule } from '@app/domains/asset-library';
 
@@ -86,7 +86,7 @@ import { AssetTopicsModule } from '@app/domains/asset-library';
     ChatTopicsModule,
     DeliveryTopicsModule,
     ImportJobTopicsModule,
-    ExportJobTopicsModule,
+    OrderExportTopicsModule,
     // SD-42: LLM replies are long-held streams too.
     AssistantModule,
     OpenTelemetryModule.forRoot({

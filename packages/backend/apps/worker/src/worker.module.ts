@@ -49,7 +49,10 @@ import {
   PaymentProcessorModule,
   PayoutsWorkerModule,
 } from '@app/domains/payments';
-import { OrdersWorkerModule } from '@app/domains/orders';
+import {
+  OrderExportWorkerModule,
+  OrdersWorkerModule,
+} from '@app/domains/orders';
 import { Module } from '@nestjs/common';
 import { OpenTelemetryModule } from 'nestjs-otel';
 import { ApiConfigModule } from '@app/common/config';
@@ -87,6 +90,7 @@ import { AuthWorkerModule } from '@app/domains/identity';
     AuthWorkerModule,
     TenancyWorkerModule,
     OrdersWorkerModule,
+    OrderExportWorkerModule,
     LedgerWorkerModule,
     PayoutsWorkerModule,
     PaymentProcessorModule,

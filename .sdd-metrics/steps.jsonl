@@ -408,3 +408,22 @@
 {"run":"20261015T175230Z","capability":"J01","step":"implement-1","start":"2026-10-16T01:06:08Z","end":"2026-10-16T01:16:29Z","seconds":621,"result":"ok","attempt":1,"reason":"ok"}
 {"run":"20261015T175230Z","capability":"J01","step":"implement-2","start":"2026-10-16T01:16:29Z","end":"2026-10-16T01:22:20Z","seconds":351,"result":"ok","attempt":1,"reason":"ok"}
 {"run":"20261015T175230Z","capability":"J01","step":"blocked","start":"2026-10-16T01:22:20Z","end":"2026-10-16T01:22:20Z","seconds":0,"result":"blocked","attempt":4,"reason":"J01: implement stuck at pass 2"}
+{"run":"20261015T175230Z","capability":"S12","step":"plan","start":"2026-10-16T01:22:24Z","end":"2026-10-16T01:26:14Z","seconds":230,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261015T175230Z","capability":"S12","step":"tasks","start":"2026-10-16T01:26:14Z","end":"2026-10-16T01:28:29Z","seconds":135,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261015T175230Z","capability":"S12","step":"analyze","start":"2026-10-16T01:28:29Z","end":"2026-10-16T01:29:10Z","seconds":41,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261015T175230Z","capability":"S12","step":"implement-1","start":"2026-10-16T01:29:10Z","end":"2026-10-16T02:34:50Z","seconds":3940,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261015T175230Z","capability":"S12","step":"implement-2","start":"2026-10-16T02:34:50Z","end":"2026-10-16T02:40:21Z","seconds":331,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261015T175230Z","capability":"S12","step":"doctor-1","start":"2026-10-16T02:40:21Z","end":"2026-10-16T02:40:46Z","seconds":25,"result":"ok","attempt":1,"reason":"ok","code_changed":false}
+{"run":"20261015T175230Z","capability":"S12","step":"converge-1","start":"2026-10-16T02:40:47Z","end":"2026-10-16T02:41:43Z","seconds":56,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261015T175230Z","capability":"S12","step":"gate","start":"2026-10-16T02:41:43Z","end":"2026-10-16T02:41:48Z","seconds":5,"result":"fail","attempt":1,"reason":"scenarios in test-plan.md with no test carrying their ID (name tests it('S12 AS-NN: ...')): AS-12"}
+{"run":"20261015T175230Z","capability":"S12","step":"repair-1","start":"2026-10-16T02:41:48Z","end":"2026-10-16T02:42:54Z","seconds":66,"result":"ok","attempt":1,"reason":"ok","code_changed":true}
+{"run":"20261015T175230Z","capability":"S12","step":"gate","start":"2026-10-16T02:42:54Z","end":"2026-10-16T02:43:04Z","seconds":10,"result":"fail","attempt":2,"reason":"test integrity: packages/backend/libs/domains/catalog-sync/catalog-import.e2e-spec.ts: fewer it()/expect() calls than at HEAD (16 < 20)"}
+{"run":"20261015T175230Z","capability":"S12","step":"repair-2","start":"2026-10-16T02:43:05Z","end":"2026-10-16T02:44:00Z","seconds":55,"result":"ok","attempt":1,"reason":"ok","code_changed":true}
+{"run":"20261015T175230Z","capability":"S12","step":"gate","start":"2026-10-16T02:44:00Z","end":"2026-10-16T02:44:30Z","seconds":30,"result":"fail","attempt":3,"reason":""}
+{"run":"20261015T175230Z","capability":"S12","step":"repair-3","start":"2026-10-16T02:44:30Z","end":"2026-10-16T02:44:55Z","seconds":25,"result":"ok","attempt":1,"reason":"ok","code_changed":true}
+{"run":"20261015T175230Z","capability":"S12","step":"gate","start":"2026-10-16T02:44:55Z","end":"2026-10-16T02:49:37Z","seconds":282,"result":"fail","attempt":4,"reason":""}
+{"run":"20261015T175230Z","capability":"S12","step":"repair-4","start":"2026-10-16T02:49:37Z","end":"2026-10-16T02:50:18Z","seconds":41,"result":"ok","attempt":1,"reason":"ok","code_changed":false}
+{"run":"20261015T175230Z","capability":"S12","step":"gate","start":"2026-10-16T02:50:18Z","end":"2026-10-16T03:00:37Z","seconds":619,"result":"fail","attempt":5,"reason":"FAIL libs/domains/orders/flash-sale-lifecycle.e2e-spec.ts (20.024 s)"}
+{"run":"20261015T175230Z","capability":"S12","step":"repair-5","start":"2026-10-16T03:00:38Z","end":"2026-10-16T03:11:14Z","seconds":636,"result":"ok","attempt":1,"reason":"ok","code_changed":true}
+{"run":"20261015T175230Z","capability":"S12","step":"gate","start":"2026-10-16T03:11:14Z","end":"2026-10-16T03:21:01Z","seconds":587,"result":"pass","attempt":6,"reason":""}
+{"run":"20261015T175230Z","capability":"S12","step":"built","start":"2026-10-16T02:40:47Z","end":"2026-10-16T03:21:01Z","seconds":2414,"result":"ok","attempt":1,"reason":"Order export (streamed CSV to object storage, progress) including moving its routes and queue out of catalog-sync (debt D-10)"}

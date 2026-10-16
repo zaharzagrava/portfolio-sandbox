@@ -43,6 +43,14 @@ export const ordersRatePolicies = definePolicies('orders', {
     key: 'custom',
     failMode: 'closed',
   },
+  /** S12 FR-004: five order-export starts per hour and shop; fail closed (a loop must not multiply 10-million-row jobs). */
+  'orders.export-start.shop': {
+    algorithm: 'slidingWindow',
+    limit: 5,
+    windowMs: 3_600_000,
+    key: 'shop',
+    failMode: 'closed',
+  },
   /** S11 FR-030: anonymous public reads of a sale, per address. */
   'orders.flash-sale-read.ip': {
     algorithm: 'slidingWindow',

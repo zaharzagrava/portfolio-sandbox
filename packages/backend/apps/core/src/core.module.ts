@@ -49,7 +49,7 @@ import {
   PaymentModule,
   PayoutsModule,
 } from '@app/domains/payments';
-import { OrdersModule } from '@app/domains/orders';
+import { OrderExportModule, OrdersModule } from '@app/domains/orders';
 import { ShopBatchReadModule, TenancyModule } from '@app/domains/tenancy';
 import { Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
@@ -127,6 +127,7 @@ import { OutboxPublisherModule } from '@app/infrastructure/outbox/outbox-publish
     ChatModule,
     TenancyModule,
     OrdersModule,
+    OrderExportModule,
     PaymentModule,
     LedgerModule,
     PayoutsModule,

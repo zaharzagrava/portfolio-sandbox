@@ -99,6 +99,7 @@ export class FlashSaleService {
         admissionRatePerSecond: input.admissionRatePerSecond,
         startsAt,
         endsAt,
+        at: now,
       });
       await this.enqueueJobs(created);
       return created;

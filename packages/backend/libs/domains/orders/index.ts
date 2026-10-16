@@ -6,8 +6,14 @@
 // Registers the orders job contracts for any app that enqueues them (e.g. auctions) without loading order.jobs.
 import './application/order.job-types';
 
+// Registers the order-export job contracts for any app that enqueues or schedules them without loading the handlers.
+import './application/order-export.job-types';
+
 export { OrdersWorkerModule } from './orders-worker.module';
 export { OrdersModule } from './orders.module';
+export { OrderExportModule } from './order-export.module';
+export { OrderExportWorkerModule } from './order-export-worker.module';
+export { OrderExportTopicsModule } from './order-export-topics.module';
 export { OrderQueryService } from './application/order-query.service';
 export type { OrderLineDto, PayableOrderDto } from './domain/order-views';
 export { OrderCommandService } from './application/order-command.service';
@@ -57,6 +63,4 @@ export { CheckoutDiscounts } from './domain/checkout-discounts.port';
 export type { DiscountableLine } from './domain/checkout-discounts.port';
 export { ORDER_MODELS } from './orders-models';
 export { CreateBisOrderDto } from './api/bis-order.dto';
-export { OrderExportService } from './application/order-export.service';
 export { OrderService } from './application/order.service';
-export { ExportJobTopicsModule } from './realtime-topics.module';

@@ -10,10 +10,9 @@ import {
   IMPORT_QUEUE,
   ShopBusyError,
 } from '../application/catalog-import.service';
-import { OrderExportService } from '@app/domains/orders';
 
 /**
- * apps/worker consumer for imports and exports. The queue's visibility is
+ * apps/worker consumer for imports. The queue's visibility is
  * extended by the consumer heartbeat while a long import runs; on shutdown
  * the AbortController stops at the next row and the checkpoint lets the
  * redelivered message resume.
@@ -29,19 +28,14 @@ export class CatalogImportWorker
   constructor(
     private readonly queue: TaskQueue,
     private readonly imports: CatalogImportService,
-    private readonly exports: OrderExportService,
   ) {}
 
   onApplicationBootstrap() {
-    this.stop = this.queue.consume<{
-      kind: 'import' | 'export';
-      jobId: string;
-    }>(
+    this.stop = this.queue.consume<{ kind: 'import'; jobId: string }>(
       IMPORT_QUEUE,
       async ({ body }) => {
         try {
-          if (body.kind === 'export') await this.exports.run(body.jobId);
-          else await this.imports.process(body.jobId, this.shutdown.signal);
+          await this.imports.process(body.jobId, this.shutdown.signal);
         } catch (error) {
           if (error instanceof ShopBusyError) {
             // Fairness: this shop already has an import running - try again in a minute instead of hogging a worker slot.

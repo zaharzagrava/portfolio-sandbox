@@ -4,6 +4,8 @@ import ShopOrder from './infra/models/shop-order.model';
 import StockReservation from './infra/models/stock-reservation.model';
 import FlashSale from './infra/models/flash-sale.model';
 import FlashSaleHistory from './infra/models/flash-sale-history.model';
+import ExportJob from './infra/models/export-job.model';
+import ExportJobHistory from './infra/models/export-job-history.model';
 
 /** The models this domain owns (no model of another owner: IX.4). Registered in every module that uses the tables. */
 export const ORDER_MODELS = [
@@ -13,4 +15,6 @@ export const ORDER_MODELS = [
   StockReservation,
   FlashSale,
   FlashSaleHistory,
+  ExportJob,
+  ExportJobHistory,
 ];

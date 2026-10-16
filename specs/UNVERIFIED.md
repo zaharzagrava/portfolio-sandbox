@@ -221,3 +221,8 @@ interviews) until its status says so. The implementation loop appends here (rule
 | S18 | SC-009: migration on a populated database blocks writes no longer than `lock_timeout` | same file (production-size copy with concurrent writers) | not run |
 | J01 | SC-001: 99% of runs show the order paid within 5 s of the payment | `specs/journeys/J01-buy-to-payout/quickstart.md`, "Ops artifacts" (100-run loop, p99 of H3) | not run |
 | J01 | SC-007: clean stack to green in under 10 minutes with 0 fixed sleeps | same file (`fresh-run.sh` + `pnpm test:journeys`, sleep grep) | not run |
+| S12 | SC-001 / AS-12: 1,000,000 order lines exported in under 5 minutes, heap under 200 MB, flat from 100,000 to 1,000,000 | `specs/domains/S12-order-export/quickstart.md`, "Ops artifacts" (`scripts/bench/order-export-bench.ts`) | not run |
+| S12 | SC-003 (100,000-line part): exactly once, documented order, byte-identical re-run | same file (benchmark `--verify`) | not run |
+| S12 | SC-005: 30 random worker kills of a 100,000-line export end in one identical file, no partial visible | same file (benchmark `--chaos 30`) | not run |
+| S12 | SC-007: progress moves at least once a second; start, finish and download of 10,000 lines in under 2 minutes | same file (W04 Playwright journey `seller-order-export.spec.ts`) | not run |
+| S12 | Edge: user-content origin serves the CSV as attachment with `nosniff`; storage lifecycle aborts incomplete uploads after one day | same file (`curl -I` on a presigned link; Terraform plan) | not run |

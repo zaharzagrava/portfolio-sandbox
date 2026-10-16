@@ -36,6 +36,17 @@ export interface OrdersConfig {
   orders_flash_public_cache_ms: number;
   orders_flash_reconcile_wait_alert_seconds: number;
   orders_flash_key_ttl_jitter: number;
+  /** S12 order export (data-model, contracts/async.md). */
+  orders_export_batch_size: number;
+  orders_export_row_limit: number;
+  orders_export_deadline_seconds: number;
+  orders_export_lease_seconds: number;
+  orders_export_heartbeat_seconds: number;
+  orders_export_storage_inactivity_seconds: number;
+  orders_export_file_retention_days: number;
+  orders_export_record_retention_days: number;
+  orders_export_link_ttl_seconds: number;
+  orders_export_unclaimed_seconds: number;
 }
 
 type Key = {
@@ -109,6 +120,22 @@ export const ordersConfigKeys: Record<keyof OrdersConfig, Key> = {
     verify: joi.number().min(0).max(0.99).required(),
     postProcess: ((v: unknown) => (v === undefined ? 0.1 : Number(v))) as never,
   },
+  orders_export_batch_size: int('ORDER_EXPORT_BATCH_SIZE', 1_000),
+  orders_export_row_limit: int('ORDER_EXPORT_ROW_LIMIT', 20_000_000),
+  orders_export_deadline_seconds: int('ORDER_EXPORT_DEADLINE_SEC', 7_200),
+  orders_export_lease_seconds: int('ORDER_EXPORT_LEASE_SEC', 300),
+  orders_export_heartbeat_seconds: int('ORDER_EXPORT_HEARTBEAT_SEC', 60),
+  orders_export_storage_inactivity_seconds: int(
+    'ORDER_EXPORT_STORAGE_INACTIVITY_SEC',
+    60,
+  ),
+  orders_export_file_retention_days: int('ORDER_EXPORT_FILE_RETENTION_DAYS', 7),
+  orders_export_record_retention_days: int(
+    'ORDER_EXPORT_RECORD_RETENTION_DAYS',
+    90,
+  ),
+  orders_export_link_ttl_seconds: int('ORDER_EXPORT_LINK_TTL_SEC', 600),
+  orders_export_unclaimed_seconds: int('ORDER_EXPORT_UNCLAIMED_SEC', 120),
 };
 
 const isSet = (value: unknown): boolean =>
@@ -166,6 +193,35 @@ export const ordersFlashRule: RuleCheck = (ctx) => {
     found.push('orders_flash_key_ttl_jitter must be below 1');
   return found;
 };
+
+/** S12 start-up rules (AS-59): the lease outlives two heartbeats, and download links need the user-content origin in production. */
+export const ordersExportRule: RuleCheck = (ctx) => {
+  const num = (key: string, fallback: number): number => {
+    const v = ctx.get(key);
+    return isSet(v) ? Number(v) : fallback;
+  };
+  const found: string[] = [];
+  if (
+    num('orders_export_lease_seconds', 300) <
+    2 * num('orders_export_heartbeat_seconds', 60)
+  )
+    found.push(
+      'orders_export_lease_seconds must be at least 2 x orders_export_heartbeat_seconds',
+    );
+  if (ctx.production && !isSet(ctx.get('usercontent_origin')))
+    found.push('usercontent_origin is required for order export downloads');
+  return found;
+};
+
+ConfigRules.register({
+  owner: 'orders',
+  keys: [
+    'orders_export_lease_seconds',
+    'orders_export_heartbeat_seconds',
+    'usercontent_origin',
+  ],
+  validate: ordersExportRule,
+});
 
 ConfigRules.register({
   owner: 'orders',

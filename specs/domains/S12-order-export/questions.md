@@ -51,3 +51,11 @@ Format: `[TAG] question → default taken → why`. BREAKING first, then CONTRAC
 - [LOCAL] Download audit is a structured log line, not a table → no new table for an operational record; the registry stays small (IX.3).
 - [LOCAL] Active-export cap is 1, not N → simplest rule that is also fair between shops; raise by configuration if ever needed.
 - [LOCAL] No filters, one format → keeps this capability small; additive later (V.7).
+
+## Found while implementing (2026-10-16): no blocker, but a human should look
+
+- [CONTRACT] The queue server must be reloaded for `order-exports` (L-020): `scripts/infra/reload-queues.sh` (dev) and a restart of `marketplace_test_elasticmq` (test) need an approval the unattended run did not have. The queues were created on the running test server through the SQS API; see gaps.md "Sibling-spec follow-ups". Until the files are reloaded, a restarted stack has no `order-exports` and the worker is (rightly) not ready.
+- [BREAKING] S12 AS-30 says a malformed `shopId` is `400 validation_failed`; S03's shop guard answers `404 shop_not_found` first. Implemented as S03 behaves; the spec sentence is the one to amend.
+- [CONTRACT] Event name `orderexport.finished` on `order_exports.events` instead of `order_export.finished` on `order-exports.events` (platform naming pattern). Decide whether S28 or any consumer needs a different name before one exists.
+- [DEFERRED T083, repair agent: runtime proof moved to the final checkpoint, see specs/deferred-checks.md; not a human decision] `scripts/qa/fresh-run.sh --here` (2026-10-16): `boot-check` said the monolith is not ready after 120 s. `/var/log/sdd/api.log` shows the watched API process dying repeatedly with `JavaScript heap out of memory` (SIGABRT), then `EADDRINUSE :::8000` on restart. No order-export, DI or wiring error appears in it. The stack was not empty (dev containers were already up), so this is not an empty-stack proof. Hypothesis (not verified): the dev runner's Node heap limit is too small for the whole monolith; needs a heap-limit raise (`--max-old-space-size`) or a fresh machine. T082 had booted the four apps on their own; this run did not re-check that.
+- [LOCAL] The benchmark and chaos run exist and ran as smoke tests (30,000 lines); the 100,000 and 1,000,000-line measurements are not run (UNVERIFIED rows stay `not run`).

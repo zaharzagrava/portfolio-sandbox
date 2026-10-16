@@ -6,11 +6,10 @@ import { RealtimeModule } from '@app/infrastructure/realtime';
 import { RateLimitModule } from '@app/infrastructure/rate-limit';
 import { catalogSyncRatePolicies } from './rate-limit-policies';
 import { CatalogImportService } from './application/catalog-import.service';
-import { OrderExportService } from '@app/domains/orders';
 import { CatalogImportController } from './api/catalog-import.controller';
 import { CatalogImportWorker } from './infra/catalog-import.worker';
 
-const SERVICES = [CatalogImportService, OrderExportService];
+const SERVICES = [CatalogImportService];
 
 /** SD-27 API (core). */
 @Module({

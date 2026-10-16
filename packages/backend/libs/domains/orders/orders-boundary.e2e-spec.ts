@@ -48,9 +48,7 @@ const TRANSITIONAL_ALLOWED = [
   'DiscountableLine',
   'ORDER_MODELS',
   'CreateBisOrderDto',
-  'OrderExportService',
   'OrderService',
-  'ExportJobTopicsModule',
 ];
 
 describe('Orders: domain boundaries', () => {
@@ -131,21 +129,62 @@ describe('Orders: domain boundaries', () => {
     expect(matching(/from '\.\.\/infra\//, layered)).toEqual([]);
   });
 
-  it('S10 AS-68: the table-ownership findings left for orders are the one S12 export join on Product', () => {
+  it('S10 AS-68: no table-ownership finding is left for orders (the S12 export join on Product is gone)', () => {
     const out = execFileSync('pnpm', ['check:table-ownership'], {
       cwd: BACKEND,
       encoding: 'utf8',
       env: { ...process.env, FORCE_COLOR: '0' },
     });
     const section = out.split(/\n(?=\S)/).find((s) => s.startsWith('orders'));
-    const lines = (section ?? '')
-      .split('\n')
-      .slice(1)
-      .filter((l) => l.trim());
-    expect(lines).toHaveLength(1);
-    expect(lines[0]).toMatch(
-      /Product\s+owned by catalog\s+libs\/domains\/orders\/application\/order-export\.service\.ts/,
+    expect(section).toBeUndefined();
+  });
+
+  describe('S12 order export', () => {
+    const exportSources = sources.filter((f) =>
+      /\/(order-export[^/]*|export-[^/]*)\.ts$/.test(f.replace(/\\/g, '/')),
     );
+
+    it('S12 AS-57: the barrel exports the three export modules and neither OrderExportService nor ExportJobTopicsModule', () => {
+      const names = exportedNames(barrel);
+      for (const name of [
+        'OrderExportModule',
+        'OrderExportWorkerModule',
+        'OrderExportTopicsModule',
+      ])
+        expect(names).toContain(name);
+      expect(names).not.toContain('OrderExportService');
+      expect(names).not.toContain('ExportJobTopicsModule');
+      expect(
+        names.filter((n) => /^(Export|OrderExport)\w*Model$/.test(n)),
+      ).toEqual([]);
+      expect(TRANSITIONAL_ALLOWED).not.toContain('OrderExportService');
+      expect(TRANSITIONAL_ALLOWED).not.toContain('ExportJobTopicsModule');
+    });
+
+    it("S12 AS-57: the export files open no transaction directly, read no other domain's table or model, and import nothing from catalog-sync", () => {
+      expect(exportSources.length).toBeGreaterThanOrEqual(15);
+      expect(matching(/\bsequelize\.transaction\(/, exportSources)).toEqual([]);
+      expect(matching(/S54 T037 audit/, exportSources)).toEqual([]);
+      expect(
+        matching(
+          /"(Product|Shop|User|Payment|ShopMembership)"|\b(ProductModel|ShopModel|UserModel|PaymentModel)\b/,
+          exportSources,
+        ),
+      ).toEqual([]);
+      expect(matching(/catalog-sync/, exportSources)).toEqual([]);
+    });
+
+    it('S12 AS-57: orders registers no job: realtime topic, and no export code is left in catalog-sync', () => {
+      expect(matching(/prefix:\s*'job'/)).toEqual([]);
+      expect(matching(/OrderExportService|ExportJobTopics\b/)).toEqual([]);
+      const catalogSync = walk(join(DOMAIN, '..', 'catalog-sync')).filter(
+        (f) => f.endsWith('.ts') && !/\.(e2e-)?spec\.ts$/.test(f),
+      );
+      expect(matching(/@app\/domains\/orders/, catalogSync)).toEqual([]);
+      expect(
+        matching(/kind:\s*'export'|kind === 'export'/, catalogSync),
+      ).toEqual([]);
+    });
   });
 
   it('S10 AS-68: the dependency rules are green', () => {

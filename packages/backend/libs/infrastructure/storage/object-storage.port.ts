@@ -44,6 +44,46 @@ export interface StoredPart {
 
 export interface PutOptions extends StorageCallOptions {
   cacheControl?: string;
+  /** S12: aborting stops a streamed upload, discards its parts and rejects with `StorageAbortedError`. */
+  signal?: AbortSignal;
+  /** S12: a streamed source that yields no bytes for this long aborts the upload and rejects with `StorageStalledError`. */
+  inactivityTimeoutMs?: number;
+}
+
+export interface PresignGetOptions {
+  expiresInSec?: number;
+  /** Sent as `Content-Disposition: attachment; filename="..."` (RFC 6266 quoting, `filename*` for other characters). */
+  downloadName?: string;
+  /** Overrides the stored `Content-Type` of the response. */
+  contentType?: string;
+  /** Sign for the separate user-content origin (`USERCONTENT_ORIGIN`) when one is configured. */
+  userContent?: boolean;
+}
+
+export class StorageAbortedError extends Error {
+  readonly name = 'StorageAbortedError';
+  constructor(message = 'upload aborted') {
+    super(message);
+  }
+}
+
+export class StorageStalledError extends Error {
+  readonly name = 'StorageStalledError';
+  constructor(message = 'upload source stalled') {
+    super(message);
+  }
+}
+
+/** RFC 6266 attachment disposition: quoted ASCII `filename`, plus `filename*` when the name has other characters. */
+export function attachmentDisposition(downloadName?: string): string {
+  if (!downloadName) return 'attachment';
+  const fallback = downloadName.replace(/[^\x20-\x7e]|["\\%]/g, '_');
+  if (fallback === downloadName) return `attachment; filename="${fallback}"`;
+  const encoded = encodeURIComponent(downloadName).replace(
+    /['()*]/g,
+    (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`,
+  );
+  return `attachment; filename="${fallback}"; filename*=UTF-8''${encoded}`;
 }
 
 /** The condition a POST policy can enforce for a closed set of content types (see `PresignPostOptions`). */
@@ -70,7 +110,7 @@ export abstract class ObjectStorage {
   abstract presignPost(options: PresignPostOptions): Promise<PresignedPost>;
   abstract presignGet(
     key: string,
-    options?: { expiresInSec?: number; downloadName?: string },
+    options?: PresignGetOptions,
   ): Promise<string>;
   /**
    * Presigned PUT whose signature covers the body's SHA-256 checksum and length:

@@ -1,12 +1,16 @@
 import { Readable } from 'node:stream';
 import {
+  attachmentDisposition,
   contentTypeCondition,
   MultipartUploadInit,
   ObjectStorage,
   PresignedPost,
+  PresignGetOptions,
   PresignPostOptions,
   PutOptions,
+  StorageAbortedError,
   StorageCallOptions,
+  StorageStalledError,
   StoredPart,
 } from './object-storage.port';
 
@@ -62,8 +66,21 @@ export class InMemoryObjectStorage extends ObjectStorage {
     };
   }
 
-  async presignGet(key: string) {
-    return `http://storage.test/${encodeURIComponent(key)}?sig=fake`;
+  presignGet(key: string, options: PresignGetOptions = {}): Promise<string> {
+    const query = new URLSearchParams({ sig: 'fake' });
+    if (options.downloadName)
+      query.set(
+        'response-content-disposition',
+        attachmentDisposition(options.downloadName),
+      );
+    if (options.contentType)
+      query.set('response-content-type', options.contentType);
+    const base = options.userContent
+      ? 'http://usercontent.storage.test'
+      : 'http://storage.test';
+    return Promise.resolve(
+      `${base}/${encodeURIComponent(key)}?${query.toString()}`,
+    );
   }
 
   async createMultipartUpload(
@@ -167,15 +184,66 @@ export class InMemoryObjectStorage extends ObjectStorage {
     contentType: string,
     options: PutOptions = {},
   ) {
+    if (options.signal?.aborted) {
+      if (!Buffer.isBuffer(body)) body.destroy();
+      throw new StorageAbortedError();
+    }
     const buffer = Buffer.isBuffer(body)
       ? body
-      : Buffer.concat(await body.toArray());
+      : await this.stageStream(key, body, options);
     this.objects.set(key, {
       body: buffer,
       contentType,
       modifiedAt: new Date(),
       cacheControl: options.cacheControl,
     });
+  }
+
+  /** Stages a stream as one part of a multipart upload; on abort or stall the upload is aborted and its parts dropped. */
+  private async stageStream(
+    key: string,
+    body: Readable,
+    options: PutOptions,
+  ): Promise<Buffer> {
+    const { uploadId } = await this.startMultipartUpload(key);
+    const chunks: Buffer[] = [];
+    let fail: (error: Error) => void = () => undefined;
+    const failed = new Promise<never>((_, reject) => {
+      fail = reject;
+    });
+    let timer: NodeJS.Timeout | undefined;
+    const arm = () => {
+      if (!options.inactivityTimeoutMs) return;
+      clearTimeout(timer);
+      timer = setTimeout(
+        () => fail(new StorageStalledError()),
+        options.inactivityTimeoutMs,
+      );
+    };
+    const onAbort = () => fail(new StorageAbortedError());
+    options.signal?.addEventListener('abort', onAbort, { once: true });
+    const read = (async () => {
+      arm();
+      for await (const chunk of body) {
+        chunks.push(Buffer.from(chunk as Buffer));
+        this.parts.get(uploadId)?.set(chunks.length, chunks[chunks.length - 1]);
+        arm();
+      }
+    })();
+    try {
+      await Promise.race([read, failed]);
+      const whole = Buffer.concat(chunks);
+      this.parts.delete(uploadId);
+      return whole;
+    } catch (error) {
+      body.destroy();
+      read.catch(() => undefined);
+      await this.abortMultipartUpload(key, uploadId);
+      throw error;
+    } finally {
+      clearTimeout(timer);
+      options.signal?.removeEventListener('abort', onAbort);
+    }
   }
 
   head(key: string, _options?: StorageCallOptions) {

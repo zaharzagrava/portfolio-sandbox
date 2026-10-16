@@ -33,6 +33,7 @@ locals {
     "webhook-deliveries.fifo" = { visibility_seconds = 180, max_receive = 5, fifo = true } # ≥ 6 × Lambda timeout (30 s)
     "media-processing"        = { visibility_seconds = 360, max_receive = 3 }              # 6 × 60 s
     "catalog-imports"         = { visibility_seconds = 300, max_receive = 3 }
+    "order-exports"           = { visibility_seconds = 300, max_receive = 3 } # S12: standard queue, message {exportId}, no FIFO options
     "video-transcode"         = { visibility_seconds = 900, max_receive = 3 }
     "integration-sync"        = { visibility_seconds = 300, max_receive = 5 }
     "integration-backfill"    = { visibility_seconds = 900, max_receive = 3 }
@@ -44,7 +45,7 @@ locals {
     "public-api-bulk-chunk"   = { visibility_seconds = 120, max_receive = 5 } # S42: one message = one chunk of 100 stock deltas
   }
 
-  domain_aggregates = ["api", "auctions", "billing", "chat", "courier", "feed", "flags", "ledger", "links", "live", "llm", "marketing", "media", "orders", "pickup", "products", "search", "shops", "stories", "usage"]
+  domain_aggregates = ["api", "auctions", "billing", "chat", "courier", "feed", "flags", "ledger", "links", "live", "llm", "marketing", "media", "order-exports", "orders", "pickup", "products", "search", "shops", "stories", "usage"]
   kafka_topics = merge(
     { "payments.requests" = var.kafka_partitions.payments, "payments.responses" = var.kafka_partitions.payments, "payments.dlq" = 1 },
     { for a in local.domain_aggregates : "${a}.events" => var.kafka_partitions.domain },

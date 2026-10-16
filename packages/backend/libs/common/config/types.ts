@@ -114,7 +114,6 @@ export class SecretsManagerConfig {
   clickhouse_password: string;
   clickhouse_database: string;
 
-
   // Showcase program (docs/showcase) - optional, defaults applied where used
   /** Event-loop p99 lag (ms) above which new requests are shed with 503. Default 200. */
   load_shedding_lag_ms?: number;
@@ -347,6 +346,17 @@ export class SecretsManagerConfig {
   orders_flash_public_cache_ms: number;
   orders_flash_reconcile_wait_alert_seconds: number;
   orders_flash_key_ttl_jitter: number;
+  /** S12: order-export settings, defaults in `orders-config.ts`, cross-rules in the orders domain. */
+  orders_export_batch_size: number;
+  orders_export_row_limit: number;
+  orders_export_deadline_seconds: number;
+  orders_export_lease_seconds: number;
+  orders_export_heartbeat_seconds: number;
+  orders_export_storage_inactivity_seconds: number;
+  orders_export_file_retention_days: number;
+  orders_export_record_retention_days: number;
+  orders_export_link_ttl_seconds: number;
+  orders_export_unclaimed_seconds: number;
   /** S21: auction settings, defaults in `auctions-config.ts`. */
   auctions_snipe_window_ms: number;
   auctions_snipe_extension_ms: number;
