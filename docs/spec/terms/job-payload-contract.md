@@ -20,6 +20,7 @@ A caller enqueues a job with a payload that has a missing field. Enqueue rejects
 
 ## Used by
 <!-- used-by:start -->
+- [S01](../capabilities/S01-auth-sessions.md): R-45
 - [S49](../capabilities/S49-job-scheduler.md): R-07
 - [invalid-schedule-error](invalid-schedule-error.md)
 - [job-attempt](job-attempt.md)

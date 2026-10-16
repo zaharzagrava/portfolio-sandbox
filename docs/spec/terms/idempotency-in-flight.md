@@ -24,6 +24,7 @@ Retry-After: 1
 
 ## Used by
 <!-- used-by:start -->
+- [S01](../capabilities/S01-auth-sessions.md): R-45
 - [idempotency-key](idempotency-key.md)
 - [idempotency-stored-answer](idempotency-stored-answer.md)
 <!-- used-by:end -->

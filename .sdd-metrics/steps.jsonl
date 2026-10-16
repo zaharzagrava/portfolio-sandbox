@@ -488,3 +488,10 @@
 {"run":"20261016T094950Z","capability":"J01","step":"implement-3","start":"2026-10-16T10:27:10Z","end":"2026-10-16T10:27:40Z","seconds":30,"result":"ok","attempt":1,"reason":"ok"}
 {"run":"20261016T094950Z","capability":"J01","step":"doctor-2","start":"2026-10-16T10:27:41Z","end":"2026-10-16T10:28:06Z","seconds":25,"result":"ok","attempt":1,"reason":"ok","code_changed":false}
 {"run":"20261016T094950Z","capability":"J01","step":"converge-1","start":"2026-10-16T10:28:07Z","end":"2026-10-16T10:28:57Z","seconds":50,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261016T111502Z","capability":"-","step":"run-start","start":"2026-10-16T11:15:02Z","end":"2026-10-16T11:15:02Z","seconds":0,"result":"ok","attempt":1,"reason":"commit=ae229449 MAX_GATE_REPAIRS=5 MAX_REPAIRS_PER_SPEC=2 REPAIR_BUDGET_MIN=60 MAX_IMPLEMENT_PASSES=10"}
+{"run":"20261016T111502Z","capability":"J01","step":"implement-1","start":"2026-10-16T11:15:03Z","end":"2026-10-16T11:15:33Z","seconds":30,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261016T111502Z","capability":"J01","step":"converge-1","start":"2026-10-16T11:15:33Z","end":"2026-10-16T11:16:03Z","seconds":30,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261016T111502Z","capability":"J01","step":"gate","start":"2026-10-16T11:16:03Z","end":"2026-10-16T11:20:37Z","seconds":274,"result":"fail","attempt":1,"reason":"FAIL test/journeys/buy-to-payout.journey-spec.ts (6.261 s)"}
+{"run":"20261016T111502Z","capability":"J01","step":"repair-1","start":"2026-10-16T11:20:37Z","end":"2026-10-16T11:30:23Z","seconds":586,"result":"ok","attempt":1,"reason":"ok","code_changed":false}
+{"run":"20261016T111502Z","capability":"J01","step":"gate","start":"2026-10-16T11:30:23Z","end":"2026-10-16T11:39:40Z","seconds":557,"result":"pass","attempt":2,"reason":"","flake":true}
+{"run":"20261016T111502Z","capability":"J01","step":"built","start":"2026-10-16T11:15:03Z","end":"2026-10-16T11:39:40Z","seconds":1477,"result":"ok","attempt":1,"reason":"Buyer pays for a multi-shop order; order paid → ledger journals → settlement → seller payout → monthly statement; buyer and sellers notified"}

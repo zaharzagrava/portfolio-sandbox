@@ -26,6 +26,7 @@ A seller has a product marked as sandbox (illustrative). A buyer search that wou
 - [S32](../capabilities/S32-product-search.md): R-06, R-15
 - [S34](../capabilities/S34-recommendations.md): R-03
 - [S35](../capabilities/S35-trending.md): R-08
+- [S46](../capabilities/S46-shopping-assistant.md): R-24
 - [W02](../capabilities/W02-storefront-discovery.md): R-18
 - [search-index](../concepts/search-index.md): C-04
 - [known-gaps](known-gaps.md)

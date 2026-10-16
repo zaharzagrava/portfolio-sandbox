@@ -25,7 +25,7 @@ SHOP_<B>              +3980
 
 ## Used by
 <!-- used-by:start -->
-- [S14](../capabilities/S14-ledger-reconciliation.md): R-14
+- [S14](../capabilities/S14-ledger-reconciliation.md): R-11, R-14
 - [clawback](clawback.md)
 - [job](job.md)
 - [ledger-jobs](ledger-jobs.md)

@@ -53,6 +53,7 @@ request 4     -> 429
 - [post-csp-reports](post-csp-reports.md)
 - [protected-route](protected-route.md)
 - [put-cart-items](put-cart-items.md)
+- [rate-limit-cost-resolver](rate-limit-cost-resolver.md)
 - [rate-limit-counter-store](rate-limit-counter-store.md)
 - [rate-limit-exemption](rate-limit-exemption.md)
 - [rate-limit-fail-mode](rate-limit-fail-mode.md)

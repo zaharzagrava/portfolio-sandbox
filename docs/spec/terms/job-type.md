@@ -20,6 +20,7 @@ A job type is the name that says what kind of work a job is. A domain registers 
 
 ## Used by
 <!-- used-by:start -->
+- [S01](../capabilities/S01-auth-sessions.md): R-45
 - [S49](../capabilities/S49-job-scheduler.md): R-05, B-04
 - [idempotency-key-conflict-error](idempotency-key-conflict-error.md)
 - [job-claim](job-claim.md)

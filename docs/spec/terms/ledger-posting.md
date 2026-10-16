@@ -21,7 +21,7 @@ The provider answers "succeeded" for the order's charge. The payment moves `PEND
 ## Used by
 <!-- used-by:start -->
 - [S13](../capabilities/S13-payment-intents.md): B-08
-- [S14](../capabilities/S14-ledger-reconciliation.md): R-06, R-11, R-21, R-31, R-41, B-03, B-04
+- [S14](../capabilities/S14-ledger-reconciliation.md): R-06, R-21, R-31, R-41, B-03, B-04
 - [account-unknown](account-unknown.md)
 - [adjusted-resolution](adjusted-resolution.md)
 - [aggregate-rows](aggregate-rows.md)

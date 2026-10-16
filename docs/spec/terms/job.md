@@ -20,7 +20,7 @@ A capability calls `JobsService.enqueue(type, payload, { idempotencyKey: 'K' })`
 
 ## Used by
 <!-- used-by:start -->
-- [S01](../capabilities/S01-auth-sessions.md): R-44
+- [S01](../capabilities/S01-auth-sessions.md): R-44, R-45
 - [S10](../capabilities/S10-cart-checkout.md): B-17
 - [S14](../capabilities/S14-ledger-reconciliation.md): R-34, R-43
 - [S49](../capabilities/S49-job-scheduler.md): R-01

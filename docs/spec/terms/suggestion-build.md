@@ -31,6 +31,7 @@ Two builds overlap and the older one finishes last. The pointer stays on the new
 - [job-lease](job-lease.md)
 - [popularity-floor](popularity-floor.md)
 - [search-log](search-log.md)
+- [suggest-snapshot](suggest-snapshot.md)
 - [suggestion-blocklist](suggestion-blocklist.md)
 - [version-pointer](version-pointer.md)
 <!-- used-by:end -->

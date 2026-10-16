@@ -21,6 +21,7 @@ Discussions is one of [the tabs on the product page](product-page-tabs.md), next
 
 ## Used by
 <!-- used-by:start -->
+- [W02](../capabilities/W02-storefront-discovery.md): B-21
 - [html-allow-list-sanitiser](html-allow-list-sanitiser.md)
 - [pickup-near-me](pickup-near-me.md)
 - [product-page-tabs](product-page-tabs.md)
