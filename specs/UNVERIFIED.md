@@ -245,3 +245,5 @@ interviews) until its status says so. The implementation loop appends here (rule
 | S27 | SC-001 (real CDN and Next.js part): a change is visible through the CDN within 60 s | same file (publish on a deployed stack, poll the CDN URL) | not run |
 | S22 | SC-004: 20,000 concurrent buyers: join p99 < 100 ms, hold p99 < 150 ms, seat map p99 < 50 ms, no relational hold/queue traffic | `specs/domains/S22-booking/quickstart.md`, "Ops artifacts" (`pnpm loadtest:launch-event`) | not run |
 | S22 | SC-009: displayed wait within 1.5x of actual wait for 90% of buyers in a steady-rate run | same file (steady-rate k6 run comparing `etaSeconds`) | not run |
+| S23 | SC-003: a posted comment reaches 99% of connected viewers' batches within 1 s at 5,000 comments/s | `specs/domains/S23-live-stream/quickstart.md`, "Ops artifacts" (`pnpm loadtest:live-stream`) | not run |
+| S23 | SC-014: one gateway instance carries 50,000 concurrent viewers per stream with one upstream subscription | same file (k6 SSE run with the connection count raised on a deployed gateway) | not run |

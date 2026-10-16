@@ -537,3 +537,6 @@
 {"run":"20261016T111502Z","capability":"S22","step":"repair-2","start":"2026-10-16T17:17:55Z","end":"2026-10-16T17:19:40Z","seconds":105,"result":"ok","attempt":1,"reason":"ok","code_changed":true}
 {"run":"20261016T111502Z","capability":"S22","step":"gate","start":"2026-10-16T17:19:40Z","end":"2026-10-16T17:25:24Z","seconds":344,"result":"pass","attempt":3,"reason":""}
 {"run":"20261016T111502Z","capability":"S22","step":"built","start":"2026-10-16T15:52:39Z","end":"2026-10-16T17:25:24Z","seconds":5565,"result":"ok","attempt":1,"reason":"Launch-event booking: waiting room, admission tokens, seat holds, booking confirm, seat map, ticket limits"}
+{"run":"20261016T111502Z","capability":"S23","step":"plan","start":"2026-10-16T17:25:48Z","end":"2026-10-16T17:29:13Z","seconds":205,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261016T111502Z","capability":"S23","step":"tasks","start":"2026-10-16T17:29:13Z","end":"2026-10-16T17:30:49Z","seconds":96,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261016T111502Z","capability":"S23","step":"analyze","start":"2026-10-16T17:30:49Z","end":"2026-10-16T17:31:24Z","seconds":35,"result":"ok","attempt":1,"reason":"ok"}

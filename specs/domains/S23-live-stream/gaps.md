@@ -89,4 +89,27 @@ Target state: `check:table-ownership --strict` reports nothing for `launch-event
 - `packages/contracts`: add the schemas named in `spec.md` (Provides) and `live-reducer.ts`; event schemas for `live.comment_removed` v2, `live.reactions_aggregated`, `live.stream_started`, `live.stream_ended`.
 - `docs/work/architecture/domain-map.md` `launch-events` "Emits": add the new events and v2.
 - S22 coordination: remove the `stream` prefix from the shared topics file; keep `LaunchEventTopicsModule` for `event` and `queue`.
-- S51 coordination: `TopicSubscriber` export from the infrastructure realtime lib (until then the gateway module keeps a local adapter behind the same interface).
+- S51 coordination: `TopicSubscriber` export from the infrastructure realtime lib (until then the gateway module keeps a local adapter behind the same interface). **Update (plan time):** `TopicSubscriber` is exported and the batcher already injects it; no local adapter is needed.
+
+## 5. Follow-ups from already-built specs (planned, see plan.md)
+
+| ID | From | Item | Required change |
+|---|---|---|---|
+| G-28 | S03 | Direct tenancy models and raw SQL | None remain in the controller (it already uses `ShopAccessService`); verify `check:table-ownership` is clean for `launch-events`, drop `forFeature([ShopMembership])` if still present, and add the `403 shop_suspended` / `409 shop_offboarding` cases to `live-streams.e2e-spec.ts` (create, start, pin, mute). |
+| G-29 | S49 | `declareJobType`, `InvalidScheduleError` | `application/live.job-types.ts` for `launch-events.live-reconcile`; the schedule bootstrap catches `InvalidScheduleError`. |
+| G-30 | S51 | `TopicSubscriber`, `livefeed` prefix, fixed sleeps at `live.e2e-spec.ts:57,79,93,109,111` | Batcher keeps `TopicSubscriber`; the old spec is replaced by `live-delivery.e2e-spec.ts` with a polling helper and the injected clock; no fixed sleep remains. |
+| G-31 | IX.4 | `LiveStream.shopId` has a foreign key to `Shop` (migration `20261001240000`) | New migration drops the constraint. |
+| G-32 | Docs | No `docs/spec/capabilities/S23-*.md` page exists | Create the page before code (rules, behaviours, `[proof]`/`[code]` markers); `python3 scripts/livespec/check.py` must pass. |
+
+## Spec changes
+
+No human-signed file (`*.reviewed.json`) exists for S23 or is touched. One text deviation inside `spec.md`, recorded for the human: the outbox topic for `live.stream_started` / `live.stream_ended` is written `launch-events.events`; the implementation uses `launch_events.events` (aggregate type `launch_events`), as S22 settled (aggregate types cannot contain `-`).
+
+## Sibling-spec follow-ups
+
+- **S22**: `api/realtime-topics.ts` loses its `stream` prefix (declared in `RealtimeTopicPrefixes` and defined in the registry); `LaunchEventTopics` keeps only `event` and `queue`. Anything of S22 that asserted the `stream` route in the shared module must stop; S23 registers it in `LiveTopicsModule`.
+- **S28**: may consume `live.stream_started` / `live.stream_ended` on topic `launch_events.events` (payloads in `contracts/events-and-realtime.md`); no notification is produced by S23.
+- **S40**: may read `live.reactions_aggregated` v1 `{streamId, second, reactions}` from the event stream; `live.comment_removed` is now v2 (`reason: 'moderator'|'auto'`, `actorId?`, `score?`).
+- **S05**: relies on `ProductQueryService.getProductsByIds([id], { shopId })` returning archived products with their `status` (or omitting them); both lead to `422 product_not_pinnable`.
+- **S50**: new policies `live.snapshot.ip` and `live.events.ip` are declared by `launch-events` (registry stays decentralised); `rate-limit.types.ts` needs no edit.
+- **J03**: consumes the stream routes (now under `/shops/:shopId/live/...` for staff), `live.stream_started`, the event connection, `stats` and the pin.
