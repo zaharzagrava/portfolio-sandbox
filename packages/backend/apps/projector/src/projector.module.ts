@@ -37,11 +37,7 @@ import {
   ShareLinksProjectorModule,
 } from '@app/domains/marketing';
 import { MediaProjectorModule, VideoProjectorModule } from '@app/domains/media';
-import {
-  FeedFanoutConsumer,
-  ProductFeedProjector,
-  FeedPublisherModule,
-} from '@app/domains/community';
+import { FeedProjectorsModule } from '@app/domains/community';
 import { CassandraModule } from '@app/infrastructure/cassandra/cassandra.module';
 import { KafkaProducerModule } from '@app/infrastructure/kafka/kafka-producer.module';
 import { BillingConsumerModule } from '@app/domains/billing';
@@ -95,8 +91,7 @@ import { CacheModule } from '@app/infrastructure/cache/cache.module';
         ...SearchProjectorModule.projectors,
         ...paymentsProjectors,
         ...BillingConsumerModule.projectors,
-        FeedFanoutConsumer,
-        ProductFeedProjector,
+        ...FeedProjectorsModule.projectors,
         ...ShareLinksProjectorModule.projectors,
         ...AdsProjectorModule.projectors,
         ...MediaProjectorModule.projectors,
@@ -156,7 +151,7 @@ import { CacheModule } from '@app/infrastructure/cache/cache.module';
         NotificationsProjectorModule,
         CassandraModule,
         KafkaProducerModule,
-        FeedPublisherModule,
+        FeedProjectorsModule,
         ClickHouseModule,
         ProductQueryModule,
         ElasticsearchModule,

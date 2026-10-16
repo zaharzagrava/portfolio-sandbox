@@ -21,6 +21,7 @@ import { autocompleteConfigKeys } from './autocomplete-config';
 import { recommendationsConfigKeys } from './recommendations-config';
 import { trendingConfigKeys } from './trending-config';
 import { discussionsConfigKeys } from './discussions-config';
+import { feedConfigKeys } from './feed-config';
 import { shareLinksConfigKeys } from './share-links-config';
 import { flagsConfigKeys } from './flags-config';
 import { knowledgeConfigKeys } from './knowledge-config';
@@ -634,6 +635,7 @@ export class ApiConfigService {
           ...recommendationsConfigKeys,
           ...trendingConfigKeys,
           ...discussionsConfigKeys,
+          ...feedConfigKeys,
           ...shareLinksConfigKeys,
           ...flagsConfigKeys,
           ...knowledgeConfigKeys,

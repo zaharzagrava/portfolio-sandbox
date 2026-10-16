@@ -1,9 +1,8 @@
 /**
- * k-way merge of timelines that are each already sorted newest-first
- * (lesson 10/05 #9: precomputed timeline ⊕ celebrities' recent items).
- * Entries are `<ms>|<itemId>`; a binary max-heap keyed by ms keeps it
- * O(total · log k) - with dozens of followed celebrities, re-sorting the
- * concatenation every page would waste work on items we never return.
+ * k-way merge of timelines (S26 D2, AS-18/26/31). Every list holds entries `(ms, itemId)` where `itemId` is the
+ * sortable item id; the global order is `ms` descending, then `itemId` descending, so equal milliseconds are ordered
+ * deterministically. Duplicates (the same item id in several lists) are returned once. The cursor is the last entry of
+ * the previous page and is exclusive. A binary heap keeps it O(total log k).
  */
 export interface TimelineEntry {
   ms: number;
@@ -12,26 +11,50 @@ export interface TimelineEntry {
 
 export const encodeEntry = (e: TimelineEntry) => `${e.ms}|${e.itemId}`;
 export const decodeEntry = (raw: string): TimelineEntry => {
-  const [ms, itemId] = raw.split('|');
-  return { ms: Number(ms), itemId };
+  const sep = raw.indexOf('|');
+  return { ms: Number(raw.slice(0, sep)), itemId: raw.slice(sep + 1) };
 };
 
+/** Negative when `a` is newer than `b` (comes first), positive when older, 0 when the same position. */
+export function compareEntries(a: TimelineEntry, b: TimelineEntry): number {
+  if (a.ms !== b.ms) return a.ms > b.ms ? -1 : 1;
+  if (a.itemId === b.itemId) return 0;
+  return a.itemId > b.itemId ? -1 : 1;
+}
+
+interface Node {
+  entry: TimelineEntry;
+  list: TimelineEntry[];
+  index: number;
+}
+
+/**
+ * @param before exclusive cursor: an entry (resume after it), or a number of milliseconds (entries strictly older).
+ */
 export function mergeNewestFirst(
-  lists: TimelineEntry[][],
+  lists: readonly (readonly TimelineEntry[])[],
   limit: number,
-  before = Number.POSITIVE_INFINITY,
+  before?: TimelineEntry | number,
 ): TimelineEntry[] {
-  const heap: { entry: TimelineEntry; list: number; index: number }[] = [];
-  const push = (node: (typeof heap)[number]) => {
+  if (limit <= 0) return [];
+  const isAfterCursor = (e: TimelineEntry): boolean => {
+    if (before === undefined) return true;
+    if (typeof before === 'number') return e.ms < before;
+    return compareEntries(e, before) > 0;
+  };
+
+  const heap: Node[] = [];
+  const higher = (a: Node, b: Node) => compareEntries(a.entry, b.entry) < 0;
+  const push = (node: Node) => {
     heap.push(node);
     for (let i = heap.length - 1; i > 0;) {
       const parent = (i - 1) >> 1;
-      if (heap[parent].entry.ms >= heap[i].entry.ms) break;
+      if (!higher(heap[i], heap[parent])) break;
       [heap[parent], heap[i]] = [heap[i], heap[parent]];
       i = parent;
     }
   };
-  const pop = () => {
+  const pop = (): Node => {
     const top = heap[0];
     const last = heap.pop()!;
     if (heap.length) {
@@ -39,21 +62,29 @@ export function mergeNewestFirst(
       for (let i = 0; ;) {
         const l = 2 * i + 1;
         const r = l + 1;
-        let max = i;
-        if (l < heap.length && heap[l].entry.ms > heap[max].entry.ms) max = l;
-        if (r < heap.length && heap[r].entry.ms > heap[max].entry.ms) max = r;
-        if (max === i) break;
-        [heap[max], heap[i]] = [heap[i], heap[max]];
-        i = max;
+        let best = i;
+        if (l < heap.length && higher(heap[l], heap[best])) best = l;
+        if (r < heap.length && higher(heap[r], heap[best])) best = r;
+        if (best === i) break;
+        [heap[best], heap[i]] = [heap[i], heap[best]];
+        i = best;
       }
     }
     return top;
   };
 
-  lists.forEach((list, li) => {
-    const start = list.findIndex((e) => e.ms < before);
-    if (start >= 0) push({ entry: list[start], list: li, index: start });
-  });
+  for (const raw of lists) {
+    // Pushes may arrive in any order; the heap needs each list sorted.
+    let list = raw as TimelineEntry[];
+    for (let i = 1; i < list.length; i++) {
+      if (compareEntries(list[i - 1], list[i]) > 0) {
+        list = [...raw].sort(compareEntries);
+        break;
+      }
+    }
+    const start = list.findIndex(isAfterCursor);
+    if (start >= 0) push({ entry: list[start], list, index: start });
+  }
 
   const out: TimelineEntry[] = [];
   const seen = new Set<string>();
@@ -63,8 +94,8 @@ export function mergeNewestFirst(
       seen.add(entry.itemId);
       out.push(entry);
     }
-    if (index + 1 < lists[list].length)
-      push({ entry: lists[list][index + 1], list, index: index + 1 });
+    if (index + 1 < list.length)
+      push({ entry: list[index + 1], list, index: index + 1 });
   }
   return out;
 }

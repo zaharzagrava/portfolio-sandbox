@@ -1,5 +1,4 @@
 import {
-  BadRequestException,
   Controller,
   Delete,
   Get,
@@ -9,50 +8,95 @@ import {
   Query,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
+import type {
+  FeedPage,
+  FollowStatus,
+  FollowingPage,
+} from '@marketplace-sandbox/contracts';
 import { Firewall, User, UserRawDto } from '@app/domains/identity';
-import { FeedService } from '../application/feed.service';
+import { RateLimit } from '@app/infrastructure/rate-limit';
+import { FeedReadService } from '../application/feed-read.service';
+import {
+  FOLLOWING_DEFAULT_LIMIT,
+  FOLLOWING_MAX_LIMIT,
+  FollowService,
+} from '../application/follow.service';
+import {
+  AccountParamDto,
+  FollowStatusQueryDto,
+  PageQueryDto,
+  pageLimit,
+  splitAccountIds,
+} from './feed.dto';
 
-const ACCOUNT_ID =
-  /^(shop|user):[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+const FEED_DEFAULT_LIMIT = 30;
+const FEED_MAX_LIMIT = 50;
 
+/** Follow graph and home feed (S26): thin; validation, rules and storage live in the application and infra layers. */
 @ApiTags('feed')
 @Controller()
 export class FeedController {
-  constructor(private readonly feed: FeedService) {}
+  constructor(
+    private readonly follows: FollowService,
+    private readonly reads: FeedReadService,
+  ) {}
 
   @Firewall()
+  @RateLimit('feed.read')
   @Get('feed')
-  timeline(@User() user: UserRawDto, @Query('before') before?: string) {
-    return this.feed.timeline(user.id, 30, before ? Number(before) : undefined);
+  feed(
+    @User() user: UserRawDto,
+    @Query() query: PageQueryDto,
+  ): Promise<FeedPage> {
+    return this.reads.page(
+      user.id,
+      pageLimit(query.limit, FEED_DEFAULT_LIMIT, FEED_MAX_LIMIT),
+      query.cursor,
+    );
   }
 
   @Firewall()
+  @RateLimit('follow.write')
   @HttpCode(204)
   @Post('follow/:accountId')
-  follow(@User() user: UserRawDto, @Param('accountId') accountId: string) {
-    if (!ACCOUNT_ID.test(accountId))
-      throw new BadRequestException(
-        'accountId must be shop:<uuid> or user:<uuid>',
-      );
-    if (accountId === `user:${user.id}`)
-      throw new BadRequestException("You can't follow yourself");
-    return this.feed.follow(user.id, accountId);
+  async follow(
+    @User() user: UserRawDto,
+    @Param() params: AccountParamDto,
+  ): Promise<void> {
+    await this.follows.follow(user.id, params.accountId);
   }
 
   @Firewall()
+  @RateLimit('follow.write')
   @HttpCode(204)
   @Delete('follow/:accountId')
-  unfollow(@User() user: UserRawDto, @Param('accountId') accountId: string) {
-    if (!ACCOUNT_ID.test(accountId))
-      throw new BadRequestException(
-        'accountId must be shop:<uuid> or user:<uuid>',
-      );
-    return this.feed.unfollow(user.id, accountId);
+  async unfollow(
+    @User() user: UserRawDto,
+    @Param() params: AccountParamDto,
+  ): Promise<void> {
+    await this.follows.unfollow(user.id, params.accountId);
   }
 
   @Firewall()
   @Get('me/following')
-  following(@User() user: UserRawDto) {
-    return this.feed.following(user.id);
+  following(
+    @User() user: UserRawDto,
+    @Query() query: PageQueryDto,
+  ): Promise<FollowingPage> {
+    return this.follows.following(
+      user.id,
+      pageLimit(query.limit, FOLLOWING_DEFAULT_LIMIT, FOLLOWING_MAX_LIMIT),
+      query.cursor,
+    );
+  }
+
+  @Firewall()
+  @RateLimit('feed.read')
+  @Get('follow-status')
+  followStatus(
+    @User() user: UserRawDto,
+    @Query() query: FollowStatusQueryDto,
+  ): Promise<FollowStatus> {
+    return this.follows.status(user.id, splitAccountIds(query.accountIds));
   }
 }

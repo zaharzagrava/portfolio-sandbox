@@ -2,6 +2,7 @@ import { IntersectionType } from '@nestjs/swagger';
 import { Environment } from '@app/common/types';
 import type { BffConfig } from './bff-config';
 import type { DiscussionsConfig } from './discussions-config';
+import type { FeedConfig } from './feed-config';
 import type { ShareLinksConfig } from './share-links-config';
 import type { FlagsConfig } from './flags-config';
 import type { KnowledgeConfig } from './knowledge-config';
@@ -459,6 +460,7 @@ export interface SecretsManagerConfig
   extends
     BffConfig,
     DiscussionsConfig,
+    FeedConfig,
     ShareLinksConfig,
     FlagsConfig,
     KnowledgeConfig,

@@ -21,6 +21,7 @@ export * from './src/fulfilment/pickup.ts';
 export * from './src/fulfilment/delivery.ts';
 export * from './src/community/discussions.ts';
 export * from './src/community/events.ts';
+export * from './src/community/feed.ts';
 export * from './src/assistant/index.ts';
 export * from './src/marketing/share-links.ts';
 export * from './src/marketing/ads.ts';

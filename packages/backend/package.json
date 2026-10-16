@@ -86,6 +86,7 @@
     "loadtest:launch-event": "k6 run scripts/load-tests/launch-event.test.js",
     "loadtest:auction": "k6 run scripts/load-tests/auction.test.js",
     "loadtest:discussions": "k6 run scripts/load-tests/discussions.test.js",
+    "loadtest:feed": "k6 run scripts/load-tests/feed.test.js",
     "loadtest:share-links": "k6 run scripts/load-tests/share-links.test.js",
     "loadtest:ads-clicks": "k6 run scripts/load-tests/ads-clicks.test.js",
     "loadtest:stories": "k6 run scripts/load-tests/stories.test.js",

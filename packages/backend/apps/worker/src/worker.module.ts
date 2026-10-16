@@ -40,7 +40,10 @@ import {
   SearchWorkerModule,
   AutocompleteWorkerModule,
 } from '@app/domains/discovery';
-import { DiscussionsWorkerModule } from '@app/domains/community';
+import {
+  DiscussionsWorkerModule,
+  FeedWorkerModule,
+} from '@app/domains/community';
 import { StatementsWorkerModule } from '@app/domains/statements';
 import { BillingWorkerModule } from '@app/domains/billing';
 import { AuctionsWorkerModule } from '@app/domains/auctions';
@@ -99,6 +102,7 @@ import { AuthWorkerModule } from '@app/domains/identity';
     BillingWorkerModule,
     StatementsWorkerModule,
     DiscussionsWorkerModule,
+    FeedWorkerModule,
     ShareLinksWorkerModule,
     AutocompleteWorkerModule,
     SearchWorkerModule,

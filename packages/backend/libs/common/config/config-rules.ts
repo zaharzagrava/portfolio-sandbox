@@ -1,4 +1,5 @@
 import { DEV_DISCUSSIONS_CURSOR_SECRET } from './discussions-config';
+import { DEV_FEED_CURSOR_SECRET } from './feed-config';
 
 /** Read access to the configuration values a rule looks at, plus whether the app runs in production. */
 export interface RuleContext {
@@ -274,6 +275,11 @@ const discussionsCursorSecretRule: RuleCheck = (ctx) =>
       ]
     : [];
 
+const feedCursorSecretRule: RuleCheck = (ctx) =>
+  ctx.production && ctx.get('feed_cursor_secret') === DEV_FEED_CURSOR_SECRET
+    ? ['feed_cursor_secret (FEED_CURSOR_SECRET) must be set in production']
+    : [];
+
 /** Every other secret the app configures; the share-link keys must differ from each of them and from each other. */
 const SHARE_LINK_DISTINCT_FROM = [
   'jwt_secret',
@@ -341,6 +347,11 @@ export const platformRules: ConfigRule[] = [
     owner: 'discussions',
     keys: ['discussions_cursor_secret'],
     validate: discussionsCursorSecretRule,
+  },
+  {
+    owner: 'feed',
+    keys: ['feed_cursor_secret'],
+    validate: feedCursorSecretRule,
   },
   { owner: 'platform', keys: ['platform_currency'], validate: currencyRule },
   {

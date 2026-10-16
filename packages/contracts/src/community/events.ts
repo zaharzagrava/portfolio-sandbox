@@ -48,3 +48,24 @@ export const discussionVoteAnomalyPayloadSchema = z.object({
   zeroWeightVotes: z.number().int().nonnegative(),
   windowSeconds: z.number().int().positive(),
 });
+
+/**
+ * `feed.item_published` v1 (topic `feed.events`, key = `authorId`; S26 contracts/events.md): announced at least once
+ * after an item is stored, consumed by the S26 fan-out. The backend `defineEvent` lives in
+ * `libs/domains/community/domain/feed-events.ts`.
+ */
+export const feedItemPublishedPayloadSchema = z.object({
+  itemId: z.string(),
+  authorId: z.string(),
+  kind: z.enum([
+    'new_product',
+    'price_drop',
+    'post',
+    'drop_announced',
+    'auction_started',
+  ]),
+  createdAt: z.string(),
+});
+export type FeedItemPublishedPayload = z.infer<
+  typeof feedItemPublishedPayloadSchema
+>;

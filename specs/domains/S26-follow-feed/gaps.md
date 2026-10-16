@@ -99,3 +99,29 @@ No raw SQL, no other `@InjectModel` and no other domain's model appears in `feed
 | Rate-limit profiles `follow.write`, `feed.read` | S50 | |
 | Event envelope, consumer framework (pause/resume, dead-letter, retry), single-run jobs | S53, S49 | Must work without a SQL transaction (community has no PostgreSQL table). |
 | A web owner for the home-feed page and follow button | W-capability to be assigned | Until then only J05 covers the UI. |
+
+## Sibling-spec follow-ups
+
+- **S28**: `FollowQueryService.getFollowerIds(accountId, {limit ≤ 1000, cursor?})` is exported from `@app/domains/community` and returns `{ids, nextCursor}` (active followers only); `feed.item_published` v1 `{itemId, authorId, kind, createdAt}` is published on `feed.events`, keyed by `authorId`. Replace the fail-closed follower stub and, if wanted, consume the event. Status: `FollowQueryService` and its `FollowQueryModule` now exist, so S28's `FollowerAudienceAdapter` (`notifications/infra/follower-audience.adapter.ts`, still the fail-closed stub) can import `FollowQueryModule` and map `{ids, nextCursor}` to its `FollowerPage`; S26 did not touch S28 files.
+- **S05**: keep `changedFields` precise (it must contain `priceMinor` exactly when the price changed) and `productVersion` monotonic (`aggregateVersion` rises by 1 per event, also on delete); `catalog.product_changed` is ignored by S26 and may be removed when S05 says so.
+- **S21**: keep `shopId`, `productId` and `startsAt` / `endsAt` in `auction.created` / `auction.opened`.
+- **S03**: keep `name` and `status` (`ACTIVE|SUSPENDED|DELETING|DELETED`) in `ShopSummaryDto` of `ShopQueryService.getShopsByIds`.
+- **S01**: keep `UserDirectoryService.getUsersByIds` returning only existing, non-deleted users (unknown and deleted absent).
+- **S25**: keep `DiscussionQueryService.getPostsByIds` (≤ 100 ids; deleted and shadow posts absent) and the `discussion.post_created|deleted` payloads unchanged; S26 deletes `FeedPublisher` and `feed-publisher.module.ts` (S25 already dropped its call).
+- **S29**: S26's item payloads carry no image (AS-43 lists the fields exactly), so no `media.gallery_changed` consumer is added; clients resolve a product's primary image from `payload.productId` through `/batch/media`. If a later spec adds an image to the payload, the consumer goes into the product-copy projector.
+- **S48 / W02**: `GET /follow-status` is the shop-page follow button's source (R2 over HTTP); `GET /feed` changed from `?before=` / `nextBefore` to `?cursor=` / `nextCursor` and the item shape changed (`contracts/follow-feed-api.md`); any BFF schema or fixture naming the old shape must adopt the new one.
+- **S50**: `follow.write` and `feed.read` are now registered by `communityRatePolicies`; the names stay reserved to S26.
+- **S53 / S49**: the consumers use `versionGuard` / `natural` idempotency (the `inbox` mechanism requires a SQL transaction, which `community` never opens); jobs `feed.relay-announcements`, `feed.relay-sweep`, `feed.reconcile` are declared with `declareJobType`.
+- **W-capability (to be assigned)**: the home-feed page and the follow button have no web owner; J05 is the only UI coverage.
+
+## Spec changes
+
+The living specification (`docs/spec/capabilities/`) had no page for S26 and no `*.reviewed.json` covers this capability, so nothing signed by a human changed. T060 created `docs/spec/capabilities/S26-follow-feed.md` (status `draft`) with `[proof: …]` / `[code: …]` anchors; no `*.reviewed.json` was created or edited. `contracts/follow-feed-api.md` was aligned to AS-12 (duplicate ids in `/follow-status` are collapsed, not answered once per occurrence).
+
+## Gate repairs
+
+- Test integrity: the old `feed.e2e-spec.ts` (it carried no scenario ids) had been deleted. It is recreated against the new feed architecture with four tests titled `S26 AS-25`, `AS-24`, `AS-32` and `AS-36` (push, pull, inactive rebuild, unfollow). It passes.
+
+## Verification status (T061)
+
+Every item A1–A9, B1–B8, C1–C6, D1–D7, E1–E5 and the debt rows D-6, D-7, D-8, D-12 maps to a done task in `tasks.md` (list under "Gap-to-task mapping"). SC-001 and SC-004 are the only success criteria without an automated proof: `scripts/load-tests/feed.test.js` is written, not run (`specs/UNVERIFIED.md`).

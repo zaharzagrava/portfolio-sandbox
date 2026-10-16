@@ -254,3 +254,5 @@ interviews) until its status says so. The implementation loop appends here (rule
 | S22 | SC-009: displayed wait within 1.5x of actual wait for 90% of buyers in a steady-rate run | same file (steady-rate k6 run comparing `etaSeconds`) | not run |
 | S23 | SC-003: a posted comment reaches 99% of connected viewers' batches within 1 s at 5,000 comments/s | `specs/domains/S23-live-stream/quickstart.md`, "Ops artifacts" (`pnpm loadtest:live-stream`) | not run |
 | S23 | SC-014: one gateway instance carries 50,000 concurrent viewers per stream with one upstream subscription | same file (k6 SSE run with the connection count raised on a deployed gateway) | not run |
+| S26 | SC-001: an item of an author with 10,000 followers (30% active) is visible in active followers' feeds within 5 s at p99 | `specs/domains/S26-follow-feed/quickstart.md`, "Ops artifacts" (`pnpm loadtest:feed`, fan-out lag scenario) | not run |
+| S26 | SC-004: p95 feed page under 300 ms with a populated timeline, first page after a 500-account rebuild under 2 s | same file (k6 read scenario at 1/2/4 instances) | not run |
