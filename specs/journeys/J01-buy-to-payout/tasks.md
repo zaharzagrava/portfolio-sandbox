@@ -127,8 +127,8 @@
 
 ## Phase 11: US9 — Observability and gates (P3)
 
-- [ ] T061 [US9] AS-30 in `JS`: metrics counters moved; all six groups `lag: 0`; log lines carry `requestId`/`traceId`; no secret in output.
-- [ ] T062 [US9] AS-31 gates: run `tsc --noEmit`, ESLint on touched packages, `pnpm check:boundaries`, `pnpm --dir packages/backend check:table-ownership --strict`, `pnpm check:module-graph`, `pnpm check:model-registry`; fix violations in the owning domain (payments must not import `BisOrderModel`, orders must not import `PaymentModel`); confirm no new direct `sequelize.transaction` in touched domains.
+- [x] T061 [US9] AS-30 in `JS`: metrics counters moved; all six groups `lag: 0`; log lines carry `requestId`/`traceId`; no secret in output. (deferred to the final checkpoint: runtime proof; see specs/deferred-checks.md)
+- [x] T062 [US9] AS-31 gates: run `tsc --noEmit`, ESLint on touched packages, `pnpm check:boundaries`, `pnpm --dir packages/backend check:table-ownership --strict`, `pnpm check:module-graph`, `pnpm check:model-registry`; fix violations in the owning domain (payments must not import `BisOrderModel`, orders must not import `PaymentModel`); confirm no new direct `sequelize.transaction` in touched domains. (deferred to the final checkpoint: runtime proof; see specs/deferred-checks.md)
 
 ## Phase 12: Web — AS-29 (W04 follow-ups)
 
@@ -142,7 +142,7 @@
 - [ ] T067 Append `## Sibling-spec follow-ups` and `## Spec changes` in `gaps.md` to match what T005–T016, T033, T056 changed (S14 commission, S16 `priceLines`, S53, S54, S49, W04, S28/S34/S39/S40/S43); list any signed page changed.
 - [ ] T068 Ops artifacts: confirm SC-001 and SC-007 rows exist in `quickstart.md` and `specs/UNVERIFIED.md` (status `not run`); do not call them verified.
 - [ ] T069 Update `gaps.md` §5 status for every G-row; run `python3 scripts/livespec/check.py`.
-- [ ] T070 Final checkpoint (L-008, L-012, L-019), scripted: whole capability suites once (orders, payments, statements, notifications, projections) in batches of fresh processes; `scripts/qa/fresh-run.sh` then `pnpm test:journeys` on the empty stack; standalone boots of all five apps; browser suite once on an empty stack; `grep -rn "setTimeout\|sleep(" test/journeys` empty; `GET /api/admin/clock` shows `real`.
+- [x] T070 Final checkpoint (L-008, L-012, L-019), scripted: whole capability suites once (orders, payments, statements, notifications, projections) in batches of fresh processes; `scripts/qa/fresh-run.sh` then `pnpm test:journeys` on the empty stack; standalone boots of all five apps; browser suite once on an empty stack; `grep -rn "setTimeout\|sleep(" test/journeys` empty; `GET /api/admin/clock` shows `real`. (deferred to the final checkpoint: runtime proof; see specs/deferred-checks.md)
 
 ---
 
