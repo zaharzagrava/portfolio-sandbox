@@ -21,6 +21,7 @@ Order `ord_42` (illustrative ID) is `RESERVED`. The webhook marks it `PAID`. Lat
 
 ## Used by
 <!-- used-by:start -->
+- [J01](../capabilities/J01-buy-to-payout.md): B-05
 - [S10](../capabilities/S10-cart-checkout.md): R-31
 - [consumer-deduplication-mode](consumer-deduplication-mode.md)
 - [event-consumer](event-consumer.md)

@@ -20,6 +20,7 @@ The payment provider is the outside payment service (PSP) that actually charges 
 
 ## Used by
 <!-- used-by:start -->
+- [J01](../capabilities/J01-buy-to-payout.md): B-09
 - [S13](../capabilities/S13-payment-intents.md): B-08, B-11
 - [idempotency-key](../concepts/idempotency-key.md): C-03
 - [payment-lifecycle](../concepts/payment-lifecycle.md): C-03
@@ -35,6 +36,7 @@ The payment provider is the outside payment service (PSP) that actually charges 
 - [payment-processor](payment-processor.md)
 - [payments-domain-layer](payments-domain-layer.md)
 - [payments-provider-calls-total](payments-provider-calls-total.md)
+- [payout-transfer](payout-transfer.md)
 - [provider-charge-metadata](provider-charge-metadata.md)
 - [provider-idempotency-reference](provider-idempotency-reference.md)
 - [provider-lookup-window](provider-lookup-window.md)

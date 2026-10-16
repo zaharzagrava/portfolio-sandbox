@@ -31,12 +31,20 @@ Scheduled jobs and leases let a domain run background and recurring work without
 
 ## Used by
 <!-- used-by:start -->
+- {{cap:J01}} Buyer pays for a multi-shop order; order paid → ledger journals → settlement → seller payout → monthly statement; buyer and sellers notified
 - {{cap:S01}} Registration, password login, sessions, refresh-token rotation, JWKS, service-to-service tokens
+- {{cap:S04}} Staged onboarding questionnaire, KYC document intake, LLM extraction, human review, shop verification
 - {{cap:S05}} Product CRUD, pricing, stock fields, product cache and invalidation, product views
+- {{cap:S07}} Bulk catalog import (multipart upload, malware scan, streamed parse, checkpoints and leases, error report)
 - {{cap:S10}} Cart (guest + merge), idempotent checkout, stock reservation, multi-shop split, order state machine, payment webhook
 - {{cap:S11}} Flash sales (scheduled drops, bucketed fast stock, admission, never oversell, async reconciliation)
+- {{cap:S12}} Order export (streamed CSV to object storage, live progress, fenced worker, retention)
 - {{cap:S13}} Payment intents, idempotency, unknown outcomes, PSP circuit breaker, outbox, saga with orders
 - {{cap:S14}} Double-entry ledger, balanced journals, hot-account sharding, balance read model, daily PSP reconciliation
+- {{cap:S15}} Seller payouts - weekly run, reserves, provider transfer with idempotency, payout states
+- {{cap:S16}} Seller statements - bitemporal commission rates, monthly statements, close, adjustments, CSV, reconciliation
+- {{cap:S17}} Subscriptions - plans, versioned prices, state machine, billing run, charging and dunning, proration, credit
+- {{cap:S18}} Usage metering (late events, adjustments) and entitlement checks
 - {{cap:S21}} Limited-drop auctions (proxy bids, anti-sniping, reserve, exactly-once close, second chance, shill guard)
 - {{cap:S24}} Product chat (channels, idempotent send, per-channel sequence, sync on reconnect, unread, receipts, presence, offline push)
 - {{cap:S28}} Notification routing, preferences, quiet hours, caps, per-channel queues, provider failover, inbox, suppression
@@ -49,6 +57,7 @@ Scheduled jobs and leases let a domain run background and recurring work without
 - {{cap:S37}} Share and affiliate short links (codes, aliases, redirects, click attribution)
 - {{cap:S38}} Feature flags and remote config (targeting, percentage rollout, local evaluation, kill switch, audit)
 - {{cap:S42}} Seller public API: API keys, scopes, sandbox, date-pinned versions, deprecation headers, batch and bulk stock, request logs, usage metering
+- {{cap:S43}} Webhook delivery to shops: endpoints, signing with dual secrets, routing, per-endpoint ordering, retries, circuit breaker, auto-disable, replay
 - {{cap:S49}} Distributed job scheduler: SKIP LOCKED leases, retries, cron leader, fairness, tz-aware cron
 - {{cap:S53}} Domain events, outbox/CDC → Kafka, idempotent versioned projections, replay, read-your-writes
 <!-- used-by:end -->

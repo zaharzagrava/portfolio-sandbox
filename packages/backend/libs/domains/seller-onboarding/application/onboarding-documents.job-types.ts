@@ -6,7 +6,8 @@ import { declareJobType } from '@app/infrastructure/jobs/job-type-registry';
 declare module '@app/infrastructure/jobs/job-types' {
   interface JobPayloads {
     'onboarding.purge-documents': { shopId: string; submissionNo: number };
-    'onboarding.erase-records': { shopId: string };
+    /** `dueAt`: when the records may go (the job runs earlier hops until then: S49 schedules at most 366 days ahead). */
+    'onboarding.erase-records': { shopId: string; dueAt?: string };
   }
 }
 
@@ -21,5 +22,8 @@ declareJobType({
 
 declareJobType({
   name: 'onboarding.erase-records',
-  contract: z.object({ shopId: z.string().uuid() }),
+  contract: z.object({
+    shopId: z.string().uuid(),
+    dueAt: z.string().datetime().optional(),
+  }),
 });

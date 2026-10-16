@@ -27,6 +27,7 @@ order ord_123
 
 ## Used by
 <!-- used-by:start -->
+- [J01](../capabilities/J01-buy-to-payout.md): B-01
 - [S10](../capabilities/S10-cart-checkout.md): R-14, R-36, B-05
 - [discount-tie-break](discount-tie-break.md)
 - [get-order-by-id](get-order-by-id.md)

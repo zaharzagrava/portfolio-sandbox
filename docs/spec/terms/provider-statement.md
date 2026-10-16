@@ -23,6 +23,7 @@ A statement line (shape illustrative) is matched by reference to a [`SALE` journ
 
 ## Used by
 <!-- used-by:start -->
+- [J01](../capabilities/J01-buy-to-payout.md): R-07, R-15, B-06
 - [S14](../capabilities/S14-ledger-reconciliation.md): R-28
 - [classify-line](classify-line.md)
 - [closed-utc-day](closed-utc-day.md)

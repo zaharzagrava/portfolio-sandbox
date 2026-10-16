@@ -2,7 +2,6 @@ import { Inject, Injectable } from '@nestjs/common';
 import { CLOCK, type Clock } from '@app/common/core/clock';
 import { OutboxService } from '@app/infrastructure/outbox/outbox.service';
 import { assertActiveTransaction } from '@app/infrastructure/context/transaction-scope';
-import { JobsService } from '@app/infrastructure/jobs/jobs.service';
 import { requiredDocuments } from '../domain/questionnaire';
 import {
   APPLICATIONS,
@@ -12,14 +11,8 @@ import {
   type DocumentRepository,
   type StatusHistoryRepository,
 } from '../domain/ports';
-import { EXTRACTION_CONFIG } from './extraction-config.token';
-import type { ExtractionConfig } from '../domain/extraction-config';
 import { outcomeVersion, ShopVerified } from './events/onboarding-events';
-import './onboarding-documents.job-types';
-
-/** The scheduled deletion of a round's raw files (S04 FR-050): unique per shop and round. */
-export const purgeKey = (shopId: string, submissionNo: number) =>
-  `purge:${shopId}:${submissionNo}`;
+import { RetentionScheduler } from './retention-scheduler';
 
 /**
  * The one place that decides whether a shop is verified (S04 FR-040, A2, A4). It runs INSIDE the transaction that
@@ -34,10 +27,9 @@ export class VerificationPolicyService {
     @Inject(APPLICATIONS) private readonly applications: ApplicationRepository,
     @Inject(DOCUMENTS) private readonly documents: DocumentRepository,
     @Inject(STATUS_HISTORY) private readonly history: StatusHistoryRepository,
-    @Inject(EXTRACTION_CONFIG) private readonly config: ExtractionConfig,
     @Inject(CLOCK) private readonly clock: Clock,
     private readonly events: OutboxService,
-    private readonly jobs: JobsService,
+    private readonly retention: RetentionScheduler,
   ) {}
 
   /** `true` when this call verified the shop. Must run inside a transaction scope. */
@@ -71,16 +63,7 @@ export class VerificationPolicyService {
       }),
       tx,
     );
-    await this.jobs.enqueue(
-      'onboarding.purge-documents',
-      { shopId, submissionNo: application.submissionNo },
-      {
-        runAt: new Date(
-          now.getTime() + this.config.rawRetentionDays * 86_400_000,
-        ),
-        idempotencyKey: purgeKey(shopId, application.submissionNo),
-      },
-    );
+    await this.retention.schedulePurge(shopId, application.submissionNo, now);
     return true;
   }
 }

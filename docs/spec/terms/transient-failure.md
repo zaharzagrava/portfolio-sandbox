@@ -21,6 +21,7 @@ Push provider 1 returns an error that means "service unavailable" (illustrative)
 ## Used by
 <!-- used-by:start -->
 - [S28](../capabilities/S28-notifications.md): R-32
+- [S46](../capabilities/S46-shopping-assistant.md): R-38
 - [dead-letter-topic](dead-letter-topic.md)
 - [delivery-line](delivery-line.md)
 - [delivery](delivery.md)

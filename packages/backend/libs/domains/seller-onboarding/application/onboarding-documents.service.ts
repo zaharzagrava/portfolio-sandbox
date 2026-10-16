@@ -1,170 +1,262 @@
-import {
-  BadRequestException,
-  ConflictException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
-import { InjectConnection } from '@nestjs/sequelize';
-import { QueryTypes, Sequelize } from 'sequelize';
+import { Inject, Injectable } from '@nestjs/common';
 import { v7 as uuidv7 } from 'uuid';
+import { z } from 'zod';
+import { CLOCK, type Clock } from '@app/common/core/clock';
+import { TransactionRunner } from '@app/infrastructure/context';
+import { OutboxService } from '@app/infrastructure/outbox/outbox.service';
 import { ObjectStorage } from '@app/infrastructure/storage/object-storage.port';
-import { TaskQueue } from '@app/infrastructure/sqs/task-queue.port';
-import type { DocumentKind } from '../domain/questionnaire';
+import { requiredDocuments, type DocumentKind } from '../domain/questionnaire';
+import {
+  alreadyVerified,
+  documentAlreadyApproved,
+  documentLimitReached,
+  documentNotFound,
+  documentNotRequired,
+  resubmissionRequired,
+  submissionRequired,
+  uploadMismatch,
+  uploadNotReceived,
+} from '../domain/errors';
+import {
+  APPLICATIONS,
+  DOCUMENTS,
+  REVIEW_TASKS,
+  STATUS_HISTORY,
+  type ApplicationRecord,
+  type ApplicationRepository,
+  type DocumentRecord,
+  type DocumentRepository,
+  type DocumentView,
+  type ReviewTaskRepository,
+  type StatusHistoryRepository,
+} from '../domain/ports';
+import { OnboardingLimits } from './onboarding-limits';
 
 export const EXTRACTION_QUEUE = 'onboarding-documents';
+export const EXTRACT_DOCUMENT_TASK = 'onboarding.extract_document';
 
-/** What the vision/PDF input of the model accepts; size caps keep requests well under API limits. */
-export const ACCEPTED_TYPES: Record<string, number> = {
-  'application/pdf': 10 * 1024 * 1024,
-  'image/jpeg': 5 * 1024 * 1024,
-  'image/png': 5 * 1024 * 1024,
-  'image/webp': 5 * 1024 * 1024,
-};
+/** At most this many distinct documents of one kind per round, superseded ones included (FR-012). */
+export const MAX_DOCUMENTS_PER_KIND = 5;
+/** The grant of a presigned upload (FR-011). */
+const GRANT_SECONDS = 900;
 
-export interface ShopDocumentRow {
-  id: string;
-  shopId: string;
+/** The message body of the extraction command, validated where it is created (L-001) and where it is read. */
+export const extractDocumentBody = z.strictObject({ documentId: z.uuid() });
+
+export interface UploadRequest {
   kind: DocumentKind;
+  sha256: string;
+  size: number;
   contentType: string;
-  contentHash: string;
-  storageKey: string;
-  status: string;
-  rejectionReason: string | null;
-  purgedAt: Date | null;
 }
 
-/**
- * KYC uploads: presigned PUT pinned to the declared SHA-256 and size, then
- * `uploaded` queues extraction. The same file for the same document kind is
- * the same row (unique content hash) → never extracted (or billed) twice.
- */
-@Injectable()
-export class OnboardingDocumentsService {
-  constructor(
-    @InjectConnection() private readonly sequelize: Sequelize,
-    private readonly storage: ObjectStorage,
-    private readonly queue: TaskQueue,
-  ) {}
-
-  async requestUpload(
-    shopId: string,
-    kind: DocumentKind,
-    sha256: string,
-    size: number,
-    contentType: string,
-  ) {
-    const max = ACCEPTED_TYPES[contentType];
-    if (!max)
-      throw new BadRequestException(`Unsupported file type ${contentType}`);
-    if (size > max)
-      throw new BadRequestException(
-        `File too large (max ${max / 1024 / 1024} MB)`,
-      );
-    const [submitted] = await this.sequelize.query(
-      `SELECT 1 FROM "ShopOnboarding" WHERE "shopId" = :shopId`,
-      { type: QueryTypes.SELECT, replacements: { shopId } },
-    );
-    // Extraction cross-checks documents against the answers, so the questionnaire comes first.
-    if (!submitted)
-      throw new ConflictException('Submit the onboarding questionnaire first');
-
-    const id = uuidv7();
-    const [created] = await this.sequelize.query<ShopDocumentRow>(
-      `INSERT INTO "ShopDocument" (id, "shopId", kind, "contentType", "contentHash", "storageKey")
-       VALUES (:id, :shopId, :kind, :contentType, :sha256, :storageKey)
-       ON CONFLICT ("shopId", kind, "contentHash") DO NOTHING RETURNING *`,
-      {
-        type: QueryTypes.SELECT,
-        replacements: {
-          id,
-          shopId,
-          kind,
-          contentType,
-          sha256,
-          storageKey: `kyc/${shopId}/${id}`,
-        },
-      },
-    );
-    const document = created ?? (await this.byHash(shopId, kind, sha256));
-    const upload =
-      document.status === 'AWAITING_UPLOAD'
-        ? await this.storage.presignPutChecked(
-            document.storageKey,
-            sha256,
-            size,
-          )
-        : null;
-    return { document: publicView(document), deduplicated: !created, upload };
-  }
-
-  async uploaded(shopId: string, documentId: string) {
-    const doc = await this.get(shopId, documentId);
-    if (doc.status !== 'AWAITING_UPLOAD') return publicView(doc);
-    if (!(await this.storage.head(doc.storageKey)))
-      throw new BadRequestException('Upload not found');
-    // S54 T037 audit: explicit unit of work, opens its own transaction by design; no network I/O inside.
-    await this.sequelize.transaction(async (transaction) => {
-      await this.sequelize.query(
-        `UPDATE "ShopDocument" SET status = 'QUEUED', "updatedAt" = now() WHERE id = :id AND status = 'AWAITING_UPLOAD'`,
-        { transaction, replacements: { id: doc.id } },
-      );
-      // A new upload replaces earlier unresolved/rejected ones of the same kind.
-      await this.sequelize.query(
-        `UPDATE "ShopDocument" SET status = 'SUPERSEDED', "updatedAt" = now()
-         WHERE "shopId" = :shopId AND kind = :kind AND id <> :id AND status IN ('QUEUED', 'NEEDS_REVIEW', 'REJECTED')`,
-        { transaction, replacements: { shopId, kind: doc.kind, id: doc.id } },
-      );
-    });
-    await this.queue.enqueue(EXTRACTION_QUEUE, { documentId: doc.id });
-    return publicView({ ...doc, status: 'QUEUED' });
-  }
-
-  /** Sellers see statuses and rejection reasons - never extracted values. */
-  async list(shopId: string) {
-    const rows = await this.sequelize.query<ShopDocumentRow>(
-      `SELECT * FROM "ShopDocument" WHERE "shopId" = :shopId AND status <> 'SUPERSEDED' ORDER BY "createdAt" DESC`,
-      {
-        type: QueryTypes.SELECT,
-        replacements: { shopId },
-      },
-    );
-    return rows.map(publicView);
-  }
-
-  private async get(
-    shopId: string,
-    documentId: string,
-  ): Promise<ShopDocumentRow> {
-    const [doc] = await this.sequelize.query<ShopDocumentRow>(
-      `SELECT * FROM "ShopDocument" WHERE id = :documentId AND "shopId" = :shopId`,
-      {
-        type: QueryTypes.SELECT,
-        replacements: { documentId, shopId },
-      },
-    );
-    if (!doc) throw new NotFoundException('Document not found');
-    return doc;
-  }
-
-  private async byHash(
-    shopId: string,
-    kind: DocumentKind,
-    sha256: string,
-  ): Promise<ShopDocumentRow> {
-    const [doc] = await this.sequelize.query<ShopDocumentRow>(
-      `SELECT * FROM "ShopDocument" WHERE "shopId" = :shopId AND kind = :kind AND "contentHash" = :sha256`,
-      {
-        type: QueryTypes.SELECT,
-        replacements: { shopId, kind, sha256 },
-      },
-    );
-    return doc;
-  }
+export interface UploadResult {
+  document: DocumentView;
+  deduplicated: boolean;
+  upload: {
+    url: string;
+    method: 'PUT';
+    headers: Record<string, string>;
+    expiresAt: string;
+  } | null;
 }
 
-const publicView = (d: ShopDocumentRow) => ({
+const publicView = (d: DocumentRecord): DocumentView => ({
   id: d.id,
   kind: d.kind,
   status: d.status,
   rejectionReason: d.rejectionReason,
 });
+
+/**
+ * KYC uploads (S04 FR-010…FR-015): a presigned PUT pinned to the declared SHA-256 and size, then `uploaded` queues
+ * extraction through the outbox in the confirming transaction (no dual write). Every gate that depends on the
+ * application runs under its row lock, so racing requests see one consistent count. The same file in the same round is
+ * the same row, so a file is never extracted - or billed - twice. No storage call happens inside a transaction.
+ */
+@Injectable()
+export class OnboardingDocumentsService {
+  constructor(
+    @Inject(APPLICATIONS) private readonly applications: ApplicationRepository,
+    @Inject(DOCUMENTS) private readonly documents: DocumentRepository,
+    @Inject(REVIEW_TASKS) private readonly tasks: ReviewTaskRepository,
+    @Inject(STATUS_HISTORY) private readonly history: StatusHistoryRepository,
+    @Inject(CLOCK) private readonly clock: Clock,
+    private readonly transactions: TransactionRunner,
+    private readonly storage: ObjectStorage,
+    private readonly outbox: OutboxService,
+    private readonly limits: OnboardingLimits,
+  ) {}
+
+  async requestUpload(
+    shopId: string,
+    userId: string,
+    request: UploadRequest,
+  ): Promise<UploadResult> {
+    await this.limits.take('onboarding.upload.shop', shopId);
+    const now = this.clock.now();
+    const id = uuidv7();
+
+    const { document, created } = await this.transactions.run(async () => {
+      const application = await this.applications.lock(shopId);
+      this.assertOpen(application, request.kind);
+
+      const existing = await this.documents.findByHash(
+        shopId,
+        application.submissionNo,
+        request.kind,
+        request.sha256,
+      );
+      if (existing) return { document: existing, created: false };
+
+      const approved = await this.documents.approvedKinds(
+        shopId,
+        application.submissionNo,
+      );
+      if (approved.includes(request.kind)) throw documentAlreadyApproved();
+      if (
+        (await this.documents.countOfKind(
+          shopId,
+          application.submissionNo,
+          request.kind,
+        )) >= MAX_DOCUMENTS_PER_KIND
+      )
+        throw documentLimitReached();
+
+      const inserted = await this.documents.insertAwaiting({
+        id,
+        shopId,
+        submissionNo: application.submissionNo,
+        kind: request.kind,
+        contentType: request.contentType,
+        contentHash: request.sha256,
+        size: request.size,
+        storageKey: `kyc/${shopId}/${id}`,
+        now,
+      });
+      if (!inserted) {
+        // cannot happen under the application lock; answer as a de-duplicated request rather than fail
+        const raced = await this.documents.findByHash(
+          shopId,
+          application.submissionNo,
+          request.kind,
+          request.sha256,
+        );
+        return { document: raced!, created: false };
+      }
+      await this.history.append({
+        entity: 'DOCUMENT',
+        entityId: inserted.id,
+        shopId,
+        fromStatus: null,
+        toStatus: 'AWAITING_UPLOAD',
+        actor: `user:${userId}`,
+        at: now,
+      });
+      return { document: inserted, created: true };
+    });
+
+    const grant =
+      document.status === 'AWAITING_UPLOAD'
+        ? await this.storage.presignPutChecked(
+            document.storageKey,
+            document.contentHash,
+            document.size ?? request.size,
+            GRANT_SECONDS,
+          )
+        : null;
+    return {
+      document: publicView(document),
+      deduplicated: !created,
+      upload: grant
+        ? {
+            url: grant.url,
+            method: 'PUT',
+            headers: grant.headers,
+            expiresAt: new Date(
+              now.getTime() + GRANT_SECONDS * 1000,
+            ).toISOString(),
+          }
+        : null,
+    };
+  }
+
+  async uploaded(
+    shopId: string,
+    userId: string,
+    documentId: string,
+  ): Promise<DocumentView> {
+    const doc = await this.documents.find(shopId, documentId);
+    if (!doc) throw documentNotFound();
+    if (doc.status !== 'AWAITING_UPLOAD') return publicView(doc);
+
+    const head = await this.storage.head(doc.storageKey);
+    if (!head) throw uploadNotReceived();
+    if (head.size !== doc.size) {
+      await this.storage.delete(doc.storageKey);
+      throw uploadMismatch();
+    }
+
+    const now = this.clock.now();
+    return this.transactions.run(async () => {
+      await this.applications.lock(shopId); // serializes confirmations of one shop
+      const won = await this.documents.transition({
+        id: doc.id,
+        from: 'AWAITING_UPLOAD',
+        to: 'QUEUED',
+        now,
+      });
+      if (!won) {
+        const current = await this.documents.find(shopId, documentId);
+        return publicView(current ?? doc);
+      }
+      const superseded = await this.documents.supersedeSiblings({
+        shopId,
+        submissionNo: doc.submissionNo,
+        kind: doc.kind,
+        keepId: doc.id,
+        now,
+      });
+      await this.tasks.cancelForDocuments(superseded.map((d) => d.id));
+      await this.history.append([
+        {
+          entity: 'DOCUMENT',
+          entityId: doc.id,
+          shopId,
+          fromStatus: 'AWAITING_UPLOAD',
+          toStatus: 'QUEUED',
+          actor: `user:${userId}`,
+          at: now,
+        },
+        ...superseded.map((d) => ({
+          entity: 'DOCUMENT' as const,
+          entityId: d.id,
+          shopId,
+          fromStatus: d.fromStatus as string,
+          toStatus: 'SUPERSEDED',
+          actor: `user:${userId}`,
+          at: now,
+        })),
+      ]);
+      await this.outbox.appendTask({
+        queue: EXTRACTION_QUEUE,
+        type: EXTRACT_DOCUMENT_TASK,
+        aggregateId: doc.id,
+        body: extractDocumentBody.parse({ documentId: doc.id }),
+      });
+      return publicView({ ...doc, status: 'QUEUED' });
+    });
+  }
+
+  /** The gates of a request that depend on the application (FR-010). */
+  private assertOpen(
+    application: ApplicationRecord | null,
+    kind: DocumentKind,
+  ): asserts application is ApplicationRecord {
+    if (!application) throw submissionRequired();
+    if (application.status === 'VERIFIED') throw alreadyVerified();
+    if (application.status === 'REJECTED') throw resubmissionRequired();
+    if (!requiredDocuments(application.answers).includes(kind))
+      throw documentNotRequired();
+  }
+}

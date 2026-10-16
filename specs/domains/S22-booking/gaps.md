@@ -108,3 +108,34 @@ Goal state: zero findings for `launch-events` under `--strict` after S22 and S23
 6. Rewrite the e2e specs per `test-plan.md`; update the k6 script.
 7. Trim the barrel and module exports; run `check:boundaries`, `check:table-ownership --strict`, `check:module-graph`, `check:model-registry`.
 8. Update `docs/work/architecture/domain-map.md` ("Emits" for `launch-events`) and the S22 row of `docs/work/architecture/pattern-map.md` if statuses change.
+
+## Spec changes
+
+- No `*.reviewed.json` sign-off is touched. No living-spec page `docs/spec/capabilities/S22-*.md` exists yet; the implementer creates it with `[proof:]`/`[code:]` markers and runs `python3 scripts/livespec/check.py`.
+- Outbox aggregate type is `launch_events`, so the topic is `launch_events.events` (spec.md wrote `launch-events.events`; see research D-6 and S28's follow-up).
+- Written by the build: the living-spec page `docs/spec/capabilities/S22-launch-event-booking.md` now exists (draft, nothing signed; no `*.reviewed.json` touched).
+- **Event `type` names.** spec.md and `contracts/events-and-commands.md` name the events `launch_events.event_created|booking_confirmed|event_sold_out|event_closed`. The S53 type pattern (`EVENT_TYPE_PATTERN`, `packages/contracts/src/events/envelope.ts`) allows no `_` in the first segment, so `OutboxService` refuses those names. Emitted types are `launchevents.<name>` (the alias `developerplatform.*` and `sellerinsights.*` already use); aggregate type, topic (`launch_events.events`), keys and payloads are as specified. S28 already resolves the alias (`notifications.topics.ts`, `event-mapping.ts`). AS-62 asserts the emitted names.
+- **Problem `code` case.** FR-051 fixes upper-case codes (`ADMISSION_REQUIRED`, `SEAT_TAKEN`, …); `problemDetailsSchema` in `packages/contracts/problem.ts` accepts `^[a-z][a-z0-9_]*$` only. The codes are implemented as specified; the specs check the problem members through a local helper instead of `problemDetailsSchema`. See the S54 follow-up below.
+- **Join limit counts new tickets.** AS-02 (twenty joins at once by one buyer: one `201`, nineteen `200`) and AS-12 (the 11th join within a minute is `429`) only fit together if the limit `launch.queue.join.user` counts tickets that were created. The limiter is charged after the atomic join says "created"; a refusal takes the new ticket back. A repeat join does not spend the budget.
+- **Replay header.** The shared idempotency facility defaults to `Idempotency-Replayed`; the hold and confirm routes set `wire.replayHeader` to `Idempotent-Replayed` as AS-25 and AS-34 name it.
+- **Heartbeat at status.** A ticket not polled for more than 120 s is also treated as gone when its owner returns before the admitter reached it (status `404`, a new join makes a fresh ticket); the spec only states the admitter case.
+- **Hold state `CONFIRMING → HELD`.** The state machine of AS-56 lists `HELD → CONFIRMED`; the seal of the confirm protocol (D-5) makes it `HELD → CONFIRMING → CONFIRMED`, and a failed booking transaction returns the hold to `HELD` so the buyer can retry (AS-41, AS-42). A separate reconciler-only repair (`revokeConfirmation`) ends a confirmation without a booking as `RELEASED`.
+- Seat records in the ledger are keyed `SEAT#<six-digit seat>` and never deleted by a release (a freed record keeps its fencing number); hold records are kept.
+
+## Sibling-spec follow-ups
+
+- **S01**: S22 needed the R1 `PurposeTokenService` and it did not exist, so a minimal provider was built in `libs/domains/identity/application/purpose-token.service.ts` as the S22 spec defines it (`sign({subject, audience, ttlSec, jti?, claims?})`, `verify(token, {audience, subject?})` throwing `InvalidPurposeTokenError`; ES256 from the key set, `iss: marketplace`, `typ: purpose+jwt`, so never an access token), exported from the identity barrel and covered by `purpose-tokens.e2e-spec.ts`. S01 should adopt it into its spec (Provides) and own it from now on.
+- **S10**: consume SQS command `orders.booking_voucher_requested` v1 from queue `orders-booking-voucher-requested` (defined in `infra/docker/elasticmq/elasticmq.conf` with its dead-letter queue). Body: `{holdId, bookingIds, launchEventId, shopId, userId, seatCount, dedupeKey}` where `dedupeKey` is `booking-voucher:<holdId>`; idempotent on it.
+- **S28**: topic `launch_events.events` is confirmed. Types are emitted as `launchevents.event_created|booking_confirmed|event_sold_out|event_closed` (see Spec changes); the payload fields are those of `packages/contracts/src/launch-events/schemas.ts` (`launchEventEventSchemas`). S28 may import the schemas from there.
+- **S04, S15, S17, S20, S21, S25**: their topic names and payload assumptions listed in S28's `contracts/events.md` do not concern S22 (its producer side is final); nothing to confirm here beyond the S28 line above.
+- **S50**: policies `launch.queue.join.user`, `launch.hold.user`, `launch.seatmap.ip` are declared in `launch-events/rate-limit-policies.ts` (call-site owner) and charged from the services (`application/launch-limits.ts`); `search.query` is no longer used by this domain.
+- **S51**: `LaunchEventTopicsModule` registers `queue` (owner policy through the ticket store), `event:seatmap` and `stream` with one rule per route and an `owner`.
+- **S52**: `DistributedLock` (with fence) replaces the hand-rolled lease for the admitter (the fence is the admission epoch), the seat-map rebuild single flight and the reconciler. The per-seat `SET NX PX` stays on purpose as a first filter (research D-3); `seat-hold.service.ts` is gone. Not adopted for `assistant`, `community`, `fulfilment` (S49 and others').
+- **S53**: the type pattern forbids `launch_events.*` event types (see Spec changes); a relaxed pattern would let S22 emit the specified names.
+- **S54**: `problemDetailsSchema.code` should accept the upper-case vocabulary of S22 (`^[A-Za-z][A-Za-z0-9_]*$`), or S22's codes must be renamed in its spec.
+- **J03**: consumes `launchevents.booking_confirmed`, the seat map and the queue endpoints.
+
+## Gate repairs
+
+- AS-47 (client delta rule): the gate scans only `packages/backend` for scenario tests, while the reducer spec lives in `packages/contracts` (which has no test runner). Added `packages/backend/libs/domains/launch-events/domain/seat-map-reducer.spec.ts`, which runs the same shared `reduceSeatMap` through the `11, 13, 12, 12` table; titles start with `S22 AS-47`. The contracts spec is kept.
+- Test integrity: the old `launch-events.e2e-spec.ts` (no scenario ids, tested the removed `SeatHoldService`) was deleted and nothing could prove a replacement. Recreated `launch-events.e2e-spec.ts` as a six-test journey smoke over the new API (titles `S22 AS-16/17/18/21/28/33`); the detailed scenarios stay in the sibling `launch-events-*.e2e-spec.ts` files.

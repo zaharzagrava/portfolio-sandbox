@@ -30,7 +30,9 @@ export class SequelizeAttemptRepository implements AttemptRepository {
     return row ? { ...row, attempt: Number(row.attempt) } : null;
   }
 
-  async insert(input: Parameters<AttemptRepository['insert']>[0]): Promise<boolean> {
+  async insert(
+    input: Parameters<AttemptRepository['insert']>[0],
+  ): Promise<boolean> {
     return (
       (await count(
         this.db,

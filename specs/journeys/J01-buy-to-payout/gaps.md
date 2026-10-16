@@ -111,9 +111,35 @@ Planned behavior changes (the capability page is edited first; no `*.reviewed.js
 - Gate failure "26 failed" (`verifyShop` timed out, shops stayed `PENDING`, documents `QUEUED`): the `document-extractor` stand-in (`pnpm --filter api run start:lambda-local document-extractor`) was not running on the gate stack, and when started it crashed on every message: `OnboardingExtractionModule` (`libs/domains/seller-onboarding/onboarding.module.ts`) did not provide the S04 ports (`APPLICATIONS`, `DOCUMENTS`, `ATTEMPTS`, `REVIEW_TASKS`, `STATUS_HISTORY`), `EXTRACTION_CONFIG`, `VerificationPolicyService` or `ClockModule`, so Nest could not build `ExtractionService` outside the monolith (L-018). The module now provides them (`EXTRACTION_CONFIG` is resolved at boot from the upper-case env names of `EXTRACTION_CONFIG_KEYS`). `npx tsc --noEmit` is clean; with the stand-in started, `pnpm test:journeys` passes 26 of 27.
 - `J01 AS-30` still fails with BLOCKED: nothing listens on `http://localhost:9464/metrics` on this runner (the API on :8000 runs without the Prometheus exporter; telemetry is off when `OTEL_SDK_DISABLED=true` or `NODE_ENV=test`). That is an environment limit, not a code fault I could find; the test was not changed. Run it with the API started with telemetry on (or `METRICS_URL` set).
 
+- Gate failure "27 failed" with `global teardown: could not restore the stack (admin login 401)` and `control` undefined in `afterAll`: environment, not code. The stack had no seeded admin, so `adminClient()` could not sign in. Fix: `pnpm --filter api seed:dev` (admin login then 200). No test or product code changed. Re-run of the full `pnpm test:journeys`: 27 passed, 27 total.
+
 ## Runtime proofs, T076–T079 (2026-10-16)
 
 - **T078 done.** Cause was in seller-onboarding, not the T071 move: `ExtractionService` seals each attempt with `sealContext(documentId, attempt)` (a `v2` value), but `ReviewService.resolve` opened it without the context (`secret context mismatch`) and sealed the human correction without one (`v1`). It now opens and seals with `sealContext`. The PII test expected `v1.`; the sealed column is `v2.` by design, so it now expects `v2.`. `onboarding.e2e-spec.ts`: 12 of 12 pass.
 - **T077 done.** The API on :8000 now serves `http://localhost:9464/metrics` (200); `J01 AS-30` passes in the US9 slice.
 - **T076 partly run.** `pnpm test:journeys` could not be started with nohup/setsid from this session (the tool refuses a detached start), so it ran in three foreground slices on the same stack with the `document-extractor` stand-in running: `-t "US1"` 4 passed, `-t "US2|US3|US4"` 10 passed, `-t "US5|US6|US7|US8|US9|Static gates"` 13 passed. Together that is 27 of 27 (AS-01…AS-31, AS-30 and AS-31 included); no test skipped between slices. `grep -rn "setTimeout\|sleep(" packages/backend/test/journeys`: empty. **NOT run (the tool asked for approval and nobody could give it):** `scripts/qa/fresh-run.sh`, `scripts/infra/boot-apps.sh` (L-018 standalone boots), Playwright `buy-to-payout` (AS-29), `python3 -m unittest discover -s scripts/infra -p test_doctor.py`, `GET /api/admin/clock`. T076 stays open for those.
 - **T079.** SC-001 and SC-007 stay `not run` in `quickstart.md` and `specs/UNVERIFIED.md` (rows for J01 at lines 222–223); no run of 100 loops or fresh-stack timing was made.
+
+## Flaky tests (passed after a repair that changed no code)
+- 2026-10-16 J01 gate: failed, then passed after a repair attempt that changed no code. Not a fix: a flake. Failed before:
+  - Journey J01: buy to payout › US1: the buyer pays once › J01 AS-01: a buyer pays a two-shop order; the order is PAID once, in order, with stock taken
+  - Journey J01: buy to payout › US1: the buyer pays once › J01 AS-02: a signed webhook once and ten times at once after success changes nothing
+  - Journey J01: buy to payout › US1: the buyer pays once › J01 AS-03: a webhook before the payment completes leaves the order RESERVED, then it becomes PAID once
+  - Journey J01: buy to payout › US1: the buyer pays once › J01 AS-04: with payments-order-copy paused the intent is 404; after resume the same key gets 202 and one payment
+  - Journey J01: buy to payout › US3: the notices › J01 AS-08: the buyer and each shop owner get exactly one notice for the paid order, staff none, and the stream carries it
+  - Journey J01: buy to payout › US3: the notices › J01 AS-09: a declined card tells the buyer once and the sellers nothing, and there is no order.confirmed
+  - Journey J01: buy to payout › US4: the weekly payout › J01 AS-20: the weekly run pays S1 its balance less the reserve, the balance drops to the reserve, the statement shows the payout
+  - Journey J01: buy to payout › US4: the weekly payout › J01 AS-21: three more runs, one after another and two at once, leave one payout and the balance unchanged
+  - Journey J01: buy to payout › US4: the weekly payout › J01 AS-22: a shop below the minimum is not paid and is told why
+  - Journey J01: buy to payout › US4: the weekly payout › J01 AS-10: payout.paid reaches the owner of the paid shop only; payout.failed the owner of the rejected one
+  - Journey J01: buy to payout › US4: the weekly payout › J01 AS-23: a rejected transfer fails the payout, gives the balance back, tells the owner, and the shop is paid once the destination is fixed
+  - Journey J01: buy to payout › US6: the compensations › J01 AS-17: a declined card cancels the order (payment_failed), gives the stock back, moves no money, and a second intent is refused
+  - Journey J01: buy to payout › US6: the compensations › J01 AS-18: cancelling while the charge is in flight refunds the late success; the order stays CANCELLED and the stock returns once
+  - Journey J01: buy to payout › US6: the compensations › J01 AS-19: an unpaid hold that ends is cancelled (hold_expired), the stock returns, the intent is refused, and no money moved
+  - Journey J01: buy to payout › US7: duplicates, replay and out-of-order signals › J01 AS-24: the same key five times at once and again later, one webhook ten times: one order, one payment, one of everything
+  - Journey J01: buy to payout › US7: duplicates, replay and out-of-order signals › J01 AS-25: replaying the topics for the six consumer groups changes no observable
+  - Journey J01: buy to payout › US7: duplicates, replay and out-of-order signals › J01 AS-26: a payment_failed signal that arrives after the success changes nothing
+  - Journey J01: buy to payout › US8: a consumer is down › J01 AS-27: with the settlement consumer down the order is PAID and notified but the balance waits; a payout run pays only what is settled; resume credits once
+  - Journey J01: buy to payout › US2: the books follow the payment › J01 AS-05: both shop balances equal net(s); nets plus the fee equal 2500; asOf is not before paidAt; cross-shop is 404
+  - Journey J01: buy to payout › US2: the books follow the payment › J01 AS-06: a declined order credits nobody
+  - ... and 8 more

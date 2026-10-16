@@ -236,3 +236,14 @@ interviews) until its status says so. The implementation loop appends here (rule
 | S04 | SC-006: the platform is told within 60 s of the last approval | same file (relay on a real stack) | not run |
 | S04 | SC-007: verified within 5 min at normal load; parked documents in review within 15 min | same file (staging run) | not run |
 | S04 | SC-008: a reviewer resolves a typical task in at most 3 interactions | same file (moderator console journey, screens not built) | not run |
+| S31 | SC-001: re-sync of a 1 GiB file after a middle edit sends at most 3 chunks | `specs/domains/S31-assets-digital-delivery/quickstart.md`, "Ops artifacts" (1 GiB sync) | not run |
+| S31 | SC-003: a capped share link holds under 100 simultaneous clicks | same file (100 concurrent redeems) | not run |
+| S31 | SC-004: entitlement appears and disappears within 30 s at p99 | same file (lag histogram under load) | not run |
+| S31 | SC-006: unreferenced bytes reclaimed between 24 h and 25 h | same file (deployed observation) | not run |
+| S31 | SC-008: 50 GiB upload and download keep application memory flat | same file (50 GiB transfer) | not run |
+| S27 | SC-003: 99% of story views from the CDN; origin 2,000 rps, p99 < 50 ms from the read model | `specs/domains/S27-brand-stories/quickstart.md`, "Ops artifacts" (`pnpm loadtest:stories`) | not run |
+| S27 | SC-001 (real CDN and Next.js part): a change is visible through the CDN within 60 s | same file (publish on a deployed stack, poll the CDN URL) | not run |
+| S22 | SC-004: 20,000 concurrent buyers: join p99 < 100 ms, hold p99 < 150 ms, seat map p99 < 50 ms, no relational hold/queue traffic | `specs/domains/S22-booking/quickstart.md`, "Ops artifacts" (`pnpm loadtest:launch-event`) | not run |
+| S22 | SC-009: displayed wait within 1.5x of actual wait for 90% of buyers in a steady-rate run | same file (steady-rate k6 run comparing `etaSeconds`) | not run |
+| S23 | SC-003: a posted comment reaches 99% of connected viewers' batches within 1 s at 5,000 comments/s | `specs/domains/S23-live-stream/quickstart.md`, "Ops artifacts" (`pnpm loadtest:live-stream`) | not run |
+| S23 | SC-014: one gateway instance carries 50,000 concurrent viewers per stream with one upstream subscription | same file (k6 SSE run with the connection count raised on a deployed gateway) | not run |

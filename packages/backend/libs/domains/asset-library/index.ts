@@ -1,8 +1,11 @@
 /**
  * Public entry point of the `asset-library` domain (constitution X.4). Code outside this domain imports only
- * from `@app/domains/asset-library`. Generated from actual cross-domain usage in Phase 2 (later batches append); extend
- * it by hand when a new export is needed. Models exported here are transitional (IX.4 debt): other
- * domains must stop injecting them.
+ * from `@app/domains/asset-library`. The barrel exports the four modules the apps host and nothing else: no model,
+ * repository, job class or port implementation.
  */
-export { AssetsModule, AssetsWorkerModule } from './assets.module';
+export {
+  AssetsModule,
+  AssetsWorkerModule,
+  AssetsProjectorModule,
+} from './assets.module';
 export { AssetTopicsModule } from './realtime-topics.module';

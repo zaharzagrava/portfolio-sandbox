@@ -1,172 +1,110 @@
-import { INestApplication } from '@nestjs/common';
-import request from 'supertest';
-import { getModelToken } from '@nestjs/sequelize';
 import { v4 } from 'uuid';
-import { generateTestingModule } from '@app/test/utils/global-modules';
-import { inParallel } from '@app/test/utils/async-helpers';
-import { SeedsModule } from '@app/test/seeds/seeds.module';
-import { SeedsService } from '@app/test/seeds/seeds.service';
-import { CacheModule } from '@app/infrastructure/cache/cache.module';
-import { RateLimitModule } from '@app/infrastructure/rate-limit/rate-limit.module';
-import { UserModel as User } from '@app/domains/identity';
-import { issueSession } from '@app/test/seeds/session.fixture';
-import { ShopModel as Shop } from '@app/domains/tenancy';
-import LaunchEvent from './infra/models/launch-event.model';
-import Booking from './infra/models/booking.model';
+import { HOLD_LEDGER, type HoldLedger } from './domain/ports';
 import { LaunchEventsModule } from './launch-events.module';
-import { SeatHoldService } from './application/seat-hold.service';
-import { WaitingRoomService } from './application/waiting-room.service';
+import {
+  createLaunchApp,
+  type LaunchTestApp,
+  type Seller,
+} from './testing/launch-events-test-kit';
 
-/** SD-21 against real Postgres + Redis + DynamoDB Local. */
+jest.setTimeout(180_000);
+
+/** Whole-journey smoke over the real module: admission, hold, confirm, release (the detail lives in the sibling specs). */
 describe('Launch event booking (e2e)', () => {
-  let app: INestApplication;
-  let seeds: SeedsService;
-  let holds: SeatHoldService;
-  let room: WaitingRoomService;
-  let event: LaunchEvent;
-
+  let t: LaunchTestApp;
+  let s: Seller;
   beforeAll(async () => {
-    const moduleRef = await generateTestingModule(
-      [LaunchEventsModule, CacheModule, RateLimitModule, SeedsModule],
-      { stores: ['redis', 'dynamo'] },
-    );
-    app = moduleRef.createNestApplication();
-    app.setGlobalPrefix('api');
-    await app.init();
-    seeds = app.get(SeedsService);
-    holds = app.get(SeatHoldService);
-    room = app.get(WaitingRoomService);
+    t = await createLaunchApp();
+    s = await t.seller();
   });
-
   afterAll(async () => {
-    await app.close();
+    await t.close();
   });
 
-  beforeEach(async () => {
-    await app
-      .get<typeof Booking>(getModelToken(Booking))
-      .destroy({ where: {} });
-    await app
-      .get<typeof LaunchEvent>(getModelToken(LaunchEvent))
-      .destroy({ where: {} });
-    await seeds.clean();
-    const shop = await app
-      .get<typeof Shop>(getModelToken(Shop))
-      .create({ name: 'Apple', slug: `apple-${v4().slice(0, 8)}` });
-    event = await app
-      .get<typeof LaunchEvent>(getModelToken(LaunchEvent))
-      .create({
-        shopId: shop.id,
-        title: 'iPhone 18 Keynote Live',
-        venue: 'Berlin flagship',
-        startsAt: new Date(Date.now() + 86_400_000),
-        salesOpenAt: new Date(Date.now() - 1_000),
-        seatCount: 800,
-        perUserLimit: 2,
-      });
-  });
+  const ledger = () =>
+    t.app.select(LaunchEventsModule).get<HoldLedger>(HOLD_LEDGER);
+  const heldSeats = async (event: { id: string }) =>
+    (await ledger().records(event.id))
+      .filter((r) => r.state !== 'FREE')
+      .map((r) => r.seat);
+  const sale = (overrides: Record<string, unknown> = {}) =>
+    t.onSale(s, { admissionRatePerSec: 100_000, ...overrides });
 
-  const users = (n: number) =>
-    app.get<typeof User>(getModelToken(User)).bulkCreate(
-      Array.from({ length: n }, () => ({ email: `u-${v4()}@mail.com` })),
-      { returning: true },
+  it('S22 AS-16: 20 buyers click the same seat at once → exactly one hold, 19 × SEAT_TAKEN', async () => {
+    const event = await sale();
+    const people = await t.buyers(20);
+    const tokens = await t.admitAll(event, people);
+    const results = await Promise.all(
+      people.map((who, i) => t.hold(event, who, tokens[i], { seats: [7] })),
     );
-
-  it('100 people click the same seat at once → exactly one hold, 99 × SEAT_TAKEN', async () => {
-    const people = await users(100);
-    const results = await inParallel(100, (i) =>
-      holds.hold(event, people[i].id, [42]),
-    );
-
-    expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(1);
-    expect(
-      results.filter(
-        (r) =>
-          r.status === 'rejected' &&
-          (r.reason as { status?: number }).status === 409,
-      ),
-    ).toHaveLength(99);
+    const won = results.filter((r) => r.status === 201);
+    const lost = results.filter((r) => r.status !== 201);
+    expect(won).toHaveLength(1);
+    expect(lost).toHaveLength(19);
+    expect(lost.every((r) => r.status === 409)).toBe(true);
+    expect(lost.every((r) => r.body.code === 'SEAT_TAKEN')).toBe(true);
+    expect(won[0].body.seats).toEqual([7]);
+    expect(await heldSeats(event)).toEqual([7]);
   });
 
-  it('multi-seat holds are all-or-nothing: a conflict on one seat rolls back the others', async () => {
-    const [a, b] = await users(2);
-    await holds.hold(event, a.id, [10]);
+  it('S22 AS-17: a multi-seat hold is all-or-nothing: a conflict on one seat leaves the others free', async () => {
+    const event = await sale();
+    const first = await t.buyer();
+    await t.held(event, first, [10]);
+    const second = await t.buyer();
+    const token = await t.admit(event, second);
+    const res = await t.hold(event, second, token, { seats: [9, 10] });
+    expect(res.status).toBe(409);
+    expect(res.body.code).toBe('SEAT_TAKEN');
+    expect(await heldSeats(event)).toEqual([10]);
+  });
 
-    await expect(holds.hold(event, b.id, [9, 10])).rejects.toMatchObject({
-      status: 409,
+  it('S22 AS-28: a released hold frees the seat for the next buyer', async () => {
+    const event = await sale();
+    const a = await t.buyer();
+    const hold = await t.held(event, a, [20]);
+    await t.release(hold.holdId, a).expect(204);
+    expect(await heldSeats(event)).toEqual([]);
+    const b = await t.buyer();
+    const again = await t.held(event, b, [20]);
+    expect(again.seats).toEqual([20]);
+    expect(again.holdId).not.toBe(hold.holdId);
+  });
+
+  it('S22 AS-33: confirm turns the hold into bookings and a replay with the same key answers the same', async () => {
+    const event = await sale();
+    const who = await t.buyer();
+    const hold = await t.held(event, who, [30, 31]);
+    const key = `key-${v4()}`;
+    const first = await t.confirm(hold.holdId, who, key).expect(201);
+    expect(first.body.bookings.map((b: { seat: number }) => b.seat)).toEqual([
+      30, 31,
+    ]);
+    const replay = await t.confirm(hold.holdId, who, key).expect(201);
+    expect(replay.body).toEqual(first.body);
+    expect(replay.headers['idempotent-replayed']).toBe('true');
+  });
+
+  it('S22 AS-21: the per-person limit refuses seats beyond it with 422 TICKET_LIMIT_EXCEEDED', async () => {
+    const event = await sale({ perUserLimit: 2 });
+    const who = await t.buyer();
+    const token = await t.admit(event, who);
+    await t.hold(event, who, token, { seats: [40, 41] }).expect(201);
+    const over = await t.hold(event, who, token, { seats: [42] }).expect(422);
+    expect(over.body).toMatchObject({
+      code: 'TICKET_LIMIT_EXCEEDED',
+      limit: 2,
+      remaining: 0,
     });
-    // Seat 9 was rolled back - someone else can take it.
-    await expect(holds.hold(event, a.id, [9])).resolves.toMatchObject({
-      seats: [9],
-    });
+    expect(await heldSeats(event)).toEqual([40, 41]);
   });
 
-  it('an expired/released hold frees the seat; confirm is idempotent and survives expiry jobs', async () => {
-    const [a, b] = await users(2);
-    const first = await holds.hold(event, a.id, [1]);
-    await holds.release(first.holdId); // what the expiry job does
-
-    const second = await holds.hold(event, b.id, [1]);
-    const booked = await holds.confirm(second.holdId, b.id);
-    expect(booked).toHaveLength(1);
-    expect(await holds.confirm(second.holdId, b.id)).toHaveLength(1); // retry
-    expect(await holds.release(second.holdId)).toBe(false); // expiry after confirm: no-op
-
-    const bitmap = Buffer.from(await holds.seatMap(event.id), 'base64');
-    expect((bitmap[0] >> (7 - 1)) & 1).toBe(1); // seat 1 shown as taken
-  });
-
-  it('per-person limit', async () => {
-    const [a] = await users(1);
-    await expect(holds.hold(event, a.id, [1, 2, 3])).rejects.toMatchObject({
-      status: 422,
-    });
-    await expect(holds.hold(event, a.id, [1, 2])).resolves.toBeDefined();
-  });
-
-  it('waiting room: joins are queued, admission happens at the configured rate, tokens are bound to user + event', async () => {
-    const people = await users(30);
-    const tickets = await Promise.all(
-      people.map((p) => room.join(event.id, p.id, event.salesOpenAt)),
-    );
-    expect(tickets.every((t) => !t.admitted && t.position! >= 1)).toBe(true);
-
-    expect(await room.admit(event.id, 10)).toBeGreaterThanOrEqual(10);
-    const statuses = await Promise.all(
-      tickets.map((t) => room.status(event.id, t.ticket)),
-    );
-    const admitted = statuses.filter((s) => s.admitted);
-    expect(admitted.length).toBeGreaterThanOrEqual(10);
-
-    const holder =
-      people[
-        tickets.findIndex((t) => admitted.some((a) => a.ticket === t.ticket))
-      ];
-    const token = admitted.find(
-      (a) => a.ticket === tickets[people.indexOf(holder)].ticket,
-    )!.admissionToken;
-    await expect(
-      room.assertAdmitted(event.id, holder.id, token),
-    ).resolves.toBeUndefined();
-    await expect(
-      room.assertAdmitted(
-        event.id,
-        people.find((p) => p !== holder)!.id,
-        token,
-      ),
-    ).rejects.toMatchObject({ status: 403 });
-    await expect(
-      room.assertAdmitted(v4(), holder.id, token),
-    ).rejects.toMatchObject({ status: 403 });
-  });
-
-  it('HTTP: holding without an admission token is rejected before touching any store', async () => {
-    const [a] = await users(1);
-    const auth = { Authorization: (await issueSession(app, a)).bearer };
-    await request(app.getHttpServer())
-      .post(`/api/launch-events/${event.id}/holds`)
-      .set(auth)
-      .send({ seats: [5] })
-      .expect(403);
+  it('S22 AS-18: holding without an admission token is 403 ADMISSION_REQUIRED and changes nothing', async () => {
+    const event = await sale();
+    const who = await t.buyer();
+    const res = await t.hold(event, who, undefined, { seats: [50] });
+    expect(res.status).toBe(403);
+    expect(res.body.code).toBe('ADMISSION_REQUIRED');
+    expect(await heldSeats(event)).toEqual([]);
   });
 });

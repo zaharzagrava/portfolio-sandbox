@@ -9,6 +9,8 @@ import type { LlmConfig } from './llm-config';
 import type { AdsConfig } from './ads-config';
 import type { DeveloperPlatformConfig } from './developer-platform-config';
 import type { CatalogSyncConfig } from './catalog-sync-config';
+import type { StoriesConfig } from './stories-config';
+import type { LaunchEventsConfig } from './launch-events-config';
 
 /**
  * @description - config that should always be present in environment variables where application is run
@@ -463,6 +465,8 @@ export interface SecretsManagerConfig
     LlmConfig,
     AdsConfig,
     DeveloperPlatformConfig,
-    CatalogSyncConfig {}
+    CatalogSyncConfig,
+    StoriesConfig,
+    LaunchEventsConfig {}
 
 export class Config extends IntersectionType(EnvConfig, SecretsManagerConfig) {}

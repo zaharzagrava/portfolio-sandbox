@@ -27,6 +27,11 @@ export type { IssuedSession } from './application/session-issuer.service';
 export { SessionRevocationService } from './application/session-revocation.service';
 export { ServiceTokenService } from './application/service-token.service';
 export {
+  InvalidPurposeTokenError,
+  PURPOSE_TOKEN_TYP,
+  PurposeTokenService,
+} from './application/purpose-token.service';
+export {
   AllowedCallers,
   ServiceAuthGuard,
 } from './api/guards/service-auth.guard';

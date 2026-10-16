@@ -21,6 +21,7 @@ A capture of 2,000 [minor units](minor-units.md) (illustrative) with the default
 
 ## Used by
 <!-- used-by:start -->
+- [J01](../capabilities/J01-buy-to-payout.md): B-09
 - [S14](../capabilities/S14-ledger-reconciliation.md): R-11, B-05
 - [journal-kind](journal-kind.md)
 - [ledger](ledger.md)

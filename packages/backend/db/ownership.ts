@@ -182,6 +182,8 @@ export const OWNERSHIP = {
   // launch-events
   LaunchEvent: 'domain:launch-events',
   Booking: 'domain:launch-events',
+  BookingEvent: 'domain:launch-events',
+  LaunchEventHistory: 'domain:launch-events',
   LiveStream: 'domain:launch-events',
   // auctions
   Auction: 'domain:auctions',
@@ -197,6 +199,8 @@ export const OWNERSHIP = {
   Story: 'domain:content',
   StoryDraft: 'domain:content',
   StoryVersion: 'domain:content',
+  StoryTransition: 'domain:content',
+  StoryShop: 'domain:content',
   // notifications
   NotificationPreference: 'domain:notifications',
   NotificationSettings: 'domain:notifications',
@@ -253,6 +257,11 @@ export const OWNERSHIP = {
   AssetShareLink: 'domain:asset-library',
   AssetSyncState: 'domain:asset-library',
   DigitalProduct: 'domain:asset-library',
+  AssetVersionChunk: 'domain:asset-library',
+  AssetShopUsage: 'domain:asset-library',
+  AssetEntitlement: 'domain:asset-library',
+  AssetDownloadGrant: 'domain:asset-library',
+  AssetOrderRevocation: 'domain:asset-library',
   // assistant
   KnowledgeDocument: 'domain:assistant',
   KnowledgeChunk: 'domain:assistant',

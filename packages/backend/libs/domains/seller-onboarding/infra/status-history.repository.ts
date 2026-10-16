@@ -11,7 +11,9 @@ import type {
 export class SequelizeStatusHistoryRepository implements StatusHistoryRepository {
   constructor(@InjectConnection() private readonly db: Sequelize) {}
 
-  async append(entries: StatusHistoryEntry | StatusHistoryEntry[]): Promise<void> {
+  async append(
+    entries: StatusHistoryEntry | StatusHistoryEntry[],
+  ): Promise<void> {
     const list = Array.isArray(entries) ? entries : [entries];
     if (list.length === 0) return;
     const values = list

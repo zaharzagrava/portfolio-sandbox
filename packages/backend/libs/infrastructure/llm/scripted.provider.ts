@@ -136,7 +136,15 @@ export class ScriptedLlmProvider implements LlmProvider {
     };
     if (turn.unavailable)
       throw new LlmUnavailableError('scripted overload', null);
+    if (turn.rateLimited)
+      throw new LlmUnavailableError(
+        'scripted rate limit',
+        turn.rateLimited.retryAfterMs,
+        true,
+      );
     if (turn.rejected) throw new LlmRejectedError('scripted rejection', 400);
+    // a scripted delay lets a spec change the world while the call is in flight (S04 AS-33)
+    if (turn.delayMs) await new Promise((r) => setTimeout(r, turn.delayMs));
     return this.result(request, turn, turn.text ?? '');
   }
 
@@ -246,7 +254,10 @@ const embeddedReply = (request: LlmRequest): string | undefined => {
           : '';
     const at = raw.indexOf(REPLY_MARKER);
     if (at >= 0)
-      return raw.slice(at + REPLY_MARKER.length).split(/\r?\n/, 1)[0].trim();
+      return raw
+        .slice(at + REPLY_MARKER.length)
+        .split(/\r?\n/, 1)[0]
+        .trim();
   }
   return undefined;
 };

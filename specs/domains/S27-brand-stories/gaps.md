@@ -126,3 +126,32 @@ Not reported by the tool but required by IX.4 and to be fixed by S27: the foreig
 | Problem+json filter, config validation, resilient HTTP client, idempotency-key facility | S54 | AS-24, AS-59, AS-95. |
 | `Firewall`, `@User()` | S01 | All routes. |
 | A web owner for the story pages, the revalidation route and the editor UI | W-capability to be assigned | Until then the UI column of `test-plan.md` is empty and the revalidation call has no real receiver. |
+
+## Spec changes
+
+No human-signed page existed for S27 and no `*.reviewed.json` was created or touched. The implementation created the living-spec page `docs/spec/capabilities/S27-brand-stories.md` first (rules R-01 to R-26, behaviors B-01 to B-10, every one with `[proof: S27 AS-nn]`); it is unsigned.
+
+## Sibling-spec follow-ups
+
+- **S03**: `tenancy.shop_*` events must keep `shopVersion` monotonic and the slug immutable; S27 consumes them as the R3 source and drops its direct read of `Shop`.
+- **S49**: add a permanent-failure outcome and single-run cron facility use as documented in `NonRetryableJobError`; S27 relies on both for `stories.publish` and the sweep.
+- **S50**: registry entry `content.write.shop` (120/min per shop, fail closed) is declared by S27 in `content/rate-limit-policies.ts`.
+- **S53**: topic `stories.events` (key `storyId`) and the event types `story.published|archived|schedule_failed` are new.
+- **S03**: the registered `tenancy.shop_deleted` payload is `{shopId, shopVersion}` (the S27 spec text says `{shopId}`); S27 consumes the registered definition from `@app/domains/tenancy`, so `shopVersion` is required of the producer. The status gate of `ShopScoped('products.read')` also refuses the story list in a `SUSPENDED` or `DELETING` shop (S03's `WHILE_SUSPENDED` list holds only `shop.read`, `members.read`, `shop.export`); S27 relies on that and does not add its own gate.
+- **S54**: the problem code `invalid_transition` carries the current status as `currentStatus` (the member `status` is the problem document's HTTP status); `slug_taken` and `version_conflict` are raised with S27's wording but not registered in the catalog (tenancy and several domains already register them with other wording).
+- **W02 (or the assigned web owner)**: adopt the public route `GET /api/stories/:shopSlug/:slug/:locale`, the revalidation receiver (`X-Revalidate-Timestamp`/`-Signature`, reject timestamps older than 5 minutes, idempotent), tags `story:<id>`/`shop:<id>`, and the `x-default`/`canonical` data.
+
+## Implementation notes (decisions taken while building)
+
+- A `DELETING` shop keeps its live stories public until `tenancy.shop_deleted` (`questions.md`, LOCAL line, S03 allows reads in `DELETING`); `FR-024` says "ACTIVE". The code follows `questions.md`: public read and sitemap show `ACTIVE` and `DELETING`, a preview needs `ACTIVE`, a scheduled publish needs `ACTIVE` (`shop_not_active`).
+- A status event is applied to the copy every time it is delivered (so a replay rebuilds an empty copy), while clearing the caches is decided by the inbox per `eventId` and repeated when an earlier try failed.
+- `StoryShop.slug` is nullable: a `shop_status_changed` may arrive before `shop_created`; the slug is set once, status and version only move forward.
+- The invalidation consumer uses `natural` idempotency plus `InboxService.claim/markStatus` (not `recordOnce`): `recordOnce` needs a transaction, and a network call must not run inside one (III.9). A failure of either target throws a plain error, so the framework's attempt budget (8) ends in the dead letter; a permanent CDN refusal and an invalid payload are `PermanentError`.
+- Configuration added: `STORY_PREVIEW_SECRET`, `REVALIDATE_URL`, `CDN_ZONE`, `CDN_TOKEN`, `CDN_API_URL` in `libs/common/config/stories-config.ts` (the production rule names a missing key and never a value). The limits (`stories_*`) are read by the domain from the environment, upper-cased.
+- The k6 script is `packages/backend/scripts/load-tests/stories.test.js` and `pnpm loadtest:stories` lives in `packages/backend/package.json` next to the other load tests (the root `package.json` has none).
+- Not done by this capability: the e2e specs were written after the code of their phase (the unit specs of the domain core were run red first); every spec was run green and the whole capability once at the end.
+
+## Gate repairs
+
+- Test integrity: the old `stories.e2e-spec.ts` (no scenario ids) was deleted, which the gate refuses. Recreated at the same path as a real lifecycle walk-through (draft → publish → read → republish → locale fallback → preview) on the new story-client fixtures, titled S27 AS-05/06/20/21/23/25/27/60/61. No product code changed.
+- `libs/domains/identity/infra/crypto/secret-box.spec.ts` (`S01 AS-67 › rejects a tampered tag`) failed outside this capability: the helper tampered with a part by overwriting its last two base64url characters with `AA`. The 16-byte GCM tag encodes to 22 characters whose last one carries 2 unused bits, so about 1 run in 1000 the tampered tag decoded to the same bytes and `open` correctly did not throw. The helper now changes the first character of the part (all six bits significant), so the tamper always changes the bytes. The assertions are unchanged and `SecretBox` is untouched.

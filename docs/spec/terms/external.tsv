@@ -265,3 +265,6 @@ pure-function	Pure function	https://en.wikipedia.org/wiki/Pure_function	Wikipedi
 http-authentication	HTTP authentication	https://developer.mozilla.org/en-US/docs/Web/HTTP/Authentication	MDN	
 phishing	Phishing	https://en.wikipedia.org/wiki/Phishing	Wikipedia	
 http-post	POST method	https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/POST	MDN	
+iban	IBAN	https://en.wikipedia.org/wiki/International_Bank_Account_Number	Wikipedia	iban
+prompt-injection	Prompt injection	https://owasp.org/www-community/attacks/PromptInjection	OWASP	prompt injection
+kyc	KYC (know your customer)	https://en.wikipedia.org/wiki/Know_your_customer	Wikipedia	kyc onboarding

@@ -31,6 +31,8 @@ import './media-config'; // registers the S29 media startup rules
 import { videoConfigKeys } from './video-config'; // also registers the S30 video startup rule
 import { bffConfigKeys } from './bff-config';
 import { catalogSyncConfigKeys } from './catalog-sync-config';
+import { storiesConfigKeys } from './stories-config'; // also registers the S27 startup rule
+import { launchEventsConfigKeys } from './launch-events-config'; // also registers the S22 startup rule
 
 dotenv.config({
   /**
@@ -640,6 +642,8 @@ export class ApiConfigService {
           ...developerPlatformConfigKeys,
           ...bffConfigKeys,
           ...catalogSyncConfigKeys,
+          ...storiesConfigKeys,
+          ...launchEventsConfigKeys,
           payments_cursor_secret: {
             verify: joi.string().optional().allow(''),
             name: 'PAYMENTS_CURSOR_SECRET',

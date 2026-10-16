@@ -24,6 +24,11 @@ const DEFINITIONS = {
     'Conflict',
     'The shop is being closed.',
   ],
+  insufficient_role: [
+    HttpStatus.FORBIDDEN,
+    'Forbidden',
+    'Your role does not allow this change.',
+  ],
   conflict_of_interest: [
     HttpStatus.FORBIDDEN,
     'Forbidden',
@@ -64,7 +69,8 @@ const DEFINITIONS = {
     'Conflict',
     'A document of this kind is already approved.',
   ],
-  document_limit_reached: [
+  // Not `document_limit_reached`: that code is the assistant's knowledge-base limit (422) and codes are unique platform-wide.
+  onboarding_document_limit_reached: [
     HttpStatus.CONFLICT,
     'Conflict',
     'The maximum number of documents of this kind was reached.',
@@ -121,6 +127,7 @@ const NOT_OWNED: OnboardingProblemCode[] = [
   'validation_failed',
   'shop_suspended',
   'shop_offboarding',
+  'insufficient_role',
 ];
 
 export class OnboardingError extends AppError {
@@ -160,6 +167,7 @@ export const validationFailed = (
   missingSteps?: string[],
 ) => new OnboardingError('validation_failed', { errors, missingSteps });
 
+export const insufficientRole = () => new OnboardingError('insufficient_role');
 export const conflictOfInterest = () =>
   new OnboardingError('conflict_of_interest');
 export const documentNotFound = () => new OnboardingError('document_not_found');
@@ -174,11 +182,13 @@ export const alreadyVerified = () => new OnboardingError('already_verified');
 export const documentAlreadyApproved = () =>
   new OnboardingError('document_already_approved');
 export const documentLimitReached = () =>
-  new OnboardingError('document_limit_reached');
-export const uploadNotReceived = () => new OnboardingError('upload_not_received');
+  new OnboardingError('onboarding_document_limit_reached');
+export const uploadNotReceived = () =>
+  new OnboardingError('upload_not_received');
 export const taskAlreadyResolved = () =>
   new OnboardingError('task_already_resolved');
-export const documentSuperseded = () => new OnboardingError('document_superseded');
+export const documentSuperseded = () =>
+  new OnboardingError('document_superseded');
 export const documentNotRequired = () =>
   new OnboardingError('document_not_required');
 export const uploadMismatch = () => new OnboardingError('upload_mismatch');
@@ -186,12 +196,13 @@ export const ibanInvalid = () => new OnboardingError('iban_invalid');
 export const vatInvalid = () => new OnboardingError('vat_invalid');
 export const missingFields = () => new OnboardingError('missing_fields');
 
-export const ONBOARDING_PROBLEMS: ProblemCatalogEntry[] = ONBOARDING_ERROR_CODES.filter(
-  (code) => !NOT_OWNED.includes(code),
-).map((code) => ({
-  code,
-  status: DEFINITIONS[code][0],
-  title: DEFINITIONS[code][1],
-  detail: DEFINITIONS[code][2],
-  owner: 'seller-onboarding',
-}));
+export const ONBOARDING_PROBLEMS: ProblemCatalogEntry[] =
+  ONBOARDING_ERROR_CODES.filter((code) => !NOT_OWNED.includes(code)).map(
+    (code) => ({
+      code,
+      status: DEFINITIONS[code][0],
+      title: DEFINITIONS[code][1],
+      detail: DEFINITIONS[code][2],
+      owner: 'seller-onboarding',
+    }),
+  );

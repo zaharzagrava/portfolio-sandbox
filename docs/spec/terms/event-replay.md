@@ -21,6 +21,7 @@ Illustrative, not taken from the spec: [S32](../capabilities/S32-product-search.
 
 ## Used by
 <!-- used-by:start -->
+- [J01](../capabilities/J01-buy-to-payout.md): R-15
 - [S28](../capabilities/S28-notifications.md): B-03
 - [S34](../capabilities/S34-recommendations.md): B-14
 - [S35](../capabilities/S35-trending.md): R-20

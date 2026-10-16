@@ -22,6 +22,7 @@ The provider answers a charge with `401` (illustrative cause: the configured pro
 ## Used by
 <!-- used-by:start -->
 - [definite-decline](definite-decline.md)
+- [failure-code](failure-code.md)
 - [payment-failed-event](payment-failed-event.md)
 - [payment-provider](payment-provider.md)
 <!-- used-by:end -->

@@ -21,6 +21,7 @@ An operator is a person who runs the system in production, not a component of it
 
 ## Used by
 <!-- used-by:start -->
+- [J01](../capabilities/J01-buy-to-payout.md): B-11, B-15
 - [S01](../capabilities/S01-auth-sessions.md): R-44
 - [S33](../capabilities/S33-autocomplete.md): R-24
 - [S49](../capabilities/S49-job-scheduler.md): B-14
@@ -38,6 +39,9 @@ An operator is a person who runs the system in production, not a component of it
 - [jobs-admin-service-retry-dead](jobs-admin-service-retry-dead.md)
 - [node](node.md)
 - [non-retryable-broker-error](non-retryable-broker-error.md)
+- [payout-destination](payout-destination.md)
+- [payout-minimum](payout-minimum.md)
+- [payouts-run-weekly-job](payouts-run-weekly-job.md)
 - [published-version](published-version.md)
 - [reconciliation-issue-auto-resolve](reconciliation-issue-auto-resolve.md)
 - [reconciliation-issue](reconciliation-issue.md)

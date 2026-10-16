@@ -94,6 +94,20 @@ None. No `docs/spec/capabilities/S04-*.md` page and no `*.reviewed.json` exists 
 - **S50**: declare policies `onboarding.upload.shop` (20/hour) and `onboarding.submit.shop` (10/day), fail-closed.
 - **S55**: wire the dead-letter handler `document-extractor-dlq` for queue `onboarding-documents` (max receives 5, visibility at least 270 s).
 - **S53**: the single-consumer command `onboarding.extract_document` goes through `appendTask`.
+- **S47 / assistant**: S04 uses the problem code `onboarding_document_limit_reached` (`409`) because the assistant already registers `document_limit_reached` (`422`) and the problem catalog allows one definition per code. Nothing to adopt; if the two capabilities should share a name, one of them renames (see `questions.md` → RESOLVED).
+- **S46**: `ScriptedLlmProvider.complete` (`libs/infrastructure/llm/scripted.provider.ts`) now throws the scripted `rateLimited` error and waits `delayMs`, as `streamTurn` already did. Adopt it in the S46 test plan if it documents the double's behaviour.
+- **S49**: `JobsService.enqueue` refuses `runAt` more than 366 days ahead; S04's 1825-day erasure therefore hops yearly (`onboarding.erase-records {shopId, dueAt}`). A cap-aware "run at" helper in S49 would remove the hop.
+- **S55**: `document-extractor-dlq` (queue `onboarding-documents-dlq`, `batchSize` 5, `maxConcurrency` 5) is added to `apps/lambdas/src/lambdas.manifest.ts`; the Terraform stack must give the DLQ an event-source mapping to this function (the DLQ itself exists in `elasticmq.conf` and `infra/stack/main.tf`).
+- **S03**: nothing changes for the events; S04 no longer exports `VerificationService` from `OnboardingModule`.
+
+## Implementation record (implement run, 2026-10-16)
+
+- **Built and proven by automated tests** (`test-spec.sh libs/domains/seller-onboarding`: 7 e2e suites, 217 tests; `pnpm run test libs/domains/seller-onboarding/domain`: 6 suites, 263 tests; `apps/lambdas/src/handlers/document-extractor.e2e-spec.ts`: 4; `apps/projector/src/onboarding-wiring.e2e-spec.ts`: 2): AS-01–AS-72 as mapped in `test-plan.md`, except the rows below.
+- **Not proven here**: SC-002 at full size, SC-006, SC-007, SC-008 (`quickstart.md` → Ops artifacts, `specs/UNVERIFIED.md`, all "not run"); the runtime proofs of `quickstart.md` (real API boot, standalone Lambda bundles, queue reload, empty-stack run) are deferred to the final checkpoint (L-019); the Playwright journeys need screens that no capability has built (A40).
+- **Static gates run**: `tsc --noEmit`, `check:table-ownership --strict` (0 findings), `check:model-registry`, `check:boundaries`, `check:no-wallclock`, ESLint on the touched files (prettier clean). `grep sequelize.transaction` in the domain: 0; `.tx.baseline` lowered to 0.
+- **Files removed**: `onboarding.e2e-spec.ts` (12 scenarios, each now covered: questionnaire → AS-01–06; documents before submit → AS-10; happy path → AS-22/49; PII → AS-30; escalation → AS-24; moderator correction → AS-25/41; prompt injection → AS-26; idempotency → AS-14/31; PNG as PDF → AS-29; supersede and stale task → AS-17/45; roles and seller view → AS-39/55; retention → AS-58) and `application/verification.service.ts` (replaced by `verification-policy.service.ts`).
+- **Follow-ups from built specs, all done**: S01 `SecretBox` context `kyc:<documentId>:<attempt>` (extraction and human attempts; AS-30, AS-41); S03 events and no `Shop` access (AS-05, AS-49, AS-62, AS-63; topic `shops.events`); S28 field names equal `contracts/events.md` (sibling note above); S46 import paths, `maxRetries: 0`, `timeoutMs: 45000`, `callId`, `purpose: "extraction"` (AS-22, AS-36).
+- **Debt**: no known open item for this domain; the application of `check:table-ownership --strict` shows an empty `seller-onboarding` block.
 
 ## Follow-ups received from built specs (requirements, all planned)
 
@@ -108,3 +122,4 @@ None. No `docs/spec/capabilities/S04-*.md` page and no `*.reviewed.json` exists 
 
 - `tsc` failed: the S04 event schemas (`OnboardingSubmitted`, `ShopVerified`, `onboarding.purge-documents`) now require `submissionNo`, but the legacy callers did not pass it. `onboarding-session.service.ts` emits `submissionNo: 1` (first round); `verification.service.ts` reads `submissionNo` from the locked `ShopOnboarding` row and passes it to `ShopVerified` and the purge job. `npx tsc --noEmit` in `packages/backend` is clean.
 - `db/ownership.spec.ts` failed: migration `20261016001000-seller-onboarding-s04.js` creates `OnboardingStatusHistory`, which the ownership registry did not list. Registered it in `packages/backend/db/ownership.ts` as `domain:seller-onboarding`; the spec now passes (5/5).
+- ESLint `require-await` failed in `apps/lambdas/src/handlers/index.ts`: the `HANDLERS` entries were `async () => module` with no `await`. They now return `Promise.resolve(module)` (same behavior). `eslint` on the file and `npx tsc --noEmit` are clean.

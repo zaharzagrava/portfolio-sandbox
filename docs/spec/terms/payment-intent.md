@@ -27,6 +27,7 @@ Location: <status URL, not given in the spec>
 
 ## Used by
 <!-- used-by:start -->
+- [J01](../capabilities/J01-buy-to-payout.md): R-14, B-05
 - [S13](../capabilities/S13-payment-intents.md): B-12
 - [check-payment-money](check-payment-money.md)
 - [order-reserved-event](order-reserved-event.md)

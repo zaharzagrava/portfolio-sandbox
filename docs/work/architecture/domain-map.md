@@ -193,7 +193,7 @@ uses to get other domains' data.
 - **Emits**: `order.reserved`, `order.paid`, `order.cancelled`.
 - **Hosted by**: core, worker.
 - **Exports (R1)**: `getOrdersForShop`, `getOrderLines`. These are used by developer-platform,
-  auctions, and asset-library instead of their current joins.
+  auctions instead of their current joins (asset-library consumes order events instead).
 - **Depends on**: catalog (R1 prices and stock), payments (SQS command for payment intent;
   consumes payment results), shop-functions (R1 discount evaluation), tenancy (R1).
 
@@ -249,12 +249,15 @@ uses to get other domains' data.
 ### launch-events
 - **Responsibility**: brand launch events: waiting room, admission tokens, seat holds, bookings,
   seat map, and the live launch stream (comments and reactions).
-- **Owns**: `LaunchEvent`, `Booking`, `LiveStream`.
-- **Other stores**: holds (DynamoDB), queue and seat bitmap (Redis), comments (DynamoDB).
-- **Emits**: `live.comment_posted`, `live.comment_removed`.
+- **Owns**: `LaunchEvent`, `LaunchEventHistory`, `Booking`, `BookingEvent`, `LiveStream`.
+- **Other stores**: holds (DynamoDB ledger with per-seat fencing numbers), queue, event gate, quota counters, seat locks and seat bitmap (Redis), comments (DynamoDB).
+- **Emits**: topic `launch_events.events`: `launchevents.event_created`, `launchevents.booking_confirmed`,
+  `launchevents.event_sold_out`, `launchevents.event_closed` (the type is the alias of the specified
+  `launch_events.*` names, S53 pattern); command `orders.booking_voucher_requested`; `live.comment_posted`,
+  `live.comment_removed`.
 - **Hosted by**: core, worker, projector, sse-gateway.
-- **Depends on**: orders (booking voucher via command), tenancy (R1 for staff moderation; replaces
-  `ShopMembership` reads).
+- **Depends on**: orders (booking voucher via command), identity (R1 `PurposeTokenService` for admission
+  tokens), tenancy (R1 `ShopScoped` for staff routes; replaces `ShopMembership` reads).
 
 ### auctions
 - **Responsibility**: limited-drop English auctions, proxy bidding, anti-sniping, exactly-once
@@ -363,11 +366,15 @@ uses to get other domains' data.
 ### asset-library
 - **Responsibility**: the shop asset library (chunked dedupe, delta sync, share links) and
   digital product delivery after purchase.
-- **Owns**: `Asset`, `AssetVersion`, `AssetChunk`, `AssetChange`, `AssetShareLink`,
-  `AssetSyncState`, `DigitalProduct`.
-- **Hosted by**: core, worker.
-- **Depends on**: orders (consumes `order.paid` to grant download entitlement; replaces the
-  `BisOrder` reads), catalog (R1).
+- **Owns**: `Asset`, `AssetVersion`, `AssetVersionChunk`, `AssetChunk`, `AssetChange`,
+  `AssetSyncState`, `AssetShopUsage`, `AssetShareLink`, `AssetDownloadGrant`, `DigitalProduct`,
+  `AssetEntitlement`, `AssetOrderRevocation`.
+- **Emits**: `assets.entitlement_granted`, `assets.entitlement_revoked`,
+  `assets.digital_product_linked`, `assets.digital_product_unlinked` (topic `assets.events`).
+- **Hosted by**: core (HTTP), worker (jobs), projector (consumers), realtime gateway (topic module).
+- **Depends on**: orders (events `order.paid`, `order.refunded`), catalog (R1
+  `getProductsByIds` and event `catalog.product_deleted`), tenancy (event `tenancy.shop_deleted`;
+  `ShopScoped`), realtime (`assets.changed` on `shop:<id>:assets`).
 
 ### assistant
 - **Responsibility**: the streamed LLM shopping assistant with read-only tools, and RAG ("ask this

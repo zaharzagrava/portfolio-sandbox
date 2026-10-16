@@ -20,6 +20,7 @@ All instances are down for 3 days over a daily schedule. When they come back, th
 
 ## Used by
 <!-- used-by:start -->
+- [J01](../capabilities/J01-buy-to-payout.md): B-05
 - [S14](../capabilities/S14-ledger-reconciliation.md): R-33
 - [S49](../capabilities/S49-job-scheduler.md): B-16, B-20
 - [cron-fires-skipped-total](cron-fires-skipped-total.md)

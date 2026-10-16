@@ -108,3 +108,34 @@ Not applicable: D-10, D-11, D-14, D-15, D-16, D-17 (other domains); D-1..D-5, D-
 5. Share links and download delivery: A14–A17, A26.
 6. Digital products and consumers: A18–A21, A30, then drop the product and order SQL (section C).
 7. Rate limits, metrics, logs, jobs, worker module split: A26, A27, A31; rewrite the e2e specs (A35) as each area lands, and update `domain-map.md` (CONTRACT question).
+
+## Sibling-spec follow-ups
+
+- **S10**: S31 does not call `OrderQueryService.getOrderLines`; it consumes `order.paid` and `order.refunded` (accepted `questions.md` decision). S10 may drop S31 from its `getOrderLines` consumers and, once S31's migration lands, drop `BisOrderModel`/`BisOrderItemModel` from its barrel for this domain; `order.refunded` must stay a full-order refund.
+- **S50**: declare `assets.upload.shop`, `assets.redeem.ip`, `assets.grant.user` (declared in S31's `rate-limit-policies.ts`).
+- **S54**: config key `usercontent_origin` must fail startup in production when equal to the app origin; request logs must use route templates for `/assets/shared/:token` and `/downloads/:token`.
+- **S28**: may consume `assets.entitlement_granted` and `assets.entitlement_revoked` (no download URL in mails).
+- **S03**: no new permission; `tenancy.shop_deleted` consumer added.
+- **S05**: `ProductQueryService.getProductsByIds([id], { shopId })` replaces the `Product` SQL (done: `application/digital.service.ts`); `catalog.product_deleted` is consumed by `infra/catalog-shop.consumer.ts` and tolerates unknown products. S05 may drop S31 from its list of capabilities that read `ProductModel`.
+- **S51**: the route `shop:<shopId>:assets` is registered through `TopicRegistry.define` (`api/realtime-topics.ts`, unchanged) and S31 now publishes `assets.changed {lastSeq}` on it through `RealtimePublisher` (`application/asset-notifier.ts`).
+- **S53 / apps**: `AssetsProjectorModule.projectors` (consumers of `orders.events`, `products.events`, `tenancy.events`) is registered in `apps/projector/src/projector.module.ts`; the core app hosts `AssetsModule`, the worker `AssetsWorkerModule`. The new topic is `assets.events` (aggregate type `assets`, keys `entitlementId` / `productId`).
+- **S54**: `usercontent_origin` is now required in production by a start-up rule of this domain (`config-rules.ts`) besides the platform rule that it differs from the front origin; `scripts/check-no-wallclock.ts` lists the asset-library folders; request logs already use route templates and the token routes use `@SensitivePathParams('token')`.
+- **S28**: unchanged (may consume `assets.entitlement_*`).
+
+## Implementation notes (where the build chose among open options)
+
+- The domain has no Sequelize models: its repositories run bound raw SQL like `seller-onboarding`, so `check:model-registry` has nothing to resolve (T019).
+- Share-link **list** needs `products.write` like create and revoke (plan T050); the `VIEWER` table of AS-19 treats it as a write.
+- Share links are shown as `<usercontent origin>/assets/shared/<token>` (the landing page); the download URL the redeem and the buyer request return is `<usercontent origin>/api/downloads/<token>`, the route the API serves.
+- Restore uses the device id `restore` for the name of a conflicted copy.
+- The test helper `asset-client.ts` lives in `testing/` (the dependency rule `x6` allows imports of `test/` only there); the faults of the storage adapter are in `testing/test-chunk-store.ts`.
+- The tests move the clock with `t.advance` / `t.setTime`, which sign every test user in again (an access token lives 300 s of the clock's time).
+- Listing order is byte order (`COLLATE "C"`, migration `20261010120000-asset-library-list-collation.js`) so `%`, `_` and letters sort the same everywhere.
+
+## Spec changes
+
+None: no `*.reviewed.json` page exists for S31 and no signed page is changed. The S31 living-spec page is created in phase 0 of the plan.
+
+## Gate repairs
+
+- Test integrity: `assets.e2e-spec.ts` (written against the deleted `assets.service.ts`, no scenario ids) was deleted. It is recreated against the HTTP API with the same five flows (partial-chunk edit, conflicted copy, version delete keeps shared chunks, share cap, dedupe prepare), titled with S31 scenario ids. No product code changed.

@@ -32,6 +32,7 @@ An order turns a cart into a hold on stock. Checkout creates one order, splits i
 
 ## Used by
 <!-- used-by:start -->
+- {{cap:J01}} Buyer pays for a multi-shop order; order paid → ledger journals → settlement → seller payout → monthly statement; buyer and sellers notified
 - {{cap:S05}} Product CRUD, pricing, stock fields, product cache and invalidation, product views
 - {{cap:S10}} Cart (guest + merge), idempotent checkout, stock reservation, multi-shop split, order state machine, payment webhook
 - {{cap:S11}} Flash sales (scheduled drops, bucketed fast stock, admission, never oversell, async reconciliation)

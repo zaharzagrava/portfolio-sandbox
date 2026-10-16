@@ -20,6 +20,7 @@ The `ledger-balances` projector stops consuming [`ledger.events`](ledger-events-
 
 ## Used by
 <!-- used-by:start -->
+- [J01](../capabilities/J01-buy-to-payout.md): B-16
 - [S14](../capabilities/S14-ledger-reconciliation.md): R-26
 - [as-of](as-of.md)
 - [balance-projector](balance-projector.md)

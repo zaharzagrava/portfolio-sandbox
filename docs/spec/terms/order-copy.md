@@ -20,6 +20,7 @@ A buyer submits a payment for order `ord_123` and the request body says `"amount
 
 ## Used by
 <!-- used-by:start -->
+- [J01](../capabilities/J01-buy-to-payout.md): R-02
 - [S13](../capabilities/S13-payment-intents.md): R-01
 - [payment-lifecycle](../concepts/payment-lifecycle.md): C-01
 - [amount-out-of-range](amount-out-of-range.md)

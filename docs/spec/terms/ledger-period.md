@@ -20,6 +20,7 @@ Suppose reconciliation finds that a `SALE` posted on 2026-10-10 was wrong (date 
 
 ## Used by
 <!-- used-by:start -->
+- [J01](../capabilities/J01-buy-to-payout.md): R-17, B-15
 - [S14](../capabilities/S14-ledger-reconciliation.md): R-36
 - [adjusted-resolution](adjusted-resolution.md)
 - [adjustment-journal](adjustment-journal.md)

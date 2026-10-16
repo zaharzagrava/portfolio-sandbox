@@ -49,7 +49,10 @@ describe('S02 SecretBox', () => {
     const NEW = Buffer.alloc(32, 2);
     const swap = (sealed: string, index: number, value?: string) => {
       const parts = sealed.split('.');
-      parts[index] = value ?? `${parts[index].slice(0, -2)}AA`;
+      // Change the first character (all six of its bits are significant): the trailing characters of a base64url
+      // part can carry padding bits that decode to the same bytes, which made this tamper a no-op about 1 in 1000 runs.
+      const part = parts[index];
+      parts[index] = value ?? `${part[0] === 'A' ? 'B' : 'A'}${part.slice(1)}`;
       return parts.join('.');
     };
 

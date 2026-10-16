@@ -21,6 +21,10 @@ const DIRS = [
   // S37 AS-65: the share-link rules read time only through the injected clock
   'libs/domains/marketing/domain',
   'libs/domains/marketing/application',
+  // S31 FR-049: every expiry, cap, grace and retention of the asset library reads the injected clock
+  'libs/domains/asset-library/domain',
+  'libs/domains/asset-library/application',
+  'libs/domains/asset-library/infra',
   // S47 G50: the knowledge half reads time only through the injected clock (the database clock stays in lease / sweep SQL)
   'libs/domains/assistant/domain',
 ];

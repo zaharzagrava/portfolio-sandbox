@@ -13,6 +13,29 @@ export const launchEventsRatePolicies = definePolicies('launch-events', {
     key: 'user',
     failMode: 'open',
   },
+  // S22 (G-10, G-34, FR-011, FR-022, FR-038): joins are idempotent, so the limiter failing open is safe; a hold that
+  // cannot be counted is refused (fail closed) because it takes quota and seats. Charged from the services.
+  'launch.queue.join.user': {
+    algorithm: 'slidingWindow',
+    limit: 10,
+    windowMs: 60_000,
+    key: 'user',
+    failMode: 'open',
+  },
+  'launch.hold.user': {
+    algorithm: 'slidingWindow',
+    limit: 30,
+    windowMs: 60_000,
+    key: 'user',
+    failMode: 'closed',
+  },
+  'launch.seatmap.ip': {
+    algorithm: 'slidingWindow',
+    limit: 600,
+    windowMs: 60_000,
+    key: 'ip',
+    failMode: 'open',
+  },
   'live.reaction': {
     algorithm: 'tokenBucket',
     limit: 5,

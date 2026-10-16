@@ -20,6 +20,7 @@ The settlement consumer is `SettlementConsumer`. It reads [`order.paid`](order-p
 
 ## Used by
 <!-- used-by:start -->
+- [J01](../capabilities/J01-buy-to-payout.md): B-16
 - [S14](../capabilities/S14-ledger-reconciliation.md): R-15
 - [consumer-group](consumer-group.md)
 - [dead-letter-topic](dead-letter-topic.md)

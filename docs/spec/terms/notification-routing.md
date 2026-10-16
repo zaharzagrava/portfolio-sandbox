@@ -19,6 +19,7 @@ An event from the [orders family](notification-family.md) reaches the S28 consum
 
 ## Used by
 <!-- used-by:start -->
+- [J01](../capabilities/J01-buy-to-payout.md): B-07
 - [S28](../capabilities/S28-notifications.md): R-20, R-41
 - [catalog-template](catalog-template.md)
 - [delivery-timeline-expired](delivery-timeline-expired.md)

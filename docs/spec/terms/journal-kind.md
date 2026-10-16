@@ -19,6 +19,7 @@ A journal kind is the business category of a journal, for example `SALE` or `PAY
 
 ## Used by
 <!-- used-by:start -->
+- [J01](../capabilities/J01-buy-to-payout.md): R-06, B-02
 - [catch-all-partition](catch-all-partition.md)
 - [clawback](clawback.md)
 - [insufficient-balance](insufficient-balance.md)

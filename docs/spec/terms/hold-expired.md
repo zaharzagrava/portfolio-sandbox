@@ -21,6 +21,7 @@ A buyer checks out at 10:00 (illustrative). The order becomes `RESERVED` with `r
 
 ## Used by
 <!-- used-by:start -->
+- [J01](../capabilities/J01-buy-to-payout.md): R-08, R-13, B-10
 - [S10](../capabilities/S10-cart-checkout.md): R-22, B-13
 - [order-version](order-version.md)
 - [orders-domain](orders-domain.md)

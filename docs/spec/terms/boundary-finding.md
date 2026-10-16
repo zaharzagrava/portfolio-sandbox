@@ -23,6 +23,7 @@ A boundary review of one domain reports:
 
 ## Used by
 <!-- used-by:start -->
+- [J01](../capabilities/J01-buy-to-payout.md): R-17, B-15
 - [boundary-review](boundary-review.md)
 - [check-boundaries](check-boundaries.md)
 - [domain-boundary-rules](domain-boundary-rules.md)

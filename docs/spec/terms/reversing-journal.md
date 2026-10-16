@@ -22,8 +22,10 @@ A reversing journal is the set of new ledger records that cancel out the entries
 
 ## Used by
 <!-- used-by:start -->
+- [J01](../capabilities/J01-buy-to-payout.md): R-11, B-13
 - [S13](../capabilities/S13-payment-intents.md): B-18
 - [S14](../capabilities/S14-ledger-reconciliation.md): R-03
+- [failure-code](failure-code.md)
 - [ledger-entry-partition](ledger-entry-partition.md)
 - [ledger-entry-table](ledger-entry-table.md)
 - [ledger-journal](ledger-journal.md)
@@ -31,5 +33,10 @@ A reversing journal is the set of new ledger records that cancel out the entries
 - [ledger-store](ledger-store.md)
 - [ledger](ledger.md)
 - [orders-refund-requested-event](orders-refund-requested-event.md)
+- [payout-destination](payout-destination.md)
+- [payout-failed-event](payout-failed-event.md)
+- [payout-status](payout-status.md)
+- [payout-transfer](payout-transfer.md)
+- [payouts-domain](payouts-domain.md)
 - [refund](refund.md)
 <!-- used-by:end -->
