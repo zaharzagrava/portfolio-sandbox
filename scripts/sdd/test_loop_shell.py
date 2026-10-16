@@ -22,7 +22,7 @@ class LoopShell(unittest.TestCase):
         text = open(os.path.join(ROOT, 'scripts/sdd/implement-specs.sh'), encoding='utf-8').read()
         m = re.search(r'^extra_context\(\) \{.*?^\}', text, re.M | re.S)
         self.assertTrue(m)
-        r = subprocess.run(['bash', '-c', f'set -euo pipefail; ROOT="{ROOT}"; LESSONS=""; decisions_to_apply() {{ :; }}; {m.group(0)}\nextra_context S01'], capture_output=True, text=True)
+        r = subprocess.run(['bash', '-c', f'set -euo pipefail; ROOT="{ROOT}"; LESSONS=""; UNATTENDED_RULES=x; decisions_to_apply() {{ :; }}; {m.group(0)}\nextra_context S01'], capture_output=True, text=True)
         self.assertNotIn('command not found', r.stderr)
         self.assertIn('[proof: ...]', r.stdout)
         self.assertIn('[code: ...]', r.stdout)
@@ -36,6 +36,15 @@ class LoopShell(unittest.TestCase):
                 if ('printf' in line or 'echo "' in line) and not line.lstrip().startswith('#') and re.search(r'(?<!\\)`', line.replace("'```'", '')):
                     bad.append(f'{os.path.basename(f)}:{n}')
         self.assertEqual(bad, [], 'unescaped backticks in a double-quoted prompt: ' + ', '.join(bad))
+
+    def test_every_agent_prompt_carries_the_unattended_rules(self):
+        """2026-10-16: a repair agent started the 25-minute journey suite in the background and ended its turn; the result never reached it and the gate ran the suite again, five times, for four hours."""
+        text = open(os.path.join(ROOT, 'scripts/sdd/implement-specs.sh'), encoding='utf-8').read()
+        self.assertIn('Never start a command in the background', text)
+        for fn in ('repair_prompt', 'doctor_prompt', 'extra_context'):
+            m = re.search(r'^%s\(\) \{.*?^\}' % fn, text, re.M | re.S)
+            self.assertTrue(m, fn)
+            self.assertIn('UNATTENDED_RULES', m.group(0), fn)
 
 
 if __name__ == '__main__':

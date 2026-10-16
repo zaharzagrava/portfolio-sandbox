@@ -31,7 +31,7 @@ run_claude() {
   #    means "finished, not exiting": stop it and count the step as done;
   #  - a call that runs longer than PASS_TIMEOUT_S is stopped and returns 124 (implement passes resume afterwards).
   # SDD_LOOP silences the interactive Stop-hook ping.
-  local pid code=0 grace="${CLAUDE_EXIT_GRACE_S:-90}" limit="${PASS_TIMEOUT_S:-7200}" start=$SECONDS size last=-1 since=$SECONDS killed=""
+  local pid code=0 grace="${CLAUDE_EXIT_GRACE_S:-30}" limit="${PASS_TIMEOUT_S:-3000}" start=$SECONDS size last=-1 since=$SECONDS killed=""
   # RUN_DEADLINE (epoch seconds) is the hard end of the whole run: no call starts after it and none may outlive it.
   local left; left="$(deadline_left)"
   if [[ -n "$left" ]]; then

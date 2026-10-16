@@ -30,6 +30,7 @@ with the links that prove it: backticked file paths and commit hashes. For a `pr
 - L-019 2026-10-14 process prevented
 - L-020 2026-10-14 config prevented
 - L-021 2026-10-14 config prevented
+- L-022 2026-10-16 process prevented
 
 ## L-001 A message option the queue refuses, found only by hand
 - **Rule:** A queue option must be validated where the message is created, not discovered when the relay fails (FIFO-only options like `groupId` never go to a standard queue).
@@ -157,3 +158,8 @@ with the links that prove it: backticked file paths and commit hashes. For a `pr
 - **Rule:** A disposable build machine runs nothing that changes it behind the loop's back, and a restart of the runner must keep the work in the tree.
 - **Symptom:** twice in one day (08:42 and 19:00 UTC) the journal shows `Stopped sdd-run.service` and `Started sdd-run.service` with no one at the keyboard; the first time the loop recovered, the second time the run failed ("cannot check out origin/sdd/wip": local changes would be overwritten). **Cause:** Ubuntu's nightly `apt-daily-upgrade` / `unattended-upgrades` job (with `needrestart`) restarts services that use upgraded libraries, including our transient service; the restart then started the script over a dirty working tree.
 - **Prevention:** `scripts/vps/vm-run.sh` stops and masks the upgrade timers and sets needrestart to list-only before anything else, and a restart commits the working tree (`wip(sdd): work in progress when the runner restarted`) and lets it take part in the choice of the start; `scripts/vps/bootstrap.sh` does the same for the image.
+
+## L-022 An agent that ends its turn to wait for a background job has quit
+- **Rule:** In an unattended run nobody answers and no notification arrives. An agent never starts a background command and stops; it polls in the foreground (`sleep 240`, then read the output file) or runs a narrower check. A gate that took more than ten minutes is not run again on byte-identical code.
+- **Symptom:** J01 sat in its gate for four hours (2026-10-16, 05:57 to 09:40 UTC): five repair attempts and a doctor, each "answer was complete but claude did not exit", while the gate (the 25-minute journey suite) was run again every time. The repair log of each attempt ends "the journey run is still in progress, I'll pick it up when it finishes". **Cause:** the agent ran `pnpm test:journeys` as a background task and ended its turn; `claude -p` never delivers the completion, so every attempt was blind, and the loop reran the same long suite on the same code. Underneath was a real fault the first run found: the document-extractor stand-in was not running on the runner's stack, and crashed at start-up outside the monolith (`OnboardingExtractionModule` lacked its S04 ports), so no shop was ever verified and the tests timed out one by one.
+- **Prevention:** every agent prompt carries the unattended rules (`UNATTENDED_RULES` in `scripts/sdd/implement-specs.sh`); `scripts/sdd/stack-fix.sh journey` rebuilds and starts the stand-in and checks the metrics port in seconds, and the journey gate runs it first; a failing gate that took 10 minutes or more is not rerun until the code changed; a capability's gate repairs stop after 120 minutes; pass timeout 50 minutes (was 120), repair agents 40, exit grace 30 s (was 90), two doctor tries per capability (was 3).

@@ -3,6 +3,7 @@
 # (a compound shell line with a login inside would not match its allow-list).
 #
 #   scripts/sdd/stack-fix.sh smoke     API ready, product search answers 200, Playwright's Chromium installed; says what to run if not
+#   scripts/sdd/stack-fix.sh journey   (re)start the document-extractor stand-in on fresh code and check the metrics port; the journey gate runs it first
 #   scripts/sdd/stack-fix.sh browser   install Playwright's Chromium for the version packages/web uses
 #   scripts/sdd/stack-fix.sh reindex   rebuild the product search index from the database (as the seeded admin) and wait for documents
 #
@@ -30,6 +31,27 @@ case "${1:-}" in
     if ! browser_ok; then echo "ENVIRONMENT: Playwright's Chromium is not installed for this version. Run: bash scripts/sdd/stack-fix.sh browser"; bad=1; fi
     (( bad == 0 )) && echo "environment ok: API ready, search answers 200, Chromium installed"
     exit "$bad" ;;
+  journey)
+    # The journey suite needs two things the dev stack does not start by itself: the document-extractor stand-in (nothing else consumes
+    # `onboarding-documents`, so no shop is ever verified and every test times out after 60 s) and the API's metrics port (:9464).
+    # Checking them takes seconds; finding out from a 25-minute run does not.
+    LAMBDA_DIR="${LAMBDA_DIR:-/tmp/sdd-lambda}"; mkdir -p "$LAMBDA_DIR"
+    [[ -s "$LAMBDA_DIR/pid" ]] && kill -TERM -- "-$(cat "$LAMBDA_DIR/pid")" 2>/dev/null; pkill -f 'lambda-local/main.js document-extractor' 2>/dev/null; sleep 1
+    if ! (cd "$ROOT/packages/backend" && pnpm exec nest build lambda-local >"$LAMBDA_DIR/build.log" 2>&1); then
+      echo "ENVIRONMENT: the document-extractor stand-in does not compile (the cause is in $LAMBDA_DIR/build.log):"; grep -m5 "error" "$LAMBDA_DIR/build.log"; exit 1
+    fi
+    (cd "$ROOT/packages/backend" && setsid node dist/apps/lambda-local/main.js document-extractor >"$LAMBDA_DIR/lambda.log" 2>&1 & echo $! > "$LAMBDA_DIR/pid")
+    sleep 8
+    if ! pgrep -f 'lambda-local/main.js document-extractor' >/dev/null; then
+      echo "CODE: the document-extractor stand-in exits at start-up (a module that does not boot outside the monolith, lesson L-018):"; tail -n 12 "$LAMBDA_DIR/lambda.log"; exit 1
+    fi
+    if grep -qE "Nest can't resolve|UnknownDependencies|Cannot find module" "$LAMBDA_DIR/lambda.log"; then
+      echo "CODE: the document-extractor stand-in cannot wire its modules:"; grep -m3 -E "Nest can't resolve|UnknownDependencies|Cannot find module" "$LAMBDA_DIR/lambda.log"; exit 1
+    fi
+    if ! curl -sf -m 8 http://localhost:9464/metrics >/dev/null; then
+      echo "ENVIRONMENT: the API does not serve metrics on :9464 (restart the API: it starts the Prometheus endpoint with the core service)"; exit 1
+    fi
+    echo "journey environment ok: extractor running, metrics answer on :9464"; exit 0 ;;
   browser)
     cd "$ROOT/packages/web" && pnpm exec playwright install chromium ;;
   reindex)

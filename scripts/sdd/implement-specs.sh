@@ -47,12 +47,12 @@ on_exit() {
   fi
 }
 trap on_exit EXIT
-metric_step - run-start "$(date +%s)" "$(date +%s)" ok 1 "commit=$(git rev-parse --short HEAD 2>/dev/null) MAX_GATE_REPAIRS=${MAX_GATE_REPAIRS:-5} MAX_REPAIRS_PER_SPEC=${MAX_REPAIRS_PER_SPEC:-3} REPAIR_BUDGET_MIN=${REPAIR_BUDGET_MIN:-60} MAX_IMPLEMENT_PASSES=${MAX_IMPLEMENT_PASSES:-10}"
+metric_step - run-start "$(date +%s)" "$(date +%s)" ok 1 "commit=$(git rev-parse --short HEAD 2>/dev/null) MAX_GATE_REPAIRS=${MAX_GATE_REPAIRS:-5} MAX_REPAIRS_PER_SPEC=${MAX_REPAIRS_PER_SPEC:-2} REPAIR_BUDGET_MIN=${REPAIR_BUDGET_MIN:-60} MAX_IMPLEMENT_PASSES=${MAX_IMPLEMENT_PASSES:-10}"
 API_URL="${API_URL:-http://localhost:8000}"
 
 # Implementation needs to build and run tests, on top of the file tools in lib.sh.
 TEST_SPEC="$ROOT/scripts/sdd/test-spec.sh"   # condensed e2e runner: far fewer tokens per red/green iteration
-IMPL_TOOLS=("Bash($TEST_SPEC:*)" 'Bash(npx tsc:*)' 'Bash(npx eslint:*)' 'Bash(npx jest:*)' 'Bash(npx nest build:*)' 'Bash(npx vitest:*)' 'Bash(npx playwright:*)'
+IMPL_TOOLS=("Bash($TEST_SPEC:*)" 'Bash(npx tsc:*)' 'Bash(npx eslint:*)' 'Bash(nohup:*)' 'Bash(npx jest:*)' 'Bash(npx nest build:*)' 'Bash(npx vitest:*)' 'Bash(npx playwright:*)'
             'Bash(python3 scripts/sdd/check-tests.py:*)' 'Bash(python3 scripts/sdd/tasks-scope.py:*)' 'Bash(python3 scripts/livespec/check.py:*)' 'Bash(python3 scripts/livespec/models.py:*)' 'Bash(bash scripts/sdd/stack-fix.sh:*)' 'Bash(pnpm:*)' 'Bash(node:*)' 'Bash(docker compose:*)' 'Bash(curl:*)'
             'Bash(cd:*)' 'Bash(cat:*)' 'Bash(grep:*)' 'Bash(find:*)' 'Bash(git log:*)'
             # the checks of a fresh-stack task (L-012, S19 T072): an unattended agent cannot approve a command, so each one it needs is listed. fresh-run.sh --here and boot-check judge the
@@ -136,6 +136,7 @@ gate() { # $1 = domain column; everything must pass
         API_URL="$API_URL" pnpm test:e2e ${PW_WORKERS:+--workers="$PW_WORKERS"}   # Playwright: happy-path journeys + layout screenshots (PW_WORKERS overrides the config)
       ) || return 1 ;;
     journey)
+      bash scripts/sdd/stack-fix.sh journey || return 1   # seconds: a missing stand-in used to cost a 25-minute run
       (cd packages/backend && API_URL="$API_URL" pnpm test:journeys) || return 1 ;;
   esac
 }
@@ -224,7 +225,9 @@ step() { # $1 = dir, $2 = step name, $3 = prompt
   local rc=0 try t0 fp0=""
   t0=$(date +%s); case "$2" in repair-*|doctor-*|ckrepair-*) fp0="$(code_fingerprint)" ;; esac
   for try in 1 2; do
-    rc=0; run_claude "$1/.$2.log" "$3" "${IMPL_TOOLS[@]}" || rc=$?
+    rc=0
+    case "$2" in repair-*|ckrepair-*) export PASS_TIMEOUT_S="${REPAIR_PASS_TIMEOUT_S:-2400}" ;; esac   # a repair that runs 40 minutes is lost, not slow
+    run_claude "$1/.$2.log" "$3" "${IMPL_TOOLS[@]}" || rc=$?
     (( rc == 0 || rc == 124 || rc == 125 )) && break
     hit_auth_failure "$1/.$2.log" && break
     hit_usage_limit "$1/.$2.log" && break
@@ -257,9 +260,10 @@ gate_digest() {
     echo '--- the last lines of the gate output ---'; tail -n 40 "$1"; } | cut -c1-240 | head -c 9000
 }
 
+UNATTENDED_RULES='UNATTENDED RULES (a run lost four hours to breaking them): nobody answers you and no notification ever reaches you. Never end your turn to wait for something: a turn that ends is the end of your work. Never start a command in the background (no run_in_background, no trailing ampersand) and then stop; if a command needs more than the 10 minutes one tool call allows (the journey suite takes about 25), start it with nohup into a file in the spec folder and keep your turn alive by polling in the FOREGROUND: run sleep 240 and then tail that file, again and again until it prints its summary line, then read the result. Prefer a narrower run to a long one (jest -t "AS-30", one spec file). Do not start a second copy of a suite that is already running; read its file instead. '
 # repair_prompt <gate log>: what the agent is told when the gate fails.
 repair_prompt() {
-  printf '%s\n%s' "The hard gate for this capability FAILED. Find the cause and fix it so the whole gate passes. Rules: never weaken or skip a test, and never lose a scenario (a test file may be replaced, split or renamed: every scenario id it carried, like 'S34 AS-12', must still be in a test title, or be retired in specs/<capability>/retired-scenarios.md with a reason); a test that fails outside this capability's own files is still a real failure (the code under it may be wrong, e.g. it can depend on the machine's time zone): fix the code and note it under a '## Gate repairs' heading in this spec's gaps.md; a scenario that test-plan.md says has a test must get a real test whose title starts with this capability's ID and the scenario (for example it('S53 AS-27: ...')), not just a tag; change nothing unrelated. Before editing anything, decide whether the failure is a fault of the ENVIRONMENT or of the code: many tests failing the same way at a 30 s timeout, an HTTP 503 or 5xx from an endpoint the failing tests only wait on, a missing browser (browserType.launch), a container that is down or an empty or stale search index are environment faults. For those run 'bash scripts/sdd/stack-fix.sh smoke' (it says what is wrong and what to run: 'browser', 'reindex') and 'bash scripts/sdd/stack-fix.sh <action>'; read the API log (/var/log/sdd/api.log on the runner) for the real error; if the root cause is a defect in product or backend code (for example a start-up hook that creates a resource with an old definition), fix THAT code, not the tests, and say so under '## Gate repairs' in gaps.md. Never change a test or a page to get around a broken environment. Re-run the failing check yourself before you stop (scripts/sdd/test-spec.sh for e2e specs, npx tsc --noEmit, python3 scripts/sdd/check-tests.py ...). Gate output, digested:" "$(gate_digest "$1")"
+  printf '%s\n%s' "$UNATTENDED_RULES The hard gate for this capability FAILED. Find the cause and fix it so the whole gate passes. Rules: never weaken or skip a test, and never lose a scenario (a test file may be replaced, split or renamed: every scenario id it carried, like 'S34 AS-12', must still be in a test title, or be retired in specs/<capability>/retired-scenarios.md with a reason); a test that fails outside this capability's own files is still a real failure (the code under it may be wrong, e.g. it can depend on the machine's time zone): fix the code and note it under a '## Gate repairs' heading in this spec's gaps.md; a scenario that test-plan.md says has a test must get a real test whose title starts with this capability's ID and the scenario (for example it('S53 AS-27: ...')), not just a tag; change nothing unrelated. Before editing anything, decide whether the failure is a fault of the ENVIRONMENT or of the code: many tests failing the same way at a 30 s timeout, an HTTP 503 or 5xx from an endpoint the failing tests only wait on, a missing browser (browserType.launch), a container that is down or an empty or stale search index are environment faults. For those run 'bash scripts/sdd/stack-fix.sh smoke' (it says what is wrong and what to run: 'browser', 'reindex') and 'bash scripts/sdd/stack-fix.sh <action>'; read the API log (/var/log/sdd/api.log on the runner) for the real error; if the root cause is a defect in product or backend code (for example a start-up hook that creates a resource with an old definition), fix THAT code, not the tests, and say so under '## Gate repairs' in gaps.md. Never change a test or a page to get around a broken environment. Re-run the failing check yourself before you stop (scripts/sdd/test-spec.sh for e2e specs, npx tsc --noEmit, python3 scripts/sdd/check-tests.py ...). Gate output, digested:" "$(gate_digest "$1")"
 }
 
 # The digest of docs/lessons.md goes into every prompt that builds, plans or repairs (extra_context, doctor_prompt).
@@ -269,6 +273,7 @@ LESSONS="$(lessons_block)"
 extra_context() { # $1 = capability id
   local fu; fu="$("$ROOT/scripts/sdd/followups.sh" "$1" 2>/dev/null || true)"
   printf ' %s' "Cross-spec rules. (0) The living specification in docs/spec says what the system does today. A change of behavior starts in the page of the capability (docs/spec/capabilities/<ID>-*.md): edit its rules and behaviors first, keep every \`[proof: ...]\` and \`[code: ...]\` true (python3 scripts/livespec/check.py checks them), and never create or edit a *.reviewed.json file (human sign-offs); if you change something a human signed, say so under '## Spec changes' in gaps.md. (1) Sibling follow-ups: if your work changes something another capability's spec relies on (a name, header, status code, contract), do not edit that spec; add a bullet '- **<their id>**: <what they must adopt>' under a '## Sibling-spec follow-ups' heading in this spec's gaps.md. (2) Unverified criteria: every success criterion (SC-nnn) that no automated test proves goes under 'Ops artifacts' in quickstart.md and as one row in specs/UNVERIFIED.md (spec, criterion, how to run it, status 'not run'); never describe it as verified. (3) Undoing work: never use git checkout, restore, reset, stash or clean (they are not available and could discard other work in the same file); to undo a change edit the file by hand and keep every other change in it, and if a task says to revert a file, restore only the lines it names. (4) Transactions: use TransactionRunner.run or @Transactional (S54 toolkit); when you touch a file that opens a transaction directly with sequelize.transaction, migrate that site and delete its '// S54 T037 audit' comment; never add a new direct sequelize.transaction (the gate fails if the count of direct sites in your domain rises)."
+  printf ' %s' "$UNATTENDED_RULES"
   if [[ -n "$LESSONS" ]]; then printf ' %s' "$LESSONS"; fi
   local dec; dec="$(decisions_to_apply "$1")"
   if [[ -n "$dec" ]]; then printf ' %s\n%s' "Decisions the owner changed after reading the defaults you recorded (docs/work/decisions/$1.md); they override any default in questions.md, so apply them, test them, update the living page, and mention them in your report:" "$dec"; fi
@@ -279,7 +284,7 @@ extra_context() { # $1 = capability id
 # crashed step) the loop does not end the run. A separate repair agent with a fresh context gets a time budget to fix the cause, then
 # the capability is retried. If the agent says a human is needed, or the budget is gone, the capability is marked BLOCKED (BLOCKED.md)
 # and the loop moves on to the next capability that does not depend on it. REPAIR_BUDGET_MIN (60) is shared by the whole run,
-# MAX_REPAIRS_PER_SPEC (3) bounds the attempts per capability, one attempt runs at most 25 minutes.
+# MAX_REPAIRS_PER_SPEC (2) bounds the attempts per capability, one attempt runs at most 25 minutes.
 REPAIR_USED=0
 BLOCKED_LIST="$(mktemp)"
 declare -A DEPS
@@ -290,7 +295,7 @@ doctor_prompt() { # $1 = id, $2 = spec dir, $3 = what failed
   if [[ -n "$log" ]]; then
     if [[ "$log" == *.gate.log ]]; then digest="$(gate_digest "$log")"; else digest="$(tail -c 5000 "$log")"; fi
   fi
-  printf '%s\n%s' "You are the repair agent of an unattended build loop. A step failed for capability $1 and the loop cannot continue until it is fixed. What failed: $3. Find the root cause and fix it so the step can be retried. Work in the spec folder $2 (spec.md, plan.md, tasks.md, test-plan.md, gaps.md, questions.md) and in the code. Typical causes: (a) an analysis finding marked CRITICAL: fix the artifacts it points at (add the missing task, align spec, plan and tasks, resolve the contradiction); never delete or weaken a requirement or a test just to make the analysis pass; (b) two requirements that contradict each other: decide it as the constitution and the spec's own intent require, record the decision under a '## RESOLVED (agent decision)' heading in questions.md, and update spec.md and test-plan.md consistently; (c) a step that crashed or produced nothing: re-run the underlying command yourself and find the cause; (d) an implement pass that closed no task: do the blocked task yourself, or record why it needs a human. Rules: never use git to undo work (edit files by hand and keep every other change in them); never skip or weaken a test, and never lose a scenario (replacing, splitting or renaming a test file is fine when every scenario id it carried is still in a test title; otherwise retire it in specs/<capability>/retired-scenarios.md with a reason); change nothing unrelated. End your final message with exactly one line: 'DOCTOR: fixed' if the loop can retry, or 'DOCTOR: needs human: <one sentence why>' if a human decision or access is needed. $LESSONS The end of the failing log follows. RUNTIME PROOFS ARE NOT YOURS TO BLOCK ON (lesson L-019): if the only open tasks ask for something that this machine can prove only at the end of the run (the real apps booting on an EMPTY stack, a browser suite, a fresh-stack run; the runner's stack is warm by now and is the one the whole run uses), do not answer needs human. Tick each such task with the note 'deferred to the final checkpoint: <the command that proves it>', append one line per task to specs/deferred-checks.md, make sure the code and the tests of the capability are green, and answer DOCTOR: fixed. Use scripts/infra/boot-app.sh <app> and scripts/qa/fresh-run.sh --here when they can show part of it now. Answer needs human only for a decision that only the owner can take." "$digest"
+  printf '%s\n%s' "$UNATTENDED_RULES You are the repair agent of an unattended build loop. A step failed for capability $1 and the loop cannot continue until it is fixed. What failed: $3. Find the root cause and fix it so the step can be retried. Work in the spec folder $2 (spec.md, plan.md, tasks.md, test-plan.md, gaps.md, questions.md) and in the code. Typical causes: (a) an analysis finding marked CRITICAL: fix the artifacts it points at (add the missing task, align spec, plan and tasks, resolve the contradiction); never delete or weaken a requirement or a test just to make the analysis pass; (b) two requirements that contradict each other: decide it as the constitution and the spec's own intent require, record the decision under a '## RESOLVED (agent decision)' heading in questions.md, and update spec.md and test-plan.md consistently; (c) a step that crashed or produced nothing: re-run the underlying command yourself and find the cause; (d) an implement pass that closed no task: do the blocked task yourself, or record why it needs a human. Rules: never use git to undo work (edit files by hand and keep every other change in them); never skip or weaken a test, and never lose a scenario (replacing, splitting or renaming a test file is fine when every scenario id it carried is still in a test title; otherwise retire it in specs/<capability>/retired-scenarios.md with a reason); change nothing unrelated. End your final message with exactly one line: 'DOCTOR: fixed' if the loop can retry, or 'DOCTOR: needs human: <one sentence why>' if a human decision or access is needed. $LESSONS The end of the failing log follows. RUNTIME PROOFS ARE NOT YOURS TO BLOCK ON (lesson L-019): if the only open tasks ask for something that this machine can prove only at the end of the run (the real apps booting on an EMPTY stack, a browser suite, a fresh-stack run; the runner's stack is warm by now and is the one the whole run uses), do not answer needs human. Tick each such task with the note 'deferred to the final checkpoint: <the command that proves it>', append one line per task to specs/deferred-checks.md, make sure the code and the tests of the capability are green, and answer DOCTOR: fixed. Use scripts/infra/boot-app.sh <app> and scripts/qa/fresh-run.sh --here when they can show part of it now. Answer needs human only for a decision that only the owner can take." "$digest"
 }
 
 block_spec() { # $1 = id, $2 = spec dir, $3 = reason
@@ -405,11 +410,21 @@ ordered_capabilities "$@" | while IFS=$'\t' read -r id domain slug title sources
   # The gate is a hard check, but a failing gate is usually fixable (a missing test, a lint error, a bug the capability exposed):
   # hand the failure to the agent, then run the gate again. MAX_GATE_REPAIRS (default 5) bounds the attempts.
   attempt=0; GATE_FP=""
+  gate_t0=$SECONDS; long_fail_fp=""
   while :; do
-    echo "  gate"; g0=$(date +%s)
-    if { MAX_PRIORITY="$limit" gate_extras "$id" "$domain" "$dir" && MAX_PRIORITY="$limit" gate "$domain"; } >"$dir/.gate.log" 2>&1; then gate_passed "$id" "$dir" "$g0" "$((attempt + 1))"; break; fi
+    # A gate that took more than 10 minutes and failed: running it again on byte-identical code proves nothing (25 minutes lost for
+    # the same answer). Skip straight to the next attempt; the repair agent is asked again with the same log.
+    cur_fp="$(code_fingerprint)"
+    if [[ -n "$long_fail_fp" && "$cur_fp" == "$long_fail_fp" ]]; then
+      echo "  gate not re-run: the code is identical to the last failing run (that run took $((long_fail_s / 60)) min)"
+      g0=$(date +%s); gate_ran=""
+    else
+      echo "  gate"; g0=$(date +%s); gate_ran=1
+      if { MAX_PRIORITY="$limit" gate_extras "$id" "$domain" "$dir" && MAX_PRIORITY="$limit" gate "$domain"; } >"$dir/.gate.log" 2>&1; then gate_passed "$id" "$dir" "$g0" "$((attempt + 1))"; break; fi
+      long_fail_s=$(( $(date +%s) - g0 )); long_fail_fp=""; (( long_fail_s >= 600 )) && long_fail_fp="$cur_fp"
+    fi
     attempt=$((attempt + 1)); gate_failed "$id" "$dir" "$g0" "$attempt"
-    if (( attempt > ${MAX_GATE_REPAIRS:-5} )); then
+    if (( attempt > ${MAX_GATE_REPAIRS:-5} || SECONDS - gate_t0 > ${GATE_WALL_MIN:-120} * 60 )); then
       echo "FAIL  $id: gate (see $dir/.gate.log)" >&2; echo "$id gate failed" > "$STATE_FILE"; exit 20
     fi
     echo "  gate failed: asking the agent to repair it (attempt $attempt of ${MAX_GATE_REPAIRS:-5})"
@@ -454,10 +469,10 @@ ordered_capabilities "$@" | while IFS=$'\t' read -r id domain slug title sources
   detail="$(cat "$STATE_FILE" 2>/dev/null)"
   repair_tries=$((repair_tries + 1))
   budget_left=$(( ${REPAIR_BUDGET_MIN:-60} * 60 - REPAIR_USED ))
-  if (( repair_tries <= ${MAX_REPAIRS_PER_SPEC:-3} && budget_left >= 120 )); then
+  if (( repair_tries <= ${MAX_REPAIRS_PER_SPEC:-2} && budget_left >= 120 )); then
     cap=$(( budget_left < 1500 ? budget_left : 1500 )); t0=$SECONDS
     echo "  repair agent for $id: $detail (repair budget left: $((budget_left / 60)) min)"
-    notify info "SDD: $id hit a problem, repair in progress" "$detail. The repair agent is working on it (attempt $repair_tries of ${MAX_REPAIRS_PER_SPEC:-3}, repair budget left $((budget_left / 60)) min). Nothing to do yet; you will get another message if it gets blocked."
+    notify info "SDD: $id hit a problem, repair in progress" "$detail. The repair agent is working on it (attempt $repair_tries of ${MAX_REPAIRS_PER_SPEC:-2}, repair budget left $((budget_left / 60)) min). Nothing to do yet; you will get another message if it gets blocked."
     ( export PASS_TIMEOUT_S=$cap; step "$dir" "doctor-$repair_tries" "$(doctor_prompt "$id" "$dir" "$detail")" ) && drc=0 || drc=$?
     REPAIR_USED=$(( REPAIR_USED + SECONDS - t0 ))
     case $drc in 75|76|77) exit "$drc" ;; esac
