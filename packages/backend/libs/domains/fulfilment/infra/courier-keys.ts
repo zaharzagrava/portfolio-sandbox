@@ -9,34 +9,53 @@ export const courierKey = (city: string, courierId: string) =>
   `courier:{${city}}:${courierId}`;
 export const offerLockKey = (city: string, courierId: string) =>
   `courier:{${city}}:${courierId}:offer`;
-export const declinedKey = (city: string, deliveryId: string) =>
-  `delivery:{${city}}:${deliveryId}:declined`;
-export const trackThrottleKey = (deliveryId: string) =>
-  `delivery:${deliveryId}:pushed`;
+export const trackThrottleKey = (city: string, deliveryId: string) =>
+  `delivery:{${city}}:${deliveryId}:pushed`;
 export const surgeKey = (city: string) => `surge:{${city}}`;
 export const demandKey = (city: string, minute: number) =>
   `demand:{${city}}:${minute}`;
 
-export const OFFER_TTL_MS = 15_000;
+/**
+ * The one key that is not per city: the dispatcher instances' heartbeats (S20 R-8). A city's work never touches it.
+ */
+export const RING_KEY = 'delivery:ring:instances';
 
 /**
- * KEYS[1] courier hash, KEYS[2] city GEO set. ARGV: courierId, ts, lat, lng, ttlSec.
- * Drops stale / out-of-order points (phones batch and retry; the network
- * reorders), then keeps the GEO index in sync with availability.
- * Returns the courier's active delivery id ('' if none), or false if dropped.
+ * Every per-city key builder, applied to one city (S20 R-9, A26, AS-54). The cell-isolation spec inspects this list: a
+ * builder added here without the `{city}` hash tag fails it, and a builder missing from here is a review finding.
+ */
+export function keyShapes(
+  city: string,
+  ids: { courierId: string; deliveryId: string; minute: number },
+): Record<string, string> {
+  return {
+    geoKey: geoKey(city),
+    courierKey: courierKey(city, ids.courierId),
+    offerLockKey: offerLockKey(city, ids.courierId),
+    trackThrottleKey: trackThrottleKey(city, ids.deliveryId),
+    surgeKey: surgeKey(city),
+    demandKey: demandKey(city, ids.minute),
+  };
+}
+
+/**
+ * KEYS[1] courier hash, KEYS[2] city GEO set. ARGV: courierId, ts, lat, lng, ttlSec, searchable ('1' | '0').
+ * Newer-only: a point not newer than the live one (phones batch and retry; the network reorders) changes nothing.
+ * Otherwise the position and the searchable-set membership change together; the caller decides `searchable` from
+ * the stored status. Returns {applied (1 | 0), active delivery id ('' if none)}.
  */
 export const APPLY_LOCATION = `
 local last = tonumber(redis.call('HGET', KEYS[1], 'ts') or '0')
-if tonumber(ARGV[2]) <= last then return false end
+local delivery = redis.call('HGET', KEYS[1], 'delivery') or ''
+if tonumber(ARGV[2]) <= last then return {0, delivery} end
 redis.call('HSET', KEYS[1], 'ts', ARGV[2], 'lat', ARGV[3], 'lng', ARGV[4])
 redis.call('EXPIRE', KEYS[1], ARGV[5])
-local status = redis.call('HGET', KEYS[1], 'status')
-if status == 'AVAILABLE' then
+if ARGV[6] == '1' then
   redis.call('GEOADD', KEYS[2], ARGV[4], ARGV[3], ARGV[1])
 else
   redis.call('ZREM', KEYS[2], ARGV[1])
 end
-return redis.call('HGET', KEYS[1], 'delivery') or ''`;
+return {1, delivery}`;
 
 /**
  * KEYS[1] courier hash, KEYS[2] city GEO set. ARGV: courierId, status, deliveryId ('' to clear).

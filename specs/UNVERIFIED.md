@@ -10,6 +10,13 @@ interviews) until its status says so. The implementation loop appends here (rule
 | S54 | SC-003: at 2x capacity, admitted p99 under 300 ms, refusals are 503 with Retry-After, probes never refused | same file (k6 at 2x capacity) | not run |
 | S54 | SC-004: a 60 s database outage keeps readiness 200 and returns fast 503 for database routes | same file (outage drill) | not run |
 | S54 | SC-008: context and logging overhead under 0.5 ms p99 per request | same file (overhead benchmark) | not run |
+| S20 | SC-001: location batches p99 < 20 ms at 50 000 points/s | `specs/domains/S20-courier-delivery/quickstart.md`, "Ops artifacts" (load run) | not run |
+| S20 | SC-002: zero double offers/assignments across 10 000 randomised concurrent operations | same file (soak script) | not run |
+| S20 | SC-003: first offer p99 < 200 ms at 5 000 req/s; push within 1 s | same file (load run + push probe) | not run |
+| S20 | SC-004: overdue offer or retry acted on within 30 s after a crash | same file (crash drill) | not run |
+| S20 | SC-006: status push within 2 s of the transition | same file (real environment) | not run |
+| S20 | SC-009: 90-day expiry of GPS points (Dynamo TTL) | same file (real environment) | not run |
+| S20 | SC-008: adding a dispatcher among five moves at most 25 % of cities; city failure isolated | same file (staging ring drill) | not run |
 | S54 | SC-001: 10 000 responses of every error kind parse as problem+json with 0 leaks | `specs/domains/S54-platform-toolkit/quickstart.md`, "Ops artifacts" (error sample) | not run |
 | S54 | SC-006: 1 000 parallel requests with one Idempotency-Key give exactly one side effect | same file (parallel idempotency) | not run |
 | S54 | SC-010: a new capability adds a domain error, probe check, shutdown task, outbound client and idempotent route using only contract names | same file (throwaway capability) | not run |

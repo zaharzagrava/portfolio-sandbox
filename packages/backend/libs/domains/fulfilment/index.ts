@@ -7,7 +7,7 @@ export { DeliveryWorkerModule } from './delivery-worker.module';
 export { DeliveryModule } from './delivery.module';
 export { PickupModule } from './pickup.module';
 export { PickupProjectorModule } from './pickup-projector.module';
-export { CourierTrackProjector } from './infra/delivery-workers';
+export { DeliveryProjectorModule } from './delivery-projector.module';
 export { DeliveryTopicsModule } from './realtime-topics.module';
 export { PickupAvailabilityService } from './application/pickup-availability.service';
 export type {
@@ -24,3 +24,9 @@ export {
   PickupStockChanged,
 } from './application/events/pickup-events';
 export type * from './api/pickup.dto';
+export {
+  DeliveryStatusChanged,
+  DELIVERY_AGGREGATE,
+} from './application/events/delivery-events';
+export { CourierLocationsReported } from './application/events/courier-events';
+export type * from './api/delivery.dto';

@@ -1,164 +1,99 @@
 import {
-  Body,
   Controller,
-  ForbiddenException,
   Get,
   HttpCode,
   Param,
   ParseUUIDPipe,
   Post,
-  Put,
 } from '@nestjs/common';
-import { ApiProperty, ApiPropertyOptional, ApiTags } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
-import {
-  ArrayMaxSize,
-  IsArray,
-  IsBoolean,
-  IsIn,
-  IsInt,
-  IsLatitude,
-  IsLongitude,
-  IsNumber,
-  IsOptional,
-  IsString,
-  IsUUID,
-  Length,
-  Matches,
-  ValidateNested,
-} from 'class-validator';
+import { ApiTags } from '@nestjs/swagger';
+import type {
+  DeliveryBuyerList,
+  DeliveryBuyerView,
+  DeliveryCourierView,
+} from '@marketplace-sandbox/contracts';
 import { Firewall, User, UserRawDto } from '@app/domains/identity';
-import { ShopScoped } from '@app/domains/tenancy';
-import { RedisService } from '@app/infrastructure/redis/redis.service';
-import { CourierService } from '../application/courier.service';
+import { RateLimit } from '@app/infrastructure/rate-limit';
+import { DeliveryActionsService } from '../application/delivery-actions.service';
+import { DeliveryReadService } from '../application/delivery-read.service';
 import { DispatchService } from '../application/dispatch.service';
-import { CITIES_KEY } from '../infra/delivery-workers';
 
-class PointDto {
-  @ApiProperty() @IsLatitude() lat: number;
-  @ApiProperty() @IsLongitude() lng: number;
-}
-
-class TrackPointDto extends PointDto {
-  @ApiProperty() @IsInt() ts: number;
-  @ApiPropertyOptional() @IsOptional() @IsNumber() accuracy?: number;
-}
-
-export class RegisterCourierDto {
-  @ApiProperty() @Matches(/^[a-z0-9-]{2,40}$/) city: string;
-  @ApiProperty({ enum: ['bike', 'scooter', 'car'] })
-  @IsIn(['bike', 'scooter', 'car'])
-  vehicle: 'bike' | 'scooter' | 'car';
-}
-
-export class AvailabilityDto {
-  @ApiProperty() @IsBoolean() available: boolean;
-}
-
-export class LocationsDto {
-  @ApiProperty({ type: [TrackPointDto] })
-  @IsArray()
-  @ArrayMaxSize(20)
-  @ValidateNested({ each: true })
-  @Type(() => TrackPointDto)
-  points: TrackPointDto[];
-}
-
-export class RequestDeliveryDto {
-  @ApiProperty() @IsUUID() buyerId: string;
-  @ApiPropertyOptional() @IsOptional() @IsUUID() orderId?: string;
-  @ApiProperty() @IsString() @Length(2, 40) city: string;
-  @ApiProperty() @ValidateNested() @Type(() => PointDto) pickup: PointDto;
-  @ApiProperty() @ValidateNested() @Type(() => PointDto) dropoff: PointDto;
-}
-
+/**
+ * The courier's actions on a delivery (S20 FR-020..FR-025): accept, decline, picked-up, delivered; and the two role
+ * reads (FR-036..FR-039): `GET /deliveries/:id` for the buyer or the assigned / offered courier, and
+ * `GET /orders/:orderId/deliveries` for the buyer. The caller is the session's user, never a path or body value; a
+ * delivery that is not theirs is a 404. One service call per method.
+ */
 @ApiTags('delivery')
 @Controller()
 export class DeliveryController {
   constructor(
-    private readonly couriers: CourierService,
     private readonly dispatch: DispatchService,
-    private readonly redis: RedisService,
+    private readonly actions: DeliveryActionsService,
+    private readonly reads: DeliveryReadService,
   ) {}
 
   @Firewall()
-  @Post('couriers/me')
-  async register(@User() user: UserRawDto, @Body() body: RegisterCourierDto) {
-    await this.redis.client.sadd(CITIES_KEY, body.city);
-    return this.couriers.register(user.id, body.city, body.vehicle);
-  }
-
-  @Firewall()
-  @Put('couriers/me/availability')
-  availability(@User() user: UserRawDto, @Body() body: AvailabilityDto) {
-    return this.couriers.setAvailability(user.id, body.available);
-  }
-
-  /** Phones send a batch every ~4 s (≤ 20 points); keep-alive connection. */
-  @Firewall()
-  @Post('couriers/me/locations')
-  @HttpCode(202)
-  async locations(@User() user: UserRawDto, @Body() body: LocationsDto) {
-    const courier = await this.couriers.get(user.id);
-    return this.couriers.report(user.id, courier.city, body.points);
-  }
-
-  @ShopScoped('orders.manage')
-  @Post('shops/:shopId/deliveries')
-  request(
-    @Param('shopId', ParseUUIDPipe) shopId: string,
-    @Body() body: RequestDeliveryDto,
-  ) {
-    return this.dispatch.request({ shopId, ...body });
-  }
-
-  /** Buyer, assigned courier, or the offered courier. Live updates: SSE `delivery:{id}`. */
-  @Firewall()
+  @RateLimit('fulfilment.delivery-actions')
   @Get('deliveries/:id')
-  async get(@Param('id', ParseUUIDPipe) id: string, @User() user: UserRawDto) {
-    const d = await this.dispatch.get(id);
-    if (![d.buyerId, d.courierId, d.offeredCourierId].includes(user.id))
-      throw new ForbiddenException();
-    const position = d.courierId
-      ? await this.couriers.position(d.city, d.courierId)
-      : null;
-    return { ...d, courierPosition: position };
+  get(
+    @Param('id', ParseUUIDPipe) id: string,
+    @User() user: UserRawDto,
+  ): Promise<DeliveryBuyerView | DeliveryCourierView> {
+    return this.reads.forCaller(id, user.id);
   }
 
   @Firewall()
+  @RateLimit('fulfilment.delivery-actions')
+  @Get('orders/:orderId/deliveries')
+  forOrder(
+    @Param('orderId', ParseUUIDPipe) orderId: string,
+    @User() user: UserRawDto,
+  ): Promise<DeliveryBuyerList> {
+    return this.reads.forBuyerByOrder(orderId, user.id);
+  }
+
+  @Firewall()
+  @RateLimit('fulfilment.delivery-actions')
   @Post('deliveries/:id/accept')
   @HttpCode(200)
-  accept(@Param('id', ParseUUIDPipe) id: string, @User() user: UserRawDto) {
+  accept(
+    @Param('id', ParseUUIDPipe) id: string,
+    @User() user: UserRawDto,
+  ): Promise<DeliveryCourierView> {
     return this.dispatch.accept(id, user.id);
   }
 
   @Firewall()
+  @RateLimit('fulfilment.delivery-actions')
   @Post('deliveries/:id/decline')
   @HttpCode(204)
-  async decline(
+  decline(
     @Param('id', ParseUUIDPipe) id: string,
     @User() user: UserRawDto,
-  ) {
-    await this.dispatch.decline(id, user.id);
+  ): Promise<void> {
+    return this.dispatch.decline(id, user.id);
   }
 
   @Firewall()
+  @RateLimit('fulfilment.delivery-actions')
   @Post('deliveries/:id/picked-up')
   @HttpCode(204)
-  async pickedUp(
+  pickedUp(
     @Param('id', ParseUUIDPipe) id: string,
     @User() user: UserRawDto,
-  ) {
-    await this.dispatch.pickUp(id, user.id);
+  ): Promise<void> {
+    return this.actions.pickUp(id, user.id);
   }
 
   @Firewall()
+  @RateLimit('fulfilment.delivery-actions')
   @Post('deliveries/:id/delivered')
   @HttpCode(204)
-  async delivered(
+  delivered(
     @Param('id', ParseUUIDPipe) id: string,
     @User() user: UserRawDto,
-  ) {
-    await this.dispatch.deliver(id, user.id);
+  ): Promise<void> {
+    return this.actions.deliver(id, user.id);
   }
 }

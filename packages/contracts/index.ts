@@ -18,6 +18,7 @@ export * from './src/media/media.ts';
 export * from './src/media/events.ts';
 export * from './src/platform/index.ts';
 export * from './src/fulfilment/pickup.ts';
+export * from './src/fulfilment/delivery.ts';
 export * from './src/community/discussions.ts';
 export * from './src/community/events.ts';
 export * from './src/assistant/index.ts';

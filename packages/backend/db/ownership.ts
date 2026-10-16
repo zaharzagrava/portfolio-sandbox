@@ -129,6 +129,9 @@ export const OWNERSHIP = {
   Courier: 'domain:fulfilment',
   Delivery: 'domain:fulfilment',
   DeliveryEvent: 'domain:fulfilment',
+  // S20: durable offer records and the deliverable-order copy built from order events (R3)
+  DeliveryOffer: 'domain:fulfilment',
+  DeliverableOrder: 'domain:fulfilment',
   // payments (payment + ledger share one transaction boundary: decision D4)
   Payment: 'domain:payments',
   PaymentHistory: 'domain:payments',

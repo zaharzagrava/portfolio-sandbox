@@ -6,7 +6,8 @@ import {
 const MINUTE = 60_000;
 
 /**
- * Rate limit policies owned by the pickup capability (S19 FR-027, A12): registered by `PickupModule` through
+ * Rate limit policies of the pickup capability (S19 FR-027, A12) and the delivery capability (S20 FR-012, FR-033,
+ * contracts/delivery-api.md): registered by `PickupModule` and `DeliveryModule` through
  * `RateLimitModule.forFeature`. Both read paths fail open: a limiter outage must not take "available near me" down.
  * They replace the `search.query` policy and `skipThrottle` the draft controller used (S50 G-35).
  */
@@ -25,6 +26,30 @@ export const fulfilmentRatePolicies = definePolicies('fulfilment', {
     limit: 300,
     windowMs: MINUTE,
     key: 'ip',
+    failMode: 'open',
+  },
+  // S20: a phone sends a batch every ~4 s; 30 a minute leaves room for retries and a reconnect burst
+  'fulfilment.courier-locations': {
+    algorithm: 'slidingWindow',
+    limit: 30,
+    windowMs: MINUTE,
+    key: 'user',
+    failMode: 'open',
+  },
+  // S20: creates a booking, so a limiter outage must not let requests through unmetered
+  'fulfilment.delivery-request': {
+    algorithm: 'slidingWindow',
+    limit: 60,
+    windowMs: MINUTE,
+    key: 'shop',
+    failMode: 'closed',
+  },
+  // S20: accept, decline, picked-up, delivered, cancel and the role reads
+  'fulfilment.delivery-actions': {
+    algorithm: 'slidingWindow',
+    limit: 120,
+    windowMs: MINUTE,
+    key: 'user',
     failMode: 'open',
   },
 } as const);

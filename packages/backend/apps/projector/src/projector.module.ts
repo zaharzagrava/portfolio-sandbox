@@ -19,7 +19,7 @@ import {
   WidgetProjectorModule,
 } from '@app/domains/developer-platform';
 import {
-  CourierTrackProjector,
+  DeliveryProjectorModule,
   PickupProjectorModule,
 } from '@app/domains/fulfilment';
 import { ChatProjectorModule } from '@app/domains/chat';
@@ -109,7 +109,7 @@ import { CacheModule } from '@app/infrastructure/cache/cache.module';
         ShopLiveProjector,
         ShopSalesProjector,
         ...ChatProjectorModule.projectors,
-        CourierTrackProjector,
+        ...DeliveryProjectorModule.projectors,
         ...PublicApiProjectorModule.projectors,
         ...WidgetProjectorModule.projectors,
         ...WebhooksProjectorModule.projectors,
@@ -131,6 +131,7 @@ import { CacheModule } from '@app/infrastructure/cache/cache.module';
         SearchProjectorModule,
         RecommendationsProjectorModule,
         PickupProjectorModule,
+        DeliveryProjectorModule,
         ShareLinksProjectorModule,
         AdsProjectorModule,
         MediaProjectorModule,

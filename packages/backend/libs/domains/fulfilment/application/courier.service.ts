@@ -1,182 +1,125 @@
+import { Inject, Injectable, Logger, Optional } from '@nestjs/common';
+import type {
+  CourierSelf,
+  CourierView,
+  RegisterCourierRequest,
+} from '@marketplace-sandbox/contracts';
+import { CLOCK, Clock } from '@app/common/core/clock';
+import { errorText, logDelivery } from './delivery-log';
 import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
-import { InjectConnection } from '@nestjs/sequelize';
-import { QueryTypes, Sequelize } from 'sequelize';
-import { RedisService } from '@app/infrastructure/redis/redis.service';
-import { KafkaProducerService } from '@app/infrastructure/kafka/kafka-producer.service';
-import { RealtimePublisher } from '@app/infrastructure/realtime';
+  COURIER_OFFLINE_HOOK,
+  COURIER_REPOSITORY,
+  GEO_INDEX,
+  type CourierOfflineHook,
+  type CourierRecord,
+  type CourierRepository,
+  type GeoIndex,
+} from '../domain/delivery-ports';
 import {
-  APPLY_LOCATION,
-  courierKey,
-  geoKey,
-  SET_STATUS,
-  trackThrottleKey,
-} from '../infra/courier-keys';
-import { CourierLocationsReported } from './events/courier-events';
+  CourierBusyError,
+  CourierProfileRequiredError,
+} from '../domain/delivery-errors';
 
-export interface LocationPoint {
-  lat: number;
-  lng: number;
-  ts: number;
-  accuracy?: number;
-}
-
-const MAX_AGE_MS = 5 * 60_000;
-const MAX_SKEW_MS = 10_000;
-const TRACK_PUSH_EVERY_MS = 2_000;
+export const toCourierView = (c: CourierRecord): CourierView => ({
+  id: c.id,
+  city: c.city,
+  vehicle: c.vehicle,
+  status: c.status,
+});
 
 /**
- * Courier side. The location path is the hot one (50k req/s): one Lua call
- * (latest point only) + one Kafka produce per batch - no Postgres.
+ * Courier profile and shift (S20 FR-001..FR-004). No SQL, no Redis client: the repository and the live index are ports.
+ * `BUSY` is never set here; the delivery moves do it (A8, A18).
  */
 @Injectable()
 export class CourierService {
+  private readonly logger = new Logger(CourierService.name);
+
   constructor(
-    @InjectConnection() private readonly sequelize: Sequelize,
-    private readonly redis: RedisService,
-    private readonly producer: KafkaProducerService,
-    private readonly realtime: RealtimePublisher,
+    @Inject(COURIER_REPOSITORY) private readonly couriers: CourierRepository,
+    @Inject(GEO_INDEX) private readonly geo: GeoIndex,
+    @Inject(CLOCK) private readonly clock: Clock,
+    @Optional()
+    @Inject(COURIER_OFFLINE_HOOK)
+    private readonly offlineHook?: CourierOfflineHook,
   ) {}
 
+  /** `created` tells the controller to answer 201 instead of 200. */
   async register(
     userId: string,
-    city: string,
-    vehicle: 'bike' | 'scooter' | 'car',
-  ) {
-    await this.sequelize.query(
-      `INSERT INTO "Courier" (id, city, vehicle) VALUES (:userId, :city, :vehicle) ON CONFLICT (id) DO UPDATE SET city = EXCLUDED.city, vehicle = EXCLUDED.vehicle`,
-      { replacements: { userId, city, vehicle } },
+    input: RegisterCourierRequest,
+  ): Promise<{ created: boolean; courier: CourierView }> {
+    const { outcome, courier, previousCity } = await this.couriers.register(
+      userId,
+      input.city,
+      input.vehicle,
+      this.clock.now(),
     );
-    return this.get(userId);
+    if (outcome === 'busy') throw new CourierBusyError();
+    if (previousCity) {
+      // The cell moved: the old city's entries are derived state and go; the new city learns the status.
+      await this.mirror(() => this.geo.removeSearchable(previousCity, userId));
+      await this.mirror(() =>
+        this.geo.setStatus(courier.city, userId, courier.status, null),
+      );
+    }
+    return { created: outcome === 'created', courier: toCourierView(courier) };
   }
 
-  async get(
-    courierId: string,
-  ): Promise<{ id: string; city: string; vehicle: string; status: string }> {
-    const [courier] = await this.sequelize.query<{
-      id: string;
-      city: string;
-      vehicle: string;
-      status: string;
-    }>(
-      `SELECT id, city, vehicle, status FROM "Courier" WHERE id = :courierId`,
-      {
-        type: QueryTypes.SELECT,
-        replacements: { courierId },
-      },
+  /** Shift start and end. Repeating a switch is a no-op that still repairs the live mirror. */
+  async setAvailability(
+    userId: string,
+    available: boolean,
+  ): Promise<CourierView> {
+    const result = await this.couriers.setAvailability(userId, available);
+    if (!result) throw new CourierProfileRequiredError();
+    if (result.outcome === 'busy') throw new CourierBusyError();
+    const { courier } = result;
+    await this.mirror(() =>
+      this.geo.setStatus(courier.city, courier.id, courier.status, null),
     );
-    if (!courier) throw new NotFoundException('Not a courier');
+    if (!available && result.outcome === 'changed')
+      await this.offlineHook?.onCourierOffline(courier.id);
+    return toCourierView(courier);
+  }
+
+  async getSelf(userId: string): Promise<CourierSelf> {
+    const self = await this.couriers.selfView(userId, this.clock.now());
+    if (!self) throw new CourierProfileRequiredError();
+    return {
+      ...toCourierView(self.courier),
+      ...(self.liveOffer && {
+        currentOffer: {
+          deliveryId: self.liveOffer.deliveryId,
+          pickup: self.liveOffer.pickup,
+          dropoff: self.liveOffer.dropoff,
+          feeMinor: self.liveOffer.feeMinor,
+          currency: self.liveOffer.currency,
+          expiresAt: self.liveOffer.expiresAt.toISOString(),
+        },
+      }),
+      ...(self.activeDelivery && { activeDelivery: self.activeDelivery }),
+    };
+  }
+
+  /** The stored profile, or `courier_profile_required` (session-derived identity: the id is the user's). */
+  async requireProfile(userId: string): Promise<CourierRecord> {
+    const courier = await this.couriers.find(userId);
+    if (!courier) throw new CourierProfileRequiredError();
     return courier;
   }
 
-  /** Shift start/end. BUSY is set by dispatch only. */
-  async setAvailability(courierId: string, available: boolean) {
-    const courier = await this.get(courierId);
-    if (courier.status === 'BUSY')
-      throw new BadRequestException('Finish the current delivery first');
-    const status = available ? 'AVAILABLE' : 'OFFLINE';
-    await this.setStatus(courier.city, courierId, status, null);
-    return { status };
-  }
-
-  async setStatus(
-    city: string,
-    courierId: string,
-    status: 'OFFLINE' | 'AVAILABLE' | 'BUSY',
-    deliveryId: string | null,
-  ) {
-    await this.sequelize.query(
-      `UPDATE "Courier" SET status = :status WHERE id = :courierId`,
-      { replacements: { status, courierId } },
-    );
-    await this.redis.client.eval(
-      SET_STATUS,
-      2,
-      courierKey(city, courierId),
-      geoKey(city),
-      courierId,
-      status,
-      deliveryId ?? '',
-    );
-  }
-
-  async report(
-    courierId: string,
-    city: string,
-    points: LocationPoint[],
-    now = Date.now(),
-  ) {
-    const valid = points
-      .filter(
-        (p) =>
-          p.ts >= now - MAX_AGE_MS &&
-          p.ts <= now + MAX_SKEW_MS &&
-          Math.abs(p.lat) <= 90 &&
-          Math.abs(p.lng) <= 180,
-      )
-      .sort((a, b) => a.ts - b.ts);
-    if (valid.length === 0) return { accepted: 0 };
-    const latest = valid[valid.length - 1];
-
-    const result = (await this.redis.client.eval(
-      APPLY_LOCATION,
-      2,
-      courierKey(city, courierId),
-      geoKey(city),
-      courierId,
-      latest.ts,
-      latest.lat,
-      latest.lng,
-      300,
-    )) as string | null;
-    const deliveryId = result || null;
-
-    // Live tracking for the buyer, throttled to one push per 2 s per delivery.
-    if (
-      deliveryId &&
-      (await this.redis.client.set(
-        trackThrottleKey(deliveryId),
-        '1',
-        'PX',
-        TRACK_PUSH_EVERY_MS,
-        'NX',
-      ))
-    ) {
-      await this.realtime.publish(
-        `delivery:${deliveryId}`,
-        'courier_position',
-        { lat: latest.lat, lng: latest.lng, ts: latest.ts },
-        { replay: false },
-      );
+  /**
+   * The live mirror is derived state: the stored status is already committed, so a failing cache is logged and the next
+   * ping or shift change repairs it (the answer must not depend on it).
+   */
+  private async mirror(work: () => Promise<void>): Promise<void> {
+    try {
+      await work();
+    } catch (error) {
+      logDelivery(this.logger, 'warn', 'courier.mirror_failed', {
+        error: errorText(error),
+      });
     }
-    await this.producer.send({
-      topic: CourierLocationsReported.topic,
-      key: city,
-      value: CourierLocationsReported.create(courierId, 0, {
-        courierId,
-        city,
-        deliveryId,
-        points: valid,
-      }),
-    });
-    return { accepted: valid.length, applied: result !== null };
-  }
-
-  async position(
-    city: string,
-    courierId: string,
-  ): Promise<{ lat: number; lng: number; ts: number } | null> {
-    const [lat, lng, ts] = await this.redis.client.hmget(
-      courierKey(city, courierId),
-      'lat',
-      'lng',
-      'ts',
-    );
-    return lat && lng && ts
-      ? { lat: Number(lat), lng: Number(lng), ts: Number(ts) }
-      : null;
   }
 }

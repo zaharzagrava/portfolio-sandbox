@@ -50,3 +50,55 @@ Decided without asking (decision policy: most production-grade option the notes 
 - [LOCAL] History is write-only (no read API); 90-day expiry kept → disputes use tooling.
 - [LOCAL] Hot-city sub-key sharding not built → scale-out step, same behaviour.
 - [LOCAL] Realtime push is best effort after commit; a failure is counted, never rolls back → III.3.
+
+## Notes from Phases 0-2 (no blocker)
+
+- [LOCAL] `orderId NOT NULL` and `feeMinor NOT NULL` are applied by the contract step, not the expand step, so the draft request path keeps working until T043/T058 replace it (see tasks.md Phase 0-2 notes).
+- [LOCAL] `DeliverableOrder.currency` is nullable: `order.cancelled` (which can arrive first, AS-56) carries no currency.
+- [LOCAL] `DeliveryEvent."from"` is nullable: the creation row has no previous status (`previousStatus: null` in the event).
+
+## Notes from Phase 3 (no blocker)
+
+- [LOCAL] The location hot path reads the courier profile by primary key (one indexed SELECT, no write) for city and status instead of a session-cached profile: the principal carries no courier data. A profile cache keyed by user can replace the read later behind the same CourierRepository.find without changing behaviour; FR-009 (no Postgres write) holds.
+- [LOCAL] The track throttle push of the draft (courier_position) was removed from ingest with the draft CourierService.report; it returns with US7 (T070-T072) using trackThrottleKey(city, deliveryId) (now hash-tagged).
+- [LOCAL] CourierTrack puts use BatchWriteItem (no per-item condition is possible there): a put with the same (courier, day, ts) key is the same item, so idempotency is natural; duplicates inside one batch are removed first.
+- [LOCAL] CourierService keeps deprecated get/setStatus/position for the draft DispatchService until T044 removes it; the old delivery.e2e-spec.ts was adapted to register/setAvailability/LocationIngestService signatures. (Removed in Phase 4: both the deprecated methods and the old spec are gone.)
+
+## Notes from Phases 4-5 (no blocker)
+
+- [LOCAL] AS-30 lists `delivered` on a `DELIVERED` delivery among the 409s while AS-33 says a repeated `delivered` is `204`: the replay (AS-33, FR-025) wins. AS-30's "picked-up on PICKED_UP by another actor" is AS-31's `404`. Beyond-target moves (`picked-up` on `DELIVERED`) stay `409`.
+- [LOCAL] A courier who is not the delivery's courier but holds or held an offer for it is "related": a wrong move answers `409 invalid_delivery_transition`; a stranger answers `404` (V.4). This is how AS-30's `picked-up on REQUESTED/OFFERED` can be a 409 at all (no courier is assigned yet).
+- [LOCAL] AS-25 "accept and shop cancel race, exactly one wins": cancel from `ASSIGNED` is legal (AS-32), so an accept that commits first is followed by a successful cancel; the end state is `CANCELLED` and a free courier in both orders. The test asserts that invariant plus "one ASSIGNED row or one refused accept".
+- [LOCAL] AS-22 "two accepts racing for two deliveries offered to one courier" cannot be built through the API because the unique index refuses a second live offer; the test seeds the second offer after the first is `ACCEPTED` (what a faulted guard plus an expiry could leave) and races two accepts of it: both answer `409 courier_busy`.
+- [LOCAL] Offer expiry by timer message acts only when the stored `expiresAt <= now`; a message that arrives early (clock skew between instances) is a no-op and the recovery job (every 15 s) catches the offer up.
+- [LOCAL] Recovery claims an overdue delivery with a 30 s lease (`nextActionAt` pushed ahead in a short transaction) and acts outside the transaction, because dispatch searches Redis and no network call may run inside a transaction (FR-051).
+- [LOCAL] The offer record of a cancelled `OFFERED` delivery becomes `EXPIRED` (AS-32); `WITHDRAWN` is not used by any current path.
+- [LOCAL] `tenancy.shop_deleted` flags an in-transit delivery with the history note `shop_deleted_in_transit`, mirroring `order_cancelled_in_transit`.
+
+## Notes from Phases 6 and 8 (no blocker)
+
+- [LOCAL] AS-56 says a request for an order whose cancel arrived before its payment answers `409 order_not_deliverable`, while FR-030 says an order that does not contain the shop is `404 order_not_found`. A copy created by `order.cancelled` alone knows no shops, so the request path answers 409 for a `CANCELLED` copy with an empty shop list and 404 when the shop list is known and lacks the shop. The cost is that any shop member who guesses the UUID of such a cancelled order learns it is cancelled (no buyer or content data); the alternative (404) contradicts AS-56.
+- [LOCAL] AS-39 "a member of another shop gets 404 or 403 per the shop gate": the S03 gate answers `404 shop_not_found` for a non-member, so the test asserts 404. `delivery_not_found` is the answer of the shop's own lookups for a delivery of another shop.
+- [LOCAL] AS-38 order of checks: body validation (400) first, then the order rules (404/409), route length, served city (422), then the surge read and the transaction. A request that is wrong in several ways gets the first class in that order.
+- [LOCAL] At 200 open deliveries a duplicate request for an order that already has an open delivery answers `open_delivery_limit` (the count runs before the insert, under the shop lock), not `delivery_already_open`.
+- [LOCAL] `@Idempotent` replays only responses the platform stores (successes); business 4xx are recomputed on retry (an unchanged order state gives the same answer). The first dispatch after commit can fail without failing the request: the delivery stays `REQUESTED` with `nextActionAt = now` and the recovery job offers it.
+- [LOCAL] The demand window of `RedisSurgeStore` is ten one-minute buckets (granularity one minute).
+
+## Notes from Phases 7, 9, 10 and 11 (no blocker)
+
+- [LOCAL] AS-47 says one ping per second for 5 s gives 2 `courier_position` pushes. With a closed window (a push at `t` blocks every push up to and including `t + 2 s`) pings at 0, 1, 2, 3, 4 s push at 0 and 3 s: 2 messages, and any closed 2 s interval holds at most one. An open window would push at 0, 2 and 4 s (3 messages), so the closed one matches the scenario; the throttle compares the caller's clock, not the store's, so it is deterministic under a frozen clock.
+- [LOCAL] FR-043 (recovery and surge handled by the owner) and AS-49 (each schedule tick computed once by the job-table claim) pull in opposite directions: a once-per-tick job runs on ONE instance, so owner-only processing would leave the cities of every other instance uncovered. Resolution: the claiming instance covers its own cities and queues one follow-up job per other live instance (`for`), so each city is processed once per tick by a job that is claimed once. The cost is one extra job row per peer per tick.
+- [LOCAL] A worker that is not in a non-empty instance set (its heartbeat is late) owns no city; its timer messages are handed back and handled after 3 hand-backs, and the jobs of the instances that are listed cover its cities. An unreadable or empty set makes it process everything (fail open).
+- [LOCAL] Hand-back delay is 1 s (SQS delays are whole seconds; the spec allows at most 2 s).
+- [LOCAL] AS-57 asks for rate-limited batches in the delivery metrics; the global limiter interceptor runs before any route-level interceptor, so the capability cannot observe its own 429. The limiter's `rate_limit_decisions_total{policy="fulfilment.courier-locations", allowed="false"}` is that count and the dead `courier_location_batches_rate_limited_total` instrument is removed. `courier_history_failures_total` has the stages `produce` and `store`; a poison message is dead-lettered by the consumer framework, which counts it.
+- [LOCAL] Surge supply is the searchable set of the city with a position at most 60 s old; a courier that holds a live offer is still in that set, so it counts as supply until it answers (the offer guard does not remove it). The demand window is ten one-minute buckets, so a request drops out between 9 and 10 minutes after it was made (never later than 10).
+- [LOCAL] The 180 s expiry of the surge map is the store's own key expiry (real time); the spec asserts the TTL and removes the key to simulate expiry because the frozen clock does not move Redis.
+- [LOCAL] The e2e specs of ownership and observability boot a second worker-shaped Nest app in the same process (`testing/worker-instance.ts`) instead of a separate OS process; they share the spec's frozen clock and the real Postgres and Redis.
+
+## Notes from Phase 12 (no blocker)
+
+- [LOCAL] Nothing runs `migrations/contract/` automatically (`db:migrate` and `db:jest:migrate:up` do not recurse), as for the S15, S16 and catalog-import contract files. The S20 contract step was applied by hand to the test DB (`pnpm db:jest:migrate:up --migrations-path migrations/contract`); that command also applied the three other pending contract files of the folder (S15, S16, catalog import) to the test DB. Because a fresh stack only runs the expand step and the code no longer writes `feeCents` (NOT NULL in the draft table), a small bridge migration `migrations/20261017100050-delivery-s20-fee-cents-nullable.js` drops that NOT NULL; the contract step then drops the column. The dev DB was not touched and `db:migrate:down` was not run.
+- [LOCAL] D-6 ("no `infra/` import in `application/`"): `DeliveryMetrics` moved from `infra/` to `application/delivery-metrics.ts` (instrumentation, no store); the `[code:]` anchor of S20.R-30 follows.
+- [LOCAL] T083: the pattern-map rule goes `implemented` -> `verified` (the `spec'd` state sits below `implemented`), so P0110, P0323, P0328 and P1105 stay `implemented`; noted in gaps.md.
+- [LOCAL] `specs/UNVERIFIED.md` had SC-006 and SC-009 in one row; split into two rows.
+- [LOCAL] `index.ts` exports `DeliveryStatusChanged`, `DELIVERY_AGGREGATE`, `CourierLocationsReported` and the delivery DTO types besides the modules.

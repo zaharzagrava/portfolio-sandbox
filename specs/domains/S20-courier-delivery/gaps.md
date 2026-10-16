@@ -75,3 +75,25 @@ The command requires an approval that the unattended run did not have, so the li
 6. Realtime: status replay, throttled position only on the way, policy through a port, `user:` pushes.
 7. City ownership: ring, heartbeat, hand-back, owner-only jobs; metrics and logs.
 8. Barrel and app wiring (D-8); update the showcase note (A34); set patterns P0110, P0323, P0328 and P1105 to `spec'd` once S20 is approved.
+
+## Ownership check (confirmed)
+
+T002, run on 2026-10-16 before any change: `pnpm --dir packages/backend check:table-ownership` and `--strict` both print `0 cross-domain data accesses in 0 domains`. The tool does not report the three DDL foreign keys (`Courier.id -> User`, `Delivery.shopId -> Shop`, `Delivery.buyerId -> User`) nor the test-only `ShopModel` import of `delivery.e2e-spec.ts`; section C stays valid as a manual list and the foreign keys are still dropped by the contract migration (T028). No other difference.
+
+## Sibling-spec follow-ups
+
+- **S10**: the wording of the order write-back contract should read `startFulfilment` (first `ASSIGNED`), `ship {trackingCode: deliveryId}` (`PICKED_UP`) and `deliver` (`DELIVERED`) through `OrderFulfilmentService.apply`, single-shop orders only; "Consumers: S20" for `order.paid`/`order.cancelled` and for `apply` (S19 consumes neither). An address in `order.paid` is still needed for automatic dispatch (the shop supplies coordinates today).
+- **S28**: `delivery.status_changed` and `courier.locations_reported` schemas now ship in `packages/contracts/src/fulfilment/delivery.ts`; switch the import (fields identical). S28 must not read delivery tables.
+- **S48**: the order page composes the order with `GET /orders/:orderId/deliveries`.
+- **S51**: serve `user:<courierId>` (self only) for `delivery_offer`, `delivery_offer_withdrawn`, `delivery_cancelled`; keep a replay window for `delivery:<id>` status. S20 only defines the `delivery:` policy (through a port).
+- **S49 / S50 / S54**: job names `fulfilment.compute-surge`, `fulfilment.recover-deliveries`, `fulfilment.apply-order-lifecycle` and policies `fulfilment.courier-locations`, `fulfilment.delivery-request`, `fulfilment.delivery-actions` are fixed by this capability; the `Idempotency-Key` facility is used for `POST /shops/:shopId/deliveries`.
+- **Pattern map (T083)**: P0110, P0323, P0328 and P1105 stay `implemented`. The rule of `docs/work/architecture/pattern-map.md` moves rows from `implemented` towards `verified` ("the implementation loop"); `spec'd` sits below `implemented`, so setting it would be a downgrade. The SDD gate promotes the rows once the S20 tests pass.
+- **Migrations**: `migrations/contract/*` is not run by `db:migrate`; the contract step `20261017100100-delivery-s20-contract.js` was applied by hand to the test database (`--migrations-path migrations/contract`). The bridge migration `20261017100050-delivery-s20-fee-cents-nullable.js` (in `migrations/`) makes a fresh stack work without it, because the code no longer writes `feeCents`. Operators run the contract step with the next release.
+
+## Spec changes
+
+None. No human-signed spec page was altered.
+
+## Gate repairs
+
+- **Test integrity**: the gate flagged the deletion of `delivery.e2e-spec.ts` (it carried no scenario id). The file is back as a smoke-level spec ported to the new fixtures: 5 tests with S20 ids (AS-14, AS-25, AS-16, AS-04, AS-49) and the same flows as the old tests (offer/decline/accept/deliver, concurrent offers, timeout and stale timers, location ordering, surge). The detailed scenarios stay in the `delivery-*.e2e-spec.ts` files. `check-tests.py integrity`, `tsc --noEmit` and the new spec pass.

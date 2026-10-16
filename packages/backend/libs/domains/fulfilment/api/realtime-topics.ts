@@ -1,30 +1,27 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
-import { InjectConnection } from '@nestjs/sequelize';
-import { QueryTypes, Sequelize } from 'sequelize';
+import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
 import { TopicRegistry } from '@app/infrastructure/realtime';
+import {
+  REALTIME_ACCESS_PORT,
+  type RealtimeAccessPort,
+} from '../domain/delivery-ports';
 
-/** `delivery:{id}` (SD-23 live tracking): the buyer and the assigned courier only. */
+/**
+ * `delivery:{id}` (SD-23 live tracking, S20 FR-040): one rule - the buyer and the assigned courier only. The data access
+ * is the port's; nothing here touches a store (A23).
+ */
 @Injectable()
 export class DeliveryTopics implements OnModuleInit {
   constructor(
     private readonly topics: TopicRegistry,
-    @InjectConnection() private readonly sequelize: Sequelize,
+    @Inject(REALTIME_ACCESS_PORT) private readonly access: RealtimeAccessPort,
   ) {}
 
   onModuleInit() {
     this.topics.define({
       prefix: 'delivery',
-      policy: async (viewer, _topic, deliveryId) => {
-        if (!viewer.userId) return false;
-        const rows = await this.sequelize.query(
-          `SELECT 1 FROM "Delivery" WHERE id = :deliveryId AND (:userId IN ("buyerId", "courierId"))`,
-          {
-            type: QueryTypes.SELECT,
-            replacements: { deliveryId, userId: viewer.userId },
-          },
-        );
-        return rows.length > 0;
-      },
+      owner: 'fulfilment',
+      policy: (viewer, _topic, deliveryId) =>
+        !!viewer.userId && this.access.canSubscribe(deliveryId, viewer.userId),
     });
   }
 }

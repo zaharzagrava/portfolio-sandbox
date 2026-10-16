@@ -549,3 +549,12 @@
 {"run":"20261016T173603Z","capability":"S23","step":"repair-2","start":"2026-10-16T18:36:40Z","end":"2026-10-16T18:38:21Z","seconds":101,"result":"ok","attempt":1,"reason":"ok","code_changed":true}
 {"run":"20261016T173603Z","capability":"S23","step":"gate","start":"2026-10-16T18:38:21Z","end":"2026-10-16T18:45:20Z","seconds":419,"result":"pass","attempt":3,"reason":""}
 {"run":"20261016T173603Z","capability":"S23","step":"built","start":"2026-10-16T17:36:03Z","end":"2026-10-16T18:45:20Z","seconds":4157,"result":"ok","attempt":1,"reason":"Live launch stream comments and reactions: sampling, batching, moderation, pinned commerce"}
+{"run":"20261016T173603Z","capability":"S20","step":"plan","start":"2026-10-16T18:45:40Z","end":"2026-10-16T18:49:10Z","seconds":210,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261016T173603Z","capability":"S20","step":"tasks","start":"2026-10-16T18:49:10Z","end":"2026-10-16T18:51:45Z","seconds":155,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261016T173603Z","capability":"S20","step":"analyze","start":"2026-10-16T18:51:46Z","end":"2026-10-16T18:52:11Z","seconds":25,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261016T173603Z","capability":"S20","step":"implement-1","start":"2026-10-16T18:52:11Z","end":"2026-10-16T20:50:14Z","seconds":7083,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261016T173603Z","capability":"S20","step":"converge-1","start":"2026-10-16T20:50:14Z","end":"2026-10-16T20:50:44Z","seconds":30,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261016T173603Z","capability":"S20","step":"gate","start":"2026-10-16T20:50:45Z","end":"2026-10-16T20:50:54Z","seconds":9,"result":"fail","attempt":1,"reason":"test integrity: packages/backend/libs/domains/fulfilment/delivery.e2e-spec.ts: test file deleted, and it carried no scenario id, so nothing proves that another test replaces it (add the scenario id to"}
+{"run":"20261016T173603Z","capability":"S20","step":"repair-1","start":"2026-10-16T20:50:55Z","end":"2026-10-16T20:53:25Z","seconds":150,"result":"ok","attempt":1,"reason":"ok","code_changed":true}
+{"run":"20261016T173603Z","capability":"S20","step":"gate","start":"2026-10-16T20:53:25Z","end":"2026-10-16T21:01:54Z","seconds":509,"result":"pass","attempt":2,"reason":""}
+{"run":"20261016T173603Z","capability":"S20","step":"built","start":"2026-10-16T18:45:39Z","end":"2026-10-16T21:01:54Z","seconds":8175,"result":"ok","attempt":1,"reason":"Same-day courier dispatch: location ingest, offers with timeout, delivery state machine, live tracking"}

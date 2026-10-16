@@ -1,195 +1,171 @@
-import { INestApplication } from '@nestjs/common';
-import { getModelToken } from '@nestjs/sequelize';
-import { v4 } from 'uuid';
-import { generateTestingModule } from '@app/test/utils/global-modules';
-import { SeedsModule } from '@app/test/seeds/seeds.module';
-import { SeedsService } from '@app/test/seeds/seeds.service';
-import { TableName } from '@app/test/seeds/types';
-import { RedisService } from '@app/infrastructure/redis/redis.service';
-import { KafkaProducerService } from '@app/infrastructure/kafka/kafka-producer.service';
-import { ShopModel as Shop } from '@app/domains/tenancy';
-import { SequelizeModule } from '@nestjs/sequelize';
-import { Module } from '@nestjs/common';
-import { DeliveryCoreModule } from './delivery-core.module';
-import { DeliveryWorkerModule } from './delivery-worker.module';
-import { CourierService } from './application/courier.service';
+import { v4 as uuidv4 } from 'uuid';
 import { DispatchService } from './application/dispatch.service';
-import { SurgeJob } from './infra/delivery-workers';
-import { courierKey, geoKey } from './infra/courier-keys';
+import { SurgeService } from './application/surge.service';
 import { geohash } from './domain/geohash';
+import {
+  BERLIN,
+  createDeliveryApp,
+  type DeliveryTestApp,
+  type DeliveryTestCourier,
+} from './testing/delivery-fixtures';
+import { FakeOrderFulfilment, fakeOrdersModule } from './testing/fake-orders';
+import {
+  DELIVERABLE_ORDER_STORE,
+  type DeliverableOrderStore,
+} from './domain/delivery-ports';
 
-@Module({
-  imports: [
-    DeliveryCoreModule,
-    DeliveryWorkerModule,
-    SequelizeModule.forFeature([Shop]),
-  ],
-})
-class SpecModule {}
+const KM = 1 / 111.2;
+const north = (km: number) => BERLIN.pickup.lat + km * KM;
+const CELL = geohash(BERLIN.pickup.lat, BERLIN.pickup.lng, 5);
 
-// Pickup at Alexanderplatz; couriers ~0.3 km, ~1 km, ~2.5 km away.
-const PICKUP = { lat: 52.5219, lng: 13.4132 };
-const DROPOFF = { lat: 52.5096, lng: 13.3759 };
-const NEAR = [
-  { lat: 52.5245, lng: 13.4135 },
-  { lat: 52.5309, lng: 13.4132 },
-  { lat: 52.5444, lng: 13.4132 },
-];
-
-/** SD-23 against real Postgres + Redis (GEO, Lua) + ElasticMQ. */
+/** Smoke-level SD-23 flow against the real stack; the detailed scenarios live in the delivery-*.e2e-spec files. */
 describe('Courier dispatch (e2e)', () => {
-  let app: INestApplication;
-  let seeds: SeedsService;
-  let couriers: CourierService;
+  let t: DeliveryTestApp;
   let dispatch: DispatchService;
-  let redis: RedisService;
-  let city: string;
 
   beforeAll(async () => {
-    const moduleRef = await generateTestingModule([SpecModule, SeedsModule], {
-      stores: ['redis', 'sqs'],
+    t = await createDeliveryApp({
+      extraImports: [fakeOrdersModule(new FakeOrderFulfilment())],
     });
-    app = moduleRef.createNestApplication();
-    await app.init();
-    seeds = app.get(SeedsService);
-    couriers = app.get(CourierService);
-    dispatch = app.get(DispatchService);
-    redis = app.get(RedisService);
-    jest
-      .spyOn(app.get(KafkaProducerService), 'send')
-      .mockResolvedValue(undefined as never);
+    dispatch = t.app.get(DispatchService);
   });
+  afterAll(() => t.close());
+  beforeEach(() => t.reset());
 
-  afterAll(async () => {
-    await app.close();
-  });
+  const fleet = async (city: string, kms = [0.3, 1, 2.5]) => {
+    const out: DeliveryTestCourier[] = [];
+    for (const km of kms)
+      out.push(await t.onShiftCourier({ city, lat: north(km) }));
+    return out;
+  };
 
-  beforeEach(async () => {
-    await seeds.clean();
-    city = `berlin-${v4().slice(0, 6)}`; // fresh cell per test: no GEO leftovers
-  });
+  it('S20 AS-14: offers the nearest courier first; decline → next nearest; accept → ASSIGNED and the courier leaves the pool', async () => {
+    const city = t.uniqueCity();
+    const [c1, c2, c3] = await fleet(city);
+    const d = await t.requested(city);
+    await dispatch.dispatch(d);
+    expect(await t.deliveryRow(d)).toMatchObject({
+      status: 'OFFERED',
+      attempt: 1,
+    });
+    expect((await t.offerRows(d))[0].courierId).toBe(c1.user.id);
 
-  const fleet = async (positions = NEAR) => {
-    const users = await seeds.createTreelike(
-      positions.map(() => ({ __type__: TableName.User })),
+    await t.as(c1.user).post(`/api/deliveries/${d}/decline`).expect(204);
+    expect(await t.deliveryRow(d)).toMatchObject({
+      status: 'OFFERED',
+      attempt: 2,
+    });
+
+    await t.as(c3.user).post(`/api/deliveries/${d}/accept`).expect(404);
+    await t.as(c2.user).post(`/api/deliveries/${d}/accept`).expect(200);
+    expect(await t.deliveryRow(d)).toMatchObject({ status: 'ASSIGNED' });
+    expect((await t.searchable(city)).sort()).toEqual(
+      [c1.user.id, c3.user.id].sort(),
     );
-    for (const [i, u] of users.entries()) {
-      await couriers.register(u.id, city, 'bike');
-      await couriers.report(u.id, city, [{ ...positions[i], ts: Date.now() }]);
-      await couriers.setAvailability(u.id, true);
-    }
-    return users.map((u) => u.id as string);
-  };
 
-  const order = async () => {
-    const [buyer] = await seeds.createTreelike([{ __type__: TableName.User }]);
-    const shop = await app
-      .get<typeof Shop>(getModelToken(Shop))
-      .create({ name: 'Local', slug: `l-${v4().slice(0, 8)}` });
-    return dispatch.request({
-      shopId: shop.id,
-      buyerId: buyer.id,
-      city,
-      pickup: PICKUP,
-      dropoff: DROPOFF,
-    });
-  };
-
-  it('offers the nearest courier first; decline → next nearest; accept → ASSIGNED and the courier leaves the pool', async () => {
-    const [c1, c2, c3] = await fleet();
-    const d = await order();
-    expect(d).toMatchObject({
-      status: 'OFFERED',
-      offeredCourierId: c1,
-      attempt: 1,
-    });
-
-    await dispatch.decline(d.id, c1);
-    expect(await dispatch.get(d.id)).toMatchObject({
-      status: 'OFFERED',
-      offeredCourierId: c2,
-      attempt: 2,
-    });
-
-    await expect(dispatch.accept(d.id, c3)).rejects.toMatchObject({
-      status: 409,
-    }); // not their offer
-    expect(await dispatch.accept(d.id, c2)).toMatchObject({
-      status: 'ASSIGNED',
-      courierId: c2,
-    });
-
-    const pool = await redis.client.zrange(geoKey(city), 0, -1);
-    expect(pool.sort()).toEqual([c1, c3].sort());
-    await dispatch.pickUp(d.id, c2);
-    await dispatch.deliver(d.id, c2);
-    expect((await redis.client.zrange(geoKey(city), 0, -1)).sort()).toEqual(
-      [c1, c2, c3].sort(),
-    ); // back in the pool
+    await t.as(c2.user).post(`/api/deliveries/${d}/picked-up`).expect(204);
+    await t.as(c2.user).post(`/api/deliveries/${d}/delivered`).expect(204);
+    expect((await t.searchable(city)).sort()).toEqual(
+      [c1.user.id, c2.user.id, c3.user.id].sort(),
+    );
   });
 
-  it('two concurrent deliveries can never be offered the same courier', async () => {
-    const [only] = await fleet([NEAR[0]]);
-    const [a, b] = await Promise.all([order(), order()]);
-    const offered = [a, b].filter((d) => d.status === 'OFFERED');
-    expect(offered).toHaveLength(1);
-    expect(offered[0].offeredCourierId).toBe(only);
-    expect([a, b].find((d) => d.status !== 'OFFERED')).toMatchObject({
-      status: 'REQUESTED',
-      offeredCourierId: null,
-    });
+  it('S20 AS-25: two concurrent deliveries can never be offered the same courier', async () => {
+    const city = t.uniqueCity();
+    const [only] = await fleet(city, [0.3]);
+    const a = await t.requested(city);
+    const b = await t.requested(city);
+    await Promise.all([dispatch.dispatch(a), dispatch.dispatch(b)]);
+    const rows = [await t.deliveryRow(a), await t.deliveryRow(b)];
+    expect(rows.filter((r) => r.status === 'OFFERED')).toHaveLength(1);
+    expect(rows.filter((r) => r.status === 'REQUESTED')).toHaveLength(1);
+    const live = [...(await t.offerRows(a)), ...(await t.offerRows(b))].filter(
+      (o) => o.status === 'OFFERED',
+    );
+    expect(live).toHaveLength(1);
+    expect(live[0].courierId).toBe(only.user.id);
   });
 
-  it('offer timeout moves on to the next courier; stale timers are ignored', async () => {
-    const [c1, c2] = await fleet(NEAR.slice(0, 2));
-    const d = await order();
-    await dispatch.onOfferTimeout({
-      deliveryId: d.id,
+  it('S20 AS-16: offer timeout moves on to the next courier; stale timers are ignored', async () => {
+    const city = t.uniqueCity();
+    const [c1, c2] = await fleet(city, [0.3, 1]);
+    const d = await t.requested(city);
+    await dispatch.dispatch(d);
+    await dispatch.onTimer({
+      deliveryId: d,
       city,
-      courierId: c1,
+      courierId: c1.user.id,
       attempt: 0,
-    }); // stale attempt
-    expect(await dispatch.get(d.id)).toMatchObject({ offeredCourierId: c1 });
+    });
+    expect(await t.deliveryRow(d)).toMatchObject({ attempt: 1 });
 
-    await dispatch.onOfferTimeout({
-      deliveryId: d.id,
+    t.clock.advance(15_000);
+    await dispatch.onTimer({
+      deliveryId: d,
       city,
-      courierId: c1,
+      courierId: c1.user.id,
       attempt: 1,
     });
-    expect(await dispatch.get(d.id)).toMatchObject({
+    expect(await t.deliveryRow(d)).toMatchObject({
       status: 'OFFERED',
-      offeredCourierId: c2,
       attempt: 2,
     });
+    expect((await t.offerRows(d)).map((o) => o.courierId)).toEqual([
+      c1.user.id,
+      c2.user.id,
+    ]);
   });
 
-  it('location updates apply in timestamp order only; non-available couriers are not searchable', async () => {
-    const [c1] = await fleet([NEAR[0]]);
-    const now = Date.now();
-    await couriers.report(c1, city, [{ ...NEAR[2], ts: now + 1_000 }]);
-    const stale = await couriers.report(c1, city, [
-      { ...NEAR[1], ts: now + 500 },
-    ]); // arrived late
-    expect(stale.applied).toBe(false);
-    expect(
-      Number(
-        (await redis.client.hget(courierKey(city, c1), 'lat'))!.slice(0, 7),
-      ),
-    ).toBeCloseTo(NEAR[2].lat, 3);
+  it('S20 AS-04: location updates apply in timestamp order only; non-available couriers are not searchable', async () => {
+    const city = t.uniqueCity();
+    const [c1] = await fleet(city, [0.3]);
+    const newer = north(2.5);
+    await t
+      .ping(c1.user, [t.point(1_000, newer, BERLIN.pickup.lng)])
+      .expect(202);
+    await t
+      .ping(c1.user, [t.point(500, north(1), BERLIN.pickup.lng)])
+      .expect(202); // arrived late
+    const live = await t.livePosition(city, c1.user.id);
+    expect(live?.lat).toBeCloseTo(newer, 3);
 
-    await couriers.setAvailability(c1, false);
-    expect(await redis.client.zrange(geoKey(city), 0, -1)).toEqual([]);
+    await t
+      .as(c1.user)
+      .put('/api/couriers/me/availability')
+      .send({ available: false });
+    expect(await t.searchable(city)).toEqual([]);
   });
 
-  it('surge rises in a cell where requests outnumber available couriers, and prices new deliveries', async () => {
-    await fleet([NEAR[0]]);
-    for (let i = 0; i < 3; i++) await order();
-    const surge = await app.get(SurgeJob).compute(city);
-    expect(surge[geohash(PICKUP.lat, PICKUP.lng, 5)]).toBe(3); // 3 requests / 1 courier
-
-    const priced = await order();
-    expect(Number(priced.surge)).toBe(3);
-    expect(priced.feeCents).toBe(Math.round(499 * 3));
+  it('S20 AS-49: surge rises in a cell where requests outnumber available couriers', async () => {
+    const city = t.uniqueCity();
+    await fleet(city, [0.3]);
+    const members = await t.shopMembers();
+    const orders = t.app.get<DeliverableOrderStore>(DELIVERABLE_ORDER_STORE);
+    for (let i = 0; i < 3; i++) {
+      const orderId = uuidv4();
+      await orders.applyPaid(
+        {
+          orderId,
+          buyerId: members.buyer.id,
+          shopIds: [members.shopId],
+          currency: 'EUR',
+          orderVersion: 4,
+        },
+        t.clock.now(),
+      );
+      await t
+        .as(members.owner)
+        .post(`/api/shops/${members.shopId}/deliveries`)
+        .set('Idempotency-Key', uuidv4())
+        .send({
+          orderId,
+          city,
+          pickup: BERLIN.pickup,
+          dropoff: BERLIN.dropoff,
+        })
+        .expect(201);
+    }
+    const computed = await t.app.get(SurgeService).compute(t.clock.now(), null);
+    expect(computed.get(city)).toEqual(new Map([[CELL, 300]]));
   });
 });
