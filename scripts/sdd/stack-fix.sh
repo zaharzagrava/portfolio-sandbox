@@ -35,6 +35,12 @@ case "${1:-}" in
     # The journey suite needs two things the dev stack does not start by itself: the document-extractor stand-in (nothing else consumes
     # `onboarding-documents`, so no shop is ever verified and every test times out after 60 s) and the API's metrics port (:9464).
     # Checking them takes seconds; finding out from a 25-minute run does not.
+    # the journeys sign in as the seeded admin; a stack that was never seeded answers 401 to all 27 tests (2026-10-16, 11:20 UTC)
+    admin_ok() { [[ "$(curl -s -m 15 -o /dev/null -w '%{http_code}' -X POST "$API_URL/api/auth/login" -H 'content-type: application/json' -d "{\"email\":\"$ADMIN_EMAIL\",\"password\":\"$ADMIN_PASSWORD\"}")" == 200 ]]; }
+    if ! admin_ok; then
+      (cd "$ROOT/packages/backend" && pnpm --filter api seed:dev >/tmp/sdd-seed.log 2>&1) || true
+      admin_ok || { echo "ENVIRONMENT: the seeded admin ($ADMIN_EMAIL) cannot log in even after pnpm --filter api seed:dev (see /tmp/sdd-seed.log)"; tail -n 5 /tmp/sdd-seed.log; exit 1; }
+    fi
     LAMBDA_DIR="${LAMBDA_DIR:-/tmp/sdd-lambda}"; mkdir -p "$LAMBDA_DIR"
     [[ -s "$LAMBDA_DIR/pid" ]] && kill -TERM -- "-$(cat "$LAMBDA_DIR/pid")" 2>/dev/null; pkill -f 'lambda-local/main.js document-extractor' 2>/dev/null; sleep 1
     if ! (cd "$ROOT/packages/backend" && pnpm exec nest build lambda-local >"$LAMBDA_DIR/build.log" 2>&1); then
