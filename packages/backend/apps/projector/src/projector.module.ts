@@ -6,6 +6,7 @@ import {
 import { StoryCacheInvalidator, StoryCacheModule } from '@app/domains/content';
 import { StatementsProjectorModule } from '@app/domains/statements';
 import { OnboardingProjectorModule } from '@app/domains/seller-onboarding';
+import { AssetsProjectorModule } from '@app/domains/asset-library';
 import {
   TrendingProjectorModule,
   RecommendationsProjectorModule,
@@ -126,8 +127,10 @@ import { CacheModule } from '@app/infrastructure/cache/cache.module';
         ...KnowledgeProjectorModule.projectors,
         ...StatementsProjectorModule.projectors,
         ...OnboardingProjectorModule.projectors,
+        ...AssetsProjectorModule.projectors,
       ],
       [
+        AssetsProjectorModule,
         OnboardingProjectorModule,
         ProductProjectorModule,
         SearchProjectorModule,

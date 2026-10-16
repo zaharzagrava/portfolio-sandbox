@@ -13,6 +13,7 @@
     "check:image-definition": "TS_NODE_TRANSPILE_ONLY=1 node -r ts-node/register scripts/check-image-definition.ts",
     "check:no-startup-migration": "TS_NODE_TRANSPILE_ONLY=1 node -r ts-node/register scripts/check-no-startup-migration.ts",
     "check:no-wallclock": "TS_NODE_TRANSPILE_ONLY=1 node -r ts-node/register scripts/check-no-wallclock.ts",
+    "check:asset-library-no-fk": "TS_NODE_TRANSPILE_ONLY=1 node -r ts-node/register scripts/check-asset-library-no-fk.ts",
     "check:model-registry": "TS_NODE_TRANSPILE_ONLY=1 node -r ./scripts/preload-contracts.cjs -r ts-node/register -r tsconfig-paths/register scripts/check-model-registry.ts",
     "test:journeys": "NODE_OPTIONS=--experimental-vm-modules jest --config jest-journeys.json --runInBand",
     "check:boundaries": "depcruise apps libs test db --config .dependency-cruiser.cjs --output-type err",

@@ -62,3 +62,8 @@ Format: `[TAG] question → default taken → why`. BREAKING first, then CONTRAC
 - [LOCAL] No antivirus scan of library files → private workspace; delivery is attachment on a separate origin.
 - [LOCAL] No watermarking → hook and `X-Licensed-To` only.
 - [LOCAL] The `GET /me/purchases` list shows only active entitlements → revoked ones are hidden, not shown greyed out.
+
+## Blocker: gate "test integrity" on the deleted assets.e2e-spec.ts
+- The old `asset-library/assets.e2e-spec.ts` (5 tests, no scenario ids) was replaced by eight spec files whose titles carry S31 AS-nn. Its five scenarios are proven by: AS-08 (edit uploads only changed chunks, byte-identical), AS-21 (stale save → conflicted copy), AS-35 (version delete keeps shared chunks), AS-50 (share cap atomic), AS-67 (buyer download after paid order).
+- `scripts/sdd/check-tests.py integrity` fails a deleted test file that carried no scenario id, and the file has no way to be retired in `retired-scenarios.md` (no ids). Only two exits exist: keep a file of that name with at least as many it()/expect() calls, or have the subject `asset-library/assets.ts` deleted. Neither is real work.
+- This session could not run `git show` (permission prompt denied in an unattended run), so I could not copy the old file to rewrite it. Hypothesis: a human should accept the deletion (one-line allowance in check-tests.py for a replaced file) or confirm that a rewritten `assets.e2e-spec.ts` with ids AS-08/21/35/50/67 is wanted.

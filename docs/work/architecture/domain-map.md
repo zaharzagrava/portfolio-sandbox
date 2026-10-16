@@ -193,7 +193,7 @@ uses to get other domains' data.
 - **Emits**: `order.reserved`, `order.paid`, `order.cancelled`.
 - **Hosted by**: core, worker.
 - **Exports (R1)**: `getOrdersForShop`, `getOrderLines`. These are used by developer-platform,
-  auctions, and asset-library instead of their current joins.
+  auctions instead of their current joins (asset-library consumes order events instead).
 - **Depends on**: catalog (R1 prices and stock), payments (SQS command for payment intent;
   consumes payment results), shop-functions (R1 discount evaluation), tenancy (R1).
 
@@ -363,11 +363,15 @@ uses to get other domains' data.
 ### asset-library
 - **Responsibility**: the shop asset library (chunked dedupe, delta sync, share links) and
   digital product delivery after purchase.
-- **Owns**: `Asset`, `AssetVersion`, `AssetChunk`, `AssetChange`, `AssetShareLink`,
-  `AssetSyncState`, `DigitalProduct`.
-- **Hosted by**: core, worker.
-- **Depends on**: orders (consumes `order.paid` to grant download entitlement; replaces the
-  `BisOrder` reads), catalog (R1).
+- **Owns**: `Asset`, `AssetVersion`, `AssetVersionChunk`, `AssetChunk`, `AssetChange`,
+  `AssetSyncState`, `AssetShopUsage`, `AssetShareLink`, `AssetDownloadGrant`, `DigitalProduct`,
+  `AssetEntitlement`, `AssetOrderRevocation`.
+- **Emits**: `assets.entitlement_granted`, `assets.entitlement_revoked`,
+  `assets.digital_product_linked`, `assets.digital_product_unlinked` (topic `assets.events`).
+- **Hosted by**: core (HTTP), worker (jobs), projector (consumers), realtime gateway (topic module).
+- **Depends on**: orders (events `order.paid`, `order.refunded`), catalog (R1
+  `getProductsByIds` and event `catalog.product_deleted`), tenancy (event `tenancy.shop_deleted`;
+  `ShopScoped`), realtime (`assets.changed` on `shop:<id>:assets`).
 
 ### assistant
 - **Responsibility**: the streamed LLM shopping assistant with read-only tools, and RAG ("ask this

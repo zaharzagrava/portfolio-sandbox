@@ -253,6 +253,11 @@ export const OWNERSHIP = {
   AssetShareLink: 'domain:asset-library',
   AssetSyncState: 'domain:asset-library',
   DigitalProduct: 'domain:asset-library',
+  AssetVersionChunk: 'domain:asset-library',
+  AssetShopUsage: 'domain:asset-library',
+  AssetEntitlement: 'domain:asset-library',
+  AssetDownloadGrant: 'domain:asset-library',
+  AssetOrderRevocation: 'domain:asset-library',
   // assistant
   KnowledgeDocument: 'domain:assistant',
   KnowledgeChunk: 'domain:assistant',

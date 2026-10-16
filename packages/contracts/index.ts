@@ -34,3 +34,4 @@ export * from './src/statements/index.ts';
 export * from './src/billing/index.ts';
 export * from './src/admin/index.ts';
 export * from './src/onboarding/index.ts';
+export * from './src/asset-library/index.ts';
