@@ -117,7 +117,9 @@ describe('API key format', () => {
         counts.set(c, (counts.get(c) ?? 0) + 1);
     expect(counts.size).toBe(62);
     const expected = (10_000 * 32) / 62;
+    // Per-symbol sd is ~1.4% of the mean; 8% is ~5.7 sigma (a 5% bound over 62
+    // symbols failed ~3% of runs by chance). Modulo bias skews 8 symbols by 25%.
     for (const n of counts.values())
-      expect(Math.abs(n - expected) / expected).toBeLessThan(0.05);
+      expect(Math.abs(n - expected) / expected).toBeLessThan(0.08);
   });
 });

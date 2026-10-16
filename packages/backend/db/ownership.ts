@@ -73,6 +73,7 @@ export const OWNERSHIP = {
   ShopDocument: 'domain:seller-onboarding',
   DocumentExtraction: 'domain:seller-onboarding',
   ReviewTask: 'domain:seller-onboarding',
+  OnboardingStatusHistory: 'domain:seller-onboarding',
   // catalog
   Product: 'domain:catalog',
   ListingDraft: 'domain:catalog',

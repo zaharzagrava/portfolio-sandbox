@@ -20,3 +20,4 @@ S07 T072: standalone boots (`scripts/infra/boot-app.sh core|worker|projector|sse
 J01 T061: AS-30 metrics and log checks (needs the API metrics endpoint at :9464): `cd packages/backend && pnpm test:journeys`, run once at the final checkpoint.
 J01 T062: gates found 17 cross-domain table accesses (asset-library, catalog-sync, community, content, launch-events, orders (order-export.service.ts reads Product), seller-insights, seller-onboarding): `pnpm --dir packages/backend check:table-ownership --strict`; fix in the owning domains at the final checkpoint.
 J01 T070: whole capability suites and `scripts/qa/fresh-run.sh` then `pnpm test:journeys` on the empty stack, run once at the final checkpoint.
+J01 T063: Playwright AS-29 `cd packages/web && PW_EXPECT_TIMEOUT_MS=20000 pnpm exec playwright test buy-to-payout --workers=2` against the running stack (needs the document-extractor local lambda); web tsc passes, run once at the final checkpoint.
