@@ -18,6 +18,7 @@ import { JobsModule } from '@app/infrastructure/jobs/jobs.module';
 import { JobsService } from '@app/infrastructure/jobs/jobs.service';
 import { JobHandler } from '@app/infrastructure/jobs/job-handler.decorator';
 import { EventsModule } from '@app/infrastructure/events/events.module';
+import { ProductQueryModule } from '@app/domains/catalog';
 import { ShopScoped } from '@app/domains/tenancy';
 import { CrawlerService } from './application/crawler.service';
 import { SELLER_INSIGHTS_AGGREGATE } from './application/events/seller-insights-events';
@@ -59,6 +60,7 @@ export class CompetitorController {
 const IMPORTS = [
   StorageModule,
   ClickHouseModule,
+  ProductQueryModule,
   EventsModule.forAggregates([SELLER_INSIGHTS_AGGREGATE]),
 ];
 

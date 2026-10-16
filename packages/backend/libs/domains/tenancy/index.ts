@@ -16,6 +16,7 @@ export { MembershipService } from './application/membership.service';
 export { TenancyWorkerModule } from './tenancy-worker.module';
 export { TenancyModule } from './tenancy.module';
 export { ShopBatchReadModule } from './batch-read.module';
+export { ShopQueryModule } from './shop-query.module';
 export { ShopTopicsModule } from './realtime-topics.module';
 export { ShopScoped } from './api/shop.guard';
 export { ShopAccessService } from './application/shop-access.service';

@@ -11,6 +11,8 @@ import { createHash, randomBytes } from 'node:crypto';
 import { PassThrough, Readable } from 'node:stream';
 import * as jwt from 'jsonwebtoken';
 import { ApiConfigService } from '@app/common/config';
+import { ProductQueryService } from '@app/domains/catalog';
+import { OrderEntitlementService } from '@app/domains/orders';
 import { ObjectStorage } from '@app/infrastructure/storage/object-storage.port';
 import { JobHandler } from '@app/infrastructure/jobs/job-handler.decorator';
 
@@ -49,6 +51,8 @@ export class AssetsService {
     @InjectConnection() private readonly sequelize: Sequelize,
     private readonly storage: ObjectStorage,
     private readonly config: ApiConfigService,
+    private readonly orders: OrderEntitlementService,
+    private readonly products: ProductQueryService,
   ) {}
 
   /**
@@ -368,12 +372,11 @@ export class AssetsService {
       currentVersion: number;
     }>(
       `SELECT d."assetId", a."currentVersion" FROM "DigitalProduct" d JOIN "Asset" a ON a.id = d."assetId" AND NOT a.deleted
-       WHERE d."productId" = :productId AND EXISTS (
-         SELECT 1 FROM "BisOrderItem" i JOIN "BisOrder" o ON o.id = i."bisOrderId"
-         WHERE i."productId" = :productId AND o."userId" = :buyerId AND o.status IN ('PAID', 'FULFILLING', 'SHIPPED', 'DELIVERED'))`,
-      { type: QueryTypes.SELECT, replacements: { productId, buyerId } },
+       WHERE d."productId" = :productId`,
+      { type: QueryTypes.SELECT, replacements: { productId } },
     );
-    if (!entitled) throw new ForbiddenException('Not purchased');
+    if (!entitled || !(await this.orders.hasPurchased(buyerId, productId)))
+      throw new ForbiddenException('Not purchased');
     const token = jwt.sign(
       {
         typ: 'digital',
@@ -428,13 +431,13 @@ export class AssetsService {
 
   async linkDigitalProduct(shopId: string, productId: string, assetId: string) {
     const [ok] = await this.sequelize.query(
-      `SELECT 1 FROM "Product" p JOIN "Asset" a ON a.id = :assetId AND a."shopId" = :shopId WHERE p.id = :productId AND p."shopId" = :shopId`,
-      {
-        type: QueryTypes.SELECT,
-        replacements: { productId, assetId, shopId },
-      },
+      `SELECT 1 FROM "Asset" a WHERE a.id = :assetId AND a."shopId" = :shopId`,
+      { type: QueryTypes.SELECT, replacements: { assetId, shopId } },
     );
-    if (!ok) throw new NotFoundException();
+    const product = await this.products.getProductsByIds([productId], {
+      shopId,
+    });
+    if (!ok || product.size === 0) throw new NotFoundException();
     await this.sequelize.query(
       `INSERT INTO "DigitalProduct" ("productId", "assetId") VALUES (:productId, :assetId) ON CONFLICT ("productId") DO UPDATE SET "assetId" = EXCLUDED."assetId"`,
       { replacements: { productId, assetId } },

@@ -1,7 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { InjectModel } from '@nestjs/sequelize';
-import { Op } from 'sequelize';
-import { ProductModel as Product } from '@app/domains/catalog';
+import { ProductQueryService } from '@app/domains/catalog';
 import { RedisService } from '@app/infrastructure/redis/redis.service';
 import { EventEnvelope } from '@app/infrastructure/events/event-envelope';
 import { Projector } from '@app/infrastructure/projections/projector';
@@ -34,7 +32,7 @@ export class LeaderboardProjector implements Projector {
 
   constructor(
     private readonly redis: RedisService,
-    @InjectModel(Product) private readonly products: typeof Product,
+    private readonly products: ProductQueryService,
   ) {}
 
   async project(events: EventEnvelope[]): Promise<void> {
@@ -46,13 +44,9 @@ export class LeaderboardProjector implements Projector {
       ...new Set(paid.flatMap((e) => e.payload.lines.map((l) => l.productId))),
     ];
     const categories = new Map(
-      (
-        await this.products.findAll({
-          where: { id: { [Op.in]: productIds } },
-          attributes: ['id', 'category'],
-          raw: true,
-        })
-      ).map((p) => [p.id, p.category]),
+      [...(await this.products.getProductsByIds(productIds)).values()].map(
+        (p) => [p.id, p.category],
+      ),
     );
 
     for (const event of paid) {

@@ -32,8 +32,9 @@ export class VerificationService {
       const [onboarding] = await this.sequelize.query<{
         answers: Answers;
         submissionNo: number;
+        verifiedAt: Date | null;
       }>(
-        `SELECT answers, "submissionNo" FROM "ShopOnboarding" WHERE "shopId" = :shopId FOR UPDATE`,
+        `SELECT answers, "submissionNo", "verifiedAt" FROM "ShopOnboarding" WHERE "shopId" = :shopId FOR UPDATE`,
         {
           type: QueryTypes.SELECT,
           transaction,
@@ -53,11 +54,9 @@ export class VerificationService {
       if (!requiredDocuments(onboarding.answers).every((k) => have.has(k)))
         return false;
 
-      const [shop] = await this.sequelize.query<{ id: string }>(
-        `UPDATE "Shop" SET "verificationStatus" = 'VERIFIED', "payoutsEnabled" = TRUE, "updatedAt" = now() WHERE id = :shopId AND "verificationStatus" <> 'VERIFIED' RETURNING id`,
-        { type: QueryTypes.SELECT, transaction, replacements: { shopId } },
-      );
-      if (!shop) return false;
+      // Already verified: this domain's own record says so. The shop's status and payouts flag follow `shop.verified`
+      // in tenancy (S03 AS-72).
+      if (onboarding.verifiedAt) return false;
       const verifiedAt = new Date();
       await this.sequelize.query(
         `UPDATE "ShopOnboarding" SET "verifiedAt" = :verifiedAt WHERE "shopId" = :shopId`,

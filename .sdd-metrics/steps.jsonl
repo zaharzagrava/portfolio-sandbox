@@ -478,3 +478,13 @@
 {"run":"20261016T055754Z","capability":"J01","step":"repair-4","start":"2026-10-16T09:18:31Z","end":"2026-10-16T09:20:36Z","seconds":125,"result":"ok","attempt":1,"reason":"ok","code_changed":false}
 {"run":"20261016T055754Z","capability":"J01","step":"gate","start":"2026-10-16T09:20:36Z","end":"2026-10-16T09:43:28Z","seconds":1372,"result":"fail","attempt":5,"reason":"FAIL test/journeys/buy-to-payout.journey-spec.ts (1343.371 s)"}
 {"run":"20261016T055754Z","capability":"J01","step":"repair-5","start":"2026-10-16T09:43:28Z","end":"2026-10-16T09:45:29Z","seconds":121,"result":"ok","attempt":1,"reason":"ok","code_changed":false}
+{"run":"20261016T094950Z","capability":"-","step":"run-start","start":"2026-10-16T09:49:50Z","end":"2026-10-16T09:49:50Z","seconds":0,"result":"ok","attempt":1,"reason":"commit=8b3bd1cd MAX_GATE_REPAIRS=5 MAX_REPAIRS_PER_SPEC=2 REPAIR_BUDGET_MIN=60 MAX_IMPLEMENT_PASSES=10"}
+{"run":"20261016T094950Z","capability":"J01","step":"converge-1","start":"2026-10-16T09:49:52Z","end":"2026-10-16T09:50:32Z","seconds":40,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261016T094950Z","capability":"J01","step":"implement-2","start":"2026-10-16T09:50:32Z","end":"2026-10-16T10:07:53Z","seconds":1041,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261016T094950Z","capability":"J01","step":"implement-3","start":"2026-10-16T10:07:53Z","end":"2026-10-16T10:14:43Z","seconds":410,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261016T094950Z","capability":"J01","step":"doctor-1","start":"2026-10-16T10:14:44Z","end":"2026-10-16T10:15:14Z","seconds":30,"result":"ok","attempt":1,"reason":"ok","code_changed":false}
+{"run":"20261016T094950Z","capability":"J01","step":"converge-1","start":"2026-10-16T10:15:15Z","end":"2026-10-16T10:15:45Z","seconds":30,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261016T094950Z","capability":"J01","step":"implement-2","start":"2026-10-16T10:15:45Z","end":"2026-10-16T10:27:10Z","seconds":685,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261016T094950Z","capability":"J01","step":"implement-3","start":"2026-10-16T10:27:10Z","end":"2026-10-16T10:27:40Z","seconds":30,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261016T094950Z","capability":"J01","step":"doctor-2","start":"2026-10-16T10:27:41Z","end":"2026-10-16T10:28:06Z","seconds":25,"result":"ok","attempt":1,"reason":"ok","code_changed":false}
+{"run":"20261016T094950Z","capability":"J01","step":"converge-1","start":"2026-10-16T10:28:07Z","end":"2026-10-16T10:28:57Z","seconds":50,"result":"ok","attempt":1,"reason":"ok"}

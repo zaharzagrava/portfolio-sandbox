@@ -1,0 +1,39 @@
+$ NODE_OPTIONS=--experimental-vm-modules jest --config jest-journeys.json --runInBand
+(node:34806) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+  console.log
+    [hop] H1 1727 ms (contract 3000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:79:11)
+
+  console.log
+    [hop] H2 2053 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:79:11)
+
+  console.log
+    [hop] H3 2081 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:79:11)
+
+  console.log
+    [hop] H1 1723 ms (contract 3000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:79:11)
+
+  console.log
+    [hop] H2 2060 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:79:11)
+
+  console.log
+    [hop] H3 2057 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:79:11)
+
+  console.log
+    [hop] H1 1740 ms (contract 3000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:79:11)
+
+[ELIFECYCLE] Command failed.

@@ -12,7 +12,6 @@ import {
   Put,
 } from '@nestjs/common';
 import { ApiProperty, ApiPropertyOptional, ApiTags } from '@nestjs/swagger';
-import { InjectModel } from '@nestjs/sequelize';
 import {
   IsInt,
   IsObject,
@@ -30,10 +29,7 @@ import {
   UserRawDto,
 } from '@app/domains/identity';
 import { RateLimit } from '@app/infrastructure/rate-limit';
-import {
-  ShopScoped,
-  ShopMembershipModel as ShopMembership,
-} from '@app/domains/tenancy';
+import { ShopAccessService, ShopScoped } from '@app/domains/tenancy';
 import { LiveService } from '../application/live.service';
 import type { Reaction } from '../infra/live-keys';
 
@@ -63,8 +59,7 @@ export class PinDto {
 export class LiveController {
   constructor(
     private readonly live: LiveService,
-    @InjectModel(ShopMembership)
-    private readonly memberships: typeof ShopMembership,
+    private readonly access: ShopAccessService,
     private readonly directory: UserDirectoryService,
   ) {}
 
@@ -105,10 +100,8 @@ export class LiveController {
   ) {
     const stream = await this.live.get(streamId);
     if (!stream) throw new NotFoundException();
-    const isStaff = !!(await this.memberships.findOne({
-      where: { shopId: stream.shopId, userId: user.id },
-      attributes: ['role'],
-    }));
+    const isStaff =
+      (await this.access.getRole(stream.shopId, user.id)) !== null;
     // The principal carries claims only (no e-mail): the display name comes from the user directory.
     const email = (await this.directory.getUsersByIds([user.id])).get(
       user.id,
@@ -192,9 +185,7 @@ export class LiveController {
   private async assertStaff(streamId: string, userId: string) {
     const stream = await this.live.get(streamId);
     if (!stream) throw new NotFoundException();
-    const member = await this.memberships.findOne({
-      where: { shopId: stream.shopId, userId },
-    });
-    if (!member || member.role === 'VIEWER') throw new ForbiddenException();
+    const role = await this.access.getRole(stream.shopId, userId);
+    if (!role || role === 'VIEWER') throw new ForbiddenException();
   }
 }

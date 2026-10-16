@@ -1,5 +1,7 @@
 import { Injectable, Module, OnApplicationBootstrap } from '@nestjs/common';
 import { AuthModule } from '@app/domains/identity';
+import { ProductQueryModule } from '@app/domains/catalog';
+import { OrderEntitlementModule } from '@app/domains/orders';
 import { StorageModule } from '@app/infrastructure/storage/storage.module';
 import { JobsModule } from '@app/infrastructure/jobs/jobs.module';
 import { JobsService } from '@app/infrastructure/jobs/jobs.service';
@@ -8,7 +10,12 @@ import { AssetsController } from './api/assets.controller';
 
 /** SD-25 API (core). */
 @Module({
-  imports: [AuthModule, StorageModule],
+  imports: [
+    AuthModule,
+    StorageModule,
+    OrderEntitlementModule,
+    ProductQueryModule,
+  ],
   providers: [AssetsService],
   exports: [AssetsService],
   controllers: [AssetsController],
@@ -31,7 +38,12 @@ class AssetsGcSchedule implements OnApplicationBootstrap {
 
 /** SD-25 chunk GC (apps/worker). */
 @Module({
-  imports: [StorageModule, JobsModule],
+  imports: [
+    StorageModule,
+    JobsModule,
+    OrderEntitlementModule,
+    ProductQueryModule,
+  ],
   providers: [AssetsService, AssetsGcSchedule],
 })
 export class AssetsWorkerModule {}

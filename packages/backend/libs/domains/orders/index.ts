@@ -15,6 +15,8 @@ export { OrderExportModule } from './order-export.module';
 export { OrderExportWorkerModule } from './order-export-worker.module';
 export { OrderExportTopicsModule } from './order-export-topics.module';
 export { OrderQueryService } from './application/order-query.service';
+export { OrderEntitlementService } from './application/order-entitlement.service';
+export { OrderEntitlementModule } from './order-entitlement.module';
 export type { OrderLineDto, PayableOrderDto } from './domain/order-views';
 export { OrderCommandService } from './application/order-command.service';
 export { OrderCommandModule } from './order-command.module';

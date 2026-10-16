@@ -57,7 +57,6 @@ import {
   paymentsProjectors,
 } from '@app/domains/payments';
 import { Module } from '@nestjs/common';
-import { SequelizeModule } from '@nestjs/sequelize';
 import { OpenTelemetryModule } from 'nestjs-otel';
 import { ApiConfigModule } from '@app/common/config';
 import { ErrorUtilsModule } from '@app/common/errors/error-utils/error-utils.module';
@@ -67,8 +66,8 @@ import { RedisModule } from '@app/infrastructure/redis/redis.module';
 import { ElasticsearchModule } from '@app/infrastructure/elasticsearch/elasticsearch.module';
 import { ProjectionsModule } from '@app/infrastructure/projections/projections.module';
 import {
-  ProductModel as Product,
   ProductProjectorModule,
+  ProductQueryModule,
 } from '@app/domains/catalog';
 import { CacheModule } from '@app/infrastructure/cache/cache.module';
 
@@ -157,7 +156,7 @@ import { CacheModule } from '@app/infrastructure/cache/cache.module';
         KafkaProducerModule,
         FeedPublisherModule,
         ClickHouseModule,
-        SequelizeModule.forFeature([Product]),
+        ProductQueryModule,
         ElasticsearchModule,
       ],
     ),

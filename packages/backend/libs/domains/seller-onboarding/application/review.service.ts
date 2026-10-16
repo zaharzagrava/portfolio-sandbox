@@ -9,9 +9,11 @@ import { QueryTypes, Sequelize } from 'sequelize';
 import { metrics } from '@opentelemetry/api';
 import { ObjectStorage } from '@app/infrastructure/storage/object-storage.port';
 import { SecretBox } from '@app/domains/identity';
+import { ShopQueryService } from '@app/domains/tenancy';
 import { PROMPT_VERSION, SENSITIVE_FIELDS } from '../domain/extraction-schema';
 import type { Extraction } from '../domain/extraction-schema';
 import { isValidIban, isValidVat, maskIban } from '../domain/validators';
+import { sealContext } from './extraction.service';
 import { VerificationService } from './verification.service';
 
 export interface ResolveInput {
@@ -42,6 +44,7 @@ export class ReviewService {
     private readonly storage: ObjectStorage,
     private readonly secrets: SecretBox,
     private readonly verification: VerificationService,
+    private readonly shops: ShopQueryService,
   ) {}
 
   async queue(limit = 50) {
@@ -49,7 +52,6 @@ export class ReviewService {
       id: string;
       documentId: string;
       shopId: string;
-      shopName: string;
       kind: string;
       reasons: unknown;
       storageKey: string;
@@ -58,19 +60,20 @@ export class ReviewService {
       model: string;
       createdAt: Date;
     }>(
-      `SELECT t.id, t."documentId", t."shopId", s.name AS "shopName", d.kind, t.reasons, d."storageKey", d."purgedAt", e.fields, e.model, t."createdAt"
+      `SELECT t.id, t."documentId", t."shopId", d.kind, t.reasons, d."storageKey", d."purgedAt", e.fields, e.model, t."createdAt"
        FROM "ReviewTask" t
        JOIN "ShopDocument" d ON d.id = t."documentId" AND d.status = 'NEEDS_REVIEW'
-       JOIN "Shop" s ON s.id = t."shopId"
        LEFT JOIN LATERAL (SELECT fields, model FROM "DocumentExtraction" WHERE "documentId" = d.id ORDER BY attempt DESC LIMIT 1) e ON true
        WHERE t.status = 'OPEN'
        ORDER BY t."createdAt"
        LIMIT :limit`,
       { type: QueryTypes.SELECT, replacements: { limit } },
     );
+    const shops = await this.shops.getShopsByIds(rows.map((r) => r.shopId));
     return Promise.all(
       rows.map(async ({ storageKey, purgedAt, ...task }) => ({
         ...task,
+        shopName: shops.get(task.shopId)?.name ?? '',
         fileUrl: purgedAt
           ? null
           : await this.storage.presignGet(storageKey, { expiresInSec: 300 }),
@@ -135,7 +138,10 @@ export class ReviewService {
       );
       const extracted = latest
         ? (JSON.parse(
-            this.secrets.open(latest.sealedFields),
+            this.secrets.open(
+              latest.sealedFields,
+              sealContext(task.documentId, latest.attempt),
+            ),
           ) as Extraction | null)
         : null;
       const values: Record<string, string | null> = Object.fromEntries(
@@ -212,7 +218,10 @@ export class ReviewService {
                 ]),
               ),
             }),
-            sealed: this.secrets.seal(JSON.stringify(final)),
+            sealed: this.secrets.seal(
+              JSON.stringify(final),
+              sealContext(task.documentId, (latest?.attempt ?? 0) + 1),
+            ),
           },
         },
       );

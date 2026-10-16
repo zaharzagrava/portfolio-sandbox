@@ -45,6 +45,7 @@ cfg.update({
     'CLOCK_CONTROL': 'enabled',  # J01: GET/PUT /api/admin/clock (the app refuses to boot with it in production)
     'STRIPE_WEBHOOK_SECRET': 'whsec_dev_journey_secret_0123456789abcdef',  # J01: the journeys sign webhook posts with it (JOURNEY_ENV points at this file)
     'PLATFORM_CURRENCY': 'EUR',  # J01 "one currency": the ledger books, and balance/statement report, in EUR (unset it defaults to USD and balances read 0)
+    'OTEL_SDK_DISABLED': 'false',  # J01 AS-30 reads the counters from the Prometheus endpoint on :9464 (started by startTelemetry); a process env that sets it to true wins over this file
     'PROVIDER_DOUBLES': 'enabled',  # binds the scripted payment and payout providers: pm_test_visa settles at once (the dummy Stripe key cannot)
 })
 with open(sys.argv[3], 'w') as f:

@@ -1,7 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { InjectModel } from '@nestjs/sequelize';
-import { Op } from 'sequelize';
-import { ProductModel as Product } from '@app/domains/catalog';
+import { ProductQueryService } from '@app/domains/catalog';
 import { ClickHouseService } from '@app/infrastructure/clickhouse/clickhouse.service';
 import { ClickHouseSink } from '@app/infrastructure/projections/sinks/clickhouse.sink';
 import { EventEnvelope } from '@app/infrastructure/events/event-envelope';
@@ -20,7 +18,7 @@ export class ShopSalesProjector implements Projector {
 
   constructor(
     clickhouse: ClickHouseService,
-    @InjectModel(Product) private readonly products: typeof Product,
+    private readonly products: ProductQueryService,
   ) {
     this.sink = new ClickHouseSink(clickhouse);
   }
@@ -34,13 +32,10 @@ export class ShopSalesProjector implements Projector {
       ...new Set(paid.flatMap((e) => e.payload.lines.map((l) => l.productId))),
     ];
     const categories = new Map(
-      (
-        await this.products.findAll({
-          where: { id: { [Op.in]: ids } },
-          attributes: ['id', 'category'],
-          raw: true,
-        })
-      ).map((p) => [p.id, p.category]),
+      [...(await this.products.getProductsByIds(ids)).values()].map((p) => [
+        p.id,
+        p.category,
+      ]),
     );
     await this.sink.insert(
       'shop_sales',

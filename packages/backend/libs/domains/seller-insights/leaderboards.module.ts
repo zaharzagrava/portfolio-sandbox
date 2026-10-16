@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { AuthModule } from '@app/domains/identity';
+import { ShopQueryModule } from '@app/domains/tenancy';
 import { ClickHouseModule } from '@app/infrastructure/clickhouse/clickhouse.module';
 import { CacheModule } from '@app/infrastructure/cache/cache.module';
 import { LeaderboardService } from './application/leaderboard.service';
@@ -8,7 +9,7 @@ import { LeaderboardsController } from './api/leaderboards.controller';
 
 /** SD-18 reads (core). */
 @Module({
-  imports: [AuthModule, ClickHouseModule, CacheModule],
+  imports: [AuthModule, ClickHouseModule, CacheModule, ShopQueryModule],
   providers: [LeaderboardService, ShopDashboardService],
   exports: [LeaderboardService],
   controllers: [LeaderboardsController],
