@@ -29,8 +29,11 @@ export class VerificationService {
    */
   async maybeVerify(shopId: string): Promise<boolean> {
     return this.transactions.run(async (transaction) => {
-      const [onboarding] = await this.sequelize.query<{ answers: Answers }>(
-        `SELECT answers FROM "ShopOnboarding" WHERE "shopId" = :shopId FOR UPDATE`,
+      const [onboarding] = await this.sequelize.query<{
+        answers: Answers;
+        submissionNo: number;
+      }>(
+        `SELECT answers, "submissionNo" FROM "ShopOnboarding" WHERE "shopId" = :shopId FOR UPDATE`,
         {
           type: QueryTypes.SELECT,
           transaction,
@@ -63,13 +66,14 @@ export class VerificationService {
       await this.events.append(
         ShopVerified.create(shopId, 2, {
           shopId,
+          submissionNo: onboarding.submissionNo,
           verifiedAt: verifiedAt.toISOString(),
         }),
         transaction,
       );
       await this.jobs.enqueue(
         'onboarding.purge-documents',
-        { shopId },
+        { shopId, submissionNo: onboarding.submissionNo },
         {
           runAt: new Date(
             verifiedAt.getTime() + RAW_DOCUMENT_RETENTION_DAYS * 86_400_000,

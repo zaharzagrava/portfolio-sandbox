@@ -58,7 +58,9 @@ import {
   staysTrue,
   waitForContract,
 } from './support/wait-for-contract';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
+import { join, resolve } from 'node:path';
 import { inParallel } from '../utils/async-helpers';
 
 /**
@@ -1780,9 +1782,55 @@ describe('Journey J01: buy to payout', () => {
       }, 180_000);
     });
 
+  /** AS-31: static gates for the journey's domains (other domains' debt D-7/D-12 is theirs). */
+  const describeStaticGates = () =>
+    describe('Static gates', () => {
+      const backend = resolve(__dirname, '../..');
+      const run = (script: string, args: string[] = []) =>
+        spawnSync('pnpm', [script, ...args], {
+          cwd: backend,
+          encoding: 'utf8',
+          timeout: 240_000,
+        });
+      const sources = (dir: string): string[] =>
+        readdirSync(dir).flatMap((n) => {
+          const p = join(dir, n);
+          if (statSync(p).isDirectory()) return sources(p);
+          return p.endsWith('.ts') && !p.endsWith('spec.ts') ? [p] : [];
+        });
+      const mentioning = (domain: string, name: string) =>
+        sources(join(backend, 'libs/domains', domain)).filter((f) =>
+          readFileSync(f, 'utf8').includes(name),
+        );
+
+      it('J01 AS-31: boundaries, table ownership of orders/payments/statements/notifications, module graph and model registry pass; payments does not import orders (D-11)', () => {
+        for (const script of [
+          'check:boundaries',
+          'check:module-graph',
+          'check:model-registry',
+        ]) {
+          const r = run(script);
+          expect([script, r.status, (r.stdout + r.stderr).slice(-600)]).toEqual(
+            [script, 0, expect.any(String)],
+          );
+        }
+        const own = run('check:table-ownership', ['--strict']);
+        const sections =
+          own.stdout.match(/^[a-z][a-z-]*(?=\s+\(\d+\))/gm) ?? [];
+        expect(
+          sections.filter((d) =>
+            ['orders', 'payments', 'statements', 'notifications'].includes(d),
+          ),
+        ).toEqual([]);
+        expect(mentioning('payments', 'BisOrderModel')).toEqual([]);
+        expect(mentioning('orders', 'PaymentModel')).toEqual([]);
+      }, 600_000);
+    });
+
   describeUS5(); // after everything that reads a statement of "now": it closes a month for good
   describeUS8Close(); // and this one closes the next month
   describeUS9(); // and this one looks back at all of it
+  describeStaticGates();
 });
 
 /**

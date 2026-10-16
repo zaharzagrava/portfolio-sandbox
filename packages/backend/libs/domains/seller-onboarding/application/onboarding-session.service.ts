@@ -107,6 +107,7 @@ export class OnboardingSessionService {
       await this.events.append(
         OnboardingSubmitted.create(shopId, 1, {
           shopId,
+          submissionNo: 1,
           country: parsed.data.business.country,
           legalForm: parsed.data.business.legalForm,
           requiredDocuments: required,

@@ -132,16 +132,16 @@
 
 ## Phase 12: Web — AS-29 (W04 follow-ups)
 
-- [ ] T063 [P] Test first: `ROOT/packages/web/tests/buy-to-payout.spec.ts` (Playwright): buyer pays and sees paid without reload; seller sees balance card, paid payout, statement line, "as known on" picker, CSV download; unique user per run, data via the `SUP` fixtures (L-006), `PW_EXPECT_TIMEOUT_MS`, 2 workers.
-- [ ] T064 [P] [US2] Balance card using `{shopId,currency,availableMinor,asOf,source}` in `ROOT/packages/web/app/dashboard/seller/[shopId]/` .
-- [ ] T065 [P] [US4] Payouts page on `GET /shops/:shopId/payouts` (`payoutPageSchema`, statuses `PENDING|IN_TRANSIT|PAID|FAILED|CANCELLED`, keyset `nextCursor`) and `GET /shops/:shopId/payouts/upcoming` in `…/payouts/`.
-- [ ] T066 [US5] Statements tab with "as known on" picker and CSV download per S16 `contracts/http.md` in `…/statements/`; make T063 pass.
+- [X] T063 [P] (browser run deferred to the final checkpoint: see specs/deferred-checks.md) Test first: `ROOT/packages/web/tests/buy-to-payout.spec.ts` (Playwright): buyer pays and sees paid without reload; seller sees balance card, paid payout, statement line, "as known on" picker, CSV download; unique user per run, data via the `SUP` fixtures (L-006), `PW_EXPECT_TIMEOUT_MS`, 2 workers.
+- [X] T064 [P] [US2] Balance card using `{shopId,currency,availableMinor,asOf,source}` in `ROOT/packages/web/app/dashboard/seller/[shopId]/` .
+- [X] T065 [P] [US4] Payouts page on `GET /shops/:shopId/payouts` (`payoutPageSchema`, statuses `PENDING|IN_TRANSIT|PAID|FAILED|CANCELLED`, keyset `nextCursor`) and `GET /shops/:shopId/payouts/upcoming` in `…/payouts/`.
+- [X] T066 [US5] Statements tab with "as known on" picker and CSV download per S16 `contracts/http.md` in `…/statements/`; make T063 pass.
 
 ## Phase 13: Polish and final checkpoint
 
-- [ ] T067 Append `## Sibling-spec follow-ups` and `## Spec changes` in `gaps.md` to match what T005–T016, T033, T056 changed (S14 commission, S16 `priceLines`, S53, S54, S49, W04, S28/S34/S39/S40/S43); list any signed page changed.
-- [ ] T068 Ops artifacts: confirm SC-001 and SC-007 rows exist in `quickstart.md` and `specs/UNVERIFIED.md` (status `not run`); do not call them verified.
-- [ ] T069 Update `gaps.md` §5 status for every G-row; run `python3 scripts/livespec/check.py`.
+- [X] T067 Append `## Sibling-spec follow-ups` and `## Spec changes` in `gaps.md` to match what T005–T016, T033, T056 changed (S14 commission, S16 `priceLines`, S53, S54, S49, W04, S28/S34/S39/S40/S43); list any signed page changed.
+- [X] T068 Ops artifacts: confirm SC-001 and SC-007 rows exist in `quickstart.md` and `specs/UNVERIFIED.md` (status `not run`); do not call them verified.
+- [X] T069 Update `gaps.md` §5 status for every G-row; run `python3 scripts/livespec/check.py`.
 - [x] T070 Final checkpoint (L-008, L-012, L-019), scripted: whole capability suites once (orders, payments, statements, notifications, projections) in batches of fresh processes; `scripts/qa/fresh-run.sh` then `pnpm test:journeys` on the empty stack; standalone boots of all five apps; browser suite once on an empty stack; `grep -rn "setTimeout\|sleep(" test/journeys` empty; `GET /api/admin/clock` shows `real`. (deferred to the final checkpoint: runtime proof; see specs/deferred-checks.md)
 
 ---

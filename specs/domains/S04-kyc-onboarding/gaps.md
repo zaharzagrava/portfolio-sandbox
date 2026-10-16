@@ -103,3 +103,8 @@ None. No `docs/spec/capabilities/S04-*.md` page and no `*.reviewed.json` exists 
 | S03 | emit the three `shop.*` events with `{shopId}`; stop `UPDATE "Shop"` at `onboarding-session.service.ts:59` and `verification.service.ts:49`; `ShopQueryService` at `review.service.ts:43`; topic discrepancy | C (A1-A3, A27) |
 | S28 | confirm topic names and payloads against the shipped schemas in `packages/contracts` | C |
 | S46 | imports from `@app/infrastructure/llm`; `maxRetries: 0`, `timeoutMs: 45000`, `callId`, `purpose: "extraction"` | E (A10, A30) |
+
+## Gate repairs
+
+- `tsc` failed: the S04 event schemas (`OnboardingSubmitted`, `ShopVerified`, `onboarding.purge-documents`) now require `submissionNo`, but the legacy callers did not pass it. `onboarding-session.service.ts` emits `submissionNo: 1` (first round); `verification.service.ts` reads `submissionNo` from the locked `ShopOnboarding` row and passes it to `ShopVerified` and the purge job. `npx tsc --noEmit` in `packages/backend` is clean.
+- `db/ownership.spec.ts` failed: migration `20261016001000-seller-onboarding-s04.js` creates `OnboardingStatusHistory`, which the ownership registry did not list. Registered it in `packages/backend/db/ownership.ts` as `domain:seller-onboarding`; the spec now passes (5/5).
