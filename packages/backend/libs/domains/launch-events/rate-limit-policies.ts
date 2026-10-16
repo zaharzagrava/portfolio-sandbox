@@ -44,6 +44,22 @@ export const launchEventsRatePolicies = definePolicies('launch-events', {
     failMode: 'open',
     localLeaseFraction: 0.2,
   },
+  // S23 FR-047: anonymous reads of a launch stream (2M viewers refreshing is the expected load shape). Charged from the
+  // services, fail open: the stream stays readable when the limiter is down.
+  'live.snapshot.ip': {
+    algorithm: 'slidingWindow',
+    limit: 120,
+    windowMs: 60_000,
+    key: 'ip',
+    failMode: 'open',
+  },
+  'live.events.ip': {
+    algorithm: 'slidingWindow',
+    limit: 30,
+    windowMs: 60_000,
+    key: 'ip',
+    failMode: 'open',
+  },
 } as const);
 
 declare module '@app/infrastructure/rate-limit/rate-limit.types' {

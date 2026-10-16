@@ -18,10 +18,13 @@ import { Environment } from '@app/common/types';
 import { SentryModule } from '@sentry/nestjs/setup';
 import { OpenTelemetryModule } from 'nestjs-otel';
 import { RealtimeStreamModule } from '@app/infrastructure/realtime';
-import { LiveGatewayModule } from './live/live-gateway.module';
 import { IdentityTopicsModule } from '@app/domains/identity';
 import { AuctionTopicsModule } from '@app/domains/auctions';
-import { LaunchEventTopicsModule } from '@app/domains/launch-events';
+import {
+  LaunchEventTopicsModule,
+  LiveGatewayModule,
+  LiveTopicsModule,
+} from '@app/domains/launch-events';
 import { FlagTopicsModule } from '@app/domains/experimentation';
 import { ChatTopicsModule } from '@app/domains/chat';
 import { DeliveryTopicsModule } from '@app/domains/fulfilment';
@@ -82,6 +85,7 @@ import { AssetTopicsModule } from '@app/domains/asset-library';
     AssetTopicsModule,
     AuctionTopicsModule,
     LaunchEventTopicsModule,
+    LiveTopicsModule,
     FlagTopicsModule,
     ChatTopicsModule,
     DeliveryTopicsModule,

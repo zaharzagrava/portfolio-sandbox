@@ -54,3 +54,7 @@ Sources: `docs/showcase/sections/SD-15-live-launch-stream.md` and `10-System-Des
 - [LOCAL] Authors' `authorId` stays in comment payloads (needed for mute and `mine`) → pseudonymous UUID, not personal data by itself.
 - [LOCAL] No staff list route for streams; streams are found through the ID returned at creation → keep scope.
 - [LOCAL] No UI journey: no web capability covers live pages; J03 holds the cross-domain happy path.
+- [LOCAL] (implementation) The `pin` event after an unpin is `{version, unpinned: true}` and the snapshots carry `pinVersion` → a bare `null` payload has no version a client can order by; the spec text says "payload `null` and `version + 1`".
+- [LOCAL] (implementation) The recent list keeps the newest 100 comments and a snapshot shows the last 50 non-removed → a removal must not leave a snapshot with 49.
+- [LOCAL] (implementation) The staff lookup on the comment path is cached by S23 for 15 s → tenancy does not cache the answer for non-members, which every ordinary viewer is; SC-012 asks for zero relational queries on a warm stream.
+- [LOCAL] (implementation) A removal-only history marker expires 30 days after the comment time, like a post → "expires with the history"; a marker that expired at the comment time would be deleted by DynamoDB TTL before the post it waits for.

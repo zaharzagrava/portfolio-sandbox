@@ -1,109 +1,139 @@
-import { Injectable } from '@nestjs/common';
-import {
-  BatchWriteCommand,
-  BatchWriteCommandInput,
-  UpdateCommand,
-} from '@aws-sdk/lib-dynamodb';
+import { Inject, Injectable } from '@nestjs/common';
+import { UpdateCommand } from '@aws-sdk/lib-dynamodb';
+import { CLOCK, Clock } from '@app/common/core/clock';
+import { sleep } from '@app/common/core/backoff';
 import { DynamoService } from '@app/infrastructure/dynamo/dynamo.service';
 import { EventEnvelope } from '@app/infrastructure/events/event-envelope';
 import { Projector } from '@app/infrastructure/projections/projector';
-import { sleep } from '@app/common/core/backoff';
+import { TransientError } from '@app/infrastructure/projections/errors';
 import {
   LiveCommentPosted,
   LiveCommentRemoved,
 } from '../application/events/live-events';
+import { liveMetrics } from '../application/live-metrics';
+import {
+  HISTORY_DAYS,
+  HISTORY_GROUP,
+  HISTORY_RETRIES,
+  LIVE_CONSUMER_HISTORY,
+} from '../domain/live-constants';
+import { commentPk, commentTimeMs } from '../domain/live-history-keys';
 
-const HISTORY_DAYS = 30;
-const minuteBucket = (ms: number) =>
-  new Date(ms).toISOString().slice(0, 16).replace(/[-:T]/g, '');
-export const commentPk = (streamId: string, at: number) =>
-  `STREAM#${streamId}#${minuteBucket(at)}`;
+export { commentPk } from '../domain/live-history-keys';
+
+const THROTTLED = new Set([
+  'ProvisionedThroughputExceededException',
+  'ThrottlingException',
+  'RequestLimitExceeded',
+  'TooManyRequestsException',
+]);
+
+type Operation =
+  | {
+      kind: 'posted';
+      event: NonNullable<ReturnType<typeof LiveCommentPosted.match>>;
+    }
+  | {
+      kind: 'removed';
+      event: NonNullable<ReturnType<typeof LiveCommentRemoved.match>>;
+    };
 
 /**
- * live.events → DynamoDB history (VOD replay of chat, moderation audit).
- * BatchWriteItem takes 25 puts per call; throttled leftovers come back as
- * UnprocessedItems and are retried with backoff (puts are idempotent - same
- * key, same item - so a whole-batch redelivery is harmless too).
+ * `live.events` → DynamoDB history (VOD replay of chat, moderation audit). Posts and removals are both `UpdateItem`
+ * upserts of the same item (key: stream + minute of the comment, comment id), so they commute: a removal that arrives
+ * first leaves a marker the post then fills in, and a repeat changes nothing (FR-038). The events are written in
+ * groups of at most 25; a throttled write is retried with growing waits, and when the retries run out the delivery
+ * fails and is redelivered by the framework, never dropped (FR-037).
  */
 @Injectable()
 export class LiveCommentsProjector implements Projector {
-  readonly name = 'live-comments-history';
-  // Same topic carries both event types.
+  readonly name = LIVE_CONSUMER_HISTORY;
   readonly topics = [LiveCommentPosted.topic];
-  // Puts and removal updates are keyed by comment id: applying them twice changes nothing.
+  // Upserts are keyed by comment id: applying them twice changes nothing.
   readonly idempotency = 'natural' as const;
   readonly handles = [
     { event: LiveCommentPosted },
     { event: LiveCommentRemoved },
   ];
 
-  constructor(private readonly dynamo: DynamoService) {}
+  constructor(
+    private readonly dynamo: DynamoService,
+    @Inject(CLOCK) private readonly clock: Clock,
+  ) {}
 
   async project(events: EventEnvelope[]): Promise<void> {
-    const table = this.dynamo.table('LiveComments');
-    const puts = events
-      .map((e) => LiveCommentPosted.match(e))
-      .filter((e): e is NonNullable<typeof e> => !!e)
-      .map(({ payload: c }) => ({
-        PutRequest: {
-          Item: {
-            PK: commentPk(c.streamId, c.at),
-            SK: c.commentId,
-            authorId: c.authorId,
-            authorName: c.authorName,
-            text: c.text,
-            at: c.at,
-            expiresAtEpoch: Math.floor(c.at / 1000) + HISTORY_DAYS * 86_400,
-          },
-        },
-      }));
-
-    for (let i = 0; i < puts.length; i += 25) {
-      let request: BatchWriteCommandInput['RequestItems'] = {
-        [table]: puts.slice(i, i + 25),
-      };
-      for (
-        let attempt = 0;
-        request && Object.keys(request).length > 0;
-        attempt++
-      ) {
-        if (attempt > 6)
-          throw new Error('LiveComments: unprocessed items after retries');
-        if (attempt > 0) await sleep(Math.min(50 * 2 ** attempt, 2_000));
-        const res = await this.dynamo.doc.send(
-          new BatchWriteCommand({ RequestItems: request }),
-        );
-        request = res.UnprocessedItems;
+    const operations: Operation[] = [];
+    for (const envelope of events) {
+      const posted = LiveCommentPosted.match(envelope);
+      if (posted) operations.push({ kind: 'posted', event: posted });
+      const removed = LiveCommentRemoved.match(envelope);
+      if (removed) operations.push({ kind: 'removed', event: removed });
+    }
+    for (let i = 0; i < operations.length; i += HISTORY_GROUP) {
+      const group = operations.slice(i, i + HISTORY_GROUP);
+      try {
+        await Promise.all(group.map((op) => this.write(op)));
+      } catch (error) {
+        liveMetrics.consumerFailures.add(1, { consumer: this.name });
+        throw error;
       }
     }
+  }
 
-    for (const removed of events
-      .map((e) => LiveCommentRemoved.match(e))
-      .filter((e): e is NonNullable<typeof e> => !!e)) {
-      // Removal events carry no timestamp of the comment; the id is uuidv7 → its ms prefix IS the time.
-      const at = parseInt(
-        removed.payload.commentId.replace(/-/g, '').slice(0, 12),
-        16,
-      );
-      await this.dynamo.doc
-        .send(
-          new UpdateCommand({
-            TableName: table,
-            Key: {
-              PK: commentPk(removed.payload.streamId, at),
-              SK: removed.payload.commentId,
-            },
-            UpdateExpression: 'SET removed = :t, removedReason = :r',
-            ConditionExpression: 'attribute_exists(PK)',
-            ExpressionAttributeValues: {
-              ':t': true,
-              ':r': removed.payload.reason,
-            },
-          }),
-        )
-        .catch((e: Error) => {
-          if (e.name !== 'ConditionalCheckFailedException') throw e; // not persisted yet / expired: nothing to mark
-        });
+  private async write(op: Operation): Promise<void> {
+    const command = this.command(op);
+    for (let attempt = 0; ; attempt++) {
+      try {
+        await this.dynamo.doc.send(command);
+        return;
+      } catch (error) {
+        if (!THROTTLED.has((error as Error).name)) throw error;
+        if (attempt >= HISTORY_RETRIES)
+          throw new TransientError('LiveComments: throttled after retries', {
+            cause: error,
+          });
+        await sleep(Math.min(25 * 2 ** attempt, 1_000));
+      }
     }
+  }
+
+  private command(op: Operation): UpdateCommand {
+    const table = this.dynamo.table('LiveComments');
+    if (op.kind === 'posted') {
+      const c = op.event.payload;
+      liveMetrics.historyLag.record(
+        Math.max(0, this.clock.nowMs() - c.at) / 1000,
+      );
+      return new UpdateCommand({
+        TableName: table,
+        Key: { PK: commentPk(c.streamId, c.at), SK: c.commentId },
+        UpdateExpression:
+          'SET authorId = :a, authorName = :n, #text = :t, #at = :at, expiresAtEpoch = :e' +
+          (c.priority ? ', priority = :p' : ''),
+        ExpressionAttributeNames: { '#text': 'text', '#at': 'at' },
+        ExpressionAttributeValues: {
+          ':a': c.authorId,
+          ':n': c.authorName,
+          ':t': c.text,
+          ':at': c.at,
+          ':e': Math.floor(c.at / 1000) + HISTORY_DAYS * 86_400,
+          ...(c.priority && { ':p': true }),
+        },
+      });
+    }
+    const r = op.event.payload;
+    // A removal carries no post time; the comment id is uuidv7, so its millisecond prefix IS the time and finds the item.
+    const at = commentTimeMs(r.commentId);
+    return new UpdateCommand({
+      TableName: table,
+      Key: { PK: commentPk(r.streamId, at), SK: r.commentId },
+      UpdateExpression:
+        'SET removed = :t, removedReason = :r, expiresAtEpoch = if_not_exists(expiresAtEpoch, :e)',
+      ExpressionAttributeValues: {
+        ':t': true,
+        ':r': r.reason,
+        ':e': Math.floor(at / 1000) + HISTORY_DAYS * 86_400,
+      },
+    });
   }
 }

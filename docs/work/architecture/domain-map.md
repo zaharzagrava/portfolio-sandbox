@@ -249,12 +249,14 @@ uses to get other domains' data.
 ### launch-events
 - **Responsibility**: brand launch events: waiting room, admission tokens, seat holds, bookings,
   seat map, and the live launch stream (comments and reactions).
-- **Owns**: `LaunchEvent`, `LaunchEventHistory`, `Booking`, `BookingEvent`, `LiveStream`.
-- **Other stores**: holds (DynamoDB ledger with per-seat fencing numbers), queue, event gate, quota counters, seat locks and seat bitmap (Redis), comments (DynamoDB).
+- **Owns**: `LaunchEvent`, `LaunchEventHistory`, `Booking`, `BookingEvent`, `LiveStream`, `LiveMute`.
+- **Other stores**: holds (DynamoDB ledger with per-seat fencing numbers), queue, event gate, quota counters, seat locks and seat bitmap (Redis), comments (DynamoDB), live-stream derived data (Redis: recent list, reaction shards, viewer counts, state cache, active set, mute cache).
 - **Emits**: topic `launch_events.events`: `launchevents.event_created`, `launchevents.booking_confirmed`,
   `launchevents.event_sold_out`, `launchevents.event_closed` (the type is the alias of the specified
-  `launch_events.*` names, S53 pattern); command `orders.booking_voucher_requested`; `live.comment_posted`,
-  `live.comment_removed`.
+  `launch_events.*` names, S53 pattern), and the live-stream lifecycle through the outbox `live.stream_started`,
+  `live.stream_ended`; command `orders.booking_voucher_requested`; topic `live.events` (plain producer, key
+  `streamId`): `live.comment_posted`, `live.comment_removed` **v2** (`reason: 'moderator' | 'auto'`, `actorId?`,
+  `score?`), `live.reactions_aggregated`.
 - **Hosted by**: core, worker, projector, sse-gateway.
 - **Depends on**: orders (booking voucher via command), identity (R1 `PurposeTokenService` for admission
   tokens), tenancy (R1 `ShopScoped` for staff routes; replaces `ShopMembership` reads).

@@ -1,102 +1,150 @@
 import {
+  Inject,
   Injectable,
   Logger,
   OnApplicationBootstrap,
   OnModuleDestroy,
 } from '@nestjs/common';
+import { randomUUID } from 'node:crypto';
 import { hostname } from 'node:os';
-import { RedisService } from '@app/infrastructure/redis/redis.service';
-import { holdLease } from '@app/infrastructure/redis/lease';
+import { CLOCK, Clock } from '@app/common/core/clock';
 import { RealtimePublisher } from '@app/infrastructure/realtime';
+import { LiveEventLog } from '../application/live-event-log';
+import { logLiveWarn } from '../application/live-log';
+import { liveMetrics } from '../application/live-metrics';
+import { LiveStateCache } from '../application/live-state-cache';
+import { TICK_MS } from '../domain/live-constants';
+import { streamTopic } from '../domain/live-keys';
 import {
-  ACTIVE_STREAMS,
-  REACTION_SHARDS,
-  reactionKey,
-  tickerLeaseKey,
-  viewersKey,
-} from './live-keys';
-
-const TICK_MS = 1_000;
-const LEASE_MS = 3_000;
-const VIEWER_ENTRY_TTL_MS = 15_000;
+  ACTIVE_STREAM_SET,
+  LIVE_TIMERS,
+  REACTION_COUNTERS,
+  TICKER_COORDINATION,
+  VIEWER_COUNTS,
+  type ActiveStreams,
+  type LiveTimers,
+  type ReactionCounters,
+  type TickerCoordination,
+  type ViewerCounts,
+} from '../domain/live-ports';
 
 /**
- * Once per second per live stream: sum the 8 reaction shards of the second
- * that just finished + the gateways' viewer counts → one `stats` event on
- * `stream:{id}`. A per-stream lease picks ONE worker instance per stream, so
- * N workers split the streams instead of all broadcasting duplicates.
+ * Once per second per live stream: sum the 8 reaction shards of the second that just finished and the gateways' viewer
+ * counts into one `stats` event on `stream:{id}` (FR-030). A per-stream lease picks ONE worker per stream, so N workers
+ * split the streams; a per-(stream, second) marker keeps a second from being published twice. Non-empty totals are also
+ * emitted once as `live.reactions_aggregated` (FR-032). A stream that is not `LIVE` any more leaves the active set.
  */
 @Injectable()
 export class LiveTicker implements OnApplicationBootstrap, OnModuleDestroy {
   private readonly logger = new Logger(LiveTicker.name);
-  private readonly me = `${hostname()}-${process.pid}`;
-  private timer?: NodeJS.Timeout;
+  private readonly me = `${hostname()}-${process.pid}-${randomUUID().slice(0, 8)}`;
+  private readonly leased = new Set<string>();
+  private stop?: () => void;
 
   constructor(
-    private readonly redis: RedisService,
+    @Inject(ACTIVE_STREAM_SET) private readonly active: ActiveStreams,
+    @Inject(TICKER_COORDINATION)
+    private readonly coordination: TickerCoordination,
+    @Inject(REACTION_COUNTERS) private readonly counters: ReactionCounters,
+    @Inject(VIEWER_COUNTS) private readonly viewers: ViewerCounts,
+    private readonly state: LiveStateCache,
     private readonly realtime: RealtimePublisher,
+    private readonly events: LiveEventLog,
+    @Inject(LIVE_TIMERS) private readonly timers: LiveTimers,
+    @Inject(CLOCK) private readonly clock: Clock,
   ) {}
 
   onApplicationBootstrap() {
-    this.timer = setInterval(
-      () =>
-        void this.tick().catch((e) =>
-          this.logger.warn(`live tick: ${e.message}`),
-        ),
+    this.stop = this.timers.every(
       TICK_MS,
+      () =>
+        void this.tick().catch((error: Error) =>
+          logLiveWarn(this.logger, 'tick_failed', {}, error),
+        ),
     );
-    this.timer.unref();
   }
 
-  onModuleDestroy() {
-    clearInterval(this.timer);
+  /** Graceful stop: the leases go at once, so another worker takes the streams over without waiting for them to expire. */
+  async onModuleDestroy() {
+    this.stop?.();
+    await this.releaseLeases();
   }
 
-  async tick(now = Date.now()): Promise<number> {
-    const streams = await this.redis.client.smembers(ACTIVE_STREAMS);
+  async releaseLeases(): Promise<void> {
+    await Promise.all(
+      [...this.leased].map((streamId) =>
+        this.coordination
+          .releaseLease(streamId, this.me)
+          .catch(() => undefined),
+      ),
+    );
+    this.leased.clear();
+  }
+
+  /** One pass over the active streams; returns how many `stats` this instance published. */
+  async tick(): Promise<number> {
+    const now = this.clock.nowMs();
+    const second = Math.floor(now / 1000) - 1;
     let published = 0;
-    for (const streamId of streams) {
-      if (
-        !(await holdLease(
-          this.redis,
-          tickerLeaseKey(streamId),
-          this.me,
-          LEASE_MS,
-        ))
-      )
-        continue;
-      const stats = await this.statsFor(
-        streamId,
-        Math.floor(now / 1000) - 1,
-        now,
-      );
-      await this.realtime.publish(`stream:${streamId}`, 'stats', stats, {
-        replay: false,
-      });
-      published++;
+    for (const streamId of await this.active.list()) {
+      try {
+        if (await this.publishFor(streamId, second, now)) published++;
+      } catch (error) {
+        logLiveWarn(this.logger, 'stats_failed', { streamId }, error);
+      }
     }
     return published;
   }
 
-  async statsFor(streamId: string, second: number, now: number) {
-    const pipeline = this.redis.client.pipeline();
-    for (let shard = 0; shard < REACTION_SHARDS; shard++)
-      pipeline.hgetall(reactionKey(streamId, second, shard));
-    pipeline.hgetall(viewersKey(streamId));
-    const results = ((await pipeline.exec()) ?? []).map(
-      ([, value]) => (value ?? {}) as Record<string, string>,
-    );
+  private async publishFor(
+    streamId: string,
+    second: number,
+    now: number,
+  ): Promise<boolean> {
+    if (!(await this.coordination.holdLease(streamId, this.me))) return false;
+    this.leased.add(streamId);
+    const stream = await this.state.get(streamId);
+    if (!stream || stream.status !== 'LIVE') {
+      // Ended or unknown: nobody publishes for it, and it leaves the set (the reconcile job would remove it too).
+      await this.active.remove(streamId);
+      await this.coordination.releaseLease(streamId, this.me);
+      this.leased.delete(streamId);
+      return false;
+    }
+    if (!(await this.coordination.claimStats(streamId, second))) return false;
 
-    const reactions: Record<string, number> = {};
-    for (const shard of results.slice(0, REACTION_SHARDS)) {
-      for (const [emoji, count] of Object.entries(shard))
-        reactions[emoji] = (reactions[emoji] ?? 0) + Number(count);
+    const totals = await this.counters.totals(streamId, second);
+    const reactions = Object.fromEntries(
+      Object.entries(totals).filter(([, count]) => count > 0),
+    );
+    const viewers = await this.viewers.total(streamId, now);
+    await this.realtime.publish(
+      streamTopic(streamId),
+      'stats',
+      { second, reactions, viewers },
+      { replay: false },
+    );
+    liveMetrics.statsPublished.add(1);
+
+    if (Object.keys(reactions).length > 0)
+      await this.aggregate(streamId, second, reactions);
+    return true;
+  }
+
+  private async aggregate(
+    streamId: string,
+    second: number,
+    reactions: Record<string, number>,
+  ): Promise<void> {
+    if (!(await this.coordination.claimAggregation(streamId, second))) return;
+    try {
+      await this.events.reactionsAggregated(streamId, second, reactions);
+    } catch (error) {
+      // Reactions are lossy by design; release the marker so a repeat of this second can still emit it.
+      await this.coordination
+        .releaseAggregation(streamId, second)
+        .catch(() => undefined);
+      logLiveWarn(this.logger, 'reactions_not_aggregated', { streamId }, error);
     }
-    let viewers = 0;
-    for (const entry of Object.values(results[REACTION_SHARDS])) {
-      const [count, seenAt] = entry.split(':').map(Number);
-      if (now - seenAt < VIEWER_ENTRY_TTL_MS) viewers += count; // a crashed gateway's entry ages out
-    }
-    return { second, reactions, viewers };
   }
 }

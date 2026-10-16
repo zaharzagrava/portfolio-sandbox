@@ -1,0 +1,87 @@
+---
+id: S23
+title: Live launch stream (sampled comment batches, reactions, moderation, pinned commerce)
+kind: capability
+status: draft
+generated_at: 470af63a
+depends_on: [S01, S03, S05, S22, S49, S50, S51, S52, S53, S54]
+concepts: [problem-json-errors, tenant-shop-rbac, transaction-runner, rate-limit-policy, cache-layers, realtime-topic-stream, job-scheduler-lease, outbox-task-queue]
+models: []
+scope:
+  - packages/backend/libs/domains/launch-events/**
+  - packages/contracts/src/live/**
+---
+# S23 - Live launch stream (sampled comment batches, reactions, moderation, pinned commerce)
+
+## Purpose
+A brand runs a live launch broadcast that millions can watch. Nobody can read thousands of comments a second, so every viewer receives a calm, bounded, fair sample of the chat (at most five sampled comments every 250 ms), always including the shop's own messages and the viewer's own. Reactions are counted, never forwarded: viewers get per-second totals. Late joiners see the last fifty comments, the pin and the status first, with no gap before live updates. Staff run the stream (create, start, end, pin a product, remove a comment, mute a viewer); abuse is stopped cheaply at the door and toxic comments are retracted afterwards. Every accepted comment is kept for thirty days for replay by minute. The live half of the `launch-events` domain only; booking is S22.
+
+## Entry points
+- Staff routes under the shop (`products.write`): `POST /shops/:shopId/live`, `.../:streamId/start`, `.../:streamId/end`, `PUT|DELETE .../:streamId/pin`, `DELETE .../:streamId/comments/:commentId`, `POST|DELETE .../:streamId/mutes/:userId`. [code: packages/backend/libs/domains/launch-events/api/live-staff.controller.ts#LiveStaffController]
+- Viewer routes: `POST /live/:streamId/comments`, `POST /live/:streamId/reactions` (session), `GET /live/:streamId` (anonymous, `s-maxage=1`). [code: packages/backend/libs/domains/launch-events/api/live-viewer.controller.ts#LiveViewerController]
+- History: `GET /live/:streamId/history?minute&limit&cursor` (anonymous). [code: packages/backend/libs/domains/launch-events/api/live-history.controller.ts#LiveHistoryController]
+- Event connection `GET /live/:streamId/events` (server-sent events, hosted by the sse-gateway app): `snapshot`, `comments`, `pin`, `comment_removed`, `status`, `stats`. [code: packages/backend/libs/domains/launch-events/gateway/live-stream.controller.ts#LiveStreamController]
+- Realtime topic `stream:<id>` (public control events only); the comment feed `livefeed:<id>` has no route. [code: packages/backend/libs/domains/launch-events/api/live-topics.ts#LiveTopics]
+- Published events: plain producer `live.comment_posted` v1, `live.comment_removed` v2, `live.reactions_aggregated` v1; outbox topic `launch_events.events` `live.stream_started`, `live.stream_ended`. [code: packages/backend/libs/domains/launch-events/application/events/live-events.ts#LiveCommentRemoved]
+- Consumers: history writer `live-comments-history`, async moderation `live-moderation`. [code: packages/backend/libs/domains/launch-events/infra/live-comments.projector.ts#LiveCommentsProjector]
+- Worker: the one-second statistics publisher and the job `launch-events.live-reconcile` (every 30 s). [code: packages/backend/libs/domains/launch-events/infra/live-ticker.service.ts#LiveTicker]
+
+## Rules
+- **S23.R-01** The reservoir keeps a uniform random sample of at most `k` items of a stream of unknown length; fewer than `k` are all kept, `k` below one is refused, draining resets it. [proof: S23 AS-01] [code: packages/backend/libs/domains/launch-events/domain/reservoir.ts#Reservoir]
+- **S23.R-02** A delivery window sends each viewer one `comments` event of the sample (at most 5), every staff comment and the viewer's own comments (flagged `mine`), each once, ascending by id, with `rate` = comments in the window × 4; an empty window sends nothing and a quiet connection gets a keep-alive line every 15 s. [proof: S23 AS-02, S23 AS-03, S23 AS-04] [code: packages/backend/libs/domains/launch-events/domain/window-composer.ts#composeWindow]
+- **S23.R-03** A gateway instance holds one comment-feed subscription, one control subscription and one sampler per stream however many viewers it serves, and releases them within a second of the last viewer leaving. [proof: S23 AS-05] [code: packages/backend/libs/domains/launch-events/gateway/live-viewer-registry.ts#LiveViewerRegistry]
+- **S23.R-04** An event connection joins delivery first, reads the snapshot second and flushes what arrived in between; the snapshot holds the status, the pin and the last 50 non-removed comments. [proof: S23 AS-06, S23 AS-07] [code: packages/backend/libs/domains/launch-events/gateway/live-stream.controller.ts#LiveStreamController]
+- **S23.R-05** Control events (`pin`, `comment_removed`, `status`, `stats`) are never sampled or held for a window. [proof: S23 AS-08] [code: packages/backend/libs/domains/launch-events/gateway/live-batcher.service.ts#StreamBatcher]
+- **S23.R-06** The client reducer ignores a pin whose version is not higher and a stats whose second is not higher, remembers a removal that arrives before its comment, and reaches the same state for any order or duplication of events. [proof: S23 AS-09, S23 AS-48] [code: packages/contracts/src/live/live-reducer.ts#reduceLive]
+- **S23.R-07** A viewer buffering more than 256 KB is closed (counted as `slow`); an instance at its cap answers `503 gateway_full` with `Retry-After: 5` and creates no subscription. [proof: S23 AS-10, S23 AS-11] [code: packages/backend/libs/domains/launch-events/gateway/live-stream.controller.ts#LiveStreamController]
+- **S23.R-08** An unknown stream is `404`, a malformed id `400`, an ended stream `409 stream_ended`; a scheduled stream opens and receives `status LIVE` at the start; at the end the viewer gets `status ENDED` and the connection closes within a second. [proof: S23 AS-12] [code: packages/backend/libs/domains/launch-events/gateway/live-stream.controller.ts#LiveStreamController]
+- **S23.R-09** The comment feed topic is private: any subscription to it, or to a prefix nobody registered, is refused like an unknown topic, and the public `stream:<id>` topic never carries a comment. [proof: S23 AS-13] [code: packages/backend/libs/domains/launch-events/api/live-topics.ts#LiveTopics]
+- **S23.R-10** The viewer count is the sum of the per-instance entries younger than 15 seconds. [proof: S23 AS-14] [code: packages/backend/libs/domains/launch-events/infra/redis-viewer-store.ts#RedisViewerStore]
+- **S23.R-11** An accepted comment gets a time-ordered id, is made durable on the event stream before it is visible, lands on the recent list and the feed, and makes no relational query on a warm stream. [proof: S23 AS-15, S23 AS-23, S23 AS-24] [code: packages/backend/libs/domains/launch-events/application/live-comment.service.ts#LiveCommentService]
+- **S23.R-12** A member of the owning shop whose role holds `products.write` posts with `priority`; every other poster is an ordinary viewer. [proof: S23 AS-16] [code: packages/backend/libs/domains/launch-events/application/live-comment.service.ts#LiveCommentService]
+- **S23.R-13** A comment is 1-200 code points after normalization (NFC, control and zero-width removed, whitespace collapsed); other bodies and extra properties are `422`, a malformed stream id `400`. [proof: S23 AS-17] [code: packages/backend/libs/domains/launch-events/domain/comment-text.ts#normalizeComment]
+- **S23.R-14** Checks run in the order session, rate limit, body, stream exists, stream live, mute, moderation; nothing is published or stored by a refusal. [proof: S23 AS-18, S23 AS-19, S23 AS-20] [code: packages/backend/libs/domains/launch-events/application/live-comment.service.ts#LiveCommentService]
+- **S23.R-15** Synchronous moderation rejects links and banned terms (also leet, accented, stretched, letter-spaced) as whole words only, reveals only `link` or `policy`, and a blocked attempt still consumes rate budget. [proof: S23 AS-19] [code: packages/backend/libs/domains/launch-events/domain/moderation.ts#syncModeration]
+- **S23.R-16** The comment limit is 3 per 10 s per user and fails open (counted); the reaction limit is 5 per second per user and fails open. [proof: S23 AS-20, S23 AS-30] [code: packages/backend/libs/domains/launch-events/rate-limit-policies.ts#launchEventsRatePolicies]
+- **S23.R-17** A mute is a durable (stream, user) record, cached in the fast store and rebuilt on a miss; a muted user is `403 user_muted` on that stream only and still watches and reacts; unmuting restores posting; staff cannot be muted. [proof: S23 AS-21, S23 AS-40] [code: packages/backend/libs/domains/launch-events/application/live-moderation.service.ts#LiveModerationService]
+- **S23.R-18** A retried post with the same `clientId` and text returns the original comment (`200`), different text is `422 client_id_reused`, twenty at once make one comment and one event. [proof: S23 AS-22] [code: packages/backend/libs/domains/launch-events/application/live-comment.service.ts#LiveCommentService]
+- **S23.R-19** The author name is a stable keyed hash of (user, stream); no e-mail or part of it appears in any payload. [proof: S23 AS-25] [code: packages/backend/libs/domains/launch-events/domain/author-handle.ts#authorHandle]
+- **S23.R-20** Stream state is cached per stream with single-flight refill; an unknown id is negatively cached for 10 seconds. [proof: S23 AS-24, S23 AS-49] [code: packages/backend/libs/domains/launch-events/application/live-state-cache.ts#LiveStateCache]
+- **S23.R-21** A reaction request carries 1-6 distinct allowed emoji with integer counts 1-20, anything else is rejected whole; accepted requests answer `202` and only increment sharded counters. [proof: S23 AS-26, S23 AS-28, S23 AS-29] [code: packages/backend/libs/domains/launch-events/application/live-reaction.service.ts#LiveReactionService]
+- **S23.R-22** Once a second per live stream exactly one publisher sums the finished second's counters and fresh viewer counts into `stats`, another takes over within 4 seconds, late increments are ignored, and each non-empty second is emitted once as `live.reactions_aggregated`. [proof: S23 AS-27, S23 AS-31, S23 AS-32] [code: packages/backend/libs/domains/launch-events/infra/live-ticker.service.ts#LiveTicker]
+- **S23.R-23** A stream moves `SCHEDULED -> LIVE -> ENDED` and `SCHEDULED -> ENDED` only; each move is one conditional update with its outbox event in one transaction; repeating a done move is a `200` without an event, starting an ended stream is `409 stream_ended`; ending clears the pin. [proof: S23 AS-34] [code: packages/backend/libs/domains/launch-events/domain/live-state.ts#liveTransition]
+- **S23.R-24** Staff routes need membership with `products.write` of the owning shop: a non-member or a stream of another shop is `404 stream_not_found`, a read-only member `403`, a closed shop answers the guard's `403 shop_suspended` or `409 shop_offboarding`. [proof: S23 AS-33, S23 AS-35, S23 AS-41] [code: packages/backend/libs/domains/launch-events/api/live-staff.controller.ts#LiveStaffController]
+- **S23.R-25** A pin is durable on the stream, checked through the catalog's product lookup with the shop filter (unknown, foreign and archived are all `422 product_not_pinnable`), versioned +1 per change, and an identical re-pin or an empty unpin changes nothing; concurrent pins get distinct consecutive versions. [proof: S23 AS-36, S23 AS-37, S23 AS-38] [code: packages/backend/libs/domains/launch-events/application/live-pin.service.ts#LivePinService]
+- **S23.R-26** Removing a comment claims a 24-hour marker, makes the removal durable on the event stream first, then drops it from the recent list and publishes `comment_removed`; it is idempotent, `404 comment_not_found` for an unknown comment, `503` with the comment still visible when the stream refuses. [proof: S23 AS-39] [code: packages/backend/libs/domains/launch-events/application/live-removal.service.ts#LiveRemovalService]
+- **S23.R-27** The public snapshot is a contract document with `Cache-Control: public, s-maxage=1`, is limited per address, shares one refill under load and degrades to `degraded: true` with an empty recent list when the fast store is down. [proof: S23 AS-42, S23 AS-51] [code: packages/backend/libs/domains/launch-events/application/live-snapshot.service.ts#LiveSnapshotService]
+- **S23.R-28** The history writer upserts posts and removals so they commute in any order and number, in groups of 25, retrying throttled leftovers and failing the delivery when the retry limit is reached. [proof: S23 AS-43, S23 AS-44] [code: packages/backend/libs/domains/launch-events/infra/live-comments.projector.ts#LiveCommentsProjector]
+- **S23.R-29** Invalid payloads and unknown versions are dead-lettered without a write while the valid messages of the batch are processed, in both consumers. [proof: S23 AS-45] [code: packages/backend/libs/domains/launch-events/infra/live-moderation.consumer.ts#LiveModerationConsumer]
+- **S23.R-30** The history read pages one minute's non-removed comments ascending by id with a gap-free cursor, `limit` 1-200, `422` on malformed input. [proof: S23 AS-46] [code: packages/backend/libs/domains/launch-events/infra/dynamo-comment-history.reader.ts#DynamoCommentHistoryReader]
+- **S23.R-31** The async classifier scores each accepted comment with a 2-second timeout; a score of 0.7 or more removes it once (`auto`, with the score); a failing classifier is retried three times, then dead-lettered and counted, without delaying history. [proof: S23 AS-47] [code: packages/backend/libs/domains/launch-events/infra/live-moderation.consumer.ts#LiveModerationConsumer]
+- **S23.R-32** The recurring job `launch-events.live-reconcile` rebuilds the active set from LIVE streams, drops ended ones and rebuilds the mute cache, safely under concurrent runs. [proof: S23 AS-49, S23 AS-50] [code: packages/backend/libs/domains/launch-events/infra/live-reconcile.job.ts#LiveReconcileJob]
+- **S23.R-33** With the event stream down comments are `503 live_unavailable` while reactions, control events and staff routes work; with the fast store down comments and reactions are `503` and the snapshot degrades; recovery needs no restart. [proof: S23 AS-51] [code: packages/backend/libs/domains/launch-events/application/live-comment.service.ts#LiveCommentService]
+- **S23.R-34** Metrics cover comments, batches, windows, delivery lag, viewers, drops, reactions, stats, removals, history lag and consumer failures; every log line carries `streamId` and the request id and none carries text, e-mail, token or `clientId`. [proof: S23 AS-52] [code: packages/backend/libs/domains/launch-events/application/live-metrics.ts#liveMetrics]
+- **S23.R-35** Configuration is validated at start: window above 0 (default 250 ms), sample size 1-50 (5), viewer cap above 0 (50,000), moderation threshold in (0, 1] (0.7); a bad value names the setting. [proof: S23 AS-53] [code: packages/backend/libs/domains/launch-events/application/live-config.ts#readLiveConfig]
+- **S23.R-36** The domain's public entry exports only the five live modules and contract types, owns `LiveStream` and `LiveMute` in the ownership registry and touches no foreign table. [proof: S23 AS-54] [code: packages/backend/libs/domains/launch-events/index.ts#LiveModule]
+
+## Behaviors
+- **S23.B-01** Given a stream with 1,250 ordinary comments in one window and three staff comments, When the window closes, Then each viewer gets five sampled comments plus the staff comments in one event with `rate` 5000. [proof: S23 AS-01, S23 AS-03]
+- **S23.B-02** Given a viewer who connects while staff change the pin and remove comments, When the connection is up, Then applying the snapshot and every later event yields the server's final pin and visible comments. [proof: S23 AS-07]
+- **S23.B-03** Given a flood of comments and 100 reaction requests of seven hearts, When the second ends, Then viewers receive one `stats` with 700 hearts and never an individual reaction. [proof: S23 AS-27]
+- **S23.B-04** Given a toxic comment scored 0.9, When the moderation consumer processes it, Then viewers receive `comment_removed` and history marks it removed. [proof: S23 AS-47, S23 AS-48]
+
+## Lifecycles
+The stream status follows the table in rule S23.R-23; the pin version only grows.
+
+## Owns
+Tables `LiveStream` (status, pin, pin version) and `LiveMute`; DynamoDB `LiveComments`; Redis keys `live:*`; rate policies `live.comment`, `live.reaction`, `live.snapshot.ip`, `live.events.ip`; job `launch-events.live-reconcile`; realtime prefix `stream`; consumer groups `live-comments-history` and `live-moderation`.
+
+## Decisions
+- The relational record is the authority for status, pin and mutes; Redis is derived and rebuilt (stream state cache, active set, mute cache).
+- High-volume `live.*` events use the plain producer; lifecycle events use the outbox in the status transaction.
+- The staff routes moved under the shop so tenancy's guard decides access; the old routes have no alias.
+- The outbox topic is written `launch_events.events` (aggregate types cannot contain `-`), as S22 settled.
+
+## Known gaps
+- Fleet-scale delivery lag (SC-003) and 50,000 viewers per instance (SC-014) are proven by the load script only, not by an automated test; they are listed in `specs/UNVERIFIED.md`.
+- History writes share one DynamoDB partition per stream-minute; the capacity risk is open.

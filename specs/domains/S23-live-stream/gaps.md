@@ -101,9 +101,49 @@ Target state: `check:table-ownership --strict` reports nothing for `launch-event
 | G-31 | IX.4 | `LiveStream.shopId` has a foreign key to `Shop` (migration `20261001240000`) | New migration drops the constraint. |
 | G-32 | Docs | No `docs/spec/capabilities/S23-*.md` page exists | Create the page before code (rules, behaviours, `[proof]`/`[code]` markers); `python3 scripts/livespec/check.py` must pass. |
 
+## Verified at tasks time (T001)
+
+`pnpm check:table-ownership` listed the two tenancy findings of section 3 as already gone before this run (the controller already used `ShopAccessService`, the module no longer registered `ShopMembership`). Already true and not redone: G-28 (controller on `ShopAccessService`; the closed-shop answers are now tested), G-30 (batcher on `TopicSubscriber`; the fixed sleeps went with the old spec), the `livefeed` prefix declaration (moved to `api/live-topics.ts`).
+
+## Implementation status (T073)
+
+Every gap is closed. Task that closed it:
+
+| Gap | Closed by | Gap | Closed by |
+|---|---|---|---|
+| G-01 staff routes under the shop | T050 | G-17 async moderation timeout, retries, dead letter | T056 |
+| G-02 priority from tenancy role | T038 | G-18 gateway hosted in the domain, barrel trimmed | T023, T063 |
+| G-03 author handle | T035, T038 | G-19 window composer, no priority cap | T021 |
+| G-04 contracts for create | T006, T047 | G-20 join first, snapshot second | T024 |
+| G-05 lifecycle, outbox, transitions | T046, T047 | G-21 stream states on the connection | T024 |
+| G-06 durable first, `clientId` | T038 | G-22 own topics module | T014 |
+| G-07 comment text | T033 | G-23 address policies | T012 |
+| G-08 cached stream state | T036 | G-24 validated config | T010 |
+| G-09 whole-word moderation | T034 | G-25 metrics and structured logs | T061 |
+| G-10 durable mutes | T004, T049 | G-26 public snapshot | T051 |
+| G-11 strict reactions | T041 | G-27 six e2e files, no fixed sleeps | T013, T018, T032, T040, T045, T054, T059, T069 |
+| G-12 durable versioned pin | T048 | G-28 S03 follow-up | T045, T052 |
+| G-13 removal | T049 | G-29 S49 follow-up | T011 |
+| G-14 reconcile job | T060 | G-30 S51 follow-up | T018, T023, T027 |
+| G-15 ticker and aggregation event | T042 | G-31 Shop foreign key dropped | T004 |
+| G-16 history upserts | T055 | G-32 living-spec page | T002, T068 |
+
+Differences from the plan text, recorded for the human (none changes a rule of `spec.md`):
+
+- The unpin `pin` event carries `{version, unpinned: true}` (the spec says "payload `null` and `version + 1`"; a bare `null` cannot be ordered by a client). The snapshot (HTTP and event connection) also carries `pinVersion`, so a client orders a late `pin` event against an unpin it never saw. The reducer in `packages/contracts/src/live/live-reducer.ts` implements both.
+- Comment ids are uuidv7 built on the injected clock with a counter, so ids made in one millisecond still sort in the order they were made.
+- The recent list keeps the newest 100 comments and shows the last 50 non-removed ones, so a removal does not leave a snapshot with 49.
+- The staff lookup of the comment path is cached for 15 seconds by this capability (`ShopAccessService` does not cache the answer for non-members, which is every ordinary viewer).
+- The e2e kit is `testing/live-test-kit.ts` and the k6 script is `packages/backend/scripts/load-tests/live-stream.test.js` (script entry in `packages/backend/package.json`), following where the repository keeps both.
+- `launchEventsRatePolicies` is no longer exported from the barrel (AS-54); `test/utils/global-modules.ts` no longer lists it (the modules register their policies with `RateLimitModule.forFeature`).
+- Config keys `live_window_ms`, `live_sample_size`, `live_viewer_cap`, `live_moderation_threshold` (env `LIVE_WINDOW_MS`, `LIVE_SAMPLE_SIZE`, `LIVE_VIEWER_CAP`, `LIVE_MODERATION_THRESHOLD`) are in `libs/common/config/launch-events-config.ts`.
+- `packages/backend/.env.test` was a stale copy of `env/test.env.example` (missing settings that other capabilities made required); it was refreshed from the example so the e2e suites can start. It is not tracked.
+
 ## Spec changes
 
 No human-signed file (`*.reviewed.json`) exists for S23 or is touched. One text deviation inside `spec.md`, recorded for the human: the outbox topic for `live.stream_started` / `live.stream_ended` is written `launch-events.events`; the implementation uses `launch_events.events` (aggregate type `launch_events`), as S22 settled (aggregate types cannot contain `-`).
+
+`docs/spec/capabilities/S51-realtime-push.md` (not signed, no `*.reviewed.json` exists) lost one line of its front-matter `scope` (`packages/backend/apps/sse-gateway/src/live/**`): that folder moved into the domain (T027) and `python3 scripts/livespec/check.py` reports a scope that matches no file as an error. No rule or behavior of S51 changed.
 
 ## Sibling-spec follow-ups
 
@@ -112,4 +152,12 @@ No human-signed file (`*.reviewed.json`) exists for S23 or is touched. One text 
 - **S40**: may read `live.reactions_aggregated` v1 `{streamId, second, reactions}` from the event stream; `live.comment_removed` is now v2 (`reason: 'moderator'|'auto'`, `actorId?`, `score?`).
 - **S05**: relies on `ProductQueryService.getProductsByIds([id], { shopId })` returning archived products with their `status` (or omitting them); both lead to `422 product_not_pinnable`.
 - **S50**: new policies `live.snapshot.ip` and `live.events.ip` are declared by `launch-events` (registry stays decentralised); `rate-limit.types.ts` needs no edit.
-- **J03**: consumes the stream routes (now under `/shops/:shopId/live/...` for staff), `live.stream_started`, the event connection, `stats` and the pin.
+- **J03**: consumes the stream routes (now under `/shops/:shopId/live/...` for staff), `live.stream_started`, the event connection, `stats` and the pin. A `pin` event after an unpin is `{version, unpinned: true}`.
+- **S51**: its page scope listed `packages/backend/apps/sse-gateway/src/live/**`; that folder is gone (the event connection is `libs/domains/launch-events/gateway/`, hosted by the sse-gateway app through `LiveGatewayModule`). The scope line was removed (see Spec changes); S51 should decide whether its page names the new location.
+- **S22**: nothing in S22's specs asserts the `stream` route; `api/realtime-topics.ts` lost its `stream` and `livefeed` declarations, which now live in `api/live-topics.ts`.
+- **S03**: `ShopAccessService.getRole` stays uncached for non-members; every comment asks "is this poster staff", so S23 caches that answer for 15 s itself. A tenancy-side negative entry would let S23 drop its cache.
+- **S52**: nothing to adopt; S23 reads the stream state through `CacheService.getOrLoad` with `l1: 'never'` and drops it with `invalidate` before it publishes a change.
+
+## Gate repairs
+
+- AS-09: the reducer tests live in `packages/contracts/src/live/live-reducer.spec.ts`, outside the backend scope that `check-tests.py scenarios` scans. Added `libs/domains/launch-events/domain/live-reducer-contract.spec.ts` (title `S23 AS-09: ...`), which runs the exported reducer from the backend. The full property test stays in contracts.

@@ -29,11 +29,7 @@ import {
   ShopLiveProjector,
   ShopSalesProjector,
 } from '@app/domains/seller-insights';
-import {
-  LiveCommentsProjector,
-  LiveModerationConsumer,
-  LiveCoreModule,
-} from '@app/domains/launch-events';
+import { LiveProjectorModule } from '@app/domains/launch-events';
 import { DynamoModule } from '@app/infrastructure/dynamo/dynamo.module';
 import { NotificationsProjectorModule } from '@app/domains/notifications';
 import {
@@ -108,8 +104,7 @@ import { CacheModule } from '@app/infrastructure/cache/cache.module';
         ...PickupProjectorModule.projectors,
         ...RecommendationsProjectorModule.projectors,
         ...NotificationsProjectorModule.projectors,
-        LiveCommentsProjector,
-        LiveModerationConsumer,
+        ...LiveProjectorModule.projectors,
         LeaderboardProjector,
         ShopLiveProjector,
         ShopSalesProjector,
@@ -155,7 +150,7 @@ import { CacheModule } from '@app/infrastructure/cache/cache.module';
         PublicApiProjectorModule,
         WidgetProjectorModule,
         SqsModule,
-        LiveCoreModule,
+        LiveProjectorModule,
         DynamoModule,
         NotificationsProjectorModule,
         CassandraModule,

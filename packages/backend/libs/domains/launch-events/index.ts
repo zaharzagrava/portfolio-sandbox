@@ -2,8 +2,9 @@
  * Public entry point of the `launch-events` domain (constitution X.4). Code outside this domain imports only
  * from `@app/domains/launch-events`.
  *
- * Booking (S22): the three Nest modules the apps mount, and DTO types. No model, repository, service class or ticker.
- * The live stream (S23) keeps its own exports below; trimming them is that capability's to-do.
+ * Booking (S22): the three Nest modules the apps mount, and DTO types. Live stream (S23): the five Nest modules the apps
+ * host (core, worker, projector, sse-gateway and its topics) and the contract types. No model, repository, service
+ * class, key helper, sampler or consumer class.
  */
 export { LaunchEventsModule } from './launch-events.module';
 export { LaunchEventsWorkerModule } from './launch-events-worker.module';
@@ -13,24 +14,14 @@ export type {
   HoldDto,
   LaunchEventDto,
   QueueStatusDto,
+  LiveComment,
+  LiveSnapshotDto,
+  LiveStreamDto,
+  LivePin,
 } from '@marketplace-sandbox/contracts';
 
-// S23 (live stream)
-export { Reservoir } from './domain/reservoir';
-export { LiveCoreModule } from './live-core.module';
-export { LiveWorkerModule } from './live-worker.module';
 export { LiveModule } from './live.module';
-export { LiveService } from './application/live.service';
-export { LiveCommentsProjector } from './infra/live-comments.projector';
-export {
-  ACTIVE_STREAMS,
-  firehoseTopic,
-  pinKey,
-  RECENT_COMMENTS,
-  recentKey,
-  viewersKey,
-} from './infra/live-keys';
-export type { LiveComment } from './infra/live-keys';
-export { LiveModerationConsumer } from './infra/live-moderation.consumer';
-export { LiveTicker } from './infra/live-ticker.service';
-export { launchEventsRatePolicies } from './rate-limit-policies';
+export { LiveWorkerModule } from './live-worker.module';
+export { LiveProjectorModule } from './live-projector.module';
+export { LiveGatewayModule } from './live-gateway.module';
+export { LiveTopicsModule } from './live-topics.module';

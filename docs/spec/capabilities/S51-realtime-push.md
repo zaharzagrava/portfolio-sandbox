@@ -8,7 +8,6 @@ depends_on: [S01, S03, S50, S54]
 concepts: [realtime-topic-stream, problem-json-errors, rate-limit-policy, access-token-session, tenant-shop-rbac]
 models: []
 scope:
-  - packages/backend/apps/sse-gateway/src/live/**
   - packages/backend/libs/domains/asset-library/**
   - packages/backend/libs/domains/auctions/**
   - packages/backend/libs/domains/catalog-sync/**

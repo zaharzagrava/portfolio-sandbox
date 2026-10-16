@@ -11,7 +11,10 @@ export class Reservoir<T> {
   constructor(
     private readonly k: number,
     private readonly random: () => number = Math.random,
-  ) {}
+  ) {
+    if (!Number.isInteger(k) || k <= 0)
+      throw new RangeError('reservoir size must be a positive integer');
+  }
 
   offer(item: T): void {
     this.seen++;

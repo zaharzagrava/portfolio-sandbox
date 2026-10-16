@@ -6,8 +6,8 @@ import { QUEUE_STORE, type QueueStore } from '../domain/ports';
  * Launch-event topics (one rule per route, S51 follow-up):
  *  - `event:{id}:seatmap`: public seat deltas (S22 FR-039);
  *  - `queue:{ticket}`: the waiting-room push, **owner only** (S22 FR-008). The policy asks the ticket store who owns the
- *    ticket; an unknown ticket and somebody else's ticket are refused the same way;
- *  - `stream:{id}`: public live comments (S23, SD-15).
+ *    ticket; an unknown ticket and somebody else's ticket are refused the same way.
+ * The live stream's `stream:{id}` topic belongs to S23 (`LiveTopics`).
  */
 @Injectable()
 export class LaunchEventTopics implements OnModuleInit {
@@ -35,11 +35,6 @@ export class LaunchEventTopics implements OnModuleInit {
         }
       },
     });
-    this.topics.define({
-      prefix: 'stream',
-      owner: 'launch-events',
-      policy: () => true,
-    });
   }
 }
 
@@ -48,8 +43,5 @@ declare module '@app/infrastructure/realtime/topics' {
   interface RealtimeTopicPrefixes {
     'event:seatmap': `event:${string}:seatmap`;
     queue: `queue:${string}`;
-    stream: `stream:${string}`;
-    /** Internal comment firehose between the live service and the batcher; no route, so no client can subscribe. */
-    livefeed: `livefeed:${string}`;
   }
 }

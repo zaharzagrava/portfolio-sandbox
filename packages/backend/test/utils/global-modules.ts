@@ -51,7 +51,6 @@ import { discoveryRatePolicies } from '@app/domains/discovery';
 import '@app/domains/experimentation';
 import '@app/domains/fulfilment';
 import { identityRatePolicies } from '@app/domains/identity';
-import { launchEventsRatePolicies } from '@app/domains/launch-events';
 import '@app/domains/marketing';
 import '@app/domains/media';
 import { notificationsRatePolicies } from '@app/domains/notifications';
@@ -74,7 +73,6 @@ const ALL_RATE_LIMIT_TABLES = [
   auctionsRatePolicies,
   communityRatePolicies,
   notificationsRatePolicies,
-  launchEventsRatePolicies,
   assistantRatePolicies,
   knowledgeRatePolicies,
   discoveryRatePolicies,
