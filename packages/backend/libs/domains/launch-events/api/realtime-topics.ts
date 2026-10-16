@@ -1,20 +1,45 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
 import { TopicRegistry } from '@app/infrastructure/realtime';
+import { QUEUE_STORE, type QueueStore } from '../domain/ports';
 
-/** Launch-event topics: `event:{id}:seatmap` (public seat deltas, SD-21), `queue:{ticket}` (waiting-room position), `stream:{id}` (public live comments, SD-15). */
+/**
+ * Launch-event topics (one rule per route, S51 follow-up):
+ *  - `event:{id}:seatmap`: public seat deltas (S22 FR-039);
+ *  - `queue:{ticket}`: the waiting-room push, **owner only** (S22 FR-008). The policy asks the ticket store who owns the
+ *    ticket; an unknown ticket and somebody else's ticket are refused the same way;
+ *  - `stream:{id}`: public live comments (S23, SD-15).
+ */
 @Injectable()
 export class LaunchEventTopics implements OnModuleInit {
-  constructor(private readonly topics: TopicRegistry) {}
+  constructor(
+    private readonly topics: TopicRegistry,
+    @Inject(QUEUE_STORE) private readonly queue: QueueStore,
+  ) {}
 
   onModuleInit() {
     this.topics.define({
       prefix: 'event',
       suffixes: ['seatmap'],
+      owner: 'launch-events',
       policy: () => true,
     });
-    // Waiting-room tickets are unguessable UUIDs handed only to their holder: knowing the topic is the capability (SD-21).
-    this.topics.define({ prefix: 'queue', policy: () => true });
-    this.topics.define({ prefix: 'stream', policy: () => true });
+    this.topics.define({
+      prefix: 'queue',
+      owner: 'launch-events',
+      policy: async (viewer, _topic, ticket) => {
+        if (!viewer.userId) return false;
+        try {
+          return (await this.queue.ownerOf(ticket)) === viewer.userId;
+        } catch {
+          return false;
+        }
+      },
+    });
+    this.topics.define({
+      prefix: 'stream',
+      owner: 'launch-events',
+      policy: () => true,
+    });
   }
 }
 

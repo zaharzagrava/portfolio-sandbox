@@ -46,6 +46,15 @@ export default class LaunchEvent extends Model<
   @Column({ type: DataType.INTEGER, allowNull: false, defaultValue: 200 })
   declare admissionRatePerSec: number;
 
+  @Column({ type: DataType.TEXT, allowNull: false, defaultValue: 'SEATED' })
+  declare seatingMode: 'SEATED' | 'GENERAL';
+
+  @Column({ type: DataType.BOOLEAN, allowNull: false, defaultValue: false })
+  declare humanCheckRequired: boolean;
+
+  @Column({ type: DataType.TEXT, allowNull: true })
+  declare closedReason: 'organizer' | 'started' | null;
+
   @Column({ type: DataType.TEXT, allowNull: false, defaultValue: 'SCHEDULED' })
   declare status: LaunchEventStatus;
 

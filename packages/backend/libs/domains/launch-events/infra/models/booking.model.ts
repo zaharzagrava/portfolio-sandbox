@@ -33,5 +33,12 @@ export default class Booking extends Model<Booking, Partial<Booking>> {
   @Column({ type: DataType.TEXT, allowNull: false, defaultValue: 'CONFIRMED' })
   declare status: 'CONFIRMED' | 'CANCELLED';
 
+  @Column({
+    type: DataType.DATE,
+    allowNull: false,
+    defaultValue: Sequelize.literal('now()'),
+  })
+  declare confirmedAt: Date;
+
   declare createdAt: Date;
 }

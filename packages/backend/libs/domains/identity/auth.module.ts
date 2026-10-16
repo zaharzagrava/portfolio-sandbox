@@ -11,6 +11,7 @@ import { RevocationMarkers } from './infra/sessions/revocation-markers';
 import { AuditService } from './application/audit.service';
 import { KeyRotationService } from './application/key-rotation.service';
 import { ServiceTokenService } from './application/service-token.service';
+import { PurposeTokenService } from './application/purpose-token.service';
 import { ResetTokenMaintenanceService } from './application/reset-token-maintenance.service';
 import { SequelizeResetTokenRepository } from './infra/models/reset-token.repository';
 import { TokenAuthService } from './application/token-auth.service';
@@ -81,6 +82,7 @@ import {
     UserDirectoryService,
     KeyRotationService,
     ServiceTokenService,
+    PurposeTokenService,
     {
       provide: RESET_TOKEN_REPOSITORY,
       useClass: SequelizeResetTokenRepository,
@@ -96,6 +98,7 @@ import {
     KeyStore,
     KeyRotationService,
     ServiceTokenService,
+    PurposeTokenService,
     RESET_TOKEN_REPOSITORY,
     ResetTokenMaintenanceService,
     SecretBox,

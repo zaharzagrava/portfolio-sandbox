@@ -243,3 +243,5 @@ interviews) until its status says so. The implementation loop appends here (rule
 | S31 | SC-008: 50 GiB upload and download keep application memory flat | same file (50 GiB transfer) | not run |
 | S27 | SC-003: 99% of story views from the CDN; origin 2,000 rps, p99 < 50 ms from the read model | `specs/domains/S27-brand-stories/quickstart.md`, "Ops artifacts" (`pnpm loadtest:stories`) | not run |
 | S27 | SC-001 (real CDN and Next.js part): a change is visible through the CDN within 60 s | same file (publish on a deployed stack, poll the CDN URL) | not run |
+| S22 | SC-004: 20,000 concurrent buyers: join p99 < 100 ms, hold p99 < 150 ms, seat map p99 < 50 ms, no relational hold/queue traffic | `specs/domains/S22-booking/quickstart.md`, "Ops artifacts" (`pnpm loadtest:launch-event`) | not run |
+| S22 | SC-009: displayed wait within 1.5x of actual wait for 90% of buyers in a steady-rate run | same file (steady-rate k6 run comparing `etaSeconds`) | not run |

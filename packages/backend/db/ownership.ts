@@ -182,6 +182,8 @@ export const OWNERSHIP = {
   // launch-events
   LaunchEvent: 'domain:launch-events',
   Booking: 'domain:launch-events',
+  BookingEvent: 'domain:launch-events',
+  LaunchEventHistory: 'domain:launch-events',
   LiveStream: 'domain:launch-events',
   // auctions
   Auction: 'domain:auctions',

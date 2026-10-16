@@ -249,12 +249,15 @@ uses to get other domains' data.
 ### launch-events
 - **Responsibility**: brand launch events: waiting room, admission tokens, seat holds, bookings,
   seat map, and the live launch stream (comments and reactions).
-- **Owns**: `LaunchEvent`, `Booking`, `LiveStream`.
-- **Other stores**: holds (DynamoDB), queue and seat bitmap (Redis), comments (DynamoDB).
-- **Emits**: `live.comment_posted`, `live.comment_removed`.
+- **Owns**: `LaunchEvent`, `LaunchEventHistory`, `Booking`, `BookingEvent`, `LiveStream`.
+- **Other stores**: holds (DynamoDB ledger with per-seat fencing numbers), queue, event gate, quota counters, seat locks and seat bitmap (Redis), comments (DynamoDB).
+- **Emits**: topic `launch_events.events`: `launchevents.event_created`, `launchevents.booking_confirmed`,
+  `launchevents.event_sold_out`, `launchevents.event_closed` (the type is the alias of the specified
+  `launch_events.*` names, S53 pattern); command `orders.booking_voucher_requested`; `live.comment_posted`,
+  `live.comment_removed`.
 - **Hosted by**: core, worker, projector, sse-gateway.
-- **Depends on**: orders (booking voucher via command), tenancy (R1 for staff moderation; replaces
-  `ShopMembership` reads).
+- **Depends on**: orders (booking voucher via command), identity (R1 `PurposeTokenService` for admission
+  tokens), tenancy (R1 `ShopScoped` for staff routes; replaces `ShopMembership` reads).
 
 ### auctions
 - **Responsibility**: limited-drop English auctions, proxy bidding, anti-sniping, exactly-once
