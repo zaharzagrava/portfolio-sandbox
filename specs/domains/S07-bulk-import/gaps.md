@@ -80,3 +80,64 @@ No other open row of `docs/work/architecture/debt-register.md` names `catalog-sy
 10. **Remove** the raw product and outbox SQL, the export controller methods, `OrderExportService` imports, the `kind` message field, models from `index.ts` (A1, A2, A27, A30); update `apps/sse-gateway` registration if the module name changes.
 11. **Tests.** Replace `catalog-import.e2e-spec.ts` with the files in `test-plan.md`, add the fake scanner server, the gated storage stream and the recording storage wrapper, and the benchmark script (A29). Record the green run (VII.9).
 12. **Re-run** `pnpm --dir packages/backend check:table-ownership --strict` and `pnpm check:boundaries`; the import files must report zero findings (AS-69). Update the debt register rows D-10, D-6, D-7, D-8, D-12 for this domain.
+
+## E. Plan update (2026-10-16): what changed since this list was written
+
+Read from the tree at `3adf8ca4`; details in [research.md](research.md#state-of-the-tree-what-changed-since-gapsmd-was-written-on-2026-10-05).
+
+- A27 is mostly done by S12 (controller/module no longer carry export code); open: `{kind:'import', jobId}` message shape, `imports.concurrent` policy, old e2e.
+- A31 shrinks to **one** missing storage capability (ranged `getStream`); list-parts, exact-length part signing, streamed `put` with abort/stall, user-content presign already exist.
+- A7: the scanner is the shared `MalwareScanner`; open: inactivity deadline and `mode` on the port, adapter path coverage.
+- A24: prefix is already `import`; policy still creator-only.
+- C: S08/S09 raw-SQL rows are gone. `.ownership.baseline` is 1 (one finding exists in the domain before this work); the real `check:table-ownership` run is the first implementation task.
+- Follow-up from S54 (`400` for DTO failures, `422` only for semantic violations) and the idempotency interceptor's 8-character key minimum change two spec texts (below).
+
+## Resolution (T068, 2026-10-16)
+
+Every item of A (A1–A32) is closed by the new code and proven by the e2e files named in `quickstart.md` "Execution record": A1–A3 `import-processing`/`import-boundary` (writes only through `ProductImportService.upsertFromExternal`, 500-row batches, no product events); A4–A6, A19, A28 `import-processing`/`import-security` and the domain specs; A7–A8 `import-security` (shared scanner, fail-closed, source deleted); A9–A13 `import-upload`/`import-status`; A14–A17, A20–A22 `import-resilience`; A15, A23 `import-report`/`import-lifecycle`; A18 `import-resilience`; A24 `import-status`; A25 the expand/data/indexes migrations plus `migrations/contract/20261016000830-catalog-import-v2-contract.js` (see Spec changes); A26 `import-lifecycle`; A27 `import-lifecycle` AS-70; A29–A30 `import-boundary` and the deleted old files; A31 storage/antivirus specs; A32 the contracts spec.
+B: D-10 resolved (already, S12); D-6, D-7, D-8, D-12 are paid for the import files and annotated in `docs/work/architecture/debt-register.md` (the rows stay open for other capabilities).
+C: `check:table-ownership --strict` shows no finding for the import files (the old allow-list entry for `catalog-import.service.ts` in `scripts/technical-table-scan.ts` is removed). D: done, in the order of `tasks.md`.
+Open: the runtime proofs (T072) and the unrun ops artifacts (SC-001, SC-002, SC-003, SC-006, SC-008, AS-29 edge, FR-044).
+
+## Spec changes
+
+The human-signed `spec.md` is not edited. The living-spec page (`docs/spec/capabilities/S07-bulk-import.md`) states the behavior below, and the tests assert it:
+
+- **AS-02 / AS-54 (status code)**: DTO, query and cursor failures answer `400 validation_failed` (S54 toolkit, house `ZodPipe`), not `422 validation_failed`. `422` stays for `invalid_parts`, `size_mismatch`, `idempotency_key_required|invalid|reuse`.
+- **AS-03 / AS-04 / AS-05 (key shape)**: the examples use key `k1`; the toolkit requires 8–128 characters of `[A-Za-z0-9_-]`, so a shorter key is `422 idempotency_key_invalid`. Tests use keys of at least 8 characters.
+- **AS-70 wording**: "404 (served by S12)" is read as "no longer served by catalog-sync" (S12 follow-up).
+- **AS-25 (adapter spec location)**: the scanner protocol cases are proven in `libs/infrastructure/antivirus/clamd-scanner.spec.ts` (extended) instead of `infra/clamav.spec.ts`, because the adapter moved to the shared library (S29 follow-up); `questions.md` LOCAL line "scanner stays inside catalog-sync" is superseded by the same follow-up.
+- **AS-64 / FR-041 (event name)**: the event is registered as `catalogsync.import_finished` on topic `catalogsync.events`, not `catalog_sync.import_finished` on `catalog-sync.events`: the platform's patterns allow no `_` in the first segment of a type nor `-` in an aggregate type (same rule S08 met). Payload and version are as specified; `importEventSchemas` in `@contracts` carries the registered key.
+- **AS-63 / FR-040 (read routes)**: the three read routes require `shop.read` instead of `products.read`; every role holds both, and only `shop.read` passes the S03 status gate of a `SUSPENDED` or `DELETING` shop, which AS-63 needs ("reads still answer 200").
+- **T024 (contract migration)**: `migrations/contract/20261016000830-catalog-import-v2-contract.js` follows the S15/S16 precedent: it ships for a later release, is run by hand, and refuses while any legacy value is not yet copied. It was not run against the shared stack.
+- **FR-009 / AS-24 (deadlines)**: unchanged in behavior; implemented as `inactivityMs` + `timeoutMs` options of the shared port.
+
+## Sibling-spec follow-ups
+
+- **S05**: publish a closed list of rejection `code`s per `ExternalProductInput` field in its contracts package (S07's message table is pinned by a unit test that fails when a code has no message); keep `field` values equal to the `ExternalProductInput` property names (`externalSku`, `title`, `description`, `brand`, `category`, `priceMinor`, `quantity`, `tags`).
+- **S29**: `MalwareScanner.scan` gains `{ inactivityMs? }` and the port gains `mode: 'active' | 'disabled'` (additive; the media caller is unaffected); `clamd-scanner.spec.ts` gains the quiet-socket, size-limit and half-reply cases; `infra/clamav.ts` in catalog-sync is deleted by S07.
+- **S12**: `ObjectStorage.getStream(key, { start })` is added by S07 (additive); S12's reads are unaffected. The old `catalog-imports` assertions in `order-export*.e2e-spec.ts` remain valid.
+- **S51**: `import:{importId}` terminal events are published with `replay: true`, progress with `replay: false`; the policy is asynchronous and calls S03's `assertMember` (the registry already accepts an async policy).
+- **S53**: `catalogsync.import_finished` v1 joins topic `catalogsync.events` (shared with S08); consumers filter on `type`.
+- **S08**: `integration-boundary.e2e-spec.ts` AS-80 ("the barrel exports exactly …") lists the barrel's exports without `CatalogImportProjectorModule`; this capability must export it (the projector app registers the two shop-event consumers through it), so add it to that list. Until then that one test fails. The S08 scan of "integration files" skipped only `test/`; S07's kit now lives in `testing/import-kit.ts` (the dependency rule `x6` only allows `libs/**/testing/` to import the e2e harness), so the scan's filter gained `testing/` (see Gate repairs).
+- **S54**: nothing to change; S07 relies on the idempotency interceptor, `ZodPipe` and the config-validation hook as they are.
+- **W04**: subscribe to `import:<importId>` (not `job:<id>`); read `importId`, `parts[].url`, `partSize`, `partCount` from the start response (no `jobId`, `partUrls`, `uploadId`, `key`); call `GET …/upload` to resume, `POST …/cancel`, `GET …/error-report` for the download link (the status route no longer carries `errorReportUrl`); generate an `Idempotency-Key` of 8+ characters per start attempt and reuse it on retry.
+- **J04**: treat `DONE` or `catalogsync.import_finished` as the trigger, then wait for S32's projection (S05's `catalog.product_*` events).
+- **S03**: nothing required; S07 adds consumers `catalog-sync-import-offboarding` and `catalog-sync-import-shop-deleted` and reads membership with `assertMember`; import history is not part of the shop export (documented in `questions.md`).
+- **S08 / S09**: nothing required; `catalog-sync.events` and the `catalog-sync.` job-name prefix are shared by name only.
+
+## F. Plan coverage of follow-ups
+
+Each follow-up from built specs (S01, S05, S08, S12, S29, S49, S50, S51, S53, S54) is a row of the table in [plan.md](plan.md#follow-ups-left-by-built-specs-each-is-a-requirement) with its home in the design.
+
+## Gate repairs
+
+- `catalog-sync/catalog-import.e2e-spec.ts` had been deleted. It carried no scenario id and its subject name did not match a deleted file, so the integrity gate found nothing that replaced it. It is back at the same path as a spec on the new import kit with its four original cases: 10k rows with 3 bad ones plus a re-import, resume from the checkpoint, binary file named .csv refused, and no export served. The error report is now one line per field problem, so the 3 bad rows give 9 lines plus the header. The spec and `tsc --noEmit` pass, and `check-tests.py integrity` exits 0.
+- Gate step `depcruise` failed with four `x6-production-never-imports-test` errors: `catalog-sync/test/import-kit.ts` imports the harness in `test/utils/`, and only `libs/**/testing/` may. The kit moved to `catalog-sync/testing/import-kit.ts` (its fakes stay in `test/fakes/`) and the ten import specs import it from there. `integration-boundary.e2e-spec.ts` (S08 AS-80) scans domain sources and flagged the moved kit, so its scan filter now skips `testing/` as it already skips `test/`; the forbidden patterns are unchanged. `depcruise`, `tsc --noEmit` and `import-boundary.e2e-spec.ts` pass; the only remaining failure in the S08 boundary spec is the barrel-list case already recorded above.
+- `libs/infrastructure/outbox/outbox-isolation.spec.ts` (S53 AS-09) still expected `catalog-sync/application/catalog-import.service.ts` in the hand-over list. S07 deleted that service and `HANDED_OVER` in `scripts/technical-table-scan.ts` is now empty, so two cases failed. The list case now expects an empty list; the "scan sees the outbox table" case now scans a temporary directory holding a file with `INSERT INTO "Outbox"` and expects one `Outbox` hit, so it still fails if the scan stops detecting. No scenario was dropped; the spec and `tsc --noEmit` pass.
+
+### Gate repair (catalog-sync suite, 2 failures in S08 tests)
+
+- **S08 AS-78 (log shape)**: nine S07 log calls (`import-lifecycle.service.ts`, `import-runner.service.ts` x2, `import-start.service.ts` x4, `import-live.adapter.ts`) logged a formatted string. They now log `{ action: 'import.<event>', importId, error }`. This was a code defect, not a test fault.
+- **S08 AS-80 (barrel)**: the barrel exports `CatalogImportProjectorModule`, which the projector app imports. The test's exact export list lacked it, so the name was added; the list is still compared exactly.
+- Re-run: `libs/domains/catalog-sync` 32 suites / 467 tests pass, and `tsc --noEmit` is clean.

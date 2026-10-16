@@ -171,11 +171,24 @@ export class InMemoryObjectStorage extends ObjectStorage {
     return Promise.resolve(keys.length);
   }
 
-  async getStream(key: string) {
+  getStream(key: string, options: { start?: number } = {}) {
     const obj = this.objects.get(key);
     if (!obj)
-      throw Object.assign(new Error(`NoSuchKey ${key}`), { name: 'NoSuchKey' });
-    return Readable.from(obj.body);
+      return Promise.reject(
+        Object.assign(new Error(`NoSuchKey ${key}`), { name: 'NoSuchKey' }),
+      );
+    const start = options.start ?? 0;
+    if (start >= obj.body.length) return Promise.resolve(Readable.from([]));
+    // 64 KiB chunks, like a network stream: a reader that stops early leaves the rest unread
+    const body = start > 0 ? obj.body.subarray(start) : obj.body;
+    return Promise.resolve(
+      Readable.from(
+        (function* () {
+          for (let at = 0; at < body.length; at += 65_536)
+            yield body.subarray(at, at + 65_536);
+        })(),
+      ),
+    );
   }
 
   async put(

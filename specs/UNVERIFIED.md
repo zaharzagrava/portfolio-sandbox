@@ -226,3 +226,9 @@ interviews) until its status says so. The implementation loop appends here (rule
 | S12 | SC-005: 30 random worker kills of a 100,000-line export end in one identical file, no partial visible | same file (benchmark `--chaos 30`) | not run |
 | S12 | SC-007: progress moves at least once a second; start, finish and download of 10,000 lines in under 2 minutes | same file (W04 Playwright journey `seller-order-export.spec.ts`) | not run |
 | S12 | Edge: user-content origin serves the CSV as attachment with `nosniff`; storage lifecycle aborts incomplete uploads after one day | same file (`curl -I` on a presigned link; Terraform plan) | not run |
+| S07 | SC-001: 1,000,000 rows / 5 GiB-class import to DONE in under 15 minutes, worker memory under 200 MB | `specs/domains/S07-bulk-import/quickstart.md`, "Ops artifacts" (`packages/backend/scripts/bench/catalog-import-bench.ts`) | not run |
+| S07 | SC-002: 20 shops importing 5 GiB-class files at once, none delayed by another shop, each shop sequential | same file (benchmark `--shops 20`) | not run |
+| S07 | SC-003: 50 random worker kills of a 100,000-row import end identical to an uninterrupted run | same file (kill/restart loop script) | not run |
+| S07 | SC-006: progress at least once per second at 20,000 rows/s; seller learns every refused row's cause without support | same file (SC-001 run timestamps; W04 usability check) | not run |
+| S07 | SC-008: 10,000-row import and 3-row report download in under 3 minutes of interaction | same file (manual run on the W04 page) | not run |
+| S07 | Edge (AS-29, FR-044): user-content origin sends `nosniff`; storage lifecycle aborts incomplete uploads and expires sources after 7 days | same file (`curl -I` on a presigned report link; Terraform plan) | not run |

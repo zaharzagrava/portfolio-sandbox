@@ -32,6 +32,11 @@ export interface CatalogSyncConfig {
   offline_sync_clock_drift_ms?: number;
   offline_sync_max_op_age_ms?: number;
   offline_sync_retention_ms?: number;
+  /** S07 bulk import numbers (defaults in the capability's `domain/import-limits.ts`); all optional. */
+  import_error_cap?: number;
+  import_busy_delay_seconds?: number;
+  import_scan_inactivity_ms?: number;
+  import_scan_total_ms?: number;
 }
 
 type Key = {
@@ -90,6 +95,36 @@ ConfigRules.register({
   validate: integrationCursorKeyRule,
 });
 
+/**
+ * S07 AS-32: bulk imports are scanned, so in production the malware scanner must be configured and cannot be switched
+ * off, and the report links need the separate user-content origin. Outside production the scanner may be disabled
+ * explicitly (the job records `scan: skipped`). Messages name keys, never values.
+ */
+export const importProductionRule: RuleCheck = (ctx) => {
+  if (!ctx.production) return [];
+  const found: string[] = [];
+  const isSet = (v: unknown) => v !== undefined && v !== null && v !== '';
+  if (!isSet(ctx.get('clamav_host')))
+    found.push(
+      'clamav_host (malware scanner address) is required in production for bulk imports',
+    );
+  if (ctx.get('media_scanner_disabled') === true)
+    found.push(
+      'media_scanner_disabled is not allowed in production (bulk imports are scanned)',
+    );
+  if (!isSet(ctx.get('usercontent_origin')))
+    found.push(
+      'usercontent_origin is required in production for import error report downloads',
+    );
+  return found;
+};
+
+ConfigRules.register({
+  owner: 'catalog-sync-import',
+  keys: ['clamav_host', 'media_scanner_disabled', 'usercontent_origin'],
+  validate: importProductionRule,
+});
+
 export const catalogSyncConfigKeys: Record<keyof CatalogSyncConfig, Key> = {
   shopify_app_key: required('SHOPIFY_APP_KEY'),
   shopify_app_secret: required('SHOPIFY_APP_SECRET'),
@@ -116,6 +151,10 @@ export const catalogSyncConfigKeys: Record<keyof CatalogSyncConfig, Key> = {
   offline_sync_clock_drift_ms: positiveInt('OFFLINE_SYNC_CLOCK_DRIFT_MS'),
   offline_sync_max_op_age_ms: positiveInt('OFFLINE_SYNC_MAX_OP_AGE_MS'),
   offline_sync_retention_ms: positiveInt('OFFLINE_SYNC_RETENTION_MS'),
+  import_error_cap: positiveInt('IMPORT_ERROR_CAP'),
+  import_busy_delay_seconds: positiveInt('IMPORT_BUSY_DELAY_SECONDS'),
+  import_scan_inactivity_ms: positiveInt('IMPORT_SCAN_INACTIVITY_MS'),
+  import_scan_total_ms: positiveInt('IMPORT_SCAN_TOTAL_MS'),
 };
 
 export interface CatalogSyncSettings {

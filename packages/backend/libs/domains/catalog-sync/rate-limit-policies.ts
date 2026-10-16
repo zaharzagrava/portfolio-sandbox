@@ -5,11 +5,12 @@ import {
 
 /** Rate limit policies owned by `catalog-sync` (S50 FR-050): registered by the import and integrations modules. */
 export const catalogSyncRatePolicies = definePolicies('catalog-sync', {
-  // SD-27 fairness: one running import per shop, so a 5 GB catalog can't starve every other shop's import.
-  'imports.concurrent': {
-    algorithm: 'concurrency',
-    limit: 1,
-    windowMs: 30 * 60_000,
+  // S07 FR-039: ten import starts per hour per shop. Called in code by the start service (S50: `@RateLimit` is
+  // metadata only), so it holds in every app. Fairness between shops is the run lease, not a limiter policy.
+  'catalog-sync.import-start.shop': {
+    algorithm: 'slidingWindow',
+    limit: 10,
+    windowMs: 3_600_000,
     key: 'shop',
     failMode: 'closed',
   },

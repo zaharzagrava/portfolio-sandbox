@@ -16,7 +16,7 @@ import {
 import { Upload } from '@aws-sdk/lib-storage';
 import { createPresignedPost } from '@aws-sdk/s3-presigned-post';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import type { Readable } from 'node:stream';
+import { Readable } from 'node:stream';
 import { ApiConfigService } from '@app/common/config';
 import { Transform } from 'node:stream';
 import {
@@ -287,13 +287,32 @@ export class S3ObjectStorage extends ObjectStorage {
 
   async getStream(
     key: string,
-    options: StorageCallOptions = {},
+    options: StorageCallOptions & { start?: number } = {},
   ): Promise<Readable> {
-    const { Body } = await this.client.send(
-      new GetObjectCommand({ Bucket: this.bucket, Key: key }),
-      this.abort(options),
-    );
-    return Body as Readable;
+    const start = options.start ?? 0;
+    try {
+      const { Body } = await this.client.send(
+        new GetObjectCommand({
+          Bucket: this.bucket,
+          Key: key,
+          ...(start > 0 ? { Range: `bytes=${start}-` } : {}),
+        }),
+        this.abort(options),
+      );
+      return Body as Readable;
+    } catch (error) {
+      // a range past the end of the object (416) is an empty stream, not a failure
+      const e = error as {
+        name?: string;
+        $metadata?: { httpStatusCode?: number };
+      };
+      if (
+        start > 0 &&
+        (e.name === 'InvalidRange' || e.$metadata?.httpStatusCode === 416)
+      )
+        return Readable.from([]);
+      throw error;
+    }
   }
 
   /**

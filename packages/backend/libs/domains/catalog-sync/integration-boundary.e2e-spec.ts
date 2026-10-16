@@ -79,6 +79,7 @@ const integrationSources = () =>
         file.endsWith('.ts') &&
         !/spec\.ts$/.test(file) &&
         !file.startsWith('test/') &&
+        !file.startsWith('testing/') &&
         !OTHER_CAPABILITIES.includes(file),
     )
     .filter((file) => file !== 'index.ts');
@@ -421,6 +422,7 @@ describe('Catalog-sync integrations module boundary', () => {
     expect(Object.keys(barrel).sort()).toEqual(
       [
         'CatalogImportModule',
+        'CatalogImportProjectorModule',
         'CatalogImportWorkerModule',
         'ImportJobTopicsModule',
         'IntegrationsModule',

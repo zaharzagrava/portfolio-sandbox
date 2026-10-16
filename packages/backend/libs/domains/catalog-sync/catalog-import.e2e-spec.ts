@@ -1,187 +1,147 @@
-import { INestApplication, Module } from '@nestjs/common';
-import {
-  getConnectionToken,
-  getModelToken,
-  SequelizeModule,
-} from '@nestjs/sequelize';
-import { QueryTypes, Sequelize } from 'sequelize';
-import { buffer } from 'node:stream/consumers';
-import { v4 } from 'uuid';
-import { generateTestingModule } from '@app/test/utils/global-modules';
-import { SeedsModule } from '@app/test/seeds/seeds.module';
-import { SeedsService } from '@app/test/seeds/seeds.service';
-import { TableName } from '@app/test/seeds/types';
-import { ObjectStorage } from '@app/infrastructure/storage/object-storage.port';
-import { RealtimePublisher } from '@app/infrastructure/realtime';
-import { TaskQueue } from '@app/infrastructure/sqs/task-queue.port';
-import { ShopModel as Shop } from '@app/domains/tenancy';
-import { CatalogImportModule } from './catalog-import.module';
+import { QueryTypes } from 'sequelize';
+import { ImportInterruptedError } from './domain/import-errors';
 import { CatalogImportController } from './api/catalog-import.controller';
-import { CatalogImportService } from './application/catalog-import.service';
+import {
+  catalogCsv,
+  createImportApp,
+  type ImportKit,
+  type Seller,
+} from './testing/import-kit';
 
-@Module({ imports: [CatalogImportModule, SequelizeModule.forFeature([Shop])] })
-class SpecModule {}
+/** The byte right after the header and the first `records` records (the checkpoint a worker stops at). */
+const endOf = (file: Buffer, records: number): number => {
+  let seen = 0;
+  for (let i = 0; i < file.length; i++)
+    if (file[i] === 0x0a && ++seen === records + 1) return i + 1;
+  return file.length;
+};
 
-/** SD-27 against real Postgres + Redis + MinIO (the worker's `process` called directly; S3 multipart is MinIO-native). */
+/** The end-to-end path of a bulk import on the real stores (the former single spec of the module, kept as its smoke test). */
 describe('Bulk catalog import (e2e)', () => {
-  let app: INestApplication;
-  let seeds: SeedsService;
-  let imports: CatalogImportService;
-  let storage: ObjectStorage;
-  let db: Sequelize;
-  let progress: jest.SpyInstance;
+  let kit: ImportKit;
+  const shops: string[] = [];
 
   beforeAll(async () => {
-    const moduleRef = await generateTestingModule([SpecModule, SeedsModule], {
-      stores: ['redis', 'storage', 'sqs'],
-    });
-    app = moduleRef.createNestApplication();
-    await app.init();
-    seeds = app.get(SeedsService);
-    imports = app.get(CatalogImportService);
-    storage = app.get(ObjectStorage);
-    db = app.get(getConnectionToken());
-    progress = jest.spyOn(app.get(RealtimePublisher), 'publish');
-    jest.spyOn(app.get(TaskQueue), 'enqueue').mockResolvedValue('m');
+    kit = await createImportApp();
   });
-
   afterAll(async () => {
-    await app.close();
+    await kit.forget(shops);
+    await kit.close();
   });
-
   beforeEach(async () => {
-    await seeds.clean();
-    progress.mockClear();
+    await kit.reset();
+  });
+  afterEach(async () => {
+    kit.probe.release();
+    await kit.forget(shops.splice(0));
   });
 
-  const csv = (rows: number, bad: number[]) =>
-    Buffer.from(
-      '﻿sku,title,description,price,stock,category,brand\n' +
-        Array.from({ length: rows }, (_, i) =>
-          bad.includes(i + 1)
-            ? `SKU-${i + 1},,"no title",abc,-1,cables,`
-            : `SKU-${i + 1},"Cable ${i + 1}, braided","2 m",${(i % 50) + 1}.99,${i % 7},cables,Anker`,
-        ).join('\n') +
-        '\n',
-    );
-
-  /** Simulates the browser's completed multipart upload: object in MinIO + job UPLOADED. */
-  const uploadedJob = async (
-    shopId: string,
-    userId: string,
-    file: Buffer,
-    extra: Record<string, unknown> = {},
-  ) => {
-    const id = v4();
-    const key = `imports/${shopId}/${id}/source`;
-    await storage.put(key, file, 'text/csv');
-    await db.query(
-      `INSERT INTO "ImportJob" (id, "shopId", "createdBy", "fileName", "objectKey", "sizeBytes", status, "checkpointRow", "rowsProcessed")
-       VALUES (:id, :shopId, :userId, 'catalog.csv', :key, :size, :status, :checkpoint, :processed)`,
-      {
-        replacements: {
-          id,
-          shopId,
-          userId,
-          key,
-          size: file.length,
-          status: extra.status ?? 'UPLOADED',
-          checkpoint: extra.checkpointRow ?? 0,
-          processed: extra.rowsProcessed ?? 0,
-        },
-      },
-    );
-    return id;
+  const seller = async (): Promise<Seller> => {
+    const s = await kit.seller();
+    shops.push(s.shop.id);
+    return s;
+  };
+  const waitFor = async (check: () => Promise<boolean>, ms = 20_000) => {
+    const until = Date.now() + ms;
+    while (Date.now() < until) {
+      if (await check()) return;
+      await new Promise((resolve) => setTimeout(resolve, 25));
+    }
+    throw new Error('condition not reached in time');
   };
 
-  const setup = async () => {
-    const shop = await app
-      .get<typeof Shop>(getModelToken(Shop))
-      .create({ name: 'Cables Inc', slug: `c-${v4().slice(0, 8)}` });
-    const [user] = await seeds.createTreelike([{ __type__: TableName.User }]);
-    return { shopId: shop.id, userId: user.id as string };
-  };
-  const productCount = async (shopId: string) =>
-    Number(
-      (
-        await db.query<{ n: string }>(
-          `SELECT count(*) AS n FROM "Product" WHERE "shopId" = :shopId`,
-          { type: QueryTypes.SELECT, replacements: { shopId } },
-        )
-      )[0].n,
-    );
+  it('10k rows with 3 bad ones → 9,997 products, a 3-line error report, progress events; re-import changes nothing (no duplicates)', async () => {
+    const s = await seller();
+    const file = catalogCsv(10_000, { bad: [17, 5_001, 9_999] });
+    const id = await kit.uploaded(s, file);
 
-  it('10k rows with 3 bad ones → 9,997 products, a 3-line error report, progress events; re-import upserts (no duplicates)', async () => {
-    const { shopId, userId } = await setup();
-    const file = csv(10_000, [17, 5_001, 9_999]);
-    const jobId = await uploadedJob(shopId, userId, file);
-
-    expect(await imports.process(jobId)).toBe('DONE');
-    expect(await productCount(shopId)).toBe(9_997);
-    const status = await imports.status(shopId, jobId);
-    expect(status).toMatchObject({
+    expect(await kit.deliver(id)).toBe('done');
+    const job = await kit.job(id);
+    expect(job).toMatchObject({
       status: 'DONE',
       rowsProcessed: 10_000,
       rowsFailed: 3,
+      rowsCreated: 9_997,
     });
-    const [{ errorReportKey }] = await db.query<{ errorReportKey: string }>(
-      `SELECT "errorReportKey" FROM "ImportJob" WHERE id = :jobId`,
-      { type: QueryTypes.SELECT, replacements: { jobId } },
-    );
-    const report = (await buffer(await storage.getStream(errorReportKey)))
-      .toString()
+    const report = (await kit.objectText(job.errorReportKey!))
       .trim()
       .split('\n');
-    expect(report).toHaveLength(4); // header + 3
-    expect(report[1]).toMatch(/^17,SKU-17,/);
-    expect(
-      progress.mock.calls.filter(
-        ([topic, type]) => topic === `import:${jobId}` && type === 'progress',
-      ),
-    ).toHaveLength(10);
-
-    const [p] = await db.query<{ price: string; title: string }>(
-      `SELECT price, title FROM "Product" WHERE "shopId" = :shopId AND "externalSku" = 'SKU-1'`,
-      { type: QueryTypes.SELECT, replacements: { shopId } },
+    expect(report).toHaveLength(10); // header + 3 bad rows × 3 field problems
+    expect(new Set(report.slice(1).map((l) => l.split(',')[0]))).toEqual(
+      new Set(['17', '5001', '9999']),
     );
-    expect(p).toMatchObject({ title: 'Cable 1, braided' });
-    expect(Number(p.price)).toBe(199); // "1.99" → minor units
+    expect(report[1]).toMatch(/^17,/);
+    expect(
+      kit.rt.of(id).filter((e) => e.type === 'progress').length,
+    ).toBeGreaterThan(0);
 
-    const again = await uploadedJob(shopId, userId, file);
-    await imports.process(again);
-    expect(await productCount(shopId)).toBe(9_997);
-  });
+    const products = await kit.productsOf(s.shop.id);
+    expect(products.size).toBe(9_997);
+    expect(products.get('SKU-1')).toMatchObject({
+      title: 'Cable 1, braided',
+      priceMinor: 299,
+    });
+
+    const again = await kit.uploaded(s, file);
+    await kit.deliver(again);
+    expect(await kit.job(again)).toMatchObject({
+      status: 'DONE',
+      rowsCreated: 0,
+      rowsUnchanged: 9_997,
+      rowsFailed: 3,
+    });
+    const rows = await kit.db.query<{ n: string }>(
+      `SELECT count(*) AS n FROM "Product" WHERE "shopId" = :shopId`,
+      { type: QueryTypes.SELECT, replacements: { shopId: s.shop.id } },
+    );
+    expect(Number(rows[0].n)).toBe(9_997);
+  }, 180_000);
 
   it('resumes from the checkpoint after a crash (rows before it are not re-written)', async () => {
-    const { shopId, userId } = await setup();
-    const jobId = await uploadedJob(shopId, userId, csv(3_000, []), {
-      status: 'PROCESSING',
-      checkpointRow: 2_000,
-      rowsProcessed: 2_000,
-    });
-    await imports.process(jobId);
-    expect(await productCount(shopId)).toBe(1_000); // only rows 2,001-3,000 were written in this run
-    expect(await imports.status(shopId, jobId)).toMatchObject({
+    const s = await seller();
+    const file = catalogCsv(3_000);
+    const id = await kit.uploaded(s, file);
+    const a = kit.newRunner();
+    kit.probe.freezeAfter(endOf(file, 1_500), { once: true, skip: 2 });
+    const first = a.handle(id, 1).catch((e: unknown) => e);
+    await kit.probe.reached;
+    await waitFor(async () => (await kit.job(id)).lastRow >= 1_500);
+    await a.shutdown();
+    kit.probe.release();
+    expect(await first).toBeInstanceOf(ImportInterruptedError);
+
+    kit.resetCalls();
+    expect(await kit.newRunner().handle(id, 2)).toBe('done');
+    const sent = kit.catalogCalls().flatMap((c) => c.skus);
+    expect(sent).toHaveLength(1_500); // only rows 1,501-3,000 were written in this run
+    expect(sent).not.toContain('SKU-1500');
+    expect(await kit.job(id)).toMatchObject({
       status: 'DONE',
       rowsProcessed: 3_000,
     });
-  });
+    expect((await kit.productsOf(s.shop.id)).size).toBe(3_000);
+  }, 90_000);
 
   it('content sniffing: a binary file named .csv is refused', async () => {
-    const { shopId, userId } = await setup();
-    const jobId = await uploadedJob(
-      shopId,
-      userId,
+    const s = await seller();
+    const id = await kit.uploaded(
+      s,
       Buffer.from([0x50, 0x4b, 0x03, 0x04, 0x00, 0x00, 0x08, 0x00]),
+      { fileName: 'catalog.csv' },
     );
-    expect(await imports.process(jobId)).toBe('FAILED');
-    expect((await imports.status(shopId, jobId)).status).toBe('FAILED');
+    expect(await kit.deliver(id)).toBe('failed');
+    expect(await kit.job(id)).toMatchObject({
+      status: 'FAILED',
+      failureCode: 'unsupported_file_type',
+    });
+    expect(kit.catalogCalls()).toEqual([]);
   });
 
-  // The order-export case that stood here moved to S12 (`orders/order-export.e2e-spec.ts`, AS-04 and AS-05): export is
-  // no longer served by this domain, and this module must not bring it back.
+  // The order export moved to S12 (`orders/order-export.e2e-spec.ts`); this module must not bring it back.
   it('serves no order export: neither the service nor an export route is part of the import module', () => {
-    expect(() => app.get('OrderExportService', { strict: false })).toThrow();
+    expect(() =>
+      kit.app.get('OrderExportService', { strict: false }),
+    ).toThrow();
     const routes = Reflect.getMetadata(
       'path',
       CatalogImportController,

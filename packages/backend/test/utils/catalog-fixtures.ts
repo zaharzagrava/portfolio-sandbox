@@ -138,6 +138,20 @@ export async function productCount(
   return Number(found.n);
 }
 
+/** The ids of a shop's products, oldest first (specs of capabilities that write products through the catalog's R1 services). */
+export async function productIdsOf(
+  app: INestApplication,
+  shopId: string,
+): Promise<string[]> {
+  const rows = await app
+    .get(Sequelize)
+    .query<{ id: string }>(
+      `SELECT "id" FROM "Product" WHERE "shopId" = :shopId ORDER BY "createdAt", "id"`,
+      { type: QueryTypes.SELECT, replacements: { shopId } },
+    );
+  return rows.map((r) => r.id);
+}
+
 /** Outbox rows of one product, oldest first, with the envelope fields a spec asserts on. */
 export async function productEvents(app: INestApplication, productId: string) {
   const rows = await outboxRowsFor(app, productId);

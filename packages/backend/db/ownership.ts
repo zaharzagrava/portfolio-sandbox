@@ -83,6 +83,7 @@ export const OWNERSHIP = {
   ProductViewBatch: 'domain:catalog',
   // catalog-sync
   ImportJob: 'domain:catalog-sync',
+  ImportJobHistory: 'domain:catalog-sync',
   Integration: 'domain:catalog-sync',
   ExternalLink: 'domain:catalog-sync',
   SyncCursor: 'domain:catalog-sync',

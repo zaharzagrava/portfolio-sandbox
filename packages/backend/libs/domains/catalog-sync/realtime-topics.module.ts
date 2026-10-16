@@ -1,7 +1,11 @@
 import { Module } from '@nestjs/common';
+import { TenancyModule } from '@app/domains/tenancy';
 import { RealtimeModule } from '@app/infrastructure/realtime';
 import { ImportJobTopics } from './api/realtime-topics';
 
-/** Registers this domain's realtime topics in the SSE gateway (imported there; debt D-3). */
-@Module({ imports: [RealtimeModule], providers: [ImportJobTopics] })
+/** Registers the live topic `import:<id>` in the SSE gateway (imported there; S51). */
+@Module({
+  imports: [RealtimeModule, TenancyModule],
+  providers: [ImportJobTopics],
+})
 export class ImportJobTopicsModule {}

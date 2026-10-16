@@ -1,4 +1,5 @@
 import {
+  CatalogImportProjectorModule,
   IntegrationsProjectorModule,
   OfflineSyncProjectorModule,
 } from '@app/domains/catalog-sync';
@@ -120,6 +121,7 @@ import { CacheModule } from '@app/infrastructure/cache/cache.module';
         StoryCacheInvalidator,
         ...IntegrationsProjectorModule.projectors,
         ...OfflineSyncProjectorModule.projectors,
+        ...CatalogImportProjectorModule.projectors,
         ...AssistantProjectorModule.projectors,
         ...KnowledgeProjectorModule.projectors,
         ...StatementsProjectorModule.projectors,
@@ -142,6 +144,7 @@ import { CacheModule } from '@app/infrastructure/cache/cache.module';
         AnalyticsProjectorModule,
         IntegrationsProjectorModule,
         OfflineSyncProjectorModule,
+        CatalogImportProjectorModule,
         StoryCacheModule,
         WebhooksProjectorModule,
         PublicApiProjectorModule,

@@ -163,9 +163,13 @@ export abstract class ObjectStorage {
     uploadId: string,
     options?: StorageCallOptions,
   ): Promise<StoredPart[] | null>;
+  /**
+   * The object as a stream. `start` reads from that byte on (S3 `Range: bytes=start-`; S07 resumes an import at its
+   * checkpoint): a `start` at or beyond the end is an empty stream, a missing key is the adapter's not-found error.
+   */
   abstract getStream(
     key: string,
-    options?: StorageCallOptions,
+    options?: StorageCallOptions & { start?: number },
   ): Promise<Readable>;
   abstract put(
     key: string,

@@ -427,3 +427,22 @@
 {"run":"20261015T175230Z","capability":"S12","step":"repair-5","start":"2026-10-16T03:00:38Z","end":"2026-10-16T03:11:14Z","seconds":636,"result":"ok","attempt":1,"reason":"ok","code_changed":true}
 {"run":"20261015T175230Z","capability":"S12","step":"gate","start":"2026-10-16T03:11:14Z","end":"2026-10-16T03:21:01Z","seconds":587,"result":"pass","attempt":6,"reason":""}
 {"run":"20261015T175230Z","capability":"S12","step":"built","start":"2026-10-16T02:40:47Z","end":"2026-10-16T03:21:01Z","seconds":2414,"result":"ok","attempt":1,"reason":"Order export (streamed CSV to object storage, progress) including moving its routes and queue out of catalog-sync (debt D-10)"}
+{"run":"20261015T175230Z","capability":"S07","step":"plan","start":"2026-10-16T03:21:21Z","end":"2026-10-16T03:27:36Z","seconds":375,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261015T175230Z","capability":"S07","step":"tasks","start":"2026-10-16T03:27:36Z","end":"2026-10-16T03:29:22Z","seconds":106,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261015T175230Z","capability":"S07","step":"analyze","start":"2026-10-16T03:29:22Z","end":"2026-10-16T03:30:22Z","seconds":60,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261015T175230Z","capability":"S07","step":"implement-1","start":"2026-10-16T03:30:22Z","end":"2026-10-16T04:22:46Z","seconds":3144,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261015T175230Z","capability":"S07","step":"implement-2","start":"2026-10-16T04:22:46Z","end":"2026-10-16T04:53:44Z","seconds":1858,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261015T175230Z","capability":"S07","step":"implement-3","start":"2026-10-16T04:53:44Z","end":"2026-10-16T04:54:09Z","seconds":25,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261015T175230Z","capability":"S07","step":"converge-3","start":"2026-10-16T04:54:09Z","end":"2026-10-16T04:54:44Z","seconds":35,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261015T175230Z","capability":"S07","step":"gate","start":"2026-10-16T04:54:44Z","end":"2026-10-16T04:54:52Z","seconds":8,"result":"fail","attempt":1,"reason":"test integrity: packages/backend/libs/domains/catalog-sync/catalog-import.e2e-spec.ts: test file deleted, and it carried no scenario id, so nothing proves that another test replaces it (add the scenar"}
+{"run":"20261015T175230Z","capability":"S07","step":"repair-1","start":"2026-10-16T04:54:52Z","end":"2026-10-16T04:57:53Z","seconds":181,"result":"ok","attempt":1,"reason":"ok","code_changed":true}
+{"run":"20261015T175230Z","capability":"S07","step":"gate","start":"2026-10-16T04:57:53Z","end":"2026-10-16T04:58:18Z","seconds":25,"result":"fail","attempt":2,"reason":""}
+{"run":"20261015T175230Z","capability":"S07","step":"repair-2","start":"2026-10-16T04:58:19Z","end":"2026-10-16T04:59:24Z","seconds":65,"result":"ok","attempt":1,"reason":"ok","code_changed":true}
+{"run":"20261015T175230Z","capability":"S07","step":"gate","start":"2026-10-16T04:59:24Z","end":"2026-10-16T05:00:41Z","seconds":77,"result":"fail","attempt":3,"reason":"FAIL libs/infrastructure/outbox/outbox-isolation.spec.ts"}
+{"run":"20261015T175230Z","capability":"S07","step":"repair-3","start":"2026-10-16T05:00:41Z","end":"2026-10-16T05:01:17Z","seconds":36,"result":"ok","attempt":1,"reason":"ok","code_changed":true}
+{"run":"20261015T175230Z","capability":"S07","step":"gate","start":"2026-10-16T05:01:17Z","end":"2026-10-16T05:05:25Z","seconds":248,"result":"fail","attempt":4,"reason":""}
+{"run":"20261015T175230Z","capability":"S07","step":"repair-4","start":"2026-10-16T05:05:25Z","end":"2026-10-16T05:07:36Z","seconds":131,"result":"ok","attempt":1,"reason":"ok","code_changed":true}
+{"run":"20261015T175230Z","capability":"S07","step":"gate","start":"2026-10-16T05:07:36Z","end":"2026-10-16T05:17:21Z","seconds":585,"result":"fail","attempt":5,"reason":"FAIL libs/domains/catalog-sync/integration-boundary.e2e-spec.ts"}
+{"run":"20261015T175230Z","capability":"S07","step":"repair-5","start":"2026-10-16T05:17:21Z","end":"2026-10-16T05:25:47Z","seconds":506,"result":"ok","attempt":1,"reason":"ok","code_changed":true}
+{"run":"20261015T175230Z","capability":"S07","step":"gate","start":"2026-10-16T05:25:47Z","end":"2026-10-16T05:35:36Z","seconds":589,"result":"pass","attempt":6,"reason":""}
+{"run":"20261015T175230Z","capability":"S07","step":"built","start":"2026-10-16T03:21:20Z","end":"2026-10-16T05:35:36Z","seconds":8056,"result":"ok","attempt":1,"reason":"Bulk catalog import: multipart upload, AV scan, streamed parse, checkpoints, error report"}
