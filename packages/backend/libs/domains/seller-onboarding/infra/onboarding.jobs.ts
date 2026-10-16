@@ -1,38 +1,30 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { InjectConnection } from '@nestjs/sequelize';
-import { QueryTypes, Sequelize } from 'sequelize';
+import { Injectable } from '@nestjs/common';
 import { JobHandler } from '@app/infrastructure/jobs/job-handler.decorator';
-import { ObjectStorage } from '@app/infrastructure/storage/object-storage.port';
+import { RetentionService } from '../application/retention.service';
 import '../application/onboarding-documents.job-types';
 
 /**
- * Retention (05/02 §9): raw KYC files are deleted RAW_DOCUMENT_RETENTION_DAYS
- * after verification; the sealed extracted fields remain (needed for payouts
- * and audits). Idempotent: purged rows are skipped, deleting a missing object
- * is a no-op.
+ * The retention jobs (S04 FR-050, A28). `onboarding.purge-documents` deletes the raw files of one round 30 days after
+ * its verification or rejection - sealed fields stay; `onboarding.erase-records` hard-deletes a deleted shop's records
+ * after the record period. Both are single-run (their unique keys) and idempotent; the work is the retention service's.
  */
 @Injectable()
 export class OnboardingJobs {
-  private readonly logger = new Logger(OnboardingJobs.name);
-
-  constructor(
-    @InjectConnection() private readonly sequelize: Sequelize,
-    private readonly storage: ObjectStorage,
-  ) {}
+  constructor(private readonly retention: RetentionService) {}
 
   @JobHandler('onboarding.purge-documents')
-  async purge({ shopId }: { shopId: string }) {
-    const docs = await this.sequelize.query<{ id: string; storageKey: string }>(
-      `SELECT id, "storageKey" FROM "ShopDocument" WHERE "shopId" = :shopId AND "purgedAt" IS NULL AND status IN ('APPROVED', 'REJECTED', 'SUPERSEDED')`,
-      { type: QueryTypes.SELECT, replacements: { shopId } },
-    );
-    for (const doc of docs) {
-      await this.storage.delete(doc.storageKey);
-      await this.sequelize.query(
-        `UPDATE "ShopDocument" SET "purgedAt" = now() WHERE id = :id`,
-        { replacements: { id: doc.id } },
-      );
-    }
-    this.logger.log(`purged ${docs.length} KYC files of shop ${shopId}`);
+  async purge({
+    shopId,
+    submissionNo,
+  }: {
+    shopId: string;
+    submissionNo: number;
+  }) {
+    await this.retention.purgeRound(shopId, submissionNo);
+  }
+
+  @JobHandler('onboarding.erase-records')
+  async erase({ shopId, dueAt }: { shopId: string; dueAt?: string }) {
+    await this.retention.erase(shopId, dueAt);
   }
 }

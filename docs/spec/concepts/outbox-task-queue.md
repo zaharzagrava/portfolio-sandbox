@@ -38,6 +38,7 @@ The outbox is the shared event backbone. A domain writes each event to an outbox
 - {{cap:S01}} Registration, password login, sessions, refresh-token rotation, JWKS, service-to-service tokens
 - {{cap:S02}} TOTP MFA with recovery codes, Google OIDC login (PKCE), account linking
 - {{cap:S03}} Shops as tenants: memberships, roles and permissions, invites, per-shop SSO, cells, offboarding
+- {{cap:S04}} Staged onboarding questionnaire, KYC document intake, LLM extraction, human review, shop verification
 - {{cap:S05}} Product CRUD, pricing, stock fields, product cache and invalidation, product views
 - {{cap:S07}} Bulk catalog import (multipart upload, malware scan, streamed parse, checkpoints and leases, error report)
 - {{cap:S08}} Shopify and WooCommerce catalog and stock sync (connect, incremental pull, webhooks, three-way stock merge, quarantine, resilience, reconciliation, management)

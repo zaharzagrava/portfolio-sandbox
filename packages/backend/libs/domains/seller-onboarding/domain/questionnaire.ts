@@ -51,12 +51,18 @@ export interface FieldIssue {
   message: string;
 }
 
-/** `{path, message}` list of a zod failure; unknown-key messages are fixed text so no submitted name is echoed. */
+/** `{path, message}` list of a zod failure; messages are fixed text (never a submitted value); an unknown field is named by its truncated key. */
 export function fieldIssues(error: z.ZodError, prefix?: string): FieldIssue[] {
-  return error.issues.map((i) => ({
-    path: [...(prefix ? [prefix] : []), ...i.path.map(String)].join('.'),
-    message: i.code === 'unrecognized_keys' ? 'Unknown field' : i.message,
-  }));
+  const at = (path: PropertyKey[]) =>
+    [...(prefix ? [prefix] : []), ...path.map(String)].join('.');
+  return error.issues.flatMap((i): FieldIssue[] =>
+    i.code === 'unrecognized_keys'
+      ? i.keys.map((key) => ({
+          path: at([...i.path, key.slice(0, 60)]),
+          message: 'Unknown field',
+        }))
+      : [{ path: at(i.path), message: i.message }],
+  );
 }
 
 /** Per-step and cross-step problems of a full answer set; empty when valid. */

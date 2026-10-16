@@ -26,7 +26,6 @@ With the 5 s tolerance, a token with [`exp` ↗](../sw-external-terms.md#jwt-exp
 - [session-lifetime](session-lifetime.md)
 - [stock-verifier](stock-verifier.md)
 - [token-refresh](token-refresh.md)
-- [totp-time-step](totp-time-step.md)
 - [verify-stripe-signature](verify-stripe-signature.md)
 - [verify-totp](verify-totp.md)
 - [webhook-secret](webhook-secret.md)

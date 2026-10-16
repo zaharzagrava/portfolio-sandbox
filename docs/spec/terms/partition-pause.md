@@ -21,6 +21,7 @@ A consumer's sink is down for 30 s while events A1, A2 and A3 arrive on one part
 
 ## Used by
 <!-- used-by:start -->
+- [J01](../capabilities/J01-buy-to-payout.md): R-16
 - [S53](../capabilities/S53-events-projections.md): B-13
 - [consumer-effects](consumer-effects.md)
 - [dead-letter-reason-code](dead-letter-reason-code.md)

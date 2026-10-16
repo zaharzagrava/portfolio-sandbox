@@ -495,3 +495,12 @@
 {"run":"20261016T111502Z","capability":"J01","step":"repair-1","start":"2026-10-16T11:20:37Z","end":"2026-10-16T11:30:23Z","seconds":586,"result":"ok","attempt":1,"reason":"ok","code_changed":false}
 {"run":"20261016T111502Z","capability":"J01","step":"gate","start":"2026-10-16T11:30:23Z","end":"2026-10-16T11:39:40Z","seconds":557,"result":"pass","attempt":2,"reason":"","flake":true}
 {"run":"20261016T111502Z","capability":"J01","step":"built","start":"2026-10-16T11:15:03Z","end":"2026-10-16T11:39:40Z","seconds":1477,"result":"ok","attempt":1,"reason":"Buyer pays for a multi-shop order; order paid → ledger journals → settlement → seller payout → monthly statement; buyer and sellers notified"}
+{"run":"20261016T111502Z","capability":"S04","step":"implement-1","start":"2026-10-16T11:42:46Z","end":"2026-10-16T11:45:21Z","seconds":155,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261016T111502Z","capability":"S04","step":"implement-2","start":"2026-10-16T11:45:21Z","end":"2026-10-16T11:46:02Z","seconds":41,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261016T111502Z","capability":"S04","step":"doctor-1","start":"2026-10-16T11:46:02Z","end":"2026-10-16T11:58:33Z","seconds":751,"result":"ok","attempt":1,"reason":"ok","code_changed":true}
+{"run":"20261016T111502Z","capability":"S04","step":"implement-1","start":"2026-10-16T11:58:34Z","end":"2026-10-16T12:41:53Z","seconds":2599,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261016T111502Z","capability":"S04","step":"converge-1","start":"2026-10-16T12:41:53Z","end":"2026-10-16T12:42:13Z","seconds":20,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261016T111502Z","capability":"S04","step":"gate","start":"2026-10-16T12:42:13Z","end":"2026-10-16T12:42:43Z","seconds":30,"result":"fail","attempt":1,"reason":""}
+{"run":"20261016T111502Z","capability":"S04","step":"repair-1","start":"2026-10-16T12:42:43Z","end":"2026-10-16T12:43:58Z","seconds":75,"result":"ok","attempt":1,"reason":"ok","code_changed":true}
+{"run":"20261016T111502Z","capability":"S04","step":"gate","start":"2026-10-16T12:43:59Z","end":"2026-10-16T12:49:35Z","seconds":336,"result":"pass","attempt":2,"reason":""}
+{"run":"20261016T111502Z","capability":"S04","step":"built","start":"2026-10-16T11:58:34Z","end":"2026-10-16T12:49:35Z","seconds":3061,"result":"ok","attempt":1,"reason":"Staged onboarding questionnaire, KYC document intake, LLM extraction, human review, shop verification"}

@@ -1,14 +1,11 @@
-import { Inject, Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger, Optional } from '@nestjs/common';
 import type Anthropic from '@anthropic-ai/sdk';
 import { CLOCK, type Clock } from '@app/common/core/clock';
-import { TransactionRunner } from '@app/infrastructure/context';
+import { RequestContext, TransactionRunner } from '@app/infrastructure/context';
+import { correlate } from './log-line';
 import { ObjectStorage } from '@app/infrastructure/storage/object-storage.port';
 import { SecretBox } from '@app/domains/identity';
-import {
-  LLM_PROVIDER,
-  LlmCallRecorder,
-  textOf,
-} from '@app/infrastructure/llm';
+import { LLM_PROVIDER, LlmCallRecorder, textOf } from '@app/infrastructure/llm';
 import type { LlmProvider } from '@app/infrastructure/llm';
 import {
   ATTEMPTS,
@@ -83,6 +80,7 @@ export class ExtractionService {
     private readonly secrets: SecretBox,
     private readonly verification: VerificationPolicyService,
     private readonly transactions: TransactionRunner,
+    @Optional() private readonly context?: RequestContext,
   ) {}
 
   private modelFor(attempt: number) {
@@ -127,7 +125,11 @@ export class ExtractionService {
 
     let outcome: ExtractionOutcome = last?.outcome ?? 'ESCALATE';
     let issues: Issue[] = last?.issues ?? [];
-    for (; attempt <= this.config.maxAttempts && outcome === 'ESCALATE'; attempt++) {
+    for (
+      ;
+      attempt <= this.config.maxAttempts && outcome === 'ESCALATE';
+      attempt++
+    ) {
       const model = this.modelFor(attempt);
       const callStarted = this.clock.now();
       const result = await this.llm.complete({
@@ -235,7 +237,11 @@ export class ExtractionService {
           at: now,
         });
       } else if (doc.status !== 'EXTRACTING') return;
-      await this.moveToReview(doc, [{ field: null, code: reason, escalate: false }], now);
+      await this.moveToReview(
+        doc,
+        [{ field: null, code: reason, escalate: false }],
+        now,
+      );
     });
     onboardingMetrics.failures.add(1, { reason });
   }
@@ -268,7 +274,10 @@ export class ExtractionService {
     } catch (error) {
       // the lease lapses by itself after leaseMs: the redelivery is late, not lost
       this.logger.warn(
-        `could not release the lease of document ${documentId}: ${(error as Error).name}`,
+        correlate(
+          `could not release the lease of document ${documentId}: ${(error as Error).name}`,
+          this.context,
+        ),
       );
     }
   }
@@ -375,11 +384,19 @@ export class ExtractionService {
         outcome: result.stopReason === 'refusal' ? 'refused' : 'completed',
         result,
         ttftMs: null,
-        durationMs: Math.max(0, this.clock.now().getTime() - callStarted.getTime()),
+        durationMs: Math.max(
+          0,
+          this.clock.now().getTime() - callStarted.getTime(),
+        ),
       });
     } catch (error) {
       onboardingMetrics.failures.add(1, { reason: 'metering_failed' });
-      this.logger.warn(`call usage not recorded: ${(error as Error).name}`);
+      this.logger.warn(
+        correlate(
+          `call usage of document ${doc.id} not recorded: ${(error as Error).name}`,
+          this.context,
+        ),
+      );
     }
   }
 

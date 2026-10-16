@@ -45,4 +45,14 @@ export const LAMBDAS: LambdaSpec[] = [
     batchSize: 2,
     maxConcurrency: 20,
   },
+  // S04 FR-026: a message parked after 5 receives sends its document to human review (`extraction_unavailable`).
+  {
+    name: 'document-extractor-dlq',
+    entry: 'handlers/document-extractor-dlq.js',
+    queue: 'onboarding-documents-dlq',
+    timeoutSec: 30,
+    memoryMb: 512,
+    batchSize: 5,
+    maxConcurrency: 5,
+  },
 ];

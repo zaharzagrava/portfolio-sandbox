@@ -28,6 +28,8 @@ If a later write in the same scope throws, the scope rolls back. Neither the bus
 - [outbox-append-task](outbox-append-task.md)
 - [outbox-connector-configuration](outbox-connector-configuration.md)
 - [outbox-rollback](outbox-rollback.md)
+- [payout-failed-event](payout-failed-event.md)
+- [payout-paid-event](payout-paid-event.md)
 - [source-topic](source-topic.md)
 - [transaction-scope](transaction-scope.md)
 <!-- used-by:end -->

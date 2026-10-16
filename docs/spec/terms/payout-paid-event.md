@@ -19,5 +19,5 @@ For a shop with a balance above the [payout minimum](payout-minimum.md) and a [d
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [payouts-domain](payouts-domain.md)
 <!-- used-by:end -->

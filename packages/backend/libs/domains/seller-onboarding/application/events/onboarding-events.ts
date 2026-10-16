@@ -57,7 +57,11 @@ export const OnboardingDocumentRejected = defineEvent(
   z.object({
     shopId: ShopId,
     documentId: z.string().uuid(),
-    kind: z.enum(['BUSINESS_REGISTRATION', 'VAT_CERTIFICATE', 'BANK_STATEMENT']),
+    kind: z.enum([
+      'BUSINESS_REGISTRATION',
+      'VAT_CERTIFICATE',
+      'BANK_STATEMENT',
+    ]),
     reason: z.string(),
   }),
 );

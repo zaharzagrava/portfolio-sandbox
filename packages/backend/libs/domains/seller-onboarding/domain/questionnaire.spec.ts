@@ -176,14 +176,24 @@ describe('required documents', () => {
       'DE',
       ['BUSINESS_REGISTRATION', 'BANK_STATEMENT', 'VAT_CERTIFICATE'],
     ],
-    ['not VAT registered', false, 'DE', ['BUSINESS_REGISTRATION', 'BANK_STATEMENT']],
+    [
+      'not VAT registered',
+      false,
+      'DE',
+      ['BUSINESS_REGISTRATION', 'BANK_STATEMENT'],
+    ],
     [
       'VAT registered in PL',
       true,
       'PL',
       ['BUSINESS_REGISTRATION', 'BANK_STATEMENT', 'VAT_CERTIFICATE'],
     ],
-    ['not VAT registered in NL', false, 'NL', ['BUSINESS_REGISTRATION', 'BANK_STATEMENT']],
+    [
+      'not VAT registered in NL',
+      false,
+      'NL',
+      ['BUSINESS_REGISTRATION', 'BANK_STATEMENT'],
+    ],
   ])('S04 AS-72: %s', (_, vat, country, expected) => {
     expect(requiredDocuments(answers(vat, country))).toEqual(expected);
   });

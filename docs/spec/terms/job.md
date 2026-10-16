@@ -40,6 +40,7 @@ A capability calls `JobsService.enqueue(type, payload, { idempotencyKey: 'K' })`
 - [order-settlement](order-settlement.md)
 - [orders-backfill-item-titles-job](orders-backfill-item-titles-job.md)
 - [outbox-purge-job](outbox-purge-job.md)
+- [payouts-run-weekly-job](payouts-run-weekly-job.md)
 - [per-shop-running-cap](per-shop-running-cap.md)
 - [products-flush-view-counts-job](products-flush-view-counts-job.md)
 - [provider-statement](provider-statement.md)

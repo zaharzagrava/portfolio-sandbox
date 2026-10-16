@@ -26,6 +26,7 @@ If the user presses "Place order" twice, both requests carry this key and only o
 
 ## Used by
 <!-- used-by:start -->
+- [J01](../capabilities/J01-buy-to-payout.md): R-01, B-01
 - [cart-badge](cart-badge.md)
 - [checkout-request-schema](checkout-request-schema.md)
 - [checkout-review-step](checkout-review-step.md)

@@ -16,7 +16,8 @@ export const ONBOARDING_PROBLEM_CODES = [
   'resubmission_required',
   'already_verified',
   'document_already_approved',
-  'document_limit_reached',
+  // `document_limit_reached` is the assistant's (422); the process-wide problem catalog allows one definition per code.
+  'onboarding_document_limit_reached',
   'upload_not_received',
   'task_already_resolved',
   'document_superseded',

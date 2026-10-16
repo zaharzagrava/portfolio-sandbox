@@ -38,6 +38,8 @@ S05 commits a product price change and appends one versioned product event in th
 - [outbox-relay](outbox-relay.md)
 - [outbox-rollback](outbox-rollback.md)
 - [payments-events-topic](payments-events-topic.md)
+- [payout-failed-event](payout-failed-event.md)
+- [payout-paid-event](payout-paid-event.md)
 - [products-events-topic](products-events-topic.md)
 - [raw-token](raw-token.md)
 - [read-model](read-model.md)

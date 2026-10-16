@@ -22,6 +22,7 @@ If the same `PAYOUT` is posted again with the same reference and the same lines,
 
 ## Used by
 <!-- used-by:start -->
+- [J01](../capabilities/J01-buy-to-payout.md): R-09, R-10, B-11
 - [balanced-journal](balanced-journal.md)
 - [guarded-account](guarded-account.md)
 - [minor-units](minor-units.md)

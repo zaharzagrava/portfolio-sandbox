@@ -20,6 +20,7 @@ Here `order.cancelled` arrives on `orders.events` for a [`PENDING`](payment-stat
 
 ## Used by
 <!-- used-by:start -->
+- [J01](../capabilities/J01-buy-to-payout.md): R-02
 - [checkout-attempt](checkout-attempt.md)
 - [consumer-outcomes](consumer-outcomes.md)
 - [order-copy](order-copy.md)

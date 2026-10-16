@@ -54,9 +54,9 @@ describe('application status machine', () => {
   });
 
   it('S04 AS-70: the table covers every pair', () => {
-    expect(pairs(APPLICATION_STATUSES, APPLICATION_EVENTS, allowed)).toHaveLength(
-      APPLICATION_STATUSES.length * APPLICATION_EVENTS.length,
-    );
+    expect(
+      pairs(APPLICATION_STATUSES, APPLICATION_EVENTS, allowed),
+    ).toHaveLength(APPLICATION_STATUSES.length * APPLICATION_EVENTS.length);
   });
 });
 

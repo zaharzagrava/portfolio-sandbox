@@ -21,6 +21,7 @@ A verified event reports a successful payment of 49.90 EUR for order `42` (illus
 
 ## Used by
 <!-- used-by:start -->
+- [J01](../capabilities/J01-buy-to-payout.md): R-03
 - [S10](../capabilities/S10-cart-checkout.md): R-27, B-16
 - [order-reservation](../concepts/order-reservation.md): C-07
 - [hold-expired](hold-expired.md)

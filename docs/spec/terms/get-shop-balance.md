@@ -32,6 +32,7 @@ The same request from a user who is not a member of that shop gets `404`, exactl
 
 ## Used by
 <!-- used-by:start -->
+- [J01](../capabilities/J01-buy-to-payout.md): B-06
 - [durable-copy](durable-copy.md)
 - [hot-copy](hot-copy.md)
 - [identical-not-found](identical-not-found.md)

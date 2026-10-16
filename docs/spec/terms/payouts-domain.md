@@ -21,5 +21,5 @@ A shop's balance is above the minimum, its destination is set, and 49 hours have
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [payout-status](payout-status.md)
 <!-- used-by:end -->

@@ -20,5 +20,5 @@ A shop's [destination](payout-destination.md) is rejected by the provider. The r
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [failure-code](failure-code.md)
 <!-- used-by:end -->

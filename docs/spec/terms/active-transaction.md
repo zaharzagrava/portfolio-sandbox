@@ -20,6 +20,7 @@ Inside [S13](../capabilities/S13-payment-intents.md)'s payment scope, [S53](../c
 
 ## Used by
 <!-- used-by:start -->
+- [J01](../capabilities/J01-buy-to-payout.md): R-06
 - [S03](../capabilities/S03-shops-rbac.md): R-21
 - [S49](../capabilities/S49-job-scheduler.md): R-02, B-02
 - [S54](../capabilities/S54-platform-toolkit.md): R-17, B-05

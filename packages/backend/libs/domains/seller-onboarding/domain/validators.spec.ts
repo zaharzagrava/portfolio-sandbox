@@ -49,6 +49,12 @@ describe('isValidVat', () => {
     expect(isValidVat('GR', 'EL123456789')).toBe(true);
     expect(isValidVat('ZZ', '123')).toBe(false);
   });
+
+  it("S04 AS-71: a number carrying another EU country's prefix is not valid for this country", () => {
+    expect(isValidVat('FR', 'DE136695976')).toBe(false);
+    expect(isValidVat('NL', 'DE136695976')).toBe(false);
+    expect(isValidVat('DE', 'FR12345678901')).toBe(false);
+  });
 });
 
 describe('namesMatch', () => {
@@ -161,7 +167,11 @@ describe('masking', () => {
       'DE89 •••• 3000',
     ],
     ['IBAN too short', () => maskIban('DE89'), '••••'],
-    ['VAT keeps prefix and last three', () => maskVat('DE136695976'), 'DE •••• 976'],
+    [
+      'VAT keeps prefix and last three',
+      () => maskVat('DE136695976'),
+      'DE •••• 976',
+    ],
     ['VAT without prefix', () => maskVat('136695976'), '•••• 976'],
     ['VAT too short', () => maskVat('DE1'), '••••'],
     [

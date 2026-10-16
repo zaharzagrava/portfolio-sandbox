@@ -23,7 +23,8 @@ export function detectFileType(bytes: Uint8Array): DetectedFileType | null {
   if (startsWith(bytes, PDF)) return 'application/pdf';
   if (startsWith(bytes, [0xff, 0xd8, 0xff])) return 'image/jpeg';
   if (startsWith(bytes, PNG_SIGNATURE)) return 'image/png';
-  if (startsWith(bytes, RIFF) && startsWith(bytes, WEBP, 8)) return 'image/webp';
+  if (startsWith(bytes, RIFF) && startsWith(bytes, WEBP, 8))
+    return 'image/webp';
   return null;
 }
 

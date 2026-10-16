@@ -21,16 +21,18 @@ export const EXTRACTION_DEFAULTS = {
 } as const;
 
 export type ExtractionConfig = {
-  [K in keyof typeof EXTRACTION_DEFAULTS]: (typeof EXTRACTION_DEFAULTS)[K] extends number
-    ? number
-    : string;
+  [
+    K in keyof typeof EXTRACTION_DEFAULTS
+  ]: (typeof EXTRACTION_DEFAULTS)[K] extends number ? number : string;
 };
 
 /** Receives per message before a message is parked: the queue visibility must cover this many model timeouts. */
 const VISIBILITY_FACTOR = 6;
 
 const positiveInt = z.number().int().min(1);
-const model = z.string().refine((v) => v.trim().length > 0, 'must not be empty');
+const model = z
+  .string()
+  .refine((v) => v.trim().length > 0, 'must not be empty');
 
 const schema = z
   .object({
@@ -48,7 +50,10 @@ const schema = z
     onboarding_queue_visibility_seconds: positiveInt,
   })
   .superRefine((c, ctx) => {
-    if (c.onboarding_extraction_model.trim() === c.onboarding_escalation_model.trim())
+    if (
+      c.onboarding_extraction_model.trim() ===
+      c.onboarding_escalation_model.trim()
+    )
       ctx.addIssue({
         code: 'custom',
         path: ['onboarding_escalation_model'],
@@ -84,10 +89,15 @@ const KEYS = {
   onboarding_raw_retention_days: 'rawRetentionDays',
   onboarding_record_retention_days: 'recordRetentionDays',
   onboarding_queue_visibility_seconds: 'queueVisibilitySeconds',
-} as const satisfies Record<keyof z.input<typeof schema>, keyof ExtractionConfig>;
+} as const satisfies Record<
+  keyof z.input<typeof schema>,
+  keyof ExtractionConfig
+>;
 
 export type ExtractionConfigKey = keyof typeof KEYS;
-export const EXTRACTION_CONFIG_KEYS = Object.keys(KEYS) as ExtractionConfigKey[];
+export const EXTRACTION_CONFIG_KEYS = Object.keys(
+  KEYS,
+) as ExtractionConfigKey[];
 
 export function resolveExtractionConfig(
   raw: Record<string, unknown> = {},
@@ -96,7 +106,12 @@ export function resolveExtractionConfig(
   const candidate = Object.fromEntries(
     EXTRACTION_CONFIG_KEYS.map((key) => {
       const value = raw[key];
-      return [key, value === undefined || value === null ? EXTRACTION_DEFAULTS[KEYS[key]] : value];
+      return [
+        key,
+        value === undefined || value === null
+          ? EXTRACTION_DEFAULTS[KEYS[key]]
+          : value,
+      ];
     }),
   );
   const parsed = schema.safeParse(candidate);

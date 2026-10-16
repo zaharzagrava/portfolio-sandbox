@@ -56,8 +56,34 @@ Format: `[TAG] question → default taken → why`. BREAKING first, then CONTRAC
 - [LOCAL] Prompt version → still stored per attempt; bumped with any prompt or schema change.
 - [LOCAL] Sniffing and `evaluate` move to `domain/`; `ExtractionService` and the Lambda keep their entry names.
 
+## UNBLOCKED (repair agent, 2026-10-16)
+
+The BLOCKED section below is resolved: the missing keys were added to `packages/backend/.env.test` using the documented values from `env/test.env.example`, and the `test:e2e` script typo (`NODE_ENV=testNODE_OPTIONS=…`) was fixed. `onboarding.e2e-spec.ts` now boots and passes (12 tests). Use `--forceExit` when running a single e2e spec (open handles keep jest alive).
+
+## BLOCKED (implement run, 2026-10-16) — resolved, see above
+
+- **Backend e2e cannot start on this machine.** `test-spec.sh libs/domains/seller-onboarding/onboarding.e2e-spec.ts` fails all 12 existing tests before any S04 code runs: `Config validation error: share_link_code_key; share_link_edge_secret; share_link_base_url; ads_click_secret; ads_aggregator_instance; api_key_pepper; widget_token_key; shopify_app_key; shopify_app_secret; shopify_api_version; integration_cursor_key (any.required)`. `packages/backend/.env.test` lacks keys that other capabilities (S36, S37 and similar) made required. Hypothesis: they did not add test values to `.env.test`, so every e2e spec in the repo fails the same way. These keys belong to other domains and the file is environment config, so I did not invent secrets for it.
+- **Needed:** test values for those keys in `.env.test`; then T002/T022/T028 and every e2e task (T020 onward) can run. Not faked.
+- **Done and proven:** T004–T019 (pure domain: status machines, validators, questionnaire, extraction rules, file type, extraction config, strict schema). `pnpm run test libs/domains/seller-onboarding/domain` gives 6 suites, 262 tests, all green.
+
 ## RESOLVED (agent decision)
 
 - **Event topic** (analysis C1, C2, C3): the BREAKING default "topic `shop-onboarding`" is withdrawn. The event infrastructure derives every topic as `<aggregateType>.events` (`topicFor`, `infrastructure/events/event-envelope.ts:32`) and aggregate types have no hyphens, so `shop-onboarding` cannot be produced through `defineEvent`. S04 keeps aggregate `shops` and topic `shops.events`, which tenancy (S03, `SHOP_EVENTS_TOPIC`) already reads. S04 is the only producer on `shops.events` (I.4); tenancy owns `tenancy.events`. S03 needs no change (J02 and payouts keep working); S28's `shop-onboarding` constant is the stale one (sibling follow-up in `gaps.md`). `shop.onboarding_submitted`, `shop.verified`, `shop.rejected` stay at contract version 1 (tenancy matches only `version === 1`; the `2` in `ShopVerified.create` was the aggregate-version argument). `submissionNo` is an additive field.
 - **Usage purpose** (C4): `extraction` (the S46 recorder accepts `chat|summary|extraction|rag`); AS-36 amended in `spec.md`. The metric name `kyc_extraction_outcomes_total` (AS-66) is unaffected.
 - **Submit limit** (C5): idempotent replays of an already submitted application do not consume the `onboarding.submit.shop` limiter; tests use a fresh shop per repetition.
+
+## RESOLVED (implement run, 2026-10-16)
+
+Decisions taken while building; none contradicts a requirement of `spec.md` except where stated.
+
+- **Problem code `document_limit_reached`** (FR-100, AS-19) → renamed `onboarding_document_limit_reached` (still `409`). The assistant capability (S47) already registers `document_limit_reached` as a `422` with other wording, and the platform problem catalog allows one definition per code (a clash fails startup). Renamed in `domain/errors.ts`, `packages/contracts/src/onboarding/problem.ts` and the AS-19 / AS-65 tests. `spec.md` FR-100 and `contracts/http.md` still say `document_limit_reached`: a sibling-spec note in `gaps.md` records it; the human may prefer to rename the assistant's code instead.
+- **Erase job at 1825 days** (FR-050, AS-60, AS-61) → S49 refuses `runAt` more than 366 days ahead, so `onboarding.erase-records` carries `{shopId, dueAt}` and hops: the first run is at most a year on, an early run schedules the next hop (key `erase:<shopId>:<date>`) and deletes nothing; it erases only once `dueAt` has passed. First key stays `erase:<shopId>`.
+- **`insufficient_role`** (AS-39) → the platform `RolesGuard` answers a generic `forbidden`, so the review routes use `Firewall({sensitive: true})` plus a small `ReviewerRoleGuard` that answers the stable `insufficient_role` for any platform role other than `ADMIN`/`MODERATOR`.
+- **`shop_deleted` consumer idempotency** (FR-064) → `natural`, not `inbox`: the storage deletes must not run inside the inbox transaction (FR-061), and every step is idempotent (purged files skipped, cancelled tasks stay cancelled, the erase job has a unique key), so a repeated `eventId` has one effect. An invalid payload is dead-lettered by the framework (contract of tenancy's `ShopDeleted`).
+- **Contract migration** → `20261016001010-seller-onboarding-s04-contract.js` sits in `migrations/` (not `migrations/contract/`) because AS-62 requires the two foreign keys to be gone in the same release, and no running code reads them.
+- **VAT validator** → `isValidVat('FR', 'DE136695976')` was `true` (France's loose format accepted a German prefix). A number that carries another EU country's prefix is now invalid for this country (unit case added to `validators.spec.ts`).
+- **Scripted LLM provider** → `ScriptedLlmProvider.complete` now honours `rateLimited` and `delayMs` like `streamTurn` already did; the test plan needs both (AS-32, AS-33). Sibling note for S46 in `gaps.md`.
+- **Lambda specs** → `x1-nothing-imports-apps` forbids a lib spec importing `apps/`, and `x4-domain-entry-point-only` forbids an app spec importing the domain's `testing/` kit, so AS-34, the dead-letter handler and the Lambda boot check live in `apps/lambdas/src/handlers/document-extractor.e2e-spec.ts` and seed with SQL; `test-plan.md` and `quickstart.md` name the file.
+- **AS-67 log correlation** → our own log lines (`ExtractionService`, `RetentionService`, the audit logger) append the request id of the current context; the Lambda handlers run every record inside `RequestContext.run({requestId: messageId})`, and the audit line carries `requestId`.
+- **Stale task vs. rejected application** → `REJECT_APPLICATION` checks the application first (`VERIFIED` → `already_verified`, `REJECTED` → `task_already_resolved`), then the task (`CANCELLED` → `document_superseded`), because rejecting an application cancels its tasks.
+- **Empty key field vs. invalid value** (AS-42) → an empty key field is `missing_fields`; a non-empty IBAN or VAT number that fails its check is `iban_invalid` / `vat_invalid`.

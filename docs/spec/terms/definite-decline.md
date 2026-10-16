@@ -20,6 +20,7 @@ The processor sends the charge for an order and the provider answers that the ca
 
 ## Used by
 <!-- used-by:start -->
+- [J01](../capabilities/J01-buy-to-payout.md): R-08
 - [S13](../capabilities/S13-payment-intents.md): R-14, B-09
 - [classify-charge](classify-charge.md)
 - [ledger-entry-table](ledger-entry-table.md)

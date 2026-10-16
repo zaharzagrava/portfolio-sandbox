@@ -22,5 +22,11 @@ J01.B-12: the run is requested again, or twice at once. Each job ends `SUCCEEDED
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [J01](../capabilities/J01-buy-to-payout.md): B-13
+- [blocked-reason](blocked-reason.md)
+- [payout-destination](payout-destination.md)
+- [payout-minimum](payout-minimum.md)
+- [payout-status](payout-status.md)
+- [payout-transfer](payout-transfer.md)
+- [payouts-domain](payouts-domain.md)
 <!-- used-by:end -->

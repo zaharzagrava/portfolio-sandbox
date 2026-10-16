@@ -21,6 +21,7 @@ Code facts are the verified notes taken from the source code that a [capability 
 
 ## Used by
 <!-- used-by:start -->
+- [J01](../capabilities/J01-buy-to-payout.md): R-17
 - [capability](capability.md)
 - [entry-point](entry-point.md)
 - [known-gaps](known-gaps.md)

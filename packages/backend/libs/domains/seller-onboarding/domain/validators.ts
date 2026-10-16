@@ -150,6 +150,8 @@ export function isValidVat(country: string, raw: string): boolean {
   const prefix = country === 'GR' ? 'EL' : country;
   let vat = normalizeVat(raw);
   if (vat.startsWith(prefix)) vat = vat.slice(2);
+  // another EU country's prefix is a number of that country, never of this one (FR's loose format would let it pass)
+  else if (vat.slice(0, 2) in VAT_FORMATS) return false;
   const format = VAT_FORMATS[prefix];
   if (!format || !format.test(vat)) return false;
   return VAT_CHECKSUMS[prefix]?.(vat) ?? true;

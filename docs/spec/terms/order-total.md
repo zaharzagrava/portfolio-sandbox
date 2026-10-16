@@ -21,6 +21,7 @@ The cart holds A × 2. A now costs `1200`, so the server's order total is `2400`
 
 ## Used by
 <!-- used-by:start -->
+- [J01](../capabilities/J01-buy-to-payout.md): B-01
 - [S10](../capabilities/S10-cart-checkout.md): B-10
 - [W03](../capabilities/W03-cart-checkout-orders.md): B-07
 - [checkout-review-step](checkout-review-step.md)

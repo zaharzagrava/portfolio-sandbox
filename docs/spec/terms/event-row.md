@@ -22,6 +22,7 @@ After commit, the row is published to Kafka. On rollback, no event row is left (
 
 ## Used by
 <!-- used-by:start -->
+- [J01](../capabilities/J01-buy-to-payout.md): R-06
 - [S01](../capabilities/S01-auth-sessions.md): R-39, B-03
 - [S05](../capabilities/S05-products.md): R-08
 - [S14](../capabilities/S14-ledger-reconciliation.md): R-06

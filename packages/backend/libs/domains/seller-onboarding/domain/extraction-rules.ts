@@ -1,9 +1,5 @@
 import { EXTRACTION_DEFAULTS } from './extraction-config';
-import {
-  type Extraction,
-  FIELDS,
-  extractionZod,
-} from './extraction-schema';
+import { type Extraction, FIELDS, extractionZod } from './extraction-schema';
 import type { Answers, DocumentKind } from './questionnaire';
 import {
   isValidIban,

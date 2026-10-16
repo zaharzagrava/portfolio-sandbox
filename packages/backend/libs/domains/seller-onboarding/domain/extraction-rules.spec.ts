@@ -80,14 +80,15 @@ const run = (
 ) => evaluateExtraction(kind, output(kind, over, top), answers, now);
 
 describe('evaluateExtraction: clean documents', () => {
-  it.each(['BUSINESS_REGISTRATION', 'VAT_CERTIFICATE', 'BANK_STATEMENT'] as const)(
-    'S04 AS-23: a consistent %s has no issues',
-    (kind) => {
-      const r = run(kind);
-      expect(r.issues).toEqual([]);
-      expect(r.extraction).not.toBeNull();
-    },
-  );
+  it.each([
+    'BUSINESS_REGISTRATION',
+    'VAT_CERTIFICATE',
+    'BANK_STATEMENT',
+  ] as const)('S04 AS-23: a consistent %s has no issues', (kind) => {
+    const r = run(kind);
+    expect(r.issues).toEqual([]);
+    expect(r.extraction).not.toBeNull();
+  });
 
   it('S04 AS-23: without answers only the document itself is checked', () => {
     const r = evaluateExtraction(
@@ -209,13 +210,10 @@ describe('evaluateExtraction: one issue code at a time', () => {
     ],
   ];
 
-  it.each(cases)(
-    'S04 AS-23: %s',
-    (_, kind, over, top, expected) => {
-      const r = run(kind, over, top);
-      expect(r.issues).toEqual([expected].flat());
-    },
-  );
+  it.each(cases)('S04 AS-23: %s', (_, kind, over, top, expected) => {
+    const r = run(kind, over, top);
+    expect(r.issues).toEqual([expected].flat());
+  });
 
   it('S04 AS-23: model_refused is not escalated and carries no extraction', () => {
     const r = evaluateExtraction(
@@ -300,15 +298,21 @@ describe('evaluateExtraction: boundaries', () => {
     expect(r.issues).toEqual(
       ok
         ? []
-        : [{ field: 'statementDate', code: 'statement_too_old', escalate: false }],
+        : [
+            {
+              field: 'statementDate',
+              code: 'statement_too_old',
+              escalate: false,
+            },
+          ],
     );
   });
 
   it('S04 AS-23: the age is counted from the injected now, not the wall clock', () => {
     const later = new Date('2027-10-16T00:00:00.000Z');
-    expect(run('BANK_STATEMENT', {}, {}, later).issues.map((i) => i.code)).toEqual(
-      ['statement_too_old'],
-    );
+    expect(
+      run('BANK_STATEMENT', {}, {}, later).issues.map((i) => i.code),
+    ).toEqual(['statement_too_old']);
     const sameDay = new Date('2026-04-19T23:59:59.000Z');
     // 2026-04-19 minus 180 days is 2025-10-21
     expect(
@@ -329,7 +333,12 @@ describe('evaluateExtraction: boundaries', () => {
 
   // token Jaccard after removing legal suffixes: 3/5 = 0.6 matches, 4/7 = 0.571 does not
   it.each([
-    ['exactly 0.6 (3/5)', 'alpha beta gamma', 'alpha beta gamma delta epsilon', true],
+    [
+      'exactly 0.6 (3/5)',
+      'alpha beta gamma',
+      'alpha beta gamma delta epsilon',
+      true,
+    ],
     [
       '0.625 (5/8)',
       'alpha beta gamma delta epsilon',

@@ -38,7 +38,6 @@ If the token says [`alg: none` ↗](../sw-external-terms.md#jwt-alg), has an unk
 - [internal-endpoint](internal-endpoint.md)
 - [invalid-token-error](invalid-token-error.md)
 - [logout-all](logout-all.md)
-- [mfa-challenge-token](mfa-challenge-token.md)
 - [mfa-management-endpoint](mfa-management-endpoint.md)
 - [page-upstream-sections](page-upstream-sections.md)
 - [post-auth-logout](post-auth-logout.md)

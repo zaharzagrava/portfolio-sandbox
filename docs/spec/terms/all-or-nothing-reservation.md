@@ -20,6 +20,7 @@ The cart asks for 2 of `prod_07` (5 in stock) and 3 of `prod_42` (only 1 in stoc
 
 ## Used by
 <!-- used-by:start -->
+- [J01](../capabilities/J01-buy-to-payout.md): R-01, B-10
 - [S05](../capabilities/S05-products.md): R-19
 - [S10](../capabilities/S10-cart-checkout.md): R-21, B-05, B-14
 - [order-reservation](../concepts/order-reservation.md): C-02

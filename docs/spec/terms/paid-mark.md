@@ -21,6 +21,7 @@ Order `ord_123` is `RESERVED`, and W03 shows it as "Awaiting payment". A verifie
 
 ## Used by
 <!-- used-by:start -->
+- [J01](../capabilities/J01-buy-to-payout.md): R-04
 - [payment-provider](payment-provider.md)
 - [provider-charge-metadata](provider-charge-metadata.md)
 - [rejected-payment-event](rejected-payment-event.md)

@@ -44,9 +44,9 @@ Constitution VII.8 table: one row per acceptance scenario in [`spec.md`](spec.md
 | AS-29 declared type ≠ bytes → review, no model call | `onboarding-extraction.e2e-spec.ts` | — | — |
 | AS-30 masked view, sealed values bound to row, no PII in logs | `onboarding-extraction.e2e-spec.ts` (captured log stream) | — | — |
 | AS-31 redelivery, concurrent workers, resume at attempt 2, no-op messages | `onboarding-extraction.e2e-spec.ts` (`Promise.all`) | — | — |
-| AS-32 provider failure, lease expiry, dead-letter routing | `onboarding-extraction.e2e-spec.ts` (frozen clock advanced past the lease) | — | — |
+| AS-32 provider failure, lease expiry, dead-letter routing | `onboarding-extraction.e2e-spec.ts` (frozen clock advanced past the lease); the dead-letter Lambda in `apps/lambdas/src/handlers/document-extractor.e2e-spec.ts` | — | — |
 | AS-33 superseded during extraction: result discarded | `onboarding-extraction.e2e-spec.ts` | — | — |
-| AS-34 invalid queue payloads as failed batch items | `onboarding-extraction.e2e-spec.ts` (Lambda `handler` with an SQS event) | — | — |
+| AS-34 invalid queue payloads as failed batch items | `apps/lambdas/src/handlers/document-extractor.e2e-spec.ts` (Lambda `handler` with an SQS event; a lib spec may not import `apps/`, `x1-nothing-imports-apps`) | — | — |
 | AS-35 missing object → review; transient storage error propagates | `onboarding-extraction.e2e-spec.ts` | — | — |
 | AS-36 per-call usage record, metering failure tolerated | `onboarding-extraction.e2e-spec.ts` | — | — |
 | AS-37 queue listing: shape, masking, order, link or null, filter | `onboarding-review.e2e-spec.ts` | — | — |
@@ -72,7 +72,7 @@ Constitution VII.8 table: one row per acceptance scenario in [`spec.md`](spec.md
 | AS-57 same file in round 2, concurrent resubmissions | `onboarding-questionnaire.e2e-spec.ts` (`Promise.all`) | — | — |
 | AS-58 purge after verification: files deleted, sealed kept, idempotent, partial failure | `onboarding-retention.e2e-spec.ts` | — | — |
 | AS-59 purge after rejection, later round untouched | `onboarding-retention.e2e-spec.ts` | — | — |
-| AS-60 `tenancy.shop_deleted` consumer: purge now, erase scheduled, duplicate, invalid | `onboarding-retention.e2e-spec.ts` | — | — |
+| AS-60 `tenancy.shop_deleted` consumer: purge now, erase scheduled, duplicate, invalid | `onboarding-retention.e2e-spec.ts`; registration in the projector app: `apps/projector/src/onboarding-wiring.e2e-spec.ts` | — | — |
 | AS-61 erase job at due time only | `onboarding-retention.e2e-spec.ts` (frozen clock) | — | — |
 | AS-62 static ownership check and foreign-key probe | `onboarding-boundaries.e2e-spec.ts` (catalog query); gate `check:table-ownership --strict` | — | — |
 | AS-63 shop names through one R1 batch call | `onboarding-boundaries.e2e-spec.ts` (spy on the exported service) | — | — |

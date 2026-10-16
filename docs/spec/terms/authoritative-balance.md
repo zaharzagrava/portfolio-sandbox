@@ -19,13 +19,16 @@ An authoritative balance is read straight from the ledger's running balances, [t
 
 ## Used by
 <!-- used-by:start -->
+- [J01](../capabilities/J01-buy-to-payout.md): R-15, B-11, B-16
 - [S14](../capabilities/S14-ledger-reconciliation.md): R-23
 - [balance-source](balance-source.md)
+- [blocked-reason](blocked-reason.md)
 - [durable-copy](durable-copy.md)
 - [get-balances](get-balances.md)
 - [hot-copy](hot-copy.md)
 - [ledger-posting](ledger-posting.md)
 - [list-seller-balances](list-seller-balances.md)
+- [payout-minimum](payout-minimum.md)
 - [read-model](read-model.md)
 - [running-balance](running-balance.md)
 - [write-model](write-model.md)

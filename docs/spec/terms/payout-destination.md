@@ -22,5 +22,10 @@ J01.B-13: a destination the provider rejects leads to a `FAILED` payout, reverse
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [J01](../capabilities/J01-buy-to-payout.md): B-11
+- [blocked-reason](blocked-reason.md)
+- [failure-code](failure-code.md)
+- [payout-failed-event](payout-failed-event.md)
+- [payout-paid-event](payout-paid-event.md)
+- [payouts-domain](payouts-domain.md)
 <!-- used-by:end -->

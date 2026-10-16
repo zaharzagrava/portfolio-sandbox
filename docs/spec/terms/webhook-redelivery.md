@@ -23,6 +23,7 @@ The provider sends `payments.payment_succeeded` with id `evt_123` (illustrative)
 
 ## Used by
 <!-- used-by:start -->
+- [J01](../capabilities/J01-buy-to-payout.md): R-04, B-03
 - [concurrent-delivery-copies](concurrent-delivery-copies.md)
 - [consumer-outcomes](consumer-outcomes.md)
 - [durable-acceptance](durable-acceptance.md)
