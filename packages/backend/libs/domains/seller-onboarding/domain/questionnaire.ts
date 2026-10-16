@@ -1,82 +1,69 @@
 import { z } from 'zod';
+import {
+  ONBOARDING_COUNTRIES,
+  ONBOARDING_STEP_NAMES,
+  onboardingStepSchemas,
+} from '@marketplace-sandbox/contracts';
+import { isValidVat } from './validators';
 
-export const EU_COUNTRIES = [
-  'AT',
-  'BE',
-  'BG',
-  'CY',
-  'CZ',
-  'DE',
-  'DK',
-  'EE',
-  'ES',
-  'FI',
-  'FR',
-  'GR',
-  'HR',
-  'HU',
-  'IE',
-  'IT',
-  'LT',
-  'LU',
-  'LV',
-  'MT',
-  'NL',
-  'PL',
-  'PT',
-  'RO',
-  'SE',
-  'SI',
-  'SK',
-] as const;
+export const EU_COUNTRIES = ONBOARDING_COUNTRIES;
 
 /**
- * The staged questionnaire (10/02 Example 6): every step validates on its
- * own (so a step can be saved half-way through the flow), and the whole set
- * is re-validated together on submit (cross-step rules).
+ * The staged questionnaire (S04 FR-001, A15, A16). The four step schemas are the strict contract schemas (an unknown
+ * field is refused; each step is valid on its own so it can be saved half-way through the flow); this module adds the
+ * cross-step rules that need the whole set, applied again on submit.
  */
-export const STEPS = {
-  business: z.object({
-    legalForm: z.enum([
-      'SOLE_TRADER',
-      'PARTNERSHIP',
-      'LIMITED_COMPANY',
-      'OTHER',
-    ]),
-    businessName: z.string().trim().min(2).max(200),
-    country: z.enum(EU_COUNTRIES),
-    registrationNumber: z.string().trim().min(2).max(50),
-  }),
-  tax: z.object({
-    vatRegistered: z.boolean(),
-    vatNumber: z.string().trim().max(20).nullable(),
-  }),
-  catalog: z.object({
-    categories: z.array(z.string().trim().min(2).max(60)).min(1).max(10),
-    expectedMonthlyOrders: z.enum([
-      'UNDER_100',
-      'UNDER_1000',
-      'UNDER_10000',
-      'OVER_10000',
-    ]),
-  }),
-  policies: z.object({
-    returnsDays: z.number().int().min(14).max(365),
-    shipsFrom: z.enum(EU_COUNTRIES),
-  }),
-} as const;
+export const STEPS = onboardingStepSchemas;
 
 export type StepName = keyof typeof STEPS;
-export const STEP_NAMES = Object.keys(STEPS) as StepName[];
+export const STEP_NAMES: StepName[] = [...ONBOARDING_STEP_NAMES];
 
 export type Answers = { [K in StepName]: z.infer<(typeof STEPS)[K]> };
 
-export const AnswersSchema = z
-  .object(STEPS)
-  .refine((a) => !a.tax.vatRegistered || !!a.tax.vatNumber, {
-    message: 'VAT number is required when VAT registered',
-    path: ['tax', 'vatNumber'],
-  });
+/**
+ * All four steps plus the cross-step rules: a VAT number is present exactly when VAT registered, and it is valid for
+ * the business country. Messages never contain the submitted values.
+ */
+export const AnswersSchema = z.strictObject(STEPS).superRefine((a, ctx) => {
+  const { vatRegistered, vatNumber } = a.tax;
+  if (vatRegistered && !vatNumber)
+    ctx.addIssue({
+      code: 'custom',
+      path: ['tax', 'vatNumber'],
+      message: 'VAT number is required when VAT registered',
+    });
+  else if (!vatRegistered && vatNumber)
+    ctx.addIssue({
+      code: 'custom',
+      path: ['tax', 'vatNumber'],
+      message: 'VAT number requires VAT registration',
+    });
+  else if (vatNumber && !isValidVat(a.business.country, vatNumber))
+    ctx.addIssue({
+      code: 'custom',
+      path: ['tax', 'vatNumber'],
+      message: 'VAT number is not valid for the business country',
+    });
+});
+
+export interface FieldIssue {
+  path: string;
+  message: string;
+}
+
+/** `{path, message}` list of a zod failure; unknown-key messages are fixed text so no submitted name is echoed. */
+export function fieldIssues(error: z.ZodError, prefix?: string): FieldIssue[] {
+  return error.issues.map((i) => ({
+    path: [...(prefix ? [prefix] : []), ...i.path.map(String)].join('.'),
+    message: i.code === 'unrecognized_keys' ? 'Unknown field' : i.message,
+  }));
+}
+
+/** Per-step and cross-step problems of a full answer set; empty when valid. */
+export function answerIssues(answers: unknown): FieldIssue[] {
+  const parsed = AnswersSchema.safeParse(answers);
+  return parsed.success ? [] : fieldIssues(parsed.error);
+}
 
 export type DocumentKind =
   'BUSINESS_REGISTRATION' | 'VAT_CERTIFICATE' | 'BANK_STATEMENT';

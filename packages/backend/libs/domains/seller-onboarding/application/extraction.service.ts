@@ -1,128 +1,135 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { InjectConnection } from '@nestjs/sequelize';
-import { QueryTypes, Sequelize } from 'sequelize';
 import type Anthropic from '@anthropic-ai/sdk';
-import { metrics } from '@opentelemetry/api';
-import { ApiConfigService } from '@app/common/config';
+import { CLOCK, type Clock } from '@app/common/core/clock';
+import { TransactionRunner } from '@app/infrastructure/context';
 import { ObjectStorage } from '@app/infrastructure/storage/object-storage.port';
 import { SecretBox } from '@app/domains/identity';
 import {
   LLM_PROVIDER,
   LlmCallRecorder,
-  LlmResult,
   textOf,
 } from '@app/infrastructure/llm';
 import type { LlmProvider } from '@app/infrastructure/llm';
-import { Answers, DocumentKind } from '../domain/questionnaire';
+import {
+  ATTEMPTS,
+  APPLICATIONS,
+  DOCUMENTS,
+  REVIEW_TASKS,
+  STATUS_HISTORY,
+  type ApplicationRepository,
+  type AttemptRepository,
+  type ClaimedDocument,
+  type DocumentRecord,
+  type DocumentRepository,
+  type ReviewTaskRepository,
+  type StatusHistoryRepository,
+} from '../domain/ports';
+import type { Answers } from '../domain/questionnaire';
+import type { ExtractionConfig } from '../domain/extraction-config';
+import {
+  evaluateExtraction,
+  outcomeFor,
+  type ExtractionOutcome,
+  type Issue,
+} from '../domain/extraction-rules';
+import { detectFileType } from '../domain/file-type';
 import {
   EXTRACTION_SYSTEM,
-  Extraction,
-  extractionZod,
-  FIELDS,
+  type Extraction,
   jsonSchemaFor,
   PROMPT_VERSION,
   SENSITIVE_FIELDS,
 } from '../domain/extraction-schema';
-import {
-  isValidIban,
-  isValidVat,
-  maskIban,
-  namesMatch,
-  normalizeVat,
-} from '../domain/validators';
-import { ShopDocumentRow } from './onboarding-documents.service';
-import { VerificationService } from './verification.service';
+import { maskIban } from '../domain/validators';
+import { EXTRACTION_CONFIG } from './extraction-config.token';
+import { onboardingMetrics } from './onboarding-metrics';
+import { VerificationPolicyService } from './verification-policy.service';
 
-export interface Issue {
-  field: string | null;
-  code: string;
-  /** true = a stronger model reading the document again could plausibly fix it. */
-  escalate: boolean;
-}
+/** Why a document went to a human without the pipeline reading it (bounded: it is a metric label). */
+export type RouteReason =
+  'file_missing' | 'extraction_unavailable' | 'content_type_mismatch';
 
-type Outcome = 'ACCEPTED' | 'ESCALATE' | 'REVIEW';
-
-const STATEMENT_MAX_AGE_DAYS = 180;
-const MAX_ATTEMPTS = 2;
+/** The key a sealed value is bound to: a ciphertext copied to another row or attempt fails to open (R-08). */
+export const sealContext = (documentId: string, attempt: number) =>
+  `kyc:${documentId}:${attempt}`;
 
 /**
- * KYC extraction (SD-44, 10/10 #44):
- *  1. cheap model first, structured outputs (JSON schema, constrained) with
- *     a value + confidence + evidence per field,
- *  2. zod re-validation + business rules (IBAN mod-97, VAT checksum, names
- *     and numbers cross-checked against the questionnaire, dates),
- *  3. a failure a better reader could fix → ONE escalation to the strong
- *     model; anything still failing → human review queue.
- * The model has no tools, and the document is declared as data in the
- * prompt; its output is never trusted - rules decide, not confidence.
- * Every attempt is stored (masked + sealed), so redelivery resumes where it
- * stopped and reviewers see what each model read.
+ * KYC extraction (SD-44, S04 FR-020…FR-028):
+ *  1. claim the document with a lease (`QUEUED → EXTRACTING`); a second worker, a redelivery or a message for a decided
+ *     document finds nothing to claim and acknowledges without effect,
+ *  2. the cheap model first (structured output, no tools, 45 s, no retry: the queue is the retry layer), strict
+ *     re-validation, business rules decide - not the model's confidence,
+ *  3. a failure a better reader could fix → ONE escalation; anything still failing → the human review queue,
+ *  4. a conditional finish asserts one row: a document superseded meanwhile discards the result.
+ * The storage read and the model calls happen outside any transaction (III.3); the claim and the finish are short ones.
+ * Every attempt is stored once (masked view + sealed copy bound to its row and attempt), so a redelivery resumes where
+ * the previous worker stopped and attempt 1 is never paid twice.
  */
 @Injectable()
 export class ExtractionService {
   private readonly logger = new Logger(ExtractionService.name);
-  private readonly outcomes = metrics
-    .getMeter('onboarding')
-    .createCounter('kyc_extraction_outcomes_total');
 
   constructor(
-    @InjectConnection() private readonly sequelize: Sequelize,
+    @Inject(APPLICATIONS) private readonly applications: ApplicationRepository,
+    @Inject(DOCUMENTS) private readonly documents: DocumentRepository,
+    @Inject(ATTEMPTS) private readonly attempts: AttemptRepository,
+    @Inject(REVIEW_TASKS) private readonly tasks: ReviewTaskRepository,
+    @Inject(STATUS_HISTORY) private readonly history: StatusHistoryRepository,
     @Inject(LLM_PROVIDER) private readonly llm: LlmProvider,
+    @Inject(EXTRACTION_CONFIG) private readonly config: ExtractionConfig,
+    @Inject(CLOCK) private readonly clock: Clock,
     private readonly recorder: LlmCallRecorder,
     private readonly storage: ObjectStorage,
     private readonly secrets: SecretBox,
-    private readonly verification: VerificationService,
-    private readonly config: ApiConfigService,
+    private readonly verification: VerificationPolicyService,
+    private readonly transactions: TransactionRunner,
   ) {}
 
   private modelFor(attempt: number) {
     return attempt === 1
-      ? (this.config.get('onboarding_extraction_model') ?? 'claude-haiku-4-5')
-      : (this.config.get('onboarding_escalation_model') ?? 'claude-opus-5-5');
+      ? this.config.extractionModel
+      : this.config.escalationModel;
   }
 
-  /** SQS/Lambda handler body. Provider errors propagate (SQS retries, then DLQ); everything else ends in APPROVED or NEEDS_REVIEW. */
+  /**
+   * SQS/Lambda handler body. A provider error propagates (the queue retries, then dead-letters); the lease is released
+   * first so the redelivery can take the document at once. Everything else ends in APPROVED or NEEDS_REVIEW.
+   */
   async process(documentId: string): Promise<void> {
-    const [doc] = await this.sequelize.query<ShopDocumentRow>(
-      `UPDATE "ShopDocument" SET status = 'EXTRACTING', "updatedAt" = now() WHERE id = :documentId AND status IN ('QUEUED', 'EXTRACTING') RETURNING *`,
-      { type: QueryTypes.SELECT, replacements: { documentId } },
-    );
-    if (!doc) return; // already decided, superseded, or not uploaded
+    const started = this.clock.now();
+    const doc = await this.claim(documentId);
+    if (!doc) return; // decided, superseded, held by another worker, or unknown
 
-    const [onboarding] = await this.sequelize.query<{ answers: Answers }>(
-      `SELECT answers FROM "ShopOnboarding" WHERE "shopId" = :shopId`,
-      {
-        type: QueryTypes.SELECT,
-        replacements: { shopId: doc.shopId },
-      },
-    );
-
-    const previous = await this.sequelize.query<{
-      attempt: number;
-      outcome: Outcome;
-      issues: Issue[];
-    }>(
-      `SELECT attempt, outcome, issues FROM "DocumentExtraction" WHERE "documentId" = :documentId ORDER BY attempt`,
-      { type: QueryTypes.SELECT, replacements: { documentId } },
-    );
-    let last = previous.at(-1);
-
-    const bytes =
-      last && last.outcome !== 'ESCALATE' ? null : await this.read(doc);
-    const sniffed = bytes ? sniff(bytes) : doc.contentType;
-    if (bytes && sniffed !== doc.contentType) {
-      return this.finish(doc, 'REVIEW', [
-        { field: null, code: 'content_type_mismatch', escalate: false },
-      ]);
+    try {
+      await this.read(doc, started);
+    } catch (error) {
+      await this.releaseLease(doc.id);
+      throw error;
     }
+  }
 
-    for (
-      let attempt = (last?.attempt ?? 0) + 1;
-      attempt <= MAX_ATTEMPTS && (!last || last.outcome === 'ESCALATE');
-      attempt++
-    ) {
+  private async read(doc: ClaimedDocument, started: Date): Promise<void> {
+    const application = await this.applications.find(doc.shopId);
+    const answers: Answers | null = application?.answers ?? null;
+    const previous = await this.attempts.list(doc.id);
+    const last = previous.at(-1) ?? null;
+    let attempt = (last?.attempt ?? 0) + 1;
+
+    // A previous worker stored a final attempt but died before finishing: finish with what it decided.
+    if (last && last.outcome !== 'ESCALATE')
+      return this.finish(doc, last.outcome, last.issues, started);
+
+    const head = await this.storage.head(doc.storageKey);
+    if (!head) return this.routeClaimed(doc, 'file_missing', started);
+    const bytes = await this.readBytes(doc);
+    if (detectFileType(bytes) !== doc.contentType)
+      return this.routeClaimed(doc, 'content_type_mismatch', started);
+
+    let outcome: ExtractionOutcome = last?.outcome ?? 'ESCALATE';
+    let issues: Issue[] = last?.issues ?? [];
+    for (; attempt <= this.config.maxAttempts && outcome === 'ESCALATE'; attempt++) {
       const model = this.modelFor(attempt);
-      const started = Date.now();
+      const callStarted = this.clock.now();
       const result = await this.llm.complete({
         model,
         system: [
@@ -137,7 +144,7 @@ export class ExtractionService {
           {
             role: 'user',
             content: [
-              documentBlock(doc.contentType, bytes!),
+              documentBlock(doc.contentType, bytes),
               {
                 type: 'text',
                 text: `This was uploaded as: ${doc.kind}. Extract the fields.`,
@@ -148,10 +155,216 @@ export class ExtractionService {
         maxTokens: 2_000,
         effort: 'low',
         outputSchema: jsonSchemaFor(doc.kind),
-        // The queue is this job's retry layer (AS-77): one attempt, bounded.
-        timeoutMs: 45_000,
+        // The queue is this job's retry layer: one bounded attempt per delivery.
+        timeoutMs: this.config.modelTimeoutMs,
         maxRetries: 0,
       });
+      await this.meter(doc, attempt, model, result, callStarted);
+
+      const evaluated = evaluateExtraction(
+        doc.kind,
+        {
+          refused: result.stopReason === 'refusal',
+          text: textOf(result.content),
+        },
+        answers,
+        this.clock.now(),
+        {
+          nameMatchThreshold: this.config.nameMatchThreshold,
+          statementMaxAgeDays: this.config.statementMaxAgeDays,
+        },
+      );
+      issues = evaluated.issues;
+      outcome = outcomeFor(issues, attempt, this.config.maxAttempts);
+      await this.attempts.insert({
+        documentId: doc.id,
+        attempt,
+        model: result.model,
+        promptVersion: PROMPT_VERSION,
+        fields: evaluated.extraction ? masked(evaluated.extraction) : {},
+        sealedFields: this.secrets.seal(
+          JSON.stringify(evaluated.extraction ?? null),
+          sealContext(doc.id, attempt),
+        ),
+        issues,
+        outcome,
+        inputTokens: result.usage.inputTokens,
+        outputTokens: result.usage.outputTokens,
+        now: this.clock.now(),
+      });
+      onboardingMetrics.outcomes.add(1, {
+        kind: doc.kind,
+        attempt: String(attempt),
+        outcome,
+      });
+    }
+
+    await this.finish(
+      doc,
+      outcome === 'ACCEPTED' ? 'ACCEPTED' : 'REVIEW',
+      issues,
+      started,
+    );
+  }
+
+  /**
+   * Sends a document to a human without (further) reading: a message parked in the dead-letter queue
+   * (`extraction_unavailable`), a missing object, a type mismatch. Idempotent: a document that is not waiting for the
+   * pipeline (`QUEUED`, or `EXTRACTING` whose worker is gone) is left alone. It claims first (`QUEUED → EXTRACTING`),
+   * then moves `EXTRACTING → NEEDS_REVIEW`, so the status machine stays as specified.
+   */
+  async routeToReview(documentId: string, reason: RouteReason): Promise<void> {
+    const now = this.clock.now();
+    await this.transactions.run(async () => {
+      const doc = await this.documents.findById(documentId);
+      if (!doc) return;
+      if (doc.status === 'QUEUED') {
+        const claimed = await this.documents.claim({
+          id: doc.id,
+          now,
+          leaseUntil: new Date(now.getTime() + this.config.leaseMs),
+        });
+        if (!claimed) return;
+        await this.history.append({
+          entity: 'DOCUMENT',
+          entityId: doc.id,
+          shopId: doc.shopId,
+          fromStatus: 'QUEUED',
+          toStatus: 'EXTRACTING',
+          actor: 'worker',
+          at: now,
+        });
+      } else if (doc.status !== 'EXTRACTING') return;
+      await this.moveToReview(doc, [{ field: null, code: reason, escalate: false }], now);
+    });
+    onboardingMetrics.failures.add(1, { reason });
+  }
+
+  private async claim(documentId: string): Promise<ClaimedDocument | null> {
+    const now = this.clock.now();
+    return this.transactions.run(async () => {
+      const claimed = await this.documents.claim({
+        id: documentId,
+        now,
+        leaseUntil: new Date(now.getTime() + this.config.leaseMs),
+      });
+      if (claimed && claimed.previousStatus === 'QUEUED')
+        await this.history.append({
+          entity: 'DOCUMENT',
+          entityId: claimed.id,
+          shopId: claimed.shopId,
+          fromStatus: 'QUEUED',
+          toStatus: 'EXTRACTING',
+          actor: 'worker',
+          at: now,
+        });
+      return claimed;
+    });
+  }
+
+  private async releaseLease(documentId: string): Promise<void> {
+    try {
+      await this.documents.releaseLease(documentId, this.clock.now());
+    } catch (error) {
+      // the lease lapses by itself after leaseMs: the redelivery is late, not lost
+      this.logger.warn(
+        `could not release the lease of document ${documentId}: ${(error as Error).name}`,
+      );
+    }
+  }
+
+  private async routeClaimed(
+    doc: ClaimedDocument,
+    reason: RouteReason,
+    started: Date,
+  ): Promise<void> {
+    onboardingMetrics.failures.add(1, { reason });
+    await this.finish(
+      doc,
+      'REVIEW',
+      [{ field: null, code: reason, escalate: false }],
+      started,
+    );
+  }
+
+  /**
+   * The conditional finish (A7): one short transaction. When the document is no longer `EXTRACTING` (superseded while
+   * the model was reading) the result is discarded - no task, no verification, no event.
+   */
+  private async finish(
+    doc: DocumentRecord,
+    outcome: ExtractionOutcome,
+    issues: Issue[],
+    started: Date,
+  ): Promise<void> {
+    const now = this.clock.now();
+    const approved = outcome === 'ACCEPTED';
+    await this.transactions.run(async () => {
+      if (approved) {
+        if (!(await this.documents.finish({ id: doc.id, to: 'APPROVED', now })))
+          return;
+        await this.history.append({
+          entity: 'DOCUMENT',
+          entityId: doc.id,
+          shopId: doc.shopId,
+          fromStatus: 'EXTRACTING',
+          toStatus: 'APPROVED',
+          actor: 'worker',
+          at: now,
+        });
+        await this.verification.evaluate(doc.shopId);
+      } else {
+        await this.moveToReview(doc, issues, now);
+      }
+    });
+    onboardingMetrics.duration.record(
+      Math.max(0, now.getTime() - started.getTime()) / 1000,
+      { kind: doc.kind, outcome: approved ? 'approved' : 'review' },
+    );
+  }
+
+  /** `EXTRACTING → NEEDS_REVIEW` plus the one open task, inside the caller's transaction. */
+  private async moveToReview(
+    doc: DocumentRecord,
+    issues: Issue[],
+    now: Date,
+  ): Promise<void> {
+    if (!(await this.documents.finish({ id: doc.id, to: 'NEEDS_REVIEW', now })))
+      return;
+    await this.history.append({
+      entity: 'DOCUMENT',
+      entityId: doc.id,
+      shopId: doc.shopId,
+      fromStatus: 'EXTRACTING',
+      toStatus: 'NEEDS_REVIEW',
+      actor: 'worker',
+      at: now,
+    });
+    await this.tasks.open({
+      documentId: doc.id,
+      shopId: doc.shopId,
+      reasons: issues,
+      now,
+    });
+  }
+
+  /** Reports one call to the metering path; a metering failure never fails the extraction. */
+  private async meter(
+    doc: DocumentRecord,
+    attempt: number,
+    model: string,
+    result: Awaited<ReturnType<LlmProvider['complete']>>,
+    callStarted: Date,
+  ): Promise<void> {
+    onboardingMetrics.tokens.add(result.usage.inputTokens, {
+      model,
+      direction: 'input',
+    });
+    onboardingMetrics.tokens.add(result.usage.outputTokens, {
+      model,
+      direction: 'output',
+    });
+    try {
       await this.recorder.record({
         subjectId: doc.shopId,
         scopeId: doc.id,
@@ -162,199 +375,20 @@ export class ExtractionService {
         outcome: result.stopReason === 'refusal' ? 'refused' : 'completed',
         result,
         ttftMs: null,
-        durationMs: Date.now() - started,
+        durationMs: Math.max(0, this.clock.now().getTime() - callStarted.getTime()),
       });
-
-      const { extraction, issues } = this.evaluate(
-        doc.kind,
-        result,
-        onboarding?.answers ?? null,
-      );
-      const outcome: Outcome = !issues.length
-        ? 'ACCEPTED'
-        : attempt < MAX_ATTEMPTS && issues.some((i) => i.escalate)
-          ? 'ESCALATE'
-          : 'REVIEW';
-      await this.sequelize.query(
-        `INSERT INTO "DocumentExtraction" ("documentId", attempt, model, "promptVersion", fields, "sealedFields", issues, outcome, "inputTokens", "outputTokens")
-         VALUES (:documentId, :attempt, :model, :promptVersion, CAST(:fields AS jsonb), :sealed, CAST(:issues AS jsonb), :outcome, :inputTokens, :outputTokens)
-         ON CONFLICT ("documentId", attempt) DO NOTHING`,
-        {
-          replacements: {
-            documentId: doc.id,
-            attempt,
-            model: result.model,
-            promptVersion: PROMPT_VERSION,
-            fields: JSON.stringify(extraction ? masked(extraction) : {}),
-            sealed: this.secrets.seal(JSON.stringify(extraction ?? null)),
-            issues: JSON.stringify(issues),
-            outcome,
-            inputTokens: result.usage.inputTokens,
-            outputTokens: result.usage.outputTokens,
-          },
-        },
-      );
-      this.outcomes.add(1, { kind: doc.kind, attempt, outcome });
-      last = { attempt, outcome, issues };
+    } catch (error) {
+      onboardingMetrics.failures.add(1, { reason: 'metering_failed' });
+      this.logger.warn(`call usage not recorded: ${(error as Error).name}`);
     }
-
-    await this.finish(
-      doc,
-      last!.outcome === 'ACCEPTED' ? 'ACCEPTED' : 'REVIEW',
-      last!.issues,
-    );
   }
 
-  /** Model output → zod → rules. Pure apart from `now`; exported behaviour is covered by the e2e spec. */
-  evaluate(
-    kind: DocumentKind,
-    result: LlmResult,
-    answers: Answers | null,
-  ): { extraction: Extraction | null; issues: Issue[] } {
-    if (result.stopReason === 'refusal')
-      return {
-        extraction: null,
-        issues: [{ field: null, code: 'model_refused', escalate: false }],
-      };
-    let extraction: Extraction;
-    try {
-      extraction = extractionZod(kind).parse(
-        JSON.parse(textOf(result.content)),
-      );
-    } catch {
-      return {
-        extraction: null,
-        issues: [{ field: null, code: 'invalid_output', escalate: true }],
-      };
-    }
-
-    const issues: Issue[] = [];
-    const add = (field: string | null, code: string, escalate: boolean) =>
-      issues.push({ field, code, escalate });
-    const v = (f: string) => extraction.fields[f]?.value ?? null;
-
-    if (!extraction.legible) add(null, 'illegible', false);
-    if (extraction.documentType !== kind)
-      add(null, 'wrong_document_type', true);
-    for (const f of FIELDS[kind]) {
-      const fv = extraction.fields[f];
-      if (!fv?.value || fv.confidence === 'low')
-        add(f, 'missing_or_low_confidence', true);
-    }
-
-    const business = answers?.business;
-    const nameField = kind === 'BANK_STATEMENT' ? 'accountHolder' : 'legalName';
-    const name = v(nameField);
-    if (name && business && !namesMatch(name, business.businessName))
-      add(nameField, 'name_mismatch', false);
-
-    switch (kind) {
-      case 'BUSINESS_REGISTRATION': {
-        const country = v('country');
-        if (country && business && country.toUpperCase() !== business.country)
-          add('country', 'country_mismatch', false);
-        const reg = v('registrationNumber');
-        if (
-          reg &&
-          business &&
-          compact(reg) !== compact(business.registrationNumber)
-        )
-          add('registrationNumber', 'registration_number_mismatch', true);
-        const issued = v('issueDate');
-        if (issued && !(Date.parse(issued) <= Date.now()))
-          add('issueDate', 'invalid_date', true);
-        break;
-      }
-      case 'VAT_CERTIFICATE': {
-        const vat = v('vatNumber');
-        const country = v('country') ?? business?.country ?? '';
-        if (vat && !isValidVat(country.toUpperCase(), vat))
-          add('vatNumber', 'vat_checksum', true);
-        const declared = answers?.tax.vatNumber;
-        if (
-          vat &&
-          declared &&
-          stripPrefix(normalizeVat(vat)) !== stripPrefix(normalizeVat(declared))
-        )
-          add('vatNumber', 'vat_mismatch', true);
-        break;
-      }
-      case 'BANK_STATEMENT': {
-        const iban = v('iban');
-        if (iban && !isValidIban(iban)) add('iban', 'iban_checksum', true);
-        const date = v('statementDate');
-        if (date) {
-          const age = (Date.now() - Date.parse(date)) / 86_400_000;
-          if (!(age >= 0 && age <= STATEMENT_MAX_AGE_DAYS))
-            add('statementDate', 'statement_too_old', false);
-        }
-        break;
-      }
-    }
-    return { extraction, issues };
-  }
-
-  private async finish(
-    doc: ShopDocumentRow,
-    outcome: 'ACCEPTED' | 'REVIEW',
-    issues: Issue[],
-  ) {
-    // S54 T037 audit: explicit unit of work, opens its own transaction by design; no network I/O inside.
-    await this.sequelize.transaction(async (transaction) => {
-      await this.sequelize.query(
-        `UPDATE "ShopDocument" SET status = :status, "updatedAt" = now() WHERE id = :id AND status = 'EXTRACTING'`,
-        {
-          transaction,
-          replacements: {
-            id: doc.id,
-            status: outcome === 'ACCEPTED' ? 'APPROVED' : 'NEEDS_REVIEW',
-          },
-        },
-      );
-      if (outcome === 'REVIEW') {
-        await this.sequelize.query(
-          `INSERT INTO "ReviewTask" ("documentId", "shopId", reasons) VALUES (:documentId, :shopId, CAST(:reasons AS jsonb))
-           ON CONFLICT ("documentId") WHERE status = 'OPEN' DO NOTHING`,
-          {
-            transaction,
-            replacements: {
-              documentId: doc.id,
-              shopId: doc.shopId,
-              reasons: JSON.stringify(issues),
-            },
-          },
-        );
-      }
-    });
-    if (outcome === 'ACCEPTED') await this.verification.maybeVerify(doc.shopId);
-  }
-
-  private async read(doc: ShopDocumentRow): Promise<Buffer> {
+  private async readBytes(doc: DocumentRecord): Promise<Buffer> {
     const parts: Buffer[] = [];
     for await (const part of await this.storage.getStream(doc.storageKey))
       parts.push(part as Buffer);
     return Buffer.concat(parts);
   }
-}
-
-/** Trust the bytes, not the declared content type. */
-export function sniff(bytes: Buffer): string | null {
-  if (bytes.subarray(0, 5).toString('latin1') === '%PDF-')
-    return 'application/pdf';
-  if (bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff)
-    return 'image/jpeg';
-  if (
-    bytes
-      .subarray(0, 8)
-      .equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))
-  )
-    return 'image/png';
-  if (
-    bytes.subarray(0, 4).toString('latin1') === 'RIFF' &&
-    bytes.subarray(8, 12).toString('latin1') === 'WEBP'
-  )
-    return 'image/webp';
-  return null;
 }
 
 function documentBlock(
@@ -378,7 +412,7 @@ function documentBlock(
 }
 
 /** Loggable/displayable view: sensitive values masked, evidence dropped (it quotes the sensitive value). */
-function masked(extraction: Extraction) {
+export function masked(extraction: Extraction) {
   return {
     documentType: extraction.documentType,
     legible: extraction.legible,
@@ -394,6 +428,3 @@ function masked(extraction: Extraction) {
     ),
   };
 }
-
-const compact = (s: string) => s.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
-const stripPrefix = (vat: string) => vat.replace(/^[A-Z]{2}/, '');

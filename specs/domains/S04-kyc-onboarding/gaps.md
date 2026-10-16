@@ -32,7 +32,7 @@ The implementation agent's to-do list. Paths are under `packages/backend/` unles
 | A24 | Review queue returns a bare array limited by `limit`, ordered by `createdAt` only (no tiebreaker), no cursor, `LEFT JOIN LATERAL` over another table's rows is fine (own tables) but the order is not deterministic | `application/review.service.ts:38-56`; `api/onboarding.controller.ts:72-75` | FR-030, AS-37, AS-38; keyset on `(createdAt, id)` |
 | A25 | Human approval does not require key fields; corrections of non-sensitive fields stored unmasked and unbounded | `application/review.service.ts:85-98` | FR-032, AS-42 |
 | A26 | No audit of resolves or file-link issues; no queue-age, duration, token or failure metrics (only three counters) | `application/review.service.ts:28-29,56,121`; `application/extraction.service.ts:42` | FR-035, FR-070, AS-48, AS-66 |
-| A27 | Events: aggregate/topic `shops`, no `submissionNo`, no `shop.rejected`, no `shop.onboarding_document_rejected`; verification event written with version arg `2` for `ShopVerified.create` | `application/events/onboarding-events.ts:4-14`; `application/verification.service.ts:55` | AS-54, Provides (topic `shop-onboarding`) |
+| A27 | Events: aggregate/topic `shops`, no `submissionNo`, no `shop.rejected`, no `shop.onboarding_document_rejected`; verification event written with version arg `2` for `ShopVerified.create` | `application/events/onboarding-events.ts:4-14`; `application/verification.service.ts:55` | AS-54, Provides (topic `shops.events`, kept) |
 | A28 | Purge job: scheduled only on verification, payload `{shopId}`, raw SQL in `infra/` with `now()` in SQL, deletes inside a loop with per-file updates, no per-round scope, no rejection or shop-deletion trigger, no erase job, no consumer of `tenancy.shop_deleted` | `infra/onboarding.jobs.ts:19-33`; `application/verification.service.ts:56-60` | FR-050, AS-58–AS-61 |
 | A29 | No status history, so transitions are not auditable; document and application transitions are not asserted as one-row conditional updates everywhere | all services (`UPDATE "ShopDocument" … WHERE id = :id` in `review.service.ts:70,103,105`) | FR-062, AS-70 |
 | A30 | Modules import other domains' internals: `LlmModule`, `LlmMeter`, `LLM_PROVIDER`, `LlmTurnResult`, `textOf`, `LlmUnavailableError` from `assistant`; `UsageService` from `billing`; ClickHouse and Kafka producer modules (the extraction Lambda boots analytics clients it should not need); `SecretBox` and `AuthModule` from identity | `onboarding.module.ts:7-10,15,34`; `application/extraction.service.ts:9,17`; `apps/lambdas/src/handlers/document-extractor.ts:7` | FR-060, debt D-14, S46 (port in `libs/infrastructure/llm`, metering by `llm.call_completed`), AS-62 |
@@ -81,3 +81,25 @@ Other cross-domain edges the static check cannot see but the spec bans: the two 
 6. Review: pagination, decisions, conflict of interest, audit, metrics (A23–A26).
 7. Retention jobs and the `shop_deleted` consumer (A28).
 8. Rewrite the e2e into the seven files of `test-plan.md` (A37) and run them green (VII.9).
+
+## Spec changes
+
+None. No `docs/spec/capabilities/S04-*.md` page and no `*.reviewed.json` exists for S04, so nothing a human signed is changed. `spec.md` AS-36 was amended to the usage purpose `extraction` (it said `kyc_extraction`); the shipped S46 recorder accepts only `chat|summary|extraction|rag`, so `extraction` is sent (research.md R-07).
+
+## Sibling-spec follow-ups
+
+- **S03**: no change needed. S04 keeps aggregate `shops`, so the topic stays `shops.events` (`SHOP_EVENTS_TOPIC`, `libs/domains/tenancy/domain/events.ts:178`) and the events stay at contract version 1 (tenancy's `consumedEvent` matches only v1). Payloads now also carry `submissionNo` (additive; use it to order rounds). S04 owns the `defineEvent` registrations; tenancy must not register them. Decision: `questions.md` → RESOLVED (agent decision).
+- **S28**: change `NOTIFICATION_SOURCE_TOPICS.shopOnboarding` (`libs/domains/notifications/infra/notifications.topics.ts:10`) from `shop-onboarding` to `shops.events` (a topic is `<aggregateType>.events`; a hyphenated name cannot be produced). New event `shop.onboarding_document_rejected {shopId, documentId, kind, reason}` is available; confirm field names against `packages/contracts`.
+- **S46**: onboarding calls use `purpose: "extraction"` (S04's AS-36 said `kyc_extraction`).
+- **S50**: declare policies `onboarding.upload.shop` (20/hour) and `onboarding.submit.shop` (10/day), fail-closed.
+- **S55**: wire the dead-letter handler `document-extractor-dlq` for queue `onboarding-documents` (max receives 5, visibility at least 270 s).
+- **S53**: the single-consumer command `onboarding.extract_document` goes through `appendTask`.
+
+## Follow-ups received from built specs (requirements, all planned)
+
+| From | Requirement | Plan group |
+|---|---|---|
+| S01 | `SecretBox.seal/open` context `kyc:<documentId>:<attempt>` | E (A14) |
+| S03 | emit the three `shop.*` events with `{shopId}`; stop `UPDATE "Shop"` at `onboarding-session.service.ts:59` and `verification.service.ts:49`; `ShopQueryService` at `review.service.ts:43`; topic discrepancy | C (A1-A3, A27) |
+| S28 | confirm topic names and payloads against the shipped schemas in `packages/contracts` | C |
+| S46 | imports from `@app/infrastructure/llm`; `maxRetries: 0`, `timeoutMs: 45000`, `callId`, `purpose: "extraction"` | E (A10, A30) |

@@ -103,7 +103,7 @@ Each queued document is read by a cheap model; the model's answer is untrusted d
 12. **AS-33** — **Given** a document superseded while its extraction is in flight, **When** the model answer arrives, **Then** the attempt may be recorded but the document stays `SUPERSEDED`, no review task is created, no verification is evaluated, and no event is published.
 13. **AS-34** — **Given** a queue message whose body is not JSON, lacks `documentId` or has a `documentId` that is not a UUID, **When** the handler runs, **Then** it is reported as a failed batch item with no model call and no row change, and the other items of the batch are processed.
 14. **AS-35** — **Given** a document whose stored object is missing at processing time, **When** processed, **Then** the document ends `NEEDS_REVIEW` with `file_missing` and no model call; **Given** a transient storage error, **Then** the error propagates for redelivery.
-15. **AS-36** — **Given** each model call, **When** it completes, **Then** one usage record `{subjectId: shopId, scopeId: documentId, callId: "<documentId>:<attempt>", purpose: "kyc_extraction"}` is reported to the metering path of S46 and the token counts are on the attempt row; **When** metering fails, **Then** extraction still completes.
+15. **AS-36** — **Given** each model call, **When** it completes, **Then** one usage record `{subjectId: shopId, scopeId: documentId, callId: "<documentId>:<attempt>", purpose: "extraction"}` is reported to the metering path of S46 and the token counts are on the attempt row; **When** metering fails, **Then** extraction still completes.
 
 ---
 
@@ -322,7 +322,7 @@ Earlier specs searched (`grep -rl` over `specs/domains`, `specs/web`, `specs/jou
   - `POST /shops/:shopId/onboarding/documents/:documentId/uploaded` → `200 {id, kind, status, rejectionReason}`.
   - `GET /admin/onboarding/reviews?kind&limit&cursor` → `200 {items, nextCursor}`; `POST /admin/onboarding/reviews/:taskId/resolve {decision: 'APPROVE'|'REJECT'|'REJECT_APPLICATION', corrections?, reason?, reasonCode?}` → `200 {status: 'APPROVED'|'REJECTED'|'APPLICATION_REJECTED', shopVerified: boolean}`.
   - Shop routes use `ShopScoped('shop.manage')`; admin routes use `Firewall({ roles: [ADMIN, MODERATOR], sensitive: true })`.
-- Events (outbox → topic `shop-onboarding`, keyed by `shopId`; envelope `{eventId, type, version, occurredAt, aggregateId: shopId}`):
+- Events (outbox → topic `shops.events` (aggregate type `shops`; topics are `<aggregateType>.events`), keyed by `shopId`; envelope `{eventId, type, version, occurredAt, aggregateId: shopId}`):
   - `shop.onboarding_submitted` v1 `{shopId, submissionNo, country, legalForm, requiredDocuments}`.
   - `shop.verified` v1 `{shopId, submissionNo, verifiedAt}`.
   - `shop.rejected` v1 `{shopId, submissionNo, rejectedAt, reasonCode}`.

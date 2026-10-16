@@ -232,3 +232,7 @@ interviews) until its status says so. The implementation loop appends here (rule
 | S07 | SC-006: progress at least once per second at 20,000 rows/s; seller learns every refused row's cause without support | same file (SC-001 run timestamps; W04 usability check) | not run |
 | S07 | SC-008: 10,000-row import and 3-row report download in under 3 minutes of interaction | same file (manual run on the W04 page) | not run |
 | S07 | Edge (AS-29, FR-044): user-content origin sends `nosniff`; storage lifecycle aborts incomplete uploads and expires sources after 7 days | same file (`curl -I` on a presigned report link; Terraform plan) | not run |
+| S04 | SC-002: 100 rounds of 10 simultaneous submits give one application and one event each | `specs/domains/S04-kyc-onboarding/quickstart.md`, "Ops artifacts" (AS-06 loop at full size) | not run |
+| S04 | SC-006: the platform is told within 60 s of the last approval | same file (relay on a real stack) | not run |
+| S04 | SC-007: verified within 5 min at normal load; parked documents in review within 15 min | same file (staging run) | not run |
+| S04 | SC-008: a reviewer resolves a typical task in at most 3 interactions | same file (moderator console journey, screens not built) | not run |

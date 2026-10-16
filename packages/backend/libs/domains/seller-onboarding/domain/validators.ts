@@ -65,6 +65,21 @@ export const maskIban = (raw: string) => {
     : '••••';
 };
 
+/** Keeps the country prefix and the last three characters; the length of the original is not revealed. */
+export const maskVat = (raw: string) => {
+  const vat = normalizeVat(raw);
+  if (vat.length <= 5) return '••••';
+  return /^[A-Z]{2}/.test(vat)
+    ? `${vat.slice(0, 2)} •••• ${vat.slice(-3)}`
+    : `•••• ${vat.slice(-3)}`;
+};
+
+/** Account holder / legal name: the initial of each word only. */
+export const maskHolder = (raw: string) => {
+  const words = raw.trim().split(/\s+/).filter(Boolean);
+  return words.length ? words.map((w) => `${w[0]}•••`).join(' ') : '••••';
+};
+
 /** EU VAT number formats (without the country prefix). Greece uses "EL". */
 const VAT_FORMATS: Record<string, RegExp> = {
   AT: /^U\d{8}$/,

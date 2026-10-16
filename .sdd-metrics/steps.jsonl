@@ -446,3 +446,9 @@
 {"run":"20261015T175230Z","capability":"S07","step":"repair-5","start":"2026-10-16T05:17:21Z","end":"2026-10-16T05:25:47Z","seconds":506,"result":"ok","attempt":1,"reason":"ok","code_changed":true}
 {"run":"20261015T175230Z","capability":"S07","step":"gate","start":"2026-10-16T05:25:47Z","end":"2026-10-16T05:35:36Z","seconds":589,"result":"pass","attempt":6,"reason":""}
 {"run":"20261015T175230Z","capability":"S07","step":"built","start":"2026-10-16T03:21:20Z","end":"2026-10-16T05:35:36Z","seconds":8056,"result":"ok","attempt":1,"reason":"Bulk catalog import: multipart upload, AV scan, streamed parse, checkpoints, error report"}
+{"run":"20261015T175230Z","capability":"S04","step":"plan","start":"2026-10-16T05:35:58Z","end":"2026-10-16T05:39:03Z","seconds":185,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261015T175230Z","capability":"S04","step":"tasks","start":"2026-10-16T05:39:03Z","end":"2026-10-16T05:41:09Z","seconds":126,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261015T175230Z","capability":"S04","step":"analyze","start":"2026-10-16T05:41:09Z","end":"2026-10-16T05:42:04Z","seconds":55,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261015T175230Z","capability":"S04","step":"doctor-1","start":"2026-10-16T05:42:04Z","end":"2026-10-16T05:43:55Z","seconds":111,"result":"ok","attempt":1,"reason":"ok","code_changed":false}
+{"run":"20261015T175230Z","capability":"S04","step":"analyze","start":"2026-10-16T05:43:55Z","end":"2026-10-16T05:44:36Z","seconds":41,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261015T175230Z","capability":"S04","step":"implement-1","start":"2026-10-16T05:44:36Z","end":"2026-10-16T05:52:36Z","seconds":480,"result":"stopped","attempt":1,"reason":"deadline"}

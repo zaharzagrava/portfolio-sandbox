@@ -70,22 +70,28 @@ export function jsonSchemaFor(kind: DocumentKind): Record<string, unknown> {
   };
 }
 
-const FieldValue = z.object({
-  value: z.string().max(500).nullable(),
+export const MAX_VALUE_LENGTH = 500;
+export const MAX_EVIDENCE_LENGTH = 1000;
+
+const FieldValue = z.strictObject({
+  value: z.string().max(MAX_VALUE_LENGTH).nullable(),
   confidence: z.enum(['high', 'medium', 'low']),
-  evidence: z.string().max(1000).nullable(),
+  evidence: z.string().max(MAX_EVIDENCE_LENGTH).nullable(),
 });
 
-/** Never trust the model's JSON, even with constrained decoding: re-validate shape and lengths. */
+/**
+ * Never trust the model's JSON, even with constrained decoding: re-validate shape, lengths and confidence values.
+ * Strict at every level: an extra key anywhere is a failure (`invalid_output`), never silently stripped (A11).
+ */
 export const extractionZod = (kind: DocumentKind) =>
-  z.object({
+  z.strictObject({
     documentType: z.enum([
       'BUSINESS_REGISTRATION',
       'VAT_CERTIFICATE',
       'BANK_STATEMENT',
       'OTHER',
     ]),
-    fields: z.object(
+    fields: z.strictObject(
       Object.fromEntries(FIELDS[kind].map((f) => [f, FieldValue])) as Record<
         string,
         typeof FieldValue
