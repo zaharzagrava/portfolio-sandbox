@@ -1,229 +1,124 @@
-import { INestApplication, Module } from '@nestjs/common';
 import {
-  getConnectionToken,
-  getModelToken,
-  SequelizeModule,
-} from '@nestjs/sequelize';
-import { QueryTypes, Sequelize } from 'sequelize';
-import request from 'supertest';
-import { v4 } from 'uuid';
-import { generateTestingModule } from '@app/test/utils/global-modules';
-import { SeedsModule } from '@app/test/seeds/seeds.module';
-import { SeedsService } from '@app/test/seeds/seeds.service';
-import { ShopModel as Shop } from '@app/domains/tenancy';
-import Outbox from '@app/infrastructure/outbox/outbox.model';
-import { EventEnvelope } from '@app/infrastructure/events/event-envelope';
+  previewTokenSchema,
+  publicStorySchema,
+} from '@marketplace-sandbox/contracts';
 import {
-  StoriesModule,
-  StoryCacheModule,
-  StoryCacheInvalidator,
-} from './stories.module';
-import { StoriesService } from './application/stories.service';
-import { CdnPurger, LoggingPurger } from './infra/cache-invalidation';
+  createStoryApp,
+  expectContract,
+  type StoryTestApp,
+} from './testing/story-client';
 
-@Module({
-  imports: [
-    StoriesModule,
-    StoryCacheModule,
-    SequelizeModule.forFeature([Shop, Outbox]),
-  ],
-  providers: [StoryCacheInvalidator],
-})
-class SpecModule {}
-
-/** SD-05 against real Postgres + Redis. */
-describe('Brand stories CMS (e2e)', () => {
-  let app: INestApplication;
-  let seeds: SeedsService;
-  let stories: StoriesService;
-  const http = () => request(app.getHttpServer());
-
+/**
+ * One end-to-end walk through the story lifecycle (draft → publish → read → republish → preview). It replaces the
+ * former service-level spec; the per-scenario depth lives in the story-*.e2e-spec.ts files.
+ */
+describe('Brand stories: lifecycle walk-through', () => {
+  let t: StoryTestApp;
   beforeAll(async () => {
-    const moduleRef = await generateTestingModule([SpecModule, SeedsModule], {
-      stores: ['redis'],
-    });
-    app = moduleRef.createNestApplication();
-    app.setGlobalPrefix('api');
-    await app.init();
-    seeds = app.get(SeedsService);
-    stories = app.get(StoriesService);
+    t = await createStoryApp();
   });
-
   afterAll(async () => {
-    await app.close();
+    await t.close();
   });
 
-  beforeEach(async () => {
-    await seeds.clean();
-  });
+  const read = (shopSlug: string, slug: string, locale = 'en') =>
+    t.http().get(`/api/stories/${shopSlug}/${slug}/${locale}`);
 
-  const story = async () => {
-    const shop = await app
-      .get<typeof Shop>(getModelToken(Shop))
-      .create({ name: 'Apple', slug: `apple-${v4().slice(0, 6)}` });
-    const s = (await stories.create(shop.id, 'inside-iphone-18')) as {
-      id: string;
-    };
-    return { shopId: shop.id, shopSlug: shop.slug, storyId: s.id };
-  };
-
-  const blocks = (text: string) => [
-    { type: 'heading', level: 2, text },
-    {
-      type: 'richText',
-      html: '<p>Titanium. <script>alert(1)</script><a href="javascript:x()">x</a><a href="https://apple.com" onclick="steal()">site</a></p>',
-    },
-  ];
-
-  it('drafts are sanitized at write time and invisible until published; publish freezes a version with ETag + cache tags', async () => {
-    const s = await story();
-    const saved = await stories.saveDraft(s.shopId, s.storyId, 'en', {
-      title: 'Inside iPhone 18',
-      blocks: blocks('Design'),
-    });
-    const html = (saved.blocks[1] as { html: string }).html;
-    expect(html).not.toMatch(/script|javascript:|onclick/);
-    expect(html).toContain(
-      '<a href="https://apple.com" rel="noopener">site</a>',
-    );
-
-    await http().get(`/api/stories/${s.shopSlug}/inside-iphone-18`).expect(404);
-    await stories.publish(s.shopId, s.storyId);
-    const res = await http()
-      .get(`/api/stories/${s.shopSlug}/inside-iphone-18`)
+  it('S27 AS-05 AS-06: a draft is sanitised at write time and invisible until published', async () => {
+    const s = await t.seller();
+    await t.syncShop(s);
+    const story = await t.createStory(s, 'inside-iphone-18');
+    const saved = await t
+      .saveDraft(s, story.id, 'en', {
+        title: 'Inside',
+        blocks: [
+          {
+            type: 'richText',
+            html: '<p>Titanium. <script>alert(1)</script><a href="javascript:x()">x</a><a href="https://apple.com" onclick="steal()">site</a></p>',
+          },
+        ],
+      })
       .expect(200);
-    expect(res.body).toMatchObject({
-      version: 1,
-      locale: 'en',
-      title: 'Inside iPhone 18',
-    });
-    expect(res.headers['cache-control']).toContain(
-      'stale-while-revalidate=86400',
+    const html = JSON.stringify(saved.body);
+    expect(html).not.toMatch(/<script/);
+    expect(html).not.toMatch(/javascript:/);
+    expect(html).not.toMatch(/onclick/);
+    expect(html).toContain('Titanium');
+    await read(s.shopSlug, story.slug).expect(404);
+  });
+
+  it('S27 AS-20 AS-25: publishing makes version 1 public with the edge cache contract', async () => {
+    const s = await t.seller();
+    await t.syncShop(s);
+    const story = await t.published(s, { slug: 'inside-iphone-18' });
+    const res = await read(s.shopSlug, story.slug).expect(200);
+    const body = expectContract(publicStorySchema, res.body);
+    expect(body.id).toBe(story.id);
+    expect(body.version).toBe(1);
+    expect(body.preview).toBe(false);
+    expect(body.shopId).toBe(s.shopId);
+    expect(res.headers['cache-control']).toBe(
+      'public, s-maxage=300, stale-while-revalidate=86400',
     );
-    expect(res.headers['cache-tag']).toBe(
-      `story:${s.storyId},shop:${s.shopId}`,
-    );
-    await http()
-      .get(`/api/stories/${s.shopSlug}/inside-iphone-18`)
-      .set('If-None-Match', res.headers.etag)
+    expect(res.headers['cache-tag']).toBe(`story:${story.id},shop:${s.shopId}`);
+    expect(res.headers.etag).toBe(`"${story.id}-v1-en"`);
+    expect(res.headers['set-cookie']).toBeUndefined();
+  });
+
+  it('S27 AS-21 AS-23: a republish serves version 2 and a stale expectedVersion is refused', async () => {
+    const s = await t.seller();
+    await t.syncShop(s);
+    const story = await t.published(s);
+    await t.saveDraft(s, story.id, 'en', { title: 'Second' }, 1).expect(200);
+    await t.publish(s, story.id, { expectedVersion: 0 }).expect(409);
+    await t.publish(s, story.id, { expectedVersion: 1 }).expect(200);
+    const res = await read(s.shopSlug, story.slug).expect(200);
+    expect(res.body.version).toBe(2);
+    expect(res.body.title).toBe('Second');
+    expect(res.headers.etag).toBe(`"${story.id}-v2-en"`);
+    const stale = await read(s.shopSlug, story.slug)
+      .set('If-None-Match', `"${story.id}-v1-en"`)
+      .expect(200);
+    expect(stale.body.version).toBe(2);
+    await read(s.shopSlug, story.slug)
+      .set('If-None-Match', `"${story.id}-v2-en"`)
       .expect(304);
   });
 
-  it('locale fallback chain and hreflang alternates', async () => {
-    const s = await story();
-    await stories.saveDraft(s.shopId, s.storyId, 'en', {
-      title: 'Hello',
-      blocks: blocks('EN'),
-    });
-    await stories.saveDraft(s.shopId, s.storyId, 'uk', {
-      title: 'Привіт',
-      blocks: blocks('UK'),
-    });
-    await stories.publish(s.shopId, s.storyId);
-    expect(
-      (
-        await http()
-          .get(`/api/stories/${s.shopSlug}/inside-iphone-18?locale=uk-UA`)
-          .expect(200)
-      ).body,
-    ).toMatchObject({ locale: 'uk', title: 'Привіт' });
-    const fr = (
-      await http()
-        .get(`/api/stories/${s.shopSlug}/inside-iphone-18?locale=fr`)
-        .expect(200)
-    ).body;
-    expect(fr.locale).toBe('en');
-    expect(
-      fr.alternates.map((a: { locale: string }) => a.locale).sort(),
-    ).toEqual(['en', 'uk']);
+  it('S27 AS-27: a locale without a translation falls back to the default locale', async () => {
+    const s = await t.seller();
+    await t.syncShop(s);
+    const story = await t.published(s, { locales: ['en', 'fr'] });
+    const fr = await read(s.shopSlug, story.slug, 'fr').expect(200);
+    expect(fr.body.locale).toBe('fr');
+    const de = await read(s.shopSlug, story.slug, 'de').expect(200);
+    expect(de.body.locale).toBe('en');
+    const en = await read(s.shopSlug, story.slug, 'en').expect(200);
+    expect(de.body.canonical).toBe(en.body.canonical);
+    expect(de.body.alternates).toEqual(fr.body.alternates);
+    await read(s.shopSlug, 'no-such-story').expect(404);
   });
 
-  it('scheduled publish goes live only when its job runs; a reschedule makes the old job a no-op', async () => {
-    const s = await story();
-    await stories.saveDraft(s.shopId, s.storyId, 'en', {
-      title: 'Reveal',
-      blocks: blocks('Soon'),
-    });
-    const first = new Date(Date.now() + 3_600_000);
-    await stories.publish(s.shopId, s.storyId, first);
-    await http().get(`/api/stories/${s.shopSlug}/inside-iphone-18`).expect(404);
-
-    const second = new Date(Date.now() + 7_200_000);
-    await stories.publish(s.shopId, s.storyId, second);
-    expect(
-      await stories.publishScheduled({
-        storyId: s.storyId,
-        scheduledAt: first.toISOString(),
-      }),
-    ).toBeNull(); // stale job
-    expect(
-      await stories.publishScheduled({
-        storyId: s.storyId,
-        scheduledAt: second.toISOString(),
-      }),
-    ).toMatchObject({ status: 'PUBLISHED', version: 1 });
-    await http().get(`/api/stories/${s.shopSlug}/inside-iphone-18`).expect(200);
-  });
-
-  it('publish emits an event that purges the CDN by tags; republish serves the new version (read model refreshed)', async () => {
-    const s = await story();
-    await stories.saveDraft(s.shopId, s.storyId, 'en', {
-      title: 'v1',
-      blocks: blocks('1'),
-    });
-    await stories.publish(s.shopId, s.storyId);
-    await http().get(`/api/stories/${s.shopSlug}/inside-iphone-18`).expect(200); // warms Redis
-    await stories.saveDraft(s.shopId, s.storyId, 'en', {
-      title: 'v2',
-      blocks: blocks('2'),
-    });
-    await stories.publish(s.shopId, s.storyId);
-    expect(
-      (
-        await http()
-          .get(`/api/stories/${s.shopSlug}/inside-iphone-18`)
-          .expect(200)
-      ).body,
-    ).toMatchObject({ title: 'v2', version: 2 });
-
-    const rows = await app
-      .get<Sequelize>(getConnectionToken())
-      .query<{ payload: EventEnvelope }>(
-        `SELECT payload FROM "Outbox" WHERE "eventName" = 'story.published' AND "aggregateId" = :id`,
-        {
-          type: QueryTypes.SELECT,
-          replacements: { id: s.storyId },
-        },
-      );
-    await app.get(StoryCacheInvalidator).project(rows.map((r) => r.payload));
-    expect((app.get(CdnPurger) as LoggingPurger).purged.at(-1)).toEqual([
-      `story:${s.storyId}`,
-      `shop:${s.shopId}`,
-    ]);
-  });
-
-  it('preview tokens show drafts with no-store; the sitemap streams published URLs with hreflang', async () => {
-    const s = await story();
-    await stories.saveDraft(s.shopId, s.storyId, 'en', {
-      title: 'Draft only',
-      blocks: blocks('d'),
-    });
-    const { token } = await stories.previewToken(s.shopId, s.storyId, 'en');
-    const preview = await http()
-      .get(`/api/stories/preview?token=${token}`)
+  it('S27 AS-60 AS-61: a preview token shows the unpublished draft, uncacheable', async () => {
+    const s = await t.seller();
+    await t.syncShop(s);
+    const story = await t.createStory(s);
+    await t.saveDraft(s, story.id, 'en', { title: 'Draft only' }).expect(200);
+    const minted = await t
+      .post(s, `/api/shops/${s.shopId}/stories/${story.id}/preview-token`, {
+        locale: 'en',
+      })
       .expect(200);
-    expect(preview.body.title).toBe('Draft only');
-    expect(preview.headers['cache-control']).toBe('private, no-store');
-    await http().get('/api/stories/preview?token=forged').expect(404);
-
-    await stories.publish(s.shopId, s.storyId);
-    const sitemap = await http().get('/api/sitemaps/stories-0.xml').expect(200);
-    expect(sitemap.text).toContain(
-      `/en/brands/${s.shopSlug}/stories/inside-iphone-18</loc>`,
-    );
-    expect(sitemap.text).toContain('hreflang="en"');
-    expect(
-      (await http().get('/api/sitemaps/stories.xml').expect(200)).text,
-    ).toContain('stories-0.xml');
+    const { token } = expectContract(previewTokenSchema, minted.body);
+    const res = await t
+      .http()
+      .get('/api/stories/preview')
+      .set('X-Preview-Token', token)
+      .expect(200);
+    expect(res.body.title).toBe('Draft only');
+    expect(res.body.preview).toBe(true);
+    expect(res.headers['cache-control']).toBe('private, no-store');
+    expect(res.headers['x-robots-tag']).toBe('noindex, nofollow');
+    await read(s.shopSlug, story.slug).expect(404);
   });
 });

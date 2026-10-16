@@ -197,6 +197,8 @@ export const OWNERSHIP = {
   Story: 'domain:content',
   StoryDraft: 'domain:content',
   StoryVersion: 'domain:content',
+  StoryTransition: 'domain:content',
+  StoryShop: 'domain:content',
   // notifications
   NotificationPreference: 'domain:notifications',
   NotificationSettings: 'domain:notifications',

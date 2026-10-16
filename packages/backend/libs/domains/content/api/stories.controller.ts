@@ -1,217 +1,221 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
-  Headers,
-  NotFoundException,
+  HttpCode,
   Param,
-  ParseUUIDPipe,
   Post,
   Put,
   Query,
-  Res,
 } from '@nestjs/common';
-import { ApiProperty, ApiPropertyOptional, ApiTags } from '@nestjs/swagger';
-import type { Response } from 'express';
+import { ApiTags } from '@nestjs/swagger';
+import type { Request } from 'express';
 import {
-  IsArray,
-  IsISO8601,
-  IsObject,
-  IsOptional,
-  IsString,
-  Length,
-  Matches,
-} from 'class-validator';
-import { Firewall } from '@app/domains/identity';
+  previewTokenRequestSchema,
+  storyPublishRequestSchema,
+} from '@marketplace-sandbox/contracts';
+import { User, UserRawDto } from '@app/domains/identity';
+import { Idempotent } from '@app/infrastructure/idempotency';
 import { ShopScoped } from '@app/domains/tenancy';
+import { DraftsService } from '../application/drafts.service';
+import { LifecycleService } from '../application/lifecycle.service';
+import { PreviewService } from '../application/preview.service';
+import { PublishService } from '../application/publish.service';
+import { ScheduleService } from '../application/schedule.service';
 import { StoriesService } from '../application/stories.service';
-import { ApiConfigService } from '@app/common/config';
+import { validationFailed, versionNotFound } from '../domain/errors';
+import { LIMITS } from '../domain/limits';
+import { STORY_STATUSES, type StoryStatus } from '../domain/story-status';
+import {
+  IntQueryPipe,
+  LocaleParamPipe,
+  UuidParamPipe,
+  VersionParamPipe,
+  ZodPipe,
+} from './pipes';
 
-export class CreateStoryDto {
-  @ApiProperty() @Matches(/^[a-z0-9][a-z0-9-]{1,80}$/) slug: string;
-  @ApiPropertyOptional()
-  @IsOptional()
-  @Matches(/^[a-z]{2}(-[A-Z]{2})?$/)
-  defaultLocale?: string;
-}
+/** Key scope of a publish: per shop (S27 FR-013). */
+const publishScope = (req: Request) =>
+  `shop:${String(req.params.shopId).toLowerCase()}`;
 
-export class DraftDto {
-  @ApiProperty() @IsString() @Length(1, 200) title: string;
-  @ApiProperty() @IsArray() blocks: unknown[];
-  @ApiPropertyOptional() @IsOptional() @IsObject() seo?: Record<
-    string,
-    unknown
-  >;
-}
+const storyId = () => Param('storyId', new UuidParamPipe('storyId'));
+const locale = () => Param('locale', new LocaleParamPipe());
+const version = () => Param('version', new VersionParamPipe(versionNotFound));
 
-export class PublishDto {
-  @ApiPropertyOptional({ description: 'ISO time; omitted = now' })
-  @IsOptional()
-  @IsISO8601()
-  at?: string;
-}
+type PublishBody = ReturnType<typeof storyPublishRequestSchema.parse>;
+type PreviewBody = ReturnType<typeof previewTokenRequestSchema.parse>;
 
-const SITEMAP_PAGE = 50_000; // protocol limit per sitemap file
-
+/** Staff routes (S27 "Provides"): the list needs `products.read`, everything else `products.write` of the shop in the path. */
 @ApiTags('stories')
 @Controller()
 export class StoriesController {
   constructor(
     private readonly stories: StoriesService,
-    private readonly config: ApiConfigService,
+    private readonly drafts: DraftsService,
+    private readonly publisher: PublishService,
+    private readonly schedules: ScheduleService,
+    private readonly lifecycle: LifecycleService,
+    private readonly previews: PreviewService,
   ) {}
 
   @ShopScoped('products.write')
   @Post('shops/:shopId/stories')
   create(
-    @Param('shopId', ParseUUIDPipe) shopId: string,
-    @Body() body: CreateStoryDto,
+    @Param('shopId') shopId: string,
+    @User() user: UserRawDto,
+    @Body() body: unknown,
   ) {
-    return this.stories.create(shopId, body.slug, body.defaultLocale);
+    return this.stories.create(shopId, user.id, body);
+  }
+
+  @ShopScoped('products.read')
+  @Get('shops/:shopId/stories')
+  list(
+    @Param('shopId') shopId: string,
+    @Query('status') status: string | undefined,
+    @Query(
+      'limit',
+      new IntQueryPipe('limit', 1, LIMITS.listMax, LIMITS.listDefault),
+    )
+    limit: number,
+    @Query('cursor') cursor: string | undefined,
+  ) {
+    if (
+      status !== undefined &&
+      !(STORY_STATUSES as readonly string[]).includes(status)
+    )
+      throw validationFailed([{ field: 'status', code: 'invalid' }]);
+    return this.stories.list(shopId, {
+      status: status as StoryStatus | undefined,
+      limit,
+      cursor: cursor === '' ? undefined : cursor,
+    });
+  }
+
+  @ShopScoped('products.write')
+  @Get('shops/:shopId/stories/:storyId')
+  detail(@Param('shopId') shopId: string, @storyId() id: string) {
+    return this.stories.detail(shopId, id);
   }
 
   @ShopScoped('products.write')
   @Put('shops/:shopId/stories/:storyId/drafts/:locale')
-  draft(
-    @Param('shopId', ParseUUIDPipe) shopId: string,
-    @Param('storyId', ParseUUIDPipe) storyId: string,
-    @Param('locale') locale: string,
-    @Body() body: DraftDto,
+  saveDraft(
+    @Param('shopId') shopId: string,
+    @storyId() id: string,
+    @locale() draftLocale: string,
+    @Body() body: unknown,
   ) {
-    if (!/^[a-z]{2}(-[A-Z]{2})?$/.test(locale)) throw new NotFoundException();
-    return this.stories.saveDraft(shopId, storyId, locale, body);
+    return this.drafts.save(shopId, id, draftLocale, body);
   }
 
   @ShopScoped('products.write')
+  @HttpCode(204)
+  @Delete('shops/:shopId/stories/:storyId/drafts/:locale')
+  async deleteDraft(
+    @Param('shopId') shopId: string,
+    @storyId() id: string,
+    @locale() draftLocale: string,
+    @Query(
+      'expectedRevision',
+      new IntQueryPipe('expectedRevision', 0, 1_000_000_000),
+    )
+    expectedRevision: number,
+  ): Promise<void> {
+    await this.drafts.remove(shopId, id, draftLocale, expectedRevision);
+  }
+
+  @ShopScoped('products.write')
+  @HttpCode(200)
+  @Idempotent({ ttlSeconds: LIMITS.idempotencyTtlSec, scope: publishScope })
   @Post('shops/:shopId/stories/:storyId/publish')
   publish(
-    @Param('shopId', ParseUUIDPipe) shopId: string,
-    @Param('storyId', ParseUUIDPipe) storyId: string,
-    @Body() body: PublishDto,
+    @Param('shopId') shopId: string,
+    @storyId() id: string,
+    @User() user: UserRawDto,
+    @Body(new ZodPipe(storyPublishRequestSchema)) body: PublishBody,
   ) {
-    return this.stories.publish(
-      shopId,
-      storyId,
-      body.at ? new Date(body.at) : undefined,
-    );
+    return body.at === undefined
+      ? this.publisher.publish(shopId, id, user.id, body.expectedVersion)
+      : this.schedules.schedule(
+          shopId,
+          id,
+          user.id,
+          body.expectedVersion,
+          body.at,
+        );
   }
 
-  @ShopScoped('products.read')
+  @ShopScoped('products.write')
+  @HttpCode(204)
+  @Delete('shops/:shopId/stories/:storyId/schedule')
+  async cancelSchedule(
+    @Param('shopId') shopId: string,
+    @storyId() id: string,
+    @User() user: UserRawDto,
+  ): Promise<void> {
+    await this.schedules.cancel(shopId, id, user.id);
+  }
+
+  @ShopScoped('products.write')
+  @HttpCode(200)
+  @Post('shops/:shopId/stories/:storyId/archive')
+  archive(
+    @Param('shopId') shopId: string,
+    @storyId() id: string,
+    @User() user: UserRawDto,
+  ) {
+    return this.lifecycle.archive(shopId, id, user.id);
+  }
+
+  @ShopScoped('products.write')
+  @Get('shops/:shopId/stories/:storyId/versions')
+  versions(
+    @Param('shopId') shopId: string,
+    @storyId() id: string,
+    @Query(
+      'limit',
+      new IntQueryPipe('limit', 1, LIMITS.listMax, LIMITS.listDefault),
+    )
+    limit: number,
+    @Query('cursor') cursor: string | undefined,
+  ) {
+    return this.lifecycle.listVersions(shopId, id, {
+      limit,
+      cursor: cursor === '' ? undefined : cursor,
+    });
+  }
+
+  @ShopScoped('products.write')
+  @Get('shops/:shopId/stories/:storyId/versions/:version')
+  versionDetail(
+    @Param('shopId') shopId: string,
+    @storyId() id: string,
+    @version() number: number,
+  ) {
+    return this.lifecycle.version(shopId, id, number);
+  }
+
+  @ShopScoped('products.write')
+  @HttpCode(200)
+  @Post('shops/:shopId/stories/:storyId/versions/:version/restore')
+  restore(
+    @Param('shopId') shopId: string,
+    @storyId() id: string,
+    @version() number: number,
+  ) {
+    return this.lifecycle.restore(shopId, id, number);
+  }
+
+  @ShopScoped('products.write')
+  @HttpCode(200)
   @Post('shops/:shopId/stories/:storyId/preview-token')
   previewToken(
-    @Param('shopId', ParseUUIDPipe) shopId: string,
-    @Param('storyId', ParseUUIDPipe) storyId: string,
-    @Query('locale') locale = 'en',
+    @Param('shopId') shopId: string,
+    @storyId() id: string,
+    @Body(new ZodPipe(previewTokenRequestSchema)) body: PreviewBody,
   ) {
-    return this.stories.previewToken(shopId, storyId, locale);
+    return this.previews.mint(shopId, id, body.locale);
   }
-
-  /**
-   * Public story. CDN contract: fresh for 5 min at the edge, then served stale
-   * up to a day while ONE request revalidates; `Cache-Tag` lets publish purge
-   * exactly this story's objects; ETag (id-version-locale) answers 304 to
-   * conditional requests without a body.
-   */
-  @Firewall({ anonymous: true })
-  @Get('stories/:shopSlug/:slug')
-  async story(
-    @Param('shopSlug') shopSlug: string,
-    @Param('slug') slug: string,
-    @Query('locale') locale: string | undefined,
-    @Headers('if-none-match') ifNoneMatch: string | undefined,
-    @Res() res: Response,
-  ) {
-    const story = await this.stories.publicStory(
-      shopSlug,
-      slug,
-      locale ?? 'en',
-    );
-    const etag = `"${story.id}-v${story.version}-${story.locale}"`;
-    res.setHeader('ETag', etag);
-    res.setHeader(
-      'Cache-Control',
-      'public, max-age=60, s-maxage=300, stale-while-revalidate=86400',
-    );
-    res.setHeader('Cache-Tag', `story:${story.id},shop:${story.shopId}`);
-    res.setHeader('Content-Language', story.locale);
-    res.setHeader('Vary', 'Accept-Language');
-    if (ifNoneMatch === etag) return res.status(304).end();
-    res.json(story);
-  }
-
-  @Firewall({ anonymous: true })
-  @Get('stories/preview')
-  async preview(@Query('token') token: string, @Res() res: Response) {
-    res.setHeader('Cache-Control', 'private, no-store');
-    res.json(await this.stories.preview(token ?? ''));
-  }
-
-  /** Sitemap index: one child sitemap per 50k URLs. */
-  @Firewall({ anonymous: true })
-  @Get('sitemaps/stories.xml')
-  async index(@Res() res: Response) {
-    const pages = Math.max(
-      1,
-      Math.ceil((await this.stories.publishedCount()) / SITEMAP_PAGE),
-    );
-    res
-      .type('application/xml')
-      .setHeader('Cache-Control', 'public, s-maxage=3600');
-    res.send(
-      `<?xml version="1.0" encoding="UTF-8"?>\n<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
-        Array.from(
-          { length: pages },
-          (_, i) =>
-            `  <sitemap><loc>${xmlEscape(`${this.config.get('backend_host')}/api/sitemaps/stories-${i}.xml`)}</loc></sitemap>`,
-        ).join('\n') +
-        `\n</sitemapindex>\n`,
-    );
-  }
-
-  /**
-   * One sitemap page STREAMED: rows are written as they are read (keyset
-   * batches of 1,000) - constant memory whether the page has 10 or 50,000
-   * URLs, and the first bytes go out immediately. hreflang alternates per locale.
-   */
-  @Firewall({ anonymous: true })
-  @Get('sitemaps/stories-:page.xml')
-  async page(@Param('page') page: string, @Res() res: Response) {
-    const n = Number(page);
-    if (!Number.isInteger(n) || n < 0) throw new NotFoundException();
-    const front = this.config.get('front_host');
-    res
-      .type('application/xml')
-      .setHeader('Cache-Control', 'public, s-maxage=3600');
-    res.write(
-      `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">\n`,
-    );
-    for await (const story of this.stories.publishedUrls(n, SITEMAP_PAGE)) {
-      for (const locale of story.locales ?? []) {
-        const loc = `${front}/${locale}/brands/${story.shopSlug}/stories/${story.slug}`;
-        const alternates = (story.locales ?? [])
-          .map(
-            (l) =>
-              `<xhtml:link rel="alternate" hreflang="${l}" href="${xmlEscape(`${front}/${l}/brands/${story.shopSlug}/stories/${story.slug}`)}"/>`,
-          )
-          .join('');
-        const chunk = `  <url><loc>${xmlEscape(loc)}</loc><lastmod>${new Date(story.publishedAt).toISOString()}</lastmod>${alternates}</url>\n`;
-        if (!res.write(chunk)) await new Promise((r) => res.once('drain', r)); // backpressure
-      }
-    }
-    res.end('</urlset>\n');
-  }
-}
-
-function xmlEscape(s: string): string {
-  return s.replace(
-    /[<>&'"]/g,
-    (c) =>
-      ({
-        '<': '&lt;',
-        '>': '&gt;',
-        '&': '&amp;',
-        "'": '&apos;',
-        '"': '&quot;',
-      })[c]!,
-  );
 }

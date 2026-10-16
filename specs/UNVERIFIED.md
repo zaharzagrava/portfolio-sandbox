@@ -241,3 +241,5 @@ interviews) until its status says so. The implementation loop appends here (rule
 | S31 | SC-004: entitlement appears and disappears within 30 s at p99 | same file (lag histogram under load) | not run |
 | S31 | SC-006: unreferenced bytes reclaimed between 24 h and 25 h | same file (deployed observation) | not run |
 | S31 | SC-008: 50 GiB upload and download keep application memory flat | same file (50 GiB transfer) | not run |
+| S27 | SC-003: 99% of story views from the CDN; origin 2,000 rps, p99 < 50 ms from the read model | `specs/domains/S27-brand-stories/quickstart.md`, "Ops artifacts" (`pnpm loadtest:stories`) | not run |
+| S27 | SC-001 (real CDN and Next.js part): a change is visible through the CDN within 60 s | same file (publish on a deployed stack, poll the CDN URL) | not run |

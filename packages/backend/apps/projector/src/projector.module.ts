@@ -3,7 +3,7 @@ import {
   IntegrationsProjectorModule,
   OfflineSyncProjectorModule,
 } from '@app/domains/catalog-sync';
-import { StoryCacheInvalidator, StoryCacheModule } from '@app/domains/content';
+import { StoriesProjectorModule } from '@app/domains/content';
 import { StatementsProjectorModule } from '@app/domains/statements';
 import { OnboardingProjectorModule } from '@app/domains/seller-onboarding';
 import { AssetsProjectorModule } from '@app/domains/asset-library';
@@ -119,7 +119,7 @@ import { CacheModule } from '@app/infrastructure/cache/cache.module';
         ...WidgetProjectorModule.projectors,
         ...WebhooksProjectorModule.projectors,
         ...AnalyticsProjectorModule.projectors,
-        StoryCacheInvalidator,
+        ...StoriesProjectorModule.projectors,
         ...IntegrationsProjectorModule.projectors,
         ...OfflineSyncProjectorModule.projectors,
         ...CatalogImportProjectorModule.projectors,
@@ -150,7 +150,7 @@ import { CacheModule } from '@app/infrastructure/cache/cache.module';
         IntegrationsProjectorModule,
         OfflineSyncProjectorModule,
         CatalogImportProjectorModule,
-        StoryCacheModule,
+        StoriesProjectorModule,
         WebhooksProjectorModule,
         PublicApiProjectorModule,
         WidgetProjectorModule,

@@ -1,12 +1,10 @@
 /**
- * Public entry point of the `content` domain (constitution X.4). Code outside this domain imports only
- * from `@app/domains/content`. Generated from actual cross-domain usage in Phase 2 (later batches append); extend
- * it by hand when a new export is needed. Models exported here are transitional (IX.4 debt): other
- * domains must stop injecting them.
+ * Public entry point of the `content` domain (constitution X.4). Code outside this domain imports only from
+ * `@app/domains/content`. The barrel exports the three Nest modules the apps host and nothing else: no model,
+ * service, repository, consumer or port implementation. `content` is a leaf: it provides no R1 export.
  */
 export {
   StoriesModule,
   StoriesWorkerModule,
-  StoryCacheInvalidator,
-  StoryCacheModule,
+  StoriesProjectorModule,
 } from './stories.module';
