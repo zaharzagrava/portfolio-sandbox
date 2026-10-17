@@ -174,7 +174,7 @@ fi
 say "test stack ready; memory: $(free -h | awk 'NR==2{print $3" used of "$2}')"
 
 # --- watch it from a tmux session (ssh in, 'tmux attach -t sdd'), monitor in the background
-export PW_WORKERS="${PW_WORKERS:-2}" PW_EXPECT_TIMEOUT_MS="${PW_EXPECT_TIMEOUT_MS:-20000}"   # the machine runs two stacks next to the browsers: fewer workers, longer waits   # Playwright workers on the 8-core machine (the config default is 2)
+export PW_WORKERS="${PW_WORKERS:-4}" PW_EXPECT_TIMEOUT_MS="${PW_EXPECT_TIMEOUT_MS:-20000}"   # the machine runs two stacks next to the browsers: fewer workers, longer waits   # Playwright workers on the 8-core machine (the config default is 2)
 export ORDER="$SDD_ORDER" COMMIT=1 PUSH_BRANCH PASS_TIMEOUT_S NTFY_TOPIC NTFY_SERVER HEARTBEAT_URL
 [[ -n "${SDD_UNTIL:-}" ]] && export UNTIL="$SDD_UNTIL"
 [[ -n "${SDD_QA:-}" ]] && export CHECKPOINT_QA="$SDD_QA" QA_BUDGET_MIN MAX_QA_FIXES MAX_NEW_CHARTERS   # the QA agent at the checkpoints (scripts/qa)

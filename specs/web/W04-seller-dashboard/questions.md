@@ -59,3 +59,6 @@ Format: `[TAG] question → default taken → why`. BREAKING first, then CONTRAC
 - [LOCAL] Orders page → read-only, no detail page; the reference shown is the first 8 characters of the shop-order id.
 - [LOCAL] Keyboard: arrow keys on the Active/Archived tab list and the Team tabs; "Open menu" button name for the mobile drawer.
 - [LOCAL] Mobile list rows → cards at ≤ 640 px; 641 to 1023 px uses the mobile frame with two-column grids.
+
+## RESOLVED (owner, 2026-10-17): the production-build server may sign in
+The dev API now allows both web origins: `BFF_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:3100` (`start:dev:monolith` and `start:dev:bff` in `packages/backend/package.json`). The `403 origin_not_allowed` on port 3100 that blocked the two loading-skeleton specs (AS-91 and AS-31) is gone. Next only prefetches the `loading.tsx` boundary in a production build, so run those two specs against the production server (`test.use({ baseURL: 'http://localhost:3100' })`, as `app-shell.prod.spec.ts` does; the config starts that server for a full run, or with `W07_PROD=1`), refresh their baselines there, and keep every other spec on the dev server. Do not weaken either test.
