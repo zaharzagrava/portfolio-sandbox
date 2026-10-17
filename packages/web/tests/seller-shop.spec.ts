@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { NEW_USER_PASSWORD, register, resetRateLimits, sellerCall, shopPath, openShop } from './helpers';
+import { NEW_USER_PASSWORD, register, resetRateLimits, sellerCall, sellerMenu, shopPath, openShop } from './helpers';
 
 /**
  * W04 US1/US2: opening a shop, coming back to it and switching between shops (AS-01..AS-03, AS-08..AS-10). Roles and labels
@@ -28,7 +28,7 @@ test.describe('Seller shop entry and overview', () => {
     await expect(page.getByRole('region', { name: 'Last 30 days', exact: true })).toBeVisible();
     await expect(page.getByRole('region', { name: 'Leaderboard rank' })).toBeVisible();
     await expect(page.getByRole('region', { name: 'Top products' })).toBeVisible();
-    await expect(page.getByRole('navigation', { name: 'Seller' }).getByRole('link', { name: 'Inventory' })).toBeVisible();
+    await expect((await sellerMenu(page)).getByRole('navigation', { name: 'Seller' }).getByRole('link', { name: 'Inventory' })).toBeVisible();
   });
 
   test('W04 AS-08: a returning owner of one shop lands on its overview', async ({ page }) => {
@@ -57,9 +57,9 @@ test.describe('Seller shop entry and overview', () => {
 
     // the switcher keeps the section
     await page.goto(shopPath(first.shopId, 'inventory'));
-    await page.getByRole('button', { name: new RegExp(first.shopName) }).first().click();
+    await (await sellerMenu(page)).getByRole('button', { name: new RegExp(first.shopName) }).first().click();
     await page.getByRole('list', { name: 'Your shops' }).getByRole('link', { name: new RegExp(secondName) }).click();
     await expect(page).toHaveURL(new RegExp(`${shopPath(secondId, 'inventory')}$`));
-    await expect(page.getByRole('button', { name: new RegExp(secondName) }).first()).toBeVisible();
+    await expect((await sellerMenu(page)).getByRole('button', { name: new RegExp(secondName) }).first()).toBeVisible();
   });
 });

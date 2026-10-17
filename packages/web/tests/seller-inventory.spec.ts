@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { openShop, register, seedProduct, shopPath } from './helpers';
+import { openFiltersIfCollapsed, openShop, register, seedProduct, shopPath } from './helpers';
 
 /**
  * W04 journey "inventory" (AS-33, AS-36, AS-30, AS-40): the owner of a freshly opened shop adds a product, edits its stock,
@@ -53,7 +53,10 @@ test.describe('Seller inventory', () => {
       await expect(page).toHaveURL(/q=ceramc/, { timeout: 3_000 });
       await expect(rowOf(page, TITLE)).toBeVisible({ timeout: 3_000 });
     }).toPass({ timeout: 45_000 });
-    await expect(page.getByRole('tab', { name: 'Archived' })).toBeDisabled();
+    const filters = await openFiltersIfCollapsed(page);
+    await expect(filters.getByRole('tab', { name: 'Archived' })).toBeDisabled();
+    if (await page.getByRole('dialog', { name: 'Filters' }).isVisible()) await page.getByRole('button', { name: 'Done' }).click();
+    await expect(page.getByRole('dialog')).toBeHidden();
     await expect(page.getByText('Search covers all products.')).toBeVisible();
 
     // Step 4 (AS-40): archive with the confirmation; it is then in the Archived tab and can come back.
@@ -66,8 +69,9 @@ test.describe('Seller inventory', () => {
     await search.fill('');
     await expect(page).not.toHaveURL(/q=/);
     await expect(rowOf(page, TITLE)).toBeHidden();
-    await page.getByRole('tab', { name: 'Archived' }).click();
+    await (await openFiltersIfCollapsed(page)).getByRole('tab', { name: 'Archived' }).click();
     await expect(page).toHaveURL(/status=ARCHIVED/);
+    if (await page.getByRole('dialog', { name: 'Filters' }).isVisible()) await page.getByRole('button', { name: 'Done' }).click();
     await expect(rowOf(page, TITLE)).toContainText('Archived');
   });
 });

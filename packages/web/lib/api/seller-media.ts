@@ -5,6 +5,7 @@ import {
   galleryMemberSchema,
   mediaCompleteResponseSchema,
   mediaOwnerSchema,
+  mediaPublicSchema,
   mediaUploadResponseSchema,
   videoCompleteResponseSchema,
   videoListSchema,
@@ -93,13 +94,16 @@ export async function completePhoto(mediaId: string): Promise<MediaCompleteRespo
 
 export const TERMINAL_MEDIA = ['READY', 'REJECTED', 'EXPIRED'] as const;
 
+export type MediaProgress = Pick<MediaOwner, 'id' | 'status' | 'width' | 'height' | 'urls' | 'rejectCode'>;
+
 /** One photo's processing state, asked every `pollMs` until it is `READY`, `REJECTED` or `EXPIRED`. */
 export function useMediaItem(shopId: string, mediaId: string | null, pollMs: number) {
   return useQuery({
     queryKey: queryKeys.seller.mediaItem(shopId, mediaId ?? ''),
-    queryFn: async (): Promise<MediaOwner> => {
+    queryFn: async (): Promise<MediaProgress> => {
       const { data } = await apiClient.get<unknown>(`/api/media/${encodeURIComponent(mediaId ?? '')}`);
-      return parseBody(mediaOwnerSchema, data);
+      // a `READY` photo is answered with the public view (no timestamps), every other status with the owner's view
+      return parseBody(mediaOwnerSchema.or(mediaPublicSchema), data);
     },
     enabled: mediaId !== null,
     refetchInterval: (query) => ((TERMINAL_MEDIA as readonly string[]).includes(query.state.data?.status ?? '') ? false : pollMs),

@@ -285,3 +285,7 @@ S03 → T033, T035, T069–T072 · S05 → T026, T052–T055, T096 · S06 → T0
 ## Implementation strategy
 
 MVP = Phases 1–5 (backend aggregate, foundations, shell, shop entry, overview + live). Then US3 inventory, US4/US5 developers, US6, US7, US8, then US10 slices one at a time (each ships green on its own tests), then Phase 13.
+
+## Phase 14: Convergence
+
+- [X] T100 Fix the stale test `W04 F6-4` in `packages/web/components/seller/media/gallery-view.test.tsx` (about line 154): `lib/api/seller-media.ts:74-78` appends the signed fields, then `Content-Type` (the policy requires `image/`), then `file`; the test expects `[key, policy, x-amz-signature, file]` and `appended[3]` as the File. Expect the extra `Content-Type` field (the file's type) and keep the "file last" assertion with `appended.at(-1)` per F6 photo gallery upload (partial)

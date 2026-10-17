@@ -1,6 +1,6 @@
 import path from 'node:path';
 import { expect, test, type Page } from '@playwright/test';
-import { SEED, openShop, register, resetRateLimits, sellerCall, shopPath } from '../helpers';
+import { SEED, clickThroughDevOverlay, openShop, register, resetRateLimits, sellerCall, sellerMenu, shopPath } from '../helpers';
 import { expectMainFitsWidth, expectNoSeriousViolations } from './axe';
 
 /**
@@ -61,6 +61,7 @@ test.describe('Seller shell layout', () => {
       await expect(bar.getByText(shopName)).toBeVisible();
       await expect(page.getByRole('navigation', { name: 'Seller' })).toBeHidden();
       await expect(page).toHaveScreenshot('shell-phone-closed.png', { stylePath });
+      await clickThroughDevOverlay(page);
       await bar.getByRole('button', { name: 'Open menu' }).click();
       const drawer = page.getByRole('dialog');
       await expect(drawer.getByRole('navigation', { name: 'Seller' }).getByRole('link', { name: 'Inventory' })).toHaveAttribute('aria-current', 'page');
@@ -80,7 +81,7 @@ test.describe('Seller shell layout', () => {
   test('W04 AS-98 VA shop switcher: list open on the current section', async ({ page }) => {
     const { shopId, shopName } = await memberWithShop(page);
     await page.goto(shopPath(shopId, 'orders'));
-    if (isPhone(page)) await page.getByRole('button', { name: 'Open menu' }).click();
+    if (isPhone(page)) await page.getByRole('region', { name: 'Shop bar' }).getByRole('button', { name: 'Open menu' }).click();
     const scope = isPhone(page) ? page.getByRole('dialog') : page.locator('aside');
     await scope.getByRole('button', { name: new RegExp(shopName) }).click();
     await expect(scope.getByRole('list', { name: 'Your shops' })).toBeVisible();
@@ -134,8 +135,7 @@ test.describe('Seller shell layout', () => {
       await held;
       await route.continue();
     });
-    if (isPhone(page)) await page.getByRole('button', { name: 'Open menu' }).click();
-    const nav = (isPhone(page) ? page.getByRole('dialog') : page.locator('aside')).getByRole('navigation', { name: 'Seller' });
+    const nav = (await sellerMenu(page)).getByRole('navigation', { name: 'Seller' });
     await nav.getByRole('link', { name: 'Inventory' }).click();
     await expect(page.locator('[data-skeleton]').first()).toBeVisible();
     await expect(page.getByText('Loading...')).toHaveCount(0);

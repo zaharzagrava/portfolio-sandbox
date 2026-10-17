@@ -1,6 +1,6 @@
 import path from 'node:path';
 import { expect, test, type Page } from '@playwright/test';
-import { openShop, register, seedProduct, shopPath } from '../helpers';
+import { openShop, register, seedProduct, sellerMenu, shopPath } from '../helpers';
 import { expectMainFitsWidth, expectNoSeriousViolations } from './axe';
 
 /**
@@ -59,8 +59,7 @@ test.describe('Seller inventory layout', () => {
       await held;
       await route.continue();
     });
-    if (isPhone(page)) await page.getByRole('button', { name: 'Open menu' }).click();
-    const nav = (isPhone(page) ? page.getByRole('dialog') : page.locator('aside')).getByRole('navigation', { name: 'Seller' });
+    const nav = (await sellerMenu(page)).getByRole('navigation', { name: 'Seller' });
     await nav.getByRole('link', { name: 'Inventory' }).click();
     await expect(page.locator('[data-skeleton]').first()).toBeVisible();
     await expect(content(page)).toHaveScreenshot('loading.png', { stylePath });

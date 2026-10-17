@@ -694,3 +694,14 @@
 {"run":"20261017T092525Z","capability":"W05","step":"plan","start":"2026-10-17T13:54:03Z","end":"2026-10-17T13:57:44Z","seconds":221,"result":"ok","attempt":1,"reason":"ok"}
 {"run":"20261017T092525Z","capability":"W05","step":"tasks","start":"2026-10-17T13:57:44Z","end":"2026-10-17T14:00:39Z","seconds":175,"result":"ok","attempt":1,"reason":"ok"}
 {"run":"20261017T092525Z","capability":"W05","step":"analyze","start":"2026-10-17T14:00:39Z","end":"2026-10-17T14:01:19Z","seconds":40,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261017T140706Z","capability":"-","step":"run-start","start":"2026-10-17T14:07:06Z","end":"2026-10-17T14:07:06Z","seconds":0,"result":"ok","attempt":1,"reason":"commit=567fde49 MAX_GATE_REPAIRS=5 MAX_REPAIRS_PER_SPEC=2 REPAIR_BUDGET_MIN=60 MAX_IMPLEMENT_PASSES=10"}
+{"run":"20261017T140706Z","capability":"W04","step":"converge-1","start":"2026-10-17T14:07:07Z","end":"2026-10-17T14:13:48Z","seconds":401,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261017T140706Z","capability":"W04","step":"implement-2","start":"2026-10-17T14:13:48Z","end":"2026-10-17T14:14:18Z","seconds":30,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261017T140706Z","capability":"W04","step":"converge-2","start":"2026-10-17T14:14:18Z","end":"2026-10-17T14:14:53Z","seconds":35,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261017T140706Z","capability":"W04","step":"gate","start":"2026-10-17T14:14:54Z","end":"2026-10-17T14:43:18Z","seconds":1704,"result":"fail","attempt":1,"reason":""}
+{"run":"20261017T140706Z","capability":"W04","step":"repair-1","start":"2026-10-17T14:43:18Z","end":"2026-10-17T15:23:27Z","seconds":2409,"result":"timeout","attempt":1,"reason":"pass-timeout","code_changed":true}
+{"run":"20261017T140706Z","capability":"W04","step":"gate","start":"2026-10-17T15:23:27Z","end":"2026-10-17T15:26:21Z","seconds":174,"result":"fail","attempt":2,"reason":""}
+{"run":"20261017T140706Z","capability":"W04","step":"repair-2","start":"2026-10-17T15:26:21Z","end":"2026-10-17T15:48:18Z","seconds":1317,"result":"ok","attempt":1,"reason":"ok","code_changed":true}
+{"run":"20261017T140706Z","capability":"W04","step":"gate","start":"2026-10-17T15:48:19Z","end":"2026-10-17T15:49:13Z","seconds":54,"result":"fail","attempt":3,"reason":""}
+{"run":"20261017T140706Z","capability":"W04","step":"repair-3","start":"2026-10-17T15:49:13Z","end":"2026-10-17T15:52:29Z","seconds":196,"result":"ok","attempt":1,"reason":"ok","code_changed":false}
+{"run":"20261017T140706Z","capability":"W04","step":"gate","start":"2026-10-17T15:52:29Z","end":"2026-10-17T15:53:20Z","seconds":51,"result":"fail","attempt":4,"reason":""}

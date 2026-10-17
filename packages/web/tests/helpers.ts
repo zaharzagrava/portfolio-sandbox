@@ -483,3 +483,26 @@ export async function readInviteLink(email: string): Promise<string> {
     .not.toBe('');
   return found;
 }
+
+/**
+ * The Next.js dev server's issue badge sits at the top left, over the phone's "Open menu" button, and takes its clicks once the
+ * page has logged a dev warning. It is not part of the product (a production build has none): let clicks pass through it.
+ */
+export async function clickThroughDevOverlay(page: Page) {
+  await page.addStyleTag({ content: 'nextjs-portal { pointer-events: none !important; }' });
+}
+
+/**
+ * Phone layout of a seller page: the Seller navigation and the shop switcher sit in the drawer behind the shop bar's
+ * "Open menu" (the site header has a button of the same name, so it is scoped). Opens it and returns the drawer; at desktop
+ * width the sidebar is always there and the `aside` is returned.
+ */
+export async function sellerMenu(page: Page) {
+  if (viewportWidth(page) >= 1024) return page.locator('aside');
+  await clickThroughDevOverlay(page);
+  await expect(page.getByRole('dialog')).toBeHidden(); // a drawer that is still sliding out blocks the button
+  await page.getByRole('region', { name: 'Shop bar' }).getByRole('button', { name: 'Open menu' }).click();
+  const drawer = page.getByRole('dialog', { name: 'Seller menu' });
+  await expect(drawer).toBeVisible();
+  return drawer;
+}
