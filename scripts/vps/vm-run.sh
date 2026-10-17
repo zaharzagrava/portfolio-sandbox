@@ -169,6 +169,7 @@ if [[ "${SDD_IMAGE:-be}" == fe && -z "${SDD_SKIP_STACK:-}" ]]; then
   done
   curl -sf http://localhost:8000/health/ready >/dev/null || fail_and_wait "the API did not become ready in 10 minutes: $(api_cause)(see $LOG/api.log)"
   say "dev stack and API ready"
+  say "starting the Lambda stand-ins (document extractor, media processing)"; bash scripts/sdd/stack-fix.sh standins >"$LOG/standins.log" 2>&1 || say "the stand-ins did not start (see $LOG/standins.log); the gates try again"
   say "seeding the demo admin and shop"; (cd packages/backend && pnpm --filter api seed:dev >"$LOG/seed.log" 2>&1) || say "the seed failed (see $LOG/seed.log); the journey preflight tries again"
 fi
 say "test stack ready; memory: $(free -h | awk 'NR==2{print $3" used of "$2}')"

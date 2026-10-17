@@ -31,6 +31,12 @@ case "${1:-}" in
     if ! browser_ok; then echo "ENVIRONMENT: Playwright's Chromium is not installed for this version. Run: bash scripts/sdd/stack-fix.sh browser"; bad=1; fi
     (( bad == 0 )) && echo "environment ok: API ready, search answers 200, Chromium installed"
     exit "$bad" ;;
+  standins)
+    # The local stand-ins for the Lambdas nothing else consumes: document-extractor (without it no shop is ever verified: J01 AS-29,
+    # shop verification) and media-processing (without it a photo stays "Waiting to process": W04 seller-photos). The runner did not start
+    # them, so the first web gate on a fresh machine failed 17 specs. Starts them when missing; `journey` below rebuilds and restarts them.
+    if pgrep -f 'lambda-local/main.js' >/dev/null; then echo "stand-ins already running"; exit 0; fi
+    exec bash "$0" journey ;;
   journey)
     # The journey suite needs two things the dev stack does not start by itself: the document-extractor stand-in (nothing else consumes
     # `onboarding-documents`, so no shop is ever verified and every test times out after 60 s) and the API's metrics port (:9464).
@@ -42,7 +48,7 @@ case "${1:-}" in
       admin_ok || { echo "ENVIRONMENT: the seeded admin ($ADMIN_EMAIL) cannot log in even after pnpm --filter api seed:dev (see /tmp/sdd-seed.log)"; tail -n 5 /tmp/sdd-seed.log; exit 1; }
     fi
     LAMBDA_DIR="${LAMBDA_DIR:-/tmp/sdd-lambda}"; mkdir -p "$LAMBDA_DIR"
-    [[ -s "$LAMBDA_DIR/pid" ]] && kill -TERM -- "-$(cat "$LAMBDA_DIR/pid")" 2>/dev/null; pkill -f 'lambda-local/main.js document-extractor' 2>/dev/null; sleep 1
+    [[ -s "$LAMBDA_DIR/pid" ]] && kill -TERM -- "-$(cat "$LAMBDA_DIR/pid")" 2>/dev/null; pkill -f 'lambda-local/main.js' 2>/dev/null; sleep 1
     if ! (cd "$ROOT/packages/backend" && pnpm exec nest build lambda-local >"$LAMBDA_DIR/build.log" 2>&1); then
       echo "ENVIRONMENT: the document-extractor stand-in does not compile (the cause is in $LAMBDA_DIR/build.log):"; grep -m5 "error" "$LAMBDA_DIR/build.log"; exit 1
     fi
@@ -54,7 +60,7 @@ case "${1:-}" in
     # LOG_FILE turns the pretty-print transport off: its worker thread cannot be found from inside a bundle
     (cd "$ROOT/packages/backend" && set -a && . ./.env && set +a && export LOG_FILE="$LAMBDA_DIR/handlers.log" && setsid node dist/apps/lambda-local/main.js document-extractor media-processing >"$LAMBDA_DIR/lambda.log" 2>&1 </dev/null & echo $! > "$LAMBDA_DIR/pid") >/dev/null 2>&1
     sleep 8
-    if ! pgrep -f 'lambda-local/main.js document-extractor' >/dev/null; then
+    if ! pgrep -f 'lambda-local/main.js' >/dev/null; then
       echo "CODE: the document-extractor stand-in exits at start-up (a module that does not boot outside the monolith, lesson L-018):"; tail -n 12 "$LAMBDA_DIR/lambda.log"; exit 1
     fi
     if grep -qE "Nest can't resolve|UnknownDependencies|Cannot find module" "$LAMBDA_DIR/lambda.log"; then

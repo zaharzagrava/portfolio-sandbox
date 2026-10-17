@@ -136,6 +136,7 @@ gate() { # $1 = domain column; everything must pass
           npx jest --ci --runInBand --forceExit --config jest-e2e.json --runTestsByPath "${specs[@]:i:batch}") || return 1
       done ;;
     web)
+      bash "$ROOT/scripts/sdd/stack-fix.sh" standins || return 1   # document-extractor and media-processing stand-ins; started once, then reused
       bash "$ROOT/scripts/sdd/stack-fix.sh" smoke || return 1
       (
         cd packages/web &&
