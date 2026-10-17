@@ -27,6 +27,7 @@ commit(batch)             // on failure: release(batch)
 ## Used by
 <!-- used-by:start -->
 - [S05](../capabilities/S05-products.md): R-21
+- [document-status](document-status.md)
 - [never-send-twice-guard](never-send-twice-guard.md)
 - [shutdown-flush](shutdown-flush.md)
 - [write-behind-in-flight-batch](write-behind-in-flight-batch.md)

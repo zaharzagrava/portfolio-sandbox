@@ -20,5 +20,5 @@ A seller saves [`business`](onboarding-questionnaire.md) on day 1 and `tax` on d
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [S04](../capabilities/S04-kyc-onboarding.md): R-02, R-06
 <!-- used-by:end -->

@@ -259,3 +259,6 @@ interviews) until its status says so. The implementation loop appends here (rule
 | S06 | SC-001: 50 editors in one draft, 99% of edits visible to all others within 100 ms | `specs/domains/S06-collab-editor/quickstart.md`, "Ops artifacts" (ws load script on a deployed collab app) | not run |
 | S06 | SC-004: publish of a ≤ 20 KB draft under 2 s at p95 | same file (publish load run on a real stack) | not run |
 | S06 | SC-007: 100,000 open drafts, 50 editors each, 20,000 updates/s fleet-wide, ~5,000 rooms per instance | same file (fleet soak on the VPS runner) | not run |
+| S40 | SC-002: boards and counters within 5 s p99, today/stats within 30 s p99 | `specs/domains/S40-leaderboards-dashboard/quickstart.md`, "Ops artifacts" (sustained order stream, lag gauges) | not run |
+| S40 | SC-003: live panel changes within 2 s of a payment for 99% while watched | same file (subscribed client delay measurement) | not run |
+| S40 | SC-005: public top list under 100 ms p99 at 50,000 req/s (cached) | same file (k6 against the cached route) | not run |

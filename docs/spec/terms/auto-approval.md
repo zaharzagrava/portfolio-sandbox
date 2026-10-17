@@ -20,5 +20,7 @@ A queued `BUSINESS_REGISTRATION` is processed. The cheap model's answer passes e
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [S04](../capabilities/S04-kyc-onboarding.md): R-16
+- [document-validation-rule](document-validation-rule.md)
+- [holder-name-check](holder-name-check.md)
 <!-- used-by:end -->

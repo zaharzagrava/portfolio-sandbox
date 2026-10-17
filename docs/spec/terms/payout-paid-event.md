@@ -19,5 +19,11 @@ For a shop with a balance above the [payout minimum](payout-minimum.md) and a [d
 
 ## Used by
 <!-- used-by:start -->
+- [event-backbone](event-backbone.md)
+- [main-journeys](main-journeys.md)
+- [notification](notification.md)
+- [payout-destination](payout-destination.md)
+- [payout-minimum](payout-minimum.md)
 - [payouts-domain](payouts-domain.md)
+- [task-row](task-row.md)
 <!-- used-by:end -->

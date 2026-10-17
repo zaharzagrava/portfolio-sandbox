@@ -40,7 +40,9 @@ A projection is a read model built only from the event log, never from another d
 - {{cap:S17}} Subscriptions - plans, versioned prices, state machine, billing run, charging and dunning, proration, credit
 - {{cap:S18}} Usage metering (late events, adjustments) and entitlement checks
 - {{cap:S19}} Pickup points, local stock, available near me, map clustering
+- {{cap:S20}} Same-day courier dispatch (courier shift, offers, delivery state machine, tracking)
 - {{cap:S25}} Product discussions (posts, nested comments, votes, ranking, abuse controls, safe markdown)
+- {{cap:S26}} Follow graph and home feed (follow, items from events, fan-out on write with celebrity merge, rebuild, hiding)
 - {{cap:S28}} Notification routing, preferences, quiet hours, caps, per-channel queues, provider failover, inbox, suppression
 - {{cap:S29}} Product and review photos (upload, safe processing, duplicate flag, galleries, cleanup)
 - {{cap:S30}} Product video and VOD (resumable upload, transcoding graph, HLS ladder, signed delivery)
@@ -50,6 +52,7 @@ A projection is a read model built only from the event log, never from another d
 - {{cap:S36}} Sponsored listings (campaigns, signed click tokens, click counting, hourly billing, daily reconciliation)
 - {{cap:S37}} Share and affiliate short links (codes, aliases, redirects, click attribution)
 - {{cap:S39}} Analytics ingestion and A/B testing (event schema, dedupe, assignment, exposure, SRM, results)
+- {{cap:S40}} Seller leaderboards, live sales dashboard and seller stats (period boards with ties, my rank, snapshots, live frames, today chart, shop stats)
 - {{cap:S42}} Seller public API: API keys, scopes, sandbox, date-pinned versions, deprecation headers, batch and bulk stock, request logs, usage metering
 - {{cap:S43}} Webhook delivery to shops: endpoints, signing with dual secrets, routing, per-endpoint ordering, retries, circuit breaker, auto-disable, replay
 - {{cap:S44}} Embeddable storefront widget: site keys bound to origins, per-site framing policy, identity hand-off, kill switch

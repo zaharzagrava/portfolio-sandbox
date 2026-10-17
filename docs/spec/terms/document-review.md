@@ -19,5 +19,14 @@ Both models report a low-confidence IBAN on a `BANK_STATEMENT`. The document bec
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [S04](../capabilities/S04-kyc-onboarding.md): R-18, B-11
+- [conflict-of-interest](conflict-of-interest.md)
+- [content-type-mismatch](content-type-mismatch.md)
+- [late-result](late-result.md)
+- [missing-object](missing-object.md)
+- [real-file-type](real-file-type.md)
+- [required-document-kind](required-document-kind.md)
+- [required-documents](required-documents.md)
+- [required-onboarding-documents](required-onboarding-documents.md)
+- [upload-mismatch](upload-mismatch.md)
 <!-- used-by:end -->

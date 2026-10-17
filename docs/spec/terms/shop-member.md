@@ -19,16 +19,19 @@ A user who sends [`POST /shops`](post-shops.md) becomes the `OWNER` member of th
 
 ## Used by
 <!-- used-by:start -->
+- [S04](../capabilities/S04-kyc-onboarding.md): R-23, B-01
 - [S05](../capabilities/S05-products.md): B-05
 - [S32](../capabilities/S32-product-search.md): R-33
 - [already-member-flag](already-member-flag.md)
 - [checkout-review-step](checkout-review-step.md)
+- [conflict-of-interest](conflict-of-interest.md)
 - [get-order-by-id](get-order-by-id.md)
 - [hot-copy](hot-copy.md)
 - [invite-acceptance](invite-acceptance.md)
 - [invite-manager](invite-manager.md)
 - [is-sandbox](is-sandbox.md)
 - [member-view](member-view.md)
+- [onboarding-questionnaire](onboarding-questionnaire.md)
 - [pending-invite](pending-invite.md)
 - [realtime-topic](realtime-topic.md)
 - [seat](seat.md)

@@ -1,125 +1,186 @@
 import {
+  Inject,
   Injectable,
   Logger,
   OnApplicationBootstrap,
-  OnModuleDestroy,
+  OnApplicationShutdown,
+  Optional,
 } from '@nestjs/common';
-import { hostname } from 'node:os';
-import { RedisService } from '@app/infrastructure/redis/redis.service';
-import { holdLease } from '@app/infrastructure/redis/lease';
-import { RealtimePublisher } from '@app/infrastructure/realtime';
-import { channelName } from '@app/infrastructure/realtime';
-import { DASH_ACTIVE, dashBucketKey } from './shop-live.projector';
+import { randomUUID } from 'node:crypto';
+import type Redis from 'ioredis';
+import { CLOCK, type Clock } from '@app/common/core/clock';
+import {
+  RealtimePublisher,
+  RealtimeSubscriptions,
+  RealtimeUnavailableError,
+} from '@app/infrastructure/realtime';
+import { insightsLog } from '../application/insights-log';
+import { insightsMetrics } from '../application/seller-insights.metrics';
+import { buildFrame } from '../domain/dashboard-frame';
+import {
+  LIVE_COUNTER_REPOSITORY,
+  type LiveCounterRepository,
+} from '../domain/ports';
+import { Lease } from './lease';
+import { INSIGHTS_REDIS } from './redis-board.repository';
+import { LIVE_SUBSCRIBED_FALLBACK_KEY, liveLeaseKey } from './redis-keys';
 
-const WINDOW_SEC = 60;
+export const LEASE_TTL_MS = 3_000;
+const FALLBACK_TTL_MS = 10_000;
+/** Shops handled at once inside one tick. */
+const CONCURRENCY = 20;
 
-export interface LiveDashboard {
-  at: number;
-  last60s: {
-    checkouts: number;
-    orders: number;
-    units: number;
-    revenue: number;
-  };
-  ordersPerSecond: number[];
-  checkoutConversion: number | null;
+/** `autoStart: false` lets a spec drive `tick(second)` itself. */
+export const DASHBOARD_TICKER_OPTIONS = Symbol(
+  'SELLER_INSIGHTS_TICKER_OPTIONS',
+);
+export interface DashboardTickerOptions {
+  autoStart?: boolean;
+  /** Names this instance in the leases; defaults to a random id. */
+  instanceId?: string;
 }
 
+const shopIdOf = (topic: string): string => topic.split(':')[1];
+
 /**
- * Every second: for shops with recent activity AND at least one dashboard
- * subscriber (PUBSUB NUMSUB - no viewers, no work), sum the last 60 one-second
- * buckets and push to `shop:{id}:live`. Per-shop leases split shops across
- * worker instances.
+ * Once per second, for every shop that has at least one subscriber to `shop:{id}:live` and only for those, publishes one
+ * `dashboard` frame without replay (S40 US5). Subscribed shops come from the realtime hub; one lease per shop splits them
+ * across worker instances; ticks never overlap (an overrunning tick makes the next one skip); shutdown finishes the tick
+ * in progress, publishes nothing afterwards and releases its leases.
  */
 @Injectable()
 export class DashboardTicker
-  implements OnApplicationBootstrap, OnModuleDestroy
+  implements OnApplicationBootstrap, OnApplicationShutdown
 {
   private readonly logger = new Logger(DashboardTicker.name);
-  private readonly me = `${hostname()}-${process.pid}`;
+  private readonly instanceId: string;
+  private readonly lease: Lease;
+  private readonly held = new Set<string>();
   private timer?: NodeJS.Timeout;
+  private inFlight?: Promise<number>;
+  private stopped = false;
 
   constructor(
-    private readonly redis: RedisService,
-    private readonly realtime: RealtimePublisher,
-  ) {}
+    private readonly subscriptions: RealtimeSubscriptions,
+    private readonly publisher: RealtimePublisher,
+    @Inject(LIVE_COUNTER_REPOSITORY)
+    private readonly counters: LiveCounterRepository,
+    @Inject(INSIGHTS_REDIS) private readonly redis: Redis,
+    @Inject(CLOCK) private readonly clock: Clock,
+    @Optional()
+    @Inject(DASHBOARD_TICKER_OPTIONS)
+    private readonly options: DashboardTickerOptions = {},
+  ) {
+    this.instanceId = options.instanceId ?? randomUUID();
+    this.lease = new Lease(redis, this.instanceId, LEASE_TTL_MS);
+  }
 
-  onApplicationBootstrap() {
+  onApplicationBootstrap(): void {
+    if (this.options.autoStart === false) return;
     this.timer = setInterval(
-      () =>
-        void this.tick().catch((e) =>
-          this.logger.warn(`dashboard tick: ${e.message}`),
-        ),
+      () => void this.tick().catch(() => undefined),
       1_000,
     );
     this.timer.unref();
   }
 
-  onModuleDestroy() {
+  async onApplicationShutdown(): Promise<void> {
+    this.stopped = true;
     clearInterval(this.timer);
+    await this.inFlight?.catch(() => undefined);
+    await Promise.all(
+      [...this.held].map((shopId) =>
+        this.lease.release(liveLeaseKey(shopId)).catch(() => undefined),
+      ),
+    );
+    this.held.clear();
   }
 
-  async tick(now = Date.now()): Promise<number> {
-    const nowSec = Math.floor(now / 1000);
-    await this.redis.client.zremrangebyscore(
-      DASH_ACTIVE,
-      '-inf',
-      nowSec - WINDOW_SEC * 2,
-    );
-    const shops = await this.redis.client.zrangebyscore(
-      DASH_ACTIVE,
-      nowSec - WINDOW_SEC,
-      '+inf',
-    );
+  /** One tick for `second` (epoch seconds). Returns the number of frames published; 0 when skipped. */
+  tick(second = Math.floor(this.clock.nowMs() / 1000)): Promise<number> {
+    if (this.stopped) return Promise.resolve(0);
+    if (this.inFlight) {
+      insightsMetrics.tickSkipped();
+      return Promise.resolve(0);
+    }
+    const run = this.run(second).finally(() => {
+      this.inFlight = undefined;
+    });
+    this.inFlight = run;
+    return run;
+  }
+
+  private async run(second: number): Promise<number> {
+    const shops = await this.watchedShops();
+    // a shop nobody watches any more gives its lease back, so another instance can take over when someone does
+    for (const shopId of [...this.held])
+      if (!shops.includes(shopId)) {
+        this.held.delete(shopId);
+        await this.lease.release(liveLeaseKey(shopId)).catch(() => undefined);
+      }
     let published = 0;
-    for (const shopId of shops) {
-      const topic = `shop:${shopId}:live` as const;
-      const [, watchers] = (await this.redis.client.pubsub(
-        'NUMSUB',
-        channelName(topic),
-      )) as [string, number];
-      if (!Number(watchers)) continue;
-      if (
-        !(await holdLease(
-          this.redis,
-          `dash:{${shopId}}:ticker`,
-          this.me,
-          3_000,
-        ))
-      )
-        continue;
-      await this.realtime.publish(
-        topic,
-        'dashboard',
-        await this.compute(shopId, nowSec),
-        { replay: false },
+    for (let i = 0; i < shops.length; i += CONCURRENCY) {
+      const results = await Promise.all(
+        shops
+          .slice(i, i + CONCURRENCY)
+          .map((shopId) => this.frameFor(shopId, second)),
       );
-      published++;
+      published += results.filter(Boolean).length;
     }
     return published;
   }
 
-  async compute(shopId: string, nowSec: number): Promise<LiveDashboard> {
-    const pipeline = this.redis.client.pipeline();
-    for (let s = nowSec - WINDOW_SEC + 1; s <= nowSec; s++)
-      pipeline.hgetall(dashBucketKey(shopId, s));
-    const buckets = ((await pipeline.exec()) ?? []).map(
-      ([, v]) => (v ?? {}) as Record<string, string>,
-    );
-    const totals = { checkouts: 0, orders: 0, units: 0, revenue: 0 };
-    const ordersPerSecond: number[] = [];
-    for (const b of buckets) {
-      for (const k of Object.keys(totals) as (keyof typeof totals)[])
-        totals[k] += Number(b[k] ?? 0);
-      ordersPerSecond.push(Number(b.orders ?? 0));
+  private async frameFor(shopId: string, second: number): Promise<boolean> {
+    try {
+      if (!(await this.lease.acquire(liveLeaseKey(shopId)))) return false;
+      this.held.add(shopId);
+      const frame = buildFrame(
+        shopId,
+        second,
+        await this.counters.window(shopId, second),
+      );
+      await this.publisher.publish(`shop:${shopId}:live`, 'dashboard', frame, {
+        replay: false,
+      });
+      insightsMetrics.frameComputed();
+      return true;
+    } catch (error) {
+      insightsLog(
+        this.logger,
+        'warn',
+        'dashboard_frame_failed',
+        { traceId: `tick-${second}` },
+        { shopId, error: (error as Error).name },
+      );
+      return false;
     }
-    return {
-      at: nowSec,
-      last60s: totals,
-      ordersPerSecond,
-      checkoutConversion: totals.checkouts
-        ? Math.round((totals.orders / totals.checkouts) * 1000) / 1000
-        : null,
-    };
+  }
+
+  /** The shops with a viewer; on a hub outage the list of the last 10 seconds is reused (S40 R-5). */
+  private async watchedShops(): Promise<string[]> {
+    try {
+      const topics = await this.subscriptions.topicsWithSubscribers(
+        'shop',
+        'live',
+      );
+      const shops = topics.map(shopIdOf);
+      await this.redis
+        .set(
+          LIVE_SUBSCRIBED_FALLBACK_KEY,
+          JSON.stringify(shops),
+          'PX',
+          FALLBACK_TTL_MS,
+        )
+        .catch(() => undefined);
+      return shops;
+    } catch (error) {
+      if (!(error instanceof RealtimeUnavailableError)) throw error;
+      try {
+        const cached = await this.redis.get(LIVE_SUBSCRIBED_FALLBACK_KEY);
+        return cached ? (JSON.parse(cached) as string[]) : [];
+      } catch {
+        return [];
+      }
+    }
   }
 }

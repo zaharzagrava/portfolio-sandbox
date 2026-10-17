@@ -26,6 +26,7 @@ await outbox.append(paymentSucceededEvent); // commits with the status change
 
 ## Used by
 <!-- used-by:start -->
+- [S04](../capabilities/S04-kyc-onboarding.md): R-27, B-15
 - [S05](../capabilities/S05-products.md): R-20
 - [S14](../capabilities/S14-ledger-reconciliation.md): R-37
 - [S53](../capabilities/S53-events-projections.md): R-01, B-01
@@ -35,6 +36,7 @@ await outbox.append(paymentSucceededEvent); // commits with the status change
 - [client-secret](client-secret.md)
 - [domain](domain.md)
 - [event-backbone](event-backbone.md)
+- [extraction-message](extraction-message.md)
 - [inbox-table](inbox-table.md)
 - [ledger-reconciliation-completed-event](ledger-reconciliation-completed-event.md)
 - [order-unavailable](order-unavailable.md)
@@ -45,5 +47,6 @@ await outbox.append(paymentSucceededEvent); // commits with the status change
 - [product-lifecycle](product-lifecycle.md)
 - [security-events](security-events.md)
 - [shop-cell-moved-event](shop-cell-moved-event.md)
+- [task-already-resolved](task-already-resolved.md)
 - [unregistered-aggregate-type-error](unregistered-aggregate-type-error.md)
 <!-- used-by:end -->

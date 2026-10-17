@@ -21,5 +21,6 @@ A bank statement's text tells the model to ignore its instructions. The account 
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [S04](../capabilities/S04-kyc-onboarding.md): R-15
+- [document-review](document-review.md)
 <!-- used-by:end -->

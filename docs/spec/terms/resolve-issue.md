@@ -21,6 +21,7 @@ On 2026-10-12, a capture `pi_123` is in the ledger but not on that day's stateme
 
 ## Used by
 <!-- used-by:start -->
+- [document-superseded](document-superseded.md)
 - [domain-layer](domain-layer.md)
 - [payments-domain-layer](payments-domain-layer.md)
 - [provider-statement](provider-statement.md)

@@ -104,3 +104,31 @@ Note on section C: `pnpm --dir packages/backend check:table-ownership` could not
 4. Live counters, ticker, topics module (AS-37–AS-45, AS-49).
 5. Analytics facts, "today", stats, refunds (AS-46–AS-48, AS-50–AS-57).
 6. Shop deletion, observability, static gates (AS-60–AS-62); update web client and k6 script.
+
+## Spec changes
+
+No human-signed file is changed. The capability page `docs/spec/capabilities/S40-leaderboards-dashboard.md` was created (WS0, `python3 scripts/livespec/check.py`: 0 errors); it states that boards, live counters and sales history count `lineTotalMinor` (the J01 follow-up). No `*.reviewed.json` was created or edited. Running `check.py --fix-backlinks` (the checker's own advice for the stale "used by" block of the concept pages S40 names) also regenerated the "used by" blocks of other concept and term pages that had drifted before this change; those edits are generated list lines only.
+
+## Implementation notes (deviations and decisions)
+
+- **Snapshot table**: `LeaderboardSnapshot` keeps its columns `period` (the period id, which names its kind) and `board` (`all` / `cat:<category>`); the primary key `(period, board, rank)` is the unique `(periodKind, periodId, category, rank)` of data-model.md. Added: `shopName`, `participants` (backfilled, then NOT NULL).
+- **Key expiry** is counted from the injected clock (`PEXPIRE` of period end + 35 days minus now), not as an absolute instant, so a frozen test clock never makes a key vanish at once.
+- **ClickHouse**: `shop_sale_facts` / `shop_refund_facts` are `clickhouse/051_shop_sale_facts.sql` (migrated at deploy); the drop of `seller_sales`, `shop_sales` and the minute view is the operator script `clickhouse/operator/052_drop_seller_sales.sql` (like S34's), to run after the facts were filled by a replay. `001_seller_sales.sql` and `050_shop_sales.sql` were removed from the migrated directory.
+- **Rejections**: the order consumers declare their order events with a permissive schema and validate against `packages/contracts` themselves, so every malformed `order.paid` gets one reason code and one `rejected` count in `leaderboard_events_total`. An envelope version the consumers do not know and an unhandled type stay with the consumer framework (its `dlq_total` counts them).
+- **Catch-up lookback**: a snapshot run looks at the 5 most recent weeks (2 months) that ended at least an hour ago, the span boards still live; each one without boards logs one `snapshot_skipped_no_boards` warning.
+- **Rate limit degraded counter** (`seller_insights_rate_limit_degraded_total`) is read from the limiter's `rate_limit_store_unavailable_total` series for the route's policy.
+- **Follow-ups of the planning request**: S03 (no tenancy model or SQL; the gates are `ShopScoped('shop.read')`, retested for SUSPENDED/DELETED in AS-26/47/52), S05 (`catalog.product_*` full state, compacted-topic replay and the tombstone state in AS-59), S10 (renamed order events and `lineTotalMinor`), S11 (`flashsale.*` events are an unhandled type on `orders.events`, skipped), S51 (`topicsWithSubscribers('shop', 'live')`, with the last list kept 10 s in Redis on `RealtimeUnavailableError`), J01 (duplicate and invalid-payload tests for every `orders.events` consumer: AS-02, AS-10, AS-41, AS-53, AS-55). S09, S13, S14 and S23 are not consumed.
+- **Wiring tests** `apps/{core,worker,projector}/src/seller-insights-wiring.e2e-spec.ts` start the real applications (L-015, L-018); the first run of the projector one showed that `ProjectionsModule` instantiates the consumers and so needs the stores exported by `SellerInsightsProjectorModule`.
+
+## Sibling-spec follow-ups
+
+- **S10**: add S40 as consumer of `order.reserved` and `order.refunded` (no payload change); keep `paidAt`, `lines[].shopId` non-null, `lineTotalMinor`, `title`, `userId`, `currency = EUR`; `order.paid` must precede `order.refunded` on the same key; a future partial refund must carry `shopRefunds: [{shopId, amountMinor}]`.
+- **S03**: S40 reads shop names from its own model fed by `tenancy.shop_created|updated|deleted`, not `ShopQueryService`; `shop.read` on a `SUSPENDED` shop must stay `200`.
+- **S05**: S40 keeps `category` and `productVersion` from `catalog.product_*`; `product_deleted` must keep carrying `productVersion`.
+- **S51**: the ticker depends on `topicsWithSubscribers('shop', 'live')` and its `RealtimeUnavailableError` rejection.
+- **S49**: schedules `seller-insights.snapshot.weekly` and `.monthly` are registered through `upsertSchedule`.
+- **W04**: routes `GET /shops/:shopId/rank`, `/stats` and `/dashboard/today` (new shapes, `…Minor` names, `from`/`to`, zero-filled `daily`); `GET /sellers/me/stats` and `GET /leaderboards/shops/:shopId` are removed; the frame has `shopId`, `windowSeconds`, `last60s.revenueMinor`; the SSE event data is the hub's `{topic, data}` envelope with the frame in `data`. `packages/web/lib/api/shops.ts` and the seller overview already use the new stats route and names (the `SELLER` role is no longer needed to read stats).
+- **S03**: the topic policy of `shop:<id>:live` in `libs/domains/tenancy/api/realtime-topics.ts` is unchanged and was exercised as is (AS-45: a member receives frames, a non-member and a member of another shop get `403`).
+- **J01/finance**: `scripts/load-tests/seed` and `seller-stats.test.js` now seed `shop_sale_facts` plus one owned shop per seller and call `GET /api/shops/:shopId/stats`.
+- **J02**: may poll `GET /shops/:shopId/rank` up to 10 s after payment.
+- **S09, S11, S13, S14, S23**: not consumed by S40 (decision in `research.md` R-11); nothing to adopt.

@@ -40,6 +40,7 @@ The outbox is the shared event backbone. A domain writes each event to an outbox
 - {{cap:S03}} Shops as tenants: memberships, roles and permissions, invites, per-shop SSO, cells, offboarding
 - {{cap:S04}} Staged onboarding questionnaire, KYC document intake, LLM extraction, human review, shop verification
 - {{cap:S05}} Product CRUD, pricing, stock fields, product cache and invalidation, product views
+- {{cap:S06}} Collaborative listing drafts - real-time co-editing, versions, publish to a product
 - {{cap:S07}} Bulk catalog import (multipart upload, malware scan, streamed parse, checkpoints and leases, error report)
 - {{cap:S08}} Shopify and WooCommerce catalog and stock sync (connect, incremental pull, webhooks, three-way stock merge, quarantine, resilience, reconciliation, management)
 - {{cap:S09}} Offline-first inventory sync for store devices (operation idempotency, stock deltas, per-field last-writer-wins, change feed, conflicts)
@@ -51,11 +52,16 @@ The outbox is the shared event backbone. A domain writes each event to an outbox
 - {{cap:S15}} Seller payouts - weekly run, reserves, provider transfer with idempotency, payout states
 - {{cap:S16}} Seller statements - bitemporal commission rates, monthly statements, close, adjustments, CSV, reconciliation
 - {{cap:S17}} Subscriptions - plans, versioned prices, state machine, billing run, charging and dunning, proration, credit
+- {{cap:S20}} Same-day courier dispatch (courier shift, offers, delivery state machine, tracking)
 - {{cap:S21}} Limited-drop auctions (proxy bids, anti-sniping, reserve, exactly-once close, second chance, shill guard)
+- {{cap:S22}} Launch-event booking (waiting room, admission tokens, seat holds, booking confirm, seat map, ticket limits)
+- {{cap:S23}} Live launch stream (sampled comment batches, reactions, moderation, pinned commerce)
 - {{cap:S24}} Product chat (channels, idempotent send, per-channel sequence, sync on reconnect, unread, receipts, presence, offline push)
+- {{cap:S27}} Brand stories CMS (versioned multi-locale stories, scheduled publish, preview, cache tags, sitemap)
 - {{cap:S28}} Notification routing, preferences, quiet hours, caps, per-channel queues, provider failover, inbox, suppression
 - {{cap:S29}} Product and review photos (upload, safe processing, duplicate flag, galleries, cleanup)
 - {{cap:S30}} Product video and VOD (resumable upload, transcoding graph, HLS ladder, signed delivery)
+- {{cap:S31}} Shop asset library (chunked dedupe, delta sync, conflicts, share links) and digital product delivery
 - {{cap:S32}} Product search: index sync with external versioning, zero-downtime reindex, relevance boosts, synonyms, facets, k-NN
 - {{cap:S36}} Sponsored listings (campaigns, signed click tokens, click counting, hourly billing, daily reconciliation)
 - {{cap:S38}} Feature flags and remote config (targeting, percentage rollout, local evaluation, kill switch, audit)

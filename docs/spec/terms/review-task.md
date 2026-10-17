@@ -25,5 +25,23 @@ A second moderator who resolves the same task gets [`409 task_already_resolved`]
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [S04](../capabilities/S04-kyc-onboarding.md): R-14, B-09
+- [auto-approval](auto-approval.md)
+- [conflict-of-interest](conflict-of-interest.md)
+- [content-type-mismatch](content-type-mismatch.md)
+- [document-review](document-review.md)
+- [document-supersede](document-supersede.md)
+- [document-superseded](document-superseded.md)
+- [escalating-issue](escalating-issue.md)
+- [holder-name-check](holder-name-check.md)
+- [iban-invalid](iban-invalid.md)
+- [masked-value](masked-value.md)
+- [missing-object](missing-object.md)
+- [moderation-task-status](moderation-task-status.md)
+- [onboarding-status-history](onboarding-status-history.md)
+- [real-file-type](real-file-type.md)
+- [rejection-reason-code](rejection-reason-code.md)
+- [shop-onboarding-document-rejected-event](shop-onboarding-document-rejected-event.md)
+- [superseded-document](superseded-document.md)
+- [task-already-resolved](task-already-resolved.md)
 <!-- used-by:end -->

@@ -20,5 +20,8 @@ A seller of a [submitted shop](onboarding-application-status.md) requests a [`BA
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [S04](../capabilities/S04-kyc-onboarding.md): B-04
+- [document-deduplicated-flag](document-deduplicated-flag.md)
+- [document-status](document-status.md)
+- [submission-required](submission-required.md)
 <!-- used-by:end -->

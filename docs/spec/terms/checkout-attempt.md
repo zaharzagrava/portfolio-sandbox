@@ -20,6 +20,7 @@ A user presses "Place order", presses it again, then reloads the page and submit
 
 ## Used by
 <!-- used-by:start -->
+- [S04](../capabilities/S04-kyc-onboarding.md): R-21
 - [S13](../capabilities/S13-payment-intents.md): R-16, R-21
 - [W03](../capabilities/W03-cart-checkout-orders.md): R-09, B-15
 - [idempotency-key](../concepts/idempotency-key.md): C-06

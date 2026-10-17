@@ -20,6 +20,7 @@ Two worker instances are running. The hourly schedule fires, one instance claims
 
 ## Used by
 <!-- used-by:start -->
+- [S04](../capabilities/S04-kyc-onboarding.md): R-20
 - [S13](../capabilities/S13-payment-intents.md): R-30
 - [S28](../capabilities/S28-notifications.md): R-44
 - [S33](../capabilities/S33-autocomplete.md): B-17
@@ -28,6 +29,7 @@ Two worker instances are running. The hourly schedule fires, one instance claims
 - [S51](../capabilities/S51-realtime-push.md): B-10, B-11
 - [autocomplete-build-total](autocomplete-build-total.md)
 - [blocklist-reload](blocklist-reload.md)
+- [document-status](document-status.md)
 - [entry-point](entry-point.md)
 - [fleet-concurrency](fleet-concurrency.md)
 - [job-lease](job-lease.md)

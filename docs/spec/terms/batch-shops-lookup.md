@@ -25,6 +25,7 @@ Here `shop_b` is suspended, so its slot holds `null`.
 
 ## Used by
 <!-- used-by:start -->
+- [S04](../capabilities/S04-kyc-onboarding.md): R-30
 - [S48](../capabilities/S48-bff.md): R-17, B-06
 - [product-view-count](product-view-count.md)
 - [rate-limit-policy](rate-limit-policy.md)

@@ -22,9 +22,13 @@ Shop verification is a [lifecycle ↗](../sw-external-terms.md#state-machine) th
 ## Used by
 <!-- used-by:start -->
 - [S03](../capabilities/S03-shops-rbac.md): R-28
+- [S04](../capabilities/S04-kyc-onboarding.md): B-19
 - [apply-verification](apply-verification.md)
+- [onboarding-document-type](onboarding-document-type.md)
+- [onboarding-questionnaire](onboarding-questionnaire.md)
 - [payouts-enabled](payouts-enabled.md)
 - [post-shops](post-shops.md)
+- [required-onboarding-documents](required-onboarding-documents.md)
 - [shop-onboarding-submitted-event](shop-onboarding-submitted-event.md)
 - [shop-rejected-event](shop-rejected-event.md)
 - [shop-status](shop-status.md)

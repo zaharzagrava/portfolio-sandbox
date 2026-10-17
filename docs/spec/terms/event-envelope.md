@@ -31,5 +31,6 @@ value:   { …envelope JSON… }
 - [event-too-large-error](event-too-large-error.md)
 - [mfa-disabled-event](mfa-disabled-event.md)
 - [outbox-relay](outbox-relay.md)
+- [rejected-operation](rejected-operation.md)
 - [security-events](security-events.md)
 <!-- used-by:end -->

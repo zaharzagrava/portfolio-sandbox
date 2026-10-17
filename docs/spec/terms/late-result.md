@@ -20,5 +20,6 @@ A shop's `BUSINESS_REGISTRATION` and `BANK_STATEMENT` are approved, so the appli
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [S04](../capabilities/S04-kyc-onboarding.md): R-27
+- [rejected-operation](rejected-operation.md)
 <!-- used-by:end -->

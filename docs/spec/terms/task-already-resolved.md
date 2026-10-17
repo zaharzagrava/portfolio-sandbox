@@ -20,5 +20,5 @@ Two moderators open the same bank statement task. One approves it and the other 
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [shop-onboarding-document-rejected-event](shop-onboarding-document-rejected-event.md)
 <!-- used-by:end -->

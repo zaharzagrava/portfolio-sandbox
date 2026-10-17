@@ -21,5 +21,6 @@ A shop's application became `VERIFIED` 30 days ago. When the purge job runs, the
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [S04](../capabilities/S04-kyc-onboarding.md): R-26
+- [late-result](late-result.md)
 <!-- used-by:end -->

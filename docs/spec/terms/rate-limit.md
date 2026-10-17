@@ -25,6 +25,7 @@ request 4     -> 429
 
 ## Used by
 <!-- used-by:start -->
+- [S04](../capabilities/S04-kyc-onboarding.md): R-12
 - [S10](../capabilities/S10-cart-checkout.md): R-09
 - [S14](../capabilities/S14-ledger-reconciliation.md): R-27
 - [S50](../capabilities/S50-rate-limiter.md): B-11
@@ -47,12 +48,15 @@ request 4     -> 429
 - [login-throttle](login-throttle.md)
 - [mfa-verify-endpoint](mfa-verify-endpoint.md)
 - [mutating-route](mutating-route.md)
+- [onboarding-submit](onboarding-submit.md)
 - [post-auth-logout](post-auth-logout.md)
 - [post-auth-refresh](post-auth-refresh.md)
 - [post-auth-register](post-auth-register.md)
+- [post-consumption-submit](post-consumption-submit.md)
 - [post-csp-reports](post-csp-reports.md)
 - [protected-route](protected-route.md)
 - [put-cart-items](put-cart-items.md)
+- [rate-limit-cost-resolver](rate-limit-cost-resolver.md)
 - [rate-limit-counter-store](rate-limit-counter-store.md)
 - [rate-limit-exemption](rate-limit-exemption.md)
 - [rate-limit-fail-mode](rate-limit-fail-mode.md)

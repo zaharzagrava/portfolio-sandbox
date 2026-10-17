@@ -15,12 +15,35 @@ export interface MyShop {
   role: 'OWNER' | 'ADMIN' | 'STAFF' | 'VIEWER';
 }
 
+/** `GET /api/shops/:shopId/stats` (S40): the shop's figures over the last `days` UTC days; money in minor units. */
 export interface SellerStats {
-  sellerId: string;
+  shopId: string;
   days: number;
-  summary: { revenueCents: number; orders: number; unitsSold: number; uniqueBuyers: number; refunds: number; avgOrderValueCents: number };
-  daily: { day: string; revenueCents: number; orders: number }[];
-  topProducts: { productId: string; revenueCents: number; unitsSold: number }[];
+  from: string;
+  to: string;
+  currency: string;
+  summary: {
+    revenueMinor: number;
+    orders: number;
+    unitsSold: number;
+    uniqueBuyers: number;
+    refundsCount: number;
+    refundedMinor: number;
+    netRevenueMinor: number;
+    avgOrderValueMinor: number;
+  };
+  daily: { day: string; revenueMinor: number; orders: number; refundedMinor: number }[];
+  topProducts: { productId: string; title: string; revenueMinor: number; unitsSold: number }[];
+}
+
+/** `GET /api/shops/:shopId/rank` (S40): the shop's own place on a board; members only. */
+export interface ShopRank {
+  period: { kind: 'week' | 'month'; id: string; startsAt: string; endsAt: string; closed: boolean };
+  category: string | null;
+  rank: number;
+  of: number;
+  topPercent: number;
+  revenueMinor: number;
 }
 
 export interface ShopProduct {
@@ -57,11 +80,28 @@ export function useCreateShop() {
   });
 }
 
-export function useSellerStats(enabled: boolean, days = 30) {
+export function useSellerStats(shopId: string | undefined, days = 30) {
   return useQuery({
-    queryKey: ['seller-stats', days],
-    enabled,
-    queryFn: async () => (await apiClient.get<SellerStats>('/api/sellers/me/stats', { params: { days } })).data,
+    queryKey: ['seller-stats', shopId, days],
+    enabled: !!shopId,
+    queryFn: async () => (await apiClient.get<SellerStats>(`/api/shops/${shopId}/stats`, { params: { days } })).data,
+  });
+}
+
+/** `404 not_ranked` (no sales on the board yet) is an ordinary answer, not an error to retry. */
+export function useShopRank(shopId: string | undefined, period: 'week' | 'month' = 'week') {
+  return useQuery({
+    queryKey: ['shop-rank', shopId, period],
+    enabled: !!shopId,
+    retry: false,
+    queryFn: async () => {
+      try {
+        return (await apiClient.get<ShopRank>(`/api/shops/${shopId}/rank`, { params: { period } })).data;
+      } catch (error) {
+        if ((error as { response?: { status?: number } }).response?.status === 404) return null;
+        throw error;
+      }
+    },
   });
 }
 

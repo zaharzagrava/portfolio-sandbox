@@ -25,6 +25,7 @@ The `operation` value `refund` is illustrative. To find the payment, search the 
 
 ## Used by
 <!-- used-by:start -->
+- [accepted-extraction](accepted-extraction.md)
 - [charge-outcome](charge-outcome.md)
 - [payments-provider-calls-total](payments-provider-calls-total.md)
 - [provider-operation](provider-operation.md)

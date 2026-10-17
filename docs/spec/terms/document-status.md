@@ -26,5 +26,5 @@ If the model call times out, the document stays `EXTRACTING` until the queue red
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [S04](../capabilities/S04-kyc-onboarding.md): R-14, R-17, B-07
 <!-- used-by:end -->

@@ -30,5 +30,6 @@ A call to a product returns this problem body:
 - [payment-method-token](payment-method-token.md)
 - [problem-title](problem-title.md)
 - [service-caller-not-allowed](service-caller-not-allowed.md)
+- [task-already-resolved](task-already-resolved.md)
 - [unsupported-combination](unsupported-combination.md)
 <!-- used-by:end -->

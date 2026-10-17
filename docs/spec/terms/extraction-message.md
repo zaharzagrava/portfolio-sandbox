@@ -25,5 +25,12 @@ A message without a valid `documentId` becomes a [failed batch item](failed-batc
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [S04](../capabilities/S04-kyc-onboarding.md): R-13
+- [document-upload](document-upload.md)
+- [late-result](late-result.md)
+- [model-call](model-call.md)
+- [model-confidence](model-confidence.md)
+- [review-task](review-task.md)
+- [strict-json](strict-json.md)
+- [upload-grant](upload-grant.md)
 <!-- used-by:end -->

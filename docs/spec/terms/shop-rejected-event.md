@@ -21,6 +21,7 @@ rules_hash: e3b0c44298fc
 
 ## Used by
 <!-- used-by:start -->
+- [shop-onboarding-document-rejected-event](shop-onboarding-document-rejected-event.md)
 - [shop-verification](shop-verification.md)
 - [tenancy-domain-layer](tenancy-domain-layer.md)
 <!-- used-by:end -->

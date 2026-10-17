@@ -20,6 +20,7 @@ A capability is one numbered part of the system specification that covers one ar
 
 ## Used by
 <!-- used-by:start -->
+- [S04](../capabilities/S04-kyc-onboarding.md): R-30
 - [W01](../capabilities/W01-auth-account.md): R-20
 - [acceptance-scenario](acceptance-scenario.md)
 - [behavior](behavior.md)

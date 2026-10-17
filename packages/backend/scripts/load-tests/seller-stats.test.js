@@ -29,30 +29,29 @@ export const options = {
   },
   thresholds: {
     ...baseThresholds,
-    'http_req_duration{name:GET /api/sellers/me/stats}': ['p(95)<500', 'p(99)<1500'],
-    'http_req_failed{name:GET /api/sellers/me/stats}': ['rate<0.01'],
+    'http_req_duration{name:GET /api/shops/:shopId/stats}': ['p(95)<500', 'p(99)<1500'],
+    'http_req_failed{name:GET /api/shops/:shopId/stats}': ['rate<0.01'],
   },
 };
 
 export default function () {
-  const email = sellers[exec.scenario.iterationInTest % sellers.length];
+  // S40: stats belong to a shop; the seeder gave every seller a shop they own (data/seller-stats.json)
+  const { email, shopId } = sellers[exec.scenario.iterationInTest % sellers.length];
 
   const session = login(email, PASSWORD);
   if (!session) return;
 
-  check(session.user, { 'login: role is SELLER': (u) => u && u.role === 'SELLER' });
-
   for (let i = 0; i < STATS_CALLS_PER_SELLER; i++) {
     const days = pick([7, 30, 90]);
 
-    const res = http.get(`${urls.api}/api/sellers/me/stats?days=${days}`, {
+    const res = http.get(`${urls.api}/api/shops/${shopId}/stats?days=${days}`, {
       headers: authHeaders(session.token),
-      tags: { name: 'GET /api/sellers/me/stats', days: String(days) },
+      tags: { name: 'GET /api/shops/:shopId/stats', days: String(days) },
     });
 
     check(res, {
       'stats: status 200': (r) => r.status === 200,
-      'stats: scoped to caller': (r) => safeJson(r, 'sellerId') === session.user.id,
+      'stats: scoped to the shop': (r) => safeJson(r, 'shopId') === shopId,
       'stats: has orders': (r) => (safeJson(r, 'summary.orders') || 0) > 0,
     });
 

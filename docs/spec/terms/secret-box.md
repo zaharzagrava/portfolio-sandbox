@@ -34,4 +34,5 @@ Illustrative: a domain that must store a secret, such as an MFA factor secret, w
 - [reseal-sso-secrets-job](reseal-sso-secrets-job.md)
 - [resolve-as-unknown](resolve-as-unknown.md)
 - [seal-context](seal-context.md)
+- [sealed-copy](sealed-copy.md)
 <!-- used-by:end -->

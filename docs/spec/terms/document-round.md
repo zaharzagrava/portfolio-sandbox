@@ -20,5 +20,14 @@ A shop's first round is rejected. The seller saves a step and submits again, and
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [S04](../capabilities/S04-kyc-onboarding.md): R-10, R-11
+- [document-content-hash](document-content-hash.md)
+- [document-deduplicated-flag](document-deduplicated-flag.md)
+- [document-kind](document-kind.md)
+- [document-supersede](document-supersede.md)
+- [rejection-reason-code](rejection-reason-code.md)
+- [submission-no](submission-no.md)
+- [submission-required](submission-required.md)
+- [superseded-document](superseded-document.md)
+- [verification-document-purge-job](verification-document-purge-job.md)
 <!-- used-by:end -->

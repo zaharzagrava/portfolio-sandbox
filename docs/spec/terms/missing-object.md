@@ -20,5 +20,7 @@ A `BUSINESS_REGISTRATION` document is [`QUEUED`](document-status.md), but the wo
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [S04](../capabilities/S04-kyc-onboarding.md): R-18
+- [S31](../capabilities/S31-assets-digital-delivery.md): R-24
+- [content-type-mismatch](content-type-mismatch.md)
 <!-- used-by:end -->

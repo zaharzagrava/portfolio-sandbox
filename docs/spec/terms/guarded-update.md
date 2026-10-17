@@ -29,6 +29,7 @@ The processor reads a payment as `UNKNOWN` at version 3 and tries to write `COMP
 - [decide-payment-status](decide-payment-status.md)
 - [inbox-table](inbox-table.md)
 - [last-owner](last-owner.md)
+- [moderation-task-status](moderation-task-status.md)
 - [optimistic-concurrency](optimistic-concurrency.md)
 - [order-command](order-command.md)
 - [order-version](order-version.md)

@@ -21,7 +21,10 @@ A shop is created by `POST /shops` and starts with verification `UNVERIFIED` and
 
 ## Used by
 <!-- used-by:start -->
+- [S04](../capabilities/S04-kyc-onboarding.md): R-05
 - [consumer-outcomes](consumer-outcomes.md)
+- [onboarding-submit](onboarding-submit.md)
+- [post-consumption-submit](post-consumption-submit.md)
 - [shop-verification](shop-verification.md)
 - [tenancy-domain-layer](tenancy-domain-layer.md)
 <!-- used-by:end -->

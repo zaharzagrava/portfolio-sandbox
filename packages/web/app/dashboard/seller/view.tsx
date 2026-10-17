@@ -8,7 +8,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useAuth } from '@/hooks/use-auth';
 import { useRefreshSession } from '@/hooks/use-auth-actions';
 import { apiErrorMessage } from '@/lib/api/errors';
 import { SHOP_SLUG, slugify, useCreateShop, useMyShops, useSellerStats } from '@/lib/api/shops';
@@ -68,13 +67,11 @@ function OpenShop() {
 }
 
 export function SellerOverviewView() {
-  const { user } = useAuth();
   const shops = useMyShops();
   const shop = shops.data?.[0];
   const isSeller = !!shop;
-  // The sales rollup is only served to accounts with the SELLER role, which opening a shop no longer grants.
-  const hasStats = user?.role === 'SELLER';
-  const stats = useSellerStats(isSeller && hasStats);
+  // Stats are the shop's (S40): every member of the shop may read them.
+  const stats = useSellerStats(shop?.id);
 
   if (shops.isLoading) return <div className="flex h-full items-center justify-center">Loading...</div>;
 
@@ -88,9 +85,10 @@ export function SellerOverviewView() {
   }
 
   const summary = stats.data?.summary;
-  const dash = hasStats ? '…' : '—';
+  const dash = '…';
+  const currency = stats.data?.currency ?? 'EUR';
   const cards = [
-    { title: 'Revenue (30d)', value: summary ? formatMoney(summary.revenueCents, 'USD') : dash, icon: DollarSign },
+    { title: 'Revenue (30d)', value: summary ? formatMoney(summary.revenueMinor, currency) : dash, icon: DollarSign },
     { title: 'Orders', value: summary?.orders ?? dash, icon: ShoppingCart },
     { title: 'Unique Buyers', value: summary?.uniqueBuyers ?? dash, icon: Users },
     { title: 'Units Sold', value: summary?.unitsSold ?? dash, icon: Activity },
@@ -142,7 +140,7 @@ export function SellerOverviewView() {
       <Card>
         <CardHeader>
           <CardTitle>Top products (30 days)</CardTitle>
-          <CardDescription>From the ClickHouse sales rollup (SD-31); updates within seconds of a paid order.</CardDescription>
+          <CardDescription>From the shop's sales history (S40); updates within seconds of a paid order.</CardDescription>
         </CardHeader>
         <CardContent>
           {stats.isError ? (
@@ -153,11 +151,11 @@ export function SellerOverviewView() {
             <ul className="space-y-2 text-sm">
               {stats.data.topProducts.map((p) => (
                 <li key={p.productId} className="flex justify-between">
-                  <Link href={`/products/${p.productId}`} className="hover:underline font-mono">
-                    {p.productId.slice(0, 8)}
+                  <Link href={`/products/${p.productId}`} className="hover:underline">
+                    {p.title}
                   </Link>
                   <span>
-                    {p.unitsSold} sold · {formatMoney(p.revenueCents, 'USD')}
+                    {p.unitsSold} sold · {formatMoney(p.revenueMinor, currency)}
                   </span>
                 </li>
               ))}

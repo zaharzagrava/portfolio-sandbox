@@ -20,6 +20,7 @@ S13 appends its payment event through S53's outbox service inside its transactio
 
 ## Used by
 <!-- used-by:start -->
+- [S04](../capabilities/S04-kyc-onboarding.md): R-13
 - [S13](../capabilities/S13-payment-intents.md): R-22, B-01
 - [S14](../capabilities/S14-ledger-reconciliation.md): R-24
 - [S53](../capabilities/S53-events-projections.md): R-08, R-16, R-19
@@ -32,6 +33,8 @@ S13 appends its payment event through S53's outbox service inside its transactio
 - [at-least-once-delivery](at-least-once-delivery.md)
 - [best-effort-push](best-effort-push.md)
 - [consumer-deduplication-mode](consumer-deduplication-mode.md)
+- [document-id](document-id.md)
+- [document-upload](document-upload.md)
 - [domain](domain.md)
 - [event-definition](event-definition.md)
 - [event-id](event-id.md)
@@ -46,6 +49,7 @@ S13 appends its payment event through S53's outbox service inside its transactio
 - [ledger-reconciliation-issue-opened-event](ledger-reconciliation-issue-opened-event.md)
 - [natural-idempotency](natural-idempotency.md)
 - [no-active-transaction-error](no-active-transaction-error.md)
+- [onboarding-documents-queue](onboarding-documents-queue.md)
 - [outbox-append-task](outbox-append-task.md)
 - [outbox-append](outbox-append.md)
 - [outbox-connector-configuration](outbox-connector-configuration.md)

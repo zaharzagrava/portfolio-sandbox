@@ -26,6 +26,7 @@ A strict request body is the rule that create and update bodies for products acc
 <!-- used-by:start -->
 - [S05](../capabilities/S05-products.md): R-02
 - [domain-layer](domain-layer.md)
+- [onboarding-questionnaire](onboarding-questionnaire.md)
 - [parse-create-input](parse-create-input.md)
 - [product-command-service](product-command-service.md)
 - [unknown-body-field](unknown-body-field.md)

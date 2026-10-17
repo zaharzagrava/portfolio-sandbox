@@ -23,5 +23,6 @@ Field names in this body are illustrative.
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [S04](../capabilities/S04-kyc-onboarding.md): R-10
+- [document-deduplicated-flag](document-deduplicated-flag.md)
 <!-- used-by:end -->

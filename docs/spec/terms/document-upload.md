@@ -19,5 +19,14 @@ A seller requests a `BANK_STATEMENT` upload and gets `201` with status `AWAITING
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [S04](../capabilities/S04-kyc-onboarding.md): B-04, B-06
+- [already-verified](already-verified.md)
+- [document-already-approved](document-already-approved.md)
+- [document-content-hash](document-content-hash.md)
+- [document-deduplicated-flag](document-deduplicated-flag.md)
+- [document-not-required](document-not-required.md)
+- [resubmission-required](resubmission-required.md)
+- [submission-required](submission-required.md)
+- [upload-grant](upload-grant.md)
+- [upload-mismatch](upload-mismatch.md)
 <!-- used-by:end -->

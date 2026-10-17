@@ -1,245 +1,206 @@
-import { INestApplication, Module } from '@nestjs/common';
-import { getModelToken, SequelizeModule } from '@nestjs/sequelize';
-import request from 'supertest';
-import { v4 } from 'uuid';
-import { generateTestingModule } from '@app/test/utils/global-modules';
-import { SeedsModule } from '@app/test/seeds/seeds.module';
-import { SeedsService } from '@app/test/seeds/seeds.service';
-import { TableName } from '@app/test/seeds/types';
-import { RedisService } from '@app/infrastructure/redis/redis.service';
-import { ProductQueryModule } from '@app/domains/catalog';
-import { ShopModel as Shop } from '@app/domains/tenancy';
-import { OrderPaid, OrderReserved } from '@app/domains/orders';
-import { LeaderboardsModule } from './leaderboards.module';
-import { LeaderboardsWorkerModule } from './leaderboards-worker.module';
-import { LeaderboardProjector } from './infra/leaderboard.projector';
-import { ShopLiveProjector } from './infra/shop-live.projector';
-import { LeaderboardSnapshotJobs } from './infra/leaderboard-snapshot.jobs';
-import { DashboardTicker } from './infra/dashboard-ticker.service';
-import { boardKey, revenueKey, ALL } from './infra/leaderboard-keys';
-import { periodOf } from './domain/periods';
+import { v4 as uuidv4 } from 'uuid';
+import {
+  leaderboardPageSchema,
+  liveDashboardFrameSchema,
+  shopRankSchema,
+} from '@marketplace-sandbox/contracts';
+import { BoardProjector } from './infra/projectors/board.projector';
+import { LiveProjector } from './infra/projectors/live.projector';
+import {
+  createInsightsApp,
+  T0,
+  type InsightsTestApp,
+} from './testing/insights-fixtures';
 
-@Module({
-  imports: [SequelizeModule.forFeature([Shop]), ProductQueryModule],
-  providers: [LeaderboardProjector, ShopLiveProjector],
-})
-class ProjectorsSpecModule {}
-
-/** SD-18 against real Redis + Postgres. */
+/**
+ * The first SD-18 scenarios, kept end to end through the real feeds and routes of the capability: ties and replays,
+ * the discounted line, the snapshot that outlives the board store, the live window. The detailed scenarios are in the
+ * sibling files (`leaderboard-feed`, `leaderboard-read`, `leaderboard-snapshots`, `dashboard-live`).
+ */
 describe('Leaderboards & live dashboard (e2e)', () => {
-  let app: INestApplication;
-  let seeds: SeedsService;
-  let projector: LeaderboardProjector;
-  let redis: RedisService;
-  const http = () => request(app.getHttpServer());
+  let t: InsightsTestApp;
 
   beforeAll(async () => {
-    const moduleRef = await generateTestingModule(
-      [
-        LeaderboardsModule,
-        LeaderboardsWorkerModule,
-        ProjectorsSpecModule,
-        SeedsModule,
+    t = await createInsightsApp();
+  });
+  afterAll(() => t.close());
+  beforeEach(() => t.reset());
+
+  const at = (seconds: number) => new Date(T0.getTime() + seconds * 1000);
+  const list = async (query = 'period=week') =>
+    leaderboardPageSchema.parse(
+      (await t.http().get(`/api/leaderboards?${query}`).expect(200)).body,
+    ).entries;
+
+  it('S40 AS-04: ranks by revenue, the earlier sale wins ties, replays never double count, category boards are separate', async () => {
+    const [alpha, beta] = await t.trio();
+    const phone = await t.product(alpha.shopId, 'electronics');
+    const cable = await t.product(alpha.shopId, 'accessories');
+    const first = t.paid({
+      paidAt: at(-60),
+      lines: [
+        { shopId: alpha.shopId, productId: phone, lineTotalMinor: 10_000 },
       ],
-      { stores: ['redis'] },
-    );
-    app = moduleRef.createNestApplication();
-    app.setGlobalPrefix('api');
-    await app.init();
-    seeds = app.get(SeedsService);
-    projector = app.get(LeaderboardProjector);
-    redis = app.get(RedisService);
-  });
-
-  afterAll(async () => {
-    await app.close();
-  });
-
-  beforeEach(async () => {
-    await seeds.clean();
-    const week = periodOf('week', new Date()).id;
-    const keys = await redis.client.keys(`lb:{${week}}:*`);
-    if (keys.length) await redis.client.del(...keys);
-  });
-
-  const shop = async (name: string) =>
-    (
-      await app
-        .get<typeof Shop>(getModelToken(Shop))
-        .create({ name, slug: `${name.toLowerCase()}-${v4().slice(0, 6)}` })
-    ).id;
-  const sale = (
-    shopId: string,
-    productId: string,
-    price: number,
-    at: Date,
-    quantity = 1,
-    discountMinor = 0,
-  ) => {
-    const orderId = v4();
-    return OrderPaid.create(
-      orderId,
-      2,
-      {
-        orderId,
-        userId: v4(),
-        orderVersion: 2,
-        totalMinor: price * quantity - discountMinor,
-        currency: 'usd',
-        paymentRef: v4(),
-        paidAt: at.toISOString(),
-        lines: [
-          {
-            productId,
-            shopId,
-            title: 'Item',
-            quantity,
-            unitPriceMinor: price,
-            discountMinor,
-            lineTotalMinor: price * quantity - discountMinor,
-          },
-        ],
-        shopOrders: [],
-      },
-      at,
-    );
-  };
-
-  it('ranks by revenue, earlier sale wins ties, replays never double count, per-category boards', async () => {
-    const [alpha, beta] = [await shop('Alpha'), await shop('Beta')];
-    const [phone, cable] = await seeds.createTreelike([
-      { __type__: TableName.Product, title: 'Phone', category: 'electronics' },
-      { __type__: TableName.Product, title: 'Cable', category: 'accessories' },
-    ]);
-    const now = Date.now();
-    const first = sale(alpha, phone.id, 10_000, new Date(now - 60_000));
-    await projector.project([
+    });
+    await t.deliver(t.projector(BoardProjector), [
       first,
-      sale(beta, phone.id, 10_000, new Date(now - 30_000)),
+      t.paid({
+        paidAt: at(-30),
+        lines: [
+          { shopId: beta.shopId, productId: phone, lineTotalMinor: 10_000 },
+        ],
+      }),
     ]);
-    await projector.project([first]); // Kafka redelivery
+    await t.deliver(t.projector(BoardProjector), [first]); // redelivery
 
-    let board = (await http().get('/api/leaderboards?period=week').expect(200))
-      .body;
-    expect(
-      board.entries.map((e: { name: string; revenue: number }) => [
-        e.name,
-        e.revenue,
-      ]),
-    ).toEqual([
-      ['Alpha', 10_000],
-      ['Beta', 10_000],
+    expect((await list()).map((e) => e.name)).toEqual(['Alpha', 'Beta']);
+    expect(await t.board(t.week(), 'all')).toEqual([
+      { shopId: alpha.shopId, revenueMinor: 10_000 },
+      { shopId: beta.shopId, revenueMinor: 10_000 },
     ]);
+    expect(await t.board(t.month(), 'cat:electronics')).toHaveLength(2);
+    expect(t.metrics.board('duplicate')).toBe(2);
 
-    await projector.project([sale(beta, cable.id, 1, new Date(now))]);
-    board = (await http().get('/api/leaderboards?period=week').expect(200))
-      .body;
-    expect(board.entries.map((e: { name: string }) => e.name)).toEqual([
-      'Beta',
-      'Alpha',
+    await t.deliver(t.projector(BoardProjector), [
+      t.paid({
+        paidAt: at(0),
+        lines: [{ shopId: beta.shopId, productId: cable, lineTotalMinor: 1 }],
+      }),
     ]);
+    expect((await list()).map((e) => e.name)).toEqual(['Beta', 'Alpha']);
     expect(
-      (
-        await http()
-          .get('/api/leaderboards?period=week&category=accessories')
-          .expect(200)
-      ).body.entries.map((e: { name: string }) => e.name),
+      (await list('period=week&category=accessories')).map((e) => e.name),
     ).toEqual(['Beta']);
-    expect(
+    expect(await list('period=month&category=electronics')).toHaveLength(2);
+    const rank = shopRankSchema.parse(
       (
-        await http()
-          .get('/api/leaderboards?period=month&category=electronics')
-          .expect(200)
-      ).body.entries,
-    ).toHaveLength(2);
-
-    expect(
-      (
-        await http()
-          .get(`/api/leaderboards/shops/${alpha}?period=week`)
+        await t
+          .as(alpha.owner)
+          .get(`/api/shops/${alpha.shopId}/rank?period=week`)
           .expect(200)
       ).body,
-    ).toMatchObject({ rank: 2, of: 2, topPercent: 100, revenue: 10_000 });
+    );
+    expect(rank).toMatchObject({
+      rank: 2,
+      of: 2,
+      topPercent: 100,
+      revenueMinor: 10_000,
+    });
   });
 
-  it('J01 G-25: a discounted line counts what was paid (lineTotalMinor), not price times quantity', async () => {
-    const alpha = await shop('Alpha');
-    const [phone] = await seeds.createTreelike([
-      { __type__: TableName.Product, title: 'Phone', category: 'electronics' },
+  it('S40 AS-01: a discounted line counts what was paid (lineTotalMinor), not price times quantity', async () => {
+    const alpha = await t.seedShop({ name: 'Alpha' });
+    const phone = await t.product(alpha.shopId, 'electronics');
+    await t.deliver(t.projector(BoardProjector), [
+      t.paid({
+        paidAt: T0,
+        lines: [
+          {
+            shopId: alpha.shopId,
+            productId: phone,
+            quantity: 2,
+            unitPriceMinor: 10_000,
+            discountMinor: 3_000,
+            lineTotalMinor: 17_000,
+          },
+        ],
+      }),
     ]);
-    await projector.project([
-      sale(alpha, phone.id, 10_000, new Date(), 2, 3_000), // 2 x 100.00 less 30.00
+
+    expect(await t.board(t.week(), 'all')).toEqual([
+      { shopId: alpha.shopId, revenueMinor: 17_000 },
     ]);
-    const board = (
-      await http().get('/api/leaderboards?period=week').expect(200)
-    ).body;
-    expect(
-      board.entries.map((e: { name: string; revenue: number }) => [
-        e.name,
-        e.revenue,
-      ]),
-    ).toEqual([['Alpha', 17_000]]);
+    const rank = shopRankSchema.parse(
+      (
+        await t
+          .as(alpha.owner)
+          .get(`/api/shops/${alpha.shopId}/rank?period=week`)
+          .expect(200)
+      ).body,
+    );
+    expect(rank.revenueMinor).toBe(17_000);
   });
 
-  it('a closed period is served from the Postgres snapshot after Redis forgets it', async () => {
-    const [alpha] = [await shop('Alpha')];
-    const [phone] = await seeds.createTreelike([
-      { __type__: TableName.Product, title: 'Phone', category: 'electronics' },
+  it('S40 AS-22: a closed period is served from the PostgreSQL snapshot after Redis forgets it', async () => {
+    const alpha = await t.readModelShop('Alpha');
+    const phone = await t.product(alpha.shopId, 'electronics');
+    await t.deliver(t.projector(BoardProjector), [
+      t.paid({
+        paidAt: '2026-10-02T10:00:00Z',
+        lines: [
+          { shopId: alpha.shopId, productId: phone, lineTotalMinor: 5_000 },
+        ],
+      }),
     ]);
-    await projector.project([sale(alpha, phone.id, 5_000, new Date())]);
-    const week = periodOf('week', new Date()).id;
+    t.clock.set(new Date('2026-10-05T01:00:00Z'));
 
-    expect(
-      await app
-        .get(LeaderboardSnapshotJobs)
-        .snapshot({ kind: 'week', periodId: week }),
-    ).toBe(2); // all + category board
-    await redis.client.del(boardKey(week, ALL), revenueKey(week, ALL));
+    const results = await t.runSnapshotJob('week');
+    t.clock.set(T0);
 
-    const board = (
-      await http().get(`/api/leaderboards?period=week&id=${week}`).expect(200)
-    ).body;
-    expect(board.entries).toEqual([
-      { rank: 1, shopId: alpha, name: 'Alpha', revenue: 5_000 },
+    expect(results).toEqual([{ periodId: '2026-W40', boards: 2, rows: 2 }]); // the overall and the electronics board
+    await t.flushRedisPrefix('lb:{2026-W40}');
+    const page = leaderboardPageSchema.parse(
+      (
+        await t
+          .http()
+          .get('/api/leaderboards?period=week&id=2026-W40')
+          .expect(200)
+      ).body,
+    );
+    expect(page.source).toBe('snapshot');
+    expect(page.entries).toEqual([
+      { rank: 1, shopId: alpha.shopId, slug: alpha.slug, name: 'Alpha' },
     ]);
   });
 
-  it('live dashboard sums the last 60 one-second buckets: checkouts, orders, revenue, conversion', async () => {
-    const shopId = v4();
-    const live = app.get(ShopLiveProjector);
-    const now = new Date();
-    const reserve = () => {
-      const orderId = v4();
-      return OrderReserved.create(
-        orderId,
-        1,
+  it('S40 AS-37: the live window sums the last 60 one-second buckets: checkouts, orders, revenue, conversion', async () => {
+    const shop = await t.seedShop();
+    const second = Math.floor(T0.getTime() / 1000);
+    const reserve = () =>
+      t.reserved({ shopIds: [shop.shopId] }, { occurredAt: T0 });
+    const paid = t.paid({
+      paidAt: T0,
+      lines: [
         {
-          orderId,
-          orderVersion: 1,
-          userId: v4(),
-          totalMinor: 0,
-          currency: 'usd',
-          shopIds: [shopId],
-          reservedUntil: now.toISOString(),
+          shopId: shop.shopId,
+          productId: uuidv4(),
+          quantity: 2,
+          lineTotalMinor: 5_000,
         },
-        now,
-      );
-    };
-    const paid = sale(shopId, v4(), 2_500, now, 2);
-    await live.project([reserve(), reserve(), reserve(), reserve(), paid]);
-    await live.project([paid]); // replay
+      ],
+    });
+    await t.deliver(t.projector(LiveProjector), [
+      reserve(),
+      reserve(),
+      reserve(),
+      reserve(),
+      paid,
+    ]);
+    await t.deliver(t.projector(LiveProjector), [paid]); // replay
+    const stream = t.subscribe(shop.owner, shop.shopId, {
+      count: 1,
+      timeoutMs: 5000,
+    });
+    await t.waitForSubscriber(shop.shopId);
 
-    const dash = await app
-      .get(DashboardTicker)
-      .compute(shopId, Math.floor(now.getTime() / 1000));
-    expect(dash.last60s).toEqual({
+    await t.ticker.tick(second);
+
+    const result = await stream;
+    expect(result.status).toBe(200);
+    expect(result.events).toHaveLength(1);
+    const frame = liveDashboardFrameSchema.parse(
+      JSON.parse(result.events[0].data!).data,
+    );
+    expect(frame.shopId).toBe(shop.shopId);
+    expect(frame.at).toBe(second);
+    expect(frame.last60s).toEqual({
       checkouts: 4,
       orders: 1,
       units: 2,
-      revenue: 5_000,
+      revenueMinor: 5_000,
     });
-    expect(dash.checkoutConversion).toBe(0.25);
-    expect(dash.ordersPerSecond).toHaveLength(60);
-    expect(dash.ordersPerSecond[59]).toBe(1);
+    expect(frame.checkoutConversion).toBe(0.25);
+    expect(frame.ordersPerSecond).toHaveLength(60);
+    expect(frame.ordersPerSecond[59]).toBe(1);
   });
 });

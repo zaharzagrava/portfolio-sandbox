@@ -36,6 +36,7 @@ A consumer gets a batch of 5 events, and the third one fails its schema. The thi
 - [device-token](device-token.md)
 - [event-sink](event-sink.md)
 - [exhausted](exhausted.md)
+- [failed-batch-item](failed-batch-item.md)
 - [generic-fallback-text](generic-fallback-text.md)
 - [handler-failed](handler-failed.md)
 - [known-unmapped-type](known-unmapped-type.md)

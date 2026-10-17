@@ -35,6 +35,7 @@ Scheduled jobs and leases let a domain run background and recurring work without
 - {{cap:S01}} Registration, password login, sessions, refresh-token rotation, JWKS, service-to-service tokens
 - {{cap:S04}} Staged onboarding questionnaire, KYC document intake, LLM extraction, human review, shop verification
 - {{cap:S05}} Product CRUD, pricing, stock fields, product cache and invalidation, product views
+- {{cap:S06}} Collaborative listing drafts - real-time co-editing, versions, publish to a product
 - {{cap:S07}} Bulk catalog import (multipart upload, malware scan, streamed parse, checkpoints and leases, error report)
 - {{cap:S10}} Cart (guest + merge), idempotent checkout, stock reservation, multi-shop split, order state machine, payment webhook
 - {{cap:S11}} Flash sales (scheduled drops, bucketed fast stock, admission, never oversell, async reconciliation)
@@ -45,7 +46,10 @@ Scheduled jobs and leases let a domain run background and recurring work without
 - {{cap:S16}} Seller statements - bitemporal commission rates, monthly statements, close, adjustments, CSV, reconciliation
 - {{cap:S17}} Subscriptions - plans, versioned prices, state machine, billing run, charging and dunning, proration, credit
 - {{cap:S18}} Usage metering (late events, adjustments) and entitlement checks
+- {{cap:S20}} Same-day courier dispatch (courier shift, offers, delivery state machine, tracking)
 - {{cap:S21}} Limited-drop auctions (proxy bids, anti-sniping, reserve, exactly-once close, second chance, shill guard)
+- {{cap:S22}} Launch-event booking (waiting room, admission tokens, seat holds, booking confirm, seat map, ticket limits)
+- {{cap:S23}} Live launch stream (sampled comment batches, reactions, moderation, pinned commerce)
 - {{cap:S24}} Product chat (channels, idempotent send, per-channel sequence, sync on reconnect, unread, receipts, presence, offline push)
 - {{cap:S28}} Notification routing, preferences, quiet hours, caps, per-channel queues, provider failover, inbox, suppression
 - {{cap:S29}} Product and review photos (upload, safe processing, duplicate flag, galleries, cleanup)

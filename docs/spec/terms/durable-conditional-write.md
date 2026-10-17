@@ -26,6 +26,7 @@ The stored step is not below T, so the write is refused. The answer stays the sa
 <!-- used-by:start -->
 - [S01](../capabilities/S01-auth-sessions.md): R-26
 - [S02](../capabilities/S02-mfa-oidc.md): R-09
+- [S04](../capabilities/S04-kyc-onboarding.md): R-25
 - [concurrent-delivery-copies](concurrent-delivery-copies.md)
 - [deliver-order](deliver-order.md)
 - [directory-version](directory-version.md)
@@ -37,6 +38,7 @@ The stored step is not below T, so the write is refused. The answer stays the sa
 - [order-status-history](order-status-history.md)
 - [payment-already-exists](payment-already-exists.md)
 - [post-auth-logout](post-auth-logout.md)
+- [task-already-resolved](task-already-resolved.md)
 - [totp-replay-protection](totp-replay-protection.md)
 - [totp-time-step](totp-time-step.md)
 - [version-pointer](version-pointer.md)

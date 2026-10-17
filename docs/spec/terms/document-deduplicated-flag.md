@@ -23,5 +23,6 @@ The ID and status are illustrative. A first-time request answers `201` instead.
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [document-id](document-id.md)
+- [onboarding-document-type](onboarding-document-type.md)
 <!-- used-by:end -->

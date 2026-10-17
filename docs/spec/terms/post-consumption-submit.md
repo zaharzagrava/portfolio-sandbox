@@ -20,5 +20,5 @@ A seller's submit succeeds, but the network drops the response, so the client re
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [S04](../capabilities/S04-kyc-onboarding.md): R-05
 <!-- used-by:end -->

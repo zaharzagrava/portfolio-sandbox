@@ -20,5 +20,6 @@ The [cheap model](cheap-model.md) reads a `BANK_STATEMENT` and its answer passes
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [S04](../capabilities/S04-kyc-onboarding.md): B-07
+- [document-status](document-status.md)
 <!-- used-by:end -->

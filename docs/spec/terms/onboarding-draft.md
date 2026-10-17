@@ -20,5 +20,12 @@ A seller saves the `business` step, and the view shows status `DRAFT` with `tax`
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [S04](../capabilities/S04-kyc-onboarding.md): B-02, B-03
+- [already-submitted](already-submitted.md)
+- [onboarding-draft-lifetime](onboarding-draft-lifetime.md)
+- [onboarding-step](onboarding-step.md)
+- [onboarding-submit](onboarding-submit.md)
+- [post-consumption-submit](post-consumption-submit.md)
+- [required-documents](required-documents.md)
+- [vat-number](vat-number.md)
 <!-- used-by:end -->

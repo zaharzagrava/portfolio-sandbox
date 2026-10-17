@@ -24,7 +24,11 @@ A shop's [payout destination](payout-destination.md) is rejected by the provider
 
 ## Used by
 <!-- used-by:start -->
+- [payout-destination](payout-destination.md)
 - [payout-failed-event](payout-failed-event.md)
 - [payout-status](payout-status.md)
+- [payout-transfer](payout-transfer.md)
 - [payouts-domain](payouts-domain.md)
+- [provider-rejected](provider-rejected.md)
+- [reversing-journal](reversing-journal.md)
 <!-- used-by:end -->

@@ -122,11 +122,13 @@ async function seedSellerStats(pool, flags) {
 
   const chClient = createClickHouseClient();
   await applyClickHouseSchema(chClient);
-  // Lightweight delete (ClickHouse 23.3+); rows are tagged at insert time.
-  await chClient.command({ query: `DELETE FROM seller_sales WHERE source = 'loadtest'` });
+  // Facts of a previous run belong to shops named `lt-seller-stats-*`; clean them before their shops go (cleanFlow).
+  await deleteLoadtestFacts(pool, chClient);
 
   const buyers = await seedUsers(pool, { flow: 'seller-stats', role: 'USER', count: userCount, passwordHash });
   const sellers = await seedUsers(pool, { flow: 'seller-stats', role: 'SELLER', count: sellerCount, passwordHash });
+  // S40: stats belong to a shop and are read by its members, so every seller gets a shop they own.
+  const shops = await seedShops(pool, sellers);
 
   const productsBySeller = new Map();
   const products = [];
@@ -143,11 +145,12 @@ async function seedSellerStats(pool, flags) {
   const DAY_MS = 86_400_000;
   const totalRows = sellers.length * salesPerSeller;
   let buffer = [];
+  const refunds = [];
   let inserted = 0;
 
   const flush = async () => {
     if (!buffer.length) return;
-    await chClient.insert({ table: 'seller_sales', values: buffer, format: 'JSONEachRow' });
+    await chClient.insert({ table: 'shop_sale_facts', values: buffer, format: 'JSONEachRow' });
     inserted += buffer.length;
     buffer = [];
     log(`  sales (clickhouse): ${inserted}/${totalRows}`);
@@ -158,27 +161,102 @@ async function seedSellerStats(pool, flags) {
     for (let i = 0; i < salesPerSeller; i++) {
       const product = pick(own);
       const quantity = randomInt(1, 3);
+      const orderId = crypto.randomUUID();
       buffer.push({
-        ts: new Date(now - Math.random() * 120 * DAY_MS).toISOString().replace('T', ' ').replace('Z', ''),
-        seller_id: seller.userId,
+        shop_id: shops.get(seller.userId),
+        order_id: orderId,
         product_id: product.id,
+        title: product.title,
         buyer_id: pick(buyers).userId,
-        order_id: crypto.randomUUID(),
-        amount_cents: product.price * quantity,
-        quantity,
-        status: Math.random() < 0.94 ? 'COMPLETED' : 'REFUNDED',
-        source: 'loadtest',
+        units: quantity,
+        line_total_minor: product.price * quantity,
+        paid_at: new Date(now - Math.random() * 120 * DAY_MS).toISOString().replace('T', ' ').replace('Z', ''),
       });
+      // ~6% of the orders are fully refunded, on the day they were paid
+      if (Math.random() < 0.06)
+        refunds.push({
+          shop_id: shops.get(seller.userId),
+          order_id: orderId,
+          amount_minor: product.price * quantity,
+          refunded_at: buffer[buffer.length - 1].paid_at,
+        });
       if (buffer.length >= 200_000) await flush();
     }
   }
   await flush();
+  if (refunds.length) await chClient.insert({ table: 'shop_refund_facts', values: refunds, format: 'JSONEachRow' });
   await chClient.close();
 
   writeData('seller-stats.json', {
     password: LOADTEST_PASSWORD,
-    sellers: sellers.map((s) => s.email),
+    sellers: sellers.map((s) => ({ email: s.email, shopId: shops.get(s.userId) })),
   });
+}
+
+/** One ACTIVE shop per seller, owned by that seller (rows are written like the tenancy fixtures do; RLS bypassed for the seed). */
+async function seedShops(pool, sellers) {
+  const shops = new Map();
+  for (const [index, batch] of chunk(sellers, 2_000).entries()) {
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      await client.query(`SELECT set_config('app.rls_bypass', 'on', true)`);
+      const { rows } = await client.query(
+        `INSERT INTO "Shop" ("name", "slug", "plan", "status", "createdAt", "updatedAt")
+         SELECT 'Load test shop ' || n, 'lt-seller-stats-' || n, 'STARTER', 'ACTIVE', now(), now()
+         FROM generate_series($1::int, $2::int) AS n
+         RETURNING id, slug`,
+        [index * 2_000 + 1, index * 2_000 + batch.length],
+      );
+      const bySlug = new Map(rows.map((r) => [r.slug, r.id]));
+      const ids = batch.map((_, i) => bySlug.get(`lt-seller-stats-${index * 2_000 + i + 1}`));
+      await client.query(
+        `INSERT INTO "ShopDirectory" ("shopId", "cell", "region", "version", "updatedAt")
+         SELECT s, 'pooled', 'eu-central-1', 1, now() FROM unnest($1::uuid[]) AS s`,
+        [ids],
+      );
+      await client.query(
+        `INSERT INTO "ShopMembership" ("shopId", "userId", "role", "source", "createdAt")
+         SELECT s, u, 'OWNER', 'owner', now() FROM unnest($1::uuid[], $2::uuid[]) AS t(s, u)`,
+        [ids, batch.map((s) => s.userId)],
+      );
+      await client.query('COMMIT');
+      batch.forEach((seller, i) => shops.set(seller.userId, ids[i]));
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+  return shops;
+}
+
+/** Removes the facts, memberships and shops of earlier `seller-stats` runs (shops are named `lt-seller-stats-*`). */
+async function deleteLoadtestFacts(pool, chClient) {
+  const { rows } = await pool.query(`SELECT id FROM "Shop" WHERE slug LIKE 'lt-seller-stats-%'`);
+  if (!rows.length) return;
+  const ids = rows.map((r) => r.id);
+  for (const table of ['shop_sale_facts', 'shop_refund_facts'])
+    await chClient.command({
+      query: `ALTER TABLE ${table} DELETE WHERE shop_id IN ({ids:Array(String)})`,
+      query_params: { ids },
+      clickhouse_settings: { mutations_sync: '2' },
+    });
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    await client.query(`SELECT set_config('app.rls_bypass', 'on', true)`);
+    await client.query(`DELETE FROM "ShopMembership" WHERE "shopId" = ANY($1::uuid[])`, [ids]);
+    await client.query(`DELETE FROM "ShopDirectory" WHERE "shopId" = ANY($1::uuid[])`, [ids]);
+    await client.query(`DELETE FROM "Shop" WHERE id = ANY($1::uuid[])`, [ids]);
+    await client.query('COMMIT');
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
 }
 
 async function seedChat(pool, flags) {
@@ -252,8 +330,13 @@ function createClickHouseClient() {
 }
 
 async function applyClickHouseSchema(chClient) {
-  const ddl = fs.readFileSync(path.join(BACKEND_ROOT, 'clickhouse/001_seller_sales.sql'), 'utf8');
-  await chClient.command({ query: ddl });
+  const ddl = fs.readFileSync(path.join(BACKEND_ROOT, 'clickhouse/051_shop_sale_facts.sql'), 'utf8');
+  const statements = ddl
+    .replace(/--.*$/gm, '')
+    .split(/;\s*$/m)
+    .map((s) => s.trim())
+    .filter(Boolean);
+  for (const query of statements) await chClient.command({ query });
 }
 
 // --- --- --- --- --- Main --- --- --- --- --- //
@@ -284,7 +367,7 @@ async function main() {
       if (flow === 'search') await deleteIndexedLoadtestProducts(createEsClient());
       if (flow === 'seller-stats') {
         const chClient = createClickHouseClient();
-        await chClient.command({ query: `DELETE FROM seller_sales WHERE source = 'loadtest'` });
+        await deleteLoadtestFacts(pool, chClient);
         await chClient.close();
       }
       return;

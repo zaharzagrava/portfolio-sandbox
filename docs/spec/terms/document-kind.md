@@ -19,5 +19,15 @@ A shop with `vatRegistered: false` must provide `BUSINESS_REGISTRATION` and `BAN
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [S04](../capabilities/S04-kyc-onboarding.md): R-08, R-11
+- [document-already-approved](document-already-approved.md)
+- [document-content-hash](document-content-hash.md)
+- [document-deduplicated-flag](document-deduplicated-flag.md)
+- [document-not-required](document-not-required.md)
+- [onboarding-application-status](onboarding-application-status.md)
+- [required-document-kind](required-document-kind.md)
+- [required-documents](required-documents.md)
+- [required-onboarding-documents](required-onboarding-documents.md)
+- [shop-onboarding-document-rejected-event](shop-onboarding-document-rejected-event.md)
+- [superseded-document](superseded-document.md)
 <!-- used-by:end -->

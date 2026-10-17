@@ -21,5 +21,7 @@ A batch from `onboarding-documents` holds three messages. Two are valid `onboard
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [S04](../capabilities/S04-kyc-onboarding.md): R-22
+- [document-id](document-id.md)
+- [extraction-message](extraction-message.md)
 <!-- used-by:end -->

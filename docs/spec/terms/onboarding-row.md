@@ -20,5 +20,7 @@ A seller saves all four steps. Nothing has been written to the onboarding table 
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [S04](../capabilities/S04-kyc-onboarding.md): R-02
+- [onboarding-draft-lifetime](onboarding-draft-lifetime.md)
+- [post-consumption-submit](post-consumption-submit.md)
 <!-- used-by:end -->

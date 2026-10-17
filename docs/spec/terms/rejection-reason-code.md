@@ -20,5 +20,5 @@ A moderator resolves a review task on a `SUBMITTED` application with "reject app
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [S04](../capabilities/S04-kyc-onboarding.md): B-16
 <!-- used-by:end -->

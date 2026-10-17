@@ -20,10 +20,13 @@ A message on `notify-email` with a broken JSON body arrives. The worker writes a
 
 ## Used by
 <!-- used-by:start -->
+- [S04](../capabilities/S04-kyc-onboarding.md): R-22
 - [S28](../capabilities/S28-notifications.md): R-35
 - [dead-letter-redrive](dead-letter-redrive.md)
 - [dead-letter-topic](dead-letter-topic.md)
 - [dead-letter-without-body](dead-letter-without-body.md)
+- [document-id](document-id.md)
+- [failed-batch-item](failed-batch-item.md)
 - [invite-token](invite-token.md)
 - [known-unmapped-type](known-unmapped-type.md)
 - [notification-channel](notification-channel.md)

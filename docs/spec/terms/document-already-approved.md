@@ -19,5 +19,5 @@ A shop's [`BANK_STATEMENT`](onboarding-document-type.md) is `APPROVED`, and its 
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [onboarding-document-type](onboarding-document-type.md)
 <!-- used-by:end -->

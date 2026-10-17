@@ -19,6 +19,7 @@ To check that an order is payable, [`checkPayable`](check-payable.md) reads `Pay
 
 ## Used by
 <!-- used-by:start -->
+- [S04](../capabilities/S04-kyc-onboarding.md): R-30
 - [S10](../capabilities/S10-cart-checkout.md): R-46
 - [S13](../capabilities/S13-payment-intents.md): R-25
 - [S14](../capabilities/S14-ledger-reconciliation.md): R-45
@@ -29,5 +30,6 @@ To check that an order is payable, [`checkPayable`](check-payable.md) reads `Pay
 - [entry-point](entry-point.md)
 - [export-join](export-join.md)
 - [ledger-entry-table](ledger-entry-table.md)
+- [onboarding-status-history](onboarding-status-history.md)
 - [transitional-block](transitional-block.md)
 <!-- used-by:end -->

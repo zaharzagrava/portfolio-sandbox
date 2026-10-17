@@ -20,5 +20,11 @@ A seller uploads a `BANK_STATEMENT` as a PDF and confirms it. Extraction reads t
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [S04](../capabilities/S04-kyc-onboarding.md): B-19, B-20
+- [document-round](document-round.md)
+- [kyc-record-retention-days](kyc-record-retention-days.md)
+- [masked-value](masked-value.md)
+- [onboarding-document-purge-job](onboarding-document-purge-job.md)
+- [sealed-copy](sealed-copy.md)
+- [sealed-row](sealed-row.md)
 <!-- used-by:end -->

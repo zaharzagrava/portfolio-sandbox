@@ -21,5 +21,12 @@ A shop's balance is above the minimum, its destination is set, and 49 hours have
 
 ## Used by
 <!-- used-by:start -->
+- [failure-code](failure-code.md)
+- [payout-destination](payout-destination.md)
+- [payout-minimum](payout-minimum.md)
+- [payout-paid-event](payout-paid-event.md)
 - [payout-status](payout-status.md)
+- [payout-transfer](payout-transfer.md)
+- [payouts-run-weekly-job](payouts-run-weekly-job.md)
+- [reversing-journal](reversing-journal.md)
 <!-- used-by:end -->

@@ -21,5 +21,14 @@ The strong model is the second AI model the extraction worker may call for a doc
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [S04](../capabilities/S04-kyc-onboarding.md): R-15, B-08
+- [cheap-model](cheap-model.md)
+- [document-issue](document-issue.md)
+- [document-review](document-review.md)
+- [document-validation-rule](document-validation-rule.md)
+- [escalating-issue](escalating-issue.md)
+- [extraction-attempt](extraction-attempt.md)
+- [extraction-worker](extraction-worker.md)
+- [model-call](model-call.md)
+- [model-confidence](model-confidence.md)
 <!-- used-by:end -->

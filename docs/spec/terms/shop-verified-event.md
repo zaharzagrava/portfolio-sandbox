@@ -21,6 +21,8 @@ rules_hash: e3b0c44298fc
 
 ## Used by
 <!-- used-by:start -->
+- [S04](../capabilities/S04-kyc-onboarding.md): R-26
+- [late-result](late-result.md)
 - [shop-verification](shop-verification.md)
 - [tenancy-domain-layer](tenancy-domain-layer.md)
 <!-- used-by:end -->

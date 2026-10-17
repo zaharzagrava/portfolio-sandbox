@@ -20,5 +20,10 @@ VAT registered is the questionnaire answer `vatRegistered` that says whether the
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [S04](../capabilities/S04-kyc-onboarding.md): B-05
+- [hard-checks](hard-checks.md)
+- [onboarding-document-type](onboarding-document-type.md)
+- [onboarding-submit](onboarding-submit.md)
+- [required-document-kind](required-document-kind.md)
+- [vat-number](vat-number.md)
 <!-- used-by:end -->

@@ -20,6 +20,7 @@ Worker A claims `recommendations.build-bought-together` on attempt 2 (illustrati
 
 ## Used by
 <!-- used-by:start -->
+- [S04](../capabilities/S04-kyc-onboarding.md): R-20
 - [S34](../capabilities/S34-recommendations.md): R-21
 - [S49](../capabilities/S49-job-scheduler.md): R-09, R-14, B-07, B-08
 - [S53](../capabilities/S53-events-projections.md): R-10
@@ -29,6 +30,7 @@ Worker A claims `recommendations.build-bought-together` on attempt 2 (illustrati
 - [autocomplete-build](autocomplete-build.md)
 - [autocomplete-worker-module](autocomplete-worker-module.md)
 - [build-lock](build-lock.md)
+- [document-id](document-id.md)
 - [fleet-wide-limit](fleet-wide-limit.md)
 - [inbox-table](inbox-table.md)
 - [job-attempt](job-attempt.md)
@@ -45,6 +47,7 @@ Worker A claims `recommendations.build-bought-together` on attempt 2 (illustrati
 - [outbox-relay](outbox-relay.md)
 - [reconciliation-run-service](reconciliation-run-service.md)
 - [reconciliation-run-uniqueness](reconciliation-run-uniqueness.md)
+- [scheduler-leader](scheduler-leader.md)
 - [search-backfill-shop-state](search-backfill-shop-state.md)
 - [search-refresh-popularity](search-refresh-popularity.md)
 - [search-retire-previous-index](search-retire-previous-index.md)

@@ -8,7 +8,7 @@ then does that flow's work.
 | --- | --- | --- | --- |
 | `payment` | 100k buyers + 1 `BisOrder` each | login → 3× `POST /api/payments` on the **edge** → polls ~10% of them until settled | `payment_settle_time` |
 | `search` | 100k buyers, 1k sellers, 50k products (Postgres + Elasticsearch) | login → 5× `GET /api/products/search` (fuzzy, facets, filters, autocomplete prefixes, k-NN) | `http_req_duration{name:GET /api/products/search}` |
-| `seller-stats` | 100k buyers, 5k sellers, 50k products, 2.5M sales rows (ClickHouse) | **seller** login → 5× `GET /api/sellers/me/stats?days=7\|30\|90` | `http_req_duration{name:GET /api/sellers/me/stats}` |
+| `seller-stats` | 100k buyers, 5k sellers each owning a shop, 50k products, 2.5M sale facts (ClickHouse `shop_sale_facts`) | **seller** login → 5× `GET /api/shops/:shopId/stats?days=7\|30\|90` (S40) | `http_req_duration{name:GET /api/shops/:shopId/stats}` |
 | `chat` | 100k buyers, 100 sellers with one channel each | login → `POST /api/chat/ws-ticket` → WebSocket to the Rust gateway → join 3 channels → one message per second for 30s | `chat_message_rtt` |
 
 ## Prerequisites

@@ -611,3 +611,10 @@
 {"run":"20261016T173603Z","capability":"S06","step":"repair-5","start":"2026-10-17T02:10:34Z","end":"2026-10-17T02:12:24Z","seconds":110,"result":"ok","attempt":1,"reason":"ok","code_changed":false}
 {"run":"20261016T173603Z","capability":"S06","step":"gate","start":"2026-10-17T02:12:24Z","end":"2026-10-17T02:12:24Z","seconds":0,"result":"fail","attempt":6,"reason":"FAIL libs/domains/catalog/collab-routing.e2e-spec.ts (85.554 s)"}
 {"run":"20261016T173603Z","capability":"S06","step":"blocked","start":"2026-10-17T02:12:24Z","end":"2026-10-17T02:12:24Z","seconds":0,"result":"blocked","attempt":3,"reason":"S06 gate failed"}
+{"run":"20261016T173603Z","capability":"S40","step":"plan","start":"2026-10-17T02:12:28Z","end":"2026-10-17T02:14:48Z","seconds":140,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261016T173603Z","capability":"S40","step":"tasks","start":"2026-10-17T02:14:48Z","end":"2026-10-17T02:16:23Z","seconds":95,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261016T173603Z","capability":"S40","step":"analyze","start":"2026-10-17T02:16:23Z","end":"2026-10-17T02:17:03Z","seconds":40,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261016T173603Z","capability":"S40","step":"implement-1","start":"2026-10-17T02:17:03Z","end":"2026-10-17T03:05:12Z","seconds":2889,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261016T173603Z","capability":"S40","step":"converge-1","start":"2026-10-17T03:05:12Z","end":"2026-10-17T03:05:47Z","seconds":35,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261016T173603Z","capability":"S40","step":"gate","start":"2026-10-17T03:05:47Z","end":"2026-10-17T03:11:28Z","seconds":341,"result":"pass","attempt":1,"reason":""}
+{"run":"20261016T173603Z","capability":"S40","step":"built","start":"2026-10-17T02:12:27Z","end":"2026-10-17T03:11:28Z","seconds":3541,"result":"ok","attempt":1,"reason":"Seller leaderboards (ties, my rank, period snapshots), live sales dashboard, seller stats"}

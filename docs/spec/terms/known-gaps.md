@@ -25,6 +25,7 @@ Known gaps is the last section of a [capability page](capability.md). It lists w
 - [body-html](body-html.md)
 - [capability](capability.md)
 - [code-facts](code-facts.md)
+- [document-content-hash](document-content-hash.md)
 - [export-join](export-join.md)
 - [failure-counter](failure-counter.md)
 - [hot-key](hot-key.md)

@@ -28,6 +28,7 @@ Idempotency-Replayed: true
 <!-- used-by:start -->
 - [S10](../capabilities/S10-cart-checkout.md): R-12, B-07
 - [S13](../capabilities/S13-payment-intents.md): R-08, B-02
+- [S31](../capabilities/S31-assets-digital-delivery.md): R-06
 - [S54](../capabilities/S54-platform-toolkit.md): B-17
 - [idempotency-in-flight](idempotency-in-flight.md)
 - [idempotency-key-required](idempotency-key-required.md)

@@ -40,3 +40,4 @@ export * from './src/asset-library/index.ts';
 export * from './src/launch-events/index.ts';
 export * from './src/live/index.ts';
 export * from './src/stories/index.ts';
+export * from './src/seller-insights/index.ts';

@@ -22,5 +22,6 @@ iban: "DE** **** **** **** **12 34"   (illustrative format)
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [S04](../capabilities/S04-kyc-onboarding.md): R-19, B-14
+- [extraction-evidence](extraction-evidence.md)
 <!-- used-by:end -->

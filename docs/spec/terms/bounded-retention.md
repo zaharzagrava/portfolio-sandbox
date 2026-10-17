@@ -36,5 +36,6 @@ Keeping keys longer than the [ranking span](ranking-span.md) is design intent (n
 - [trending-configuration](trending-configuration.md)
 - [trending-ranking-cache](trending-ranking-cache.md)
 - [trending-window](trending-window.md)
+- [verification-document-purge-job](verification-document-purge-job.md)
 - [window-merge](window-merge.md)
 <!-- used-by:end -->

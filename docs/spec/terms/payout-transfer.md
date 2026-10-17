@@ -25,7 +25,10 @@ J01.B-13: the provider rejects the destination, so the payout is `FAILED`, the b
 - [J01](../capabilities/J01-buy-to-payout.md): B-12
 - [blocked-reason](blocked-reason.md)
 - [failure-code](failure-code.md)
+- [payment-provider](payment-provider.md)
 - [payout-destination](payout-destination.md)
 - [payout-minimum](payout-minimum.md)
 - [payouts-domain](payouts-domain.md)
+- [payouts-run-weekly-job](payouts-run-weekly-job.md)
+- [reversing-journal](reversing-journal.md)
 <!-- used-by:end -->

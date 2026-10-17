@@ -1,24 +1,22 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import { Controller, Get, Header, Req } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
-import { Firewall, User, UserRawDto, Role } from '@app/domains/identity';
+import type { Request } from 'express';
+import type { SellerStats } from '@marketplace-sandbox/contracts';
+import { ShopScoped } from '@app/domains/tenancy';
 import { SellerStatsService } from '../application/seller-stats.service';
-import {
-  SellerStatsQueryDto,
-  SellerStatsResponseDto,
-} from './seller-stats.dto';
+import { parseStatsQuery } from './query-dtos';
 
-@ApiTags('sellers')
-@Controller('sellers')
+/** A shop's sales stats over the last N days (S40 US6); replaces the per-user `GET /sellers/me/stats`. */
+@ApiTags('shops')
+@Controller()
 export class SellerStatsController {
-  constructor(private readonly sellerStatsService: SellerStatsService) {}
+  constructor(private readonly stats: SellerStatsService) {}
 
-  /** Example: GET /api/sellers/me/stats?days=30 */
-  @Firewall({ roles: [Role.SELLER] })
-  @Get('me/stats')
-  async myStats(
-    @User() user: UserRawDto,
-    @Query() query: SellerStatsQueryDto,
-  ): Promise<SellerStatsResponseDto> {
-    return this.sellerStatsService.getStats(user.id, query.days ?? 30);
+  /** GET /api/shops/:shopId/stats?days=30 */
+  @ShopScoped('shop.read')
+  @Header('Cache-Control', 'private, no-store')
+  @Get('shops/:shopId/stats')
+  get(@Req() req: Request & { shopId: string }): Promise<SellerStats> {
+    return this.stats.stats(req.shopId, parseStatsQuery(req.query).days);
   }
 }

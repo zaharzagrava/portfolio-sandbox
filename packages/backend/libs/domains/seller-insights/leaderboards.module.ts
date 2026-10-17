@@ -1,17 +1,28 @@
 import { Module } from '@nestjs/common';
+import { ProblemCatalogModule } from '@app/common/errors/problem-catalog.module';
 import { AuthModule } from '@app/domains/identity';
 import { ShopQueryModule } from '@app/domains/tenancy';
-import { ClickHouseModule } from '@app/infrastructure/clickhouse/clickhouse.module';
-import { CacheModule } from '@app/infrastructure/cache/cache.module';
-import { LeaderboardService } from './application/leaderboard.service';
-import { ShopDashboardService } from './application/shop-dashboard.service';
+import { ClockModule } from '@app/infrastructure/platform/clock.module';
+import { RateLimitModule } from '@app/infrastructure/rate-limit';
 import { LeaderboardsController } from './api/leaderboards.controller';
+import { sellerInsightsRatePolicies } from './api/rate-limit-policies';
+import { ShopRankController } from './api/shop-rank.controller';
+import { LeaderboardReadService } from './application/leaderboard-read.service';
+import { ShopRankService } from './application/shop-rank.service';
+import { INSIGHTS_PROBLEMS } from './domain/insights-errors';
+import { SellerInsightsStoresModule } from './seller-insights-stores.module';
 
-/** SD-18 reads (core). */
+/** S40 board reads (apps/core): the public top list and a shop's own rank. */
 @Module({
-  imports: [AuthModule, ClickHouseModule, CacheModule, ShopQueryModule],
-  providers: [LeaderboardService, ShopDashboardService],
-  exports: [LeaderboardService],
-  controllers: [LeaderboardsController],
+  imports: [
+    AuthModule,
+    ShopQueryModule,
+    ClockModule,
+    SellerInsightsStoresModule,
+    RateLimitModule.forFeature(sellerInsightsRatePolicies),
+    ProblemCatalogModule.forFeature(INSIGHTS_PROBLEMS),
+  ],
+  providers: [LeaderboardReadService, ShopRankService],
+  controllers: [LeaderboardsController, ShopRankController],
 })
 export class LeaderboardsModule {}

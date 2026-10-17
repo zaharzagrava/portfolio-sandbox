@@ -20,5 +20,8 @@ The model returns an [IBAN ↗](../sw-external-terms.md#iban) for a [`BANK_STATE
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [S04](../capabilities/S04-kyc-onboarding.md): R-19
+- [hard-checks](hard-checks.md)
+- [sealed-row](sealed-row.md)
+- [strict-json](strict-json.md)
 <!-- used-by:end -->

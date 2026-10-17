@@ -26,4 +26,5 @@ Cache-Control: no-store
 ## Used by
 <!-- used-by:start -->
 - [W02](../capabilities/W02-storefront-discovery.md): R-03
+- [rejected-operation](rejected-operation.md)
 <!-- used-by:end -->

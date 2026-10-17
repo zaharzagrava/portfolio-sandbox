@@ -28,6 +28,7 @@ The search index consumer receives a batch of catalog events (count illustrative
 - [consumer-effects](consumer-effects.md)
 - [event-backbone](event-backbone.md)
 - [exported-service](exported-service.md)
+- [failed-batch-item](failed-batch-item.md)
 - [schema-invalid](schema-invalid.md)
 - [side-effects](side-effects.md)
 <!-- used-by:end -->

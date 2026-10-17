@@ -36,6 +36,7 @@ An idempotency key is a client-chosen string of 8 to 128 characters. It lets a c
 - {{cap:J01}} Buyer pays for a multi-shop order; order paid → ledger journals → settlement → seller payout → monthly statement; buyer and sellers notified
 - {{cap:S04}} Staged onboarding questionnaire, KYC document intake, LLM extraction, human review, shop verification
 - {{cap:S05}} Product CRUD, pricing, stock fields, product cache and invalidation, product views
+- {{cap:S06}} Collaborative listing drafts - real-time co-editing, versions, publish to a product
 - {{cap:S10}} Cart (guest + merge), idempotent checkout, stock reservation, multi-shop split, order state machine, payment webhook
 - {{cap:S13}} Payment intents, idempotency, unknown outcomes, PSP circuit breaker, outbox, saga with orders
 - {{cap:S14}} Double-entry ledger, balanced journals, hot-account sharding, balance read model, daily PSP reconciliation
@@ -43,9 +44,13 @@ An idempotency key is a client-chosen string of 8 to 128 characters. It lets a c
 - {{cap:S16}} Seller statements - bitemporal commission rates, monthly statements, close, adjustments, CSV, reconciliation
 - {{cap:S17}} Subscriptions - plans, versioned prices, state machine, billing run, charging and dunning, proration, credit
 - {{cap:S19}} Pickup points, local stock, available near me, map clustering
+- {{cap:S20}} Same-day courier dispatch (courier shift, offers, delivery state machine, tracking)
 - {{cap:S21}} Limited-drop auctions (proxy bids, anti-sniping, reserve, exactly-once close, second chance, shill guard)
+- {{cap:S22}} Launch-event booking (waiting room, admission tokens, seat holds, booking confirm, seat map, ticket limits)
 - {{cap:S24}} Product chat (channels, idempotent send, per-channel sequence, sync on reconnect, unread, receipts, presence, offline push)
 - {{cap:S25}} Product discussions (posts, nested comments, votes, ranking, abuse controls, safe markdown)
+- {{cap:S27}} Brand stories CMS (versioned multi-locale stories, scheduled publish, preview, cache tags, sitemap)
+- {{cap:S31}} Shop asset library (chunked dedupe, delta sync, conflicts, share links) and digital product delivery
 - {{cap:S37}} Share and affiliate short links (codes, aliases, redirects, click attribution)
 - {{cap:S42}} Seller public API: API keys, scopes, sandbox, date-pinned versions, deprecation headers, batch and bulk stock, request logs, usage metering
 - {{cap:S43}} Webhook delivery to shops: endpoints, signing with dual secrets, routing, per-endpoint ordering, retries, circuit breaker, auto-disable, replay

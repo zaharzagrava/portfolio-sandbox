@@ -21,5 +21,10 @@ The cheap model reads a `BANK_STATEMENT` and returns the IBAN with low confidenc
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [S04](../capabilities/S04-kyc-onboarding.md): R-15, B-09
+- [cheap-model](cheap-model.md)
+- [document-review](document-review.md)
+- [document-validation-rule](document-validation-rule.md)
+- [extraction-attempt](extraction-attempt.md)
+- [holder-name-check](holder-name-check.md)
 <!-- used-by:end -->

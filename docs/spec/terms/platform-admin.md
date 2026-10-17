@@ -26,11 +26,13 @@ The same request from a shop `OWNER` who is not a platform admin is refused. If 
 ## Used by
 <!-- used-by:start -->
 - [S03](../capabilities/S03-shops-rbac.md): R-25
+- [S04](../capabilities/S04-kyc-onboarding.md): R-23
 - [S10](../capabilities/S10-cart-checkout.md): R-36
 - [S32](../capabilities/S32-product-search.md): R-21
 - [actor-id](actor-id.md)
 - [adjusted-resolution](adjusted-resolution.md)
 - [allowed-region](allowed-region.md)
+- [conflict-of-interest](conflict-of-interest.md)
 - [directory-row](directory-row.md)
 - [directory-version](directory-version.md)
 - [finance-reconciliation-api](finance-reconciliation-api.md)
@@ -42,6 +44,7 @@ The same request from a shop `OWNER` who is not a platform admin is refused. If 
 - [reconciliation-controller](reconciliation-controller.md)
 - [reconciliation-issue](reconciliation-issue.md)
 - [reconciliation-resolution](reconciliation-resolution.md)
+- [review-task](review-task.md)
 - [sensitive-route](sensitive-route.md)
 - [session-revocation](session-revocation.md)
 - [shop-cell-directory-row](shop-cell-directory-row.md)

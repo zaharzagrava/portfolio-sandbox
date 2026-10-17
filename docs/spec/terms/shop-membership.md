@@ -23,6 +23,7 @@ A signed-in user who is not a member calls `GET /shops/:shopId/products` for a r
 ## Used by
 <!-- used-by:start -->
 - [S03](../capabilities/S03-shops-rbac.md): R-01
+- [S04](../capabilities/S04-kyc-onboarding.md): R-07
 - [S05](../capabilities/S05-products.md): R-04
 - [S14](../capabilities/S14-ledger-reconciliation.md): R-27
 - [federated-identity-linked-event](federated-identity-linked-event.md)

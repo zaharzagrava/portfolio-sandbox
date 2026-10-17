@@ -25,6 +25,9 @@ Two concurrent requests try to insert the same unique value. The second one rece
 <!-- used-by:start -->
 - [S53](../capabilities/S53-events-projections.md): B-02
 - [already-member](already-member.md)
+- [already-verified](already-verified.md)
+- [document-already-approved](document-already-approved.md)
+- [document-superseded](document-superseded.md)
 - [error-catalogue](error-catalogue.md)
 - [error-code](error-code.md)
 - [last-owner](last-owner.md)
@@ -32,8 +35,11 @@ Two concurrent requests try to insert the same unique value. The second one rece
 - [no-previous-index](no-previous-index.md)
 - [order-not-cancellable](order-not-cancellable.md)
 - [reindex-in-progress](reindex-in-progress.md)
+- [resubmission-required](resubmission-required.md)
 - [section](section.md)
 - [shop-limit-reached](shop-limit-reached.md)
 - [slug-taken](slug-taken.md)
+- [submission-required](submission-required.md)
+- [task-already-resolved](task-already-resolved.md)
 - [version-conflict](version-conflict.md)
 <!-- used-by:end -->

@@ -20,5 +20,5 @@ A moderator approves a task, but the IBAN fails the [hard check](hard-checks.md)
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [S04](../capabilities/S04-kyc-onboarding.md): R-27
 <!-- used-by:end -->

@@ -19,5 +19,25 @@ A moderator rejects a `BANK_STATEMENT` with a reason of 3 to 500 characters. The
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [S04](../capabilities/S04-kyc-onboarding.md): B-13, B-14
+- [auto-approval](auto-approval.md)
+- [document-issue](document-issue.md)
+- [document-status](document-status.md)
+- [document-supersede](document-supersede.md)
+- [document-superseded](document-superseded.md)
+- [document-validation-rule](document-validation-rule.md)
+- [hard-checks](hard-checks.md)
+- [holder-name-check](holder-name-check.md)
+- [iban-invalid](iban-invalid.md)
+- [masked-value](masked-value.md)
+- [missing-object](missing-object.md)
+- [moderation-task-status](moderation-task-status.md)
+- [moderation-task](moderation-task.md)
+- [onboarding-application-status](onboarding-application-status.md)
+- [rejection-reason-code](rejection-reason-code.md)
+- [review-task](review-task.md)
+- [sealed-row](sealed-row.md)
+- [shop-onboarding-document-rejected-event](shop-onboarding-document-rejected-event.md)
+- [submission-no](submission-no.md)
+- [task-already-resolved](task-already-resolved.md)
 <!-- used-by:end -->

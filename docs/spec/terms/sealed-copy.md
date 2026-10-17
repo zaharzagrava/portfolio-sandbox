@@ -20,5 +20,9 @@ A moderator approves a `BANK_STATEMENT` task with a corrected IBAN. The task kee
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [S04](../capabilities/S04-kyc-onboarding.md): R-19
+- [extraction-evidence](extraction-evidence.md)
+- [iban-invalid](iban-invalid.md)
+- [masked-value](masked-value.md)
+- [verification-document-purge-job](verification-document-purge-job.md)
 <!-- used-by:end -->

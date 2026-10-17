@@ -20,5 +20,9 @@ A `BANK_STATEMENT` comes back from the cheap model with a low-confidence IBAN. T
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [S04](../capabilities/S04-kyc-onboarding.md): R-29, B-11, B-12
+- [content-type-mismatch](content-type-mismatch.md)
+- [escalating-issue](escalating-issue.md)
+- [extraction-attempt](extraction-attempt.md)
+- [real-file-type](real-file-type.md)
 <!-- used-by:end -->

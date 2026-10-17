@@ -19,5 +19,8 @@ A shop answered `vatRegistered: false`. Its required documents are `BUSINESS_REG
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [S04](../capabilities/S04-kyc-onboarding.md): R-04
+- [already-verified](already-verified.md)
+- [onboarding-document-type](onboarding-document-type.md)
+- [onboarding-submit](onboarding-submit.md)
 <!-- used-by:end -->

@@ -20,5 +20,11 @@ A seller saves the `business` step. The onboarding view then shows `DRAFT`, the 
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [S04](../capabilities/S04-kyc-onboarding.md): B-01, B-18
+- [already-verified](already-verified.md)
+- [onboarding-application-status](onboarding-application-status.md)
+- [onboarding-draft-lifetime](onboarding-draft-lifetime.md)
+- [onboarding-questionnaire](onboarding-questionnaire.md)
+- [onboarding-row](onboarding-row.md)
+- [onboarding-submit](onboarding-submit.md)
 <!-- used-by:end -->

@@ -21,5 +21,16 @@ The cheap model reads a `BANK_STATEMENT` and returns an IBAN that fails the IBAN
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [S04](../capabilities/S04-kyc-onboarding.md): R-24
+- [auto-approval](auto-approval.md)
+- [cheap-model](cheap-model.md)
+- [document-issue](document-issue.md)
+- [document-review](document-review.md)
+- [document-validation-rule](document-validation-rule.md)
+- [extraction-worker](extraction-worker.md)
+- [iban-invalid](iban-invalid.md)
+- [model-confidence](model-confidence.md)
+- [rejected-operation](rejected-operation.md)
+- [review-task](review-task.md)
+- [vat-invalid](vat-invalid.md)
 <!-- used-by:end -->

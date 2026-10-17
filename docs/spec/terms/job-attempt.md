@@ -19,6 +19,7 @@ After a job's 3rd attempt throws, the retry delay is a random value between 0 an
 
 ## Used by
 <!-- used-by:start -->
+- [S04](../capabilities/S04-kyc-onboarding.md): R-19
 - [S13](../capabilities/S13-payment-intents.md): B-15
 - [S14](../capabilities/S14-ledger-reconciliation.md): B-13
 - [S28](../capabilities/S28-notifications.md): R-31

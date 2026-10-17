@@ -20,6 +20,7 @@ For shop `7f3c…` (illustrative id), the client secret is sealed with the conte
 
 ## Used by
 <!-- used-by:start -->
+- [accepted-extraction](accepted-extraction.md)
 - [oidc-provider-registry](oidc-provider-registry.md)
 - [put-shops-sso](put-shops-sso.md)
 - [reseal-sso-secrets-job](reseal-sso-secrets-job.md)

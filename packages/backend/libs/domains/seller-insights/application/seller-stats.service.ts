@@ -1,121 +1,77 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import * as fs from 'fs';
-import * as path from 'path';
-import { ClickHouseService } from '@app/infrastructure/clickhouse/clickhouse.service';
-import { SellerStatsResponseDto } from '../api/seller-stats.dto';
+import { Inject, Injectable } from '@nestjs/common';
+import type { SellerStats } from '@marketplace-sandbox/contracts';
+import { CLOCK, type Clock } from '@app/common/core/clock';
+import { averageOrderValue } from '../domain/average-order-value';
+import { AnalyticsStoreUnavailableError } from '../domain/errors';
+import { insightsUnavailable } from '../domain/insights-errors';
+import {
+  SALES_HISTORY_REPOSITORY,
+  type SalesHistoryRepository,
+  type SalesWindow,
+} from '../domain/ports';
 
-const SCHEMA_FILE = 'clickhouse/001_seller_sales.sql';
+const DAY_MS = 86_400_000;
+const dayOf = (ms: number) => new Date(ms).toISOString().slice(0, 10);
 
 /**
- * Seller dashboards read from ClickHouse, never Postgres: they aggregate
- * over every sale a seller ever made, which is exactly the scan-heavy OLAP
- * shape that would compete with the payment write path for OLTP resources.
- * // See README.md#adr -> "Why use ClickHouse for analytics?"
+ * A shop's figures over the last N UTC calendar days ending today (S40 US6): summary, a zero-filled daily series and
+ * the five best products, from the exact sales history. The answer never names a buyer.
  */
 @Injectable()
-export class SellerStatsService implements OnModuleInit {
-  private readonly l = new Logger(SellerStatsService.name);
+export class SellerStatsService {
+  constructor(
+    @Inject(SALES_HISTORY_REPOSITORY)
+    private readonly history: SalesHistoryRepository,
+    @Inject(CLOCK) private readonly clock: Clock,
+  ) {}
 
-  constructor(private readonly clickHouseService: ClickHouseService) {}
-
-  async onModuleInit() {
+  async stats(shopId: string, days: number): Promise<SellerStats> {
+    const today = Math.floor(this.clock.nowMs() / DAY_MS) * DAY_MS;
+    const first = today - (days - 1) * DAY_MS;
+    let window: SalesWindow;
     try {
-      const ddl = fs.readFileSync(
-        path.resolve(process.cwd(), SCHEMA_FILE),
-        'utf8',
+      window = await this.history.window(
+        shopId,
+        new Date(first),
+        new Date(today + DAY_MS),
       );
-      await this.clickHouseService.getClient().command({ query: ddl });
-    } catch (error: any) {
-      this.l.warn(
-        `seller_sales schema not applied: ${error?.message ?? error}`,
-      );
+    } catch (error) {
+      if (error instanceof AnalyticsStoreUnavailableError)
+        throw insightsUnavailable();
+      throw error;
     }
-  }
-
-  public async getStats(
-    sellerId: string,
-    days: number,
-  ): Promise<SellerStatsResponseDto> {
-    const params = { sellerId, days };
-    const where = `seller_id = {sellerId:UUID} AND ts >= now64(3) - toIntervalDay({days:UInt32})`;
-
-    // 64-bit ints come back as JSON strings from ClickHouse, hence Number().
-    const [summaryRows, dailyRows, topRows] = await Promise.all([
-      this.clickHouseService.query<{
-        revenue: string;
-        orders: string;
-        units: string;
-        unique_buyers: string;
-        refunds: string;
-      }>(
-        `SELECT
-           sumIf(amount_cents, status = 'COMPLETED')      AS revenue,
-           countIf(status = 'COMPLETED')                  AS orders,
-           sumIf(quantity, status = 'COMPLETED')          AS units,
-           uniqCombinedIf(buyer_id, status = 'COMPLETED') AS unique_buyers,
-           countIf(status = 'REFUNDED')                   AS refunds
-         FROM seller_sales
-         WHERE ${where}`,
-        params,
-      ),
-      this.clickHouseService.query<{
-        day: string;
-        revenue: string;
-        orders: string;
-      }>(
-        `SELECT
-           toString(toDate(ts))                      AS day,
-           sumIf(amount_cents, status = 'COMPLETED') AS revenue,
-           countIf(status = 'COMPLETED')             AS orders
-         FROM seller_sales
-         WHERE ${where}
-         GROUP BY day
-         ORDER BY day`,
-        params,
-      ),
-      this.clickHouseService.query<{
-        product_id: string;
-        revenue: string;
-        units: string;
-      }>(
-        `SELECT
-           toString(product_id) AS product_id,
-           sum(amount_cents)    AS revenue,
-           sum(quantity)        AS units
-         FROM seller_sales
-         WHERE ${where} AND status = 'COMPLETED'
-         GROUP BY product_id
-         ORDER BY revenue DESC
-         LIMIT 5`,
-        params,
-      ),
-    ]);
-
-    const summary = summaryRows[0];
-    const revenueCents = Number(summary?.revenue ?? 0);
-    const orders = Number(summary?.orders ?? 0);
-
+    const byDay = new Map(window.daily.map((d) => [d.day, d]));
+    const daily = Array.from({ length: days }, (_, i) => {
+      const day = dayOf(first + i * DAY_MS);
+      const point = byDay.get(day);
+      return {
+        day,
+        revenueMinor: point?.revenueMinor ?? 0,
+        orders: point?.orders ?? 0,
+        refundedMinor: point?.refundedMinor ?? 0,
+      };
+    });
     return {
-      sellerId,
+      shopId,
       days,
+      from: dayOf(first),
+      to: dayOf(today),
+      currency: 'EUR',
       summary: {
-        revenueCents,
-        orders,
-        unitsSold: Number(summary?.units ?? 0),
-        uniqueBuyers: Number(summary?.unique_buyers ?? 0),
-        refunds: Number(summary?.refunds ?? 0),
-        avgOrderValueCents: orders > 0 ? Math.round(revenueCents / orders) : 0,
+        revenueMinor: window.revenueMinor,
+        orders: window.orders,
+        unitsSold: window.unitsSold,
+        uniqueBuyers: window.uniqueBuyers,
+        refundsCount: window.refundsCount,
+        refundedMinor: window.refundedMinor,
+        netRevenueMinor: window.revenueMinor - window.refundedMinor,
+        avgOrderValueMinor: averageOrderValue(
+          window.revenueMinor,
+          window.orders,
+        ),
       },
-      daily: dailyRows.map((row) => ({
-        day: row.day,
-        revenueCents: Number(row.revenue),
-        orders: Number(row.orders),
-      })),
-      topProducts: topRows.map((row) => ({
-        productId: row.product_id,
-        revenueCents: Number(row.revenue),
-        unitsSold: Number(row.units),
-      })),
+      daily,
+      topProducts: window.topProducts,
     };
   }
 }

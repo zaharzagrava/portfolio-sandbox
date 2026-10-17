@@ -20,5 +20,13 @@ A [shop member](shop-member.md) saves the `business` step. The onboarding view t
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [S04](../capabilities/S04-kyc-onboarding.md): R-01
+- [already-submitted](already-submitted.md)
+- [document-not-required](document-not-required.md)
+- [onboarding-document-type](onboarding-document-type.md)
+- [required-onboarding-documents](required-onboarding-documents.md)
+- [resubmission-required](resubmission-required.md)
+- [submission-required](submission-required.md)
+- [submission](submission.md)
+- [vat-number](vat-number.md)
 <!-- used-by:end -->

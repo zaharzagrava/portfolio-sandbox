@@ -41,6 +41,7 @@ A rate-limit policy is a named rule that caps how often one subject (address, us
 - {{cap:S03}} Shops as tenants: memberships, roles and permissions, invites, per-shop SSO, cells, offboarding
 - {{cap:S04}} Staged onboarding questionnaire, KYC document intake, LLM extraction, human review, shop verification
 - {{cap:S05}} Product CRUD, pricing, stock fields, product cache and invalidation, product views
+- {{cap:S06}} Collaborative listing drafts - real-time co-editing, versions, publish to a product
 - {{cap:S07}} Bulk catalog import (multipart upload, malware scan, streamed parse, checkpoints and leases, error report)
 - {{cap:S08}} Shopify and WooCommerce catalog and stock sync (connect, incremental pull, webhooks, three-way stock merge, quarantine, resilience, reconciliation, management)
 - {{cap:S09}} Offline-first inventory sync for store devices (operation idempotency, stock deltas, per-field last-writer-wins, change feed, conflicts)
@@ -54,12 +55,18 @@ A rate-limit policy is a named rule that caps how often one subject (address, us
 - {{cap:S17}} Subscriptions - plans, versioned prices, state machine, billing run, charging and dunning, proration, credit
 - {{cap:S18}} Usage metering (late events, adjustments) and entitlement checks
 - {{cap:S19}} Pickup points, local stock, available near me, map clustering
+- {{cap:S20}} Same-day courier dispatch (courier shift, offers, delivery state machine, tracking)
 - {{cap:S21}} Limited-drop auctions (proxy bids, anti-sniping, reserve, exactly-once close, second chance, shill guard)
+- {{cap:S22}} Launch-event booking (waiting room, admission tokens, seat holds, booking confirm, seat map, ticket limits)
+- {{cap:S23}} Live launch stream (sampled comment batches, reactions, moderation, pinned commerce)
 - {{cap:S24}} Product chat (channels, idempotent send, per-channel sequence, sync on reconnect, unread, receipts, presence, offline push)
 - {{cap:S25}} Product discussions (posts, nested comments, votes, ranking, abuse controls, safe markdown)
+- {{cap:S26}} Follow graph and home feed (follow, items from events, fan-out on write with celebrity merge, rebuild, hiding)
+- {{cap:S27}} Brand stories CMS (versioned multi-locale stories, scheduled publish, preview, cache tags, sitemap)
 - {{cap:S28}} Notification routing, preferences, quiet hours, caps, per-channel queues, provider failover, inbox, suppression
 - {{cap:S29}} Product and review photos (upload, safe processing, duplicate flag, galleries, cleanup)
 - {{cap:S30}} Product video and VOD (resumable upload, transcoding graph, HLS ladder, signed delivery)
+- {{cap:S31}} Shop asset library (chunked dedupe, delta sync, conflicts, share links) and digital product delivery
 - {{cap:S32}} Product search: index sync with external versioning, zero-downtime reindex, relevance boosts, synonyms, facets, k-NN
 - {{cap:S33}} Search autocomplete: query-log top-K trie, catalog completions, per-source budgets, typo fallback
 - {{cap:S34}} "Bought together" recommendations: co-occurrence graph, normalisation, 2-hop cold start
@@ -68,6 +75,7 @@ A rate-limit policy is a named rule that caps how often one subject (address, us
 - {{cap:S37}} Share and affiliate short links (codes, aliases, redirects, click attribution)
 - {{cap:S38}} Feature flags and remote config (targeting, percentage rollout, local evaluation, kill switch, audit)
 - {{cap:S39}} Analytics ingestion and A/B testing (event schema, dedupe, assignment, exposure, SRM, results)
+- {{cap:S40}} Seller leaderboards, live sales dashboard and seller stats (period boards with ties, my rank, snapshots, live frames, today chart, shop stats)
 - {{cap:S42}} Seller public API: API keys, scopes, sandbox, date-pinned versions, deprecation headers, batch and bulk stock, request logs, usage metering
 - {{cap:S43}} Webhook delivery to shops: endpoints, signing with dual secrets, routing, per-endpoint ordering, retries, circuit breaker, auto-disable, replay
 - {{cap:S44}} Embeddable storefront widget: site keys bound to origins, per-site framing policy, identity hand-off, kill switch

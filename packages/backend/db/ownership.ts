@@ -236,6 +236,8 @@ export const OWNERSHIP = {
   ExperimentAudit: 'domain:experimentation',
   // seller-insights
   LeaderboardSnapshot: 'domain:seller-insights',
+  SellerInsightsShop: 'domain:seller-insights',
+  SellerInsightsProduct: 'domain:seller-insights',
   CompetitorWatch: 'domain:seller-insights',
   CrawlTarget: 'domain:seller-insights',
   // developer-platform

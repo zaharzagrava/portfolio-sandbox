@@ -20,5 +20,5 @@ A seller declares a document as PDF, but the uploaded bytes are a PNG. When the 
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [upload-mismatch](upload-mismatch.md)
 <!-- used-by:end -->

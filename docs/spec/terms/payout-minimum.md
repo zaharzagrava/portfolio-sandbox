@@ -24,8 +24,12 @@ A shop's balance is below the minimum when the [operator](operator.md) runs [`pa
 ## Used by
 <!-- used-by:start -->
 - [J01](../capabilities/J01-buy-to-payout.md): B-11
+- [authoritative-balance](authoritative-balance.md)
 - [blocked-reason](blocked-reason.md)
+- [operator](operator.md)
 - [payout-destination](payout-destination.md)
 - [payout-paid-event](payout-paid-event.md)
+- [payout-transfer](payout-transfer.md)
 - [payouts-domain](payouts-domain.md)
+- [payouts-run-weekly-job](payouts-run-weekly-job.md)
 <!-- used-by:end -->

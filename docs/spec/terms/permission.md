@@ -27,6 +27,8 @@ shop.read, members.read, shop.export
 - [tenant-shop-rbac](../concepts/tenant-shop-rbac.md): C-04
 - [member-view](member-view.md)
 - [my-role](my-role.md)
+- [onboarding-questionnaire](onboarding-questionnaire.md)
+- [platform-role](platform-role.md)
 - [role-permission-matrix](role-permission-matrix.md)
 - [shop-membership](shop-membership.md)
 - [shop-role](shop-role.md)

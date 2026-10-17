@@ -25,5 +25,8 @@ A seller confirms a `BANK_STATEMENT` upload. The document moves to `QUEUED`, and
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [document-id](document-id.md)
+- [document-upload](document-upload.md)
+- [extraction-message](extraction-message.md)
+- [failed-batch-item](failed-batch-item.md)
 <!-- used-by:end -->

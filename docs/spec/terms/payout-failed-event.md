@@ -20,5 +20,9 @@ A shop's [destination](payout-destination.md) is rejected by the provider. The r
 
 ## Used by
 <!-- used-by:start -->
+- [event-backbone](event-backbone.md)
 - [failure-code](failure-code.md)
+- [payout-destination](payout-destination.md)
+- [reversing-journal](reversing-journal.md)
+- [task-row](task-row.md)
 <!-- used-by:end -->

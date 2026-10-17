@@ -22,6 +22,7 @@ The statement has a capture with [provider reference](reconciliation-issue-refer
 ## Used by
 <!-- used-by:start -->
 - [S14](../capabilities/S14-ledger-reconciliation.md): B-13
+- [holder-name-check](holder-name-check.md)
 - [ledger-journal](ledger-journal.md)
 - [platform-admin](platform-admin.md)
 - [provider-statement](provider-statement.md)

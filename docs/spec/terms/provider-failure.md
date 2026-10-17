@@ -22,6 +22,8 @@ A provider failure happens when an e-mail, SMS or push provider does not accept 
 
 ## Used by
 <!-- used-by:start -->
+- [S04](../capabilities/S04-kyc-onboarding.md): R-21
+- [invalid-output](invalid-output.md)
 - [notification-line](notification-line.md)
 - [permanent-error](permanent-error.md)
 - [provider-chain](provider-chain.md)

@@ -37,6 +37,7 @@ A member with `ADMIN` in a shop may make another member `STAFF` or `VIEWER`. Onl
 - [permission-denied](permission-denied.md)
 - [permission](permission.md)
 - [platform-admin](platform-admin.md)
+- [platform-role](platform-role.md)
 - [post-auth-register](post-auth-register.md)
 - [post-bff-session-refresh](post-bff-session-refresh.md)
 - [presentation-only](presentation-only.md)

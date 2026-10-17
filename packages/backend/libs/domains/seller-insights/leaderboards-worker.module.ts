@@ -1,13 +1,28 @@
 import { Module } from '@nestjs/common';
-import { RealtimeModule } from '@app/infrastructure/realtime';
+import { ClockModule } from '@app/infrastructure/platform/clock.module';
 import { JobsModule } from '@app/infrastructure/jobs/jobs.module';
-import { DashboardTicker } from './infra/dashboard-ticker.service';
-import { LeaderboardSnapshotJobs } from './infra/leaderboard-snapshot.jobs';
+import { RealtimeModule } from '@app/infrastructure/realtime';
+import { SnapshotService } from './application/snapshot.service';
+import {
+  DASHBOARD_TICKER_OPTIONS,
+  DashboardTicker,
+} from './infra/dashboard-ticker.service';
+import { SnapshotJobs } from './infra/snapshot.jobs';
+import { SellerInsightsStoresModule } from './seller-insights-stores.module';
 
-/** SD-18 periodic work (apps/worker): dashboard ticker + period snapshots. */
+/** S40 periodic work (apps/worker): the dashboard ticker and the period freeze jobs. */
 @Module({
-  imports: [RealtimeModule, JobsModule],
-  providers: [DashboardTicker, LeaderboardSnapshotJobs],
-  exports: [DashboardTicker, LeaderboardSnapshotJobs],
+  imports: [
+    RealtimeModule,
+    JobsModule,
+    ClockModule,
+    SellerInsightsStoresModule,
+  ],
+  providers: [
+    { provide: DASHBOARD_TICKER_OPTIONS, useValue: {} },
+    DashboardTicker,
+    SnapshotService,
+    SnapshotJobs,
+  ],
 })
 export class LeaderboardsWorkerModule {}

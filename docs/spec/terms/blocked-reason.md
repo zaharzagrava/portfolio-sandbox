@@ -24,5 +24,9 @@ The operator runs `payouts.run-weekly`. One shop's balance is under the payout m
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [authoritative-balance](authoritative-balance.md)
+- [payout-destination](payout-destination.md)
+- [payout-minimum](payout-minimum.md)
+- [payout-transfer](payout-transfer.md)
+- [payouts-run-weekly-job](payouts-run-weekly-job.md)
 <!-- used-by:end -->

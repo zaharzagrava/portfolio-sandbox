@@ -19,5 +19,6 @@ A seller has already requested five different [`BANK_STATEMENT`](onboarding-docu
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [document-round](document-round.md)
+- [onboarding-document-type](onboarding-document-type.md)
 <!-- used-by:end -->

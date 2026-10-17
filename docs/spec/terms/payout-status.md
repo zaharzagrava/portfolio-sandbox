@@ -20,5 +20,9 @@ The operator runs `payouts.run-weekly` for a shop with a valid destination. The 
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [failure-code](failure-code.md)
+- [main-journeys](main-journeys.md)
+- [payouts-domain](payouts-domain.md)
+- [payouts-run-weekly-job](payouts-run-weekly-job.md)
+- [reversing-journal](reversing-journal.md)
 <!-- used-by:end -->

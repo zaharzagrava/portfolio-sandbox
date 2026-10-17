@@ -25,6 +25,7 @@ A route has a concurrency limit of 2 and a handler that takes 300 ms. While two 
 - [client-abort](client-abort.md)
 - [concurrency-lease-release](concurrency-lease-release.md)
 - [concurrency-limit](concurrency-limit.md)
+- [extraction-worker](extraction-worker.md)
 - [pending-row](pending-row.md)
 - [rate-limit-budget](rate-limit-budget.md)
 - [rate-limit-counter-store](rate-limit-counter-store.md)

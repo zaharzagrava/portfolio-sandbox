@@ -1,66 +1,53 @@
-import {
-  BadRequestException,
-  Controller,
-  Get,
-  Header,
-  Param,
-  ParseUUIDPipe,
-  Query,
-} from '@nestjs/common';
+import { Controller, Get, Req, Res } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
+import type { Request, Response } from 'express';
+import type { LeaderboardPage } from '@marketplace-sandbox/contracts';
+import { MetricsRegistry } from '@app/common/telemetry/metrics-registry';
 import { Firewall } from '@app/domains/identity';
-import { ShopScoped } from '@app/domains/tenancy';
-import { LeaderboardService } from '../application/leaderboard.service';
-import { ShopDashboardService } from '../application/shop-dashboard.service';
-import type { PeriodKind } from '../domain/periods';
+import { RateLimit } from '@app/infrastructure/rate-limit';
+import { insightsMetrics } from '../application/seller-insights.metrics';
+import { LeaderboardReadService } from '../application/leaderboard-read.service';
+import { parseTopQuery } from './query-dtos';
 
-const kindOf = (period?: string): PeriodKind => {
-  if (period === undefined || period === 'week') return 'week';
-  if (period === 'month') return 'month';
-  throw new BadRequestException('period: week | month');
-};
+const LIVE_CACHE = 'public, max-age=10, s-maxage=30';
+const FROZEN_CACHE = 'public, max-age=3600, s-maxage=86400';
+const LIMITER_POLICY = 'seller-insights.leaderboard-read.ip';
 
+/** The public top list (S40 US2): anonymous, rate limited per address, no revenue in any entry. */
 @ApiTags('leaderboards')
 @Controller()
 export class LeaderboardsController {
-  constructor(
-    private readonly leaderboards: LeaderboardService,
-    private readonly dashboard: ShopDashboardService,
-  ) {}
+  private limiterOutages = 0;
 
-  /** GET /api/leaderboards?period=week&id=2026-W40&category=electronics */
+  constructor(private readonly reads: LeaderboardReadService) {}
+
+  /** GET /api/leaderboards?period=week&id=2026-W40&category=electronics&limit=20 */
   @Firewall({ anonymous: true })
-  @Header('Cache-Control', 'public, max-age=10, s-maxage=30')
+  @RateLimit(LIMITER_POLICY)
   @Get('leaderboards')
-  top(
-    @Query('period') period?: string,
-    @Query('id') id?: string,
-    @Query('category') category?: string,
-    @Query('limit') limit = '20',
-  ) {
-    return this.leaderboards.top(
-      kindOf(period),
-      id,
-      category,
-      Math.min(Math.max(Number(limit) || 20, 1), 100),
+  async top(
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<LeaderboardPage> {
+    this.noteLimiterOutage();
+    const page = await this.reads.top(parseTopQuery(req.query));
+    res.setHeader(
+      'Cache-Control',
+      page.source === 'snapshot' ? FROZEN_CACHE : LIVE_CACHE,
     );
+    return page;
   }
 
-  @Firewall({ anonymous: true })
-  @Get('leaderboards/shops/:shopId')
-  rank(
-    @Param('shopId', ParseUUIDPipe) shopId: string,
-    @Query('period') period?: string,
-    @Query('id') id?: string,
-    @Query('category') category?: string,
-  ) {
-    return this.leaderboards.rank(shopId, kindOf(period), id, category);
-  }
-
-  /** Initial chart for the live dashboard; the per-second updates arrive over SSE `shop:{id}:live`. */
-  @ShopScoped('shop.read')
-  @Get('shops/:shopId/dashboard/today')
-  today(@Param('shopId', ParseUUIDPipe) shopId: string) {
-    return this.dashboard.today(shopId);
+  /** The limiter fails open: when it served this request without its store, count it (S40 AS-21). */
+  private noteLimiterOutage(): void {
+    const outages =
+      MetricsRegistry.value('rate_limit_store_unavailable_total', {
+        policy: LIMITER_POLICY,
+        fail_mode: 'open',
+      }) ?? 0;
+    if (outages > this.limiterOutages) {
+      insightsMetrics.rateLimitDegraded();
+      this.limiterOutages = outages;
+    }
   }
 }

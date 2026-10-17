@@ -21,5 +21,5 @@ A user with the `MODERATOR` platform role lists open review tasks and gets them 
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [moderator](moderator.md)
 <!-- used-by:end -->
