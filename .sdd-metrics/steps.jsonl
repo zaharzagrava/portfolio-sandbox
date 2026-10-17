@@ -618,3 +618,12 @@
 {"run":"20261016T173603Z","capability":"S40","step":"converge-1","start":"2026-10-17T03:05:12Z","end":"2026-10-17T03:05:47Z","seconds":35,"result":"ok","attempt":1,"reason":"ok"}
 {"run":"20261016T173603Z","capability":"S40","step":"gate","start":"2026-10-17T03:05:47Z","end":"2026-10-17T03:11:28Z","seconds":341,"result":"pass","attempt":1,"reason":""}
 {"run":"20261016T173603Z","capability":"S40","step":"built","start":"2026-10-17T02:12:27Z","end":"2026-10-17T03:11:28Z","seconds":3541,"result":"ok","attempt":1,"reason":"Seller leaderboards (ties, my rank, period snapshots), live sales dashboard, seller stats"}
+{"run":"20261016T173603Z","capability":"S41","step":"plan","start":"2026-10-17T03:11:49Z","end":"2026-10-17T03:15:09Z","seconds":200,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261016T173603Z","capability":"S41","step":"tasks","start":"2026-10-17T03:15:09Z","end":"2026-10-17T03:18:34Z","seconds":205,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261016T173603Z","capability":"S41","step":"analyze","start":"2026-10-17T03:18:34Z","end":"2026-10-17T03:19:24Z","seconds":50,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261016T173603Z","capability":"S41","step":"implement-1","start":"2026-10-17T03:19:25Z","end":"2026-10-17T04:17:49Z","seconds":3504,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261016T173603Z","capability":"S41","step":"converge-1","start":"2026-10-17T04:17:49Z","end":"2026-10-17T04:18:09Z","seconds":20,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261016T173603Z","capability":"S41","step":"gate","start":"2026-10-17T04:18:09Z","end":"2026-10-17T04:18:20Z","seconds":11,"result":"fail","attempt":1,"reason":"test integrity: packages/backend/libs/domains/seller-insights/crawler.e2e-spec.ts: test file deleted, and it carried no scenario id, so nothing proves that another test replaces it (add the scenario i"}
+{"run":"20261016T173603Z","capability":"S41","step":"repair-1","start":"2026-10-17T04:18:21Z","end":"2026-10-17T04:20:46Z","seconds":145,"result":"ok","attempt":1,"reason":"ok","code_changed":true}
+{"run":"20261016T173603Z","capability":"S41","step":"gate","start":"2026-10-17T04:20:47Z","end":"2026-10-17T04:29:03Z","seconds":496,"result":"pass","attempt":2,"reason":""}
+{"run":"20261016T173603Z","capability":"S41","step":"built","start":"2026-10-17T03:11:48Z","end":"2026-10-17T04:29:03Z","seconds":4635,"result":"ok","attempt":1,"reason":"Competitor price monitor: polite crawling, robots, SSRF-safe fetch, price extraction, alerts"}

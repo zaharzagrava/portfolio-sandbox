@@ -20,8 +20,10 @@ const sources = (dir: string): string[] =>
 
 describe('Seller insights: data ownership of the entry point', () => {
   it('S40 AS-62: the domain entry point exports modules only, no model and no consumer class', () => {
+    // S41 replaced `CrawlerModule` by the core, worker and projector modules of the competitor monitor
     expect(Object.keys(entryPoint).sort()).toEqual([
-      'CrawlerModule',
+      'CompetitorProjectorModule',
+      'CompetitorsModule',
       'CrawlerWorkerModule',
       'LeaderboardsModule',
       'LeaderboardsWorkerModule',

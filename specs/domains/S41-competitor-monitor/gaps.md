@@ -77,3 +77,35 @@ Note on section C: `pnpm --dir packages/backend check:table-ownership` could not
 6. **Tests**: the five e2e files and four unit specs of [`test-plan.md`](test-plan.md); replace `crawler.e2e-spec.ts` and `domain/crawler.spec.ts`; web journey `packages/web/e2e/competitor-monitor.spec.ts` once the screen exists.
 7. **Removal of dead code and config**: `urlKey` (A29), the `webhooks_allow_private_hosts` use in the crawler, `NotificationRouter` imports; new config keys with startup validation (fixture allowlist, loop count, minimum gap, request cap).
 8. **Load script** for SC-007 under `packages/backend/scripts/load-tests/`.
+9. **Living-spec page** `docs/spec/capabilities/S41-competitor-monitor.md` (none exists): written first, `[proof:]`/`[code:]` kept true.
+10. **Plan deltas (2026-10-17)**: [`research.md`](research.md) "Gap status" lists which rows other specs already closed (A9, most of A23, section C rows 1–3, 5–6). The status vocabulary of S54 (`blocked_address`, `unresolvable`, `invalid_url`, `redirect_refused`, `redirected_host`, `too_many_redirects`, `unsupported_content_type`, `timeout`, `tls_error`, `network_error`) is adopted as `lastStatus`.
+
+## Spec changes
+
+- None to a human-signed file (`docs/spec/capabilities/S41-competitor-monitor.md` is new and unsigned). Deliberate deviations from `spec.md` text, all written into the living page under "Decisions":
+  - the event type is emitted as `sellerinsights.competitor_price_dropped` (S53 envelope rule) and its topic is `seller_insights.events` (what S28 consumes), not `seller-insights.events`;
+  - the two read routes (list, prices) are guarded by `shop.read`, not `products.read`: S03 keeps only `shop.read`, `members.read` and `shop.export` available on a suspended or closing shop, and AS-07 requires reads to answer `200` there; every role has both permissions, so no role gains or loses access;
+  - with the limiter store down the fail-closed `503` carries the platform's code `rate_limiter_unavailable` (S50), not `service_unavailable` (FR-034 lists the latter);
+  - a freshly fetched `robots.txt` is followed by the politeness gap before the page request (AS-23 reads "consecutive requests", robots.txt included);
+  - redirects are judged by their target before their host (additive `strictRedirects` option of `safeGet`), so AS-27's metadata-address redirect is `blocked_address`.
+
+## Provider side built for a missing requirement
+
+- `maxCompetitorWatches` did not exist in billing (S18): it is now in `ENTITLEMENT_KEYS`, `LIMIT_KEYS`, the `Entitlements` types, the contracts `entitlementsSchema` and the database check `billing_entitlements_valid` (migration `20261017400100-billing-s41-entitlement-key.js`), covered by `domain/entitlements.spec.ts` and by the S41 AS-08 scenarios through the real `EntitlementsService`. Plan values stay S18's to set; a plan without the key allows 0.
+
+## Sibling-spec follow-ups
+
+- **S18**: add the limit key `maxCompetitorWatches` to the plan table values it documents (S41 added the key to `ENTITLEMENT_KEYS`, `LIMIT_KEYS`, the contracts schema and the database check as the minimal provider side; STARTER and free tier 0). The e2e of S41 writes the key on the seeded `pro` (5) and `starter` (100) plans and removes it at the end.
+- **S50**: the fail-closed answer of the limiter on a write route is `503 rate_limiter_unavailable`; S41 FR-034 lists `service_unavailable` for it and S41 documents the platform's code.
+- **S03**: reads of a suspended or closing shop are only possible with `shop.read` (S41 uses it for the list and the history); a capability that wants `products.read` on such a shop must add it to `WHILE_SUSPENDED` there.
+- **S28**: the `sellerinsights.competitor_price_dropped` v1 payload gains `priceVersion` (additive); the event is emitted once per owner with a deterministic `eventId`, so dedupe on `eventId`, never on (aggregateId, version).
+- **S53**: if the envelope pattern is relaxed to allow `seller_insights.*`, tell S41 to rename; until then S41 keeps `sellerinsights.*`.
+- **S54**: S41 added one additive option to `safeGet`, `strictRedirects` (default false): a redirect to a non-`https` target fails `redirect_refused`, and a redirect to a host that resolves to a non-public address fails `blocked_address` before the same-host rule applies; covered by `safe-request.e2e-spec.ts`. List it in the S54 page. The crawler uses the vocabulary of `SafeRequestErrorKind` verbatim as its status.
+- **S40**: `SellerInsightsProjectorModule` is unchanged; S41's consumers live in `CompetitorProjectorModule` (own consumer groups `seller-insights-competitor-shops` and `seller-insights-competitor-products`).
+- **S50**: new policy name `seller-insights.competitor-write.shop` (30/min, fail closed).
+- **S49**: new job `crawler.purge-targets` (daily) next to `crawler.schedule-due`.
+- **S40**: shares the domain; `CompetitorShop` is a separate table from S40's `SellerInsightsShop`, no change needed.
+
+## Gate repairs
+
+- Test integrity: `crawler.e2e-spec.ts` and `domain/crawler.spec.ts` (the former crawler tests, deleted when the crawler was split into the worker modules) carried no scenario id, so the gate could not see a replacement. Both files are back as real tests whose titles carry S41 ids: the e2e smoke path (AS-32/43/44, AS-18, AS-35, AS-23) and the combined pure-logic smoke cases (AS-40, AS-19, AS-36, AS-33). The detailed scenarios stay in the `competitor-*.e2e-spec.ts` and the per-primitive unit specs.

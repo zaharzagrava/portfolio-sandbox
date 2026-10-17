@@ -15,6 +15,14 @@ export const sellerInsightsRatePolicies = definePolicies('seller-insights', {
     key: 'ip',
     failMode: 'open',
   },
+  // S41 FR-009: 30 competitor watch writes a minute per shop; a limiter outage must not let writes through.
+  'seller-insights.competitor-write.shop': {
+    algorithm: 'slidingWindow',
+    limit: 30,
+    windowMs: 60_000,
+    key: 'shop',
+    failMode: 'closed',
+  },
 } as const);
 
 declare module '@app/infrastructure/rate-limit/rate-limit.types' {

@@ -180,6 +180,10 @@ describe('safe outbound requests (SSRF)', () => {
           return void res
             .writeHead(302, { location: 'https://redirect.example/landing' })
             .end();
+        if (url.pathname === '/to-http')
+          return void res
+            .writeHead(302, { location: 'http://shop.example/landing' })
+            .end();
         if (url.pathname === '/start')
           return void res.writeHead(302, { location: '/landing' }).end();
         res.writeHead(200, { 'content-type': 'text/html' }).end('landed');
@@ -261,6 +265,28 @@ describe('safe outbound requests (SSRF)', () => {
           )
         ).kind,
       ).toBe('blocked_address');
+    });
+
+    it('S41 AS-27: with strictRedirects a redirect is judged by its target first (non-https, private address) and then by its host', async () => {
+      const strict = {
+        ...base,
+        maxRedirects: 2,
+        sameHostRedirectsOnly: true,
+        strictRedirects: true,
+      };
+      expect(
+        (await failure(safeGet('https://shop.example/to-http', strict))).kind,
+      ).toBe('redirect_refused');
+      expect(
+        (await failure(safeGet('https://shop.example/to-private', strict)))
+          .kind,
+      ).toBe('blocked_address');
+      expect(
+        (await failure(safeGet('https://shop.example/to-other', strict))).kind,
+      ).toBe('redirected_host');
+      expect(
+        (await safeGet('https://shop.example/start', strict)).finalUrl,
+      ).toBe('https://shop.example/landing');
     });
 
     it('fails too_many_redirects on the redirect past the limit', async () => {

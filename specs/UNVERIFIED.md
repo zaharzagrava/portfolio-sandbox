@@ -262,3 +262,6 @@ interviews) until its status says so. The implementation loop appends here (rule
 | S40 | SC-002: boards and counters within 5 s p99, today/stats within 30 s p99 | `specs/domains/S40-leaderboards-dashboard/quickstart.md`, "Ops artifacts" (sustained order stream, lag gauges) | not run |
 | S40 | SC-003: live panel changes within 2 s of a payment for 99% while watched | same file (subscribed client delay measurement) | not run |
 | S40 | SC-005: public top list under 100 ms p99 at 50,000 req/s (cached) | same file (k6 against the cached route) | not run |
+| S41 | SC-005: a new URL is fetched for the first time within 2 minutes in a running fleet | `specs/domains/S41-competitor-monitor/quickstart.md`, "Ops artifacts" (wall-clock registration → first check) | not run |
+| S41 | SC-006: registration p95 < 500 ms (excl. DNS), history read p95 < 300 ms for 365 days | same file (k6 against core with seeded history) | not run |
+| S41 | SC-007: 10 M URLs / 6 h ≈ 460 fetches/s fleet-wide with at most one in-flight request per host | same file (`scripts/load-tests/competitor-crawl.*`) | not run |

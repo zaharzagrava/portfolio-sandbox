@@ -240,6 +240,7 @@ export const OWNERSHIP = {
   SellerInsightsProduct: 'domain:seller-insights',
   CompetitorWatch: 'domain:seller-insights',
   CrawlTarget: 'domain:seller-insights',
+  CompetitorShop: 'domain:seller-insights',
   // developer-platform
   ApiKey: 'domain:developer-platform',
   ShopApiSettings: 'domain:developer-platform',

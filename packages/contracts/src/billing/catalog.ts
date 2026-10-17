@@ -24,6 +24,7 @@ export const entitlementsSchema = z.strictObject({
   auctions: z.boolean().optional(),
   apiCallsPerMonth: nonNegativeInt.optional(),
   assistantTokensPerMonth: nonNegativeInt.optional(),
+  maxCompetitorWatches: nonNegativeInt.optional(),
 });
 export type PlanEntitlements = z.infer<typeof entitlementsSchema>;
 

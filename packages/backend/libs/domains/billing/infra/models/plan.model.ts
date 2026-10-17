@@ -15,6 +15,7 @@ export interface Entitlements {
   auctions?: boolean;
   apiCallsPerMonth?: number;
   assistantTokensPerMonth?: number;
+  maxCompetitorWatches?: number;
 }
 
 @Table({

@@ -35,6 +35,7 @@ import { catalogSyncConfigKeys } from './catalog-sync-config';
 import { storiesConfigKeys } from './stories-config'; // also registers the S27 startup rule
 import { collabConfigKeys } from './collab-config'; // also registers the S06 startup rule
 import { launchEventsConfigKeys } from './launch-events-config'; // also registers the S22 startup rule
+import { competitorConfigKeys } from './competitor-config'; // also registers the S41 startup rule
 
 dotenv.config({
   /**
@@ -648,6 +649,7 @@ export class ApiConfigService {
           ...storiesConfigKeys,
           ...collabConfigKeys,
           ...launchEventsConfigKeys,
+          ...competitorConfigKeys,
           payments_cursor_secret: {
             verify: joi.string().optional().allow(''),
             name: 'PAYMENTS_CURSOR_SECRET',

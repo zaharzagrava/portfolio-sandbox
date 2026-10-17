@@ -18,11 +18,19 @@ export const ENTITLEMENT_KEYS = [
   'auctions',
   'apiCallsPerMonth',
   'assistantTokensPerMonth',
+  'maxCompetitorWatches',
 ] as const;
 export type EntitlementKey = (typeof ENTITLEMENT_KEYS)[number];
 
-/** Count limits (`checkLimit`): the caller holds the current count. */
-export const LIMIT_KEYS = ['maxProducts', 'seats'] as const;
+/**
+ * Count limits (`checkLimit`): the caller holds the current count. `maxCompetitorWatches` is S41's (competitor price
+ * monitor): the free tier and any plan without the key allow 0.
+ */
+export const LIMIT_KEYS = [
+  'maxProducts',
+  'seats',
+  'maxCompetitorWatches',
+] as const;
 export type LimitKey = (typeof LIMIT_KEYS)[number];
 
 /** Monthly quotas (`checkQuota`) and the usage metric that counts each (FR-006). */
@@ -40,6 +48,7 @@ export interface Entitlements {
   auctions?: boolean;
   apiCallsPerMonth?: number;
   assistantTokensPerMonth?: number;
+  maxCompetitorWatches?: number;
 }
 
 /** Free tier when there is no live subscription (S18 owns it, FR-002). */

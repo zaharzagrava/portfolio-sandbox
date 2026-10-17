@@ -13,8 +13,11 @@ export function simhash(text: string): string {
     .split(/\s+/)
     .filter(Boolean);
   const votes = new Array<number>(64).fill(0);
-  for (let i = 0; i + 2 < Math.max(words.length, 3); i++) {
-    const shingle = words.slice(i, i + 3).join(' ');
+  const shingles =
+    words.length <= 3
+      ? [words.join(' ')]
+      : words.slice(0, -2).map((_, i) => words.slice(i, i + 3).join(' '));
+  for (const shingle of shingles) {
     const h = createHash('md5').update(shingle).digest().readBigUInt64BE(0);
     for (let bit = 0; bit < 64; bit++)
       votes[bit] += (h >> BigInt(bit)) & 1n ? 1 : -1;

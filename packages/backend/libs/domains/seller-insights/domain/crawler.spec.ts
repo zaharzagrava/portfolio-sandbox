@@ -3,9 +3,9 @@ import { isAllowed, parseRobots } from './robots';
 import { simhash, simhashDistance, visibleText } from './simhash';
 import { extractPrice } from './extract-price';
 
-/** Crawler building blocks - pure, unit-tested. */
+/** Crawler building blocks together - pure. Each primitive has its own table-driven spec; this one keeps the combined smoke cases. */
 describe('crawler primitives', () => {
-  it('normalizes URLs into one crawl target', () => {
+  it('S41 AS-40: normalizes URLs into one crawl target', () => {
     expect(
       normalizeUrl(
         'HTTPS://Shop.COM:443/p/1/?utm_source=x&b=2&a=1&gclid=z#reviews',
@@ -13,7 +13,7 @@ describe('crawler primitives', () => {
     ).toBe('https://shop.com/p/1?a=1&b=2');
   });
 
-  it('robots.txt: our group beats *, longest rule wins, wildcards and $ work', () => {
+  it('S41 AS-19: robots.txt: our group beats *, longest rule wins, wildcards and $ work', () => {
     const rules = parseRobots(
       [
         'User-agent: *',
@@ -40,7 +40,7 @@ describe('crawler primitives', () => {
     ).toBe(false);
   });
 
-  it('SimHash: a rotated widget is near, a different page is far', () => {
+  it('S41 AS-36: SimHash: a rotated widget is near, a different page is far', () => {
     const page = (widget: string) =>
       `iPhone 17 Pro 256GB Natural Titanium. Price 1199. Free delivery tomorrow. ${'Specs and details. '.repeat(30)} People also bought ${widget}`;
     expect(
@@ -59,22 +59,24 @@ describe('crawler primitives', () => {
     ).toBe('Hi');
   });
 
-  it('extracts prices from JSON-LD (incl. @graph / AggregateOffer) before meta tags', () => {
+  it('S41 AS-33: extracts prices from JSON-LD (incl. @graph / AggregateOffer) before meta tags', () => {
     expect(
       extractPrice(
         '<script type="application/ld+json">{"@context":"https://schema.org","@type":"Product","offers":{"@type":"Offer","price":"1099.00","priceCurrency":"eur"}}</script>',
       ),
-    ).toEqual({ amountMinor: 109_900, currency: 'EUR', source: 'json-ld' });
+    ).toMatchObject({ amountMinor: 109_900, currency: 'EUR' });
     expect(
       extractPrice(
         '<script type="application/ld+json">{"@graph":[{"@type":"WebPage"},{"@type":"Product","offers":{"@type":"AggregateOffer","lowPrice":49.5,"priceCurrency":"USD"}}]}</script>',
-      )?.amountMinor,
-    ).toBe(4_950);
+      ),
+    ).toMatchObject({ amountMinor: 4_950, currency: 'USD' });
     expect(
       extractPrice(
         '<meta property="product:price:amount" content="19.99"><meta property="product:price:currency" content="GBP">',
       ),
-    ).toEqual({ amountMinor: 1_999, currency: 'GBP', source: 'meta' });
-    expect(extractPrice('<p>was €199, now only €149!</p>')).toBeNull();
+    ).toMatchObject({ amountMinor: 1_999, currency: 'GBP' });
+    expect(extractPrice('<p>was €199, now only €149!</p>')).toEqual({
+      kind: 'none',
+    });
   });
 });

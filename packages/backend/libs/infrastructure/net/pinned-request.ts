@@ -39,6 +39,12 @@ export interface SafeGetOptions extends CommonOptions {
   maxRedirects?: number;
   /** Default true: a redirect to another host fails `redirected_host`. */
   sameHostRedirectsOnly?: boolean;
+  /**
+   * Default false. A redirect is judged by what it points at before it is judged by where it leads (S41 AS-27): a
+   * target that is not `https` fails `redirect_refused`, and one whose host resolves to a non-public address fails
+   * `blocked_address` even when the redirect would also have left the host.
+   */
+  strictRedirects?: boolean;
 }
 
 export interface SafeRequestOptions extends CommonOptions {
@@ -65,6 +71,7 @@ interface Spec {
   maxRedirects: number;
   onRedirect: 'refuse' | 'return' | 'follow';
   sameHostOnly: boolean;
+  strictRedirects?: boolean;
   options: CommonOptions;
 }
 
@@ -92,6 +99,7 @@ export function safeGet(
     maxRedirects,
     onRedirect: maxRedirects > 0 ? 'follow' : 'refuse',
     sameHostOnly: options.sameHostRedirectsOnly ?? true,
+    strictRedirects: options.strictRedirects,
     options,
   });
 }
@@ -164,6 +172,18 @@ async function execute(spec: Spec): Promise<SafeResult> {
         next = new URL(location, current);
       } catch {
         throw new SafeRequestError('invalid_url');
+      }
+      if (spec.strictRedirects) {
+        if (next.protocol !== 'https:')
+          throw new SafeRequestError('redirect_refused');
+        if (next.hostname !== firstHost())
+          await withDeadline(
+            resolvePublicAddress(next.hostname, {
+              resolver: spec.options.resolver,
+              allowPrivateHosts: spec.options.allowPrivateHosts,
+            }),
+            remaining(),
+          );
       }
       if (spec.sameHostOnly && next.hostname !== firstHost())
         throw new SafeRequestError('redirected_host');

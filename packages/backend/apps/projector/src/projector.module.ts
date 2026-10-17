@@ -24,7 +24,10 @@ import {
 } from '@app/domains/fulfilment';
 import { ChatProjectorModule } from '@app/domains/chat';
 import { SqsModule } from '@app/infrastructure/sqs/sqs.module';
-import { SellerInsightsProjectorModule } from '@app/domains/seller-insights';
+import {
+  CompetitorProjectorModule,
+  SellerInsightsProjectorModule,
+} from '@app/domains/seller-insights';
 import { LiveProjectorModule } from '@app/domains/launch-events';
 import { DynamoModule } from '@app/infrastructure/dynamo/dynamo.module';
 import { NotificationsProjectorModule } from '@app/domains/notifications';
@@ -99,6 +102,7 @@ import { CacheModule } from '@app/infrastructure/cache/cache.module';
         ...NotificationsProjectorModule.projectors,
         ...LiveProjectorModule.projectors,
         ...SellerInsightsProjectorModule.projectors,
+        ...CompetitorProjectorModule.projectors,
         ...ChatProjectorModule.projectors,
         ...DeliveryProjectorModule.projectors,
         ...PublicApiProjectorModule.projectors,
@@ -150,6 +154,7 @@ import { CacheModule } from '@app/infrastructure/cache/cache.module';
         KafkaProducerModule,
         FeedProjectorsModule,
         SellerInsightsProjectorModule,
+        CompetitorProjectorModule,
         ClickHouseModule,
         ProductQueryModule,
         ElasticsearchModule,

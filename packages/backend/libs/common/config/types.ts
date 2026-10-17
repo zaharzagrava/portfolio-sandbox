@@ -13,6 +13,7 @@ import type { CatalogSyncConfig } from './catalog-sync-config';
 import type { StoriesConfig } from './stories-config';
 import type { CollabConfig } from './collab-config';
 import type { LaunchEventsConfig } from './launch-events-config';
+import type { CompetitorConfig } from './competitor-config';
 
 /**
  * @description - config that should always be present in environment variables where application is run
@@ -471,6 +472,7 @@ export interface SecretsManagerConfig
     CatalogSyncConfig,
     StoriesConfig,
     CollabConfig,
-    LaunchEventsConfig {}
+    LaunchEventsConfig,
+    CompetitorConfig {}
 
 export class Config extends IntersectionType(EnvConfig, SecretsManagerConfig) {}

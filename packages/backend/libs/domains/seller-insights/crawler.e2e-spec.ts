@@ -1,251 +1,108 @@
-import { INestApplication, Module } from '@nestjs/common';
 import {
-  getConnectionToken,
-  getModelToken,
-  SequelizeModule,
-} from '@nestjs/sequelize';
-import { QueryTypes, Sequelize } from 'sequelize';
-import http from 'node:http';
-import { AddressInfo } from 'node:net';
-import { v4 } from 'uuid';
-import { generateTestingModule } from '@app/test/utils/global-modules';
-import { applyClickHouseDdl } from '@app/test/utils/clickhouse-ddl';
-import { SeedsModule } from '@app/test/seeds/seeds.module';
-import { SeedsService } from '@app/test/seeds/seeds.service';
-import { TableName } from '@app/test/seeds/types';
-import { ApiConfigService } from '@app/common/config';
-import { ClickHouseService } from '@app/infrastructure/clickhouse/clickhouse.service';
-import { RedisService } from '@app/infrastructure/redis/redis.service';
-import { outboxRowsFor } from '@app/common/testing';
-import {
-  ShopModel as Shop,
-  ShopMembershipModel as ShopMembership,
-} from '@app/domains/tenancy';
-import { CrawlerModule } from './crawler.module';
-import { CrawlerService } from './application/crawler.service';
+  createCompetitorApp,
+  T0,
+  type CompetitorTestApp,
+  type SeededShop,
+} from './testing/competitor-fixtures';
 
-@Module({
-  imports: [CrawlerModule, SequelizeModule.forFeature([Shop, ShopMembership])],
-})
-class SpecModule {}
+const HOUR = 3_600_000;
+const U1 = 'https://rival.test/p/iphone';
 
-/** SD-35 against real Postgres + Redis + MinIO + ClickHouse, crawling a local fixture site. */
-describe('Competitor price crawler (e2e)', () => {
-  let app: INestApplication;
-  let seeds: SeedsService;
-  let crawler: CrawlerService;
-  let db: Sequelize;
-  let site: http.Server;
-  let base: string;
-  let competitorPrice = 899.0;
-  const hits: string[] = [];
-
-  /** The undercut events the crawl published for the watches of a target (what the owner is told is not this domain's concern). */
-  const priceDrops = async (targetId: string) => {
-    const watches = await db.query<{ id: string }>(
-      `SELECT id FROM "CompetitorWatch" WHERE "targetId" = :targetId`,
-      { type: QueryTypes.SELECT, replacements: { targetId } },
-    );
-    const rows = await Promise.all(
-      watches.map((w) => outboxRowsFor(app, w.id)),
-    );
-    return rows
-      .flat()
-      .filter((row) => row.type === 'sellerinsights.competitor_price_dropped');
-  };
+/**
+ * Smoke path of the competitor crawler (registration -> crawl -> record -> alert). The detailed
+ * scenarios live in the competitor-*.e2e-spec.ts files; this file keeps the end-to-end flow of the
+ * former crawler spec under S41 scenario ids.
+ */
+describe('Competitor monitor: crawler end to end', () => {
+  let t: CompetitorTestApp;
+  let A: SeededShop;
+  let watchId: string;
+  const site = () => t.sites['rival.test'];
+  const advance = (nextCheckAt: Date) =>
+    t.clock.set(new Date(Math.max(t.clock.nowMs(), nextCheckAt.getTime())));
 
   beforeAll(async () => {
-    site = http.createServer((req, res) => {
-      hits.push(req.url!);
-      if (req.url === '/robots.txt')
-        return res.end('User-agent: *\nDisallow: /private\nCrawl-delay: 2\n');
-      if (req.url!.startsWith('/p/')) {
-        return res.end(
-          `<html><head><script type="application/ld+json">{"@type":"Product","name":"iPhone 17","offers":{"@type":"Offer","price":"${competitorPrice.toFixed(2)}","priceCurrency":"USD"}}</script></head>
-           <body><h1>iPhone 17 Pro</h1><p>${'Great phone with titanium design and a fast chip. '.repeat(40)}</p><p>Price: $${competitorPrice}</p></body></html>`,
-        );
-      }
-      res.end('<html><body>secret</body></html>');
-    });
-    await new Promise<void>((r) => site.listen(0, '127.0.0.1', r));
-    base = `http://127.0.0.1:${(site.address() as AddressInfo).port}`;
-
-    const moduleRef = await generateTestingModule([SpecModule, SeedsModule], {
-      stores: ['redis', 'storage'],
-    });
-    app = moduleRef.createNestApplication();
-    const config = app.get(ApiConfigService);
-    const get = config.get.bind(config);
-    jest
-      .spyOn(config, 'get')
-      .mockImplementation(((key: string) =>
-        key === 'webhooks_allow_private_hosts'
-          ? '127.0.0.1'
-          : get(key as never)) as typeof config.get);
-    await app.init();
-    seeds = app.get(SeedsService);
-    crawler = app.get(CrawlerService);
-    db = app.get(getConnectionToken());
-    await applyClickHouseDdl(
-      app.get(ClickHouseService),
-      '090_competitor_prices.sql',
-    );
+    t = await createCompetitorApp({ sites: ['rival.test', 'other.test'] });
   });
-
-  afterAll(async () => {
-    await app.close();
-    site.close();
-  });
-
+  afterAll(() => t.close());
   beforeEach(async () => {
-    await seeds.clean();
-    hits.length = 0;
-    competitorPrice = 899;
-    const redis = app.get(RedisService).client;
-    const keys = await redis.keys('crawl:*');
-    if (keys.length) await redis.del(...keys);
+    await t.reset();
+    A = await t.seedShop({ plan: 'PRO', limit: 100, announce: true });
+    const product = await t.product(A.shopId, { priceMinor: 99_900 });
+    watchId = (await t.register(A.owner, A.shopId, product.id, U1)).id;
   });
 
-  const shopWithProduct = async (priceMinor: number) => {
-    const shop = await app
-      .get<typeof Shop>(getModelToken(Shop))
-      .create({ name: 'Mine', slug: `m-${v4().slice(0, 8)}` });
-    const [owner, product] = await seeds.createTreelike([
-      { __type__: TableName.User },
-      {
-        __type__: TableName.Product,
-        title: 'iPhone 17',
-        shopId: shop.id,
-        price: priceMinor,
-      },
-    ]);
-    await app
-      .get<typeof ShopMembership>(getModelToken(ShopMembership))
-      .create({ shopId: shop.id, userId: owner.id, role: 'OWNER' });
-    return {
-      shopId: shop.id,
-      productId: product.id as string,
-      ownerId: owner.id as string,
-    };
-  };
-  const target = async (id: string) =>
-    (
-      await db.query<{
-        lastStatus: string;
-        lastPriceMinor: string;
-        unchangedStreak: number;
-        nextCheckAt: Date;
-      }>(`SELECT * FROM "CrawlTarget" WHERE id = :id`, {
-        type: QueryTypes.SELECT,
-        replacements: { id },
-      })
-    )[0];
+  it('S41 AS-32 AS-43 AS-44: the page price is recorded and the owner is alerted only when undercut', async () => {
+    site().priced('/p/iphone', '1099.00');
+    await t.cycle();
+    const first = (await t.target(U1))!;
+    expect(first).toMatchObject({ lastStatus: 'ok', observationNo: 1 });
+    expect(await t.alerts(watchId)).toHaveLength(0);
 
-  it('JSON-LD price is recorded; the owner is alerted only when undercut', async () => {
-    const mine = await shopWithProduct(99_900);
-    const { targetId } = await crawler.watch(
-      mine.shopId,
-      mine.productId,
-      `${base}/p/iphone?utm_source=ads`,
-    );
-    await crawler.crawl(targetId);
-    expect(await target(targetId)).toMatchObject({
-      lastStatus: 'ok',
-      lastPriceMinor: '89900',
-    });
-    const drops = await priceDrops(targetId);
-    expect(drops).toHaveLength(1);
-    expect(drops[0]).toMatchObject({
-      kind: 'event',
-      topic: 'seller_insights.events',
-      aggregateType: 'seller_insights',
-      payload: {
-        type: 'sellerinsights.competitor_price_dropped',
-        payload: {
-          shopId: mine.shopId,
-          productId: mine.productId,
-          ownerId: mine.ownerId,
-          competitorPriceMinor: 89_900,
-          yourPriceMinor: 99_900,
-          host: new URL(base).host,
-        },
-      },
-    });
-    const [{ n }] = await app
-      .get(ClickHouseService)
-      .query<{ n: string }>(
-        `SELECT count() AS n FROM competitor_prices WHERE target_id = {id:String}`,
-        { id: targetId },
-      );
-    expect(Number(n)).toBe(1);
-
-    competitorPrice = 1_099; // a one-token change: SimHash alone would call this page "unchanged"
-    await crawler.crawl(targetId);
-    expect(await target(targetId)).toMatchObject({
-      lastStatus: 'ok',
-      lastPriceMinor: '109900',
-    }); // the price change is NOT missed
-    expect(await priceDrops(targetId)).toHaveLength(1); // raised, not undercutting: nothing new
+    site().priced('/p/iphone', '899.00');
+    advance(first.nextCheckAt);
+    await t.cycle();
+    const second = (await t.target(U1))!;
+    expect(second.observationNo).toBe(2);
+    expect(Number(second.lastPriceMinor)).toBe(89_900);
+    expect(await t.alerts(watchId)).not.toHaveLength(0);
+    expect(await t.history(second.id)).toHaveLength(2);
   });
 
-  it('robots.txt: disallowed paths are never fetched', async () => {
-    const mine = await shopWithProduct(10_000);
-    const { targetId } = await crawler.watch(
-      mine.shopId,
-      mine.productId,
-      `${base}/private/deal`,
-    );
-    await crawler.crawl(targetId);
-    expect(hits).toEqual(['/robots.txt']);
-    expect((await target(targetId)).lastStatus).toBe('disallowed-by-robots');
+  it('S41 AS-18: a path robots.txt disallows is never fetched', async () => {
+    site().robots = { body: 'User-agent: *\nDisallow: /private' };
+    site().priced('/private/deal', 899);
+    const product = await t.product(A.shopId);
+    const u = 'https://rival.test/private/deal';
+    await t.register(A.owner, A.shopId, product.id, u);
+
+    await t.cycle();
+
+    const paths = site()
+      .requests()
+      .map((r) => r.path);
+    expect(paths).toContain('/robots.txt');
+    expect(paths.filter((p) => p.startsWith('/private'))).toEqual([]);
+    const row = (await t.target(u))!;
+    expect(row.lastStatus).toBe('disallowed_by_robots');
+    expect(row.observationNo).toBe(0);
+    expect(row.nextCheckAt).toEqual(new Date(T0.getTime() + 24 * HOUR));
   });
 
-  it('an unchanged page (SimHash) skips extraction and backs off its next check', async () => {
-    const mine = await shopWithProduct(10_000);
-    const { targetId } = await crawler.watch(
-      mine.shopId,
-      mine.productId,
-      `${base}/p/stable`,
-    );
-    await crawler.crawl(targetId);
-    const first = await target(targetId);
-    await crawler.crawl(targetId);
-    const second = await target(targetId);
-    expect(second).toMatchObject({
+  it('S41 AS-35: an unchanged page skips extraction and backs off the next check', async () => {
+    site().priced('/p/iphone', '899.00');
+    await t.cycle();
+    advance((await t.target(U1))!.nextCheckAt);
+
+    await t.cycle();
+
+    const again = (await t.target(U1))!;
+    expect(again).toMatchObject({
       lastStatus: 'unchanged',
       unchangedStreak: 1,
+      observationNo: 1,
     });
+    expect(again.nextCheckAt.getTime()).toBeGreaterThanOrEqual(
+      t.clock.nowMs() + 12 * HOUR,
+    );
+    expect(await t.history(again.id)).toHaveLength(1);
+  });
+
+  it('S41 AS-23: many watchers of one URL share a single fetch', async () => {
+    const B = await t.seedShop({ plan: 'PRO', limit: 100, announce: true });
+    const product = await t.product(B.shopId);
+    await t.register(B.owner, B.shopId, product.id, U1);
+    site().priced('/p/iphone', '899.00');
+
+    await t.cycle();
+
     expect(
-      new Date(second.nextCheckAt).getTime() -
-        new Date(first.nextCheckAt).getTime(),
-    ).toBeGreaterThan(5 * 3_600_000);
-  });
-
-  it('the frontier allows one in-flight fetch per host and honours Crawl-delay; many watchers share one fetch', async () => {
-    const a = await shopWithProduct(10_000);
-    const b = await shopWithProduct(10_000);
-    const t1 = await crawler.watch(a.shopId, a.productId, `${base}/p/one`);
-    const t2 = await crawler.watch(
-      b.shopId,
-      b.productId,
-      `${base}/p/one#reviews`,
-    ); // same page, another shop
-    await crawler.watch(b.shopId, b.productId, `${base}/p/two`);
-    expect(t2.targetId).toBe(t1.targetId);
-
-    expect(await crawler.scheduleDue()).toBe(2); // 2 distinct targets, one host
-    expect(await crawler.crawlNext()).toBe(true);
-    expect(await crawler.crawlNext()).toBe(false); // host leased + 2 s crawl delay
-  });
-
-  it('SSRF: watching an internal address is refused', async () => {
-    const mine = await shopWithProduct(10_000);
-    await expect(
-      crawler.watch(
-        mine.shopId,
-        mine.productId,
-        'https://169.254.169.254/latest/meta-data',
-      ),
-    ).rejects.toMatchObject({ status: 400 });
+      site()
+        .requests()
+        .filter((r) => r.path !== '/robots.txt'),
+    ).toHaveLength(1);
+    expect(await t.watchRows()).toHaveLength(2);
+    expect((await t.target(U1))!.observationNo).toBe(1);
+    expect(await t.alerts(watchId)).not.toHaveLength(0);
   });
 });

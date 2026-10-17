@@ -3,7 +3,9 @@
  * from `@app/domains/seller-insights`. Only the modules the apps wire are exported: no model, no consumer class (S40 D-8);
  * the consumers are listed by `SellerInsightsProjectorModule.projectors`.
  */
-export { CrawlerModule, CrawlerWorkerModule } from './crawler.module';
+export { CompetitorsModule } from './competitors.module';
+export { CrawlerWorkerModule } from './crawler-worker.module';
+export { CompetitorProjectorModule } from './competitor-projector.module';
 export { LeaderboardsWorkerModule } from './leaderboards-worker.module';
 export { LeaderboardsModule } from './leaderboards.module';
 export { SellerStatsModule } from './seller-stats.module';

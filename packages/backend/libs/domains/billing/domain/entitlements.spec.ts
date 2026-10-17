@@ -102,7 +102,19 @@ describe('S18 hasEntitlement', () => {
       'auctions',
       'apiCallsPerMonth',
       'assistantTokensPerMonth',
+      'maxCompetitorWatches',
     ]);
+  });
+
+  it('S41: maxCompetitorWatches is a count limit, 0 where a plan does not carry it', () => {
+    expect(checkLimit(FREE_SHOP, 'maxCompetitorWatches', 0)).toEqual({
+      allowed: false,
+      limit: 0,
+      remaining: 0,
+    });
+    expect(
+      checkLimit({ maxCompetitorWatches: 5 }, 'maxCompetitorWatches', 4),
+    ).toEqual({ allowed: true, limit: 5, remaining: 1 });
   });
 });
 

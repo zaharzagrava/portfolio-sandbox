@@ -2,7 +2,7 @@ import { ShopFunctionsModule } from '@app/domains/shop-functions';
 import { KnowledgeModule } from '@app/domains/assistant';
 import { OnboardingModule } from '@app/domains/seller-onboarding';
 import {
-  CrawlerModule,
+  CompetitorsModule,
   LeaderboardsModule,
   SellerStatsModule,
 } from '@app/domains/seller-insights';
@@ -166,7 +166,7 @@ import { OutboxPublisherModule } from '@app/infrastructure/outbox/outbox-publish
     AssetsModule,
     VideoModule,
     IntegrationsModule,
-    CrawlerModule,
+    CompetitorsModule,
     ShopFunctionsModule,
     SellerStatsModule,
     OpenTelemetryModule.forRoot({
