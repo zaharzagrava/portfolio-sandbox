@@ -3,6 +3,7 @@
 # (a compound shell line with a login inside would not match its allow-list).
 #
 #   scripts/sdd/stack-fix.sh smoke     API ready, product search answers 200, Playwright's Chromium installed; says what to run if not
+#   scripts/sdd/stack-fix.sh api-ready  wait until the watch-mode API has finished recompiling and answers ready steadily
 #   scripts/sdd/stack-fix.sh journey   (re)start the document-extractor stand-in on fresh code and check the metrics port; the journey gate runs it first
 #   scripts/sdd/stack-fix.sh browser   install Playwright's Chromium for the version packages/web uses
 #   scripts/sdd/stack-fix.sh reindex   rebuild the product search index from the database (as the seeded admin) and wait for documents
@@ -31,6 +32,19 @@ case "${1:-}" in
     if ! browser_ok; then echo "ENVIRONMENT: Playwright's Chromium is not installed for this version. Run: bash scripts/sdd/stack-fix.sh browser"; bad=1; fi
     (( bad == 0 )) && echo "environment ok: API ready, search answers 200, Chromium installed"
     exit "$bad" ;;
+  api-ready)
+    # The dev API runs in watch mode: every edit of backend code recompiles and restarts it, and for a few seconds the BFF answers 502/503.
+    # A browser or journey spec that starts in that window fails for no reason of its own. Wait until the API has answered ready five times in
+    # a row (10 s) and its log has been quiet for 6 s (no restart under way). At the deadline a ready API is accepted even if its log is busy.
+    deadline=$((SECONDS + ${API_READY_WAIT_S:-240})); streak=0
+    while (( SECONDS < deadline )); do
+      if [[ "$(curl -s -m 5 -o /dev/null -w '%{http_code}' "$API_URL/health/ready")" == 200 ]]; then streak=$((streak + 1)); else streak=0; fi
+      quiet=1; if [[ -n "${API_LOG:-}" && -f "$API_LOG" ]]; then (( $(date +%s) - $(stat -c %Y "$API_LOG") >= 6 )) || quiet=0; fi
+      (( streak >= 5 && quiet )) && { echo "API stable (ready 5 times in a row, log quiet)"; exit 0; }
+      sleep 2
+    done
+    (( streak >= 5 )) && { echo "API ready, log still busy after ${API_READY_WAIT_S:-240}s: going on"; exit 0; }
+    echo "ENVIRONMENT: the API is not stable after ${API_READY_WAIT_S:-240}s (it keeps restarting or answers errors). Read /var/log/sdd/api.log for the cause."; exit 1 ;;
   standins)
     # The local stand-ins for the Lambdas nothing else consumes: document-extractor (without it no shop is ever verified: J01 AS-29,
     # shop verification) and media-processing (without it a photo stays "Waiting to process": W04 seller-photos). The runner did not start

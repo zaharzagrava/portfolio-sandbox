@@ -117,6 +117,19 @@ class LoopShell(unittest.TestCase):
         self.assertEqual(log[6], 'RUN 2 files: e.e2e-spec.ts f.e2e-spec.ts')
         self.assertEqual(log[7], 'rc=0')
 
+    def test_api_ready_waits_for_a_steady_answer(self):
+        """The watch-mode API restarts after every edit; specs must not start in that window."""
+        import http.server, threading, tempfile
+        d = tempfile.mkdtemp(); os.makedirs(os.path.join(d, 'health')); open(os.path.join(d, 'health/ready'), 'w').write('ok')
+        handler = lambda *a, **k: http.server.SimpleHTTPRequestHandler(*a, directory=d, **k)
+        srv = http.server.ThreadingHTTPServer(('127.0.0.1', 0), handler); threading.Thread(target=srv.serve_forever, daemon=True).start()
+        env = {**os.environ, 'API_URL': f'http://127.0.0.1:{srv.server_address[1]}', 'API_READY_WAIT_S': '30'}
+        r = subprocess.run(['bash', os.path.join(ROOT, 'scripts/sdd/stack-fix.sh'), 'api-ready'], capture_output=True, text=True, env=env)
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr); self.assertIn('stable', r.stdout)
+        srv.shutdown(); srv.server_close()
+        r = subprocess.run(['bash', os.path.join(ROOT, 'scripts/sdd/stack-fix.sh'), 'api-ready'], capture_output=True, text=True, env={**env, 'API_READY_WAIT_S': '4'})
+        self.assertEqual(r.returncode, 1); self.assertIn('not stable', r.stdout)
+
 
 if __name__ == '__main__':
     unittest.main()
