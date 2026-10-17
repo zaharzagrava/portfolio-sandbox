@@ -137,6 +137,8 @@ gate() { # $1 = domain column; everything must pass
       done ;;
     web)
       bash "$ROOT/scripts/sdd/stack-fix.sh" smoke || return 1
+      # the photo and buy-to-payout journeys need the media-processing and document-extractor stand-ins (READY photo, VERIFIED shop)
+      bash "$ROOT/scripts/sdd/stack-fix.sh" journey || return 1
       (
         cd packages/web &&
         npx tsc --noEmit -p tsconfig.json &&
