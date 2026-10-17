@@ -675,3 +675,8 @@
 {"run":"20261017T092525Z","capability":"S06","step":"repair-2","start":"2026-10-17T09:38:11Z","end":"2026-10-17T09:39:27Z","seconds":76,"result":"ok","attempt":1,"reason":"ok","code_changed":true}
 {"run":"20261017T092525Z","capability":"S06","step":"gate","start":"2026-10-17T09:39:27Z","end":"2026-10-17T09:53:27Z","seconds":840,"result":"pass","attempt":3,"reason":""}
 {"run":"20261017T092525Z","capability":"S06","step":"built","start":"2026-10-17T09:25:26Z","end":"2026-10-17T09:53:27Z","seconds":1681,"result":"ok","attempt":1,"reason":"Collaborative listing drafts (CRDT rooms, permissions per update, version history, publish)"}
+{"run":"20261017T092525Z","capability":"S55","step":"converge-1","start":"2026-10-17T09:53:48Z","end":"2026-10-17T09:54:08Z","seconds":20,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261017T092525Z","capability":"S55","step":"gate","start":"2026-10-17T09:54:08Z","end":"2026-10-17T10:00:37Z","seconds":389,"result":"fail","attempt":1,"reason":"FAIL libs/infrastructure/outbox/outbox-tasks.e2e-spec.ts"}
+{"run":"20261017T092525Z","capability":"S55","step":"repair-1","start":"2026-10-17T10:00:37Z","end":"2026-10-17T10:14:54Z","seconds":857,"result":"ok","attempt":1,"reason":"ok","code_changed":true}
+{"run":"20261017T092525Z","capability":"S55","step":"gate","start":"2026-10-17T10:14:54Z","end":"2026-10-17T10:32:18Z","seconds":1044,"result":"pass","attempt":2,"reason":""}
+{"run":"20261017T092525Z","capability":"S55","step":"built","start":"2026-10-17T09:53:47Z","end":"2026-10-17T10:32:18Z","seconds":2311,"result":"ok","attempt":1,"reason":"Lambda workers: partial batch failures, idempotency records, FIFO groups, local runner"}
