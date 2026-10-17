@@ -1,8 +1,6 @@
-import { DashboardOverviewView } from './view';
+import { permanentRedirect } from 'next/navigation';
 
-// Auth-gated (DashboardShell renders pages only once the user is known): nothing to prerender here.
-export const instant = false;
-
+/** The buyer's dashboard is gone: orders live at `/orders`, selling at `/dashboard/seller` (W04 FR-013). */
 export default function Page() {
-  return <DashboardOverviewView />;
+  permanentRedirect('/dashboard/seller');
 }

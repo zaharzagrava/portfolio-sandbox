@@ -20,6 +20,7 @@ The [cheap model](cheap-model) reads a `BANK_STATEMENT` and returns plain text w
 
 ## Used by
 <!-- used-by:start -->
+- [accepted-extraction](accepted-extraction.md)
 - [extraction-evidence](extraction-evidence.md)
 - [invalid-output](invalid-output.md)
 <!-- used-by:end -->

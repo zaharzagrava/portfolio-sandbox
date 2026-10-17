@@ -43,7 +43,7 @@ test.describe('Home trending', () => {
     }).toPass({ timeout: 90_000, intervals: [2_000, 5_000] });
     const card = rail.getByRole('link').first();
     await expect(card).toHaveAttribute('href', /^\/products\/[0-9a-f-]{36}$/);
-    await expect(card).toContainText(/\$\d[\d,]*\.\d{2}/);
+    await expect(card).toContainText(/€\d[\d,]*\.\d{2}/);
     await expect(page.getByText(/Powered by|Count-Min Sketch/i)).toHaveCount(0);
     await card.click();
     await expect(page).toHaveURL(/\/products\/[0-9a-f-]{36}$/);

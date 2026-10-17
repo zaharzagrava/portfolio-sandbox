@@ -46,7 +46,7 @@ case "${1:-}" in
     if ! (cd "$ROOT/packages/backend" && pnpm exec nest build lambda-local >"$LAMBDA_DIR/build.log" 2>&1); then
       echo "ENVIRONMENT: the document-extractor stand-in does not compile (the cause is in $LAMBDA_DIR/build.log):"; grep -m5 "error" "$LAMBDA_DIR/build.log"; exit 1
     fi
-    (cd "$ROOT/packages/backend" && setsid node dist/apps/lambda-local/main.js document-extractor >"$LAMBDA_DIR/lambda.log" 2>&1 & echo $! > "$LAMBDA_DIR/pid")
+    (cd "$ROOT/packages/backend" && setsid node dist/apps/lambda-local/main.js document-extractor media-processing >"$LAMBDA_DIR/lambda.log" 2>&1 & echo $! > "$LAMBDA_DIR/pid")
     sleep 8
     if ! pgrep -f 'lambda-local/main.js document-extractor' >/dev/null; then
       echo "CODE: the document-extractor stand-in exits at start-up (a module that does not boot outside the monolith, lesson L-018):"; tail -n 12 "$LAMBDA_DIR/lambda.log"; exit 1

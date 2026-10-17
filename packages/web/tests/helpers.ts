@@ -403,3 +403,83 @@ export async function bellCount(page: Page): Promise<number> {
   const match = /^Notifications, (\d+) unread$/.exec(name ?? '');
   return match ? Number(match[1]) : 0;
 }
+
+// ---------------------------------------------------------------------------------------------------------------------
+// W04 seller dashboard helpers (contracts/web-modules.md, "Playwright helpers")
+// ---------------------------------------------------------------------------------------------------------------------
+
+/** `/dashboard/seller/{shopId}` or one of its sections (`inventory`, `developers/api-keys`, ...). */
+export function shopPath(shopId: string, section?: string): string {
+  return `/dashboard/seller/${shopId}${section ? `/${section.replace(/^\//, '')}` : ''}`;
+}
+
+/**
+ * Opens a shop through the UI from a signed-in page (W04 AS-01..AS-03): fills the open-shop form on `/dashboard/seller`
+ * and waits for the new shop's overview. The name is unique per call unless one is given. Returns the shop id read from the
+ * address. A member who already has a shop is redirected by the server, so call this as a member without one (`register`).
+ */
+export async function openShop(page: Page, name = `E2E Shop ${Date.now().toString(36)}${Math.floor(Math.random() * 1e4)}`): Promise<{ shopId: string; shopName: string }> {
+  await resetRateLimits();
+  await page.goto('/dashboard/seller');
+  await waitForForm(page);
+  await page.getByLabel('Shop name').fill(name);
+  await page.getByRole('button', { name: 'Open shop' }).click();
+  await expect(page).toHaveURL(/\/dashboard\/seller\/[0-9a-f-]{36}$/);
+  const shopId = new URL(page.url()).pathname.split('/').pop() as string;
+  await expect(page.getByRole('heading', { level: 1, name })).toBeVisible();
+  return { shopId, shopName: name };
+}
+
+/**
+ * Creates a product in `shopId` through the real API as the shop's own member and returns its id (W04 L-005: a journey
+ * never shares stock with another). `auth` names the member (a user from `register`, default password `NEW_USER_PASSWORD`);
+ * without it the seeded seller is used, which only fits the seeded seller's shop.
+ */
+export async function seedProduct(
+  shopId: string,
+  input: { title?: string; brand?: string; category?: string; priceMinor?: number; quantity?: number; description?: string } = {},
+  auth?: { email: string; password?: string },
+): Promise<string> {
+  const login = await sellerCall('POST', '/api/auth/login', auth ? { email: auth.email, password: auth.password ?? NEW_USER_PASSWORD } : { email: SEED.seller, password: SEED.password });
+  expect(login.status).toBe(200);
+  const token: string = login.data.accessToken.token;
+  const stamp = `${Date.now().toString(36)}${Math.floor(Math.random() * 1e4)}`;
+  const created = await sellerCall(
+    'POST',
+    `/api/shops/${shopId}/products`,
+    {
+      title: input.title ?? `Seeded Product ${stamp}`,
+      brand: input.brand ?? 'Test',
+      category: input.category ?? `seeded-${stamp}`,
+      priceMinor: input.priceMinor ?? 1999,
+      quantity: input.quantity ?? 5,
+      description: input.description ?? 'Product created by a test.',
+    },
+    token,
+  );
+  expect(created.status).toBe(201);
+  return created.data.id as string;
+}
+
+/**
+ * The invitation link the dev stack "e-mailed" to `email` (`GET /api/dev/mailbox`, the same development hook as
+ * `getResetLink`, W04 R-13); polls until the mail is there. Returns the path on the site under test (`/invites/{token}`).
+ * If the dev mailbox does not list invitation mails, `seller-team.spec.ts` is blocked (see its header).
+ */
+export async function readInviteLink(email: string): Promise<string> {
+  let found = '';
+  await expect
+    .poll(
+      async () => {
+        const response = await fetch(`${API_URL}/api/dev/mailbox?to=${encodeURIComponent(email)}`);
+        if (!response.ok) return '';
+        const { messages } = (await response.json()) as { messages: { links: string[] }[] };
+        const link = messages.flatMap((message) => message.links).find((candidate) => candidate.includes('/invites/'));
+        found = link ? new URL(link).pathname : '';
+        return found;
+      },
+      { message: `invitation link for ${email}`, timeout: 15_000 },
+    )
+    .not.toBe('');
+  return found;
+}

@@ -24,6 +24,8 @@ A shop with `vatRegistered: false` must provide `BUSINESS_REGISTRATION` and `BAN
 - [document-content-hash](document-content-hash.md)
 - [document-deduplicated-flag](document-deduplicated-flag.md)
 - [document-not-required](document-not-required.md)
+- [document-round](document-round.md)
+- [document-supersede](document-supersede.md)
 - [onboarding-application-status](onboarding-application-status.md)
 - [required-document-kind](required-document-kind.md)
 - [required-documents](required-documents.md)

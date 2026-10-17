@@ -271,3 +271,16 @@ interviews) until its status says so. The implementation loop appends here (rule
 | S55 | SC-003: the dead-letter alarm and `DeadLettered` metric reach an operator before anyone looks at the queue | `specs/domains/S55-serverless-workers/quickstart.md`, "Ops artifacts" (poison message in demo) | not run |
 | S55 | SC-007: local runner and the Lambda service give the same record shape, deletions and retry counts | same file (compare a deployed event with the local one) | not run |
 | S55 | SC-008: a new function needs one manifest entry plus one entry file and nothing else | same file (`terraform plan` with a sample entry) | not run |
+| W04 | SC-001: a new member reaches a working overview in under 60 s of interaction | `specs/web/W04-seller-dashboard/quickstart.md`, "Ops artifacts" (stopwatch run) | not run |
+| W04 | SC-002: 99 % of paid orders reach the live numbers within 2 s | same file (100 scripted payments, Performance panel) | not run |
+| W04 | SC-003: add a product and see it in under 90 s, find it again with one typo | same file (stopwatch run) | not run |
+| W04 | SC-008: keyboard-only member completes open shop, add product, create key, add endpoint | same file (keyboard-only walk) | not run |
+| W04 | SC-009: frame at once, page-shaped skeleton within 1 s, no layout shift | same file (Performance panel with throttling, CLS) | not run |
+| W05 | SC-001: send appears within 100 ms of pressing Send (real browser) | `specs/web/W05-chat-assistant/quickstart.md`, "Ops artifacts" (Performance panel, 20 sends) | not run |
+| W05 | SC-002: after up to one hour offline all messages appear once, in order, within 5 s | same file (offline hour with 120 messages) | not run |
+| W05 | SC-004: message visible within 2 s live and 20 s without the stream | same file (50 deliveries, stream blocked) | not run |
+| W05 | SC-005: first words immediately; a 10 s drop mid-answer loses and repeats no words | same file (offline toggle during a long answer) | not run |
+| W05 | SC-006: stop confirmed within 2 s | same file (20 stops on the scripted provider) | not run |
+| W05 | SC-008: both features completable with the keyboard alone | same file (keyboard walk of JC and JA flows) | not run |
+| W05 | SC-009: on-screen keyboard never covers the composer; 44 x 44 px targets | same file (iOS Safari and Android Chrome run) | not run |
+| W05 | SC-010: no credential, text or location readable from storage or console | same file (DevTools storage and console review) | not run |

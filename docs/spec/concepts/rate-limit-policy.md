@@ -76,9 +76,11 @@ A rate-limit policy is a named rule that caps how often one subject (address, us
 - {{cap:S38}} Feature flags and remote config (targeting, percentage rollout, local evaluation, kill switch, audit)
 - {{cap:S39}} Analytics ingestion and A/B testing (event schema, dedupe, assignment, exposure, SRM, results)
 - {{cap:S40}} Seller leaderboards, live sales dashboard and seller stats (period boards with ties, my rank, snapshots, live frames, today chart, shop stats)
+- {{cap:S41}} Competitor price monitor (watches, polite SSRF-safe crawling, robots.txt, price extraction, change detection, price-drop alerts)
 - {{cap:S42}} Seller public API: API keys, scopes, sandbox, date-pinned versions, deprecation headers, batch and bulk stock, request logs, usage metering
 - {{cap:S43}} Webhook delivery to shops: endpoints, signing with dual secrets, routing, per-endpoint ordering, retries, circuit breaker, auto-disable, replay
 - {{cap:S44}} Embeddable storefront widget: site keys bound to origins, per-site framing policy, identity hand-off, kill switch
+- {{cap:S45}} Seller discount functions (sealed runtime, online judge, versions, checkout evaluation with circuit breaker)
 - {{cap:S46}} Streamed shopping assistant (read-only tools, resumable streams, allowance, fallback model, moderation, metering, shared model provider port)
 - {{cap:S47}} Ask this product and the shop help center (knowledge documents, ingestion, hybrid retrieval, cited answers)
 - {{cap:S48}} BFF composition: product-page aggregate with budgets and partial errors, GraphQL with DataLoaders and limits, session handling
@@ -88,5 +90,6 @@ A rate-limit policy is a named rule that caps how often one subject (address, us
 - {{cap:W01}} Sign up, log in, forgot password, MFA step-up, session cookie via BFF, CSRF, logout, account state in the navbar
 - {{cap:W02}} Home, search (autocomplete, filters, facets, sort, URL state), trending and recommendation rails, product page (product, shop, pickup near me, discussions, ask this product, share link)
 - {{cap:W03}} Cart (guest and merged on login), checkout with idempotent submit and async payment status, success page, order history, notification popover
+- {{cap:W04}} Seller dashboard (shop entry and switcher, live overview, inventory, API keys, webhooks, API version, request logs, usage, team, invitations, orders)
 - {{cap:W07}} App shell and cross-cutting UI: navbar, footer, legal pages, developer docs, error/not-found/loading states, responsive layout, accessibility, CSP and security headers
 <!-- used-by:end -->

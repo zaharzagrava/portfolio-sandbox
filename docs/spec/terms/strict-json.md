@@ -24,4 +24,6 @@ These field names and values are illustrative. The real schema is not in the fac
 ## Used by
 <!-- used-by:start -->
 - [S04](../capabilities/S04-kyc-onboarding.md): R-17
+- [extraction-evidence](extraction-evidence.md)
+- [extraction-message](extraction-message.md)
 <!-- used-by:end -->

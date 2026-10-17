@@ -36,6 +36,10 @@ export type RouteName =
   | 'cart'
   | 'order'
   | 'payments'
+  | 'sellerShop'
+  | 'sellerStats'
+  | 'sellerToday'
+  | 'sellerRank'
   | 'login'
   | 'refresh'
   | 'logout'
@@ -94,6 +98,10 @@ const ROUTES: [RegExp, string, RouteName][] = [
   [/^\/api\/cart$/, 'GET', 'cart'],
   [/^\/api\/orders\/[^/]+$/, 'GET', 'order'],
   [/^\/api\/payments$/, 'GET', 'payments'],
+  [/^\/api\/shops\/[^/]+$/, 'GET', 'sellerShop'],
+  [/^\/api\/shops\/[^/]+\/stats$/, 'GET', 'sellerStats'],
+  [/^\/api\/shops\/[^/]+\/dashboard\/today$/, 'GET', 'sellerToday'],
+  [/^\/api\/shops\/[^/]+\/rank$/, 'GET', 'sellerRank'],
   [/^\/api\/auth\/login$/, 'POST', 'login'],
   [/^\/api\/auth\/refresh$/, 'POST', 'refresh'],
   [/^\/api\/auth\/logout$/, 'POST', 'logout'],
@@ -104,7 +112,15 @@ const routeOf = (method: string, path: string): RouteName | 'unknown' =>
   ROUTES.find(([re, m]) => m === method && re.test(path))?.[2] ?? 'unknown';
 
 /** Routes the forwarder specs reach through `onUnknown` (they predate the W03 aggregates' named routes). */
-const FORWARDED_ROUTES = new Set<RouteName>(['cart', 'order', 'payments']);
+const FORWARDED_ROUTES = new Set<RouteName>([
+  'cart',
+  'order',
+  'payments',
+  'sellerShop',
+  'sellerStats',
+  'sellerToday',
+  'sellerRank',
+]);
 
 /** Path parameter `index` (0 = the first segment after `/api`) of a recorded call. */
 export const segment = (call: RecordedCall, index: number): string =>

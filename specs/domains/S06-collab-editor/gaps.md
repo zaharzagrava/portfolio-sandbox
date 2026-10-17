@@ -124,6 +124,8 @@ Recorded 2026-10-16 before any code change.
 
 ## Gate repairs
 
+- **Gate failure of 2026-10-17, thirteenth pass (test cleanup hardened).** `product-shop-lifecycle` S05 AS-80 ("shopId is NOT NULL") received `YES`. The AS-79 block of the same spec drops NOT NULL on `"Product"."shopId"` in `beforeAll` and restores it in `afterAll`; if the DELETE before the restore failed, or an earlier process died in between, the damage stayed and the next run reported it (L-013). The contract migration `20261012110100` is correct. `afterAll` now restores NOT NULL in a `finally`. The spec passes alone (14 tests). No scenario or assertion was changed.
+
 - **Gate failure of 2026-10-17, twelfth pass (environment: stale `.env.test`).** A new failure class, not the heap abort. The suites `drafts-consumers`, `collab-rooms`, `product-cache`, `product`, `product-boundary` failed at boot with `Config validation error: share_link_code_key, share_link_edge_secret, share_link_base_url, ads_click_secret, ads_aggregator_instance, api_key_pepper, widget_token_key, shopify_app_key, shopify_app_secret, shopify_api_version, integration_cursor_key (any.required)`. The git-ignored `packages/backend/.env.test` is a one-time copy of `env/test.env.example` (`scripts/vps/bootstrap.sh` uses `cp -n`, so it never refreshes) and predated the keys later capabilities (S37, S36, S42, S44, S08, S06) made required. Refreshed it from the example; the example already holds them. Re-run: `drafts-consumers` (6) and `collab-rooms`, `product-cache`, `product`, `product-boundary` (4 suites, 44 tests) pass. No product code or test changed. Follow-up for the runner: `bootstrap.sh`/`vm-run.sh` should refresh `.env.test` when the example has keys it lacks.
 
 - **Gate failure of 2026-10-17, eleventh pass (no code change).** Same unbatched heap-limit abort (4 GB, core dumped; 503s before it). `stack-fix.sh smoke` ok; `catalog/(collab-routing|collab-ops|drafts-publish|product-views)` (4 suites, 63 tests) pass in one fresh process. The batched `gate()` in `scripts/sdd/implement-specs.sh` (`GATE_BATCH`, 6 GB heap) is in the tree; the failing run predates it.
@@ -166,3 +168,7 @@ Recorded 2026-10-16 before any code change.
   - Collaborative editing rooms › on one editing instance › S06 AS-24: with the instant notification lost, the periodic membership re-check (one batched read per shop) closes the socket
   - Collaborative editing rooms › on one editing instance › S06 AS-25: a suspended shop closes its rooms with 4003 shop_inactive and blocks connects; when it is active again connects work
   - ... and 189 more
+
+### Gate repair (environment): stale `.env.test`
+
+`collab-rooms` and `drafts-publish` e2e specs failed at app boot with `Config validation error: share_link_code_key … integration_cursor_key (any.required)`. The cause was the runner's untracked `packages/backend/.env.test`, which predated the required keys added by other capabilities (S08, S36, S42, S44, share links, S06 collab ticket key). No product or test code was wrong. `.env.test` was refreshed from the tracked `packages/backend/env/test.env.example` (the documented source); both specs now pass (24/24 and 35/35).

@@ -21,8 +21,13 @@ A moderator approves a `BANK_STATEMENT` task with a corrected IBAN. The task kee
 ## Used by
 <!-- used-by:start -->
 - [S04](../capabilities/S04-kyc-onboarding.md): R-19
+- [extraction-attempt](extraction-attempt.md)
 - [extraction-evidence](extraction-evidence.md)
 - [iban-invalid](iban-invalid.md)
 - [masked-value](masked-value.md)
+- [raw-document-file](raw-document-file.md)
+- [readable-column](readable-column.md)
+- [sealed-row](sealed-row.md)
+- [secret-box](secret-box.md)
 - [verification-document-purge-job](verification-document-purge-job.md)
 <!-- used-by:end -->

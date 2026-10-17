@@ -27,4 +27,10 @@ If the model call times out, the document stays `EXTRACTING` until the queue red
 ## Used by
 <!-- used-by:start -->
 - [S04](../capabilities/S04-kyc-onboarding.md): R-14, R-17, B-07
+- [cheap-model](cheap-model.md)
+- [document-validation-rule](document-validation-rule.md)
+- [moderator](moderator.md)
+- [upload-grant](upload-grant.md)
+- [worker-instance](worker-instance.md)
+- [write-behind-claim](write-behind-claim.md)
 <!-- used-by:end -->

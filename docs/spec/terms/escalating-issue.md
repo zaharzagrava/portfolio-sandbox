@@ -27,4 +27,7 @@ The cheap model reads a `BANK_STATEMENT` and returns the IBAN with low confidenc
 - [document-validation-rule](document-validation-rule.md)
 - [extraction-attempt](extraction-attempt.md)
 - [holder-name-check](holder-name-check.md)
+- [model-call](model-call.md)
+- [review-task](review-task.md)
+- [strong-model](strong-model.md)
 <!-- used-by:end -->

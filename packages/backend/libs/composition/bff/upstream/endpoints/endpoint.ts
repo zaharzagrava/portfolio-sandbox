@@ -16,7 +16,8 @@ export type Capability =
   | 'auctions'
   | 'identity'
   | 'orders'
-  | 'payments';
+  | 'payments'
+  | 'seller-insights';
 
 /**
  * One declared upstream call (S48 FR-001): method, path, contract schema, identity need, shared-cache eligibility.

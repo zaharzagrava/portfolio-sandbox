@@ -19,5 +19,9 @@ A shop's [`BANK_STATEMENT`](onboarding-document-type.md) is `APPROVED`, and its 
 
 ## Used by
 <!-- used-by:start -->
+- [conflict-error](conflict-error.md)
+- [document-kind](document-kind.md)
+- [document-supersede](document-supersede.md)
+- [document-upload](document-upload.md)
 - [onboarding-document-type](onboarding-document-type.md)
 <!-- used-by:end -->

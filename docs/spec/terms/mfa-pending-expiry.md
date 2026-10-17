@@ -22,6 +22,5 @@ At 10:00 a user enrols, and at 10:05 they enrol again, so the deadline is reset 
 - [S02](../capabilities/S02-mfa-oidc.md): R-03, R-05
 - [mfa-confirm](mfa-confirm.md)
 - [mfa-enrolment](mfa-enrolment.md)
-- [mfa-state](mfa-state.md)
 - [second-factor-model](second-factor-model.md)
 <!-- used-by:end -->

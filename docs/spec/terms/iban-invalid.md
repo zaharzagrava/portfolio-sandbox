@@ -20,5 +20,8 @@ A review task for a `BANK_STATEMENT` holds an extracted IBAN that fails the chec
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [hard-checks](hard-checks.md)
+- [moderator](moderator.md)
+- [review-task](review-task.md)
+- [sealed-copy](sealed-copy.md)
 <!-- used-by:end -->

@@ -160,3 +160,7 @@ Where the S53 codemod must touch these files to keep the tree compiling, it chan
 - **Task rows**: `taskRow` stores the active `traceparent` in the row; the relay sends it as the message attribute; the dedupe ID is sent for FIFO queues only (standard queues take none).
 - **Migration** `20261009170000-outbox-parked-index.js`: partial index for the `outbox_parked` gauge.
 - **AS-21** (CDC) remains unrun: see `quickstart.md` Ops artifacts and `specs/UNVERIFIED.md`.
+
+## Gate repairs
+
+- `outbox/outbox-tasks.e2e-spec.ts` (S53 AS-90, AS-91) and `outbox/relay-shape.e2e-spec.ts` (J01 G-01) failed in the gate and passed alone: the `Outbox` table is shared by every suite, and rows that earlier suites left pending (about 99 due `products.events` rows plus a `helper-queue` task row) filled the relay's claim batch (100, oldest first), so one `drain()` never reached the test's own row. The stack was healthy (`stack-fix.sh smoke` ok). Fix: both specs lease every foreign pending row away for an hour in `beforeEach`, before they append their own rows. No assertion changed and no scenario was lost. The suites that leave pending rows behind are not identified; they are the real leak (L-013). I did not run the failing version again after the fix, so the cause is inferred from the batch arithmetic and the DB state, not reproduced with the old code.

@@ -353,6 +353,8 @@ describe('BFF forwarder (authenticated pass-through of /api/*)', () => {
         (res) => {
           expect(res.statusCode).toBe(200);
           expect(res.headers['content-type']).toContain('text/event-stream');
+          // a compressing hop in front (Next's `compress`) must not buffer the stream
+          expect(res.headers['cache-control']).toContain('no-transform');
           res.setEncoding('utf8');
           res.on('data', (chunk: string) => received.push(chunk));
           res.on('end', resolve);

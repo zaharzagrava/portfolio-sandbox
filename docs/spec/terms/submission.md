@@ -24,4 +24,6 @@ The `requiredDocuments` value is illustrative for a shop that is not VAT registe
 ## Used by
 <!-- used-by:start -->
 - [S04](../capabilities/S04-kyc-onboarding.md): R-12
+- [onboarding-questionnaire](onboarding-questionnaire.md)
+- [required-document-kind](required-document-kind.md)
 <!-- used-by:end -->

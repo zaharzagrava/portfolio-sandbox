@@ -34,7 +34,7 @@ describe('W07 CSP builder (lib/security/csp.ts)', () => {
       'font-src': ["'self'"],
       'img-src': ["'self'", 'data:', 'blob:', ...HOSTS.mediaHosts, 'https://tiles.example.com'],
       'media-src': ["'self'", 'blob:', 'https://video.example.com'],
-      'connect-src': ["'self'", 'https://tiles.example.com', 'https://video.example.com'],
+      'connect-src': ["'self'", 'https://tiles.example.com', 'https://video.example.com', ...HOSTS.mediaHosts],
       'worker-src': ["'self'", 'blob:'],
       'frame-src': ["'none'"],
       'object-src': ["'none'"],
@@ -59,7 +59,7 @@ describe('W07 CSP builder (lib/security/csp.ts)', () => {
     const prod = csp({ hosts: HOSTS });
     const dev = csp({ isDev: true, hosts: HOSTS });
     expect(dev['script-src']).toEqual([...prod['script-src'], "'unsafe-eval'"]);
-    expect(dev['connect-src']).toEqual(["'self'", 'ws:', 'wss:', 'https://tiles.example.com', 'https://video.example.com']);
+    expect(dev['connect-src']).toEqual(["'self'", 'ws:', 'wss:', 'https://tiles.example.com', 'https://video.example.com', ...HOSTS.mediaHosts]);
     expect(dev['upgrade-insecure-requests']).toBeUndefined();
     const { 'script-src': _a, 'connect-src': _b, 'upgrade-insecure-requests': _c, ...restDev } = dev;
     const { 'script-src': _d, 'connect-src': _e, 'upgrade-insecure-requests': _f, ...restProd } = prod;

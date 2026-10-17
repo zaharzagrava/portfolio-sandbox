@@ -120,9 +120,15 @@ describe('Outbox task rows relayed to a queue', () => {
     await app.close();
   });
 
-  beforeEach(() => {
+  beforeEach(async () => {
     queue.calls.length = 0;
     queue.failing = false;
+    // The Outbox table is shared with every other suite: rows they left pending would fill the relay batch (100) ahead of
+    // this test's rows, so they are leased away for an hour before the test appends its own.
+    await sequelize.query(
+      `UPDATE "Outbox" SET "leaseUntil" = now() + interval '1 hour'
+       WHERE "status" = 'pending' AND ("leaseUntil" IS NULL OR "leaseUntil" < now())`,
+    );
   });
 
   const task = (aggregateId: string) => ({

@@ -21,6 +21,9 @@ There are 120 open tasks (illustrative). A moderator lists them with `limit=50` 
 ## Used by
 <!-- used-by:start -->
 - [S04](../capabilities/S04-kyc-onboarding.md): B-13, B-16, B-20
+- [document-supersede](document-supersede.md)
 - [document-validation-rule](document-validation-rule.md)
+- [moderator](moderator.md)
+- [optimistic-concurrency](optimistic-concurrency.md)
 - [vat-invalid](vat-invalid.md)
 <!-- used-by:end -->

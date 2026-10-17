@@ -1,7 +1,9 @@
 import {
+  liveDashboardFrameSchema,
   notificationRealtimeEventSchema,
   orderStatusEventSchema,
   paymentStatusEventSchema,
+  type LiveDashboardFrame,
   type NotificationRealtimeEvent,
   type UserStreamEvent as ContractUserStreamEvent,
 } from '@marketplace-sandbox/contracts';
@@ -308,6 +310,53 @@ export function addTopic(topic: string, eventTypes: string[] = []): () => void {
     topicHolders.delete(topic);
     if (handlers.size > 0) connect();
   };
+}
+
+export type TopicEvent = { type: string; data: unknown };
+
+/**
+ * Receive the events of one extra topic on the page's single connection (W04 `shop:{shopId}:live`, event `dashboard`).
+ * A thin wrapper over `addTopic` and a topic-only handler: no second `EventSource`, the same refusal and recreate flow.
+ * The handler gets `{type, data}` for the topic's own events, `{type: 'resync', data: null}` when the replay window was
+ * lost or the stream reconnected, and `{type: 'revoked', data: topic}` when the server dropped the topic. The returned
+ * function releases the topic; the connection closes with its last holder.
+ */
+export function subscribeTopic(topic: string, handler: (event: TopicEvent) => void, eventTypes: string[] = ['dashboard']): () => void {
+  const holder: UserEventHandler = {
+    onTopicEvent: (from, type, data) => {
+      if (from === topic) handler({ type, data });
+    },
+    onResync: () => handler({ type: 'resync', data: null }),
+    onRevoked: (from) => {
+      if (from === topic) handler({ type: 'revoked', data: from });
+    },
+  };
+  handlers.add(holder);
+  const releaseTopic = addTopic(topic, eventTypes);
+  if (!connection) connect();
+  let active = true;
+  return () => {
+    if (!active) return;
+    active = false;
+    releaseTopic();
+    handlers.delete(holder);
+    if (handlers.size === 0) {
+      closeConnection();
+      everOpened = false;
+      refreshTried = false;
+      setHealth('closed');
+    }
+  };
+}
+
+/**
+ * The payload of a `dashboard` event of `shop:{shopId}:live`: the hub's `{topic, data}` envelope (or the bare frame)
+ * checked with `liveDashboardFrameSchema`. `null` for anything else; a malformed frame is dropped, never thrown.
+ */
+export function parseLiveFrame(data: unknown): LiveDashboardFrame | null {
+  const inner = typeof data === 'object' && data !== null && 'topic' in data && 'data' in data ? (data as { data: unknown }).data : data;
+  const parsed = liveDashboardFrameSchema.safeParse(inner);
+  return parsed.success ? parsed.data : null;
 }
 
 // --- polling fallback (AS-39) -----------------------------------------------------------------------------------------

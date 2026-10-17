@@ -25,6 +25,8 @@ import { OrderPageController } from './orders/order-page.controller';
 import { OrderPageService } from './orders/order-page.service';
 import { ProductPageController } from './page/product-page.controller';
 import { ProductPageService } from './page/product-page.service';
+import { SellerOverviewController } from './seller/seller-overview.controller';
+import { SellerOverviewService } from './seller/seller-overview.service';
 import { JsonBodyGuard, SessionController } from './session/session.controller';
 import { UpstreamClient } from './upstream/upstream-client';
 
@@ -77,12 +79,14 @@ import { UpstreamClient } from './upstream/upstream-client';
     ProductPageService,
     CartPageService,
     OrderPageService,
+    SellerOverviewService,
     JsonBodyGuard,
   ],
   controllers: [
     ProductPageController,
     CartPageController,
     OrderPageController,
+    SellerOverviewController,
     SessionController,
     ForwardController,
   ],

@@ -27,6 +27,7 @@ const CATALOG = {
   ],
   invalid_token: [401, 'Unauthorized', 'The credential was rejected.'],
   not_found: [404, 'Not Found', 'The resource was not found.'],
+  shop_not_found: [404, 'Not Found', 'The shop was not found.'],
   upstream_invalid: [
     502,
     'Bad Gateway',

@@ -39,8 +39,13 @@ const INTERNAL: RagStreamEvent = { event: 'error', code: 'INTERNAL' };
  *   the `AbortError` (the connection closes);
  * - the CSRF header and the session cookie are added by `streamSse`; no token travels from JavaScript.
  */
-export async function askProduct(
-  productId: string,
+export function askProduct(productId: string, question: string, options: { signal: AbortSignal; onEvent: (event: RagStreamEvent) => void }): Promise<void> {
+  return askStream(`/api/products/${encodeURIComponent(productId)}/ask`, question, options);
+}
+
+/** The same stream for any S47 ask route (W04 uses `/api/shops/{shopId}/knowledge/ask`). */
+export async function askStream(
+  path: string,
   question: string,
   { signal, onEvent }: { signal: AbortSignal; onEvent: (event: RagStreamEvent) => void },
 ): Promise<void> {
@@ -63,7 +68,7 @@ export async function askProduct(
 
   try {
     const response = await streamSse(
-      `/api/products/${encodeURIComponent(productId)}/ask`,
+      path,
       { body: { question: question.trim() }, signal: ours.signal },
       (raw) => {
         if (ended || !KNOWN_EVENTS.has(raw.event)) return;

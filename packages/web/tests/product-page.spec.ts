@@ -9,7 +9,7 @@ test.describe('Product page', () => {
 
     await expect(page.getByRole('heading', { level: 1, name: SEED.product })).toBeVisible();
     await expect(page).toHaveTitle(`${SEED.product} · Marketplace`);
-    await expect(page.getByTestId('product-price')).toHaveText('$899.99');
+    await expect(page.getByTestId('product-price')).toHaveText('€899.99');
     await expect(page.getByText('In stock', { exact: true })).toBeVisible();
     await expect(page.getByRole('navigation', { name: 'Breadcrumb' })).toContainText(SEED.product);
 

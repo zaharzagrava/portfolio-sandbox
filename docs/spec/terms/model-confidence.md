@@ -21,4 +21,8 @@ The [cheap model](cheap-model.md) returns an [IBAN ↗](../sw-external-terms.md#
 ## Used by
 <!-- used-by:start -->
 - [S04](../capabilities/S04-kyc-onboarding.md): R-16, B-08
+- [cheap-model](cheap-model.md)
+- [extraction-message](extraction-message.md)
+- [hard-checks](hard-checks.md)
+- [strong-model](strong-model.md)
 <!-- used-by:end -->

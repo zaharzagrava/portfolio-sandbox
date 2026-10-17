@@ -22,9 +22,12 @@ A seller saves the `business` step, so the view shows `DRAFT`. They complete all
 ## Used by
 <!-- used-by:start -->
 - [already-submitted](already-submitted.md)
+- [document-kind](document-kind.md)
 - [document-upload](document-upload.md)
+- [moderator](moderator.md)
 - [onboarding-questionnaire](onboarding-questionnaire.md)
 - [onboarding-row](onboarding-row.md)
+- [onboarding-step](onboarding-step.md)
 - [rejected-operation](rejected-operation.md)
 - [rejection-reason-code](rejection-reason-code.md)
 - [submission-required](submission-required.md)

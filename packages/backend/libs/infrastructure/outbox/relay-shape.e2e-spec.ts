@@ -57,6 +57,15 @@ describe('Outbox relay shape on the real topic', () => {
     await app.close();
   });
 
+  beforeEach(async () => {
+    // The Outbox table is shared with every other suite: rows they left pending would fill the relay batch (100) ahead of
+    // this test's rows, so they are leased away for an hour before the test appends its own.
+    await sequelize.query(
+      `UPDATE "Outbox" SET "leaseUntil" = now() + interval '1 hour'
+       WHERE "status" = 'pending' AND ("leaseUntil" IS NULL OR "leaseUntil" < now())`,
+    );
+  });
+
   const paid = (orderId: string) =>
     OrderPaid.create(orderId, 2, {
       orderId,

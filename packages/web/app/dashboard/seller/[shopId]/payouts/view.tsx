@@ -1,12 +1,15 @@
 'use client';
 
-import { useParams } from 'next/navigation';
-import { format } from 'date-fns';
+import { SectionError } from '@/components/seller/problem-states';
+import { TableRowsSkeleton } from '@/components/seller/page-skeletons';
+import { ResponsiveTable, type Column } from '@/components/seller/responsive-table';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { useShopPayouts, useUpcomingPayout, type PayoutView, type UpcomingPayoutView } from '@/lib/api/finance';
+import { useShopPayouts, useUpcomingPayout, type PayoutView, type UpcomingPayoutView } from '@/lib/api/seller-finance';
+import { formatInstant } from '@/lib/seller/format-date';
 import { formatMoney } from '@/lib/utils';
+import { BalanceCard } from '../balance-card';
 
 const STATUS_LABEL: Record<PayoutView['status'], string> = {
   PENDING: 'Pending',
@@ -29,75 +32,76 @@ function statusVariant(status: PayoutView['status']): 'default' | 'secondary' | 
   return status === 'CANCELLED' ? 'outline' : 'secondary';
 }
 
-export function PayoutsView() {
-  const { shopId } = useParams<{ shopId: string }>();
+const columns: Column<PayoutView>[] = [
+  { id: 'week', header: 'Week of', primary: true, cell: (payout) => payout.periodStart },
+  { id: 'amount', header: 'Amount', cell: (payout) => formatMoney(payout.amountMinor, payout.currency) },
+  { id: 'status', header: 'Status', cell: (payout) => <Badge variant={statusVariant(payout.status)}>{STATUS_LABEL[payout.status]}</Badge> },
+  { id: 'paid', header: 'Paid', cell: (payout) => (payout.paidAt ? formatInstant(payout.paidAt, { time: false }).text : '—') },
+];
+
+/** The balance, the next payout and the payout history of a shop (W04 US10, S14/S15). All text is fixed per status and reason. */
+export function PayoutsView({ shopId }: { shopId: string }) {
   const payouts = useShopPayouts(shopId);
   const upcoming = useUpcomingPayout(shopId);
   const next = upcoming.data;
+  const items = payouts.data?.pages.flatMap((page) => page.items) ?? [];
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Payouts</h1>
-        <p className="text-muted-foreground">Transfers of your balance to your payout destination.</p>
+      <div className="space-y-1">
+        <h1 className="text-2xl font-bold tracking-tight">Payouts</h1>
+        <p className="text-sm text-muted-foreground">Transfers of your balance to your payout destination.</p>
       </div>
 
-      <Card data-testid="upcoming-payout">
-        <CardHeader>
-          <CardTitle>Next payout</CardTitle>
-          <CardDescription>{next ? `Next run ${format(new Date(next.nextRunAt), 'PPP')}` : upcoming.isError ? 'Not available right now.' : 'Loading'}</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-1 text-sm">
-          {next && (
-            <>
-              <p className="text-2xl font-bold" data-testid="upcoming-estimate">{formatMoney(next.estimatedPayoutMinor, next.currency)}</p>
-              <p className="text-muted-foreground">
-                Balance {formatMoney(next.availableMinor, next.currency)} · reserve {formatMoney(next.reserveMinor, next.currency)}
-              </p>
-              {next.blockedReason && <p data-testid="upcoming-blocked">{BLOCKED_COPY[next.blockedReason]}</p>}
-            </>
-          )}
-        </CardContent>
-      </Card>
+      <div className="grid gap-4 md:grid-cols-2">
+        <BalanceCard shopId={shopId} />
+        <Card data-testid="upcoming-payout">
+          <CardHeader>
+            <CardTitle className="text-sm font-medium">Next payout</CardTitle>
+            {next && <CardDescription>{`Next run ${formatInstant(next.nextRunAt, { time: false }).text}`}</CardDescription>}
+          </CardHeader>
+          <CardContent className="space-y-1 text-sm">
+            {upcoming.isError ? (
+              <SectionError error={upcoming.error} onRetry={() => void upcoming.refetch()} />
+            ) : !next ? (
+              <p className="text-muted-foreground">Loading…</p>
+            ) : (
+              <>
+                <p className="text-2xl font-bold tabular-nums" data-testid="upcoming-estimate">
+                  {formatMoney(next.estimatedPayoutMinor, next.currency)}
+                </p>
+                <p className="text-muted-foreground">
+                  Balance {formatMoney(next.availableMinor, next.currency)} · reserve {formatMoney(next.reserveMinor, next.currency)}
+                </p>
+                {next.blockedReason && <p data-testid="upcoming-blocked">{BLOCKED_COPY[next.blockedReason]}</p>}
+              </>
+            )}
+          </CardContent>
+        </Card>
+      </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>History</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {payouts.isError ? (
-            <p className="text-sm text-destructive">Payouts are unavailable right now.</p>
-          ) : payouts.isLoading ? (
-            <p className="text-sm text-muted-foreground">Loading…</p>
-          ) : !payouts.data?.items.length ? (
-            <p className="text-sm text-muted-foreground" data-testid="payouts-empty">No payouts yet.</p>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Week of</TableHead>
-                  <TableHead>Amount</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Paid</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {payouts.data.items.map((payout) => (
-                  <TableRow key={payout.id} data-testid="payout-row">
-                    <TableCell>{payout.periodStart}</TableCell>
-                    <TableCell>{formatMoney(payout.amountMinor, payout.currency)}</TableCell>
-                    <TableCell>
-                      <Badge variant={statusVariant(payout.status)}>{STATUS_LABEL[payout.status]}</Badge>
-                    </TableCell>
-                    <TableCell>{payout.paidAt ? format(new Date(payout.paidAt), 'PPP') : '—'}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-          {payouts.data?.nextCursor && <p className="mt-2 text-xs text-muted-foreground">Showing the latest payouts.</p>}
-        </CardContent>
-      </Card>
+      <section aria-label="Payout history" className="space-y-3">
+        <h2 className="text-lg font-semibold">History</h2>
+        {payouts.isError && items.length === 0 ? (
+          <SectionError error={payouts.error} onRetry={() => void payouts.refetch()} />
+        ) : payouts.isPending ? (
+          <TableRowsSkeleton name="payouts" rows={4} />
+        ) : items.length === 0 ? (
+          <p className="rounded-lg border border-dashed p-6 text-center text-sm" data-testid="payouts-empty">
+            No payouts yet.
+          </p>
+        ) : (
+          <>
+            <ResponsiveTable caption="Payouts" captionHidden columns={columns} rows={items} rowKey={(payout) => payout.id} rowTestId="payout-row" />
+            {payouts.isError && <SectionError error={payouts.error} onRetry={() => void payouts.fetchNextPage()} />}
+            {payouts.hasNextPage && (
+              <Button type="button" variant="outline" className="min-h-11 sm:min-h-8" disabled={payouts.isFetchingNextPage} onClick={() => void payouts.fetchNextPage()}>
+                Show more
+              </Button>
+            )}
+          </>
+        )}
+      </section>
     </div>
   );
 }

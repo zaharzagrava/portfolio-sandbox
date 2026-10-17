@@ -19,5 +19,9 @@ A moderator has the review task for an old [`BUSINESS_REGISTRATION`](document-ki
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [conflict-error](conflict-error.md)
+- [document-supersede](document-supersede.md)
+- [moderator](moderator.md)
+- [resolve-issue](resolve-issue.md)
+- [review-task](review-task.md)
 <!-- used-by:end -->

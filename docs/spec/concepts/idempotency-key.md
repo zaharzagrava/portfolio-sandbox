@@ -59,6 +59,8 @@ An idempotency key is a client-chosen string of 8 to 128 characters. It lets a c
 - {{cap:S50}} Rate limiting: token bucket, sliding window, concurrency limits, fail modes, headers
 - {{cap:S53}} Domain events, outbox/CDC → Kafka, idempotent versioned projections, replay, read-your-writes
 - {{cap:S54}} Platform toolkit: problem+json errors, request context and transactions, health probes, graceful shutdown, load shedding, resilient HTTP
+- {{cap:S55}} Lambda workers: partial batch failure, idempotent effects, manifest, dead letters, local runner, bundles
 - {{cap:W02}} Home, search (autocomplete, filters, facets, sort, URL state), trending and recommendation rails, product page (product, shop, pickup near me, discussions, ask this product, share link)
 - {{cap:W03}} Cart (guest and merged on login), checkout with idempotent submit and async payment status, success page, order history, notification popover
+- {{cap:W04}} Seller dashboard (shop entry and switcher, live overview, inventory, API keys, webhooks, API version, request logs, usage, team, invitations, orders)
 <!-- used-by:end -->

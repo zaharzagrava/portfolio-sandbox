@@ -126,3 +126,21 @@ Constitution VII.8 table: one row per acceptance scenario in [`spec.md`](spec.md
 - Constitution VII.7: no journey repeats an edge case the API proves; every validation, conflict, limit and permission case is a unit test with a problem+json fixture, or a backend scenario named in the last column.
 - Pattern rows: P0406 → AS-19, AS-20, AS-21, AS-22, AS-23, AS-24, AS-25, AS-27; P0901 → AS-12, AS-29, AS-30, AS-70, AS-73, AS-92.
 - The architecture test `lib/architecture.test.ts` is shared with W03 and W01; W04 adds its own assertions (AS-92, AS-93), not a second file.
+
+## Addendum: cross-spec screens (US10, tasks T077-T094)
+
+Tests are named `W04 F<n>: ...` (these screens have no AS number in this spec); the scenarios live in the owning domain spec.
+
+| Slice | Unit | Journey |
+|---|---|---|
+| F5 balance, payouts, statements (S14, S15, S16) | `app/dashboard/seller/[shopId]/balance-card.test.tsx`, `payouts/view.test.tsx`, `statements/view.test.tsx` | `tests/buy-to-payout.spec.ts` (J01 AS-29) |
+| F2 bulk import (S07) | `components/seller/imports/import-view.test.tsx` | `tests/seller-import.spec.ts` |
+| F4 order export (S12) | `components/seller/exports/export-view.test.tsx` | none (the happy path is the unit test; the file link is a short-lived address) |
+| F7 sponsored campaigns (S36) | `components/seller/ads/campaigns-view.test.tsx` | `tests/ad-campaign.spec.ts` (create and pause) |
+| F8 storefront widget (S44) | `components/seller/widget/widget-view.test.tsx` | none (the happy path is the unit test; the identity secret is shown once) |
+| F9 knowledge documents and help-center ask (S47) | `components/seller/knowledge/documents-view.test.tsx` | none (S47's two journey rows stay skipped, see gaps.md) |
+| F1 listing editor (S06) | `components/seller/editor/listing-editor.test.tsx` (F1-1..F1-35: WebSocket stub speaking the sync protocol; every close code; backoff; `acknowledgeProductVersion`; versions; per-attempt `Idempotency-Key`; `listing_invalid` at the field), `draft-launcher.test.tsx` (F1-40..F1-44) | `tests/listing-editor.spec.ts` (S06 happy path: start, edit live, save version, publish) |
+| F6 photos (S29) | `components/seller/media/gallery-view.test.tsx` (F6-1..F6-11) | `tests/seller-photos.spec.ts` |
+| F6 video (S30) | `components/seller/media/video-upload-view.test.tsx` (F6-20..F6-29) | `tests/seller-video.spec.ts` (S30 AS-61, seller half: part interrupted and sent again, then processing; playback stays `product-video.spec.ts`) |
+| F3 integrations, quarantine, reconciliations (S08) | `components/seller/integrations/integrations-view.test.tsx` (F3-1..F3-13), `integration-detail-view.test.tsx` (F3-20..F3-42) | none (the OAuth round trip needs a Shopify app; the unit tests cover the return with `?connected=` and `?error=`) |
+| F3 offline conflicts (S09) | `components/seller/integrations/offline-conflicts-view.test.tsx` (F3-50..F3-55) | none |

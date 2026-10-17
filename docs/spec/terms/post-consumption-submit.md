@@ -21,4 +21,9 @@ A seller's submit succeeds, but the network drops the response, so the client re
 ## Used by
 <!-- used-by:start -->
 - [S04](../capabilities/S04-kyc-onboarding.md): R-05
+- [onboarding-draft](onboarding-draft.md)
+- [onboarding-row](onboarding-row.md)
+- [onboarding-submit](onboarding-submit.md)
+- [rate-limit](rate-limit.md)
+- [shop-onboarding-submitted-event](shop-onboarding-submitted-event.md)
 <!-- used-by:end -->

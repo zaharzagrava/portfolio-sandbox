@@ -21,5 +21,9 @@ A moderator resolves the [open review task](review-task.md) for a shop's `BANK_S
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [document-kind](document-kind.md)
+- [moderator](moderator.md)
+- [review-task](review-task.md)
+- [shop-rejected-event](shop-rejected-event.md)
+- [task-already-resolved](task-already-resolved.md)
 <!-- used-by:end -->

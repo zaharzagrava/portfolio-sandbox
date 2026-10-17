@@ -25,5 +25,8 @@ Submitting a [draft](onboarding-draft.md) whose answers contain the fragment bel
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [onboarding-draft](onboarding-draft.md)
+- [onboarding-questionnaire](onboarding-questionnaire.md)
+- [onboarding-submit](onboarding-submit.md)
+- [vat-registered](vat-registered.md)
 <!-- used-by:end -->

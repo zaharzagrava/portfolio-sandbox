@@ -20,5 +20,8 @@ Two moderators approve the same open task at once. One wins and the task becomes
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [document-supersede](document-supersede.md)
+- [guarded-update](guarded-update.md)
+- [moderator](moderator.md)
+- [review-task](review-task.md)
 <!-- used-by:end -->

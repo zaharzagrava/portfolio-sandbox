@@ -19,5 +19,12 @@ After submitting, a shop that is not VAT registered gets these [required documen
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [document-already-approved](document-already-approved.md)
+- [document-deduplicated-flag](document-deduplicated-flag.md)
+- [document-limit-reached](document-limit-reached.md)
+- [document-supersede](document-supersede.md)
+- [onboarding-questionnaire](onboarding-questionnaire.md)
+- [required-onboarding-documents](required-onboarding-documents.md)
+- [shop-verification](shop-verification.md)
+- [vat-registered](vat-registered.md)
 <!-- used-by:end -->

@@ -40,26 +40,70 @@ const samples: Record<string, unknown[]> = {
   'notifications.inbox': [],
   'notifications.preferences': [],
   'notifications.devices': [],
-  'seller.dashboard': [ID],
-  'seller.products': [ID],
+  'seller.shops': [],
+  'seller.shop': [ID],
+  'seller.scope': [ID, 'inventory'],
+  'seller.overview': [ID, { days: 30 }],
+  'seller.inventory': [ID, { q: 'mug', status: 'ACTIVE' }],
+  'seller.product': [ID, ID],
+  'seller.orders': [ID, {}],
+  'seller.team.members': [ID, {}],
+  'seller.team.invites': [ID, { status: 'pending' }],
+  'seller.team.roles': [],
+  'seller.apiKeys': [ID, {}],
+  'seller.apiVersion': [ID],
+  'seller.logs': [ID, { status: '4xx' }],
+  'seller.usage': [ID, { days: 30, livemode: true }],
+  'seller.webhooks': [ID, {}],
+  'seller.webhookEventTypes': [ID],
+  'seller.webhook': [ID, ID],
+  'seller.webhookAttempts': [ID, ID, { ok: false }],
+  'seller.webhookEvent': [ID, ID, ID],
+  'seller.adCampaigns': [ID, { status: 'ACTIVE' }],
+  'seller.adBilling': [ID, ID, {}],
+  'seller.widgetSites': [ID, {}],
+  'seller.knowledgeDocuments': [ID, { status: 'FAILED' }],
+  'seller.all': [],
+  'seller.finance': [ID, 'balance'],
+  'seller.imports': [ID, 'list'],
+  'seller.exports': [ID, 'list'],
+  'seller.adCampaignDetail': [ID, ID],
+  'seller.gallery': [ID, ID],
+  'seller.mediaItem': [ID, ID],
+  'seller.videos': [ID, { productId: ID }],
+  'seller.video': [ID, ID],
+  'seller.integrations': [ID, {}],
+  'seller.integration': [ID, ID],
+  'seller.quarantine': [ID, ID, { status: 'OPEN' }],
+  'seller.reconciliations': [ID, ID, {}],
+  'seller.reconciliation': [ID, ID, ID],
+  'seller.conflicts': [ID, ID, {}],
+  'seller.offlineConflicts': [ID, {}],
+  'seller.drafts': [ID, {}],
+  'seller.draftVersions': [ID, ID],
 };
+
+/** A group may nest one level (`seller.team.members`); the path joins the names with dots. */
+function walk(domain: string, prefix: string, group: Record<string, unknown>, found: Array<{ path: string; domain: string; key: unknown }>) {
+  for (const [name, entry] of Object.entries(group)) {
+    const path = `${prefix}.${name}`;
+    if (typeof entry === 'function') {
+      if (!(path in samples)) {
+        found.push({ path, domain, key: undefined });
+        continue;
+      }
+      found.push({ path, domain, key: (entry as (...args: unknown[]) => unknown)(...samples[path]) });
+    } else if (entry && typeof entry === 'object' && !Array.isArray(entry)) {
+      walk(domain, path, entry as Record<string, unknown>, found);
+    } else {
+      found.push({ path, domain, key: entry });
+    }
+  }
+}
 
 function allKeys(): Array<{ path: string; domain: string; key: unknown }> {
   const found: Array<{ path: string; domain: string; key: unknown }> = [];
-  for (const [domain, group] of Object.entries(queryKeys)) {
-    for (const [name, entry] of Object.entries(group as Record<string, unknown>)) {
-      const path = `${domain}.${name}`;
-      if (typeof entry === 'function') {
-        if (!(path in samples)) {
-          found.push({ path, domain, key: undefined });
-          continue;
-        }
-        found.push({ path, domain, key: (entry as (...args: unknown[]) => unknown)(...samples[path]) });
-      } else {
-        found.push({ path, domain, key: entry });
-      }
-    }
-  }
+  for (const [domain, group] of Object.entries(queryKeys)) walk(domain, domain, group as Record<string, unknown>, found);
   return found;
 }
 
@@ -87,5 +131,53 @@ describe('W07 query keys (AS-36)', () => {
 
   it('W07 AS-36: the shell adds the developers.openapi key', () => {
     expect(queryKeys.developers.openapi).toEqual(['developers', 'openapi']);
+  });
+});
+
+describe('W04 seller query keys (AS-92)', () => {
+  const OTHER = '7c1d9a2e-0b3f-4c5d-8e6f-2a3b4c5d6e7f';
+  const s = queryKeys.seller;
+
+  it('W04 AS-92: the buyer-era dashboard and products keys are gone', () => {
+    expect(Object.keys(s)).not.toContain('dashboard');
+    expect(Object.keys(s)).not.toContain('products');
+  });
+
+  it('W04 AS-92: parameters are canonical, so equal views give equal keys and undefined parameters are dropped', () => {
+    expect(s.inventory(ID, { q: 'mug', status: 'ACTIVE', inStock: undefined })).toEqual(s.inventory(ID, { status: 'ACTIVE', q: 'mug' }));
+    expect(s.inventory(ID, { q: 'mug' })).not.toEqual(s.inventory(ID, { q: 'cup' }));
+    expect(s.webhookAttempts(ID, ID, { ok: false })).not.toEqual(s.webhookAttempts(ID, ID, { ok: true }));
+  });
+
+  it('W04 AS-92: every per-shop key sits under scope(shopId, section), so one invalidation covers a section; shops do not mix', () => {
+    const sections = {
+      overview: s.overview(ID, { days: 7 }),
+      inventory: s.inventory(ID, {}),
+      orders: s.orders(ID, {}),
+      apiKeys: s.apiKeys(ID, {}),
+      webhooks: s.webhooks(ID, {}),
+      logs: s.logs(ID, {}),
+      usage: s.usage(ID, { days: 30, livemode: true }),
+    } as const;
+    const names: Record<keyof typeof sections, string> = {
+      overview: 'overview',
+      inventory: 'inventory',
+      orders: 'orders',
+      apiKeys: 'api-keys',
+      webhooks: 'webhooks',
+      logs: 'logs',
+      usage: 'usage',
+    };
+    for (const [name, key] of Object.entries(sections)) {
+      const scope = s.scope(ID, names[name as keyof typeof sections] as never);
+      expect(key.slice(0, scope.length), name).toEqual(scope);
+      expect(JSON.stringify(s.scope(OTHER, names[name as keyof typeof sections] as never))).not.toBe(JSON.stringify(scope));
+    }
+  });
+
+  it('W04 AS-79: the roles matrix is not per shop; members and invites are', () => {
+    expect(s.team.roles()).toEqual(['seller', 'team', 'roles']);
+    expect(s.team.members(ID, {})).toContain(ID);
+    expect(s.team.invites(ID, { status: 'pending' })).toContain(ID);
   });
 });

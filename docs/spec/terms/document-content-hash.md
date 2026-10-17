@@ -25,4 +25,8 @@ Field names in this body are illustrative.
 <!-- used-by:start -->
 - [S04](../capabilities/S04-kyc-onboarding.md): R-10
 - [document-deduplicated-flag](document-deduplicated-flag.md)
+- [document-kind](document-kind.md)
+- [document-round](document-round.md)
+- [document-upload](document-upload.md)
+- [known-gaps](known-gaps.md)
 <!-- used-by:end -->

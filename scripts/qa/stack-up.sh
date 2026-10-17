@@ -21,8 +21,9 @@ grep -q "dev stack is up and migrated" "$QA_DIR/stack.log" || { echo "the stack 
 setsid pnpm --filter api run start:dev:monolith >"$QA_DIR/api.log" 2>&1 & echo $! > "$QA_DIR/api.pid"
 for _ in $(seq 1 120); do curl -sf localhost:8000/health/ready >/dev/null && break; sleep 5; done
 curl -sf localhost:8000/health/ready >/dev/null || { echo "the API did not become ready: see $QA_DIR/api.log" >&2; "$(dirname "$0")/stack-down.sh" "$QA_DIR"; exit 1; }
-# the local stand-in for the document-extractor Lambda: nothing else consumes `onboarding-documents`, so without it no shop is ever verified (J01 G-33)
-setsid pnpm --filter api run start:lambda-local document-extractor >"$QA_DIR/lambda.log" 2>&1 & echo $! > "$QA_DIR/lambda.pid"
+# the local stand-in for the document-extractor Lambda: nothing else consumes `onboarding-documents`, so without it no shop is ever verified (J01 G-33);
+# and for the media-processing Lambda: nothing else consumes `media-processing`, so an uploaded photo never leaves "Waiting to process" (W04 seller-photos)
+setsid pnpm --filter api run start:lambda-local document-extractor media-processing >"$QA_DIR/lambda.log" 2>&1 & echo $! > "$QA_DIR/lambda.pid"
 # the seeded accounts and products (a fresh stack has none)
 pnpm --filter api seed:dev >"$QA_DIR/seed.log" 2>&1 || { echo "the seed failed: see $QA_DIR/seed.log" >&2; "$(dirname "$0")/stack-down.sh" "$QA_DIR"; exit 1; }
 if [[ "${WITH_WEB:-}" == 1 ]]; then   # the storefront, for the browser (QA agent, Playwright)

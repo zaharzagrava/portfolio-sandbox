@@ -53,6 +53,7 @@ A projection is a read model built only from the event log, never from another d
 - {{cap:S37}} Share and affiliate short links (codes, aliases, redirects, click attribution)
 - {{cap:S39}} Analytics ingestion and A/B testing (event schema, dedupe, assignment, exposure, SRM, results)
 - {{cap:S40}} Seller leaderboards, live sales dashboard and seller stats (period boards with ties, my rank, snapshots, live frames, today chart, shop stats)
+- {{cap:S41}} Competitor price monitor (watches, polite SSRF-safe crawling, robots.txt, price extraction, change detection, price-drop alerts)
 - {{cap:S42}} Seller public API: API keys, scopes, sandbox, date-pinned versions, deprecation headers, batch and bulk stock, request logs, usage metering
 - {{cap:S43}} Webhook delivery to shops: endpoints, signing with dual secrets, routing, per-endpoint ordering, retries, circuit breaker, auto-disable, replay
 - {{cap:S44}} Embeddable storefront widget: site keys bound to origins, per-site framing policy, identity hand-off, kill switch

@@ -37,11 +37,17 @@ export const shopSchema = z
     shopVersion: z.number().int(),
     createdAt: z.string(),
     purgeAt: z.string().nullable(),
-    myRole: shopRoleSchema.optional(),
-    myPermissions: z.array(z.string()).optional(),
+    /** Every shop read by or for a member carries both (S03 AS-06); only the owner-less export omits them. */
+    myRole: shopRoleSchema,
+    myPermissions: z.array(z.string()),
   })
   .strict();
 export type ShopDto = z.infer<typeof shopSchema>;
+/** The shop as the export carries it: no caller, so no role. */
+export const exportedShopSchema = shopSchema.partial({
+  myRole: true,
+  myPermissions: true,
+});
 
 export const shopListItemSchema = z
   .object({
@@ -105,7 +111,7 @@ export const shopSummarySchema = z
 export const shopExportSchema = z
   .object({
     generatedAt: z.string(),
-    shop: shopSchema,
+    shop: exportedShopSchema,
     members: z.array(shopMemberSchema),
     invites: z.array(
       z
