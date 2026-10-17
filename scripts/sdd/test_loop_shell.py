@@ -69,6 +69,54 @@ class LoopShell(unittest.TestCase):
         self.assertEqual(r.returncode, 0, r.stderr[-300:])
         self.assertIn('survived', r.stdout)
 
+    def test_staged_backend_gate_reruns_only_failures_then_everything_then_small_batches(self):
+        """The user's rule: parts first, then only the failed ones, then everything, then (if that fails again) small batches."""
+        import tempfile, textwrap
+        d = tempfile.mkdtemp()
+        env = {**os.environ, 'GIT_AUTHOR_NAME': 't', 'GIT_AUTHOR_EMAIL': 't@t', 'GIT_COMMITTER_NAME': 't', 'GIT_COMMITTER_EMAIL': 't@t'}
+        subprocess.run(['git', 'init', '-q'], cwd=d, check=True, env=env)
+        os.makedirs(os.path.join(d, 'packages/backend'))
+        os.makedirs(os.path.join(d, 'bin'))
+        # a fake npx: --listTests prints 6 spec files; a run writes a report in which `bad-spec` files fail while $BAD is set
+        open(os.path.join(d, 'bin/npx'), 'w').write(textwrap.dedent('''\
+            #!/usr/bin/env bash
+            if [[ " $* " == *" --listTests "* ]]; then for n in a b c d e f; do echo "$PWD/libs/domains/x/$n.e2e-spec.ts"; done; exit 0; fi
+            out=""; files=(); while (( $# )); do case "$1" in --outputFile=*) out="${1#*=}";; --runTestsByPath) shift; files=("$@"); break;; esac; shift; done
+            echo "RUN ${#files[@]} files: ${files[*]##*/}" >> "$LOG"
+            python3 - "$out" "${files[@]}" <<'PY'
+            import json, os, sys
+            out, files = sys.argv[1], sys.argv[2:]
+            bad = os.environ.get("BAD", "").split()
+            res = [{"name": f, "status": "failed" if os.path.basename(f).split(".")[0] in bad else "passed"} for f in files]
+            json.dump({"testResults": res}, open(out, "w"))
+            sys.exit(1 if any(r["status"] == "failed" for r in res) else 0)
+            PY
+            '''))
+        os.chmod(os.path.join(d, 'bin/npx'), 0o755)
+        text = open(os.path.join(ROOT, 'scripts/sdd/implement-specs.sh'), encoding='utf-8').read()
+        funcs = '\n'.join(re.search(r'^%s\(\) \{.*?^\}' % n, text, re.M | re.S).group(0) for n in ('gate_state', 'gate_fulls_failed', 'gate_full_failed', 'gate_reset', 'backend_run_specs', 'backend_gate'))
+        funcs = '\n'.join(l for l in funcs.split('\n'))
+        script = f'''set -uo pipefail; cd {d}; export PATH={d}/bin:$PATH LOG={d}/log; id=T; code_path() {{ echo libs/domains/x; }}
+        {funcs}
+        run() {{ echo "-- $1"; shift; "$@" >/dev/null 2>&1; echo "rc=$?" >> $LOG; }}
+        export BAD="b e"; run "1 first run (parts of 4)" backend_gate x
+        export BAD="e"; run "2 only the failed, still red" backend_gate x
+        export BAD=""; run "3 failed pass, then everything" backend_gate x
+        '''
+        r = subprocess.run(['bash', '-c', script], capture_output=True, text=True, env=env)
+        log = open(os.path.join(d, 'log')).read().split('\n')
+        # first run: 6 files in parts of 12 = one process with all six, fails (b, e)
+        self.assertEqual(log[0], 'RUN 6 files: a.e2e-spec.ts b.e2e-spec.ts c.e2e-spec.ts d.e2e-spec.ts e.e2e-spec.ts f.e2e-spec.ts', r.stderr[-500:])
+        self.assertEqual(log[1], 'rc=1')
+        # second attempt: only b and e; e still fails
+        self.assertEqual(log[2], 'RUN 2 files: b.e2e-spec.ts e.e2e-spec.ts')
+        self.assertEqual(log[3], 'rc=1')
+        # third attempt: only the failed list (now just e), it passes; then everything, in batches of 4 because a full run failed before
+        self.assertEqual(log[4], 'RUN 1 files: e.e2e-spec.ts')
+        self.assertEqual(log[5], 'RUN 4 files: a.e2e-spec.ts b.e2e-spec.ts c.e2e-spec.ts d.e2e-spec.ts')
+        self.assertEqual(log[6], 'RUN 2 files: e.e2e-spec.ts f.e2e-spec.ts')
+        self.assertEqual(log[7], 'rc=0')
+
 
 if __name__ == '__main__':
     unittest.main()

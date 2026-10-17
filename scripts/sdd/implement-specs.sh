@@ -121,35 +121,98 @@ PY
   (cd packages/web && API_URL="$API_URL" pnpm test:e2e --last-failed ${PW_WORKERS:+--workers="$PW_WORKERS"})
 }
 
+# ---- Staged gate (iterative, not "everything again" after every fix). State per capability lives in .git (never committed):
+#   stage 1  first run: everything, in parts (backend: GATE_BATCH spec files per fresh process; web: tsc, Vitest, then Playwright)
+#   stage 2  after a failure: only what failed (backend: the failed spec files; web: Playwright --last-failed)
+#   stage 3  only when stage 2 is green: everything again
+#   stage 4  when that full run fails again too: everything in small batches (backend GATE_BATCH_SMALL, web GATE_WEB_BATCH files per process)
+# Passing stage 3 or 4 is the only way to a green gate, so the result is as strict as before; the cheap stages just come first.
+gate_state() { local d; d="$(git rev-parse --absolute-git-dir)/sdd-gate-${id:-x}"; mkdir -p "$d"; echo "$d"; }   # absolute: jest runs in packages/backend
+gate_fulls_failed() { cat "$(gate_state)/fulls-failed" 2>/dev/null || echo 0; }
+gate_full_failed() { echo $(( $(gate_fulls_failed) + 1 )) > "$(gate_state)/fulls-failed"; }
+gate_reset() { rm -rf "$(git rev-parse --absolute-git-dir)/sdd-gate-${id:-x}"; }
+
+# backend_run_specs <batch size> <spec files...>: the e2e suites, BATCH per fresh jest process (heap 6 GB), every batch runs even when one
+# fails, so the failed list is complete; writes it to the state dir and returns 1 if any failed.
+backend_run_specs() {
+  local batch=$1 st i rc=0 out; shift; st="$(gate_state)"; : > "$st/failed-now"
+  for (( i = 0; i < $#; i += batch )); do
+    out="$st/batch-$i.json"
+    (cd packages/backend && NODE_ENV=test NODE_OPTIONS="--experimental-vm-modules --max-old-space-size=6144" timeout 1800 \
+      npx jest --ci --runInBand --forceExit --config jest-e2e.json --json --outputFile="$out" --runTestsByPath "${@:i+1:batch}") || {
+        rc=1
+        python3 - "$out" >> "$st/failed-now" <<'PY' || true
+import json,sys
+try: j=json.load(open(sys.argv[1]))
+except Exception: sys.exit(0)
+for r in j.get("testResults", []):
+    if r.get("status") == "failed": print(r["name"])
+PY
+        # a batch that died before writing its report (heap, timeout): count every file of the batch as failed
+        [[ -s "$out" ]] || printf '%s\n' "${@:i+1:batch}" >> "$st/failed-now"
+      }
+  done
+  sort -u "$st/failed-now" -o "$st/failed-now"
+  return $rc
+}
+
+backend_gate() { # $1 = domain column
+  local specs=() st fs=() n batch=${GATE_BATCH:-12}; st="$(gate_state)"
+  # stage 2: only the spec files that failed last time
+  if [[ -s "$st/failed-specs" ]]; then
+    mapfile -t fs < "$st/failed-specs"
+    echo "gate stage 2: re-running only the ${#fs[@]} spec file(s) that failed last time"
+    if ! backend_run_specs "$batch" "${fs[@]}"; then cp "$st/failed-now" "$st/failed-specs"; return 1; fi
+    echo "gate stage 3: the failed specs pass; now everything"
+  fi
+  mapfile -t specs < <(cd packages/backend && NODE_ENV=test npx jest --config jest-e2e.json --listTests "$(code_path "$1")" 2>/dev/null | grep -E 'e2e-spec\.ts$' | sort)
+  (( ${#specs[@]} )) || { echo "no e2e specs found under $(code_path "$1")"; return 1; }
+  n=$(gate_fulls_failed); (( n >= 1 )) && { batch=${GATE_BATCH_SMALL:-4}; echo "gate stage 4: the full run failed before; everything in batches of $batch"; }
+  if ! backend_run_specs "$batch" "${specs[@]}"; then cp "$st/failed-now" "$st/failed-specs"; gate_full_failed; return 1; fi
+  rm -f "$st/failed-specs"
+}
+
+# web_full <files...>: tsc, Vitest, then Playwright (all specs, or the named files); the last failure is recorded for stage 2.
+web_full() {
+  (
+    cd packages/web &&
+    npx tsc --noEmit -p tsconfig.json &&
+    pnpm test &&                               # Vitest: UI-only logic, component states, a11y
+    API_URL="$API_URL" pnpm test:e2e ${PW_WORKERS:+--workers="$PW_WORKERS"} "$@"   # Playwright: happy-path journeys + layout screenshots
+  )
+}
+web_gate_full() {
+  local files=() batch=${GATE_WEB_BATCH:-12} i
+  if (( $(gate_fulls_failed) >= 1 )); then
+    # stage 4: Playwright in file batches, each a fresh process; stops at the first failing batch so its failures are the ones recorded
+    mapfile -t files < <(cd packages/web && find tests -name '*.spec.ts' | sort)
+    echo "gate stage 4: the full run failed before; Playwright in batches of $batch spec files"
+    (cd packages/web && npx tsc --noEmit -p tsconfig.json && pnpm test) || { gate_full_failed; return 1; }
+    for (( i = 0; i < ${#files[@]}; i += batch )); do
+      (cd packages/web && API_URL="$API_URL" pnpm test:e2e ${PW_WORKERS:+--workers="$PW_WORKERS"} "${files[@]:i:batch}") || { gate_full_failed; return 1; }
+    done
+  else
+    web_full || { gate_full_failed; return 1; }
+  fi
+}
+
 gate() { # $1 = domain column; everything must pass
   if [[ "$(kind_of "$1")" == web ]]; then web_failed_first || return 1; fi
   core_gate_cached || return 1
   case "$(kind_of "$1")" in
     backend)
-      # One jest process for a whole domain ran out of heap (4 GB) late in the run; the late suites then saw 503s and timeouts from GC pauses.
-      # Same remedy as checkpoint.sh: the suites run one at a time, GATE_BATCH of them per fresh process.
-      local specs batch=${GATE_BATCH:-12} i
-      mapfile -t specs < <(cd packages/backend && NODE_ENV=test npx jest --config jest-e2e.json --listTests "$(code_path "$1")" 2>/dev/null | grep -E 'e2e-spec\.ts$' | sort)
-      (( ${#specs[@]} )) || { echo "no e2e specs found under $(code_path "$1")"; return 1; }
-      for (( i = 0; i < ${#specs[@]}; i += batch )); do
-        (cd packages/backend && NODE_ENV=test NODE_OPTIONS="--experimental-vm-modules --max-old-space-size=6144" timeout 1800 \
-          npx jest --ci --runInBand --forceExit --config jest-e2e.json --runTestsByPath "${specs[@]:i:batch}") || return 1
-      done ;;
+      backend_gate "$1" || return 1 ;;
     web)
       bash "$ROOT/scripts/sdd/stack-fix.sh" standins || return 1   # document-extractor and media-processing stand-ins; started once, then reused
       bash "$ROOT/scripts/sdd/stack-fix.sh" smoke || return 1
       # the photo and buy-to-payout journeys need the media-processing and document-extractor stand-ins (READY photo, VERIFIED shop)
       bash "$ROOT/scripts/sdd/stack-fix.sh" journey || return 1
-      (
-        cd packages/web &&
-        npx tsc --noEmit -p tsconfig.json &&
-        pnpm test &&                               # Vitest: UI-only logic, component states, a11y
-        API_URL="$API_URL" pnpm test:e2e ${PW_WORKERS:+--workers="$PW_WORKERS"}   # Playwright: happy-path journeys + layout screenshots (PW_WORKERS overrides the config)
-      ) || return 1 ;;
+      web_gate_full || return 1 ;;
     journey)
       bash scripts/sdd/stack-fix.sh journey || return 1   # seconds: a missing stand-in used to cost a 25-minute run
       (cd packages/backend && API_URL="$API_URL" pnpm test:journeys) || return 1 ;;
   esac
+  gate_reset
 }
 
 # Test integrity and lint, for the capability being built. Cheap, deterministic, and aimed at the two ways an agent

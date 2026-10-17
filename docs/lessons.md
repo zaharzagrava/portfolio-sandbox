@@ -34,6 +34,7 @@ with the links that prove it: backticked file paths and commit hashes. For a `pr
 - L-023 2026-10-17 resources prevented
 - L-024 2026-10-17 process prevented
 - L-025 2026-10-17 config prevented
+- L-026 2026-10-17 process prevented
 
 ## L-001 A message option the queue refuses, found only by hand
 - **Rule:** A queue option must be validated where the message is created, not discovered when the relay fails (FIFO-only options like `groupId` never go to a standard queue).
@@ -185,3 +186,8 @@ Second round of L-022 (2026-10-17, 13:54 UTC): the new time limits blocked W04. 
 - **Rule:** Everything a browser or journey spec consumes from a queue has a consumer on the runner's stack from the first minute: the document-extractor and media-processing stand-ins (`scripts/sdd/stack-fix.sh standins`).
 - **Symptom:** the first web gate on a fresh machine (W04, 2026-10-17, 16:33 UTC) failed 17 specs in 23.8 minutes: J01 AS-29 "shop VERIFIED by the onboarding extraction timed out after 60000ms", seller-photos, others. **Cause:** nothing on the runner started the stand-ins; only the journey gate's preflight (and the QA stack script) did, so a web gate before the first journey gate, or on a machine that had never run a journey, had no consumer for `onboarding-documents` and `media-processing`. Earlier machines worked because an agent had started them by hand.
 - **Prevention:** `vm-run.sh` starts them after the API is ready, the web gate calls `stack-fix.sh standins` first (starts only when missing), and the journey preflight restarts both on fresh code.
+
+## L-026 The gate should be iterative: parts, then only the failures, then everything, then small batches
+- **Rule:** After a failed gate the next attempt re-runs only what failed. Everything runs again only when the failures are green, and a full run that fails a second time is repeated in small batches (backend `GATE_BATCH_SMALL` 4 spec files per process, web `GATE_WEB_BATCH` 12 files per process).
+- **Symptom:** every repair attempt re-ran the whole gate (24 minutes for the web gate of W04, a whole domain of e2e suites for a backend one) although the agent had touched one file.
+- **Prevention:** `backend_gate`/`web_gate_full` in `scripts/sdd/implement-specs.sh` keep the stage per capability in `.git/sdd-gate-<id>`; `test_loop_shell.py` walks the four stages with a fake jest. The web stages are checked for syntax only (they need the live stack).
