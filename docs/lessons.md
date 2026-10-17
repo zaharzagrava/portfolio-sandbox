@@ -31,6 +31,7 @@ with the links that prove it: backticked file paths and commit hashes. For a `pr
 - L-020 2026-10-14 config prevented
 - L-021 2026-10-14 config prevented
 - L-022 2026-10-16 process prevented
+- L-023 2026-10-17 resources prevented
 
 ## L-001 A message option the queue refuses, found only by hand
 - **Rule:** A queue option must be validated where the message is created, not discovered when the relay fails (FIFO-only options like `groupId` never go to a standard queue).
@@ -165,3 +166,8 @@ with the links that prove it: backticked file paths and commit hashes. For a `pr
 - **Prevention:** every agent prompt carries the unattended rules (`UNATTENDED_RULES` in `scripts/sdd/implement-specs.sh`); `scripts/sdd/stack-fix.sh journey` rebuilds and starts the stand-in and checks the metrics port in seconds, and the journey gate runs it first; a failing gate that took 10 minutes or more is not rerun until the code changed; a capability's gate repairs stop after 120 minutes; pass timeout 50 minutes (was 120), repair agents 40, exit grace 30 s (was 90), two doctor tries per capability (was 3).
 
 Second round of L-022 (same day, 10:30 UTC): the next run went round a different circle. Converge distrusts a task ticked "deferred" ("their [X] is not evidence") and adds "record the runtime proofs" as a new task after every pass; the agent cannot run `fresh-run.sh --here` or the app boots on the build machine, so the pass closes nothing, the doctor defers the task, converge adds another. **Prevention:** `scripts/sdd/defer-runtime.py` runs after every converge and ticks any open task that only asks to run, record or prove a runtime check as deferred (writing `specs/deferred-checks.md`); the converge prompt says a deferred tick is done and forbids adding such tasks.
+
+## L-023 One test process for a whole domain runs out of memory late in the run
+- **Rule:** The backend gate runs the e2e suites of a domain in fresh jest processes (`GATE_BATCH`, default 12, 6 GB heap each), never all in one.
+- **Symptom:** S06 was BLOCKED after three rounds of five repairs (2026-10-17, about 03:00 to 06:20 UTC) and S55 started down the same road. The gate showed dozens of unrelated failures: 503s, timeouts, rate-limit counts. **Cause:** one jest process for the whole domain hit its 4 GB heap limit (`JavaScript heap out of memory`); the suites after it saw GC pauses. Each suite passed alone. The repair agents found this and edited `scripts/sdd/implement-specs.sh` on the runner, but the running loop had already read the old script, so every attempt reran the old gate.
+- **Prevention:** the batched gate is merged (`gate()` in `scripts/sdd/implement-specs.sh`, same remedy as `checkpoint.sh`). Because a loop never sees an edit to its own script, an agent that changes `scripts/sdd/` must say so, and the next restart picks it up.
