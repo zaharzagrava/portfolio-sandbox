@@ -46,7 +46,13 @@ case "${1:-}" in
     if ! (cd "$ROOT/packages/backend" && pnpm exec nest build lambda-local >"$LAMBDA_DIR/build.log" 2>&1); then
       echo "ENVIRONMENT: the document-extractor stand-in does not compile (the cause is in $LAMBDA_DIR/build.log):"; grep -m5 "error" "$LAMBDA_DIR/build.log"; exit 1
     fi
-    (cd "$ROOT/packages/backend" && setsid node dist/apps/lambda-local/main.js document-extractor media-processing >"$LAMBDA_DIR/lambda.log" 2>&1 & echo $! > "$LAMBDA_DIR/pid")
+    # lambda-local reads dist/lambda-bundles/manifest.json (SD-03), which only `build:lambdas` writes
+    if ! (cd "$ROOT/packages/backend" && pnpm run build:lambdas >"$LAMBDA_DIR/bundles.log" 2>&1); then
+      echo "ENVIRONMENT: the Lambda bundles do not build (the cause is in $LAMBDA_DIR/bundles.log):"; tail -n 8 "$LAMBDA_DIR/bundles.log"; exit 1
+    fi
+    # the handlers read their settings (MEDIA_BUCKET, ...) from the process environment when they load, so hand them the dev .env
+    # LOG_FILE turns the pretty-print transport off: its worker thread cannot be found from inside a bundle
+    (cd "$ROOT/packages/backend" && set -a && . ./.env && set +a && export LOG_FILE="$LAMBDA_DIR/handlers.log" && setsid node dist/apps/lambda-local/main.js document-extractor media-processing >"$LAMBDA_DIR/lambda.log" 2>&1 </dev/null & echo $! > "$LAMBDA_DIR/pid") >/dev/null 2>&1
     sleep 8
     if ! pgrep -f 'lambda-local/main.js document-extractor' >/dev/null; then
       echo "CODE: the document-extractor stand-in exits at start-up (a module that does not boot outside the monolith, lesson L-018):"; tail -n 12 "$LAMBDA_DIR/lambda.log"; exit 1

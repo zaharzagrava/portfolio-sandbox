@@ -150,10 +150,11 @@ describe('W04 F6 photo gallery', () => {
     await user.upload(screen.getByLabelText('Add photos'), png());
     await waitFor(() => expect(screen.getAllByRole('img')).toHaveLength(4));
     expect(started).toEqual({ purpose: 'product' });
-    // the signed fields as given, then the file last
-    expect(appended.map(([name]) => name)).toEqual(['key', 'policy', 'x-amz-signature', 'file']);
+    // the signed fields as given, then the file's Content-Type (the policy requires image/), then the file last
+    expect(appended.map(([name]) => name)).toEqual(['key', 'policy', 'x-amz-signature', 'Content-Type', 'file']);
     expect(appended[0][1]).toBe('originals/abc');
-    expect(appended[3][1]).toBeInstanceOf(File);
+    expect(appended[3][1]).toBe('image/png');
+    expect(appended.at(-1)?.[1]).toBeInstanceOf(File);
     expect(polls).toBeGreaterThanOrEqual(3);
     expect(screen.getByRole('button', { name: 'Save photos' })).toBeEnabled();
   });

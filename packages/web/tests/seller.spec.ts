@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { register, resetRateLimits } from './helpers';
+import { register, resetRateLimits, sellerMenu } from './helpers';
 
 /** W04 seller entry smoke: a new member opens a shop and lands on its overview. The detailed journeys are in seller-shop.spec.ts and the other seller-*.spec.ts files. */
 test.describe('Seller', () => {
@@ -19,6 +19,6 @@ test.describe('Seller', () => {
     await expect(page.getByRole('region', { name: 'Last 30 days', exact: true })).toBeVisible();
     await expect(page.getByRole('region', { name: 'Leaderboard rank' })).toBeVisible();
     await expect(page.getByRole('region', { name: 'Top products' })).toBeVisible();
-    await expect(page.getByRole('navigation', { name: 'Seller' }).getByRole('link', { name: 'Inventory' })).toBeVisible();
+    await expect((await sellerMenu(page)).getByRole('navigation', { name: 'Seller' }).getByRole('link', { name: 'Inventory' })).toBeVisible();
   });
 });

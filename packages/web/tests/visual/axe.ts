@@ -29,7 +29,10 @@ export async function expectNoSeriousViolations(page: Page, selector?: string): 
  * unless it sits inside a container that scrolls on purpose (the tab list, the chip row). Call at 320 px.
  */
 export async function expectMainFitsWidth(page: Page): Promise<void> {
-  const offenders = await page.evaluate(() => {
+  // A chart re-measures itself after the viewport shrinks (ResizeObserver), so the check is repeated until it settles; an element
+  // that stays too wide still fails after the timeout.
+  const measure = () =>
+    page.evaluate(() => {
     const main = document.querySelector('#main-content');
     if (!main) return ['#main-content missing'];
     const width = document.documentElement.clientWidth;
@@ -43,8 +46,8 @@ export async function expectMainFitsWidth(page: Page): Promise<void> {
     return [...main.querySelectorAll('*')]
       .filter((el) => el.getBoundingClientRect().right > width + 0.5 && !scrolls(el))
       .map((el) => `${el.tagName}.${String((el as HTMLElement).className).slice(0, 50)} right=${Math.round(el.getBoundingClientRect().right)}`);
-  });
-  expect(offenders).toEqual([]);
+    });
+  await expect.poll(measure).toEqual([]);
 }
 
 /** Layout rule shared by every visual state: nothing scrolls sideways (checked at 320 px by the callers). */

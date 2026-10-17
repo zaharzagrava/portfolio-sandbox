@@ -3,7 +3,7 @@ import { ControlSurface, adminClient } from '../../backend/test/journeys/support
 import { JOURNEY_PASSWORD, JourneyClient } from '../../backend/test/journeys/support/journey-client';
 import { checkout, payOrder, waitBalance, waitOrderStatus, waitPaymentStatus } from '../../backend/test/journeys/support/purchase';
 import { createSeller } from '../../backend/test/journeys/support/seller-fixture';
-import { login, payWithSandboxCard, register } from './helpers';
+import { login, payWithSandboxCard, register, sellerMenu } from './helpers';
 
 /**
  * J01 AS-29: the buy-to-payout path seen through the screens (W03 checkout, W04 seller dashboard). The data comes from the
@@ -50,18 +50,17 @@ test.describe('J01 buy to payout', () => {
 
       // --- the payout: the destination must cool (48 h), then the weekly run pays ---------------------------------------------
       await control.advance(49 * 3600);
-      try {
-        const job = await control.runJob('payouts.run-weekly');
-        expect(job.status).toBe('SUCCEEDED');
-        await expectPaidPayoutOf(seller.owner, seller.shopId);
-      } finally {
-        await control.rebase();
-      }
+      const job = await control.runJob('payouts.run-weekly');
+      expect(job.status).toBe('SUCCEEDED');
+      await expectPaidPayoutOf(seller.owner, seller.shopId);
 
       // --- the seller, in the browser ------------------------------------------------------------------------------------
+      // The clock is still moved: the statement counts a payout only from the moment it was recorded, so after the clock is
+      // put back (outer `finally`) the payout lies in the future and the month shows "Paid out €0.00" (the backend journey
+      // reads it in the same way, before its rebase).
       const sellerPage = await (await browser.newContext({ acceptDownloads: true })).newPage();
       await login(sellerPage, seller.owner.email, JOURNEY_PASSWORD, '/dashboard/seller');
-      await sellerPage.getByRole('link', { name: 'Payouts' }).first().click();
+      await (await sellerMenu(sellerPage)).getByRole('link', { name: 'Payouts' }).click();
       await expect(sellerPage.getByTestId('balance-card')).toBeVisible();
       await expect(sellerPage.getByTestId('balance-amount')).toContainText(/€\s?\d/);
       const payoutRow = sellerPage.getByTestId('payout-row');
@@ -85,6 +84,7 @@ test.describe('J01 buy to payout', () => {
       await sellerPage.getByRole('link', { name: 'Download CSV' }).click();
       expect((await download).suggestedFilename()).toBe(`statement-${seller.shopId}-${month}.csv`);
     } finally {
+      await control.rebase().catch(() => undefined);
       await control.restoreAll().catch(() => undefined);
     }
   });

@@ -239,6 +239,8 @@ test.describe('W07 app shell', () => {
     });
     const id = await productId();
     const token = 'inv_SECRETtokenvalue1234567890';
+    // a signed-out visitor to /invites/{token} is sent to sign-in (W04 AS-80), so the invite page is reported by a member
+    await register(page);
     // Events leave in batches every 5 s (or by beacon when the page is hidden, which a test cannot observe), so each
     // address is loaded and its batch awaited before the next one.
     const reportedBy = async (path: string, expected: string) => {

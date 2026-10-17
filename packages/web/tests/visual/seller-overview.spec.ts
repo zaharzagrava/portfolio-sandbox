@@ -51,6 +51,22 @@ async function answerWithSales(page: Page, fail: ('stats' | 'rank')[] = []) {
   });
 }
 
+/**
+ * The period the member picks is read by the server render (the page seeds the query), so the browser asks for it again only
+ * when the member comes back to the tab (live panel: "Coming back to a hidden tab"). That request is the one `answerWithSales` answers.
+ */
+async function leaveAndReturn(page: Page) {
+  await page.evaluate(() => {
+    const setState = (state: 'hidden' | 'visible') => {
+      Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => state });
+      Object.defineProperty(document, 'hidden', { configurable: true, get: () => state === 'hidden' });
+      document.dispatchEvent(new Event('visibilitychange'));
+    };
+    setState('hidden');
+    setState('visible');
+  });
+}
+
 async function expectLayout(page: Page) {
   await expectNoSeriousViolations(page);
   const original = page.viewportSize();
@@ -68,6 +84,8 @@ test.describe('Seller overview layout', () => {
     await answerWithSales(page);
     await page.goto(shopPath(shopId));
     await page.getByLabel('Period').selectOption('7');
+    await expect(page).toHaveURL(/days=7/);
+    await leaveAndReturn(page);
     await expect(page.getByRole('region', { name: 'Top products' }).getByText(/Handmade Ceramic Mug/)).toBeVisible();
     await shot(page, 'overview-with-data.png');
     await expectLayout(page);
@@ -89,6 +107,8 @@ test.describe('Seller overview layout', () => {
     await answerWithSales(page, ['stats', 'rank']);
     await page.goto(shopPath(shopId));
     await page.getByLabel('Period').selectOption('7');
+    await expect(page).toHaveURL(/days=7/);
+    await leaveAndReturn(page);
     await expect(page.getByRole('region', { name: 'Top products' }).getByText('Sales numbers are temporarily unavailable.')).toBeVisible();
     await expect(page.getByRole('region', { name: 'Leaderboard rank' }).getByText('Your rank is temporarily unavailable.')).toBeVisible();
     await shot(page, 'overview-partial.png');
