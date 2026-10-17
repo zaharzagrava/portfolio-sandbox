@@ -35,6 +35,15 @@ async function openPanel(page: Page, options: { unread?: number } = {}) {
 // The unread count is pinned with the list: a fresh member's welcome item arrives asynchronously, and "Mark all as read" shows
 // only while the count is above zero, so an unpinned count changes the height of the panel from run to run.
 async function stubInbox(page: Page, respond: Parameters<Page['route']>[1], unread = 0) {
+  // The live stream would prepend the welcome item to a list that is pinned here, at a moment that changes from run to run.
+  // The stream stays up (an offline stream shows its own banner); only its `notification` events are not delivered.
+  await page.addInitScript(() => {
+    const add = EventSource.prototype.addEventListener;
+    EventSource.prototype.addEventListener = function (this: EventSource, type: string, ...rest: unknown[]) {
+      if (type === 'notification') return;
+      return (add as (...args: unknown[]) => void).call(this, type, ...rest);
+    } as typeof EventSource.prototype.addEventListener;
+  });
   await page.route('**/api/notifications?*', respond);
   await page.route('**/api/notifications/unread-count', (route) => route.fulfill({ status: 200, contentType: 'application/json', json: { unread } }));
 }

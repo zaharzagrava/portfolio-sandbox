@@ -59,7 +59,10 @@ test.describe('J01 buy to payout', () => {
       // put back (outer `finally`) the payout lies in the future and the month shows "Paid out €0.00" (the backend journey
       // reads it in the same way, before its rebase).
       const sellerPage = await (await browser.newContext({ acceptDownloads: true })).newPage();
-      await login(sellerPage, seller.owner.email, JOURNEY_PASSWORD, '/dashboard/seller');
+      await login(sellerPage, seller.owner.email, JOURNEY_PASSWORD);
+      // W04 AS-08: a single shop redirects to its overview
+      await sellerPage.goto('/dashboard/seller');
+      await expect(sellerPage).toHaveURL(new RegExp(`/dashboard/seller/${seller.shopId}$`));
       await (await sellerMenu(sellerPage)).getByRole('link', { name: 'Payouts' }).click();
       await expect(sellerPage.getByTestId('balance-card')).toBeVisible();
       await expect(sellerPage.getByTestId('balance-amount')).toContainText(/€\s?\d/);
