@@ -8,6 +8,8 @@ export const FILTER_KEY = 'share-links:bloom';
 export const FILTER_READY_KEY = 'share-links:bloom:ready';
 export const FILTER_LOCK_KEY = 'share-links:bloom:lock';
 const REDIS_TIMEOUT_MS = 150;
+/** A write must not be lost to a busy Redis (the first SETBIT of a cold 12 MB key allocates it): writes get a longer budget than reads. */
+const REDIS_WRITE_TIMEOUT_MS = 1_000;
 const LOCK_TTL_MS = 10 * 60_000;
 const ADD_BATCH = 5_000;
 
@@ -45,7 +47,7 @@ export class RedisExistenceFilter implements ExistenceFilter {
 
   /** Sets the code's bits in one pipeline; a failed reply is a failure (the link must not be written without its entry). */
   async add(code: string): Promise<void> {
-    await withTimeout('link-filter', REDIS_TIMEOUT_MS, () =>
+    await withTimeout('link-filter', REDIS_WRITE_TIMEOUT_MS, () =>
       this.setBits([code]),
     );
   }
