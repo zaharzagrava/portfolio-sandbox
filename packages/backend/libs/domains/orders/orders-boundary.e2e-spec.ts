@@ -44,8 +44,6 @@ const TRANSITIONAL_ALLOWED = [
   'BisOrderWithAllFilters',
   'ShopOrderModel',
   'StockReservationModel',
-  'CheckoutDiscounts',
-  'DiscountableLine',
   'ORDER_MODELS',
   'CreateBisOrderDto',
   'OrderService',

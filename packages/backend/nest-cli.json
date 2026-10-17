@@ -110,6 +110,15 @@
         "tsConfigPath": "apps/sse-gateway/tsconfig.app.json"
       }
     },
+    "function-runner": {
+      "type": "application",
+      "root": "apps/function-runner",
+      "entryFile": "main",
+      "sourceRoot": "apps/function-runner/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/function-runner/tsconfig.app.json"
+      }
+    },
     "worker": {
       "type": "application",
       "root": "apps/worker",

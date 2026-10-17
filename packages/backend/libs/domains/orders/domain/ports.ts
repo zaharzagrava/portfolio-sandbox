@@ -319,6 +319,7 @@ export interface ShopDiscountsPort {
   /** Per-shop discount amounts; any failure is reported by throwing and the caller falls back to catalogue prices. */
   evaluate(
     lines: DiscountLine[],
+    currency: string,
   ): Promise<Array<{ shopId: string; discountMinor: number }>>;
 }
 

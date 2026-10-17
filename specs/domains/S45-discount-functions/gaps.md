@@ -78,7 +78,7 @@ Existing tests: `shop-functions.e2e-spec.ts` (3 tests: judge verdicts, own-shop 
 
 ## 3. `check:table-ownership` lines for `shop-functions`
 
-Not run (see the note at the top). Expected from reading the code: **MODEL** rows: none in production code; **SQL** rows: none against another owner; **reference** rows: the FK `ShopFunction → "Shop"` in `migrations/20261002150000-shop-functions.js:9` (tenancy-owned). The implementation agent runs `pnpm --dir packages/backend check:table-ownership` before starting and after each step; the target for this domain is zero rows, reached through:
+**Live result (implementation run, 2026-10-17)**: `pnpm --dir packages/backend check:table-ownership --strict` reports `0 cross-domain data accesses in 0 domains` before and after the work (the checker does not model the foreign key `ShopFunction → "Shop"`; that constraint is dropped by the contract step of `migrations/20261017500000-shop-functions-s45.js`, and `shop-functions-ops.e2e-spec.ts` AS-39 proves no table of this domain has a foreign key outside the domain). Target for this domain: zero rows, reached through:
 
 | Finding | Mechanism that replaces it |
 |---|---|
@@ -96,3 +96,34 @@ Not run (see the note at the top). Expected from reading the code: **MODEL** row
 5. **Management routes, contracts, errors, entitlement and permission** (G-09 to G-12, G-15, G-18, G-23, G-30).
 6. **Evaluation service and the orders cut-over** (G-01 to G-08) with S10; delete the orders port and the `@Global()` provider.
 7. **Runner deployment and ops check** (G-28), then the static checks (AS-38) and the recorded green run of every suite (VII.9).
+
+## Sibling-spec follow-ups
+
+- **S03**: add the permission `functions.manage` (OWNER, ADMIN) to the matrix; this capability uses `shop.manage` through one constant (`FUNCTIONS_PERMISSION`) until then and switches in one line.
+- **S18**: add the boolean entitlement `shopFunctions` (free `false`, `pro` `true`) to the closed allowlist; until it exists the production adapter treats `unknown_entitlement` as not entitled (fail closed), so the feature is off in production until S18 adopts the key, and the management guard becomes `RequiresShopEntitlement('shopFunctions')`.
+- **S10**: DONE here as the minimal cut-over edit, S10's spec must now state it: `ShopDiscountsPort.evaluate(lines, currency)` takes the cart currency as its second argument (the cart of `evaluateDiscounts` has one currency; the legacy adapter hard-coded `usd`), the binding is `ShopFunctionsDiscountsAdapter` over `DiscountEvaluationService` (imported through `DiscountEvaluationModule`), and `LegacyCheckoutDiscountsAdapter`, `CheckoutDiscounts` and `DiscountableLine` are deleted from orders (the pinned transitional list shrank by those two names). The input line field is `unitPriceMinor`, and a missing `shopId` is an invalid cart (`invalid_cart`, empty result). `FakeDiscounts` in orders' testing kit still works because it ignores the second argument.
+- **S53**: the judge queue is named `shop-functions-judge-version` (a dot is not valid in an SQS standard queue name; the spec's `shop-functions.judge-version` stays the name of the outbox task family `shop_functions.judge_requested`). It replaces `function-test-runs` in `infra/docker/elasticmq/elasticmq.conf` and `infra/stack/main.tf` (visibility 60 s, 5 receives, DLQ `shop-functions-judge-version-dlq`). The ElasticMQ server must be reloaded by a human; the consumer's readiness check fails while either queue is missing.
+- **S50**: policy `shop-functions.submit.shop` (10/hour/shop, fail closed) is registered by `ShopFunctionsModule` through `RateLimitModule.forFeature(shopFunctionsRatePolicies)`, as the other domains do; there is no central core policy list to edit.
+- **S54 / platform catalog**: `version_limit_reached` is `422` here (FR-034) while asset-library registers the same code as `409 Conflict`. The shared problem catalog refuses two different definitions, so this capability raises its error without registering it and `invalid_cursor` is the platform's. One of the two capabilities should rename its code or the catalog should allow per-owner statuses.
+- **S54 / metrics**: the registry requires a unit suffix on histograms, so `shop_functions_evaluation_duration_ms` of AS-35 is exported as `shop_functions_evaluation_duration_seconds` (buckets in seconds).
+- **S03 / identity**: the 403 for a role without permission is tenancy's `permission_denied` and the 401 for an anonymous caller is identity's `invalid_token`; FR-034 names them `forbidden` and `unauthenticated`. The e2e tests assert the platform's codes.
+- **S01 (platform)**: `ShopFunctionsStoresModule`/`DiscountEvaluationModule` are imported by orders' `OrdersCoreModule`, so every app that hosts orders (core, worker, local-monolith) now also loads billing's entitlement service; the sealed runtime creates no isolate until the first evaluation.
+
+## Spec changes
+
+No page signed by a human (`*.reviewed.json`) exists for S45; the living page `docs/spec/capabilities/S45-discount-functions.md` is new and unsigned.
+
+## Deviations from the plan (implementation run)
+
+- **Request bodies** are parsed with the strict zod schemas of `packages/contracts/src/shop-functions` in the controller (the S41 precedent), not with class-validator DTO classes; `api/dto/` does not exist. Unknown properties are refused (`400 validation_failed` naming the field).
+- **Entitlement** is checked in the services through the `ShopFunctionsEntitlements` port (research D-13), not with `RequiresShopEntitlement`, because S18's closed key list does not contain `shopFunctions`; the production adapter reads the key as plain data from `getMany`, so the feature is off until S18 adds it.
+- **Breaker state** is one Redis hash per function (`shopfn:breaker:{functionId}`: open-until, window count and start, trial deadline, last failure) updated by three Lua scripts, instead of three keys; same rules as `domain/breaker.ts`.
+- **function-runner image**: the generic `infra/docker/node/Dockerfile` already takes `APP` as a build argument, so `infra/docker/function-runner/` holds only the hardened `compose.yml` (a second Dockerfile would be a copy). The runner program is exported from the domain barrel (`startRunnerServer`) because `apps/*` may import a domain only through its `index.ts`.
+- **Host-side deadline in the sealed runtime**: the engine's time limit cannot interrupt a long native built-in (`new Array(1e7).fill(1)` runs for 240 ms, `1e8` for ~10 s). `FunctionSandbox.run` answers `timeout` at `2 x budget + 150 ms` and asks the engine to dispose the isolate; its concurrency slot frees when the isolate really ends. A heap bomb therefore classifies as `memory` only when the engine reaches its limit before that deadline (the checkout spec gives it room).
+- **A version with no frozen test case** (a pre-migration row) is rejected by the judge (nothing proves it) instead of being run with an empty suite.
+
+## Gate repairs
+
+- Test integrity: `shop-functions.e2e-spec.ts` was deleted when its single-file flows were split into `shop-functions-{management,judge,checkout,ops}.e2e-spec.ts`, and it carried no scenario id. The path now holds a short end-to-end journey whose titles carry S45 AS-10, AS-24 and AS-28; the detailed scenarios stay in the sibling files. `check-tests.py integrity` passes, `tsc --noEmit` is clean, and the journey spec passes (3 tests).
+
+- **Boot-check failure (environment, not code)**: `/health/ready` answered 503 with only `queue:shop-functions-judge-version` down. S45 adds that queue (defined in `infra/docker/elasticmq/elasticmq.conf` and `infra/stack/main.tf`), but the running ElasticMQ container (up 12 h) had not reloaded its conf (L-020). Fixed with `scripts/infra/reload-queues.sh --wait 120`: the queue exists and the API reports ready. The `moderation_1.HeuristicToxicityClassifier is not a constructor` lines in `/var/log/sdd/api.log` are from a stale watch build on Oct 16 (the current `dist` has no such reference, the current source has no `moderation` export of that class, and `tsc --noEmit` is clean); they are not caused by S45 and need no code change.

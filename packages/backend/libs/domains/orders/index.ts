@@ -61,8 +61,6 @@ export {
 export type { BisOrderWithAllFilters } from './infra/models/bis-order.model';
 export { default as ShopOrderModel } from './infra/models/shop-order.model';
 export { default as StockReservationModel } from './infra/models/stock-reservation.model';
-export { CheckoutDiscounts } from './domain/checkout-discounts.port';
-export type { DiscountableLine } from './domain/checkout-discounts.port';
 export { ORDER_MODELS } from './orders-models';
 export { CreateBisOrderDto } from './api/bis-order.dto';
 export { OrderService } from './application/order.service';

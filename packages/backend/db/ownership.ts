@@ -256,6 +256,7 @@ export const OWNERSHIP = {
   ShopFunction: 'domain:shop-functions',
   ShopFunctionVersion: 'domain:shop-functions',
   ShopFunctionTestCase: 'domain:shop-functions',
+  ShopFunctionVersionHistory: 'domain:shop-functions',
   // asset-library
   Asset: 'domain:asset-library',
   AssetVersion: 'domain:asset-library',

@@ -1,38 +1,29 @@
-import { Injectable, Optional } from '@nestjs/common';
-import { CheckoutDiscounts } from '../domain/checkout-discounts.port';
+import { Injectable } from '@nestjs/common';
+import { DiscountEvaluationService } from '@app/domains/shop-functions';
 import type { DiscountLine, ShopDiscountsPort } from '../domain/ports';
 
 /**
- * Bridges today's per-line `CheckoutDiscounts` (shop-functions) to the per-shop amounts checkout works with:
- * `Σ (gross − discounted unit) × quantity` per shop, floored at 0. Without a bound source there are no discounts.
- * The caller applies the time box, validates the amounts and counts every fallback.
+ * Seller discounts from `shop-functions` (S45, R1): one integer amount per shop for the cart. The service never rejects;
+ * the caller still applies its own time box, validates the amounts and counts every fallback.
  */
 @Injectable()
-export class LegacyCheckoutDiscountsAdapter implements ShopDiscountsPort {
-  constructor(@Optional() private readonly source?: CheckoutDiscounts) {}
+export class ShopFunctionsDiscountsAdapter implements ShopDiscountsPort {
+  constructor(private readonly evaluation: DiscountEvaluationService) {}
 
   async evaluate(
     lines: DiscountLine[],
+    currency: string,
   ): Promise<Array<{ shopId: string; discountMinor: number }>> {
-    if (!this.source) return [];
-    const prices = await this.source.unitPrices(
-      lines.map((l) => ({
+    const { shopDiscounts } = await this.evaluation.evaluateDiscounts({
+      currency: currency.toUpperCase(),
+      lines: lines.map((l) => ({
         productId: l.productId,
         shopId: l.shopId,
         category: l.category,
         quantity: l.quantity,
-        unitPrice: l.unitPriceMinor,
+        unitPriceMinor: l.unitPriceMinor,
       })),
-    );
-    const byShop = new Map<string, number>();
-    lines.forEach((l, i) => {
-      const unit = prices[i] ?? l.unitPriceMinor;
-      const off = Math.max(0, (l.unitPriceMinor - unit) * l.quantity);
-      byShop.set(l.shopId, (byShop.get(l.shopId) ?? 0) + off);
     });
-    return [...byShop].map(([shopId, discountMinor]) => ({
-      shopId,
-      discountMinor,
-    }));
+    return shopDiscounts;
   }
 }

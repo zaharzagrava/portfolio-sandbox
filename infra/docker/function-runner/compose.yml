@@ -1,0 +1,49 @@
+# S45 FR-024 / AS-23: the function-runner is the only process that executes a seller's code for the judge.
+#
+# It is the generic Node image (infra/docker/node/Dockerfile, which takes APP as a build argument; a second Dockerfile
+# would only copy it) started with a hardened runtime profile:
+#   - no network at all (`network_mode: none`): the coordinator reaches it through a Unix socket on a volume that only
+#     the two services below mount;
+#   - read-only root file system; the only writable path is the socket volume and a small tmpfs;
+#   - non-root user, all capabilities dropped, no privilege escalation, the container runtime's DEFAULT seccomp profile
+#     (never `unconfined`);
+#   - no secret, queue, cache or database variable in `environment`;
+#   - CPU, memory and process limits.
+#
+# Local run:  docker compose -f docker-compose.yaml -f infra/docker/function-runner/compose.yml up function-runner worker
+# `pnpm --dir packages/backend check:function-runner` fails on any deviation from this profile.
+services:
+  function-runner:
+    build:
+      context: ../../..
+      dockerfile: infra/docker/node/Dockerfile
+      args:
+        APP: function-runner
+    user: "1000:1000"
+    network_mode: none
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:size=16m,noexec,nosuid
+    volumes:
+      - function-runner-socket:/run/function-runner
+    environment:
+      NODE_ENV: production
+      FUNCTION_RUNNER_SOCKET: /run/function-runner/runner.sock
+    mem_limit: 512m
+    cpus: 1.0
+    pids_limit: 128
+    restart: unless-stopped
+
+  # The judge coordinator (apps/worker): holds the database credentials, never runs seller code.
+  worker:
+    volumes:
+      - function-runner-socket:/run/function-runner
+    environment:
+      FUNCTION_RUNNER_SOCKET: /run/function-runner/runner.sock
+
+volumes:
+  function-runner-socket: {}

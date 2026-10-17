@@ -360,10 +360,17 @@ uses to get other domains' data.
 ### shop-functions
 - **Responsibility**: seller-written discount functions: submission, sandboxed test runs
   (judge), versioning, and fail-safe evaluation in checkout.
-- **Owns**: `ShopFunction`, `ShopFunctionVersion`, `ShopFunctionTestCase`.
-- **Hosted by**: core, worker.
-- **Exports (R1)**: `evaluateDiscounts(cart)`, consumed by orders.
-- **Depends on**: billing (R1 entitlement).
+- **Owns**: `ShopFunction`, `ShopFunctionVersion`, `ShopFunctionTestCase`, `ShopFunctionVersionHistory`.
+- **Other stores**: Redis keys `shopfn:*` (active set, memo, breaker; all derived, all with a TTL).
+- **Hosted by**: core, worker, function-runner.
+- **Exports (R1)**: `DiscountEvaluationService.evaluateDiscounts(cart)` (with the two DTO types
+  `DiscountCartDto`, `DiscountEvaluationDto`), consumed by orders; the modules; `startRunnerServer`, the program of the
+  `function-runner` deployable.
+- **Depends on**: billing (R1 entitlement), tenancy (R1 `ShopScoped`), identity (R1 `@User()`). Nothing imports orders.
+- **I.6 (new deployable `function-runner`)**: it exists for one reason, process-level isolation. Seller code must run
+  where there is no network, no data-store credential and a read-only root file system; the worker holds the credentials
+  and so cannot host it. It talks to the judge coordinator (worker) over a Unix socket on a shared volume only
+  (`infra/docker/function-runner/compose.yml`, checked by `pnpm check:function-runner`).
 
 ### asset-library
 - **Responsibility**: the shop asset library (chunked dedupe, delta sync, share links) and

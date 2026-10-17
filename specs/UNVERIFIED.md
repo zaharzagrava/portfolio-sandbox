@@ -265,3 +265,6 @@ interviews) until its status says so. The implementation loop appends here (rule
 | S41 | SC-005: a new URL is fetched for the first time within 2 minutes in a running fleet | `specs/domains/S41-competitor-monitor/quickstart.md`, "Ops artifacts" (wall-clock registration → first check) | not run |
 | S41 | SC-006: registration p95 < 500 ms (excl. DNS), history read p95 < 300 ms for 365 days | same file (k6 against core with seeded history) | not run |
 | S41 | SC-007: 10 M URLs / 6 h ≈ 460 fetches/s fleet-wide with at most one in-flight request per host | same file (`scripts/load-tests/competitor-crawl.*`) | not run |
+| S45 | SC-002: checkout evaluation p95 ≤ 15 ms (one shop, one healthy function, warm cache) and the 200 ms worst case on real hardware | `specs/domains/S45-discount-functions/quickstart.md`, "Ops artifacts" (benchmark against core with a seeded function) | not run |
+| S45 | SC-004: a version is judged and readable within 5 s of submission when the judge is idle | same file (submit and time on a running core + worker + function-runner stack) | not run |
+| S45 | SC-003 / AS-23: the deployed function-runner has no egress, no credentials, a read-only root | same file (probe inside the running runner container; `check:function-runner` proves only the declared profile) | not run |

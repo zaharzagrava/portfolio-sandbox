@@ -11,6 +11,7 @@ import { ProductModule } from '@app/domains/catalog';
 import { AuthModule } from '@app/domains/identity';
 import { PaymentQueryModule } from '@app/domains/payments';
 import { TenancyModule } from '@app/domains/tenancy';
+import { DiscountEvaluationModule } from '@app/domains/shop-functions';
 import { ORDER_MODELS } from './orders-models';
 import { FlashSaleCoreModule } from './flash-sale-core.module';
 import {
@@ -45,7 +46,7 @@ import { CatalogAdapter } from './infra/catalog.adapter';
 import { CatalogReservationSource } from './infra/catalog-reservation-source';
 import { RedisCheckoutLock } from './infra/checkout-lock.redis';
 import { DynamoCartStore } from './infra/cart.dynamo-store';
-import { LegacyCheckoutDiscountsAdapter } from './infra/discounts.adapter';
+import { ShopFunctionsDiscountsAdapter } from './infra/discounts.adapter';
 import { SequelizeOrderHistoryRepository } from './infra/order-history.repository';
 import { SequelizeOrderRepository } from './infra/order.repository';
 import { PaymentQueryStatusAdapter } from './infra/payment-status.adapter';
@@ -74,6 +75,7 @@ import { SequelizeShopOrderRepository } from './infra/shop-order.repository';
     PaymentQueryModule,
     ProblemCatalogModule.forFeature(ORDERS_PROBLEMS),
     FlashSaleCoreModule,
+    DiscountEvaluationModule,
     SequelizeModule.forFeature(ORDER_MODELS),
   ],
   providers: [
@@ -91,7 +93,7 @@ import { SequelizeShopOrderRepository } from './infra/shop-order.repository';
     { provide: CHECKOUT_LOCK, useClass: RedisCheckoutLock },
     { provide: PRODUCT_CATALOG, useClass: CatalogAdapter },
     { provide: SHOP_DIRECTORY, useClass: ShopDirectoryAdapter },
-    { provide: SHOP_DISCOUNTS, useClass: LegacyCheckoutDiscountsAdapter },
+    { provide: SHOP_DISCOUNTS, useClass: ShopFunctionsDiscountsAdapter },
     CatalogReservationSource,
     { provide: RESERVATION_SOURCE, useExisting: CatalogReservationSource },
     { provide: REALTIME_PORT, useClass: RealtimeAdapter },

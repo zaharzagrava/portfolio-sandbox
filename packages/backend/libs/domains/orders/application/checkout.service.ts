@@ -274,6 +274,7 @@ export class CheckoutService {
       });
       const shopDiscounts = await this.shopDiscounts(
         priceLines.filter((l) => !l.noDiscount),
+        currency,
         started,
         budgetMs,
       );
@@ -485,6 +486,7 @@ export class CheckoutService {
    */
   private async shopDiscounts(
     lines: Array<DiscountLine & { productId: string }>,
+    currency: string,
     started: bigint,
     budgetMs: number,
   ): Promise<Array<{ shopId: string; discountMinor: number }>> {
@@ -501,7 +503,7 @@ export class CheckoutService {
     let raw: unknown;
     try {
       raw = await withTimeout(
-        this.discounts.evaluate(lines),
+        this.discounts.evaluate(lines, currency),
         Math.min(this.config.get('orders_discount_timeout_ms'), remaining),
         () => new UpstreamUnavailableError('discounts'),
       );

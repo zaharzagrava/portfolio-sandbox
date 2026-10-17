@@ -38,7 +38,7 @@ locals {
     "integration-sync"        = { visibility_seconds = 300, max_receive = 5 }
     "integration-backfill"    = { visibility_seconds = 900, max_receive = 3 }
     "crawl-fetch"             = { visibility_seconds = 60, max_receive = 3 }
-    "function-test-runs"      = { visibility_seconds = 120, max_receive = 2 }
+    "shop-functions-judge-version" = { visibility_seconds = 60, max_receive = 5 } # S45: one message = one version to judge
     "knowledge-ingest"        = { visibility_seconds = 300, max_receive = 5 }
     "onboarding-documents"    = { visibility_seconds = 720, max_receive = 5 } # 6 × 120 s
     "bulk-stock-updates"      = { visibility_seconds = 120, max_receive = 5 }

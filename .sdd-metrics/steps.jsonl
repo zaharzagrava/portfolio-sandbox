@@ -627,3 +627,14 @@
 {"run":"20261016T173603Z","capability":"S41","step":"repair-1","start":"2026-10-17T04:18:21Z","end":"2026-10-17T04:20:46Z","seconds":145,"result":"ok","attempt":1,"reason":"ok","code_changed":true}
 {"run":"20261016T173603Z","capability":"S41","step":"gate","start":"2026-10-17T04:20:47Z","end":"2026-10-17T04:29:03Z","seconds":496,"result":"pass","attempt":2,"reason":""}
 {"run":"20261016T173603Z","capability":"S41","step":"built","start":"2026-10-17T03:11:48Z","end":"2026-10-17T04:29:03Z","seconds":4635,"result":"ok","attempt":1,"reason":"Competitor price monitor: polite crawling, robots, SSRF-safe fetch, price extraction, alerts"}
+{"run":"20261016T173603Z","capability":"S45","step":"plan","start":"2026-10-17T04:29:23Z","end":"2026-10-17T04:35:14Z","seconds":351,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261016T173603Z","capability":"S45","step":"tasks","start":"2026-10-17T04:35:14Z","end":"2026-10-17T04:37:44Z","seconds":150,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261016T173603Z","capability":"S45","step":"analyze","start":"2026-10-17T04:37:44Z","end":"2026-10-17T04:38:24Z","seconds":40,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261016T173603Z","capability":"S45","step":"implement-1","start":"2026-10-17T04:38:24Z","end":"2026-10-17T05:25:13Z","seconds":2809,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261016T173603Z","capability":"S45","step":"converge-1","start":"2026-10-17T05:25:13Z","end":"2026-10-17T05:26:18Z","seconds":65,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261016T173603Z","capability":"S45","step":"gate","start":"2026-10-17T05:26:18Z","end":"2026-10-17T05:26:28Z","seconds":10,"result":"fail","attempt":1,"reason":"test integrity: packages/backend/libs/domains/shop-functions/shop-functions.e2e-spec.ts: test file deleted, and it carried no scenario id, so nothing proves that another test replaces it (add the scen"}
+{"run":"20261016T173603Z","capability":"S45","step":"repair-1","start":"2026-10-17T05:26:28Z","end":"2026-10-17T05:27:34Z","seconds":66,"result":"ok","attempt":1,"reason":"ok","code_changed":true}
+{"run":"20261016T173603Z","capability":"S45","step":"gate","start":"2026-10-17T05:27:34Z","end":"2026-10-17T05:32:15Z","seconds":281,"result":"fail","attempt":2,"reason":""}
+{"run":"20261016T173603Z","capability":"S45","step":"repair-2","start":"2026-10-17T05:32:15Z","end":"2026-10-17T05:33:36Z","seconds":81,"result":"ok","attempt":1,"reason":"ok","code_changed":false}
+{"run":"20261016T173603Z","capability":"S45","step":"gate","start":"2026-10-17T05:33:36Z","end":"2026-10-17T05:38:54Z","seconds":318,"result":"pass","attempt":3,"reason":""}
+{"run":"20261016T173603Z","capability":"S45","step":"built","start":"2026-10-17T04:29:23Z","end":"2026-10-17T05:38:54Z","seconds":4171,"result":"ok","attempt":1,"reason":"Seller discount functions: submission, sandboxed judge with test cases, versions, fail-safe evaluation at checkout"}
