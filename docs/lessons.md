@@ -35,6 +35,7 @@ with the links that prove it: backticked file paths and commit hashes. For a `pr
 - L-024 2026-10-17 process prevented
 - L-025 2026-10-17 config prevented
 - L-026 2026-10-17 process prevented
+- L-027 2026-10-17 resources prevented
 
 ## L-001 A message option the queue refuses, found only by hand
 - **Rule:** A queue option must be validated where the message is created, not discovered when the relay fails (FIFO-only options like `groupId` never go to a standard queue).
@@ -191,3 +192,8 @@ Second round of L-022 (2026-10-17, 13:54 UTC): the new time limits blocked W04. 
 - **Rule:** After a failed gate the next attempt re-runs only what failed. Everything runs again only when the failures are green, and a full run that fails a second time is repeated in small batches (backend `GATE_BATCH_SMALL` 4 spec files per process, web `GATE_WEB_BATCH` 12 files per process).
 - **Symptom:** every repair attempt re-ran the whole gate (24 minutes for the web gate of W04, a whole domain of e2e suites for a backend one) although the agent had touched one file.
 - **Prevention:** `backend_gate`/`web_gate_full` in `scripts/sdd/implement-specs.sh` keep the stage per capability in `.git/sdd-gate-<id>`; `test_loop_shell.py` walks the four stages with a fake jest. The web stages are checked for syntax only (they need the live stack).
+
+## L-027 The dev API's own type checker ran out of memory and took the API down
+- **Rule:** The watch build of the local monolith only transpiles; types are checked by the gates (`tsc --noEmit`). Nothing in the dev stack may restart or stall the API during a test run.
+- **Symptom:** W04's gate failed 3 specs (checkout JC-2 and JO-1 on desktop and mobile) with `502 bad_gateway` / `socket hang up`; repair attempts 2 to 5 each took one minute, found an environment fault, changed nothing, and the gate was not re-run on identical code, so five attempts and a doctor were used (2026-10-17, about 18:10 UTC). **Cause:** Nest's webpack builder always adds `ForkTsCheckerWebpackPlugin` with its default 2 GB heap (whatever `typeCheck` says); on a recompile it hit `JavaScript heap out of memory` and the monolith was down while the BFF answered.
+- **Prevention:** `apps/local-monolith/webpack.dev.js` (set as `webpackConfigPath` for the project in `nest-cli.json`) drops that plugin from the watch build; the build takes 10 s.

@@ -71,7 +71,8 @@
       "entryFile": "main",
       "sourceRoot": "apps/local-monolith/src",
       "compilerOptions": {
-        "tsConfigPath": "apps/local-monolith/tsconfig.app.json"
+        "tsConfigPath": "apps/local-monolith/tsconfig.app.json",
+        "webpackConfigPath": "apps/local-monolith/webpack.dev.js"
       }
     },
     "payment-processor": {
