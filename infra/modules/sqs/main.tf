@@ -8,6 +8,8 @@ variable "queues" {
     visibility_seconds = number
     max_receive        = number
     fifo               = optional(bool, false)
+    # Visibility of the dead-letter queue, for a queue whose dead letters have a handler (6 × the handler's timeout).
+    dlq_visibility_seconds = optional(number)
   }))
 }
 variable "kms_key_arn" { type = string }
@@ -26,7 +28,9 @@ resource "aws_sqs_queue" "dlq" {
   name                      = each.value.fifo ? "${var.env}-${local.base[each.key]}-dlq.fifo" : "${var.env}-${each.key}-dlq"
   fifo_queue                = each.value.fifo
   message_retention_seconds = 1209600 # 14 days to investigate and redrive
-  kms_master_key_id         = var.kms_key_arn
+  # dlq_visibility_seconds: a dead-letter handler needs 6 × its timeout; without a handler the SQS default (30 s) stays.
+  visibility_timeout_seconds = coalesce(each.value.dlq_visibility_seconds, 30)
+  kms_master_key_id          = var.kms_key_arn
   tags                      = var.tags
 }
 
@@ -55,6 +59,8 @@ resource "aws_sqs_queue_redrive_allow_policy" "dlq" {
 }
 
 output "queue_arns" { value = { for k, q in aws_sqs_queue.this : k => q.arn } }
-output "queue_urls" { value = { for k, q in aws_sqs_queue.this : k => q.url } }
+output "queue_names" { value = { for k, q in aws_sqs_queue.this : k => q.name } }
+output "dlq_arns" { value = { for k, q in aws_sqs_queue.dlq : k => q.arn } }
+output "queue_urls"{ value = { for k, q in aws_sqs_queue.this : k => q.url } }
 output "dlq_names" { value = { for k, q in aws_sqs_queue.dlq : k => q.name } }
 output "all_arns" { value = concat([for q in aws_sqs_queue.this : q.arn], [for q in aws_sqs_queue.dlq : q.arn]) }

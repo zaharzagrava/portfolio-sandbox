@@ -59,7 +59,7 @@
     "lambdas": {
       "type": "application",
       "root": "apps/lambdas",
-      "entryFile": "lambdas.manifest",
+      "entryFile": "handlers/webhook-delivery",
       "sourceRoot": "apps/lambdas/src",
       "compilerOptions": {
         "tsConfigPath": "apps/lambdas/tsconfig.app.json"

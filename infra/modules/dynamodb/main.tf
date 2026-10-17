@@ -60,4 +60,5 @@ resource "aws_dynamodb_table" "this" {
 }
 
 output "table_arns" { value = [for t in aws_dynamodb_table.this : t.arn] }
-output "table_names" { value = { for k, t in aws_dynamodb_table.this : k => t.name } }
+output "table_arns_by_key" { value = { for k, t in aws_dynamodb_table.this : k => t.arn } }
+output "table_names"{ value = { for k, t in aws_dynamodb_table.this : k => t.name } }

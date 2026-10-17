@@ -40,7 +40,7 @@ locals {
     "crawl-fetch"             = { visibility_seconds = 60, max_receive = 3 }
     "shop-functions-judge-version" = { visibility_seconds = 60, max_receive = 5 } # S45: one message = one version to judge
     "knowledge-ingest"        = { visibility_seconds = 300, max_receive = 5 }
-    "onboarding-documents"    = { visibility_seconds = 720, max_receive = 5 } # 6 × 120 s
+    "onboarding-documents"    = { visibility_seconds = 720, max_receive = 5, dlq_visibility_seconds = 270 } # 6 × 120 s; DLQ handler 6 × 45 s
     "bulk-stock-updates"      = { visibility_seconds = 120, max_receive = 5 }
     "public-api-bulk-chunk"   = { visibility_seconds = 120, max_receive = 5 } # S42: one message = one chunk of 100 stock deltas
   }
@@ -343,12 +343,24 @@ module "lambdas" {
   env                = var.env
   functions          = local.lambdas
   queue_arns         = module.sqs.queue_arns
-  subnet_ids         = module.network.private_subnet_ids
-  security_group_ids = [aws_security_group.lambda.id]
-  secret_arn         = module.secrets.secret_arns["app"]
-  kms_key_arns       = [module.secrets.kms_key_arn]
-  extra_policy_json  = local.worker_policy
-  alarm_topic_arn    = module.observability.pager_topic_arn
+  queue_names        = module.sqs.queue_names
+  dlq_arns           = module.sqs.dlq_arns
+  dlq_names          = module.sqs.dlq_names
+  # The Lambda role reads and writes the idempotency table (S55); S3 only where a function needs it.
+  idempotency_table_arn = module.dynamodb.table_arns_by_key["Idempotency"]
+  subnet_ids            = module.network.private_subnet_ids
+  security_group_ids    = [aws_security_group.lambda.id]
+  secret_arn            = module.secrets.secret_arns["app"]
+  kms_key_arns          = [module.secrets.kms_key_arn]
+  extra_policy_json = {
+    "media-processing" = jsonencode({
+      Version = "2012-10-17"
+      Statement = [
+        { Effect = "Allow", Action = ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"], Resource = "${module.storage.media_bucket_arn}/*" },
+      ]
+    })
+  }
+  alarm_topic_arn = module.observability.pager_topic_arn
   tags               = local.tags
 }
 

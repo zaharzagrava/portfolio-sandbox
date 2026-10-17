@@ -3,7 +3,7 @@ import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { config } from 'dotenv';
 import { Client } from 'pg';
 import sharp from 'sharp';
-import type { SqsEvent, SqsRecord } from '../shared/sqs-batch';
+import type { SqsEvent, SqsRecord } from '@app/infrastructure/serverless';
 
 /**
  * The real Lambda handler of the media pipeline (S29 L-015, L-004, B11), imported as the bundle imports it: it builds its
@@ -59,8 +59,8 @@ describe('Media-processing Lambda handler', () => {
     attributes: { ApproximateReceiveCount: '1' },
     eventSourceARN: 'arn:aws:sqs:eu-central-1:000000000000:media-processing',
     messageAttributes: {
-      requestId: { stringValue: 'req-lambda-1' },
-      traceId: { stringValue: 'trace-1' },
+      requestId: { stringValue: 'req-lambda-1', dataType: 'String' },
+      traceId: { stringValue: 'trace-1', dataType: 'String' },
     },
   });
 

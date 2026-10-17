@@ -268,3 +268,6 @@ interviews) until its status says so. The implementation loop appends here (rule
 | S45 | SC-002: checkout evaluation p95 ≤ 15 ms (one shop, one healthy function, warm cache) and the 200 ms worst case on real hardware | `specs/domains/S45-discount-functions/quickstart.md`, "Ops artifacts" (benchmark against core with a seeded function) | not run |
 | S45 | SC-004: a version is judged and readable within 5 s of submission when the judge is idle | same file (submit and time on a running core + worker + function-runner stack) | not run |
 | S45 | SC-003 / AS-23: the deployed function-runner has no egress, no credentials, a read-only root | same file (probe inside the running runner container; `check:function-runner` proves only the declared profile) | not run |
+| S55 | SC-003: the dead-letter alarm and `DeadLettered` metric reach an operator before anyone looks at the queue | `specs/domains/S55-serverless-workers/quickstart.md`, "Ops artifacts" (poison message in demo) | not run |
+| S55 | SC-007: local runner and the Lambda service give the same record shape, deletions and retry counts | same file (compare a deployed event with the local one) | not run |
+| S55 | SC-008: a new function needs one manifest entry plus one entry file and nothing else | same file (`terraform plan` with a sample entry) | not run |

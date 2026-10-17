@@ -4,6 +4,12 @@
     "declaration": false,
     "outDir": "../../dist/apps/lambdas"
   },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "test", "**/*spec.ts"]
+  "include": ["src/**/*", "../../libs/infrastructure/serverless/**/*"],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "test",
+    "**/*spec.ts",
+    "../../libs/infrastructure/serverless/testing/**"
+  ]
 }

@@ -1,4 +1,4 @@
-import type { SqsEvent, SqsRecord } from '../shared/sqs-batch';
+import type { SqsEvent, SqsRecord } from '@app/infrastructure/serverless';
 
 /**
  * The Lambda entry point of delivery (S43 AS-45): the handler answers with the partial-batch response, listing exactly
@@ -11,10 +11,9 @@ const handleRecord = jest.fn<Promise<string>, [string, number]>();
 jest.mock('@app/domains/developer-platform', () => ({
   WebhooksLambdaModule: { host: () => ({ handleRecord }) },
 }));
-jest.mock('../shared/nest-context', () => ({
+jest.mock('@app/infrastructure/serverless/context', () => ({
   nestContext: () => Promise.resolve({}),
 }));
-jest.mock('../shared/telemetry', () => ({ metric: jest.fn(), log: jest.fn() }));
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { handler } = require('./webhook-delivery') as {

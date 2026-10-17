@@ -638,3 +638,24 @@
 {"run":"20261016T173603Z","capability":"S45","step":"repair-2","start":"2026-10-17T05:32:15Z","end":"2026-10-17T05:33:36Z","seconds":81,"result":"ok","attempt":1,"reason":"ok","code_changed":false}
 {"run":"20261016T173603Z","capability":"S45","step":"gate","start":"2026-10-17T05:33:36Z","end":"2026-10-17T05:38:54Z","seconds":318,"result":"pass","attempt":3,"reason":""}
 {"run":"20261016T173603Z","capability":"S45","step":"built","start":"2026-10-17T04:29:23Z","end":"2026-10-17T05:38:54Z","seconds":4171,"result":"ok","attempt":1,"reason":"Seller discount functions: submission, sandboxed judge with test cases, versions, fail-safe evaluation at checkout"}
+{"run":"20261016T173603Z","capability":"S55","step":"plan","start":"2026-10-17T05:39:13Z","end":"2026-10-17T05:41:48Z","seconds":155,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261016T173603Z","capability":"S55","step":"tasks","start":"2026-10-17T05:41:48Z","end":"2026-10-17T05:43:09Z","seconds":81,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261016T173603Z","capability":"S55","step":"analyze","start":"2026-10-17T05:43:09Z","end":"2026-10-17T05:43:54Z","seconds":45,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261016T173603Z","capability":"S55","step":"implement-1","start":"2026-10-17T05:43:54Z","end":"2026-10-17T06:20:26Z","seconds":2192,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261016T173603Z","capability":"S55","step":"converge-1","start":"2026-10-17T06:20:26Z","end":"2026-10-17T06:20:47Z","seconds":21,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261016T173603Z","capability":"S55","step":"gate","start":"2026-10-17T06:20:47Z","end":"2026-10-17T06:36:07Z","seconds":920,"result":"fail","attempt":1,"reason":""}
+{"run":"20261016T173603Z","capability":"S55","step":"repair-1","start":"2026-10-17T06:36:07Z","end":"2026-10-17T06:45:48Z","seconds":581,"result":"ok","attempt":1,"reason":"ok","code_changed":false}
+{"run":"20261016T173603Z","capability":"S55","step":"gate","start":"2026-10-17T06:45:48Z","end":"2026-10-17T06:45:48Z","seconds":0,"result":"fail","attempt":2,"reason":""}
+{"run":"20261016T173603Z","capability":"S55","step":"repair-2","start":"2026-10-17T06:45:49Z","end":"2026-10-17T06:51:10Z","seconds":321,"result":"ok","attempt":1,"reason":"ok","code_changed":false}
+{"run":"20261016T173603Z","capability":"S55","step":"gate","start":"2026-10-17T06:51:10Z","end":"2026-10-17T06:51:10Z","seconds":0,"result":"fail","attempt":3,"reason":""}
+{"run":"20261016T173603Z","capability":"S55","step":"repair-3","start":"2026-10-17T06:51:10Z","end":"2026-10-17T06:51:50Z","seconds":40,"result":"ok","attempt":1,"reason":"ok","code_changed":false}
+{"run":"20261016T173603Z","capability":"S55","step":"gate","start":"2026-10-17T06:51:50Z","end":"2026-10-17T06:51:50Z","seconds":0,"result":"fail","attempt":4,"reason":""}
+{"run":"20261016T173603Z","capability":"S55","step":"repair-4","start":"2026-10-17T06:51:51Z","end":"2026-10-17T06:52:41Z","seconds":50,"result":"ok","attempt":1,"reason":"ok","code_changed":false}
+{"run":"20261016T173603Z","capability":"S55","step":"gate","start":"2026-10-17T06:52:41Z","end":"2026-10-17T06:52:41Z","seconds":0,"result":"fail","attempt":5,"reason":""}
+{"run":"20261016T173603Z","capability":"S55","step":"repair-5","start":"2026-10-17T06:52:42Z","end":"2026-10-17T06:53:42Z","seconds":60,"result":"ok","attempt":1,"reason":"ok","code_changed":false}
+{"run":"20261016T173603Z","capability":"S55","step":"gate","start":"2026-10-17T06:53:42Z","end":"2026-10-17T06:53:42Z","seconds":0,"result":"fail","attempt":6,"reason":""}
+{"run":"20261016T173603Z","capability":"S55","step":"doctor-1","start":"2026-10-17T06:53:43Z","end":"2026-10-17T07:07:44Z","seconds":841,"result":"ok","attempt":1,"reason":"ok","code_changed":false}
+{"run":"20261016T173603Z","capability":"S55","step":"converge-1","start":"2026-10-17T07:07:45Z","end":"2026-10-17T07:10:40Z","seconds":175,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261016T173603Z","capability":"S55","step":"gate","start":"2026-10-17T07:10:40Z","end":"2026-10-17T07:23:16Z","seconds":756,"result":"fail","attempt":1,"reason":"FAIL libs/infrastructure/realtime/realtime-fanout.e2e-spec.ts (11.474 s)"}
+{"run":"20261016T173603Z","capability":"S55","step":"repair-1","start":"2026-10-17T07:23:16Z","end":"2026-10-17T07:23:57Z","seconds":41,"result":"ok","attempt":1,"reason":"ok","code_changed":false}
+{"run":"20261016T173603Z","capability":"S55","step":"gate","start":"2026-10-17T07:23:57Z","end":"2026-10-17T07:23:57Z","seconds":0,"result":"fail","attempt":2,"reason":"FAIL libs/infrastructure/realtime/realtime-fanout.e2e-spec.ts (11.474 s)"}

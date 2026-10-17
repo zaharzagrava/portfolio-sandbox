@@ -18,12 +18,13 @@ import {
 import { ClamdMalwareScanner } from '@app/infrastructure/antivirus/clamd-scanner';
 import { DisabledMalwareScanner } from '@app/infrastructure/antivirus/disabled-scanner';
 import {
-  processBatch,
-  SqsBatchResponse,
-  SqsEvent,
-  SqsRecord,
-} from '../shared/sqs-batch';
-import { log, metric } from '../shared/telemetry';
+  defineSqsHandler,
+  functionInfo,
+  log,
+  manifestEntry,
+  metric,
+  TransientError,
+} from '@app/infrastructure/serverless';
 
 /**
  * SD-10 media processing - a SMALL handler (no Nest): sharp + pg + S3 SDK, created at module scope so warm invocations
@@ -55,7 +56,7 @@ const s3 = new S3Client({
 });
 const pool = new Pool({
   connectionString: databaseUrl,
-  max: 2,
+  max: manifestEntry('media-processing').dbPoolMax,
   idleTimeoutMillis: 30_000,
 });
 
@@ -167,49 +168,47 @@ interface QueueMessage {
   Records?: { eventName?: string; s3?: { object?: { key?: string } } }[];
 }
 
-function keysOf(body: string): string[] {
-  const parsed = JSON.parse(body) as QueueMessage;
-  if (parsed.originalKey) return [parsed.originalKey];
-  return (parsed.Records ?? [])
-    .filter((r) => r.eventName?.startsWith('ObjectCreated'))
-    .map((r) =>
-      decodeURIComponent((r.s3?.object?.key ?? '').replace(/\+/g, ' ')),
-    );
-}
+/** A body is ours when it names one original key or carries S3 notification records; anything else never reaches the processor. */
+const messageBody = {
+  safeParse(
+    input: unknown,
+  ): { success: true; data: string[] } | { success: false } {
+    if (typeof input !== 'object' || input === null) return { success: false };
+    const parsed = input as QueueMessage;
+    if (typeof parsed.originalKey === 'string' && parsed.originalKey)
+      return { success: true, data: [parsed.originalKey] };
+    if (!Array.isArray(parsed.Records)) return { success: false };
+    return {
+      success: true,
+      data: parsed.Records.filter((r) =>
+        r.eventName?.startsWith('ObjectCreated'),
+      ).map((r) =>
+        decodeURIComponent((r.s3?.object?.key ?? '').replace(/\+/g, ' ')),
+      ),
+    };
+  },
+};
 
-/** `requestId` / `traceId` written at `complete` travel as SQS message attributes. */
-function contextOf(record: SqsRecord): {
-  requestId?: string;
-  traceId?: string;
-} {
-  const attributes = (
-    record as SqsRecord & {
-      messageAttributes?: Record<string, { stringValue?: string }>;
-    }
-  ).messageAttributes;
-  return {
-    requestId: attributes?.requestId?.stringValue,
-    traceId: attributes?.traceId?.stringValue,
-  };
-}
-
-export async function handler(event: SqsEvent): Promise<SqsBatchResponse> {
-  return processBatch(
-    event,
-    async (record) => {
-      const context = contextOf(record);
-      for (const key of keysOf(record.body)) {
-        // A key outside the originals prefix is not ours: no row is read, nothing happens (AS-11).
-        if (!key.startsWith(ORIGINALS_PREFIX)) {
-          log('info', 'media notification ignored (foreign prefix)', context);
-          continue;
-        }
-        const result = await processor.process(key, context);
-        // A held lease means another worker has it: let the queue deliver again later.
-        if (result === 'BUSY')
-          throw new Error('media is being processed by another worker');
+export const handler = defineSqsHandler({
+  function: functionInfo('media-processing'),
+  bodySchema: messageBody,
+  concurrency: 2, // sharp is CPU-bound; parallelism comes from many containers, not one
+  handle: async (message) => {
+    // `requestId` / `traceId` written at `complete` travel as SQS message attributes.
+    const context = {
+      requestId: message.attributes.requestId,
+      traceId: message.attributes.traceId,
+    };
+    for (const key of message.body) {
+      // A key outside the originals prefix is not ours: no row is read, nothing happens (AS-11).
+      if (!key.startsWith(ORIGINALS_PREFIX)) {
+        log('info', 'media notification ignored (foreign prefix)', context);
+        continue;
       }
-    },
-    { concurrency: 2 }, // sharp is CPU-bound; parallelism comes from many containers, not one
-  );
-}
+      const result = await processor.process(key, context);
+      // A held lease means another worker has it: let the queue deliver again later.
+      if (result === 'BUSY')
+        throw new TransientError('media is being processed by another worker');
+    }
+  },
+});

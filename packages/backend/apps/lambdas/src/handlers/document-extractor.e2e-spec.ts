@@ -3,10 +3,10 @@ import { NestFactory } from '@nestjs/core';
 import { QueryTypes, type Sequelize } from 'sequelize';
 import { v4 } from 'uuid';
 import { ExtractionService } from '@app/domains/seller-onboarding';
-import { nestContext } from '../shared/nest-context';
-import type { SqsEvent } from '../shared/sqs-batch';
+import type { SqsEvent } from '@app/infrastructure/serverless';
 import {
   DocumentExtractorModule,
+  extractionContext,
   handler as extractorHandler,
 } from './document-extractor';
 import { handler as deadLetterHandler } from './document-extractor-dlq';
@@ -32,7 +32,7 @@ describe('Seller onboarding: extraction Lambdas (e2e)', () => {
   const created: string[] = [];
 
   beforeAll(async () => {
-    const context = await nestContext(DocumentExtractorModule);
+    const context = await extractionContext();
     db = context.get(getConnectionToken());
   });
   afterAll(async () => {

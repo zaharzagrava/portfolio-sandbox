@@ -6,12 +6,12 @@
   "_design": {
     "pattern": "Lambda/worker idempotency records (SD-03, Powertools-style)",
     "items": {
-      "record": "PK=<function>#<idempotency key> | status IN_PROGRESS|COMPLETED, inProgressUntil (ms), result (JSON), expiresAtEpoch"
+      "record": "PK=<function>#<idempotency key> | status IN_PROGRESS|COMPLETED, ownerToken (random per attempt), leaseUntil (ms), fingerprint (optional), result (JSON, absent when resultOmitted), resultOmitted, completedAt (ms), expiresAtEpoch"
     },
     "accessPatterns": [
-      "claim: PutItem IF attribute_not_exists(PK) OR (status = IN_PROGRESS AND inProgressUntil < now) - a crashed attempt's claim expires",
-      "complete: UpdateItem SET status = COMPLETED, result",
-      "failure: DeleteItem (the retry may run again)"
+      "claim: PutItem IF attribute_not_exists(PK) OR (status = IN_PROGRESS AND leaseUntil < now) OR expiresAtEpoch < nowSec - a crashed attempt's claim expires, a past-retention record counts as absent",
+      "complete: UpdateItem IF ownerToken = token SET status = COMPLETED, result, completedAt",
+      "failure: DeleteItem IF ownerToken = token (the retry may run again)"
     ],
     "why": "SQS is at-least-once and Lambda retries batches: the same message can run twice concurrently on two containers; a conditional write is the cheapest cross-container lock with automatic expiry"
   }

@@ -1,32 +1,58 @@
-# SQS → Lambda workers (SD-03), one per entry of the build's manifest.json (apps/lambdas/src/lambdas.manifest.ts).
+# SQS → Lambda workers (SD-03), one per entry of the build's manifest.json
+# (packages/backend/libs/infrastructure/serverless/manifest/lambdas.manifest.ts, S55). A dead-letter handler is its own
+# element of the manifest (`deadLetterOf`) and consumes the dead-letter queue of its source queue.
 # The event source mapping points at the `live` alias, which deploy.yml moves with a CodeDeploy canary
 # (10% for 5 min, rollback on the function's alarms). maximum_concurrency caps containers → DB connections
 # and provider token budgets; ReportBatchItemFailures = only failed records are retried.
 
 variable "env" { type = string }
 variable "functions" {
-  description = "From manifest.json: name => { queue, timeoutSec, memoryMb, batchSize, maxConcurrency }"
+  description = "From manifest.json: name => the entry (queue, limits, deadLetterOf for a dead-letter handler)"
   type = map(object({
-    queue          = string
-    timeoutSec     = number
-    memoryMb       = number
-    batchSize      = number
-    maxConcurrency = number
+    queue                = string
+    timeoutSec           = number
+    memoryMb             = number
+    batchSize            = number
+    maxConcurrency       = number
+    visibilityTimeoutSec = optional(number)
+    maxReceiveCount      = optional(number)
+    fifo                 = optional(bool, false)
+    dbPoolMax            = optional(number, 2)
+    deadLetterOf         = optional(string)
   }))
 }
 variable "queue_arns" { type = map(string) }
+variable "queue_names" { type = map(string) }
+variable "dlq_arns" {
+  description = "Dead-letter queue ARN per source queue key; a dead-letter handler consumes it"
+  type        = map(string)
+}
+variable "dlq_names" { type = map(string) }
+variable "idempotency_table_arn" { type = string }
 variable "subnet_ids" { type = list(string) }
 variable "security_group_ids" { type = list(string) }
 variable "secret_arn" { type = string }
 variable "kms_key_arns" { type = list(string) }
 variable "extra_policy_json" {
-  type    = string
-  default = null
+  description = "function name => policy JSON for rights that are not queue, table, secret or key (S3 for media-processing)"
+  type        = map(string)
+  default     = {}
 }
 variable "alarm_topic_arn" { type = string }
 variable "tags" {
   type    = map(string)
   default = {}
+}
+
+locals {
+  # The queue a function consumes: its own, or (a dead-letter handler) the dead-letter queue of its source's queue.
+  consumed_queue_arn = {
+    for k, f in var.functions : k => f.deadLetterOf == null ? var.queue_arns[f.queue] : var.dlq_arns[var.functions[f.deadLetterOf].queue]
+  }
+  consumed_queue_name = {
+    for k, f in var.functions : k => f.deadLetterOf == null ? var.queue_names[f.queue] : var.dlq_names[var.functions[f.deadLetterOf].queue]
+  }
+  source_functions = { for k, f in var.functions : k => f if f.deadLetterOf == null }
 }
 
 data "aws_iam_policy_document" "trust" {
@@ -39,23 +65,28 @@ data "aws_iam_policy_document" "trust" {
   }
 }
 
+# One execution role per function (S55 FR-048): least privilege, a blast radius of one function.
 resource "aws_iam_role" "fn" {
-  name               = "marketplace-${var.env}-lambda-workers"
+  for_each           = var.functions
+  name               = "marketplace-${var.env}-${each.key}"
   assume_role_policy = data.aws_iam_policy_document.trust.json
   tags               = var.tags
 }
 
 resource "aws_iam_role_policy_attachment" "vpc" {
-  role       = aws_iam_role.fn.name
+  for_each   = var.functions
+  role       = aws_iam_role.fn[each.key].name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
 }
 
 resource "aws_iam_role_policy" "fn" {
-  role = aws_iam_role.fn.id
+  for_each = var.functions
+  role     = aws_iam_role.fn[each.key].id
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
-      { Effect = "Allow", Action = ["sqs:ReceiveMessage", "sqs:DeleteMessage", "sqs:GetQueueAttributes", "sqs:ChangeMessageVisibility"], Resource = [for f in var.functions : var.queue_arns[f.queue]] },
+      { Effect = "Allow", Action = ["sqs:ReceiveMessage", "sqs:DeleteMessage", "sqs:GetQueueAttributes", "sqs:ChangeMessageVisibility"], Resource = [local.consumed_queue_arn[each.key]] },
+      { Effect = "Allow", Action = ["dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:UpdateItem", "dynamodb:DeleteItem"], Resource = [var.idempotency_table_arn] },
       { Effect = "Allow", Action = ["secretsmanager:GetSecretValue"], Resource = var.secret_arn },
       { Effect = "Allow", Action = ["kms:Decrypt", "kms:GenerateDataKey"], Resource = var.kms_key_arns },
     ]
@@ -63,9 +94,9 @@ resource "aws_iam_role_policy" "fn" {
 }
 
 resource "aws_iam_role_policy" "extra" {
-  count  = var.extra_policy_json == null ? 0 : 1
-  role   = aws_iam_role.fn.id
-  policy = var.extra_policy_json
+  for_each = { for k, v in var.extra_policy_json : k => v if contains(keys(var.functions), k) }
+  role     = aws_iam_role.fn[each.key].id
+  policy   = each.value
 }
 
 data "archive_file" "placeholder" {
@@ -87,7 +118,7 @@ resource "aws_cloudwatch_log_group" "fn" {
 resource "aws_lambda_function" "this" {
   for_each      = var.functions
   function_name = "marketplace-${var.env}-${each.key}"
-  role          = aws_iam_role.fn.arn
+  role          = aws_iam_role.fn[each.key].arn
   runtime       = "nodejs22.x"
   architectures = ["arm64"]
   handler       = "index.handler"
@@ -105,6 +136,7 @@ resource "aws_lambda_function" "this" {
       NODE_ENV      = "production"
       AWS_SECRET_ID = "marketplace/${var.env}/app"
       NODE_OPTIONS  = "--enable-source-maps"
+      DB_POOL_MAX   = tostring(each.value.dbPoolMax) # concurrency × pool is the connection budget (manifest)
     }
   }
   tracing_config { mode = "Active" }
@@ -123,16 +155,14 @@ resource "aws_lambda_alias" "live" {
 
 resource "aws_lambda_event_source_mapping" "sqs" {
   for_each                           = var.functions
-  event_source_arn                   = var.queue_arns[each.value.queue]
+  event_source_arn                   = local.consumed_queue_arn[each.key]
   function_name                      = aws_lambda_alias.live[each.key].arn
   batch_size                         = each.value.batchSize
   maximum_batching_window_in_seconds = 1
   function_response_types            = ["ReportBatchItemFailures"]
-  # Connection arithmetic (constitution III.12): every container holds at most `pool max` (2 for media-processing)
-  # connections, so the database sees concurrency × 2 from each function. S29 media-processing: 100 × 2 = 200 at the
-  # cap, and the READY transaction is held for milliseconds with no network call inside it. The sum over all functions
-  # (webhook-delivery 200 × pool, media-processing 100 × 2, document-extractor 20 × pool) must stay under the RDS Proxy
-  # limit; change `maxConcurrency` in `apps/lambdas/src/lambdas.manifest.ts` and this sum together.
+  # Connection arithmetic (constitution III.12): every container holds at most `dbPoolMax` connections, so the database
+  # sees concurrency × pool from each function. The sum over all functions (dead-letter handlers included) is validated
+  # against the connection budget by the manifest (validateManifest, S55 AS-30); change `maxConcurrency` there.
   scaling_config { maximum_concurrency = max(2, each.value.maxConcurrency) }
 }
 
@@ -146,6 +176,56 @@ resource "aws_cloudwatch_metric_alarm" "errors" {
   period              = 60
   evaluation_periods  = 3
   threshold           = 5
+  comparison_operator = "GreaterThanThreshold"
+  treat_missing_data  = "notBreaching"
+  alarm_actions       = [var.alarm_topic_arn]
+  tags                = var.tags
+}
+
+# A message in a dead-letter queue pages an operator (S55 SC-003); the dead-letter handler normally drains it.
+resource "aws_cloudwatch_metric_alarm" "dlq_depth" {
+  for_each            = local.source_functions
+  alarm_name          = "marketplace-${var.env}-${each.key}-dlq-depth"
+  namespace           = "AWS/SQS"
+  metric_name         = "ApproximateNumberOfMessagesVisible"
+  dimensions          = { QueueName = var.dlq_names[each.value.queue] }
+  statistic           = "Maximum"
+  period              = 60
+  evaluation_periods  = 1
+  threshold           = 0
+  comparison_operator = "GreaterThanThreshold"
+  treat_missing_data  = "notBreaching"
+  alarm_actions       = [var.alarm_topic_arn]
+  tags                = var.tags
+}
+
+# The oldest message of a consumed queue should never be older than a few function timeouts.
+resource "aws_cloudwatch_metric_alarm" "queue_age" {
+  for_each            = var.functions
+  alarm_name          = "marketplace-${var.env}-${each.key}-queue-age"
+  namespace           = "AWS/SQS"
+  metric_name         = "ApproximateAgeOfOldestMessage"
+  dimensions          = { QueueName = local.consumed_queue_name[each.key] }
+  statistic           = "Maximum"
+  period              = 60
+  evaluation_periods  = 5
+  threshold           = max(300, 10 * each.value.timeoutSec)
+  comparison_operator = "GreaterThanThreshold"
+  treat_missing_data  = "notBreaching"
+  alarm_actions       = [var.alarm_topic_arn]
+  tags                = var.tags
+}
+
+resource "aws_cloudwatch_metric_alarm" "throttles" {
+  for_each            = var.functions
+  alarm_name          = "marketplace-${var.env}-${each.key}-throttles"
+  namespace           = "AWS/Lambda"
+  metric_name         = "Throttles"
+  dimensions          = { FunctionName = aws_lambda_function.this[each.key].function_name }
+  statistic           = "Sum"
+  period              = 60
+  evaluation_periods  = 3
+  threshold           = 0
   comparison_operator = "GreaterThanThreshold"
   treat_missing_data  = "notBreaching"
   alarm_actions       = [var.alarm_topic_arn]
@@ -201,4 +281,4 @@ resource "aws_codedeploy_deployment_group" "fn" {
 }
 
 output "function_names" { value = { for k, f in aws_lambda_function.this : k => f.function_name } }
-output "role_arn" { value = aws_iam_role.fn.arn }
+output "role_arns" { value = { for k, r in aws_iam_role.fn : k => r.arn } }

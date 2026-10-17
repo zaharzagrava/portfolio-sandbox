@@ -9,15 +9,14 @@ import {
   ExtractionService,
   extractDocumentBody,
 } from '@app/domains/seller-onboarding';
-import { LlmUnavailableError } from '@app/infrastructure/llm';
-import { nestContext } from '../shared/nest-context';
 import {
-  processBatch,
-  SqsBatchResponse,
-  SqsEvent,
-  SqsRecord,
-} from '../shared/sqs-batch';
-import { metric } from '../shared/telemetry';
+  defineSqsHandler,
+  functionInfo,
+  manifestEntry,
+  metric,
+  TransientError,
+} from '@app/infrastructure/serverless';
+import { nestContext } from '@app/infrastructure/serverless/context';
 
 /**
  * The standalone app of this Lambda (L-018): the extraction module only. No ClickHouse, Kafka producer or billing module
@@ -34,6 +33,12 @@ import { metric } from '../shared/telemetry';
 })
 export class DocumentExtractorModule {}
 
+/** The extraction context of this function (cached per container) with the pool size of the manifest. */
+export const extractionContext = () =>
+  nestContext(DocumentExtractorModule, {
+    dbPoolMax: manifestEntry('document-extractor').dbPoolMax,
+  });
+
 /**
  * SD-44 KYC extraction on the `onboarding-documents` queue (Nest context cached per container, Q6). Partial batch
  * failures: a body that is not `{documentId: uuid}` is a failed item with no side effect and does not block the rest of
@@ -42,43 +47,36 @@ export class DocumentExtractorModule {}
  * provider's tokens/min budget expressed in containers. Idempotency is the service's own: per-document status claim with
  * a lease + per-attempt rows, so a redelivered message resumes instead of re-paying for attempt 1.
  */
-export async function handler(event: SqsEvent): Promise<SqsBatchResponse> {
-  const context = await nestContext(DocumentExtractorModule);
-  const extraction = context.get(ExtractionService);
-  const requests = context.get(RequestContext);
-  // each message runs in its own request context, so its log lines carry the message id (AS-67)
-  return processBatch(event, (record) =>
-    requests.run({ requestId: record.messageId }, () =>
-      handleRecord(extraction, record),
-    ),
-  );
-}
-
-async function handleRecord(
-  extraction: ExtractionService,
-  record: SqsRecord,
-): Promise<void> {
-  const started = Date.now();
-  let documentId: string;
-  try {
-    documentId = extractDocumentBody.parse(JSON.parse(record.body)).documentId;
-  } catch {
-    metric('Marketplace/KYC', 'InvalidMessages', 1, 'Count', {});
-    throw new Error('invalid onboarding-documents message');
-  }
-  try {
-    await extraction.process(documentId);
-    metric(
-      'Marketplace/KYC',
-      'ExtractionMs',
-      Date.now() - started,
-      'Milliseconds',
-      { outcome: 'ok' },
-    );
-  } catch (error) {
-    metric('Marketplace/KYC', 'ExtractionErrors', 1, 'Count', {
-      kind: error instanceof LlmUnavailableError ? 'provider' : 'other',
+export const handler = defineSqsHandler({
+  function: functionInfo('document-extractor'),
+  bodySchema: extractDocumentBody,
+  init: async () => {
+    const context = await extractionContext();
+    return {
+      extraction: context.get(ExtractionService),
+      requests: context.get(RequestContext),
+    };
+  },
+  handle: async (message, { extraction, requests }) => {
+    const started = Date.now();
+    // each message runs in its own request context, so its log lines carry the message id (AS-67)
+    await requests.run({ requestId: message.id }, async () => {
+      try {
+        await extraction.process(message.body.documentId);
+        metric(
+          'Marketplace/KYC',
+          'ExtractionMs',
+          Date.now() - started,
+          'Milliseconds',
+          { outcome: 'ok' },
+        );
+      } catch (error) {
+        const transient = error instanceof TransientError;
+        metric('Marketplace/KYC', 'ExtractionErrors', 1, 'Count', {
+          kind: transient ? 'provider' : 'other',
+        });
+        throw error;
+      }
     });
-    throw error;
-  }
-}
+  },
+});
