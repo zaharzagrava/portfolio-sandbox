@@ -36,6 +36,7 @@ with the links that prove it: backticked file paths and commit hashes. For a `pr
 - L-025 2026-10-17 config prevented
 - L-026 2026-10-17 process prevented
 - L-027 2026-10-17 resources prevented
+- L-028 2026-10-17 process prevented
 
 ## L-001 A message option the queue refuses, found only by hand
 - **Rule:** A queue option must be validated where the message is created, not discovered when the relay fails (FIFO-only options like `groupId` never go to a standard queue).
@@ -199,3 +200,8 @@ Second round of L-022 (2026-10-17, 13:54 UTC): the new time limits blocked W04. 
 - **Prevention:** `apps/local-monolith/webpack.dev.js` (set as `webpackConfigPath` for the project in `nest-cli.json`) drops that plugin from the watch build; the build takes 10 s.
 
 Second part of L-027: even without the out-of-memory, the watch-mode API restarts after every edit of backend code, and a spec that starts in that window sees 502/503. **Prevention:** `scripts/sdd/stack-fix.sh api-ready` waits until the API has answered ready five times in a row and its log has been quiet for 6 s; the gate runs it before browser and journey stages and before every Playwright batch, and the agents' rules tell them to run it after editing backend code.
+
+## L-028 "Needs a human" for something an agent could do itself
+- **Rule:** A restart of the dev API, a held port, a changed start script: the agent does it (`scripts/sdd/stack-fix.sh api-restart`) and never answers "needs human". A gate stage must not depend on a service it does not use.
+- **Symptom:** W04 was BLOCKED (2026-10-17, 19:51 UTC): repair attempts 2 to 5 each failed in seconds and the doctor wrote "needs human: the running dev API must be restarted so it serves metrics on :9464; I'm not permitted to restart it". **Cause:** an agent had put `stack-fix.sh journey` into the WEB gate to start the Lambda stand-ins; that action also checks the metrics port, which only the backend journeys (J01 AS-30) read; after a watch-mode restart :9464 was unavailable for a while (the new process waits for the old one), so the web gate failed on a check it had no use for, and agents may not run `kill`.
+- **Prevention:** the web gate uses `stack-fix.sh standins` only; the journey preflight waits up to a minute for the metrics port and then says how to restart; `stack-fix.sh api-restart` restarts the dev API from the current script and waits for a stable answer; the agents' rules name it.

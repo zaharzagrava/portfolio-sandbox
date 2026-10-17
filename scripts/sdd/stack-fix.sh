@@ -3,6 +3,7 @@
 # (a compound shell line with a login inside would not match its allow-list).
 #
 #   scripts/sdd/stack-fix.sh smoke     API ready, product search answers 200, Playwright's Chromium installed; says what to run if not
+#   scripts/sdd/stack-fix.sh api-restart  restart the dev API from the current start script and environment, then wait for it
 #   scripts/sdd/stack-fix.sh api-ready  wait until the watch-mode API has finished recompiling and answers ready steadily
 #   scripts/sdd/stack-fix.sh journey   (re)start the document-extractor stand-in on fresh code and check the metrics port; the journey gate runs it first
 #   scripts/sdd/stack-fix.sh browser   install Playwright's Chromium for the version packages/web uses
@@ -32,6 +33,14 @@ case "${1:-}" in
     if ! browser_ok; then echo "ENVIRONMENT: Playwright's Chromium is not installed for this version. Run: bash scripts/sdd/stack-fix.sh browser"; bad=1; fi
     (( bad == 0 )) && echo "environment ok: API ready, search answers 200, Chromium installed"
     exit "$bad" ;;
+  api-restart)
+    # Restarts the dev API (the nest watcher and the process it started) from the current start script and environment, and waits until it is
+    # stable. Agents are not allowed to run `kill` or the start script themselves; this is the one command for it.
+    pkill -TERM -f 'nest start local-monolith' 2>/dev/null; pkill -TERM -f 'dist/apps/local-monolith/main' 2>/dev/null; sleep 4
+    pkill -KILL -f 'nest start local-monolith' 2>/dev/null; pkill -KILL -f 'dist/apps/local-monolith/main' 2>/dev/null; sleep 1
+    (cd "$ROOT" && setsid nohup pnpm --filter api run start:dev:monolith >>"${API_LOG:-/tmp/sdd-api.log}" 2>&1 < /dev/null &)
+    sleep 5
+    API_READY_WAIT_S=420 exec bash "$0" api-ready ;;
   api-ready)
     # The dev API runs in watch mode: every edit of backend code recompiles and restarts it, and for a few seconds the BFF answers 502/503.
     # A browser or journey spec that starts in that window fails for no reason of its own. Wait until the API has answered ready five times in
@@ -80,8 +89,10 @@ case "${1:-}" in
     if grep -qE "Nest can't resolve|UnknownDependencies|Cannot find module" "$LAMBDA_DIR/lambda.log"; then
       echo "CODE: the document-extractor stand-in cannot wire its modules:"; grep -m3 -E "Nest can't resolve|UnknownDependencies|Cannot find module" "$LAMBDA_DIR/lambda.log"; exit 1
     fi
+    # after a watch-mode restart the new process may wait for the old one to release :9464; give it a minute
+    for _ in $(seq 1 20); do curl -sf -m 5 http://localhost:9464/metrics >/dev/null && break; sleep 3; done
     if ! curl -sf -m 8 http://localhost:9464/metrics >/dev/null; then
-      echo "ENVIRONMENT: the API does not serve metrics on :9464 (restart the API: it starts the Prometheus endpoint with the core service)"; exit 1
+      echo "ENVIRONMENT: the API does not serve metrics on :9464. Restart it yourself: bash scripts/sdd/stack-fix.sh api-restart"; exit 1
     fi
     echo "journey environment ok: extractor running, metrics answer on :9464"; exit 0 ;;
   browser)
