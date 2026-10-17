@@ -436,10 +436,14 @@ describe('Product and shop lifecycle', () => {
       );
     });
     afterAll(async () => {
-      await sequelize.query(`DELETE FROM "Product" WHERE "shopId" IS NULL`);
-      await sequelize.query(
-        `ALTER TABLE "Product" ALTER COLUMN "shopId" SET NOT NULL`,
-      );
+      // The schema must be put back even if the delete fails (L-013): the next run would report this damage.
+      try {
+        await sequelize.query(`DELETE FROM "Product" WHERE "shopId" IS NULL`);
+      } finally {
+        await sequelize.query(
+          `ALTER TABLE "Product" ALTER COLUMN "shopId" SET NOT NULL`,
+        );
+      }
     });
 
     const legacy = async (sellerId: string | null, n: number) => {
