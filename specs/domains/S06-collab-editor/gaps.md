@@ -124,6 +124,8 @@ Recorded 2026-10-16 before any code change.
 
 ## Gate repairs
 
+- **Gate failure of 2026-10-17, twelfth pass (environment: stale `.env.test`).** A new failure class, not the heap abort. The suites `drafts-consumers`, `collab-rooms`, `product-cache`, `product`, `product-boundary` failed at boot with `Config validation error: share_link_code_key, share_link_edge_secret, share_link_base_url, ads_click_secret, ads_aggregator_instance, api_key_pepper, widget_token_key, shopify_app_key, shopify_app_secret, shopify_api_version, integration_cursor_key (any.required)`. The git-ignored `packages/backend/.env.test` is a one-time copy of `env/test.env.example` (`scripts/vps/bootstrap.sh` uses `cp -n`, so it never refreshes) and predated the keys later capabilities (S37, S36, S42, S44, S08, S06) made required. Refreshed it from the example; the example already holds them. Re-run: `drafts-consumers` (6) and `collab-rooms`, `product-cache`, `product`, `product-boundary` (4 suites, 44 tests) pass. No product code or test changed. Follow-up for the runner: `bootstrap.sh`/`vm-run.sh` should refresh `.env.test` when the example has keys it lacks.
+
 - **Gate failure of 2026-10-17, eleventh pass (no code change).** Same unbatched heap-limit abort (4 GB, core dumped; 503s before it). `stack-fix.sh smoke` ok; `catalog/(collab-routing|collab-ops|drafts-publish|product-views)` (4 suites, 63 tests) pass in one fresh process. The batched `gate()` in `scripts/sdd/implement-specs.sh` (`GATE_BATCH`, 6 GB heap) is in the tree; the failing run predates it.
 
 - **Gate failure of 2026-10-17, tenth pass (no code change).** Same unbatched heap-limit abort (4 GB, core dumped; 503s in the suites before it). `stack-fix.sh smoke` ok; re-run alone `collab-routing` (11) and `drafts-publish` (35) pass. The batched `gate()` in `scripts/sdd/implement-specs.sh` (`GATE_BATCH`, 6 GB heap) is in the tree; the failing run predates it.
@@ -140,3 +142,27 @@ Recorded 2026-10-16 before any code change.
 - **Gate failure of 2026-10-17, fifth pass (no code change).** Same heap-limit abort in one unbatched jest process (digest unchanged). Re-run on a healthy stack: `catalog/(collab-routing|drafts-publish|product-views|product-invalidation)` (4 suites, 68 tests) and `catalog-sync/import-security` (12) pass. The batched `gate()` (`GATE_BATCH`, 6 GB heap) in `scripts/sdd/implement-specs.sh` is already in the tree; the failing run did not use it.
 - **Gate failure of 2026-10-17, sixth pass (no code change).** Same unbatched heap-limit abort. Re-run alone: `collab-routing` (11), `drafts-publish` (35), `product-views` (11), `product-invalidation` (11), `catalog-sync/import-security` (12) pass, and `catalog/(collab|drafts)` passes in one process (8 suites, 164 tests). The fix is the batched `gate()` already in `scripts/sdd/implement-specs.sh`.
 - **Gate failure of 2026-10-17, seventh pass (no code change).** Same unbatched heap-limit abort (digest unchanged). `stack-fix.sh smoke` ok; `catalog/(collab-routing|collab-ops|product-views)` (3 suites, 28 tests) pass in one fresh process. `gate()` in `scripts/sdd/implement-specs.sh` is batched (`GATE_BATCH`, 6 GB heap); the failing run did not use it.
+
+## Flaky tests (passed after a repair that changed no code)
+- 2026-10-17 S06 gate: failed, then passed after a repair attempt that changed no code. Not a fix: a flake. Failed before:
+  - Collaborative editing rooms › on one editing instance › S06 AS-12: a client that sends its first sync message at once, before the room is loaded, is accepted and synced; the server starts the exchange itself
+  - Collaborative editing rooms › on one editing instance › S06 AS-13: every bad ticket class is refused at the upgrade with 401, a bad Origin with 403, and no ticket text reaches a log
+  - Collaborative editing rooms › on one editing instance › S06 AS-14: concurrent edits from two editors converge, and the state rebuilt from storage equals the live state
+  - Collaborative editing rooms › on one editing instance › S06 AS-15: the same update delivered twice changes nothing and persists nothing more
+  - Collaborative editing rooms › on one editing instance › S06 AS-16: an update that arrives before the one it depends on is held, then both apply and the result equals in-order delivery
+  - Collaborative editing rooms › on one editing instance › S06 AS-17: a client that was offline resumes with only what it lacks, its own edits are merged, and everything is identical
+  - Collaborative editing rooms › on one editing instance › S06 AS-18: cursors are relayed and never persisted, a late joiner sees them, a closed socket loses its cursor, silence expires one, and nobody can overwrite another presence entry
+  - Collaborative editing rooms › on one editing instance › limits (AS-19) › S06 AS-19: a frame over 512 KiB closes the connection with 1009 and nothing is applied
+  - Collaborative editing rooms › on one editing instance › limits (AS-19) › S06 AS-19: a presence frame over 8 KiB closes the connection with 1009
+  - Collaborative editing rooms › on one editing instance › limits (AS-19) › S06 AS-19: a frame that cannot be decoded closes with 4000 and the room is unchanged
+  - Collaborative editing rooms › on one editing instance › limits (AS-19) › S06 AS-19: an update that would take the document over 2 MiB is not applied or persisted and closes with 4009
+  - Collaborative editing rooms › on one editing instance › limits (AS-19) › S06 AS-19: more than 200 frames in a second close the connection with 4029
+  - Collaborative editing rooms › on one editing instance › limits (AS-19) › S06 AS-19: the 51st connection to a room closes with 4008 room_full and the first 50 are unaffected; a user's 6th closes with 4008 too_many_connections
+  - Collaborative editing rooms › on one editing instance › S06 AS-20: a client that stops answering pings is terminated after one missed round; the member and cursor are removed and the room keeps working
+  - Collaborative editing rooms › on one editing instance › S06 AS-21: 50 editors opening a cold draft load it once; the last leaving unloads it after the idle period (flush, compact); a join during the unload waits and sees every edit
+  - Collaborative editing rooms › on one editing instance › S06 AS-22: a read-only member's update and state frames are dropped with a read_only message, nothing is broadcast or persisted, the socket stays open and a log line names the ids without content
+  - Collaborative editing rooms › on one editing instance › S06 AS-23: a role change to viewer, delivered through the real consumer, makes further updates denied within seconds; earlier edits stay; a role that adds write takes effect on the next connect
+  - Collaborative editing rooms › on one editing instance › S06 AS-24: a removed member's sockets close with 4003 within seconds, others are unaffected, their edits remain, and their next connect is 404 shop_not_found
+  - Collaborative editing rooms › on one editing instance › S06 AS-24: with the instant notification lost, the periodic membership re-check (one batched read per shop) closes the socket
+  - Collaborative editing rooms › on one editing instance › S06 AS-25: a suspended shop closes its rooms with 4003 shop_inactive and blocks connects; when it is active again connects work
+  - ... and 189 more
