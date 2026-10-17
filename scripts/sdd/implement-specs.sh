@@ -243,7 +243,9 @@ step() { # $1 = dir, $2 = step name, $3 = prompt
   done
   step_metric "$1" "$2" "$t0" "$rc" "$try" "$fp0"
   # A pass that hit the time limit is not a failure: the next implement pass resumes at the first open task.
-  if (( rc == 124 )) && [[ "$2" == implement-* ]]; then echo "  $2 hit the pass timeout; the next pass resumes"; return 0; fi
+  # The same for a repair or doctor step: its edits are in the tree, the gate (or the next build) shows whether they were enough. Treating the
+  # timeout as a failure blocked W04 after one 40-minute repair and one 25-minute doctor (2026-10-17).
+  if (( rc == 124 )) && [[ "$2" == implement-* || "$2" == repair-* || "$2" == doctor-* || "$2" == ckrepair-* ]]; then echo "  $2 hit the pass timeout; the loop goes on from what is in the tree"; return 0; fi
   if (( rc == 125 )); then echo "deadline:$(basename "$1") at $2" > "$STATE_FILE"; exit 76; fi
   if (( rc != 0 )); then
     if hit_auth_failure "$1/.$2.log"; then echo "auth:$(basename "$1") $2 could not authenticate" > "$STATE_FILE"; exit 77; fi
