@@ -54,6 +54,22 @@ export class SequelizeReadStateRepository implements ReadStateRepository {
       : null;
   }
 
+  async receipts(
+    channelId: string,
+  ): Promise<{ userId: string; lastReadSeq: number }[]> {
+    const rows = await select<{ userId: string; lastReadSeq: string | number }>(
+      this.sequelize,
+      `SELECT m."userId", m."lastReadSeq" FROM "ChatChannelMember" m
+        WHERE m."channelId" = :channelId AND m.status = 'ACTIVE'
+        ORDER BY m."userId"`,
+      { channelId },
+    );
+    return rows.map((r) => ({
+      userId: r.userId,
+      lastReadSeq: safeNumber(r.lastReadSeq),
+    }));
+  }
+
   async unreadPage(
     userId: string,
     limit: number,

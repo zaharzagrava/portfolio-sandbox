@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type {
   ChatChannel,
+  ChatInboxPage,
   CreateChannelRequest,
   UpdateChannelRequest,
 } from '@marketplace-sandbox/contracts';
@@ -12,11 +13,17 @@ import {
   channelArchived,
   channelExists,
   channelNotFound,
+  ChatValidationError,
   forbidden,
   invalidTransition,
   productArchived,
   productNotFound,
 } from '../domain/errors';
+import {
+  decodeInboxCursor,
+  encodeInboxCursor,
+  type InboxCursor,
+} from '../domain/history-cursor';
 import {
   PORTS,
   type ChannelRecord,
@@ -94,6 +101,42 @@ export class ChatChannelService {
         return toChannelView(found.channel, outcome.member.role);
       }
     }
+  }
+
+  /**
+   * The caller's chats for the inbox (W05 B-1): active memberships only, archived ones after the active ones, newest
+   * message first. One query for the page; keyset cursor.
+   */
+  async mine(
+    userId: string,
+    query: { limit: number; cursor?: string },
+  ): Promise<ChatInboxPage> {
+    let after: InboxCursor | null = null;
+    if (query.cursor !== undefined) {
+      after = decodeInboxCursor(query.cursor);
+      if (!after) throw new ChatValidationError(['cursor']);
+    }
+    const rows = await this.channels.listMine(userId, query.limit + 1, after);
+    const page = rows.slice(0, query.limit);
+    const last = page[page.length - 1];
+    return {
+      items: page.map(({ channel, member, lastMessageAt }) => ({
+        ...toChannelView(channel, member.role),
+        unread: Math.max(0, channel.lastSeq - member.lastReadSeq),
+        lastSeq: channel.lastSeq,
+        lastMessageAt: lastMessageAt
+          ? new Date(lastMessageAt).toISOString()
+          : null,
+      })),
+      nextCursor:
+        rows.length > query.limit && last
+          ? encodeInboxCursor({
+              archived: last.channel.isArchived,
+              at: last.lastMessageAt,
+              channelId: last.channel.id,
+            })
+          : null,
+    };
   }
 
   /** Members only; a stranger (or a banned member) is told the channel does not exist. */

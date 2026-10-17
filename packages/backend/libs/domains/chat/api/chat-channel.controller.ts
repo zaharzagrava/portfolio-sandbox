@@ -8,12 +8,16 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Query,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
+import type { z } from 'zod';
 import {
+  chatInboxQuerySchema,
   createChannelRequestSchema,
   updateChannelRequestSchema,
   type ChatChannel,
+  type ChatInboxPage,
   type CreateChannelRequest,
   type UpdateChannelRequest,
 } from '@marketplace-sandbox/contracts';
@@ -42,6 +46,17 @@ export class ChatChannelController {
     body: CreateChannelRequest,
   ): Promise<ChatChannel> {
     return this.channels.create(user.id, body);
+  }
+
+  @Firewall()
+  @RateLimit('chat.read.user')
+  @Get('channels/mine')
+  mine(
+    @User() user: AuthenticatedUser,
+    @Query(new ChatZodPipe(chatInboxQuerySchema))
+    query: z.output<typeof chatInboxQuerySchema>,
+  ): Promise<ChatInboxPage> {
+    return this.channels.mine(user.id, query);
   }
 
   @Firewall()

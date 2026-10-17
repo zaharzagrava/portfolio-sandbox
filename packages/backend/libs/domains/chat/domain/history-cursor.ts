@@ -57,6 +57,32 @@ export function decodeUnreadCursor(cursor: string): UnreadCursor | null {
   return { at, channelId };
 }
 
+/**
+ * Keyset position of the inbox, ordered by `(isArchived, lastMessageAt DESC NULLS LAST, channelId DESC)`. `at` is
+ * `timestamptz::text` as the database printed it (null for a channel nobody wrote to), for the reason given above.
+ */
+export interface InboxCursor {
+  archived: boolean;
+  at: string | null;
+  channelId: string;
+}
+
+export function encodeInboxCursor(cursor: InboxCursor): string {
+  return encode(cursor);
+}
+
+export function decodeInboxCursor(cursor: string): InboxCursor | null {
+  const v = decode(cursor);
+  if (typeof v !== 'object' || v === null || Array.isArray(v)) return null;
+  const { archived, at, channelId } = v as Record<string, unknown>;
+  if (typeof archived !== 'boolean' || typeof channelId !== 'string')
+    return null;
+  if (!UUID.test(channelId)) return null;
+  if (at !== null && (typeof at !== 'string' || !PG_TIMESTAMPTZ.test(at)))
+    return null;
+  return { archived, at, channelId };
+}
+
 export interface SyncWindow {
   fromSeq: number;
   toSeq: number;

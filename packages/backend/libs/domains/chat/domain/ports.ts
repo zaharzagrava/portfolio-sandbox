@@ -2,6 +2,7 @@ import type {
   ChatChannelMemberRole,
   ChatChannelMemberStatus,
 } from './chat.constants';
+import type { InboxCursor } from './history-cursor';
 
 /**
  * Ports of `chat` (S24 contracts/services.md; D-6): `application/` depends on these only, `infra/` implements them
@@ -70,6 +71,13 @@ export interface MessageRecord {
   deletedAt: Date | null;
 }
 
+export interface InboxEntry {
+  channel: ChannelRecord;
+  member: MemberRecord;
+  /** `timestamptz::text`, the keyset position; null when the channel has no message. */
+  lastMessageAt: string | null;
+}
+
 export interface ChannelRepository {
   /** Creates the channel and its OWNER member in one transaction; null when the product already has a channel. */
   createIfAbsent(input: {
@@ -91,6 +99,15 @@ export interface ChannelRepository {
     userId: string,
   ): Promise<{ channel: ChannelRecord; member: MemberRecord | null } | null>;
   findById(channelId: string): Promise<ChannelRecord | null>;
+  /**
+   * The caller's active memberships, archived chats after the active ones, newest message first (channels nobody wrote
+   * to last). One query; the caller asks for one row more than a page to learn whether a page follows.
+   */
+  listMine(
+    userId: string,
+    limit: number,
+    after: InboxCursor | null,
+  ): Promise<InboxEntry[]>;
   /** `UPDATE … WHERE isArchived = :from`; false when the row was not in that state. */
   setArchived(
     channelId: string,
@@ -268,6 +285,10 @@ export interface ReadStateRepository {
     seq: number,
     now: Date,
   ): Promise<ReadPosition | null>;
+  /** Where every active member of the channel has read up to. */
+  receipts(
+    channelId: string,
+  ): Promise<{ userId: string; lastReadSeq: number }[]>;
   /** Active, non-archived channels of the user by most recent activity first; `limit + 1` rows tell whether more remain. */
   unreadPage(
     userId: string,
@@ -277,11 +298,18 @@ export interface ReadStateRepository {
 }
 
 /** Live-only events on the realtime hub topic `chat:<channelId>` (receipts, presence); best effort. */
+export type HubEventType =
+  | 'read'
+  | 'presence'
+  | 'message'
+  | 'message_deleted'
+  | 'channel_archived';
+
 export interface RealtimeHub {
   /** True when the hub took the event. Never throws for a store fault. */
   publish(
     channelId: string,
-    type: 'read' | 'presence',
+    type: HubEventType,
     data: Record<string, unknown>,
   ): Promise<boolean>;
 }
