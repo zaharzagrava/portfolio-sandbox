@@ -691,3 +691,6 @@
 {"run":"20261017T092525Z","capability":"W04","step":"repair-2","start":"2026-10-17T12:48:44Z","end":"2026-10-17T13:28:53Z","seconds":2409,"result":"timeout","attempt":1,"reason":"pass-timeout","code_changed":true}
 {"run":"20261017T092525Z","capability":"W04","step":"doctor-1","start":"2026-10-17T13:28:53Z","end":"2026-10-17T13:54:00Z","seconds":1507,"result":"timeout","attempt":1,"reason":"pass-timeout","code_changed":true}
 {"run":"20261017T092525Z","capability":"W04","step":"blocked","start":"2026-10-17T13:54:00Z","end":"2026-10-17T13:54:00Z","seconds":0,"result":"blocked","attempt":1,"reason":"W04-seller-dashboard failed at repair-2"}
+{"run":"20261017T092525Z","capability":"W05","step":"plan","start":"2026-10-17T13:54:03Z","end":"2026-10-17T13:57:44Z","seconds":221,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261017T092525Z","capability":"W05","step":"tasks","start":"2026-10-17T13:57:44Z","end":"2026-10-17T14:00:39Z","seconds":175,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261017T092525Z","capability":"W05","step":"analyze","start":"2026-10-17T14:00:39Z","end":"2026-10-17T14:01:19Z","seconds":40,"result":"ok","attempt":1,"reason":"ok"}
