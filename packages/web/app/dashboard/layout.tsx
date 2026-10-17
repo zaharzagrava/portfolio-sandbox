@@ -1,14 +1,9 @@
-import { Suspense } from 'react';
-import { DashboardShell } from '@/components/dashboard/dashboard-shell';
+import type { ReactNode } from 'react';
 
 /**
- * The shell reads the URL (usePathname/useParams) and the session on the client, so it streams in behind a
- * Suspense boundary; the static fallback is prerendered (Cache Components / instant navigation).
+ * Passes its children through (W04 FR-013). The seller frame lives in `seller/[shopId]/layout.tsx`, where the shop is known;
+ * `/dashboard` and `/dashboard/settings` only redirect.
  */
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
-      <DashboardShell>{children}</DashboardShell>
-    </Suspense>
-  );
+export default function DashboardLayout({ children }: { children: ReactNode }) {
+  return children;
 }

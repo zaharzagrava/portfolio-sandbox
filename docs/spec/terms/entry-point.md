@@ -24,6 +24,7 @@ An entry point is a way into a [capability](capability.md): a place where other 
 <!-- used-by:start -->
 - [S14](../capabilities/S14-ledger-reconciliation.md): R-46
 - [S28](../capabilities/S28-notifications.md): R-52
+- [S45](../capabilities/S45-discount-functions.md): R-24
 - [capability](capability.md)
 - [code-facts](code-facts.md)
 - [confirmation-mismatch](confirmation-mismatch.md)

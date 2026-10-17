@@ -266,5 +266,10 @@ const lastUserText = (request: LlmRequest): string => {
   const last = [...request.messages].reverse().find((m) => m.role === 'user');
   if (!last) return '';
   if (typeof last.content === 'string') return last.content;
-  return last.content.map((b) => (b.type === 'text' ? b.text : '')).join('');
+  // The turn runner appends a `<context>` block to the user's text; the echo is the user's words only.
+  return last.content
+    .map((b) =>
+      b.type === 'text' && !b.text.startsWith('<context>') ? b.text : '',
+    )
+    .join('');
 };

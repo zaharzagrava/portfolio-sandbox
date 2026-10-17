@@ -21,5 +21,9 @@ The [cheap model](cheap-model.md) returns free text around a JSON fragment for a
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [accepted-extraction](accepted-extraction.md)
+- [cheap-model](cheap-model.md)
+- [extraction-attempt](extraction-attempt.md)
+- [extraction-schema](extraction-schema.md)
+- [provider-failure](provider-failure.md)
 <!-- used-by:end -->

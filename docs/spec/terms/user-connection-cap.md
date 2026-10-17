@@ -24,6 +24,5 @@ A shopper has 20 tabs open, and each tab holds a stream connection for `user:{us
 - [realtime-hub](realtime-hub.md)
 - [realtime-instance-limit](realtime-instance-limit.md)
 - [stream-connection](stream-connection.md)
-- [too-many-connections](too-many-connections.md)
 - [viewer](viewer.md)
 <!-- used-by:end -->

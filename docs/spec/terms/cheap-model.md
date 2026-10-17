@@ -25,7 +25,11 @@ The cheap model is the first AI model the [extraction worker](extraction-worker.
 - [S04](../capabilities/S04-kyc-onboarding.md): R-15, B-07
 - [document-status](document-status.md)
 - [document-validation-rule](document-validation-rule.md)
+- [escalating-issue](escalating-issue.md)
 - [extraction-attempt](extraction-attempt.md)
+- [extraction-worker](extraction-worker.md)
+- [hard-checks](hard-checks.md)
 - [invalid-output](invalid-output.md)
 - [model-confidence](model-confidence.md)
+- [strong-model](strong-model.md)
 <!-- used-by:end -->

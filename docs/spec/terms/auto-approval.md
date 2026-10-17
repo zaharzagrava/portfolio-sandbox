@@ -22,5 +22,9 @@ A queued `BUSINESS_REGISTRATION` is processed. The cheap model's answer passes e
 <!-- used-by:start -->
 - [S04](../capabilities/S04-kyc-onboarding.md): R-16
 - [document-validation-rule](document-validation-rule.md)
+- [extraction-worker](extraction-worker.md)
+- [hard-checks](hard-checks.md)
 - [holder-name-check](holder-name-check.md)
+- [moderator](moderator.md)
+- [review-task](review-task.md)
 <!-- used-by:end -->

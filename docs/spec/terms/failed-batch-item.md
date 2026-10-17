@@ -22,6 +22,10 @@ A batch from `onboarding-documents` holds three messages. Two are valid `onboard
 ## Used by
 <!-- used-by:start -->
 - [S04](../capabilities/S04-kyc-onboarding.md): R-22
+- [consumer-batch](consumer-batch.md)
+- [dead-letter-topic](dead-letter-topic.md)
 - [document-id](document-id.md)
 - [extraction-message](extraction-message.md)
+- [malformed-queue-message](malformed-queue-message.md)
+- [onboarding-documents-queue](onboarding-documents-queue.md)
 <!-- used-by:end -->

@@ -87,5 +87,4 @@ export const developersApi = {
   },
   rotateWebhookSecret: async (shopId: string, webhookId: string): Promise<{ secret: string }> =>
     (await apiClient.post(`${base(shopId)}/webhooks/${webhookId}/rotate-secret`)).data,
-  pingWebhooks: async (shopId: string): Promise<{ queued: number }> => (await apiClient.post(`${base(shopId)}/webhooks/ping`)).data,
 };

@@ -22,5 +22,9 @@ A seller requests a [`BANK_STATEMENT`](onboarding-document-type.md) upload decla
 <!-- used-by:start -->
 - [S04](../capabilities/S04-kyc-onboarding.md): R-18
 - [content-type-mismatch](content-type-mismatch.md)
+- [document-review](document-review.md)
+- [extraction-worker](extraction-worker.md)
+- [model-call](model-call.md)
 - [raw-document-file](raw-document-file.md)
+- [review-task](review-task.md)
 <!-- used-by:end -->

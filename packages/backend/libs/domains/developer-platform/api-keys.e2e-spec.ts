@@ -1,3 +1,4 @@
+import { apiKeyListSchema } from '@marketplace-sandbox/contracts';
 import { RedisService } from '@app/infrastructure/redis/redis.service';
 import {
   addShopMember,
@@ -68,6 +69,28 @@ describe('Developer platform: API key lifecycle (dashboard)', () => {
     inst.withKey(key).get('/v1/products');
 
   describe('AS-01…AS-04 create, validate, authorize', () => {
+    it('W04 B-4: GET keys answers {items, nextCursor} (apiKeyListSchema) and accepts limit and cursor', async () => {
+      const w = await t.seedWorld();
+      for (const name of ['one', 'two', 'three'])
+        await createKey(t, w, { name });
+      const first = await t
+        .as(w.owner)
+        .get(`${KEYS(w.shop.id)}?limit=2`)
+        .expect(200);
+      const page1 = apiKeyListSchema.parse(first.body);
+      expect(page1.items).toHaveLength(2);
+      expect(page1.nextCursor).toEqual(expect.any(String));
+      const second = await t
+        .as(w.owner)
+        .get(
+          `${KEYS(w.shop.id)}?limit=2&cursor=${encodeURIComponent(page1.nextCursor!)}`,
+        )
+        .expect(200);
+      const page2 = apiKeyListSchema.parse(second.body);
+      expect(page2.items).toHaveLength(1);
+      expect(page2.nextCursor).toBeNull();
+    });
+
     it('S42 AS-01: the secret is shown once, only a keyed hash is stored, and one event is committed with the row', async () => {
       const w = await t.seedWorld();
       const res = await t

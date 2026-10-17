@@ -271,3 +271,8 @@ interviews) until its status says so. The implementation loop appends here (rule
 | S55 | SC-003: the dead-letter alarm and `DeadLettered` metric reach an operator before anyone looks at the queue | `specs/domains/S55-serverless-workers/quickstart.md`, "Ops artifacts" (poison message in demo) | not run |
 | S55 | SC-007: local runner and the Lambda service give the same record shape, deletions and retry counts | same file (compare a deployed event with the local one) | not run |
 | S55 | SC-008: a new function needs one manifest entry plus one entry file and nothing else | same file (`terraform plan` with a sample entry) | not run |
+| W04 | SC-001: a new member reaches a working overview in under 60 s of interaction | `specs/web/W04-seller-dashboard/quickstart.md`, "Ops artifacts" (stopwatch run) | not run |
+| W04 | SC-002: 99 % of paid orders reach the live numbers within 2 s | same file (100 scripted payments, Performance panel) | not run |
+| W04 | SC-003: add a product and see it in under 90 s, find it again with one typo | same file (stopwatch run) | not run |
+| W04 | SC-008: keyboard-only member completes open shop, add product, create key, add endpoint | same file (keyboard-only walk) | not run |
+| W04 | SC-009: frame at once, page-shaped skeleton within 1 s, no layout shift | same file (Performance panel with throttling, CLS) | not run |

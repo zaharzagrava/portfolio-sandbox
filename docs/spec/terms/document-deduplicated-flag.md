@@ -23,6 +23,11 @@ The ID and status are illustrative. A first-time request answers `201` instead.
 
 ## Used by
 <!-- used-by:start -->
+- [document-content-hash](document-content-hash.md)
 - [document-id](document-id.md)
+- [document-kind](document-kind.md)
+- [document-round](document-round.md)
+- [document-upload](document-upload.md)
 - [onboarding-document-type](onboarding-document-type.md)
+- [upload-grant](upload-grant.md)
 <!-- used-by:end -->

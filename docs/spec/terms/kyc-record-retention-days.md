@@ -21,5 +21,7 @@ A shop's application becomes [`VERIFIED`](onboarding-application-status.md). Thi
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [onboarding-document-purge-job](onboarding-document-purge-job.md)
+- [raw-document-file](raw-document-file.md)
+- [sealed-row](sealed-row.md)
 <!-- used-by:end -->

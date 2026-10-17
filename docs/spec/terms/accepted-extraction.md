@@ -26,4 +26,8 @@ The cheap model returns valid JSON for a `BANK_STATEMENT`. The [IBAN ↗](../sw-
 <!-- used-by:start -->
 - [extraction-schema](extraction-schema.md)
 - [invalid-output](invalid-output.md)
+- [provider-raw-answer-kind](provider-raw-answer-kind.md)
+- [readable-column](readable-column.md)
+- [seal-context](seal-context.md)
+- [sealed-row](sealed-row.md)
 <!-- used-by:end -->

@@ -25,5 +25,11 @@ A message without `documentId` is a [malformed queue message](malformed-queue-me
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [document-deduplicated-flag](document-deduplicated-flag.md)
+- [extraction-worker](extraction-worker.md)
+- [failed-batch-item](failed-batch-item.md)
+- [inbox-table](inbox-table.md)
+- [job-lease](job-lease.md)
+- [malformed-queue-message](malformed-queue-message.md)
+- [onboarding-documents-queue](onboarding-documents-queue.md)
 <!-- used-by:end -->

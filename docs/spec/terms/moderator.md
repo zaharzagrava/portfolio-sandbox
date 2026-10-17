@@ -34,6 +34,7 @@ A moderator rejects a `BANK_STATEMENT` with a reason of 3 to 500 characters. The
 - [moderation-task-status](moderation-task-status.md)
 - [moderation-task](moderation-task.md)
 - [onboarding-application-status](onboarding-application-status.md)
+- [platform-role](platform-role.md)
 - [rejection-reason-code](rejection-reason-code.md)
 - [review-task](review-task.md)
 - [sealed-row](sealed-row.md)

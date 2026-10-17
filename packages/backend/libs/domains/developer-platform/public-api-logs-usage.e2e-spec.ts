@@ -1,3 +1,4 @@
+import { requestLogPageSchema } from '@marketplace-sandbox/contracts';
 import { MetricsRegistry } from '@app/common/telemetry/metrics-registry';
 import { PermanentError } from '@app/infrastructure/projections/errors';
 import { developerPlatformRatePolicies } from './rate-limit-policies';
@@ -457,6 +458,31 @@ describe('Public API: request logs and usage report', () => {
         (i: { at: string }) => i.at,
       );
       expect(instants).toEqual([...instants].sort().reverse());
+    });
+
+    it('W04 B-4: GET logs answers {items, nextCursor} (requestLogPageSchema) with limit and cursor', async () => {
+      const { w } = await world();
+      const at = (s: number) =>
+        new Date(Date.parse('2026-10-06T11:00:00.000Z') + s * 1_000);
+      await project([
+        record(w.shop.id, { status: 200, occurredAt: at(1) }),
+        record(w.shop.id, { status: 200, occurredAt: at(2) }),
+        record(w.shop.id, { status: 200, occurredAt: at(3) }),
+      ]);
+      const page = (q: string) =>
+        t
+          .as(w.owner)
+          .get(`${LOGS(w.shop.id)}?${q}`)
+          .expect(200)
+          .then((r) => requestLogPageSchema.parse(r.body));
+      const p1 = await page('limit=2');
+      expect(p1.items).toHaveLength(2);
+      expect(p1.nextCursor).toEqual(expect.any(String));
+      const p2 = await page(
+        `limit=2&cursor=${encodeURIComponent(p1.nextCursor!)}`,
+      );
+      expect(p2.items).toHaveLength(1);
+      expect(p2.nextCursor).toBeNull();
     });
 
     it.each([

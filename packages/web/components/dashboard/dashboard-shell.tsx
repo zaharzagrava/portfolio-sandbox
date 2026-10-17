@@ -1,150 +1,37 @@
-'use client';
+import type { ReactNode } from 'react';
+import type { ShopListItem } from '@/lib/api/seller';
+import { Banners } from './banners';
+import { MobileDrawer } from './mobile-drawer';
+import { SellerSidebar, type SidebarShop } from './seller-nav';
 
-import { useAuth } from '@/hooks/use-auth';
-import { useLogout } from '@/hooks/use-auth-actions';
-import { loginHref } from '@/lib/auth/return-to';
-import { useRouter, usePathname, useParams } from 'next/navigation';
-import { useEffect } from 'react';
-import Link from 'next/link';
-import { LayoutDashboard, ShoppingBag, Settings, Package, BarChart3, LogOut, Key, Webhook, BookOpen } from 'lucide-react';
-import { useMyShops } from '@/lib/api/shops';
-import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
-
-const navItems = [
-  { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },
-  { href: '/orders', label: 'Orders', icon: ShoppingBag },
-  { href: '/dashboard/settings', label: 'Settings', icon: Settings },
-];
-
-const sellerNavItems = [
-  { href: '/dashboard/seller', label: 'Seller Analytics', icon: BarChart3 },
-  { href: '/dashboard/seller/inventory', label: 'Inventory', icon: Package },
-];
-
-export function DashboardShell({ children }: { children: React.ReactNode }) {
-  const { user, isLoading } = useAuth();
-  const logout = useLogout();
-  const router = useRouter();
-  const pathname = usePathname();
-  const params = useParams();
-  const { data: shops } = useMyShops(!!user);
-  const shopId = (params?.shopId as string) || shops?.[0]?.id;
-
-  useEffect(() => {
-    if (!isLoading && !user) {
-      router.replace(loginHref(pathname || '/dashboard'));
-    }
-  }, [user, isLoading, router, pathname]);
-
-  if (isLoading || !user) {
-    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
-  }
-
-  // Opening a shop no longer changes the account role: a seller is a member of at least one shop.
-  const isSeller = (shops?.length ?? 0) > 0;
-
+/**
+ * The frame of every `/dashboard/seller/{shopId}/**` page (W04 FR-011, AS-98): a persistent sidebar from 1024 px, a top bar
+ * with a drawer below. A Server Component: it holds no session, reads no role claim and has no client guard; the layout
+ * has already required the session and resolved the shop, and the entries follow the shop's `myPermissions` (see
+ * `seller-nav.tsx`). The banner region sits above the page body (offline, suspended, closing).
+ */
+export function DashboardShell({
+  shop,
+  shops,
+  nextCursor,
+  children,
+}: {
+  shop: SidebarShop & { status: string };
+  shops: readonly ShopListItem[];
+  nextCursor?: string | null;
+  children: ReactNode;
+}) {
+  const sidebarShop = { id: shop.id, name: shop.name, myRole: shop.myRole, myPermissions: shop.myPermissions };
   return (
-    <div className="flex min-h-screen flex-col md:flex-row">
-      <aside className="w-full md:w-64 border-r bg-muted/40 p-6 flex flex-col gap-6">
-        <div className="font-semibold text-lg">My Dashboard</div>
-        <nav className="flex flex-col gap-2 flex-1">
-          {navItems.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all hover:bg-accent",
-                pathname === item.href ? "bg-accent text-accent-foreground font-medium" : "text-muted-foreground"
-              )}
-            >
-              <item.icon className="h-4 w-4" />
-              {item.label}
-            </Link>
-          ))}
-          
-          {!isSeller && (
-            <Link
-              href="/dashboard/seller"
-              className={cn(
-                "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all hover:bg-accent",
-                pathname === '/dashboard/seller' ? "bg-accent text-accent-foreground font-medium" : "text-muted-foreground"
-              )}
-            >
-              <Package className="h-4 w-4" />
-              Start selling
-            </Link>
-          )}
-
-          {isSeller && (
-            <>
-              <div className="mt-4 mb-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                Seller Tools
-              </div>
-              {sellerNavItems.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={cn(
-                    "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all hover:bg-accent",
-                    pathname === item.href ? "bg-accent text-accent-foreground font-medium" : "text-muted-foreground"
-                  )}
-                >
-                  <item.icon className="h-4 w-4" />
-                  {item.label}
-                </Link>
-              ))}
-
-              {shopId && (<>
-              <div className="mt-4 mb-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                Developer Settings
-              </div>
-              <Link
-                href={`/dashboard/seller/${shopId}/developers/api-keys`}
-                className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all hover:bg-accent",
-                  pathname.includes('/developers/api-keys') ? "bg-accent text-accent-foreground font-medium" : "text-muted-foreground"
-                )}
-              >
-                <Key className="h-4 w-4" />
-                API Keys
-              </Link>
-              <Link
-                href={`/dashboard/seller/${shopId}/developers/webhooks`}
-                className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all hover:bg-accent",
-                  pathname.includes('/developers/webhooks') ? "bg-accent text-accent-foreground font-medium" : "text-muted-foreground"
-                )}
-              >
-                <Webhook className="h-4 w-4" />
-                Webhooks
-              </Link>
-              </>)}
-              <Link
-                href="/developers/docs"
-                className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all hover:bg-accent",
-                  pathname === '/developers/docs' ? "bg-accent text-accent-foreground font-medium" : "text-muted-foreground"
-                )}
-              >
-                <BookOpen className="h-4 w-4" />
-                API Documentation
-              </Link>
-            </>
-          )}
-        </nav>
-        
-        <div className="mt-auto">
-          <Button variant="ghost" className="w-full justify-start gap-3" onClick={() => logout.mutate()}>
-            <LogOut className="h-4 w-4" />
-            Logout
-          </Button>
-        </div>
+    <div className="flex min-h-[calc(100svh-3.5rem)] flex-col lg:flex-row">
+      <aside className="hidden w-64 shrink-0 border-r bg-muted/40 p-4 lg:block">
+        <SellerSidebar shop={sidebarShop} shops={shops} nextCursor={nextCursor} />
       </aside>
-      
-      <main className="flex-1 p-6 md:p-8">
+      <MobileDrawer shop={sidebarShop} shops={shops} nextCursor={nextCursor} />
+      <div className="min-w-0 flex-1 space-y-4 p-4 md:p-6 lg:p-8">
+        <Banners shop={shop} />
         {children}
-      </main>
+      </div>
     </div>
   );
 }

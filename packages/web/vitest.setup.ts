@@ -2,6 +2,7 @@ import '@testing-library/jest-dom/vitest';
 import { cleanup } from '@testing-library/react';
 import { afterAll, afterEach, beforeAll, vi } from 'vitest';
 import { setupServer } from 'msw/node';
+import { restoreAllStubs } from './lib/test/stub-registry';
 
 /** Shared MSW server: tests add handlers with `server.use(...)`; any unhandled request fails the test. */
 export const server = setupServer();
@@ -9,6 +10,7 @@ export const server = setupServer();
 beforeAll(() => server.listen({ onUnhandledFrame: 'error' }));
 afterEach(() => {
   cleanup();
+  restoreAllStubs();
   server.resetHandlers();
 });
 afterAll(() => server.close());

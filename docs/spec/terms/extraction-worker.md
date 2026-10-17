@@ -26,12 +26,15 @@ The extraction worker consumes extraction messages from the `onboarding-document
 <!-- used-by:start -->
 - [auto-approval](auto-approval.md)
 - [cheap-model](cheap-model.md)
+- [concurrency-lease](concurrency-lease.md)
 - [content-type-mismatch](content-type-mismatch.md)
 - [document-id](document-id.md)
 - [extraction-message](extraction-message.md)
+- [hard-checks](hard-checks.md)
 - [missing-object](missing-object.md)
 - [model-call](model-call.md)
 - [onboarding-documents-queue](onboarding-documents-queue.md)
 - [raw-document-file](raw-document-file.md)
 - [real-file-type](real-file-type.md)
+- [strong-model](strong-model.md)
 <!-- used-by:end -->

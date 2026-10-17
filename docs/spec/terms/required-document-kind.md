@@ -25,7 +25,11 @@ The submit answer above is for a shop with `vatRegistered: false`. The list form
 ## Used by
 <!-- used-by:start -->
 - [S04](../capabilities/S04-kyc-onboarding.md): R-26, B-17
+- [document-kind](document-kind.md)
 - [document-not-required](document-not-required.md)
+- [document-review](document-review.md)
+- [onboarding-submit](onboarding-submit.md)
 - [submission](submission.md)
+- [vat-registered](vat-registered.md)
 - [verification-document-purge-job](verification-document-purge-job.md)
 <!-- used-by:end -->

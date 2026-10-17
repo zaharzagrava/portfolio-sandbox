@@ -24,6 +24,7 @@ A seller saves the `business` step. The onboarding view then shows `DRAFT`, the 
 - [already-verified](already-verified.md)
 - [onboarding-application-status](onboarding-application-status.md)
 - [onboarding-draft-lifetime](onboarding-draft-lifetime.md)
+- [onboarding-draft](onboarding-draft.md)
 - [onboarding-questionnaire](onboarding-questionnaire.md)
 - [onboarding-row](onboarding-row.md)
 - [onboarding-submit](onboarding-submit.md)

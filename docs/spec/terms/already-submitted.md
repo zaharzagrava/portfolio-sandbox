@@ -20,5 +20,7 @@ A shop's application is `SUBMITTED`. The seller saves the `tax` step again with 
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [onboarding-application-status](onboarding-application-status.md)
+- [onboarding-draft](onboarding-draft.md)
+- [onboarding-questionnaire](onboarding-questionnaire.md)
 <!-- used-by:end -->

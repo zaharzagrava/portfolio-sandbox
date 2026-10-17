@@ -20,5 +20,8 @@ A user with platform role `MODERATOR` is also staff of shop "Acme Ceramics" (ill
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [document-review](document-review.md)
+- [platform-admin](platform-admin.md)
+- [review-task](review-task.md)
+- [shop-member](shop-member.md)
 <!-- used-by:end -->

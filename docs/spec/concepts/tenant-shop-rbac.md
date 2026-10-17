@@ -49,10 +49,13 @@ A shop is the tenant of the marketplace: a seller organisation with a team, a pl
 - {{cap:S31}} Shop asset library (chunked dedupe, delta sync, conflicts, share links) and digital product delivery
 - {{cap:S32}} Product search: index sync with external versioning, zero-downtime reindex, relevance boosts, synonyms, facets, k-NN
 - {{cap:S40}} Seller leaderboards, live sales dashboard and seller stats (period boards with ties, my rank, snapshots, live frames, today chart, shop stats)
+- {{cap:S41}} Competitor price monitor (watches, polite SSRF-safe crawling, robots.txt, price extraction, change detection, price-drop alerts)
 - {{cap:S42}} Seller public API: API keys, scopes, sandbox, date-pinned versions, deprecation headers, batch and bulk stock, request logs, usage metering
 - {{cap:S43}} Webhook delivery to shops: endpoints, signing with dual secrets, routing, per-endpoint ordering, retries, circuit breaker, auto-disable, replay
 - {{cap:S44}} Embeddable storefront widget: site keys bound to origins, per-site framing policy, identity hand-off, kill switch
+- {{cap:S45}} Seller discount functions (sealed runtime, online judge, versions, checkout evaluation with circuit breaker)
 - {{cap:S50}} Rate limiting: token bucket, sliding window, concurrency limits, fail modes, headers
 - {{cap:S51}} Realtime push hub: topic SSE, Last-Event-ID replay, per-topic policies, ref-counted fan-out
 - {{cap:S53}} Domain events, outbox/CDC → Kafka, idempotent versioned projections, replay, read-your-writes
+- {{cap:W04}} Seller dashboard (shop entry and switcher, live overview, inventory, API keys, webhooks, API version, request logs, usage, team, invitations, orders)
 <!-- used-by:end -->

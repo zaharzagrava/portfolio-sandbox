@@ -22,4 +22,6 @@ A user with the `MODERATOR` platform role lists open review tasks and gets them 
 ## Used by
 <!-- used-by:start -->
 - [moderator](moderator.md)
+- [permission](permission.md)
+- [shop-role](shop-role.md)
 <!-- used-by:end -->

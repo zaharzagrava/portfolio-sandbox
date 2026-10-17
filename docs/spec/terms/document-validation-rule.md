@@ -21,5 +21,14 @@ The [cheap model](cheap-model.md) reads a `BANK_STATEMENT` and its answer passes
 ## Used by
 <!-- used-by:start -->
 - [S04](../capabilities/S04-kyc-onboarding.md): B-07
+- [auto-approval](auto-approval.md)
+- [cheap-model](cheap-model.md)
 - [document-status](document-status.md)
+- [escalating-issue](escalating-issue.md)
+- [hard-checks](hard-checks.md)
+- [holder-name-check](holder-name-check.md)
+- [key-field](key-field.md)
+- [moderation-task](moderation-task.md)
+- [moderator](moderator.md)
+- [strong-model](strong-model.md)
 <!-- used-by:end -->

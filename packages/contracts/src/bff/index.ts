@@ -4,3 +4,4 @@ export * from './graphql.ts';
 export * from './upstream.ts';
 export * from './cart-page.ts';
 export * from './order-page.ts';
+export * from './seller-overview.ts';

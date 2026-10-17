@@ -121,4 +121,32 @@ describe('W07 config (lib/config-parse.ts)', () => {
     expect(parseConfig({ ...dev, API_URL: 'http://api:9000' }).publicApiUrl).toBe('http://api:9000');
     expect(parseConfig({ ...dev, API_URL: 'http://api:9000', PUBLIC_API_URL: 'http://pub:9001' }).publicApiUrl).toBe('http://pub:9001');
   });
+
+  describe('W04 platform currency and public API base URL (gap E11)', () => {
+    it.each([
+      ['EUR', 2],
+      ['USD', 2],
+      ['JPY', 0],
+      ['KWD', 3],
+    ])('W04 AS-35: PLATFORM_CURRENCY %s has %i fraction digits from Intl', (code, digits) => {
+      const config = parseConfig({ ...dev, PLATFORM_CURRENCY: code });
+      expect(config.platformCurrency).toEqual({ code, fractionDigits: digits });
+    });
+
+    it('W04 AS-35: PLATFORM_CURRENCY is optional (the product form is then disabled) and upper-cased', () => {
+      expect(parseConfig(dev).platformCurrency).toBeUndefined();
+      expect(parseConfig({ ...dev, PLATFORM_CURRENCY: ' eur ' }).platformCurrency?.code).toBe('EUR');
+    });
+
+    it.each(['EURO', 'E1R', '12', 'US$'])('W04 AS-35: PLATFORM_CURRENCY "%s" is not an ISO 4217 code and throws naming the variable', (value) => {
+      expect(() => parseConfig({ ...dev, PLATFORM_CURRENCY: value })).toThrowError(/PLATFORM_CURRENCY/);
+    });
+
+    it('W04 AS-55: PUBLIC_API_BASE_URL is an absolute URL without a trailing slash; missing shows the placeholder', () => {
+      expect(parseConfig({ ...dev, PUBLIC_API_BASE_URL: 'https://api.example.com/' }).publicApiBaseUrl).toBe('https://api.example.com');
+      expect(parseConfig(dev).publicApiBaseUrl).toBe('https://<your-api-host>');
+      expect(() => parseConfig({ ...dev, PUBLIC_API_BASE_URL: '/relative' })).toThrowError(/PUBLIC_API_BASE_URL/);
+      expect(() => parseConfig({ ...dev, PUBLIC_API_BASE_URL: 'javascript:alert(1)' })).toThrowError(/PUBLIC_API_BASE_URL/);
+    });
+  });
 });

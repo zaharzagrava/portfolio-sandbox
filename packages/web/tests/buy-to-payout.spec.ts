@@ -61,10 +61,9 @@ test.describe('J01 buy to payout', () => {
       // --- the seller, in the browser ------------------------------------------------------------------------------------
       const sellerPage = await (await browser.newContext({ acceptDownloads: true })).newPage();
       await login(sellerPage, seller.owner.email, JOURNEY_PASSWORD, '/dashboard/seller');
+      await sellerPage.getByRole('link', { name: 'Payouts' }).first().click();
       await expect(sellerPage.getByTestId('balance-card')).toBeVisible();
       await expect(sellerPage.getByTestId('balance-amount')).toContainText(/€\s?\d/);
-
-      await sellerPage.getByRole('link', { name: 'Payouts' }).click();
       const payoutRow = sellerPage.getByTestId('payout-row');
       await expect(payoutRow).toHaveCount(1);
       await expect(payoutRow).toContainText('Paid');

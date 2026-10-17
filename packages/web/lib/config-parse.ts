@@ -16,6 +16,10 @@ export type Config = {
   mapTileUrl?: string;
   /** `STOREFRONT_ADS_ENABLED=true`; off by default (W02 FR-131). */
   adsEnabled: boolean;
+  /** `PLATFORM_CURRENCY` (ISO 4217) with its fraction digits from `Intl`; absent: the seller product form is disabled (W04). */
+  platformCurrency?: { code: string; fractionDigits: number };
+  /** `PUBLIC_API_BASE_URL` shown in "Using the API" (W04 AS-55); the placeholder `https://<your-api-host>` when unset. */
+  publicApiBaseUrl: string;
   paymentProviderHosts: string[];
   widgetAppBundleUrl: string;
   sourceCodeUrl?: string;
@@ -113,6 +117,34 @@ export function parseConfig(env: Env, options: { warn?: (message: string) => voi
     if (!sourceCodeUrl) warn('SOURCE_CODE_URL is ignored: it must be an https: address');
   }
 
+  let platformCurrency: Config['platformCurrency'];
+  const rawCurrency = env.PLATFORM_CURRENCY?.trim().toUpperCase();
+  if (rawCurrency) {
+    let fractionDigits: number | undefined;
+    if (/^[A-Z]{3}$/.test(rawCurrency)) {
+      try {
+        fractionDigits = new Intl.NumberFormat('en', { style: 'currency', currency: rawCurrency }).resolvedOptions().maximumFractionDigits;
+      } catch {
+        fractionDigits = undefined;
+      }
+    }
+    if (fractionDigits === undefined) throw new Error(`PLATFORM_CURRENCY: "${env.PLATFORM_CURRENCY}" is not an ISO 4217 currency code`);
+    platformCurrency = { code: rawCurrency, fractionDigits };
+  }
+
+  let publicApiBaseUrl = 'https://<your-api-host>';
+  const rawBase = env.PUBLIC_API_BASE_URL?.trim();
+  if (rawBase) {
+    let base: URL;
+    try {
+      base = new URL(rawBase);
+    } catch {
+      throw new Error(`PUBLIC_API_BASE_URL: "${rawBase}" is not an absolute URL`);
+    }
+    if (base.protocol !== 'https:' && base.protocol !== 'http:') throw new Error(`PUBLIC_API_BASE_URL: "${rawBase}" must be an http(s) URL`);
+    publicApiBaseUrl = rawBase.replace(/\/+$/, '');
+  }
+
   return {
     siteUrl,
     apiUrl,
@@ -124,6 +156,8 @@ export function parseConfig(env: Env, options: { warn?: (message: string) => voi
     mapTileHost: mapTileHosts[0],
     mapTileUrl,
     adsEnabled: env.STOREFRONT_ADS_ENABLED?.trim() === 'true',
+    platformCurrency,
+    publicApiBaseUrl,
     paymentProviderHosts: hosts('PAYMENT_PROVIDER_HOSTS'),
     widgetAppBundleUrl: env.WIDGET_APP_BUNDLE_URL?.trim() || DEFAULT_WIDGET_BUNDLE,
     sourceCodeUrl,

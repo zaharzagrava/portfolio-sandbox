@@ -21,5 +21,9 @@ A shop's `BUSINESS_REGISTRATION` and `BANK_STATEMENT` are approved, so the appli
 ## Used by
 <!-- used-by:start -->
 - [S04](../capabilities/S04-kyc-onboarding.md): R-27
+- [document-review](document-review.md)
+- [extraction-message](extraction-message.md)
 - [rejected-operation](rejected-operation.md)
+- [shop-verified-event](shop-verified-event.md)
+- [verification-document-purge-job](verification-document-purge-job.md)
 <!-- used-by:end -->

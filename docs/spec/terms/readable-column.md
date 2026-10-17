@@ -22,6 +22,7 @@ The cheap model extracts an IBAN from a `BANK_STATEMENT`. The readable column st
 ## Used by
 <!-- used-by:start -->
 - [accepted-extraction](accepted-extraction.md)
+- [extraction-attempt](extraction-attempt.md)
 - [extraction-evidence](extraction-evidence.md)
 - [sealed-copy](sealed-copy.md)
 - [sealed-row](sealed-row.md)

@@ -23,8 +23,13 @@ A task has an invalid IBAN. A moderator approves it with a corrected IBAN. The t
 <!-- used-by:start -->
 - [S04](../capabilities/S04-kyc-onboarding.md): B-14, B-19
 - [accepted-extraction](accepted-extraction.md)
+- [extraction-attempt](extraction-attempt.md)
+- [extraction-evidence](extraction-evidence.md)
 - [kyc-record-retention-days](kyc-record-retention-days.md)
 - [masked-value](masked-value.md)
+- [moderator](moderator.md)
 - [onboarding-document-purge-job](onboarding-document-purge-job.md)
+- [raw-document-file](raw-document-file.md)
+- [readable-column](readable-column.md)
 - [sealed-copy](sealed-copy.md)
 <!-- used-by:end -->

@@ -23,4 +23,8 @@ A `BUSINESS_REGISTRATION` document is [`QUEUED`](document-status.md), but the wo
 - [S04](../capabilities/S04-kyc-onboarding.md): R-18
 - [S31](../capabilities/S31-assets-digital-delivery.md): R-24
 - [content-type-mismatch](content-type-mismatch.md)
+- [document-review](document-review.md)
+- [extraction-worker](extraction-worker.md)
+- [moderator](moderator.md)
+- [review-task](review-task.md)
 <!-- used-by:end -->

@@ -23,4 +23,7 @@ A bank statement's text tells the model to ignore its instructions. The account 
 <!-- used-by:start -->
 - [S04](../capabilities/S04-kyc-onboarding.md): R-15
 - [document-review](document-review.md)
+- [hard-checks](hard-checks.md)
+- [moderator](moderator.md)
+- [strong-model](strong-model.md)
 <!-- used-by:end -->

@@ -28,7 +28,6 @@ A user in state `none` calls `POST /auth/mfa/enroll` and gets back `200` with [`
 - [manual-entry-key](manual-entry-key.md)
 - [mfa-not-pending](mfa-not-pending.md)
 - [mfa-pending-expiry](mfa-pending-expiry.md)
-- [mfa-state](mfa-state.md)
 - [otpauth-uri](otpauth-uri.md)
 - [second-factor-model](second-factor-model.md)
 <!-- used-by:end -->

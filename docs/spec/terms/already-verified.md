@@ -19,5 +19,8 @@ A shop became `VERIFIED` when its last required document was approved, and `shop
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [conflict-error](conflict-error.md)
+- [document-upload](document-upload.md)
+- [onboarding-step](onboarding-step.md)
+- [required-onboarding-documents](required-onboarding-documents.md)
 <!-- used-by:end -->

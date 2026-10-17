@@ -21,4 +21,8 @@ A moderator resolves a review task on a `SUBMITTED` application with "reject app
 ## Used by
 <!-- used-by:start -->
 - [S04](../capabilities/S04-kyc-onboarding.md): B-16
+- [document-round](document-round.md)
+- [moderator](moderator.md)
+- [onboarding-application-status](onboarding-application-status.md)
+- [review-task](review-task.md)
 <!-- used-by:end -->

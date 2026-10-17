@@ -680,3 +680,14 @@
 {"run":"20261017T092525Z","capability":"S55","step":"repair-1","start":"2026-10-17T10:00:37Z","end":"2026-10-17T10:14:54Z","seconds":857,"result":"ok","attempt":1,"reason":"ok","code_changed":true}
 {"run":"20261017T092525Z","capability":"S55","step":"gate","start":"2026-10-17T10:14:54Z","end":"2026-10-17T10:32:18Z","seconds":1044,"result":"pass","attempt":2,"reason":""}
 {"run":"20261017T092525Z","capability":"S55","step":"built","start":"2026-10-17T09:53:47Z","end":"2026-10-17T10:32:18Z","seconds":2311,"result":"ok","attempt":1,"reason":"Lambda workers: partial batch failures, idempotency records, FIFO groups, local runner"}
+{"run":"20261017T092525Z","capability":"W04","step":"plan","start":"2026-10-17T10:32:33Z","end":"2026-10-17T10:37:08Z","seconds":275,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261017T092525Z","capability":"W04","step":"tasks","start":"2026-10-17T10:37:08Z","end":"2026-10-17T10:39:33Z","seconds":145,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261017T092525Z","capability":"W04","step":"analyze","start":"2026-10-17T10:39:33Z","end":"2026-10-17T10:40:19Z","seconds":46,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261017T092525Z","capability":"W04","step":"implement-1","start":"2026-10-17T10:40:19Z","end":"2026-10-17T12:12:41Z","seconds":5542,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261017T092525Z","capability":"W04","step":"converge-1","start":"2026-10-17T12:12:41Z","end":"2026-10-17T12:13:46Z","seconds":65,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261017T092525Z","capability":"W04","step":"gate","start":"2026-10-17T12:13:46Z","end":"2026-10-17T12:13:49Z","seconds":3,"result":"fail","attempt":1,"reason":"test integrity: packages/web/tests/visual/seller-developers.spec.ts: skipped/todo test added; packages/web/lib/api/shops.test.tsx: test file deleted, and it carried no scenario id, so nothing proves t"}
+{"run":"20261017T092525Z","capability":"W04","step":"repair-1","start":"2026-10-17T12:13:49Z","end":"2026-10-17T12:15:30Z","seconds":101,"result":"ok","attempt":1,"reason":"ok","code_changed":true}
+{"run":"20261017T092525Z","capability":"W04","step":"gate","start":"2026-10-17T12:15:30Z","end":"2026-10-17T12:48:44Z","seconds":1994,"result":"fail","attempt":2,"reason":""}
+{"run":"20261017T092525Z","capability":"W04","step":"repair-2","start":"2026-10-17T12:48:44Z","end":"2026-10-17T13:28:53Z","seconds":2409,"result":"timeout","attempt":1,"reason":"pass-timeout","code_changed":true}
+{"run":"20261017T092525Z","capability":"W04","step":"doctor-1","start":"2026-10-17T13:28:53Z","end":"2026-10-17T13:54:00Z","seconds":1507,"result":"timeout","attempt":1,"reason":"pass-timeout","code_changed":true}
+{"run":"20261017T092525Z","capability":"W04","step":"blocked","start":"2026-10-17T13:54:00Z","end":"2026-10-17T13:54:00Z","seconds":0,"result":"blocked","attempt":1,"reason":"W04-seller-dashboard failed at repair-2"}

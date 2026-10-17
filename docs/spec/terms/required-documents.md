@@ -19,5 +19,7 @@ A VAT-registered shop submits and gets `requiredDocuments` with `BUSINESS_REGIST
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [document-kind](document-kind.md)
+- [document-review](document-review.md)
+- [onboarding-draft](onboarding-draft.md)
 <!-- used-by:end -->

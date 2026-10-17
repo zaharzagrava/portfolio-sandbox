@@ -23,13 +23,19 @@ The [`requiredDocuments`](required-documents.md) value shown is illustrative for
 ## Used by
 <!-- used-by:start -->
 - [S04](../capabilities/S04-kyc-onboarding.md): R-03
+- [onboarding-draft](onboarding-draft.md)
 - [onboarding-questionnaire](onboarding-questionnaire.md)
 - [onboarding-row](onboarding-row.md)
 - [onboarding-status-history](onboarding-status-history.md)
+- [onboarding-step](onboarding-step.md)
 - [post-consumption-submit](post-consumption-submit.md)
+- [rate-limit](rate-limit.md)
 - [rejected-operation](rejected-operation.md)
 - [required-document-kind](required-document-kind.md)
+- [required-onboarding-documents](required-onboarding-documents.md)
+- [shop-onboarding-submitted-event](shop-onboarding-submitted-event.md)
 - [submission-no](submission-no.md)
 - [vat-invalid](vat-invalid.md)
 - [vat-number](vat-number.md)
+- [vat-registered](vat-registered.md)
 <!-- used-by:end -->

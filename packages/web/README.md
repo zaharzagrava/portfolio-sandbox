@@ -33,6 +33,8 @@ See `.env.example`. The values below are read once by `lib/config-parse.ts`; a b
 | `NEXT_PUBLIC_MAP_TILE_URL` | Public tile template with `{z}/{x}/{y}`; its origin must equal `MAP_TILE_HOST`. Unset: the pickup map shows the list view only. |
 | `STOREFRONT_ADS_ENABLED` | `true` turns on the sponsored slot on `/search`. Off by default. |
 | `PAYMENT_PROVIDER_HOSTS` | Server-only. Exact https origin(s) of the payment provider (scripts, frames, API). The CSP adds them on `/checkout/pay/*` only; no other page may load them. |
+| `PLATFORM_CURRENCY` | Server-only. ISO 4217 code of the platform currency (seller product form, W04). Unset: the product form is disabled with an alert. |
+| `PUBLIC_API_BASE_URL` | Server-only. Absolute URL shown in the seller "Using the API" section (W04). Unset: `https://<your-api-host>`. |
 | `NEXT_PUBLIC_PAYMENT_PUBLISHABLE_KEY` | Public. The provider's publishable key for the hosted card fields (loaded lazily on the pay page). |
 | `NEXT_PUBLIC_PAYMENTS_SANDBOX` | Public. `true` shows the sandbox card picker instead of the provider's fields. Ignored when `NODE_ENV` is `production`. |
 

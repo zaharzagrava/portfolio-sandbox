@@ -26,7 +26,9 @@ export function buildCsp({ nonce, pathname, isDev, hosts }: CspInput): string {
   const payment = PAYMENT_PATH.test(pathname) ? hosts.paymentProviderHosts : [];
   const self = "'self'";
   // MapLibre loads raster tiles with `fetch` and runs a worker from a `blob:` URL; hls.js loads playlists and segments with `fetch`.
+  // Seller uploads (W04, S29/S30) `fetch` their bytes straight to the signed URL of the media storage host.
   const fetched = [...(hosts.mapTileHost ? [hosts.mapTileHost] : []), ...hosts.videoHosts];
+  const uploads = hosts.mediaHosts;
 
   const directives: Record<string, string[]> = {
     'default-src': [self],
@@ -37,7 +39,7 @@ export function buildCsp({ nonce, pathname, isDev, hosts }: CspInput): string {
     'font-src': [self],
     'img-src': [self, 'data:', 'blob:', ...hosts.mediaHosts, ...(hosts.mapTileHost ? [hosts.mapTileHost] : [])],
     'media-src': [self, 'blob:', ...hosts.videoHosts],
-    'connect-src': [self, ...(isDev ? ['ws:', 'wss:'] : []), ...fetched, ...payment],
+    'connect-src': [self, ...(isDev ? ['ws:', 'wss:'] : []), ...fetched, ...uploads, ...payment],
     ...(fetched.length > 0 ? { 'worker-src': [self, 'blob:'] } : {}),
     'frame-src': payment.length > 0 ? payment : ["'none'"],
     'object-src': ["'none'"],

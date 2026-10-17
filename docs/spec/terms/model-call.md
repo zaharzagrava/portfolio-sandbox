@@ -24,5 +24,8 @@ A `BANK_STATEMENT` comes back from the cheap model with a low-confidence IBAN. T
 - [content-type-mismatch](content-type-mismatch.md)
 - [escalating-issue](escalating-issue.md)
 - [extraction-attempt](extraction-attempt.md)
+- [extraction-message](extraction-message.md)
+- [extraction-worker](extraction-worker.md)
 - [real-file-type](real-file-type.md)
+- [strong-model](strong-model.md)
 <!-- used-by:end -->

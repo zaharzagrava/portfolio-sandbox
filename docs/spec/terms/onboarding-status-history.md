@@ -24,5 +24,8 @@ A seller submits a complete draft, so the application moves from `DRAFT` to `SUB
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [audit-log](audit-log.md)
+- [onboarding-submit](onboarding-submit.md)
+- [review-task](review-task.md)
+- [table-ownership](table-ownership.md)
 <!-- used-by:end -->

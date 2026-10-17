@@ -20,5 +20,7 @@ A shop answered [`vatRegistered: true`](vat-registered.md) and uploaded a [`VAT_
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [hard-checks](hard-checks.md)
+- [moderation-task](moderation-task.md)
+- [onboarding-submit](onboarding-submit.md)
 <!-- used-by:end -->

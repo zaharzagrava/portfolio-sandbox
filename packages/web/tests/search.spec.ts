@@ -117,7 +117,7 @@ test.describe('Catalog & search', () => {
 
     await expect(page).toHaveURL(new RegExp(`/products/${id}$`));
     await expect(page.getByRole('heading', { level: 1, name: SEED.product })).toBeVisible();
-    await expect(page.getByTestId('product-price')).toHaveText('$899.99');
+    await expect(page.getByTestId('product-price')).toHaveText('€899.99');
     await expect(page.getByText('In stock', { exact: true })).toBeVisible();
   });
 });

@@ -24,4 +24,10 @@ iban: "DE** **** **** **** **12 34"   (illustrative format)
 <!-- used-by:start -->
 - [S04](../capabilities/S04-kyc-onboarding.md): R-19, B-14
 - [extraction-evidence](extraction-evidence.md)
+- [moderator](moderator.md)
+- [onboarding-document-purge-job](onboarding-document-purge-job.md)
+- [raw-document-file](raw-document-file.md)
+- [review-task](review-task.md)
+- [sealed-copy](sealed-copy.md)
+- [sealed-row](sealed-row.md)
 <!-- used-by:end -->

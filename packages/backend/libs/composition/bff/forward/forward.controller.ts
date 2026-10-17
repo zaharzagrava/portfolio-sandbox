@@ -191,7 +191,11 @@ export class ForwardController {
             c.startsWith(`${CORE_COOKIE}=`),
           );
           if (cartSet?.length) res.setHeader('Set-Cookie', cartSet);
-          if (accessToken) res.setHeader('Cache-Control', 'no-store');
+          if (accessToken) {
+            // An event stream keeps `no-transform`: a compressing hop in front (Next's `compress`) would buffer it in gzip and no frame would arrive.
+            const stream = String(answer.headers['content-type'] ?? '').startsWith('text/event-stream');
+            res.setHeader('Cache-Control', stream ? 'no-store, no-transform' : 'no-store');
+          }
           answer.on('error', () => res.destroy());
           answer.pipe(res);
           res.once('close', () => {

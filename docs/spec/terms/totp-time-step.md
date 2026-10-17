@@ -21,6 +21,7 @@ A user's authenticator app shows `482913` (illustrative) during step T. The serv
 ## Used by
 <!-- used-by:start -->
 - [S02](../capabilities/S02-mfa-oidc.md): R-08, R-34, B-06
+- [clock-skew-tolerance](clock-skew-tolerance.md)
 - [durable-conditional-write](durable-conditional-write.md)
 - [mfa-code](mfa-code.md)
 - [second-factor-model](second-factor-model.md)

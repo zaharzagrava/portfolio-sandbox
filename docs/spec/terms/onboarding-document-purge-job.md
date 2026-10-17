@@ -25,4 +25,6 @@ A shop's application became `VERIFIED` 30 days ago. When the purge job runs, the
 - [document-round](document-round.md)
 - [kyc-record-retention-days](kyc-record-retention-days.md)
 - [masked-value](masked-value.md)
+- [raw-document-file](raw-document-file.md)
+- [sealed-row](sealed-row.md)
 <!-- used-by:end -->

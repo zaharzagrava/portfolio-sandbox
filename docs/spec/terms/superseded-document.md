@@ -21,4 +21,7 @@ A `BANK_STATEMENT` sits in [`NEEDS_REVIEW`](document-status.md) with an open rev
 ## Used by
 <!-- used-by:start -->
 - [S04](../capabilities/S04-kyc-onboarding.md): R-25
+- [document-kind](document-kind.md)
+- [document-round](document-round.md)
+- [review-task](review-task.md)
 <!-- used-by:end -->

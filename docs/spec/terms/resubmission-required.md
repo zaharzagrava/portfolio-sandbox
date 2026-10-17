@@ -19,5 +19,8 @@ A moderator rejects a shop's application, `shop.rejected` is published, and the 
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [conflict-error](conflict-error.md)
+- [document-supersede](document-supersede.md)
+- [document-upload](document-upload.md)
+- [onboarding-questionnaire](onboarding-questionnaire.md)
 <!-- used-by:end -->

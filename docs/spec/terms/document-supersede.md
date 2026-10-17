@@ -25,10 +25,13 @@ Superseding is how a new file replaces an older one of the same document kind. I
 - [S04](../capabilities/S04-kyc-onboarding.md): R-14
 - [document-already-approved](document-already-approved.md)
 - [document-kind](document-kind.md)
+- [document-round](document-round.md)
 - [document-superseded](document-superseded.md)
 - [document-upload](document-upload.md)
 - [moderation-task-status](moderation-task-status.md)
 - [moderation-task](moderation-task.md)
+- [moderator](moderator.md)
 - [onboarding-document-type](onboarding-document-type.md)
 - [resubmission-required](resubmission-required.md)
+- [review-task](review-task.md)
 <!-- used-by:end -->

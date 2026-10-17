@@ -47,6 +47,7 @@ export default defineConfig({
     {
       command: 'pnpm run dev',
       env: {
+        PLATFORM_CURRENCY: 'EUR', // W04: the seller product form names the platform currency (the dev stack's backend books EUR)
         NEXT_PUBLIC_PAYMENTS_SANDBOX: 'true', // W03: the pay step shows the sandbox card picker (never in production builds)
         // W02: a tile source for the pickup map; the journeys answer its requests with a stub tile (no third-party host is ever called).
         NEXT_PUBLIC_MAP_TILE_URL: 'https://tiles.test.local/{z}/{x}/{y}.png',
