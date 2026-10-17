@@ -705,3 +705,5 @@
 {"run":"20261017T140706Z","capability":"W04","step":"gate","start":"2026-10-17T15:48:19Z","end":"2026-10-17T15:49:13Z","seconds":54,"result":"fail","attempt":3,"reason":""}
 {"run":"20261017T140706Z","capability":"W04","step":"repair-3","start":"2026-10-17T15:49:13Z","end":"2026-10-17T15:52:29Z","seconds":196,"result":"ok","attempt":1,"reason":"ok","code_changed":false}
 {"run":"20261017T140706Z","capability":"W04","step":"gate","start":"2026-10-17T15:52:29Z","end":"2026-10-17T15:53:20Z","seconds":51,"result":"fail","attempt":4,"reason":""}
+{"run":"20261017T160200Z","capability":"-","step":"run-start","start":"2026-10-17T16:02:00Z","end":"2026-10-17T16:02:00Z","seconds":0,"result":"ok","attempt":1,"reason":"commit=ed967690 MAX_GATE_REPAIRS=5 MAX_REPAIRS_PER_SPEC=2 REPAIR_BUDGET_MIN=60 MAX_IMPLEMENT_PASSES=10"}
+{"run":"20261017T160200Z","capability":"W04","step":"converge-1","start":"2026-10-17T16:02:01Z","end":"2026-10-17T16:02:51Z","seconds":50,"result":"ok","attempt":1,"reason":"ok"}
