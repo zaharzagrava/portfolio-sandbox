@@ -7,6 +7,9 @@ import { openMenuIfCollapsed, register } from './helpers';
  * signs up its own user and asks its own question (L-006).
  */
 const SEND_URL = '**/api/assistant/conversations/*/messages';
+// Letters only: the assistant refuses a message that holds a long number that passes the card-number checksum (`input_rejected`,
+// category `sensitive_data`), and about one `Date.now()` in ten does.
+const unique = () => Math.random().toString(36).replace(/[^a-z]/g, '').slice(0, 8) || 'abcdefgh';
 const input = (page: Page) => page.getByPlaceholder('Ask me anything...');
 
 async function openAssistant(page: Page) {
@@ -22,7 +25,7 @@ async function ask(page: Page, question: string) {
 
 test.describe('Shopping assistant sheet', () => {
   test('S46 AS-01: ask the assistant, the answer streams in, and the exchange is stored in the history', async ({ page }) => {
-    const question = `Recommend a coffee grinder ${Date.now()}`;
+    const question = `Recommend a coffee grinder ${unique()}`;
     await openAssistant(page);
     await ask(page, question);
 
@@ -42,14 +45,16 @@ test.describe('Shopping assistant sheet', () => {
   });
 
   test('S46 AS-22: a connection that drops mid-answer resumes and shows the full text once', async ({ page }) => {
-    const question = `Which kettle is best ${Date.now()}`;
+    const question = `Which kettle is best ${unique()}`;
     await openAssistant(page);
     // The page sees only the first frames of the reply (meta and the first text), then the connection ends: a cut stream.
     await page.route(SEND_URL, async (route) => {
       if (route.request().method() !== 'POST') return route.fallback();
       const response = await route.fetch();
-      const frames = (await response.text()).split('\n\n');
-      const cut = frames.slice(0, 3).join('\n\n') + '\n\n';
+      // The server may batch the text deltas into fewer frames, so the cut is made by leaving out the terminal frame (done, refusal, error)
+      // rather than by counting: the stream ends without one, which is what a dropped connection looks like.
+      const frames = (await response.text()).split('\n\n').filter(Boolean);
+      const cut = frames.filter((frame) => !/^event: ?(done|refusal|error)/m.test(frame)).slice(0, 3).join('\n\n') + '\n\n';
       await route.fulfill({ response, body: cut });
     });
     const resumed = page.waitForResponse((r) => /\/api\/assistant\/messages\/[^/]+\/stream$/.test(r.url()) && r.request().headers()['last-event-id'] !== undefined);

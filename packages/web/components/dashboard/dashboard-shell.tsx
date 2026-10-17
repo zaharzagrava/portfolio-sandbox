@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import type { ShopListItem } from '@/lib/api/seller';
 import { Banners } from './banners';
 import { MobileDrawer } from './mobile-drawer';
+import { PendingContent } from './navigation-pending';
 import { SellerSidebar, type SidebarShop } from './seller-nav';
 
 /**
@@ -30,7 +31,7 @@ export function DashboardShell({
       <MobileDrawer shop={sidebarShop} shops={shops} nextCursor={nextCursor} />
       <div className="min-w-0 flex-1 space-y-4 p-4 md:p-6 lg:p-8">
         <Banners shop={shop} />
-        {children}
+        <PendingContent>{children}</PendingContent>
       </div>
     </div>
   );

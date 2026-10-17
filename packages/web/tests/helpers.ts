@@ -489,7 +489,16 @@ export async function readInviteLink(email: string): Promise<string> {
  * page has logged a dev warning. It is not part of the product (a production build has none): let clicks pass through it.
  */
 export async function clickThroughDevOverlay(page: Page) {
-  await page.addStyleTag({ content: 'nextjs-portal { pointer-events: none !important; }' });
+  await addPageStyle(page, 'nextjs-portal, [data-nextjs-dev-overlay] { pointer-events: none !important; }');
+}
+
+/** Adds CSS to the page the way the CSP allows: a constructable stylesheet (`page.addStyleTag` makes a <style> tag, which `style-src` with a nonce refuses). */
+export async function addPageStyle(page: Page, css: string) {
+  await page.evaluate((text) => {
+    const sheet = new CSSStyleSheet();
+    sheet.replaceSync(text);
+    document.adoptedStyleSheets = [...document.adoptedStyleSheets, sheet];
+  }, css);
 }
 
 /**

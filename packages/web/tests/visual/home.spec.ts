@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { expectNoHorizontalScroll, expectNoSeriousViolations } from './axe';
-import { productId } from '../helpers';
+import { addPageStyle, productId } from '../helpers';
 
 /**
  * VH rows of W02 (AS-01, AS-04, AS-75): the home page's layout at the phone (390 x 844) and desktop (1280 x 800) widths.
@@ -94,7 +94,7 @@ test.describe('Home layout', () => {
       await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
       // The shortcut row depends on the catalogue's categories, and so does its height: a mask would still move everything below it,
       // so the row is taken out of the layout and the screenshot is the same on an empty stack and on a used one.
-      await page.addStyleTag({ content: 'nav[aria-label="Categories"] { display: none !important; }' });
+      await addPageStyle(page, 'nav[aria-label="Categories"] { display: none !important; }');
       await expect(page.locator('main section').first()).toHaveScreenshot('home-hero.png');
     });
   });

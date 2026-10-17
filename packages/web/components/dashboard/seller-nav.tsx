@@ -1,5 +1,6 @@
 'use client';
 
+import type { MouseEvent } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
@@ -7,16 +8,20 @@ import { ShopSwitcher } from '@/components/seller/shop-switcher';
 import type { ShopListItem } from '@/lib/api/seller';
 import { accountNavLinks, isCurrentItem, isCurrentPath, sellerNavItems, type SellerNavItem } from '@/lib/seller/nav';
 import { shopCan } from '@/lib/seller/permissions';
+import { beginNavigation } from './navigation-pending';
 
 export type SidebarShop = { id: string; name: string; myRole?: string; myPermissions?: readonly string[] | null };
 
 const linkClass = (current: boolean) =>
   cn(
     'flex min-h-11 items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-accent focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none sm:min-h-9',
-    current ? 'bg-accent font-medium text-accent-foreground' : 'text-muted-foreground',
+    current ? 'bg-accent font-medium text-accent-foreground' : 'text-muted-foreground hover:text-foreground',
   );
 
-const heading = 'px-3 pb-1 pt-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground';
+/** A click the router handles itself (no new tab, no download). */
+const isPlainClick = (event: MouseEvent<HTMLAnchorElement>) => event.button === 0 && !(event.metaKey || event.ctrlKey || event.shiftKey || event.altKey);
+
+const heading ='px-3 pb-1 pt-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground';
 
 /** Entries the member's permissions allow (presentation only: the API decides on every call). */
 export function visibleNavItems(shop: Pick<SidebarShop, 'myPermissions'>, group: SellerNavItem['group']): SellerNavItem[] {
@@ -62,7 +67,10 @@ export function SellerSidebar({
                     <Link
                       href={item.href(shop.id)}
                       aria-current={isCurrentItem(item, pathname, shop.id) ? 'page' : undefined}
-                      onClick={onNavigate}
+                      onClick={(event) => {
+                        if (!isCurrentItem(item, pathname, shop.id) && isPlainClick(event)) beginNavigation();
+                        onNavigate?.();
+                      }}
                       className={linkClass(isCurrentItem(item, pathname, shop.id))}
                     >
                       <item.icon aria-hidden="true" className="size-4 shrink-0" />
@@ -81,7 +89,15 @@ export function SellerSidebar({
           <ul className="flex flex-col gap-1">
             {accountNavLinks.map((link) => (
               <li key={link.id}>
-                <Link href={link.href} aria-current={isCurrentPath(pathname, link.href) ? 'page' : undefined} onClick={onNavigate} className={linkClass(isCurrentPath(pathname, link.href))}>
+                <Link
+                  href={link.href}
+                  aria-current={isCurrentPath(pathname, link.href) ? 'page' : undefined}
+                  onClick={(event) => {
+                    if (!isCurrentPath(pathname, link.href) && isPlainClick(event)) beginNavigation();
+                    onNavigate?.();
+                  }}
+                  className={linkClass(isCurrentPath(pathname, link.href))}
+                >
                   <link.icon aria-hidden="true" className="size-4 shrink-0" />
                   {link.label}
                 </Link>

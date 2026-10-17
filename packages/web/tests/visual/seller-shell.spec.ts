@@ -86,6 +86,8 @@ test.describe('Seller shell layout', () => {
     await scope.getByRole('button', { name: new RegExp(shopName) }).click();
     await expect(scope.getByRole('list', { name: 'Your shops' })).toBeVisible();
     await expect(scope.getByRole('link', { name: 'All your shops' })).toBeVisible();
+    // The drawer is taller than the phone: opening the switcher can leave it scrolled, and the element shot follows the scroll.
+    await scope.evaluate((element) => element.scrollTo(0, 0));
     await expect(scope).toHaveScreenshot('switcher-open.png', { stylePath });
     await expectNoSeriousViolations(page);
   });

@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { addPageStyle } from '../helpers';
 import { expectMainFitsWidth, expectNoSeriousViolations } from './axe';
 
 /**
@@ -101,7 +102,7 @@ test.describe('Cart layout', () => {
     await expect(page.getByText(/^A very long product title/).first()).toBeVisible();
     // W07's header is 29 px wider than 320 px (gaps.md "Sibling-spec follow-ups"); it widens the layout viewport and would
     // hide W03's own overflow, so it is taken out of the measurement.
-    await page.addStyleTag({ content: 'header { display: none !important; }' });
+    await addPageStyle(page, 'header { display: none !important; }');
     await expectMainFitsWidth(page);
     expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(0);
   });
