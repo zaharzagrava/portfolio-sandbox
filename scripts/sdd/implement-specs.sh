@@ -126,7 +126,15 @@ gate() { # $1 = domain column; everything must pass
   core_gate_cached || return 1
   case "$(kind_of "$1")" in
     backend)
-      (cd packages/backend && NODE_ENV=test NODE_OPTIONS=--experimental-vm-modules timeout 1800 npx jest --ci --runInBand --forceExit --config jest-e2e.json "$(code_path "$1")") || return 1 ;;
+      # One jest process for a whole domain ran out of heap (4 GB) late in the run; the late suites then saw 503s and timeouts from GC pauses.
+      # Same remedy as checkpoint.sh: the suites run one at a time, GATE_BATCH of them per fresh process.
+      local specs batch=${GATE_BATCH:-12} i
+      mapfile -t specs < <(cd packages/backend && NODE_ENV=test npx jest --config jest-e2e.json --listTests "$(code_path "$1")" 2>/dev/null | grep -E 'e2e-spec\.ts$' | sort)
+      (( ${#specs[@]} )) || { echo "no e2e specs found under $(code_path "$1")"; return 1; }
+      for (( i = 0; i < ${#specs[@]}; i += batch )); do
+        (cd packages/backend && NODE_ENV=test NODE_OPTIONS="--experimental-vm-modules --max-old-space-size=6144" timeout 1800 \
+          npx jest --ci --runInBand --forceExit --config jest-e2e.json --runTestsByPath "${specs[@]:i:batch}") || return 1
+      done ;;
     web)
       bash "$ROOT/scripts/sdd/stack-fix.sh" smoke || return 1
       (

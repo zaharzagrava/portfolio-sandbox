@@ -32,6 +32,28 @@ export const catalogRatePolicies = definePolicies('catalog', {
     key: 'ip',
     failMode: 'open',
   },
+  // S06: all three fail closed (a limiter outage must not let writes or ticket minting through).
+  'catalog.draft-connect.user': {
+    algorithm: 'slidingWindow',
+    limit: 30,
+    windowMs: MINUTE,
+    key: 'user',
+    failMode: 'closed',
+  },
+  'catalog.draft-write.shop': {
+    algorithm: 'slidingWindow',
+    limit: 120,
+    windowMs: MINUTE,
+    key: 'shop',
+    failMode: 'closed',
+  },
+  'catalog.draft-publish.shop': {
+    algorithm: 'slidingWindow',
+    limit: 10,
+    windowMs: MINUTE,
+    key: 'shop',
+    failMode: 'closed',
+  },
   // TRANSITIONAL: five other domains (experimentation, catalog-sync, fulfilment, discovery, launch-events) still use
   // this name and S32 has not declared it yet. The catalog's own routes no longer use it.
   'search.query': {

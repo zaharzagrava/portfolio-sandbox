@@ -66,7 +66,10 @@ import { JobsWorkerModule } from '@app/infrastructure/jobs/jobs-worker.module';
 import { IdempotencyModule } from '@app/infrastructure/idempotency';
 import { OutboxMaintenanceModule } from '@app/infrastructure/outbox/outbox-maintenance.module';
 import { InboxModule } from '@app/infrastructure/inbox';
-import { ProductWorkerModule } from '@app/domains/catalog';
+import {
+  DraftsProjectorModule,
+  ProductWorkerModule,
+} from '@app/domains/catalog';
 import { AuthWorkerModule } from '@app/domains/identity';
 
 /**
@@ -90,6 +93,8 @@ import { AuthWorkerModule } from '@app/domains/identity';
     OutboxMaintenanceModule,
     InboxModule,
     ProductWorkerModule,
+    // The draft jobs (stale publish leases, superseded snapshots); the consumers run in the projector app.
+    DraftsProjectorModule,
     AuthWorkerModule,
     TenancyWorkerModule,
     OrdersWorkerModule,

@@ -8,6 +8,10 @@ export { ProductQueryModule } from './product-query.module';
 export { ProductProjectorModule } from './product-projector.module';
 export { ProductWorkerModule } from './product-worker.module';
 export { catalogRatePolicies } from './rate-limit-policies';
+// S06 listing drafts: three modules, nothing else (the services, stores and rooms stay inside the domain).
+export { CollabModule } from './collab.module';
+export { DraftsModule } from './drafts.module';
+export { DraftsProjectorModule } from './drafts-projector.module';
 
 export { ProductCommandService } from './application/product-command.service';
 export { ProductQueryService } from './application/product-query.service';
@@ -44,8 +48,6 @@ export {
 // capabilities listed in gaps.md section C still import them. Do not add to this block; delete a line when its last
 // importer has converted (`product-boundary.e2e-spec.ts` pins the list so it can only shrink).
 export { default as ProductModel } from './infra/models/product.model';
-export { CollabModule } from './collab.module';
-export { DraftsModule } from './drafts.module';
 export { ProductDtoModule } from './product-dto.module';
 export { ProductDtoService } from './infra/product-dto.service';
 export { ProductService } from './application/product.service';

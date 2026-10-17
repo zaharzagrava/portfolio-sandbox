@@ -60,6 +60,7 @@ import { RedisModule } from '@app/infrastructure/redis/redis.module';
 import { ElasticsearchModule } from '@app/infrastructure/elasticsearch/elasticsearch.module';
 import { ProjectionsModule } from '@app/infrastructure/projections/projections.module';
 import {
+  DraftsProjectorModule,
   ProductProjectorModule,
   ProductQueryModule,
 } from '@app/domains/catalog';
@@ -88,6 +89,7 @@ import { CacheModule } from '@app/infrastructure/cache/cache.module';
     ProjectionsModule.forProjectors(
       [
         ...ProductProjectorModule.projectors,
+        ...DraftsProjectorModule.projectors,
         ...SearchProjectorModule.projectors,
         ...paymentsProjectors,
         ...BillingConsumerModule.projectors,
@@ -123,6 +125,7 @@ import { CacheModule } from '@app/infrastructure/cache/cache.module';
         AssetsProjectorModule,
         OnboardingProjectorModule,
         ProductProjectorModule,
+        DraftsProjectorModule,
         SearchProjectorModule,
         RecommendationsProjectorModule,
         PickupProjectorModule,

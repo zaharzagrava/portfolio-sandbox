@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+export * from './drafts.ts';
+
 /**
  * S05 contracts (specs/domains/S05-products/contracts/http.md and events.md). Response and event schemas are strict:
  * a field added on the server without a contract change (`sellerId`, `embedding`, exact stock in the public view) fails

@@ -18,7 +18,10 @@ import { createCatalogApp, type CatalogTestApp } from './testing/catalog-app';
  * a deliberate edit of this file and of `contracts/services.md`.
  */
 const PINNED_EXPORTS = [
-  // modules
+  // modules (S06 adds the three draft modules and nothing else: contracts of specs/domains/S06-collab-editor)
+  'CollabModule',
+  'DraftsModule',
+  'DraftsProjectorModule',
   'ProductBatchReadModule',
   'ProductModule',
   'ProductProjectorModule',
@@ -46,8 +49,6 @@ const PINNED_EXPORTS = [
   'ProductRestored',
   'ProductUpdated',
   // TRANSITIONAL block (gaps.md section C)
-  'CollabModule',
-  'DraftsModule',
   'PRODUCTS_AGGREGATE',
   'ProductChanged',
   'ProductDtoModule',

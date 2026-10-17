@@ -256,3 +256,6 @@ interviews) until its status says so. The implementation loop appends here (rule
 | S23 | SC-014: one gateway instance carries 50,000 concurrent viewers per stream with one upstream subscription | same file (k6 SSE run with the connection count raised on a deployed gateway) | not run |
 | S26 | SC-001: an item of an author with 10,000 followers (30% active) is visible in active followers' feeds within 5 s at p99 | `specs/domains/S26-follow-feed/quickstart.md`, "Ops artifacts" (`pnpm loadtest:feed`, fan-out lag scenario) | not run |
 | S26 | SC-004: p95 feed page under 300 ms with a populated timeline, first page after a 500-account rebuild under 2 s | same file (k6 read scenario at 1/2/4 instances) | not run |
+| S06 | SC-001: 50 editors in one draft, 99% of edits visible to all others within 100 ms | `specs/domains/S06-collab-editor/quickstart.md`, "Ops artifacts" (ws load script on a deployed collab app) | not run |
+| S06 | SC-004: publish of a ≤ 20 KB draft under 2 s at p95 | same file (publish load run on a real stack) | not run |
+| S06 | SC-007: 100,000 open drafts, 50 editors each, 20,000 updates/s fleet-wide, ~5,000 rooms per instance | same file (fleet soak on the VPS runner) | not run |

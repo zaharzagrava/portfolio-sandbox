@@ -1,31 +1,51 @@
 import { HashRing } from './hash-ring';
 
-/** Routing for every collab connection depends on it; pure → unit spec. */
+/** Routing for every collab connection depends on it; pure → unit spec (S06 AS-45, pattern P1105). */
 describe('HashRing', () => {
-  const keys = Array.from({ length: 20_000 }, (_, i) => `draft-${i}`);
+  const keys = Array.from({ length: 10_000 }, (_, i) => `draft-${i}`);
+  const owners = (ring: HashRing) => keys.map((k) => ring.nodeFor(k));
 
-  it('spreads keys evenly across instances (virtual nodes)', () => {
+  it('S06 AS-45: every process names the same owner for every draft id, whatever the order of the member list', () => {
+    const nodes = ['a', 'b', 'c', 'd', 'e'];
+    const reference = owners(new HashRing(nodes));
+    for (const order of [
+      [...nodes].reverse(),
+      ['c', 'a', 'e', 'b', 'd'],
+      ['e', 'd', 'c', 'b', 'a'],
+    ])
+      expect(owners(new HashRing(order))).toEqual(reference);
+  });
+
+  it('S06 AS-45: with 5 instances and 10,000 ids no instance owns more than 115% of the mean', () => {
     const ring = new HashRing(['a', 'b', 'c', 'd', 'e']);
     const counts = new Map<string, number>();
-    for (const k of keys)
-      counts.set(ring.nodeFor(k)!, (counts.get(ring.nodeFor(k)!) ?? 0) + 1);
+    for (const owner of owners(ring))
+      counts.set(owner!, (counts.get(owner!) ?? 0) + 1);
+    expect(counts.size).toBe(5);
     for (const count of counts.values())
-      expect(Math.abs(count - 4_000)).toBeLessThan(4_000 * 0.15);
+      expect(count).toBeLessThanOrEqual((keys.length / 5) * 1.15);
   });
 
-  it('adding an instance moves only ~1/N of the keys, all of them to the new instance', () => {
-    const before = new HashRing(['a', 'b', 'c', 'd']);
-    const after = new HashRing(['a', 'b', 'c', 'd', 'e']);
+  it('S06 AS-45: a 6th instance takes at most 1/6 + 5% of the ids and every moved id goes to it', () => {
+    const before = new HashRing(['a', 'b', 'c', 'd', 'e']);
+    const after = new HashRing(['a', 'b', 'c', 'd', 'e', 'f']);
     const moved = keys.filter((k) => before.nodeFor(k) !== after.nodeFor(k));
-    expect(moved.length / keys.length).toBeGreaterThan(0.12);
-    expect(moved.length / keys.length).toBeLessThan(0.28); // ideal 1/5 = 0.2
-    expect(moved.every((k) => after.nodeFor(k) === 'e')).toBe(true);
+    expect(moved.length).toBeGreaterThan(0);
+    expect(moved.length / keys.length).toBeLessThanOrEqual(1 / 6 + 0.05);
+    expect(moved.every((k) => after.nodeFor(k) === 'f')).toBe(true);
   });
 
-  it('is deterministic regardless of node order; empty ring routes nowhere', () => {
-    expect(new HashRing(['x', 'y']).nodeFor('k')).toBe(
-      new HashRing(['y', 'x']).nodeFor('k'),
-    );
-    expect(new HashRing([]).nodeFor('k')).toBeNull();
+  it('S06 AS-45: when an instance leaves only its own ids move', () => {
+    const before = new HashRing(['a', 'b', 'c', 'd', 'e']);
+    const after = new HashRing(['a', 'b', 'c', 'd']);
+    const moved = keys.filter((k) => before.nodeFor(k) !== after.nodeFor(k));
+    expect(moved.length).toBeGreaterThan(0);
+    expect(moved.every((k) => before.nodeFor(k) === 'e')).toBe(true);
+  });
+
+  it('S06 AS-45: an empty ring has no owner', () => {
+    const ring = new HashRing([]);
+    expect(ring.nodeFor('k')).toBeNull();
+    expect(ring.size).toBe(0);
   });
 });

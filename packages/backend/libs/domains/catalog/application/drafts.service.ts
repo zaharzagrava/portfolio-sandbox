@@ -1,222 +1,218 @@
-import {
-  BadRequestException,
-  ForbiddenException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
-import { InjectConnection } from '@nestjs/sequelize';
-import { QueryTypes, Sequelize } from 'sequelize';
-import * as Y from 'yjs';
+import { Inject, Injectable } from '@nestjs/common';
 import { v7 as uuidv7 } from 'uuid';
-import { ApiConfigService } from '@app/common/config';
-import { RedisService } from '@app/infrastructure/redis/redis.service';
-import { ObjectStorage } from '@app/infrastructure/storage/object-storage.port';
-import { ShopAccessService } from '@app/domains/tenancy';
-import { ProductCommandService } from './product-command.service';
-import { ProductQueryService } from './product-query.service';
-import { DraftStore } from '../infra/draft-store';
-import { CollabInstanceRegistry } from '../infra/instance-registry';
-import { signCollabTicket } from '../infra/collab-ticket';
-import { readListing, seedListing } from '../domain/listing-doc';
-import { COLLAB_REVOKE_CHANNEL } from './room-manager.service';
+import {
+  draftCreateRequestSchema,
+  type Draft,
+  type DraftConnect,
+  type DraftPage,
+} from '@marketplace-sandbox/contracts';
+import { CLOCK, type Clock } from '@app/common/core/clock';
+import {
+  decodeDraftCursor,
+  draftListScope,
+  encodeDraftCursor,
+} from '../domain/draft-cursor';
+import {
+  CollabUnavailableError,
+  DraftInvalidTransitionError,
+  DraftLimitReachedError,
+  DraftNotFoundError,
+  DraftValidationError,
+  PublishInProgressError,
+} from '../domain/draft-errors';
+import { parseDraftListQuery, parseWith } from '../domain/draft-input';
+import { DRAFT_LIMITS } from '../domain/draft-limits';
+import {
+  COLLAB_BACKPLANE,
+  DOC_STORE,
+  DRAFT_MEMBERSHIP,
+  DRAFT_REPOSITORY,
+  PRODUCT_GATEWAY,
+  RING_REGISTRY,
+  type Backplane,
+  type DocStore,
+  type DraftRecord,
+  type DraftRepository,
+  type MembershipReader,
+  type ProductGateway,
+  type RingRegistry,
+} from '../domain/draft-ports';
+import { applyDraftTransition } from '../domain/draft-status';
+import { parseSpecs, seedListing } from '../domain/listing-doc';
+import { ProductArchivedError } from '../domain/product-errors';
+import { InvalidCursorError } from '../domain/product-errors';
+import { DraftTicketService } from './draft-ticket.service';
 
-export interface DraftRow {
-  id: string;
-  shopId: string;
-  productId: string | null;
-  title: string;
-  status: string;
-}
+export const toDraftView = (record: DraftRecord): Draft => ({
+  id: record.id,
+  shopId: record.shopId,
+  productId: record.productId,
+  title: record.title,
+  status: record.status,
+  baseProductVersion: record.baseProductVersion,
+  createdBy: record.createdBy,
+  createdAt: record.createdAt.toISOString(),
+  updatedAt: record.updatedAt.toISOString(),
+  publishedAt: record.publishedAt ? record.publishedAt.toISOString() : null,
+});
 
+/**
+ * Drafts as records (S06): create (blank or from a product), list, archive and connect. Publish and versions are separate
+ * services. The shop is in every predicate and another shop's draft is the same `404` as an unknown one.
+ */
 @Injectable()
 export class DraftsService {
   constructor(
-    @InjectConnection() private readonly sequelize: Sequelize,
-    private readonly store: DraftStore,
-    private readonly registry: CollabInstanceRegistry,
-    private readonly storage: ObjectStorage,
-    private readonly commands: ProductCommandService,
-    private readonly productQuery: ProductQueryService,
-    private readonly access: ShopAccessService,
-    private readonly redis: RedisService,
-    private readonly config: ApiConfigService,
+    @Inject(DRAFT_REPOSITORY) private readonly drafts: DraftRepository,
+    @Inject(DOC_STORE) private readonly docs: DocStore,
+    @Inject(PRODUCT_GATEWAY) private readonly products: ProductGateway,
+    @Inject(DRAFT_MEMBERSHIP) private readonly membership: MembershipReader,
+    @Inject(RING_REGISTRY) private readonly ring: RingRegistry,
+    @Inject(COLLAB_BACKPLANE) private readonly backplane: Backplane,
+    private readonly tickets: DraftTicketService,
+    @Inject(CLOCK) private readonly clock: Clock,
   ) {}
 
-  /** New draft, optionally pre-filled from an existing product (seq-0 snapshot). */
-  async create(
-    shopId: string,
-    userId: string,
-    title: string,
-    productId?: string,
-  ) {
-    let seed: Y.Doc | null = null;
-    if (productId) {
-      const p = (
-        await this.productQuery.getProductsByIds([productId], { shopId })
-      ).get(productId);
-      if (!p) throw new NotFoundException('Product not found in this shop');
-      seed = seedListing({
-        title: p.title,
-        description: p.description,
-        price: p.priceMinor,
-        brand: p.brand,
-        category: p.category,
-        quantity: p.quantity,
-      });
+  async create(shopId: string, actorId: string, body: unknown): Promise<Draft> {
+    const parsed = parseWith(draftCreateRequestSchema, body);
+    if (!parsed.ok) throw new DraftValidationError(parsed.fields);
+    const { title, productId } = parsed.value;
+
+    const product = productId
+      ? await this.products.get(shopId, productId)
+      : null;
+    if (product?.status === 'ARCHIVED') throw new ProductArchivedError();
+
+    const record = await this.drafts.insertWithinCap(
+      {
+        id: uuidv7(),
+        shopId,
+        productId: product?.id ?? null,
+        baseProductVersion: product?.version ?? null,
+        title,
+        createdBy: actorId,
+        now: this.clock.now(),
+      },
+      DRAFT_LIMITS.openDraftsPerShop,
+    );
+    if (!record) throw new DraftLimitReachedError();
+
+    if (product) {
+      const { description, specs } = parseSpecs(product.description);
+      try {
+        await this.docs.seed(
+          shopId,
+          record.id,
+          seedListing({
+            title: product.title,
+            description,
+            priceMinor: product.priceMinor,
+            brand: product.brand,
+            category: product.category,
+            quantity: product.quantity,
+            specs,
+          }),
+        );
+      } catch (error) {
+        // A draft that cannot start with its product's content must not exist half made.
+        await this.drafts.deleteByIds(shopId, [record.id]);
+        throw error;
+      }
     }
-    const [draft] = await this.sequelize.query<DraftRow>(
-      `INSERT INTO "ListingDraft" ("shopId", "productId", title, "createdBy") VALUES (:shopId, :productId, :title, :userId) RETURNING id, "shopId", "productId", title, status`,
-      {
-        type: QueryTypes.SELECT,
-        replacements: { shopId, productId: productId ?? null, title, userId },
-      },
-    );
-    if (seed) await this.store.seed(draft.id, seed);
-    return draft;
+    return toDraftView(record);
   }
 
-  list(shopId: string) {
-    return this.sequelize.query<DraftRow>(
-      `SELECT id, "shopId", "productId", title, status, "updatedAt" FROM "ListingDraft" WHERE "shopId" = :shopId ORDER BY "updatedAt" DESC LIMIT 100`,
-      {
-        type: QueryTypes.SELECT,
-        replacements: { shopId },
-      },
+  async list(
+    shopId: string,
+    query: Record<string, unknown>,
+  ): Promise<DraftPage> {
+    const parsed = parseDraftListQuery(query ?? {});
+    if (!parsed.ok) throw new DraftValidationError(parsed.fields);
+    const { status, limit, cursor } = parsed.value;
+    const scope = draftListScope(shopId, status);
+    const after = cursor === null ? null : decodeDraftCursor(cursor, scope);
+    if (cursor !== null && !after) throw new InvalidCursorError();
+    const found = await this.drafts.listByShop(
+      shopId,
+      status,
+      after,
+      limit + 1,
     );
-  }
-
-  /** Where to connect + a 60 s ticket bound to this draft and the caller's permission level. */
-  async connect(draftId: string, userId: string) {
-    const draft = await this.get(draftId);
-    const role = await this.access.getRole(draft.shopId, userId);
-    if (!role) throw new NotFoundException('Draft not found'); // BOLA-safe: don't reveal other shops' drafts
-    const owner = await this.registry.ownerOf(draftId);
-    if (!owner)
-      throw new BadRequestException('Collaboration service unavailable');
-    const canWrite = role !== 'VIEWER' && draft.status === 'DRAFT';
+    const page = found.slice(0, limit);
+    const last = page[page.length - 1];
     return {
-      url: `${owner.url}/collab/${draftId}`,
-      ticket: signCollabTicket(
-        { userId, draftId, canWrite },
-        this.config.get('jwt_secret'),
-      ),
-      canWrite,
+      items: page.map((row) => toDraftView(row.record)),
+      nextCursor:
+        found.length > limit && last
+          ? encodeDraftCursor(last.key, scope)
+          : null,
     };
   }
 
-  /** Called when a member is demoted/removed: open sessions are closed wherever the room lives. */
-  async revoke(draftId: string, userId: string) {
-    await this.redis.client.publish(
-      COLLAB_REVOKE_CHANNEL,
-      JSON.stringify({ draftId, userId }),
-    );
-  }
-
-  async versions(draftId: string) {
-    return this.sequelize.query(
-      `SELECT id, name, "createdBy", "createdAt" FROM "ListingDraftVersion" WHERE "draftId" = :draftId ORDER BY "createdAt" DESC`,
-      {
-        type: QueryTypes.SELECT,
-        replacements: { draftId },
-      },
-    );
-  }
-
-  /** Named version = full state (snapshot + tail) frozen to S3; at most ~100 ms behind the live room. */
-  async createVersion(draftId: string, userId: string, name: string) {
-    const { doc } = await this.store.load(draftId);
-    const id = uuidv7();
-    const objectKey = `drafts/${draftId}/versions/${id}.ybin`;
-    await this.storage.put(
-      objectKey,
-      Buffer.from(Y.encodeStateAsUpdate(doc)),
-      'application/octet-stream',
-    );
-    await this.sequelize.query(
-      `INSERT INTO "ListingDraftVersion" (id, "draftId", name, "objectKey", "createdBy") VALUES (:id, :draftId, :name, :objectKey, :userId)`,
-      {
-        replacements: { id, draftId, name, objectKey, userId },
-      },
-    );
-    return { id, name, content: readListing(doc) };
-  }
-
-  /**
-   * Publish: materialize the CRDT into a product revision through the catalog's one write path
-   * (`ProductCommandService`: create, or update with the current version, one full-state event in the same
-   * transaction), freeze a "Published" version, close the draft.
-   */
-  async publish(draftId: string, userId: string) {
-    const draft = await this.get(draftId);
-    if (draft.status !== 'DRAFT')
-      throw new BadRequestException('Draft already published');
-    const { doc } = await this.store.load(draftId);
-    const c = readListing(doc);
-    if (!c.title || c.price === null || c.price < 1)
-      throw new BadRequestException('Title and price are required to publish');
-    const specs = Object.entries(c.specs)
-      .map(([k, v]) => `- ${k}: ${v}`)
-      .join('\n');
-    const description = specs ? `${c.description}\n\n${specs}` : c.description;
-
-    let productId = draft.productId;
-    if (!productId) {
-      const created = await this.commands.create(draft.shopId, userId, {
-        title: c.title,
-        description,
-        priceMinor: c.price,
-        // A product has a brand (1 to 100 characters); a draft that never set one is published as unbranded.
-        brand: c.brand?.trim() || 'Unbranded',
-        category: c.category ?? 'uncategorized',
-        quantity: c.quantity ?? 0,
-      });
-      productId = created.id;
-    } else {
-      const current = await this.commands.getForShop(draft.shopId, productId);
-      const updated = await this.commands.update(
-        draft.shopId,
-        productId,
-        {
-          expectedVersion: current.version,
-          title: c.title,
-          description,
-          priceMinor: c.price,
-          ...(c.brand?.trim() ? { brand: c.brand.trim() } : {}),
-          ...(c.category ? { category: c.category } : {}),
-          ...(c.quantity !== null ? { quantity: c.quantity } : {}),
-        },
-        userId,
-      );
-      productId = updated.id;
-    }
-    await this.createVersion(
+  async archive(shopId: string, draftId: string): Promise<Draft> {
+    const current = await this.mustFind(shopId, draftId);
+    this.assertTransition(current, 'ARCHIVED');
+    const archived = await this.drafts.transition({
+      shopId,
       draftId,
+      from: 'DRAFT',
+      to: 'ARCHIVED',
+      now: this.clock.now(),
+    });
+    if (!archived) {
+      // Someone else moved the draft between the read and the update: say why from the row as it is now.
+      const now = await this.mustFind(shopId, draftId);
+      this.assertTransition(now, 'ARCHIVED');
+      throw new DraftInvalidTransitionError(now.status);
+    }
+    await this.backplane.publish({
+      type: 'close-draft',
+      draftId,
+      reason: 'draft_closed',
+    });
+    return toDraftView(archived);
+  }
+
+  /** Where to connect plus a 60 second ticket bound to this draft, shop, user and permission level. */
+  async connect(
+    shopId: string,
+    draftId: string,
+    userId: string,
+  ): Promise<DraftConnect> {
+    const draft = await this.mustFind(shopId, draftId);
+    const access = await this.membership.accessOf(shopId, userId);
+    if (access.kind !== 'member') throw new DraftNotFoundError();
+    const owner = await this.ring.ownerOf(draftId);
+    if (!owner) throw new CollabUnavailableError();
+    const canWrite = access.ability === 'write' && draft.status === 'DRAFT';
+    const { ticket, expiresAt } = this.tickets.issue({
       userId,
-      `Published ${new Date().toISOString().slice(0, 16)}`,
-    );
-    await this.sequelize.query(
-      `UPDATE "ListingDraft" SET status = 'PUBLISHED', "productId" = :productId, "publishedAt" = now(), "updatedAt" = now() WHERE id = :draftId`,
-      {
-        replacements: { productId, draftId },
-      },
-    );
-    return { productId };
+      shopId,
+      draftId,
+      canWrite,
+    });
+    return {
+      url: `${owner.url}/collab/${draftId}`,
+      ticket,
+      canWrite,
+      expiresAt: expiresAt.toISOString(),
+    };
   }
 
-  async get(draftId: string): Promise<DraftRow> {
-    const [draft] = await this.sequelize.query<DraftRow>(
-      `SELECT id, "shopId", "productId", title, status FROM "ListingDraft" WHERE id = :draftId`,
-      {
-        type: QueryTypes.SELECT,
-        replacements: { draftId },
-      },
-    );
-    if (!draft) throw new NotFoundException('Draft not found');
-    return draft;
+  private async mustFind(
+    shopId: string,
+    draftId: string,
+  ): Promise<DraftRecord> {
+    const found = await this.drafts.findInShop(shopId, draftId);
+    if (!found) throw new DraftNotFoundError();
+    return found;
   }
 
-  async assertShop(draftId: string, shopId: string) {
-    if ((await this.get(draftId)).shopId !== shopId)
-      throw new ForbiddenException();
+  private assertTransition(record: DraftRecord, to: 'ARCHIVED') {
+    const move = applyDraftTransition(record.status, to);
+    if (move.ok) return;
+    throw move.code === 'publish_in_progress'
+      ? new PublishInProgressError()
+      : new DraftInvalidTransitionError(move.currentStatus);
   }
 }

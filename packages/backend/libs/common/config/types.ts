@@ -11,6 +11,7 @@ import type { AdsConfig } from './ads-config';
 import type { DeveloperPlatformConfig } from './developer-platform-config';
 import type { CatalogSyncConfig } from './catalog-sync-config';
 import type { StoriesConfig } from './stories-config';
+import type { CollabConfig } from './collab-config';
 import type { LaunchEventsConfig } from './launch-events-config';
 
 /**
@@ -469,6 +470,7 @@ export interface SecretsManagerConfig
     DeveloperPlatformConfig,
     CatalogSyncConfig,
     StoriesConfig,
+    CollabConfig,
     LaunchEventsConfig {}
 
 export class Config extends IntersectionType(EnvConfig, SecretsManagerConfig) {}

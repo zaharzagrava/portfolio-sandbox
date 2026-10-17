@@ -1,42 +1,30 @@
-import * as jwt from 'jsonwebtoken';
-
-const TYPE = 'collab-ticket';
-const TTL_SEC = 60;
-
-export interface CollabTicket {
-  userId: string;
-  draftId: string;
-  canWrite: boolean;
-}
+import { Injectable } from '@nestjs/common';
+import { RedisService } from '@app/infrastructure/redis/redis.service';
+import { DRAFT_LIMITS } from '../domain/draft-limits';
+import type { TicketIdStore } from '../domain/draft-ports';
+import { withTimeout } from './timeouts';
 
 /**
- * Browsers can't set headers on a WebSocket, and access tokens in URLs end up
- * in logs. So: an authenticated HTTP call mints a 60-second ticket bound to ONE
- * draft and ONE permission level; the WS handshake carries only that.
+ * Single use of a ticket (S06 FR-009): `SET collab:ticket:<jti> 1 NX EX 60`. Called only after the room accepted the join,
+ * so a redirect to the owning instance (close 4001) never burns the ticket. A Redis failure is an error, never a grant.
  */
-export function signCollabTicket(ticket: CollabTicket, secret: string): string {
-  return jwt.sign(
-    { sub: ticket.userId, d: ticket.draftId, w: ticket.canWrite, typ: TYPE },
-    secret,
-    { expiresIn: TTL_SEC },
-  );
-}
+@Injectable()
+export class RedisTicketIdStore implements TicketIdStore {
+  constructor(private readonly redis: RedisService) {}
 
-export function verifyCollabTicket(
-  token: string,
-  secret: string,
-): CollabTicket | null {
-  try {
-    const claims = jwt.verify(token, secret) as {
-      sub: string;
-      d: string;
-      w: boolean;
-      typ: string;
-    };
-    return claims.typ === TYPE
-      ? { userId: claims.sub, draftId: claims.d, canWrite: !!claims.w }
-      : null;
-  } catch {
-    return null;
+  async consume(jti: string, ttlSeconds: number): Promise<boolean> {
+    const reply = await withTimeout(
+      'ticket consume',
+      DRAFT_LIMITS.redisTimeoutMs,
+      () =>
+        this.redis.client.set(
+          `collab:ticket:${jti}`,
+          '1',
+          'EX',
+          ttlSeconds,
+          'NX',
+        ),
+    );
+    return reply === 'OK';
   }
 }
