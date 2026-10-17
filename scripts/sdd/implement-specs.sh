@@ -138,6 +138,8 @@ gate() { # $1 = domain column; everything must pass
     web)
       bash "$ROOT/scripts/sdd/stack-fix.sh" standins || return 1   # document-extractor and media-processing stand-ins; started once, then reused
       bash "$ROOT/scripts/sdd/stack-fix.sh" smoke || return 1
+      # the photo and buy-to-payout journeys need the media-processing and document-extractor stand-ins (READY photo, VERIFIED shop)
+      bash "$ROOT/scripts/sdd/stack-fix.sh" journey || return 1
       (
         cd packages/web &&
         npx tsc --noEmit -p tsconfig.json &&
