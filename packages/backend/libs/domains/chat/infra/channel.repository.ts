@@ -3,9 +3,11 @@ import { InjectConnection } from '@nestjs/sequelize';
 import { Sequelize } from 'sequelize-typescript';
 import { TransactionRunner } from '@app/infrastructure/context';
 import { ChatChannelMemberRole } from '../domain/chat.constants';
+import type { InboxCursor } from '../domain/history-cursor';
 import type {
   ChannelRecord,
   ChannelRepository,
+  InboxEntry,
   MemberRecord,
 } from '../domain/ports';
 import { safeNumber, select } from './sql';
@@ -141,6 +143,42 @@ export class SequelizeChannelRepository implements ChannelRepository {
       { channelId },
     );
     return rows.length ? toChannel(rows[0]) : null;
+  }
+
+  async listMine(
+    userId: string,
+    limit: number,
+    after: InboxCursor | null,
+  ): Promise<InboxEntry[]> {
+    const rows = await select<Row & MemberRow & { lastMessageAtText: string | null }>(
+      this.sequelize,
+      `SELECT ${COLUMNS}, ${MEMBER_COLUMNS}, c."lastMessageAt"::text AS "lastMessageAtText"
+         FROM "ChatChannelMember" m
+         JOIN "ChatChannel" c ON c.id = m."channelId"
+        WHERE m."userId" = :userId AND m.status = 'ACTIVE'
+          AND (CAST(:hasCursor AS boolean) = false
+               OR c."isArchived" > CAST(:archived AS boolean)
+               OR (c."isArchived" = CAST(:archived AS boolean)
+                   AND (CASE WHEN CAST(:at AS text) IS NOT NULL
+                             THEN (c."lastMessageAt" IS NULL OR c."lastMessageAt" < CAST(:at AS timestamptz)
+                                   OR (c."lastMessageAt" = CAST(:at AS timestamptz) AND c.id < CAST(:channelId AS uuid)))
+                             ELSE (c."lastMessageAt" IS NULL AND c.id < CAST(:channelId AS uuid)) END)))
+        ORDER BY c."isArchived" ASC, c."lastMessageAt" DESC NULLS LAST, c.id DESC
+        LIMIT :limit`,
+      {
+        userId,
+        limit,
+        hasCursor: after !== null,
+        archived: after?.archived ?? false,
+        at: after?.at ?? null,
+        channelId: after?.channelId ?? null,
+      },
+    );
+    return rows.map((r) => ({
+      channel: toChannel(r),
+      member: toMember(r),
+      lastMessageAt: r.lastMessageAtText,
+    }));
   }
 
   async setArchived(

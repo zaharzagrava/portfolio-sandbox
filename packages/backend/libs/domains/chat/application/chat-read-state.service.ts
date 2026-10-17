@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import type { ChatUnreadPage } from '@marketplace-sandbox/contracts';
+import type { ChatReceipts, ChatUnreadPage } from '@marketplace-sandbox/contracts';
 import { CLOCK, type Clock } from '@app/common/core/clock';
 import {
   chatPushFailedCounter,
@@ -15,6 +15,7 @@ import {
 import { advanceReadPosition, unreadCount } from '../domain/read-position';
 import {
   PORTS,
+  type ChannelRepository,
   type ReadStateRepository,
   type RealtimeHub,
 } from '../domain/ports';
@@ -25,6 +26,8 @@ export class ChatReadStateService {
   constructor(
     @Inject(PORTS.ReadStateRepository)
     private readonly state: ReadStateRepository,
+    @Inject(PORTS.ChannelRepository)
+    private readonly channels: ChannelRepository,
     @Inject(PORTS.RealtimeHub) private readonly hub: RealtimeHub,
     @Inject(CLOCK) private readonly clock: Clock,
     @Inject(CHAT_SETTINGS) private readonly settings: ChatSettings,
@@ -58,6 +61,21 @@ export class ChatReadStateService {
           ? encodeUnreadCursor(last.activityAt, last.channelId)
           : null,
     };
+  }
+
+  /**
+   * Where the other members have read up to ("Seen by"). Members only (a stranger gets the unknown-channel answer); in a
+   * channel above the huge-channel threshold nothing is listed, as nothing is published (G-22).
+   */
+  async receipts(
+    userId: string,
+    channelId: string,
+  ): Promise<ChatReceipts> {
+    const found = await this.channels.findForMember(channelId, userId);
+    if (!found) throw channelNotFound();
+    if (found.channel.activeMemberCount > this.settings.hugeChannelThreshold)
+      return { items: [], suppressed: true };
+    return { items: await this.state.receipts(channelId), suppressed: false };
   }
 
   /**

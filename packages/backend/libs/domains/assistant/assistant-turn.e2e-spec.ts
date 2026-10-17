@@ -112,6 +112,28 @@ describe('Shopping assistant: turns, conversations, idempotency', () => {
     expect(await h.repository.messageCount(u.id, c)).toBe(2);
   });
 
+  it('W05 AS-51: the finished turn in the history carries the id the stream announced in meta.messageId (turnId)', async () => {
+    const u = await h.user();
+    const c = await h.conversation(u);
+    h.llm.script({ text: 'Hello there', chunks: 2 });
+
+    const { events } = await h.ask(u, c, { text: 'hi' });
+
+    const history = assistantHistorySchema.parse(
+      (
+        await h
+          .http()
+          .get(`/api/assistant/conversations/${c}/messages`)
+          .set(u.auth)
+          .expect(200)
+      ).body,
+    );
+    // a turn is stored under the generation id; the client finds a "lost" reply by this id (message ids are per row)
+    expect(new Set(history.messages.map((m) => m.turnId))).toEqual(
+      new Set([data(events[0]).messageId]),
+    );
+  });
+
   it('S46 AS-02: headers, retry hint, heartbeat, strictly increasing ids, no cost in done', async () => {
     const u = await h.user();
     const c = await h.conversation(u);

@@ -14,6 +14,7 @@ import type { z } from 'zod';
 import {
   chatMarkReadRequestSchema,
   unreadQuerySchema,
+  type ChatReceipts,
   type ChatUnreadPage,
 } from '@marketplace-sandbox/contracts';
 import { Firewall, User } from '@app/domains/identity';
@@ -37,6 +38,16 @@ export class ChatReadStateController {
     query: z.output<typeof unreadQuerySchema>,
   ): Promise<ChatUnreadPage> {
     return this.readState.unread(user.id, query);
+  }
+
+  @Firewall()
+  @RateLimit('chat.read.user')
+  @Get('channels/:channelId/receipts')
+  receipts(
+    @User() user: AuthenticatedUser,
+    @Param('channelId', ParseUUIDPipe) channelId: string,
+  ): Promise<ChatReceipts> {
+    return this.readState.receipts(user.id, channelId);
   }
 
   @Firewall()

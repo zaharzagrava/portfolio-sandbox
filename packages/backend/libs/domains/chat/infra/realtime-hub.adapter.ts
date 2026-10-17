@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { RealtimePublisher } from '@app/infrastructure/realtime';
-import type { RealtimeHub } from '../domain/ports';
+import type { HubEventType, RealtimeHub } from '../domain/ports';
 
 /**
  * Receipts and presence go through the S51 hub as live-only events (`replay: false`) on `chat:<channelId>`; the
@@ -15,7 +15,7 @@ export class RealtimeHubAdapter implements RealtimeHub {
 
   async publish(
     channelId: string,
-    type: 'read' | 'presence',
+    type: HubEventType,
     data: Record<string, unknown>,
   ): Promise<boolean> {
     try {
