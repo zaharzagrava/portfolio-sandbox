@@ -83,12 +83,18 @@ Many sections also carry an **In this codebase** block that links the idea to th
 - [08 Media & files](10-system-design/08-media-and-files.md): file sync, video streaming, large upload pipeline
 - [09 Data & infrastructure](10-system-design/09-data-and-infrastructure.md): job scheduler, webhooks, analytics, aggregation/top-K, metrics/logs, cache, crawler, ETL sync, search, feature flags, auth, code execution
 - [10 AI applications](10-system-design/10-ai-applications.md): LLM chat, RAG, AI document processing
-- [11 Application architecture](10-system-design/11-application-architecture.md): Modular Monolith, Hexagonal Architecture
+- [11 Application architecture](10-system-design/11-application-architecture.md): Modular Monolith, Hexagonal Architecture, canonical model + anti-corruption layer
 
 ### 11: Algorithms & Coding
 - [01 Coding interview process](11-algorithms-coding/01-coding-interview-process.md)
 - [02 Dynamic programming](11-algorithms-coding/02-dynamic-programming.md)
 - [03 Patterns cheat sheet](11-algorithms-coding/03-patterns-cheatsheet.md)
+
+### 12: Domain: rental payments
+- [01 PMS and rent payments](12-domain-rental-payments/01-pms-and-rent-payments.md): what a PMS is, who's who (owner, property manager, PMS vendor, tenant), money flow, why rent fintechs exist, questions to ask
+
+### Practice: rehearsal answers (one question = one file: landed design + spoken script + follow-up drill)
+- [01 PMS integration](practice/01-pms-webhook-ingestion.md): reliable webhook ingestion (dedupe, strict per-account ordering, gaps, downtime, audit) + structure for many PMSs (ports & adapters, canonical model, mapping, isolation, workers and side effects)
 
 ---
 

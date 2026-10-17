@@ -242,6 +242,50 @@ Modifiers:
   FROM next WHERE jobs.id = next.id RETURNING jobs.*;
   ```
   (This is how pg-boss and graphile-worker work. Also the outbox relay.)
+
+  **The core idea in one line: the lock is only for the *grab*; the `status` column is the *ownership*.** Like a task board: `SKIP LOCKED` stops two hands grabbing the same card at the same instant; writing your name on the card (`status = RUNNING`, `locked_by`, `locked_until`) is what keeps everyone else away afterwards, for as long as the work takes, with no lock held.
+  ```
+  A: BEGIN; pick QUEUED job … SKIP LOCKED → gets J (row locked)
+  B: same query, same moment → J is locked → skipped → gets another job or nothing
+  A: UPDATE J SET status = RUNNING, locked_until = now + lease; COMMIT        (lock gone)
+  B: polls again → WHERE status = 'QUEUED' doesn't match J at all             (status protects it)
+  A: calls Stripe, no transaction, ~1 s → UPDATE J SET status = DONE
+  A dies mid-call → J stays RUNNING → lease expires → reaper sets QUEUED → B runs it
+     → the job itself must be safe to re-run (charge: claim marker → UNKNOWN → resolver; Stripe idempotency key)
+  ```
+  Without `SKIP LOCKED`, B would *wait* for A's lock and then find J no longer matches: still correct, just slower. `SKIP LOCKED` = "don't wait, take the next one".
+
+  Two styles of Postgres queue:
+  | | **Claim, commit, then work** (above) | **Hold the lock for the whole transaction** |
+  |---|---|---|
+  | How | mark `running`, COMMIT, process outside the tx, then mark `done` | `BEGIN; SELECT … FOR UPDATE SKIP LOCKED; process; COMMIT` |
+  | Worker crash | job stuck in `running` → needs a **reaper** (`locked_at` older than N min → back to `pending`) | tx rolls back, **lock released automatically**, another worker takes it |
+  | Use when | long jobs, external API calls | short DB-only work (ordered event application); never call external APIs inside |
+
+  **Fleet coordination**: N workers on different machines run the same loop; the row lock *is* the coordinator (no ZooKeeper, no queue). `SKIP LOCKED` = "if someone holds it, take a different row instead of waiting". Locking a per-entity row (e.g. an account's cursor) gives serial-per-entity, parallel-across-entities processing with any worker able to take any entity. Workers are continuous loops (poll ~1 s when idle), not cron jobs.
+
+  **External calls (Stripe, a partner API) never go inside a transaction.** Holding a tx open across a network call holds the DB connection (pool exhaustion), holds row locks (other work waits), holds back VACUUM, and worst: if the call succeeds and the tx then rolls back, **money moved but the DB says it didn't**, and a retry charges twice. Pattern **claim → call → record**, three steps:
+  ```
+  tx 1 (ms):  UPDATE payment SET charge_attempted_at = now()          -- the claim; a conditional UPDATE, so
+              WHERE id = $1 AND status = 'PENDING' AND charge_attempted_at IS NULL   -- only one worker wins
+  no tx:      stripe.create({ idempotencyKey: paymentId })            -- seconds; provider dedupes retries
+  tx 2 (ms):  UPDATE payment SET status = 'COMPLETED', version = version + 1
+              WHERE id = $1 AND status = 'PENDING' AND version = $v   -- guarded transition
+              + history row + ledger entry + outbox event, same tx
+  crash between tx 1 and tx 2 → the retry sees charge_attempted_at set → status UNKNOWN (never call again blindly)
+              → resolver job asks Stripe by idempotency key what happened, then records it
+  ```
+  Here the claim is a **conditional UPDATE** (optimistic), not `SKIP LOCKED`; both are "only one worker gets it".
+
+  **Why a conditional UPDATE is race-proof even after tx 1 commits.** Two workers get the same command (SQS standard is at-least-once; a visibility timeout can expire mid-call). An `UPDATE` takes the row's write lock, so concurrent UPDATEs on one row run one after another. In READ COMMITTED, the one that waited **re-evaluates its WHERE on the new row version** before writing:
+  ```
+  A: UPDATE … WHERE charge_attempted_at IS NULL → 1 row (claims, commits)
+  B: UPDATE … WHERE charge_attempted_at IS NULL → waits for A's lock, re-checks: not NULL → 0 rows → "noop", no Stripe call
+  ```
+  The decision ("am I the one?") is the **result of the write** (`RETURNING` / rowCount), never a separate earlier read. A read-then-check (`if (payment.chargeAttemptedAt)`) is only a fast path; it can be stale.
+  A duplicate that arrives *after* A committed the claim but *before* A recorded Stripe's answer can't tell "A is still in flight" from "A crashed". The safe choice is to never call again: mark `UNKNOWN`. A's answer then still applies (`UNKNOWN → COMPLETED` is a legal transition), and the resolver finds nothing left to do. Cost: a spurious UNKNOWN; refinement: treat the claim as a **lease** (only consider it crashed if `charge_attempted_at` is older than the provider timeout).
+  Third safety net: the provider's own idempotency key (Stripe dedupes the same key for 24 h).
+  **A queue doesn't give "processed once"**: it gives at-least-once delivery. One-at-a-time comes from the DB (conditional UPDATE / `SKIP LOCKED`); the queue just distributes work. This repo: `PaymentChargeService` (startCharge → createIntent → transitions.apply) and the jobs table (`claimJobs`: `SKIP LOCKED` inside a 5 s claim tx, then `RUNNING` + a lease `lockedUntil`, with `JobReaper` returning expired leases).
 - **`NOWAIT`**: fail immediately instead of waiting.
 
 ### Advisory locks

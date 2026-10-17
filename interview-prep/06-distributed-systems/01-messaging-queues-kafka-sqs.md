@@ -163,9 +163,25 @@ For **consume → process → produce** pipelines (read from topic A, write resu
 ### Standard vs FIFO
 | | Standard | FIFO |
 |---|---|---|
-| Throughput | nearly unlimited | 300 msg/s per API action (3,000 with batching); **high-throughput mode** much higher (scales per message group) |
+| Throughput | nearly unlimited | default: **300 API calls/s per action** (Send, Receive, Delete each) = 3,000 msg/s with batches of 10. **High-throughput mode**: up to 70,000 calls/s (700k msg/s batched) in us-east-1/us-west-2/eu-west-1, much less in smaller regions (2,400 calls/s in most). Limits are per queue; you can shard across queues |
 | Ordering | best-effort | strict **per `MessageGroupId`** |
 | Duplicates | possible (at-least-once) | dedup within **5-minute** window via `MessageDeduplicationId` or content-based |
+
+**Big picture first:** companies running 100k+ msg/s on SQS use **standard** queues (no fixed limit). FIFO is a special queue type where strict order costs throughput, so it has quotas. A **message group** is just a label you put on each message (`MessageGroupId: "account-42"`); SQS keeps order only among messages with the same label. Why "next one only after the previous is deleted"? Because that *is* strict order: if SQS handed `account-42 #2` to worker B while worker A still works on #1, B could finish first and order would break. So: one group = one single-file line, many groups = many lines served in parallel (like checkout lanes).
+
+```
+STANDARD queue, 2 workers                     FIFO queue, group = account
+t0  A takes acc42#1 (slow, 300 ms)            t0  A takes acc42#1 (in flight)
+t0  B takes acc42#2 (fast, 50 ms)             t0  B asks: acc42#2 is NOT handed out (its group is busy),
+t50 B applies #2  ← before #1: order broken          B gets acc7#1 instead (other group = parallel)
+t300 A applies #1                              t300 A deletes acc42#1 → acc42#2 becomes available
+```
+Ordering can also live **outside** the queue: if the message is only a wake-up ("account 42 has events") and the worker locks the account's cursor row in the DB and applies events by sequence number, two workers waking for the same account can't break order (the second finds the row locked and exits). Then a standard queue is enough, and often **no queue at all**: if the data already sits in a Postgres table, workers can poll it with `FOR UPDATE SKIP LOCKED` (Postgres as a queue: pg-boss, graphile-worker). A broker in front of a table is just a doorbell plus a dual write (insert + send can't share a transaction), so you'd need a DB poller as a safety net anyway. Add the broker for latency, fan-out to other services, or volume beyond one DB.
+
+Two separate FIFO limits apply at the same time:
+1. **Queue-wide API quota** (the table row above): e.g. 300 `SendMessage` calls/s for the whole queue in default mode.
+2. **Per-group serialization**: a group has one batch in flight and gets the next only after you delete it, so one group's speed ≈ batch size / processing time (100 ms handler, batch of 1 ⇒ ~10 msg/s for that group). It doesn't matter how high the queue quota is.
+So total throughput ≈ min(queue quota, number of active groups × per-group rate). Parallelism comes from **many groups**; one hot group is slow whatever the quota. A webhook integration (~tens of msgs/s spread over many accounts) is far below both.
 
 FIFO ordering per group: messages in a group are processed **one at a time**. A stuck message **blocks its group** while it retries, so pick group IDs at the right granularity (e.g. per account rather than one global group).
 
@@ -207,6 +223,7 @@ How it behaves:
 - Two ways to set it:
   - **explicit**: pass `MessageDeduplicationId`. Use a **stable business ID** (`eventId`, outbox row ID, `${orderId}:${version}`) so every retry of the same logical event carries the same ID. **Don't** generate a new random UUID per attempt, because that defeats the purpose.
   - **content-based deduplication** (a queue setting): SQS uses a **SHA-256 of the message body** as the ID (message attributes aren't included). It's convenient, but two *legitimately different* events with identical bodies within 5 minutes get merged, so include a unique ID or timestamp in the body.
+- Not unique to SQS, but each broker does it differently: Azure Service Bus "duplicate detection" (`MessageId`, configurable window), NATS JetStream (`Nats-Msg-Id` header, window), Kafka's idempotent producer (sequence numbers, retries of one producer session only). RabbitMQ has none built in. All of them are **producer-retry protection over a short window**, never a replacement for an idempotent consumer.
 - Scope: per queue by default. In **high-throughput FIFO** mode it can be scoped per message group (`DeduplicationScope=messageGroup`).
 
 **What it does NOT do:**
@@ -405,6 +422,7 @@ Alternatives: **naturally idempotent operations** (upsert by business key, `SET 
 - Even with ordered delivery, **retries and parallel consumers** reorder things. Defensive consumers:
   - Carry a **sequence number or version** per aggregate, and ignore stale events (`if event.version <= current.version: skip`).
   - Or make events "thin" (`InvoiceUpdated {id}`) so the consumer fetches the current state, which makes order irrelevant.
+- A FIFO queue only preserves the order messages were **enqueued** in. If the source (e.g. a partner's webhooks) already delivers out of order, FIFO can't fix it: use the version guard. Worked example: [webhook receive pipeline](../04-api-design/03-idempotency-pagination-rate-limiting-webhooks.md#consuming-webhooks-the-reliable-receive-pipeline).
 
 <!-- theory-links:start -->
 > [!TIP] In this codebase
@@ -455,6 +473,50 @@ Alternatives: **naturally idempotent operations** (upsert by business key, `SET 
 - **SNS**: pub/sub fan-out to multiple SQS, Lambda, HTTP, or email targets (SNS + SQS fan-out pattern).
 - **EventBridge**: an event bus with content-based routing rules, schema discovery, SaaS integrations, archive and replay. Higher latency than SNS.
 - **Kafka (MSK / Confluent)**: high-throughput streams, replay, multiple independent consumer groups, stream processing, CDC. More operational effort.
+
+### Postgres table vs SQS vs Kafka for a piece of work
+
+**Two questions first**
+1. **Command or fact?** A command ("charge payment 9": one handler does it) → a **queue** (Postgres table or SQS). A fact ("PaymentCompleted": many listeners each react at their own pace) → **Kafka** (or SNS → several SQS queues).
+2. **For a command**, walk the table: needs where only Postgres says a clean "yes" (scheduling far ahead, querying/editing single items, hard per-tenant caps, ordering by an external sequence with waiting for gaps) point to a table. Volume, spikes, cross-team consumers and wanting managed retries point to SQS. Often both: **Postgres is the source of truth, the broker is transport** (outbox → relay → SQS/Kafka).
+
+| Need | Postgres table (pg-boss, graphile-worker, own `claimJobs`) | SQS | Kafka |
+|---|---|---|---|
+| **Create the work atomically with business data** | direct: one INSERT in the business transaction | yes, in **two stages**: outbox row in the tx + a relay that sends it (no shared tx with your DB) | same via outbox or CDC (Debezium); Kafka transactions cover Kafka only, not your DB |
+| "Taken" / lease | `status = RUNNING` + `locked_until` (build it or use a library) | **visibility timeout**, built in | no per-message lease: a consumer owns a partition, progress = committed offset |
+| Retries, backoff, dead letter | build it or use a library | **built in**: `maxReceiveCount` → DLQ, redrive | by hand: retry topics + DLQ topic, or pause the partition |
+| **Scheduled far ahead** (autopay on the 1st of next month, retry in 6 h) | any `run_at` | `DelaySeconds` max **15 min** (longer: EventBridge Scheduler or a table) | no |
+| **Query / edit / cancel single items** | plain SQL | only aggregate counts; can't find, change or delete one message | can scan a topic, but not by field without an external index (ksqlDB, a DB sink); can't edit or delete |
+| **Fairness** (one tenant can't hog the workers) | hard caps per tenant in the claim query | **fair queues** (2025): standard queue + `MessageGroupId = tenant`; other tenants are served first while one has a backlog. Best-effort, no hard cap | per partition: a heavy tenant slows everyone hashed to its partition |
+| **Strict order** | by any column, incl. the partner's sequence; can **wait for a missing #41** | FIFO: arrival order per `MessageGroupId`; can't wait for a missing message | per partition (key = account), arrival order; waiting for gaps needs consumer-side state (Kafka Streams store) |
+| **Stop on failure** (never skip) | stall exactly **one account** (cursor doesn't move), indefinitely, visible in SQL | FIFO blocks its group, then after `maxReceiveCount` → DLQ and the group **continues** (skips); without a DLQ it retries until retention (≤ 14 days), then the message is gone | stop committing / pause → blocks the **whole partition** (every account hashed into it) |
+| Volume | ~1k–few k jobs/s per DB; polling + dead tuples hurt beyond | near-unlimited (standard) | 100k–millions msg/s |
+| Spiky load (rent day: 100× on the 1st) | moderate bursts; heavy bursts → row churn | absorbs; autoscale workers on queue depth | absorbs; consumers lag, then catch up |
+| Many independent consumers of the same item | no (one claimer) | one per queue; SNS fan-out to a few queues | **yes**: each consumer group reads everything |
+| Replay history | if you keep the rows | no: deleted once processed | **yes**, within retention |
+| How long data is kept | until you delete it | **4 days by default, max 14**, then unprocessed messages are deleted: a buffer, never a store | configurable: hours to forever (time or size based; compacted topics keep the latest per key) |
+| Failure handling "for free" | crash → tx rolls back → work is still there (lock-held style); lease + reaper for claim-then-work jobs | crash/timeout → redelivery; retries + DLQ built in | crash → re-read from the last committed offset; **no** per-message retry/backoff/DLQ (retry topics by hand) |
+| Another team's service does the work | shared schema couples teams | **yes**: the queue is the contract | yes |
+| Load on your DB | polling queries | none | none |
+| Idempotent handlers needed | yes | yes (at-least-once) | yes |
+
+**Examples for "query / edit single items"** (why a table is often worth it): support asks "why wasn't tenant X charged?" (find the job by tenant); a tenant cancels autopay (cancel their pending charge); a manager moves the rent date (reschedule); an ops dashboard "jobs stuck > 1 h by type and customer"; "pause everything for customer Y"; a dedupe check "is a charge for this lease already pending?" before enqueueing.
+
+**Fairness, concretely:** on rent day a 50k-unit customer enqueues 50k charges and a 20-unit customer enqueues 20. Processed in arrival order, the small customer waits hours. Fair processing interleaves them or caps the big one.
+
+**Why only a table can "wait for a missing #41":** a broker hands out messages in the order they were **put in** (arrival order). If the partner sent #41 then #42, but #42 reached us first, the broker delivers #42 first and has no idea #41 exists. To wait, the consumer must hold #42 somewhere without acknowledging it (memory is lost on a crash; not committing the offset also blocks everything behind it), so you end up building a store keyed by sequence (a Kafka Streams state store): a table again. In Postgres, #42 is simply a row, and "is #41 here yet?" is an indexed query.
+
+**Can SQS FIFO stop instead of skipping?** Only partly. The DLQ is optional: without a redrive policy a failing message keeps retrying and blocks its group, but only until the queue's **retention period** (default 4 days, max 14) runs out, then it is **deleted**: a time bomb. There is no "pause this one group" API (you can only stop consumers, which stops every group), and you can't see which group is stuck without your own bookkeeping. To really stop one account you record "account paused" in your DB, which brings the state back to a table.
+
+**Why not one Kafka partition per tenant (or per account)?** Partition counts are fixed per topic and costly: each partition is files, replication, leader election and metadata; consumer-group rebalances slow down as they grow; adding a tenant means adding partitions, which **changes `hash(key) % N` for every existing key** (breaking per-key order during the change) unless you write a custom partitioner; partitions can't be removed. So the normal setup is `key = tenantId` hashed into a modest N (12–48), and **many tenants share a partition**:
+- a heavy tenant (rent day, 50k charges) delays every tenant hashed next to it;
+- inside one tenant everything is **serial** (one partition = one consumer), so the 50k charges can't run in parallel even though they're independent.
+"Partitioned by account" therefore means *hashed by account into N shared partitions*: strict order per account ✓; fairness ✗ (no caps, neighbours share a partition); stop-on-failure stops the **whole partition** unless the consumer parks the account in its own state store.
+A Postgres jobs table can do what fairness actually needs: run independent jobs in parallel **and** cap each tenant (e.g. ≤ 20 running per tenant), so the big tenant gets its share, not everything and not just one worker. Common Kafka workaround: dedicated topics/partitions for the few "whale" tenants.
+
+**Kafka is not a task queue:** no per-message ack, retry or delay; one slow message blocks its partition; parallelism is capped by the partition count.
+
+This repo uses both: `payments-charge` goes outbox → SQS (independent commands, managed retries); charge retries and resolver checks are Postgres jobs (`jobs.enqueue` with `runAt`), and `claimJobs` enforces per-shop caps.
 
 <!-- theory-links:start -->
 > [!TIP] In this codebase

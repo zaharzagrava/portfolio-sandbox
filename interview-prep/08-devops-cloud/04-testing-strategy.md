@@ -23,6 +23,7 @@
 
 ## 2. Unit tests: making domain logic testable
 
+- **Pure function**: output depends only on its inputs, and it has no side effects (no DB, network, clock, randomness, no mutating its arguments). Same input → same output, every time. Payoff: tests are "this input → that output" with no mocks, and replaying old data gives the same result (e.g. integration mappers: partner JSON in, canonical JSON out, golden-file tests on recorded payloads).
 - Keep computation **pure**: inputs (data plus config plus "now") → outputs. Inject the clock (`now: Date`) rather than calling `new Date()` inside the function.
 - **Table-driven tests** for financial rules:
   ```ts

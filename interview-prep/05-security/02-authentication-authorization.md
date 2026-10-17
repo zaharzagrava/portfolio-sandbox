@@ -4,6 +4,34 @@ Sessions vs tokens, OAuth/OIDC, password storage, authorization models (RBAC, AB
 
 ---
 
+## 0. Crypto building blocks: hash, HMAC, signature, encryption
+
+| Primitive | Inputs | Proves | Who can create / verify | Used for |
+|---|---|---|---|---|
+| **Hash** (SHA-256) | data | integrity only if the hash itself is trusted; anyone can recompute it | anyone / anyone | checksums, content-based dedup, ETags |
+| **HMAC** (HMAC-SHA256) | data + **shared secret** | data wasn't changed **and** came from someone holding the secret | secret holders / secret holders (symmetric) | webhook signatures, signed CSRF tokens, signed cookies/cursors, HS256 JWTs, blind indexes |
+| **Digital signature** (RSA, ECDSA, Ed25519) | data + **private key** | integrity + origin, **non-repudiation**: only the private-key owner could have signed | private key owner / anyone with the public key | RS256/ES256 JWTs, OIDC, TLS certs, partner signing with their key |
+| **Encryption** (AES-GCM, KMS) | data + key | **confidentiality** (hides content) | key holders | secrets at rest, PII fields, TLS |
+
+- **HMAC = hash(secret + message)**, constructed safely: `HMAC(K, m) = H((K ⊕ opad) ‖ H((K ⊕ ipad) ‖ m))`. Plain `sha256(secret + body)` is vulnerable to length-extension attacks; always use `crypto.createHmac`.
+- Verify by **recomputing** the HMAC and comparing in constant time (`timingSafeEqual`); a normal `===` leaks how many leading characters matched.
+- **HMAC ≠ encryption.** A hash/HMAC is one-way, so the *tag* is unreadable, but nobody can reverse it to get the data back either, not even the key holder. That's why it's **sent next to the message, not instead of it**: `{ body: {...readable JSON...} }` + header `X-Signature: <tag>`. The receiver needs the original body to recompute the tag. Encryption is two-way: the ciphertext *replaces* the data and the key holder can decrypt it. Need both? Encrypt (TLS / AES-GCM, which is authenticated encryption) *and* sign.
+- **Why an attacker can't forge it**: computing `HMAC(secret, data)` requires the secret, and the output reveals nothing about the secret. Changing even one byte of the data yields a completely different tag. Example: signed double-submit CSRF token = `random + "." + HMAC(serverSecret, sessionId + "." + random)`. The attacker knows their own session and can pick any random, but without `serverSecret` they can't produce a tag the server will accept for the **victim's** `sessionId`.
+- **JWT uses the same primitives**, and a normal JWT has **no encryption at all**. Its 3 parts are `header.payload.signature`; the payload is only base64url, **readable by anyone**. `HS256` = the signature part is HMAC-SHA256 over `base64url(header) + "." + base64url(payload)` with a shared secret. (Encrypted tokens are a different format, **JWE**; a signed JWT is technically a JWS.) Never put secrets in a JWT payload, **even when the JWT lives in an HttpOnly cookie**: HttpOnly only hides it from *page JS*. It's still readable by the user (devtools), browser extensions with cookie access, every downstream service that receives it, anything that logs headers/cookies (proxies, APM, error trackers), and any client that gets the token in a response body (mobile, or "body delivery" mode). Put only IDs and claims there (`sub`, `sid`, `role`); look up sensitive data server-side. `RS256`/`ES256`/`EdDSA` = digital signature with a private key, verified via public keys (JWKS). Same rule as above: HS256 ⇒ every verifier can also mint tokens; RS256 ⇒ only the issuer can.
+- **Signed double-submit cookie** is one *use* of HMAC. The same primitive signs webhooks (`HMAC(secret, timestamp + "." + rawBody)`), signed cookies, pagination cursors. Only the input and the secret holder differ. See [CSRF §3.2](01-web-security-xss-csrf-csp.md) and [webhooks](../04-api-design/03-idempotency-pagination-rate-limiting-webhooks.md#5-webhooks-as-provider-and-consumer).
+
+**Webhooks: shared secret (HMAC) or asymmetric?** Asymmetric would be: partner signs with its **private** key, we verify with its **public** key.
+| | HMAC shared secret | Asymmetric signature |
+|---|---|---|
+| Who uses it | most providers: Stripe, GitHub, Shopify, Slack, Twilio | AWS SNS (RSA + cert URL), PayPal, SendGrid (ECDSA), Discord (Ed25519), Standard Webhooks spec supports Ed25519 |
+| Setup | provider generates a secret per endpoint, you paste it in config | publish public keys (JWKS / cert URL), you fetch and cache them |
+| If **our** copy leaks | attacker can forge webhooks to us → rotate | nothing: a public key can't sign |
+| Non-repudiation | no: we could have forged it too | **yes**: only the partner could have signed |
+| Speed / simplicity | very fast, trivial in every language | slower, key distribution and rotation (`kid`) |
+Rule of thumb: HMAC is the industry default and fine for integrity + authenticity. Choose asymmetric when you need **proof against the sender** (fintech disputes), many verifiers, or don't want to store a forging-capable secret. Add **mTLS** or an IP allowlist as extra layers for high-value partners.
+
+---
+
 ## 1. Sessions vs tokens
 
 | | Server sessions (opaque ID in cookie) | Stateless JWT access tokens |

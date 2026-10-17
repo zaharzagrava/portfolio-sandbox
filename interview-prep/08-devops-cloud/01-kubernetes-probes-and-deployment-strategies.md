@@ -199,6 +199,12 @@ strategy:
       - pause: { duration: 10m }
 ```
 
+### Shadow mode (dark launch, traffic mirroring)
+Run the new version on **real production input** but **don't let its results count**: don't commit them, don't trigger payments or emails. Record what it *would* have done and compare with the current path (or, for an integration, with the partner's own state). Switch to live when the diff is clean.
+- Request-level: mirror a copy of live traffic to the new service (Istio/Envoy mirroring), discard its responses.
+- Domain-level: e.g. a new PMS adapter or customer in `status = shadow` processes real webhooks and writes its proposed changes to a diff table only.
+- Catches what tests can't: real data shapes, volumes, edge cases. Costs: double processing, and side effects must be strictly suppressed.
+
 ### Feature flags
 Decouple **deploy** from **release**: ship dark, enable per cohort, kill switch. Also the foundation of A/B tests and experimentation platforms.
 

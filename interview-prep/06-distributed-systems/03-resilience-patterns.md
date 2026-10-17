@@ -60,6 +60,8 @@ CLOSED ──(failure rate > threshold in window)──► OPEN ──(after coo
 ```
 - **Open**: fail fast (or fall back) without calling the dependency. That saves resources and gives the dependency time to recover.
 - Configure a minimum request volume, a failure rate threshold (e.g. 50% over 10 s), slow-call counting (latency above X counts as a failure), and the cooldown.
+- **Circuit breaker vs kill switch**: a breaker is **automatic and temporary**, driven by measured failures of a dependency, and closes itself when trial calls succeed. A kill switch is a **manual (or alert-driven) flag** a human flips, e.g. `partner_accounts.status = 'paused'`, for problems a breaker can't see: the partner is sending *valid-looking wrong data*, a mapper bug, a security incident, a customer offboarding. It stays off until someone turns it back on. In an integration: inbound events keep being **stored** while paused, and processing resumes from the cursor later, so nothing is lost.
+  - **How manual**: a row/flag (`partner_accounts.status`, or a feature-flag service), flipped from an admin screen or CLI by on-call or support, **audited** (who, when, why). Workers check it in the claim query (`… AND status = 'live'`), so it takes effect within one poll (~1 s), no deploy. It can be **auto-tripped** by severe alerts (e.g. > 20% of a partner's events failing validation, or a sudden "every lease ended" burst), but **resuming is always a human decision** after checking.
 
 ```ts
 import CircuitBreaker from 'opossum';

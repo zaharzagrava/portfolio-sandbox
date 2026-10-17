@@ -117,7 +117,15 @@ Benefits:
 - **Retention**: `DROP TABLE events_2025_01` (or `DETACH ... CONCURRENTLY`) instead of a massive `DELETE` that bloats the table.
 - Smaller indexes per partition, and vacuum works per partition.
 
-Costs: primary and unique keys must include the partition key; too many partitions (thousands) slow planning; you have to automate partition creation (`pg_partman`).
+Costs: primary and unique keys must include the partition key; you have to automate partition creation (`pg_partman`); and **too many partitions** (thousands) backfire:
+| Cost | Why |
+|---|---|
+| Slower planning | the planner considers every partition the query might touch; pruning helps only when the query filters on the partition key |
+| Lock overhead | a query locks every partition it touches; past 16 relations per transaction Postgres leaves the fast-path lock slots for the shared lock table → contention |
+| Memory | each backend caches metadata for every partition it opens; × hundreds of connections |
+| Migrations | `ALTER TABLE` / new index runs on every partition |
+| Cross-partition queries | "everything received in the last hour, all customers" scans thousands of partitions |
+Rules of thumb: tens to low hundreds of partitions; partition by **time** (retention) or by a key nearly every query filters on. **Per-customer partitions are an anti-pattern**: use a `tenant_id` column + composite indexes leading with it, or `PARTITION BY HASH (tenant_id)` into a fixed small number (e.g. 16).
 
 Rule of thumb: consider it once a table goes past roughly 100 GB, or when you have a clear time-based retention requirement.
 
