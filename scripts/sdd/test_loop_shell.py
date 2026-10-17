@@ -60,6 +60,15 @@ class LoopShell(unittest.TestCase):
         r = subprocess.run(['python3', os.path.join(ROOT, 'scripts/sdd/defer-runtime.py'), t, 'J01', c], capture_output=True, text=True)
         self.assertEqual(r.stdout.strip(), '')
 
+    def test_failures_names_survives_a_reader_that_closes_the_pipe(self):
+        """S06 2026-10-17: `failures.py names big.log | head -3` died of a broken pipe (python exit 120) and, under set -e -o pipefail, ended the whole run."""
+        import tempfile
+        f = os.path.join(tempfile.mkdtemp(), 'big.log')
+        open(f, 'w').write(''.join(f'  ● Suite {i} › S06 AS-{i}: something failed\n\n    boom\n\n' for i in range(20000)))
+        r = subprocess.run(['bash', '-c', f'set -euo pipefail; n="$(python3 {ROOT}/scripts/sdd/failures.py names {f} | head -3 | tr "\\n" ";")"; echo survived'], capture_output=True, text=True)
+        self.assertEqual(r.returncode, 0, r.stderr[-300:])
+        self.assertIn('survived', r.stdout)
+
 
 if __name__ == '__main__':
     unittest.main()

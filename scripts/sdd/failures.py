@@ -228,4 +228,11 @@ def main(argv=None):
 
 
 if __name__ == '__main__':
-    sys.exit(main())
+    try:
+        rc = main()
+        sys.stdout.flush()
+    except BrokenPipeError:
+        # a reader such as `| head -3` closed the pipe: that is not a failure (python would exit 120, and the loop's set -e -o pipefail ended the run)
+        os.dup2(os.open(os.devnull, os.O_WRONLY), sys.stdout.fileno())
+        rc = 0
+    sys.exit(rc)

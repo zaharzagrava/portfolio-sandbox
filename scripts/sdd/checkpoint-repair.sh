@@ -26,7 +26,8 @@ checkpoint_repair_prompt() {
 # flake_record <what> <first failing log> <file to append the note to>
 flake_record() {
   python3 "$FAILURES_PY" flake-note "$2" --label "$1" --append "$3" 2>/dev/null || true
-  local n; n="$(python3 "$FAILURES_PY" names "$2" 2>/dev/null | head -3 | tr '\n' ';')"
+  # `names | head -3` on a big log makes python die of a broken pipe (exit 120); under set -e -o pipefail that ended the whole run (S06, 2026-10-17)
+  local n; n="$(python3 "$FAILURES_PY" names "$2" 2>/dev/null | head -3 | tr '\n' ';' || true)"
   [[ -n "${STATE_FILE:-}" ]] && printf '%s: %s\n' "$1" "${n:-?}" >> "$STATE_FILE.flakes"
   notify info "SDD: $1 passed after a repair that changed no code" "A flake, not a fix: ${n:-see the log}. Recorded in $3." || true
 }

@@ -217,6 +217,17 @@ say "loop starting"
 scripts/sdd/implement-specs.sh ${SDD_ARGS:-} >"$LOG/loop.log" 2>&1
 code=$?
 say "loop ended with exit code $code"
+# An exit code that is not one of the loop's own (0 finished, 30 UNTIL reached, 75 usage limit, 76 time budget, 77 login, 78 blocked
+# list, 143/130 someone stopped it) means the script itself crashed (a broken pipe under set -e ended S06 after 28 minutes, 2026-10-17).
+# The loop resumes from the files, so run it again, at most 3 times, instead of leaving the machine idle until the failure timer.
+crashes=0
+while [[ ! " 0 30 75 76 77 78 130 143 " =~ " $code " ]] && (( crashes < 3 )); do
+  crashes=$((crashes + 1)); say "the loop crashed (exit $code); starting it again ($crashes of 3)"
+  notify warn "SDD: the loop crashed (exit $code)" "The script itself failed, not a capability. The runner starts it again ($crashes of 3); the log is on the machine." 2>/dev/null || true
+  scripts/sdd/implement-specs.sh ${SDD_ARGS:-} >>"$LOG/loop.log" 2>&1
+  code=$?
+  say "loop ended with exit code $code"
+done
 
 kill "$MON_PID" "$SNAP_PID" "$MEM_PID" ${API_PID:+"$API_PID"} 2>/dev/null || true
 say "peak memory used during the run: $(cat "$LOG/peak-mem-mb" 2>/dev/null || echo ?) MB of $(free -m | awk 'NR==2{print $2}') MB (machine type: ${HCLOUD_SERVER_TYPE:-?})"
