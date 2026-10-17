@@ -21,6 +21,7 @@ export function useShopOrders(shopId: string, params: { status?: string; cursor?
     queryKey: queryKeys.seller.orders(shopId, params),
     queryFn: () => fetchShopOrders(shopId, params),
     initialData,
+    staleTime: 0, // the server read only seeds the first paint; orders arrive all the time, so the browser asks again on mount
     placeholderData: keepPreviousData,
     retry: retryUnlessClientError,
   });

@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { expectMainFitsWidth, expectNoSeriousViolations } from './axe';
-import { SEED, createIsolatedProduct, productId } from '../helpers';
+import { SEED, addPageStyle, createIsolatedProduct, productId } from '../helpers';
 
 /**
  * VP rows of W02 (AS-32..AS-34, AS-36..AS-38, AS-75): the product page's layout at the phone (390 x 844) and desktop
@@ -81,12 +81,12 @@ test.describe('Product page layout', () => {
     const bar = page.getByTestId('mobile-purchase-bar');
     await expect(bar).toHaveCount(0); // the main area is in view
     // The seeded product has little content: give the tab panel height so the purchase area can scroll out of view.
-    await page.addStyleTag({ content: '[role="tabpanel"] { min-height: 1800px; }' });
+    await addPageStyle(page, '[role="tabpanel"] { min-height: 1800px; }');
     await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
     if (mobile(page)) {
       await expect(page.getByTestId('purchase-area')).not.toBeInViewport();
       await expect(bar).toBeVisible();
-      await expect(bar).toContainText('$899.99');
+      await expect(bar).toContainText('€899.99');
       const barBox = (await bar.boundingBox())!;
       expect(barBox.y + barBox.height).toBeLessThanOrEqual(page.viewportSize()!.height + 1);
     } else {
@@ -98,7 +98,7 @@ test.describe('Product page layout', () => {
     const id = await productId();
     await page.goto(`/products/${id}`);
     await expect(page.getByTestId('purchase-area')).toBeVisible();
-    await page.addStyleTag({ content: '[role="tabpanel"] { min-height: 1800px; }' });
+    await addPageStyle(page, '[role="tabpanel"] { min-height: 1800px; }');
     await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
     const bar = page.getByTestId('mobile-purchase-bar');
     if (!mobile(page)) {
