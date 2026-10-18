@@ -61,6 +61,9 @@ export function useInventory(shopId: string, params: InventoryParams, initialDat
     queryFn: () => fetchInventory(shopId, params),
     placeholderData: keepPreviousData,
     initialData,
+    // the search index lags behind a new product by a few seconds: a search is read again whenever it is asked for again, so an
+    // empty answer is never served for a minute (the browse list keeps the default)
+    staleTime: isSearch(params) ? 0 : undefined,
     retry: retryUnlessClientError,
   });
 }

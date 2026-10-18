@@ -12,6 +12,11 @@ test.describe('Seller bulk import', () => {
     const { shopId } = await openShop(page);
 
     await page.goto(shopPath(shopId, 'imports'));
+    // a file chosen before React attaches its handlers is never seen (the Start button stays disabled on a loaded machine)
+    await page.waitForFunction(() => {
+      const input = document.querySelector('[data-testid="import-file"]');
+      return !!input && Object.keys(input).some((key) => key.startsWith('__reactProps'));
+    });
     const rows = ['sku,title,description,price,stock,category,brand'];
     for (let i = 1; i <= 20; i++) rows.push(`E2E-${i},Item ${i},Generated,${i % 5 === 0 ? 'abc' : '12.50'},3,kitchen,ClayWorks`);
     await page.getByTestId('import-file').setInputFiles({

@@ -105,7 +105,11 @@ test.describe('Seller shell layout', () => {
     try {
       await page.goto(shopPath(shopId));
       await expect(page.getByLabel('Shop status')).toHaveText('This shop is suspended. You can view data but not make changes.');
-      await expect(content(page)).toHaveScreenshot('suspended-banner.png', { stylePath });
+      // The live panel changes height with its connection (connecting, live with the bars, unavailable): shoot it once live.
+      const live = page.getByRole('region', { name: 'Last 60 seconds' });
+      await expect(live.getByRole('status')).toHaveText('Live', { timeout: 15_000 });
+      await expect(live.getByRole('img')).toBeVisible();
+      await expect(content(page)).toHaveScreenshot('suspended-banner.png', { stylePath, mask: [live.locator('[data-live-values]')] });
       await expectAccessibleAndContained(page);
     } finally {
       await setSuspended(shopId, false);

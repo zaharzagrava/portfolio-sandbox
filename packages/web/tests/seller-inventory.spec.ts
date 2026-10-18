@@ -48,7 +48,10 @@ test.describe('Seller inventory', () => {
     // Step 3 (AS-30): a typo still finds it. The search index lags behind a new product, so the search is repeated until it shows.
     const search = page.getByRole('searchbox', { name: 'Search your products' });
     await expect(async () => {
+      // the box reports after 300 ms of silence: wait until the empty text reached the address, or both fills collapse into one
+      // unchanged `q` and the search is never asked again
       await search.fill('');
+      await expect(page).not.toHaveURL(/q=/, { timeout: 3_000 });
       await search.fill('ceramc mug');
       await expect(page).toHaveURL(/q=ceramc/, { timeout: 3_000 });
       await expect(rowOf(page, TITLE)).toBeVisible({ timeout: 3_000 });

@@ -177,7 +177,7 @@ export function LivePanel({ shopId, currency }: { shopId: string; currency?: str
         </p>
       </div>
       {!unavailable && (
-        <div data-live-values aria-live="off" className={stale ? 'space-y-3 opacity-50' : 'space-y-3'}>
+        <div data-live-values aria-live="off" className={stale ? 'space-y-3 text-muted-foreground' : 'space-y-3'}>
           <dl className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             <Value label="Checkouts">{frame ? frame.last60s.checkouts : '—'}</Value>
             <Value label="Orders">{frame ? frame.last60s.orders : '—'}</Value>
