@@ -30,3 +30,9 @@ Run at the final checkpoint (`!STOP final`, `scripts/sdd/checkpoints/final.sh`):
 - Delete the merged remote branches `origin/harness/overnight` and `origin/claude/specs-incremental` (waiting for your OK).
 - Review `python3 scripts/sdd/report.py --stdout`, the QA ledger `scripts/qa/findings.tsv` and `docs/work/decisions/` (BREAKING and CONTRACT lines first).
 - Spec vocabulary: read the 15 term pages that judge granularity (`upstream`, `idempotency-key`, `event-consumer`, `inbox-table`, `loader`, `outbox-relay`, `published-version`, `search-facets`, `can-advance`, `decode-snapshot`, `replay-false`, `category-tracking`, `host-bff-cookies`, `combined-business-multiplier`, `rate-limit-policy`); sign the living pages (S13, S10, S01 first); optional Opus second opinion on the term finder.
+
+## 5. Quality items found while watching the runs (decide after the build)
+
+- **W04 AS-19 was loosened by the doctor (2026-10-18, doctor-1).** `packages/web/tests/seller-live.spec.ts` now waits up to 20 s for the Orders counter instead of 2 s; only Revenue and the "Live" status keep the 2 s check. Reason given: under load the buyer's "Order confirmed" page appears before the live counters count the order. No test measures the full paid-to-panel latency any more (`live-panel.test.tsx` covers the panel alone). Restore the 2 s assertion, or measure the real latency under load and decide whether the spec target or the code is wrong.
+- **API log noise:** `MaxListenersExceededWarning: 11 finish listeners added to [ServerResponse]` about 9,000 times per full browser run; some middleware adds a finish listener per request.
+- **Dev DB holds rows dated 2026-10-19/20** from earlier journey runs that moved the clock; harmless now, but a stale volume in the runner image should be rebuilt (`scripts/vps/build-snapshot.sh --with-web`).

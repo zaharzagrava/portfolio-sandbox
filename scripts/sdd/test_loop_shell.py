@@ -130,6 +130,15 @@ class LoopShell(unittest.TestCase):
         r = subprocess.run(['bash', os.path.join(ROOT, 'scripts/sdd/stack-fix.sh'), 'api-ready'], capture_output=True, text=True, env={**env, 'API_READY_WAIT_S': '4'})
         self.assertEqual(r.returncode, 1); self.assertIn('not stable', r.stdout)
 
+    def test_flaky_browser_tests_are_recorded_not_hidden(self):
+        """PW_RETRIES=1 lets a flake pass on the retry; the gate must still list it."""
+        import tempfile
+        d = tempfile.mkdtemp()
+        open(os.path.join(d, '.gate.log'), 'w').write('noise\n  2 flaky\n    [desktop] › tests/seller-live.spec.ts:8:7 › Seller live › W04 AS-19\n    [mobile] › tests/a.spec.ts:1:1 › x › y\n  454 passed (25.1m)\n')
+        r = subprocess.run(['bash', '-c', f'source {ROOT}/scripts/sdd/checkpoint-repair.sh 2>/dev/null; flaky_specs_record W04 {d}'], capture_output=True, text=True)
+        out = open(os.path.join(d, 'flaky-specs.md')).read()
+        self.assertIn('seller-live.spec.ts:8:7', out); self.assertIn('tests/a.spec.ts', out); self.assertNotIn('454 passed', out)
+
 
 if __name__ == '__main__':
     unittest.main()

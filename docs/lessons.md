@@ -38,6 +38,7 @@ with the links that prove it: backticked file paths and commit hashes. For a `pr
 - L-027 2026-10-17 resources prevented
 - L-028 2026-10-17 process prevented
 - L-029 2026-10-18 state-leak prevented
+- L-030 2026-10-18 timing prevented
 
 ## L-001 A message option the queue refuses, found only by hand
 - **Rule:** A queue option must be validated where the message is created, not discovered when the relay fails (FIFO-only options like `groupId` never go to a standard queue).
@@ -211,3 +212,8 @@ Second part of L-027: even without the out-of-memory, the watch-mode API restart
 - **Rule:** Anything that changes global state of the dev stack (the API clock, feature flags that every user sees, key rotation) runs ALONE, after the parallel suite. `packages/web/playwright.config.ts` leaves `CLOCK_SPECS` out of a normal run; `PW_CLOCK=1 playwright test --workers=1` runs them; the SDD gate, the checkpoint sweep and `fresh-run.sh` do both.
 - **Symptom:** W04 was BLOCKED and W05 failed its gate all night (2026-10-17/18) on one spec, cart checkout JC-2 ("Order confirmed" never appeared), on desktop and mobile, in every full run; alone it passed in 24 s. The repair agents called it a load flake and changed nothing, which cost about 12 hours and every repair budget. **Cause:** the J01 UI journey (`buy-to-payout.spec.ts`) calls `control.advance(49 * 3600)` to run the weekly payout; while the API clock is moved, every other session gets `401 invalid_token`, and with two workers it ran next to JC-2. The API log showed about 2,200 `invalid_token` responses per run and rows dated two days ahead. Found by running the same batch of spec files on the stopped runner: 2 failures with the old config, 64 passes and 0 `invalid_token` with the new one; the clock was back at offset 0.
 - **Prevention:** the config split above; also: a failure that appears only in the full run and not alone is an interaction between specs, not "load". Compare the API log of the full run with the log of the single run.
+
+## L-030 About 450 browser tests on a loaded machine always flake once
+- **Rule:** The gate runs Playwright with one retry (`PW_RETRIES=1`, set by `vm-run.sh`). A test that fails and then passes is a flake: it passes the gate and is written to `specs/<capability>/flaky-specs.md`; a test that is really broken fails twice.
+- **Symptom:** W04's web gate failed in a different place every cycle (seller-import, seller-inventory, two layout screenshots, live numbers, five seller layout screenshots), each time one to five of about 450 tests, and each failure cost a repair round plus a 25-minute full run (about 40 minutes per cycle, six hours in total on 2026-10-18); repair agents "fixed" a different timing issue each time or loosened a wait.
+- **Prevention:** the retry plus the flaky list. Look at the lists when a spec starts failing for real, and when it appears in them twice, make it deterministic.

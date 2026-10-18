@@ -30,7 +30,10 @@ export default defineConfig({
   /* Fail the build on CI if you accidentally left test.only in the source code. */
   forbidOnly: !!process.env.CI,
   /* Retry on CI only */
-  retries: process.env.CI ? 2 : 0,
+  // The SDD gate sets PW_RETRIES=1: a test that fails and then passes is reported as "flaky" (and recorded), a test that is really broken fails
+  // twice. About 450 browser tests on a loaded 2-worker machine fail at least one flake per full run; without a retry each flake cost a 40-minute
+  // repair-and-gate cycle (W04, 2026-10-18).
+  retries: process.env.PW_RETRIES !== undefined ? Number(process.env.PW_RETRIES) : process.env.CI ? 2 : 0,
   /* Opt out of parallel tests on CI. */
   workers: process.env.CI ? 1 : 2, // one local dev stack: keep the load (and RAM) modest
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */

@@ -52,6 +52,30 @@ gate_passed() {
     extra='"flake":true'; flake_record "$1 gate" "$2/.gate.first-fail.log" "$2/gaps.md"
   fi
   metric_step "$1" gate "$3" "$(date +%s)" pass "$4" "" "$extra"
+  flaky_specs_record "$1" "$2"
+}
+# flaky_specs_record <id> <dir>: the browser tests that failed once and passed on the retry (PW_RETRIES=1) are listed in <dir>/flaky-specs.md, so a
+# retry never hides them: they are the first thing to look at when a spec starts to fail for real.
+flaky_specs_record() {
+  [[ -f "$2/.gate.log" ]] || return 0
+  python3 - "$1" "$2" <<'PY' || true
+import re, sys, os, datetime
+cap, d = sys.argv[1], sys.argv[2]
+text = re.sub(r'\x1b\[[0-9;]*m', '', open(os.path.join(d, '.gate.log'), encoding='utf-8', errors='replace').read())
+names = set()
+for block in re.split(r'\n(?=\s+\d+ (?:failed|passed|flaky|skipped|did not run))', text):
+    m = re.match(r'\s+(\d+) flaky\n((?:\s+\[[^\]]+\] › .*\n?)+)', block)
+    if m:
+        for line in m.group(2).splitlines():
+            if line.strip(): names.add(line.strip()[:200])
+if names:
+    p = os.path.join(d, 'flaky-specs.md')
+    new = not os.path.exists(p)
+    with open(p, 'a', encoding='utf-8') as f:
+        if new: f.write('# Browser tests that failed once and passed on the retry\n\nRecorded by the gate (PW_RETRIES=1). Look here first when one of them fails for real.\n')
+        f.write('\n' + datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%d %H:%MZ') + ' ' + cap + ' gate:\n')
+        for n in sorted(names): f.write('- ' + n + '\n')
+PY
 }
 
 # checkpoint_with_repair <label>: 0 when the checkpoint passes (possibly after repairs), 1 when it stays failed.
