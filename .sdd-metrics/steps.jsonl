@@ -819,3 +819,7 @@
 {"run":"20261018T082649Z","capability":"W04","step":"repair-1","start":"2026-10-18T11:53:14Z","end":"2026-10-18T12:12:46Z","seconds":1172,"result":"ok","attempt":1,"reason":"ok","code_changed":true}
 {"run":"20261018T082649Z","capability":"W04","step":"gate","start":"2026-10-18T12:12:46Z","end":"2026-10-18T12:50:30Z","seconds":2264,"result":"fail","attempt":2,"reason":""}
 {"run":"20261018T082649Z","capability":"W04","step":"repair-2","start":"2026-10-18T12:50:30Z","end":"2026-10-18T12:51:26Z","seconds":56,"result":"ok","attempt":1,"reason":"ok","code_changed":true}
+{"run":"20261018T125731Z","capability":"-","step":"run-start","start":"2026-10-18T12:57:31Z","end":"2026-10-18T12:57:31Z","seconds":0,"result":"ok","attempt":1,"reason":"commit=6bc8dc18 MAX_GATE_REPAIRS=5 MAX_REPAIRS_PER_SPEC=2 REPAIR_BUDGET_MIN=60 MAX_IMPLEMENT_PASSES=10"}
+{"run":"20261018T125731Z","capability":"W04","step":"converge-1","start":"2026-10-18T12:57:32Z","end":"2026-10-18T12:57:57Z","seconds":25,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261018T125731Z","capability":"W04","step":"gate","start":"2026-10-18T12:57:57Z","end":"2026-10-18T13:36:54Z","seconds":2337,"result":"pass","attempt":1,"reason":""}
+{"run":"20261018T125731Z","capability":"W04","step":"built","start":"2026-10-18T12:57:31Z","end":"2026-10-18T13:36:54Z","seconds":2363,"result":"ok","attempt":1,"reason":"Seller dashboard: shop overview, live sales numbers, inventory management, developer settings (API keys, webhook endpoints)"}
