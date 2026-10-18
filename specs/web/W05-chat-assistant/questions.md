@@ -51,3 +51,7 @@ Format: `[TAG] question → default taken → why`. BREAKING first, then CONTRAC
 - [LOCAL] Existing `data-testid` hooks (`chat-title`, `chat-message`, `chat-channel`, `assistant-message`, `user-message`) stay; new tests prefer roles and names.
 - [LOCAL] Unread divider text "{n} new messages" and the jump pill use the server's `unread` at open time → no guessing.
 - [LOCAL] Tablet widths (641–1023 px) use the mobile single-pane layout → the two-pane layout needs ≥ 1024 px for a usable message width.
+
+## T080 backend suite result (not caused by W05, which changed no backend file)
+- `scripts/sdd/test-spec.sh chat`: `apps/core/src/chat-wiring.e2e-spec.ts` exits with `process.exit 1` while `NestFactory.create(CoreModule)` boots (log /tmp/test-spec.BPEOv7.log, no message printed). Hypothesis: a stack/environment dependency of the monolith boot, not the chat domain.
+- `scripts/sdd/test-spec.sh assistant`: 389 of 390 pass; `assistant-metering.e2e-spec.ts` AS-69 fails with `Unknown table expression identifier 'llm_requests'` (ClickHouse table missing on the test stack, class L-011). Hypothesis: the ClickHouse migration is not applied on this stack.

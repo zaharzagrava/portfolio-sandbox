@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { Suspense, type ReactNode } from 'react';
 import { AccountSlot, AccountSlotSkeleton } from '@/components/auth/account-slot';
 import { CartBadge } from '@/components/cart/cart-badge';
-import { AssistantLauncher } from '@/components/chat/assistant-launcher';
+import { AssistantLauncher } from '@/components/assistant/assistant-launcher';
 import { MainNav } from '@/components/layout/main-nav';
 import { MobileMenu } from '@/components/layout/mobile-menu';
 import { SearchRow } from '@/components/layout/search-row';

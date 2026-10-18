@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from 'react';
 import { AddToCartButton } from '@/components/add-to-cart-button';
 import { SharePopover } from '@/components/product/share-popover';
 import { Button } from '@/components/ui/button';
+import { chatHref } from '@/lib/chat/links';
 import { formatMoney } from '@/lib/utils';
 
 /**
@@ -62,7 +63,7 @@ export function PurchaseArea({
       <div ref={main} className="flex flex-wrap gap-3" data-testid="purchase-area">
         <AddToCartButton productId={productId} category={category} disabled={!inStock} />
         <Button size="lg" variant="outline" asChild>
-          <Link href={`/chat?product=${productId}`}>
+          <Link href={chatHref({ product: productId })}>
             <MessagesSquare aria-hidden="true" className="mr-2 size-4" />
             Chat with seller
           </Link>

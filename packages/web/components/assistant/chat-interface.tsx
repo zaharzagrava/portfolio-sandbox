@@ -1,104 +1,78 @@
 'use client';
 
-import { useRef, useEffect } from 'react';
-import { Send, Square } from 'lucide-react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { useAssistantChat } from '@/hooks/use-assistant-chat';
-import { ChatMessage } from './chat-message';
-import { useAuth } from '@/hooks/use-auth';
-import Link from 'next/link';
+import type { AssistantChat } from '@/hooks/use-assistant-chat';
+import { useBrowserLocation } from '@/hooks/use-browser-location';
+import { Composer } from './composer';
+import { LocationSwitch } from './location-switch';
+import { ReplyNotice } from './reply-notice';
+import { Transcript } from './transcript';
+import { UsageMeter } from './usage-meter';
 
-export function ChatInterface() {
-  const { messages, input, setInput, sendMessage, isStreaming, stopGeneration } = useAssistantChat();
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const { isAuthenticated } = useAuth();
+const LOCATION_FAILED = ['denied', 'unsupported', 'timeout', 'unavailable'];
 
-  useEffect(() => {
-    if (scrollRef.current) {
-      const scrollContainer = scrollRef.current.querySelector('[data-radix-scroll-area-viewport]');
-      if (scrollContainer) {
-        scrollContainer.scrollTop = scrollContainer.scrollHeight;
-      }
-    }
-  }, [messages, isStreaming]);
+/**
+ * The member's view of the conversation: transcript, inline notice, composer with the location switch, allowance line. All
+ * state comes from `useAssistantChat` (owned by the launcher so a running reply survives closing the sheet); the only state kept
+ * here is the location switch and the position it holds, in memory, gone when the sheet closes (W05 AS-46).
+ */
+export function ChatInterface({ chat }: { chat: AssistantChat }) {
+  const location = useBrowserLocation();
+  const [wanted, setWanted] = useState(false);
+  const failed = wanted && LOCATION_FAILED.includes(location.status);
+  const on = wanted && !failed;
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      if (input.trim() && !isStreaming) {
-        sendMessage(input);
-      }
-    }
+  const toggle = (next: boolean) => {
+    setWanted(next);
+    if (next) location.request();
   };
 
-  const onSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (input.trim() && !isStreaming) {
-      sendMessage(input);
-    }
-  };
+  const send = () => chat.send(on && location.coords ? { lat: location.coords.lat, lng: location.coords.lng } : {});
 
-  if (!isAuthenticated) {
-    return (
-      <div className="p-6 text-center text-muted-foreground">
-        <Link href="/login" className="underline">Log in</Link> to chat with the shopping assistant.
+  let empty;
+  if (chat.conversationId !== null && chat.historyState === 'loading') {
+    empty = (
+      <p role="status" className="my-8 text-center text-sm text-muted-foreground">
+        Loading the conversation…
+      </p>
+    );
+  } else if (chat.conversationId !== null && chat.historyState === 'error') {
+    empty = (
+      <div role="alert" className="my-8 flex flex-col items-center gap-2 text-center text-sm">
+        <p>We couldn&apos;t load this conversation.</p>
+        <Button type="button" variant="outline" className="min-h-11" onClick={() => void chat.refetchHistory()}>
+          Try again
+        </Button>
+      </div>
+    );
+  } else if (chat.conversationId === null) {
+    empty = (
+      <div className="my-8 text-center text-muted-foreground">
+        <p>Hi! I&apos;m your AI Shopping Assistant.</p>
+        <p className="mt-2 text-sm">How can I help you today?</p>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col h-full bg-background">
-      <ScrollArea className="flex-1 p-4" ref={scrollRef}>
-        <div className="flex flex-col gap-4 pb-4">
-          {messages.map((message, i) => (
-            <ChatMessage key={message.id || i} message={message} />
-          ))}
-          {messages.length === 0 && (
-            <div className="text-center text-muted-foreground my-8">
-              <p>Hi! I'm your AI Shopping Assistant.</p>
-              <p className="text-sm mt-2">How can I help you today?</p>
-            </div>
-          )}
-        </div>
-      </ScrollArea>
-      <div className="p-4 border-t bg-background">
-        <form onSubmit={onSubmit} className="flex items-end gap-2 relative">
-          <Textarea
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Ask me anything..."
-            className="min-h-[60px] max-h-[200px] resize-none pr-12 py-3"
-            rows={1}
-          />
-          <div className="absolute right-2 bottom-2 flex items-center justify-center h-[44px]">
-            {isStreaming ? (
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                onClick={stopGeneration}
-                className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                title="Stop generation"
-              >
-                <Square className="h-4 w-4 fill-current" />
-              </Button>
-            ) : (
-              <Button
-                type="submit"
-                variant="ghost"
-                size="icon"
-                disabled={!input.trim()}
-                className="h-8 w-8 text-primary hover:text-primary hover:bg-primary/10"
-              >
-                <Send className="h-4 w-4" />
-              </Button>
-            )}
-          </div>
-        </form>
-      </div>
+    <div className="flex min-h-0 flex-1 flex-col bg-background">
+      <Transcript items={chat.items} busy={chat.running} announce={chat.announce} empty={empty} />
+      {chat.notice && <ReplyNotice notice={chat.notice} onTryAgain={chat.notice.tryAgain === 'reattach' ? chat.reattach : chat.tryAgain} onNewChat={chat.newChat} />}
+      <Composer
+        value={chat.input}
+        onChange={chat.setInput}
+        onSend={send}
+        canSend={chat.canSend}
+        running={chat.running}
+        stopping={chat.reply.phase === 'stopping'}
+        canStop={chat.reply.messageId !== undefined}
+        onStop={chat.stop}
+        lock={chat.lock}
+        onNewChat={chat.newChat}
+        switcher={<LocationSwitch checked={on} failed={failed} onCheckedChange={toggle} />}
+      />
+      <UsageMeter usage={chat.usage} />
     </div>
   );
 }

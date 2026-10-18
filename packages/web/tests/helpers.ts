@@ -515,3 +515,30 @@ export async function sellerMenu(page: Page) {
   await expect(drawer).toBeVisible();
   return drawer;
 }
+
+/** The assistant sheet (W05 AS-41): opened from the header button, or from the phone menu's entry; returns the dialog. */
+export async function openAssistant(page: Page) {
+  await openMenuIfCollapsed(page); // below 1024 px the launcher is a menu entry
+  await page.getByRole('button', { name: 'AI Assistant' }).click();
+  const sheet = page.getByRole('dialog', { name: 'AI Shopping Assistant' });
+  await expect(sheet).toBeVisible();
+  return sheet;
+}
+
+/** Types a question into the open assistant sheet and sends it with Enter. */
+export async function askAssistant(page: Page, text: string) {
+  const field = page.getByRole('textbox', { name: 'Message to the assistant' });
+  await field.fill(text);
+  await field.press('Enter');
+}
+
+/**
+ * A buyer opens a product's chat the way the page offers it (W05 AS-01): the product page, then **Chat with seller**. Waits
+ * until the address is `/chat?channel=…` and the conversation's title is on screen.
+ */
+export async function openProductChat(page: Page, productId: string) {
+  await page.goto(`/products/${productId}`);
+  await page.getByRole('link', { name: 'Chat with seller' }).click();
+  await expect(page).toHaveURL(/\/chat\?channel=[0-9a-f-]{36}$/);
+  await expect(page.getByTestId('chat-title')).toBeVisible();
+}

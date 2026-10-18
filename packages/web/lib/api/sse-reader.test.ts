@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { chunkedResponse, controlledStream } from '../../tests/support/chunked-stream';
 import { SseParser, streamSse } from './sse-reader';
 
 describe('streamSse', () => {
@@ -15,6 +16,33 @@ describe('streamSse', () => {
     expect(headers['X-CSRF-Token']).toBe('tok');
     expect(Object.keys(headers).map((k) => k.toLowerCase())).not.toContain('authorization');
     expect(events).toEqual(['done']);
+  });
+
+  it('W05 AS-49: a connection cut after the stream opened ends the read quietly; an abort by the caller rejects with an AbortError', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(chunkedResponse(['event: text\ndata: {}\n\n', 'event: te'], { drop: 'error' }));
+    const events: string[] = [];
+    const response = await streamSse('/api/assistant/x', { method: 'GET' }, (e) => events.push(e.event));
+    expect(response.ok).toBe(true);
+    expect(events).toEqual(['text']);
+
+    const stream = controlledStream();
+    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(stream.response);
+    const controller = new AbortController();
+    let opened!: () => void;
+    const firstEvent = new Promise<void>((resolve) => (opened = resolve));
+    const reading = streamSse('/api/assistant/x', { method: 'GET', signal: controller.signal }, () => opened()).catch((e: unknown) => e);
+    stream.push('event: text\ndata: {}\n\n');
+    await firstEvent;
+    controller.abort();
+    expect(((await reading) as Error).name).toBe('AbortError');
+    expect(stream.cancelled()).toBe(true);
+  });
+
+  it('W05 AS-67: no access token is read or sent, and a request refused before a stream opens comes back as the response', async () => {
+    const spy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('{"code":"x"}', { status: 429 }));
+    const response = await streamSse('/api/assistant/chat', { body: { q: 1 } }, () => undefined);
+    expect(response.status).toBe(429);
+    expect(JSON.stringify(spy.mock.calls[0][1]?.headers)).not.toMatch(/bearer|authorization/i);
   });
 });
 

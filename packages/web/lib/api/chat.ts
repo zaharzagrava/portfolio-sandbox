@@ -1,54 +1,135 @@
+import {
+  chatChannelSchema,
+  chatChannelSyncSchema,
+  chatInboxPageSchema,
+  chatMarkReadResponseSchema,
+  chatMessagePageSchema,
+  chatReceiptsSchema,
+  chatUnreadPageSchema,
+  presenceResponseSchema,
+  sendMessageResponseSchema,
+  type ChatChannel,
+  type ChatChannelSync,
+  type ChatInboxPage,
+  type ChatMessagePage,
+  type ChatReceipts,
+  type ChatUnreadPage,
+  type PresenceResponse,
+  type SendMessageResponse,
+} from '@marketplace-sandbox/contracts';
+import { z } from 'zod';
 import { apiClient } from './client';
+import { problemFromError, type Problem } from './errors';
+import { parseBody } from './parse';
 
 /**
- * Product chat (SD-14) over HTTP: send with a client-generated id (retries are idempotent), and catch up with
- * per-channel `seq` cursors via /chat/sync - the same path an offline phone uses when it reconnects.
- * (The low-latency WebSocket path is the separate Rust gateway, not part of the local stack.)
+ * Product chat over HTTP (S24; W05 FR-072). Same-origin relative URLs, the session cookie travels by itself and the shared
+ * client adds the CSRF proof on every write (W01); there is no token and no credential header of our own. Every body is parsed
+ * with its `packages/contracts` schema (a mismatch is the unexpected error of FR-062). Lists are pages `{ items, nextCursor }`.
+ * `send` never creates the `clientMessageId`: the caller makes one per user action and reuses it on every retry (FR-026).
  */
-export interface ChatChannel {
-  id: string;
-  productId: string;
-  sellerId: string;
-  title: string;
-  isArchived: boolean;
-  myRole?: 'OWNER' | 'MODERATOR' | 'MEMBER';
+
+const BASE = '/api/chat';
+
+/** The problem of a failed chat call: W01's `Problem` plus the chat extension members read from the raw body (gap M7). */
+export type ChatProblem = Problem & {
+  /** `403 muted`: when the mute ends (an ISO instant). */
+  mutedUntil?: string;
+};
+
+const extensionSchema = z.object({ mutedUntil: z.string().min(1).optional() });
+
+export function chatProblem(error: unknown): ChatProblem {
+  const problem = problemFromError(error);
+  const data = (error as { response?: { data?: unknown } } | null)?.response?.data;
+  const extension = extensionSchema.safeParse(data && typeof data === 'object' ? { mutedUntil: (data as Record<string, unknown>).mutedUntil } : {});
+  return extension.success && extension.data.mutedUntil ? { ...problem, mutedUntil: extension.data.mutedUntil } : problem;
 }
 
-export interface ChatMessage {
-  id: string;
-  seq: number;
-  authorId: string;
-  body: string | null;
-  createdAt: string;
-  deleted: boolean;
-}
-
-export interface ChannelSync {
-  channelId: string;
-  messages: ChatMessage[];
-  lastSeq: number;
-  hasMore: boolean;
-}
-
-/** Adds new messages, replaces re-delivered ones (same id), keeps `seq` order. */
-export function mergeMessages(current: ChatMessage[], incoming: ChatMessage[]): ChatMessage[] {
-  if (incoming.length === 0) return current;
-  const byId = new Map(current.map((m) => [m.id, m]));
-  for (const m of incoming) byId.set(m.id, m);
-  return [...byId.values()].sort((a, b) => a.seq - b.seq);
-}
+type PageParams = { limit?: number; cursor?: string };
+const pageQuery = ({ limit, cursor }: PageParams) => ({ ...(limit !== undefined ? { limit } : {}), ...(cursor ? { cursor } : {}) });
 
 export const chatApi = {
-  myChannels: async (): Promise<{ channelId: string; unread: number; lastSeq: number }[]> =>
-    (await apiClient.get<{ items: { channelId: string; unread: number; lastSeq: number }[] }>('/api/chat/unread')).data.items,
-  channel: async (channelId: string): Promise<ChatChannel> => (await apiClient.get(`/api/chat/channels/${channelId}`)).data,
-  byProduct: async (productId: string): Promise<ChatChannel> => (await apiClient.get(`/api/chat/channels/by-product/${productId}`)).data,
-  create: async (productId: string): Promise<ChatChannel> => (await apiClient.post('/api/chat/channels', { productId })).data,
-  join: async (channelId: string): Promise<ChatChannel> => (await apiClient.post(`/api/chat/channels/${channelId}/join`, {})).data,
-  sync: async (cursors: Record<string, number>): Promise<ChannelSync[]> => (await apiClient.post('/api/chat/sync', { cursors })).data,
-  send: async (channelId: string, body: string): Promise<{ message: ChatMessage }> =>
-    (await apiClient.post(`/api/chat/channels/${channelId}/messages`, { clientMessageId: crypto.randomUUID(), body })).data,
-  markRead: async (channelId: string, seq: number): Promise<void> => {
-    await apiClient.post(`/api/chat/channels/${channelId}/read`, { seq });
+  /** `GET /chat/channels/mine`: the member's chats with `unread`, `lastSeq`, `lastMessageAt` in one call (FR-010). */
+  async inbox(params: PageParams = {}): Promise<ChatInboxPage> {
+    const { data } = await apiClient.get<unknown>(`${BASE}/channels/mine`, { params: pageQuery(params) });
+    return parseBody(chatInboxPageSchema, data);
+  },
+
+  /** `GET /chat/unread`: per-chat unread counts (the inbox already carries them; kept for the fallback). */
+  async unreadPage(params: PageParams = {}): Promise<ChatUnreadPage> {
+    const { data } = await apiClient.get<unknown>(`${BASE}/unread`, { params: pageQuery(params) });
+    return parseBody(chatUnreadPageSchema, data);
+  },
+
+  async channel(channelId: string): Promise<ChatChannel> {
+    const { data } = await apiClient.get<unknown>(`${BASE}/channels/${encodeURIComponent(channelId)}`);
+    return parseBody(chatChannelSchema, data);
+  },
+
+  /** The chat of a product; `myRole` is null for a visitor who has not joined. `404 channel_not_found` when there is none. */
+  async byProduct(productId: string): Promise<ChatChannel> {
+    const { data } = await apiClient.get<unknown>(`${BASE}/channels/by-product/${encodeURIComponent(productId)}`);
+    return parseBody(chatChannelSchema, data);
+  },
+
+  /** Shop staff open the chat of a product (the explicit button of AS-04). */
+  async create(productId: string): Promise<ChatChannel> {
+    const { data } = await apiClient.post<unknown>(`${BASE}/channels`, { productId });
+    return parseBody(chatChannelSchema, data);
+  },
+
+  async join(channelId: string): Promise<ChatChannel> {
+    const { data } = await apiClient.post<unknown>(`${BASE}/channels/${encodeURIComponent(channelId)}/join`, {});
+    return parseBody(chatChannelSchema, data);
+  },
+
+  /** A history page, newest first; `cursor` is the previous page's `nextCursor`. */
+  async history(channelId: string, params: PageParams = {}): Promise<ChatMessagePage> {
+    const { data } = await apiClient.get<unknown>(`${BASE}/channels/${encodeURIComponent(channelId)}/messages`, { params: pageQuery(params) });
+    return parseBody(chatMessagePageSchema, data);
+  },
+
+  /** `201` for a new message, `200 duplicate: true` for a replay of the same `clientMessageId`. */
+  async send(request: { channelId: string; clientMessageId: string; body: string; replyToId?: string | null }): Promise<SendMessageResponse> {
+    const { channelId, clientMessageId, body, replyToId } = request;
+    const { data } = await apiClient.post<unknown>(`${BASE}/channels/${encodeURIComponent(channelId)}/messages`, {
+      clientMessageId,
+      body,
+      ...(replyToId ? { replyToId } : {}),
+    });
+    return parseBody(sendMessageResponseSchema, data);
+  },
+
+  /** `POST /chat/sync`: one result per cursor; `hasMore` means call again from `lastSeq`. */
+  async sync(cursors: Record<string, number>): Promise<ChatChannelSync[]> {
+    const { data } = await apiClient.post<unknown>(`${BASE}/sync`, { cursors });
+    return parseBody(z.array(chatChannelSyncSchema), data);
+  },
+
+  /** The response carries the new `unread`: the badge is set from it, never guessed (FR-031). */
+  async markRead(channelId: string, seq: number): Promise<{ lastReadSeq: number; unread: number }> {
+    const { data } = await apiClient.post<unknown>(`${BASE}/channels/${encodeURIComponent(channelId)}/read`, { seq });
+    return parseBody(chatMarkReadResponseSchema, data);
+  },
+
+  /** `204`; a message that is already gone answers `404 message_not_found`, which the caller treats as done. */
+  async remove(channelId: string, messageId: string): Promise<void> {
+    await apiClient.delete(`${BASE}/channels/${encodeURIComponent(channelId)}/messages/${encodeURIComponent(messageId)}`);
+  },
+
+  async receipts(channelId: string): Promise<ChatReceipts> {
+    const { data } = await apiClient.get<unknown>(`${BASE}/channels/${encodeURIComponent(channelId)}/receipts`);
+    return parseBody(chatReceiptsSchema, data);
+  },
+
+  /** `204`; best effort, a failure never shows (AS-35). */
+  async heartbeat(): Promise<void> {
+    await apiClient.post(`${BASE}/presence/heartbeat`, {});
+  },
+
+  async presence(userIds: string[]): Promise<PresenceResponse> {
+    const { data } = await apiClient.get<unknown>(`${BASE}/presence`, { params: { userIds: userIds.join(',') } });
+    return parseBody(presenceResponseSchema, data);
   },
 };

@@ -97,9 +97,23 @@ export const queryKeys = {
     all: ['payments'] as const,
     detail: (id: string) => ['payments', 'detail', id] as const,
   },
+  /** W05 (FR-070): the member's inbox, the open chat and what hangs off it. `all` is an invalidation prefix only. */
   chat: {
-    channels: ['chat', 'channels'],
-    messages: (channelId: string) => ['chat', 'messages', channelId],
+    all: ['chat'] as const,
+    inbox: () => ['chat', 'inbox'] as const,
+    unreadTotal: () => ['chat', 'unreadTotal'] as const,
+    channel: (channelId: string) => ['chat', 'channel', channelId] as const,
+    byProduct: (productId: string) => ['chat', 'byProduct', productId] as const,
+    messages: (channelId: string) => ['chat', 'messages', channelId] as const,
+    receipts: (channelId: string) => ['chat', 'receipts', channelId] as const,
+    presence: (userId: string) => ['chat', 'presence', userId] as const,
+  },
+  /** W05 (FR-070): the assistant's conversations, one conversation's history and the monthly allowance. */
+  assistant: {
+    all: ['assistant'] as const,
+    conversations: () => ['assistant', 'conversations'] as const,
+    history: (conversationId: string) => ['assistant', 'history', conversationId] as const,
+    usage: () => ['assistant', 'usage'] as const,
   },
   notifications: {
     all: ['notifications'] as const,
