@@ -65,8 +65,10 @@ export const logMark = (path: string | null): number =>
   path ? statSync(path).size : 0;
 
 export function logLinesSince(path: string, mark: number): string[] {
-  return readFileSync(path)
-    .subarray(mark)
+  const bytes = readFileSync(path);
+  // A log that is now shorter than the mark was truncated or recreated (the runner restarts the API): every line in it is newer than the mark.
+  return bytes
+    .subarray(bytes.length < mark ? 0 : mark)
     .toString('utf8')
     .split('\n')
     .filter(Boolean);

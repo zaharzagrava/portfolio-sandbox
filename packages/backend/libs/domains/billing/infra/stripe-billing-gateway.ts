@@ -1,6 +1,9 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { assertNoActiveTransaction } from '@app/infrastructure/context';
+import { ApiConfigService } from '@app/common/config';
 import { StripeService } from '@app/infrastructure/stripe/stripe.service';
+import type { BillingProviderTransport } from './billing-provider-transport';
+import { ScriptedBillingTransport } from './scripted-billing-transport';
 import {
   classifyError,
   classifyIntent,
@@ -10,21 +13,7 @@ import {
 } from '../domain/charge-outcome';
 import type { BillingGateway, ChargeRequest } from '../domain/ports';
 
-/** What the adapter needs from the provider SDK (the thin `StripeService` satisfies it; the e2e kit swaps in a scripted double). */
-export interface BillingProviderTransport {
-  createPaymentIntent(params: {
-    amount: number;
-    currency: string;
-    paymentMethodId: string;
-    idempotencyKey: string;
-    metadata?: Record<string, string>;
-    timeoutMs?: number;
-  }): Promise<IntentSnapshot>;
-  findPaymentIntentByMetadataPair(
-    pairs: Record<string, string>,
-    timeoutMs: number,
-  ): Promise<IntentSnapshot | null>;
-}
+export type { BillingProviderTransport };
 
 export const BILLING_PROVIDER_TRANSPORT = Symbol('BILLING_PROVIDER_TRANSPORT');
 
@@ -104,8 +93,18 @@ export class StripeBillingGateway implements BillingGateway {
   }
 }
 
-/** Binds the transport token to the real client. */
+/**
+ * Binds the transport token to the real client, or to the scripted provider when `PROVIDER_DOUBLES=enabled` (the config
+ * rules refuse that in production, like S13.R-31 for order payments): `pm_test_visa` settles, `pm_test_declined` declines.
+ */
 export const stripeTransportProvider = {
   provide: BILLING_PROVIDER_TRANSPORT,
-  useExisting: StripeService,
+  inject: [ApiConfigService, StripeService],
+  useFactory: (
+    config: ApiConfigService,
+    stripe: StripeService,
+  ): BillingProviderTransport =>
+    config.get('provider_doubles') === 'enabled'
+      ? new ScriptedBillingTransport()
+      : stripe,
 };

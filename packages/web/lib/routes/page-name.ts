@@ -8,6 +8,8 @@ export const PAGE_TEMPLATES = [
   '/account/notifications',
   '/account/security',
   '/admin/feature-flags',
+  '/admin/feature-flags/new',
+  '/admin/feature-flags/:key',
   '/cart',
   '/chat',
   '/checkout',

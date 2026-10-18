@@ -23,6 +23,11 @@ export interface SafeUrlOptions {
   /** Escape hatches for tests and local stand-ins; refused when `NODE_ENV=production` (FR-062). */
   allowHttpHosts?: string[];
   allowPrivateHosts?: string[];
+  /**
+   * Hosts whose certificate is not verified (a local receiver with a self-signed certificate; the connection is still
+   * https). Listed hosts only, refused in production like the other hatches.
+   */
+  allowSelfSignedHosts?: string[];
   testTransport?: TestTransport;
   /** Defaults to `process.env.NODE_ENV`. */
   nodeEnv?: string;
@@ -35,10 +40,11 @@ export function assertNoEscapeHatchInProduction(options: SafeUrlOptions): void {
   if (
     options.allowHttpHosts?.length ||
     options.allowPrivateHosts?.length ||
+    options.allowSelfSignedHosts?.length ||
     options.testTransport
   ) {
     throw new SafeRequestConfigError(
-      'SSRF escape hatches (allowHttpHosts, allowPrivateHosts, testTransport) are not allowed in production',
+      'SSRF escape hatches (allowHttpHosts, allowPrivateHosts, allowSelfSignedHosts, testTransport) are not allowed in production',
     );
   }
 }

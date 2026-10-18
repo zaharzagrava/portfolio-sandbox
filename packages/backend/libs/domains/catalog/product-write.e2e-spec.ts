@@ -1,4 +1,5 @@
 import { QueryTypes } from 'sequelize';
+import { EntitlementsService } from '@app/domains/billing';
 import { Sequelize } from 'sequelize-typescript';
 import {
   productEventSchemas,
@@ -51,7 +52,21 @@ describe('Product write API', () => {
   const base = (shopId = w.shop.id) => `/api/shops/${shopId}/products`;
 
   beforeAll(async () => {
-    t = await createCatalogApp();
+    // the plan limit has its own spec (product-plan-limit); here the shop is on a plan without a cap
+    t = await createCatalogApp({
+      overrides: [
+        {
+          provide: EntitlementsService,
+          useValue: {
+            checkLimit: async () => ({
+              allowed: true,
+              limit: null,
+              remaining: null,
+            }),
+          },
+        },
+      ],
+    });
     sequelize = t.app.get(Sequelize);
   });
   afterAll(() => t.close());

@@ -7,6 +7,7 @@ import {
 import { MetricsRegistry } from '@app/common/telemetry/metrics-registry';
 import type { TestUser } from '@app/test/utils/catalog-app';
 import { createBillingApp, type BillingTestApp } from './testing/billing-app';
+import { ENTITLEMENT_CACHE, type EntitlementCachePort } from './domain/ports';
 import {
   createFs,
   expectStatus,
@@ -132,6 +133,46 @@ describe('Billing: charging, unknown outcomes and dunning', () => {
     ).toBeGreaterThan(0);
   });
 
+  it('S17 G-13: until the first invoice is paid the shop is on the free tier; the payment announces the paid plan by event, the free entry dropped by the consumer', async () => {
+    const fs = await open();
+    const read = () =>
+      t.as(fs.owner).get(`/api/shops/${fs.shopId}/subscription`);
+    expect((await read()).body.entitlements.auctions).toBe(false);
+    await t.drainJobs(); // the charge settles
+    const statusEvents = await events('billing.subscription_status_changed');
+    expect(
+      statusEvents.slice(-1).map((p) => [p.from, p.status, p.planCode]),
+    ).toEqual([['ACTIVE', 'ACTIVE', 'pro']]);
+    expect(
+      (await events('billing.subscription_plan_changed')).map((p) => [
+        p.plan,
+        p.version,
+      ]),
+    ).toEqual([
+      ['STARTER', 1],
+      ['PRO', 2],
+    ]);
+    // the cache: only the event drops the cached free tier, never a direct call, so until the consumer runs it still shows
+    expect((await read()).body.entitlements.auctions).toBe(false);
+    const status = statusEvents.slice(-1)[0] as {
+      subjectType: 'SHOP';
+      subjectId: string;
+      subscriptionId: string;
+      subscriptionVersion: number;
+    };
+    expect(
+      await t.app
+        .get<EntitlementCachePort>(ENTITLEMENT_CACHE)
+        .invalidateIfOlder(
+          status.subjectType,
+          status.subjectId,
+          status.subscriptionId,
+          status.subscriptionVersion,
+        ),
+    ).toBe('applied'); // what the entitlements-invalidation consumer does with that event
+    expect((await read()).body.entitlements.auctions).toBe(true);
+  });
+
   it('S17 AS-41: a decline starts dunning: PAST_DUE, the next attempt a day after the first failure, events carry the reason', async () => {
     const fs = await open({ paymentMethodRef: 'pm_declined' });
     const invoice = await invoiceOf(fs);
@@ -179,11 +220,12 @@ describe('Billing: charging, unknown outcomes and dunning', () => {
       { key: `invoice-charge:${invoice.id}:2` },
     );
     expect(iso(next.runAt)).toBe('2026-04-11T12:00:10.000Z');
-    // grace: the plan's entitlements stay and the announced tier does not move
+    // J02 G-13: nothing has been paid yet, so there is no paid plan to keep during the grace: the free tier throughout
+    // and the announced tier does not move (a renewal that fails after a paid charge does keep the plan: AS-56 and S18)
     const read = await t
       .as(fs.owner)
       .get(`/api/shops/${fs.shopId}/subscription`);
-    expect(read.body.entitlements.auctions).toBe(true);
+    expect(read.body.entitlements.auctions).toBe(false);
     expect(
       (await events('billing.subscription_plan_changed')).map((p) => p.version),
     ).toEqual([1]);
@@ -230,10 +272,7 @@ describe('Billing: charging, unknown outcomes and dunning', () => {
         p.plan,
         p.version,
       ]),
-    ).toEqual([
-      ['PRO', 1],
-      ['STARTER', 2],
-    ]);
+    ).toEqual([['STARTER', 1]]); // never paid: the tier was the free one from the first announcement to UNPAID
     expect(t.provider.creates.map((c) => c.idempotencyKey)).toEqual(
       [1, 2, 3, 4].map((n) => `${invoice.id}:${n}`),
     );
@@ -689,9 +728,8 @@ describe('Billing: charging, unknown outcomes and dunning', () => {
           p.version,
         ]),
       ).toEqual([
-        ['PRO', 1],
-        ['STARTER', 2],
-        ['PRO', 3],
+        ['STARTER', 1],
+        ['PRO', 2],
       ]);
       expect(
         (

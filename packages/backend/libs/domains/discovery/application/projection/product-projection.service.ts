@@ -42,6 +42,7 @@ import {
 import type { ProductEventKind } from '../../domain/projection-guard';
 import {
   searchIgnoredCounter,
+  searchProductsIndexedCounter,
   searchStaleIgnoredCounter,
 } from '../../infra/search-metrics';
 import { SearchSettings } from '../../infra/search-settings';
@@ -135,7 +136,10 @@ export class ProductProjectionService {
           counts.stale++;
           searchStaleIgnoredCounter.add(1, { source: 'product' });
         } else if (outcome === 'duplicate') counts.duplicate++;
-        else counts.applied++;
+        else {
+          counts.applied++;
+          searchProductsIndexedCounter.add(1);
+        }
       }
 
       await this.writeShopTable(live);

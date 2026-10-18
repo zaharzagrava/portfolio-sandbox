@@ -57,6 +57,7 @@ import { ShopProvisioningService } from './application/shop-provisioning.service
 import { ShopQueryService } from './application/shop-query.service';
 import { MembershipService } from './application/membership.service';
 import { ShopService } from './application/shop.service';
+import { IdempotencyModule } from '@app/infrastructure/idempotency';
 import { ShopSsoService } from './application/shop-sso.service';
 import { SsoProvisioningService } from './application/sso-provisioning.service';
 import { ShopCellService } from './application/shop-cell.service';
@@ -77,6 +78,7 @@ import { TenancyAudit } from './application/tenancy-observability';
     CacheModule,
     ClockModule,
     EventsModule.forAggregates([TENANCY_AGGREGATE]),
+    IdempotencyModule,
     ProblemCatalogModule.forFeature(TENANCY_PROBLEMS),
     RateLimitModule,
     RateLimitModule.forFeature(tenancyRatePolicies),

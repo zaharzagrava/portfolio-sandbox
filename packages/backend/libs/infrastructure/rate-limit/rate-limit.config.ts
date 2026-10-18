@@ -1,4 +1,5 @@
 import { ApiConfigService } from '@app/common/config';
+import { parseList } from '@app/common/config/local-profile-config';
 
 /** The six `rate_limit_*` settings with their defaults (FR-055). */
 export class RateLimitConfig {
@@ -8,6 +9,8 @@ export class RateLimitConfig {
   fallbackInstances = 4;
   leaseTtlMs = 1_000;
   penaltyMaxMs = 3_600_000;
+  /** Local profile only (refused in production at start-up): client IPs that skip every policy, e.g. the journey runner. */
+  allowIps: string[] = [];
 
   static from(config: Pick<ApiConfigService, 'get'>): RateLimitConfig {
     const out = new RateLimitConfig();
@@ -32,6 +35,7 @@ export class RateLimitConfig {
     out.fallbackInstances = pick('rate_limit_fallback_instances', 4);
     out.leaseTtlMs = pick('rate_limit_lease_ttl_ms', 1_000);
     out.penaltyMaxMs = pick('rate_limit_penalty_max_ms', 3_600_000);
+    out.allowIps = parseList(read('rate_limit_allow_ips'));
     out.validate();
     return out;
   }

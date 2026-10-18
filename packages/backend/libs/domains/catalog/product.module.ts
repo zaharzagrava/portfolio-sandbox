@@ -1,9 +1,11 @@
 import { Module } from '@nestjs/common';
 import { SequelizeModule } from '@nestjs/sequelize';
+import { BillingModule } from '@app/domains/billing';
 import { AuthModule } from '@app/domains/identity';
 import { TenancyModule } from '@app/domains/tenancy';
 import { CacheModule } from '@app/infrastructure/cache/cache.module';
 import { EventsModule } from '@app/infrastructure/events/events.module';
+import { IdempotencyModule } from '@app/infrastructure/idempotency';
 import { RateLimitModule } from '@app/infrastructure/rate-limit';
 import { ClockModule } from '@app/infrastructure/platform/clock.module';
 import { ProductController } from './api/product.controller';
@@ -47,7 +49,9 @@ import { catalogRatePolicies } from './rate-limit-policies';
       ProductViewBatch,
     ]),
     AuthModule,
+    BillingModule,
     ClockModule,
+    IdempotencyModule,
     ProductDtoModule,
     EventsModule.forAggregates([PRODUCTS_AGGREGATE]),
     CacheModule,

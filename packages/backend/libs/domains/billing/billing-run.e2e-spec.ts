@@ -239,8 +239,9 @@ describe('Billing: renewal run', () => {
         e.payload.version,
       ]),
     ).toEqual([
-      ['PRO', 1],
-      ['STARTER', 2],
+      ['STARTER', 1], // announced at subscribe, before the first charge
+      ['PRO', 2], // the first charge settled
+      ['STARTER', 3], // the period ended
     ]);
     const read = await t
       .as(fs.owner)

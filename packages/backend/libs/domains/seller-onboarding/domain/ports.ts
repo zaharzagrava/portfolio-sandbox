@@ -43,6 +43,8 @@ export interface ApplicationRepository {
     submittedBy: string;
     now: Date;
   }): Promise<number | null>;
+  /** The shops whose application is `SUBMITTED` and has every document of its round approved (the verify-pending sweep); oldest first. */
+  listPendingVerification(limit: number): Promise<string[]>;
   /** `SUBMITTED → VERIFIED`. */
   verify(shopId: string, at: Date): Promise<boolean>;
   /** `SUBMITTED → REJECTED`. */

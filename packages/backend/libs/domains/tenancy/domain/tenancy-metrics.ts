@@ -4,6 +4,11 @@ import { MetricsRegistry } from '@app/common/telemetry/metrics-registry';
  * Instruments of the tenancy domain. Counters carry a bounded reason label only: never a shop or user id (the
  * registry refuses those labels); those go to logs and traces (VIII.1, FR-080).
  */
+export const shopsCreatedCounter = MetricsRegistry.counter({
+  name: 'shops_created_total',
+  help: 'Shops created (J02 AS-32)',
+  labels: [],
+});
 export const crossTenantCounter = MetricsRegistry.counter({
   name: 'tenancy_cross_tenant_total',
   help: 'Transactions that bypassed row-level security, by allowlisted reason',

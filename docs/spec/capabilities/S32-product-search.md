@@ -122,7 +122,7 @@ Reindex run statuses: `QUEUED`, `BUILDING`, `CATCHING_UP`, `COMPLETED`, `FAILED`
 - The search query and click logs (rows expire after 90 days).
 - Events emitted: `search.performed`, `search.result_clicked`, `search.reindex_completed`.
 - Metrics: `search_requests_total`, `search_unavailable_total`, `search_degraded_total`, `search_stale_events_ignored_total`, `search_ignored_total`, `search_projection_lag_seconds`.
-- Configuration: engine address, search budget 1 s, embedding budget 300 ms, refresh interval, search-log secret, `searchId` signing key, retention windows.
+- Configuration: engine address, search budget 1 s, embedding budget 300 ms, refresh interval (`SEARCH_REFRESH_INTERVAL`, default 5 s, 1 s in the local profile; every index definition, including the legacy engine service's, takes it from the setting [proof: S32 G-26]), search-log secret, `searchId` signing key, retention windows.
 - Policies: `discovery.search.query`, `discovery.shop-search`, `discovery.search-click`, `discovery.search-admin`.
 
 ## Decisions

@@ -32,7 +32,11 @@ const reject = (reason: EndpointUrlRejectionReason): ParsedEndpointUrl => ({
  * parser turns into an address, so `2130706433` and `0x7f000001` are literals too), not `localhost` or a name under it.
  * Whether the name resolves to public addresses is the guard's job at save time and on every attempt, not this file's.
  */
-export function parseEndpointUrl(raw: string): ParsedEndpointUrl {
+export function parseEndpointUrl(
+  raw: string,
+  /** `host:port` of local receivers (local profile): those, and only those, may use a port and an IP literal. */
+  allowedReceiverHosts: readonly string[] = [],
+): ParsedEndpointUrl {
   if (typeof raw !== 'string' || raw.length === 0 || raw !== raw.trim())
     return { ok: false, failure: { kind: 'malformed' } };
   if (raw.length > WEBHOOK_URL_MAX_LENGTH)
@@ -45,6 +49,12 @@ export function parseEndpointUrl(raw: string): ParsedEndpointUrl {
   }
   if (url.protocol !== 'https:') return reject('not_https');
   if (url.username || url.password) return reject('credentials_not_allowed');
+  if (url.port !== '' && allowedReceiverHosts.includes(url.host))
+    return {
+      ok: true,
+      host: url.hostname.replace(/^\[|\]$/g, ''),
+      normalized: `https://${url.host}${url.pathname}${url.search}`,
+    };
   if (url.port !== '') return reject('port_not_allowed'); // `:443` is the default and parses to ''
   const bare = url.hostname.replace(/^\[|\]$/g, '');
   if (isIP(bare) !== 0) return reject('ip_literal');

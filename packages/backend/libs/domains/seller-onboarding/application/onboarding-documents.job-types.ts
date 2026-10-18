@@ -8,8 +8,15 @@ declare module '@app/infrastructure/jobs/job-types' {
     'onboarding.purge-documents': { shopId: string; submissionNo: number };
     /** `dueAt`: when the records may go (the job runs earlier hops until then: S49 schedules at most 366 days ahead). */
     'onboarding.erase-records': { shopId: string; dueAt?: string };
+    /** J02: the sweep for applications stranded between the last approval and the verification; idempotent. */
+    'onboarding.verify-pending': Record<string, never>;
   }
 }
+
+declareJobType({
+  name: 'onboarding.verify-pending',
+  contract: z.object({}).strict() as z.ZodType<Record<string, never>>,
+});
 
 declareJobType({
   name: 'onboarding.purge-documents',

@@ -440,6 +440,46 @@ export async function openShop(page: Page, name = uniqueShopName()): Promise<{ s
   return { shopId, shopName: name };
 }
 
+/** W06: signs the seeded admin in and lands on the flag list (the guard's `returnTo` brings the admin back to it). */
+export async function adminLogin(page: Page) {
+  await login(page, SEED.admin, SEED.password, '/admin/feature-flags');
+}
+
+/** W06: `/admin/feature-flags/{key}` and, with a tab, `?tab=history` (the console's own address scheme). */
+export const flagPath = (key: string, tab?: 'history') => `/admin/feature-flags/${encodeURIComponent(key)}${tab ? `?tab=${tab}` : ''}`;
+
+/**
+ * A key that cannot collide with another run or another worker (flags are global to the dev stack, archived keys are never
+ * reused). It starts with `00-` and carries the time backwards, so the newest test flag sorts first and is always on the first
+ * page of the list (the list is key-ordered and has no search).
+ */
+export const uniqueFlagKey = (prefix = 'w06') => `00-${prefix}-${(9_999_999_999_999 - Date.now()).toString(36)}-${Math.floor(Math.random() * 1e3).toString(36)}`;
+
+/** W06: archives a flag through the UI so the dev stack's 500-flag limit is not eaten by test flags. A no-op if it is already archived. */
+export async function archiveFlagThroughUi(page: Page, key: string) {
+  await page.goto(flagPath(key));
+  const archive = page.getByRole('button', { name: 'Archive', exact: true });
+  if (!(await archive.isVisible().catch(() => false))) return;
+  await archive.click();
+  await page.getByRole('dialog').getByRole('button', { name: 'Archive flag' }).click();
+  await expect(page.getByText("This flag is archived. It can't be edited, killed or restored.")).toBeVisible();
+}
+
+/**
+ * W06: creates a flag through the UI (the New flag page, the owner prefilled with the admin's e-mail), waits for the editor
+ * and returns the key. The flag starts disabled; pass `description` to give it one.
+ */
+export async function createFlag(page: Page, key = uniqueFlagKey(), options: { description?: string } = {}): Promise<string> {
+  await page.goto('/admin/feature-flags/new');
+  await waitForForm(page);
+  await page.getByLabel('Key').fill(key);
+  if (options.description) await page.getByLabel(/Description/).fill(options.description);
+  await page.getByRole('button', { name: 'Create flag' }).click();
+  await expect(page).toHaveURL(new RegExp(`/admin/feature-flags/${key}$`));
+  await expect(page.getByRole('heading', { level: 1, name: key })).toBeVisible();
+  return key;
+}
+
 /**
  * Creates a product in `shopId` through the real API as the shop's own member and returns its id (W04 L-005: a journey
  * never shares stock with another). `auth` names the member (a user from `register`, default password `NEW_USER_PASSWORD`);

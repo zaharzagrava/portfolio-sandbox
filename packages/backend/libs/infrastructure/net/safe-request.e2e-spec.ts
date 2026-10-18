@@ -441,4 +441,43 @@ describe('safe outbound requests (SSRF)', () => {
     });
     expect(redirected).toMatchObject({ status: 302, redirects: 0 });
   });
+
+  describe('a local receiver with a self-signed certificate (J02 G-32)', () => {
+    const post = (extra: Record<string, unknown>) =>
+      safeRequest({
+        method: 'POST',
+        url: `https://127.0.0.1:${shop.port}/hook`,
+        body: '{}',
+        timeoutMs: 2_000,
+        maxResponseBytes: 1024,
+        allowedPorts: [443],
+        followRedirects: false,
+        ...extra,
+      });
+
+    it('S54 G-32: a host listed in allowSelfSignedHosts (and allowPrivateHosts) is reached on its own port over https', async () => {
+      const result = await post({
+        allowPrivateHosts: ['127.0.0.1'],
+        allowSelfSignedHosts: ['127.0.0.1'],
+      });
+      expect(result.status).toBe(200);
+    });
+
+    it('S54 G-32: without the listing the certificate is refused (tls_error) and an unlisted port is an invalid url', async () => {
+      expect(
+        (await failure(post({ allowPrivateHosts: ['127.0.0.1'] }))).kind,
+      ).toBe('tls_error');
+      expect((await failure(post({}))).kind).toBe('invalid_url');
+    });
+
+    it('S54 G-32: the option is refused when NODE_ENV=production', async () => {
+      await expect(
+        post({
+          allowPrivateHosts: ['127.0.0.1'],
+          allowSelfSignedHosts: ['127.0.0.1'],
+          nodeEnv: 'production',
+        }),
+      ).rejects.toThrow(/not allowed in production/);
+    });
+  });
 });

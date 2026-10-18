@@ -159,7 +159,8 @@ describe('Billing: subscription state machine, cancel, resume and shop lifecycle
       ]);
       expect(h.every((r) => r.actor === `user:${fs.owner.id}`)).toBe(true);
       expect((await sub(fs.subscriptionId)).version).toBe(3);
-      // status events only for moves that change the status
+      // status events only for moves that change the status, plus the one that announces the first settled charge
+      // (J02 G-13: ACTIVE to ACTIVE, the paid plan starting)
       expect(
         (await statusEvents(fs.subscriptionId)).map((e) => [
           e.payload.from,
@@ -167,6 +168,7 @@ describe('Billing: subscription state machine, cancel, resume and shop lifecycle
         ]),
       ).toEqual([
         [null, 'ACTIVE'],
+        ['ACTIVE', 'ACTIVE'],
         ['ACTIVE', 'CANCELED'],
       ]);
     });
@@ -343,10 +345,7 @@ describe('Billing: subscription state machine, cancel, resume and shop lifecycle
           e.payload.plan,
           e.payload.version,
         ]),
-      ).toEqual([
-        ['PRO', 1],
-        ['STARTER', 2],
-      ]);
+      ).toEqual([['STARTER', 1]]); // the invoice was never paid: the plan never applied
       const again = await subscribeShop(t, fs.owner, fs.shopId, {
         priceId: await t.priceId('starter'),
         paymentMethodRef: 'pm_ok',

@@ -65,7 +65,7 @@ function document(page: string, reply: Record<string, unknown>): Buffer {
   ]);
 }
 
-async function upload(
+export async function upload(
   owner: JourneyClient,
   shopId: string,
   kind: string,
@@ -101,6 +101,16 @@ async function upload(
 
 /** Drives S04 to a verified, payout-enabled shop through public routes only (the extractor double reads the marker). */
 async function verifyShop(owner: JourneyClient, shopId: string): Promise<void> {
+  const number = await answerAndSubmit(owner, shopId);
+  await uploadOkDocuments(owner, shopId, number);
+  await waitVerified(owner, shopId);
+}
+
+/** Saves the four questionnaire steps and submits; returns the registration number the documents must carry. */
+export async function answerAndSubmit(
+  owner: JourneyClient,
+  shopId: string,
+): Promise<string> {
   const number = String(randomInt(10_000, 99_999));
   const steps: Record<string, unknown> = {
     business: {
@@ -131,7 +141,15 @@ async function verifyShop(owner: JourneyClient, shopId: string): Promise<void> {
     throw new Error(
       `onboarding submit: ${submitted.status} ${JSON.stringify(submitted.body)}`,
     );
+  return number;
+}
 
+/** The two documents a non-VAT business needs, with the scripted replies the model double reads. */
+export async function uploadOkDocuments(
+  owner: JourneyClient,
+  shopId: string,
+  number: string,
+): Promise<void> {
   await upload(
     owner,
     shopId,
@@ -163,7 +181,12 @@ async function verifyShop(owner: JourneyClient, shopId: string): Promise<void> {
       },
     }),
   );
+}
 
+export async function waitVerified(
+  owner: JourneyClient,
+  shopId: string,
+): Promise<void> {
   try {
     await waitFor(
       async () => {
@@ -330,4 +353,127 @@ export async function stockOf(
       `stock of ${productId}: ${reply.status} ${JSON.stringify(reply.body)}`,
     );
   return reply.body.quantity;
+}
+
+// --- J02: the seller's own path, step by step (each step idempotent: a retried hook opens what exists, L-010) ------------
+
+export interface OpenShop {
+  owner: JourneyClient;
+  shopId: string;
+  slug: string;
+}
+
+/** A brand-new account (`202` then sign-in). The role stays `USER` until the shop exists and identity's consumer ran. */
+export const registerSeller = (label = 'seller'): Promise<JourneyClient> =>
+  JourneyClient.signUp(label);
+
+/** `POST /shops` with its own idempotency key; a retry with the same owner opens the shop that exists. */
+export async function openShop(
+  owner: JourneyClient,
+  key: string = randomUUID(),
+): Promise<OpenShop> {
+  await resetRateLimits();
+  const slug = unique('j02');
+  const created = await owner.post<{ id: string }>('/api/shops', {
+    body: { name: `Journey ${slug}`, slug },
+    key,
+  });
+  if (created.status === 201 || created.status === 200)
+    return { owner, shopId: created.body.id, slug };
+  if (created.status === 409) {
+    const mine = await owner.get<{ items?: { id: string; slug: string }[] }>(
+      '/api/shops/mine',
+    );
+    const existing = mine.body.items?.[0];
+    if (existing) return { owner, shopId: existing.id, slug: existing.slug };
+  }
+  throw new Error(
+    `create shop: ${created.status} ${problemCode(created.body)} ${JSON.stringify(created.body)}`,
+  );
+}
+
+/** The ok path of S04 (questionnaire, submit, `kyc-ok-*` documents) to a `VERIFIED`, payout-enabled shop. */
+export async function onboardVerified(shop: OpenShop): Promise<void> {
+  await verifyShop(shop.owner, shop.shopId);
+}
+
+/** The public price of the shop plan `code` (default `pro`), read from the anonymous catalog. */
+export async function shopPriceId(
+  owner: JourneyClient,
+  code = 'pro',
+  interval: 'MONTH' | 'YEAR' = 'MONTH',
+): Promise<{ priceId: string; maxProducts: number | null }> {
+  const catalog = await owner.get<{
+    plans: {
+      code: string;
+      audience: string;
+      entitlements: Record<string, number | boolean>;
+      prices: { id: string; interval: string }[];
+    }[];
+  }>('/api/plans');
+  const plan = catalog.body.plans.find(
+    (p) => p.code === code && p.audience === 'SHOP',
+  );
+  const price = plan?.prices.find((p) => p.interval === interval);
+  if (!plan || !price)
+    throw new Error(`no ${code}/${interval} shop price in /plans`);
+  const max = plan.entitlements.maxProducts;
+  return {
+    priceId: price.id,
+    maxProducts: typeof max === 'number' ? max : null,
+  };
+}
+
+/** `POST /shops/:id/subscription` with a key; `pm` is a scripted payment method (`pm_test_visa`, `pm_test_declined`). */
+export async function subscribe(
+  shop: OpenShop,
+  pm = 'pm_test_visa',
+  options: { code?: string; key?: string } = {},
+) {
+  const { priceId } = await shopPriceId(shop.owner, options.code);
+  return shop.owner.post<Record<string, any>>(
+    `/api/shops/${shop.shopId}/subscription`,
+    {
+      body: { priceId, paymentMethodRef: pm },
+      key: options.key ?? randomUUID(),
+    },
+  );
+}
+
+/** Creates a product through the seller route; `overrides` replace any field of the body. */
+export async function createProduct(
+  shop: OpenShop,
+  overrides: Record<string, unknown> = {},
+  key: string = randomUUID(),
+) {
+  const title = (overrides.title as string | undefined) ?? unique('J02 Item');
+  return shop.owner.post<Record<string, any>>(
+    `/api/shops/${shop.shopId}/products`,
+    {
+      body: {
+        title,
+        brand: 'Journey',
+        category: 'electronics',
+        quantity: 1,
+        priceMinor: 1500,
+        currency: 'EUR',
+        description: `${title}. Created by the J02 journey.`,
+        tags: ['journey'],
+        ...overrides,
+      },
+      key,
+    },
+  );
+}
+
+/** Creates a webhook endpoint for `url`; the secret comes back once, in this reply. */
+export async function createEndpoint(
+  shop: OpenShop,
+  url: string,
+  events: string[] = ['order.paid'],
+) {
+  return shop.owner.post<{ id: string; secret: string }>(
+    `/api/shops/${shop.shopId}/developers/webhooks`,
+    { body: { url, events } },
+  );
 }

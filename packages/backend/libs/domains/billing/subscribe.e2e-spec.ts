@@ -148,8 +148,9 @@ describe('Billing: subscribing', () => {
       subscriptionVersion: 0,
     });
     const tier = await t.outbox('billing.subscription_plan_changed');
+    // J02 G-13: the plan applies after the first charge settles, so subscribing announces the free tier only
     expect(tier.map((e) => e.payload)).toEqual([
-      { shopId, plan: 'PRO', version: 1 },
+      { shopId, plan: 'STARTER', version: 1 },
     ]);
     expect(tier[0].aggregateId).toBe(shopId);
     expect(t.provider.creates).toHaveLength(0);

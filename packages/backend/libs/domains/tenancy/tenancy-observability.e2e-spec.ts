@@ -28,6 +28,17 @@ describe('Observability of the tenancy domain', () => {
   afterAll(() => t.close());
   beforeEach(() => t.reset());
 
+  it('J02 AS-32: creating a shop moves shops_created_total by one', async () => {
+    const before = MetricsRegistry.value('shops_created_total', {}) ?? 0;
+    const owner = await t.newUser();
+    await t
+      .as(owner)
+      .post('/api/shops')
+      .send({ name: 'Counted', slug: 'counted-shop' })
+      .expect(201);
+    expect(MetricsRegistry.value('shops_created_total', {})).toBe(before + 1);
+  });
+
   it('S03 AS-81: each mutation writes one audit line with actor, shop, action and request, and no address, token or secret', async () => {
     const lines: Array<Record<string, unknown>> = [];
     const all: string[] = [];

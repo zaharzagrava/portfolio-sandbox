@@ -18,6 +18,7 @@ export function ConfirmDialog({
   confirmLabel,
   cancelLabel = 'Cancel',
   destructive = false,
+  confirmClassName,
   error,
   children,
   onConfirm,
@@ -29,6 +30,8 @@ export function ConfirmDialog({
   confirmLabel: string;
   cancelLabel?: string;
   destructive?: boolean;
+  /** Extra classes of the confirm button (W06 uses a solid red that meets the contrast rule). */
+  confirmClassName?: string;
   /** A problem alert from the last attempt. */
   error?: ReactNode;
   /** Extra controls between the description and the buttons (an overlap choice, for instance). */
@@ -79,7 +82,7 @@ export function ConfirmDialog({
           <Button ref={cancelRef} type="button" variant="outline" disabled={pending} onClick={() => onOpenChange(false)}>
             {cancelLabel}
           </Button>
-          <Button type="button" variant={destructive ? 'destructive' : 'default'} disabled={pending} aria-busy={pending} onClick={() => void confirm()}>
+          <Button type="button" variant={destructive ? 'destructive' : 'default'} className={confirmClassName} disabled={pending} aria-busy={pending} onClick={() => void confirm()}>
             {confirmLabel}
           </Button>
         </DialogFooter>

@@ -35,6 +35,11 @@ export interface WebhookSettings {
   historyRetentionDays: number;
   /** Hosts that may resolve to private addresses; honoured outside production only. */
   privateHostAllowance: string[];
+  /**
+   * `host:port` of local receivers (J02 G-32): an address listed here may use its own port, an IP literal and a
+   * self-signed certificate, but is still https only. Honoured outside production only.
+   */
+  allowedReceiverHosts: string[];
 }
 
 export const DEFAULT_WEBHOOK_SETTINGS: WebhookSettings = {
@@ -57,6 +62,7 @@ export const DEFAULT_WEBHOOK_SETTINGS: WebhookSettings = {
   logTtlDays: 30,
   historyRetentionDays: 400,
   privateHostAllowance: [],
+  allowedReceiverHosts: [],
 };
 
 /** Startup failure that names the setting. */
@@ -85,6 +91,16 @@ export function validateWebhookSettings(
     throw new WebhookSettingsError(
       'privateHostAllowance',
       'must be empty in production',
+    );
+  if (env.nodeEnv === 'production' && s.allowedReceiverHosts.length > 0)
+    throw new WebhookSettingsError(
+      'allowedReceiverHosts',
+      'must be empty in production',
+    );
+  if (s.allowedReceiverHosts.some((h) => !/^[^\s:]+:\d{1,5}$/.test(h)))
+    throw new WebhookSettingsError(
+      'allowedReceiverHosts',
+      'entries must be host:port',
     );
   for (const key of [
     'attemptTimeoutMs',
@@ -207,6 +223,7 @@ export function resolveWebhookSettings(
       d.historyRetentionDays,
     ),
     privateHostAllowance: list(raw.privateHostAllowance),
+    allowedReceiverHosts: list(raw.allowedReceiverHosts),
   };
   return validateWebhookSettings(settings, env);
 }

@@ -1,7 +1,16 @@
 import { z } from 'zod';
 
 /** J01 control surface: job types an administrator may enqueue over HTTP. */
-export const ADMIN_JOB_TYPES = ['payouts.run-weekly', 'statements.close-month', 'payments.reconcile-daily'] as const;
+export const ADMIN_JOB_TYPES = [
+  'payouts.run-weekly',
+  'statements.close-month',
+  'payments.reconcile-daily',
+  // J02: the seller path (billing run, onboarding sweep, delayed webhook retry, search reindex)
+  'billing.run',
+  'onboarding.verify-pending',
+  'webhooks.retry',
+  'search.reindex',
+] as const;
 export const adminJobTypeSchema = z.enum(ADMIN_JOB_TYPES);
 
 export const adminJobStatusSchema = z.enum(['QUEUED', 'RUNNING', 'SUCCEEDED', 'FAILED', 'DEAD']);

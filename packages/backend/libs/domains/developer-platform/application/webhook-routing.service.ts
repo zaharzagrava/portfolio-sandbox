@@ -97,6 +97,9 @@ export class WebhookRoutingService {
       await this.receipts.complete(group, sourceEventId);
       return 'routed';
     } catch (error) {
+      this.logger.warn(
+        `routing of ${sourceEventId} in ${group} failed: ${(error as Error).name}: ${(error as Error).message}`,
+      );
       await this.receipts.fail(group, sourceEventId);
       throw error;
     }

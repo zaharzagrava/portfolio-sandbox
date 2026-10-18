@@ -9,6 +9,10 @@ const bounds = { south: 1, west: 2, north: 3, east: 4 };
 /** Arguments to build one key of each factory; a new factory without an entry here fails the first test. */
 const samples: Record<string, unknown[]> = {
   'products.detail': [ID],
+  'admin.flags.list': [{ status: 'killed' }],
+  'admin.flags.detail': ['new-checkout'],
+  'admin.flags.history': ['new-checkout', {}],
+  'admin.flags.stale': [{ days: 14 }],
   'search.results': [view],
   'search.near': [view, coords],
   'suggest.prefix': ['iph'],

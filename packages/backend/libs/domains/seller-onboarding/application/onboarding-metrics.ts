@@ -5,6 +5,12 @@ import { MetricsRegistry } from '@app/common/telemetry/metrics-registry';
  * document or user identifier is ever a label; those belong in logs and traces.
  */
 export const onboardingMetrics = {
+  /** Applications submitted, verified and rejected (J02 AS-32); one count per decision event appended. */
+  applicationDecisions: MetricsRegistry.counter({
+    name: 'onboarding_decisions_total',
+    help: 'Onboarding application decisions by decision (submitted, verified, rejected)',
+    labels: ['decision'],
+  }),
   outcomes: MetricsRegistry.counter({
     name: 'kyc_extraction_outcomes_total',
     help: 'Extraction attempts by document kind, attempt number and outcome',

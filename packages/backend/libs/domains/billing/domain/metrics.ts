@@ -28,6 +28,12 @@ export const chargeAttemptsCounter = MetricsRegistry.counter({
   labels: ['outcome'],
 });
 
+export const invoicesPaidCounter = MetricsRegistry.counter({
+  name: 'invoices_paid_total',
+  help: 'Invoices settled as paid (J02 AS-32)',
+  labels: [],
+});
+
 export const unknownAttemptsGauge = MetricsRegistry.gauge({
   name: 'billing_unknown_attempts',
   help: 'Charge attempts whose outcome is not known yet',

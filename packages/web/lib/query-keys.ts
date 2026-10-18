@@ -126,8 +126,18 @@ export const queryKeys = {
     openapi: ['developers', 'openapi'] as const,
   },
   /** W04: every per-shop key starts with `['seller', shopId, section]`, so `scope(shopId, section)` invalidates a whole section. */
+  /** W06 (S38): the admin feature-flag console. `all` is the prefix every successful write invalidates. */
+  admin: {
+    flags: {
+      all: ['admin', 'flags'] as const,
+      list: (params: { status?: string; cursor?: string }) => ['admin', 'flags', 'list', canonical({ status: params.status ?? 'all', cursor: params.cursor })] as const,
+      detail: (key: string) => ['admin', 'flags', 'detail', key] as const,
+      history: (key: string, params: { cursor?: string }) => ['admin', 'flags', 'history', key, canonical(params)] as const,
+      stale: (params: { days: number }) => ['admin', 'flags', 'stale', canonical(params)] as const,
+    },
+  },
   seller: {
-    /** Prefix of every seller key: the reconnect refetch (AS-88) invalidates it. */
+/** Prefix of every seller key: the reconnect refetch (AS-88) invalidates it. */
     all: () => ['seller'] as const,
     shops: () => ['seller', 'shops'] as const,
     shop: (shopId: string) => ['seller', shopId, 'shop'] as const,

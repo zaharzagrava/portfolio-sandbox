@@ -302,6 +302,9 @@ function requestOnce(
           ? {
               servername: isIP(hostname) ? undefined : hostname,
               ca: transport?.ca,
+              ...(spec.options.allowSelfSignedHosts?.includes(hostname)
+                ? { rejectUnauthorized: false }
+                : {}),
             }
           : {}),
       },

@@ -215,3 +215,14 @@ export const productEventSchemas = {
   'catalog.product_deleted': productDeletedPayloadSchema,
 } as const;
 export type ProductEventType = keyof typeof productEventSchemas;
+
+/** `409 plan_limit_reached` of the product create route (J02 FR-010): the limit that stopped the create; nothing was written. */
+export const planLimitProblemSchema = z.looseObject({
+  type: z.string().min(1),
+  title: z.string().min(1),
+  status: z.literal(409),
+  code: z.literal('plan_limit_reached'),
+  key: z.literal('maxProducts'),
+  limit: z.number().int().nonnegative(),
+});
+export type PlanLimitProblem = z.infer<typeof planLimitProblemSchema>;

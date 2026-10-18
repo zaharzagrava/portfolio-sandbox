@@ -137,6 +137,50 @@ describe('webhook endpoint URL rules (pure)', () => {
     expect(normalizeEndpointUrl('nonsense')).toBeNull();
   });
 
+  describe('allowed receiver hosts (local profile, J02 G-32)', () => {
+    const allowed = ['127.0.0.1:18443'];
+
+    it('S43 G-32: a listed host:port may use its own port and an IP literal; the port stays in the normalised form', () => {
+      expect(parseEndpointUrl('https://127.0.0.1:18443/hook', allowed)).toEqual(
+        {
+          ok: true,
+          host: '127.0.0.1',
+          normalized: 'https://127.0.0.1:18443/hook',
+        },
+      );
+    });
+
+    it('S43 G-32: an unlisted port or host keeps every rule', () => {
+      expect(parseEndpointUrl('https://127.0.0.1:18444/hook', allowed)).toEqual(
+        {
+          ok: false,
+          failure: { kind: 'rejected', reason: 'port_not_allowed' },
+        },
+      );
+      expect(parseEndpointUrl('https://127.0.0.1/hook', allowed)).toEqual({
+        ok: false,
+        failure: { kind: 'rejected', reason: 'ip_literal' },
+      });
+      expect(parseEndpointUrl('https://127.0.0.1:18443/hook')).toEqual({
+        ok: false,
+        failure: { kind: 'rejected', reason: 'port_not_allowed' },
+      });
+    });
+
+    it('S43 G-32: a listed host is https only and takes no credentials', () => {
+      expect(parseEndpointUrl('http://127.0.0.1:18443/hook', allowed)).toEqual({
+        ok: false,
+        failure: { kind: 'rejected', reason: 'not_https' },
+      });
+      expect(
+        parseEndpointUrl('https://user:pw@127.0.0.1:18443/hook', allowed),
+      ).toEqual({
+        ok: false,
+        failure: { kind: 'rejected', reason: 'credentials_not_allowed' },
+      });
+    });
+  });
+
   it('S43 AS-58: the parsed host carries no path, query or user-info', () => {
     const parsed = parseEndpointUrl(
       'https://hooks.acme.test/in?token=SECRET123',

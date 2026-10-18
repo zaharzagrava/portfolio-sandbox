@@ -7,7 +7,7 @@ import type {
   RejectionReasonCode,
 } from '../domain/ports';
 import type { Answers } from '../domain/questionnaire';
-import { count, json, one } from './sql';
+import { count, json, one, rows } from './sql';
 
 const COLUMNS = `"shopId", "answers", "submittedBy", "submittedAt", "status", "submissionNo", "verifiedAt", "rejectedAt", "rejectionReasonCode"`;
 
@@ -30,6 +30,20 @@ export class SequelizeApplicationRepository implements ApplicationRepository {
       `SELECT ${COLUMNS} FROM "ShopOnboarding" WHERE "shopId" = :shopId FOR UPDATE`,
       { shopId },
     );
+  }
+
+  async listPendingVerification(limit: number): Promise<string[]> {
+    // A superset of "all required documents approved": the policy under the application lock decides.
+    const found = await rows<{ shopId: string }>(
+      this.db,
+      `SELECT o."shopId" FROM "ShopOnboarding" o
+        WHERE o."status" = 'SUBMITTED'
+          AND EXISTS (SELECT 1 FROM "ShopDocument" d
+                       WHERE d."shopId" = o."shopId" AND d."submissionNo" = o."submissionNo" AND d."status" = 'APPROVED')
+        ORDER BY o."submittedAt", o."shopId" LIMIT :limit`,
+      { limit },
+    );
+    return found.map((r) => r.shopId);
   }
 
   async insert(input: {

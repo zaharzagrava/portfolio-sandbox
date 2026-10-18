@@ -4,6 +4,7 @@
  */
 export {
   OnboardingExtractionModule,
+  OnboardingLocalExtractorModule,
   OnboardingModule,
   OnboardingProjectorModule,
   OnboardingWorkerModule,

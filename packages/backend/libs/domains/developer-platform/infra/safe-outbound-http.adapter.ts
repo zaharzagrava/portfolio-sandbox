@@ -28,6 +28,24 @@ export type WebhookNetOptions = Pick<
   'resolver' | 'testTransport' | 'allowHttpHosts'
 >;
 
+/**
+ * What the local profile's `allowedReceiverHosts` (`host:port`) adds to the S54 options: the host may be private, may use
+ * its port and may present a self-signed certificate. Empty in production, where startup refuses the setting.
+ */
+export function receiverAllowances(settings: WebhookSettings) {
+  const hosts = settings.allowedReceiverHosts.map((entry) =>
+    entry.slice(0, entry.lastIndexOf(':')),
+  );
+  const ports = settings.allowedReceiverHosts.map((entry) =>
+    Number(entry.slice(entry.lastIndexOf(':') + 1)),
+  );
+  return {
+    allowPrivateHosts: [...settings.privateHostAllowance, ...hosts],
+    allowSelfSignedHosts: hosts,
+    allowedPorts: [443, ...ports],
+  };
+}
+
 /** The one place that knows S54's failure vocabulary (a renamed kind changes only this table). */
 const ERROR_OF: Record<SafeRequestErrorKind, AttemptError> = {
   blocked_address: 'blocked_address',
@@ -85,9 +103,8 @@ export class SafeOutboundHttpAdapter extends OutboundHttp {
         body: request.body,
         timeoutMs: request.timeoutMs,
         maxResponseBytes: request.maxResponseBytes,
-        allowedPorts: [443],
         followRedirects: false,
-        allowPrivateHosts: this.settings.privateHostAllowance,
+        ...receiverAllowances(this.settings),
         clock: this.clock,
         ...this.net,
       });

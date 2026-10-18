@@ -88,3 +88,31 @@ Files in scope (under `packages/web`): `app/admin/layout.tsx`, `app/admin/featur
 | G2 | No `not-found.tsx` under `app/admin/feature-flags/[key]` with the copy "We couldn't find that flag." | — | AS-31 |
 | G3 | No shared timestamp formatter for "YYYY-MM-DD HH:mm UTC" in `<time>` | `lib/utils.ts` | FR-024 |
 | G4 | Dependencies imply a form lib already present (`react-hook-form`, `@hookform/resolvers`, `zod`); the editor's nested arrays (variants, rules, conditions, slices) need a reducer or `useFieldArray`; either fits, but the form schema must not duplicate S38's rules | `package.json` | FR-007 |
+
+## Plan findings (2026-10-18, see `plan.md` and `research.md`)
+
+- **E1, E4, E5 are closed**: the S38 admin API and `packages/contracts/src/experimentation/flags.ts` exist (R-01). **E2** is covered by the generic `/api/:path*` → `/api/bff/f/:path*` rewrite (R-04); Phase 0 proves `Retry-After` and problem+json pass through.
+- **F1–F4 are closed**: RTL, user-event, jest-dom, MSW, axe, the Vitest `include`, the React plugin, the `mobile` project and `tests/visual/` exist. Open: F5 (`createFlag`, `flagPath`, `adminLogin`; `login()` already uses `returnTo`), F6–F9.
+- **W02 follow-up (`formatMoney`)** does not apply: W06 shows no money.
+- **`isAdmin`** exists as a stand-in in `lib/admin/is-admin.ts`; Phase 1 types it as `SessionUser | null` and tests it.
+
+## Build findings (T006 and the build)
+
+- **Backend shape (R-01, R-02, E1/E4/E5)**: verified by reading `flag-errors.ts` and the admin e2e specs. A problem body carries the machine code as `code` (an `AppError` code), `currentVersion` on `version_conflict`, `currentStatus` on `invalid_transition`, and `errors: [{field, path, code, sum?}]` on `flag_definition_invalid` (both `field` and `path`). `readFlagProblem` still falls back to the tail of `type` and a unit test pins both. `scripts/sdd/test-spec.sh flags-admin` could not run on this machine: every case stops at `Config validation error` (missing `share_link_*`, `ads_*`, `api_key_pepper`, `widget_token_key`, `shopify_*`, `integration_cursor_key` in the jest environment), which is an environment limit and not a shape failure. No backend file was edited.
+- **`Retry-After` through the forwarder (R-04)**: not proven by a stack test; the 429 countdown is proven in unit tests (`flag-editor.test.tsx` AS-50, `create-flag-form.test.tsx` AS-50) from a stubbed header. If the forwarder drops the header the console shows "Too many requests. Try again later." without a countdown (the copy handles it); S48 would then need the pass-through.
+- **Strict response schemas**: `flagSchema` uses closed enums for attributes and operators, so a rule the editor could not show (V.7) is refused by the parse before it reaches the editor. The read-only raw-rule path exists and is unit-tested with a body built around the parse. A contracts change to tolerate unknown attributes would be S38's.
+- **Layout guard and pages**: a layout cannot know the address, so `AdminGuard` (layout) shows the shell or the no-access panel and each page calls `requireAdminPage(returnTo)` first (redirect with its own path and query, `false` for a non-admin). For a member the layout renders the page hidden so the framework's instant-navigation check sees every segment; the page requests nothing.
+- **Visual baselines**: `tests/visual/admin-*.spec.ts` assert structure, axe (serious and critical) and the 320 px width rule; no `toHaveScreenshot` baseline was produced on this machine. The list and editor skeletons (AS-06, AS-63) are proven by unit tests only, because the server's first read cannot be delayed from the browser.
+
+## Spec changes
+
+The living-spec page `docs/spec/capabilities/W06-admin-flags.md` was created (none existed). No existing page signed by a human changed. No `*.reviewed.json` was created or edited. `python3 scripts/livespec/check.py` reports 0 errors.
+
+## Sibling-spec follow-ups
+
+- **W07**: two static lists of W07 gained W06 entries so its own rules stay green: `lib/routes/page-name.ts` (`/admin/feature-flags/new`, `/admin/feature-flags/:key`, AS-35) and the key samples of `lib/query-keys.domains.test.ts` (`admin.flags.*`, AS-36). Keep them when those files change.
+- **W07**: show **Admin** (to `/admin`) in the account menu when `isAdmin(user)`; `lib/admin/is-admin.ts` now accepts a user or `null` and `components/auth/account-menu.tsx` already imports it. W06 does not edit the navbar (E8, AS-66).
+- **S38**: a key-prefix filter `q` on `GET /api/admin/flags` (E7) and a seed with a past-expiry flag and an unevaluated flag so the stale journey shows rows (E9); optional `actor {id, email}` in history via an S48 aggregate (E6); tolerate unknown attributes and operators in the response schema if V.7 forward compatibility is wanted in the editor.
+- **W01**: `components/auth/session-lifecycle.tsx` now passes `description: sessionEndedDescription()` (from `lib/admin/flags/dirty.ts`) to the session-ended toast, so an open flag editor can say its unsaved edits are lost (AS-49). Keep the description when that component changes. The machine `code` is already in the problem body, so `problemFromError` needs no change.
+- **W04**: `components/seller/confirm-dialog.tsx` gained an optional `confirmClassName` (W06 uses a solid red that meets the 4.5:1 contrast rule; the shared `destructive` button variant measures 3.9:1 in axe). `app/dashboard/seller/view.tsx` keeps its own `formatMoney(…, 'USD')` follow-up from W02; W06 shows no money.
+- **S48**: only if the forwarder drops `Retry-After` on admin routes (R-04, see above).

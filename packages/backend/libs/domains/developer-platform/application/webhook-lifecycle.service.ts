@@ -120,7 +120,10 @@ export class WebhookLifecycleService {
   }
 
   private hostOf(endpoint: EndpointRecord): string {
-    const parsed = parseEndpointUrl(endpoint.url);
+    const parsed = parseEndpointUrl(
+      endpoint.url,
+      this.settings.allowedReceiverHosts,
+    );
     return parsed.ok ? parsed.host : 'invalid';
   }
 

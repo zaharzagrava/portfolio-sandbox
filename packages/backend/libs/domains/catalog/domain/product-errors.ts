@@ -50,6 +50,24 @@ export class VersionConflictError extends AppError {
   }
 }
 
+/** The shop already has as many live products as its plan allows (J02 FR-010); nothing was written. */
+export class PlanLimitReachedError extends AppError {
+  constructor(
+    readonly key: 'maxProducts',
+    readonly limit: number,
+  ) {
+    super(
+      domainError(
+        HttpStatus.CONFLICT,
+        'plan_limit_reached',
+        'Conflict',
+        'The shop has reached the number of products its plan allows.',
+        { key, limit },
+      ),
+    );
+  }
+}
+
 export class InvalidTransitionError extends AppError {
   constructor() {
     super(

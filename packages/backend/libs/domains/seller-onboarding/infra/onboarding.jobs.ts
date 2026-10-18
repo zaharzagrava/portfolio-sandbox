@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { JobHandler } from '@app/infrastructure/jobs/job-handler.decorator';
 import { RetentionService } from '../application/retention.service';
+import { VerifyPendingService } from '../application/verify-pending.service';
 import '../application/onboarding-documents.job-types';
 
 /**
@@ -10,7 +11,16 @@ import '../application/onboarding-documents.job-types';
  */
 @Injectable()
 export class OnboardingJobs {
-  constructor(private readonly retention: RetentionService) {}
+  constructor(
+    private readonly retention: RetentionService,
+    private readonly verifyPending: VerifyPendingService,
+  ) {}
+
+  /** The sweep, run on demand through the admin job routes (J02 G-09); idempotent. */
+  @JobHandler('onboarding.verify-pending')
+  async sweep() {
+    await this.verifyPending.run();
+  }
 
   @JobHandler('onboarding.purge-documents')
   async purge({

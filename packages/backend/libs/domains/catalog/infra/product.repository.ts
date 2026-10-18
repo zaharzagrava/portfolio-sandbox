@@ -105,6 +105,22 @@ export class SequelizeProductRepository implements ProductRepository {
     });
   }
 
+  async lockShopForCreate(shopId: string): Promise<void> {
+    // one creator per shop at a time, released with the transaction: the count below cannot be raced past the limit
+    await this.rows<object>(
+      `SELECT pg_advisory_xact_lock(hashtextextended($1::text, 0))`,
+      [`product-create:${shopId}`],
+    );
+  }
+
+  async countLive(shopId: string): Promise<number> {
+    const [row] = await this.rows<{ n: string }>(
+      `SELECT count(*)::text AS n FROM "Product" p WHERE p."shopId" = $1 AND p."status" = 'ACTIVE'`,
+      [shopId],
+    );
+    return Number(row?.n ?? 0);
+  }
+
   async insert(input: NewProduct): Promise<ProductRecord> {
     const [row] = await this.rows<Row>(
       `INSERT INTO "Product" AS p ("id","shopId","createdBy","isSandbox","title","description","brand","category",

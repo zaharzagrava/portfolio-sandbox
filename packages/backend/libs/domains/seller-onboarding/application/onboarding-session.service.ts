@@ -34,6 +34,7 @@ import {
   submittedVersion,
 } from './events/onboarding-events';
 import { OnboardingLimits } from './onboarding-limits';
+import { onboardingMetrics } from './onboarding-metrics';
 
 export interface SubmitResult {
   submitted: true;
@@ -235,6 +236,7 @@ export class OnboardingSessionService {
     });
 
     if (stored) {
+      onboardingMetrics.applicationDecisions.add(1, { decision: 'submitted' });
       await this.drafts.delete(shopId);
       return stored;
     }

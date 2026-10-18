@@ -181,6 +181,10 @@ export interface InvoiceRepository {
   /** The oldest invoice still to be collected (`OPEN` or `UNCOLLECTIBLE`, total > 0). */
   oldestOwed(subscriptionId: string): Promise<InvoiceRow | null>;
   countOwed(subscriptionId: string): Promise<number>;
+  /** Invoices of the subscription that were paid with money (total above zero): the proof that a charge has settled. */
+  countPaid(subscriptionId: string): Promise<number>;
+  /** Invoices of the subscription that ask for money (total above zero), whatever their status. */
+  countBilled(subscriptionId: string): Promise<number>;
   /** The last `RENEWAL` before `before`, for late-usage pricing. */
   previousRenewal(
     subscriptionId: string,

@@ -6,6 +6,7 @@ import type {
 } from '@marketplace-sandbox/contracts';
 import { ApiConfigService, PlatformSettings } from '@app/common/config';
 import { CLOCK, type Clock } from '@app/common/core/clock';
+import { EntitlementsService } from '@app/domains/billing';
 import { ShopQueryService } from '@app/domains/tenancy';
 import { TransactionRunner } from '@app/infrastructure/context';
 import { OutboxService } from '@app/infrastructure/outbox/outbox.service';
@@ -26,6 +27,7 @@ import {
   CurrencyNotSupportedError,
   InvalidCursorError,
   InvalidTransitionError,
+  PlanLimitReachedError,
   ProductArchivedError,
   ProductNotFoundError,
   ProductValidationError,
@@ -69,6 +71,7 @@ export class ProductCommandService {
     private readonly audit: ProductAudit,
     config: ApiConfigService,
     @Inject(CLOCK) private readonly clock: Clock,
+    private readonly entitlements: EntitlementsService,
   ) {
     this.currency = new PlatformSettings(config).currency;
   }
@@ -83,9 +86,22 @@ export class ProductCommandService {
     const value = parsed.value;
     this.assertCurrency('create', value.currency);
     const shop = await this.activeShop('create', shopId);
+    // What the plan allows is asked before the transaction (III.3); an answer that cannot be had fails the create closed
+    // (`503 entitlements_unavailable`), never open.
+    const limit = await this.productLimit(shopId);
 
     const now = this.clock.now();
     const record = await this.runner.run(async () => {
+      if (limit !== null) {
+        await this.products.lockShopForCreate(shopId);
+        if ((await this.products.countLive(shopId)) >= limit) {
+          productWriteCounter.add(1, {
+            operation: 'create',
+            result: 'refused',
+          });
+          throw new PlanLimitReachedError('maxProducts', limit);
+        }
+      }
       const created = await this.products.insert({
         id: uuidv7(),
         shopId,
@@ -304,6 +320,13 @@ export class ProductCommandService {
     if (currency === undefined || currency === this.currency) return;
     productWriteCounter.add(1, { operation, result: 'refused' });
     throw new CurrencyNotSupportedError();
+  }
+
+  /** The shop's `maxProducts` (S18 `checkLimit`); `null` when the plan has no cap. */
+  private async productLimit(shopId: string): Promise<number | null> {
+    return (
+      await this.entitlements.checkLimit('SHOP', shopId, 'maxProducts', 0)
+    ).limit;
   }
 
   private async activeShop(operation: Operation, shopId: string) {

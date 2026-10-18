@@ -31,8 +31,8 @@ describe('Consumer operator routes (S53, J01 G-26, G-31)', () => {
 
   const sessionFor = async (role: Role) => {
     const user = await t.seedUser({ role });
-    const session = await t
-      .app.get(SessionIssuer)
+    const session = await t.app
+      .get(SessionIssuer)
       .issue({ userId: user.id, amr: ['pwd'] });
     return { user, session };
   };
@@ -115,10 +115,12 @@ describe('Consumer operator routes (S53, J01 G-26, G-31)', () => {
     'J01 G-31: %s %s is refused for an admin whose session was revoked (sensitive session required)',
     async (method, path) => {
       await t.app.get(SessionRevocationService).revokeBySid(adminSid, 'logout');
-      await call(method, path, admin, { since: new Date().toISOString() }).expect(
-        401,
+      await call(method, path, admin, {
+        since: new Date().toISOString(),
+      }).expect(401);
+      expect(await redis.client.exists(pauseKey('payments-order-copy'))).toBe(
+        0,
       );
-      expect(await redis.client.exists(pauseKey('payments-order-copy'))).toBe(0);
     },
   );
 
@@ -145,7 +147,20 @@ describe('Consumer operator routes (S53, J01 G-26, G-31)', () => {
     expect(await redis.client.exists(pauseKey('no-such-group'))).toBe(0);
   });
 
-  it('J01 G-31: the six journey group names are known before any runner declared them', async () => {
+  it('S53 G-36: the seven seller-journey group names (J02) are known before any runner declared them', async () => {
+    for (const group of [
+      'identity-seller-promotion',
+      'tenancy-shop-lifecycle',
+      'entitlements-invalidation',
+      'search-product-index',
+      'webhook-router',
+      'leaderboards',
+      'product-cache-invalidator',
+    ])
+      expect((await view(group)).group).toBe(group);
+  });
+
+  it('J01 G-31: the journey group names are known before any runner declared them', async () => {
     for (const group of JOURNEY_CONSUMER_GROUPS) {
       expect((await view(group)).group).toBe(group);
     }
@@ -222,7 +237,8 @@ describe('Consumer operator routes (S53, J01 G-26, G-31)', () => {
 
   it('J01 G-31: pause and resume are idempotent and a second pause keeps the first flag', async () => {
     const { group } = await runner();
-    const pause = () => call('post', `/api/admin/consumers/${group}/pause`, admin);
+    const pause = () =>
+      call('post', `/api/admin/consumers/${group}/pause`, admin);
     const resume = () =>
       call('post', `/api/admin/consumers/${group}/resume`, admin);
 
@@ -246,12 +262,16 @@ describe('Consumer operator routes (S53, J01 G-26, G-31)', () => {
     const send = (verb: 'pause' | 'resume') =>
       call('post', `/api/admin/consumers/${group}/${verb}`, admin);
 
-    const pauses = await Promise.all(Array.from({ length: 6 }, () => send('pause')));
+    const pauses = await Promise.all(
+      Array.from({ length: 6 }, () => send('pause')),
+    );
     expect(pauses.map((r) => r.status)).toEqual(Array(6).fill(200));
     expect(await redis.client.exists(pauseKey(group))).toBe(1);
     expect((await view(group)).state).toBe('PAUSED');
 
-    const resumes = await Promise.all(Array.from({ length: 6 }, () => send('resume')));
+    const resumes = await Promise.all(
+      Array.from({ length: 6 }, () => send('resume')),
+    );
     expect(resumes.map((r) => r.status)).toEqual(Array(6).fill(200));
     expect(await redis.client.exists(pauseKey(group))).toBe(0);
 
@@ -272,7 +292,9 @@ describe('Consumer operator routes (S53, J01 G-26, G-31)', () => {
     const second = b.get(Natural);
     await kit.awaitMembers(a.s.kafka, a.group, 2);
 
-    await call('post', `/api/admin/consumers/${a.group}/pause`, admin).expect(200);
+    await call('post', `/api/admin/consumers/${a.group}/pause`, admin).expect(
+      200,
+    );
     await sleep(2000);
     const events = [0, 1].map((partition) => ({
       partition,
@@ -287,7 +309,9 @@ describe('Consumer operator routes (S53, J01 G-26, G-31)', () => {
     expect(await kit.naturalRows(a.group)).toBe(0);
     expect((await view(a.group)).lag).toBe(2);
 
-    await call('post', `/api/admin/consumers/${a.group}/resume`, admin).expect(200);
+    await call('post', `/api/admin/consumers/${a.group}/resume`, admin).expect(
+      200,
+    );
     await waitFor(async () => (await kit.naturalRows(a.group)) === 2, {
       description: 'both partitions applied after the resume',
       timeoutMs: 10_000,
@@ -322,7 +346,10 @@ describe('Consumer operator routes (S53, J01 G-26, G-31)', () => {
       async () =>
         events.every((e) => consumer.probe.invocationsOf(e.eventId) === 2) &&
         (await view(group)).state === 'RUNNING',
-      { description: 'every event handled a second time, group running', timeoutMs: 30_000 },
+      {
+        description: 'every event handled a second time, group running',
+        timeoutMs: 30_000,
+      },
     );
     expect(await kit.naturalRows(group)).toBe(3); // the consumer is idempotent
     expect(await redis.client.exists(pauseKey(group))).toBe(0);
@@ -331,20 +358,29 @@ describe('Consumer operator routes (S53, J01 G-26, G-31)', () => {
   }, 120_000);
 
   it.each([
-    ['in the future', () => new Date(t.clock.nowMs() + 3_600_000).toISOString()],
+    [
+      'in the future',
+      () => new Date(t.clock.nowMs() + 3_600_000).toISOString(),
+    ],
     ['malformed', () => 'last tuesday'],
     ['not a string', () => 12345 as unknown as string],
-  ])('J01 G-31: replay with a since %s answers 422 and pauses nothing', async (_name, since) => {
-    const { group } = await runner();
-    const res = await call(
-      'post',
-      `/api/admin/consumers/${group}/replay`,
-      admin,
-      { since: since() },
-    ).expect(422);
-    expect(problemDetailsSchema.parse(res.body).code).toBe('validation_failed');
-    expect(await redis.client.exists(pauseKey(group))).toBe(0);
-  }, 90_000);
+  ])(
+    'J01 G-31: replay with a since %s answers 422 and pauses nothing',
+    async (_name, since) => {
+      const { group } = await runner();
+      const res = await call(
+        'post',
+        `/api/admin/consumers/${group}/replay`,
+        admin,
+        { since: since() },
+      ).expect(422);
+      expect(problemDetailsSchema.parse(res.body).code).toBe(
+        'validation_failed',
+      );
+      expect(await redis.client.exists(pauseKey(group))).toBe(0);
+    },
+    90_000,
+  );
 
   it('J01 G-26: redrive answers 202 {requeued}, re-queues a dead-lettered event, and dlqDepth follows', async () => {
     const { s, consumer, group } = await runner(1, { attempts: 1 });

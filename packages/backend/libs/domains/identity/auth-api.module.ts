@@ -38,6 +38,7 @@ import { SessionsController } from './api/sessions.controller';
 import { SessionAdminService } from './application/session-admin.service';
 import { WellKnownController } from './api/well-known.controller';
 import { AccountService } from './application/account.service';
+import { BootstrapAdminService } from './application/bootstrap-admin.service';
 import { LoginService } from './application/login.service';
 import { MfaAttemptBudget } from './application/mfa-attempt-budget';
 import { MfaLoginService } from './application/mfa-login.service';
@@ -81,6 +82,7 @@ import { CsrfGuard } from './api/guards/csrf.guard';
     // Production reaches providers over the public internet; the e2e app overrides this with the fake provider's host.
     { provide: OIDC_NET_OPTIONS, useValue: {} },
     AccountService,
+    BootstrapAdminService,
     CredentialCookies,
     FederatedIdentityService,
     LoginService,

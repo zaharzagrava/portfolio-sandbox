@@ -15,6 +15,9 @@ import { ReviewService } from './application/review.service';
 import { ExtractionService } from './application/extraction.service';
 import { VerificationPolicyService } from './application/verification-policy.service';
 import { RetentionScheduler } from './application/retention-scheduler';
+import { VerifyPendingService } from './application/verify-pending.service';
+import { ExtractorGate } from './application/extractor-gate';
+import { ConsumerPauseFlags } from '@app/infrastructure/projections/consumer-pause';
 import { OnboardingAudit } from './application/onboarding-audit';
 import { OnboardingLimits } from './application/onboarding-limits';
 import { EXTRACTION_CONFIG } from './application/extraction-config.token';
@@ -40,6 +43,7 @@ import { SequelizeStatusHistoryRepository } from './infra/status-history.reposit
 import { RedisDraftStore } from './infra/draft.store';
 import { ExtractionQueueReadiness } from './infra/queue-readiness';
 import { OnboardingJobs } from './infra/onboarding.jobs';
+import { LocalDocumentExtractor } from './infra/local-document-extractor';
 import { OnboardingShopDeletedConsumer } from './infra/shop-deleted.consumer';
 import { RetentionService } from './application/retention.service';
 import { OnboardingController } from './api/onboarding.controller';
@@ -115,16 +119,33 @@ export class OnboardingModule {}
   imports: [
     LlmModule,
     StorageModule,
+    SqsModule,
     ClockModule,
     EventsModule.forAggregates([
       { aggregateType: 'shops', retention: 'full-history' },
     ]),
     JobsModule,
   ],
-  providers: [...DECISION_PROVIDERS, ExtractionService, SecretBox],
+  providers: [
+    ...DECISION_PROVIDERS,
+    ExtractionService,
+    ExtractorGate,
+    ConsumerPauseFlags,
+    SecretBox,
+  ],
   exports: [ExtractionService],
 })
 export class OnboardingExtractionModule {}
+
+/**
+ * The extraction consumer of the local deployment (J02 G-11): the Lambda's work, on the same queue, in the monolith's own
+ * process. Imported by the local monolith only, never by a deployed app, which would double-consume the queue.
+ */
+@Module({
+  imports: [OnboardingExtractionModule, SqsModule],
+  providers: [LocalDocumentExtractor],
+})
+export class OnboardingLocalExtractorModule {}
 
 const RETENTION_PROVIDERS = [
   ...REPOSITORIES,
@@ -134,8 +155,21 @@ const RETENTION_PROVIDERS = [
 
 /** SD-44 (worker): the retention jobs (purge of a round's raw files, erasure of a deleted shop's records). */
 @Module({
-  imports: [StorageModule, JobsModule, ClockModule],
-  providers: [...RETENTION_PROVIDERS, OnboardingJobs],
+  imports: [
+    StorageModule,
+    JobsModule,
+    ClockModule,
+    EventsModule.forAggregates([
+      { aggregateType: 'shops', retention: 'full-history' },
+    ]),
+  ],
+  providers: [
+    ...RETENTION_PROVIDERS,
+    RetentionScheduler,
+    VerificationPolicyService,
+    VerifyPendingService,
+    OnboardingJobs,
+  ],
 })
 export class OnboardingWorkerModule {}
 

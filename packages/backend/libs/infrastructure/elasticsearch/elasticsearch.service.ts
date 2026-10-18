@@ -98,7 +98,9 @@ export class ElasticsearchService implements OnModuleInit {
   public productsIndexDefinition() {
     return {
       settings: {
-        refresh_interval: '5s',
+        // Visibility of a write is the search hops' budget (J02 H9..H11): the local profile sets `1s`.
+        refresh_interval:
+          this.configService.get('search_refresh_interval') ?? '5s',
         analysis: {
           analyzer: {
             autocomplete_index: {

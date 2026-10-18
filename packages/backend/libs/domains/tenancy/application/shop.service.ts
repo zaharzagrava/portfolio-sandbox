@@ -27,6 +27,7 @@ import {
 } from '../domain/errors';
 import { decodeKeyset, encodeKeyset, parseLimit } from '../domain/cursor';
 import { checkSlug } from '../domain/slug-policy';
+import { shopsCreatedCounter } from '../domain/tenancy-metrics';
 import { allowedRegions } from '../domain/region-policy';
 import { MAX_OWNED_SHOPS } from '../domain/seat-policy';
 import type { ShopRole } from '../domain/shop-types';
@@ -118,6 +119,7 @@ export class ShopService {
       },
       { userId: ownerId },
     );
+    shopsCreatedCounter.add(1);
     this.audit.record('shop.created', { shopId: id, actorId: ownerId });
     return toShopDto(shop, 'OWNER');
   }
