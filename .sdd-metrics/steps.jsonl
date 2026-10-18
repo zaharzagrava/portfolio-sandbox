@@ -823,3 +823,6 @@
 {"run":"20261018T125731Z","capability":"W04","step":"converge-1","start":"2026-10-18T12:57:32Z","end":"2026-10-18T12:57:57Z","seconds":25,"result":"ok","attempt":1,"reason":"ok"}
 {"run":"20261018T125731Z","capability":"W04","step":"gate","start":"2026-10-18T12:57:57Z","end":"2026-10-18T13:36:54Z","seconds":2337,"result":"pass","attempt":1,"reason":""}
 {"run":"20261018T125731Z","capability":"W04","step":"built","start":"2026-10-18T12:57:31Z","end":"2026-10-18T13:36:54Z","seconds":2363,"result":"ok","attempt":1,"reason":"Seller dashboard: shop overview, live sales numbers, inventory management, developer settings (API keys, webhook endpoints)"}
+{"run":"20261018T125731Z","capability":"W05","step":"converge-1","start":"2026-10-18T13:37:13Z","end":"2026-10-18T13:38:58Z","seconds":105,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261018T125731Z","capability":"W05","step":"gate","start":"2026-10-18T13:38:58Z","end":"2026-10-18T14:11:29Z","seconds":1951,"result":"pass","attempt":1,"reason":""}
+{"run":"20261018T125731Z","capability":"W05","step":"built","start":"2026-10-18T13:37:13Z","end":"2026-10-18T14:11:30Z","seconds":2057,"result":"ok","attempt":1,"reason":"Product chat (realtime, unread, receipts, reconnect) and the streamed shopping assistant sheet (resume, abort, errors)"}
