@@ -259,6 +259,8 @@ export interface TicketView {
   expiresAtMs: number;
   admissionToken?: string;
   tokenExpiresAtMs?: number;
+  /** The stack-clock instant the admitter admitted the ticket (J03). */
+  admittedAtMs?: number;
 }
 
 export type JoinResult =

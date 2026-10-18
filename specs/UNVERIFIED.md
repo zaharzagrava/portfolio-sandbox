@@ -294,3 +294,9 @@ interviews) until its status says so. The implementation loop appends here (rule
 | J02 | SC-004: product listed to public search within 10 s (p99) | same file (loop AS-18) | not run |
 | J02 | SC-005: order paid to webhook and rank within 10 s (p99) | same file (loop AS-25) | not run |
 | J02 | SC-008: clean stack to green in under 10 minutes, 0 fixed sleeps | same file (fresh-run.sh then pnpm test:journeys, grep for sleeps) | not run |
+| J03 | SC-003: booking to buyer notice within 5 s and voucher within 10 s in 99% of runs | specs/journeys/J03-launch-day/quickstart.md (Ops artifacts: loop AS-02 100 times, p99 of H4, H5) | not run |
+| J03 | SC-004: paid order to buyer and owner notices within 5 s (p99) | same file (loop AS-12) | not run |
+| J03 | SC-005: comment to viewers within 1 s, history within 5 s, toxic removed within 5 s (p99) | same file (loop AS-20, AS-24) | not run |
+| J03 | SC-006: winner order visible within 10 s of auction end (p99) | same file (loop AS-31) | not run |
+| J03 | SC-008: lag back to 0 within 15 s of resuming a paused consumer (p99) | same file (loop AS-06, AS-07, AS-18, AS-25, AS-36) | not run |
+| J03 | SC-009: clean stack to green in under 15 minutes, 0 fixed sleeps | same file (fresh-run.sh then pnpm test:journeys, grep for sleeps) | not run |

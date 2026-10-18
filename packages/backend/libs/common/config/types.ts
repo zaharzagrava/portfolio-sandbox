@@ -243,6 +243,8 @@ export class SecretsManagerConfig {
 
   /** S54: `enabled` switches on the controllable clock (never in production), see `clock-config.ts`. */
   clock_control?: string;
+  /** J03: `enabled` switches on the read-only event tap (never in production), see `clock-config.ts`. */
+  event_tap?: string;
 
   /** J02 local profile, see `local-profile-config.ts`; every one is refused in production. */
   bootstrap_admin_email?: string;

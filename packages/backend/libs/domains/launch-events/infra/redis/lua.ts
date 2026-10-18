@@ -70,11 +70,11 @@ local now = tonumber(ARGV[4])
 local hb = tonumber(ARGV[5])
 local shards = tonumber(ARGV[6])
 local tk = 'lt:{' .. E .. '}:' .. ticket
-local h = redis.call('HMGET', tk, 'user', 'admitted', 'lastSeen', 'shard', 'score', 'token', 'tokenExp')
+local h = redis.call('HMGET', tk, 'user', 'admitted', 'lastSeen', 'shard', 'score', 'token', 'tokenExp', 'admittedAt')
 if not h[1] or h[1] ~= userId then return false end
 if h[2] == '1' then
   if tonumber(h[7]) <= now then redis.call('DEL', tk) return false end
-  return {'admitted', h[6], h[7]}
+  return {'admitted', h[6], h[7], h[8] or h[7]}
 end
 if now - tonumber(h[3]) > hb then
   redis.call('ZREM', 'lq:{' .. E .. '}:' .. h[4], ticket)
@@ -173,7 +173,7 @@ for i = 0, count - 1 do
   local shard = redis.call('HGET', tk, 'shard')
   if shard then
     if redis.call('ZREM', 'lq:{' .. E .. '}:' .. shard, ticket) == 1 then
-      redis.call('HSET', tk, 'admitted', '1', 'token', token, 'tokenExp', tokenExp)
+      redis.call('HSET', tk, 'admitted', '1', 'token', token, 'tokenExp', tokenExp, 'admittedAt', tostring(now))
       redis.call('EXPIRE', tk, math.max(60, math.ceil((tonumber(tokenExp) - now) / 1000) + 60))
       out[#out + 1] = ticket
       admitted = admitted + 1

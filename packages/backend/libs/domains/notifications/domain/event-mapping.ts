@@ -462,9 +462,31 @@ const MAPPERS: { [T in CanonicalConsumedEventType]: Mapper<T> } = {
   'launch_events.booking_confirmed': (p, m) =>
     requests([
       request(m, 'booking.confirmed', user(p.userId), {
-        seats: text(p.seats),
+        // S22 emits the seat numbers; the notice says how many
+        seats: text(Array.isArray(p.seats) ? p.seats.length : p.seats),
         launchEventId: p.launchEventId,
       }),
+    ]),
+  // ---- flash sales (S11): the shop owners hear that a drop sold out (once per sale) or could not start ---------------
+  'flash_sale.sold_out': (p, m) =>
+    requests([
+      request(
+        m,
+        'shop.flash_sale_sold_out',
+        owners(p.shopId),
+        { shopId: p.shopId, saleId: p.saleId },
+        { sourceId: p.saleId },
+      ),
+    ]),
+  'flash_sale.start_failed': (p, m) =>
+    requests([
+      request(
+        m,
+        'shop.flash_sale_start_failed',
+        owners(p.shopId),
+        { shopId: p.shopId, saleId: p.saleId, reason: p.reason },
+        { sourceId: p.saleId },
+      ),
     ]),
   // Chat owns its dedupe key: a retry of the same escalation is the same notification.
   'chat.message_escalated': (p, m) =>

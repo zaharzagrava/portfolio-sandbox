@@ -19,7 +19,8 @@ import {
   KAFKA_CONSUMER_OVERRIDES,
   type KafkaClientOverrides,
 } from '@app/infrastructure/kafka/kafka-client.options';
-import { aliasesOf, membersOf } from './consumer-groups';
+import { TaskQueue } from '@app/infrastructure/sqs/task-queue.port';
+import { aliasesOf, membersOf, queueOf } from './consumer-groups';
 import { ConsumerLag, UnknownConsumerGroupError } from './consumer-lag';
 import { ConsumerPauseFlags } from './consumer-pause';
 import { deadLetterTopic } from './dead-letter';
@@ -85,6 +86,7 @@ export class ConsumerAdminService implements OnModuleInit, OnModuleDestroy {
     @Optional()
     @Inject(KAFKA_CONSUMER_OVERRIDES)
     private readonly overrides: KafkaClientOverrides = {},
+    @Optional() private readonly queues?: TaskQueue,
   ) {}
 
   onModuleInit(): void {
@@ -107,6 +109,9 @@ export class ConsumerAdminService implements OnModuleInit, OnModuleDestroy {
     let lag = 0;
     for (const member of resolved.members)
       lag += await this.lagOf(member, resolved.topicsOf.get(member) ?? []);
+    // A queue consumer (the booking voucher): the lag is what waits in its queue, visible and not yet received.
+    const queue = queueOf(group);
+    if (queue && this.queues) lag += await this.queues.queueDepth(queue);
     return {
       group,
       topics: resolved.topics,

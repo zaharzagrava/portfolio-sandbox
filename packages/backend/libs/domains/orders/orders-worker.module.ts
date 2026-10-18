@@ -6,6 +6,7 @@ import { OrderJobs } from './infra/order.jobs';
 import { PaymentsEventsConsumer } from './infra/payments-events.consumer';
 import { ORDER_MODELS } from './orders-models';
 import { OrdersCoreModule } from './orders-core.module';
+import { VouchersWorkerModule } from './vouchers-core.module';
 
 /** The job handlers: hold expiry, sweeper, recovery, release, cart clean-up, webhook processing, flash-sale lifecycle. */
 @Module({
@@ -25,6 +26,8 @@ export class OrdersJobsModule {}
 @Module({
   imports: [
     OrdersJobsModule,
+    // The consumer of `orders-booking-voucher-requested` (J03 G-04): hosted wherever the worker side is (L-015, L-018).
+    VouchersWorkerModule,
     ProjectionsModule.forProjectors(
       [PaymentsEventsConsumer],
       [OrdersCoreModule],

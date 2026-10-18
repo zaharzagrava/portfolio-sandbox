@@ -240,6 +240,16 @@ async function addStaff(
   shopId: string,
 ): Promise<JourneyClient> {
   const staff = await JourneyClient.signUp('staff');
+  await inviteAndAccept(owner, shopId, staff);
+  return staff;
+}
+
+/** Invites an existing account to the shop as STAFF through the public routes and accepts from the dev mailbox. */
+export async function inviteAndAccept(
+  owner: JourneyClient,
+  shopId: string,
+  staff: JourneyClient,
+): Promise<void> {
   const invited = await owner.post(`/api/shops/${shopId}/invites`, {
     body: { email: staff.email, role: 'STAFF' },
   });
@@ -276,7 +286,6 @@ async function addStaff(
     throw new Error(
       `accept invite: ${accepted.status} ${JSON.stringify(accepted.body)}`,
     );
-  return staff;
 }
 
 async function addProduct(

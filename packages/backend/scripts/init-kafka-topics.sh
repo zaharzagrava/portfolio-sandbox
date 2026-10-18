@@ -14,6 +14,10 @@ TOPICS=(
   "payouts.events"
   "statements.events"
   "products.events"
+  # J03 G-30: launch day (seat booking, live stream, auctions), keyed by aggregate id; the event tap reads them
+  "launch_events.events"
+  "live.events"
+  "auctions.events"
   # S36 sponsored listings (L-002, L-011: every topic the code names must exist)
   "marketing.events"
   "ads.clicks"

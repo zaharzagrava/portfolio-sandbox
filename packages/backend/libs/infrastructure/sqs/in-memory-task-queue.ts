@@ -57,6 +57,10 @@ export class InMemoryTaskQueue extends TaskQueue {
     };
   }
 
+  queueDepth(queue: string): Promise<number> {
+    return Promise.resolve(this.sent.filter((m) => m.queue === queue).length);
+  }
+
   async drain(queue: string): Promise<void> {
     const handler = this.handlers.get(queue);
     if (!handler) return;

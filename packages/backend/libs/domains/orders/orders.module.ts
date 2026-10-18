@@ -21,6 +21,8 @@ import { CartCookie } from './api/cart-cookie';
 import { CartController } from './api/cart.controller';
 import { CheckoutController } from './api/checkout.controller';
 import { OrdersController } from './api/orders.controller';
+import { VouchersController } from './api/vouchers.controller';
+import { VouchersCoreModule } from './vouchers-core.module';
 import { ShopOrdersController } from './api/shop-orders.controller';
 import { EmptyBodyMiddleware } from './api/empty-body.middleware';
 import { StripeWebhookController } from './api/stripe-webhook.controller';
@@ -42,6 +44,7 @@ export { ORDER_MODELS } from './orders-models';
     InboxModule,
     FlashSaleCoreModule,
     FlashSaleModule,
+    VouchersCoreModule,
     RateLimitModule.forFeature(ordersRatePolicies),
     SequelizeModule.forFeature(ORDER_MODELS),
   ],
@@ -56,6 +59,7 @@ export { ORDER_MODELS } from './orders-models';
   controllers: [
     CartController,
     CheckoutController,
+    VouchersController, // before OrdersController: `/orders/vouchers` must not reach `/orders/:orderId`
     OrdersController,
     ShopOrdersController,
     StripeWebhookController,

@@ -6,6 +6,7 @@ import {
   clockViewSchema,
   consumerViewSchema,
   JOURNEY_CONSUMER_GROUPS,
+  LAUNCH_DAY_CONSUMER_GROUPS,
   type AdminJob,
   type AdminJobType,
   type ClockView,
@@ -290,11 +291,14 @@ export class ControlSurface {
     for (const group of new Set<string>([
       ...paused,
       ...JOURNEY_CONSUMER_GROUPS,
+      ...LAUNCH_DAY_CONSUMER_GROUPS,
     ])) {
       try {
         await this.resume(group);
       } catch (error) {
-        failures.push((error as Error).message);
+        const message = (error as Error).message;
+        // A group this deployment does not host answers 404 consumer_not_found: nothing to resume, not a failure.
+        if (!message.includes(`resume ${group}: 404`)) failures.push(message);
       }
     }
     // The operator signed in while the clock was moved: those sessions are dated in the future, so after the clock is real

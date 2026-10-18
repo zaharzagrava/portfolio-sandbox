@@ -1,7 +1,15 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { SHOP_ORDER_STATUSES } from '@marketplace-sandbox/contracts';
-import { IsIn, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
+import {
+  IsIn,
+  IsInt,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Max,
+  Min,
+} from 'class-validator';
 
 export class ListOrdersQueryDto {
   @ApiProperty({ required: false, default: 20, minimum: 1, maximum: 100 })
@@ -15,6 +23,13 @@ export class ListOrdersQueryDto {
   @IsOptional()
   @IsString()
   cursor?: string;
+}
+
+export class ListVouchersQueryDto extends ListOrdersQueryDto {
+  @ApiProperty({ required: false, format: 'uuid' })
+  @IsOptional()
+  @IsUUID()
+  launchEventId?: string;
 }
 
 export class ListShopOrdersQueryDto extends ListOrdersQueryDto {

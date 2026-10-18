@@ -14,32 +14,30 @@ export interface OpenStream {
     timeoutMs: number,
     what: string,
   ): Promise<StreamEvent>;
+  /** True once the server (or `close()`) ended the connection. */
+  readonly closed: boolean;
   close(): void;
 }
 
 /**
- * Opens `GET /api/streams?topics=…` as the actor and collects events in the background until `close()`.
- * Resolves once the server has answered `200`, so events published after this returns are not missed.
+ * Opens an SSE endpoint and collects events in the background until `close()` or until the server ends the connection.
+ * Resolves once the server has answered `200`, so events published after this returns are not missed. The gateway wraps a
+ * payload as `{topic, data}`; the events seen by a test carry the payload.
  */
-export async function openStream(
-  actor: JourneyClient,
-  topics: string,
+export async function openSse(
+  url: string,
+  headers: Record<string, string> = {},
 ): Promise<OpenStream> {
   const abort = new AbortController();
   const events: StreamEvent[] = [];
-  const response = await fetch(
-    `${API_URL}/api/streams?topics=${encodeURIComponent(topics)}`,
-    {
-      headers: {
-        accept: 'text/event-stream',
-        authorization: `Bearer ${actor.token}`,
-      },
-      signal: abort.signal,
-    },
-  );
+  let closed = false;
+  const response = await fetch(url, {
+    headers: { accept: 'text/event-stream', ...headers },
+    signal: abort.signal,
+  });
   if (response.status !== 200) {
     abort.abort();
-    throw new Error(`stream ${topics}: ${response.status}`);
+    throw new Error(`stream ${url}: ${response.status}`);
   }
   void (async () => {
     const decoder = new TextDecoder();
@@ -60,7 +58,6 @@ export async function openStream(
           if (data === undefined) continue;
           try {
             const frame = JSON.parse(data) as Record<string, unknown>;
-            // the gateway wraps the payload as `{topic, data}`; tests see the payload
             events.push({
               event,
               data:
@@ -77,10 +74,15 @@ export async function openStream(
       }
     } catch {
       // closed by the test (abort) or by the server: nothing more to collect
+    } finally {
+      closed = true;
     }
   })();
   return {
     events,
+    get closed() {
+      return closed;
+    },
     next: async (predicate, timeoutMs, what) => {
       try {
         return await waitFor(async () => events.find(predicate), {
@@ -96,4 +98,14 @@ export async function openStream(
     },
     close: () => abort.abort(),
   };
+}
+
+/** `GET /api/streams?topics=…` as the actor. */
+export function openStream(
+  actor: JourneyClient,
+  topics: string,
+): Promise<OpenStream> {
+  return openSse(`${API_URL}/api/streams?topics=${encodeURIComponent(topics)}`, {
+    authorization: `Bearer ${actor.token}`,
+  });
 }

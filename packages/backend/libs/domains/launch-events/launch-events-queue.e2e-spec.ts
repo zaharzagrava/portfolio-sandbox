@@ -212,6 +212,40 @@ describe('Launch events: waiting room, admission rate and load shedding', () => 
     });
   });
 
+  it('S22 AS-05 (J03): the ticket status carries admittedAt, on the stack clock, only once admitted, and only for its owner', async () => {
+    const s = await t.seller();
+    const event = await t.onSale(s);
+    const buyer = await t.buyer();
+    const stranger = await t.buyer();
+    const joined = await t.join(event, buyer).expect(201);
+    const waiting = expectContract(
+      queueStatusSchema,
+      (await t.status(event, buyer, joined.body.ticket).expect(200)).body,
+    );
+    expect(waiting.admitted).toBe(false);
+    expect(waiting).not.toHaveProperty('admittedAt');
+
+    const before = t.clock.nowMs();
+    await t.admitter.admitEvent(event.id);
+    const status = expectContract(
+      queueStatusSchema,
+      (await t.status(event, buyer, joined.body.ticket).expect(200)).body,
+    );
+    expect(status.admitted).toBe(true);
+    expect(Date.parse(status.admittedAt!)).toBeGreaterThanOrEqual(before);
+    expect(Date.parse(status.admittedAt!)).toBeLessThanOrEqual(t.clock.nowMs());
+    // Stable: asking again later gives the same instant.
+    await t.advance(5 * SECOND);
+    const again = expectContract(
+      queueStatusSchema,
+      (await t.status(event, buyer, joined.body.ticket).expect(200)).body,
+    );
+    expect(again.admittedAt).toBe(status.admittedAt);
+    // Nobody else reads it, and the body names no person.
+    await t.status(event, stranger, joined.body.ticket).expect(404);
+    expect(JSON.stringify(status)).not.toContain(buyer.id);
+  });
+
   it('S22 AS-05: after the token lifetime the hold is refused and a new join takes a new ticket at the back', async () => {
     const s = await t.seller();
     const event = await t.onSale(s);

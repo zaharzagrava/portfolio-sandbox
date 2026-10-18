@@ -44,6 +44,7 @@ cfg.update({
     'ADS_AGGREGATOR_INSTANCE': 'local-1',
     'COLLAB_PUBLIC_URL': 'ws://localhost:8000',  # the monolith serves /collab/:draftId on the API port; the example's :8020 has no listener in the dev stack
     'COLLAB_TICKET_KEY': 'dev-collab-ticket-key-hhhhhhhhhhhhhhhhhhhhhhhhhhhh',  # W04 listing editor: without it POST .../drafts/:id/connect answers 500 (the key is optional outside production)
+    'EVENT_TAP': 'enabled',  # J03: GET /api/admin/topics/:topic/messages (read-only; refused in production)
     'CLOCK_CONTROL': 'enabled',  # J01: GET/PUT /api/admin/clock (the app refuses to boot with it in production)
     'STRIPE_WEBHOOK_SECRET': 'whsec_dev_journey_secret_0123456789abcdef',  # J01: the journeys sign webhook posts with it (JOURNEY_ENV points at this file)
     'PLATFORM_CURRENCY': 'EUR',  # J01 "one currency": the ledger books, and balance/statement report, in EUR (unset it defaults to USD and balances read 0)

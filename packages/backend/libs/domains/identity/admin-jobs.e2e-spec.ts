@@ -15,6 +15,9 @@ import '@app/domains/billing';
 import '@app/domains/developer-platform';
 import '@app/domains/discovery';
 import '@app/domains/seller-onboarding';
+import '@app/domains/launch-events';
+import '@app/domains/auctions';
+import '@app/domains/orders';
 import { AuthTestApp, createAuthApp } from './testing/auth-app';
 import { flushRedis } from './testing/mfa-fixtures';
 import { IdentityOpsModule } from './identity-ops.module';
@@ -145,6 +148,37 @@ describe('J01 G-30: admin job requests (POST/GET /api/admin/jobs)', () => {
     } finally {
       await sql.query(`DELETE FROM "Job" WHERE type IN (:types)`, {
         replacements: { types: J02_TYPES },
+      });
+    }
+  });
+
+  it('J03 G-40: the launch-day jobs are on the allow-list and enqueue one QUEUED job each; an unknown type stays 422', async () => {
+    const types = [
+      'launch-events.reconcile-seats',
+      'auctions.sweep-due',
+      'flash-sale.verify',
+      'launch-events.live-reconcile',
+    ];
+    try {
+      for (const type of types) {
+        const res = await post({ type, payload: {} }).expect(202);
+        const { jobId } = adminJobAcceptedSchema.parse(res.body);
+        const rows = await jobsOf(type);
+        expect(rows.map((r) => r.id)).toEqual([jobId]);
+        expect(rows[0].status).toBe('QUEUED');
+      }
+      const refused = await post({ type: 'auctions.sweep-never' }).expect(422);
+      expect(problemDetailsSchema.parse(refused.body).code).toBe(
+        'job_type_not_allowed',
+      );
+      const nonAdmin = await sessionFor(Role.SELLER);
+      await post(
+        { type: 'auctions.sweep-due', payload: {} },
+        { token: nonAdmin.accessToken.token },
+      ).expect(403);
+    } finally {
+      await sql.query(`DELETE FROM "Job" WHERE type IN (:types)`, {
+        replacements: { types },
       });
     }
   });

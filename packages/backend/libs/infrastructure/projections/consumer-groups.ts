@@ -6,7 +6,12 @@
  * Pausing, replaying or reading an alias acts on all of its member groups.
  */
 export type CanonicalGroup =
-  { readonly groups: readonly string[] } | { readonly prefix: string };
+  | {
+      readonly groups: readonly string[];
+      /** A queue consumer (not Kafka): its lag is the number of messages waiting in this queue. */
+      readonly queue?: string;
+    }
+  | { readonly prefix: string };
 
 export const CANONICAL_CONSUMER_GROUPS: Readonly<
   Record<string, CanonicalGroup>
@@ -40,7 +45,18 @@ export const CANONICAL_CONSUMER_GROUPS: Readonly<
   'product-cache-invalidator': { groups: ['product-cache-invalidator'] },
   // The document extractor is a queue worker, not a Kafka group: the name only carries the operator's hold (pause/resume).
   'document-extractor': { groups: ['document-extractor'] },
+  // Launch day (J03). The voucher consumer is an SQS consumer of orders: pause is the Redis flag, lag the visible messages.
+  'orders-booking-voucher': {
+    groups: ['orders-booking-voucher'],
+    queue: 'orders-booking-voucher-requested',
+  },
 };
+
+/** The queue behind a canonical queue consumer, or null when the name is a Kafka group. */
+export function queueOf(canonical: string): string | null {
+  const def = CANONICAL_CONSUMER_GROUPS[canonical];
+  return def && 'queue' in def && def.queue ? def.queue : null;
+}
 
 /** The canonical aliases a real group answers to besides its own name (a runner checks all their pause flags). */
 export function aliasesOf(group: string): string[] {

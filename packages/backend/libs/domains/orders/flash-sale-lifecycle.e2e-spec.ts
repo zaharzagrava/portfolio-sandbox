@@ -797,6 +797,24 @@ describe('Flash sales: load, end, reconcile and never oversell', () => {
       expect(await events(d.id, 'flashsale.sold_out')).toHaveLength(1);
     });
 
+    it('J03 AS-11: racing buyers that take the last units together still write sold_out exactly once', async () => {
+      for (let round = 0; round < 3; round++) {
+        const d = await openDrop(t, {
+          units: 12,
+          buckets: 4,
+          limit: 1,
+          regular: 2,
+        });
+        const users = await Promise.all(
+          Array.from({ length: 24 }, () => t.newUser()),
+        );
+        for (const user of users) await addToCart(t, user, d.productId, 1);
+        const replies = await Promise.all(users.map((u) => checkoutAs(t, u)));
+        expect(replies.filter((r) => r.status === 202)).toHaveLength(12);
+        expect(await events(d.id, 'flashsale.sold_out')).toHaveLength(1);
+      }
+    });
+
     it('S11 AS-37: a refused outbox append for sold_out deletes the marker, so the next claim emits it', async () => {
       const d = await openDrop(t, {
         units: 2,

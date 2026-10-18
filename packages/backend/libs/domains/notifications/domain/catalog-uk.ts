@@ -98,6 +98,15 @@ export const UK_TEMPLATES: Record<NotificationType, Template> = {
     title: 'Нове замовлення',
     body: 'Ви отримали замовлення на суму {{subtotal}}.',
   },
+  'shop.flash_sale_sold_out': {
+    title: 'Ваш дроп розпродано',
+    body: 'Усі одиниці вашого обмеженого дропу продано.',
+  },
+  'shop.flash_sale_start_failed': {
+    title: 'Дроп не вдалося запустити',
+    body: 'Дроп не стартував ({{reason}}). З нього нічого не продано; перевірте залишок і заплануйте його знову.',
+    emailSubject: 'Дроп не вдалося запустити',
+  },
   'order.confirmed': {
     title: 'Замовлення підтверджено',
     body: 'Ми отримали оплату {{total}}. Замовлення {{orderShort}} готується.',
