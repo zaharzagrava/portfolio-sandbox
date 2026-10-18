@@ -230,7 +230,11 @@ gate() { # $1 = domain column; everything must pass
       web_gate_full || return 1 ;;
     journey)
       bash scripts/sdd/stack-fix.sh journey || return 1   # seconds: a missing stand-in used to cost a 25-minute run
-      (cd packages/backend && API_URL="$API_URL" pnpm test:journeys) || return 1 ;;
+      # Only THIS journey's spec: the others passed at their own gate, the whole suite runs at the final checkpoint. J02's gate re-ran J01
+      # (10+ minutes) and failed on J01 AS-30, a log-offset check that is sensitive to the stack's history (2026-10-18).
+      local jspec; jspec="$(cd packages/backend && grep -l "Journey ${id%%-*}[: ]" test/journeys/*.journey-spec.ts 2>/dev/null | head -1)"
+      [[ -n "$jspec" ]] && echo "journey gate: only $jspec" || echo "journey gate: no spec file named for ${id%%-*}; running the whole suite"
+      (cd packages/backend && API_URL="$API_URL" pnpm test:journeys $jspec) || return 1 ;;
   esac
   gate_reset
 }
