@@ -10,6 +10,17 @@ const needsProdServer =
   process.env.W07_PROD === '1' || !namesSpecFile || process.argv.some((arg) => /security-headers|widget-embed|app-shell\.prod/.test(arg));
 
 /**
+ * Specs that move the API's clock. J01 AS-29 calls `control.advance(49 * 3600)` for the weekly payout; while the clock is moved, every other
+ * session on the stack gets `401 invalid_token`. Run next to cart-checkout JC-2 it failed that spec in every W04 and W05 gate for a night
+ * (2026-10-17/18). So a normal run leaves these specs out, and they run on their own with `PW_CLOCK=1 pnpm test:e2e` (the SDD gate, the
+ * checkpoint sweep and fresh-run.sh do it after the main run).
+ */
+const CLOCK_SPECS = /buy-to-payout\.spec\.ts$/;
+const WITH_CLOCK = process.env.PW_CLOCK === '1';
+const PHONE = { ...devices['Desktop Chrome'], viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true };
+const DESKTOP = { ...devices['Desktop Chrome'], viewport: { width: 1280, height: 800 } };
+
+/**
  * See https://playwright.dev/docs/test-configuration.
  */
 export default defineConfig({
@@ -71,9 +82,16 @@ export default defineConfig({
   ],
 
   /* Configure projects for major browsers */
-  projects: [
-    // Phone: 390 x 844, touch.
-    { name: 'mobile', use: { ...devices['Desktop Chrome'], viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true } },
-    { name: 'desktop', use: { ...devices['Desktop Chrome'], viewport: { width: 1280, height: 800 } } },
-  ],
+  projects: WITH_CLOCK
+    ? [
+        // PW_CLOCK=1: only the specs that move the API's clock, one after the other, nothing else running (see CLOCK_SPECS above).
+        { name: 'clock-desktop', testMatch: CLOCK_SPECS, use: { ...DESKTOP } },
+        { name: 'clock-mobile', testMatch: CLOCK_SPECS, dependencies: ['clock-desktop'], use: { ...PHONE } },
+      ]
+    : [
+        // Phone: 390 x 844, touch.
+        { name: 'mobile', testIgnore: CLOCK_SPECS, use: { ...PHONE } },
+        { name: 'desktop', testIgnore: CLOCK_SPECS, use: { ...DESKTOP } },
+      ],
+
 });

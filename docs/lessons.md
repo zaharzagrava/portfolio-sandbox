@@ -37,6 +37,7 @@ with the links that prove it: backticked file paths and commit hashes. For a `pr
 - L-026 2026-10-17 process prevented
 - L-027 2026-10-17 resources prevented
 - L-028 2026-10-17 process prevented
+- L-029 2026-10-18 state-leak prevented
 
 ## L-001 A message option the queue refuses, found only by hand
 - **Rule:** A queue option must be validated where the message is created, not discovered when the relay fails (FIFO-only options like `groupId` never go to a standard queue).
@@ -205,3 +206,8 @@ Second part of L-027: even without the out-of-memory, the watch-mode API restart
 - **Rule:** A restart of the dev API, a held port, a changed start script: the agent does it (`scripts/sdd/stack-fix.sh api-restart`) and never answers "needs human". A gate stage must not depend on a service it does not use.
 - **Symptom:** W04 was BLOCKED (2026-10-17, 19:51 UTC): repair attempts 2 to 5 each failed in seconds and the doctor wrote "needs human: the running dev API must be restarted so it serves metrics on :9464; I'm not permitted to restart it". **Cause:** an agent had put `stack-fix.sh journey` into the WEB gate to start the Lambda stand-ins; that action also checks the metrics port, which only the backend journeys (J01 AS-30) read; after a watch-mode restart :9464 was unavailable for a while (the new process waits for the old one), so the web gate failed on a check it had no use for, and agents may not run `kill`.
 - **Prevention:** the web gate uses `stack-fix.sh standins` only; the journey preflight waits up to a minute for the metrics port and then says how to restart; `stack-fix.sh api-restart` restarts the dev API from the current script and waits for a stable answer; the agents' rules name it.
+
+## L-029 A spec that moves the shared clock must not run next to other specs
+- **Rule:** Anything that changes global state of the dev stack (the API clock, feature flags that every user sees, key rotation) runs ALONE, after the parallel suite. `packages/web/playwright.config.ts` leaves `CLOCK_SPECS` out of a normal run; `PW_CLOCK=1 playwright test --workers=1` runs them; the SDD gate, the checkpoint sweep and `fresh-run.sh` do both.
+- **Symptom:** W04 was BLOCKED and W05 failed its gate all night (2026-10-17/18) on one spec, cart checkout JC-2 ("Order confirmed" never appeared), on desktop and mobile, in every full run; alone it passed in 24 s. The repair agents called it a load flake and changed nothing, which cost about 12 hours and every repair budget. **Cause:** the J01 UI journey (`buy-to-payout.spec.ts`) calls `control.advance(49 * 3600)` to run the weekly payout; while the API clock is moved, every other session gets `401 invalid_token`, and with two workers it ran next to JC-2. The API log showed about 2,200 `invalid_token` responses per run and rows dated two days ahead. Found by running the same batch of spec files on the stopped runner: 2 failures with the old config, 64 passes and 0 `invalid_token` with the new one; the clock was back at offset 0.
+- **Prevention:** the config split above; also: a failure that appears only in the full run and not alone is an interaction between specs, not "load". Compare the API log of the full run with the log of the single run.

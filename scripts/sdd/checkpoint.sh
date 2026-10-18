@@ -49,6 +49,8 @@ if [[ "${CHECKPOINT_SWEEP:-1}" != 0 ]]; then
   if [[ -d packages/web ]] && ls packages/web/playwright.config.* >/dev/null 2>&1 && curl -sf "$API_URL/health/ready" >/dev/null; then
     echo "  checkpoint $label: web (Playwright) sweep"
     (cd packages/web && timeout "${SWEEP_TIMEOUT_S:-3600}" npx playwright test --reporter=list ${PW_WORKERS:+--workers="$PW_WORKERS"}) >>"$log" 2>&1 || { echo "  web sweep FAILED"; fail=1; }
+    # the specs that move the API's clock run alone, after everything else (packages/web/playwright.config.ts, PW_CLOCK)
+    (cd packages/web && PW_CLOCK=1 timeout "${SWEEP_TIMEOUT_S:-3600}" npx playwright test --reporter=list --workers=1) >>"$log" 2>&1 || { echo "  web sweep (clock specs) FAILED"; fail=1; }
   fi
 fi
 

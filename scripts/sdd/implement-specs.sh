@@ -118,7 +118,9 @@ j=json.load(open(sys.argv[1]))
 sys.exit(0 if j.get("status")=="failed" and j.get("failedTests") else 1)
 PY
   echo "re-running the tests that failed last time first"
-  (cd packages/web && API_URL="$API_URL" pnpm test:e2e --last-failed ${PW_WORKERS:+--workers="$PW_WORKERS"})
+  local clock=""; [[ "$(cat "$(gate_state)/last-kind" 2>/dev/null)" == clock ]] && clock=1   # the last run was the clock specs: they are a different project set
+  local workers=${PW_WORKERS:+--workers=$PW_WORKERS}; [[ -n "$clock" ]] && workers="--workers=1"
+  (cd packages/web && PW_CLOCK=$clock API_URL="$API_URL" pnpm test:e2e --last-failed $workers)
 }
 
 # ---- Staged gate (iterative, not "everything again" after every fix). State per capability lives in .git (never committed):
@@ -179,7 +181,17 @@ web_full() {
     npx tsc --noEmit -p tsconfig.json &&
     pnpm test &&                               # Vitest: UI-only logic, component states, a11y
     API_URL="$API_URL" pnpm test:e2e ${PW_WORKERS:+--workers="$PW_WORKERS"} "$@"   # Playwright: happy-path journeys + layout screenshots
-  )
+  ) || return 1
+  web_clock_specs
+}
+# The specs that move the API's clock (J01 AS-29) run ALONE, after the main run: in parallel they made every other session's token invalid and
+# failed cart-checkout JC-2 in each W04 and W05 gate for a night (2026-10-17/18). packages/web/playwright.config.ts leaves them out unless PW_CLOCK=1.
+web_clock_specs() {
+  echo clock > "$(gate_state)/last-kind"
+  bash "$ROOT/scripts/sdd/stack-fix.sh" api-ready || return 1
+  (cd packages/web && PW_CLOCK=1 API_URL="$API_URL" pnpm test:e2e --workers=1)
+  local rc=$?; (( rc == 0 )) && echo main > "$(gate_state)/last-kind"
+  return $rc
 }
 web_gate_full() {
   local files=() batch=${GATE_WEB_BATCH:-12} i
@@ -192,7 +204,9 @@ web_gate_full() {
       bash "$ROOT/scripts/sdd/stack-fix.sh" api-ready || { gate_full_failed; return 1; }
       (cd packages/web && API_URL="$API_URL" pnpm test:e2e ${PW_WORKERS:+--workers="$PW_WORKERS"} "${files[@]:i:batch}") || { gate_full_failed; return 1; }
     done
+    web_clock_specs || { gate_full_failed; return 1; }
   else
+    echo main > "$(gate_state)/last-kind"
     web_full || { gate_full_failed; return 1; }
   fi
 }

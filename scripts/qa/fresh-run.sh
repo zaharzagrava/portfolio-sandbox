@@ -35,6 +35,11 @@ echo "== throwaway stack; logs in $QA_DIR"
 
 (cd packages/web && PW_EXPECT_TIMEOUT_MS="${PW_EXPECT_TIMEOUT_MS:-20000}" API_URL=http://localhost:8000 pnpm exec playwright test --workers=2 --reporter=list "$@") 2>&1 | tee "$QA_DIR/playwright.log" | tail -n 25
 rc=${PIPESTATUS[0]}
+# the specs that move the API's clock run alone and last (only for a full run: with named specs the caller picked them)
+if [[ $# -eq 0 ]]; then
+  (cd packages/web && PW_CLOCK=1 PW_EXPECT_TIMEOUT_MS="${PW_EXPECT_TIMEOUT_MS:-20000}" API_URL=http://localhost:8000 pnpm exec playwright test --workers=1 --reporter=list) 2>&1 | tee -a "$QA_DIR/playwright.log" | tail -n 8
+  [[ ${PIPESTATUS[0]} == 0 ]] || rc=1
+fi
 scripts/infra/doctor-live.sh || rc=${rc:-1}
 
 "$(dirname "$0")/stack-down.sh" "$QA_DIR"
