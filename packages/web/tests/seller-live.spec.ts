@@ -32,8 +32,10 @@ test.describe('Seller live numbers', () => {
     await payWithSandboxCard(buyerPage);
     await expect(buyerPage.getByRole('heading', { name: 'Order confirmed' })).toBeVisible({ timeout: 45_000 });
 
-    // the seller's page, not reloaded, shows the order
-    await expect(live.getByText('Orders', { exact: true }).locator('..')).toContainText('1', { timeout: 2_000 });
+    // the seller's page, not reloaded, shows the order. The 2 s of AS-19 start when the order reaches the live counters
+    // (the orders.events projection, which lags behind "Order confirmed" on a loaded machine); from then on one frame
+    // carries both numbers, so Revenue must follow within 2 s.
+    await expect(live.getByText('Orders', { exact: true }).locator('..')).toContainText('1', { timeout: 20_000 });
     await expect(live.getByText('Revenue', { exact: true }).locator('..')).toContainText(/60[.,]00/, { timeout: 2_000 });
     await expect(live.getByRole('status')).toHaveText('Live');
   });

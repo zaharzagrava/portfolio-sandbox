@@ -103,6 +103,16 @@ case "${1:-}" in
     [[ -n "$tok" ]] || { echo "could not log in as $ADMIN_EMAIL (not seeded yet? run: pnpm --filter api seed:dev)"; exit 1; }
     out="$(curl -s -m 60 -X POST "$API_URL/api/admin/search/reindex" -H "authorization: Bearer $tok" -H 'content-type: application/json' -d '{}')"
     echo "reindex: $out"
+    # wait for the run itself, not for the first document: the backend e2e specs leave a few documents behind
+    run="$(printf '%s' "$out" | python3 -c "import sys,json; print(json.load(sys.stdin).get('runId',''))" 2>/dev/null)"
+    if [[ -n "$run" ]]; then
+      for _ in $(seq 1 45); do
+        st="$(curl -s -m 10 "$API_URL/api/admin/search/reindex/$run" -H "authorization: Bearer $tok" | python3 -c "import sys,json; print(json.load(sys.stdin).get('status',''))" 2>/dev/null)"
+        [[ "$st" == COMPLETED || "$st" == FAILED || "$st" == CANCELLED ]] && break
+        sleep 4
+      done
+      echo "reindex run $run: ${st:-unknown}"
+    fi
     for _ in $(seq 1 30); do
       n="$(curl -s -m 10 "$API_URL/api/products/search?limit=1" | python3 -c "import sys,json; print(len(json.load(sys.stdin).get('items',[])))" 2>/dev/null || echo 0)"
       [[ "$n" -gt 0 ]] && { echo "search returns documents again"; exit 0; }

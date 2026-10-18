@@ -414,11 +414,21 @@ export function shopPath(shopId: string, section?: string): string {
 }
 
 /**
+ * A unique shop name of constant length and digits only: the screenshots of W04 include text that repeats the name, and a
+ * name of mixed letters changes where that text wraps (a 20 px difference in height between two runs).
+ */
+export function uniqueShopName(): string {
+  const time = String(Date.now() % 1e6).padStart(6, '0');
+  const random = String(Math.floor(Math.random() * 1e3)).padStart(3, '0');
+  return `E2E Shop ${time}${random}`;
+}
+
+/**
  * Opens a shop through the UI from a signed-in page (W04 AS-01..AS-03): fills the open-shop form on `/dashboard/seller`
  * and waits for the new shop's overview. The name is unique per call unless one is given. Returns the shop id read from the
  * address. A member who already has a shop is redirected by the server, so call this as a member without one (`register`).
  */
-export async function openShop(page: Page, name = `E2E Shop ${Date.now().toString(36)}${Math.floor(Math.random() * 1e4)}`): Promise<{ shopId: string; shopName: string }> {
+export async function openShop(page: Page, name = uniqueShopName()): Promise<{ shopId: string; shopName: string }> {
   await resetRateLimits();
   await page.goto('/dashboard/seller');
   await waitForForm(page);

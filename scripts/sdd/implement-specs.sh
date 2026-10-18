@@ -176,6 +176,8 @@ backend_gate() { # $1 = domain column
 
 # web_full <files...>: tsc, Vitest, then Playwright (all specs, or the named files); the last failure is recorded for stage 2.
 web_full() {
+  # the backend e2e specs delete the live products index of the shared search engine (testing/search-app.ts): rebuild it before the browser run
+  bash "$ROOT/scripts/sdd/stack-fix.sh" reindex || return 1
   (
     cd packages/web &&
     npx tsc --noEmit -p tsconfig.json &&
@@ -202,6 +204,7 @@ web_gate_full() {
     (cd packages/web && npx tsc --noEmit -p tsconfig.json && pnpm test) || { gate_full_failed; return 1; }
     for (( i = 0; i < ${#files[@]}; i += batch )); do
       bash "$ROOT/scripts/sdd/stack-fix.sh" api-ready || { gate_full_failed; return 1; }
+      (( i == 0 )) && { bash "$ROOT/scripts/sdd/stack-fix.sh" reindex || { gate_full_failed; return 1; }; }
       (cd packages/web && API_URL="$API_URL" pnpm test:e2e ${PW_WORKERS:+--workers="$PW_WORKERS"} "${files[@]:i:batch}") || { gate_full_failed; return 1; }
     done
     web_clock_specs || { gate_full_failed; return 1; }

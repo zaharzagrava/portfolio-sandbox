@@ -802,3 +802,20 @@
 {"run":"20261017T200126Z","capability":"W05","step":"repair-2","start":"2026-10-18T02:40:54Z","end":"2026-10-18T03:21:02Z","seconds":2408,"result":"timeout","attempt":1,"reason":"pass-timeout","code_changed":false}
 {"run":"20261017T200126Z","capability":"W05","step":"gate","start":"2026-10-18T03:21:03Z","end":"2026-10-18T03:21:03Z","seconds":0,"result":"fail","attempt":3,"reason":""}
 {"run":"20261017T200126Z","capability":"W05","step":"repair-3","start":"2026-10-18T03:21:03Z","end":"2026-10-18T03:40:59Z","seconds":1196,"result":"ok","attempt":1,"reason":"ok","code_changed":true}
+{"run":"20261018T082649Z","capability":"-","step":"run-start","start":"2026-10-18T08:26:49Z","end":"2026-10-18T08:26:49Z","seconds":0,"result":"ok","attempt":1,"reason":"commit=362c74ba MAX_GATE_REPAIRS=5 MAX_REPAIRS_PER_SPEC=2 REPAIR_BUDGET_MIN=60 MAX_IMPLEMENT_PASSES=10"}
+{"run":"20261018T082649Z","capability":"W04","step":"converge-1","start":"2026-10-18T08:26:50Z","end":"2026-10-18T08:30:00Z","seconds":190,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261018T082649Z","capability":"W04","step":"gate","start":"2026-10-18T08:30:01Z","end":"2026-10-18T09:07:52Z","seconds":2271,"result":"fail","attempt":1,"reason":""}
+{"run":"20261018T082649Z","capability":"W04","step":"repair-1","start":"2026-10-18T09:07:53Z","end":"2026-10-18T09:10:18Z","seconds":145,"result":"ok","attempt":1,"reason":"ok","code_changed":false}
+{"run":"20261018T082649Z","capability":"W04","step":"gate","start":"2026-10-18T09:10:18Z","end":"2026-10-18T09:10:18Z","seconds":0,"result":"fail","attempt":2,"reason":""}
+{"run":"20261018T082649Z","capability":"W04","step":"repair-2","start":"2026-10-18T09:10:18Z","end":"2026-10-18T09:14:34Z","seconds":256,"result":"ok","attempt":1,"reason":"ok","code_changed":false}
+{"run":"20261018T082649Z","capability":"W04","step":"gate","start":"2026-10-18T09:14:34Z","end":"2026-10-18T09:14:34Z","seconds":0,"result":"fail","attempt":3,"reason":""}
+{"run":"20261018T082649Z","capability":"W04","step":"repair-3","start":"2026-10-18T09:14:34Z","end":"2026-10-18T09:23:35Z","seconds":541,"result":"ok","attempt":1,"reason":"ok","code_changed":true}
+{"run":"20261018T082649Z","capability":"W04","step":"gate","start":"2026-10-18T09:23:36Z","end":"2026-10-18T10:01:54Z","seconds":2298,"result":"fail","attempt":4,"reason":""}
+{"run":"20261018T082649Z","capability":"W04","step":"repair-4","start":"2026-10-18T10:01:55Z","end":"2026-10-18T10:10:15Z","seconds":500,"result":"ok","attempt":1,"reason":"ok","code_changed":true}
+{"run":"20261018T082649Z","capability":"W04","step":"gate","start":"2026-10-18T10:10:16Z","end":"2026-10-18T10:47:21Z","seconds":2225,"result":"fail","attempt":5,"reason":""}
+{"run":"20261018T082649Z","capability":"W04","step":"doctor-1","start":"2026-10-18T10:47:21Z","end":"2026-10-18T10:54:22Z","seconds":421,"result":"ok","attempt":1,"reason":"ok","code_changed":true}
+{"run":"20261018T082649Z","capability":"W04","step":"converge-1","start":"2026-10-18T10:54:23Z","end":"2026-10-18T10:56:53Z","seconds":150,"result":"ok","attempt":1,"reason":"ok"}
+{"run":"20261018T082649Z","capability":"W04","step":"gate","start":"2026-10-18T10:56:53Z","end":"2026-10-18T11:53:14Z","seconds":3381,"result":"fail","attempt":1,"reason":""}
+{"run":"20261018T082649Z","capability":"W04","step":"repair-1","start":"2026-10-18T11:53:14Z","end":"2026-10-18T12:12:46Z","seconds":1172,"result":"ok","attempt":1,"reason":"ok","code_changed":true}
+{"run":"20261018T082649Z","capability":"W04","step":"gate","start":"2026-10-18T12:12:46Z","end":"2026-10-18T12:50:30Z","seconds":2264,"result":"fail","attempt":2,"reason":""}
+{"run":"20261018T082649Z","capability":"W04","step":"repair-2","start":"2026-10-18T12:50:30Z","end":"2026-10-18T12:51:26Z","seconds":56,"result":"ok","attempt":1,"reason":"ok","code_changed":true}
