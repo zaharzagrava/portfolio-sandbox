@@ -10,6 +10,11 @@ export function formatWait(seconds: number | null | undefined): string | null {
   return unit(Math.ceil(seconds / 3600), 'hour');
 }
 
+/** The wait as it reads inside "Try again in {wait}": W01's wording, or "a moment" when the server gave none (W05 FR-063). */
+export function waitPhrase(seconds: number | null | undefined): string {
+  return formatWait(seconds) ?? 'a moment';
+}
+
 /** "{subject}. Try again in {wait}." or "{subject}. Try again later." */
 export function waitSentence(subject: string, seconds: number | null | undefined): string {
   const wait = formatWait(seconds);

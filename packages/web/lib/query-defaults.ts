@@ -22,5 +22,24 @@ export function applyQueryDefaults(client: QueryClient): QueryClient {
   client.setQueryDefaults(['orders', 'detail'], { staleTime: 0 });
   client.setQueryDefaults(['payments'], { staleTime: 0 });
   client.setQueryDefaults(['notifications'], { staleTime: 30_000, refetchOnWindowFocus: true });
+  // W05 (FR-073): chat reads follow the decision table; the unread number is the server's, so nothing is kept long. Messages are
+  // invalidated by the catch-up (FR-041); the more specific roots below win over nothing (there is no `['chat']` default).
+  client.setQueryDefaults(['chat', 'inbox'], { staleTime: 15_000 });
+  client.setQueryDefaults(['chat', 'unreadTotal'], { staleTime: 30_000 });
+  client.setQueryDefaults(['chat', 'channel'], { staleTime: 60_000 });
+  client.setQueryDefaults(['chat', 'byProduct'], { staleTime: 0 });
+  client.setQueryDefaults(['chat', 'messages'], { staleTime: 0 });
+  client.setQueryDefaults(['chat', 'receipts'], { staleTime: 0 });
+  client.setQueryDefaults(['chat', 'presence'], { staleTime: 30_000 });
+  client.setQueryDefaults(['assistant', 'conversations'], { staleTime: 60_000 });
+  client.setQueryDefaults(['assistant', 'history'], { staleTime: ASSISTANT_HISTORY_STALE_MS });
+  client.setQueryDefaults(['assistant', 'usage'], { staleTime: 60_000 });
   return client;
+}
+
+const ASSISTANT_HISTORY_STALE_MS = 60_000;
+
+/** `assistant.history` is stale at once while a reply runs (the stream and the history must agree), 60 s otherwise (FR-073). */
+export function assistantHistoryStaleTime(replyRunning: boolean): number {
+  return replyRunning ? 0 : ASSISTANT_HISTORY_STALE_MS;
 }

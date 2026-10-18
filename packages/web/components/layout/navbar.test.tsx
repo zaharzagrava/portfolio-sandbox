@@ -34,7 +34,7 @@ vi.mock('@/components/search/search-box', () => ({
     return <input type="search" aria-label="Search products" data-testid="search" />;
   },
 }));
-vi.mock('@/components/chat/assistant-launcher', () => ({
+vi.mock('@/components/assistant/assistant-launcher', () => ({
   AssistantLauncher: () => {
     renders.assistant++;
     return <button type="button" aria-label="AI Assistant" data-testid="assistant" />;

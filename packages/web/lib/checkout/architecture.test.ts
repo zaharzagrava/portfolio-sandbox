@@ -116,10 +116,10 @@ describe('W03 architecture rules', () => {
     expect(offenders.map(rel)).toEqual([]);
   });
 
-  it('W03 AS-72: the attempt store is the only sessionStorage user and lives outside lib/api', () => {
+  it('W03 AS-72: the attempt store is the only sessionStorage user of W03 and lives outside lib/api (W05 adds exactly one more, its assistant pointer, FR-071)', () => {
     expect(named(ATTEMPT_STORE).length, `${ATTEMPT_STORE} must exist`).toBe(1);
     const users = under('app', 'components', 'hooks', 'lib').filter((file) => USES_SESSION_STORAGE.test(code(file)) && !/^lib\/(?:auth|api)\//.test(rel(file)));
-    expect(users.map(rel)).toEqual([ATTEMPT_STORE]);
+    expect(users.map(rel).sort()).toEqual(['lib/assistant/active-store.ts', ATTEMPT_STORE]);
   });
 
   it('W03 AS-72: URLs are relative and same-origin (no absolute literal, no NEXT_PUBLIC_API_URL)', () => {

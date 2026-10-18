@@ -95,3 +95,88 @@ describe('W04 architecture rules', () => {
     expect(offenders.map(rel)).toEqual([]);
   });
 });
+
+// --- the W05 file sets (chat and assistant) ----------------------------------------------------------------------------
+/** Components, pages and hooks of the product chat and the assistant sheet: render and react, never touch the network. */
+const w05RenderFiles = [
+  ...under('components/chat', 'components/assistant', 'app/chat'),
+  ...named('hooks/use-assistant-chat.ts', 'hooks/use-chat-live.ts', 'hooks/use-read-tracker.ts', 'hooks/use-presence.ts', 'hooks/use-jittered-backoff.ts'),
+];
+/** Libraries of the two features: the API clients, the stream reader and the pure logic. */
+const w05LibFiles = [
+  ...under('lib/chat', 'lib/assistant'),
+  ...named('lib/api/chat.ts', 'lib/api/assistant.ts', 'lib/api/sse-reader.ts', 'lib/realtime/chat-topics.ts'),
+];
+const w05 = [...new Set([...w05RenderFiles, ...w05LibFiles])];
+/** The one module that may touch `sessionStorage` (FR-071). */
+const ACTIVE_STORE = 'lib/assistant/active-store.ts';
+
+describe('W05 architecture rules', () => {
+  it('W05 AS-67: the library file set holds the modules of the two features', () => {
+    for (const file of ['lib/chat/links.ts', 'lib/chat/catch-up.ts', 'lib/chat/pending-messages.ts', 'lib/assistant/reply-reducer.ts', ACTIVE_STORE, 'lib/api/chat.ts', 'lib/api/assistant.ts']) {
+      expect(w05LibFiles.map(rel), file).toContain(file);
+    }
+  });
+
+  it('W05 AS-67: no fetch, axios or EventSource in components, hooks, pages or layouts of the chat and the assistant', () => {
+    const offenders = w05RenderFiles.filter((file) => /\bfetch\s*\(|from ['"]axios['"]|\bapiClient\b|\bEventSource\b|fetch-event-source|\bstreamSse\b/.test(code(file)));
+    expect(offenders.map(rel)).toEqual([]);
+  });
+
+  it('W05 AS-68: query keys come only from lib/query-keys.ts (no literal queryKey arrays)', () => {
+    const offenders = w05.filter((file) => /\bqueryKey\s*:\s*\[|\bqueryKey\s*=\s*\[/.test(code(file)));
+    expect(offenders.map(rel)).toEqual([]);
+  });
+
+  it('W05 AS-68: no new Context and no global store', () => {
+    const offenders = w05.filter((file) => /\bcreateContext\s*\(|from ['"](?:zustand|jotai|redux|@reduxjs\/toolkit|valtio)/.test(code(file)));
+    expect(offenders.map(rel)).toEqual([]);
+  });
+
+  it('W05 AS-67: nothing is stored in the browser except the assistant pointer, and only lib/assistant/active-store.ts touches storage', () => {
+    const offenders = w05.filter((file) => rel(file) !== ACTIVE_STORE && /\blocalStorage\b|\bsessionStorage\b|\bindexedDB\b|document\.cookie|\bcaches\.open\b/.test(code(file)));
+    expect(offenders.map(rel)).toEqual([]);
+    const store = path.join(root, ACTIVE_STORE);
+    expect(existsSync(store), `${ACTIVE_STORE} exists`).toBe(true);
+    expect(code(store)).not.toMatch(/\blocalStorage\b|\bindexedDB\b|document\.cookie/);
+  });
+
+  it('W05 AS-67: no token, no Authorization header, no refresh from a W05 file', () => {
+    const offenders = w05.filter((file) => /\bAuthorization\b|\bBearer\b|\bsetAccessToken\b|\bgetAccessToken\b|\brefreshSession\s*\(|\{[^}]*\brefreshSession\b[^}]*\}\s*from/.test(code(file)));
+    expect(offenders.map(rel)).toEqual([]);
+  });
+
+  it('W05 AS-67: URLs are relative and same-origin (no absolute literal in a library, no NEXT_PUBLIC_API_URL or NEXT_PUBLIC_SSE_URL)', () => {
+    const offenders = w05.filter((file) => (w05LibFiles.includes(file) && /['"`]https?:\/\//.test(code(file))) || /NEXT_PUBLIC_API_URL|NEXT_PUBLIC_SSE_URL/.test(code(file)));
+    expect(offenders.map(rel)).toEqual([]);
+  });
+
+  it('W05 AS-67: no dangerouslySetInnerHTML (message and answer text is rendered as text)', () => {
+    expect(w05.filter((file) => /dangerouslySetInnerHTML/.test(code(file))).map(rel)).toEqual([]);
+  });
+
+  it('W05 AS-68: no array index as a React key (placeholder skeletons are decorative and exempt)', () => {
+    const indexKey = /\bkey=\{\s*(?:i|idx|index|\w*Index)\s*\}|\bkey=\{`[^`]*\$\{\s*(?:i|idx|index|\w*Index)\s*\}|\bm\.id\s*\|\|\s*i\b/;
+    expect(w05.filter((file) => !/skeleton/i.test(rel(file)) && indexKey.test(code(file))).map(rel)).toEqual([]);
+  });
+
+  it('W05 AS-69: app/chat/page.tsx is a Server Component that reads the request inside <Suspense>', () => {
+    const file = path.join(root, 'app/chat/page.tsx');
+    expect(existsSync(file)).toBe(true);
+    const source = code(file);
+    expect(source).not.toMatch(/^\s*['"]use client['"]/m);
+    expect(source).toMatch(/<Suspense\b/);
+    expect(source).toMatch(/\brequireServerSession\s*\(/);
+    expect(source).toMatch(/\bsearchParams\b/);
+    // The page function itself only renders the shell and the boundary: awaiting the session or the search params happens in a child inside <Suspense>.
+    const page = source.slice(source.search(/export\s+default\s+(?:async\s+)?function/));
+    const body = page.slice(0, page.search(/\n}\n|\n}$/) + 2);
+    expect(body).not.toMatch(/\bawait\b|\bcookies\s*\(|\bheaders\s*\(/);
+    expect(body).not.toMatch(/export\s+default\s+async/);
+  });
+
+  it('W05 AS-69: no "use cache" in app/chat or in any W05 file (member data is private and per user)', () => {
+    const offenders = w05.filter((file) => /^\s*['"]use cache(?::\s*\w+)?['"]/m.test(read(file)));
+    expect(offenders.map(rel)).toEqual([]);
+  });
+});

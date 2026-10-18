@@ -39,9 +39,14 @@ export class SseParser {
   }
 }
 
+const abortError = () => new DOMException('The operation was aborted.', 'AbortError');
+
 /**
  * POST (or GET) a streaming endpoint and deliver parsed events - for streams EventSource can't open
- * (POST bodies). The session cookie identifies the caller. Resolves when the server ends the stream or `signal` aborts.
+ * (POST bodies). The session cookie identifies the caller (W01: no token is read or sent from JavaScript). Resolves with
+ * the response when the server ends the stream, and also when the connection is cut after the stream opened (the caller
+ * knows from the events it saw whether a terminal one arrived); rejects when the request itself fails (no answer) or when
+ * `signal` aborts, with an `AbortError`.
  */
 export async function streamSse(
   url: string,
@@ -64,10 +69,30 @@ export async function streamSse(
   const reader = res.body.getReader();
   const decoder = new TextDecoder();
   const parser = new SseParser();
-  for (;;) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    for (const event of parser.feed(decoder.decode(value, { stream: true }))) onEvent(event);
+  // An abort while reading ends the read with an AbortError (a real fetch rejects the pending read itself; cancelling the
+  // reader makes the same true for a body that ignores the signal).
+  let abortedWhileReading = false;
+  const cancel = () => {
+    abortedWhileReading = true;
+    void reader.cancel().catch(() => undefined);
+  };
+  init.signal?.addEventListener('abort', cancel, { once: true });
+  try {
+    for (;;) {
+      let chunk: ReadableStreamReadResult<Uint8Array>;
+      try {
+        chunk = await reader.read();
+      } catch (error) {
+        if (abortedWhileReading || init.signal?.aborted) throw abortError();
+        void error; // the connection was cut under the reader: the stream ends here
+        break;
+      }
+      if (chunk.done) break;
+      for (const event of parser.feed(decoder.decode(chunk.value, { stream: true }))) onEvent(event);
+    }
+  } finally {
+    init.signal?.removeEventListener('abort', cancel);
   }
+  if (abortedWhileReading) throw abortError();
   return res;
 }

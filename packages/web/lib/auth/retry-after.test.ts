@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatWait, waitSentence } from './retry-after';
+import { formatWait, waitPhrase, waitSentence } from './retry-after';
 
 describe('formatWait', () => {
   it.each([
@@ -22,6 +22,16 @@ describe('formatWait', () => {
     expect(formatWait(undefined)).toBeNull();
     expect(formatWait(null)).toBeNull();
     expect(formatWait(Number.NaN)).toBeNull();
+  });
+});
+
+describe('waitPhrase', () => {
+  it('W05 FR-063: the wait in W01 words, or "a moment" when the server gave none (shared by the chat and the assistant)', () => {
+    expect(waitPhrase(30)).toBe('30 seconds');
+    expect(waitPhrase(90)).toBe('2 minutes');
+    expect(waitPhrase(undefined)).toBe('a moment');
+    expect(waitPhrase(null)).toBe('a moment');
+    expect(waitPhrase(Number.NaN)).toBe('a moment');
   });
 });
 

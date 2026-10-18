@@ -4,6 +4,10 @@ import { afterAll, afterEach, beforeAll, vi } from 'vitest';
 import { setupServer } from 'msw/node';
 import { restoreAllStubs } from './lib/test/stub-registry';
 
+// W05 (research R-10): jsdom has no layout, so the virtualised message list renders nothing there. Every test file gets a double
+// that renders all rows through the same components; the real scroll behaviour is covered by the visual and journey tests.
+vi.mock('react-virtuoso', async () => await import('./tests/support/virtuoso-double'));
+
 /** Shared MSW server: tests add handlers with `server.use(...)`; any unhandled request fails the test. */
 export const server = setupServer();
 
@@ -64,8 +68,7 @@ if (typeof window !== 'undefined') {
       value: { writeText: vi.fn(() => Promise.resolve()), readText: vi.fn(() => Promise.resolve('')) },
     });
   }
-  Element.prototype.scrollIntoView ??= () => {};
-  Element.prototype.setPointerCapture ??= () => {};
+  Element.prototype.scrollIntoView ??= () => {};  Element.prototype.setPointerCapture ??= () => {};
   Element.prototype.releasePointerCapture ??= () => {};
   Element.prototype.hasPointerCapture ??= () => false;
 }

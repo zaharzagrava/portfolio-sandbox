@@ -61,7 +61,7 @@ export function StatementsView({ shopId }: { shopId: string }) {
         </div>
         {month && (
           <Button variant="outline" asChild className="min-h-11 sm:min-h-8">
-            <a href={statementCsvPath(shopId, month, knownAt)} download>
+            <a href={statementCsvPath(shopId, month, knownAt)} download={`statement-${shopId}-${month}.csv`}>
               Download CSV
             </a>
           </Button>

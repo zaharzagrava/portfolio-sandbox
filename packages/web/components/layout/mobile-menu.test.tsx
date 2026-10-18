@@ -15,7 +15,7 @@ vi.mock('@/components/auth/account-menu', () => ({
   MobileAccountEntries: () => <div data-testid="account-entries">account</div>,
   MobileLoginLink: () => null,
 }));
-vi.mock('@/components/chat/assistant-launcher', () => ({
+vi.mock('@/components/assistant/assistant-launcher', () => ({
   AssistantLauncher: ({ variant }: { variant: string }) => <button type="button">AI Assistant ({variant})</button>,
 }));
 

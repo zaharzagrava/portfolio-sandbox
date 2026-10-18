@@ -1,6 +1,6 @@
 import { QueryClient } from '@tanstack/react-query';
 import { describe, expect, it } from 'vitest';
-import { applyQueryDefaults } from './query-defaults';
+import { applyQueryDefaults, assistantHistoryStaleTime } from './query-defaults';
 import { queryKeys } from './query-keys';
 
 const ID = '3f2b8c1e-5a4d-4e6f-9a7b-1c2d3e4f5a6b';
@@ -99,6 +99,44 @@ describe('queryKeys', () => {
     expect(options(queryKeys.payments.detail(ID)).staleTime).toBe(0);
     expect(options(queryKeys.notifications.unreadCount()).staleTime).toBe(30_000);
     expect(options(queryKeys.notifications.inbox()).staleTime).toBe(30_000);
+  });
+
+  it('W05 FR-070: the chat and assistant keys are factory tuples under their roots; chat.channels and the old messages entry are replaced', () => {
+    expect(queryKeys.chat.all).toEqual(['chat']);
+    expect(queryKeys.chat.inbox()).toEqual(['chat', 'inbox']);
+    expect(queryKeys.chat.unreadTotal()).toEqual(['chat', 'unreadTotal']);
+    expect(queryKeys.chat.channel(ID)).toEqual(['chat', 'channel', ID]);
+    expect(queryKeys.chat.byProduct(ID)).toEqual(['chat', 'byProduct', ID]);
+    expect(queryKeys.chat.messages(ID)).toEqual(['chat', 'messages', ID]);
+    expect(queryKeys.chat.receipts(ID)).toEqual(['chat', 'receipts', ID]);
+    expect(queryKeys.chat.presence(ID)).toEqual(['chat', 'presence', ID]);
+    expect('channels' in queryKeys.chat).toBe(false);
+    expect(queryKeys.assistant.all).toEqual(['assistant']);
+    expect(queryKeys.assistant.conversations()).toEqual(['assistant', 'conversations']);
+    expect(queryKeys.assistant.history(ID)).toEqual(['assistant', 'history', ID]);
+    expect(queryKeys.assistant.usage()).toEqual(['assistant', 'usage']);
+    for (const key of [queryKeys.chat.inbox(), queryKeys.chat.messages(ID), queryKeys.chat.presence(ID)]) expect(key.slice(0, 1)).toEqual(queryKeys.chat.all);
+    for (const key of [queryKeys.assistant.conversations(), queryKeys.assistant.history(ID), queryKeys.assistant.usage()]) expect(key.slice(0, 1)).toEqual(queryKeys.assistant.all);
+  });
+
+  it('W05 FR-073: browser cache lifetimes follow the decision table', () => {
+    const client = applyQueryDefaults(new QueryClient());
+    const stale = (key: readonly unknown[]) => client.defaultQueryOptions({ queryKey: key }).staleTime;
+    expect(stale(queryKeys.chat.inbox())).toBe(15_000);
+    expect(stale(queryKeys.chat.unreadTotal())).toBe(30_000);
+    expect(stale(queryKeys.chat.channel(ID))).toBe(60_000);
+    expect(stale(queryKeys.chat.byProduct(ID))).toBe(0);
+    expect(stale(queryKeys.chat.messages(ID))).toBe(0);
+    expect(stale(queryKeys.chat.receipts(ID))).toBe(0);
+    expect(stale(queryKeys.chat.presence(ID))).toBe(30_000);
+    expect(stale(queryKeys.assistant.conversations())).toBe(60_000);
+    expect(stale(queryKeys.assistant.history(ID))).toBe(60_000);
+    expect(stale(queryKeys.assistant.usage())).toBe(60_000);
+  });
+
+  it('W05 FR-073: assistant history is fresh for 0 s while a reply runs and 60 s otherwise', () => {
+    expect(assistantHistoryStaleTime(true)).toBe(0);
+    expect(assistantHistoryStaleTime(false)).toBe(60_000);
   });
 
   it('W02 AS-71: the old products.search key is gone and the other roots are unchanged', () => {

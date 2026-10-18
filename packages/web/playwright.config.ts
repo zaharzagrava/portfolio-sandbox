@@ -43,6 +43,8 @@ export default defineConfig({
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',
   },
+  // The per-test limit must exceed the longest wait inside a test (checkout settles the payment within 45 s on a loaded runner).
+  timeout: Number(process.env.PW_TEST_TIMEOUT_MS) || 90_000,
   expect: {
     // A loaded runner (two stacks, a dev server compiling pages on demand, parallel browsers) needs longer than 5 s for a page to settle;
     // the build machine sets PW_EXPECT_TIMEOUT_MS. The assertions themselves are unchanged.
