@@ -238,6 +238,30 @@ export class ControlSurface {
     return label();
   }
 
+  /**
+   * A story that moves the clock by days freezes every leaderboard week it crosses (the snapshot job runs on the moved
+   * clock), and a frozen week stays sealed when the clock goes back: the real week would then take no sale. When the
+   * clock is within `days` of the end of its ISO week, the story lives in the next week instead (Monday 12:00 UTC), as
+   * `alignToOpenMonth` does for months. Stays in the clock's month; call it after `alignToOpenMonth`.
+   */
+  async alignToSafeWeek(days = 3): Promise<void> {
+    const now = new Date(Date.parse((await this.clock()).now));
+    const weekday = (now.getUTCDay() + 6) % 7; // Monday = 0
+    const monday = Date.UTC(
+      now.getUTCFullYear(),
+      now.getUTCMonth(),
+      now.getUTCDate() - weekday,
+      12,
+    );
+    const nextMonday = monday + 7 * 86_400_000;
+    if (nextMonday - now.getTime() > days * 86_400_000) return;
+    const target = new Date(nextMonday);
+    if (target.getUTCMonth() !== now.getUTCMonth()) return;
+    const seconds = Math.ceil((nextMonday - now.getTime()) / 1000);
+    this.baseSeconds += seconds;
+    await this.advance(seconds);
+  }
+
   /** Revokes every session of the operator, the current one last (it keeps working on routes that do not check revocation). */
   private async endAdminSessions(): Promise<void> {
     const listed =

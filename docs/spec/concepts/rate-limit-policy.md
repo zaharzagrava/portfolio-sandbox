@@ -91,5 +91,7 @@ A rate-limit policy is a named rule that caps how often one subject (address, us
 - {{cap:W02}} Home, search (autocomplete, filters, facets, sort, URL state), trending and recommendation rails, product page (product, shop, pickup near me, discussions, ask this product, share link)
 - {{cap:W03}} Cart (guest and merged on login), checkout with idempotent submit and async payment status, success page, order history, notification popover
 - {{cap:W04}} Seller dashboard (shop entry and switcher, live overview, inventory, API keys, webhooks, API version, request logs, usage, team, invitations, orders)
+- {{cap:W05}} Chat and shopping assistant (product chat inbox and conversation, live delivery, read receipts, presence, assistant sheet and streaming answers)
+- {{cap:W06}} Admin feature-flag console (guard and shell, flag list, create, editor with targeting and rollout, kill switch, restore, archive, audit trail, stale report)
 - {{cap:W07}} App shell and cross-cutting UI: navbar, footer, legal pages, developer docs, error/not-found/loading states, responsive layout, accessibility, CSP and security headers
 <!-- used-by:end -->

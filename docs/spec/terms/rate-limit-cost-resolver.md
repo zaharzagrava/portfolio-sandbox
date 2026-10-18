@@ -22,9 +22,7 @@ A resolver returns `2.3`, so the request costs `3` units. It returns `0.4`, so t
 <!-- used-by:start -->
 - [S50](../capabilities/S50-rate-limiter.md): R-06, R-20
 - [http-surface](http-surface.md)
-- [rate-limit-cost](rate-limit-cost.md)
 - [rate-limit-decorator](rate-limit-decorator.md)
 - [rate-limit-fail-mode](rate-limit-fail-mode.md)
 - [rate-limit-policy](rate-limit-policy.md)
-- [rate-limit](rate-limit.md)
 <!-- used-by:end -->

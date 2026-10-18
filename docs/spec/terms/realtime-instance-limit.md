@@ -27,5 +27,6 @@ An instance at its limit gets a new connection request for [`user:{userId}`](rea
 - [realtime-config](realtime-config.md)
 - [realtime-hub](realtime-hub.md)
 - [stream-connection](stream-connection.md)
+- [too-many-connections](too-many-connections.md)
 - [user-connection-cap](user-connection-cap.md)
 <!-- used-by:end -->

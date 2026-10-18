@@ -180,7 +180,7 @@ export class WebhookReceiver {
       deliveryId: header(WEBHOOK_HEADERS.deliveryId) ?? '',
       attempt: Number(header(WEBHOOK_HEADERS.attempt) ?? 0),
       type: header(WEBHOOK_HEADERS.eventType) ?? String(body.type ?? ''),
-      replay: header(WEBHOOK_HEADERS.replay) === 'true',
+      replay: header(WEBHOOK_HEADERS.replay) === '1', // S43 outbound contract: `1` on replays only
       verified:
         this.secret !== '' &&
         verifyWebhook(raw, header(WEBHOOK_HEADERS.signature), this.secret, {

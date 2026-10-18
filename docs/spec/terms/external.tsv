@@ -268,3 +268,4 @@ http-post	POST method	https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/
 iban	IBAN	https://en.wikipedia.org/wiki/International_Bank_Account_Number	Wikipedia	iban
 prompt-injection	Prompt injection	https://owasp.org/www-community/attacks/PromptInjection	OWASP	prompt injection
 kyc	KYC (know your customer)	https://en.wikipedia.org/wiki/Know_your_customer	Wikipedia	kyc onboarding
+sqs-visibility-timeout	SQS visibility timeout	https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-visibility-timeout.html	AWS docs	

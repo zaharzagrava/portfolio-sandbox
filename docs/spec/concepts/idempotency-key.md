@@ -34,6 +34,7 @@ An idempotency key is a client-chosen string of 8 to 128 characters. It lets a c
 ## Used by
 <!-- used-by:start -->
 - {{cap:J01}} Buyer pays for a multi-shop order; order paid → ledger journals → settlement → seller payout → monthly statement; buyer and sellers notified
+- {{cap:J02}} New seller registers, creates a shop, passes onboarding/KYC, subscribes to a plan, lists a product that becomes searchable, sells it, receives the order webhook, and appears on the leaderboard
 - {{cap:S04}} Staged onboarding questionnaire, KYC document intake, LLM extraction, human review, shop verification
 - {{cap:S05}} Product CRUD, pricing, stock fields, product cache and invalidation, product views
 - {{cap:S06}} Collaborative listing drafts - real-time co-editing, versions, publish to a product
@@ -63,4 +64,5 @@ An idempotency key is a client-chosen string of 8 to 128 characters. It lets a c
 - {{cap:W02}} Home, search (autocomplete, filters, facets, sort, URL state), trending and recommendation rails, product page (product, shop, pickup near me, discussions, ask this product, share link)
 - {{cap:W03}} Cart (guest and merged on login), checkout with idempotent submit and async payment status, success page, order history, notification popover
 - {{cap:W04}} Seller dashboard (shop entry and switcher, live overview, inventory, API keys, webhooks, API version, request logs, usage, team, invitations, orders)
+- {{cap:W05}} Chat and shopping assistant (product chat inbox and conversation, live delivery, read receipts, presence, assistant sheet and streaming answers)
 <!-- used-by:end -->

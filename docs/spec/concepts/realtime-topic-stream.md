@@ -43,4 +43,5 @@ A topic is a named channel that a domain publishes events to. The stream is the 
 - {{cap:S51}} Realtime push hub: topic SSE, Last-Event-ID replay, per-topic policies, ref-counted fan-out
 - {{cap:W03}} Cart (guest and merged on login), checkout with idempotent submit and async payment status, success page, order history, notification popover
 - {{cap:W04}} Seller dashboard (shop entry and switcher, live overview, inventory, API keys, webhooks, API version, request logs, usage, team, invitations, orders)
+- {{cap:W05}} Chat and shopping assistant (product chat inbox and conversation, live delivery, read receipts, presence, assistant sheet and streaming answers)
 <!-- used-by:end -->

@@ -78,3 +78,14 @@ None made by planning. Implementation edits the capability pages named in `plan.
 - **S43**: accept `allowedReceiverHosts` (host:port) as a local-profile setting validated at startup; verify delivery headers and `resource_version`.
 - **S03, S04, S17, S32**: list the AS-32 counters `shops_created_total`, `onboarding_decisions_total{decision}`, `invoices_paid_total`, `search_products_indexed_total` in their observability rules; the local profile's `ALLOWED_RECEIVER_HOSTS` lists a second receiver port (`127.0.0.1:18444`) for the two-shop scenario AS-26.
 - **S49**: allow-list gains `billing.run`, `onboarding.verify-pending`, `webhooks.retry`, `search.reindex`.
+
+## Gate repairs
+
+Gate failure: `J02 AS-27` timed out waiting for `order.paid` at the receiver. Causes found, all in the journey's own files (no product code changed):
+
+- **Ordered lane race** (`seller-to-first-sale.journey-spec.ts`): the receiver started answering `500` while `product.created` of the same endpoint was still in flight, so that event failed first and held `order.paid` behind its own retry in the endpoint's ordered lane. AS-27 now waits for `product.created` at the receiver before scripting the failure.
+- **Retry step** (`seller-to-first-sale.journey-spec.ts`): `control.runJob('webhooks.retry')` without a payload is refused by the job contract (422); the job is scheduled by the failed attempt with its own payload. Attempts 1 to 3 run in the ordered lane and come back through the queue's visibility timeout (30 s of real time), so AS-27 advances the clock and polls for the successful retry for up to 90 s (the retry is not a first-attempt hop, H13 does not bound it).
+- **Replay header** (`support/webhook-receiver.ts`): the S43 outbound contract sends `Marketplace-Replay: 1`; the receiver double compared with `'true'`, so a replay was never marked. J02 `spec.md` AS-27 says "Marketplace-Replay: true"; S43 owns the wire value (`1`).
+- **State leak that hid behind the above** (`support/control-surface.ts`): AS-14 moves the clock by two days; when that crosses the end of the real ISO week, the snapshot job freezes the live week (`2026-W42` on 2026-10-18, a Sunday) and AS-25 to AS-30 get `404 not_ranked` for the rest of that week. New `ControlSurface.alignToSafeWeek()` (called in `beforeAll` after `alignToOpenMonth`) makes the journey live from the next Monday 12:00 UTC when the clock is within 3 days of its week's end. A week frozen by an earlier run on this stack stays sealed until it ends.
+
+Result: `seller-to-first-sale.journey-spec.ts` 33 of 33 passed on the local stack.

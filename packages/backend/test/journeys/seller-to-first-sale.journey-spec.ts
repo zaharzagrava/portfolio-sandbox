@@ -21,6 +21,7 @@ import {
   upload,
   type OpenShop,
 } from './support/seller-fixture';
+import { waitFor } from '../utils/async-helpers';
 import { staysTrue, waitForContract } from './support/wait-for-contract';
 import { RECEIVER_PORT, WebhookReceiver } from './support/webhook-receiver';
 import {
@@ -62,6 +63,7 @@ describe('Journey J02: seller to first sale', () => {
     // J01 closes a month for good, and a sale in a closed month is sealed out of the boards (S40): when the stack's current
     // month is closed, this journey lives in the first month that is still open, as J01 does.
     await control.alignToOpenMonth();
+    await control.alignToSafeWeek(); // AS-14 moves the clock by days: that must not freeze the live leaderboard week
     receiver = await WebhookReceiver.start();
     // The signature carries the stack's time: the receiver judges it by the stack's clock, not by this machine's.
     receiver.clockSkewMs = Date.parse((await control.clock()).now) - Date.now();
@@ -1177,6 +1179,14 @@ describe('Journey J02: seller to first sale', () => {
     it('J02 AS-27: a receiver that fails then recovers gets the same event id once, and a replay is marked', async () => {
       const shop = await readySeller();
       const product = await listed(shop);
+      // the endpoint's lane is ordered: product.created must be through before the receiver starts failing,
+      // or it holds order.paid behind its own retry
+      await waitForContract(
+        'J02.H13',
+        async () =>
+          receiver.ofType('product.created').find(isOrder(product.id)) ?? null,
+        'product.created at the receiver',
+      );
       receiver.answer(500);
       let eventId = '';
       try {
@@ -1187,17 +1197,21 @@ describe('Journey J02: seller to first sale', () => {
         const failed = await attemptsOf(shop, shop.endpointId, eventId);
         expect(failed.body.items.some((a) => !a.ok)).toBe(true);
         receiver.answer(200);
-        await waitForContract(
-          'J02.H13',
+        // The retry is not a first-attempt hop (H13): the ordered lane gives the delivery back through the queue's
+        // visibility timeout (30 s of real time), and the moved clock makes the next attempt due.
+        await waitFor(
           async () => {
             await control.advance(60);
-            await control.runJob('webhooks.retry');
             const done = (
               await attemptsOf(shop, shop.endpointId, eventId)
             ).body.items.some((a) => a.ok);
             return done ? true : null;
           },
-          'a successful retry',
+          {
+            timeoutMs: 90_000,
+            intervalMs: 1_000,
+            description: 'a successful retry of the failed delivery',
+          },
         );
       } finally {
         receiver.answer(200);

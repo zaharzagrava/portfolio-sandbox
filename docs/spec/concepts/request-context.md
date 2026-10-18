@@ -38,4 +38,5 @@ Request context is one isolated store of values for each HTTP request, consumer 
 - {{cap:S53}} Domain events, outbox/CDC → Kafka, idempotent versioned projections, replay, read-your-writes
 - {{cap:S54}} Platform toolkit: problem+json errors, request context and transactions, health probes, graceful shutdown, load shedding, resilient HTTP
 - {{cap:S55}} Lambda workers: partial batch failure, idempotent effects, manifest, dead letters, local runner, bundles
+- {{cap:W06}} Admin feature-flag console (guard and shell, flag list, create, editor with targeting and rollout, kill switch, restore, archive, audit trail, stale report)
 <!-- used-by:end -->
