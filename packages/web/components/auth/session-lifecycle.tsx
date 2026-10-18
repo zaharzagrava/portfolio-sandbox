@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { toast } from 'sonner';
 import { clearPrivateState, dropPrivateQueries } from '@/hooks/use-auth-actions';
+import { sessionEndedDescription } from '@/lib/admin/flags/dirty';
 import { setSessionPresence } from '@/lib/api/session-presence';
 import { COPY } from '@/lib/auth/copy';
 import { safeReturnTo } from '@/lib/auth/return-to';
@@ -29,7 +30,8 @@ export function SessionLifecycle() {
       clearPrivateState(queryClient);
       router.refresh();
       const signIn = `/login?returnTo=${encodeURIComponent(here)}&notice=session_expired`;
-      toast(COPY.sessionEnded, { action: { label: 'Sign in', onClick: () => router.push(signIn) } });
+      // W06 AS-49: an open flag editor says its unsaved edits are lost (only while dirty).
+      toast(COPY.sessionEnded, { description: sessionEndedDescription(), action: { label: 'Sign in', onClick: () => router.push(signIn) } });
     });
 
     const unsubscribe = subscribeAuth((type) => {

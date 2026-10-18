@@ -284,3 +284,7 @@ interviews) until its status says so. The implementation loop appends here (rule
 | W05 | SC-008: both features completable with the keyboard alone | same file (keyboard walk of JC and JA flows) | not run |
 | W05 | SC-009: on-screen keyboard never covers the composer; 44 x 44 px targets | same file (iOS Safari and Android Chrome run) | not run |
 | W05 | SC-010: no credential, text or location readable from storage or console | same file (DevTools storage and console review) | not run |
+| W06 | SC-001: kill in at most 3 interactions, "Killed" visible within 2 s | specs/web/W06-admin-flags/quickstart.md (Ops artifacts: kill journey on mobile and desktop, stopwatch) | not run |
+| W06 | SC-002: a disabled flag created in under 1 minute with key and owner | same file (timed run by a person) | not run |
+| W06 | SC-008: "what changed and by whom" found in under 30 s | same file (usability check with an on-call admin) | not run |
+| W06 | SC-009: shell and skeleton immediately, no layout shift | same file (CLS measurement on a production build) | not run |

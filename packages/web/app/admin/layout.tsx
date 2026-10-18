@@ -1,32 +1,34 @@
-import Link from 'next/link';
-import { ReactNode } from 'react';
-import { Flag, LayoutDashboard } from 'lucide-react';
+import type { Metadata } from 'next';
+import { Suspense, type ReactNode } from 'react';
+import { AdminGuard } from '@/components/admin/admin-guard';
+import { Skeleton } from '@/components/ui/skeleton';
 
-export default function AdminLayout({ children }: { children: ReactNode }) {
+export const metadata: Metadata = { title: 'Marketplace Admin', robots: { index: false, follow: false } };
+
+/** The static frame while the session is read: header and sidebar shapes, no text, no spinner (W06 AS-63). */
+function ShellSkeleton() {
   return (
-    <div className="flex min-h-screen w-full flex-col bg-muted/40">
-      <header className="flex h-14 items-center gap-4 border-b bg-background px-4 sm:h-auto sm:border-0 sm:bg-transparent sm:px-6 sm:pt-4">
-        <Link href="/admin" className="flex items-center gap-2 font-semibold">
-          <LayoutDashboard className="h-5 w-5" />
-          <span className="text-lg">Marketplace Admin</span>
-        </Link>
-      </header>
-      <div className="flex flex-1 mt-4">
-        <aside className="w-64 flex-col border-r bg-background p-4 hidden md:flex">
-          <nav className="flex flex-col gap-2">
-            <Link 
-              href="/admin/feature-flags" 
-              className="flex items-center gap-2 rounded-lg bg-muted px-3 py-2 text-primary transition-all hover:text-primary"
-            >
-              <Flag className="h-4 w-4" />
-              Feature Flags
-            </Link>
-          </nav>
-        </aside>
-        <main className="min-w-0 flex-1 p-4 sm:p-6">
-          {children}
-        </main>
+    <div aria-hidden="true" data-skeleton="admin-shell" className="flex min-h-[calc(100svh-3.5rem)] flex-col lg:flex-row">
+      <div className="hidden w-64 shrink-0 space-y-3 border-r p-4 lg:block">
+        <Skeleton className="h-9 w-full" />
+        <Skeleton className="h-9 w-full" />
+      </div>
+      <div className="min-w-0 flex-1 space-y-4 p-4 md:p-6 lg:p-8">
+        <Skeleton className="h-8 w-56" />
+        <Skeleton className="h-64 w-full" />
       </div>
     </div>
+  );
+}
+
+/**
+ * Every `/admin/**` page (W06 FR-002, FR-006): the layout does not await the session at its top level; the guard is a
+ * component inside the boundary. No `instant = false`, nothing cached (per-user pages).
+ */
+export default function AdminLayout({ children }: { children: ReactNode }) {
+  return (
+    <Suspense fallback={<ShellSkeleton />}>
+      <AdminGuard>{children}</AdminGuard>
+    </Suspense>
   );
 }
