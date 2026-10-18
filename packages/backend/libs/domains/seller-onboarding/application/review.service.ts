@@ -313,6 +313,7 @@ export class ReviewService {
           ),
           assertActiveTransaction(),
         );
+        onboardingMetrics.applicationDecisions.add(1, { decision: 'rejected' });
         await this.retention.schedulePurge(
           task.shopId,
           application.submissionNo,

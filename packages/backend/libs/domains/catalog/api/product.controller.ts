@@ -15,10 +15,14 @@ import type {
 } from '@marketplace-sandbox/contracts';
 import { User, UserRawDto } from '@app/domains/identity';
 import { ShopScoped } from '@app/domains/tenancy';
+import { Idempotent } from '@app/infrastructure/idempotency';
 import { RateLimit } from '@app/infrastructure/rate-limit';
 import { ProductCommandService } from '../application/product-command.service';
 import { ProductIdPipe } from './product-id.pipe';
 import { TransitionBody } from './product.dto';
+
+/** Optional `Idempotency-Key` of a create: 1 to 128 printable characters; the facility keeps a key for 24 hours. */
+const PRODUCT_CREATE_KEY = /^[A-Za-z0-9_.:-]{1,128}$/;
 
 /**
  * Member routes of a shop's products (S05 `contracts/http.md`). Each method is: guard (member, permission, shop status)
@@ -32,6 +36,16 @@ export class ProductController {
 
   @ShopScoped('products.write')
   @RateLimit('catalog.product-write.shop')
+  @Idempotent({
+    required: false,
+    ttlSeconds: 24 * 3600,
+    scope: (req) =>
+      `products.create:${String(req.params.shopId).toLowerCase()}`,
+    wire: {
+      keyPattern: PRODUCT_CREATE_KEY,
+      codes: { inFlight: 'request_in_flight' },
+    },
+  })
   @Post()
   create(
     @Param('shopId') shopId: string,

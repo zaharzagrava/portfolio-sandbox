@@ -107,7 +107,7 @@ describe('Webhooks: routing of domain events (consumers)', () => {
   const receipts = (group: string, eventId: string) =>
     t.rows<{ status: string }>(
       `SELECT status FROM "ProcessedWebhookEvent" WHERE provider = :group AND "eventId" = :eventId`,
-      { group, eventId },
+      { group: `${group}:routing`, eventId },
     );
   const allPending = () => lane().pending();
 

@@ -41,6 +41,12 @@ export const searchStaleIgnoredCounter = MetricsRegistry.counter({
   labels: ['source'],
 });
 
+export const searchProductsIndexedCounter = MetricsRegistry.counter({
+  name: 'search_products_indexed_total',
+  help: 'Product events applied to the search index (J02 AS-32)',
+  labels: [],
+});
+
 export const searchIgnoredCounter = MetricsRegistry.counter({
   name: 'search_ignored_total',
   help: 'Events acknowledged without effect, by reason (sandbox, unknown_type, shop_deleted)',

@@ -65,4 +65,53 @@ describe('RateLimitInterceptor in a process hosting several applications', () =>
     );
     expect(internals.admit).toHaveBeenCalledTimes(2);
   });
+
+  describe('local-profile allow-list (J02 S50)', () => {
+    const buildWith = (allowIps: string[]) => {
+      const reflector = {
+        getAllAndOverride: jest
+          .fn()
+          .mockReturnValue([{ policy: 'auth.register.ip' }]),
+      };
+      const interceptor = new RateLimitInterceptor(
+        reflector as never,
+        {} as never,
+        {} as never,
+        {} as never,
+        {} as never,
+        { applyDefault: true },
+        { allowIps } as never,
+      );
+      const internals = interceptor as unknown as {
+        admit: jest.Mock;
+        run: jest.Mock;
+      };
+      internals.admit = jest.fn().mockResolvedValue({ taken: [] });
+      internals.run = jest.fn().mockReturnValue(of('handled'));
+      return { interceptor, internals };
+    };
+
+    it('S50 G-01: an allow-listed address is not charged by any policy', async () => {
+      const { interceptor, internals } = buildWith(['203.0.113.7']);
+      const result = await firstValueFrom(
+        interceptor.intercept(
+          contextOf({ method: 'POST', headers: {}, clientIp: '203.0.113.7' }),
+          next,
+        ),
+      );
+      expect(result).toBe('passed through');
+      expect(internals.admit).not.toHaveBeenCalled();
+    });
+
+    it('S50 G-01: any other address is still limited', async () => {
+      const { interceptor, internals } = buildWith(['203.0.113.7']);
+      await firstValueFrom(
+        interceptor.intercept(
+          contextOf({ method: 'POST', headers: {}, clientIp: '198.51.100.1' }),
+          next,
+        ),
+      );
+      expect(internals.admit).toHaveBeenCalledTimes(1);
+    });
+  });
 });

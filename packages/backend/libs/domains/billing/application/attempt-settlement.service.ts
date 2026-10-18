@@ -7,6 +7,7 @@ import { BILLING_LIMITS } from '../domain/config';
 import { MAX_ATTEMPTS, nextAttemptAt } from '../domain/dunning-schedule';
 import {
   chargeAttemptsCounter,
+  invoicesPaidCounter,
   dunningExhaustedCounter,
 } from '../domain/metrics';
 import {
@@ -81,9 +82,18 @@ export class AttemptSettlement {
         }),
       );
       await this.recover(view, now);
+      // the first money taken for a plan: the paid entitlements and tier start here, announced by an event (J02 G-13)
+      if (
+        subscription.status === 'ACTIVE' &&
+        (await this.invoices.countPaid(subscription.id)) === 1
+      )
+        await this.transitions.firstChargeSettled(view, now);
       return true;
     });
-    if (done) chargeAttemptsCounter.add(1, { outcome: 'succeeded' });
+    if (done) {
+      chargeAttemptsCounter.add(1, { outcome: 'succeeded' });
+      invoicesPaidCounter.add(1);
+    }
     return done;
   }
 

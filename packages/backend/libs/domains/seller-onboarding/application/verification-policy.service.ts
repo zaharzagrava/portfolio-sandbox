@@ -12,6 +12,7 @@ import {
   type StatusHistoryRepository,
 } from '../domain/ports';
 import { outcomeVersion, ShopVerified } from './events/onboarding-events';
+import { onboardingMetrics } from './onboarding-metrics';
 import { RetentionScheduler } from './retention-scheduler';
 
 /**
@@ -63,6 +64,7 @@ export class VerificationPolicyService {
       }),
       tx,
     );
+    onboardingMetrics.applicationDecisions.add(1, { decision: 'verified' });
     await this.retention.schedulePurge(shopId, application.submissionNo, now);
     return true;
   }

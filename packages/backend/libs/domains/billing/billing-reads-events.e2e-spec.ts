@@ -396,6 +396,7 @@ describe('Billing: reads and events', () => {
         }),
         201,
       );
+      await t.drainJobs(); // the first charge settles: only then does the plan apply (J02 G-13)
       expectStatus(
         await t
           .as(owner)
@@ -410,15 +411,17 @@ describe('Billing: reads and events', () => {
         }),
         201,
       );
+      await t.drainJobs();
       expect(
         (await tierEvents(made.shopId)).map((e) => [
           e.payload.plan,
           e.payload.version,
         ]),
       ).toEqual([
-        ['PRO', 1],
-        ['STARTER', 2],
-        ['PRO', 3],
+        ['STARTER', 1], // announced at subscribe: nothing is paid yet
+        ['PRO', 2],
+        ['STARTER', 3],
+        ['PRO', 4],
       ]);
 
       // starter -> starter, a price change within a plan: no event
@@ -553,9 +556,8 @@ describe('Billing: reads and events', () => {
         subscriptionVersion: 0,
       });
       expect(found?.entitlements).toMatchObject({ auctions: true });
-      expect((await basis.getLiveBasis('SHOP', pastDue.shopId))?.status).toBe(
-        'PAST_DUE',
-      );
+      // J02 G-13: this shop's first charge failed, so there is no paid plan that could be kept during the grace
+      expect(await basis.getLiveBasis('SHOP', pastDue.shopId)).toBeNull();
       expect(await basis.getLiveBasis('SHOP', cancelled.shopId)).toBeNull();
       const many = await basis.getLiveBasisBySubjectIds('SHOP', [
         active.shopId,
@@ -563,9 +565,7 @@ describe('Billing: reads and events', () => {
         cancelled.shopId,
         active.shopId,
       ]);
-      expect([...many.keys()].sort()).toEqual(
-        [active.shopId, pastDue.shopId].sort(),
-      );
+      expect([...many.keys()]).toEqual([active.shopId]);
       await expect(
         basis.getLiveBasisBySubjectIds(
           'SHOP',

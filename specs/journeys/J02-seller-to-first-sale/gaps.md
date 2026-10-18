@@ -57,3 +57,24 @@ Existing journey tests: none. `test/journeys/` holds only `README.md`; `jest-jou
 2. Events and consumers: G-03, G-04, G-07, G-09, G-14, G-15, G-16, G-23, G-28, G-30, G-35.
 3. APIs and shapes: G-05, G-08, G-12, G-21, G-26, G-29, G-31, G-34.
 4. Control and observability: G-17, G-18, G-27, G-33, G-36, G-37, G-38, then the journey kit G-39 and the static gates G-40.
+
+## 3. Status after the planning audit
+
+`research.md` §1 replaces the "Current state" column above with a status per gap (DONE, PARTIAL, OPEN, verify). Rows still OPEN with direct evidence: G-02 (no bootstrap admin), G-09 sweep `onboarding.verify-pending`, G-11 (extractor and model double in the local deployment), G-15 (`entitlements-invalidation`), G-20 (`checkLimit` not called by catalog), G-32 (`allowedReceiverHosts`), G-36 (canonical group names), and the 5 s search `refresh_interval`.
+
+## Spec changes
+
+None made by planning. Implementation edits the capability pages named in `plan.md` (rule 0) before changing behaviour; any page with a `*.reviewed.json` sign-off that changes is listed here by the implementing agent.
+
+## Sibling-spec follow-ups
+
+- **S01**: rename the promotion consumer group to `identity-seller-promotion` (today `identity-shop-owner-promotion`); provision the local-profile `ADMIN` from `BOOTSTRAP_ADMIN_EMAIL`/`BOOTSTRAP_ADMIN_PASSWORD`.
+- **S03**: one group `tenancy-shop-lifecycle` for `shop-onboarding` and `billing.events` (today `tenancy-verification` and `tenancy-shop-plan`).
+- **S18**: provide the consumer group `entitlements-invalidation` on `billing.events`.
+- **S32**: rename `search-indexer` to `search-product-index` covering `products.events` and `tenancy.events`; wire `search_refresh_interval` into the index settings (`1s` in the local profile).
+- **S40**: rename the board projector group to `leaderboards`.
+- **S04**: add job `onboarding.verify-pending`; the extractor runs in the local deployment with a model double by fixture content.
+- **S05**: `ProductCommandService.create` calls `EntitlementsService.checkLimit('SHOP', shopId, 'maxProducts', count)` and answers `409 plan_limit_reached`.
+- **S43**: accept `allowedReceiverHosts` (host:port) as a local-profile setting validated at startup; verify delivery headers and `resource_version`.
+- **S03, S04, S17, S32**: list the AS-32 counters `shops_created_total`, `onboarding_decisions_total{decision}`, `invoices_paid_total`, `search_products_indexed_total` in their observability rules; the local profile's `ALLOWED_RECEIVER_HOSTS` lists a second receiver port (`127.0.0.1:18444`) for the two-shop scenario AS-26.
+- **S49**: allow-list gains `billing.run`, `onboarding.verify-pending`, `webhooks.retry`, `search.reindex`.

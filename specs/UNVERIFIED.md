@@ -288,3 +288,9 @@ interviews) until its status says so. The implementation loop appends here (rule
 | W06 | SC-002: a disabled flag created in under 1 minute with key and owner | same file (timed run by a person) | not run |
 | W06 | SC-008: "what changed and by whom" found in under 30 s | same file (usability check with an on-call admin) | not run |
 | W06 | SC-009: shell and skeleton immediately, no layout shift | same file (CLS measurement on a production build) | not run |
+| J02 | SC-001: shop created to SELLER role within 3 s in 99% of runs | specs/journeys/J02-seller-to-first-sale/quickstart.md (Ops artifacts: loop AS-02 100 times, p99 of H1) | not run |
+| J02 | SC-002: last approved document to VERIFIED within 5 s (p99); submission to verified under 30 s | same file (loop AS-06) | not run |
+| J02 | SC-003: first charge to plan limits within 5 s (p99) | same file (loop AS-12) | not run |
+| J02 | SC-004: product listed to public search within 10 s (p99) | same file (loop AS-18) | not run |
+| J02 | SC-005: order paid to webhook and rank within 10 s (p99) | same file (loop AS-25) | not run |
+| J02 | SC-008: clean stack to green in under 10 minutes, 0 fixed sleeps | same file (fresh-run.sh then pnpm test:journeys, grep for sleeps) | not run |

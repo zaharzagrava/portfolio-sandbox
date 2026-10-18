@@ -296,7 +296,12 @@ export class SequelizeSubscriptionRepository implements SubscriptionRepository {
               p."entitlements", s."version" AS "subscriptionVersion"
          FROM "Subscription" s JOIN "Price" pr ON pr."id" = s."priceId" JOIN "Plan" p ON p."id" = pr."planId"
         WHERE s."subjectType" = :subjectType AND s."subjectId" IN (:subjectIds)
-          AND s."status" IN ('TRIALING','ACTIVE','PAST_DUE')`,
+          AND s."status" IN ('TRIALING','ACTIVE','PAST_DUE')
+          AND (s."subjectType" <> 'SHOP' OR s."status" = 'TRIALING' OR pr."unitAmount" = 0
+               OR EXISTS (SELECT 1 FROM "Invoice" i
+                           WHERE i."subscriptionId" = s."id" AND i."status" = 'PAID' AND i."total" > 0)
+               OR NOT EXISTS (SELECT 1 FROM "Invoice" i
+                               WHERE i."subscriptionId" = s."id" AND i."total" > 0))`,
       { subjectType, subjectIds },
     );
     return rows;

@@ -10,6 +10,10 @@ import { transitionEndpoint } from '../domain/endpoint-status';
 import { ApiError } from '../domain/errors';
 import { parseEndpointUrl } from '../domain/webhook-url';
 import {
+  WEBHOOK_SETTINGS,
+  type WebhookSettings,
+} from '../domain/webhook-settings';
+import {
   AddressGuard,
   BreakerStore,
   EndpointHistory,
@@ -109,6 +113,7 @@ export class WebhookEndpointsService {
     private readonly subscriptions: WebhookSubscriptions,
     private readonly guard: AddressGuard,
     @Inject(CLOCK) private readonly clock: Clock,
+    @Inject(WEBHOOK_SETTINGS) private readonly settings: WebhookSettings,
   ) {}
 
   // ------------------------------------------------------------ guards
@@ -117,7 +122,7 @@ export class WebhookEndpointsService {
   private async checkUrl(
     raw: string,
   ): Promise<{ normalized: string; host: string }> {
-    const parsed = parseEndpointUrl(raw);
+    const parsed = parseEndpointUrl(raw, this.settings.allowedReceiverHosts);
     if (!parsed.ok) {
       if (parsed.failure.kind === 'rejected')
         throw endpointUrlRejected(parsed.failure.reason);

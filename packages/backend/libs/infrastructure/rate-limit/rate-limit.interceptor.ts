@@ -6,6 +6,7 @@ import {
   Injectable,
   Logger,
   NestInterceptor,
+  Optional,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import type { Request, Response } from 'express';
@@ -36,6 +37,7 @@ import {
   type HeaderItem,
 } from './rate-limit-headers';
 import { RateLimitDenialLog } from './rate-limit-denial-log';
+import { RateLimitConfig } from './rate-limit.config';
 import { RateLimitMetrics } from './rate-limit.metrics';
 import { RateLimiterService } from './rate-limiter.service';
 import type { RateLimitDecision, RateLimitPolicy } from './rate-limit.types';
@@ -87,6 +89,7 @@ export class RateLimitInterceptor implements NestInterceptor {
     private readonly denialLog: RateLimitDenialLog,
     @Inject(RATE_LIMIT_ROOT_OPTIONS)
     private readonly options: { applyDefault: boolean },
+    @Optional() private readonly config?: RateLimitConfig,
   ) {}
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
@@ -94,6 +97,9 @@ export class RateLimitInterceptor implements NestInterceptor {
     const http = context.switchToHttp();
     const req = http.getRequest<LimitedRequest>();
     if (req.method === 'OPTIONS') return next.handle(); // a CORS preflight costs nothing (FR-030)
+    // Local profile (J02): the journey runner's address creates many accounts from one IP; refused in production at start-up.
+    if (req.clientIp && this.config?.allowIps.includes(req.clientIp))
+      return next.handle();
     // The local monolith hosts several applications in one process, each with its own `forRoot()`: the first
     // interceptor to see a request enforces, the others must not charge the same request again.
     if (ENFORCED.has(req)) return next.handle();

@@ -244,6 +244,13 @@ export class SecretsManagerConfig {
   /** S54: `enabled` switches on the controllable clock (never in production), see `clock-config.ts`. */
   clock_control?: string;
 
+  /** J02 local profile, see `local-profile-config.ts`; every one is refused in production. */
+  bootstrap_admin_email?: string;
+  bootstrap_admin_password?: string;
+  rate_limit_allow_ips?: string;
+  allowed_receiver_hosts?: string;
+  allowed_receiver_ca_fingerprint?: string;
+
   /** S15: seller payout settings, defaults in `payout-config.ts`. */
   payout_default_reserve_bps: number;
   payout_min_minor: number;

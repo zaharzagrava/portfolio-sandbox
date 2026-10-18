@@ -21,6 +21,7 @@ export const webhookSettingsProvider: Provider = {
     resolveWebhookSettings(
       {
         privateHostAllowance: config.get('webhooks_allow_private_hosts'),
+        allowedReceiverHosts: config.get('allowed_receiver_hosts'),
         attemptTimeoutMs: config.get('webhooks_attempt_timeout_ms'),
         workerConcurrency: config.get('webhooks_worker_concurrency'),
         visibilityTimeoutSec: config.get('webhooks_visibility_timeout_sec'),

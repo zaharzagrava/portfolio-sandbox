@@ -15,6 +15,7 @@ import { paymentsConfigKeys } from './payments-config';
 import { ledgerConfigKeys } from './ledger-config';
 import { payoutConfigKeys } from './payout-config';
 import { clockConfigKeys } from './clock-config';
+import { localProfileConfigKeys } from './local-profile-config';
 import { notificationsConfigKeys } from './notifications-config';
 import { searchConfigKeys } from './search-config';
 import { autocompleteConfigKeys } from './autocomplete-config';
@@ -623,6 +624,7 @@ export class ApiConfigService {
           ...ledgerConfigKeys,
           ...payoutConfigKeys,
           ...clockConfigKeys,
+          ...localProfileConfigKeys,
           payout_cursor_secret: {
             verify: joi.string().optional().allow(''),
             name: 'PAYOUT_CURSOR_SECRET',

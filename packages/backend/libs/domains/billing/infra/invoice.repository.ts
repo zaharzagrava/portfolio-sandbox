@@ -202,6 +202,25 @@ export class SequelizeInvoiceRepository implements InvoiceRepository {
     return Number(row?.n ?? 0);
   }
 
+  async countBilled(subscriptionId: string) {
+    const [row] = await select<{ n: string }>(
+      this.sequelize,
+      `SELECT count(*) AS n FROM "Invoice" WHERE "subscriptionId" = :subscriptionId AND "total" > 0`,
+      { subscriptionId },
+    );
+    return Number(row?.n ?? 0);
+  }
+
+  async countPaid(subscriptionId: string) {
+    const [row] = await select<{ n: string }>(
+      this.sequelize,
+      `SELECT count(*) AS n FROM "Invoice"
+        WHERE "subscriptionId" = :subscriptionId AND "status" = 'PAID' AND "total" > 0`,
+      { subscriptionId },
+    );
+    return Number(row?.n ?? 0);
+  }
+
   previousRenewal(subscriptionId: string, before: Date) {
     return this.one(
       `SELECT ${COLUMNS} FROM "Invoice" i

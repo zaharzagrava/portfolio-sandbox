@@ -6,6 +6,7 @@ import {
 import { checkSafeUrl, SafeRequestError } from '@app/infrastructure/net';
 import { AddressGuard, AddressVerdict } from '../domain/webhook-ports';
 import {
+  receiverAllowances,
   WEBHOOK_NET_OPTIONS,
   type WebhookNetOptions,
 } from './safe-outbound-http.adapter';
@@ -34,7 +35,7 @@ export class SafeAddressGuard extends AddressGuard {
     try {
       await checkSafeUrl(url, {
         resolver: this.net.resolver,
-        allowPrivateHosts: this.settings.privateHostAllowance,
+        ...receiverAllowances(this.settings),
       });
       return { ok: true };
     } catch (error) {

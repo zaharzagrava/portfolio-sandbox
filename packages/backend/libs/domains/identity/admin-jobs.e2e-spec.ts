@@ -11,6 +11,10 @@ import { requestFingerprint } from '@app/infrastructure/idempotency/fingerprint'
 // the allow-listed job types are declared by the owning domains: loading their public entry points registers them
 import '@app/domains/payments';
 import '@app/domains/statements';
+import '@app/domains/billing';
+import '@app/domains/developer-platform';
+import '@app/domains/discovery';
+import '@app/domains/seller-onboarding';
 import { AuthTestApp, createAuthApp } from './testing/auth-app';
 import { flushRedis } from './testing/mfa-fixtures';
 import { IdentityOpsModule } from './identity-ops.module';
@@ -21,6 +25,13 @@ const ALLOWED = [
   'payouts.run-weekly',
   'statements.close-month',
   'payments.reconcile-daily',
+];
+
+const J02_TYPES = [
+  'billing.run',
+  'onboarding.verify-pending',
+  'webhooks.retry',
+  'search.reindex',
 ];
 
 describe('J01 G-30: admin job requests (POST/GET /api/admin/jobs)', () => {
@@ -39,7 +50,7 @@ describe('J01 G-30: admin job requests (POST/GET /api/admin/jobs)', () => {
     await t.reset();
     await flushRedis(t);
     await sql.query(`DELETE FROM "Job" WHERE type IN (:types)`, {
-      replacements: { types: ALLOWED },
+      replacements: { types: [...ALLOWED, ...J02_TYPES] },
     });
     const session = await sessionFor(Role.ADMIN);
     admin = session.accessToken.token;
@@ -101,6 +112,40 @@ describe('J01 G-30: admin job requests (POST/GET /api/admin/jobs)', () => {
       expect(rows[0].status).toBe('QUEUED');
       expect(rows[0].payload).toEqual(body.payload);
       expect(rows[0].runAt.getTime()).toBeLessThanOrEqual(Date.now());
+    }
+  });
+
+  it('S01 G-37: billing.run, onboarding.verify-pending, webhooks.retry and search.reindex are on the allow-list', async () => {
+    const bodies = [
+      { type: 'billing.run', payload: {} },
+      { type: 'onboarding.verify-pending', payload: {} },
+      {
+        type: 'webhooks.retry',
+        payload: {
+          endpointId: 'e1',
+          eventId: 'evt_1',
+          deliveryId: 'dlv_1',
+          kind: 'event',
+          attempt: 2,
+        },
+      },
+      {
+        type: 'search.reindex',
+        payload: { runId: '00000000-0000-4000-8000-000000000001' },
+      },
+    ];
+    try {
+      for (const body of bodies) {
+        const res = await post(body).expect(202);
+        const { jobId } = adminJobAcceptedSchema.parse(res.body);
+        const rows = await jobsOf(body.type);
+        expect(rows.map((r) => r.id)).toEqual([jobId]);
+        expect(rows[0].status).toBe('QUEUED');
+      }
+    } finally {
+      await sql.query(`DELETE FROM "Job" WHERE type IN (:types)`, {
+        replacements: { types: J02_TYPES },
+      });
     }
   });
 
@@ -172,7 +217,10 @@ describe('J01 G-30: admin job requests (POST/GET /api/admin/jobs)', () => {
       { type: 'payouts.run-weekly', payload: {} },
       { token: null },
     ).expect(401);
-    await t.http().get('/api/admin/jobs/00000000-0000-7000-8000-000000000000').expect(401);
+    await t
+      .http()
+      .get('/api/admin/jobs/00000000-0000-7000-8000-000000000000')
+      .expect(401);
     expect(await allJobs()).toBe(0);
   });
 
@@ -181,10 +229,9 @@ describe('J01 G-30: admin job requests (POST/GET /api/admin/jobs)', () => {
     async (role) => {
       const session = await sessionFor(role);
       const token = session.accessToken.token;
-      await post(
-        { type: 'payouts.run-weekly', payload: {} },
-        { token },
-      ).expect(403);
+      await post({ type: 'payouts.run-weekly', payload: {} }, { token }).expect(
+        403,
+      );
       await t
         .http()
         .get('/api/admin/jobs/00000000-0000-7000-8000-000000000000')
@@ -196,7 +243,10 @@ describe('J01 G-30: admin job requests (POST/GET /api/admin/jobs)', () => {
 
   it('J01 G-30: the same key and body return the same jobId and one job exists', async () => {
     const k = key();
-    const body = { type: 'payouts.run-weekly', payload: { periodStart: '2026-01-05' } };
+    const body = {
+      type: 'payouts.run-weekly',
+      payload: { periodStart: '2026-01-05' },
+    };
     const first = await post(body, { key: k }).expect(202);
     const second = await post(body, { key: k }).expect(202);
 
@@ -207,7 +257,10 @@ describe('J01 G-30: admin job requests (POST/GET /api/admin/jobs)', () => {
 
   it('J01 G-30: a request whose first attempt is still in flight is 409 idempotency_in_flight', async () => {
     const k = key();
-    const body = { type: 'payouts.run-weekly', payload: { periodStart: '2026-01-05' } };
+    const body = {
+      type: 'payouts.run-weekly',
+      payload: { periodStart: '2026-01-05' },
+    };
     const claim = await t.app.get(IdempotencyRepository).claim({
       scope: `admin-jobs:${adminId}`,
       key: k,
@@ -263,7 +316,10 @@ describe('J01 G-30: admin job requests (POST/GET /api/admin/jobs)', () => {
 
   it('J01 G-30: five concurrent requests with one key create one job', async () => {
     const k = key();
-    const body = { type: 'payouts.run-weekly', payload: { periodStart: '2026-01-05' } };
+    const body = {
+      type: 'payouts.run-weekly',
+      payload: { periodStart: '2026-01-05' },
+    };
     const results = await Promise.all(
       Array.from({ length: 5 }, () => post(body, { key: k })),
     );
@@ -280,7 +336,10 @@ describe('J01 G-30: admin job requests (POST/GET /api/admin/jobs)', () => {
 
   describe('GET /api/admin/jobs/:jobId', () => {
     const get = (id: string, token: string = admin) =>
-      t.http().get(`/api/admin/jobs/${id}`).set('Authorization', `Bearer ${token}`);
+      t
+        .http()
+        .get(`/api/admin/jobs/${id}`)
+        .set('Authorization', `Bearer ${token}`);
 
     it('J01 G-30: returns id, type, status, attempts and finishedAt without the payload', async () => {
       const { body } = await post({
@@ -288,7 +347,9 @@ describe('J01 G-30: admin job requests (POST/GET /api/admin/jobs)', () => {
         payload: { month: '2026-01' },
       }).expect(202);
 
-      const queued = adminJobSchema.parse((await get(body.jobId).expect(200)).body);
+      const queued = adminJobSchema.parse(
+        (await get(body.jobId).expect(200)).body,
+      );
       expect(queued).toEqual({
         id: body.jobId,
         type: 'statements.close-month',
@@ -302,7 +363,9 @@ describe('J01 G-30: admin job requests (POST/GET /api/admin/jobs)', () => {
         `UPDATE "Job" SET status = 'SUCCEEDED', attempts = 1, "finishedAt" = '2026-02-01T00:00:00Z' WHERE id = :id`,
         { replacements: { id: body.jobId } },
       );
-      const done = adminJobSchema.parse((await get(body.jobId).expect(200)).body);
+      const done = adminJobSchema.parse(
+        (await get(body.jobId).expect(200)).body,
+      );
       expect(done).toEqual({
         id: body.jobId,
         type: 'statements.close-month',

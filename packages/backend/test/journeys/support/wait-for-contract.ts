@@ -49,6 +49,92 @@ export const HOPS = {
     what: 'refund_requested → payment REFUNDED',
   },
   H13: { maxMs: 5_000, owner: 'S49', what: 'control-surface job → finished' },
+  // J02 (seller to first sale): spec.md "Eventual-consistency contract". Prefixed so they never collide with J01's H1..H13.
+  'J02.H1': {
+    maxMs: 3_000,
+    owner: 'S01',
+    what: 'tenancy.shop_created → role becomes SELLER',
+  },
+  'J02.H2': {
+    maxMs: 5_000,
+    owner: 'S03',
+    what: 'shop.onboarding_submitted → shop PENDING',
+  },
+  'J02.H3': {
+    maxMs: 20_000,
+    owner: 'S04',
+    what: 'document uploaded → extraction → APPROVED or NEEDS_REVIEW',
+  },
+  'J02.H4': {
+    maxMs: 5_000,
+    owner: 'S03',
+    what: 'last document approved (or moderator APPROVE) → shop VERIFIED, payoutsEnabled',
+  },
+  'J02.H5': {
+    maxMs: 5_000,
+    owner: 'S03',
+    what: 'shop.rejected → shop REJECTED, payoutsEnabled false',
+  },
+  'J02.H6': {
+    maxMs: 5_000,
+    owner: 'S17',
+    what: 'subscription accepted → charge → invoice PAID, subscription ACTIVE',
+  },
+  'J02.H7': {
+    maxMs: 5_000,
+    owner: 'S18',
+    what: 'billing.subscription_status_changed → entitlements of the new plan',
+  },
+  'J02.H8': {
+    maxMs: 5_000,
+    owner: 'S03',
+    what: 'billing.subscription_plan_changed → Shop.plan',
+  },
+  'J02.H9': {
+    maxMs: 10_000,
+    owner: 'S32',
+    what: 'catalog.product_created → search document',
+  },
+  'J02.H10': {
+    maxMs: 10_000,
+    owner: 'S32',
+    what: 'catalog.product_updated (stock, archive, restore) → search document',
+  },
+  'J02.H11': {
+    maxMs: 10_000,
+    owner: 'S32',
+    what: 'tenancy.shop_status_changed → products hidden or shown',
+  },
+  'J02.H12': {
+    maxMs: 10_000,
+    owner: 'S43',
+    what: 'catalog.product_created → webhook product.created first attempt',
+  },
+  'J02.H13': {
+    maxMs: 10_000,
+    owner: 'S43',
+    what: 'order.paid → webhook order.paid first attempt',
+  },
+  'J02.H14': {
+    maxMs: 5_000, // the deadline (2 x 5 s) is the 10 s floor S40 allows for polling the rank until 200
+    owner: 'S40',
+    what: 'order.paid → leaderboard board and rank',
+  },
+  'J02.H15': {
+    maxMs: 5_000,
+    owner: 'S40',
+    what: 'tenancy.shop_created | shop_updated → name and slug on the board',
+  },
+  'J02.H16': {
+    maxMs: 15_000,
+    owner: 'S53',
+    what: 'consumer resumed or replayed → lag 0',
+  },
+  'J02.H17': {
+    maxMs: 5_000,
+    owner: 'S49',
+    what: 'job run through the control surface → finished',
+  },
 } as const;
 
 export type Hop = keyof typeof HOPS;

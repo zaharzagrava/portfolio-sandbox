@@ -6,6 +6,7 @@ import {
 } from '@marketplace-sandbox/contracts';
 import { Role } from '@app/domains/identity';
 import { JobsTestProbe } from '@app/infrastructure/jobs';
+import { VerifyPendingService } from './application/verify-pending.service';
 import {
   ANSWERS,
   bankAnswer,
@@ -489,6 +490,47 @@ describe('Seller onboarding: verification and view (e2e)', () => {
       'Müller Handels GmbH',
     ])
       expect(final).not.toContain(forbidden);
+  });
+
+  describe('the verify-pending sweep (J02 G-09)', () => {
+    /** All required documents approved, application still SUBMITTED: the state a crash between approval and verification leaves. */
+    const strandedAfterCrash = async () => {
+      const s = await t.submitted();
+      await t.approved(s, 'BUSINESS_REGISTRATION');
+      const doc = await t.upload(
+        s,
+        'BANK_STATEMENT',
+        t.pdf(`statement ${v4()}`),
+      );
+      await t.db.query(
+        `UPDATE "ShopDocument" SET status = 'APPROVED' WHERE id = :id`,
+        { replacements: { id: doc.id } },
+      );
+      expect((await application(s.shopId)).status).toBe('SUBMITTED');
+      return s;
+    };
+
+    it('S04 G-09: verifies the stranded shop once, and a second run changes nothing', async () => {
+      const s = await strandedAfterCrash();
+      const sweep = t.app.get(VerifyPendingService);
+
+      expect(await sweep.run()).toMatchObject({ verified: 1 });
+      expect((await application(s.shopId)).status).toBe('VERIFIED');
+      expect(await events(s.shopId, 'shop.verified')).toHaveLength(1);
+
+      expect(await sweep.run()).toMatchObject({ verified: 0 });
+      expect(await events(s.shopId, 'shop.verified')).toHaveLength(1);
+    });
+
+    it('S04 G-09: leaves an application that still waits for a document alone', async () => {
+      const s = await t.submitted();
+      await t.approved(s, 'BUSINESS_REGISTRATION');
+      expect(await t.app.get(VerifyPendingService).run()).toMatchObject({
+        verified: 0,
+      });
+      expect((await application(s.shopId)).status).toBe('SUBMITTED');
+      expect(await events(s.shopId, 'shop.verified')).toHaveLength(0);
+    });
   });
 });
 

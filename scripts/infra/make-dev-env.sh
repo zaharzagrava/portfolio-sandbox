@@ -48,6 +48,11 @@ cfg.update({
     'STRIPE_WEBHOOK_SECRET': 'whsec_dev_journey_secret_0123456789abcdef',  # J01: the journeys sign webhook posts with it (JOURNEY_ENV points at this file)
     'PLATFORM_CURRENCY': 'EUR',  # J01 "one currency": the ledger books, and balance/statement report, in EUR (unset it defaults to USD and balances read 0)
     'OTEL_SDK_DISABLED': 'false',  # J01 AS-30 reads the counters from the Prometheus endpoint on :9464 (started by startTelemetry); a process env that sets it to true wins over this file
+    'BOOTSTRAP_ADMIN_EMAIL': 'admin@marketplace.local',  # J02: provisions the platform ADMIN at start-up (local profile; the app refuses to boot with it in production)
+    'BOOTSTRAP_ADMIN_PASSWORD': 'Demo-Seed-Pw-7491!',  # same value the seed script and the journeys' adminClient() use
+    'RATE_LIMIT_ALLOW_IPS': '127.0.0.1,::1,::ffff:127.0.0.1',  # J02: the journey runner creates many accounts from one address
+    'ALLOWED_RECEIVER_HOSTS': '127.0.0.1:18443,127.0.0.1:18444',  # J02: the journey's HTTPS webhook receiver (WebhookReceiver, JOURNEY_RECEIVER_PORT)
+    'SEARCH_REFRESH_INTERVAL': '1s',  # J02: product search hops (H9..H11) need a refresh of 1 s at most
     'PROVIDER_DOUBLES': 'enabled',  # binds the scripted payment and payout providers: pm_test_visa settles at once (the dummy Stripe key cannot)
 })
 with open(sys.argv[3], 'w') as f:

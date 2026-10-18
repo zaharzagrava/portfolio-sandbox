@@ -16,8 +16,17 @@ export class InboxRoutingReceipts extends RoutingReceipts {
     super();
   }
 
+  /**
+   * The inbox source of a receipt. It is not the consumer group itself: the projection runner records `(group, event)` in
+   * the inbox, inside the transaction that wraps the handler, for consumers with `idempotency: 'inbox'`. A receipt on the same
+   * key would wait for that uncommitted row while the handler waits for the receipt.
+   */
+  private source(group: string): string {
+    return `${group}:routing`;
+  }
+
   async claim(group: string, sourceEventId: string): Promise<ReceiptClaim> {
-    const result = await this.inbox.claim(group, sourceEventId);
+    const result = await this.inbox.claim(this.source(group), sourceEventId);
     switch (result.outcome) {
       case 'CLAIMED':
         return { outcome: 'claimed', attempts: result.attempts };
@@ -29,12 +38,17 @@ export class InboxRoutingReceipts extends RoutingReceipts {
   }
 
   async complete(group: string, sourceEventId: string): Promise<void> {
-    await this.inbox.markStatus(group, sourceEventId, 'PROCESSED');
+    await this.inbox.markStatus(this.source(group), sourceEventId, 'PROCESSED');
   }
 
   async fail(group: string, sourceEventId: string): Promise<void> {
     try {
-      await this.inbox.markStatus(group, sourceEventId, 'FAILED', 'routing');
+      await this.inbox.markStatus(
+        this.source(group),
+        sourceEventId,
+        'FAILED',
+        'routing',
+      );
     } catch (error) {
       // The failure path must survive the failure (L-016): the claim lease frees the event if this write is lost too.
       this.logger.warn(

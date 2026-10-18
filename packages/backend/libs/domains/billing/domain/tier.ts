@@ -21,8 +21,11 @@ export const tierOfPlanCode = (code: string): PlanTier | null =>
 export function effectiveTier(
   status: SubscriptionStatus | null,
   planCode: string | null,
+  /** False while a paid plan has not yet been paid for: the shop stays on the free tier until the first charge settles. */
+  settled = true,
 ): PlanTier {
   if (status === null || planCode === null) return 'STARTER';
   if (!ENTITLED_STATUSES.includes(status)) return 'STARTER';
+  if (!settled) return 'STARTER';
   return tierOfPlanCode(planCode) ?? 'STARTER';
 }

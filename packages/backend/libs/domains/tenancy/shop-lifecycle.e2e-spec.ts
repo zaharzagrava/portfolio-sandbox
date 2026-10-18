@@ -29,6 +29,39 @@ describe('Shop lifecycle', () => {
   afterAll(() => t.close());
   beforeEach(() => t.reset());
 
+  it('S03 G-05: a retried create with the same Idempotency-Key replays the first answer (one shop); another body with that key is 422', async () => {
+    const owner = await t.newUser();
+    const send = (body: object) =>
+      t
+        .as(owner)
+        .post('/api/shops')
+        .set('Idempotency-Key', 'j02-key-0001')
+        .send(body);
+
+    const first = await send({
+      name: 'Keyed Goods',
+      slug: 'keyed-goods',
+    }).expect(201);
+    const again = await send({ name: 'Keyed Goods', slug: 'keyed-goods' });
+    expect(again.status).toBe(201);
+    expect(again.body.id).toBe(first.body.id);
+    const mine = await t.as(owner).get('/api/shops/mine').expect(200);
+    expect(mine.body.items).toHaveLength(1);
+
+    const other = await send({ name: 'Other Goods', slug: 'other-goods' });
+    expect(other.status).toBe(422);
+    expect(other.body.code).toBe('idempotency_key_reuse');
+  });
+
+  it('S03 G-05: without a key the create works as before', async () => {
+    const owner = await t.newUser();
+    await t
+      .as(owner)
+      .post('/api/shops')
+      .send({ name: 'Plain', slug: 'plain-goods' })
+      .expect(201);
+  });
+
   it('S03 AS-01: creating a shop returns the contract body and persists shop, owner membership, directory entry and events, and writes nothing to the user', async () => {
     const owner = await t.newUser();
     const before = await t.app

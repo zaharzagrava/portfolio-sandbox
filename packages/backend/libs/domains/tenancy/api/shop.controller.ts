@@ -13,6 +13,7 @@ import {
 import { ApiTags } from '@nestjs/swagger';
 import { Firewall, User } from '@app/domains/identity';
 import type { AuthenticatedUser } from '@app/domains/identity';
+import { Idempotent } from '@app/infrastructure/idempotency';
 import { RateLimit } from '@app/infrastructure/rate-limit';
 import { ShopScoped } from './shop.guard';
 import type { ShopRequest } from './shop.guard';
@@ -27,6 +28,8 @@ export class ShopController {
 
   @Firewall()
   @RateLimit('tenancy.shop-create.user')
+  // An optional key (J02 G-05): a retry with the same key and body replays the first `201`, another body is refused.
+  @Idempotent({ required: false })
   @Post('shops')
   @HttpCode(201)
   create(@User() user: AuthenticatedUser, @Body() body: CreateShopDto) {

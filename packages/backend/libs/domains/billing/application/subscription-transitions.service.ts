@@ -71,6 +71,32 @@ export class SubscriptionTransitions {
     });
   }
 
+  /**
+   * The first charge of a plan has settled (J02 G-13): the status stays `ACTIVE` and the row does not change, but the
+   * entitlements and the shop's tier do. The status event is announced (`from` = `status`, the row's own version) and the
+   * paid plan reaches the entitlement cache only through that event (`entitlements-invalidation`), never by a direct call:
+   * the cached free tier belongs to no subscription, so the event always drops it.
+   */
+  async firstChargeSettled(current: SubscriptionView, at: Date): Promise<void> {
+    const { subscription } = current;
+    await this.outbox.append(
+      SubscriptionStatusChanged.create(
+        subscription.subjectId,
+        subscription.version,
+        {
+          subscriptionId: subscription.id,
+          subjectType: subscription.subjectType,
+          subjectId: subscription.subjectId,
+          status: subscription.status,
+          from: subscription.status,
+          planCode: current.plan.code,
+          subscriptionVersion: subscription.version,
+        },
+      ),
+    );
+    await this.tiers.sync(current, at);
+  }
+
   private async apply(
     current: SubscriptionView,
     patch: SubscriptionPatch,

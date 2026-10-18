@@ -58,6 +58,36 @@ describe('webhook settings (pure)', () => {
     expect(e.message).toMatch(/privateHostAllowance/);
   });
 
+  it('S43 G-32: allowed receiver hosts are empty by default and refused in production, naming the setting', () => {
+    expect(DEFAULT_WEBHOOK_SETTINGS.allowedReceiverHosts).toEqual([]);
+    const e = failure(
+      settings({ allowedReceiverHosts: ['127.0.0.1:18443'] }),
+      'production',
+    );
+    expect(e.setting).toBe('allowedReceiverHosts');
+    expect(() =>
+      validateWebhookSettings(
+        settings({ allowedReceiverHosts: ['127.0.0.1:18443'] }),
+        { nodeEnv: 'test' },
+      ),
+    ).not.toThrow();
+  });
+
+  it('S43 G-32: allowed receiver hosts are parsed from a comma list and must be host:port', () => {
+    expect(
+      resolveWebhookSettings(
+        { allowedReceiverHosts: '127.0.0.1:18443, receiver.test:9443' },
+        { nodeEnv: 'test' },
+      ).allowedReceiverHosts,
+    ).toEqual(['127.0.0.1:18443', 'receiver.test:9443']);
+    expect(() =>
+      resolveWebhookSettings(
+        { allowedReceiverHosts: 'receiver.test' },
+        { nodeEnv: 'test' },
+      ),
+    ).toThrow(/allowedReceiverHosts/);
+  });
+
   it.each(['test', 'development', 'staging'])(
     'S43 AS-71: outside production (%s) the allowance is honoured for the listed hosts only',
     (nodeEnv) => {

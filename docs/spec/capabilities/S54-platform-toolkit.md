@@ -127,6 +127,7 @@ Every backend app needs the same operating base: one error format, a per-request
 - **S54.B-17** Given a request with a new [`Idempotency-Key`](../terms/idempotency-key.md) repeated, when [the route requires a key](../terms/idempotent-decorator.md), then [the stored response is replayed](../terms/idempotency-stored-answer.md) with [`Idempotency-Replayed: true`](../terms/idempotency-replayed.md) and the handler runs once. [proof: S54 AS-116, S54 AS-130]
 - **S54.B-18** Given the same key with a different body, when it arrives, then it returns [`422 idempotency_key_reuse`](../terms/idempotency-key-reuse.md). [proof: S54 AS-119, S54 AS-120]
 - **S54.B-19** Given the [idempotency store](../terms/idempotency-store.md) is unreachable, when a required-key request arrives, then it returns [`503 idempotency_unavailable`](../terms/idempotency-unavailable.md) and the handler does not run. [proof: S54 AS-127]
+- **S54.B-21** Given a host listed in `allowSelfSignedHosts` (a local receiver, refused with the other escape hatches when `NODE_ENV=production`), when `safeRequest` connects over `https`, then it does not verify that host's certificate, and an unlisted host still fails `tls_error`. [proof: S54 G-32] [code: packages/backend/libs/infrastructure/net/pinned-request.ts#safeRequest]
 - **S54.B-20** Given a hostname resolves to a [private address ↗](../sw-external-terms.md#ssrf), when [`safeGet`](../terms/safe-http-client.md) runs, then it fails with [`blocked_address`](../terms/blocked-address.md). [proof: S54 AS-105, S54 AS-106]
 
 ## Lifecycles

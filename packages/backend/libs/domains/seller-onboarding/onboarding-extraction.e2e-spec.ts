@@ -2,6 +2,8 @@ import { Logger } from '@nestjs/common';
 import { v4 } from 'uuid';
 import { SecretBox } from '@app/domains/identity';
 import { LlmCallRecorder, LlmUnavailableError } from '@app/infrastructure/llm';
+import { ConsumerPauseFlags } from '@app/infrastructure/projections/consumer-pause';
+import { TaskQueue } from '@app/infrastructure/sqs/task-queue.port';
 import {
   BAD_IBAN,
   bankAnswer,
@@ -662,5 +664,30 @@ describe('Seller onboarding: AI extraction (e2e)', () => {
     t.llm.script({ text: vatAnswer() });
     await t.extraction.process(doc.id);
     expect(await t.docStatus(doc.id)).toBe('APPROVED');
+  });
+
+  describe('the extractor held by an operator (J02 AS-10)', () => {
+    it('S04 G-10: while "document-extractor" is paused a message leaves the document QUEUED and comes back later; after resume it is decided', async () => {
+      const { doc } = await withStatement();
+      const flags = t.app.get(ConsumerPauseFlags);
+      const queue = t.app.get(TaskQueue);
+      const enqueue = jest.spyOn(queue, 'enqueue');
+      await flags.pause('document-extractor', 'test', new Date().toISOString());
+      try {
+        await t.extraction.process(doc.id);
+        expect(await t.docStatus(doc.id)).toBe('QUEUED');
+        expect(t.llm.requests).toHaveLength(0);
+        expect(enqueue).toHaveBeenCalledWith(
+          'onboarding-documents',
+          { documentId: doc.id },
+          { delaySeconds: 2 },
+        );
+      } finally {
+        await flags.resume('document-extractor');
+      }
+      t.llm.script({ text: bankAnswer(GOOD_IBAN) });
+      await t.extraction.process(doc.id);
+      expect(await t.docStatus(doc.id)).toBe('APPROVED');
+    });
   });
 });

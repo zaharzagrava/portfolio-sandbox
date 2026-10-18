@@ -56,6 +56,10 @@ export interface ProductRepository
     ProductRepositoryStock,
     ProductRepositoryExternal,
     ProductRepositoryReads {
+  /** Takes the shop's create lock until the transaction ends (the plan limit is counted under it). Must run in a transaction. */
+  lockShopForCreate(shopId: string): Promise<void>;
+  /** Products of the shop that are not archived: what counts against the plan limit. */
+  countLive(shopId: string): Promise<number>;
   /** `version` 1, `status` ACTIVE, `createdAt = updatedAt = now`. */
   insert(input: NewProduct): Promise<ProductRecord>;
   /** `WHERE id = :id AND "shopId" = :shopId`; another shop's product is simply absent (III.4). */

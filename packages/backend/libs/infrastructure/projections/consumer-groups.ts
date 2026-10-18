@@ -1,6 +1,6 @@
 /**
- * Canonical consumer-group names of the buy-to-payout journey (S53 R-21). Four are the real Kafka group ids; two are
- * aliases over several real groups, so no group was renamed (renaming would drop committed offsets):
+ * Canonical consumer-group names of the journeys (S53 R-21). Some are the real Kafka group ids; the others are
+ * aliases over one or several real groups, so no group was renamed (renaming would drop committed offsets). Buy to payout:
  *  - `statements-facts` is `statements-sales`, `statements-payouts` and `statements-ledger`;
  *  - `notification-router` is every `notifications-<family>` group.
  * Pausing, replaying or reading an alias acts on all of its member groups.
@@ -19,6 +19,27 @@ export const CANONICAL_CONSUMER_GROUPS: Readonly<
     groups: ['statements-sales', 'statements-payouts', 'statements-ledger'],
   },
   'notification-router': { prefix: 'notifications-' },
+  // The seller journey (J02). Aliases again, for the same reason: a renamed group would start from the first offset.
+  'identity-seller-promotion': { groups: ['identity-shop-owner-promotion'] },
+  'tenancy-shop-lifecycle': {
+    groups: ['tenancy-verification', 'tenancy-shop-plan'],
+  },
+  'entitlements-invalidation': { groups: ['billing-entitlement-invalidation'] },
+  'search-product-index': {
+    groups: ['search-indexer', 'search-shop-state'],
+  },
+  // `webhook-router-orders`, `-products` and `-payouts` (the shop-deleted purge, `webhook-shop-deleted`, is not a router)
+  'webhook-router': { prefix: 'webhook-router-' },
+  leaderboards: {
+    groups: [
+      'seller-insights-boards',
+      'seller-insights-shops',
+      'seller-insights-products',
+    ],
+  },
+  'product-cache-invalidator': { groups: ['product-cache-invalidator'] },
+  // The document extractor is a queue worker, not a Kafka group: the name only carries the operator's hold (pause/resume).
+  'document-extractor': { groups: ['document-extractor'] },
 };
 
 /** The canonical aliases a real group answers to besides its own name (a runner checks all their pause flags). */

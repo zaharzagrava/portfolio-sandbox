@@ -39,6 +39,7 @@ import {
 } from '../domain/extraction-schema';
 import { maskIban } from '../domain/validators';
 import { EXTRACTION_CONFIG } from './extraction-config.token';
+import { ExtractorGate } from './extractor-gate';
 import { onboardingMetrics } from './onboarding-metrics';
 import { VerificationPolicyService } from './verification-policy.service';
 
@@ -81,6 +82,7 @@ export class ExtractionService {
     private readonly verification: VerificationPolicyService,
     private readonly transactions: TransactionRunner,
     @Optional() private readonly context?: RequestContext,
+    @Optional() private readonly gate?: ExtractorGate,
   ) {}
 
   private modelFor(attempt: number) {
@@ -95,6 +97,7 @@ export class ExtractionService {
    */
   async process(documentId: string): Promise<void> {
     const started = this.clock.now();
+    if (await this.gate?.holdIfPaused(documentId)) return; // held by an operator: the document stays QUEUED
     const doc = await this.claim(documentId);
     if (!doc) return; // decided, superseded, held by another worker, or unknown
 

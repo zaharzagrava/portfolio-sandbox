@@ -8,6 +8,15 @@ export const JOURNEY_CONSUMER_GROUPS = [
   'ledger-balances',
   'notification-router',
   'statements-facts',
+  // J02 (seller to first sale), canonical names of its contract
+  'identity-seller-promotion',
+  'tenancy-shop-lifecycle',
+  'entitlements-invalidation',
+  'search-product-index',
+  'webhook-router',
+  'leaderboards',
+  'product-cache-invalidator',
+  'document-extractor',
 ] as const;
 
 export const consumerStateSchema = z.enum(['RUNNING', 'PAUSED']);
