@@ -1,5 +1,5 @@
 import { Inject, Injectable, OnModuleDestroy, Optional } from '@nestjs/common';
-import { Kafka, Producer } from 'kafkajs';
+import { Kafka, Partitioners, Producer } from 'kafkajs';
 import { ApiConfigService } from '@app/common/config';
 import { PublishTimeoutError } from '@app/infrastructure/events/event-errors';
 import { createKafka } from './kafka-client.factory';
@@ -90,6 +90,8 @@ export class KafkaProducerService implements OnModuleDestroy {
     if (!pending) {
       const producer = this.clients[profile].producer({
         maxInFlightRequests: 1,
+        // Named, so kafkajs does not print its "switched default partitioner" warning (an unstructured log line)
+        createPartitioner: Partitioners.DefaultPartitioner,
         ...(profile === 'relay'
           ? { retry: { retries: 0 } }
           : { idempotent: true }),

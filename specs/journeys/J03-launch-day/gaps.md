@@ -87,3 +87,10 @@ Also true in all five domains: **no code uses the injectable `Clock`** (`libs/co
 ## Gate repairs
 
 - `launch-day.journey-spec.ts`: `admitted` was an untyped evolving array (inferred `never` under tsc); typed it `Admitted[]`. `tsc --noEmit` now passes.
+
+## Gate repairs
+
+- AS-39 failed because the API log held an unstructured kafkajs line ("KafkaJS v2.0.0 switched default partitioner"), printed whenever a producer is created without `createPartitioner`. Fixed in code: `KafkaProducerService` and `TransactionalPipeline` now pass `Partitioners.DefaultPartitioner` (the same behavior as before). The test was not changed. Not re-run: the journey suite takes about 25 minutes; `tsc --noEmit` passes.
+
+## Doctor note (J03 gate: AS-38, AS-39)
+- AS-38 passed alone (run-us5.log); in the gate run the dev API restarted under it (watch mode, kafka edits): bid replies and the metrics port failed. AS-39 saw unstructured kafkajs lines (also from before the logger fix); kafkajs lines now go through the app logger with a traceId (clientId). Re-run: AS-38 and AS-39 after stack-fix.sh api-ready.

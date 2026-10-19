@@ -1,0 +1,1134 @@
+$ NODE_OPTIONS=--experimental-vm-modules jest --config jest-journeys.json --runInBand -- test/journeys/launch-day.journey-spec.ts -t AS-39
+(node:58361) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+FAIL test/journeys/launch-day.journey-spec.ts (1093.247 s)
+  ● Console
+
+    console.log
+      [hop] J03.H1 7 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H3 5 ms (contract 1000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H4 1070 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H5 7 ms (contract 10000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H2 810 ms (contract 3000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H4 534 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H5 13 ms (contract 10000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H1 108 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H2 526 ms (contract 3000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H2 787 ms (contract 3000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H2 810 ms (contract 3000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H6 8 ms (contract 1000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H8 10431 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H1 321 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H2 266 ms (contract 3000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H7 371 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] H4 4540 ms (contract 10000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H2 270 ms (contract 3000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] H13 545 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H2 263 ms (contract 3000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H29 4864 ms (contract 15000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H29 11 ms (contract 15000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H2 268 ms (contract 3000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H4 1599 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H29 37 ms (contract 15000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H29 522 ms (contract 15000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] H4 15 ms (contract 10000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H2 259 ms (contract 3000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H1 342 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H2 524 ms (contract 3000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H2 793 ms (contract 3000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] H4 9602 ms (contract 10000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H2 518 ms (contract 3000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H2 794 ms (contract 3000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H8 7 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H8 5145 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] H4 9937 ms (contract 10000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H9 608 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H10 1475 ms (contract 10000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] H13 520 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] H13 808 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H14 14 ms (contract 10000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] H1 535 ms (contract 3000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] H1 12 ms (contract 3000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] H1 10 ms (contract 3000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] H1 9 ms (contract 3000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] H1 13 ms (contract 3000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] H3 3938 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] H3 4 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] H3 10 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] H3 11 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] H3 10 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H12 2157 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H12 8 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H12 8 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H12 7 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H12 11 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H12 22 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] H11 641 ms (contract 10000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H14 1062 ms (contract 10000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] H11 95 ms (contract 10000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H14 7 ms (contract 10000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] H11 57 ms (contract 10000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H14 5 ms (contract 10000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] H11 61 ms (contract 10000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H14 7 ms (contract 10000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] H11 64 ms (contract 10000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H14 7 ms (contract 10000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] H11 68 ms (contract 10000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H14 6 ms (contract 10000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] H11 60 ms (contract 10000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H14 18 ms (contract 10000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] H11 64 ms (contract 10000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H14 10 ms (contract 10000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] H11 60 ms (contract 10000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H14 8 ms (contract 10000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] H11 53 ms (contract 10000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H14 13 ms (contract 10000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] H11 53 ms (contract 10000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H14 6 ms (contract 10000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] H11 54 ms (contract 10000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H14 7 ms (contract 10000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] H11 72 ms (contract 10000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H14 7 ms (contract 10000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] H11 61 ms (contract 10000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H14 5 ms (contract 10000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] H11 50 ms (contract 10000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H14 7 ms (contract 10000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H14 51 ms (contract 10000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H14 1045 ms (contract 10000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H13 80 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] H4 9566 ms (contract 10000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] H11 365 ms (contract 10000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H15 114 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H15 11 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H10 40 ms (contract 10000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H8 10442 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] H13 263 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H9 634 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H9 320 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H13 10403 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H13 6 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H9 357 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] H1 37 ms (contract 3000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] H3 2134 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] H1 16 ms (contract 3000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] H3 3946 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] H1 29 ms (contract 3000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] H3 3991 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H29 19 ms (contract 15000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H29 9 ms (contract 15000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H29 6 ms (contract 15000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H12 10 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] H4 9374 ms (contract 10000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H16 10420 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H18 10 ms (contract 1000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H19 18 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H19 6 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H19 14 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H19 25 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H16 5060 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] H4 335 ms (contract 10000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H19 6 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] H4 380 ms (contract 10000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] H4 374 ms (contract 10000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H19 10 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] H4 937 ms (contract 10000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] H4 384 ms (contract 10000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H17 0 ms (contract 250 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H16 10337 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H28 5 ms (contract 10000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H23 527 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H21 4 ms (contract 1000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H22 1092 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H23 792 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H24 345 ms (contract 10000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H25 1362 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H23 268 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] H13 286 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+          at async Promise.all (index 1)
+
+    console.log
+      [hop] H13 285 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+          at async Promise.all (index 2)
+
+    console.log
+      [hop] H13 794 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+          at async Promise.all (index 0)
+
+    console.log
+      [hop] J03.H23 7 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] H13 524 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H25 60 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H24 76 ms (contract 10000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] H1 15 ms (contract 3000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H26 4384 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H26 1862 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H26 9 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H26 8 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] H1 11 ms (contract 3000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H23 295 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H23 534 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H28 530 ms (contract 10000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H23 529 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H23 526 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H24 561 ms (contract 10000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H27 1321 ms (contract 10000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H27 601 ms (contract 10000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H27 1358 ms (contract 10000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H27 87 ms (contract 10000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] H1 17 ms (contract 3000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H26 5926 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H26 1958 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] H4 917 ms (contract 10000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H23 282 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H23 538 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H24 584 ms (contract 10000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H27 1568 ms (contract 10000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H28 2069 ms (contract 10000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H28 4 ms (contract 10000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H23 290 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H23 262 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H28 6 ms (contract 10000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H23 5123 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H23 546 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H23 521 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H24 603 ms (contract 10000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] H1 1359 ms (contract 3000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] H3 4238 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H29 317 ms (contract 15000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H26 1327 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] H4 343 ms (contract 10000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H26 10468 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H1 611 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H2 272 ms (contract 3000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H4 564 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H9 611 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] H1 1057 ms (contract 3000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] H3 3973 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H12 2180 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H23 8 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H23 545 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H24 628 ms (contract 10000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] H1 525 ms (contract 3000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H23 6190 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H25 8 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H26 21 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] H4 4724 ms (contract 10000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H1 324 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H2 1039 ms (contract 3000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H2 1055 ms (contract 3000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H2 1058 ms (contract 3000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H2 794 ms (contract 3000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H2 1055 ms (contract 3000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H2 1060 ms (contract 3000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H2 810 ms (contract 3000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H2 1060 ms (contract 3000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H2 1078 ms (contract 3000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H2 794 ms (contract 3000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H2 1052 ms (contract 3000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H2 1065 ms (contract 3000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H9 337 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H23 533 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] H4 399 ms (contract 10000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H19 6 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H23 271 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+    console.log
+      [hop] J03.H24 601 ms (contract 10000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+  ● Journey J03: launch day › US5: one buyer is told the truth, and four launches at once do not cross › J03 AS-38: a booking race, a drop race, a chat, and an auction at once do not cross; every consumer catches up
+
+    expect(received).toHaveLength(expected)
+
+    Expected length: 1
+    Received length: 0
+    Received array:  []
+
+      2607 |         auction.id,
+      2608 |       );
+    > 2609 |       expect(closes).toHaveLength(1);
+           |                      ^
+      2610 |
+      2611 |       // no cross-talk: every inbox holds only its own facts
+      2612 |       for (const b of bookers) {
+
+      at Object.<anonymous> (test/journeys/launch-day.journey-spec.ts:2609:22)
+
+  ● Journey J03: launch day › US6: every hop is observable, and the code stays on approved paths › J03 AS-39: the counters moved, every group is at rest, and no secret or personal datum is in the log
+
+    BLOCKED: the metrics endpoint http://localhost:9464/metrics is not reachable (fetch failed); set METRICS_URL
+
+      10 | export async function readMetrics(): Promise<MetricSnapshot> {
+      11 |   const response = await fetch(METRICS_URL).catch((error: Error) => {
+    > 12 |     throw new Error(
+         |           ^
+      13 |       `BLOCKED: the metrics endpoint ${METRICS_URL} is not reachable (${error.message}); set METRICS_URL`,
+      14 |     );
+      15 |   });
+
+      at test/journeys/support/observability.ts:12:11
+      at readMetrics (test/journeys/support/observability.ts:11:20)
+      at Object.<anonymous> (test/journeys/launch-day.journey-spec.ts:2637:23)
+
+[ELIFECYCLE] Command failed.

@@ -1,9 +1,10 @@
 import { Inject, Injectable, Logger, Optional } from '@nestjs/common';
-import type {
-  Consumer,
-  EachBatchPayload,
-  KafkaMessage,
-  Producer,
+import {
+  Partitioners,
+  type Consumer,
+  type EachBatchPayload,
+  type KafkaMessage,
+  type Producer,
 } from 'kafkajs';
 import { ApiConfigService } from '@app/common/config';
 import { createKafka } from '@app/infrastructure/kafka/kafka-client.factory';
@@ -88,6 +89,7 @@ export class TransactionalPipeline {
       transactionalId: spec.transactionalId,
       idempotent: true,
       maxInFlightRequests: 1,
+      createPartitioner: Partitioners.DefaultPartitioner,
     });
     const consumer: Consumer = kafka.consumer({
       groupId: spec.groupId,

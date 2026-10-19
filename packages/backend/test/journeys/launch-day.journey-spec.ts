@@ -67,6 +67,7 @@ import { waitFor } from '../utils/async-helpers';
 import {
   apiLogPath,
   logLinesSince,
+  logMark,
   metricValue,
   readMetrics,
 } from './support/observability';
@@ -82,8 +83,10 @@ describe('Journey J03: launch day', () => {
   let admin: JourneyClient;
   let control: ControlSurface;
   let fixture: LaunchFixture;
+  let logStart = 0;
 
   beforeAll(async () => {
+    logStart = logMark(apiLogPath());
     admin = await adminClient();
     control = new ControlSurface(admin);
     await control.restoreAll(); // a known stack: consumers running, clock real
@@ -2681,7 +2684,7 @@ describe('Journey J03: launch day', () => {
 
       const log = apiLogPath();
       if (log) {
-        const lines = logLinesSince(log, 0);
+        const lines = logLinesSince(log, logStart);
         const text = lines.join('\n');
         // no bearer or admission token, no e-mail address of a journey user, no comment text, no card reference
         expect(text).not.toMatch(
