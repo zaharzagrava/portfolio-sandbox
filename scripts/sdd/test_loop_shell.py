@@ -139,6 +139,18 @@ class LoopShell(unittest.TestCase):
         out = open(os.path.join(d, 'flaky-specs.md')).read()
         self.assertIn('seller-live.spec.ts:8:7', out); self.assertIn('tests/a.spec.ts', out); self.assertNotIn('454 passed', out)
 
+    def test_unattended_rules_survive_bash_quoting(self):
+        """2026-10-19: a single quote inside the single-quoted rules ended the string, bash ran a word of the text as a command, and the loop never started."""
+        text = open(os.path.join(ROOT, 'scripts/sdd/implement-specs.sh'), encoding='utf-8').read()
+        m = re.search(r"^UNATTENDED_RULES='.*?'\n", text, re.M | re.S)
+        self.assertTrue(m)
+        r = subprocess.run(['bash', '-c', m.group(0) + '\nprintf %s "$UNATTENDED_RULES"'], capture_output=True, text=True)
+        self.assertEqual(r.stderr, '', r.stderr)
+        for needle in ('wait-for.sh', 'Never start a command in the background', 'api-restart', 'Never answer needs human for that.'):
+            self.assertIn(needle, r.stdout)
+        # nothing may follow the closing quote on that line except a newline: no stray words that bash would run
+        self.assertTrue(m.group(0).rstrip('\n').endswith("'"))
+
 
 if __name__ == '__main__':
     unittest.main()
