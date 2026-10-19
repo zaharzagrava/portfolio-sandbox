@@ -249,9 +249,10 @@ export async function inviteAndAccept(
   owner: JourneyClient,
   shopId: string,
   staff: JourneyClient,
+  role: 'ADMIN' | 'STAFF' | 'VIEWER' = 'STAFF',
 ): Promise<void> {
   const invited = await owner.post(`/api/shops/${shopId}/invites`, {
-    body: { email: staff.email, role: 'STAFF' },
+    body: { email: staff.email, role },
   });
   if (invited.status !== 201)
     throw new Error(

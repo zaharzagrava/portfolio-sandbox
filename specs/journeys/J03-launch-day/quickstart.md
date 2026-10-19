@@ -48,5 +48,6 @@ Statistical and wall-clock criteria need many runs; one journey run does not pro
 - **SC-006** (timing part): winner's order visible within 10 s of the end (p99): loop AS-31.
 - **SC-008**: lag back to 0 within 15 s of resuming (p99): loop AS-06, AS-07, AS-18, AS-25, AS-36.
 - **SC-009**: clean stack to green in under 15 minutes with 0 fixed sleeps: `scripts/qa/fresh-run.sh`, then `pnpm test:journeys`, grep for sleeps.
+- **AS-39** (metrics and log redaction): needs the metrics endpoint of the API (`METRICS_URL`, default `http://localhost:9464/metrics`) and the API log (`API_LOG`); the stack of the implement pass exposes neither, so the test reports BLOCKED. Run it after the whole file has run, with both reachable.
 
 SC-001, SC-002 and SC-007 are asserted in every run (AS-11, AS-38, AS-03 and others); their "100% of runs" wording is only as strong as the runs made.

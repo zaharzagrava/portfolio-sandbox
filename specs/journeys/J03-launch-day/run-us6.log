@@ -1,0 +1,26 @@
+$ NODE_OPTIONS=--experimental-vm-modules jest --config jest-journeys.json --runInBand -t AS-39
+(node:41727) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+FAIL test/journeys/launch-day.journey-spec.ts (28.803 s)
+  ● Journey J03: launch day › US6: every hop is observable, and the code stays on approved paths › J03 AS-39: the counters moved, every group is at rest, and no secret or personal datum is in the log
+
+    BLOCKED: the metrics endpoint http://localhost:9464/metrics is not reachable (fetch failed); set METRICS_URL
+
+      10 | export async function readMetrics(): Promise<MetricSnapshot> {
+      11 |   const response = await fetch(METRICS_URL).catch((error: Error) => {
+    > 12 |     throw new Error(
+         |           ^
+      13 |       `BLOCKED: the metrics endpoint ${METRICS_URL} is not reachable (${error.message}); set METRICS_URL`,
+      14 |     );
+      15 |   });
+
+      at test/journeys/support/observability.ts:12:11
+      at readMetrics (test/journeys/support/observability.ts:11:20)
+      at Object.<anonymous> (test/journeys/launch-day.journey-spec.ts:2408:23)
+
+Test Suites: 1 failed, 4 skipped, 1 of 5 total
+Tests:       1 failed, 123 skipped, 124 total
+Snapshots:   0 total
+Time:        30.151 s, estimated 205 s
+Ran all test suites with tests matching "AS-39".
+[ELIFECYCLE] Command failed with exit code 1.

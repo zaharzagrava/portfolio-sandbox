@@ -87,6 +87,19 @@ describe('Live stream: comment ingest, moderation and mutes', () => {
     });
   });
 
+  it('S23 AS-15: the time inside a comment id is its server time, also after the clock moved back (the history finds its partition by it)', async () => {
+    const { stream } = await liveStreamWithSeller();
+    const viewer = await t.viewer();
+    await t.comment(stream.id, viewer, 'Ahead').expect(201);
+    t.clock.set(new Date(t.clock.nowMs() - 2_000));
+    const other = await t.viewer();
+    const back = expectContract(
+      liveCommentSchema,
+      (await t.comment(stream.id, other, 'Behind').expect(201)).body,
+    );
+    expect(parseInt(back.id.replace(/-/g, '').slice(0, 12), 16)).toBe(back.at);
+  });
+
   it('S23 AS-15: the comment reaches the stream’s viewers in the next window', async () => {
     const { stream } = await liveStreamWithSeller();
     const watcher = await t.connect(stream.id);

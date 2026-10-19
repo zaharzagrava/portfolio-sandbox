@@ -300,6 +300,7 @@ interviews) until its status says so. The implementation loop appends here (rule
 | J03 | SC-006: winner order visible within 10 s of auction end (p99) | same file (loop AS-31) | not run |
 | J03 | SC-008: lag back to 0 within 15 s of resuming a paused consumer (p99) | same file (loop AS-06, AS-07, AS-18, AS-25, AS-36) | not run |
 | J03 | SC-009: clean stack to green in under 15 minutes, 0 fixed sleeps | same file (fresh-run.sh then pnpm test:journeys, grep for sleeps) | not run |
+| J03 | AS-39 (FR-030): the launch-day counters moved and no secret or personal datum is in the API log | specs/journeys/J03-launch-day/quickstart.md (Ops artifacts: start the stack with the metrics port open, then `METRICS_URL=... pnpm test:journeys -t "AS-39"` after the whole file ran) | not run |
 | J04 | SC-001: 60-row file visible within 60 s of upload end | `specs/journeys/J04-catalog-sync-to-search/quickstart.md`, "Ops artifacts" (loop AS-01) | not run |
 | J04 | SC-002: Shopify variants visible within 60 s of connect | same file (loop AS-05) | not run |
 | J04 | SC-003: availability and Shopify stock within 10 s of a till sale | same file (loop AS-10) | not run |

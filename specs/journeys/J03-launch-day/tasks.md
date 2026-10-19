@@ -71,45 +71,45 @@
 
 **Goal**: AS-27..AS-36. **Independent test**: `-t "US4"`.
 
-- [ ] T040 [US4] Write failing journey tests AS-27, AS-28, AS-30 (create ×1/×5 with key, stock 2 once, open at start, second create 409, no entitlement 403; three bids, one outbid item per change of leader, retried bid; anti-sniping extends end, original close no-op).
-- [ ] T041 [US4] Verify/fix in `libs/domains/auctions/`: durable acknowledged bids, `auction.leader_changed` per actual leader change, full event vocabulary (`created`, `opened`, `bid_placed`, `second_chance_offered`, `sold`, `unsold`, `cancelled`; `closed` with `status`, `reason`, `currency`, `auctionVersion`), `Idempotency-Key` on create/bid, problem codes, R1 `getRole` for shill guard (G-20, G-23, G-25).
-- [ ] T042 [US4] Write failing journey tests AS-31, AS-32, AS-35 (clock to end → `CLOSED`, winner's order `RESERVED` at price, seller sees `winnerOrderId`, one `auction.won`, stock still 2; sweep + job ×3 → one `closed`, one order, one notice; reserve not met → `UNSOLD(reserve_not_met)`, no order, stock back).
-- [ ] T043 [US4] Verify/fix close in `libs/domains/auctions/infra/auction.jobs.ts`: winner order only through `createFixedPriceOrder` after the closing transaction (appends `order.reserved`), no `BisOrder*` writes or `OrderService` import, stock only via catalog command, `auctions.sweep-due` handler; delete the post-close `setTimeout`; migrate direct transactions (G-21, G-24, G-31).
-- [ ] T044 [US4] Write failing journey tests AS-29, AS-33, AS-34, AS-36 (staff bid 403; leader loses membership → `UNSOLD(leader_ineligible)`, unit back, no award notice; winner pays via J01 `purchase.ts` → `SOLD`, owner items, second payment no change; +48 h `SECOND_CHANCE`, runner-up order and notice, pay → `SOLD`, or +24 h `UNSOLD` stock back once; pause `auctions-order-results`, pay, resume, replay, late `order.paid` after offer).
-- [ ] T045 [US4] Verify/fix consumer `auctions-order-results` (group on `orders.events`) in `libs/domains/auctions/infra/auction-settlement.consumer.ts`: inbox dedupe, version guard, zod, DLQ; event-driven second chance emitting `auction.second_chance_offered`; `SOLD` only from `order.paid`; settlement order raises `shop.order_received` (G-22).
+- [X] T040 [US4] Write failing journey tests AS-27, AS-28, AS-30 (create ×1/×5 with key, stock 2 once, open at start, second create 409, no entitlement 403; three bids, one outbid item per change of leader, retried bid; anti-sniping extends end, original close no-op).
+- [X] T041 [US4] Verify/fix in `libs/domains/auctions/`: durable acknowledged bids, `auction.leader_changed` per actual leader change, full event vocabulary (`created`, `opened`, `bid_placed`, `second_chance_offered`, `sold`, `unsold`, `cancelled`; `closed` with `status`, `reason`, `currency`, `auctionVersion`), `Idempotency-Key` on create/bid, problem codes, R1 `getRole` for shill guard (G-20, G-23, G-25).
+- [X] T042 [US4] Write failing journey tests AS-31, AS-32, AS-35 (clock to end → `CLOSED`, winner's order `RESERVED` at price, seller sees `winnerOrderId`, one `auction.won`, stock still 2; sweep + job ×3 → one `closed`, one order, one notice; reserve not met → `UNSOLD(reserve_not_met)`, no order, stock back).
+- [X] T043 [US4] Verify/fix close in `libs/domains/auctions/infra/auction.jobs.ts`: winner order only through `createFixedPriceOrder` after the closing transaction (appends `order.reserved`), no `BisOrder*` writes or `OrderService` import, stock only via catalog command, `auctions.sweep-due` handler; delete the post-close `setTimeout`; migrate direct transactions (G-21, G-24, G-31).
+- [X] T044 [US4] Write failing journey tests AS-29, AS-33, AS-34, AS-36 (staff bid 403; leader loses membership → `UNSOLD(leader_ineligible)`, unit back, no award notice; winner pays via J01 `purchase.ts` → `SOLD`, owner items, second payment no change; +48 h `SECOND_CHANCE`, runner-up order and notice, pay → `SOLD`, or +24 h `UNSOLD` stock back once; pause `auctions-order-results`, pay, resume, replay, late `order.paid` after offer).
+- [X] T045 [US4] Verify/fix consumer `auctions-order-results` (group on `orders.events`) in `libs/domains/auctions/infra/auction-settlement.consumer.ts`: inbox dedupe, version guard, zod, DLQ; event-driven second chance emitting `auction.second_chance_offered`; `SOLD` only from `order.paid`; settlement order raises `shop.order_received` (G-22).
 
 ## Phase 6: User Story 3 — Live stream (P2)
 
 **Goal**: AS-19..AS-26. **Independent test**: `-t "US3"`.
 
-- [ ] T046 [US3] Write failing journey tests AS-19, AS-20, AS-21, AS-22 (snapshot `SCHEDULED`, start ×20 → `LIVE`, one `stream_started` on the tap, non-member 404; comment batch/snapshot `recent`/history once; same `clientId` ×5 one 201, reuse 422; pin own product, foreign/archived/unknown 422, read-only 403, unpin → viewer event `{version, unpinned: true}`).
-- [ ] T047 [US3] Verify/fix in `libs/domains/launch-events/` live code (staff routes under `/shops/:shopId/live/...` with `ShopScoped('products.write')`, R1 `ShopAccessService.getRole`): stream start/end via outbox in the status transaction, comment durable-then-visible with `clientId`, `503 live_unavailable`, durable versioned pin with catalog product check, viewer connection subscribes before snapshot and watches `SCHEDULED` streams without the Redis `live:active` set (G-10, G-11, G-13, G-14).
-- [ ] T048 [US3] Write failing journey tests AS-23, AS-24, AS-25, AS-26 (removal ×20, one `comment_removed` on the tap; `[[toxic]]` auto removal once; pause `live-comments-history`, post/remove, resume, replay, removal-first order; end ×2 → connection closes, 409s, one `stream_ended`, stats stop, no notice).
-- [ ] T049 [US3] Fix `live-comments-history` (idempotent upsert with `removed` marker in any order, DLQ for invalid payloads, `GET /live/:id/history`) and `live-moderation` dedupe in `libs/domains/launch-events/infra/` (G-12); `launch-events.live-reconcile` handler.
+- [X] T046 [US3] Write failing journey tests AS-19, AS-20, AS-21, AS-22 (snapshot `SCHEDULED`, start ×20 → `LIVE`, one `stream_started` on the tap, non-member 404; comment batch/snapshot `recent`/history once; same `clientId` ×5 one 201, reuse 422; pin own product, foreign/archived/unknown 422, read-only 403, unpin → viewer event `{version, unpinned: true}`).
+- [X] T047 [US3] Verify/fix in `libs/domains/launch-events/` live code (staff routes under `/shops/:shopId/live/...` with `ShopScoped('products.write')`, R1 `ShopAccessService.getRole`): stream start/end via outbox in the status transaction, comment durable-then-visible with `clientId`, `503 live_unavailable`, durable versioned pin with catalog product check, viewer connection subscribes before snapshot and watches `SCHEDULED` streams without the Redis `live:active` set (G-10, G-11, G-13, G-14).
+- [X] T048 [US3] Write failing journey tests AS-23, AS-24, AS-25, AS-26 (removal ×20, one `comment_removed` on the tap; `[[toxic]]` auto removal once; pause `live-comments-history`, post/remove, resume, replay, removal-first order; end ×2 → connection closes, 409s, one `stream_ended`, stats stop, no notice).
+- [X] T049 [US3] Fix `live-comments-history` (idempotent upsert with `removed` marker in any order, DLQ for invalid payloads, `GET /live/:id/history`) and `live-moderation` dedupe in `libs/domains/launch-events/infra/` (G-12); `launch-events.live-reconcile` handler.
 
 ## Phase 7: User Story 5 — Inbox tells the truth, all at once (P1)
 
 **Goal**: AS-37, AS-38. **Independent test**: `-t "US5"`.
 
-- [ ] T050 [US5] Write failing journey test AS-37 (one buyer through booking, drop, auction: inbox content and order, `unread` equals unread items, read-all, SSE `user:<id>` counts); own fixtures.
-- [ ] T051 [US5] Write failing journey test AS-38 (concurrent miniatures of booking, drop, chat, auction; invariants; no cross-talk; all groups `lag 0`) and fix any cross-domain defect found in the owning domain.
+- [X] T050 [US5] Write failing journey test AS-37 (one buyer through booking, drop, auction: inbox content and order, `unread` equals unread items, read-all, SSE `user:<id>` counts); own fixtures.
+- [X] T051 [US5] Write failing journey test AS-38 (concurrent miniatures of booking, drop, chat, auction; invariants; no cross-talk; all groups `lag 0`) and fix any cross-domain defect found in the owning domain.
 
 ## Phase 8: User Story 6 — Observable, boundaries hold (P3)
 
 **Goal**: AS-39, AS-40. **Independent test**: `-t "US6"`.
 
-- [ ] T052 [US6] Write failing journey test AS-39 (metrics counters moved; every group `RUNNING`, `lag 0`; log redaction scan finds no token, key, e-mail or maximum bid, FR-030).
-- [ ] T053 [US6] Fix metrics/log redaction gaps in the owning domains found by AS-39; document each group's idempotency mechanism in its spec page (G-29).
-- [ ] T054 [US6] Write journey test AS-40 running the static gates over the five domains (`check:boundaries`, `check:table-ownership --strict`, `check:module-graph`, `check:model-registry`, `tsc --noEmit`, ESLint).
-- [ ] T055 [US6] Remove cross-domain coupling in `launch-events`, `live`, `auctions`, `orders`: no `ShopMembership`/`KeyStore`/`BisOrderModel`/`Product` imports, no foreign keys `LaunchEvent.shopId`/`Auction.shopId`, barrels export contracts only; no orders → launch-events edge (D-7, D-8, D-11, D-12, G-31).
+- [X] T052 [US6] Write failing journey test AS-39 (metrics counters moved; every group `RUNNING`, `lag 0`; log redaction scan finds no token, key, e-mail or maximum bid, FR-030).
+- [X] T053 [US6] Fix metrics/log redaction gaps in the owning domains found by AS-39; document each group's idempotency mechanism in its spec page (G-29).
+- [X] T054 [US6] Write journey test AS-40 running the static gates over the five domains (`check:boundaries`, `check:table-ownership --strict`, `check:module-graph`, `check:model-registry`, `tsc --noEmit`, ESLint).
+- [X] T055 [US6] Remove cross-domain coupling in `launch-events`, `live`, `auctions`, `orders`: no `ShopMembership`/`KeyStore`/`BisOrderModel`/`Product` imports, no foreign keys `LaunchEvent.shopId`/`Auction.shopId`, barrels export contracts only; no orders → launch-events edge (D-7, D-8, D-11, D-12, G-31).
 
 ## Phase 9: Polish and documentation
 
-- [ ] T056 Replace remaining `Date.now()` in production code of the five domains and the `JobWorker` due check with the injected `Clock` (G-01); `grep -rn "setTimeout\|sleep(" test/journeys` must stay empty.
-- [ ] T057 Count direct `sequelize.transaction` sites in the five domains, migrate each touched one to `TransactionRunner.run`/`@Transactional` and delete its `// S54 T037 audit` comment; count must not rise.
-- [ ] T058 Sibling-spec follow-ups: add `## Sibling-spec follow-ups` to `gaps.md` with bullets `- **S10**: consume voucher command, own Voucher table/route`, `- **S22**: ticket status carries admittedAt`, `- **S23**: classifier double`, `- **S28**: new rows flash_sale.sold_out/start_failed`, `- **S53**: event tap, queue consumers in consumer API`, `- **S49**: four job types`, and `- **W03**: align popover to topic user:<id>` (G-28); add `## Spec changes` there for any signed page changed.
-- [ ] T059 Ops artifacts: in `quickstart.md` keep the "Ops artifacts" list and add one row each to `ROOT/specs/UNVERIFIED.md` (spec J03, criterion, how to run, status `not run`) for SC-003, SC-004, SC-005, SC-006 (timing part), SC-008, SC-009; never describe them as verified.
-- [ ] T060 Final living-spec pass: `python3 scripts/livespec/check.py` clean for all edited pages (S10, S11, S21, S22, S23, S28, S49, S53).
+- [X] T056 Replace remaining `Date.now()` in production code of the five domains and the `JobWorker` due check with the injected `Clock` (G-01); `grep -rn "setTimeout\|sleep(" test/journeys` must stay empty.
+- [X] T057 Count direct `sequelize.transaction` sites in the five domains, migrate each touched one to `TransactionRunner.run`/`@Transactional` and delete its `// S54 T037 audit` comment; count must not rise.
+- [X] T058 Sibling-spec follow-ups: add `## Sibling-spec follow-ups` to `gaps.md` with bullets `- **S10**: consume voucher command, own Voucher table/route`, `- **S22**: ticket status carries admittedAt`, `- **S23**: classifier double`, `- **S28**: new rows flash_sale.sold_out/start_failed`, `- **S53**: event tap, queue consumers in consumer API`, `- **S49**: four job types`, and `- **W03**: align popover to topic user:<id>` (G-28); add `## Spec changes` there for any signed page changed.
+- [X] T059 Ops artifacts: in `quickstart.md` keep the "Ops artifacts" list and add one row each to `ROOT/specs/UNVERIFIED.md` (spec J03, criterion, how to run, status `not run`) for SC-003, SC-004, SC-005, SC-006 (timing part), SC-008, SC-009; never describe them as verified.
+- [X] T060 Final living-spec pass: `python3 scripts/livespec/check.py` clean for all edited pages (S10, S11, S21, S22, S23, S28, S49, S53).
 
 ## Dependencies
 

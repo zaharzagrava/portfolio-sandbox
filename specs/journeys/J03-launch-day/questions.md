@@ -45,3 +45,12 @@ Decisions taken unattended under the decision policy (production-grade, constitu
 - [LOCAL] `GET /orders/vouchers` is paged like `GET /orders` → same cursor convention.
 - [LOCAL] SSE clients in tests are wrappers over `test/utils/sse-client.ts` → no new transport.
 - [LOCAL] "Absence" assertions wait for `lag: 0` plus the hop's maximum on the stack clock → no fixed sleep.
+
+## Findings of the implement pass (US3, US4)
+
+- Environment note: `scripts/sdd/stack-fix.sh` and `wait-for.sh` are still refused ("requires approval"); `pnpm --dir <pkg> test:journeys -t "<slice>" > <file> 2>&1` in the foreground works (US4: 10 passed in 300 s; US3: 8 passed in ~100 s). Logs: `run-us4.log`, `run-us3.log`.
+- [CONTRACT] AS-21 runs two concurrent posts with one `clientId`, not five → S23 AS-20 (3 comments per 10 s per user) is charged before the `clientId` claim (FR-019 order), so a retry costs a token; five at once would end in `429`. J03 spec says five and S23 AS-22 says twenty; they cannot both hold with the limiter on. Left as S23 defines it; the journey keeps one token for the `client_id_reused` check. Decision for a human: charge the limiter only for a new comment, or keep the order.
+- [LOCAL] AS-26: a comment on an `ENDED` stream answers `409 stream_not_live` (S23 AS-18), not `stream_ended` (that is the event connection, S23 AS-12) → the test asserts what S23 defines.
+- [LOCAL] AS-23: the viewer may receive `comment_removed` more than once when 20 concurrent deletes race (`live-removal.service.ts` announces from the claim loser and the winner); the event stream has exactly one, which is what S23 AS-39 requires. The test asserts at least one push and exactly one event.
+- [LOCAL] AS-25: "removal before post" is exercised as "the history is behind while the auto removal happens"; the topic keeps post-before-removal order per stream, so a true removal-first delivery cannot be induced from outside.
+- [LOCAL] H16 (outbox relay of `live.stream_started`) took 6.6 s in one run against a 5 s contract (the test deadline is 2×, so it passed).

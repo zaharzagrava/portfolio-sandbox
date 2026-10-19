@@ -1,10 +1,16 @@
+import { spawnSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
+import { resolve } from 'node:path';
 import {
   auctionMemberSchema,
   auctionPublicSchema,
   bidResultSchema,
+  JOURNEY_CONSUMER_GROUPS,
+  LAUNCH_DAY_CONSUMER_GROUPS,
   flashSaleMemberSchema,
   flashSalePublicSchema,
+  liveHistoryPageSchema,
+  liveSnapshotSchema,
   orderPageSchema,
   productSearchResponseSchema,
   voucherPageSchema,
@@ -13,6 +19,9 @@ import {
   type BidResult,
   type FlashSaleMember,
   type FlashSalePublic,
+  type LiveComment,
+  type LiveSnapshotDto,
+  type LiveStreamDto,
   type Voucher,
 } from '@marketplace-sandbox/contracts';
 import { ControlSurface, adminClient } from './support/control-surface';
@@ -28,7 +37,13 @@ import {
 import { getOrder, payOrder, waitOrderStatus } from './support/purchase';
 import { LaunchFixture } from './support/launch-fixture';
 import { countExactlyOnce, eventTap, tapUntil } from './support/event-tap';
-import { expectEvent, sseClient, topics } from './support/sse-client';
+import {
+  expectEvent,
+  liveViewer,
+  sseClient,
+  topics,
+  type OpenStream,
+} from './support/sse-client';
 import {
   admit,
   confirmHold,
@@ -49,6 +64,12 @@ import {
 } from './support/inbox';
 import { staysTrue, waitForContract } from './support/wait-for-contract';
 import { waitFor } from '../utils/async-helpers';
+import {
+  apiLogPath,
+  logLinesSince,
+  metricValue,
+  readMetrics,
+} from './support/observability';
 
 /**
  * Journey J03: launch day. Black box: public HTTP, SSE, the control surface and the read-only event tap; every test creates
@@ -83,7 +104,9 @@ describe('Journey J03: launch day', () => {
       schema: voucherPageSchema,
     });
     if (reply.status !== 200)
-      throw new Error(`vouchers: ${reply.status} ${JSON.stringify(reply.body)}`);
+      throw new Error(
+        `vouchers: ${reply.status} ${JSON.stringify(reply.body)}`,
+      );
     return reply.body.items;
   };
 
@@ -137,7 +160,9 @@ describe('Journey J03: launch day', () => {
       body: { expectedVersion: current.body.version, quantity },
     });
     if (patched.status !== 200)
-      throw new Error(`set stock: ${patched.status} ${JSON.stringify(patched.body)}`);
+      throw new Error(
+        `set stock: ${patched.status} ${JSON.stringify(patched.body)}`,
+      );
   };
 
   const newBuyers = async (n: number, label = 'buyer') => {
@@ -175,10 +200,7 @@ describe('Journey J03: launch day', () => {
         expect(joined.position).toBeGreaterThanOrEqual(1);
         tickets.push(joined.ticket);
       }
-      const queuePush = await sseClient(
-        buyers[0],
-        topics.queue(tickets[0]),
-      );
+      const queuePush = await sseClient(buyers[0], topics.queue(tickets[0]));
 
       // sales open: the clock passes salesOpenAt and the scheduled job opens the event
       await advanceKeepingQueue(
@@ -240,12 +262,16 @@ describe('Journey J03: launch day', () => {
         'admitted push',
       );
       expect(pushed.data.admissionToken).toBe(first?.admissionToken);
-      expect(queuePush.events.filter((e) => e.event === 'admitted')).toHaveLength(
-        1,
-      );
+      expect(
+        queuePush.events.filter((e) => e.event === 'admitted'),
+      ).toHaveLength(1);
       queuePush.close();
 
-      b1 = { buyer: buyers[0], ticket: tickets[0], token: first!.admissionToken! };
+      b1 = {
+        buyer: buyers[0],
+        ticket: tickets[0],
+        token: first!.admissionToken!,
+      };
       const key = 'k-j03-0001-' + randomUUID();
       // the map is built by the first read; a delta is published only for a map that exists
       await seatMap(buyers[1], eventId);
@@ -345,7 +371,9 @@ describe('Journey J03: launch day', () => {
     /** Unread items are exactly the unread items of the inbox (the buyer's welcome notice is one of them). */
     const expectUnreadMatchesInbox = async (client: JourneyClient) => {
       const items = await inbox(client);
-      expect(await unreadCount(client)).toBe(items.filter((i) => !i.read).length);
+      expect(await unreadCount(client)).toBe(
+        items.filter((i) => !i.read).length,
+      );
     };
 
     it('J03 AS-03: a retried confirm, with the same key and with ten others at once, books once', async () => {
@@ -353,7 +381,9 @@ describe('Journey J03: launch day', () => {
       const hold = await mustHold(b2, eventId, [7]);
       const key = randomUUID();
       const same = await Promise.all(
-        Array.from({ length: 5 }, () => confirmHold(b2.buyer, hold.holdId, key)),
+        Array.from({ length: 5 }, () =>
+          confirmHold(b2.buyer, hold.holdId, key),
+        ),
       );
       const others = await Promise.all(
         Array.from({ length: 10 }, () => confirmHold(b2.buyer, hold.holdId)),
@@ -363,7 +393,9 @@ describe('Journey J03: launch day', () => {
         (r) => r.status === 200 || r.status === 201,
       );
       expect(ok.length).toBeGreaterThanOrEqual(1);
-      for (const r of [...same, ...others, after].filter((r) => !ok.includes(r)))
+      for (const r of [...same, ...others, after].filter(
+        (r) => !ok.includes(r),
+      ))
         expect(problem(r.body).code).toBe('idempotency_in_flight'); // a copy that met the first one running
       expect(after.status).toBe(201);
       const ids = new Set(
@@ -384,7 +416,8 @@ describe('Journey J03: launch day', () => {
       await expectUnreadMatchesInbox(b2.buyer);
       await waitForContract(
         'J03.H5',
-        async () => ((await vouchersOf(b2.buyer, eventId)).length ? true : null),
+        async () =>
+          (await vouchersOf(b2.buyer, eventId)).length ? true : null,
         'voucher of B2',
       );
       expect(await vouchersOf(b2.buyer, eventId)).toHaveLength(1);
@@ -478,7 +511,9 @@ describe('Journey J03: launch day', () => {
           type: 'launchevents.booking_confirmed',
           key: event.id,
         })
-      ).filter((m) => (m.payload as { holdId?: string }).holdId === hold.holdId);
+      ).filter(
+        (m) => (m.payload as { holdId?: string }).holdId === hold.holdId,
+      );
       expect(confirmedHolds).toEqual([]);
 
       const b5 = await admittedBuyer(event.id, 'b5');
@@ -495,13 +530,15 @@ describe('Journey J03: launch day', () => {
         await control.pause('notification-router');
         const hold = await mustHold(b6, eventId, [20]);
         await mustConfirm(b6.buyer, hold.holdId);
-        expect((await myBookings(b6.buyer, eventId)).map((b) => b.seat)).toEqual([
-          20,
-        ]);
+        expect(
+          (await myBookings(b6.buyer, eventId)).map((b) => b.seat),
+        ).toEqual([20]);
         await staysTrue(
           'J03.H4',
           async () =>
-            expect(await itemsOf(b6.buyer, 'booking.confirmed')).toHaveLength(0),
+            expect(await itemsOf(b6.buyer, 'booking.confirmed')).toHaveLength(
+              0,
+            ),
           'no notice while the group is paused',
         );
         await waitForContract(
@@ -541,7 +578,8 @@ describe('Journey J03: launch day', () => {
       }
       await waitForContract(
         'J03.H29',
-        async () => ((await vouchersOf(b7.buyer, eventId)).length ? true : null),
+        async () =>
+          (await vouchersOf(b7.buyer, eventId)).length ? true : null,
         'voucher after the resume',
       );
       // pause and resume again: a message the queue delivers a second time makes no second voucher
@@ -625,7 +663,11 @@ describe('Journey J03: launch day', () => {
       expect(problem(refusedConfirm.body).code).toBe('EVENT_CLOSED');
       await waitFor(
         async () => !(await seatMap(admin, eventId)).taken.includes(35),
-        { timeoutMs: 60_000, intervalMs: 1_000, description: 'active holds freed' },
+        {
+          timeoutMs: 60_000,
+          intervalMs: 1_000,
+          description: 'active holds freed',
+        },
       );
       const closedEvents = await tapUntil('J03.H8', 'launch_events.events', {
         type: 'launchevents.event_closed',
@@ -664,7 +706,9 @@ describe('Journey J03: launch day', () => {
         schema: flashSalePublicSchema,
       });
       if (reply.status !== 200)
-        throw new Error(`public sale: ${reply.status} ${JSON.stringify(reply.body)}`);
+        throw new Error(
+          `public sale: ${reply.status} ${JSON.stringify(reply.body)}`,
+        );
       return reply.body as FlashSalePublic;
     };
     const stockNow = (seller: SellerFixture, productId: string) =>
@@ -918,7 +962,10 @@ describe('Journey J03: launch day', () => {
         await itemsOf(main.seller.staff!, 'shop.flash_sale_sold_out'),
       ).toHaveLength(0);
       // the late buyer sold the sale out a second time (AS-14): still one item
-      await control.replay('notification-router', new Date((await fixture.nowMs()) - 6 * 3_600_000));
+      await control.replay(
+        'notification-router',
+        new Date((await fixture.nowMs()) - 6 * 3_600_000),
+      );
       await control.waitCaughtUp('notification-router');
       await staysExactly(
         'J03.H13',
@@ -932,7 +979,12 @@ describe('Journey J03: launch day', () => {
       // the late buyer's hold lapses, the window ends, the reconcile follows
       await control.advance(3_600 + 1_200);
       await waitOrderStatus(lateBuyer, lateOrder, 'CANCELLED', 'H11');
-      const reconciled = await waitSale('J03.H15', main.seller, main.sale.id, 'RECONCILED');
+      const reconciled = await waitSale(
+        'J03.H15',
+        main.seller,
+        main.sale.id,
+        'RECONCILED',
+      );
       expect(reconciled.stats).toBeTruthy();
       await waitForContract(
         'J03.H15',
@@ -988,9 +1040,9 @@ describe('Journey J03: launch day', () => {
       expect(orderIds.size).toBe(1);
       const orders = await buyer.get<{ items: unknown[] }>('/api/orders');
       expect(orders.body.items).toHaveLength(1);
-      expect(
-        (await saleOf(drop.seller, drop.sale.id)).stats?.unitsHeld,
-      ).toBe(1);
+      expect((await saleOf(drop.seller, drop.sale.id)).stats?.unitsHeld).toBe(
+        1,
+      );
       await cartWith(buyer, drop.product);
       const second = await rawCheckout(buyer);
       expect(second.status).toBe(422);
@@ -1031,7 +1083,11 @@ describe('Journey J03: launch day', () => {
       });
       expect(failures).toHaveLength(1);
       expect(
-        await waitForItems('J03.H13', seller.owner, 'shop.flash_sale_start_failed'),
+        await waitForItems(
+          'J03.H13',
+          seller.owner,
+          'shop.flash_sale_start_failed',
+        ),
       ).toHaveLength(1);
       expect(
         await itemsOf(seller.staff!, 'shop.flash_sale_start_failed'),
@@ -1064,22 +1120,509 @@ describe('Journey J03: launch day', () => {
           },
           'inboxes empty while the group is paused',
         );
-        expect(await control.lag('notification-router')).toBeGreaterThanOrEqual(1);
+        expect(await control.lag('notification-router')).toBeGreaterThanOrEqual(
+          1,
+        );
       } finally {
         await control.resume('notification-router');
       }
       for (const b of buyers)
         await waitForItems('J03.H29', b, 'order.confirmed');
-      await waitForItems('J03.H12', drop.seller.owner, 'shop.order_received', 3);
-      await control.replay('notification-router', new Date((await fixture.nowMs()) - 6 * 3_600_000));
+      await waitForItems(
+        'J03.H12',
+        drop.seller.owner,
+        'shop.order_received',
+        3,
+      );
+      await control.replay(
+        'notification-router',
+        new Date((await fixture.nowMs()) - 6 * 3_600_000),
+      );
       await control.waitCaughtUp('notification-router');
       for (const b of buyers)
         await staysExactly('J03.H12', b, 'order.confirmed', 1);
-      await staysExactly('J03.H12', drop.seller.owner, 'shop.order_received', 3);
+      await staysExactly(
+        'J03.H12',
+        drop.seller.owner,
+        'shop.order_received',
+        3,
+      );
     });
 
     let lateBuyer: JourneyClient;
     let lateOrder: string;
+  });
+
+  describe('US3: a live stream reaches its audience, is stored, and stays clean', () => {
+    let seller: SellerFixture;
+    let reader: JourneyClient; // VIEWER member of the shop: read-only
+    let stream: LiveStreamDto;
+    let viewer: OpenStream; // W
+    let b90: JourneyClient;
+    let b91: JourneyClient;
+    let firstComment: LiveComment;
+    let startedAtMs: number;
+
+    const LIVE_TOPIC = 'live.events';
+    const LIFECYCLE_TOPIC = 'launch_events.events';
+    const base = () => `/api/shops/${seller.shopId}/live/${stream.id}`;
+
+    const postComment = (who: JourneyClient, text: string, clientId?: string) =>
+      who.post(`/api/live/${stream.id}/comments`, {
+        body: clientId ? { text, clientId } : { text },
+      });
+    const mustPost = async (who: JourneyClient, text: string) => {
+      const reply = await postComment(who, text);
+      if (reply.status !== 201)
+        throw new Error(
+          `comment: ${reply.status} ${JSON.stringify(reply.body)}`,
+        );
+      return reply.body as LiveComment;
+    };
+    const snapshot = async (): Promise<LiveSnapshotDto> => {
+      const reply = await new JourneyClient('anon@example.com').get(
+        `/api/live/${stream.id}`,
+        { schema: liveSnapshotSchema },
+      );
+      if (reply.status !== 200)
+        throw new Error(`live: ${reply.status} ${JSON.stringify(reply.body)}`);
+      return reply.body as LiveSnapshotDto;
+    };
+    const minuteOf = (at: number) =>
+      new Date(at).toISOString().replace(/[-:T]/g, '').slice(0, 12);
+    const history = async (at: number): Promise<LiveComment[]> => {
+      const reply = await new JourneyClient('anon@example.com').get(
+        `/api/live/${stream.id}/history`,
+        {
+          query: { minute: minuteOf(at), limit: 200 },
+          schema: liveHistoryPageSchema,
+        },
+      );
+      if (reply.status !== 200)
+        throw new Error(
+          `history: ${reply.status} ${JSON.stringify(reply.body)}`,
+        );
+      return (reply.body as { items: LiveComment[] }).items;
+    };
+    const inBatch = (id: string) => (d: Record<string, unknown>) =>
+      (d.items as { id: string }[]).some((c) => c.id === id);
+    const batched = (id: string) =>
+      viewer.events
+        .filter((e) => e.event === 'comments')
+        .flatMap((e) => (e.data.items as { id: string }[]) ?? [])
+        .filter((c) => c.id === id).length;
+    const removedFor = (id: string) =>
+      viewer.events.filter(
+        (e) => e.event === 'comment_removed' && e.data.id === id,
+      ).length;
+    const removals = async (commentId: string) =>
+      (
+        await eventTap(LIVE_TOPIC, {
+          type: 'live.comment_removed',
+          key: stream.id,
+        })
+      ).filter(
+        (m) => (m.payload as { commentId: string }).commentId === commentId,
+      );
+    const listedInHistory = async (c: LiveComment) =>
+      (await history(c.at)).some((x) => x.id === c.id);
+
+    beforeAll(async () => {
+      seller = await createSeller(admin, {
+        products: [
+          { priceMinor: 2_000, quantity: 20 },
+          { priceMinor: 2_500, quantity: 5 },
+        ],
+        staff: true,
+      });
+      reader = await JourneyClient.signUp('reader');
+      await inviteAndAccept(seller.owner, seller.shopId, reader, 'VIEWER');
+      stream = await fixture.createStream(seller);
+      [b90, b91] = await newBuyers(2, 'viewer');
+    });
+
+    afterAll(() => viewer?.close());
+
+    it('J03 AS-19: the stream starts once; viewers and the event stream agree; a non-member gets 404', async () => {
+      viewer = await liveViewer(stream.id);
+      const first = await expectEvent(viewer, 'J03.H17', 'snapshot');
+      expect(first.data.status).toBe('SCHEDULED');
+
+      const starts = await Promise.all(
+        Array.from({ length: 20 }, () =>
+          fixture.startStream(seller.staff!, seller.shopId, stream.id),
+        ),
+      );
+      expect(starts.map((r) => r.status)).toEqual(Array(20).fill(200));
+      await expectEvent(
+        viewer,
+        'J03.H17',
+        'status',
+        (d) => d.status === 'LIVE',
+      );
+      const shown = await snapshot();
+      expect(shown.status).toBe('LIVE');
+      expect(shown.startedAt).not.toBeNull();
+      startedAtMs = Date.parse(shown.startedAt!);
+
+      await tapUntil('J03.H16', LIFECYCLE_TOPIC, {
+        type: 'live.stream_started',
+        key: stream.id,
+      });
+      const started = await countExactlyOnce(
+        control,
+        LIFECYCLE_TOPIC,
+        'live.stream_started',
+        stream.id,
+      );
+      expect(started).toHaveLength(1);
+      expect(started[0].payload).toMatchObject({
+        streamId: stream.id,
+        shopId: seller.shopId,
+        title: stream.title,
+        launchEventId: null,
+      });
+
+      const outsider = await JourneyClient.signUp('outsider');
+      expect(
+        (await fixture.startStream(outsider, seller.shopId, stream.id)).status,
+      ).toBe(404);
+    });
+
+    it('J03 AS-20: a comment reaches the viewer, the late joiner and the history, once', async () => {
+      firstComment = await mustPost(b90, 'Take my money!');
+      expect(firstComment.text).toBe('Take my money!');
+      expect(firstComment.authorName).not.toContain(b90.email.split('@')[0]);
+
+      await expectEvent(
+        viewer,
+        'J03.H18',
+        'comments',
+        inBatch(firstComment.id),
+      );
+      const late = await waitForContract(
+        'J03.H18',
+        async () => {
+          const s = await snapshot();
+          return s.recent.some((c) => c.id === firstComment.id) ? s : null;
+        },
+        'late joiner sees the comment',
+      );
+      expect(late.recent.filter((c) => c.id === firstComment.id)).toHaveLength(
+        1,
+      );
+
+      const listed = await waitForContract(
+        'J03.H19',
+        async () => {
+          const items = await history(firstComment.at);
+          return items.some((c) => c.id === firstComment.id) ? items : null;
+        },
+        'history lists the comment',
+      );
+      expect(listed.filter((c) => c.id === firstComment.id)).toHaveLength(1);
+      expect(batched(firstComment.id)).toBe(1);
+    });
+
+    it('J03 AS-21: the same clientId five times gives one comment; another text with it is refused', async () => {
+      // Two at once: S23 AS-20 limits a user to 3 comments per 10 s and charges retries too (questions.md, J03-Q-live-retry);
+      // the third token is left for the refused reuse below.
+      const retrier = (await newBuyers(1, 'retrier'))[0];
+      const clientId = randomUUID();
+      const replies = await Promise.all(
+        Array.from({ length: 2 }, () =>
+          postComment(retrier, 'Once only', clientId),
+        ),
+      );
+      expect(replies.filter((r) => r.status === 201)).toHaveLength(1);
+      expect(replies.filter((r) => r.status === 200)).toHaveLength(1);
+      const ids = new Set(replies.map((r) => (r.body as LiveComment).id));
+      expect(ids.size).toBe(1);
+      const sent = replies[0].body as LiveComment;
+
+      await expectEvent(viewer, 'J03.H18', 'comments', inBatch(sent.id));
+      await waitForContract(
+        'J03.H19',
+        async () => listedInHistory(sent),
+        'history lists the retried comment',
+      );
+      await staysTrue(
+        'J03.H18',
+        async () => {
+          expect(batched(sent.id)).toBe(1);
+          expect(
+            (await history(sent.at)).filter((c) => c.id === sent.id),
+          ).toHaveLength(1);
+        },
+        'the retried comment stays single',
+      );
+
+      const reused = await postComment(retrier, 'A different text', clientId);
+      expect(reused.status).toBe(422);
+      expect(problemCode(reused.body)).toBe('client_id_reused');
+    });
+
+    it('J03 AS-22: the pin asks the catalog; foreign, archived and unknown products are refused alike; a read-only member cannot pin', async () => {
+      const [pinned, toArchive] = seller.products;
+      const pin = (who: JourneyClient, productId: string) =>
+        who.call('PUT', `${base()}/pin`, {
+          body: { productId, text: 'Buy now — 20 left', stockLeft: 20 },
+        });
+
+      const ok = await pin(seller.staff!, pinned.id);
+      expect(ok.status).toBe(200);
+      expect(ok.body).toMatchObject({ version: 1, productTitle: pinned.title });
+      await expectEvent(viewer, 'J03.H17', 'pin', (d) => d.version === 1);
+      expect((await snapshot()).pin).toMatchObject({ productId: pinned.id });
+
+      const other = await createSeller(admin, {
+        products: [{ priceMinor: 900, quantity: 3 }],
+      });
+      const current = await seller.owner.get<{ version: number }>(
+        `/api/shops/${seller.shopId}/products/${toArchive.id}`,
+      );
+      const archived = await seller.owner.post(
+        `/api/shops/${seller.shopId}/products/${toArchive.id}/archive`,
+        { body: { expectedVersion: current.body.version } },
+      );
+      expect(archived.status).toBe(200);
+      const refusals = await Promise.all(
+        [other.products[0].id, toArchive.id, randomUUID()].map((id) =>
+          pin(seller.staff!, id),
+        ),
+      );
+      for (const r of refusals) {
+        expect(r.status).toBe(422);
+        expect(problemCode(r.body)).toBe('product_not_pinnable');
+      }
+      expect(
+        new Set(refusals.map((r) => (r.body as { detail?: string }).detail))
+          .size,
+      ).toBe(1);
+
+      expect((await pin(reader, pinned.id)).status).toBe(403);
+
+      const unpin = await seller.staff!.call('DELETE', `${base()}/pin`);
+      expect(unpin.status).toBe(204);
+      const event = await expectEvent(
+        viewer,
+        'J03.H17',
+        'pin',
+        (d) => d.version === 2,
+      );
+      expect(event.data).toMatchObject({ version: 2, unpinned: true });
+      expect((await snapshot()).pin).toBeNull();
+    });
+
+    it('J03 AS-23: a removal is durable once; viewers, the snapshot, the history and the event stream agree', async () => {
+      const comment = await mustPost(b90, 'Please remove me');
+      await expectEvent(viewer, 'J03.H18', 'comments', inBatch(comment.id));
+      await waitForContract(
+        'J03.H19',
+        async () => listedInHistory(comment),
+        'history lists the comment',
+      );
+
+      const removed = await Promise.all(
+        Array.from({ length: 20 }, () =>
+          seller.staff!.call('DELETE', `${base()}/comments/${comment.id}`),
+        ),
+      );
+      expect(removed.map((r) => r.status)).toEqual(Array(20).fill(204));
+      await expectEvent(
+        viewer,
+        'J03.H17',
+        'comment_removed',
+        (d) => d.id === comment.id,
+      );
+      expect((await snapshot()).recent.some((c) => c.id === comment.id)).toBe(
+        false,
+      );
+      await waitForContract(
+        'J03.H19',
+        async () => !(await listedInHistory(comment)),
+        'history drops the comment',
+      );
+      await waitForContract(
+        'J03.H16',
+        async () => (await removals(comment.id)).length >= 1,
+        'the removal on the event stream',
+      );
+      await control.waitCaughtUp('live-moderation');
+      const mine = await removals(comment.id);
+      expect(mine).toHaveLength(1);
+      expect(mine[0].payload).toMatchObject({ reason: 'moderator' });
+      expect((mine[0].payload as { actorId?: string }).actorId).toEqual(
+        expect.any(String),
+      );
+      expect(removedFor(comment.id)).toBeGreaterThanOrEqual(1);
+    });
+
+    it('J03 AS-24: a toxic comment is removed asynchronously, once; a polite one stays', async () => {
+      const toxic = await mustPost(b91, '[[toxic]] hello');
+      const polite = await mustPost(b90, 'hello friends');
+      await expectEvent(viewer, 'J03.H18', 'comments', inBatch(toxic.id));
+      await expectEvent(
+        viewer,
+        'J03.H20',
+        'comment_removed',
+        (d) => d.id === toxic.id,
+      );
+      expect((await snapshot()).recent.some((c) => c.id === toxic.id)).toBe(
+        false,
+      );
+      await waitForContract(
+        'J03.H19',
+        async () => !(await listedInHistory(toxic)),
+        'history drops the toxic comment',
+      );
+      await control.waitCaughtUp('live-moderation');
+      const auto = await removals(toxic.id);
+      expect(auto).toHaveLength(1);
+      expect(auto[0].payload).toMatchObject({ reason: 'auto' });
+      expect(
+        (auto[0].payload as { score: number }).score,
+      ).toBeGreaterThanOrEqual(0.9);
+      expect((await snapshot()).recent.some((c) => c.id === polite.id)).toBe(
+        true,
+      );
+      expect(await removals(polite.id)).toHaveLength(0);
+    });
+
+    it('J03 AS-25: with the history consumer down nothing is lost; replays and an early removal change nothing', async () => {
+      const since = new Date(startedAtMs);
+      await control.pause('live-comments-history');
+      const posted: LiveComment[] = [];
+      const chatters = await newBuyers(5, 'chatter');
+      for (const [i, chatter] of chatters.entries())
+        posted.push(await mustPost(chatter, `paused ${i}`));
+      const [gone, ...kept] = posted;
+      const del = await seller.staff!.call(
+        'DELETE',
+        `${base()}/comments/${gone.id}`,
+      );
+      expect(del.status).toBe(204);
+      for (const c of kept)
+        await expectEvent(viewer, 'J03.H18', 'comments', inBatch(c.id));
+      const recent = (await snapshot()).recent.map((c) => c.id);
+      expect(kept.every((c) => recent.includes(c.id))).toBe(true);
+      expect(recent).not.toContain(gone.id);
+      await staysTrue(
+        'J03.H19',
+        async () => {
+          const ids = (await history(posted[0].at)).map((c) => c.id);
+          expect(posted.some((c) => ids.includes(c.id))).toBe(false);
+        },
+        'history shows none of the paused comments',
+      );
+      expect(await control.lag('live-comments-history')).toBeGreaterThanOrEqual(
+        1,
+      );
+
+      await control.resume('live-comments-history');
+      await control.waitCaughtUp('live-comments-history');
+      const listed = await waitForContract(
+        'J03.H19',
+        async () => {
+          const ids = (await history(posted[0].at)).map((c) => c.id);
+          return kept.every((c) => ids.includes(c.id)) ? ids : null;
+        },
+        'history lists the four kept comments',
+      );
+      for (const c of kept)
+        expect(listed.filter((id) => id === c.id)).toHaveLength(1);
+      expect(listed).not.toContain(gone.id);
+
+      await control.replay('live-comments-history', since);
+      await control.waitCaughtUp('live-comments-history');
+      const after = (await history(posted[0].at)).map((c) => c.id);
+      expect([...after].sort()).toEqual([...listed].sort());
+
+      // The removal is applied by the history while it was behind the post: the comment must stay unlisted.
+      await control.pause('live-comments-history');
+      const toxic = await mustPost(b91, '[[toxic]] late');
+      await expectEvent(
+        viewer,
+        'J03.H20',
+        'comment_removed',
+        (d) => d.id === toxic.id,
+      );
+      await control.resume('live-comments-history');
+      await control.waitCaughtUp('live-comments-history');
+      await staysTrue(
+        'J03.H19',
+        async () => {
+          expect(await listedInHistory(toxic)).toBe(false);
+        },
+        'a removed comment is never listed',
+      );
+    });
+
+    it('J03 AS-26: the stream ends once; connections close; nothing is posted afterwards; nobody is notified', async () => {
+      const ends = await Promise.all([
+        seller.staff!.post(`${base()}/end`),
+        seller.staff!.post(`${base()}/end`),
+      ]);
+      expect(ends.map((r) => r.status)).toEqual([200, 200]);
+      await expectEvent(
+        viewer,
+        'J03.H17',
+        'status',
+        (d) => d.status === 'ENDED',
+      );
+      await waitForContract(
+        'J03.H17',
+        async () => viewer.closed,
+        'the connection closes',
+      );
+
+      await expect(liveViewer(stream.id)).rejects.toThrow(/409/);
+      const comment = await postComment(b90, 'too late');
+      expect(comment.status).toBe(409);
+      expect(problemCode(comment.body)).toBe('stream_not_live');
+      const reaction = await b90.post(`/api/live/${stream.id}/reactions`, {
+        body: { reactions: { '🔥': 1 } },
+      });
+      expect(reaction.status).toBe(409);
+      const pin = await seller.staff!.call('PUT', `${base()}/pin`, {
+        body: { productId: seller.products[0].id, text: 'late' },
+      });
+      expect(pin.status).toBe(409);
+
+      await tapUntil('J03.H16', LIFECYCLE_TOPIC, {
+        type: 'live.stream_ended',
+        key: stream.id,
+      });
+      const once = await countExactlyOnce(
+        control,
+        LIFECYCLE_TOPIC,
+        'live.stream_ended',
+        stream.id,
+      );
+      expect(once).toHaveLength(1);
+      expect(once[0].payload).toMatchObject({
+        streamId: stream.id,
+        shopId: seller.shopId,
+      });
+      expect(
+        typeof (once[0].payload as { durationSeconds: number }).durationSeconds,
+      ).toBe('number');
+
+      const stats = viewer.events.filter((e) => e.event === 'stats').length;
+      await staysTrue(
+        'J03.H17',
+        async () => {
+          expect(viewer.events.filter((e) => e.event === 'stats').length).toBe(
+            stats,
+          );
+        },
+        'stats stop after the end',
+      );
+      for (const who of [seller.owner, seller.staff!, b90, b91])
+        expect(
+          (await inbox(who)).filter((i) => i.type.startsWith('live.')),
+        ).toHaveLength(0);
+    });
   });
 
   describe('US4: an auction closes once, and its winner is settled', () => {
@@ -1096,7 +1639,9 @@ describe('Journey J03: launch day', () => {
         { schema: auctionPublicSchema },
       );
       if (reply.status !== 200)
-        throw new Error(`auction: ${reply.status} ${JSON.stringify(reply.body)}`);
+        throw new Error(
+          `auction: ${reply.status} ${JSON.stringify(reply.body)}`,
+        );
       return reply.body as AuctionPublic;
     };
     const memberAuction = async (seller: SellerFixture, id: string) => {
@@ -1105,7 +1650,9 @@ describe('Journey J03: launch day', () => {
         { schema: auctionMemberSchema },
       );
       if (reply.status !== 200)
-        throw new Error(`member auction: ${reply.status} ${JSON.stringify(reply.body)}`);
+        throw new Error(
+          `member auction: ${reply.status} ${JSON.stringify(reply.body)}`,
+        );
       return reply.body as AuctionMember;
     };
     const waitAuction = (
@@ -1145,16 +1692,26 @@ describe('Journey J03: launch day', () => {
     const ordersOf = async (buyer: JourneyClient) => {
       const reply = await buyer.get('/api/orders', { schema: orderPageSchema });
       if (reply.status !== 200)
-        throw new Error(`orders: ${reply.status} ${JSON.stringify(reply.body)}`);
-      return (reply.body as { items: { id: string; status: string; totalMinor: number }[] }).items;
+        throw new Error(
+          `orders: ${reply.status} ${JSON.stringify(reply.body)}`,
+        );
+      return (
+        reply.body as {
+          items: { id: string; status: string; totalMinor: number }[];
+        }
+      ).items;
     };
     const advanceTo = async (isoOrMs: string | number, afterSec = 1) => {
-      const target = typeof isoOrMs === 'string' ? Date.parse(isoOrMs) : isoOrMs;
-      const seconds = Math.ceil((target - (await fixture.nowMs())) / 1000) + afterSec;
+      const target =
+        typeof isoOrMs === 'string' ? Date.parse(isoOrMs) : isoOrMs;
+      const seconds =
+        Math.ceil((target - (await fixture.nowMs())) / 1000) + afterSec;
       if (seconds > 0) await control.advance(seconds);
     };
     /** A shop on the plan that carries the `auctions` entitlement, with one product of `stock` units. */
-    const auctionSeller = async (stock = 3): Promise<{ seller: SellerFixture; product: FixtureProduct }> => {
+    const auctionSeller = async (
+      stock = 3,
+    ): Promise<{ seller: SellerFixture; product: FixtureProduct }> => {
       const seller = await createSeller(admin, {
         products: [{ priceMinor: 5_000, quantity: stock }],
         staff: true,
@@ -1184,7 +1741,11 @@ describe('Journey J03: launch day', () => {
             throw error;
           }
         },
-        { timeoutMs: 20_000, intervalMs: 500, description: 'auctions entitlement' },
+        {
+          timeoutMs: 20_000,
+          intervalMs: 500,
+          description: 'auctions entitlement',
+        },
       );
     const newAuction = async (
       options: {
@@ -1215,10 +1776,14 @@ describe('Journey J03: launch day', () => {
       runnerUpMax: number | null,
       options: { reservePriceMinor?: number } = {},
     ) => {
-      const a = await newAuction({ reservePriceMinor: options.reservePriceMinor ?? 1_000 });
+      const a = await newAuction({
+        reservePriceMinor: options.reservePriceMinor ?? 1_000,
+      });
       await openAuction(a);
       const winner = await JourneyClient.signUp('winner');
-      const runnerUp = runnerUpMax ? await JourneyClient.signUp('runnerup') : undefined;
+      const runnerUp = runnerUpMax
+        ? await JourneyClient.signUp('runnerup')
+        : undefined;
       if (runnerUp) await mustBid(runnerUp, a.auction.id, runnerUpMax!);
       await mustBid(winner, a.auction.id, winnerMax);
       await advanceTo(a.auction.endsAt);
@@ -1256,7 +1821,10 @@ describe('Journey J03: launch day', () => {
       };
       const again = await Promise.all(
         Array.from({ length: 5 }, () =>
-          seller.owner.post(`/api/shops/${seller.shopId}/auctions`, { body, key }),
+          seller.owner.post(`/api/shops/${seller.shopId}/auctions`, {
+            body,
+            key,
+          }),
         ),
       );
       for (const r of again) {
@@ -1268,10 +1836,13 @@ describe('Journey J03: launch day', () => {
         async () => ((await stockOf(seller, product.id)) === 2 ? true : null),
         'stock lowered once',
       );
-      const second = await seller.owner.post(`/api/shops/${seller.shopId}/auctions`, {
-        body: { ...body, title: `${first.title} again` },
-        key: randomUUID(),
-      });
+      const second = await seller.owner.post(
+        `/api/shops/${seller.shopId}/auctions`,
+        {
+          body: { ...body, title: `${first.title} again` },
+          key: randomUUID(),
+        },
+      );
       expect(second.status).toBe(409);
       expect(problemCode(second.body)).toBe('auction_exists_for_product');
       expect(await stockOf(seller, product.id)).toBe(2);
@@ -1279,10 +1850,13 @@ describe('Journey J03: launch day', () => {
       const plain = await createSeller(admin, {
         products: [{ priceMinor: 5_000, quantity: 1 }],
       });
-      const refused = await plain.owner.post(`/api/shops/${plain.shopId}/auctions`, {
-        body: { ...body, productId: plain.products[0].id },
-        key: randomUUID(),
-      });
+      const refused = await plain.owner.post(
+        `/api/shops/${plain.shopId}/auctions`,
+        {
+          body: { ...body, productId: plain.products[0].id },
+          key: randomUUID(),
+        },
+      );
       expect(refused.status).toBe(403);
       expect(problemCode(refused.body)).toBe('entitlement_required');
 
@@ -1323,7 +1897,12 @@ describe('Journey J03: launch day', () => {
       expect(view.bidCount).toBe(3);
       expect(view.leaderAlias).toBeTruthy();
       expect(JSON.stringify(view)).not.toMatch(/12000|userId/);
-      await expectEvent(viewer, 'J03.H21', 'price', (d) => d.priceMinor === 10_500);
+      await expectEvent(
+        viewer,
+        'J03.H21',
+        'price',
+        (d) => d.priceMinor === 10_500,
+      );
       viewer.close();
       await waitForItems('J03.H22', b1, 'auction.outbid');
       await staysExactly('J03.H22', b1, 'auction.outbid', 1);
@@ -1337,7 +1916,9 @@ describe('Journey J03: launch day', () => {
       const original = (await publicAuction(main.auction.id)).endsAt;
       await advanceTo(Date.parse(original) - 90_000, 0);
       const sniped = await bid(b2, main.auction.id, 13_000);
-      expect({ status: sniped.status, body: sniped.body }).toMatchObject({ status: 200 });
+      expect({ status: sniped.status, body: sniped.body }).toMatchObject({
+        status: 200,
+      });
       const moved = (sniped.body as BidResult).endsAt;
       expect(Date.parse(moved)).toBeGreaterThan(Date.parse(original));
       expect((await publicAuction(main.auction.id)).endsAt).toBe(moved);
@@ -1347,7 +1928,10 @@ describe('Journey J03: launch day', () => {
         'J03.H23',
         async () => {
           expect(
-            await eventTap('auctions.events', { type: 'auction.closed', key: main.auction.id }),
+            await eventTap('auctions.events', {
+              type: 'auction.closed',
+              key: main.auction.id,
+            }),
           ).toHaveLength(0);
         },
         'no auction.closed at the original end',
@@ -1366,8 +1950,12 @@ describe('Journey J03: launch day', () => {
       expect(full.totalMinor).toBe(closed.priceMinor);
       expect(full.items).toHaveLength(1);
       expect(full.items[0].discountMinor).toBe(0);
-      expect(Date.parse(full.reservedUntil!) - (await fixture.nowMs())).toBeGreaterThan(47 * 3_600_000);
-      expect((await memberAuction(main.seller, main.auction.id)).winnerOrderId).toBe(order.id);
+      expect(
+        Date.parse(full.reservedUntil!) - (await fixture.nowMs()),
+      ).toBeGreaterThan(47 * 3_600_000);
+      expect(
+        (await memberAuction(main.seller, main.auction.id)).winnerOrderId,
+      ).toBe(order.id);
       await waitForItems('J03.H25', b2, 'auction.won');
       await staysExactly('J03.H25', b2, 'auction.won', 1);
       for (const other of [b1, b3])
@@ -1391,7 +1979,12 @@ describe('Journey J03: launch day', () => {
       await waitForItems('J03.H25', winner, 'auction.won');
       await staysExactly('J03.H25', winner, 'auction.won', 1);
       expect(await ordersOf(winner)).toHaveLength(1);
-      const closed = await countExactlyOnce(control, 'auctions.events', 'auction.closed', a.auction.id);
+      const closed = await countExactlyOnce(
+        control,
+        'auctions.events',
+        'auction.closed',
+        a.auction.id,
+      );
       expect(closed).toHaveLength(1);
       expect(await stockOf(a.seller, a.product.id)).toBe(2);
     });
@@ -1401,12 +1994,19 @@ describe('Journey J03: launch day', () => {
       expect((await payOrder(b2, order.id)).status).toBe(202);
       const sold = await waitAuction('J03.H26', main.auction.id, 'SOLD');
       expect(sold.status).toBe('SOLD');
-      expect((await memberAuction(main.seller, main.auction.id)).winnerOrderId).toBe(order.id);
+      expect(
+        (await memberAuction(main.seller, main.auction.id)).winnerOrderId,
+      ).toBe(order.id);
       await waitForItems('J03.H26', main.seller.owner, 'auction.sold');
       await waitForItems('J03.H26', main.seller.owner, 'shop.order_received');
       await waitForItems('J03.H26', b2, 'order.confirmed');
       await staysExactly('J03.H26', main.seller.owner, 'auction.sold', 1);
-      await staysExactly('J03.H26', main.seller.owner, 'shop.order_received', 1);
+      await staysExactly(
+        'J03.H26',
+        main.seller.owner,
+        'shop.order_received',
+        1,
+      );
       await staysExactly('J03.H26', b2, 'order.confirmed', 1);
       expect(await stockOf(main.seller, main.product.id)).toBe(2);
       const again = await payOrder(b2, order.id);
@@ -1425,14 +2025,19 @@ describe('Journey J03: launch day', () => {
       const refused = await bid(a.seller.staff!, a.auction.id, 9_000);
       expect(refused.status).toBe(403);
       expect(problemCode(refused.body)).toBe('shill_bid_forbidden');
-      expect((await publicAuction(a.auction.id)).priceMinor).toBe(before.priceMinor);
+      expect((await publicAuction(a.auction.id)).priceMinor).toBe(
+        before.priceMinor,
+      );
       await inviteAndAccept(a.seller.owner, a.seller.shopId, leader);
       await advanceTo(a.auction.endsAt);
       await waitAuction('J03.H23', a.auction.id, 'UNSOLD');
-      expect((await memberAuction(a.seller, a.auction.id)).statusReason).toBe('leader_ineligible');
+      expect((await memberAuction(a.seller, a.auction.id)).statusReason).toBe(
+        'leader_ineligible',
+      );
       await waitForContract(
         'J03.H28',
-        async () => ((await stockOf(a.seller, a.product.id)) === 3 ? true : null),
+        async () =>
+          (await stockOf(a.seller, a.product.id)) === 3 ? true : null,
         'unit returned',
       );
       expect(await ordersOf(leader)).toHaveLength(0);
@@ -1453,14 +2058,19 @@ describe('Journey J03: launch day', () => {
       );
       expect(offer.totalMinor).toBe(5_000);
       const full = await getOrder(a.runnerUp!, offer.id);
-      expect(Date.parse(full.reservedUntil!) - (await fixture.nowMs())).toBeGreaterThan(23 * 3_600_000);
+      expect(
+        Date.parse(full.reservedUntil!) - (await fixture.nowMs()),
+      ).toBeGreaterThan(23 * 3_600_000);
       await waitForItems('J03.H27', a.runnerUp!, 'auction.second_chance');
       await waitForItems('J03.H27', a.winner, 'order.cancelled');
       expect(await ordersOf(a.runnerUp!)).toHaveLength(1);
       expect((await payOrder(a.runnerUp!, offer.id)).status).toBe(202);
       await waitAuction('J03.H26', a.auction.id, 'SOLD');
       await waitForItems('J03.H26', a.seller.owner, 'auction.sold');
-      await control.replay('auctions-order-results', new Date((await fixture.nowMs()) - 6 * 3_600_000));
+      await control.replay(
+        'auctions-order-results',
+        new Date((await fixture.nowMs()) - 6 * 3_600_000),
+      );
       await control.waitCaughtUp('auctions-order-results');
       expect((await publicAuction(a.auction.id)).status).toBe('SOLD');
 
@@ -1470,10 +2080,13 @@ describe('Journey J03: launch day', () => {
       await waitAuction('J03.H27', u.auction.id, 'SECOND_CHANCE');
       await control.advance(24 * 3_600 + 120);
       await waitAuction('J03.H28', u.auction.id, 'UNSOLD');
-      expect((await memberAuction(u.seller, u.auction.id)).statusReason).toBe('second_chance_unpaid');
+      expect((await memberAuction(u.seller, u.auction.id)).statusReason).toBe(
+        'second_chance_unpaid',
+      );
       await waitForContract(
         'J03.H28',
-        async () => ((await stockOf(u.seller, u.product.id)) === 3 ? true : null),
+        async () =>
+          (await stockOf(u.seller, u.product.id)) === 3 ? true : null,
         'unit returned once',
       );
       expect(await ordersOf(u.runnerUp!)).toHaveLength(1);
@@ -1491,17 +2104,26 @@ describe('Journey J03: launch day', () => {
       await mustBid(bidder, a.auction.id, 2_900);
       await advanceTo(a.auction.endsAt);
       await waitAuction('J03.H23', a.auction.id, 'UNSOLD');
-      expect((await memberAuction(a.seller, a.auction.id)).statusReason).toBe('reserve_not_met');
+      expect((await memberAuction(a.seller, a.auction.id)).statusReason).toBe(
+        'reserve_not_met',
+      );
       expect(await ordersOf(bidder)).toHaveLength(0);
       await staysExactly('J03.H25', bidder, 'auction.won', 0);
       await waitForContract(
         'J03.H28',
-        async () => ((await stockOf(a.seller, a.product.id)) === 3 ? true : null),
+        async () =>
+          (await stockOf(a.seller, a.product.id)) === 3 ? true : null,
         'unit returned',
       );
-      const closed = await tapUntil('J03.H23', 'auctions.events', { type: 'auction.closed', key: a.auction.id });
+      const closed = await tapUntil('J03.H23', 'auctions.events', {
+        type: 'auction.closed',
+        key: a.auction.id,
+      });
       expect(closed).toHaveLength(1);
-      expect(closed[0].payload).toMatchObject({ status: 'UNSOLD', reason: 'reserve_not_met' });
+      expect(closed[0].payload).toMatchObject({
+        status: 'UNSOLD',
+        reason: 'reserve_not_met',
+      });
     });
 
     it('J03 AS-36: with the settlement consumer down the sale waits; replays and duplicates change nothing', async () => {
@@ -1514,7 +2136,8 @@ describe('Journey J03: launch day', () => {
         expect((await publicAuction(a.auction.id)).status).toBe('CLOSED');
         await waitForContract(
           'J03.H29',
-          async () => ((await control.lag('auctions-order-results')) >= 1 ? true : null),
+          async () =>
+            (await control.lag('auctions-order-results')) >= 1 ? true : null,
           'lag of the paused settlement consumer',
         );
         expect((await publicAuction(a.auction.id)).status).toBe('CLOSED');
@@ -1522,21 +2145,582 @@ describe('Journey J03: launch day', () => {
         await control.resume('auctions-order-results');
       }
       await waitAuction('J03.H26', a.auction.id, 'SOLD');
-      await control.replay('auctions-order-results', new Date((await fixture.nowMs()) - 6 * 3_600_000));
+      await control.replay(
+        'auctions-order-results',
+        new Date((await fixture.nowMs()) - 6 * 3_600_000),
+      );
       await control.waitCaughtUp('auctions-order-results');
       const view = await memberAuction(a.seller, a.auction.id);
       expect(view.status).toBe('SOLD');
       expect(view.winnerOrderId).toBe(order.id);
-      await tapUntil('J03.H26', 'auctions.events', { type: 'auction.sold', key: a.auction.id });
+      await tapUntil('J03.H26', 'auctions.events', {
+        type: 'auction.sold',
+        key: a.auction.id,
+      });
       await staysTrue(
         'J03.H26',
         async () => {
           expect(
-            await eventTap('auctions.events', { type: 'auction.sold', key: a.auction.id }),
+            await eventTap('auctions.events', {
+              type: 'auction.sold',
+              key: a.auction.id,
+            }),
           ).toHaveLength(1);
         },
         'one auction.sold after the replay',
       );
     });
+  });
+
+  describe('US5: one buyer is told the truth, and four launches at once do not cross', () => {
+    const INCREMENT = 500;
+    const DROP_PRICE = 2_500;
+    const REGULAR_PRICE = 5_000;
+
+    const advanceTo = async (isoOrMs: string | number, afterSec = 1) => {
+      const target =
+        typeof isoOrMs === 'string' ? Date.parse(isoOrMs) : isoOrMs;
+      const seconds =
+        Math.ceil((target - (await fixture.nowMs())) / 1000) + afterSec;
+      if (seconds > 0) await control.advance(seconds);
+    };
+    const publicAuctionOf = async (id: string): Promise<AuctionPublic> => {
+      const reply = await new JourneyClient('anon@example.com').get(
+        `/api/auctions/${id}`,
+        { schema: auctionPublicSchema },
+      );
+      if (reply.status !== 200)
+        throw new Error(
+          `auction: ${reply.status} ${JSON.stringify(reply.body)}`,
+        );
+      return reply.body as AuctionPublic;
+    };
+    const waitAuctionStatus = (id: string, status: AuctionPublic['status']) =>
+      waitForContract(
+        'J03.H23',
+        async () => {
+          const a = await publicAuctionOf(id);
+          return a.status === status ? a : null;
+        },
+        `auction ${id} ${status}`,
+      );
+    const saleStatus = async (
+      seller: SellerFixture,
+      saleId: string,
+    ): Promise<FlashSaleMember> => {
+      const reply = await seller.owner.get(
+        `/api/shops/${seller.shopId}/flash-sales/${saleId}`,
+        { schema: flashSaleMemberSchema },
+      );
+      if (reply.status !== 200)
+        throw new Error(`sale: ${reply.status} ${JSON.stringify(reply.body)}`);
+      return reply.body as FlashSaleMember;
+    };
+    const waitLoaded = (seller: SellerFixture, saleId: string) =>
+      waitForContract(
+        'J03.H9',
+        async () => {
+          const sale = await saleStatus(seller, saleId);
+          return sale.status === 'LOADED' ? sale : null;
+        },
+        'sale LOADED',
+      );
+    const onSale = async (
+      seller: SellerFixture,
+      options: { seatCount: number },
+    ) => {
+      const event = await fixture.createEvent(seller, {
+        seatCount: options.seatCount,
+        salesOpensInSec: 130,
+        perUserLimit: 4,
+        admissionRatePerSec: 20,
+      });
+      return event;
+    };
+    const waitOnSale = (eventId: string) =>
+      waitForContract(
+        'J03.H1',
+        async () =>
+          (await getEvent(admin, eventId)).status === 'ON_SALE' ? true : null,
+        'event ON_SALE',
+      );
+    const cartAndCheckout = async (
+      buyer: JourneyClient,
+      product: FixtureProduct,
+    ) => {
+      const put = await buyer.put(`/api/cart/items/${product.id}`, {
+        body: { quantity: 1 },
+      });
+      if (put.status >= 300)
+        throw new Error(`cart: ${put.status} ${JSON.stringify(put.body)}`);
+      return buyer.post('/api/checkout', { body: {}, key: randomUUID() });
+    };
+    const entitledSeller = async (stock: number) => {
+      const seller = await createSeller(admin, {
+        products: [{ priceMinor: REGULAR_PRICE, quantity: stock }],
+        staff: true,
+      });
+      const accepted = await subscribe(
+        { owner: seller.owner, shopId: seller.shopId, slug: seller.slug },
+        'pm_test_visa',
+      );
+      expect(accepted.status).toBe(201);
+      return seller;
+    };
+    const auctionFor = (
+      seller: SellerFixture,
+      options: { reservePriceMinor?: number; startsInSec?: number } = {},
+    ) =>
+      waitFor(
+        async () => {
+          try {
+            return await fixture.createAuction(seller, seller.products[0], {
+              minIncrementMinor: INCREMENT,
+              ...options,
+            });
+          } catch (error) {
+            if (/entitlement_required|: 403/.test(String(error))) return null;
+            throw error;
+          }
+        },
+        {
+          timeoutMs: 20_000,
+          intervalMs: 500,
+          description: 'auctions entitlement',
+        },
+      );
+    const firstOrder = (buyer: JourneyClient) =>
+      waitForContract(
+        'J03.H24',
+        async () => {
+          const reply = await buyer.get('/api/orders', {
+            schema: orderPageSchema,
+          });
+          const items = (reply.body as { items: { id: string }[] }).items;
+          return items[0] ?? null;
+        },
+        'winner order',
+      );
+
+    it('J03 AS-37: the inbox of one buyer who booked, bought a drop unit and won an auction holds exactly those facts', async () => {
+      const b9 = await JourneyClient.signUp('b9');
+      const [eventSeller, dropSeller, auctionSeller] = [
+        await createSeller(admin, { products: [], staff: true }),
+        await createSeller(admin, {
+          products: [{ priceMinor: REGULAR_PRICE, quantity: 20 }],
+          staff: true,
+        }),
+        await entitledSeller(2),
+      ];
+      const event = await onSale(eventSeller, { seatCount: 10 });
+      const sale = await fixture.createDrop(
+        dropSeller,
+        dropSeller.products[0],
+        {
+          units: 3,
+          priceMinor: DROP_PRICE,
+          perUserLimit: 1,
+          startsInSec: 300,
+        },
+      );
+      const auction = await auctionFor(auctionSeller, {
+        reservePriceMinor: 1_000,
+        startsInSec: 300,
+      });
+
+      const live = await sseClient(b9, topics.user(b9.userId!));
+      const knownBefore = new Set((await inbox(b9)).map((i) => i.id));
+
+      // booking
+      await control.advance(131);
+      await waitOnSale(event.id);
+      const admitted = await admit(fixture, b9, event.id);
+      const hold = await mustHold(admitted, event.id, [1, 2]);
+      await mustConfirm(b9, hold.holdId);
+      await waitForItems('J03.H4', b9, 'booking.confirmed');
+
+      // the drop
+      await control.advance(109); // startsAt - 60 s
+      await waitLoaded(dropSeller, sale.id);
+      await control.advance(65);
+      const bought = await cartAndCheckout(b9, dropSeller.products[0]);
+      expect(bought.status).toBe(202);
+      const dropOrderId = (bought.body as { orderId: string }).orderId;
+      expect((await payOrder(b9, dropOrderId)).status).toBe(202);
+      await waitOrderStatus(b9, dropOrderId, 'PAID', 'H3');
+      await waitForItems('J03.H12', b9, 'order.confirmed', 1);
+
+      // the auction
+      await waitAuctionStatus(auction.id, 'OPEN');
+      const bid = await b9.post(`/api/auctions/${auction.id}/bids`, {
+        body: { maxAmountMinor: 4_000 },
+        key: randomUUID(),
+        schema: bidResultSchema,
+      });
+      expect(bid.status).toBe(200);
+      await advanceTo(auction.endsAt);
+      await waitAuctionStatus(auction.id, 'CLOSED');
+      const won = await waitForContract(
+        'J03.H24',
+        async () => {
+          const reply = await b9.get('/api/orders', {
+            schema: orderPageSchema,
+          });
+          const items = (reply.body as { items: { id: string }[] }).items;
+          return items.find((o) => o.id !== dropOrderId) ?? null;
+        },
+        'the auction order of B9',
+      );
+      expect((await payOrder(b9, won.id)).status).toBe(202);
+      await waitAuctionStatus(auction.id, 'SOLD');
+      await waitForItems('J03.H25', b9, 'auction.won');
+      await waitForItems('J03.H26', b9, 'order.confirmed', 2);
+
+      await control.waitCaughtUp('notification-router');
+      const items = (await inbox(b9)).filter((i) => !knownBefore.has(i.id));
+      const count = (type: string) =>
+        items.filter((i) => i.type === type).length;
+      expect(count('booking.confirmed')).toBe(1);
+      expect(count('order.confirmed')).toBe(2);
+      expect(count('auction.won')).toBe(1);
+      expect(new Set(items.map((i) => i.id)).size).toBe(items.length);
+      const stamps = items.map((i) => Date.parse(i.createdAt));
+      expect([...stamps].sort((a, b) => b - a)).toEqual(stamps); // newest first
+
+      const unread = await unreadCount(b9);
+      expect(unread).toBe((await inbox(b9)).filter((i) => !i.read).length);
+      for (const _ of [1, 2]) {
+        const read = await b9.post('/api/notifications/read', {
+          body: { all: true },
+        });
+        expect(read.status).toBeLessThan(300);
+        expect(await unreadCount(b9)).toBe(0);
+      }
+
+      const pushed = live.events.filter((e) => e.event === 'notification');
+      const pushedTypes = pushed.map((e) => e.data.type as string);
+      for (const type of [
+        'booking.confirmed',
+        'order.confirmed',
+        'auction.won',
+      ])
+        expect(pushedTypes.filter((t) => t === type)).toHaveLength(count(type));
+      expect(new Set(pushed.map((e) => e.data.id)).size).toBe(pushed.length);
+      live.close();
+    });
+
+    it('J03 AS-38: a booking race, a drop race, a chat, and an auction at once do not cross; every consumer catches up', async () => {
+      const [eventSeller, dropSeller, auctionSeller] = [
+        await createSeller(admin, { products: [], staff: true }),
+        await createSeller(admin, {
+          products: [{ priceMinor: REGULAR_PRICE, quantity: 30 }],
+          staff: true,
+        }),
+        await entitledSeller(2),
+      ];
+      const streamSeller = await createSeller(admin, {
+        products: [],
+        staff: true,
+      });
+      const event = await onSale(eventSeller, { seatCount: 6 });
+      const sale = await fixture.createDrop(
+        dropSeller,
+        dropSeller.products[0],
+        {
+          units: 5,
+          priceMinor: DROP_PRICE,
+          perUserLimit: 1,
+          startsInSec: 300,
+        },
+      );
+      const auction = await auctionFor(auctionSeller, {
+        reservePriceMinor: 1_000,
+        startsInSec: 300,
+      });
+      const stream = await fixture.createStream(streamSeller);
+      expect(
+        (
+          await fixture.startStream(
+            streamSeller.staff!,
+            streamSeller.shopId,
+            stream.id,
+          )
+        ).status,
+      ).toBe(200);
+
+      await control.advance(131);
+      await waitOnSale(event.id);
+      const bookers = await newBuyers(12, 'booker');
+      const admitted: Admitted[] = [];
+      for (const b of bookers) admitted.push(await admit(fixture, b, event.id));
+      await control.advance(109);
+      await waitLoaded(dropSeller, sale.id);
+      await control.advance(65);
+      await waitAuctionStatus(auction.id, 'OPEN');
+      const racers = await newBuyers(15, 'racer');
+      const chatters = await newBuyers(10, 'chatter');
+      const bidders = await newBuyers(6, 'bidder');
+
+      const bookingRace = Promise.all(
+        admitted.map(async (a, i) => {
+          const held = await holdSeats(a, event.id, [i % 6]);
+          if (held.status !== 201)
+            return {
+              buyer: a.buyer,
+              held: false,
+              seat: i % 6,
+              refusal: `${held.status} ${problemCode(held.body)}`,
+            };
+          const done = await confirmHold(
+            a.buyer,
+            (held.body as { holdId: string }).holdId,
+          );
+          return { buyer: a.buyer, held: true, confirmed: done.status < 300 };
+        }),
+      );
+      const dropRace = Promise.all(
+        racers.map(async (r) => ({
+          buyer: r,
+          reply: await cartAndCheckout(r, dropSeller.products[0]),
+        })),
+      );
+      const chat = Promise.all(
+        chatters.flatMap((c) =>
+          [1, 2, 3].map((n) =>
+            c.post(`/api/live/${stream.id}/comments`, {
+              body: { text: `hello ${n}` },
+            }),
+          ),
+        ),
+      );
+      const bids = Promise.all(
+        bidders.map((b, i) =>
+          b.post(`/api/auctions/${auction.id}/bids`, {
+            body: { maxAmountMinor: 2_000 + i * 1_000 },
+            key: randomUUID(),
+          }),
+        ),
+      );
+      const [booked, dropped, comments, bidReplies] = await Promise.all([
+        bookingRace,
+        dropRace,
+        chat,
+        bids,
+      ]);
+
+      // seats: one holder per seat, never more bookings than seats
+      const holders = booked.filter((b) => b.held);
+      expect(
+        booked.filter((b) => !b.held).map((b) => `${b.seat}: ${b.refusal}`),
+      ).toEqual(Array(6).fill(expect.stringMatching(/409 /)));
+      expect(holders).toHaveLength(6);
+      expect(holders.every((b) => b.confirmed)).toBe(true);
+      const mapNow = await seatMap(bookers[0], event.id);
+      expect(mapNow.taken.slice().sort()).toEqual([0, 1, 2, 3, 4, 5]);
+      let bookings = 0;
+      for (const h of holders)
+        bookings += (await myBookings(h.buyer, event.id)).length;
+      expect(bookings).toBe(6);
+
+      // drop: exactly the units
+      const accepted = dropped.filter((d) => d.reply.status === 202);
+      expect(accepted).toHaveLength(5);
+      for (const d of dropped.filter((x) => x.reply.status !== 202))
+        expect(problemCode(d.reply.body)).toBe('out_of_stock');
+      expect(await stockOf(dropSeller, dropSeller.products[0].id)).toBe(25);
+
+      // chat: nothing lost, nothing twice
+      const okComments = comments.filter((c) => c.status === 201);
+      expect(okComments).toHaveLength(30);
+      const ids = okComments.map((c) => (c.body as LiveComment).id);
+      for (const id of ids.slice(0, 5))
+        expect(
+          (
+            await streamSeller.staff!.call(
+              'DELETE',
+              `/api/shops/${streamSeller.shopId}/live/${stream.id}/comments/${id}`,
+            )
+          ).status,
+        ).toBe(204);
+      await control.waitCaughtUp('live-comments-history');
+      const minutes = new Set(
+        okComments
+          .map((c) => (c.body as LiveComment).at)
+          .map((t) =>
+            new Date(t).toISOString().replace(/[-:T]/g, '').slice(0, 12),
+          ),
+      );
+      const readHistory = async () => {
+        const listed: string[] = [];
+        for (const minute of minutes) {
+          const page = await new JourneyClient('anon@example.com').get(
+            `/api/live/${stream.id}/history`,
+            { query: { minute, limit: 200 }, schema: liveHistoryPageSchema },
+          );
+          listed.push(
+            ...(page.body as { items: { id: string }[] }).items.map(
+              (i) => i.id,
+            ),
+          );
+        }
+        return listed;
+      };
+      const listed = await waitForContract(
+        'J03.H19',
+        async () => {
+          const now = await readHistory();
+          const stale = ids.slice(0, 5).filter((id) => now.includes(id)).length;
+          const missing = ids.slice(5).filter((id) => !now.includes(id)).length;
+          if (stale || missing) {
+            const tapped = (
+              await eventTap('live.events', {
+                type: 'live.comment_removed',
+                key: stream.id,
+              })
+            ).length;
+            const skew = okComments.slice(0, 5).map((c) => {
+              const { id, at } = c.body as LiveComment;
+              return at - parseInt(id.replace(/-/g, '').slice(0, 12), 16);
+            });
+            throw new Error(
+              `${stale} removed still listed, ${missing} kept missing of ${now.length} listed; ${tapped} removals on the event stream; lag ${await control.lag('live-comments-history')}; at minus id time ${JSON.stringify(skew)}`,
+            );
+          }
+          return now;
+        },
+        'history holds the 25 kept comments and none of the 5 removed',
+      );
+      expect(new Set(listed).size).toBe(listed.length);
+
+      // auction: the highest maximum wins, once
+      expect(bidReplies.every((r) => r.status === 200)).toBe(true);
+      await advanceTo(auction.endsAt);
+      const closed = await waitAuctionStatus(auction.id, 'CLOSED');
+      const winner = bidders[5];
+      const order = await firstOrder(winner);
+      expect(order.id).toEqual(expect.any(String));
+      expect(closed.priceMinor).toBeLessThanOrEqual(7_000);
+      const closes = await countExactlyOnce(
+        control,
+        'auctions.events',
+        'auction.closed',
+        auction.id,
+      );
+      expect(closes).toHaveLength(1);
+
+      // no cross-talk: every inbox holds only its own facts
+      for (const b of bookers) {
+        const mine = holders.find((h) => h.buyer === b);
+        expect(await itemsOf(b, 'booking.confirmed')).toHaveLength(
+          mine ? 1 : 0,
+        );
+        expect(await itemsOf(b, 'auction.won')).toHaveLength(0);
+      }
+      for (const b of bidders.slice(0, 5))
+        expect(await itemsOf(b, 'auction.won')).toHaveLength(0);
+      for (const c of chatters)
+        expect(await itemsOf(c, 'booking.confirmed')).toHaveLength(0);
+
+      for (const group of [
+        'notification-router',
+        'live-comments-history',
+        'live-moderation',
+        'auctions-order-results',
+        'orders-booking-voucher',
+      ])
+        await control.waitCaughtUp(group);
+    });
+  });
+
+  describe('US6: every hop is observable, and the code stays on approved paths', () => {
+    it('J03 AS-39: the counters moved, every group is at rest, and no secret or personal datum is in the log', async () => {
+      const metrics = await readMetrics();
+      for (const name of [
+        'launch_holds_total',
+        'launch_confirms_total',
+        'launch_admitted_total',
+        'flash_sale_reservations_total',
+        'live_comments_total',
+        'live_removals_total',
+        'auction_bids_total',
+        'auction_closed_total',
+        'notifications_events_consumed_total',
+        'notifications_inbox_created_total',
+      ])
+        expect({ name, moved: metricValue(metrics, name) > 0 }).toEqual({
+          name,
+          moved: true,
+        });
+      for (const name of [
+        'launch_double_booking_detected_total',
+        'flash_sale_oversell_detected_total',
+        'flash_sale_stock_drift_units_total',
+      ])
+        expect({ name, value: metricValue(metrics, name) }).toEqual({
+          name,
+          value: 0,
+        });
+      // `late_payment` only moves in AS-36, where the settlement consumer is paused on purpose
+      expect(
+        metricValue(metrics, 'auction_settlement_anomaly_total', {
+          kind: 'late_payment',
+        }),
+      ).toBeGreaterThanOrEqual(0);
+
+      for (const group of [
+        ...JOURNEY_CONSUMER_GROUPS,
+        ...LAUNCH_DAY_CONSUMER_GROUPS,
+      ]) {
+        const view = await control.waitCaughtUp(group);
+        expect({ group, state: view.state, lag: view.lag }).toEqual({
+          group,
+          state: 'RUNNING',
+          lag: 0,
+        });
+      }
+
+      const log = apiLogPath();
+      if (log) {
+        const lines = logLinesSince(log, 0);
+        const text = lines.join('\n');
+        // no bearer or admission token, no e-mail address of a journey user, no comment text, no card reference
+        expect(text).not.toMatch(
+          /eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}/,
+        );
+        expect(text).not.toMatch(/[a-z0-9-]+@example\.com/);
+        for (const secret of ['Take my money!', '[[toxic]]', 'pm_test_visa'])
+          expect({ secret, found: text.includes(secret) }).toEqual({
+            secret,
+            found: false,
+          });
+        const withoutId = lines.filter(
+          (line) =>
+            line.trimStart().startsWith('{') &&
+            !/requestId|traceId|trace_id|request_id/.test(line),
+        );
+        expect(withoutId.slice(0, 5)).toEqual([]);
+      }
+    });
+
+    it('J03 AS-40: approved paths only: boundaries, table ownership, module graph and model registry pass', () => {
+      const backend = resolve(__dirname, '../..');
+      for (const [script, args] of [
+        ['check:boundaries', []],
+        ['check:table-ownership', ['--strict']],
+        ['check:module-graph', []],
+        ['check:model-registry', []],
+      ] as [string, string[]][]) {
+        const r = spawnSync('pnpm', [script, ...args], {
+          cwd: backend,
+          encoding: 'utf8',
+          timeout: 240_000,
+        });
+        expect([script, r.status, (r.stdout + r.stderr).slice(-600)]).toEqual([
+          script,
+          0,
+          expect.any(String),
+        ]);
+      }
+    }, 600_000);
   });
 });

@@ -1,0 +1,9 @@
+$ NODE_OPTIONS=--experimental-vm-modules jest --config jest-journeys.json --runInBand -t 'US3: a live stream'
+(node:30044) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+Test Suites: 4 skipped, 1 passed, 1 of 5 total
+Tests:       112 skipped, 8 passed, 120 total
+Snapshots:   0 total
+Time:        122.341 s
+Ran all test suites with tests matching "US3: a live stream".

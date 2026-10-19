@@ -116,16 +116,15 @@ export class LiveCommentService {
 
   /**
    * A time-ordered id (uuidv7) built on the injected clock, with a counter so that ids made in the same millisecond by
-   * this process still sort in the order they were made (the viewers' batches and the history sort by id).
+   * this process still sort in the order they were made (the viewers' batches and the history sort by id). The time of
+   * the id is always `at`, also when the clock moved back: the history finds a comment's partition by the time in its id.
    */
   private lastMs = 0;
   private seq = 0;
   private nextId(at: number): string {
-    if (at > this.lastMs) {
-      this.lastMs = at;
-      this.seq = 0;
-    } else this.seq++;
-    return uuidv7({ msecs: this.lastMs, seq: this.seq });
+    this.seq = at === this.lastMs ? this.seq + 1 : 0;
+    this.lastMs = at;
+    return uuidv7({ msecs: at, seq: this.seq });
   }
 
   private parse(body: unknown): { text: string; clientId?: string } {
