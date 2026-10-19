@@ -5,7 +5,7 @@
 # "needs human", a stalled loop.log (30 min without a change), a vanished machine, an unreachable machine, the runner script's own failure line.
 cd "$(dirname "${BASH_SOURCE[0]}")/../.." || exit 1
 source scripts/vps/lib.sh; load_config; set -a; source ~/.config/sdd-vps/config.env; set +a
-PAT='^done |^build |STOP|BLOCKED|^FAIL|crashed|gate failed|gate not re-run|gate stage|doctor-|hit the pass timeout|needs human|TIME BUDGET|reached UNTIL|CHECKPOINT|checkpoint'
+PAT='PERMISSION|^done |^build |STOP|BLOCKED|^FAIL|crashed|gate failed|gate not re-run|gate stage|doctor-|hit the pass timeout|needs human|TIME BUDGET|reached UNTIL|CHECKPOINT|checkpoint'
 seen=0; unreach=0; gone=0; lastvm=""; stalls=0
 while true; do
   ip=$(hcloud server list -o noheader -o columns=ipv4 2>/dev/null | head -1)

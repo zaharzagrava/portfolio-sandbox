@@ -39,6 +39,7 @@ with the links that prove it: backticked file paths and commit hashes. For a `pr
 - L-028 2026-10-17 process prevented
 - L-029 2026-10-18 state-leak prevented
 - L-030 2026-10-18 timing prevented
+- L-031 2026-10-19 config prevented
 
 ## L-001 A message option the queue refuses, found only by hand
 - **Rule:** A queue option must be validated where the message is created, not discovered when the relay fails (FIFO-only options like `groupId` never go to a standard queue).
@@ -219,3 +220,8 @@ Second part of L-027: even without the out-of-memory, the watch-mode API restart
 - **Prevention:** the retry plus the flaky list. Look at the lists when a spec starts failing for real, and when it appears in them twice, make it deterministic.
 
 Second part of L-030: a journey's gate runs only its own spec file (`pnpm test:journeys <file>`). J02's gate re-ran J01 as well (10+ minutes) and failed on J01 AS-30 (a log-offset check that depends on the stack's history) although J01 had passed at its own gate; the whole journey suite runs at the final checkpoint. Also: the runner config's `PASS_TIMEOUT_S=7200` overrode the 50-minute default and let J02's first implement pass run for two hours; it is now 3000.
+
+## L-031 A refused command stalls a pass until its timeout and ends as "needs human"
+- **Rule:** Every command an unattended agent may need is on the allow-list in a form that does not depend on its working directory, and a refusal is announced in the loop log (`PERMISSION:`), not discovered after three passes.
+- **Symptom:** J03 (2026-10-18/19): three implement passes of 50 minutes each closed no task (22 tasks open), then the doctor wrote "needs human: the unattended shell refuses `python3 scripts/livespec/check.py`, `git`, jest and pnpm" and J03 was BLOCKED; J04 lost passes the same way. **Cause:** the allow-list matches command prefixes: `python3 scripts/livespec/check.py` only in that exact form, no `git diff` at all. A journey capability works inside `packages/backend/test/journeys`, so an agent that has `cd`'d there runs `python3 ../../scripts/...` or `git diff`, which "requires approval" in an unattended run. The first task (T008) needed `check.py`, so nothing after it could start.
+- **Prevention:** `python3`, `bash scripts`, read-only git (`diff`, `status`, `show`, `ls-files`, `rev-parse`, `blame`) and the usual file tools are allowed; `step()` writes a `PERMISSION:` line naming the refusal; `scripts/vps/watch-runner.sh` reports it.

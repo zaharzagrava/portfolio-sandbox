@@ -58,7 +58,12 @@ IMPL_TOOLS=("Bash($TEST_SPEC:*)" 'Bash(npx tsc:*)' 'Bash(npx eslint:*)' 'Bash(no
             # the checks of a fresh-stack task (L-012, S19 T072): an unattended agent cannot approve a command, so each one it needs is listed. fresh-run.sh --here and boot-check judge the
             # running stack; the doctors and the scripted buy flow name a stuck payment or queue; the logs of the API and the stacks say why.
             'Bash(scripts/qa/fresh-run.sh:*)' 'Bash(bash scripts/qa/fresh-run.sh:*)' 'Bash(scripts/infra/boot-check.sh:*)' 'Bash(scripts/infra/boot-app.sh:*)' 'Bash(scripts/infra/reload-queues.sh:*)' 'Bash(scripts/infra/doctor-live.sh:*)' 'Bash(python3 scripts/infra/doctor.py:*)'
-            'Bash(scripts/sdd/checkpoints/buy-ui.sh:*)' 'Bash(docker ps:*)' 'Bash(docker logs:*)' 'Bash(docker exec:*)' 'Bash(tail:*)' 'Bash(head:*)' 'Bash(ls:*)' 'Bash(jq:*)' 'Bash(sleep:*)')
+            'Bash(scripts/sdd/checkpoints/buy-ui.sh:*)' 'Bash(docker ps:*)' 'Bash(docker logs:*)' 'Bash(docker exec:*)' 'Bash(tail:*)' 'Bash(head:*)' 'Bash(ls:*)' 'Bash(jq:*)' 'Bash(sleep:*)'
+            # J03 (2026-10-19) stood still for three 50-minute passes on its first task: the agent had cd'd into packages/backend, so
+            # `python3 ../../scripts/livespec/check.py` and `git diff` did not match the exact forms above and "required approval" that nobody can give.
+            # python3 and node run arbitrary code already (node:* and pnpm:* are listed); read-only git and the usual file tools are no new power.
+            'Bash(python3:*)' 'Bash(bash scripts:*)' 'Bash(git diff:*)' 'Bash(git status:*)' 'Bash(git show:*)' 'Bash(git ls-files:*)' 'Bash(git rev-parse:*)' 'Bash(git blame:*)'
+            'Bash(wc:*)' 'Bash(sort:*)' 'Bash(uniq:*)' 'Bash(diff:*)' 'Bash(stat:*)' 'Bash(which:*)' 'Bash(date:*)' 'Bash(mkdir:*)' 'Bash(basename:*)' 'Bash(dirname:*)' 'Bash(realpath:*)')
 
 # push_branch: with PUSH_BRANCH set, publish HEAD to that branch (best effort; the VPS runner sets it so nothing is lost).
 push_branch() {
@@ -331,6 +336,11 @@ step() { # $1 = dir, $2 = step name, $3 = prompt
     hit_usage_limit "$1/.$2.log" && break
     (( try == 1 )) && { echo "  $2 failed; retrying once (transient errors happen)"; sleep 20; }
   done
+  # A command the unattended shell refused ("requires approval") cannot be answered by anyone: name it in the loop log (the watcher and the phone
+  # message pick it up) instead of letting the pass run into its timeout.
+  if grep -qaiE "requires approval|was refused|were refused|is refused|permission to use" "$1/.$2.log" 2>/dev/null; then
+    echo "  PERMISSION: $2 says a command was refused: $(grep -aiE 'requires approval|refused|permission to use' "$1/.$2.log" | head -2 | tr '\n' ' ' | cut -c1-260)"
+  fi
   step_metric "$1" "$2" "$t0" "$rc" "$try" "$fp0"
   # A pass that hit the time limit is not a failure: the next implement pass resumes at the first open task.
   # The same for a repair or doctor step: its edits are in the tree, the gate (or the next build) shows whether they were enough. Treating the
