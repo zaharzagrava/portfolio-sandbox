@@ -1,33 +1,9 @@
-$ NODE_OPTIONS=--experimental-vm-modules jest --config jest-journeys.json --runInBand launch-day -t AS-36 --testTimeout=150000 --forceExit
-(node:113432) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+$ NODE_OPTIONS=--experimental-vm-modules jest --config jest-journeys.json --runInBand -t 'US4: an auction'
+(node:18880) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
 (Use `node --trace-warnings ...` to show where the warning was created)
-  console.log
-    [hop] J03.H23 511 ms (contract 5000 ms)
 
-      at waitForContract (test/journeys/support/wait-for-contract.ts:320:11)
-
-  console.log
-    [hop] J03.H23 514 ms (contract 5000 ms)
-
-      at waitForContract (test/journeys/support/wait-for-contract.ts:320:11)
-
-  console.log
-    [hop] J03.H24 561 ms (contract 10000 ms)
-
-      at waitForContract (test/journeys/support/wait-for-contract.ts:320:11)
-
-  console.log
-    [hop] H1 11 ms (contract 3000 ms)
-
-      at waitForContract (test/journeys/support/wait-for-contract.ts:320:11)
-
-  console.log
-    [hop] H3 3599 ms (contract 5000 ms)
-
-      at waitForContract (test/journeys/support/wait-for-contract.ts:320:11)
-
-  console.log
-    [hop] J03.H29 1986 ms (contract 15000 ms)
-
-      at waitForContract (test/journeys/support/wait-for-contract.ts:320:11)
-
+Test Suites: 4 skipped, 1 passed, 1 of 5 total
+Tests:       102 skipped, 10 passed, 112 total
+Snapshots:   0 total
+Time:        298.524 s
+Ran all test suites with tests matching "US4: an auction".

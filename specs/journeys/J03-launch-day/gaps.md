@@ -69,3 +69,21 @@ Also true in all five domains: **no code uses the injectable `Clock`** (`libs/co
 3. Hand-offs with money or stock: G-21, G-22, G-24 (auction settlement), G-18, G-19 (drop stock), G-04 (voucher).
 4. Notifications: G-05, G-26, G-27, then G-11 to G-14 (live), G-06 to G-09 (booking details), G-25.
 5. G-29, G-31 (idempotency proofs, coupling), G-43 to G-46, then the journey itself and `pnpm test:journeys` green on a fresh stack.
+
+## Sibling-spec follow-ups
+
+- **S10**: consume the voucher command `orders.booking_voucher_requested` (group `orders-booking-voucher`), own the Voucher table and the route `GET /orders/vouchers`.
+- **S22**: the ticket status carries `admittedAt`.
+- **S23**: the local-profile classifier double (`[[toxic]]` scores 0.95, everything else 0.05); the per-user comment limit (3 per 10 s) is charged to retries of a `clientId` too, so AS-22's twenty simultaneous posts cannot all pass with the limiter on (decide: charge only new comments); a removal raced by 20 concurrent deletes may be announced to viewers more than once.
+- **S28**: new rows `flash_sale.sold_out` and `flash_sale.start_failed`.
+- **S53**: the event tap and the queue consumers in the consumer API.
+- **S49**: four job types (`launch-events.reconcile-seats`, `auctions.sweep-due`, `flash-sale.verify`, `launch-events.live-reconcile`).
+- **W03**: align the popover to the topic `user:<id>`; the `notification` event carries `unread: boolean` per item, not a running count.
+
+## Spec changes
+
+- None to a signed page. Code change made by this journey: `LiveCommentService.nextId` (`launch-events`) now builds the comment id from the comment's own time (before, a clock that had moved back left the id ahead of `at`, so the history stored a removal in a different minute partition than its post and the removed comment stayed listed). No `*.reviewed.json` was touched.
+
+## Gate repairs
+
+- `launch-day.journey-spec.ts`: `admitted` was an untyped evolving array (inferred `never` under tsc); typed it `Admitted[]`. `tsc --noEmit` now passes.
