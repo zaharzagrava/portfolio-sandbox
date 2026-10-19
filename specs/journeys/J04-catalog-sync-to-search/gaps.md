@@ -50,3 +50,36 @@ J01's gaps apply here unchanged and are not repeated: the relay envelope (J01 G-
 3. S32 projector and API (G-16, G-17), S19 copy, topic and API (G-18–G-20), S08 push consumer (G-11, G-12).
 4. S07 events and routes (G-05–G-07), S08 connect/webhook (G-08, G-10), shop lifecycle consumers (G-23).
 5. Journey kit and the journey file (G-09, G-27); last, S26/S50 clean-up (G-24, G-25).
+
+## 4. Corrections found while building the journey
+
+- **AS-09 step 2 (spec.md)**: the spec says the exact store `GET /pickup-points/near?productId=` still lists the point of an archived product. The code and the living page S19.R-14 / S19.B-04 say the opposite (one visibility rule hides an archived product from the index, the exact browse and the clusters). The journey follows S19.R-14: the exact browse is empty after archive and lists the point again after restore.
+- T031 audit: no raw Product quantity SQL or products.events insert in orders/auctions/payments production code (only test fixtures); stock writers use applyStockDelta through their adapters. Stale comment at product.model.ts fixed.
+- **AS-20 (spec.md)**: a suspended shop's import start and till push are answered `403 shop_suspended` by the platform shop guard (not `409` / `shop_not_active`); every shop-scoped read except imports (products, integration) is refused the same way. The journey asserts the real contract.
+
+## 5. Status of the rows (G-01..G-27)
+
+All rows are closed by the work of this journey or by the capabilities it depends on, and are proven by the journey scenarios, the e2e specs named in tasks.md, or the static audit (T031). G-12 (FIFO queue per integration) is superseded: lease and fencing are the correctness mechanism (research.md §1). G-15's trigger and FK are gone (S09 feed consumer). G-24 is the import-origin fan-out policy of S26 (T043/T044). G-25 is pinned by `libs/domains/catalog-sync/rate-limit-routes.spec.ts`, `libs/domains/fulfilment/near-search-rate-limit.spec.ts` and `libs/domains/discovery/search-rate-limit.spec.ts`. Rows whose proof is a measurement (SC-001..SC-006, SC-008) are listed under "Ops artifacts" in quickstart.md and in `specs/UNVERIFIED.md`, status `not run`.
+
+## Spec changes
+
+No page carries a `*.reviewed.json` sign-off, so no signed text changed. Pages edited (rule 0): S08 (`ALLOWED_PROVIDER_HOSTS`, event name `catalogsync.import_finished`, new rule **S08.R-39**: a failed stock push is recorded as `lastError` and repaired by the next completed pass), S53 (canonical aliases `integrations-stock-push`, `offline-sync-feed`, `pickup-availability`; topics `pickup.events`, `tenancy.events`, `catalog-sync.events`), S49 (job types `catalog-sync.sync-all`, `catalog-sync.reconcile-all`, `catalog-sync.recover-stalled-imports`, `search.reindex`), S26 (import-origin fan-out policy).
+
+## Sibling-spec follow-ups
+
+- **S07**: the registered event name is `catalogsync.import_finished` (spec text says `catalog_sync.import_finished`); a suspended shop's import start is answered `403 shop_suspended` by the platform guard, not `409 shop_not_active`.
+- **S53**: the three aliases `integrations-stock-push`, `offline-sync-feed` and `pickup-availability` act on all their real groups; replay pauses, rewinds and resumes the group, so `RUNNING` with `lag: 0` after a replay means it finished.
+- **S26**: import-origin product creates are not fanned out one by one to followers.
+- **S19**: `pickup.events` carries `stockVersion`; a no-op `PUT stock` emits nothing; the exact browse hides archived products like the index (S19.R-14), which J04 spec.md AS-09 had stated the other way round.
+- **S08**: a provider failure while pushing stock sets `lastError` (R-39); the outbox rows written while the stack clock is moved are due on the moved clock, so a test that moves the clock keeps it moved until it has seen the effects.
+
+## Gate repairs
+- The gate's only errors were two livespec check failures in pages outside J04, fixed by editing the pages (no code or test changed, no `*.reviewed.json` touched):
+  - `S10-cart-checkout.md`: the Entry-points route `POST /api/admin/consumers/orders-booking-voucher/pause` is now written as the controller defines it, `POST /api/admin/consumers/:group/pause` with `group` = `orders-booking-voucher`.
+  - `S23-live-stream.md` S23.B-05: `[proof: J03 AS-24]` named a title that does not exist; the test is `J03 G-43` (`scripted-toxicity.classifier.e2e-spec.ts`), so the proof now says that.
+- `python3 scripts/livespec/check.py` now reports 0 errors (warnings only).
+- Backend unit gate (3 suites, 5 tests) repaired; full `pnpm test` now 471 suites / 9316 tests green:
+  - `db/ownership.ts`: the `Voucher` table (orders `voucher.model.ts`, S10 booking voucher) was not in the ownership registry; registered as `domain:orders`.
+  - `notifications/domain/event-mapping.spec.ts` (S28 AS-13): the alias test looks up the canonical row in `MAPPED`, and there were none for `flash_sale.sold_out` / `flash_sale.start_failed`; added both rows (the mapping already existed in `event-mapping.ts`).
+  - `shop-functions/infra/sandbox.ts` (S45 AS-14): a runaway native call (`new Array(1e7).fill`) either hit the heap cap (`memory`) or the host deadline (`timeout`), depending on timing, so the test was flaky. A run that already spent its time budget when the isolate dies is now classified `timeout`; the memory-bomb tests (1–2 s budgets, instant OOM) still get `memory`.
+- Journey environment check (`stack-fix.sh journey`) failed with "the API does not serve metrics on :9464" (the watch-mode API had lost the metrics listener). No code or test changed: ran `bash scripts/sdd/stack-fix.sh api-restart`; afterwards :9464/metrics and `/health/ready` answer 200 and `stack-fix.sh journey` prints "journey environment ok". No runner restart needed.

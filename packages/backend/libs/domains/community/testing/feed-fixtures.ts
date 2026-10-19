@@ -159,6 +159,7 @@ export interface ProductEventInput {
   isSandbox?: boolean;
   productVersion?: number;
   changedFields?: string[];
+  source?: 'seller' | 'import' | 'integration';
   occurredAt?: Date;
   eventId?: string;
 }
@@ -547,6 +548,7 @@ export async function createFeedApp(
       createdAt: now,
       updatedAt: now,
       changedFields: input.changedFields ?? [],
+      ...(input.source ? { source: input.source } : {}),
     };
   };
 

@@ -10,7 +10,18 @@ export const clockConfigKeys = {
     name: 'CLOCK_CONTROL',
     verify: joi.string().valid('enabled', 'disabled').optional().allow(''),
   },
+  // J03: the read-only event tap of the journey control surface (`GET /api/admin/topics/:topic/messages`).
+  event_tap: {
+    name: 'EVENT_TAP',
+    verify: joi.string().valid('enabled', 'disabled').optional().allow(''),
+  },
 };
+
+/** The event tap is never allowed in production. */
+export const eventTapRule: RuleCheck = (ctx) =>
+  ctx.production && ctx.get('event_tap') === 'enabled'
+    ? ['event_tap must not be enabled in production']
+    : [];
 
 /** The controllable clock is never allowed in production. */
 export const clockControlRule: RuleCheck = (ctx) =>
@@ -22,4 +33,10 @@ ConfigRules.register({
   owner: 'clock',
   keys: ['clock_control'],
   validate: clockControlRule,
+});
+
+ConfigRules.register({
+  owner: 'event-tap',
+  keys: ['event_tap'],
+  validate: eventTapRule,
 });

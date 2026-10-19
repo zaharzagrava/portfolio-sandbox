@@ -42,14 +42,30 @@ export function validateStoreUrl(input: string): StoreUrlResult {
   return { ok: true, baseUrl: `https://${host}${path}` };
 }
 
+/** The `host:port` list of the local-profile setting `ALLOWED_PROVIDER_HOSTS` (empty outside the local profile). */
+export function parseAllowedProviderHosts(raw: unknown): string[] {
+  return typeof raw === 'string'
+    ? raw
+        .split(',')
+        .map((s) => s.trim().toLowerCase())
+        .filter(Boolean)
+    : [];
+}
+
 export type ShopifyDomainResult =
   { ok: true; domain: string } | { ok: false; code: 'invalid_shop_domain' };
 
 /** `^[a-z0-9][a-z0-9-]*\.myshopify\.com$`, <= 255, lower-cased; no scheme, port or path. */
-export function validateShopifyDomain(input: string): ShopifyDomainResult {
+export function validateShopifyDomain(
+  input: string,
+  allowedHosts: readonly string[] = [],
+): ShopifyDomainResult {
   if (typeof input !== 'string')
     return { ok: false, code: 'invalid_shop_domain' };
   const domain = input.trim().toLowerCase();
+  // J04 local profile: a listed `host:port` stands in for a myshopify.com store (never set in production).
+  if (allowedHosts.some((h) => h.toLowerCase() === domain))
+    return { ok: true, domain };
   if (
     domain.length > 255 ||
     !/^[a-z0-9][a-z0-9-]{0,62}\.myshopify\.com$/.test(domain)

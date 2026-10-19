@@ -54,6 +54,7 @@ S13 publishes a `payment.status` event to the owner's topic `user:{userId}` each
 - [stream-connection](stream-connection.md)
 - [stream-frame](stream-frame.md)
 - [tenancy-domain-layer](tenancy-domain-layer.md)
+- [too-many-connections](too-many-connections.md)
 - [topic-registry-frozen](topic-registry-frozen.md)
 - [topic-registry](topic-registry.md)
 - [unusable-cursor-entry](unusable-cursor-entry.md)

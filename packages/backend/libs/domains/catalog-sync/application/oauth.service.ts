@@ -3,7 +3,10 @@ import { createHash, randomBytes } from 'node:crypto';
 import type { IntegrationInstallResponse } from '@marketplace-sandbox/contracts';
 import { ApiConfigService } from '@app/common/config';
 import { syncProblem } from '../domain/catalog-sync-errors';
-import { validateShopifyDomain } from '../domain/store-address';
+import {
+  parseAllowedProviderHosts,
+  validateShopifyDomain,
+} from '../domain/store-address';
 import {
   INSTALL_REPOSITORY,
   PROVIDER_SESSIONS,
@@ -44,7 +47,10 @@ export class OAuthService {
     userId: string,
     shopDomainInput: string,
   ): Promise<IntegrationInstallResponse> {
-    const domain = validateShopifyDomain(shopDomainInput);
+    const domain = validateShopifyDomain(
+      shopDomainInput,
+      parseAllowedProviderHosts(this.config.get('allowed_provider_hosts')),
+    );
     if (!domain.ok) throw syncProblem('invalid_store_url');
     const state = randomBytes(24).toString('base64url');
     const now = this.clock.now();

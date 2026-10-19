@@ -145,6 +145,25 @@ describe('S53 task queue (ElasticMQ)', () => {
     ).resolves.toBe(true);
   });
 
+  it('J03 G-42: a held consumer takes nothing and queueDepth counts the waiting messages; the resume delivers them once', async () => {
+    const { queue } = await makeQueue('held');
+    let held = true;
+    const seen: number[] = [];
+    consume<{ n: number }>(queue, async ({ body }) => void seen.push(body.n), {
+      isPaused: async () => held,
+    });
+    await sqs.enqueue(queue, { n: 1 });
+    await sqs.enqueue(queue, { n: 2 });
+    await until(async () => (await sqs.queueDepth(queue)) === 2);
+    await sleep(1_500);
+    expect(seen).toEqual([]);
+    expect(await sqs.queueDepth(queue)).toBe(2);
+    held = false;
+    await until(() => seen.length === 2);
+    await until(async () => (await sqs.queueDepth(queue)) === 0);
+    expect([...seen].sort()).toEqual([1, 2]);
+  }, 30_000);
+
   it('S53 AS-92: a 2 s delay hides the task, then delivers it once', async () => {
     const { queue } = await makeQueue('delay');
     const started = Date.now();

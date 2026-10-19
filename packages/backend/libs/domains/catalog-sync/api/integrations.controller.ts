@@ -22,7 +22,9 @@ import {
   type IntegrationSyncRequest,
   type WooConnectRequest,
 } from '@marketplace-sandbox/contracts';
+import { ApiConfigService } from '@app/common/config';
 import { User, UserRawDto } from '@app/domains/identity';
+import { parseAllowedProviderHosts } from '../domain/store-address';
 import { ShopScoped } from '@app/domains/tenancy';
 import { RateLimit } from '@app/infrastructure/rate-limit';
 import { ConnectService } from '../application/connect.service';
@@ -47,6 +49,7 @@ export class IntegrationsController {
     private readonly oauth: OAuthService,
     private readonly connect: ConnectService,
     private readonly admin: IntegrationAdminService,
+    private readonly config: ApiConfigService,
   ) {}
 
   @ShopScoped('integrations.manage')
@@ -56,9 +59,32 @@ export class IntegrationsController {
   install(
     @Param('shopId', UuidParamPipe) shopId: string,
     @User() user: UserRawDto,
-    @Body(installBody) body: { shopDomain: string },
+    @Body() raw: unknown,
   ): Promise<IntegrationInstallResponse> {
-    return this.oauth.startInstall(shopId, user.id, body.shopDomain);
+    return this.oauth.startInstall(
+      shopId,
+      user.id,
+      this.installRequest(raw).shopDomain,
+    );
+  }
+
+  /** The contract shape, except that a `host:port` listed in the local profile (`ALLOWED_PROVIDER_HOSTS`) stands in for a store. */
+  private installRequest(raw: unknown): { shopDomain: string } {
+    const listed = parseAllowedProviderHosts(
+      this.config.get('allowed_provider_hosts'),
+    );
+    const candidate =
+      typeof raw === 'object' && raw !== null
+        ? (raw as { shopDomain?: unknown })
+        : {};
+    if (
+      listed.length > 0 &&
+      Object.keys(candidate).length === 1 &&
+      typeof candidate.shopDomain === 'string' &&
+      listed.includes(candidate.shopDomain.trim().toLowerCase())
+    )
+      return { shopDomain: candidate.shopDomain };
+    return installBody.transform(raw);
   }
 
   @ShopScoped('integrations.manage')

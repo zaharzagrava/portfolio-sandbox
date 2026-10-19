@@ -10,6 +10,15 @@ export const ADMIN_JOB_TYPES = [
   'onboarding.verify-pending',
   'webhooks.retry',
   'search.reindex',
+  // J03: launch day (seat reconcile, auction sweep, drop verify, live reconcile)
+  'launch-events.reconcile-seats',
+  'auctions.sweep-due',
+  'flash-sale.verify',
+  'launch-events.live-reconcile',
+  // J04: catalog sync to search (provider pull, reconciliation, stalled-import recovery; `search.reindex` is above)
+  'catalog-sync.sync-all',
+  'catalog-sync.reconcile-all',
+  'catalog-sync.recover-stalled-imports',
 ] as const;
 export const adminJobTypeSchema = z.enum(ADMIN_JOB_TYPES);
 

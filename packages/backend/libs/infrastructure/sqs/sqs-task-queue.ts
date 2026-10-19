@@ -29,6 +29,9 @@ const oldestMessageAge = MetricsRegistry.gauge({
   labels: ['queue'],
 });
 
+/** How often a held consumer looks at its flag again. */
+const PAUSE_POLL_MS = 500;
+
 @Injectable()
 export class SqsTaskQueue extends TaskQueue {
   private readonly logger = new Logger(SqsTaskQueue.name);
@@ -67,6 +70,16 @@ export class SqsTaskQueue extends TaskQueue {
       if (error instanceof QueueDoesNotExist) return false;
       throw error;
     }
+  }
+
+  async queueDepth(queue: string): Promise<number> {
+    const { Attributes = {} } = await this.client.send(
+      new GetQueueAttributesCommand({
+        QueueUrl: this.queueUrl(queue),
+        AttributeNames: ['ApproximateNumberOfMessages'],
+      }),
+    );
+    return Number(Attributes.ApproximateNumberOfMessages ?? 0);
   }
 
   async enqueue<T>(
@@ -130,6 +143,7 @@ export class SqsTaskQueue extends TaskQueue {
       waitTimeSec = 20,
       bodySchema,
       deadLetterQueue = queue.replace(/(\.fifo)?$/, '-dlq$1'),
+      isPaused,
     }: ConsumeOptions = {},
   ): () => Promise<void> {
     const queueUrl = this.queueUrl(queue);
@@ -243,6 +257,10 @@ export class SqsTaskQueue extends TaskQueue {
           continue;
         }
         try {
+          if (isPaused && (await isPaused())) {
+            await sleep(PAUSE_POLL_MS);
+            continue;
+          }
           const { Messages = [] } = await this.client.send(
             new ReceiveMessageCommand({
               QueueUrl: queueUrl,
@@ -258,6 +276,21 @@ export class SqsTaskQueue extends TaskQueue {
             }),
             { abortSignal: polling.signal },
           );
+          // Held while this receive was waiting: give the messages back at once (they keep their place in the queue).
+          if (Messages.length && isPaused && (await isPaused())) {
+            await Promise.allSettled(
+              Messages.map((m) =>
+                this.client.send(
+                  new ChangeMessageVisibilityCommand({
+                    QueueUrl: queueUrl,
+                    ReceiptHandle: m.ReceiptHandle,
+                    VisibilityTimeout: 0,
+                  }),
+                ),
+              ),
+            );
+            continue;
+          }
           // Backlog age as this consumer sees it: how long the oldest message just received had waited (0 when idle).
           const sent = Messages.map((m) =>
             Number(m.Attributes?.SentTimestamp),

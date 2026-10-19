@@ -9,6 +9,8 @@ import { MetricsRegistry } from '@app/common/telemetry/metrics-registry';
 import { RedisService } from '@app/infrastructure/redis/redis.service';
 import { ConsumerKit } from '@app/infrastructure/events/testing/consumer-kit';
 import { fixtureConsumer } from '@app/infrastructure/events/testing/fixture-consumers';
+import { SqsModule } from '@app/infrastructure/sqs/sqs.module';
+import { TaskQueue } from '@app/infrastructure/sqs/task-queue.port';
 import { readTopic } from '@app/test/utils/kafka-test';
 import { waitFor } from '@app/test/utils/async-helpers';
 import { PermanentError } from '@app/infrastructure/projections/errors';
@@ -66,7 +68,7 @@ describe('Consumer operator routes (S53, J01 G-26, G-31)', () => {
 
   beforeAll(async () => {
     await kit.start();
-    t = await createAuthApp({ extraImports: [IdentityOpsModule] });
+    t = await createAuthApp({ extraImports: [IdentityOpsModule, SqsModule] });
     redis = t.app.get(RedisService);
   }, 120_000);
   afterAll(async () => {
@@ -160,11 +162,70 @@ describe('Consumer operator routes (S53, J01 G-26, G-31)', () => {
       expect((await view(group)).group).toBe(group);
   });
 
+  it('J04 G-11 G-15 G-18: the catalog-sync journey aliases are known, pause/resume answer for them, and the real group names still resolve', async () => {
+    for (const group of [
+      'integrations-stock-push',
+      'offline-sync-feed',
+      'pickup-availability',
+      'search-product-index',
+      'product-cache-invalidator',
+    ]) {
+      const first = await view(group);
+      expect(first.group).toBe(group);
+      expect(first.lag).toBeGreaterThanOrEqual(0);
+    }
+    for (const group of [
+      'integrations-stock-push',
+      'offline-sync-feed',
+      'pickup-availability',
+    ])
+      expect(JOURNEY_CONSUMER_GROUPS).toContain(group);
+  });
+
   it('J01 G-31: the journey group names are known before any runner declared them', async () => {
     for (const group of JOURNEY_CONSUMER_GROUPS) {
       expect((await view(group)).group).toBe(group);
     }
   });
+
+  it('J03 G-42: the booking-voucher queue consumer can be paused, its lag is the visible messages, other consumers keep running', async () => {
+    const group = 'orders-booking-voucher';
+    const queue = t.app.get(TaskQueue);
+    const other = await view('payments-order-copy');
+    const paused = await call(
+      'post',
+      `/api/admin/consumers/${group}/pause`,
+      admin,
+    ).expect(200);
+    expect(consumerViewSchema.parse(paused.body).state).toBe('PAUSED');
+    expect((await view('payments-order-copy')).state).toBe(other.state);
+
+    // Held: the message stays in the queue, whoever consumes it (the flag is the same in every process).
+    const before = (await view(group)).lag;
+    await queue.enqueue('orders-booking-voucher-requested', { held: true });
+    await waitFor(async () => (await view(group)).lag === before + 1, {
+      description: 'one more message waiting',
+    });
+
+    // Clean up: take the message away ourselves, then resume.
+    const drained: unknown[] = [];
+    const stop = queue.consume(
+      'orders-booking-voucher-requested',
+      async ({ body }) => void drained.push(body),
+      { waitTimeSec: 1, concurrency: 1 },
+    );
+    await waitFor(async () => drained.length > 0, {
+      description: 'message drained by the spec',
+    });
+    await stop();
+    const resumed = await call(
+      'post',
+      `/api/admin/consumers/${group}/resume`,
+      admin,
+    ).expect(200);
+    expect(consumerViewSchema.parse(resumed.body).state).toBe('RUNNING');
+    expect((await view(group)).lag).toBe(before);
+  }, 60_000);
 
   it('J01 G-31: GET reports state, topics, lag, lastProcessedAt and dlqDepth of a running group', async () => {
     const { s, consumer, group } = await runner();

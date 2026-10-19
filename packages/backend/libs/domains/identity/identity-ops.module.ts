@@ -11,6 +11,11 @@ import {
 } from './api/clock-admin.controller';
 import { ConsumersAdminController } from './api/consumers-admin.controller';
 import { JobsAdminController } from './api/jobs-admin.controller';
+import {
+  EventTapEnabledGuard,
+  TopicsAdminController,
+} from './api/topics-admin.controller';
+import { TopicTapService } from '@app/infrastructure/kafka/topic-tap.service';
 
 /**
  * Operator routes (ADMIN only) over the S49 job system, the S53 consumers and the S54 clock. A separate module so that
@@ -30,7 +35,8 @@ import { JobsAdminController } from './api/jobs-admin.controller';
     JobsAdminController,
     ConsumersAdminController,
     ClockAdminController,
+    TopicsAdminController,
   ],
-  providers: [ClockControlEnabledGuard],
+  providers: [ClockControlEnabledGuard, EventTapEnabledGuard, TopicTapService],
 })
 export class IdentityOpsModule {}

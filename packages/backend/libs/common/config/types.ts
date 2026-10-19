@@ -243,6 +243,8 @@ export class SecretsManagerConfig {
 
   /** S54: `enabled` switches on the controllable clock (never in production), see `clock-config.ts`. */
   clock_control?: string;
+  /** J03: `enabled` switches on the read-only event tap (never in production), see `clock-config.ts`. */
+  event_tap?: string;
 
   /** J02 local profile, see `local-profile-config.ts`; every one is refused in production. */
   bootstrap_admin_email?: string;
@@ -250,6 +252,7 @@ export class SecretsManagerConfig {
   rate_limit_allow_ips?: string;
   allowed_receiver_hosts?: string;
   allowed_receiver_ca_fingerprint?: string;
+  allowed_provider_hosts?: string;
 
   /** S15: seller payout settings, defaults in `payout-config.ts`. */
   payout_default_reserve_bps: number;

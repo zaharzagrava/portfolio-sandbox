@@ -402,6 +402,34 @@ export const NOTIFICATION_TYPES = {
     },
   },
 
+  'shop.flash_sale_sold_out': {
+    category: 'shop',
+    priority: 'transactional',
+    recipient: 'shopOwners',
+    channels: ['push', 'inapp'],
+    link: (d) => `/shops/${d.shopId}/flash-sales/${d.saleId}`,
+    templates: {
+      en: {
+        title: 'Your drop sold out',
+        body: 'Every unit of your limited drop is sold.',
+      },
+    },
+  },
+  'shop.flash_sale_start_failed': {
+    category: 'shop',
+    priority: 'transactional',
+    recipient: 'shopOwners',
+    channels: ['email', 'inapp'],
+    link: (d) => `/shops/${d.shopId}/flash-sales/${d.saleId}`,
+    templates: {
+      en: {
+        title: 'Your drop could not start',
+        body: 'The drop did not start ({{reason}}). Nothing was sold from it; check the stock and schedule it again.',
+        emailSubject: 'Your drop could not start',
+      },
+    },
+  },
+
   // ---- orders, payments, delivery ----------------------------------------------------------------------------------
   'order.confirmed': {
     category: 'orders',

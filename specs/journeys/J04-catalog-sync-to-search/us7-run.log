@@ -1,0 +1,118 @@
+$ NODE_OPTIONS=--experimental-vm-modules jest --config jest-journeys.json --runInBand catalog-sync-to-search -t US7
+(node:179241) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+  console.log
+    [hop] J04.H4 267 ms (contract 30000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+  console.log
+    [hop] J04.H3 1627 ms (contract 10000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+  console.log
+    [hop] J04.H7 2098 ms (contract 10000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+  console.log
+    [hop] J04.H3 563 ms (contract 10000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+  console.log
+    [hop] J04.H15 995 ms (contract 15000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+  console.log
+    [hop] J04.H15 292 ms (contract 15000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+  console.log
+    [hop] J04.H14 2197 ms (contract 10000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+  console.log
+    [hop] H13 266 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+  console.log
+    [hop] J04.H14 1365 ms (contract 10000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+  console.log
+    [hop] H13 259 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+  console.log
+    [hop] J04.H6 49 ms (contract 15000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+  console.log
+    [hop] J04.H1 268 ms (contract 30000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+  console.log
+    [hop] J04.H1 265 ms (contract 30000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+  console.log
+    [hop] J04.H2 8 ms (contract 0 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+  console.log
+    [hop] J04.H1 267 ms (contract 30000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+  console.log
+    [hop] J04.H15 736 ms (contract 15000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+  console.log
+    [hop] J04.H3 289 ms (contract 10000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+  console.log
+    [hop] H13 258 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+  console.log
+    [hop] J04.H6 48 ms (contract 15000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+  console.log
+    [hop] J04.H15 1057 ms (contract 15000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+  console.log
+    [hop] H13 519 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+  console.log
+    [hop] J04.H3 26 ms (contract 10000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+Test Suites: 1 passed, 1 total
+Tests:       19 skipped, 3 passed, 22 total
+Snapshots:   0 total
+Time:        130.697 s
+Ran all test suites matching catalog-sync-to-search with tests matching "US7".

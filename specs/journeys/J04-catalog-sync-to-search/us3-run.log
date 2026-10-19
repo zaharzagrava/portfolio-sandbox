@@ -1,0 +1,58 @@
+$ NODE_OPTIONS=--experimental-vm-modules jest --config jest-journeys.json --runInBand catalog-sync-to-search -t 'J04 AS-0[89]'
+(node:166731) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+  console.log
+    [hop] J04.H7 3660 ms (contract 10000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+  console.log
+    [hop] J04.H7 1904 ms (contract 10000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+  console.log
+    [hop] J04.H3 21 ms (contract 10000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+  console.log
+    [hop] J04.H8 1882 ms (contract 10000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+  console.log
+    [hop] J04.H3 16 ms (contract 10000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+  console.log
+    [hop] J04.H7 2101 ms (contract 10000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+  console.log
+    [hop] J04.H3 17 ms (contract 10000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+  console.log
+    [hop] J04.H7 1883 ms (contract 10000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+  console.log
+    [hop] J04.H15 1283 ms (contract 15000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+  console.log
+    [hop] J04.H7 16 ms (contract 10000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+Test Suites: 1 passed, 1 total
+Tests:       7 skipped, 2 passed, 9 total
+Snapshots:   0 total
+Time:        49.686 s, estimated 56 s
+Ran all test suites matching catalog-sync-to-search with tests matching "J04 AS-0[89]".

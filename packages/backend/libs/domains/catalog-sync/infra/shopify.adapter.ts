@@ -40,6 +40,8 @@ export interface ShopifyAdapterOptions {
   /** Pinned Admin API version (configuration `SHOPIFY_API_VERSION`). */
   apiVersion: string;
   clock?: Clock;
+  /** Local profile (`ALLOWED_PROVIDER_HOSTS`): `host:port` stand-ins accepted as a store domain. */
+  allowedHosts?: readonly string[];
 }
 
 const header = (headers: WebhookHeaders, name: string): string | undefined => {
@@ -116,7 +118,7 @@ export class ShopifyAdapter implements CommerceProvider {
       Math.abs(now.getTime() - Number(timestamp) * 1000) > CALLBACK_TOLERANCE_MS
     )
       return null;
-    const domain = validateShopifyDomain(shop);
+    const domain = validateShopifyDomain(shop, this.options.allowedHosts);
     return domain.ok ? { shop: domain.domain, code, state } : null;
   }
 

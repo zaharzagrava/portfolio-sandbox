@@ -107,6 +107,7 @@ export class RedisQueueStore implements QueueStore {
         expiresAtMs: Number(reply[2]),
         admissionToken: reply[1],
         tokenExpiresAtMs: Number(reply[2]),
+        admittedAtMs: Number(reply[3]),
       };
     return {
       ticket,

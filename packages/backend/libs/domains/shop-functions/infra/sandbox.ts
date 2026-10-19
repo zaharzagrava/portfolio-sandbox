@@ -203,7 +203,7 @@ export class FunctionSandbox {
       try {
         await script.run(context, { timeout: timeoutMs });
       } catch (error) {
-        return this.isolateFailure(isolate, error, fail);
+        return this.isolateFailure(isolate, error, fail, timeoutMs);
       }
       await (
         await isolate.compileScript(ENTRY, { filename: 'entry.js' })
@@ -220,7 +220,7 @@ export class FunctionSandbox {
           arguments: { copy: true },
         });
       } catch (error) {
-        return this.isolateFailure(isolate, error, fail);
+        return this.isolateFailure(isolate, error, fail, timeoutMs);
       }
       if (typeof raw !== 'string') return fail('invalid-output', 'no result');
       const bytes = Buffer.byteLength(raw);
@@ -242,7 +242,7 @@ export class FunctionSandbox {
       if (!checked.ok) return fail('invalid-output', checked.detail);
       return { ok: true, output: checked.output, ms: elapsed() };
     } catch (error) {
-      return this.isolateFailure(isolate, error, fail);
+      return this.isolateFailure(isolate, error, fail, timeoutMs);
     }
   }
 
@@ -251,9 +251,17 @@ export class FunctionSandbox {
     isolate: ivm.Isolate,
     error: unknown,
     fail: (error: SandboxFailure, detail: string) => SandboxResult,
+    timeoutMs: number,
   ): SandboxResult {
     const message = (error as Error)?.message ?? 'error';
-    if (isolate.isDisposed) return fail('memory', 'memory limit exceeded');
+    if (isolate.isDisposed) {
+      // Whether a runaway native call dies of the heap cap or of the host deadline is a race; a run that already spent
+      // its whole time budget is a timeout either way.
+      const result = fail('memory', 'memory limit exceeded');
+      if (!result.ok && result.ms > timeoutMs)
+        return fail('timeout', 'time limit exceeded');
+      return result;
+    }
     if (/timed out/i.test(message))
       return fail('timeout', 'time limit exceeded');
     return fail('runtime', message);

@@ -34,7 +34,11 @@ import {
   type StoreTarget,
   type SyncSession,
 } from '../domain/ports';
-import { PROVIDER_NETWORK, type ProviderNetwork } from './provider-network';
+import {
+  allowedProviderHosts,
+  PROVIDER_NETWORK,
+  type ProviderNetwork,
+} from './provider-network';
 import {
   breakerOpenedCounter,
   provider429Counter,
@@ -139,6 +143,7 @@ export class HttpProviderSessions implements ProviderSessions {
       appSecret: settings.shopifyAppSecret,
       apiVersion: settings.shopifyApiVersion,
       clock,
+      allowedHosts: allowedProviderHosts(config),
     });
     this.currency = new PlatformSettings(config).currency;
     this.network = network ?? {};

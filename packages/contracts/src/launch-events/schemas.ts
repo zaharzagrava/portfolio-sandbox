@@ -90,6 +90,8 @@ export const queueStatusSchema = z.object({
   expiresAt: iso,
   admissionToken: z.string().optional(),
   tokenExpiresAt: iso.optional(),
+  /** Present only once admitted: the instant (stack clock) the ticket was admitted. */
+  admittedAt: iso.optional(),
 });
 export type QueueStatusDto = z.infer<typeof queueStatusSchema>;
 

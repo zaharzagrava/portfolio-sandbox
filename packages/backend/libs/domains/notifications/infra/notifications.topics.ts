@@ -31,6 +31,9 @@ const FAMILY_BY_PREFIX: ReadonlyArray<[string, NotificationSourceFamily]> = [
   ['tenancy.', 'tenancy'],
   ['shop.', 'shopOnboarding'],
   ['order.', 'orders'],
+  // Flash sales (S11) publish on `orders.events`: the sold-out and start-failed facts tell the shop owners (J03 G-26).
+  ['flash_sale.', 'orders'],
+  ['flashsale.', 'orders'],
   ['payments.', 'payments'],
   ['delivery.', 'delivery'],
   ['auction.', 'auctions'],

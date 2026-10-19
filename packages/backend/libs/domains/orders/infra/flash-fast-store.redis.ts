@@ -278,10 +278,12 @@ export class RedisFlashFastStore implements FlashFastStore {
           ? {
               kind: 'held',
               draws,
+              // `contents` is the read before the draw, stale when buyers race; a draw that left its bucket at zero says
+              // the same from the store itself, and the sold-out check reads every bucket before it decides (J03 AS-11).
               lastUnits:
                 contents.reduce((s, c) => s + Math.max(0, c), 0) -
                   req.quantity <=
-                0,
+                  0 || results.some((r) => r === 0),
             }
           : { kind: 'already_claimed', draws };
 

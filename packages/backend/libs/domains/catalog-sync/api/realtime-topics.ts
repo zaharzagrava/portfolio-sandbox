@@ -25,6 +25,8 @@ export class ImportJobTopics implements OnModuleInit {
     this.topics.define({
       prefix: 'import',
       owner: 'catalog-sync',
+      // Terminal events are replayable (S07 AS-55): a subscriber who connects after the end, with no cursor, still gets them.
+      replayFromStart: true,
       policy: async (viewer, _topic, importId) => {
         if (!viewer.userId || !UUID.test(importId)) return false;
         const [job] = await this.sequelize.query<{ shopId: string }>(

@@ -32,6 +32,7 @@ An access token is a short-lived credential, signed by S01, that proves who a ca
 
 ## Used by
 <!-- used-by:start -->
+- {{cap:J02}} New seller registers, creates a shop, passes onboarding/KYC, subscribes to a plan, lists a product that becomes searchable, sells it, receives the order webhook, and appears on the leaderboard
 - {{cap:S01}} Registration, password login, sessions, refresh-token rotation, JWKS, service-to-service tokens
 - {{cap:S02}} TOTP MFA with recovery codes, Google OIDC login (PKCE), account linking
 - {{cap:S04}} Staged onboarding questionnaire, KYC document intake, LLM extraction, human review, shop verification

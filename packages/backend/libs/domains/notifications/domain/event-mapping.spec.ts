@@ -623,6 +623,37 @@ const MAPPED: Row[] = [
     requests: [{ type: 'discussion.comment', recipient: user('OWN') }],
   },
   {
+    name: 'flash_sale.sold_out tells the shop owners, once per sale',
+    type: 'flash_sale.sold_out',
+    payload: { saleId: 'SALE1', shopId: 'S1', productId: 'PR1' },
+    requests: [
+      {
+        type: 'shop.flash_sale_sold_out',
+        recipient: owners('S1'),
+        sourceId: 'SALE1',
+        data: { shopId: 'S1', saleId: 'SALE1' },
+      },
+    ],
+  },
+  {
+    name: 'flash_sale.start_failed tells the shop owners why',
+    type: 'flash_sale.start_failed',
+    payload: {
+      saleId: 'SALE1',
+      shopId: 'S1',
+      productId: 'PR1',
+      reason: 'stock_changed',
+    },
+    requests: [
+      {
+        type: 'shop.flash_sale_start_failed',
+        recipient: owners('S1'),
+        sourceId: 'SALE1',
+        data: { shopId: 'S1', saleId: 'SALE1', reason: 'stock_changed' },
+      },
+    ],
+  },
+  {
     name: 'seller_insights.competitor_price_dropped goes to the owner',
     type: 'seller_insights.competitor_price_dropped',
     payload: {

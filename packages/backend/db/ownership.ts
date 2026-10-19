@@ -120,6 +120,7 @@ export const OWNERSHIP = {
   FlashSaleHistory: 'domain:orders',
   ExportJob: 'domain:orders',
   ExportJobHistory: 'domain:orders',
+  Voucher: 'domain:orders',
   // fulfilment
   PickupPoint: 'domain:fulfilment',
   PickupStock: 'domain:fulfilment',

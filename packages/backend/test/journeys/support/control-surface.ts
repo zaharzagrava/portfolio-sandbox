@@ -6,6 +6,7 @@ import {
   clockViewSchema,
   consumerViewSchema,
   JOURNEY_CONSUMER_GROUPS,
+  LAUNCH_DAY_CONSUMER_GROUPS,
   type AdminJob,
   type AdminJobType,
   type ClockView,
@@ -133,9 +134,12 @@ export class ControlSurface {
   }
 
   /** Polls until the group has caught up (lag 0); the deadline is the settlement hop (H4). */
-  async waitCaughtUp(group: string): Promise<ConsumerView> {
+  async waitCaughtUp(
+    group: string,
+    hop: 'H4' | 'J04.H15' = 'H4',
+  ): Promise<ConsumerView> {
     return waitForContract(
-      'H4',
+      hop,
       async () => {
         const view = await this.consumer(group);
         return view.state === 'RUNNING' && view.lag === 0 ? view : null;
@@ -238,6 +242,30 @@ export class ControlSurface {
     return label();
   }
 
+  /**
+   * A story that moves the clock by days freezes every leaderboard week it crosses (the snapshot job runs on the moved
+   * clock), and a frozen week stays sealed when the clock goes back: the real week would then take no sale. When the
+   * clock is within `days` of the end of its ISO week, the story lives in the next week instead (Monday 12:00 UTC), as
+   * `alignToOpenMonth` does for months. Stays in the clock's month; call it after `alignToOpenMonth`.
+   */
+  async alignToSafeWeek(days = 3): Promise<void> {
+    const now = new Date(Date.parse((await this.clock()).now));
+    const weekday = (now.getUTCDay() + 6) % 7; // Monday = 0
+    const monday = Date.UTC(
+      now.getUTCFullYear(),
+      now.getUTCMonth(),
+      now.getUTCDate() - weekday,
+      12,
+    );
+    const nextMonday = monday + 7 * 86_400_000;
+    if (nextMonday - now.getTime() > days * 86_400_000) return;
+    const target = new Date(nextMonday);
+    if (target.getUTCMonth() !== now.getUTCMonth()) return;
+    const seconds = Math.ceil((nextMonday - now.getTime()) / 1000);
+    this.baseSeconds += seconds;
+    await this.advance(seconds);
+  }
+
   /** Revokes every session of the operator, the current one last (it keeps working on routes that do not check revocation). */
   private async endAdminSessions(): Promise<void> {
     const listed =
@@ -266,11 +294,14 @@ export class ControlSurface {
     for (const group of new Set<string>([
       ...paused,
       ...JOURNEY_CONSUMER_GROUPS,
+      ...LAUNCH_DAY_CONSUMER_GROUPS,
     ])) {
       try {
         await this.resume(group);
       } catch (error) {
-        failures.push((error as Error).message);
+        const message = (error as Error).message;
+        // A group this deployment does not host answers 404 consumer_not_found: nothing to resume, not a failure.
+        if (!message.includes(`resume ${group}: 404`)) failures.push(message);
       }
     }
     // The operator signed in while the clock was moved: those sessions are dated in the future, so after the clock is real

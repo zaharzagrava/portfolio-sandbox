@@ -135,6 +135,238 @@ export const HOPS = {
     owner: 'S49',
     what: 'job run through the control surface → finished',
   },
+  // J03 (launch day): spec.md "Eventual-consistency contract". Prefixed so they never collide with J01's H1..H13.
+  'J03.H1': {
+    maxMs: 5_000,
+    owner: 'S22',
+    what: 'job launch-events.open-sales run → event ON_SALE',
+  },
+  'J03.H2': {
+    maxMs: 3_000,
+    owner: 'S22',
+    what: 'sales open → queued ticket admitted',
+  },
+  'J03.H3': {
+    maxMs: 1_000,
+    owner: 'S22',
+    what: 'hold or release → seat map change',
+  },
+  'J03.H4': {
+    maxMs: 5_000,
+    owner: 'S28',
+    what: 'confirm committed → booking.confirmed → booking notice',
+  },
+  'J03.H5': {
+    maxMs: 10_000,
+    owner: 'S10',
+    what: 'confirm committed → SQS voucher command → voucher issued',
+  },
+  'J03.H6': {
+    maxMs: 1_000,
+    owner: 'S22',
+    what: 'last seat booked → event SOLD_OUT',
+  },
+  'J03.H7': {
+    maxMs: 5_000,
+    owner: 'S22',
+    what: 'job expire-hold run → seats free',
+  },
+  'J03.H8': {
+    maxMs: 5_000,
+    owner: 'S22',
+    what: 'event_sold_out / event_closed relayed',
+  },
+  'J03.H9': {
+    maxMs: 5_000,
+    owner: 'S11',
+    what: 'job flash-sale.load run → sale LOADED, product stock lowered',
+  },
+  'J03.H10': {
+    maxMs: 10_000,
+    owner: 'S32',
+    what: 'catalog.product_updated (stock change) → search document',
+  },
+  'J03.H11': {
+    maxMs: 0,
+    owner: 'S10',
+    what: 'POST /checkout of a drop line → order RESERVED (synchronous)',
+  },
+  'J03.H12': {
+    maxMs: 5_000,
+    owner: 'S28',
+    what: 'order paid → buyer and shop-owner inbox items',
+  },
+  'J03.H13': {
+    maxMs: 5_000,
+    owner: 'S28',
+    what: 'flash_sale.sold_out / start_failed → shop-owner notice',
+  },
+  'J03.H14': {
+    maxMs: 10_000,
+    owner: 'S11',
+    what: 'order CANCELLED (hold expiry) → units back and buyer notice',
+  },
+  'J03.H15': {
+    maxMs: 5_000,
+    owner: 'S11',
+    what: 'job flash-sale.reconcile run → leftovers returned, sale RECONCILED',
+  },
+  'J03.H16': {
+    maxMs: 5_000,
+    owner: 'S23',
+    what: 'live.stream_started / _ended relayed',
+  },
+  'J03.H17': {
+    maxMs: 250,
+    owner: 'S23',
+    what: 'stream start / end, pin, removal → viewers',
+  },
+  'J03.H18': {
+    maxMs: 1_000,
+    owner: 'S23',
+    what: 'comment accepted → viewers batch',
+  },
+  'J03.H19': {
+    maxMs: 5_000,
+    owner: 'S23',
+    what: 'comment accepted → history',
+  },
+  'J03.H20': {
+    maxMs: 5_000,
+    owner: 'S23',
+    what: 'toxic comment accepted → removed',
+  },
+  'J03.H21': {
+    maxMs: 1_000,
+    owner: 'S21',
+    what: 'bid committed → price push; view',
+  },
+  'J03.H22': {
+    maxMs: 5_000,
+    owner: 'S28',
+    what: 'auction.leader_changed → outbid notice',
+  },
+  'J03.H23': {
+    maxMs: 5_000,
+    owner: 'S21',
+    what: 'auction end (job run) → CLOSED / UNSOLD',
+  },
+  'J03.H24': {
+    maxMs: 10_000,
+    owner: 'S21',
+    what: 'auction.closed → winner order requested → order RESERVED',
+  },
+  'J03.H25': {
+    maxMs: 5_000,
+    owner: 'S28',
+    what: 'auction.closed → auction.won notice',
+  },
+  'J03.H26': {
+    maxMs: 5_000,
+    owner: 'S21',
+    what: 'order.paid of the settlement order → auction SOLD → auction.sold notice',
+  },
+  'J03.H27': {
+    maxMs: 10_000,
+    owner: 'S21',
+    what: 'winner order CANCELLED → SECOND_CHANCE, offer order, notice',
+  },
+  'J03.H28': {
+    maxMs: 10_000,
+    owner: 'S21',
+    what: 'auction UNSOLD / CANCELLED → unit returned',
+  },
+  'J03.H29': {
+    maxMs: 15_000,
+    owner: 'S53',
+    what: 'consumer resumed or replayed → lag 0',
+  },
+  'J03.H30': {
+    maxMs: 5_000,
+    owner: 'S49',
+    what: 'job run through the control surface → finished',
+  },
+  // J04 (catalog sync to search): spec.md "Eventual-consistency contract". Prefixed so they never collide with J01's H1..H13.
+  'J04.H1': {
+    maxMs: 30_000,
+    owner: 'S07',
+    what: 'complete accepted → scan → parse → import DONE',
+  },
+  'J04.H2': {
+    maxMs: 0,
+    owner: 'S05',
+    what: 'import batch committed → products in the catalog (true at DONE)',
+  },
+  'J04.H3': {
+    maxMs: 10_000,
+    owner: 'S32',
+    what: 'catalog.product_created | updated → search document',
+  },
+  'J04.H4': {
+    maxMs: 30_000,
+    owner: 'S08',
+    what: 'OAuth callback → backfill → provider products in the catalog',
+  },
+  'J04.H5': {
+    maxMs: 15_000,
+    owner: 'S08',
+    what: 'provider webhook accepted → incremental pull → product updated',
+  },
+  'J04.H6': {
+    maxMs: 15_000,
+    owner: 'S08',
+    what: 'job catalog-sync.sync-all run → pull applied',
+  },
+  'J04.H7': {
+    maxMs: 10_000,
+    owner: 'S19',
+    what: 'pickup stock written → offer in near-me',
+  },
+  'J04.H8': {
+    maxMs: 10_000,
+    owner: 'S19',
+    what: 'catalog.product_* (title, price, archive, restore) → near-me product copy',
+  },
+  'J04.H9': {
+    maxMs: 0,
+    owner: 'S09',
+    what: 'sync push accepted → stock in the catalog (synchronous)',
+  },
+  'J04.H10': {
+    maxMs: 10_000,
+    owner: 'S32',
+    what: 'catalog.product_updated (quantity) → inStock in the index',
+  },
+  'J04.H11': {
+    maxMs: 10_000,
+    owner: 'S08',
+    what: 'catalog.product_updated (quantity) → provider stock written',
+  },
+  'J04.H12': {
+    maxMs: 5_000,
+    owner: 'S09',
+    what: 'catalog.product_updated → other device change feed',
+  },
+  'J04.H13': {
+    maxMs: 15_000,
+    owner: 'S08',
+    what: 'provider-side stock change → catalog stock merged',
+  },
+  'J04.H14': {
+    maxMs: 10_000,
+    owner: 'S32',
+    what: 'tenancy.shop_status_changed → products hidden or shown in search and near-me',
+  },
+  'J04.H15': {
+    maxMs: 15_000,
+    owner: 'S53',
+    what: 'consumer resumed or replayed → lag 0',
+  },
+  'J04.H16': {
+    maxMs: 5_000,
+    owner: 'S49',
+    what: 'job run through the control surface → finished',
+  },
 } as const;
 
 export type Hop = keyof typeof HOPS;
@@ -144,8 +376,12 @@ export const TIME_FACTOR = Number(process.env.JOURNEY_TIME_FACTOR ?? '1');
 
 export const POLL_MS = 250;
 
-/** Deadline of a hop: twice the contract maximum, scaled. */
-export const deadlineMs = (hop: Hop) => 2 * HOPS[hop].maxMs * TIME_FACTOR;
+/** A synchronous or sub-second hop (J03 H11, H17) still gets one second of network, and a poll at 250 ms must be able to see it. */
+const MIN_DEADLINE_MS = 1_000;
+
+/** Deadline of a hop: twice the contract maximum, scaled (at least one second). */
+export const deadlineMs = (hop: Hop) =>
+  Math.max(MIN_DEADLINE_MS, 2 * HOPS[hop].maxMs * TIME_FACTOR);
 
 /**
  * Polls `probe` every 250 ms until it returns a truthy value, up to the hop's deadline. Prints how long the hop took

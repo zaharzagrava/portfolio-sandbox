@@ -7,3 +7,4 @@ export * from './order-events.ts';
 export * from './order-export.ts';
 export * from './payment-events.ts';
 export * from './webhook.ts';
+export * from './voucher.ts';

@@ -166,8 +166,30 @@ export const payoutConsumedSchemas = {
 export const launchEventConsumedSchemas = {
   'launch_events.booking_confirmed': z.object({
     userId: id,
-    seats: z.number().int().positive(),
+    /**
+     * The seats the buyer holds: S22 emits the seat numbers (J03 G-05); a bare count is still accepted. Either way the
+     * notice shows how many.
+     */
+    seats: z.union([
+      z.number().int().positive(),
+      z.array(z.number().int()).min(1),
+    ]),
     launchEventId: id,
+  }),
+} as const;
+
+// ---- flash sales (S11): `orders.events`, key = saleId; the shop owners are told (J03 G-26) ------------------------------
+export const flashSaleConsumedSchemas = {
+  'flash_sale.sold_out': z.object({
+    saleId: id,
+    shopId: id,
+    productId: id,
+  }),
+  'flash_sale.start_failed': z.object({
+    saleId: id,
+    shopId: id,
+    productId: id,
+    reason: z.string(),
   }),
 } as const;
 
@@ -248,6 +270,7 @@ const canonicalConsumedEventSchemas = {
   ...billingConsumedSchemas,
   ...payoutConsumedSchemas,
   ...launchEventConsumedSchemas,
+  ...flashSaleConsumedSchemas,
   ...chatConsumedSchemas,
   ...discussionConsumedSchemas,
   ...sellerInsightsConsumedSchemas,
@@ -264,6 +287,8 @@ const canonicalConsumedEventSchemas = {
  */
 export const CONSUMED_EVENT_ALIASES = {
   'launchevents.booking_confirmed': 'launch_events.booking_confirmed',
+  'flashsale.sold_out': 'flash_sale.sold_out',
+  'flashsale.start_failed': 'flash_sale.start_failed',
   'sellerinsights.competitor_price_dropped':
     'seller_insights.competitor_price_dropped',
   'developerplatform.webhook_endpoint_disabled':
@@ -274,6 +299,9 @@ export const consumedEventSchemas = {
   ...canonicalConsumedEventSchemas,
   'launchevents.booking_confirmed':
     canonicalConsumedEventSchemas['launch_events.booking_confirmed'],
+  'flashsale.sold_out': canonicalConsumedEventSchemas['flash_sale.sold_out'],
+  'flashsale.start_failed':
+    canonicalConsumedEventSchemas['flash_sale.start_failed'],
   'sellerinsights.competitor_price_dropped':
     canonicalConsumedEventSchemas['seller_insights.competitor_price_dropped'],
   'developerplatform.webhook_endpoint_disabled':

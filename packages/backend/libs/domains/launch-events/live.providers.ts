@@ -31,7 +31,7 @@ import {
   VIEWER_COUNTS,
 } from './domain/live-ports';
 import { DynamoCommentHistoryReader } from './infra/dynamo-comment-history.reader';
-import { HeuristicToxicityClassifier } from './infra/heuristic-toxicity.classifier';
+import { toxicityClassifierFor } from './infra/scripted-toxicity.classifier';
 import { SystemLiveTimers } from './infra/live-timers';
 import { RedisActiveStreams } from './infra/redis/redis-active-streams';
 import { RedisClientIds } from './infra/redis/redis-client-ids';
@@ -65,7 +65,12 @@ export const LIVE_HISTORY_ADAPTERS: Provider[] = [
   { provide: COMMENT_HISTORY_READER, useClass: DynamoCommentHistoryReader },
 ];
 export const LIVE_SUPPORT_PROVIDERS: Provider[] = [
-  { provide: TOXICITY_CLASSIFIER, useClass: HeuristicToxicityClassifier },
+  {
+    provide: TOXICITY_CLASSIFIER,
+    inject: [ApiConfigService],
+    useFactory: (config: ApiConfigService) =>
+      toxicityClassifierFor(config.get('provider_doubles')),
+  },
   {
     provide: LIVE_SETTINGS,
     inject: [ApiConfigService],

@@ -36,6 +36,11 @@ export interface ConsumeOptions {
   bodySchema?: BodySchema;
   /** Where invalid bodies go. Defaults to the queue's name with `-dlq` added before any `.fifo`. */
   deadLetterQueue?: string;
+  /**
+   * Operator hold (S53): while it answers `true` the consumer takes nothing off the queue, so the messages wait visible
+   * (their count is the lag). A message received just before the hold began is put back untouched.
+   */
+  isPaused?: () => Promise<boolean>;
 }
 
 /**
@@ -61,6 +66,11 @@ export abstract class TaskQueue {
   queueExists(queue: string): Promise<boolean> {
     void queue;
     return Promise.resolve(true);
+  }
+  /** Messages waiting in the queue (visible, not yet received): the lag of a queue consumer. The in-memory queue counts what it holds. */
+  queueDepth(queue: string): Promise<number> {
+    void queue;
+    return Promise.resolve(0);
   }
   /** Starts a long-polling consumer; resolves the returned `stop()` once in-flight messages finish. */
   abstract consume<T>(

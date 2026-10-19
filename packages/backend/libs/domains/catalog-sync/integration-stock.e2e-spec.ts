@@ -783,6 +783,11 @@ describe('Integration bidirectional stock', () => {
       await consumer.project([event]);
       expect((await links(t.id))[0].syncedStock).toBe(10);
       expect(t.fake.stockOf(t.variantId)).toBe(10);
+      // S08.R-39: the failure is visible on the integration, the local sale is untouched.
+      expect((await integrations.findById(t.id))?.lastError).toMatch(
+        /^stock_push_failed: /,
+      );
+      expect((await product(t.productId)).quantity).toBe(8);
 
       await consumer.project([event]);
       expect(t.fake.stockOf(t.variantId)).toBe(8);

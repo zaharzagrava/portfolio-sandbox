@@ -17,6 +17,19 @@ export const JOURNEY_CONSUMER_GROUPS = [
   'leaderboards',
   'product-cache-invalidator',
   'document-extractor',
+  // J03 (launch day)
+  'orders-booking-voucher',
+  // J04 (catalog sync to search)
+  'integrations-stock-push',
+  'offline-sync-feed',
+  'pickup-availability',
+] as const;
+
+/** Real Kafka groups of the launch-day journey (J03): addressed by their declared names, known only where their runner is hosted. */
+export const LAUNCH_DAY_CONSUMER_GROUPS = [
+  'auctions-order-results',
+  'live-comments-history',
+  'live-moderation',
 ] as const;
 
 export const consumerStateSchema = z.enum(['RUNNING', 'PAUSED']);

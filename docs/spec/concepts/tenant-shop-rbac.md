@@ -32,6 +32,7 @@ A shop is the tenant of the marketplace: a seller organisation with a team, a pl
 ## Used by
 <!-- used-by:start -->
 - {{cap:J01}} Buyer pays for a multi-shop order; order paid → ledger journals → settlement → seller payout → monthly statement; buyer and sellers notified
+- {{cap:J02}} New seller registers, creates a shop, passes onboarding/KYC, subscribes to a plan, lists a product that becomes searchable, sells it, receives the order webhook, and appears on the leaderboard
 - {{cap:S03}} Shops as tenants: memberships, roles and permissions, invites, per-shop SSO, cells, offboarding
 - {{cap:S04}} Staged onboarding questionnaire, KYC document intake, LLM extraction, human review, shop verification
 - {{cap:S05}} Product CRUD, pricing, stock fields, product cache and invalidation, product views

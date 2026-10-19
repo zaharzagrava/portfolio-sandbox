@@ -225,6 +225,31 @@ const ROWS: Row[] = [
       ]),
   },
   {
+    type: 'shop.flash_sale_sold_out',
+    to: 'owner',
+    emit: (t, w) =>
+      consume(t, [
+        envelope('flashsale.sold_out', {
+          saleId: v4(),
+          shopId: w.shopId,
+          productId: v4(),
+        }),
+      ]),
+  },
+  {
+    type: 'shop.flash_sale_start_failed',
+    to: 'owner',
+    emit: (t, w) =>
+      consume(t, [
+        envelope('flashsale.start_failed', {
+          saleId: v4(),
+          shopId: w.shopId,
+          productId: v4(),
+          reason: 'insufficient_stock',
+        }),
+      ]),
+  },
+  {
     type: 'order.confirmed',
     to: 'buyer',
     emit: (t, w) =>
@@ -717,6 +742,74 @@ describe('Notifications: catalog completeness', () => {
         ).toHaveLength(0);
     },
   );
+
+  it('J03 G-05: the booking.confirmed notice is made from the very payload S22 emits (seat numbers, hold, bookings), once, and only for the buyer', async () => {
+    const w = await world();
+    const holdId = v4();
+    // Exactly what S22 puts on the topic (more fields than the notice needs).
+    const emitted = {
+      holdId,
+      launchEventId: v4(),
+      shopId: w.shopId,
+      userId: w.buyer.id,
+      seats: [42, 43],
+      bookingIds: [v4(), v4()],
+      confirmedAt: iso(),
+    };
+    const real = envelope('launchevents.booking_confirmed', emitted);
+    await consume(t, [real]);
+    const mine = () =>
+      inbox(w.buyer).then((items) =>
+        items.filter((i) => i.type === 'booking.confirmed'),
+      );
+    const items = await mine();
+    expect(items).toHaveLength(1);
+    expect(items[0].body).toContain('2');
+
+    // The same delivery again (at-least-once): still one item, and the unread counter counts it once.
+    const unread = async () =>
+      (await t.as(w.buyer).get('/api/notifications').expect(200)).body.unread;
+    const before = await unread();
+    await consume(t, [real]);
+    expect(await mine()).toHaveLength(1);
+    expect(await unread()).toBe(before);
+
+    // Nobody else hears about it.
+    for (const other of [w.owner, w.bystander])
+      expect(
+        (await inbox(other)).filter((i) => i.type === 'booking.confirmed'),
+      ).toHaveLength(0);
+  });
+
+  it('J03 G-26: a drop sold out tells the owners once per sale (a replay and a later sell-out add none) and no staff member; a failed start tells them too', async () => {
+    const w = await world();
+    const staff = await t.newUser();
+    await t.seedShop([staff.id]); // staff of another shop: not a recipient either
+    const saleId = v4();
+    const soldOut = () =>
+      envelope('flashsale.sold_out', {
+        saleId,
+        shopId: w.shopId,
+        productId: v4(),
+      });
+    await consume(t, [soldOut()]);
+    await consume(t, [soldOut()]); // another event of the same sale (units released, sold out again)
+    const mine = (user: TestUser, type: string) =>
+      inbox(user).then((items) => items.filter((i) => i.type === type));
+    expect(await mine(w.owner, 'shop.flash_sale_sold_out')).toHaveLength(1);
+    for (const other of [w.buyer, w.bystander, staff])
+      expect(await mine(other, 'shop.flash_sale_sold_out')).toHaveLength(0);
+
+    await consume(t, [
+      envelope('flashsale.start_failed', {
+        saleId: v4(),
+        shopId: w.shopId,
+        productId: v4(),
+        reason: 'insufficient_stock',
+      }),
+    ]);
+    expect(await mine(w.owner, 'shop.flash_sale_start_failed')).toHaveLength(1);
+  });
 
   it.each(ROWS.filter((r) => r.internal).map((r) => [r.type, r] as const))(
     'S28 AS-87: %s has no source event; it is proven by its own scenario',

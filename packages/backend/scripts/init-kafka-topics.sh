@@ -14,6 +14,14 @@ TOPICS=(
   "payouts.events"
   "statements.events"
   "products.events"
+  # J03 G-30: launch day (seat booking, live stream, auctions), keyed by aggregate id; the event tap reads them
+  "launch_events.events"
+  "live.events"
+  "auctions.events"
+  # J04 G-19: catalog sync to search. `catalogsync.events` is the registered name of the spec's `catalog-sync.events`.
+  "pickup.events"
+  "tenancy.events"
+  "catalogsync.events"
   # S36 sponsored listings (L-002, L-011: every topic the code names must exist)
   "marketing.events"
   "ads.clicks"

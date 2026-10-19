@@ -141,6 +141,11 @@ export class ProductEventsConsumer implements Projector {
           // A credential that no longer works stops the pushes until the seller reconnects (AS-60).
           if (error.kind === 'auth_failed')
             await this.health.markNeedsReauth(integration);
+          else
+            await this.integrations.recordError(
+              integration.id,
+              `stock_push_failed: ${error.kind}`,
+            );
           this.logger.warn({
             action: 'catalog-sync.stock_push_failed',
             integrationId: integration.id,

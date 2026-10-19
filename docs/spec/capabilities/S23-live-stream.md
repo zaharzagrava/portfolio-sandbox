@@ -68,6 +68,7 @@ A brand runs a live launch broadcast that millions can watch. Nobody can read th
 - **S23.B-01** Given a stream with 1,250 ordinary comments in one window and three staff comments, When the window closes, Then each viewer gets five sampled comments plus the staff comments in one event with `rate` 5000. [proof: S23 AS-01, S23 AS-03]
 - **S23.B-02** Given a viewer who connects while staff change the pin and remove comments, When the connection is up, Then applying the snapshot and every later event yields the server's final pin and visible comments. [proof: S23 AS-07]
 - **S23.B-03** Given a flood of comments and 100 reaction requests of seven hearts, When the second ends, Then viewers receive one `stats` with 700 hearts and never an individual reaction. [proof: S23 AS-27]
+- **S23.B-05** Given `PROVIDER_DOUBLES=enabled` (local profile, refused in production), When a comment contains `[[toxic]]`, Then the classifier scores it 0.95, and any other comment 0.05. [proof: J03 G-43] [code: packages/backend/libs/domains/launch-events/infra/scripted-toxicity.classifier.ts#ScriptedToxicityClassifier]
 - **S23.B-04** Given a toxic comment scored 0.9, When the moderation consumer processes it, Then viewers receive `comment_removed` and history marks it removed. [proof: S23 AS-47, S23 AS-48]
 
 ## Lifecycles

@@ -179,6 +179,33 @@ describe('Follow feed: items from events, idempotency and out-of-order delivery'
       expect((await itemRow(itemId))!.kind).toBe('new_product');
     });
 
+    it('S26 AS-60: a product created by an import or an integration makes no new_product item; a seller create still does', async () => {
+      const shop = await t.seedShop();
+      const imported = uuidv4();
+      const synced = uuidv4();
+      const own = uuidv4();
+      await products().project([
+        t.productEvent('created', {
+          productId: imported,
+          shopId: shop.shopId,
+          source: 'import',
+        }),
+        t.productEvent('created', {
+          productId: synced,
+          shopId: shop.shopId,
+          source: 'integration',
+        }),
+        t.productEvent('created', {
+          productId: own,
+          shopId: shop.shopId,
+          source: 'seller',
+        }),
+      ]);
+      expect(await itemIdOf('new_product', imported)).toBeFalsy();
+      expect(await itemIdOf('new_product', synced)).toBeFalsy();
+      expect(await itemIdOf('new_product', own)).toBeTruthy();
+    });
+
     it('S26 AS-14: a lower price makes a price_drop with the previous price; no other update does', async () => {
       const shop = await t.seedShop();
       const productId = uuidv4();

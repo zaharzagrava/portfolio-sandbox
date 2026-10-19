@@ -43,6 +43,9 @@ export const toQueueStatus = (
       expiresAt: new Date(view.expiresAtMs).toISOString(),
       admissionToken: view.admissionToken,
       tokenExpiresAt: new Date(view.tokenExpiresAtMs!).toISOString(),
+      ...(view.admittedAtMs !== undefined && {
+        admittedAt: new Date(view.admittedAtMs).toISOString(),
+      }),
     };
   const position = view.position ?? view.queueLength;
   return {

@@ -294,3 +294,16 @@ interviews) until its status says so. The implementation loop appends here (rule
 | J02 | SC-004: product listed to public search within 10 s (p99) | same file (loop AS-18) | not run |
 | J02 | SC-005: order paid to webhook and rank within 10 s (p99) | same file (loop AS-25) | not run |
 | J02 | SC-008: clean stack to green in under 10 minutes, 0 fixed sleeps | same file (fresh-run.sh then pnpm test:journeys, grep for sleeps) | not run |
+| J03 | SC-003: booking to buyer notice within 5 s and voucher within 10 s in 99% of runs | specs/journeys/J03-launch-day/quickstart.md (Ops artifacts: loop AS-02 100 times, p99 of H4, H5) | not run |
+| J03 | SC-004: paid order to buyer and owner notices within 5 s (p99) | same file (loop AS-12) | not run |
+| J03 | SC-005: comment to viewers within 1 s, history within 5 s, toxic removed within 5 s (p99) | same file (loop AS-20, AS-24) | not run |
+| J03 | SC-006: winner order visible within 10 s of auction end (p99) | same file (loop AS-31) | not run |
+| J03 | SC-008: lag back to 0 within 15 s of resuming a paused consumer (p99) | same file (loop AS-06, AS-07, AS-18, AS-25, AS-36) | not run |
+| J03 | SC-009: clean stack to green in under 15 minutes, 0 fixed sleeps | same file (fresh-run.sh then pnpm test:journeys, grep for sleeps) | not run |
+| J04 | SC-001: 60-row file visible within 60 s of upload end | `specs/journeys/J04-catalog-sync-to-search/quickstart.md`, "Ops artifacts" (loop AS-01) | not run |
+| J04 | SC-002: Shopify variants visible within 60 s of connect | same file (loop AS-05) | not run |
+| J04 | SC-003: availability and Shopify stock within 10 s of a till sale | same file (loop AS-10) | not run |
+| J04 | SC-004: pickup shelf findable within 10 s and follows changes | same file (loop AS-08, AS-09) | not run |
+| J04 | SC-005: 100 replays and 100 duplicate webhooks change stock once | same file (loop AS-11, AS-06) | not run |
+| J04 | SC-006: both-sold cases end identical and non-negative | same file (loop AS-14, AS-15) | not run |
+| J04 | SC-008: suspended shop hidden within 10 s | same file (loop AS-20) | not run |

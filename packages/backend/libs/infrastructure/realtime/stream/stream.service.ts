@@ -310,7 +310,9 @@ export class StreamService implements OnModuleDestroy {
     try {
       await Promise.all(
         topics
-          .filter((t) => !conn.cursor.has(t))
+          .filter(
+            (t) => !conn.cursor.has(t) && !this.registry.replaysFromStart(t),
+          )
           .map(async (topic) => {
             const info = await this.readInfo(topic);
             if (info.exists) {
