@@ -352,8 +352,8 @@ step() { # $1 = dir, $2 = step name, $3 = prompt
   done
   # A command the unattended shell refused ("requires approval") cannot be answered by anyone: name it in the loop log (the watcher and the phone
   # message pick it up) instead of letting the pass run into its timeout.
-  if grep -qaiE "requires approval|was refused|were refused|is refused|permission to use" "$1/.$2.log" 2>/dev/null; then
-    echo "  PERMISSION: $2 says a command was refused: $(grep -aiE 'requires approval|refused|permission to use' "$1/.$2.log" | head -2 | tr '\n' ' ' | cut -c1-260)"
+  if grep -qaiE "requires approval|was refused|were refused|is refused|permission to use|(harness|shell|environment|sandbox)[^.]{0,40}refus|refused (every|the|to run)" "$1/.$2.log" 2>/dev/null; then
+    echo "  PERMISSION: $2 says a command was refused: $(grep -aiE 'requires approval|refus|permission to use' "$1/.$2.log" | head -2 | tr '\n' ' ' | cut -c1-260)"
   fi
   step_metric "$1" "$2" "$t0" "$rc" "$try" "$fp0"
   # A pass that hit the time limit is not a failure: the next implement pass resumes at the first open task.
@@ -550,7 +550,7 @@ ordered_capabilities "$@" | while IFS=$'\t' read -r id domain slug title sources
       long_fail_s=$(( $(date +%s) - g0 )); long_fail_fp=""; (( long_fail_s >= 600 )) && long_fail_fp="$cur_fp"
     fi
     attempt=$((attempt + 1)); gate_failed "$id" "$dir" "$g0" "$attempt"
-    if (( attempt > ${MAX_GATE_REPAIRS:-5} || SECONDS - gate_t0 > ${GATE_WALL_MIN:-120} * 60 )); then
+    if (( attempt > ${MAX_GATE_REPAIRS:-5} || SECONDS - gate_t0 > ${GATE_WALL_MIN:-200} * 60 )); then
       echo "FAIL  $id: gate (see $dir/.gate.log)" >&2; echo "$id gate failed" > "$STATE_FILE"; exit 20
     fi
     echo "  gate failed: asking the agent to repair it (attempt $attempt of ${MAX_GATE_REPAIRS:-5})"

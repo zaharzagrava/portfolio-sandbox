@@ -40,6 +40,7 @@ with the links that prove it: backticked file paths and commit hashes. For a `pr
 - L-029 2026-10-18 state-leak prevented
 - L-030 2026-10-18 timing prevented
 - L-031 2026-10-19 config prevented
+- L-032 2026-10-19 test-hollow prevented
 
 ## L-001 A message option the queue refuses, found only by hand
 - **Rule:** A queue option must be validated where the message is created, not discovered when the relay fails (FIFO-only options like `groupId` never go to a standard queue).
@@ -231,3 +232,8 @@ Third part of L-022 (2026-10-19, J03): the rule "poll with sleep 240" cannot be 
 Fourth part of L-022 (2026-10-19): the first fix for the `sleep` rule broke the shell quoting of `UNATTENDED_RULES` (single quotes inside a single-quoted string), so bash ran a word of the rule text as a command and the loop never started (`bash -n` passed: the syntax was valid). **Prevention:** `test_loop_shell.py` evaluates the assignment and checks the text is whole (it must end with the last sentence and print nothing on stderr). Never put a single quote in that string.
 
 Second part of L-031 (2026-10-19, same day): after `python3:*` and read-only git were allowed, J03's agents were still refused `stack-fix.sh`, `wait-for.sh` and `test-spec.sh` ("requires approval", then "a 25-minute full run wasn't possible"). **Cause:** a rule matches a command only up to a word boundary, so `Bash(bash scripts:*)` does not match `bash scripts/sdd/stack-fix.sh`; only a rule that names the script does, and only in the path form it spells (the agents in `packages/backend` write `../../scripts/...`). **Prevention:** `IMPL_TOOLS` is generated for every helper script in every path form (`scripts`, `./scripts`, `../scripts`, `../../scripts`, `/opt/sdd/repo/scripts`), with and without `bash`/`python3`; `test_loop_shell.py` checks it.
+
+## L-032 A log check that reads the whole log fails on whatever happened before the test
+- **Rule:** A journey that checks the API log reads the lines of its own run: take `logMark(apiLogPath())` before the first request (in `beforeAll`) and read `logLinesSince(log, mark)`. Never `logLinesSince(log, 0)`.
+- **Symptom:** J03 AS-39 ("every JSON log line carries an id") failed in four gates in a row (2026-10-19) with KafkaJS startup warnings and consumer-rebalance lines from before the journey and from API restarts; the repairs removed the warning at its source (an explicit partitioner) and the doctor routed kafkajs lines through the app logger, and the gate still failed because the old lines stayed in the log. The gate loop also stopped after two attempts: `GATE_WALL_MIN` (120) is too short for a journey gate of 20 minutes plus repairs of up to 40; now 200.
+- **Prevention:** J03 takes its mark; the permission detector also recognises "the harness refused ...".
