@@ -20,12 +20,14 @@ A capability calls `JobsService.enqueue(type, payload, { idempotencyKey: 'K' })`
 
 ## Used by
 <!-- used-by:start -->
+- [J02](../capabilities/J02-seller-to-first-sale.md): R-10, B-08
 - [S01](../capabilities/S01-auth-sessions.md): R-44, R-45
 - [S10](../capabilities/S10-cart-checkout.md): B-17
 - [S14](../capabilities/S14-ledger-reconciliation.md): R-34, R-43
 - [S49](../capabilities/S49-job-scheduler.md): R-01
 - [api-layer](api-layer.md)
 - [auth-purge-reset-tokens-job](auth-purge-reset-tokens-job.md)
+- [charge-job](charge-job.md)
 - [infrastructure-layer](infrastructure-layer.md)
 - [invite-purge-job](invite-purge-job.md)
 - [job-claim](job-claim.md)
@@ -36,6 +38,7 @@ A capability calls `JobsService.enqueue(type, payload, { idempotencyKey: 'K' })`
 - [ledger-settle-order-job](ledger-settle-order-job.md)
 - [notifications-callbacks-queue](notifications-callbacks-queue.md)
 - [notifications-reconcile-unread-job](notifications-reconcile-unread-job.md)
+- [onboarding-verify-pending-job](onboarding-verify-pending-job.md)
 - [order-items-backfill](order-items-backfill.md)
 - [order-settlement](order-settlement.md)
 - [orders-backfill-item-titles-job](orders-backfill-item-titles-job.md)

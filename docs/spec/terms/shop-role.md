@@ -21,6 +21,7 @@ A member with `ADMIN` in a shop may make another member `STAFF` or `VIEWER`. Onl
 ## Used by
 <!-- used-by:start -->
 - [J01](../capabilities/J01-buy-to-payout.md): R-12, B-07
+- [J02](../capabilities/J02-seller-to-first-sale.md): R-05
 - [S03](../capabilities/S03-shops-rbac.md): R-06, R-07, B-06, B-20
 - [S10](../capabilities/S10-cart-checkout.md): R-39
 - [W07](../capabilities/W07-app-shell.md): B-04

@@ -127,4 +127,4 @@ MVP = Phases 1–3 (US1). Then slice-first per research.md §3: write the story'
 
 ## Phase 10: Convergence
 
-- [ ] T061 In `packages/backend/test/journeys/launch-day.journey-spec.ts` import `logMark` (from `support/observability`), take `logStart = logMark(apiLogPath())` in the journey's top-level `beforeAll` before its first request, and pass it instead of `0` to `logLinesSince` in AS-39 (about line 2684), as the owner's second note in questions.md requires; keep the id rule and the redaction checks unchanged, per FR-030 (partial)
+- [X] T061 In `packages/backend/test/journeys/launch-day.journey-spec.ts` import `logMark` (from `support/observability`), take `logStart = logMark(apiLogPath())` in the journey's top-level `beforeAll` before its first request, and pass it instead of `0` to `logLinesSince` in AS-39 (about line 2684), as the owner's second note in questions.md requires; keep the id rule and the redaction checks unchanged, per FR-030 (partial)

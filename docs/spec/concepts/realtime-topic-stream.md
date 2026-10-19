@@ -30,6 +30,7 @@ A topic is a named channel that a domain publishes events to. The stream is the 
 
 ## Used by
 <!-- used-by:start -->
+- {{cap:J03}} Launch day: waiting room and seat booking, flash-sale purchase without overselling, live stream comments, an auction closing with the winner's checkout, and the notifications each triggers
 - {{cap:S03}} Shops as tenants: memberships, roles and permissions, invites, per-shop SSO, cells, offboarding
 - {{cap:S13}} Payment intents, idempotency, unknown outcomes, PSP circuit breaker, outbox, saga with orders
 - {{cap:S20}} Same-day courier dispatch (courier shift, offers, delivery state machine, tracking)

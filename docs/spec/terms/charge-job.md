@@ -22,5 +22,7 @@ With `pm_test_declined`, the job's first charge is declined, the invoice stays u
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [billing-invoice-paid-event](billing-invoice-paid-event.md)
+- [invoice](invoice.md)
+- [local-provider-doubles](local-provider-doubles.md)
 <!-- used-by:end -->

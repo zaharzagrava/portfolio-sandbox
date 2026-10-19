@@ -28,6 +28,7 @@ The transaction runner is the shared toolkit scope that runs a unit of work as o
 
 ## Used by
 <!-- used-by:start -->
+- {{cap:J03}} Launch day: waiting room and seat booking, flash-sale purchase without overselling, live stream comments, an auction closing with the winner's checkout, and the notifications each triggers
 - {{cap:S01}} Registration, password login, sessions, refresh-token rotation, JWKS, service-to-service tokens
 - {{cap:S02}} TOTP MFA with recovery codes, Google OIDC login (PKCE), account linking
 - {{cap:S03}} Shops as tenants: memberships, roles and permissions, invites, per-shop SSO, cells, offboarding

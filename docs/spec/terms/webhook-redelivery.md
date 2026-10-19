@@ -31,4 +31,6 @@ The provider sends `payments.payment_succeeded` with id `evt_123` (illustrative)
 - [guarded-update](guarded-update.md)
 - [never-send-twice-guard](never-send-twice-guard.md)
 - [order-webhook-events-purge](order-webhook-events-purge.md)
+- [webhook-receiver-allow-list](webhook-receiver-allow-list.md)
+- [webhook-retry-job](webhook-retry-job.md)
 <!-- used-by:end -->

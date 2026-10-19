@@ -36,6 +36,7 @@ A view with event time `11:00:30` falls in the `11:00–11:01` window. It still 
 - [partition-window-merge](partition-window-merge.md)
 - [product-view-event](product-view-event.md)
 - [received-at](received-at.md)
+- [shop-rank](shop-rank.md)
 - [shutdown-deadline](shutdown-deadline.md)
 - [top-k-heap](top-k-heap.md)
 - [trending-aggregate](trending-aggregate.md)

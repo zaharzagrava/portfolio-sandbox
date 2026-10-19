@@ -21,6 +21,7 @@ When the [shop backfill](search-backfill-shop-state.md) gives a [legacy product]
 
 ## Used by
 <!-- used-by:start -->
+- [J02](../capabilities/J02-seller-to-first-sale.md): R-13
 - [S05](../capabilities/S05-products.md): R-25
 - [S32](../capabilities/S32-product-search.md): R-13
 - [cache-invalidator](cache-invalidator.md)
@@ -28,6 +29,7 @@ When the [shop backfill](search-backfill-shop-state.md) gives a [legacy product]
 - [is-sandbox](is-sandbox.md)
 - [legacy-seller](legacy-seller.md)
 - [outbox-append](outbox-append.md)
+- [product-created-event](product-created-event.md)
 - [products-events-topic](products-events-topic.md)
 - [search-backfill-shop-state](search-backfill-shop-state.md)
 - [shop-purge](shop-purge.md)

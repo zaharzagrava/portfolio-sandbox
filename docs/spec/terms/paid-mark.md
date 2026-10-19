@@ -26,5 +26,6 @@ Order `ord_123` is `RESERVED`, and W03 shows it as "Awaiting payment". A verifie
 - [provider-charge-metadata](provider-charge-metadata.md)
 - [rejected-payment-event](rejected-payment-event.md)
 - [shop-order](shop-order.md)
+- [shop-rank](shop-rank.md)
 - [verified-webhook-event](verified-webhook-event.md)
 <!-- used-by:end -->

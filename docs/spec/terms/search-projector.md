@@ -25,6 +25,7 @@ A `catalog.product_updated` event arrives with version 7 for a product whose sto
 - [consumer-outcomes](consumer-outcomes.md)
 - [dead-letter-topic](dead-letter-topic.md)
 - [event-consumer](event-consumer.md)
+- [get-product-by-id](get-product-by-id.md)
 - [in-memory-mailbox](in-memory-mailbox.md)
 - [ledger-lag-metric](ledger-lag-metric.md)
 - [live-index-alias](live-index-alias.md)

@@ -21,6 +21,7 @@ Shop "shop-42" (illustrative) moves to `SUSPENDED`. Its existing products disapp
 
 ## Used by
 <!-- used-by:start -->
+- [J02](../capabilities/J02-seller-to-first-sale.md): R-13, B-13
 - [S03](../capabilities/S03-shops-rbac.md): R-01, R-26, B-14, B-22, B-23, B-24
 - [S05](../capabilities/S05-products.md): R-10, R-23, B-01, B-20
 - [S32](../capabilities/S32-product-search.md): R-16
@@ -29,6 +30,7 @@ Shop "shop-42" (illustrative) moves to `SUSPENDED`. Its existing products disapp
 - [apply-verification](apply-verification.md)
 - [batch-shops-lookup](batch-shops-lookup.md)
 - [event-definition](event-definition.md)
+- [get-product-by-id](get-product-by-id.md)
 - [get-shop-export](get-shop-export.md)
 - [live-shop](live-shop.md)
 - [platform-admin](platform-admin.md)

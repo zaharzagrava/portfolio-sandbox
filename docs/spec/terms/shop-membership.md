@@ -22,6 +22,7 @@ A signed-in user who is not a member calls `GET /shops/:shopId/products` for a r
 
 ## Used by
 <!-- used-by:start -->
+- [J02](../capabilities/J02-seller-to-first-sale.md): R-02, B-01
 - [S03](../capabilities/S03-shops-rbac.md): R-01
 - [S04](../capabilities/S04-kyc-onboarding.md): R-07
 - [S05](../capabilities/S05-products.md): R-04

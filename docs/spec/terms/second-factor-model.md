@@ -29,7 +29,6 @@ A user in state `none` calls `POST /auth/mfa/enroll`, and their `SecondFactor` m
 - [mfa-not-enabled](mfa-not-enabled.md)
 - [mfa-pending-expiry](mfa-pending-expiry.md)
 - [mfa-recovery-code](mfa-recovery-code.md)
-- [mfa-state](mfa-state.md)
 - [totp-replay-protection](totp-replay-protection.md)
 - [totp-time-step](totp-time-step.md)
 <!-- used-by:end -->

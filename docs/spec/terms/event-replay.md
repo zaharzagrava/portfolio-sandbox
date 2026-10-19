@@ -22,6 +22,7 @@ Illustrative, not taken from the spec: [S32](../capabilities/S32-product-search.
 ## Used by
 <!-- used-by:start -->
 - [J01](../capabilities/J01-buy-to-payout.md): R-15
+- [J02](../capabilities/J02-seller-to-first-sale.md): R-15
 - [S28](../capabilities/S28-notifications.md): B-03
 - [S34](../capabilities/S34-recommendations.md): B-14
 - [S35](../capabilities/S35-trending.md): R-20
@@ -30,15 +31,19 @@ Illustrative, not taken from the spec: [S32](../capabilities/S32-product-search.
 - [realtime-topic-stream](../concepts/realtime-topic-stream.md): C-04, C-05
 - [search-index](../concepts/search-index.md): C-08
 - [basket](basket.md)
+- [billing-events-topic](billing-events-topic.md)
 - [co-occurrence-graph](co-occurrence-graph.md)
+- [entitlement](entitlement.md)
 - [event-consumer](event-consumer.md)
 - [order-baskets-projector](order-baskets-projector.md)
 - [order-paid-event](order-paid-event.md)
 - [parked-row](parked-row.md)
+- [product-created-event](product-created-event.md)
 - [published-row](published-row.md)
 - [queue-refusal](queue-refusal.md)
 - [replay-cursor](replay-cursor.md)
 - [search-index](search-index.md)
+- [shop-rank](shop-rank.md)
 - [stream-frame](stream-frame.md)
 - [verification-failed](verification-failed.md)
 <!-- used-by:end -->

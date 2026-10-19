@@ -21,5 +21,5 @@ The receiver `R` is set to answer `500`, and a buyer pays an order. The first de
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [webhook-endpoint](webhook-endpoint.md)
 <!-- used-by:end -->

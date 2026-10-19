@@ -21,6 +21,7 @@ The relay crashes after sending an event but before marking its row as sent. The
 
 ## Used by
 <!-- used-by:start -->
+- [J02](../capabilities/J02-seller-to-first-sale.md): R-04, R-14, B-02, B-10, B-12
 - [S32](../capabilities/S32-product-search.md): R-40
 - [S34](../capabilities/S34-recommendations.md): B-11
 - [S53](../capabilities/S53-events-projections.md): B-07
@@ -33,6 +34,7 @@ The relay crashes after sending an event but before marking its row as sent. The
 - [auctions-source-family](auctions-source-family.md)
 - [balance-projector](balance-projector.md)
 - [barrel-export](barrel-export.md)
+- [billing-events-topic](billing-events-topic.md)
 - [billing-source-family](billing-source-family.md)
 - [buffered-data](buffered-data.md)
 - [cache-invalidator](cache-invalidator.md)
@@ -40,14 +42,20 @@ The relay crashes after sending an event but before marking its row as sent. The
 - [commit-floor](commit-floor.md)
 - [consumer-declaration-error](consumer-declaration-error.md)
 - [consumer-deduplication-mode](consumer-deduplication-mode.md)
+- [consumer-lag](consumer-lag.md)
 - [correction-path](correction-path.md)
 - [dead-letter-reason-code](dead-letter-reason-code.md)
 - [dead-letter-redrive](dead-letter-redrive.md)
 - [dropped-late-event](dropped-late-event.md)
+- [entitlement](entitlement.md)
+- [entitlements-consumer](entitlements-consumer.md)
 - [event-id](event-id.md)
 - [event-replay](event-replay.md)
 - [event-ts](event-ts.md)
+- [fact](fact.md)
+- [get-product-by-id](get-product-by-id.md)
 - [heavy-hitters](heavy-hitters.md)
+- [identity-promotion-consumer](identity-promotion-consumer.md)
 - [idle-timeout](idle-timeout.md)
 - [infrastructure-layer](infrastructure-layer.md)
 - [is-sandbox](is-sandbox.md)
@@ -80,4 +88,5 @@ The relay crashes after sending an event but before marking its row as sent. The
 - [trending-events](trending-events.md)
 - [version-guard](version-guard.md)
 - [visitor](visitor.md)
+- [webhook-router](webhook-router.md)
 <!-- used-by:end -->

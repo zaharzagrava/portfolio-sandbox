@@ -21,5 +21,5 @@ In AS-27 the receiver `R` answers `500` to the first `order.paid` attempt. The r
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [J02](../capabilities/J02-seller-to-first-sale.md): R-18
 <!-- used-by:end -->

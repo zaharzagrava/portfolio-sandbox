@@ -20,6 +20,7 @@ A seller saves the `business` step. The onboarding view then shows `DRAFT`, the 
 
 ## Used by
 <!-- used-by:start -->
+- [J02](../capabilities/J02-seller-to-first-sale.md): R-06
 - [S04](../capabilities/S04-kyc-onboarding.md): B-01, B-18
 - [already-verified](already-verified.md)
 - [onboarding-application-status](onboarding-application-status.md)

@@ -28,6 +28,7 @@ S05 commits a product price change and appends one versioned product event in th
 - [aggregate-id](aggregate-id.md)
 - [at-least-once-delivery](at-least-once-delivery.md)
 - [auctions-source-family](auctions-source-family.md)
+- [billing-events-topic](billing-events-topic.md)
 - [consumer-batch](consumer-batch.md)
 - [consumer-deduplication-mode](consumer-deduplication-mode.md)
 - [heavy-hitters](heavy-hitters.md)

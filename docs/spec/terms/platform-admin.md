@@ -31,6 +31,7 @@ The same request from a shop `OWNER` who is not a platform admin is refused. If 
 - [S32](../capabilities/S32-product-search.md): R-21
 - [actor-id](actor-id.md)
 - [adjusted-resolution](adjusted-resolution.md)
+- [admin-bootstrap](admin-bootstrap.md)
 - [allowed-region](allowed-region.md)
 - [conflict-of-interest](conflict-of-interest.md)
 - [directory-row](directory-row.md)

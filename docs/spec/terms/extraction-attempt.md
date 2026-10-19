@@ -25,6 +25,7 @@ If the strong-[model call](model-call.md) had timed out instead, no row is writt
 
 ## Used by
 <!-- used-by:start -->
+- [J02](../capabilities/J02-seller-to-first-sale.md): B-04
 - [cheap-model](cheap-model.md)
 - [escalating-issue](escalating-issue.md)
 - [invalid-output](invalid-output.md)

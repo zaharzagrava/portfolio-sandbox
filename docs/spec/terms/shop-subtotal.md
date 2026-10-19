@@ -20,6 +20,7 @@ A [seller discount](seller-discount.md) of 300 on a shop grossing 2000 gives a s
 
 ## Used by
 <!-- used-by:start -->
+- [J02](../capabilities/J02-seller-to-first-sale.md): B-16
 - [S10](../capabilities/S10-cart-checkout.md): R-14, R-39, R-41, B-10
 - [W03](../capabilities/W03-cart-checkout-orders.md): R-05
 - [discount-tie-break](discount-tie-break.md)
@@ -29,4 +30,5 @@ A [seller discount](seller-discount.md) of 300 on a shop grossing 2000 gives a s
 - [order-total](order-total.md)
 - [seller-discount](seller-discount.md)
 - [shop-order](shop-order.md)
+- [shop-rank](shop-rank.md)
 <!-- used-by:end -->

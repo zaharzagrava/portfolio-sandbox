@@ -24,6 +24,8 @@ The extraction worker consumes extraction messages from the `onboarding-document
 
 ## Used by
 <!-- used-by:start -->
+- [J02](../capabilities/J02-seller-to-first-sale.md): B-05
+- [admin-bootstrap](admin-bootstrap.md)
 - [auto-approval](auto-approval.md)
 - [cheap-model](cheap-model.md)
 - [concurrency-lease](concurrency-lease.md)
@@ -31,6 +33,7 @@ The extraction worker consumes extraction messages from the `onboarding-document
 - [document-id](document-id.md)
 - [extraction-message](extraction-message.md)
 - [hard-checks](hard-checks.md)
+- [local-queue-configuration](local-queue-configuration.md)
 - [missing-object](missing-object.md)
 - [model-call](model-call.md)
 - [onboarding-documents-queue](onboarding-documents-queue.md)

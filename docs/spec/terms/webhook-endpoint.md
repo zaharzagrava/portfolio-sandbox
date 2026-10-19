@@ -21,5 +21,8 @@ The owner creates an endpoint pointing at the test receiver `R`, and the secret 
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [J02](../capabilities/J02-seller-to-first-sale.md): B-11, B-14
+- [shop-webhook](shop-webhook.md)
+- [webhook-receiver-allow-list](webhook-receiver-allow-list.md)
+- [webhook-signature-signing](webhook-signature-signing.md)
 <!-- used-by:end -->

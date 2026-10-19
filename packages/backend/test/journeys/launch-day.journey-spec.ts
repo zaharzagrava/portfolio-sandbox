@@ -2603,6 +2603,11 @@ describe('Journey J03: launch day', () => {
       const order = await firstOrder(winner);
       expect(order.id).toEqual(expect.any(String));
       expect(closed.priceMinor).toBeLessThanOrEqual(7_000);
+      // the relay publishes after the status flips: wait for the event, then prove it came once
+      await tapUntil('J03.H23', 'auctions.events', {
+        type: 'auction.closed',
+        key: auction.id,
+      });
       const closes = await countExactlyOnce(
         control,
         'auctions.events',

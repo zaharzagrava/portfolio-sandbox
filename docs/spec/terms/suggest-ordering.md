@@ -25,6 +25,8 @@ Suggest ordering is the fixed order of entries in an autocomplete answer. Query 
 - [distinct-searchers](distinct-searchers.md)
 - [exact-top-k](exact-top-k.md)
 - [search-total-order](search-total-order.md)
+- [shop-leaderboard](shop-leaderboard.md)
+- [shop-rank](shop-rank.md)
 - [suggestion-blend](suggestion-blend.md)
 - [typo-suggestion-source](typo-suggestion-source.md)
 - [use-suggestions](use-suggestions.md)

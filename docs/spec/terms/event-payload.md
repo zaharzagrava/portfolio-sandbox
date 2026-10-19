@@ -25,6 +25,7 @@ The event payload is the data a domain attaches to an event when it publishes to
 - [S32](../capabilities/S32-product-search.md): R-40
 - [S51](../capabilities/S51-realtime-push.md): R-05
 - [realtime-topic-stream](../concepts/realtime-topic-stream.md): C-02
+- [billing-invoice-paid-event](billing-invoice-paid-event.md)
 - [connection-admission](connection-admission.md)
 - [domain-boundary-rules](domain-boundary-rules.md)
 - [format-frame](format-frame.md)

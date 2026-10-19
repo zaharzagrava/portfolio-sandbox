@@ -19,5 +19,7 @@ A fact is a business decision that has already happened and is recorded as an ev
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [J02](../capabilities/J02-seller-to-first-sale.md): R-16
+- [consumer-lag](consumer-lag.md)
+- [webhook-router](webhook-router.md)
 <!-- used-by:end -->

@@ -20,6 +20,7 @@ In one window, [`PLATFORM_FEES`](ledger-system-accounts.md) shard 3 holds +50 an
 
 ## Used by
 <!-- used-by:start -->
+- [J02](../capabilities/J02-seller-to-first-sale.md): R-09
 - [S14](../capabilities/S14-ledger-reconciliation.md): R-19
 - [balanced-journal](balanced-journal.md)
 - [ledger-balance-shard](ledger-balance-shard.md)

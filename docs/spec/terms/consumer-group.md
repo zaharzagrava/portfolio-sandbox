@@ -25,6 +25,7 @@ A consumer group is the name a consumer declares when it registers to read the e
 - [projection-and-replay](../concepts/projection-and-replay.md): C-03
 - [analytics-events-topic](analytics-events-topic.md)
 - [balance-projector](balance-projector.md)
+- [billing-events-topic](billing-events-topic.md)
 - [consumer-declaration-error](consumer-declaration-error.md)
 - [consumer-deduplication-mode](consumer-deduplication-mode.md)
 - [dead-letter-redrive](dead-letter-redrive.md)
@@ -36,4 +37,5 @@ A consumer group is the name a consumer declares when it registers to read the e
 - [settlement-consumer](settlement-consumer.md)
 - [settlement-journal](settlement-journal.md)
 - [shop-status-consumer](shop-status-consumer.md)
+- [webhook-router](webhook-router.md)
 <!-- used-by:end -->

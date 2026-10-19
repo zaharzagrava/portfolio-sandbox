@@ -20,5 +20,6 @@ rules_hash: e3b0c44298fc
 
 ## Used by
 <!-- used-by:start -->
+- [J02](../capabilities/J02-seller-to-first-sale.md): B-06
 - [shop-verification](shop-verification.md)
 <!-- used-by:end -->

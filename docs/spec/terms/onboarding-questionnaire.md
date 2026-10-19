@@ -20,6 +20,7 @@ A [shop member](shop-member.md) saves the `business` step. The onboarding view t
 
 ## Used by
 <!-- used-by:start -->
+- [J02](../capabilities/J02-seller-to-first-sale.md): B-04
 - [S04](../capabilities/S04-kyc-onboarding.md): R-01
 - [already-submitted](already-submitted.md)
 - [document-not-required](document-not-required.md)

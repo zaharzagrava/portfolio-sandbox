@@ -21,6 +21,7 @@ A seller saves the `business` step, so the view shows `DRAFT`. They complete all
 
 ## Used by
 <!-- used-by:start -->
+- [J02](../capabilities/J02-seller-to-first-sale.md): R-08
 - [already-submitted](already-submitted.md)
 - [document-kind](document-kind.md)
 - [document-upload](document-upload.md)

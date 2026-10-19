@@ -20,5 +20,9 @@ The owner of a verified shop subscribes with `pm_test_visa`. The charge job pays
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [J02](../capabilities/J02-seller-to-first-sale.md): R-11
+- [billing-invoice-payment-failed-event](billing-invoice-payment-failed-event.md)
+- [charge-job](charge-job.md)
+- [invoice](invoice.md)
+- [max-products](max-products.md)
 <!-- used-by:end -->

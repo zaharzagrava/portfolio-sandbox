@@ -25,6 +25,7 @@ A [`STARTER`](plan-limit.md) shop with 4 members and 1 unexpired [pending invite
 
 ## Used by
 <!-- used-by:start -->
+- [J02](../capabilities/J02-seller-to-first-sale.md): B-01
 - [S03](../capabilities/S03-shops-rbac.md): R-12, R-21
 - [S49](../capabilities/S49-job-scheduler.md): B-13
 - [W02](../capabilities/W02-storefront-discovery.md): B-14

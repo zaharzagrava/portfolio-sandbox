@@ -21,6 +21,7 @@ An `order.paid` event reaches the orders consumer, which maps it to a notificati
 
 ## Used by
 <!-- used-by:start -->
+- [J02](../capabilities/J02-seller-to-first-sale.md): B-18
 - [S28](../capabilities/S28-notifications.md): R-10
 - [catalog-template](catalog-template.md)
 - [done-marker](done-marker.md)

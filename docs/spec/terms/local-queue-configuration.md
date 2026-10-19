@@ -20,5 +20,5 @@ The file is `infra/docker/elasticmq/elasticmq.conf`. In J02 AS-10, the extractor
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [webhook-receiver-allow-list](webhook-receiver-allow-list.md)
 <!-- used-by:end -->

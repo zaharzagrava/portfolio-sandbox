@@ -21,5 +21,5 @@ The owner subscribes with `pm_test_declined`. The charge job's first charge is d
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [free-tier](free-tier.md)
 <!-- used-by:end -->

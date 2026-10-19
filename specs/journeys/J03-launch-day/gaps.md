@@ -94,3 +94,7 @@ Also true in all five domains: **no code uses the injectable `Clock`** (`libs/co
 
 ## Doctor note (J03 gate: AS-38, AS-39)
 - AS-38 passed alone (run-us5.log); in the gate run the dev API restarted under it (watch mode, kafka edits): bid replies and the metrics port failed. AS-39 saw unstructured kafkajs lines (also from before the logger fix); kafkajs lines now go through the app logger with a traceId (clientId). Re-run: AS-38 and AS-39 after stack-fix.sh api-ready.
+
+## Gate repairs
+
+- AS-38 failed at `countExactlyOnce(... 'auction.closed')` with 0 events: the test read the event tap as soon as the auction showed CLOSED, before the relay had published `auction.closed`. The test now waits for the event (`tapUntil('J03.H23', ...)`) and then counts it, so a duplicate is still caught. No product code changed. A second failure seen while verifying (409 `idempotency_in_flight` on bids) came from the dev API restarting under the run after an edit; AS-38 passed on re-run after `stack-fix.sh api-ready`.

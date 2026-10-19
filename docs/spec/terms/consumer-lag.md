@@ -20,5 +20,9 @@ In AS-05 the [identity promotion consumer](identity-promotion-consumer.md) is pa
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [J02](../capabilities/J02-seller-to-first-sale.md): R-16
+- [billing-events-topic](billing-events-topic.md)
+- [entitlements-consumer](entitlements-consumer.md)
+- [identity-promotion-consumer](identity-promotion-consumer.md)
+- [webhook-router](webhook-router.md)
 <!-- used-by:end -->

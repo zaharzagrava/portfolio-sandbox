@@ -21,6 +21,7 @@ A job is [enqueued](job-enqueue.md) and gets [`created: true`](enqueue-created-f
 
 ## Used by
 <!-- used-by:start -->
+- [J02](../capabilities/J02-seller-to-first-sale.md): B-17
 - [S10](../capabilities/S10-cart-checkout.md): R-18, R-23
 - [S49](../capabilities/S49-job-scheduler.md): R-12, B-05, B-06
 - [order-reservation](../concepts/order-reservation.md): C-05
@@ -37,6 +38,7 @@ A job is [enqueued](job-enqueue.md) and gets [`created: true`](enqueue-created-f
 - [per-aggregate-ordering](per-aggregate-ordering.md)
 - [search-backfill-shop-state](search-backfill-shop-state.md)
 - [search-retire-previous-index](search-retire-previous-index.md)
+- [shop-webhook](shop-webhook.md)
 - [stock-release](stock-release.md)
 - [stripe-statement-adapter](stripe-statement-adapter.md)
 <!-- used-by:end -->

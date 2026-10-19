@@ -21,5 +21,6 @@ An operator replays `billing.events` from the beginning. The entitlements consum
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [entitlement](entitlement.md)
+- [entitlements-consumer](entitlements-consumer.md)
 <!-- used-by:end -->

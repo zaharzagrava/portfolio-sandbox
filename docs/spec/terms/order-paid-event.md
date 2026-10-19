@@ -20,6 +20,7 @@ rules_hash: d32613bfda5d
 
 ## Used by
 <!-- used-by:start -->
+- [J02](../capabilities/J02-seller-to-first-sale.md): B-18
 - [S34](../capabilities/S34-recommendations.md): B-11
 - [at-least-once-delivery](at-least-once-delivery.md)
 - [basket](basket.md)
@@ -33,4 +34,5 @@ rules_hash: d32613bfda5d
 - [model-registration](model-registration.md)
 - [order-baskets-projector](order-baskets-projector.md)
 - [orm-association](orm-association.md)
+- [webhook-signature-signing](webhook-signature-signing.md)
 <!-- used-by:end -->

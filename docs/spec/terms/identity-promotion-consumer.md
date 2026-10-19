@@ -22,5 +22,5 @@ In AS-05 the consumer is paused, so the role stays `USER` and its lag shows at l
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [consumer-lag](consumer-lag.md)
 <!-- used-by:end -->
