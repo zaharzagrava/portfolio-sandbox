@@ -51,7 +51,10 @@ export interface ProviderCallEvent {
  */
 export type UnsafeTestNetwork = Pick<
   SafeUrlOptions,
-  'allowHttpHosts' | 'allowPrivateHosts' | 'testTransport'
+  | 'allowHttpHosts'
+  | 'allowPrivateHosts'
+  | 'allowSelfSignedHosts'
+  | 'testTransport'
 >;
 
 export interface ProviderHttpOptions {

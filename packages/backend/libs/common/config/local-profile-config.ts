@@ -12,6 +12,7 @@ export interface LocalProfileConfig {
   rate_limit_allow_ips?: string;
   allowed_receiver_hosts?: string;
   allowed_receiver_ca_fingerprint?: string;
+  allowed_provider_hosts?: string;
 }
 
 const optional = (name: string, verify: joi.AnySchema = joi.string()) => ({
@@ -37,6 +38,11 @@ export const localProfileConfigKeys = {
    * Without it a listed host is trusted with whatever certificate it presents (still HTTPS, never plain HTTP).
    */
   allowed_receiver_ca_fingerprint: optional('ALLOWED_RECEIVER_CA_FINGERPRINT'),
+  /**
+   * J04: comma-separated `host:port` of a commerce-provider stand-in (the Shopify double) the catalog-sync call stack may
+   * reach over HTTPS although the address is private. Every other host stays behind the SSRF guard.
+   */
+  allowed_provider_hosts: optional('ALLOWED_PROVIDER_HOSTS'),
 };
 
 const isSet = (value: unknown): boolean =>
@@ -67,6 +73,9 @@ export const localProfileRule: RuleCheck = (ctx) => {
   for (const host of hosts)
     if (!/^[A-Za-z0-9.-]+:\d{1,5}$/.test(host))
       problems.push('allowed_receiver_hosts entries must be host:port');
+  for (const host of parseList(ctx.get('allowed_provider_hosts')))
+    if (!/^[A-Za-z0-9.-]+:\d{1,5}$/.test(host))
+      problems.push('allowed_provider_hosts entries must be host:port');
   for (const fingerprint of parseList(
     ctx.get('allowed_receiver_ca_fingerprint'),
   ))

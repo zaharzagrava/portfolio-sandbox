@@ -18,6 +18,7 @@ import '@app/domains/seller-onboarding';
 import '@app/domains/launch-events';
 import '@app/domains/auctions';
 import '@app/domains/orders';
+import '@app/domains/catalog-sync';
 import { AuthTestApp, createAuthApp } from './testing/auth-app';
 import { flushRedis } from './testing/mfa-fixtures';
 import { IdentityOpsModule } from './identity-ops.module';
@@ -174,6 +175,32 @@ describe('J01 G-30: admin job requests (POST/GET /api/admin/jobs)', () => {
       const nonAdmin = await sessionFor(Role.SELLER);
       await post(
         { type: 'auctions.sweep-due', payload: {} },
+        { token: nonAdmin.accessToken.token },
+      ).expect(403);
+    } finally {
+      await sql.query(`DELETE FROM "Job" WHERE type IN (:types)`, {
+        replacements: { types },
+      });
+    }
+  });
+
+  it('J04 G-22: the catalog-sync jobs are on the allow-list, each request enqueues one QUEUED job, and non-admins are refused', async () => {
+    const types = [
+      'catalog-sync.sync-all',
+      'catalog-sync.reconcile-all',
+      'catalog-sync.recover-stalled-imports',
+    ];
+    try {
+      for (const type of types) {
+        const res = await post({ type, payload: {} }).expect(202);
+        const { jobId } = adminJobAcceptedSchema.parse(res.body);
+        const rows = await jobsOf(type);
+        expect(rows.map((r) => r.id)).toEqual([jobId]);
+        expect(rows[0].status).toBe('QUEUED');
+      }
+      const nonAdmin = await sessionFor(Role.SELLER);
+      await post(
+        { type: 'catalog-sync.sync-all', payload: {} },
         { token: nonAdmin.accessToken.token },
       ).expect(403);
     } finally {

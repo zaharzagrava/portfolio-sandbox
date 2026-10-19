@@ -24,6 +24,11 @@ export interface TopicDefinition {
   owner?: string;
   /** Who may subscribe: exactly one rule per route. */
   policy: TopicPolicy;
+  /**
+   * A first connect without a cursor replays the topic's whole buffer instead of starting at its latest position. For a
+   * topic that only ever carries a few replayable terminal events (an import's `done`), so a late subscriber gets them.
+   */
+  replayFromStart?: boolean;
 }
 
 export class InvalidTopicDefinitionError extends Error {
@@ -55,6 +60,7 @@ interface Route {
   singleton: boolean;
   policy: TopicPolicy;
   owner?: string;
+  replayFromStart: boolean;
 }
 
 /**
@@ -106,7 +112,14 @@ export class TopicRegistry implements OnApplicationBootstrap {
         singleton: !!def.singleton,
         policy: def.policy,
         owner: def.owner,
+        replayFromStart: !!def.replayFromStart,
       });
+  }
+
+  /** Whether a first connect to this topic replays its buffer from the start (see `TopicDefinition.replayFromStart`). */
+  replaysFromStart(topic: string): boolean {
+    const route = this.resolve(topic);
+    return !!route && !!this.routes.get(route.key)?.replayFromStart;
   }
 
   freeze(): void {

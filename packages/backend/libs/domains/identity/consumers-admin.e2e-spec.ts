@@ -68,8 +68,7 @@ describe('Consumer operator routes (S53, J01 G-26, G-31)', () => {
 
   beforeAll(async () => {
     await kit.start();
-    t = await createAuthApp({ extraImports: [IdentityOpsModule, SqsModule],
-    });
+    t = await createAuthApp({ extraImports: [IdentityOpsModule, SqsModule] });
     redis = t.app.get(RedisService);
   }, 120_000);
   afterAll(async () => {
@@ -161,6 +160,26 @@ describe('Consumer operator routes (S53, J01 G-26, G-31)', () => {
       'product-cache-invalidator',
     ])
       expect((await view(group)).group).toBe(group);
+  });
+
+  it('J04 G-11 G-15 G-18: the catalog-sync journey aliases are known, pause/resume answer for them, and the real group names still resolve', async () => {
+    for (const group of [
+      'integrations-stock-push',
+      'offline-sync-feed',
+      'pickup-availability',
+      'search-product-index',
+      'product-cache-invalidator',
+    ]) {
+      const first = await view(group);
+      expect(first.group).toBe(group);
+      expect(first.lag).toBeGreaterThanOrEqual(0);
+    }
+    for (const group of [
+      'integrations-stock-push',
+      'offline-sync-feed',
+      'pickup-availability',
+    ])
+      expect(JOURNEY_CONSUMER_GROUPS).toContain(group);
   });
 
   it('J01 G-31: the journey group names are known before any runner declared them', async () => {

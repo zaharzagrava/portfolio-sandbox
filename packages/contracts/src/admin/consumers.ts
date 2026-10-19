@@ -19,6 +19,10 @@ export const JOURNEY_CONSUMER_GROUPS = [
   'document-extractor',
   // J03 (launch day)
   'orders-booking-voucher',
+  // J04 (catalog sync to search)
+  'integrations-stock-push',
+  'offline-sync-feed',
+  'pickup-availability',
 ] as const;
 
 /** Real Kafka groups of the launch-day journey (J03): addressed by their declared names, known only where their runner is hosted. */

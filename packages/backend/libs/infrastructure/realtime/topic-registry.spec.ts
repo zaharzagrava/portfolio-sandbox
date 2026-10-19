@@ -76,6 +76,15 @@ describe('S51 TopicRegistry definitions', () => {
     expect(policy).toHaveBeenCalledWith(viewer, 'shop:S1:live', 'S1', 'live');
   });
 
+  it('J04 AS-01: a route defined with replayFromStart says so, other routes and unknown topics do not', () => {
+    const registry = new TopicRegistry();
+    registry.define({ prefix: 'import', policy: allow, replayFromStart: true });
+    registry.define({ prefix: 'auction', policy: allow });
+    expect(registry.replaysFromStart('import:1')).toBe(true);
+    expect(registry.replaysFromStart('auction:1')).toBe(false);
+    expect(registry.replaysFromStart('nothing:1')).toBe(false);
+  });
+
   it('S51 AS-13: an undefined route is unknown and denied', async () => {
     const registry = new TopicRegistry();
     expect(registry.isKnown('nosuch:1')).toBe(false);

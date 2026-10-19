@@ -252,6 +252,7 @@ export class SecretsManagerConfig {
   rate_limit_allow_ips?: string;
   allowed_receiver_hosts?: string;
   allowed_receiver_ca_fingerprint?: string;
+  allowed_provider_hosts?: string;
 
   /** S15: seller payout settings, defaults in `payout-config.ts`. */
   payout_default_reserve_bps: number;

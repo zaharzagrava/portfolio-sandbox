@@ -194,6 +194,8 @@ const snapshotFields = {
   createdAt: z.string(),
   updatedAt: z.string(),
   changedFields: z.array(z.enum(PRODUCT_CHANGED_FIELDS)),
+  /** Origin of the change; absent on events written before J04. Consumers treat absent as `seller`. */
+  source: z.enum(['seller', 'import', 'integration']).optional(),
 };
 export const productSnapshotSchema = z.object(snapshotFields).strict();
 export type ProductSnapshot = z.infer<typeof productSnapshotSchema>;

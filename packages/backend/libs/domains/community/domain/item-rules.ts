@@ -41,6 +41,8 @@ export interface ProductEventInput {
   isSandbox: boolean;
   productVersion: number;
   changedFields: readonly string[];
+  /** Absent means `seller` (events written before the field existed). */
+  source?: 'seller' | 'import' | 'integration';
 }
 
 export type ProductEventKind =
@@ -65,6 +67,7 @@ export function productItem(
     sourceKey: event.productId,
   };
   if (kind === 'created') {
+    if (event.source && event.source !== 'seller') return skip('bulk_origin');
     if (previous) {
       if (previous.status === 'DELETED') return skip('deleted');
       if (previous.productVersion > event.productVersion) return skip('stale');

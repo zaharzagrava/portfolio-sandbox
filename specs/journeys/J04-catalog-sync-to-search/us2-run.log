@@ -1,0 +1,48 @@
+$ NODE_OPTIONS=--experimental-vm-modules jest --config jest-journeys.json --runInBand catalog-sync-to-search -t 'J04 AS-0[567]'
+(node:164629) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+  console.log
+    [hop] J04.H4 268 ms (contract 30000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+  console.log
+    [hop] J04.H3 2162 ms (contract 10000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+  console.log
+    [hop] J04.H5 264 ms (contract 15000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+  console.log
+    [hop] J04.H3 1106 ms (contract 10000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+  console.log
+    [hop] H13 520 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+  console.log
+    [hop] J04.H6 53 ms (contract 15000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+  console.log
+    [hop] J04.H3 1636 ms (contract 10000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+  console.log
+    [hop] H13 261 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:401:11)
+
+Test Suites: 1 passed, 1 total
+Tests:       4 skipped, 3 passed, 7 total
+Snapshots:   0 total
+Time:        70.097 s, estimated 88 s
+Ran all test suites matching catalog-sync-to-search with tests matching "J04 AS-0[567]".

@@ -134,9 +134,12 @@ export class ControlSurface {
   }
 
   /** Polls until the group has caught up (lag 0); the deadline is the settlement hop (H4). */
-  async waitCaughtUp(group: string): Promise<ConsumerView> {
+  async waitCaughtUp(
+    group: string,
+    hop: 'H4' | 'J04.H15' = 'H4',
+  ): Promise<ConsumerView> {
     return waitForContract(
-      'H4',
+      hop,
       async () => {
         const view = await this.consumer(group);
         return view.state === 'RUNNING' && view.lag === 0 ? view : null;

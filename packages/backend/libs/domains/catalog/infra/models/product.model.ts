@@ -134,8 +134,8 @@ export default class Product extends Model<Product, Partial<Product>> {
   declare viewCount: number;
 
   /**
-   * TRANSITIONAL: still mapped only because discovery's `search-reindex.service.ts` reads it through this model (S32
-   * owns the decision). No catalog view, event or cache entry carries it; `searchVector` is not mapped at all.
+   * TRANSITIONAL: kept mapped until S32 decides whether the column goes (discovery's reindex now replays `products.events`
+   * and no longer reads it). No catalog view, event or cache entry carries it; `searchVector` is not mapped at all.
    */
   @Column({ type: DataType.JSONB, allowNull: true })
   declare embedding: number[] | null;

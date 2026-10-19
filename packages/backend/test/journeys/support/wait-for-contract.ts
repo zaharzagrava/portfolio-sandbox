@@ -286,6 +286,87 @@ export const HOPS = {
     owner: 'S49',
     what: 'job run through the control surface → finished',
   },
+  // J04 (catalog sync to search): spec.md "Eventual-consistency contract". Prefixed so they never collide with J01's H1..H13.
+  'J04.H1': {
+    maxMs: 30_000,
+    owner: 'S07',
+    what: 'complete accepted → scan → parse → import DONE',
+  },
+  'J04.H2': {
+    maxMs: 0,
+    owner: 'S05',
+    what: 'import batch committed → products in the catalog (true at DONE)',
+  },
+  'J04.H3': {
+    maxMs: 10_000,
+    owner: 'S32',
+    what: 'catalog.product_created | updated → search document',
+  },
+  'J04.H4': {
+    maxMs: 30_000,
+    owner: 'S08',
+    what: 'OAuth callback → backfill → provider products in the catalog',
+  },
+  'J04.H5': {
+    maxMs: 15_000,
+    owner: 'S08',
+    what: 'provider webhook accepted → incremental pull → product updated',
+  },
+  'J04.H6': {
+    maxMs: 15_000,
+    owner: 'S08',
+    what: 'job catalog-sync.sync-all run → pull applied',
+  },
+  'J04.H7': {
+    maxMs: 10_000,
+    owner: 'S19',
+    what: 'pickup stock written → offer in near-me',
+  },
+  'J04.H8': {
+    maxMs: 10_000,
+    owner: 'S19',
+    what: 'catalog.product_* (title, price, archive, restore) → near-me product copy',
+  },
+  'J04.H9': {
+    maxMs: 0,
+    owner: 'S09',
+    what: 'sync push accepted → stock in the catalog (synchronous)',
+  },
+  'J04.H10': {
+    maxMs: 10_000,
+    owner: 'S32',
+    what: 'catalog.product_updated (quantity) → inStock in the index',
+  },
+  'J04.H11': {
+    maxMs: 10_000,
+    owner: 'S08',
+    what: 'catalog.product_updated (quantity) → provider stock written',
+  },
+  'J04.H12': {
+    maxMs: 5_000,
+    owner: 'S09',
+    what: 'catalog.product_updated → other device change feed',
+  },
+  'J04.H13': {
+    maxMs: 15_000,
+    owner: 'S08',
+    what: 'provider-side stock change → catalog stock merged',
+  },
+  'J04.H14': {
+    maxMs: 10_000,
+    owner: 'S32',
+    what: 'tenancy.shop_status_changed → products hidden or shown in search and near-me',
+  },
+  'J04.H15': {
+    maxMs: 15_000,
+    owner: 'S53',
+    what: 'consumer resumed or replayed → lag 0',
+  },
+  'J04.H16': {
+    maxMs: 5_000,
+    owner: 'S49',
+    what: 'job run through the control surface → finished',
+  },
 } as const;
 
 export type Hop = keyof typeof HOPS;

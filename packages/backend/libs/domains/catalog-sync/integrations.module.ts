@@ -52,7 +52,12 @@ import {
 import { CatalogServicesGateway } from './infra/catalog-gateway.adapter';
 import { SecretBoxCredentialVault } from './infra/credential-vault';
 import { IntegrationsJobs } from './infra/integrations.jobs';
-import { PROVIDER_NETWORK } from './infra/provider-network';
+import { ApiConfigService } from '@app/common/config';
+import {
+  allowedProviderHosts,
+  PROVIDER_NETWORK,
+  providerNetworkFromAllowList,
+} from './infra/provider-network';
 import { HttpProviderSessions } from './infra/provider-sessions.adapter';
 import { ProductEventsConsumer } from './infra/product-events.consumer';
 import {
@@ -96,7 +101,12 @@ const ADAPTERS: Provider[] = [
   { provide: SYNC_CLOCK, useExisting: CLOCK },
   { provide: CATALOG_GATEWAY, useClass: CatalogServicesGateway },
   { provide: SHOP_STATUS_GATEWAY, useClass: TenancyShopStatusGateway },
-  { provide: PROVIDER_NETWORK, useValue: {} },
+  {
+    provide: PROVIDER_NETWORK,
+    inject: [ApiConfigService],
+    useFactory: (config: ApiConfigService) =>
+      providerNetworkFromAllowList(allowedProviderHosts(config)),
+  },
   { provide: PROVIDER_SESSIONS, useClass: HttpProviderSessions },
 ];
 

@@ -43,7 +43,7 @@ export class FakeClamd {
   /** Sockets that are still open (a scan that ended must have closed its socket). */
   private open = new Set<Socket>();
   private server: Server | undefined;
-  private port = 0;
+  protected port = 0;
 
   get openSockets(): number {
     return this.open.size;

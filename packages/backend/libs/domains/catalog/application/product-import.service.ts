@@ -57,7 +57,7 @@ export class ProductImportService {
     items: unknown[],
     source: ExternalSource,
   ): Promise<ExternalUpsertResult[]> {
-    void source;
+    const origin = source === 'import' ? 'import' : 'integration';
     if (
       !isUuid(shopId) ||
       !Array.isArray(items) ||
@@ -114,6 +114,7 @@ export class ProductImportService {
             now,
             events,
             touched,
+            origin,
           );
         }
         await this.outbox.append(events);
@@ -130,6 +131,7 @@ export class ProductImportService {
     now: Date,
     events: EventEnvelope[],
     touched: Array<{ productId: string; version: number }>,
+    origin: 'import' | 'integration',
   ): Promise<ExternalUpsertResult> {
     for (let attempt = 0; attempt < 3; attempt++) {
       const existing = await this.products.lockByExternalSku(
@@ -154,7 +156,7 @@ export class ProductImportService {
           { anyStatus: true },
         );
         if (!updated) continue; // the row changed under us: look again
-        events.push(snapshotEvent('updated', updated, changed));
+        events.push(snapshotEvent('updated', updated, changed, origin));
         touched.push({ productId: updated.id, version: updated.version });
         return {
           externalSku: fields.externalSku,
@@ -171,7 +173,7 @@ export class ProductImportService {
         now,
       );
       if (!created) continue; // a concurrent twin inserted it first: update that one
-      events.push(snapshotEvent('created', created, []));
+      events.push(snapshotEvent('created', created, [], origin));
       touched.push({ productId: created.id, version: created.version });
       return {
         externalSku: fields.externalSku,

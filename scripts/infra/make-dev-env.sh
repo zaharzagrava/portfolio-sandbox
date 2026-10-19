@@ -53,6 +53,8 @@ cfg.update({
     'BOOTSTRAP_ADMIN_PASSWORD': 'Demo-Seed-Pw-7491!',  # same value the seed script and the journeys' adminClient() use
     'RATE_LIMIT_ALLOW_IPS': '127.0.0.1,::1,::ffff:127.0.0.1',  # J02: the journey runner creates many accounts from one address
     'ALLOWED_RECEIVER_HOSTS': '127.0.0.1:18443,127.0.0.1:18444',  # J02: the journey's HTTPS webhook receiver (WebhookReceiver, JOURNEY_RECEIVER_PORT)
+    'ALLOWED_PROVIDER_HOSTS': '127.0.0.1:18445',  # J04: the journey's HTTPS Shopify double (ShopifyDouble, JOURNEY_SHOPIFY_PORT); every other host stays behind the SSRF guard
+    'CLAMAV_HOST': '127.0.0.1:18446',  # J04: the journey's clamd-protocol scanner double (ScannerDouble, JOURNEY_SCANNER_PORT); read only when MEDIA_SCANNER_DISABLED is not true
     'SEARCH_REFRESH_INTERVAL': '1s',  # J02: product search hops (H9..H11) need a refresh of 1 s at most
     'PROVIDER_DOUBLES': 'enabled',  # binds the scripted payment and payout providers: pm_test_visa settles at once (the dummy Stripe key cannot)
 })

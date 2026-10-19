@@ -11,6 +11,8 @@ export const topics = {
   auction: (auctionId: string) => `auction:${auctionId}`,
   stream: (streamId: string) => `stream:${streamId}`,
   user: (userId: string) => `user:${userId}`,
+  /** J04: the progress and terminal events of a bulk import (replayable for a late subscriber). */
+  import: (importId: string) => `import:${importId}`,
 } as const;
 
 /** `GET /api/streams?topics=…` for one or several topics, as `actor` (the gateway checks every topic against the principal). */

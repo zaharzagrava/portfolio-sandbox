@@ -45,6 +45,23 @@ export const CANONICAL_CONSUMER_GROUPS: Readonly<
   'product-cache-invalidator': { groups: ['product-cache-invalidator'] },
   // The document extractor is a queue worker, not a Kafka group: the name only carries the operator's hold (pause/resume).
   'document-extractor': { groups: ['document-extractor'] },
+  // Catalog sync to search (J04). Aliases over the real groups of S08, S09 and S19; no group was renamed.
+  'integrations-stock-push': {
+    groups: [
+      'catalog-sync-product-events',
+      'catalog-sync-shop-offboarding',
+      'catalog-sync-shop-deleted',
+    ],
+  },
+  'offline-sync-feed': { groups: ['catalog-sync-offline-feed'] },
+  'pickup-availability': {
+    groups: [
+      'pickup-index-stock',
+      'pickup-index-shop',
+      'pickup-index-product',
+      'pickup-index-point',
+    ],
+  },
   // Launch day (J03). The voucher consumer is an SQS consumer of orders: pause is the Redis flag, lag the visible messages.
   'orders-booking-voucher': {
     groups: ['orders-booking-voucher'],

@@ -86,12 +86,12 @@ export const snapshotEvent = (
   kind: SnapshotEventKind,
   record: ProductRecord,
   changedFields: ProductSnapshot['changedFields'],
+  source?: ProductSnapshot['source'],
 ): EventEnvelope =>
-  DEFINITIONS[kind].create(
-    record.id,
-    record.version,
-    toSnapshot(record, changedFields),
-  );
+  DEFINITIONS[kind].create(record.id, record.version, {
+    ...toSnapshot(record, changedFields),
+    ...(source ? { source } : {}),
+  });
 
 export const deletedEvent = (
   productId: string,

@@ -41,3 +41,14 @@ Format: `[TAG] question → default taken → why`. BREAKING first, then CONTRAC
 - [LOCAL] Shopify stock location = the double's primary location → S08 rule.
 - [LOCAL] Replay (AS-19) starts from the journey start time, not the topic beginning → keeps the run short on a shared stack.
 - [LOCAL] No UI scenario → no screen owns these steps until W04 and the device app exist.
+
+## RESOLVED (agent decision)
+
+- The implement pass 2 "BLOCKER" below was a transient shell refusal, not a missing decision: `IMPL_TOOLS` in `scripts/sdd/implement-specs.sh` already allows `python3 scripts/livespec/check.py`, `bash scripts/sdd/stack-fix.sh`, `pnpm`, jest and `git status`. Run them in exactly those prefix forms (no `cd x &&` chains, no heredocs, no absolute-path variants). T019 is ticked: AS-01/AS-02 exist in `catalog-sync-to-search.journey-spec.ts` (AS-03..AS-07 too). Resume at T001; do not stop on this note.
+
+## (historical) BLOCKER (implement pass, 2026-10-19): shell refused every command
+
+Tried: `python3 scripts/livespec/check.py`, `bash scripts/sdd/stack-fix.sh api-ready`, `git -C /opt/sdd/repo status --short`. Each answered "This command requires approval" (only `echo` ran). The unattended run has no one to approve, so I cannot run `test-spec.sh`, jest, `pnpm test:journeys` or the livespec check.
+Hypothesis: the run's permission settings lack allow rules for `python3`, `bash scripts/sdd/*`, `git`, `pnpm`; the same cause as the J03 blocker in commit a39755db.
+Effect: every remaining task (T001 docs check, T019, T023..T045 red→green journey slices, T046..T049 gates) needs a watched failing test and a passing run. I wrote no code, so as not to ship untested changes. Tasks T002..T018 (marked [X]) and T020..T022 are untouched.
+Needed: allow `python3 scripts/livespec/check.py`, `bash scripts/sdd/*`, `pnpm`, `git` and jest in the run's permission settings, then resume at T001 (the first unchecked task; T019 is also unchecked while T020..T022 are ticked, so check that journey file for AS-01/AS-02 first).

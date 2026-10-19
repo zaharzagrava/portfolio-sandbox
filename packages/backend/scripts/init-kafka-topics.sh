@@ -18,6 +18,10 @@ TOPICS=(
   "launch_events.events"
   "live.events"
   "auctions.events"
+  # J04 G-19: catalog sync to search. `catalogsync.events` is the registered name of the spec's `catalog-sync.events`.
+  "pickup.events"
+  "tenancy.events"
+  "catalogsync.events"
   # S36 sponsored listings (L-002, L-011: every topic the code names must exist)
   "marketing.events"
   "ads.clicks"
