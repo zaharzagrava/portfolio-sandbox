@@ -41,6 +41,7 @@ with the links that prove it: backticked file paths and commit hashes. For a `pr
 - L-030 2026-10-18 timing prevented
 - L-031 2026-10-19 config prevented
 - L-032 2026-10-19 test-hollow prevented
+- L-033 2026-10-19 resources prevented
 
 ## L-001 A message option the queue refuses, found only by hand
 - **Rule:** A queue option must be validated where the message is created, not discovered when the relay fails (FIFO-only options like `groupId` never go to a standard queue).
@@ -237,3 +238,8 @@ Second part of L-031 (2026-10-19, same day): after `python3:*` and read-only git
 - **Rule:** A journey that checks the API log reads the lines of its own run: take `logMark(apiLogPath())` before the first request (in `beforeAll`) and read `logLinesSince(log, mark)`. Never `logLinesSince(log, 0)`.
 - **Symptom:** J03 AS-39 ("every JSON log line carries an id") failed in four gates in a row (2026-10-19) with KafkaJS startup warnings and consumer-rebalance lines from before the journey and from API restarts; the repairs removed the warning at its source (an explicit partitioner) and the doctor routed kafkajs lines through the app logger, and the gate still failed because the old lines stayed in the log. The gate loop also stopped after two attempts: `GATE_WALL_MIN` (120) is too short for a journey gate of 20 minutes plus repairs of up to 40; now 200.
 - **Prevention:** J03 takes its mark; the permission detector also recognises "the harness refused ...".
+
+## L-033 A test process that does not exit freezes the gate with the verdict already known
+- **Rule:** Every gate stage has a hard time limit, and jest runs with `forceExit` (the journey config too). A gate that waits for a process must not wait forever.
+- **Symptom:** J04's journey gate ran for over two hours (2026-10-19, 11:55 to 14:14 UTC) although its verdict was in after 212 seconds: 15 of 23 tests failed with `listen EADDRINUSE 127.0.0.1:18445` (a receiver server on a fixed port that a test does not close) and then "Jest did not exit one second after the test run has completed". The loop waited for jest, so no repair could start, and the monitor only said "stalled". **Cause:** `jest-journeys.json` had no `forceExit` and the journey gate had no timeout, unlike the backend gate (`timeout 1800` and `--forceExit`).
+- **Prevention:** `forceExit: true` in `jest-journeys.json`; `timeout -k 30` around the journey gate (2700 s) and the web stages (3000 s). Found by comparing the runner's log timestamps with the last gate line: when the monitor says "stalled" during a gate, look at the gate log's end for "did not exit".

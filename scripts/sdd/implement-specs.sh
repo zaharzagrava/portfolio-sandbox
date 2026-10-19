@@ -201,7 +201,7 @@ web_full() {
     cd packages/web &&
     npx tsc --noEmit -p tsconfig.json &&
     pnpm test &&                               # Vitest: UI-only logic, component states, a11y
-    API_URL="$API_URL" pnpm test:e2e ${PW_WORKERS:+--workers="$PW_WORKERS"} "$@"   # Playwright: happy-path journeys + layout screenshots
+    API_URL="$API_URL" timeout -k 30 "${WEB_GATE_TIMEOUT_S:-3000}" pnpm test:e2e ${PW_WORKERS:+--workers="$PW_WORKERS"} "$@"   # Playwright: happy-path journeys + layout screenshots
   ) || return 1
   web_clock_specs
 }
@@ -210,7 +210,7 @@ web_full() {
 web_clock_specs() {
   echo clock > "$(gate_state)/last-kind"
   bash "$ROOT/scripts/sdd/stack-fix.sh" api-ready || return 1
-  (cd packages/web && PW_CLOCK=1 API_URL="$API_URL" pnpm test:e2e --workers=1)
+  (cd packages/web && PW_CLOCK=1 API_URL="$API_URL" timeout -k 30 "${WEB_GATE_TIMEOUT_S:-3000}" pnpm test:e2e --workers=1)
   local rc=$?; (( rc == 0 )) && echo main > "$(gate_state)/last-kind"
   return $rc
 }
@@ -224,7 +224,7 @@ web_gate_full() {
     for (( i = 0; i < ${#files[@]}; i += batch )); do
       bash "$ROOT/scripts/sdd/stack-fix.sh" api-ready || { gate_full_failed; return 1; }
       (( i == 0 )) && { bash "$ROOT/scripts/sdd/stack-fix.sh" reindex || { gate_full_failed; return 1; }; }
-      (cd packages/web && API_URL="$API_URL" pnpm test:e2e ${PW_WORKERS:+--workers="$PW_WORKERS"} "${files[@]:i:batch}") || { gate_full_failed; return 1; }
+      (cd packages/web && API_URL="$API_URL" timeout -k 30 "${WEB_GATE_TIMEOUT_S:-3000}" pnpm test:e2e ${PW_WORKERS:+--workers="$PW_WORKERS"} "${files[@]:i:batch}") || { gate_full_failed; return 1; }
     done
     web_clock_specs || { gate_full_failed; return 1; }
   else
@@ -253,7 +253,9 @@ gate() { # $1 = domain column; everything must pass
       # (10+ minutes) and failed on J01 AS-30, a log-offset check that is sensitive to the stack's history (2026-10-18).
       local jspec; jspec="$(cd packages/backend && grep -l "Journey ${id%%-*}[: ]" test/journeys/*.journey-spec.ts 2>/dev/null | head -1)"
       [[ -n "$jspec" ]] && echo "journey gate: only $jspec" || echo "journey gate: no spec file named for ${id%%-*}; running the whole suite"
-      (cd packages/backend && API_URL="$API_URL" pnpm test:journeys $jspec) || return 1 ;;
+      # A hard limit: a jest that does not exit ("did not exit one second after the test run has completed") held J04's gate for 2 hours with the
+      # verdict already in (2026-10-19); the config has forceExit now and this is the net under it.
+      (cd packages/backend && API_URL="$API_URL" timeout -k 30 "${JOURNEY_GATE_TIMEOUT_S:-2700}" pnpm test:journeys $jspec) || return 1 ;;
   esac
   gate_reset
 }
