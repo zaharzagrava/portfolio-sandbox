@@ -20,5 +20,7 @@ A viewer posts "Love the colour!" with `clientId` `c-123` (illustrative values).
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [J03](../capabilities/J03-launch-day.md): B-18
+- [live-events-topic](live-events-topic.md)
+- [recent-comments](recent-comments.md)
 <!-- used-by:end -->

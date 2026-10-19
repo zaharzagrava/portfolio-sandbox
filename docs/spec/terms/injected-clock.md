@@ -22,10 +22,15 @@ A test gives the posting service a clock fixed at `2026-10-13T00:00:00Z` (illust
 - [S14](../capabilities/S14-ledger-reconciliation.md): R-07
 - [S28](../capabilities/S28-notifications.md): R-25
 - [acceptance-scenario](acceptance-scenario.md)
+- [auctions-close-job](auctions-close-job.md)
+- [ends-at](ends-at.md)
+- [flash-sale-end-job](flash-sale-end-job.md)
 - [ledger-journal](ledger-journal.md)
 - [ledger-posting](ledger-posting.md)
 - [ledger](ledger.md)
+- [orders-expire-reservation-job](orders-expire-reservation-job.md)
 - [posted-at](posted-at.md)
+- [seat-hold-expired](seat-hold-expired.md)
 - [validate-day](validate-day.md)
 - [wake-instant](wake-instant.md)
 <!-- used-by:end -->

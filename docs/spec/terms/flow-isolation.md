@@ -20,5 +20,5 @@ Two auctions and one drop run at once in `launch-day.journey-spec.ts`. A bid on 
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [J03](../capabilities/J03-launch-day.md): R-20
 <!-- used-by:end -->

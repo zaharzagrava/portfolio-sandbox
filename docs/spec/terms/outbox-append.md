@@ -40,6 +40,7 @@ await outbox.append(paymentSucceededEvent); // commits with the status change
 - [extraction-message](extraction-message.md)
 - [fact](fact.md)
 - [inbox-table](inbox-table.md)
+- [launch-events-events-topic](launch-events-events-topic.md)
 - [ledger-reconciliation-completed-event](ledger-reconciliation-completed-event.md)
 - [order-unavailable](order-unavailable.md)
 - [outbox-relay](outbox-relay.md)

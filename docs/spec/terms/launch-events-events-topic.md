@@ -21,5 +21,5 @@ A buyer confirms a seat hold. In one transaction, the bookings and `launch_event
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [launch-event](launch-event.md)
 <!-- used-by:end -->

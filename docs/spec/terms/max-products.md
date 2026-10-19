@@ -24,5 +24,7 @@ A free-tier shop already at its limit tries to create one more product:
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [entitlement](entitlement.md)
+- [free-tier](free-tier.md)
+- [plan-limit](plan-limit.md)
 <!-- used-by:end -->

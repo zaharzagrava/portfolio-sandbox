@@ -21,5 +21,11 @@ The winner does not pay within 48 hours. The order becomes `CANCELLED(hold_expir
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [J03](../capabilities/J03-launch-day.md): R-10
+- [auction-unsold](auction-unsold.md)
+- [auction-won-event](auction-won-event.md)
+- [auctions-close-job](auctions-close-job.md)
+- [conditional-transition](conditional-transition.md)
+- [payment-provider-chain](payment-provider-chain.md)
+- [refused-leader](refused-leader.md)
 <!-- used-by:end -->

@@ -27,10 +27,13 @@ SHOP_<B>              +3980
 <!-- used-by:start -->
 - [J01](../capabilities/J01-buy-to-payout.md): R-08, B-06
 - [S14](../capabilities/S14-ledger-reconciliation.md): R-11, R-14
+- [auction-sold](auction-sold.md)
+- [auction-unit](auction-unit.md)
 - [clawback](clawback.md)
 - [job](job.md)
 - [ledger-jobs](ledger-jobs.md)
 - [record-payment-refunded](record-payment-refunded.md)
+- [second-chance](second-chance.md)
 - [serializable-scope](serializable-scope.md)
 - [settlement-consumer](settlement-consumer.md)
 - [settlement-journal](settlement-journal.md)

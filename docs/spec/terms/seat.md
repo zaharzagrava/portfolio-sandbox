@@ -21,13 +21,17 @@ A [`STARTER`](plan-limit.md) shop has 3 members and 2 unexpired pending invites,
 
 ## Used by
 <!-- used-by:start -->
+- [J03](../capabilities/J03-launch-day.md): R-20, B-17
 - [S03](../capabilities/S03-shops-rbac.md): R-17, R-23
 - [tenant-shop-rbac](../concepts/tenant-shop-rbac.md): C-08
 - [already-member](already-member.md)
+- [buyer-queue](buyer-queue.md)
+- [flow-isolation](flow-isolation.md)
 - [invite-lifecycle](invite-lifecycle.md)
 - [invite-revoke](invite-revoke.md)
 - [max-owned-shops](max-owned-shops.md)
 - [member-provisioning](member-provisioning.md)
+- [organizer](organizer.md)
 - [pending-invite](pending-invite.md)
 - [plan-limit](plan-limit.md)
 - [provider-default-role](provider-default-role.md)
@@ -35,6 +39,7 @@ A [`STARTER`](plan-limit.md) shop has 3 members and 2 unexpired pending invites,
 - [shop-member](shop-member.md)
 - [shop-role](shop-role.md)
 - [shop-tenant](shop-tenant.md)
+- [sold-out](sold-out.md)
 - [subscription-plan-changed-event](subscription-plan-changed-event.md)
 - [tenancy-domain-layer](tenancy-domain-layer.md)
 <!-- used-by:end -->

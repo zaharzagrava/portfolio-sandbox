@@ -21,5 +21,8 @@ An auction ends at 20:00 (illustrative). A bid arrives at 19:59, inside the anti
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [J03](../capabilities/J03-launch-day.md): B-13
+- [auctions-close-job](auctions-close-job.md)
+- [duplicate-triggers](duplicate-triggers.md)
+- [ends-at](ends-at.md)
 <!-- used-by:end -->

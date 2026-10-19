@@ -21,5 +21,5 @@ An event has one seat left and five buyers confirm at the same moment. Exactly o
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [booking-hold](booking-hold.md)
 <!-- used-by:end -->

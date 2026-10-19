@@ -21,5 +21,7 @@ From J03.B-07: a drop loads 20 units and all 20 are reserved. Illustrative: 15 o
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [drop-reconcile](drop-reconcile.md)
+- [flash-sale-end-job](flash-sale-end-job.md)
+- [flash-sale-reconcile-job](flash-sale-reconcile-job.md)
 <!-- used-by:end -->

@@ -22,15 +22,18 @@ The relay crashes after sending an event but before marking its row as sent. The
 ## Used by
 <!-- used-by:start -->
 - [J02](../capabilities/J02-seller-to-first-sale.md): R-04, R-14, B-02, B-10, B-12
+- [J03](../capabilities/J03-launch-day.md): R-14, B-06
 - [S32](../capabilities/S32-product-search.md): R-40
 - [S34](../capabilities/S34-recommendations.md): B-11
 - [S53](../capabilities/S53-events-projections.md): B-07
 - [projection-and-replay](../concepts/projection-and-replay.md): C-03
+- [admitter](admitter.md)
 - [aggregate-id](aggregate-id.md)
 - [aggregate-store](aggregate-store.md)
 - [aggregate-version](aggregate-version.md)
 - [api-layer](api-layer.md)
 - [at-least-once-delivery](at-least-once-delivery.md)
+- [auction-won-notice](auction-won-notice.md)
 - [auctions-source-family](auctions-source-family.md)
 - [balance-projector](balance-projector.md)
 - [barrel-export](barrel-export.md)
@@ -39,6 +42,7 @@ The relay crashes after sending an event but before marking its row as sent. The
 - [buffered-data](buffered-data.md)
 - [cache-invalidator](cache-invalidator.md)
 - [category-tracking](category-tracking.md)
+- [comment-moderation](comment-moderation.md)
 - [commit-floor](commit-floor.md)
 - [consumer-declaration-error](consumer-declaration-error.md)
 - [consumer-deduplication-mode](consumer-deduplication-mode.md)
@@ -53,6 +57,7 @@ The relay crashes after sending an event but before marking its row as sent. The
 - [event-replay](event-replay.md)
 - [event-ts](event-ts.md)
 - [fact](fact.md)
+- [flash-sale-sold-out-notification](flash-sale-sold-out-notification.md)
 - [get-product-by-id](get-product-by-id.md)
 - [heavy-hitters](heavy-hitters.md)
 - [identity-promotion-consumer](identity-promotion-consumer.md)
@@ -69,6 +74,7 @@ The relay crashes after sending an event but before marking its row as sent. The
 - [notification-version-check](notification-version-check.md)
 - [notified-version](notified-version.md)
 - [order-baskets-projector](order-baskets-projector.md)
+- [order-confirmed-notification](order-confirmed-notification.md)
 - [order-version](order-version.md)
 - [orders-events-consumer](orders-events-consumer.md)
 - [outbid-event](outbid-event.md)
@@ -88,5 +94,6 @@ The relay crashes after sending an event but before marking its row as sent. The
 - [trending-events](trending-events.md)
 - [version-guard](version-guard.md)
 - [visitor](visitor.md)
+- [voucher-command](voucher-command.md)
 - [webhook-router](webhook-router.md)
 <!-- used-by:end -->

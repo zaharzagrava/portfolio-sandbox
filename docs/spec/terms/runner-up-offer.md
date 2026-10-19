@@ -21,5 +21,8 @@ The winner of an auction leaves their order unpaid for 48 hours. The order becom
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [J03](../capabilities/J03-launch-day.md): B-16
+- [auction-reserve](auction-reserve.md)
+- [refused-leader](refused-leader.md)
+- [second-chance](second-chance.md)
 <!-- used-by:end -->

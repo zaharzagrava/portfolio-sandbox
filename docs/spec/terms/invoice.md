@@ -21,5 +21,9 @@ The owner subscribes with `pm_test_declined`. The charge job's first charge is d
 
 ## Used by
 <!-- used-by:start -->
+- [billing-invoice-payment-failed-event](billing-invoice-payment-failed-event.md)
+- [charge-job](charge-job.md)
+- [entitlement](entitlement.md)
+- [entitlements-consumer](entitlements-consumer.md)
 - [free-tier](free-tier.md)
 <!-- used-by:end -->

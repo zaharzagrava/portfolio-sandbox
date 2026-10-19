@@ -23,11 +23,13 @@ An `order.paid` event reaches the orders consumer, which maps it to a notificati
 <!-- used-by:start -->
 - [J02](../capabilities/J02-seller-to-first-sale.md): B-18
 - [S28](../capabilities/S28-notifications.md): R-10
+- [booking-confirmed-notification](booking-confirmed-notification.md)
 - [catalog-template](catalog-template.md)
 - [done-marker](done-marker.md)
 - [event-consumer](event-consumer.md)
 - [in-memory-mailbox](in-memory-mailbox.md)
 - [inbox-item](inbox-item.md)
+- [launch-events-booking-confirmed-event](launch-events-booking-confirmed-event.md)
 - [marketing-cap](marketing-cap.md)
 - [marketing-external-channels](marketing-external-channels.md)
 - [notification-channel](notification-channel.md)

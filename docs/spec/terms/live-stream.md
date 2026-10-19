@@ -20,5 +20,8 @@ The brand starts a stream. Viewers receive the start event and then the posted c
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [J03](../capabilities/J03-launch-day.md): B-19
+- [client-id-reused](client-id-reused.md)
+- [comment-moderation](comment-moderation.md)
+- [recent-comments](recent-comments.md)
 <!-- used-by:end -->

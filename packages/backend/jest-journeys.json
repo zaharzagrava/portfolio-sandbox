@@ -23,5 +23,6 @@
   "globalTeardown": "<rootDir>/test/journeys/support/global-teardown.ts",
   "testTimeout": 180000,
   "maxWorkers": 1,
+  "forceExit": true,
   "passWithNoTests": true
 }

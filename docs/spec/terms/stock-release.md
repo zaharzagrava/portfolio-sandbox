@@ -23,6 +23,7 @@ Order `42` (illustrative) is cancelled with [`hold_expired`](hold-expired.md). I
 <!-- used-by:start -->
 - [J01](../capabilities/J01-buy-to-payout.md): R-05, R-13, B-09
 - [J02](../capabilities/J02-seller-to-first-sale.md): B-19
+- [J03](../capabilities/J03-launch-day.md): R-11
 - [S10](../capabilities/S10-cart-checkout.md): B-13, B-14
 - [order-reservation](../concepts/order-reservation.md): C-04
 - [catalog-stock-command](catalog-stock-command.md)

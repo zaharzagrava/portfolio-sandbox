@@ -21,5 +21,5 @@ A buyer holds a seat and never confirms it. The hold expires and the seat is fre
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [stream-pin](stream-pin.md)
 <!-- used-by:end -->

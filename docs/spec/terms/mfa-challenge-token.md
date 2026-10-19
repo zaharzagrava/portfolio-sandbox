@@ -21,12 +21,10 @@ Alice logs in with her password and gets a challenge. Her browser receives it in
 ## Used by
 <!-- used-by:start -->
 - [S02](../capabilities/S02-mfa-oidc.md): R-06
-- [access-token](access-token.md)
 - [invalid-mfa-challenge](invalid-mfa-challenge.md)
 - [mfa-challenge-spent-burned](mfa-challenge-spent-burned.md)
 - [mfa-management-endpoint](mfa-management-endpoint.md)
 - [mfa-recovery-code-regenerate](mfa-recovery-code-regenerate.md)
 - [mfa-recovery-code](mfa-recovery-code.md)
 - [mfa-state](mfa-state.md)
-- [token-refresh](token-refresh.md)
 <!-- used-by:end -->

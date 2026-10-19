@@ -21,6 +21,7 @@ A browser watching `user:{userId}` loses its connection for a few minutes. When 
 
 ## Used by
 <!-- used-by:start -->
+- [J03](../capabilities/J03-launch-day.md): B-18
 - [S51](../capabilities/S51-realtime-push.md): R-13, R-34, B-05, B-12, B-15
 - [realtime-topic-stream](../concepts/realtime-topic-stream.md): C-08
 - [baseline-frame](baseline-frame.md)

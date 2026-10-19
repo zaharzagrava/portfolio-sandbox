@@ -21,5 +21,7 @@ A buyer confirms a [hold](booking-hold.md) while the voucher consumer is paused.
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [J03](../capabilities/J03-launch-day.md): R-01, R-04
+- [booking-hold](booking-hold.md)
+- [launch-events-booking-confirmed-event](launch-events-booking-confirmed-event.md)
 <!-- used-by:end -->

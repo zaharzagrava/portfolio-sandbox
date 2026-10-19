@@ -20,5 +20,10 @@ The leader is at or above the reserve when the end passes. The auction becomes `
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [J03](../capabilities/J03-launch-day.md): R-11
+- [auction-reserve](auction-reserve.md)
+- [auction-unsold](auction-unsold.md)
+- [no-notification-list](no-notification-list.md)
+- [refused-leader](refused-leader.md)
+- [shill-bid-forbidden](shill-bid-forbidden.md)
 <!-- used-by:end -->

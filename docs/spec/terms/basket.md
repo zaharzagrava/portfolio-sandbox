@@ -31,6 +31,7 @@ Order `ord_123` (illustrative) is paid with `p_kettle` and `p_mug`. `OrderBasket
 - [co-order-threshold](co-order-threshold.md)
 - [direct-neighbour](direct-neighbour.md)
 - [event-replay](event-replay.md)
+- [order-baskets-build](order-baskets-build.md)
 - [order-baskets-projector](order-baskets-projector.md)
 - [order-paid-event](order-paid-event.md)
 - [order-refunded-event](order-refunded-event.md)

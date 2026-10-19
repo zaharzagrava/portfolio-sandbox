@@ -21,5 +21,5 @@ Illustrative: a drop loads 20 units, sells 12 that are paid, and 8 remain. `flas
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [J03](../capabilities/J03-launch-day.md): R-06
 <!-- used-by:end -->

@@ -25,5 +25,13 @@ Confirming the same hold several times, with one key or with different keys, ret
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [J03](../capabilities/J03-launch-day.md): B-01, B-05
+- [admission-token](admission-token.md)
+- [admitter](admitter.md)
+- [booking-confirm](booking-confirm.md)
+- [booking-confirmed-notification](booking-confirmed-notification.md)
+- [booking-id](booking-id.md)
+- [buyer-queue](buyer-queue.md)
+- [seat-hold-expired](seat-hold-expired.md)
+- [voucher](voucher.md)
 <!-- used-by:end -->

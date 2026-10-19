@@ -21,5 +21,12 @@ An auction with a leader below the reserve closes. It ends as `UNSOLD(reserve_no
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [J03](../capabilities/J03-launch-day.md): R-20
+- [auction-unsold](auction-unsold.md)
+- [catalog-stock](catalog-stock.md)
+- [close-job](close-job.md)
+- [drop-hold](drop-hold.md)
+- [flash-sale-sold-out-notification](flash-sale-sold-out-notification.md)
+- [flow-isolation](flow-isolation.md)
+- [shill-bid-forbidden](shill-bid-forbidden.md)
 <!-- used-by:end -->

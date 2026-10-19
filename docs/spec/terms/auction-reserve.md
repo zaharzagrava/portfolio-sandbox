@@ -20,5 +20,12 @@ The reserve is 10000 (illustrative), and the highest bid when the end passes is 
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [J03](../capabilities/J03-launch-day.md): R-11, B-14
+- [auction-closed-event](auction-closed-event.md)
+- [auction-status](auction-status.md)
+- [auction-unsold](auction-unsold.md)
+- [auction-won-event](auction-won-event.md)
+- [auction-won-notice](auction-won-notice.md)
+- [auctions-close-job](auctions-close-job.md)
+- [refused-leader](refused-leader.md)
 <!-- used-by:end -->

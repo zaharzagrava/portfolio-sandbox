@@ -21,5 +21,7 @@ A seller's documents are all approved, then the process crashes before `shop.ver
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [guarded-update](guarded-update.md)
+- [job](job.md)
+- [tenancy-domain-layer](tenancy-domain-layer.md)
 <!-- used-by:end -->

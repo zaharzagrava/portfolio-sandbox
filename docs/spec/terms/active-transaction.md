@@ -27,6 +27,7 @@ Inside [S13](../capabilities/S13-payment-intents.md)'s payment scope, [S53](../c
 - [S54](../capabilities/S54-platform-toolkit.md): R-17, B-05
 - [transaction-runner](../concepts/transaction-runner.md): C-03
 - [append-standalone](append-standalone.md)
+- [auction-closed-event](auction-closed-event.md)
 - [event-row](event-row.md)
 - [get-balances](get-balances.md)
 - [idempotency-key-conflict-error](idempotency-key-conflict-error.md)

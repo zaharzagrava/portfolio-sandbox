@@ -149,14 +149,25 @@ describe('Journey J04: catalog sync to search', () => {
   const connectedStore = async (label: string, token: string) => {
     const shop = await newShop(label);
     const double = await ShopifyDouble.startDouble();
-    double.clockSkewMs = Date.parse((await control.clock()).now) - Date.now();
-    const variants = double.seedStandard(token);
-    const connected = await connectShopify(shop, double);
-    await waitLinked(shop, connected.integrationId, 7);
-    await waitForContract('J04.H3', async () => {
-      const found = await searchProducts(token);
-      return found.total === 7 ? found : null;
-    });
+    let connected: Awaited<ReturnType<typeof connectShopify>> | undefined;
+    let variants: Record<string, number>;
+    try {
+      double.clockSkewMs = Date.parse((await control.clock()).now) - Date.now();
+      variants = double.seedStandard(token);
+      connected = await connectShopify(shop, double);
+      await waitLinked(shop, connected.integrationId, 7);
+      await waitForContract('J04.H3', async () => {
+        const found = await searchProducts(token);
+        return found.total === 7 ? found : null;
+      });
+    } catch (error) {
+      // A failed setup must not keep the fixed port (or the store) for the describes that follow.
+      if (connected)
+        await disconnect(shop, connected.integrationId).catch(() => undefined);
+      await double.stop();
+      throw error;
+    }
+    const { integrationId } = connected;
     const products = await listProducts(shop);
     const productOf = (variant: number) =>
       products.find((p) => p.externalSku?.endsWith(`:${variant}`))!;
@@ -164,10 +175,10 @@ describe('Journey J04: catalog sync to search', () => {
       shop,
       double,
       variants,
-      integrationId: connected.integrationId,
+      integrationId,
       productOf,
       close: async () => {
-        await disconnect(shop, connected.integrationId);
+        await disconnect(shop, integrationId);
         await double.stop();
       },
     };
@@ -187,7 +198,7 @@ describe('Journey J04: catalog sync to search', () => {
     beforeAll(async () => {
       shop = await newShop('us1');
       other = await newShop('us1other');
-      token = `${run}a`;
+      token = `${run}amber`;
       file = csv(rowsFor(token, 60, { priceCents: 1500, stock: 5 }));
     });
 
@@ -394,7 +405,7 @@ describe('Journey J04: catalog sync to search', () => {
 
     beforeAll(async () => {
       shop = await newShop('us2');
-      token = `${run}s`;
+      token = `${run}sierra`;
       double = await ShopifyDouble.startDouble();
       double.clockSkewMs = Date.parse((await control.clock()).now) - Date.now();
       variants = double.seedStandard(token);
@@ -577,7 +588,7 @@ describe('Journey J04: catalog sync to search', () => {
     beforeAll(async () => {
       shop = await newShop('us3');
       other = await newShop('us3other');
-      token = `${run}c`;
+      token = `${run}cobalt`;
       site = await createPickupPoint(shop);
       product = await createCatalogProduct(shop, `Lamp ${token} 001`, 5);
     });
@@ -713,7 +724,7 @@ describe('Journey J04: catalog sync to search', () => {
 
     beforeAll(async () => {
       shop = await newShop('us4');
-      token = `${run}d`;
+      token = `${run}dynamo`;
       double = await ShopifyDouble.startDouble();
       double.clockSkewMs = Date.parse((await control.clock()).now) - Date.now();
       variants = double.seedStandard(token);
@@ -933,7 +944,7 @@ describe('Journey J04: catalog sync to search', () => {
     };
 
     beforeAll(async () => {
-      token = `${run}e`;
+      token = `${run}quartz`;
       store = await connectedStore('us5', token);
       d1 = new DeviceClient(store.shop, `d1-${run}`);
       await settle('integrations-stock-push');
@@ -1169,7 +1180,7 @@ describe('Journey J04: catalog sync to search', () => {
 
     beforeAll(async () => {
       startedAt = new Date(Date.now() - 60_000);
-      token = `${run}f`;
+      token = `${run}falcon`;
       store = await connectedStore('us6', token);
       d1 = new DeviceClient(store.shop, `d1-${run}`);
       const plain = await createCatalogProduct(
@@ -1303,7 +1314,7 @@ describe('Journey J04: catalog sync to search', () => {
     const visibleInSearch = async () => (await searchProducts(token)).total;
 
     beforeAll(async () => {
-      token = `${run}g`;
+      token = `${run}garnet`;
       store = await connectedStore('us7', token);
       other = await newShop('us7other');
       d1 = new DeviceClient(store.shop, `d1-${run}`);
@@ -1566,7 +1577,7 @@ describe('Journey J04: catalog sync to search', () => {
     let staff: JourneyClient;
 
     beforeAll(async () => {
-      token = `${run}h`;
+      token = `${run}harbor`;
       store = await connectedStore('us8', token);
       staff = await JourneyClient.signUp('us8staff');
       await inviteAndAccept(store.shop.owner, store.shop.shopId, staff);

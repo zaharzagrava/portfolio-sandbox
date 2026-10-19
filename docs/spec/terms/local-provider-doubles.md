@@ -21,6 +21,10 @@ In [J02 AS-12](acceptance-scenario.md), the owner subscribes with `pm_test_visa`
 
 ## Used by
 <!-- used-by:start -->
+- [acceptance-scenario](acceptance-scenario.md)
+- [admin-bootstrap](admin-bootstrap.md)
+- [charge-job](charge-job.md)
 - [local-queue-configuration](local-queue-configuration.md)
+- [main-journeys](main-journeys.md)
 - [webhook-receiver-allow-list](webhook-receiver-allow-list.md)
 <!-- used-by:end -->

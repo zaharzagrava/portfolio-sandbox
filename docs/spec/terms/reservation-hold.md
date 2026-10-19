@@ -20,5 +20,7 @@ A buyer holds a seat and never confirms. After 10 minutes the seat is free again
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [J03](../capabilities/J03-launch-day.md): R-16
+- [drop-hold](drop-hold.md)
+- [orders-expire-reservation-job](orders-expire-reservation-job.md)
 <!-- used-by:end -->

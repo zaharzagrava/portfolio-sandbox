@@ -22,6 +22,7 @@ Known gaps is the last section of a [capability page](capability.md). It lists w
 ## Used by
 <!-- used-by:start -->
 - [acceptance-scenario](acceptance-scenario.md)
+- [bid-increment](bid-increment.md)
 - [body-html](body-html.md)
 - [capability](capability.md)
 - [code-facts](code-facts.md)

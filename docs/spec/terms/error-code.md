@@ -29,6 +29,7 @@ A checkout fails and the body carries `"code": "conflict"`. [{{cap:W03}}](../cap
 - [cart-empty](cart-empty.md)
 - [cell-unavailable](cell-unavailable.md)
 - [clamping](clamping.md)
+- [client-id-reused](client-id-reused.md)
 - [conflict-error](conflict-error.md)
 - [currency-not-supported](currency-not-supported.md)
 - [error-catalogue](error-catalogue.md)
@@ -38,5 +39,6 @@ A checkout fails and the body carries `"code": "conflict"`. [{{cap:W03}}](../cap
 - [method-not-allowed](method-not-allowed.md)
 - [phone-code-lockout](phone-code-lockout.md)
 - [reindex-in-progress](reindex-in-progress.md)
+- [seat-hold-expired](seat-hold-expired.md)
 - [unknown-query-parameter](unknown-query-parameter.md)
 <!-- used-by:end -->

@@ -21,5 +21,5 @@ A brand schedules a drop, and product stock does not change. When `flash-sale.lo
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [flash-sale-load-job](flash-sale-load-job.md)
 <!-- used-by:end -->

@@ -22,11 +22,13 @@ A member with `ADMIN` in a shop may make another member `STAFF` or `VIEWER`. Onl
 <!-- used-by:start -->
 - [J01](../capabilities/J01-buy-to-payout.md): R-12, B-07
 - [J02](../capabilities/J02-seller-to-first-sale.md): R-05
+- [J03](../capabilities/J03-launch-day.md): B-08, B-10
 - [S03](../capabilities/S03-shops-rbac.md): R-06, R-07, B-06, B-20
 - [S10](../capabilities/S10-cart-checkout.md): R-39
 - [W07](../capabilities/W07-app-shell.md): B-04
 - [tenant-shop-rbac](../concepts/tenant-shop-rbac.md): C-04
 - [confirmation-mismatch](confirmation-mismatch.md)
+- [flash-sale-sold-out-notification](flash-sale-sold-out-notification.md)
 - [get-shop-by-id](get-shop-by-id.md)
 - [invite-acceptance](invite-acceptance.md)
 - [invite-lifecycle](invite-lifecycle.md)
@@ -35,6 +37,7 @@ A member with `ADMIN` in a shop may make another member `STAFF` or `VIEWER`. Onl
 - [membership-query-service](membership-query-service.md)
 - [my-role](my-role.md)
 - [notification](notification.md)
+- [organizer](organizer.md)
 - [permission-denied](permission-denied.md)
 - [permission](permission.md)
 - [platform-admin](platform-admin.md)

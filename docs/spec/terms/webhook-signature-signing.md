@@ -21,4 +21,8 @@ In AS-25 a buyer pays for the shop's product. The receiver `R` gets one signed `
 ## Used by
 <!-- used-by:start -->
 - [J02](../capabilities/J02-seller-to-first-sale.md): R-17
+- [delivery-line](delivery-line.md)
+- [order-paid-event](order-paid-event.md)
+- [webhook-endpoint](webhook-endpoint.md)
+- [webhook-secret](webhook-secret.md)
 <!-- used-by:end -->

@@ -31,6 +31,7 @@ In S53.B-01, the writing domain updates [aggregate A](aggregate-id.md) from vers
 - [exported-service](exported-service.md)
 - [fact](fact.md)
 - [inbox-table](inbox-table.md)
+- [launch-day-flow](launch-day-flow.md)
 - [media-controller](media-controller.md)
 - [outbox-append](outbox-append.md)
 - [outbox-relay](outbox-relay.md)

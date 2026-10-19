@@ -21,5 +21,6 @@ After [`auctions.close`](auctions-close-job.md) runs twice for the same auction,
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [control-surface](control-surface.md)
+- [stack](stack.md)
 <!-- used-by:end -->

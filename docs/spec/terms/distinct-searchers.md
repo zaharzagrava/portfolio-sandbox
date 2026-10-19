@@ -40,7 +40,6 @@ One searcher types `cheap iphone` 100 times. That query has only one distinct se
 - [search-log](search-log.md)
 - [snapshot](snapshot.md)
 - [suggest-ordering](suggest-ordering.md)
-- [suggest-snapshot](suggest-snapshot.md)
 - [suggestion-build](suggestion-build.md)
 - [verification-gate](verification-gate.md)
 <!-- used-by:end -->

@@ -26,6 +26,7 @@ await publish("user:<A>", "price", { price: 3 });
 <!-- used-by:start -->
 - [S28](../capabilities/S28-notifications.md): B-01
 - [S51](../capabilities/S51-realtime-push.md): B-08
+- [comment-moderation](comment-moderation.md)
 - [done-marker](done-marker.md)
 - [format-frame](format-frame.md)
 - [inbox-item](inbox-item.md)

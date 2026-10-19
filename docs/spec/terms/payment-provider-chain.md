@@ -20,5 +20,5 @@ The J01 chain is the payment flow described by the J01 journey, which this [laun
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [auction-sold](auction-sold.md)
 <!-- used-by:end -->

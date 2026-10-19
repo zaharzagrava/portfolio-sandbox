@@ -23,6 +23,7 @@ If the catalog has a type that is sent by SMS but production has no SMS provider
 - [S28](../capabilities/S28-notifications.md): R-37, R-42, R-49
 - [catalog-template](catalog-template.md)
 - [mail-provider](mail-provider.md)
+- [no-notification-list](no-notification-list.md)
 - [notification-channel](notification-channel.md)
 - [notification-type](notification-type.md)
 - [recipient-rule](recipient-rule.md)

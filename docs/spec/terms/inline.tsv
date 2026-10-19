@@ -28,3 +28,4 @@ docs/spec/capabilities/S32-product-search.md	S32.R-27	two-way rules	(`a, b`)	syn
 docs/spec/capabilities/S32-product-search.md	S32.R-27	one-way rules	(`a => b`)	synonym-rules	Synonym rules	promoted
 docs/spec/capabilities/S32-product-search.md	S32.R-22	`avgRating`	(mean rounded to two decimals, `null` when nothing matches)	avg-rating-facet	avgRating facet	promoted
 docs/spec/capabilities/S32-product-search.md	S32.R-39	`202` with an empty body	with an empty body	http-202-accepted	202 Accepted	open
+docs/spec/capabilities/J04-catalog-sync-to-search.md	J04.R-15	an impossible (negative) merge	impossible (negative)	impossible-merge	Impossible merge	open

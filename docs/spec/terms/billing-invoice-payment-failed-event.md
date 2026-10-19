@@ -21,5 +21,9 @@ The owner subscribes with `pm_test_declined`. The charge job's first charge is d
 
 ## Used by
 <!-- used-by:start -->
+- [entitlement](entitlement.md)
+- [free-tier](free-tier.md)
 - [invoice](invoice.md)
+- [outbox-append](outbox-append.md)
+- [payment-method-token](payment-method-token.md)
 <!-- used-by:end -->

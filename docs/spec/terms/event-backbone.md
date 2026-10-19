@@ -32,6 +32,7 @@ S05 commits a product price change and appends one versioned product event in th
 - [consumer-batch](consumer-batch.md)
 - [consumer-deduplication-mode](consumer-deduplication-mode.md)
 - [heavy-hitters](heavy-hitters.md)
+- [launch-events-events-topic](launch-events-events-topic.md)
 - [ledger-events-topic](ledger-events-topic.md)
 - [monotonic-version](monotonic-version.md)
 - [order-paid-event](order-paid-event.md)

@@ -30,6 +30,7 @@ The event payload is the data a domain attaches to an event when it publishes to
 - [domain-boundary-rules](domain-boundary-rules.md)
 - [format-frame](format-frame.md)
 - [is-sandbox](is-sandbox.md)
+- [launch-events-booking-confirmed-event](launch-events-booking-confirmed-event.md)
 - [member-removed-event](member-removed-event.md)
 - [order-cancelled-event](order-cancelled-event.md)
 - [order-paid-event](order-paid-event.md)

@@ -21,5 +21,10 @@ The search consumer is paused and the owner creates product `P2`. `GET /products
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [event-consumer](event-consumer.md)
+- [known-gaps](known-gaps.md)
+- [main-journeys](main-journeys.md)
+- [product-archive](product-archive.md)
+- [search-projector](search-projector.md)
+- [shop-status](shop-status.md)
 <!-- used-by:end -->

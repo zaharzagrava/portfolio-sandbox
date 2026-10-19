@@ -21,5 +21,5 @@ Illustrative: a launch event is `ON_SALE` with seats still free. The organizer e
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [launch-event](launch-event.md)
 <!-- used-by:end -->

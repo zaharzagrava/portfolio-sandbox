@@ -21,6 +21,7 @@ An owner demotes a member with `PATCH /shops/:shopId/members/:userId` and gets `
 
 ## Used by
 <!-- used-by:start -->
+- [J03](../capabilities/J03-launch-day.md): R-15
 - [after-commit-callback](after-commit-callback.md)
 - [authorization-cache](authorization-cache.md)
 - [cache-entry](cache-entry.md)

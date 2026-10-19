@@ -20,5 +20,5 @@ The leader is at or above the [reserve](auction-reserve.md) when the end passes.
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [award-notice](award-notice.md)
 <!-- used-by:end -->

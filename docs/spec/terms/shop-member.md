@@ -19,6 +19,7 @@ A user who sends [`POST /shops`](post-shops.md) becomes the `OWNER` member of th
 
 ## Used by
 <!-- used-by:start -->
+- [J03](../capabilities/J03-launch-day.md): R-12
 - [S04](../capabilities/S04-kyc-onboarding.md): R-23, B-01
 - [S05](../capabilities/S05-products.md): B-05
 - [S32](../capabilities/S32-product-search.md): R-33
@@ -35,6 +36,7 @@ A user who sends [`POST /shops`](post-shops.md) becomes the `OWNER` member of th
 - [pending-invite](pending-invite.md)
 - [realtime-topic](realtime-topic.md)
 - [seat](seat.md)
+- [shill-bid-forbidden](shill-bid-forbidden.md)
 - [shop-membership](shop-membership.md)
 - [shop-role](shop-role.md)
 - [shop-search-table](shop-search-table.md)

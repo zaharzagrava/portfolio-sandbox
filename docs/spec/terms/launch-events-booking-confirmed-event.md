@@ -21,5 +21,5 @@ A buyer confirms a hold. Once the event reaches notifications and orders, the bu
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [booking-confirmed-notification](booking-confirmed-notification.md)
 <!-- used-by:end -->

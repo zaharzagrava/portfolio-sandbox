@@ -25,15 +25,12 @@ The user calls enrol, so the state goes `none→pending`. They confirm with a cu
 - [S48](../capabilities/S48-bff.md): B-15
 - [W01](../capabilities/W01-auth-account.md): B-10
 - [identity-link](identity-link.md)
-- [link-conflict](link-conflict.md)
 - [login-mfa-page](login-mfa-page.md)
 - [mfa-already-enabled](mfa-already-enabled.md)
 - [mfa-challenge-token](mfa-challenge-token.md)
 - [mfa-confirm](mfa-confirm.md)
-- [mfa-enrolment](mfa-enrolment.md)
 - [mfa-management-endpoint](mfa-management-endpoint.md)
 - [mfa-not-enabled](mfa-not-enabled.md)
-- [mfa-pending-expiry](mfa-pending-expiry.md)
 - [mfa-recovery-code](mfa-recovery-code.md)
 - [mfa-recovery-codes-regenerated-event](mfa-recovery-codes-regenerated-event.md)
 - [mfa-recovery-digest](mfa-recovery-digest.md)
@@ -41,6 +38,5 @@ The user calls enrol, so the state goes `none→pending`. They confirm with a cu
 - [otpauth-uri](otpauth-uri.md)
 - [post-auth-login](post-auth-login.md)
 - [post-bff-session](post-bff-session.md)
-- [second-factor-model](second-factor-model.md)
 - [session-controller](session-controller.md)
 <!-- used-by:end -->

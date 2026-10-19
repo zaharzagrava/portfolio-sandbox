@@ -21,5 +21,6 @@ The owner of a shop on an active plan sends `POST` to create product `P1` with a
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [catalog-product-events](catalog-product-events.md)
+- [event-replay](event-replay.md)
 <!-- used-by:end -->

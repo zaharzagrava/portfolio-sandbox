@@ -19,5 +19,6 @@ A viewer posts a comment, and a second viewer joins the stream afterwards. The l
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [J03](../capabilities/J03-launch-day.md): R-19
+- [comment-moderation](comment-moderation.md)
 <!-- used-by:end -->

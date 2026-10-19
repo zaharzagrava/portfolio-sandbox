@@ -21,5 +21,9 @@ In B-08 the owner subscribes with `pm_test_visa`, and the [charge job](charge-jo
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [charge-job](charge-job.md)
+- [domain](domain.md)
+- [entitlements-consumer](entitlements-consumer.md)
+- [event-payload](event-payload.md)
+- [free-tier](free-tier.md)
 <!-- used-by:end -->

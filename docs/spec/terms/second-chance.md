@@ -21,5 +21,8 @@ The winner does not pay within 48 hours. Orders emits `order.cancelled` for the 
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [auction-reserve](auction-reserve.md)
+- [auction-unsold](auction-unsold.md)
+- [auction-won-notice](auction-won-notice.md)
+- [refused-leader](refused-leader.md)
 <!-- used-by:end -->

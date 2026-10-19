@@ -36,6 +36,7 @@ The order moves from `PENDING` to `RESERVED`, and then to `PAID` when a matching
 - [orders-backfill-item-titles-job](orders-backfill-item-titles-job.md)
 - [orders-realtime-failed-total](orders-realtime-failed-total.md)
 - [outbox-rollback](outbox-rollback.md)
+- [payment-provider-chain](payment-provider-chain.md)
 - [realtime-topic](realtime-topic.md)
 - [reservation-status](reservation-status.md)
 - [reserved-until](reserved-until.md)
@@ -43,4 +44,5 @@ The order moves from `PENDING` to `RESERVED`, and then to `PAID` when a matching
 - [stock-operation-id](stock-operation-id.md)
 - [user-summary](user-summary.md)
 - [verified-webhook-event](verified-webhook-event.md)
+- [voucher-command](voucher-command.md)
 <!-- used-by:end -->

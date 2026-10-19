@@ -21,5 +21,11 @@ Twelve buyers wait in the queue of one launch event while sales are open. The ad
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [admission-token](admission-token.md)
+- [admitter](admitter.md)
+- [buyer-queue](buyer-queue.md)
+- [launch-event-status](launch-event-status.md)
+- [reservation-hold](reservation-hold.md)
+- [seat-hold](seat-hold.md)
+- [sold-out](sold-out.md)
 <!-- used-by:end -->

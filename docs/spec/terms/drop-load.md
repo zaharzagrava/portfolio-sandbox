@@ -20,5 +20,11 @@ A brand schedules a drop of 20 units, and product stock stays unchanged. When `f
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [J03](../capabilities/J03-launch-day.md): R-06, R-07, R-08, R-09
+- [catalog-stock](catalog-stock.md)
+- [exactly-once-load](exactly-once-load.md)
+- [flash-sale-load-job](flash-sale-load-job.md)
+- [load-job](load-job.md)
+- [reserved-answer](reserved-answer.md)
+- [start-failed](start-failed.md)
 <!-- used-by:end -->

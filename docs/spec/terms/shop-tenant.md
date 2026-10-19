@@ -29,6 +29,7 @@ A [`STARTER`](plan-limit.md) shop with 4 members and 1 unexpired [pending invite
 - [S03](../capabilities/S03-shops-rbac.md): R-12, R-21
 - [S49](../capabilities/S49-job-scheduler.md): B-13
 - [W02](../capabilities/W02-storefront-discovery.md): B-14
+- [award-notice](award-notice.md)
 - [ensure-shops-for-legacy-sellers](ensure-shops-for-legacy-sellers.md)
 - [invite-acceptance](invite-acceptance.md)
 - [invite-token](invite-token.md)

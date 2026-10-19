@@ -26,6 +26,7 @@ The processor reads a payment as `UNKNOWN` at version 3 and tries to write `COMP
 - [aggregate-version](aggregate-version.md)
 - [best-effort-push](best-effort-push.md)
 - [charge-outcome](charge-outcome.md)
+- [conditional-transition](conditional-transition.md)
 - [decide-payment-status](decide-payment-status.md)
 - [inbox-table](inbox-table.md)
 - [last-owner](last-owner.md)

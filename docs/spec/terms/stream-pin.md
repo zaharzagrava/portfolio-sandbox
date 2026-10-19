@@ -21,5 +21,6 @@ The brand starts a stream and pins a message. Each connected viewer receives the
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [J03](../capabilities/J03-launch-day.md): B-19
+- [live-stream](live-stream.md)
 <!-- used-by:end -->

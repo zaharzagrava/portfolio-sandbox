@@ -28,6 +28,8 @@ A capability calls `JobsService.enqueue(type, payload, { idempotencyKey: 'K' })`
 - [api-layer](api-layer.md)
 - [auth-purge-reset-tokens-job](auth-purge-reset-tokens-job.md)
 - [charge-job](charge-job.md)
+- [control-surface](control-surface.md)
+- [drop](drop.md)
 - [infrastructure-layer](infrastructure-layer.md)
 - [invite-purge-job](invite-purge-job.md)
 - [job-claim](job-claim.md)
@@ -42,6 +44,7 @@ A capability calls `JobsService.enqueue(type, payload, { idempotencyKey: 'K' })`
 - [order-items-backfill](order-items-backfill.md)
 - [order-settlement](order-settlement.md)
 - [orders-backfill-item-titles-job](orders-backfill-item-titles-job.md)
+- [organizer](organizer.md)
 - [outbox-purge-job](outbox-purge-job.md)
 - [payouts-run-weekly-job](payouts-run-weekly-job.md)
 - [per-shop-running-cap](per-shop-running-cap.md)
@@ -52,5 +55,6 @@ A capability calls `JobsService.enqueue(type, payload, { idempotencyKey: 'K' })`
 - [search-backfill-embeddings-job](search-backfill-embeddings-job.md)
 - [search-purge-tombstones-job](search-purge-tombstones-job.md)
 - [shop-purge-job](shop-purge-job.md)
+- [stack](stack.md)
 - [stock-operation-purge](stock-operation-purge.md)
 <!-- used-by:end -->

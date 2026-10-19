@@ -20,5 +20,12 @@ The job [`auctions.close`](auctions-close-job.md) fires for an auction whose end
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [J03](../capabilities/J03-launch-day.md): R-10
+- [auctions-close-job](auctions-close-job.md)
+- [booking-set](booking-set.md)
+- [close-job](close-job.md)
+- [drop-load](drop-load.md)
+- [duplicate-triggers](duplicate-triggers.md)
+- [exactly-once-load](exactly-once-load.md)
+- [flash-sale-load-job](flash-sale-load-job.md)
 <!-- used-by:end -->

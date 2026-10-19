@@ -21,5 +21,9 @@ Twelve buyers wait in a launch event's queue. When sales open the [admitter](adm
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [J03](../capabilities/J03-launch-day.md): R-05, B-01
+- [admitter](admitter.md)
+- [booking-hold](booking-hold.md)
+- [reservation-hold](reservation-hold.md)
+- [voucher](voucher.md)
 <!-- used-by:end -->

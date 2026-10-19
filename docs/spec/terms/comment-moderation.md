@@ -20,5 +20,6 @@ The brand removes a comment during a stream. Connected viewers receive the remov
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [J03](../capabilities/J03-launch-day.md): R-19
+- [comment-client-id](comment-client-id.md)
 <!-- used-by:end -->

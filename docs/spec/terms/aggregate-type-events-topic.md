@@ -30,6 +30,8 @@ The poller relay mode and the CDC relay mode publish exactly the same message (S
 <!-- used-by:start -->
 - [aggregate-type](aggregate-type.md)
 - [event-envelope](event-envelope.md)
+- [launch-events-booking-confirmed-event](launch-events-booking-confirmed-event.md)
+- [launch-events-events-topic](launch-events-events-topic.md)
 - [pending-row](pending-row.md)
 - [security-events](security-events.md)
 - [unregistered-aggregate-type-error](unregistered-aggregate-type-error.md)

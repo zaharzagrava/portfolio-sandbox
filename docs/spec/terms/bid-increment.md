@@ -21,5 +21,5 @@ Bids of 10000, 5000 and 12000 arrive in that order (J03.B-12). The 12000 bid tak
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [proxy-bidding](proxy-bidding.md)
 <!-- used-by:end -->

@@ -20,5 +20,11 @@ A buyer confirms one hold five times at once with one key and ten more times wit
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [J03](../capabilities/J03-launch-day.md): R-02
+- [booking-hold](booking-hold.md)
+- [launch-events-booking-confirmed-event](launch-events-booking-confirmed-event.md)
+- [reservation-hold](reservation-hold.md)
+- [sold-out](sold-out.md)
+- [voucher-command](voucher-command.md)
+- [voucher](voucher.md)
 <!-- used-by:end -->

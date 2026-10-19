@@ -20,6 +20,7 @@ A user has 3 unread items. A [`payment` event](notification-type.md) creates a n
 
 ## Used by
 <!-- used-by:start -->
+- [J03](../capabilities/J03-launch-day.md): R-14
 - [S28](../capabilities/S28-notifications.md): R-39, R-40, B-01, B-10
 - [dedupe-identity](dedupe-identity.md)
 - [inbox-item](inbox-item.md)

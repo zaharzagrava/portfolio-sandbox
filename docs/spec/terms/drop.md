@@ -21,5 +21,22 @@ A drop has 20 units and receives 60 simultaneous checkouts. Exactly 20 checkouts
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [J03](../capabilities/J03-launch-day.md): R-06, B-07, B-08, B-09, B-11
+- [catalog-stock](catalog-stock.md)
+- [drop-load](drop-load.md)
+- [drop-reconcile](drop-reconcile.md)
+- [flash-sale-end-job](flash-sale-end-job.md)
+- [flash-sale-load-job](flash-sale-load-job.md)
+- [flash-sale-reconcile-job](flash-sale-reconcile-job.md)
+- [flash-sale-sold-out-notification](flash-sale-sold-out-notification.md)
+- [flow-isolation](flow-isolation.md)
+- [launch-day-flow](launch-day-flow.md)
+- [load-job](load-job.md)
+- [order-confirmed-notification](order-confirmed-notification.md)
+- [orders-expire-reservation-job](orders-expire-reservation-job.md)
+- [reservation-hold](reservation-hold.md)
+- [reserved-answer](reserved-answer.md)
+- [shop-order-received-notification](shop-order-received-notification.md)
+- [start-failed](start-failed.md)
+- [unsold-units](unsold-units.md)
 <!-- used-by:end -->

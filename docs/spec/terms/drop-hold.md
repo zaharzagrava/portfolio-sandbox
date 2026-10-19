@@ -20,5 +20,9 @@ A drop has 15 orders that are reserved but unpaid. After 15 minutes pass, all 15
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [J03](../capabilities/J03-launch-day.md): R-08
+- [drop-reconcile](drop-reconcile.md)
+- [flash-sale-end-job](flash-sale-end-job.md)
+- [no-notification-list](no-notification-list.md)
+- [unsold-units](unsold-units.md)
 <!-- used-by:end -->

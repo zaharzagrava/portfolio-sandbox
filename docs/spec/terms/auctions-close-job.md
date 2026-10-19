@@ -21,5 +21,5 @@ A leader bids 12000 against a reserve of 10000 (illustrative reserve). When the 
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [auction-won-event](auction-won-event.md)
 <!-- used-by:end -->

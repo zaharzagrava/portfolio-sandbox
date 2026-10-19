@@ -20,5 +20,9 @@ An auction's leader is at or above the reserve. `auctions.close` fires twice for
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [J03](../capabilities/J03-launch-day.md): B-13
+- [anti-sniping-window](anti-sniping-window.md)
+- [auction-status](auction-status.md)
+- [duplicate-triggers](duplicate-triggers.md)
+- [ends-at](ends-at.md)
 <!-- used-by:end -->

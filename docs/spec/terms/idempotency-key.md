@@ -27,12 +27,15 @@ If this exact request is sent again with the same key, the client still gets one
 <!-- used-by:start -->
 - [J01](../capabilities/J01-buy-to-payout.md): R-14, B-05
 - [J02](../capabilities/J02-seller-to-first-sale.md): B-03
+- [J03](../capabilities/J03-launch-day.md): R-02, R-17, B-03
 - [S10](../capabilities/S10-cart-checkout.md): R-12, R-13, R-36, R-44, B-07
 - [S13](../capabilities/S13-payment-intents.md): R-08, B-01, B-05
 - [S49](../capabilities/S49-job-scheduler.md): R-06
 - [W03](../capabilities/W03-cart-checkout-orders.md): R-09, R-11, B-14, B-16
 - [job-scheduler-lease](../concepts/job-scheduler-lease.md): C-03
 - [adjustment-journal](adjustment-journal.md)
+- [booking-id](booking-id.md)
+- [booking-set](booking-set.md)
 - [cart-empty](cart-empty.md)
 - [checkout-attempt](checkout-attempt.md)
 - [checkout-in-progress](checkout-in-progress.md)
@@ -40,6 +43,7 @@ If this exact request is sent again with the same key, the client still gets one
 - [concurrency-limit](concurrency-limit.md)
 - [correction-path](correction-path.md)
 - [cron-fire-key](cron-fire-key.md)
+- [drop-hold](drop-hold.md)
 - [get-order-by-id](get-order-by-id.md)
 - [idempotency-in-flight](idempotency-in-flight.md)
 - [idempotency-key-conflict-error](idempotency-key-conflict-error.md)
@@ -63,6 +67,8 @@ If this exact request is sent again with the same key, the client still gets one
 - [rate-limit-response-headers](rate-limit-response-headers.md)
 - [rate-limit](rate-limit.md)
 - [request-fingerprint](request-fingerprint.md)
+- [scheduler-leader](scheduler-leader.md)
+- [scheduler-tick](scheduler-tick.md)
 - [search-backfill-shop-state](search-backfill-shop-state.md)
 - [unknown-payment-outcome](unknown-payment-outcome.md)
 <!-- used-by:end -->

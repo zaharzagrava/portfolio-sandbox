@@ -20,5 +20,9 @@ J02's configuration contains `infra/docker/elasticmq/elasticmq.conf`, the local 
 
 ## Used by
 <!-- used-by:start -->
+- [admin-bootstrap](admin-bootstrap.md)
+- [local-provider-doubles](local-provider-doubles.md)
+- [local-queue-configuration](local-queue-configuration.md)
 - [webhook-endpoint](webhook-endpoint.md)
+- [webhook-redelivery](webhook-redelivery.md)
 <!-- used-by:end -->

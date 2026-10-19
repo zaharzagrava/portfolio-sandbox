@@ -19,5 +19,6 @@ A buyer confirms one hold five times at once with one key, and ten more times wi
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [booking-confirm](booking-confirm.md)
+- [seat-hold](seat-hold.md)
 <!-- used-by:end -->
