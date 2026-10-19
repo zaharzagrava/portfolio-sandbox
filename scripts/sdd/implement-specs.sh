@@ -65,6 +65,20 @@ IMPL_TOOLS=("Bash($TEST_SPEC:*)" 'Bash(npx tsc:*)' 'Bash(npx eslint:*)' 'Bash(no
             'Bash(python3:*)' 'Bash(bash scripts:*)' 'Bash(scripts/sdd/wait-for.sh:*)' 'Bash(git diff:*)' 'Bash(git status:*)' 'Bash(git show:*)' 'Bash(git ls-files:*)' 'Bash(git rev-parse:*)' 'Bash(git blame:*)'
             'Bash(wc:*)' 'Bash(sort:*)' 'Bash(uniq:*)' 'Bash(diff:*)' 'Bash(stat:*)' 'Bash(which:*)' 'Bash(date:*)' 'Bash(mkdir:*)' 'Bash(basename:*)' 'Bash(dirname:*)' 'Bash(realpath:*)')
 
+# The matching of an allow-list entry stops at a word boundary, so `Bash(bash scripts:*)` does NOT match `bash scripts/sdd/stack-fix.sh`: only an entry
+# that names the script does, and only in the path form it spells. An agent that works in packages/backend (every journey) writes ../../scripts/...,
+# and was refused with "requires approval" for stack-fix.sh, wait-for.sh and test-spec.sh (J03, 2026-10-19). So every helper script is listed in
+# every path form an agent can use, with and without bash/python3 in front.
+for _root in scripts ./scripts ../scripts ../../scripts /opt/sdd/repo/scripts; do
+  for _f in sdd/stack-fix.sh sdd/wait-for.sh sdd/test-spec.sh sdd/implement-specs.sh qa/fresh-run.sh infra/boot-check.sh infra/boot-app.sh infra/reload-queues.sh infra/doctor-live.sh infra/make-dev-env.sh sdd/checkpoints/buy-ui.sh; do
+    IMPL_TOOLS+=("Bash(bash $_root/$_f:*)" "Bash($_root/$_f:*)")
+  done
+  for _f in sdd/check-tests.py sdd/tasks-scope.py sdd/failures.py livespec/check.py livespec/models.py livespec/terms.py livespec/generate.py infra/doctor.py; do
+    IMPL_TOOLS+=("Bash(python3 $_root/$_f:*)" "Bash(python3 -I $_root/$_f:*)")
+  done
+done
+unset _root _f
+
 # push_branch: with PUSH_BRANCH set, publish HEAD to that branch (best effort; the VPS runner sets it so nothing is lost).
 push_branch() {
   [[ -n "${PUSH_BRANCH:-}" ]] || return 0

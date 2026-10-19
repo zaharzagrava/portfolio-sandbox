@@ -151,6 +151,17 @@ class LoopShell(unittest.TestCase):
         # nothing may follow the closing quote on that line except a newline: no stray words that bash would run
         self.assertTrue(m.group(0).rstrip('\n').endswith("'"))
 
+    def test_allow_list_names_every_helper_in_every_path_form(self):
+        """J03 2026-10-19: an agent working in packages/backend writes ../../scripts/sdd/stack-fix.sh; a rule matches only up to a word boundary, so the script must be named."""
+        text = open(os.path.join(ROOT, 'scripts/sdd/implement-specs.sh'), encoding='utf-8').read()
+        i = text.index('IMPL_TOOLS=('); j = text.index('unset _root _f') + len('unset _root _f')
+        r = subprocess.run(['bash', '-c', 'ROOT=/opt/sdd/repo; TEST_SPEC="$ROOT/scripts/sdd/test-spec.sh"\n' + text[i:j] + '\nprintf "%s\\n" "${IMPL_TOOLS[@]}"'], capture_output=True, text=True)
+        self.assertEqual(r.stderr, '', r.stderr)
+        tools = r.stdout.split('\n')
+        for want in ('Bash(bash ../../scripts/sdd/wait-for.sh:*)', 'Bash(../../scripts/sdd/stack-fix.sh:*)', 'Bash(bash scripts/sdd/test-spec.sh:*)',
+                     'Bash(python3 ../../scripts/livespec/check.py:*)', 'Bash(git diff:*)', 'Bash(python3:*)'):
+            self.assertIn(want, tools)
+
 
 if __name__ == '__main__':
     unittest.main()
