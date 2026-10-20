@@ -19,5 +19,12 @@ The owner subscribes with `pm_test_declined`. The first charge is declined, [the
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [J02](../capabilities/J02-seller-to-first-sale.md): R-11
+- [billing-invoice-paid-event](billing-invoice-paid-event.md)
+- [billing-invoice-payment-failed-event](billing-invoice-payment-failed-event.md)
+- [charge-job](charge-job.md)
+- [entitlement](entitlement.md)
+- [entitlements-consumer](entitlements-consumer.md)
+- [invoice](invoice.md)
+- [max-products](max-products.md)
 <!-- used-by:end -->

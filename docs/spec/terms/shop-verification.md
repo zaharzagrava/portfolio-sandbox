@@ -21,6 +21,7 @@ Shop verification is a [lifecycle ↗](../sw-external-terms.md#state-machine) th
 
 ## Used by
 <!-- used-by:start -->
+- [J02](../capabilities/J02-seller-to-first-sale.md): B-08
 - [S03](../capabilities/S03-shops-rbac.md): R-28
 - [S04](../capabilities/S04-kyc-onboarding.md): B-19
 - [apply-verification](apply-verification.md)

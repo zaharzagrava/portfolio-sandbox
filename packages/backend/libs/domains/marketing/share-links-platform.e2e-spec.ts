@@ -370,6 +370,7 @@ describe('Share links: operations and boundaries', () => {
           'CampaignEnded',
           'CampaignPaused',
           'CampaignResumed',
+          'LinkAttributionModule',
           'LinkAttributionService',
           'ProductSponsorshipChanged',
           'ShareLinksModule',

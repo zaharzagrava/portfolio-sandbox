@@ -21,5 +21,8 @@ A buyer pays an order holding lines from shop A and shop B. Each shop receives i
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [J02](../capabilities/J02-seller-to-first-sale.md): B-15, B-16, B-19
+- [shop-rank](shop-rank.md)
+- [suggest-ordering](suggest-ordering.md)
+- [tenancy-shop-events](tenancy-shop-events.md)
 <!-- used-by:end -->

@@ -20,6 +20,7 @@ A queued `BUSINESS_REGISTRATION` is processed. The cheap model's answer passes e
 
 ## Used by
 <!-- used-by:start -->
+- [J02](../capabilities/J02-seller-to-first-sale.md): B-04
 - [S04](../capabilities/S04-kyc-onboarding.md): R-16
 - [document-validation-rule](document-validation-rule.md)
 - [extraction-worker](extraction-worker.md)

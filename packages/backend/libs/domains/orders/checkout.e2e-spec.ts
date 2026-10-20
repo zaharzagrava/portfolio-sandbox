@@ -254,7 +254,7 @@ describe('Checkout: idempotency, validation, pricing and split', () => {
       expect(await orderCount(extra)).toBe(0);
     });
 
-    it('S10 AS-69: refCode is stored on the order; absent stays empty; malformed codes are 400 with no order; the same key with another code is 422', async () => {
+    it('S10 AS-69: a ref that names no link credits no one (J05); absent stays empty; malformed codes and the old refCode field are 400 with no order; the same key with another ref is 422', async () => {
       const { a } = await standard();
       const refOf = async (orderId: string) =>
         (
@@ -268,11 +268,11 @@ describe('Checkout: idempotency, validation, pricing and split', () => {
       const user = await t.newUser();
       await addToCart(user, a, 1);
       const key = newKey();
-      const coded = await checkout(user, key, { refCode: 'friend-42' });
+      const coded = await checkout(user, key, { ref: 'friend-42' });
       expect(coded.status).toBe(202);
-      expect(await refOf(coded.body.orderId)).toBe('friend-42');
+      expect(await refOf(coded.body.orderId)).toBeNull();
 
-      const reused = await checkout(user, key, { refCode: 'other-code' });
+      const reused = await checkout(user, key, { ref: 'other-code' });
       expect(reused.status).toBe(422);
       expect(reused.body.code).toBe('idempotency_key_reuse');
 
@@ -284,14 +284,8 @@ describe('Checkout: idempotency, validation, pricing and split', () => {
 
       const bad = await t.newUser();
       await addToCart(bad, a, 1);
-      for (const refCode of [
-        'ab',
-        'x'.repeat(65),
-        'has space',
-        'semi;colon',
-        7,
-      ]) {
-        const res = await checkout(bad, newKey(), { refCode });
+      for (const ref of ['ab', 'x'.repeat(65), 'has space', 'semi;colon', 7]) {
+        const res = await checkout(bad, newKey(), { ref });
         expect(res.status).toBe(400);
         expect(res.body.code).toBe('validation_failed');
       }

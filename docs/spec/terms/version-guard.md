@@ -21,6 +21,7 @@ A projection already stores `version` 7 for [`aggregateId`](aggregate-id.md) `pr
 
 ## Used by
 <!-- used-by:start -->
+- [billing-events-topic](billing-events-topic.md)
 - [consumer-deduplication-mode](consumer-deduplication-mode.md)
 - [event-consumer](event-consumer.md)
 - [gallery-event](gallery-event.md)

@@ -12,6 +12,7 @@ export class FakeImageResolver implements ProductImageResolver {
     return `https://cdn.test/${mediaId}/thumb.jpg`;
   }
 
+  // eslint-disable-next-line @typescript-eslint/require-await -- the port is async
   async thumbnails(mediaIds: string[]): Promise<Map<string, string>> {
     if (this.down) throw new Error('media service unavailable');
     return new Map(

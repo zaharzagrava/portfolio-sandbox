@@ -38,6 +38,7 @@ S13 appends its payment event through S53's outbox service inside its transactio
 - [domain](domain.md)
 - [event-definition](event-definition.md)
 - [event-id](event-id.md)
+- [event-tap](event-tap.md)
 - [event-too-large-error](event-too-large-error.md)
 - [guarded-update](guarded-update.md)
 - [inbox-item](inbox-item.md)

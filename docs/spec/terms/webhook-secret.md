@@ -24,9 +24,13 @@ During a secret rotation, the payment provider still signs an event with the pre
 
 ## Used by
 <!-- used-by:start -->
+- [J02](../capabilities/J02-seller-to-first-sale.md): R-20, B-14
 - [S10](../capabilities/S10-cart-checkout.md): R-25
 - [clock-skew-tolerance](clock-skew-tolerance.md)
 - [guest-cart-token](guest-cart-token.md)
+- [shop-webhook](shop-webhook.md)
 - [verified-webhook-event](verified-webhook-event.md)
 - [verify-stripe-signature](verify-stripe-signature.md)
+- [webhook-endpoint](webhook-endpoint.md)
+- [webhook-signature-signing](webhook-signature-signing.md)
 <!-- used-by:end -->

@@ -17,6 +17,12 @@ import {
   type KafkaClientOverrides,
 } from '@app/infrastructure/kafka/kafka-client.options';
 import { ShutdownRegistry } from '@app/infrastructure/lifecycle';
+import { aliasesOf } from '@app/infrastructure/projections/consumer-groups';
+import {
+  ConsumerPauseFlags,
+  PAUSE_POLL_MS,
+} from '@app/infrastructure/projections/consumer-pause';
+import { ProjectionRegistry } from '@app/infrastructure/projections/projection-registry';
 import { trendingConnectFailures } from '../application/trending-metrics';
 import {
   TRENDING_CONSUMER_NAME,
@@ -72,6 +78,9 @@ export class TrendingConsumer
   private ticking = false;
   private active = 0;
   private timer?: NodeJS.Timeout;
+  private flagTimer?: NodeJS.Timeout;
+  private flagSyncing = false;
+  private operatorPaused = false;
   private started?: Promise<void>;
   private resolveReady!: () => void;
   private readonly readyPromise = new Promise<void>((resolve) => {
@@ -93,6 +102,8 @@ export class TrendingConsumer
     @Optional()
     @Inject(KAFKA_CONSUMER_OVERRIDES)
     private readonly overrides: KafkaClientOverrides = {},
+    @Optional() private readonly flags?: ConsumerPauseFlags,
+    @Optional() private readonly registry?: ProjectionRegistry,
   ) {
     this.options = options ?? DEFAULT_TRENDING_CONSUMER_OPTIONS;
   }
@@ -119,6 +130,57 @@ export class TrendingConsumer
     );
     this.timer = setInterval(() => void this.tickNow(), this.settings.tickMs);
     this.timer.unref();
+    if (this.flags) {
+      // Operator tools (S53 R-21, R-22) address this group by name: they read its declaration and its pause flag.
+      void this.registry
+        ?.declare({
+          name: this.options.groupId,
+          topics: [this.options.topic],
+          idempotency: 'natural',
+          replayable: false,
+        })
+        .catch((error: Error) =>
+          this.logger.warn(`could not record the declaration: ${error.name}`),
+        );
+      this.flagTimer = setInterval(() => void this.syncFlag(), PAUSE_POLL_MS);
+      this.flagTimer.unref();
+    }
+  }
+
+  /** Follows the operator's pause flag (Redis): partitions are held while it is set and released when it is gone. */
+  private async syncFlag(): Promise<void> {
+    if (
+      !this.flags ||
+      this.flagSyncing ||
+      this.stopped ||
+      !this.consumer ||
+      this.assigned.length === 0
+    )
+      return;
+    this.flagSyncing = true;
+    try {
+      const flagged = await this.flags.isPaused([
+        this.options.groupId,
+        ...aliasesOf(this.options.groupId),
+      ]);
+      if (flagged === this.operatorPaused) return;
+      this.operatorPaused = flagged;
+      const partitions = this.assigned.map((partition) => ({
+        topic: this.options.topic,
+        partitions: [partition],
+      }));
+      if (flagged) this.consumer.pause(partitions);
+      else if (!this.paused) this.consumer.resume(partitions);
+      this.logger.log(
+        `consumer ${this.options.groupId} ${flagged ? 'paused' : 'resumed'} by operator`,
+      );
+    } catch (error) {
+      this.logger.warn(
+        `pause flag unreadable (${(error as Error).name}), keeping the last state`,
+      );
+    } finally {
+      this.flagSyncing = false;
+    }
   }
 
   async onModuleDestroy(): Promise<void> {
@@ -137,7 +199,8 @@ export class TrendingConsumer
     try {
       await this.ingest.tick();
       await this.commit();
-      if (this.paused && !this.ingest.overBudget()) this.resume();
+      if (this.paused && !this.operatorPaused && !this.ingest.overBudget())
+        this.resume();
     } catch (error) {
       this.logger.warn(`tick failed: ${(error as Error).name}`);
     } finally {
@@ -151,6 +214,7 @@ export class TrendingConsumer
     this.stopped = true;
     this.ready = false;
     if (this.timer) clearInterval(this.timer);
+    if (this.flagTimer) clearInterval(this.flagTimer);
     await this.started?.catch(() => undefined);
     if (!this.consumer) return;
     try {
@@ -174,6 +238,7 @@ export class TrendingConsumer
     this.stopped = true;
     this.ready = false;
     if (this.timer) clearInterval(this.timer);
+    if (this.flagTimer) clearInterval(this.flagTimer);
     await this.started?.catch(() => undefined);
     await this.consumer?.disconnect().catch(() => undefined);
   }
@@ -200,6 +265,17 @@ export class TrendingConsumer
     isRunning,
     isStale,
   }: BatchPayload): Promise<void> {
+    // the flag is read again before the batch is taken, so a pause is obeyed at once and not at the next poll
+    await this.syncFlag();
+    if (this.operatorPaused) {
+      // the batch is not taken: the position goes back to its first message, so it is read again after the resume
+      this.consumer?.seek({
+        topic: batch.topic,
+        partition: batch.partition,
+        offset: batch.firstOffset() ?? '0',
+      });
+      return;
+    }
     for (const message of batch.messages) {
       if (!isRunning() || isStale()) return; // the rest is redelivered
       await this.ingest.ingest({
@@ -213,6 +289,9 @@ export class TrendingConsumer
     }
     await this.ingest.afterBatch();
     await this.commit();
+    void this.flags
+      ?.touch(this.options.groupId, new Date().toISOString())
+      .catch(() => undefined);
     const high = Number(batch.highWatermark);
     if (Number.isFinite(high))
       this.ingest.setLag(

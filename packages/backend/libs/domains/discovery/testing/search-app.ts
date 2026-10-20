@@ -207,11 +207,10 @@ export async function createSearchApp(
            "updatedAt" = now(), "pendingVersion" = NULL, "pendingRules" = NULL, "pendingAt" = NULL`,
         { bind: [DEFAULT_SYNONYM_RULES] },
       );
-      await es.synonyms
-        .deleteSynonym({ id: SYNONYMS_SET_ID })
-        .catch((e: { statusCode?: number }) =>
-          e.statusCode === 404 ? undefined : Promise.reject(e),
-        );
+      await es.synonyms.deleteSynonym({ id: SYNONYMS_SET_ID }).catch(
+        (e: { statusCode?: number }) =>
+          e.statusCode === 404 ? undefined : Promise.reject(e as Error), // eslint-disable-line @typescript-eslint/prefer-promise-reject-errors
+      );
       base.app.get(SearchIndexRegistry, { strict: false }).invalidate();
       await base.app
         .get(IndexBootstrapService, { strict: false })
@@ -225,11 +224,10 @@ export async function createSearchApp(
       });
     },
     async doc(productId) {
-      const res = await es
-        .get({ index: 'products', id: productId })
-        .catch((e: { statusCode?: number }) =>
-          e.statusCode === 404 ? null : Promise.reject(e),
-        );
+      const res = await es.get({ index: 'products', id: productId }).catch(
+        (e: { statusCode?: number }) =>
+          e.statusCode === 404 ? null : Promise.reject(e as Error), // eslint-disable-line @typescript-eslint/prefer-promise-reject-errors
+      );
       return res ? (res._source as IndexedDocument) : null;
     },
     async count(query) {

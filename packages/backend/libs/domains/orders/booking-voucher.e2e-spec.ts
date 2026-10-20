@@ -86,11 +86,14 @@ describe('Orders: booking voucher (J03 G-04, G-44, S10)', () => {
     expect(queue.deadLettered).toHaveLength(2);
     expect(queue.deadLettered[0].reason).toBe('SCHEMA_INVALID');
     expect(
-      await rows<{ n: string }>(t.app, `SELECT count(*)::text AS n FROM "Voucher"`),
+      await rows<{ n: string }>(
+        t.app,
+        `SELECT count(*)::text AS n FROM "Voucher"`,
+      ),
     ).toEqual(before);
   });
 
-  it('J03 G-44: GET /orders/vouchers lists the caller\'s own vouchers, newest first, parsed by the contract', async () => {
+  it("J03 G-44: GET /orders/vouchers lists the caller's own vouchers, newest first, parsed by the contract", async () => {
     const me = await t.newUser();
     const other = await t.newUser();
     const event = randomUUID();
@@ -156,9 +159,9 @@ describe('Orders: booking voucher (J03 G-04, G-44, S10)', () => {
     );
     expect(second.items).toHaveLength(1);
     expect(second.nextCursor).toBeNull();
-    expect(
-      [...first.items, ...second.items].map((v) => v.voucherId),
-    ).toEqual(filtered.items.map((v) => v.voucherId));
+    expect([...first.items, ...second.items].map((v) => v.voucherId)).toEqual(
+      filtered.items.map((v) => v.voucherId),
+    );
 
     const none = await t
       .as(me)
@@ -174,15 +177,22 @@ describe('Orders: booking voucher (J03 G-04, G-44, S10)', () => {
     await send(command({ userId: me.id }));
     await send(command({ userId: me.id }));
     const first = voucherPageSchema.parse(
-      (await t.as(me).get('/api/orders/vouchers').query({ limit: 1 }).expect(200))
-        .body,
+      (
+        await t
+          .as(me)
+          .get('/api/orders/vouchers')
+          .query({ limit: 1 })
+          .expect(200)
+      ).body,
     );
     const foreign = await t
       .as(other)
       .get('/api/orders/vouchers')
       .query({ cursor: first.nextCursor! })
       .expect(400);
-    expect(problemDetailsSchema.parse(foreign.body).code).toBe('invalid_cursor');
+    expect(problemDetailsSchema.parse(foreign.body).code).toBe(
+      'invalid_cursor',
+    );
     await t.as(me).get('/api/orders/vouchers').query({ limit: 0 }).expect(400);
     await t
       .as(me)
@@ -194,7 +204,11 @@ describe('Orders: booking voucher (J03 G-04, G-44, S10)', () => {
 
   it('J03 G-42: while the group is paused the consumer is told to take nothing; resumed, it takes the command', async () => {
     const flags = t.app.get(ConsumerPauseFlags);
-    await flags.pause(BOOKING_VOUCHER_GROUP, randomUUID(), new Date().toISOString());
+    await flags.pause(
+      BOOKING_VOUCHER_GROUP,
+      randomUUID(),
+      new Date().toISOString(),
+    );
     expect(await flags.isPaused([BOOKING_VOUCHER_GROUP])).toBe(true);
     await flags.resume(BOOKING_VOUCHER_GROUP);
     expect(await flags.isPaused([BOOKING_VOUCHER_GROUP])).toBe(false);

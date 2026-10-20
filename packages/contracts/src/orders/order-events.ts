@@ -32,6 +32,11 @@ export const orderEventSchemas = {
     currency: z.string(),
     paymentRef: z.string(),
     paidAt: z.string(),
+    /** J05: the share link credited at checkout and its owner (absent on events of older orders). */
+    attribution: z
+      .object({ code: z.string(), ownerId: z.string() })
+      .nullable()
+      .optional(),
     lines: z.array(
       z.object({
         /**
@@ -67,6 +72,11 @@ export const orderEventSchemas = {
     amountMinor: minor,
     currency: z.string(),
     reason: z.string(),
+    /** J05: the credit the order carried (so a consumer can reverse it without having seen the payment). */
+    attribution: z
+      .object({ code: z.string(), ownerId: z.string() })
+      .nullable()
+      .optional(),
   }),
   'order.fulfilment_changed': z.object({
     ...base,

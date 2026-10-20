@@ -26,6 +26,8 @@ orders:ord_123:reserve:prod_07
 - [S10](../capabilities/S10-cart-checkout.md): R-20
 - [apply-delta](apply-delta.md)
 - [domain-boundary-rules](domain-boundary-rules.md)
+- [drop-load](drop-load.md)
+- [exactly-once-load](exactly-once-load.md)
 - [hold-expired](hold-expired.md)
 - [order-id](order-id.md)
 - [order-status](order-status.md)

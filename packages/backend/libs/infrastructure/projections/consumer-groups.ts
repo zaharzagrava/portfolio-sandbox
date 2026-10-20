@@ -67,6 +67,17 @@ export const CANONICAL_CONSUMER_GROUPS: Readonly<
     groups: ['orders-booking-voucher'],
     queue: 'orders-booking-voucher-requested',
   },
+  // The engagement loop (J05). Aliases over the real groups (`feed-*`, `link-clicks`, `analytics-purchases`); none renamed.
+  'community-feed-products': { groups: ['feed-products'] },
+  'community-feed-discussions': { groups: ['feed-posts'] },
+  'community-feed-fanout': { groups: ['feed-fanout'] },
+  'marketing-link-clicks': { groups: ['link-clicks'] },
+  'marketing-affiliate-conversions': {
+    groups: ['marketing-affiliate-conversions'],
+  },
+  'discovery-order-baskets': { groups: ['discovery-order-baskets'] },
+  'discovery-trending-topk': { groups: ['discovery-trending-topk'] },
+  'experimentation-purchases': { groups: ['analytics-purchases'] },
 };
 
 /** The queue behind a canonical queue consumer, or null when the name is a Kafka group. */

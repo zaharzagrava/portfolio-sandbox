@@ -21,5 +21,12 @@ The entitlements consumer is paused. A verified shop subscribes with `pm_test_vi
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [billing-events-topic](billing-events-topic.md)
+- [billing-invoice-paid-event](billing-invoice-paid-event.md)
+- [charge-job](charge-job.md)
+- [consumer-lag](consumer-lag.md)
+- [event-consumer](event-consumer.md)
+- [fact](fact.md)
+- [free-tier](free-tier.md)
+- [invoice](invoice.md)
 <!-- used-by:end -->

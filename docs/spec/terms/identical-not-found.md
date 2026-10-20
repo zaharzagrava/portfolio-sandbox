@@ -20,6 +20,7 @@ A user who is not a member calls `GET /shops/shop_123` (id illustrative). They g
 
 ## Used by
 <!-- used-by:start -->
+- [J02](../capabilities/J02-seller-to-first-sale.md): R-06
 - [S03](../capabilities/S03-shops-rbac.md): B-15
 - [S05](../capabilities/S05-products.md): R-04, R-06
 - [S10](../capabilities/S10-cart-checkout.md): R-35

@@ -21,6 +21,12 @@ A test runs the production build and walks from the home page (`/`) to `/search`
 ## Used by
 <!-- used-by:start -->
 - [W07](../capabilities/W07-app-shell.md): B-12
+- [admin-bootstrap](admin-bootstrap.md)
+- [comment-client-id](comment-client-id.md)
+- [get-product-by-id](get-product-by-id.md)
+- [launch-day-flow](launch-day-flow.md)
+- [local-provider-doubles](local-provider-doubles.md)
+- [local-queue-configuration](local-queue-configuration.md)
 - [payout-paid-event](payout-paid-event.md)
 - [payout-status](payout-status.md)
 - [production-configuration](production-configuration.md)

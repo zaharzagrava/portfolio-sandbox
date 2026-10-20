@@ -15,10 +15,10 @@ export class CheckoutRequestDto {
 
   @ApiPropertyOptional({
     description:
-      'Referral code of the buyer (3-64 characters of [A-Za-z0-9_-])',
+      'Code of the share link that brought the buyer (3-64 characters of [A-Za-z0-9_-]); an unknown or own code credits no one',
   })
   @IsOptional()
   @IsString()
   @Matches(/^[A-Za-z0-9_-]{3,64}$/)
-  refCode?: string;
+  ref?: string;
 }

@@ -20,5 +20,8 @@ In AS-25 a buyer pays for the new shop's product. The shop receives [`order.paid
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [J02](../capabilities/J02-seller-to-first-sale.md): R-18, R-19
+- [order-status](order-status.md)
+- [shop-rank](shop-rank.md)
+- [tenancy-shop-events](tenancy-shop-events.md)
 <!-- used-by:end -->

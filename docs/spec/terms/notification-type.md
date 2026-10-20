@@ -24,10 +24,13 @@ Whether a type is mandatory decides whether its e-mail carries the unsubscribe l
 ## Used by
 <!-- used-by:start -->
 - [catalog-template](catalog-template.md)
+- [flash-sale-sold-out-notification](flash-sale-sold-out-notification.md)
 - [mandatory-type](mandatory-type.md)
 - [notification-catalog](notification-catalog.md)
 - [notification-category](notification-category.md)
 - [notification-router](notification-router.md)
+- [order-confirmed-notification](order-confirmed-notification.md)
+- [shop-order-received-notification](shop-order-received-notification.md)
 - [tenancy-invite-requested-queue](tenancy-invite-requested-queue.md)
 - [unread-count](unread-count.md)
 <!-- used-by:end -->

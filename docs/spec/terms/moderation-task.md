@@ -20,7 +20,9 @@ There are 120 open tasks (illustrative). A moderator lists them with `limit=50` 
 
 ## Used by
 <!-- used-by:start -->
+- [J02](../capabilities/J02-seller-to-first-sale.md): B-05
 - [S04](../capabilities/S04-kyc-onboarding.md): B-13, B-16, B-20
+- [admin-bootstrap](admin-bootstrap.md)
 - [document-supersede](document-supersede.md)
 - [document-validation-rule](document-validation-rule.md)
 - [moderator](moderator.md)

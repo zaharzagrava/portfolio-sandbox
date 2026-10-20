@@ -44,6 +44,8 @@ export const orderSchema = z
     currency: z.string(),
     reservedUntil: z.string().nullable(),
     createdAt: z.string(),
+    /** The share link credited with this order, frozen at checkout (J05); never the owner. */
+    attribution: z.object({ code: z.string() }).strict().nullable().optional(),
     items: z.array(orderItemSchema),
     shopOrders: z.array(
       z

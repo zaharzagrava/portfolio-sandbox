@@ -30,6 +30,7 @@ await outbox.append(paymentSucceededEvent); // commits with the status change
 - [S05](../capabilities/S05-products.md): R-20
 - [S14](../capabilities/S14-ledger-reconciliation.md): R-37
 - [S53](../capabilities/S53-events-projections.md): R-01, B-01
+- [billing-invoice-payment-failed-event](billing-invoice-payment-failed-event.md)
 - [catalog-product-deleted-event](catalog-product-deleted-event.md)
 - [catalog-product-events](catalog-product-events.md)
 - [catalog-product-updated-event](catalog-product-updated-event.md)
@@ -37,7 +38,9 @@ await outbox.append(paymentSucceededEvent); // commits with the status change
 - [domain](domain.md)
 - [event-backbone](event-backbone.md)
 - [extraction-message](extraction-message.md)
+- [fact](fact.md)
 - [inbox-table](inbox-table.md)
+- [launch-events-events-topic](launch-events-events-topic.md)
 - [ledger-reconciliation-completed-event](ledger-reconciliation-completed-event.md)
 - [order-unavailable](order-unavailable.md)
 - [outbox-relay](outbox-relay.md)

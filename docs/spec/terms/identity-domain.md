@@ -27,9 +27,11 @@ identity/infra/keys/key-rotation.jobs.ts  → scheduled signing-key rotation
 
 ## Used by
 <!-- used-by:start -->
+- [J02](../capabilities/J02-seller-to-first-sale.md): R-03
 - [S10](../capabilities/S10-cart-checkout.md): R-01
 - [S28](../capabilities/S28-notifications.md): R-07
 - [S48](../capabilities/S48-bff.md): B-17
+- [identity-promotion-consumer](identity-promotion-consumer.md)
 - [master-key](master-key.md)
 - [mfa-recovery-codes-regenerated-event](mfa-recovery-codes-regenerated-event.md)
 - [normalise-recovery-code](normalise-recovery-code.md)

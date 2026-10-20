@@ -26,6 +26,7 @@ A typical path is `PENDING` → `RESERVED` → `PAID`. [W03](../capabilities/W03
 - [W03](../capabilities/W03-cart-checkout-orders.md): B-18, B-19
 - [order-reservation](../concepts/order-reservation.md): C-08
 - [get-shop-orders](get-shop-orders.md)
+- [leaderboard](leaderboard.md)
 - [order-command](order-command.md)
 - [order-id](order-id.md)
 - [order-status-history](order-status-history.md)

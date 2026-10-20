@@ -20,6 +20,7 @@ A buyer pays an order with products from shops A and B. The buyer holds one `ord
 ## Used by
 <!-- used-by:start -->
 - [J01](../capabilities/J01-buy-to-payout.md): R-12
+- [J03](../capabilities/J03-launch-day.md): R-04
 - [payout-paid-event](payout-paid-event.md)
 - [shop-role](shop-role.md)
 <!-- used-by:end -->

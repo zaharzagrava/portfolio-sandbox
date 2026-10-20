@@ -21,5 +21,12 @@ An operator replays `billing.events` from the beginning. The entitlements consum
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [consumer-group](consumer-group.md)
+- [consumer-lag](consumer-lag.md)
+- [entitlement](entitlement.md)
+- [entitlements-consumer](entitlements-consumer.md)
+- [event-backbone](event-backbone.md)
+- [event-consumer](event-consumer.md)
+- [event-replay](event-replay.md)
+- [version-guard](version-guard.md)
 <!-- used-by:end -->

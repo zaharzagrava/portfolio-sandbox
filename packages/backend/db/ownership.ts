@@ -229,6 +229,8 @@ export const OWNERSHIP = {
   AdShopSnapshot: 'domain:marketing',
   AdBillingAdjustment: 'domain:marketing',
   AdReconciliationRun: 'domain:marketing',
+  // J05 affiliate conversions
+  AffiliateConversion: 'domain:marketing',
   // experimentation
   FeatureFlag: 'domain:experimentation',
   FlagAudit: 'domain:experimentation',

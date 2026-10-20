@@ -3,7 +3,8 @@ import { z } from 'zod';
 export const checkoutRequestSchema = z
   .object({
     expectedTotalMinor: z.number().int().min(0).optional(),
-    refCode: z
+    /** Referral code of a share link (J05). Replaces `refCode`; an unknown, disabled or own code credits no one (never an error). */
+    ref: z
       .string()
       .regex(/^[A-Za-z0-9_-]{3,64}$/)
       .optional(),

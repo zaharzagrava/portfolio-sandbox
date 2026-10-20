@@ -65,6 +65,8 @@ export class JobMaintenance implements OnApplicationBootstrap {
   private wake = new AbortController();
   private loopDone?: Promise<void>;
   private ticks = 0;
+  /** The clock reading of the last pass that held the leader lock; `null` until this instance has run one. */
+  private lastPassAt: Date | null = null;
   private readonly lagTypes = new Set<string>();
   private readonly deadTypes = new Set<string>();
 
@@ -152,6 +154,11 @@ export class JobMaintenance implements OnApplicationBootstrap {
         );
         jobMetrics.cronLeader.set(locked ? 1 : 0);
         if (!locked) return 0;
+        // Time that moved backwards since the last pass (a clock reset after a journey moved it forward, a restart after
+        // that) would leave every schedule waiting for an instant that has not happened yet: bring them back.
+        if (!this.lastPassAt || now.getTime() < this.lastPassAt.getTime())
+          await this.pullBackStrandedSchedules(tx, now);
+        this.lastPassAt = now;
 
         const due = await this.sequelize.query<DueSchedule>(
           `SELECT id, name, cron, timezone, "jobType", payload, "nextFireAt", overlap, "maxAttempts" FROM "JobSchedule"
@@ -170,6 +177,38 @@ export class JobMaintenance implements OnApplicationBootstrap {
         propagation: 'requires_new',
         statementTimeoutMs: MATERIALISE_STATEMENT_TIMEOUT_MS,
       },
+    );
+  }
+
+  /**
+   * A schedule's `nextFireAt` is always the first cron instant after the time it was computed from, so one later than the
+   * first instant after *now* was computed on a clock that has since gone back. It is set to the instant after now.
+   */
+  private async pullBackStrandedSchedules(tx: Transaction, now: Date) {
+    const waiting = await this.sequelize.query<{
+      id: string;
+      cron: string;
+      timezone: string;
+      nextFireAt: Date;
+    }>(
+      `SELECT id, cron, timezone, "nextFireAt" FROM "JobSchedule" WHERE enabled AND "nextFireAt" > :now FOR UPDATE`,
+      { type: QueryTypes.SELECT, replacements: { now }, transaction: tx },
+    );
+    for (const s of waiting) {
+      const next = nextFireAt(s.cron, s.timezone, now);
+      if (new Date(s.nextFireAt).getTime() <= next.getTime()) continue;
+      await this.sequelize.query(
+        `UPDATE "JobSchedule" SET "nextFireAt" = :next, "updatedAt" = :now WHERE id = :id`,
+        { replacements: { id: s.id, next, now }, transaction: tx },
+      );
+    }
+    // A job a schedule fired on the moved clock waits for an instant that has not happened yet; with `overlap: 'skip'` it
+    // also counts as active, so the schedule would fire nothing until then (the discussions relay stalled for the whole
+    // offset). A scheduled tick is a repeat of the same work: it is due now.
+    await this.sequelize.query(
+      `UPDATE "Job" SET "runAt" = :now
+       WHERE status = 'QUEUED' AND "scheduleName" IS NOT NULL AND "runAt" > :now`,
+      { replacements: { now }, transaction: tx },
     );
   }
 

@@ -36,6 +36,8 @@ const MERGE_ATTEMPTS = 3;
 const BACKOFF_CAP_MS = 2_000;
 /** Rough size of one buffered late event, so a flood of them also counts against the memory budget. */
 const CORRECTION_EVENT_BYTES = 160;
+/** Rough size of one counted event id kept until its window is merged. */
+const EVENT_ID_BYTES = 64;
 /** At this share of the budget no new category sketch is opened. */
 const SOFT_LIMIT = 0.8;
 
@@ -56,6 +58,8 @@ interface SketchPair {
 interface WindowState {
   sketches: Map<string, SketchPair>;
   caps: WindowCaps;
+  /** Ids counted in this window: claimed with the merge, so a copy that arrives after the window closed changes nothing. */
+  eventIds: string[];
   bytes: number;
   reported: boolean;
 }
@@ -171,6 +175,9 @@ export class TrendingIngestService {
     if (event.categoryRejected)
       trendingEvents.add(1, { outcome: 'category_rejected' });
     this.count(entry.state, event);
+    entry.state.eventIds.push(event.eventId);
+    entry.state.bytes += EVENT_ID_BYTES;
+    this.trackedBytes += EVENT_ID_BYTES;
     return 'counted';
   }
 
@@ -325,6 +332,7 @@ export class TrendingIngestService {
         firstOffset: entry.firstOffset,
         lastOffset: entry.lastOffset,
         categories: categories.filter((c) => c.entries.length > 0),
+        eventIds: entry.state.eventIds,
       }),
     );
     if (outcome === null) {
@@ -463,7 +471,13 @@ export class TrendingIngestService {
     const bytes = caps.byteSize + all.cms.byteSize;
     this.trackedBytes += bytes;
     trendingTrackedBytes.set(this.trackedBytes);
-    return { sketches: new Map([['all', all]]), caps, bytes, reported: false };
+    return {
+      sketches: new Map([['all', all]]),
+      caps,
+      eventIds: [],
+      bytes,
+      reported: false,
+    };
   }
 
   private newPair(width: number): SketchPair {

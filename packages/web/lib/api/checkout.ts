@@ -12,7 +12,7 @@ export type PostCheckoutInput = {
   /** One UUID per attempt, see `lib/checkout/attempt.ts`. */
   key: string;
   expectedTotalMinor?: number;
-  /** Added only if `checkoutRequestSchema` declares `refCode` (S10 H4). */
+  /** Sent as the body field `ref` when `checkoutRequestSchema` declares it (S10 H4, J05). */
   refCode?: string | null;
   /** `cookie` (session + CSRF) and `X-CSRF-Token`, supplied by the server module. */
   headers: Record<string, string>;
@@ -36,14 +36,14 @@ export type CheckoutResult = CheckoutSuccess | CheckoutFailure;
 
 type SchemaLike = { shape: Record<string, unknown> };
 
-/** The request body: `refCode` only when the schema declares it and a code is present. */
+/** The request body: `ref` (the share-link code) only when the schema declares it and a code is present. */
 export function buildCheckoutBody(
   input: { expectedTotalMinor?: number; refCode?: string | null },
   schema: SchemaLike = checkoutRequestSchema,
 ): Record<string, unknown> {
   const body: Record<string, unknown> = {};
   if (input.expectedTotalMinor !== undefined) body.expectedTotalMinor = input.expectedTotalMinor;
-  if (input.refCode && 'refCode' in schema.shape) body.refCode = input.refCode;
+  if (input.refCode && 'ref' in schema.shape) body.ref = input.refCode;
   return body;
 }
 

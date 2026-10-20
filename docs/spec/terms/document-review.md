@@ -19,6 +19,7 @@ Both models report a low-confidence IBAN on a `BANK_STATEMENT`. The document bec
 
 ## Used by
 <!-- used-by:start -->
+- [J02](../capabilities/J02-seller-to-first-sale.md): B-05
 - [S04](../capabilities/S04-kyc-onboarding.md): R-18, B-11
 - [conflict-of-interest](conflict-of-interest.md)
 - [content-type-mismatch](content-type-mismatch.md)

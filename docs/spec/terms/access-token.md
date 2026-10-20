@@ -25,10 +25,14 @@ If the token says [`alg: none` ↗](../sw-external-terms.md#jwt-alg), has an unk
 
 ## Used by
 <!-- used-by:start -->
+- [J02](../capabilities/J02-seller-to-first-sale.md): R-01
+- [J03](../capabilities/J03-launch-day.md): R-05
 - [S01](../capabilities/S01-auth-sessions.md): R-32, B-01, B-10
 - [S48](../capabilities/S48-bff.md): R-13, B-18
 - [W01](../capabilities/W01-auth-account.md): R-01
+- [admission-token](admission-token.md)
 - [allowed-callers-decorator](allowed-callers-decorator.md)
+- [booking-hold](booking-hold.md)
 - [chat-unread](chat-unread.md)
 - [clock-skew-tolerance](clock-skew-tolerance.md)
 - [current-session-marker](current-session-marker.md)

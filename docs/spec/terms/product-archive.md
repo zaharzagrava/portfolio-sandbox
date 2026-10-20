@@ -27,6 +27,7 @@ An archived product has the status `ARCHIVED`. A member with [`products.write`](
 - [W02](../capabilities/W02-storefront-discovery.md): R-18
 - [batch-products-lookup](batch-products-lookup.md)
 - [expected-version](expected-version.md)
+- [get-product-by-id](get-product-by-id.md)
 - [product-status-history](product-status-history.md)
 - [upsert-from-external](upsert-from-external.md)
 - [version-conflict](version-conflict.md)

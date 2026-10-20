@@ -23,6 +23,15 @@ export const JOURNEY_CONSUMER_GROUPS = [
   'integrations-stock-push',
   'offline-sync-feed',
   'pickup-availability',
+  // J05 (engagement loop)
+  'community-feed-products',
+  'community-feed-discussions',
+  'community-feed-fanout',
+  'marketing-link-clicks',
+  'marketing-affiliate-conversions',
+  'discovery-order-baskets',
+  'discovery-trending-topk',
+  'experimentation-purchases',
 ] as const;
 
 /** Real Kafka groups of the launch-day journey (J03): addressed by their declared names, known only where their runner is hosted. */

@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { Inject, Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger, Optional } from '@nestjs/common';
 import { v7 as uuidv7 } from 'uuid';
 import type {
   CheckoutRequest,
@@ -12,12 +12,14 @@ import { TransactionRunner } from '@app/infrastructure/context';
 import { idempotencyError } from '@app/infrastructure/idempotency/idempotency.errors';
 import { JobsService } from '@app/infrastructure/jobs/jobs.service';
 import {
+  ATTRIBUTION_RESOLVER,
   CART_STORE,
   CHECKOUT_LOCK,
   ORDER_REPOSITORY,
   PRODUCT_CATALOG,
   SHOP_DIRECTORY,
   SHOP_DISCOUNTS,
+  type AttributionResolverPort,
   type CartStore,
   type CatalogProduct,
   type CheckoutLock,
@@ -87,6 +89,9 @@ export class CheckoutService {
     @Inject(PRODUCT_CATALOG) private readonly catalog: ProductCatalogPort,
     @Inject(SHOP_DIRECTORY) private readonly shops: ShopDirectoryPort,
     @Inject(SHOP_DISCOUNTS) private readonly discounts: ShopDiscountsPort,
+    @Optional()
+    @Inject(ATTRIBUTION_RESOLVER)
+    private readonly attribution: AttributionResolverPort | null,
     @Inject(FLASH_RESERVATION) private readonly flash: FlashReservationPort,
     @Inject(FLASH_CRASH_POINT) private readonly crash: CrashPoint,
     private readonly reservation: OrderReservationService,
@@ -298,6 +303,7 @@ export class CheckoutService {
 
     // Tx 1: the order, its snapshots, its shop orders and its reservation requests, atomically.
     const orderId = uuidv7();
+    const credited = await this.attribute(userId, request.ref);
     let created: OrderRecord | null;
     try {
       await this.crash.hit('checkout:before-order-write');
@@ -318,7 +324,8 @@ export class CheckoutService {
           userId,
           idempotencyKey,
           requestHash,
-          refCode: request.refCode ?? null,
+          refCode: credited?.code ?? null,
+          attributionOwnerId: credited?.ownerId ?? null,
           totalMinor: priced.totalMinor,
           currency,
           now,
@@ -406,6 +413,32 @@ export class CheckoutService {
     return this.answer(order);
   }
 
+  /**
+   * Who is credited for this order (J05): the owner of the `ref` link, resolved once and frozen on the order. An unknown,
+   * disabled or own link credits no one, and a lookup that fails neither: a reference never costs a sale.
+   */
+  private async attribute(
+    userId: string,
+    ref: string | undefined,
+  ): Promise<{ code: string; ownerId: string } | null> {
+    if (!ref || !this.attribution) return null;
+    try {
+      const link = await withTimeout(
+        this.attribution.resolve(ref),
+        this.config.get('orders_catalog_timeout_ms'),
+        () => new Error('attribution lookup timed out'),
+      );
+      if (!link || link.status === 'DISABLED' || link.ownerId === userId)
+        return null;
+      return { code: link.code, ownerId: link.ownerId };
+    } catch (error) {
+      this.logger.warn(
+        `attribution lookup failed, order not credited: ${error instanceof Error ? error.name : 'error'}`,
+      );
+      return null;
+    }
+  }
+
   private answer(order: OrderRecord): CheckoutResponse {
     return {
       orderId: order.id,
@@ -420,7 +453,7 @@ export class CheckoutService {
     const fingerprint: Record<string, unknown> = {};
     if (request.expectedTotalMinor !== undefined)
       fingerprint.expectedTotalMinor = request.expectedTotalMinor;
-    if (request.refCode !== undefined) fingerprint.refCode = request.refCode;
+    if (request.ref !== undefined) fingerprint.ref = request.ref;
     const canonical = JSON.stringify(fingerprint);
     return createHash('sha256').update(canonical).digest('hex');
   }

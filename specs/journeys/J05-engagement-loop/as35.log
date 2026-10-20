@@ -1,0 +1,129 @@
+$ NODE_OPTIONS=--experimental-vm-modules jest --config jest-journeys.json --runInBand engagement-loop -t 'AS-3[567]'
+(node:385699) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+  console.log
+    [hop] J05.H15 4426 ms (contract 15000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:482:11)
+
+  console.log
+    [hop] J05.H6 290 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:482:11)
+
+  console.log
+    [hop] J05.H14 660 ms (contract 60000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:482:11)
+
+  console.log
+    [hop] H1 1958 ms (contract 3000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:482:11)
+
+  console.log
+    [hop] H3 3972 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:482:11)
+
+  console.log
+    [hop] J05.H9 2162 ms (contract 10000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:482:11)
+
+  console.log
+    [hop] J05.H14 45 ms (contract 60000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:482:11)
+
+  console.log
+    [hop] J05.H15 390 ms (contract 15000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:482:11)
+
+  console.log
+    [hop] J05.H15 373 ms (contract 15000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:482:11)
+
+  console.log
+    [hop] J05.H15 300 ms (contract 15000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:482:11)
+
+  console.log
+    [hop] J05.H15 305 ms (contract 15000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:482:11)
+
+  console.log
+    [hop] J05.H15 328 ms (contract 15000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:482:11)
+
+  console.log
+    [hop] J05.H15 312 ms (contract 15000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:482:11)
+
+  console.log
+    [hop] J05.H15 279 ms (contract 15000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:482:11)
+
+  console.log
+    [hop] J05.H15 304 ms (contract 15000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:482:11)
+
+  console.log
+    [hop] H13 784 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:482:11)
+
+  console.log
+    [hop] J05.H15 328 ms (contract 15000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:482:11)
+
+  console.log
+    [hop] J05.H15 327 ms (contract 15000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:482:11)
+
+  console.log
+    [hop] J05.H15 269 ms (contract 15000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:482:11)
+
+  console.log
+    [hop] J05.H15 295 ms (contract 15000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:482:11)
+
+  console.log
+    [hop] J05.H15 384 ms (contract 15000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:482:11)
+
+  console.log
+    [hop] J05.H15 404 ms (contract 15000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:482:11)
+
+  console.log
+    [hop] J05.H15 344 ms (contract 15000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:482:11)
+
+  console.log
+    [hop] J05.H15 389 ms (contract 15000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:482:11)
+
+Test Suites: 1 passed, 1 total
+Tests:       33 skipped, 3 passed, 36 total
+Snapshots:   0 total
+Time:        337.024 s
+Ran all test suites matching engagement-loop with tests matching "AS-3[567]".
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished?

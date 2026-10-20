@@ -21,8 +21,11 @@ A shop with 2,500 products is suspended, and `tenancy.shop_status_changed` arriv
 
 ## Used by
 <!-- used-by:start -->
+- [J02](../capabilities/J02-seller-to-first-sale.md): R-19
 - [cache-entry](cache-entry.md)
 - [catalog-shop-purge](catalog-shop-purge.md)
+- [leaderboard](leaderboard.md)
+- [shop-leaderboard](shop-leaderboard.md)
 - [shop-version](shop-version.md)
 - [tenancy-domain-layer](tenancy-domain-layer.md)
 <!-- used-by:end -->

@@ -1,0 +1,81 @@
+$ NODE_OPTIONS=--experimental-vm-modules jest --config jest-journeys.json --runInBand -t 'Journey J05: engagement loop US5'
+(node:238338) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+FAIL test/journeys/engagement-loop.journey-spec.ts (190.451 s)
+  ● Console
+
+    console.log
+      [hop] J05.H13 9 ms (contract 35000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:482:11)
+
+    console.log
+      [hop] H1 1548 ms (contract 3000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:482:11)
+
+    console.log
+      [hop] H3 3971 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:482:11)
+
+    console.log
+      [hop] H1 1844 ms (contract 3000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:482:11)
+
+    console.log
+      [hop] H3 3936 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:482:11)
+
+    console.log
+      [hop] J05.H15 4331 ms (contract 15000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:482:11)
+
+    console.log
+      [hop] J05.H13 28640 ms (contract 35000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:482:11)
+
+    console.log
+      [hop] J05.H15 5076 ms (contract 15000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:482:11)
+
+    console.log
+      [hop] J05.H13 13 ms (contract 35000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:482:11)
+
+    console.log
+      [hop] J05.H3 5 ms (contract 10000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:482:11)
+
+  ● Journey J05: engagement loop › US5: the shopper’s engagement shows up in trending, and a purchase on its own does not › J05 AS-27: a paid order on its own does not move trending
+
+    waitFor(J05.H15 consumer discovery-trending-topk caught up (owner S53, contract 15000 ms)) timed out after 30000ms
+
+      19 |     await new Promise((r) => setTimeout(r, intervalMs));
+      20 |   }
+    > 21 |   throw new Error(
+         |         ^
+      22 |     `waitFor(${description}) timed out after ${timeoutMs}ms${lastError ? `: ${(lastError as Error).message}` : ''}`,
+      23 |   );
+      24 | }
+
+      at waitFor (test/utils/async-helpers.ts:21:9)
+      at waitForContract (test/journeys/support/wait-for-contract.ts:477:17)
+      at settled (test/journeys/engagement-loop.journey-spec.ts:95:33)
+      at Object.<anonymous> (test/journeys/engagement-loop.journey-spec.ts:1185:7)
+
+
+Test Suites: 1 failed, 5 skipped, 1 of 6 total
+Tests:       1 failed, 149 skipped, 3 passed, 153 total
+Snapshots:   0 total
+Time:        191.87 s
+Ran all test suites with tests matching "Journey J05: engagement loop US5".
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished?
+[ELIFECYCLE] Command failed with exit code 1.

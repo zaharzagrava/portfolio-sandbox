@@ -22,6 +22,7 @@ import {
   createShortLinkRequestSchema,
   updateShortLinkRequestSchema,
   type CreateShortLinkRequest,
+  type LinkConversionPage,
   type LinkStats,
   type LinkStatsRange,
   type ShortLink,
@@ -122,6 +123,21 @@ export class ShareLinksController {
     @Param('code') code: string,
   ): Promise<ShortLink> {
     return this.commands.disable(user.id, code);
+  }
+
+  @Firewall()
+  @Get('links/:code/conversions')
+  conversions(
+    @User() user: UserRawDto,
+    @Param('code') code: string,
+    @Query(new LinkZodPipe(listQuerySchema)) query: ListQuery,
+  ): Promise<LinkConversionPage> {
+    return this.queries.conversionPage(
+      user.id,
+      code,
+      query.limit,
+      query.cursor,
+    );
   }
 
   @Firewall()

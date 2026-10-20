@@ -25,6 +25,8 @@ The buyer starts a payment with this body:
 
 ## Used by
 <!-- used-by:start -->
+- [J02](../capabilities/J02-seller-to-first-sale.md): R-10, R-20
+- [billing-invoice-payment-failed-event](billing-invoice-payment-failed-event.md)
 - [client-secret](client-secret.md)
 - [event-payload](event-payload.md)
 - [payment-intent](payment-intent.md)
@@ -32,4 +34,5 @@ The buyer starts a payment with this body:
 - [provider-secret](provider-secret.md)
 - [realtime-event](realtime-event.md)
 - [terminal-payment-status](terminal-payment-status.md)
+- [webhook-endpoint](webhook-endpoint.md)
 <!-- used-by:end -->

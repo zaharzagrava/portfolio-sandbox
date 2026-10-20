@@ -20,5 +20,11 @@ In J02 [AS-08](acceptance-scenario.md), the [extractor](extraction-worker.md) ro
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [acceptance-scenario](acceptance-scenario.md)
+- [extraction-worker](extraction-worker.md)
+- [local-provider-doubles](local-provider-doubles.md)
+- [main-journeys](main-journeys.md)
+- [moderation-task](moderation-task.md)
+- [platform-admin](platform-admin.md)
+- [webhook-receiver-allow-list](webhook-receiver-allow-list.md)
 <!-- used-by:end -->

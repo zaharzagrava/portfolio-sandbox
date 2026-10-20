@@ -19,6 +19,7 @@ A seller requests a `BANK_STATEMENT` upload and gets `201` with status `AWAITING
 
 ## Used by
 <!-- used-by:start -->
+- [J02](../capabilities/J02-seller-to-first-sale.md): B-07
 - [S04](../capabilities/S04-kyc-onboarding.md): B-04, B-06
 - [already-verified](already-verified.md)
 - [document-already-approved](document-already-approved.md)

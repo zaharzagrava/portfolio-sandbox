@@ -1,0 +1,64 @@
+$ NODE_OPTIONS=--experimental-vm-modules jest --config jest-journeys.json --runInBand test/journeys/engagement-loop.journey-spec.ts -t US5
+(node:277632) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+  console.log
+    [hop] J05.H13 32859 ms (contract 35000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:482:11)
+
+  console.log
+    [hop] H1 436 ms (contract 3000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:482:11)
+
+  console.log
+    [hop] H3 3980 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:482:11)
+
+  console.log
+    [hop] H1 1970 ms (contract 3000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:482:11)
+
+  console.log
+    [hop] H3 3960 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:482:11)
+
+  console.log
+    [hop] J05.H15 379 ms (contract 15000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:482:11)
+
+  console.log
+    [hop] J05.H15 468 ms (contract 15000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:482:11)
+
+  console.log
+    [hop] J05.H13 32562 ms (contract 35000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:482:11)
+
+  console.log
+    [hop] J05.H15 4549 ms (contract 15000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:482:11)
+
+  console.log
+    [hop] J05.H13 13 ms (contract 35000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:482:11)
+
+  console.log
+    [hop] J05.H3 9 ms (contract 10000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:482:11)
+
+Test Suites: 1 passed, 1 total
+Tests:       32 skipped, 4 passed, 36 total
+Snapshots:   0 total
+Time:        263.347 s, estimated 1346 s
+Ran all test suites matching test/journeys/engagement-loop.journey-spec.ts with tests matching "US5".
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished?

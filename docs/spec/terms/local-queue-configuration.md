@@ -20,5 +20,10 @@ The file is `infra/docker/elasticmq/elasticmq.conf`. In J02 AS-10, the extractor
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [dead-letter-topic](dead-letter-topic.md)
+- [extraction-message](extraction-message.md)
+- [extraction-worker](extraction-worker.md)
+- [local-provider-doubles](local-provider-doubles.md)
+- [main-journeys](main-journeys.md)
+- [webhook-receiver-allow-list](webhook-receiver-allow-list.md)
 <!-- used-by:end -->

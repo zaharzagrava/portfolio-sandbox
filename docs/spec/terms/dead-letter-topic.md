@@ -40,6 +40,7 @@ A consumer gets a batch of 5 events, and the third one fails its schema. The thi
 - [generic-fallback-text](generic-fallback-text.md)
 - [handler-failed](handler-failed.md)
 - [known-unmapped-type](known-unmapped-type.md)
+- [local-queue-configuration](local-queue-configuration.md)
 - [malformed-queue-message](malformed-queue-message.md)
 - [notification-rendering](notification-rendering.md)
 - [partition-pause](partition-pause.md)

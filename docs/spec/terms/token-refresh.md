@@ -20,6 +20,7 @@ The BFF finds that the access token for a [`__Host-bff-session` cookie](session-
 
 ## Used by
 <!-- used-by:start -->
+- [J02](../capabilities/J02-seller-to-first-sale.md): B-02
 - [S01](../capabilities/S01-auth-sessions.md): R-18, R-21, R-22, R-27, R-31, B-06, B-10, B-19, B-22, B-28
 - [S48](../capabilities/S48-bff.md): R-19, B-17
 - [W01](../capabilities/W01-auth-account.md): B-19

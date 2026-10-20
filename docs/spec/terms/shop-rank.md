@@ -20,5 +20,14 @@ In [AS-26](acceptance-scenario.md), a buyer pays one order with products from tw
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [J02](../capabilities/J02-seller-to-first-sale.md): R-15, R-19
+- [acceptance-scenario](acceptance-scenario.md)
+- [event-replay](event-replay.md)
+- [known-gaps](known-gaps.md)
+- [leaderboard](leaderboard.md)
+- [paid-mark](paid-mark.md)
+- [shop-leaderboard](shop-leaderboard.md)
+- [shop-subtotal](shop-subtotal.md)
+- [suggest-ordering](suggest-ordering.md)
+- [trending-window](trending-window.md)
 <!-- used-by:end -->

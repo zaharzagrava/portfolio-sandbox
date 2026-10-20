@@ -14,6 +14,7 @@ import type { EmbeddingProvider } from '../../domain/ports';
 export class HashEmbeddingProvider implements EmbeddingProvider {
   readonly modelVersion = EMBEDDING_MODEL_VERSION;
 
+  // eslint-disable-next-line @typescript-eslint/require-await -- the port is async; this provider is a pure function
   async embed(text: string, signal?: AbortSignal): Promise<number[]> {
     signal?.throwIfAborted();
     const vector = new Array<number>(EMBEDDING_DIMS).fill(0);

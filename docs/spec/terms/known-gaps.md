@@ -22,12 +22,14 @@ Known gaps is the last section of a [capability page](capability.md). It lists w
 ## Used by
 <!-- used-by:start -->
 - [acceptance-scenario](acceptance-scenario.md)
+- [bid-increment](bid-increment.md)
 - [body-html](body-html.md)
 - [capability](capability.md)
 - [code-facts](code-facts.md)
 - [document-content-hash](document-content-hash.md)
 - [export-join](export-join.md)
 - [failure-counter](failure-counter.md)
+- [get-product-by-id](get-product-by-id.md)
 - [hot-key](hot-key.md)
 - [rate-limit-policy](rate-limit-policy.md)
 - [raw-token](raw-token.md)
@@ -35,5 +37,6 @@ Known gaps is the last section of a [capability page](capability.md). It lists w
 - [rule-proof](rule-proof.md)
 - [sandbox-product](sandbox-product.md)
 - [search-sort-order](search-sort-order.md)
+- [shop-rank](shop-rank.md)
 - [source-code-url](source-code-url.md)
 <!-- used-by:end -->

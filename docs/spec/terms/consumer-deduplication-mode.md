@@ -29,6 +29,7 @@ A consumer of [S05](../capabilities/S05-products.md) product events declares `ve
 - [consumer-group](consumer-group.md)
 - [event-backbone](event-backbone.md)
 - [event-consumer](event-consumer.md)
+- [fact](fact.md)
 - [inbox-item](inbox-item.md)
 - [inbox-table](inbox-table.md)
 - [natural-idempotency](natural-idempotency.md)

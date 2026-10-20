@@ -7,6 +7,8 @@ import { CacheModule } from '@app/infrastructure/cache/cache.module';
 import { KAFKA_CONSUMER_OVERRIDES } from '@app/infrastructure/kafka/kafka-client.options';
 import { KafkaProducerModule } from '@app/infrastructure/kafka/kafka-producer.module';
 import { DeadLetterWriter } from '@app/infrastructure/projections/dead-letter';
+import { ConsumerPauseFlags } from '@app/infrastructure/projections/consumer-pause';
+import { ProjectionRegistry } from '@app/infrastructure/projections/projection-registry';
 import { RateLimitModule } from '@app/infrastructure/rate-limit';
 import { TrendingController } from './api/trending.controller';
 import {
@@ -74,6 +76,9 @@ export class TrendingModule {}
       useExisting: RedisTrendingAggregateAdapter,
     },
     DeadLetterWriter,
+    // The operator's view of the group: its declaration (topics) and its pause flag (S53 R-21, R-22).
+    ConsumerPauseFlags,
+    ProjectionRegistry,
     TrendingIngestService,
     TrendingConsumer,
     // Production values; specs bind a fresh group and topic, a process-exit spy and a scripted jitter.

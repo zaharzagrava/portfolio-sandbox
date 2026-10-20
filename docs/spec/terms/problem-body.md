@@ -26,10 +26,14 @@ A call to a product returns this problem body:
 ## Used by
 <!-- used-by:start -->
 - [S14](../capabilities/S14-ledger-reconciliation.md): R-47
+- [booking-hold-expired](booking-hold-expired.md)
+- [client-id-reused](client-id-reused.md)
 - [invalid-reset-token](invalid-reset-token.md)
 - [payment-method-token](payment-method-token.md)
 - [problem-title](problem-title.md)
+- [seat-hold-expired](seat-hold-expired.md)
 - [service-caller-not-allowed](service-caller-not-allowed.md)
+- [shill-bid-forbidden](shill-bid-forbidden.md)
 - [task-already-resolved](task-already-resolved.md)
 - [unsupported-combination](unsupported-combination.md)
 <!-- used-by:end -->

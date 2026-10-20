@@ -22,6 +22,7 @@ Behavior [`S05.B-14`](behavior.md) cites `[proof: S05 AS-53]`: with stock 5 and 
 ## Used by
 <!-- used-by:start -->
 - [S34](../capabilities/S34-recommendations.md): B-01
+- [admin-bootstrap](admin-bootstrap.md)
 - [amount-out-of-range](amount-out-of-range.md)
 - [baseline-frame](baseline-frame.md)
 - [behavior](behavior.md)
@@ -36,6 +37,7 @@ Behavior [`S05.B-14`](behavior.md) cites `[proof: S05 AS-53]`: with stock 5 and 
 - [in-process-port](in-process-port.md)
 - [injected-clock](injected-clock.md)
 - [known-gaps](known-gaps.md)
+- [local-provider-doubles](local-provider-doubles.md)
 - [popularity-floor](popularity-floor.md)
 - [queue-refusal](queue-refusal.md)
 - [reset-on-success](reset-on-success.md)
@@ -43,6 +45,7 @@ Behavior [`S05.B-14`](behavior.md) cites `[proof: S05 AS-53]`: with stock 5 and 
 - [robots-list](robots-list.md)
 - [rule-proof](rule-proof.md)
 - [seeded-stream](seeded-stream.md)
+- [shop-rank](shop-rank.md)
 - [shop-search-table](shop-search-table.md)
 - [stock-operation](stock-operation.md)
 <!-- used-by:end -->

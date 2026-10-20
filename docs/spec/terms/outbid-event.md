@@ -21,8 +21,11 @@ A user is outbid at 23:30 local time, and their quiet hours are `22:00`–`07:00
 
 ## Used by
 <!-- used-by:start -->
+- [J03](../capabilities/J03-launch-day.md): B-12
 - [S28](../capabilities/S28-notifications.md): B-06
+- [auction-leader](auction-leader.md)
 - [auctions-source-family](auctions-source-family.md)
+- [bid-increment](bid-increment.md)
 - [event-consumer](event-consumer.md)
 - [inbox-item](inbox-item.md)
 - [mandatory-type](mandatory-type.md)
@@ -30,6 +33,7 @@ A user is outbid at 23:30 local time, and their quiet hours are `22:00`–`07:00
 - [maximum-age](maximum-age.md)
 - [notification-bell](notification-bell.md)
 - [notification-routing](notification-routing.md)
+- [proxy-bidding](proxy-bidding.md)
 - [push-notification](push-notification.md)
 - [quiet-hours](quiet-hours.md)
 - [suppression](suppression.md)

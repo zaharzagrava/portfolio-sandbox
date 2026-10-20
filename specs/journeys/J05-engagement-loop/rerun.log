@@ -1,0 +1,64 @@
+$ NODE_OPTIONS=--experimental-vm-modules jest --config jest-journeys.json --runInBand test/journeys/engagement-loop.journey-spec.ts -t 'J05 AS-2[6-9]'
+(node:418322) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+  console.log
+    [hop] J05.H13 30211 ms (contract 35000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:482:11)
+
+  console.log
+    [hop] H1 941 ms (contract 3000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:482:11)
+
+  console.log
+    [hop] H3 3989 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:482:11)
+
+  console.log
+    [hop] H1 1980 ms (contract 3000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:482:11)
+
+  console.log
+    [hop] H3 3980 ms (contract 5000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:482:11)
+
+  console.log
+    [hop] J05.H15 403 ms (contract 15000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:482:11)
+
+  console.log
+    [hop] J05.H15 459 ms (contract 15000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:482:11)
+
+  console.log
+    [hop] J05.H13 49706 ms (contract 35000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:482:11)
+
+  console.log
+    [hop] J05.H15 4886 ms (contract 15000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:482:11)
+
+  console.log
+    [hop] J05.H13 11 ms (contract 35000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:482:11)
+
+  console.log
+    [hop] J05.H3 9 ms (contract 10000 ms)
+
+      at waitForContract (test/journeys/support/wait-for-contract.ts:482:11)
+
+Test Suites: 1 passed, 1 total
+Tests:       32 skipped, 4 passed, 36 total
+Snapshots:   0 total
+Time:        277.781 s
+Ran all test suites matching test/journeys/engagement-loop.journey-spec.ts with tests matching "J05 AS-2[6-9]".
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished?

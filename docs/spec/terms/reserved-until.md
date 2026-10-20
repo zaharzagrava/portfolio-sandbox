@@ -27,4 +27,5 @@ Stock is reserved at `2026-10-13T10:00:00Z` (illustrative), so `reservedUntil` i
 - [payment-command](payment-command.md)
 - [payment-processor](payment-processor.md)
 - [pending-order-recovery](pending-order-recovery.md)
+- [reserved-answer](reserved-answer.md)
 <!-- used-by:end -->

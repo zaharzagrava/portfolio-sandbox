@@ -20,6 +20,7 @@ The stored version for a product is 7. An event with `aggregateVersion: 8` is ap
 
 ## Used by
 <!-- used-by:start -->
+- [J02](../capabilities/J02-seller-to-first-sale.md): R-14
 - [S03](../capabilities/S03-shops-rbac.md): B-18
 - [S10](../capabilities/S10-cart-checkout.md): R-42
 - [S32](../capabilities/S32-product-search.md): B-14
