@@ -21,7 +21,9 @@ A buyer holds seats with an admission token and then confirms the hold. The book
 ## Used by
 <!-- used-by:start -->
 - [booking-hold-expired](booking-hold-expired.md)
+- [booking-id](booking-id.md)
 - [booking-set](booking-set.md)
 - [launch-event-status](launch-event-status.md)
+- [seat-hold](seat-hold.md)
 - [sold-out](sold-out.md)
 <!-- used-by:end -->

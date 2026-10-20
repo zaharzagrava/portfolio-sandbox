@@ -23,5 +23,7 @@ Illustrative value: an earlier `endsAt` of 20:00 was moved to 20:05 after [a lat
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [anti-sniping-window](anti-sniping-window.md)
+- [close-job](close-job.md)
+- [injected-clock](injected-clock.md)
 <!-- used-by:end -->

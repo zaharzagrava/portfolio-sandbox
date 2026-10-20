@@ -22,7 +22,6 @@ The user is linked to Google subject `g-1`. A Google login arrives for subject `
 - [identity-link](identity-link.md)
 - [identity-store](identity-store.md)
 - [linked-identity](linked-identity.md)
-- [mfa-state](mfa-state.md)
 - [oidc-callback](oidc-callback.md)
 - [oidc-login-error](oidc-login-error.md)
 - [provider-subject](provider-subject.md)

@@ -22,6 +22,9 @@ Bids of 10000, 5000 and 12000 arrive in that order. The 5000 bid does not take t
 ## Used by
 <!-- used-by:start -->
 - [J03](../capabilities/J03-launch-day.md): B-12
+- [auction-leader](auction-leader.md)
 - [bid-increment](bid-increment.md)
+- [minor-units](minor-units.md)
+- [outbid-event](outbid-event.md)
 - [shill-bid-forbidden](shill-bid-forbidden.md)
 <!-- used-by:end -->

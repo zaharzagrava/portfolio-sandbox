@@ -21,5 +21,10 @@ Device `D2` pulled at cursor `C0`. Another device then sells units of `Ps`. `D2`
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [J04](../capabilities/J04-catalog-sync-to-search.md): B-13
+- [device-sale](device-sale.md)
+- [device-sync](device-sync.md)
+- [offline-sync-feed-consumer](offline-sync-feed-consumer.md)
+- [till](till.md)
+- [x-device-id-header](x-device-id-header.md)
 <!-- used-by:end -->

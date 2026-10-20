@@ -38,6 +38,7 @@ The outbox is the shared event backbone. A domain writes each event to an outbox
 - {{cap:J02}} New seller registers, creates a shop, passes onboarding/KYC, subscribes to a plan, lists a product that becomes searchable, sells it, receives the order webhook, and appears on the leaderboard
 - {{cap:J03}} Launch day: waiting room and seat booking, flash-sale purchase without overselling, live stream comments, an auction closing with the winner's checkout, and the notifications each triggers
 - {{cap:J04}} A shop imports its catalog (bulk file and Shopify), products become searchable and available near me, an offline store device sells stock, and the stock change syncs back to Shopify
+- {{cap:J05}} A buyer follows a shop, sees its new product in the feed, discusses it, shares an affiliate link that converts, and the purchase shows up in recommendations, trending, and A/B experiment results
 - {{cap:S01}} Registration, password login, sessions, refresh-token rotation, JWKS, service-to-service tokens
 - {{cap:S02}} TOTP MFA with recovery codes, Google OIDC login (PKCE), account linking
 - {{cap:S03}} Shops as tenants: memberships, roles and permissions, invites, per-shop SSO, cells, offboarding

@@ -20,5 +20,5 @@ Base 10 on both sides. A device sells 2 (local 8) and Shopify sells 3 (remote 7)
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [J04](../capabilities/J04-catalog-sync-to-search.md): B-14
 <!-- used-by:end -->

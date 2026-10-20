@@ -20,5 +20,8 @@ From J04 B-18: [`integrations-stock-push`](integrations-stock-push-queue.md) is 
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [J04](../capabilities/J04-catalog-sync-to-search.md): R-18
+- [offline-sync-feed-consumer](offline-sync-feed-consumer.md)
+- [queue-pause](queue-pause.md)
+- [shopify-push-consumer](shopify-push-consumer.md)
 <!-- used-by:end -->

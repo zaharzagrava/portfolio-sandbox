@@ -20,5 +20,7 @@ Linked catalog and Shopify stock are both 10. A device sells 2 and Shopify sells
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [J04](../capabilities/J04-catalog-sync-to-search.md): R-13
+- [device-sale](device-sale.md)
+- [shopify-write](shopify-write.md)
 <!-- used-by:end -->

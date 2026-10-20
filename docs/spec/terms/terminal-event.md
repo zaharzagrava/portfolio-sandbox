@@ -24,5 +24,7 @@ event: failed
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [catalog-imports-queue](catalog-imports-queue.md)
+- [import-run-status](import-run-status.md)
+- [unsupported-file-type](unsupported-file-type.md)
 <!-- used-by:end -->

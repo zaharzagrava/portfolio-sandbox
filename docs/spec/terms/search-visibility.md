@@ -22,6 +22,7 @@ A product is deleted at version 7. A delayed update event for the same product t
 ## Used by
 <!-- used-by:start -->
 - [J02](../capabilities/J02-seller-to-first-sale.md): B-11, B-13
+- [J04](../capabilities/J04-catalog-sync-to-search.md): B-01, B-20
 - [S05](../capabilities/S05-products.md): B-13
 - [S32](../capabilities/S32-product-search.md): R-16, R-45, B-01, B-09, B-10
 - [S33](../capabilities/S33-autocomplete.md): R-11
@@ -51,6 +52,8 @@ A product is deleted at version 7. A delayed update event for the same product t
 - [search-totals](search-totals.md)
 - [semantic-search](semantic-search.md)
 - [shop-status](shop-status.md)
+- [shopify-backfill](shopify-backfill.md)
+- [shopify-import](shopify-import.md)
 - [trending-limit](trending-limit.md)
 - [trending-ranking-cache](trending-ranking-cache.md)
 <!-- used-by:end -->

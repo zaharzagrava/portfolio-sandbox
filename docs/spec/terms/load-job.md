@@ -22,4 +22,7 @@ A brand schedules a drop of 20 units. Before the load job runs, the product's st
 ## Used by
 <!-- used-by:start -->
 - [J03](../capabilities/J03-launch-day.md): B-11
+- [catalog-stock](catalog-stock.md)
+- [drop-load](drop-load.md)
+- [drop](drop.md)
 <!-- used-by:end -->

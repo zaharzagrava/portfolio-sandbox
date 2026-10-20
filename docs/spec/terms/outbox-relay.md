@@ -49,6 +49,7 @@ If the send fails, it waits a [full-jitter backoff](jitter.md) (base 1 s, cap 60
 - [ledger-events-topic](ledger-events-topic.md)
 - [non-retryable-broker-error](non-retryable-broker-error.md)
 - [non-retryable-job-error](non-retryable-job-error.md)
+- [offline-sync-feed-consumer](offline-sync-feed-consumer.md)
 - [outbox-append-task](outbox-append-task.md)
 - [outbox-append](outbox-append.md)
 - [outbox-rollback](outbox-rollback.md)

@@ -30,7 +30,6 @@ The BFF finds that the access token for a [`__Host-bff-session` cookie](session-
 - [host-refresh-cookie](host-refresh-cookie.md)
 - [identity-domain](identity-domain.md)
 - [logout-all](logout-all.md)
-- [mfa-challenge-token](mfa-challenge-token.md)
 - [oversized-refresh-token](oversized-refresh-token.md)
 - [post-auth-logout](post-auth-logout.md)
 - [post-auth-refresh](post-auth-refresh.md)

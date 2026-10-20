@@ -20,6 +20,7 @@ A user belongs to three [shops](shop-tenant.md). [`GET /shops/mine?limit=2`](get
 
 ## Used by
 <!-- used-by:start -->
+- [J04](../capabilities/J04-catalog-sync-to-search.md): B-13
 - [S01](../capabilities/S01-auth-sessions.md): R-44
 - [S03](../capabilities/S03-shops-rbac.md): B-04
 - [S05](../capabilities/S05-products.md): R-10
@@ -39,6 +40,7 @@ A user belongs to three [shops](shop-tenant.md). [`GET /shops/mine?limit=2`](get
 - [keyset-pagination](keyset-pagination.md)
 - [list-seller-balances](list-seller-balances.md)
 - [notification-secret](notification-secret.md)
+- [offline-sync-feed-consumer](offline-sync-feed-consumer.md)
 - [payments-domain-layer](payments-domain-layer.md)
 - [product-search-route](product-search-route.md)
 - [search-mode](search-mode.md)
@@ -48,4 +50,5 @@ A user belongs to three [shops](shop-tenant.md). [`GET /shops/mine?limit=2`](get
 - [shop-tenant](shop-tenant.md)
 - [stripe-statement-adapter](stripe-statement-adapter.md)
 - [tampered-cursor](tampered-cursor.md)
+- [x-device-id-header](x-device-id-header.md)
 <!-- used-by:end -->

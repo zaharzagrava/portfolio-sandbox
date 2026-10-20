@@ -29,4 +29,5 @@ Code checks a requested reason with `isCrossTenantReason` before it reads shop r
 - [tenancy-tables](tenancy-tables.md)
 - [tenant-setting](tenant-setting.md)
 - [tenant](tenant.md)
+- [x-device-id-header](x-device-id-header.md)
 <!-- used-by:end -->

@@ -21,6 +21,9 @@ The brand starts a stream. A viewer posts a comment with a `clientId`. Other vie
 
 ## Used by
 <!-- used-by:start -->
+- [consumer-group](consumer-group.md)
+- [inbox-item](inbox-item.md)
 - [live-events-topic](live-events-topic.md)
+- [stream-connection](stream-connection.md)
 - [stream-pin](stream-pin.md)
 <!-- used-by:end -->

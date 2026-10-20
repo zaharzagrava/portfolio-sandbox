@@ -24,6 +24,7 @@ On one tick, three scheduler instances try the advisory lock and only one gets i
 - [S49](../capabilities/S49-job-scheduler.md): R-16, R-20
 - [cron-fire-key](cron-fire-key.md)
 - [cron-schedule-materialisation](cron-schedule-materialisation.md)
+- [idempotency-key](idempotency-key.md)
 - [job-enqueue](job-enqueue.md)
 - [jobs-partition-maintenance](jobs-partition-maintenance.md)
 - [ledger-backfill-balances-job](ledger-backfill-balances-job.md)

@@ -19,5 +19,10 @@ From J04 B-14: base 10, a device sells 2 (local 8) and Shopify sells 3 (remote 7
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [J04](../capabilities/J04-catalog-sync-to-search.md): R-15
+- [conditional-absolute-write](conditional-absolute-write.md)
+- [shopify-inventory](shopify-inventory.md)
+- [shopify-link](shopify-link.md)
+- [shopify-push-pull](shopify-push-pull.md)
+- [shopify-write](shopify-write.md)
 <!-- used-by:end -->

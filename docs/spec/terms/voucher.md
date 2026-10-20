@@ -22,8 +22,14 @@ A buyer holds seats with their [admission token](admission-token.md) and confirm
 ## Used by
 <!-- used-by:start -->
 - [J03](../capabilities/J03-launch-day.md): R-14, B-02, B-06
+- [admission-token](admission-token.md)
 - [booking-hold-expired](booking-hold-expired.md)
+- [booking-hold](booking-hold.md)
+- [booking-set](booking-set.md)
+- [consumer-group](consumer-group.md)
+- [inbox-item](inbox-item.md)
 - [reservation-hold](reservation-hold.md)
 - [seat-hold-expired](seat-hold-expired.md)
+- [seat-hold](seat-hold.md)
 - [voucher-command](voucher-command.md)
 <!-- used-by:end -->

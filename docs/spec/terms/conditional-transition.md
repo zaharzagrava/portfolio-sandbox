@@ -28,4 +28,6 @@ The job [`auctions.close`](auctions-close-job.md) fires for an auction whose end
 - [duplicate-triggers](duplicate-triggers.md)
 - [exactly-once-load](exactly-once-load.md)
 - [flash-sale-load-job](flash-sale-load-job.md)
+- [guarded-update](guarded-update.md)
+- [winner-order](winner-order.md)
 <!-- used-by:end -->

@@ -33,4 +33,5 @@ DELETE /notifications/devices/:deviceId  -> removes it, [owner only](device-owne
 - [device-token](device-token.md)
 - [permanent-error](permanent-error.md)
 - [push-notification](push-notification.md)
+- [stock-conflict](stock-conflict.md)
 <!-- used-by:end -->

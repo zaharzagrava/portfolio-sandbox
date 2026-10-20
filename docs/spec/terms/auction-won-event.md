@@ -20,5 +20,9 @@ Bids of 10000, 5000 and 12000 are placed. The end passes and the leader is at or
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [auction-leader](auction-leader.md)
+- [auction-reserve](auction-reserve.md)
+- [auction-won-notice](auction-won-notice.md)
+- [auctions-close-job](auctions-close-job.md)
+- [winner-order](winner-order.md)
 <!-- used-by:end -->

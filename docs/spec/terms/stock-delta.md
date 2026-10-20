@@ -25,6 +25,7 @@ Stock is 5, and ten concurrent operations each send a delta of `-1`. Five apply 
 - [all-or-nothing-reservation](all-or-nothing-reservation.md)
 - [apply-delta](apply-delta.md)
 - [catalog-domain-layer](catalog-domain-layer.md)
+- [conditional-absolute-write](conditional-absolute-write.md)
 - [insufficient-stock](insufficient-stock.md)
 - [stock-operation-replayed](stock-operation-replayed.md)
 - [stock-upper-bound](stock-upper-bound.md)

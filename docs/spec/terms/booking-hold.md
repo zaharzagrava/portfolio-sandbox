@@ -22,8 +22,12 @@ A buyer leaves the queue with an admission token, holds seats, then confirms. Th
 ## Used by
 <!-- used-by:start -->
 - [J03](../capabilities/J03-launch-day.md): R-01, R-02, R-04
+- [access-token](access-token.md)
+- [admission-token](admission-token.md)
 - [booking-hold-expired](booking-hold-expired.md)
+- [booking-set](booking-set.md)
 - [control-surface](control-surface.md)
+- [launch-event-status](launch-event-status.md)
 - [launch-events-booking-confirmed-event](launch-events-booking-confirmed-event.md)
 - [no-notification-list](no-notification-list.md)
 - [sold-out](sold-out.md)

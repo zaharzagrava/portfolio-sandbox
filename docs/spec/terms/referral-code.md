@@ -21,6 +21,7 @@ A member with a `__Host-ref` cookie presses **Place order** on the [Review step]
 
 ## Used by
 <!-- used-by:start -->
+- [S10](../capabilities/S10-cart-checkout.md): R-47
 - [checkout-request-schema](checkout-request-schema.md)
 - [checkout-review-step](checkout-review-step.md)
 - [host-ref-cookie](host-ref-cookie.md)

@@ -20,9 +20,13 @@ A bid lands inside the [anti-sniping window](anti-sniping-window.md), so [`endsA
 ## Used by
 <!-- used-by:start -->
 - [J03](../capabilities/J03-launch-day.md): R-10
+- [anti-sniping-window](anti-sniping-window.md)
 - [auction-closed-event](auction-closed-event.md)
 - [auction-won-notice](auction-won-notice.md)
 - [auctions-close-job](auctions-close-job.md)
 - [award-notice](award-notice.md)
+- [close-job](close-job.md)
+- [conditional-transition](conditional-transition.md)
+- [job-lease](job-lease.md)
 - [winner-order](winner-order.md)
 <!-- used-by:end -->

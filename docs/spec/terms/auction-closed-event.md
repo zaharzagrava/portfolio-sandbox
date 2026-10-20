@@ -20,5 +20,8 @@ The leader is at or above the [reserve](auction-reserve.md) when the end passes.
 
 ## Used by
 <!-- used-by:start -->
+- [active-transaction](active-transaction.md)
+- [auction-reserve](auction-reserve.md)
 - [award-notice](award-notice.md)
+- [duplicate-triggers](duplicate-triggers.md)
 <!-- used-by:end -->

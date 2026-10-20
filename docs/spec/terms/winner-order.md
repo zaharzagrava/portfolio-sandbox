@@ -26,6 +26,7 @@ The winner does not pay within 48 hours. The order becomes `CANCELLED(hold_expir
 - [auction-won-event](auction-won-event.md)
 - [auctions-close-job](auctions-close-job.md)
 - [conditional-transition](conditional-transition.md)
+- [duplicate-triggers](duplicate-triggers.md)
 - [payment-provider-chain](payment-provider-chain.md)
 - [refused-leader](refused-leader.md)
 <!-- used-by:end -->

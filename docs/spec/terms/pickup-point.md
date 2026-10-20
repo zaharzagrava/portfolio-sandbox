@@ -20,5 +20,6 @@ Product `Pc` has catalog quantity 5 and no pickup stock, so it is not in "availa
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [J04](../capabilities/J04-catalog-sync-to-search.md): B-08
+- [pickup-stock](pickup-stock.md)
 <!-- used-by:end -->

@@ -22,7 +22,10 @@ An auction's leader is at or above the reserve. `auctions.close` fires twice for
 <!-- used-by:start -->
 - [J03](../capabilities/J03-launch-day.md): B-13
 - [anti-sniping-window](anti-sniping-window.md)
+- [auction-leader](auction-leader.md)
 - [auction-status](auction-status.md)
+- [auction-unit](auction-unit.md)
+- [conditional-transition](conditional-transition.md)
 - [duplicate-triggers](duplicate-triggers.md)
 - [ends-at](ends-at.md)
 <!-- used-by:end -->

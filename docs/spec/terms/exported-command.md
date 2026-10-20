@@ -27,7 +27,15 @@ For example, another domain calls `applyStockDelta` with an `[operationId](stock
 
 ## Used by
 <!-- used-by:start -->
+- [J04](../capabilities/J04-catalog-sync-to-search.md): R-01
 - [application-layer](application-layer.md)
+- [catalog-import](catalog-import.md)
+- [csv-product](csv-product.md)
 - [domain-boundary-rules](domain-boundary-rules.md)
+- [scheduled-pull](scheduled-pull.md)
+- [shopify-backfill](shopify-backfill.md)
+- [shopify-import](shopify-import.md)
+- [shopify-scheduled-pull](shopify-scheduled-pull.md)
+- [till](till.md)
 - [use-case](use-case.md)
 <!-- used-by:end -->

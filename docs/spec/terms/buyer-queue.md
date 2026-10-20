@@ -24,4 +24,7 @@ Twelve buyers join the queue of a launch event before sales open. Once the event
 - [J03](../capabilities/J03-launch-day.md): B-01
 - [admission-token](admission-token.md)
 - [admitter](admitter.md)
+- [launch-event](launch-event.md)
+- [seat-hold](seat-hold.md)
+- [seat](seat.md)
 <!-- used-by:end -->

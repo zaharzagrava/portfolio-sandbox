@@ -21,5 +21,9 @@ A brand schedules a drop of 20 units, and product stock stays the same. When `fl
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [catalog-stock](catalog-stock.md)
+- [conditional-transition](conditional-transition.md)
+- [drop-load](drop-load.md)
+- [drop](drop.md)
+- [exactly-once-load](exactly-once-load.md)
 <!-- used-by:end -->

@@ -27,5 +27,9 @@ The reserve is 10000 (illustrative), and the highest bid when the end passes is 
 - [auction-won-event](auction-won-event.md)
 - [auction-won-notice](auction-won-notice.md)
 - [auctions-close-job](auctions-close-job.md)
+- [award-notice](award-notice.md)
+- [inbox-item](inbox-item.md)
 - [refused-leader](refused-leader.md)
+- [runner-up-offer](runner-up-offer.md)
+- [second-chance](second-chance.md)
 <!-- used-by:end -->

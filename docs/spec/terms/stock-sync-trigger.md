@@ -20,5 +20,10 @@ Shopify answers `503`. A device sells 2 from 10, and the push answers at once wi
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [J04](../capabilities/J04-catalog-sync-to-search.md): B-16
+- [device-sale](device-sale.md)
+- [shopify-push-consumer](shopify-push-consumer.md)
+- [shopify-write](shopify-write.md)
+- [stock-merge](stock-merge.md)
+- [sync-trigger](sync-trigger.md)
 <!-- used-by:end -->

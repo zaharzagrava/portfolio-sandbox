@@ -21,5 +21,5 @@ The owner of shop `SH` starts an import of catalog file `F1` (60 rows) and opens
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [terminal-event](terminal-event.md)
 <!-- used-by:end -->

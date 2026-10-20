@@ -20,5 +20,9 @@ B-08: a buyer pays a [drop order](drop.md). The buyer has one [`order.confirmed`
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [consumer-group](consumer-group.md)
+- [drop](drop.md)
+- [event-replay](event-replay.md)
+- [inbox-item](inbox-item.md)
+- [notification-type](notification-type.md)
 <!-- used-by:end -->

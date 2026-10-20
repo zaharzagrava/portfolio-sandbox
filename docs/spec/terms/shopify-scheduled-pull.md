@@ -20,5 +20,9 @@ A product title is changed in Shopify, and no webhook arrives. When the schedule
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [J04](../capabilities/J04-catalog-sync-to-search.md): B-07
+- [shopify-connection](shopify-connection.md)
+- [shopify-push-pull](shopify-push-pull.md)
+- [shopify-variant](shopify-variant.md)
+- [shopify-write](shopify-write.md)
 <!-- used-by:end -->

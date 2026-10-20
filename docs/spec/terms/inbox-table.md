@@ -62,10 +62,12 @@ S13 appends its payment event through S53's outbox service inside its transactio
 - [payment-status-event](payment-status-event.md)
 - [payment-status-history](payment-status-history.md)
 - [payment-status](payment-status.md)
+- [pickup-availability-consumer](pickup-availability-consumer.md)
 - [products-events-topic](products-events-topic.md)
 - [provider-secret](provider-secret.md)
 - [relay-poller-mode](relay-poller-mode.md)
 - [shop-created-event](shop-created-event.md)
 - [shop-verification-changed-event](shop-verification-changed-event.md)
+- [shopify-push-consumer](shopify-push-consumer.md)
 - [version-guard](version-guard.md)
 <!-- used-by:end -->

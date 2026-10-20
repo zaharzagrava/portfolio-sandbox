@@ -20,5 +20,8 @@ Pickup stock is the quantity a seller sets for a product at a specific [pickup p
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [J04](../capabilities/J04-catalog-sync-to-search.md): R-11, B-08, B-12
+- [csv-product](csv-product.md)
+- [near-me-index](near-me-index.md)
+- [pickup-availability-consumer](pickup-availability-consumer.md)
 <!-- used-by:end -->

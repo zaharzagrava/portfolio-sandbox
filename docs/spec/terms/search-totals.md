@@ -21,6 +21,7 @@ A buyer searches for "mug" (illustrative). [The index](search-index.md) matches 
 
 ## Used by
 <!-- used-by:start -->
+- [J04](../capabilities/J04-catalog-sync-to-search.md): R-06, B-04
 - [S32](../capabilities/S32-product-search.md): R-06, R-22, B-17
 - [W02](../capabilities/W02-storefront-discovery.md): B-06
 - [h1-heading](h1-heading.md)
@@ -30,4 +31,5 @@ A buyer searches for "mug" (illustrative). [The index](search-index.md) matches 
 - [search-items](search-items.md)
 - [search-visibility](search-visibility.md)
 - [semantic-search](semantic-search.md)
+- [unsupported-file-type](unsupported-file-type.md)
 <!-- used-by:end -->

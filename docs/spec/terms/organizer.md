@@ -21,5 +21,8 @@ Illustrative: a launch event is `ON_SALE` with seats still free. The organizer e
 
 ## Used by
 <!-- used-by:start -->
+- [job](job.md)
 - [launch-event](launch-event.md)
+- [seat](seat.md)
+- [shop-role](shop-role.md)
 <!-- used-by:end -->

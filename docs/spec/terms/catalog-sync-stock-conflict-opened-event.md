@@ -21,5 +21,5 @@ Stock is 3 on both sides. A device sells 3 and Shopify sells 2. The merge would 
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [stock-conflict](stock-conflict.md)
 <!-- used-by:end -->

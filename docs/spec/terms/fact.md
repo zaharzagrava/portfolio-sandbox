@@ -28,5 +28,6 @@ A fact is a business decision that has already happened and is recorded as an ev
 - [event-consumer](event-consumer.md)
 - [event-tap](event-tap.md)
 - [outbox-append](outbox-append.md)
+- [unsupported-file-type](unsupported-file-type.md)
 - [webhook-router](webhook-router.md)
 <!-- used-by:end -->

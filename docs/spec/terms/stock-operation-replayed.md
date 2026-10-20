@@ -21,8 +21,12 @@ A caller sends `applyStockDelta` with `operationId` `op-123` (illustrative) and 
 
 ## Used by
 <!-- used-by:start -->
+- [device-sale](device-sale.md)
+- [device-sync](device-sync.md)
 - [idempotency-purge-job](idempotency-purge-job.md)
+- [op-id](op-id.md)
 - [product-maintenance-jobs](product-maintenance-jobs.md)
 - [product-stock-service](product-stock-service.md)
+- [shopify-write](shopify-write.md)
 - [stock-delta](stock-delta.md)
 <!-- used-by:end -->

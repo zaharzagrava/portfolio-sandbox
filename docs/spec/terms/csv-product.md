@@ -19,5 +19,7 @@ CSV product `Pc` has [catalog stock](catalog-stock.md) 5 and pickup stock 4 at [
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [J04](../capabilities/J04-catalog-sync-to-search.md): B-12
+- [pickup-stock](pickup-stock.md)
+- [shopify-link](shopify-link.md)
 <!-- used-by:end -->

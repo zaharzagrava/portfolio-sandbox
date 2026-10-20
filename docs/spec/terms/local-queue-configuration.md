@@ -20,6 +20,7 @@ The file is `infra/docker/elasticmq/elasticmq.conf`. In J02 AS-10, the extractor
 
 ## Used by
 <!-- used-by:start -->
+- [catalog-imports-queue](catalog-imports-queue.md)
 - [dead-letter-topic](dead-letter-topic.md)
 - [extraction-message](extraction-message.md)
 - [extraction-worker](extraction-worker.md)

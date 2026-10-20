@@ -27,5 +27,5 @@ If the device resends the same `opId`, the stored outcome returns with no second
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [J04](../capabilities/J04-catalog-sync-to-search.md): R-20
 <!-- used-by:end -->

@@ -19,5 +19,10 @@ B-08: three buyers pay their drop orders (illustrative count). Each of the three
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [consumer-group](consumer-group.md)
+- [drop](drop.md)
+- [event-consumer](event-consumer.md)
+- [event-replay](event-replay.md)
+- [inbox-item](inbox-item.md)
+- [notification-type](notification-type.md)
 <!-- used-by:end -->

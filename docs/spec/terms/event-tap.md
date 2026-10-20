@@ -21,6 +21,9 @@ After [`auctions.close`](auctions-close-job.md) runs twice for the same auction,
 
 ## Used by
 <!-- used-by:start -->
+- [consumer-group](consumer-group.md)
 - [control-surface](control-surface.md)
+- [fact](fact.md)
+- [inbox-table](inbox-table.md)
 - [stack](stack.md)
 <!-- used-by:end -->

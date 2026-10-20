@@ -25,6 +25,8 @@ Twelve buyers wait in the queue of one launch event while sales are open. The ad
 - [admitter](admitter.md)
 - [buyer-queue](buyer-queue.md)
 - [launch-event-status](launch-event-status.md)
+- [launch-events-events-topic](launch-events-events-topic.md)
+- [organizer](organizer.md)
 - [reservation-hold](reservation-hold.md)
 - [seat-hold](seat-hold.md)
 - [sold-out](sold-out.md)

@@ -27,6 +27,7 @@ A consumer gets a batch of 5 events, and the third one fails its schema. The thi
 - [auctions-source-family](auctions-source-family.md)
 - [balance-projector](balance-projector.md)
 - [billing-source-family](billing-source-family.md)
+- [catalog-imports-queue](catalog-imports-queue.md)
 - [catalog-template](catalog-template.md)
 - [consumer-attempt-budget](consumer-attempt-budget.md)
 - [contact-data](contact-data.md)

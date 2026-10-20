@@ -20,8 +20,14 @@ The leader is at or above the reserve when the end passes. The auction becomes [
 
 ## Used by
 <!-- used-by:start -->
+- [auction-reserve](auction-reserve.md)
 - [auction-unit](auction-unit.md)
 - [auction-won-event](auction-won-event.md)
 - [auctions-close-job](auctions-close-job.md)
+- [duplicate-triggers](duplicate-triggers.md)
+- [event-consumer](event-consumer.md)
+- [event-replay](event-replay.md)
+- [inbox-item](inbox-item.md)
 - [refused-leader](refused-leader.md)
+- [second-chance](second-chance.md)
 <!-- used-by:end -->

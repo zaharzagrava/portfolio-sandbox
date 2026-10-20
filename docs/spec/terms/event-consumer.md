@@ -23,6 +23,7 @@ The relay crashes after sending an event but before marking its row as sent. The
 <!-- used-by:start -->
 - [J02](../capabilities/J02-seller-to-first-sale.md): R-04, R-14, B-02, B-10, B-12
 - [J03](../capabilities/J03-launch-day.md): R-14, B-06
+- [J04](../capabilities/J04-catalog-sync-to-search.md): R-17
 - [S32](../capabilities/S32-product-search.md): R-40
 - [S34](../capabilities/S34-recommendations.md): B-11
 - [S53](../capabilities/S53-events-projections.md): B-07
@@ -41,12 +42,14 @@ The relay crashes after sending an event but before marking its row as sent. The
 - [billing-source-family](billing-source-family.md)
 - [buffered-data](buffered-data.md)
 - [cache-invalidator](cache-invalidator.md)
+- [catalog-sync-stock-conflict-opened-event](catalog-sync-stock-conflict-opened-event.md)
 - [category-tracking](category-tracking.md)
 - [comment-moderation](comment-moderation.md)
 - [commit-floor](commit-floor.md)
 - [consumer-declaration-error](consumer-declaration-error.md)
 - [consumer-deduplication-mode](consumer-deduplication-mode.md)
 - [consumer-lag](consumer-lag.md)
+- [consumer-pause](consumer-pause.md)
 - [correction-path](correction-path.md)
 - [dead-letter-reason-code](dead-letter-reason-code.md)
 - [dead-letter-redrive](dead-letter-redrive.md)
@@ -63,6 +66,7 @@ The relay crashes after sending an event but before marking its row as sent. The
 - [identity-promotion-consumer](identity-promotion-consumer.md)
 - [idle-timeout](idle-timeout.md)
 - [infrastructure-layer](infrastructure-layer.md)
+- [integrations-stock-push-queue](integrations-stock-push-queue.md)
 - [is-sandbox](is-sandbox.md)
 - [known-unmapped-type](known-unmapped-type.md)
 - [member-removed-event](member-removed-event.md)
@@ -73,6 +77,7 @@ The relay crashes after sending an event but before marking its row as sent. The
 - [notification-routing](notification-routing.md)
 - [notification-version-check](notification-version-check.md)
 - [notified-version](notified-version.md)
+- [offline-sync-feed-consumer](offline-sync-feed-consumer.md)
 - [order-baskets-projector](order-baskets-projector.md)
 - [order-confirmed-notification](order-confirmed-notification.md)
 - [order-version](order-version.md)
@@ -82,12 +87,16 @@ The relay crashes after sending an event but before marking its row as sent. The
 - [payment-event-outcome](payment-event-outcome.md)
 - [payment-processor](payment-processor.md)
 - [payments-events-consumer](payments-events-consumer.md)
+- [pickup-availability-consumer](pickup-availability-consumer.md)
 - [post-webhooks-stripe](post-webhooks-stripe.md)
+- [queue-pause](queue-pause.md)
 - [read-model](read-model.md)
 - [read-your-writes](read-your-writes.md)
 - [schema-invalid](schema-invalid.md)
+- [search-product-index-queue](search-product-index-queue.md)
 - [search-projector](search-projector.md)
 - [shop-status-consumer](shop-status-consumer.md)
+- [shopify-push-consumer](shopify-push-consumer.md)
 - [shutdown-flush](shutdown-flush.md)
 - [tenancy-invite-requested-queue](tenancy-invite-requested-queue.md)
 - [trending-aggregate](trending-aggregate.md)

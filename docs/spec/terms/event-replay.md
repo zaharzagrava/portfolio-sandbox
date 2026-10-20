@@ -24,6 +24,7 @@ Illustrative, not taken from the spec: [S32](../capabilities/S32-product-search.
 - [J01](../capabilities/J01-buy-to-payout.md): R-15
 - [J02](../capabilities/J02-seller-to-first-sale.md): R-15
 - [J03](../capabilities/J03-launch-day.md): R-14
+- [J04](../capabilities/J04-catalog-sync-to-search.md): R-12, B-19
 - [S28](../capabilities/S28-notifications.md): B-03
 - [S34](../capabilities/S34-recommendations.md): B-14
 - [S35](../capabilities/S35-trending.md): R-20
@@ -46,6 +47,7 @@ Illustrative, not taken from the spec: [S32](../capabilities/S32-product-search.
 - [parked-row](parked-row.md)
 - [product-created-event](product-created-event.md)
 - [published-row](published-row.md)
+- [queue-pause](queue-pause.md)
 - [queue-refusal](queue-refusal.md)
 - [recent-comments](recent-comments.md)
 - [replay-cursor](replay-cursor.md)

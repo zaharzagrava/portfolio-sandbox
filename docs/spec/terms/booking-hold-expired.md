@@ -24,5 +24,9 @@ A buyer holds a seat and waits 10 minutes before confirming. The seat is free ag
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [booking-confirm](booking-confirm.md)
+- [booking-hold](booking-hold.md)
+- [inbox-item](inbox-item.md)
+- [problem-body](problem-body.md)
+- [voucher](voucher.md)
 <!-- used-by:end -->

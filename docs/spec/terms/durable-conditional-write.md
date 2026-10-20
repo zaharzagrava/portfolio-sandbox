@@ -24,6 +24,7 @@ The stored step is not below T, so the write is refused. The answer stays the sa
 
 ## Used by
 <!-- used-by:start -->
+- [J04](../capabilities/J04-catalog-sync-to-search.md): B-14
 - [S01](../capabilities/S01-auth-sessions.md): R-26
 - [S02](../capabilities/S02-mfa-oidc.md): R-09
 - [S04](../capabilities/S04-kyc-onboarding.md): R-25

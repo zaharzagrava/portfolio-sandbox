@@ -22,5 +22,6 @@ In another case, an import of `SH` is completed but not yet processed when the a
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [catalog-import](catalog-import.md)
+- [import-run-status](import-run-status.md)
 <!-- used-by:end -->

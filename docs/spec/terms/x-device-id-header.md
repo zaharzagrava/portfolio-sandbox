@@ -25,5 +25,6 @@ The device feed answers with an entry for `Ps` that carries the new quantity.
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [device-sync](device-sync.md)
+- [offline-sync-feed-consumer](offline-sync-feed-consumer.md)
 <!-- used-by:end -->

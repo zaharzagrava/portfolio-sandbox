@@ -22,6 +22,7 @@ An operator is a person who runs the system in production, not a component of it
 ## Used by
 <!-- used-by:start -->
 - [J01](../capabilities/J01-buy-to-payout.md): B-11, B-15
+- [J04](../capabilities/J04-catalog-sync-to-search.md): B-19
 - [S01](../capabilities/S01-auth-sessions.md): R-44
 - [S33](../capabilities/S33-autocomplete.md): R-24
 - [S49](../capabilities/S49-job-scheduler.md): B-14

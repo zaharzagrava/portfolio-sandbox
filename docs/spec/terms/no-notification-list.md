@@ -21,5 +21,12 @@ A buyer holds a seat and never confirms it. The hold expires and the seat is fre
 
 ## Used by
 <!-- used-by:start -->
+- [auction-unsold](auction-unsold.md)
+- [award-notice](award-notice.md)
+- [booking-hold](booking-hold.md)
+- [drop-hold](drop-hold.md)
+- [inbox-item](inbox-item.md)
+- [notification-catalog](notification-catalog.md)
+- [refused-leader](refused-leader.md)
 - [stream-pin](stream-pin.md)
 <!-- used-by:end -->

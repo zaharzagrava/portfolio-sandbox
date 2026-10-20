@@ -21,5 +21,8 @@ A stock push writes a catalog stock change to Shopify. The `integrations-stock-p
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [J04](../capabilities/J04-catalog-sync-to-search.md): B-14
+- [conditional-absolute-write](conditional-absolute-write.md)
+- [stock-merge](stock-merge.md)
+- [stock-sync-trigger](stock-sync-trigger.md)
 <!-- used-by:end -->

@@ -21,6 +21,7 @@ rules_hash: e3b0c44298fc
 
 ## Used by
 <!-- used-by:start -->
+- [J04](../capabilities/J04-catalog-sync-to-search.md): B-10
 - [all-or-nothing-reservation](all-or-nothing-reservation.md)
 - [facet-self-exclusion](facet-self-exclusion.md)
 - [search-facets](search-facets.md)

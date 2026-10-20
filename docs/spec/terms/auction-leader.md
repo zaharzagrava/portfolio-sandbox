@@ -24,6 +24,7 @@ Bids of 10000, 5000 and 12000 arrive. The price follows proxy bidding, and the l
 - [auction-won-event](auction-won-event.md)
 - [bid-increment](bid-increment.md)
 - [close-job](close-job.md)
+- [outbid-event](outbid-event.md)
 - [proxy-bidding](proxy-bidding.md)
 - [refused-leader](refused-leader.md)
 <!-- used-by:end -->

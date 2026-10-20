@@ -21,5 +21,8 @@ A user already has 20 streams open on [`user:{userId}`](realtime-topic.md) acros
 ## Used by
 <!-- used-by:start -->
 - [extension-members](extension-members.md)
+- [realtime-instance-limit](realtime-instance-limit.md)
+- [realtime-topic](realtime-topic.md)
 - [stream-connection](stream-connection.md)
+- [user-connection-cap](user-connection-cap.md)
 <!-- used-by:end -->

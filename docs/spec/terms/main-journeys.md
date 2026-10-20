@@ -23,6 +23,7 @@ A test runs the production build and walks from the home page (`/`) to `/search`
 - [W07](../capabilities/W07-app-shell.md): B-12
 - [admin-bootstrap](admin-bootstrap.md)
 - [comment-client-id](comment-client-id.md)
+- [consumer-pause](consumer-pause.md)
 - [get-product-by-id](get-product-by-id.md)
 - [launch-day-flow](launch-day-flow.md)
 - [local-provider-doubles](local-provider-doubles.md)
@@ -30,4 +31,5 @@ A test runs the production build and walks from the home page (`/`) to `/search`
 - [payout-paid-event](payout-paid-event.md)
 - [payout-status](payout-status.md)
 - [production-configuration](production-configuration.md)
+- [queue-pause](queue-pause.md)
 <!-- used-by:end -->

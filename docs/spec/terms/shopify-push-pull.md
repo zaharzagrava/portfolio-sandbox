@@ -28,5 +28,8 @@ A title changed in Shopify with no webhook is picked up by the scheduled pull (J
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [J04](../capabilities/J04-catalog-sync-to-search.md): R-19
+- [shop-integration](shop-integration.md)
+- [shopify-echo](shopify-echo.md)
+- [sync-trigger](sync-trigger.md)
 <!-- used-by:end -->

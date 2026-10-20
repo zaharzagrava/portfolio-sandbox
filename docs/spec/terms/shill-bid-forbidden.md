@@ -25,5 +25,9 @@ The current price and the [current leader](proxy-bidding.md) stay as they were.
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [auction-unit](auction-unit.md)
+- [award-notice](award-notice.md)
+- [problem-body](problem-body.md)
+- [proxy-bidding](proxy-bidding.md)
+- [shop-member](shop-member.md)
 <!-- used-by:end -->

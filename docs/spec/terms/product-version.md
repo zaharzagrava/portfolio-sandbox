@@ -24,6 +24,7 @@ The status is `409` and nothing changes.
 
 ## Used by
 <!-- used-by:start -->
+- [J04](../capabilities/J04-catalog-sync-to-search.md): B-03
 - [S05](../capabilities/S05-products.md): R-20
 - [S32](../capabilities/S32-product-search.md): R-13, R-14
 - [cache-entry](cache-entry.md)

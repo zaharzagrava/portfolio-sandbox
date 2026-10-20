@@ -23,4 +23,8 @@ There are 12 buyers in the queue of a launch event that is [`ON_SALE`](launch-ev
 <!-- used-by:start -->
 - [J03](../capabilities/J03-launch-day.md): B-01
 - [admission-token](admission-token.md)
+- [buyer-queue](buyer-queue.md)
+- [event-consumer](event-consumer.md)
+- [launch-event](launch-event.md)
+- [seat-hold](seat-hold.md)
 <!-- used-by:end -->

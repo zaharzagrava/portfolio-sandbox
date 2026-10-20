@@ -22,6 +22,7 @@ Shop "shop-42" (illustrative) moves to `SUSPENDED`. Its existing products disapp
 ## Used by
 <!-- used-by:start -->
 - [J02](../capabilities/J02-seller-to-first-sale.md): R-13, B-13
+- [J04](../capabilities/J04-catalog-sync-to-search.md): R-10, R-19, B-20
 - [S03](../capabilities/S03-shops-rbac.md): R-01, R-26, B-14, B-22, B-23, B-24
 - [S05](../capabilities/S05-products.md): R-10, R-23, B-01, B-20
 - [S32](../capabilities/S32-product-search.md): R-16
@@ -29,14 +30,17 @@ Shop "shop-42" (illustrative) moves to `SUSPENDED`. Its existing products disapp
 - [search-index](../concepts/search-index.md): C-05
 - [apply-verification](apply-verification.md)
 - [batch-shops-lookup](batch-shops-lookup.md)
+- [catalog-imports-queue](catalog-imports-queue.md)
 - [event-definition](event-definition.md)
 - [get-product-by-id](get-product-by-id.md)
 - [get-shop-export](get-shop-export.md)
 - [live-shop](live-shop.md)
+- [near-me-index](near-me-index.md)
 - [platform-admin](platform-admin.md)
 - [post-shops](post-shops.md)
 - [product-not-found](product-not-found.md)
 - [role-permission-matrix](role-permission-matrix.md)
+- [scheduled-pull](scheduled-pull.md)
 - [search-facets](search-facets.md)
 - [search-index](search-index.md)
 - [search-visibility](search-visibility.md)
@@ -48,6 +52,9 @@ Shop "shop-42" (illustrative) moves to `SUSPENDED`. Its existing products disapp
 - [shop-status-consumer](shop-status-consumer.md)
 - [shop-status-history](shop-status-history.md)
 - [shop-verification](shop-verification.md)
+- [shopify-import](shopify-import.md)
+- [shopify-push-pull](shopify-push-pull.md)
+- [shopify-scheduled-pull](shopify-scheduled-pull.md)
 - [tenancy-domain-layer](tenancy-domain-layer.md)
 - [view-count-flush](view-count-flush.md)
 <!-- used-by:end -->

@@ -20,5 +20,7 @@ A device sale is a sale recorded by a [till](till.md), an offline device in the 
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [J04](../capabilities/J04-catalog-sync-to-search.md): R-12
+- [pickup-stock](pickup-stock.md)
+- [x-device-id-header](x-device-id-header.md)
 <!-- used-by:end -->
