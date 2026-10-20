@@ -26,6 +26,8 @@ export interface WindowMerge {
   firstOffset: number;
   lastOffset: number;
   categories: { category: string; entries: RankedEntry[] }[];
+  /** Ids of the events counted in the window: claimed with the merge so a late copy of one of them is not counted again. */
+  eventIds?: string[];
 }
 
 /** One late event applied through the correction path: counted once per `eventId`, however often it is delivered. */

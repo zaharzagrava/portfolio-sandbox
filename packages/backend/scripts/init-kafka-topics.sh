@@ -27,6 +27,10 @@ TOPICS=(
   "ads.clicks"
   "ads.click-aggregates"
   "ads.clicks.dlq"
+  # J05 engagement loop: link clicks and affiliate conversions (G-23, L-002)
+  "links.events"
+  "feed.events"
+  "discussion.events"
   # S38 feature flags: one `experimentation.flag_changed` per applied change (outbox relay publishes it here)
   "flags.events"
 )

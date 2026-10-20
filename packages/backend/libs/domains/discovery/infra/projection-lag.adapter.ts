@@ -69,6 +69,7 @@ export class KafkaProjectionLag implements ProjectionLagPort {
         const timer = setTimeout(() => resolve(null), 3_000);
         void consumer
           .run({
+            // eslint-disable-next-line @typescript-eslint/require-await -- the kafkajs handler type is async
             eachMessage: async ({ partition: p, message }) => {
               if (p !== partition || Number(message.offset) < offset) return;
               clearTimeout(timer);

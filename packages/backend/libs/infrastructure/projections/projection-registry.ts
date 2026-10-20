@@ -20,7 +20,12 @@ const KEY = 'projection:registry';
 export class ProjectionRegistry {
   constructor(private readonly redis: RedisService) {}
 
-  async declare(projector: Projector): Promise<void> {
+  async declare(
+    projector: Pick<
+      Projector,
+      'name' | 'topics' | 'idempotency' | 'replayable'
+    >,
+  ): Promise<void> {
     const declaration: ProjectionDeclaration = {
       name: projector.name,
       topics: projector.topics,

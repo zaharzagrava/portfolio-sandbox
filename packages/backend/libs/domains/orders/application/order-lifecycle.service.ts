@@ -291,6 +291,10 @@ export class OrderLifecycleService {
             currency: order.currency,
             paymentRef: command.paymentRef,
             paidAt: now.toISOString(),
+            attribution:
+              order.refCode && order.attributionOwnerId
+                ? { code: order.refCode, ownerId: order.attributionOwnerId }
+                : null,
             lines: items.map((i) => ({
               ...(i.lineId ? { lineId: i.lineId } : {}),
               ...(i.category ? { category: i.category } : {}),
@@ -319,6 +323,10 @@ export class OrderLifecycleService {
             amountMinor: order.totalMinor,
             currency: order.currency,
             reason: command.reason,
+            attribution:
+              order.refCode && order.attributionOwnerId
+                ? { code: order.refCode, ownerId: order.attributionOwnerId }
+                : null,
           }),
         );
         return;

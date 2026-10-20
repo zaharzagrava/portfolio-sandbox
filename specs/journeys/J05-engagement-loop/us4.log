@@ -1,0 +1,10 @@
+$ NODE_OPTIONS=--experimental-vm-modules jest --config jest-journeys.json --runInBand -t 'Journey J05: engagement loop US4'
+(node:213159) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+Test Suites: 5 skipped, 1 passed, 1 of 6 total
+Tests:       145 skipped, 4 passed, 149 total
+Snapshots:   0 total
+Time:        210.028 s, estimated 266 s
+Ran all test suites with tests matching "Journey J05: engagement loop US4".
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished?

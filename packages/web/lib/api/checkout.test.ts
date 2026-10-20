@@ -108,17 +108,17 @@ describe('postCheckout (W03 UK3)', () => {
   it('W03 AS-34: refCode is sent when the request schema declares it (the contract does today)', async () => {
     accept();
     await postCheckout(input({ refCode: 'FRIEND1' }));
-    expect(await seen[0].json()).toEqual({ expectedTotalMinor: 3998, refCode: 'FRIEND1' });
+    expect(await seen[0].json()).toEqual({ expectedTotalMinor: 3998, ref: 'FRIEND1' });
   });
 });
 
 describe('buildCheckoutBody (W03 UK3, AS-34)', () => {
-  const declaring = { shape: { expectedTotalMinor: {}, refCode: {} } };
+  const declaring = { shape: { expectedTotalMinor: {}, ref: {} } };
   const lacking = { shape: { expectedTotalMinor: {} } };
 
   it.each([
     ['schema lacks refCode, code given', lacking, { expectedTotalMinor: 5, refCode: 'X' }, { expectedTotalMinor: 5 }],
-    ['schema declares refCode, code given', declaring, { expectedTotalMinor: 5, refCode: 'X' }, { expectedTotalMinor: 5, refCode: 'X' }],
+    ['schema declares refCode, code given', declaring, { expectedTotalMinor: 5, refCode: 'X' }, { expectedTotalMinor: 5, ref: 'X' }],
     ['schema declares refCode, no code', declaring, { expectedTotalMinor: 5 }, { expectedTotalMinor: 5 }],
     ['schema declares refCode, null code', declaring, { expectedTotalMinor: 5, refCode: null }, { expectedTotalMinor: 5 }],
     ['schema declares refCode, empty code', declaring, { expectedTotalMinor: 5, refCode: '' }, { expectedTotalMinor: 5 }],
@@ -128,7 +128,7 @@ describe('buildCheckoutBody (W03 UK3, AS-34)', () => {
     expect(buildCheckoutBody(given, schema)).toEqual(expected);
   });
 
-  it('W03 AS-34: the real checkoutRequestSchema declares refCode, so a given code is sent', () => {
-    expect(buildCheckoutBody({ expectedTotalMinor: 1, refCode: 'X' })).toEqual({ expectedTotalMinor: 1, refCode: 'X' });
+  it('W03 AS-34: the real checkoutRequestSchema declares ref, so a given code is sent', () => {
+    expect(buildCheckoutBody({ expectedTotalMinor: 1, refCode: 'X' })).toEqual({ expectedTotalMinor: 1, ref: 'X' });
   });
 });

@@ -1,0 +1,94 @@
+$ NODE_OPTIONS=--experimental-vm-modules jest --config jest-journeys.json --runInBand j05diag
+(node:216324) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+  console.log
+    DIAG post {"status":202,"accepted":8,"rejected":[]} clock {"now":"2026-10-19T16:59:39.253Z","mode":"real","offsetSeconds":0}
+
+      at Object.<anonymous> (test/journeys/j05diag.journey-spec.ts:21:13)
+
+  console.log
+    DIAG t+5s 200 {"category":"aud-dbb35ec1","windowMinutes":60,"generatedAt":"2026-10-19T16:59:44.279Z","items":[]}
+
+      at read (test/journeys/j05diag.journey-spec.ts:24:15)
+
+  console.log
+    DIAG consumer {"group":"discovery-trending-topk","topics":[],"state":"RUNNING","lag":0,"lastProcessedAt":null,"dlqDepth":0}
+
+      at read (test/journeys/j05diag.journey-spec.ts:25:15)
+
+  console.log
+    DIAG t+10s 200 {"category":"aud-dbb35ec1","windowMinutes":60,"generatedAt":"2026-10-19T16:59:49.308Z","items":[]}
+
+      at read (test/journeys/j05diag.journey-spec.ts:24:15)
+
+  console.log
+    DIAG consumer {"group":"discovery-trending-topk","topics":[],"state":"RUNNING","lag":0,"lastProcessedAt":null,"dlqDepth":0}
+
+      at read (test/journeys/j05diag.journey-spec.ts:25:15)
+
+  console.log
+    DIAG t+15s 200 {"category":"aud-dbb35ec1","windowMinutes":60,"generatedAt":"2026-10-19T16:59:54.341Z","items":[]}
+
+      at read (test/journeys/j05diag.journey-spec.ts:24:15)
+
+  console.log
+    DIAG consumer {"group":"discovery-trending-topk","topics":[],"state":"RUNNING","lag":0,"lastProcessedAt":null,"dlqDepth":0}
+
+      at read (test/journeys/j05diag.journey-spec.ts:25:15)
+
+  console.log
+    DIAG t+20s 200 {"category":"aud-dbb35ec1","windowMinutes":60,"generatedAt":"2026-10-19T16:59:59.373Z","items":[]}
+
+      at read (test/journeys/j05diag.journey-spec.ts:24:15)
+
+  console.log
+    DIAG consumer {"group":"discovery-trending-topk","topics":[],"state":"RUNNING","lag":0,"lastProcessedAt":null,"dlqDepth":0}
+
+      at read (test/journeys/j05diag.journey-spec.ts:25:15)
+
+  console.log
+    DIAG adv t+5s 200 {"category":"aud-dbb35ec1","windowMinutes":60,"generatedAt":"2026-10-19T17:05:04.416Z","items":[]}
+
+      at read (test/journeys/j05diag.journey-spec.ts:24:15)
+
+  console.log
+    DIAG consumer {"group":"discovery-trending-topk","topics":[],"state":"RUNNING","lag":0,"lastProcessedAt":null,"dlqDepth":0}
+
+      at read (test/journeys/j05diag.journey-spec.ts:25:15)
+
+  console.log
+    DIAG adv t+10s 200 {"category":"aud-dbb35ec1","windowMinutes":60,"generatedAt":"2026-10-19T17:05:09.527Z","items":[]}
+
+      at read (test/journeys/j05diag.journey-spec.ts:24:15)
+
+  console.log
+    DIAG consumer {"group":"discovery-trending-topk","topics":[],"state":"RUNNING","lag":0,"lastProcessedAt":null,"dlqDepth":0}
+
+      at read (test/journeys/j05diag.journey-spec.ts:25:15)
+
+  console.log
+    DIAG adv t+15s 200 {"category":"aud-dbb35ec1","windowMinutes":60,"generatedAt":"2026-10-19T17:05:14.557Z","items":[]}
+
+      at read (test/journeys/j05diag.journey-spec.ts:24:15)
+
+  console.log
+    DIAG consumer {"group":"discovery-trending-topk","topics":[],"state":"RUNNING","lag":0,"lastProcessedAt":null,"dlqDepth":0}
+
+      at read (test/journeys/j05diag.journey-spec.ts:25:15)
+
+  console.log
+    DIAG adv t+20s 200 {"category":"aud-dbb35ec1","windowMinutes":60,"generatedAt":"2026-10-19T17:05:19.586Z","items":[]}
+
+      at read (test/journeys/j05diag.journey-spec.ts:24:15)
+
+  console.log
+    DIAG consumer {"group":"discovery-trending-topk","topics":[],"state":"RUNNING","lag":0,"lastProcessedAt":null,"dlqDepth":0}
+
+      at read (test/journeys/j05diag.journey-spec.ts:25:15)
+
+Test Suites: 1 passed, 1 total
+Tests:       1 passed, 1 total
+Snapshots:   0 total
+Time:        44.135 s, estimated 45 s
+Ran all test suites matching j05diag.
+Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished?

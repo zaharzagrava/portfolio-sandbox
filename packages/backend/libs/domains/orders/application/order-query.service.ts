@@ -237,6 +237,7 @@ export class OrderQueryService {
       currency: order.currency,
       reservedUntil: order.reservedUntil?.toISOString() ?? null,
       createdAt: order.createdAt.toISOString(),
+      attribution: order.refCode ? { code: order.refCode } : null,
       items: items.map((i) => ({
         productId: i.productId,
         shopId: i.shopId,

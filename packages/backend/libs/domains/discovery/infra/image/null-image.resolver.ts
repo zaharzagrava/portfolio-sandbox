@@ -7,7 +7,7 @@ import type { ProductImageResolver } from '../../domain/ports';
  */
 @Injectable()
 export class NullImageResolver implements ProductImageResolver {
-  async thumbnails(): Promise<Map<string, string>> {
-    return new Map();
+  thumbnails(): Promise<Map<string, string>> {
+    return Promise.resolve(new Map());
   }
 }

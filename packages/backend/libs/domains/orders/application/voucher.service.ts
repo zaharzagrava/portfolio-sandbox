@@ -93,17 +93,15 @@ export class VoucherService {
     const page = rows.slice(0, query.limit);
     const last = page.at(-1);
     return {
-      items: page.map(
-        (row): Voucher => ({
-          voucherId: row.id,
-          holdId: row.holdId,
-          launchEventId: row.launchEventId,
-          shopId: row.shopId,
-          seatCount: row.seatCount,
-          status: row.status,
-          createdAt: new Date(row.createdAt).toISOString(),
-        }),
-      ),
+      items: page.map((row): Voucher => ({
+        voucherId: row.id,
+        holdId: row.holdId,
+        launchEventId: row.launchEventId,
+        shopId: row.shopId,
+        seatCount: row.seatCount,
+        status: row.status,
+        createdAt: new Date(row.createdAt).toISOString(),
+      })),
       nextCursor:
         rows.length > query.limit && last
           ? encodeOrderCursor(scope, {

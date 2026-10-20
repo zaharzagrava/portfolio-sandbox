@@ -53,6 +53,62 @@ describe('Recurring schedules (S49, e2e, real Postgres)', () => {
     await t.reset();
   });
 
+  it('J05 G-22: a clock that goes back after it moved forward pulls the schedules back, so they fire again on the restored time', async () => {
+    await t.jobs.upsertSchedule({ name: 'stranded', ...HOURLY });
+    const planned = new Date((await schedule('stranded')).nextFireAt);
+    await t.maintenance.materializeDueSchedules(); // a pass on the real time
+
+    t.clock.set(new Date(planned.getTime() + 5 * 86_400_000));
+    expect(await t.maintenance.materializeDueSchedules()).toBe(1); // fired on the moved clock
+    const afterMove = new Date((await schedule('stranded')).nextFireAt);
+    expect(afterMove.getTime()).toBeGreaterThan(
+      planned.getTime() + 4 * 86_400_000,
+    );
+
+    t.clock.set(new Date(planned.getTime() - 60_000)); // the clock is reset
+    await t.maintenance.materializeDueSchedules();
+    expect(
+      new Date((await schedule('stranded')).nextFireAt).toISOString(),
+    ).toBe(planned.toISOString());
+
+    t.clock.set(planned);
+    expect(await t.maintenance.materializeDueSchedules()).toBe(1);
+  });
+
+  it('J05 G-22: a job a skip-overlap schedule fired on the moved clock is due again once the clock is restored, so the schedule is not blocked for the whole offset', async () => {
+    await t.jobs.upsertSchedule({
+      name: 'skipping',
+      ...HOURLY,
+      overlap: 'skip',
+    });
+    const planned = new Date((await schedule('skipping')).nextFireAt);
+    await t.maintenance.materializeDueSchedules(); // a pass on the real time
+
+    t.clock.set(new Date(planned.getTime() + 5 * 86_400_000));
+    await t.maintenance.materializeDueSchedules(); // fires on the moved clock
+    await t.sequelize.query(
+      `UPDATE "Job" SET status = 'SUCCEEDED', "finishedAt" = now() WHERE "scheduleName" = 'skipping'`,
+    );
+    t.clock.set(new Date(planned.getTime() + 10 * 86_400_000));
+    await t.maintenance.materializeDueSchedules(); // its next fire was planned on the moved clock
+    const [moved] = await jobs(
+      `"scheduleName" = 'skipping' AND status = 'QUEUED'`,
+    );
+    expect(new Date(moved.runAt).getTime()).toBeGreaterThan(
+      planned.getTime() + 4 * 86_400_000,
+    );
+
+    const restored = new Date(planned.getTime() - 60_000);
+    t.clock.set(restored); // the clock is reset
+    await t.maintenance.materializeDueSchedules();
+    const [back] = await jobs(
+      `"scheduleName" = 'skipping' AND status = 'QUEUED'`,
+    );
+    expect(new Date(back.runAt).getTime()).toBeLessThanOrEqual(
+      restored.getTime(),
+    );
+  });
+
   it('S49 AS-53: a due schedule becomes one job with the key cron:<name>:<fireAt>', async () => {
     await t.jobs.upsertSchedule({ name: 'hourly', ...HOURLY });
     expect(new Date((await schedule('hourly')).nextFireAt).toISOString()).toBe(

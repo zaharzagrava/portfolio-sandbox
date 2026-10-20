@@ -16,7 +16,7 @@ export const NOTIFICATION_SOURCE_TOPICS = {
   payouts: 'payouts.events',
   launchEvents: 'launch_events.events',
   chat: 'chat.events',
-  discussions: 'discussions.events',
+  discussions: 'discussion.events',
   // Topics are `<aggregateType>.events` and an aggregate type is `[a-z][a-z0-9_]*` (S53): no hyphens. These two now have
   // producers (seller-insights crawler, developer-platform webhook deliverer) and use their aggregate types.
   sellerInsights: 'seller_insights.events',

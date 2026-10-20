@@ -19,6 +19,8 @@ export const ADMIN_JOB_TYPES = [
   'catalog-sync.sync-all',
   'catalog-sync.reconcile-all',
   'catalog-sync.recover-stalled-imports',
+  // J05: engagement loop (the bought-together build, triggered on demand)
+  'recommendations.build-bought-together',
 ] as const;
 export const adminJobTypeSchema = z.enum(ADMIN_JOB_TYPES);
 

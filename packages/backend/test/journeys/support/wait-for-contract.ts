@@ -367,6 +367,87 @@ export const HOPS = {
     owner: 'S49',
     what: 'job run through the control surface → finished',
   },
+  // J05 (engagement loop): spec.md "Eventual-consistency contract". Prefixed so they never collide with J01's H1..H13.
+  'J05.H1': {
+    maxMs: 0,
+    owner: 'S26',
+    what: 'POST /follow/:accountId → follow state (synchronous)',
+  },
+  'J05.H2': {
+    maxMs: 10_000,
+    owner: 'S26',
+    what: 'catalog.product_created → new_product item in an active follower\u2019s feed',
+  },
+  'J05.H3': {
+    maxMs: 10_000,
+    owner: 'S26',
+    what: 'product archived / price drop → item hidden / price_drop item',
+  },
+  'J05.H4': {
+    maxMs: 10_000,
+    owner: 'S26',
+    what: 'discussion.post_created → post item in the followers\u2019 feed',
+  },
+  'J05.H5': {
+    maxMs: 0,
+    owner: 'S25',
+    what: 'post deleted → gone from every feed (synchronous hydration)',
+  },
+  'J05.H6': {
+    maxMs: 5_000,
+    owner: 'S28',
+    what: 'discussion.comment_created → notice for the post\u2019s author',
+  },
+  'J05.H7': {
+    maxMs: 60_000,
+    owner: 'S37',
+    what: 'GET /l/:code served → click in the owner\u2019s statistics',
+  },
+  'J05.H8': {
+    maxMs: 0,
+    owner: 'S10',
+    what: 'POST /checkout {ref} → attribution frozen on the order (synchronous)',
+  },
+  'J05.H9': {
+    maxMs: 10_000,
+    owner: 'S37',
+    what: 'order.paid → conversion CONFIRMED + link.converted',
+  },
+  'J05.H10': {
+    maxMs: 10_000,
+    owner: 'S37',
+    what: 'order.refunded (full) → conversion REVERSED',
+  },
+  'J05.H11': {
+    maxMs: 30_000,
+    owner: 'S34',
+    what: 'job recommendations.build-bought-together run → list replaced',
+  },
+  'J05.H12': {
+    maxMs: 10_000,
+    owner: 'S34',
+    what: 'order.paid → basket recorded',
+  },
+  'J05.H13': {
+    maxMs: 35_000,
+    owner: 'S35',
+    what: 'events posted → trending, once the stack clock passed window end + lateness + idle',
+  },
+  'J05.H14': {
+    maxMs: 60_000,
+    owner: 'S39',
+    what: 'exposure + order.paid → variant counts',
+  },
+  'J05.H15': {
+    maxMs: 15_000,
+    owner: 'S53',
+    what: 'a consumer resumed or replayed → lag 0',
+  },
+  'J05.H16': {
+    maxMs: 5_000,
+    owner: 'S49',
+    what: 'any job run through the control surface → finished',
+  },
 } as const;
 
 export type Hop = keyof typeof HOPS;

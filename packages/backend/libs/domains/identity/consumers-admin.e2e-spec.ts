@@ -1,5 +1,6 @@
 import { v7 as uuidv7 } from 'uuid';
 import {
+  ADMIN_JOB_TYPES,
   consumerRedriveResultSchema,
   consumerViewSchema,
   JOURNEY_CONSUMER_GROUPS,
@@ -180,6 +181,24 @@ describe('Consumer operator routes (S53, J01 G-26, G-31)', () => {
       'pickup-availability',
     ])
       expect(JOURNEY_CONSUMER_GROUPS).toContain(group);
+  });
+
+  it('J05 AS-35 G-09: the eight engagement-loop group names are known, are in the journey list, and the job is allow-listed', async () => {
+    const aliases = [
+      'community-feed-products',
+      'community-feed-discussions',
+      'community-feed-fanout',
+      'marketing-link-clicks',
+      'marketing-affiliate-conversions',
+      'discovery-order-baskets',
+      'discovery-trending-topk',
+      'experimentation-purchases',
+    ];
+    for (const group of aliases) {
+      expect((await view(group)).group).toBe(group);
+      expect(JOURNEY_CONSUMER_GROUPS).toContain(group);
+    }
+    expect(ADMIN_JOB_TYPES).toContain('recommendations.build-bought-together');
   });
 
   it('J01 G-31: the journey group names are known before any runner declared them', async () => {

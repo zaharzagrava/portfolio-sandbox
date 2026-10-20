@@ -1,4 +1,8 @@
-import { linkClickedEventSchema } from '@marketplace-sandbox/contracts';
+import {
+  linkClickedEventSchema,
+  linkConversionReversedEventSchema,
+  linkConvertedEventSchema,
+} from '@marketplace-sandbox/contracts';
 import { defineEvent } from '@app/infrastructure/events/define-event';
 import type { TopicRegistration } from '@app/infrastructure/events/topic-registry';
 
@@ -18,6 +22,22 @@ export const LinkClicked = defineEvent(
   'links',
   1,
   linkClickedEventSchema,
+);
+
+/** `links.events` (key = code): a paid order credited to the link, written with the conversion row (J05). */
+export const LinkConverted = defineEvent(
+  'link.converted',
+  'links',
+  1,
+  linkConvertedEventSchema,
+);
+
+/** `links.events` (key = code): the credited order was refunded in full (J05). */
+export const LinkConversionReversed = defineEvent(
+  'link.conversion_reversed',
+  'links',
+  1,
+  linkConversionReversedEventSchema,
 );
 
 export { linkClickedEventSchema };

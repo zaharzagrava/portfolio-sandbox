@@ -20,11 +20,11 @@ vi.mock('@/lib/server/ref-code.server', () => ({
 }));
 vi.mock('@marketplace-sandbox/contracts', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@marketplace-sandbox/contracts')>();
-  const withRefCode = actual.checkoutRequestSchema.extend({ refCode: (await import('zod')).z.string().optional() });
+  const withRefCode = actual.checkoutRequestSchema.extend({ ref: (await import('zod')).z.string().optional() });
   return {
     ...actual,
     get checkoutRequestSchema() {
-      return seam.schemaDeclaresRefCode ? withRefCode : actual.checkoutRequestSchema.omit({ refCode: true });
+      return seam.schemaDeclaresRefCode ? withRefCode : actual.checkoutRequestSchema.omit({ ref: true });
     },
   };
 });
@@ -83,7 +83,7 @@ describe('Order creation function (W03 UK3)', () => {
     seam.refCode = 'REF-123';
     seam.schemaDeclaresRefCode = true;
     await placeOrder({ key: KEY, expectedTotalMinor: 100 });
-    expect(await seen[0].json()).toEqual({ expectedTotalMinor: 100, refCode: 'REF-123' });
+    expect(await seen[0].json()).toEqual({ expectedTotalMinor: 100, ref: 'REF-123' });
   });
 
   it('W03 AS-34: refCode is not sent when the schema declares it but there is no code', async () => {

@@ -11,10 +11,12 @@ import { ProductModule } from '@app/domains/catalog';
 import { AuthModule } from '@app/domains/identity';
 import { PaymentQueryModule } from '@app/domains/payments';
 import { TenancyModule } from '@app/domains/tenancy';
+import { LinkAttributionModule } from '@app/domains/marketing';
 import { DiscountEvaluationModule } from '@app/domains/shop-functions';
 import { ORDER_MODELS } from './orders-models';
 import { FlashSaleCoreModule } from './flash-sale-core.module';
 import {
+  ATTRIBUTION_RESOLVER,
   CART_STORE,
   CHECKOUT_LOCK,
   ORDER_HISTORY_REPOSITORY,
@@ -43,6 +45,7 @@ import { WebhookProcessorService } from './application/webhook-processor.service
 import { ReservationRecoveryService } from './application/reservation-recovery.service';
 import { ReservationReleaseService } from './application/reservation-release.service';
 import { CatalogAdapter } from './infra/catalog.adapter';
+import { LinkAttributionAdapter } from './infra/link-attribution.adapter';
 import { CatalogReservationSource } from './infra/catalog-reservation-source';
 import { RedisCheckoutLock } from './infra/checkout-lock.redis';
 import { DynamoCartStore } from './infra/cart.dynamo-store';
@@ -76,6 +79,7 @@ import { SequelizeShopOrderRepository } from './infra/shop-order.repository';
     ProblemCatalogModule.forFeature(ORDERS_PROBLEMS),
     FlashSaleCoreModule,
     DiscountEvaluationModule,
+    LinkAttributionModule,
     SequelizeModule.forFeature(ORDER_MODELS),
   ],
   providers: [
@@ -92,6 +96,7 @@ import { SequelizeShopOrderRepository } from './infra/shop-order.repository';
     { provide: CART_STORE, useClass: DynamoCartStore },
     { provide: CHECKOUT_LOCK, useClass: RedisCheckoutLock },
     { provide: PRODUCT_CATALOG, useClass: CatalogAdapter },
+    { provide: ATTRIBUTION_RESOLVER, useClass: LinkAttributionAdapter },
     { provide: SHOP_DIRECTORY, useClass: ShopDirectoryAdapter },
     { provide: SHOP_DISCOUNTS, useClass: ShopFunctionsDiscountsAdapter },
     CatalogReservationSource,
@@ -122,6 +127,7 @@ import { SequelizeShopOrderRepository } from './infra/shop-order.repository';
     RESERVATION_REPOSITORY,
     ORDER_HISTORY_REPOSITORY,
     PRODUCT_CATALOG,
+    ATTRIBUTION_RESOLVER,
     SHOP_DIRECTORY,
     SHOP_DISCOUNTS,
     RESERVATION_SOURCE,

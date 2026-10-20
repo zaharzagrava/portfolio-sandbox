@@ -79,6 +79,7 @@ export class OrderCommandService {
           .update(JSON.stringify([cmd.productId, cmd.unitPriceMinor]))
           .digest('hex'),
         refCode: null,
+        attributionOwnerId: null,
         totalMinor: cmd.unitPriceMinor,
         currency: cmd.currency,
         now: this.clock.now(),

@@ -13,21 +13,26 @@ import { aggregateKey, mergeKey, seenKey } from './trending-keys';
 import { withBudget } from './with-budget';
 
 /**
- * One window of one partition, all or nothing. KEYS = [merge record, aggregate…]; ARGV = [ttl, covered offsets, then per
- * aggregate: pair count and (member, score)…]. The record is created with NX: when it already exists the merge was applied
+ * One window of one partition, all or nothing. KEYS = [merge record, aggregate…, seen key of each counted event…]; ARGV =
+ * [ttl, covered offsets, aggregate count, then per aggregate: pair count and (member, score)…]. The seen keys make a copy of
+ * a counted event that arrives after its window closed a no-op in the correction path (AS-29). The record is created with NX: when it already exists the merge was applied
  * before (a replay, or a second owner of the same partition) and nothing changes (S35 R-3, FR-019).
  */
 const MERGE_WINDOW = `
 local ttl = tonumber(ARGV[1])
 if not redis.call('SET', KEYS[1], ARGV[2], 'NX', 'EX', ttl) then return 0 end
-local pos = 3
-for k = 2, #KEYS do
+local aggregates = tonumber(ARGV[3])
+local pos = 4
+for k = 2, 1 + aggregates do
   local n = tonumber(ARGV[pos]); pos = pos + 1
   for i = 1, n do
     redis.call('ZINCRBY', KEYS[k], ARGV[pos + 1], ARGV[pos])
     pos = pos + 2
   end
   redis.call('EXPIRE', KEYS[k], ttl)
+end
+for k = 2 + aggregates, #KEYS do
+  redis.call('SET', KEYS[k], '1', 'NX', 'EX', ttl)
 end
 return 1
 `;
@@ -79,10 +84,12 @@ export class RedisTrendingAggregateAdapter
       ...merge.categories.map((c) =>
         aggregateKey(c.category, merge.windowStartMs),
       ),
+      ...(merge.eventIds ?? []).map(seenKey),
     ];
     const args: (string | number)[] = [
       this.settings.retentionSeconds,
       `${merge.firstOffset}-${merge.lastOffset}`,
+      merge.categories.length,
     ];
     for (const c of merge.categories) {
       args.push(c.entries.length);

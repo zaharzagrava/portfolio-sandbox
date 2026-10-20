@@ -294,6 +294,7 @@ export async function seedPendingOrder(
       idempotencyKey: input.key ?? `seed-${randomUUID()}`,
       requestHash: 'seed',
       refCode: null,
+      attributionOwnerId: null,
       totalMinor: lines.reduce((s, l) => s + l.lineTotalMinor, 0),
       currency: input.currency ?? 'USD',
       now: input.now ?? app.get<Clock>(CLOCK).now(),

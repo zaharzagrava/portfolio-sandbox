@@ -43,7 +43,7 @@ const SWEEP_HOURS = 48;
 const RECONCILE_PAGES = 20;
 
 /**
- * Background work of the feed, registered only by `FeedWorkerModule` (S26 E5, S49): the announcement relay every 5 s and
+ * Background work of the feed, registered only by `FeedWorkerModule` (S26 E5, S49): the announcement relay every 2 s and
  * a full sweep hourly, and the daily reconciliation of the follow graph (paged: a run hands the next page's cursor to a
  * follow-up job). All are safe to repeat.
  */
@@ -59,7 +59,7 @@ export class FeedJobs implements OnApplicationBootstrap {
 
   async onApplicationBootstrap(): Promise<void> {
     const schedules = [
-      ['feed.relay-announcements', '*/5 * * * * *', {}],
+      ['feed.relay-announcements', '*/2 * * * * *', {}],
       ['feed.relay-sweep', '0 11 * * * *', {}],
       ['feed.reconcile', '0 30 3 * * *', { phase: null, after: null }],
     ] as const;

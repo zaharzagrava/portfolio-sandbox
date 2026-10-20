@@ -25,6 +25,10 @@ export interface OrderRecord {
   requestHash: string | null;
   cancelReason: CancelReason | null;
   paymentRef: string | null;
+  /** The credited share link, frozen at checkout (J05); `null` when none. */
+  refCode: string | null;
+  /** Owner of that link; internal, never returned by an API. */
+  attributionOwnerId: string | null;
   createdAt: Date;
 }
 
@@ -100,6 +104,7 @@ export interface NewOrder {
   idempotencyKey: string;
   requestHash: string;
   refCode: string | null;
+  attributionOwnerId: string | null;
   totalMinor: number;
   currency: string;
   now: Date;
@@ -369,9 +374,22 @@ export const ORDER_HISTORY_REPOSITORY = Symbol('ORDER_HISTORY_REPOSITORY');
 export const CART_STORE = Symbol('CART_STORE');
 export const CHECKOUT_LOCK = Symbol('CHECKOUT_LOCK');
 export const PRODUCT_CATALOG = Symbol('PRODUCT_CATALOG');
+export const ATTRIBUTION_RESOLVER = Symbol('ATTRIBUTION_RESOLVER');
 export const SHOP_DIRECTORY = Symbol('SHOP_DIRECTORY');
 export const SHOP_DISCOUNTS = Symbol('SHOP_DISCOUNTS');
 export const RESERVATION_SOURCE = Symbol('RESERVATION_SOURCE');
 export const REALTIME_PORT = Symbol('REALTIME_PORT');
 export const PAYMENT_STATUS = Symbol('PAYMENT_STATUS');
 export const REFUND_COMMAND = Symbol('REFUND_COMMAND');
+
+/** A share link as the checkout sees it (marketing's R1 answer, reduced to what attribution needs). */
+export interface ResolvedAttribution {
+  code: string;
+  ownerId: string;
+  status: 'ACTIVE' | 'EXPIRED' | 'DISABLED';
+}
+
+/** Who owns the link behind a `ref` code (J05); `null` when there is no such link. Throws when marketing cannot answer. */
+export interface AttributionResolverPort {
+  resolve(code: string): Promise<ResolvedAttribution | null>;
+}

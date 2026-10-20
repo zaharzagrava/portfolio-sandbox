@@ -87,6 +87,10 @@ export default class BisOrder extends Model<BisOrder, Partial<BisOrder>> {
   @Column({ type: DataType.TEXT, allowNull: true })
   declare refCode: string | null;
 
+  /** Owner of the credited link, frozen at checkout (J05); never returned by an API. */
+  @Column({ type: DataType.UUID, allowNull: true })
+  declare attributionOwnerId: string | null;
+
   @Column({ type: DataType.DATE, allowNull: true })
   declare reservedUntil: Date | null;
 

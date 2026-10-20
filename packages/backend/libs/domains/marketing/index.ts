@@ -19,6 +19,7 @@ export {
   ProductSponsorshipChanged,
 } from './application/events/ads-events';
 export { ShareLinksModule } from './share-links.module';
+export { LinkAttributionModule } from './link-attribution.module';
 export { ShareLinksWorkerModule } from './share-links-worker.module';
 export { ShareLinksProjectorModule } from './share-links-projector.module';
 export {

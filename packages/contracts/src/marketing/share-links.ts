@@ -99,6 +99,9 @@ export const linkStatsSchema = z
     to: z.string(),
     bucket: z.enum(["minute", "hour", "day"]),
     total: z.number().int().min(0),
+    /** J05: confirmed conversions of the link and their value net of refunds (minor units). */
+    conversions: z.number().int().min(0),
+    convertedMinor: z.number().int().min(0),
     series: z.array(
       z.object({ start: z.string(), clicks: z.number().int().min(0) }),
     ),
@@ -121,3 +124,49 @@ export const linkClickedEventSchema = z
   })
   .strict();
 export type LinkClickedPayload = z.infer<typeof linkClickedEventSchema>;
+
+/** One credited purchase of a link (J05). No buyer, no order id: the conversion has its own id. */
+export const linkConversionSchema = z
+  .object({
+    conversionId: z.uuid(),
+    paidAt: z.string(),
+    amountMinor: z.number().int().min(0),
+    currency: z.string(),
+    status: z.enum(["CONFIRMED", "REVERSED"]),
+    refundedMinor: z.number().int().min(0),
+  })
+  .strict();
+export type LinkConversion = z.infer<typeof linkConversionSchema>;
+
+export const linkConversionPageSchema = z
+  .object({
+    items: z.array(linkConversionSchema),
+    nextCursor: z.string().nullable(),
+  })
+  .strict();
+export type LinkConversionPage = z.infer<typeof linkConversionPageSchema>;
+
+/** Payload of `link.converted` v1 (topic `links.events`, key = code). */
+export const linkConvertedEventSchema = z
+  .object({
+    conversionId: z.uuid(),
+    linkCode: z.string().min(1),
+    amountMinor: z.number().int().min(0),
+    currency: z.string(),
+    paidAt: z.string(),
+  })
+  .strict();
+export type LinkConvertedPayload = z.infer<typeof linkConvertedEventSchema>;
+
+/** Payload of `link.conversion_reversed` v1 (topic `links.events`, key = code). */
+export const linkConversionReversedEventSchema = z
+  .object({
+    conversionId: z.uuid(),
+    linkCode: z.string().min(1),
+    refundedMinor: z.number().int().min(0),
+    amountMinor: z.number().int().min(0),
+  })
+  .strict();
+export type LinkConversionReversedPayload = z.infer<
+  typeof linkConversionReversedEventSchema
+>;

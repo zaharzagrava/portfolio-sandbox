@@ -12,6 +12,8 @@ import {
   LINK_CACHE,
   LINK_REPOSITORY,
 } from './domain/ports';
+import { CONVERSION_STORE } from './domain/conversion-ports';
+import { SequelizeConversionStore } from './infra/sequelize-conversion.store';
 import { AllowAllReputationAdapter } from './infra/allow-all-reputation.adapter';
 import { ClickhouseClickStatsReader } from './infra/clickhouse-click-stats.reader';
 import { DynamoLinkRepository } from './infra/dynamo-link.repository';
@@ -28,6 +30,7 @@ const PORTS = [
   CLICK_STATS_READER,
   DESTINATION_REPUTATION,
   LINK_CACHE,
+  CONVERSION_STORE,
 ];
 
 /**
@@ -49,6 +52,8 @@ const PORTS = [
     KafkaClickPublisher,
     ClickhouseClickStatsReader,
     AllowAllReputationAdapter,
+    SequelizeConversionStore,
+    { provide: CONVERSION_STORE, useExisting: SequelizeConversionStore },
     { provide: LINK_REPOSITORY, useExisting: DynamoLinkRepository },
     { provide: CODE_SEQUENCE, useExisting: RedisCodeSequence },
     { provide: EXISTENCE_FILTER, useExisting: RedisExistenceFilter },

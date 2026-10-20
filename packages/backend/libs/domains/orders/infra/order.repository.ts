@@ -25,11 +25,13 @@ interface OrderRow {
   requestHash: string | null;
   cancelReason: OrderRecord['cancelReason'];
   paymentRef: string | null;
+  refCode: string | null;
+  attributionOwnerId: string | null;
   createdAt: Date;
 }
 
 const COLUMNS = `"id", "userId", "status", "total", "currency", "reservedUntil", "version", "idempotencyKey",
-  "requestHash", "cancelReason", "paymentRef", "createdAt"`;
+  "requestHash", "cancelReason", "paymentRef", "refCode", "attributionOwnerId", "createdAt"`;
 
 const toRecord = (r: OrderRow): OrderRecord => ({
   id: r.id,
@@ -43,6 +45,8 @@ const toRecord = (r: OrderRow): OrderRecord => ({
   requestHash: r.requestHash,
   cancelReason: r.cancelReason,
   paymentRef: r.paymentRef,
+  refCode: r.refCode,
+  attributionOwnerId: r.attributionOwnerId,
   createdAt: r.createdAt,
 });
 
@@ -88,8 +92,8 @@ export class SequelizeOrderRepository implements OrderRepository {
     };
     const inserted = await this.select<OrderRow>(
       `INSERT INTO "BisOrder" ("id", "userId", "status", "total", "currency", "idempotencyKey", "requestHash",
-                               "refCode", "version", "createdAt", "updatedAt")
-       VALUES (:id, :userId, 'PENDING', :total, :currency, :key, :hash, :refCode, 1, :now, :now)
+                               "refCode", "attributionOwnerId", "version", "createdAt", "updatedAt")
+       VALUES (:id, :userId, 'PENDING', :total, :currency, :key, :hash, :refCode, :ownerId, 1, :now, :now)
        ON CONFLICT ("userId", "idempotencyKey") WHERE "idempotencyKey" IS NOT NULL DO NOTHING
        RETURNING ${COLUMNS}`,
       {
@@ -100,6 +104,7 @@ export class SequelizeOrderRepository implements OrderRepository {
         key: order.idempotencyKey,
         hash: order.requestHash,
         refCode: order.refCode,
+        ownerId: order.attributionOwnerId,
         now: order.now,
       },
     );

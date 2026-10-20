@@ -308,3 +308,6 @@ interviews) until its status says so. The implementation loop appends here (rule
 | J04 | SC-005: 100 replays and 100 duplicate webhooks change stock once | same file (loop AS-11, AS-06) | not run |
 | J04 | SC-006: both-sold cases end identical and non-negative | same file (loop AS-14, AS-15) | not run |
 | J04 | SC-008: suspended shop hidden within 10 s | same file (loop AS-20) | not run |
+| J05 | AS-34: UI follow shop → feed card (no web owner yet) | `pnpm --filter web exec playwright test tests/engagement-loop.spec.ts` once built | not run |
+| J05 | SC-010: clean stack to green in under 12 minutes | `scripts/qa/fresh-run.sh`, then time `pnpm test:journeys` | not run |
+| J05 | SC-001/SC-004/SC-006/SC-007/SC-008: the 99 %-of-runs parts | repeat the J05 journey 20 times on a fresh stack and count | not run |
