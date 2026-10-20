@@ -114,7 +114,7 @@ if ! command -v ffprobe >/dev/null 2>&1; then
   say "installing ffmpeg"
   (export DEBIAN_FRONTEND=noninteractive; timeout 240 apt-get install -y -qq ffmpeg >"$LOG/ffmpeg-install.log" 2>&1 || { timeout 120 apt-get update -qq >>"$LOG/ffmpeg-install.log" 2>&1; timeout 240 apt-get install -y -qq ffmpeg >>"$LOG/ffmpeg-install.log" 2>&1; }) || say "WARN: ffmpeg did not install (see $LOG/ffmpeg-install.log)"
 fi
-[[ -f packages/backend/.env.test ]] || cp packages/backend/env/test.env.example packages/backend/.env.test
+cp -f packages/backend/env/test.env.example packages/backend/.env.test   # every start: the copy in the image was 41 keys old and 11 required settings short, so 500 of 593 e2e suites failed on config validation (2026-10-20)
 if [[ ! -f packages/backend/creds/jwtRS256.key ]]; then
   mkdir -p packages/backend/creds
   openssl genrsa -out packages/backend/creds/jwtRS256.key 2048 2>/dev/null
