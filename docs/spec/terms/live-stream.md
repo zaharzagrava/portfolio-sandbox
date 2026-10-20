@@ -23,5 +23,9 @@ The brand starts a stream. Viewers receive the start event and then the posted c
 - [J03](../capabilities/J03-launch-day.md): B-19
 - [client-id-reused](client-id-reused.md)
 - [comment-moderation](comment-moderation.md)
+- [inbox-item](inbox-item.md)
+- [launch-day-flow](launch-day-flow.md)
 - [recent-comments](recent-comments.md)
+- [stream-connection](stream-connection.md)
+- [stream-pin](stream-pin.md)
 <!-- used-by:end -->

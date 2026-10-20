@@ -32,6 +32,7 @@ Confirming the same hold several times, with one key or with different keys, ret
 - [booking-confirmed-notification](booking-confirmed-notification.md)
 - [booking-id](booking-id.md)
 - [buyer-queue](buyer-queue.md)
+- [launch-event](launch-event.md)
 - [seat-hold-expired](seat-hold-expired.md)
 - [voucher](voucher.md)
 <!-- used-by:end -->

@@ -24,5 +24,7 @@ If Shopify answers `503`, the sale is still kept (`[quantityAfter](quantity-afte
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [J04](../capabilities/J04-catalog-sync-to-search.md): B-12
+- [csv-product](csv-product.md)
+- [pickup-stock](pickup-stock.md)
 <!-- used-by:end -->

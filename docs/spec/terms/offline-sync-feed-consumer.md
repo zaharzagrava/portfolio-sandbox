@@ -21,5 +21,5 @@ Device `D2` pulls at cursor `C0`. Another device then sells units of the Shopify
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [device-sync](device-sync.md)
 <!-- used-by:end -->

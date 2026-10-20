@@ -20,5 +20,9 @@ A viewer posts a comment, and a second viewer joins the stream afterwards. The l
 ## Used by
 <!-- used-by:start -->
 - [J03](../capabilities/J03-launch-day.md): R-19
+- [chat-history](chat-history.md)
 - [comment-moderation](comment-moderation.md)
+- [consumer-group](consumer-group.md)
+- [event-replay](event-replay.md)
+- [live-stream](live-stream.md)
 <!-- used-by:end -->

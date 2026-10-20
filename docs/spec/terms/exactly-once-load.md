@@ -21,5 +21,9 @@ A brand schedules a drop, and product stock does not change. When `flash-sale.lo
 
 ## Used by
 <!-- used-by:start -->
+- [catalog-stock](catalog-stock.md)
+- [conditional-transition](conditional-transition.md)
+- [drop-load](drop-load.md)
 - [flash-sale-load-job](flash-sale-load-job.md)
+- [stock-operation-id](stock-operation-id.md)
 <!-- used-by:end -->

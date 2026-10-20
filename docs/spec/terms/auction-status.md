@@ -23,5 +23,6 @@ Auction status is the lifecycle state of an auction. After the [close job](close
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [auction-reserve](auction-reserve.md)
+- [close-job](close-job.md)
 <!-- used-by:end -->

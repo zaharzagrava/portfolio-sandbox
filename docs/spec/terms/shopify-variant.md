@@ -20,5 +20,11 @@ Variant `V1`'s price changes to `21.50` in Shopify. The webhook arrives twice, b
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [J04](../capabilities/J04-catalog-sync-to-search.md): B-05
+- [conditional-absolute-write](conditional-absolute-write.md)
+- [csv-product](csv-product.md)
+- [shop-integration](shop-integration.md)
+- [shopify-connection](shopify-connection.md)
+- [shopify-inventory](shopify-inventory.md)
+- [shopify-link](shopify-link.md)
 <!-- used-by:end -->

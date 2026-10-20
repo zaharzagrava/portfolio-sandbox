@@ -21,5 +21,7 @@ File `F2` updates rows 001–003 to price `18.00` and has no stock column. The i
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [J04](../capabilities/J04-catalog-sync-to-search.md): R-01, B-02, B-20
+- [import-row-counts](import-row-counts.md)
+- [unsupported-file-type](unsupported-file-type.md)
 <!-- used-by:end -->

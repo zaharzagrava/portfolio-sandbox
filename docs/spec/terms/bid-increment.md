@@ -21,5 +21,9 @@ Bids of 10000, 5000 and 12000 arrive in that order (J03.B-12). The 12000 bid tak
 
 ## Used by
 <!-- used-by:start -->
+- [auction-leader](auction-leader.md)
+- [known-gaps](known-gaps.md)
+- [minor-units](minor-units.md)
+- [outbid-event](outbid-event.md)
 - [proxy-bidding](proxy-bidding.md)
 <!-- used-by:end -->

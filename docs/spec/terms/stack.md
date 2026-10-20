@@ -20,5 +20,10 @@ The stack is the one running set of services and infrastructure that the [launch
 
 ## Used by
 <!-- used-by:start -->
+- [consumer-lag](consumer-lag.md)
+- [control-surface](control-surface.md)
+- [event-tap](event-tap.md)
 - [flow-isolation](flow-isolation.md)
+- [job](job.md)
+- [launch-day-flow](launch-day-flow.md)
 <!-- used-by:end -->

@@ -23,5 +23,11 @@ A buyer confirms a [hold](booking-hold.md) while the voucher consumer is paused.
 <!-- used-by:start -->
 - [J03](../capabilities/J03-launch-day.md): R-01, R-04
 - [booking-hold](booking-hold.md)
+- [booking-set](booking-set.md)
+- [consumer-group](consumer-group.md)
+- [event-consumer](event-consumer.md)
+- [event-replay](event-replay.md)
 - [launch-events-booking-confirmed-event](launch-events-booking-confirmed-event.md)
+- [orders-domain](orders-domain.md)
+- [voucher](voucher.md)
 <!-- used-by:end -->

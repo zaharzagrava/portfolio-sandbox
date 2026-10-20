@@ -26,6 +26,7 @@ Idempotency-Replayed: true
 
 ## Used by
 <!-- used-by:start -->
+- [J04](../capabilities/J04-catalog-sync-to-search.md): R-12, B-02, B-11
 - [S10](../capabilities/S10-cart-checkout.md): R-12, B-07
 - [S13](../capabilities/S13-payment-intents.md): R-08, B-02
 - [S31](../capabilities/S31-assets-digital-delivery.md): R-06

@@ -20,5 +20,10 @@ B-10: a drop's last unit is reserved and the sale reaches 0 units. The owner's i
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [auction-unit](auction-unit.md)
+- [drop](drop.md)
+- [event-consumer](event-consumer.md)
+- [inbox-item](inbox-item.md)
+- [notification-type](notification-type.md)
+- [shop-role](shop-role.md)
 <!-- used-by:end -->

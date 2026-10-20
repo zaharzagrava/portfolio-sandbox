@@ -21,5 +21,14 @@ The control surface is a set of operations for tests and local use that drive th
 
 ## Used by
 <!-- used-by:start -->
+- [J04](../capabilities/J04-catalog-sync-to-search.md): B-19
+- [booking-hold](booking-hold.md)
+- [consumer-lag](consumer-lag.md)
+- [consumer-pause](consumer-pause.md)
+- [event-tap](event-tap.md)
+- [job](job.md)
+- [launch-day-flow](launch-day-flow.md)
+- [partition-pause](partition-pause.md)
+- [queue-pause](queue-pause.md)
 - [stack](stack.md)
 <!-- used-by:end -->

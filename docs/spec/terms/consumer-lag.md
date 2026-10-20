@@ -23,11 +23,13 @@ In AS-05 the [identity promotion consumer](identity-promotion-consumer.md) is pa
 - [J02](../capabilities/J02-seller-to-first-sale.md): R-16
 - [J03](../capabilities/J03-launch-day.md): R-15
 - [billing-events-topic](billing-events-topic.md)
+- [consumer-pause](consumer-pause.md)
 - [control-surface](control-surface.md)
 - [entitlements-consumer](entitlements-consumer.md)
 - [event-consumer](event-consumer.md)
 - [fact](fact.md)
 - [identity-promotion-consumer](identity-promotion-consumer.md)
+- [offline-sync-feed-consumer](offline-sync-feed-consumer.md)
 - [partition-pause](partition-pause.md)
 - [stack](stack.md)
 - [webhook-router](webhook-router.md)

@@ -30,4 +30,5 @@ In the web client, the [`createEventStream`](create-event-stream.md) wrapper wou
 - [realtime-hub](realtime-hub.md)
 - [sse-data-line](sse-data-line.md)
 - [stream-frame](stream-frame.md)
+- [terminal-event](terminal-event.md)
 <!-- used-by:end -->

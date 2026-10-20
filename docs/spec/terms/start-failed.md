@@ -20,5 +20,7 @@ A brand schedules a drop of 20 units. Product stock then falls to 15 (illustrati
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [catalog-stock](catalog-stock.md)
+- [drop-load](drop-load.md)
+- [drop](drop.md)
 <!-- used-by:end -->

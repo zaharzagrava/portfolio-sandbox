@@ -21,5 +21,6 @@ A winner does not pay within 48 hours. The order becomes `CANCELLED(hold_expired
 
 ## Used by
 <!-- used-by:start -->
+- [consumer-group](consumer-group.md)
 - [payment-provider-chain](payment-provider-chain.md)
 <!-- used-by:end -->

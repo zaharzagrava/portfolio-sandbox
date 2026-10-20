@@ -21,5 +21,12 @@ Shopify-linked product `Ps` has [catalog stock](catalog-stock.md) 10. A till sel
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [device-sale](device-sale.md)
+- [device-sync](device-sync.md)
+- [offline-sync-feed-consumer](offline-sync-feed-consumer.md)
+- [op-id](op-id.md)
+- [pickup-point](pickup-point.md)
+- [shopify-push-pull](shopify-push-pull.md)
+- [stock-sync-trigger](stock-sync-trigger.md)
+- [x-device-id-header](x-device-id-header.md)
 <!-- used-by:end -->

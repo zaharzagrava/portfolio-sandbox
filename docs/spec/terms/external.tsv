@@ -270,3 +270,4 @@ prompt-injection	Prompt injection	https://owasp.org/www-community/attacks/Prompt
 kyc	KYC (know your customer)	https://en.wikipedia.org/wiki/Know_your_customer	Wikipedia	kyc onboarding
 sqs-visibility-timeout	SQS visibility timeout	https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-visibility-timeout.html	AWS docs	
 eventual-consistency	Eventual consistency	https://en.wikipedia.org/wiki/Eventual_consistency	Wikipedia	eventually correct
+ab-test	A/B test	https://en.wikipedia.org/wiki/A/B_testing	Wikipedia	a/b test

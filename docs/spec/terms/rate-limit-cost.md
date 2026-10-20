@@ -25,7 +25,6 @@ Under a policy with `limit` 10 (illustrative), a cost of 3 takes 3 units. A cost
 - [batching-not-supported](batching-not-supported.md)
 - [rate-limit-bucket](rate-limit-bucket.md)
 - [rate-limit-budget](rate-limit-budget.md)
-- [rate-limit-cost-resolver](rate-limit-cost-resolver.md)
 - [rate-limit-decorator](rate-limit-decorator.md)
 - [sliding-window-estimate](sliding-window-estimate.md)
 <!-- used-by:end -->

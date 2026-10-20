@@ -25,6 +25,8 @@ A browser watches `user:{userId}` for the notification bell. The connection drop
 - [realtime-topic-stream](../concepts/realtime-topic-stream.md): C-04
 - [baseline-frame](baseline-frame.md)
 - [create-event-stream](create-event-stream.md)
+- [device-sale](device-sale.md)
+- [device-sync](device-sync.md)
 - [encode-cursor](encode-cursor.md)
 - [event-replay](event-replay.md)
 - [realtime-event](realtime-event.md)

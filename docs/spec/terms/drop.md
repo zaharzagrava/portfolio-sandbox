@@ -30,6 +30,8 @@ A drop has 20 units and receives 60 simultaneous checkouts. Exactly 20 checkouts
 - [flash-sale-reconcile-job](flash-sale-reconcile-job.md)
 - [flash-sale-sold-out-notification](flash-sale-sold-out-notification.md)
 - [flow-isolation](flow-isolation.md)
+- [inbox-item](inbox-item.md)
+- [job](job.md)
 - [launch-day-flow](launch-day-flow.md)
 - [load-job](load-job.md)
 - [order-confirmed-notification](order-confirmed-notification.md)

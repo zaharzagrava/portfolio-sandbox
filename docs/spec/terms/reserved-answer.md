@@ -20,5 +20,7 @@ B-07: a drop of 20 units receives 60 simultaneous checkouts. Exactly 20 answer `
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [drop-load](drop-load.md)
+- [drop](drop.md)
+- [reserved-until](reserved-until.md)
 <!-- used-by:end -->

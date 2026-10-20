@@ -21,5 +21,5 @@ Product `Pc` has catalog quantity 5 and no pickup stock, so it is not "available
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [near-me-index](near-me-index.md)
 <!-- used-by:end -->

@@ -20,5 +20,10 @@ A store with 7 active variants is connected by an owner with `integrations.manag
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [J04](../capabilities/J04-catalog-sync-to-search.md): B-05
+- [shop-integration](shop-integration.md)
+- [shopify-connection](shopify-connection.md)
+- [shopify-import](shopify-import.md)
+- [shopify-link](shopify-link.md)
+- [shopify-variant](shopify-variant.md)
 <!-- used-by:end -->

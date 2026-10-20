@@ -21,5 +21,10 @@ A buyer confirms a seat hold. In one transaction, the bookings and `launch_event
 
 ## Used by
 <!-- used-by:start -->
+- [aggregate-type-events-topic](aggregate-type-events-topic.md)
+- [consumer-group](consumer-group.md)
+- [event-backbone](event-backbone.md)
+- [event-replay](event-replay.md)
 - [launch-event](launch-event.md)
+- [outbox-append](outbox-append.md)
 <!-- used-by:end -->

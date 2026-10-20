@@ -20,5 +20,11 @@ From J04 B-14: catalog and Shopify both hold 10. A device sells 2, and the [push
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [J04](../capabilities/J04-catalog-sync-to-search.md): R-13
+- [shopify-inventory](shopify-inventory.md)
+- [shopify-link](shopify-link.md)
+- [shopify-push-consumer](shopify-push-consumer.md)
+- [shopify-push-pull](shopify-push-pull.md)
+- [shopify-write](shopify-write.md)
+- [stock-merge](stock-merge.md)
 <!-- used-by:end -->

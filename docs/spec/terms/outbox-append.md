@@ -31,6 +31,7 @@ await outbox.append(paymentSucceededEvent); // commits with the status change
 - [S14](../capabilities/S14-ledger-reconciliation.md): R-37
 - [S53](../capabilities/S53-events-projections.md): R-01, B-01
 - [billing-invoice-payment-failed-event](billing-invoice-payment-failed-event.md)
+- [catalog-import-file](catalog-import-file.md)
 - [catalog-product-deleted-event](catalog-product-deleted-event.md)
 - [catalog-product-events](catalog-product-events.md)
 - [catalog-product-updated-event](catalog-product-updated-event.md)

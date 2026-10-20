@@ -20,5 +20,5 @@ A [pause](consumer-pause.md) stops one [consumer](event-consumer.md) in the chai
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [J04](../capabilities/J04-catalog-sync-to-search.md): B-17, B-18
 <!-- used-by:end -->

@@ -21,9 +21,13 @@ The leader is at or above the reserve when the end passes. The auction becomes `
 ## Used by
 <!-- used-by:start -->
 - [J03](../capabilities/J03-launch-day.md): R-11
+- [auction-closed-event](auction-closed-event.md)
 - [auction-reserve](auction-reserve.md)
 - [auction-unsold](auction-unsold.md)
+- [consumer-group](consumer-group.md)
+- [duplicate-triggers](duplicate-triggers.md)
 - [no-notification-list](no-notification-list.md)
 - [refused-leader](refused-leader.md)
 - [shill-bid-forbidden](shill-bid-forbidden.md)
+- [shop-tenant](shop-tenant.md)
 <!-- used-by:end -->

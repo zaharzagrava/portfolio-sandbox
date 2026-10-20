@@ -20,12 +20,27 @@ From J03.B-11: after a drop is scheduled, the product's catalog stock falls belo
 
 ## Used by
 <!-- used-by:start -->
+- [J04](../capabilities/J04-catalog-sync-to-search.md): R-11, B-03, B-08, B-12
+- [auction-unit](auction-unit.md)
+- [catalog-import-file](catalog-import-file.md)
+- [csv-product](csv-product.md)
+- [device-sale](device-sale.md)
+- [drop-load](drop-load.md)
 - [drop-reconcile](drop-reconcile.md)
+- [drop](drop.md)
 - [exactly-once-load](exactly-once-load.md)
 - [flash-sale-load-job](flash-sale-load-job.md)
 - [flash-sale-reconcile-job](flash-sale-reconcile-job.md)
 - [load-job](load-job.md)
+- [op-id](op-id.md)
+- [pickup-point](pickup-point.md)
+- [pickup-stock](pickup-stock.md)
 - [reservation-hold](reservation-hold.md)
+- [shopify-inventory](shopify-inventory.md)
+- [shopify-link](shopify-link.md)
 - [start-failed](start-failed.md)
+- [stock-conflict](stock-conflict.md)
+- [stock-three-way-merge](stock-three-way-merge.md)
+- [till](till.md)
 - [unsold-units](unsold-units.md)
 <!-- used-by:end -->

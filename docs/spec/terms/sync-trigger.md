@@ -20,5 +20,6 @@ From J04 B-16: Shopify answers `503`. A device sells 2 from 10 and the push answ
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [J04](../capabilities/J04-catalog-sync-to-search.md): R-16
+- [scheduled-pull](scheduled-pull.md)
 <!-- used-by:end -->

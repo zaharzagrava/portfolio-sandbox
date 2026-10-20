@@ -21,5 +21,7 @@ An event has one seat left and five buyers confirm at the same moment. Exactly o
 
 ## Used by
 <!-- used-by:start -->
+- [booking-confirm](booking-confirm.md)
 - [booking-hold](booking-hold.md)
+- [launch-event](launch-event.md)
 <!-- used-by:end -->

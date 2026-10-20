@@ -23,8 +23,10 @@ An archived product read anonymously returns `404` with `Cache-Control: public, 
 
 ## Used by
 <!-- used-by:start -->
+- [J04](../capabilities/J04-catalog-sync-to-search.md): R-10
 - [catalog-domain-layer](catalog-domain-layer.md)
 - [domain-layer](domain-layer.md)
 - [identical-not-found](identical-not-found.md)
 - [live-shop](live-shop.md)
+- [near-me-index](near-me-index.md)
 <!-- used-by:end -->

@@ -21,5 +21,6 @@ Catalog and Shopify both hold 10. A device sells 2, and Shopify sells 3 before t
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [shopify-connection](shopify-connection.md)
+- [shopify-push-pull](shopify-push-pull.md)
 <!-- used-by:end -->

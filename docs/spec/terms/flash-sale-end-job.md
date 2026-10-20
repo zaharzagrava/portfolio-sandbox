@@ -21,5 +21,8 @@ From J03.B-07: a drop loads 20 units, and 60 buyers check out at the same moment
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [drop-hold](drop-hold.md)
+- [drop](drop.md)
+- [injected-clock](injected-clock.md)
+- [unsold-units](unsold-units.md)
 <!-- used-by:end -->

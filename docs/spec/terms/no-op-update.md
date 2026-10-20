@@ -20,6 +20,7 @@ A product has the name "Blue mug" at `[version](product-version.md): 2`. A clien
 
 ## Used by
 <!-- used-by:start -->
+- [J04](../capabilities/J04-catalog-sync-to-search.md): R-03
 - [S05](../capabilities/S05-products.md): R-08
 - [cache-entry](cache-entry.md)
 - [cache-miss](cache-miss.md)

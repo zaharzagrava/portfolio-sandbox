@@ -19,5 +19,8 @@ A Shopify change notice, from a [webhook](shop-webhook.md) or a [scheduled pull]
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [J04](../capabilities/J04-catalog-sync-to-search.md): R-14
+- [shopify-inventory](shopify-inventory.md)
+- [shopify-link](shopify-link.md)
+- [shopify-write](shopify-write.md)
 <!-- used-by:end -->

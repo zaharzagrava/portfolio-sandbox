@@ -19,5 +19,6 @@ From J04 B-15: both sides hold 3. A [device](device-registration.md) sells 3 (lo
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [J04](../capabilities/J04-catalog-sync-to-search.md): R-15
+- [stock-three-way-merge](stock-three-way-merge.md)
 <!-- used-by:end -->

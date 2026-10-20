@@ -20,5 +20,9 @@ A buyer confirms a hold while the notification consumer is paused. The booking e
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [event-replay](event-replay.md)
+- [inbox-item](inbox-item.md)
+- [launch-events-booking-confirmed-event](launch-events-booking-confirmed-event.md)
+- [notification-router](notification-router.md)
+- [seat-hold](seat-hold.md)
 <!-- used-by:end -->

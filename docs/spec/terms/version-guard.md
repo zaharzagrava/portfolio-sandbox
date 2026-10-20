@@ -21,6 +21,7 @@ A projection already stores `version` 7 for [`aggregateId`](aggregate-id.md) `pr
 
 ## Used by
 <!-- used-by:start -->
+- [J04](../capabilities/J04-catalog-sync-to-search.md): R-17
 - [billing-events-topic](billing-events-topic.md)
 - [consumer-deduplication-mode](consumer-deduplication-mode.md)
 - [event-consumer](event-consumer.md)
@@ -29,5 +30,10 @@ A projection already stores `version` 7 for [`aggregateId`](aggregate-id.md) `pr
 - [image-url](image-url.md)
 - [inbox-table](inbox-table.md)
 - [natural-idempotency](natural-idempotency.md)
+- [offline-sync-feed-consumer](offline-sync-feed-consumer.md)
+- [pickup-availability-consumer](pickup-availability-consumer.md)
+- [queue-pause](queue-pause.md)
+- [search-product-index-queue](search-product-index-queue.md)
+- [shopify-push-consumer](shopify-push-consumer.md)
 - [sponsorship-event](sponsorship-event.md)
 <!-- used-by:end -->

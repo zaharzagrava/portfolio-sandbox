@@ -24,5 +24,7 @@ The `clientId` value and text are illustrative.
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [error-code](error-code.md)
+- [live-stream](live-stream.md)
+- [problem-body](problem-body.md)
 <!-- used-by:end -->

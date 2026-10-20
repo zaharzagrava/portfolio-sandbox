@@ -21,9 +21,13 @@ One buyer books seats for a launch event, buys a drop unit, then wins and pays a
 ## Used by
 <!-- used-by:start -->
 - [control-surface](control-surface.md)
+- [domain](domain.md)
+- [drop](drop.md)
 - [flow-isolation](flow-isolation.md)
+- [inbox-item](inbox-item.md)
 - [live-events-topic](live-events-topic.md)
 - [live-stream](live-stream.md)
+- [main-journeys](main-journeys.md)
 - [payment-provider-chain](payment-provider-chain.md)
 - [stack](stack.md)
 <!-- used-by:end -->

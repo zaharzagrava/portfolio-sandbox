@@ -20,5 +20,5 @@ The owner of shop `SH` connects a Shopify store, and the [variants](shopify-vari
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [J04](../capabilities/J04-catalog-sync-to-search.md): R-20
 <!-- used-by:end -->

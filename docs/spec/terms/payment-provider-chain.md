@@ -21,4 +21,8 @@ The J01 chain is the payment flow described by the J01 journey, which this [laun
 ## Used by
 <!-- used-by:start -->
 - [auction-sold](auction-sold.md)
+- [auctions-order-results-consumer](auctions-order-results-consumer.md)
+- [launch-day-flow](launch-day-flow.md)
+- [orders-domain](orders-domain.md)
+- [winner-order](winner-order.md)
 <!-- used-by:end -->

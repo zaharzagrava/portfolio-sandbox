@@ -27,5 +27,6 @@ Clamping means quietly changing an out-of-range value to the nearest allowed val
 - [combined-business-multiplier](combined-business-multiplier.md)
 - [error-code](error-code.md)
 - [get-trending](get-trending.md)
+- [stock-three-way-merge](stock-three-way-merge.md)
 - [trending-limit](trending-limit.md)
 <!-- used-by:end -->

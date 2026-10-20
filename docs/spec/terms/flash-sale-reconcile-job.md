@@ -21,5 +21,7 @@ Illustrative: a drop of 20 units ends with 12 paid. Between them, `flash-sale.en
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [catalog-stock](catalog-stock.md)
+- [drop](drop.md)
+- [unsold-units](unsold-units.md)
 <!-- used-by:end -->

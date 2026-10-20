@@ -28,5 +28,6 @@ A catalog import file is a bulk file a seller uploads to fill or update a shop's
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [J04](../capabilities/J04-catalog-sync-to-search.md): B-01
+- [csv-product](csv-product.md)
 <!-- used-by:end -->

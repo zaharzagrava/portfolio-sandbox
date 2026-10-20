@@ -22,4 +22,8 @@ The brand removes a comment during a stream. Connected viewers receive the remov
 <!-- used-by:start -->
 - [J03](../capabilities/J03-launch-day.md): R-19
 - [comment-client-id](comment-client-id.md)
+- [event-consumer](event-consumer.md)
+- [live-stream](live-stream.md)
+- [realtime-event](realtime-event.md)
+- [recent-comments](recent-comments.md)
 <!-- used-by:end -->

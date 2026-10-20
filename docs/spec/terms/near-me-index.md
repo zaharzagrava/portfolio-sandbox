@@ -20,5 +20,5 @@ Product `Pc` has catalog quantity 5 and no pickup stock, so it does not appear n
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [J04](../capabilities/J04-catalog-sync-to-search.md): R-10
 <!-- used-by:end -->

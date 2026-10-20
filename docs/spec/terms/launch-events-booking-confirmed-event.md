@@ -21,5 +21,13 @@ A buyer confirms a hold. Once the event reaches notifications and orders, the bu
 
 ## Used by
 <!-- used-by:start -->
+- [aggregate-type-events-topic](aggregate-type-events-topic.md)
 - [booking-confirmed-notification](booking-confirmed-notification.md)
+- [booking-hold](booking-hold.md)
+- [booking-set](booking-set.md)
+- [consumer-group](consumer-group.md)
+- [event-payload](event-payload.md)
+- [inbox-item](inbox-item.md)
+- [notification-router](notification-router.md)
+- [voucher-command](voucher-command.md)
 <!-- used-by:end -->

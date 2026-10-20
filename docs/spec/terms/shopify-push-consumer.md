@@ -19,5 +19,5 @@ The Shopify push consumer is the [event consumer](event-consumer.md) [`integrati
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [J04](../capabilities/J04-catalog-sync-to-search.md): B-10
 <!-- used-by:end -->

@@ -20,5 +20,9 @@ B-05: a buyer holds a seat and does not confirm it within 10 minutes. The seat i
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [error-code](error-code.md)
+- [injected-clock](injected-clock.md)
+- [problem-body](problem-body.md)
+- [seat-hold](seat-hold.md)
+- [voucher](voucher.md)
 <!-- used-by:end -->

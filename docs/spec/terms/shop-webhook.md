@@ -22,7 +22,16 @@ In AS-27 the receiver `R` answers `500` to the first `order.paid` attempt. The r
 ## Used by
 <!-- used-by:start -->
 - [J02](../capabilities/J02-seller-to-first-sale.md): R-18
+- [J04](../capabilities/J04-catalog-sync-to-search.md): B-06
 - [job-retries](job-retries.md)
+- [scheduled-pull](scheduled-pull.md)
+- [shopify-connection](shopify-connection.md)
+- [shopify-echo](shopify-echo.md)
+- [shopify-push-pull](shopify-push-pull.md)
+- [shopify-scheduled-pull](shopify-scheduled-pull.md)
+- [shopify-variant](shopify-variant.md)
+- [stock-sync-trigger](stock-sync-trigger.md)
+- [sync-trigger](sync-trigger.md)
 - [webhook-endpoint](webhook-endpoint.md)
 - [webhook-secret](webhook-secret.md)
 <!-- used-by:end -->

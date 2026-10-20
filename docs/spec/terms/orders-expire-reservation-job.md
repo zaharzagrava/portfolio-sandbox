@@ -21,5 +21,7 @@ From J03.B-09: 15 [drop orders](drop.md) are reserved but not paid. When 15 minu
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [drop](drop.md)
+- [injected-clock](injected-clock.md)
+- [reservation-hold](reservation-hold.md)
 <!-- used-by:end -->

@@ -21,6 +21,7 @@ A consumer with stored version 5 for an aggregate receives three events: version
 
 ## Used by
 <!-- used-by:start -->
+- [J04](../capabilities/J04-catalog-sync-to-search.md): B-19
 - [S53](../capabilities/S53-events-projections.md): R-19
 - [cache-invalidator](cache-invalidator.md)
 - [cache-miss](cache-miss.md)

@@ -21,5 +21,13 @@ An auction closes with a leader below the reserve. The auction ends `UNSOLD(rese
 ## Used by
 <!-- used-by:start -->
 - [J03](../capabilities/J03-launch-day.md): R-16
+- [auction-leader](auction-leader.md)
+- [auction-reserve](auction-reserve.md)
+- [auction-won-notice](auction-won-notice.md)
+- [award-notice](award-notice.md)
+- [inbox-item](inbox-item.md)
 - [no-notification-list](no-notification-list.md)
+- [runner-up-offer](runner-up-offer.md)
+- [second-chance](second-chance.md)
+- [winner-order](winner-order.md)
 <!-- used-by:end -->

@@ -20,5 +20,6 @@ A viewer posts "Love this colour!" with `clientId` `c-123` (illustrative). The n
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [comment-moderation](comment-moderation.md)
+- [main-journeys](main-journeys.md)
 <!-- used-by:end -->

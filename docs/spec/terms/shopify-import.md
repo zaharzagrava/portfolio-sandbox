@@ -21,5 +21,5 @@ Shop `SH` connects a Shopify store with 7 active variants. The owner holds `inte
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [J04](../capabilities/J04-catalog-sync-to-search.md): R-19
 <!-- used-by:end -->

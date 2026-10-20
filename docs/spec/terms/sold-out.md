@@ -20,5 +20,9 @@ B-04: a launch event has one seat left and five buyers confirm their [holds](boo
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [booking-confirm](booking-confirm.md)
+- [booking-hold](booking-hold.md)
+- [booking-set](booking-set.md)
+- [launch-event](launch-event.md)
+- [seat](seat.md)
 <!-- used-by:end -->

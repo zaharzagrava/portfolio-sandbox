@@ -21,5 +21,12 @@ Shop `SH`'s owner holds `integrations.manage` and connects a store with 7 active
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [J04](../capabilities/J04-catalog-sync-to-search.md): B-05
+- [catalog-sync-stock-conflict-opened-event](catalog-sync-stock-conflict-opened-event.md)
+- [csv-product](csv-product.md)
+- [scheduled-pull](scheduled-pull.md)
+- [shopify-link](shopify-link.md)
+- [stock-conflict](stock-conflict.md)
+- [stock-merge](stock-merge.md)
+- [stock-three-way-merge](stock-three-way-merge.md)
 <!-- used-by:end -->

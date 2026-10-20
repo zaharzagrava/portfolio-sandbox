@@ -19,5 +19,5 @@ Catalog stock and Shopify inventory are both 10. A device sells 2 and Shopify se
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [J04](../capabilities/J04-catalog-sync-to-search.md): B-10
 <!-- used-by:end -->

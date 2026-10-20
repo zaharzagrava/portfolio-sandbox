@@ -20,5 +20,6 @@ After `auctions.close`, the auction is `CLOSED` and the winner has one order. Th
 
 ## Used by
 <!-- used-by:start -->
-_nobody yet_
+- [order-settlement](order-settlement.md)
+- [payment-provider-chain](payment-provider-chain.md)
 <!-- used-by:end -->

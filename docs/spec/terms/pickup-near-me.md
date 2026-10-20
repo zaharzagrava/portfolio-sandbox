@@ -21,8 +21,11 @@ A shopper on `/search?q=espresso` turns on "Available for pickup near me". The w
 
 ## Used by
 <!-- used-by:start -->
+- [J04](../capabilities/J04-catalog-sync-to-search.md): R-19, B-08, B-09, B-20
 - [coordinate-rounding](coordinate-rounding.md)
+- [csv-product](csv-product.md)
 - [pickup-coordinates](pickup-coordinates.md)
+- [pickup-point](pickup-point.md)
 - [product-discussions](product-discussions.md)
 - [product-page-tabs](product-page-tabs.md)
 - [round-coords](round-coords.md)

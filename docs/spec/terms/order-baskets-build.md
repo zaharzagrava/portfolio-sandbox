@@ -22,6 +22,7 @@ The [`17 3 * * *` ↗](../sw-external-terms.md#cron-expression) schedule fires a
 <!-- used-by:start -->
 - [S34](../capabilities/S34-recommendations.md): R-21, B-13
 - [atomic-list-swap](atomic-list-swap.md)
+- [basket](basket.md)
 - [bucket-count](bucket-count.md)
 - [build-counts](build-counts.md)
 - [build-lock](build-lock.md)
