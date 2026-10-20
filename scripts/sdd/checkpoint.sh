@@ -13,11 +13,25 @@ API_URL="${API_URL:-http://localhost:8000}"
 log="$ROOT/specs/.checkpoints/$label.log"
 mkdir -p "$ROOT/specs/.checkpoints"; : > "$log"
 fail=0
+source "$ROOT/scripts/sdd/ckpt-progress.sh"; ckpt_init "$label"   # progress lines and phone messages: a checkpoint only, never the per-capability gates
+ckpt_note info "started: boot check, backend unit tests, backend e2e sweep, browser sweep, living spec, flow script"
 
 # the monolith must boot before anything else is worth running (the unit and e2e suites build their own small modules)
 if [[ -n "${API_LOG:-}${BOOT_CHECK:-}" ]]; then
   echo "  checkpoint $label: boot check"
-  scripts/infra/boot-check.sh --wait "${BOOT_WAIT:-240}" >>"$log" 2>&1 || { echo "  boot check FAILED: the API does not start (the Nest errors are in $log)"; fail=1; }
+  if scripts/infra/boot-check.sh --wait "${BOOT_WAIT:-240}" >>"$log" 2>&1; then ckpt_note ok "boot check: the monolith starts"
+  else echo "  boot check FAILED: the API does not start (the Nest errors are in $log)"; ckpt_note fail "boot check FAILED: the API does not start"; fail=1; fi
+fi
+
+# the unit tests of the whole backend (about a minute): a later capability may have broken an earlier one's pure logic
+if [[ "${CHECKPOINT_SWEEP:-1}" != 0 ]]; then
+  ckpt_note info "backend unit tests: running"
+  u0=$SECONDS
+  (cd packages/backend && NODE_ENV=test NODE_OPTIONS=--experimental-vm-modules timeout "${UNIT_TIMEOUT_S:-1200}" npx jest --ci --silent --colors=false) >"$log.unit" 2>&1; urc=$?
+  cat "$log.unit" >>"$log"
+  usum="$(grep -aE '^Tests:' "$log.unit" | tail -1 | sed 's/  */ /g')"
+  if (( urc == 0 )); then ckpt_note ok "backend unit tests done: ${usum:-passed} ($((SECONDS - u0)) s)"
+  else echo "  backend unit tests FAILED"; ckpt_note fail "backend unit tests FAILED: ${usum:-see the log}"; fail=1; fi
 fi
 
 if [[ "${CHECKPOINT_SWEEP:-1}" != 0 ]]; then
@@ -28,10 +42,12 @@ if [[ "${CHECKPOINT_SWEEP:-1}" != 0 ]]; then
   backend_sweep_failed=0
   mapfile -t all_specs < <(cd packages/backend && NODE_ENV=test npx jest --config jest-e2e.json --listTests 2>/dev/null | grep -E 'e2e-spec\.ts$' | sort)
   total=${#all_specs[@]}; batch=${SWEEP_BATCH:-12}
+  ckpt_note info "backend e2e sweep: starting, $total suites in batches of $batch"
   for (( i = 0; i < total; i += batch )); do
     echo "  backend e2e sweep: suites $((i + 1))-$(( i + batch < total ? i + batch : total )) of $total" >>"$log"
     (cd packages/backend && NODE_ENV=test NODE_OPTIONS="--experimental-vm-modules --max-old-space-size=6144" timeout "${SWEEP_TIMEOUT_S:-3600}" \
        npx jest --ci --runInBand --forceExit --config jest-e2e.json --colors=false --runTestsByPath "${all_specs[@]:i:batch}") >>"$log" 2>&1 || backend_sweep_failed=1
+  ckpt_progress "backend e2e" "$(( i + batch < total ? i + batch : total ))" "$total" 10 "$(grep -ac '^FAIL ' "$log") failing suites so far"
   done
   # Old e2e tests of features that are still to be rebuilt (a domain with no built capability) are expected to be red and do not count; a
   # batch that ended without its summary line crashed, which always counts.
@@ -45,13 +61,20 @@ if [[ "${CHECKPOINT_SWEEP:-1}" != 0 ]]; then
   else
     backend_sweep_failed=0
   fi
-  if (( backend_sweep_failed )); then echo "  backend e2e sweep FAILED"; fail=1; fi
+  if (( backend_sweep_failed )); then echo "  backend e2e sweep FAILED"; ckpt_note fail "backend e2e sweep FAILED: $(grep -ac '^FAIL ' "$log") failing suites of $total (the repair agent gets the list)"; fail=1
+  else ckpt_note ok "backend e2e sweep done: $total suites pass"; fi
   if [[ -d packages/web ]] && ls packages/web/playwright.config.* >/dev/null 2>&1 && curl -sf "$API_URL/health/ready" >/dev/null; then
     echo "  checkpoint $label: web (Playwright) sweep"
     bash "$ROOT/scripts/sdd/stack-fix.sh" reindex >>"$log" 2>&1   # the backend e2e specs delete the live products index
-    (cd packages/web && timeout "${SWEEP_TIMEOUT_S:-3600}" npx playwright test --reporter=list ${PW_WORKERS:+--workers="$PW_WORKERS"}) >>"$log" 2>&1 || { echo "  web sweep FAILED"; fail=1; }
+    ckpt_note info "browser sweep (Playwright): starting"
+    wlog="$log.web"; : > "$wlog"
+    ckpt_watch_playwright "$wlog" "browser sweep" 25 & wpid=$!
+    (cd packages/web && timeout "${SWEEP_TIMEOUT_S:-3600}" npx playwright test --reporter=list ${PW_WORKERS:+--workers="$PW_WORKERS"}) >>"$wlog" 2>&1; wrc=$?
+    kill "$wpid" 2>/dev/null; cat "$wlog" >>"$log"; wsum="$(sed 's/\x1b\[[0-9;]*m//g' "$wlog" | grep -aE '^\s+[0-9]+ (passed|failed|flaky)' | tr -s ' ' | tr '\n' ',' )"
+    if (( wrc == 0 )); then ckpt_note ok "browser sweep done: ${wsum:-passed}"; else echo "  web sweep FAILED"; ckpt_note fail "browser sweep FAILED: ${wsum:-see the log}"; fail=1; fi
     # the specs that move the API's clock run alone, after everything else (packages/web/playwright.config.ts, PW_CLOCK)
-    (cd packages/web && PW_CLOCK=1 timeout "${SWEEP_TIMEOUT_S:-3600}" npx playwright test --reporter=list --workers=1) >>"$log" 2>&1 || { echo "  web sweep (clock specs) FAILED"; fail=1; }
+    (cd packages/web && PW_CLOCK=1 timeout "${SWEEP_TIMEOUT_S:-3600}" npx playwright test --reporter=list --workers=1) >>"$log" 2>&1 \
+      && ckpt_note ok "browser sweep, clock specs (alone): pass" || { echo "  web sweep (clock specs) FAILED"; ckpt_note fail "browser sweep, clock specs FAILED"; fail=1; }
   fi
 fi
 
@@ -60,13 +83,15 @@ if [[ -d docs/spec && -f scripts/livespec/check.py ]]; then
   echo "  checkpoint $label: living specification" >>"$log"
   base_arg=(); git rev-parse -q --verify "${CHECKPOINT_BASE:-origin/master}" >/dev/null && base_arg=(--base "${CHECKPOINT_BASE:-origin/master}")
   { python3 scripts/livespec/check.py "${base_arg[@]}" && python3 scripts/livespec/models.py check && python3 scripts/livespec/test_livespec.py 2>&1 | tail -3 \
-      && { ! command -v npx >/dev/null || python3 scripts/livespec/run_models.py; }; } >>"$log" 2>&1 || { echo "  living specification check FAILED"; fail=1; }
+      && { ! command -v npx >/dev/null || python3 scripts/livespec/run_models.py; }; } >>"$log" 2>&1 \
+    && ckpt_note ok "living specification check passes" || { echo "  living specification check FAILED"; ckpt_note fail "living specification check FAILED"; fail=1; }
 fi
 
 script="$ROOT/scripts/sdd/checkpoints/$label.sh"
 if [[ -x "$script" ]]; then
   echo "  checkpoint $label: flow script"
-  "$script" >>"$log" 2>&1 || { echo "  flow script FAILED"; fail=1; }
+  ckpt_note info "flow script $label: starting (boots of core, projector and worker, fresh-stack run, scripted buy flow)"
+  "$script" >>"$log" 2>&1 && ckpt_note ok "flow script $label: passes" || { echo "  flow script FAILED"; ckpt_note fail "flow script $label FAILED"; fail=1; }
 fi
 
 # Opt-in: the QA agent (a Claude session that uses the product like a person), e.g. CHECKPOINT_QA="buy account". Needs the web server on :3000 and the API.
@@ -90,5 +115,6 @@ if [[ -n "${CHECKPOINT_QA:-}" && -x "$ROOT/scripts/qa/pipeline.sh" && ! -f "$qa_
 fi
 
 (( fail )) || rm -f "$qa_marker"   # a passing checkpoint ends the QA round
+(( fail )) && ckpt_note warn "round finished with failures (repair next, if budget is left); log: specs/.checkpoints/$label.log" || ckpt_note ok "round finished: everything passes"
 if (( fail )); then echo "checkpoint $label failed; see $log"; tail -n 25 "$log" | cut -c1-200; fi
 exit "$fail"

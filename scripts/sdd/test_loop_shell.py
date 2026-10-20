@@ -162,6 +162,28 @@ class LoopShell(unittest.TestCase):
                      'Bash(python3 ../../scripts/livespec/check.py:*)', 'Bash(git diff:*)', 'Bash(python3:*)'):
             self.assertIn(want, tools)
 
+    def test_checkpoint_progress_helpers(self):
+        """Phone messages and progress lines of a checkpoint: buckets, one note per boundary, nothing for 100 percent (the verdict says that)."""
+        script = f'''set -uo pipefail; export NOTIFY_DRY=1 ROOT={ROOT}; source {ROOT}/scripts/sdd/ckpt-progress.sh; ckpt_init final
+        echo "b1=$(ckpt_bucket 59 593 10) b2=$(ckpt_bucket 60 593 10) b3=$(ckpt_bucket 593 593 10) b4=$(ckpt_bucket 5 0 10)"
+        for d in 12 60 61 70 120 593; do ckpt_progress "backend e2e" $d 593 10 "2 failing suites so far"; done'''
+        r = subprocess.run(['bash', '-c', script], capture_output=True, text=True)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        self.assertIn('b1=0 b2=10 b3=100 b4=0', r.stdout)
+        notes = [l for l in r.stdout.split('\n') if 'backend e2e' in l and l.startswith('  [checkpoint')]
+        self.assertEqual(len(notes), 2, r.stdout)   # 10% (60 suites) and 20% (120 suites); 12 is below 10%, 61 and 70 are the same boundary, 593 is 100%
+        self.assertIn('backend e2e 10% (60 of 593), 2 failing suites so far', notes[0]); self.assertIn('backend e2e 20% (120 of 593)', notes[1])
+        self.assertIn('NOTIFY[info] SDD checkpoint final:', r.stdout)
+
+    def test_checkpoint_playwright_watcher_reads_the_list_reporter(self):
+        import tempfile, time
+        d = tempfile.mkdtemp(); log = os.path.join(d, 'web.log')
+        open(log, 'w').write('Running 8 tests using 2 workers\n' + ''.join(f'  ✓   {i} [desktop] › tests/a.spec.ts:1:1 › t{i} (1.0s)\n' for i in range(1, 5)) + '  ✘   5 [desktop] › tests/b.spec.ts:2:2 › broken (3.0s)\n')
+        script = f'''export NOTIFY_DRY=1 ROOT={ROOT}; source {ROOT}/scripts/sdd/ckpt-progress.sh; ckpt_init final
+        sleep() {{ command sleep 0.2; }}; ckpt_watch_playwright {log} "browser sweep" 25 & p=$!; command sleep 1.5; kill $p; wait $p 2>/dev/null; true'''
+        r = subprocess.run(['bash', '-c', script], capture_output=True, text=True, timeout=30)
+        self.assertIn('browser sweep 50% (5 of 8), 1 failing so far', r.stdout, r.stdout + r.stderr)
+
 
 if __name__ == '__main__':
     unittest.main()
