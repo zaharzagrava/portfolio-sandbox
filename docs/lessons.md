@@ -42,6 +42,7 @@ with the links that prove it: backticked file paths and commit hashes. For a `pr
 - L-031 2026-10-19 config prevented
 - L-032 2026-10-19 test-hollow prevented
 - L-033 2026-10-19 resources prevented
+- L-034 2026-10-20 config prevented
 
 ## L-001 A message option the queue refuses, found only by hand
 - **Rule:** A queue option must be validated where the message is created, not discovered when the relay fails (FIFO-only options like `groupId` never go to a standard queue).
@@ -243,3 +244,8 @@ Second part of L-031 (2026-10-19, same day): after `python3:*` and read-only git
 - **Rule:** Every gate stage has a hard time limit, and jest runs with `forceExit` (the journey config too). A gate that waits for a process must not wait forever.
 - **Symptom:** J04's journey gate ran for over two hours (2026-10-19, 11:55 to 14:14 UTC) although its verdict was in after 212 seconds: 15 of 23 tests failed with `listen EADDRINUSE 127.0.0.1:18445` (a receiver server on a fixed port that a test does not close) and then "Jest did not exit one second after the test run has completed". The loop waited for jest, so no repair could start, and the monitor only said "stalled". **Cause:** `jest-journeys.json` had no `forceExit` and the journey gate had no timeout, unlike the backend gate (`timeout 1800` and `--forceExit`).
 - **Prevention:** `forceExit: true` in `jest-journeys.json`; `timeout -k 30` around the journey gate (2700 s) and the web stages (3000 s). Found by comparing the runner's log timestamps with the last gate line: when the monitor says "stalled" during a gate, look at the gate log's end for "did not exit".
+
+## L-034 The local Lambda stand-in did not load `.env`
+- **Rule:** `start:lambda-local` starts node with `-r dotenv/config`: the launcher and the handler bundles read `process.env`, and nothing in them loads `.env`.
+- **Symptom:** on a developer laptop (2026-10-20) `pnpm --filter api run start:lambda-local document-extractor media-processing` stopped with `lambda-local cannot start: media-processing: MEDIA_BUCKET is required` although `.env` had it (the "injected env (86) from .env" line printed by the build step made it look loaded); an uploaded product photo stayed "Waiting to process". The runner never saw it because its shell had the variables exported.
+- **Prevention:** the flag in the script. Test by running the launcher directly: no "injected env" line means it reads only the shell.

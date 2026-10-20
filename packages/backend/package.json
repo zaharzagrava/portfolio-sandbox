@@ -98,7 +98,7 @@
     "start:dev:bff": "NODE_ENV=local PORT=8006 BFF_LOCAL_DEV=true BFF_UPSTREAM_URL=http://localhost:8000 BFF_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:3100 BFF_SESSION_KEYS=AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQE= BFF_CSRF_KEY=AgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgI= nest start bff --watch",
     "start:dev:monolith": "NODE_ENV=local OTEL_SDK_DISABLED=false EMAIL_PROVIDER=memory DEV_MAILBOX_ENABLED=true BFF_LOCAL_DEV=true BFF_UPSTREAM_URL=http://localhost:8000 BFF_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:3100 BFF_SESSION_KEYS=AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQE= BFF_CSRF_KEY=AgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgI= nest start local-monolith --watch",
     "build:lambdas": "node scripts/build-lambdas.mjs",
-    "start:lambda-local": "pnpm build:lambdas && nest build lambda-local && node dist/apps/lambda-local/main.js",
+    "start:lambda-local": "pnpm build:lambdas && nest build lambda-local && node -r dotenv/config dist/apps/lambda-local/main.js",
     "lambda-local:redrive": "nest build lambda-local && node dist/apps/lambda-local/main.js --redrive",
     "seed:dev": "ts-node -r tsconfig-paths/register scripts/seed/dev-seed.ts"
   },
