@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
-import { NEW_USER_PASSWORD, register, resetRateLimits, signOut, uniqueEmail, waitForForm } from './helpers';
+import { NEW_USER_PASSWORD, registerThroughUi as register, resetRateLimits, signOut, uniqueEmail, waitForForm } from './helpers';
 
 const isDesktop = (page: Page) => (page.viewportSize()?.width ?? 1280) >= 1024;
 

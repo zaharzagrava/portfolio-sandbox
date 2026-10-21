@@ -82,3 +82,30 @@ Ways to the target, in order of leverage:
 4. Preloaded fixtures and logged-in sessions, so agents spend no time on setup.
 5. Cheaper model for breadth, stronger one for verification.
 Quality: a time box per charter caps depth; parallelism adds breadth. Not an executor swap.
+
+## Fix-later list (found 2026-10-21, deliberately not worked on before the speed-up)
+
+- `catalog-sync/import-fairness` (S07 AS-63, 1 of 6 tests): fails every time with the dirty-tables-only Postgres reset (commit 40aa225f), passes with the old reset.
+  The failure is a 503 `rate_limiter_unavailable` ("Stream isn't writeable") from Redis. Look at what the reset leaves behind or skips.
+- Failing with both resets (12 tests in 6 suites): `developer-platform-*` (4 suites), `catalog-sync/sync-fields`, `assistant/knowledge-events`.
+- Other failures in the partial sweep: `orders-boundary` (voucher.service.ts imports infra), `product-shop-lifecycle` (Product.shopId nullable), `assistant-metering`,
+  `sync-feed-consumer`, `discussions*` (S25 AS-19/24/29), `trending-stream` (344 s, 3 tests).
+
+## Findings 2026-10-21 (speed work)
+
+- Production bundle for the whole browser suite is blocked: `NODE_ENV !== 'production'` gates the sandbox card picker (`components/checkout/payment-fields.tsx:29`),
+  by design; the checkout journeys need it. The dev server compiles each route once per run, so the cost is likely small; measure with the Playwright
+  timing reporter (`TEST_TIMING_OUT`) before choosing a fix.
+- Browser login through the API: `register(page)` now calls `registerByApi` (register + login through `page.request`, same calls as the forms); `auth.spec.ts`
+  keeps the UI path (`registerThroughUi`); `PW_UI_LOGIN=1` restores the UI path everywhere. NOT yet run.
+- Vitest spike works on the e2e suites: `packages/backend/vitest.e2e.config.ts` (unplugin-swc for decorator metadata, `isolate: false`, one fork, `jest` shim for
+  `jest.spyOn/fn/restoreAllMocks`), `bff` needed `resolve.dedupe: ['graphql']` + inlining graphql/apollo (two copies of graphql otherwise).
+- Shards: `scripts/infra/shard-stack.sh <n> <env|up|setup|down>` generates a whole separate test stack per shard (ports shifted by 10 per shard). Not yet started.
+
+## Vitest spike result (2026-10-21, 30 suites = every 20th e2e suite, excluding the 5 slowest)
+
+- Jest, batches of 12 fresh processes: 367 s. Vitest, one process, `isolate: false`: 315 s (order A) and 313 s (reverse). Saving 52 s per 30 files = 1.7 s per file,
+  so about 17 minutes over 593 files (rule: go if at least 10 minutes and all orders pass).
+- Same failures as Jest (`import-fairness`, the new-reset one) in order A. Reverse order has one more: `order-export-lifecycle` line 492 (it reads captured log lines;
+  passes alone and in order A). Order-dependent state with `isolate: false`: find it before switching (the Nest logger override is the first suspect).
+- Verdict: GO, with that one order dependence to remove. Not switched yet: Jest stays the runner until the full Vitest sweep matches Jest's results.

@@ -46,3 +46,5 @@ __pycache__/
 specs/.qa/**/*.png
 specs/.qa/**/*.webm
 specs/.qa/**/*.zip
+docker-compose.shard*.yaml
+packages/backend/.env.test.shard*

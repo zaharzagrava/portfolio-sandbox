@@ -11,7 +11,7 @@
     "check:technical-tables": "TS_NODE_TRANSPILE_ONLY=1 node -r ts-node/register scripts/check-table-ownership.ts --technical-only",
     "check:no-request-scope": "TS_NODE_TRANSPILE_ONLY=1 node -r ts-node/register scripts/check-no-request-scope.ts",
     "check:function-runner": "TS_NODE_TRANSPILE_ONLY=1 node -r ts-node/register scripts/check-function-runner.ts",
-    "check:image-definition":"TS_NODE_TRANSPILE_ONLY=1 node -r ts-node/register scripts/check-image-definition.ts",
+    "check:image-definition": "TS_NODE_TRANSPILE_ONLY=1 node -r ts-node/register scripts/check-image-definition.ts",
     "check:no-startup-migration": "TS_NODE_TRANSPILE_ONLY=1 node -r ts-node/register scripts/check-no-startup-migration.ts",
     "check:no-wallclock": "TS_NODE_TRANSPILE_ONLY=1 node -r ts-node/register scripts/check-no-wallclock.ts",
     "check:asset-library-no-fk": "TS_NODE_TRANSPILE_ONLY=1 node -r ts-node/register scripts/check-asset-library-no-fk.ts",
@@ -234,6 +234,8 @@
     "tsconfig-paths": "^4.2.0",
     "typescript": "^5.7.3",
     "typescript-eslint": "^8.20.0",
+    "unplugin-swc": "^2.0.0",
+    "vitest": "3.2.7",
     "yaml": "^2.9.1"
   },
   "jest": {

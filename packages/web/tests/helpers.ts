@@ -68,6 +68,27 @@ export async function login(page: Page, email: string, password: string, returnT
  * with the new credentials; lands on the home page signed in.
  */
 export async function register(page: Page, email = uniqueEmail()) {
+  if (process.env.PW_UI_LOGIN !== '1') return registerByApi(page, email);
+  return registerThroughUi(page, email);
+}
+
+/**
+ * The fast set-up used by almost every journey: the same two calls the forms make (register, then sign in), sent from the page's own
+ * context so the BFF session and CSRF cookies land in the browser; lands on the home page signed in. The forms themselves are exercised by
+ * `auth.spec.ts` and the specs of the password, MFA and sessions flows through `registerThroughUi`. `PW_UI_LOGIN=1` makes every journey use the forms.
+ */
+export async function registerByApi(page: Page, email = uniqueEmail()) {
+  await resetRateLimits();
+  const password = NEW_USER_PASSWORD;
+  const created = await page.request.post('/api/auth/register', { data: { email, password } });
+  expect(created.status(), `register ${email}: ${await created.text()}`).toBeLessThan(300);
+  const signedIn = await page.request.post('/api/auth/login', { data: { email, password } });
+  expect(signedIn.status(), `login ${email}: ${await signedIn.text()}`).toBeLessThan(300);
+  await page.goto('/');
+  return { email, password };
+}
+
+export async function registerThroughUi(page: Page, email = uniqueEmail()) {
   await resetRateLimits();
   const password = NEW_USER_PASSWORD;
   await page.goto('/register');
