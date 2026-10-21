@@ -215,13 +215,20 @@ export async function createTrendingApp(
     options.topic ?? (await createTrendingTopic(options.partitions));
   const groupId =
     options.groupId ?? `trending-spec-${randomUUID().slice(0, 8)}`;
+  // the shard's Redis (host, port and database number come from REDIS_URL)
+  const redisTarget = new URL(
+    process.env.REDIS_URL ?? 'redis://localhost:6400/0',
+  );
   const redisProxy = options.redisProxy
-    ? await TcpFaultProxy.start({ host: 'localhost', port: 6400 })
+    ? await TcpFaultProxy.start({
+        host: redisTarget.hostname,
+        port: Number(redisTarget.port || 6379),
+      })
     : null;
   const exits: number[] = [];
   const base = await createCatalogApp({
     ...(redisProxy
-      ? { redisUrl: `redis://127.0.0.1:${redisProxy.port}/0` }
+      ? { redisUrl: `redis://127.0.0.1:${redisProxy.port}/${redisTarget.pathname.slice(1) || '0'}` }
       : {}),
     extraImports: [TrendingModule, TrendingProjectorModule],
     env: { ...TRENDING_TEST_ENV, ...options.env },

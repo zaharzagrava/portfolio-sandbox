@@ -28,10 +28,12 @@ while :; do
   echo "[$((SECONDS - t1)) s] $done_files of ~593 files done, $failing failing"
   if (( abort > 0 && failing > abort )); then
     aborted=1; echo "STOP: $failing files failing (limit $abort) - killing all slices to start fixing"
-    for p in "${pids[@]}"; do kill -- "-$p" 2>/dev/null; done   # setsid made each slice its own process group
-    echo "--- first failing files and their first error lines:"
-    clean | grep -aE '^ (❯|×) [a-z].*e2e-spec\.ts.*failed' | sort -u | head -12
-    clean | grep -aE '^(Error|AssertionError|TypeError|KafkaJS[A-Za-z]*):' | sort | uniq -c | sort -rn | head -8
+    for p in "${pids[@]}"; do kill -INT -- "-$p" 2>/dev/null; done   # setsid made each slice its own process group; Vitest prints its failure details on SIGINT
+    sleep 20; for p in "${pids[@]}"; do kill -KILL -- "-$p" 2>/dev/null; done
+    echo "--- first failing files:"
+    clean | grep -aE '^ (❯|×) [a-z].*e2e-spec\.ts.*failed' | sort -u | head -20
+    echo "--- the failures with their first error line:"
+    clean | grep -aE -A2 '^ FAIL ' | grep -avE '^--$' | cut -c1-230 | head -90
     break
   fi
 done

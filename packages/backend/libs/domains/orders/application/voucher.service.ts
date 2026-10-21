@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { InjectModel } from '@nestjs/sequelize';
-import { QueryTypes } from 'sequelize';
+import { InjectConnection } from '@nestjs/sequelize';
+import { QueryTypes, Sequelize } from 'sequelize';
 import {
   type bookingVoucherRequestedSchema,
   type Voucher,
@@ -10,7 +10,6 @@ import type { z } from 'zod';
 import { CLOCK, Clock } from '@app/common/core/clock';
 import { TransactionRunner } from '@app/infrastructure/context';
 import { decodeOrderCursor, encodeOrderCursor } from '../domain/order-cursor';
-import VoucherModel from '../infra/models/voucher.model';
 
 /** The command the booking confirmation sends to orders (S22 emits, S10 consumes). */
 export type BookingVoucherCommand = z.infer<
@@ -34,7 +33,7 @@ interface VoucherRow {
 @Injectable()
 export class VoucherService {
   constructor(
-    @InjectModel(VoucherModel) private readonly vouchers: typeof VoucherModel,
+    @InjectConnection() private readonly sequelize: Sequelize,
     private readonly runner: TransactionRunner,
     @Inject(CLOCK) private readonly clock: Clock,
   ) {}
@@ -42,7 +41,7 @@ export class VoucherService {
   /** Returns whether this call created the voucher (false: it already existed). */
   async issue(command: BookingVoucherCommand): Promise<boolean> {
     return this.runner.run(async (transaction) => {
-      const [created] = await this.vouchers.sequelize!.query<{ id: string }>(
+      const [created] = await this.sequelize.query<{ id: string }>(
         `INSERT INTO "Voucher" ("holdId", "launchEventId", "shopId", "userId", "seatCount", "status", "createdAt")
          VALUES (:holdId, :launchEventId, :shopId, :userId, :seatCount, 'ISSUED', :now)
          ON CONFLICT ("holdId") DO NOTHING
@@ -71,7 +70,7 @@ export class VoucherService {
   ): Promise<VoucherPage> {
     const scope = `voucher:${userId}`;
     const after = query.cursor ? decodeOrderCursor(scope, query.cursor) : null;
-    const rows = await this.vouchers.sequelize!.query<VoucherRow>(
+    const rows = await this.sequelize.query<VoucherRow>(
       `SELECT "id", "holdId", "launchEventId", "shopId", "seatCount", "status", "createdAt"
          FROM "Voucher"
         WHERE "userId" = :userId
