@@ -215,7 +215,7 @@ export async function createAnalyticsApp(
     extraImports: [AnalyticsModule, ...(options.extraImports ?? [])],
     env: { TRUSTED_PROXIES: '127.0.0.1', ...options.env },
     structuredLogger: options.structuredLogger,
-    ...(redisProxy && { redisUrl: `redis://127.0.0.1:${redisProxy.port}/0` }),
+    ...(redisProxy && { redisUrl: `redis://127.0.0.1:${redisProxy.port}/${new URL(process.env.REDIS_URL ?? "redis://localhost:6400/0").pathname.slice(1) || "0"}` }),
   });
   base.clock.set(T0);
   const app = base.app;

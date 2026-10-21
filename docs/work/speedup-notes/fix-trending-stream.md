@@ -23,3 +23,6 @@ All three are in the group "the aggregate store fails". They put a fault proxy i
 ## What was not done
 Sharing one app between tests was not tried: several tests close or restart the consumer, and an earlier attempt
 broke 5 tests. The remaining time is the broker's join delay per test, which tests cannot shorten honestly.
+
+## Result (shard 10, whole file)
+Before: 3 failed, 15 passed, 352 s. After: 18 passed, 142 s.

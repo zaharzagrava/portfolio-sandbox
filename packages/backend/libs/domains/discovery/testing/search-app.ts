@@ -93,6 +93,8 @@ export async function createSearchApp(
     /** A fault proxy in front of the broker, to prove logging and clicks never hurt a search. */
     kafkaProxy?: boolean;
     env?: Record<string, string>;
+    /** The limiter reads the frozen test clock (see createCatalogApp), so a spec filling a bucket sees no refill. */
+    limiterUsesClock?: boolean;
   } = {},
 ): Promise<SearchTestApp> {
   const embeddings = new TestEmbeddingProvider();
@@ -118,6 +120,7 @@ export async function createSearchApp(
       : null,
   ]);
   const base = await createCatalogApp({
+    limiterUsesClock: options.limiterUsesClock,
     ...(redisProxy
       ? { redisUrl: `redis://127.0.0.1:${redisProxy.port}/${redisDb()}` }
       : {}),

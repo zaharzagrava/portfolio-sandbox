@@ -277,7 +277,7 @@ describe('Payments: reads, list and tenant isolation', () => {
       port: Number(redis.port || 6379),
     });
     const own = await createPaymentsApp({
-      redisUrl: `redis://127.0.0.1:${proxy.port}/0`,
+      redisUrl: `redis://127.0.0.1:${proxy.port}/${new URL(process.env.REDIS_URL ?? "redis://localhost:6400/0").pathname.slice(1) || "0"}`,
     });
     try {
       await own.reset();

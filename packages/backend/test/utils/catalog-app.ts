@@ -4,6 +4,7 @@ import { getModelToken } from '@nestjs/sequelize';
 import { GetCommand } from '@aws-sdk/lib-dynamodb';
 import supertest from 'supertest';
 import { CLOCK, FakeClock } from '@app/common/core/clock';
+import { TimeSource } from '@app/infrastructure/rate-limit/time-source';
 import { DynamoService } from '@app/infrastructure/dynamo/dynamo.service';
 import { LoggingModule } from '@app/common/logging/logging.module';
 import { configureHttpApp } from '@app/infrastructure/platform/bootstrap-http';
@@ -79,10 +80,24 @@ export async function createCatalogApp(
     customize?: (builder: TestingModuleBuilder) => TestingModuleBuilder;
     redisUrl?: string;
     env?: Record<string, string>;
+    /**
+     * The rate limiter reads the app's frozen test clock instead of the store's real time, so a spec that fills a
+     * bucket with many calls does not see it refill while the calls are slow (a busy machine). Wins over nothing:
+     * a provider override of `TimeSource` in `overrides` or `customize` still replaces it.
+     */
+    limiterUsesClock?: boolean;
   } = {},
 ): Promise<CatalogTestApp> {
   const env = {
-    ...(options.redisUrl ? { REDIS_URL: options.redisUrl } : {}),
+    ...(options.redisUrl
+      ? {
+          REDIS_URL: options.redisUrl,
+          // A fault proxy in front of Redis is there to prove the limiter's short allowance and fail-open path
+          // (a 'hang' proxy must be given up on quickly), so those apps keep the production 200 ms, not the
+          // generous test default from e2e-env.setup.ts.
+          RATE_LIMIT_STORE_TIMEOUT_MS: '200',
+        }
+      : {}),
     ...options.env,
   };
   const previous = Object.fromEntries(
@@ -107,6 +122,10 @@ export async function createCatalogApp(
         stores: ['redis', 'dynamo'],
         customize: (builder) => {
           let b = builder.overrideProvider(CLOCK).useValue(clock);
+          if (options.limiterUsesClock)
+            b = b
+              .overrideProvider(TimeSource)
+              .useValue({ overrideMs: () => clock.nowMs() });
           for (const o of options.overrides ?? [])
             b = b.overrideProvider(o.provide).useValue(o.useValue);
           return options.customize ? options.customize(b) : b;

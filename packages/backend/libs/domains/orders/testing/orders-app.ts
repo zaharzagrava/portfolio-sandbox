@@ -165,6 +165,7 @@ export async function createOrdersApp(
   const discounts = new FakeDiscounts();
   const realtime = new FakeRealtimePublisher();
   const base = await createCatalogApp({
+    limiterUsesClock: true, // 120 sequential cart writes must not see the window slide on a busy machine
     redisUrl: options.redisUrl,
     structuredLogger: options.structuredLogger,
     extraImports: [

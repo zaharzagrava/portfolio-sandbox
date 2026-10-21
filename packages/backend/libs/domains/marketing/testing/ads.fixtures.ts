@@ -298,7 +298,7 @@ export async function createAdsApp(
 
   const base = await createCatalogApp({
     structuredLogger: options.structuredLogger,
-    ...(redisProxy && { redisUrl: `redis://127.0.0.1:${redisProxy.port}/0` }),
+    ...(redisProxy && { redisUrl: `redis://127.0.0.1:${redisProxy.port}/${new URL(process.env.REDIS_URL ?? "redis://localhost:6400/0").pathname.slice(1) || "0"}` }),
     env: options.env,
     extraImports: [AdsModule, ...(options.extraImports ?? [])],
     customize: (builder) => {

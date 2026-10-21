@@ -35,7 +35,7 @@ describe('Bulk import fairness and limits', () => {
   beforeAll(async () => {
     proxy = await TcpFaultProxy.start(redisTarget());
     kit = await createImportApp({
-      env: { REDIS_URL: `redis://127.0.0.1:${proxy.port}/0` },
+      env: { REDIS_URL: `redis://127.0.0.1:${proxy.port}/${new URL(process.env.REDIS_URL ?? "redis://localhost:6400/0").pathname.slice(1) || "0"}` },
     });
   });
   afterAll(async () => {

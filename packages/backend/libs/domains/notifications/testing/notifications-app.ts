@@ -2,6 +2,7 @@ import type { INestApplication } from '@nestjs/common';
 import supertest from 'supertest';
 import { CLOCK } from '@app/common/core/clock';
 import { configureHttpApp } from '@app/infrastructure/platform/bootstrap-http';
+import { RateLimiterService } from '@app/infrastructure/rate-limit';
 import { RealtimePublisher } from '@app/infrastructure/realtime';
 import { generateTestingModule } from '@app/test/utils/global-modules';
 import { SeedsModule } from '@app/test/seeds/seeds.module';
@@ -233,6 +234,14 @@ export async function createNotificationsApp(
       clock.reset();
       app.get(KeyStore).invalidate();
       for (const p of Object.values(providers)) p.reset();
+      // The provider send budgets (token buckets, 14 e-mails a second) live in real time in Redis and in a local lease: what one
+      // spec spends must not be missing in the next one (AS-49 sent 20 mails at once and found the bucket still drained).
+      const limiter = app.get(RateLimiterService);
+      for (const policy of [
+        'notify.email', 'notify.sms', 'notify.push',
+        'notify.email.marketing', 'notify.sms.marketing', 'notify.push.marketing',
+      ] as const)
+        for (const p of Object.values(providers)) await limiter.reset(policy, p.name);
       realtime.reset();
       if (options.workers !== false)
         for (const chain of Object.values(

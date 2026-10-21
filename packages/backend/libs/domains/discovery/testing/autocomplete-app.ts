@@ -60,6 +60,7 @@ export async function createAutocompleteApp(
   options: Parameters<typeof createSearchApp>[0] = {},
 ): Promise<AutocompleteTestApp> {
   const base = await createSearchApp({
+    limiterUsesClock: true, // 600 requests in a row must not see the window slide on a busy machine
     ...options,
     extraImports: [
       AutocompleteModule,

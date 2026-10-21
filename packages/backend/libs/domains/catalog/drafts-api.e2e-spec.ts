@@ -765,7 +765,7 @@ describe('Listing drafts API', () => {
       });
       limited = await createCatalogApp({
         extraImports: [DraftsModule],
-        redisUrl: `redis://127.0.0.1:${proxy.port}/0`,
+        redisUrl: `redis://127.0.0.1:${proxy.port}/${new URL(process.env.REDIS_URL ?? "redis://localhost:6400/0").pathname.slice(1) || "0"}`,
       });
     });
     afterAll(async () => {

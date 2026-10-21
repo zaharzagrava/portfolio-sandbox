@@ -1193,7 +1193,7 @@ describe('Product write API with the limiter store down', () => {
       port: Number(url.port || 6379),
     });
     t = await createCatalogApp({
-      redisUrl: `redis://127.0.0.1:${proxy.port}/0`,
+      redisUrl: `redis://127.0.0.1:${proxy.port}/${new URL(process.env.REDIS_URL ?? "redis://localhost:6400/0").pathname.slice(1) || "0"}`,
     });
   });
   afterAll(async () => {

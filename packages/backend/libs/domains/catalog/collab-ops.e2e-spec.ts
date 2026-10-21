@@ -60,7 +60,7 @@ describe('Collab operations', () => {
     t = await createCatalogApp({
       structuredLogger: true,
       extraImports: [DraftsModule, CollabModule, DraftsProjectorModule],
-      redisUrl: `redis://127.0.0.1:${proxy.port}/0`,
+      redisUrl: `redis://127.0.0.1:${proxy.port}/${new URL(process.env.REDIS_URL ?? "redis://localhost:6400/0").pathname.slice(1) || "0"}`,
     });
     docs = t.app.get<DocStore>(DOC_STORE, { strict: false });
     objects = t.app.get<SnapshotStore>(SNAPSHOT_STORE, { strict: false });

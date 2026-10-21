@@ -946,7 +946,7 @@ describe('Checkout: fail-closed rate limiting (AS-26)', () => {
       port: Number(redis.port || 6379),
     });
     const t = await createOrdersApp({
-      redisUrl: `redis://127.0.0.1:${proxy.port}/0`,
+      redisUrl: `redis://127.0.0.1:${proxy.port}/${new URL(process.env.REDIS_URL ?? "redis://localhost:6400/0").pathname.slice(1) || "0"}`,
     });
     try {
       await t.reset();

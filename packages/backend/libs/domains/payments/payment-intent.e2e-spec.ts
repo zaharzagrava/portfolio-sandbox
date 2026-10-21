@@ -547,7 +547,7 @@ describe('Payment intents: fail-closed rate limiting (AS-14)', () => {
       port: Number(redis.port || 6379),
     });
     const t = await createPaymentsApp({
-      redisUrl: `redis://127.0.0.1:${proxy.port}/0`,
+      redisUrl: `redis://127.0.0.1:${proxy.port}/${new URL(process.env.REDIS_URL ?? "redis://localhost:6400/0").pathname.slice(1) || "0"}`,
     });
     try {
       await t.reset();
