@@ -608,9 +608,17 @@ describe('Follow graph: the limiter store is down', () => {
   let t: FeedTestApp;
 
   beforeAll(async () => {
-    proxy = await TcpFaultProxy.start({ host: 'localhost', port: 6400 });
+    proxy = await TcpFaultProxy.start({
+      host: 'localhost',
+      port: Number(
+        new URL(process.env.REDIS_URL ?? 'redis://localhost:6400/0').port ||
+          6400,
+      ),
+    });
     t = await createFeedApp({
-      env: { REDIS_URL: `redis://127.0.0.1:${proxy.port}/${new URL(process.env.REDIS_URL ?? "redis://localhost:6400/0").pathname.slice(1) || "0"}` },
+      env: {
+        REDIS_URL: `redis://127.0.0.1:${proxy.port}/${new URL(process.env.REDIS_URL ?? 'redis://localhost:6400/0').pathname.slice(1) || '0'}`,
+      },
     });
   });
   afterAll(async () => {

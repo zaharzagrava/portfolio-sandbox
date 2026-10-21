@@ -34,390 +34,431 @@ describe('Bad messages and sick stores do not stop the line', () => {
   afterAll(() => kit.stopAll());
   afterEach(() => kit.resetProxy());
 
-  it.concurrent('S53 AS-50: invalid JSON, an empty value and a non-envelope each go to the dead-letter topic, the rest of the batch is applied', async () => {
-    const s = await kit.scenario();
-    const Natural = s.make('natural');
-    const app = await s.boot([Natural]);
-    const consumer = app.get(Natural);
-    const [a, b] = [uuidv7(), uuidv7()];
+  it.concurrent(
+    'S53 AS-50: invalid JSON, an empty value and a non-envelope each go to the dead-letter topic, the rest of the batch is applied',
+    async () => {
+      const s = await kit.scenario();
+      const Natural = s.make('natural');
+      const app = await s.boot([Natural]);
+      const consumer = app.get(Natural);
+      const [a, b] = [uuidv7(), uuidv7()];
 
-    await s.publishRaw([
-      {
-        key: a,
-        value: JSON.stringify(s.ItemChanged.create(a, 1, { name: 'good-1' })),
-      },
-      { key: 'k1', value: '{this is not json' },
-      { key: 'k2', value: null },
-      { key: 'k3', value: JSON.stringify({ hello: 'world' }) },
-      {
-        key: b,
-        value: JSON.stringify(s.ItemChanged.create(b, 1, { name: 'good-2' })),
-      },
-    ]);
-
-    await waitFor(
-      async () =>
-        (await dlq(consumer.name)).length === 3 &&
-        (await kit.naturalRows(consumer.name)) === 2,
-      {
-        description: '3 dead letters, 2 applied',
-      },
-    );
-    const letters = await dlq(consumer.name);
-    expect(letters.map((l) => l.headers['x-dlq-reason-code'])).toEqual([
-      'INVALID_ENVELOPE',
-      'INVALID_ENVELOPE',
-      'INVALID_ENVELOPE',
-    ]);
-    expect(
-      consumer.probe.calls
-        .flatMap((c) => c.events)
-        .map((e) => e.aggregateId)
-        .sort(),
-    ).toEqual([a, b].sort());
-    expect(dlqTotal(consumer.name, 'INVALID_ENVELOPE')).toBe(3);
-  });
-
-  it.concurrent('S53 AS-51: the third of five events fails its payload schema: it is dead-lettered with the paths, never the values, and the other four are applied', async () => {
-    const s = await kit.scenario();
-    const Natural = s.make('natural');
-    const app = await s.boot([Natural]);
-    const consumer = app.get(Natural);
-    const ids = Array.from({ length: 5 }, () => uuidv7());
-    const events = ids.map((id, i) =>
-      s.ItemChanged.create(id, 1, { name: `n${i}` }),
-    );
-    const bad = { ...events[2], payload: { name: 987654 } };
-
-    await s.publishRaw(
-      events.map((e, i) => ({
-        key: e.aggregateId,
-        value: JSON.stringify(i === 2 ? bad : e),
-      })),
-    );
-
-    await waitFor(
-      async () =>
-        (await dlq(consumer.name)).length === 1 &&
-        (await kit.naturalRows(consumer.name)) === 4,
-      {
-        description: '1 dead letter, 4 applied',
-      },
-    );
-    const [letter] = await dlq(consumer.name);
-    expect(letter.headers['x-dlq-reason-code']).toBe('INVALID_PAYLOAD');
-    expect(letter.headers['x-dlq-reason']).toContain('name');
-    expect(letter.headers['x-dlq-reason']).not.toContain('987654');
-    expect(letter.key).toBe(ids[2]);
-  });
-
-  it.concurrent('S53 AS-52: an unknown event type is skipped and counted ignored, its offset is committed, nothing is dead-lettered', async () => {
-    const s = await kit.scenario();
-    const Other = defineEvent(
-      `${s.agg}.something_else`,
-      s.agg,
-      1,
-      z.object({ x: z.number() }),
-    );
-    const Natural = s.make('natural');
-    const app = await s.boot([Natural]);
-    const consumer = app.get(Natural);
-
-    await s.publish([Other.create(uuidv7(), 1, { x: 1 })]);
-
-    await waitFor(async () => kit.metric(consumer.name, 'ignored') === 1, {
-      description: 'ignored',
-    });
-    await waitFor(
-      async () =>
-        (await kit.committed(s.kafka, consumer.name, s.topic))[0] === 1,
-      { description: 'offset committed' },
-    );
-    expect(consumer.probe.calls).toHaveLength(0);
-    expect(await dlq(consumer.name)).toHaveLength(0);
-  });
-
-  it.concurrent('S53 AS-53: an event of a known type with a newer contract version is dead-lettered UNSUPPORTED_VERSION', async () => {
-    const s = await kit.scenario();
-    const V2 = defineEvent(
-      s.ItemChanged.type,
-      s.agg,
-      2,
-      z.object({ name: z.string() }),
-    );
-    const Natural = s.make('natural');
-    const app = await s.boot([Natural]);
-    const consumer = app.get(Natural);
-
-    await s.publish([V2.create(uuidv7(), 1, { name: 'from the future' })]);
-
-    await waitFor(async () => (await dlq(consumer.name)).length === 1, {
-      description: 'dead letter',
-    });
-    expect((await dlq(consumer.name))[0].headers['x-dlq-reason-code']).toBe(
-      'UNSUPPORTED_VERSION',
-    );
-    expect(consumer.probe.calls).toHaveLength(0);
-  });
-
-  it.concurrent('S53 AS-54: a version 1 event is upgraded and applied with the same effect as a native version 2', async () => {
-    const s = await kit.scenario();
-    const R1 = defineEvent(
-      `${s.agg}.renamed`,
-      s.agg,
-      1,
-      z.object({ name: z.string() }),
-      { carries: 'state' },
-    );
-    const R2 = defineEvent(
-      `${s.agg}.renamed`,
-      s.agg,
-      2,
-      z.object({ title: z.string() }),
-      { carries: 'state' },
-    );
-    const Natural = s.make('natural', 'natural', {
-      handles: [
+      await s.publishRaw([
         {
-          event: R2,
-          upgradeFrom: [
-            {
-              version: 1,
-              upcast: (p) => ({ title: (p as { name: string }).name }),
-            },
-          ],
+          key: a,
+          value: JSON.stringify(s.ItemChanged.create(a, 1, { name: 'good-1' })),
         },
-      ],
-    });
-    const app = await s.boot([Natural]);
-    const consumer = app.get(Natural);
-    const [old, native] = [uuidv7(), uuidv7()];
+        { key: 'k1', value: '{this is not json' },
+        { key: 'k2', value: null },
+        { key: 'k3', value: JSON.stringify({ hello: 'world' }) },
+        {
+          key: b,
+          value: JSON.stringify(s.ItemChanged.create(b, 1, { name: 'good-2' })),
+        },
+      ]);
 
-    await s.publish([
-      R1.create(old, 1, { name: 'Same' }),
-      R2.create(native, 1, { title: 'Same' }),
-    ]);
+      await waitFor(
+        async () =>
+          (await dlq(consumer.name)).length === 3 &&
+          (await kit.naturalRows(consumer.name)) === 2,
+        {
+          description: '3 dead letters, 2 applied',
+        },
+      );
+      const letters = await dlq(consumer.name);
+      expect(letters.map((l) => l.headers['x-dlq-reason-code'])).toEqual([
+        'INVALID_ENVELOPE',
+        'INVALID_ENVELOPE',
+        'INVALID_ENVELOPE',
+      ]);
+      expect(
+        consumer.probe.calls
+          .flatMap((c) => c.events)
+          .map((e) => e.aggregateId)
+          .sort(),
+      ).toEqual([a, b].sort());
+      expect(dlqTotal(consumer.name, 'INVALID_ENVELOPE')).toBe(3);
+    },
+  );
 
-    await waitFor(async () => (await kit.naturalRows(consumer.name)) === 2, {
-      description: 'both applied',
-    });
-    const [rows] = await kit.sequelize.query(
-      `SELECT "key", "value" FROM "S53FixtureNatural" WHERE "consumer" = $1`,
-      { bind: [consumer.name] },
-    );
-    expect(
-      (rows as { key: string; value: string }[]).map((r) => r.value),
-    ).toEqual(['Same', 'Same']);
-    const handled = consumer.probe.calls.flatMap((c) => c.events);
-    expect(handled.map((e) => e.version)).toEqual([2, 2]);
-    expect(handled.map((e) => e.payload)).toEqual([
-      { title: 'Same' },
-      { title: 'Same' },
-    ]);
-    expect(await dlq(consumer.name)).toHaveLength(0);
-  });
+  it.concurrent(
+    'S53 AS-51: the third of five events fails its payload schema: it is dead-lettered with the paths, never the values, and the other four are applied',
+    async () => {
+      const s = await kit.scenario();
+      const Natural = s.make('natural');
+      const app = await s.boot([Natural]);
+      const consumer = app.get(Natural);
+      const ids = Array.from({ length: 5 }, () => uuidv7());
+      const events = ids.map((id, i) =>
+        s.ItemChanged.create(id, 1, { name: `n${i}` }),
+      );
+      const bad = { ...events[2], payload: { name: 987654 } };
 
-  it.concurrent('S53 AS-55: an aggregate id that is not a UUID is dead-lettered INVALID_AGGREGATE_ID and has no effect', async () => {
-    const s = await kit.scenario();
-    const Natural = s.make('natural', 'natural', {
-      aggregateIdSchema: z.uuid(),
-    });
-    const app = await s.boot([Natural]);
-    const consumer = app.get(Natural);
+      await s.publishRaw(
+        events.map((e, i) => ({
+          key: e.aggregateId,
+          value: JSON.stringify(i === 2 ? bad : e),
+        })),
+      );
 
-    await s.publish([
-      s.ItemChanged.create('not-a-uuid', 1, { name: 'bad id' }),
-      s.ItemChanged.create(uuidv7(), 1, { name: 'good id' }),
-    ]);
+      await waitFor(
+        async () =>
+          (await dlq(consumer.name)).length === 1 &&
+          (await kit.naturalRows(consumer.name)) === 4,
+        {
+          description: '1 dead letter, 4 applied',
+        },
+      );
+      const [letter] = await dlq(consumer.name);
+      expect(letter.headers['x-dlq-reason-code']).toBe('INVALID_PAYLOAD');
+      expect(letter.headers['x-dlq-reason']).toContain('name');
+      expect(letter.headers['x-dlq-reason']).not.toContain('987654');
+      expect(letter.key).toBe(ids[2]);
+    },
+  );
 
-    await waitFor(
-      async () =>
-        (await dlq(consumer.name)).length === 1 &&
-        (await kit.naturalRows(consumer.name)) === 1,
-      {
-        description: '1 dead letter, 1 applied',
-      },
-    );
-    expect((await dlq(consumer.name))[0].headers['x-dlq-reason-code']).toBe(
-      'INVALID_AGGREGATE_ID',
-    );
-    expect((await dlq(consumer.name))[0].headers['x-dlq-reason']).not.toContain(
-      'not-a-uuid',
-    );
-  });
+  it.concurrent(
+    'S53 AS-52: an unknown event type is skipped and counted ignored, its offset is committed, nothing is dead-lettered',
+    async () => {
+      const s = await kit.scenario();
+      const Other = defineEvent(
+        `${s.agg}.something_else`,
+        s.agg,
+        1,
+        z.object({ x: z.number() }),
+      );
+      const Natural = s.make('natural');
+      const app = await s.boot([Natural]);
+      const consumer = app.get(Natural);
 
-  it.concurrent('S53 AS-56: a dead letter keeps the original key and value bytes and carries the full header set', async () => {
-    const s = await kit.scenario();
-    const Natural = s.make('natural');
-    const app = await s.boot([Natural]);
-    const consumer = app.get(Natural);
-    const key = Buffer.from('raw-key-\u0001-bytes', 'latin1');
-    const value = Buffer.from('{broken json é with bytes', 'latin1');
+      await s.publish([Other.create(uuidv7(), 1, { x: 1 })]);
 
-    const [meta] = await s.publishRaw([{ key, value }]);
-
-    await waitFor(async () => (await dlq(consumer.name)).length === 1, {
-      description: 'dead letter',
-    });
-    const [letter] = await dlq(consumer.name);
-    const raw = await rawDlq(s.kafka, consumer.name);
-    expect(Buffer.compare(raw.key!, key)).toBe(0);
-    expect(Buffer.compare(raw.value!, value)).toBe(0);
-    expect(Object.keys(letter.headers).sort()).toEqual([
-      'x-attempts',
-      'x-consumer',
-      'x-dlq-reason',
-      'x-dlq-reason-code',
-      'x-failed-at',
-      'x-source-offset',
-      'x-source-partition',
-      'x-source-topic',
-    ]);
-    expect(letter.headers).toMatchObject({
-      'x-source-topic': s.topic,
-      'x-source-partition': '0',
-      'x-source-offset': String(meta.baseOffset),
-      'x-consumer': consumer.name,
-      'x-dlq-reason-code': 'INVALID_ENVELOPE',
-      'x-attempts': '0',
-      'x-failed-at': kitClock.now().toISOString(),
-    });
-    expect(letter.headers['x-dlq-reason'].length).toBeLessThanOrEqual(500);
-  });
-
-  it.concurrent('S53 AS-57: a handler that always throws a permanent error is attempted 3 times, then dead-lettered HANDLER_FAILED, the others are applied and the offset passes it', async () => {
-    const s = await kit.scenario();
-    const Natural = s.make('natural');
-    const app = await s.boot([Natural]);
-    const consumer = app.get(Natural);
-    const [e1, poison, e3] = [uuidv7(), uuidv7(), uuidv7()].map((id, i) =>
-      s.ItemChanged.create(id, 1, { name: `e${i}` }),
-    );
-    consumer.probe.throwBefore.set(poison.eventId, {
-      times: -1,
-      error: () => new PermanentError('cannot be applied'),
-    });
-
-    await s.publish([e1, poison, e3]);
-
-    await waitFor(
-      async () =>
-        (await dlq(consumer.name)).length === 1 &&
-        (await kit.naturalRows(consumer.name)) === 2,
-      {
-        description: 'poison dead-lettered, others applied',
-      },
-    );
-    expect(consumer.probe.invocationsOf(poison.eventId)).toBe(3);
-    const [letter] = await dlq(consumer.name);
-    expect(letter.headers).toMatchObject({
-      'x-dlq-reason-code': 'HANDLER_FAILED',
-      'x-attempts': '3',
-    });
-    expect(letter.headers['x-dlq-reason']).toContain('PermanentError');
-    expect(letter.headers['x-dlq-reason']).not.toContain('cannot be applied');
-    expect(letter.json<EventEnvelope>().eventId).toBe(poison.eventId);
-    await waitFor(
-      async () =>
-        (await kit.committed(s.kafka, consumer.name, s.topic))[0] === 3,
-      { description: 'offset passed the poison' },
-    );
-  });
-
-  it.concurrent('S53 AS-58: a consumer configured for 6 attempts invokes the handler exactly 6 times before dead-lettering', async () => {
-    const s = await kit.scenario();
-    const Natural = s.make('natural', 'six', { attempts: 6 });
-    const app = await s.boot([Natural]);
-    const consumer = app.get(Natural);
-    const poison = s.ItemChanged.create(uuidv7(), 1, { name: 'poison' });
-    consumer.probe.throwBefore.set(poison.eventId, {
-      times: -1,
-      error: () => new Error('always'),
-    });
-
-    await s.publish([poison]);
-
-    await waitFor(async () => (await dlq(consumer.name)).length === 1, {
-      description: 'dead letter',
-    });
-    expect(consumer.probe.invocationsOf(poison.eventId)).toBe(6);
-    expect((await dlq(consumer.name))[0].headers['x-attempts']).toBe('6');
-  });
-
-  it.concurrent('S53 AS-59: a sink that is unreachable for 30 s pauses the partition: nothing is dead-lettered, and after the sink returns every event is applied in order', async () => {
-    const s = await kit.scenario();
-    const sinkProxy = await TcpFaultProxy.start({
-      host: 'localhost',
-      port: 6400,
-    });
-    const direct = new Redis({ host: 'localhost', port: 6400, db: redisDb });
-    const listKey = `s53:outage:${s.id}`;
-
-    @Injectable()
-    class OutageConsumer implements Projector {
-      readonly name = `fx-outage-${s.id}`;
-      readonly topics = [s.topic];
-      readonly idempotency = 'natural' as const;
-      readonly handles = [{ event: s.ItemChanged }];
-      private readonly sink = new Redis({
-        host: '127.0.0.1',
-        port: sinkProxy.port,
-        db: redisDb,
-        lazyConnect: true,
-        maxRetriesPerRequest: 1,
-        enableOfflineQueue: false,
-        retryStrategy: () => 200,
+      await waitFor(async () => kit.metric(consumer.name, 'ignored') === 1, {
+        description: 'ignored',
       });
-      async project(events: EventEnvelope[]): Promise<void> {
-        try {
-          if (this.sink.status === 'wait' || this.sink.status === 'end')
-            await this.sink.connect().catch(() => undefined);
-          for (const e of events) await this.sink.rpush(listKey, e.eventId);
-        } catch (error) {
-          throw new TransientError('sink unreachable', { cause: error });
+      await waitFor(
+        async () =>
+          (await kit.committed(s.kafka, consumer.name, s.topic))[0] === 1,
+        { description: 'offset committed' },
+      );
+      expect(consumer.probe.calls).toHaveLength(0);
+      expect(await dlq(consumer.name)).toHaveLength(0);
+    },
+  );
+
+  it.concurrent(
+    'S53 AS-53: an event of a known type with a newer contract version is dead-lettered UNSUPPORTED_VERSION',
+    async () => {
+      const s = await kit.scenario();
+      const V2 = defineEvent(
+        s.ItemChanged.type,
+        s.agg,
+        2,
+        z.object({ name: z.string() }),
+      );
+      const Natural = s.make('natural');
+      const app = await s.boot([Natural]);
+      const consumer = app.get(Natural);
+
+      await s.publish([V2.create(uuidv7(), 1, { name: 'from the future' })]);
+
+      await waitFor(async () => (await dlq(consumer.name)).length === 1, {
+        description: 'dead letter',
+      });
+      expect((await dlq(consumer.name))[0].headers['x-dlq-reason-code']).toBe(
+        'UNSUPPORTED_VERSION',
+      );
+      expect(consumer.probe.calls).toHaveLength(0);
+    },
+  );
+
+  it.concurrent(
+    'S53 AS-54: a version 1 event is upgraded and applied with the same effect as a native version 2',
+    async () => {
+      const s = await kit.scenario();
+      const R1 = defineEvent(
+        `${s.agg}.renamed`,
+        s.agg,
+        1,
+        z.object({ name: z.string() }),
+        { carries: 'state' },
+      );
+      const R2 = defineEvent(
+        `${s.agg}.renamed`,
+        s.agg,
+        2,
+        z.object({ title: z.string() }),
+        { carries: 'state' },
+      );
+      const Natural = s.make('natural', 'natural', {
+        handles: [
+          {
+            event: R2,
+            upgradeFrom: [
+              {
+                version: 1,
+                upcast: (p) => ({ title: (p as { name: string }).name }),
+              },
+            ],
+          },
+        ],
+      });
+      const app = await s.boot([Natural]);
+      const consumer = app.get(Natural);
+      const [old, native] = [uuidv7(), uuidv7()];
+
+      await s.publish([
+        R1.create(old, 1, { name: 'Same' }),
+        R2.create(native, 1, { title: 'Same' }),
+      ]);
+
+      await waitFor(async () => (await kit.naturalRows(consumer.name)) === 2, {
+        description: 'both applied',
+      });
+      const [rows] = await kit.sequelize.query(
+        `SELECT "key", "value" FROM "S53FixtureNatural" WHERE "consumer" = $1`,
+        { bind: [consumer.name] },
+      );
+      expect(
+        (rows as { key: string; value: string }[]).map((r) => r.value),
+      ).toEqual(['Same', 'Same']);
+      const handled = consumer.probe.calls.flatMap((c) => c.events);
+      expect(handled.map((e) => e.version)).toEqual([2, 2]);
+      expect(handled.map((e) => e.payload)).toEqual([
+        { title: 'Same' },
+        { title: 'Same' },
+      ]);
+      expect(await dlq(consumer.name)).toHaveLength(0);
+    },
+  );
+
+  it.concurrent(
+    'S53 AS-55: an aggregate id that is not a UUID is dead-lettered INVALID_AGGREGATE_ID and has no effect',
+    async () => {
+      const s = await kit.scenario();
+      const Natural = s.make('natural', 'natural', {
+        aggregateIdSchema: z.uuid(),
+      });
+      const app = await s.boot([Natural]);
+      const consumer = app.get(Natural);
+
+      await s.publish([
+        s.ItemChanged.create('not-a-uuid', 1, { name: 'bad id' }),
+        s.ItemChanged.create(uuidv7(), 1, { name: 'good id' }),
+      ]);
+
+      await waitFor(
+        async () =>
+          (await dlq(consumer.name)).length === 1 &&
+          (await kit.naturalRows(consumer.name)) === 1,
+        {
+          description: '1 dead letter, 1 applied',
+        },
+      );
+      expect((await dlq(consumer.name))[0].headers['x-dlq-reason-code']).toBe(
+        'INVALID_AGGREGATE_ID',
+      );
+      expect(
+        (await dlq(consumer.name))[0].headers['x-dlq-reason'],
+      ).not.toContain('not-a-uuid');
+    },
+  );
+
+  it.concurrent(
+    'S53 AS-56: a dead letter keeps the original key and value bytes and carries the full header set',
+    async () => {
+      const s = await kit.scenario();
+      const Natural = s.make('natural');
+      const app = await s.boot([Natural]);
+      const consumer = app.get(Natural);
+      const key = Buffer.from('raw-key-\u0001-bytes', 'latin1');
+      const value = Buffer.from('{broken json é with bytes', 'latin1');
+
+      const [meta] = await s.publishRaw([{ key, value }]);
+
+      await waitFor(async () => (await dlq(consumer.name)).length === 1, {
+        description: 'dead letter',
+      });
+      const [letter] = await dlq(consumer.name);
+      const raw = await rawDlq(s.kafka, consumer.name);
+      expect(Buffer.compare(raw.key!, key)).toBe(0);
+      expect(Buffer.compare(raw.value!, value)).toBe(0);
+      expect(Object.keys(letter.headers).sort()).toEqual([
+        'x-attempts',
+        'x-consumer',
+        'x-dlq-reason',
+        'x-dlq-reason-code',
+        'x-failed-at',
+        'x-source-offset',
+        'x-source-partition',
+        'x-source-topic',
+      ]);
+      expect(letter.headers).toMatchObject({
+        'x-source-topic': s.topic,
+        'x-source-partition': '0',
+        'x-source-offset': String(meta.baseOffset),
+        'x-consumer': consumer.name,
+        'x-dlq-reason-code': 'INVALID_ENVELOPE',
+        'x-attempts': '0',
+        'x-failed-at': kitClock.now().toISOString(),
+      });
+      expect(letter.headers['x-dlq-reason'].length).toBeLessThanOrEqual(500);
+    },
+  );
+
+  it.concurrent(
+    'S53 AS-57: a handler that always throws a permanent error is attempted 3 times, then dead-lettered HANDLER_FAILED, the others are applied and the offset passes it',
+    async () => {
+      const s = await kit.scenario();
+      const Natural = s.make('natural');
+      const app = await s.boot([Natural]);
+      const consumer = app.get(Natural);
+      const [e1, poison, e3] = [uuidv7(), uuidv7(), uuidv7()].map((id, i) =>
+        s.ItemChanged.create(id, 1, { name: `e${i}` }),
+      );
+      consumer.probe.throwBefore.set(poison.eventId, {
+        times: -1,
+        error: () => new PermanentError('cannot be applied'),
+      });
+
+      await s.publish([e1, poison, e3]);
+
+      await waitFor(
+        async () =>
+          (await dlq(consumer.name)).length === 1 &&
+          (await kit.naturalRows(consumer.name)) === 2,
+        {
+          description: 'poison dead-lettered, others applied',
+        },
+      );
+      expect(consumer.probe.invocationsOf(poison.eventId)).toBe(3);
+      const [letter] = await dlq(consumer.name);
+      expect(letter.headers).toMatchObject({
+        'x-dlq-reason-code': 'HANDLER_FAILED',
+        'x-attempts': '3',
+      });
+      expect(letter.headers['x-dlq-reason']).toContain('PermanentError');
+      expect(letter.headers['x-dlq-reason']).not.toContain('cannot be applied');
+      expect(letter.json<EventEnvelope>().eventId).toBe(poison.eventId);
+      await waitFor(
+        async () =>
+          (await kit.committed(s.kafka, consumer.name, s.topic))[0] === 3,
+        { description: 'offset passed the poison' },
+      );
+    },
+  );
+
+  it.concurrent(
+    'S53 AS-58: a consumer configured for 6 attempts invokes the handler exactly 6 times before dead-lettering',
+    async () => {
+      const s = await kit.scenario();
+      const Natural = s.make('natural', 'six', { attempts: 6 });
+      const app = await s.boot([Natural]);
+      const consumer = app.get(Natural);
+      const poison = s.ItemChanged.create(uuidv7(), 1, { name: 'poison' });
+      consumer.probe.throwBefore.set(poison.eventId, {
+        times: -1,
+        error: () => new Error('always'),
+      });
+
+      await s.publish([poison]);
+
+      await waitFor(async () => (await dlq(consumer.name)).length === 1, {
+        description: 'dead letter',
+      });
+      expect(consumer.probe.invocationsOf(poison.eventId)).toBe(6);
+      expect((await dlq(consumer.name))[0].headers['x-attempts']).toBe('6');
+    },
+  );
+
+  it.concurrent(
+    'S53 AS-59: a sink that is unreachable for 30 s pauses the partition: nothing is dead-lettered, and after the sink returns every event is applied in order',
+    async () => {
+      const s = await kit.scenario();
+      const sinkProxy = await TcpFaultProxy.start({
+        host: 'localhost',
+        port: Number(
+          new URL(process.env.REDIS_URL ?? 'redis://localhost:6400/0').port ||
+            6400,
+        ),
+      });
+      const direct = new Redis({
+        host: 'localhost',
+        port: Number(
+          new URL(process.env.REDIS_URL ?? 'redis://localhost:6400/0').port ||
+            6400,
+        ),
+        db: redisDb,
+      });
+      const listKey = `s53:outage:${s.id}`;
+
+      @Injectable()
+      class OutageConsumer implements Projector {
+        readonly name = `fx-outage-${s.id}`;
+        readonly topics = [s.topic];
+        readonly idempotency = 'natural' as const;
+        readonly handles = [{ event: s.ItemChanged }];
+        private readonly sink = new Redis({
+          host: '127.0.0.1',
+          port: sinkProxy.port,
+          db: redisDb,
+          lazyConnect: true,
+          maxRetriesPerRequest: 1,
+          enableOfflineQueue: false,
+          retryStrategy: () => 200,
+        });
+        async project(events: EventEnvelope[]): Promise<void> {
+          try {
+            if (this.sink.status === 'wait' || this.sink.status === 'end')
+              await this.sink.connect().catch(() => undefined);
+            for (const e of events) await this.sink.rpush(listKey, e.eventId);
+          } catch (error) {
+            throw new TransientError('sink unreachable', { cause: error });
+          }
         }
       }
-    }
-    const app = await s.boot([OutageConsumer]);
-    const consumer = app.get(OutageConsumer);
-    const before = Array.from({ length: 3 }, (_, i) =>
-      s.ItemChanged.create(uuidv7(), 1, { name: `b${i}` }),
-    );
-    await s.publish(before);
-    await waitFor(async () => (await direct.llen(listKey)) === 3, {
-      description: 'first three applied',
-    });
+      const app = await s.boot([OutageConsumer]);
+      const consumer = app.get(OutageConsumer);
+      const before = Array.from({ length: 3 }, (_, i) =>
+        s.ItemChanged.create(uuidv7(), 1, { name: `b${i}` }),
+      );
+      await s.publish(before);
+      await waitFor(async () => (await direct.llen(listKey)) === 3, {
+        description: 'first three applied',
+      });
 
-    sinkProxy.mode = 'refuse';
-    sinkProxy.sever();
-    const during = Array.from({ length: 6 }, (_, i) =>
-      s.ItemChanged.create(uuidv7(), 1, { name: `d${i}` }),
-    );
-    await s.publish(during);
-    await new Promise((resolve) => setTimeout(resolve, 30_000));
+      sinkProxy.mode = 'refuse';
+      sinkProxy.sever();
+      const during = Array.from({ length: 6 }, (_, i) =>
+        s.ItemChanged.create(uuidv7(), 1, { name: `d${i}` }),
+      );
+      await s.publish(during);
+      await new Promise((resolve) => setTimeout(resolve, 30_000));
 
-    expect(dlqTotal(consumer.name, 'HANDLER_FAILED')).toBe(0);
-    expect(await direct.llen(listKey)).toBe(3);
-    expect(
-      MetricsRegistry.value('consumer_paused_total', {
-        consumer: consumer.name,
-        reason: 'transient',
-      }) ?? 0,
-    ).toBeGreaterThan(0);
+      expect(dlqTotal(consumer.name, 'HANDLER_FAILED')).toBe(0);
+      expect(await direct.llen(listKey)).toBe(3);
+      expect(
+        MetricsRegistry.value('consumer_paused_total', {
+          consumer: consumer.name,
+          reason: 'transient',
+        }) ?? 0,
+      ).toBeGreaterThan(0);
 
-    sinkProxy.mode = 'pass';
-    await waitFor(async () => (await direct.llen(listKey)) === 9, {
-      description: 'all applied after the outage',
-      timeoutMs: 30_000,
-    });
-    expect(await direct.lrange(listKey, 0, -1)).toEqual(
-      [...before, ...during].map((e) => e.eventId),
-    );
-    expect(await dlq(consumer.name)).toHaveLength(0);
-    await direct.del(listKey);
-    direct.disconnect();
-    await sinkProxy.close();
-  }, 120_000);
+      sinkProxy.mode = 'pass';
+      await waitFor(async () => (await direct.llen(listKey)) === 9, {
+        description: 'all applied after the outage',
+        timeoutMs: 30_000,
+      });
+      expect(await direct.lrange(listKey, 0, -1)).toEqual(
+        [...before, ...during].map((e) => e.eventId),
+      );
+      expect(await dlq(consumer.name)).toHaveLength(0);
+      await direct.del(listKey);
+      direct.disconnect();
+      await sinkProxy.close();
+    },
+    120_000,
+  );
 
   it('S53 AS-60: a backpressure error pauses that partition for at least its delay, other partitions keep flowing, and it is not a failure', async () => {
     const s = await kit.scenario(2);

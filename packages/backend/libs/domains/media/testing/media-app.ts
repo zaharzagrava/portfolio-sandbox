@@ -175,7 +175,12 @@ export interface MediaTestApp extends CatalogTestApp {
 }
 
 export const MINIO = { host: 'localhost', port: 9210 };
-export const REDIS = { host: 'localhost', port: 6400 };
+export const REDIS = {
+  host: 'localhost',
+  port: Number(
+    new URL(process.env.REDIS_URL ?? 'redis://localhost:6400/0').port || 6400,
+  ),
+};
 
 /** The real `MediaModule` behind the production HTTP pipeline, real Postgres, MinIO and Redis; only the queue transport is in memory. */
 export async function createMediaApp(
@@ -193,7 +198,9 @@ export async function createMediaApp(
   const holder: { clock?: { nowMs(): number } } = {};
   const base = await createCatalogApp({
     ...options,
-    ...(redisProxy && { redisUrl: `redis://127.0.0.1:${redisProxy.port}/${new URL(process.env.REDIS_URL ?? "redis://localhost:6400/0").pathname.slice(1) || "0"}` }),
+    ...(redisProxy && {
+      redisUrl: `redis://127.0.0.1:${redisProxy.port}/${new URL(process.env.REDIS_URL ?? 'redis://localhost:6400/0').pathname.slice(1) || '0'}`,
+    }),
     extraImports: [MediaModule, ...(options.extraImports ?? [])],
     customize: (builder) => {
       const b = builder

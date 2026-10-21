@@ -57,7 +57,12 @@ import { StubEncoder } from './stub-encoder';
 export const MIN_PART_SIZE = 5 * 1024 * 1024;
 
 export const MINIO = { host: 'localhost', port: 9210 };
-export const REDIS = { host: 'localhost', port: 6400 };
+export const REDIS = {
+  host: 'localhost',
+  port: Number(
+    new URL(process.env.REDIS_URL ?? 'redis://localhost:6400/0').port || 6400,
+  ),
+};
 
 /** A recording `VideoMetrics`: what was counted and observed, per name and label values. */
 export class RecordingVideoMetrics extends VideoMetrics {
@@ -375,7 +380,9 @@ export async function createVideoApp(
     : null;
   const base = await createCatalogApp({
     structuredLogger: options.structuredLogger,
-    ...(redisProxy && { redisUrl: `redis://127.0.0.1:${redisProxy.port}/${new URL(process.env.REDIS_URL ?? "redis://localhost:6400/0").pathname.slice(1) || "0"}` }),
+    ...(redisProxy && {
+      redisUrl: `redis://127.0.0.1:${redisProxy.port}/${new URL(process.env.REDIS_URL ?? 'redis://localhost:6400/0').pathname.slice(1) || '0'}`,
+    }),
     ...(options.env && { env: options.env }),
     extraImports: [
       VideoModule,

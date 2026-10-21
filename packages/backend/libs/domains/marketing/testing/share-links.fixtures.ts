@@ -179,7 +179,13 @@ export async function createShareLinksApp(
         })
     : null;
   const redisProxy = options.redisProxy
-    ? await TcpFaultProxy.start({ host: 'localhost', port: 6400 })
+    ? await TcpFaultProxy.start({
+        host: 'localhost',
+        port: Number(
+          new URL(process.env.REDIS_URL ?? 'redis://localhost:6400/0').port ||
+            6400,
+        ),
+      })
     : null;
   if (options.consumer) {
     await deleteTopicsMatching(/^(links\.events|link-clicks\.dlq)$/);
@@ -192,7 +198,9 @@ export async function createShareLinksApp(
 
   const base = await createCatalogApp({
     structuredLogger: options.structuredLogger,
-    ...(redisProxy && { redisUrl: `redis://127.0.0.1:${redisProxy.port}/${new URL(process.env.REDIS_URL ?? "redis://localhost:6400/0").pathname.slice(1) || "0"}` }),
+    ...(redisProxy && {
+      redisUrl: `redis://127.0.0.1:${redisProxy.port}/${new URL(process.env.REDIS_URL ?? 'redis://localhost:6400/0').pathname.slice(1) || '0'}`,
+    }),
     extraImports: [
       ShareLinksModule,
       ShareLinksWorkerModule,

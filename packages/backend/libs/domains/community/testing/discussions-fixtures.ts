@@ -212,7 +212,13 @@ export async function createDiscussionsApp(
         })
     : null;
   const redisProxy = options.redisProxy
-    ? await TcpFaultProxy.start({ host: 'localhost', port: 6400 })
+    ? await TcpFaultProxy.start({
+        host: 'localhost',
+        port: Number(
+          new URL(process.env.REDIS_URL ?? 'redis://localhost:6400/0').port ||
+            6400,
+        ),
+      })
     : null;
   const faults: Faults = {
     scyllaDown: false,
@@ -238,7 +244,9 @@ export async function createDiscussionsApp(
 
   const base = await createCatalogApp({
     structuredLogger: options.structuredLogger,
-    ...(redisProxy && { redisUrl: `redis://127.0.0.1:${redisProxy.port}/${new URL(process.env.REDIS_URL ?? "redis://localhost:6400/0").pathname.slice(1) || "0"}` }),
+    ...(redisProxy && {
+      redisUrl: `redis://127.0.0.1:${redisProxy.port}/${new URL(process.env.REDIS_URL ?? 'redis://localhost:6400/0').pathname.slice(1) || '0'}`,
+    }),
     extraImports: [DiscussionsModule, DiscussionsWorkerModule],
     overrides: [{ provide: EventPublisher, useValue: bus }],
     customize: (builder) =>

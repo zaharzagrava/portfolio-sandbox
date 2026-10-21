@@ -7,6 +7,7 @@ set -uo pipefail
 ROOT="$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel)"; cd "$ROOT"
 N="${1:-5}"; out="$ROOT/specs/.checkpoints/sharded"; rm -rf "$out"; mkdir -p "$out"
 t0=$SECONDS
+[[ "${RESET:-1}" == 0 ]] || for n in $(seq 1 "$N"); do scripts/infra/shard-reset.sh "$n" > "$out/reset-$n.log" 2>&1 & done; wait   # clean slate for each slice (RESET=0 skips)
 for n in $(seq 1 "$N"); do scripts/infra/shard-prepare.sh "$n" > "$out/prepare-$n.log" 2>&1 || { echo "prepare of shard $n failed, see $out/prepare-$n.log"; exit 1; }; done
 echo "prepared $N shards in $((SECONDS - t0)) s"
 t1=$SECONDS

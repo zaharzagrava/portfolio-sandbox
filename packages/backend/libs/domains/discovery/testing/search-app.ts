@@ -74,8 +74,9 @@ export interface SearchTestApp extends CatalogTestApp {
 
 /** The Redis database of this run (a shard has its own); the proxy URL has to name the same one. */
 const redisDb = () =>
-  new URL(process.env.REDIS_URL ?? 'redis://localhost:6400/0').pathname.slice(1) ||
-  '0';
+  new URL(process.env.REDIS_URL ?? 'redis://localhost:6400/0').pathname.slice(
+    1,
+  ) || '0';
 
 /**
  * The real app the search specs run against: the catalog test app (identity, tenancy, rate limit, outbox, jobs) plus
@@ -108,7 +109,13 @@ export async function createSearchApp(
         })
       : null,
     options.redisProxy
-      ? TcpFaultProxy.start({ host: 'localhost', port: 6400 })
+      ? TcpFaultProxy.start({
+          host: 'localhost',
+          port: Number(
+            new URL(process.env.REDIS_URL ?? 'redis://localhost:6400/0').port ||
+              6400,
+          ),
+        })
       : null,
     options.kafkaProxy
       ? TcpFaultProxy.start({

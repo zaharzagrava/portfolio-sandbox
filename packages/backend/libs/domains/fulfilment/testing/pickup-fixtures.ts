@@ -163,7 +163,13 @@ export async function createPickupApp(
   } = {},
 ): Promise<PickupTestApp> {
   const redisProxy = options.proxies?.redis
-    ? await TcpFaultProxy.start({ host: 'localhost', port: 6400 })
+    ? await TcpFaultProxy.start({
+        host: 'localhost',
+        port: Number(
+          new URL(process.env.REDIS_URL ?? 'redis://localhost:6400/0').port ||
+            6400,
+        ),
+      })
     : null;
   const searchProxy = options.proxies?.search
     ? await TcpFaultProxy.start({ host: 'localhost', port: 9300 })

@@ -284,7 +284,13 @@ export async function createAdsApp(
   const calls = new Map<string, number>();
   const clockHolder: { clock?: FakeClock } = {};
   const redisProxy = options.redisProxy
-    ? await TcpFaultProxy.start({ host: 'localhost', port: 6400 })
+    ? await TcpFaultProxy.start({
+        host: 'localhost',
+        port: Number(
+          new URL(process.env.REDIS_URL ?? 'redis://localhost:6400/0').port ||
+            6400,
+        ),
+      })
     : null;
   const logChunks: string[] = [];
   const stdoutSpy = options.structuredLogger
@@ -298,7 +304,9 @@ export async function createAdsApp(
 
   const base = await createCatalogApp({
     structuredLogger: options.structuredLogger,
-    ...(redisProxy && { redisUrl: `redis://127.0.0.1:${redisProxy.port}/${new URL(process.env.REDIS_URL ?? "redis://localhost:6400/0").pathname.slice(1) || "0"}` }),
+    ...(redisProxy && {
+      redisUrl: `redis://127.0.0.1:${redisProxy.port}/${new URL(process.env.REDIS_URL ?? 'redis://localhost:6400/0').pathname.slice(1) || '0'}`,
+    }),
     env: options.env,
     extraImports: [AdsModule, ...(options.extraImports ?? [])],
     customize: (builder) => {

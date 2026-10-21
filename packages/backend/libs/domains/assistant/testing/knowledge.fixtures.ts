@@ -311,7 +311,13 @@ export async function createKnowledgeApp(
   const recorder = new RecordingRecorder();
   const moderation = new ModerationStub();
   const redisProxy = options.redisProxy
-    ? await TcpFaultProxy.start({ host: 'localhost', port: 6400 })
+    ? await TcpFaultProxy.start({
+        host: 'localhost',
+        port: Number(
+          new URL(process.env.REDIS_URL ?? 'redis://localhost:6400/0').port ||
+            6400,
+        ),
+      })
     : null;
 
   const base = await createCatalogApp({

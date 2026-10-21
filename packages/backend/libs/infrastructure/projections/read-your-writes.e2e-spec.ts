@@ -34,9 +34,7 @@ const countOwnReads = (app: INestApplication) => {
   let n = 0;
   for (const cmd of ['get', 'getBuffer', 'mget', 'mgetBuffer'] as const) {
     const original = client[cmd].bind(client) as (...a: unknown[]) => unknown;
-    (client as unknown as Record<string, unknown>)[cmd] = (
-      ...a: unknown[]
-    ) => {
+    (client as unknown as Record<string, unknown>)[cmd] = (...a: unknown[]) => {
       n++;
       return original(...a);
     };
@@ -265,7 +263,13 @@ describe('A writer sees their own write', () => {
   });
 
   it('S53 AS-79: with the checkpoint store down the route answers from the write model at once, without an error, and counts the fallback', async () => {
-    const sink = await TcpFaultProxy.start({ host: 'localhost', port: 6400 });
+    const sink = await TcpFaultProxy.start({
+      host: 'localhost',
+      port: Number(
+        new URL(process.env.REDIS_URL ?? 'redis://localhost:6400/0').port ||
+          6400,
+      ),
+    });
     const client = new Redis({
       host: '127.0.0.1',
       port: sink.port,

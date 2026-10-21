@@ -134,11 +134,19 @@ export async function createRecommendationsApp(
   } = {},
 ): Promise<RecommendationsTestApp> {
   const redisProxy = options.redisProxy
-    ? await TcpFaultProxy.start({ host: 'localhost', port: 6400 })
+    ? await TcpFaultProxy.start({
+        host: 'localhost',
+        port: Number(
+          new URL(process.env.REDIS_URL ?? 'redis://localhost:6400/0').port ||
+            6400,
+        ),
+      })
     : null;
   const base = await createCatalogApp({
     ...(redisProxy
-      ? { redisUrl: `redis://127.0.0.1:${redisProxy.port}/${new URL(process.env.REDIS_URL ?? "redis://localhost:6400/0").pathname.slice(1) || "0"}` }
+      ? {
+          redisUrl: `redis://127.0.0.1:${redisProxy.port}/${new URL(process.env.REDIS_URL ?? 'redis://localhost:6400/0').pathname.slice(1) || '0'}`,
+        }
       : {}),
     extraImports: [
       JobsModule,
