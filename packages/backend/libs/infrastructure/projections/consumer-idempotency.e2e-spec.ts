@@ -147,6 +147,9 @@ describe('Consumers apply an event once, whatever the delivery', () => {
     };
     const stop = async (app: INestApplication) => {
       apps.splice(apps.indexOf(app), 1);
+      // tests run side by side and share this connection: if it belongs to the app being stopped, hand it to a live one first
+      if (sequelize === app.get(Sequelize) && apps.length > 0)
+        sequelize = apps[apps.length - 1].get(Sequelize);
       await app.close();
     };
     return {

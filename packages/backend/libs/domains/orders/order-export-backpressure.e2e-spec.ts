@@ -68,5 +68,6 @@ describe('Order export: backpressure from storage to the order store', () => {
     const rows = csvRows(await kit.fileOf(exportId));
     expect(rows).toHaveLength(50_000);
     expect(new Set(rows.map((r) => r.split(',')[7])).size).toBe(50_000);
-  });
+    // 50,000 lines take 17 s alone and over 60 s when other test processes share the machine
+  }, 180_000);
 });

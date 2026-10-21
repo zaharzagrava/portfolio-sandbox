@@ -31,6 +31,7 @@ import { shardName } from '@app/common/shard';
 import { ProductSearchModule } from '../product-search.module';
 import { SearchProjectorModule } from '../search-projector.module';
 import { SearchWorkerModule } from '../search-worker.module';
+import { RedisService } from '@app/infrastructure/redis/redis.service';
 import { TestEmbeddingProvider } from './test-embedding.provider';
 import { TestReindexProbe } from './reindex-probe';
 
@@ -70,6 +71,11 @@ export interface SearchTestApp extends CatalogTestApp {
   indices(): Promise<Record<string, string[]>>;
   rows<T extends object>(sql: string, bind?: unknown[]): Promise<T[]>;
 }
+
+/** The Redis database of this run (a shard has its own); the proxy URL has to name the same one. */
+const redisDb = () =>
+  new URL(process.env.REDIS_URL ?? 'redis://localhost:6400/0').pathname.slice(1) ||
+  '0';
 
 /**
  * The real app the search specs run against: the catalog test app (identity, tenancy, rate limit, outbox, jobs) plus
@@ -113,7 +119,7 @@ export async function createSearchApp(
   ]);
   const base = await createCatalogApp({
     ...(redisProxy
-      ? { redisUrl: `redis://127.0.0.1:${redisProxy.port}/0` }
+      ? { redisUrl: `redis://127.0.0.1:${redisProxy.port}/${redisDb()}` }
       : {}),
     prependImports: [ProductSearchModule],
     extraImports: [
@@ -189,6 +195,21 @@ export async function createSearchApp(
         }
       embeddings.reset();
       probe.reset();
+      // A fault test may have cut the app's Redis connection; the client refuses commands (no offline queue) until it
+      // has reconnected, so wait until it answers before anything else uses it.
+      if (redisProxy) {
+        const client = base.app.get(RedisService, { strict: false }).client;
+        const deadline = Date.now() + 10_000;
+        for (;;) {
+          try {
+            await client.ping();
+            break;
+          } catch (e) {
+            if (Date.now() > deadline) throw e;
+            await new Promise((r) => setTimeout(r, 50));
+          }
+        }
+      }
       // Two independent chains run at the same time: the database wipe followed by putting the synonym tables back, and
       // the engine side (delete every products index, then the synonym set that those indices referenced).
       const database = async () => {

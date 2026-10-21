@@ -258,7 +258,17 @@ describe('S51 publisher (PUB)', () => {
   it('S51 AS-32: a store that answers later than the timeout resolves published:false and is not retried', async () => {
     const topic = `auction:${freshId()}` as const;
     await rt.publisher.publish(topic, 'warmup', {}); // loads the script, so a retry would show as a second EVALSHA
-    await rt.redis.client.config('RESETSTAT');
+    // MONITOR, not INFO commandstats: the stats are for the whole server, and other shards run commands on it too.
+    // Only this app's database is kept.
+    const db = Number(rt.redis.client.options.db ?? 0);
+    const seen: string[] = [];
+    const monitor = await rt.redis.client.monitor();
+    monitor.on(
+      'monitor',
+      (_time: string, args: string[], _source: string, database: string) => {
+        if (Number(database) === db) seen.push(String(args[0]).toLowerCase());
+      },
+    );
     const failedBefore = publishedCount('failed');
 
     await rt.redis.client.client('PAUSE', '1200', 'WRITE');
@@ -272,16 +282,17 @@ describe('S51 publisher (PUB)', () => {
     expect(publishedCount('failed')).toBe(failedBefore + 1);
 
     // the single attempt lands after the pause; nothing issues a second one
-    await waitFor(
-      async () => {
-        const stats = (await rt.redis.client.info('commandstats')) as string;
-        return /cmdstat_evalsha:calls=1,/.test(stats);
-      },
-      { timeoutMs: 5_000, intervalMs: 50 },
-    );
-    const stats = (await rt.redis.client.info('commandstats')) as string;
-    expect(stats).toMatch(/cmdstat_evalsha:calls=1,/);
-    expect(stats).not.toMatch(/cmdstat_eval:/);
+    try {
+      await waitFor(async () => seen.includes('evalsha'), {
+        timeoutMs: 5_000,
+        intervalMs: 50,
+      });
+      await new Promise((resolve) => setTimeout(resolve, 100)); // the monitor stream trails the commands slightly
+      expect(seen.filter((c) => c === 'evalsha')).toHaveLength(1);
+      expect(seen).not.toContain('eval');
+    } finally {
+      monitor.disconnect();
+    }
   });
 
   it('S51 AS-33: publishing with no viewer succeeds, leaves only the buffer, and a later cursor receives it', async () => {

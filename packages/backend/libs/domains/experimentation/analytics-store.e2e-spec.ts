@@ -7,6 +7,7 @@ import { deleteTopicsMatching, readTopic } from '@app/test/utils/kafka-test';
 import { AnalyticsProjectorModule } from './analytics-projector.module';
 import { AnalyticsWorkerModule } from './analytics-worker.module';
 import { StoreDeadLetterWatcher } from './application/store-dead-letter-watcher.service';
+import { shardName } from '@app/common/shard';
 import { ANALYTICS_TOPIC } from './domain/event-schema';
 import { EVENT_STORE, type EventStore } from './domain/ports';
 import { PurchaseEventsProjector } from './infra/purchase-events.projector';
@@ -300,7 +301,7 @@ describe('Analytics store, dedupe and purchase projector (S39)', () => {
       expect(others).toHaveLength(0);
       expect(row.raw).toBe(garbage);
       expect(row.error.length).toBeGreaterThan(0);
-      expect(row.topic).toBe(ANALYTICS_TOPIC);
+      expect(row.topic).toBe(shardName(ANALYTICS_TOPIC));
       expect(Number(row.partition)).toBeGreaterThanOrEqual(0);
       expect(Number(row.offset)).toBeGreaterThanOrEqual(0);
       expect(row.at).toMatch(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/);
@@ -460,10 +461,10 @@ describe('Analytics store, dedupe and purchase projector (S39)', () => {
       const queue = await show('analytics_events_queue');
       expect(queue.engine).toBe('Kafka');
       expect(queue.create_table_query).toContain(
-        "kafka_group_name = 'clickhouse-analytics'",
+        `kafka_group_name = '${shardName('clickhouse-analytics')}'`,
       );
       expect(queue.create_table_query).toContain(
-        "kafka_topic_list = 'analytics.events'",
+        `kafka_topic_list = '${shardName('analytics.events')}'`,
       );
       expect(queue.create_table_query).toContain(
         "kafka_handle_error_mode = 'stream'",

@@ -4,6 +4,7 @@ import {
 } from '@app/test/utils/catalog-fixtures';
 import { ShopQueryService } from '@app/domains/tenancy';
 import { OrderQueryService } from '@app/domains/orders';
+import { EntitlementsService } from '@app/domains/billing';
 import {
   createKey,
   createPublicApiKit,
@@ -51,6 +52,20 @@ describe('Public API: products, stock and orders', () => {
   beforeAll(async () => {
     t = await createPublicApiKit({
       dashboardImports: [PublicApiProjectorModule],
+      // The free tier allows 10 live products and the 20-repeat races make more; the plan limit is proved in catalog's
+      // product-plan-limit spec, so here the plan answer is an uncapped one.
+      overrides: [
+        {
+          provide: EntitlementsService,
+          useValue: {
+            checkLimit: async () => ({
+              allowed: true,
+              limit: null,
+              remaining: null,
+            }),
+          },
+        },
+      ],
     });
     pub = t.pub;
   });

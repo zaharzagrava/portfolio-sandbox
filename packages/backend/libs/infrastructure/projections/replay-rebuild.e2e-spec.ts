@@ -289,7 +289,8 @@ describe('Rebuilding or replacing a read model without downtime', () => {
     expect(handled1.some((id) => handled2.includes(id))).toBe(false);
   }, 120_000);
 
-  it.concurrent('S53 AS-87: a consumer with side effects is not rewound without --allow-side-effects and a reason; with both it proceeds and one audit line names consumer, reason and operator', async () => {
+  // Not concurrent: it swaps the process-wide Nest logger to read the audit line, and other apps starting at the same time reset it.
+  it('S53 AS-87: a consumer with side effects is not rewound without --allow-side-effects and a reason; with both it proceeds and one audit line names consumer, reason and operator', async () => {
     const s = await kit.scenario();
     const Effectful = s.make('natural', 'effects', { replayable: false });
     const app = await s.boot([Effectful]);

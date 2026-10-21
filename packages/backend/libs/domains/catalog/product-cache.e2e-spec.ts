@@ -211,7 +211,9 @@ describe('Product cache behaviour', () => {
   it('S05 AS-34: a write answers 200 while the shared cache is down (the limiter and the database are up), and a versioned invalidation brings the new price in afterwards', async () => {
     // Only the cache's own connection runs through the proxy, so the write path's other dependencies stay healthy.
     const proxy = await proxyTo(redisUrl());
-    const proxied = urlConfig(`redis://127.0.0.1:${proxy.port}/0`);
+    const proxied = urlConfig(
+      `redis://127.0.0.1:${proxy.port}/${new URL(process.env.REDIS_URL ?? 'redis://localhost:6400/0').pathname.slice(1) || '0'}`,
+    );
     const cacheRedis = new RedisService(proxied);
     const cache = new CacheService(cacheRedis, proxied);
     await cache.onModuleInit();
@@ -372,7 +374,7 @@ describe('Product reads with the shared cache down', () => {
   beforeAll(async () => {
     proxy = await proxyTo(redisUrl());
     t = await createCatalogApp({
-      redisUrl: `redis://127.0.0.1:${proxy.port}/0`,
+      redisUrl: `redis://127.0.0.1:${proxy.port}/${new URL(process.env.REDIS_URL ?? 'redis://localhost:6400/0').pathname.slice(1) || '0'}`,
     });
   });
   afterAll(async () => {

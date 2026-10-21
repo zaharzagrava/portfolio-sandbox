@@ -14,6 +14,6 @@ export async function startStoreProxy(): Promise<TcpFaultProxy> {
 }
 
 export const proxyUrl = (proxy: TcpFaultProxy): string =>
-  `redis://127.0.0.1:${proxy.port}/0`;
+  `redis://127.0.0.1:${proxy.port}/${new URL(process.env.REDIS_URL ?? 'redis://localhost:6400/0').pathname.slice(1) || '0'}`;
 
 export type { TcpFaultProxy };

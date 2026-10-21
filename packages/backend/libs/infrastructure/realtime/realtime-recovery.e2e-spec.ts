@@ -49,7 +49,7 @@ describe('S51 recovery (REC)', () => {
   const viaProxy = () =>
     createRealtimeApp({
       config: {
-        subscriberUrl: `redis://127.0.0.1:${proxy.port}/0`,
+        subscriberUrl: `redis://127.0.0.1:${proxy.port}/${new URL(process.env.REDIS_URL ?? 'redis://localhost:6400/0').pathname.slice(1) || '0'}`,
         subscribeTimeoutMs: 400,
       },
     });

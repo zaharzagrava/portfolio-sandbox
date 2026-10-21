@@ -92,14 +92,26 @@ export async function createFlashApp(
   const crash = new CrashSwitch();
   let random = seededRandom(7);
   const randomProxy: FlashRandom = () => random();
-  const base = await createOrdersApp({
-    ...options,
-    overrides: [
-      { provide: FLASH_CRASH_POINT, useValue: crash },
-      { provide: FLASH_RANDOM, useValue: randomProxy },
-      ...(options.overrides ?? []),
-    ],
-  });
+  // Hundreds of buyers at once in a busy process can take over the 200 ms the rate-limit store gets per call; the
+  // breaker then opens, and with the frozen test clock it never closes again. A wider limit only for this app
+  // (set while it starts, put back after: the setting is read at start-up).
+  const timeoutKey = 'RATE_LIMIT_STORE_TIMEOUT_MS';
+  const timeoutBefore = process.env[timeoutKey];
+  process.env[timeoutKey] ??= '3000';
+  let base: Awaited<ReturnType<typeof createOrdersApp>>;
+  try {
+    base = await createOrdersApp({
+      ...options,
+      overrides: [
+        { provide: FLASH_CRASH_POINT, useValue: crash },
+        { provide: FLASH_RANDOM, useValue: randomProxy },
+        ...(options.overrides ?? []),
+      ],
+    });
+  } finally {
+    if (timeoutBefore === undefined) delete process.env[timeoutKey];
+    else process.env[timeoutKey] = timeoutBefore;
+  }
   const redis = base.app.get(RedisService).client;
   let last: Record<string, number> = {};
   const parseStats = async () => {
@@ -180,8 +192,13 @@ export async function createFlashApp(
     async recordRedisCommands(fn) {
       const monitor = await redis.monitor();
       const commands: string[][] = [];
-      monitor.on('monitor', (_time: string, args: string[]) =>
-        commands.push(args),
+      // MONITOR sees every database on the server (other shards too): keep only this app's database
+      const db = Number(redis.options.db ?? 0);
+      monitor.on(
+        'monitor',
+        (_time: string, args: string[], _source: string, database: string) => {
+          if (Number(database) === db) commands.push(args);
+        },
       );
       try {
         const result = await fn();

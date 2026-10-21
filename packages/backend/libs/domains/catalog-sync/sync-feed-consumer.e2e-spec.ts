@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { getConnectionToken } from '@nestjs/sequelize';
 import { QueryTypes, type Sequelize } from 'sequelize';
+import { EntitlementsService } from '@app/domains/billing';
 import {
   ProductCommandService,
   ProductStockService,
@@ -20,6 +21,14 @@ import {
 import { SYNC_FEED_REPOSITORY, type SyncFeedRepository } from './domain/ports';
 import { SyncFeedConsumer } from './infra/sync-feed.consumer';
 
+/**
+ * AS-26 creates 30 products in one shop; the free plan allows 10 live ones and that limit is not what this spec proves
+ * (catalog's product-plan-limit spec does), so the plan answer here is an uncapped one.
+ */
+const uncappedPlan = {
+  checkLimit: async () => ({ allowed: true, limit: null, remaining: null }),
+};
+
 describe('Offline sync: change feed consumers', () => {
   let ctx: CatalogTestApp;
   let db: Sequelize;
@@ -31,6 +40,7 @@ describe('Offline sync: change feed consumers', () => {
 
   beforeAll(async () => {
     ctx = await createCatalogApp({
+      overrides: [{ provide: EntitlementsService, useValue: uncappedPlan }],
       extraImports: [
         OfflineSyncModule,
         OfflineSyncWorkerModule,

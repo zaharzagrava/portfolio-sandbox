@@ -23,6 +23,8 @@ import { Projector } from './projector';
 import type { ConsumerProbe } from '@app/infrastructure/events/testing/fixture-consumers';
 
 const kit = new ConsumerKit();
+// this shard's Redis database (the number at the end of REDIS_URL), so a flush of another database cannot wipe the outage list
+const redisDb = Number(/\/(\d+)$/.exec(process.env.REDIS_URL ?? '')?.[1] ?? 0);
 const dlqTotal = (consumer: string, code: string) =>
   MetricsRegistry.value('dlq_total', { consumer, reason: code }) ?? 0;
 const dlq = (consumer: string) => readTopic(`${consumer}.dlq`);
@@ -348,7 +350,7 @@ describe('Bad messages and sick stores do not stop the line', () => {
       host: 'localhost',
       port: 6400,
     });
-    const direct = new Redis({ host: 'localhost', port: 6400 });
+    const direct = new Redis({ host: 'localhost', port: 6400, db: redisDb });
     const listKey = `s53:outage:${s.id}`;
 
     @Injectable()
@@ -360,6 +362,7 @@ describe('Bad messages and sick stores do not stop the line', () => {
       private readonly sink = new Redis({
         host: '127.0.0.1',
         port: sinkProxy.port,
+        db: redisDb,
         lazyConnect: true,
         maxRetriesPerRequest: 1,
         enableOfflineQueue: false,

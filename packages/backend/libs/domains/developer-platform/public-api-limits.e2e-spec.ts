@@ -12,6 +12,7 @@ import {
   type PublicApiKit,
   type ShopWorld,
 } from './testing/public-api-kit';
+import { EntitlementsService } from '@app/domains/billing';
 import { PublicCatalogService } from './application/public-catalog.service';
 import { QuotaAnswer, QuotaPort, QuotaUnavailable } from './domain/ports';
 import { BillingQuotaAdapter } from './infra/billing-quota.adapter';
@@ -44,6 +45,14 @@ class FakeQuota extends QuotaPort {
   }
 }
 
+/**
+ * The product plan limit is not what these specs prove (the free tier allows 10 live products, and AS-54 creates 20
+ * in a row), so the plan answer is an uncapped one; the real limit is proved in catalog's product-plan-limit spec.
+ */
+const uncappedPlan = {
+  checkLimit: async () => ({ allowed: true, limit: null, remaining: null }),
+};
+
 describe('Public API: idempotency, rate limits and quotas', () => {
   const quota = new FakeQuota();
   let t: PublicApiKit;
@@ -52,7 +61,10 @@ describe('Public API: idempotency, rate limits and quotas', () => {
 
   beforeAll(async () => {
     t = await createPublicApiKit({
-      overrides: [{ provide: QuotaPort, useValue: quota }],
+      overrides: [
+        { provide: QuotaPort, useValue: quota },
+        { provide: EntitlementsService, useValue: uncappedPlan },
+      ],
     });
     pub = t.pub;
     pub2 = await t.publicInstance();

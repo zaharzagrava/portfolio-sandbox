@@ -29,3 +29,18 @@ function resetSharedProcessState(): void {
 resetSharedProcessState();
 const afterAllHook = (globalThis as { afterAll?: (fn: () => void) => void }).afterAll;
 afterAllHook?.(resetSharedProcessState);
+
+// process.env is shared by all files of a shard as well. A spec that sets a variable in a test and does not undo it (NODE_ENV,
+// PROVIDER_DOUBLES, a rate-limit or breaker setting ...) changes the next file's app. The state right after the file's imports
+// (when ApiConfigService has already loaded .env.test) is the baseline; every file ends by putting exactly that back.
+const hooks = globalThis as { beforeAll?: (fn: () => void) => void; afterAll?: (fn: () => void) => void };
+let envBaseline: NodeJS.ProcessEnv | undefined;
+hooks.beforeAll?.(() => {
+  envBaseline = { ...process.env };
+});
+hooks.afterAll?.(() => {
+  if (!envBaseline) return;
+  for (const key of Object.keys(process.env)) if (!(key in envBaseline)) delete process.env[key];
+  for (const [key, value] of Object.entries(envBaseline)) if (process.env[key] !== value) process.env[key] = value;
+  envBaseline = undefined;
+});

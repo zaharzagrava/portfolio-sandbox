@@ -13,7 +13,17 @@ import type {
 } from '@app/infrastructure/projections/projector';
 
 /** Test-only tables of the fixture consumers (created here, no migration): effects, versioned documents, natural keys. */
-export async function ensureFixtureTables(sequelize: Sequelize): Promise<void> {
+export function ensureFixtureTables(sequelize: Sequelize): Promise<void> {
+  // Tests that run side by side all boot here at once; two "CREATE TABLE IF NOT EXISTS" on the same name at the same
+  // moment can still collide in Postgres (unique violation), so in one process they go one after another.
+  const run = fixtureTablesQueue.then(() => createFixtureTables(sequelize));
+  fixtureTablesQueue = run.catch(() => undefined);
+  return run;
+}
+
+let fixtureTablesQueue: Promise<void> = Promise.resolve();
+
+async function createFixtureTables(sequelize: Sequelize): Promise<void> {
   await sequelize.query(`
     CREATE TABLE IF NOT EXISTS "S53FixtureEffect" (
       "n" bigserial PRIMARY KEY, "consumer" text NOT NULL, "aggregateId" text NOT NULL,

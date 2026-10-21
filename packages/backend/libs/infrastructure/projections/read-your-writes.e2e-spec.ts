@@ -25,6 +25,25 @@ const TENANT_A = '00000000-0000-7000-8000-00000000000a';
 const TENANT_B = '00000000-0000-7000-8000-00000000000b';
 const kit = new ConsumerKit();
 
+/**
+ * Counts the Redis reads (get, mget and the checkpoint lookup) issued by this app's own client. The server-wide counter
+ * is shared with every other shard on the same Redis server, so it cannot be used. Returns the running total.
+ */
+const countOwnReads = (app: INestApplication) => {
+  const client = app.get(RedisService).client;
+  let n = 0;
+  for (const cmd of ['get', 'getBuffer', 'mget', 'mgetBuffer'] as const) {
+    const original = client[cmd].bind(client) as (...a: unknown[]) => unknown;
+    (client as unknown as Record<string, unknown>)[cmd] = (
+      ...a: unknown[]
+    ) => {
+      n++;
+      return original(...a);
+    };
+  }
+  return () => n;
+};
+
 describe('A writer sees their own write', () => {
   beforeAll(() => kit.start());
   afterAll(() => kit.stopAll());
@@ -192,16 +211,10 @@ describe('A writer sees their own write', () => {
   ])(
     'S53 AS-77: a %s minVersion answers 400 problem+json naming the parameter and does not wait',
     async (_label, query) => {
-      const { get, fixtures } = await boot();
+      const { app, get, fixtures } = await boot();
       const id = await seedAt(fixtures, TENANT_A, 1);
-      const redis = new Redis({ host: 'localhost', port: 6400 });
-      const gets = async () =>
-        Number(
-          /cmdstat_get:calls=(\d+)/.exec(
-            await redis.info('commandstats'),
-          )?.[1] ?? 0,
-        );
-      const before = await gets();
+      const gets = countOwnReads(app);
+      const before = gets();
 
       const started = Date.now();
       const res = await get(id, query).expect(400);
@@ -209,8 +222,7 @@ describe('A writer sees their own write', () => {
       expect(Date.now() - started).toBeLessThan(300);
       expect(res.headers['content-type']).toContain('application/problem+json');
       expect(JSON.stringify(res.body)).toContain('minVersion');
-      expect(await gets()).toBe(before); // the checkpoint store was never consulted
-      redis.disconnect();
+      expect(gets()).toBe(before); // this app never read the checkpoint store (or any key)
     },
   );
 
@@ -229,16 +241,11 @@ describe('A writer sees their own write', () => {
   });
 
   it('S53 AS-78: another tenant gets the same 404 as for an id that does not exist, the checkpoint store is not consulted, and it does not wait', async () => {
-    const { get, fixtures } = await boot();
+    const { app, get, fixtures } = await boot();
     const id = await seedAt(fixtures, TENANT_A, 5);
     const missing = uuidv7();
-    const redis = new Redis({ host: 'localhost', port: 6400 });
-    const gets = async () =>
-      Number(
-        /cmdstat_get:calls=(\d+)/.exec(await redis.info('commandstats'))?.[1] ??
-          0,
-      );
-    const before = await gets();
+    const gets = countOwnReads(app);
+    const before = gets();
 
     const started = Date.now();
     const foreign = await get(id, '?minVersion=1', TENANT_B).expect(404);
@@ -254,8 +261,7 @@ describe('A writer sees their own write', () => {
       absent.body.detail.replace(missing, '<id>'),
     );
     expect(JSON.stringify(foreign.body)).not.toContain('version');
-    expect(await gets()).toBe(before);
-    redis.disconnect();
+    expect(gets()).toBe(before);
   });
 
   it('S53 AS-79: with the checkpoint store down the route answers from the write model at once, without an error, and counts the fallback', async () => {

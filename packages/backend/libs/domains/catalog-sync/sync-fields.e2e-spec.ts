@@ -5,6 +5,7 @@ import {
   syncPushResponseSchema,
   type SyncOpResult,
 } from '@marketplace-sandbox/contracts';
+import { EntitlementsService } from '@app/domains/billing';
 import {
   ProductCommandService,
   ProductQueryService,
@@ -35,6 +36,20 @@ describe('Offline sync: per-field last-writer-wins', () => {
 
   beforeAll(async () => {
     ctx = await createCatalogApp({
+      // The free tier allows 10 live products and the 20-round race below makes more; the plan limit is proved in
+      // catalog's product-plan-limit spec, so here the plan answer is an uncapped one.
+      overrides: [
+        {
+          provide: EntitlementsService,
+          useValue: {
+            checkLimit: async () => ({
+              allowed: true,
+              limit: null,
+              remaining: null,
+            }),
+          },
+        },
+      ],
       extraImports: [
         OfflineSyncModule,
         OfflineSyncWorkerModule,

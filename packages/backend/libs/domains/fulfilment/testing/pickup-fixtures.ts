@@ -170,7 +170,9 @@ export async function createPickupApp(
     : null;
   const base = await createCatalogApp({
     ...options,
-    ...(redisProxy && { redisUrl: `redis://127.0.0.1:${redisProxy.port}/0` }),
+    ...(redisProxy && {
+      redisUrl: `redis://127.0.0.1:${redisProxy.port}/${new URL(process.env.REDIS_URL ?? 'redis://localhost:6400/0').pathname.slice(1) || '0'}`,
+    }),
     env: {
       ...options.env,
       ...(searchProxy && {

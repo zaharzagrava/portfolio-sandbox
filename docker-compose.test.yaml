@@ -62,7 +62,7 @@ services:
     image: scylladb/scylla:6.2
     container_name: marketplace_test_scylla
     # epoll reactor: a second Scylla next to the dev one would exhaust the kernel fs.aio-max-nr budget.
-    command: --smp 1 --memory 750M --overprovisioned 1 --developer-mode 1 --reactor-backend=epoll
+    command: --smp 1 --memory 750M --overprovisioned 1 --developer-mode 1 --reactor-backend=epoll --cas-contention-timeout-in-ms 10000 --write-request-timeout-in-ms 10000
     ports:
       - '9142:9042'
   test_dynamodb:
