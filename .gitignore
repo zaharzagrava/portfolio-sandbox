@@ -37,6 +37,7 @@ specs/**/.*.log
 # SDD monitor state and progress log
 .sdd-monitor/
 specs/.checkpoints/*.log
+specs/.checkpoints/*.jsonl
 
 # Python bytecode of the scripts
 __pycache__/

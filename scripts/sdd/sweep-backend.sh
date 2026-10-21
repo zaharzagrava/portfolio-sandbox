@@ -7,6 +7,7 @@
 set -uo pipefail
 ROOT="$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel)"; cd "$ROOT"
 log="${1:-$ROOT/specs/.checkpoints/backend-sweep.log}"; mkdir -p "$(dirname "$log")"; : > "$log"
+export TEST_TIMING=1 TEST_TIMING_OUT="${log%.log}.timing.jsonl"; rm -f "$TEST_TIMING_OUT"   # per-file timing, read with scripts/sdd/timing-report.py
 mapfile -t all_specs < <(cd packages/backend && NODE_ENV=test npx jest --config jest-e2e.json --listTests 2>/dev/null | grep -E 'e2e-spec\.ts$' | sort)
 [[ -n "${ONLY:-}" ]] && mapfile -t all_specs < <(printf '%s\n' "${all_specs[@]}" | grep -E "$ONLY")
 total=${#all_specs[@]}; batch=${SWEEP_BATCH:-12}; heap=${SWEEP_HEAP_MB:-4096}
@@ -21,6 +22,7 @@ for (( i = 0; i < total; i += batch )); do
 done
 summaries=$(grep -ac '^Test Suites:' "$log"); batches=$(( (total + batch - 1) / batch ))
 (( summaries == batches )) || { echo "a batch ended without a summary ($summaries of $batches): the process crashed"; exit 1; }
+python3 "$ROOT/scripts/sdd/timing-report.py" "$TEST_TIMING_OUT" --top 10 | tee -a "$log"
 python3 "$ROOT/scripts/sdd/sweep-verdict.py" "$log" | tee -a "$log"
 python3 "$ROOT/scripts/sdd/sweep-verdict.py" "$log" | grep -q '^FAILED:' && exit 1
 exit 0

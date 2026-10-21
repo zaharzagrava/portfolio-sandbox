@@ -40,6 +40,7 @@ if [[ "${CHECKPOINT_SWEEP:-1}" != 0 ]]; then
   # garbage collector paused for seconds, which looked like 503s, dropped connections and bad timers. The suites run one at a time,
   # in batches of SWEEP_BATCH, each batch in a fresh process.
   backend_sweep_failed=0
+  export TEST_TIMING=1 TEST_TIMING_OUT="$ROOT/specs/.checkpoints/$label.timing-backend.jsonl"; rm -f "$TEST_TIMING_OUT"   # where the time goes, per file and phase
   mapfile -t all_specs < <(cd packages/backend && NODE_ENV=test npx jest --config jest-e2e.json --listTests 2>/dev/null | grep -E 'e2e-spec\.ts$' | sort)
   total=${#all_specs[@]}; batch=${SWEEP_BATCH:-12}
   ckpt_note info "backend e2e sweep: starting, $total suites in batches of $batch"
@@ -61,6 +62,8 @@ if [[ "${CHECKPOINT_SWEEP:-1}" != 0 ]]; then
   else
     backend_sweep_failed=0
   fi
+  python3 "$ROOT/scripts/sdd/timing-report.py" "$TEST_TIMING_OUT" --top 10 --markdown "$ROOT/specs/.checkpoints/$label.timing-backend.md" >>"$log" 2>&1 || true
+  ckpt_note info "backend e2e timing: $(python3 "$ROOT/scripts/sdd/timing-report.py" "$TEST_TIMING_OUT" --top 1 2>/dev/null | sed -n '2,8p' | awk '{printf "%s %s %s; ", $1, $2, $3}') report: specs/.checkpoints/$label.timing-backend.md"
   if (( backend_sweep_failed )); then echo "  backend e2e sweep FAILED"; ckpt_note fail "backend e2e sweep FAILED: $(grep -ac '^FAIL ' "$log") failing suites of $total (the repair agent gets the list)"; fail=1
   else ckpt_note ok "backend e2e sweep done: $total suites pass"; fi
   if [[ -d packages/web ]] && ls packages/web/playwright.config.* >/dev/null 2>&1 && curl -sf "$API_URL/health/ready" >/dev/null; then
@@ -68,8 +71,10 @@ if [[ "${CHECKPOINT_SWEEP:-1}" != 0 ]]; then
     bash "$ROOT/scripts/sdd/stack-fix.sh" reindex >>"$log" 2>&1   # the backend e2e specs delete the live products index
     ckpt_note info "browser sweep (Playwright): starting"
     wlog="$log.web"; : > "$wlog"
+    export TEST_TIMING_OUT="$ROOT/specs/.checkpoints/$label.timing-browser.jsonl"; rm -f "$TEST_TIMING_OUT"
     ckpt_watch_playwright "$wlog" "browser sweep" 25 & wpid=$!
-    (cd packages/web && timeout "${SWEEP_TIMEOUT_S:-3600}" npx playwright test --reporter=list ${PW_WORKERS:+--workers="$PW_WORKERS"}) >>"$wlog" 2>&1; wrc=$?
+    (cd packages/web && timeout "${SWEEP_TIMEOUT_S:-3600}" npx playwright test --reporter=list,./tests/support/timing-reporter.ts ${PW_WORKERS:+--workers="$PW_WORKERS"}) >>"$wlog" 2>&1; wrc=$?
+    python3 "$ROOT/scripts/sdd/timing-report.py" "$TEST_TIMING_OUT" --top 10 --markdown "$ROOT/specs/.checkpoints/$label.timing-browser.md" >>"$log" 2>&1 || true
     kill "$wpid" 2>/dev/null; cat "$wlog" >>"$log"; wsum="$(sed 's/\x1b\[[0-9;]*m//g' "$wlog" | grep -aE '^\s+[0-9]+ (passed|failed|flaky)' | tr -s ' ' | tr '\n' ',' )"
     if (( wrc == 0 )); then ckpt_note ok "browser sweep done: ${wsum:-passed}"; else echo "  web sweep FAILED"; ckpt_note fail "browser sweep FAILED: ${wsum:-see the log}"; fail=1; fi
     # the specs that move the API's clock run alone, after everything else (packages/web/playwright.config.ts, PW_CLOCK)

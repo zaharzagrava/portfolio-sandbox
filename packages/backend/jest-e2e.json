@@ -11,7 +11,7 @@
     "<rootDir>/test/toolkit/",
     "<rootDir>/scripts/rag-eval/"
   ],
-  "testEnvironment": "node",
+  "testEnvironment": "<rootDir>/test/timing-environment.cjs",
   "testRegex": ".*\\.e2e-spec\\.ts$",
   "transform": {
     "^.+\\.(t|j)s$": "ts-jest"

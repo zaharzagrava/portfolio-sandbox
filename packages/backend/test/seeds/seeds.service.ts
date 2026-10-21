@@ -104,12 +104,30 @@ export class SeedsService {
         replacements: { keep: SeedsService.KEEP_TABLES },
       },
     );
-    if (tables.length) {
+    // Truncating all 233 tables with CASCADE took about 130 ms per test (363 of 591 e2e files reset before each test). One query tells which
+    // tables hold rows (about 35 ms for all of them); only those are truncated, and CASCADE still empties every table that references them,
+    // so the result is the same empty database. The query is rebuilt on every call: partitions can appear while a suite runs. (Sequences of
+    // tables that were already empty are not restarted.)
+    const quote = (name: string) => name.replace(/'/g, "''");
+    const dirty = tables.length
+      ? (
+          await sequelize.query<{ t: string }>(
+            tables
+              .map(
+                (t) =>
+                  `SELECT '${quote(t.name)}' AS t WHERE EXISTS (SELECT 1 FROM "public"."${t.name.replace(/"/g, '""')}")`,
+              )
+              .join(' UNION ALL '),
+            { type: QueryTypes.SELECT },
+          )
+        ).map((row) => row.t)
+      : [];
+    if (dirty.length) {
       // The app's own background pollers (outbox, jobs) may hold row locks: retry a deadlock a few times.
       for (let attempt = 1; ; attempt++) {
         try {
           await sequelize.query(
-            `TRUNCATE ${tables.map((t) => `"${t.name}"`).join(', ')} RESTART IDENTITY CASCADE`,
+            `TRUNCATE ${dirty.map((name) => `"${name.replace(/"/g, '""')}"`).join(', ')} RESTART IDENTITY CASCADE`,
           );
           break;
         } catch (error) {
