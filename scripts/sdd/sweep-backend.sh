@@ -6,7 +6,7 @@
 # Exit 0 = the sweep passed (sweep-verdict.py prints FAILED: lines otherwise). The progress goes to stdout, the jest output to the log.
 set -uo pipefail
 ROOT="$(git -C "$(dirname "${BASH_SOURCE[0]}")" rev-parse --show-toplevel)"; cd "$ROOT"
-log="${1:-$ROOT/specs/.checkpoints/backend-sweep.log}"; mkdir -p "$(dirname "$log")"; : > "$log"
+log="$(realpath -m "${1:-$ROOT/specs/.checkpoints/backend-sweep.log}")"; mkdir -p "$(dirname "$log")"; : > "$log"
 export TEST_TIMING=1 TEST_TIMING_OUT="${log%.log}.timing.jsonl"; rm -f "$TEST_TIMING_OUT"   # per-file timing, read with scripts/sdd/timing-report.py
 mapfile -t all_specs < <(cd packages/backend && NODE_ENV=test npx jest --config jest-e2e.json --listTests 2>/dev/null | grep -E 'e2e-spec\.ts$' | sort)
 [[ -n "${ONLY:-}" ]] && mapfile -t all_specs < <(printf '%s\n' "${all_specs[@]}" | grep -E "$ONLY")
