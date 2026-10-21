@@ -48,3 +48,7 @@ specs/.qa/**/*.webm
 specs/.qa/**/*.zip
 docker-compose.shard*.yaml
 packages/backend/.env.test.shard*
+specs/.checkpoints/speedup-*.txt
+specs/.checkpoints/sharded/
+specs/.checkpoints/*.json
+specs/.checkpoints/*.md
