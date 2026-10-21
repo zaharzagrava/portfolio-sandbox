@@ -175,12 +175,18 @@ describe('Zero-downtime search reindex', () => {
       const statuses: number[] = [];
       const totals: number[] = [];
       let finished = false;
+      // the search limit is 120 a minute per user: a slow (loaded) run needs more polls than one user may send,
+      // so the polls are spread over several users; every answer is still required to be 200
+      const pollers = await Promise.all(
+        Array.from({ length: 10 }, () => t.admin()),
+      );
+      let poll = 0;
       void running.finally(() => {
         finished = true;
       });
       while (!finished) {
         const res = await t
-          .http()
+          .as(pollers[poll++ % pollers.length])
           .get('/api/products/search')
           .query({ q: 'gadget', limit: 1 });
         statuses.push(res.status);
@@ -189,7 +195,7 @@ describe('Zero-downtime search reindex', () => {
         await new Promise((r) => setTimeout(r, 20));
       }
       expect(statuses.length).toBeGreaterThan(5);
-      expect(statuses.filter((s) => s !== 200)).toEqual([]);
+      expect(statuses.every((s) => s === 200)).toBe(true);
       expect(Math.min(...totals)).toBe(300);
       expect((await run(accepted.runId)).status).toBe('COMPLETED');
     });
@@ -657,7 +663,7 @@ describe('Zero-downtime search reindex', () => {
         );
         await new Promise((r) => setTimeout(r, 25));
       }
-      expect(statuses.filter((s) => s !== 200)).toEqual([]);
+      expect(statuses.every((s) => s === 200)).toBe(true);
       const done = await run(accepted.runId);
       expect(done.status).toBe('COMPLETED');
       expect(await t.engine.aliasTargets(PRODUCTS_ALIAS)).toEqual([done.index]);

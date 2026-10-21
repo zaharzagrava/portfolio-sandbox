@@ -27,7 +27,15 @@ module.exports = {
     await sequelize.query(`ALTER TABLE "Product" VALIDATE CONSTRAINT "Product_shopId_not_null_tmp"`);
     await step(`ALTER TABLE "Product" ALTER COLUMN "shopId" SET NOT NULL`);
     await step(`ALTER TABLE "Product" DROP CONSTRAINT "Product_shopId_not_null_tmp"`);
-    await step(`ALTER TABLE "Product" DROP CONSTRAINT IF EXISTS "Product_shopId_not_null"`);
+    // Only the old S03 CHECK of this name. On PostgreSQL 18 the NOT NULL itself is a constraint with the same default
+    // name, so an unconditional DROP CONSTRAINT here silently undid the SET NOT NULL above (fixed again by 20261019000200).
+    await step(
+      `DO $$ BEGIN
+         IF EXISTS (SELECT 1 FROM pg_constraint WHERE conrelid = '"Product"'::regclass AND conname = 'Product_shopId_not_null' AND contype = 'c') THEN
+           ALTER TABLE "Product" DROP CONSTRAINT "Product_shopId_not_null";
+         END IF;
+       END $$`,
+    );
     for (const check of ['Product_quantity_check', 'Product_version_check'])
       await sequelize.query(
         `DO $$ BEGIN
