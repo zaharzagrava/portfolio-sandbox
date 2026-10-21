@@ -523,8 +523,9 @@ describe('Auctions: events, bid partitions, metrics and domain isolation', () =>
     it('S21 AS-51: the log lines are JSON with requestId, auctionId, the bidder and the outcome, and never a maximum; spans cover bid, close and order request', async () => {
       const { id } = await dataset({ originalEndsAt: T });
       const [u1, u2] = await bidders(2);
-      await bid(u1, id, 7777);
-      await bid(u2, id, 6543);
+      // Seven-digit maxima: the log output is searched for these digits, and a short number like 7777 can occur by chance inside a trace id or a timestamp.
+      await bid(u1, id, 7_777_771);
+      await bid(u2, id, 6_543_219);
       await t.setTime(E);
       await t.jobs.close({ auctionId: id });
       await t.jobs.requestOrder(
@@ -552,8 +553,8 @@ describe('Auctions: events, bid partitions, metrics and domain isolation', () =>
       ).toBe(true);
       const raw = written.join('');
       for (const secret of [
-        '7777',
-        '6543',
+        '7777771',
+        '6543219',
         u1.email,
         u2.email,
         u1.bearer.replace('Bearer ', ''),

@@ -110,3 +110,16 @@ Quality: a time box per charter caps depth; parallelism adds breadth. Not an exe
   passes alone and in order A). Order-dependent state with `isolate: false`: find it before switching (the Nest logger override is the first suspect).
 - Verdict: GO, with that one order dependence to remove. Not switched yet: Jest stays the runner until the full Vitest sweep matches Jest's results.
 - trending-stream: helper G2 shared one app between six tests, but a test in between closes the app (Sequelize 'connection manager was closed'): reverted. Redo with the close moved.
+
+## State at 14:25 on 2026-10-21 (before a laptop reboot)
+
+- Full backend e2e suite on 5 shards (scripts/speedup/run-sharded.sh 5): 812 s of running + 45 s of preparing = 14.3 min, 8,390 tests passed, 4 failed
+  (trending-platform, launch-events-operations, load-shedding, launch-events-queue (20 runs)): all four read logs or metrics and pass alone.
+  Earlier: 1,113 s (split by file count), 992 s (split by measured time). Baseline before today: about 95 min.
+- Per-shard file times are even after the balanced split; what remains is the first-time loading of big code sets (about 30 to 45 s per shard,
+  220 s in the unlucky shard), a single-core Scylla/Kafka shared by all shards, and a few long real-time files (trending-stream 131 s, ads-aggregation 95 s,
+  consumer-failures 89 s, search-reindex 72 s).
+- Next: fix the 4 failures; try 8 shards (plan: 9 min); optional: convert the sources once with swc and share them between shards.
+- After a reboot: scripts/infra/stack.sh test setup, then scripts/infra/shard-prepare.sh for each shard is done by run-sharded.sh itself; shard Redis
+  containers (marketplace_test_redis_s<n>) are recreated by shard-prepare.sh; the template database is re-created on first prepare.
+- Cleanup of disk: docker system prune / docker volume prune (unused only); the swap can be reset with: sudo swapoff -a && sudo swapon -a
