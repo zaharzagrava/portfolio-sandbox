@@ -5,7 +5,7 @@
 # n = 1..15 (the Redis database number). Shard names:
 #   TEST_SHARD             1          prefix `s1-` for Kafka topics and groups, queue names, search indices and synonym set, Redis channels (libs/common/shard)
 #   DB_NAME / TEST_DB_NAME marketplace_test_s1      Postgres database, cloned from marketplace_test_template
-#   REDIS_URL              redis://localhost:6400/1 (database number = shard number)
+#   REDIS_URL              redis://localhost:650<n>/0 (the shard's own Redis container, not the shared one)
 #   CASSANDRA_KEYSPACE     marketplace_s1
 #   DYNAMO_TABLE_PREFIX    test_s1_
 #   CLICKHOUSE_DATABASE    marketplace_test_s1
@@ -22,7 +22,7 @@ cat <<OUT
 TEST_SHARD=$n
 DB_NAME=marketplace_test_s$n
 TEST_DB_NAME=marketplace_test_s$n
-REDIS_URL=${redis_url%/*}/$n
+REDIS_URL=redis://localhost:$((6500 + n))/0
 CASSANDRA_KEYSPACE=marketplace_s$n
 DYNAMO_TABLE_PREFIX=test_s${n}_
 CLICKHOUSE_DATABASE=marketplace_test_s$n

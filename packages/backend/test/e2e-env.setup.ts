@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 // e2e specs always run against docker-compose.test.yaml (D5); ApiConfigService
 // loads `.env.test` when NODE_ENV=test (copy env/test.env.example).
 process.env.NODE_ENV = 'test';
@@ -56,7 +57,27 @@ afterAllHook?.(resetSharedProcessState);
 // (when ApiConfigService has already loaded .env.test) is the baseline; every file ends by putting exactly that back.
 const hooks = globalThis as { beforeAll?: (fn: () => void | Promise<void>) => void; afterAll?: (fn: () => void | Promise<void>) => void };
 let envBaseline: NodeJS.ProcessEnv | undefined;
+
+// The developer's own `.env` (PROVIDER_DOUBLES=enabled, ...) must never reach a test: a spec that imports a script or config calling
+// `require('dotenv').config()` would load it into the shared process for every later file. Variables that exist only in `.env`
+// (not in `.env.test`, not in the environment the process started with) are removed before each file.
+const startedWith = ((globalThis as { __e2eStartEnvKeys?: Set<string> }).__e2eStartEnvKeys ??= new Set(Object.keys(process.env)));
+const keysOf = (file: string): string[] => {
+  try {
+    return readFileSync(path.resolve(process.cwd(), file), 'utf8')
+      .split('\n')
+      .map((line) => /^\s*(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=/.exec(line)?.[1])
+      .filter((key): key is string => !!key);
+  } catch {
+    return [];
+  }
+};
+const devOnlyKeys = (): string[] => {
+  const test = new Set(keysOf('.env.test'));
+  return keysOf('.env').filter((key) => !test.has(key) && !startedWith.has(key));
+};
 hooks.beforeAll?.(() => {
+  for (const key of devOnlyKeys()) delete process.env[key];
   envBaseline = { ...process.env };
   return resetSharedPinoLogger();
 });

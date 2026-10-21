@@ -7,7 +7,8 @@
 #   MinIO       bucket marketplace-media-test-s<n>
 #   SQS         the queues of infra/docker/elasticmq/elasticmq.conf (dead-letter queues too) as s<n>-<name>, created through the ElasticMQ API
 #   Kafka       the topics of scripts/init-kafka-topics.sh as s<n>-<topic> (the broker creates any other topic on first use)
-#   Redis       nothing to create: the shard uses database number <n>
+#   Redis       its OWN container marketplace_test_redis_s<n> on port 6500+<n> (some tests change ACL rules on the default user, which is server-wide;
+#               on the shared Redis that broke every other shard). Started with docker run -d --rm; stop with: docker rm -f marketplace_test_redis_s<n>
 #   Elasticsearch  nothing to create: the apps create s<n>-products_m1_init, the alias s<n>-products and the pickup index when they start
 # Never touches the default names (no prefix / no suffix). Env of the shard: scripts/infra/shard-env.sh <n>. Container names: STACK_PROJECT (default marketplace_test).
 set -euo pipefail
@@ -25,6 +26,11 @@ CH_URL="$(val CLICKHOUSE_URL)"
 export DB_HOST=localhost DB_PORT="$(val DB_PORT)" DB_USERNAME=postgres DB_PASSWORD=postgres
 export DYNAMO_ENDPOINT="$(val DYNAMO_ENDPOINT)" CASSANDRA_CONTACT_POINTS="$(val CASSANDRA_CONTACT_POINTS)" CASSANDRA_LOCAL_DC="$(val CASSANDRA_LOCAL_DC)"
 export AWS_REGION="${AWS_REGION:-eu-central-1}"
+redis_name="${PROJECT}_redis_s$n"
+if ! docker ps --format '{{.Names}}' | grep -qx "$redis_name"; then
+  docker rm -f "$redis_name" >/dev/null 2>&1 || true
+  docker run -d --rm --name "$redis_name" -p "$((6500 + n)):6379" redis:alpine >/dev/null
+fi
 t0=$SECONDS; log() { echo "[shard $n +$((SECONDS - t0))s] $*"; }
 pids=()
 
