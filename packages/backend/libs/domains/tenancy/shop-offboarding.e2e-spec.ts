@@ -88,7 +88,9 @@ describe('Shop lifecycle: suspension, offboarding, export and purge', () => {
   });
   afterAll(() => t.close());
   beforeEach(() => t.reset());
-  afterEach(() => jest.restoreAllMocks());
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
 
   describe('S03 AS-65: suspend and reinstate', () => {
     it('S03 AS-65: suspends and reinstates with history, events, a version bump and the provider cache dropped', async () => {

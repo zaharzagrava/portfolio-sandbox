@@ -29,7 +29,9 @@ describe('Search administration access and status', () => {
     await t.resetHistory();
     adminUser = await t.admin();
   });
-  afterEach(() => jest.restoreAllMocks());
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
 
   const routes: [string, string][] = [
     ['get', '/api/admin/search/index'],

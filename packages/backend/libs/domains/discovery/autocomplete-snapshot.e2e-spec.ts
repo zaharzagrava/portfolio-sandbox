@@ -55,7 +55,9 @@ describe('Autocomplete snapshot build and hot swap', () => {
     await t.resetAutocomplete();
     t.clock.set(new Date());
   });
-  afterEach(() => jest.restoreAllMocks());
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
 
   const readSnapshot = async (version: string) =>
     decodeSnapshot((await store.get(version))!);

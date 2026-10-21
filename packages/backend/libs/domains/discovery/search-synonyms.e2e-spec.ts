@@ -23,7 +23,9 @@ describe('Search synonyms administration', () => {
     adminUser = await t.admin();
     shopId = newId();
   });
-  afterEach(() => jest.restoreAllMocks());
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
 
   const put = (body: unknown) =>
     t

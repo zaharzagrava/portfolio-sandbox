@@ -52,7 +52,9 @@ describe('Search autocomplete API', () => {
     await t.resetAutocomplete();
     engineCalls = jest.spyOn(t.engine, 'search');
   });
-  afterEach(() => jest.restoreAllMocks());
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
 
   const get = (q: string, params: Record<string, string> = {}) =>
     t

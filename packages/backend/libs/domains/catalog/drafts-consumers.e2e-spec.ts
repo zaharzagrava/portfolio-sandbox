@@ -339,7 +339,9 @@ describe('Draft tenancy event consumers: shop deleted', () => {
     w = await createShopWorld(t);
     await announceRing(t.app);
   });
-  afterEach(() => jest.restoreAllMocks());
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
 
   /** A draft with a stored snapshot, log entries and a version object. */
   const fullDraft = async (shopId: string) => {

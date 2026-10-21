@@ -35,7 +35,9 @@ describe('Available near me: search, browse, pagination, limits and degradation'
     });
   });
   afterAll(() => t.close());
-  afterEach(() => jest.restoreAllMocks());
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
   beforeEach(async () => {
     await t.reset();
     w = await t.world();

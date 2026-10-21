@@ -78,7 +78,9 @@ describe('Database cells', () => {
       else process.env[name] = value;
   });
   beforeEach(() => t.reset());
-  afterEach(() => jest.restoreAllMocks());
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
 
   it('S03 AS-51: a new shop is in the pooled cell, version 1, in the default or the requested allowed region', async () => {
     const owner = await t.newUser();

@@ -60,7 +60,9 @@ describe('Search exported services and module boundary', () => {
     }) as unknown as { publisher: EventPublisher };
     published = jest.spyOn(adapter.publisher, 'publish');
   });
-  afterEach(() => jest.restoreAllMocks());
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
 
   describe('ProductSearchService for other domains (AS-78)', () => {
     it('S32 AS-78: returns the route\'s answer with the same visibility, no vectors, surface "internal", and refuses limit above 20 and any cursor or facets', async () => {

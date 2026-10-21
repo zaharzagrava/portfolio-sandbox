@@ -221,7 +221,9 @@ describe('Cache read path (L1 → L2 → loader)', () => {
         .spyOn(Logger.prototype, 'warn')
         .mockImplementation(() => undefined);
     });
-    afterEach(() => warn.mockRestore());
+    afterEach(() => {
+      warn.mockRestore();
+    });
 
     it('S52 AS-08: a 300 KiB value is returned twice, stored nowhere, counted twice and logged once without the value', async () => {
       const ns = uniqueNamespace();

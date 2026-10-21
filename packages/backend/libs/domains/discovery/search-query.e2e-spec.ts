@@ -45,7 +45,9 @@ describe('Public product search API', () => {
     published = jest.spyOn(adapter.publisher, 'publish');
     engineCalls = jest.spyOn(t.engine, 'search');
   });
-  afterEach(() => jest.restoreAllMocks());
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
 
   const search = (query: Record<string, string | number> = {}) =>
     t.http().get('/api/products/search').query(query);

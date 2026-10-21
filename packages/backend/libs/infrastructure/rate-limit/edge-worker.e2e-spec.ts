@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { vi } from 'vitest';
 import { LimiterInstance, createLimiter } from './test/limiter-fixture';
 
 /**
@@ -6,22 +7,18 @@ import { LimiterInstance, createLimiter } from './test/limiter-fixture';
  * Redis behind a REST-shaped bridge. Token verification (`jose`) is replaced: a token `good:<id>` is a verified user.
  * Proves the worker's fail-open path and its choice of subject: S50 AS-78, AS-79.
  */
-jest.mock(
-  'jose',
-  () => ({
-    createRemoteJWKSet: jest.fn(),
-    decodeProtectedHeader: () => ({}),
-    importSPKI: async () => ({}),
-    jwtVerify: async (token: string) => {
-      if (!token.startsWith('good:')) throw new Error('bad token');
-      return { payload: { sub: token.slice(5) } };
-    },
-  }),
-  { virtual: true },
-);
+vi.mock('jose', () => ({
+  createRemoteJWKSet: vi.fn(),
+  decodeProtectedHeader: () => ({}),
+  importSPKI: async () => ({}),
+  jwtVerify: async (token: string) => {
+    if (!token.startsWith('good:')) throw new Error('bad token');
+    return { payload: { sub: token.slice(5) } };
+  },
+}));
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const worker = require('../../../../edge-be/src/index') as {
+// Loaded after the (hoisted) `jose` mock; Vitest cannot `require` a .ts file the way Jest's transform could.
+const worker = (await import('../../../../edge-be/src/index')) as unknown as {
   default: {
     fetch: (r: Request, env: unknown, ctx: unknown) => Promise<Response>;
   };

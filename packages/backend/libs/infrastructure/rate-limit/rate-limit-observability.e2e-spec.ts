@@ -46,7 +46,9 @@ describe('S50 observability (e2e, real Redis)', () => {
     outage = await createLimiter({ clientUrl: proxyUrl(proxy), clock });
   });
 
-  afterEach(() => jest.restoreAllMocks());
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
 
   afterAll(async () => {
     await direct.close();

@@ -26,7 +26,9 @@ describe('Shop product search', () => {
     owner = await t.newUser();
     shop = await createShop(t.app, owner);
   });
-  afterEach(() => jest.restoreAllMocks());
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
 
   const route = (shopId: string, query: Record<string, string | number>) =>
     t.as(owner).get(`/api/shops/${shopId}/products/search`).query(query);

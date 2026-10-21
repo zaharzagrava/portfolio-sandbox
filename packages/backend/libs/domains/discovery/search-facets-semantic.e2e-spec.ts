@@ -53,7 +53,9 @@ describe('Search facets and semantic mode', () => {
     }) as unknown as { publisher: EventPublisher };
     published = jest.spyOn(adapter.publisher, 'publish');
   });
-  afterEach(() => jest.restoreAllMocks());
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
 
   const search = (query: Record<string, string | number> = {}) =>
     t.http().get('/api/products/search').query(query);

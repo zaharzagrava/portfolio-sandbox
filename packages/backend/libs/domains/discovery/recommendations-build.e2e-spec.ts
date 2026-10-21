@@ -31,7 +31,9 @@ describe('Co-occurrence nightly build', () => {
   beforeEach(async () => {
     await t.clean();
   });
-  afterEach(() => jest.restoreAllMocks());
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
 
   /** `count` orders of the same products, every one by a different buyer unless `buyers` limits them. */
   const orders = (

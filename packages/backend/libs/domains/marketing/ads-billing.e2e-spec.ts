@@ -776,7 +776,9 @@ describe('Sponsored listings: billing and reconciliation', () => {
         jest
           .spyOn(Logger.prototype, 'warn')
           .mockImplementation(() => undefined);
-      afterEach(() => jest.restoreAllMocks());
+      afterEach(() => {
+        jest.restoreAllMocks();
+      });
 
       it.each([
         ['5%', 105, true],

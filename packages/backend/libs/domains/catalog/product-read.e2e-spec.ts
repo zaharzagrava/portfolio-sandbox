@@ -58,7 +58,9 @@ describe('Public product read API', () => {
     await t.reset();
     w = await createShopWorld(t);
   });
-  afterEach(() => jest.restoreAllMocks());
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
 
   describe('detail (AS-23 to AS-26)', () => {
     it('S05 AS-23: anyone reads a visible product: public view, ETag, Cache-Control, one cache entry, one view counted', async () => {

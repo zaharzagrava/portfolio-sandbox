@@ -63,7 +63,9 @@ describe('Search click-through measurement', () => {
     }) as unknown as { publisher: EventPublisher };
     published = jest.spyOn(adapter.publisher, 'publish');
   });
-  afterEach(() => jest.restoreAllMocks());
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
 
   const emitted = (type: string): Published[] =>
     published.mock.calls

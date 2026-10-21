@@ -1,3 +1,4 @@
+import { createRequire } from 'node:module';
 import { v4 as uuidv4 } from 'uuid';
 import type { Sequelize } from 'sequelize';
 import { MetricsRegistry } from '@app/common/telemetry/metrics-registry';
@@ -30,9 +31,12 @@ import {
 const metric = (name: string, labels: Record<string, string> = {}) =>
   MetricsRegistry.value(name, labels) ?? 0;
 
-const expandMigration = jest.requireActual<{
+// A CommonJS file resolved from this spec (the shim's `jest.requireActual` would resolve it from the shim's folder).
+const expandMigration = createRequire(__filename)(
+  '../../../migrations/20261016000000-statements-s16-expand.js',
+) as {
   up(queryInterface: unknown): Promise<void>;
-}>('../../../migrations/20261016000000-statements-s16-expand.js');
+};
 
 describe('Statements: retention, boundaries, migration, configuration and shutdown', () => {
   let t: StatementsTestApp;

@@ -48,7 +48,9 @@ describe('Payments: observability, secrets, configuration and shutdown', () => {
   });
   afterAll(() => t.close());
   beforeEach(() => t.reset());
-  afterEach(() => jest.restoreAllMocks());
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
 
   const counter = (name: string, labels: Record<string, string> = {}) =>
     MetricsRegistry.value(name, labels) ?? 0;

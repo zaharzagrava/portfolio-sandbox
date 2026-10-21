@@ -55,7 +55,9 @@ describe('Product events and observability', () => {
     await t.reset();
     w = await createShopWorld(t);
   });
-  afterEach(() => jest.restoreAllMocks());
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
 
   it('S05 AS-82: every outbox payload of the write path parses with its schema; aggregateVersion rises by exactly 1 per product; a no-op writes none', async () => {
     const created = await t.as(w.staff).post(base()).send(body).expect(201);

@@ -214,7 +214,9 @@ describe('Lambda workers wiring (e2e)', () => {
         return (write as any)(chunk, ...rest);
       }) as typeof process.stdout.write);
     });
-    afterEach(() => spy.mockRestore());
+    afterEach(() => {
+      spy.mockRestore();
+    });
     afterAll(async () => {
       for (const id of created) {
         await db.query(`DELETE FROM "ReviewTask" WHERE "documentId" = $1`, [

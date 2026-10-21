@@ -29,7 +29,9 @@ describe('W07 csp-reports (e2e)', () => {
     for (const key of await scanKeys(probe.redis, 'rl:{default.write|ip:*'))
       await probe.redis.client.del(key);
   });
-  afterEach(() => warn.mockRestore());
+  afterEach(() => {
+    warn.mockRestore();
+  });
 
   const post = () => probe.http().post('/api/csp-reports');
 

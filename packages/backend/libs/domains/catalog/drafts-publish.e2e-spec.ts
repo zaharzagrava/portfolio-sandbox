@@ -106,7 +106,9 @@ describe('Draft publish', () => {
     w = await createShopWorld(t);
     await announceRing(t.app);
   });
-  afterEach(() => jest.restoreAllMocks());
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
 
   // ------------------------------------------------------------------------------------------ US4: happy paths
 

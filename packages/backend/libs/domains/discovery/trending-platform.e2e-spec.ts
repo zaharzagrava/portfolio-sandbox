@@ -48,7 +48,9 @@ describe('Trending degradation, metrics and boundary', () => {
     });
     afterAll(() => t.close());
     beforeEach(() => t.clean());
-    afterEach(() => jest.restoreAllMocks());
+    afterEach(() => {
+      jest.restoreAllMocks();
+    });
 
     it('S35 AS-36: every instrument exists with fixed-enum labels, the merge timestamp moves, and logs and labels carry no identifiers', async () => {
       const warn = jest.spyOn(Logger.prototype, 'warn');

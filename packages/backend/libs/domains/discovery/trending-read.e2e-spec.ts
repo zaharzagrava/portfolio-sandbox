@@ -50,7 +50,9 @@ describe('Trending products API', () => {
   beforeEach(async () => {
     await t.clean();
   });
-  afterEach(() => jest.restoreAllMocks());
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
 
   const get = (query: Record<string, string> = {}) =>
     t.http().get('/api/trending').query(query);

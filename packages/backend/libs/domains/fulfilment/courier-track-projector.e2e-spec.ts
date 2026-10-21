@@ -36,7 +36,9 @@ describe('Courier track history: consumer idempotency, poison messages and store
     await kit.stopAll();
     await t.close();
   });
-  afterEach(() => jest.restoreAllMocks());
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
   beforeEach(() => t.reset());
 
   describe('US1 - duplicates (AS-10)', () => {

@@ -22,7 +22,9 @@ describe('Autocomplete (e2e)', () => {
     // an open breaker from an earlier test would hide the catalog half
     t.clock.advance(10_000);
   });
-  afterEach(() => jest.restoreAllMocks());
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
 
   it('S33 SD-12: popular, successful queries become suggestions; rare, failed and blocklisted ones do not', async () => {
     await t.logQuery('iphone 17', 50);

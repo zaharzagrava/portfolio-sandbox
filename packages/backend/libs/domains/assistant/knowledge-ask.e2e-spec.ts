@@ -46,7 +46,9 @@ describe('RAG: ask this product and the shop help center', () => {
     await t.reset();
     searchSpy = jest.spyOn(t.app.get(KnowledgeSearchService), 'search');
   });
-  afterEach(() => searchSpy.mockRestore());
+  afterEach(() => {
+    searchSpy.mockRestore();
+  });
 
   const noSideEffects = () => {
     expect(searchSpy).not.toHaveBeenCalled();

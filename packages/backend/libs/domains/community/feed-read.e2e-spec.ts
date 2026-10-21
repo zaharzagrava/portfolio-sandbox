@@ -664,7 +664,9 @@ describe('Follow feed: home timeline, paging, hydration and degradation', () => 
           );
         });
     });
-    afterEach(() => spy.mockRestore());
+    afterEach(() => {
+      spy.mockRestore();
+    });
 
     it('S26 AS-41: S25 lookup down omits post items, marks the page degraded, serves the rest and leaks nothing', async () => {
       const [reader, author] = await t.users(2);

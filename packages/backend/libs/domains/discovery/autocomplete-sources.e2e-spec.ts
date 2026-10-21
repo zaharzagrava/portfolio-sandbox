@@ -39,7 +39,9 @@ describe('Autocomplete source budgets and typo fallback', () => {
     await get(`warm${Date.now()}`).expect(200);
     engine = jest.spyOn(t.engine, 'search');
   });
-  afterEach(() => jest.restoreAllMocks());
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
 
   const isFuzzy = (params: unknown) =>
     JSON.stringify(params).includes('fuzziness');

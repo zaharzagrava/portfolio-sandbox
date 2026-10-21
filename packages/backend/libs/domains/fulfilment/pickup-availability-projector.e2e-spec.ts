@@ -35,7 +35,9 @@ describe('Pickup availability: index consumers, ordering, replay and observabili
     t = await createPickupApp();
   });
   afterAll(() => t.close());
-  afterEach(() => jest.restoreAllMocks());
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
   beforeEach(async () => {
     await t.reset();
     w = await t.world();

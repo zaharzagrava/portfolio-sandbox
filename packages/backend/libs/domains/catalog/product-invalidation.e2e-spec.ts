@@ -104,7 +104,9 @@ describe('Product cache invalidation', () => {
     await t.reset();
     w = await createShopWorld(t);
   });
-  afterEach(() => jest.restoreAllMocks());
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
 
   describe('delete-on-write (AS-39)', () => {
     it('S05 AS-39: after each kind of write the entry is gone before the response and an immediate read returns the committed data', async () => {

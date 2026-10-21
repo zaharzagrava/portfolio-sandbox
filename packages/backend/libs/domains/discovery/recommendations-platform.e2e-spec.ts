@@ -95,7 +95,9 @@ describe('Recommendations degradation, metrics and boundary', () => {
     });
     afterAll(() => t.close());
     beforeEach(() => t.clean());
-    afterEach(() => jest.restoreAllMocks());
+    afterEach(() => {
+      jest.restoreAllMocks();
+    });
 
     const rail = (id: string) =>
       t.http().get(`/api/products/${id}/recommendations`);

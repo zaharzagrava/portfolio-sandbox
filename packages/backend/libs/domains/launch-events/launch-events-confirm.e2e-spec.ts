@@ -257,7 +257,9 @@ describe('Launch events: booking confirmation, idempotency and recovery', () => 
 
   it('S22 AS-35: ten confirms at once make one set of bookings, one event and one voucher command (20 runs)', async () => {
     const event = await sale();
-    await eachRound(20, async (run) => {
+    // Sequential: the rounds share one event, and admitting a person admits the whole waiting queue of the event, so
+    // rounds side by side take each other's place ("not admitted").
+    for (let run = 0; run < 20; run++) {
       const { who, hold } = await holding(event, [run * 2, run * 2 + 1]);
       const results = await Promise.all(
         Array.from({ length: 10 }, () => t.confirm(hold.holdId, who)),
@@ -273,7 +275,7 @@ describe('Launch events: booking confirmation, idempotency and recovery', () => 
       expect(
         (await t.outbox(hold.holdId)).filter((r) => r.kind === 'task'),
       ).toHaveLength(1);
-    });
+    }
   });
 
   // ------------------------------------------------------------------------------------------------- AS-36
@@ -367,7 +369,9 @@ describe('Launch events: booking confirmation, idempotency and recovery', () => 
     const dynamo = t.app.get(DynamoService);
     const redis = t.app.get(RedisService).client;
     const event = await sale({ perUserLimit: 2 });
-    await eachRound(20, async (run) => {
+    // Sequential: the rounds share one event, and admitting a person admits the whole waiting queue of the event, so
+    // rounds side by side take each other's place ("not admitted").
+    for (let run = 0; run < 20; run++) {
       const seat = 7 + run * 2;
       const a = await holding(event, [seat]);
       // a fault wipes the ledger record and the lock of the seat: a second hold takes it
@@ -396,7 +400,7 @@ describe('Launch events: booking confirmation, idempotency and recovery', () => 
         first.status === 409 ? a.hold.holdId : holdB.body.holdId;
       expect(await bookingsOf(loserHold)).toBe(0); // a multi-seat confirm with one booked seat writes nothing
       expect(await doubleBooked()).toBe(0);
-    });
+    }
   });
 
   // ------------------------------------------------------------------------------------------------- AS-39

@@ -52,7 +52,9 @@ describe('Draft version history', () => {
     w = await createShopWorld(t);
     await announceRing(t.app);
   });
-  afterEach(() => jest.restoreAllMocks());
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
 
   it('S06 AS-40: a named version holds every edit the room received just before the call, has no content in its answer, and later edits never change it', async () => {
     const draft = await seedDraft(t.app, w.shop.id, w.owner.id);

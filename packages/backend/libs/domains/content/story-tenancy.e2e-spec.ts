@@ -857,8 +857,7 @@ describe('Brand stories: authentication, tenant isolation, shop lifecycle, rate 
     );
     for (const fk of fks) expect(['"Story"']).toContain(fk.to);
     // the barrel exports Nest modules and nothing else
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const barrel = require('./index') as Record<string, unknown>;
+    const barrel = (await import('./index.js')) as Record<string, unknown>;
     expect(
       Object.keys(barrel)
         .filter(

@@ -35,6 +35,9 @@ services:
     ports:
       - '9192:9192'
       - '8182:8182'
+    # Redpanda allows about (open-file limit / 5) partitions; the default 1024 gave ~204, which five shards' topics exceed
+    ulimits:
+      nofile: { soft: 262144, hard: 262144 }
   test_elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.15.3
     container_name: marketplace_test_elasticsearch

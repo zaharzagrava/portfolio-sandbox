@@ -61,7 +61,9 @@ describe('safe outbound requests (SSRF)', () => {
       return testTransport(); // lazily: the stand-ins exist only after beforeAll
     },
   };
-  beforeEach(() => resolver.mockClear());
+  beforeEach(() => {
+    resolver.mockClear(); // a block: Vitest would call a returned function (the mock itself) as a clean-up
+  });
 
   const failure = async (promise: Promise<unknown>) => {
     const error = await promise.then(

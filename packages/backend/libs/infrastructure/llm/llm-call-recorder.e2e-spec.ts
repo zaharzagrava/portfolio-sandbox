@@ -55,7 +55,9 @@ const recorderFor = (box: ReturnType<typeof outbox>, sleeps: number[] = []) =>
   });
 
 describe('LlmCallRecorder', () => {
-  afterEach(() => jest.restoreAllMocks());
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
 
   it('S46 AS-73: the appended event parses with the llm.call_completed v1 schema and carries the fields S18 requires', async () => {
     const box = outbox();

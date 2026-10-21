@@ -29,7 +29,9 @@ describe('Pickup stock: set, adjust, idempotency, concurrency and exact check', 
     t = await createPickupApp();
   });
   afterAll(() => t.close());
-  afterEach(() => jest.restoreAllMocks());
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
   beforeEach(async () => {
     await t.reset();
     w = await t.world();

@@ -9,6 +9,7 @@ export default defineConfig({
   resolve: {
     dedupe: ['graphql'],
     alias: [
+      { find: /^dotenv\/config$/, replacement: r('test/empty-dotenv-config.ts') },
       { find: /^@app\/(infrastructure|composition|domains)\/(.*)$/, replacement: r('libs') + '/$1/$2' },
       { find: /^@app\/test\/(.*)$/, replacement: r('test') + '/$1' },
       { find: /^@app\/common\/(.*)$/, replacement: r('libs/common') + '/$1' },
