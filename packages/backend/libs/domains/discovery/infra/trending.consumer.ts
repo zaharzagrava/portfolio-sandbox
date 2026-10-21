@@ -159,10 +159,14 @@ export class TrendingConsumer
       return;
     this.flagSyncing = true;
     try {
-      const flagged = await this.flags.isPaused([
-        this.options.groupId,
-        ...aliasesOf(this.options.groupId),
-      ]);
+      // under a budget: a store that swallows the call must not hold the batch (and the group session) hostage
+      const flagged = await withBudget(
+        this.flags.isPaused([
+          this.options.groupId,
+          ...aliasesOf(this.options.groupId),
+        ]),
+        this.settings.mergeBudgetMs,
+      );
       if (flagged === this.operatorPaused) return;
       this.operatorPaused = flagged;
       const partitions = this.assigned.map((partition) => ({

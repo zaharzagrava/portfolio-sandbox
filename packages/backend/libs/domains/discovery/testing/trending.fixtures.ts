@@ -228,7 +228,9 @@ export async function createTrendingApp(
   const exits: number[] = [];
   const base = await createCatalogApp({
     ...(redisProxy
-      ? { redisUrl: `redis://127.0.0.1:${redisProxy.port}/${redisTarget.pathname.slice(1) || '0'}` }
+      ? {
+          redisUrl: `redis://127.0.0.1:${redisProxy.port}/${redisTarget.pathname.slice(1) || '0'}`,
+        }
       : {}),
     extraImports: [TrendingModule, TrendingProjectorModule],
     env: { ...TRENDING_TEST_ENV, ...options.env },

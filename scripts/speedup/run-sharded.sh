@@ -12,7 +12,7 @@ echo "prepared $N shards in $((SECONDS - t0)) s"
 t1=$SECONDS
 pids=()
 for n in $(seq 1 "$N"); do
-  setsid scripts/infra/shard-run.sh "$n" "$N" --reporter=default --reporter=json --outputFile="$out/result-$n.json" > "$out/run-$n.log" 2>&1 &
+  FAIL_LOG="$out/fails-$n.txt" setsid scripts/infra/shard-run.sh "$n" "$N" --reporter=default --reporter=json --reporter=./test/fail-log-reporter.ts --outputFile.json="$out/result-$n.json" > "$out/run-$n.log" 2>&1 &
   pids+=($!)
 done
 # Live progress, and stop early: every 15 s print how many files are done / failing; when more than ABORT_AFTER files fail, kill every slice
@@ -29,11 +29,11 @@ while :; do
   if (( abort > 0 && failing > abort )); then
     aborted=1; echo "STOP: $failing files failing (limit $abort) - killing all slices to start fixing"
     for p in "${pids[@]}"; do kill -INT -- "-$p" 2>/dev/null; done   # setsid made each slice its own process group; Vitest prints its failure details on SIGINT
-    sleep 20; for p in "${pids[@]}"; do kill -KILL -- "-$p" 2>/dev/null; done
+    sleep 3; for p in "${pids[@]}"; do kill -KILL -- "-$p" 2>/dev/null; done
     echo "--- first failing files:"
     clean | grep -aE '^ (❯|×) [a-z].*e2e-spec\.ts.*failed' | sort -u | head -20
-    echo "--- the failures with their first error line:"
-    clean | grep -aE -A2 '^ FAIL ' | grep -avE '^--$' | cut -c1-230 | head -90
+    echo "--- the failures (file | test | first error line):"
+    cat "$out"/fails-*.txt 2>/dev/null | head -60
     break
   fi
 done
