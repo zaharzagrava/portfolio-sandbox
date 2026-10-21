@@ -39,8 +39,7 @@ describe('Media-processing Lambda handler', () => {
       },
     });
     // loaded only now: the handler reads its environment when the module is evaluated
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    ({ handler } = require('./media-processing') as {
+    ({ handler } = (await import('./media-processing')) as {
       handler: typeof handler;
     });
   });

@@ -203,6 +203,14 @@ export const MetricsRegistry = {
     return registry.get(name)?.values.size ?? 0;
   },
 
+  /**
+   * Test helper: forget every recorded value but keep the registrations. Handles created at import time (module-level
+   * counters) stay connected, which `reset()` would cut when several spec files share one process.
+   */
+  resetValues(): void {
+    for (const entry of registry.values()) entry.values.clear();
+  },
+
   /** Test helper: forget every registration. */
   reset(): void {
     registry.clear();

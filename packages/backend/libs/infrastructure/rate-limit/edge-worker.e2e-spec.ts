@@ -7,7 +7,14 @@ import { LimiterInstance, createLimiter } from './test/limiter-fixture';
  * Redis behind a REST-shaped bridge. Token verification (`jose`) is replaced: a token `good:<id>` is a verified user.
  * Proves the worker's fail-open path and its choice of subject: S50 AS-78, AS-79.
  */
-vi.mock('jose', () => ({
+// `jose` is the edge package's own dependency (the backend cannot resolve it), so the mock names the file the worker really loads.
+const joseOfEdgeWorker = vi.hoisted(() =>
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  (require('node:module') as typeof import('node:module'))
+    .createRequire(`${process.cwd()}/../edge-be/package.json`)
+    .resolve('jose'),
+);
+vi.mock(joseOfEdgeWorker, () => ({
   createRemoteJWKSet: vi.fn(),
   decodeProtectedHeader: () => ({}),
   importSPKI: async () => ({}),

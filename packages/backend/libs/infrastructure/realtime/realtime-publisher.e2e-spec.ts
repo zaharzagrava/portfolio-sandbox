@@ -337,7 +337,7 @@ describe('S51 publisher (PUB)', () => {
     it('entries older than the retention age are dropped and the key expires as a whole', async () => {
       const short = await createRealtimeApp({
         keepStore: true,
-        config: { retentionMs: 800 },
+        config: { retentionMs: 1_000 },
       });
       try {
         const topic = `stream:${freshId()}` as const;
@@ -365,7 +365,7 @@ describe('S51 publisher (PUB)', () => {
         expect(remaining.every(([, fields]) => fields[1] !== 'old')).toBe(true);
         const ttl = await short.redis.client.pttl(`rt:s:${topic}`);
         expect(ttl).toBeGreaterThan(0);
-        expect(ttl).toBeLessThanOrEqual(800);
+        expect(ttl).toBeLessThanOrEqual(1_000);
         // idle for the retention age: no buffer left
         await waitFor(
           async () => (await short.redis.client.exists(`rt:s:${topic}`)) === 0,

@@ -147,8 +147,9 @@ export async function startStoreProxy(): Promise<TcpFaultProxy> {
   });
 }
 
+/** Through the fault proxy, onto the same Redis database as `testRedisUrl()` (a test shard has its own database number). */
 export const proxyUrl = (proxy: TcpFaultProxy): string =>
-  `redis://127.0.0.1:${proxy.port}/0`;
+  `redis://127.0.0.1:${proxy.port}/${new URL(testRedisUrl()).pathname.slice(1) || '0'}`;
 
 /** A key in a namespace no other test uses, so metric deltas and leftovers never collide. */
 export function uniqueKey(namespace = 'spec'): string {

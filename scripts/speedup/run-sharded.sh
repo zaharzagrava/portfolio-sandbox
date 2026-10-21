@@ -16,8 +16,8 @@ for n in $(seq 1 "$N"); do
   pids+=($!)
 done
 # Live progress, and stop early: every 15 s print how many files are done / failing; when more than ABORT_AFTER files fail, kill every slice
-# (default 6; ABORT_AFTER=0 never aborts) and show the first errors, so the fixing can start at once instead of after the whole run.
-abort="${ABORT_AFTER:-6}"; aborted=0
+# (default 3; ABORT_AFTER=0 never aborts) and show the first errors, so the fixing can start at once instead of after the whole run.
+abort="${ABORT_AFTER:-3}"; aborted=0
 while :; do
   alive=0; for p in "${pids[@]}"; do kill -0 "$p" 2>/dev/null && alive=1; done
   (( alive )) || break

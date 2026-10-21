@@ -325,7 +325,7 @@ describe('load shedding (SHED)', () => {
   }, 60_000);
 
   it('S54 AS-83: when the monitor cannot start requests are admitted, one error is logged and no gauge series exists; windows replace each other', async () => {
-    MetricsRegistry.reset();
+    MetricsRegistry.resetValues(); // not reset(): that cuts every module-level metric handle for the files that run after this one
     const error = jest.spyOn(Logger.prototype, 'error').mockImplementation();
     const app = await boot({ source: new BrokenLagSource() });
     await get(app, '/s/default').expect(200);
