@@ -11,9 +11,17 @@ t0=$SECONDS
 for n in $(seq 1 "$N"); do scripts/infra/shard-prepare.sh "$n" > "$out/prepare-$n.log" 2>&1 || { echo "prepare of shard $n failed, see $out/prepare-$n.log"; exit 1; }; done
 echo "prepared $N shards in $((SECONDS - t0)) s"
 t1=$SECONDS
+# Split by measured TIME (scripts/speedup/balance.py, from the previous run's per-file durations in specs/.checkpoints/durations.json), not by file count.
+# Without durations (first run) vitest's own --shard=i/N is used. BALANCE=0 forces that.
+dur="$ROOT/specs/.checkpoints/durations.json"; balanced=0
+if [[ "${BALANCE:-1}" != 0 && -f "$dur" ]]; then
+  (cd packages/backend && npx vitest list --filesOnly --config vitest.e2e.config.ts 2>/dev/null | sed 's#.*packages/backend/##' | grep 'e2e-spec' | sort) > "$out/all-specs.txt"
+  python3 scripts/speedup/balance.py "$N" "$dur" "$out/all-specs.txt" "$out" && balanced=1
+fi
 pids=()
 for n in $(seq 1 "$N"); do
-  FAIL_LOG="$out/fails-$n.txt" setsid scripts/infra/shard-run.sh "$n" "$N" --reporter=default --reporter=json --reporter=./test/fail-log-reporter.ts --outputFile.json="$out/result-$n.json" > "$out/run-$n.log" 2>&1 &
+  if (( balanced )); then slice=(0 $(cat "$out/list-$n.txt")); else slice=("$N"); fi
+  FAIL_LOG="$out/fails-$n.txt" setsid scripts/infra/shard-run.sh "$n" "${slice[@]}" --reporter=default --reporter=json --reporter=./test/fail-log-reporter.ts --outputFile.json="$out/result-$n.json" > "$out/run-$n.log" 2>&1 &
   pids+=($!)
 done
 # Live progress, and stop early: every 15 s print how many files are done / failing; when more than ABORT_AFTER files fail, kill every slice
@@ -51,7 +59,7 @@ for p in sorted(glob.glob(out + '/result-*.json')):
         files.append((dur, name, len(t.get('assertionResults', []))))
         f = [a['fullName'] for a in t.get('assertionResults', []) if a.get('status') == 'failed']
         if f or (not t.get('assertionResults') and t.get('status') == 'failed'): bad.append((name, f or ['suite failed to start']))
-missing = [i for i in range(1, 100) if False]
+json.dump({n: round(d, 1) for d, n, _ in files}, open(os.path.join(os.path.dirname(out), 'durations.json'), 'w'))
 print('tests passed %d, failed %d, files %d' % (passed, failed, len(files)))
 print('failing files (%d):' % len(bad))
 for n, f in bad: print('  ', n, '|', f[0][-80:], '(+%d)' % (len(f) - 1) if len(f) > 1 else '')

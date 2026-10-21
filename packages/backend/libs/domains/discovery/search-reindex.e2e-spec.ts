@@ -189,7 +189,7 @@ describe('Zero-downtime search reindex', () => {
         await new Promise((r) => setTimeout(r, 20));
       }
       expect(statuses.length).toBeGreaterThan(5);
-      expect(statuses.every((s) => s === 200)).toBe(true);
+      expect(statuses.filter((s) => s !== 200)).toEqual([]);
       expect(Math.min(...totals)).toBe(300);
       expect((await run(accepted.runId)).status).toBe('COMPLETED');
     });
@@ -657,7 +657,7 @@ describe('Zero-downtime search reindex', () => {
         );
         await new Promise((r) => setTimeout(r, 25));
       }
-      expect(statuses.every((s) => s === 200)).toBe(true);
+      expect(statuses.filter((s) => s !== 200)).toEqual([]);
       const done = await run(accepted.runId);
       expect(done.status).toBe('COMPLETED');
       expect(await t.engine.aliasTargets(PRODUCTS_ALIAS)).toEqual([done.index]);

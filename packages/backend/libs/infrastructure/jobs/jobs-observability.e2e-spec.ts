@@ -87,12 +87,14 @@ describe('Job observability and operator views (S49, e2e, real Postgres)', () =>
     MetricsRegistry.value('job_queue_lag_seconds', type ? { type } : {});
 
   beforeAll(async () => {
+    metrics.disable(); // the global provider can be set once per process; drop an earlier file's
     metrics.setGlobalMeterProvider(new MeterProvider({ readers: [reader] }));
     t = await createJobsTestApp({ providers: [ObsHandlers] });
     admin = t.get(JobsAdminService);
     h = t.get(ObsHandlers);
   });
   afterAll(async () => {
+    metrics.disable();
     h.release?.();
     await t.close();
   });

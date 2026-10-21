@@ -52,11 +52,18 @@ export const jobMetrics = {
   }),
   /** Created on first use, so it binds to the meter provider the process has by then (not the no-op one of import time). */
   recordDuration(ms: number, type: string): void {
-    duration ??= metrics
-      .getMeter('jobs')
-      .createHistogram('job_duration_ms', { unit: 'ms' });
+    // Re-created when the process's meter provider changed (one process can host many apps, e.g. a test run), else the
+    // histogram would stay bound to the provider that existed when it was first used and the new one would never see it.
+    const provider = metrics.getMeterProvider();
+    if (!duration || durationProvider !== provider) {
+      duration = provider
+        .getMeter('jobs')
+        .createHistogram('job_duration_ms', { unit: 'ms' });
+      durationProvider = provider;
+    }
     duration.record(ms, { type });
   },
 };
 
 let duration: Histogram | undefined;
+let durationProvider: unknown;
