@@ -5,6 +5,8 @@ import {
   importStartResponseSchema,
 } from '@marketplace-sandbox/contracts';
 import { TcpFaultProxy } from '@app/test/fakes/tcp-fault-proxy';
+import { RedisService } from '@app/infrastructure/redis/redis.service';
+import { waitFor } from '@app/test/utils/async-helpers';
 import { createShop } from '@app/test/utils/tenancy-fixtures';
 import {
   catalogCsv,
@@ -184,6 +186,18 @@ describe('Bulk import fairness and limits', () => {
     expect(read.status).toBe(200);
     expect(importPageSchema.parse(read.body).items).toEqual([]);
     proxy.mode = 'pass';
+    // the app's Redis connection was cut: the next spec must not start while it is still reconnecting
+    // ("Stream isn't writeable" turned its first call into a 503 once the reset got faster)
+    await waitFor(
+      async () =>
+        (await kit.app.get(RedisService, { strict: false }).client.ping()) ===
+        'PONG',
+      {
+        description: 'the limiter store answers again',
+        timeoutMs: 15_000,
+        intervalMs: 50,
+      },
+    );
   }, 60_000);
 
   it.each([

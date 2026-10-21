@@ -1,7 +1,7 @@
-import { execFileSync } from 'node:child_process';
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { Logger } from '@nestjs/common';
+import { boundaryCheck, ownershipCheck } from '@app/test/utils/static-checks';
 import { v4 as uuidv4 } from 'uuid';
 import {
   eventEnvelopeSchema,
@@ -350,12 +350,15 @@ describe('Payouts: audit, events, boundaries, migration and configuration', () =
       }
     });
 
-    it("S15 AS-52: the table-ownership check reports nothing for payments, and the payout code never opens its own transaction or touches another owner's model", () => {
-      const out = execFileSync('pnpm', ['check:table-ownership'], {
-        cwd: join(PAYMENTS_DIR, '../../..'),
-        encoding: 'utf8',
-        env: { ...process.env, FORCE_COLOR: '0' },
-      });
+    it("S15 AS-52: the table-ownership check reports nothing for payments, and the payout code never opens its own transaction or touches another owner's model", async () => {
+      const result = await ownershipCheck(
+        join(PAYMENTS_DIR, '../../..'),
+        [],
+        true,
+      );
+      // the old call threw on a non-zero exit
+      expect(result.status).toBe(0);
+      const out = result.stdout;
       expect(
         out.split(/\n(?=\S)/).find((s) => s.startsWith('payments')) ?? '',
       ).toBe('');

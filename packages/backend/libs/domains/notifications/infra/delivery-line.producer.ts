@@ -14,6 +14,7 @@ import {
   deadLetterQueueOf,
   lineQueueOf,
 } from './notifications.topics';
+import { shardName } from '@app/common/shard';
 
 /**
  * `DELIVERY_LINE_PRODUCER` over the task queue: a delivery goes on the line of its channel and kind (transactional or
@@ -65,7 +66,9 @@ export class SqsDeliveryLineProducer
       for (const name of names) {
         try {
           const dlq = await client.send(
-            new CreateQueueCommand({ QueueName: deadLetterQueueOf(name) }),
+            new CreateQueueCommand({
+              QueueName: shardName(deadLetterQueueOf(name)),
+            }),
           );
           const { Attributes } = await client.send(
             new GetQueueAttributesCommand({
@@ -75,7 +78,7 @@ export class SqsDeliveryLineProducer
           );
           await client.send(
             new CreateQueueCommand({
-              QueueName: name,
+              QueueName: shardName(name),
               Attributes: {
                 VisibilityTimeout: '60',
                 RedrivePolicy: JSON.stringify({

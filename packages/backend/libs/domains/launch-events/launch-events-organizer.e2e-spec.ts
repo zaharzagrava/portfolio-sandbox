@@ -21,6 +21,20 @@ import {
   type Seller,
 } from './testing/launch-events-test-kit';
 
+/** Runs the rounds of a repeated test five at a time (each round uses data of its own). */
+const eachRound = async (
+  rounds: number,
+  body: (round: number) => Promise<void>,
+  size = 5,
+): Promise<void> => {
+  for (let from = 0; from < rounds; from += size)
+    await Promise.all(
+      Array.from({ length: Math.min(size, rounds - from) }, (_, k) =>
+        body(from + k),
+      ),
+    );
+};
+
 const FAST = { admissionRatePerSec: 100_000 };
 
 jest.setTimeout(180_000); // the suites create hundreds of people through the real stores
@@ -346,7 +360,7 @@ describe('Launch events: organizer routes, status machine and my bookings', () =
     await close(stranger, stranger.shopId, event.id).expect(404);
     await close(s, s.shopId, v4()).expect(404);
 
-    for (let run = 0; run < 20; run++) {
+    await eachRound(20, async () => {
       const fresh = await sale();
       const results = await Promise.all([
         close(s, s.shopId, fresh.id),
@@ -354,7 +368,7 @@ describe('Launch events: organizer routes, status machine and my bookings', () =
       ]);
       expect(results.map((r) => r.status).sort()).toEqual([200, 409]);
       expect(await eventClosedRows(fresh.id)).toBe(1);
-    }
+    });
   });
   const eventClosedRows = async (id: string) =>
     (await t.outbox(id)).filter((r) => r.type === 'launchevents.event_closed')

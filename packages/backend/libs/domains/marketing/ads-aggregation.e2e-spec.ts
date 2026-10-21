@@ -96,25 +96,39 @@ describe('Sponsored listings: click aggregation', () => {
 
   // ---- reading the log ----------------------------------------------------------------------------------------------
 
-  /** What a read_committed reader sees on `topic` after `settleMs` of quiet (an aborted batch is never visible). */
-  const readCommitted = async (topic: string, settleMs = 2_500) => {
+  /**
+   * What a read_committed reader sees on `topic` (an aborted batch is never visible). It stops once the reader has joined its group
+   * and then `settleMs` have passed without a new message (the fetch starts right after the join, so the data is there by then).
+   */
+  const readCommitted = async (topic: string, settleMs = 1_000) => {
     const consumer = testKafka().consumer({
       groupId: `rc-${uuidv4()}`,
       readUncommitted: false,
     });
     const seen: Array<{ value: string; headers: Record<string, string> }> = [];
+    const activity = { last: null as number | null }; // set when the group is joined, moved on by every message
+    consumer.on(consumer.events.GROUP_JOIN, () => {
+      activity.last = Date.now();
+    });
     await consumer.connect();
     await consumer.subscribe({ topic, fromBeginning: true });
     await consumer.run({
-      eachMessage: async ({ message: m }) =>
-        void seen.push({
+      eachMessage: async ({ message: m }) => {
+        activity.last = Date.now();
+        seen.push({
           value: m.value!.toString(),
           headers: Object.fromEntries(
             Object.entries(m.headers ?? {}).map(([k, v]) => [k, String(v)]),
           ),
-        }),
+        });
+      },
     });
-    await sleep(settleMs);
+    const started = Date.now();
+    while (
+      (activity.last === null || Date.now() - activity.last < settleMs) &&
+      Date.now() - started < 20_000 + settleMs
+    )
+      await sleep(25);
     await consumer.disconnect();
     return seen;
   };

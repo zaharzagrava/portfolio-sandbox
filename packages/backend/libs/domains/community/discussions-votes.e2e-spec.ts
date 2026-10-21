@@ -232,22 +232,34 @@ describe('Product discussions: votes, concurrency and rate limits', () => {
 
     it('S25 AS-30: a +1 racing a -1 from one user leaves exactly one of the two, with counts equal to the records, 20 times', async () => {
       const authors = await t.users(20);
-      for (const author of authors) {
-        const postId = await t.newPost(author, w.product.id);
-        await Promise.all([
-          cast(w.reader, postId, 1),
-          cast(w.reader, postId, -1),
-        ]);
-        const stored = await records(postId);
-        expect(stored).toHaveLength(1);
-        const shown = await post(postId);
-        expect(shown.ups + shown.downs).toBe(1);
-        expect(shown.ups).toBe(stored[0].value === 1 ? 1 : 0);
-        expect(shown.downs).toBe(stored[0].value === -1 ? 1 : 0);
-        await t.flushDiscussionCache();
-        const rebuilt = await post(postId);
-        expect([rebuilt.ups, rebuilt.downs]).toEqual([shown.ups, shown.downs]);
-      }
+      // Phase 1: the 20 races run side by side (each has its own post). Phase 2: the cache is flushed once and every
+      // post is read again from the store, so each post is still checked against a cold cache.
+      const rounds = await Promise.all(
+        authors.map(async (author) => {
+          const postId = await t.newPost(author, w.product.id);
+          await Promise.all([
+            cast(w.reader, postId, 1),
+            cast(w.reader, postId, -1),
+          ]);
+          const stored = await records(postId);
+          expect(stored).toHaveLength(1);
+          const shown = await post(postId);
+          expect(shown.ups + shown.downs).toBe(1);
+          expect(shown.ups).toBe(stored[0].value === 1 ? 1 : 0);
+          expect(shown.downs).toBe(stored[0].value === -1 ? 1 : 0);
+          return { postId, shown };
+        }),
+      );
+      await t.flushDiscussionCache();
+      await Promise.all(
+        rounds.map(async ({ postId, shown }) => {
+          const rebuilt = await post(postId);
+          expect([rebuilt.ups, rebuilt.downs]).toEqual([
+            shown.ups,
+            shown.downs,
+          ]);
+        }),
+      );
     });
 
     it('S25 AS-31: the 61st vote in a minute is 429 with the rate-limit headers; the 60 earlier ones are stored', async () => {

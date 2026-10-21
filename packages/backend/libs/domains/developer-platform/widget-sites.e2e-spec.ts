@@ -21,6 +21,20 @@ import {
   type WidgetWorld,
 } from './testing/widget-kit';
 
+/** Runs the rounds of a repeated test five at a time (each round uses data of its own). */
+const eachRound = async (
+  rounds: number,
+  body: (round: number) => Promise<void>,
+  size = 5,
+): Promise<void> => {
+  for (let from = 0; from < rounds; from += size)
+    await Promise.all(
+      Array.from({ length: Math.min(size, rounds - from) }, (_, k) =>
+        body(from + k),
+      ),
+    );
+};
+
 const EVENT = 'developerplatform.widget_site_changed';
 
 describe('Widget: site management (dashboard)', () => {
@@ -720,7 +734,7 @@ describe('Widget: site management (dashboard)', () => {
     });
 
     it('S44 AS-11: two rotations at once on a site without a previous secret: exactly one 201, one rotation_in_progress, 20 rounds', async () => {
-      for (let round = 0; round < 20; round += 1) {
+      await eachRound(20, async () => {
         await clearRateLimits(t.app);
         const site = await t.site(w);
         const results = await Promise.all([
@@ -740,7 +754,7 @@ describe('Widget: site management (dashboard)', () => {
             .open(row.identitySecretSealed, `widget-site:${site.id}`),
         ).toBe(winner.body.identitySecret);
         await owner().delete(`${base()}/${site.id}`).expect(204);
-      }
+      });
     });
   });
 

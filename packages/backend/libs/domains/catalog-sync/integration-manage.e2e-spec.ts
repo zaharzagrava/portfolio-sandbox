@@ -265,13 +265,13 @@ describe('Integration management API', () => {
   describe('list and detail', () => {
     it('S08 AS-67: seven integrations page three at a time newest first with an opaque cursor; bad limits and a tampered cursor are 400; the bodies parse and carry no secret', async () => {
       const s = await seller();
-      const made: Awaited<ReturnType<typeof integrationIn>>[] = [];
-      for (let i = 0; i < 7; i++)
-        made.push(
-          await integrationIn(s, i === 3 ? 'DISCONNECTED' : 'ACTIVE', {
+      const made = await Promise.all(
+        Array.from({ length: 7 }, (_, i) =>
+          integrationIn(s, i === 3 ? 'DISCONNECTED' : 'ACTIVE', {
             createdAt: new Date(ctx.clock.now().getTime() + i * 1000),
           }),
-        );
+        ),
+      );
       const expected = made.map((m) => m.id).reverse();
 
       const seen: string[] = [];
@@ -549,20 +549,23 @@ describe('Integration management API', () => {
 
     it('S08 AS-68: a concurrent pause and resume of an ACTIVE integration leave one consistent outcome: every history row is a successful call and the status is the last one written', async () => {
       const s = await seller();
-      for (let round = 0; round < 6; round++) {
-        const t = await integrationIn(s);
-        const [p, r] = await Promise.all([
-          ctx.as(s.owner).post(`${t.path}/pause`),
-          ctx.as(s.owner).post(`${t.path}/resume`),
-        ]);
-        expect(p.status).toBe(200); // pause is legal from ACTIVE whatever the order
-        expect([200, 409]).toContain(r.status);
-        const history = await historyOf(t.id);
-        // resume only succeeds when it ran after the pause; then there are two rows, otherwise exactly one.
-        expect(history).toHaveLength(r.status === 200 ? 2 : 1);
-        expect((await eventsOf(t.id)).length).toBe(history.length);
-        expect((await rowOf(t.id)).status).toBe(history.at(-1)!.toStatus);
-      }
+      // the 6 rounds each have their own integration, so they run side by side
+      await Promise.all(
+        Array.from({ length: 6 }, async () => {
+          const t = await integrationIn(s);
+          const [p, r] = await Promise.all([
+            ctx.as(s.owner).post(`${t.path}/pause`),
+            ctx.as(s.owner).post(`${t.path}/resume`),
+          ]);
+          expect(p.status).toBe(200); // pause is legal from ACTIVE whatever the order
+          expect([200, 409]).toContain(r.status);
+          const history = await historyOf(t.id);
+          // resume only succeeds when it ran after the pause; then there are two rows, otherwise exactly one.
+          expect(history).toHaveLength(r.status === 200 ? 2 : 1);
+          expect((await eventsOf(t.id)).length).toBe(history.length);
+          expect((await rowOf(t.id)).status).toBe(history.at(-1)!.toStatus);
+        }),
+      );
     });
   });
 

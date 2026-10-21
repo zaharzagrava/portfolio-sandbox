@@ -35,7 +35,7 @@ import {
 } from './testing';
 
 const waitFor: typeof waitForSoon = (probe, options = {}) =>
-  waitForSoon(probe, { timeoutMs: 45_000, ...options });
+  waitForSoon(probe, { timeoutMs: 45_000, intervalMs: 30, ...options });
 
 const DAY = 86_400_000;
 const HOUR = 3_600_000;

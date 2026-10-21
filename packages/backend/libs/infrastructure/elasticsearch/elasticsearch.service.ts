@@ -7,9 +7,10 @@ import {
   ProductSearchResult,
   UpsertProductDocument,
 } from './types';
+import { shardName } from '@app/common/shard';
 
-export const PRODUCTS_INDEX = 'products';
-export const SYNONYMS_SET = 'product-synonyms';
+export const PRODUCTS_INDEX = shardName('products');
+export const SYNONYMS_SET = shardName('product-synonyms');
 const DEFAULT_SYNONYMS = [
   'airpods, earbuds, wireless headphones',
   'phone, smartphone, mobile',

@@ -182,10 +182,16 @@ describe('Experiment assignment API (S39)', () => {
       await seedExperiment(t.sequelize);
       // A fresh address per run: the limiter's window lives in Redis and outlives a previous run of this very spec.
       const ip = `10.99.${Math.floor(Math.random() * 250) + 1}.${Math.floor(Math.random() * 250) + 1}`;
-      for (let i = 0; i < 120; i++) {
-        const res = await ask({ anonymousId: 'anon-12345678', ip });
-        if (res.status !== 200)
-          throw new Error(`request ${i + 1}: ${res.status}`);
+      for (let batch = 0; batch < 4; batch++) {
+        const results = await Promise.all(
+          Array.from({ length: 30 }, () =>
+            ask({ anonymousId: 'anon-12345678', ip }),
+          ),
+        );
+        results.forEach((res, i) => {
+          if (res.status !== 200)
+            throw new Error(`request ${batch * 30 + i + 1}: ${res.status}`);
+        });
       }
       const limited = await ask({ anonymousId: 'anon-12345678', ip });
       expect(limited.status).toBe(429);

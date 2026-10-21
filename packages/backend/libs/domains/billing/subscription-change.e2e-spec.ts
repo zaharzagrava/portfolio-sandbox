@@ -617,8 +617,11 @@ describe('Billing: plan changes and proration', () => {
 
     it('S17 AS-69: the 31st change request within an hour is 429', async () => {
       const fs = await fsAt();
-      for (let i = 0; i < 30; i++) {
-        const res = await change(fs.owner, fs.shopId, {});
+      // 30 attempts at once (was one by one); every answer is still checked
+      const attempts = await Promise.all(
+        Array.from({ length: 30 }, () => change(fs.owner, fs.shopId, {})),
+      );
+      for (const res of attempts) {
         expect(res.status).toBe(422); // nothing to change; still an attempt
       }
       const refused = await change(fs.owner, fs.shopId, {

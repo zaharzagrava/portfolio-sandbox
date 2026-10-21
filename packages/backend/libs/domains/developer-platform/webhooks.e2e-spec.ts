@@ -26,6 +26,20 @@ import {
 } from './testing/webhook-e2e.fixture';
 import { clearRateLimits } from './testing/public-api-kit';
 
+/** Runs the rounds of a repeated test five at a time (each round uses data of its own). */
+const eachRound = async (
+  rounds: number,
+  body: (round: number) => Promise<void>,
+  size = 5,
+): Promise<void> => {
+  for (let from = 0; from < rounds; from += size)
+    await Promise.all(
+      Array.from({ length: Math.min(size, rounds - from) }, (_, k) =>
+        body(from + k),
+      ),
+    );
+};
+
 const EVENT = 'developerplatform.webhook_endpoint_changed';
 const HOUR = 3_600_000;
 
@@ -300,7 +314,7 @@ describe('Webhooks: signing and secret rotation', () => {
     });
 
     it('S43 AS-20: two concurrent rotations give exactly one 201 and one 409, and the stored secret is the winner’s (20 rounds)', async () => {
-      for (let round = 0; round < 20; round += 1) {
+      await eachRound(20, async () => {
         await clearRateLimits(t.app);
         const e = await create(t.endpointUrl());
         const results = await Promise.all([
@@ -319,7 +333,7 @@ describe('Webhooks: signing and secret rotation', () => {
           (await history(e.id)).filter((h) => h.facet === 'secret_rotated'),
         ).toHaveLength(1);
         await owner().delete(`${base()}/${e.id}`).expect(204);
-      }
+      });
     }, 120_000);
   });
 

@@ -16,6 +16,20 @@ import {
 import { DEPRECATED_ROUTES, VERSION_REGISTRY } from './domain/version-registry';
 import type { VersionEntry } from './domain/version-registry';
 
+/** Runs the rounds of a repeated test five at a time (each round uses data of its own). */
+const eachRound = async (
+  rounds: number,
+  body: (round: number) => Promise<void>,
+  size = 5,
+): Promise<void> => {
+  for (let from = 0; from < rounds; from += size)
+    await Promise.all(
+      Array.from({ length: Math.min(size, rounds - from) }, (_, k) =>
+        body(from + k),
+      ),
+    );
+};
+
 const LATEST = '2026-10-01';
 const OLD = '2026-01-15';
 const DEPRECATION_HEADERS = {
@@ -74,7 +88,7 @@ describe('Public API: date-pinned versions and deprecation', () => {
 
   describe('AS-26 the first key pins the shop', () => {
     it('S42 AS-26: two concurrent first-key creations leave exactly one pin row, on the latest version (20 repeats)', async () => {
-      for (let i = 0; i < 20; i += 1) {
+      await eachRound(20, async () => {
         const w = await t.seedWorld();
         const body = {
           name: 'ERP',
@@ -101,7 +115,7 @@ describe('Public API: date-pinned versions and deprecation', () => {
           version: LATEST,
           previousVersion: null,
         });
-      }
+      });
     });
 
     it('S42 AS-26: a newly registered version does not move a pinned shop; a shop created after it is pinned to it', async () => {

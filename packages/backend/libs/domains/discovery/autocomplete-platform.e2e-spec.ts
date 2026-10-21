@@ -1,5 +1,5 @@
-import { spawnSync } from 'node:child_process';
 import { join } from 'node:path';
+import { boundaryCheck, runOnce } from '@app/test/utils/static-checks';
 import { ApiConfigService } from '@app/common/config';
 import { ConfigUtilsService } from '@app/common/config/config-utils/config-utils.service';
 import { MetricsRegistry } from '@app/common/telemetry/metrics-registry';
@@ -11,41 +11,33 @@ import {
 } from './testing/autocomplete-app';
 
 const BACKEND = join(__dirname, '../../..');
-const run = (cmd: string, args: string[]) =>
-  spawnSync(cmd, args, {
-    cwd: BACKEND,
-    encoding: 'utf8',
-    env: { ...process.env, NODE_ENV: 'test', TS_NODE_TRANSPILE_ONLY: '1' },
-    maxBuffer: 32 * 1024 * 1024,
-  });
-
 const metric = (name: string, labels: Record<string, string> = {}) =>
   MetricsRegistry.value(name, labels);
 
 describe('Autocomplete module boundary, metrics and configuration', () => {
   describe('boundary (AS-49)', () => {
-    it('S33 AS-49: the boundary and table-ownership checks are clean and the barrel exports the two autocomplete modules only', () => {
-      const boundaries = run('npx', [
-        'depcruise',
-        'apps',
-        'libs',
-        'test',
-        'db',
-        '--config',
-        '.dependency-cruiser.cjs',
-        '--output-type',
-        'err',
+    it('S33 AS-49: the boundary and table-ownership checks are clean and the barrel exports the two autocomplete modules only', async () => {
+      // the two checks do not depend on each other: run them side by side (the boundary answer is shared with other specs)
+      const [boundaries, ownership] = await Promise.all([
+        boundaryCheck(BACKEND),
+        runOnce(
+          'check:table-ownership:strict:node',
+          'node',
+          [
+            '-r',
+            'ts-node/register',
+            'scripts/check-table-ownership.ts',
+            '--strict',
+          ],
+          BACKEND,
+          230_000,
+          { ...process.env, NODE_ENV: 'test', TS_NODE_TRANSPILE_ONLY: '1' },
+        ),
       ]);
       expect(boundaries.stdout + boundaries.stderr).toContain(
         'no dependency violations found',
       );
 
-      const ownership = run('node', [
-        '-r',
-        'ts-node/register',
-        'scripts/check-table-ownership.ts',
-        '--strict',
-      ]);
       // other domains still carry cross-domain reads (their debt); discovery must carry none
       const output = ownership.stdout + ownership.stderr;
       expect(output).toContain('cross-domain data accesses');

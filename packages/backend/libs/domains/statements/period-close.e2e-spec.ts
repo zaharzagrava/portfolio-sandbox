@@ -460,8 +460,9 @@ describe('Statements: period close and accounting periods', () => {
   });
 
   it('S16 AS-39: 25 shops with a batch of 10 are written in three batches and the month closes only after all are counted', async () => {
-    const many: string[] = [];
-    for (let i = 0; i < 25; i++) many.push((await t.shopWithOwner()).shopId);
+    const many: string[] = (
+      await Promise.all(Array.from({ length: 25 }, () => t.shopWithOwner()))
+    ).map((made) => made.shopId); // together (was one by one)
     await t.sales.deliver(
       ...many.map((shopId) =>
         orderPaid({

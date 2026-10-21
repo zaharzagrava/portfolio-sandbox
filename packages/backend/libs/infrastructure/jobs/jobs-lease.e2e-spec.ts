@@ -523,7 +523,10 @@ describe('Job leases, fencing, reaper and shutdown (S49, e2e, real Postgres)', (
     try {
       w.startLoop();
       m.startLoop();
-      await sleep(1_500);
+      await waitFor(
+        () => logs.calls.some((c) => c.level === 'error'),
+        10_000,
+      );
       expect(
         logs.calls.filter((c) => c.level === 'error').length,
       ).toBeGreaterThan(0);

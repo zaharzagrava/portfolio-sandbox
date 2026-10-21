@@ -9,6 +9,7 @@ import {
   type SQSClient,
 } from '@aws-sdk/client-sqs';
 import { log } from '../telemetry/telemetry';
+import { shardName } from '@app/common/shard';
 
 export interface RedriveOptions {
   /** Name of the dead-letter queue, e.g. `onboarding-documents-dlq` or `webhook-deliveries-dlq.fifo`. */
@@ -34,10 +35,11 @@ export async function redrive({
   const target = source ?? sourceQueueOf(dlq);
   if (target === dlq)
     throw new Error(`"${dlq}" is not a dead-letter queue name`);
-  const dlqUrl = (await sqs.send(new GetQueueUrlCommand({ QueueName: dlq })))
-    .QueueUrl!;
+  const dlqUrl = (
+    await sqs.send(new GetQueueUrlCommand({ QueueName: shardName(dlq) }))
+  ).QueueUrl!;
   const sourceUrl = (
-    await sqs.send(new GetQueueUrlCommand({ QueueName: target }))
+    await sqs.send(new GetQueueUrlCommand({ QueueName: shardName(target) }))
   ).QueueUrl!;
   const fifo = target.endsWith('.fifo');
   let moved = 0;

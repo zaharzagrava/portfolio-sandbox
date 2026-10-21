@@ -726,7 +726,7 @@ describe('Competitor monitor: polite and SSRF-safe crawling (frontier, robots, l
           `SELECT COUNT(*)::int AS n FROM "CrawlTarget" WHERE "lastCheckedAt" IS NOT NULL`,
         );
         if (n === 19 || Date.now() > deadline) break;
-        await new Promise((r) => setTimeout(r, 200));
+        await new Promise((r) => setTimeout(r, 50));
       }
       await Promise.all([t.worker.stop(), second.stop()]);
 

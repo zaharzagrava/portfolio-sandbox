@@ -11,6 +11,8 @@ import { join } from 'node:path';
 import { Client } from 'cassandra-driver';
 
 async function main() {
+  // CASSANDRA_KEYSPACE (default marketplace): a shard of the shared test stack has its own keyspace (scripts/infra/shard-prepare.sh)
+  const keyspace = process.env.CASSANDRA_KEYSPACE ?? 'marketplace';
   const dir = join(__dirname, '../../cql');
   const client = new Client({
     contactPoints: (
@@ -28,7 +30,7 @@ async function main() {
   for (const file of files) {
     if (file !== '000_keyspace.cql') {
       const rows = await client.execute(
-        'SELECT file FROM marketplace.schema_migrations',
+        `SELECT file FROM ${keyspace}.schema_migrations`,
       );
       rows.rows.forEach((r) => applied.add(r.file));
     }
@@ -36,13 +38,14 @@ async function main() {
 
     const statements = readFileSync(join(dir, file), 'utf8')
       .replace(/--.*$/gm, '')
+      .replace(/\bmarketplace\b/g, keyspace)
       .split(';')
       .map((s) => s.trim())
       .filter(Boolean);
     for (const statement of statements) await client.execute(statement);
 
     await client.execute(
-      'INSERT INTO marketplace.schema_migrations (file, applied_at) VALUES (?, toTimestamp(now()))',
+      `INSERT INTO ${keyspace}.schema_migrations (file, applied_at) VALUES (?, toTimestamp(now()))`,
       [file],
       {
         prepare: true,

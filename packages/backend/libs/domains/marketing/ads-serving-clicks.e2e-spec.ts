@@ -361,10 +361,15 @@ describe('Sponsored listings: serving and clicks', () => {
 
     it('S36 AS-22: the 121st request in a minute is 429; a limiter that is down still serves', async () => {
       await shopCampaign(25);
-      for (let i = 0; i < 120; i++) {
-        const ok = await serve('?category=audio');
-        if (ok.status !== 200)
-          throw new Error(`request ${i + 1}: ${ok.status}`);
+      // 120 requests in waves of 30 at once (was one by one)
+      for (let wave = 0; wave < 4; wave++) {
+        const answers = await Promise.all(
+          Array.from({ length: 30 }, () => serve('?category=audio')),
+        );
+        answers.forEach((ok, i) => {
+          if (ok.status !== 200)
+            throw new Error(`request ${wave * 30 + i + 1}: ${ok.status}`);
+        });
       }
       const limited = await serve('?category=audio');
       expect(limited.status).toBe(429);

@@ -32,7 +32,7 @@ describe('Bad messages and sick stores do not stop the line', () => {
   afterAll(() => kit.stopAll());
   afterEach(() => kit.resetProxy());
 
-  it('S53 AS-50: invalid JSON, an empty value and a non-envelope each go to the dead-letter topic, the rest of the batch is applied', async () => {
+  it.concurrent('S53 AS-50: invalid JSON, an empty value and a non-envelope each go to the dead-letter topic, the rest of the batch is applied', async () => {
     const s = await kit.scenario();
     const Natural = s.make('natural');
     const app = await s.boot([Natural]);
@@ -76,7 +76,7 @@ describe('Bad messages and sick stores do not stop the line', () => {
     expect(dlqTotal(consumer.name, 'INVALID_ENVELOPE')).toBe(3);
   });
 
-  it('S53 AS-51: the third of five events fails its payload schema: it is dead-lettered with the paths, never the values, and the other four are applied', async () => {
+  it.concurrent('S53 AS-51: the third of five events fails its payload schema: it is dead-lettered with the paths, never the values, and the other four are applied', async () => {
     const s = await kit.scenario();
     const Natural = s.make('natural');
     const app = await s.boot([Natural]);
@@ -109,7 +109,7 @@ describe('Bad messages and sick stores do not stop the line', () => {
     expect(letter.key).toBe(ids[2]);
   });
 
-  it('S53 AS-52: an unknown event type is skipped and counted ignored, its offset is committed, nothing is dead-lettered', async () => {
+  it.concurrent('S53 AS-52: an unknown event type is skipped and counted ignored, its offset is committed, nothing is dead-lettered', async () => {
     const s = await kit.scenario();
     const Other = defineEvent(
       `${s.agg}.something_else`,
@@ -135,7 +135,7 @@ describe('Bad messages and sick stores do not stop the line', () => {
     expect(await dlq(consumer.name)).toHaveLength(0);
   });
 
-  it('S53 AS-53: an event of a known type with a newer contract version is dead-lettered UNSUPPORTED_VERSION', async () => {
+  it.concurrent('S53 AS-53: an event of a known type with a newer contract version is dead-lettered UNSUPPORTED_VERSION', async () => {
     const s = await kit.scenario();
     const V2 = defineEvent(
       s.ItemChanged.type,
@@ -158,7 +158,7 @@ describe('Bad messages and sick stores do not stop the line', () => {
     expect(consumer.probe.calls).toHaveLength(0);
   });
 
-  it('S53 AS-54: a version 1 event is upgraded and applied with the same effect as a native version 2', async () => {
+  it.concurrent('S53 AS-54: a version 1 event is upgraded and applied with the same effect as a native version 2', async () => {
     const s = await kit.scenario();
     const R1 = defineEvent(
       `${s.agg}.renamed`,
@@ -215,7 +215,7 @@ describe('Bad messages and sick stores do not stop the line', () => {
     expect(await dlq(consumer.name)).toHaveLength(0);
   });
 
-  it('S53 AS-55: an aggregate id that is not a UUID is dead-lettered INVALID_AGGREGATE_ID and has no effect', async () => {
+  it.concurrent('S53 AS-55: an aggregate id that is not a UUID is dead-lettered INVALID_AGGREGATE_ID and has no effect', async () => {
     const s = await kit.scenario();
     const Natural = s.make('natural', 'natural', {
       aggregateIdSchema: z.uuid(),
@@ -244,7 +244,7 @@ describe('Bad messages and sick stores do not stop the line', () => {
     );
   });
 
-  it('S53 AS-56: a dead letter keeps the original key and value bytes and carries the full header set', async () => {
+  it.concurrent('S53 AS-56: a dead letter keeps the original key and value bytes and carries the full header set', async () => {
     const s = await kit.scenario();
     const Natural = s.make('natural');
     const app = await s.boot([Natural]);
@@ -283,7 +283,7 @@ describe('Bad messages and sick stores do not stop the line', () => {
     expect(letter.headers['x-dlq-reason'].length).toBeLessThanOrEqual(500);
   });
 
-  it('S53 AS-57: a handler that always throws a permanent error is attempted 3 times, then dead-lettered HANDLER_FAILED, the others are applied and the offset passes it', async () => {
+  it.concurrent('S53 AS-57: a handler that always throws a permanent error is attempted 3 times, then dead-lettered HANDLER_FAILED, the others are applied and the offset passes it', async () => {
     const s = await kit.scenario();
     const Natural = s.make('natural');
     const app = await s.boot([Natural]);
@@ -322,7 +322,7 @@ describe('Bad messages and sick stores do not stop the line', () => {
     );
   });
 
-  it('S53 AS-58: a consumer configured for 6 attempts invokes the handler exactly 6 times before dead-lettering', async () => {
+  it.concurrent('S53 AS-58: a consumer configured for 6 attempts invokes the handler exactly 6 times before dead-lettering', async () => {
     const s = await kit.scenario();
     const Natural = s.make('natural', 'six', { attempts: 6 });
     const app = await s.boot([Natural]);
@@ -342,7 +342,7 @@ describe('Bad messages and sick stores do not stop the line', () => {
     expect((await dlq(consumer.name))[0].headers['x-attempts']).toBe('6');
   });
 
-  it('S53 AS-59: a sink that is unreachable for 30 s pauses the partition: nothing is dead-lettered, and after the sink returns every event is applied in order', async () => {
+  it.concurrent('S53 AS-59: a sink that is unreachable for 30 s pauses the partition: nothing is dead-lettered, and after the sink returns every event is applied in order', async () => {
     const s = await kit.scenario();
     const sinkProxy = await TcpFaultProxy.start({
       host: 'localhost',

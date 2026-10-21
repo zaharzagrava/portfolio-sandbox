@@ -227,10 +227,14 @@ describe('Billing: usage read', () => {
   describe('S18 AS-53: the rate limit', () => {
     it('S18 AS-53: the 61st read within a minute is 429 with Retry-After', async () => {
       const a = await shopA();
-      for (let i = 0; i < 60; i++)
-        expect((await get(a.ann, `/api/shops/${a.shopId}/usage`)).status).toBe(
-          200,
-        );
+      // 60 reads in two waves of 30 at once (was one by one); every answer is still checked
+      for (let wave = 0; wave < 2; wave++)
+        for (const res of await Promise.all(
+          Array.from({ length: 30 }, () =>
+            get(a.ann, `/api/shops/${a.shopId}/usage`),
+          ),
+        ))
+          expect(res.status).toBe(200);
       const refused = await get(a.ann, `/api/shops/${a.shopId}/usage`);
       expect(refused.status).toBe(429);
       expect(refused.headers['retry-after']).toBeDefined();

@@ -478,26 +478,29 @@ describe('Product discussions: nested comments, threads and tombstones', () => {
     it('S25 AS-23: a reply racing with the delete of its parent ends consistently 20 times: stored under the tombstone or refused, never orphaned, counts follow the rows', async () => {
       const postId = await t.newPost(w.author, w.product.id);
       const people = await t.users(40);
-      let stored = 0;
-      for (let round = 0; round < 20; round++) {
-        const owner = people[round];
-        const replier = people[20 + round];
-        const parent = await t.newComment(owner, postId, {
-          body: `parent ${round}`,
-        });
-        const [deleted, reply] = await Promise.all([
-          t.as(owner).delete(`/api/comments/${parent}`),
-          t.comment(replier, postId, {
-            body: 'racing reply',
-            parentId: parent,
-          }),
-        ]);
-        expect(deleted.status).toBe(204);
-        expect([201, 409]).toContain(reply.status);
-        if (reply.status === 409)
-          expect(reply.body.code).toBe('parent_deleted');
-        else stored++;
-      }
+      // The 20 rounds use their own parent and their own two people, so they run side by side.
+      const outcomes = await Promise.all(
+        Array.from({ length: 20 }, async (_, round) => {
+          const owner = people[round];
+          const replier = people[20 + round];
+          const parent = await t.newComment(owner, postId, {
+            body: `parent ${round}`,
+          });
+          const [deleted, reply] = await Promise.all([
+            t.as(owner).delete(`/api/comments/${parent}`),
+            t.comment(replier, postId, {
+              body: 'racing reply',
+              parentId: parent,
+            }),
+          ]);
+          expect(deleted.status).toBe(204);
+          expect([201, 409]).toContain(reply.status);
+          if (reply.status === 409)
+            expect(reply.body.code).toBe('parent_deleted');
+          return reply.status === 201;
+        }),
+      );
+      const stored = outcomes.filter(Boolean).length;
       const all = await rows(
         'SELECT comment_id, parent_id, deleted FROM comments_by_post',
       );

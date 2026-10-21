@@ -91,7 +91,7 @@ jobs:
           NODE_ENV=test pnpm run dynamo:create-tables
       - name: API e2e (deep layer of the test pyramid, D27)
         working-directory: packages/backend
-        run: pnpm test:e2e --ci
+        run: pnpm test:e2e   # Vitest (vitest.e2e.config.ts); the Jest fallback is `pnpm test:e2e:jest`
       - name: Store logs on failure
         if: failure()
         run: docker compose -f docker-compose.test.yaml -p marketplace_test logs --no-color > compose.log

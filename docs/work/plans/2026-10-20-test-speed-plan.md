@@ -109,3 +109,4 @@ Quality: a time box per charter caps depth; parallelism adds breadth. Not an exe
 - Same failures as Jest (`import-fairness`, the new-reset one) in order A. Reverse order has one more: `order-export-lifecycle` line 492 (it reads captured log lines;
   passes alone and in order A). Order-dependent state with `isolate: false`: find it before switching (the Nest logger override is the first suspect).
 - Verdict: GO, with that one order dependence to remove. Not switched yet: Jest stays the runner until the full Vitest sweep matches Jest's results.
+- trending-stream: helper G2 shared one app between six tests, but a test in between closes the app (Sequelize 'connection manager was closed'): reverted. Redo with the close moved.

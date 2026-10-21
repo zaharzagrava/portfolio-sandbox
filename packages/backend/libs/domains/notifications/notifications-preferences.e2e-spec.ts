@@ -31,7 +31,7 @@ import {
 } from './testing';
 
 const waitFor: typeof waitForSoon = (probe, options = {}) =>
-  waitForSoon(probe, { timeoutMs: 45_000, ...options });
+  waitForSoon(probe, { timeoutMs: 45_000, intervalMs: 30, ...options });
 
 const PHONE = '+380501234567';
 const MASKED = '+380•••••4567';

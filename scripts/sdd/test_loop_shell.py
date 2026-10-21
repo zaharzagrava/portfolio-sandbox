@@ -77,11 +77,11 @@ class LoopShell(unittest.TestCase):
         subprocess.run(['git', 'init', '-q'], cwd=d, check=True, env=env)
         os.makedirs(os.path.join(d, 'packages/backend'))
         os.makedirs(os.path.join(d, 'bin'))
-        # a fake npx: --listTests prints 6 spec files; a run writes a report in which `bad-spec` files fail while $BAD is set
+        # a fake npx (Vitest): `vitest list --filesOnly` prints 6 spec files; `vitest run` writes a JSON report in which `bad-spec` files fail while $BAD is set
         open(os.path.join(d, 'bin/npx'), 'w').write(textwrap.dedent('''\
             #!/usr/bin/env bash
-            if [[ " $* " == *" --listTests "* ]]; then for n in a b c d e f; do echo "$PWD/libs/domains/x/$n.e2e-spec.ts"; done; exit 0; fi
-            out=""; files=(); while (( $# )); do case "$1" in --outputFile=*) out="${1#*=}";; --runTestsByPath) shift; files=("$@"); break;; esac; shift; done
+            if [[ " $* " == *" list "* ]]; then for n in a b c d e f; do echo "libs/domains/x/$n.e2e-spec.ts"; done; exit 0; fi
+            out=""; files=(); for a in "$@"; do case "$a" in --outputFile.json=*) out="${a#*=}";; *.e2e-spec.ts) files+=("$a");; esac; done
             echo "RUN ${#files[@]} files: ${files[*]##*/}" >> "$LOG"
             python3 - "$out" "${files[@]}" <<'PY'
             import json, os, sys
@@ -96,7 +96,7 @@ class LoopShell(unittest.TestCase):
         text = open(os.path.join(ROOT, 'scripts/sdd/implement-specs.sh'), encoding='utf-8').read()
         funcs = '\n'.join(re.search(r'^%s\(\) \{.*?^\}' % n, text, re.M | re.S).group(0) for n in ('gate_state', 'gate_fulls_failed', 'gate_full_failed', 'gate_reset', 'backend_run_specs', 'backend_gate'))
         funcs = '\n'.join(l for l in funcs.split('\n'))
-        script = f'''set -uo pipefail; cd {d}; export PATH={d}/bin:$PATH LOG={d}/log; id=T; code_path() {{ echo libs/domains/x; }}
+        script = f'''set -uo pipefail; cd {d}; export ROOT={ROOT} PATH={d}/bin:$PATH LOG={d}/log; id=T; code_path() {{ echo libs/domains/x; }}
         {funcs}
         run() {{ echo "-- $1"; shift; "$@" >/dev/null 2>&1; echo "rc=$?" >> $LOG; }}
         export BAD="b e"; run "1 first run (parts of 4)" backend_gate x

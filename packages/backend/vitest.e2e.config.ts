@@ -17,7 +17,7 @@ export default defineConfig({
   },
   test: {
     globals: true,
-    include: ['libs/**/*.e2e-spec.ts', 'apps/**/*.e2e-spec.ts'],
+    include: ['libs/**/*.e2e-spec.ts', 'apps/**/*.e2e-spec.ts', 'test/toolkit/**/*.e2e-spec.ts', 'scripts/rag-eval/**/*.e2e-spec.ts'], // the same roots as jest-e2e.json,
     setupFiles: ['./test/e2e-env.setup.ts', './test/vitest-jest-shim.ts'],
     pool: 'forks',
     poolOptions: { forks: { singleFork: true } },

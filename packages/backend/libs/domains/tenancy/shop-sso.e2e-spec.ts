@@ -63,9 +63,10 @@ describe('Company sign-in per shop: public lookup', () => {
   });
 
   it('S03 AS-46: the 31st lookup in a minute from one IP is 429', async () => {
-    let last = 0;
-    for (let i = 0; i < 30; i++) last = (await lookup('nobody-here')).status;
-    expect(last).toBe(404);
+    const statuses = await Promise.all(
+      Array.from({ length: 30 }, async () => (await lookup('nobody-here')).status),
+    );
+    expect(statuses.every((s) => s === 404)).toBe(true);
     const limited = await lookup('nobody-here').expect(429);
     expect(limited.headers['retry-after']).toBeDefined();
   });

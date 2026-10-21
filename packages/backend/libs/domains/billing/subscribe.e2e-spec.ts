@@ -569,7 +569,10 @@ describe('Billing: subscribing', () => {
         priceId: '00000000-0000-4000-8000-000000000000',
         paymentMethodRef: 'pm_ok',
       });
-    for (let i = 0; i < 10; i++) expect((await attempt()).status).toBe(404);
+    for (const res of await Promise.all(
+      Array.from({ length: 10 }, () => attempt()),
+    ))
+      expect(res.status).toBe(404); // ten at once (was one by one)
     const refused = await attempt();
     expect(refused.status).toBe(429);
     expect(refused.headers['retry-after']).toBeDefined();

@@ -21,6 +21,20 @@ import { PublicApiProjectorModule } from './public-api-projector.module';
 import { PublicApiShopLifecycleConsumer } from './infra/consumers';
 import { ShopStatusChanged } from '@app/domains/tenancy';
 
+/** Runs the rounds of a repeated test five at a time (each round uses data of its own). */
+const eachRound = async (
+  rounds: number,
+  body: (round: number) => Promise<void>,
+  size = 5,
+): Promise<void> => {
+  for (let from = 0; from < rounds; from += size)
+    await Promise.all(
+      Array.from({ length: Math.min(size, rounds - from) }, (_, k) =>
+        body(from + k),
+      ),
+    );
+};
+
 const product = (over: Record<string, unknown> = {}) => ({
   title: 'iPhone 17',
   price: { amount: 129_900, currency: 'USD' },
@@ -372,7 +386,7 @@ describe('Public API: products, stock and orders', () => {
 
     it('S42 AS-40: two parallel PATCH with the same If-Match give one 200 and one 412, and the stored version is the next one (20 repeats)', async () => {
       const { key } = await world();
-      for (let i = 0; i < 20; i += 1) {
+      await eachRound(20, async () => {
         const id = await atVersion(key, 8);
         const results = await Promise.all([
           patch(key, id, { title: 'a' }, '"8"'),
@@ -385,7 +399,7 @@ describe('Public API: products, stock and orders', () => {
           { id },
         );
         expect(stored.version).toBe(9);
-      }
+      });
     });
 
     it('S42 AS-40: an archived product is 409 product_archived; an empty body or one with no changeable field is 400', async () => {

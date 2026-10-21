@@ -518,10 +518,17 @@ describe('Ledger: running balances, read model and balance endpoint', () => {
     it('S14 AS-35: the 121st read in a minute is 429 with Retry-After; with the limiter store down it is still answered', async () => {
       const user = await t.newUser();
       const shop = await createShop(t.app, user);
-      for (let i = 0; i < 120; i++)
+      // 120 reads in waves of 30 at once (was one by one); the 121st below still goes after all of them
+      for (let wave = 0; wave < 4; wave++)
         expect(
-          (await t.as(user).get(`/api/shops/${shop.id}/balance`)).status,
-        ).toBe(200);
+          (
+            await Promise.all(
+              Array.from({ length: 30 }, () =>
+                t.as(user).get(`/api/shops/${shop.id}/balance`),
+              ),
+            )
+          ).map((r) => r.status),
+        ).toEqual(Array(30).fill(200));
       const limited = await t.as(user).get(`/api/shops/${shop.id}/balance`);
       expect(limited.status).toBe(429);
       expect(limited.headers['retry-after']).toBeDefined();

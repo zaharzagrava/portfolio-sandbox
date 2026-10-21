@@ -17,6 +17,20 @@ import {
   type Seller,
 } from './testing/launch-events-test-kit';
 
+/** Runs the rounds of a repeated test five at a time (each round uses data of its own). */
+const eachRound = async (
+  rounds: number,
+  body: (round: number) => Promise<void>,
+  size = 5,
+): Promise<void> => {
+  for (let from = 0; from < rounds; from += size)
+    await Promise.all(
+      Array.from({ length: Math.min(size, rounds - from) }, (_, k) =>
+        body(from + k),
+      ),
+    );
+};
+
 const FAST = { admissionRatePerSec: 100_000 };
 
 jest.setTimeout(180_000); // the suites create hundreds of people through the real stores
@@ -424,7 +438,7 @@ describe('Launch events: admission token, seat holds and ticket limits', () => {
 
   it('S22 AS-22: five parallel single-seat holds against a limit of two give two holds and three refusals (20 runs)', async () => {
     const event = await sale({ perUserLimit: 2 });
-    for (let run = 0; run < 20; run++) {
+    await eachRound(20, async (run) => {
       const { who, token } = await admitted(event);
       const base = run * 5;
       const results = await Promise.all(
@@ -439,7 +453,7 @@ describe('Launch events: admission token, seat holds and ticket limits', () => {
       expect(
         (await records(event)).filter((r) => r.userId === who.id),
       ).toHaveLength(2);
-    }
+    });
   });
 
   // ------------------------------------------------------------------------------------------------- AS-23

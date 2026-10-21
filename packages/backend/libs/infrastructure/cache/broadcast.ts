@@ -1,7 +1,8 @@
 import Redis from 'ioredis';
 import { CacheLog } from './cache-log';
+import { shardName } from '@app/common/shard';
 
-export const INVALIDATION_CHANNEL = 'cache:invalidate';
+export const INVALIDATION_CHANNEL = shardName('cache:invalidate');
 
 export type BroadcastMessage =
   | { kind: 'drop'; keys: string[] }

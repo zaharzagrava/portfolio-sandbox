@@ -309,8 +309,15 @@ describe('Billing: charging, unknown outcomes and dunning', () => {
 
   it('S17 AS-45: the same job delivered twice at once charges once (50 invoices)', async () => {
     const fss: Fixture[] = [];
-    for (let i = 0; i < 50; i++)
-      fss.push(await open({ plan: 'starter', quantity: 1 }));
+    // 50 subscriptions made in 5 groups of 10 at once (was one by one; the clock is the same fixed time for each, nothing is charged yet)
+    for (let group = 0; group < 5; group++)
+      fss.push(
+        ...(await Promise.all(
+          Array.from({ length: 10 }, () =>
+            open({ plan: 'starter', quantity: 1 }),
+          ),
+        )),
+      );
     const ids = await Promise.all(
       fss.map(async (fs) => (await invoiceOf(fs)).id),
     );

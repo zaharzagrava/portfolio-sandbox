@@ -1,5 +1,6 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import type { VideoCompleteResponse } from '@marketplace-sandbox/contracts';
+import { AppError } from '@app/common/errors/error.types';
 import { CLOCK, Clock } from '@app/common/core/clock';
 import { TaskQueue } from '@app/infrastructure/sqs/task-queue.port';
 import {
@@ -91,7 +92,8 @@ export class VideoFinalizeService {
       if (!head) throw new Error('the source is missing after assembly');
       if (head.size !== video.sizeBytes) return await this.sizeMismatch(video);
     } catch (error) {
-      if ((error as { code?: string }).code) throw error;
+      // our own domain errors pass through; a raw network error (it has a `code` too, e.g. ECONNRESET) is a storage fault
+      if (error instanceof AppError) throw error;
       this.logger.warn(
         `could not assemble the upload: ${(error as Error).message}`,
         undefined,

@@ -26,6 +26,8 @@ import {
 } from '../infra/index-bootstrap.service';
 import { DEFAULT_SYNONYM_RULES } from '../infra/repositories/synonym-set.repository';
 import { SearchIndexRegistry } from '../infra/search-index-registry';
+import { PRODUCTS_ALIAS } from '../infra/search-index-names';
+import { shardName } from '@app/common/shard';
 import { ProductSearchModule } from '../product-search.module';
 import { SearchProjectorModule } from '../search-projector.module';
 import { SearchWorkerModule } from '../search-worker.module';
@@ -89,23 +91,26 @@ export async function createSearchApp(
 ): Promise<SearchTestApp> {
   const embeddings = new TestEmbeddingProvider();
   const probe = new TestReindexProbe();
-  const proxy = options.engineProxy
-    ? await TcpFaultProxy.start({
-        host: 'localhost',
-        port: new URL(ES_NODE).port ? Number(new URL(ES_NODE).port) : 9300,
-      })
-    : null;
-  const redisProxy = options.redisProxy
-    ? await TcpFaultProxy.start({ host: 'localhost', port: 6400 })
-    : null;
-  const kafkaProxy = options.kafkaProxy
-    ? await TcpFaultProxy.start({
-        host: 'localhost',
-        port: Number(
-          (process.env.KAFKA_BROKER ?? 'localhost:9192').split(':')[1],
-        ),
-      })
-    : null;
+  // the three optional fault proxies start at the same time
+  const [proxy, redisProxy, kafkaProxy] = await Promise.all([
+    options.engineProxy
+      ? TcpFaultProxy.start({
+          host: 'localhost',
+          port: new URL(ES_NODE).port ? Number(new URL(ES_NODE).port) : 9300,
+        })
+      : null,
+    options.redisProxy
+      ? TcpFaultProxy.start({ host: 'localhost', port: 6400 })
+      : null,
+    options.kafkaProxy
+      ? TcpFaultProxy.start({
+          host: 'localhost',
+          port: Number(
+            (process.env.KAFKA_BROKER ?? 'localhost:9192').split(':')[1],
+          ),
+        })
+      : null,
+  ]);
   const base = await createCatalogApp({
     ...(redisProxy
       ? { redisUrl: `redis://127.0.0.1:${redisProxy.port}/0` }
@@ -184,33 +189,40 @@ export async function createSearchApp(
         }
       embeddings.reset();
       probe.reset();
-      await base.reset();
-      // the engine refuses wildcard deletes: name every products index (and a legacy concrete one) explicitly
-      const names = Object.keys(
-        await es.indices
-          .get({
-            index: 'products*',
-            expand_wildcards: 'all',
-            ignore_unavailable: true,
-          })
-          .catch(() => ({})),
-      );
-      if (names.length > 0)
-        await es.indices.delete({ index: names, ignore_unavailable: true });
-      // the seeds keep the synonym tables (their migration seeds them): put them back to version 1 and let the next
-      // bootstrap push that version to the engine again
-      await sequelize.query(`DELETE FROM "SearchSynonymVersion"`);
-      await sequelize.query(
-        `INSERT INTO "SearchSynonymSet" ("id", "version", "rules", "updatedAt")
+      // Two independent chains run at the same time: the database wipe followed by putting the synonym tables back, and
+      // the engine side (delete every products index, then the synonym set that those indices referenced).
+      const database = async () => {
+        await base.reset();
+        // the seeds keep the synonym tables (their migration seeds them): put them back to version 1 and let the next
+        // bootstrap push that version to the engine again
+        await sequelize.query(`DELETE FROM "SearchSynonymVersion"`);
+        await sequelize.query(
+          `INSERT INTO "SearchSynonymSet" ("id", "version", "rules", "updatedAt")
          VALUES (1, 1, $1::text[], now())
          ON CONFLICT ("id") DO UPDATE SET "version" = 1, "rules" = EXCLUDED."rules", "updatedBy" = NULL,
            "updatedAt" = now(), "pendingVersion" = NULL, "pendingRules" = NULL, "pendingAt" = NULL`,
-        { bind: [DEFAULT_SYNONYM_RULES] },
-      );
-      await es.synonyms.deleteSynonym({ id: SYNONYMS_SET_ID }).catch(
-        (e: { statusCode?: number }) =>
-          e.statusCode === 404 ? undefined : Promise.reject(e as Error), // eslint-disable-line @typescript-eslint/prefer-promise-reject-errors
-      );
+          { bind: [DEFAULT_SYNONYM_RULES] },
+        );
+      };
+      const engineSide = async () => {
+        // the engine refuses wildcard deletes: name every products index (and a legacy concrete one) explicitly
+        const names = Object.keys(
+          await es.indices
+            .get({
+              index: shardName('products*'),
+              expand_wildcards: 'all',
+              ignore_unavailable: true,
+            })
+            .catch(() => ({})),
+        );
+        if (names.length > 0)
+          await es.indices.delete({ index: names, ignore_unavailable: true });
+        await es.synonyms.deleteSynonym({ id: SYNONYMS_SET_ID }).catch(
+          (e: { statusCode?: number }) =>
+            e.statusCode === 404 ? undefined : Promise.reject(e as Error), // eslint-disable-line @typescript-eslint/prefer-promise-reject-errors
+        );
+      };
+      await Promise.all([database(), engineSide()]);
       base.app.get(SearchIndexRegistry, { strict: false }).invalidate();
       await base.app
         .get(IndexBootstrapService, { strict: false })
@@ -219,12 +231,12 @@ export async function createSearchApp(
     },
     async refresh() {
       await es.indices.refresh({
-        index: 'products*',
+        index: shardName('products*'),
         ignore_unavailable: true,
       });
     },
     async doc(productId) {
-      const res = await es.get({ index: 'products', id: productId }).catch(
+      const res = await es.get({ index: PRODUCTS_ALIAS, id: productId }).catch(
         (e: { statusCode?: number }) =>
           e.statusCode === 404 ? null : Promise.reject(e as Error), // eslint-disable-line @typescript-eslint/prefer-promise-reject-errors
       );
@@ -233,14 +245,14 @@ export async function createSearchApp(
     async count(query) {
       await app.refresh();
       const res = await es.count({
-        index: 'products',
+        index: PRODUCTS_ALIAS,
         ...(query && { query }),
       });
       return res.count;
     },
     async indices() {
       const res = await es.indices.get({
-        index: 'products*',
+        index: shardName('products*'),
         expand_wildcards: 'all',
       });
       return Object.fromEntries(

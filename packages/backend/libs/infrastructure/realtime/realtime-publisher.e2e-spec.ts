@@ -1,3 +1,4 @@
+import { channelName } from '@app/infrastructure/realtime/keys';
 import { MetricsRegistry } from '@app/common/telemetry/metrics-registry';
 import { waitFor } from '@app/test/utils/async-helpers';
 import { inParallel } from '@app/test/utils/async-helpers';
@@ -291,7 +292,7 @@ describe('S51 publisher (PUB)', () => {
     expect(rt.hub.channelCount()).toBe(0);
     const [, subscribers] = (await rt.redis.client.pubsub(
       'NUMSUB',
-      `rt:c:${topic}`,
+      channelName(topic),
     )) as [string, number];
     expect(Number(subscribers)).toBe(0);
     expect(await rt.redis.client.xlen(`rt:s:${topic}`)).toBe(2);
@@ -336,7 +337,7 @@ describe('S51 publisher (PUB)', () => {
     it('entries older than the retention age are dropped and the key expires as a whole', async () => {
       const short = await createRealtimeApp({
         keepStore: true,
-        config: { retentionMs: 1_500 },
+        config: { retentionMs: 800 },
       });
       try {
         const topic = `stream:${freshId()}` as const;
@@ -354,7 +355,7 @@ describe('S51 publisher (PUB)', () => {
             );
             return !left.some(([, fields]) => fields[1] === 'old');
           },
-          { timeoutMs: 6_000, intervalMs: 200 },
+          { timeoutMs: 6_000, intervalMs: 50 },
         );
         const remaining = await short.redis.client.xrange(
           `rt:s:${topic}`,
@@ -364,13 +365,13 @@ describe('S51 publisher (PUB)', () => {
         expect(remaining.every(([, fields]) => fields[1] !== 'old')).toBe(true);
         const ttl = await short.redis.client.pttl(`rt:s:${topic}`);
         expect(ttl).toBeGreaterThan(0);
-        expect(ttl).toBeLessThanOrEqual(1_500);
+        expect(ttl).toBeLessThanOrEqual(800);
         // idle for the retention age: no buffer left
         await waitFor(
           async () => (await short.redis.client.exists(`rt:s:${topic}`)) === 0,
           {
             timeoutMs: 6_000,
-            intervalMs: 200,
+            intervalMs: 50,
           },
         );
       } finally {

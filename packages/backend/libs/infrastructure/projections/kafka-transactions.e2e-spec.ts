@@ -87,7 +87,7 @@ describe('Kafka transactional consume-transform-produce pipeline', () => {
     return handle;
   };
 
-  it('S53 AS-102: 10 inputs and 3 outputs are committed together: the reader sees 3 outputs once, the group offset moved by 10', async () => {
+  it.concurrent('S53 AS-102: 10 inputs and 3 outputs are committed together: the reader sees 3 outputs once, the group offset moved by 10', async () => {
     const { input, output } = await topics('commit');
     await produce(
       input,
@@ -118,7 +118,7 @@ describe('Kafka transactional consume-transform-produce pipeline', () => {
     ]);
   }, 60_000);
 
-  it('S53 AS-103: outputs sent before a crash are invisible; after the restart the inputs are redelivered and the outputs appear once', async () => {
+  it.concurrent('S53 AS-103: outputs sent before a crash are invisible; after the restart the inputs are redelivered and the outputs appear once', async () => {
     const { input, output } = await topics('abort');
     await produce(input, ['x1', 'x2', 'x3']);
     let crashes = 0;
@@ -166,7 +166,7 @@ describe('Kafka transactional consume-transform-produce pipeline', () => {
     ]);
   }, 60_000);
 
-  it('S53 AS-104: a second instance with the same transactional identity fences the first: its commit is rejected, it stops, no duplicates', async () => {
+  it.concurrent('S53 AS-104: a second instance with the same transactional identity fences the first: its commit is rejected, it stops, no duplicates', async () => {
     const { input, output } = await topics('fence');
     await produce(input, ['y1', 'y2']);
     let release!: () => void;

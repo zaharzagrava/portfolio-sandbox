@@ -545,8 +545,13 @@ describe('Delivery request: idempotency, tenant isolation and visibility', () =>
 
     it('S20 AS-43: the 61st request in a minute is 429 rate_limited with Retry-After and writes no row; another shop is unaffected', async () => {
       const w = await world();
-      for (let i = 0; i < 60; i++)
-        await request(w.owner, w.shopId, bodyFor(uuidv4(), w.city)).expect(404);
+      // 60 requests in two waves of 30 at once (was one by one); every answer is still checked
+      for (let wave = 0; wave < 2; wave++)
+        await Promise.all(
+          Array.from({ length: 30 }, () =>
+            request(w.owner, w.shopId, bodyFor(uuidv4(), w.city)).expect(404),
+          ),
+        );
 
       const limited = await request(
         w.owner,

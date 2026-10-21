@@ -3,6 +3,7 @@ import { Kafka, logLevel, type LogEntry } from 'kafkajs';
 import { ApiConfigService } from '@app/common/config';
 import { Environment } from '@app/common/types';
 import type { KafkaClientOverrides } from './kafka-client.options';
+import { shardKafka } from './shard-kafka';
 
 /**
  * kafkajs prints its own unstructured JSON lines to stdout (no requestId, no
@@ -35,21 +36,23 @@ export function createKafka(
   const isLocal = [Environment.local, Environment.test].includes(
     config.get('node_env'),
   );
-  return new Kafka({
-    clientId,
-    brokers: config.get('kafka_broker').split(','),
-    logLevel: logLevel.WARN,
-    logCreator: kafkaLogCreator,
-    ...(isLocal
-      ? {}
-      : {
-          ssl: true,
-          sasl: {
-            mechanism: 'plain',
-            username: config.get('kafka_api_key'),
-            password: config.get('kafka_api_secret'),
-          },
-        }),
-    ...overrides,
-  });
+  return shardKafka(
+    new Kafka({
+      clientId,
+      brokers: config.get('kafka_broker').split(','),
+      logLevel: logLevel.WARN,
+      logCreator: kafkaLogCreator,
+      ...(isLocal
+        ? {}
+        : {
+            ssl: true,
+            sasl: {
+              mechanism: 'plain',
+              username: config.get('kafka_api_key'),
+              password: config.get('kafka_api_secret'),
+            },
+          }),
+      ...overrides,
+    }),
+  );
 }

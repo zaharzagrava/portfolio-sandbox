@@ -194,7 +194,11 @@ describe('Shop functions: submission, judge and versions', () => {
 
     it('a function with 100 versions refuses another with 422 version_limit_reached', async () => {
       const fn = await t.newFunction(A.admin, A.shopId);
-      for (let v = 1; v <= 100; v++) await t.insertVersion(fn, v, 'REJECTED');
+      await Promise.all(
+        Array.from({ length: 100 }, (_, i) =>
+          t.insertVersion(fn, i + 1, 'REJECTED'),
+        ),
+      );
 
       problem(
         await t.submit(A.admin, A.shopId, fn, GOOD_SOURCE),

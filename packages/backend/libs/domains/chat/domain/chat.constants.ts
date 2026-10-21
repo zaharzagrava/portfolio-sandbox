@@ -1,3 +1,5 @@
+import { shardName } from '@app/common/shard';
+
 /** Roles and statuses of a channel member (moved out of the model, G-37: `api/` and `application/` import these). */
 export enum ChatChannelMemberRole {
   OWNER = 'OWNER',
@@ -26,9 +28,9 @@ export enum ChatChannelMemberStatus {
  *   yet.
  */
 export const chatChannelRedisTopic = (channelId: string): string =>
-  `chat:channel:${channelId}`;
+  `${shardName('chat:channel:')}${channelId}`;
 
-export const CHAT_MODERATION_REDIS_TOPIC = 'chat:moderation';
+export const CHAT_MODERATION_REDIS_TOPIC = shardName('chat:moderation');
 
 export enum ChatModerationEventType {
   BAN = 'ban',

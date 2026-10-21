@@ -176,26 +176,30 @@ describe('Orders: reads, history and tenant isolation', () => {
       { priceMinor: 500, quantity: 100 },
     ]);
     const base = t.clock.now().getTime();
-    const mine: string[] = [];
-    for (let i = 0; i < 45; i += 1) {
-      const o = await seedPendingOrder(t.app, {
-        userId: buyer.id,
-        now: new Date(base + Math.floor(i / 3) * 1_000), // three orders share each instant
-        lines: [line(products[0].id, shop.id)],
-      });
-      mine.push(o.id);
-    }
-    for (let i = 0; i < 5; i += 1) {
-      const o = await seedPendingOrder(t.app, {
-        userId: buyer.id,
-        lines: [line(products[0].id, shop.id)],
-      });
-      await exec(
-        t.app,
-        `UPDATE "BisOrder" SET "status" = 'CANCELLED', "cancelReason" = 'out_of_stock' WHERE "id" = :id`,
-        { id: o.id },
-      );
-    }
+    const mine: string[] = (
+      await Promise.all(
+        Array.from({ length: 45 }, (_, i) =>
+          seedPendingOrder(t.app, {
+            userId: buyer.id,
+            now: new Date(base + Math.floor(i / 3) * 1_000), // three orders share each instant
+            lines: [line(products[0].id, shop.id)],
+          }),
+        ),
+      )
+    ).map((o) => o.id);
+    await Promise.all(
+      Array.from({ length: 5 }, async () => {
+        const o = await seedPendingOrder(t.app, {
+          userId: buyer.id,
+          lines: [line(products[0].id, shop.id)],
+        });
+        await exec(
+          t.app,
+          `UPDATE "BisOrder" SET "status" = 'CANCELLED', "cancelReason" = 'out_of_stock' WHERE "id" = :id`,
+          { id: o.id },
+        );
+      }),
+    );
     await seedPendingOrder(t.app, {
       userId: other.id,
       lines: [line(products[0].id, shop.id)],
@@ -241,11 +245,14 @@ describe('Orders: reads, history and tenant isolation', () => {
     const { shop, products } = await seedShopWithProducts(t.app, [
       { priceMinor: 500, quantity: 100 },
     ]);
-    for (let i = 0; i < 22; i += 1)
-      await seedPendingOrder(t.app, {
-        userId: buyer.id,
-        lines: [line(products[0].id, shop.id)],
-      });
+    await Promise.all(
+      Array.from({ length: 22 }, () =>
+        seedPendingOrder(t.app, {
+          userId: buyer.id,
+          lines: [line(products[0].id, shop.id)],
+        }),
+      ),
+    );
     await seedPendingOrder(t.app, {
       userId: other.id,
       lines: [line(products[0].id, shop.id)],

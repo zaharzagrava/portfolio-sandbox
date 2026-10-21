@@ -82,10 +82,11 @@ describe('Shopping assistant: resumable streams, cancel, abort, shutdown', () =>
 
   it('S46 AS-22: 50 randomized resumes against a generator at full speed lose and repeat nothing', async () => {
     const text = Array.from({ length: 600 }, (_, i) => `[${i}]`).join('');
-    for (let trial = 0; trial < 50; trial++) {
+    // Rounds of 5 trials side by side: every trial has its own user and conversation, and the scripted turns are
+    // identical, so it does not matter which trial takes which queued turn.
+    const runTrial = async (trial: number) => {
       const u = await h.user();
       const c = await h.conversation(u);
-      h.llm.script({ text, chunks: 600, delayMs: 1 });
       // the 40 ms coalescing leaves some twenty events; the first read takes a random few of them
       const take = 2 + Math.floor(Math.random() * 8);
       const first = await h.ask(u, c, { text: 'go' }, { count: take });
@@ -99,6 +100,13 @@ describe('Shopping assistant: resumable streams, cancel, abort, shutdown', () =>
       expect(rest.events.at(-1)!.event).toBe('done');
       expect(new Set(all.map((e) => e.id)).size).toBe(all.length);
       expect(textOf(all)).toBe(text);
+    };
+    for (let from = 0; from < 50; from += 5) {
+      for (let i = 0; i < 5; i++)
+        h.llm.script({ text, chunks: 600, delayMs: 1 });
+      await Promise.all(
+        Array.from({ length: 5 }, (_, i) => runTrial(from + i)),
+      );
     }
   }, 170_000);
 
@@ -218,13 +226,13 @@ describe('Shopping assistant: resumable streams, cancel, abort, shutdown', () =>
     it('does not abort when the viewer reconnects within the grace period', async () => {
       const u = await h.user();
       const c = await h.conversation(u);
-      h.config.set('assistant_detach_grace_ms', 1_500);
+      h.config.set('assistant_detach_grace_ms', 500);
       h.llm.script({ text: 'streaming', hang: true, delayMs: 20 });
       const first = await h.ask(u, c, { text: 'go' }, { count: 2 });
       const g = messageIdOf(first.events);
 
       const viewer = await attach(u, g, first.events.at(-1)!.id!);
-      await new Promise((r) => setTimeout(r, 2_500));
+      await new Promise((r) => setTimeout(r, 900));
       expect(h.llm.aborted).toBe(0);
       expect(await state(u, g)).toBe('running');
       expect(viewer.events.length).toBeGreaterThan(0);
@@ -283,7 +291,7 @@ describe('Shopping assistant: resumable streams, cancel, abort, shutdown', () =>
           (frames) => frames.filter((f) => f.event === 'text').length >= 3,
           5_000,
         );
-        await new Promise((r) => setTimeout(r, 1_500));
+        await new Promise((r) => setTimeout(r, 900));
         expect(h.llm.aborted).toBe(0);
         expect(remote.events[0].event).toBe('meta');
         expect(data(remote.events[0]).messageId).toBe(g);

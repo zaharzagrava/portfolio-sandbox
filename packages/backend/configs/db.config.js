@@ -18,9 +18,9 @@ module.exports = {
   test: {
     username: 'postgres',
     password: 'postgres',
-    database: 'marketplace_test',
+    database: process.env.TEST_DB_NAME || 'marketplace_test', // scripts/infra/shard-prepare.sh migrates marketplace_test_template
     host: 'localhost',
-    port: 5400,
+    port: Number(process.env.TEST_DB_PORT) || 5400, // a shard's stack sets TEST_DB_PORT (scripts/infra/shard-stack.sh)
     dialect: 'postgres',
     logging: false,
   },

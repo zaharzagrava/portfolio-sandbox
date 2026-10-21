@@ -977,12 +977,17 @@ describe('Product write API', () => {
   describe('write rate limit (AS-22) and the role/state matrix (SC-001)', () => {
     it('S05 AS-22: the 121st write of a shop within the minute is 429 with Retry-After; reads of the shop still succeed and other shops are unaffected', async () => {
       const results: number[] = [];
-      for (let i = 0; i < 120; i++) {
-        const res = await t
-          .as(w.staff)
-          .post(base())
-          .send({ ...validBody, title: `Coat ${i}` });
-        results.push(res.status);
+      // groups of 20 at once: the limiter counts atomically, so 120 accepted writes are 120 whichever way they arrive
+      for (let first = 0; first < 120; first += 20) {
+        const group = await Promise.all(
+          Array.from({ length: 20 }, (_, k) =>
+            t
+              .as(w.staff)
+              .post(base())
+              .send({ ...validBody, title: `Coat ${first + k}` }),
+          ),
+        );
+        results.push(...group.map((res) => res.status));
       }
       expect(results.every((s) => s === 201)).toBe(true);
 

@@ -53,7 +53,13 @@ describe('Auctions: anti-sniping extension', () => {
       .send({ maxAmountMinor: max });
   const bidders = async (n: number) => {
     const out: TestUser[] = [];
-    for (let i = 0; i < n; i++) out.push(await t.user());
+    // 25 at a time: the users are separate rows and sessions
+    for (let i = 0; i < n; i += 25)
+      out.push(
+        ...(await Promise.all(
+          Array.from({ length: Math.min(25, n - i) }, () => t.user()),
+        )),
+      );
     return out;
   };
   const endsAtOf = async (id: string) =>

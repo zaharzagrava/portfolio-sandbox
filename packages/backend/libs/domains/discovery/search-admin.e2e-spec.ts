@@ -1,3 +1,4 @@
+import { PRODUCTS_ALIAS } from './infra/search-index-names';
 import { Logger } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import {
@@ -125,7 +126,7 @@ describe('Search administration access and status', () => {
 
     const before = await status();
     expect(before).toMatchObject({
-      alias: 'products',
+      alias: PRODUCTS_ALIAS,
       previousIndex: null,
       previousRetiresAt: null,
       mappingVersion: MAPPING_VERSION,

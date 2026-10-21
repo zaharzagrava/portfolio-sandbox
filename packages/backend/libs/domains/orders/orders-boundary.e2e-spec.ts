@@ -1,7 +1,7 @@
-import { execFileSync } from 'node:child_process';
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { getOptions } from 'sequelize-typescript';
+import { boundaryCheck, ownershipCheck } from '@app/test/utils/static-checks';
 import { ownedBy } from '../../../db/ownership';
 import { ORDER_MODELS } from './orders-models';
 
@@ -127,15 +127,14 @@ describe('Orders: domain boundaries', () => {
     expect(matching(/from '\.\.\/infra\//, layered)).toEqual([]);
   });
 
-  it('S10 AS-68: no table-ownership finding is left for orders (the S12 export join on Product is gone)', () => {
-    const out = execFileSync('pnpm', ['check:table-ownership'], {
-      cwd: BACKEND,
-      encoding: 'utf8',
-      env: { ...process.env, FORCE_COLOR: '0' },
-    });
+  it('S10 AS-68: no table-ownership finding is left for orders (the S12 export join on Product is gone)', async () => {
+    const result = await ownershipCheck(BACKEND, [], true);
+    // the old call threw on a non-zero exit
+    expect(result.status).toBe(0);
+    const out = result.stdout;
     const section = out.split(/\n(?=\S)/).find((s) => s.startsWith('orders'));
     expect(section).toBeUndefined();
-  });
+  }, 300_000);
 
   describe('S12 order export', () => {
     const exportSources = sources.filter((f) =>
@@ -185,12 +184,10 @@ describe('Orders: domain boundaries', () => {
     });
   });
 
-  it('S10 AS-68: the dependency rules are green', () => {
-    const out = execFileSync('pnpm', ['check:boundaries'], {
-      cwd: BACKEND,
-      encoding: 'utf8',
-      env: { ...process.env, FORCE_COLOR: '0' },
-    });
-    expect(out).toContain('no dependency violations found');
-  });
+  it('S10 AS-68: the dependency rules are green', async () => {
+    const result = await boundaryCheck(BACKEND);
+    // the old call threw on a non-zero exit
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain('no dependency violations found');
+  }, 300_000);
 });

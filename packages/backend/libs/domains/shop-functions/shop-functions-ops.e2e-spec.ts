@@ -304,7 +304,11 @@ describe('Shop functions: observability and schema invariants', () => {
         422,
         'function_limit_reached',
       );
-      for (let v = 1; v <= 100; v++) await t.insertVersion(fn, v, 'REJECTED');
+      await Promise.all(
+        Array.from({ length: 100 }, (_, i) =>
+          t.insertVersion(fn, i + 1, 'REJECTED'),
+        ),
+      );
       expectProblem(
         await t.submit(A.admin, A.shopId, fn, GOOD_SOURCE),
         422,

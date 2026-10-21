@@ -241,7 +241,7 @@ describe('Live stream: reactions, statistics and viewer counts', () => {
         await other.tick();
         return stats(stream.id).length >= 2;
       },
-      { timeoutMs: 4_000, intervalMs: 100, description: 'takeover' },
+      { timeoutMs: 4_000, intervalMs: 20, description: 'takeover' },
     );
     expect(Date.now() - stoppedAt).toBeLessThanOrEqual(4_100);
     await other.releaseLeases();

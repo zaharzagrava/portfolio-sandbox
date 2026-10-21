@@ -1,3 +1,4 @@
+import { shardName } from '@app/common/shard';
 import {
   CreateQueueCommand,
   DeleteQueueCommand,
@@ -94,7 +95,7 @@ describe('Outbox task rows relayed to a queue', () => {
   beforeAll(async () => {
     await raw.send(
       new CreateQueueCommand({
-        QueueName: QUEUE,
+        QueueName: shardName(QUEUE),
         Attributes: { FifoQueue: 'true' },
       }),
     );

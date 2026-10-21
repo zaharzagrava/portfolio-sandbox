@@ -37,6 +37,17 @@ describe('Checkout: stock reservation, expiry and compensation', () => {
 
   type User = Awaited<ReturnType<OrdersTestApp['newUser']>>;
   const newKey = () => `key-${randomUUID()}`;
+  /** Makes `count` buyers 25 at a time (each has its own row and session, so they do not touch each other). */
+  const newUsers = async (count: number) => {
+    const made: User[] = [];
+    for (let i = 0; i < count; i += 25)
+      made.push(
+        ...(await Promise.all(
+          Array.from({ length: Math.min(25, count - i) }, () => t.newUser()),
+        )),
+      );
+    return made;
+  };
   const checkout = (user: User, key = newKey(), body: object = {}) =>
     t.as(user).post('/api/checkout').set('Idempotency-Key', key).send(body);
   const addToCart = async (
@@ -179,8 +190,7 @@ describe('Checkout: stock reservation, expiry and compensation', () => {
         { priceMinor: 100, quantity: 50, currency: 'EUR' },
       ]);
       const a = products[0];
-      const buyers: User[] = [];
-      for (let i = 0; i < 200; i++) buyers.push(await t.newUser());
+      const buyers = await newUsers(200);
 
       for (let round = 0; round < 5; round++) {
         await exec(
@@ -304,8 +314,7 @@ describe('Checkout: stock reservation, expiry and compensation', () => {
         { priceMinor: 100, quantity: 1_000, currency: 'EUR' },
       ]);
       const [a, b] = products;
-      const buyers: User[] = [];
-      for (let i = 0; i < 200; i++) buyers.push(await t.newUser());
+      const buyers = await newUsers(200);
       for (let i = 0; i < buyers.length; i += 20)
         await Promise.all(
           buyers.slice(i, i + 20).map(async (u, k) => {
@@ -411,29 +420,35 @@ describe('Checkout: stock reservation, expiry and compensation', () => {
       const buyer = await t.newUser();
       const lifecycle = t.app.get(OrderLifecycleService);
       const ids: string[] = [];
-      for (let i = 0; i < 251; i++) {
-        const o = await seedPendingOrder(t.app, {
-          userId: buyer.id,
-          lines: [
-            {
-              productId: shop.products[0].id,
-              shopId: shop.shop.id,
-              quantity: 1,
-              unitPriceMinor: 100,
-            },
-          ],
-        });
-        const until =
-          i === 250
-            ? new Date(t.clock.now().getTime() + 5 * MIN)
-            : new Date(t.clock.now().getTime() - 1_000);
-        await lifecycle.transition(
-          o.id,
-          { type: 'reserve' },
-          { actor: 'system:test', reservedUntil: until },
+      for (let from = 0; from < 251; from += 25)
+        ids.push(
+          ...(await Promise.all(
+            Array.from({ length: Math.min(25, 251 - from) }, async (_, k) => {
+              const i = from + k;
+              const o = await seedPendingOrder(t.app, {
+                userId: buyer.id,
+                lines: [
+                  {
+                    productId: shop.products[0].id,
+                    shopId: shop.shop.id,
+                    quantity: 1,
+                    unitPriceMinor: 100,
+                  },
+                ],
+              });
+              const until =
+                i === 250
+                  ? new Date(t.clock.now().getTime() + 5 * MIN)
+                  : new Date(t.clock.now().getTime() - 1_000);
+              await lifecycle.transition(
+                o.id,
+                { type: 'reserve' },
+                { actor: 'system:test', reservedUntil: until },
+              );
+              return o.id;
+            }),
+          )),
         );
-        ids.push(o.id);
-      }
       const statuses = async () =>
         (
           await rows<{ status: string; n: string }>(

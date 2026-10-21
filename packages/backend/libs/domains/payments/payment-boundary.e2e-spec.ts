@@ -1,6 +1,6 @@
-import { execFileSync } from 'node:child_process';
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
+import { boundaryCheck, ownershipCheck } from '@app/test/utils/static-checks';
 
 const DOMAIN = __dirname;
 const BACKEND = join(__dirname, '..', '..', '..');
@@ -67,12 +67,11 @@ describe('Payments: domain boundaries', () => {
     expect(count).toBe(0);
   });
 
-  it('S13 AS-64: no table-ownership finding is left for payments (S14 removed the three in the ledger and payout files)', () => {
-    const out = execFileSync('pnpm', ['check:table-ownership'], {
-      cwd: BACKEND,
-      encoding: 'utf8',
-      env: { ...process.env, FORCE_COLOR: '0' },
-    });
+  it('S13 AS-64: no table-ownership finding is left for payments (S14 removed the three in the ledger and payout files)', async () => {
+    const result = await ownershipCheck(BACKEND, [], true);
+    // the old call threw on a non-zero exit
+    expect(result.status).toBe(0);
+    const out = result.stdout;
     const section = out.split(/\n(?=\S)/).find((s) => s.startsWith('payments'));
     const files = (section ?? '')
       .split('\n')
@@ -81,5 +80,5 @@ describe('Payments: domain boundaries', () => {
       .filter(Boolean)
       .sort();
     expect(files).toEqual([]);
-  });
+  }, 300_000);
 });

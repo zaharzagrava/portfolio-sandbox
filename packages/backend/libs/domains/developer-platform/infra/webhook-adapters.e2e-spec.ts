@@ -22,6 +22,20 @@ import {
 } from '../testing/webhook-e2e.fixture';
 import { RedisBreakerStore } from './redis-breaker.store';
 
+/** Runs the rounds of a repeated test five at a time (each round uses data of its own). */
+const eachRound = async (
+  rounds: number,
+  body: (round: number) => Promise<void>,
+  size = 5,
+): Promise<void> => {
+  for (let from = 0; from < rounds; from += size)
+    await Promise.all(
+      Array.from({ length: Math.min(size, rounds - from) }, (_, k) =>
+        body(from + k),
+      ),
+    );
+};
+
 /**
  * The store adapters of the capability against the real engines of the test stack (Postgres, DynamoDB Local, Redis) and
  * the queue port's own option validation. The wired behaviour is proven by the story specs through HTTP; these specs prove
@@ -119,7 +133,7 @@ describe('Webhooks: store adapters', () => {
     });
 
     it('S43 AS-12: concurrent creates of one new address give one created and the rest duplicates (20 rounds)', async () => {
-      for (let round = 0; round < 20; round++) {
+      await eachRound(20, async (round) => {
         const shopId = uuidv7();
         const urlNormalized = `https://race-${round}.acme.test/in`;
         const results = await Promise.all(
@@ -139,11 +153,11 @@ describe('Webhooks: store adapters', () => {
           { shopId },
         );
         expect(counter.endpoints).toBe(1);
-      }
+      });
     });
 
     it('S43 AS-11: the limit holds under concurrent creates: exactly the allowed number succeed, counter = rows (20 rounds)', async () => {
-      for (let round = 0; round < 20; round++) {
+      await eachRound(20, async () => {
         const shopId = uuidv7();
         for (let i = 0; i < 18; i++)
           await endpoints.insertWithinLimit(newEndpoint(shopId), 20);
@@ -166,7 +180,7 @@ describe('Webhooks: store adapters', () => {
         );
         expect(count).toBe(20);
         expect(counter.endpoints).toBe(20);
-      }
+      });
     }, 120_000);
 
     it('S43 AS-11: deleting an endpoint frees a slot', async () => {
@@ -222,7 +236,7 @@ describe('Webhooks: store adapters', () => {
     });
 
     it('S43 AS-09: a transition asserts the source status: the second of two concurrent enables conflicts (20 rounds)', async () => {
-      for (let round = 0; round < 20; round++) {
+      await eachRound(20, async () => {
         const shopId = uuidv7();
         const input = newEndpoint(shopId);
         await endpoints.insertWithinLimit(input, 20);
@@ -251,7 +265,7 @@ describe('Webhooks: store adapters', () => {
         ]);
         expect(results.filter((r) => r.outcome === 'applied')).toHaveLength(1);
         expect(results.filter((r) => r.outcome === 'conflict')).toHaveLength(1);
-      }
+      });
     });
 
     it('S43 AS-08: enabling clears the failure window; a transition on another shop is not_found', async () => {
@@ -395,7 +409,7 @@ describe('Webhooks: store adapters', () => {
         new Date(expires.getTime() + 1000),
       );
       expect(early.outcome).toBe('conflict'); // no previous secret valid any more at that instant
-      for (let round = 0; round < 20; round++) {
+      await eachRound(20, async () => {
         const fresh = newEndpoint(shopId);
         await endpoints.insertWithinLimit(fresh, 20);
         const results = await Promise.all(
@@ -417,7 +431,7 @@ describe('Webhooks: store adapters', () => {
           (await endpoints.expirePreviousSecret(shopId, fresh.id, NOW)).outcome,
         ).toBe('conflict');
         await endpoints.delete(shopId, fresh.id);
-      }
+      });
     });
 
     it('S43 AS-55: the failure window starts once, clears on recovery, and the sweep disables only past the cutoff', async () => {
@@ -576,7 +590,7 @@ describe('Webhooks: store adapters', () => {
     });
 
     it('S43 AS-44: two workers claiming the same attempt at once: exactly one wins (20 rounds)', async () => {
-      for (let round = 0; round < 20; round++) {
+      await eachRound(20, async () => {
         const d = delivery();
         await log.createDelivery(d);
         const results = await Promise.all(
@@ -588,7 +602,7 @@ describe('Webhooks: store adapters', () => {
         expect(
           results.filter((r) => !r.claimed && r.reason === 'in_flight'),
         ).toHaveLength(4);
-      }
+      });
     });
 
     it('S43 AS-44: a delivered delivery is never claimed again', async () => {
@@ -809,7 +823,7 @@ describe('Webhooks: store adapters', () => {
   describe('breaker store (Redis)', () => {
     it('S43 AS-47: five failures open the breaker for a minute, the probe lease has one winner (20 rounds), a success closes it', async () => {
       const now = NOW.getTime();
-      for (let round = 0; round < 20; round++) {
+      await eachRound(20, async () => {
         const id = uuidv7();
         for (let i = 1; i <= 4; i++)
           expect((await breaker.recordFailure(id, now)).openUntil).toBeNull();
@@ -836,7 +850,7 @@ describe('Webhooks: store adapters', () => {
         expect((await breaker.get(id)).probeInFlight).toBe(false);
         await breaker.recordSuccess(id);
         expect(await breaker.get(id)).toEqual(CLOSED_BREAKER);
-      }
+      });
     });
 
     it('S43 AS-49: when the store fails the breaker answers closed, counts the degradation and never throws', async () => {

@@ -41,7 +41,7 @@ import {
 
 /** Line workers need a moment; a queue receive abandoned by an earlier run can hold a message for one visibility timeout. */
 const waitFor: typeof waitForSoon = (probe, options = {}) =>
-  waitForSoon(probe, { timeoutMs: 45_000, ...options });
+  waitForSoon(probe, { timeoutMs: 45_000, intervalMs: 30, ...options });
 
 type Channel = DeliveryMessage['channel'];
 
@@ -340,7 +340,7 @@ describe('Notifications: channel lines, providers, failover and retries', () => 
         await handle(m);
         return (await statusOf(m.deliveryId)) === 'sent';
       },
-      { description: 'sent once the bucket refilled', intervalMs: 500 },
+      { description: 'sent once the bucket refilled', intervalMs: 100 },
     );
     expect(t.providers.email.callsTo(user.email)).toHaveLength(1);
     for (const r of returned) expect(r.options.attributes?.attempt).toBe('1');

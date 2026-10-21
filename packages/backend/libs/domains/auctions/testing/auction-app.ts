@@ -1,3 +1,4 @@
+import { shardId } from '@app/common/shard';
 import { Module, type INestApplication } from '@nestjs/common';
 import { v7 as uuidv7 } from 'uuid';
 import { QueryTypes } from 'sequelize';
@@ -357,7 +358,9 @@ export function fastStoreOf(app: INestApplication): FastStore {
       } while (cursor !== '0');
     },
     async flushAll() {
-      await redis.flushall();
+      // FLUSHALL empties every Redis database of the server, so under a test shard (TEST_SHARD) only this shard's database goes
+      if (shardId() === '') await redis.flushall();
+      else await redis.flushdb();
     },
   };
 }

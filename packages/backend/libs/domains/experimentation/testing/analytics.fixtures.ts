@@ -23,6 +23,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { AnalyticsModule } from '../analytics.module';
 import { ANALYTICS_TOPIC } from '../domain/event-schema';
+import { shardName } from '@app/common/shard';
 
 /** The frozen "now" of the S39 specs. */
 export const T0 = new Date('2026-10-14T12:00:00.000Z');
@@ -60,7 +61,14 @@ export async function applyAnalyticsStore(
       );
     if (streaming && !options.stream) continue;
     await clickhouse.getClient().command({
-      query: statement.replace('kafka:29092', 'test_kafka:29192'),
+      // the Kafka engine talks to the broker itself, past the shard wrapper: give it the shard's topic and group names
+      query: statement
+        .replace('kafka:29092', 'test_kafka:29192')
+        .replace("'analytics.events'", `'${shardName('analytics.events')}'`)
+        .replace(
+          "'clickhouse-analytics'",
+          `'${shardName('clickhouse-analytics')}'`,
+        ),
     });
   }
 }

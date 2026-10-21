@@ -1,3 +1,5 @@
+import { shardName } from '@app/common/shard';
+import { describe as vitestDescribe } from 'vitest';
 import {
   CreateQueueCommand,
   DeleteQueueCommand,
@@ -60,7 +62,10 @@ async function makeQueue(
   const dlq = `s53-${name}-${RUN}-dlq${suffix}`;
   const fifoAttrs = opts.fifo ? { FifoQueue: 'true' } : {};
   await raw.send(
-    new CreateQueueCommand({ QueueName: dlq, Attributes: fifoAttrs }),
+    new CreateQueueCommand({
+      QueueName: shardName(dlq),
+      Attributes: fifoAttrs,
+    }),
   );
   created.push(dlq);
   const dlqArn = (
@@ -73,7 +78,7 @@ async function makeQueue(
   ).Attributes!.QueueArn;
   await raw.send(
     new CreateQueueCommand({
-      QueueName: queue,
+      QueueName: shardName(queue),
       Attributes: {
         ...fifoAttrs,
         VisibilityTimeout: String(opts.visibility ?? 30),
@@ -124,7 +129,7 @@ afterAll(async () => {
   );
 });
 
-describe('S53 task queue (ElasticMQ)', () => {
+vitestDescribe.concurrent('S53 task queue (ElasticMQ)', () => {
   const sqs = new SqsTaskQueue(config as never);
   const consume = <T>(
     q: string,
@@ -246,9 +251,9 @@ describe('S53 task queue (ElasticMQ)', () => {
     expect(overlap).toBe(false);
   }, 40_000);
 
-  it('S53 AS-94: concurrency 4, 15 s handlers: never more than 4 in flight, each delivered once, visibility extended', async () => {
+  it('S53 AS-94: concurrency 4, 4 s handlers (twice the 2 s visibility): never more than 4 in flight, each delivered once, visibility extended', async () => {
     const { queue } = await makeQueue('concurrency', {
-      visibility: 6,
+      visibility: 2,
       maxReceiveCount: 5,
     });
     let inFlight = 0;
@@ -262,23 +267,23 @@ describe('S53 task queue (ElasticMQ)', () => {
         expect(receiveCount).toBe(1);
         peak = Math.max(peak, ++inFlight);
         try {
-          await sleep(15_000);
+          await sleep(4_000);
           done.add(body.n);
         } finally {
           inFlight--;
         }
       },
-      { concurrency: 4, visibilityTimeoutSec: 6 },
+      { concurrency: 4, visibilityTimeoutSec: 2 },
     );
     await sqs.enqueueBatch(
       queue,
-      Array.from({ length: 20 }, (_, n) => ({ body: { n } })),
+      Array.from({ length: 12 }, (_, n) => ({ body: { n } })),
     );
-    await until(() => done.size === 20, 110_000);
+    await until(() => done.size === 12, 40_000);
     expect(peak).toBeLessThanOrEqual(4);
     expect([...started.values()].every((c) => c === 1)).toBe(true);
     expect(await readQueue(queue)).toEqual([]);
-  }, 130_000);
+  }, 50_000);
 
   it('S53 AS-95: a failing handler sees receiveCount 1, 2, 3, then the message is in the dead-letter queue', async () => {
     const { queue, dlq } = await makeQueue('redrive', {

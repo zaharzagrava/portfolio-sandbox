@@ -73,32 +73,41 @@ describe('Flash sales: reserving drop units, admission and fail-closed', () => {
         quantity: units + regular,
       })),
     );
+    // the sales are for different products, so they can be scheduled 10 at a time
     const drops: Drop[] = [];
-    for (const product of seller.products) {
-      const res = await t
-        .as(seller.owner)
-        .post(`/api/shops/${seller.shop.id}/flash-sales`)
-        .send({
-          productId: product.id,
-          priceMinor: DROP_PRICE,
-          units,
-          buckets,
-          perUserLimit: over.limit ?? 1,
-          admissionRatePerSecond: over.rate ?? 2000,
-          startsAt: at(10 * MIN).toISOString(),
-          endsAt: at(70 * MIN).toISOString(),
-        });
-      expect(res.status).toBe(201);
-      drops.push({
-        id: res.body.id,
-        productId: product.id,
-        seller,
-        units,
-        buckets,
-      });
-    }
+    for (let from = 0; from < seller.products.length; from += 10)
+      drops.push(
+        ...(await Promise.all(
+          seller.products.slice(from, from + 10).map(async (product) => {
+            const res = await t
+              .as(seller.owner)
+              .post(`/api/shops/${seller.shop.id}/flash-sales`)
+              .send({
+                productId: product.id,
+                priceMinor: DROP_PRICE,
+                units,
+                buckets,
+                perUserLimit: over.limit ?? 1,
+                admissionRatePerSecond: over.rate ?? 2000,
+                startsAt: at(10 * MIN).toISOString(),
+                endsAt: at(70 * MIN).toISOString(),
+              });
+            expect(res.status).toBe(201);
+            return {
+              id: res.body.id as string,
+              productId: product.id,
+              seller,
+              units,
+              buckets,
+            };
+          }),
+        )),
+      );
     t.clock.set(at(9 * MIN));
-    for (const d of drops) await t.jobs.load({ saleId: d.id });
+    for (let from = 0; from < drops.length; from += 10)
+      await Promise.all(
+        drops.slice(from, from + 10).map((d) => t.jobs.load({ saleId: d.id })),
+      );
     t.clock.set(at(10 * MIN));
     return drops;
   };

@@ -17,6 +17,22 @@ import {
 const id = (n: number) =>
   `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`;
 
+/**
+ * Sends `count` calls in groups of 30 at once (the limiter counts them atomically, so the count is the same as one by one)
+ * and checks that every one was answered 200.
+ */
+const burstOk = async (
+  count: number,
+  call: () => PromiseLike<{ status: number }>,
+) => {
+  for (let sent = 0; sent < count; sent += 30) {
+    const group = await Promise.all(
+      Array.from({ length: Math.min(30, count - sent) }, () => call()),
+    );
+    expect(group.map((r) => r.status)).toEqual(group.map(() => 200));
+  }
+};
+
 describe('Bought-together recommendations API', () => {
   let t: RecommendationsTestApp;
 
@@ -311,9 +327,7 @@ describe('Bought-together recommendations API', () => {
       const { shop } = await world();
       const x = (await createProduct(t.app, shop)).id;
       await t.redis.client.flushdb();
-      let last;
-      for (let i = 0; i < 600; i++) last = await get(x);
-      expect(last!.status).toBe(200);
+      await burstOk(600, () => get(x));
 
       const limited = await get(x).expect(429);
 

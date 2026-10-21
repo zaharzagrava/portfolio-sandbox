@@ -1,8 +1,9 @@
+import { shardName } from '@app/common/shard';
 /** Public products index definition (data-model section 2). Pure: the adapter hands it to `indices.create`. */
 export const MAPPING_VERSION = 1;
 export const EMBEDDING_MODEL_VERSION = 'hash-64-v1';
 export const EMBEDDING_DIMS = 64;
-export const DEFAULT_SYNONYMS_SET = 'product-synonyms';
+export const DEFAULT_SYNONYMS_SET = shardName('product-synonyms');
 
 export interface IndexProfile {
   shards: number;

@@ -843,10 +843,11 @@ export async function createFeedApp(
     async reset() {
       await seeds.clean();
       // the relay scans every recent hour: announcements another test left behind must not leak into this one
+      const keyspace = process.env.CASSANDRA_KEYSPACE ?? 'marketplace';
       await cassandra.client.execute(
-        'TRUNCATE marketplace.pending_announcements',
+        `TRUNCATE ${keyspace}.pending_announcements`,
       );
-      await cassandra.client.execute('TRUNCATE marketplace.dead_announcements');
+      await cassandra.client.execute(`TRUNCATE ${keyspace}.dead_announcements`);
       const keys = await redisService.client.keys('fd:*');
       if (keys.length) await redisService.client.del(...keys);
       app.get(KeyStore).invalidate();

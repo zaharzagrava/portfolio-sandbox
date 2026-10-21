@@ -1,7 +1,7 @@
-import { spawnSync } from 'node:child_process';
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { Logger } from '@nestjs/common';
+import { boundaryCheck, ownershipCheck } from '@app/test/utils/static-checks';
 import { FakeClock } from '@app/common/core/clock';
 import { MetricsRegistry } from '@app/common/telemetry/metrics-registry';
 import { ReadinessService } from '@app/infrastructure/health/readiness.service';
@@ -241,23 +241,14 @@ describe('Trending degradation, metrics and boundary', () => {
       }
     });
 
-    it('S35 AS-38: the static boundary checks report nothing for trending', () => {
-      const boundaries = spawnSync('pnpm', ['check:boundaries'], {
-        cwd: BACKEND,
-        encoding: 'utf8',
-        timeout: 240_000,
-      });
+    it('S35 AS-38: the static boundary checks report nothing for trending', async () => {
+      // the two checks do not depend on each other: run them side by side
+      const [boundaries, ownership] = await Promise.all([
+        boundaryCheck(BACKEND),
+        ownershipCheck(BACKEND, ['--strict'], true),
+      ]);
       expect(boundaries.status).toBe(0);
       // other domains may still carry findings (exit 1); the report must hold no line for trending
-      const ownership = spawnSync(
-        'pnpm',
-        ['check:table-ownership', '--strict'],
-        {
-          cwd: BACKEND,
-          encoding: 'utf8',
-          timeout: 120_000,
-        },
-      );
       expect(ownership.stdout).toMatch(/\S/);
       expect(ownership.stdout.toLowerCase()).not.toMatch(/trending/);
     }, 400_000);

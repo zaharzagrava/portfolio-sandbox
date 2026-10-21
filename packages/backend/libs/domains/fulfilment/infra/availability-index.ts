@@ -14,13 +14,14 @@ import type { OfferWrite } from '../domain/offer-document';
 import { SearchUnavailableError } from '../domain/pickup-errors';
 import type { CursorValue } from '../domain/search-cursor';
 import { PickupMetrics } from './pickup-metrics';
+import { shardName } from '@app/common/shard';
 
 /**
  * The pickup index is private to this capability: nobody else reads or writes it and it shares no filter with the
  * product index (S19 A13, D-16). The `_v2` suffix marks the mapping of data-model.md; the draft's index of the same
  * family keeps its old mapping and is simply no longer used.
  */
-export const AVAILABILITY_INDEX = 'pickup_availability_v2';
+export const AVAILABILITY_INDEX = shardName('pickup_availability_v2');
 
 /** Search and cluster reads are latency bound: one attempt, 800 ms (S19 FR-024). */
 export const READ_TIMEOUT_MS = 800;

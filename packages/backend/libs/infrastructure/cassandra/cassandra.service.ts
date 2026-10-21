@@ -16,6 +16,8 @@ export type CqlParams = unknown[] | Record<string, unknown>;
 export class CassandraService implements OnModuleInit {
   private readonly logger = new Logger(CassandraService.name);
   readonly client: Client;
+  /** The connection attempt, started in the constructor so it overlaps with the rest of the app start-up. */
+  private readonly connecting: Promise<void>;
 
   constructor(
     config: ApiConfigService,
@@ -54,6 +56,16 @@ export class CassandraService implements OnModuleInit {
       }),
     });
 
+    // Start connecting now; `onModuleInit` waits for the result. A failure is logged there, never thrown here.
+    this.connecting = this.client.connect().then(
+      () => undefined,
+      (error: unknown) => {
+        this.logger.error(
+          `Cassandra connect failed: ${(error as Error).message}`,
+        );
+      },
+    );
+
     shutdown?.register({
       name: 'cassandra.shutdown',
       order: 90,
@@ -62,14 +74,8 @@ export class CassandraService implements OnModuleInit {
   }
 
   async onModuleInit() {
-    try {
-      await this.client.connect();
-    } catch (error) {
-      // Don't crash the whole app at boot: features backed by Scylla fail individually and /health/ready reports it.
-      this.logger.error(
-        `Cassandra connect failed: ${(error as Error).message}`,
-      );
-    }
+    // Don't crash the whole app at boot: features backed by Scylla fail individually and /health/ready reports it.
+    await this.connecting;
   }
 
   execute(

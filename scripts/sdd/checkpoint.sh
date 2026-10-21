@@ -36,18 +36,17 @@ fi
 
 if [[ "${CHECKPOINT_SWEEP:-1}" != 0 ]]; then
   echo "  checkpoint $label: backend e2e sweep (log: $log)"
-  # One jest process for all ~70 suites ran out of memory (4 GB heap) after ~16 minutes: the late suites then ran in a process whose
+  # One test process for all ~70 suites ran out of memory (4 GB heap) after ~16 minutes: the late suites then ran in a process whose
   # garbage collector paused for seconds, which looked like 503s, dropped connections and bad timers. The suites run one at a time,
   # in batches of SWEEP_BATCH, each batch in a fresh process.
   backend_sweep_failed=0
   export TEST_TIMING=1 TEST_TIMING_OUT="$ROOT/specs/.checkpoints/$label.timing-backend.jsonl"; rm -f "$TEST_TIMING_OUT"   # where the time goes, per file and phase
-  mapfile -t all_specs < <(cd packages/backend && NODE_ENV=test npx jest --config jest-e2e.json --listTests 2>/dev/null | grep -E 'e2e-spec\.ts$' | sort)
+  mapfile -t all_specs < <(cd packages/backend && NODE_ENV=test npx vitest list --filesOnly --config vitest.e2e.config.ts 2>/dev/null | grep -E 'e2e-spec\.ts$' | sort)
   total=${#all_specs[@]}; batch=${SWEEP_BATCH:-12}
   ckpt_note info "backend e2e sweep: starting, $total suites in batches of $batch"
   for (( i = 0; i < total; i += batch )); do
     echo "  backend e2e sweep: suites $((i + 1))-$(( i + batch < total ? i + batch : total )) of $total" >>"$log"
-    (cd packages/backend && NODE_ENV=test NODE_OPTIONS="--experimental-vm-modules --max-old-space-size=6144" timeout "${SWEEP_TIMEOUT_S:-3600}" \
-       npx jest --ci --runInBand --forceExit --config jest-e2e.json --colors=false --runTestsByPath "${all_specs[@]:i:batch}") >>"$log" 2>&1 || backend_sweep_failed=1
+    NODE_OPTIONS="--max-old-space-size=6144" timeout "${SWEEP_TIMEOUT_S:-3600}" bash "$ROOT/scripts/sdd/vitest-batch.sh" "${all_specs[@]:i:batch}" >>"$log" 2>&1 || backend_sweep_failed=1
   ckpt_progress "backend e2e" "$(( i + batch < total ? i + batch : total ))" "$total" 10 "$(grep -ac '^FAIL ' "$log") failing suites so far"
   done
   # Old e2e tests of features that are still to be rebuilt (a domain with no built capability) are expected to be red and do not count; a

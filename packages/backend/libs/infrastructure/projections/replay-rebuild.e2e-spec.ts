@@ -65,7 +65,7 @@ describe('Rebuilding or replacing a read model without downtime', () => {
       await s.publish(events.slice(i, i + size));
   };
 
-  it('S53 AS-82: resetting a stopped group to the earliest offset and restarting it rebuilds an identical read model (same content hash)', async () => {
+  it.concurrent('S53 AS-82: resetting a stopped group to the earliest offset and restarting it rebuilds an identical read model (same content hash)', async () => {
     const s = await kit.scenario();
     const Guard = s.make('versionGuard');
     const first = await s.boot([Guard]);
@@ -108,7 +108,7 @@ describe('Rebuilding or replacing a read model without downtime', () => {
     ).toBeGreaterThanOrEqual(1_000);
   }, 120_000);
 
-  it('S53 AS-83: a group with a live member is refused with GROUP_ACTIVE and its offsets are untouched', async () => {
+  it.concurrent('S53 AS-83: a group with a live member is refused with GROUP_ACTIVE and its offsets are untouched', async () => {
     const s = await kit.scenario();
     const Guard = s.make('versionGuard');
     const app = await s.boot([Guard]);
@@ -141,7 +141,7 @@ describe('Rebuilding or replacing a read model without downtime', () => {
     );
   }, 60_000);
 
-  it('S53 AS-84: promotion is refused while the new version lags or its verification fails, then switches reads atomically once it has caught up; the old version is kept', async () => {
+  it.concurrent('S53 AS-84: promotion is refused while the new version lags or its verification fails, then switches reads atomically once it has caught up; the old version is kept', async () => {
     const s = await kit.scenario();
     const V1 = s.make('versionGuard', 'live');
     const V2 = s.make('versionGuard', 'shadow');
@@ -213,7 +213,7 @@ describe('Rebuilding or replacing a read model without downtime', () => {
     expect(await docCount(live.name)).toBe(150); // v1 is kept, not dropped
   }, 150_000);
 
-  it('S53 AS-85: a rollback after promotion makes reads use v1 again, and v1 kept applying events so it is not stale', async () => {
+  it.concurrent('S53 AS-85: a rollback after promotion makes reads use v1 again, and v1 kept applying events so it is not stale', async () => {
     const s = await kit.scenario();
     const V1 = s.make('versionGuard', 'live');
     const V2 = s.make('versionGuard', 'shadow');
@@ -255,7 +255,7 @@ describe('Rebuilding or replacing a read model without downtime', () => {
     });
   }, 90_000);
 
-  it('S53 AS-86: a replay stopped partway continues from the committed offsets, not from zero, and every event is applied exactly once overall', async () => {
+  it.concurrent('S53 AS-86: a replay stopped partway continues from the committed offsets, not from zero, and every event is applied exactly once overall', async () => {
     const s = await kit.scenario();
     const Natural = s.make('natural', 'resume');
     const { events } = history(s, 100, 10);
@@ -289,7 +289,7 @@ describe('Rebuilding or replacing a read model without downtime', () => {
     expect(handled1.some((id) => handled2.includes(id))).toBe(false);
   }, 120_000);
 
-  it('S53 AS-87: a consumer with side effects is not rewound without --allow-side-effects and a reason; with both it proceeds and one audit line names consumer, reason and operator', async () => {
+  it.concurrent('S53 AS-87: a consumer with side effects is not rewound without --allow-side-effects and a reason; with both it proceeds and one audit line names consumer, reason and operator', async () => {
     const s = await kit.scenario();
     const Effectful = s.make('natural', 'effects', { replayable: false });
     const app = await s.boot([Effectful]);
@@ -348,7 +348,7 @@ describe('Rebuilding or replacing a read model without downtime', () => {
     expect(audit[0]).toContain('alice');
   }, 60_000);
 
-  it('S53 AS-88: a truncated, non-compacted topic is refused HISTORY_TRUNCATED unless --from-retained; a compacted topic proceeds and rebuilds the latest state including versioned deletes', async () => {
+  it.concurrent('S53 AS-88: a truncated, non-compacted topic is refused HISTORY_TRUNCATED unless --from-retained; a compacted topic proceeds and rebuilds the latest state including versioned deletes', async () => {
     const s = await kit.scenario();
     const admin = s.kafka.admin();
     await admin.connect();
@@ -453,7 +453,7 @@ describe('Rebuilding or replacing a read model without downtime', () => {
     await admin.disconnect();
   }, 120_000);
 
-  it('S53 AS-89: lag is per partition and total, caughtUp turns true once the consumer has applied the rest, and an unknown group raises UnknownConsumerGroupError', async () => {
+  it.concurrent('S53 AS-89: lag is per partition and total, caughtUp turns true once the consumer has applied the rest, and an unknown group raises UnknownConsumerGroupError', async () => {
     const s = await kit.scenario();
     const Natural = s.make('natural', 'lag');
     const app = await s.boot([Natural]);

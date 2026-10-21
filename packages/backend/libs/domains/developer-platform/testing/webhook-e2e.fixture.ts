@@ -645,15 +645,20 @@ export async function createWebhookKit(
       return `https://${host}${path}`;
     },
     async seedWorld(opts = {}) {
-      const owner = await base.newUser();
-      const admin = await base.newUser();
-      const staff = await base.newUser();
-      const viewer = await base.newUser();
-      const outsider = await base.newUser();
+      // the five people are independent rows, so they are made at the same time
+      const [owner, admin, staff, viewer, outsider] = await Promise.all([
+        base.newUser(),
+        base.newUser(),
+        base.newUser(),
+        base.newUser(),
+        base.newUser(),
+      ]);
       const shop = await createShop(base.app, owner, { status: opts.status });
-      await addMember(base.app, shop.id, admin.id, 'ADMIN');
-      await addMember(base.app, shop.id, staff.id, 'STAFF');
-      await addMember(base.app, shop.id, viewer.id, 'VIEWER');
+      await Promise.all([
+        addMember(base.app, shop.id, admin.id, 'ADMIN'),
+        addMember(base.app, shop.id, staff.id, 'STAFF'),
+        addMember(base.app, shop.id, viewer.id, 'VIEWER'),
+      ]);
       return {
         owner,
         admin,

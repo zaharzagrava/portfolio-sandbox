@@ -25,6 +25,13 @@ const until = async (check: () => Promise<boolean>, ms = 10_000) => {
   throw new Error(`condition not met within ${ms} ms`);
 };
 
+// The readiness service keeps its answer for 2 s. Dropping that kept answer before each look makes every change show at
+// once, so the test still proves "the check follows the queue" without waiting for the 2 s to pass after each change.
+const freshReport = (readiness: ReadinessService) => {
+  (readiness as unknown as { cached?: unknown }).cached = undefined;
+  return readiness.report();
+};
+
 /**
  * The real worker application (S42 L-004, L-015, L-018): `WorkerModule` starts with `PublicApiWorkerModule` in it, the
  * three job types are declared with payload contracts and scheduled, the bulk chunk consumer is part of the module that
@@ -74,19 +81,19 @@ describe('Public API wiring in the real worker application', () => {
   it('S42 AS-51: the worker is ready while the bulk chunk queue exists and not ready while it is missing (L-002)', async () => {
     const readiness = app.get(ReadinessService);
     const check = `queue:${QUEUE}`;
-    await until(async () => (await readiness.report()).checks[check] === 'up');
+    await until(async () => (await freshReport(readiness)).checks[check] === 'up');
     const queue = app.get(TaskQueue);
     const exists = jest
       .spyOn(queue, 'queueExists')
       .mockImplementation((name) => Promise.resolve(name !== QUEUE));
     try {
       await until(async () => {
-        const report = await readiness.report();
+        const report = await freshReport(readiness);
         return report.checks[check] === 'down' && !report.ready;
       });
     } finally {
       exists.mockRestore();
     }
-    await until(async () => (await readiness.report()).checks[check] === 'up');
+    await until(async () => (await freshReport(readiness)).checks[check] === 'up');
   });
 });

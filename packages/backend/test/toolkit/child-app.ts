@@ -220,10 +220,10 @@ async function main() {
     sequelize = new Sequelize({
       dialect: 'postgres',
       host: 'localhost',
-      port: 5400,
+      port: Number(process.env.DB_PORT ?? 5400),
       username: 'postgres',
       password: 'postgres',
-      database: 'marketplace_test',
+      database: process.env.DB_NAME ?? 'marketplace_test',
       logging: false,
     });
     await sequelize.authenticate();

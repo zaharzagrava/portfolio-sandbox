@@ -6,8 +6,9 @@ import { parseBackplaneMessage } from '../domain/backplane-message';
 import { DRAFT_LIMITS } from '../domain/draft-limits';
 import type { Backplane, BackplaneMessage } from '../domain/draft-ports';
 import { bestEffort } from './timeouts';
+import { shardName } from '@app/common/shard';
 
-export const COLLAB_REVOKE_CHANNEL = 'collab:revoke';
+export const COLLAB_REVOKE_CHANNEL = shardName('collab:revoke');
 
 /**
  * Instant notification between processes over Redis pub/sub (S06 D-6). Best effort: a publish that fails or takes longer

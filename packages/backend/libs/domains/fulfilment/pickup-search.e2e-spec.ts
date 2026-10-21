@@ -481,7 +481,11 @@ describe('Available near me: search, browse, pagination, limits and degradation'
 
   describe('US1 - rate limit', () => {
     it('S19 AS-08: the 121st request in a minute from one address answers 429 rate_limited with Retry-After', async () => {
-      for (let i = 0; i < 120; i++) await search().expect(200);
+      // 120 requests in waves of 30 at once (was one by one)
+      for (let wave = 0; wave < 4; wave++)
+        await Promise.all(
+          Array.from({ length: 30 }, () => search().expect(200)),
+        );
 
       const res = await search().expect(429);
 
@@ -688,7 +692,10 @@ describe('Available near me: search, browse, pagination, limits and degradation'
     });
 
     it('S19 AS-42: the browse is under the same policy: the 121st request answers 429 rate_limited', async () => {
-      for (let i = 0; i < 120; i++) await browse().expect(200);
+      for (let wave = 0; wave < 4; wave++)
+        await Promise.all(
+          Array.from({ length: 30 }, () => browse().expect(200)),
+        );
       const res = await browse().expect(429);
       expect(res.body.code).toBe('rate_limited');
       expect(Number(res.headers['retry-after'])).toBeGreaterThan(0);

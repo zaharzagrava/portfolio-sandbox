@@ -1,3 +1,4 @@
+import { channelName } from '@app/infrastructure/realtime/keys';
 import * as http from 'node:http';
 import { MetricsRegistry } from '@app/common/telemetry/metrics-registry';
 import { waitFor } from '@app/test/utils/async-helpers';
@@ -18,10 +19,10 @@ describe('S51 fan-out (FAN)', () => {
     return stream;
   };
   const numsub = async (topic: string) => {
-    const [, n] = (await rt.redis.client.pubsub('NUMSUB', `rt:c:${topic}`)) as [
-      string,
-      number,
-    ];
+    const [, n] = (await rt.redis.client.pubsub(
+      'NUMSUB',
+      channelName(topic),
+    )) as [string, number];
     return Number(n);
   };
   const connections = () => MetricsRegistry.value('realtime_connections') ?? 0;

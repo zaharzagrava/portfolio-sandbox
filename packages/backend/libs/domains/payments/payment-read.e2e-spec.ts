@@ -161,14 +161,17 @@ describe('Payments: reads, list and tenant isolation', () => {
     it('S13 AS-58: 45 payments page 20/20/5 with no repeat or skip under concurrent inserts; default limit is 20; a tampered cursor is invalid_cursor', async () => {
       const user = await t.newUser();
       const base = t.clock.now().getTime();
-      const seeded: string[] = [];
-      for (let i = 0; i < 45; i++) {
-        const row = await seedPayment(t.app, {
-          userId: user.id,
-          createdAt: new Date(base - (45 - i) * 1_000),
-        });
-        seeded.push(row.id);
-      }
+      // each row has its own fixed time, so the 45 are written together (was one by one); `seeded` keeps their order
+      const seeded: string[] = (
+        await Promise.all(
+          Array.from({ length: 45 }, (_, i) =>
+            seedPayment(t.app, {
+              userId: user.id,
+              createdAt: new Date(base - (45 - i) * 1_000),
+            }),
+          ),
+        )
+      ).map((row) => row.id);
       const newestFirst = [...seeded].reverse();
 
       const first = paymentPageSchema.parse(
@@ -252,9 +255,14 @@ describe('Payments: reads, list and tenant isolation', () => {
 
     it('S13 AS-60: the 121st read in a minute is 429', async () => {
       const user = await t.newUser();
-      for (let i = 0; i < 120; i++) {
-        const res = await t.as(user).get('/api/payments?limit=1');
-        expect(res.status).toBe(200);
+      // 120 reads in waves of 30 at once (was one by one); the 121st below still goes after all of them
+      for (let wave = 0; wave < 4; wave++) {
+        const wavesRes = await Promise.all(
+          Array.from({ length: 30 }, () =>
+            t.as(user).get('/api/payments?limit=1'),
+          ),
+        );
+        expect(wavesRes.map((r) => r.status)).toEqual(Array(30).fill(200));
       }
       const limited = await t.as(user).get('/api/payments?limit=1');
       expect(limited.status).toBe(429);

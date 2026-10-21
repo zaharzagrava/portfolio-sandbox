@@ -13,6 +13,7 @@ import {
   type Message,
 } from '@aws-sdk/client-sqs';
 import type { ManifestEntry } from '../manifest/lambda-spec';
+import { shardName } from '@app/common/shard';
 
 export const SQS_ENDPOINT = process.env.SQS_ENDPOINT ?? 'http://localhost:9424';
 export const SQS_PREFIX =
@@ -49,7 +50,7 @@ export async function createTestQueue(
   const dlqUrl = (
     await sqs.send(
       new CreateQueueCommand({
-        QueueName: dlqName,
+        QueueName: shardName(dlqName),
         Attributes: { ...fifoAttributes },
       }),
     )
@@ -57,12 +58,12 @@ export async function createTestQueue(
   const url = (
     await sqs.send(
       new CreateQueueCommand({
-        QueueName: name,
+        QueueName: shardName(name),
         Attributes: {
           ...fifoAttributes,
           VisibilityTimeout: String(options.visibilitySec ?? 6),
           RedrivePolicy: JSON.stringify({
-            deadLetterTargetArn: `arn:aws:sqs:elasticmq:000000000000:${dlqName}`,
+            deadLetterTargetArn: `arn:aws:sqs:elasticmq:000000000000:${shardName(dlqName)}`,
             maxReceiveCount: options.maxReceive ?? 3,
           }),
         },

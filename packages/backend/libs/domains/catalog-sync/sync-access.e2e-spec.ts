@@ -30,6 +30,22 @@ import {
 const SECOND = 1_000;
 const limiterTime = new ManualTimeSource(Date.now());
 
+/**
+ * Sends `count` calls in groups of 30 at once (the limiter counts them atomically, so the count is the same as one by one)
+ * and checks that every one was answered 200.
+ */
+const burstOk = async (
+  count: number,
+  call: () => PromiseLike<{ status: number }>,
+) => {
+  for (let sent = 0; sent < count; sent += 30) {
+    const group = await Promise.all(
+      Array.from({ length: Math.min(30, count - sent) }, () => call()),
+    );
+    expect(group.map((r) => r.status)).toEqual(group.map(() => 200));
+  }
+};
+
 describe('Offline sync: access, tenancy and limits', () => {
   let ctx: CatalogTestApp;
   let db: Sequelize;
@@ -276,7 +292,7 @@ describe('Offline sync: access, tenancy and limits', () => {
 
   it('S09 AS-36: a device over its pull budget gets 429 with Retry-After and pulls again after the window', async () => {
     const w = await world();
-    for (let i = 0; i < 120; i++) expect((await pull(w)).status).toBe(200);
+    await burstOk(120, () => pull(w));
 
     const limited = await pull(w);
     expect(limited.status).toBe(429);

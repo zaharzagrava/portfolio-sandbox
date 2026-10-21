@@ -344,8 +344,17 @@ describe('Payouts: seller and operator API', () => {
     });
 
     it('S15 AS-36: the 121st read in a minute is 429 with Retry-After', async () => {
-      for (let i = 0; i < 120; i += 1)
-        expect((await get(owner, `/shops/${shopId}/payouts`)).status).toBe(200);
+      // 120 reads in waves of 30 at once (was one by one)
+      for (let wave = 0; wave < 4; wave += 1)
+        expect(
+          (
+            await Promise.all(
+              Array.from({ length: 30 }, () =>
+                get(owner, `/shops/${shopId}/payouts`),
+              ),
+            )
+          ).map((r) => r.status),
+        ).toEqual(Array(30).fill(200));
       const limited = await get(owner, `/shops/${shopId}/payouts`);
       expect(limited.status).toBe(429);
       expect(limited.headers['retry-after']).toBeDefined();

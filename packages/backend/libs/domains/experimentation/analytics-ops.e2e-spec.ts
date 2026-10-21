@@ -1,5 +1,4 @@
-import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
+import { boundaryCheck, ownershipCheck } from '@app/test/utils/static-checks';
 import { QueryTypes } from 'sequelize';
 import { v4 as uuidv4 } from 'uuid';
 import { INGEST_CODES } from '@marketplace-sandbox/contracts';
@@ -30,7 +29,6 @@ import {
   type AnalyticsTestApp,
 } from './testing/analytics.fixtures';
 
-const run = promisify(execFile);
 const HOUR = 3_600_000;
 
 const metric = (name: string, labels: Record<string, string> = {}): number =>
@@ -165,10 +163,14 @@ describe('Analytics operations: metrics, logs, ownership (S39)', () => {
         .mockRejectedValueOnce(new Error('broker down'));
       expect((await t.postEvents({ events: [t.event()] })).status).toBe(503);
       const limited = await t.newUser();
-      for (let i = 0; i < 120; i++)
-        await t.postEvents(
-          { events: [t.event({ name: 'nope' })] },
-          { user: limited },
+      for (let batch = 0; batch < 4; batch++)
+        await Promise.all(
+          Array.from({ length: 30 }, () =>
+            t.postEvents(
+              { events: [t.event({ name: 'nope' })] },
+              { user: limited },
+            ),
+          ),
         );
       expect(
         (await t.postEvents({ events: [t.event()] }, { user: limited })).status,
@@ -447,19 +449,16 @@ describe('Analytics operations: metrics, logs, ownership (S39)', () => {
     });
 
     it('S39 AS-56: the static gates report nothing for experimentation', async () => {
-      const ownership = await run('pnpm', ['check:table-ownership'], {
-        cwd: process.cwd(),
-        maxBuffer: 10 * 1024 * 1024,
-      }).catch((error) => error as { stdout: string; stderr: string });
+      // the two checks do not depend on each other: run them side by side (the boundary answer is shared with other specs)
+      const [ownership, boundaries] = await Promise.all([
+        ownershipCheck(process.cwd()),
+        boundaryCheck(process.cwd()),
+      ]);
       expect(`${ownership.stdout}${ownership.stderr}`).not.toMatch(
         /experimentation/i,
       );
-      await expect(
-        run('pnpm', ['check:boundaries'], {
-          cwd: process.cwd(),
-          maxBuffer: 10 * 1024 * 1024,
-        }),
-      ).resolves.toBeDefined();
+      // the old call threw on a non-zero exit
+      expect(boundaries.status).toBe(0);
     }, 300_000);
   });
 });

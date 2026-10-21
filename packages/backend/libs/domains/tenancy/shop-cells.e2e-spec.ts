@@ -1,3 +1,4 @@
+import { shardId } from '@app/common/shard';
 import { Logger } from '@nestjs/common';
 import { QueryTypes } from 'sequelize';
 import { Sequelize } from 'sequelize-typescript';
@@ -13,7 +14,8 @@ import {
 import { TenantConnectionResolver } from './infra/tenant-connection.resolver';
 import { createTenancyApp, type TenancyTestApp } from './testing/tenancy-app';
 
-const CELL_DB = 'marketplace_test_cell_dedicated1';
+// one cell database per test shard (TEST_SHARD): `...dedicated1_s<n>`; unchanged without a shard
+const CELL_DB = `marketplace_test_cell_dedicated1${shardId() === '' ? '' : `_s${shardId()}`}`;
 const env = (name: string) => process.env[name] ?? '';
 
 /** The second database the cell lives in: same server as the test database, own database and role limits. */

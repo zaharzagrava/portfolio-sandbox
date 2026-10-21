@@ -1,7 +1,7 @@
-import { spawnSync } from 'node:child_process';
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { QueryTypes } from 'sequelize';
+import { boundaryCheck, ownershipCheck } from '@app/test/utils/static-checks';
 import { createImportApp, type ImportKit } from './testing/import-kit';
 import * as barrel from './index';
 
@@ -52,12 +52,12 @@ describe('Catalog-sync import module boundary', () => {
     );
   });
 
-  it('S07 AS-69: the table-ownership gate reports nothing for the import files, and the module-boundary gate finds no violation', () => {
-    const ownership = spawnSync(
-      'pnpm',
-      ['--silent', 'check:table-ownership', '--strict'],
-      { cwd: BACKEND, encoding: 'utf8' },
-    );
+  it('S07 AS-69: the table-ownership gate reports nothing for the import files, and the module-boundary gate finds no violation', async () => {
+    // the two gates do not depend on each other: run them side by side
+    const [ownership, boundaries] = await Promise.all([
+      ownershipCheck(BACKEND, ['--strict']),
+      boundaryCheck(BACKEND),
+    ]);
     const lines = `${ownership.stdout}\n${ownership.stderr}`.split('\n');
     const mine = lines.filter(
       (line) =>
@@ -71,10 +71,6 @@ describe('Catalog-sync import module boundary', () => {
       ),
     ).toEqual([]);
 
-    const boundaries = spawnSync('pnpm', ['--silent', 'check:boundaries'], {
-      cwd: BACKEND,
-      encoding: 'utf8',
-    });
     expect([boundaries.status, boundaries.stdout.slice(-400)]).toEqual([
       0,
       expect.stringContaining('no dependency violations'),

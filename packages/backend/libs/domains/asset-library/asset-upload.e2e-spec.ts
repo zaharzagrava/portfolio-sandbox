@@ -306,7 +306,7 @@ describe('Asset library: prepare, dedupe, commit, quota and idempotency', () => 
       1_000,
       1,
     );
-    await new Promise((r) => setTimeout(r, 2_200));
+    await new Promise((r) => setTimeout(r, 1_200));
     const { 'content-length': _x, ...shortHeaders } = short.headers;
     const expired = await fetch(short.url, {
       method: 'PUT',
@@ -820,8 +820,12 @@ describe('Asset library: prepare, dedupe, commit, quota and idempotency', () => 
   it('S31 AS-18: the 121st upload call within a minute answers 429, other shops are free', async () => {
     const s = await t.seller();
     const other = await t.seller();
-    for (let i = 0; i < 120; i++)
-      await t.prepare(s, [{ hash: hex(), size: 1 }]).expect(200);
+    for (let from = 0; from < 120; from += 30)
+      await Promise.all(
+        Array.from({ length: 30 }, () =>
+          t.prepare(s, [{ hash: hex(), size: 1 }]).expect(200),
+        ),
+      );
     const before = await chunkRows(s.shopId);
     const limited = await t.prepare(s, [{ hash: hex(), size: 1 }]).expect(429);
     expect(limited.body.code).toBe('rate_limited');

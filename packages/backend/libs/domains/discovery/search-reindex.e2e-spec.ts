@@ -1,3 +1,5 @@
+import { PRODUCTS_ALIAS } from './infra/search-index-names';
+import { shardName } from '@app/common/shard';
 import { randomUUID } from 'node:crypto';
 import {
   reindexAcceptedSchema,
@@ -72,7 +74,7 @@ describe('Zero-downtime search reindex', () => {
       (await get(`/api/admin/search/reindex/${runId}`).expect(200)).body,
     );
   const runOnce = () => t.worker.runOnce();
-  const live = async () => (await t.engine.aliasTargets('products'))[0];
+  const live = async () => (await t.engine.aliasTargets(PRODUCTS_ALIAS))[0];
   const history = (runId: string) =>
     t.rows<{ fromStatus: string | null; toStatus: string }>(
       `SELECT "fromStatus", "toStatus" FROM "SearchReindexRunHistory" WHERE "runId" = $1 ORDER BY "historyId"`,
@@ -104,7 +106,7 @@ describe('Zero-downtime search reindex', () => {
     await t.refresh();
     return events.map((e) => e.aggregateId);
   };
-  const versions = async (index = 'products') => {
+  const versions = async (index = PRODUCTS_ALIAS) => {
     await t.es.indices.refresh({ index });
     const res = await t.es.search({
       index,
@@ -634,12 +636,12 @@ describe('Zero-downtime search reindex', () => {
     it('S32 AS-48: a concrete index named like the live name is replaced by the alias in one atomic step while searches keep answering', async () => {
       await t.es.indices.delete({ index: Object.keys(await t.indices()) });
       await t.es.indices.create({
-        index: 'products',
+        index: PRODUCTS_ALIAS,
         ...productsIndexDefinition(TEST_PROFILE),
       } as never);
       t.app.get(SearchIndexRegistry, { strict: false }).invalidate();
       await seed(30);
-      expect(Object.keys(await t.indices())).toEqual(['products']);
+      expect(Object.keys(await t.indices())).toEqual([PRODUCTS_ALIAS]);
 
       const accepted = await startRun();
       const running = runOnce();
@@ -658,9 +660,9 @@ describe('Zero-downtime search reindex', () => {
       expect(statuses.every((s) => s === 200)).toBe(true);
       const done = await run(accepted.runId);
       expect(done.status).toBe('COMPLETED');
-      expect(await t.engine.aliasTargets('products')).toEqual([done.index]);
-      expect(await t.es.indices.exists({ index: 'products' })).toBe(true); // the alias resolves
-      expect(Object.keys(await t.indices())).not.toContain('products');
+      expect(await t.engine.aliasTargets(PRODUCTS_ALIAS)).toEqual([done.index]);
+      expect(await t.es.indices.exists({ index: PRODUCTS_ALIAS })).toBe(true); // the alias resolves
+      expect(Object.keys(await t.indices())).not.toContain(PRODUCTS_ALIAS);
       expect(await t.count()).toBe(30);
     });
 
@@ -668,7 +670,7 @@ describe('Zero-downtime search reindex', () => {
       await t.es.indices.delete({ index: Object.keys(await t.indices()) });
       const old = productsIndexDefinition(TEST_PROFILE);
       await t.es.indices.create({
-        index: 'products_m0_legacy',
+        index: shardName('products_m0_legacy'),
         ...old,
         mappings: {
           ...old.mappings,
@@ -678,7 +680,7 @@ describe('Zero-downtime search reindex', () => {
             createdByRun: null,
           },
         },
-        aliases: { products: {} },
+        aliases: { [PRODUCTS_ALIAS]: {} },
       } as never);
       t.app.get(SearchIndexRegistry, { strict: false }).invalidate();
       await seed(5);
@@ -686,7 +688,9 @@ describe('Zero-downtime search reindex', () => {
       await t.app
         .get(IndexBootstrapService, { strict: false })
         .ensureLiveIndex();
-      expect(Object.keys(await t.indices())).toEqual(['products_m0_legacy']);
+      expect(Object.keys(await t.indices())).toEqual([
+        shardName('products_m0_legacy'),
+      ]);
       const status = searchIndexStatusSchema.parse(
         (await get('/api/admin/search/index').expect(200)).body,
       );
@@ -733,7 +737,7 @@ describe('Zero-downtime search reindex', () => {
       await Promise.all([make().ensureLiveIndex(), make().ensureLiveIndex()]);
       const indices = await t.indices();
       expect(Object.keys(indices)).toHaveLength(1);
-      expect(Object.values(indices)[0]).toEqual(['products']);
+      expect(Object.values(indices)[0]).toEqual([PRODUCTS_ALIAS]);
       expect((await t.http().get('/api/products/search')).body).toMatchObject({
         items: [],
         total: { value: 0, exact: true },

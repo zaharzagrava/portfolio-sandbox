@@ -1,7 +1,7 @@
-import { execFileSync } from 'node:child_process';
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { Logger } from '@nestjs/common';
+import { boundaryCheck, ownershipCheck } from '@app/test/utils/static-checks';
 import { v4 as uuidv4 } from 'uuid';
 import { context, trace } from '@opentelemetry/api';
 import { ApiConfigService } from '@app/common/config';
@@ -507,12 +507,15 @@ describe('Ledger: observability, secrets, configuration and shutdown', () => {
         ]);
     });
 
-    it('S14 AS-67: the table-ownership check reports nothing for the ledger and reconciliation files', () => {
-      const out = execFileSync('pnpm', ['check:table-ownership'], {
-        cwd: join(PAYMENTS_DIR, '../../..'),
-        encoding: 'utf8',
-        env: { ...process.env, FORCE_COLOR: '0' },
-      });
+    it('S14 AS-67: the table-ownership check reports nothing for the ledger and reconciliation files', async () => {
+      const result = await ownershipCheck(
+        join(PAYMENTS_DIR, '../../..'),
+        [],
+        true,
+      );
+      // the old call threw on a non-zero exit
+      expect(result.status).toBe(0);
+      const out = result.stdout;
       const section = out
         .split(/\n(?=\S)/)
         .find((s) => s.startsWith('payments'));

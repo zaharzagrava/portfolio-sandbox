@@ -1,3 +1,4 @@
+import { shardName } from '@app/common/shard';
 import {
   CreateQueueCommand,
   DeleteQueueCommand,
@@ -185,7 +186,7 @@ describe('Metrics and logs of the events and projections framework', () => {
 
     // Task queue gauges: one waiting message, then a consumer that sees it.
     const queue = `s53-obs-${s.id}`;
-    await rawSqs.send(new CreateQueueCommand({ QueueName: queue }));
+    await rawSqs.send(new CreateQueueCommand({ QueueName: shardName(queue) }));
     await rawSqs.send(
       new SendMessageCommand({
         QueueUrl: `${PREFIX}${queue}`,

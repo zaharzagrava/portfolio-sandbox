@@ -1,0 +1,2 @@
+libs/domains/marketing/ads-serving-clicks.e2e-spec.ts
+libs/domains/marketing/ads-platform.e2e-spec.ts

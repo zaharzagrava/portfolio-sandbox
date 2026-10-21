@@ -1,3 +1,4 @@
+import { channelName } from '@app/infrastructure/realtime/keys';
 import {
   problemDetailsSchema,
   streamEventEnvelopeSchema,
@@ -164,7 +165,7 @@ describe('S51 topic stream (STREAM)', () => {
     expect(res.status).toBe(400);
     const [, subscribers] = (await rt.redis.client.pubsub(
       'NUMSUB',
-      `rt:c:auction:${id}`,
+      channelName(`auction:${id}`),
     )) as [string, number];
     expect(Number(subscribers)).toBe(0);
   });

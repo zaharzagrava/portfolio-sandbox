@@ -261,7 +261,10 @@ describe('W04 seller overview aggregate (GET /bff/seller/:shopId/overview)', () 
           .http()
           .get('/api/bff/seller/not-a-uuid/overview')
           .set('X-Forwarded-For', ip);
-      for (let i = 0; i < 300; i++) await as('198.51.100.7').expect(400);
+      for (let batch = 0; batch < 6; batch++)
+        await Promise.all(
+          Array.from({ length: 50 }, () => as('198.51.100.7').expect(400)),
+        );
       const denied = await as('198.51.100.7').expect(429);
       expect(parseProblem(denied.body).code).toBe('rate_limited');
       expect(denied.headers['ratelimit-policy']).toContain(

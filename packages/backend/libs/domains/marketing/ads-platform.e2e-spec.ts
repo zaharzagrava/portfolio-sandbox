@@ -680,7 +680,10 @@ describe('Sponsored listings: operations and boundaries', () => {
         eachMessage: async ({ message }) =>
           void (clicks += JSON.parse(message.value!.toString()).clicks),
       });
-      await new Promise((r) => setTimeout(r, 3_000));
+      // wait until all 200 are seen (up to 10 s), then a short grace so a late duplicate would still be counted (was a fixed 3 s)
+      for (let i = 0; i < 200 && clicks < 200; i++)
+        await new Promise((r) => setTimeout(r, 50));
+      await new Promise((r) => setTimeout(r, 500));
       await reader.disconnect();
       expect(clicks).toBe(200);
 

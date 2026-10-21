@@ -47,7 +47,7 @@ case "$mode" in
     for i in $(seq 1 60); do
       kill -0 "$stack" 2>/dev/null || { echo "→ the stack exited before the migrations ran" >&2; exit 1; }
       sleep 5
-      if (set -a; source "$envf"; set +a; DOTENV_CONFIG_PATH="$ROOT/$envf" pnpm --filter api run test:stack:migrate); then
+      if (set -a; source "$envf"; set +a; export TEST_DB_PORT="$DB_PORT"; DOTENV_CONFIG_PATH="$ROOT/$envf" pnpm --filter api run test:stack:migrate); then
         echo "→ shard $n is up and migrated. Ctrl+C stops it."; wait "$stack"; exit $?
       fi
       echo "→ stores not ready yet (attempt $i/60)"

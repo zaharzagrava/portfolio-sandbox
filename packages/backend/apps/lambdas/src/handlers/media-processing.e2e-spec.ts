@@ -13,7 +13,8 @@ import type { SqsEvent, SqsRecord } from '@app/infrastructure/serverless';
  */
 describe('Media-processing Lambda handler', () => {
   const env = process.env;
-  const bucket = 'marketplace-media-test';
+  // MEDIA_BUCKET from the shell (a test shard has its own bucket); the plain stack bucket otherwise
+  const bucket = process.env.MEDIA_BUCKET ?? 'marketplace-media-test';
   let db: Client;
   let s3: S3Client;
   let handler: (

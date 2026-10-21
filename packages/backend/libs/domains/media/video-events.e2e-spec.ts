@@ -1,5 +1,5 @@
-import { spawnSync } from 'node:child_process';
 import { join } from 'node:path';
+import { boundaryCheck, ownershipCheck } from '@app/test/utils/static-checks';
 import { QueryTypes } from 'sequelize';
 import { Sequelize } from 'sequelize-typescript';
 import { videoEventSchemas } from '@marketplace-sandbox/contracts';
@@ -365,16 +365,12 @@ describe('Video events, observability and configuration', () => {
           WHERE c.contype = 'f' AND (c.conrelid::regclass::text ~ '^"?Video' OR c.confrelid::regclass::text ~ '^"?Video')`,
       );
       for (const fk of fks) expect(fk.to.replace(/"/g, '')).toMatch(/^Video/); // only inside the domain
-      const ownership = spawnSync(
-        'pnpm',
-        ['check:table-ownership', '--strict'],
-        { cwd: ROOT, encoding: 'utf8' },
-      );
+      // the two checks do not depend on each other: run them side by side (the boundary answer is shared with other specs)
+      const [ownership, boundaries] = await Promise.all([
+        ownershipCheck(ROOT, ['--strict'], true),
+        boundaryCheck(ROOT),
+      ]);
       expect(ownership.stdout).not.toMatch(/^media\s+\(/m);
-      const boundaries = spawnSync('pnpm', ['check:boundaries'], {
-        cwd: ROOT,
-        encoding: 'utf8',
-      });
       expect(`${boundaries.stdout}${boundaries.stderr}`).not.toMatch(
         /libs\/domains\/media/,
       );

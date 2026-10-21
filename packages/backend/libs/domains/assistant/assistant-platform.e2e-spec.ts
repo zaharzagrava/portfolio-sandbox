@@ -1,7 +1,6 @@
-import { execFile } from 'node:child_process';
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { promisify } from 'node:util';
+import { boundaryCheck, ownershipCheck } from '@app/test/utils/static-checks';
 import { ConfigUtilsService } from '@app/common/config/config-utils/config-utils.service';
 import { ApiConfigService } from '@app/common/config';
 import {
@@ -16,7 +15,6 @@ import { waitFor } from '@app/test/utils/async-helpers';
 import { GenerationService } from './application/generation.service';
 import { bootAssistant, data, type Harness } from './testing/assistant.harness';
 
-const run = promisify(execFile);
 const backend = join(__dirname, '../../..');
 
 describe('Shopping assistant: configuration, shutdown, boundaries', () => {
@@ -275,20 +273,15 @@ describe('Shopping assistant: configuration, shutdown, boundaries', () => {
     });
 
     it('dependency-cruiser and the table-ownership check are clean for this lib', async () => {
-      const boundaries = await run('pnpm', ['run', 'check:boundaries'], {
-        cwd: backend,
-        timeout: 280_000,
-      });
+      // the two checks do not depend on each other: run them side by side (the boundary answer is shared with other specs)
+      const [boundaries, ownershipRun] = await Promise.all([
+        boundaryCheck(backend),
+        ownershipCheck(backend, ['--strict']),
+      ]);
       expect(boundaries.stdout).toContain('no dependency violations found');
 
       // other domains still carry their own recorded findings; this lib and the LLM lib must have none
-      const ownership = await run(
-        'pnpm',
-        ['run', 'check:table-ownership', '--strict'],
-        { cwd: backend, timeout: 120_000 },
-      )
-        .then((r) => r.stdout)
-        .catch((e: { stdout: string }) => e.stdout);
+      const ownership = ownershipRun.stdout;
       expect(ownership).not.toContain('libs/domains/assistant/');
       expect(ownership).not.toContain('libs/infrastructure/llm/');
     }, 300_000);

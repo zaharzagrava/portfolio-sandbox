@@ -22,6 +22,20 @@ import {
   type Seller,
 } from './testing/launch-events-test-kit';
 
+/** Runs the rounds of a repeated test five at a time (each round uses data of its own). */
+const eachRound = async (
+  rounds: number,
+  body: (round: number) => Promise<void>,
+  size = 5,
+): Promise<void> => {
+  for (let from = 0; from < rounds; from += size)
+    await Promise.all(
+      Array.from({ length: Math.min(size, rounds - from) }, (_, k) =>
+        body(from + k),
+      ),
+    );
+};
+
 const FAST = { admissionRatePerSec: 100_000 };
 const pad = (seat: number) => String(seat).padStart(6, '0');
 
@@ -243,7 +257,7 @@ describe('Launch events: booking confirmation, idempotency and recovery', () => 
 
   it('S22 AS-35: ten confirms at once make one set of bookings, one event and one voucher command (20 runs)', async () => {
     const event = await sale();
-    for (let run = 0; run < 20; run++) {
+    await eachRound(20, async (run) => {
       const { who, hold } = await holding(event, [run * 2, run * 2 + 1]);
       const results = await Promise.all(
         Array.from({ length: 10 }, () => t.confirm(hold.holdId, who)),
@@ -259,7 +273,7 @@ describe('Launch events: booking confirmation, idempotency and recovery', () => 
       expect(
         (await t.outbox(hold.holdId)).filter((r) => r.kind === 'task'),
       ).toHaveLength(1);
-    }
+    });
   });
 
   // ------------------------------------------------------------------------------------------------- AS-36
@@ -353,7 +367,7 @@ describe('Launch events: booking confirmation, idempotency and recovery', () => 
     const dynamo = t.app.get(DynamoService);
     const redis = t.app.get(RedisService).client;
     const event = await sale({ perUserLimit: 2 });
-    for (let run = 0; run < 20; run++) {
+    await eachRound(20, async (run) => {
       const seat = 7 + run * 2;
       const a = await holding(event, [seat]);
       // a fault wipes the ledger record and the lock of the seat: a second hold takes it
@@ -382,7 +396,7 @@ describe('Launch events: booking confirmation, idempotency and recovery', () => 
         first.status === 409 ? a.hold.holdId : holdB.body.holdId;
       expect(await bookingsOf(loserHold)).toBe(0); // a multi-seat confirm with one booked seat writes nothing
       expect(await doubleBooked()).toBe(0);
-    }
+    });
   });
 
   // ------------------------------------------------------------------------------------------------- AS-39
@@ -571,7 +585,7 @@ describe('Launch events: booking confirmation, idempotency and recovery', () => 
   // ------------------------------------------------------------------------------------------------- AS-43
 
   it('S22 AS-43: the last booked seat sells the event out exactly once (20 runs)', async () => {
-    for (let run = 0; run < 20; run++) {
+    await eachRound(20, async () => {
       const event = await sale({
         seatCount: 3,
         seatsPerRow: 3,
@@ -613,7 +627,7 @@ describe('Launch events: booking confirmation, idempotency and recovery', () => 
       const refused = await t.join(event, late);
       expect(refused.status).toBe(409);
       expect(refused.body.code).toBe('EVENT_SOLD_OUT');
-    }
+    });
   });
 
   // ------------------------------------------------------------------------------------------------- AS-44

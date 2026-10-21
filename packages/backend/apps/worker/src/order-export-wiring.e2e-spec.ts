@@ -18,6 +18,13 @@ const until = async (check: () => Promise<boolean>, ms = 10_000) => {
   throw new Error(`condition not met within ${ms} ms`);
 };
 
+// The readiness service keeps its answer for 2 s. Dropping that kept answer before each look makes every change show at
+// once, so the test still proves "the check follows the queue" without waiting for the 2 s to pass after each change.
+const freshReport = (readiness: ReadinessService) => {
+  (readiness as unknown as { cached?: unknown }).cached = undefined;
+  return readiness.report();
+};
+
 /**
  * The real worker application (S12 L-004, L-015, L-018, L-002): `WorkerModule` starts with `OrderExportWorkerModule` in
  * it, the three jobs are declared with a strict contract, and the pod is not ready while the queue it consumes (or its
@@ -65,7 +72,7 @@ describe('Order export wiring in the real worker application', () => {
   it('S12 AS-01: the worker is ready while the export queue and its dead-letter queue exist and not ready while one is missing (L-002)', async () => {
     const readiness = app.get(ReadinessService);
     const check = `queue:${QUEUE}`;
-    await until(async () => (await readiness.report()).checks[check] === 'up');
+    await until(async () => (await freshReport(readiness)).checks[check] === 'up');
     const queue = app.get(TaskQueue);
     for (const missing of [QUEUE, `${QUEUE}-dlq`]) {
       const exists = jest
@@ -73,14 +80,14 @@ describe('Order export wiring in the real worker application', () => {
         .mockImplementation((name) => Promise.resolve(name !== missing));
       try {
         await until(async () => {
-          const report = await readiness.report();
+          const report = await freshReport(readiness);
           return report.checks[check] === 'down' && !report.ready;
         });
       } finally {
         exists.mockRestore();
       }
       await until(
-        async () => (await readiness.report()).checks[check] === 'up',
+        async () => (await freshReport(readiness)).checks[check] === 'up',
       );
     }
   });

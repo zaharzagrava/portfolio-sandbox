@@ -117,6 +117,27 @@ describe('Webhooks: endpoint management (dashboard)', () => {
     await clearRateLimits(t.app);
   };
 
+  /**
+   * Runs `rounds` rounds of a repeated test, `size` at a time. Each round gets a shop of its own (so the rounds share no
+   * endpoint slots, counters or rate-limit allowance) and the rounds of one batch run at the same time.
+   */
+  const inRounds = async (
+    rounds: number,
+    size: number,
+    round: (world: WebhookWorld, index: number) => Promise<void>,
+  ): Promise<WebhookWorld[]> => {
+    const worlds: WebhookWorld[] = [];
+    for (let from = 0; from < rounds; from += size)
+      await Promise.all(
+        Array.from({ length: Math.min(size, rounds - from) }, async (_, k) => {
+          const world = await t.seedWorld();
+          worlds[from + k] = world;
+          await round(world, from + k);
+        }),
+      );
+    return worlds;
+  };
+
   describe('create and read (AS-01, AS-04, AS-06)', () => {
     it('S43 AS-01: an owner creates an endpoint; the secret is shown once and sealed at rest, with a history row and one outbox event', async () => {
       const url = t.endpointUrl();
@@ -549,13 +570,13 @@ describe('Webhooks: endpoint management (dashboard)', () => {
     });
 
     it('S43 AS-09: two concurrent enables of a disabled endpoint: exactly one 200 and one 409, one history row and one event (20 rounds)', async () => {
-      for (let round = 0; round < 20; round += 1) {
-        await clearRateLimits(t.app);
-        const e = await created();
-        await owner().post(`${base()}/${e.id}/disable`).expect(200);
+      await inRounds(20, 5, async (world) => {
+        const own = () => t.as(world.owner);
+        const e = await created(mk(), world);
+        await own().post(`${base(world)}/${e.id}/disable`).expect(200);
         const results = await Promise.all([
-          owner().post(`${base()}/${e.id}/enable`),
-          owner().post(`${base()}/${e.id}/enable`),
+          own().post(`${base(world)}/${e.id}/enable`),
+          own().post(`${base(world)}/${e.id}/enable`),
         ]);
         expect(results.map((r) => r.status).sort()).toEqual([200, 409]);
         expect(
@@ -564,8 +585,8 @@ describe('Webhooks: endpoint management (dashboard)', () => {
         expect(
           (await changes(e.id)).filter((c) => c === 'enabled'),
         ).toHaveLength(1);
-        await owner().delete(`${base()}/${e.id}`).expect(204);
-      }
+        await own().delete(`${base(world)}/${e.id}`).expect(204);
+      });
     }, 120_000);
 
     it('S43 AS-10: delete removes the row and frees the slot, leaves a history row and an event; every route then answers 404, also a second delete', async () => {
@@ -626,32 +647,41 @@ describe('Webhooks: endpoint management (dashboard)', () => {
 
   describe('limits (AS-11, AS-12)', () => {
     it('S43 AS-11: from 18 endpoints three concurrent creates give exactly two 201 and one 422 endpoint_limit_reached, the counter equals the rows (20 rounds)', async () => {
-      for (let round = 0; round < 20; round += 1) {
-        await emptyShop();
-        for (let i = 0; i < 18; i += 1) await created();
-        const results = await Promise.all([create(), create(), create()]);
+      const worlds = await inRounds(20, 5, async (world) => {
+        await Promise.all(
+          Array.from({ length: 18 }, () => created(mk(), world)),
+        );
+        const results = await Promise.all([
+          create(mk(), world),
+          create(mk(), world),
+          create(mk(), world),
+        ]);
         expect(results.map((r) => r.status).sort()).toEqual([201, 201, 422]);
         expect(results.find((r) => r.status === 422)!.body.code).toBe(
           'endpoint_limit_reached',
         );
-        expect(await count()).toBe(20);
-        expect(await counter()).toBe(20);
-        const extra = await create();
+        expect(await count(world.shop.id)).toBe(20);
+        expect(await counter(world.shop.id)).toBe(20);
+        const extra = await create(mk(), world);
         expect([extra.status, extra.body.code]).toEqual([
           422,
           'endpoint_limit_reached',
         ]);
-        expect(await count()).toBe(20);
-        expect(await counter()).toBe(20);
-      }
+        expect(await count(world.shop.id)).toBe(20);
+        expect(await counter(world.shop.id)).toBe(20);
+      });
       // deleting one frees a slot
+      const last = worlds[worlds.length - 1];
       const [any] = await t.rows<{ id: string }>(
         `SELECT id FROM "WebhookEndpoint" WHERE "shopId" = :id LIMIT 1`,
-        { id: w.shop.id },
+        { id: last.shop.id },
       );
-      await owner().delete(`${base()}/${any.id}`).expect(204);
-      await create().then((r) => expect(r.status).toBe(201));
-      expect(await counter()).toBe(20);
+      await t
+        .as(last.owner)
+        .delete(`${base(last)}/${any.id}`)
+        .expect(204);
+      await create(mk(), last).then((r) => expect(r.status).toBe(201));
+      expect(await counter(last.shop.id)).toBe(20);
     }, 300_000);
 
     it('S43 AS-12: a second endpoint with the same address after normalisation is 409 duplicate_endpoint_url; another shop may use it', async () => {
@@ -676,17 +706,19 @@ describe('Webhooks: endpoint management (dashboard)', () => {
     });
 
     it('S43 AS-12: two concurrent creates of the same new address give one 201 and one 409 (20 rounds)', async () => {
-      for (let round = 0; round < 20; round += 1) {
-        await emptyShop();
+      await inRounds(20, 5, async (world) => {
         const url = t.endpointUrl();
-        const results = await Promise.all([create(mk(url)), create(mk(url))]);
+        const results = await Promise.all([
+          create(mk(url), world),
+          create(mk(url), world),
+        ]);
         expect(results.map((r) => r.status).sort()).toEqual([201, 409]);
         expect(results.find((r) => r.status === 409)!.body.code).toBe(
           'duplicate_endpoint_url',
         );
-        expect(await count()).toBe(1);
-        expect(await counter()).toBe(1);
-      }
+        expect(await count(world.shop.id)).toBe(1);
+        expect(await counter(world.shop.id)).toBe(1);
+      });
     }, 120_000);
   });
 
@@ -779,20 +811,25 @@ describe('Webhooks: endpoint management (dashboard)', () => {
         ['owner', t.as(w.owner), 'ok'],
       ];
       for (const route of routes) {
-        for (const [who, agent, expected] of actors) {
-          await emptyShop();
-          const e = await created();
-          const res = await route.call(agent, e.id);
-          const want = expected === 'ok' ? route.ok : expected;
-          if (res.status !== want)
-            throw new Error(
-              `${route.name} as ${who}: expected ${want}, got ${res.status} ${JSON.stringify(res.body)}`,
-            );
-          if (expected === 403) expect(res.body.code).toBe('permission_denied');
-          if (expected === 404) expect(res.body.code).toBe('shop_not_found');
-          if (expected !== 'ok')
-            expect((await row(e.id)).status).toBe('enabled');
-        }
+        // one clean shop per route; the six people each use an endpoint of their own, at the same time
+        await emptyShop();
+        await Promise.all(
+          actors.map(async ([who, agent, expected]) => {
+            const e = await created();
+            const res = await route.call(agent, e.id);
+            const want = expected === 'ok' ? route.ok : expected;
+            if (res.status !== want)
+              throw new Error(
+                `${route.name} as ${who}: expected ${want}, got ${res.status} ${JSON.stringify(res.body)}`,
+              );
+            if (expected === 403)
+              expect(res.body.code).toBe('permission_denied');
+            if (expected === 404)
+              expect(res.body.code).toBe('shop_not_found');
+            if (expected !== 'ok')
+              expect((await row(e.id)).status).toBe('enabled');
+          }),
+        );
       }
     }, 180_000);
 
@@ -851,10 +888,19 @@ describe('Webhooks: endpoint management (dashboard)', () => {
   describe('rate limits (AS-15)', () => {
     it('S43 AS-15: the 121st mutating call of a shop in a minute is 429 with structured RateLimit headers and Retry-After; another shop is unaffected', async () => {
       const unknown = '00000000-0000-4000-8000-0000000000aa';
-      for (let i = 0; i < 120; i += 1) {
-        const res = await owner().post(`${base()}/${unknown}/disable`);
-        if (res.status !== 404)
-          throw new Error(`call ${i + 1}: expected 404, got ${res.status}`);
+      // the first 120 calls are all allowed, so they can go 20 at a time; the 121st comes after all of them
+      for (let from = 0; from < 120; from += 20) {
+        const batch = await Promise.all(
+          Array.from({ length: 20 }, () =>
+            owner().post(`${base()}/${unknown}/disable`),
+          ),
+        );
+        batch.forEach((res, k) => {
+          if (res.status !== 404)
+            throw new Error(
+              `call ${from + k + 1}: expected 404, got ${res.status}`,
+            );
+        });
       }
       const limited = await owner().post(`${base()}/${unknown}/disable`);
       expect(limited.status).toBe(429);

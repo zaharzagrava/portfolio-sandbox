@@ -75,6 +75,11 @@ async function ensureCassandraKeyspace(): Promise<void> {
       join(__dirname, '../../../cql/000_keyspace.cql'),
       'utf8',
     )
+      // CASSANDRA_KEYSPACE (default marketplace): a test shard has its own keyspace, as in scripts/cql/migrate.ts
+      .replace(
+        /\bmarketplace\b/g,
+        process.env.CASSANDRA_KEYSPACE ?? 'marketplace',
+      )
       .replace(/--.*$/gm, '')
       .split(';')
       .map((s) => s.trim())

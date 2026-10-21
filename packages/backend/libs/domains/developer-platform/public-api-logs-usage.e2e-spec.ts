@@ -25,6 +25,20 @@ import { RequestRecord } from './domain/ports';
 import { recordEventId } from './domain/request-record';
 import { usageEventId } from './domain/usage-bucket';
 
+/** Runs the rounds of a repeated test five at a time (each round uses data of its own). */
+const eachRound = async (
+  rounds: number,
+  body: (round: number) => Promise<void>,
+  size = 5,
+): Promise<void> => {
+  for (let from = 0; from < rounds; from += size)
+    await Promise.all(
+      Array.from({ length: Math.min(size, rounds - from) }, (_, k) =>
+        body(from + k),
+      ),
+    );
+};
+
 const LOGS = (shopId: string) => `/api/shops/${shopId}/developers/logs`;
 const USAGE = (shopId: string) => `/api/shops/${shopId}/developers/usage`;
 const limiterPolicy = developerPlatformRatePolicies.policies[
@@ -752,14 +766,14 @@ describe('Public API: request logs and usage report', () => {
 
     it('S42 AS-64: the same request under the same event id from two consumers at once is counted once (20 repeats)', async () => {
       const { w } = await world();
-      for (let i = 0; i < 20; i += 1) {
+      await eachRound(20, async (i) => {
         const minute = Date.UTC(2026, 9, 7, 8, i, 0);
         const r = record(w.shop.id, {
           occurredAt: new Date(minute + 5_000),
           requestId: `req_${newId().replace(/-/g, '')}`,
         });
         await Promise.all([feed([r]), feed([r])]);
-      }
+      });
       t.clock.set(new Date('2026-10-07T09:00:00.000Z'));
       await closer().close();
       const events = await usage(w.shop.id);

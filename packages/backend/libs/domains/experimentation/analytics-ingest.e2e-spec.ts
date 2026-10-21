@@ -491,12 +491,17 @@ describe('Analytics ingest API (S39)', () => {
       const limited = await t.newUser();
       const other = await t.newUser();
       const probe = t.event();
-      for (let i = 0; i < 120; i++) {
-        const res = await t.postEvents(
-          { events: [t.event({ name: 'nope' })] },
-          { user: limited },
+      // 120 requests, 30 at a time (the counter is atomic, so the 121st is still the first refused)
+      for (let batch = 0; batch < 4; batch++) {
+        const results = await Promise.all(
+          Array.from({ length: 30 }, () =>
+            t.postEvents(
+              { events: [t.event({ name: 'nope' })] },
+              { user: limited },
+            ),
+          ),
         );
-        expect(res.status).toBe(202);
+        for (const res of results) expect(res.status).toBe(202);
       }
       const before = await topicSize();
       const rateLimited = metric('analytics_rate_limited_total');

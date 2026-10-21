@@ -8,6 +8,7 @@ import type { IndexInfo, IndexManagerPort } from '../domain/ports';
 import { IndexBootstrapService } from './index-bootstrap.service';
 import { PRODUCTS_ALIAS } from './search-index-names';
 import { SearchSettings } from './search-settings';
+import { shardName } from '@app/common/shard';
 
 const PRODUCT_DOCUMENTS = {
   bool: {
@@ -33,7 +34,9 @@ export class SearchIndexManager implements IndexManagerPort {
   }
 
   async createFor(runId: string): Promise<string> {
-    const name = `products_m${MAPPING_VERSION}_${runId.replace(/-/g, '').slice(0, 12)}`;
+    const name = shardName(
+      `products_m${MAPPING_VERSION}_${runId.replace(/-/g, '').slice(0, 12)}`,
+    );
     await this.bootstrap.ensureSynonymsSet();
     await this.engine.createIndex(
       name,
@@ -55,7 +58,7 @@ export class SearchIndexManager implements IndexManagerPort {
   }
 
   async productIndices(): Promise<IndexInfo[]> {
-    const found = await this.engine.listIndices('products_*');
+    const found = await this.engine.listIndices(shardName('products_*'));
     return Object.entries(found).map(([name, i]) => this.toInfo(name, i)!);
   }
 

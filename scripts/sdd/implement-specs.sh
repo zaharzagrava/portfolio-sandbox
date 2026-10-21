@@ -153,14 +153,13 @@ gate_fulls_failed() { cat "$(gate_state)/fulls-failed" 2>/dev/null || echo 0; }
 gate_full_failed() { echo $(( $(gate_fulls_failed) + 1 )) > "$(gate_state)/fulls-failed"; }
 gate_reset() { rm -rf "$(git rev-parse --absolute-git-dir)/sdd-gate-${id:-x}"; }
 
-# backend_run_specs <batch size> <spec files...>: the e2e suites, BATCH per fresh jest process (heap 6 GB), every batch runs even when one
+# backend_run_specs <batch size> <spec files...>: the e2e suites, BATCH per fresh Vitest process (heap 6 GB), every batch runs even when one
 # fails, so the failed list is complete; writes it to the state dir and returns 1 if any failed.
 backend_run_specs() {
   local batch=$1 st i rc=0 out; shift; st="$(gate_state)"; : > "$st/failed-now"
   for (( i = 0; i < $#; i += batch )); do
     out="$st/batch-$i.json"
-    (cd packages/backend && NODE_ENV=test NODE_OPTIONS="--experimental-vm-modules --max-old-space-size=6144" timeout 1800 \
-      npx jest --ci --runInBand --forceExit --config jest-e2e.json --json --outputFile="$out" --runTestsByPath "${@:i+1:batch}") || {
+    NODE_OPTIONS="--max-old-space-size=6144" VITEST_JSON="$out" timeout 1800 bash "$ROOT/scripts/sdd/vitest-batch.sh" "${@:i+1:batch}" || {
         rc=1
         python3 - "$out" >> "$st/failed-now" <<'PY' || true
 import json,sys
@@ -186,7 +185,7 @@ backend_gate() { # $1 = domain column
     if ! backend_run_specs "$batch" "${fs[@]}"; then cp "$st/failed-now" "$st/failed-specs"; return 1; fi
     echo "gate stage 3: the failed specs pass; now everything"
   fi
-  mapfile -t specs < <(cd packages/backend && NODE_ENV=test npx jest --config jest-e2e.json --listTests "$(code_path "$1")" 2>/dev/null | grep -E 'e2e-spec\.ts$' | sort)
+  mapfile -t specs < <(cd packages/backend && NODE_ENV=test npx vitest list --filesOnly --config vitest.e2e.config.ts "$(code_path "$1")" 2>/dev/null | grep -E 'e2e-spec\.ts$' | sort)
   (( ${#specs[@]} )) || { echo "no e2e specs found under $(code_path "$1")"; return 1; }
   n=$(gate_fulls_failed); (( n >= 1 )) && { batch=${GATE_BATCH_SMALL:-4}; echo "gate stage 4: the full run failed before; everything in batches of $batch"; }
   if ! backend_run_specs "$batch" "${specs[@]}"; then cp "$st/failed-now" "$st/failed-specs"; gate_full_failed; return 1; fi

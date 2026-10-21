@@ -324,7 +324,10 @@ describe('Client flags endpoint (S38)', () => {
   it('S38 AS-42: the 121st request in a minute is 429 with Retry-After', async () => {
     await clientFlag();
     const visitor = { 'X-Anonymous-Id': 'visitor-limit' };
-    for (let i = 0; i < 120; i++) await anonymous(visitor).expect(200);
+    for (let batch = 0; batch < 4; batch++)
+      await Promise.all(
+        Array.from({ length: 30 }, () => anonymous(visitor).expect(200)),
+      );
 
     const limited = await anonymous(visitor);
 

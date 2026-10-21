@@ -24,7 +24,7 @@ import { ApiConfigService } from '@app/common/config';
 import { JobsTestProbe } from '@app/infrastructure/jobs';
 import { ShopMembershipModel as ShopMembership } from '@app/domains/tenancy';
 import { OrderPaid } from '@app/domains/orders';
-import { envelope } from './testing';
+import { envelope, waitForQueueEmpty } from './testing';
 import { NotificationsModule } from './notifications.module';
 import { NotificationsWorkerModule } from './notifications-worker.module';
 import { NotificationsCoreModule } from './notifications-core.module';
@@ -224,7 +224,7 @@ describe('Notifications (e2e)', () => {
 
     // Kafka redelivers the same event (projector crashed before committing the offset).
     await router.project([event]);
-    await new Promise((r) => setTimeout(r, 1_500));
+    await waitForQueueEmpty({ app } as never, 'notify-email');
     expect(emailsTo(u.email)).toHaveLength(1);
     expect(
       (await http().get('/api/notifications').set(u.auth).expect(200)).body
@@ -350,7 +350,7 @@ describe('Notifications (e2e)', () => {
         (await http().get('/api/notifications').set(u.auth)).body.items
           .length === 2,
     );
-    await new Promise((r) => setTimeout(r, 1_500));
+    await waitForQueueEmpty({ app } as never, 'notify-email');
     expect(emailsTo(u.email)).toHaveLength(1);
   });
 
@@ -447,7 +447,7 @@ describe('Notifications (e2e)', () => {
         (await http().get('/api/notifications').set(u.auth)).body.items
           .length === 2,
     );
-    await new Promise((r) => setTimeout(r, 1_500));
+    await waitForQueueEmpty({ app } as never, 'notify-email');
     expect(emailsTo(u.email)).toHaveLength(1); // suppressed before reaching any provider
   });
 });

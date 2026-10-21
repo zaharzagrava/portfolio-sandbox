@@ -46,7 +46,7 @@ import type { DeliveryLineProducer } from './domain/ports';
  * visibility timeout (5 s), so the wait is longer than the default.
  */
 const waitFor: typeof waitForSoon = (probe, options = {}) =>
-  waitForSoon(probe, { timeoutMs: 45_000, ...options });
+  waitForSoon(probe, { timeoutMs: 45_000, intervalMs: 30, ...options });
 
 const ignored = (reason: string) =>
   MetricsRegistry.value('notifications_events_ignored_total', { reason }) ?? 0;

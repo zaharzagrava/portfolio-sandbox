@@ -74,10 +74,10 @@ describe('Media wiring in the real worker application', () => {
     let status = 'QUEUED';
     for (
       let i = 0;
-      i < 60 && status !== 'SUCCEEDED' && status !== 'DEAD';
+      i < 300 && status !== 'SUCCEEDED' && status !== 'DEAD';
       i++
     ) {
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      await new Promise((resolve) => setTimeout(resolve, 100));
       status = (
         await sequelize.query<{ status: string }>(
           `SELECT "status" FROM "Job" WHERE "id" = :jobId`,

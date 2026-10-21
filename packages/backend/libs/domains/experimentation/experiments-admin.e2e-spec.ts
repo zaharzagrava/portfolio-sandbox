@@ -592,11 +592,14 @@ describe('Experiments admin API (S39)', () => {
   describe('limit', () => {
     it('S39 AS-37: the 201st key is 422 experiment_limit_reached; an update of an existing key still works', async () => {
       const first = await create();
-      for (let i = 1; i < 200; i++)
-        await seedExperiment(t.sequelize, {
-          status: 'DRAFT',
-          createdAt: new Date(T0.getTime() - i * 1_000),
-        });
+      await Promise.all(
+        Array.from({ length: 199 }, (_, n) =>
+          seedExperiment(t.sequelize, {
+            status: 'DRAFT',
+            createdAt: new Date(T0.getTime() - (n + 1) * 1_000),
+          }),
+        ),
+      );
       const refused = await put(admin, key(), body());
       expect(refused.status).toBe(422);
       expect(refused.body.code).toBe('experiment_limit_reached');
@@ -609,8 +612,11 @@ describe('Experiments admin API (S39)', () => {
     }, 60_000);
 
     it('S39 AS-37: parallel creates cannot exceed 200', async () => {
-      for (let i = 0; i < 198; i++)
-        await seedExperiment(t.sequelize, { status: 'DRAFT' });
+      await Promise.all(
+        Array.from({ length: 198 }, () =>
+          seedExperiment(t.sequelize, { status: 'DRAFT' }),
+        ),
+      );
       const results = await Promise.all(
         Array.from({ length: 5 }, (_, i) =>
           put(i % 2 ? admin : other, key('race'), body()),
@@ -626,17 +632,19 @@ describe('Experiments admin API (S39)', () => {
   describe('reads', () => {
     it('S39 AS-38: 120 experiments are listed in pages by createdAt then key, newest first, each once', async () => {
       const keys: string[] = [];
-      for (let i = 0; i < 120; i++) {
-        // Ten share each creation time, so the key decides among them.
-        const name = `seed-${String(i).padStart(3, '0')}`;
-        keys.push(name);
-        await seedExperiment(t.sequelize, {
-          key: name,
-          status: i % 3 === 0 ? 'RUNNING' : 'DRAFT',
-          layer: `seed-layer-${i}`,
-          createdAt: new Date(T0.getTime() - Math.floor(i / 10) * 1_000),
-        });
-      }
+      for (let i = 0; i < 120; i++)
+        keys.push(`seed-${String(i).padStart(3, '0')}`);
+      await Promise.all(
+        keys.map((name, i) =>
+          // Ten share each creation time, so the key decides among them.
+          seedExperiment(t.sequelize, {
+            key: name,
+            status: i % 3 === 0 ? 'RUNNING' : 'DRAFT',
+            layer: `seed-layer-${i}`,
+            createdAt: new Date(T0.getTime() - Math.floor(i / 10) * 1_000),
+          }),
+        ),
+      );
       const expectedOrder = [...keys].sort((x, y) => {
         const gx = Math.floor(keys.indexOf(x) / 10);
         const gy = Math.floor(keys.indexOf(y) / 10);

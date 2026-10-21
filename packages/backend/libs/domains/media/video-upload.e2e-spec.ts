@@ -314,8 +314,11 @@ describe('Video upload API', () => {
     });
 
     it('S30 AS-05: with 9 pending uploads, five concurrent starts give one 201 and four 409 pending_uploads_limit', async () => {
-      for (let i = 0; i < 9; i++)
-        await t.video({ shopId: w.shop.id, uploaderId: w.staff.id });
+      await Promise.all(
+        Array.from({ length: 9 }, () =>
+          t.video({ shopId: w.shop.id, uploaderId: w.staff.id }),
+        ),
+      );
       const answers = await Promise.all(
         Array.from({ length: 5 }, () =>
           start(w.staff, w.shop.id, valid({ sizeBytes: 2048 })),
@@ -344,8 +347,12 @@ describe('Video upload API', () => {
     });
 
     it('S30 AS-06: the 21st start in an hour is 429 with Retry-After and creates no row', async () => {
-      for (let i = 0; i < 20; i++)
-        await start(w.owner, w.shop.id, valid({ sizeBytes: 2048 })); // the first ten create slots, the rest are 409
+      // the first ten create slots, the rest are 409 (answers are not looked at; only the 20 attempts count)
+      await Promise.all(
+        Array.from({ length: 20 }, () =>
+          start(w.owner, w.shop.id, valid({ sizeBytes: 2048 })),
+        ),
+      );
       const before = await count();
       const limited = await start(
         w.owner,
@@ -362,8 +369,12 @@ describe('Video upload API', () => {
         uploaderId: w.staff.id,
         status: 'READY',
       });
-      for (let i = 0; i < 120; i++)
-        await resume(w.owner, w.shop.id, id).expect(409);
+      for (let from = 0; from < 120; from += 30)
+        await Promise.all(
+          Array.from({ length: 30 }, () =>
+            resume(w.owner, w.shop.id, id).expect(409),
+          ),
+        );
       const limited = await resume(w.owner, w.shop.id, id).expect(429);
       expect(limited.headers['retry-after']).toBeDefined();
     });
@@ -440,7 +451,7 @@ describe('Video upload API', () => {
         MIN_PART_SIZE,
         1,
       );
-      await sleep(2100);
+      await sleep(1200); // the permission lives 1 s; the store counts whole seconds
       expect(
         (await t.putPart(shortLived, Buffer.alloc(MIN_PART_SIZE))).status,
       ).toBe(403);

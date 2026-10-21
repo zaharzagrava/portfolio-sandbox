@@ -208,8 +208,15 @@ describe('Launch events: seat map, deltas and realtime topics', () => {
   it('S22 AS-49: the 601st map read of an address in a minute is 429; with the limiter down reads still answer', async () => {
     const event = await sale();
     await t.advance(125 * SECOND); // a fresh minute for this address: the sliding window forgets the earlier reads
-    for (let i = 0; i < 600; i++)
-      await t.http().get(`/api/launch-events/${event.id}/seatmap`).expect(200);
+    // all 600 reads are allowed, so they go 50 at a time; the 601st still comes after every one of them
+    for (let from = 0; from < 600; from += 50) {
+      const batch = await Promise.all(
+        Array.from({ length: 50 }, () =>
+          t.http().get(`/api/launch-events/${event.id}/seatmap`),
+        ),
+      );
+      batch.forEach((r) => expect(r.status).toBe(200));
+    }
     const limited = await t
       .http()
       .get(`/api/launch-events/${event.id}/seatmap`)

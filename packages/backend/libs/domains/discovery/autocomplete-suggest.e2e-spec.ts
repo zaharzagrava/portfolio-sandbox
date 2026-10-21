@@ -17,6 +17,22 @@ import { seedProducts } from './testing/search-fixtures';
 const LONG_QUERY = 'wireless noise cancelling headphones case'; // a shorter query sharing the prefix
 const LONGER = 'wireless noise cancelling headphones case xl x'; // 46 characters
 
+/**
+ * Sends `count` calls in groups of 30 at once (the limiter counts them atomically, so the count is the same as one by one)
+ * and checks that every one was answered 200.
+ */
+const burstOk = async (
+  count: number,
+  call: () => PromiseLike<{ status: number }>,
+) => {
+  for (let sent = 0; sent < count; sent += 30) {
+    const group = await Promise.all(
+      Array.from({ length: Math.min(30, count - sent) }, () => call()),
+    );
+    expect(group.map((r) => r.status)).toEqual(group.map(() => 200));
+  }
+};
+
 describe('Search autocomplete API', () => {
   let t: AutocompleteTestApp;
   let engineCalls: jest.SpyInstance;
@@ -359,9 +375,7 @@ describe('Search autocomplete API', () => {
   describe('rate limit (AS-09)', () => {
     it('S33 AS-09: the 601st request in a minute is a 429 rate_limited with Retry-After; a downed limiter store still answers', async () => {
       await t.redis.client.flushdb();
-      let last;
-      for (let i = 0; i < 600; i++) last = await get('iph');
-      expect(last!.status).toBe(200);
+      await burstOk(600, () => get('iph'));
       const limited = await get('iph').expect(429);
       expect(problem(limited.body).code).toBe('rate_limited');
       expect(Number(limited.headers['retry-after'])).toBeGreaterThan(0);

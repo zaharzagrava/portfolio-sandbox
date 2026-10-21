@@ -123,11 +123,15 @@ describe('Reconciliation: issue board and resolution', () => {
       await seedRun('2026-10-03', new Date(base - 2_000)),
       await seedRun('2026-10-04', new Date(base - 1_000)),
     ];
-    for (let i = 0; i < 45; i++)
-      await seedIssue(runs[2], day, {
-        kind: i % 3 === 0 ? 'AMOUNT_MISMATCH' : 'MISSING_IN_LEDGER',
-        createdAt: new Date(base - 100_000 + i * 10),
-      });
+    // the 45 rows have their own fixed times, so they are written together (was one by one)
+    await Promise.all(
+      Array.from({ length: 45 }, (_, i) =>
+        seedIssue(runs[2], day, {
+          kind: i % 3 === 0 ? 'AMOUNT_MISMATCH' : 'MISSING_IN_LEDGER',
+          createdAt: new Date(base - 100_000 + i * 10),
+        }),
+      ),
+    );
 
     const first = await t
       .as(admin)
@@ -581,13 +585,17 @@ describe('Reconciliation: issue board and resolution', () => {
 
   it('S14 AS-59: the 31st resolve in a minute is 429 with Retry-After', async () => {
     const run = await seedRun('2026-10-04', t.clock.now());
-    for (let i = 0; i < 30; i++) {
-      const id = await seedIssue(run, '2026-10-04');
-      expect(
-        (await resolve(admin, id, { resolution: 'explained', note: `n${i}` }))
-          .status,
-      ).toBe(200);
-    }
+    // 30 resolves at once (was one by one); every answer is still checked
+    const answers = await Promise.all(
+      Array.from({ length: 30 }, async (_, i) => {
+        const issueId = await seedIssue(run, '2026-10-04');
+        return resolve(admin, issueId, {
+          resolution: 'explained',
+          note: `n${i}`,
+        });
+      }),
+    );
+    for (const answer of answers) expect(answer.status).toBe(200);
     const id = await seedIssue(run, '2026-10-04');
     const limited = await resolve(admin, id, {
       resolution: 'adjusted',

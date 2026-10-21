@@ -196,7 +196,7 @@ describe('Live stream: history, async moderation and consumers', () => {
         },
         {
           timeoutMs: 60_000,
-          intervalMs: 500,
+          intervalMs: 100,
           description: 'both consumer groups stable',
         },
       );
@@ -234,7 +234,7 @@ describe('Live stream: history, async moderation and consumers', () => {
           ),
         {
           timeoutMs: 60_000,
-          intervalMs: 200,
+          intervalMs: 50,
           description: 'the valid comment is stored',
         },
       );
@@ -249,7 +249,7 @@ describe('Live stream: history, async moderation and consumers', () => {
             before.moderationUnknown,
         {
           timeoutMs: 60_000,
-          intervalMs: 200,
+          intervalMs: 50,
           description: 'both consumers dead-lettered both messages',
         },
       );
@@ -444,7 +444,7 @@ describe('Live stream: history, async moderation and consumers', () => {
           ).groups.every((g) => g.state === 'Stable' && g.members.length === 1),
         {
           timeoutMs: 60_000,
-          intervalMs: 500,
+          intervalMs: 100,
           description: 'both consumer groups stable',
         },
       );
@@ -481,13 +481,13 @@ describe('Live stream: history, async moderation and consumers', () => {
         },
         {
           timeoutMs: 60_000,
-          intervalMs: 200,
+          intervalMs: 50,
           description: 'history stored the comment',
         },
       );
       await waitFor(async () => dlq() > dlqBefore, {
         timeoutMs: 60_000,
-        intervalMs: 200,
+        intervalMs: 50,
         description: 'the failed event is dead-lettered',
       });
       expect(failed() - failedBefore).toBeGreaterThanOrEqual(3);

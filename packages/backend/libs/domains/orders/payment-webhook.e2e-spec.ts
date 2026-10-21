@@ -24,6 +24,20 @@ import {
   type OrdersTestApp,
 } from './testing/orders-app';
 
+/** Runs the rounds of a repeated test five at a time (each round uses data of its own). */
+const eachRound = async (
+  rounds: number,
+  body: (round: number) => Promise<void>,
+  size = 5,
+): Promise<void> => {
+  for (let from = 0; from < rounds; from += size)
+    await Promise.all(
+      Array.from({ length: Math.min(size, rounds - from) }, (_, k) =>
+        body(from + k),
+      ),
+    );
+};
+
 const MIN = 60_000;
 
 describe('Payment webhook: signature, dedupe, async processing and out-of-order events', () => {
@@ -681,7 +695,7 @@ describe('Payment webhook: signature, dedupe, async processing and out-of-order 
       const product = products[0];
       let paidWins = 0;
       let cancelWins = 0;
-      for (let i = 0; i < 50; i++) {
+      await eachRound(50, async (i) => {
         const user = await t.newUser();
         await t
           .as(user)
@@ -722,7 +736,7 @@ describe('Payment webhook: signature, dedupe, async processing and out-of-order 
           expect(types).toEqual(['order.reserved', 'order.cancelled']);
           expect(await refundTasks(orderId)).toHaveLength(1);
         }
-      }
+      });
       // stock: every cancelled order returned its unit, every paid one kept it
       expect(await stockOf(t.app, [product.id])).toEqual({
         [product.id]: 100 - paidWins,
@@ -784,9 +798,12 @@ describe('Payment webhook: signature, dedupe, async processing and out-of-order 
       const raw = JSON.stringify(
         stripeEvent('customer.created', { id: 'evt_forged' }),
       );
-      let last = 0;
-      for (let i = 0; i < 301; i++)
-        last = (await post(raw, 'v1=forged')).status;
+      // the first 300 go 50 at a time; the 301st comes alone, after all of them, and must be the refused one
+      for (let from = 0; from < 300; from += 50)
+        await Promise.all(
+          Array.from({ length: 50 }, () => post(raw, 'v1=forged')),
+        );
+      const last = (await post(raw, 'v1=forged')).status;
       expect(last).toBe(429);
     }, 120_000);
   });

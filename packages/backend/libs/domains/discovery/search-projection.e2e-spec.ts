@@ -1,3 +1,4 @@
+import { PRODUCTS_ALIAS } from './infra/search-index-names';
 import { randomUUID } from 'node:crypto';
 import type { ProductSnapshot } from '@marketplace-sandbox/contracts';
 import { MetricsRegistry } from '@app/common/telemetry/metrics-registry';
@@ -76,7 +77,7 @@ describe('Search index projection', () => {
   const visibleIds = async (extra?: object): Promise<string[]> => {
     await t.refresh();
     const res = await t.es.search({
-      index: 'products',
+      index: PRODUCTS_ALIAS,
       size: 200,
       _source: false,
       query: {
@@ -189,12 +190,12 @@ describe('Search index projection', () => {
         product({ productId: p1, title: 'Once', productVersion: 1 }),
       );
       await send(t.app).products(e);
-      const first = await t.es.get({ index: 'products', id: p1 });
+      const first = await t.es.get({ index: PRODUCTS_ALIAS, id: p1 });
 
       await send(t.app).products(e);
       await send(t.app).products({ ...e, eventId: randomUUID() });
 
-      const again = await t.es.get({ index: 'products', id: p1 });
+      const again = await t.es.get({ index: PRODUCTS_ALIAS, id: p1 });
       expect(again._source).toEqual(first._source);
       expect(again._seq_no).toBe(first._seq_no); // no second write reached the engine
       expect(await t.count({ term: { productId: p1 } })).toBe(1);
@@ -809,7 +810,7 @@ describe('Search index projection', () => {
       const operations = Array.from({ length: 501 }, (_, i) => {
         const sid = `00000000-0000-4000-8000-${String(i).padStart(12, '0')}`;
         return [
-          { index: { _index: 'products', _id: newId() } },
+          { index: { _index: PRODUCTS_ALIAS, _id: newId() } },
           {
             productId: newId(),
             shopId: sid,
@@ -843,13 +844,13 @@ describe('Search index projection', () => {
       await send(t.app).shops(events.shops);
       await send(t.app).gallery(events.gallery);
       await send(t.app).sponsorship(events.sponsorship);
-      const once = (await t.es.get({ index: 'products', id: p1 }))._source;
+      const once = (await t.es.get({ index: PRODUCTS_ALIAS, id: p1 }))._source;
       await send(t.app).shops(events.shops);
       await send(t.app).gallery(events.gallery);
       await send(t.app).sponsorship(events.sponsorship);
-      expect((await t.es.get({ index: 'products', id: p1 }))._source).toEqual(
-        once,
-      );
+      expect(
+        (await t.es.get({ index: PRODUCTS_ALIAS, id: p1 }))._source,
+      ).toEqual(once);
     });
 
     it('S32 AS-33: an invalid payload to the shop-state, media and sponsorship consumers is refused with no effect', async () => {
@@ -857,7 +858,8 @@ describe('Search index projection', () => {
       await send(t.app).products(
         productEvent('created', product({ productId: p1 })),
       );
-      const before = (await t.es.get({ index: 'products', id: p1 }))._source;
+      const before = (await t.es.get({ index: PRODUCTS_ALIAS, id: p1 }))
+        ._source;
       const e = shopStatusEvent(shopId, 'SUSPENDED', 2, t.clock.now());
       await expect(
         send(t.app).shops({
@@ -882,9 +884,9 @@ describe('Search index projection', () => {
           payload: { ...(s.payload as object), sponsored: 'yes' },
         }),
       ).rejects.toBeInstanceOf(PermanentError);
-      expect((await t.es.get({ index: 'products', id: p1 }))._source).toEqual(
-        before,
-      );
+      expect(
+        (await t.es.get({ index: PRODUCTS_ALIAS, id: p1 }))._source,
+      ).toEqual(before);
       expect(await t.rows(`SELECT 1 FROM "SearchShopState"`)).toHaveLength(0);
     });
   });

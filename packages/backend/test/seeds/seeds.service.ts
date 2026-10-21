@@ -95,6 +95,17 @@ export class SeedsService {
    */
   public async clean() {
     this.l.log(`--- Clearing the database ---`);
+    // Non-Postgres stores registered by feature modules (Redis, Scylla, Dynamo, ...) are independent of Postgres, so their wipe
+    // runs while the Postgres one runs (the wait is the slower of the two, not the sum). Both always finish before this returns.
+    const [postgres, others] = await Promise.allSettled([
+      this.cleanPostgres(),
+      this.testCleanupRegistry?.runAll(),
+    ]);
+    if (postgres.status === 'rejected') throw postgres.reason;
+    if (others.status === 'rejected') throw others.reason;
+  }
+
+  private async cleanPostgres() {
     const sequelize = this.productModel.sequelize!;
     const tables = await sequelize.query<{ name: string }>(
       `SELECT table_name::text AS name FROM information_schema.tables
@@ -143,9 +154,6 @@ export class SeedsService {
         }
       }
     }
-
-    // Non-Postgres stores registered by feature modules (Redis, Scylla, Dynamo, SQS, ...)
-    await this.testCleanupRegistry?.runAll();
   }
 
   private static readonly KEEP_TABLES = [

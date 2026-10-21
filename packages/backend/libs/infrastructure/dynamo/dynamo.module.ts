@@ -20,6 +20,9 @@ import {
   exports: [DynamoService],
 })
 export class DynamoModule implements OnModuleInit {
+  /** Test-only: key attribute names per table name, for the wipe between tests. */
+  private static readonly keyNamesCache = new Map<string, string[]>();
+
   constructor(
     private readonly dynamo: DynamoService,
     private readonly moduleRef: ModuleRef,
@@ -36,40 +39,49 @@ export class DynamoModule implements OnModuleInit {
     }
     if (!registry) return;
     // e2e specs: empty every table of this environment's prefix (test data volumes are tiny).
+    // The key names of a table never change while the process runs, so DescribeTable is asked once per table per process, and the
+    // tables are emptied at the same time (about 10 tables: one round of requests instead of ten after another).
+    const keyNamesOf = DynamoModule.keyNamesCache;
     registry.register('dynamo.truncate', async () => {
       const prefix = this.dynamo.table('');
       const { TableNames = [] } = await this.dynamo.doc.send(
         new ListTablesCommand({}),
       );
-      for (const table of TableNames.filter((t) => t.startsWith(prefix))) {
-        const { Table } = await this.dynamo.doc.send(
-          new DescribeTableCommand({ TableName: table }),
-        );
-        const keyNames = (Table?.KeySchema ?? []).map((k) => k.AttributeName!);
-        let start: Record<string, never> | undefined;
-        do {
-          const page = await this.dynamo.doc.send(
-            new ScanCommand({
-              TableName: table,
-              ProjectionExpression: keyNames.join(','),
-              ExclusiveStartKey: start,
-            }),
-          );
-          const items = page.Items ?? [];
-          for (let i = 0; i < items.length; i += 25) {
-            await this.dynamo.doc.send(
-              new BatchWriteItemCommand({
-                RequestItems: {
-                  [table]: items
-                    .slice(i, i + 25)
-                    .map((Key) => ({ DeleteRequest: { Key } })),
-                },
+      await Promise.all(
+        TableNames.filter((t) => t.startsWith(prefix)).map(async (table) => {
+          let keyNames = keyNamesOf.get(table);
+          if (!keyNames) {
+            const { Table } = await this.dynamo.doc.send(
+              new DescribeTableCommand({ TableName: table }),
+            );
+            keyNames = (Table?.KeySchema ?? []).map((k) => k.AttributeName!);
+            keyNamesOf.set(table, keyNames);
+          }
+          let start: Record<string, never> | undefined;
+          do {
+            const page = await this.dynamo.doc.send(
+              new ScanCommand({
+                TableName: table,
+                ProjectionExpression: keyNames.join(','),
+                ExclusiveStartKey: start,
               }),
             );
-          }
-          start = page.LastEvaluatedKey as typeof start;
-        } while (start);
-      }
+            const items = page.Items ?? [];
+            for (let i = 0; i < items.length; i += 25) {
+              await this.dynamo.doc.send(
+                new BatchWriteItemCommand({
+                  RequestItems: {
+                    [table]: items
+                      .slice(i, i + 25)
+                      .map((Key) => ({ DeleteRequest: { Key } })),
+                  },
+                }),
+              );
+            }
+            start = page.LastEvaluatedKey as typeof start;
+          } while (start);
+        }),
+      );
     });
   }
 }

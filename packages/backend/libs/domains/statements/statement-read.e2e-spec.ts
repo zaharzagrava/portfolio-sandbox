@@ -534,13 +534,17 @@ describe('Statements: seller statement reads and as-known-at', () => {
       await own.reset();
       const { shopId, owner: me } = await own.shopWithOwner();
       const admin = await own.admin();
-      let last = 200;
-      for (let i = 0; i < 120; i++) {
-        last = (await own.as(me).get(`/api/shops/${shopId}/statements/2026-03`))
-          .status;
-        if (last !== 200) break;
+      // 120 reads in waves of 30 at once (was one by one)
+      for (let wave = 0; wave < 4; wave++) {
+        const statuses = (
+          await Promise.all(
+            Array.from({ length: 30 }, () =>
+              own.as(me).get(`/api/shops/${shopId}/statements/2026-03`),
+            ),
+          )
+        ).map((r) => r.status);
+        expect(statuses).toEqual(Array(30).fill(200));
       }
-      expect(last).toBe(200);
       const limited = await own
         .as(me)
         .get(`/api/shops/${shopId}/statements/2026-03`);

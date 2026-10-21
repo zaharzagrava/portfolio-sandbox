@@ -474,7 +474,7 @@ describe('Payment intents: accept, idempotency, validation and access', () => {
       const user = await t.newUser();
       const orderId = randomUUID();
       const request = pay(user, newKey(), body(orderId));
-      await new Promise((r) => setTimeout(r, 1_000));
+      await new Promise((r) => setTimeout(r, 300)); // inside the 2 s wait (was 1 s)
       await publishOrderReserved(t.app, { userId: user.id, orderId });
       const late = await request;
       expect(late.status).toBe(202);

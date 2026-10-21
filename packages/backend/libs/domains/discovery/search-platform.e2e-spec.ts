@@ -1,7 +1,6 @@
-import { execFile } from 'node:child_process';
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { promisify } from 'node:util';
+import { boundaryCheck, ownershipCheck } from '@app/test/utils/static-checks';
 import { productSearchResponseSchema } from '@marketplace-sandbox/contracts';
 import { EventPublisher } from '@app/infrastructure/events/event-publisher';
 import { generateTestingModule } from '@app/test/utils/global-modules';
@@ -27,7 +26,6 @@ import {
 } from './testing/search-events';
 import { seedProducts } from './testing/search-fixtures';
 
-const run = promisify(execFile);
 const BACKEND = resolve(__dirname, '../../..');
 const SEARCH_CODE = __dirname;
 
@@ -251,20 +249,16 @@ describe('Search exported services and module boundary', () => {
     });
 
     it('S32 AS-80: check:boundaries is green and check:table-ownership reports nothing for discovery', async () => {
-      const boundaries = await run(
-        'pnpm',
-        ['--dir', BACKEND, 'check:boundaries'],
-        { maxBuffer: 10_000_000 },
-      );
+      // the two checks do not depend on each other: run them side by side
+      const [boundaries, ownership] = await Promise.all([
+        boundaryCheck(BACKEND),
+        ownershipCheck(BACKEND),
+      ]);
+      expect(boundaries.status).toBe(0);
       expect(boundaries.stdout + boundaries.stderr).toMatch(
         /no dependency violations/i,
       );
 
-      const ownership = await run(
-        'pnpm',
-        ['--dir', BACKEND, 'check:table-ownership'],
-        { maxBuffer: 10_000_000 },
-      ).catch((e: { stdout?: string }) => ({ stdout: e.stdout ?? '' }));
       expect(ownership.stdout).not.toMatch(/^discovery\s/m);
       expect(ownership.stdout).not.toMatch(/libs\/domains\/discovery\//);
     }, 300_000);

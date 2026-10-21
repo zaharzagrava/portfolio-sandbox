@@ -411,11 +411,11 @@ describe('Flash sales: load, end, reconcile and never oversell', () => {
     };
     /** The fast store holds `remaining` units in total, in the first bucket. */
     const setRemaining = async (d: Drop, remaining: number) => {
-      for (let b = 0; b < d.buckets; b++)
-        await t.redis.set(
-          `flash:{${d.id}:${b}}:stock`,
-          b === 0 ? remaining : 0,
-        );
+      await Promise.all(
+        Array.from({ length: d.buckets }, (_, b) =>
+          t.redis.set(`flash:{${d.id}:${b}}:stock`, b === 0 ? remaining : 0),
+        ),
+      );
     };
 
     it('S11 AS-24: 3 HELD reservations → no return, a retry within 60 s, the waiting gauge; it completes after they resolve', async () => {
@@ -614,9 +614,15 @@ describe('Flash sales: load, end, reconcile and never oversell', () => {
         user: Awaited<ReturnType<FlashTestApp['newUser']>>;
         orderId: string;
       }> = [];
-      for (let i = 0; i < n; i++) {
-        const user = await t.newUser();
-        await addToCart(t, user, d.productId, each);
+      // people and carts are made together; the buying itself stays one after the other (oldest first)
+      const users = await Promise.all(
+        Array.from({ length: n }, async () => {
+          const user = await t.newUser();
+          await addToCart(t, user, d.productId, each);
+          return user;
+        }),
+      );
+      for (const user of users) {
         const res = await checkoutAs(t, user);
         expect(res.status).toBe(202);
         orders.push({ user, orderId: res.body.orderId });
@@ -625,8 +631,9 @@ describe('Flash sales: load, end, reconcile and never oversell', () => {
     };
     type Drop2 = Awaited<ReturnType<typeof openDrop>>;
     const setBuckets = async (d: Drop2, values: number[]) => {
-      for (const [b, v] of values.entries())
-        await t.redis.set(`flash:{${d.id}:${b}}:stock`, v);
+      await Promise.all(
+        values.map((v, b) => t.redis.set(`flash:{${d.id}:${b}}:stock`, v)),
+      );
     };
     const total = (d: Drop2) => t.buckets(d.id, d.buckets).then(sum);
 
@@ -808,7 +815,7 @@ describe('Flash sales: load, end, reconcile and never oversell', () => {
         const users = await Promise.all(
           Array.from({ length: 24 }, () => t.newUser()),
         );
-        for (const user of users) await addToCart(t, user, d.productId, 1);
+        await Promise.all(users.map((u) => addToCart(t, u, d.productId, 1)));
         const replies = await Promise.all(users.map((u) => checkoutAs(t, u)));
         expect(replies.filter((r) => r.status === 202)).toHaveLength(12);
         expect(await events(d.id, 'flashsale.sold_out')).toHaveLength(1);

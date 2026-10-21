@@ -67,8 +67,8 @@ describe('Live stream: sampling, batching, snapshots and event connections', () 
     users: Actor[],
     prefix = 'c',
   ) => {
-    for (let i = 0; i < n; i += 50) {
-      const results = await inParallel(Math.min(50, n - i), (k) =>
+    for (let i = 0; i < n; i += 125) {
+      const results = await inParallel(Math.min(125, n - i), (k) =>
         t.comment(streamId, users[(i + k) % users.length], `${prefix}${i + k}`),
       );
       for (const r of results)
@@ -305,7 +305,8 @@ describe('Live stream: sampling, batching, snapshots and event connections', () 
     const s = await t.seller();
     const users = await manyViewers(20);
     const product = await t.product(s.shopId);
-    for (let round = 0; round < 20; round++) {
+    // the rounds use streams of their own, so five of them run at the same time
+    const oneRound = async (round: number) => {
       const stream = await t.liveStream(s);
       const ids: string[] = [];
       for (let i = 0; i < 6; i++)
@@ -363,8 +364,12 @@ describe('Live stream: sampling, batching, snapshots and event connections', () 
       expect(final.pinVersion).toBe(row.pinVersion);
       expect(final.comments.map((c) => c.id)).toEqual(ids.slice(3));
       sse.close();
-      open.pop();
-    }
+      open.splice(open.indexOf(sse), 1);
+    };
+    for (let from = 0; from < 20; from += 5)
+      await Promise.all(
+        Array.from({ length: 5 }, (_, k) => oneRound(from + k)),
+      );
   }, 180_000);
 
   // --- AS-08 ------------------------------------------------------------------------------------------------------

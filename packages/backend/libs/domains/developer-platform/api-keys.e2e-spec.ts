@@ -13,6 +13,20 @@ import {
 import { KeyUsageFlusher } from './application/key-usage.flusher';
 import { KEY_CACHE_PREFIX, LAST_USED_KEY } from './infra/redis-key-cache';
 
+/** Runs the rounds of a repeated test five at a time (each round uses data of its own). */
+const eachRound = async (
+  rounds: number,
+  body: (round: number) => Promise<void>,
+  size = 5,
+): Promise<void> => {
+  for (let from = 0; from < rounds; from += size)
+    await Promise.all(
+      Array.from({ length: Math.min(size, rounds - from) }, (_, k) =>
+        body(from + k),
+      ),
+    );
+};
+
 const KEYS = (shopId: string) => `/api/shops/${shopId}/developers/keys`;
 const HOUR = 3_600_000;
 
@@ -332,7 +346,7 @@ describe('Developer platform: API key lifecycle (dashboard)', () => {
 
   describe('AS-05 limit', () => {
     it('S42 AS-05: with 24 active keys, 5 parallel creations give exactly one 201 and four 422 key_limit_reached (20 repeats)', async () => {
-      for (let i = 0; i < 20; i += 1) {
+      await eachRound(20, async () => {
         const w = await t.seedWorld();
         await seedKeys(w.shop.id, w.owner.id, 24);
         const results = await Promise.all(
@@ -354,7 +368,7 @@ describe('Developer platform: API key lifecycle (dashboard)', () => {
           true,
         );
         expect(await keyRows(w.shop.id)).toHaveLength(25);
-      }
+      });
     });
 
     it('S42 AS-05: revoked and expired keys do not count, and a rotating key counts once', async () => {
@@ -503,7 +517,7 @@ describe('Developer platform: API key lifecycle (dashboard)', () => {
     });
 
     it('S42 AS-07: two parallel rotations of an active key give one 201 and one 409 key_already_rotating, one successor (20 repeats)', async () => {
-      for (let i = 0; i < 20; i += 1) {
+      await eachRound(20, async () => {
         const w = await t.seedWorld();
         const key = await createKey(t, w);
         const results = await Promise.all(
@@ -521,7 +535,7 @@ describe('Developer platform: API key lifecycle (dashboard)', () => {
         const all = await keyRows(w.shop.id);
         expect(all).toHaveLength(2);
         expect(all.filter((k) => k.successorId !== null)).toHaveLength(1);
-      }
+      });
     });
 
     it('S42 AS-08: revoke is immediate on every instance and idempotent, with exactly one event; the successor of a rotating key is untouched', async () => {

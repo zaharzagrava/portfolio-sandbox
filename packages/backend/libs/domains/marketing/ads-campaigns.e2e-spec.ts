@@ -652,8 +652,13 @@ describe('Sponsored listings: campaigns', () => {
   describe('S36 AS-14: write rate limit', () => {
     it('the 61st mutation of a shop within the minute is 429 with Retry-After and writes nothing', async () => {
       const { campaign } = await t.campaign(team);
-      for (let i = 0; i < 59; i++)
-        await t.act(team.owner, team.shop.id, campaign.id, 'resume'); // 409 each: a refused request still counts
+      // 59 refused requests in two waves at once (was one by one)
+      for (const size of [30, 29])
+        await Promise.all(
+          Array.from({ length: size }, () =>
+            t.act(team.owner, team.shop.id, campaign.id, 'resume'),
+          ), // 409 each: a refused request still counts
+        );
       const product = await t.product(team.shop.id);
       // 1 (create) + 59 = 60 so far: the next one is the 61st
       const limited = await t.create(team.owner, team.shop.id, {

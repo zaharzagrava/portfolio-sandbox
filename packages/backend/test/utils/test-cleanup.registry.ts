@@ -21,11 +21,24 @@ export class TestCleanupRegistry implements TestCleanupPort {
     this.cleaners.push({ name, order, run });
   }
 
+  /**
+   * Cleaners with the same `order` are independent stores (Redis, Scylla, Dynamo), so each group runs at the same time
+   * (the wipe takes as long as the slowest store, not the sum). Groups still run one after another in `order`.
+   * If several fail, the first failure (in registration order) is thrown after the whole group has finished.
+   */
   async runAll(): Promise<void> {
-    for (const cleaner of [...this.cleaners].sort(
-      (a, b) => a.order - b.order,
-    )) {
-      await cleaner.run();
+    const sorted = [...this.cleaners].sort((a, b) => a.order - b.order);
+    for (let i = 0; i < sorted.length; ) {
+      let j = i;
+      while (j < sorted.length && sorted[j].order === sorted[i].order) j++;
+      const results = await Promise.allSettled(
+        sorted.slice(i, j).map((cleaner) => cleaner.run()),
+      );
+      const failed = results.find(
+        (r): r is PromiseRejectedResult => r.status === 'rejected',
+      );
+      if (failed) throw failed.reason;
+      i = j;
     }
   }
 }

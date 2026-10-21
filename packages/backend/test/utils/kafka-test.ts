@@ -1,13 +1,59 @@
 import { Kafka, logLevel } from 'kafkajs';
 import { v4 as uuidv4 } from 'uuid';
+import { shardKafka } from '@app/infrastructure/kafka/shard-kafka';
 
 /** Direct connection to the test Redpanda (docker-compose.test.yaml), bypassing any fault proxy. */
 export const testKafka = (): Kafka =>
-  new Kafka({
-    clientId: `spec-${uuidv4().slice(0, 6)}`,
-    brokers: [process.env.KAFKA_BROKER ?? 'localhost:9192'],
-    logLevel: logLevel.NOTHING,
-  });
+  shardKafka(
+    new Kafka({
+      clientId: `spec-${uuidv4().slice(0, 6)}`,
+      brokers: [process.env.KAFKA_BROKER ?? 'localhost:9192'],
+      logLevel: logLevel.NOTHING,
+    }),
+  );
+
+type Admin = ReturnType<Kafka['admin']>;
+const ADMIN_IDLE_MS = 3_000;
+let sharedAdmin: Promise<Admin> | null = null;
+let adminUsers = 0;
+let adminIdleTimer: NodeJS.Timeout | null = null;
+
+function dropAdmin(): void {
+  const doomed = sharedAdmin;
+  sharedAdmin = null;
+  void doomed?.then((a) => a.disconnect()).catch(() => undefined);
+}
+
+/**
+ * Runs `fn` on one admin connection that is kept for the whole process and closed after a few idle seconds (so the
+ * process can still end). A failure on a connection that was reused (broker restarted, socket gone) is retried once
+ * on a fresh connection; a failure on a fresh connection is thrown as before.
+ */
+async function withAdmin<T>(fn: (admin: Admin) => Promise<T>): Promise<T> {
+  if (adminIdleTimer) clearTimeout(adminIdleTimer);
+  adminIdleTimer = null;
+  adminUsers++;
+  try {
+    for (let attempt = 0; ; attempt++) {
+      const reused = sharedAdmin !== null;
+      sharedAdmin ??= (async () => {
+        const a = testKafka().admin();
+        await a.connect();
+        return a;
+      })();
+      const current = sharedAdmin;
+      try {
+        return await fn(await current);
+      } catch (error) {
+        if (sharedAdmin === current) dropAdmin();
+        if (!reused || attempt > 0) throw error;
+      }
+    }
+  } finally {
+    if (--adminUsers === 0)
+      adminIdleTimer = setTimeout(dropAdmin, ADMIN_IDLE_MS);
+  }
+}
 
 export async function createTopics(
   topics: {
@@ -16,31 +62,23 @@ export async function createTopics(
     configEntries?: { name: string; value: string }[];
   }[],
 ): Promise<void> {
-  const admin = testKafka().admin();
-  await admin.connect();
-  try {
-    await admin.createTopics({
+  await withAdmin((admin) =>
+    admin.createTopics({
       waitForLeaders: true,
       topics: topics.map((t) => ({ numPartitions: 1, ...t })),
-    });
-  } finally {
-    await admin.disconnect();
-  }
+    }),
+  );
 }
 
 /** Deletes the topics whose name matches: specs clean up after themselves (the test broker caps total partitions). */
 export async function deleteTopicsMatching(pattern: RegExp): Promise<void> {
-  const admin = testKafka().admin();
-  await admin.connect();
-  try {
+  await withAdmin(async (admin) => {
     const doomed = (await admin.listTopics()).filter((t) => pattern.test(t));
     for (let i = 0; i < doomed.length; i += 50)
       await admin
         .deleteTopics({ topics: doomed.slice(i, i + 50), timeout: 30_000 })
         .catch(() => undefined);
-  } finally {
-    await admin.disconnect();
-  }
+  });
 }
 
 export interface LogMessage {

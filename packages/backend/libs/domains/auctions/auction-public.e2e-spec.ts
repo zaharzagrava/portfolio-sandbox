@@ -65,7 +65,13 @@ describe('Auctions: public view, bid history, my bid and live price push', () =>
       .send({ maxAmountMinor: max });
   const bidders = async (n: number) => {
     const out: TestUser[] = [];
-    for (let i = 0; i < n; i++) out.push(await t.user());
+    // 25 at a time: the users are separate rows and sessions
+    for (let i = 0; i < n; i += 25)
+      out.push(
+        ...(await Promise.all(
+          Array.from({ length: Math.min(25, n - i) }, () => t.user()),
+        )),
+      );
     return out;
   };
   /** The table of AS-11: U1 10000, U2 5000, U3 12000, U1 10400 (rejected), U1 11000. */

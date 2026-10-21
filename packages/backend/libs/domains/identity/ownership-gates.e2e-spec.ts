@@ -1,14 +1,7 @@
-import { spawnSync } from 'node:child_process';
 import { join } from 'node:path';
+import { boundaryCheck, ownershipCheck } from '@app/test/utils/static-checks';
 
 const BACKEND = join(__dirname, '../../..');
-const run = (cmd: string, args: string[]) =>
-  spawnSync(cmd, args, {
-    cwd: BACKEND,
-    encoding: 'utf8',
-    env: { ...process.env, NODE_ENV: 'test', TS_NODE_TRANSPILE_ONLY: '1' },
-    maxBuffer: 32 * 1024 * 1024,
-  });
 
 /**
  * The foreign rows that read `User` today (chat, notifications, payments, tenancy's test kit): debt of the capabilities
@@ -17,27 +10,16 @@ const run = (cmd: string, args: string[]) =>
 const KNOWN_FOREIGN_ROWS = 7;
 
 describe('Identity ownership and boundary gates', () => {
-  it('S01 AS-81: the boundary check is clean, identity reaches into no other domain, and foreign reads of identity tables do not grow', () => {
-    const boundaries = run('npx', [
-      'depcruise',
-      'apps',
-      'libs',
-      'test',
-      'db',
-      '--config',
-      '.dependency-cruiser.cjs',
-      '--output-type',
-      'err',
+  it('S01 AS-81: the boundary check is clean, identity reaches into no other domain, and foreign reads of identity tables do not grow', async () => {
+    // the two checks do not depend on each other: run them side by side (the boundary answer is shared with other specs)
+    const [boundaries, ownership] = await Promise.all([
+      boundaryCheck(BACKEND),
+      ownershipCheck(BACKEND),
     ]);
     expect(boundaries.stdout + boundaries.stderr).toContain(
       'no dependency violations found',
     );
 
-    const ownership = run('node', [
-      '-r',
-      'ts-node/register',
-      'scripts/check-table-ownership.ts',
-    ]);
     const rows = ownership.stdout
       .split('\n')
       .filter((l) =>

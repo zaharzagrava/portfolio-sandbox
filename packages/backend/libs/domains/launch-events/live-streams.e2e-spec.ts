@@ -16,6 +16,20 @@ import {
   type Seller,
 } from './testing/live-test-kit';
 
+/** Runs the rounds of a repeated test five at a time (each round uses data of its own). */
+const eachRound = async (
+  rounds: number,
+  body: (round: number) => Promise<void>,
+  size = 5,
+): Promise<void> => {
+  for (let from = 0; from < rounds; from += size)
+    await Promise.all(
+      Array.from({ length: Math.min(size, rounds - from) }, (_, k) =>
+        body(from + k),
+      ),
+    );
+};
+
 describe('Live stream: lifecycle, authorization and pinned commerce', () => {
   let t: LiveTestApp;
   let redis: RedisService;
@@ -541,7 +555,7 @@ describe('Live stream: lifecycle, authorization and pinned commerce', () => {
   it('S23 AS-39: a repeat and 20 concurrent removals are 204 each and still one event, 20 times over', async () => {
     const s = await t.seller();
     const stream = await t.liveStream(s);
-    for (let round = 0; round < 20; round++) {
+    await eachRound(20, async (round) => {
       const c = await postComment(
         stream.id,
         await t.viewer(),
@@ -555,7 +569,7 @@ describe('Live stream: lifecycle, authorization and pinned commerce', () => {
           (r as PromiseFulfilledResult<{ status: number }>).value.status,
         ).toBe(204);
       await t.removeComment(s, stream.id, c.id).expect(204);
-    }
+    });
     expect(eventsOf('live.comment_removed')).toHaveLength(20);
   });
 
@@ -761,7 +775,11 @@ describe('Live stream: lifecycle, authorization and pinned commerce', () => {
   it('S23 AS-42: the address limit answers 429 with Retry-After after 120 reads a minute, and a limiter that is down lets reads through', async () => {
     const s = await t.seller();
     const stream = await t.liveStream(s);
-    for (let i = 0; i < 120; i++) await t.snapshot(stream.id).expect(200);
+    // all 120 reads are allowed, so they go 20 at a time; the 121st still comes after every one of them
+    for (let from = 0; from < 120; from += 20)
+      await Promise.all(
+        Array.from({ length: 20 }, () => t.snapshot(stream.id).expect(200)),
+      );
     const limited = await t.snapshot(stream.id).expect(429);
     expect(limited.headers['retry-after']).toBeDefined();
     t.stores.limiter.down();

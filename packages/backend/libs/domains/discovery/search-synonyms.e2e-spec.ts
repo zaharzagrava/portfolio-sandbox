@@ -1,3 +1,4 @@
+import { PRODUCTS_ALIAS } from './infra/search-index-names';
 import { Logger } from '@nestjs/common';
 import {
   productSearchResponseSchema,
@@ -48,7 +49,7 @@ describe('Search synonyms administration', () => {
       await put({ rules: ['zzzfoo, zzzbar'], expectedVersion: 1 }).expect(200);
       expect(await found('earbuds')).toEqual([]);
       const before = await t.indices();
-      const docBefore = await t.es.get({ index: 'products', id: airpods });
+      const docBefore = await t.es.get({ index: PRODUCTS_ALIAS, id: airpods });
 
       const res = await put({
         rules: ['airpods, earbuds'],
@@ -63,7 +64,7 @@ describe('Search synonyms administration', () => {
       });
       expect(await found('earbuds')).toEqual(['AirPods Pro']);
       expect(await t.indices()).toEqual(before);
-      const docAfter = await t.es.get({ index: 'products', id: airpods });
+      const docAfter = await t.es.get({ index: PRODUCTS_ALIAS, id: airpods });
       expect(docAfter._seq_no).toBe(docBefore._seq_no);
       const runs = await t.rows(`SELECT 1 FROM "SearchReindexRun"`);
       expect(runs).toEqual([]);

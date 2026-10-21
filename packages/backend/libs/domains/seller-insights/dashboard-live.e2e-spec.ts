@@ -298,7 +298,7 @@ describe('Live dashboard: counters, ticker and frames', () => {
       let n = 1;
       while ((await other.tick(T + n++)) === 0) {
         expect(Date.now() - started).toBeLessThan(5000);
-        await sleep(250);
+        await sleep(50);
       }
       expect(frames(await second)).toHaveLength(1);
       expect(Date.now() - started).toBeLessThan(5000);
@@ -316,7 +316,7 @@ describe('Live dashboard: counters, ticker and frames', () => {
         .mockImplementation(async (...args) => {
           running++;
           overlapped ||= running > 1;
-          await sleep(1200);
+          await sleep(400);
           try {
             return await original(...args);
           } finally {
@@ -388,7 +388,7 @@ describe('Live dashboard: counters, ticker and frames', () => {
       const spy = jest
         .spyOn(t.counters(), 'window')
         .mockImplementation(async (...args) => {
-          await sleep(600);
+          await sleep(300);
           return original(...args);
         });
 

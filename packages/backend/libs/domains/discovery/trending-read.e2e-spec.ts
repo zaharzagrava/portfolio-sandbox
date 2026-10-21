@@ -20,6 +20,22 @@ import {
 const CACHEABLE = 'public, max-age=30, s-maxage=30';
 const ws = windowOf;
 
+/**
+ * Sends `count` calls in groups of 30 at once (the limiter counts them atomically, so the count is the same as one by one)
+ * and checks that every one was answered 200.
+ */
+const burstOk = async (
+  count: number,
+  call: () => PromiseLike<{ status: number }>,
+) => {
+  for (let sent = 0; sent < count; sent += 30) {
+    const group = await Promise.all(
+      Array.from({ length: Math.min(30, count - sent) }, () => call()),
+    );
+    expect(group.map((r) => r.status)).toEqual(group.map(() => 200));
+  }
+};
+
 describe('Trending products API', () => {
   let t: TrendingTestApp;
 
@@ -263,9 +279,7 @@ describe('Trending products API', () => {
     it('S35 AS-08: the 301st request in a minute is a 429 rate_limited with Retry-After and no-store; a downed limiter store still answers', async () => {
       // the limiter is per address (S50 covers other addresses; a spec cannot change the address of a request)
       await t.seedDatasetT();
-      let last;
-      for (let i = 0; i < 300; i++) last = await get({ category: 'audio' });
-      expect(last!.status).toBe(200);
+      await burstOk(300, () => get({ category: 'audio' }));
 
       const limited = await get({ category: 'audio' }).expect(429);
       expect(t.problem(limited.body).code).toBe('rate_limited');

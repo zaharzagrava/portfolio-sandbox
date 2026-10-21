@@ -15,12 +15,13 @@ import {
 } from '../domain/ports';
 import { PRODUCTS_ALIAS } from './search-index-names';
 import { SearchSettings } from './search-settings';
+import { shardName } from '@app/common/shard';
 
 /** The engine's name of the synonym set every products index references (research R-05). */
-export const SYNONYMS_SET_ID = 'product-synonyms';
+export const SYNONYMS_SET_ID = shardName('product-synonyms');
 
 /** Name of the first index: fixed, so two instances starting together create the same one (the second finds it existing). */
-export const INITIAL_INDEX = `products_m${MAPPING_VERSION}_init`;
+export const INITIAL_INDEX = shardName(`products_m${MAPPING_VERSION}_init`);
 
 /**
  * First-start bootstrap (AS-50): when neither the alias nor any index exists, create one empty versioned index behind

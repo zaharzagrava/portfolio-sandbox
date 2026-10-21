@@ -16,27 +16,37 @@ export class ClickHouseService implements OnModuleInit, OnModuleDestroy {
   private readonly l = new Logger(ClickHouseService.name);
   private client: ClickHouseClient | null = null;
 
-  constructor(private readonly configService: ApiConfigService) {}
+  /** The connection check, started in the constructor so it overlaps with the rest of the app start-up. */
+  private readonly connecting: Promise<void>;
+
+  constructor(private readonly configService: ApiConfigService) {
+    this.connecting = this.connect();
+  }
 
   async onModuleInit() {
+    await this.connecting;
+  }
+
+  private async connect(): Promise<void> {
     try {
-      this.client = createClient({
+      const client = createClient({
         url: this.configService.get('clickhouse_url'),
         username: this.configService.get('clickhouse_user'),
         password: this.configService.get('clickhouse_password'),
         database: this.configService.get('clickhouse_database'),
       });
-      await this.client.ping();
+      await client.ping();
+      this.client = client;
       this.l.log(
         `ClickHouse ready at ${this.configService.get('clickhouse_url')}`,
       );
     } catch (error: any) {
       this.l.warn(`ClickHouse init skipped: ${error?.message ?? error}`);
-      this.client = null;
     }
   }
 
   async onModuleDestroy() {
+    await this.connecting;
     await this.client?.close();
   }
 

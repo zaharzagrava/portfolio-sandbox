@@ -18,6 +18,20 @@ const product = (over: Record<string, unknown> = {}) => ({
   ...over,
 });
 
+/** Runs the rounds of a repeated test five at a time (each round has a world of its own). */
+const eachRound = async (
+  rounds: number,
+  body: (round: number) => Promise<void>,
+  size = 5,
+): Promise<void> => {
+  for (let from = 0; from < rounds; from += size)
+    await Promise.all(
+      Array.from({ length: Math.min(size, rounds - from) }, (_, k) =>
+        body(from + k),
+      ),
+    );
+};
+
 describe('Public API: sandbox', () => {
   let t: PublicApiKit;
   let pub2: Awaited<ReturnType<PublicApiKit['publicInstance']>>;
@@ -101,7 +115,7 @@ describe('Public API: sandbox', () => {
   });
 
   it('S42 AS-23: 10 parallel first calls of a test key create exactly one sandbox shop, and all act on it (20 repeats)', async () => {
-    for (let i = 0; i < 20; i += 1) {
+    await eachRound(20, async () => {
       const w = await t.seedWorld();
       const test = await createKey(t, w, { livemode: false });
       const instances = [t.pub, pub2];
@@ -136,7 +150,7 @@ describe('Public API: sandbox', () => {
         { id: created.body.id },
       );
       expect(owner.shopId).toBe(sandboxes[0].id);
-    }
+    });
   });
 
   it('S42 AS-24: the sandbox has no orders: an empty list and 404 for any order', async () => {

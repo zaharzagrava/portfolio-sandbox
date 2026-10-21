@@ -1,7 +1,7 @@
-import { execFileSync } from 'node:child_process';
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { Logger } from '@nestjs/common';
+import { ownershipCheck } from '@app/test/utils/static-checks';
 import { v4, v7 as uuidv7 } from 'uuid';
 import { MetricsRegistry } from '@app/common/telemetry/metrics-registry';
 import { RedisService } from '@app/infrastructure/redis/redis.service';
@@ -905,25 +905,14 @@ describe('Brand stories: authentication, tenant isolation, shop lifecycle, rate 
     expect(missing.map((m) => `${m.file}: ${m.sql.slice(0, 90)}`)).toEqual([]);
   });
 
-  it('S27 AS-99: the strict table-ownership check reports no line for content', () => {
+  it('S27 AS-99: the strict table-ownership check reports no line for content', async () => {
     const root = join(__dirname, '..', '..', '..');
-    const output = execFileSync(
-      'node',
-      [
-        '-r',
-        'ts-node/register',
-        'scripts/check-table-ownership.ts',
-        '--strict',
-      ],
-      {
-        cwd: root,
-        env: { ...process.env, TS_NODE_TRANSPILE_ONLY: '1' },
-        encoding: 'utf8',
-        stdio: ['ignore', 'pipe', 'pipe'],
-      },
-    );
+    const result = await ownershipCheck(root, ['--strict']);
+    // the old call threw on a non-zero exit
+    expect(result.status).toBe(0);
+    const output = result.stdout;
     expect(
       output.split('\n').filter((line) => /\bcontent\b/i.test(line)),
     ).toEqual([]);
-  });
+  }, 300_000);
 });

@@ -227,7 +227,7 @@ describe('Consumers apply an event once, whatever the delivery', () => {
       { description: `${members} members in ${group}`, timeoutMs: 60_000 },
     );
 
-  it('S53 AS-28: an inbox consumer given the same event twice leaves one effect, one inbox record, and counts the second as duplicate', async () => {
+  it.concurrent('S53 AS-28: an inbox consumer given the same event twice leaves one effect, one inbox record, and counts the second as duplicate', async () => {
     const s = await scenario();
     const Inbox = s.make('inbox');
     const app = await s.boot([Inbox]);
@@ -249,7 +249,7 @@ describe('Consumers apply an event once, whatever the delivery', () => {
     expect(metric(consumer.name, 'applied')).toBe(1);
   });
 
-  it('S53 AS-29: a version-guarded consumer applies the first of two copies and of an equal-version event with another eventId, once', async () => {
+  it.concurrent('S53 AS-29: a version-guarded consumer applies the first of two copies and of an equal-version event with another eventId, once', async () => {
     const s = await scenario();
     const Guard = s.make('versionGuard');
     const app = await s.boot([Guard]);
@@ -273,7 +273,7 @@ describe('Consumers apply an event once, whatever the delivery', () => {
     expect(metric(consumer.name, 'applied')).toBe(1);
   });
 
-  it('S53 AS-30: a natural consumer given an event twice leaves one row', async () => {
+  it.concurrent('S53 AS-30: a natural consumer given an event twice leaves one row', async () => {
     const s = await scenario();
     const Natural = s.make('natural');
     const app = await s.boot([Natural]);
@@ -298,7 +298,7 @@ describe('Consumers apply an event once, whatever the delivery', () => {
     ).toBe(1);
   });
 
-  it('S53 AS-31: an inbox handler that throws after its effect leaves neither effect nor record; the retry leaves both once', async () => {
+  it.concurrent('S53 AS-31: an inbox handler that throws after its effect leaves neither effect nor record; the retry leaves both once', async () => {
     const s = await scenario();
     const Inbox = s.make('inbox');
     const app = await s.boot([Inbox]);
@@ -324,7 +324,7 @@ describe('Consumers apply an event once, whatever the delivery', () => {
     expect(consumer.probe.invocationsOf(event.eventId)).toBe(2);
   });
 
-  it('S53 AS-32: two instances handling the same eventId at the same moment leave one effect and one record, the loser counts a duplicate', async () => {
+  it.concurrent('S53 AS-32: two instances handling the same eventId at the same moment leave one effect and one record, the loser counts a duplicate', async () => {
     const s = await scenario(2);
     const Inbox = s.make('inbox');
     const instance1 = await s.boot([Inbox]);
@@ -364,7 +364,7 @@ describe('Consumers apply an event once, whatever the delivery', () => {
     await s.stop(instance2);
   });
 
-  it('S53 AS-33: events with aggregateVersion 3, 1, 2 leave the read model at 3, count two stale, and the checkpoint is 3', async () => {
+  it.concurrent('S53 AS-33: events with aggregateVersion 3, 1, 2 leave the read model at 3, count two stale, and the checkpoint is 3', async () => {
     const s = await scenario();
     const Guard = s.make('versionGuard');
     const app = await s.boot([Guard]);
@@ -391,7 +391,7 @@ describe('Consumers apply an event once, whatever the delivery', () => {
     ).toBe(3);
   });
 
-  it('S53 AS-34: an equal version is a duplicate: nothing is written and the checkpoint stays', async () => {
+  it.concurrent('S53 AS-34: an equal version is a duplicate: nothing is written and the checkpoint stays', async () => {
     const s = await scenario();
     const Guard = s.make('versionGuard');
     const app = await s.boot([Guard]);
@@ -420,7 +420,7 @@ describe('Consumers apply an event once, whatever the delivery', () => {
     ).toBe(5);
   });
 
-  it('S53 AS-35: 200 events over 10 aggregates in one partition never overlap per aggregate and follow log order', async () => {
+  it.concurrent('S53 AS-35: 200 events over 10 aggregates in one partition never overlap per aggregate and follow log order', async () => {
     const s = await scenario(1);
     const Natural = s.make('natural', 'seq');
     const app = await s.boot([Natural]);
@@ -459,7 +459,7 @@ describe('Consumers apply an event once, whatever the delivery', () => {
       );
   });
 
-  it('S53 AS-36: a handler that throws on the first delivery is retried, applied once, and the offset passes the event only after success', async () => {
+  it.concurrent('S53 AS-36: a handler that throws on the first delivery is retried, applied once, and the offset passes the event only after success', async () => {
     const s = await scenario();
     const Inbox = s.make('inbox');
     const app = await s.boot([Inbox]);
@@ -493,7 +493,7 @@ describe('Consumers apply an event once, whatever the delivery', () => {
     expect(await inboxRecords(consumer.name)).toBe(1);
   });
 
-  it('S53 AS-37: a connection cut while the handler runs leaves the offset before the batch; the batch is redelivered and applied once; a cut after the effect redelivers as duplicate', async () => {
+  it.concurrent('S53 AS-37: a connection cut while the handler runs leaves the offset before the batch; the batch is redelivered and applied once; a cut after the effect redelivers as duplicate', async () => {
     const s = await scenario();
     const Inbox = s.make('inbox');
     const app = await s.boot([Inbox], {
@@ -608,7 +608,7 @@ describe('Consumers apply an event once, whatever the delivery', () => {
     await s.stop(instance2);
   }, 150_000);
 
-  it('S53 AS-39: two consumers with different groups both receive every event, and a stuck one does not delay the other', async () => {
+  it.concurrent('S53 AS-39: two consumers with different groups both receive every event, and a stuck one does not delay the other', async () => {
     const s = await scenario();
     const Fast = s.make('natural', 'fast');
     const Slow = s.make('natural', 'slow');
@@ -645,7 +645,7 @@ describe('Consumers apply an event once, whatever the delivery', () => {
     );
   });
 
-  it('S53 AS-40: a coalescing consumer gets one event (version 30) for thirty in a batch, counts 29 coalesced and every event in the lag; one without coalesce gets all 30 in order', async () => {
+  it.concurrent('S53 AS-40: a coalescing consumer gets one event (version 30) for thirty in a batch, counts 29 coalesced and every event in the lag; one without coalesce gets all 30 in order', async () => {
     const s = await scenario();
     const Coalescing = s.make('versionGuard', 'coalescing', { coalesce: true });
     const Plain = s.make('versionGuard', 'plain');
@@ -687,7 +687,7 @@ describe('Consumers apply an event once, whatever the delivery', () => {
     expect(metric(plain.name, 'coalesced')).toBe(0);
   });
 
-  it('S53 AS-42: a delete at version 5 followed by a late upsert at version 4 stays deleted; an upsert at version 6 revives it', async () => {
+  it.concurrent('S53 AS-42: a delete at version 5 followed by a late upsert at version 4 stays deleted; an upsert at version 6 revives it', async () => {
     const s = await scenario();
     const Guard = s.make('versionGuard');
     const app = await s.boot([Guard]);
@@ -718,7 +718,7 @@ describe('Consumers apply an event once, whatever the delivery', () => {
     });
   });
 
-  it('S53 AS-31: the dedupe record shares the transaction: inbox records are per consumer, not per event id', async () => {
+  it.concurrent('S53 AS-31: the dedupe record shares the transaction: inbox records are per consumer, not per event id', async () => {
     const s = await scenario();
     const A = s.make('inbox', 'inbox-a');
     const B = s.make('inbox', 'inbox-b');
@@ -738,7 +738,8 @@ describe('Consumers apply an event once, whatever the delivery', () => {
     expect(await inboxRecords(b.name)).toBe(1);
   });
 
-  afterEach(() => {
+  // Only AS-37 uses the fault proxy and it hands the proxy back itself; tests run side by side, so no per-test reset here.
+  afterAll(() => {
     proxy.mode = 'pass';
   });
 });

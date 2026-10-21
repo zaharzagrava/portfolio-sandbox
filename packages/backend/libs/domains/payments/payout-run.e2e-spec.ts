@@ -145,7 +145,9 @@ describe('Payouts: weekly run, reserves and eligibility', () => {
     for (let repetition = 0; repetition < 20; repetition += 1) {
       await t.reset();
       t.clock.set(RUN_AT);
-      for (let i = 0; i < 20; i += 1) await seller(t, { balance: 20_000 });
+      await Promise.all(
+        Array.from({ length: 20 }, () => seller(t, { balance: 20_000 })),
+      );
 
       const [first, second] = await Promise.all([t.run.run({}), t.run.run({})]);
 

@@ -258,7 +258,11 @@ describe('Refresh token rotation', () => {
 
   it('S01 AS-38: the 61st refresh request of a minute is 429 and leaves the presented token unspent', async () => {
     const { session } = await seededSession();
-    for (let i = 0; i < 60; i++) await refresh('x'.repeat(43)).expect(401);
+    await Promise.all(
+      Array.from({ length: 60 }, async () => {
+        await refresh('x'.repeat(43)).expect(401);
+      }),
+    );
 
     const res = await refresh(session.refreshToken).expect(429);
 

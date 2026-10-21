@@ -12,6 +12,7 @@ import {
 import { metrics } from '@opentelemetry/api';
 import { ApiConfigService } from '@app/common/config';
 import { MetricsRegistry } from '@app/common/telemetry/metrics-registry';
+import { shardPrefix, unshardName } from '@app/common/shard';
 
 const POLL_MS = 30_000;
 
@@ -79,7 +80,10 @@ export class QueueMetricsService
     try {
       // One account/region per environment: every queue it lists is ours.
       const { QueueUrls = [] } = await this.client.send(
-        new ListQueuesCommand({}),
+        new ListQueuesCommand(
+          // a test shard sees only its own queues (TEST_SHARD)
+          shardPrefix() ? { QueueNamePrefix: shardPrefix() } : {},
+        ),
       );
       const next = new Map<
         string,
@@ -96,7 +100,8 @@ export class QueueMetricsService
             ],
           }),
         );
-        const queue = url.split('/').pop()!;
+        const queue =
+          unshardName(url.split('/').pop()!) ?? url.split('/').pop()!;
         const counts = {
           visible: Number(a.ApproximateNumberOfMessages ?? 0),
           inFlight: Number(a.ApproximateNumberOfMessagesNotVisible ?? 0),

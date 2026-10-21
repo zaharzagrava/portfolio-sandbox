@@ -255,7 +255,11 @@ describe('Pickup map clusters', () => {
     });
 
     it('S19 AS-39: the 301st request in a minute answers 429 rate_limited with no-store; the limiter store down fails open', async () => {
-      for (let i = 0; i < 300; i++) await clusters().expect(200);
+      // 300 requests in waves of 30 at once (was one by one)
+      for (let wave = 0; wave < 10; wave++)
+        await Promise.all(
+          Array.from({ length: 30 }, () => clusters().expect(200)),
+        );
       const limited = await clusters().expect(429);
       expect(limited.body.code).toBe('rate_limited');
       expect(limited.headers['cache-control']).toBe('no-store');

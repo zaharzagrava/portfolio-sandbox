@@ -1,3 +1,4 @@
+import { channelName } from '@app/infrastructure/realtime/keys';
 import {
   resyncDataSchema,
   streamEventEnvelopeSchema,
@@ -342,7 +343,7 @@ describe('S51 replay (REPLAY)', () => {
     }
     const craft = (id: string, n: number) =>
       rt.redis.client.publish(
-        `rt:c:${topic}`,
+        channelName(topic),
         JSON.stringify({ id, topic, type: 'price', data: { n } }),
       );
     await craft(ids[2], 3); // stale

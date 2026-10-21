@@ -1,3 +1,4 @@
+import { channelName } from '@app/infrastructure/realtime/keys';
 import { problemDetailsSchema } from '@marketplace-sandbox/contracts';
 import { waitFor } from '@app/test/utils/async-helpers';
 import {
@@ -20,10 +21,10 @@ describe('S51 authorization (AUTHZ)', () => {
     return stream;
   };
   const numsub = async (topic: string) => {
-    const [, n] = (await rt.redis.client.pubsub('NUMSUB', `rt:c:${topic}`)) as [
-      string,
-      number,
-    ];
+    const [, n] = (await rt.redis.client.pubsub(
+      'NUMSUB',
+      channelName(topic),
+    )) as [string, number];
     return Number(n);
   };
   const problem = (body: unknown) => problemDetailsSchema.parse(body);

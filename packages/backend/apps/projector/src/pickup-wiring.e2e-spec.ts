@@ -1,3 +1,4 @@
+import { AVAILABILITY_INDEX } from '@app/domains/fulfilment/infra/availability-index';
 import { Module, type INestApplication } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { ApiConfigModule } from '@app/common/config';
@@ -59,7 +60,7 @@ describe('Pickup wiring in the projector application', () => {
     ])
       expect(await registry.get(name)).not.toBeNull();
     expect(
-      await app.get(SearchEngineClient).indexExists('pickup_availability_v2'),
+      await app.get(SearchEngineClient).indexExists(AVAILABILITY_INDEX),
     ).toBe(true);
   });
 

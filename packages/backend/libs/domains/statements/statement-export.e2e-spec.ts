@@ -496,7 +496,7 @@ describe('Statements: streamed CSV export', () => {
               `LOCK TABLE "StatementSaleFact" IN ACCESS EXCLUSIVE MODE`,
               { transaction: tx },
             );
-            await sleep(4000);
+            await sleep(2500); // still longer than the 1 s export timeout
           });
           await sleep(300);
           try {
@@ -538,7 +538,13 @@ describe('Statements: streamed CSV export', () => {
         csv(shops.a, '2026-03', '', a),
         csv(shops.a, '2026-03', '', b),
       ];
-      await sleep(400);
+      // wait until both slow exports are really inside the database call (was a fixed 400 ms)
+      for (
+        let i = 0;
+        i < 100 && (source.saleBatch as jest.Mock).mock.calls.length < 2;
+        i++
+      )
+        await sleep(10);
       const calls = (source.saleBatch as jest.Mock).mock.calls.length;
       const third = await csv(shops.a, '2026-03', '', await owner(shops.a));
       expect(third.status).toBe(429);
