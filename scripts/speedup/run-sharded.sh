@@ -10,10 +10,33 @@ t0=$SECONDS
 for n in $(seq 1 "$N"); do scripts/infra/shard-prepare.sh "$n" > "$out/prepare-$n.log" 2>&1 || { echo "prepare of shard $n failed, see $out/prepare-$n.log"; exit 1; }; done
 echo "prepared $N shards in $((SECONDS - t0)) s"
 t1=$SECONDS
+pids=()
 for n in $(seq 1 "$N"); do
-  scripts/infra/shard-run.sh "$n" "$N" --reporter=json --outputFile="$out/result-$n.json" > "$out/run-$n.log" 2>&1 &
+  setsid scripts/infra/shard-run.sh "$n" "$N" --reporter=default --reporter=json --outputFile="$out/result-$n.json" > "$out/run-$n.log" 2>&1 &
+  pids+=($!)
 done
-wait
+# Live progress, and stop early: every 15 s print how many files are done / failing; when more than ABORT_AFTER files fail, kill every slice
+# (default 6; ABORT_AFTER=0 never aborts) and show the first errors, so the fixing can start at once instead of after the whole run.
+abort="${ABORT_AFTER:-6}"; aborted=0
+while :; do
+  alive=0; for p in "${pids[@]}"; do kill -0 "$p" 2>/dev/null && alive=1; done
+  (( alive )) || break
+  sleep 15
+  clean() { sed 's/\x1b\[[0-9;]*m//g' "$out"/run-*.log; }
+  done_files=$(clean | grep -aEc '^ (✓|❯|×) [a-z].*e2e-spec\.ts')
+  failing=$(clean | grep -aE '^ (❯|×) [a-z].*e2e-spec\.ts.*failed' | sort -u | wc -l)
+  echo "[$((SECONDS - t1)) s] $done_files of ~593 files done, $failing failing"
+  if (( abort > 0 && failing > abort )); then
+    aborted=1; echo "STOP: $failing files failing (limit $abort) - killing all slices to start fixing"
+    for p in "${pids[@]}"; do kill -- "-$p" 2>/dev/null; done   # setsid made each slice its own process group
+    echo "--- first failing files and their first error lines:"
+    clean | grep -aE '^ (❯|×) [a-z].*e2e-spec\.ts.*failed' | sort -u | head -12
+    clean | grep -aE '^(Error|AssertionError|TypeError|KafkaJS[A-Za-z]*):' | sort | uniq -c | sort -rn | head -8
+    break
+  fi
+done
+wait 2>/dev/null
+(( aborted )) && { echo "run stopped early; logs in $out/run-*.log"; exit 3; }
 echo "ran $N shards in parallel: $((SECONDS - t1)) s (total with preparing: $((SECONDS - t0)) s)"
 python3 - "$out" <<'P'
 import glob, json, sys, os

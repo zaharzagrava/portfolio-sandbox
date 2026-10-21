@@ -3,7 +3,7 @@
 #   Postgres    database marketplace_test_s<n> cloned from marketplace_test_template (created and migrated once; the clone takes about a second)
 #   Scylla      keyspace marketplace_s<n> (cql migrations run with CASSANDRA_KEYSPACE)
 #   Dynamo      tables with the prefix test_s<n>_
-#   ClickHouse  database marketplace_test_s<n> (the specs create their tables)
+#   ClickHouse  database marketplace_test_s<n> with the tables of packages/backend/clickhouse/*.sql (scripts/clickhouse/migrate.ts)
 #   MinIO       bucket marketplace-media-test-s<n>
 #   SQS         the queues of infra/docker/elasticmq/elasticmq.conf (dead-letter queues too) as s<n>-<name>, created through the ElasticMQ API
 #   Kafka       the topics of scripts/init-kafka-topics.sh as s<n>-<topic> (the broker creates any other topic on first use)
@@ -47,7 +47,7 @@ pids=()
 ( cd "$BACKEND" && DOTENV_CONFIG_PATH=/dev/null npx ts-node -r tsconfig-paths/register scripts/dynamo/create-tables.ts >/dev/null && log "dynamo: tables $DYNAMO_TABLE_PREFIX* ready" ) & pids+=($!)
 
 # --- ClickHouse database, MinIO bucket
-( curl -fsS "$CH_URL/" --data-binary "CREATE DATABASE IF NOT EXISTS $CLICKHOUSE_DATABASE" && log "clickhouse: $CLICKHOUSE_DATABASE ready" ) & pids+=($!)
+( cd "$BACKEND" && DOTENV_CONFIG_PATH=/dev/null CLICKHOUSE_URL="$CH_URL" CLICKHOUSE_USER="$(val CLICKHOUSE_USER)" CLICKHOUSE_PASSWORD="$(val CLICKHOUSE_PASSWORD)" npx ts-node -r tsconfig-paths/register scripts/clickhouse/migrate.ts >/dev/null && log "clickhouse: $CLICKHOUSE_DATABASE ready (tables migrated)" ) & pids+=($!)
 ( docker exec "${PROJECT}_minio" sh -c "/usr/bin/mc alias set local http://localhost:9000 minioadmin minioadmin >/dev/null && /usr/bin/mc mb --ignore-existing local/$MEDIA_BUCKET >/dev/null" && log "minio: bucket $MEDIA_BUCKET ready" ) & pids+=($!)
 
 # --- SQS: every queue of the stand-in config under the shard prefix, dead-letter queues first
