@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { SEED, createIsolatedProduct, login, payWithSandboxCard, productId, register, signOut } from './helpers';
+import { SEED, createIsolatedProduct, login, payWithSandboxCard, productId, register, registerThroughUi, signOut } from './helpers';
 
 /**
  * W03 journeys JC-1 to JC-4 against the real dev stack: a guest adds to the cart, signs up and keeps it; the purchase path; the
@@ -32,8 +32,9 @@ test.describe('Cart & checkout', () => {
     // Events are batched; the queue flushes within a few seconds.
     await expect.poll(() => events.some((body) => body.includes('add_to_cart') && body.includes(id)), { timeout: 20_000 }).toBe(true);
 
-    // Signing up moves the guest cart into the member's cart.
-    await register(page);
+    // Signing up moves the guest cart into the member's cart. That merge is a step of the sign-in form's own code, so this journey signs up
+    // through the forms (the API sign-in used by the other journeys does not run it).
+    await registerThroughUi(page);
     await page.goto('/cart');
     await expect(page.getByRole('heading', { level: 1, name: 'Your cart' })).toBeVisible();
     await expect(page.getByRole('link', { name: SEED.product })).toBeVisible();

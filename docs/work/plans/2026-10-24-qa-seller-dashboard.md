@@ -94,6 +94,16 @@ An isolated stack per agent is the clean answer but is not affordable on this ma
   verified shop and has none, it says so and stops that part instead of guessing.
 - Payment: the sandbox card (payment method id `pm_card_visa`).
 
+## Two helpers that need no AI
+
+Besides the agents, two plain programs look for bugs, so the result does not rest on an AI's judgement alone (notes: `docs/work/speedup-notes/qa-monkey-fuzz.md`).
+The **monkey** (`scripts/qa/monkey-seller.mjs`) is a browser that clicks and types at random for a few minutes on every seller page
+and writes down errors, broken pages, server errors and leaked internals. The **fuzzer** (`scripts/qa/fuzz-seller-api.mjs`) sends
+odd and hostile requests to every seller endpoint of the API and checks fixed rules (no 500, tidy error documents, no one else's data,
+401 without a login, no double creation). Run them with `scripts/qa/seller-run.sh --monkey 5 --fuzz 5` before the charters (off by
+default); their findings go to `specs/.checkpoints/qa-monkey` and `qa-fuzz` as `findings.tsv`, and they count as bugs found
+"without AI" when the owner judges the result.
+
 ## How findings are written
 
 - Each explorer writes one report: `specs/.qa/<date>-<charter>.md` (existing shape: `DEFECT D1 CONFIRMED high: title`, steps, expected,

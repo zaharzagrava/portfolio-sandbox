@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 # Runs the ten seller-dashboard charters (scripts/qa/charters/seller-*.md) with QA agents, one after another or a few at once, on its own git branch.
 # Plan: docs/work/plans/2026-10-24-qa-seller-dashboard.md. Notes in plain words: docs/work/speedup-notes/qa-runner.md
-#   scripts/qa/seller-run.sh [--parallel N] [--only a,b] [--no-fix] [--retries N] [--budget MINUTES] [--list]
+#   scripts/qa/seller-run.sh [--parallel N] [--only a,b] [--no-fix] [--retries N] [--budget MINUTES] [--list] [--monkey [MIN]] [--fuzz [MIN]]
+#   --monkey / --fuzz: before the charters, run the two no-AI explorers (monkey-seller.mjs, fuzz-seller-api.mjs) for MIN minutes (default 5) each;
+#   their findings (specs/.checkpoints/qa-monkey, qa-fuzz) are only listed in the run log. Default off.
 # Environment: QA_PARALLEL (3), QA_RETRIES (1), QA_BUDGET_MIN (240), QA_BASE (master), QA_BRANCH (qa/seller-dashboard),
 #              QA_WORKTREE (../<repo>-qa), QA_STATE (specs/.checkpoints/qa-seller), QA_MAX_FIXES (15).
 # For each charter: an explorer agent (scripts/qa/run.sh, only reads and reports), then, unless --no-fix, a fixer agent in the branch's own
@@ -13,7 +15,7 @@ SELF="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="${QA_REPO:-$(git -C "$SELF" rev-parse --show-toplevel)}"
 source "$SELF/../sdd/lib.sh"
 
-PARALLEL="${QA_PARALLEL:-3}"; RETRIES="${QA_RETRIES:-1}"; BUDGET_MIN="${QA_BUDGET_MIN:-240}"; NO_FIX="${QA_NO_FIX:-}"; ONLY=""; LIST=""
+PARALLEL="${QA_PARALLEL:-3}"; RETRIES="${QA_RETRIES:-1}"; BUDGET_MIN="${QA_BUDGET_MIN:-240}"; NO_FIX="${QA_NO_FIX:-}"; ONLY=""; LIST=""; MONKEY=""; FUZZ=""
 BASE="${QA_BASE:-master}"; BRANCH="${QA_BRANCH:-qa/seller-dashboard}"; MAX_FIXES="${QA_MAX_FIXES:-15}"
 WT="${QA_WORKTREE:-$(dirname "$ROOT")/$(basename "$ROOT")-qa}"
 STATE="${QA_STATE:-$ROOT/specs/.checkpoints/qa-seller}"
@@ -22,8 +24,10 @@ EXPLORE="${QA_EXPLORE_CMD:-$SELF/run.sh}"; GUARD="${QA_GUARD_CMD:-$SELF/guard-te
 WEB_URL="${QA_WEB_URL:-localhost:3000}"; API_URL="${QA_API_URL:-localhost:8000/health/ready}"
 while [[ $# -gt 0 ]]; do case "$1" in
   --parallel) PARALLEL="$2"; shift 2 ;; --only) ONLY="$2"; shift 2 ;; --no-fix) NO_FIX=1; shift ;;
+  --monkey) MONKEY=5; if [[ "${2:-}" =~ ^[0-9]+$ ]]; then MONKEY="$2"; shift; fi; shift ;;
+  --fuzz) FUZZ=5; if [[ "${2:-}" =~ ^[0-9]+$ ]]; then FUZZ="$2"; shift; fi; shift ;;
   --retries) RETRIES="$2"; shift 2 ;; --budget) BUDGET_MIN="$2"; shift 2 ;; --list) LIST=1; shift ;;
-  -h|--help) sed -n '2,10p' "${BASH_SOURCE[0]}"; exit 0 ;;
+  -h|--help) sed -n '2,12p' "${BASH_SOURCE[0]}"; exit 0 ;;
   *) echo "unknown option $1 (see --help)" >&2; exit 2 ;; esac; done
 (( PARALLEL >= 1 )) 2>/dev/null || { echo "--parallel must be a number, 1 or more" >&2; exit 2; }
 (( PARALLEL > 3 )) && PARALLEL=3   # three at once is all this laptop carries
@@ -150,6 +154,16 @@ run_charter() {
   esac
   say "$c: $status ($findings confirmed, $commits commits)"
 }
+
+# optional no-AI explorers, before the charters; a crash of one is reported and does not stop the run
+if [[ -n "$MONKEY" ]]; then
+  say "monkey: $MONKEY min on the phone and the desktop size"
+  node "$SELF/monkey-seller.mjs" --minutes "$MONKEY" --viewport desktop 2>&1 | tail -n 12 || say "monkey stopped early"
+fi
+if [[ -n "$FUZZ" ]]; then
+  say "fuzz: $FUZZ min"
+  node "$SELF/fuzz-seller-api.mjs" --minutes "$FUZZ" 2>&1 | tail -n 12 || say "fuzz stopped early"
+fi
 
 say "branch $BRANCH in $WT; charters: ${FIRST[*]} ${LAST[*]}; at most $PARALLEL at once; budget $BUDGET_MIN min; state in $STATE"
 for c in "${FIRST[@]}"; do

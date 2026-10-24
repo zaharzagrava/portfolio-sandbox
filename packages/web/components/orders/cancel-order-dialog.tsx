@@ -31,13 +31,15 @@ export function CancelOrderDialog({ orderId, returnFocus }: { orderId: string; r
 
   const confirm = () => {
     setProblem(null);
-    cancel.mutate(orderId, {
-      onSuccess: () => {
+    // mutateAsync, not mutate with callbacks: the callbacks are dropped when this dialog unmounts before the answer arrives
+    // (the live status can flip the page to Cancelled, and the Cancel button goes away, first) and the toast would be lost.
+    cancel.mutateAsync(orderId).then(
+      () => {
         done.current = true;
         setOpen(false);
         toast.success('Order cancelled');
       },
-      onError: (error) => {
+      (error: unknown) => {
         const failure = problemFromError(error);
         if (failure.code === 'order_not_cancellable') {
           const current = (error as { response?: { data?: { currentStatus?: string } } }).response?.data?.currentStatus;
@@ -59,7 +61,7 @@ export function CancelOrderDialog({ orderId, returnFocus }: { orderId: string; r
         }
         setProblem(failure);
       },
-    });
+    );
   };
 
   return (

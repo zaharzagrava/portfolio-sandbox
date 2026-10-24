@@ -1,3 +1,5 @@
+import { createServer, type Server } from 'node:http';
+import type { AddressInfo } from 'node:net';
 import path from 'node:path';
 import { expect, test, type Page } from '@playwright/test';
 import { register } from '../helpers';
@@ -61,9 +63,28 @@ type World = {
   syncBody: unknown[];
 };
 
-async function stubChat(page: Page, world: World) {
+/** A stream that opens and then stays open for good (a stubbed body always ends, and an ended stream shows "Reconnecting…" 3 seconds later). */
+async function openStreamServer(): Promise<Server> {
+  const server = createServer((request, response) => {
+    response.writeHead(200, {
+      'content-type': 'text/event-stream',
+      'cache-control': 'no-store, no-transform',
+      'access-control-allow-origin': request.headers.origin ?? '*',
+      'access-control-allow-credentials': 'true',
+    });
+    response.write('retry: 3600000\n\n: ready\n\n');
+  });
+  await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
+  return server;
+}
+
+async function stubChat(page: Page, world: World, options: { openStream?: Server } = {}) {
   // The stream is a finite body here: a long `retry:` keeps the browser from reconnecting (and so from re-sending "Not sent" bubbles).
-  await stubHubStream(page, ['retry: 3600000\n\n', ': ready\n\n']);
+  // A state that must show NO banner and may take long (the conversation test) gets a stream that never ends instead.
+  if (options.openStream) {
+    const { port } = options.openStream.address() as AddressInfo;
+    await page.route((url) => url.pathname === '/api/streams', (route) => route.continue({ url: `http://127.0.0.1:${port}/` }));
+  } else await stubHubStream(page, ['retry: 3600000\n\n', ': ready\n\n']);
   await stubApi(page, 'GET', '/chat/channels/mine', () => ({ status: world.inbox.status ?? 200, body: world.inbox.body }));
   await stubApi(page, 'GET', /^\/api\/chat\/channels\/by-product\/[^/]+$/, () => ({ status: world.lookup.status, body: world.lookup.body }));
   await stubApi(page, 'POST', /^\/api\/chat\/channels\/[0-9a-f-]{36}\/join$/, () => ({ status: world.join.status, body: world.join.body }));
@@ -236,9 +257,11 @@ test.describe('Chat layouts', () => {
 
   test('a conversation: unread divider, counter, not sent, muted, archived', async ({ page }) => {
     const world = newWorld();
+    const streams = await openStreamServer();
+    try {
     await register(page);
     const me = await memberId(page);
-    await stubChat(page, world);
+    await stubChat(page, world, { openStream: streams });
     world.history = [
       message(1, SELLER, 'Hello! Thanks for your interest in the Espresso Machine.'),
       message(2, me, 'Is it still available? **Could** you ship <b>tomorrow</b>?'),
@@ -280,6 +303,10 @@ test.describe('Chat layouts', () => {
     await show(page, `/chat?channel=${CHANNEL}`);
     await expect(page.getByText('This chat was archived. You can read it, but not reply.')).toBeVisible();
     await check(page, 'archived');
+    } finally {
+      streams.closeAllConnections();
+      streams.close();
+    }
   });
 
   test('the connection banner and the jump pill', async ({ page }) => {
