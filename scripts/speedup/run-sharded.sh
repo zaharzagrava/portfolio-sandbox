@@ -25,17 +25,17 @@ for n in $(seq 1 "$N"); do
   pids+=($!)
 done
 # Live progress, and stop early: every 15 s print how many files are done / failing; when more than ABORT_AFTER files fail, kill every slice
-# (default 3; ABORT_AFTER=0 never aborts) and show the first errors, so the fixing can start at once instead of after the whole run.
-abort="${ABORT_AFTER:-3}"; aborted=0
+# (default 1: stop at the FIRST failing file; ABORT_AFTER=0 never aborts) and show the first errors, so the fixing can start at once instead of after the whole run.
+abort="${ABORT_AFTER:-1}"; aborted=0
 while :; do
   alive=0; for p in "${pids[@]}"; do kill -0 "$p" 2>/dev/null && alive=1; done
   (( alive )) || break
-  sleep 15
+  sleep 5
   clean() { sed 's/\x1b\[[0-9;]*m//g' "$out"/run-*.log; }
   done_files=$(clean | grep -aEc '^ (✓|❯|×) [a-z].*e2e-spec\.ts')
   failing=$(clean | grep -aE '^ (❯|×) [a-z].*e2e-spec\.ts.*failed' | sort -u | wc -l)
   echo "[$((SECONDS - t1)) s] $done_files of ~593 files done, $failing failing"
-  if (( abort > 0 && failing > abort )); then
+  if (( abort > 0 && failing >= abort )); then
     aborted=1; echo "STOP: $failing files failing (limit $abort) - killing all slices to start fixing"
     for p in "${pids[@]}"; do kill -INT -- "-$p" 2>/dev/null; done   # setsid made each slice its own process group; Vitest prints its failure details on SIGINT
     sleep 3; for p in "${pids[@]}"; do kill -KILL -- "-$p" 2>/dev/null; done
