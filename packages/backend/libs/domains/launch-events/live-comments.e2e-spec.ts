@@ -498,6 +498,10 @@ describe('Live stream: comment ingest, moderation and mutes', () => {
     const { s, stream } = await liveStreamWithSeller();
     const other = await t.liveStream(s);
     const viewer = await t.viewer();
+    // The fake clock starts at the real time: both comments must fall into one minute bucket (the history page is per minute), so start
+    // early in a minute (the second comment is posted 10 s after the first).
+    const secondOfMinute = new Date(t.clock.nowMs()).getUTCSeconds();
+    if (secondOfMinute > 40) await t.advance((61 - secondOfMinute) * 1000);
     const first = await t.comment(stream.id, viewer, 'hello').expect(201);
     await t.advance(10_000);
     const second = await t.comment(stream.id, viewer, 'again').expect(201);
