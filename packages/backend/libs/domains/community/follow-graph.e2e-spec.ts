@@ -529,6 +529,7 @@ describe('Follow graph: follow, unfollow, limits and privacy', () => {
 
   describe('reconciliation', () => {
     it('S26 AS-51: counts are recomputed from the follower records and half-written relations are completed from the buyer side; a second run changes nothing', async () => {
+      const startedAt = Date.now();
       const [u1, u2, u3, u4, u5, half, ghost] = await t.users(7);
       const shop = await t.seedShop();
       const other = await t.seedShop();
@@ -587,10 +588,27 @@ describe('Follow graph: follow, unfollow, limits and privacy', () => {
       expect(first.finished).toBe(true);
 
       // 5 completed relations + the half-written one the buyer side vouches for; the ghost record is gone
+      let detail = '';
+      if (first.repaired < 6) {
+        // A short pass: say what the half-written buyer looks like now (its own rows, its follower record), so the cause is visible.
+        const buyerRows = (
+          await t.cql(
+            'SELECT account_id, active FROM following_by_user WHERE user_id = ?',
+            [half.id],
+          )
+        ).rows.length;
+        const followerRow = (
+          await t.cql(
+            'SELECT follower_id FROM followers_by_account WHERE account_id = ? AND follower_id = ?',
+            [shop.accountId, half.id],
+          )
+        ).rows.length;
+        detail = ` half: buyerRows=${buyerRows} followerRecord=${followerRow} secondsSinceStart=${Math.round((Date.now() - startedAt) / 1000)}`;
+      }
       expect(
         first.repaired >= 6
           ? 'repaired enough'
-          : `repaired=${first.repaired} users=${first.users} accounts=${first.accounts} failed=${first.failed}`,
+          : `repaired=${first.repaired} users=${first.users} accounts=${first.accounts} failed=${first.failed}${detail}`,
       ).toBe('repaired enough');
       expect(await storedCount(shop.accountId)).toBe(6);
       expect(await storedCount(other.accountId)).toBe(1);
