@@ -225,6 +225,24 @@ async function main() {
     }
     console.log(`seller  ${SEED_USERS.seller} / ${PASSWORD}  shop ${shopId}`);
 
+    // A shop without a subscription is on the free plan, which allows 10 products; the demo shop has more. Give it the Pro plan
+    // (10,000 products, auctions) once, the way a paid shop looks.
+    const hasPlan = await db.query(
+      `SELECT 1 FROM "Subscription" WHERE "subjectType" = 'SHOP' AND "subjectId" = $1 LIMIT 1`,
+      [shopId],
+    );
+    if (hasPlan.rowCount === 0) {
+      await db.query(
+        `INSERT INTO "Subscription" ("id", "subjectType", "subjectId", "priceId", "status", "quantity", "billingAnchorDay",
+                                     "currentPeriodStart", "currentPeriodEnd", "version")
+         SELECT gen_random_uuid(), 'SHOP', $1, pr.id, 'ACTIVE', 1, 1, now() - interval '1 day', now() + interval '30 days', 0
+           FROM "Price" pr JOIN "Plan" pl ON pl.id = pr."planId"
+          WHERE pl.code = 'pro' AND pr.interval = 'MONTH' LIMIT 1`,
+        [shopId],
+      );
+      console.log('plan    Pro for the demo shop');
+    }
+
     const { rows } = await db.query<{ title: string }>(
       `SELECT title FROM "Product" WHERE "shopId" = $1`,
       [shopId],
