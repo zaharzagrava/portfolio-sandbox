@@ -123,3 +123,19 @@ Quality: a time box per charter caps depth; parallelism adds breadth. Not an exe
 - After a reboot: scripts/infra/stack.sh test setup, then scripts/infra/shard-prepare.sh for each shard is done by run-sharded.sh itself; shard Redis
   containers (marketplace_test_redis_s<n>) are recreated by shard-prepare.sh; the template database is re-created on first prepare.
 - Cleanup of disk: docker system prune / docker volume prune (unused only); the swap can be reset with: sudo swapoff -a && sudo swapon -a
+
+## State at the end of 2026-10-24 (stopped by the owner)
+
+- Backend e2e on 8 shards (scripts/speedup/run-sharded.sh 8): one fully green run (8,394 passed, 0 failed, 593 files, 649 s running + 64 s preparing = 11.9 min).
+  The second run in a row was NOT green: libs/domains/community/follow-graph.e2e-spec.ts (S26 AS-51, 'expected repaired >= 6') failed again, as in several earlier
+  full runs (about 1 in 3). It passes alone. It is only the 3rd file of its shard, so the cause is machine load at the start of a full run (all shards on their
+  heaviest files, one Scylla), not file order. The test now reads back its own corruption first and names the repair counts in the failure message
+  (repaired / users / accounts / failed). Next step: replay the opening 4 files of all 8 shards at once (/tmp/prof/open8.sh idea) and read those numbers.
+- Fixed today in the product (real bugs): admitter, JobWorker and JobMaintenance loops did not stop on app.close(); notification preferences could show a stale
+  value for up to 5 minutes after fast concurrent writes (recipient view cache race); trending consumer pause-switch read had no time limit; product
+  migration dropped Product.shopId NOT NULL on PostgreSQL 18; storage errors with a code were returned as 500 instead of 503.
+- Front end: edits are in but the suite was never run today (API shop/admin set-up, page warm-up in global setup, shared Redis connection). Baseline run and
+  front-end shards (one API + one web process per shard on the shared services) are for tomorrow.
+- QA agents for the seller dashboard: 10 charters (scripts/qa/charters/seller-*.md), plan docs/work/plans/2026-10-24-qa-seller-dashboard.md, runner
+  scripts/qa/seller-run.sh with a guard (scripts/qa/guard-tests.sh), 22 script tests pass. Never run against a real agent yet. First gentle run:
+  scripts/qa/seller-run.sh --only photos --no-fix --parallel 1 (needs the dev stack: scripts/qa/stack-up.sh with WITH_WEB=1; stop the test stack first).

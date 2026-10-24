@@ -590,7 +590,7 @@ describe('Follow graph: follow, unfollow, limits and privacy', () => {
       expect(
         first.repaired >= 6
           ? 'repaired enough'
-          : `repair pass result ${JSON.stringify(first)}`,
+          : `repaired=${first.repaired} users=${first.users} accounts=${first.accounts} failed=${first.failed}`,
       ).toBe('repaired enough');
       expect(await storedCount(shop.accountId)).toBe(6);
       expect(await storedCount(other.accountId)).toBe(1);
