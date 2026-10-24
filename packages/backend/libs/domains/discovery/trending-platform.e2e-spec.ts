@@ -56,6 +56,11 @@ describe('Trending degradation, metrics and boundary', () => {
       const warn = jest.spyOn(Logger.prototype, 'warn');
       const error = jest.spyOn(Logger.prototype, 'error');
       const mergedBefore = counter('trending_last_merge_timestamp_seconds');
+      // The gauge counts whole seconds: wait for the next second, so a merge made at once is strictly later than this reading.
+      await waitFor(
+        () => Promise.resolve(Math.floor(Date.now() / 1000) > mergedBefore),
+        { description: 'the next second' },
+      );
       const d = await t.seedDatasetT();
       await t.produce([
         'not json',

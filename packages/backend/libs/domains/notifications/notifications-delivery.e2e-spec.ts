@@ -585,6 +585,11 @@ describe('Notifications: channel lines, providers, failover and retries', () => 
     await Promise.all(messages.flatMap((m) => [handle(m), handle(m)]));
 
     for (const m of messages) {
+      // The e-mail budget is a bucket of 14 a second and 20 messages arrive at once: the last ones are delayed and sent a moment later.
+      await waitFor(async () => (await statusOf(m.deliveryId)) === 'sent', {
+        description: 'sent once the bucket refilled',
+        intervalMs: 100,
+      });
       expect(t.providers.email.callsTo(m.to[0])).toHaveLength(1);
       expect(await statusOf(m.deliveryId)).toBe('sent');
       expect(
