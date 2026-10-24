@@ -101,7 +101,7 @@ export async function registerByApi(page: Page, email = uniqueEmail()) {
   const password = NEW_USER_PASSWORD;
   const created = await page.request.post('/api/auth/register', { data: { email, password } });
   expect(created.status(), `register ${email}: ${await created.text()}`).toBeLessThan(300);
-  const signedIn = await page.request.post('/api/auth/login', { data: { email, password } });
+  const signedIn = await page.request.post('/api/bff/session', { data: { email, password } });
   expect(signedIn.status(), `login ${email}: ${await signedIn.text()}`).toBeLessThan(300);
   await page.goto('/');
   return { email, password };

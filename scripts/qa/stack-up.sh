@@ -33,7 +33,7 @@ sleep 3; grep -qi "video" "$QA_DIR/api.log" || echo "WARNING: the API log does n
 # the seeded accounts and products (a fresh stack has none)
 pnpm --filter api seed:dev >"$QA_DIR/seed.log" 2>&1 || { echo "the seed failed: see $QA_DIR/seed.log" >&2; "$(dirname "$0")/stack-down.sh" "$QA_DIR"; exit 1; }
 if [[ "${WITH_WEB:-}" == 1 ]]; then   # the storefront, for the browser (QA agent, Playwright)
-  (cd packages/web && NEXT_PUBLIC_PAYMENTS_SANDBOX=true setsid pnpm run dev >"$QA_DIR/web.log" 2>&1 & echo $! > "$QA_DIR/web.pid")
+  (cd packages/web && PLATFORM_CURRENCY=EUR NEXT_PUBLIC_PAYMENTS_SANDBOX=true NEXT_PUBLIC_MAP_TILE_URL='https://tiles.test.local/{z}/{x}/{y}.png' MAP_TILE_HOST='https://tiles.test.local' setsid pnpm run dev >"$QA_DIR/web.log" 2>&1 & echo $! > "$QA_DIR/web.pid")
   for _ in $(seq 1 60); do curl -sf localhost:3000 >/dev/null && break; sleep 3; done
   curl -sf localhost:3000 >/dev/null || { echo "the web server did not answer: see $QA_DIR/web.log" >&2; "$(dirname "$0")/stack-down.sh" "$QA_DIR"; exit 1; }
 fi

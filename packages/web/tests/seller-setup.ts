@@ -20,7 +20,7 @@ export async function openShopByApi(member: { email: string; password?: string }
 export async function adminLoginByApi(page: Page) {
   if (process.env.PW_UI_LOGIN === '1') return login(page, SEED.admin, SEED.password, '/admin/feature-flags');
   await resetRateLimits();
-  const signedIn = await page.request.post('/api/auth/login', { data: { email: SEED.admin, password: SEED.password } });
+  const signedIn = await page.request.post('/api/bff/session', { data: { email: SEED.admin, password: SEED.password } });
   expect(signedIn.status(), `admin login: ${await signedIn.text()}`).toBeLessThan(300);
   await page.goto('/admin/feature-flags');
 }
