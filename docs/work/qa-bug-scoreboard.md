@@ -24,7 +24,7 @@ Other results are counted separately: **candidate** (not confirmed yet), **false
 |---|---|---|---|---|---|---|---|---|---|
 | 0 | 2026-10-24 | Monkey tester (2 min, dev server) | whole seller area | 0 confirmed yet | ~45 (hydration mismatch on ~13 pages, a11y list on developers/logs; the style-blocking error is probably dev-mode noise) | not triaged | - | 0 | needs a rerun on the production build |
 | 0 | 2026-10-24 | API fuzzer (2 min, 3,520 requests) | 228 seller endpoints | 0 confirmed yet | 18 (answers without `code`, 400/404 instead of 401 on some endpoints) | some may be deliberate | - | 0 | no 5xx, no cross-seller leak, no duplicate create |
-| 1 | 2026-10-25 | AI agent, charter seller-photos (explore only) | photos | (running, started 19:29) | | | | 0 | |
+| 1 | 2026-10-25 | AI agent, charter seller-photos (explore only, 12 min) | photos | 0 new (1 confirmed, but it is the bug the owner already knew: photos blank after upload/Save/reload) | 1 suspicious (CSP inline-style console errors, likely dev-mode noise) | 0 | 1 known | 0 | Root cause found layer by layer: MEDIA_CDN_URL points at port 9000 (ClickHouse) instead of 9100 (MinIO), the page only allows 9100, and the bucket answers 403 on 9100. The data is saved; only the picture is blank. 20+ other cases clean (file kinds, limits, gallery API rules, permissions). Not done: two tabs, network loss, VIEWER role, suspended shop, keyboard reorder, public product page showed no img elements (not investigated). |
 
 ## How to read it
 
