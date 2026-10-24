@@ -1,6 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import { DeleteCommand } from '@aws-sdk/lib-dynamodb';
 import { balanceSchema } from '@marketplace-sandbox/contracts';
+import { ApiConfigService } from '@app/common/config';
 import { MetricsRegistry } from '@app/common/telemetry/metrics-registry';
 import { DynamoService } from '@app/infrastructure/dynamo/dynamo.service';
 import { RedisService } from '@app/infrastructure/redis/redis.service';
@@ -12,6 +13,7 @@ import { addMember, createShop } from '@app/test/utils/tenancy-fixtures';
 import { createLedgerApp, type LedgerTestApp } from './testing/ledger-app';
 import { assertBooksHealthy, count, sql } from './testing/ledger-fixtures';
 import { JournalInvalid } from './domain/ledger-errors';
+import { shardOf } from './domain/shard';
 import {
   BALANCE_DURABLE_STORE,
   BALANCE_HOT_STORE,
@@ -246,10 +248,23 @@ describe('Ledger: running balances, read model and balance endpoint', () => {
     const a = uuidv4();
     await fund(a, 100);
     await fund(a, 40);
-    await adjust([
-      { accountId: `SHOP_${a}`, amountMinor: -30 },
-      { accountId: 'PLATFORM_FEES', amountMinor: 30 },
-    ]);
+    // The fee line lands on the shard picked by the hash of the reference. The check below uses shards 3 and 9 of
+    // PLATFORM_FEES, so the reference must not hash to either (with a random one, 2 runs in 32 hit them and failed).
+    let reference = `t-${uuidv4()}`;
+    while (
+      [3, 9].includes(
+        shardOf(reference, t.app.get(ApiConfigService).get('ledger_shards')),
+      )
+    )
+      reference = `t-${uuidv4()}`;
+    await adjust(
+      [
+        { accountId: `SHOP_${a}`, amountMinor: -30 },
+        { accountId: 'PLATFORM_FEES', amountMinor: 30 },
+      ],
+      'ADJUSTMENT',
+      reference,
+    );
     const events = await outbox();
     await projector.project(events);
     await projector.project(events); // duplicate delivery
@@ -591,7 +606,7 @@ describe('Ledger: running balances, read model and balance endpoint', () => {
       port: Number(redis.port || 6379),
     });
     const own = await createLedgerApp({
-      redisUrl: `redis://127.0.0.1:${proxy.port}/${new URL(process.env.REDIS_URL ?? "redis://localhost:6400/0").pathname.slice(1) || "0"}`,
+      redisUrl: `redis://127.0.0.1:${proxy.port}/${new URL(process.env.REDIS_URL ?? 'redis://localhost:6400/0').pathname.slice(1) || '0'}`,
     });
     try {
       await own.reset();

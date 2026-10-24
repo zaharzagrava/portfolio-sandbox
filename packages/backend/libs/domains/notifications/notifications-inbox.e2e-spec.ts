@@ -332,9 +332,10 @@ describe('Notifications: inbox and unread counter', () => {
 
     const heavy = await t.newUser();
     const now = t.clock.now().getTime();
-    for (let from = 0; from < 1_005; from += 25)
+    // 5 writes at a time: the inbox store gives each write 1 s, and 25 at once on a busy shared machine went over it
+    for (let from = 0; from < 1_005; from += 5)
       await Promise.all(
-        Array.from({ length: Math.min(25, 1_005 - from) }, (_, k) =>
+        Array.from({ length: Math.min(5, 1_005 - from) }, (_, k) =>
           addItem(heavy, {
             eventTime: new Date(now - 60_000 - (from + k) * 1_000),
           }),

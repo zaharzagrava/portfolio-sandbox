@@ -3,6 +3,7 @@ import {
   Injectable,
   Logger,
   OnApplicationBootstrap,
+  OnModuleDestroy,
   Optional,
 } from '@nestjs/common';
 import { CLOCK, Clock } from '@app/common/core/clock';
@@ -40,7 +41,7 @@ const BATCH = 1_000;
  * bucket (pure `token-bucket.ts`) holds one second of the rate, so downtime never turns into a burst.
  */
 @Injectable()
-export class Admitter implements OnApplicationBootstrap {
+export class Admitter implements OnApplicationBootstrap, OnModuleDestroy {
   private readonly logger = new Logger(Admitter.name);
   private timer?: NodeJS.Timeout;
   private ticking = false;
@@ -74,6 +75,11 @@ export class Admitter implements OnApplicationBootstrap {
       TICK_MS,
     );
     this.timer.unref();
+  }
+
+  /** A closed application must not keep admitting: the shutdown registry only runs on a real signal, not on `app.close()`. */
+  onModuleDestroy() {
+    clearInterval(this.timer);
   }
 
   /** One pass over every event with a waiting room. Returns the admitted count per event. */
