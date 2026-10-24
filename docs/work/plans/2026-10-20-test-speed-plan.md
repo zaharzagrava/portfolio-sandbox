@@ -161,3 +161,16 @@ Quality: a time box per charter caps depth; parallelism adds breadth. Not an exe
   findings (hydration mismatch on ~13 seller pages, CSP inline-style error probably dev-mode noise, 18 API inconsistencies) need triage on a production build.
 - To restart: scripts/qa/stack-up.sh with WITH_WEB=1 (about 5 min); keep the web server detached (Playwright's own webServer dies with its process), then
   'cd packages/web && W07_PROD=1 API_URL=http://localhost:8000 npx playwright test --workers=4 --max-failures=10'.
+
+## State at the end of 2026-10-25 (stopped by the owner)
+
+- Backend: done (two green runs in a row, about 11 min on 8 shards). Front end: done (two green runs in a row, 498 passed, 0 failed, 44 skipped, about 8.5 min with 4 workers).
+- Real product bugs found by the flaky tests and fixed on the way: cancel-order toast lost when the dialog closes; assistant reply shown twice after a reload (2 unit tests);
+  chat "Seen" receipt lost when leaving within 500 ms (unit tests replaced); dev seed broke on the free plan limit; PostgreSQL 18 dropped Product.shopId NOT NULL; others in the
+  backend sections above. Test problems fixed: the seller-video test uploaded filler bytes (now a real clip, needs ffmpeg), pictures taken before the page settled.
+  Unproven guards: the admin-flags menu retry; the 4 px overview difference seen once. A UX issue left: the seller overview "Last 60 seconds" panel jumps by 44 px at its first update.
+- AI agents: round 1 done (docs/work/qa-bug-scoreboard.md): the photos charter (explore only, 12 min) found the root cause of the known photo bug: MEDIA_CDN_URL points at
+  port 9000 (ClickHouse) instead of 9100 (MinIO), the web page only allows 9100, and the bucket answers 403 on 9100. Report: specs/.checkpoints/qa-seller/reports/ (not committed).
+- Tomorrow: (1) let the fix agent fix the photo bug (media address, public-read bucket on the dev stack, a test) as the first autonomous fix; (2) run the other four key charters
+  (shop setup, products, inventory-stock, orders) explore only; (3) monkey and fuzzer on a production build to triage; (4) rounds with fixes until the scoreboard shows zeros.
+- To restart: WITH_WEB=1 scripts/qa/stack-up.sh (about 5 min), then scripts/qa/seller-run.sh --only <charter> [--no-fix] --parallel 1.
