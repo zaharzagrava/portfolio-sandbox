@@ -13,7 +13,7 @@ const rowOf = (page: Page, title: string) => page.getByRole('row').filter({ hasT
 
 test.describe('Seller inventory', () => {
   test('owner adds, finds, edits and archives a product', async ({ page }) => {
-    const member = const member = await register(page);
+    const member = await register(page);
     const { shopId } = await openShopByApi(member);
     await seedProduct(shopId, { title: 'Seeded Walnut Spoon', quantity: 4 }, member);
     await page.goto(shopPath(shopId, 'inventory'));

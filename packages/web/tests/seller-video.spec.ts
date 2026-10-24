@@ -12,7 +12,7 @@ const PART_BYTES = 8 * 1024 * 1024;
 
 test.describe('Seller video', () => {
   test('owner uploads a video; a failed part is sent again; the page shows it processing', async ({ page }) => {
-    const member = const member = await register(page);
+    const member = await register(page);
     const { shopId } = await openShopByApi(member);
     const productId = await seedProduct(shopId, { title: 'Video Test Mug' }, member);
 

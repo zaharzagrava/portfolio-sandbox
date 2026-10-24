@@ -14,7 +14,7 @@ const PIXEL_PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAD
 
 test.describe('Seller photos', () => {
   test('owner adds a photo to a product and saves the gallery', async ({ page }) => {
-    const member = const member = await register(page);
+    const member = await register(page);
     const { shopId } = await openShopByApi(member);
     const title = 'Photo Test Mug';
     await seedProduct(shopId, { title }, member);

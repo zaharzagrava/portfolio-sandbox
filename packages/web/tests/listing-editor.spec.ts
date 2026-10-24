@@ -12,7 +12,7 @@ import { openShopByApi } from './seller-setup';
  */
 test.describe('Seller listing editor', () => {
   test('owner edits a draft live, saves a version and publishes it', async ({ page }) => {
-    const member = const member = await register(page);
+    const member = await register(page);
     const { shopId } = await openShopByApi(member);
     const original = 'Draft Test Mug';
     await seedProduct(shopId, { title: original, brand: 'Clay Works', category: 'kitchen', priceMinor: 2450, quantity: 7, description: 'Hand thrown.' }, member);

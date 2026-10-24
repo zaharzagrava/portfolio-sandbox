@@ -11,7 +11,7 @@ const TITLE = 'Sponsored Walnut Spoon';
 
 test.describe('Seller campaigns', () => {
   test('owner creates a campaign and pauses it', async ({ page }) => {
-    const member = const member = await register(page);
+    const member = await register(page);
     const { shopId } = await openShopByApi(member);
     await seedProduct(shopId, { title: TITLE, quantity: 8 }, member);
 
