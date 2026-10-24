@@ -55,12 +55,10 @@ describe('Trending degradation, metrics and boundary', () => {
     it('S35 AS-36: every instrument exists with fixed-enum labels, the merge timestamp moves, and logs and labels carry no identifiers', async () => {
       const warn = jest.spyOn(Logger.prototype, 'warn');
       const error = jest.spyOn(Logger.prototype, 'error');
+      // The app runs on a fixed fake clock, so a merge of an earlier test or file in this process leaves the very same timestamp behind:
+      // start from zero values so that "the merge timestamp moves" is proven by this test's own merge.
+      MetricsRegistry.resetValues();
       const mergedBefore = counter('trending_last_merge_timestamp_seconds');
-      // The gauge counts whole seconds: wait for the next second, so a merge made at once is strictly later than this reading.
-      await waitFor(
-        () => Promise.resolve(Math.floor(Date.now() / 1000) > mergedBefore),
-        { description: 'the next second' },
-      );
       const d = await t.seedDatasetT();
       await t.produce([
         'not json',
