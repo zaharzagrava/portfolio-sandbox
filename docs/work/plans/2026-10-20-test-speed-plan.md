@@ -139,3 +139,11 @@ Quality: a time box per charter caps depth; parallelism adds breadth. Not an exe
 - QA agents for the seller dashboard: 10 charters (scripts/qa/charters/seller-*.md), plan docs/work/plans/2026-10-24-qa-seller-dashboard.md, runner
   scripts/qa/seller-run.sh with a guard (scripts/qa/guard-tests.sh), 22 script tests pass. Never run against a real agent yet. First gentle run:
   scripts/qa/seller-run.sh --only photos --no-fix --parallel 1 (needs the dev stack: scripts/qa/stack-up.sh with WITH_WEB=1; stop the test stack first).
+
+## Backend done: two green runs in a row (2026-10-25, 14:08 to 14:31)
+
+- scripts/speedup/run-sharded.sh 8, same commit, two runs: 8,394 passed, 0 failed, 593 files each; 665 s and 690 s including 62 s of preparing the shards (about 11 min).
+  A morning run of the same suite took about 95 min.
+- Still unexplained: follow-graph (S26 AS-51) failed in about 1 of 3 earlier full runs and passed in both of these. Its failure message now names the state of the
+  half-written buyer (rows, follower record, seconds since start). live-comments was a minute-boundary bug of the test (fake clock starts at the real time).
+- Next: front end (baseline run with the timing reporter, fix until green, then shards), then the seller-dashboard QA agents.
