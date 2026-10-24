@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 import { expectNoSeriousViolations } from './axe';
 import { FAKE_LOCATION, createIsolatedProduct, createPickupSeed, register, startDiscussion } from '../helpers';
 
@@ -204,6 +204,15 @@ test.describe('Ask layout', () => {
  * different every run, so the screenshot masks the field.
  */
 test.describe('Share layout', () => {
+  /** Waits until an element's box is the same for 6 frames in a row. */
+  async function expectStableBox(locator: Locator) {
+    await expect(async () => {
+      const first = await locator.boundingBox();
+      for (let i = 0; i < 6; i++) await locator.page().evaluate(() => new Promise((r) => requestAnimationFrame(r)));
+      expect(await locator.boundingBox()).toEqual(first);
+    }).toPass({ timeout: 10_000 });
+  }
+
   async function openShare(page: Page) {
     const dialog = page.getByRole('dialog', { name: 'Share this product' });
     await expect(async () => {
@@ -230,7 +239,10 @@ test.describe('Share layout', () => {
     // Signed in: the created link.
     await register(page);
     await page.goto(`/products/${product.id}`);
-    const trigger = (await page.getByRole('button', { name: 'Share' }).boundingBox())!; // measured before the sheet makes the page inert
+    const shareButton = page.getByRole('button', { name: 'Share' });
+    await expect(shareButton).toBeEnabled();
+    await expectStableBox(shareButton); // sections above may still load and push the button down
+    const shareHandle = (await shareButton.elementHandle())!; // a handle still works once the open sheet hides the page from role queries
     dialog = await openShare(page);
     const field = dialog.getByRole('textbox', { name: 'Share link' });
     await expect(field).toBeVisible();
@@ -238,6 +250,10 @@ test.describe('Share layout', () => {
     await expect(copy).toBeVisible();
     await expectNoSeriousViolations(page);
 
+    await page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished.catch(() => undefined))));
+    await expectStableBox(dialog);
+    // Read the button again now that the popover is open: both boxes come from the same settled page.
+    const trigger = (await shareHandle.boundingBox())!;
     const box = (await dialog.boundingBox())!;
     if (mobile(page)) {
       // A sheet: fixed to the bottom edge and as wide as the screen; the controls are easy to hit.

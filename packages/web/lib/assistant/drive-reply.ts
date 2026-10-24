@@ -48,7 +48,7 @@ export async function readFinishedAnswer(queryClient: QueryClient, dispatch: Dis
       queryFn: () => assistantApi.history(conversationId),
       staleTime: 0,
     });
-    const answer = history.messages.find((message) => message.id === messageId && message.role === 'assistant');
+    const answer = history.messages.find((message) => (message.turnId === messageId || message.id === messageId) && message.role === 'assistant');
     if (answer) {
       dispatch({ type: 'fromHistory', text: answer.text, tools: answer.tools.map((name, at) => ({ id: `${answer.id}:${at}`, name, status: 'done' as const })) });
       return true;

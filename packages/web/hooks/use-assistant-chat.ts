@@ -125,9 +125,10 @@ export function useAssistantChat({ active }: { active: boolean }) {
   const showReply = reply.phase !== 'idle' && replyConversationId === conversationId;
   const saved = historyQuery.data?.messages ?? [];
   // A reply on screen that is already in the history is shown once, from the live state.
-  const savedTurn = showReply && reply.messageId ? saved.find((m) => m.id === reply.messageId)?.turnId : undefined;
+  // The stream's `messageId` is the id of the turn (the history's `turnId`), not the id of a saved message.
+  const savedTurn = showReply && reply.messageId ? saved.find((m) => m.turnId === reply.messageId || m.id === reply.messageId)?.turnId : undefined;
   const items: TranscriptMessage[] = saved
-    .filter((m) => savedTurn === undefined || m.turnId !== savedTurn)
+    .filter((m) => savedTurn === undefined || m.turnId !== savedTurn || (m.role === 'user' && reply.question === ''))
     .map((m) => ({ id: m.id, role: m.role, content: m.text, tools: m.tools.map((name, at) => ({ id: `${m.id}:${at}`, name, status: 'done' as const })) }));
   if (showReply) {
     if (reply.question) items.push({ id: `question:${reply.idempotencyKey}`, role: 'user', content: reply.question, tools: [] });

@@ -256,6 +256,44 @@ describe('Assistant chat hook: a dropped connection never loses an answer', () =
     expect(result.current.notice).toBeNull();
   });
 
+  // The stream's message id is the turn id; a saved message has an id of its own and carries that turn id in `turnId`.
+  const savedTurn = (turnId: string) => ({
+    conversation: { id: CONVERSATION_ID, title: 'New chat', updatedAt: '2026-10-17T10:00:00.000Z' },
+    messages: [
+      { id: 'saved-user-1', turnId, role: 'user' as const, text: 'hi', tools: [] },
+      { id: 'saved-answer-1', turnId, role: 'assistant' as const, text: 'Full answer', tools: [] },
+    ],
+  });
+
+  it('W05 AS-48: a saved message found by its turnId (its own id differs from the stream message id) is read from the history on a 404 resume, shown once', async () => {
+    const { result } = setup();
+    const first = await startReply(result);
+    fake.api.history.mockResolvedValue(savedTurn('m1'));
+    await act(async () => first.end({ terminal: false }));
+    const second = await fake.call(1);
+    await act(async () => second.fail(new AssistantRejected(404, { code: 'generation_not_found' }, {})));
+    await vi.waitFor(() => expect(result.current.running).toBe(false));
+    expect(result.current.items.map((m) => m.content)).toEqual(['hi', 'Full answer']);
+    expect(result.current.notice).toBeNull();
+  });
+
+  it('W05 AS-48: a reply already saved in the history (turnId = stream message id, different message ids) is shown once', async () => {
+    sessionStorage.setItem('assistant.active', JSON.stringify({ conversationId: CONVERSATION_ID }));
+    fake.api.history.mockResolvedValue(savedTurn('m1'));
+    const { result } = setup();
+    await vi.waitFor(() => expect(result.current.historyState).toBe('ready'));
+    await sendText(result, 'hi');
+    const call = await fake.call(0);
+    act(() => call.emit(META('m1'), '1-0'));
+    act(() => call.emit(TEXT('Full answer'), '2-0'));
+    act(() => call.emit(DONE(), '3-0'));
+    await act(async () => call.end({ terminal: true }));
+    expect(result.current.items.map((m) => [m.role, m.content])).toEqual([
+      ['user', 'hi'],
+      ['assistant', 'Full answer'],
+    ]);
+  });
+
   it('W05 AS-51: a resume that answers 404 with no answer in the history says the reply was interrupted and offers Try again', async () => {
     const { result } = setup();
     const first = await startReply(result);
