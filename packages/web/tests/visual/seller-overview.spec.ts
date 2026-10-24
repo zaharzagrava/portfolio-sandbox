@@ -75,6 +75,10 @@ async function expectLayout(page: Page) {
   if (original) await page.setViewportSize(original);
 }
 
+/** The live panel grows by the bar strip (44 px) when its first frame arrives. Only the test whose picture shows that state waits for it. */
+const waitForLiveFrame = (page: Page) =>
+  expect(page.getByRole('region', { name: 'Last 60 seconds' }).getByRole('img')).toBeVisible({ timeout: 15_000 });
+
 const shot = (page: Page, name: string) => expect(content(page)).toHaveScreenshot(name, { stylePath, mask: [page.getByRole('region', { name: 'Last 60 seconds' })] });
 
 test.describe('Seller overview layout', () => {
@@ -87,6 +91,7 @@ test.describe('Seller overview layout', () => {
     await expect(page).toHaveURL(/days=7/);
     await leaveAndReturn(page);
     await expect(page.getByRole('region', { name: 'Top products' }).getByText(/Handmade Ceramic Mug/)).toBeVisible();
+    await waitForLiveFrame(page);
     await shot(page, 'overview-with-data.png');
     await expectLayout(page);
   });
