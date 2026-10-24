@@ -3,6 +3,7 @@ import {
   Injectable,
   Logger,
   OnApplicationBootstrap,
+  OnModuleDestroy,
   Optional,
 } from '@nestjs/common';
 import { InjectConnection } from '@nestjs/sequelize';
@@ -49,7 +50,7 @@ type Settled =
  *  reaped and claimed again, even by itself) cannot change the new owner's result.
  */
 @Injectable()
-export class JobWorker implements OnApplicationBootstrap {
+export class JobWorker implements OnApplicationBootstrap, OnModuleDestroy {
   private readonly logger = new Logger(JobWorker.name);
   readonly workerId = `${hostname()}:${process.pid}:${randomUUID().slice(0, 8)}`;
   private draining = false;
@@ -84,6 +85,11 @@ export class JobWorker implements OnApplicationBootstrap {
   onApplicationBootstrap() {
     if (this.options.loops === false) return;
     this.loopDone = this.loop();
+  }
+
+  /** `app.close()` without a signal (specs): the claim loop must stop too. A second stop after the signal path is a no-op. */
+  async onModuleDestroy(): Promise<void> {
+    await this.stop();
   }
 
   /** Exposed for specs and manual drains: claim + run one batch, wait for it. */

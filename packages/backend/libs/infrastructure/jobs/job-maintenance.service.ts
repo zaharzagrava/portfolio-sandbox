@@ -3,6 +3,7 @@ import {
   Injectable,
   Logger,
   OnApplicationBootstrap,
+  OnModuleDestroy,
   Optional,
 } from '@nestjs/common';
 import { InjectConnection } from '@nestjs/sequelize';
@@ -59,7 +60,9 @@ interface DueSchedule {
  *  - Partition maintenance job: create partitions ahead, drop old finished ones, purge old keys.
  */
 @Injectable()
-export class JobMaintenance implements OnApplicationBootstrap {
+export class JobMaintenance
+  implements OnApplicationBootstrap, OnModuleDestroy
+{
   private readonly logger = new Logger(JobMaintenance.name);
   private draining = false;
   private wake = new AbortController();
@@ -93,6 +96,11 @@ export class JobMaintenance implements OnApplicationBootstrap {
   onApplicationBootstrap() {
     if (this.options.loops === false) return;
     this.loopDone = this.loop();
+  }
+
+  /** `app.close()` without a signal (specs): the maintenance loop must stop too. A second stop is a no-op. */
+  async onModuleDestroy(): Promise<void> {
+    await this.stop();
   }
 
   /** Starts the loop; for specs that created the app with `loops: false`. */
