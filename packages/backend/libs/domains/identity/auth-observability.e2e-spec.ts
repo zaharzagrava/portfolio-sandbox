@@ -456,6 +456,14 @@ describe('Auth observability', () => {
     );
   });
 
+  // AS-85 corrupts the ACTIVE signing key on purpose. The next file of the shard (one shared process and database) must not find it
+  // before its own first data wipe: take the corrupted row away again.
+  afterEach(async () => {
+    const keys = t.app.get(getModelToken(SigningKey)) as typeof SigningKey;
+    await keys.destroy({ where: { privateKeyEnc: 'corrupted-key-material' } });
+    t.app.get(KeyStore).invalidate();
+  });
+
   it('S01 AS-85: an unreadable signing key is a generic 500 with no stack, no key text and no session left behind', async () => {
     const { email } = await user();
     const keys = t.app.get(getModelToken(SigningKey)) as typeof SigningKey;
