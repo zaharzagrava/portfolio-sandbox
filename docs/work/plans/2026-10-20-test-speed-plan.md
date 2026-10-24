@@ -147,3 +147,17 @@ Quality: a time box per charter caps depth; parallelism adds breadth. Not an exe
 - Still unexplained: follow-graph (S26 AS-51) failed in about 1 of 3 earlier full runs and passed in both of these. Its failure message now names the state of the
   half-written buyer (rows, follower record, seconds since start). live-comments was a minute-boundary bug of the test (fake clock starts at the real time).
 - Next: front end (baseline run with the timing reporter, fix until green, then shards), then the seller-dashboard QA agents.
+
+## State at 16:10 on 2026-10-25 (stopped by the owner for the gym)
+
+- Backend: done (two green runs in a row, about 11 min on 8 shards).
+- Front end (Playwright, 542 tests, 4 workers, W07_PROD=1, API_URL=http://localhost:8000): about 8.3 min, was 22 to 25. One fully green run (498 passed, 0 failed, 44 skipped);
+  later runs each had one flaky failure, fixed one by one (assistant reload showed a reply twice = real product bug, fixed with 2 unit tests; share popover; the seller-overview
+  phone layout was 44 px shorter in one run: a helper was investigating, NOT finished, its edit of tests/visual/seller-overview.spec.ts is uncommitted).
+  Still needed: two full runs in a row, then the QA agents.
+- Real product bugs fixed on the way: dev seed (free plan limit), cancel-order toast lost when the dialog closes, assistant reply shown twice after reload.
+- 44 skipped tests are test.fixme/test.skip (datasets not seeded in the dev stack, dev mailbox missing, google, sponsored listing): coverage gaps, not failures.
+- QA: five key seller charters planned (shop setup, products, photos, inventory/stock, orders), plus scripts/qa/monkey-seller.mjs and fuzz-seller-api.mjs; early monkey/fuzz
+  findings (hydration mismatch on ~13 seller pages, CSP inline-style error probably dev-mode noise, 18 API inconsistencies) need triage on a production build.
+- To restart: scripts/qa/stack-up.sh with WITH_WEB=1 (about 5 min); keep the web server detached (Playwright's own webServer dies with its process), then
+  'cd packages/web && W07_PROD=1 API_URL=http://localhost:8000 npx playwright test --workers=4 --max-failures=10'.
