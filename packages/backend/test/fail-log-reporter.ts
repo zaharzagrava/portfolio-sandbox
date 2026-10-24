@@ -10,7 +10,7 @@ export default class FailLogReporter implements Reporter {
   onTestCaseResult(testCase: TestCase) {
     const result = testCase.result();
     if (result.state !== 'failed') return;
-    const first = (result.errors?.[0]?.message ?? '').split('\n')[0].replace(/\x1b\[[0-9;]*m/g, '').slice(0, 220);
+    const first = (result.errors?.[0]?.message ?? '').split('\n')[0].replace(/\x1b\[[0-9;]*m/g, '').slice(0, 700);
     const file = testCase.module.moduleId.split('packages/backend/')[1] ?? testCase.module.moduleId;
     try {
       appendFileSync(this.out, `${file} | ${testCase.fullName.slice(-110)} | ${first}\n`);
@@ -26,7 +26,7 @@ export default class FailLogReporter implements Reporter {
     if ([...module.children.allTests()].length === 0) {
       const err = module.errors()[0]?.message?.split('\n')[0] ?? 'suite failed to start';
       try {
-        appendFileSync(this.out, `${module.moduleId.split('packages/backend/')[1] ?? module.moduleId} | (suite) | ${err.slice(0, 220)}\n`);
+        appendFileSync(this.out, `${module.moduleId.split('packages/backend/')[1] ?? module.moduleId} | (suite) | ${err.slice(0, 700)}\n`);
       } catch {
         /* ignore */
       }
