@@ -71,8 +71,14 @@ test.describe('Admin feature flags', () => {
     const key = await newFlag(page);
     await page.goto('/admin/feature-flags');
     const row = page.getByRole('row').filter({ hasText: key });
-    await row.getByRole('button', { name: `Actions for ${key}` }).click();
-    await page.getByRole('menuitem', { name: 'Kill switch' }).click();
+    // The list is server-rendered, then hydrated and refetched: a menu opened in that window can be re-created under the
+    // pointer. Open it again until the item takes the click (each try is short; the whole step keeps the 15 s budget).
+    await expect(async () => {
+      if (!(await page.getByRole('menuitem', { name: 'Kill switch' }).isVisible())) {
+        await row.getByRole('button', { name: `Actions for ${key}` }).click({ timeout: 3_000 });
+      }
+      await page.getByRole('menuitem', { name: 'Kill switch' }).click({ timeout: 3_000 });
+    }).toPass({ timeout: 20_000 });
     const kill = page.getByRole('dialog');
     await expect(kill.getByRole('button', { name: 'Cancel' })).toBeFocused();
     await kill.getByRole('button', { name: 'Kill flag' }).click();

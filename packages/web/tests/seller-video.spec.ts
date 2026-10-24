@@ -1,3 +1,7 @@
+import { execFileSync } from 'node:child_process';
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { expect, test } from '@playwright/test';
 import { register, seedProduct, shopPath } from './helpers';
 import { openShopByApi } from './seller-setup';
@@ -9,6 +13,27 @@ import { openShopByApi } from './seller-setup';
  * video can be seeded); they need an encoder in the dev stack.
  */
 const PART_BYTES = 8 * 1024 * 1024;
+
+/**
+ * A REAL 2-second clip (made with ffmpeg) followed by one MP4 "free" padding box, so the file is a bit more than one part long
+ * and still plays. A file of filler bytes is not a video: the worker rejects it ("That file isn't a video.") within a moment,
+ * and the page can show that before it ever shows "Processing".
+ */
+function realVideoOfAtLeast(bytes: number): Buffer {
+  const dir = mkdtempSync(join(tmpdir(), 'seller-video-'));
+  try {
+    const file = join(dir, 'clip.mp4');
+    execFileSync('ffmpeg', ['-v', 'error', '-f', 'lavfi', '-i', 'testsrc2=size=320x240:rate=15', '-t', '2', '-pix_fmt', 'yuv420p', '-c:v', 'libx264', '-movflags', '+faststart', file]);
+    const clip = readFileSync(file);
+    const padSize = Math.max(8, bytes - clip.length);
+    const free = Buffer.alloc(padSize, 0);
+    free.writeUInt32BE(padSize, 0);
+    free.write('free', 4, 'latin1');
+    return Buffer.concat([clip, free]);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+}
 
 test.describe('Seller video', () => {
   test('owner uploads a video; a failed part is sent again; the page shows it processing', async ({ page }) => {
@@ -31,7 +56,7 @@ test.describe('Seller video', () => {
 
     await page.goto(shopPath(shopId, `products/${productId}/media/video`));
     await expect(page.getByRole('heading', { level: 1, name: 'Video' })).toBeVisible();
-    await page.getByLabel('Video file').setInputFiles({ name: 'tour.mp4', mimeType: 'video/mp4', buffer: Buffer.alloc(PART_BYTES + 4096, 1) });
+    await page.getByLabel('Video file').setInputFiles({ name: 'tour.mp4', mimeType: 'video/mp4', buffer: realVideoOfAtLeast(PART_BYTES + 4096) });
     await page.getByLabel('Title').fill('Kiln tour');
     await page.getByRole('button', { name: 'Upload video' }).click();
 
