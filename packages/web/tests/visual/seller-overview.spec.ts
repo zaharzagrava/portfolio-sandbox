@@ -116,6 +116,7 @@ test.describe('Seller overview layout', () => {
     await leaveAndReturn(page);
     await expect(page.getByRole('region', { name: 'Top products' }).getByText('Sales numbers are temporarily unavailable.')).toBeVisible();
     await expect(page.getByRole('region', { name: 'Leaderboard rank' }).getByText('Your rank is temporarily unavailable.')).toBeVisible();
+    await waitForLiveFrame(page);
     await shot(page, 'overview-partial.png');
     await expectLayout(page);
   });
