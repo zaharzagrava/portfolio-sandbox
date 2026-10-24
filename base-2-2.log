@@ -1,0 +1,31 @@
+
+ RUN  v3.2.7 /home/zagrava/workspace/personal-projects/portfolio-sandbox/packages/backend
+
+stdout | libs/domains/notifications/notifications-preferences.e2e-spec.ts
+◇ injected env (55) from .env.test // tip: ⌘ override existing { override: true }
+
+stdout | libs/domains/notifications/notifications-preferences.e2e-spec.ts
+◇ injected env (0) from .env.test // tip: ⌘ override existing { override: true }
+
+<claude-code-hint v="1" type="plugin" value="stripe@claude-plugins-official" />
+ ✓ libs/domains/notifications/notifications-preferences.e2e-spec.ts (16 tests) 16749ms
+   ✓ Notifications: preferences, settings, phone verification, devices and unsubscribe > S28 AS-15: changing a cell shows in the matrix and in routing; repeating it changes nothing  798ms
+   ✓ Notifications: preferences, settings, phone verification, devices and unsubscribe > S28 AS-16: invalid preference input is 400 and stores nothing; no credentials is 401; the 61st write in a minute is 429  1259ms
+   ✓ Notifications: preferences, settings, phone verification, devices and unsubscribe > S28 AS-17: mandatory notices ignore opt-outs but never the suppression list  821ms
+   ✓ Notifications: preferences, settings, phone verification, devices and unsubscribe > S28 AS-18: sms needs a verified phone; once verified it carries a later order; a changed phone loses it again  1512ms
+   ✓ Notifications: preferences, settings, phone verification, devices and unsubscribe > S28 AS-19: settings take effect for the next notification in every process: language and the zone of the quiet hours  1159ms
+   ✓ Notifications: preferences, settings, phone verification, devices and unsubscribe > S28 AS-20: settings are validated: format errors 400, a half-set or equal quiet window 422, nothing stored on failure  930ms
+   ✓ Notifications: preferences, settings, phone verification, devices and unsubscribe > S28 AS-22: wrong codes count down and lock for 15 minutes; an expired, absent or used code is refused  1087ms
+   ✓ Notifications: preferences, settings, phone verification, devices and unsubscribe > S28 AS-23: three code requests per hour; a missing phone is 422 phone_missing; a suppressed phone is 422 phone_unreachable  1565ms
+   ✓ Notifications: preferences, settings, phone verification, devices and unsubscribe > S28 AS-24: concurrent writes end in one consistent state (20 users, 4 racing writes each)  1407ms
+   ✓ Notifications: preferences, settings, phone verification, devices and unsubscribe > unsubscribe > S28 AS-25: GET describes and changes nothing; POST unsubscribes that category by e-mail only, repeatably  538ms
+   ✓ Notifications: preferences, settings, phone verification, devices and unsubscribe > unsubscribe > S28 AS-26: forged, tampered, foreign and empty tokens are the same 400 and change nothing; a flood from one address is 429  1113ms
+   ✓ Notifications: preferences, settings, phone verification, devices and unsubscribe > S28 AS-27: only non-mandatory e-mail carries the unsubscribe link, and the adapter turns it into both one-click headers  982ms
+   ✓ Notifications: preferences, settings, phone verification, devices and unsubscribe > devices > S28 AS-28: devices are registered without exposing the token, move to the latest user, are capped at 10 and validated  1517ms
+   ✓ Notifications: preferences, settings, phone verification, devices and unsubscribe > devices > S28 AS-29: a device is removed by its own id and only by its owner  808ms
+
+ Test Files  1 passed (1)
+      Tests  16 passed (16)
+   Start at  12:21:18
+   Duration  37.41s (transform 10.41s, setup 262ms, collect 19.76s, tests 16.75s, environment 0ms, prepare 125ms)
+

@@ -562,13 +562,36 @@ describe('Follow graph: follow, unfollow, limits and privacy', () => {
         u1.id,
       ]);
       expect(await storedCount(shop.accountId)).toBe(7);
+      // The corruption made above must be readable before the repair runs (a failure here names the cause; a failure below means that
+      // something else repaired part of it first).
+      const halfRows = (
+        await t.cql(
+          'SELECT user_id FROM following_by_user WHERE user_id = ? AND account_id = ?',
+          [half.id, shop.accountId],
+        )
+      ).rows;
+      expect(
+        halfRows.length === 1
+          ? 'readable'
+          : `the hand-made buyer-side relation is not readable (${halfRows.length} rows)`,
+      ).toBe('readable');
+      const recordsBefore = (await followerRows(shop.accountId)).length;
+      expect(
+        recordsBefore === 6
+          ? 'six records'
+          : `five followers and the ghost record expected before the repair, found ${recordsBefore}`,
+      ).toBe('six records');
 
       const reconcile = t.app.get(FeedReconcileService);
       const first = await reconcile.run({ graceMs: 60_000, paceMs: 0 });
       expect(first.finished).toBe(true);
 
       // 5 completed relations + the half-written one the buyer side vouches for; the ghost record is gone
-      expect(first.repaired).toBeGreaterThanOrEqual(6);
+      expect(
+        first.repaired >= 6
+          ? 'repaired enough'
+          : `repair pass result ${JSON.stringify(first)}`,
+      ).toBe('repaired enough');
       expect(await storedCount(shop.accountId)).toBe(6);
       expect(await storedCount(other.accountId)).toBe(1);
       const followers = (await followerRows(shop.accountId))
