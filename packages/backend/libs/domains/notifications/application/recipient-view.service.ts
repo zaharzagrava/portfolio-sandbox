@@ -38,8 +38,41 @@ export class RecipientViewService {
     private readonly cache: CacheService,
   ) {}
 
+  /**
+   * Reads in flight. A read that overlaps an invalidation of one of its users may hold the old data, and the cache would keep it for
+   * 5 minutes (a slow reader storing after the writer cleared). `invalidate` marks such users as raced; the read then drops its cached
+   * copy and reads again, so the write is never lost to a late reader. Nothing is kept after a read ends.
+   */
+  private readonly reading = new Set<{
+    ids: Set<string>;
+    raced: Set<string>;
+  }>();
+
   async views(userIds: string[]): Promise<Map<string, RecipientView>> {
     const unique = [...new Set(userIds)];
+    const read = { ids: new Set(unique), raced: new Set<string>() };
+    this.reading.add(read);
+    let out: Map<string, RecipientView>;
+    try {
+      out = await this.cachedViews(unique);
+    } finally {
+      this.reading.delete(read);
+    }
+    if (read.raced.size === 0) return out;
+    const raced = [...read.raced];
+    await this.cache.invalidate(raced.map(keyOf));
+    const fresh = await this.load(raced);
+    for (const [key, view] of fresh) {
+      if (view) out.set(userOf(key), view);
+      else out.delete(userOf(key));
+    }
+    await this.cache.invalidate(raced.map(keyOf));
+    return out;
+  }
+
+  private async cachedViews(
+    unique: string[],
+  ): Promise<Map<string, RecipientView>> {
     const out = new Map<string, RecipientView>();
     for (let i = 0; i < unique.length; i += BATCH) {
       const ids = unique.slice(i, i + BATCH);
@@ -63,6 +96,8 @@ export class RecipientViewService {
   /** After any write to the user's preferences, settings, devices or suppression-driven overrides. */
   async invalidate(userIds: string | string[]): Promise<void> {
     const ids = Array.isArray(userIds) ? userIds : [userIds];
+    for (const read of this.reading)
+      for (const id of ids) if (read.ids.has(id)) read.raced.add(id);
     if (ids.length > 0) await this.cache.invalidate(ids.map(keyOf));
   }
 
