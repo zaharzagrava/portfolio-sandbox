@@ -64,7 +64,8 @@ let step = 0, currentAction = 'setup', shotCount = 0, page, stats = { actions: 0
 const esc = (v) => String(v ?? '').replace(/[\t\r\n]+/g, ' ').slice(0, 500);
 const routeOf = (u) => { try { return new URL(u, WEB).pathname.replace(/\/[0-9a-f]{8}-[0-9a-f-]{27,}/g, '/:id'); } catch { return u; } };
 async function addFinding(kind, url, detail, extraKey = '') {
-  const message = String(detail).replace(/nonce-[\w+\/=-]+/g, 'nonce-X').replace(/\d{3,}/g, 'N').replace(/[0-9a-f]{8}-[0-9a-f-]{27,}/g, 'ID').slice(0, 160);
+  let d0 = String(detail); const csp = d0.match(/^(.*?Content Security Policy directive:? ?'[a-z-]+)/s); if (csp) d0 = csp[1];
+  const message = d0.replace(/nonce-[\w+\/=-]+/g, 'nonce-X').replace(/\d{3,}/g, 'N').replace(/[0-9a-f]{8}-[0-9a-f-]{27,}/g, 'ID').slice(0, 160);
   const key = [kind, routeOf(url), message, extraKey].join('|');
   const f = findings.get(key);
   if (f) { f.count++; return; }
@@ -161,7 +162,7 @@ const isDanger = (t) => FORBIDDEN_TEXT.test(`${t.text} ${t.label} ${t.href}`) ||
 
 async function doAction(kind, targets) {
   const L = (i) => page.locator(`[data-monkey="${i}"]`).first();
-  const T = { timeout: 3000 };
+  const T = { timeout: 1500 };
   const safeClickables = targets.filter((t) => !isField(t) && !isDanger(t) && (!t.href || inSeller(t.href) || t.href.startsWith('#')));
   const fields = targets.filter((t) => isField(t) && t.type !== 'hidden' && !isDanger(t));
   switch (kind) {
@@ -206,7 +207,7 @@ async function checkPage() {
     const bad = await page.evaluate(() => {
       const t = document.body?.innerText ?? '';
       if (/Application error: a (client|server)-side exception/i.test(t)) return 'Application error page';
-      if (document.querySelector('nextjs-portal')) return 'Next error overlay';
+      if ([...document.querySelectorAll('nextjs-portal')].some((p) => p.shadowRoot?.querySelector('[data-nextjs-dialog], [data-nextjs-dialog-overlay], [data-nextjs-error-overlay]'))) return 'Next error overlay';
       if (/Internal Server Error|Unhandled Runtime Error/i.test(t)) return 'error text on the page: ' + (t.match(/Internal Server Error|Unhandled Runtime Error/i) ?? [''])[0];
       if (/\b(undefined|NaN|\[object Object\])\b/.test(t.replace(/\s+/g, ' ')) ) return 'raw "' + (t.match(/\b(undefined|NaN|\[object Object\])\b/) ?? [''])[0] + '" shown on the page';
       if (document.documentElement.scrollWidth > window.innerWidth + 40) return 'sideways scroll: page is ' + document.documentElement.scrollWidth + 'px wide in a ' + window.innerWidth + 'px window';

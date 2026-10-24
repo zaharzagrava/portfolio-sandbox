@@ -70,6 +70,8 @@ test.describe('Product page layout', () => {
     await expect(page.getByTestId('gallery-placeholder')).toBeVisible();
     await expect(page.getByRole('heading', { level: 2 })).toHaveCount(0); // no rail headings, no empty sections
     await expect(page.getByRole('button', { name: /add to cart/i }).first()).toBeEnabled();
+    // Share is disabled until hydration and the session lookup finish, then fades to its enabled colours: measure contrast after that.
+    await expect(page.getByRole('button', { name: 'Share' }).first()).toBeEnabled();
     await expectNoSeriousViolations(page);
     await expect(page.getByTestId('gallery-placeholder')).toHaveScreenshot('gallery-placeholder.png');
   });

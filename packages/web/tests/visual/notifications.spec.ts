@@ -24,7 +24,15 @@ async function openPanel(page: Page, options: { unread?: number } = {}) {
   await register(page);
   // The welcome item is created asynchronously after sign-up: wait for the badge so the first read of the inbox has it.
   if (options.unread) await expect(page.getByRole('button', { name: `Notifications, ${options.unread} unread` })).toBeVisible({ timeout: 20_000 });
-  await page.getByRole('button', { name: /^Notifications/ }).click();
+  // A click before the page is hydrated is lost (the bell's handler is not attached yet): wait until React has attached to the bell.
+  const bell = page.getByRole('button', { name: /^Notifications/ });
+  await expect(bell).toBeVisible();
+  await bell.evaluate((node) => new Promise<void>((resolve) => {
+    const ready = () => Object.keys(node).some((key) => key.startsWith('__reactProps'));
+    const tick = () => (ready() ? resolve() : setTimeout(tick, 50));
+    tick();
+  }));
+  await bell.click();
   const panel = page.getByRole('dialog', { name: 'Notifications' });
   await expect(panel).toBeVisible();
   // The panel zooms in: measure it once the animation has ended.

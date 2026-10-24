@@ -324,10 +324,31 @@ test.describe('Chat layouts', () => {
     await expect(page.getByTestId('chat-message').last()).toBeVisible();
     await list.locator('[data-virtuoso-scroller="true"]').evaluate((scroller) => scroller.scrollTo({ top: 0 }));
     await expect(page.getByText('Start of the chat')).toBeVisible();
+    // The page learns "the reader is not at the end" from the list's scroll events, a moment after the scroll: wait until the list has
+    // held still (same position, same height) for 30 frames, or a message that arrives meanwhile is counted as read, and no pill shows.
+    await list.locator('[data-virtuoso-scroller="true"]').evaluate(
+      (scroller) =>
+        new Promise<void>((resolve) => {
+          let still = 0;
+          let last = '';
+          const frame = () => {
+            const now = `${scroller.scrollTop}/${scroller.scrollHeight}`;
+            still = now === last && scroller.scrollTop === 0 ? still + 1 : 0;
+            last = now;
+            if (still >= 30) resolve();
+            else requestAnimationFrame(frame);
+          };
+          requestAnimationFrame(frame);
+        }),
+    );
     world.syncBody = [{ channelId: CHANNEL, messages: [message(41, SELLER, 'A new message while you were reading up here.')], lastSeq: 41, hasMore: false }];
     await expect(page.getByText('Message number 40 in a long conversation.')).not.toBeInViewport();
-    await page.evaluate(() => window.dispatchEvent(new Event('online')));
-    await expect(page.getByRole('button', { name: 'Jump to latest, 1 new message' })).toBeVisible();
+    // A catch-up that is already running (the page's first read, a poll) has read the old answer and a second one is not started
+    // meanwhile: send the "back online" nudge again until a catch-up that started after the new message has run.
+    await expect(async () => {
+      await page.evaluate(() => window.dispatchEvent(new Event('online')));
+      await expect(page.getByRole('button', { name: 'Jump to latest, 1 new message' })).toBeVisible({ timeout: 1_500 });
+    }).toPass({ timeout: 20_000 });
     await check(page, 'pill');
 
     // The browser goes offline: the banner says so, at the top of the inbox and the conversation.
