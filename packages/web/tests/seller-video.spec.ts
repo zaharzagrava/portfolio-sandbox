@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
-import { openShop, register, seedProduct, shopPath } from './helpers';
+import { register, seedProduct, shopPath } from './helpers';
+import { openShopByApi } from './seller-setup';
 
 /**
  * W04 F6 journey "video" (S30 AS-61, the seller half): the owner picks a video file on the product's video page, the upload
@@ -11,8 +12,8 @@ const PART_BYTES = 8 * 1024 * 1024;
 
 test.describe('Seller video', () => {
   test('owner uploads a video; a failed part is sent again; the page shows it processing', async ({ page }) => {
-    const member = await register(page);
-    const { shopId } = await openShop(page);
+    const member = const member = await register(page);
+    const { shopId } = await openShopByApi(member);
     const productId = await seedProduct(shopId, { title: 'Video Test Mug' }, member);
 
     // The first PUT of the first part fails once; the page sends that part again (and only that part).

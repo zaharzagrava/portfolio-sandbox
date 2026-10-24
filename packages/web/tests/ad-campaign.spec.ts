@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
-import { openShop, register, seedProduct, shopPath } from './helpers';
+import { register, seedProduct, shopPath } from './helpers';
+import { openShopByApi } from './seller-setup';
 
 /**
  * W04 journey "sponsored campaign" (F7): the owner of a fresh shop creates a campaign for one of its products
@@ -10,8 +11,8 @@ const TITLE = 'Sponsored Walnut Spoon';
 
 test.describe('Seller campaigns', () => {
   test('owner creates a campaign and pauses it', async ({ page }) => {
-    const member = await register(page);
-    const { shopId } = await openShop(page);
+    const member = const member = await register(page);
+    const { shopId } = await openShopByApi(member);
     await seedProduct(shopId, { title: TITLE, quantity: 8 }, member);
 
     await page.goto(shopPath(shopId, 'campaigns'));

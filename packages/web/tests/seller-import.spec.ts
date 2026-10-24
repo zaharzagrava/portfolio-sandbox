@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
-import { openShop, register, shopPath } from './helpers';
+import { register, shopPath } from './helpers';
+import { openShopByApi } from './seller-setup';
 
 /**
  * Bulk catalog import happy path (S07 SC-008, journey J04; W04 US10): choose a CSV, the parts upload to the addresses of the
@@ -8,8 +9,8 @@ import { openShop, register, shopPath } from './helpers';
  */
 test.describe('Seller bulk import', () => {
   test('a seller imports a CSV, watches the progress and downloads the report of the refused rows', async ({ page }) => {
-    await register(page);
-    const { shopId } = await openShop(page);
+    const member = await register(page);
+    const { shopId } = await openShopByApi(member);
 
     await page.goto(shopPath(shopId, 'imports'));
     // a file chosen before React attaches its handlers is never seen (the Start button stays disabled on a loaded machine)

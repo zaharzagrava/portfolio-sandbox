@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
-import { openFiltersIfCollapsed, openShop, register, seedProduct, shopPath } from './helpers';
+import { openFiltersIfCollapsed, register, seedProduct, shopPath } from './helpers';
+import { openShopByApi } from './seller-setup';
 
 /**
  * W04 journey "inventory" (AS-33, AS-36, AS-30, AS-40): the owner of a freshly opened shop adds a product, edits its stock,
@@ -12,8 +13,8 @@ const rowOf = (page: Page, title: string) => page.getByRole('row').filter({ hasT
 
 test.describe('Seller inventory', () => {
   test('owner adds, finds, edits and archives a product', async ({ page }) => {
-    const member = await register(page);
-    const { shopId } = await openShop(page);
+    const member = const member = await register(page);
+    const { shopId } = await openShopByApi(member);
     await seedProduct(shopId, { title: 'Seeded Walnut Spoon', quantity: 4 }, member);
     await page.goto(shopPath(shopId, 'inventory'));
     await expect(page.getByRole('heading', { level: 1, name: 'Inventory' })).toBeVisible();

@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
-import { adminLogin, archiveFlagThroughUi, createFlag, flagPath, uniqueFlagKey } from './helpers';
+import { archiveFlagThroughUi, createFlag, flagPath, uniqueFlagKey } from './helpers';
+import { adminLoginByApi } from './seller-setup';
 
 /**
  * W06 journeys (VII.7: the happy path of each story; every failure form is a unit test): an admin creates a flag that starts
@@ -13,7 +14,7 @@ test.afterEach(async ({ page }) => {
 });
 
 async function newFlag(page: Page, description?: string) {
-  await adminLogin(page);
+  await adminLoginByApi(page);
   const key = uniqueFlagKey();
   created.push(key);
   await createFlag(page, key, { description });
@@ -113,7 +114,7 @@ test.describe('Admin feature flags', () => {
   });
 
   test('W06 AS-45 admin opens the stale report', async ({ page }) => {
-    await adminLogin(page);
+    await adminLoginByApi(page);
     await page.getByRole('tab', { name: 'Stale' }).click();
     await expect(page).toHaveURL(/tab=stale/);
     // The dev stack seeds no expired or unused flag (gaps E9): the report or its good-news message must show.

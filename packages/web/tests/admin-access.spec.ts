@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
-import { SEED, adminLogin, login, register } from './helpers';
+import { SEED, login, register } from './helpers';
+import { adminLoginByApi } from './seller-setup';
 
 /** W06 AS-47, AS-48: only admins get into the console; a visitor signs in and comes back, a member sees only the no-access panel. */
 test.describe('Admin console access', () => {
@@ -13,7 +14,7 @@ test.describe('Admin console access', () => {
   });
 
   test('W06 AS-48 AS-59 an admin sees the shell and the navigation', async ({ page }) => {
-    await adminLogin(page);
+    await adminLoginByApi(page);
     await expect(page.getByRole('heading', { level: 1, name: 'Feature flags' })).toBeVisible();
     await expect(page.locator('main > div > header').getByText(SEED.admin)).toBeVisible();
     const viewport = page.viewportSize();

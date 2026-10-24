@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
-import { payWithSandboxCard, openShop, register, seedProduct, shopPath } from './helpers';
+import { payWithSandboxCard, register, seedProduct, shopPath } from './helpers';
+import { openShopByApi } from './seller-setup';
 
 /** W04 AS-19 (and S40 AS-50): a paid order of the shop moves the live numbers without a reload. Own member, shop and product. */
 test.describe('Seller live numbers', () => {
@@ -8,7 +9,7 @@ test.describe('Seller live numbers', () => {
   test('W04 AS-19: a sandbox-paid order moves Orders and Revenue of the last 60 seconds within 2 seconds', async ({ browser }) => {
     const sellerPage = await (await browser.newContext()).newPage();
     const seller = await register(sellerPage);
-    const { shopId } = await openShop(sellerPage);
+    const { shopId } = await openShopByApi(seller);
     const productId = await seedProduct(shopId, { priceMinor: 6000, quantity: 5 }, seller);
 
     await sellerPage.goto(shopPath(shopId));

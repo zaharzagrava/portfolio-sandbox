@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
-import { NEW_USER_PASSWORD, register, resetRateLimits, sellerCall, sellerMenu, shopPath, openShop } from './helpers';
+import { NEW_USER_PASSWORD, register, resetRateLimits, sellerCall, sellerMenu, shopPath } from './helpers';
+import { openShopByApi } from './seller-setup';
 
 /**
  * W04 US1/US2: opening a shop, coming back to it and switching between shops (AS-01..AS-03, AS-08..AS-10). Roles and labels
@@ -32,8 +33,8 @@ test.describe('Seller shop entry and overview', () => {
   });
 
   test('W04 AS-08: a returning owner of one shop lands on its overview', async ({ page }) => {
-    await register(page);
-    const { shopId, shopName } = await openShop(page);
+    const member = await register(page);
+    const { shopId, shopName } = await openShopByApi(member);
     await page.goto('/dashboard/seller');
     await expect(page).toHaveURL(new RegExp(`${shopPath(shopId)}$`));
     await expect(page.getByRole('heading', { level: 1, name: shopName })).toBeVisible();
@@ -41,7 +42,7 @@ test.describe('Seller shop entry and overview', () => {
 
   test('W04 AS-09: an owner of two shops picks one and switches while keeping the section', async ({ page }) => {
     const member = await register(page);
-    const first = await openShop(page);
+    const first = await openShopByApi(member);
     const login = await sellerCall('POST', '/api/auth/login', { email: member.email, password: NEW_USER_PASSWORD });
     expect(login.status).toBe(200);
     const secondName = `E2E Second ${Date.now().toString(36)}`;

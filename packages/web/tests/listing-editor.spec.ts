@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
-import { openShop, register, seedProduct, shopPath } from './helpers';
+import { register, seedProduct, shopPath } from './helpers';
+import { openShopByApi } from './seller-setup';
 
 /**
  * W04 F1 journey "listing editor" (S06, happy path): the owner of a fresh shop opens a product's draft from the inventory
@@ -11,8 +12,8 @@ import { openShop, register, seedProduct, shopPath } from './helpers';
  */
 test.describe('Seller listing editor', () => {
   test('owner edits a draft live, saves a version and publishes it', async ({ page }) => {
-    const member = await register(page);
-    const { shopId } = await openShop(page);
+    const member = const member = await register(page);
+    const { shopId } = await openShopByApi(member);
     const original = 'Draft Test Mug';
     await seedProduct(shopId, { title: original, brand: 'Clay Works', category: 'kitchen', priceMinor: 2450, quantity: 7, description: 'Hand thrown.' }, member);
 

@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
-import { API_URL, openShop, readInviteLink, register, shopPath, uniqueEmail } from './helpers';
+import { API_URL, readInviteLink, register, shopPath, uniqueEmail } from './helpers';
+import { openShopByApi } from './seller-setup';
 
 /**
  * W04 journey "invitation" (AS-80): the owner of a fresh shop invites a registered person by e-mail; the invitee opens the
@@ -27,9 +28,9 @@ test.describe('Seller team', () => {
     const inviteeContext = await browser.newContext();
     const invitee = await inviteeContext.newPage();
     try {
-      await register(invitee, inviteeEmail);
-      await register(page);
-      const { shopId, shopName } = await openShop(page);
+      // the two members are independent: register both at once
+      const [, owner] = await Promise.all([register(invitee, inviteeEmail), register(page)]);
+      const { shopId, shopName } = await openShopByApi(owner);
 
       await page.goto(shopPath(shopId, 'team?tab=invitations'));
       await page.getByLabel('E-mail address').fill(inviteeEmail);

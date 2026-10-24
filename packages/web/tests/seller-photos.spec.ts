@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
-import { openShop, register, seedProduct, shopPath } from './helpers';
+import { register, seedProduct, shopPath } from './helpers';
+import { openShopByApi } from './seller-setup';
 
 /**
  * W04 F6 journey "photos" (S29): the owner of a fresh shop opens the photos of a product from the inventory menu, adds a
@@ -13,8 +14,8 @@ const PIXEL_PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAD
 
 test.describe('Seller photos', () => {
   test('owner adds a photo to a product and saves the gallery', async ({ page }) => {
-    const member = await register(page);
-    const { shopId } = await openShop(page);
+    const member = const member = await register(page);
+    const { shopId } = await openShopByApi(member);
     const title = 'Photo Test Mug';
     await seedProduct(shopId, { title }, member);
 

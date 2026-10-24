@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
-import { openShop, register, shopPath } from './helpers';
+import { register, shopPath } from './helpers';
+import { openShopByApi } from './seller-setup';
 
 /**
  * W04 journey "developers" (AS-45, AS-53, AS-57, AS-64): the owner of a freshly opened shop creates an API key and sees its
@@ -17,8 +18,8 @@ const HOOK_URL = process.env.WEBHOOK_E2E_URL ?? 'https://example.com/hooks/e2e';
 test.describe('Seller developers', () => {
   test('owner creates and revokes a key, adds an endpoint and sends a test event', async ({ page }) => {
     await page.context().grantPermissions(['clipboard-read', 'clipboard-write']); // "Copy" counts as copied only when the browser allows the write
-    await register(page);
-    const { shopId } = await openShop(page);
+    const member = await register(page);
+    const { shopId } = await openShopByApi(member);
 
     // Step 1 (AS-45, AS-46): create a test key; the secret is shown once, and the list shows the prefix only.
     await page.goto(shopPath(shopId, 'developers/api-keys'));

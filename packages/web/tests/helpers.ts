@@ -21,22 +21,41 @@ export const uniqueEmail = (prefix = 'ui') => `${prefix}-${Date.now()}-${Math.fl
  * Clears the limiter counters (`rl:*`) of the dev stack's Redis; the policies themselves stay as they are.
  */
 export async function resetRateLimits() {
-  const url = process.env.REDIS_URL ?? 'redis://localhost:6300/0';
   try {
-    // ioredis is the backend package's dependency: resolve it from there
-    const Redis = createRequire(path.resolve(__dirname, '../../backend/package.json'))('ioredis');
-    const redis = new Redis(url, { lazyConnect: true, maxRetriesPerRequest: 1 });
-    await redis.connect();
+    const redis = await sharedRedis();
     let cursor = '0';
     do {
       const [next, keys] = await redis.scan(cursor, 'MATCH', 'rl:*', 'COUNT', 1000);
       cursor = next;
       if (keys.length) await redis.del(...keys);
     } while (cursor !== '0');
-    redis.disconnect();
   } catch (error) {
+    sharedRedisConnection = undefined; // a broken connection is rebuilt on the next call
     console.error(`WARNING: could not reset the rate limits (${(error as Error).message}); a 429 may follow.`);
   }
+}
+
+// One Redis connection per worker process, opened on the first reset and kept (it used to be opened, used and closed for every
+// registration, about 20 times per spec file). Playwright ends the worker process, which closes the socket.
+type RedisLike = { disconnect: () => void; scan: (...args: unknown[]) => Promise<[string, string[]]>; del: (...keys: string[]) => Promise<unknown> };
+let sharedRedisConnection: Promise<RedisLike> | undefined;
+function sharedRedis(): Promise<RedisLike> {
+  sharedRedisConnection ??= (async () => {
+    const url = process.env.REDIS_URL ?? 'redis://localhost:6300/0';
+    // ioredis is the backend package's dependency: resolve it from there
+    const Redis = createRequire(path.resolve(__dirname, '../../backend/package.json'))('ioredis');
+    const redis = new Redis(url, { lazyConnect: true, maxRetriesPerRequest: 1 });
+    await redis.connect();
+    return redis as RedisLike;
+  })();
+  return sharedRedisConnection;
+}
+
+/** Closes the shared connection (global setup does, so the main Playwright process is not held open). */
+export async function closeSharedRedis() {
+  const pending = sharedRedisConnection;
+  sharedRedisConnection = undefined;
+  (await pending?.catch(() => undefined))?.disconnect();
 }
 
 /** The password the journeys give the accounts they register (the seeded accounts use `SEED.password`). */

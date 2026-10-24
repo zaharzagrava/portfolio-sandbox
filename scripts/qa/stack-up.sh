@@ -24,6 +24,12 @@ curl -sf localhost:8000/health/ready >/dev/null || { echo "the API did not becom
 # the local stand-in for the document-extractor Lambda: nothing else consumes `onboarding-documents`, so without it no shop is ever verified (J01 G-33);
 # and for the media-processing Lambda: nothing else consumes `media-processing`, so an uploaded photo never leaves "Waiting to process" (W04 seller-photos)
 setsid pnpm --filter api run start:lambda-local document-extractor media-processing >"$QA_DIR/lambda.log" 2>&1 & echo $! > "$QA_DIR/lambda.pid"
+# The video worker needs no extra process: the API started above (local-monolith) already hosts the worker app, whose video module reads the queue `video-transcode`.
+# What it does need is the encoder programs on this machine; without them every video stays PROCESSING for ever (seller-video charter). Warn loudly, do not stop.
+for tool in ffmpeg ffprobe; do
+  command -v "$tool" >/dev/null || { echo "WARNING: $tool is not installed: uploaded videos will never leave PROCESSING (install ffmpeg)" | tee -a "$QA_DIR/warnings.log" >&2; }
+done
+sleep 3; grep -qi "video" "$QA_DIR/api.log" || echo "WARNING: the API log does not mention the video worker yet: check $QA_DIR/api.log before the video charter" | tee -a "$QA_DIR/warnings.log" >&2
 # the seeded accounts and products (a fresh stack has none)
 pnpm --filter api seed:dev >"$QA_DIR/seed.log" 2>&1 || { echo "the seed failed: see $QA_DIR/seed.log" >&2; "$(dirname "$0")/stack-down.sh" "$QA_DIR"; exit 1; }
 if [[ "${WITH_WEB:-}" == 1 ]]; then   # the storefront, for the browser (QA agent, Playwright)
