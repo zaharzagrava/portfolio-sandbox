@@ -136,13 +136,34 @@ describe('Read position', () => {
     expect(markRead.mock.calls).toEqual([[4], [5]]);
   });
 
-  it('W05 AS-31 UC10: dispose cancels a pending call', async () => {
-    const { tracker, markRead } = setup();
+  it('W05 AS-31 UC10: leaving the chat inside the debounce still sends the position seen, once, and the badge is set from the answer', async () => {
+    const { tracker, markRead, onResult } = setup();
     tracker.setActive(true);
     tracker.report(4);
     tracker.dispose();
     await vi.advanceTimersByTimeAsync(5000);
-    expect(markRead).not.toHaveBeenCalled();
+    expect(markRead.mock.calls).toEqual([[4]]);
+    expect(onResult).toHaveBeenCalledExactlyOnceWith({ lastReadSeq: 4, unread: 0 });
+  });
+
+  it('W05 AS-31 UC10: leaving sends nothing when the tab is hidden, nothing new was seen, or the call is already on its way', async () => {
+    const hidden = setup();
+    hidden.tracker.report(4);
+    hidden.tracker.dispose();
+    const none = setup();
+    none.tracker.setActive(true);
+    none.tracker.dispose();
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(hidden.markRead).not.toHaveBeenCalled();
+    expect(none.markRead).not.toHaveBeenCalled();
+
+    const busy = setup();
+    busy.tracker.setActive(true);
+    busy.tracker.report(4);
+    await vi.advanceTimersByTimeAsync(500);
+    busy.tracker.dispose();
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(busy.markRead).toHaveBeenCalledTimes(1);
   });
 
   it('W05 AS-31 UC10: a start position (the server\'s lastReadSeq when the chat opens) is already acknowledged', async () => {

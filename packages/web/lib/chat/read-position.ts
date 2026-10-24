@@ -17,7 +17,10 @@ export type ReadTracker = {
   report: (seq: number) => void;
   /** Whether the tab is visible and focused (the component re-reports the visible position when it becomes active). */
   setActive: (active: boolean) => void;
-  /** Cancels timers; nothing is sent afterwards. */
+  /**
+   * Stops the tracker. A position that was seen but is still waiting out the debounce (the member left the chat quickly) is
+   * sent once now, so the read is not lost; the answer still updates the badge. Nothing else is sent afterwards.
+   */
   dispose: () => void;
 };
 
@@ -35,6 +38,8 @@ export function createReadTracker(options: {
   let blockedUntil = 0;
   let timer: ReturnType<typeof setTimeout> | undefined;
   let disposed = false;
+  /** Set while the last, flushing call of a disposed tracker is on its way. */
+  let leaving = false;
 
   const schedule = (delay: number) => {
     clearTimeout(timer);
@@ -43,7 +48,7 @@ export function createReadTracker(options: {
 
   function fire() {
     timer = undefined;
-    if (disposed || !active || inFlight || target <= acknowledged) return;
+    if ((disposed && !leaving) || !active || inFlight || target <= acknowledged) return;
     const wait = blockedUntil - Date.now();
     if (wait > 0) return schedule(wait);
     inFlight = true;
@@ -53,7 +58,7 @@ export function createReadTracker(options: {
       .then(
         (result) => {
           acknowledged = Math.max(acknowledged, result.lastReadSeq, sending);
-          if (!disposed) options.onResult(result);
+          if (!disposed || leaving) options.onResult(result);
         },
         (error: unknown) => {
           const problem = problemFromError(error);
@@ -84,9 +89,15 @@ export function createReadTracker(options: {
       } else if (target > acknowledged && !inFlight) schedule(READ_DEBOUNCE_MS);
     },
     dispose() {
-      disposed = true;
+      if (disposed) return;
+      const pending = active && !inFlight && target > acknowledged && blockedUntil <= Date.now();
       clearTimeout(timer);
       timer = undefined;
+      if (pending) {
+        leaving = true;
+        fire();
+      }
+      disposed = true;
     },
   };
 }
