@@ -2,7 +2,7 @@
 import { expect, type Page, test } from '@playwright/test';
 import { NEW_USER_PASSWORD, register, sellerCall, sellerMenu, shopPath } from './helpers';
 import { archiveByApi, joinShopAs, type Member, openSecondShop, ownerWithShop, setSuspended, tokenOf, watchApi } from './seller/cross-cutting/support';
-import { historyOf, indexRow, menuButton, openInventory, openRowAction, outboxOf, productRow, proOwner, seedAll, sql } from './support/inventory';
+import { historyOf, indexRow, menuButton, openInventory, openRowAction, outboxOf, productRow, proOwner, seedAll, sharedProOwner, sql } from './support/inventory';
 import { setShopStatus, userId } from './seller/support/db';
 import { openShopByApi } from './seller-setup';
 import { acceptInvite, memberWithRole, ownerByApi, type Role } from './support/seller-entry';
@@ -47,7 +47,7 @@ test.describe('Add product', () => {
   test.describe('Add product: button and dialog', () => {
     test('W04 AS-33 @desktop: the button opens a dialog with focus on Title; Tab stays inside; Escape closes and returns focus; Cancel sends nothing and the form reopens empty', async ({ page }) => {
       test.info().annotations.push({ type: 'aiqa-lines', description: 'inventory.add.button,inventory.add.dialog-open,inventory.add.dialog-keyboard,inventory.add.cancel' });
-      const { member, shopId } = await proOwner(page);
+      const { member, shopId } = await sharedProOwner(page);
       await openInventory(page, member, shopId);
       const api = watchApi(page);
       await expect(addButton(page)).toBeEnabled();
@@ -86,7 +86,7 @@ test.describe('Add product', () => {
   test.describe('Add product: fields', () => {
     test('W04 AS-34 @desktop: text fields: required, trimmed, limits, the alert, aria-invalid and focus on the first bad field', async ({ page }) => {
       test.info().annotations.push({ type: 'aiqa-lines', description: 'inventory.add.invalid-submit,inventory.add.field-title,inventory.add.field-brand,inventory.add.field-category,inventory.add.field-description,inventory.add.leading-trailing-spaces' });
-      const { member, shopId } = await proOwner(page);
+      const { member, shopId } = await sharedProOwner(page);
       await openInventory(page, member, shopId);
       const api = watchApi(page);
       await openAdd(page);
@@ -136,7 +136,7 @@ test.describe('Add product', () => {
 
     test('W04 AS-34 @desktop: a description of exactly 4000 characters with spaces around it is accepted and saved trimmed (P2F5)', async ({ page }) => {
       test.info().annotations.push({ type: 'aiqa-lines', description: 'inventory.add.field-description-padded' });
-      const { member, shopId } = await proOwner(page);
+      const { member, shopId } = await sharedProOwner(page);
       await openInventory(page, member, shopId);
       await openAdd(page);
       const values = await fillForm(page, { description: `\n ${'d'.repeat(4000)} \n` });
@@ -148,7 +148,7 @@ test.describe('Add product', () => {
 
     test('W04 AS-34 @desktop: an empty description is not sent', async ({ page }) => {
       test.info().annotations.push({ type: 'aiqa-lines', description: 'inventory.add.field-description' });
-      const { member, shopId } = await proOwner(page);
+      const { member, shopId } = await sharedProOwner(page);
       await openInventory(page, member, shopId);
       await openAdd(page);
       const values = await fillForm(page, { description: '   ' });
@@ -161,7 +161,7 @@ test.describe('Add product', () => {
 
     test('W04 AS-35 @desktop: 24.50, 24,5, 0.01, 19.99, 99999999.99 and the maximum 100000000.00 are accepted and stored as exact minor units', async ({ page }) => {
       test.info().annotations.push({ type: 'aiqa-lines', description: 'inventory.add.price-edge-values,inventory.add.field-price' });
-      const { member, shopId } = await proOwner(page);
+      const { member, shopId } = await sharedProOwner(page);
       await openInventory(page, member, shopId);
       const cases: [string, number][] = [['24.50', 2450], ['24,5', 2450], ['0.01', 1], ['19.99', 1999], ['99999999.99', 9_999_999_999], ['100000000.00', 10_000_000_000], [' 7 ', 700]];
       for (const [text, minor] of cases) {
@@ -181,7 +181,7 @@ test.describe('Add product', () => {
 
     test('W04 AS-34 @desktop: the stock field: 0 to 1,000,000,000 whole, spaces trimmed, the single error text', async ({ page }) => {
       test.info().annotations.push({ type: 'aiqa-lines', description: 'inventory.add.field-stock,inventory.add.stock-edge-values' });
-      const { member, shopId } = await proOwner(page);
+      const { member, shopId } = await sharedProOwner(page);
       await openInventory(page, member, shopId);
       const api = watchApi(page);
       await openAdd(page);
@@ -207,7 +207,7 @@ test.describe('Add product', () => {
 
     test('W04 AS-43 @desktop: emoji, accents, 200 emoji (code points) and script text are saved and shown as text; 201 emoji are refused', async ({ page }) => {
       test.info().annotations.push({ type: 'aiqa-lines', description: 'inventory.add.unicode-emoji-html' });
-      const { member, shopId } = await proOwner(page);
+      const { member, shopId } = await sharedProOwner(page);
       await openInventory(page, member, shopId);
       const emoji200 = '😀'.repeat(120); // 240 UTF-16 units: fits the box
       const texts = [emoji200, `<script>alert(1)</script> ${Date.now()}`, `Crème brûlée ☕ ${Date.now()}`, `'; DROP TABLE "Product"; -- ${Date.now()}`];
@@ -232,7 +232,7 @@ test.describe('Add product', () => {
   test.describe('Add product: creating', () => {
     test('W04 AS-43 @desktop: a title of 200 emoji (200 code points) is saved whole, not cut at 125 (P2F4)', async ({ page }) => {
       test.info().annotations.push({ type: 'aiqa-lines', description: 'inventory.add.unicode-emoji-html-200' });
-      const { member, shopId } = await proOwner(page);
+      const { member, shopId } = await sharedProOwner(page);
       await openInventory(page, member, shopId);
       await openAdd(page);
       await fillForm(page, { title: '😀'.repeat(200) });
@@ -242,7 +242,7 @@ test.describe('Add product', () => {
 
     test('W04 AS-33 @desktop: one request for a double press and Enter, read-only fields while it runs, the row, its history and its outbox event', async ({ page }) => {
       test.info().annotations.push({ type: 'aiqa-lines', description: 'inventory.add.create-button,inventory.add.create-db-row,inventory.add.double-press,inventory.add.enter-key,inventory.add.fields-readonly-while-saving,inventory.add.idempotency-key,inventory.add.csrf-header' });
-      const { member, shopId } = await proOwner(page);
+      const { member, shopId } = await sharedProOwner(page);
       await openInventory(page, member, shopId);
       const api = watchApi(page);
       const requests: { method: string; url: string; headers: Record<string, string>; body: Record<string, unknown> }[] = [];
@@ -293,7 +293,7 @@ test.describe('Add product', () => {
 
     test('W04 AS-33 @desktop: Enter in a field submits like the button', async ({ page }) => {
       test.info().annotations.push({ type: 'aiqa-lines', description: 'inventory.add.enter-key' });
-      const { member, shopId } = await proOwner(page);
+      const { member, shopId } = await sharedProOwner(page);
       await openInventory(page, member, shopId);
       await openAdd(page);
       const values = await fillForm(page, {});

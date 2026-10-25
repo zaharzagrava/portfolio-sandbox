@@ -76,6 +76,21 @@ export async function proOwner(page: Page) {
   return { member, shopId, shopName };
 }
 
+type ProOwner = Awaited<ReturnType<typeof proOwner>>;
+let sharedPro: Promise<ProOwner> | undefined;
+/**
+ * One member with one Pro shop per worker process, for tests that only add rows with titles of their own (they find them by title)
+ * and never change the shop, the plan, the roles or the limits. The page is signed in as that member by the API.
+ */
+export async function sharedProOwner(page: Page): Promise<ProOwner> {
+  sharedPro ??= proOwner(page);
+  const owner = await sharedPro;
+  await resetRateLimits();
+  const session = await page.request.post('/api/bff/session', { data: { email: owner.member.email, password: owner.member.password ?? NEW_USER_PASSWORD } });
+  expect(session.status(), `sign in ${owner.member.email}: ${await session.text()}`).toBeLessThan(300);
+  return owner;
+}
+
 const signedIn = new WeakSet<Page>();
 
 /** Signs an existing member in again on a page and opens the inventory of the shop with the given query. */
