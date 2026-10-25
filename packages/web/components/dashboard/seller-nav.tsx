@@ -68,7 +68,7 @@ export function SellerSidebar({
                       href={item.href(shop.id)}
                       aria-current={isCurrentItem(item, pathname, shop.id) ? 'page' : undefined}
                       onClick={(event) => {
-                        if (!isCurrentItem(item, pathname, shop.id) && isPlainClick(event)) beginNavigation();
+                        if (!isCurrentItem(item, pathname, shop.id) && isPlainClick(event)) beginNavigation(item.href(shop.id));
                         onNavigate?.();
                       }}
                       className={linkClass(isCurrentItem(item, pathname, shop.id))}
@@ -93,7 +93,7 @@ export function SellerSidebar({
                   href={link.href}
                   aria-current={isCurrentPath(pathname, link.href) ? 'page' : undefined}
                   onClick={(event) => {
-                    if (!isCurrentPath(pathname, link.href) && isPlainClick(event)) beginNavigation();
+                    if (!isCurrentPath(pathname, link.href) && isPlainClick(event)) beginNavigation(link.href);
                     onNavigate?.();
                   }}
                   className={linkClass(isCurrentPath(pathname, link.href))}

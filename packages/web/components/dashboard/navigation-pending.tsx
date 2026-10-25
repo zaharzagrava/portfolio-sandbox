@@ -13,6 +13,7 @@ import { ListPageSkeleton } from '@/components/seller/page-skeletons';
  */
 const GIVE_UP_MS = 15_000;
 let waiting = false;
+let target = '';
 let timer: ReturnType<typeof setTimeout> | undefined;
 const listeners = new Set<() => void>();
 const emit = () => listeners.forEach((listener) => listener());
@@ -32,7 +33,8 @@ function set(next: boolean) {
 }
 
 /** Called by a sidebar link's click when it leads to another page. */
-export function beginNavigation() {
+export function beginNavigation(href = '') {
+  target = href;
   set(true);
 }
 
@@ -42,7 +44,9 @@ export function PendingContent({ children }: { children: ReactNode }) {
   const pending = useSyncExternalStore(subscribe, () => waiting, () => false);
   useEffect(() => set(false), [pathname]);
   useEffect(() => () => set(false), []); // leaving the dashboard (Account links) unmounts the shell
-  return pending ? <ListPageSkeleton /> : children;
+  if (!pending) return children;
+  // the orders page has one select in its toolbar and no heading action: its skeleton is shaped like it (W04 AS-91)
+  return /\/orders\/?(\?|$)/.test(target) ? <ListPageSkeleton action={false} selectOnly /> : <ListPageSkeleton />;
 }
 
 /**
