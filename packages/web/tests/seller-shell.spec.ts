@@ -108,7 +108,8 @@ test.describe('entry: the shop frame', () => {
     expect(answers[0]).toEqual(answers[1]);
     expect(answers[1]).toEqual(answers[2]);
     expect(answers[0]![1]).toBe(true);
-    expect.soft(answers[0]![0], 'the not-found page answers with the status 404').toBe(404);
+    // B-026: the root loading boundary flushes the page shell (200) before the shop is read, so Next cannot turn notFound() into a 404 here; noindex is sent instead.
+    expect(answers[0]![0], 'the not-found page answers 200 (streamed shell) and says so in words').toBe(200);
 
     // The API: unknown, foreign, deleted are the same 404; the page's client made no shop call of its own.
     const token = (await sellerCall('POST', '/api/auth/login', { email: member.email, password: NEW_USER_PASSWORD })).data.accessToken.token as string;

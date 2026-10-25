@@ -39,10 +39,10 @@ export function proxy(request: NextRequest) {
   requestHeaders.set('x-return-to', `${request.nextUrl.pathname}${request.nextUrl.search}`);
   requestHeaders.set('Content-Security-Policy', policy);
 
-  // A seller address with a broken percent sequence (`/%E0%A4%A`) is served as an unknown shop: the framework would answer
-  // with a bare "400 Bad Request." page (B-084). The rewritten address is a malformed id, which shows the one not-found page.
+  // A seller address with a broken percent sequence (`/%E0%A4%A`): the framework cannot even match the route (a rewrite
+  // fails with "failed to decode param", a 500), so it is sent to a malformed id, which shows the one not-found page (B-084).
   const response = hasBrokenPercent(request.nextUrl.pathname) && request.nextUrl.pathname.startsWith('/dashboard/seller/')
-    ? NextResponse.rewrite(new URL('/dashboard/seller/not-a-shop', request.url), { request: { headers: requestHeaders } })
+    ? NextResponse.redirect(new URL('/dashboard/seller/not-a-shop', request.url))
     : NextResponse.next({ request: { headers: requestHeaders } });
   response.headers.set('Content-Security-Policy', policy);
   response.headers.set('Reporting-Endpoints', `${CSP_REPORT_GROUP}="${CSP_REPORT_PATH}"`);
