@@ -55,3 +55,6 @@ specs/.checkpoints/*.md
 specs/.checkpoints/qa-monkey/
 specs/.checkpoints/qa-fuzz/
 specs/.checkpoints/qa-seller/
+
+# Stryker mutation testing scratch folders
+.stryker-tmp/
