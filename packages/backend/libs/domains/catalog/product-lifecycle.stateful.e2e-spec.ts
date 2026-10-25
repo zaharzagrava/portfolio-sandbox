@@ -155,20 +155,19 @@ const commands = fc.commands(
 
 describe('Product lifecycle, random sequences (stateful)', () => {
   let t: CatalogTestApp;
-  let w: ShopWorld;
-
   beforeAll(async () => {
     t = await createCatalogApp();
   });
   afterAll(() => t.close());
   beforeEach(async () => {
     await t.reset();
-    w = await createShopWorld(t);
   });
 
   it('S05 AS-10, AS-11, AS-16, AS-17: after every random action version, stock, buyer visibility and events match the model', async () => {
     await fc.assert(
       fc.asyncProperty(commands, async (cmds) => {
+        // a shop per run: one shop's plan caps its live products (J02 FR-010), which a run of 15 would reach
+        const w = await createShopWorld(t);
         const body = {
           title: 'Wool coat',
           description: 'Warm',
