@@ -50,3 +50,21 @@ How this was made: read the page, the view, the table, the API client, the serve
 
 - No real browser pass (desktop and 390 px) and no pass as VIEWER/STAFF/ADMIN or on a suspended shop: only code reading and curl. Those lines are all `untested`.
 - The ledger (S14) and payment intents (S13) are not read by this page; only their effect on ShopOrder.status was traced (via order-lifecycle.service.ts and the payments consumer). The exact payment webhook to ShopOrder path was read at the level of the setStatus calls, not step by step through payment-result.service.ts.
+
+## Live pass (added after the first version): what the real page showed
+
+Done with Playwright against http://localhost:3000 and curl, DB read with psql (marketplace). Setup: new shop "Orders QA" (OWNER seller@marketplace.local) with 26 slices (24 Paid, 1 Pending, 1 Cancelled, 0 Refunded), a second empty shop, and ADMIN / STAFF / VIEWER members invited and accepted. Viewed as OWNER, ADMIN, STAFF, VIEWER at 1280 and 390 px; shop ACTIVE and then SUSPENDED (suspended by admin@marketplace.local, then reinstated). Screenshots and scripts are in the scratchpad q folder (live1..4.cjs). Browser mocks were used only for errors, odd data and slow answers.
+
+What matched the code reading: 4 roles all see the page with the same 20 + 6 rows; sidebar entries differ by role (STAFF/VIEWER do not see Payouts, Statements, Integrations, Storefront widget, API keys, Webhooks, API version; VIEWER also loses Import and Order export); filter, paging (page 2 has 6 rows, only "First page"), status kept with cursor, status change drops cursor, empty shop "No orders yet.", empty filter "No orders match this status." + "Clear filter", past-end page "No orders on this page.", foreign-shop cursor "That page link is no longer valid." + "Go to the first page", offline banner, 390 px has no sideways scroll, JPY shows "¥100", KWD "KWD 12.345" (3 digits, but with the code, not the symbol), the date has datetime and a UTC tooltip, ArrowDown on the select changes the filter. DB: ShopOrder per status 24/1/1, sums and line count (27 lines) equal the API, currency and buyer come from BisOrder, index ShopOrder_shop_keyset_idx exists.
+
+What live showed that code reading missed or got wrong:
+1. Suspended shop is worse than expected: the orders AND the inventory area both show the suspended sentence with a useless "Try again"; the banner above says the same sentence ("You can view data"), so the page promises data and gives none. API 403 shop_suspended for OWNER and VIEWER alike, while GET /api/shops/{id} stays 200. (confirms gaps (c)1)
+2. A currency code that Intl rejects in one row crashes the whole page into the error boundary "Something went wrong" (not just that row). New line orders.table.currency-invalid-crash.
+3. ?status=BOGUS: select is blank and the panel reads "Check this field." with only "Try again" (no clear link). (confirms (c)5)
+4. A status outside the four makes the page show "Something went wrong on our side. / Try again" (live with a mocked answer), never a title-case badge. (confirms (c)3)
+5. 429 shows two texts (visible countdown said 5 s, the status text said 7 seconds). New line orders.state.rate-limited-text.
+6. Reference collision seen for real: all 26 rows read 01a171d7 (a table of 20 identical references).
+7. buyerId is in the server-rendered HTML of the page (not in the visible DOM, no e-mail anywhere). (confirms (a)1)
+8. No 401 or other failing request on the orders page itself; the 401 console error seen on first sign-in comes from the login page, not from orders.
+
+Not done live: REFUNDED rows (none could be made: no refund route used), a 0-decimal shop, the slow first load skeleton (the slow-answer mock did not show a busy state; the busy/dimmed table line stays untested), a multi-shop order seen from the second shop, DELETING shop, a custom role without orders.read (the forbidden panel), real 5xx from the server.

@@ -1,6 +1,17 @@
 # Inventory: differences between spec and code (mapper pass)
 
-How this map was made: from the code and the spec (W04, S05, S03, S32 where they touch the page). The stack answered on http://localhost:3000 (HTTP 200) but I did NOT open the page in a browser in this pass (time budget went into tracing code to API to table). So the "controls found" list comes from the code only; a tester must confirm on the live page at 1280 px and 390 px that nothing extra exists (for example a control added by the shell or a different shop role). Paths are under packages/ unless full.
+How this map was made: code and spec first, then a live pass with Playwright against http://localhost:3000 as OWNER, ADMIN, STAFF and VIEWER (extra memberships added in the database, removed afterwards) at 1280 and 390 px, shop ACTIVE, SUSPENDED and DELETING, with database checks. Paths are under packages/ unless full.
+
+## Live-pass findings (what code reading alone missed or got wrong)
+
+- SUSPENDED (and DELETING) shop: the list call GET /api/shops/:id/products answers 403, so the page shows the banner plus an error with "Try again" and NO rows, no row menus. W04.R-03 / AS-86 promise "still allow every read". Cause: tenancy/application/shop-access.service.ts WHILE_SUSPENDED lets only shop.read, members.read, shop.export through (S03.R-05) and products.read is not in it. Spec W04 and S03 disagree; the page behaviour does not match W04.
+- 150-character search: the page shows "Check this field." with "Try again" (API 400 validation_failed on q). Confirmed live.
+- Archive with a stale row version: the dialog stays open with "This product changed since you opened it." and NO "Load latest" button (confirmed live). The stock popover handles conflicts itself and works.
+- The stock number is plain text; clicking it opens nothing (popover only through the menu "Adjust stock").
+- Archived tab plus Stock filter and no hits says "No archived products." (not the filter message).
+- My earlier suspicion that the price edit leaves the legacy `Product.price` stale was wrong: after an edit both `price` and `priceMinor` were 3010.
+- Roles confirmed live: OWNER, ADMIN, STAFF see Add product and the menu (Edit, Adjust stock, Photos and video, Edit together, Archive); VIEWER sees the list but no Add product and no menu. No horizontal scroll at 390 or 1280. At 390 the tabs and Stock select move into the "Filters" sheet (Active, Archived, Clear filters, Done) and the shop switcher button is hidden (drawer).
+- Worked as specified live: create (one request on double click, DB row with shopId, createdBy, EUR, price=priceMinor=2450, version 1, one outbox row), price/stock messages, 24,5 comma price, stock popover stale version ("Stock changed to 9 while you were editing."), same-value stock keeps version, edit sends only changed fields, edit conflict plus "Load latest", archive writes ProductStatusHistory, restore, cursor paging (20 + next, "First page"), invalid cursor message, cursor reused with another filter refused, bogus URL values fall back, XSS text shown as text, spaces-only search ignored.
 
 ## (a) In the code but not in the spec
 
@@ -13,7 +24,7 @@ How this map was made: from the code and the spec (W04, S05, S03, S32 where they
 - Restore has no confirmation dialog and no double-press guard (only destructive actions need one by R-23, so this is allowed, but it can send two requests). File: inventory-view.tsx#restoreRow.
 - Product API accepts `category` as a list filter and `tags` on create/update; the page offers neither. Files: catalog/domain/product-input.ts#parseListQuery, packages/contracts/src/catalog/index.ts.
 - API accepts an optional `Idempotency-Key` on create (24 h); the page never sends one. File: catalog/api/product.controller.ts#create, web/lib/api/seller-products.ts#createProduct.
-- Update writes `priceMinor` only; create writes both `price` and `priceMinor` (legacy column `Product.price` stays old after a price edit). Files: catalog/infra/product.repository.ts (INSERT vs UPDATABLE list). Possible data bug if anything still reads `Product.price`; a tester must compare the two columns after an edit.
+- Update lists `priceMinor` only in UPDATABLE while create writes both `price` and `priceMinor`; live check showed both equal after an edit (something else keeps them in step). File: catalog/infra/product.repository.ts.
 - The page sends `limit=20` fixed; API allows 1..100. Not a bug.
 
 ## (b) In the spec but not found in the code (likely bugs)
@@ -35,6 +46,6 @@ How this map was made: from the code and the spec (W04, S05, S03, S32 where they
 
 ## Not mapped / open
 
-- Live browser walk at 390 px and 1280 px (see top).
+- Not done live: search paging past 20 hits, plan_limit_reached (needs hosted billing), rate limit 429, role lowered while the page is open, offline banner.
 - Roles: the four roles OWNER/ADMIN/STAFF/VIEWER come from catalog tenancy domain/permissions.ts (STAFF and above hold products.write; VIEWER only reads). Role changes while the page is open were mapped as one line, not traced into the permission cache.
 - Where the shell's shop-status banner and offline banner are built (web/components/dashboard/*) was only mapped by name.

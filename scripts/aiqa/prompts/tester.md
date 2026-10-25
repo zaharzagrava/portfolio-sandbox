@@ -10,7 +10,7 @@ For EVERY line you take:
 3. Check the API call it made (status code, body, headers) with the browser's network log.
 4. Check the database when the line says `db` (query the real row/outbox before and after).
 5. Compare with the spec text in the `spec` column and with what the code says. Try the nasty variants a person could do: empty, huge, wrong type, double press, back button, reload in the middle, two tabs, slow or lost network, other roles, suspended shop, phone width 390 px.
-6. Update ONLY your line in the TSV: set status (`pass`, `bug`, `blocked`, `n/a`), date (YYYY-MM-DD), by (`ai-tester`), layers actually checked (e.g. `ui,api,db`), bugs (your local ids F1, F2 ...) and a short note of what you really did.
+6. Update your line (with the helper described at the end): set status (`pass`, `bug`, `blocked`, `n/a`), date (YYYY-MM-DD), by (`ai-tester`), layers actually checked (e.g. `ui,api,db`), bugs (your local ids F1, F2 ...) and a short note of what you really did.
    `pass` means you checked all required layers and found nothing wrong. If you could not check a layer, use `blocked` with the reason. Never mark `pass` from reading code alone.
 7. If you find extra controls or behaviors that the map does not list, add a new line (id ending `-extra-N`, spec `none`) and test it too.
 
@@ -18,3 +18,8 @@ Bugs: append to scripts/aiqa/findings/{{AREA}}.md, one block each:
 `F<n> [CONFIRMED|SUSPICIOUS] <severity> <short title>` then steps, expected (with the spec id), actual, evidence (request/response lines, db rows, script name). CONFIRMED only if you reproduced it twice. Console noise about "Applying inline style violates ... Content Security Policy" is already known (dev server): do not report it again.
 
 Rules: plain language; never edit product code or tests; no git stash/reset/checkout; no commits; no pushes; do not stop the stack; keep every test script small. Do not edit lines of the TSV you did not test. At the end print: lines passed, bugs, blocked, still untested, and the bug titles.
+
+Update lines with the helper, never by editing the TSV by hand (several testers work at once):
+`node scripts/aiqa/mark.mjs <area> <line-id> <pass|bug|blocked|n/a> <layers, e.g. ui,api,db> <bug ids like F1,F2 or -> "<what you really did>"`
+New lines you discover: append them with `printf '...\n' >> scripts/aiqa/coverage/<area>.tsv` (ten tab-separated columns, status untested) and then mark them with the helper.
+Put your bug findings in scripts/aiqa/findings/{{AREA}}-{{PASS}}.md (your own file, so no clash); number them F1, F2... prefixed by your pass, e.g. P3F1.
