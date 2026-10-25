@@ -92,6 +92,7 @@ export function ProblemPanel({
   subject,
   onRetry,
   firstPageHref,
+  onActiveChange,
   className,
 }: {
   problem: Problem;
@@ -100,13 +101,15 @@ export function ProblemPanel({
   onRetry?: () => void;
   /** Target of "Go to the first page" for `invalid_cursor`; defaults to the current path, which has no cursor. */
   firstPageHref?: string;
+  /** Passed to the rate-limit countdown: `true` while it counts, so the control that caused it can disable itself (W04 R-14). */
+  onActiveChange?: (active: boolean) => void;
   className?: string;
 }) {
   const pathname = usePathname();
   const copy = sellerProblemCopy(problem, { ...context, subject: subject ?? context?.subject });
 
   if (copy.form === 'session') return <SessionEnded className={className} />;
-  if (copy.form === 'countdown') return <RateLimitNotice seconds={copy.retryAfterSeconds} subject={subject ?? context?.subject} className={className} />;
+  if (copy.form === 'countdown') return <RateLimitNotice seconds={copy.retryAfterSeconds} subject={subject ?? context?.subject} onActiveChange={onActiveChange} className={className} />;
 
   return (
     <div role="alert" tabIndex={-1} className={`${ALERT} ${className ?? ''}`}>

@@ -17,7 +17,8 @@ export function FiltersSheet({
   onClear,
   title = 'Filters',
 }: {
-  children: ReactNode;
+  /** The filters. A function receives `inlineSheetOpen`: `true` for the inline copy while the sheet is open, so a control can give its twin another id (B-066). */
+  children: ReactNode | ((copy: { inlineWhileSheetOpen: boolean }) => ReactNode);
   /** How many filters differ from their defaults; shown on the button. */
   activeCount?: number;
   onClear?: () => void;
@@ -27,7 +28,7 @@ export function FiltersSheet({
   return (
     <>
       <div data-filters-inline="" inert={open} className="hidden flex-wrap items-end gap-3 min-[641px]:flex">
-        {children}
+        {typeof children === 'function' ? children({ inlineWhileSheetOpen: open }) : children}
       </div>
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetTrigger asChild>
@@ -41,7 +42,7 @@ export function FiltersSheet({
             <SheetTitle>{title}</SheetTitle>
             <SheetDescription className="sr-only">Narrow the list. The page address keeps your choices.</SheetDescription>
           </SheetHeader>
-          <div className="grid gap-4 px-4">{children}</div>
+          <div className="grid gap-4 px-4">{typeof children === 'function' ? children({ inlineWhileSheetOpen: false }) : children}</div>
           <SheetFooter>
             {onClear && (
               <Button type="button" variant="outline" onClick={onClear}>

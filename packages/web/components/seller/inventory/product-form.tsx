@@ -129,6 +129,7 @@ export function ProductForm({ mode, shopId, currency, fractionDigits, product, o
   const [submitted, setSubmitted] = useState(false);
   const [serverErrors, setServerErrors] = useState<Errors>({});
   const [problem, setProblem] = useState<Problem | null>(null);
+  const [counting, setCounting] = useState(false);
   const [conflict, setConflict] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [loadingLatest, setLoadingLatest] = useState(false);
@@ -319,7 +320,7 @@ export function ProductForm({ mode, shopId, currency, fractionDigits, product, o
           {notice}
         </p>
       )}
-      {problem && <ProblemPanel problem={problem} context={{ place: 'dialog' }} />}
+      {problem && <ProblemPanel problem={problem} context={{ place: 'dialog' }} onActiveChange={setCounting} />}
 
       <div className="grid gap-1.5">
         <Label htmlFor={id('title')}>Title</Label>
@@ -362,7 +363,7 @@ export function ProductForm({ mode, shopId, currency, fractionDigits, product, o
             Cancel
           </Button>
         )}
-        <Button type="submit" className="min-h-11 sm:min-h-8" disabled={pending || unchanged} aria-busy={pending}>
+        <Button type="submit" className="min-h-11 sm:min-h-8" disabled={pending || unchanged || (counting && problem !== null)} aria-busy={pending}>
           {mode === 'create' ? (create.isPending ? 'Creating…' : 'Create product') : update.isPending ? 'Saving…' : 'Save changes'}
         </Button>
       </div>

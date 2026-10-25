@@ -67,7 +67,7 @@ export function ResponsiveTable<Row>({
             >
               {columns.map((column) =>
                 column.primary ? (
-                  <th key={column.id} scope="row" className={cn('px-2 py-2 text-left font-medium break-words max-sm:block max-sm:px-0 max-sm:text-base', column.className)}>
+                  <th key={column.id} scope="row" className={cn('px-2 py-2 text-left font-medium [overflow-wrap:anywhere] max-sm:block max-sm:px-0 max-sm:text-base', column.className)}>
                     {column.cell(row)}
                   </th>
                 ) : (
@@ -75,7 +75,7 @@ export function ResponsiveTable<Row>({
                     key={column.id}
                     data-label={column.header}
                     className={cn(
-                      'px-2 py-2 break-words max-sm:flex max-sm:justify-between max-sm:gap-3 max-sm:px-0 max-sm:py-1 max-sm:before:shrink-0 max-sm:before:text-muted-foreground max-sm:before:content-[attr(data-label)]',
+                      'px-2 py-2 [overflow-wrap:anywhere] max-sm:flex max-sm:justify-between max-sm:gap-3 max-sm:px-0 max-sm:py-1 max-sm:before:shrink-0 max-sm:before:text-muted-foreground max-sm:before:content-[attr(data-label)]',
                       column.className,
                     )}
                   >

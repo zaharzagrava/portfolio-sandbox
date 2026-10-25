@@ -78,7 +78,7 @@ export function InventoryToolbar({
   }
 
   const activeFilters = (params.status !== 'ACTIVE' ? 1 : 0) + (params.inStock !== undefined ? 1 : 0);
-  const filters = (
+  const filters = ({ inlineWhileSheetOpen }: { inlineWhileSheetOpen: boolean }) => (
     <>
       <div role="tablist" aria-label="Product status" onKeyDown={key} className="inline-flex h-9 items-center rounded-lg bg-muted p-[3px] text-muted-foreground">
         {STATUSES.map((status) => {
@@ -102,20 +102,7 @@ export function InventoryToolbar({
           );
         })}
       </div>
-      <div className="grid gap-1.5">
-        <Label htmlFor="inventory-stock">Stock</Label>
-        <select
-          id="inventory-stock"
-          value={params.inStock === undefined ? '' : String(params.inStock)}
-          disabled={searching}
-          onChange={(event) => onStock(event.target.value === '' ? undefined : event.target.value === 'true')}
-          className="h-11 w-full rounded-lg border border-input bg-transparent px-2.5 text-base outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 sm:h-8 md:text-sm dark:bg-input/30"
-        >
-          <option value="">All</option>
-          <option value="true">In stock</option>
-          <option value="false">Out of stock</option>
-        </select>
-      </div>
+      <StockField id={inlineWhileSheetOpen ? 'inventory-stock-inline' : 'inventory-stock'} value={params.inStock} disabled={searching} onChange={onStock} />
     </>
   );
 
@@ -134,6 +121,26 @@ export function InventoryToolbar({
           <p>Search results can take a few seconds to include new products.</p>
         </div>
       )}
+    </div>
+  );
+}
+
+/** The Stock select. The filters render twice (inline and in the phone sheet), so each copy gets its own id for its label. */
+function StockField({ id, value, disabled, onChange }: { id: string; value: boolean | undefined; disabled: boolean; onChange: (inStock: boolean | undefined) => void }) {
+  return (
+    <div className="grid gap-1.5">
+      <Label htmlFor={id}>Stock</Label>
+      <select
+        id={id}
+        value={value === undefined ? '' : String(value)}
+        disabled={disabled}
+        onChange={(event) => onChange(event.target.value === '' ? undefined : event.target.value === 'true')}
+        className="h-11 w-full rounded-lg border border-input bg-transparent px-2.5 text-base outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 sm:h-8 md:text-sm dark:bg-input/30"
+      >
+        <option value="">All</option>
+        <option value="true">In stock</option>
+        <option value="false">Out of stock</option>
+      </select>
     </div>
   );
 }

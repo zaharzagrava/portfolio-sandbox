@@ -27,6 +27,8 @@ vi.mock('next/navigation', () => ({
     throw new Error(`NEXT_REDIRECT ${to}`);
   },
 }));
+const seenReturnTo = vi.hoisted(() => ({ value: null as string | null }));
+vi.mock('next/headers', () => ({ headers: async () => new Headers(seenReturnTo.value ? { 'x-return-to': seenReturnTo.value } : {}) }));
 vi.mock('@/lib/auth/session.server', () => ({ requireServerSession }));
 vi.mock('@/lib/server/seller.server', () => ({ readShop, readMyShops }));
 
@@ -53,6 +55,16 @@ describe('W04 shell guard (AS-84)', () => {
     await frame();
     expect(requireServerSession).toHaveBeenCalledWith(`/dashboard/seller/${SELLER_SHOP_ID}`);
     expect(requireServerSession.mock.invocationCallOrder[0]).toBeLessThan(readShop.mock.invocationCallOrder[0]!);
+  });
+
+  it('W04 AS-84: the address the proxy saw (section and query) is the returnTo; another shop\'s address is ignored (B-023)', async () => {
+    seenReturnTo.value = `/dashboard/seller/${SELLER_SHOP_ID}/orders?page=2`;
+    await frame();
+    expect(requireServerSession).toHaveBeenLastCalledWith(`/dashboard/seller/${SELLER_SHOP_ID}/orders?page=2`);
+    seenReturnTo.value = '/dashboard/seller/other/orders';
+    await frame();
+    expect(requireServerSession).toHaveBeenLastCalledWith(`/dashboard/seller/${SELLER_SHOP_ID}`);
+    seenReturnTo.value = null;
   });
 
   it('W04 AS-84: an anonymous visitor is redirected and nothing is read', async () => {
