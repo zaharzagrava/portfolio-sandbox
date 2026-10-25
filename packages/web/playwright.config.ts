@@ -26,7 +26,7 @@ const DESKTOP = { ...devices['Desktop Chrome'], viewport: { width: 1280, height:
  * only with PW_BROWSERS=1 (`npx playwright install firefox` first), so a normal run
  * and the SDD gate are unchanged. Run: `PW_BROWSERS=1 npx playwright test --project=firefox-desktop`.
  */
-const FOUR_AREAS = /(^|[\\/])(seller|seller-shop|seller-inventory|seller-photos)\.spec\.ts$|seller[\\/]cross-cutting[\\/](concurrency|isolation|a11y)\.spec\.ts$/;
+const FOUR_AREAS = /(^|[\\/])seller(-shop|-shell|-access|-inventory|-inventory-write|-photos|-photos\.api|-orders|-a11y|-concurrency-isolation)?\.spec\.ts$/;
 const CROSS_BROWSER = process.env.PW_BROWSERS === '1';
 
 /**
