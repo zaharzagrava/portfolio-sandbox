@@ -595,7 +595,13 @@ describe('Invitations', () => {
             .get(`/api/shops/${shop.id}/invites?${q}`)
             .expect(400)
         ).body.code,
-      ).toBe('validation_failed');
+      ).toBe(
+        q.startsWith('cursor=')
+          ? 'invalid_cursor'
+          : q.startsWith('limit=')
+            ? 'invalid_limit'
+            : 'validation_failed',
+      );
     expect(
       (await t.as(viewer).get(`/api/shops/${shop.id}/invites`).expect(403)).body
         .code,

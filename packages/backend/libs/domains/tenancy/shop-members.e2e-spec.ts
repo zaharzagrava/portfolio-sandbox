@@ -126,7 +126,7 @@ describe('Team membership', () => {
             .get(`/api/shops/${shop.id}/members?${query}`)
             .expect(400)
         ).body.code,
-      ).toBe('validation_failed');
+      ).toBe(query.startsWith('cursor=') ? 'invalid_cursor' : 'invalid_limit');
     await t
       .as(await t.newUser())
       .get(`/api/shops/${shop.id}/members`)

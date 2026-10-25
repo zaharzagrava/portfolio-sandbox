@@ -377,7 +377,7 @@ describe('Shop lifecycle', () => {
       expect(
         (await t.as(user).get(`/api/shops/mine?${query}`).expect(400)).body
           .code,
-      ).toBe('validation_failed');
+      ).toBe(query.startsWith('cursor=') ? 'invalid_cursor' : 'invalid_limit');
   });
 
   it('S03 AS-08: an admin renames the shop; shopVersion and the event move; slug and plan cannot be sent', async () => {
