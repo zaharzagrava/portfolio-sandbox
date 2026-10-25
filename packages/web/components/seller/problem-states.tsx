@@ -147,7 +147,8 @@ export function OfflineBanner() {
     }
     if (wasOffline.current) {
       wasOffline.current = false;
-      void queryClient.invalidateQueries({ queryKey: queryKeys.seller.all() });
+      // Joins a refetch the query client already started for the same reconnect: one request, not two (B-071).
+      void queryClient.invalidateQueries({ queryKey: queryKeys.seller.all() }, { cancelRefetch: false });
     }
   }, [online, queryClient]);
 

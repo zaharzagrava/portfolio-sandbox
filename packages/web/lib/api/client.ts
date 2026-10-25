@@ -16,10 +16,15 @@ declare module 'axios' {
  * non-GET. There is no token state, no bearer header and no refresh here: the BFF attaches identity and
  * refreshes server-side.
  */
+/** Longest wait for an answer from the API before the call is given up (the seller screens then say it could not be reached). */
+export const REQUEST_TIMEOUT_MS = 15_000;
+
 export const apiClient = axios.create({
   baseURL: '',
   headers: { 'Content-Type': 'application/json' },
   withCredentials: true,
+  // No spinner may outlast a frozen database, cache or queue: a call with no answer ends as a network problem ("Couldn't reach the server", try again).
+  timeout: REQUEST_TIMEOUT_MS,
 });
 
 const SAFE_METHODS = new Set(['get', 'head', 'options']);

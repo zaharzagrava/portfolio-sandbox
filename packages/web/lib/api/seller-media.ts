@@ -64,6 +64,9 @@ export async function startPhotoUpload(shopId: string): Promise<MediaUploadRespo
   return parseBody(mediaUploadResponseSchema, data);
 }
 
+/** A photo transfer that gets no answer for this long ends as a network problem, so the tile can offer a retry (B-091). */
+const UPLOAD_TIMEOUT_MS = 20_000;
+
 /** A failed byte transfer to a signed URL; `status` is 0 when the request did not reach the server. */
 export class TransferError extends Error {
   constructor(readonly status: number) {
@@ -80,7 +83,7 @@ export async function postPhotoFile(upload: MediaUploadResponse['upload'], file:
   form.append('file', file);
   let response: Response;
   try {
-    response = await fetch(upload.url, { method: 'POST', body: form, credentials: 'omit' });
+    response = await fetch(upload.url, { method: 'POST', body: form, credentials: 'omit', signal: AbortSignal.timeout(UPLOAD_TIMEOUT_MS) });
   } catch {
     throw new TransferError(0);
   }
