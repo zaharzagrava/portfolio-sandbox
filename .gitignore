@@ -59,3 +59,8 @@ specs/.checkpoints/qa-seller/
 # Stryker mutation testing scratch folders
 .stryker-tmp/
 .web-aiqa-copy/
+specs/.checkpoints/coverage/
+
+# AI QA throwaway browser scripts written by agents
+packages/web/aiqa-*.cjs
+packages/web/live*.cjs
