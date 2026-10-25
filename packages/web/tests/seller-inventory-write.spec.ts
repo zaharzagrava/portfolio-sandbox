@@ -109,9 +109,10 @@ test.describe('Add product', () => {
 
       // limits
       const long = (n: number) => 'x'.repeat(n);
-      expect(await field(page, 'Title').evaluate((input) => (input as HTMLInputElement).maxLength)).toBe(250);
+      // B-068: Title is counted in code points on submit; the box has no maxLength in UTF-16 units (an emoji is 2 units)
+      expect(await field(page, 'Title').evaluate((input) => (input as HTMLInputElement).maxLength)).toBe(-1);
       await field(page, 'Title').fill(long(300));
-      expect((await field(page, 'Title').inputValue()).length).toBe(250); // the box stops at 250
+      expect((await field(page, 'Title').inputValue()).length).toBe(300); // nothing is cut silently
       await field(page, 'Brand').fill(long(101));
       await field(page, 'Category').fill(long(101));
       await field(page, 'Description (optional)').fill(long(4001));
