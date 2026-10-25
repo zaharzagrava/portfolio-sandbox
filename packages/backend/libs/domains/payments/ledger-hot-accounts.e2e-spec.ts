@@ -142,7 +142,10 @@ describe('Ledger: hot-account sharding, sweep and lock order', () => {
         rows.filter((r) => r.shard > 0).every((r) => Number(r.balance) === 0),
       ).toBe(true);
       expect(await logical(account)).toBe(before[account]);
-      expect(Number(rows.find((r) => r.shard === 0)!.balance)).toBe(
+      // A row for shard 0 exists only if a posting drew shard 0 or the sweep had something to credit to it. An account whose
+      // shards net to zero (MARKETPLACE_CLEARING: in with the sale, out with the settlement) gets no credit line, so with
+      // no random draw on shard 0 it has no row; no row means balance 0. Either way shard 0 must hold the logical balance.
+      expect(Number(rows.find((r) => r.shard === 0)?.balance ?? 0)).toBe(
         before[account],
       );
     }
