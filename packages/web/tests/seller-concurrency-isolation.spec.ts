@@ -120,7 +120,12 @@ test.describe('W04 AS-111 a reload or Back in the middle of a write @desktop', (
     const overview = page.url();
 
     await page.goBack();
-    // a member with one shop is sent on to it (W04 AS-08); the form must not come back
+    // Opening the shop replaced the form's history entry (B-101), so Back goes to the page before the form and leaves the dashboard
+    await expect(page).not.toHaveURL(/\/dashboard\/seller/);
+    await expect(page.getByRole('button', { name: 'Open shop' })).toBeHidden();
+    await expect(page.getByLabel('Shop name')).toBeHidden();
+    // and Forward returns to the new shop's overview, never to the form
+    await page.goForward();
     await expect(page).toHaveURL(overview);
     await expect(page.getByRole('button', { name: 'Open shop' })).toBeHidden();
     expect(api.count('POST', /^\/api\/shops$/)).toBe(1);
