@@ -10,9 +10,9 @@ import { currentPageLabel } from '@/lib/seller/nav';
 import { SellerSidebar, type SidebarShop } from './seller-nav';
 
 /**
- * The top bar of the mobile frame (W04 AS-98): "Open menu", the shop name and the page name; the menu opens a drawer with
+ * The top bar of the mobile frame (W04 AS-98): "Open seller menu", the shop name and the page name; the menu opens a drawer with
  * exactly the sidebar's content. It closes after choosing an entry, on Escape and when the address changes, and focus
- * returns to "Open menu" (the sheet restores it to its trigger).
+ * returns to "Open seller menu" (the sheet restores it to its trigger).
  */
 export function MobileDrawer({ shop, shops, nextCursor }: { shop: SidebarShop; shops: readonly ShopListItem[]; nextCursor?: string | null }) {
   const pathname = usePathname();
@@ -29,6 +29,20 @@ export function MobileDrawer({ shop, shops, nextCursor }: { shop: SidebarShop; s
     return () => desktop.removeEventListener('change', close);
   }, []);
 
+  // While the drawer is open the page behind it is out of the accessibility tree and out of the tab order (B-080): the
+  // landmarks around the drawer are made `inert` (the platform way) and handed back when it closes. The drawer itself is
+  // portalled to the body, so none of these contains it; the focus trap of the sheet is untouched.
+  useEffect(() => {
+    if (!open) return;
+    const marked: Element[] = [];
+    for (const landmark of document.querySelectorAll('body header, body main, body footer')) {
+      if (landmark.hasAttribute('inert') || landmark.closest('[role="dialog"]') || landmark.querySelector('[role="dialog"]')) continue;
+      landmark.setAttribute('inert', '');
+      marked.push(landmark);
+    }
+    return () => marked.forEach((landmark) => landmark.removeAttribute('inert'));
+  }, [open]);
+
   return (
     <div role="region" aria-label="Shop bar" className="flex items-center gap-2 border-b bg-background px-2 py-1 lg:hidden">
       <Sheet
@@ -39,7 +53,7 @@ export function MobileDrawer({ shop, shops, nextCursor }: { shop: SidebarShop; s
         }}
       >
         <SheetTrigger asChild>
-          <Button variant="ghost" size="icon-lg" className="size-11" aria-label="Open menu">
+          <Button variant="ghost" size="icon-lg" className="size-11" aria-label="Open seller menu">
             <MenuIcon aria-hidden="true" className="size-5" />
           </Button>
         </SheetTrigger>

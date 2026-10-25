@@ -27,7 +27,7 @@ async function openOrdersEntry(page: Page) {
     await sidebar.click();
     return;
   }
-  await page.getByRole('button', { name: 'Open menu' }).last().click();
+  await page.getByRole('button', { name: 'Open seller menu' }).click();
   await page.getByRole('dialog').getByRole('link', { name: 'Orders', exact: true }).click();
 }
 
@@ -72,7 +72,7 @@ test.describe('signed in', () => {
     lines('orders.page.route-and-nav');
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto(shopPath(fx.shopId));
-    await page.getByRole('button', { name: 'Open menu' }).last().click();
+    await page.getByRole('button', { name: 'Open seller menu' }).click();
     await page.getByRole('dialog').getByRole('link', { name: 'Orders', exact: true }).click();
     await expect(page).toHaveURL(ordersPath());
     await expect(page.getByRole('heading', { level: 1, name: 'Orders' })).toBeVisible();

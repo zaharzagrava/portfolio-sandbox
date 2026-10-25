@@ -21,7 +21,7 @@ async function phoneOwner(page: Page, name?: string) {
 
 const bar = (page: Page) => page.getByRole('region', { name: 'Shop bar' });
 const drawer = (page: Page) => page.getByRole('dialog', { name: 'Seller menu' });
-const opener = (page: Page) => bar(page).getByRole('button', { name: 'Open menu' });
+const opener = (page: Page) => bar(page).getByRole('button', { name: 'Open seller menu' });
 
 async function openDrawer(page: Page) {
   await clickThroughDevOverlay(page);

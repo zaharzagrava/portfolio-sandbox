@@ -79,6 +79,8 @@ export function InventoryView({
   const [archiving, setArchiving] = useState<InventoryRow | null>(null);
   const [adjusting, setAdjusting] = useState<string | null>(null);
   const [actionProblem, setActionProblem] = useState<Problem | null>(null);
+  // A rate-limit countdown after a failed restore: "Restore" stays disabled until it ends (B-098).
+  const [counting, setCounting] = useState(false);
 
   const hrefFor = (next: Partial<Pick<InventoryParams, 'q' | 'status' | 'inStock'>>, cursor?: string) => {
     const merged = { q: params.q, status: params.status, inStock: params.inStock, ...next };
@@ -142,7 +144,7 @@ export function InventoryView({
       { id: 'media', label: 'Photos and video', hidden: !canWrite || !active, onSelect: () => router.push(`/dashboard/seller/${encodeURIComponent(shopId)}/products/${encodeURIComponent(row.id)}/media`) },
       { id: 'draft', label: 'Edit together', hidden: !canWrite || !active, onSelect: () => router.push(`/dashboard/seller/${encodeURIComponent(shopId)}/products/${encodeURIComponent(row.id)}/draft`) },
       { id: 'archive', label: 'Archive', hidden: !canWrite || !active, destructive: true, onSelect: () => (setActionProblem(null), setArchiving(row)) },
-      { id: 'restore', label: 'Restore', hidden: !canWrite || active, onSelect: () => void restoreRow(row) },
+      { id: 'restore', label: 'Restore', hidden: !canWrite || active, disabled: counting && actionProblem !== null, onSelect: () => void restoreRow(row) },
     ];
   }
 
@@ -199,7 +201,7 @@ export function InventoryView({
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="space-y-1">
+        <div className="min-w-0 space-y-1 [overflow-wrap:anywhere]">
           <h1 className="text-2xl font-bold tracking-tight">Inventory</h1>
           <p className="text-sm text-muted-foreground">The products of {shop.name}.</p>
         </div>
@@ -226,7 +228,7 @@ export function InventoryView({
         onClear={() => router.push(pathname)}
       />
 
-      {actionProblem && <ProblemPanel problem={actionProblem} context={{ place: 'page' }} />}
+      {actionProblem && <ProblemPanel problem={actionProblem} context={{ place: 'page' }} onActiveChange={setCounting} />}
 
       <div role="region" aria-label="Products">
         {inventory.isError && tooLongSearch(inventory.error, params.q) ? (

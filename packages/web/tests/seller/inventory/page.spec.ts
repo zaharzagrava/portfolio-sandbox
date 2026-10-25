@@ -77,7 +77,7 @@ test.describe('Inventory page: opening it', () => {
     await expect(page.getByRole('link', { name: 'Inventory' })).toHaveAttribute('aria-current', 'page');
     await page.setViewportSize({ width: 390, height: 844 });
     await expect(page.getByRole('link', { name: 'Inventory' })).toBeHidden();
-    await page.getByRole('region', { name: 'Shop bar' }).getByRole('button', { name: 'Open menu' }).click();
+    await page.getByRole('region', { name: 'Shop bar' }).getByRole('button', { name: 'Open seller menu' }).click();
     await expect(page.getByRole('dialog').getByRole('link', { name: 'Inventory' })).toHaveAttribute('aria-current', 'page');
   });
 

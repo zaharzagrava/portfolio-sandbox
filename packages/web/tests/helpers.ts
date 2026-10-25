@@ -600,7 +600,7 @@ export async function sellerMenu(page: Page) {
   if (viewportWidth(page) >= 1024) return page.locator('aside');
   await clickThroughDevOverlay(page);
   await expect(page.getByRole('dialog')).toBeHidden(); // a drawer that is still sliding out blocks the button
-  await page.getByRole('region', { name: 'Shop bar' }).getByRole('button', { name: 'Open menu' }).click();
+  await page.getByRole('region', { name: 'Shop bar' }).getByRole('button', { name: 'Open seller menu' }).click();
   const drawer = page.getByRole('dialog', { name: 'Seller menu' });
   await expect(drawer).toBeVisible();
   return drawer;

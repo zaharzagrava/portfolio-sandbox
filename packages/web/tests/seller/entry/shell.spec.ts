@@ -53,7 +53,7 @@ test.describe('entry: the shell', () => {
       } else {
         await expect(bar, `${width}: bar`).toBeVisible();
         await expect(sidebar, `${width}: sidebar`).toBeHidden();
-        await expect(bar.getByRole('button', { name: 'Open menu' })).toBeVisible();
+        await expect(bar.getByRole('button', { name: 'Open seller menu' })).toBeVisible();
       }
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), `${width}: no sideways scroll`).toBe(true);
     }

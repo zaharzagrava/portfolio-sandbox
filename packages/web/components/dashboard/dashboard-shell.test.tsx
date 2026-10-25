@@ -220,13 +220,13 @@ describe('W04 shell frame (AS-98)', () => {
     expect(within(nav).getByRole('link', { name: 'API documentation' })).toBeInTheDocument();
   });
 
-  it('W04 AS-98: the top bar has "Open menu", the shop name and the page name; the drawer opens with the same entries', async () => {
+  it('W04 AS-98: the top bar has "Open seller menu", the shop name and the page name; the drawer opens with the same entries', async () => {
     mockPathname = `/dashboard/seller/${SELLER_SHOP_ID}/orders`;
     shell();
     const bar = screen.getByRole('region', { name: 'Shop bar' });
     expect(within(bar).getByText('Clay Works')).toBeInTheDocument();
     expect(within(bar).getByText('Orders')).toBeInTheDocument();
-    const button = within(bar).getByRole('button', { name: 'Open menu' });
+    const button = within(bar).getByRole('button', { name: 'Open seller menu' });
     expect(screen.queryByRole('dialog')).toBeNull();
     await userEvent.click(button);
     const drawer = screen.getByRole('dialog');
@@ -237,18 +237,18 @@ describe('W04 shell frame (AS-98)', () => {
     expect(within(nav).getByRole('link', { name: 'Orders' })).toHaveAttribute('aria-current', 'page');
   });
 
-  it('W04 AS-98: choosing an entry closes the drawer and focus returns to "Open menu"', async () => {
+  it('W04 AS-98: choosing an entry closes the drawer and focus returns to "Open seller menu"', async () => {
     shell();
-    const button = screen.getByRole('button', { name: 'Open menu' });
+    const button = screen.getByRole('button', { name: 'Open seller menu' });
     await userEvent.click(button);
     await userEvent.click(within(screen.getByRole('dialog')).getByRole('link', { name: 'Team' }));
     expect(screen.queryByRole('dialog')).toBeNull();
     expect(button).toHaveFocus();
   });
 
-  it('W04 AS-98: Escape closes the drawer and focus returns to "Open menu"', async () => {
+  it('W04 AS-98: Escape closes the drawer and focus returns to "Open seller menu"', async () => {
     shell();
-    const button = screen.getByRole('button', { name: 'Open menu' });
+    const button = screen.getByRole('button', { name: 'Open seller menu' });
     await userEvent.click(button);
     expect(screen.getByRole('dialog')).toBeInTheDocument();
     await userEvent.keyboard('{Escape}');

@@ -57,7 +57,7 @@ test.describe('Photos: leaving with an unsaved draft', () => {
     await makeDraft(page);
     const sidebar = page.locator(`a[href="/dashboard/seller/${shopId}/orders"]`).first();
     if (!(await sidebar.isVisible())) {
-      await page.getByRole('region', { name: 'Shop bar' }).getByRole('button', { name: 'Open menu' }).click();
+      await page.getByRole('region', { name: 'Shop bar' }).getByRole('button', { name: 'Open seller menu' }).click();
       await page.getByRole('dialog', { name: 'Menu' }).locator(`a[href="/dashboard/seller/${shopId}/orders"]`).click();
     } else await sidebar.click();
     await expect(page).toHaveURL(new RegExp(`/dashboard/seller/${shopId}/orders`));

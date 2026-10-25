@@ -226,7 +226,7 @@ test.describe('Adjust stock popover', () => {
     const { member, shopId, productIds } = await ownerWithShop(page, [{ title: 'Fail Mug', quantity: 8 }]);
     await openInventory(page, member, shopId);
     const productUrl = /\/products\/[0-9a-f-]{36}$/;
-    let popover = await openAdjust(page, 'Fail Mug');
+    const popover = await openAdjust(page, 'Fail Mug');
     // 500 (stub)
     await page.route(productUrl, (route) => (route.request().method() === 'PATCH' ? route.fulfill({ status: 500, contentType: 'application/problem+json', body: JSON.stringify({ type: 'x', title: 'Boom', status: 500, code: 'internal_error' }) }) : route.continue()));
     await popover.getByLabel('New stock').fill('3');

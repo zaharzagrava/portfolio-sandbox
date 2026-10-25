@@ -41,6 +41,8 @@ export function GalleryView({ shopId, productId, pollMs = DEFAULT_MEDIA_POLL_MS 
   const [draft, setDraft] = useState<Item[] | null>(null);
   const [pending, setPending] = useState<Pending[]>([]);
   const [problem, setProblem] = useState<Problem | null>(null);
+  // A rate-limit countdown is running: "Save photos" stays disabled until it ends (B-098).
+  const [counting, setCounting] = useState(false);
   const queryClient = useQueryClient();
   /** The version the draft STARTED from: Save sends this one, so a list another editor saved meanwhile is a 409, not a lost update. */
   const [baseVersion, setBaseVersion] = useState<number | null>(null);
@@ -144,7 +146,10 @@ export function GalleryView({ shopId, productId, pollMs = DEFAULT_MEDIA_POLL_MS 
       if (sellerProblemCopy(failure).refetch) {
         void queryClient.invalidateQueries({ queryKey: queryKeys.seller.shop(shopId) });
         void gallery.refetch();
-        if (failure.code === 'product_archived' || failure.code === 'product_not_found') (setArchived(true), endDraft());
+        if (failure.code === 'product_archived' || failure.code === 'product_not_found') {
+          setArchived(true);
+          endDraft();
+        }
       }
     }
   }
@@ -269,7 +274,7 @@ export function GalleryView({ shopId, productId, pollMs = DEFAULT_MEDIA_POLL_MS 
 
       {problem && (
         <div className="space-y-2">
-          <ProblemPanel problem={problem} context={{ kind: 'write', resource: 'photos' }} />
+          <ProblemPanel problem={problem} context={{ kind: 'write', resource: 'photos' }} onActiveChange={setCounting} />
           {copy?.action === 'load-latest' && (
             <Button type="button" variant="outline" size="sm" onClick={() => void loadLatest()}>
               Load latest
@@ -280,7 +285,7 @@ export function GalleryView({ shopId, productId, pollMs = DEFAULT_MEDIA_POLL_MS 
 
       {canWrite && (
         <div className="flex gap-2">
-          <Button type="button" disabled={!editable || draft === null || save.isPending} title={reason ?? undefined} onClick={() => void onSave()}>
+          <Button type="button" disabled={!editable || draft === null || save.isPending || (counting && problem !== null)} title={reason ?? undefined} onClick={() => void onSave()}>
             Save photos
           </Button>
           {draft !== null && (

@@ -50,7 +50,8 @@ describe('W04 AS-29 readInventoryParams', () => {
     [{ status: ['ACTIVE', 'ARCHIVED'] }, { status: 'ACTIVE' }],
     [{ inStock: 'maybe' }, { inStock: undefined }],
     [{ q: ['a', 'b'] }, { q: '' }],
-    [{ q: 'x'.repeat(300) }, { q: 'x'.repeat(200) }],
+    [{ q: 'x'.repeat(300) }, { q: '' }], // over 200 characters counts as unsupported (no search), see 7258e928
+    [{ q: 'x'.repeat(200) }, { q: 'x'.repeat(200) }],
     [{ cursor: '' }, { cursor: undefined }],
     [{ cursor: 'c'.repeat(600) }, { cursor: undefined }],
   ])('replaces the invalid value in %j by its default', (raw, expected) => {

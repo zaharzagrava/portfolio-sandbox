@@ -30,6 +30,8 @@ export function ArchiveDialog({
   // The version after "Load latest"; the row on screen still carries the old one.
   const [latest, setLatest] = useState<{ id: string; version: number } | null>(null);
   const [loadingLatest, setLoadingLatest] = useState(false);
+  // A rate-limit countdown is running: the confirm button stays disabled until it ends (B-098).
+  const [counting, setCounting] = useState(false);
 
   async function loadLatest() {
     if (!row) return;
@@ -89,10 +91,11 @@ export function ArchiveDialog({
       title="Archive product?"
       description="It disappears from the storefront and search. You can restore it."
       confirmLabel="Archive product"
+      confirmDisabled={counting && problem !== null}
       error={
         problem ? (
           <div className="grid justify-items-start gap-2">
-            <ProblemPanel problem={problem} context={{ place: 'dialog' }} className="w-full" />
+            <ProblemPanel problem={problem} context={{ place: 'dialog' }} className="w-full" onActiveChange={setCounting} />
             {problem.code === 'version_conflict' && (
               <Button type="button" variant="outline" size="sm" className="min-h-11 sm:min-h-7" disabled={loadingLatest} onClick={() => void loadLatest()}>
                 Load latest

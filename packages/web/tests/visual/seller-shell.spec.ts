@@ -62,17 +62,17 @@ test.describe('Seller shell layout', () => {
       await expect(page.getByRole('navigation', { name: 'Seller' })).toBeHidden();
       await expect(page).toHaveScreenshot('shell-phone-closed.png', { stylePath });
       await clickThroughDevOverlay(page);
-      await bar.getByRole('button', { name: 'Open menu' }).click();
+      await bar.getByRole('button', { name: 'Open seller menu' }).click();
       const drawer = page.getByRole('dialog');
       await expect(drawer.getByRole('navigation', { name: 'Seller' }).getByRole('link', { name: 'Inventory' })).toHaveAttribute('aria-current', 'page');
       await expect(drawer).toHaveScreenshot('shell-phone-drawer.png', { stylePath });
       await expectNoSeriousViolations(page);
       await page.keyboard.press('Escape');
-      await expect(bar.getByRole('button', { name: 'Open menu' })).toBeFocused();
+      await expect(bar.getByRole('button', { name: 'Open seller menu' })).toBeFocused();
     } else {
       const nav = page.getByRole('navigation', { name: 'Seller' });
       await expect(nav.getByRole('link', { name: 'Inventory' })).toHaveAttribute('aria-current', 'page');
-      await expect(page.getByRole('button', { name: 'Open menu' })).toBeHidden();
+      await expect(page.getByRole('button', { name: 'Open seller menu' })).toBeHidden();
       await expect(page).toHaveScreenshot('shell-desktop.png', { stylePath });
       await expectAccessibleAndContained(page);
     }
@@ -81,7 +81,7 @@ test.describe('Seller shell layout', () => {
   test('W04 AS-98 VA shop switcher: list open on the current section', async ({ page }) => {
     const { shopId, shopName } = await memberWithShop(page);
     await page.goto(shopPath(shopId, 'orders'));
-    if (isPhone(page)) await page.getByRole('region', { name: 'Shop bar' }).getByRole('button', { name: 'Open menu' }).click();
+    if (isPhone(page)) await page.getByRole('region', { name: 'Shop bar' }).getByRole('button', { name: 'Open seller menu' }).click();
     const scope = isPhone(page) ? page.getByRole('dialog') : page.locator('aside');
     await scope.getByRole('button', { name: new RegExp(shopName) }).click();
     await expect(scope.getByRole('list', { name: 'Your shops' })).toBeVisible();

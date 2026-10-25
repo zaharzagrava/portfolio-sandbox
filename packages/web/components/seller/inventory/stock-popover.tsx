@@ -67,13 +67,16 @@ function StockForm({ shopId, row, onDone, onStale }: { shopId: string; row: Inve
   const [invalid, setInvalid] = useState(false);
   const [changedTo, setChangedTo] = useState<number | null>(null);
   const [problem, setProblem] = useState<Problem | null>(null);
+  // A rate-limit countdown is running: "Update stock" stays disabled until it ends (B-098).
+  const [counting, setCounting] = useState(false);
+  const blocked = counting && problem !== null;
   const adjust = useAdjustStock(shopId);
   // A ref, not state: two presses a few milliseconds apart both see the same render, and the version may be read first.
   const sending = useRef(false);
 
   async function submit(event: FormEvent) {
     event.preventDefault();
-    if (sending.current || adjust.isPending) return;
+    if (sending.current || adjust.isPending || blocked) return;
     sending.current = true;
     try {
       await send();
@@ -162,12 +165,12 @@ function StockForm({ shopId, row, onDone, onStale }: { shopId: string; row: Inve
           </div>
         )}
       </div>
-      {problem && <ProblemPanel problem={problem} context={{ place: 'dialog' }} />}
+      {problem && <ProblemPanel problem={problem} context={{ place: 'dialog' }} onActiveChange={setCounting} />}
       <div className="flex justify-end gap-2">
         <Button type="button" variant="outline" size="sm" className="min-h-11 sm:min-h-7" disabled={adjust.isPending} onClick={onDone}>
           Cancel
         </Button>
-        <Button type="submit" size="sm" className="min-h-11 sm:min-h-7" disabled={adjust.isPending} aria-busy={adjust.isPending}>
+        <Button type="submit" size="sm" className="min-h-11 sm:min-h-7" disabled={adjust.isPending || blocked} aria-busy={adjust.isPending}>
           Update stock
         </Button>
       </div>
