@@ -5,6 +5,15 @@ import { buildCsp, CSP_REPORT_GROUP, CSP_REPORT_PATH, generateNonce } from '@/li
 // Parsed once per process. `lib/config.ts` is `server-only` and cannot be imported here.
 const appConfig = parseConfig(process.env);
 
+function hasBrokenPercent(pathname: string): boolean {
+  try {
+    decodeURIComponent(pathname);
+    return false;
+  } catch {
+    return true;
+  }
+}
+
 /**
  * Per-response nonce policy (Next.js "Content Security Policy" guide). This hook decides nothing about access, status or
  * redirects: authorization lives in the pages and the API (constitution VI.5).
@@ -26,9 +35,15 @@ export function proxy(request: NextRequest) {
   // The framework reads the policy from the request headers to put the nonce on its own scripts.
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set('x-nonce', nonce);
+  // The seller layout cannot see the address it renders for; its sign-in guard reads this to keep path and query (W04 AS-84).
+  requestHeaders.set('x-return-to', `${request.nextUrl.pathname}${request.nextUrl.search}`);
   requestHeaders.set('Content-Security-Policy', policy);
 
-  const response = NextResponse.next({ request: { headers: requestHeaders } });
+  // A seller address with a broken percent sequence (`/%E0%A4%A`) is served as an unknown shop: the framework would answer
+  // with a bare "400 Bad Request." page (B-084). The rewritten address is a malformed id, which shows the one not-found page.
+  const response = hasBrokenPercent(request.nextUrl.pathname) && request.nextUrl.pathname.startsWith('/dashboard/seller/')
+    ? NextResponse.rewrite(new URL('/dashboard/seller/not-a-shop', request.url), { request: { headers: requestHeaders } })
+    : NextResponse.next({ request: { headers: requestHeaders } });
   response.headers.set('Content-Security-Policy', policy);
   response.headers.set('Reporting-Endpoints', `${CSP_REPORT_GROUP}="${CSP_REPORT_PATH}"`);
   return response;

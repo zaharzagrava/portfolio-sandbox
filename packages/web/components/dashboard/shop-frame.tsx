@@ -1,6 +1,7 @@
 import 'server-only';
 import type { ReactNode } from 'react';
 import { dehydrate, HydrationBoundary, QueryClient } from '@tanstack/react-query';
+import { headers } from 'next/headers';
 import { notFound, redirect } from 'next/navigation';
 import { ForbiddenPanel } from '@/components/seller/forbidden-panel';
 import type { ShopListItem } from '@/lib/api/seller';
@@ -40,7 +41,10 @@ export function requireSellerSession(pathname: string, searchParams?: SearchPara
  */
 export async function ShopFrame({ params, children }: { params: Promise<{ shopId: string }>; children: ReactNode }) {
   const { shopId } = await params;
-  const returnTo = sellerReturnTo(`/dashboard/seller/${encodeURIComponent(shopId)}`);
+  const root = `/dashboard/seller/${encodeURIComponent(shopId)}`;
+  const seen = (await headers()).get('x-return-to');
+  // The address the proxy saw, so a signed-out visit to a section or a query survives login (B-023); only this shop's own pages count.
+  const returnTo = seen && (seen === root || seen.startsWith(`${root}/`) || seen.startsWith(`${root}?`)) ? seen : sellerReturnTo(root);
   await requireServerSession(returnTo);
 
   const [shopResult, shopsResult] = await Promise.all([readShop(shopId), readMyShops()]);

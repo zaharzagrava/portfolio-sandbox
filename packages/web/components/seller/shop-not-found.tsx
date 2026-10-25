@@ -9,7 +9,10 @@ import { SELLER_HOME } from '@/lib/seller/nav';
  */
 export function ShopNotFound() {
   return (
-    <StateMessage
+    <>
+      {/* React puts this in the document head; the layout's own title (Overview, Seller dashboard) would otherwise stay (B-065). */}
+      <title>Shop not found · Marketplace</title>
+      <StateMessage
       title="We couldn't find that shop."
       description="Check the address, or choose one of your shops."
       actions={
@@ -17,6 +20,7 @@ export function ShopNotFound() {
           <Link href={SELLER_HOME}>Your shops</Link>
         </Button>
       }
-    />
+      />
+    </>
   );
 }
