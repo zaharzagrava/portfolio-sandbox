@@ -17,9 +17,33 @@ Decided with the owner on 2026-10-25. First built and run on the four areas (ent
 10. `fresh-seed-pass`: after a round is clean, run the whole map pass again with a different seed (different data, different random choices, different tester agents). The number of new findings compared with the first pass shows how much a single pass misses. A round is only closed when the fresh-seed pass finds nothing new.
 11. `security`: scanners on the four areas: Semgrep (code rules, run from Docker), Schemathesis (API fuzz from the OpenAPI document `GET /v1/openapi.json`, run from Docker against the production-build stack), OWASP ZAP baseline scan against the production build (Docker), plus dependency audit (`pnpm audit`) and a secrets scan (gitleaks). Findings go to the register like any bug; real ones are fixed with a test.
 
-12. `fault-injection`: break things in the middle of an action: stop or pause the database, Redis, the message queue, search or storage while a seller saves, uploads, changes stock or reads orders (Docker `pause`/`stop` of that one container, or a proxy that drops or delays calls). Check: the screen says something honest (never a fake success, never an endless spinner), a retry after the service returns works exactly once, and the data is consistent afterwards (no half-written rows, no lost outbox messages, no duplicate). Runs on the dev stack with each service paused in turn; results are Playwright specs plus a small runner `scripts/aiqa/tracks/fault-injection/`.
-13. `odd-data`: 10,000 products in one shop, 5,000 orders, names in other scripts (Cyrillic, Arabic, CJK, emoji, right-to-left, very long words, zero-width characters), huge and tiny numbers, every currency fraction size (0, 2, 3 digits), rounding edge prices (0.29, 1.15, 19.99, 999999.99), other time zones around midnight UTC. A seed script `scripts/aiqa/tracks/odd-data/seed.mjs` builds the data; testers and Playwright specs check lists, search, paging, money and dates on it.
+12. `fault-injection`: freeze ONE helper service (database, Redis, Kafka, search, storage, queue ...) for under 5 minutes while the spec presses real buttons, then unfreeze and check: an honest message within 25 seconds, no fake success, one clean retry, data consistent, outbox published. Runner `scripts/aiqa/tracks/fault-injection/run.mjs`; map `coverage/fault-injection.tsv`; spec `packages/web/tests/aiqa/fault-injection.spec.ts` (skips itself unless the runner sets `AIQA_FAULT=1`).
+13. `odd-data`: one throwaway shop with 10,000 products and 5,000 orders full of odd data (six scripts, emoji, right-to-left, 120-letter words, rounding prices, currencies with 0/2/3 decimals, instants around midnight UTC viewed from far time zones). Seed `scripts/aiqa/tracks/odd-data/seed.mjs`; map `coverage/odd-data.tsv`; spec `packages/web/tests/aiqa/odd-data.spec.ts` (skips itself without `/tmp/fe/odd-data.json`).
 14. `flaky-history`: every run of the Playwright and backend suites appends one line per test (name, result, duration, date, commit) to a history file; `scripts/aiqa/flaky.mjs` prints tests that failed and passed on the same commit, or failed more than once in the last 20 runs. A test on that list is a bug to investigate, never to retry.
+
+## Where every track lives (map, test, README)
+
+Each track folder under `scripts/aiqa/tracks/<name>/` has a `README.md` in plain language: what it finds, prerequisites, how to point it at a new feature, commands, how to read results, how results become map lines/findings/register entries, known limits. Tracks that have a map of their own use the same 10-column format and the same tools (`status.mjs`, `mark.mjs`, `run-specs.mjs`, fingerprints).
+
+| Track | README | Map (`coverage/`) | Permanent test | Runs from |
+|---|---|---|---|---|
+| planted-bugs | `tracks/planted-bugs/README.md` | none (score) | `tracks/planted-bugs/probes/planted-probe.spec.ts` | `plant.sh`, `score.sh` |
+| mutation | `tracks/mutation/README.md` | none (survivors become tests) | web: `lib/seller/*.mutation.test.ts`, `nav.test.ts`; backend: unit specs | `pnpm mutation:web`, `tracks/mutation/backend.sh` |
+| concurrency | in the tests | lines in each area map | `packages/web/tests/seller-concurrency.spec.ts` (screens); backend: `libs/domains/catalog/product-concurrency.e2e-spec.ts`, `media/media-concurrency.e2e-spec.ts`, `orders/order-seller-concurrency.e2e-spec.ts` | Playwright; backend test stack |
+| seller-isolation | in the tests | lines in each area map | `packages/web/tests/seller-isolation.spec.ts` (screens); backend: `libs/domains/catalog/product-isolation.e2e-spec.ts`, `orders/order-seller-isolation.e2e-spec.ts` | Playwright; backend test stack |
+| prod-build | `tracks/prod-build/README.md` | none | monkey + fuzzer in `scripts/qa/` | `tracks/prod-build/run.sh` |
+| a11y-browsers | in `a11y-seller.spec.ts` | lines in each area map | `packages/web/tests/a11y-seller.spec.ts`, `PW_BROWSERS=1` Firefox | Playwright |
+| human-pass | `human-pass.md` | none | none | the owner |
+| code-coverage | `tracks/code-coverage/README.md` | adds `<area>.coverage.*` lines | none | `tracks/code-coverage/report.mjs` |
+| stateful | `tracks/stateful/README.md` | lines in each area map | `lib/seller/seller-logic.property.test.ts`, `product-lifecycle.stateful.e2e-spec.ts` | Vitest, backend test stack |
+| security | `tracks/security/README.md` | none (`findings/security*.md`) | Semgrep rules + selftest | `tracks/security/run.sh` |
+| fault-injection | `tracks/fault-injection/README.md` | `coverage/fault-injection.tsv` | `tests/aiqa/fault-injection.spec.ts` | `tracks/fault-injection/run.mjs` |
+| odd-data | `tracks/odd-data/README.md` | `coverage/odd-data.tsv` | `tests/aiqa/odd-data.spec.ts` | `tracks/odd-data/seed.mjs` + Playwright |
+| flaky-history | `tracks/flaky-history/README.md` | none | reporters in `tests/support/` and `backend/test/` | `scripts/aiqa/flaky.mjs` |
+
+## A new feature: which tracks to run again
+
+See "Adding a new feature to the flow" in `README.md`. Short form: map -> specs -> odd-data seed and map lines -> fault-injection actions -> isolation -> concurrency -> a11y -> security scope -> coverage report -> mutation targets.
 
 ## Parked (do later, owner agreed)
 
@@ -28,18 +52,15 @@ Decided with the owner on 2026-10-25. First built and run on the four areas (ent
 
 - Dev-server-only findings are accepted as duplicates of production questions until `prod-build` has re-checked them.
 
-## Order of a full round
+## Order of a full round (revised 2026-10-25, owner asked to remove double work)
 
-1. Map-driven pass over all maps (testers), then confirm findings by hand.
-2. Fixer (gaps and bugs) with permanent tests, then re-check the touched lines.
-3. Tracks 3, 4, 6, 9 (tests in normal suites; need the QA stack for Playwright parts, the backend test stack for backend parts: swap stacks, never both).
-4. Track 2 mutation (needs the test stack for the backend part; web part needs nothing).
-5. Track 5 prod build: monkey, fuzzer, re-check of dev-only findings.
-6. Tracks 12 and 13 (fault injection, odd data), track 11 security scanners; track 8 coverage read-out (new map lines for unexecuted code, testers run them).
-7. Track 1 planted bugs: measure the whole flow.
-8. Track 10 fresh-seed pass.
-9. Track 7 human pass by the owner.
-10. Repeat until a full round, including the fresh-seed pass, finds nothing new and all usual suites are green.
+1. Map-driven passes finish (testers). Specs move to the final layout `packages/web/tests/seller/<area>/`.
+2. Triage the findings, then FIX in one batch (`prompts/fixer.md`): cross-cutting fixes first, then one fixer per area in parallel. The unfinished backend race, isolation and stateful specs are finished here.
+3. Usual suites green twice in a row, with ONE stack swap: test stack up, backend suite twice (includes the new backend specs); swap to the dev stack, front-end suite twice on both projects (includes every spec of the testers). Running the suites IS the re-check: there is no separate re-check step. The cache (`run-specs.mjs`, `recheck.mjs`, `snapshot-diff.mjs`) is for partial runs while fixing.
+4. Final checks on the dev stack, in parallel: fresh-seed pass over the maps, production build with monkey tester and fuzzer, security scanners, odd-data and fault-injection maps re-run.
+5. Measurements: backend mutation testing (test stack, so after step 4), planted-bugs round in its own checkout, code coverage read-out (new map lines for unexecuted code).
+6. Human pass by the owner (`human-pass.md`).
+7. If steps 4 or 5 find something new: small fix round, back to step 3. Done when a full round finds nothing new.
 
 ## The only things that keep this flow from being perfect (owner's list, 2026-10-25)
 
