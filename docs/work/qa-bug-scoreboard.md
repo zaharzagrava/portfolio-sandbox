@@ -39,6 +39,7 @@ Other results are counted separately: **candidate** (not confirmed yet), **false
 | 5a | 2026-10-25 | Map-driven pass 2, entry area (70 lines, permanent specs, desktop and mobile) | entry | 1 new (B-065); B-023 and B-026 re-confirmed; flake `submit-happy-path` explained by B-040 | 0 | 0 | B-023, B-026, B-040 | 0 | 63 pass, 5 bug, 2 unreachable; all four roles checked on 18 menu entries |
 | 5b | 2026-10-25 | Map-driven pass 2, inventory area (70 lines, 5 new permanent specs, desktop and mobile) | inventory | 7 new (B-066 to B-072); B-024, B-030, B-051 re-confirmed | 0 | 0 | B-024, B-030, B-051 | 0 | 54 pass, 13 bug, 3 blocked |
 | 5c | 2026-10-25 | Map-driven pass 2, media area (71 lines, 4 new permanent specs, desktop and mobile) | photos | 3 new (B-073, B-074 confirmed; B-077 info); B-002, B-043 re-confirmed | 2 (B-075, B-076) | 0 | B-002, B-043 | 0 | 55 pass, 12 bug, 4 blocked |
+| 5d | 2026-10-25 | Map-driven pass 3, entry area (72 lines, 7 new permanent specs, desktop and mobile) | entry | 8 new (B-078 to B-082, B-083, B-085; B-084 candidate); B-023, B-071 re-confirmed | 1 (B-084) | 0 | B-023, B-071 | 0 | entry map complete: 159 pass, 24 bug, 6 blocked, 0 untested |
 
 ## How to read it
 
