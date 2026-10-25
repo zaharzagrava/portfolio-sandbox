@@ -46,7 +46,7 @@ export class GalleryController {
     return this.galleries.replace(shopId.toLowerCase(), productId, body);
   }
 
-  @ShopScoped('products.read')
+  @ShopScoped('products.read', { readWhileClosed: true })
   @UseGuards(PathIdsGuard)
   @RateLimit('media.read.ip')
   @Get('shops/:shopId/products/:productId/gallery')

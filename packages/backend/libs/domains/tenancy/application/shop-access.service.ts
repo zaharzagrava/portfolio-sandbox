@@ -28,17 +28,25 @@ import {
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-/**
- * FR-013: what a closed shop still allows. Reads of the shop's own data stay open (W04 R-03: the seller can still see
- * products, photos and orders); every write is refused.
- */
+/** FR-013: what a closed shop still allows on any route; every write is refused. */
 const WHILE_SUSPENDED: readonly ShopPermission[] = [
   'shop.read',
   'members.read',
-  'products.read',
-  'orders.read',
   'shop.export',
 ];
+/**
+ * W04 R-03: the seller can still see products, photos and orders of a closed shop. Only the routes that opt in with
+ * `ShopScoped(permission, { readWhileClosed: true })` get these two permissions through the gate; drafts, sync, search,
+ * collaboration and the other `products.read` routes stay refused.
+ */
+const READ_WHILE_CLOSED: readonly ShopPermission[] = [
+  'products.read',
+  'orders.read',
+];
+
+export interface ResolveOptions {
+  readWhileClosed?: boolean;
+}
 const WHILE_DELETING: readonly ShopPermission[] = [
   ...WHILE_SUSPENDED,
   'shop.delete',
@@ -83,6 +91,7 @@ export class ShopAccessService {
     shopId: string,
     userId: string,
     permission?: ShopPermission,
+    options: ResolveOptions = {},
   ): Promise<ResolvedAccess> {
     const strong =
       permission !== undefined && SENSITIVE_PERMISSIONS.includes(permission);
@@ -95,7 +104,12 @@ export class ShopAccessService {
       authzDeniedCounter.add(1, { reason: 'permission' });
       throw new Domain_PermissionDeniedError();
     }
-    if (permission) this.gate(entry.status, permission);
+    if (permission) {
+      const open =
+        options.readWhileClosed === true &&
+        READ_WHILE_CLOSED.includes(permission);
+      if (!open) this.gate(entry.status, permission);
+    }
     return entry;
   }
 

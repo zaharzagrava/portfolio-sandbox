@@ -55,7 +55,7 @@ export class ProductController {
     return this.commands.create(shopId, user.id, body);
   }
 
-  @ShopScoped('products.read')
+  @ShopScoped('products.read', { readWhileClosed: true })
   @Get()
   list(
     @Param('shopId') shopId: string,
@@ -64,7 +64,7 @@ export class ProductController {
     return this.commands.listByShop(shopId, query);
   }
 
-  @ShopScoped('products.read')
+  @ShopScoped('products.read', { readWhileClosed: true })
   @Get(':productId')
   get(
     @Param('shopId') shopId: string,

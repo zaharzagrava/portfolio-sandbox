@@ -19,6 +19,7 @@ import {
 import { authzDeniedCounter } from '../domain/tenancy-metrics';
 
 const SHOP_PERMISSION_METADATA = 'tenancy:permission';
+const SHOP_READ_WHILE_CLOSED_METADATA = 'tenancy:read-while-closed';
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export interface ShopRequest {
@@ -65,10 +66,16 @@ export class ShopGuard implements CanActivate {
       SHOP_PERMISSION_METADATA,
       ctx.getHandler(),
     );
+    const readWhileClosed =
+      this.reflector.get<boolean | undefined>(
+        SHOP_READ_WHILE_CLOSED_METADATA,
+        ctx.getHandler(),
+      ) === true;
     const { role } = await this.access.resolve(
       shopId.toLowerCase(),
       req.user.id,
       permission,
+      { readWhileClosed },
     );
 
     req.shopId = shopId.toLowerCase();
@@ -79,10 +86,22 @@ export class ShopGuard implements CanActivate {
   }
 }
 
+export interface ShopScopedOptions {
+  /**
+   * Only for the seller dashboard's own reads (W04 R-03): the route stays readable while the shop is `SUSPENDED` or
+   * `DELETING`. Honoured for `products.read` and `orders.read` only; every other route keeps the full status gate.
+   */
+  readWhileClosed?: boolean;
+}
+
 /** `@ShopScoped('products.write')` = authenticated + member of the shop + permission + status gate. */
-export const ShopScoped = (permission?: ShopPermission) =>
+export const ShopScoped = (
+  permission?: ShopPermission,
+  options: ShopScopedOptions = {},
+) =>
   applyDecorators(
     Firewall(),
     SetMetadata(SHOP_PERMISSION_METADATA, permission),
+    SetMetadata(SHOP_READ_WHILE_CLOSED_METADATA, options.readWhileClosed === true),
     UseGuards(ShopGuard),
   );

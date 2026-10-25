@@ -19,12 +19,17 @@ import { SHOP_PERMISSIONS, type ShopPermission } from '../domain/permissions';
  * (no path parameter), echoing what the guard put in the request context. Other capabilities guard their routes with
  * the same `ShopScoped`, so this is what "a shop-scoped route" means to the tenancy specs.
  */
-function probeController(permission: ShopPermission | undefined) {
-  @Controller(`probe/shop/${permission ?? 'member'}`)
+function probeController(
+  permission: ShopPermission | undefined,
+  readWhileClosed = false,
+) {
+  @Controller(
+    `probe/${readWhileClosed ? 'shop-open' : 'shop'}/${permission ?? 'member'}`,
+  )
   class ShopProbeController {
     constructor(private readonly context: RequestContext) {}
 
-    @ShopScoped(permission)
+    @ShopScoped(permission, { readWhileClosed })
     @Get()
     handle(@Req() req: ShopRequest) {
       return {
@@ -61,6 +66,9 @@ class CellProbeController {
     CellProbeController,
     probeController(undefined),
     ...SHOP_PERMISSIONS.map((p) => probeController(p)),
+    // the routes that opt in to reading a closed shop (the seller dashboard's own reads)
+    probeController('products.read', true),
+    probeController('orders.read', true),
   ],
 })
 export class ShopProbeModule {}

@@ -233,14 +233,39 @@ describe('Tenant resolution and isolation', () => {
       permission: string,
     ) => t.as(user).get(probe(permission)).set('X-Shop-Id', shopId);
 
-    it('SUSPENDED allows shop.read, members.read, products.read, orders.read, shop.export and refuses the rest with 403 shop_suspended', async () => {
+    const callOpen = (
+      user: Awaited<ReturnType<TenancyTestApp['newUser']>>,
+      shopId: string,
+      permission: string,
+    ) =>
+      t
+        .as(user)
+        .get(`/api/probe/shop-open/${permission}`)
+        .set('X-Shop-Id', shopId);
+
+    it('SUSPENDED allows shop.read, members.read, shop.export and refuses the rest with 403 shop_suspended', async () => {
       const owner = await t.newUser();
       const shop = await createShop(t.app, owner, { status: 'SUSPENDED' });
-      const open = ['shop.read', 'members.read', 'products.read', 'orders.read', 'shop.export'];
+      const open = ['shop.read', 'members.read', 'shop.export'];
       for (const p of open) await call(owner, shop.id, p).expect(200);
       for (const p of SHOP_PERMISSIONS.filter((x) => !open.includes(x))) {
         const res = await call(owner, shop.id, p).expect(403);
         expect(res.body.code).toBe('shop_suspended');
+      }
+    });
+
+    it('products.read and orders.read pass the gate of a SUSPENDED or DELETING shop only on routes that opt in (W04 R-03)', async () => {
+      const owner = await t.newUser();
+      for (const [status, http, code] of [
+        ['SUSPENDED', 403, 'shop_suspended'],
+        ['DELETING', 409, 'shop_offboarding'],
+      ] as const) {
+        const shop = await createShop(t.app, owner, { status });
+        for (const p of ['products.read', 'orders.read']) {
+          await callOpen(owner, shop.id, p).expect(200);
+          const res = await call(owner, shop.id, p).expect(http);
+          expect(res.body.code).toBe(code);
+        }
       }
     });
 
@@ -250,13 +275,13 @@ describe('Tenant resolution and isolation', () => {
       for (const p of [
         'shop.read',
         'members.read',
-        'products.read',
-        'orders.read',
         'shop.export',
         'shop.delete',
       ])
         await call(owner, shop.id, p).expect(200);
       for (const p of [
+        'products.read',
+        'orders.read',
         'products.write',
         'shop.manage',
         'members.manage',

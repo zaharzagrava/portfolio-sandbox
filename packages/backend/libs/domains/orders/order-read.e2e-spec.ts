@@ -346,7 +346,7 @@ describe('Orders: reads, history and tenant isolation', () => {
       );
     });
 
-    it('S10 AS-61: status filter, keyset pages, bad status or cursor are 400, and a suspended shop follows the S03 gate', async () => {
+    it('S10 AS-61: status filter, keyset pages, bad status or cursor are 400, and a suspended shop still answers the list (S03 R-05, W04 R-03)', async () => {
       const { buyer, s1, p1 } = await seed();
       const member = await t.newUser();
       await addMember(t.app, s1.id, member.id, 'VIEWER');
@@ -398,8 +398,11 @@ describe('Orders: reads, history and tenant isolation', () => {
       // a shop that is suspended from the start (S03 caches membership for 15 s, so flip no live shop)
       const suspended = await createShop(t.app, null, { status: 'SUSPENDED' });
       await addMember(t.app, suspended.id, member.id, 'OWNER');
-      const gated = await t.as(member).get(`/api/shops/${suspended.id}/orders`);
-      expect(gated.status).toBe(403);
+      const readable = await t
+        .as(member)
+        .get(`/api/shops/${suspended.id}/orders`);
+      expect(readable.status).toBe(200);
+      expect(shopOrderPageSchema.parse(readable.body).items).toEqual([]);
     });
   });
 

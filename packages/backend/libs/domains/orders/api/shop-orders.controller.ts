@@ -10,7 +10,7 @@ import { ListShopOrdersQueryDto } from './orders.dto';
 export class ShopOrdersController {
   constructor(private readonly queries: OrderQueryService) {}
 
-  @ShopScoped('orders.read')
+  @ShopScoped('orders.read', { readWhileClosed: true })
   @Get('shops/:shopId/orders')
   list(
     @Param('shopId', ParseUUIDPipe) shopId: string,

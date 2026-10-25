@@ -9,7 +9,7 @@ rules_hash: 6865a89176c9
 ---
 # Shop status gate
 ## Definition
-The shop status gate is the last check on a shop request. It runs after [authentication](session-cookie.md), the `404` check and the [`403 permission_denied`](permission-denied.md) check. It limits what any member can do based on the shop's status, whatever their role. While a shop is [`SUSPENDED`](shop-status.md), only the [`shop.read`](permission.md), `members.read`, `products.read`, `orders.read` and `shop.export` permissions are allowed.
+The shop status gate is the last check on a shop request. It runs after [authentication](session-cookie.md), the `404` check and the [`403 permission_denied`](permission-denied.md) check. It limits what any member can do based on the shop's status, whatever their role. While a shop is [`SUSPENDED`](shop-status.md), only the [`shop.read`](permission.md), `members.read` and `shop.export` permissions are allowed. The seller dashboard's own reads (the shop's product list and product, its photo gallery and its order list) also pass with `products.read` and `orders.read`, so the seller still sees the shop's data ([W04 R-03](../capabilities/W04-seller-dashboard.md)); drafts, sync, shop search and live editing stay refused.
 
 ## Example
 An [`OWNER`](shop-role.md) of a `SUSPENDED` shop can still export the shop's data with `shop.export`. The same `OWNER` is blocked if they try to edit a product.
