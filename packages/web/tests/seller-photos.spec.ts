@@ -2023,7 +2023,7 @@ test.describe('Photos: the public gallery', () => {
       // the page is cached for a few seconds (a state seen while the shop was suspended may still be served)
       await expect(async () => {
         await buyer.goto(`/products/${productId}`);
-        await expect(buyer.getByTestId('gallery-placeholder'), 'the live product shows the neutral block on this stack (http addresses)').toBeVisible({ timeout: 2_000 });
+        await expect(buyer.getByTestId('gallery-main').locator('img'), 'the live product shows its first remaining photo (B-002: the dev MinIO origin is allowed)').toBeVisible({ timeout: 2_000 });
       }).toPass({ timeout: 40_000, intervals: [3_000] });
       expect(await buyer.content(), 'the removed photo is not on the page').not.toContain(mediaIds[0]);
     } finally {
@@ -2047,14 +2047,15 @@ test.describe('Photos: the public gallery', () => {
       await expect(buyer.getByTestId('gallery-main')).toHaveCount(0);
       await expect(buyer.getByRole('list', { name: 'Product images' })).toHaveCount(0);
 
-      // photos exist, but their addresses are http (dev storage): the page does not use them, same block
+      // photos exist at the dev MinIO origin (http://localhost:9100, the one development address the page allows, B-002): the main image shows;
+      // any other http address is refused by the page (unit test of safeHttpsUrl)
       const read = await (await publicGallery(withPhotos)).json();
       expect(read.items, 'the gallery holds 2 photos').toHaveLength(2);
       expect(new URL(read.items[0].urls.feed).protocol, 'this stack serves http addresses').toBe('http:');
+      expect(new URL(read.items[0].urls.feed).origin).toBe('http://localhost:9100');
       await buyer.goto(`/products/${withPhotos}`);
-      await expect(buyer.getByTestId('gallery-placeholder')).toBeVisible();
-      await expect(buyer.getByTestId('gallery-main')).toHaveCount(0);
-      expect(await buyer.locator('img[src^="http:"]').count(), 'no http picture is put on the page').toBe(0);
+      await expect(buyer.getByTestId('gallery-main').locator('img')).toBeVisible();
+      await expect(buyer.getByTestId('gallery-placeholder')).toHaveCount(0);
     } finally {
       await buyer.context().close();
     }

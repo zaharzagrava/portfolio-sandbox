@@ -7,7 +7,10 @@ export function safeHttpsUrl(value: unknown): string | undefined {
   if (typeof value !== 'string' || value === '') return undefined;
   try {
     const url = new URL(value);
-    if (url.protocol !== 'https:' || url.username || url.password) return undefined;
+    if (url.username || url.password) return undefined;
+    // The dev stack serves media from the local MinIO over plain http (the same origin the CSP and the image allow-list name in development, B-002).
+    const devMedia = process.env.NODE_ENV !== 'production' && url.protocol === 'http:' && url.origin === 'http://localhost:9100';
+    if (url.protocol !== 'https:' && !devMedia) return undefined;
     return value;
   } catch {
     return undefined;

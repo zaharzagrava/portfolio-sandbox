@@ -115,6 +115,11 @@ describe('safeHttpsUrl', () => {
     expect(safeHttpsUrl(value)).toBeUndefined();
   });
 
+  it('W02 AS-72: the dev MinIO origin is the one http address allowed outside production (B-002)', () => {
+    expect(safeHttpsUrl('http://localhost:9100/marketplace-media/media/derived/a.webp')).toBe('http://localhost:9100/marketplace-media/media/derived/a.webp');
+    expect(safeHttpsUrl('http://localhost:9000/marketplace-media/a.webp')).toBeUndefined();
+  });
+
   it('W02 AS-72: non-strings are ignored', () => {
     expect(safeHttpsUrl(null)).toBeUndefined();
     expect(safeHttpsUrl(undefined)).toBeUndefined();
