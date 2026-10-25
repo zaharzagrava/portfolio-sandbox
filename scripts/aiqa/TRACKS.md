@@ -17,7 +17,14 @@ Decided with the owner on 2026-10-25. First built and run on the four areas (ent
 10. `fresh-seed-pass`: after a round is clean, run the whole map pass again with a different seed (different data, different random choices, different tester agents). The number of new findings compared with the first pass shows how much a single pass misses. A round is only closed when the fresh-seed pass finds nothing new.
 11. `security`: scanners on the four areas: Semgrep (code rules, run from Docker), Schemathesis (API fuzz from the OpenAPI document `GET /v1/openapi.json`, run from Docker against the production-build stack), OWASP ZAP baseline scan against the production build (Docker), plus dependency audit (`pnpm audit`) and a secrets scan (gitleaks). Findings go to the register like any bug; real ones are fixed with a test.
 
+12. `fault-injection`: break things in the middle of an action: stop or pause the database, Redis, the message queue, search or storage while a seller saves, uploads, changes stock or reads orders (Docker `pause`/`stop` of that one container, or a proxy that drops or delays calls). Check: the screen says something honest (never a fake success, never an endless spinner), a retry after the service returns works exactly once, and the data is consistent afterwards (no half-written rows, no lost outbox messages, no duplicate). Runs on the dev stack with each service paused in turn; results are Playwright specs plus a small runner `scripts/aiqa/tracks/fault-injection/`.
+13. `odd-data`: 10,000 products in one shop, 5,000 orders, names in other scripts (Cyrillic, Arabic, CJK, emoji, right-to-left, very long words, zero-width characters), huge and tiny numbers, every currency fraction size (0, 2, 3 digits), rounding edge prices (0.29, 1.15, 19.99, 999999.99), other time zones around midnight UTC. A seed script `scripts/aiqa/tracks/odd-data/seed.mjs` builds the data; testers and Playwright specs check lists, search, paging, money and dates on it.
+14. `flaky-history`: every run of the Playwright and backend suites appends one line per test (name, result, duration, date, commit) to a history file; `scripts/aiqa/flaky.mjs` prints tests that failed and passed on the same commit, or failed more than once in the last 20 runs. A test on that list is a bug to investigate, never to retry.
+
 ## Parked (do later, owner agreed)
+
+- Migration test: data written before a database change must still show correctly after it (old rows, old shapes). To write when the next schema change lands.
+- API change check: compare the API description (`GET /v1/openapi.json`) before and after a change and fail on breaking changes the web app depends on. To add when API changes start; there are none yet.
 
 - Dev-server-only findings are accepted as duplicates of production questions until `prod-build` has re-checked them.
 
@@ -28,7 +35,7 @@ Decided with the owner on 2026-10-25. First built and run on the four areas (ent
 3. Tracks 3, 4, 6, 9 (tests in normal suites; need the QA stack for Playwright parts, the backend test stack for backend parts: swap stacks, never both).
 4. Track 2 mutation (needs the test stack for the backend part; web part needs nothing).
 5. Track 5 prod build: monkey, fuzzer, re-check of dev-only findings.
-6. Track 11 security scanners; track 8 coverage read-out (new map lines for unexecuted code, testers run them).
+6. Tracks 12 and 13 (fault injection, odd data), track 11 security scanners; track 8 coverage read-out (new map lines for unexecuted code, testers run them).
 7. Track 1 planted bugs: measure the whole flow.
 8. Track 10 fresh-seed pass.
 9. Track 7 human pass by the owner.
