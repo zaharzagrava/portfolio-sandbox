@@ -88,6 +88,13 @@ Idea from the owner: start each page with fixed seed data, save its HTML, and co
 Spec-versus-code gaps are not just listed; they are part of the flow and get fixed in the same round.
 - Spec states a clear rule and code breaks it: fix the code, test first.
 - Code is clearly intended and spec is stale: fix the spec text and say so in the commit.
-- Real product decision (two reasonable behaviors, or big): write the question in plain words in `findings/<area>.owner-questions.md` and go on; do not block.
+- Product choices (two reasonable behaviors): the fixer decides alone (owner decision 2026-10-25): best for the product as a career portfolio showcase, no over-engineering; use a pattern from `docs/work/architecture/pattern-map.md` where it genuinely fits, otherwise what fits the code, architecture and product. The reason goes in the commit message. No owner questions, no blocking.
 - One commit per fix on the local branch `qa/seller-dashboard` (worktree `../portfolio-sandbox-qa`), checked by `scripts/qa/guard-tests.sh`; never pushed. `prompts/fixer.md` is the instruction.
 - After fixes, the touched map lines go back to `untested` and the tester re-checks them (a fix without a re-check does not count).
+
+## Definition of done for an area
+
+1. Every line of the map is `pass`, `bug`-then-fixed-and-rechecked, or `n/a` with a reason; no `untested`, no `blocked`.
+2. Every fix has a permanent test in the normal suites (Playwright, Vitest/Jest, backend end-to-end).
+3. A full new AI pass over the whole map finds nothing new.
+4. The usual suites are green: backend end-to-end (`scripts/speedup/run-sharded.sh 8`), front-end Playwright (both projects), unit tests, lint and type check.
