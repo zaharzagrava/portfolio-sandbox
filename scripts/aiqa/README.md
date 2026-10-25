@@ -73,15 +73,28 @@ Later: overview-live, team, developers (keys, webhooks, logs, usage, API version
 - From `IDEAS.md`, for the four areas first: (1) cross-model review and the "no weakened tests" guard; (2) double-click and parallel-request tests with a database check for impossible rows; (3) random-input / "must always hold" tests for money, stock, filters and paging; (4) mutation testing on money, stock and permission files; (5) security basics: seller A must not read seller B's data. Plant 5 known bugs once to measure how many the flow finds.
 - Scope stays on the four areas until their maps are fully checked.
 
-## Cache (re-map only what changed)
+## Cache (re-test only what changed)
 
-Idea from the owner: start each page with fixed seed data, save its HTML, and compare with the last saved copy; re-run mapping only for the parts that changed. Design:
+Nothing that was checked and has not changed is tested again. Two kinds of change are watched.
 
-- Every map line gets a `fingerprint`: a hash of (the page part's HTML with ids, dates and random strings removed) plus the hash of the code files in its `code` column.
-- A snapshot script (`snapshot.mjs`, to build) opens each page with the fixed demo seed at 1280 and 390 px for each role and state, splits the HTML into parts (one per control or region), and stores `coverage/snapshots/<area>/<page>.json`.
-- On the next run it compares: unchanged parts keep their status and date; changed or new parts become `untested` and go to the mapper again; parts that vanished are marked `removed`.
-- A spec file change (hash of the spec id's file) also marks the lines that cite it as `untested`.
-- Limit: HTML only shows what a page shows in its first state. Dialogs, error states and states after actions are only seen by driving the page, so snapshots must include scripted states (open each dialog, trigger each error), and the code hash covers the rest.
+**Code and spec (`fingerprint.mjs`, `recheck.mjs`).** A line is re-checked only when something it depends on changed, all the way down. Each map line gets a fingerprint: a hash of the content of
+- every file named in its `code` column (paths like `a/b.ts#symbol`, `>` traces, short names such as `shop-picker.tsx`, globs; unknown paths are listed, never a crash);
+- the definition file of every named class, function, hook or constant (`ShopController`, `ShopService.mine`, `useShop`, `pageForShop`: found in the web, backend and contracts sources; a name that is defined in more than 3 places is skipped);
+- every named database table: the Sequelize model file with that `tableName` and every migration (`packages/backend/migrations*`) that creates or alters the table (`createTable`, `addColumn`, `ALTER TABLE ...`); a migration that only mentions the table in a foreign key does not count;
+- the API client and the shared contracts of those files: `packages/web/lib/api/*` and `*.dto.ts` files they import, and the contracts (zod schemas, types) they import by name from `@marketplace-sandbox/contracts`;
+- the spec lines that mention each id in the `spec` column (for example the line `- **W04.R-02** ...`; when no line carries the id, or the id is only a capability like `W04`, the whole capability file).
+Fingerprints live in `coverage/<area>.fingerprints.json` (per line: `code`, `spec`, `at`, and the hash of every single file, so the note says which file changed). Limit: a changed file counts as a change even if the edit is a comment; the model file is hashed whole, not per column.
+- `node scripts/aiqa/fingerprint.mjs <area>|all [--force]` stores fingerprints. Lines already `pass`/`bug` keep their old fingerprint unless `--force`, so a change since the check is not hidden.
+- `node scripts/aiqa/mark.mjs ...` records the line's current fingerprint by itself whenever a tester marks `pass` or `bug`. Testers do nothing extra.
+- `node scripts/aiqa/recheck.mjs <area>|all [--dry]` compares stored and current fingerprints. A `pass`/`bug` line whose hash changed goes back to `untested` with the note `changed: <files or spec ids>`; unchanged lines are never touched. `--dry` only prints.
+- `node scripts/aiqa/run-specs.mjs <area> [--all] [--dry]` runs the permanent specs `packages/web/tests/aiqa/*.spec.ts`. A test names the lines it covers with `test.info().annotations.push({ type: 'aiqa-lines', description: 'id1,id2' })`. First the stale lines go back to untested (recheck), then only the spec files that annotate an `untested` or `blocked` line of the area run (`--all`: every spec of the area). From the JSON result each line is marked by `mark.mjs`: all its tests passed -> `pass` (fingerprint stored), a test failed -> `bug` with bug id `spec-fail` and the first error line, only skipped -> left alone. So a passing line with an unchanged fingerprint is never run and no agent has to look at it again. `--dry` prints what would run.
+- `node scripts/aiqa/status.mjs` ends with `stale: N lines changed since last check`.
+
+**Pages (`snapshot.mjs`, `snapshot-diff.mjs`).** The demo seed is fixed (seller@marketplace.local, Demo Shop). `snapshots.config.json` lists, per area, the page states (url template with `{shopId}` and `{productId}`, steps that open a dialog or menu, roles `owner`, `viewer`, `noshop`, `anon`, widths). The scripts need the dev stack (web :3000, API :8000) and use Playwright from `packages/web`.
+- `node scripts/aiqa/snapshot.mjs <area>|all [state]` opens every state at 1280 and 390 px for each role and stores `coverage/snapshots/<area>/<state>.json`: the page cut into parts (landmarks, headings, dialogs and menus, every button, link and form control) with a hash per part. Before hashing, ids, dates, times, "5 minutes ago", uuids, random strings, hashed class names and the unread counter are removed.
+- `node scripts/aiqa/snapshot-diff.mjs <area>|all [--dry] [state]` takes the pictures again and prints added, removed and changed parts. A changed part is matched to map lines of the area by its text (role, label, aria-label) found in the line's `what`; the matching lines that were `pass`/`bug` go back to `untested` (note `ui changed: ...`). A label that matches more than 12 lines is printed as "too generic" and maps nothing. A new button or field that matches no line is printed as `new control not in the map`: add it to the map. The new picture replaces the stored one (not with `--dry`).
+- The VIEWER role needs the dev mailbox to list invitation mails (the same blocker as `seller-team.spec.ts`, L-003). Without it the viewer states are skipped with a message and the script leaves no pending invitation behind. The helper accounts `aiqa-viewer@example.com` and `aiqa-noshop@example.com` are created on the first run.
+- Limit: a snapshot only shows what the steps in the config reach. Error states and states after an action need a config state with steps (or the code hash covers them). Data that other tests change (a new order in the list) shows as a changed part; that is a reason to look, not a bug.
 
 ## Gaps are fixed right away (owner decision, 2026-10-25)
 
@@ -102,3 +115,7 @@ Spec-versus-code gaps are not just listed; they are part of the flow and get fix
 ## Tracks, limits
 
 All extra tracks (planted bugs, mutation, concurrency, isolation, prod build with monkey and fuzzer, accessibility and other browsers, human pass, code coverage, rule-based random tests, fresh-seed pass, security scanners) and the short list of things that keep the flow imperfect are in `TRACKS.md`.
+
+## Invitation mail in the dev stack
+
+Mails do not go to Mailpit: the dev API uses an in-memory mailbox, read at `GET http://localhost:8000/api/dev/mailbox?to=<email>` (the invite link is `/invites/<token>`; poll for a few seconds; it keeps the last 50 mails and is emptied on API restart). The API must be started with `pnpm --filter api run start:dev:monolith` (it sets `DEV_MAILBOX_ENABLED=true`). `readInviteLink` in `packages/web/tests/helpers.ts` does this. So the VIEWER and STAFF roles ARE testable: invite, read the link, accept. Details: `findings/invite-mail.md`.
