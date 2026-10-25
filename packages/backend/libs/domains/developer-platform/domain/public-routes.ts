@@ -89,7 +89,7 @@ export const PUBLIC_ROUTES: PublicRoute[] = [
     summary: 'Read a product’s stock',
     scope: 'products:read',
     success: { status: 200, resource: 'stock' },
-    errors: [404, ...COMMON],
+    errors: [400, 404, ...COMMON],
   },
   {
     method: 'get',
@@ -100,7 +100,7 @@ export const PUBLIC_ROUTES: PublicRoute[] = [
     summary: 'Read a product’s stock (deprecated)',
     scope: 'products:read',
     success: { status: 200, resource: 'stock' },
-    errors: [404, 410, ...COMMON],
+    errors: [400, 404, 410, ...COMMON],
   },
   {
     method: 'post',
@@ -125,7 +125,7 @@ export const PUBLIC_ROUTES: PublicRoute[] = [
     summary: 'Read a bulk stock job',
     scope: 'stock:write',
     success: { status: 200, resource: 'bulkJob' },
-    errors: [404, ...COMMON],
+    errors: [400, 404, ...COMMON],
   },
   {
     method: 'get',
@@ -148,7 +148,7 @@ export const PUBLIC_ROUTES: PublicRoute[] = [
     summary: 'Read one order slice',
     scope: 'orders:read',
     success: { status: 200, resource: 'order' },
-    errors: [404, 406, ...COMMON],
+    errors: [400, 404, 406, ...COMMON],
   },
   {
     method: 'post',

@@ -57,6 +57,34 @@ export function buildOpenApi(): Json {
     Product_20260115: schemaOf(publicApiV20260115.productSchema),
     Order_20260115: schemaOf(publicApiV20260115.orderSchema),
   };
+  // Rules the server enforces beyond the plain type (B-063): written into the description so a client sees them.
+  const at = (node: unknown, ...path: string[]): Json | undefined =>
+    path.reduce<unknown>(
+      (cur, key) => (cur as Json | undefined)?.[key],
+      node,
+    ) as Json | undefined;
+  const currency = at(
+    schemas.CreateProduct,
+    'properties',
+    'price',
+    'properties',
+    'currency',
+  );
+  if (currency)
+    currency.description =
+      'Only currencies the marketplace supports; any other code answers 400 `validation_failed` (field price.currency, code `unsupported`).';
+  const delta = at(
+    schemas.BulkStock,
+    'properties',
+    'items',
+    'items',
+    'properties',
+    'delta',
+  );
+  if (delta) {
+    delta.not = { const: 0 };
+    delta.description = 'A change of 0 is refused (400 `validation_failed`).';
+  }
   const oneOfVersions = (resource: 'Product' | 'Order'): Json => ({
     description: 'The shape depends on the Marketplace-Version of the request.',
     oneOf: versions
@@ -212,6 +240,131 @@ export function buildOpenApi(): Json {
     ['get', '/api/shops/{shopId}/developers/logs', 'Search the request log'],
     ['get', '/api/shops/{shopId}/developers/usage', 'Usage report'],
   ];
+  // The seller dashboard routes of the inventory, photos, orders and shop-setup areas (B-063): same session as the web app.
+  const SHOP_STATUSES = [400, 401, 403, 404, 409, 429];
+  const area: [string, string, string, number[], Json[]?][] = [
+    ['get', '/api/shops/mine', 'The shops of the signed-in person', [401]],
+    [
+      'post',
+      '/api/shops',
+      'Open a shop (the caller becomes its OWNER)',
+      [400, 401, 409, 422, 429],
+    ],
+    ['get', '/api/shops/{shopId}', 'Read a shop', SHOP_STATUSES],
+    [
+      'patch',
+      '/api/shops/{shopId}',
+      'Change a shop’s name or settings',
+      SHOP_STATUSES,
+    ],
+    [
+      'get',
+      '/api/shops/{shopId}/products',
+      'List the shop’s products with search, status and stock filters',
+      SHOP_STATUSES,
+    ],
+    [
+      'post',
+      '/api/shops/{shopId}/products',
+      'Create a product',
+      [...SHOP_STATUSES, 422],
+    ],
+    [
+      'get',
+      '/api/shops/{shopId}/products/{productId}',
+      'Read one product',
+      SHOP_STATUSES,
+    ],
+    [
+      'patch',
+      '/api/shops/{shopId}/products/{productId}',
+      'Change a product (If-Match carries its version)',
+      [...SHOP_STATUSES, 412, 422, 428],
+    ],
+    [
+      'post',
+      '/api/shops/{shopId}/products/{productId}/archive',
+      'Archive a product',
+      SHOP_STATUSES,
+    ],
+    [
+      'post',
+      '/api/shops/{shopId}/products/{productId}/restore',
+      'Restore an archived product',
+      SHOP_STATUSES,
+    ],
+    [
+      'get',
+      '/api/shops/{shopId}/products/{productId}/gallery',
+      'Read a product’s photo gallery',
+      SHOP_STATUSES,
+    ],
+    [
+      'put',
+      '/api/shops/{shopId}/products/{productId}/gallery',
+      'Replace a product’s photo gallery',
+      [...SHOP_STATUSES, 422],
+    ],
+    [
+      'post',
+      '/api/shops/{shopId}/media/uploads',
+      'Start a photo upload (signed address)',
+      [...SHOP_STATUSES, 413, 415, 422],
+    ],
+    [
+      'get',
+      '/api/shops/{shopId}/orders',
+      'List the shop’s order slices, newest first (no buyer identity)',
+      SHOP_STATUSES,
+      [
+        {
+          name: 'status',
+          in: 'query',
+          schema: {
+            type: 'string',
+            enum: ['PENDING', 'PAID', 'CANCELLED', 'REFUNDED'],
+          },
+        },
+        {
+          name: 'limit',
+          in: 'query',
+          schema: { type: 'integer', minimum: 1, maximum: 100, default: 20 },
+        },
+        {
+          name: 'cursor',
+          in: 'query',
+          description: 'Opaque cursor from `nextCursor`; bound to the shop.',
+          schema: { type: 'string' },
+        },
+      ],
+    ],
+  ];
+  for (const [method, path, summary, statuses, extra] of area)
+    (paths[path] ??= {})[method] = {
+      operationId: `seller_${method}_${path.replace(/[^a-z]+/gi, '_')}`,
+      summary,
+      tags: ['seller'],
+      security: [{ sessionAuth: [] }],
+      parameters: [
+        ...[...path.matchAll(/\{(\w+)\}/g)].map((p) => ({
+          name: p[1],
+          in: 'path',
+          required: true,
+          schema: { type: 'string', format: 'uuid' },
+        })),
+        ...(extra ?? []),
+      ],
+      responses: {
+        [method === 'post' &&
+        !path.endsWith('/archive') &&
+        !path.endsWith('/restore')
+          ? '201'
+          : '200']: { description: 'Success' },
+        ...Object.fromEntries(
+          statuses.map((status) => [String(status), problemResponse(status)]),
+        ),
+      },
+    };
   for (const [method, path, summary] of dashboard)
     (paths[path] ??= {})[method] = {
       operationId: `dashboard_${method}_${path.replace(/[^a-z]+/gi, '_')}`,
@@ -256,6 +409,7 @@ export function buildOpenApi(): Json {
       { name: 'orders' },
       { name: 'batch' },
       { name: 'dashboard' },
+      { name: 'seller' },
       { name: 'meta' },
     ],
     'x-versions': VERSION_REGISTRY.map((v) => ({
@@ -300,7 +454,7 @@ export function buildOpenApi(): Json {
           in: 'header',
           required: false,
           description:
-            'A registered version date; overrides the shop’s pin for this request only.',
+            'A registered version date; overrides the shop’s pin for this request only. An unknown value answers 400 `invalid_version`.',
           schema: { type: 'string', enum: versions },
         },
         IdempotencyKey: {
@@ -315,7 +469,8 @@ export function buildOpenApi(): Json {
           name: 'If-Match',
           in: 'header',
           required: true,
-          description: 'The product version from its ETag, e.g. "7".',
+          description:
+            'Required. The product version from its ETag, e.g. "7". Missing: 428 `precondition_required`; malformed: 400; stale: 412.',
           schema: { type: 'string' },
         },
         Limit: {
@@ -338,8 +493,9 @@ export function buildOpenApi(): Json {
         Expand: {
           name: 'expand',
           in: 'query',
-          description: '`shop` only, at most 3 values.',
-          schema: { type: 'string' },
+          description:
+            '`shop` only, at most 3 values; anything else answers 400 `invalid_expand`.',
+          schema: { type: 'string', pattern: '^shop(,shop){0,2}$' },
         },
       },
       schemas: {
