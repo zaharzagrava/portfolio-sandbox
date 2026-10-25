@@ -58,3 +58,4 @@ specs/.checkpoints/qa-seller/
 
 # Stryker mutation testing scratch folders
 .stryker-tmp/
+.web-aiqa-copy/
