@@ -64,3 +64,5 @@ specs/.checkpoints/coverage/
 # AI QA throwaway browser scripts written by agents
 packages/web/aiqa-*.cjs
 packages/web/live*.cjs
+packages/web/aiqa-*.png
+packages/web/live*.png
