@@ -145,3 +145,13 @@ Mails do not go to Mailpit: the dev API uses an in-memory mailbox, read at `GET 
 ## Real 429 rate limits in the dev stack
 
 The API lets 127.0.0.1 through the limiter (`RATE_LIMIT_ALLOW_IPS`). To get a real 429, call the API through the machine's LAN address (for example `http://192.168.55.6:8000`, find it with `hostname -I`) instead of localhost; the limiter then counts and answers 429 with `Retry-After`. Use this for every line blocked on "no real 429". Do not change the allow-list.
+
+## ONE SUITE rule (owner, 2026-10-25, said with anger, never violate)
+
+There is exactly ONE front-end suite (`npx playwright test`) and ONE backend suite. AI QA does NOT make a second suite and does NOT pile new files on top of the existing tests.
+- Before writing a test, search the existing suite for the same behaviour (`packages/web/tests/*.spec.ts`, `seller-*.spec.ts`, unit tests next to the code, backend e2e next to the code). If a test covers it: reuse it, extend it with the missing assertion, or fix it. Do not write a duplicate.
+- New tests go INTO the existing feature file when one exists (for example `seller-inventory.spec.ts`), or into one new file per feature in the normal place. Never a folder of one-file-per-section specs. Target: a few files per feature, not 15.
+- The whole suite must stay inside its time budget (front end about 9 to 10 minutes at 3 or 4 workers; backend about 12). A new test that does not fit the budget is merged, made cheaper, or run on desktop only. AI QA measures the suite time before and after every change and reports it.
+- Cheap tests: log in by API, create the seller/shop once per file (beforeAll), no fixed sleeps, phone project only for specs about the phone layout, one desktop run for everything else.
+- The map (`coverage/<area>.tsv`) records which existing or new test covers each line (the `aiqa-lines` annotation can be added to an existing test). The map is the sync between the AI QA flow and the suite; it is never a reason for a new file.
+- Slow or special runs (container pausing, the 10,000-product seed, 12-minute auction, 49-minute photo purge) are not part of the normal run and are gated by an env switch.

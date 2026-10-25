@@ -25,3 +25,5 @@ Update lines with the helper, never by editing the TSV by hand (several testers 
 `node scripts/aiqa/mark.mjs <area> <line-id> <pass|bug|blocked|n/a> <layers, e.g. ui,api,db> <bug ids like F1,F2 or -> "<what you really did>"`
 New lines you discover: append them with `printf '...\n' >> scripts/aiqa/coverage/<area>.tsv` (ten tab-separated columns, status untested) and then mark them with the helper.
 Put your bug findings in scripts/aiqa/findings/{{AREA}}-{{PASS}}.md (your own file, so no clash); number them F1, F2... prefixed by your pass, e.g. P3F1.
+
+ONE SUITE RULE (see scripts/aiqa/README.md): do not add a parallel suite or a pile of new files. Search the existing tests first; extend or fix them; new tests go into the existing feature file; keep the whole suite inside its time budget (front end about 9 to 10 minutes). Cheap tests: API login, seller/shop once per file, no sleeps, phone only for phone-layout specs.

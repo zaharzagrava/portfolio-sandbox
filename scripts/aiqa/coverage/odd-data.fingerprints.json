@@ -1070,7 +1070,7 @@
   }
  },
  "odd-data.inventory.stock-filter-out-of-stock": {
-  "code": "6f7e7d287721a030",
+  "code": "371bff8cbd8a598f",
   "spec": "a385b437e5abd6e4",
   "at": "2026-10-25",
   "files": {
@@ -1090,8 +1090,8 @@
    "packages/backend/migrations/20261012110100-catalog-s05-contract-shop-not-null.js": "8a47c2555685c414",
    "packages/backend/migrations/20261019000200-catalog-s05-restore-shop-not-null.js": "2e65f3b53087f5ee",
    "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
-   "packages/web/app/dashboard/seller/[shopId]/inventory/page.tsx": "e9212480fb2b68a8",
-   "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62",
+   "packages/web/app/dashboard/seller/[shopId]/inventory/page.tsx": "32ad38fba9137abf",
+   "packages/web/components/seller/inventory/inventory-view.tsx": "11d0a5bc15c53bb2",
    "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
    "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd",
    "packages/web/lib/api/seller.ts": "267d9b324c265899"
@@ -1133,14 +1133,14 @@
   }
  },
  "odd-data.layout.inventory-archived": {
-  "code": "800888044c6bd049",
+  "code": "1290c0b4f20ff153",
   "spec": "a6b6562bcb139298",
   "at": "2026-10-25",
   "files": {
-   "packages/web/app/dashboard/seller/[shopId]/inventory/page.tsx": "e9212480fb2b68a8",
-   "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62",
+   "packages/web/app/dashboard/seller/[shopId]/inventory/page.tsx": "32ad38fba9137abf",
+   "packages/web/components/seller/inventory/inventory-view.tsx": "b9bbb890d4484569",
    "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
-   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd",
+   "packages/web/lib/api/seller-products.ts": "6bc41057d8aec907",
    "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
