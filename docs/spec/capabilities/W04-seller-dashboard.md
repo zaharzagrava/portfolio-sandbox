@@ -62,11 +62,12 @@ A member opens a shop and runs it from one place. The member sees how it sells n
 - **W04.R-32** The shop switcher MUST list the first 50 shops of the member and keep the current section when the member switches. [proof: W04 AS-09]
 - **W04.R-33** The overview MUST render each optional section on its own: a section that failed shows its message and "Try again" while the others stay. [proof: W04 AS-17]
 - **W04.R-34** The period and "today" queries MUST be invalidated at most once every 30 seconds while frames show new orders, and the stream MUST close while the tab is hidden. [proof: none]
+- **W04.R-35** The photos page of a product MUST be reachable by address and tabs, follow each upload through its states, keep the draft (order, first photo is the cover, remove) in the page until Save, send the whole list with its version, say in words why a save, an upload or a role fails, and read the public gallery the same way a buyer does. [proof: W04 AS-101, W04 AS-102, W04 AS-103, W04 AS-104, W04 AS-105, W04 AS-106, W04 AS-107] [code: packages/web/components/seller/media/gallery-view.tsx#GalleryView]
 
 ## Behaviors
-- **W04.B-01** Given a member without a shop, when they open `/dashboard/seller`, then the page reads "Open your shop" with "Shop name" and "Handle", and the handle follows the name until the member edits it. [proof: none]
-- **W04.B-02** Given a valid name and handle, when the member presses "Open shop" twice, then one request is sent, the browser goes to the new overview, and the session role is refreshed in the background up to 3 times. [proof: none]
-- **W04.B-03** Given `409 slug_taken` or `422 slug_reserved`, then the message appears under "Handle"; given `409 shop_limit_reached` or `429`, then an alert appears above the button. [proof: none]
+- **W04.B-01** Given a member without a shop, when they open `/dashboard/seller`, then the page reads "Open your shop" with "Shop name" and "Handle", and the handle follows the name until the member edits it. [proof: W04 AS-01, AS-02]
+- **W04.B-02** Given a valid name and handle, when the member presses "Open shop" twice, then one request is sent, the browser goes to the new overview, and the session role is refreshed in the background up to 3 times. [proof: W04 AS-07]
+- **W04.B-03** Given `409 slug_taken` or `422 slug_reserved`, then the message appears under "Handle"; given `409 shop_limit_reached` or `429`, then an alert appears above the button. [proof: W04 AS-05, AS-06]
 - **W04.B-04** Given a member of one shop, when they open `/dashboard/seller`, then the server redirects to that shop; given several, then a picker lists name, handle, role and a status badge. [proof: W04 AS-08]
 - **W04.B-05** Given paid orders, when the member opens the overview, then it shows the header, the live panel, "Today (UTC)", the period tiles, the rank, the daily chart and the top products in that order. [proof: none]
 - **W04.B-06** Given a new shop, then the tiles show zero in the shop currency, "Today (UTC)" reads "No orders yet today.", and the rank reads "Not ranked yet. Your shop appears on the leaderboard after its first paid order." [proof: none]
@@ -96,11 +97,15 @@ A member opens a shop and runs it from one place. The member sees how it sells n
 - **W04.B-30** Given the Roles tab, then the matrix shows "Allowed" or "Not allowed" as text with an icon, and marks the member's own role "Your role". [proof: W04 AS-79]
 - **W04.B-31** Given a signed-in member opens `/invites/{token}` and presses "Accept invitation", then one request is made and the browser goes to the shop replacing the history entry; every refusal reads the same. [proof: none]
 - **W04.B-32** Given the orders page, then the table lists reference, status, items, subtotal and date newest first, with no buyer identifier. [proof: W04 AS-83]
-- **W04.B-33** Given a signed-out visitor opens any seller URL, then the server redirects to `/login?returnTo=` that path and query before any content is sent. [proof: none]
+- **W04.B-33** Given a signed-out visitor opens any seller URL, then the server redirects to `/login?returnTo=` that path and query before any content is sent. [proof: W04 AS-84]
 - **W04.B-34** Given a `401` from any seller request, then the session-ended flow of {{cap:W01}} runs exactly once. [proof: W04 AS-87]
-- **W04.B-35** Given the browser goes offline, then the banner "You're offline. Changes can't be saved." shows, and on reconnect the banner clears and the open queries refetch once. [proof: none]
+- **W04.B-35** Given the browser goes offline, then the banner "You're offline. Changes can't be saved." shows, and on reconnect the banner clears and the open queries refetch once. [proof: W04 AS-88]
 - **W04.B-36** Given a `5xx` problem, then the alert shows a reference with a "Copy" button and no stack, SQL or upstream text; given `400 invalid_cursor`, then "That page link is no longer valid." offers "Go to the first page". [proof: W04 AS-89]
 - **W04.B-37** Given any seller page at 390 px and 1280 px, then the sidebar becomes a drawer opened by "Open menu", the current page carries `aria-current="page"`, and nothing scrolls sideways. [proof: W04 AS-96, W04 AS-97]
+- **W04.B-38** Given a reload or the Back button in the middle of a write (typed form, open dialog, request on its way), then nothing is sent twice, no second row appears, and the saved data is read back unchanged. [proof: W04 AS-111]
+- **W04.B-39** Given seller A's session forces a read or write on seller B's shop, product, photos or orders, then the answer equals the answer for an unknown shop, nothing of B is in it, and B's data is unchanged. [proof: W04 AS-112]
+- **W04.B-40** Given any seller page state, then axe finds no serious or critical issue. [proof: W04 AS-113]
+- **W04.B-41** Given the orders page, then it is read-only and private: markup in the shop name is plain text, nothing leads to the export page, no fee, payout or net is shown, and the orders of every member role are the same while strangers see none. [proof: W04 AS-120, W04 AS-121]
 
 ## Lifecycles
 No model is listed. The shop status `ACTIVE`, `SUSPENDED`, `DELETING` is S03's; this capability shows it and disables writes unless it is `ACTIVE`. Key status `active`, `rotating`, `expired`, `revoked` and endpoint status `enabled`, `disabled` are S42's and S43's.
