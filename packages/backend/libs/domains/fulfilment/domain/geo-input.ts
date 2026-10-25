@@ -13,11 +13,14 @@ import {
 export type Parsed<T> =
   { ok: true; value: T } | { ok: false; fields: string[] };
 
-/** Names of the failing parameters, never their values; unknown keys are named too. */
+/**
+ * Names of the failing parameters, never their values; unknown keys at the top level are named too. Unknown keys inside
+ * a nested value name the parent (the union of opening hours reports the keys of its first branch, which are valid).
+ */
 export const fieldsOf = (error: z.ZodError): string[] => [
   ...new Set(
     error.issues.flatMap((issue) =>
-      issue.code === 'unrecognized_keys'
+      issue.code === 'unrecognized_keys' && issue.path.length === 0
         ? issue.keys
         : [String(issue.path[0] ?? 'query')],
     ),
