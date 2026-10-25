@@ -66,3 +66,7 @@ packages/web/aiqa-*.cjs
 packages/web/live*.cjs
 packages/web/aiqa-*.png
 packages/web/live*.png
+
+# AI QA generated reports (run output, not baselines); maps, fingerprints and snapshots stay tracked
+scripts/aiqa/coverage/*.unexecuted.md
+scripts/aiqa/coverage/*.lock
