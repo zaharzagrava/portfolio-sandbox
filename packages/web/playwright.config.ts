@@ -104,8 +104,10 @@ export default defineConfig({
       ]
     : [
         // Phone: 390 x 844, touch.
-        { name: 'mobile', testIgnore: CLOCK_SPECS, use: { ...PHONE } },
-        { name: 'desktop', testIgnore: CLOCK_SPECS, use: { ...DESKTOP } },
+        // One suite, two projects. A test titled with `@phone` is about the phone layout and runs only on the phone project; a test titled
+        // with `@desktop` (behaviour, API, database, roles, concurrency) runs only on desktop; the older untagged tests run on both.
+        { name: 'mobile', testIgnore: CLOCK_SPECS, grepInvert: /@desktop/, use: { ...PHONE } },
+        { name: 'desktop', testIgnore: CLOCK_SPECS, grepInvert: /@phone/, use: { ...DESKTOP } },
         ...(CROSS_BROWSER
           ? [
               { name: 'firefox-desktop', testMatch: FOUR_AREAS, use: { ...devices['Desktop Firefox'], viewport: { width: 1280, height: 800 } } },
