@@ -22,7 +22,12 @@ export function useSearchView() {
   const { view, changed } = useMemo(() => parseSearchView(new URLSearchParams(text)), [text]);
 
   const change = useCallback(
-    (patch: Partial<SearchView>, mode: 'push' | 'replace' = 'push') => navigateTo(searchHref(withChange(view, patch)), mode),
+    (patch: Partial<SearchView>, mode: 'push' | 'replace' = 'push') => {
+      // Built on the address as it is now, not on the last render: a press right after another change (the router has
+      // not re-rendered yet) must not drop the part the previous press wrote.
+      const current = typeof window === 'undefined' ? view : parseSearchView(new URLSearchParams(window.location.search)).view;
+      navigateTo(searchHref(withChange(current, patch)), mode);
+    },
     [view],
   );
   /** Replaces the whole view (clear all, chip removal, cleaned view). */
