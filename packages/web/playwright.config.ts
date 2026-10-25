@@ -28,6 +28,15 @@ const DESKTOP = { ...devices['Desktop Chrome'], viewport: { width: 1280, height:
  */
 const FOUR_AREAS = /(^|[\\/])seller(-shop|-shell|-access|-inventory|-inventory-write|-photos|-photos\.api|-orders|-a11y|-concurrency-isolation)?\.spec\.ts$/;
 const CROSS_BROWSER = process.env.PW_BROWSERS === '1';
+/**
+ * Special runs stay out of the normal run, so they never show up as skipped tests: the 10,000-product seed (AIQA_ODD=1), the container
+ * pausing (AIQA_FAULT=1, set by its runner) and the hourly/auction specs (AIQA_SLOW=1).
+ */
+const SPECIAL_RUNS = [
+  ...(process.env.AIQA_ODD ? [] : [/[\\/]track[\\/]odd-data\.spec\.ts$/]),
+  ...(process.env.AIQA_FAULT ? [] : [/[\\/]track[\\/]fault-injection\.spec\.ts$/]),
+  ...(process.env.AIQA_SLOW ? [] : [/\.slow\.spec\.ts$/]),
+];
 
 /**
  * See https://playwright.dev/docs/test-configuration.
@@ -106,8 +115,8 @@ export default defineConfig({
         // Phone: 390 x 844, touch.
         // One suite, two projects. A test titled with `@phone` is about the phone layout and runs only on the phone project; a test titled
         // with `@desktop` (behaviour, API, database, roles, concurrency) runs only on desktop; the older untagged tests run on both.
-        { name: 'mobile', testIgnore: CLOCK_SPECS, grepInvert: /@desktop/, use: { ...PHONE } },
-        { name: 'desktop', testIgnore: CLOCK_SPECS, grepInvert: /@phone/, use: { ...DESKTOP } },
+        { name: 'mobile', testIgnore: [CLOCK_SPECS, ...SPECIAL_RUNS], grepInvert: /@desktop/, use: { ...PHONE } },
+        { name: 'desktop', testIgnore: [CLOCK_SPECS, ...SPECIAL_RUNS], grepInvert: /@phone/, use: { ...DESKTOP } },
         ...(CROSS_BROWSER
           ? [
               { name: 'firefox-desktop', testMatch: FOUR_AREAS, use: { ...devices['Desktop Firefox'], viewport: { width: 1280, height: 800 } } },
