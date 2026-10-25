@@ -5,7 +5,7 @@
 import { expect, type Page, test } from '@playwright/test';
 import { openFiltersIfCollapsed, register, seedProduct, sellerCall, shopPath } from './helpers';
 import { openShopByApi } from './seller-setup';
-import { archiveAll, makePro, openInventory, proOwner, type Seed, seedAll, sql, tableRows, waitIndexed } from './support/inventory';
+import { archiveAll, makePro, openInventory, proOwner, type Seed, seedAll, sharedShop, sql, tableRows, waitIndexed } from './support/inventory';
 import { archiveByApi, mainText, ownerWithShop, setSuspended, tokenOf, uniqueTitle, UNKNOWN_ID, watchApi } from './seller/cross-cutting/support';
 
 const TITLE = 'Handmade Ceramic Mug';
@@ -287,7 +287,7 @@ test.describe('Inventory search', () => {
 
     test('W04 AS-30 @desktop: the search call carries only q and limit', async ({ page }) => {
       test.info().annotations.push({ type: 'aiqa-lines', description: 'inventory.search.api-call' });
-      const { member, shopId } = await ownerWithShop(page, [{ title: 'Query Shape Mug' }]);
+      const { member, shopId } = await sharedShop(page, [{ title: 'Query Shape Mug' }]);
       await openInventory(page, member, shopId);
       const sent = page.waitForRequest((request) => /\/products\/search/.test(request.url()));
       await search(page).fill('Query Shape');
@@ -340,7 +340,7 @@ test.describe('Inventory search', () => {
 
     test('W04 AS-30 @desktop: text longer than the search allows (100) is explained, not shown as a vague field error', async ({ page }) => {
       test.info().annotations.push({ type: 'aiqa-lines', description: 'inventory.search.long-text' });
-      const { member, shopId } = await ownerWithShop(page, [{ title: 'Long Mug' }]);
+      const { member, shopId } = await sharedShop(page, [{ title: 'Long Mug' }]);
       await openInventory(page, member, shopId);
       const api = watchApi(page);
       await search(page).fill('a'.repeat(101));
@@ -350,7 +350,7 @@ test.describe('Inventory search', () => {
 
     test('W04 AS-30 @desktop: Back returns to the earlier address and the box shows its text', async ({ page }) => {
       test.info().annotations.push({ type: 'aiqa-lines', description: 'inventory.search.back-button' });
-      const { member, shopId } = await ownerWithShop(page, [{ title: 'Back Mug' }]);
+      const { member, shopId } = await sharedShop(page, [{ title: 'Back Mug' }]);
       await openInventory(page, member, shopId, '?q=mug');
       await expect(search(page)).toHaveValue('mug');
       await page.goto(`${shopPath(shopId, 'inventory')}?q=spoon`);
@@ -399,9 +399,9 @@ test.describe('Inventory search', () => {
 
     test('W04 AS-28 @desktop: the stock number is plain text: clicking it opens nothing', async ({ page }) => {
       test.info().annotations.push({ type: 'aiqa-lines', description: 'inventory.list.row-stock-number' });
-      const { member, shopId } = await ownerWithShop(page, [{ title: 'Stock Text Mug', quantity: 7 }]);
+      const { member, shopId, titles: [mug] } = await sharedShop(page, [{ title: 'Stock Text Mug', quantity: 7 }]);
       await openInventory(page, member, shopId);
-      await page.getByRole('row').filter({ hasText: 'Stock Text Mug' }).getByText('7', { exact: true }).click();
+      await page.getByRole('row').filter({ hasText: mug }).getByText('7', { exact: true }).click();
       await expect(page.getByRole('dialog')).toHaveCount(0);
       await expect(page.locator('[data-slot="popover-content"]')).toHaveCount(0);
     });
@@ -773,7 +773,7 @@ test.describe('Inventory page', () => {
 
     test('W04 AS-98 @desktop: the Inventory entry marks the current page, also in the phone menu', async ({ page }) => {
       test.info().annotations.push({ type: 'aiqa-lines', description: 'inventory.page.menu-entry' });
-      const { shopId, member } = await ownerWithShop(page);
+      const { shopId, member } = await sharedShop(page);
       await page.setViewportSize({ width: 1280, height: 800 });
       await openInventory(page, member, shopId);
       await expect(page.getByRole('link', { name: 'Inventory' })).toHaveAttribute('aria-current', 'page');
@@ -785,7 +785,7 @@ test.describe('Inventory page', () => {
 
     test('W04 AS-98 @phone: the two phone menu buttons have different accessible names', async ({ page }) => {
       test.info().annotations.push({ type: 'aiqa-lines', description: 'inventory.page.menu-entry-extra-1' });
-      const { shopId, member } = await ownerWithShop(page);
+      const { shopId, member } = await sharedShop(page);
       await page.setViewportSize({ width: 390, height: 844 });
       await openInventory(page, member, shopId);
       const names = await page.getByRole('button', { name: /menu/i }).evaluateAll((buttons) => buttons.map((button) => button.getAttribute('aria-label')));
@@ -795,13 +795,13 @@ test.describe('Inventory page', () => {
 
     test('W04 AS-97 @phone: at 390 px nothing scrolls sideways and the controls are at least 44 px high', async ({ page }) => {
       test.info().annotations.push({ type: 'aiqa-lines', description: 'inventory.page.phone-layout' });
-      const { shopId, member } = await ownerWithShop(page, [{ title: 'Phone Mug' }]);
+      const { shopId, member, titles: [mug] } = await sharedShop(page, [{ title: 'Phone Mug' }]);
       await page.setViewportSize({ width: 390, height: 844 });
       await openInventory(page, member, shopId);
-      await expect(page.getByRole('rowheader', { name: 'Phone Mug' })).toBeVisible();
+      await expect(page.getByRole('rowheader', { name: mug, exact: true })).toBeVisible();
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
       expect(await page.getByRole('table').evaluate((table) => getComputedStyle(table).display)).toBe('block');
-      for (const control of [page.getByRole('searchbox'), page.getByRole('button', { name: /Filters/ }), page.getByRole('button', { name: 'Add product' }).first(), page.getByRole('button', { name: 'Actions for Phone Mug' })]) {
+      for (const control of [page.getByRole('searchbox'), page.getByRole('button', { name: /Filters/ }), page.getByRole('button', { name: 'Add product' }).first(), page.getByRole('button', { name: `Actions for ${mug}` })]) {
         const box = await control.boundingBox();
         expect(box?.height ?? 0).toBeGreaterThanOrEqual(44);
       }
@@ -826,7 +826,7 @@ test.describe('Inventory empty and error states', () => {
 
     test('W04 AS-89 @desktop: a 5xx on the list read shows the words, a reference with Copy and no technical text; it is retried at most twice; Try again refetches', async ({ page }) => {
       test.info().annotations.push({ type: 'aiqa-lines', description: 'inventory.error.read-fail,inventory.error.5xx-reference' });
-      const { member, shopId } = await ownerWithShop(page, [{ title: 'State Mug' }]);
+      const { member, shopId, titles: [mug] } = await sharedShop(page, [{ title: 'State Mug' }]);
       await openInventory(page, member, shopId);
       const api = watchApi(page);
       const failing = (route: import('@playwright/test').Route) => route.fulfill({ status: 503, contentType: 'application/problem+json', body: problem(503, 'internal_error') });
@@ -843,13 +843,13 @@ test.describe('Inventory empty and error states', () => {
       await page.unrouteAll({ behavior: 'ignoreErrors' });
       api.reset();
       await region(page).getByRole('button', { name: 'Try again' }).click();
-      await expect(page.getByRole('rowheader', { name: 'State Mug' })).toBeVisible();
+      await expect(page.getByRole('rowheader', { name: mug, exact: true })).toBeVisible();
       expect(api.count('GET', /\/products$/)).toBe(1);
     });
 
     test('W04 AS-89 @desktop: a 4xx on the list read is shown once and is not retried by the query', async ({ page }) => {
       test.info().annotations.push({ type: 'aiqa-lines', description: 'inventory.error.read-fail-4xx' });
-      const { member, shopId } = await ownerWithShop(page, [{ title: 'Four Mug' }]);
+      const { member, shopId } = await sharedShop(page, [{ title: 'Four Mug' }]);
       await openInventory(page, member, shopId);
       const api = watchApi(page);
       await page.route((url) => LIST(url), (route) => route.fulfill({ status: 403, contentType: 'application/problem+json', body: problem(403, 'permission_denied') }));
@@ -937,10 +937,10 @@ test.describe('Inventory search paging and row menu', () => {
     test('W04 AS-94 @desktop: the trigger is named after the row, opens with Enter/Space, arrows move, Escape returns focus; items by status; Edit and Adjust stock open their parts', async ({ page }) => {
       test.info().annotations.push({ type: 'aiqa-lines', description: 'inventory.menu.trigger,inventory.menu.active-items,inventory.menu.archived-items,inventory.menu.edit-item,inventory.menu.adjust-item,inventory.stock.popover-open' });
       let focusAfterEdit = '';
-      const { member, shopId, token, productIds } = await ownerWithShop(page, [{ title: 'Menu Mug', quantity: 4 }, { title: 'Old Mug', quantity: 2 }]);
+      const { member, shopId, token, productIds, titles: [menuMug, oldMug] } = await sharedShop(page, [{ title: 'Menu Mug', quantity: 4 }, { title: 'Old Mug', quantity: 2 }]);
       await archiveByApi(token, shopId, productIds[1]);
       await openInventory(page, member, shopId);
-      const button = menuButton(page, 'Menu Mug');
+      const button = menuButton(page, menuMug);
       await expect(button).toBeVisible();
       // keyboard: Enter opens, arrows move, Escape closes and returns focus
       await button.focus();
@@ -969,7 +969,7 @@ test.describe('Inventory search paging and row menu', () => {
       }
 
       await openInventory(page, member, shopId, '?status=ARCHIVED');
-      await menuButton(page, 'Old Mug').click();
+      await menuButton(page, oldMug).click();
       expect(await items(page)).toEqual(['Restore']);
       await page.keyboard.press('Escape');
 
@@ -979,7 +979,7 @@ test.describe('Inventory search paging and row menu', () => {
       await page.getByRole('menuitem', { name: 'Edit', exact: true }).click();
       const edit = page.getByRole('dialog', { name: 'Edit product' });
       await expect(edit).toBeVisible();
-      await expect(edit.getByLabel('Title', { exact: true })).toHaveValue('Menu Mug');
+      await expect(edit.getByLabel('Title', { exact: true })).toHaveValue(menuMug);
       await page.keyboard.press('Escape');
       await expect(edit).toHaveCount(0);
       focusAfterEdit = await page.evaluate(() => `${document.activeElement?.tagName}:${document.activeElement?.getAttribute('aria-label') ?? ''}`);
@@ -987,10 +987,10 @@ test.describe('Inventory search paging and row menu', () => {
       // Adjust stock opens the popover on the stock cell, prefilled; closing returns focus to the menu button
       await button.click();
       await page.getByRole('menuitem', { name: 'Adjust stock', exact: true }).click();
-      const popover = page.getByRole('dialog', { name: 'Adjust stock of Menu Mug' });
+      const popover = page.getByRole('dialog', { name: `Adjust stock of ${menuMug}` });
       await expect(popover).toBeVisible();
       await expect(popover.getByLabel('New stock')).toHaveValue('4');
-      const cell = await page.getByRole('row', { name: /Menu Mug/ }).locator('td, [role="cell"]').nth(2).boundingBox();
+      const cell = await page.getByRole('row', { name: menuMug }).locator('td, [role="cell"]').nth(2).boundingBox();
       const pop = await popover.boundingBox();
       expect(Math.abs((pop?.y ?? 0) - ((cell?.y ?? 0) + (cell?.height ?? 0))), 'popover hangs under the stock cell').toBeLessThan(200);
       await page.keyboard.press('Escape');
@@ -1001,32 +1001,32 @@ test.describe('Inventory search paging and row menu', () => {
 
     test('W04 AS-94 @desktop: closing the Edit dialog returns focus to the row\'s menu button (W04.R-24)', async ({ page }) => {
       test.info().annotations.push({ type: 'aiqa-lines', description: 'inventory.menu.edit-item-focus' });
-      const { member, shopId } = await ownerWithShop(page, [{ title: 'Focus Mug' }]);
+      const { member, shopId, titles: [mug] } = await sharedShop(page, [{ title: 'Focus Mug' }]);
       await openInventory(page, member, shopId);
-      await menuButton(page, 'Focus Mug').click();
+      await menuButton(page, mug).click();
       await page.getByRole('menuitem', { name: 'Edit', exact: true }).click();
       await expect(page.getByRole('dialog', { name: 'Edit product' }).getByLabel('Title', { exact: true })).toBeFocused();
       await page.keyboard.press('Escape');
       await expect(page.getByRole('dialog', { name: 'Edit product' })).toHaveCount(0);
-      await expect(menuButton(page, 'Focus Mug')).toBeFocused();
+      await expect(menuButton(page, mug)).toBeFocused();
     });
 
     test('W04 AS-94 @desktop: Photos and video and Edit together go to their pages', async ({ page }) => {
       test.info().annotations.push({ type: 'aiqa-lines', description: 'inventory.menu.photos-item,inventory.menu.draft-item' });
-      const { member, shopId, productIds } = await ownerWithShop(page, [{ title: 'Way Mug' }]);
+      const { member, shopId, productIds, titles: [mug] } = await sharedShop(page, [{ title: 'Way Mug' }]);
       await openInventory(page, member, shopId);
-      await menuButton(page, 'Way Mug').click();
+      await menuButton(page, mug).click();
       await page.getByRole('menuitem', { name: 'Photos and video', exact: true }).click();
       await expect(page).toHaveURL(`${shopPath(shopId, `products/${productIds[0]}/media`)}`.replace(/^/, 'http://localhost:3000'));
       await openInventory(page, member, shopId);
-      await menuButton(page, 'Way Mug').click();
+      await menuButton(page, mug).click();
       await page.getByRole('menuitem', { name: 'Edit together', exact: true }).click();
       await expect(page).toHaveURL(`http://localhost:3000${shopPath(shopId, `products/${productIds[0]}/draft`)}`);
     });
 
     test('W04 AS-40 @desktop: Restore sends one request even when pressed twice, shows the toast, moves the row to Active; status ACTIVE, version +1, history row', async ({ page }) => {
       test.info().annotations.push({ type: 'aiqa-lines', description: 'inventory.menu.restore-item,inventory.menu.restore-double-press' });
-      const { member, shopId, token, productIds } = await ownerWithShop(page, [{ title: 'Back Mug' }]);
+      const { member, shopId, token, productIds, titles: [mug] } = await sharedShop(page, [{ title: 'Back Mug' }]);
       await archiveByApi(token, shopId, productIds[0]);
       const before = (await sql<{ version: number }>(`SELECT version FROM "Product" WHERE id = $1`, [productIds[0]]))[0].version;
       await openInventory(page, member, shopId, '?status=ARCHIVED');
@@ -1035,28 +1035,28 @@ test.describe('Inventory search paging and row menu', () => {
         await new Promise((resolve) => setTimeout(resolve, 600)); // keep the first restore running while the second is chosen
         await route.continue();
       });
-      await menuButton(page, 'Back Mug').click();
+      await menuButton(page, mug).click();
       await page.getByRole('menuitem', { name: 'Restore', exact: true }).click();
       // a second choice while the first runs (the menu is still reachable on the row)
-      const again = menuButton(page, 'Back Mug');
+      const again = menuButton(page, mug);
       if (await again.count()) {
         await again.click({ timeout: 2000 }).catch(() => undefined);
         await page.getByRole('menuitem', { name: 'Restore', exact: true }).click({ timeout: 2000 }).catch(() => undefined);
       }
       await expect(page.getByText('Product restored').first()).toBeVisible();
-      await expect(page.getByRole('rowheader', { name: 'Back Mug' })).toHaveCount(0); // left the Archived tab
+      await expect(page.getByRole('rowheader', { name: mug })).toHaveCount(0); // left the Archived tab
       expect(api.count('POST', /\/restore$/)).toBe(1);
       await expect(region(page).getByRole('alert')).toHaveCount(0);
       expect((await sql(`SELECT status, version FROM "Product" WHERE id = $1`, [productIds[0]]))[0]).toMatchObject({ status: 'ACTIVE', version: before + 1 });
       const history = await sql<{ fromStatus: string; toStatus: string }>(`SELECT "fromStatus", "toStatus" FROM "ProductStatusHistory" WHERE "productId" = $1 ORDER BY at`, [productIds[0]]);
       expect(history.at(-1)).toMatchObject({ fromStatus: 'ARCHIVED', toStatus: 'ACTIVE' });
       await openInventory(page, member, shopId);
-      await expect(page.getByRole('rowheader', { name: 'Back Mug' })).toBeVisible();
+      await expect(page.getByRole('rowheader', { name: mug })).toBeVisible();
     });
 
     test('W04 AS-40 @desktop: a failed Restore shows the problem above the list; a stale answer says the product changed elsewhere and the list refetches; 429 counts down; 5xx has a reference', async ({ page }) => {
       test.info().annotations.push({ type: 'aiqa-lines', description: 'inventory.menu.restore-failure' });
-      const { member, shopId, token, productIds } = await ownerWithShop(page, [{ title: 'Fail Mug' }]);
+      const { member, shopId, token, productIds, titles: [mug] } = await sharedShop(page, [{ title: 'Fail Mug' }]);
       await archiveByApi(token, shopId, productIds[0]);
       const answers: { status: number; code: string; headers?: Record<string, string>; text: RegExp }[] = [
         { status: 409, code: 'invalid_transition', text: /^This product was archived or restored elsewhere\. The list has been refreshed\.$/ },
@@ -1070,7 +1070,7 @@ test.describe('Inventory search paging and row menu', () => {
         await openInventory(page, member, shopId, '?status=ARCHIVED');
         await page.route(/\/products\/[^/]+\/restore$/, (route) => route.fulfill({ status: answer.status, contentType: 'application/problem+json', headers: answer.headers, body: JSON.stringify({ type: 'x', title: 'x', status: answer.status, code: answer.code, requestId: 'req-test-123' }) }));
         const api = watchApi(page);
-        await menuButton(page, 'Fail Mug').click();
+        await menuButton(page, mug).click();
         await page.getByRole('menuitem', { name: 'Restore', exact: true }).click();
         const shown = page.locator('#main-content').locator('p').filter({ hasText: answer.text }).first();
         await expect(shown, `${answer.status} ${answer.code}`).toBeVisible();
@@ -1085,16 +1085,16 @@ test.describe('Inventory search paging and row menu', () => {
 
     test('W04 AS-41 @desktop: choosing another menu item clears the previous problem alert', async ({ page }) => {
       test.info().annotations.push({ type: 'aiqa-lines', description: 'inventory.menu.problem-cleared' });
-      const { member, shopId, token, productIds } = await ownerWithShop(page, [{ title: 'Clear Mug' }, { title: 'Next Mug' }]);
+      const { member, shopId, token, productIds, titles: [clearMug, nextMug] } = await sharedShop(page, [{ title: 'Clear Mug' }, { title: 'Next Mug' }]);
       await archiveByApi(token, shopId, productIds[0]);
       await archiveByApi(token, shopId, productIds[1]);
       await openInventory(page, member, shopId, '?status=ARCHIVED');
       await page.route(/\/products\/[^/]+\/restore$/, (route) => route.fulfill({ status: 500, contentType: 'application/problem+json', body: JSON.stringify({ type: 'x', title: 'x', status: 500, code: 'internal_error', requestId: 'req-x' }) }));
-      await menuButton(page, 'Clear Mug').click();
+      await menuButton(page, clearMug).click();
       await page.getByRole('menuitem', { name: 'Restore', exact: true }).click();
       await expect(page.getByText('Something went wrong on our side.')).toBeVisible();
       await page.unrouteAll({ behavior: 'ignoreErrors' });
-      await menuButton(page, 'Next Mug').click();
+      await menuButton(page, nextMug).click();
       await page.getByRole('menuitem', { name: 'Restore', exact: true }).click();
       await expect(page.getByText('Something went wrong on our side.')).toHaveCount(0); // the new action cleared the old problem
       await expect(page.getByText('Product restored')).toBeVisible();

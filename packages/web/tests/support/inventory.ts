@@ -91,6 +91,21 @@ export async function sharedProOwner(page: Page): Promise<ProOwner> {
   return owner;
 }
 
+let titleCounter = 0;
+/** A title of its own: the shared shop keeps every row of every test of the worker, so literal titles would repeat. */
+export const ownTitle = (base: string) => `${base} [${process.pid.toString(36)}-${(titleCounter++).toString(36)}]`;
+
+/**
+ * The per-worker shared Pro shop (page signed in) plus products created for one test. Titles get a unique suffix; they come back in
+ * `titles` in the order given, with the ids in `productIds`. For tests that only read or touch their own rows.
+ */
+export async function sharedShop(page: Page, products: Seed[] = []) {
+  const owner = await sharedProOwner(page);
+  const titles = products.map((product) => ownTitle(product.title));
+  const productIds = await seedAll(owner.member, owner.shopId, products.map((product, index) => ({ ...product, title: titles[index] })));
+  return { ...owner, token: await tokenOf(owner.member), titles, productIds };
+}
+
 const signedIn = new WeakSet<Page>();
 
 /** Signs an existing member in again on a page and opens the inventory of the shop with the given query. */
