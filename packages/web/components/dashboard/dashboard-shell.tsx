@@ -29,7 +29,7 @@ export function DashboardShell({
         <SellerSidebar shop={sidebarShop} shops={shops} nextCursor={nextCursor} />
       </aside>
       <MobileDrawer shop={sidebarShop} shops={shops} nextCursor={nextCursor} />
-      <div className="min-w-0 flex-1 space-y-4 p-4 [overflow-wrap:anywhere] md:p-6 lg:p-8">
+      <div className="min-w-0 flex-1 space-y-4 p-4 md:p-6 lg:p-8">
         <Banners shop={shop} />
         <PendingContent>{children}</PendingContent>
       </div>

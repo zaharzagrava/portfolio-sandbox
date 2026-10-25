@@ -109,7 +109,7 @@ export function DocumentsView({ shopId, pollMs = KNOWLEDGE_POLL_MS }: { shopId: 
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="space-y-1">
           <h1 className="text-2xl font-bold tracking-tight">Help documents</h1>
-          <p className="text-sm text-muted-foreground">Documents of {shop.name} that the help-center assistant answers from.</p>
+          <p className="text-sm text-muted-foreground [overflow-wrap:anywhere]">Documents of {shop.name} that the help-center assistant answers from.</p>
         </div>
         {canWrite && (
           <div className="flex flex-col items-end gap-1">

@@ -113,7 +113,7 @@ function Sites({ shopId, shop }: { shopId: string; shop: NonNullable<ReturnType<
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="space-y-1">
           <h1 className="text-2xl font-bold tracking-tight">Storefront widget</h1>
-          <p className="text-sm text-muted-foreground">Sell {shop.name} on your own website. Each site has its own key and allowed addresses.</p>
+          <p className="text-sm text-muted-foreground [overflow-wrap:anywhere]">Sell {shop.name} on your own website. Each site has its own key and allowed addresses.</p>
         </div>
         <div className="flex flex-col items-end gap-1">
           <Button type="button" className="min-h-11 sm:min-h-8" disabled={!writable} aria-describedby={!writable ? 'widget-add-note' : undefined} onClick={() => setAdding(true)}>

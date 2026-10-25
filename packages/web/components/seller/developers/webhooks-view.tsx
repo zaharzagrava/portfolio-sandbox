@@ -136,7 +136,7 @@ export function WebhooksView({ shopId, serverParams, initialData }: { shopId: st
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="space-y-1">
           <h1 className="text-2xl font-bold tracking-tight">Webhooks</h1>
-          <p className="text-sm text-muted-foreground">We send events from {shop.name} to the addresses you add here.</p>
+          <p className="text-sm text-muted-foreground [overflow-wrap:anywhere]">We send events from {shop.name} to the addresses you add here.</p>
         </div>
         {canManage && (
           <div className="flex flex-col items-end gap-1">

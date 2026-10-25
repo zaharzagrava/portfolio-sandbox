@@ -203,7 +203,7 @@ export function InventoryView({
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0 space-y-1 [overflow-wrap:anywhere]">
           <h1 className="text-2xl font-bold tracking-tight">Inventory</h1>
-          <p className="text-sm text-muted-foreground">The products of {shop.name}.</p>
+          <p className="text-sm text-muted-foreground [overflow-wrap:anywhere]">The products of {shop.name}.</p>
         </div>
         {canWrite && (
           <div className="flex flex-col items-end gap-1">

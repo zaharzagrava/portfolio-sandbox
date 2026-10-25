@@ -72,7 +72,7 @@ export function OrdersView({ shopId, serverParams, initialData }: { shopId: stri
     <div className="space-y-6">
       <div className="space-y-1">
         <h1 className="text-2xl font-bold tracking-tight">Orders</h1>
-        <p className="text-sm text-muted-foreground">{shop ? `The orders placed with ${shop.name}, newest first.` : 'The orders of this shop, newest first.'}</p>
+        <p className="text-sm text-muted-foreground [overflow-wrap:anywhere]">{shop ? `The orders placed with ${shop.name}, newest first.` : 'The orders of this shop, newest first.'}</p>
       </div>
 
       <div className="flex flex-wrap items-center gap-2">

@@ -51,7 +51,7 @@ export function TeamView({
     <div className="space-y-6">
       <div className="space-y-1">
         <h1 className="text-2xl font-bold tracking-tight">Team</h1>
-        <p className="text-sm text-muted-foreground">The people who work on {shop.name}.</p>
+        <p className="text-sm text-muted-foreground [overflow-wrap:anywhere]">The people who work on {shop.name}.</p>
       </div>
 
       <Tabs value={params.tab} onValueChange={(tab) => router.push(hrefFor({ tab: tab as TeamParams['tab'] }))}>
