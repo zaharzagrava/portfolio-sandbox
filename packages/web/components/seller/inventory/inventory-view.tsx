@@ -1,5 +1,6 @@
 'use client';
 
+import { beginListNavigation, useListNavigationPending } from '@/components/dashboard/navigation-pending';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useState } from 'react';
@@ -16,17 +17,23 @@ import { problemFromError, type Problem } from '@/lib/api/errors';
 import { useShop } from '@/lib/api/seller';
 import { fetchProduct, useInventory, useRestoreProduct, type InventoryPage, type InventoryRow } from '@/lib/api/seller-products';
 import { shopCan, useShopWritable } from '@/lib/seller/permissions';
-import { buildQuery, readInventoryParams, type InventoryParams } from '@/lib/seller/search-params';
+import { buildQuery, rawFromSearchParams, readInventoryParams, type InventoryParams } from '@/lib/seller/search-params';
+import { useCanonicalSearch } from '@/lib/seller/use-canonical-search';
 import { STOCK_LABEL, stockStatus } from '@/lib/seller/stock';
 import { formatMoney } from '@/lib/utils';
 import { ArchiveDialog } from './archive-dialog';
-import { InventoryToolbar } from './inventory-toolbar';
+import { InventoryToolbar, SEARCH_MAX } from './inventory-toolbar';
 import { ProductDialog } from './product-form';
 import { StockPopover } from './stock-popover';
 
 type Currency = { code: string; fractionDigits: number };
 
+const URL_KEYS = ['q', 'status', 'inStock', 'cursor'] as const;
+
 const sameParams = (a: InventoryParams, b: InventoryParams) => a.q === b.q && a.status === b.status && a.inStock === b.inStock && a.cursor === b.cursor;
+
+/** The shop search refuses text over 100 characters with a 400 `validation_failed`: say that, instead of a vague field error. */
+const tooLongSearch = (error: unknown, q: string) => problemFromError(error).code === 'validation_failed' && [...q.trim()].length > SEARCH_MAX;
 
 function InventorySkeleton() {
   return (
@@ -58,7 +65,8 @@ export function InventoryView({
   const router = useRouter();
   const pathname = usePathname() ?? `/dashboard/seller/${shopId}/inventory`;
   const searchParams = useSearchParams();
-  const params = readInventoryParams(Object.fromEntries(searchParams.entries()));
+  const params = readInventoryParams(rawFromSearchParams(new URLSearchParams(searchParams.toString())));
+  useCanonicalSearch(URL_KEYS, buildQuery({ q: params.q, status: params.status, inStock: params.inStock, cursor: params.cursor }, { status: 'ACTIVE' }));
   const shopQuery = useShop(shopId);
   const shop = shopQuery.data;
   const { writable, reason } = useShopWritable(shop);
@@ -89,11 +97,13 @@ export function InventoryView({
     }
   }
 
+  const listPending = useListNavigationPending();
+
   if (!shop) return <InventorySkeleton />;
 
   const searching = params.q.trim().length > 0;
   const data = inventory.data;
-  const busy = inventory.isPlaceholderData;
+  const busy = inventory.isPlaceholderData || listPending;
   const addDisabled = !writable || !currency;
   const addNote = !writable ? reason : !currency ? "Adding products isn't set up on this platform yet." : null;
 
@@ -219,7 +229,11 @@ export function InventoryView({
       {actionProblem && <ProblemPanel problem={actionProblem} context={{ place: 'page' }} />}
 
       <div role="region" aria-label="Products">
-        {inventory.isError ? (
+        {inventory.isError && tooLongSearch(inventory.error, params.q) ? (
+          <p role="alert" className="rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-900 dark:border-red-900 dark:bg-red-950/60 dark:text-red-100">
+            That search is too long. Use at most {SEARCH_MAX} characters.
+          </p>
+        ) : inventory.isError ? (
           <SectionError error={inventory.error} onRetry={() => void inventory.refetch()} firstPageHref={pathname} />
         ) : !data ? (
           <InventorySkeleton />
@@ -240,14 +254,14 @@ export function InventoryView({
               <nav aria-label="Pages" className="flex items-center justify-between gap-3">
                 {params.cursor ? (
                   <Button asChild variant="outline" className="min-h-11 sm:min-h-8">
-                    <Link href={hrefFor({})}>First page</Link>
+                    <Link href={hrefFor({})} onClick={beginListNavigation}>First page</Link>
                   </Button>
                 ) : (
                   <span />
                 )}
                 {data.nextCursor && (
                   <Button asChild variant="outline" className="min-h-11 sm:min-h-8">
-                    <Link href={hrefFor({}, data.nextCursor)}>Next page</Link>
+                    <Link href={hrefFor({}, data.nextCursor)} onClick={beginListNavigation}>Next page</Link>
                   </Button>
                 )}
               </nav>

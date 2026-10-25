@@ -7,6 +7,8 @@ import { Label } from '@/components/ui/label';
 import type { InventoryParams } from '@/lib/seller/search-params';
 
 export const SEARCH_DEBOUNCE_MS = 300;
+/** What the shop search accepts (the API refuses more). */
+export const SEARCH_MAX = 100;
 
 const STATUSES = [
   { value: 'ACTIVE', label: 'Active' },

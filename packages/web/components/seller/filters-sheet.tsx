@@ -26,12 +26,12 @@ export function FiltersSheet({
   const [open, setOpen] = useState(false);
   return (
     <>
-      <div data-filters-inline="" inert={open} className="hidden flex-wrap items-end gap-3 sm:flex">
+      <div data-filters-inline="" inert={open} className="hidden flex-wrap items-end gap-3 min-[641px]:flex">
         {children}
       </div>
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetTrigger asChild>
-          <Button type="button" variant="outline" className="min-h-11 w-full sm:hidden">
+          <Button type="button" variant="outline" className="min-h-11 w-full min-[641px]:hidden">
             <SlidersHorizontalIcon aria-hidden="true" />
             {activeCount > 0 ? `${title} (${activeCount} on)` : title}
           </Button>
