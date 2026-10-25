@@ -2,7 +2,7 @@
 import { expect, type Page, test } from '@playwright/test';
 import { NEW_USER_PASSWORD, register, sellerCall, sellerMenu, shopPath } from './helpers';
 import { archiveByApi, joinShopAs, type Member, openSecondShop, ownerWithShop, setSuspended, tokenOf, watchApi } from './seller/cross-cutting/support';
-import { historyOf, indexRow, menuButton, openInventory, openRowAction, outboxOf, productRow, proOwner, seedAll, sharedProOwner, sql } from './support/inventory';
+import { historyOf, indexRow, menuButton, openInventory, openRowAction, outboxOf, productRow, proOwner, seedAll, sharedProOwner, sharedShop, sql } from './support/inventory';
 import { setShopStatus, userId } from './seller/support/db';
 import { openShopByApi } from './seller-setup';
 import { acceptInvite, memberWithRole, ownerByApi, type Role } from './support/seller-entry';
@@ -434,14 +434,14 @@ test.describe('Edit product', () => {
 
   async function seedOne(page: Page, extra: { title?: string; quantity?: number; priceMinor?: number } = {}) {
     const title = extra.title ?? 'Edit Mug';
-    const owner = await ownerWithShop(page, [{ title, quantity: extra.quantity ?? 10, priceMinor: extra.priceMinor ?? 2450 }]);
-    return { ...owner, id: owner.productIds[0], title };
+    const owner = await sharedShop(page, [{ title, quantity: extra.quantity ?? 10, priceMinor: extra.priceMinor ?? 2450 }]);
+    return { ...owner, id: owner.productIds[0], title: owner.titles[0] };
   }
 
   test.describe('Edit product dialog', () => {
     test('W04 AS-36 @desktop: a skeleton until the read answers, then the filled form with focus on Title; 24.50 and 0.05 round-trip; no currency or tags control', async ({ page }) => {
       test.info().annotations.push({ type: 'aiqa-lines', description: 'inventory.edit.dialog-open,inventory.edit.price-roundtrip,inventory.edit.currency-readonly,inventory.edit.tags-not-editable' });
-      const { member, shopId, id } = await seedOne(page);
+      const { title, member, shopId, id } = await seedOne(page);
       await sql(`UPDATE "Product" SET tags = '["alpha","beta"]'::jsonb, description = 'Plain words' WHERE id = $1`, [id]);
       await openInventory(page, member, shopId);
       const api = watchApi(page);
@@ -452,16 +452,16 @@ test.describe('Edit product', () => {
         await gate;
         return route.continue();
       });
-      await openRowAction(page, 'Edit Mug', 'Edit');
+      await openRowAction(page, title, 'Edit');
       await expect(editDialog(page)).toBeVisible();
       await expect(editDialog(page).getByText('Only the fields you change are saved.')).toBeVisible();
       await expect(editDialog(page).locator('[data-skeleton="product-form"]')).toBeVisible();
       await expect(field(page, 'Title')).toHaveCount(0);
       release();
-      await expect(field(page, 'Title')).toHaveValue('Edit Mug');
+      await expect(field(page, 'Title')).toHaveValue(title);
       await expect(field(page, 'Title')).toBeFocused();
       await expect(field(page, 'Brand')).toHaveValue('Test');
-      await expect(field(page, 'Category')).toHaveValue(/^seeded-/);
+      await expect(field(page, 'Category')).toHaveValue('aiqa');
       await expect(field(page, 'Description (optional)')).toHaveValue('Plain words');
       await expect(field(page, 'Price (EUR)')).toHaveValue('24.50');
       await expect(field(page, 'Stock')).toHaveValue('10');
@@ -478,7 +478,7 @@ test.describe('Edit product', () => {
       // 5 minor units load as 0.05, and saving another field leaves price (and tags) alone
       await sql(`UPDATE "Product" SET "priceMinor" = 5, price = 5 WHERE id = $1`, [id]);
       await openInventory(page, member, shopId);
-      await openEdit(page, 'Edit Mug');
+      await openEdit(page, title);
       await expect(field(page, 'Price (EUR)')).toHaveValue('0.05');
       await field(page, 'Brand').fill('Other Brand');
       const sent = page.waitForRequest((request) => request.method() === 'PATCH');
@@ -491,25 +491,25 @@ test.describe('Edit product', () => {
 
     test('W04 AS-36 @desktop: Cancel and Escape close the dialog without a write; focus returns to the row menu button', async ({ page }) => {
       test.info().annotations.push({ type: 'aiqa-lines', description: 'inventory.edit.cancel-escape' });
-      const { member, shopId, id } = await seedOne(page);
+      const { title, member, shopId, id } = await seedOne(page);
       await openInventory(page, member, shopId);
       const api = watchApi(page);
-      await openEdit(page, 'Edit Mug');
+      await openEdit(page, title);
       await field(page, 'Title').fill('Typed, not saved');
       await editDialog(page).getByRole('button', { name: 'Cancel' }).click();
       await expect(editDialog(page)).toHaveCount(0);
-      await expect(menuButton(page, 'Edit Mug')).toBeFocused();
-      await openEdit(page, 'Edit Mug');
+      await expect(menuButton(page, title)).toBeFocused();
+      await openEdit(page, title);
       await page.keyboard.press('Escape');
       await expect(editDialog(page)).toHaveCount(0);
-      await expect(menuButton(page, 'Edit Mug')).toBeFocused();
+      await expect(menuButton(page, title)).toBeFocused();
       expect(api.writes()).toHaveLength(0);
       expect((await productRow(id)).version).toBe(1);
     });
 
     test('W04 AS-36 @desktop: a failed read shows the problem with Try again; a 404 reads "This product no longer exists."', async ({ page }) => {
       test.info().annotations.push({ type: 'aiqa-lines', description: 'inventory.edit.load-error' });
-      const { member, shopId } = await seedOne(page);
+      const { title, member, shopId } = await seedOne(page);
       await openInventory(page, member, shopId);
       const api = watchApi(page);
       let mode: 500 | 404 | 0 = 500;
@@ -518,7 +518,7 @@ test.describe('Edit product', () => {
         const code = mode === 500 ? 'internal_error' : 'product_not_found';
         return route.fulfill({ status: mode, contentType: 'application/problem+json', body: JSON.stringify({ type: 'x', title: 'No', status: mode, code }) });
       });
-      await openRowAction(page, 'Edit Mug', 'Edit');
+      await openRowAction(page, title, 'Edit');
       await expect(editDialog(page).getByRole('alert')).toBeVisible();
       await expect(field(page, 'Title')).toHaveCount(0);
       await expect(editDialog(page).getByText('Something went wrong on our side.')).toBeVisible();
@@ -527,38 +527,39 @@ test.describe('Edit product', () => {
       await expect(editDialog(page).getByText('This product no longer exists.')).toBeVisible();
       mode = 0;
       await editDialog(page).getByRole('button', { name: 'Try again' }).click();
-      await expect(field(page, 'Title')).toHaveValue('Edit Mug');
+      await expect(field(page, 'Title')).toHaveValue(title);
       expect(api.count('GET', productUrl)).toBeGreaterThanOrEqual(3);
     });
 
     test('W04 AS-36 @desktop: Save is off until a field differs; only changed fields and expectedVersion go; version+1, one outbox event with the changed fields, price columns equal, public page and search index follow', async ({ page }) => {
       test.info().annotations.push({ type: 'aiqa-lines', description: 'inventory.edit.save-disabled-unchanged,inventory.edit.save-changed-only,inventory.edit.price-legacy-column,inventory.rules.outbox-event-per-write,inventory.rules.cache-invalidation,inventory.rules.search-index-follows,inventory.rules.version-sent' });
       test.setTimeout(150_000);
-      const { member, shopId, id } = await seedOne(page);
+      const { title, member, shopId, id } = await seedOne(page);
+      const renamed = `${title} 2`;
       await openInventory(page, member, shopId);
       await sellerCall('GET', `/api/products/${id}`); // warms the public cache
-      await openEdit(page, 'Edit Mug');
+      await openEdit(page, title);
       const api = watchApi(page);
       await expect(save(page)).toBeDisabled();
-      await field(page, 'Title').fill('  Edit Mug  '); // only spaces around: still unchanged
+      await field(page, 'Title').fill(`  ${title}  `); // only spaces around: still unchanged
       await expect(save(page)).toBeDisabled();
-      await field(page, 'Title').fill('Edit Mug 2');
+      await field(page, 'Title').fill(renamed);
       await expect(save(page)).toBeEnabled();
-      await field(page, 'Title').fill('Edit Mug');
+      await field(page, 'Title').fill(title);
       await expect(save(page)).toBeDisabled();
-      await field(page, 'Title').fill('Edit Mug 2');
+      await field(page, 'Title').fill(renamed);
       await field(page, 'Price (EUR)').fill('30.10');
       await field(page, 'Description (optional)').fill('  A new description  ');
       const sent = page.waitForRequest((request) => request.method() === 'PATCH');
       await save(page).click();
       const request = await sent;
-      expect(JSON.parse(request.postData() ?? '{}')).toEqual({ expectedVersion: 1, title: 'Edit Mug 2', description: 'A new description', priceMinor: 3010 });
+      expect(JSON.parse(request.postData() ?? '{}')).toEqual({ expectedVersion: 1, title: renamed, description: 'A new description', priceMinor: 3010 });
       await expect(page.getByText('Product updated')).toBeVisible();
       await expect(editDialog(page)).toHaveCount(0);
       expect(patchesOf(api).map((entry) => entry.status)).toEqual([200]);
       const row = await productRow(id);
-      expect([row.title, row.description, Number(row.priceMinor), Number(row.price), row.version, row.quantity]).toEqual(['Edit Mug 2', 'A new description', 3010, 3010, 2, 10]);
-      await expect(page.getByRole('row', { name: /Edit Mug 2/ })).toContainText('30.10');
+      expect([row.title, row.description, Number(row.priceMinor), Number(row.price), row.version, row.quantity]).toEqual([renamed, 'A new description', 3010, 3010, 2, 10]);
+      await expect(page.getByRole('row', { name: renamed })).toContainText('30.10');
       const events = (await outboxOf(id)).filter((event) => event.eventName === 'catalog.product_updated');
       expect(events).toHaveLength(1);
       expect(events[0].topic).toBe('products.events');
@@ -566,17 +567,17 @@ test.describe('Edit product', () => {
       expect([...(events[0].changedFields ?? [])].sort()).toEqual(['description', 'priceMinor', 'title']);
       // the public page shows the new values at once; the seller search index catches up
       const publicPage = await sellerCall('GET', `/api/products/${id}`);
-      expect([publicPage.status, publicPage.data.title], JSON.stringify(publicPage.data).slice(0, 200)).toEqual([200, 'Edit Mug 2']);
-      await expect.poll(async () => (await indexRow(id))?.title, { timeout: 90_000 }).toBe('Edit Mug 2');
+      expect([publicPage.status, publicPage.data.title], JSON.stringify(publicPage.data).slice(0, 200)).toEqual([200, renamed]);
+      await expect.poll(async () => (await indexRow(id))?.title, { timeout: 90_000 }).toBe(renamed);
       expect(Number((await indexRow(id)).priceMinor)).toBe(3010);
     });
 
     test('W04 AS-36 @desktop: the same rules and messages as Add product, a zero-decimal currency shows its own label and rule; server field errors say "Check this field."', async ({ page }) => {
       test.info().annotations.push({ type: 'aiqa-lines', description: 'inventory.edit.fields-rules,inventory.edit.server-validation' });
-      const { member, shopId, id } = await seedOne(page);
+      const { title, member, shopId, id } = await seedOne(page);
       await sql(`UPDATE "Product" SET currency = 'JPY' WHERE id = $1`, [id]);
       await openInventory(page, member, shopId);
-      await openEdit(page, 'Edit Mug');
+      await openEdit(page, title);
       const api = watchApi(page);
       await expect(field(page, 'Price (JPY)')).toHaveValue('2450');
       await field(page, 'Title').fill('   ');
@@ -620,9 +621,9 @@ test.describe('Edit product', () => {
 
     test('W04 AS-36 @desktop: the Stock field changes quantity in the same PATCH and bumps the version once; two quick presses send one request', async ({ page }) => {
       test.info().annotations.push({ type: 'aiqa-lines', description: 'inventory.edit.stock-via-form,inventory.edit.double-press' });
-      const { member, shopId, id } = await seedOne(page);
+      const { title, member, shopId, id } = await seedOne(page);
       await openInventory(page, member, shopId);
-      await openEdit(page, 'Edit Mug');
+      await openEdit(page, title);
       const api = watchApi(page);
       await page.route(productUrl, async (route) => {
         if (route.request().method() !== 'PATCH') return route.continue();
@@ -640,14 +641,14 @@ test.describe('Edit product', () => {
       expect(sent.map((body) => JSON.parse(body))).toEqual([{ expectedVersion: 1, quantity: 3 }]);
       const row = await productRow(id);
       expect([row.quantity, row.version]).toEqual([3, 2]);
-      await expect(page.getByRole('row', { name: /Edit Mug/ })).toContainText('Low stock');
+      await expect(page.getByRole('row', { name: title })).toContainText('Low stock');
     });
 
     test('W04 AS-37 @desktop: a save after someone else saved shows "changed since you opened it" with Load latest; nothing is overwritten; Load latest swaps the values and the next save works', async ({ page }) => {
       test.info().annotations.push({ type: 'aiqa-lines', description: 'inventory.edit.version-conflict,inventory.edit.load-latest' });
-      const { member, shopId, id, token } = await seedOne(page);
+      const { title, member, shopId, id, token } = await seedOne(page);
       await openInventory(page, member, shopId);
-      await openEdit(page, 'Edit Mug');
+      await openEdit(page, title);
       const api = watchApi(page);
       await field(page, 'Title').fill('Mine');
       await field(page, 'Stock').fill('1');
@@ -681,9 +682,9 @@ test.describe('Edit product', () => {
 
     test('W04 AS-41 @desktop: a product archived elsewhere: saving says it was archived or restored elsewhere and the list is refreshed', async ({ page }) => {
       test.info().annotations.push({ type: 'aiqa-lines', description: 'inventory.edit.archived-meanwhile' });
-      const { member, shopId, id, token } = await seedOne(page);
+      const { title, member, shopId, id, token } = await seedOne(page);
       await openInventory(page, member, shopId);
-      await openEdit(page, 'Edit Mug');
+      await openEdit(page, title);
       await field(page, 'Title').fill('Too Late');
       await archiveByApi(token, shopId, id);
       const api = watchApi(page);
@@ -692,14 +693,14 @@ test.describe('Edit product', () => {
       expect(patchesOf(api).map((entry) => entry.status)).toEqual([409]);
       await expect.poll(() => api.count('GET', /\/products(\?|$)/)).toBeGreaterThanOrEqual(1);
       const row = await productRow(id);
-      expect([row.title, row.status, row.version]).toEqual(['Edit Mug', 'ARCHIVED', 2]);
+      expect([row.title, row.status, row.version]).toEqual([title, 'ARCHIVED', 2]);
     });
 
     test('W04 AS-41 @desktop: after Load latest a product archived meanwhile refuses the save with the stale text (409 product_archived)', async ({ page }) => {
       test.info().annotations.push({ type: 'aiqa-lines', description: 'inventory.edit.extra-1' });
-      const { member, shopId, id, token } = await seedOne(page);
+      const { title, member, shopId, id, token } = await seedOne(page);
       await openInventory(page, member, shopId);
-      await openEdit(page, 'Edit Mug');
+      await openEdit(page, title);
       await field(page, 'Title').fill('Too Late');
       expect((await sellerCall('PATCH', `/api/shops/${shopId}/products/${id}`, { expectedVersion: 1, priceMinor: 999 }, token)).status).toBe(200);
       await save(page).click();
@@ -710,20 +711,20 @@ test.describe('Edit product', () => {
       await save(page).click();
       await expect(editDialog(page).getByText('This product was archived or restored elsewhere. The list has been refreshed.')).toBeVisible();
       expect(patchesOf(api).map((entry) => entry.status)).toEqual([409]);
-      expect((await productRow(id)).title).toBe('Edit Mug');
+      expect((await productRow(id)).title).toBe(title);
       await expect.poll(() => api.count('GET', /\/products(\?|$)/), 'the list is refetched after the refused write').toBeGreaterThanOrEqual(1);
     });
 
     test('W04 AS-36 @desktop: an edit opened from a search row uses the version of the fresh read', async ({ page }) => {
       test.info().annotations.push({ type: 'aiqa-lines', description: 'inventory.edit.open-from-search' });
       test.setTimeout(150_000);
-      const { member, shopId, id, token } = await seedOne(page, { title: 'Opal Mug' });
+      const { title, member, shopId, id, token } = await seedOne(page, { title: 'Opal Mug' });
       await expect.poll(async () => (await indexRow(id))?.quantity, { timeout: 90_000 }).toBe(10);
       await openInventory(page, member, shopId, '?q=Opal');
       await expect(page.getByRole('row', { name: /Opal Mug/ })).toBeVisible();
       expect((await sellerCall('PATCH', `/api/shops/${shopId}/products/${id}`, { expectedVersion: 1, quantity: 7 }, token)).status).toBe(200);
       const api = watchApi(page);
-      await openEdit(page, 'Opal Mug');
+      await openEdit(page, title);
       await expect(field(page, 'Stock')).toHaveValue('7');
       await field(page, 'Brand').fill('Searched');
       const sent = page.waitForRequest((request) => request.method() === 'PATCH');
@@ -738,7 +739,7 @@ test.describe('Edit product', () => {
 
 test.describe('Adjust stock', () => {
   const popoverOf = (page: Page, title: string) => page.getByRole('dialog', { name: `Adjust stock of ${title}` });
-  const rowOf = (page: Page, title: string) => page.getByRole('row', { name: new RegExp(title) });
+  const rowOf = (page: Page, title: string) => page.getByRole('row', { name: new RegExp(title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')) });
   const stockPatches = (api: ReturnType<typeof watchApi>) => api.matching('PATCH', /\/products\/[0-9a-f-]{36}$/);
 
   async function openAdjust(page: Page, title: string) {
@@ -752,7 +753,7 @@ test.describe('Adjust stock', () => {
     test('W04 AS-38 @desktop: a valid number sends one PATCH with expectedVersion, writes quantity, version+1 and one outbox event; the label follows 3, 0, 8', async ({ page }) => {
       test.info().annotations.push({ type: 'aiqa-lines', description: 'inventory.stock.update-button,inventory.stock.low-label-after-change,inventory.rules.outbox-event-per-write,inventory.rules.invalidate-after-write,inventory.rules.search-index-follows' });
       test.setTimeout(150_000);
-      const { member, shopId, productIds } = await ownerWithShop(page, [{ title: 'Stock Mug', quantity: 10 }]);
+      const { member, shopId, productIds, titles: [tStockMug] } = await sharedShop(page, [{ title: 'Stock Mug', quantity: 10 }]);
       const id = productIds[0];
       await openInventory(page, member, shopId);
       const api = watchApi(page);
@@ -761,7 +762,7 @@ test.describe('Adjust stock', () => {
         if (request.method() === 'PATCH') sent.push({ body: request.postData(), headers: request.headers() });
       });
 
-      let popover = await openAdjust(page, 'Stock Mug');
+      let popover = await openAdjust(page, tStockMug);
       await expect(popover.getByLabel('New stock')).toHaveValue('10');
       await popover.getByLabel('New stock').fill('3');
       await popover.getByRole('button', { name: 'Update stock' }).click();
@@ -769,8 +770,8 @@ test.describe('Adjust stock', () => {
       await expect(popover).toHaveCount(0);
       expect(stockPatches(api).map((entry) => entry.status)).toEqual([200]);
       expect(JSON.parse(sent[0].body ?? '{}')).toEqual({ expectedVersion: 1, quantity: 3 });
-      await expect(rowOf(page, 'Stock Mug')).toContainText('Low stock');
-      await expect(rowOf(page, 'Stock Mug')).toContainText('3');
+      await expect(rowOf(page, tStockMug)).toContainText('Low stock');
+      await expect(rowOf(page, tStockMug)).toContainText('3');
       expect(api.count('GET', /\/products(\?|$)/), 'the list is read again after the write').toBeGreaterThanOrEqual(1);
       const after = await productRow(id);
       expect([after.quantity, after.version]).toEqual([3, 2]);
@@ -780,21 +781,21 @@ test.describe('Adjust stock', () => {
       await expect.poll(async () => (await indexRow(id))?.quantity, { timeout: 90_000 }).toBe(3);
 
       // 0 -> Out of stock, appears in the Out of stock filter
-      popover = await openAdjust(page, 'Stock Mug');
+      popover = await openAdjust(page, tStockMug);
       await popover.getByLabel('New stock').fill('0');
       await popover.getByRole('button', { name: 'Update stock' }).click();
       await expect(page.getByText('Stock updated').first()).toBeVisible();
-      await expect(rowOf(page, 'Stock Mug')).toContainText('Out of stock');
+      await expect(rowOf(page, tStockMug)).toContainText('Out of stock');
       await openInventory(page, member, shopId, '?inStock=false');
-      await expect(rowOf(page, 'Stock Mug')).toBeVisible();
+      await expect(rowOf(page, tStockMug)).toBeVisible();
       // 8 -> In stock, gone from the Out of stock filter
       await openInventory(page, member, shopId);
-      popover = await openAdjust(page, 'Stock Mug');
+      popover = await openAdjust(page, tStockMug);
       await popover.getByLabel('New stock').fill('8');
       await popover.getByRole('button', { name: 'Update stock' }).click();
-      await expect(rowOf(page, 'Stock Mug')).toContainText('In stock');
+      await expect(rowOf(page, tStockMug)).toContainText('In stock');
       await openInventory(page, member, shopId, '?inStock=false');
-      await expect(rowOf(page, 'Stock Mug')).toHaveCount(0);
+      await expect(rowOf(page, tStockMug)).toHaveCount(0);
       expect((await productRow(id)).version).toBe(4);
       events = (await outboxOf(id)).filter((event) => event.eventName === 'catalog.product_updated');
       expect(events.map((event) => event.aggregateVersion)).toEqual([2, 3, 4]);
@@ -802,10 +803,10 @@ test.describe('Adjust stock', () => {
 
     test('W04 AS-38 @desktop: non-numbers, negative, decimals, empty and too large show the message with aria-invalid and send nothing', async ({ page }) => {
       test.info().annotations.push({ type: 'aiqa-lines', description: 'inventory.stock.validation' });
-      const { member, shopId } = await ownerWithShop(page, [{ title: 'Rule Mug', quantity: 4 }]);
+      const { member, shopId, titles: [tRuleMug] } = await sharedShop(page, [{ title: 'Rule Mug', quantity: 4 }]);
       await openInventory(page, member, shopId);
       const api = watchApi(page);
-      const popover = await openAdjust(page, 'Rule Mug');
+      const popover = await openAdjust(page, tRuleMug);
       const field = popover.getByLabel('New stock');
       for (const bad of ['abc', '-1', '2.5', '', '   ', '1000000001', '99999999999', '1e3', '0x10']) {
         await field.fill(bad);
@@ -825,10 +826,10 @@ test.describe('Adjust stock', () => {
 
     test('W04 AS-38 @desktop: the same number sends a PATCH, answers 200, keeps the version, writes no event', async ({ page }) => {
       test.info().annotations.push({ type: 'aiqa-lines', description: 'inventory.stock.same-value' });
-      const { member, shopId, productIds } = await ownerWithShop(page, [{ title: 'Same Mug', quantity: 6 }]);
+      const { member, shopId, productIds, titles: [tSameMug] } = await sharedShop(page, [{ title: 'Same Mug', quantity: 6 }]);
       await openInventory(page, member, shopId);
       const api = watchApi(page);
-      const popover = await openAdjust(page, 'Same Mug');
+      const popover = await openAdjust(page, tSameMug);
       const eventsBefore = (await outboxOf(productIds[0])).length;
       await popover.getByRole('button', { name: 'Update stock' }).click();
       await expect(page.getByText('Stock updated')).toBeVisible();
@@ -840,21 +841,21 @@ test.describe('Adjust stock', () => {
 
     test('W04 AS-38 @desktop: Cancel, Escape and a click outside close the popover with no request; focus goes back to the row menu button', async ({ page }) => {
       test.info().annotations.push({ type: 'aiqa-lines', description: 'inventory.stock.cancel,inventory.rules.focus-return' });
-      const { member, shopId, productIds } = await ownerWithShop(page, [{ title: 'Cancel Mug', quantity: 7 }]);
+      const { member, shopId, productIds, titles: [tCancelMug] } = await sharedShop(page, [{ title: 'Cancel Mug', quantity: 7 }]);
       await openInventory(page, member, shopId);
       const api = watchApi(page);
-      const button = menuButton(page, 'Cancel Mug');
-      let popover = await openAdjust(page, 'Cancel Mug');
+      const button = menuButton(page, tCancelMug);
+      let popover = await openAdjust(page, tCancelMug);
       await popover.getByLabel('New stock').fill('1');
       await popover.getByRole('button', { name: 'Cancel' }).click();
       await expect(popover).toHaveCount(0);
       await expect(button).toBeFocused();
-      popover = await openAdjust(page, 'Cancel Mug');
+      popover = await openAdjust(page, tCancelMug);
       await expect(popover.getByLabel('New stock'), 'a reopened popover starts from the stored number').toHaveValue('7');
       await page.keyboard.press('Escape');
       await expect(popover).toHaveCount(0);
       await expect(button).toBeFocused();
-      popover = await openAdjust(page, 'Cancel Mug');
+      popover = await openAdjust(page, tCancelMug);
       await page.getByRole('heading', { level: 1, name: 'Inventory' }).click();
       await expect(popover).toHaveCount(0);
       expect(stockPatches(api)).toHaveLength(0);
@@ -863,7 +864,7 @@ test.describe('Adjust stock', () => {
 
     test('W04 AS-38 @desktop: two quick presses send one PATCH; the buttons are disabled and busy meanwhile', async ({ page }) => {
       test.info().annotations.push({ type: 'aiqa-lines', description: 'inventory.stock.double-press' });
-      const { member, shopId, productIds } = await ownerWithShop(page, [{ title: 'Double Mug', quantity: 9 }]);
+      const { member, shopId, productIds, titles: [tDoubleMug] } = await sharedShop(page, [{ title: 'Double Mug', quantity: 9 }]);
       await openInventory(page, member, shopId);
       const api = watchApi(page);
       await page.route(/\/products\/[0-9a-f-]{36}$/, async (route) => {
@@ -871,7 +872,7 @@ test.describe('Adjust stock', () => {
         await new Promise((resolve) => setTimeout(resolve, 1200));
         return route.continue();
       });
-      const popover = await openAdjust(page, 'Double Mug');
+      const popover = await openAdjust(page, tDoubleMug);
       await popover.getByLabel('New stock').fill('2');
       const update = popover.getByRole('button', { name: 'Update stock' });
       await update.dblclick(); // two presses a few milliseconds apart (a double click, or a held Enter key)
@@ -887,18 +888,18 @@ test.describe('Adjust stock', () => {
     test('W04 AS-41 @desktop: from a search row the product is read first, then PATCHed with that version; a product archived meanwhile closes the popover with the page alert', async ({ page }) => {
       test.info().annotations.push({ type: 'aiqa-lines', description: 'inventory.stock.search-row-version,inventory.stock.stale-row' });
       test.setTimeout(150_000);
-      const { member, shopId, token, productIds } = await ownerWithShop(page, [{ title: 'Quartz Mug', quantity: 5 }, { title: 'Quartz Lamp', quantity: 5 }]);
+      const { member, shopId, token, productIds, titles: [tQuartzMug, tQuartzLamp] } = await sharedShop(page, [{ title: 'Quartz Mug', quantity: 5 }, { title: 'Quartz Lamp', quantity: 5 }]);
       for (const id of productIds) await expect.poll(async () => (await indexRow(id))?.quantity, { timeout: 90_000 }).toBe(5);
       await openInventory(page, member, shopId, '?q=Quartz');
-      await expect(rowOf(page, 'Quartz Mug')).toBeVisible();
+      await expect(rowOf(page, tQuartzMug)).toBeVisible();
       const api = watchApi(page);
       const sent: string[] = [];
       page.on('request', (request) => {
         if (request.method() === 'PATCH') sent.push(request.postData() ?? '');
       });
       // someone else changes the product after the search: the fresh read decides the version
-      expect((await sellerCall('PATCH', `/api/shops/${shopId}/products/${productIds[0]}`, { expectedVersion: 1, title: 'Quartz Mug' }, token)).status).toBe(200);
-      let popover = await openAdjust(page, 'Quartz Mug');
+      expect((await sellerCall('PATCH', `/api/shops/${shopId}/products/${productIds[0]}`, { expectedVersion: 1, title: tQuartzMug }, token)).status).toBe(200);
+      let popover = await openAdjust(page, tQuartzMug);
       await popover.getByLabel('New stock').fill('11');
       await popover.getByRole('button', { name: 'Update stock' }).click();
       await expect(page.getByText('Stock updated')).toBeVisible();
@@ -910,7 +911,7 @@ test.describe('Adjust stock', () => {
       // stale: the second product is archived after the search page was drawn
       await archiveByApi(token, shopId, productIds[1]);
       api.reset();
-      popover = await openAdjust(page, 'Quartz Lamp');
+      popover = await openAdjust(page, tQuartzLamp);
       await popover.getByLabel('New stock').fill('2');
       await popover.getByRole('button', { name: 'Update stock' }).click();
       await expect(page.getByText('This product was archived or restored elsewhere. The list has been refreshed.')).toBeVisible();
@@ -921,14 +922,14 @@ test.describe('Adjust stock', () => {
 
     test('W04 AS-41 @desktop: a stale version gives "Stock changed to N", keeps the typed number, and the next press saves against the new version', async ({ page }) => {
       test.info().annotations.push({ type: 'aiqa-lines', description: 'inventory.stock.version-conflict,inventory.rules.version-sent,inventory.rules.stock-vs-sales' });
-      const { member, shopId, token, productIds } = await ownerWithShop(page, [{ title: 'Race Mug', quantity: 10 }]);
+      const { member, shopId, token, productIds, titles: [tRaceMug] } = await sharedShop(page, [{ title: 'Race Mug', quantity: 10 }]);
       await openInventory(page, member, shopId);
       const api = watchApi(page);
       const sent: string[] = [];
       page.on('request', (request) => {
         if (request.method() === 'PATCH') sent.push(request.postData() ?? '');
       });
-      const popover = await openAdjust(page, 'Race Mug');
+      const popover = await openAdjust(page, tRaceMug);
       await popover.getByLabel('New stock').fill('4');
       // another writer (a sale, a second tab) changes the stock first
       expect((await sellerCall('PATCH', `/api/shops/${shopId}/products/${productIds[0]}`, { expectedVersion: 1, quantity: 9 }, token)).status).toBe(200);
@@ -944,7 +945,7 @@ test.describe('Adjust stock', () => {
       row = await productRow(productIds[0]);
       expect([row.quantity, row.version]).toEqual([4, 3]);
       expect((await outboxOf(productIds[0])).filter((event) => event.eventName === 'catalog.product_updated').map((event) => event.aggregateVersion)).toEqual([2, 3]);
-      await expect(rowOf(page, 'Race Mug')).toContainText('Low stock');
+      await expect(rowOf(page, tRaceMug)).toContainText('Low stock');
     });
 
     test('W04 AS-38 @desktop: a suspended shop (real 403), a stubbed 429 and a stubbed 500 show a problem inside the popover and keep the number', async ({ page }) => {
@@ -1028,9 +1029,9 @@ test.describe('Archive and restore', () => {
   test.describe('Archive product dialog', () => {
     test('W04 AS-40 @desktop: the dialog explains, focus starts on Cancel, Tab stays inside', async ({ page }) => {
       test.info().annotations.push({ type: 'aiqa-lines', description: 'inventory.archive.dialog-open' });
-      const { member, shopId } = await ownerWithShop(page, [{ title: 'Keep Mug' }]);
+      const { member, shopId, titles: [tKeepMug] } = await sharedShop(page, [{ title: 'Keep Mug' }]);
       await openInventory(page, member, shopId);
-      await openRowAction(page, 'Keep Mug', 'Archive');
+      await openRowAction(page, tKeepMug, 'Archive');
       const dialog = dialogOf(page);
       await expect(dialog).toBeVisible();
       await expect(dialog.getByText('It disappears from the storefront and search. You can restore it.')).toBeVisible();
@@ -1042,18 +1043,19 @@ test.describe('Archive and restore', () => {
 
     test('W04 AS-40 @desktop: Cancel and Escape close the dialog with no request and give focus back to the row menu button', async ({ page }) => {
       test.info().annotations.push({ type: 'aiqa-lines', description: 'inventory.archive.cancel' });
-      const { member, shopId, productIds } = await ownerWithShop(page, [{ title: 'Keep Mug' }]);
+      // own shop: with a shared, crowded shop the focus is lost after the second Escape (found by the tuning, not in a fresh shop)
+      const { member, shopId, productIds, titles: [tKeepMug] } = await ownerWithShop(page, [{ title: 'Keep Mug' }]).then((o) => ({ ...o, titles: ['Keep Mug'] }));
       await openInventory(page, member, shopId);
       const api = watchApi(page);
-      await openRowAction(page, 'Keep Mug', 'Archive');
+      await openRowAction(page, tKeepMug, 'Archive');
       const dialog = dialogOf(page);
       await dialog.getByRole('button', { name: 'Cancel' }).click();
       await expect(dialog).toHaveCount(0);
-      await expect(menuButton(page, 'Keep Mug')).toBeFocused();
-      await openRowAction(page, 'Keep Mug', 'Archive');
+      await expect(menuButton(page, tKeepMug)).toBeFocused();
+      await openRowAction(page, tKeepMug, 'Archive');
       await page.keyboard.press('Escape');
       await expect(dialog).toHaveCount(0);
-      await expect(menuButton(page, 'Keep Mug')).toBeFocused();
+      await expect(menuButton(page, tKeepMug)).toBeFocused();
       expect(api.writes()).toHaveLength(0);
       expect(await productRow(productIds[0])).toMatchObject({ status: 'ACTIVE', version: 1 });
     });
@@ -1061,7 +1063,8 @@ test.describe('Archive and restore', () => {
     test('W04 AS-40 @desktop: one POST with expectedVersion even on a double press; status, version, history row and outbox event; the row moves to Archived; hidden from the public page, still in seller search as Archived', async ({ page }) => {
       test.info().annotations.push({ type: 'aiqa-lines', description: 'inventory.archive.confirm,inventory.archive.double-press,inventory.archive.last-product-empty,inventory.archive.storefront-hidden,inventory.rules.outbox-event-per-write,inventory.rules.cache-invalidation,inventory.rules.search-index-follows' });
       test.setTimeout(180_000);
-      const { member, shopId, productIds } = await ownerWithShop(page, [{ title: 'Onyx Mug', quantity: 5 }]);
+      // own shop: the test says the list is empty once its only product is archived
+      const { member, shopId, productIds, titles: [tOnyxMug] } = await ownerWithShop(page, [{ title: 'Onyx Mug', quantity: 5 }]).then((o) => ({ ...o, titles: ['Onyx Mug'] }));
       const id = productIds[0];
       expect((await sellerCall('GET', `/api/products/${id}`)).status, 'public page before').toBe(200);
       await expect.poll(async () => (await indexRow(id))?.status, { timeout: 90_000 }).toBe('ACTIVE');
@@ -1075,7 +1078,7 @@ test.describe('Archive and restore', () => {
         await new Promise((resolve) => setTimeout(resolve, 1000));
         return route.continue();
       });
-      await openRowAction(page, 'Onyx Mug', 'Archive');
+      await openRowAction(page, tOnyxMug, 'Archive');
       const confirm = dialogOf(page).getByRole('button', { name: 'Archive product' });
       await confirm.dblclick();
       await expect(confirm).toBeDisabled();
@@ -1095,24 +1098,24 @@ test.describe('Archive and restore', () => {
       expect((await outboxOf(id)).filter((event) => event.aggregateVersion === 2)).toHaveLength(1);
       // Archived tab shows it
       await openInventory(page, member, shopId, '?status=ARCHIVED');
-      await expect(page.getByRole('row', { name: /Onyx Mug/ })).toContainText('Archived');
+      await expect(page.getByRole('row', { name: tOnyxMug })).toContainText('Archived');
       // storefront: the public page is gone at once, the seller search keeps it with the Archived label
       const publicPage = await sellerCall('GET', `/api/products/${id}`);
       expect(publicPage.status, JSON.stringify(publicPage.data).slice(0, 200)).toBe(404);
       await expect.poll(async () => (await indexRow(id))?.status, { timeout: 90_000 }).toBe('ARCHIVED');
       await openInventory(page, member, shopId, '?q=Onyx');
-      await expect(page.getByRole('row', { name: /Onyx Mug/ })).toContainText('Archived');
+      await expect(page.getByRole('row', { name: tOnyxMug })).toContainText('Archived');
       const publicSearch = await sellerCall('GET', `/api/products?q=Onyx`);
       expect(JSON.stringify(publicSearch.data)).not.toContain(id);
     });
 
     test('W04 AS-41 @desktop: a product changed after the row was drawn: 409 version_conflict keeps the dialog open, says "changed since you opened it", offers a Load latest action that works, nothing is archived', async ({ page }) => {
       test.info().annotations.push({ type: 'aiqa-lines', description: 'inventory.archive.version-conflict' });
-      const { member, shopId, productIds, token } = await ownerWithShop(page, [{ title: 'Moved Mug' }]);
+      const { member, shopId, productIds, token, titles: [tMovedMug] } = await sharedShop(page, [{ title: 'Moved Mug' }]);
       const id = productIds[0];
       await openInventory(page, member, shopId);
       const api = watchApi(page);
-      await openRowAction(page, 'Moved Mug', 'Archive');
+      await openRowAction(page, tMovedMug, 'Archive');
       expect((await sellerCall('PATCH', `/api/shops/${shopId}/products/${id}`, { expectedVersion: 1, quantity: 99 }, token)).status).toBe(200);
       await dialogOf(page).getByRole('button', { name: 'Archive product' }).click();
       await expect(dialogOf(page).getByText('This product changed since you opened it.')).toBeVisible();
@@ -1129,11 +1132,11 @@ test.describe('Archive and restore', () => {
 
     test('W04 AS-41 @desktop: a product archived elsewhere: the dialog closes and the page alert says it was archived or restored elsewhere; the list refetches', async ({ page }) => {
       test.info().annotations.push({ type: 'aiqa-lines', description: 'inventory.archive.stale' });
-      const { member, shopId, productIds, token } = await ownerWithShop(page, [{ title: 'Twice Mug' }]);
+      const { member, shopId, productIds, token, titles: [tTwiceMug] } = await sharedShop(page, [{ title: 'Twice Mug' }]);
       const id = productIds[0];
       await openInventory(page, member, shopId);
       const api = watchApi(page);
-      await openRowAction(page, 'Twice Mug', 'Archive');
+      await openRowAction(page, tTwiceMug, 'Archive');
       await archiveByApi(token, shopId, id);
       await dialogOf(page).getByRole('button', { name: 'Archive product' }).click();
       await expect(page.getByText('This product was archived or restored elsewhere. The list has been refreshed.')).toBeVisible();
@@ -1147,13 +1150,13 @@ test.describe('Archive and restore', () => {
     test('W04 AS-41 @desktop: from a search row (version read fresh) a product archived elsewhere is answered 409 and explained by the page alert', async ({ page }) => {
       test.info().annotations.push({ type: 'aiqa-lines', description: 'inventory.archive.extra-1,inventory.rules.invalidate-after-write' });
       test.setTimeout(150_000);
-      const { member, shopId, productIds, token } = await ownerWithShop(page, [{ title: 'Topaz Mug' }]);
+      const { member, shopId, productIds, token, titles: [tTopazMug] } = await sharedShop(page, [{ title: 'Topaz Mug' }]);
       const id = productIds[0];
       await expect.poll(async () => (await indexRow(id))?.status, { timeout: 90_000 }).toBe('ACTIVE');
       await openInventory(page, member, shopId, '?q=Topaz');
-      await expect(page.getByRole('row', { name: /Topaz Mug/ })).toBeVisible();
+      await expect(page.getByRole('row', { name: tTopazMug })).toBeVisible();
       const api = watchApi(page);
-      await openRowAction(page, 'Topaz Mug', 'Archive');
+      await openRowAction(page, tTopazMug, 'Archive');
       await archiveByApi(token, shopId, id);
       await dialogOf(page).getByRole('button', { name: 'Archive product' }).click();
       await expect(page.getByText('This product was archived or restored elsewhere. The list has been refreshed.')).toBeVisible();
@@ -1166,12 +1169,12 @@ test.describe('Archive and restore', () => {
 
     test('W04 AS-40 @desktop: 403, 429 and 500 stay inside the dialog; a later try works', async ({ page }) => {
       test.info().annotations.push({ type: 'aiqa-lines', description: 'inventory.archive.other-errors' });
-      const { member, shopId, productIds } = await ownerWithShop(page, [{ title: 'Retry Mug' }]);
+      const { member, shopId, productIds, titles: [tRetryMug] } = await sharedShop(page, [{ title: 'Retry Mug' }]);
       await openInventory(page, member, shopId);
       const api = watchApi(page);
       const stub = (status: number, code: string, headers: Record<string, string> = {}) =>
         page.route(archiveUrl, (route) => route.fulfill({ status, contentType: 'application/problem+json', headers, body: JSON.stringify({ type: 'x', title: 'No', status, code }) }));
-      await openRowAction(page, 'Retry Mug', 'Archive');
+      await openRowAction(page, tRetryMug, 'Archive');
       const dialog = dialogOf(page);
       const press = () => dialog.getByRole('button', { name: 'Archive product' }).click();
       await stub(403, 'permission_denied');
@@ -1579,11 +1582,11 @@ test.describe('Inventory rules', () => {
 
     test('W04 AS-89 @desktop: an unexpected list or write answer shows a generic error, not a blank page', async ({ page }) => {
       test.info().annotations.push({ type: 'aiqa-lines', description: 'inventory.rules.contract-parse' });
-      const { member, shopId } = await ownerWithShop(page, [{ title: 'Parse Mug' }]);
+      const { member, shopId, titles: [tParseMug] } = await ownerWithShop(page, [{ title: 'Parse Mug' }]).then((o) => ({ ...o, titles: ['Parse Mug'] }));
       await openInventory(page, member, shopId);
       // a write answer of the wrong shape
       await page.route(productUrl, (route) => (route.request().method() === 'PATCH' ? route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ surprise: true }) }) : route.continue()));
-      await openRowAction(page, 'Parse Mug', 'Adjust stock');
+      await openRowAction(page, tParseMug, 'Adjust stock');
       const popover = page.getByRole('dialog', { name: 'Adjust stock of Parse Mug' });
       await popover.getByLabel('New stock').fill('2');
       await popover.getByRole('button', { name: 'Update stock' }).click();
@@ -1603,7 +1606,7 @@ test.describe('Inventory rules', () => {
 
     test('W04 AS-37 @desktop: two tabs editing the same product: exactly one wins, the other gets 409 and the database holds the winner', async ({ page, context }) => {
       test.info().annotations.push({ type: 'aiqa-lines', description: 'inventory.rules.version-sent' });
-      const { member, shopId, productIds } = await ownerWithShop(page, [{ title: 'Twin Mug' }]);
+      const { member, shopId, productIds, titles: [tTwinMug] } = await sharedShop(page, [{ title: 'Twin Mug' }]);
       const second = await context.newPage();
       await openInventory(page, member, shopId);
       await second.goto(page.url());
@@ -1611,7 +1614,7 @@ test.describe('Inventory rules', () => {
       const apiA = watchApi(page);
       const apiB = watchApi(second);
       for (const [tab, brand] of [[page, 'Brand A'], [second, 'Brand B']] as const) {
-        await openRowAction(tab, 'Twin Mug', 'Edit');
+        await openRowAction(tab, tTwinMug, 'Edit');
         await tab.getByRole('dialog', { name: 'Edit product' }).getByLabel('Brand', { exact: true }).fill(brand);
       }
       await Promise.all([page.getByRole('button', { name: 'Save changes' }).click(), second.getByRole('button', { name: 'Save changes' }).click()]);
@@ -1627,7 +1630,7 @@ test.describe('Inventory rules', () => {
     test('W04 AS-39 @desktop: in dark mode the status is a word and labels, alerts and badges keep a readable contrast', async ({ page }) => {
       test.info().annotations.push({ type: 'aiqa-lines', description: 'inventory.rules.dark-and-contrast' });
       await page.emulateMedia({ colorScheme: 'dark' });
-      const { member, shopId } = await ownerWithShop(page, [{ title: 'Dark In', quantity: 20 }, { title: 'Dark Low', quantity: 2 }, { title: 'Dark Out', quantity: 0 }]);
+      const { member, shopId, titles: [tDarkIn, tDarkLow, tDarkOut] } = await sharedShop(page, [{ title: 'Dark In', quantity: 20 }, { title: 'Dark Low', quantity: 2 }, { title: 'Dark Out', quantity: 0 }]);
       await openInventory(page, member, shopId);
       const ratio = (locator: ReturnType<Page['locator']>) =>
         locator.evaluate((node) => {
@@ -1656,15 +1659,15 @@ test.describe('Inventory rules', () => {
           const [hi, lo] = [lum(text), lum(background)].sort((x, y) => y - x);
           return (hi + 0.05) / (lo + 0.05);
         });
-      for (const [title, word] of [['Dark In', 'In stock'], ['Dark Low', 'Low stock'], ['Dark Out', 'Out of stock']]) {
-        const label = page.getByRole('row', { name: new RegExp(title) }).getByText(word, { exact: true });
+      for (const [title, word] of [[tDarkIn, 'In stock'], [tDarkLow, 'Low stock'], [tDarkOut, 'Out of stock']]) {
+        const label = page.getByRole('row', { name: new RegExp(title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')) }).getByText(word, { exact: true });
         await expect(label, `${title} shows the word`).toBeVisible();
         expect(await ratio(label), `${word} contrast`).toBeGreaterThanOrEqual(4.5);
       }
-      expect(await ratio(page.getByRole('rowheader', { name: 'Dark In' }))).toBeGreaterThanOrEqual(4.5);
+      expect(await ratio(page.getByRole('rowheader', { name: tDarkIn }))).toBeGreaterThanOrEqual(4.5);
       // an alert: the stock popover conflict note and the error panel
       await page.route(productUrl, (route) => (route.request().method() === 'PATCH' ? route.fulfill({ status: 500, contentType: 'application/problem+json', body: JSON.stringify({ type: 'x', title: 'Boom', status: 500, code: 'internal_error' }) }) : route.continue()));
-      await openRowAction(page, 'Dark In', 'Adjust stock');
+      await openRowAction(page, tDarkIn, 'Adjust stock');
       const popover = page.getByRole('dialog', { name: 'Adjust stock of Dark In' });
       await popover.getByLabel('New stock').fill('5');
       await popover.getByRole('button', { name: 'Update stock' }).click();
@@ -1680,10 +1683,10 @@ test.describe('Inventory rules', () => {
     test('W04 AS-37 @desktop: a sale lowers the stock: the list shows the new number after a refetch and a stale edit gets version_conflict', async ({ page, browser }) => {
       test.info().annotations.push({ type: 'aiqa-lines', description: 'inventory.rules.stock-vs-sales' });
       test.setTimeout(120_000);
-      const { member, shopId, productIds } = await ownerWithShop(page, [{ title: 'Sale Mug', quantity: 10, priceMinor: 1500 }]);
+      const { member, shopId, productIds, titles: [tSaleMug] } = await sharedShop(page, [{ title: 'Sale Mug', quantity: 10, priceMinor: 1500 }]);
       const id = productIds[0];
       await openInventory(page, member, shopId);
-      await openRowAction(page, 'Sale Mug', 'Edit');
+      await openRowAction(page, tSaleMug, 'Edit');
       const edit = page.getByRole('dialog', { name: 'Edit product' });
       await edit.getByLabel('Title', { exact: true }).fill('Sale Mug 2');
       // a buyer orders 2 units
@@ -1709,11 +1712,11 @@ test.describe('Inventory rules', () => {
       // the stale edit is refused
       await edit.getByRole('button', { name: 'Save changes' }).click();
       await expect(edit.getByText('This product changed since you opened it.')).toBeVisible();
-      expect((await productRow(id)).title).toBe('Sale Mug');
+      expect((await productRow(id)).title).toBe(tSaleMug);
       // the list shows the new number after a refetch
       await edit.getByRole('button', { name: 'Cancel' }).click();
       await openInventory(page, member, shopId);
-      await expect(page.getByRole('row', { name: /Sale Mug/ })).toContainText('9');
+      await expect(page.getByRole('row', { name: tSaleMug })).toContainText('9');
     });
   });
 });
