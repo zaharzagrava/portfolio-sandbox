@@ -48,11 +48,11 @@ describe('W04 search-params edges (mutation survivors)', () => {
     expect(readCursor('a'.repeat(513))).toBeUndefined();
   });
 
-  it('an orders status is 1 to 32 capital letters or underscores, the whole value', () => {
+  it('an orders status is one of the four known statuses, the whole value, upper case; anything else is the default', () => {
     expect(readOrdersParams({ status: 'PAID' }).status).toBe('PAID');
-    expect(readOrdersParams({ status: 'PARTIALLY_SHIPPED' }).status).toBe('PARTIALLY_SHIPPED');
-    expect(readOrdersParams({ status: 'A'.repeat(32) }).status).toBe('A'.repeat(32));
-    expect(readOrdersParams({ status: 'A'.repeat(33) }).status).toBeUndefined();
+    expect(readOrdersParams({ status: 'REFUNDED' }).status).toBe('REFUNDED');
+    expect(readOrdersParams({ status: 'PARTIALLY_SHIPPED' }).status).toBeUndefined();
+    expect(readOrdersParams({ status: 'BOGUS' }).status).toBeUndefined();
     expect(readOrdersParams({ status: 'PAID-x' }).status).toBeUndefined();
     expect(readOrdersParams({ status: 'x-PAID' }).status).toBeUndefined();
     expect(readOrdersParams({ status: 'paid' }).status).toBeUndefined();

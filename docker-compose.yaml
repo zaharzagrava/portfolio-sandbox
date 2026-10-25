@@ -151,6 +151,7 @@ services:
       /bin/sh -c "
       until /usr/bin/mc alias set local http://minio:9000 minioadmin minioadmin; do sleep 1; done;
       /usr/bin/mc mb --ignore-existing local/marketplace-media;
+      /usr/bin/mc anonymous set download local/marketplace-media/media/derived || true;
       /usr/bin/mc ilm rule add --expire-delete-marker --noncurrent-expire-days 7 local/marketplace-media || true;
       exit 0;
       "

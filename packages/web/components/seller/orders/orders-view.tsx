@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { beginListNavigation, useListNavigationPending } from '@/components/dashboard/navigation-pending';
 import { SectionError } from '@/components/seller/problem-states';
 import { ResponsiveTable, type Column } from '@/components/seller/responsive-table';
 import { Badge } from '@/components/ui/badge';
@@ -9,8 +10,8 @@ import { Button } from '@/components/ui/button';
 import { TableRowsSkeleton } from '@/components/seller/page-skeletons';
 import { useShop } from '@/lib/api/seller';
 import { useShopOrders, type ShopOrderPageDto } from '@/lib/api/seller-orders';
-import { buildQuery, readOrdersParams, type OrdersParams } from '@/lib/seller/search-params';
-import { formatInstant } from '@/lib/seller/format-date';
+import { buildQuery, rawFromSearchParams, readOrdersParams, type OrdersParams } from '@/lib/seller/search-params';
+import { LocalTime } from '@/components/seller/local-time';
 import { formatMoney } from '@/lib/utils';
 import { SHOP_ORDER_STATUSES } from '@marketplace-sandbox/contracts';
 
@@ -27,16 +28,22 @@ export const orderStatusLabel = (status: string): string =>
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(' ');
 
+/**
+ * The short reference of a slice. Ids are time-ordered, so the first characters are equal for slices made in the same
+ * minute; the last 8 are the random part and tell two orders apart (W04.B-32).
+ */
+export const orderReference = (shopOrderId: string): string => shopOrderId.slice(-8);
+
 const STATUS_VARIANT: Record<string, 'secondary' | 'outline' | 'destructive' | 'default'> = { PAID: 'default', PENDING: 'secondary', CANCELLED: 'outline', REFUNDED: 'outline' };
 
 /**
  * The order slices of a shop (W04 US8, FR-042, AS-83): newest first, a status filter and keyset paging in the URL. The
- * reference is the first 8 characters of the shop-order id; the buyer id is in the answer and is never rendered.
+ * reference is the last 8 characters of the shop-order id; the answer carries no buyer identity.
  */
 export function OrdersView({ shopId, serverParams, initialData }: { shopId: string; serverParams: OrdersParams; initialData?: ShopOrderPageDto }) {
   const router = useRouter();
   const pathname = usePathname() ?? `/dashboard/seller/${shopId}/orders`;
-  const params = readOrdersParams(Object.fromEntries(useSearchParams().entries()));
+  const params = readOrdersParams(rawFromSearchParams(new URLSearchParams(useSearchParams().toString())));
   const shop = useShop(shopId).data;
   const orders = useShopOrders(shopId, params, initialData && sameParams(params, serverParams) ? initialData : undefined);
 
@@ -46,26 +53,20 @@ export function OrdersView({ shopId, serverParams, initialData }: { shopId: stri
   };
 
   const columns: Column<Slice>[] = [
-    { id: 'order', header: 'Order', primary: true, cell: (row) => <span className="font-mono">{row.shopOrderId.slice(0, 8)}</span> },
+    { id: 'order', header: 'Order', primary: true, cell: (row) => <span className="font-mono">{orderReference(row.shopOrderId)}</span> },
     { id: 'status', header: 'Status', cell: (row) => <Badge variant={STATUS_VARIANT[row.status] ?? 'outline'}>{orderStatusLabel(row.status)}</Badge> },
     { id: 'items', header: 'Items', cell: (row) => row.items.length },
     { id: 'subtotal', header: 'Subtotal', cell: (row) => formatMoney(row.subtotalMinor, row.currency) },
     {
       id: 'date',
       header: 'Date',
-      cell: (row) => {
-        const at = formatInstant(row.createdAt);
-        return (
-          <time dateTime={at.iso} title={at.utc}>
-            {at.text}
-          </time>
-        );
-      },
+      cell: (row) => <LocalTime value={row.createdAt} />,
     },
   ];
 
   const data = orders.data;
-  const busy = orders.isPlaceholderData;
+  const listPending = useListNavigationPending();
+  const busy = orders.isPlaceholderData || listPending;
 
   return (
     <div className="space-y-6">
@@ -81,7 +82,7 @@ export function OrdersView({ shopId, serverParams, initialData }: { shopId: stri
         <select
           id="orders-status"
           value={params.status ?? ''}
-          onChange={(event) => router.push(hrefFor(event.target.value || undefined))}
+          onChange={(event) => (beginListNavigation(), router.push(hrefFor(event.target.value || undefined)))}
           className="h-11 rounded-lg border border-input bg-background px-3 text-sm sm:h-8"
         >
           <option value="">All statuses</option>
@@ -95,7 +96,7 @@ export function OrdersView({ shopId, serverParams, initialData }: { shopId: stri
 
       <div role="region" aria-label="Orders">
         {orders.isError ? (
-          <SectionError error={orders.error} onRetry={() => void orders.refetch()} firstPageHref={pathname} />
+          <SectionError error={orders.error} onRetry={() => void orders.refetch()} firstPageHref={hrefFor(params.status)} />
         ) : !data ? (
           <TableRowsSkeleton name="orders" />
         ) : data.items.length === 0 && !busy ? (
@@ -104,7 +105,7 @@ export function OrdersView({ shopId, serverParams, initialData }: { shopId: stri
               <>
                 <p>No orders on this page.</p>
                 <Button asChild variant="outline" className="min-h-11 sm:min-h-8">
-                  <Link href={hrefFor(params.status)}>First page</Link>
+                  <Link href={hrefFor(params.status)} onClick={beginListNavigation}>First page</Link>
                 </Button>
               </>
             ) : params.status ? (
@@ -125,14 +126,14 @@ export function OrdersView({ shopId, serverParams, initialData }: { shopId: stri
               <nav aria-label="Pages" className="flex items-center justify-between gap-3">
                 {params.cursor ? (
                   <Button asChild variant="outline" className="min-h-11 sm:min-h-8">
-                    <Link href={hrefFor(params.status)}>First page</Link>
+                    <Link href={hrefFor(params.status)} onClick={beginListNavigation}>First page</Link>
                   </Button>
                 ) : (
                   <span />
                 )}
                 {data.nextCursor && (
                   <Button asChild variant="outline" className="min-h-11 sm:min-h-8">
-                    <Link href={hrefFor(params.status, data.nextCursor)}>Next page</Link>
+                    <Link href={hrefFor(params.status, data.nextCursor)} onClick={beginListNavigation}>Next page</Link>
                   </Button>
                 )}
               </nav>

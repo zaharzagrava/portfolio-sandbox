@@ -2,6 +2,14 @@ import { describe, expect, it } from 'vitest';
 import { formatMoney } from './utils';
 
 describe('formatMoney', () => {
+  it('keeps the last digit of the largest safe amount', () => {
+    expect(formatMoney(Number.MAX_SAFE_INTEGER, 'EUR')).toBe('€90,071,992,547,409.91');
+  });
+
+  it('does not throw for a currency code the browser rejects', () => {
+    expect(formatMoney(1250, 'XX1')).toBe('XX1 1250');
+  });
+
   it('W02 U-money: USD shows two fraction digits from integer cents', () => {
     expect(formatMoney(89999, 'USD')).toBe('$899.99');
     expect(formatMoney(5, 'USD')).toBe('$0.05');

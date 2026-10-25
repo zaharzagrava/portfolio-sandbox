@@ -31,7 +31,7 @@ async function OrdersPage({ params, searchParams }: Props) {
 
 export default function Page(props: Props) {
   return (
-    <Suspense fallback={<ListPageSkeleton />}>
+    <Suspense fallback={<ListPageSkeleton action={false} selectOnly />}>
       <OrdersPage {...props} />
     </Suspense>
   );

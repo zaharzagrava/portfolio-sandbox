@@ -27,6 +27,8 @@ cfg.update({
     'ELASTICSEARCH_NODE': 'http://localhost:9200',
     'CLICKHOUSE_URL': 'http://localhost:8123', 'CLICKHOUSE_DATABASE': 'marketplace',
     'S3_ENDPOINT': 'http://localhost:9100',
+    'MEDIA_CDN_URL': 'http://localhost:9100/marketplace-media',  # MinIO, not 9000 (ClickHouse); derived files are public-read (docker-compose minio-init)
+    'VIDEO_CDN_URL': 'http://localhost:9100/marketplace-media',
     'SQS_ENDPOINT': 'http://localhost:9324', 'SQS_QUEUE_URL_PREFIX': 'http://localhost:9324/000000000000/',
     'DYNAMO_ENDPOINT': 'http://localhost:8100', 'DYNAMO_TABLE_PREFIX': 'local_',
     'CASSANDRA_CONTACT_POINTS': 'localhost:9042',

@@ -39,7 +39,7 @@ test.beforeAll(async ({ browser }) => {
     expect((await sellerCall('POST', '/api/auth/register', { email, password: NEW_USER_PASSWORD })).status).toBeLessThan(300);
     buyerId = userId(email);
     seedSlices(shopId, buyerId, [0, 1, 2, 3, 4].map((index) => ({ status: index % 2 ? 'PAID' : 'PENDING', createdAt: at(index * 10) })));
-    refs = (await readSlices(token, shopId)).map((slice) => slice.shopOrderId.slice(0, 8));
+    refs = (await readSlices(token, shopId)).map((slice) => slice.shopOrderId.slice(-8));
     expect(refs).toHaveLength(5);
   } finally {
     await context.close();
@@ -70,7 +70,7 @@ for (const role of ['ADMIN', 'STAFF', 'VIEWER'] as const) {
       const mine = await tokenOf(joined.member);
       const answer = await sellerCall('GET', `/api/shops/${shopId}/orders?limit=100`, undefined, mine);
       expect(answer.status).toBe(200);
-      expect((answer.data.items as { shopOrderId: string }[]).map((item) => item.shopOrderId.slice(0, 8))).toEqual(refs);
+      expect((answer.data.items as { shopOrderId: string }[]).map((item) => item.shopOrderId.slice(-8))).toEqual(refs);
     } finally {
       await joined.context.close();
     }

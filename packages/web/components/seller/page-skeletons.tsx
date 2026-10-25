@@ -48,16 +48,22 @@ export function OverviewSkeleton() {
   );
 }
 
-/** A heading with its primary action, an optional filter bar, then a header row and `rows` body rows. */
-export function ListPageSkeleton({ rows = 8, filters = true }: { rows?: number; filters?: boolean }) {
+/** A heading with its primary action (`action={false}` for none), an optional filter bar (`selectOnly`: one select, as the orders page has), then a header row and `rows` body rows. */
+export function ListPageSkeleton({ rows = 8, filters = true, action = true, selectOnly = false }: { rows?: number; filters?: boolean; action?: boolean; selectOnly?: boolean }) {
   return (
     <div aria-hidden="true" data-skeleton="list" className="space-y-6">
-      <Heading withAction />
+      <Heading withAction={action} />
       {filters && (
         <div data-region="toolbar" className="flex flex-wrap gap-3">
-          <Skeleton className="h-9 w-full sm:w-72" />
-          <Skeleton className="h-9 w-28" />
-          <Skeleton className="h-9 w-28" />
+          {selectOnly ? (
+            <Skeleton className="h-9 w-40" />
+          ) : (
+            <>
+              <Skeleton className="h-9 w-full sm:w-72" />
+              <Skeleton className="h-9 w-28" />
+              <Skeleton className="h-9 w-28" />
+            </>
+          )}
         </div>
       )}
       <div className="space-y-2">

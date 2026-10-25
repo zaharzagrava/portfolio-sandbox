@@ -86,16 +86,6 @@ export function readInventoryParams(raw: RawSearchParams): InventoryParams {
   };
 }
 
-/** The browser's `URLSearchParams` as the server's raw shape: a repeated key is an array, so both sides read it alike. */
-export function rawSearchParams(search: { keys(): Iterable<string>; getAll(key: string): string[] }): RawSearchParams {
-  const raw: RawSearchParams = {};
-  for (const key of new Set(search.keys())) {
-    const values = search.getAll(key);
-    raw[key] = values.length === 1 ? values[0] : values;
-  }
-  return raw;
-}
-
 export type OrdersParams = { status: ShopOrderStatus | undefined; cursor: string | undefined };
 /** An unsupported or repeated `status` is the default (all statuses), never an error (W04.R-10). */
 export function readOrdersParams(raw: RawSearchParams): OrdersParams {

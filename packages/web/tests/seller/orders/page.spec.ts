@@ -20,6 +20,17 @@ const ordersPath = (query = '') => `${shopPath(fx.shopId, 'orders')}${query}`;
 const lines = (...ids: string[]) => test.info().annotations.push({ type: 'aiqa-lines', description: ids.join(',') });
 const rowsOf = (page: Page) => page.getByRole('region', { name: 'Orders' }).locator('tbody tr');
 
+/** Clicks the Orders entry of the sidebar; on a phone the sidebar is hidden, so the menu is opened first. */
+async function openOrdersEntry(page: Page) {
+  const sidebar = page.getByRole('navigation').getByRole('link', { name: 'Orders', exact: true }).first();
+  if (await sidebar.isVisible()) {
+    await sidebar.click();
+    return;
+  }
+  await page.getByRole('button', { name: 'Open menu' }).last().click();
+  await page.getByRole('dialog').getByRole('link', { name: 'Orders', exact: true }).click();
+}
+
 test.describe('signed in', () => {
   test.beforeEach(async ({ page }) => {
     await signIn(page, fx.owner);
@@ -41,7 +52,7 @@ test.describe('signed in', () => {
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
     api.reset(); // the overview reads other things; only what the orders page asks for counts
     streams.length = 0;
-    await page.getByRole('navigation').getByRole('link', { name: 'Orders', exact: true }).first().click();
+    await openOrdersEntry(page);
     await expect(page).toHaveURL(ordersPath());
     await expect(page.getByRole('navigation').getByRole('link', { name: 'Orders', exact: true }).first()).toHaveAttribute('aria-current', 'page');
     await expect(page.getByRole('heading', { level: 1, name: 'Orders' })).toBeVisible();
@@ -99,7 +110,7 @@ test.describe('signed in', () => {
       }).observe(document, { childList: true, subtree: true });
     });
     await page.goto(shopPath(fx.shopId));
-    await page.getByRole('navigation').getByRole('link', { name: 'Orders', exact: true }).first().click();
+    await openOrdersEntry(page);
     await expect(rowsOf(page)).toHaveCount(6);
     const seen = await page.evaluate(() => (window as unknown as { __skeleton?: Record<string, unknown> }).__skeleton);
     expect(seen, 'the skeleton was on screen while the page loaded').toBeTruthy();

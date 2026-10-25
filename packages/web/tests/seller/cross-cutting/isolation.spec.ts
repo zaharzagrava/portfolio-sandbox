@@ -194,7 +194,7 @@ test.describe('Seller isolation: seller A and the data of seller B', () => {
     const items = orders.data.items as { shopOrderId: string; buyerId?: string }[];
     expect(items.length).toBeGreaterThan(0);
     const shop = await sellerCall('GET', `/api/shops/${seeded.shopId}`, undefined, seeded.token);
-    const needles = [shop.data.name as string, ...items.flatMap((item) => [item.shopOrderId.slice(0, 8), item.buyerId ?? ''])].filter(Boolean);
+    const needles = [shop.data.name as string, ...items.flatMap((item) => [item.shopOrderId.slice(-8), item.buyerId ?? ''])].filter(Boolean);
 
     await ownerWithShop(page, []);
     const theirs = await look(page, shopPath(seeded.shopId, 'orders'));

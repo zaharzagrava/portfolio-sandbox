@@ -160,7 +160,7 @@ test.describe('table', () => {
     await expect(rowsOf(page)).toHaveCount(20);
     for (const [index, slice] of slices.slice(0, 20).entries()) {
       const row = rowsOf(page).nth(index);
-      await expect(row.locator('th')).toHaveText(slice.shopOrderId.slice(0, 8));
+      await expect(row.locator('th')).toHaveText(slice.shopOrderId.slice(-8));
       await expect(row.locator('th span')).toHaveClass(/font-mono/);
       await expect(row.locator('td').nth(0)).toHaveText(slice.status[0] + slice.status.slice(1).toLowerCase());
       await expect(row.locator('td').nth(1)).toHaveText(String(slice.items.length));

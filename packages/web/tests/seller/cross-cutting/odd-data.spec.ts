@@ -340,7 +340,7 @@ test.describe('Odd data: the shop with 10,000 products and 5,000 orders', () => 
     await page.goto(shopPath(manifest.shopId, 'orders'));
     for (let pageNo = 0; ; pageNo++) {
       await expect(orderRowsOf(page).first()).toBeVisible();
-      const expected = api.items.slice(pageNo * 20, pageNo * 20 + 20).map((o) => o.shopOrderId.slice(0, 8));
+      const expected = api.items.slice(pageNo * 20, pageNo * 20 + 20).map((o) => o.shopOrderId.slice(-8));
       await expect.poll(async () => (await readOrderRows(page)).map((r) => r.id).join(','), { timeout: 15_000, message: `page ${pageNo}` }).toBe(expected.join(','));
       seen.push(...(await readOrderRows(page)).map((r) => r.id));
       const next = page.getByRole('link', { name: 'Next page' });
@@ -351,7 +351,7 @@ test.describe('Odd data: the shop with 10,000 products and 5,000 orders', () => 
       expect(pageNo).toBeLessThan(400);
     }
     expect(seen.length).toBe(manifest.orders.written);
-    expect(new Set(seen).size).toBe(new Set(api.items.map((o) => o.shopOrderId.slice(0, 8))).size);
+    expect(new Set(seen).size).toBe(new Set(api.items.map((o) => o.shopOrderId.slice(-8))).size);
   });
 
   // ------------------------------------------------------------------------------------------------ names, text, layout

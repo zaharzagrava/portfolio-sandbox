@@ -69,6 +69,8 @@ describe('W04 readCursor and the list readers', () => {
   it('orders: status and cursor', () => {
     expect(readOrdersParams({ status: 'PAID', cursor: 'x' })).toEqual({ status: 'PAID', cursor: 'x' });
     expect(readOrdersParams({ status: 'paid; drop' })).toEqual({ status: undefined, cursor: undefined });
+    expect(readOrdersParams({ status: 'BOGUS' }).status).toBeUndefined();
+    expect(readOrdersParams({ status: ['PAID', 'PENDING'] }).status).toBeUndefined();
   });
 
   it('team: tab (members default), invitation status (pending default), cursor', () => {

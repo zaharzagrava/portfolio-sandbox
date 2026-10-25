@@ -28,7 +28,6 @@ const slice = (over: Record<string, unknown> = {}) => ({
   status: 'PAID',
   subtotalMinor: 4900,
   currency: 'EUR',
-  buyerId: BUYER,
   createdAt: '2026-10-16T09:30:00.000Z',
   items: [item(1), item(2)],
   ...over,
@@ -59,7 +58,7 @@ describe('W04 shop orders', () => {
     const headers = within(table).getAllByRole('columnheader').map((cell) => cell.textContent);
     expect(headers).toEqual(expect.arrayContaining(['Order', 'Status', 'Items', 'Subtotal', 'Date']));
     const row = within(table).getAllByRole('row')[1];
-    expect(row).toHaveTextContent('abcdef12');
+    expect(row).toHaveTextContent('00000001');
     expect(row).not.toHaveTextContent('abcdef12-0000');
     expect(row).toHaveTextContent('Paid');
     expect(row).toHaveTextContent('2');
