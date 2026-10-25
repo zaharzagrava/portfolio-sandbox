@@ -1,11 +1,134 @@
+import { type Page, expect, test } from '@playwright/test';
+import { API_URL, NEW_USER_PASSWORD, SEED, register, sellerCall, uniqueEmail } from './helpers';
+import { UNKNOWN_ID, openSecondShop, tokenOf, watchApi } from './seller/cross-cutting/support';
+import { type Role, acceptInvite, covers, isPhone, memberWithRole, ownerByApi, sellerNav } from './support/seller-entry';
 import { execFileSync } from 'node:child_process';
-import { expect, test, type Page } from '@playwright/test';
-import { API_URL, NEW_USER_PASSWORD, SEED, register, sellerCall, uniqueEmail } from '../../helpers';
-import { UNKNOWN_ID, openSecondShop, tokenOf, watchApi } from '../cross-cutting/support';
-import { openShopByApi } from '../../seller-setup';
-import { rows, scalar, setShopStatus, userId } from '../support/db';
-import { acceptInvite, covers, isPhone, memberWithRole, ownerByApi, sellerNav, type Role } from './support';
+import { openShopByApi } from './seller-setup';
+import { rows, scalar, setShopStatus, userId } from './seller/support/db';
 
+// ---- menu entries by role
+{
+/**
+ * AI QA, area "entry", pass 2, section "menu entries by role": a real OWNER, ADMIN, STAFF and VIEWER (the last three made by the
+ * real invitation mail) each look at the whole menu. Expected entries come from the permission matrix of S03 (typed here on purpose,
+ * not read from the code under test). Each test names the map lines it covers in its title and in the `aiqa-lines` annotation.
+ */
+
+const HOME = '/dashboard/seller';
+const NO_ACCESS = "You don't have access to this page.";
+
+const READ = ['shop.read', 'members.read', 'products.read', 'orders.read'];
+const STAFF = [...READ, 'products.write', 'orders.manage'];
+const ADMIN = [...STAFF, 'shop.manage', 'members.manage', 'payouts.read', 'api-keys.manage', 'webhooks.manage', 'integrations.manage', 'widget.manage'];
+const MATRIX: Record<Role, string[]> = { VIEWER: READ, STAFF, ADMIN, OWNER: [...ADMIN, 'shop.delete', 'shop.export', 'billing.manage', 'sso.manage'] };
+
+/** id, label, section, permission that shows it (the spec's "Screens and routes"). */
+const ENTRIES: { id: string; label: string; section: string; needs: string | null }[] = [
+  { id: 'overview', label: 'Overview', section: '', needs: 'shop.read' },
+  { id: 'inventory', label: 'Inventory', section: '/inventory', needs: 'products.read' },
+  { id: 'orders', label: 'Orders', section: '/orders', needs: 'orders.read' },
+  { id: 'team', label: 'Team', section: '/team', needs: 'members.read' },
+  { id: 'payouts', label: 'Payouts', section: '/payouts', needs: 'payouts.read' },
+  { id: 'statements', label: 'Statements', section: '/statements', needs: 'payouts.read' },
+  { id: 'imports', label: 'Import', section: '/imports', needs: 'products.write' },
+  { id: 'exports', label: 'Order export', section: '/exports', needs: 'orders.manage' },
+  { id: 'integrations', label: 'Integrations', section: '/integrations', needs: 'integrations.manage' },
+  { id: 'campaigns', label: 'Campaigns', section: '/campaigns', needs: 'products.read' },
+  { id: 'widget', label: 'Storefront widget', section: '/widget', needs: 'widget.manage' },
+  { id: 'knowledge', label: 'Help documents', section: '/knowledge', needs: 'products.read' },
+  { id: 'api-keys', label: 'API keys', section: '/developers/api-keys', needs: 'shop.manage' },
+  { id: 'webhooks', label: 'Webhooks', section: '/developers/webhooks', needs: 'webhooks.manage' },
+  { id: 'api-version', label: 'API version', section: '/developers/api-version', needs: 'shop.manage' },
+  { id: 'logs', label: 'Request logs', section: '/developers/logs', needs: 'shop.read' },
+  { id: 'usage', label: 'Usage', section: '/developers/usage', needs: 'shop.read' },
+  { id: 'api-docs', label: 'API documentation', section: '', needs: null },
+];
+const DEVELOPERS = ['api-keys', 'webhooks', 'api-version', 'logs', 'usage', 'api-docs'];
+
+for (const role of ['OWNER', 'ADMIN', 'STAFF', 'VIEWER'] as const) {
+  test(`W04 AS-54: a ${role} sees exactly the entries the matrix gives, the others are refused by hand with the access panel @desktop`, async ({ browser }) => {
+    covers(...ENTRIES.map((e) => `entry.nav.${e.id}`), 'entry.nav.group-hidden-when-empty', 'entry.nav.team-invitations-gating', 'entry.shell.nav-account-links');
+    test.setTimeout(300_000);
+    const { page, context, member, shopId } = await memberWithRole(browser, role);
+    try {
+      // The API says what the role may do (the shop answer's myPermissions); the menu has to follow it.
+      const shop = (await sellerCall('GET', `/api/shops/${shopId}`, undefined, await tokenOf(member))).data as { myRole: string; myPermissions: string[] };
+      expect(shop.myRole).toBe(role);
+      expect([...shop.myPermissions].sort()).toEqual([...MATRIX[role]].sort());
+      const dbRole = rows(`select m.role from "ShopMembership" m where m."shopId"='${shopId}' and m."userId"='${userId(member.email)}'`)[0]!;
+      expect(dbRole[0]).toBe(role);
+
+      await page.goto(`${HOME}/${shopId}`);
+      const visible: string[] = [];
+      const hidden: string[] = [];
+      for (const entry of ENTRIES) {
+        const allowed = entry.needs === null || MATRIX[role].includes(entry.needs);
+        (allowed ? visible : hidden).push(entry.id);
+        const link = (await sellerNav(page)).getByRole('link', { name: entry.label, exact: true });
+        if (allowed) {
+          await expect.soft(link, `${role}: ${entry.id} shown`).toHaveCount(1);
+          const href = entry.id === 'api-docs' ? '/developers/docs' : `${HOME}/${shopId}${entry.section}`;
+          await expect.soft(link, `${role}: ${entry.id} href`).toHaveAttribute('href', href);
+        } else {
+          await expect.soft(link, `${role}: ${entry.id} hidden`).toHaveCount(0);
+        }
+        if (isPhone(page)) await page.keyboard.press('Escape');
+      }
+
+      // Group headings: a group with no entries has no heading; the Developers group of a VIEWER is Request logs, Usage, API documentation.
+      const nav = await sellerNav(page);
+      const developers = DEVELOPERS.filter((id) => visible.includes(id));
+      await expect.soft(nav.getByRole('heading', { level: 2 }), `${role}: headings`).toHaveText(['Shop', 'Developers', 'Account']);
+      if (role === 'VIEWER') {
+        expect.soft(developers, 'viewer Developers group').toEqual(['logs', 'usage', 'api-docs']);
+        await expect.soft(nav.locator('section').filter({ has: page.getByRole('heading', { name: 'Developers' }) }).getByRole('link')).toHaveText(['Request logs', 'Usage', 'API documentation']);
+      }
+      // Account links for every role.
+      await expect.soft(nav.getByRole('link', { name: 'Your orders' })).toHaveAttribute('href', '/orders');
+      await expect.soft(nav.getByRole('link', { name: 'Account security' })).toHaveAttribute('href', '/account/security');
+      if (isPhone(page)) await page.keyboard.press('Escape');
+
+      // Entries that are not shown: the page typed by hand is the access panel, in the shell; entries that are shown open their page.
+      for (const entry of ENTRIES.filter((e) => e.id !== 'api-docs')) {
+        const allowed = hidden.indexOf(entry.id) < 0;
+        await page.goto(`${HOME}/${shopId}${entry.section}`);
+        const panel = page.getByRole('heading', { name: NO_ACCESS });
+        if (allowed) await expect.soft(panel, `${role}: ${entry.id} page opens`).toHaveCount(0);
+        else {
+          await expect.soft(panel, `${role}: ${entry.id} refused by hand`).toBeVisible();
+          await expect.soft(page.getByText(`Your role in this shop: ${role[0]}${role.slice(1).toLowerCase()}.`)).toBeVisible();
+          await expect.soft(page.getByRole('link', { name: 'Overview' }).last()).toHaveAttribute('href', `${HOME}/${shopId}`);
+        }
+        // The page follows the menu: the entry that points here is the current one (when it is shown).
+        if (allowed) {
+          const current = (await sellerNav(page)).locator('[aria-current="page"]');
+          await expect.soft(current, `${role}: ${entry.id} marked current`).toHaveText(entry.label);
+          if (isPhone(page)) await page.keyboard.press('Escape');
+        }
+      }
+
+      // The click path for one shown entry (menu -> page -> marked current).
+      await page.goto(`${HOME}/${shopId}`);
+      await (await sellerNav(page)).getByRole('link', { name: 'Inventory', exact: true }).click();
+      await expect(page).toHaveURL(`${HOME}/${shopId}/inventory`);
+
+      // The Invitations tab of Team needs members.manage (ADMIN and OWNER).
+      await page.goto(`${HOME}/${shopId}/team?tab=invitations`);
+      const canInvite = MATRIX[role].includes('members.manage');
+      if (canInvite) await expect.soft(page.getByRole('heading', { name: NO_ACCESS }), `${role}: invitations open`).toHaveCount(0);
+      else await expect.soft(page.getByRole('heading', { name: NO_ACCESS }), `${role}: invitations refused`).toBeVisible();
+      await page.goto(`${HOME}/${shopId}/team`);
+      await expect.soft(page.getByRole('heading', { name: NO_ACCESS }), `${role}: team list opens`).toHaveCount(0);
+      await expect.soft(page.getByRole('tab', { name: /Invitations/ }), `${role}: Invitations tab`).toHaveCount(canInvite ? 1 : 0);
+    } finally {
+      await context.close();
+    }
+  });
+}
+}
+
+// ---- roles and the shop API
+{
 /**
  * AI QA, area "entry", pass 3, section "the shop API and roles": what /shops* answers and writes (Shop, ShopMembership,
  * ShopDirectory, ShopStatusHistory, Outbox), and what the menu shows for real members. The permission matrix is typed here on
@@ -25,37 +148,7 @@ const sql = (statement: string) => execFileSync('docker', ['exec', '-i', process
 const ENTRY_COUNT: Record<Role, number> = { OWNER: 18, ADMIN: 18, STAFF: 11, VIEWER: 9 };
 
 test.describe('entry: roles and the shop API', () => {
-  for (const role of ['OWNER', 'ADMIN', 'STAFF', 'VIEWER'] as const) {
-    test(`entry.rbac.${role.toLowerCase()}-nav: a real ${role} - the membership row, the shop answer and the menu agree with the matrix`, async ({ browser }) => {
-      covers(`entry.rbac.${role.toLowerCase()}-nav`);
-      test.setTimeout(180_000);
-      const { page, context, member, shopId } = await memberWithRole(browser, role);
-      try {
-        const dbRole = rows(`select m.role, m.source from "ShopMembership" m where m."shopId"='${shopId}' and m."userId"='${userId(member.email)}'`)[0]!;
-        expect(dbRole[0]).toBe(role);
-        const shop = (await sellerCall('GET', `/api/shops/${shopId}`, undefined, await tokenOf(member))).data as { myRole: string; myPermissions: string[] };
-        expect(shop.myRole).toBe(role);
-        expect([...shop.myPermissions].sort()).toEqual([...MATRIX[role]].sort());
-        await page.goto(`${HOME}/${shopId}`);
-        const nav = await sellerNav(page);
-        await expect(nav.getByRole('link')).toHaveCount(ENTRY_COUNT[role] + 2); // + Your orders, Account security
-        // Not in the matrix, not in the menu: the cannot-do entries are absent.
-        const manage = nav.getByRole('link', { name: /^(API keys|Webhooks|API version)$/ });
-        await expect(manage).toHaveCount(MATRIX[role].includes('shop.manage') ? (MATRIX[role].includes('webhooks.manage') ? 3 : 2) : 0);
-        if (role === 'OWNER') {
-          // The owner's permissions are all in the answer: 16 names, including the owner-only ones.
-          expect(shop.myPermissions).toEqual(expect.arrayContaining(['shop.delete', 'shop.export', 'sso.manage', 'billing.manage']));
-        } else {
-          expect(shop.myPermissions).not.toContain('shop.delete');
-          expect(shop.myPermissions).not.toContain('sso.manage');
-        }
-      } finally {
-        await context.close();
-      }
-    });
-  }
-
-  test('entry.rbac.hidden-page-direct-url entry.rbac.forbidden-panel-button entry.rbac.api-still-enforces: a hidden page typed by hand is the access panel with no data request; the API says 404, 403 and 401 in order', async ({ browser }) => {
+  test('W04 AS-54: a hidden page typed by hand is the access panel with no data request; the API says 404, 403 and 401 in order @desktop', async ({ browser }) => {
     covers('entry.rbac.hidden-page-direct-url', 'entry.rbac.forbidden-panel-button', 'entry.rbac.api-still-enforces');
     test.setTimeout(180_000);
     const { page, context, member, shopId, owner } = await memberWithRole(browser, 'VIEWER');
@@ -102,7 +195,7 @@ test.describe('entry: roles and the shop API', () => {
     }
   });
 
-  test('entry.rbac.session-role-ignored: an owner whose session still says BUYER sees the whole menu', async ({ page }) => {
+  test('W04 AS-54: an owner whose session still says BUYER sees the whole menu @desktop', async ({ page }) => {
     covers('entry.rbac.session-role-ignored');
     const member = await register(page);
     const session = await page.request.get('/api/bff/session');
@@ -114,7 +207,7 @@ test.describe('entry: roles and the shop API', () => {
     await expect((await sellerNav(page)).getByRole('link')).toHaveCount(ENTRY_COUNT.OWNER + 2);
   });
 
-  test('entry.rbac.role-change-effect entry.rbac.removed-member: a demoted member loses entries on the next load; a removed member gets the not-found page', async ({ browser }) => {
+  test('W04 AS-54: a demoted member loses entries on the next load; a removed member gets the not-found page @desktop', async ({ browser }) => {
     covers('entry.rbac.role-change-effect', 'entry.rbac.removed-member');
     test.setTimeout(240_000);
     const { page, context, member, shopId, owner } = await memberWithRole(browser, 'ADMIN');
@@ -174,7 +267,7 @@ test.describe('entry: roles and the shop API', () => {
     }
   });
 
-  test('entry.rbac.member-in-two-shops: OWNER of one shop and VIEWER of another gets different menus and the switch re-evaluates them', async ({ page }) => {
+  test('W04 AS-54: OWNER of one shop and VIEWER of another gets different menus and the switch re-evaluates them @desktop', async ({ page }) => {
     covers('entry.rbac.member-in-two-shops');
     const member = await register(page);
     const me = { email: member.email, password: NEW_USER_PASSWORD };
@@ -190,7 +283,7 @@ test.describe('entry: roles and the shop API', () => {
     await expect((await sellerNav(page)).getByRole('link')).toHaveCount(ENTRY_COUNT.VIEWER + 2);
     // Switch through the switcher from the owner's inventory to the other shop's: the menu follows.
     await page.goto(`${HOME}/${own.shopId}/developers/api-keys`);
-    const { sellerMenu } = await import('../../helpers');
+    const { sellerMenu } = await import('./helpers');
     const menu = await sellerMenu(page);
     await menu.getByRole('button').first().click();
     await menu.getByRole('list', { name: 'Your shops' }).getByRole('link').filter({ hasText: 'Aiqa Theirs' }).click();
@@ -200,7 +293,7 @@ test.describe('entry: roles and the shop API', () => {
     await expect((await sellerNav(page)).getByRole('link', { name: 'API keys' })).toHaveCount(0);
   });
 
-  test('entry.rbac.shop-roles-matrix-api entry.rbac.x-shop-id-mismatch entry.rbac.anonymous-401: the matrix route equals S03; a different X-Shop-Id is 400; every shop route refuses a request with no token', async ({ page }) => {
+  test('W04 AS-99: the matrix route equals S03; a different X-Shop-Id is 400; every shop route refuses a request with no token @desktop', async ({ page }) => {
     covers('entry.rbac.shop-roles-matrix-api', 'entry.rbac.x-shop-id-mismatch', 'entry.rbac.anonymous-401');
     const member = await register(page);
     const a = await openShopByApi(member);
@@ -256,7 +349,7 @@ test.describe('entry: roles and the shop API', () => {
     await expect(page).toHaveURL(/\/login/);
   });
 
-  test('entry.api.shops-create-response entry.api.outbox-shop-created: the 201 body, the rows in all four tables and the two outbox events written together', async ({ page }) => {
+  test('W04 AS-99: the 201 body, the rows in all four tables and the two outbox events written together @desktop', async ({ page }) => {
     covers('entry.api.shops-create-response', 'entry.api.outbox-shop-created');
     const member = await register(page);
     const token = await tokenOf({ email: member.email });
@@ -286,7 +379,7 @@ test.describe('entry: roles and the shop API', () => {
     await expect((await sellerNav(page)).getByRole('link')).toHaveCount(ENTRY_COUNT.OWNER + 2);
   });
 
-  test('entry.api.shops-mine-paging entry.api.shops-get entry.api.sandbox-not-listed: paging by cursor with bad values refused, one answer for unknown, malformed and foreign ids, sandbox shops not listed', async ({ page }) => {
+  test('W04 AS-99: paging by cursor with bad values refused, one answer for unknown, malformed and foreign ids, sandbox shops not listed @desktop', async ({ page }) => {
     covers('entry.api.shops-mine-paging', 'entry.api.shops-get', 'entry.api.sandbox-not-listed');
     const member = await register(page);
     const me = { email: member.email };
@@ -341,14 +434,14 @@ test.describe('entry: roles and the shop API', () => {
     await expect(page.getByRole('list', { name: 'Your shops' }).getByRole('listitem')).toHaveCount(3);
     await expect(page.getByText(sandboxName)).toHaveCount(0);
     await page.goto(`${HOME}/${live}`);
-    const { sellerMenu } = await import('../../helpers');
+    const { sellerMenu } = await import('./helpers');
     const menu = await sellerMenu(page);
     await menu.getByRole('button').first().click();
     await expect(menu.getByRole('list', { name: 'Your shops' }).getByRole('listitem')).toHaveCount(3);
     await expect(menu.getByText(sandboxName)).toHaveCount(0);
   });
 
-  test('entry.api.shops-patch-rename: an owner or admin renames (row, version, outbox); other fields and other roles are refused', async ({ browser }) => {
+  test('W04 AS-99: an owner or admin renames (row, version, outbox); other fields and other roles are refused @desktop', async ({ browser }) => {
     covers('entry.api.shops-patch-rename');
     test.setTimeout(180_000);
     const { page, context, shopId, owner } = await memberWithRole(browser, 'STAFF');
@@ -375,7 +468,7 @@ test.describe('entry: roles and the shop API', () => {
     }
   });
 
-  test('entry.api.shop-limit-db: the 11th owned shop is refused and ten parallel creations leave exactly ten', async ({ page }) => {
+  test('W04 AS-99: the 11th owned shop is refused and ten parallel creations leave exactly ten @desktop', async ({ page }) => {
     covers('entry.api.shop-limit-db');
     test.setTimeout(240_000);
     const member = await register(page);
@@ -399,7 +492,7 @@ test.describe('entry: roles and the shop API', () => {
     await expect(page.getByRole('heading', { name: 'Open your shop' })).toHaveCount(0);
   });
 
-  test('entry.api.demo-seller-state: the demo seller has one active shop as owner and signs in straight onto it', async ({ page }) => {
+  test('W04 AS-99: the demo seller has one active shop as owner and signs in straight onto it @desktop', async ({ page }) => {
     covers('entry.api.demo-seller-state');
     const login = await sellerCall('POST', '/api/auth/login', { email: SEED.seller, password: SEED.password });
     expect(login.status).toBe(200);
@@ -417,3 +510,4 @@ test.describe('entry: roles and the shop API', () => {
 });
 
 void (undefined as unknown as Page);
+}

@@ -1,7 +1,7 @@
 import { expect, test, type Browser, type BrowserContext, type Page } from '@playwright/test';
-import { API_URL, NEW_USER_PASSWORD, register, resetRateLimits, sellerCall, uniqueEmail } from '../../helpers';
-import { tokenOf, type Member } from '../cross-cutting/support';
-import { openShopByApi } from '../../seller-setup';
+import { API_URL, NEW_USER_PASSWORD, register, resetRateLimits, sellerCall, uniqueEmail } from '../helpers';
+import { tokenOf, type Member } from '../seller/cross-cutting/support';
+import { openShopByApi } from '../seller-setup';
 
 /** Shared set-up of the AI QA "entry" specs (roles, memberships, the drawer at phone width). */
 
@@ -69,7 +69,7 @@ export async function memberWithRole(browser: Browser, role: Role): Promise<{ pa
 
 /** The Seller navigation: the sidebar at desktop width, the drawer behind "Open menu" on a phone. */
 export async function sellerNav(page: Page) {
-  const { sellerMenu } = await import('../../helpers');
+  const { sellerMenu } = await import('../helpers');
   const menu = await sellerMenu(page);
   return menu.getByRole('navigation', { name: 'Seller' });
 }
