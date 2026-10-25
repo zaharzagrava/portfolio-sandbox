@@ -37,6 +37,7 @@ Other results are counted separately: **candidate** (not confirmed yet), **false
 | 3d | 2026-10-25 | Map-driven pass 1, inventory area (40 of 174 lines, permanent specs; also triage of the cache builder's 9 failing lines) | inventory | 2 new (B-053, B-054); B-030 and B-023 confirmed | 1 (B-055) | 5 test mistakes fixed | B-023, B-030 | 0 | 35 pass, 4 bug, 1 n/a; 40 pass / 8 fail (4 real bugs on desktop and mobile) |
 | 4 | 2026-10-25 | Tracks: production build (monkey 10 min, fuzzer 10 min, recheck of dev-only findings) and security scanners (Semgrep, gitleaks, audit, Schemathesis, ZAP) | whole seller area + dependencies | 8 (B-056 to B-061, B-063; B-005 and B-026 now real on production) | 1 (B-062) | 1 (B-003 dev-only) | B-035 found again by Semgrep | 0 | Critical dependency holes: Next.js, DOMPurify, multer |
 | 5a | 2026-10-25 | Map-driven pass 2, entry area (70 lines, permanent specs, desktop and mobile) | entry | 1 new (B-065); B-023 and B-026 re-confirmed; flake `submit-happy-path` explained by B-040 | 0 | 0 | B-023, B-026, B-040 | 0 | 63 pass, 5 bug, 2 unreachable; all four roles checked on 18 menu entries |
+| 5b | 2026-10-25 | Map-driven pass 2, inventory area (70 lines, 5 new permanent specs, desktop and mobile) | inventory | 7 new (B-066 to B-072); B-024, B-030, B-051 re-confirmed | 0 | 0 | B-024, B-030, B-051 | 0 | 54 pass, 13 bug, 3 blocked |
 
 ## How to read it
 
