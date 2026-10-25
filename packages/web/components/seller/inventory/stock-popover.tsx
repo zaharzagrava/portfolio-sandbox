@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, type FormEvent, type ReactNode } from 'react';
+import { useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { toast } from 'sonner';
 import { ProblemPanel } from '@/components/seller/problem-states';
 import { Button } from '@/components/ui/button';
@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverAnchor, PopoverContent } from '@/components/ui/popover';
 import { problemFromError, type Problem } from '@/lib/api/errors';
-import { fetchProduct, useAdjustStock, type InventoryRow } from '@/lib/api/seller-products';
+import { ARCHIVED_ELSEWHERE, fetchProduct, useAdjustStock, type InventoryRow } from '@/lib/api/seller-products';
 import { STOCK_ERROR, stockError } from './product-form';
 
 /** The codes that say the row on screen is out of date: the page shows the explanation (AS-41) and the list refetches. */
@@ -68,10 +68,21 @@ function StockForm({ shopId, row, onDone, onStale }: { shopId: string; row: Inve
   const [changedTo, setChangedTo] = useState<number | null>(null);
   const [problem, setProblem] = useState<Problem | null>(null);
   const adjust = useAdjustStock(shopId);
+  // A ref, not state: two presses a few milliseconds apart both see the same render, and the version may be read first.
+  const sending = useRef(false);
 
   async function submit(event: FormEvent) {
     event.preventDefault();
-    if (adjust.isPending) return;
+    if (sending.current || adjust.isPending) return;
+    sending.current = true;
+    try {
+      await send();
+    } finally {
+      sending.current = false;
+    }
+  }
+
+  async function send() {
     if (stockError(text)) {
       setInvalid(true);
       return;
@@ -88,6 +99,11 @@ function StockForm({ shopId, row, onDone, onStale }: { shopId: string; row: Inve
       if (failure.code === 'version_conflict') {
         try {
           const latest = await fetchProduct(shopId, row.id);
+          if (latest.status === 'ARCHIVED') {
+            onStale(ARCHIVED_ELSEWHERE);
+            onDone();
+            return;
+          }
           setVersion(latest.version);
           setChangedTo(latest.quantity);
           return;
@@ -127,9 +143,23 @@ function StockForm({ shopId, row, onDone, onStale }: { shopId: string; row: Inve
           </p>
         )}
         {changedTo !== null && (
-          <p id={`stock-${row.id}-changed`} role="status" className="text-sm text-amber-900 dark:text-amber-100">
-            Stock changed to {changedTo} while you were editing.
-          </p>
+          <div className="grid justify-items-start gap-2">
+            <p id={`stock-${row.id}-changed`} role="status" className="text-sm text-amber-900 dark:text-amber-100">
+              Stock changed to {changedTo} while you were editing.
+            </p>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="min-h-11 sm:min-h-7"
+              onClick={() => {
+                setText(String(changedTo));
+                setChangedTo(null);
+              }}
+            >
+              Load latest
+            </Button>
+          </div>
         )}
       </div>
       {problem && <ProblemPanel problem={problem} context={{ place: 'dialog' }} />}

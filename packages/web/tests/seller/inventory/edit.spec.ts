@@ -285,15 +285,16 @@ test.describe('Edit product dialog', () => {
     expect([row.title, row.status, row.version]).toEqual(['Edit Mug', 'ARCHIVED', 2]);
   });
 
-  test('[inventory.edit.extra-1] after Load latest the archived product refuses the save with the stale text (409 product_archived)', async ({ page }) => {
+  test('[inventory.edit.extra-1] after Load latest a product archived meanwhile refuses the save with the stale text (409 product_archived)', async ({ page }) => {
     test.info().annotations.push({ type: 'aiqa-lines', description: 'inventory.edit.extra-1' });
     const { member, shopId, id, token } = await seedOne(page);
     await openInventory(page, member, shopId);
     await openEdit(page, 'Edit Mug');
     await field(page, 'Title').fill('Too Late');
-    await archiveByApi(token, shopId, id);
+    expect((await sellerCall('PATCH', `/api/shops/${shopId}/products/${id}`, { expectedVersion: 1, priceMinor: 999 }, token)).status).toBe(200);
     await save(page).click();
     await editDialog(page).getByRole('button', { name: 'Load latest' }).click();
+    await archiveByApi(token, shopId, id);
     await field(page, 'Title').fill('Still Too Late');
     const api = watchApi(page);
     await save(page).click();

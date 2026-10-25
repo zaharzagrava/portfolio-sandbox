@@ -5,7 +5,8 @@ import { toast } from 'sonner';
 import { ConfirmDialog } from '@/components/seller/confirm-dialog';
 import { ProblemPanel } from '@/components/seller/problem-states';
 import { problemFromError, type Problem } from '@/lib/api/errors';
-import { fetchProduct, useArchiveProduct, type InventoryRow } from '@/lib/api/seller-products';
+import { Button } from '@/components/ui/button';
+import { ARCHIVED_ELSEWHERE, fetchProduct, isArchivedNow, useArchiveProduct, type InventoryRow } from '@/lib/api/seller-products';
 import { STALE_ROW_CODES } from './stock-popover';
 
 /**
@@ -26,17 +27,45 @@ export function ArchiveDialog({
 }) {
   const archive = useArchiveProduct(shopId);
   const [problem, setProblem] = useState<Problem | null>(null);
+  // The version after "Load latest"; the row on screen still carries the old one.
+  const [latest, setLatest] = useState<{ id: string; version: number } | null>(null);
+  const [loadingLatest, setLoadingLatest] = useState(false);
+
+  async function loadLatest() {
+    if (!row) return;
+    setLoadingLatest(true);
+    try {
+      const product = await fetchProduct(shopId, row.id);
+      if (product.status === 'ARCHIVED') {
+        onStale(ARCHIVED_ELSEWHERE);
+        onClose();
+        return;
+      }
+      setLatest({ id: row.id, version: product.version });
+      setProblem(null);
+    } catch (error) {
+      setProblem(problemFromError(error));
+    } finally {
+      setLoadingLatest(false);
+    }
+  }
 
   async function confirm() {
     if (!row) return;
     setProblem(null);
     try {
-      const expectedVersion = row.version ?? (await fetchProduct(shopId, row.id)).version;
+      const expectedVersion = (latest?.id === row.id ? latest.version : undefined) ?? row.version ?? (await fetchProduct(shopId, row.id)).version;
       await archive.mutateAsync({ productId: row.id, expectedVersion });
       toast.success('Product archived');
       onClose();
     } catch (error) {
       const failure = problemFromError(error);
+      // a list row that is stale because the product was archived elsewhere is an archive, not "changed"
+      if (failure.code === 'version_conflict' && (await isArchivedNow(shopId, row.id))) {
+        onStale(ARCHIVED_ELSEWHERE);
+        onClose();
+        return;
+      }
       if (failure.code && STALE_ROW_CODES.includes(failure.code)) {
         onStale(failure);
         onClose();
@@ -53,13 +82,25 @@ export function ArchiveDialog({
       onOpenChange={(open) => {
         if (!open) {
           setProblem(null);
+          setLatest(null);
           onClose();
         }
       }}
       title="Archive product?"
       description="It disappears from the storefront and search. You can restore it."
       confirmLabel="Archive product"
-      error={problem ? <ProblemPanel problem={problem} context={{ place: 'dialog' }} /> : undefined}
+      error={
+        problem ? (
+          <div className="grid justify-items-start gap-2">
+            <ProblemPanel problem={problem} context={{ place: 'dialog' }} className="w-full" />
+            {problem.code === 'version_conflict' && (
+              <Button type="button" variant="outline" size="sm" className="min-h-11 sm:min-h-7" disabled={loadingLatest} onClick={() => void loadLatest()}>
+                Load latest
+              </Button>
+            )}
+          </div>
+        ) : undefined
+      }
       onConfirm={confirm}
     />
   );

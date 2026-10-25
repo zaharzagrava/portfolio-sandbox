@@ -304,7 +304,7 @@ test.describe('Add product: creating', () => {
     expect(new URL(sent.url).origin).toBe(new URL(page.url()).origin); // a relative path
     expect(sent.headers['x-csrf-token'], 'CSRF header').toBeTruthy();
     expect(sent.headers['authorization']).toBeUndefined();
-    expect(sent.headers['idempotency-key']).toBeUndefined(); // the page sends none (map line: info)
+    expect(sent.headers['idempotency-key']).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/); // one key per create attempt (B-034)
     expect(sent.body).toEqual({ title: values.title, brand: 'Woodworks', category: 'Kitchen', description: 'A fine spoon', priceMinor: 2450, currency: 'EUR', quantity: 7 });
 
     const rows = await sql<Record<string, unknown>>(`SELECT * FROM "Product" WHERE "shopId" = $1 AND title = $2`, [shopId, values.title]);

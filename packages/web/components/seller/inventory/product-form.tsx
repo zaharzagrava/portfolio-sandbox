@@ -5,13 +5,15 @@ import { toast } from 'sonner';
 import { PRODUCT_LIMITS, type ProductCreateRequest, type ProductUpdateRequest } from '@marketplace-sandbox/contracts';
 import { ProblemPanel } from '@/components/seller/problem-states';
 import { Button } from '@/components/ui/button';
+import { currentOpener } from '@/lib/focus-opener';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
 import { problemFromError, type Problem } from '@/lib/api/errors';
-import { fetchProduct, useCreateProduct, useProduct, useUpdateProduct, type ProductMemberView } from '@/lib/api/seller-products';
+import { newIdempotencyKey } from '@/lib/api/idempotency';
+import { ARCHIVED_ELSEWHERE, fetchProduct, isArchivedNow, useCreateProduct, useProduct, useUpdateProduct, type ProductMemberView } from '@/lib/api/seller-products';
 import { fractionDigitsOf, parseMoneyInput } from '@/lib/seller/money-input';
 
 /**
@@ -89,7 +91,7 @@ function validate(values: Values, fractionDigits: number): Errors {
   if (title) errors.title = title;
   if (brand) errors.brand = brand;
   if (category) errors.category = category;
-  if ([...values.description].length > PRODUCT_LIMITS.description.max) errors.description = `Use at most ${PRODUCT_LIMITS.description.max} characters.`;
+  if ([...values.description.trim()].length > PRODUCT_LIMITS.description.max) errors.description = `Use at most ${PRODUCT_LIMITS.description.max} characters.`;
   const price = priceError(values.price, fractionDigits);
   if (price) errors.price = price;
   const stock = stockError(values.stock);
@@ -130,6 +132,8 @@ export function ProductForm({ mode, shopId, currency, fractionDigits, product, o
   const [conflict, setConflict] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [loadingLatest, setLoadingLatest] = useState(false);
+  // One key per create attempt: a repeat of the same request gets the same product back; a changed form is a new attempt.
+  const [attemptKey, setAttemptKey] = useState<string | null>(null);
   const create = useCreateProduct(shopId);
   const update = useUpdateProduct(shopId);
   const pending = create.isPending || update.isPending || loadingLatest;
@@ -156,6 +160,7 @@ export function ProductForm({ mode, shopId, currency, fractionDigits, product, o
     });
     setProblem(null);
     setNotice(null);
+    setAttemptKey(null);
   }
 
   function focusField(field: Field) {
@@ -212,7 +217,9 @@ export function ProductForm({ mode, shopId, currency, fractionDigits, product, o
           currency,
           quantity: Number(now.stock),
         };
-        await create.mutateAsync(body);
+        const idempotencyKey = attemptKey ?? newIdempotencyKey();
+        setAttemptKey(idempotencyKey);
+        await create.mutateAsync({ ...body, idempotencyKey });
         toast.success('Product created');
       } else if (product) {
         const body = updateBody();
@@ -224,6 +231,8 @@ export function ProductForm({ mode, shopId, currency, fractionDigits, product, o
       onSaved();
     } catch (error) {
       const failure = problemFromError(error);
+      // a definite refusal ends the attempt; only a lost answer (no status, 5xx) is retried with the same key
+      if (failure.status >= 400 && failure.status < 500) setAttemptKey(null);
       if (failure.code === 'validation_failed' && failure.errors.length > 0) {
         const next: Errors = {};
         for (const entry of failure.errors) {
@@ -238,7 +247,9 @@ export function ProductForm({ mode, shopId, currency, fractionDigits, product, o
         }
       }
       if (failure.code === 'version_conflict' && mode === 'edit') {
-        setConflict(true);
+        // the change that made the version stale may be an archive: then "Load latest" would only lead to a refusal
+        if (product && (await isArchivedNow(shopId, product.id))) setProblem(ARCHIVED_ELSEWHERE);
+        else setConflict(true);
         return;
       }
       setProblem(failure);
@@ -312,7 +323,7 @@ export function ProductForm({ mode, shopId, currency, fractionDigits, product, o
 
       <div className="grid gap-1.5">
         <Label htmlFor={id('title')}>Title</Label>
-        <Input {...fieldProps('title')} aria-required="true" autoComplete="off" maxLength={PRODUCT_LIMITS.title.max + 50} />
+        <Input {...fieldProps('title')} aria-required="true" autoComplete="off" />
         {message('title')}
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
@@ -394,7 +405,7 @@ export function ProductDialog({
         className="max-h-dvh overflow-y-auto max-sm:h-dvh max-sm:max-w-none max-sm:rounded-none sm:max-w-lg"
         onOpenAutoFocus={(event) => {
           event.preventDefault();
-          opener.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+          opener.current = currentOpener();
           const first = content.current?.querySelector<HTMLElement>('input, textarea');
           (first ?? content.current)?.focus();
         }}
