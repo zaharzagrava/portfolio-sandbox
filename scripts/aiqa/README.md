@@ -98,3 +98,7 @@ Spec-versus-code gaps are not just listed; they are part of the flow and get fix
 2. Every fix has a permanent test in the normal suites (Playwright, Vitest/Jest, backend end-to-end).
 3. A full new AI pass over the whole map finds nothing new.
 4. The usual suites are green: backend end-to-end (`scripts/speedup/run-sharded.sh 8`), front-end Playwright (both projects), unit tests, lint and type check.
+
+## Tracks, limits
+
+All extra tracks (planted bugs, mutation, concurrency, isolation, prod build with monkey and fuzzer, accessibility and other browsers, human pass, code coverage, rule-based random tests, fresh-seed pass, security scanners) and the short list of things that keep the flow imperfect are in `TRACKS.md`.

@@ -12,20 +12,33 @@ Decided with the owner on 2026-10-25. First built and run on the four areas (ent
 6. `a11y-browsers`: an accessibility scan (axe) of every page state in the four areas and a run of the Playwright tests of the four areas in Firefox and WebKit (Safari engine) as well as Chromium.
 7. `human-pass`: a short list for the owner to click through at the end: look and feel, wording, things only a person judges. Generated from the maps (`scripts/aiqa/human-pass.md`).
 
+8. `code-coverage`: turn on code-coverage recording in the running app (web: V8 coverage through Playwright / `NODE_V8_COVERAGE` on the server; backend: V8 coverage of the API process) while the testers and the permanent tests run, then list the code of the four areas that nothing ever executed. Each unexecuted piece becomes a new map line (or a justified `n/a`). Answers "did we really test everything".
+9. `stateful`: rule-based random tests (fast-check model/command testing for the backend and for pure logic; for screens a small random-action runner on top of Playwright). The rules are written once ("stock never below 0", "an archived product is never shown to buyers", "a version only goes up by 1", "totals equal the sum of the lines"); the tool runs thousands of random action sequences and checks the rules after every step, and shrinks a failure to the shortest sequence.
+10. `fresh-seed-pass`: after a round is clean, run the whole map pass again with a different seed (different data, different random choices, different tester agents). The number of new findings compared with the first pass shows how much a single pass misses. A round is only closed when the fresh-seed pass finds nothing new.
+11. `security`: scanners on the four areas: Semgrep (code rules, run from Docker), Schemathesis (API fuzz from the OpenAPI document `GET /v1/openapi.json`, run from Docker against the production-build stack), OWASP ZAP baseline scan against the production build (Docker), plus dependency audit (`pnpm audit`) and a secrets scan (gitleaks). Findings go to the register like any bug; real ones are fixed with a test.
+
 ## Parked (do later, owner agreed)
 
-- Non-functional: speed under load (k6), security scanners (Semgrep, Schemathesis, ZAP), chaos and fault injection.
-- Fake services: mail, payments, storage are doubles; real-provider checks belong to a later hardening step. The invitation mail not arriving in the dev mailbox must be explained (stack or bug) while testing `entry`/team.
-- A second model family as independent reviewer (postponed by the owner).
 - Dev-server-only findings are accepted as duplicates of production questions until `prod-build` has re-checked them.
 
 ## Order of a full round
 
 1. Map-driven pass over all maps (testers), then confirm findings by hand.
 2. Fixer (gaps and bugs) with permanent tests, then re-check the touched lines.
-3. Tracks 3, 4, 6 (tests in normal suites; need the QA stack for Playwright parts, the backend test stack for backend parts: swap stacks, never both).
+3. Tracks 3, 4, 6, 9 (tests in normal suites; need the QA stack for Playwright parts, the backend test stack for backend parts: swap stacks, never both).
 4. Track 2 mutation (needs the test stack for the backend part; web part needs nothing).
 5. Track 5 prod build: monkey, fuzzer, re-check of dev-only findings.
-6. Track 1 planted bugs: measure the whole flow.
-7. Track 7 human pass by the owner.
-8. Repeat until a full round finds nothing new and all usual suites are green.
+6. Track 11 security scanners; track 8 coverage read-out (new map lines for unexecuted code, testers run them).
+7. Track 1 planted bugs: measure the whole flow.
+8. Track 10 fresh-seed pass.
+9. Track 7 human pass by the owner.
+10. Repeat until a full round, including the fresh-seed pass, finds nothing new and all usual suites are green.
+
+## The only things that keep this flow from being perfect (owner's list, 2026-10-25)
+
+Everything else is supposed to be done by the tracks above. These stay open on purpose:
+- Speed under load (k6 load tests): written down, to do later.
+- Real users on a live app, with monitoring and a slow rollout. Big companies get most of their confidence there.
+- A human clicking through once (`human-pass.md`).
+- Real mail and payments instead of fakes (the invitation mail that never reaches the dev mailbox must still be explained while testing).
+- A review by a model from a different company, to cover the blind spots of Claude testing Claude (postponed by the owner).

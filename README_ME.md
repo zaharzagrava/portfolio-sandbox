@@ -291,8 +291,23 @@ consumer, a missing search index) and checks the agent reports each, then one ru
 - `scripts/sdd/` the loop (`implement-specs.sh`, `checkpoint.sh`, `checkpoint-repair.sh`, `lib.sh`, `failures.py`, `report.py`, order files, checkpoint scripts in `checkpoints/`).
 - `scripts/vps/` the cloud runner. `scripts/qa/` QA agent, pipeline, charters, mutations, benchmark, throwaway stack. `scripts/infra/` doctors. `scripts/livespec`, `scripts/lessons`,
   `scripts/decisions`, `scripts/mutation`.
+- `scripts/aiqa/` the AI QA flow for a whole slice of the app (coverage maps, testers, fixer, extra tracks): see the section "AI QA: test a whole slice with a coverage map" below.
 - `specs/` per-capability spec folders (spec, plan, tasks, `questions.md`, `gaps.md`, `BLOCKED.md`), `specs/.checkpoints/` pass markers, `specs/.qa/` QA reports.
 - `docs/spec/` the living specification. `docs/lessons.md`. `docs/work/decisions/`. `docs/ops/incidents/`. `docs/reports/`. `docs/work/architecture/sdd-runbook.md` (why each part exists).
+
+## AI QA: test a whole slice with a coverage map
+
+Written 2026-10-25. Everything is in `scripts/aiqa/`; read its `README.md` (method and decisions), `TRACKS.md` (extra tracks) and `IDEAS.md` (the practices considered).
+
+What it is, in plain words:
+- Goal: find out if an AI can FULLY test a set of pages alone. Pages in scope now: entry (open shop, picker, switcher, menu), inventory, media (photos), orders.
+- A map (`scripts/aiqa/coverage/<area>.tsv`) lists every button, toggle, field and rule on those pages with its spec id and its code trace (screen -> API -> service -> database table) and a status with date. `node scripts/aiqa/status.mjs` shows how much is checked.
+- Mapper agents build the map from the LIVE page, the spec and the code, and list the spec-versus-code gaps (`<area>.gaps.md`). Testers go through the lines until none is `untested`. Gaps and bugs are fixed right away by a fixer agent on the local branch `qa/seller-dashboard` (test first, one commit per fix, never pushed); product choices are decided by the fixer (best for the portfolio showcase, patterns from `docs/work/architecture/pattern-map.md` where they fit).
+- Extra tracks: planted bugs (measures how many the flow finds), mutation testing, concurrency and double-click tests, seller-A-versus-B isolation, production build with the monkey tester and API fuzzer, accessibility and Firefox/WebKit, human click-through list (`scripts/aiqa/human-pass.md`), code coverage of what the agents ran, rule-based random tests, a fresh-seed repeat pass, security scanners.
+- Memory limit: the dev stack and the backend test stack cannot run together; the flow swaps them.
+- Bugs: `docs/work/qa-bug-register.md` (each finding), `docs/work/qa-bug-scoreboard.md` (counts per round).
+- Not covered on purpose (owner's list): speed under load, real users with monitoring and slow rollout, a human click-through, real mail and payments, a review by another company's model.
+
 
 ## Run the e2e specs (verified path)
 
