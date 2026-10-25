@@ -82,3 +82,12 @@ Idea from the owner: start each page with fixed seed data, save its HTML, and co
 - On the next run it compares: unchanged parts keep their status and date; changed or new parts become `untested` and go to the mapper again; parts that vanished are marked `removed`.
 - A spec file change (hash of the spec id's file) also marks the lines that cite it as `untested`.
 - Limit: HTML only shows what a page shows in its first state. Dialogs, error states and states after actions are only seen by driving the page, so snapshots must include scripted states (open each dialog, trigger each error), and the code hash covers the rest.
+
+## Gaps are fixed right away (owner decision, 2026-10-25)
+
+Spec-versus-code gaps are not just listed; they are part of the flow and get fixed in the same round.
+- Spec states a clear rule and code breaks it: fix the code, test first.
+- Code is clearly intended and spec is stale: fix the spec text and say so in the commit.
+- Real product decision (two reasonable behaviors, or big): write the question in plain words in `findings/<area>.owner-questions.md` and go on; do not block.
+- One commit per fix on the local branch `qa/seller-dashboard` (worktree `../portfolio-sandbox-qa`), checked by `scripts/qa/guard-tests.sh`; never pushed. `prompts/fixer.md` is the instruction.
+- After fixes, the touched map lines go back to `untested` and the tester re-checks them (a fix without a re-check does not count).
