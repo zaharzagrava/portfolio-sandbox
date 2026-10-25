@@ -51,3 +51,11 @@ Source: A = AI agent charter, M = monkey tester, F = API fuzzer, T = a test foun
 | B-023 | 2026-10-25 | A (entry pass 1, P1F2) | login / returnTo | Reproduced again as a permanent failing spec (entry-index.spec.ts) | confirmed | |
 
 Corrections to the mapper's gap list (entry pass 1): the site-wide offline banner DOES show outside the shop shell; a non-UUID shop id answers the same 404 `shop_not_found` as an unknown one; `/dashboard` redirects work in the browser. These are not bugs.
+| B-043 | 2026-10-25 | A (media pass 1, P1F3) | photos page | On an ARCHIVED product's photos page the file chooser and Remove stay enabled; Save returns 409 and the sentence says "The list has been refreshed" but no refetch happens and the draft stays. Database unchanged. | confirmed (medium) | spec media-page.spec.ts |
+| B-044 | 2026-10-25 | A (media pass 1, P1F5) | photo upload | An animated PNG is accepted as READY although S29.R-09 says one frame only (animated WebP is correctly rejected as `multi_frame`). Seen 3 times. | confirmed (medium) | |
+| B-045 | 2026-10-25 | A (media pass 1, P1F6) | photo upload | With 18 photos in the draft, choosing 5 files sends 2 and silently drops 3 with no message | confirmed (low) | |
+| B-046 | 2026-10-25 | A (media pass 1, P1F7) | photos page | A bad product id says "shop" in the not-found text; an unknown or foreign product shows "Try again" on a 404 | candidate (low) | |
+| B-047 | 2026-10-25 | A (media pass 1, P1F8) | photo upload | Chrome logs the storage POST as `net::ERR_ABORTED` although storage answers 204 | candidate (info) | |
+| B-002 | 2026-10-25 | A (media pass 1, P1F4) | photos | Reproduced again as a permanent failing spec (media-page.spec.ts): URLs on port 9000 (ClickHouse answers 400), blocked by the page's CSP; on 9100 the bucket answers 403 | confirmed (high) | to fix |
+| B-023 | 2026-10-25 | A (media pass 1, P1F1) | login / returnTo | Also on the photos, inventory and orders pages: returnTo is cut to `/dashboard/seller/<shop>` (W04 AS-84) | confirmed (medium), extends B-023 | |
+| B-026 | 2026-10-25 | A (media pass 1, P1F2) | not-found | "We couldn't find that shop." pages answer HTTP 200 (W04 FR-001 wants 404) on the dev server; production build still to be checked | confirmed on dev | prod-build check pending |
