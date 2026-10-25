@@ -1,6 +1,7 @@
 'use client';
 
 import { useRef, useState, type ReactNode } from 'react';
+import { currentOpener } from '@/lib/focus-opener';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
@@ -64,7 +65,7 @@ export function ConfirmDialog({
         onOpenAutoFocus={(event) => {
           event.preventDefault();
           // There is no DialogTrigger here, so the control that opened the dialog is remembered by hand.
-          opener.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+          opener.current = currentOpener();
           cancelRef.current?.focus();
         }}
         onCloseAutoFocus={(event) => {

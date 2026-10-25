@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useSyncExternalStore, type ReactNode } from 'react';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { ListPageSkeleton } from '@/components/seller/page-skeletons';
 
 /**
@@ -43,4 +43,41 @@ export function PendingContent({ children }: { children: ReactNode }) {
   useEffect(() => set(false), [pathname]);
   useEffect(() => () => set(false), []); // leaving the dashboard (Account links) unmounts the shell
   return pending ? <ListPageSkeleton /> : children;
+}
+
+/**
+ * A paging link or filter of a list was pressed and the next page has not arrived yet (W04 R-26). The address only changes when
+ * the server has answered, so the list cannot tell by itself that it is waiting: the press says so, and the new address clears it.
+ */
+let listWaiting = false;
+let listTimer: ReturnType<typeof setTimeout> | undefined;
+const listListeners = new Set<() => void>();
+const emitList = () => listListeners.forEach((listener) => listener());
+const subscribeList = (listener: () => void) => {
+  listListeners.add(listener);
+  return () => {
+    listListeners.delete(listener);
+  };
+};
+
+function setList(next: boolean) {
+  clearTimeout(listTimer);
+  if (next) listTimer = setTimeout(() => setList(false), GIVE_UP_MS);
+  if (listWaiting === next) return;
+  listWaiting = next;
+  emitList();
+}
+
+/** Called by a paging link's click or a filter's change. */
+export function beginListNavigation() {
+  setList(true);
+}
+
+/** `true` from the press until the list's address changes; the list dims its rows and sets `aria-busy`. */
+export function useListNavigationPending(): boolean {
+  const search = useSearchParams()?.toString() ?? '';
+  const pending = useSyncExternalStore(subscribeList, () => listWaiting, () => false);
+  useEffect(() => setList(false), [search]);
+  useEffect(() => () => setList(false), []);
+  return pending;
 }

@@ -1,6 +1,8 @@
 'use client';
 
+import { useRef } from 'react';
 import { MoreHorizontalIcon } from 'lucide-react';
+import { rememberOpener } from '@/lib/focus-opener';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
@@ -22,12 +24,13 @@ export type RowMenuItem = {
  * opens remembers the trigger as the control to return to.
  */
 export function RowMenu({ label, items, disabledReason }: { label: string; items: RowMenuItem[]; disabledReason?: string | null }) {
+  const trigger = useRef<HTMLButtonElement>(null);
   const visible = items.filter((item) => !item.hidden);
   if (visible.length === 0) return null;
   return (
     <DropdownMenu modal={false}>
       <DropdownMenuTrigger asChild>
-        <Button type="button" variant="ghost" size="icon" aria-label={`Actions for ${label}`} className="min-h-11 min-w-11 sm:min-h-8 sm:min-w-8">
+        <Button ref={trigger} type="button" variant="ghost" size="icon" aria-label={`Actions for ${label}`} className="min-h-11 min-w-11 sm:min-h-8 sm:min-w-8">
           <MoreHorizontalIcon aria-hidden="true" />
         </Button>
       </DropdownMenuTrigger>
@@ -44,6 +47,7 @@ export function RowMenu({ label, items, disabledReason }: { label: string; items
             variant={item.destructive ? 'destructive' : 'default'}
             disabled={item.disabled || Boolean(disabledReason)}
             onSelect={() => {
+              rememberOpener(trigger.current);
               setTimeout(item.onSelect, 0);
             }}
           >

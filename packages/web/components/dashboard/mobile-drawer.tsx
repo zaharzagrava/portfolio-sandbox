@@ -2,7 +2,7 @@
 
 import { MenuIcon } from 'lucide-react';
 import { usePathname } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import type { ShopListItem } from '@/lib/api/seller';
@@ -20,6 +20,14 @@ export function MobileDrawer({ shop, shops, nextCursor }: { shop: SidebarShop; s
   const [openedAt, setOpenedAt] = useState(pathname);
 
   if (open && openedAt !== pathname) setOpen(false);
+
+  // Growing to the desktop width shows the sidebar: the drawer must not stay on top of it with the page locked (B-079).
+  useEffect(() => {
+    const desktop = window.matchMedia('(min-width: 1024px)');
+    const close = () => desktop.matches && setOpen(false);
+    desktop.addEventListener('change', close);
+    return () => desktop.removeEventListener('change', close);
+  }, []);
 
   return (
     <div role="region" aria-label="Shop bar" className="flex items-center gap-2 border-b bg-background px-2 py-1 lg:hidden">
