@@ -17,8 +17,8 @@ Decided with the owner on 2026-10-25. First built and run on the four areas (ent
 10. `fresh-seed-pass`: DROPPED on 2026-10-25 (see order of a full round).
 11. `security`: scanners on the four areas: Semgrep (code rules, run from Docker), Schemathesis (API fuzz from the OpenAPI document `GET /v1/openapi.json`, run from Docker against the production-build stack), OWASP ZAP baseline scan against the production build (Docker), plus dependency audit (`pnpm audit`) and a secrets scan (gitleaks). Findings go to the register like any bug; real ones are fixed with a test.
 
-12. `fault-injection`: freeze ONE helper service (database, Redis, Kafka, search, storage, queue ...) for under 5 minutes while the spec presses real buttons, then unfreeze and check: an honest message within 25 seconds, no fake success, one clean retry, data consistent, outbox published. Runner `scripts/aiqa/tracks/fault-injection/run.mjs`; map `coverage/fault-injection.tsv`; spec `packages/web/tests/aiqa/fault-injection.spec.ts` (skips itself unless the runner sets `AIQA_FAULT=1`).
-13. `odd-data`: one throwaway shop with 10,000 products and 5,000 orders full of odd data (six scripts, emoji, right-to-left, 120-letter words, rounding prices, currencies with 0/2/3 decimals, instants around midnight UTC viewed from far time zones). Seed `scripts/aiqa/tracks/odd-data/seed.mjs`; map `coverage/odd-data.tsv`; spec `packages/web/tests/aiqa/odd-data.spec.ts` (skips itself without `/tmp/fe/odd-data.json`).
+12. `fault-injection`: freeze ONE helper service (database, Redis, Kafka, search, storage, queue ...) for under 5 minutes while the spec presses real buttons, then unfreeze and check: an honest message within 25 seconds, no fake success, one clean retry, data consistent, outbox published. Runner `scripts/aiqa/tracks/fault-injection/run.mjs`; map `coverage/fault-injection.tsv`; spec `packages/web/tests/seller/cross-cutting/fault-injection.spec.ts` (skips itself unless the runner sets `AIQA_FAULT=1`).
+13. `odd-data`: one throwaway shop with 10,000 products and 5,000 orders full of odd data (six scripts, emoji, right-to-left, 120-letter words, rounding prices, currencies with 0/2/3 decimals, instants around midnight UTC viewed from far time zones). Seed `scripts/aiqa/tracks/odd-data/seed.mjs`; map `coverage/odd-data.tsv`; spec `packages/web/tests/seller/cross-cutting/odd-data.spec.ts` (skips itself without `/tmp/fe/odd-data.json`).
 14. `flaky-history`: every run of the Playwright and backend suites appends one line per test (name, result, duration, date, commit) to a history file; `scripts/aiqa/flaky.mjs` prints tests that failed and passed on the same commit, or failed more than once in the last 20 runs. A test on that list is a bug to investigate, never to retry.
 
 ## Where every track lives (map, test, README)
@@ -29,16 +29,16 @@ Each track folder under `scripts/aiqa/tracks/<name>/` has a `README.md` in plain
 |---|---|---|---|---|
 | planted-bugs | `tracks/planted-bugs/README.md` | none (score) | `tracks/planted-bugs/probes/planted-probe.spec.ts` | `plant.sh`, `score.sh` |
 | mutation | `tracks/mutation/README.md` | none (survivors become tests) | web: `lib/seller/*.mutation.test.ts`, `nav.test.ts`; backend: unit specs | `pnpm mutation:web`, `tracks/mutation/backend.sh` |
-| concurrency | in the tests | lines in each area map | `packages/web/tests/seller-concurrency.spec.ts` (screens); backend: `libs/domains/catalog/product-concurrency.e2e-spec.ts`, `media/media-concurrency.e2e-spec.ts`, `orders/order-seller-concurrency.e2e-spec.ts` | Playwright; backend test stack |
-| seller-isolation | in the tests | lines in each area map | `packages/web/tests/seller-isolation.spec.ts` (screens); backend: `libs/domains/catalog/product-isolation.e2e-spec.ts`, `orders/order-seller-isolation.e2e-spec.ts` | Playwright; backend test stack |
+| concurrency | in the tests | lines in each area map | `packages/web/tests/seller/cross-cutting/concurrency.spec.ts` (screens); backend: `libs/domains/catalog/product-concurrency.e2e-spec.ts`, `media/media-concurrency.e2e-spec.ts`, `orders/order-seller-concurrency.e2e-spec.ts` | Playwright; backend test stack |
+| seller-isolation | in the tests | lines in each area map | `packages/web/tests/seller/cross-cutting/isolation.spec.ts` (screens); backend: `libs/domains/catalog/product-isolation.e2e-spec.ts`, `orders/order-seller-isolation.e2e-spec.ts` | Playwright; backend test stack |
 | prod-build | `tracks/prod-build/README.md` | none | monkey + fuzzer in `scripts/qa/` | `tracks/prod-build/run.sh` |
-| a11y-browsers | in `a11y-seller.spec.ts` | lines in each area map | `packages/web/tests/a11y-seller.spec.ts`, `PW_BROWSERS=1` Firefox | Playwright |
+| a11y-browsers | in `cross-cutting/a11y.spec.ts` | lines in each area map | `packages/web/tests/seller/cross-cutting/a11y.spec.ts`, `PW_BROWSERS=1` Firefox | Playwright |
 | human-pass | `human-pass.md` | none | none | the owner |
 | code-coverage | `tracks/code-coverage/README.md` | adds `<area>.coverage.*` lines | none | `tracks/code-coverage/report.mjs` |
 | stateful | `tracks/stateful/README.md` | lines in each area map | `lib/seller/seller-logic.property.test.ts`, `product-lifecycle.stateful.e2e-spec.ts` | Vitest, backend test stack |
 | security | `tracks/security/README.md` | none (`findings/security*.md`) | Semgrep rules + selftest | `tracks/security/run.sh` |
-| fault-injection | `tracks/fault-injection/README.md` | `coverage/fault-injection.tsv` | `tests/aiqa/fault-injection.spec.ts` | `tracks/fault-injection/run.mjs` |
-| odd-data | `tracks/odd-data/README.md` | `coverage/odd-data.tsv` | `tests/aiqa/odd-data.spec.ts` | `tracks/odd-data/seed.mjs` + Playwright |
+| fault-injection | `tracks/fault-injection/README.md` | `coverage/fault-injection.tsv` | `tests/seller/cross-cutting/fault-injection.spec.ts` | `tracks/fault-injection/run.mjs` |
+| odd-data | `tracks/odd-data/README.md` | `coverage/odd-data.tsv` | `tests/seller/cross-cutting/odd-data.spec.ts` | `tracks/odd-data/seed.mjs` + Playwright |
 | flaky-history | `tracks/flaky-history/README.md` | none | reporters in `tests/support/` and `backend/test/` | `scripts/aiqa/flaky.mjs` |
 
 ## A new feature: which tracks to run again
@@ -57,8 +57,8 @@ See "Adding a new feature to the flow" in `README.md`. Short form: map -> specs 
 1. Map-driven passes finish (testers). Specs move to the final layout `packages/web/tests/seller/<area>/`.
 2. Triage the findings, then FIX in one batch (`prompts/fixer.md`): cross-cutting fixes first, then one fixer per area in parallel. Fixers write ALL the code (and the missing backend race, isolation and stateful specs) and run only the type check and lint: no spec run after each change.
 3. Usual suites in a loop until green twice in a row, with ONE stack swap: test stack up, backend suite (includes the new backend specs); swap to the dev stack, front-end suite on both projects (includes every tester spec and the odd-data spec); then the fault-injection runner once (it pauses containers in short windows). Running the suites IS the re-check; the cache is for partial runs while fixing.
-4. Production build: monkey tester, API fuzzer, security scanners (Semgrep, Schemathesis, ZAP), recheck of dev-only findings.
-5. Measurements: code-coverage read-out (code nobody executed becomes new map lines, tested), backend mutation testing (test stack), planted-bugs round in its own checkout.
+4. Production build: SKIPPED in round 1 (owner tests it locally; it already ran once and settled B-003/B-005/B-026/B-031). Run again in a later round: monkey tester, API fuzzer, security scanners, recheck of dev-only findings.
+5. Measurements (never run yet except web mutation and the planted-bug probe): code-coverage read-out (code nobody executed becomes new map lines, tested), backend mutation testing (`tracks/mutation/backend.sh`, test stack, about 300 test runs), web mutation rerun on changed files (`pnpm mutation:web`, 10 minutes), planted-bugs round (`tracks/planted-bugs/`: run the QA flow in the planted checkout, then `score.sh`).
 6. Human pass by the owner (`human-pass.md`).
 7. If steps 4 or 5 find something new: small fix round, back to step 3. Done when a full round finds nothing new.
 
