@@ -38,6 +38,7 @@ Other results are counted separately: **candidate** (not confirmed yet), **false
 | 4 | 2026-10-25 | Tracks: production build (monkey 10 min, fuzzer 10 min, recheck of dev-only findings) and security scanners (Semgrep, gitleaks, audit, Schemathesis, ZAP) | whole seller area + dependencies | 8 (B-056 to B-061, B-063; B-005 and B-026 now real on production) | 1 (B-062) | 1 (B-003 dev-only) | B-035 found again by Semgrep | 0 | Critical dependency holes: Next.js, DOMPurify, multer |
 | 5a | 2026-10-25 | Map-driven pass 2, entry area (70 lines, permanent specs, desktop and mobile) | entry | 1 new (B-065); B-023 and B-026 re-confirmed; flake `submit-happy-path` explained by B-040 | 0 | 0 | B-023, B-026, B-040 | 0 | 63 pass, 5 bug, 2 unreachable; all four roles checked on 18 menu entries |
 | 5b | 2026-10-25 | Map-driven pass 2, inventory area (70 lines, 5 new permanent specs, desktop and mobile) | inventory | 7 new (B-066 to B-072); B-024, B-030, B-051 re-confirmed | 0 | 0 | B-024, B-030, B-051 | 0 | 54 pass, 13 bug, 3 blocked |
+| 5c | 2026-10-25 | Map-driven pass 2, media area (71 lines, 4 new permanent specs, desktop and mobile) | photos | 3 new (B-073, B-074 confirmed; B-077 info); B-002, B-043 re-confirmed | 2 (B-075, B-076) | 0 | B-002, B-043 | 0 | 55 pass, 12 bug, 4 blocked |
 
 ## How to read it
 
