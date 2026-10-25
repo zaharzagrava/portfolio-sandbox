@@ -1080,7 +1080,11 @@ test.describe('Archive and restore', () => {
       });
       await openRowAction(page, tOnyxMug, 'Archive');
       const confirm = dialogOf(page).getByRole('button', { name: 'Archive product' });
-      await confirm.dblclick();
+      // two presses in the same tick: the button disables after the first, so a dblclick would wait for it
+      await confirm.evaluate((button: HTMLElement) => {
+        button.click();
+        button.click();
+      });
       await expect(confirm).toBeDisabled();
       await expect(confirm).toHaveAttribute('aria-busy', 'true');
       await expect(dialogOf(page).getByRole('button', { name: 'Cancel' })).toBeDisabled();
