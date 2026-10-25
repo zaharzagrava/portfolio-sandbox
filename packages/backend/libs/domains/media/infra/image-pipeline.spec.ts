@@ -2,6 +2,7 @@ import sharp from 'sharp';
 import { bands, hamming } from '../domain/duplicate-match';
 import { RejectedImageError } from '../domain/reject-code';
 import {
+  animatedPng,
   animatedWebp,
   blankPhoto,
   displayP3Patch,
@@ -115,6 +116,7 @@ describe('image pipeline', () => {
     ['a GIF', gifImage, 'format_not_allowed'],
     ['a TIFF', tiffImage, 'format_not_allowed'],
     ['an animated WebP', animatedWebp, 'multi_frame'],
+    ['an animated PNG', animatedPng, 'multi_frame'],
     ['a 100-megapixel PNG header', hundredMegapixelPng, 'image_too_large'],
   ];
   it.each(rejections)(

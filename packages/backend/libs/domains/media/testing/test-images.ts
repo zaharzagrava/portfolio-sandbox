@@ -183,6 +183,24 @@ export async function animatedWebp(): Promise<Buffer> {
     .toBuffer();
 }
 
+/** A PNG that carries an `acTL` (animation control) chunk after its header: an APNG whose first frame is a normal image. */
+export async function animatedPng(): Promise<Buffer> {
+  const png = await sharp({
+    create: { width: 64, height: 48, channels: 3, background: '#f00' },
+  })
+    .png()
+    .toBuffer();
+  const data = Buffer.alloc(8);
+  data.writeUInt32BE(2, 0); // frames
+  const type = Buffer.from('acTL', 'latin1');
+  const length = Buffer.alloc(4);
+  length.writeUInt32BE(data.length, 0);
+  const crc = Buffer.alloc(4);
+  crc.writeUInt32BE(crc32(Buffer.concat([type, data])), 0);
+  const chunk = Buffer.concat([length, type, data, crc]);
+  return Buffer.concat([png.subarray(0, 33), chunk, png.subarray(33)]); // 8 signature + 25 IHDR
+}
+
 export const gifImage = (): Promise<Buffer> =>
   sharp({ create: { width: 64, height: 48, channels: 3, background: '#f00' } })
     .gif()

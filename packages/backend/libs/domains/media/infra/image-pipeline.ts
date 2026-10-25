@@ -32,6 +32,25 @@ function isAllowedFormat(meta: Metadata): boolean {
   return meta.format === 'heif' && meta.compression === 'av1';
 }
 
+/**
+ * An animated PNG (APNG) keeps its first frame in a normal image and adds an `acTL` chunk before the first `IDAT`;
+ * sharp reads one page either way, so the chunk list is walked here (chunk headers only, S29.R-09: one frame).
+ */
+function isAnimatedPng(input: Buffer): boolean {
+  const signature = Buffer.from([
+    0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
+  ]);
+  if (input.length < 8 || !input.subarray(0, 8).equals(signature)) return false;
+  let offset = 8;
+  while (offset + 8 <= input.length) {
+    const type = input.toString('latin1', offset + 4, offset + 8);
+    if (type === 'acTL') return true;
+    if (type === 'IDAT' || type === 'IEND') return false;
+    offset += 12 + input.readUInt32BE(offset);
+  }
+  return false;
+}
+
 /** Header-only inspection: nothing here decodes pixels, so a decompression bomb costs nothing (AS-16). */
 async function inspect(
   input: Buffer,
@@ -48,7 +67,8 @@ async function inspect(
   if (!meta.width || !meta.height) throw new RejectedImageError('not_an_image');
   if (meta.width * meta.height > MAX_INPUT_PIXELS)
     throw new RejectedImageError('image_too_large');
-  if ((meta.pages ?? 1) > 1) throw new RejectedImageError('multi_frame');
+  if ((meta.pages ?? 1) > 1 || isAnimatedPng(input))
+    throw new RejectedImageError('multi_frame');
   const swap = (meta.orientation ?? 1) >= 5;
   return {
     width: swap ? meta.height : meta.width,
