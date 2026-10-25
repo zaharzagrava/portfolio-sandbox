@@ -114,11 +114,13 @@ test.describe('entry: the open-shop form', () => {
     await expect(form.handle).toHaveAttribute('id', 'shop-slug');
     await expect(form.handle).toHaveAttribute('placeholder', 'my-shop');
     await expect(form.handle).toHaveAttribute('spellcheck', 'false');
-    // The typing limit of the Handle is 80, while the API refuses more than 40: the client check on blur is what catches it.
+    // B-041: the Name box stops at 80, the Handle box at 40 (S03.R-13: a slug is 3 to 40 characters).
+    await expect(form.handle).toHaveAttribute('maxlength', '40');
     await form.name.fill('n'.repeat(100));
     expect(await form.name.inputValue()).toHaveLength(80);
     await form.handle.fill('a'.repeat(100));
-    expect(await form.handle.inputValue()).toHaveLength(80);
+    expect(await form.handle.inputValue()).toHaveLength(40);
+    await form.handle.fill('ab');
     await form.name.focus();
     await expect(page.getByText(HANDLE_RULE)).toBeVisible();
   });
@@ -150,13 +152,14 @@ test.describe('entry: the open-shop form', () => {
     const stamp = Date.now().toString(36);
     const cases: [string, boolean][] = [
       ['ab', false],
-      ['a'.repeat(41), false],
       [`-lead${stamp}`, false],
       [`trail${stamp}-`, false],
       [`UPPER${stamp}`, false],
       [`p--${stamp}`, true],
       ['a'.repeat(40 - stamp.length) + stamp, true],
     ];
+    // 41 characters cannot be typed (the box stops at 40, B-041); only the API is asked
+    expect((await sellerCall('POST', '/api/shops', { name: 'Parity', slug: 'a'.repeat(41) }, token)).status, 'API on 41 characters').toBe(400);
     for (const [handle, accepted] of cases) {
       await form.handle.fill(handle);
       await form.name.focus();
