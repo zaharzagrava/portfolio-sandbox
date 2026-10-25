@@ -1,0 +1,12 @@
+diff --git a/packages/backend/libs/domains/catalog/domain/product-view.ts b/packages/backend/libs/domains/catalog/domain/product-view.ts
+index 759997f2..7760aba1 100644
+--- a/packages/backend/libs/domains/catalog/domain/product-view.ts
++++ b/packages/backend/libs/domains/catalog/domain/product-view.ts
+@@ -101,6 +101,7 @@ export const toMemberView = (p: ProductRecord): ProductMemberView => ({
+ 
+ /** Public view: no `sellerId`, no exact `quantity`, no status; `id` and `version` feed the ETag. */
+ export const toPublicView = (p: ProductRecord): ProductPublicView => ({
++  ...p,
+   id: p.id,
+   shopId: p.shopId,
+   title: p.title,

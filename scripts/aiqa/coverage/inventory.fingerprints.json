@@ -1,11 +1,15 @@
 {
  "inventory.add.button": {
-  "code": "cc9bd97d187e90e2",
+  "code": "03b4fd7749c541a1",
   "spec": "78bdb547bf3a0363",
   "at": "2026-10-25",
   "files": {
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
    "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62",
-   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e"
+   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.B-12": "27238a60ce5077ff",
@@ -14,11 +18,14 @@
   }
  },
  "inventory.add.button-no-currency": {
-  "code": "5e7927b68926a3a2",
+  "code": "5a30db01c0eae38b",
   "spec": "8f9b3d16186068d9",
   "at": "2026-10-25",
   "files": {
    "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899",
    "packages/web/lib/config.ts": "d08df08a4c1e2242"
   },
   "specs": {
@@ -26,11 +33,19 @@
   }
  },
  "inventory.add.button-suspended-closing": {
-  "code": "bc5d64db49986faf",
+  "code": "4373db5938a978f4",
   "spec": "70353983f3eb1f96",
   "at": "2026-10-25",
   "files": {
+   "packages/contracts/src/developer-platform/keys.ts": "444d734754f9c8e3",
+   "packages/contracts/src/developer-platform/webhooks.ts": "f8aae4c6f9163cf7",
+   "packages/web/components/seller/developers/api-keys-view.tsx": "2257e0ede17f139b",
+   "packages/web/components/seller/developers/webhooks-view.tsx": "4f3d9d99bd76e381",
    "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-developers.ts": "b89dff983d26aa6c",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899",
    "packages/web/lib/seller/permissions.ts": "e938842e33042b83"
   },
   "specs": {
@@ -39,11 +54,14 @@
   }
  },
  "inventory.add.button-viewer": {
-  "code": "bc5d64db49986faf",
+  "code": "97c5fdfae52a4953",
   "spec": "d9f05fad057de3a0",
   "at": "2026-10-25",
   "files": {
    "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899",
    "packages/web/lib/seller/permissions.ts": "e938842e33042b83"
   },
   "specs": {
@@ -53,23 +71,43 @@
   }
  },
  "inventory.add.cancel": {
-  "code": "f6fce6eb834d4cb9",
+  "code": "2cc16792a6bb4612",
   "spec": "2cae3e137e0ef0b1",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e"
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd"
   },
   "specs": {
    "W04.AS-94": "fda763c08f1ae4d8"
   }
  },
  "inventory.add.create-button": {
-  "code": "913e90c1df2deda0",
+  "code": "b37bde6c75718497",
   "spec": "b505bfdbd6e6e3b9",
   "at": "2026-10-25",
   "files": {
    "packages/backend/libs/domains/catalog/api/product.controller.ts": "8e9e10f4f4b368fe",
-   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e"
+   "packages/backend/libs/domains/catalog/api/product.dto.ts": "1ee0842eafbb0cbd",
+   "packages/backend/libs/domains/catalog/application/product-command.service.ts": "88c1d095f06a340d",
+   "packages/backend/libs/domains/catalog/infra/models/product.model.ts": "b0656bb99edfec60",
+   "packages/backend/migrations/20260808090000-product-inventory.js": "4a65c08eb15d88a6",
+   "packages/backend/migrations/20260808120000-fold-inventory-into-product.js": "aacef9f21305bdb2",
+   "packages/backend/migrations/20260925090000-create-chat-tables.js": "358ede1ec6827334",
+   "packages/backend/migrations/20261001120000-product-view-count.js": "99acd29211991504",
+   "packages/backend/migrations/20261001140000-shops-tenancy-expand.js": "ee553fcdf13e2504",
+   "packages/backend/migrations/20261001220000-product-fts.js": "bd3351f7d9ded480",
+   "packages/backend/migrations/20261002100000-catalog-import.js": "2db019d13c68da53",
+   "packages/backend/migrations/20261010150000-catalog-s05-expand-columns.js": "be62c4c6d364f5cd",
+   "packages/backend/migrations/20261012110000-catalog-s05-contract-fks.js": "2727866f3ef5fc4b",
+   "packages/backend/migrations/20261012110100-catalog-s05-contract-shop-not-null.js": "8a47c2555685c414",
+   "packages/backend/migrations/20261019000200-catalog-s05-restore-shop-not-null.js": "2e65f3b53087f5ee",
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd"
   },
   "specs": {
    "S05.B-01": "38d1efc7e38fe3bb",
@@ -78,12 +116,25 @@
   }
  },
  "inventory.add.create-db-row": {
-  "code": "7dea08dc25d4c93a",
+  "code": "bd0999dab1ca0f36",
   "spec": "4567cf3282e91f4d",
   "at": "2026-10-25",
   "files": {
    "packages/backend/libs/domains/catalog/application/product-command.service.ts": "88c1d095f06a340d",
-   "packages/backend/libs/domains/catalog/infra/product.repository.ts": "e16b828599363cf9"
+   "packages/backend/libs/domains/catalog/infra/models/product.model.ts": "b0656bb99edfec60",
+   "packages/backend/libs/domains/catalog/infra/product.repository.ts": "e16b828599363cf9",
+   "packages/backend/migrations/20260808090000-product-inventory.js": "4a65c08eb15d88a6",
+   "packages/backend/migrations/20260808120000-fold-inventory-into-product.js": "aacef9f21305bdb2",
+   "packages/backend/migrations/20260925090000-create-chat-tables.js": "358ede1ec6827334",
+   "packages/backend/migrations/20261001120000-product-view-count.js": "99acd29211991504",
+   "packages/backend/migrations/20261001140000-shops-tenancy-expand.js": "ee553fcdf13e2504",
+   "packages/backend/migrations/20261001220000-product-fts.js": "bd3351f7d9ded480",
+   "packages/backend/migrations/20261002100000-catalog-import.js": "2db019d13c68da53",
+   "packages/backend/migrations/20261010150000-catalog-s05-expand-columns.js": "be62c4c6d364f5cd",
+   "packages/backend/migrations/20261012110000-catalog-s05-contract-fks.js": "2727866f3ef5fc4b",
+   "packages/backend/migrations/20261012110100-catalog-s05-contract-shop-not-null.js": "8a47c2555685c414",
+   "packages/backend/migrations/20261019000200-catalog-s05-restore-shop-not-null.js": "2e65f3b53087f5ee",
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f"
   },
   "specs": {
    "S05.R-01": "acd20e042fdd68b7",
@@ -92,11 +143,13 @@
   }
  },
  "inventory.add.csrf-header": {
-  "code": "8c37aa6b041fb11a",
+  "code": "2cbd60aec23f314c",
   "spec": "f72ca0e7811020bb",
   "at": "2026-10-25",
   "files": {
-   "packages/web/lib/api/client.ts": "0fa4cb70bbc2d203"
+   "packages/web/lib/api/client.ts": "0fa4cb70bbc2d203",
+   "packages/web/lib/api/csrf.ts": "daf5cdfd0afe67b1",
+   "packages/web/lib/api/session-presence.ts": "d25930d0e67e2a05"
   },
   "specs": {
    "W04.AS-93": "2dc4bd824f07d87b",
@@ -104,11 +157,14 @@
   }
  },
  "inventory.add.dialog-keyboard": {
-  "code": "f6fce6eb834d4cb9",
+  "code": "2cc16792a6bb4612",
   "spec": "bc239ff020cd5b7d",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e"
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd"
   },
   "specs": {
    "W04.AS-94": "fda763c08f1ae4d8",
@@ -116,11 +172,14 @@
   }
  },
  "inventory.add.dialog-open": {
-  "code": "f6fce6eb834d4cb9",
+  "code": "2cc16792a6bb4612",
   "spec": "bc239ff020cd5b7d",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e"
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd"
   },
   "specs": {
    "W04.AS-94": "fda763c08f1ae4d8",
@@ -128,66 +187,133 @@
   }
  },
  "inventory.add.double-press": {
-  "code": "f6fce6eb834d4cb9",
+  "code": "2cc16792a6bb4612",
   "spec": "65469c1320ff2368",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e"
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd"
   },
   "specs": {
    "W04.R-23": "da8d8279d5f88703"
   }
  },
  "inventory.add.enter-key": {
-  "code": "f6fce6eb834d4cb9",
+  "code": "2cc16792a6bb4612",
   "spec": "a35bfe03f247cbc3",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e"
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd"
   },
   "specs": {
    "W04.AS-34": "eabea675046ec473"
   }
  },
  "inventory.add.field-brand": {
-  "code": "f6fce6eb834d4cb9",
+  "code": "9eb2ecfd2552bef0",
   "spec": "d396d4c0d99ef8b9",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e"
+   "packages/backend/libs/domains/catalog/infra/models/product.model.ts": "b0656bb99edfec60",
+   "packages/backend/migrations/20260808090000-product-inventory.js": "4a65c08eb15d88a6",
+   "packages/backend/migrations/20260808120000-fold-inventory-into-product.js": "aacef9f21305bdb2",
+   "packages/backend/migrations/20260925090000-create-chat-tables.js": "358ede1ec6827334",
+   "packages/backend/migrations/20261001120000-product-view-count.js": "99acd29211991504",
+   "packages/backend/migrations/20261001140000-shops-tenancy-expand.js": "ee553fcdf13e2504",
+   "packages/backend/migrations/20261001220000-product-fts.js": "bd3351f7d9ded480",
+   "packages/backend/migrations/20261002100000-catalog-import.js": "2db019d13c68da53",
+   "packages/backend/migrations/20261010150000-catalog-s05-expand-columns.js": "be62c4c6d364f5cd",
+   "packages/backend/migrations/20261012110000-catalog-s05-contract-fks.js": "2727866f3ef5fc4b",
+   "packages/backend/migrations/20261012110100-catalog-s05-contract-shop-not-null.js": "8a47c2555685c414",
+   "packages/backend/migrations/20261019000200-catalog-s05-restore-shop-not-null.js": "2e65f3b53087f5ee",
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd"
   },
   "specs": {
    "S05.R-02": "274f1d3a47afc616"
   }
  },
  "inventory.add.field-category": {
-  "code": "f6fce6eb834d4cb9",
+  "code": "9eb2ecfd2552bef0",
   "spec": "d396d4c0d99ef8b9",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e"
+   "packages/backend/libs/domains/catalog/infra/models/product.model.ts": "b0656bb99edfec60",
+   "packages/backend/migrations/20260808090000-product-inventory.js": "4a65c08eb15d88a6",
+   "packages/backend/migrations/20260808120000-fold-inventory-into-product.js": "aacef9f21305bdb2",
+   "packages/backend/migrations/20260925090000-create-chat-tables.js": "358ede1ec6827334",
+   "packages/backend/migrations/20261001120000-product-view-count.js": "99acd29211991504",
+   "packages/backend/migrations/20261001140000-shops-tenancy-expand.js": "ee553fcdf13e2504",
+   "packages/backend/migrations/20261001220000-product-fts.js": "bd3351f7d9ded480",
+   "packages/backend/migrations/20261002100000-catalog-import.js": "2db019d13c68da53",
+   "packages/backend/migrations/20261010150000-catalog-s05-expand-columns.js": "be62c4c6d364f5cd",
+   "packages/backend/migrations/20261012110000-catalog-s05-contract-fks.js": "2727866f3ef5fc4b",
+   "packages/backend/migrations/20261012110100-catalog-s05-contract-shop-not-null.js": "8a47c2555685c414",
+   "packages/backend/migrations/20261019000200-catalog-s05-restore-shop-not-null.js": "2e65f3b53087f5ee",
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd"
   },
   "specs": {
    "S05.R-02": "274f1d3a47afc616"
   }
  },
  "inventory.add.field-description": {
-  "code": "f6fce6eb834d4cb9",
+  "code": "9eb2ecfd2552bef0",
   "spec": "d396d4c0d99ef8b9",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e"
+   "packages/backend/libs/domains/catalog/infra/models/product.model.ts": "b0656bb99edfec60",
+   "packages/backend/migrations/20260808090000-product-inventory.js": "4a65c08eb15d88a6",
+   "packages/backend/migrations/20260808120000-fold-inventory-into-product.js": "aacef9f21305bdb2",
+   "packages/backend/migrations/20260925090000-create-chat-tables.js": "358ede1ec6827334",
+   "packages/backend/migrations/20261001120000-product-view-count.js": "99acd29211991504",
+   "packages/backend/migrations/20261001140000-shops-tenancy-expand.js": "ee553fcdf13e2504",
+   "packages/backend/migrations/20261001220000-product-fts.js": "bd3351f7d9ded480",
+   "packages/backend/migrations/20261002100000-catalog-import.js": "2db019d13c68da53",
+   "packages/backend/migrations/20261010150000-catalog-s05-expand-columns.js": "be62c4c6d364f5cd",
+   "packages/backend/migrations/20261012110000-catalog-s05-contract-fks.js": "2727866f3ef5fc4b",
+   "packages/backend/migrations/20261012110100-catalog-s05-contract-shop-not-null.js": "8a47c2555685c414",
+   "packages/backend/migrations/20261019000200-catalog-s05-restore-shop-not-null.js": "2e65f3b53087f5ee",
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd"
   },
   "specs": {
    "S05.R-02": "274f1d3a47afc616"
   }
  },
  "inventory.add.field-price": {
-  "code": "9db9e48a2c3db94d",
+  "code": "7839abcff88eb061",
   "spec": "944326aaa33de83c",
   "at": "2026-10-25",
   "files": {
+   "packages/backend/libs/domains/auctions/domain/proxy-bid.ts": "7bb4e359f1bd2409",
+   "packages/backend/libs/domains/catalog/infra/models/product.model.ts": "b0656bb99edfec60",
+   "packages/backend/migrations/20260808090000-product-inventory.js": "4a65c08eb15d88a6",
+   "packages/backend/migrations/20260808120000-fold-inventory-into-product.js": "aacef9f21305bdb2",
+   "packages/backend/migrations/20260925090000-create-chat-tables.js": "358ede1ec6827334",
+   "packages/backend/migrations/20261001120000-product-view-count.js": "99acd29211991504",
+   "packages/backend/migrations/20261001140000-shops-tenancy-expand.js": "ee553fcdf13e2504",
+   "packages/backend/migrations/20261001220000-product-fts.js": "bd3351f7d9ded480",
+   "packages/backend/migrations/20261002100000-catalog-import.js": "2db019d13c68da53",
+   "packages/backend/migrations/20261010150000-catalog-s05-expand-columns.js": "be62c4c6d364f5cd",
+   "packages/backend/migrations/20261012110000-catalog-s05-contract-fks.js": "2727866f3ef5fc4b",
+   "packages/backend/migrations/20261012110100-catalog-s05-contract-shop-not-null.js": "8a47c2555685c414",
+   "packages/backend/migrations/20261019000200-catalog-s05-restore-shop-not-null.js": "2e65f3b53087f5ee",
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
    "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd",
    "packages/web/lib/seller/money-input.ts": "a06b37dd9c97195a"
   },
   "specs": {
@@ -196,11 +322,26 @@
   }
  },
  "inventory.add.field-stock": {
-  "code": "f6fce6eb834d4cb9",
+  "code": "9eb2ecfd2552bef0",
   "spec": "5b8ab6f6c5ea1d2e",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e"
+   "packages/backend/libs/domains/catalog/infra/models/product.model.ts": "b0656bb99edfec60",
+   "packages/backend/migrations/20260808090000-product-inventory.js": "4a65c08eb15d88a6",
+   "packages/backend/migrations/20260808120000-fold-inventory-into-product.js": "aacef9f21305bdb2",
+   "packages/backend/migrations/20260925090000-create-chat-tables.js": "358ede1ec6827334",
+   "packages/backend/migrations/20261001120000-product-view-count.js": "99acd29211991504",
+   "packages/backend/migrations/20261001140000-shops-tenancy-expand.js": "ee553fcdf13e2504",
+   "packages/backend/migrations/20261001220000-product-fts.js": "bd3351f7d9ded480",
+   "packages/backend/migrations/20261002100000-catalog-import.js": "2db019d13c68da53",
+   "packages/backend/migrations/20261010150000-catalog-s05-expand-columns.js": "be62c4c6d364f5cd",
+   "packages/backend/migrations/20261012110000-catalog-s05-contract-fks.js": "2727866f3ef5fc4b",
+   "packages/backend/migrations/20261012110100-catalog-s05-contract-shop-not-null.js": "8a47c2555685c414",
+   "packages/backend/migrations/20261019000200-catalog-s05-restore-shop-not-null.js": "2e65f3b53087f5ee",
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd"
   },
   "specs": {
    "S05.R-19": "57c4aec5657946ea",
@@ -208,11 +349,27 @@
   }
  },
  "inventory.add.field-title": {
-  "code": "f6fce6eb834d4cb9",
+  "code": "2975c586f21c4fc2",
   "spec": "6f5163d5084ff95e",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e"
+   "packages/backend/libs/domains/catalog/domain/product-input.ts": "79e9c232f2ef4422",
+   "packages/backend/libs/domains/catalog/infra/models/product.model.ts": "b0656bb99edfec60",
+   "packages/backend/migrations/20260808090000-product-inventory.js": "4a65c08eb15d88a6",
+   "packages/backend/migrations/20260808120000-fold-inventory-into-product.js": "aacef9f21305bdb2",
+   "packages/backend/migrations/20260925090000-create-chat-tables.js": "358ede1ec6827334",
+   "packages/backend/migrations/20261001120000-product-view-count.js": "99acd29211991504",
+   "packages/backend/migrations/20261001140000-shops-tenancy-expand.js": "ee553fcdf13e2504",
+   "packages/backend/migrations/20261001220000-product-fts.js": "bd3351f7d9ded480",
+   "packages/backend/migrations/20261002100000-catalog-import.js": "2db019d13c68da53",
+   "packages/backend/migrations/20261010150000-catalog-s05-expand-columns.js": "be62c4c6d364f5cd",
+   "packages/backend/migrations/20261012110000-catalog-s05-contract-fks.js": "2727866f3ef5fc4b",
+   "packages/backend/migrations/20261012110100-catalog-s05-contract-shop-not-null.js": "8a47c2555685c414",
+   "packages/backend/migrations/20261019000200-catalog-s05-restore-shop-not-null.js": "2e65f3b53087f5ee",
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd"
   },
   "specs": {
    "S05.R-02": "274f1d3a47afc616",
@@ -220,32 +377,45 @@
   }
  },
  "inventory.add.fields-readonly-while-saving": {
-  "code": "f6fce6eb834d4cb9",
+  "code": "2cc16792a6bb4612",
   "spec": "8f846e0a8c3ab4a3",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e"
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd"
   },
   "specs": {
    "W04.AS-95": "399a29cff5b75f0a"
   }
  },
  "inventory.add.idempotency-key": {
-  "code": "2e72efa35cd2aadd",
+  "code": "70bbf6eb1222dbe6",
   "spec": "44136fa355b3678a",
   "at": "2026-10-25",
   "files": {
    "packages/backend/libs/domains/catalog/api/product.controller.ts": "8e9e10f4f4b368fe",
+   "packages/backend/libs/domains/catalog/api/product.dto.ts": "1ee0842eafbb0cbd",
+   "packages/backend/libs/infrastructure/idempotency/idempotent.decorator.ts": "ece7962518682c59",
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/contracts/src/search/shop-product-search.ts": "aed2f677d96f5388",
+   "packages/web/lib/api/client.ts": "0fa4cb70bbc2d203",
+   "packages/web/lib/api/orders.ts": "7631ea19bc997f81",
+   "packages/web/lib/api/parse.ts": "82453dbb70bf149b",
    "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd"
   },
   "specs": {}
  },
  "inventory.add.invalid-submit": {
-  "code": "f6fce6eb834d4cb9",
+  "code": "2cc16792a6bb4612",
   "spec": "3c0eab6f4d05b4c9",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e"
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd"
   },
   "specs": {
    "W04.AS-34": "eabea675046ec473",
@@ -253,22 +423,28 @@
   }
  },
  "inventory.add.leading-trailing-spaces": {
-  "code": "f6fce6eb834d4cb9",
+  "code": "2cc16792a6bb4612",
   "spec": "d396d4c0d99ef8b9",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e"
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd"
   },
   "specs": {
    "S05.R-02": "274f1d3a47afc616"
   }
  },
  "inventory.add.plan-limit": {
-  "code": "bfc2a8a10051ee2a",
+  "code": "04c3db345036f5f3",
   "spec": "dfc139a26338f05d",
   "at": "2026-10-25",
   "files": {
    "packages/backend/libs/domains/catalog/application/product-command.service.ts": "88c1d095f06a340d",
+   "packages/backend/libs/domains/catalog/domain/product-errors.ts": "84054f0c5bd343c2",
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
    "packages/web/lib/seller/problem-copy.ts": "4ef1088a69dc32f7"
   },
   "specs": {
@@ -288,11 +464,14 @@
   }
  },
  "inventory.add.price-errors": {
-  "code": "9db9e48a2c3db94d",
+  "code": "f7628f9bd7237b52",
   "spec": "3e601a69ada02ee5",
   "at": "2026-10-25",
   "files": {
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
    "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd",
    "packages/web/lib/seller/money-input.ts": "a06b37dd9c97195a"
   },
   "specs": {
@@ -326,11 +505,14 @@
   }
  },
  "inventory.add.server-validation": {
-  "code": "f6fce6eb834d4cb9",
+  "code": "2cc16792a6bb4612",
   "spec": "6f5163d5084ff95e",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e"
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd"
   },
   "specs": {
    "S05.R-02": "274f1d3a47afc616",
@@ -338,22 +520,27 @@
   }
  },
  "inventory.add.stock-edge-values": {
-  "code": "f6fce6eb834d4cb9",
+  "code": "2cc16792a6bb4612",
   "spec": "d396d4c0d99ef8b9",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e"
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd"
   },
   "specs": {
    "S05.R-02": "274f1d3a47afc616"
   }
  },
  "inventory.add.suspended-api": {
-  "code": "bfc2a8a10051ee2a",
+  "code": "56b9bcb24e82bfcf",
   "spec": "8611940302f0baca",
   "at": "2026-10-25",
   "files": {
    "packages/backend/libs/domains/catalog/application/product-command.service.ts": "88c1d095f06a340d",
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
    "packages/web/lib/seller/problem-copy.ts": "4ef1088a69dc32f7"
   },
   "specs": {
@@ -362,12 +549,15 @@
   }
  },
  "inventory.add.unicode-emoji-html": {
-  "code": "59fd57e31af576c5",
+  "code": "365c2109c8bc1c7d",
   "spec": "0e36ce90f9e6ebbc",
   "at": "2026-10-25",
   "files": {
    "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
-   "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62"
+   "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "S05.R-02": "274f1d3a47afc616",
@@ -375,11 +565,14 @@
   }
  },
  "inventory.add.viewer-api": {
-  "code": "39745627bf76ef05",
+  "code": "9a4f4a3ef38d6b6e",
   "spec": "5caed9318fb07b75",
   "at": "2026-10-25",
   "files": {
-   "packages/backend/libs/domains/catalog/api/product.controller.ts": "8e9e10f4f4b368fe"
+   "packages/backend/libs/domains/catalog/api/product.controller.ts": "8e9e10f4f4b368fe",
+   "packages/backend/libs/domains/catalog/api/product.dto.ts": "1ee0842eafbb0cbd",
+   "packages/backend/libs/domains/tenancy/api/shop.guard.ts": "d0836b3019ac98bf",
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f"
   },
   "specs": {
    "S03": "516b2d0fe923a967",
@@ -398,12 +591,31 @@
   }
  },
  "inventory.archive.confirm": {
-  "code": "019ff7e229de4109",
+  "code": "e03ff680c8f84ed9",
   "spec": "b032f5c91a68ed44",
   "at": "2026-10-25",
   "files": {
    "packages/backend/libs/domains/catalog/api/product.controller.ts": "8e9e10f4f4b368fe",
-   "packages/web/components/seller/inventory/archive-dialog.tsx": "e26b324fa29d0096"
+   "packages/backend/libs/domains/catalog/api/product.dto.ts": "1ee0842eafbb0cbd",
+   "packages/backend/libs/domains/catalog/application/product-command.service.ts": "88c1d095f06a340d",
+   "packages/backend/libs/domains/catalog/infra/models/product-status-history.model.ts": "20ecdb68a2a2ccab",
+   "packages/backend/libs/domains/catalog/infra/models/product.model.ts": "b0656bb99edfec60",
+   "packages/backend/migrations/20260808090000-product-inventory.js": "4a65c08eb15d88a6",
+   "packages/backend/migrations/20260808120000-fold-inventory-into-product.js": "aacef9f21305bdb2",
+   "packages/backend/migrations/20260925090000-create-chat-tables.js": "358ede1ec6827334",
+   "packages/backend/migrations/20261001120000-product-view-count.js": "99acd29211991504",
+   "packages/backend/migrations/20261001140000-shops-tenancy-expand.js": "ee553fcdf13e2504",
+   "packages/backend/migrations/20261001220000-product-fts.js": "bd3351f7d9ded480",
+   "packages/backend/migrations/20261002100000-catalog-import.js": "2db019d13c68da53",
+   "packages/backend/migrations/20261010150000-catalog-s05-expand-columns.js": "be62c4c6d364f5cd",
+   "packages/backend/migrations/20261010151000-catalog-s05-expand-tables.js": "0be6f3e30629dec1",
+   "packages/backend/migrations/20261012110000-catalog-s05-contract-fks.js": "2727866f3ef5fc4b",
+   "packages/backend/migrations/20261012110100-catalog-s05-contract-shop-not-null.js": "8a47c2555685c414",
+   "packages/backend/migrations/20261019000200-catalog-s05-restore-shop-not-null.js": "2e65f3b53087f5ee",
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/web/components/seller/inventory/archive-dialog.tsx": "e26b324fa29d0096",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd"
   },
   "specs": {
    "S05.B-05": "e750186ff1ce2d1d",
@@ -412,12 +624,14 @@
   }
  },
  "inventory.archive.dialog-open": {
-  "code": "597c1169ba62ed04",
+  "code": "e68da3618190bbca",
   "spec": "969042da90c84faf",
   "at": "2026-10-25",
   "files": {
    "packages/web/components/seller/confirm-dialog.tsx": "1980bb9e05cfd45b",
-   "packages/web/components/seller/inventory/archive-dialog.tsx": "e26b324fa29d0096"
+   "packages/web/components/seller/inventory/archive-dialog.tsx": "e26b324fa29d0096",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd"
   },
   "specs": {
    "W04.AS-40": "eabea675046ec473",
@@ -438,33 +652,41 @@
   }
  },
  "inventory.archive.last-product-empty": {
-  "code": "f8e21a9ec32c353f",
+  "code": "8d3533779f3910fb",
   "spec": "80ad5c35de6a3639",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62"
+   "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.AS-32": "eabea675046ec473"
   }
  },
  "inventory.archive.other-errors": {
-  "code": "302a8793bcb75429",
+  "code": "93a884e86418bc73",
   "spec": "655f0c0142a9aa97",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/inventory/archive-dialog.tsx": "e26b324fa29d0096"
+   "packages/web/components/seller/inventory/archive-dialog.tsx": "e26b324fa29d0096",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd"
   },
   "specs": {
    "W04.R-13": "91b32c5778f1aab7"
   }
  },
  "inventory.archive.stale": {
-  "code": "302a8793bcb75429",
+  "code": "5a138e1999c2ae08",
   "spec": "7cea8b94a2e6792c",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/inventory/archive-dialog.tsx": "e26b324fa29d0096"
+   "packages/web/components/seller/inventory/archive-dialog.tsx": "e26b324fa29d0096",
+   "packages/web/components/seller/inventory/stock-popover.tsx": "eed2b2621e4eba19",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd"
   },
   "specs": {
    "S05.R-09": "4fdc6c2cade60e16",
@@ -485,11 +707,13 @@
   }
  },
  "inventory.archive.version-conflict": {
-  "code": "a930e0d0bcd7d7a4",
+  "code": "75d2579db88bab4f",
   "spec": "0b8c758dae51c443",
   "at": "2026-10-25",
   "files": {
    "packages/web/components/seller/inventory/archive-dialog.tsx": "e26b324fa29d0096",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd",
    "packages/web/lib/seller/problem-copy.ts": "4ef1088a69dc32f7"
   },
   "specs": {
@@ -498,11 +722,14 @@
   }
  },
  "inventory.edit.archived-meanwhile": {
-  "code": "f6ede5000dbc67d9",
+  "code": "2c947c4ab1cd3fb8",
   "spec": "222f2f3e6bdc2fa0",
   "at": "2026-10-25",
   "files": {
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
    "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd",
    "packages/web/lib/seller/problem-copy.ts": "4ef1088a69dc32f7"
   },
   "specs": {
@@ -511,33 +738,46 @@
   }
  },
  "inventory.edit.cancel-escape": {
-  "code": "f6fce6eb834d4cb9",
+  "code": "2cc16792a6bb4612",
   "spec": "2cae3e137e0ef0b1",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e"
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd"
   },
   "specs": {
    "W04.AS-94": "fda763c08f1ae4d8"
   }
  },
  "inventory.edit.currency-readonly": {
-  "code": "f6fce6eb834d4cb9",
+  "code": "2cc16792a6bb4612",
   "spec": "3491c010f97619a7",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e"
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd"
   },
   "specs": {
    "S05.R-03": "befb86cf91442744"
   }
  },
  "inventory.edit.dialog-open": {
-  "code": "f6fce6eb834d4cb9",
+  "code": "fa4571f6be60b1c2",
   "spec": "39051fdcf4b09fd1",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e"
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/contracts/src/search/shop-product-search.ts": "aed2f677d96f5388",
+   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e",
+   "packages/web/lib/api/client.ts": "0fa4cb70bbc2d203",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/orders.ts": "7631ea19bc997f81",
+   "packages/web/lib/api/parse.ts": "82453dbb70bf149b",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd"
   },
   "specs": {
    "W04.AS-36": "8253b4dd2de7f301",
@@ -545,22 +785,28 @@
   }
  },
  "inventory.edit.double-press": {
-  "code": "f6fce6eb834d4cb9",
+  "code": "2cc16792a6bb4612",
   "spec": "65469c1320ff2368",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e"
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd"
   },
   "specs": {
    "W04.R-23": "da8d8279d5f88703"
   }
  },
  "inventory.edit.fields-rules": {
-  "code": "f6fce6eb834d4cb9",
+  "code": "2cc16792a6bb4612",
   "spec": "e10931dc513f586e",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e"
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd"
   },
   "specs": {
    "W04.AS-34": "eabea675046ec473",
@@ -568,22 +814,28 @@
   }
  },
  "inventory.edit.load-error": {
-  "code": "f6fce6eb834d4cb9",
+  "code": "2cc16792a6bb4612",
   "spec": "52e38c010edd645e",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e"
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd"
   },
   "specs": {
    "W04.B-14": "b1e4306c8993a29c"
   }
  },
  "inventory.edit.load-latest": {
-  "code": "f6fce6eb834d4cb9",
+  "code": "2cc16792a6bb4612",
   "spec": "391ebd37f023c7e0",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e"
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd"
   },
   "specs": {
    "W04.AS-37": "eabea675046ec473",
@@ -591,44 +843,72 @@
   }
  },
  "inventory.edit.open-from-search": {
-  "code": "f6fce6eb834d4cb9",
+  "code": "fa4571f6be60b1c2",
   "spec": "a0ac4ba3ba1dd2e0",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e"
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/contracts/src/search/shop-product-search.ts": "aed2f677d96f5388",
+   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e",
+   "packages/web/lib/api/client.ts": "0fa4cb70bbc2d203",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/orders.ts": "7631ea19bc997f81",
+   "packages/web/lib/api/parse.ts": "82453dbb70bf149b",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd"
   },
   "specs": {
    "W04.R-29": "8253b4dd2de7f301"
   }
  },
  "inventory.edit.price-legacy-column": {
-  "code": "da271207b52cb9e2",
+  "code": "01490f0dfee2f0d8",
   "spec": "4aaf65b37b3f7161",
   "at": "2026-10-25",
   "files": {
-   "packages/backend/libs/domains/catalog/infra/product.repository.ts": "e16b828599363cf9"
+   "packages/backend/libs/domains/auctions/domain/proxy-bid.ts": "7bb4e359f1bd2409",
+   "packages/backend/libs/domains/catalog/infra/product.repository.ts": "e16b828599363cf9",
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f"
   },
   "specs": {
    "S05": "1c3a69378d1ddf23"
   }
  },
  "inventory.edit.price-roundtrip": {
-  "code": "f6fce6eb834d4cb9",
+  "code": "2cc16792a6bb4612",
   "spec": "f319e961fb472aa4",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e"
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd"
   },
   "specs": {
    "W04.R-05": "64d916eeba5e0ef2"
   }
  },
  "inventory.edit.save-changed-only": {
-  "code": "f6fce6eb834d4cb9",
+  "code": "d2e080844fa5eda3",
   "spec": "c6b573fb21697687",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e"
+   "packages/backend/libs/domains/catalog/application/product-command.service.ts": "88c1d095f06a340d",
+   "packages/backend/libs/domains/catalog/infra/models/product.model.ts": "b0656bb99edfec60",
+   "packages/backend/migrations/20260808090000-product-inventory.js": "4a65c08eb15d88a6",
+   "packages/backend/migrations/20260808120000-fold-inventory-into-product.js": "aacef9f21305bdb2",
+   "packages/backend/migrations/20260925090000-create-chat-tables.js": "358ede1ec6827334",
+   "packages/backend/migrations/20261001120000-product-view-count.js": "99acd29211991504",
+   "packages/backend/migrations/20261001140000-shops-tenancy-expand.js": "ee553fcdf13e2504",
+   "packages/backend/migrations/20261001220000-product-fts.js": "bd3351f7d9ded480",
+   "packages/backend/migrations/20261002100000-catalog-import.js": "2db019d13c68da53",
+   "packages/backend/migrations/20261010150000-catalog-s05-expand-columns.js": "be62c4c6d364f5cd",
+   "packages/backend/migrations/20261012110000-catalog-s05-contract-fks.js": "2727866f3ef5fc4b",
+   "packages/backend/migrations/20261012110100-catalog-s05-contract-shop-not-null.js": "8a47c2555685c414",
+   "packages/backend/migrations/20261019000200-catalog-s05-restore-shop-not-null.js": "2e65f3b53087f5ee",
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd"
   },
   "specs": {
    "S05.B-02": "d89b50c34c873390",
@@ -638,55 +918,69 @@
   }
  },
  "inventory.edit.save-disabled-unchanged": {
-  "code": "f6fce6eb834d4cb9",
+  "code": "2cc16792a6bb4612",
   "spec": "382b301bcf9c9dec",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e"
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd"
   },
   "specs": {
    "W04.AS-36": "8253b4dd2de7f301"
   }
  },
  "inventory.edit.server-validation": {
-  "code": "f6fce6eb834d4cb9",
+  "code": "2cc16792a6bb4612",
   "spec": "d396d4c0d99ef8b9",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e"
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd"
   },
   "specs": {
    "S05.R-02": "274f1d3a47afc616"
   }
  },
  "inventory.edit.stock-via-form": {
-  "code": "f6fce6eb834d4cb9",
+  "code": "2cc16792a6bb4612",
   "spec": "1d409cdadf0e31d4",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e"
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd"
   },
   "specs": {
    "S05.B-02": "d89b50c34c873390"
   }
  },
  "inventory.edit.tags-not-editable": {
-  "code": "d8830e1d03082ee5",
+  "code": "2cc16792a6bb4612",
   "spec": "44136fa355b3678a",
   "at": "2026-10-25",
   "files": {
    "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
-   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e"
+   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd"
   },
   "specs": {}
  },
  "inventory.edit.version-conflict": {
-  "code": "e73eb94eaec1f628",
+  "code": "c72671125fe12dcb",
   "spec": "678f0a4fb504b463",
   "at": "2026-10-25",
   "files": {
    "packages/backend/libs/domains/catalog/application/product-command.service.ts": "88c1d095f06a340d",
-   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e"
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd"
   },
   "specs": {
    "S05.R-07": "858321e7603689d8",
@@ -695,22 +989,28 @@
   }
  },
  "inventory.empty.no-flash": {
-  "code": "f8e21a9ec32c353f",
+  "code": "8d3533779f3910fb",
   "spec": "d92cbbc0a3633b92",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62"
+   "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.R-26": "c060454e7c10d038"
   }
  },
  "inventory.empty.none": {
-  "code": "f8e21a9ec32c353f",
+  "code": "8d3533779f3910fb",
   "spec": "7824cc9946dee0ef",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62"
+   "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.AS-32": "eabea675046ec473",
@@ -718,11 +1018,13 @@
   }
  },
  "inventory.error.401": {
-  "code": "8c37aa6b041fb11a",
+  "code": "2cbd60aec23f314c",
   "spec": "fd597e82bb19e058",
   "at": "2026-10-25",
   "files": {
-   "packages/web/lib/api/client.ts": "0fa4cb70bbc2d203"
+   "packages/web/lib/api/client.ts": "0fa4cb70bbc2d203",
+   "packages/web/lib/api/csrf.ts": "daf5cdfd0afe67b1",
+   "packages/web/lib/api/session-presence.ts": "d25930d0e67e2a05"
   },
   "specs": {
    "W04.AS-87": "1a95828b4c1b5684",
@@ -730,11 +1032,12 @@
   }
  },
  "inventory.error.5xx-reference": {
-  "code": "b490ba440760cfa5",
+  "code": "7ff6a7777e8258d5",
   "spec": "d7c83d22d3b72334",
   "at": "2026-10-25",
   "files": {
    "packages/web/components/seller/problem-states.tsx": "b8ff53d2297a93b6",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
    "packages/web/lib/seller/problem-copy.ts": "4ef1088a69dc32f7"
   },
   "specs": {
@@ -752,13 +1055,21 @@
   }
  },
  "inventory.error.read-fail": {
-  "code": "e078b2a5f1199004",
+  "code": "dd3292b89adfac96",
   "spec": "e31aeae76dbea0fa",
   "at": "2026-10-25",
   "files": {
+   "packages/contracts/src/bff/order-page.ts": "534fbde0752fca2e",
+   "packages/contracts/src/bff/product-page.ts": "e69c1c8b8065afb4",
+   "packages/contracts/src/orders/order.ts": "825d6af4758d3309",
    "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62",
    "packages/web/components/seller/problem-states.tsx": "b8ff53d2297a93b6",
-   "packages/web/lib/api/orders.ts": "7631ea19bc997f81"
+   "packages/web/lib/api/client.ts": "0fa4cb70bbc2d203",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/orders.ts": "7631ea19bc997f81",
+   "packages/web/lib/api/parse.ts": "82453dbb70bf149b",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.AS-31": "c060454e7c10d038",
@@ -766,12 +1077,15 @@
   }
  },
  "inventory.filter.clear-filters": {
-  "code": "830f291960556a8b",
+  "code": "60bd9673fbfb99a7",
   "spec": "44160e96f2ce6a4d",
   "at": "2026-10-25",
   "files": {
    "packages/web/components/seller/filters-sheet.tsx": "1c0252f5f2bf94c4",
-   "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62"
+   "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.R-10": "8cd48a8baeb758a6"
@@ -789,11 +1103,14 @@
   }
  },
  "inventory.filter.empty-result": {
-  "code": "f8e21a9ec32c353f",
+  "code": "8d3533779f3910fb",
   "spec": "80ad5c35de6a3639",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62"
+   "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.AS-32": "eabea675046ec473"
@@ -881,22 +1198,40 @@
   }
  },
  "inventory.filter.url-reload": {
-  "code": "f8e21a9ec32c353f",
+  "code": "8d3533779f3910fb",
   "spec": "44160e96f2ce6a4d",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62"
+   "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.R-10": "8cd48a8baeb758a6"
   }
  },
  "inventory.list.only-own-shop": {
-  "code": "39745627bf76ef05",
+  "code": "78162e36b84e5ab1",
   "spec": "82b88a06f1825031",
   "at": "2026-10-25",
   "files": {
-   "packages/backend/libs/domains/catalog/api/product.controller.ts": "8e9e10f4f4b368fe"
+   "packages/backend/libs/domains/catalog/api/product.controller.ts": "8e9e10f4f4b368fe",
+   "packages/backend/libs/domains/catalog/api/product.dto.ts": "1ee0842eafbb0cbd",
+   "packages/backend/libs/domains/catalog/application/product-command.service.ts": "88c1d095f06a340d",
+   "packages/backend/libs/domains/catalog/infra/models/product.model.ts": "b0656bb99edfec60",
+   "packages/backend/migrations/20260808090000-product-inventory.js": "4a65c08eb15d88a6",
+   "packages/backend/migrations/20260808120000-fold-inventory-into-product.js": "aacef9f21305bdb2",
+   "packages/backend/migrations/20260925090000-create-chat-tables.js": "358ede1ec6827334",
+   "packages/backend/migrations/20261001120000-product-view-count.js": "99acd29211991504",
+   "packages/backend/migrations/20261001140000-shops-tenancy-expand.js": "ee553fcdf13e2504",
+   "packages/backend/migrations/20261001220000-product-fts.js": "bd3351f7d9ded480",
+   "packages/backend/migrations/20261002100000-catalog-import.js": "2db019d13c68da53",
+   "packages/backend/migrations/20261010150000-catalog-s05-expand-columns.js": "be62c4c6d364f5cd",
+   "packages/backend/migrations/20261012110000-catalog-s05-contract-fks.js": "2727866f3ef5fc4b",
+   "packages/backend/migrations/20261012110100-catalog-s05-contract-shop-not-null.js": "8a47c2555685c414",
+   "packages/backend/migrations/20261019000200-catalog-s05-restore-shop-not-null.js": "2e65f3b53087f5ee",
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f"
   },
   "specs": {
    "S05.R-04": "21bc016af2fd002b",
@@ -917,12 +1252,32 @@
   }
  },
  "inventory.list.page-size-20": {
-  "code": "b48aef4d5cf1ff60",
+  "code": "8b867d6103b66f5f",
   "spec": "daf4825c7ab24065",
   "at": "2026-10-25",
   "files": {
    "packages/backend/libs/domains/catalog/api/product.controller.ts": "8e9e10f4f4b368fe",
-   "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62"
+   "packages/backend/libs/domains/catalog/api/product.dto.ts": "1ee0842eafbb0cbd",
+   "packages/backend/libs/domains/catalog/application/product-command.service.ts": "88c1d095f06a340d",
+   "packages/backend/libs/domains/catalog/infra/models/product.model.ts": "b0656bb99edfec60",
+   "packages/backend/migrations/20260808090000-product-inventory.js": "4a65c08eb15d88a6",
+   "packages/backend/migrations/20260808120000-fold-inventory-into-product.js": "aacef9f21305bdb2",
+   "packages/backend/migrations/20260925090000-create-chat-tables.js": "358ede1ec6827334",
+   "packages/backend/migrations/20261001120000-product-view-count.js": "99acd29211991504",
+   "packages/backend/migrations/20261001140000-shops-tenancy-expand.js": "ee553fcdf13e2504",
+   "packages/backend/migrations/20261001220000-product-fts.js": "bd3351f7d9ded480",
+   "packages/backend/migrations/20261002100000-catalog-import.js": "2db019d13c68da53",
+   "packages/backend/migrations/20261010150000-catalog-s05-expand-columns.js": "be62c4c6d364f5cd",
+   "packages/backend/migrations/20261012110000-catalog-s05-contract-fks.js": "2727866f3ef5fc4b",
+   "packages/backend/migrations/20261012110100-catalog-s05-contract-shop-not-null.js": "8a47c2555685c414",
+   "packages/backend/migrations/20261019000200-catalog-s05-restore-shop-not-null.js": "2e65f3b53087f5ee",
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/contracts/src/search/shop-product-search.ts": "aed2f677d96f5388",
+   "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899",
+   "packages/web/lib/seller/wire.ts": "c92f8861bcf3babb"
   },
   "specs": {
    "S05.B-04": "52816a61cb9f9438",
@@ -931,12 +1286,30 @@
   }
  },
  "inventory.list.row-name": {
-  "code": "b48aef4d5cf1ff60",
+  "code": "9d088c89bf864d1d",
   "spec": "8959cbbfd8ee1717",
   "at": "2026-10-25",
   "files": {
    "packages/backend/libs/domains/catalog/api/product.controller.ts": "8e9e10f4f4b368fe",
-   "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62"
+   "packages/backend/libs/domains/catalog/api/product.dto.ts": "1ee0842eafbb0cbd",
+   "packages/backend/libs/domains/catalog/application/product-command.service.ts": "88c1d095f06a340d",
+   "packages/backend/libs/domains/catalog/infra/models/product.model.ts": "b0656bb99edfec60",
+   "packages/backend/migrations/20260808090000-product-inventory.js": "4a65c08eb15d88a6",
+   "packages/backend/migrations/20260808120000-fold-inventory-into-product.js": "aacef9f21305bdb2",
+   "packages/backend/migrations/20260925090000-create-chat-tables.js": "358ede1ec6827334",
+   "packages/backend/migrations/20261001120000-product-view-count.js": "99acd29211991504",
+   "packages/backend/migrations/20261001140000-shops-tenancy-expand.js": "ee553fcdf13e2504",
+   "packages/backend/migrations/20261001220000-product-fts.js": "bd3351f7d9ded480",
+   "packages/backend/migrations/20261002100000-catalog-import.js": "2db019d13c68da53",
+   "packages/backend/migrations/20261010150000-catalog-s05-expand-columns.js": "be62c4c6d364f5cd",
+   "packages/backend/migrations/20261012110000-catalog-s05-contract-fks.js": "2727866f3ef5fc4b",
+   "packages/backend/migrations/20261012110100-catalog-s05-contract-shop-not-null.js": "8a47c2555685c414",
+   "packages/backend/migrations/20261019000200-catalog-s05-restore-shop-not-null.js": "2e65f3b53087f5ee",
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.AS-43": "c0a284bc37d23a8d",
@@ -944,11 +1317,29 @@
   }
  },
  "inventory.list.row-price": {
-  "code": "61cd8b7ee83cd486",
+  "code": "e77840b459df4447",
   "spec": "8570ffe9e3452149",
   "at": "2026-10-25",
   "files": {
+   "packages/backend/libs/domains/auctions/domain/proxy-bid.ts": "7bb4e359f1bd2409",
+   "packages/backend/libs/domains/catalog/infra/models/product.model.ts": "b0656bb99edfec60",
+   "packages/backend/libs/domains/notifications/domain/money.ts": "2b895c63170065c0",
+   "packages/backend/migrations/20260808090000-product-inventory.js": "4a65c08eb15d88a6",
+   "packages/backend/migrations/20260808120000-fold-inventory-into-product.js": "aacef9f21305bdb2",
+   "packages/backend/migrations/20260925090000-create-chat-tables.js": "358ede1ec6827334",
+   "packages/backend/migrations/20261001120000-product-view-count.js": "99acd29211991504",
+   "packages/backend/migrations/20261001140000-shops-tenancy-expand.js": "ee553fcdf13e2504",
+   "packages/backend/migrations/20261001220000-product-fts.js": "bd3351f7d9ded480",
+   "packages/backend/migrations/20261002100000-catalog-import.js": "2db019d13c68da53",
+   "packages/backend/migrations/20261010150000-catalog-s05-expand-columns.js": "be62c4c6d364f5cd",
+   "packages/backend/migrations/20261012110000-catalog-s05-contract-fks.js": "2727866f3ef5fc4b",
+   "packages/backend/migrations/20261012110100-catalog-s05-contract-shop-not-null.js": "8a47c2555685c414",
+   "packages/backend/migrations/20261019000200-catalog-s05-restore-shop-not-null.js": "2e65f3b53087f5ee",
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
    "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899",
    "packages/web/lib/utils.ts": "13dbc56570cb6305"
   },
   "specs": {
@@ -957,11 +1348,14 @@
   }
  },
  "inventory.list.row-status-label": {
-  "code": "e46c5490e027170c",
+  "code": "090365215e6e0411",
   "spec": "8ca73213b11531db",
   "at": "2026-10-25",
   "files": {
    "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899",
    "packages/web/lib/seller/stock.ts": "b032a294f57b62bb"
   },
   "specs": {
@@ -970,23 +1364,41 @@
   }
  },
  "inventory.list.row-stock-number": {
-  "code": "6550cbc76c7bd3eb",
+  "code": "4e13f86f215a6308",
   "spec": "4f301d8ce86cc908",
   "at": "2026-10-25",
   "files": {
+   "packages/backend/libs/domains/catalog/infra/models/product.model.ts": "b0656bb99edfec60",
+   "packages/backend/migrations/20260808090000-product-inventory.js": "4a65c08eb15d88a6",
+   "packages/backend/migrations/20260808120000-fold-inventory-into-product.js": "aacef9f21305bdb2",
+   "packages/backend/migrations/20260925090000-create-chat-tables.js": "358ede1ec6827334",
+   "packages/backend/migrations/20261001120000-product-view-count.js": "99acd29211991504",
+   "packages/backend/migrations/20261001140000-shops-tenancy-expand.js": "ee553fcdf13e2504",
+   "packages/backend/migrations/20261001220000-product-fts.js": "bd3351f7d9ded480",
+   "packages/backend/migrations/20261002100000-catalog-import.js": "2db019d13c68da53",
+   "packages/backend/migrations/20261010150000-catalog-s05-expand-columns.js": "be62c4c6d364f5cd",
+   "packages/backend/migrations/20261012110000-catalog-s05-contract-fks.js": "2727866f3ef5fc4b",
+   "packages/backend/migrations/20261012110100-catalog-s05-contract-shop-not-null.js": "8a47c2555685c414",
+   "packages/backend/migrations/20261019000200-catalog-s05-restore-shop-not-null.js": "2e65f3b53087f5ee",
    "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62",
-   "packages/web/components/seller/inventory/stock-popover.tsx": "eed2b2621e4eba19"
+   "packages/web/components/seller/inventory/stock-popover.tsx": "eed2b2621e4eba19",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.AS-38": "eabea675046ec473"
   }
  },
  "inventory.list.search-active-badge": {
-  "code": "f8e21a9ec32c353f",
+  "code": "8d3533779f3910fb",
   "spec": "44136fa355b3678a",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62"
+   "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {}
  },
@@ -1003,98 +1415,127 @@
   }
  },
  "inventory.menu.active-items": {
-  "code": "f8e21a9ec32c353f",
+  "code": "8d3533779f3910fb",
   "spec": "1c1ce486a2e12915",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62"
+   "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.AS-40": "eabea675046ec473"
   }
  },
  "inventory.menu.adjust-item": {
-  "code": "6550cbc76c7bd3eb",
+  "code": "c61865133ac90922",
   "spec": "4f301d8ce86cc908",
   "at": "2026-10-25",
   "files": {
    "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62",
-   "packages/web/components/seller/inventory/stock-popover.tsx": "eed2b2621e4eba19"
+   "packages/web/components/seller/inventory/stock-popover.tsx": "eed2b2621e4eba19",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.AS-38": "eabea675046ec473"
   }
  },
  "inventory.menu.archived-items": {
-  "code": "f8e21a9ec32c353f",
+  "code": "8d3533779f3910fb",
   "spec": "1c1ce486a2e12915",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62"
+   "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.AS-40": "eabea675046ec473"
   }
  },
  "inventory.menu.draft-item": {
-  "code": "f8e21a9ec32c353f",
+  "code": "8d3533779f3910fb",
   "spec": "72bd446c8d9b8c0a",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62"
+   "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "S06": "76429f3a2906e91c"
   }
  },
  "inventory.menu.edit-item": {
-  "code": "f8e21a9ec32c353f",
+  "code": "03b4fd7749c541a1",
   "spec": "382b301bcf9c9dec",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62"
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62",
+   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.AS-36": "8253b4dd2de7f301"
   }
  },
  "inventory.menu.photos-item": {
-  "code": "f8e21a9ec32c353f",
+  "code": "8d3533779f3910fb",
   "spec": "44136fa355b3678a",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62"
+   "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {}
  },
  "inventory.menu.problem-cleared": {
-  "code": "f8e21a9ec32c353f",
+  "code": "8d3533779f3910fb",
   "spec": "268ef6fe1beaaa47",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62"
+   "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.AS-41": "b1e4306c8993a29c"
   }
  },
  "inventory.menu.restore-double-press": {
-  "code": "f8e21a9ec32c353f",
+  "code": "8d3533779f3910fb",
   "spec": "65469c1320ff2368",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62"
+   "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.R-23": "da8d8279d5f88703"
   }
  },
  "inventory.menu.restore-failure": {
-  "code": "71c6df4789cf41ff",
+  "code": "0268aafa4e5eb165",
   "spec": "8605fa7d7ec7c440",
   "at": "2026-10-25",
   "files": {
    "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899",
    "packages/web/lib/seller/problem-copy.ts": "4ef1088a69dc32f7"
   },
   "specs": {
@@ -1103,12 +1544,32 @@
   }
  },
  "inventory.menu.restore-item": {
-  "code": "b48aef4d5cf1ff60",
+  "code": "1b3886037688733d",
   "spec": "02d1bb35baba7267",
   "at": "2026-10-25",
   "files": {
    "packages/backend/libs/domains/catalog/api/product.controller.ts": "8e9e10f4f4b368fe",
-   "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62"
+   "packages/backend/libs/domains/catalog/api/product.dto.ts": "1ee0842eafbb0cbd",
+   "packages/backend/libs/domains/catalog/application/product-command.service.ts": "88c1d095f06a340d",
+   "packages/backend/libs/domains/catalog/infra/models/product-status-history.model.ts": "20ecdb68a2a2ccab",
+   "packages/backend/libs/domains/catalog/infra/models/product.model.ts": "b0656bb99edfec60",
+   "packages/backend/migrations/20260808090000-product-inventory.js": "4a65c08eb15d88a6",
+   "packages/backend/migrations/20260808120000-fold-inventory-into-product.js": "aacef9f21305bdb2",
+   "packages/backend/migrations/20260925090000-create-chat-tables.js": "358ede1ec6827334",
+   "packages/backend/migrations/20261001120000-product-view-count.js": "99acd29211991504",
+   "packages/backend/migrations/20261001140000-shops-tenancy-expand.js": "ee553fcdf13e2504",
+   "packages/backend/migrations/20261001220000-product-fts.js": "bd3351f7d9ded480",
+   "packages/backend/migrations/20261002100000-catalog-import.js": "2db019d13c68da53",
+   "packages/backend/migrations/20261010150000-catalog-s05-expand-columns.js": "be62c4c6d364f5cd",
+   "packages/backend/migrations/20261010151000-catalog-s05-expand-tables.js": "0be6f3e30629dec1",
+   "packages/backend/migrations/20261012110000-catalog-s05-contract-fks.js": "2727866f3ef5fc4b",
+   "packages/backend/migrations/20261012110100-catalog-s05-contract-shop-not-null.js": "8a47c2555685c414",
+   "packages/backend/migrations/20261019000200-catalog-s05-restore-shop-not-null.js": "2e65f3b53087f5ee",
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "S05.B-05": "e750186ff1ce2d1d",
@@ -1152,10 +1613,19 @@
   }
  },
  "inventory.page.bad-shop-id": {
-  "code": "8f02356bc730d329",
+  "code": "30fb8bfb69bb3b0b",
   "spec": "9fc4dcfe5b3fd4b7",
   "at": "2026-10-25",
   "files": {
+   "packages/backend/libs/domains/tenancy/api/shop.guard.ts": "d0836b3019ac98bf",
+   "packages/contracts/src/bff/seller-overview.ts": "cf5790c3205c6cf1",
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/contracts/src/developer-platform/keys.ts": "444d734754f9c8e3",
+   "packages/contracts/src/developer-platform/logs.ts": "53ca17bc6a88f8cb",
+   "packages/contracts/src/developer-platform/webhooks.ts": "f8aae4c6f9163cf7",
+   "packages/contracts/src/orders/order.ts": "825d6af4758d3309",
+   "packages/contracts/src/search/shop-product-search.ts": "aed2f677d96f5388",
+   "packages/contracts/src/tenancy/index.ts": "324ccfbe0702f2bf",
    "packages/web/lib/server/seller.server.ts": "7b2b5295d5ae9ac5"
   },
   "specs": {
@@ -1165,23 +1635,29 @@
   }
  },
  "inventory.page.first-page-error-retry": {
-  "code": "a6efdfb38155bf86",
+  "code": "7ba205e726553c38",
   "spec": "0470ec69060ef0e6",
   "at": "2026-10-25",
   "files": {
+   "packages/contracts/src/bff/product-page.ts": "e69c1c8b8065afb4",
    "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62",
-   "packages/web/components/seller/problem-states.tsx": "b8ff53d2297a93b6"
+   "packages/web/components/seller/problem-states.tsx": "b8ff53d2297a93b6",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.AS-31": "c060454e7c10d038"
   }
  },
  "inventory.page.forbidden-panel": {
-  "code": "561e2d9886efedb3",
+  "code": "3a275030308d04c3",
   "spec": "c07f53dec8e4a4ea",
   "at": "2026-10-25",
   "files": {
+   "packages/web/components/dashboard/shop-frame.tsx": "04ebc512219b394f",
    "packages/web/components/seller/forbidden-panel.tsx": "593ff8c8e9726203",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899",
    "packages/web/lib/seller/permissions.ts": "e938842e33042b83"
   },
   "specs": {
@@ -1190,12 +1666,15 @@
   }
  },
  "inventory.page.heading-caption": {
-  "code": "dd782b71dc8e0070",
+  "code": "50323965c2957c60",
   "spec": "bce66203b3c2cf03",
   "at": "2026-10-25",
   "files": {
    "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62",
-   "packages/web/components/seller/responsive-table.tsx": "296ce71c11d48740"
+   "packages/web/components/seller/responsive-table.tsx": "296ce71c11d48740",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.AS-95": "399a29cff5b75f0a",
@@ -1216,13 +1695,16 @@
   }
  },
  "inventory.page.loading-skeleton": {
-  "code": "4322f56dc62f09a3",
+  "code": "a0b6a6e37b3c1224",
   "spec": "2acfc38394942547",
   "at": "2026-10-25",
   "files": {
    "packages/web/app/dashboard/seller/[shopId]/inventory/loading.tsx": "a866645427352b2f",
    "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62",
-   "packages/web/components/seller/page-skeletons.tsx": "6d8169b1609f5520"
+   "packages/web/components/seller/page-skeletons.tsx": "6d8169b1609f5520",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.AS-91": "92d2478a25820073",
@@ -1241,6 +1723,16 @@
    "W04.R-01": "1f540d546d2b8bff"
   }
  },
+ "inventory.page.menu-entry-extra-1": {
+  "code": "13463a8d0fb309fc",
+  "spec": "44136fa355b3678a",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/dashboard/dashboard-shell.tsx": "61bd0e834051789a",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
+  },
+  "specs": {}
+ },
  "inventory.page.phone-layout": {
   "code": "c12fc25a91e62500",
   "spec": "330a52cb9c50aed3",
@@ -1258,11 +1750,33 @@
   }
  },
  "inventory.page.route-open": {
-  "code": "9108bb397a44f274",
+  "code": "a84e94c64e3a519d",
   "spec": "2bdb7f102509e85a",
   "at": "2026-10-25",
   "files": {
    "packages/backend/libs/domains/catalog/api/product.controller.ts": "8e9e10f4f4b368fe",
+   "packages/backend/libs/domains/catalog/api/product.dto.ts": "1ee0842eafbb0cbd",
+   "packages/backend/libs/domains/catalog/application/product-command.service.ts": "88c1d095f06a340d",
+   "packages/backend/libs/domains/catalog/infra/models/product.model.ts": "b0656bb99edfec60",
+   "packages/backend/migrations/20260808090000-product-inventory.js": "4a65c08eb15d88a6",
+   "packages/backend/migrations/20260808120000-fold-inventory-into-product.js": "aacef9f21305bdb2",
+   "packages/backend/migrations/20260925090000-create-chat-tables.js": "358ede1ec6827334",
+   "packages/backend/migrations/20261001120000-product-view-count.js": "99acd29211991504",
+   "packages/backend/migrations/20261001140000-shops-tenancy-expand.js": "ee553fcdf13e2504",
+   "packages/backend/migrations/20261001220000-product-fts.js": "bd3351f7d9ded480",
+   "packages/backend/migrations/20261002100000-catalog-import.js": "2db019d13c68da53",
+   "packages/backend/migrations/20261010150000-catalog-s05-expand-columns.js": "be62c4c6d364f5cd",
+   "packages/backend/migrations/20261012110000-catalog-s05-contract-fks.js": "2727866f3ef5fc4b",
+   "packages/backend/migrations/20261012110100-catalog-s05-contract-shop-not-null.js": "8a47c2555685c414",
+   "packages/backend/migrations/20261019000200-catalog-s05-restore-shop-not-null.js": "2e65f3b53087f5ee",
+   "packages/contracts/src/bff/seller-overview.ts": "cf5790c3205c6cf1",
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/contracts/src/developer-platform/keys.ts": "444d734754f9c8e3",
+   "packages/contracts/src/developer-platform/logs.ts": "53ca17bc6a88f8cb",
+   "packages/contracts/src/developer-platform/webhooks.ts": "f8aae4c6f9163cf7",
+   "packages/contracts/src/orders/order.ts": "825d6af4758d3309",
+   "packages/contracts/src/search/shop-product-search.ts": "aed2f677d96f5388",
+   "packages/contracts/src/tenancy/index.ts": "324ccfbe0702f2bf",
    "packages/web/app/dashboard/seller/[shopId]/inventory/page.tsx": "e9212480fb2b68a8",
    "packages/web/lib/server/seller.server.ts": "7b2b5295d5ae9ac5"
   },
@@ -1272,12 +1786,13 @@
   }
  },
  "inventory.page.signed-out": {
-  "code": "41f2f8cf80a447d5",
+  "code": "a32292102bc70812",
   "spec": "769949034c2fcca6",
   "at": "2026-10-25",
   "files": {
    "packages/web/app/dashboard/seller/[shopId]/inventory/page.tsx": "e9212480fb2b68a8",
-   "packages/web/components/dashboard/shop-frame.tsx": "04ebc512219b394f"
+   "packages/web/components/dashboard/shop-frame.tsx": "04ebc512219b394f",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.AS-84": "3f501d830040b391",
@@ -1285,12 +1800,19 @@
   }
  },
  "inventory.paging.busy-dimmed": {
-  "code": "5393f32d551f142a",
+  "code": "223f4b5b3348ae7e",
   "spec": "7f50ba02a0bfa1fd",
   "at": "2026-10-25",
   "files": {
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/contracts/src/search/shop-product-search.ts": "aed2f677d96f5388",
    "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62",
-   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd"
+   "packages/web/lib/api/client.ts": "0fa4cb70bbc2d203",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/orders.ts": "7631ea19bc997f81",
+   "packages/web/lib/api/parse.ts": "82453dbb70bf149b",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.AS-31": "c060454e7c10d038",
@@ -1298,31 +1820,40 @@
   }
  },
  "inventory.paging.cursor-other-filter": {
-  "code": "399638d4baa72a67",
+  "code": "8246664b0a49755b",
   "spec": "ab8a322934ec015f",
   "at": "2026-10-25",
   "files": {
-   "packages/backend/libs/domains/catalog/domain/product-cursor.ts": "c19272665677546a"
+   "packages/backend/libs/domains/catalog/application/product-command.service.ts": "88c1d095f06a340d",
+   "packages/backend/libs/domains/catalog/domain/product-cursor.ts": "c19272665677546a",
+   "packages/backend/libs/domains/community/domain/cursor.ts": "ac278b3e745f7279",
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f"
   },
   "specs": {
    "S05.R-10": "079fe2dcce47d26b"
   }
  },
  "inventory.paging.empty-last-page": {
-  "code": "f8e21a9ec32c353f",
+  "code": "8d3533779f3910fb",
   "spec": "44136fa355b3678a",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62"
+   "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {}
  },
  "inventory.paging.first-page": {
-  "code": "f8e21a9ec32c353f",
+  "code": "8d3533779f3910fb",
   "spec": "35ee75c74b6a3976",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62"
+   "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.AS-28": "023ab9cbf8dea9b7",
@@ -1330,12 +1861,14 @@
   }
  },
  "inventory.paging.invalid-cursor": {
-  "code": "f4a8f90ad6488e40",
+  "code": "91605f7333e63098",
   "spec": "cdf831c781fcfd76",
   "at": "2026-10-25",
   "files": {
    "packages/backend/libs/domains/catalog/domain/product-cursor.ts": "c19272665677546a",
+   "packages/contracts/src/bff/product-page.ts": "e69c1c8b8065afb4",
    "packages/web/components/seller/problem-states.tsx": "b8ff53d2297a93b6",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
    "packages/web/lib/seller/search-params.ts": "b0323b8c4ae21191"
   },
   "specs": {
@@ -1344,22 +1877,26 @@
   }
  },
  "inventory.paging.last-page-no-next": {
-  "code": "8fb5cdc4b1978a9e",
+  "code": "216ec04683a0bf42",
   "spec": "13b0c52689241b31",
   "at": "2026-10-25",
   "files": {
-   "packages/backend/libs/domains/catalog/application/product-command.service.ts": "88c1d095f06a340d"
+   "packages/backend/libs/domains/catalog/application/product-command.service.ts": "88c1d095f06a340d",
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f"
   },
   "specs": {
    "S05.B-04": "52816a61cb9f9438"
   }
  },
  "inventory.paging.next-page": {
-  "code": "24a8cd31a57edf3a",
+  "code": "a80ace3467ea0d35",
   "spec": "7a0b626a3790c121",
   "at": "2026-10-25",
   "files": {
    "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899",
    "packages/web/lib/seller/search-params.ts": "b0323b8c4ae21191"
   },
   "specs": {
@@ -1368,11 +1905,16 @@
   }
  },
  "inventory.roles.admin": {
-  "code": "f515b244574b2c40",
+  "code": "b2da1d5de0317863",
   "spec": "ea059a5609e89ccc",
   "at": "2026-10-25",
   "files": {
-   "packages/backend/libs/domains/tenancy/domain/permissions.ts": "62031a52bc431e77"
+   "packages/backend/libs/domains/identity/api/clock-admin.controller.ts": "67c4629712f0265a",
+   "packages/backend/libs/domains/identity/api/jobs-admin.controller.ts": "c37f8d0411bebdff",
+   "packages/backend/libs/domains/identity/api/jobs-admin.dto.ts": "686e3e171f7c456e",
+   "packages/backend/libs/domains/tenancy/domain/permissions.ts": "62031a52bc431e77",
+   "packages/contracts/src/admin/clock.ts": "4f75f00239bd6a43",
+   "packages/contracts/src/admin/jobs.ts": "29a177ec3afef53f"
   },
   "specs": {
    "S03": "516b2d0fe923a967",
@@ -1417,11 +1959,12 @@
   }
  },
  "inventory.roles.role-change-live": {
-  "code": "af1e45f18ba901f2",
+  "code": "e5bd455834c4a2db",
   "spec": "9e666b97388b3005",
   "at": "2026-10-25",
   "files": {
    "packages/backend/libs/domains/tenancy/api/shop.guard.ts": "d0836b3019ac98bf",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
    "packages/web/lib/seller/problem-copy.ts": "4ef1088a69dc32f7"
   },
   "specs": {
@@ -1442,12 +1985,15 @@
   }
  },
  "inventory.roles.viewer": {
-  "code": "fd78ffbb336e362a",
+  "code": "953edc05d5b11b7c",
   "spec": "0573727e38968d80",
   "at": "2026-10-25",
   "files": {
    "packages/backend/libs/domains/tenancy/domain/permissions.ts": "62031a52bc431e77",
-   "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62"
+   "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.AS-42": "65391888e7557615",
@@ -1455,11 +2001,14 @@
   }
  },
  "inventory.roles.viewer-direct-api": {
-  "code": "39745627bf76ef05",
+  "code": "9a4f4a3ef38d6b6e",
   "spec": "5caed9318fb07b75",
   "at": "2026-10-25",
   "files": {
-   "packages/backend/libs/domains/catalog/api/product.controller.ts": "8e9e10f4f4b368fe"
+   "packages/backend/libs/domains/catalog/api/product.controller.ts": "8e9e10f4f4b368fe",
+   "packages/backend/libs/domains/catalog/api/product.dto.ts": "1ee0842eafbb0cbd",
+   "packages/backend/libs/domains/tenancy/api/shop.guard.ts": "d0836b3019ac98bf",
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f"
   },
   "specs": {
    "S03": "516b2d0fe923a967",
@@ -1478,10 +2027,14 @@
   }
  },
  "inventory.rules.contract-parse": {
-  "code": "59afd9232c6ac978",
+  "code": "b9ef1838475103bd",
   "spec": "ef409481d9f6fb3f",
   "at": "2026-10-25",
   "files": {
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/contracts/src/search/shop-product-search.ts": "aed2f677d96f5388",
+   "packages/web/lib/api/client.ts": "0fa4cb70bbc2d203",
+   "packages/web/lib/api/orders.ts": "7631ea19bc997f81",
    "packages/web/lib/api/parse.ts": "82453dbb70bf149b",
    "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd"
   },
@@ -1490,24 +2043,31 @@
   }
  },
  "inventory.rules.dark-and-contrast": {
-  "code": "f8e21a9ec32c353f",
+  "code": "207fa2a8dfc100ef",
   "spec": "a1957403eca07eaf",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62"
+   "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62",
+   "packages/web/components/ui/badge.tsx": "4840b89580b59b45",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.AS-39": "f1ac75bd7c4d139d"
   }
  },
  "inventory.rules.focus-return": {
-  "code": "901256b30827b392",
+  "code": "2ce0b639539c3cae",
   "spec": "bc239ff020cd5b7d",
   "at": "2026-10-25",
   "files": {
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
    "packages/web/components/seller/confirm-dialog.tsx": "1980bb9e05cfd45b",
    "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e",
-   "packages/web/components/seller/inventory/stock-popover.tsx": "eed2b2621e4eba19"
+   "packages/web/components/seller/inventory/stock-popover.tsx": "eed2b2621e4eba19",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd"
   },
   "specs": {
    "W04.AS-94": "fda763c08f1ae4d8",
@@ -1515,10 +2075,15 @@
   }
  },
  "inventory.rules.invalidate-after-write": {
-  "code": "7067dd38adef7786",
+  "code": "b9ef1838475103bd",
   "spec": "c13df2644d76a512",
   "at": "2026-10-25",
   "files": {
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/contracts/src/search/shop-product-search.ts": "aed2f677d96f5388",
+   "packages/web/lib/api/client.ts": "0fa4cb70bbc2d203",
+   "packages/web/lib/api/orders.ts": "7631ea19bc997f81",
+   "packages/web/lib/api/parse.ts": "82453dbb70bf149b",
    "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd"
   },
   "specs": {
@@ -1526,22 +2091,27 @@
   }
  },
  "inventory.rules.no-js-injection-search": {
-  "code": "f8e21a9ec32c353f",
+  "code": "8d3533779f3910fb",
   "spec": "74b06185be28d453",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62"
+   "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.R-28": "bcbeea3991272441"
   }
  },
  "inventory.rules.outbox-event-per-write": {
-  "code": "8fb5cdc4b1978a9e",
+  "code": "d8ce453fba5ba547",
   "spec": "0f0ebc1b492daca0",
   "at": "2026-10-25",
   "files": {
-   "packages/backend/libs/domains/catalog/application/product-command.service.ts": "88c1d095f06a340d"
+   "packages/backend/libs/domains/catalog/application/product-command.service.ts": "88c1d095f06a340d",
+   "packages/backend/libs/infrastructure/outbox/outbox.service.ts": "03106e75b225602a",
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f"
   },
   "specs": {
    "S05.R-08": "e38cb28bf93a017e",
@@ -1549,10 +2119,11 @@
   }
  },
  "inventory.rules.problem-copy-by-code": {
-  "code": "487b82365a27118a",
+  "code": "d7b4d6b7cd89626e",
   "spec": "2552cb8d936dd0dd",
   "at": "2026-10-25",
   "files": {
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
    "packages/web/lib/seller/problem-copy.ts": "4ef1088a69dc32f7"
   },
   "specs": {
@@ -1561,11 +2132,12 @@
   }
  },
  "inventory.rules.rate-limit-countdown": {
-  "code": "b72b17f008008b3d",
+  "code": "335bc506c7760923",
   "spec": "83721bde12828e39",
   "at": "2026-10-25",
   "files": {
    "packages/web/components/seller/problem-states.tsx": "b8ff53d2297a93b6",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
    "packages/web/lib/seller/countdown.ts": "948ccd86aea00fcb"
   },
   "specs": {
@@ -1597,11 +2169,14 @@
   }
  },
  "inventory.rules.text-as-text": {
-  "code": "f8e21a9ec32c353f",
+  "code": "8d3533779f3910fb",
   "spec": "8959cbbfd8ee1717",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62"
+   "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.AS-43": "c0a284bc37d23a8d",
@@ -1609,11 +2184,16 @@
   }
  },
  "inventory.rules.version-sent": {
-  "code": "3ff0d3cfecd5f991",
+  "code": "e14a1c676b0ab491",
   "spec": "9b7a30a277e3ff7f",
   "at": "2026-10-25",
   "files": {
    "packages/backend/libs/domains/catalog/infra/product.repository.ts": "e16b828599363cf9",
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/contracts/src/search/shop-product-search.ts": "aed2f677d96f5388",
+   "packages/web/lib/api/client.ts": "0fa4cb70bbc2d203",
+   "packages/web/lib/api/orders.ts": "7631ea19bc997f81",
+   "packages/web/lib/api/parse.ts": "82453dbb70bf149b",
    "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd"
   },
   "specs": {
@@ -1622,11 +2202,16 @@
   }
  },
  "inventory.search.api-call": {
-  "code": "de6ce7b391ec6f87",
+  "code": "20e8106019435dd8",
   "spec": "73204ff7081bffd9",
   "at": "2026-10-25",
   "files": {
    "packages/backend/libs/domains/discovery/api/shop-product-search.controller.ts": "2a82faa722c131f3",
+   "packages/backend/libs/domains/discovery/application/shop-product-search.service.ts": "225c24f2703435a0",
+   "packages/backend/libs/domains/discovery/infra/models/search-shop-product.model.ts": "54bceeff0687e842",
+   "packages/backend/migrations/20261012090000-search-s32-shop-product.js": "0ddaafd27f4cc43a",
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/contracts/src/search/shop-product-search.ts": "aed2f677d96f5388",
    "packages/web/lib/seller/wire.ts": "c92f8861bcf3babb"
   },
   "specs": {
@@ -1669,11 +2254,14 @@
   }
  },
  "inventory.search.empty-result": {
-  "code": "f8e21a9ec32c353f",
+  "code": "8d3533779f3910fb",
   "spec": "80ad5c35de6a3639",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62"
+   "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.AS-32": "eabea675046ec473"
@@ -1703,11 +2291,18 @@
   }
  },
  "inventory.search.new-product-lag": {
-  "code": "0b8befdf0ac1b636",
+  "code": "9f34ed4211a0c496",
   "spec": "10e4c7899eb34217",
   "at": "2026-10-25",
   "files": {
+   "packages/backend/libs/domains/discovery/infra/models/search-shop-product.model.ts": "54bceeff0687e842",
    "packages/backend/libs/domains/discovery/infra/projectors/product-index.projector.ts": "762ba0a89060053d",
+   "packages/backend/migrations/20261012090000-search-s32-shop-product.js": "0ddaafd27f4cc43a",
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/contracts/src/search/shop-product-search.ts": "aed2f677d96f5388",
+   "packages/web/lib/api/client.ts": "0fa4cb70bbc2d203",
+   "packages/web/lib/api/orders.ts": "7631ea19bc997f81",
+   "packages/web/lib/api/parse.ts": "82453dbb70bf149b",
    "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd"
   },
   "specs": {
@@ -1716,34 +2311,46 @@
   }
  },
  "inventory.search.only-own-shop": {
-  "code": "a7c76b30252f069a",
+  "code": "582e1a02f1fffb3b",
   "spec": "dabef66aaa13155d",
   "at": "2026-10-25",
   "files": {
-   "packages/backend/libs/domains/discovery/api/shop-product-search.controller.ts": "2a82faa722c131f3"
+   "packages/backend/libs/domains/discovery/api/shop-product-search.controller.ts": "2a82faa722c131f3",
+   "packages/backend/libs/domains/discovery/application/shop-product-search.service.ts": "225c24f2703435a0",
+   "packages/backend/libs/domains/discovery/infra/models/search-shop-product.model.ts": "54bceeff0687e842",
+   "packages/backend/migrations/20261012090000-search-s32-shop-product.js": "0ddaafd27f4cc43a",
+   "packages/contracts/src/search/shop-product-search.ts": "aed2f677d96f5388"
   },
   "specs": {
    "S32.FR-046": "24edc6d0e14803a3"
   }
  },
  "inventory.search.paging": {
-  "code": "a7c76b30252f069a",
+  "code": "e39862ccf7b291bc",
   "spec": "5a476d55cba26c13",
   "at": "2026-10-25",
   "files": {
-   "packages/backend/libs/domains/discovery/api/shop-product-search.controller.ts": "2a82faa722c131f3"
+   "packages/backend/libs/domains/discovery/api/shop-product-search.controller.ts": "2a82faa722c131f3",
+   "packages/backend/libs/domains/discovery/application/shop-product-search.service.ts": "225c24f2703435a0",
+   "packages/backend/libs/domains/discovery/domain/search-cursor.ts": "177b4995f8a1de24",
+   "packages/backend/libs/domains/discovery/infra/models/search-shop-product.model.ts": "54bceeff0687e842",
+   "packages/backend/migrations/20261012090000-search-s32-shop-product.js": "0ddaafd27f4cc43a",
+   "packages/contracts/src/search/shop-product-search.ts": "aed2f677d96f5388"
   },
   "specs": {
    "S32": "24edc6d0e14803a3"
   }
  },
  "inventory.search.rate-limit": {
-  "code": "799fcf03f17e98fa",
+  "code": "203024f7ef086ff6",
   "spec": "da0eefb266e5a299",
   "at": "2026-10-25",
   "files": {
    "packages/backend/libs/domains/discovery/api/shop-product-search.controller.ts": "2a82faa722c131f3",
-   "packages/web/components/seller/problem-states.tsx": "b8ff53d2297a93b6"
+   "packages/backend/libs/infrastructure/rate-limit/rate-limit.decorator.ts": "4d506b807972c650",
+   "packages/contracts/src/search/shop-product-search.ts": "aed2f677d96f5388",
+   "packages/web/components/seller/problem-states.tsx": "b8ff53d2297a93b6",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5"
   },
   "specs": {
    "W04.AS-90": "b866c136e97e7ae7",
@@ -1751,12 +2358,19 @@
   }
  },
  "inventory.search.row-actions": {
-  "code": "5393f32d551f142a",
+  "code": "223f4b5b3348ae7e",
   "spec": "a0ac4ba3ba1dd2e0",
   "at": "2026-10-25",
   "files": {
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/contracts/src/search/shop-product-search.ts": "aed2f677d96f5388",
    "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62",
-   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd"
+   "packages/web/lib/api/client.ts": "0fa4cb70bbc2d203",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/orders.ts": "7631ea19bc997f81",
+   "packages/web/lib/api/parse.ts": "82453dbb70bf149b",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.R-29": "8253b4dd2de7f301"
@@ -1786,11 +2400,13 @@
   }
  },
  "inventory.search.typo-match": {
-  "code": "40ff97fd19416233",
+  "code": "fcaf8cbc38621d4c",
   "spec": "b3dd6785748e144c",
   "at": "2026-10-25",
   "files": {
-   "packages/backend/libs/domains/discovery/infra/repositories/shop-search.repository.ts": "7ab69c9ee583b875"
+   "packages/backend/libs/domains/discovery/infra/models/search-shop-product.model.ts": "54bceeff0687e842",
+   "packages/backend/libs/domains/discovery/infra/repositories/shop-search.repository.ts": "7ab69c9ee583b875",
+   "packages/backend/migrations/20261012090000-search-s32-shop-product.js": "0ddaafd27f4cc43a"
   },
   "specs": {
    "S32.AS-62": "5f7a663e12459c11",
@@ -1799,11 +2415,14 @@
   }
  },
  "inventory.search.url-write": {
-  "code": "f8e21a9ec32c353f",
+  "code": "8d3533779f3910fb",
   "spec": "4a57ab42ad775fb5",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62"
+   "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.B-11": "ce9b4472d75deda6",
@@ -1811,10 +2430,12 @@
   }
  },
  "inventory.search.whitespace-only": {
-  "code": "b7b307bd9b3c821b",
+  "code": "65de725f1d5fe42b",
   "spec": "44160e96f2ce6a4d",
   "at": "2026-10-25",
   "files": {
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/contracts/src/search/shop-product-search.ts": "aed2f677d96f5388",
    "packages/web/components/seller/inventory/inventory-toolbar.tsx": "36a0c0fc5f84e547",
    "packages/web/lib/seller/wire.ts": "c92f8861bcf3babb"
   },
@@ -1823,11 +2444,12 @@
   }
  },
  "inventory.shop.closing": {
-  "code": "8fb5cdc4b1978a9e",
+  "code": "216ec04683a0bf42",
   "spec": "8611940302f0baca",
   "at": "2026-10-25",
   "files": {
-   "packages/backend/libs/domains/catalog/application/product-command.service.ts": "88c1d095f06a340d"
+   "packages/backend/libs/domains/catalog/application/product-command.service.ts": "88c1d095f06a340d",
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f"
   },
   "specs": {
    "S05.R-05": "821f7dce9e7813c9",
@@ -1849,22 +2471,25 @@
   }
  },
  "inventory.shop.suspended-api-writes": {
-  "code": "8fb5cdc4b1978a9e",
+  "code": "216ec04683a0bf42",
   "spec": "a68c80a39311becc",
   "at": "2026-10-25",
   "files": {
-   "packages/backend/libs/domains/catalog/application/product-command.service.ts": "88c1d095f06a340d"
+   "packages/backend/libs/domains/catalog/application/product-command.service.ts": "88c1d095f06a340d",
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f"
   },
   "specs": {
    "S05.R-05": "821f7dce9e7813c9"
   }
  },
  "inventory.shop.suspended-reads": {
-  "code": "39745627bf76ef05",
+  "code": "be8c5f548a5630a9",
   "spec": "761ab8293d685a9b",
   "at": "2026-10-25",
   "files": {
-   "packages/backend/libs/domains/catalog/api/product.controller.ts": "8e9e10f4f4b368fe"
+   "packages/backend/libs/domains/catalog/api/product.controller.ts": "8e9e10f4f4b368fe",
+   "packages/backend/libs/domains/catalog/api/product.dto.ts": "1ee0842eafbb0cbd",
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f"
   },
   "specs": {
    "S03.R-05": "504d946ad792f572",
@@ -1873,11 +2498,12 @@
   }
  },
  "inventory.shop.switch-shop": {
-  "code": "3999e51d4e9b1b5d",
+  "code": "4c009a36dcf49f47",
   "spec": "7a208f568e102ccc",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/shop-switcher.tsx": "2711e51c0dbe994e"
+   "packages/web/components/seller/shop-switcher.tsx": "2711e51c0dbe994e",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.AS-09": "e225a2c8b8acf88a",
@@ -1885,33 +2511,38 @@
   }
  },
  "inventory.stock.archived-product-api": {
-  "code": "8fb5cdc4b1978a9e",
+  "code": "216ec04683a0bf42",
   "spec": "1b72c5b21e7b3daa",
   "at": "2026-10-25",
   "files": {
-   "packages/backend/libs/domains/catalog/application/product-command.service.ts": "88c1d095f06a340d"
+   "packages/backend/libs/domains/catalog/application/product-command.service.ts": "88c1d095f06a340d",
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f"
   },
   "specs": {
    "S05.R-09": "4fdc6c2cade60e16"
   }
  },
  "inventory.stock.cancel": {
-  "code": "d89fcfe8dca2973a",
+  "code": "e39b8626f49e8505",
   "spec": "2cae3e137e0ef0b1",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/inventory/stock-popover.tsx": "eed2b2621e4eba19"
+   "packages/web/components/seller/inventory/stock-popover.tsx": "eed2b2621e4eba19",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd"
   },
   "specs": {
    "W04.AS-94": "fda763c08f1ae4d8"
   }
  },
  "inventory.stock.double-press": {
-  "code": "d89fcfe8dca2973a",
+  "code": "e39b8626f49e8505",
   "spec": "65469c1320ff2368",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/inventory/stock-popover.tsx": "eed2b2621e4eba19"
+   "packages/web/components/seller/inventory/stock-popover.tsx": "eed2b2621e4eba19",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd"
   },
   "specs": {
    "W04.R-23": "da8d8279d5f88703"
@@ -1929,11 +2560,14 @@
   }
  },
  "inventory.stock.other-errors": {
-  "code": "d89fcfe8dca2973a",
+  "code": "aee7bd20577f7221",
   "spec": "48fda3ddb9957ffe",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/inventory/stock-popover.tsx": "eed2b2621e4eba19"
+   "packages/web/components/seller/inventory/stock-popover.tsx": "eed2b2621e4eba19",
+   "packages/web/components/seller/problem-states.tsx": "b8ff53d2297a93b6",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd"
   },
   "specs": {
    "W04.R-13": "91b32c5778f1aab7",
@@ -1941,11 +2575,13 @@
   }
  },
  "inventory.stock.popover-open": {
-  "code": "d89fcfe8dca2973a",
+  "code": "e39b8626f49e8505",
   "spec": "a2389b1666788b25",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/inventory/stock-popover.tsx": "eed2b2621e4eba19"
+   "packages/web/components/seller/inventory/stock-popover.tsx": "eed2b2621e4eba19",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd"
   },
   "specs": {
    "W04.AS-38": "eabea675046ec473",
@@ -1953,34 +2589,46 @@
   }
  },
  "inventory.stock.same-value": {
-  "code": "c990639cb6023e3b",
+  "code": "1d03887b8919ebb7",
   "spec": "1db92b474e4c8ab2",
   "at": "2026-10-25",
   "files": {
    "packages/backend/libs/domains/catalog/application/product-command.service.ts": "88c1d095f06a340d",
-   "packages/web/components/seller/inventory/stock-popover.tsx": "eed2b2621e4eba19"
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/web/components/seller/inventory/stock-popover.tsx": "eed2b2621e4eba19",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd"
   },
   "specs": {
    "S05.R-08": "e38cb28bf93a017e"
   }
  },
  "inventory.stock.search-row-version": {
-  "code": "d89fcfe8dca2973a",
+  "code": "dee2da0aa8a69c9a",
   "spec": "a0ac4ba3ba1dd2e0",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/inventory/stock-popover.tsx": "eed2b2621e4eba19"
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/contracts/src/search/shop-product-search.ts": "aed2f677d96f5388",
+   "packages/web/components/seller/inventory/stock-popover.tsx": "eed2b2621e4eba19",
+   "packages/web/lib/api/client.ts": "0fa4cb70bbc2d203",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/orders.ts": "7631ea19bc997f81",
+   "packages/web/lib/api/parse.ts": "82453dbb70bf149b",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd"
   },
   "specs": {
    "W04.R-29": "8253b4dd2de7f301"
   }
  },
  "inventory.stock.stale-row": {
-  "code": "d89fcfe8dca2973a",
+  "code": "e39b8626f49e8505",
   "spec": "8605fa7d7ec7c440",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/inventory/stock-popover.tsx": "eed2b2621e4eba19"
+   "packages/web/components/seller/inventory/stock-popover.tsx": "eed2b2621e4eba19",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd"
   },
   "specs": {
    "W04.AS-41": "b1e4306c8993a29c",
@@ -1988,12 +2636,29 @@
   }
  },
  "inventory.stock.update-button": {
-  "code": "31eadda612144f9f",
+  "code": "1b5d4a42d9e52df4",
   "spec": "d8e8f39728d912d2",
   "at": "2026-10-25",
   "files": {
    "packages/backend/libs/domains/catalog/api/product.controller.ts": "8e9e10f4f4b368fe",
-   "packages/web/components/seller/inventory/stock-popover.tsx": "eed2b2621e4eba19"
+   "packages/backend/libs/domains/catalog/api/product.dto.ts": "1ee0842eafbb0cbd",
+   "packages/backend/libs/domains/catalog/application/product-command.service.ts": "88c1d095f06a340d",
+   "packages/backend/libs/domains/catalog/infra/models/product.model.ts": "b0656bb99edfec60",
+   "packages/backend/migrations/20260808090000-product-inventory.js": "4a65c08eb15d88a6",
+   "packages/backend/migrations/20260808120000-fold-inventory-into-product.js": "aacef9f21305bdb2",
+   "packages/backend/migrations/20260925090000-create-chat-tables.js": "358ede1ec6827334",
+   "packages/backend/migrations/20261001120000-product-view-count.js": "99acd29211991504",
+   "packages/backend/migrations/20261001140000-shops-tenancy-expand.js": "ee553fcdf13e2504",
+   "packages/backend/migrations/20261001220000-product-fts.js": "bd3351f7d9ded480",
+   "packages/backend/migrations/20261002100000-catalog-import.js": "2db019d13c68da53",
+   "packages/backend/migrations/20261010150000-catalog-s05-expand-columns.js": "be62c4c6d364f5cd",
+   "packages/backend/migrations/20261012110000-catalog-s05-contract-fks.js": "2727866f3ef5fc4b",
+   "packages/backend/migrations/20261012110100-catalog-s05-contract-shop-not-null.js": "8a47c2555685c414",
+   "packages/backend/migrations/20261019000200-catalog-s05-restore-shop-not-null.js": "2e65f3b53087f5ee",
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/web/components/seller/inventory/stock-popover.tsx": "eed2b2621e4eba19",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd"
   },
   "specs": {
    "S05.B-02": "d89b50c34c873390",
@@ -2002,12 +2667,15 @@
   }
  },
  "inventory.stock.validation": {
-  "code": "132848a868d34825",
+  "code": "6b8fd39393e5a1d7",
   "spec": "11b647653f606518",
   "at": "2026-10-25",
   "files": {
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
    "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e",
-   "packages/web/components/seller/inventory/stock-popover.tsx": "eed2b2621e4eba19"
+   "packages/web/components/seller/inventory/stock-popover.tsx": "eed2b2621e4eba19",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd"
   },
   "specs": {
    "S05.R-02": "274f1d3a47afc616",
@@ -2015,12 +2683,16 @@
   }
  },
  "inventory.stock.version-conflict": {
-  "code": "c990639cb6023e3b",
+  "code": "a084d7ea618876b7",
   "spec": "b2f756ab3381fb53",
   "at": "2026-10-25",
   "files": {
    "packages/backend/libs/domains/catalog/application/product-command.service.ts": "88c1d095f06a340d",
-   "packages/web/components/seller/inventory/stock-popover.tsx": "eed2b2621e4eba19"
+   "packages/backend/libs/domains/catalog/domain/product-errors.ts": "84054f0c5bd343c2",
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/web/components/seller/inventory/stock-popover.tsx": "eed2b2621e4eba19",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd"
   },
   "specs": {
    "S05.R-07": "858321e7603689d8",
@@ -2028,11 +2700,26 @@
   }
  },
  "inventory.tabs.active": {
-  "code": "b8a142dc3e60d620",
+  "code": "5a6c42a66adf1b86",
   "spec": "44160e96f2ce6a4d",
   "at": "2026-10-25",
   "files": {
    "packages/backend/libs/domains/catalog/api/product.controller.ts": "8e9e10f4f4b368fe",
+   "packages/backend/libs/domains/catalog/api/product.dto.ts": "1ee0842eafbb0cbd",
+   "packages/backend/libs/domains/catalog/application/product-command.service.ts": "88c1d095f06a340d",
+   "packages/backend/libs/domains/catalog/infra/models/product.model.ts": "b0656bb99edfec60",
+   "packages/backend/migrations/20260808090000-product-inventory.js": "4a65c08eb15d88a6",
+   "packages/backend/migrations/20260808120000-fold-inventory-into-product.js": "aacef9f21305bdb2",
+   "packages/backend/migrations/20260925090000-create-chat-tables.js": "358ede1ec6827334",
+   "packages/backend/migrations/20261001120000-product-view-count.js": "99acd29211991504",
+   "packages/backend/migrations/20261001140000-shops-tenancy-expand.js": "ee553fcdf13e2504",
+   "packages/backend/migrations/20261001220000-product-fts.js": "bd3351f7d9ded480",
+   "packages/backend/migrations/20261002100000-catalog-import.js": "2db019d13c68da53",
+   "packages/backend/migrations/20261010150000-catalog-s05-expand-columns.js": "be62c4c6d364f5cd",
+   "packages/backend/migrations/20261012110000-catalog-s05-contract-fks.js": "2727866f3ef5fc4b",
+   "packages/backend/migrations/20261012110100-catalog-s05-contract-shop-not-null.js": "8a47c2555685c414",
+   "packages/backend/migrations/20261019000200-catalog-s05-restore-shop-not-null.js": "2e65f3b53087f5ee",
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
    "packages/web/components/seller/inventory/inventory-toolbar.tsx": "36a0c0fc5f84e547"
   },
   "specs": {
@@ -2040,11 +2727,26 @@
   }
  },
  "inventory.tabs.archived": {
-  "code": "b8a142dc3e60d620",
+  "code": "5a6c42a66adf1b86",
   "spec": "a385b437e5abd6e4",
   "at": "2026-10-25",
   "files": {
    "packages/backend/libs/domains/catalog/api/product.controller.ts": "8e9e10f4f4b368fe",
+   "packages/backend/libs/domains/catalog/api/product.dto.ts": "1ee0842eafbb0cbd",
+   "packages/backend/libs/domains/catalog/application/product-command.service.ts": "88c1d095f06a340d",
+   "packages/backend/libs/domains/catalog/infra/models/product.model.ts": "b0656bb99edfec60",
+   "packages/backend/migrations/20260808090000-product-inventory.js": "4a65c08eb15d88a6",
+   "packages/backend/migrations/20260808120000-fold-inventory-into-product.js": "aacef9f21305bdb2",
+   "packages/backend/migrations/20260925090000-create-chat-tables.js": "358ede1ec6827334",
+   "packages/backend/migrations/20261001120000-product-view-count.js": "99acd29211991504",
+   "packages/backend/migrations/20261001140000-shops-tenancy-expand.js": "ee553fcdf13e2504",
+   "packages/backend/migrations/20261001220000-product-fts.js": "bd3351f7d9ded480",
+   "packages/backend/migrations/20261002100000-catalog-import.js": "2db019d13c68da53",
+   "packages/backend/migrations/20261010150000-catalog-s05-expand-columns.js": "be62c4c6d364f5cd",
+   "packages/backend/migrations/20261012110000-catalog-s05-contract-fks.js": "2727866f3ef5fc4b",
+   "packages/backend/migrations/20261012110100-catalog-s05-contract-shop-not-null.js": "8a47c2555685c414",
+   "packages/backend/migrations/20261019000200-catalog-s05-restore-shop-not-null.js": "2e65f3b53087f5ee",
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
    "packages/web/components/seller/inventory/inventory-toolbar.tsx": "36a0c0fc5f84e547"
   },
   "specs": {

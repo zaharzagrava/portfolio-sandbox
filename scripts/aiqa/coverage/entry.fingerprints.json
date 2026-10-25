@@ -9,19 +9,24 @@
   }
  },
  "entry.api.legacy-seller-shop": {
-  "code": "44136fa355b3678a",
+  "code": "5a9610950ed47d84",
   "spec": "e2ddc6f36bc0e6d2",
   "at": "2026-10-25",
-  "files": {},
+  "files": {
+   "packages/backend/libs/domains/tenancy/application/shop-provisioning.service.ts": "eacc7f13ed725a5a"
+  },
   "specs": {
    "S03.B-16": "53be129ba18a32d3"
   }
  },
  "entry.api.outbox-shop-created": {
-  "code": "44136fa355b3678a",
+  "code": "3eb7c9fbcd84d312",
   "spec": "be1622eda68992a9",
   "at": "2026-10-25",
-  "files": {},
+  "files": {
+   "packages/backend/libs/domains/tenancy/application/shop.service.ts": "9a312d91c7d681af",
+   "packages/backend/libs/infrastructure/outbox/outbox.service.ts": "03106e75b225602a"
+  },
   "specs": {
    "S03": "516b2d0fe923a967"
   }
@@ -57,51 +62,63 @@
   }
  },
  "entry.api.shops-get": {
-  "code": "44136fa355b3678a",
+  "code": "88cab0d4f32a7390",
   "spec": "924a798ed30920db",
   "at": "2026-10-25",
-  "files": {},
+  "files": {
+   "packages/backend/libs/domains/tenancy/api/shop.controller.ts": "be0ce071ac0c848a",
+   "packages/backend/libs/domains/tenancy/api/tenancy.dto.ts": "e1198cdca40b60bd"
+  },
   "specs": {
    "S03.B-03": "150e23d00e853f9c",
    "S03.R-01": "9057c654c2f8e352"
   }
  },
  "entry.api.shops-mine-paging": {
-  "code": "44136fa355b3678a",
+  "code": "ec4086f0ac64f398",
   "spec": "053be527db95959c",
   "at": "2026-10-25",
-  "files": {},
+  "files": {
+   "packages/backend/libs/domains/tenancy/application/shop.service.ts": "9a312d91c7d681af"
+  },
   "specs": {
    "S03.B-04": "ded571a75ceec349"
   }
  },
  "entry.api.shops-patch-rename": {
-  "code": "44136fa355b3678a",
+  "code": "42de30a3c2da9dd2",
   "spec": "ff10e706273660f5",
   "at": "2026-10-25",
-  "files": {},
+  "files": {
+   "packages/backend/libs/domains/tenancy/api/shop.controller.ts": "be0ce071ac0c848a",
+   "packages/backend/libs/domains/tenancy/api/tenancy.dto.ts": "e1198cdca40b60bd",
+   "packages/backend/libs/domains/tenancy/application/shop.service.ts": "9a312d91c7d681af"
+  },
   "specs": {
    "S03.B-05": "5e017de3ac71b3a8"
   }
  },
  "entry.auth.expired-cookie-on-navigation": {
-  "code": "7bd7bc4006ca7f9a",
+  "code": "b03199f13c91563f",
   "spec": "80be0bf4ee46bf68",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/dashboard/shop-frame.tsx": "04ebc512219b394f"
+   "packages/web/components/dashboard/shop-frame.tsx": "04ebc512219b394f",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.B-33": "3a2845c45f76de31"
   }
  },
  "entry.auth.login-return": {
-  "code": "d94f1a80e5fed318",
+  "code": "7fd48fcbcd198676",
   "spec": "2f9bcfdc1fd47eb6",
   "at": "2026-10-25",
   "files": {
    "packages/web/app/(auth)/login/login-form.tsx": "1f2d082a3d90128c",
    "packages/web/app/(auth)/login/mfa/mfa-form.tsx": "5fd5b7d8a388f300",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/session.ts": "8151d40f794d358d",
    "packages/web/lib/auth/return-to.ts": "fa4c21a038da3a83"
   },
   "specs": {
@@ -110,11 +127,12 @@
   }
  },
  "entry.auth.session-ended-once": {
-  "code": "db27df7184d432f9",
+  "code": "ea54745e09d5e9a3",
   "spec": "fd597e82bb19e058",
   "at": "2026-10-25",
   "files": {
    "packages/web/components/auth/session-lifecycle.tsx": "ce060b875ee2eaef",
+   "packages/web/lib/api/session-presence.ts": "d25930d0e67e2a05",
    "packages/web/lib/auth/session-ended.ts": "7759612ac84e0b12"
   },
   "specs": {
@@ -134,11 +152,20 @@
   }
  },
  "entry.banner.admin-suspend-db": {
-  "code": "dc351c0c8695b539",
+  "code": "266c25e33c016d87",
   "spec": "270c7f835d839569",
   "at": "2026-10-25",
   "files": {
-   "packages/backend/libs/domains/tenancy/api/admin-shops.controller.ts": "5b95a180c7eb3fd1"
+   "packages/backend/libs/domains/tenancy/api/admin-shops.controller.ts": "5b95a180c7eb3fd1",
+   "packages/backend/libs/domains/tenancy/api/tenancy.dto.ts": "e1198cdca40b60bd",
+   "packages/backend/libs/domains/tenancy/application/shop-lifecycle.service.ts": "afd173af1d2e9e1e",
+   "packages/backend/libs/domains/tenancy/infra/models/shop-status-history.model.ts": "a792a60518094a04",
+   "packages/backend/libs/domains/tenancy/infra/models/shop.model.ts": "ba1b0987ab3d736f",
+   "packages/backend/migrations/20261001140000-shops-tenancy-expand.js": "ee553fcdf13e2504",
+   "packages/backend/migrations/20261001160000-ledger-partitioning-payouts-recon.js": "d3581d6c92e577fb",
+   "packages/backend/migrations/20261001290000-public-api.js": "a3df3f97e02853f6",
+   "packages/backend/migrations/20261002170000-seller-onboarding.js": "5182cff5a76e0ca2",
+   "packages/backend/migrations/20261010140000-tenancy-s03-expand.js": "83c015f426cf7cbe"
   },
   "specs": {
    "S03.B-22": "eb0938cb223428f8"
@@ -169,11 +196,19 @@
   }
  },
  "entry.banner.offboarding-start-db": {
-  "code": "175f2cd4040f1301",
+  "code": "f1eb855efa4ec007",
   "spec": "e982f64951690154",
   "at": "2026-10-25",
   "files": {
-   "packages/backend/libs/domains/tenancy/api/offboarding.controller.ts": "c3bbbde64ca3b29d"
+   "packages/backend/libs/domains/tenancy/api/offboarding.controller.ts": "c3bbbde64ca3b29d",
+   "packages/backend/libs/domains/tenancy/api/tenancy.dto.ts": "e1198cdca40b60bd",
+   "packages/backend/libs/domains/tenancy/application/shop-lifecycle.service.ts": "afd173af1d2e9e1e",
+   "packages/backend/libs/domains/tenancy/infra/models/shop.model.ts": "ba1b0987ab3d736f",
+   "packages/backend/migrations/20261001140000-shops-tenancy-expand.js": "ee553fcdf13e2504",
+   "packages/backend/migrations/20261001160000-ledger-partitioning-payouts-recon.js": "d3581d6c92e577fb",
+   "packages/backend/migrations/20261001290000-public-api.js": "a3df3f97e02853f6",
+   "packages/backend/migrations/20261002170000-seller-onboarding.js": "5182cff5a76e0ca2",
+   "packages/backend/migrations/20261010140000-tenancy-s03-expand.js": "83c015f426cf7cbe"
   },
   "specs": {
    "S03.B-23": "ea9603d814b55408",
@@ -181,10 +216,12 @@
   }
  },
  "entry.banner.refresh-after-status-change": {
-  "code": "084dc3e8b54a4604",
+  "code": "9fb1ba43c469372d",
   "spec": "32e44dddd6dd7c26",
   "at": "2026-10-25",
   "files": {
+   "packages/web/lib/api/assistant.ts": "3cd64e331a745bda",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
    "packages/web/lib/api/problem-copy.ts": "fee92af3f30afb8c",
    "packages/web/lib/assistant/problem-copy.ts": "7901b9fda9cb5675",
    "packages/web/lib/seller/problem-copy.ts": "4ef1088a69dc32f7"
@@ -194,11 +231,18 @@
   }
  },
  "entry.banner.suspended": {
-  "code": "502da4c3e1b22874",
+  "code": "7b709db7add9326f",
   "spec": "e134d53b0c0c04ea",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/shop-status-banner.tsx": "2e011c86faa2ae74"
+   "packages/backend/libs/domains/tenancy/infra/models/shop.model.ts": "ba1b0987ab3d736f",
+   "packages/backend/migrations/20261001140000-shops-tenancy-expand.js": "ee553fcdf13e2504",
+   "packages/backend/migrations/20261001160000-ledger-partitioning-payouts-recon.js": "d3581d6c92e577fb",
+   "packages/backend/migrations/20261001290000-public-api.js": "a3df3f97e02853f6",
+   "packages/backend/migrations/20261002170000-seller-onboarding.js": "5182cff5a76e0ca2",
+   "packages/backend/migrations/20261010140000-tenancy-s03-expand.js": "83c015f426cf7cbe",
+   "packages/web/components/seller/shop-status-banner.tsx": "2e011c86faa2ae74",
+   "packages/web/lib/seller/permissions.ts": "e938842e33042b83"
   },
   "specs": {
    "S03.R-05": "504d946ad792f572",
@@ -207,10 +251,12 @@
   }
  },
  "entry.banner.writes-disabled": {
-  "code": "44136fa355b3678a",
+  "code": "8edb3979a0b9af99",
   "spec": "67d3131f043d3c3e",
   "at": "2026-10-25",
-  "files": {},
+  "files": {
+   "packages/web/lib/seller/permissions.ts": "e938842e33042b83"
+  },
   "specs": {
    "S03.R-05": "504d946ad792f572",
    "W04.R-03": "3d83ff66a103db87"
@@ -228,44 +274,54 @@
   }
  },
  "entry.drawer.close-on-navigate": {
-  "code": "8912f151bcabfeef",
+  "code": "ec7caca072442c9e",
   "spec": "65ce02b78ac61f1d",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/dashboard/mobile-drawer.tsx": "fae05477f0e60c92"
+   "packages/contracts/src/chat/channel.ts": "920423fb45751086",
+   "packages/contracts/src/chat/hub-events.ts": "0f483d54ca2b6c1a",
+   "packages/contracts/src/chat/inbox.ts": "7a1063488fd2cf4e",
+   "packages/contracts/src/chat/receipts.ts": "67e3eda44cdc234c",
+   "packages/web/components/dashboard/mobile-drawer.tsx": "fae05477f0e60c92",
+   "packages/web/hooks/use-chat-live.ts": "239e0c3da1786cc2",
+   "packages/web/lib/api/chat.ts": "b0bf3147ce8460a2",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.AS-98": "f7af4eecc58f36b9"
   }
  },
  "entry.drawer.description-sr": {
-  "code": "8912f151bcabfeef",
+  "code": "09791ab05453372f",
   "spec": "7eba6d191b3fe25e",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/dashboard/mobile-drawer.tsx": "fae05477f0e60c92"
+   "packages/web/components/dashboard/mobile-drawer.tsx": "fae05477f0e60c92",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.R-24": "b9ee5bc57cf1e574"
   }
  },
  "entry.drawer.escape": {
-  "code": "8912f151bcabfeef",
+  "code": "09791ab05453372f",
   "spec": "7eba6d191b3fe25e",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/dashboard/mobile-drawer.tsx": "fae05477f0e60c92"
+   "packages/web/components/dashboard/mobile-drawer.tsx": "fae05477f0e60c92",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.R-24": "b9ee5bc57cf1e574"
   }
  },
  "entry.drawer.open": {
-  "code": "8912f151bcabfeef",
+  "code": "09791ab05453372f",
   "spec": "1de456798299ab0c",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/dashboard/mobile-drawer.tsx": "fae05477f0e60c92"
+   "packages/web/components/dashboard/mobile-drawer.tsx": "fae05477f0e60c92",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.B-37": "fd6c85bbcba690d5",
@@ -273,11 +329,12 @@
   }
  },
  "entry.drawer.outside-click": {
-  "code": "8912f151bcabfeef",
+  "code": "09791ab05453372f",
   "spec": "65ce02b78ac61f1d",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/dashboard/mobile-drawer.tsx": "fae05477f0e60c92"
+   "packages/web/components/dashboard/mobile-drawer.tsx": "fae05477f0e60c92",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.AS-98": "f7af4eecc58f36b9"
@@ -295,22 +352,24 @@
   }
  },
  "entry.drawer.rotate-resize": {
-  "code": "8912f151bcabfeef",
+  "code": "09791ab05453372f",
   "spec": "da99d296bdd621a7",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/dashboard/mobile-drawer.tsx": "fae05477f0e60c92"
+   "packages/web/components/dashboard/mobile-drawer.tsx": "fae05477f0e60c92",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.B-37": "fd6c85bbcba690d5"
   }
  },
  "entry.drawer.shop-bar": {
-  "code": "8912f151bcabfeef",
+  "code": "09791ab05453372f",
   "spec": "ebee454a8543ff1e",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/dashboard/mobile-drawer.tsx": "fae05477f0e60c92"
+   "packages/web/components/dashboard/mobile-drawer.tsx": "fae05477f0e60c92",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.AS-98": "f7af4eecc58f36b9",
@@ -318,44 +377,82 @@
   }
  },
  "entry.drawer.sideways-scroll": {
-  "code": "41914f2ce5d11357",
+  "code": "13463a8d0fb309fc",
   "spec": "da99d296bdd621a7",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/dashboard/dashboard-shell.tsx": "61bd0e834051789a"
+   "packages/web/components/dashboard/dashboard-shell.tsx": "61bd0e834051789a",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.B-37": "fd6c85bbcba690d5"
   }
  },
  "entry.drawer.switcher-inside": {
-  "code": "8912f151bcabfeef",
+  "code": "8fb7cf751964b74e",
   "spec": "65ce02b78ac61f1d",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/dashboard/mobile-drawer.tsx": "fae05477f0e60c92"
+   "packages/web/components/dashboard/mobile-drawer.tsx": "fae05477f0e60c92",
+   "packages/web/components/dashboard/seller-nav.tsx": "3fe3854905dd347b",
+   "packages/web/components/seller/shop-switcher.tsx": "2711e51c0dbe994e",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.AS-98": "f7af4eecc58f36b9"
   }
  },
+ "entry.form.api-name-limits": {
+  "code": "bf9505f1b2c6c1e0",
+  "spec": "5cb156193b8f15cc",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/tenancy/api/tenancy.dto.ts": "e1198cdca40b60bd"
+  },
+  "specs": {
+   "S03.R-13": "4576eae268ed12f1"
+  }
+ },
+ "entry.form.api-unknown-shop-id": {
+  "code": "88cab0d4f32a7390",
+  "spec": "9d6f7ac0d826a770",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/tenancy/api/shop.controller.ts": "be0ce071ac0c848a",
+   "packages/backend/libs/domains/tenancy/api/tenancy.dto.ts": "e1198cdca40b60bd"
+  },
+  "specs": {
+   "S03.R-01": "9057c654c2f8e352"
+  }
+ },
  "entry.form.button-label-pending": {
-  "code": "21006f952cc7b9c2",
+  "code": "b994afba23f0ca80",
   "spec": "07789ccc72930e95",
   "at": "2026-10-25",
   "files": {
-   "packages/web/app/dashboard/seller/open-shop-form.tsx": "b64fdea935b03d29"
+   "packages/contracts/src/assistant/knowledge.ts": "3a1bb24ee5d1556a",
+   "packages/web/app/dashboard/seller/open-shop-form.tsx": "b64fdea935b03d29",
+   "packages/web/lib/api/client.ts": "0fa4cb70bbc2d203",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/orders.ts": "7631ea19bc997f81",
+   "packages/web/lib/api/parse.ts": "82453dbb70bf149b",
+   "packages/web/lib/api/seller-knowledge.ts": "c2d792729d58f82f",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899",
+   "packages/web/lib/api/shops.ts": "1d7ef79fbefb8de0"
   },
   "specs": {
    "W04.B-02": "af66d2952377ed08"
   }
  },
  "entry.form.double-press-one-request": {
-  "code": "21006f952cc7b9c2",
+  "code": "256e8797d39a019e",
   "spec": "8c2ac6d3da5b0193",
   "at": "2026-10-25",
   "files": {
-   "packages/web/app/dashboard/seller/open-shop-form.tsx": "b64fdea935b03d29"
+   "packages/web/app/dashboard/seller/open-shop-form.tsx": "b64fdea935b03d29",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899",
+   "packages/web/lib/api/shops.ts": "1d7ef79fbefb8de0"
   },
   "specs": {
    "W04.AS-07": "acd14391bec16564",
@@ -364,56 +461,92 @@
   }
  },
  "entry.form.enter-key-submits": {
-  "code": "21006f952cc7b9c2",
+  "code": "256e8797d39a019e",
   "spec": "44136fa355b3678a",
   "at": "2026-10-25",
   "files": {
-   "packages/web/app/dashboard/seller/open-shop-form.tsx": "b64fdea935b03d29"
+   "packages/web/app/dashboard/seller/open-shop-form.tsx": "b64fdea935b03d29",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899",
+   "packages/web/lib/api/shops.ts": "1d7ef79fbefb8de0"
   },
   "specs": {}
  },
  "entry.form.error-5xx": {
-  "code": "236e733b2e6e2101",
+  "code": "b74e66cd3e4d5249",
   "spec": "d7c83d22d3b72334",
   "at": "2026-10-25",
   "files": {
    "packages/web/app/dashboard/seller/open-shop-form.tsx": "b64fdea935b03d29",
-   "packages/web/components/seller/problem-states.tsx": "b8ff53d2297a93b6"
+   "packages/web/app/developers/docs/reference.tsx": "14774a4228f888ac",
+   "packages/web/components/admin/flags/copy-button.tsx": "f6a352cd2e847c80",
+   "packages/web/components/admin/flags/flag-problem.tsx": "7cd5aea71b7198b2",
+   "packages/web/components/seller/copy-button.tsx": "71efd6c2ee07cf5d",
+   "packages/web/components/seller/problem-states.tsx": "b8ff53d2297a93b6",
+   "packages/web/lib/api/developers.ts": "227528294a75a455",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899",
+   "packages/web/lib/api/shops.ts": "1d7ef79fbefb8de0"
   },
   "specs": {
    "W04.B-36": "fcc8e64e5e4d05f8",
    "W04.R-13": "91b32c5778f1aab7"
   }
  },
+ "entry.form.error-5xx-network": {
+  "code": "e425ae5c540052c8",
+  "spec": "e95829d2495c7ab0",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/app/dashboard/seller/open-shop-form.tsx": "b64fdea935b03d29",
+   "packages/web/components/seller/problem-states.tsx": "b8ff53d2297a93b6",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899",
+   "packages/web/lib/api/shops.ts": "1d7ef79fbefb8de0"
+  },
+  "specs": {
+   "W04.AS-06": "eabea675046ec473"
+  }
+ },
  "entry.form.error-clears-on-edit": {
-  "code": "21006f952cc7b9c2",
+  "code": "256e8797d39a019e",
   "spec": "605d84456ff980fd",
   "at": "2026-10-25",
   "files": {
-   "packages/web/app/dashboard/seller/open-shop-form.tsx": "b64fdea935b03d29"
+   "packages/web/app/dashboard/seller/open-shop-form.tsx": "b64fdea935b03d29",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899",
+   "packages/web/lib/api/shops.ts": "1d7ef79fbefb8de0"
   },
   "specs": {
    "W04.AS-05": "eabea675046ec473"
   }
  },
  "entry.form.error-name-focus": {
-  "code": "21006f952cc7b9c2",
+  "code": "256e8797d39a019e",
   "spec": "605d84456ff980fd",
   "at": "2026-10-25",
   "files": {
-   "packages/web/app/dashboard/seller/open-shop-form.tsx": "b64fdea935b03d29"
+   "packages/web/app/dashboard/seller/open-shop-form.tsx": "b64fdea935b03d29",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899",
+   "packages/web/lib/api/shops.ts": "1d7ef79fbefb8de0"
   },
   "specs": {
    "W04.AS-05": "eabea675046ec473"
   }
  },
  "entry.form.error-network-down": {
-  "code": "d1def16c0e9cf61a",
+  "code": "700739857aa04fb9",
   "spec": "30c6abef762640af",
   "at": "2026-10-25",
   "files": {
    "packages/web/app/dashboard/seller/open-shop-form.tsx": "b64fdea935b03d29",
+   "packages/web/lib/api/assistant.ts": "3cd64e331a745bda",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
    "packages/web/lib/api/problem-copy.ts": "fee92af3f30afb8c",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899",
+   "packages/web/lib/api/shops.ts": "1d7ef79fbefb8de0",
    "packages/web/lib/assistant/problem-copy.ts": "7901b9fda9cb5675",
    "packages/web/lib/seller/problem-copy.ts": "4ef1088a69dc32f7"
   },
@@ -422,12 +555,16 @@
   }
  },
  "entry.form.error-rate-limit": {
-  "code": "236e733b2e6e2101",
+  "code": "7e8b4246d9a85501",
   "spec": "24ba1b045344823f",
   "at": "2026-10-25",
   "files": {
+   "packages/backend/libs/infrastructure/rate-limit/rate-limit.decorator.ts": "4d506b807972c650",
    "packages/web/app/dashboard/seller/open-shop-form.tsx": "b64fdea935b03d29",
-   "packages/web/components/seller/problem-states.tsx": "b8ff53d2297a93b6"
+   "packages/web/components/seller/problem-states.tsx": "b8ff53d2297a93b6",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899",
+   "packages/web/lib/api/shops.ts": "1d7ef79fbefb8de0"
   },
   "specs": {
    "S03.R-18": "f064d992b745d526",
@@ -437,22 +574,30 @@
   }
  },
  "entry.form.error-retry-after-fix": {
-  "code": "21006f952cc7b9c2",
+  "code": "256e8797d39a019e",
   "spec": "605d84456ff980fd",
   "at": "2026-10-25",
   "files": {
-   "packages/web/app/dashboard/seller/open-shop-form.tsx": "b64fdea935b03d29"
+   "packages/web/app/dashboard/seller/open-shop-form.tsx": "b64fdea935b03d29",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899",
+   "packages/web/lib/api/shops.ts": "1d7ef79fbefb8de0"
   },
   "specs": {
    "W04.AS-05": "eabea675046ec473"
   }
  },
  "entry.form.error-session-ended": {
-  "code": "9ab881a80b53ddc8",
+  "code": "ed87004794359fb4",
   "spec": "fd597e82bb19e058",
   "at": "2026-10-25",
   "files": {
    "packages/web/app/dashboard/seller/open-shop-form.tsx": "b64fdea935b03d29",
+   "packages/web/components/admin/flags/flag-problem.tsx": "7cd5aea71b7198b2",
+   "packages/web/components/seller/problem-states.tsx": "b8ff53d2297a93b6",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899",
+   "packages/web/lib/api/shops.ts": "1d7ef79fbefb8de0",
    "packages/web/lib/auth/session-ended.ts": "7759612ac84e0b12"
   },
   "specs": {
@@ -461,11 +606,20 @@
   }
  },
  "entry.form.error-shop-limit": {
-  "code": "21006f952cc7b9c2",
+  "code": "58fc1a4d5a6c472b",
   "spec": "a4fa44d30aad3839",
   "at": "2026-10-25",
   "files": {
-   "packages/web/app/dashboard/seller/open-shop-form.tsx": "b64fdea935b03d29"
+   "packages/backend/libs/domains/tenancy/application/shop.service.ts": "9a312d91c7d681af",
+   "packages/backend/libs/domains/tenancy/infra/models/shop-membership.model.ts": "45533969e65b506e",
+   "packages/backend/migrations/20261001140000-shops-tenancy-expand.js": "ee553fcdf13e2504",
+   "packages/backend/migrations/20261010140000-tenancy-s03-expand.js": "83c015f426cf7cbe",
+   "packages/backend/migrations/20261010141000-tenancy-s03-contract-fks.js": "be9a026486c0c7f0",
+   "packages/web/app/dashboard/seller/open-shop-form.tsx": "b64fdea935b03d29",
+   "packages/web/components/seller/problem-states.tsx": "b8ff53d2297a93b6",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899",
+   "packages/web/lib/api/shops.ts": "1d7ef79fbefb8de0"
   },
   "specs": {
    "S03.B-02": "16a29201399ef20a",
@@ -474,12 +628,15 @@
   }
  },
  "entry.form.error-slug-reserved": {
-  "code": "299fcbb85919654d",
+  "code": "35214ee8767c4ea7",
   "spec": "0b9821c60053fbdd",
   "at": "2026-10-25",
   "files": {
    "packages/backend/libs/domains/tenancy/domain/slug-policy.ts": "b3e4006fcdefa14e",
-   "packages/web/app/dashboard/seller/open-shop-form.tsx": "b64fdea935b03d29"
+   "packages/web/app/dashboard/seller/open-shop-form.tsx": "b64fdea935b03d29",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899",
+   "packages/web/lib/api/shops.ts": "1d7ef79fbefb8de0"
   },
   "specs": {
    "S03.R-13": "4576eae268ed12f1",
@@ -487,11 +644,21 @@
   }
  },
  "entry.form.error-slug-taken": {
-  "code": "4f67d367baabf094",
+  "code": "3e2f3b69aebedef4",
   "spec": "a333490e24abc08a",
   "at": "2026-10-25",
   "files": {
+   "packages/backend/libs/domains/tenancy/application/shop.service.ts": "9a312d91c7d681af",
+   "packages/backend/libs/domains/tenancy/infra/models/shop.model.ts": "ba1b0987ab3d736f",
+   "packages/backend/migrations/20261001140000-shops-tenancy-expand.js": "ee553fcdf13e2504",
+   "packages/backend/migrations/20261001160000-ledger-partitioning-payouts-recon.js": "d3581d6c92e577fb",
+   "packages/backend/migrations/20261001290000-public-api.js": "a3df3f97e02853f6",
+   "packages/backend/migrations/20261002170000-seller-onboarding.js": "5182cff5a76e0ca2",
+   "packages/backend/migrations/20261010140000-tenancy-s03-expand.js": "83c015f426cf7cbe",
    "packages/web/app/dashboard/seller/open-shop-form.tsx": "b64fdea935b03d29",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899",
+   "packages/web/lib/api/shops.ts": "1d7ef79fbefb8de0",
    "packages/web/lib/seller/problem-copy.ts": "4ef1088a69dc32f7"
   },
   "specs": {
@@ -501,33 +668,61 @@
   }
  },
  "entry.form.error-validation-failed": {
-  "code": "21006f952cc7b9c2",
+  "code": "814642f1e37b60c6",
   "spec": "605d84456ff980fd",
   "at": "2026-10-25",
   "files": {
-   "packages/web/app/dashboard/seller/open-shop-form.tsx": "b64fdea935b03d29"
+   "packages/backend/libs/domains/tenancy/api/tenancy.dto.ts": "e1198cdca40b60bd",
+   "packages/web/app/dashboard/seller/open-shop-form.tsx": "b64fdea935b03d29",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899",
+   "packages/web/lib/api/shops.ts": "1d7ef79fbefb8de0"
+  },
+  "specs": {
+   "W04.AS-05": "eabea675046ec473"
+  }
+ },
+ "entry.form.first-click-lost-layout-shift": {
+  "code": "256e8797d39a019e",
+  "spec": "605d84456ff980fd",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/app/dashboard/seller/open-shop-form.tsx": "b64fdea935b03d29",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899",
+   "packages/web/lib/api/shops.ts": "1d7ef79fbefb8de0"
   },
   "specs": {
    "W04.AS-05": "eabea675046ec473"
   }
  },
  "entry.form.handle-field": {
-  "code": "21006f952cc7b9c2",
+  "code": "8794358ef04812e7",
   "spec": "34a2c6e82a2dcbd6",
   "at": "2026-10-25",
   "files": {
-   "packages/web/app/dashboard/seller/open-shop-form.tsx": "b64fdea935b03d29"
+   "packages/backend/libs/domains/content/domain/story-input.ts": "03694895a0b4ca2f",
+   "packages/backend/libs/domains/tenancy/api/tenancy.dto.ts": "e1198cdca40b60bd",
+   "packages/backend/libs/domains/tenancy/domain/slug-policy.ts": "b3e4006fcdefa14e",
+   "packages/contracts/src/stories/story.ts": "93d39e7e6d36307b",
+   "packages/web/app/dashboard/seller/open-shop-form.tsx": "b64fdea935b03d29",
+   "packages/web/components/ui/input.tsx": "75418e030b2a54dd",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899",
+   "packages/web/lib/api/shops.ts": "1d7ef79fbefb8de0"
   },
   "specs": {
    "W04.B-01": "13add0d3413bff25"
   }
  },
  "entry.form.handle-follows-name": {
-  "code": "7e2492b52e41ae75",
+  "code": "256e8797d39a019e",
   "spec": "1450aabb33ba4803",
   "at": "2026-10-25",
   "files": {
    "packages/web/app/dashboard/seller/open-shop-form.tsx": "b64fdea935b03d29",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899",
    "packages/web/lib/api/shops.ts": "1d7ef79fbefb8de0"
   },
   "specs": {
@@ -536,11 +731,15 @@
   }
  },
  "entry.form.handle-pattern-parity": {
-  "code": "8276558c883f54b5",
+  "code": "913bdaa9aa79a837",
   "spec": "5cb156193b8f15cc",
   "at": "2026-10-25",
   "files": {
+   "packages/backend/libs/domains/content/application/public-read.service.ts": "29d45e0093df469d",
+   "packages/backend/libs/domains/content/domain/story-input.ts": "03694895a0b4ca2f",
    "packages/backend/libs/domains/tenancy/domain/slug-policy.ts": "b3e4006fcdefa14e",
+   "packages/contracts/src/stories/public.ts": "e13cfd1f1fde3031",
+   "packages/contracts/src/stories/story.ts": "93d39e7e6d36307b",
    "packages/web/lib/api/shops.ts": "1d7ef79fbefb8de0"
   },
   "specs": {
@@ -548,11 +747,14 @@
   }
  },
  "entry.form.handle-stops-following": {
-  "code": "21006f952cc7b9c2",
+  "code": "256e8797d39a019e",
   "spec": "1450aabb33ba4803",
   "at": "2026-10-25",
   "files": {
-   "packages/web/app/dashboard/seller/open-shop-form.tsx": "b64fdea935b03d29"
+   "packages/web/app/dashboard/seller/open-shop-form.tsx": "b64fdea935b03d29",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899",
+   "packages/web/lib/api/shops.ts": "1d7ef79fbefb8de0"
   },
   "specs": {
    "W04.AS-02": "acd14391bec16564",
@@ -560,11 +762,15 @@
   }
  },
  "entry.form.handle-validation-blur": {
-  "code": "7e2492b52e41ae75",
+  "code": "dcc1518cdf270ba0",
   "spec": "dbda106f8d87c7b0",
   "at": "2026-10-25",
   "files": {
+   "packages/backend/libs/domains/content/application/public-read.service.ts": "29d45e0093df469d",
+   "packages/contracts/src/stories/public.ts": "e13cfd1f1fde3031",
    "packages/web/app/dashboard/seller/open-shop-form.tsx": "b64fdea935b03d29",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899",
    "packages/web/lib/api/shops.ts": "1d7ef79fbefb8de0"
   },
   "specs": {
@@ -573,22 +779,27 @@
   }
  },
  "entry.form.heading": {
-  "code": "21006f952cc7b9c2",
+  "code": "256e8797d39a019e",
   "spec": "34a2c6e82a2dcbd6",
   "at": "2026-10-25",
   "files": {
-   "packages/web/app/dashboard/seller/open-shop-form.tsx": "b64fdea935b03d29"
+   "packages/web/app/dashboard/seller/open-shop-form.tsx": "b64fdea935b03d29",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899",
+   "packages/web/lib/api/shops.ts": "1d7ef79fbefb8de0"
   },
   "specs": {
    "W04.B-01": "13add0d3413bff25"
   }
  },
  "entry.form.idempotency-key": {
-  "code": "73ecd2f1af9a5515",
+  "code": "a1ad396a82160b4c",
   "spec": "a8c454d12290f0e8",
   "at": "2026-10-25",
   "files": {
-   "packages/backend/libs/domains/tenancy/api/shop.controller.ts": "be0ce071ac0c848a"
+   "packages/backend/libs/domains/tenancy/api/shop.controller.ts": "be0ce071ac0c848a",
+   "packages/backend/libs/domains/tenancy/api/tenancy.dto.ts": "e1198cdca40b60bd",
+   "packages/backend/libs/infrastructure/idempotency/idempotent.decorator.ts": "ece7962518682c59"
   },
   "specs": {
    "J02": "ba56fd23074e1146",
@@ -596,10 +807,15 @@
   }
  },
  "entry.form.invalidates-shops-cache": {
-  "code": "0340ff1dd08abc62",
+  "code": "2111c316ae84e266",
   "spec": "c13df2644d76a512",
   "at": "2026-10-25",
   "files": {
+   "packages/contracts/src/bff/seller-overview.ts": "cf5790c3205c6cf1",
+   "packages/contracts/src/tenancy/index.ts": "324ccfbe0702f2bf",
+   "packages/web/lib/api/client.ts": "0fa4cb70bbc2d203",
+   "packages/web/lib/api/orders.ts": "7631ea19bc997f81",
+   "packages/web/lib/api/parse.ts": "82453dbb70bf149b",
    "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
@@ -607,43 +823,65 @@
   }
  },
  "entry.form.labels-a11y": {
-  "code": "21006f952cc7b9c2",
+  "code": "256e8797d39a019e",
   "spec": "7eba6d191b3fe25e",
   "at": "2026-10-25",
   "files": {
-   "packages/web/app/dashboard/seller/open-shop-form.tsx": "b64fdea935b03d29"
+   "packages/web/app/dashboard/seller/open-shop-form.tsx": "b64fdea935b03d29",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899",
+   "packages/web/lib/api/shops.ts": "1d7ef79fbefb8de0"
   },
   "specs": {
    "W04.R-24": "b9ee5bc57cf1e574"
   }
  },
  "entry.form.mobile-390": {
-  "code": "21006f952cc7b9c2",
+  "code": "7fed14ac43912a4d",
   "spec": "da99d296bdd621a7",
   "at": "2026-10-25",
   "files": {
-   "packages/web/app/dashboard/seller/open-shop-form.tsx": "b64fdea935b03d29"
+   "packages/web/app/dashboard/seller/open-shop-form.tsx": "b64fdea935b03d29",
+   "packages/web/components/ui/card.tsx": "8ad3a18d36bda059",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899",
+   "packages/web/lib/api/shops.ts": "1d7ef79fbefb8de0"
   },
   "specs": {
    "W04.B-37": "fd6c85bbcba690d5"
   }
  },
  "entry.form.multi-tab-race": {
-  "code": "44136fa355b3678a",
+  "code": "d7cd923ac104b6dd",
   "spec": "0e15d38d2caf0b49",
   "at": "2026-10-25",
-  "files": {},
+  "files": {
+   "packages/backend/libs/domains/tenancy/application/shop.service.ts": "9a312d91c7d681af",
+   "packages/backend/libs/domains/tenancy/infra/models/shop.model.ts": "ba1b0987ab3d736f",
+   "packages/backend/migrations/20261001140000-shops-tenancy-expand.js": "ee553fcdf13e2504",
+   "packages/backend/migrations/20261001160000-ledger-partitioning-payouts-recon.js": "d3581d6c92e577fb",
+   "packages/backend/migrations/20261001290000-public-api.js": "a3df3f97e02853f6",
+   "packages/backend/migrations/20261002170000-seller-onboarding.js": "5182cff5a76e0ca2",
+   "packages/backend/migrations/20261010140000-tenancy-s03-expand.js": "83c015f426cf7cbe"
+  },
   "specs": {
    "S03.R-12": "d02cafd818041e8c",
    "S03.R-13": "4576eae268ed12f1"
   }
  },
  "entry.form.name-field": {
-  "code": "21006f952cc7b9c2",
+  "code": "e7c9632448529415",
   "spec": "ee230a20495ddcb0",
   "at": "2026-10-25",
   "files": {
-   "packages/web/app/dashboard/seller/open-shop-form.tsx": "b64fdea935b03d29"
+   "packages/backend/libs/domains/content/domain/story-input.ts": "03694895a0b4ca2f",
+   "packages/backend/libs/domains/tenancy/api/tenancy.dto.ts": "e1198cdca40b60bd",
+   "packages/contracts/src/stories/story.ts": "93d39e7e6d36307b",
+   "packages/web/app/dashboard/seller/open-shop-form.tsx": "b64fdea935b03d29",
+   "packages/web/components/ui/input.tsx": "75418e030b2a54dd",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899",
+   "packages/web/lib/api/shops.ts": "1d7ef79fbefb8de0"
   },
   "specs": {
    "S03.R-13": "4576eae268ed12f1",
@@ -651,35 +889,72 @@
   }
  },
  "entry.form.name-validation-blur": {
-  "code": "21006f952cc7b9c2",
+  "code": "256e8797d39a019e",
   "spec": "605d84456ff980fd",
   "at": "2026-10-25",
   "files": {
-   "packages/web/app/dashboard/seller/open-shop-form.tsx": "b64fdea935b03d29"
+   "packages/web/app/dashboard/seller/open-shop-form.tsx": "b64fdea935b03d29",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899",
+   "packages/web/lib/api/shops.ts": "1d7ef79fbefb8de0"
   },
   "specs": {
    "W04.AS-05": "eabea675046ec473"
   }
  },
  "entry.form.region-default": {
-  "code": "44136fa355b3678a",
+  "code": "5e5759ffef0419ef",
   "spec": "e465892eafc0dd28",
   "at": "2026-10-25",
-  "files": {},
+  "files": {
+   "packages/backend/libs/domains/tenancy/api/shop.controller.ts": "be0ce071ac0c848a",
+   "packages/backend/libs/domains/tenancy/api/tenancy.dto.ts": "e1198cdca40b60bd",
+   "packages/backend/libs/domains/tenancy/application/shop.service.ts": "9a312d91c7d681af",
+   "packages/backend/libs/domains/tenancy/infra/models/shop-directory.model.ts": "ff8e8996c19443dd",
+   "packages/backend/libs/domains/tenancy/infra/models/shop-membership.model.ts": "45533969e65b506e",
+   "packages/backend/libs/domains/tenancy/infra/models/shop-status-history.model.ts": "a792a60518094a04",
+   "packages/backend/libs/domains/tenancy/infra/models/shop.model.ts": "ba1b0987ab3d736f",
+   "packages/backend/migrations/20261001140000-shops-tenancy-expand.js": "ee553fcdf13e2504",
+   "packages/backend/migrations/20261001160000-ledger-partitioning-payouts-recon.js": "d3581d6c92e577fb",
+   "packages/backend/migrations/20261001290000-public-api.js": "a3df3f97e02853f6",
+   "packages/backend/migrations/20261002170000-seller-onboarding.js": "5182cff5a76e0ca2",
+   "packages/backend/migrations/20261010140000-tenancy-s03-expand.js": "83c015f426cf7cbe",
+   "packages/backend/migrations/20261010141000-tenancy-s03-contract-fks.js": "be9a026486c0c7f0"
+  },
   "specs": {
    "S03.B-28": "6caf6397e1ab85e6"
   }
  },
  "entry.form.role-refresh-background": {
-  "code": "21006f952cc7b9c2",
+  "code": "9809e3ef02a14822",
   "spec": "0e17f0d46426051d",
   "at": "2026-10-25",
   "files": {
-   "packages/web/app/dashboard/seller/open-shop-form.tsx": "b64fdea935b03d29"
+   "packages/web/app/dashboard/seller/open-shop-form.tsx": "b64fdea935b03d29",
+   "packages/web/hooks/use-auth-actions.ts": "d654fd838f946fce",
+   "packages/web/lib/api/cart.ts": "05d16442520f14fa",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899",
+   "packages/web/lib/api/session.ts": "8151d40f794d358d",
+   "packages/web/lib/api/shops.ts": "1d7ef79fbefb8de0"
   },
   "specs": {
    "W04.AS-04": "eabea675046ec473",
    "W04.B-02": "af66d2952377ed08"
+  }
+ },
+ "entry.form.role-refresh-early-stop": {
+  "code": "256e8797d39a019e",
+  "spec": "f4e61347dc425253",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/app/dashboard/seller/open-shop-form.tsx": "b64fdea935b03d29",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899",
+   "packages/web/lib/api/shops.ts": "1d7ef79fbefb8de0"
+  },
+  "specs": {
+   "W04.AS-04": "eabea675046ec473"
   }
  },
  "entry.form.slugify-edge-cases": {
@@ -694,12 +969,32 @@
   }
  },
  "entry.form.submit-happy-path": {
-  "code": "1862231b76d12cf5",
+  "code": "ca42d8c28d2fe6a3",
   "spec": "58f9585a59839d65",
   "at": "2026-10-25",
   "files": {
+   "packages/backend/libs/domains/tenancy/api/shop.controller.ts": "be0ce071ac0c848a",
+   "packages/backend/libs/domains/tenancy/api/tenancy.dto.ts": "e1198cdca40b60bd",
+   "packages/backend/libs/domains/tenancy/application/shop.service.ts": "9a312d91c7d681af",
+   "packages/backend/libs/domains/tenancy/infra/models/shop-directory.model.ts": "ff8e8996c19443dd",
+   "packages/backend/libs/domains/tenancy/infra/models/shop-membership.model.ts": "45533969e65b506e",
+   "packages/backend/libs/domains/tenancy/infra/models/shop-status-history.model.ts": "a792a60518094a04",
+   "packages/backend/libs/domains/tenancy/infra/models/shop.model.ts": "ba1b0987ab3d736f",
+   "packages/backend/migrations/20261001140000-shops-tenancy-expand.js": "ee553fcdf13e2504",
+   "packages/backend/migrations/20261001160000-ledger-partitioning-payouts-recon.js": "d3581d6c92e577fb",
+   "packages/backend/migrations/20261001290000-public-api.js": "a3df3f97e02853f6",
+   "packages/backend/migrations/20261002170000-seller-onboarding.js": "5182cff5a76e0ca2",
+   "packages/backend/migrations/20261010140000-tenancy-s03-expand.js": "83c015f426cf7cbe",
+   "packages/backend/migrations/20261010141000-tenancy-s03-contract-fks.js": "be9a026486c0c7f0",
+   "packages/contracts/src/bff/seller-overview.ts": "cf5790c3205c6cf1",
+   "packages/contracts/src/tenancy/index.ts": "324ccfbe0702f2bf",
    "packages/web/app/dashboard/seller/open-shop-form.tsx": "b64fdea935b03d29",
-   "packages/web/lib/api/seller.ts": "267d9b324c265899"
+   "packages/web/lib/api/client.ts": "0fa4cb70bbc2d203",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/orders.ts": "7631ea19bc997f81",
+   "packages/web/lib/api/parse.ts": "82453dbb70bf149b",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899",
+   "packages/web/lib/api/shops.ts": "1d7ef79fbefb8de0"
   },
   "specs": {
    "S03.B-01": "c9655bf0d42d3317",
@@ -709,22 +1004,29 @@
   }
  },
  "entry.form.submit-invalid-focus": {
-  "code": "21006f952cc7b9c2",
+  "code": "256e8797d39a019e",
   "spec": "605d84456ff980fd",
   "at": "2026-10-25",
   "files": {
-   "packages/web/app/dashboard/seller/open-shop-form.tsx": "b64fdea935b03d29"
+   "packages/web/app/dashboard/seller/open-shop-form.tsx": "b64fdea935b03d29",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899",
+   "packages/web/lib/api/shops.ts": "1d7ef79fbefb8de0"
   },
   "specs": {
    "W04.AS-05": "eabea675046ec473"
   }
  },
  "entry.form.unicode-whitespace-name": {
-  "code": "21006f952cc7b9c2",
+  "code": "814642f1e37b60c6",
   "spec": "5cb156193b8f15cc",
   "at": "2026-10-25",
   "files": {
-   "packages/web/app/dashboard/seller/open-shop-form.tsx": "b64fdea935b03d29"
+   "packages/backend/libs/domains/tenancy/api/tenancy.dto.ts": "e1198cdca40b60bd",
+   "packages/web/app/dashboard/seller/open-shop-form.tsx": "b64fdea935b03d29",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899",
+   "packages/web/lib/api/shops.ts": "1d7ef79fbefb8de0"
   },
   "specs": {
    "S03.R-13": "4576eae268ed12f1"
@@ -743,55 +1045,75 @@
   }
  },
  "entry.form.xss-name": {
-  "code": "adb87a15bdef98c7",
+  "code": "318affcd15eda6cb",
   "spec": "74b06185be28d453",
   "at": "2026-10-25",
   "files": {
+   "packages/backend/libs/domains/tenancy/infra/models/shop.model.ts": "ba1b0987ab3d736f",
+   "packages/backend/migrations/20261001140000-shops-tenancy-expand.js": "ee553fcdf13e2504",
+   "packages/backend/migrations/20261001160000-ledger-partitioning-payouts-recon.js": "d3581d6c92e577fb",
+   "packages/backend/migrations/20261001290000-public-api.js": "a3df3f97e02853f6",
+   "packages/backend/migrations/20261002170000-seller-onboarding.js": "5182cff5a76e0ca2",
+   "packages/backend/migrations/20261010140000-tenancy-s03-expand.js": "83c015f426cf7cbe",
    "packages/web/app/dashboard/seller/open-shop-form.tsx": "b64fdea935b03d29",
-   "packages/web/components/seller/shop-switcher.tsx": "2711e51c0dbe994e"
+   "packages/web/components/seller/shop-switcher.tsx": "2711e51c0dbe994e",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899",
+   "packages/web/lib/api/shops.ts": "1d7ef79fbefb8de0"
   },
   "specs": {
    "W04.R-28": "bcbeea3991272441"
   }
  },
  "entry.frame.401-on-shop-read": {
-  "code": "7bd7bc4006ca7f9a",
+  "code": "b03199f13c91563f",
   "spec": "80be0bf4ee46bf68",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/dashboard/shop-frame.tsx": "04ebc512219b394f"
+   "packages/web/components/dashboard/shop-frame.tsx": "04ebc512219b394f",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.B-33": "3a2845c45f76de31"
   }
  },
  "entry.frame.403-as-404": {
-  "code": "7bd7bc4006ca7f9a",
+  "code": "b03199f13c91563f",
   "spec": "0402ec2a3e91189e",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/dashboard/shop-frame.tsx": "04ebc512219b394f"
+   "packages/web/components/dashboard/shop-frame.tsx": "04ebc512219b394f",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.AS-85": "dab82e9523887b3c"
   }
  },
  "entry.frame.current-shop-not-in-first-50": {
-  "code": "7bd7bc4006ca7f9a",
+  "code": "b03199f13c91563f",
   "spec": "809bccc97448a752",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/dashboard/shop-frame.tsx": "04ebc512219b394f"
+   "packages/web/components/dashboard/shop-frame.tsx": "04ebc512219b394f",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.R-32": "87499b9da52c3bc4"
   }
  },
  "entry.frame.deleted-shop": {
-  "code": "44136fa355b3678a",
+  "code": "d7cd923ac104b6dd",
   "spec": "543b782868e28e9b",
   "at": "2026-10-25",
-  "files": {},
+  "files": {
+   "packages/backend/libs/domains/tenancy/application/shop.service.ts": "9a312d91c7d681af",
+   "packages/backend/libs/domains/tenancy/infra/models/shop.model.ts": "ba1b0987ab3d736f",
+   "packages/backend/migrations/20261001140000-shops-tenancy-expand.js": "ee553fcdf13e2504",
+   "packages/backend/migrations/20261001160000-ledger-partitioning-payouts-recon.js": "d3581d6c92e577fb",
+   "packages/backend/migrations/20261001290000-public-api.js": "a3df3f97e02853f6",
+   "packages/backend/migrations/20261002170000-seller-onboarding.js": "5182cff5a76e0ca2",
+   "packages/backend/migrations/20261010140000-tenancy-s03-expand.js": "83c015f426cf7cbe"
+  },
   "specs": {
    "S03.B-25": "38b01510edb8f82a",
    "S03.R-01": "9057c654c2f8e352"
@@ -809,11 +1131,17 @@
   }
  },
  "entry.frame.foreign-shop-id": {
-  "code": "7bd7bc4006ca7f9a",
+  "code": "d8e0ab739dea3779",
   "spec": "1de80284f08fbac8",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/dashboard/shop-frame.tsx": "04ebc512219b394f"
+   "packages/backend/libs/domains/tenancy/api/shop.guard.ts": "d0836b3019ac98bf",
+   "packages/backend/libs/domains/tenancy/infra/models/shop-membership.model.ts": "45533969e65b506e",
+   "packages/backend/migrations/20261001140000-shops-tenancy-expand.js": "ee553fcdf13e2504",
+   "packages/backend/migrations/20261010140000-tenancy-s03-expand.js": "83c015f426cf7cbe",
+   "packages/backend/migrations/20261010141000-tenancy-s03-contract-fks.js": "be9a026486c0c7f0",
+   "packages/web/components/dashboard/shop-frame.tsx": "04ebc512219b394f",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "S03.R-01": "9057c654c2f8e352",
@@ -821,11 +1149,12 @@
   }
  },
  "entry.frame.hydration-seed": {
-  "code": "e0cf24fa1925b16a",
+  "code": "af014c4658d8131e",
   "spec": "c13df2644d76a512",
   "at": "2026-10-25",
   "files": {
    "packages/web/components/dashboard/shop-frame.tsx": "04ebc512219b394f",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899",
    "packages/web/lib/query-keys.ts": "0da0b77363058008"
   },
   "specs": {
@@ -845,11 +1174,23 @@
   }
  },
  "entry.frame.malformed-shop-id": {
-  "code": "d99d60de7d50e540",
+  "code": "9bbc4b0bc8fd2ac9",
   "spec": "a003b5d715fe8566",
   "at": "2026-10-25",
   "files": {
+   "packages/backend/libs/domains/catalog/domain/product-input.ts": "79e9c232f2ef4422",
+   "packages/contracts/src/bff/seller-overview.ts": "cf5790c3205c6cf1",
+   "packages/contracts/src/bff/session.ts": "0d3ce9bf10b174fa",
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/contracts/src/developer-platform/keys.ts": "444d734754f9c8e3",
+   "packages/contracts/src/developer-platform/logs.ts": "53ca17bc6a88f8cb",
+   "packages/contracts/src/developer-platform/webhooks.ts": "f8aae4c6f9163cf7",
+   "packages/contracts/src/orders/order.ts": "825d6af4758d3309",
+   "packages/contracts/src/search/shop-product-search.ts": "aed2f677d96f5388",
+   "packages/contracts/src/tenancy/index.ts": "324ccfbe0702f2bf",
    "packages/web/components/dashboard/shop-frame.tsx": "04ebc512219b394f",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899",
+   "packages/web/lib/server/member-read.server.ts": "8e6f57d3aaaf0db6",
    "packages/web/lib/server/seller.server.ts": "7b2b5295d5ae9ac5"
   },
   "specs": {
@@ -893,10 +1234,12 @@
   }
  },
  "entry.frame.returnto-keeps-query": {
-  "code": "f336f4e902f9bf41",
+  "code": "d2f1b54bbae3f0b1",
   "spec": "2f9bcfdc1fd47eb6",
   "at": "2026-10-25",
   "files": {
+   "packages/web/components/dashboard/shop-frame.tsx": "04ebc512219b394f",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899",
    "packages/web/lib/auth/return-to.ts": "fa4c21a038da3a83"
   },
   "specs": {
@@ -905,45 +1248,57 @@
   }
  },
  "entry.frame.returnto-nested-path-only": {
-  "code": "7bd7bc4006ca7f9a",
+  "code": "0a4ea95df1282f8b",
   "spec": "80be0bf4ee46bf68",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/dashboard/shop-frame.tsx": "04ebc512219b394f"
+   "packages/contracts/src/developer-platform/keys.ts": "444d734754f9c8e3",
+   "packages/web/components/dashboard/shop-frame.tsx": "04ebc512219b394f",
+   "packages/web/components/product/discussions/use-discussions-view.ts": "072815b5637410ad",
+   "packages/web/components/seller/developers/api-keys-view.tsx": "2257e0ede17f139b",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-developers.ts": "b89dff983d26aa6c",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.B-33": "3a2845c45f76de31"
   }
  },
  "entry.frame.shop-5xx": {
-  "code": "c4453fd267db9a39",
+  "code": "2e931c25405718ba",
   "spec": "5b31fa1cca57115c",
   "at": "2026-10-25",
   "files": {
    "packages/web/app/dashboard/seller/[shopId]/error.tsx": "55e24a7ec31b0c2e",
    "packages/web/components/dashboard/shop-frame.tsx": "04ebc512219b394f",
-   "packages/web/components/layout/route-error.tsx": "14e0fd9d6e70eaa5"
+   "packages/web/components/layout/route-error.tsx": "14e0fd9d6e70eaa5",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.B-36": "fcc8e64e5e4d05f8"
   }
  },
  "entry.frame.shops-list-fail-soft": {
-  "code": "7bd7bc4006ca7f9a",
+  "code": "b03199f13c91563f",
   "spec": "44136fa355b3678a",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/dashboard/shop-frame.tsx": "04ebc512219b394f"
+   "packages/web/components/dashboard/shop-frame.tsx": "04ebc512219b394f",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {}
  },
  "entry.frame.signed-out-shop-url": {
-  "code": "45c23d5675ab0140",
+  "code": "56005fc89f042508",
   "spec": "302d732f6d6f9a27",
   "at": "2026-10-25",
   "files": {
    "packages/web/app/(auth)/login/login-form.tsx": "1f2d082a3d90128c",
-   "packages/web/components/dashboard/shop-frame.tsx": "04ebc512219b394f"
+   "packages/web/components/dashboard/shop-frame.tsx": "04ebc512219b394f",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899",
+   "packages/web/lib/api/session.ts": "8151d40f794d358d",
+   "packages/web/lib/auth/return-to.ts": "fa4c21a038da3a83"
   },
   "specs": {
    "W01.AS-07": "fe53dcca7b241b54",
@@ -963,16 +1318,46 @@
   }
  },
  "entry.frame.unknown-shop-id": {
-  "code": "7bd7bc4006ca7f9a",
+  "code": "429977b8bd38c1d7",
   "spec": "1de80284f08fbac8",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/dashboard/shop-frame.tsx": "04ebc512219b394f"
+   "packages/backend/libs/domains/tenancy/api/shop.guard.ts": "d0836b3019ac98bf",
+   "packages/backend/libs/domains/tenancy/infra/models/shop.model.ts": "ba1b0987ab3d736f",
+   "packages/backend/migrations/20261001140000-shops-tenancy-expand.js": "ee553fcdf13e2504",
+   "packages/backend/migrations/20261001160000-ledger-partitioning-payouts-recon.js": "d3581d6c92e577fb",
+   "packages/backend/migrations/20261001290000-public-api.js": "a3df3f97e02853f6",
+   "packages/backend/migrations/20261002170000-seller-onboarding.js": "5182cff5a76e0ca2",
+   "packages/backend/migrations/20261010140000-tenancy-s03-expand.js": "83c015f426cf7cbe",
+   "packages/web/components/dashboard/shop-frame.tsx": "04ebc512219b394f",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "S03.R-01": "9057c654c2f8e352",
    "W04.R-04": "c537cfa9fd118e3a"
   }
+ },
+ "entry.global.offline-banner": {
+  "code": "1a82063b021e3300",
+  "spec": "30c6abef762640af",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/dashboard/banners.tsx": "7f26801ce6652eb4"
+  },
+  "specs": {
+   "W04.B-35": "2be9201b0ff215fd"
+  }
+ },
+ "entry.index.empty-picker-foreign-cursor": {
+  "code": "be044577905b3813",
+  "spec": "44136fa355b3678a",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/app/dashboard/seller/page.tsx": "f118669e0960e48a",
+   "packages/web/app/dashboard/seller/shop-picker.tsx": "81353f94979d297c",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
+  },
+  "specs": {}
  },
  "entry.index.error-boundary": {
   "code": "89d323f07469e6c1",
@@ -986,10 +1371,12 @@
   }
  },
  "entry.index.invalid-cursor": {
-  "code": "89d323f07469e6c1",
+  "code": "e7f08a8a6d4559ba",
   "spec": "5b31fa1cca57115c",
   "at": "2026-10-25",
   "files": {
+   "packages/backend/libs/domains/tenancy/application/shop.service.ts": "9a312d91c7d681af",
+   "packages/backend/libs/domains/tenancy/domain/cursor.ts": "79e808a09d468ba8",
    "packages/web/app/dashboard/seller/page.tsx": "f118669e0960e48a"
   },
   "specs": {
@@ -1034,12 +1421,13 @@
   }
  },
  "entry.index.many-shops-picker": {
-  "code": "2b3d0e9f717b9487",
+  "code": "be044577905b3813",
   "spec": "a71417bc20c005bb",
   "at": "2026-10-25",
   "files": {
    "packages/web/app/dashboard/seller/page.tsx": "f118669e0960e48a",
-   "packages/web/app/dashboard/seller/shop-picker.tsx": "81353f94979d297c"
+   "packages/web/app/dashboard/seller/shop-picker.tsx": "81353f94979d297c",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.AS-09": "e225a2c8b8acf88a",
@@ -1047,11 +1435,31 @@
   }
  },
  "entry.index.no-shop-form": {
-  "code": "89d323f07469e6c1",
+  "code": "013d03ad218d5f68",
   "spec": "9f59c9ab3fc1edbd",
   "at": "2026-10-25",
   "files": {
-   "packages/web/app/dashboard/seller/page.tsx": "f118669e0960e48a"
+   "packages/backend/libs/domains/tenancy/api/shop.controller.ts": "be0ce071ac0c848a",
+   "packages/backend/libs/domains/tenancy/api/tenancy.dto.ts": "e1198cdca40b60bd",
+   "packages/backend/libs/domains/tenancy/application/shop.service.ts": "9a312d91c7d681af",
+   "packages/backend/libs/domains/tenancy/infra/models/shop-membership.model.ts": "45533969e65b506e",
+   "packages/backend/libs/domains/tenancy/infra/models/shop.model.ts": "ba1b0987ab3d736f",
+   "packages/backend/migrations/20261001140000-shops-tenancy-expand.js": "ee553fcdf13e2504",
+   "packages/backend/migrations/20261001160000-ledger-partitioning-payouts-recon.js": "d3581d6c92e577fb",
+   "packages/backend/migrations/20261001290000-public-api.js": "a3df3f97e02853f6",
+   "packages/backend/migrations/20261002170000-seller-onboarding.js": "5182cff5a76e0ca2",
+   "packages/backend/migrations/20261010140000-tenancy-s03-expand.js": "83c015f426cf7cbe",
+   "packages/backend/migrations/20261010141000-tenancy-s03-contract-fks.js": "be9a026486c0c7f0",
+   "packages/contracts/src/bff/seller-overview.ts": "cf5790c3205c6cf1",
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/contracts/src/developer-platform/keys.ts": "444d734754f9c8e3",
+   "packages/contracts/src/developer-platform/logs.ts": "53ca17bc6a88f8cb",
+   "packages/contracts/src/developer-platform/webhooks.ts": "f8aae4c6f9163cf7",
+   "packages/contracts/src/orders/order.ts": "825d6af4758d3309",
+   "packages/contracts/src/search/shop-product-search.ts": "aed2f677d96f5388",
+   "packages/contracts/src/tenancy/index.ts": "324ccfbe0702f2bf",
+   "packages/web/app/dashboard/seller/page.tsx": "f118669e0960e48a",
+   "packages/web/lib/server/seller.server.ts": "7b2b5295d5ae9ac5"
   },
   "specs": {
    "W04.AS-01": "eabea675046ec473",
@@ -1060,10 +1468,18 @@
   }
  },
  "entry.index.one-shop-redirect": {
-  "code": "89d323f07469e6c1",
+  "code": "3cfc7823282d33f0",
   "spec": "bf5c5b69205383bb",
   "at": "2026-10-25",
   "files": {
+   "packages/backend/libs/domains/discovery/application/product-search.service.ts": "b0d21b61c231ba04",
+   "packages/backend/libs/domains/seller-onboarding/application/review.service.ts": "2950e094ac567aff",
+   "packages/backend/libs/domains/tenancy/infra/models/shop-membership.model.ts": "45533969e65b506e",
+   "packages/backend/migrations/20261001140000-shops-tenancy-expand.js": "ee553fcdf13e2504",
+   "packages/backend/migrations/20261010140000-tenancy-s03-expand.js": "83c015f426cf7cbe",
+   "packages/backend/migrations/20261010141000-tenancy-s03-contract-fks.js": "be9a026486c0c7f0",
+   "packages/contracts/src/onboarding/onboarding.ts": "7cf803c48c7098a4",
+   "packages/contracts/src/search/product-search.ts": "8a7971170cfa3e67",
    "packages/web/app/dashboard/seller/page.tsx": "f118669e0960e48a"
   },
   "specs": {
@@ -1104,13 +1520,33 @@
    "W04.B-34": "21c58835339a1097"
   }
  },
+ "entry.index.signed-out-deep-returnto": {
+  "code": "0a4ea95df1282f8b",
+  "spec": "80be0bf4ee46bf68",
+  "at": "2026-10-25",
+  "files": {
+   "packages/contracts/src/developer-platform/keys.ts": "444d734754f9c8e3",
+   "packages/web/components/dashboard/shop-frame.tsx": "04ebc512219b394f",
+   "packages/web/components/product/discussions/use-discussions-view.ts": "072815b5637410ad",
+   "packages/web/components/seller/developers/api-keys-view.tsx": "2257e0ede17f139b",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-developers.ts": "b89dff983d26aa6c",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
+  },
+  "specs": {
+   "W04.B-33": "3a2845c45f76de31"
+  }
+ },
  "entry.index.signed-out-redirect": {
-  "code": "f5570be1738792fc",
+  "code": "2a1503d3bbe884de",
   "spec": "769949034c2fcca6",
   "at": "2026-10-25",
   "files": {
+   "packages/contracts/src/bff/session.ts": "0d3ce9bf10b174fa",
    "packages/web/app/dashboard/seller/page.tsx": "f118669e0960e48a",
    "packages/web/components/dashboard/shop-frame.tsx": "04ebc512219b394f",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899",
+   "packages/web/lib/api/session-server.ts": "27edbf1c2492f7ac",
    "packages/web/lib/auth/return-to.ts": "fa4c21a038da3a83",
    "packages/web/lib/auth/session.server.ts": "d31e19b3a2c0f03e"
   },
@@ -1120,11 +1556,13 @@
   }
  },
  "entry.index.suspended-or-deleting-in-list": {
-  "code": "7753304525658374",
+  "code": "03aba18047d4bb0d",
   "spec": "ee04b14f3a253110",
   "at": "2026-10-25",
   "files": {
-   "packages/web/app/dashboard/seller/shop-picker.tsx": "81353f94979d297c"
+   "packages/backend/libs/domains/tenancy/application/shop.service.ts": "9a312d91c7d681af",
+   "packages/web/app/dashboard/seller/shop-picker.tsx": "81353f94979d297c",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "S03.B-14": "4524a1007de863c3",
@@ -1141,12 +1579,13 @@
   "specs": {}
  },
  "entry.misc.dark-mode": {
-  "code": "e440a64e1cbcdd6f",
+  "code": "2e1a97037fd36f42",
   "spec": "44136fa355b3678a",
   "at": "2026-10-25",
   "files": {
    "packages/web/components/seller/problem-states.tsx": "b8ff53d2297a93b6",
-   "packages/web/components/seller/shop-status-banner.tsx": "2e011c86faa2ae74"
+   "packages/web/components/seller/shop-status-banner.tsx": "2e011c86faa2ae74",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5"
   },
   "specs": {}
  },
@@ -1158,10 +1597,21 @@
   "specs": {}
  },
  "entry.misc.invalid-percent-path": {
-  "code": "8f02356bc730d329",
+  "code": "c90d5ceece0cd75a",
   "spec": "d4a54ef9edd72f77",
   "at": "2026-10-25",
   "files": {
+   "packages/backend/libs/domains/catalog/domain/product-input.ts": "79e9c232f2ef4422",
+   "packages/contracts/src/bff/seller-overview.ts": "cf5790c3205c6cf1",
+   "packages/contracts/src/bff/session.ts": "0d3ce9bf10b174fa",
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/contracts/src/developer-platform/keys.ts": "444d734754f9c8e3",
+   "packages/contracts/src/developer-platform/logs.ts": "53ca17bc6a88f8cb",
+   "packages/contracts/src/developer-platform/webhooks.ts": "f8aae4c6f9163cf7",
+   "packages/contracts/src/orders/order.ts": "825d6af4758d3309",
+   "packages/contracts/src/search/shop-product-search.ts": "aed2f677d96f5388",
+   "packages/contracts/src/tenancy/index.ts": "324ccfbe0702f2bf",
+   "packages/web/lib/server/member-read.server.ts": "8e6f57d3aaaf0db6",
    "packages/web/lib/server/seller.server.ts": "7b2b5295d5ae9ac5"
   },
   "specs": {
@@ -1169,22 +1619,24 @@
   }
  },
  "entry.misc.keyboard-skip": {
-  "code": "68d3e793f94f1f4a",
+  "code": "52da61b827d9c7a2",
   "spec": "7eba6d191b3fe25e",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/dashboard/seller-nav.tsx": "3fe3854905dd347b"
+   "packages/web/components/dashboard/seller-nav.tsx": "3fe3854905dd347b",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.R-24": "b9ee5bc57cf1e574"
   }
  },
  "entry.misc.title-focus-on-navigation": {
-  "code": "41914f2ce5d11357",
+  "code": "13463a8d0fb309fc",
   "spec": "7eba6d191b3fe25e",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/dashboard/dashboard-shell.tsx": "61bd0e834051789a"
+   "packages/web/components/dashboard/dashboard-shell.tsx": "61bd0e834051789a",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.R-24": "b9ee5bc57cf1e574"
@@ -1202,11 +1654,13 @@
   }
  },
  "entry.misc.unmounted-shell-account-links": {
-  "code": "68d3e793f94f1f4a",
+  "code": "650fdb3315838a1b",
   "spec": "44136fa355b3678a",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/dashboard/seller-nav.tsx": "3fe3854905dd347b"
+   "packages/web/components/dashboard/seller-nav.tsx": "3fe3854905dd347b",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899",
+   "packages/web/lib/seller/nav.ts": "d05b59bcd2efc52a"
   },
   "specs": {}
  },
@@ -1285,11 +1739,12 @@
   }
  },
  "entry.nav.group-hidden-when-empty": {
-  "code": "68d3e793f94f1f4a",
+  "code": "52da61b827d9c7a2",
   "spec": "967f3d028845b6f3",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/dashboard/seller-nav.tsx": "3fe3854905dd347b"
+   "packages/web/components/dashboard/seller-nav.tsx": "3fe3854905dd347b",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.R-01": "1f540d546d2b8bff"
@@ -1515,11 +1970,13 @@
   }
  },
  "entry.offline.banner-clear-refetch": {
-  "code": "80f1c7bfa965a94b",
+  "code": "b0d6abb741b1d025",
   "spec": "a5eb44d2a65d88ac",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/problem-states.tsx": "b8ff53d2297a93b6"
+   "packages/web/components/seller/problem-states.tsx": "b8ff53d2297a93b6",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/query-keys.ts": "0da0b77363058008"
   },
   "specs": {
    "W04.AS-88": "3f501d830040b391",
@@ -1527,12 +1984,13 @@
   }
  },
  "entry.offline.banner-show": {
-  "code": "142826768c6d5a31",
+  "code": "43c57c2222e1c839",
   "spec": "a5eb44d2a65d88ac",
   "at": "2026-10-25",
   "files": {
    "packages/web/components/seller/problem-states.tsx": "b8ff53d2297a93b6",
-   "packages/web/hooks/use-online.ts": "b20187c3078d0167"
+   "packages/web/hooks/use-online.ts": "b20187c3078d0167",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5"
   },
   "specs": {
    "W04.AS-88": "3f501d830040b391",
@@ -1540,33 +1998,38 @@
   }
  },
  "entry.offline.no-refetch-when-never-offline": {
-  "code": "80f1c7bfa965a94b",
+  "code": "70af50b2f9b14468",
   "spec": "30c6abef762640af",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/problem-states.tsx": "b8ff53d2297a93b6"
+   "packages/web/components/admin/admin-offline-banner.tsx": "632e414fe051ca12",
+   "packages/web/components/seller/problem-states.tsx": "b8ff53d2297a93b6",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5"
   },
   "specs": {
    "W04.B-35": "2be9201b0ff215fd"
   }
  },
  "entry.offline.on-no-shop-page": {
-  "code": "7c4386b22baed63e",
+  "code": "6000ee2f0d60c4c6",
   "spec": "30c6abef762640af",
   "at": "2026-10-25",
   "files": {
    "packages/web/components/dashboard/banners.tsx": "7f26801ce6652eb4",
-   "packages/web/components/dashboard/dashboard-shell.tsx": "61bd0e834051789a"
+   "packages/web/components/dashboard/dashboard-shell.tsx": "61bd0e834051789a",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.B-35": "2be9201b0ff215fd"
   }
  },
  "entry.offline.write-while-offline": {
-  "code": "084dc3e8b54a4604",
+  "code": "9fb1ba43c469372d",
   "spec": "30c6abef762640af",
   "at": "2026-10-25",
   "files": {
+   "packages/web/lib/api/assistant.ts": "3cd64e331a745bda",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
    "packages/web/lib/api/problem-copy.ts": "fee92af3f30afb8c",
    "packages/web/lib/assistant/problem-copy.ts": "7901b9fda9cb5675",
    "packages/web/lib/seller/problem-copy.ts": "4ef1088a69dc32f7"
@@ -1576,54 +2039,67 @@
   }
  },
  "entry.picker.heading": {
-  "code": "7753304525658374",
+  "code": "6ac13f2909bffcfd",
   "spec": "07a126d3c7ac97b7",
   "at": "2026-10-25",
   "files": {
-   "packages/web/app/dashboard/seller/shop-picker.tsx": "81353f94979d297c"
+   "packages/web/app/dashboard/seller/shop-picker.tsx": "81353f94979d297c",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.B-04": "9513702ea34a7500"
   }
  },
  "entry.picker.list-aria": {
-  "code": "7753304525658374",
+  "code": "6ac13f2909bffcfd",
   "spec": "7eba6d191b3fe25e",
   "at": "2026-10-25",
   "files": {
-   "packages/web/app/dashboard/seller/shop-picker.tsx": "81353f94979d297c"
+   "packages/web/app/dashboard/seller/shop-picker.tsx": "81353f94979d297c",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.R-24": "b9ee5bc57cf1e574"
   }
  },
  "entry.picker.long-name-truncate": {
-  "code": "7753304525658374",
+  "code": "6ac13f2909bffcfd",
   "spec": "da99d296bdd621a7",
   "at": "2026-10-25",
   "files": {
-   "packages/web/app/dashboard/seller/shop-picker.tsx": "81353f94979d297c"
+   "packages/web/app/dashboard/seller/shop-picker.tsx": "81353f94979d297c",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.B-37": "fd6c85bbcba690d5"
   }
  },
  "entry.picker.next-page": {
-  "code": "7753304525658374",
+  "code": "03aba18047d4bb0d",
   "spec": "07a126d3c7ac97b7",
   "at": "2026-10-25",
   "files": {
-   "packages/web/app/dashboard/seller/shop-picker.tsx": "81353f94979d297c"
+   "packages/backend/libs/domains/tenancy/application/shop.service.ts": "9a312d91c7d681af",
+   "packages/web/app/dashboard/seller/shop-picker.tsx": "81353f94979d297c",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.B-04": "9513702ea34a7500"
   }
  },
  "entry.picker.page-size-50": {
-  "code": "8f02356bc730d329",
+  "code": "5095bfceb90aa703",
   "spec": "ac67762c5144cfa8",
   "at": "2026-10-25",
   "files": {
+   "packages/contracts/src/bff/seller-overview.ts": "cf5790c3205c6cf1",
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/contracts/src/developer-platform/keys.ts": "444d734754f9c8e3",
+   "packages/contracts/src/developer-platform/logs.ts": "53ca17bc6a88f8cb",
+   "packages/contracts/src/developer-platform/webhooks.ts": "f8aae4c6f9163cf7",
+   "packages/contracts/src/orders/order.ts": "825d6af4758d3309",
+   "packages/contracts/src/search/shop-product-search.ts": "aed2f677d96f5388",
+   "packages/contracts/src/tenancy/index.ts": "324ccfbe0702f2bf",
    "packages/web/lib/server/seller.server.ts": "7b2b5295d5ae9ac5"
   },
   "specs": {
@@ -1644,11 +2120,25 @@
   }
  },
  "entry.picker.row-link": {
-  "code": "7753304525658374",
+  "code": "aee1f8c03e258d04",
   "spec": "a71417bc20c005bb",
   "at": "2026-10-25",
   "files": {
-   "packages/web/app/dashboard/seller/shop-picker.tsx": "81353f94979d297c"
+   "packages/backend/libs/domains/tenancy/infra/models/shop-membership.model.ts": "45533969e65b506e",
+   "packages/backend/libs/domains/tenancy/infra/models/shop.model.ts": "ba1b0987ab3d736f",
+   "packages/backend/migrations/20261001140000-shops-tenancy-expand.js": "ee553fcdf13e2504",
+   "packages/backend/migrations/20261001160000-ledger-partitioning-payouts-recon.js": "d3581d6c92e577fb",
+   "packages/backend/migrations/20261001290000-public-api.js": "a3df3f97e02853f6",
+   "packages/backend/migrations/20261002170000-seller-onboarding.js": "5182cff5a76e0ca2",
+   "packages/backend/migrations/20261010140000-tenancy-s03-expand.js": "83c015f426cf7cbe",
+   "packages/backend/migrations/20261010141000-tenancy-s03-contract-fks.js": "be9a026486c0c7f0",
+   "packages/contracts/src/bff/seller-overview.ts": "cf5790c3205c6cf1",
+   "packages/contracts/src/tenancy/index.ts": "324ccfbe0702f2bf",
+   "packages/web/app/dashboard/seller/shop-picker.tsx": "81353f94979d297c",
+   "packages/web/lib/api/client.ts": "0fa4cb70bbc2d203",
+   "packages/web/lib/api/orders.ts": "7631ea19bc997f81",
+   "packages/web/lib/api/parse.ts": "82453dbb70bf149b",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.AS-09": "e225a2c8b8acf88a",
@@ -1656,33 +2146,48 @@
   }
  },
  "entry.picker.status-badge": {
-  "code": "7753304525658374",
+  "code": "7a790c6ab825ae3d",
   "spec": "07a126d3c7ac97b7",
   "at": "2026-10-25",
   "files": {
-   "packages/web/app/dashboard/seller/shop-picker.tsx": "81353f94979d297c"
+   "packages/backend/libs/domains/tenancy/infra/models/shop.model.ts": "ba1b0987ab3d736f",
+   "packages/backend/migrations/20261001140000-shops-tenancy-expand.js": "ee553fcdf13e2504",
+   "packages/backend/migrations/20261001160000-ledger-partitioning-payouts-recon.js": "d3581d6c92e577fb",
+   "packages/backend/migrations/20261001290000-public-api.js": "a3df3f97e02853f6",
+   "packages/backend/migrations/20261002170000-seller-onboarding.js": "5182cff5a76e0ca2",
+   "packages/backend/migrations/20261010140000-tenancy-s03-expand.js": "83c015f426cf7cbe",
+   "packages/web/app/dashboard/seller/shop-picker.tsx": "81353f94979d297c",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.B-04": "9513702ea34a7500"
   }
  },
  "entry.picker.suspended-shop-click": {
-  "code": "9c9708ce24acd91c",
+  "code": "7b84b24f875e610c",
   "spec": "32e44dddd6dd7c26",
   "at": "2026-10-25",
   "files": {
    "packages/web/app/dashboard/seller/shop-picker.tsx": "81353f94979d297c",
-   "packages/web/components/dashboard/shop-frame.tsx": "04ebc512219b394f"
+   "packages/web/components/dashboard/shop-frame.tsx": "04ebc512219b394f",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.R-03": "3d83ff66a103db87"
   }
  },
  "entry.rbac.admin-nav": {
-  "code": "44136fa355b3678a",
+  "code": "b2da1d5de0317863",
   "spec": "500015a0c732b8dc",
   "at": "2026-10-25",
-  "files": {},
+  "files": {
+   "packages/backend/libs/domains/identity/api/clock-admin.controller.ts": "67c4629712f0265a",
+   "packages/backend/libs/domains/identity/api/jobs-admin.controller.ts": "c37f8d0411bebdff",
+   "packages/backend/libs/domains/identity/api/jobs-admin.dto.ts": "686e3e171f7c456e",
+   "packages/backend/libs/domains/tenancy/domain/permissions.ts": "62031a52bc431e77",
+   "packages/contracts/src/admin/clock.ts": "4f75f00239bd6a43",
+   "packages/contracts/src/admin/jobs.ts": "29a177ec3afef53f"
+  },
   "specs": {
    "S03.R-06": "82778140dd5f3a8b",
    "S03.R-08": "274cbdd26f1bcfe7",
@@ -1690,10 +2195,14 @@
   }
  },
  "entry.rbac.anonymous-401": {
-  "code": "44136fa355b3678a",
+  "code": "51ebdbd4b468a4d4",
   "spec": "b9633365153cbe1e",
   "at": "2026-10-25",
-  "files": {},
+  "files": {
+   "packages/backend/libs/domains/identity/api/decorators/firewall.decorator.ts": "860a5f41e0815782",
+   "packages/backend/libs/domains/tenancy/api/shop.controller.ts": "be0ce071ac0c848a",
+   "packages/backend/libs/domains/tenancy/api/tenancy.dto.ts": "e1198cdca40b60bd"
+  },
   "specs": {
    "S03.R-02": "00b6731c51d43e89"
   }
@@ -1723,12 +2232,13 @@
   }
  },
  "entry.rbac.hidden-page-direct-url": {
-  "code": "727e424f37ae23c2",
+  "code": "6d50c9b36cadbeac",
   "spec": "c07f53dec8e4a4ea",
   "at": "2026-10-25",
   "files": {
    "packages/web/components/dashboard/shop-frame.tsx": "04ebc512219b394f",
-   "packages/web/components/seller/forbidden-panel.tsx": "593ff8c8e9726203"
+   "packages/web/components/seller/forbidden-panel.tsx": "593ff8c8e9726203",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.AS-54": "b665cc840f027891",
@@ -1736,10 +2246,15 @@
   }
  },
  "entry.rbac.member-in-two-shops": {
-  "code": "44136fa355b3678a",
+  "code": "1236a84e858b28d9",
   "spec": "be1622eda68992a9",
   "at": "2026-10-25",
-  "files": {},
+  "files": {
+   "packages/backend/libs/domains/tenancy/infra/models/shop-membership.model.ts": "45533969e65b506e",
+   "packages/backend/migrations/20261001140000-shops-tenancy-expand.js": "ee553fcdf13e2504",
+   "packages/backend/migrations/20261010140000-tenancy-s03-expand.js": "83c015f426cf7cbe",
+   "packages/backend/migrations/20261010141000-tenancy-s03-contract-fks.js": "be9a026486c0c7f0"
+  },
   "specs": {
    "S03": "516b2d0fe923a967"
   }
@@ -1756,20 +2271,24 @@
   }
  },
  "entry.rbac.owner-nav": {
-  "code": "44136fa355b3678a",
+  "code": "49b6b1744bb1734a",
   "spec": "a3d3200d31ccf2da",
   "at": "2026-10-25",
-  "files": {},
+  "files": {
+   "packages/backend/libs/domains/tenancy/domain/permissions.ts": "62031a52bc431e77",
+   "packages/backend/libs/infrastructure/idempotency/idempotency.errors.ts": "18522f124606cb31"
+  },
   "specs": {
    "S03.R-06": "82778140dd5f3a8b",
    "W04.R-01": "1f540d546d2b8bff"
   }
  },
  "entry.rbac.removed-member": {
-  "code": "45c2911e36c460e8",
+  "code": "aebd070c1f4e4c5b",
   "spec": "ab508fc24fa9d39d",
   "at": "2026-10-25",
   "files": {
+   "packages/backend/libs/domains/tenancy/api/shop.guard.ts": "d0836b3019ac98bf",
    "packages/backend/libs/domains/tenancy/infra/member-revocation.consumer.ts": "c230629e3a1c7938"
   },
   "specs": {
@@ -1778,12 +2297,17 @@
   }
  },
  "entry.rbac.role-change-effect": {
-  "code": "229204475b3ea1d1",
+  "code": "2fff5589d7cd6c5c",
   "spec": "8f1343aa17c5f07f",
   "at": "2026-10-25",
   "files": {
    "packages/backend/libs/domains/tenancy/api/members.controller.ts": "449ddacfdf9449f4",
-   "packages/backend/libs/domains/tenancy/infra/authz-cache.redis.ts": "6fcc7aa9dc2b5989"
+   "packages/backend/libs/domains/tenancy/api/tenancy.dto.ts": "e1198cdca40b60bd",
+   "packages/backend/libs/domains/tenancy/infra/authz-cache.redis.ts": "6fcc7aa9dc2b5989",
+   "packages/backend/libs/domains/tenancy/infra/models/shop-membership.model.ts": "45533969e65b506e",
+   "packages/backend/migrations/20261001140000-shops-tenancy-expand.js": "ee553fcdf13e2504",
+   "packages/backend/migrations/20261010140000-tenancy-s03-expand.js": "83c015f426cf7cbe",
+   "packages/backend/migrations/20261010141000-tenancy-s03-contract-fks.js": "be9a026486c0c7f0"
   },
   "specs": {
    "S03.B-06": "8ce75e37a3dbfdf0",
@@ -1791,12 +2315,15 @@
   }
  },
  "entry.rbac.session-role-ignored": {
-  "code": "b4d5296a612ada3b",
+  "code": "caaa125da643e3bc",
   "spec": "c1d6841de3c75da0",
   "at": "2026-10-25",
   "files": {
    "packages/web/app/dashboard/seller/open-shop-form.tsx": "b64fdea935b03d29",
-   "packages/web/components/dashboard/seller-nav.tsx": "3fe3854905dd347b"
+   "packages/web/components/dashboard/seller-nav.tsx": "3fe3854905dd347b",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899",
+   "packages/web/lib/api/shops.ts": "1d7ef79fbefb8de0"
   },
   "specs": {
    "W04.B-02": "af66d2952377ed08",
@@ -1804,11 +2331,12 @@
   }
  },
  "entry.rbac.shop-roles-matrix-api": {
-  "code": "3fbd9e6b067e574b",
+  "code": "0c39c74c56d4c906",
   "spec": "d8ebc6c3d17188b9",
   "at": "2026-10-25",
   "files": {
    "packages/backend/libs/domains/tenancy/api/shop-roles.controller.ts": "c3ced195d3ffba83",
+   "packages/backend/libs/domains/tenancy/domain/shop-types.ts": "1e61a63c3d4e64b6",
    "packages/web/lib/seller/permissions.ts": "e938842e33042b83"
   },
   "specs": {
@@ -1816,10 +2344,12 @@
   }
  },
  "entry.rbac.staff-nav": {
-  "code": "44136fa355b3678a",
+  "code": "f515b244574b2c40",
   "spec": "36329e880c71ebd6",
   "at": "2026-10-25",
-  "files": {},
+  "files": {
+   "packages/backend/libs/domains/tenancy/domain/permissions.ts": "62031a52bc431e77"
+  },
   "specs": {
    "S03.R-06": "82778140dd5f3a8b",
    "W04.R-01": "1f540d546d2b8bff",
@@ -1827,10 +2357,12 @@
   }
  },
  "entry.rbac.viewer-nav": {
-  "code": "44136fa355b3678a",
+  "code": "f515b244574b2c40",
   "spec": "36329e880c71ebd6",
   "at": "2026-10-25",
-  "files": {},
+  "files": {
+   "packages/backend/libs/domains/tenancy/domain/permissions.ts": "62031a52bc431e77"
+  },
   "specs": {
    "S03.R-06": "82778140dd5f3a8b",
    "W04.R-01": "1f540d546d2b8bff",
@@ -1849,11 +2381,12 @@
   }
  },
  "entry.shell.desktop-layout": {
-  "code": "41914f2ce5d11357",
+  "code": "13463a8d0fb309fc",
   "spec": "ebee454a8543ff1e",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/dashboard/dashboard-shell.tsx": "61bd0e834051789a"
+   "packages/web/components/dashboard/dashboard-shell.tsx": "61bd0e834051789a",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.AS-98": "f7af4eecc58f36b9",
@@ -1872,11 +2405,12 @@
   }
  },
  "entry.shell.nav-account-links": {
-  "code": "a9d7b41f8f47f56b",
+  "code": "650fdb3315838a1b",
   "spec": "65ce02b78ac61f1d",
   "at": "2026-10-25",
   "files": {
    "packages/web/components/dashboard/seller-nav.tsx": "3fe3854905dd347b",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899",
    "packages/web/lib/seller/nav.ts": "d05b59bcd2efc52a"
   },
   "specs": {
@@ -1884,12 +2418,18 @@
   }
  },
  "entry.shell.nav-click-pending-skeleton": {
-  "code": "3fb22a8d6ccf57f5",
+  "code": "a1d08fe41d7de45f",
   "spec": "35774734954c7aed",
   "at": "2026-10-25",
   "files": {
    "packages/web/components/dashboard/navigation-pending.tsx": "f7f8fac1a2e4645a",
-   "packages/web/components/dashboard/seller-nav.tsx": "3fe3854905dd347b"
+   "packages/web/components/dashboard/seller-nav.tsx": "3fe3854905dd347b",
+   "packages/web/components/search/pickup-mode.tsx": "2b558779586ebcbf",
+   "packages/web/components/search/search-results.tsx": "ff913c9a11171303",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/pickup.ts": "79830625e3e4d791",
+   "packages/web/lib/api/search.ts": "36c2055c66349829",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.AS-91": "92d2478a25820073"
@@ -1907,11 +2447,12 @@
   }
  },
  "entry.shell.nav-landmark": {
-  "code": "68d3e793f94f1f4a",
+  "code": "52da61b827d9c7a2",
   "spec": "65ce02b78ac61f1d",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/dashboard/seller-nav.tsx": "3fe3854905dd347b"
+   "packages/web/components/dashboard/seller-nav.tsx": "3fe3854905dd347b",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.AS-98": "f7af4eecc58f36b9"
@@ -1929,12 +2470,13 @@
   }
  },
  "entry.shell.sidebar-switcher": {
-  "code": "f36a365606558555",
+  "code": "2ed8da9c2fa62f74",
   "spec": "809bccc97448a752",
   "at": "2026-10-25",
   "files": {
    "packages/web/components/dashboard/seller-nav.tsx": "3fe3854905dd347b",
-   "packages/web/components/seller/shop-switcher.tsx": "2711e51c0dbe994e"
+   "packages/web/components/seller/shop-switcher.tsx": "2711e51c0dbe994e",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.R-32": "87499b9da52c3bc4"
@@ -1972,11 +2514,12 @@
   }
  },
  "entry.switcher.button": {
-  "code": "3999e51d4e9b1b5d",
+  "code": "4c009a36dcf49f47",
   "spec": "7a208f568e102ccc",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/shop-switcher.tsx": "2711e51c0dbe994e"
+   "packages/web/components/seller/shop-switcher.tsx": "2711e51c0dbe994e",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.AS-09": "e225a2c8b8acf88a",
@@ -1984,43 +2527,54 @@
   }
  },
  "entry.switcher.close-on-choose": {
-  "code": "3999e51d4e9b1b5d",
+  "code": "4c009a36dcf49f47",
   "spec": "65ce02b78ac61f1d",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/shop-switcher.tsx": "2711e51c0dbe994e"
+   "packages/web/components/seller/shop-switcher.tsx": "2711e51c0dbe994e",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.AS-98": "f7af4eecc58f36b9"
   }
  },
  "entry.switcher.close-on-path-change": {
-  "code": "3999e51d4e9b1b5d",
+  "code": "185f9e2021ff344c",
   "spec": "c71d61f04e4087fd",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/shop-switcher.tsx": "2711e51c0dbe994e"
+   "packages/contracts/src/chat/channel.ts": "920423fb45751086",
+   "packages/contracts/src/chat/hub-events.ts": "0f483d54ca2b6c1a",
+   "packages/contracts/src/chat/inbox.ts": "7a1063488fd2cf4e",
+   "packages/contracts/src/chat/receipts.ts": "67e3eda44cdc234c",
+   "packages/web/components/seller/shop-switcher.tsx": "2711e51c0dbe994e",
+   "packages/web/hooks/use-chat-live.ts": "239e0c3da1786cc2",
+   "packages/web/lib/api/chat.ts": "b0bf3147ce8460a2",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.AS-09": "e225a2c8b8acf88a"
   }
  },
  "entry.switcher.escape": {
-  "code": "3999e51d4e9b1b5d",
+  "code": "4c009a36dcf49f47",
   "spec": "7eba6d191b3fe25e",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/shop-switcher.tsx": "2711e51c0dbe994e"
+   "packages/web/components/seller/shop-switcher.tsx": "2711e51c0dbe994e",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.R-24": "b9ee5bc57cf1e574"
   }
  },
  "entry.switcher.keeps-query": {
-  "code": "44136fa355b3678a",
+  "code": "6063d8b5a9a789b4",
   "spec": "44160e96f2ce6a4d",
   "at": "2026-10-25",
-  "files": {},
+  "files": {
+   "packages/web/lib/seller/nav.ts": "d05b59bcd2efc52a"
+  },
   "specs": {
    "W04.R-10": "8cd48a8baeb758a6"
   }
@@ -2038,11 +2592,13 @@
   }
  },
  "entry.switcher.keeps-section-forbidden": {
-  "code": "7bd7bc4006ca7f9a",
+  "code": "acf7ebb520432846",
   "spec": "e7f8c195f1705632",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/dashboard/shop-frame.tsx": "04ebc512219b394f"
+   "packages/web/components/dashboard/shop-frame.tsx": "04ebc512219b394f",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899",
+   "packages/web/lib/seller/nav.ts": "d05b59bcd2efc52a"
   },
   "specs": {
    "W04.AS-54": "b665cc840f027891",
@@ -2050,44 +2606,48 @@
   }
  },
  "entry.switcher.keyboard-nav": {
-  "code": "3999e51d4e9b1b5d",
+  "code": "4c009a36dcf49f47",
   "spec": "7eba6d191b3fe25e",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/shop-switcher.tsx": "2711e51c0dbe994e"
+   "packages/web/components/seller/shop-switcher.tsx": "2711e51c0dbe994e",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.R-24": "b9ee5bc57cf1e574"
   }
  },
  "entry.switcher.list-content": {
-  "code": "3999e51d4e9b1b5d",
+  "code": "4c009a36dcf49f47",
   "spec": "c71d61f04e4087fd",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/shop-switcher.tsx": "2711e51c0dbe994e"
+   "packages/web/components/seller/shop-switcher.tsx": "2711e51c0dbe994e",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.AS-09": "e225a2c8b8acf88a"
   }
  },
  "entry.switcher.long-names": {
-  "code": "3999e51d4e9b1b5d",
+  "code": "4c009a36dcf49f47",
   "spec": "74b06185be28d453",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/shop-switcher.tsx": "2711e51c0dbe994e"
+   "packages/web/components/seller/shop-switcher.tsx": "2711e51c0dbe994e",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.R-28": "bcbeea3991272441"
   }
  },
  "entry.switcher.max-50": {
-  "code": "3999e51d4e9b1b5d",
+  "code": "4c009a36dcf49f47",
   "spec": "7a208f568e102ccc",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/shop-switcher.tsx": "2711e51c0dbe994e"
+   "packages/web/components/seller/shop-switcher.tsx": "2711e51c0dbe994e",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.AS-09": "e225a2c8b8acf88a",
@@ -2095,49 +2655,54 @@
   }
  },
  "entry.switcher.not-closing-on-outside-click": {
-  "code": "3999e51d4e9b1b5d",
+  "code": "4c009a36dcf49f47",
   "spec": "44136fa355b3678a",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/shop-switcher.tsx": "2711e51c0dbe994e"
+   "packages/web/components/seller/shop-switcher.tsx": "2711e51c0dbe994e",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {}
  },
  "entry.switcher.one-shop": {
-  "code": "3999e51d4e9b1b5d",
+  "code": "4c009a36dcf49f47",
   "spec": "44136fa355b3678a",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/shop-switcher.tsx": "2711e51c0dbe994e"
+   "packages/web/components/seller/shop-switcher.tsx": "2711e51c0dbe994e",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {}
  },
  "entry.switcher.stale-list": {
-  "code": "7bd7bc4006ca7f9a",
+  "code": "b03199f13c91563f",
   "spec": "44136fa355b3678a",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/dashboard/shop-frame.tsx": "04ebc512219b394f"
+   "packages/web/components/dashboard/shop-frame.tsx": "04ebc512219b394f",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {}
  },
  "entry.switcher.status-badge": {
-  "code": "3999e51d4e9b1b5d",
+  "code": "4c009a36dcf49f47",
   "spec": "c71d61f04e4087fd",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/shop-switcher.tsx": "2711e51c0dbe994e"
+   "packages/web/components/seller/shop-switcher.tsx": "2711e51c0dbe994e",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.AS-09": "e225a2c8b8acf88a"
   }
  },
  "entry.switcher.touch-targets": {
-  "code": "3999e51d4e9b1b5d",
+  "code": "4c009a36dcf49f47",
   "spec": "da99d296bdd621a7",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/shop-switcher.tsx": "2711e51c0dbe994e"
+   "packages/web/components/seller/shop-switcher.tsx": "2711e51c0dbe994e",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.B-37": "fd6c85bbcba690d5"

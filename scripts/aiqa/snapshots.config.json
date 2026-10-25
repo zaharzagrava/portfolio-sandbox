@@ -3,7 +3,7 @@
   "areas": {
     "orders": {
       "states": {
-        "list": { "url": "/dashboard/seller/{shopId}/orders", "roles": ["owner", "viewer", "anon"] },
+        "list": { "url": "/dashboard/seller/{shopId}/orders", "roles": ["owner", "viewer", "staff", "admin", "anon"] },
         "bad-shop": { "url": "/dashboard/seller/not-a-uuid/orders", "roles": ["owner"], "widths": [1280] },
         "status-filter-open": { "url": "/dashboard/seller/{shopId}/orders", "roles": ["owner"], "steps": [{ "click": { "role": "combobox", "name": "Status" } }] },
         "phone-menu": { "url": "/dashboard/seller/{shopId}/orders", "roles": ["owner"], "widths": [390], "steps": [{ "click": { "role": "button", "name": "Open menu" } }] }
@@ -11,7 +11,7 @@
     },
     "inventory": {
       "states": {
-        "list": { "url": "/dashboard/seller/{shopId}/inventory", "roles": ["owner", "viewer", "anon"] },
+        "list": { "url": "/dashboard/seller/{shopId}/inventory", "roles": ["owner", "viewer", "staff", "admin", "anon"] },
         "archived-tab": { "url": "/dashboard/seller/{shopId}/inventory?status=ARCHIVED", "roles": ["owner"] },
         "search": { "url": "/dashboard/seller/{shopId}/inventory?q=espresso", "roles": ["owner"] },
         "add-dialog": { "url": "/dashboard/seller/{shopId}/inventory", "roles": ["owner"], "steps": [{ "click": { "role": "button", "name": "Add product" } }] },
@@ -22,7 +22,7 @@
     },
     "media": {
       "states": {
-        "photos": { "url": "/dashboard/seller/{shopId}/products/{productId}/media", "roles": ["owner", "viewer", "anon"] },
+        "photos": { "url": "/dashboard/seller/{shopId}/products/{productId}/media", "roles": ["owner", "viewer", "staff", "admin", "anon"] },
         "video-tab": { "url": "/dashboard/seller/{shopId}/products/{productId}/media/video", "roles": ["owner"] },
         "bad-product": { "url": "/dashboard/seller/{shopId}/products/not-a-uuid/media", "roles": ["owner"], "widths": [1280] }
       }
@@ -30,10 +30,10 @@
     "entry": {
       "states": {
         "index": { "ids": "^entry\\.", "url": "/dashboard/seller", "roles": ["owner", "noshop", "anon"] },
-        "overview": { "ids": "^entry\\.", "url": "/dashboard/seller/{shopId}", "roles": ["owner", "viewer", "noshop", "anon"] },
+        "overview": { "ids": "^entry\\.", "url": "/dashboard/seller/{shopId}", "roles": ["owner", "viewer", "staff", "admin", "noshop", "anon"] },
         "bad-shop": { "ids": "^entry\\.", "url": "/dashboard/seller/not-a-uuid", "roles": ["owner"], "widths": [1280] },
         "shop-switcher": { "ids": "^entry\\.", "url": "/dashboard/seller/{shopId}", "roles": ["owner"], "widths": [1280], "steps": [{ "click": { "role": "button", "name": "Demo Shop" } }] },
-        "phone-drawer": { "ids": "^entry\\.", "url": "/dashboard/seller/{shopId}", "roles": ["owner", "viewer"], "widths": [390], "steps": [{ "click": { "role": "button", "name": "Open menu" } }] },
+        "phone-drawer": { "ids": "^entry\\.", "url": "/dashboard/seller/{shopId}", "roles": ["owner", "viewer", "staff"], "widths": [390], "steps": [{ "click": { "role": "button", "name": "Open menu" } }] },
         "open-shop-filled": { "ids": "^entry\\.", "url": "/dashboard/seller", "roles": ["noshop"], "steps": [{ "fill": { "label": "Shop name", "value": "Aiqa Probe" } }] }
       }
     }

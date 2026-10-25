@@ -1,0 +1,13 @@
+diff --git a/packages/backend/libs/domains/catalog/application/product-command.service.ts b/packages/backend/libs/domains/catalog/application/product-command.service.ts
+index 43470ca1..d30469b6 100644
+--- a/packages/backend/libs/domains/catalog/application/product-command.service.ts
++++ b/packages/backend/libs/domains/catalog/application/product-command.service.ts
+@@ -331,7 +331,7 @@ export class ProductCommandService {
+ 
+   private async activeShop(operation: Operation, shopId: string) {
+     const shop = (await this.shops.getShopsByIds([shopId])).get(shopId);
+-    if (!shop || shop.status !== 'ACTIVE') {
++    if (!shop || (shop.status !== 'ACTIVE' && shop.status !== 'SUSPENDED')) {
+       productWriteCounter.add(1, { operation, result: 'refused' });
+       throw new ShopNotActiveError(
+         shop?.status === 'SUSPENDED' || shop?.status === 'DELETING'

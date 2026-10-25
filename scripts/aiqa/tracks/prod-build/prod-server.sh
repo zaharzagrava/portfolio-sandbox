@@ -13,7 +13,10 @@ alive() { curl -s -o /dev/null --max-time 5 "http://localhost:$PORT/"; }
 case "${1:-status}" in
   status) alive && echo up || echo down ;;
   down)
-    if [[ -f "$D/pid" ]]; then kill -- "-$(cat "$D/pid")" 2>/dev/null || kill "$(cat "$D/pid")" 2>/dev/null; rm -f "$D/pid"; echo "stopped"; else echo "no server of mine to stop"; fi
+    if [[ -f "$D/pid" ]]; then   # setsid made a session of its own: end every process of it (pnpm, sh, next-server)
+      sid="$(ps -o sid= -p "$(cat "$D/pid")" 2>/dev/null | tr -d ' ')"
+      if [[ -n "$sid" ]]; then pkill -s "$sid" 2>/dev/null; else kill "$(cat "$D/pid")" 2>/dev/null; fi
+      rm -f "$D/pid"; echo "stopped"; else echo "no server of mine to stop"; fi
     if [[ -f "$D/webdir" ]]; then rm -rf "$(cat "$D/webdir")"; rm -f "$D/webdir"; fi ;;
   up)
     if alive; then echo "already up on $PORT"; exit 0; fi

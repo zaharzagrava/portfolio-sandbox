@@ -26,7 +26,7 @@ const browser = await launch();
 const toReset = new Map(); // area -> Map(lineId -> reason)
 let newControls = 0, changedParts = 0;
 try {
-  const env = await prepare(browser);
+  const env = await prepare(browser, cfg, target);
   for (const area of target === 'all' ? Object.keys(cfg.areas) : [target]) {
     const states = cfg.areas[area]?.states;
     if (!states) { console.log(`${area}: no states in snapshots.config.json`); continue; }

@@ -11,44 +11,59 @@
   }
  },
  "orders.a11y.dark-mode": {
-  "code": "20e8d2681455adc4",
+  "code": "0e1b079b5795ac58",
   "spec": "de01a22c6a555587",
   "at": "2026-10-25",
   "files": {
+   "packages/contracts/src/experimentation/flags.ts": "e87fcdb80b288569",
+   "packages/contracts/src/orders/order.ts": "825d6af4758d3309",
+   "packages/web/components/admin/flags/flag-editor.tsx": "b391a543d8797a1b",
+   "packages/web/components/admin/flags/flag-problem.tsx": "7cd5aea71b7198b2",
    "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e",
-   "packages/web/components/seller/problem-states.tsx": "b8ff53d2297a93b6"
+   "packages/web/components/seller/problem-states.tsx": "b8ff53d2297a93b6",
+   "packages/web/lib/api/admin-flags.ts": "5db0ef97d346d8c2",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-orders.ts": "486eb16218364ac5",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.AS-97": "fd6c85bbcba690d5"
   }
  },
  "orders.a11y.focus": {
-  "code": "1bd594ea6cea8ae8",
+  "code": "41e6e3b94ea208c7",
   "spec": "8f846e0a8c3ab4a3",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e"
+   "packages/contracts/src/orders/order.ts": "825d6af4758d3309",
+   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e",
+   "packages/web/lib/api/seller-orders.ts": "486eb16218364ac5",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.AS-95": "399a29cff5b75f0a"
   }
  },
  "orders.a11y.landmarks": {
-  "code": "1bd594ea6cea8ae8",
+  "code": "41e6e3b94ea208c7",
   "spec": "8f846e0a8c3ab4a3",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e"
+   "packages/contracts/src/orders/order.ts": "825d6af4758d3309",
+   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e",
+   "packages/web/lib/api/seller-orders.ts": "486eb16218364ac5",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.AS-95": "399a29cff5b75f0a"
   }
  },
  "orders.api.contract": {
-  "code": "e2201a466e24e921",
+  "code": "46b5d7719630e1bf",
   "spec": "ae663bcfa0330515",
   "at": "2026-10-25",
   "files": {
+   "packages/backend/libs/domains/orders/application/order-query.service.ts": "e14edb839e662670",
    "packages/contracts/src/orders/order.ts": "825d6af4758d3309"
   },
   "specs": {
@@ -65,10 +80,13 @@
   }
  },
  "orders.api.limit-bounds": {
-  "code": "44136fa355b3678a",
+  "code": "a295fdaf4667db9d",
   "spec": "f8cef7331970db2a",
   "at": "2026-10-25",
-  "files": {},
+  "files": {
+   "packages/backend/libs/domains/orders/api/orders.dto.ts": "7b0f40af8cfa5630",
+   "packages/contracts/src/orders/order.ts": "825d6af4758d3309"
+  },
   "specs": {
    "S10.R-37": "35e61017cd853e8b",
    "S10.R-39": "d2d6893ae3e7b3ed"
@@ -86,68 +104,92 @@
   }
  },
  "orders.api.shop-id-validation": {
-  "code": "44136fa355b3678a",
+  "code": "c877b9948ab688cf",
   "spec": "ae663bcfa0330515",
   "at": "2026-10-25",
-  "files": {},
+  "files": {
+   "packages/backend/libs/domains/tenancy/api/shop.guard.ts": "d0836b3019ac98bf"
+  },
   "specs": {
    "S10.R-39": "d2d6893ae3e7b3ed"
   }
  },
  "orders.api.status-validation": {
-  "code": "44136fa355b3678a",
+  "code": "a295fdaf4667db9d",
   "spec": "ae663bcfa0330515",
   "at": "2026-10-25",
-  "files": {},
+  "files": {
+   "packages/backend/libs/domains/orders/api/orders.dto.ts": "7b0f40af8cfa5630",
+   "packages/contracts/src/orders/order.ts": "825d6af4758d3309"
+  },
   "specs": {
    "S10.R-39": "d2d6893ae3e7b3ed"
   }
  },
  "orders.db.index-use": {
-  "code": "44136fa355b3678a",
+  "code": "daf5190b3e5ab87b",
   "spec": "658031d1fe5e3dc6",
   "at": "2026-10-25",
-  "files": {},
+  "files": {
+   "packages/backend/libs/domains/orders/infra/models/shop-order.model.ts": "2ff7760550e1e604",
+   "packages/backend/migrations/20261001150000-checkout-orders-inventory.js": "676b84c22daf1467",
+   "packages/backend/migrations/20261010160000-orders-s10-expand-columns.js": "968fcdb631260142"
+  },
   "specs": {
    "S10.R-38": "896057ef681bedcd"
   }
  },
  "orders.db.join-bisorder": {
-  "code": "44136fa355b3678a",
+  "code": "abbe717388c0536a",
   "spec": "708467ffb3b2a2eb",
   "at": "2026-10-25",
-  "files": {},
+  "files": {
+   "packages/backend/libs/domains/launch-events/infra/redis/lua.ts": "04347796378f12a4",
+   "packages/backend/libs/domains/orders/infra/models/bis-order.model.ts": "3e535d73bb950429",
+   "packages/backend/migrations/20260125105527-unnamed-migration.js": "5b056775ce884824",
+   "packages/backend/migrations/20261001150000-checkout-orders-inventory.js": "676b84c22daf1467",
+   "packages/backend/migrations/20261010160000-orders-s10-expand-columns.js": "968fcdb631260142",
+   "packages/backend/migrations/20261012120000-orders-s10-ref-code.js": "5ab8503aa0b764b6",
+   "packages/backend/migrations/20261019000000-orders-j05-attribution-expand.js": "1538cde1ac6a10b5"
+  },
   "specs": {
    "S10.R-14": "2073e7c53c67310a"
   }
  },
  "orders.db.keyset-index": {
-  "code": "44244bf83ee6dc4d",
+  "code": "f3ba59a6b5b2672b",
   "spec": "658031d1fe5e3dc6",
   "at": "2026-10-25",
   "files": {
-   "packages/backend/libs/domains/orders/infra/shop-order.repository.ts": "fbff1ae6dfd0f4b2"
+   "packages/backend/libs/domains/orders/infra/models/shop-order.model.ts": "2ff7760550e1e604",
+   "packages/backend/libs/domains/orders/infra/shop-order.repository.ts": "fbff1ae6dfd0f4b2",
+   "packages/backend/migrations/20261001150000-checkout-orders-inventory.js": "676b84c22daf1467",
+   "packages/backend/migrations/20261010160000-orders-s10-expand-columns.js": "968fcdb631260142"
   },
   "specs": {
    "S10.R-38": "896057ef681bedcd"
   }
  },
  "orders.db.line-title-null": {
-  "code": "8584c40e5adfd589",
+  "code": "df88df3467581d87",
   "spec": "eaa688f414c0633a",
   "at": "2026-10-25",
   "files": {
-   "packages/backend/libs/domains/orders/application/item-backfill.service.ts": "1a724e3f79ab5b96"
+   "packages/backend/libs/domains/orders/application/item-backfill.service.ts": "1a724e3f79ab5b96",
+   "packages/backend/libs/domains/orders/application/order-query.service.ts": "e14edb839e662670",
+   "packages/contracts/src/orders/order.ts": "825d6af4758d3309"
   },
   "specs": {
    "S10.R-15": "ecd9f77a3a95d74d"
   }
  },
  "orders.db.lines-join": {
-  "code": "44136fa355b3678a",
+  "code": "44244bf83ee6dc4d",
   "spec": "f567808398940689",
   "at": "2026-10-25",
-  "files": {},
+  "files": {
+   "packages/backend/libs/domains/orders/infra/shop-order.repository.ts": "fbff1ae6dfd0f4b2"
+  },
   "specs": {
    "S10.R-14": "2073e7c53c67310a",
    "S10.R-39": "d2d6893ae3e7b3ed"
@@ -165,21 +207,39 @@
   }
  },
  "orders.db.read-only": {
-  "code": "44136fa355b3678a",
+  "code": "ae6dba8d7c2a67ac",
   "spec": "cade40eb2c2512aa",
   "at": "2026-10-25",
-  "files": {},
+  "files": {
+   "packages/backend/libs/domains/orders/infra/reservation.repository.ts": "36af585877fdaf0b",
+   "packages/backend/libs/domains/orders/infra/shop-order.repository.ts": "fbff1ae6dfd0f4b2",
+   "packages/backend/libs/domains/tenancy/infra/models/shop.repository.ts": "6797d135d33af6a0"
+  },
   "specs": {
    "W04.B-32": "a80f2e33156235ce"
   }
  },
  "orders.db.slice-order-link": {
-  "code": "4191ed23fc3f4b4a",
+  "code": "aafb5a7f242f782f",
   "spec": "bc9aab1fe42dffee",
   "at": "2026-10-25",
   "files": {
    "packages/backend/libs/domains/fulfilment/application/order-lifecycle.service.ts": "3ccfcdab1c8f7c3e",
-   "packages/backend/libs/domains/orders/application/order-lifecycle.service.ts": "f7e7d1244884fcb0"
+   "packages/backend/libs/domains/orders/application/order-lifecycle.service.ts": "f7e7d1244884fcb0",
+   "packages/backend/libs/domains/orders/infra/models/bis-order.model.ts": "3e535d73bb950429",
+   "packages/backend/libs/domains/orders/infra/models/shop-order.model.ts": "2ff7760550e1e604",
+   "packages/backend/libs/domains/payments/infra/models/payment.model.ts": "0e2acd100ffc9f6e",
+   "packages/backend/migrations/20260125105527-unnamed-migration.js": "5b056775ce884824",
+   "packages/backend/migrations/20260502082945-unnamed-migration.js": "8526a9b890f90726",
+   "packages/backend/migrations/20260809150000-payment-product-occ-fields.js": "aa2fdd5ab805b963",
+   "packages/backend/migrations/20260815083235-denormalize-user-id-to-payment.js": "57c90b435a68a592",
+   "packages/backend/migrations/20261001150000-checkout-orders-inventory.js": "676b84c22daf1467",
+   "packages/backend/migrations/20261001160000-ledger-partitioning-payouts-recon.js": "d3581d6c92e577fb",
+   "packages/backend/migrations/20261010160000-orders-s10-expand-columns.js": "968fcdb631260142",
+   "packages/backend/migrations/20261011100000-payments-s13-expand-columns.js": "e81251a83e212d28",
+   "packages/backend/migrations/20261011100400-payments-s13-backfill-validate.js": "d68f826dc43ffce6",
+   "packages/backend/migrations/20261012120000-orders-s10-ref-code.js": "5ab8503aa0b764b6",
+   "packages/backend/migrations/20261019000000-orders-j05-attribution-expand.js": "1538cde1ac6a10b5"
   },
   "specs": {
    "S10.R-33": "d3cd67b75e7b34b8",
@@ -187,11 +247,14 @@
   }
  },
  "orders.filter.address-restore": {
-  "code": "5a0d514c913040c3",
+  "code": "8de718c96336b2f4",
   "spec": "44160e96f2ce6a4d",
   "at": "2026-10-25",
   "files": {
+   "packages/contracts/src/orders/order.ts": "825d6af4758d3309",
    "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e",
+   "packages/web/lib/api/seller-orders.ts": "486eb16218364ac5",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899",
    "packages/web/lib/seller/search-params.ts": "b0323b8c4ae21191"
   },
   "specs": {
@@ -199,11 +262,14 @@
   }
  },
  "orders.filter.back-to-all": {
-  "code": "5a0d514c913040c3",
+  "code": "8de718c96336b2f4",
   "spec": "44160e96f2ce6a4d",
   "at": "2026-10-25",
   "files": {
+   "packages/contracts/src/orders/order.ts": "825d6af4758d3309",
    "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e",
+   "packages/web/lib/api/seller-orders.ts": "486eb16218364ac5",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899",
    "packages/web/lib/seller/search-params.ts": "b0323b8c4ae21191"
   },
   "specs": {
@@ -211,11 +277,17 @@
   }
  },
  "orders.filter.bad-upper-status-ui": {
-  "code": "9aa0f045f3c39e01",
+  "code": "903293b670d5069f",
   "spec": "550b8b3cc67dc9d4",
   "at": "2026-10-25",
   "files": {
+   "packages/contracts/src/bff/product-page.ts": "e69c1c8b8065afb4",
+   "packages/contracts/src/orders/order.ts": "825d6af4758d3309",
    "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e",
+   "packages/web/components/seller/problem-states.tsx": "b8ff53d2297a93b6",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-orders.ts": "486eb16218364ac5",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899",
    "packages/web/lib/seller/problem-copy.ts": "4ef1088a69dc32f7"
   },
   "specs": {
@@ -224,11 +296,21 @@
   }
  },
  "orders.filter.choose-status": {
-  "code": "1bd594ea6cea8ae8",
+  "code": "a116121a9104b04c",
   "spec": "5fae6fd91459508b",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e"
+   "packages/backend/libs/domains/orders/api/orders.dto.ts": "7b0f40af8cfa5630",
+   "packages/backend/libs/domains/orders/api/shop-orders.controller.ts": "505589b438d1ad9e",
+   "packages/backend/libs/domains/orders/application/order-query.service.ts": "e14edb839e662670",
+   "packages/backend/libs/domains/orders/infra/models/shop-order.model.ts": "2ff7760550e1e604",
+   "packages/backend/libs/domains/orders/infra/shop-order.repository.ts": "fbff1ae6dfd0f4b2",
+   "packages/backend/migrations/20261001150000-checkout-orders-inventory.js": "676b84c22daf1467",
+   "packages/backend/migrations/20261010160000-orders-s10-expand-columns.js": "968fcdb631260142",
+   "packages/contracts/src/orders/order.ts": "825d6af4758d3309",
+   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e",
+   "packages/web/lib/api/seller-orders.ts": "486eb16218364ac5",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.AS-83": "46feb960bd365676",
@@ -236,22 +318,28 @@
   }
  },
  "orders.filter.drops-cursor": {
-  "code": "1bd594ea6cea8ae8",
+  "code": "41e6e3b94ea208c7",
   "spec": "44160e96f2ce6a4d",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e"
+   "packages/contracts/src/orders/order.ts": "825d6af4758d3309",
+   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e",
+   "packages/web/lib/api/seller-orders.ts": "486eb16218364ac5",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.R-10": "8cd48a8baeb758a6"
   }
  },
  "orders.filter.invalid-value-select-blank": {
-  "code": "5a0d514c913040c3",
+  "code": "8de718c96336b2f4",
   "spec": "44160e96f2ce6a4d",
   "at": "2026-10-25",
   "files": {
+   "packages/contracts/src/orders/order.ts": "825d6af4758d3309",
    "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e",
+   "packages/web/lib/api/seller-orders.ts": "486eb16218364ac5",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899",
    "packages/web/lib/seller/search-params.ts": "b0323b8c4ae21191"
   },
   "specs": {
@@ -259,32 +347,40 @@
   }
  },
  "orders.filter.keyboard": {
-  "code": "1bd594ea6cea8ae8",
+  "code": "41e6e3b94ea208c7",
   "spec": "fae922b2e8e23c4d",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e"
+   "packages/contracts/src/orders/order.ts": "825d6af4758d3309",
+   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e",
+   "packages/web/lib/api/seller-orders.ts": "486eb16218364ac5",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.R-25": "ceeb7a73996519d8"
   }
  },
  "orders.filter.label": {
-  "code": "1bd594ea6cea8ae8",
+  "code": "41e6e3b94ea208c7",
   "spec": "fae922b2e8e23c4d",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e"
+   "packages/contracts/src/orders/order.ts": "825d6af4758d3309",
+   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e",
+   "packages/web/lib/api/seller-orders.ts": "486eb16218364ac5",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.R-25": "ceeb7a73996519d8"
   }
  },
  "orders.filter.repeated-status": {
-  "code": "3eedb9fbf23504ff",
+  "code": "f3968c89a0bd3460",
   "spec": "44160e96f2ce6a4d",
   "at": "2026-10-25",
   "files": {
+   "packages/backend/libs/domains/orders/api/orders.dto.ts": "7b0f40af8cfa5630",
+   "packages/contracts/src/orders/order.ts": "825d6af4758d3309",
    "packages/web/lib/seller/search-params.ts": "b0323b8c4ae21191"
   },
   "specs": {
@@ -292,12 +388,14 @@
   }
  },
  "orders.filter.select-options": {
-  "code": "b600f584b9b83432",
+  "code": "41e6e3b94ea208c7",
   "spec": "96edeae8edd61d2e",
   "at": "2026-10-25",
   "files": {
    "packages/contracts/src/orders/order.ts": "825d6af4758d3309",
-   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e"
+   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e",
+   "packages/web/lib/api/seller-orders.ts": "486eb16218364ac5",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "S10.R-39": "d2d6893ae3e7b3ed",
@@ -305,22 +403,31 @@
   }
  },
  "orders.filter.select-size-phone": {
-  "code": "1bd594ea6cea8ae8",
+  "code": "41e6e3b94ea208c7",
   "spec": "fae922b2e8e23c4d",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e"
+   "packages/contracts/src/orders/order.ts": "825d6af4758d3309",
+   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e",
+   "packages/web/lib/api/seller-orders.ts": "486eb16218364ac5",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.R-25": "ceeb7a73996519d8"
   }
  },
  "orders.filter.status-cancelled": {
-  "code": "1bd594ea6cea8ae8",
+  "code": "9365afc233b46674",
   "spec": "67e7f7894bf9aeba",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e"
+   "packages/backend/libs/domains/orders/infra/models/shop-order.model.ts": "2ff7760550e1e604",
+   "packages/backend/migrations/20261001150000-checkout-orders-inventory.js": "676b84c22daf1467",
+   "packages/backend/migrations/20261010160000-orders-s10-expand-columns.js": "968fcdb631260142",
+   "packages/contracts/src/orders/order.ts": "825d6af4758d3309",
+   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e",
+   "packages/web/lib/api/seller-orders.ts": "486eb16218364ac5",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "S10.R-22": "fe4fdcf010649cc7",
@@ -328,11 +435,17 @@
   }
  },
  "orders.filter.status-pending": {
-  "code": "1bd594ea6cea8ae8",
+  "code": "9365afc233b46674",
   "spec": "fa19bac0f8351eed",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e"
+   "packages/backend/libs/domains/orders/infra/models/shop-order.model.ts": "2ff7760550e1e604",
+   "packages/backend/migrations/20261001150000-checkout-orders-inventory.js": "676b84c22daf1467",
+   "packages/backend/migrations/20261010160000-orders-s10-expand-columns.js": "968fcdb631260142",
+   "packages/contracts/src/orders/order.ts": "825d6af4758d3309",
+   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e",
+   "packages/web/lib/api/seller-orders.ts": "486eb16218364ac5",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "S10.R-14": "2073e7c53c67310a",
@@ -340,11 +453,17 @@
   }
  },
  "orders.filter.status-refunded": {
-  "code": "1bd594ea6cea8ae8",
+  "code": "9365afc233b46674",
   "spec": "39ed57087fab0870",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e"
+   "packages/backend/libs/domains/orders/infra/models/shop-order.model.ts": "2ff7760550e1e604",
+   "packages/backend/migrations/20261001150000-checkout-orders-inventory.js": "676b84c22daf1467",
+   "packages/backend/migrations/20261010160000-orders-s10-expand-columns.js": "968fcdb631260142",
+   "packages/contracts/src/orders/order.ts": "825d6af4758d3309",
+   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e",
+   "packages/web/lib/api/seller-orders.ts": "486eb16218364ac5",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "S10.R-33": "d3cd67b75e7b34b8",
@@ -352,10 +471,12 @@
   }
  },
  "orders.filter.unknown-status-in-address": {
-  "code": "3eedb9fbf23504ff",
+  "code": "f3968c89a0bd3460",
   "spec": "44160e96f2ce6a4d",
   "at": "2026-10-25",
   "files": {
+   "packages/backend/libs/domains/orders/api/orders.dto.ts": "7b0f40af8cfa5630",
+   "packages/contracts/src/orders/order.ts": "825d6af4758d3309",
    "packages/web/lib/seller/search-params.ts": "b0323b8c4ae21191"
   },
   "specs": {
@@ -385,11 +506,27 @@
   }
  },
  "orders.page.heading": {
-  "code": "1bd594ea6cea8ae8",
+  "code": "906d7b6c20c2c9d6",
   "spec": "2c67428fa8e919a0",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e"
+   "packages/backend/libs/domains/tenancy/api/shop.controller.ts": "be0ce071ac0c848a",
+   "packages/backend/libs/domains/tenancy/api/tenancy.dto.ts": "e1198cdca40b60bd",
+   "packages/backend/libs/domains/tenancy/infra/models/shop.model.ts": "ba1b0987ab3d736f",
+   "packages/backend/migrations/20261001140000-shops-tenancy-expand.js": "ee553fcdf13e2504",
+   "packages/backend/migrations/20261001160000-ledger-partitioning-payouts-recon.js": "d3581d6c92e577fb",
+   "packages/backend/migrations/20261001290000-public-api.js": "a3df3f97e02853f6",
+   "packages/backend/migrations/20261002170000-seller-onboarding.js": "5182cff5a76e0ca2",
+   "packages/backend/migrations/20261010140000-tenancy-s03-expand.js": "83c015f426cf7cbe",
+   "packages/contracts/src/bff/seller-overview.ts": "cf5790c3205c6cf1",
+   "packages/contracts/src/orders/order.ts": "825d6af4758d3309",
+   "packages/contracts/src/tenancy/index.ts": "324ccfbe0702f2bf",
+   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e",
+   "packages/web/lib/api/client.ts": "0fa4cb70bbc2d203",
+   "packages/web/lib/api/orders.ts": "7631ea19bc997f81",
+   "packages/web/lib/api/parse.ts": "82453dbb70bf149b",
+   "packages/web/lib/api/seller-orders.ts": "486eb16218364ac5",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.B-32": "a80f2e33156235ce",
@@ -397,10 +534,14 @@
   }
  },
  "orders.page.no-live-update": {
-  "code": "6eca4e750d76fa09",
+  "code": "e8efe353b56b6c46",
   "spec": "7bcc403d67741df5",
   "at": "2026-10-25",
   "files": {
+   "packages/contracts/src/orders/order.ts": "825d6af4758d3309",
+   "packages/web/lib/api/client.ts": "0fa4cb70bbc2d203",
+   "packages/web/lib/api/orders.ts": "7631ea19bc997f81",
+   "packages/web/lib/api/parse.ts": "82453dbb70bf149b",
    "packages/web/lib/api/seller-orders.ts": "486eb16218364ac5"
   },
   "specs": {
@@ -408,13 +549,22 @@
   }
  },
  "orders.page.permission-gate": {
-  "code": "0287afab41cb71d9",
+  "code": "a1f044b9eef01c60",
   "spec": "c07f53dec8e4a4ea",
   "at": "2026-10-25",
   "files": {
+   "packages/backend/libs/domains/tenancy/infra/models/shop.model.ts": "ba1b0987ab3d736f",
+   "packages/backend/migrations/20261001140000-shops-tenancy-expand.js": "ee553fcdf13e2504",
+   "packages/backend/migrations/20261001160000-ledger-partitioning-payouts-recon.js": "d3581d6c92e577fb",
+   "packages/backend/migrations/20261001290000-public-api.js": "a3df3f97e02853f6",
+   "packages/backend/migrations/20261002170000-seller-onboarding.js": "5182cff5a76e0ca2",
+   "packages/backend/migrations/20261010140000-tenancy-s03-expand.js": "83c015f426cf7cbe",
    "packages/web/app/dashboard/seller/[shopId]/orders/page.tsx": "c95755cc233da175",
+   "packages/web/components/admin/forbidden-panel.tsx": "56fec4464f5f98ef",
    "packages/web/components/dashboard/shop-frame.tsx": "04ebc512219b394f",
-   "packages/web/components/seller/forbidden-panel.tsx": "593ff8c8e9726203"
+   "packages/web/components/seller/forbidden-panel.tsx": "593ff8c8e9726203",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899",
+   "packages/web/lib/seller/permissions.ts": "e938842e33042b83"
   },
   "specs": {
    "W04.AS-54": "b665cc840f027891",
@@ -422,10 +572,16 @@
   }
  },
  "orders.page.refetch-on-mount": {
-  "code": "6eca4e750d76fa09",
+  "code": "98a9c4a0fe2a26e1",
   "spec": "9ea56bfc92f2e6cc",
   "at": "2026-10-25",
   "files": {
+   "packages/backend/libs/domains/orders/api/orders.dto.ts": "7b0f40af8cfa5630",
+   "packages/backend/libs/domains/orders/api/shop-orders.controller.ts": "505589b438d1ad9e",
+   "packages/contracts/src/orders/order.ts": "825d6af4758d3309",
+   "packages/web/lib/api/client.ts": "0fa4cb70bbc2d203",
+   "packages/web/lib/api/orders.ts": "7631ea19bc997f81",
+   "packages/web/lib/api/parse.ts": "82453dbb70bf149b",
    "packages/web/lib/api/seller-orders.ts": "486eb16218364ac5"
   },
   "specs": {
@@ -433,12 +589,13 @@
   }
  },
  "orders.page.route-and-nav": {
-  "code": "33aa552b65353a3b",
+  "code": "8a96a093fecdd159",
   "spec": "7f19de622036a998",
   "at": "2026-10-25",
   "files": {
    "packages/web/components/dashboard/mobile-drawer.tsx": "fae05477f0e60c92",
    "packages/web/components/dashboard/seller-nav.tsx": "3fe3854905dd347b",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899",
    "packages/web/lib/seller/nav.ts": "d05b59bcd2efc52a"
   },
   "specs": {
@@ -447,10 +604,29 @@
   }
  },
  "orders.page.server-first-read": {
-  "code": "c383350ecd3df350",
+  "code": "06d8b38d649d8778",
   "spec": "9ea56bfc92f2e6cc",
   "at": "2026-10-25",
   "files": {
+   "packages/backend/libs/domains/orders/application/order-query.service.ts": "e14edb839e662670",
+   "packages/backend/libs/domains/orders/infra/models/bis-order-item.model.ts": "6a881806dbf6be51",
+   "packages/backend/libs/domains/orders/infra/models/bis-order.model.ts": "3e535d73bb950429",
+   "packages/backend/libs/domains/orders/infra/models/shop-order.model.ts": "2ff7760550e1e604",
+   "packages/backend/migrations/20260125105527-unnamed-migration.js": "5b056775ce884824",
+   "packages/backend/migrations/20260815083236-create-bis-order-items.js": "8aa17c798d5f94f1",
+   "packages/backend/migrations/20261001150000-checkout-orders-inventory.js": "676b84c22daf1467",
+   "packages/backend/migrations/20261010160000-orders-s10-expand-columns.js": "968fcdb631260142",
+   "packages/backend/migrations/20261012120000-orders-s10-ref-code.js": "5ab8503aa0b764b6",
+   "packages/backend/migrations/20261016000100-orders-item-category.js": "c055788be6beeaf7",
+   "packages/backend/migrations/20261019000000-orders-j05-attribution-expand.js": "1538cde1ac6a10b5",
+   "packages/contracts/src/bff/seller-overview.ts": "cf5790c3205c6cf1",
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/contracts/src/developer-platform/keys.ts": "444d734754f9c8e3",
+   "packages/contracts/src/developer-platform/logs.ts": "53ca17bc6a88f8cb",
+   "packages/contracts/src/developer-platform/webhooks.ts": "f8aae4c6f9163cf7",
+   "packages/contracts/src/orders/order.ts": "825d6af4758d3309",
+   "packages/contracts/src/search/shop-product-search.ts": "aed2f677d96f5388",
+   "packages/contracts/src/tenancy/index.ts": "324ccfbe0702f2bf",
    "packages/web/app/dashboard/seller/[shopId]/orders/page.tsx": "c95755cc233da175",
    "packages/web/lib/server/seller.server.ts": "7b2b5295d5ae9ac5"
   },
@@ -459,12 +635,16 @@
   }
  },
  "orders.page.session-guard": {
-  "code": "bf3764049a7680a4",
+  "code": "3d6c7a4774b2253c",
   "spec": "75ba3eebf8e1f150",
   "at": "2026-10-25",
   "files": {
+   "packages/contracts/src/bff/session.ts": "0d3ce9bf10b174fa",
    "packages/web/app/dashboard/seller/[shopId]/orders/page.tsx": "c95755cc233da175",
-   "packages/web/components/dashboard/shop-frame.tsx": "04ebc512219b394f"
+   "packages/web/components/dashboard/shop-frame.tsx": "04ebc512219b394f",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899",
+   "packages/web/lib/api/session-server.ts": "27edbf1c2492f7ac",
+   "packages/web/lib/auth/session.server.ts": "d31e19b3a2c0f03e"
   },
   "specs": {
    "W01": "9d05bb0d0f73d2b0",
@@ -472,12 +652,26 @@
   }
  },
  "orders.page.shop-not-found": {
-  "code": "bf3764049a7680a4",
+  "code": "db46efbd047c2781",
   "spec": "ade07013daacf559",
   "at": "2026-10-25",
   "files": {
+   "packages/backend/libs/domains/tenancy/api/shop.guard.ts": "d0836b3019ac98bf",
+   "packages/backend/libs/domains/tenancy/application/shop-access.service.ts": "7bc64000bd829cec",
+   "packages/backend/libs/domains/tenancy/infra/models/shop.model.ts": "ba1b0987ab3d736f",
+   "packages/backend/migrations/20261001140000-shops-tenancy-expand.js": "ee553fcdf13e2504",
+   "packages/backend/migrations/20261001160000-ledger-partitioning-payouts-recon.js": "d3581d6c92e577fb",
+   "packages/backend/migrations/20261001290000-public-api.js": "a3df3f97e02853f6",
+   "packages/backend/migrations/20261002170000-seller-onboarding.js": "5182cff5a76e0ca2",
+   "packages/backend/migrations/20261010140000-tenancy-s03-expand.js": "83c015f426cf7cbe",
+   "packages/contracts/src/tenancy/index.ts": "324ccfbe0702f2bf",
    "packages/web/app/dashboard/seller/[shopId]/orders/page.tsx": "c95755cc233da175",
-   "packages/web/components/dashboard/shop-frame.tsx": "04ebc512219b394f"
+   "packages/web/components/dashboard/shop-frame.tsx": "04ebc512219b394f",
+   "packages/web/lib/api/client.ts": "0fa4cb70bbc2d203",
+   "packages/web/lib/api/orders.ts": "7631ea19bc997f81",
+   "packages/web/lib/api/parse.ts": "82453dbb70bf149b",
+   "packages/web/lib/api/seller-team.ts": "f4ef782114a3f035",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "S03": "516b2d0fe923a967",
@@ -511,11 +705,14 @@
   }
  },
  "orders.paging.back-button": {
-  "code": "1bd594ea6cea8ae8",
+  "code": "41e6e3b94ea208c7",
   "spec": "44160e96f2ce6a4d",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e"
+   "packages/contracts/src/orders/order.ts": "825d6af4758d3309",
+   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e",
+   "packages/web/lib/api/seller-orders.ts": "486eb16218364ac5",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.R-10": "8cd48a8baeb758a6"
@@ -553,10 +750,11 @@
   }
  },
  "orders.paging.cursor-tampered": {
-  "code": "3eedb9fbf23504ff",
+  "code": "e718baa3841c2f5c",
   "spec": "550b8b3cc67dc9d4",
   "at": "2026-10-25",
   "files": {
+   "packages/backend/libs/domains/orders/domain/order-cursor.ts": "b799a1f101369af7",
    "packages/web/lib/seller/search-params.ts": "b0323b8c4ae21191"
   },
   "specs": {
@@ -565,64 +763,81 @@
   }
  },
  "orders.paging.exactly-page-size": {
-  "code": "44136fa355b3678a",
+  "code": "46b5d7719630e1bf",
   "spec": "ade894b3fa20f467",
   "at": "2026-10-25",
-  "files": {},
+  "files": {
+   "packages/backend/libs/domains/orders/application/order-query.service.ts": "e14edb839e662670",
+   "packages/contracts/src/orders/order.ts": "825d6af4758d3309"
+  },
   "specs": {
    "S10.R-37": "35e61017cd853e8b"
   }
  },
  "orders.paging.first-page-link": {
-  "code": "1bd594ea6cea8ae8",
+  "code": "41e6e3b94ea208c7",
   "spec": "44160e96f2ce6a4d",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e"
+   "packages/contracts/src/orders/order.ts": "825d6af4758d3309",
+   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e",
+   "packages/web/lib/api/seller-orders.ts": "486eb16218364ac5",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.R-10": "8cd48a8baeb758a6"
   }
  },
  "orders.paging.go-to-first-page-button": {
-  "code": "80f1c7bfa965a94b",
+  "code": "4fcd39d1a1f37679",
   "spec": "304677b023de82d3",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/problem-states.tsx": "b8ff53d2297a93b6"
+   "packages/web/components/seller/problem-states.tsx": "b8ff53d2297a93b6",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5"
   },
   "specs": {
    "W04.AS-89": "12a7e5fe8b821d1f"
   }
  },
  "orders.paging.hidden-while-busy": {
-  "code": "1bd594ea6cea8ae8",
+  "code": "41e6e3b94ea208c7",
   "spec": "d92cbbc0a3633b92",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e"
+   "packages/contracts/src/orders/order.ts": "825d6af4758d3309",
+   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e",
+   "packages/web/lib/api/seller-orders.ts": "486eb16218364ac5",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.R-26": "c060454e7c10d038"
   }
  },
  "orders.paging.last-page": {
-  "code": "1bd594ea6cea8ae8",
+  "code": "41e6e3b94ea208c7",
   "spec": "9ea56bfc92f2e6cc",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e"
+   "packages/contracts/src/orders/order.ts": "825d6af4758d3309",
+   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e",
+   "packages/web/lib/api/seller-orders.ts": "486eb16218364ac5",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.AS-83": "46feb960bd365676"
   }
  },
  "orders.paging.next-link": {
-  "code": "1bd594ea6cea8ae8",
+  "code": "f354c776bb3c70e7",
   "spec": "7fceca681eb76a2f",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e"
+   "packages/backend/libs/domains/orders/domain/order-cursor.ts": "b799a1f101369af7",
+   "packages/contracts/src/orders/order.ts": "825d6af4758d3309",
+   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e",
+   "packages/web/lib/api/seller-orders.ts": "486eb16218364ac5",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "S10.R-37": "35e61017cd853e8b",
@@ -631,22 +846,28 @@
   }
  },
  "orders.paging.no-nav-when-single": {
-  "code": "1bd594ea6cea8ae8",
+  "code": "41e6e3b94ea208c7",
   "spec": "9ea56bfc92f2e6cc",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e"
+   "packages/contracts/src/orders/order.ts": "825d6af4758d3309",
+   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e",
+   "packages/web/lib/api/seller-orders.ts": "486eb16218364ac5",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.AS-83": "46feb960bd365676"
   }
  },
  "orders.phone.layout-390": {
-  "code": "1bd594ea6cea8ae8",
+  "code": "41e6e3b94ea208c7",
   "spec": "f226ffa14d46d840",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e"
+   "packages/contracts/src/orders/order.ts": "825d6af4758d3309",
+   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e",
+   "packages/web/lib/api/seller-orders.ts": "486eb16218364ac5",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.AS-97": "fd6c85bbcba690d5",
@@ -654,23 +875,31 @@
   }
  },
  "orders.phone.paging-buttons": {
-  "code": "1bd594ea6cea8ae8",
+  "code": "41e6e3b94ea208c7",
   "spec": "fae922b2e8e23c4d",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e"
+   "packages/contracts/src/orders/order.ts": "825d6af4758d3309",
+   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e",
+   "packages/web/lib/api/seller-orders.ts": "486eb16218364ac5",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.R-25": "ceeb7a73996519d8"
   }
  },
  "orders.role.admin": {
-  "code": "838f3f480a9a60ee",
+  "code": "ed6917489e9ac6b0",
   "spec": "e163725fadd09050",
   "at": "2026-10-25",
   "files": {
+   "packages/backend/libs/domains/identity/api/clock-admin.controller.ts": "67c4629712f0265a",
+   "packages/backend/libs/domains/identity/api/jobs-admin.controller.ts": "c37f8d0411bebdff",
+   "packages/backend/libs/domains/identity/api/jobs-admin.dto.ts": "686e3e171f7c456e",
    "packages/backend/libs/domains/shop-functions/api/permissions.ts": "72f6532b00f4f9d8",
    "packages/backend/libs/domains/tenancy/domain/permissions.ts": "62031a52bc431e77",
+   "packages/contracts/src/admin/clock.ts": "4f75f00239bd6a43",
+   "packages/contracts/src/admin/jobs.ts": "29a177ec3afef53f",
    "packages/web/lib/seller/permissions.ts": "e938842e33042b83"
   },
   "specs": {
@@ -678,31 +907,51 @@
   }
  },
  "orders.role.api-no-permission": {
-  "code": "44136fa355b3678a",
+  "code": "1075d2aed577c03a",
   "spec": "a6e47974bbf68f5b",
   "at": "2026-10-25",
-  "files": {},
+  "files": {
+   "packages/backend/libs/domains/orders/api/orders.dto.ts": "7b0f40af8cfa5630",
+   "packages/backend/libs/domains/orders/api/shop-orders.controller.ts": "505589b438d1ad9e",
+   "packages/backend/libs/domains/tenancy/api/shop.guard.ts": "d0836b3019ac98bf",
+   "packages/backend/libs/domains/tenancy/application/shop-access.service.ts": "7bc64000bd829cec"
+  },
   "specs": {
    "S10.R-39": "d2d6893ae3e7b3ed",
    "W04.R-02": "b665cc840f027891"
   }
  },
  "orders.role.foreign-shop-member": {
-  "code": "44136fa355b3678a",
+  "code": "c44f8368573f5c6b",
   "spec": "46516d9ca1ecb3b8",
   "at": "2026-10-25",
-  "files": {},
+  "files": {
+   "packages/backend/libs/domains/tenancy/api/shop.guard.ts": "d0836b3019ac98bf",
+   "packages/backend/libs/domains/tenancy/domain/errors.ts": "4232c0ad55603d99"
+  },
   "specs": {
    "S10.R-39": "d2d6893ae3e7b3ed",
    "W04.AS-85": "dab82e9523887b3c"
   }
  },
  "orders.role.owner": {
-  "code": "f515b244574b2c40",
+  "code": "a918af2954510045",
   "spec": "d196dbbf0d28488c",
   "at": "2026-10-25",
   "files": {
-   "packages/backend/libs/domains/tenancy/domain/permissions.ts": "62031a52bc431e77"
+   "packages/backend/libs/domains/tenancy/domain/permissions.ts": "62031a52bc431e77",
+   "packages/backend/libs/domains/tenancy/infra/models/shop.model.ts": "ba1b0987ab3d736f",
+   "packages/backend/libs/infrastructure/idempotency/idempotency.errors.ts": "18522f124606cb31",
+   "packages/backend/migrations/20261001140000-shops-tenancy-expand.js": "ee553fcdf13e2504",
+   "packages/backend/migrations/20261001160000-ledger-partitioning-payouts-recon.js": "d3581d6c92e577fb",
+   "packages/backend/migrations/20261001290000-public-api.js": "a3df3f97e02853f6",
+   "packages/backend/migrations/20261002170000-seller-onboarding.js": "5182cff5a76e0ca2",
+   "packages/backend/migrations/20261010140000-tenancy-s03-expand.js": "83c015f426cf7cbe",
+   "packages/contracts/src/tenancy/index.ts": "324ccfbe0702f2bf",
+   "packages/web/lib/api/client.ts": "0fa4cb70bbc2d203",
+   "packages/web/lib/api/orders.ts": "7631ea19bc997f81",
+   "packages/web/lib/api/parse.ts": "82453dbb70bf149b",
+   "packages/web/lib/api/seller-team.ts": "f4ef782114a3f035"
   },
   "specs": {
    "S03.FR-020": "82778140dd5f3a8b",
@@ -710,11 +959,12 @@
   }
  },
  "orders.role.permission-change-live": {
-  "code": "838f3f480a9a60ee",
+  "code": "651e0db988d18c23",
   "spec": "383b0e9de5dd0cc5",
   "at": "2026-10-25",
   "files": {
    "packages/backend/libs/domains/shop-functions/api/permissions.ts": "72f6532b00f4f9d8",
+   "packages/backend/libs/domains/tenancy/application/shop-access.service.ts": "7bc64000bd829cec",
    "packages/backend/libs/domains/tenancy/domain/permissions.ts": "62031a52bc431e77",
    "packages/web/lib/seller/permissions.ts": "e938842e33042b83"
   },
@@ -760,20 +1010,25 @@
   }
  },
  "orders.security.idor-shop-order": {
-  "code": "44136fa355b3678a",
+  "code": "c877b9948ab688cf",
   "spec": "ae663bcfa0330515",
   "at": "2026-10-25",
-  "files": {},
+  "files": {
+   "packages/backend/libs/domains/tenancy/api/shop.guard.ts": "d0836b3019ac98bf"
+  },
   "specs": {
    "S10.R-39": "d2d6893ae3e7b3ed"
   }
  },
  "orders.security.xss-fields": {
-  "code": "1bd594ea6cea8ae8",
+  "code": "41e6e3b94ea208c7",
   "spec": "74b06185be28d453",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e"
+   "packages/contracts/src/orders/order.ts": "825d6af4758d3309",
+   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e",
+   "packages/web/lib/api/seller-orders.ts": "486eb16218364ac5",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.R-28": "bcbeea3991272441"
@@ -791,19 +1046,23 @@
   }
  },
  "orders.shop.deleted": {
-  "code": "44136fa355b3678a",
+  "code": "e018955627e62109",
   "spec": "0402ec2a3e91189e",
   "at": "2026-10-25",
-  "files": {},
+  "files": {
+   "packages/backend/libs/domains/tenancy/application/shop-access.service.ts": "7bc64000bd829cec"
+  },
   "specs": {
    "W04.AS-85": "dab82e9523887b3c"
   }
  },
  "orders.shop.deleting": {
-  "code": "44136fa355b3678a",
+  "code": "e018955627e62109",
   "spec": "70353983f3eb1f96",
   "at": "2026-10-25",
-  "files": {},
+  "files": {
+   "packages/backend/libs/domains/tenancy/application/shop-access.service.ts": "7bc64000bd829cec"
+  },
   "specs": {
    "W04.AS-86": "87f5c7cbdb80abff",
    "W04.R-03": "3d83ff66a103db87"
@@ -834,11 +1093,13 @@
   }
  },
  "orders.shop.suspended-banner-vs-list": {
-  "code": "80f1c7bfa965a94b",
+  "code": "4004e5a07a19db23",
   "spec": "70353983f3eb1f96",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/problem-states.tsx": "b8ff53d2297a93b6"
+   "packages/backend/libs/domains/tenancy/application/shop-access.service.ts": "7bc64000bd829cec",
+   "packages/web/components/seller/problem-states.tsx": "b8ff53d2297a93b6",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5"
   },
   "specs": {
    "W04.AS-86": "87f5c7cbdb80abff",
@@ -846,10 +1107,15 @@
   }
  },
  "orders.shop.suspended-read": {
-  "code": "44136fa355b3678a",
+  "code": "c4f421b8c267255a",
   "spec": "e0f84a20e59f4f67",
   "at": "2026-10-25",
-  "files": {},
+  "files": {
+   "packages/backend/libs/domains/orders/api/orders.dto.ts": "7b0f40af8cfa5630",
+   "packages/backend/libs/domains/orders/api/shop-orders.controller.ts": "505589b438d1ad9e",
+   "packages/backend/libs/domains/tenancy/application/shop-access.service.ts": "7bc64000bd829cec",
+   "packages/backend/libs/domains/tenancy/domain/errors.ts": "4232c0ad55603d99"
+  },
   "specs": {
    "S03": "516b2d0fe923a967",
    "S10.R-39": "d2d6893ae3e7b3ed",
@@ -870,13 +1136,14 @@
   }
  },
  "orders.source.cancel-marks-cancelled": {
-  "code": "c6d4b56743501665",
+  "code": "c9f7a5945a43d7a7",
   "spec": "aca9c1a97ad15d18",
   "at": "2026-10-25",
   "files": {
    "packages/backend/libs/domains/fulfilment/application/order-lifecycle.service.ts": "3ccfcdab1c8f7c3e",
    "packages/backend/libs/domains/orders/application/order-cancellation.service.ts": "70149d509df24b1f",
-   "packages/backend/libs/domains/orders/application/order-lifecycle.service.ts": "f7e7d1244884fcb0"
+   "packages/backend/libs/domains/orders/application/order-lifecycle.service.ts": "f7e7d1244884fcb0",
+   "packages/contracts/src/orders/order.ts": "825d6af4758d3309"
   },
   "specs": {
    "S10.R-22": "fe4fdcf010649cc7",
@@ -884,23 +1151,37 @@
   }
  },
  "orders.source.cart-not-in-list": {
-  "code": "047d6bab104977b4",
+  "code": "dc2aad71064f5803",
   "spec": "5e067bd35004e571",
   "at": "2026-10-25",
   "files": {
-   "packages/backend/libs/domains/orders/application/cart.service.ts": "dda56dddba96a4c7"
+   "packages/backend/libs/domains/orders/application/cart.service.ts": "dda56dddba96a4c7",
+   "packages/contracts/src/orders/cart.ts": "7eaa7e4971dc22d2"
   },
   "specs": {
    "S10": "bfdf0e3960714b46"
   }
  },
  "orders.source.checkout-creates-slices": {
-  "code": "5321f23dd1f6242a",
+  "code": "c4b4ae2e199d3325",
   "spec": "087e80a0fd0ba0b8",
   "at": "2026-10-25",
   "files": {
    "packages/backend/libs/domains/orders/api/checkout.controller.ts": "80db042a75839e73",
-   "packages/backend/libs/domains/orders/infra/order.repository.ts": "1a65f497cfc1ee18"
+   "packages/backend/libs/domains/orders/api/checkout.dto.ts": "84b1671374dcafdd",
+   "packages/backend/libs/domains/orders/application/checkout.service.ts": "6a6fed663e24f073",
+   "packages/backend/libs/domains/orders/infra/models/bis-order-item.model.ts": "6a881806dbf6be51",
+   "packages/backend/libs/domains/orders/infra/models/bis-order.model.ts": "3e535d73bb950429",
+   "packages/backend/libs/domains/orders/infra/models/shop-order.model.ts": "2ff7760550e1e604",
+   "packages/backend/libs/domains/orders/infra/order.repository.ts": "1a65f497cfc1ee18",
+   "packages/backend/migrations/20260125105527-unnamed-migration.js": "5b056775ce884824",
+   "packages/backend/migrations/20260815083236-create-bis-order-items.js": "8aa17c798d5f94f1",
+   "packages/backend/migrations/20261001150000-checkout-orders-inventory.js": "676b84c22daf1467",
+   "packages/backend/migrations/20261010160000-orders-s10-expand-columns.js": "968fcdb631260142",
+   "packages/backend/migrations/20261012120000-orders-s10-ref-code.js": "5ab8503aa0b764b6",
+   "packages/backend/migrations/20261016000100-orders-item-category.js": "c055788be6beeaf7",
+   "packages/backend/migrations/20261019000000-orders-j05-attribution-expand.js": "1538cde1ac6a10b5",
+   "packages/contracts/src/orders/checkout.ts": "d0fd4fc60f1771e5"
   },
   "specs": {
    "S10.B-05": "322baac8747d9c66",
@@ -922,11 +1203,12 @@
   }
  },
  "orders.source.flash-sale-order": {
-  "code": "5f153a704424d985",
+  "code": "57d4cc6952784611",
   "spec": "eba649d1f4128ce9",
   "at": "2026-10-25",
   "files": {
-   "packages/backend/libs/domains/orders/application/checkout.service.ts": "6a6fed663e24f073"
+   "packages/backend/libs/domains/orders/application/checkout.service.ts": "6a6fed663e24f073",
+   "packages/contracts/src/orders/checkout.ts": "d0fd4fc60f1771e5"
   },
   "specs": {
    "S10": "bfdf0e3960714b46",
@@ -934,11 +1216,14 @@
   }
  },
  "orders.source.fulfilment-no-effect": {
-  "code": "cbcadedc4491906a",
+  "code": "ae51272614dd4e82",
   "spec": "ea93387d683a374b",
   "at": "2026-10-25",
   "files": {
-   "packages/backend/libs/domains/orders/application/order-fulfilment.service.ts": "2d3d9f7ed7cb10e6"
+   "packages/backend/libs/domains/orders/application/order-fulfilment.service.ts": "2d3d9f7ed7cb10e6",
+   "packages/backend/libs/domains/orders/infra/models/shop-order.model.ts": "2ff7760550e1e604",
+   "packages/backend/migrations/20261001150000-checkout-orders-inventory.js": "676b84c22daf1467",
+   "packages/backend/migrations/20261010160000-orders-s10-expand-columns.js": "968fcdb631260142"
   },
   "specs": {
    "S10.R-34": "d1bd843c6a431883"
@@ -955,16 +1240,19 @@
   }
  },
  "orders.source.out-of-stock-cancel": {
-  "code": "44136fa355b3678a",
+  "code": "3a39573899b745a8",
   "spec": "ade894b3fa20f467",
   "at": "2026-10-25",
-  "files": {},
+  "files": {
+   "packages/backend/libs/domains/fulfilment/infra/delivery.repository.ts": "b5d70a034eed9793",
+   "packages/contracts/src/fulfilment/delivery.ts": "a084d0743a1c4a5a"
+  },
   "specs": {
    "S10.R-37": "35e61017cd853e8b"
   }
  },
  "orders.source.payment-marks-paid": {
-  "code": "d74e890df292cd32",
+  "code": "7ab67c0c50e711fd",
   "spec": "bc9aab1fe42dffee",
   "at": "2026-10-25",
   "files": {
@@ -972,7 +1260,11 @@
    "packages/backend/libs/domains/orders/api/stripe-webhook.controller.ts": "22d6698b15a55725",
    "packages/backend/libs/domains/orders/application/order-lifecycle.service.ts": "f7e7d1244884fcb0",
    "packages/backend/libs/domains/orders/application/payment-result.service.ts": "8b56b93befa839b1",
-   "packages/backend/libs/domains/orders/infra/payments-events.consumer.ts": "9942e339ede1b287"
+   "packages/backend/libs/domains/orders/infra/models/shop-order.model.ts": "2ff7760550e1e604",
+   "packages/backend/libs/domains/orders/infra/payments-events.consumer.ts": "9942e339ede1b287",
+   "packages/backend/migrations/20261001150000-checkout-orders-inventory.js": "676b84c22daf1467",
+   "packages/backend/migrations/20261010160000-orders-s10-expand-columns.js": "968fcdb631260142",
+   "packages/contracts/src/payments/payment-events.ts": "aac8d5ad1f2d3768"
   },
   "specs": {
    "S10.R-33": "d3cd67b75e7b34b8",
@@ -1014,55 +1306,71 @@
   }
  },
  "orders.state.empty-filter": {
-  "code": "1bd594ea6cea8ae8",
+  "code": "41e6e3b94ea208c7",
   "spec": "9ea56bfc92f2e6cc",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e"
+   "packages/contracts/src/orders/order.ts": "825d6af4758d3309",
+   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e",
+   "packages/web/lib/api/seller-orders.ts": "486eb16218364ac5",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.AS-83": "46feb960bd365676"
   }
  },
  "orders.state.empty-no-flash": {
-  "code": "1bd594ea6cea8ae8",
+  "code": "41e6e3b94ea208c7",
   "spec": "d92cbbc0a3633b92",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e"
+   "packages/contracts/src/orders/order.ts": "825d6af4758d3309",
+   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e",
+   "packages/web/lib/api/seller-orders.ts": "486eb16218364ac5",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.R-26": "c060454e7c10d038"
   }
  },
  "orders.state.empty-no-orders": {
-  "code": "1bd594ea6cea8ae8",
+  "code": "41e6e3b94ea208c7",
   "spec": "9ea56bfc92f2e6cc",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e"
+   "packages/contracts/src/orders/order.ts": "825d6af4758d3309",
+   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e",
+   "packages/web/lib/api/seller-orders.ts": "486eb16218364ac5",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.AS-83": "46feb960bd365676"
   }
  },
  "orders.state.empty-page": {
-  "code": "1bd594ea6cea8ae8",
+  "code": "41e6e3b94ea208c7",
   "spec": "9ea56bfc92f2e6cc",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e"
+   "packages/contracts/src/orders/order.ts": "825d6af4758d3309",
+   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e",
+   "packages/web/lib/api/seller-orders.ts": "486eb16218364ac5",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.AS-83": "46feb960bd365676"
   }
  },
  "orders.state.error-4xx-no-retry": {
-  "code": "96a36160ab3d7c92",
+  "code": "abd973b529b0d0db",
   "spec": "304677b023de82d3",
   "at": "2026-10-25",
   "files": {
+   "packages/contracts/src/bff/order-page.ts": "534fbde0752fca2e",
+   "packages/contracts/src/orders/order.ts": "825d6af4758d3309",
+   "packages/web/lib/api/client.ts": "0fa4cb70bbc2d203",
    "packages/web/lib/api/orders.ts": "7631ea19bc997f81",
+   "packages/web/lib/api/parse.ts": "82453dbb70bf149b",
    "packages/web/lib/api/seller-orders.ts": "486eb16218364ac5"
   },
   "specs": {
@@ -1070,10 +1378,17 @@
   }
  },
  "orders.state.error-bad-body": {
-  "code": "6eca4e750d76fa09",
+  "code": "a86f18415c7895fe",
   "spec": "304677b023de82d3",
   "at": "2026-10-25",
   "files": {
+   "packages/backend/libs/domains/shop-functions/api/parse.ts": "1acad030d80d0876",
+   "packages/backend/libs/infrastructure/serverless/batch/define-sqs-handler.ts": "9f611664a9bc650c",
+   "packages/contracts/src/orders/order.ts": "825d6af4758d3309",
+   "packages/contracts/src/shop-functions/functions.ts": "cdc71041251cdae3",
+   "packages/web/lib/api/client.ts": "0fa4cb70bbc2d203",
+   "packages/web/lib/api/orders.ts": "7631ea19bc997f81",
+   "packages/web/lib/api/parse.ts": "82453dbb70bf149b",
    "packages/web/lib/api/seller-orders.ts": "486eb16218364ac5"
   },
   "specs": {
@@ -1093,13 +1408,23 @@
   }
  },
  "orders.state.error-read": {
-  "code": "9ac22dd525608f0d",
+  "code": "c23b0a88ead090c9",
   "spec": "19a600927765b316",
   "at": "2026-10-25",
   "files": {
+   "packages/contracts/src/bff/order-page.ts": "534fbde0752fca2e",
+   "packages/contracts/src/bff/product-page.ts": "e69c1c8b8065afb4",
+   "packages/contracts/src/orders/order.ts": "825d6af4758d3309",
    "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e",
    "packages/web/components/seller/problem-states.tsx": "b8ff53d2297a93b6",
+   "packages/web/lib/api/assistant.ts": "3cd64e331a745bda",
+   "packages/web/lib/api/client.ts": "0fa4cb70bbc2d203",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/orders.ts": "7631ea19bc997f81",
+   "packages/web/lib/api/parse.ts": "82453dbb70bf149b",
    "packages/web/lib/api/problem-copy.ts": "fee92af3f30afb8c",
+   "packages/web/lib/api/seller-orders.ts": "486eb16218364ac5",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899",
    "packages/web/lib/assistant/problem-copy.ts": "7901b9fda9cb5675",
    "packages/web/lib/seller/problem-copy.ts": "4ef1088a69dc32f7"
   },
@@ -1109,23 +1434,35 @@
   }
  },
  "orders.state.error-try-again": {
-  "code": "1bd594ea6cea8ae8",
+  "code": "3725f54346741ce7",
   "spec": "304677b023de82d3",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e"
+   "packages/contracts/src/media/video.ts": "b24f3f7006e47042",
+   "packages/contracts/src/orders/order.ts": "825d6af4758d3309",
+   "packages/web/components/seller/integrations/quarantine-panel.tsx": "39a4ea45f48ea734",
+   "packages/web/components/seller/media/video-upload-view.tsx": "f2f6fb6e0be17881",
+   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-integrations.ts": "6199ddb7cf94152b",
+   "packages/web/lib/api/seller-media.ts": "31b6db808f27ab21",
+   "packages/web/lib/api/seller-orders.ts": "486eb16218364ac5",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.AS-89": "12a7e5fe8b821d1f"
   }
  },
  "orders.state.loading-first": {
-  "code": "95eda8eb6ce828bd",
+  "code": "739d43185ddbdec1",
   "spec": "2acfc38394942547",
   "at": "2026-10-25",
   "files": {
+   "packages/contracts/src/orders/order.ts": "825d6af4758d3309",
    "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e",
-   "packages/web/components/seller/page-skeletons.tsx": "6d8169b1609f5520"
+   "packages/web/components/seller/page-skeletons.tsx": "6d8169b1609f5520",
+   "packages/web/lib/api/seller-orders.ts": "486eb16218364ac5",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.AS-91": "92d2478a25820073",
@@ -1133,34 +1470,38 @@
   }
  },
  "orders.state.offline": {
-  "code": "80f1c7bfa965a94b",
+  "code": "b0d6abb741b1d025",
   "spec": "d8cb92d2d2d9213e",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/problem-states.tsx": "b8ff53d2297a93b6"
+   "packages/web/components/seller/problem-states.tsx": "b8ff53d2297a93b6",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/query-keys.ts": "0da0b77363058008"
   },
   "specs": {
    "W04.AS-88": "3f501d830040b391"
   }
  },
  "orders.state.rate-limited": {
-  "code": "cf906a51071fd43a",
+  "code": "057d656d939ffb59",
   "spec": "f85ca6d5e8d0b923",
   "at": "2026-10-25",
   "files": {
    "packages/backend/libs/domains/orders/rate-limit-policies.ts": "f1a70dcd7f89d1c4",
-   "packages/web/components/seller/problem-states.tsx": "b8ff53d2297a93b6"
+   "packages/web/components/seller/problem-states.tsx": "b8ff53d2297a93b6",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5"
   },
   "specs": {
    "W04.AS-90": "b866c136e97e7ae7"
   }
  },
  "orders.state.rate-limited-text": {
-  "code": "b72b17f008008b3d",
+  "code": "335bc506c7760923",
   "spec": "f85ca6d5e8d0b923",
   "at": "2026-10-25",
   "files": {
    "packages/web/components/seller/problem-states.tsx": "b8ff53d2297a93b6",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
    "packages/web/lib/seller/countdown.ts": "948ccd86aea00fcb"
   },
   "specs": {
@@ -1168,11 +1509,14 @@
   }
  },
  "orders.state.session-ended": {
-  "code": "80f1c7bfa965a94b",
+  "code": "d7dda2fac3c400cb",
   "spec": "1e61fb9bc1cd9d1f",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/problem-states.tsx": "b8ff53d2297a93b6"
+   "packages/web/components/admin/flags/flag-problem.tsx": "7cd5aea71b7198b2",
+   "packages/web/components/seller/problem-states.tsx": "b8ff53d2297a93b6",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/auth/session-ended.ts": "7759612ac84e0b12"
   },
   "specs": {
    "W01": "9d05bb0d0f73d2b0",
@@ -1180,10 +1524,12 @@
   }
  },
  "orders.state.shop-deleted-while-open": {
-  "code": "084dc3e8b54a4604",
+  "code": "9fb1ba43c469372d",
   "spec": "0402ec2a3e91189e",
   "at": "2026-10-25",
   "files": {
+   "packages/web/lib/api/assistant.ts": "3cd64e331a745bda",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
    "packages/web/lib/api/problem-copy.ts": "fee92af3f30afb8c",
    "packages/web/lib/assistant/problem-copy.ts": "7901b9fda9cb5675",
    "packages/web/lib/seller/problem-copy.ts": "4ef1088a69dc32f7"
@@ -1204,12 +1550,15 @@
   }
  },
  "orders.table.busy-keeps-rows": {
-  "code": "b9bda09dfb342e1e",
+  "code": "f7285fb8cc507ddb",
   "spec": "7f50ba02a0bfa1fd",
   "at": "2026-10-25",
   "files": {
+   "packages/contracts/src/orders/order.ts": "825d6af4758d3309",
    "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e",
-   "packages/web/components/seller/responsive-table.tsx": "296ce71c11d48740"
+   "packages/web/components/seller/responsive-table.tsx": "296ce71c11d48740",
+   "packages/web/lib/api/seller-orders.ts": "486eb16218364ac5",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.AS-31": "c060454e7c10d038",
@@ -1217,11 +1566,21 @@
   }
  },
  "orders.table.currency-invalid-crash": {
-  "code": "f700573c5f6fb652",
+  "code": "c55312b090a7ea60",
   "spec": "5478743d3b85b594",
   "at": "2026-10-25",
   "files": {
+   "packages/backend/libs/domains/notifications/domain/money.ts": "2b895c63170065c0",
+   "packages/backend/libs/domains/orders/infra/models/bis-order.model.ts": "3e535d73bb950429",
+   "packages/backend/migrations/20260125105527-unnamed-migration.js": "5b056775ce884824",
+   "packages/backend/migrations/20261001150000-checkout-orders-inventory.js": "676b84c22daf1467",
+   "packages/backend/migrations/20261010160000-orders-s10-expand-columns.js": "968fcdb631260142",
+   "packages/backend/migrations/20261012120000-orders-s10-ref-code.js": "5ab8503aa0b764b6",
+   "packages/backend/migrations/20261019000000-orders-j05-attribution-expand.js": "1538cde1ac6a10b5",
+   "packages/contracts/src/orders/order.ts": "825d6af4758d3309",
    "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e",
+   "packages/web/lib/api/seller-orders.ts": "486eb16218364ac5",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899",
    "packages/web/lib/utils.ts": "13dbc56570cb6305"
   },
   "specs": {
@@ -1229,10 +1588,11 @@
   }
  },
  "orders.table.currency-unknown-code": {
-  "code": "9b99af03652d20ba",
+  "code": "2a9992736e43989e",
   "spec": "5478743d3b85b594",
   "at": "2026-10-25",
   "files": {
+   "packages/backend/libs/domains/notifications/domain/money.ts": "2b895c63170065c0",
    "packages/web/lib/utils.ts": "13dbc56570cb6305"
   },
   "specs": {
@@ -1240,10 +1600,11 @@
   }
  },
  "orders.table.currency-zero-decimal": {
-  "code": "9b99af03652d20ba",
+  "code": "2a9992736e43989e",
   "spec": "5478743d3b85b594",
   "at": "2026-10-25",
   "files": {
+   "packages/backend/libs/domains/notifications/domain/money.ts": "2b895c63170065c0",
    "packages/web/lib/utils.ts": "13dbc56570cb6305"
   },
   "specs": {
@@ -1251,11 +1612,17 @@
   }
  },
  "orders.table.date": {
-  "code": "4e60db2096d5c136",
+  "code": "beb4e1ae08cb6611",
   "spec": "0f69adb971a77403",
   "at": "2026-10-25",
   "files": {
+   "packages/backend/libs/domains/orders/infra/models/shop-order.model.ts": "2ff7760550e1e604",
+   "packages/backend/migrations/20261001150000-checkout-orders-inventory.js": "676b84c22daf1467",
+   "packages/backend/migrations/20261010160000-orders-s10-expand-columns.js": "968fcdb631260142",
+   "packages/contracts/src/orders/order.ts": "825d6af4758d3309",
    "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e",
+   "packages/web/lib/api/seller-orders.ts": "486eb16218364ac5",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899",
    "packages/web/lib/seller/format-date.ts": "7e9348066a935023"
   },
   "specs": {
@@ -1287,21 +1654,33 @@
   }
  },
  "orders.table.items-count": {
-  "code": "1bd594ea6cea8ae8",
+  "code": "3c8ade3997cf18eb",
   "spec": "cade40eb2c2512aa",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e"
+   "packages/backend/libs/domains/orders/application/order-query.service.ts": "e14edb839e662670",
+   "packages/backend/libs/domains/orders/infra/models/bis-order-item.model.ts": "6a881806dbf6be51",
+   "packages/backend/libs/domains/orders/infra/shop-order.repository.ts": "fbff1ae6dfd0f4b2",
+   "packages/backend/migrations/20260815083236-create-bis-order-items.js": "8aa17c798d5f94f1",
+   "packages/backend/migrations/20261001150000-checkout-orders-inventory.js": "676b84c22daf1467",
+   "packages/backend/migrations/20261010160000-orders-s10-expand-columns.js": "968fcdb631260142",
+   "packages/backend/migrations/20261016000100-orders-item-category.js": "c055788be6beeaf7",
+   "packages/contracts/src/orders/order.ts": "825d6af4758d3309",
+   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e",
+   "packages/web/lib/api/seller-orders.ts": "486eb16218364ac5",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.B-32": "a80f2e33156235ce"
   }
  },
  "orders.table.items-only-this-shop": {
-  "code": "44136fa355b3678a",
+  "code": "44244bf83ee6dc4d",
   "spec": "f567808398940689",
   "at": "2026-10-25",
-  "files": {},
+  "files": {
+   "packages/backend/libs/domains/orders/infra/shop-order.repository.ts": "fbff1ae6dfd0f4b2"
+  },
   "specs": {
    "S10.R-14": "2073e7c53c67310a",
    "S10.R-39": "d2d6893ae3e7b3ed"
@@ -1319,10 +1698,16 @@
   }
  },
  "orders.table.no-buyer-api-and-html": {
-  "code": "a8844fe53646c8ab",
+  "code": "3fa7a37b8beef04d",
   "spec": "d1bfa169ec204892",
   "at": "2026-10-25",
   "files": {
+   "packages/backend/libs/domains/orders/infra/models/bis-order.model.ts": "3e535d73bb950429",
+   "packages/backend/migrations/20260125105527-unnamed-migration.js": "5b056775ce884824",
+   "packages/backend/migrations/20261001150000-checkout-orders-inventory.js": "676b84c22daf1467",
+   "packages/backend/migrations/20261010160000-orders-s10-expand-columns.js": "968fcdb631260142",
+   "packages/backend/migrations/20261012120000-orders-s10-ref-code.js": "5ab8503aa0b764b6",
+   "packages/backend/migrations/20261019000000-orders-j05-attribution-expand.js": "1538cde1ac6a10b5",
    "packages/contracts/src/orders/order.ts": "825d6af4758d3309",
    "packages/web/app/dashboard/seller/[shopId]/orders/page.tsx": "c95755cc233da175"
   },
@@ -1333,11 +1718,14 @@
   }
  },
  "orders.table.no-buyer-ui": {
-  "code": "1bd594ea6cea8ae8",
+  "code": "41e6e3b94ea208c7",
   "spec": "12388945adacdce5",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e"
+   "packages/contracts/src/orders/order.ts": "825d6af4758d3309",
+   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e",
+   "packages/web/lib/api/seller-orders.ts": "486eb16218364ac5",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.AS-83": "46feb960bd365676",
@@ -1345,41 +1733,60 @@
   }
  },
  "orders.table.no-default-currency": {
-  "code": "1bd594ea6cea8ae8",
+  "code": "be291bd7dd05cd9f",
   "spec": "5478743d3b85b594",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e"
+   "packages/backend/libs/domains/notifications/domain/money.ts": "2b895c63170065c0",
+   "packages/contracts/src/orders/order.ts": "825d6af4758d3309",
+   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e",
+   "packages/web/lib/api/seller-orders.ts": "486eb16218364ac5",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899",
+   "packages/web/lib/utils.ts": "13dbc56570cb6305"
   },
   "specs": {
    "W04.R-07": "fe836bf9fe8a3c07"
   }
  },
  "orders.table.no-line-detail-ui": {
-  "code": "1bd594ea6cea8ae8",
+  "code": "41e6e3b94ea208c7",
   "spec": "cade40eb2c2512aa",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e"
+   "packages/contracts/src/orders/order.ts": "825d6af4758d3309",
+   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e",
+   "packages/web/lib/api/seller-orders.ts": "486eb16218364ac5",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.B-32": "a80f2e33156235ce"
   }
  },
  "orders.table.order-newest-first": {
-  "code": "44136fa355b3678a",
+  "code": "44244bf83ee6dc4d",
   "spec": "cade40eb2c2512aa",
   "at": "2026-10-25",
-  "files": {},
+  "files": {
+   "packages/backend/libs/domains/orders/infra/shop-order.repository.ts": "fbff1ae6dfd0f4b2"
+  },
   "specs": {
    "W04.B-32": "a80f2e33156235ce"
   }
  },
  "orders.table.page-size": {
-  "code": "b88f2e45a789bb38",
+  "code": "bc7a171d8139984c",
   "spec": "af5fe4e41250a49a",
   "at": "2026-10-25",
   "files": {
+   "packages/backend/libs/domains/orders/api/orders.dto.ts": "7b0f40af8cfa5630",
+   "packages/contracts/src/bff/seller-overview.ts": "cf5790c3205c6cf1",
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/contracts/src/developer-platform/keys.ts": "444d734754f9c8e3",
+   "packages/contracts/src/developer-platform/logs.ts": "53ca17bc6a88f8cb",
+   "packages/contracts/src/developer-platform/webhooks.ts": "f8aae4c6f9163cf7",
+   "packages/contracts/src/orders/order.ts": "825d6af4758d3309",
+   "packages/contracts/src/search/shop-product-search.ts": "aed2f677d96f5388",
+   "packages/contracts/src/tenancy/index.ts": "324ccfbe0702f2bf",
    "packages/web/lib/seller/wire.ts": "c92f8861bcf3babb",
    "packages/web/lib/server/seller.server.ts": "7b2b5295d5ae9ac5"
   },
@@ -1402,80 +1809,121 @@
   }
  },
  "orders.table.reference": {
-  "code": "1bd594ea6cea8ae8",
+  "code": "6a6f1a64e8004aa6",
   "spec": "cade40eb2c2512aa",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e"
+   "packages/backend/libs/domains/orders/infra/models/shop-order.model.ts": "2ff7760550e1e604",
+   "packages/backend/libs/domains/orders/infra/shop-order.repository.ts": "fbff1ae6dfd0f4b2",
+   "packages/backend/libs/domains/orders/testing/order-export.fixtures.ts": "8eb75858deb20827",
+   "packages/backend/migrations/20261001150000-checkout-orders-inventory.js": "676b84c22daf1467",
+   "packages/backend/migrations/20261010160000-orders-s10-expand-columns.js": "968fcdb631260142",
+   "packages/contracts/src/orders/order.ts": "825d6af4758d3309",
+   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e",
+   "packages/web/lib/api/seller-orders.ts": "486eb16218364ac5",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.B-32": "a80f2e33156235ce"
   }
  },
  "orders.table.reference-collision": {
-  "code": "1bd594ea6cea8ae8",
+  "code": "41e6e3b94ea208c7",
   "spec": "cade40eb2c2512aa",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e"
+   "packages/contracts/src/orders/order.ts": "825d6af4758d3309",
+   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e",
+   "packages/web/lib/api/seller-orders.ts": "486eb16218364ac5",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.B-32": "a80f2e33156235ce"
   }
  },
  "orders.table.region": {
-  "code": "b9bda09dfb342e1e",
+  "code": "f7285fb8cc507ddb",
   "spec": "fae922b2e8e23c4d",
   "at": "2026-10-25",
   "files": {
+   "packages/contracts/src/orders/order.ts": "825d6af4758d3309",
    "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e",
-   "packages/web/components/seller/responsive-table.tsx": "296ce71c11d48740"
+   "packages/web/components/seller/responsive-table.tsx": "296ce71c11d48740",
+   "packages/web/lib/api/seller-orders.ts": "486eb16218364ac5",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.R-25": "ceeb7a73996519d8"
   }
  },
  "orders.table.row-not-link": {
-  "code": "1bd594ea6cea8ae8",
+  "code": "41e6e3b94ea208c7",
   "spec": "cade40eb2c2512aa",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e"
+   "packages/contracts/src/orders/order.ts": "825d6af4758d3309",
+   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e",
+   "packages/web/lib/api/seller-orders.ts": "486eb16218364ac5",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.B-32": "a80f2e33156235ce"
   }
  },
  "orders.table.status-badge": {
-  "code": "1bd594ea6cea8ae8",
+  "code": "9365afc233b46674",
   "spec": "cade40eb2c2512aa",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e"
+   "packages/backend/libs/domains/orders/infra/models/shop-order.model.ts": "2ff7760550e1e604",
+   "packages/backend/migrations/20261001150000-checkout-orders-inventory.js": "676b84c22daf1467",
+   "packages/backend/migrations/20261010160000-orders-s10-expand-columns.js": "968fcdb631260142",
+   "packages/contracts/src/orders/order.ts": "825d6af4758d3309",
+   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e",
+   "packages/web/lib/api/seller-orders.ts": "486eb16218364ac5",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.B-32": "a80f2e33156235ce"
   }
  },
  "orders.table.status-unknown": {
-  "code": "8ed25514f0c5c2b2",
+  "code": "f777450a8b228b57",
   "spec": "cade40eb2c2512aa",
   "at": "2026-10-25",
   "files": {
+   "packages/backend/libs/domains/shop-functions/api/parse.ts": "1acad030d80d0876",
+   "packages/backend/libs/infrastructure/serverless/batch/define-sqs-handler.ts": "9f611664a9bc650c",
    "packages/contracts/src/orders/order.ts": "825d6af4758d3309",
+   "packages/contracts/src/shop-functions/functions.ts": "cdc71041251cdae3",
    "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e",
-   "packages/web/lib/api/seller-orders.ts": "486eb16218364ac5"
+   "packages/web/lib/api/client.ts": "0fa4cb70bbc2d203",
+   "packages/web/lib/api/orders.ts": "7631ea19bc997f81",
+   "packages/web/lib/api/parse.ts": "82453dbb70bf149b",
+   "packages/web/lib/api/seller-orders.ts": "486eb16218364ac5",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.B-32": "a80f2e33156235ce"
   }
  },
  "orders.table.subtotal": {
-  "code": "f700573c5f6fb652",
+  "code": "a45215a6de2d86a9",
   "spec": "9f6eb1041b2b1539",
   "at": "2026-10-25",
   "files": {
+   "packages/backend/libs/domains/notifications/domain/money.ts": "2b895c63170065c0",
+   "packages/backend/libs/domains/orders/infra/models/bis-order.model.ts": "3e535d73bb950429",
+   "packages/backend/libs/domains/orders/infra/models/shop-order.model.ts": "2ff7760550e1e604",
+   "packages/backend/migrations/20260125105527-unnamed-migration.js": "5b056775ce884824",
+   "packages/backend/migrations/20261001150000-checkout-orders-inventory.js": "676b84c22daf1467",
+   "packages/backend/migrations/20261010160000-orders-s10-expand-columns.js": "968fcdb631260142",
+   "packages/backend/migrations/20261012120000-orders-s10-ref-code.js": "5ab8503aa0b764b6",
+   "packages/backend/migrations/20261019000000-orders-j05-attribution-expand.js": "1538cde1ac6a10b5",
+   "packages/contracts/src/orders/order.ts": "825d6af4758d3309",
    "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e",
+   "packages/web/lib/api/seller-orders.ts": "486eb16218364ac5",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899",
    "packages/web/lib/utils.ts": "13dbc56570cb6305"
   },
   "specs": {
@@ -1484,12 +1932,21 @@
   }
  },
  "orders.table.subtotal-vs-lines": {
-  "code": "2b3d6605d21e25fe",
+  "code": "f92cfa603e32a297",
   "spec": "d50ffbe553ce2c72",
   "at": "2026-10-25",
   "files": {
+   "packages/backend/libs/domains/orders/api/orders.dto.ts": "7b0f40af8cfa5630",
    "packages/backend/libs/domains/orders/api/shop-orders.controller.ts": "505589b438d1ad9e",
-   "packages/backend/libs/domains/orders/domain/money-allocation.ts": "275b70f6c86f4718"
+   "packages/backend/libs/domains/orders/domain/money-allocation.ts": "275b70f6c86f4718",
+   "packages/backend/libs/domains/orders/infra/models/bis-order-item.model.ts": "6a881806dbf6be51",
+   "packages/backend/libs/domains/orders/infra/models/shop-order.model.ts": "2ff7760550e1e604",
+   "packages/backend/migrations/20260815083236-create-bis-order-items.js": "8aa17c798d5f94f1",
+   "packages/backend/migrations/20261001150000-checkout-orders-inventory.js": "676b84c22daf1467",
+   "packages/backend/migrations/20261010160000-orders-s10-expand-columns.js": "968fcdb631260142",
+   "packages/backend/migrations/20261016000100-orders-item-category.js": "c055788be6beeaf7",
+   "packages/contracts/src/bff/cart-page.ts": "9b6d216bfcdae9a3",
+   "packages/web/lib/cart/totals.ts": "0f51410a47cbcffa"
   },
   "specs": {
    "S10.R-14": "2073e7c53c67310a",
@@ -1497,11 +1954,14 @@
   }
  },
  "orders.table.text-as-text": {
-  "code": "1bd594ea6cea8ae8",
+  "code": "41e6e3b94ea208c7",
   "spec": "74b06185be28d453",
   "at": "2026-10-25",
   "files": {
-   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e"
+   "packages/contracts/src/orders/order.ts": "825d6af4758d3309",
+   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e",
+   "packages/web/lib/api/seller-orders.ts": "486eb16218364ac5",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
   },
   "specs": {
    "W04.R-28": "bcbeea3991272441"

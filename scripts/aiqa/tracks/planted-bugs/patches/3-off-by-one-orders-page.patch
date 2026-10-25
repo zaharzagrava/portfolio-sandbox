@@ -1,0 +1,13 @@
+diff --git a/packages/backend/libs/domains/orders/application/order-query.service.ts b/packages/backend/libs/domains/orders/application/order-query.service.ts
+index dcd8e3f5..d4c31b81 100644
+--- a/packages/backend/libs/domains/orders/application/order-query.service.ts
++++ b/packages/backend/libs/domains/orders/application/order-query.service.ts
+@@ -96,7 +96,7 @@ export class OrderQueryService {
+       limit + 1,
+       after,
+     );
+-    const page = found.slice(0, limit);
++    const page = found.slice(0, limit - 1);
+     const last = page[page.length - 1];
+     const lines = await this.shopOrders.lines(
+       page.map((p) => p.orderId),

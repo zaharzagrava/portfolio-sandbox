@@ -1,0 +1,401 @@
+{
+ "url": "/dashboard/seller",
+ "at": "2026-10-25",
+ "variants": {
+  "noshop@1280": {
+   "parts": {
+    "landmark:header:": {
+     "kind": "landmark",
+     "role": "header",
+     "label": "",
+     "hash": "f4c6c931f87b9d33",
+     "text": "Marketplace Browse Developers Search 1 AI"
+    },
+    "landmark:nav:Main": {
+     "kind": "landmark",
+     "role": "nav",
+     "label": "Main",
+     "hash": "ddae26d0602b5d43",
+     "text": "Browse Developers"
+    },
+    "landmark:search:Search": {
+     "kind": "landmark",
+     "role": "search",
+     "label": "Search",
+     "hash": "497847eeb99830a5",
+     "text": "Search"
+    },
+    "landmark:status:": {
+     "kind": "landmark",
+     "role": "status",
+     "label": "",
+     "hash": "1f6fcccd70c8cf35",
+     "text": ""
+    },
+    "landmark:status:#2": {
+     "kind": "landmark",
+     "role": "status",
+     "label": "",
+     "hash": "f7c2a65142256a10",
+     "text": ""
+    },
+    "landmark:main:Open your shop": {
+     "kind": "landmark",
+     "role": "main",
+     "label": "Open your shop",
+     "hash": "1919e5e00b213e4e",
+     "text": "Start selling Open your shop Start selling on the marketplace. You become the shop's owner"
+    },
+    "landmark:aside:": {
+     "kind": "landmark",
+     "role": "aside",
+     "label": "",
+     "hash": "2ca6b62560922596",
+     "text": "Start selling"
+    },
+    "landmark:nav:Seller": {
+     "kind": "landmark",
+     "role": "nav",
+     "label": "Seller",
+     "hash": "5cbe8b01755b86f4",
+     "text": "Start selling"
+    },
+    "landmark:form:Open your shop": {
+     "kind": "landmark",
+     "role": "form",
+     "label": "Open your shop",
+     "hash": "82c27c8083c8f5ff",
+     "text": "Open your shop Start selling on the marketplace. You become the shop's owner. Shop name Ha"
+    },
+    "heading:h1:Open your shop": {
+     "kind": "heading",
+     "role": "h1",
+     "label": "Open your shop",
+     "hash": "1045caca648ae579",
+     "text": "Open your shop"
+    },
+    "landmark:footer:": {
+     "kind": "landmark",
+     "role": "footer",
+     "label": "",
+     "hash": "9c562b70291e65f6",
+     "text": "Marketplace is a portfolio project: no real goods are sold and no real payments are taken."
+    },
+    "landmark:nav:Footer": {
+     "kind": "landmark",
+     "role": "nav",
+     "label": "Footer",
+     "hash": "db4a8f2179b1097a",
+     "text": "Browse API docs Terms Privacy"
+    },
+    "control:link:Skip to main content": {
+     "kind": "control",
+     "role": "link",
+     "label": "Skip to main content",
+     "hash": "81a11e945293313b",
+     "text": "Skip to main content"
+    },
+    "control:link:Marketplace home": {
+     "kind": "control",
+     "role": "link",
+     "label": "Marketplace home",
+     "hash": "4d5aea33a1d80680",
+     "text": "Marketplace"
+    },
+    "control:link:Browse": {
+     "kind": "control",
+     "role": "link",
+     "label": "Browse",
+     "hash": "8c2545a533ce284e",
+     "text": "Browse"
+    },
+    "control:link:Developers": {
+     "kind": "control",
+     "role": "link",
+     "label": "Developers",
+     "hash": "1e3ea66e2cd9eb56",
+     "text": "Developers"
+    },
+    "control:combobox:Search products": {
+     "kind": "control",
+     "role": "combobox",
+     "label": "Search products",
+     "hash": "b864144e2f46150f",
+     "text": ""
+    },
+    "control:button:Search": {
+     "kind": "control",
+     "role": "button",
+     "label": "Search",
+     "hash": "5ed2af085dfeb7e2",
+     "text": "Search"
+    },
+    "control:button:AI Assistant": {
+     "kind": "control",
+     "role": "button",
+     "label": "AI Assistant",
+     "hash": "98c150aadc2e92b9",
+     "text": ""
+    },
+    "control:button:Theme": {
+     "kind": "control",
+     "role": "button",
+     "label": "Theme",
+     "hash": "fce6dd3cb68184a6",
+     "text": ""
+    },
+    "control:link:Cart": {
+     "kind": "control",
+     "role": "link",
+     "label": "Cart",
+     "hash": "0aad2101fe953097",
+     "text": ""
+    },
+    "control:button:Notifications, {n} unread": {
+     "kind": "control",
+     "role": "button",
+     "label": "Notifications, 1 unread",
+     "hash": "bc00013d093cabf8",
+     "text": "1"
+    },
+    "control:button:Account menu": {
+     "kind": "control",
+     "role": "button",
+     "label": "Account menu",
+     "hash": "7a64b15d258d27b5",
+     "text": "AI"
+    },
+    "control:link:Start selling": {
+     "kind": "control",
+     "role": "link",
+     "label": "Start selling",
+     "hash": "a4005247a4ba1ca3",
+     "text": "Start selling"
+    },
+    "control:textbox:Shop name": {
+     "kind": "control",
+     "role": "textbox",
+     "label": "Shop name",
+     "hash": "61093eb0b5bca55f",
+     "text": ""
+    },
+    "control:textbox:Handle": {
+     "kind": "control",
+     "role": "textbox",
+     "label": "Handle",
+     "hash": "2f54374d65d40138",
+     "text": ""
+    },
+    "control:button:Open shop": {
+     "kind": "control",
+     "role": "button",
+     "label": "Open shop",
+     "hash": "adc0b55c985b44b7",
+     "text": "Open shop"
+    },
+    "control:link:Browse#2": {
+     "kind": "control",
+     "role": "link",
+     "label": "Browse",
+     "hash": "a2898cee8547aba3",
+     "text": "Browse"
+    },
+    "control:link:API docs": {
+     "kind": "control",
+     "role": "link",
+     "label": "API docs",
+     "hash": "c0acc9df2457128d",
+     "text": "API docs"
+    },
+    "control:link:Terms": {
+     "kind": "control",
+     "role": "link",
+     "label": "Terms",
+     "hash": "dca560c191f27a43",
+     "text": "Terms"
+    },
+    "control:link:Privacy": {
+     "kind": "control",
+     "role": "link",
+     "label": "Privacy",
+     "hash": "fffed0cc845d93f2",
+     "text": "Privacy"
+    }
+   },
+   "finalPath": "/dashboard/seller"
+  },
+  "noshop@390": {
+   "parts": {
+    "landmark:header:": {
+     "kind": "landmark",
+     "role": "header",
+     "label": "",
+     "hash": "f4c6c931f87b9d33",
+     "text": "Marketplace Browse Developers Search 1 AI"
+    },
+    "landmark:status:": {
+     "kind": "landmark",
+     "role": "status",
+     "label": "",
+     "hash": "f7c2a65142256a10",
+     "text": ""
+    },
+    "landmark:main:Open your shop": {
+     "kind": "landmark",
+     "role": "main",
+     "label": "Open your shop",
+     "hash": "1919e5e00b213e4e",
+     "text": "Start selling Open your shop Start selling on the marketplace. You become the shop's owner"
+    },
+    "landmark:aside:": {
+     "kind": "landmark",
+     "role": "aside",
+     "label": "",
+     "hash": "2ca6b62560922596",
+     "text": "Start selling"
+    },
+    "landmark:nav:Seller": {
+     "kind": "landmark",
+     "role": "nav",
+     "label": "Seller",
+     "hash": "5cbe8b01755b86f4",
+     "text": "Start selling"
+    },
+    "landmark:form:Open your shop": {
+     "kind": "landmark",
+     "role": "form",
+     "label": "Open your shop",
+     "hash": "82c27c8083c8f5ff",
+     "text": "Open your shop Start selling on the marketplace. You become the shop's owner. Shop name Ha"
+    },
+    "heading:h1:Open your shop": {
+     "kind": "heading",
+     "role": "h1",
+     "label": "Open your shop",
+     "hash": "1045caca648ae579",
+     "text": "Open your shop"
+    },
+    "landmark:footer:": {
+     "kind": "landmark",
+     "role": "footer",
+     "label": "",
+     "hash": "9c562b70291e65f6",
+     "text": "Marketplace is a portfolio project: no real goods are sold and no real payments are taken."
+    },
+    "landmark:nav:Footer": {
+     "kind": "landmark",
+     "role": "nav",
+     "label": "Footer",
+     "hash": "db4a8f2179b1097a",
+     "text": "Browse API docs Terms Privacy"
+    },
+    "control:link:Skip to main content": {
+     "kind": "control",
+     "role": "link",
+     "label": "Skip to main content",
+     "hash": "81a11e945293313b",
+     "text": "Skip to main content"
+    },
+    "control:button:Open menu": {
+     "kind": "control",
+     "role": "button",
+     "label": "Open menu",
+     "hash": "bbc5f44470fad6c6",
+     "text": ""
+    },
+    "control:link:Marketplace home": {
+     "kind": "control",
+     "role": "link",
+     "label": "Marketplace home",
+     "hash": "4d5aea33a1d80680",
+     "text": "Marketplace"
+    },
+    "control:button:Search": {
+     "kind": "control",
+     "role": "button",
+     "label": "Search",
+     "hash": "81036c580a241420",
+     "text": ""
+    },
+    "control:button:Theme": {
+     "kind": "control",
+     "role": "button",
+     "label": "Theme",
+     "hash": "fce6dd3cb68184a6",
+     "text": ""
+    },
+    "control:link:Cart": {
+     "kind": "control",
+     "role": "link",
+     "label": "Cart",
+     "hash": "0aad2101fe953097",
+     "text": ""
+    },
+    "control:button:Notifications, {n} unread": {
+     "kind": "control",
+     "role": "button",
+     "label": "Notifications, 1 unread",
+     "hash": "bc00013d093cabf8",
+     "text": "1"
+    },
+    "control:link:Start selling": {
+     "kind": "control",
+     "role": "link",
+     "label": "Start selling",
+     "hash": "a4005247a4ba1ca3",
+     "text": "Start selling"
+    },
+    "control:textbox:Shop name": {
+     "kind": "control",
+     "role": "textbox",
+     "label": "Shop name",
+     "hash": "61093eb0b5bca55f",
+     "text": ""
+    },
+    "control:textbox:Handle": {
+     "kind": "control",
+     "role": "textbox",
+     "label": "Handle",
+     "hash": "2f54374d65d40138",
+     "text": ""
+    },
+    "control:button:Open shop": {
+     "kind": "control",
+     "role": "button",
+     "label": "Open shop",
+     "hash": "adc0b55c985b44b7",
+     "text": "Open shop"
+    },
+    "control:link:Browse": {
+     "kind": "control",
+     "role": "link",
+     "label": "Browse",
+     "hash": "a2898cee8547aba3",
+     "text": "Browse"
+    },
+    "control:link:API docs": {
+     "kind": "control",
+     "role": "link",
+     "label": "API docs",
+     "hash": "c0acc9df2457128d",
+     "text": "API docs"
+    },
+    "control:link:Terms": {
+     "kind": "control",
+     "role": "link",
+     "label": "Terms",
+     "hash": "dca560c191f27a43",
+     "text": "Terms"
+    },
+    "control:link:Privacy": {
+     "kind": "control",
+     "role": "link",
+     "label": "Privacy",
+     "hash": "fffed0cc845d93f2",
+     "text": "Privacy"
+    }
+   },
+   "finalPath": "/dashboard/seller"
+  }
+ }
+}

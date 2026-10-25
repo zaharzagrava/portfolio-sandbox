@@ -11,7 +11,6 @@ export const config = () => JSON.parse(readFileSync(join(AIQA, 'snapshots.config
 
 const SEED = { email: 'seller@marketplace.local', password: 'Demo-Seed-Pw-7491!' };
 const OWN_PASSWORD = 'SuperSecurePassword123!';
-const ROLE_ACCOUNTS = { viewer: 'aiqa-viewer@example.com', noshop: 'aiqa-noshop@example.com' };
 
 // ---------------------------------------------------------------- normalizing
 const MONTH = '(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)[a-z]*\\.?';
@@ -146,64 +145,85 @@ export async function demoIds() {
   return { shopId, productId: product?.id ?? '00000000-0000-4000-8000-000000000000', token };
 }
 
-/** Makes the fixed helper accounts once: a VIEWER of the demo shop, and a member with no shop. Idempotent. */
-export async function ensureAccounts(ids) {
-  for (const email of Object.values(ROLE_ACCOUNTS)) {
-    if (!(await tokenOf(email, OWN_PASSWORD))) {
-      const r = await call('POST', '/api/auth/register', { email, password: OWN_PASSWORD });
-      if (r.status >= 300 && r.status !== 409) throw new Error(`cannot create ${email}: ${r.status} ${JSON.stringify(r.data)} (rate limit? wait an hour)`);
-    }
+const MEMBER_ROLES = { viewer: 'VIEWER', staff: 'STAFF', admin: 'ADMIN' }; // snapshot role -> shop role
+const emailOf = (role) => `aiqa-${role}@example.com`;
+const OWNER_EMAIL = 'aiqa-owner@example.com';
+const ROLE_SHOP = 'AIQA Roles Shop';
+
+async function ensureAccount(email) {
+  let token = await tokenOf(email, OWN_PASSWORD);
+  if (!token) {
+    const r = await call('POST', '/api/auth/register', { email, password: OWN_PASSWORD });
+    if (r.status >= 300 && r.status !== 409) throw new Error(`cannot create ${email}: ${r.status} ${JSON.stringify(r.data)} (rate limit? try again later)`);
+    token = await tokenOf(email, OWN_PASSWORD);
   }
-  const viewerToken = await tokenOf(ROLE_ACCOUNTS.viewer, OWN_PASSWORD);
-  const mine = (await call('GET', '/api/shops/mine', undefined, viewerToken)).data;
-  if ((mine.items ?? mine).some((s) => s.id === ids.shopId)) return true;
-  const invited = await call('POST', `/api/shops/${ids.shopId}/invites`, { email: ROLE_ACCOUNTS.viewer, role: 'VIEWER' }, ids.token);
-  if (invited.status === 409) { // a pending invitation from an earlier run: send the mail again
-    const pending = (await call('GET', `/api/shops/${ids.shopId}/invites`, undefined, ids.token)).data?.items?.find((i) => i.email === ROLE_ACCOUNTS.viewer && i.status === 'pending');
-    if (pending) await call('POST', `/api/shops/${ids.shopId}/invites/${pending.id}/resend`, {}, ids.token);
-  } else if (invited.status !== 201) { console.log(`viewer: invite failed (${invited.status}); VIEWER states are skipped`); return false; }
-  return 'invited';
+  return token;
 }
 
-async function acceptInvite(browser) {
-  const ctx = await browser.newContext({ baseURL: WEB });
-  try {
-    await ctx.request.post('/api/bff/session', { data: { email: ROLE_ACCOUNTS.viewer, password: OWN_PASSWORD } });
-    const page = await ctx.newPage();
-    let link;
-    for (let i = 0; i < 20 && !link; i++) {
-      const res = await fetch(`${API}/api/dev/mailbox?to=${encodeURIComponent(ROLE_ACCOUNTS.viewer)}`);
-      if (!res.ok) return false;
-      link = (await res.json()).messages.flatMap((m) => m.links).filter((l) => l.includes('/invites/')).pop();
-      if (!link) await new Promise((r) => setTimeout(r, 1000));
+/** Waits for the invitation mail in the dev mailbox (the API keeps the last 50 mails in memory: read it right after sending). */
+async function inviteToken(email) {
+  for (let i = 0; i < 40; i++) {
+    const res = await fetch(`${API}/api/dev/mailbox?to=${encodeURIComponent(email)}`);
+    if (res.ok) {
+      const link = (await res.json()).messages.flatMap((m) => m.links).find((l) => l.includes('/invites/'));
+      if (link) return decodeURIComponent(new URL(link).pathname.split('/invites/')[1]);
     }
-    if (!link) return false;
-    await page.goto(new URL(link).pathname);
-    await page.getByRole('button', { name: 'Accept invitation' }).click({ timeout: 8000 });
-    await page.waitForURL(/\/dashboard\/seller\/[0-9a-f-]{36}/, { timeout: 15000 });
-    return true;
-  } catch { return false; } finally { await ctx.close(); }
+    await new Promise((r) => setTimeout(r, 1000));
+  }
+  return null;
 }
 
-export async function prepare(browser) {
+/**
+ * A throwaway shop of its own ("AIQA Roles Shop", owned by a helper seller, one product) with one member per role (VIEWER, STAFF, ADMIN),
+ * so those roles are snapshotted without adding anyone to the demo shop. Made once; later runs find it again. Returns { shopId, productId, ready: {role: bool} }.
+ */
+async function ensureRoleShop(roles) {
+  const ownerToken = await ensureAccount(OWNER_EMAIL);
+  const mine = (await call('GET', '/api/shops/mine', undefined, ownerToken)).data;
+  let shop = (mine.items ?? mine).find((x) => x.name === ROLE_SHOP);
+  if (!shop) {
+    const c = await call('POST', '/api/shops', { name: ROLE_SHOP, slug: `aiqa-roles-${Date.now().toString(36)}` }, ownerToken);
+    if (c.status !== 201) throw new Error(`cannot open the roles shop: ${c.status} ${JSON.stringify(c.data)}`);
+    shop = c.data;
+  }
+  const products = (await call('GET', `/api/shops/${shop.id}/products?limit=5`, undefined, ownerToken)).data?.items ?? [];
+  let product = products[0];
+  if (!product) {
+    const c = await call('POST', `/api/shops/${shop.id}/products`, { title: 'AIQA Snapshot Mug', brand: 'Aiqa', category: 'aiqa-snapshot', quantity: 7, priceMinor: 1999, description: 'Product of the AI QA snapshot shop.', tags: ['aiqa-snapshot'] }, ownerToken);
+    product = c.data;
+  }
+  const ready = {};
+  for (const role of roles) {
+    const token = await ensureAccount(emailOf(role));
+    const theirs = (await call('GET', '/api/shops/mine', undefined, token)).data;
+    if ((theirs.items ?? theirs).some((x) => x.id === shop.id)) { ready[role] = true; continue; }
+    let invited = await call('POST', `/api/shops/${shop.id}/invites`, { email: emailOf(role), role: MEMBER_ROLES[role] }, ownerToken);
+    if (invited.status === 409) { // an earlier invitation is still pending: send the mail again
+      const pending = (await call('GET', `/api/shops/${shop.id}/invites`, undefined, ownerToken)).data?.items?.find((i) => i.email === emailOf(role) && i.status === 'pending');
+      if (pending) invited = await call('POST', `/api/shops/${shop.id}/invites/${pending.id}/resend`, {}, ownerToken);
+    }
+    const invite = invited.status < 300 ? await inviteToken(emailOf(role)) : null;
+    const accepted = invite ? await call('POST', '/api/shop-invites/accept', { token: invite }, token) : { status: 0 };
+    ready[role] = accepted.status === 200 || accepted.status === 201;
+    if (!ready[role]) console.log(`${role}: could not join the roles shop (invite ${invited.status}, mail ${invite ? 'found' : 'missing'}, accept ${accepted.status}); its states are skipped`);
+  }
+  return { shopId: shop.id, productId: product?.id ?? '00000000-0000-4000-8000-000000000000', ready };
+}
+
+export async function prepare(browser, cfg, target) {
   const ids = await demoIds();
-  const r = await ensureAccounts(ids);
-  let viewer = r !== false;
-  if (r === 'invited') {
-    viewer = await acceptInvite(browser);
-    if (!viewer) { // no mail to read: do not leave a pending invitation on the demo shop
-      const list = (await call('GET', `/api/shops/${ids.shopId}/invites`, undefined, ids.token)).data?.items ?? [];
-      for (const i of list.filter((x) => x.email === ROLE_ACCOUNTS.viewer && x.status === 'pending')) await call('DELETE', `/api/shops/${ids.shopId}/invites/${i.id}`, undefined, ids.token);
-    }
-  }
-  if (!viewer) console.log('viewer: could not be made a member (dev mailbox?); VIEWER states are skipped');
-  return { ids, viewer };
+  const used = new Set();
+  for (const [area, a] of Object.entries(cfg.areas)) if (target === 'all' || target === area) for (const st of Object.values(a.states)) (st.roles ?? ['owner']).forEach((r) => used.add(r));
+  const memberRoles = Object.keys(MEMBER_ROLES).filter((r) => used.has(r));
+  if (used.has('noshop')) await ensureAccount(emailOf('noshop'));
+  const roleShop = memberRoles.length ? await ensureRoleShop(memberRoles) : { ready: {} };
+  return { ids, roleShop };
 }
 
 async function contextFor(browser, role, width, ready) {
   const ctx = await browser.newContext({ baseURL: WEB, viewport: { width, height: width >= 1000 ? 800 : 844 }, hasTouch: width < 1000, isMobile: width < 1000, reducedMotion: 'reduce', timezoneId: 'UTC', locale: 'en-US' });
   if (role !== 'anon') {
-    const [email, password] = role === 'owner' ? [SEED.email, SEED.password] : [ROLE_ACCOUNTS[role], OWN_PASSWORD];
+    const [email, password] = role === 'owner' ? [SEED.email, SEED.password] : [emailOf(role), OWN_PASSWORD];
     const r = await ctx.request.post('/api/bff/session', { data: { email, password } });
     if (r.status() >= 300) throw new Error(`sign-in as ${role} failed: ${r.status()}`);
   }
@@ -222,11 +242,12 @@ export async function capture(browser, state, role, width, ctxVars) {
   const ctx = await contextFor(browser, role, width);
   try {
     const page = await ctx.newPage();
-    await page.addInitScript(() => { try { Math.random = () => 0.5; } catch { /* ignore */ } });
     const url = state.url.replace(/\{(\w+)\}/g, (_, k) => ctxVars[k] ?? k);
     await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60_000 });
     await page.waitForLoadState('networkidle', { timeout: 15_000 }).catch(() => {});
-    await page.waitForTimeout(600);
+    // text typed or buttons pressed before React has attached its handlers are lost
+    await page.waitForFunction(() => [...document.querySelectorAll('button,a,input,form')].some((e) => Object.keys(e).some((k) => k.startsWith('__reactProps'))), null, { timeout: 15_000 }).catch(() => {});
+    await page.waitForTimeout(800);
     for (const step of state.steps ?? []) {
       try {
         if (step.click) await locatorOf(page, step.click).click({ timeout: 4000 });
@@ -248,14 +269,17 @@ export async function capture(browser, state, role, width, ctxVars) {
 }
 
 /** All variants (role x width) of one state. */
-export async function captureState(browser, name, state, env, cfg) {
+export async function captureState(browser, name, state, env, cfg, onlyRoles = null) {
   const variants = {}, notes = [];
   for (const role of state.roles ?? ['owner']) {
-    if (role === 'viewer' && !env.viewer) { notes.push(`${role}: skipped (no viewer member)`); continue; }
+    if (onlyRoles && !onlyRoles.includes(role)) continue;
+    const member = role in MEMBER_ROLES;
+    if (member && !env.roleShop.ready[role]) { notes.push(`${role}: skipped (not a member of the roles shop)`); continue; }
+    const vars = member ? { ...env.ids, shopId: env.roleShop.shopId, productId: env.roleShop.productId } : env.ids;
     for (const width of state.widths ?? cfg.widths) {
       const key = `${role}@${width}`;
       try {
-        const r = await capture(browser, state, role, width, env.ids);
+        const r = await capture(browser, state, role, width, vars);
         if (r.skipped) notes.push(`${key}: skipped, ${r.skipped}`); else variants[key] = r;
       } catch (e) { notes.push(`${key}: error, ${String(e.message).split('\n')[0]}`); }
     }

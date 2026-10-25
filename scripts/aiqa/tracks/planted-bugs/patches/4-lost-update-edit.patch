@@ -1,0 +1,21 @@
+diff --git a/packages/backend/libs/domains/catalog/application/product-command.service.ts b/packages/backend/libs/domains/catalog/application/product-command.service.ts
+index 43470ca1..ee91606d 100644
+--- a/packages/backend/libs/domains/catalog/application/product-command.service.ts
++++ b/packages/backend/libs/domains/catalog/application/product-command.service.ts
+@@ -138,15 +138,13 @@ export class ProductCommandService {
+     const now = this.clock.now();
+     const outcome = await this.run('update', async () => {
+       const current = await this.mustFind(shopId, productId);
+-      if (current.version !== expectedVersion)
+-        throw new VersionConflictError(current.version);
+       if (current.status === 'ARCHIVED') throw new ProductArchivedError();
+       const { changes, fields } = diffProduct(current, edit);
+       if (fields.length === 0) return { record: current, changed: false };
+       const updated = await this.products.update(
+         shopId,
+         productId,
+-        expectedVersion,
++        current.version,
+         changes,
+         now,
+       );

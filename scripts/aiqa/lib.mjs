@@ -34,14 +34,73 @@ function files() {
 const EXT = 'tsx?|mjs|cjs|jsx?|json|css|sql|sh|ya?ml|prisma|md';
 const PATH_RE = new RegExp(`[\\w@\\[\\]().*{}/-]*[\\w\\]*)]\\.(?:${EXT})(?![\\w])`, 'g');
 
-/** Names file paths in a `code` cell. Returns { files: [repo-relative], unknown: [token] }. */
+const SRC_RE = /^packages\/(web|backend|contracts)\/.*\.(ts|tsx)$/;
+const NOT_SRC = /(node_modules|\/dist\/|\.next\/|\.spec\.|\.test\.|\.e2e-spec\.|\/tests?\/|\/test-utils\/|\.d\.ts$)/;
+const read = (rel) => { try { return readFileSync(join(REPO, rel), 'utf8'); } catch { return ''; } };
+
+let symbols, tables, migrations;
+/** name -> [files] of definitions (class, function, const, type...) in the web, backend and contracts sources. */
+function symbolIndex() {
+  if (symbols) return symbols;
+  symbols = new Map(); tables = new Map();
+  const def = /^[ \t]*(?:export\s+)?(?:default\s+)?(?:declare\s+)?(?:abstract\s+)?(?:async\s+)?(?:class|function\*?|const|let|enum|interface|type)\s+([A-Za-z_$][\w$]*)/gm;
+  for (const f of files()) {
+    if (!SRC_RE.test(f) || NOT_SRC.test(f)) continue;
+    const text = read(f);
+    for (const m of text.matchAll(def)) { const l = symbols.get(m[1]) ?? []; if (!l.includes(f)) l.push(f); symbols.set(m[1], l); }
+    for (const m of text.matchAll(/tableName:\s*['"](\w+)['"]/g)) tables.set(m[1], f);
+  }
+  return symbols;
+}
+/** Migration files that touch a table: they quote its name. */
+function migrationsOf(table) {
+  migrations ??= files().filter((f) => /^packages\/backend\/migrations(-\w+)?\/.*\.[cm]?js$/.test(f)).map((f) => [f, read(f)]);
+  const q = `["'\`]${table}["'\`]`;
+  const re = new RegExp(`\\.(?:createTable|addColumn|removeColumn|changeColumn|renameColumn|addIndex|removeIndex|dropTable|addConstraint|removeConstraint|renameTable|bulkInsert|bulkDelete|bulkUpdate)\\(\\s*${q}|(?:ALTER|CREATE|DROP)\\s+TABLE\\s+(?:IF\\s+(?:NOT\\s+)?EXISTS\\s+)?"?${table}"?[\\s(;]`);
+  return migrations.filter(([, t]) => re.test(t)).map(([f]) => f);
+}
+const STOP = new Set(['None', 'GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'API', 'UI', 'DB', 'URL', 'HTML', 'JSON', 'Next', 'React', 'Props']);
+
+/** Source files an imported file leans on: API clients (packages/web/lib/api), and the contracts (zod schemas, types) it imports by name. */
+function importDeps(rel) {
+  const out = new Set();
+  const text = read(rel);
+  for (const m of text.matchAll(/import\s+(?:type\s+)?(?:([\w$]+)\s*,?\s*)?(?:\{([^}]*)\})?\s*from\s*['"]([^'"]+)['"]/g)) {
+    const from = m[3];
+    if (from === '@marketplace-sandbox/contracts' || from.startsWith('@marketplace-sandbox/contracts/')) {
+      for (const n of (m[2] ?? '').split(',').map((x) => x.trim().replace(/^type\s+/, '').split(/\s+as\s+/)[0]).filter(Boolean)) {
+        const hits = (symbolIndex().get(n) ?? []).filter((f) => f.startsWith('packages/contracts/'));
+        if (hits.length && hits.length <= 2) hits.forEach((h) => out.add(h));
+      }
+    } else if (from.startsWith('.') || from.startsWith('@/')) {
+      const base = from.startsWith('@/') ? join('packages/web', from.slice(2)) : join(dirname(rel), from);
+      for (const c of [base + '.ts', base + '.tsx', join(base, 'index.ts')]) {
+        if (files().includes(c) && (/^packages\/web\/lib\/api\//.test(c) || /\.(dto|schema|contract)s?\.ts$/.test(c))) out.add(c);
+      }
+    }
+  }
+  return out;
+}
+
+/** Everything a `code` cell depends on: named files, definitions of named symbols (classes, hooks, services), the table models and migrations of named tables, the API client and contracts those files use. */
 export function codeFiles(cell) {
+  cell = cell ?? '';
   const found = new Set(), unknown = [];
-  for (const m of (cell ?? '').matchAll(PATH_RE)) {
+  for (const m of cell.matchAll(PATH_RE)) {
     const token = m[0].replace(/^\(+/, '');
     const hits = resolveToken(token);
     if (hits.length) hits.forEach((h) => found.add(h)); else unknown.push(token);
   }
+  const rest = cell.replace(PATH_RE, ' ');
+  symbolIndex();
+  for (const m of rest.matchAll(/[A-Za-z_$][\w$]*/g)) {
+    const t = m[0];
+    if (tables.has(t)) { found.add(tables.get(t)); migrationsOf(t).forEach((f) => found.add(f)); continue; }
+    if (t.length < 4 || STOP.has(t) || !/[A-Z]/.test(t)) continue;
+    const hits = symbols.get(t);
+    if (hits && hits.length <= 3) hits.forEach((h) => found.add(h));
+  }
+  for (const f of [...found]) if (/\.(ts|tsx)$/.test(f)) importDeps(f).forEach((d) => found.add(d));
   return { files: [...found].sort(), unknown };
 }
 

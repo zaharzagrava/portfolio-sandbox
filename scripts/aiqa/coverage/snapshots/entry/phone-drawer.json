@@ -1,0 +1,357 @@
+{
+ "url": "/dashboard/seller/{shopId}",
+ "at": "2026-10-25",
+ "variants": {
+  "owner@390": {
+   "parts": {
+    "landmark:header:": {
+     "kind": "landmark",
+     "role": "header",
+     "label": "",
+     "hash": "0cea5b5eb5051129",
+     "text": "Marketplace Browse Developers Search 1 SE"
+    },
+    "landmark:status:": {
+     "kind": "landmark",
+     "role": "status",
+     "label": "",
+     "hash": "f7c2a65142256a10",
+     "text": ""
+    },
+    "landmark:main:Shop": {
+     "kind": "landmark",
+     "role": "main",
+     "label": "Shop",
+     "hash": "132e4d4d7db4a2c5",
+     "text": "Demo Shop Shop Overview Inventory Orders Team Payouts Statements Import Order export Integ"
+    },
+    "dialog:dialog:Menu": {
+     "kind": "dialog",
+     "role": "dialog",
+     "label": "Menu",
+     "hash": "208dc8364b325bc4",
+     "text": "Menu Account and site navigation Account seller@marketplace.local Role: Seller Dashboard O"
+    },
+    "heading:h2:Menu": {
+     "kind": "heading",
+     "role": "h2",
+     "label": "Menu",
+     "hash": "63cb986930b64207",
+     "text": "Menu"
+    },
+    "landmark:nav:Main": {
+     "kind": "landmark",
+     "role": "nav",
+     "label": "Main",
+     "hash": "9e4a6a5e73e925ce",
+     "text": "Browse Cart Chats Developers AI Assistant"
+    },
+    "control:link:Dashboard": {
+     "kind": "control",
+     "role": "link",
+     "label": "Dashboard",
+     "hash": "b95ec609f6add3f4",
+     "text": "Dashboard"
+    },
+    "control:link:Orders": {
+     "kind": "control",
+     "role": "link",
+     "label": "Orders",
+     "hash": "3fcdb339976da574",
+     "text": "Orders"
+    },
+    "control:link:Account & security": {
+     "kind": "control",
+     "role": "link",
+     "label": "Account & security",
+     "hash": "b2338af4de8c9992",
+     "text": "Account &amp; security"
+    },
+    "control:button:Log out": {
+     "kind": "control",
+     "role": "button",
+     "label": "Log out",
+     "hash": "6ce20b78430eb436",
+     "text": "Log out"
+    },
+    "control:link:Browse": {
+     "kind": "control",
+     "role": "link",
+     "label": "Browse",
+     "hash": "9622cd7709f460f8",
+     "text": "Browse"
+    },
+    "control:link:Cart": {
+     "kind": "control",
+     "role": "link",
+     "label": "Cart",
+     "hash": "6e8a12a0d7389165",
+     "text": "Cart"
+    },
+    "control:link:Chats": {
+     "kind": "control",
+     "role": "link",
+     "label": "Chats",
+     "hash": "4041c53da70ad9fa",
+     "text": "Chats"
+    },
+    "control:link:Developers": {
+     "kind": "control",
+     "role": "link",
+     "label": "Developers",
+     "hash": "effe604c2a8da148",
+     "text": "Developers"
+    },
+    "control:button:AI Assistant": {
+     "kind": "control",
+     "role": "button",
+     "label": "AI Assistant",
+     "hash": "9d3219d81a099995",
+     "text": "AI Assistant"
+    },
+    "control:button:Close": {
+     "kind": "control",
+     "role": "button",
+     "label": "Close",
+     "hash": "9a6ae31e0d3d2750",
+     "text": "Close"
+    }
+   },
+   "finalPath": "/dashboard/seller/{uuid}"
+  },
+  "viewer@390": {
+   "parts": {
+    "landmark:header:": {
+     "kind": "landmark",
+     "role": "header",
+     "label": "",
+     "hash": "823df78b14e9cc7a",
+     "text": "Marketplace Browse Developers Search 1 AI"
+    },
+    "landmark:status:": {
+     "kind": "landmark",
+     "role": "status",
+     "label": "",
+     "hash": "f7c2a65142256a10",
+     "text": ""
+    },
+    "landmark:main:Shop": {
+     "kind": "landmark",
+     "role": "main",
+     "label": "Shop",
+     "hash": "e398d9712cf93fa3",
+     "text": "AIQA Roles Shop Shop Overview Inventory Orders Team Campaigns Help documents Developers Re"
+    },
+    "dialog:dialog:Menu": {
+     "kind": "dialog",
+     "role": "dialog",
+     "label": "Menu",
+     "hash": "aa2c3bc969a344e9",
+     "text": "Menu Account and site navigation Account aiqa-viewer@example.com Role: Member Dashboard Or"
+    },
+    "heading:h2:Menu": {
+     "kind": "heading",
+     "role": "h2",
+     "label": "Menu",
+     "hash": "63cb986930b64207",
+     "text": "Menu"
+    },
+    "landmark:nav:Main": {
+     "kind": "landmark",
+     "role": "nav",
+     "label": "Main",
+     "hash": "9e4a6a5e73e925ce",
+     "text": "Browse Cart Chats Developers AI Assistant"
+    },
+    "control:link:Dashboard": {
+     "kind": "control",
+     "role": "link",
+     "label": "Dashboard",
+     "hash": "b95ec609f6add3f4",
+     "text": "Dashboard"
+    },
+    "control:link:Orders": {
+     "kind": "control",
+     "role": "link",
+     "label": "Orders",
+     "hash": "3fcdb339976da574",
+     "text": "Orders"
+    },
+    "control:link:Account & security": {
+     "kind": "control",
+     "role": "link",
+     "label": "Account & security",
+     "hash": "b2338af4de8c9992",
+     "text": "Account &amp; security"
+    },
+    "control:button:Log out": {
+     "kind": "control",
+     "role": "button",
+     "label": "Log out",
+     "hash": "6ce20b78430eb436",
+     "text": "Log out"
+    },
+    "control:link:Browse": {
+     "kind": "control",
+     "role": "link",
+     "label": "Browse",
+     "hash": "9622cd7709f460f8",
+     "text": "Browse"
+    },
+    "control:link:Cart": {
+     "kind": "control",
+     "role": "link",
+     "label": "Cart",
+     "hash": "6e8a12a0d7389165",
+     "text": "Cart"
+    },
+    "control:link:Chats": {
+     "kind": "control",
+     "role": "link",
+     "label": "Chats",
+     "hash": "4041c53da70ad9fa",
+     "text": "Chats"
+    },
+    "control:link:Developers": {
+     "kind": "control",
+     "role": "link",
+     "label": "Developers",
+     "hash": "effe604c2a8da148",
+     "text": "Developers"
+    },
+    "control:button:AI Assistant": {
+     "kind": "control",
+     "role": "button",
+     "label": "AI Assistant",
+     "hash": "9d3219d81a099995",
+     "text": "AI Assistant"
+    },
+    "control:button:Close": {
+     "kind": "control",
+     "role": "button",
+     "label": "Close",
+     "hash": "9a6ae31e0d3d2750",
+     "text": "Close"
+    }
+   },
+   "finalPath": "/dashboard/seller/{uuid}"
+  },
+  "staff@390": {
+   "parts": {
+    "landmark:header:": {
+     "kind": "landmark",
+     "role": "header",
+     "label": "",
+     "hash": "823df78b14e9cc7a",
+     "text": "Marketplace Browse Developers Search 1 AI"
+    },
+    "landmark:status:": {
+     "kind": "landmark",
+     "role": "status",
+     "label": "",
+     "hash": "f7c2a65142256a10",
+     "text": ""
+    },
+    "landmark:main:Shop": {
+     "kind": "landmark",
+     "role": "main",
+     "label": "Shop",
+     "hash": "d38fd08b73407a0f",
+     "text": "AIQA Roles Shop Shop Overview Inventory Orders Team Import Order export Campaigns Help doc"
+    },
+    "dialog:dialog:Menu": {
+     "kind": "dialog",
+     "role": "dialog",
+     "label": "Menu",
+     "hash": "644597b6239ff628",
+     "text": "Menu Account and site navigation Account aiqa-staff@example.com Role: Member Dashboard Ord"
+    },
+    "heading:h2:Menu": {
+     "kind": "heading",
+     "role": "h2",
+     "label": "Menu",
+     "hash": "63cb986930b64207",
+     "text": "Menu"
+    },
+    "landmark:nav:Main": {
+     "kind": "landmark",
+     "role": "nav",
+     "label": "Main",
+     "hash": "9e4a6a5e73e925ce",
+     "text": "Browse Cart Chats Developers AI Assistant"
+    },
+    "control:link:Dashboard": {
+     "kind": "control",
+     "role": "link",
+     "label": "Dashboard",
+     "hash": "b95ec609f6add3f4",
+     "text": "Dashboard"
+    },
+    "control:link:Orders": {
+     "kind": "control",
+     "role": "link",
+     "label": "Orders",
+     "hash": "3fcdb339976da574",
+     "text": "Orders"
+    },
+    "control:link:Account & security": {
+     "kind": "control",
+     "role": "link",
+     "label": "Account & security",
+     "hash": "b2338af4de8c9992",
+     "text": "Account &amp; security"
+    },
+    "control:button:Log out": {
+     "kind": "control",
+     "role": "button",
+     "label": "Log out",
+     "hash": "6ce20b78430eb436",
+     "text": "Log out"
+    },
+    "control:link:Browse": {
+     "kind": "control",
+     "role": "link",
+     "label": "Browse",
+     "hash": "9622cd7709f460f8",
+     "text": "Browse"
+    },
+    "control:link:Cart": {
+     "kind": "control",
+     "role": "link",
+     "label": "Cart",
+     "hash": "6e8a12a0d7389165",
+     "text": "Cart"
+    },
+    "control:link:Chats": {
+     "kind": "control",
+     "role": "link",
+     "label": "Chats",
+     "hash": "4041c53da70ad9fa",
+     "text": "Chats"
+    },
+    "control:link:Developers": {
+     "kind": "control",
+     "role": "link",
+     "label": "Developers",
+     "hash": "effe604c2a8da148",
+     "text": "Developers"
+    },
+    "control:button:AI Assistant": {
+     "kind": "control",
+     "role": "button",
+     "label": "AI Assistant",
+     "hash": "9d3219d81a099995",
+     "text": "AI Assistant"
+    },
+    "control:button:Close": {
+     "kind": "control",
+     "role": "button",
+     "label": "Close",
+     "hash": "9a6ae31e0d3d2750",
+     "text": "Close"
+    }
+   },
+   "finalPath": "/dashboard/seller/{uuid}"
+  }
+ }
+}

@@ -77,8 +77,11 @@ api() {
   docker run --rm --network host --user "$UIDGID" -e HOME=/tmp -v "$RAW:/out" schemathesis/schemathesis:latest run http://localhost:8005/v1/openapi.json \
     --url http://localhost:8005 -H "Authorization: Bearer $key" --include-path-regex '^/v1/(products|stock|orders|batch)' \
     --phases examples,coverage,fuzzing,stateful --max-examples "${ST_EXAMPLES:-25}" --workers 2 --max-time "${ST_SECONDS:-240}" --checks all >"$RAW/schemathesis.txt" 2>&1
-  curl -s -X DELETE "$API/api/shops/$shop/developers/keys/$kid" -H "authorization: Bearer $tok" -o /dev/null   # revoke the throwaway key
-  [[ -n "$started_pub" && -f /tmp/aiqa-public-api/pid ]] && { kill -- "-$(cat /tmp/aiqa-public-api/pid)" 2>/dev/null; rm -f /tmp/aiqa-public-api/pid; }
+  tok="$(curl -s -X POST "$API/api/auth/login" -H 'content-type: application/json' -d "{\"email\":\"$SELLER_EMAIL\",\"password\":\"$SELLER_PW\"}" | jq -r '.accessToken.token')"   # the first token is short-lived and ran out during the scan
+  curl -s -X DELETE "$API/api/shops/$shop/developers/keys/$kid" -H "authorization: Bearer $tok" -o /dev/null -w 'revoked test key: %{http_code}\n'   # revoke the throwaway key (204 expected)
+  if [[ -n "$started_pub" && -f /tmp/aiqa-public-api/pid ]]; then   # setsid gave it a session of its own: end every process of it
+    sid="$(ps -o sid= -p "$(cat /tmp/aiqa-public-api/pid)" 2>/dev/null | tr -d ' ')"; [[ -n "$sid" ]] && pkill -s "$sid" 2>/dev/null; rm -f /tmp/aiqa-public-api/pid
+  fi
   sum schemathesis
 }
 

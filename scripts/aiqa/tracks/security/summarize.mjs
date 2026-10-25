@@ -27,7 +27,7 @@ if (tool === 'semgrep') {
 if (tool === 'gitleaks') {
   const r = rd('gitleaks.json');
   md += `# Security: gitleaks (secrets in the code and its history)\n\nRun ${date}. Looks for passwords, keys and tokens in the whole git history and in the files of the working copy that git does not ignore.\n\nResult: ${r.length} flags.\n\n`;
-  for (const x of r) md += `- \`${x.File}:${x.StartLine}\` rule ${x.RuleID}${x.Commit ? ` (commit ${x.Commit.slice(0, 8)})` : ' (working copy)'}: \`${(x.Match || '').replace(/\s+/g, ' ').slice(0, 70)}\`\n`;
+  for (const x of r) md += `- \`${x.File.replace(/^\/repo\//, "")}:${x.StartLine}\` rule ${x.RuleID}${x.Commit ? ` (commit ${x.Commit.slice(0, 8)})` : ' (working copy)'}: \`${(x.Match || '').replace(/\s+/g, ' ').slice(0, 70)}\`\n`;
 }
 if (tool === 'audit') {
   md += `# Security: dependency audit (pnpm audit --prod)\n\nRun ${date}. Known holes in the packages the web app and the API ship with. \`pnpm audit\` checks the whole lock file, so the list is split by which package pulls the dependency in.\n\n`;

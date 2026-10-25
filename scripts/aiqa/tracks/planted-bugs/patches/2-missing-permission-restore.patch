@@ -1,0 +1,13 @@
+diff --git a/packages/backend/libs/domains/catalog/api/product.controller.ts b/packages/backend/libs/domains/catalog/api/product.controller.ts
+index 91c8fdb2..e11790c8 100644
+--- a/packages/backend/libs/domains/catalog/api/product.controller.ts
++++ b/packages/backend/libs/domains/catalog/api/product.controller.ts
+@@ -103,7 +103,7 @@ export class ProductController {
+     );
+   }
+ 
+-  @ShopScoped('products.write')
++  @ShopScoped('products.read')
+   @RateLimit('catalog.product-write.shop')
+   @HttpCode(200)
+   @Post(':productId/restore')
