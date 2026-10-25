@@ -17,7 +17,7 @@ Owner rules, 2026-10-25. Every agent that writes or changes a test follows them.
 ## 3. Performance budget
 - Front-end suite: about 9 to 10 minutes at 3 or 4 workers. Backend suite: about 12 minutes at 6 to 8 shards. A change that pushes either over its budget must be made cheaper or merged before it lands. Measure the suite time before and after any change that adds more than about 20 tests, and report it.
 - Cheap tests: log in by API (not the UI) unless the test is about login; create the seller/shop/product once per file or describe (`beforeAll`), not per test; no fixed sleeps; wait on a condition; no waiting for background jobs longer than needed (poll fast); share read-only fixtures; run independent tests in parallel.
-- Phone project only for specs about the phone layout (drawer, sheet, cards, sideways scroll). Behaviour, API, database, role and concurrency tests run once, on desktop.
+- Test a functionality ONCE. The phone project runs only what differs on a phone (layout, drawer, sheet, cards, sideways scroll, touch, visual baselines). Behaviour, API, database, role and concurrency tests run once, on desktop. Applies to the OLD tests too, not only new ones. Convention: tag the test title `@phone` (phone project only) or `@desktop` (desktop project only); untagged tests run on both (`packages/web/playwright.config.ts`: `grepInvert`).
 - Slow or special runs are never in the normal run and are gated by an env switch: container pausing (fault injection), the 10,000-row seed, the 12-minute auction, the 49-minute photo purge.
 - Never weaken a check, raise a timeout, or add retries to make a test fit the budget.
 
