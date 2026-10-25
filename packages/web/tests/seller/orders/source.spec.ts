@@ -30,7 +30,7 @@ const badgeOf = async (page: Page, slice: Slice) => {
   const current = await readSlices(fx.token, fx.shopId); // the list as it is now (other tests add slices)
   const at = current.findIndex((entry) => entry.shopOrderId === slice.shopOrderId);
   expect(at, 'the slice is on the first page').toBeLessThan(20);
-  await expect(rowsOf(page).nth(at).locator('th')).toHaveText(slice.shopOrderId.slice(0, 8));
+  await expect(rowsOf(page).nth(at).locator('th')).toHaveText(slice.shopOrderId.slice(-8));
   return rowsOf(page).nth(at).locator('td').first().innerText();
 };
 const call = async (method: string, route: string, body: unknown, token: string, headers: Record<string, string> = {}) => {
@@ -122,7 +122,7 @@ test('[orders.source.cart-not-in-list] lines in a cart that was never checked ou
   await call('DELETE', '/api/cart', undefined, fx.buyer.token);
 });
 
-test('[orders.source.out-of-stock-cancel] two buyers race for the last piece: the loser is refused at once (422) or cancelled for stock, and a cancelled one is listed to the seller as a Cancelled slice (recorded)', async () => {
+test('[orders.source.out-of-stock-cancel] two buyers race for the last piece: the loser is refused at once (422) or cancelled for stock, and the refused attempt never shows in the seller list (B-093)', async () => {
   lines('orders.source.out-of-stock-cancel');
   const stamp = Date.now().toString(36);
   const made = await sellerCall('POST', `/api/shops/${fx.shopId}/products`, { title: `Orders Scarce ${stamp}`, brand: 'Test', category: `orders-${stamp}`, priceMinor: 100, quantity: 1, description: 'One piece.' }, fx.token);
@@ -144,13 +144,17 @@ test('[orders.source.out-of-stock-cancel] two buyers race for the last piece: th
   const answers = await Promise.all(buyers.map((token) => call('POST', '/api/checkout', {}, token, { 'Idempotency-Key': crypto.randomUUID() })));
   const got = answers.map((answer) => answer.status);
   expect(got.filter((status) => status === 202).length >= 1 && got.every((status) => status === 202 || status === 422), JSON.stringify(answers.map((answer) => [answer.status, answer.data?.code]))).toBe(true);
-  // whatever the answers were, the one piece went to one order; the other buyer's attempt is a CANCELLED(out_of_stock) order
+  // whatever the answers were, the one piece went to one order; the other buyer's attempt stays as a CANCELLED(out_of_stock)
+  // order (the replay record of its idempotency key) but holds no stock, so the seller's list does not show it
   await expect
-    .poll(async () => (await readSlices(fx.token, fx.shopId)).filter((slice) => slice.items.some((item) => item.productId === productId)).map((slice) => slice.status).sort(), { timeout: 30_000 })
-    .toEqual(['CANCELLED', 'PENDING']);
-  const orderRows = rows(`select o.status || '/' || coalesce(o."cancelReason",'') from "BisOrder" o join "BisOrderItem" i on i."bisOrderId"=o.id where i."productId"='${productId}' order by 1`).flat();
-  expect(orderRows).toEqual(['CANCELLED/out_of_stock', 'RESERVED/']);
-  test.info().annotations.push({ type: 'observed', description: `checkout answers ${answers.map((answer) => answer.status).join('/')}; every attempt, also an answer 422, leaves a Cancelled order and slice: ${orderRows.join(', ')}` });
+    .poll(
+      async () => rows(`select o.status || '/' || coalesce(o."cancelReason",'') from "BisOrder" o join "BisOrderItem" i on i."bisOrderId"=o.id where i."productId"='${productId}' order by 1`).flat(),
+      { timeout: 30_000 },
+    )
+    .toEqual(['CANCELLED/out_of_stock', 'RESERVED/']);
+  const listed = (await readSlices(fx.token, fx.shopId)).filter((slice) => slice.items.some((item) => item.productId === productId));
+  expect(listed.map((slice) => slice.status)).toEqual(['PENDING']);
+  test.info().annotations.push({ type: 'observed', description: `checkout answers ${answers.map((answer) => answer.status).join('/')}; the refused attempt leaves a Cancelled order that the seller list hides` });
 });
 
 test('[orders.source.rls-or-tenancy] a member of the shop who buys from it gets a row like any other buyer (the list is by shop only)', async ({ browser }) => {

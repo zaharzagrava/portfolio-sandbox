@@ -109,7 +109,6 @@ export class OrderQueryService {
         status: p.status,
         subtotalMinor: p.subtotalMinor,
         currency: p.currency,
-        buyerId: p.buyerId,
         createdAt: p.createdAt.toISOString(),
         items: lines
           .filter((l) => l.shopOrderId === p.id)
@@ -151,7 +150,6 @@ export class OrderQueryService {
       status: slice.status,
       subtotalMinor: slice.subtotalMinor,
       currency: slice.currency,
-      buyerId: slice.buyerId,
       createdAt: slice.createdAt.toISOString(),
       items: lines
         .filter((l) => l.shopOrderId === slice.id)

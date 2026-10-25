@@ -95,7 +95,7 @@ describe('W04 lib/api/seller-orders.ts', () => {
       http.get(`${shop}/orders`, ({ request }) => {
         seen = new URL(request.url);
         return HttpResponse.json({
-          items: [{ shopOrderId: INVITE, orderId: USER, status: 'PAID', subtotalMinor: 2500, currency: 'EUR', buyerId: 'buyer-1', createdAt: '2026-10-17T09:00:00.000Z', items: [] }],
+          items: [{ shopOrderId: INVITE, orderId: USER, status: 'PAID', subtotalMinor: 2500, currency: 'EUR', createdAt: '2026-10-17T09:00:00.000Z', items: [] }],
           nextCursor: null,
         });
       }),

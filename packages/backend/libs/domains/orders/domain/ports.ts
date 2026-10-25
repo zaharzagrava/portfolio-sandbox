@@ -186,7 +186,6 @@ export interface ShopOrderListRecord {
   status: ShopOrderStatus;
   subtotalMinor: number;
   currency: string;
-  buyerId: string;
   createdAt: Date;
 }
 

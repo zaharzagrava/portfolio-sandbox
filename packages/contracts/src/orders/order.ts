@@ -99,7 +99,6 @@ export const shopOrderPageSchema = z
           status: shopOrderStatusSchema,
           subtotalMinor: minor,
           currency: z.string(),
-          buyerId: z.string(),
           createdAt: z.string(),
           items: z.array(orderItemSchema),
         })

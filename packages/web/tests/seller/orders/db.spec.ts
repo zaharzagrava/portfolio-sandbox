@@ -42,15 +42,15 @@ test.beforeAll(async ({ browser }) => {
 const newShop = async () => (await openSecondShop(owner)).shopId;
 const read = async (shop: string) => (await sellerCall('GET', `/api/shops/${shop}/orders?limit=100`, undefined, token)).data.items as Slice[];
 
-test('[orders.db.join-bisorder] currency and buyer come from BisOrder through the join; a slice cannot exist without its BisOrder', async ({ page }) => {
+test('[orders.db.join-bisorder] currency comes from BisOrder (the buyer is joined but never sent) through the join; a slice cannot exist without its BisOrder', async ({ page }) => {
   lines('orders.db.join-bisorder');
   const shop = await newShop();
   const [first, second] = seedSlices(shop, buyerId, [{ createdAt: at(1), subtotal: 12345 }, { createdAt: at(2), subtotal: 500 }]);
   runSql(`update "BisOrder" set currency='USD' where id='${first.orderId}'`);
   const items = await read(shop);
-  expect(items.map((item) => [item.shopOrderId, item.currency, item.buyerId])).toEqual([
-    [first.shopOrderId, 'USD', buyerId],
-    [second.shopOrderId, 'EUR', buyerId],
+  expect(items.map((item) => [item.shopOrderId, item.currency])).toEqual([
+    [first.shopOrderId, 'USD'],
+    [second.shopOrderId, 'EUR'],
   ]);
   await signIn(page, owner);
   await page.goto(ordersPath(shop));
@@ -118,7 +118,7 @@ test('[orders.db.keyset-index, orders.db.index-use] with 10 000 slices the list 
           insert into "ShopOrder"(id,"bisOrderId","shopId",subtotal,status,"createdAt","updatedAt") select sid, oid, '${shop}', 1000, 'PENDING', now() - (i || ' seconds')::interval, now() from g;
           analyze "ShopOrder"; analyze "BisOrder"`);
   expect(scalar(`select count(*) from "ShopOrder" where "shopId"='${shop}'`)).toBe('10000');
-  const plan = runSql(`explain (analyze, buffers) SELECT so."id", so."bisOrderId" AS "orderId", so."status", so."subtotal", o."currency", o."userId" AS "buyerId", so."createdAt"
+  const plan = runSql(`explain (analyze, buffers) SELECT so."id", so."bisOrderId" AS "orderId", so."status", so."subtotal", o."currency", so."createdAt"
        FROM "ShopOrder" so JOIN "BisOrder" o ON o."id" = so."bisOrderId"
        WHERE so."shopId" = '${shop}' AND (so."createdAt", so."id") < (now() - interval '5000 seconds', 'ffffffff-ffff-4fff-8fff-ffffffffffff'::uuid)
        ORDER BY so."createdAt" DESC, so."id" DESC LIMIT 21`);

@@ -16,6 +16,11 @@ import { safeNumber } from './safe-number';
 export class SequelizeShopOrderRepository implements ShopOrderRepository {
   constructor(@InjectConnection() private readonly sequelize: Sequelize) {}
 
+  /**
+   * A checkout refused for lack of stock keeps a cancelled order (it is the replay record of the idempotency key) but
+   * never held stock or money, so the seller's list and slice read leave it out: a buyer pressing "Place order" on a
+   * sold-out product again and again cannot fill a shop's Orders page with Cancelled rows (B-093).
+   */
   async pageForShop(
     shopId: string,
     status: ShopOrderStatus | null,
@@ -28,12 +33,12 @@ export class SequelizeShopOrderRepository implements ShopOrderRepository {
       status: ShopOrderStatus;
       subtotal: string | number;
       currency: string;
-      buyerId: string;
       createdAt: Date;
     }>(
-      `SELECT so."id", so."bisOrderId" AS "orderId", so."status", so."subtotal", o."currency", o."userId" AS "buyerId", so."createdAt"
+      `SELECT so."id", so."bisOrderId" AS "orderId", so."status", so."subtotal", o."currency", so."createdAt"
        FROM "ShopOrder" so JOIN "BisOrder" o ON o."id" = so."bisOrderId"
        WHERE so."shopId" = :shopId
+         AND NOT (o."status"::text = 'CANCELLED' AND o."cancelReason" = 'out_of_stock')
          AND (CAST(:status AS text) IS NULL OR so."status"::text = :status)
          AND (CAST(:afterCreatedAt AS timestamptz) IS NULL
               OR (so."createdAt", so."id") < (CAST(:afterCreatedAt AS timestamptz), CAST(:afterId AS uuid)))
@@ -56,7 +61,6 @@ export class SequelizeShopOrderRepository implements ShopOrderRepository {
       status: r.status,
       subtotalMinor: safeNumber(r.subtotal),
       currency: r.currency,
-      buyerId: r.buyerId,
       createdAt: r.createdAt,
     }));
   }
@@ -71,12 +75,12 @@ export class SequelizeShopOrderRepository implements ShopOrderRepository {
       status: ShopOrderStatus;
       subtotal: string | number;
       currency: string;
-      buyerId: string;
       createdAt: Date;
     }>(
-      `SELECT so."id", so."bisOrderId" AS "orderId", so."status", so."subtotal", o."currency", o."userId" AS "buyerId", so."createdAt"
+      `SELECT so."id", so."bisOrderId" AS "orderId", so."status", so."subtotal", o."currency", so."createdAt"
        FROM "ShopOrder" so JOIN "BisOrder" o ON o."id" = so."bisOrderId"
-       WHERE so."shopId" = :shopId AND so."id" = CAST(:shopOrderId AS uuid)`,
+       WHERE so."shopId" = :shopId AND so."id" = CAST(:shopOrderId AS uuid)
+         AND NOT (o."status"::text = 'CANCELLED' AND o."cancelReason" = 'out_of_stock')`,
       { type: QueryTypes.SELECT, replacements: { shopId, shopOrderId } },
     );
     return r
@@ -86,7 +90,6 @@ export class SequelizeShopOrderRepository implements ShopOrderRepository {
           status: r.status,
           subtotalMinor: safeNumber(r.subtotal),
           currency: r.currency,
-          buyerId: r.buyerId,
           createdAt: r.createdAt,
         }
       : null;

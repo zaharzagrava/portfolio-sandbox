@@ -44,7 +44,7 @@ test('[orders.api.contract] the list answer has exactly the fields of the contra
   expect(answer.data.nextCursor).toBeNull();
   expect(answer.data.items).toHaveLength(6);
   for (const item of answer.data.items) {
-    expect(Object.keys(item).sort()).toEqual(['buyerId', 'createdAt', 'currency', 'items', 'orderId', 'shopOrderId', 'status', 'subtotalMinor']);
+    expect(Object.keys(item).sort()).toEqual(['createdAt', 'currency', 'items', 'orderId', 'shopOrderId', 'status', 'subtotalMinor']);
     expect(item.createdAt).toBe(new Date(item.createdAt).toISOString());
     expect(['PENDING', 'PAID', 'CANCELLED', 'REFUNDED']).toContain(item.status);
     expect(Number.isInteger(item.subtotalMinor)).toBe(true);
@@ -63,7 +63,7 @@ test('[orders.role.owner] the OWNER sees the page and every slice of the shop', 
   await expect(page.getByRole('heading', { level: 1, name: 'Orders' })).toBeVisible();
   await expect(rowsOf(page)).toHaveCount(6);
   const api = (await sellerCall('GET', `/api/shops/${shopId}/orders`, undefined, token)).data.items as { shopOrderId: string }[];
-  expect(await rowsOf(page).locator('th').allInnerTexts()).toEqual(api.map((item) => item.shopOrderId.slice(0, 8)));
+  expect(await rowsOf(page).locator('th').allInnerTexts()).toEqual(api.map((item) => item.shopOrderId.slice(-8)));
   await expect(page.getByRole('region', { name: 'Orders' }).getByRole('button')).toHaveCount(0);
 });
 
