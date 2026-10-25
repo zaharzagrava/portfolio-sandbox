@@ -49,18 +49,24 @@ export class UploadService {
     purpose: 'product' | 'review',
     shopId: string | null,
   ): Promise<MediaUploadResponse> {
-    const pending = await this.store.media.countPending(uploaderId, shopId);
-    if (pending >= MAX_PENDING_UPLOADS) throw pendingUploadsLimit(pending);
-
     // The client never chooses (or overwrites) a path.
     const originalKey = originalKeyFor(
       shopId ? { shopId } : { userId: uploaderId },
       uuidv4(),
     );
     const now = this.clock.now();
-    const media = await this.store.tx(({ media: repo }) =>
-      repo.insertPending({ shopId, uploaderId, purpose, originalKey, now }),
+    const reserved = await this.store.tx(({ media: repo }) =>
+      repo.reservePending({
+        shopId,
+        uploaderId,
+        purpose,
+        originalKey,
+        now,
+        limit: MAX_PENDING_UPLOADS,
+      }),
     );
+    if (!reserved.ok) throw pendingUploadsLimit(reserved.current);
+    const media = reserved.media;
     // Signing is a local computation: nothing in the transaction above waited for storage.
     const signed = await this.storage.presignPost({
       key: originalKey,

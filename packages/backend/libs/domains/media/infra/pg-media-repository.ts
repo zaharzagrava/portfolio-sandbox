@@ -121,6 +121,28 @@ export class PgMediaRepository implements MediaRepository {
     return Number(row.count);
   }
 
+  /**
+   * The pending-upload quota as one atomic step: a transaction-scoped advisory lock per uploader and shop makes the
+   * count and the insert one unit, so a hundred presigns at once cannot pass the same count (S29 AS-04). Call it inside
+   * `tx`; the lock is released at commit.
+   */
+  async reservePending(input: {
+    shopId: string | null;
+    uploaderId: string;
+    purpose: MediaPurpose;
+    originalKey: string;
+    now: Date;
+    limit: number;
+  }): Promise<{ ok: true; media: MediaRecord } | { ok: false; current: number }> {
+    await this.sql(
+      `SELECT pg_advisory_xact_lock(hashtextextended('media-pending:' || $1::text || ':' || COALESCE($2::text, ''), 0))`,
+      [input.uploaderId, input.shopId],
+    );
+    const current = await this.countPending(input.uploaderId, input.shopId);
+    if (current >= input.limit) return { ok: false, current };
+    return { ok: true, media: await this.insertPending(input) };
+  }
+
   async insertPending(input: {
     shopId: string | null;
     uploaderId: string;

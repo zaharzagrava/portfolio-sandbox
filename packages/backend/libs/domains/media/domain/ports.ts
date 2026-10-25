@@ -66,6 +66,17 @@ export interface DuplicateScan {
 export interface MediaRepository {
   // ---- upload
   countPending(uploaderId: string, shopId: string | null): Promise<number>;
+  /** Count and insert as one atomic step (advisory lock per uploader and shop); call inside `tx`. */
+  reservePending(input: {
+    shopId: string | null;
+    uploaderId: string;
+    purpose: MediaPurpose;
+    originalKey: string;
+    now: Date;
+    limit: number;
+  }): Promise<
+    { ok: true; media: MediaRecord } | { ok: false; current: number }
+  >;
   insertPending(input: {
     shopId: string | null;
     uploaderId: string;
@@ -177,6 +188,10 @@ export interface GalleryRepository {
   /** READY photos of a product by position (what readers see). */
   readItems(productId: string): Promise<GalleryRow[]>;
   version(productId: string): Promise<number>;
+  /** The items and the version from one statement, so they are one snapshot (a writer cannot land between them). */
+  readSnapshot(
+    productId: string,
+  ): Promise<{ items: GalleryRow[]; version: number }>;
   deleteForProduct(productId: string): Promise<number>;
   deleteForShop(shopId: string): Promise<number>;
 }

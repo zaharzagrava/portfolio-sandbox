@@ -107,6 +107,24 @@ export class PgGalleryRepository implements GalleryRepository {
     );
   }
 
+  async readSnapshot(
+    productId: string,
+  ): Promise<{ items: GalleryRow[]; version: number }> {
+    // One statement sees one snapshot: the version and the links it names cannot come from two different writes.
+    const [row] = await this.sql<{ version: number; items: GalleryRow[] }>(
+      `SELECT COALESCE((SELECT "version" FROM "ProductGallery" WHERE "productId" = $1), 0)::int AS "version",
+              COALESCE((SELECT json_agg(json_build_object(
+                          'mediaId', x."mediaId", 'position', x."position", 'variants', x."variants",
+                          'width', x."width", 'height', x."height") ORDER BY x."position", x."mediaId")
+                          FROM (SELECT m."id" AS "mediaId", pm."position"::int AS "position", m."variants", m."width", m."height"
+                                  FROM "ProductMedia" pm JOIN "Media" m ON m."id" = pm."mediaId"
+                                 WHERE pm."productId" = $1 AND m."status" = 'READY' AND m."variants" IS NOT NULL) x),
+                       '[]'::json) AS "items"`,
+      [productId],
+    );
+    return { items: row.items, version: row.version };
+  }
+
   async version(productId: string): Promise<number> {
     const [row] = await this.sql<{ version: number }>(
       `SELECT "version" FROM "ProductGallery" WHERE "productId" = $1`,

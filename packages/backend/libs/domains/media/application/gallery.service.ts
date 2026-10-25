@@ -106,10 +106,7 @@ export class GalleryService {
   }
 
   private async read(productId: string): Promise<GalleryMember> {
-    const [rows, version] = await Promise.all([
-      this.store.gallery.readItems(productId),
-      this.store.gallery.version(productId),
-    ]);
-    return { items: this.items(rows), version };
+    const { items, version } = await this.store.gallery.readSnapshot(productId);
+    return { items: this.items(items), version };
   }
 }
