@@ -19,8 +19,21 @@ function announceTitleWhenSettled() {
     observer.disconnect();
     window.clearTimeout(giveUp);
     const text = document.title || document.querySelector('h1')?.textContent || '';
-    const region = document.querySelector('next-route-announcer')?.shadowRoot?.getElementById('__next-route-announcer__');
-    if (region && text && region.textContent !== text) region.textContent = text;
+    const root = document.querySelector('next-route-announcer')?.shadowRoot;
+    const next = root?.getElementById('__next-route-announcer__');
+    if (!root || !text || next?.textContent === text) return;
+    // Never write into Next's own node: React owns it, and replacing its text crashes the next update (removeChild error).
+    // A sibling node of ours, in the same shadow root, is a separate polite live region.
+    let region = root.getElementById('__route-title-announcer__');
+    if (!region) {
+      region = document.createElement('p');
+      region.id = '__route-title-announcer__';
+      region.setAttribute('aria-live', 'polite');
+      region.setAttribute('role', 'status');
+      region.style.cssText = 'position:absolute;width:1px;height:1px;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0;padding:0';
+      root.appendChild(region);
+    }
+    region.textContent = text;
   };
   observer.observe(document.head, { childList: true, subtree: true, characterData: true });
   // A page whose title did not change (same title on both pages) still announces its name once.
