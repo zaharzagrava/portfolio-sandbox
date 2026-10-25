@@ -366,13 +366,19 @@ export class Domain_StaleVersionError extends AppError {
   }
 }
 
-/** A malformed query parameter (cursor, limit, status): the same `validation_failed` the body pipe produces. */
+/**
+ * A malformed query parameter (cursor, limit, status): the same `validation_failed` the body pipe produces, except a bad
+ * page cursor or page size, which answer their own S03 B-04 codes (`invalid_cursor`, `invalid_limit`) so a client can
+ * send the reader back to the first page.
+ */
 export class Domain_InvalidQueryError extends AppError {
   constructor(field: string, code: string) {
     super(
       domainError(
         HttpStatus.BAD_REQUEST,
-        'validation_failed',
+        code === 'invalid_cursor' || code === 'invalid_limit'
+          ? code
+          : 'validation_failed',
         'Bad Request',
         'The request is not valid.',
         { extensions: { errors: [{ field, code }] } },

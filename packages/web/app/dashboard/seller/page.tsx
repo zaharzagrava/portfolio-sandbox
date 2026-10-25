@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Suspense } from 'react';
 import { redirect } from 'next/navigation';
 import { requireSellerSession } from '@/components/dashboard/shop-frame';
+import { ProblemPanel } from '@/components/seller/problem-states';
 import { Skeleton } from '@/components/ui/skeleton';
 import { loginHref } from '@/lib/auth/return-to';
 import { readCursor, type RawSearchParams } from '@/lib/seller/search-params';
@@ -25,6 +26,9 @@ async function SellerIndex({ searchParams }: { searchParams: Promise<RawSearchPa
   const result = await readMyShops(cursor);
   if (!result.ok) {
     if (result.status === 401) redirect(loginHref(SELLER_HOME));
+    // A stale or hand-made `cursor` is told in words with a way back to the first page, not the error page (S03 B-04).
+    if (result.status === 400 && result.code === 'invalid_cursor')
+      return <ProblemPanel problem={{ status: 400, code: 'invalid_cursor', errors: [] }} context={{ kind: 'read' }} firstPageHref={SELLER_HOME} />;
     throw new Error('shops_unavailable');
   }
   const { items, nextCursor } = result.data;

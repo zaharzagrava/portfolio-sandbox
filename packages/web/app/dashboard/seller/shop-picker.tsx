@@ -15,7 +15,8 @@ export function ShopPicker({ shops, nextCursor, cursor }: { shops: readonly Shop
     <div className="space-y-4">
       <h1 className="text-2xl font-bold tracking-tight">Your shops</h1>
       <p className="text-muted-foreground">Choose a shop to open its dashboard.</p>
-      <Card className="p-0">
+      {shops.length === 0 && <p className="text-sm text-muted-foreground">There are no more shops on this page.</p>}
+      <Card className={shops.length === 0 ? 'hidden' : 'p-0'}>
         <ul aria-label="Your shops" className="divide-y">
           {shops.map((shop) => (
             <li key={shop.id}>

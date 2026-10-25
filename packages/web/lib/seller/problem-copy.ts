@@ -48,7 +48,7 @@ const FALLBACK_4XX = "Something didn't work. Check the details and try again.";
 const STALE_PRODUCT = 'This product was archived or restored elsewhere. The list has been refreshed.';
 
 const UNAVAILABLE_CODES = new Set(['upstream_unavailable', 'upstream_invalid', 'overloaded', 'service_unavailable', 'serialization_failure', 'cell_unavailable', 'search_unavailable']);
-const GENERIC_CODES = new Set(['shop_mismatch', 'invalid_topics', 'invalid_query', 'idempotency_key_required', 'idempotency_key_reuse']);
+const GENERIC_CODES = new Set(['shop_mismatch', 'invalid_topics', 'invalid_query', 'invalid_limit', 'idempotency_key_required', 'idempotency_key_reuse']);
 const SESSION_CODES = new Set(['unauthenticated', 'invalid_token', 'session_expired']);
 
 type Entry = { form: SellerProblemForm; message: string; field?: string; action?: SellerProblemAction; refetch?: boolean; silent?: boolean };
@@ -87,6 +87,7 @@ const FIXED: Record<string, Entry> = {
   slug_taken: { form: 'field', field: 'slug', message: 'That handle is taken. Try another.' },
   slug_reserved: { form: 'field', field: 'slug', message: 'That handle is reserved. Try another.' },
   shop_limit_reached: alert('You already own 10 shops.'),
+  plan_limit_reached: alert('Your plan has reached its product limit. Upgrade the plan to add more products.'),
   seat_limit_reached: alert('Your plan has no free seats.'),
   invite_pending: alert('An invitation is already pending for this address.'),
   already_member: alert('This person is already a member.'),
