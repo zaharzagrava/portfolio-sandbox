@@ -12,6 +12,7 @@ import { useRefreshSession } from '@/hooks/use-auth-actions';
 import { SHOP_SLUG, slugify } from '@/lib/api/shops';
 import { problemFromError, type Problem } from '@/lib/api/errors';
 import { useOpenShop } from '@/lib/api/seller';
+import type { SessionResult } from '@/lib/api/session';
 import { sellerProblemCopy } from '@/lib/seller/problem-copy';
 
 /** Delays between the background session refreshes after a shop opens: 1 s, 2 s, 4 s, then stop (W04 AS-04). */
@@ -31,8 +32,9 @@ async function refreshUntilSeller(refresh: () => Promise<unknown>): Promise<void
   for (const delay of ROLE_REFRESH_DELAYS_MS) {
     await new Promise((resolve) => setTimeout(resolve, delay));
     try {
-      const result = (await refresh()) as { ok?: boolean; kind?: string; session?: { role?: string } } | undefined;
-      if (result?.ok && result.kind === 'session' && result.session?.role === 'SELLER') return;
+      const result = (await refresh()) as SessionResult | undefined;
+      // The answer is `{ user: { role } }`; any role above a plain buyer's means the claim has caught up.
+      if (result?.ok && result.kind === 'session' && result.session.user.role !== 'USER') return;
     } catch {
       /* a failed refresh is simply asked again by the next step */
     }
@@ -147,11 +149,10 @@ export function OpenShopForm() {
               }}
               onBlur={() => setChecked((c) => ({ ...c, name: true }))}
             />
-            {nameProblem && (
-              <p id="shop-name-problem" className="text-xs text-destructive">
-                {nameProblem}
-              </p>
-            )}
+            {/* The line keeps its height when empty, so an error that appears on blur never pushes "Open shop" away from a click that is under way. */}
+            <p id={nameProblem ? 'shop-name-problem' : undefined} className="min-h-8 text-xs text-destructive sm:min-h-4">
+              {nameProblem}
+            </p>
           </div>
           <div className="space-y-2">
             <Label htmlFor="shop-slug">Handle</Label>
@@ -161,7 +162,7 @@ export function OpenShopForm() {
               name="slug"
               value={handle}
               placeholder="my-shop"
-              maxLength={80}
+              maxLength={40}
               autoComplete="off"
               spellCheck={false}
               aria-invalid={handleProblem ? true : undefined}
@@ -173,11 +174,9 @@ export function OpenShopForm() {
               }}
               onBlur={() => setChecked((c) => ({ ...c, slug: true }))}
             />
-            {handleProblem && (
-              <p id="shop-slug-problem" className="text-xs text-destructive">
-                {handleProblem}
-              </p>
-            )}
+            <p id={handleProblem ? 'shop-slug-problem' : undefined} className="min-h-8 text-xs text-destructive sm:min-h-4">
+              {handleProblem}
+            </p>
           </div>
         </CardContent>
         <CardFooter className="flex-col items-stretch gap-3">

@@ -15,8 +15,8 @@ vi.mock('@/hooks/use-auth-actions', () => ({ useRefreshSession: () => refresh })
 
 import { OpenShopForm } from './open-shop-form';
 
-const USER_SESSION = { ok: true, kind: 'session', session: { role: 'USER' } };
-const SELLER_SESSION = { ok: true, kind: 'session', session: { role: 'SELLER' } };
+const USER_SESSION = { ok: true, kind: 'session', session: { user: { role: 'USER' } } };
+const SELLER_SESSION = { ok: true, kind: 'session', session: { user: { role: 'SELLER' } } };
 
 function renderForm() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });

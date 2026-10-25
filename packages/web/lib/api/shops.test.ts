@@ -8,6 +8,7 @@ describe('slugify', () => {
       expect(slug === '' || SHOP_SLUG.test(slug) || slug.length < 3).toBe(true);
     }
     expect(slugify('Demo Shop')).toBe('demo-shop');
+    expect(slugify('Café Münster')).toBe('cafe-munster');
     expect(slugify('ACME---Tools!!')).toBe('acme-tools');
   });
 
