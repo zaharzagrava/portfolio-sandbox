@@ -12,7 +12,9 @@ Goal: find out if an AI can FULLY test a given set of pages on its own, and know
 
 ## Where things are
 
-- `coverage/<area>.tsv`: the maps (tab-separated, one line per item). Columns: id, what, spec, code, layers, status, date, by, bugs, note.
+- `coverage/<area>.tsv`: the maps (tab-separated, one line per item). Columns: id, what, spec, code, layers, status, date, by, bugs, note. Besides the four page areas there are two track maps in the same format: `odd-data.tsv` (one line per data shape x page, ids `odd-data.<area>.<shape>`) and `fault-injection.tsv` (one line per outage x action, ids `fault.<dependency>.<action>`).
+- `tracks/<name>/README.md`: one plain-language README per extra track (see `TRACKS.md` for the table of maps, tests and commands).
+- `packages/web/tests/aiqa/*.spec.ts`: the permanent tests; one test per behaviour, line ids in the title and in the `aiqa-lines` annotation.
 - `coverage/<area>.gaps.md`: differences found between spec and code while mapping.
 - `findings/<area>.md`: what testers report (bugs and suspicious things) before they go to the register.
 - `prompts/mapper.md`, `prompts/tester.md`: the instructions for the two kinds of agent (so nothing is explained twice).
@@ -87,7 +89,7 @@ Fingerprints live in `coverage/<area>.fingerprints.json` (per line: `code`, `spe
 - `node scripts/aiqa/fingerprint.mjs <area>|all [--force]` stores fingerprints. Lines already `pass`/`bug` keep their old fingerprint unless `--force`, so a change since the check is not hidden.
 - `node scripts/aiqa/mark.mjs ...` records the line's current fingerprint by itself whenever a tester marks `pass` or `bug`. Testers do nothing extra.
 - `node scripts/aiqa/recheck.mjs <area>|all [--dry]` compares stored and current fingerprints. A `pass`/`bug` line whose hash changed goes back to `untested` with the note `changed: <files or spec ids>`; unchanged lines are never touched. `--dry` only prints.
-- `node scripts/aiqa/run-specs.mjs <area> [--all] [--dry]` runs the permanent specs `packages/web/tests/aiqa/*.spec.ts`. A test names the lines it covers with `test.info().annotations.push({ type: 'aiqa-lines', description: 'id1,id2' })`. First the stale lines go back to untested (recheck), then only the spec files that annotate an `untested` or `blocked` line of the area run (`--all`: every spec of the area). From the JSON result each line is marked by `mark.mjs`: all its tests passed -> `pass` (fingerprint stored), a test failed -> `bug` with bug id `spec-fail` and the first error line, only skipped -> left alone. So a passing line with an unchanged fingerprint is never run and no agent has to look at it again. `--dry` prints what would run.
+- `node scripts/aiqa/run-specs.mjs <area> [--all] [--dry]` runs the permanent specs `packages/web/tests/aiqa/*.spec.ts`. A test names the lines it covers with `test.info().annotations.push({ type: 'aiqa-lines', description: 'id1,id2' })` (or a small helper `lines('id1','id2')` doing the same). The static read that decides which spec files to run takes every known line id of the area written anywhere in a spec file, so helpers and tables of ids work. First the stale lines go back to untested (recheck), then only the spec files that annotate an `untested` or `blocked` line of the area run (`--all`: every spec of the area). From the JSON result each line is marked by `mark.mjs`: all its tests passed -> `pass` (fingerprint stored), a test failed -> `bug` with bug id `spec-fail` and the first error line, only skipped -> left alone. So a passing line with an unchanged fingerprint is never run and no agent has to look at it again. `--dry` prints what would run.
 - `node scripts/aiqa/status.mjs` ends with `stale: N lines changed since last check`.
 
 **Pages (`snapshot.mjs`, `snapshot-diff.mjs`).** The demo seed is fixed (seller@marketplace.local, Demo Shop). `snapshots.config.json` lists, per area, the page states (url template with `{shopId}` and `{productId}`, steps that open a dialog or menu, roles `owner`, `viewer`, `noshop`, `anon`, widths). The scripts need the dev stack (web :3000, API :8000) and use Playwright from `packages/web`.
@@ -112,6 +114,26 @@ Spec-versus-code gaps are not just listed; they are part of the flow and get fix
 3. A full new AI pass over the whole map finds nothing new.
 4. The usual suites are green: backend end-to-end (`scripts/speedup/run-sharded.sh 8`), front-end Playwright (both projects), unit tests, lint and type check.
 
+## Adding a new feature to the flow (checklist)
+
+Use this when a new page or capability is added (example: a "Team" page). Do the steps in this order; each step names the file or tool.
+
+1. **Mapper** (`prompts/mapper.md`): read page + spec + code and write `coverage/<area>.tsv` and `coverage/<area>.gaps.md` (one line per button, field, state, rule; id `<area>.<section>.<thing>`). Run `node scripts/aiqa/fingerprint.mjs <area>`.
+2. **Owner** skims the map and the gaps; gaps are fixed with tests (see "Gaps are fixed right away").
+3. **Testers** (`explore.sh <area>`, `prompts/tester.md`): one spec per group in `packages/web/tests/aiqa/<area>-<group>.spec.ts`, test titles with the line ids, annotation `aiqa-lines`; mark lines from results with `run-specs.mjs <area>` (never by hand). Findings go to `findings/<area>-<n>.md`, then the register.
+4. **Tracks to run again for the new area** (each README says where to edit):
+   - `odd-data`: add the new entity and its odd values to `tracks/odd-data/seed.mjs`, lines to `coverage/odd-data.tsv`, tests to `odd-data.spec.ts` (text in other scripts, long words, rounding money, currencies, time zones, volume).
+   - `fault-injection`: add the new actions to `fault-injection.spec.ts` (`LINE_IDS`, one "during" and one "after recovery" test each), lines to `coverage/fault-injection.tsv` for every dependency, and any new container to `CONTAINERS` in `tracks/fault-injection/run.mjs`; tell other testers, then `run.mjs --mark`.
+   - `seller-isolation`: seller A must not read or change seller B's data on every new endpoint (own-shop ids, foreign ids, foreign cursors): add to `packages/web/tests/seller-isolation.spec.ts` and the backend `*-isolation.e2e-spec.ts` files.
+   - `concurrency`: double click, two tabs, parallel requests on every new write; database check for impossible rows: add to `packages/web/tests/seller-concurrency.spec.ts` and the backend `*-concurrency.e2e-spec.ts` files.
+   - `a11y-browsers`: add the page states to `a11y-seller.spec.ts` (and the Firefox file list in `playwright.config.ts`).
+   - `security`: add the new folders to `WEB_DIRS`/`BACK_DIRS` and new routes to the Schemathesis path list in `tracks/security/run.sh`; a new rule needs a selftest sample.
+   - `code-coverage`: record the new specs with `QA_COVERAGE=1`, `report.mjs <area>`, turn unexecuted code into map lines.
+   - `mutation`: add the pure rule files (money, stock, permissions, paging) to `stryker.config.json` / `tracks/mutation/backend.sh`.
+   - `stateful`: add properties for new pure functions and a command model for the new entity.
+   - `prod-build`: add the pages to the monkey/fuzzer lists; `planted-bugs`: add one patch when you want the score to include the new area.
+5. `node scripts/aiqa/status.mjs` must show no `untested`/`blocked` line for the area and no "pass without ui" problem; `node scripts/aiqa/recheck.mjs all` keeps the map honest after later code changes.
+
 ## Tracks, limits
 
 All extra tracks (planted bugs, mutation, concurrency, isolation, prod build with monkey and fuzzer, accessibility and other browsers, human pass, code coverage, rule-based random tests, fresh-seed pass, security scanners) and the short list of things that keep the flow imperfect are in `TRACKS.md`.
@@ -119,3 +141,7 @@ All extra tracks (planted bugs, mutation, concurrency, isolation, prod build wit
 ## Invitation mail in the dev stack
 
 Mails do not go to Mailpit: the dev API uses an in-memory mailbox, read at `GET http://localhost:8000/api/dev/mailbox?to=<email>` (the invite link is `/invites/<token>`; poll for a few seconds; it keeps the last 50 mails and is emptied on API restart). The API must be started with `pnpm --filter api run start:dev:monolith` (it sets `DEV_MAILBOX_ENABLED=true`). `readInviteLink` in `packages/web/tests/helpers.ts` does this. So the VIEWER and STAFF roles ARE testable: invite, read the link, accept. Details: `findings/invite-mail.md`.
+
+## Real 429 rate limits in the dev stack
+
+The API lets 127.0.0.1 through the limiter (`RATE_LIMIT_ALLOW_IPS`). To get a real 429, call the API through the machine's LAN address (for example `http://192.168.55.6:8000`, find it with `hostname -I`) instead of localhost; the limiter then counts and answers 429 with `Retry-After`. Use this for every line blocked on "no real 429". Do not change the allow-list.
