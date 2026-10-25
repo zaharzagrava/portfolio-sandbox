@@ -155,3 +155,5 @@ There is exactly ONE front-end suite (`npx playwright test`) and ONE backend sui
 - Cheap tests: log in by API, create the seller/shop once per file (beforeAll), no fixed sleeps, phone project only for specs about the phone layout, one desktop run for everything else.
 - The map (`coverage/<area>.tsv`) records which existing or new test covers each line (the `aiqa-lines` annotation can be added to an existing test). The map is the sync between the AI QA flow and the suite; it is never a reason for a new file.
 - Slow or special runs (container pausing, the 10,000-product seed, 12-minute auction, 49-minute photo purge) are not part of the normal run and are gated by an env switch.
+
+Full binding rules for FE and BE (one suite, scenario ids in titles, performance budget): docs/work/architecture/test-suite-rules.md. The SDD flow (scripts/sdd) follows the same file.

@@ -27,3 +27,5 @@ New lines you discover: append them with `printf '...\n' >> scripts/aiqa/coverag
 Put your bug findings in scripts/aiqa/findings/{{AREA}}-{{PASS}}.md (your own file, so no clash); number them F1, F2... prefixed by your pass, e.g. P3F1.
 
 ONE SUITE RULE (see scripts/aiqa/README.md): do not add a parallel suite or a pile of new files. Search the existing tests first; extend or fix them; new tests go into the existing feature file; keep the whole suite inside its time budget (front end about 9 to 10 minutes). Cheap tests: API login, seller/shop once per file, no sleeps, phone only for phone-layout specs.
+
+TEST SUITE RULES: before writing or changing any test, read docs/work/architecture/test-suite-rules.md (one unified suite for front end and backend, titles carry the capability and scenario id, performance budget, cheap tests). Do not add duplicate or parallel tests; the suite time budget is part of done.

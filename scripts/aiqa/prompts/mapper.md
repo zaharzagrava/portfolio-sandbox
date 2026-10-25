@@ -18,3 +18,5 @@ What to do:
    - One line per control AND one line per rule/behavior that is not already one control (for example "double press sends one request"). Expect 60 to 200 lines for a page. Do not merge different buttons into one line. Do not invent controls that are not in the code.
 4. Write scripts/aiqa/coverage/{{AREA}}.gaps.md with three plain lists: (a) in the code but not in the spec, (b) in the spec but not found in the code (likely bugs), (c) spec and code disagree (quote both). Each with file paths.
 5. Run `node scripts/aiqa/status.mjs {{AREA}}` and fix format problems. Finish with a short plain-language summary: number of lines, number of gaps found per list, anything you could not map.
+
+TEST SUITE RULES: before writing or changing any test, read docs/work/architecture/test-suite-rules.md (one unified suite for front end and backend, titles carry the capability and scenario id, performance budget, cheap tests). Do not add duplicate or parallel tests; the suite time budget is part of done.

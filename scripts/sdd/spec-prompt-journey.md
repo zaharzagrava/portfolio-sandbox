@@ -59,3 +59,5 @@ Also write these two files next to `spec.md`:
   progress. For each, name the domain that must fix it. This is the implementation agent's to-do list.
 
 Finish by running the spec quality checklist as the command describes. Don't modify code.
+
+TEST SUITE RULES: before writing or changing any test, read docs/work/architecture/test-suite-rules.md (one unified suite for front end and backend, titles carry the capability and scenario id, performance budget, cheap tests). Do not add duplicate or parallel tests; the suite time budget is part of done.
