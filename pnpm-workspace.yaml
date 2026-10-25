@@ -23,6 +23,12 @@ allowBuilds:
   tree-sitter-json: true
   unrs-resolver: true
   workerd: true
+# Advisory fixes that sit below a major jump (B-058): platform-express 11 still asks for multer 2.4.
+overrides:
+  multer: '>=2.5.0'
+  follow-redirects: '>=1.16.1'
+  body-parser: '>=2.4.0'
+  'js-yaml@5': '>=5.4.1 <6'
 minimumReleaseAgeExclude:
   - '@next/env@16.3.8'
   - '@next/eslint-plugin-next@16.3.8'
