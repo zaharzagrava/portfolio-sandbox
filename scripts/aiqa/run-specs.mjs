@@ -17,20 +17,23 @@ const area = args.find((a) => !a.startsWith('--'));
 if (!area || !areas().includes(area)) { console.error('usage: run-specs.mjs <area> [--all] [--dry] [--no-recheck]'); process.exit(2); }
 const dry = flags.has('--dry'), all = flags.has('--all');
 const WEB = join(REPO, 'packages', 'web');
-const SPEC_DIR = join(WEB, 'tests', 'seller');
+const TESTS = join(WEB, 'tests');
+const SPEC_DIR = join(TESTS, 'seller');
 const specFiles = (dir, rel = '') => existsSync(dir) ? readdirSync(dir, { withFileTypes: true }).flatMap((e) => e.isDirectory() ? specFiles(join(dir, e.name), `${rel}${e.name}/`) : e.name.endsWith('.spec.ts') ? [`${rel}${e.name}`] : []) : [];
 
 // 1. which lines does each spec file cover (static read of the annotations)
 const coverage = new Map(); // file -> Set(lineId)
-if (existsSync(SPEC_DIR)) {
-  for (const f of specFiles(SPEC_DIR)) {
-    const text = readFileSync(join(SPEC_DIR, f), 'utf8');
+// the area folders, the merged cross-cutting spec at the tests root, and the gated tracks (tests/track, env AIQA_ODD / AIQA_FAULT)
+const SPEC_FILES = [...specFiles(SPEC_DIR).map((f) => `seller/${f}`), ...specFiles(join(TESTS, 'track'), 'track/'), ...(existsSync(TESTS) ? readdirSync(TESTS).filter((n) => /^seller-.*\.spec\.ts$/.test(n)) : [])];
+if (SPEC_FILES.length) {
+  for (const f of SPEC_FILES) {
+    const text = readFileSync(join(TESTS, f), 'utf8');
     const ids = new Set();
     for (const m of text.matchAll(/type:\s*['"]aiqa-lines['"]\s*,\s*description:\s*(['"`])([\s\S]*?)\1/g)) m[2].split(/[\s,]+/).filter((i) => i.startsWith(`${area}.`)).forEach((i) => ids.add(i));
     // specs that annotate through a helper (lines('id', ...)) or in a table of ids: any known line id of the area written in the file counts
     const knownIds = new Set(loadMap(area).map((r) => r.id));
     for (const m of text.matchAll(/[a-z][a-z0-9-]*(?:\.[a-z0-9-]+){2,}/g)) if (knownIds.has(m[0])) ids.add(m[0]);
-    if (ids.size) coverage.set(`tests/seller/${f}`, ids);
+    if (ids.size) coverage.set(`tests/${f}`, ids);
   }
 }
 if (!coverage.size) { console.log('no spec in packages/web/tests/seller annotates lines of this area yet (annotation type "aiqa-lines")'); process.exit(0); }
@@ -57,7 +60,7 @@ if (dry || !chosen.length) process.exit(0);
 // 4. run
 const out = join(COVERAGE, `.run-specs-${area}.json`);
 rmSync(out, { force: true });
-const run = spawnSync('npx', ['playwright', 'test', ...chosen, '--reporter=json'], { cwd: WEB, env: { ...process.env, PLAYWRIGHT_JSON_OUTPUT_NAME: out }, stdio: ['ignore', 'ignore', 'inherit'] });
+const run = spawnSync('npx', ['playwright', 'test', ...chosen, '--reporter=json'], { cwd: WEB, env: { ...process.env, AIQA_ODD: area === 'odd-data' ? '1' : process.env.AIQA_ODD, PLAYWRIGHT_JSON_OUTPUT_NAME: out }, stdio: ['ignore', 'ignore', 'inherit'] });
 if (!existsSync(out)) { console.error(`Playwright produced no report (exit ${run.status})`); process.exit(1); }
 const report = JSON.parse(readFileSync(out, 'utf8'));
 rmSync(out, { force: true });

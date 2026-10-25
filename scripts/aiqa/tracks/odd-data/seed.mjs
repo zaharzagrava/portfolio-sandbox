@@ -4,7 +4,7 @@
 // Products go through the real API (so outbox, search index and projections run as in production); the rate limiter counters are
 // cleared between batches (the same thing packages/web/tests/helpers.ts does). The shop gets the Pro plan by SQL like dev-seed.ts.
 // Orders have no seller-side API (they come from buyers' checkouts), so the 5,000 slices are written by SQL into BisOrder/BisOrderItem/ShopOrder.
-// Result: /tmp/fe/odd-data.json (shop id, login, counts) which packages/web/tests/seller/cross-cutting/odd-data.spec.ts reads.
+// Result: /tmp/fe/odd-data.json (shop id, login, counts) which packages/web/tests/track/odd-data.spec.ts reads.
 import { createRequire } from 'node:module';
 import { readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';

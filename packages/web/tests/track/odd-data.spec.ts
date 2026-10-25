@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
-import { resetRateLimits, sellerCall } from '../../helpers';
-import { shopPath } from './support';
+import { resetRateLimits, sellerCall } from '../helpers';
+import { shopPath } from '../seller/cross-cutting/support';
 
 /**
  * AI QA, track "odd-data" (map: scripts/aiqa/coverage/odd-data.tsv, how to use it: scripts/aiqa/tracks/odd-data/README.md).
@@ -9,7 +9,7 @@ import { shopPath } from './support';
  * (six scripts, emoji, right-to-left text, very long words, zero-width and combining characters, prices at rounding edges, stock at
  * 0 / 1 / 5 / 6 / 1,000,000,000, orders around midnight UTC at month, year, leap-day and DST boundaries, products and orders in
  * JPY / KWD / BHD / USD). The seed writes the manifest `/tmp/fe/odd-data.json` (override with the env variable ODD_DATA_FILE).
- * Without that file every test here skips itself, so the normal suite is not affected.
+ * Without AIQA_ODD=1 and that file every test here skips itself, so the normal suite is not affected.
  *
  * One test per map line; the line id is in the title and in the `aiqa-lines` annotation. Every list is read twice: through the real API
  * (the saved truth) and on the screen; the two must agree. Nothing here changes data except the `edit-price-*` tests (they edit EDGE
@@ -226,7 +226,7 @@ const EDGE_STOCKS: [string, number][] = [
 ];
 
 test.describe('Odd data: the shop with 10,000 products and 5,000 orders', () => {
-  test.skip(!loaded, `${FILE} is missing: run "node scripts/aiqa/tracks/odd-data/seed.mjs" first (or set ODD_DATA_FILE)`);
+  test.skip(process.env.AIQA_ODD !== '1' || !loaded, `${FILE} is missing: run "node scripts/aiqa/tracks/odd-data/seed.mjs" first (or set ODD_DATA_FILE)`);
 
   test.beforeEach(async ({ page }) => {
     await signIn(page);
@@ -581,7 +581,7 @@ test.describe('Odd data: the shop with 10,000 products and 5,000 orders', () => 
 
   test('[odd-data.orders.subtotal-currency-jpy, odd-data.orders.subtotal-currency-kwd] unit: formatMoney gives the exact text for 0, 2 and 3 fraction digits and for the rounding-edge prices', async () => {
     lines('odd-data.orders.subtotal-currency-jpy', 'odd-data.orders.subtotal-currency-kwd');
-    const { formatMoney } = await import('../../../lib/utils');
+    const { formatMoney } = await import('../../lib/utils');
     expect(formatMoney(1234, 'JPY')).toBe('¥1,234');
     expect(squash(formatMoney(1234567, 'KWD'))).toBe('KWD 1,234.567');
     expect(squash(formatMoney(1, 'KWD'))).toBe('KWD 0.001');

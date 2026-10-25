@@ -17,8 +17,8 @@ Decided with the owner on 2026-10-25. First built and run on the four areas (ent
 10. `fresh-seed-pass`: DROPPED on 2026-10-25 (see order of a full round).
 11. `security`: scanners on the four areas: Semgrep (code rules, run from Docker), Schemathesis (API fuzz from the OpenAPI document `GET /v1/openapi.json`, run from Docker against the production-build stack), OWASP ZAP baseline scan against the production build (Docker), plus dependency audit (`pnpm audit`) and a secrets scan (gitleaks). Findings go to the register like any bug; real ones are fixed with a test.
 
-12. `fault-injection`: freeze ONE helper service (database, Redis, Kafka, search, storage, queue ...) for under 5 minutes while the spec presses real buttons, then unfreeze and check: an honest message within 25 seconds, no fake success, one clean retry, data consistent, outbox published. Runner `scripts/aiqa/tracks/fault-injection/run.mjs`; map `coverage/fault-injection.tsv`; spec `packages/web/tests/seller/cross-cutting/fault-injection.spec.ts` (skips itself unless the runner sets `AIQA_FAULT=1`).
-13. `odd-data`: one throwaway shop with 10,000 products and 5,000 orders full of odd data (six scripts, emoji, right-to-left, 120-letter words, rounding prices, currencies with 0/2/3 decimals, instants around midnight UTC viewed from far time zones). Seed `scripts/aiqa/tracks/odd-data/seed.mjs`; map `coverage/odd-data.tsv`; spec `packages/web/tests/seller/cross-cutting/odd-data.spec.ts` (skips itself without `/tmp/fe/odd-data.json`).
+12. `fault-injection`: freeze ONE helper service (database, Redis, Kafka, search, storage, queue ...) for under 5 minutes while the spec presses real buttons, then unfreeze and check: an honest message within 25 seconds, no fake success, one clean retry, data consistent, outbox published. Runner `scripts/aiqa/tracks/fault-injection/run.mjs`; map `coverage/fault-injection.tsv`; spec `packages/web/tests/track/fault-injection.spec.ts` (skips itself unless the runner sets `AIQA_FAULT=1`).
+13. `odd-data`: one throwaway shop with 10,000 products and 5,000 orders full of odd data (six scripts, emoji, right-to-left, 120-letter words, rounding prices, currencies with 0/2/3 decimals, instants around midnight UTC viewed from far time zones). Seed `scripts/aiqa/tracks/odd-data/seed.mjs`; map `coverage/odd-data.tsv`; spec `packages/web/tests/track/odd-data.spec.ts` (skips itself unless AIQA_ODD=1 and `/tmp/fe/odd-data.json` exist).
 14. `flaky-history`: every run of the Playwright and backend suites appends one line per test (name, result, duration, date, commit) to a history file; `scripts/aiqa/flaky.mjs` prints tests that failed and passed on the same commit, or failed more than once in the last 20 runs. A test on that list is a bug to investigate, never to retry.
 
 ## Where every track lives (map, test, README)
@@ -37,8 +37,8 @@ Each track folder under `scripts/aiqa/tracks/<name>/` has a `README.md` in plain
 | code-coverage | `tracks/code-coverage/README.md` | adds `<area>.coverage.*` lines | none | `tracks/code-coverage/report.mjs` |
 | stateful | `tracks/stateful/README.md` | lines in each area map | `lib/seller/seller-logic.property.test.ts`, `product-lifecycle.stateful.e2e-spec.ts` | Vitest, backend test stack |
 | security | `tracks/security/README.md` | none (`findings/security*.md`) | Semgrep rules + selftest | `tracks/security/run.sh` |
-| fault-injection | `tracks/fault-injection/README.md` | `coverage/fault-injection.tsv` | `tests/seller/cross-cutting/fault-injection.spec.ts` | `tracks/fault-injection/run.mjs` |
-| odd-data | `tracks/odd-data/README.md` | `coverage/odd-data.tsv` | `tests/seller/cross-cutting/odd-data.spec.ts` | `tracks/odd-data/seed.mjs` + Playwright |
+| fault-injection | `tracks/fault-injection/README.md` | `coverage/fault-injection.tsv` | `tests/track/fault-injection.spec.ts` | `tracks/fault-injection/run.mjs` |
+| odd-data | `tracks/odd-data/README.md` | `coverage/odd-data.tsv` | `tests/track/odd-data.spec.ts` | `tracks/odd-data/seed.mjs` + Playwright |
 | flaky-history | `tracks/flaky-history/README.md` | none | reporters in `tests/support/` and `backend/test/` | `scripts/aiqa/flaky.mjs` |
 
 ## A new feature: which tracks to run again

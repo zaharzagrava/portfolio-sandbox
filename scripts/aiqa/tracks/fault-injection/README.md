@@ -5,7 +5,7 @@ Plain words: the app talks to a database, a cache (Redis), a message queue (Kafk
 Files:
 
 - `run.mjs` (this folder): the runner that freezes and unfreezes containers.
-- `packages/web/tests/seller/cross-cutting/fault-injection.spec.ts`: the permanent test (skips itself unless the runner started it).
+- `packages/web/tests/track/fault-injection.spec.ts`: the permanent test (skips itself unless the runner started it).
 - `scripts/aiqa/coverage/fault-injection.tsv`: the map. Line ids: `fault.<dependency>.<action>`, for example `fault.postgres.create-product`, `fault.redis.inventory-load`, `fault.minio.photo-upload`, `fault.kafka.outbox-published`.
 - `scripts/aiqa/findings/tracks-12-13.md`: findings of the first run (B-089, B-090, B-091 in `docs/work/qa-bug-register.md`).
 

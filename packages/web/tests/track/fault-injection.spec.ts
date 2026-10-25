@@ -2,9 +2,9 @@ import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } fr
 import { createRequire } from 'node:module';
 import path from 'node:path';
 import { expect, test, type BrowserContext, type Page } from '@playwright/test';
-import { API_URL, register, resetRateLimits, sellerCall } from '../../helpers';
-import { PIXEL_PNG, readGallery, readProduct, shopPath, tokenOf, uniqueTitle } from './support';
-import { openShopByApi } from '../../seller-setup';
+import { API_URL, register, resetRateLimits, sellerCall } from '../helpers';
+import { PIXEL_PNG, readGallery, readProduct, shopPath, tokenOf, uniqueTitle } from '../seller/cross-cutting/support';
+import { openShopByApi } from '../seller-setup';
 
 /**
  * AI QA, track "fault-injection" (map: scripts/aiqa/coverage/fault-injection.tsv, how to use it: scripts/aiqa/tracks/fault-injection/README.md).
@@ -74,7 +74,7 @@ async function waitFlag(name: string, ms: number) {
 
 // ---- direct database read of the outbox (the same connection settings the seed scripts use)
 function dbClient() {
-  const backend = path.resolve(__dirname, '../../../../backend');
+  const backend = path.resolve(__dirname, '../../../backend');
   const req = createRequire(path.join(backend, 'package.json'));
   const { Client } = req('pg');
   const env = Object.fromEntries(

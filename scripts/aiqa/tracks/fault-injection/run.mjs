@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Track 12 fault-injection runner. Pauses ONE dependency container of the running dev stack while
-// packages/web/tests/seller/cross-cutting/fault-injection.spec.ts does its actions, then unpauses it and lets the spec check the recovery.
+// packages/web/tests/track/fault-injection.spec.ts does its actions, then unpauses it and lets the spec check the recovery.
 //   node scripts/aiqa/tracks/fault-injection/run.mjs [--mark] postgres redis kafka elasticsearch minio scylla elasticmq clamav clickhouse
 //   (no dependency = all of them, one after the other; "db" is accepted for "postgres")
 //   --mark: after each run, write the result of every map line (scripts/aiqa/coverage/fault-injection.tsv) with scripts/aiqa/mark.mjs
@@ -74,7 +74,7 @@ for (const dep of wanted) {
   const raise = (f) => writeFileSync(path.join(dir, f), String(Date.now()));
   console.log(`\n=== ${dep} (${container}) ===`);
   const log = path.join(dir, 'playwright.log');
-  const child = spawn('npx', ['playwright', 'test', 'tests/seller/cross-cutting/fault-injection.spec.ts', '--project=desktop', '--workers=1', '--reporter=list,json'], {
+  const child = spawn('npx', ['playwright', 'test', 'tests/track/fault-injection.spec.ts', '--project=desktop', '--workers=1', '--reporter=list,json'], {
     cwd: path.join(root, 'packages/web'), env: { ...process.env, AIQA_FAULT: '1', FAULT_DEP: dep, FAULT_DIR: dir, PW_EXPECT_TIMEOUT_MS: '10000', PLAYWRIGHT_JSON_OUTPUT_NAME: path.join(dir, 'report.json') }, stdio: ['ignore', 'pipe', 'pipe'],
   });
   let exited = false; let out = '';

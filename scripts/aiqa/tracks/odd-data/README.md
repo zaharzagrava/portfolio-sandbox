@@ -5,7 +5,7 @@ Plain words: the normal tests use tidy data ("Blue Mug", price 19.99, 3 products
 Files:
 
 - `seed.mjs` builds the data (this folder).
-- `packages/web/tests/seller/cross-cutting/odd-data.spec.ts` is the permanent test, one test per map line.
+- `packages/web/tests/track/odd-data.spec.ts` is the permanent test, one test per map line.
 - `scripts/aiqa/coverage/odd-data.tsv` is the map (one line per data shape x page). Line ids look like `odd-data.inventory.long-word-no-spaces`.
 - `scripts/aiqa/findings/tracks-12-13.md` holds the first run's findings (B-086, B-087, B-088, B-092 in `docs/work/qa-bug-register.md`).
 
@@ -31,9 +31,9 @@ The map-driven testers use small clean data; the stateful and mutation tracks ch
 ```
 node scripts/aiqa/tracks/odd-data/seed.mjs                  # builds the shop, writes /tmp/fe/odd-data.json
 cd packages/web
-npx playwright test tests/seller/cross-cutting/odd-data.spec.ts --project=desktop --workers=1 --output=/tmp/my-odd
-npx playwright test tests/seller/cross-cutting/odd-data.spec.ts --project=mobile  --workers=1 --grep-invert paging    # phone width, without the long walks
-npx playwright test tests/seller/cross-cutting/odd-data.spec.ts --grep "odd-data.orders.date"                         # a subset
+AIQA_ODD=1 npx playwright test tests/track/odd-data.spec.ts --project=desktop --workers=1 --output=/tmp/my-odd
+AIQA_ODD=1 npx playwright test tests/track/odd-data.spec.ts --project=mobile  --workers=1 --grep-invert paging    # phone width, without the long walks
+AIQA_ODD=1 npx playwright test tests/track/odd-data.spec.ts --grep "odd-data.orders.date"                         # a subset
 node scripts/aiqa/run-specs.mjs odd-data [--all] [--dry]    # runs the spec when a line is untested and marks the lines from the result
 node scripts/aiqa/status.mjs odd-data                       # what is still untested
 ```
