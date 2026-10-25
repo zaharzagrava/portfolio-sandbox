@@ -2,19 +2,19 @@ import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import path from 'node:path';
 import { expect, type Page } from '@playwright/test';
-import { NEW_USER_PASSWORD, register, resetRateLimits, sellerCall, shopPath } from '../../helpers';
-import { openShopByApi } from '../../seller-setup';
-import { tokenOf, type Member } from '../cross-cutting/support';
+import { NEW_USER_PASSWORD, register, resetRateLimits, sellerCall, shopPath } from '../helpers';
+import { openShopByApi } from '../seller-setup';
+import { tokenOf, type Member } from '../seller/cross-cutting/support';
 
 /**
- * Set-up shared by the AI QA specs of the inventory page (`tests/aiqa/inventory-*.spec.ts`). The members and shops are the specs'
+ * Set-up shared by the AI QA specs of the inventory page (`seller-inventory*.spec.ts`). The members and shops are the specs'
  * own; the database is read with the connection settings the seed scripts use, only to check what the page and the API claim.
  */
 
 export type Seed = { title: string; quantity?: number; priceMinor?: number; currency?: string };
 
 function dbClient() {
-  const backend = path.resolve(__dirname, '../../../../backend');
+  const backend = path.resolve(__dirname, '../../../backend');
   const { Client } = createRequire(path.join(backend, 'package.json'))('pg');
   const env = Object.fromEntries(
     readFileSync(path.join(backend, '.env'), 'utf8')
@@ -94,4 +94,57 @@ export async function openInventory(page: Page, member: Member, shopId: string, 
 /** The cells of every body row: name, price, stock, status text. */
 export async function tableRows(page: Page): Promise<string[][]> {
   return page.locator('tbody tr').evaluateAll((rows) => rows.map((row) => [...row.children].slice(0, 4).map((cell) => (cell as HTMLElement).innerText.replace(/\s+/g, ' ').trim())));
+}
+
+/** Set-up shared by the AI QA specs of the inventory writes (edit, stock, archive, restore): rows read back from the real database. */
+
+export const menuButton = (page: Page, title: string) => page.getByRole('button', { name: `Actions for ${title}`, exact: true });
+
+export async function openRowAction(page: Page, title: string, item: string) {
+  await menuButton(page, title).click();
+  await page.getByRole('menuitem', { name: item, exact: true }).click();
+}
+
+/** The product row as the database holds it. */
+export async function productRow(id: string) {
+  const row = (await sql<{ title: string; brand: string; category: string; description: string; priceMinor: number; price: unknown; quantity: number; version: number; status: string; currency: string; tags: unknown }>(
+    `SELECT title, brand, category, description, "priceMinor", price, quantity, version, status, currency, tags FROM "Product" WHERE id = $1`,
+    [id],
+  ))[0];
+  expect(row, `product ${id} exists`).toBeTruthy();
+  return row;
+}
+
+export type OutboxRow = { topic: string; eventName: string; aggregateVersion: number; changedFields: string[] | null; status: unknown; quantity: number | null };
+
+/** Every outbox row of a product, oldest first. */
+export async function outboxOf(id: string): Promise<OutboxRow[]> {
+  return sql<OutboxRow>(
+    `SELECT topic, "eventName", (payload->>'aggregateVersion')::int AS "aggregateVersion", payload->'payload'->'changedFields' AS "changedFields",
+            payload->'payload'->>'status' AS status, (payload->'payload'->>'quantity')::int AS quantity
+       FROM "Outbox" WHERE "aggregateId" = $1 AND "aggregateType" = 'products' ORDER BY "createdAt", id`,
+    [id],
+  );
+}
+
+export const historyOf = (id: string) =>
+  sql<{ fromStatus: string; toStatus: string; productVersion: number; actorId: string | null }>(
+    `SELECT "fromStatus", "toStatus", "productVersion", "actorId" FROM "ProductStatusHistory" WHERE "productId" = $1 ORDER BY at, id`,
+    [id],
+  );
+
+export const indexRow = async (id: string) =>
+  (await sql<{ title: string; status: string; quantity: number; priceMinor: number }>(`SELECT title, status, quantity, "priceMinor" FROM "SearchShopProduct" WHERE "productId" = $1`, [id]))[0];
+
+/**
+ * Waits until the search index (SearchShopProduct, filled from the outbox by the poller in batches) holds `count` rows of the shop, and,
+ * when `archived` is given, that product as ARCHIVED. Polls the database quickly instead of reloading a page; the bound stays at 60 s.
+ */
+export async function waitIndexed(shopId: string, count: number, opts: { archived?: string } = {}): Promise<void> {
+  await expect
+    .poll(async () => Number((await sql<{ n: number }>(`SELECT count(*)::int AS n FROM "SearchShopProduct" WHERE "shopId" = $1`, [shopId]))[0].n), { timeout: 60_000, intervals: [100, 200, 300] })
+    .toBe(count);
+  if (opts.archived) {
+    await expect.poll(async () => (await indexRow(opts.archived as string))?.status, { timeout: 60_000, intervals: [100, 200, 300] }).toBe('ARCHIVED');
+  }
 }
