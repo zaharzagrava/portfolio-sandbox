@@ -24,13 +24,15 @@ vi.mock(joseOfEdgeWorker, () => ({
   },
 }));
 
-// Loaded after the (hoisted) `jose` mock; Vitest cannot `require` a .ts file the way Jest's transform could.
-const worker = (await import('../../../../edge-be/src/index')) as unknown as {
+type EdgeWorker = {
   default: {
     fetch: (r: Request, env: unknown, ctx: unknown) => Promise<Response>;
   };
   edgeRateLimitStats: { failOpen: number };
 };
+// Loaded after the (hoisted) `jose` mock; Vitest cannot `require` a .ts file the way Jest's transform could. Loaded in
+// `beforeAll`, not at the top level: this package compiles as CommonJS, where top-level `await` is not allowed.
+let worker: EdgeWorker;
 
 describe('S50 edge worker (e2e, real Redis)', () => {
   let a: LimiterInstance;
@@ -50,6 +52,9 @@ describe('S50 edge worker (e2e, real Redis)', () => {
   };
 
   beforeAll(async () => {
+    // a variable specifier: the type checker must not pull the edge package's Workers-typed sources into this program
+    const entry = '../../../../edge-be/src/index';
+    worker = (await import(entry)) as EdgeWorker;
     a = await createLimiter();
   });
 

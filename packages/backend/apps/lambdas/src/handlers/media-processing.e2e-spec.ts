@@ -39,7 +39,7 @@ describe('Media-processing Lambda handler', () => {
       },
     });
     // loaded only now: the handler reads its environment when the module is evaluated
-    ({ handler } = (await import('./media-processing')) as {
+    ({ handler } = (await import('./media-processing.js')) as {
       handler: typeof handler;
     });
   });

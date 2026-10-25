@@ -544,7 +544,7 @@ describe('Product concurrency', () => {
 
   describe('reads while products change', () => {
     it('S05 AS-14: paging through 12 products while new ones are created and others archived shows no product twice and none from another shop', async () => {
-      const mine = [];
+      const mine: string[] = [];
       for (let i = 0; i < 12; i += 1) mine.push((await make({ title: `Mine ${i}` })).id);
       const other = await createShopWorld(t);
       await t
