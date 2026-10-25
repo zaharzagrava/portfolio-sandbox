@@ -6,7 +6,7 @@ P3F1 [CONFIRMED] low "Update stock" pressed twice within a few milliseconds send
 Steps: Adjust stock, type a number, double-click "Update stock" (or hold Enter). 
 Expected (W04.R-23, map line inventory.stock.double-press): one request.
 Actual: the guard is `if (adjust.isPending) return;` on React state, which only flips a moment after the first press. Two presses in the same few milliseconds send two PATCHes (first 200, second 409 version_conflict). The Archive dialog (ref guard in confirm-dialog.tsx) and the Edit form send only one.
-Evidence: tests/aiqa/inventory-stock.spec.ts [inventory.stock.double-press] fails desktop and mobile (statuses [200, 409]). Likely harmless for a human double click, real for a held Enter key.
+Evidence: tests/seller/inventory/stock.spec.ts [inventory.stock.double-press] fails desktop and mobile (statuses [200, 409]). Likely harmless for a human double click, real for a held Enter key.
 
 P3F2 [CONFIRMED] medium Archive dialog is a dead end after a version conflict, and "archived elsewhere" is reported as "changed since you opened it"
 Steps: open Archive on a row, change or archive the same product elsewhere (second tab, API), press "Archive product".

@@ -1,13 +1,15 @@
 # Findings, tracks 12 (fault injection) and 13 (odd data)
 
+Note (after the first run): the specs were renamed and split into one test per map line: `packages/web/tests/seller/cross-cutting/odd-data.spec.ts` (maps `coverage/odd-data.tsv`; old ids ODD-01..14 became `odd-data.*` line ids) and `packages/web/tests/seller/cross-cutting/fault-injection.spec.ts` (`coverage/fault-injection.tsv`; old FI-01..09 became `fault.<dependency>.<action>`). The text below is the record of the first run and keeps the old ids.
+
 Run on 2026-10-25 against the dev stack (compose project sddqa081903, containers `payment_system_*`), API :8000, web :3000 (dev server).
 Nothing in product code was changed; the failing checks stay unskipped.
 
 ## How to repeat
 
-- Track 13: `node scripts/aiqa/tracks/odd-data/seed.mjs` (about 4 minutes: new seller + new shop on the Pro plan, 10,000 products through the API, 150 archived, 5,000 order slices by SQL, four products in JPY/KWD/BHD/USD by SQL). It writes `/tmp/fe/odd-data.json`. Then in `packages/web`: `npx playwright test tests/seller-odd-data.spec.ts --project=desktop` (and `--project=mobile`). The two full-walk specs (ODD-03, ODD-04) take 4 to 7 minutes each.
+- Track 13: `node scripts/aiqa/tracks/odd-data/seed.mjs` (about 4 minutes: new seller + new shop on the Pro plan, 10,000 products through the API, 150 archived, 5,000 order slices by SQL, four products in JPY/KWD/BHD/USD by SQL). It writes `/tmp/fe/odd-data.json`. Then in `packages/web`: `npx playwright test tests/seller/cross-cutting/odd-data.spec.ts --project=desktop` (and `--project=mobile`). The two full-walk specs (ODD-03, ODD-04) take 4 to 7 minutes each.
   The run of 2026-10-25 used the shop `Odd Data Shop mvni1axm`, login `odd-seller-mvni1axm@example.com`, shop id `01a171ef-6c6b-7579-8459-2a880a20da04`.
-- Track 12: `node scripts/aiqa/tracks/fault-injection/run.mjs <db|redis|kafka|elasticsearch|minio|scylla|elasticmq|clamav|clickhouse>` (no argument = all). It pauses ONE container (`docker pause`) while `packages/web/tests/seller-fault-injection.spec.ts` acts, writes the window to `/tmp/fe/fault-window.txt`, unpauses on exit/crash/Ctrl-C. Per-run evidence: `/tmp/fe/fault/<dep>/{observations.json,trace.log,playwright.log}`.
+- Track 12: `node scripts/aiqa/tracks/fault-injection/run.mjs <db|redis|kafka|elasticsearch|minio|scylla|elasticmq|clamav|clickhouse>` (no argument = all). It pauses ONE container (`docker pause`) while `packages/web/tests/seller/cross-cutting/fault-injection.spec.ts` acts, writes the window to `/tmp/fe/fault-window.txt`, unpauses on exit/crash/Ctrl-C. Per-run evidence: `/tmp/fe/fault/<dep>/{observations.json,trace.log,playwright.log}`.
 
 ## What passed (so it is not re-checked)
 
@@ -28,7 +30,7 @@ Nothing in product code was changed; the failing checks stay unskipped.
 - Expected (map `inventory.list.row-name` "long names wrap", `inventory.page.phone-layout` "nothing scrolls sideways", W04 R-28): a title of 100+ characters with no spaces wraps or is cut inside the table, the page never scrolls sideways.
 - Steps: open `/dashboard/seller/01a171ef-6c6b-7579-8459-2a880a20da04/inventory` at 1280 px wide (project `desktop`). Page 1 holds `A` + 120 times `b` and `Pneumonoultramicroscopic...xxxx` titles.
 - Actual: the table grows to the word: the page scrolls sideways, `scrollWidth` 1492 against 1280 (table spans x 288..1492; Stock, Status and Actions columns are off screen). The same on `?status=ARCHIVED` (1477), `?inStock=false` (1340), search `#09991` (1382), `#09987` (1284), `#09994` (1492). The cell has `break-words`, which does not lower the minimum width of a table cell; `overflow-wrap: anywhere` or `table-layout: fixed` / `min-w-0` would.
-- Evidence: `seller-odd-data.spec.ts` ODD-05, ODD-06, ODD-08, ODD-14 (desktop). At 390 px the same pages pass (the table becomes cards).
+- Evidence: `tests/seller/cross-cutting/odd-data.spec.ts` (first-run ids ODD-05, ODD-06, ODD-08, ODD-14, desktop). At 390 px the same pages pass (the table becomes cards).
 
 ### B-13-2 Order dates are shown in the server's time zone, not the viewer's, on a page load
 - Expected (W04 assumptions "Time", `packages/web/lib/seller/format-date.ts`: "a server timestamp in the viewer's zone with the UTC instant beside it"): the date column shows the time in the viewer's zone.

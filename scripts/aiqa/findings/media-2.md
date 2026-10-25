@@ -1,6 +1,6 @@
 # media, pass 2 (tester ai-tester, 2026-10-25)
 
-Method: executable specs per group in `packages/web/tests/aiqa/` (`media-gallery-edit`, `media-gallery-save`, `media-upload-states`, `media-backend`, helpers in `media-edit-support.ts`). Run: `cd packages/web && npx playwright test tests/aiqa/media-gallery-edit.spec.ts tests/aiqa/media-gallery-save.spec.ts tests/aiqa/media-upload-states.spec.ts tests/aiqa/media-backend.spec.ts --project=desktop --project=mobile --output=/tmp/<own folder>`. Failing tests below are left failing on purpose.
+Method: executable specs per group in `packages/web/tests/aiqa/` (`media-gallery-edit`, `media-gallery-save`, `media-upload-states`, `media-backend`, helpers in `media-edit-support.ts`). Run: `cd packages/web && npx playwright test tests/seller/media/gallery-edit.spec.ts tests/seller/media/gallery-save.spec.ts tests/seller/media/upload-states.spec.ts tests/seller/media/backend.spec.ts --project=desktop --project=mobile --output=/tmp/<own folder>`. Failing tests below are left failing on purpose.
 
 Predecessor check: `media-page.spec.ts` + `media-upload.spec.ts` re-run on desktop AND mobile: 42 passed, 12 failed; the 12 are exactly the 6 known findings P1F1 (not-signed-in), P1F2 (unknown-shop 200), P1F3 (archived-product), P1F4 (storage address on port 9000), P1F5 (animated PNG), P1F6 (files dropped silently), each on both projects. No new failure, nothing flaky.
 

@@ -11,7 +11,8 @@
     "start:e2e": "NEXT_DIST_DIR=.next-prod SITE_URL=https://localhost PAYMENT_PROVIDER_HOSTS=https://pay.example.test next start -p 3100",
     "lint": "eslint",
     "test": "vitest run",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "mutation:web": "stryker run"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",
@@ -56,6 +57,8 @@
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",
     "@playwright/test": "^1.63.0",
+    "@stryker-mutator/core": "^10.1.1",
+    "@stryker-mutator/vitest-runner": "^10.1.1",
     "@tailwindcss/postcss": "^4",
     "@testing-library/dom": "^10.4.2",
     "@testing-library/jest-dom": "^7.0.1",
@@ -69,6 +72,7 @@
     "esbuild": "^0.28.2",
     "eslint": "^9",
     "eslint-config-next": "16.3.8",
+    "fast-check": "^4.10.2",
     "jsdom": "^30.1.1",
     "msw": "^3.0.3",
     "tailwindcss": "^4",

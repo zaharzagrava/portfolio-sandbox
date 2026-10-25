@@ -17,12 +17,12 @@ P1F3 [CONFIRMED] low A 101 to 200 character search gives only "Check this field.
 Steps: type 101 (or 150, 200) letters in "Search your products", or open ?q=<150 letters>.
 Expected (gap list (c), W04.B-11 clear message): the person is told the text is too long (limit 100), or the box stops at 100.
 Actual: the page keeps up to 200 characters (search-params.ts), the API answers 400 validation_failed, the Products region shows "Check this field." and "Try again" (retry sends the same 400). No maxlength on the box. Hits at exactly 100 work.
-Evidence: tests/aiqa/inventory-search.spec.ts [inventory.search.long-text] (fails desktop and mobile); direct API 101 chars 400, 100 chars 200.
+Evidence: tests/seller/inventory/search.spec.ts [inventory.search.long-text] (fails desktop and mobile); direct API 101 chars 400, 100 chars 200.
 
 P1F4 [CONFIRMED] low A slow next page shows no busy state (W04.R-26 "old rows stay, dimmed, aria-busy")
 Steps: shop with 21 products, hold the request of the next-page address (cursor) for a few seconds, press "Next page".
 Expected (W04.R-26, AS-31): old rows stay, the table is aria-busy="true" and dimmed, paging links hidden until the new rows arrive.
 Actual: the next page is a server-rendered navigation seeded as initial data, so the client query is never in the placeholder state; table aria-busy stays "false", nothing is dimmed, and the "Next page" link stays pressable while the old page is shown (also for search and filters: a changed address is answered by the server render, not by the client query). The busy styling exists in code (inventory-view.tsx busy) but is only reachable when the server's first read failed.
-Evidence: tests/aiqa/inventory-search.spec.ts [inventory.paging.busy-dimmed] (fails desktop and mobile).
+Evidence: tests/seller/inventory/search.spec.ts [inventory.paging.busy-dimmed] (fails desktop and mobile).
 
 P1F5 [CONFIRMED] low Search lag note (gap list, info only): an archived product archived right after creation showed in the search only after the outbox relay caught up (a backlog of about 1900 pending outbox rows was on the stack at 07:27). Not counted as a bug; the spec polls up to 90 s.

@@ -1,0 +1,27 @@
+{
+  "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
+  "testRunner": "vitest",
+  "tsconfigFile": "tsconfig.stryker-skip.json",
+  "plugins": ["@stryker-mutator/vitest-runner"],
+  "vitest": { "configFile": "vitest.mutation.config.ts" },
+  "mutate": [
+    "lib/seller/money-input.ts",
+    "lib/seller/stock.ts",
+    "lib/seller/search-params.ts",
+    "lib/seller/permissions.ts",
+    "lib/seller/nav.ts",
+    "lib/api/seller-products.ts",
+    "lib/api/seller-orders.ts",
+    "lib/auth/return-to.ts",
+    "lib/auth/guards.ts"
+  ],
+  "coverageAnalysis": "perTest",
+  "reporters": ["clear-text", "json", "html"],
+  "jsonReporter": { "fileName": "reports/mutation/mutation.json" },
+  "htmlReporter": { "fileName": "reports/mutation/index.html" },
+  "tempDirName": ".stryker-tmp",
+  "cleanTempDir": true,
+  "timeoutMS": 20000,
+  "concurrency": 3,
+  "thresholds": { "high": 80, "low": 60, "break": null }
+}

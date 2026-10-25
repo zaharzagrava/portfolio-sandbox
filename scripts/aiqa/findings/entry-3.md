@@ -1,7 +1,7 @@
 # entry, pass 3 (ai-tester, 2026-10-25): findings
 
 Specs added in packages/web/tests/aiqa/: entry-switcher, entry-drawer, entry-banner, entry-offline, entry-api, entry-misc, entry-retry (reuse entry-support.ts, db.ts; invitations through `acceptInvite`, which takes the newest unused link).
-Run: `npx playwright test tests/aiqa/entry- --workers=2` (desktop and mobile 390 px projects; each drawer test sets 390 px itself).
+Run: `npx playwright test tests/seller/entry/ --workers=2` (desktop and mobile 390 px projects; each drawer test sets 390 px itself).
 The failing tests named below are left failing on purpose: each one is a finding.
 
 P3F1 [CONFIRMED] medium A long shop name with no spaces pushes the dashboard pages sideways at 390 px

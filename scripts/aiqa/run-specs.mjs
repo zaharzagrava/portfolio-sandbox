@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Runs the permanent Playwright specs (packages/web/tests/aiqa/*.spec.ts) that cover map lines needing a check, and marks the lines from the results.
+// Runs the permanent Playwright specs (packages/web/tests/seller/**/*.spec.ts) that cover map lines needing a check, and marks the lines from the results.
 // node scripts/aiqa/run-specs.mjs <area> [--all] [--dry] [--no-recheck]
 //   default: first recheck.mjs logic (changed lines go back to untested), then only specs that annotate an untested line of the area run.
 //   --all: every spec that annotates a line of the area runs, whatever the status.   --dry: only print what would run.
@@ -17,19 +17,23 @@ const area = args.find((a) => !a.startsWith('--'));
 if (!area || !areas().includes(area)) { console.error('usage: run-specs.mjs <area> [--all] [--dry] [--no-recheck]'); process.exit(2); }
 const dry = flags.has('--dry'), all = flags.has('--all');
 const WEB = join(REPO, 'packages', 'web');
-const SPEC_DIR = join(WEB, 'tests', 'aiqa');
+const SPEC_DIR = join(WEB, 'tests', 'seller');
+const specFiles = (dir, rel = '') => existsSync(dir) ? readdirSync(dir, { withFileTypes: true }).flatMap((e) => e.isDirectory() ? specFiles(join(dir, e.name), `${rel}${e.name}/`) : e.name.endsWith('.spec.ts') ? [`${rel}${e.name}`] : []) : [];
 
 // 1. which lines does each spec file cover (static read of the annotations)
 const coverage = new Map(); // file -> Set(lineId)
 if (existsSync(SPEC_DIR)) {
-  for (const f of readdirSync(SPEC_DIR).filter((n) => n.endsWith('.spec.ts'))) {
+  for (const f of specFiles(SPEC_DIR)) {
     const text = readFileSync(join(SPEC_DIR, f), 'utf8');
     const ids = new Set();
     for (const m of text.matchAll(/type:\s*['"]aiqa-lines['"]\s*,\s*description:\s*(['"`])([\s\S]*?)\1/g)) m[2].split(/[\s,]+/).filter((i) => i.startsWith(`${area}.`)).forEach((i) => ids.add(i));
-    if (ids.size) coverage.set(`tests/aiqa/${f}`, ids);
+    // specs that annotate through a helper (lines('id', ...)) or in a table of ids: any known line id of the area written in the file counts
+    const knownIds = new Set(loadMap(area).map((r) => r.id));
+    for (const m of text.matchAll(/[a-z][a-z0-9-]*(?:\.[a-z0-9-]+){2,}/g)) if (knownIds.has(m[0])) ids.add(m[0]);
+    if (ids.size) coverage.set(`tests/seller/${f}`, ids);
   }
 }
-if (!coverage.size) { console.log('no spec in packages/web/tests/aiqa annotates lines of this area yet (annotation type "aiqa-lines")'); process.exit(0); }
+if (!coverage.size) { console.log('no spec in packages/web/tests/seller annotates lines of this area yet (annotation type "aiqa-lines")'); process.exit(0); }
 
 // 2. stale lines go back to untested (same logic as recheck.mjs)
 const rows = loadMap(area), stored = readFps(area);

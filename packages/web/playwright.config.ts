@@ -21,6 +21,15 @@ const PHONE = { ...devices['Desktop Chrome'], viewport: { width: 390, height: 84
 const DESKTOP = { ...devices['Desktop Chrome'], viewport: { width: 1280, height: 800 } };
 
 /**
+ * Track 6: the specs of the four seller areas (entry, inventory, media, orders) also run in Firefox. (WebKit, the Safari engine, was dropped on 2026-10-25: not needed for now.)
+ * Only these files: the visual specs keep Chromium baselines, and the other specs are not part of the four areas. The projects exist
+ * only with PW_BROWSERS=1 (`npx playwright install firefox` first), so a normal run
+ * and the SDD gate are unchanged. Run: `PW_BROWSERS=1 npx playwright test --project=firefox-desktop`.
+ */
+const FOUR_AREAS = /(^|[\\/])(seller|seller-shop|seller-inventory|seller-photos)\.spec\.ts$|seller[\\/]cross-cutting[\\/](concurrency|isolation|a11y)\.spec\.ts$/;
+const CROSS_BROWSER = process.env.PW_BROWSERS === '1';
+
+/**
  * See https://playwright.dev/docs/test-configuration.
  */
 export default defineConfig({
@@ -97,6 +106,11 @@ export default defineConfig({
         // Phone: 390 x 844, touch.
         { name: 'mobile', testIgnore: CLOCK_SPECS, use: { ...PHONE } },
         { name: 'desktop', testIgnore: CLOCK_SPECS, use: { ...DESKTOP } },
+        ...(CROSS_BROWSER
+          ? [
+              { name: 'firefox-desktop', testMatch: FOUR_AREAS, use: { ...devices['Desktop Firefox'], viewport: { width: 1280, height: 800 } } },
+            ]
+          : []),
       ],
 
 });

@@ -1,6 +1,6 @@
 # media, pass 1 (tester ai-tester, 2026-10-25)
 
-Method: exploration by hand, then the permanent specs `packages/web/tests/aiqa/media-page.spec.ts` and `packages/web/tests/aiqa/media-upload.spec.ts` (+ `media-support.ts`). The failing tests below are left failing on purpose. Run: `cd packages/web && npx playwright test tests/aiqa/media-page.spec.ts tests/aiqa/media-upload.spec.ts --project=desktop`.
+Method: exploration by hand, then the permanent specs `packages/web/tests/seller/media/page.spec.ts` and `packages/web/tests/seller/media/upload.spec.ts` (+ `media-support.ts`). The failing tests below are left failing on purpose. Run: `cd packages/web && npx playwright test tests/seller/media/page.spec.ts tests/seller/media/upload.spec.ts --project=desktop`.
 
 P1F1 [CONFIRMED] medium Sign-in redirect forgets the page: returnTo is the shop home, not the photos page
 Steps: signed out, open /dashboard/seller/{shop}/products/{product}/media (same for /inventory and /orders?x=1).

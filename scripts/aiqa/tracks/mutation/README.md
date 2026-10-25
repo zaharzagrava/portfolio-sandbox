@@ -1,8 +1,51 @@
-# Track 2: mutation testing
+# Track "mutation": do the tests really notice a broken rule?
+
+Plain words: the script breaks the code on purpose (changes `>` into `>=`, deletes a check) and runs the tests. If the tests still pass, nothing guards that line: a "survivor". Example: change "stock below 0 is refused" to "below -1 is refused"; if every test still passes, no test checks that border.
+
+## What this finds that the other tracks miss
+
+Tests that pass but guard nothing. The map says a line is `pass`; mutation shows whether the test behind it would ever turn red.
+
+## Prerequisites
+
+- Web: nothing running (no stack): `cd packages/web && pnpm mutation:web` (about 10 minutes, Stryker + Vitest).
+- Backend: node + jest only (no Docker, no database), but one jest run per mutant, so it needs a free CPU and takes a long time (about 300 runs for 12 files). Another agent must not be using the backend test stack heavily at the same time.
+- Memory: Stryker runs 3 workers (`concurrency: 3`); lower it if the machine is busy.
+
+## How to point it at a NEW feature
+
+1. Web: add the pure-logic files of the feature (money parsing, stock status, filters, permissions, paging cursors) to `mutate` in `packages/web/stryker.config.json`, and the tests that cover them to `packages/web/vitest.mutation.config.ts`.
+2. Backend: add the feature's rule files (`*.ts` in `domain/` with a unit spec next to them) to `FILES` in `backend.sh`. A file without a unit spec cannot be mutated (write the unit spec first; the cheapest next step for cursors and stock-input).
+3. Good targets: money, stock, permissions, state changes, paging, input checks. Not: screens, styling.
+
+## Commands
+
+```
+cd packages/web && pnpm mutation:web                          # report: packages/web/reports/mutation/index.html (git-ignored)
+scripts/aiqa/tracks/mutation/backend.sh [--max 25] [--min-score 0.6]    # output also in scripts/aiqa/tracks/mutation/backend-<date>.txt
+```
+
+## How to read the results
+
+Killed = a test failed on the broken code (good). Survived = no test noticed (bad, unless equivalent: the broken code behaves the same). The score is killed / total. Read each survivor in the report: write a test that fails on that mutant (do not weaken anything), or write down why it is equivalent.
+
+## How results become map lines, findings and register entries
+
+A survivor in a file that a map line depends on sends that line back to `untested` (`mark.mjs <area> <line> blocked - "mutant survives: <file:line>"`) until a new test kills it; the new test carries the line id. A survivor that shows real missing behaviour (not just a missing test) is a register entry.
+
+## Known limits
+
+- TypeScript 7 breaks Stryker's type step: `tsconfigFile` points at a missing file on purpose.
+- The backend run was written but not yet run in the first round.
+- Only logic files are mutated; screens are not.
+
+## Details (from the first version of this README)
+
+## Track 2: mutation testing
 
 Plain words: break the code on purpose (change `>` to `>=`, delete a check, swap `&&` for `||`), run the tests, and see if some test fails. A "survivor" is a deliberate mistake that no test noticed: that line is not really guarded.
 
-## Web (Stryker) - done, works
+### Web (Stryker) - done, works
 
 - Run: `cd packages/web && pnpm mutation:web` (about 10 minutes, no services needed).
 - Config: `packages/web/stryker.config.json`. The tests used: `packages/web/vitest.mutation.config.ts` (a narrow copy of the normal vitest config: only tests of the seller area, auth, and the dashboard shell; the full suite is slow and one focus test is flaky under load).
@@ -13,7 +56,7 @@ Plain words: break the code on purpose (change `>` to `>=`, delete a check, swap
   - `concurrency: 3`. With 4 runners the test "W04 AS-94 row menu ... returns focus to the trigger" failed once in the first (clean) run, which makes Stryker refuse to start. That test is timing-sensitive; if Stryker says "failed tests in the initial test run", just run again or lower `concurrency`.
 - Stryker 10.1.1 and vitest 3.2.7 work together (`@stryker-mutator/vitest-runner`, `coverageAnalysis: perTest`).
 
-### Result (2026-10-25)
+#### Result (2026-10-25)
 
 | | mutants | killed | survived | no coverage | score |
 |---|---|---|---|---|---|
@@ -37,7 +80,7 @@ Survivors that are left, and why they are fine:
 - `nav.ts` L49 (`ROLE_LABEL = {}`): the fallback formula produces the same four labels; equivalent.
 - `seller-products.ts` L74 (`productId ?? ''`): only the cache key of a disabled query when no product is chosen; no visible behavior.
 
-## Backend (in-house mutate.py) - written, NOT run in this round
+### Backend (in-house mutate.py) - written, NOT run in this round
 
 - Run: `scripts/aiqa/tracks/mutation/backend.sh [--max 25] [--min-score 0.6]`. Needs only node and jest (unit specs, no docker, no database), but it runs jest once per mutant, so it takes a while (12 files x 25 mutants ~ 300 jest runs). It was not run now because another agent owns the backend test stack.
 - Files: tenancy permissions, role-policy, shop-status, cursor; catalog stock-rule, product-input, product-status; orders money-allocation, stock-operations, order-state; fulfilment stock-rules, search-cursor.

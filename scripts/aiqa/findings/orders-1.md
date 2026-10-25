@@ -1,6 +1,6 @@
 # Orders, pass 1 (tester, 2026-10-25)
 
-Proof: the permanent specs `packages/web/tests/aiqa/orders-page.spec.ts` and `orders-list.spec.ts` (run: `npx playwright test tests/aiqa/orders-list.spec.ts tests/aiqa/orders-page.spec.ts --project=desktop`). Each failing test below is left failing on purpose.
+Proof: the permanent specs `packages/web/tests/seller/orders/page.spec.ts` and `orders-list.spec.ts` (run: `npx playwright test tests/seller/orders/list.spec.ts tests/seller/orders/page.spec.ts --project=desktop`). Each failing test below is left failing on purpose.
 
 P1F1 [CONFIRMED] medium Sign-in redirect forgets the orders address (and its query)
 Steps: signed out, open /dashboard/seller/{shopId}/orders?status=PAID&cursor=abc. Sign in.

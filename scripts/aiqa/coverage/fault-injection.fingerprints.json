@@ -1,0 +1,2645 @@
+{
+ "fault.api.restart-during-write": {
+  "code": "6a3e6fcfb88e62b7",
+  "spec": "d7c83d22d3b72334",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/catalog/application/product-command.service.ts": "88c1d095f06a340d",
+   "packages/backend/libs/domains/catalog/infra/models/product.model.ts": "b0656bb99edfec60",
+   "packages/backend/libs/infrastructure/outbox/outbox.model.ts": "54077ca4d70b485b",
+   "packages/backend/migrations/20260125105527-unnamed-migration.js": "5b056775ce884824",
+   "packages/backend/migrations/20260425085120-unnamed-migration.js": "b81f453542d4ee49",
+   "packages/backend/migrations/20260808090000-product-inventory.js": "4a65c08eb15d88a6",
+   "packages/backend/migrations/20260808120000-fold-inventory-into-product.js": "aacef9f21305bdb2",
+   "packages/backend/migrations/20260809090000-outbox-mailman-fields.js": "fe8b9efa9ed85ae4",
+   "packages/backend/migrations/20260925090000-create-chat-tables.js": "358ede1ec6827334",
+   "packages/backend/migrations/20261001100000-outbox-domain-events.js": "e9fd4302f322fcf0",
+   "packages/backend/migrations/20261001120000-product-view-count.js": "99acd29211991504",
+   "packages/backend/migrations/20261001140000-shops-tenancy-expand.js": "ee553fcdf13e2504",
+   "packages/backend/migrations/20261001220000-product-fts.js": "bd3351f7d9ded480",
+   "packages/backend/migrations/20261002100000-catalog-import.js": "2db019d13c68da53",
+   "packages/backend/migrations/20261002180000-outbox-extra-error.js": "4c66c4635883141f",
+   "packages/backend/migrations/20261009130000-outbox-row-contract.js": "b96fe4b1c99a3b86",
+   "packages/backend/migrations/20261010150000-catalog-s05-expand-columns.js": "be62c4c6d364f5cd",
+   "packages/backend/migrations/20261012110000-catalog-s05-contract-fks.js": "2727866f3ef5fc4b",
+   "packages/backend/migrations/20261012110100-catalog-s05-contract-shop-not-null.js": "8a47c2555685c414",
+   "packages/backend/migrations/20261019000200-catalog-s05-restore-shop-not-null.js": "2e65f3b53087f5ee",
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f"
+  },
+  "specs": {
+   "W04.B-36": "fcc8e64e5e4d05f8",
+   "W04.R-13": "91b32c5778f1aab7"
+  }
+ },
+ "fault.clamav.archive-product": {
+  "code": "5b7bbaed30ff4eef",
+  "spec": "0a2963f705bbcab4",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/catalog/api/product.controller.ts": "8e9e10f4f4b368fe",
+   "packages/backend/libs/domains/catalog/api/product.dto.ts": "1ee0842eafbb0cbd",
+   "packages/backend/libs/domains/catalog/application/product-command.service.ts": "88c1d095f06a340d",
+   "packages/backend/libs/domains/catalog/infra/models/product-status-history.model.ts": "20ecdb68a2a2ccab",
+   "packages/backend/libs/domains/catalog/infra/models/product.model.ts": "b0656bb99edfec60",
+   "packages/backend/libs/infrastructure/outbox/outbox.model.ts": "54077ca4d70b485b",
+   "packages/backend/migrations/20260125105527-unnamed-migration.js": "5b056775ce884824",
+   "packages/backend/migrations/20260425085120-unnamed-migration.js": "b81f453542d4ee49",
+   "packages/backend/migrations/20260808090000-product-inventory.js": "4a65c08eb15d88a6",
+   "packages/backend/migrations/20260808120000-fold-inventory-into-product.js": "aacef9f21305bdb2",
+   "packages/backend/migrations/20260809090000-outbox-mailman-fields.js": "fe8b9efa9ed85ae4",
+   "packages/backend/migrations/20260925090000-create-chat-tables.js": "358ede1ec6827334",
+   "packages/backend/migrations/20261001100000-outbox-domain-events.js": "e9fd4302f322fcf0",
+   "packages/backend/migrations/20261001120000-product-view-count.js": "99acd29211991504",
+   "packages/backend/migrations/20261001140000-shops-tenancy-expand.js": "ee553fcdf13e2504",
+   "packages/backend/migrations/20261001220000-product-fts.js": "bd3351f7d9ded480",
+   "packages/backend/migrations/20261002100000-catalog-import.js": "2db019d13c68da53",
+   "packages/backend/migrations/20261002180000-outbox-extra-error.js": "4c66c4635883141f",
+   "packages/backend/migrations/20261009130000-outbox-row-contract.js": "b96fe4b1c99a3b86",
+   "packages/backend/migrations/20261010150000-catalog-s05-expand-columns.js": "be62c4c6d364f5cd",
+   "packages/backend/migrations/20261010151000-catalog-s05-expand-tables.js": "0be6f3e30629dec1",
+   "packages/backend/migrations/20261012110000-catalog-s05-contract-fks.js": "2727866f3ef5fc4b",
+   "packages/backend/migrations/20261012110100-catalog-s05-contract-shop-not-null.js": "8a47c2555685c414",
+   "packages/backend/migrations/20261019000200-catalog-s05-restore-shop-not-null.js": "2e65f3b53087f5ee",
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/web/components/seller/inventory/archive-dialog.tsx": "e26b324fa29d0096",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd"
+  },
+  "specs": {
+   "W04.AS-39": "f1ac75bd7c4d139d",
+   "W04.B-36": "fcc8e64e5e4d05f8",
+   "W04.R-13": "91b32c5778f1aab7"
+  }
+ },
+ "fault.clamav.create-product": {
+  "code": "8587b3230d66b3a3",
+  "spec": "e84a3eb1b83b2cb3",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/catalog/api/product.controller.ts": "8e9e10f4f4b368fe",
+   "packages/backend/libs/domains/catalog/api/product.dto.ts": "1ee0842eafbb0cbd",
+   "packages/backend/libs/domains/catalog/application/product-command.service.ts": "88c1d095f06a340d",
+   "packages/backend/libs/domains/catalog/infra/models/product.model.ts": "b0656bb99edfec60",
+   "packages/backend/libs/infrastructure/outbox/outbox.model.ts": "54077ca4d70b485b",
+   "packages/backend/migrations/20260125105527-unnamed-migration.js": "5b056775ce884824",
+   "packages/backend/migrations/20260425085120-unnamed-migration.js": "b81f453542d4ee49",
+   "packages/backend/migrations/20260808090000-product-inventory.js": "4a65c08eb15d88a6",
+   "packages/backend/migrations/20260808120000-fold-inventory-into-product.js": "aacef9f21305bdb2",
+   "packages/backend/migrations/20260809090000-outbox-mailman-fields.js": "fe8b9efa9ed85ae4",
+   "packages/backend/migrations/20260925090000-create-chat-tables.js": "358ede1ec6827334",
+   "packages/backend/migrations/20261001100000-outbox-domain-events.js": "e9fd4302f322fcf0",
+   "packages/backend/migrations/20261001120000-product-view-count.js": "99acd29211991504",
+   "packages/backend/migrations/20261001140000-shops-tenancy-expand.js": "ee553fcdf13e2504",
+   "packages/backend/migrations/20261001220000-product-fts.js": "bd3351f7d9ded480",
+   "packages/backend/migrations/20261002100000-catalog-import.js": "2db019d13c68da53",
+   "packages/backend/migrations/20261002180000-outbox-extra-error.js": "4c66c4635883141f",
+   "packages/backend/migrations/20261009130000-outbox-row-contract.js": "b96fe4b1c99a3b86",
+   "packages/backend/migrations/20261010150000-catalog-s05-expand-columns.js": "be62c4c6d364f5cd",
+   "packages/backend/migrations/20261012110000-catalog-s05-contract-fks.js": "2727866f3ef5fc4b",
+   "packages/backend/migrations/20261012110100-catalog-s05-contract-shop-not-null.js": "8a47c2555685c414",
+   "packages/backend/migrations/20261019000200-catalog-s05-restore-shop-not-null.js": "2e65f3b53087f5ee",
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd"
+  },
+  "specs": {
+   "W04.AS-31": "c060454e7c10d038",
+   "W04.B-36": "fcc8e64e5e4d05f8",
+   "W04.R-13": "91b32c5778f1aab7"
+  }
+ },
+ "fault.clamav.edit-product": {
+  "code": "8587b3230d66b3a3",
+  "spec": "a99379dc26f644bf",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/catalog/api/product.controller.ts": "8e9e10f4f4b368fe",
+   "packages/backend/libs/domains/catalog/api/product.dto.ts": "1ee0842eafbb0cbd",
+   "packages/backend/libs/domains/catalog/application/product-command.service.ts": "88c1d095f06a340d",
+   "packages/backend/libs/domains/catalog/infra/models/product.model.ts": "b0656bb99edfec60",
+   "packages/backend/libs/infrastructure/outbox/outbox.model.ts": "54077ca4d70b485b",
+   "packages/backend/migrations/20260125105527-unnamed-migration.js": "5b056775ce884824",
+   "packages/backend/migrations/20260425085120-unnamed-migration.js": "b81f453542d4ee49",
+   "packages/backend/migrations/20260808090000-product-inventory.js": "4a65c08eb15d88a6",
+   "packages/backend/migrations/20260808120000-fold-inventory-into-product.js": "aacef9f21305bdb2",
+   "packages/backend/migrations/20260809090000-outbox-mailman-fields.js": "fe8b9efa9ed85ae4",
+   "packages/backend/migrations/20260925090000-create-chat-tables.js": "358ede1ec6827334",
+   "packages/backend/migrations/20261001100000-outbox-domain-events.js": "e9fd4302f322fcf0",
+   "packages/backend/migrations/20261001120000-product-view-count.js": "99acd29211991504",
+   "packages/backend/migrations/20261001140000-shops-tenancy-expand.js": "ee553fcdf13e2504",
+   "packages/backend/migrations/20261001220000-product-fts.js": "bd3351f7d9ded480",
+   "packages/backend/migrations/20261002100000-catalog-import.js": "2db019d13c68da53",
+   "packages/backend/migrations/20261002180000-outbox-extra-error.js": "4c66c4635883141f",
+   "packages/backend/migrations/20261009130000-outbox-row-contract.js": "b96fe4b1c99a3b86",
+   "packages/backend/migrations/20261010150000-catalog-s05-expand-columns.js": "be62c4c6d364f5cd",
+   "packages/backend/migrations/20261012110000-catalog-s05-contract-fks.js": "2727866f3ef5fc4b",
+   "packages/backend/migrations/20261012110100-catalog-s05-contract-shop-not-null.js": "8a47c2555685c414",
+   "packages/backend/migrations/20261019000200-catalog-s05-restore-shop-not-null.js": "2e65f3b53087f5ee",
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd"
+  },
+  "specs": {
+   "W04.AS-36": "8253b4dd2de7f301",
+   "W04.B-36": "fcc8e64e5e4d05f8",
+   "W04.R-13": "91b32c5778f1aab7"
+  }
+ },
+ "fault.clamav.inventory-load": {
+  "code": "fe715c40096a5c97",
+  "spec": "e31aeae76dbea0fa",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/catalog/application/product-command.service.ts": "88c1d095f06a340d",
+   "packages/backend/libs/domains/catalog/infra/models/product.model.ts": "b0656bb99edfec60",
+   "packages/backend/migrations/20260808090000-product-inventory.js": "4a65c08eb15d88a6",
+   "packages/backend/migrations/20260808120000-fold-inventory-into-product.js": "aacef9f21305bdb2",
+   "packages/backend/migrations/20260925090000-create-chat-tables.js": "358ede1ec6827334",
+   "packages/backend/migrations/20261001120000-product-view-count.js": "99acd29211991504",
+   "packages/backend/migrations/20261001140000-shops-tenancy-expand.js": "ee553fcdf13e2504",
+   "packages/backend/migrations/20261001220000-product-fts.js": "bd3351f7d9ded480",
+   "packages/backend/migrations/20261002100000-catalog-import.js": "2db019d13c68da53",
+   "packages/backend/migrations/20261010150000-catalog-s05-expand-columns.js": "be62c4c6d364f5cd",
+   "packages/backend/migrations/20261012110000-catalog-s05-contract-fks.js": "2727866f3ef5fc4b",
+   "packages/backend/migrations/20261012110100-catalog-s05-contract-shop-not-null.js": "8a47c2555685c414",
+   "packages/backend/migrations/20261019000200-catalog-s05-restore-shop-not-null.js": "2e65f3b53087f5ee",
+   "packages/contracts/src/bff/seller-overview.ts": "cf5790c3205c6cf1",
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/contracts/src/developer-platform/keys.ts": "444d734754f9c8e3",
+   "packages/contracts/src/developer-platform/logs.ts": "53ca17bc6a88f8cb",
+   "packages/contracts/src/developer-platform/webhooks.ts": "f8aae4c6f9163cf7",
+   "packages/contracts/src/orders/order.ts": "825d6af4758d3309",
+   "packages/contracts/src/search/shop-product-search.ts": "aed2f677d96f5388",
+   "packages/contracts/src/tenancy/index.ts": "324ccfbe0702f2bf",
+   "packages/web/app/dashboard/seller/[shopId]/inventory/page.tsx": "e9212480fb2b68a8",
+   "packages/web/lib/server/seller.server.ts": "7b2b5295d5ae9ac5"
+  },
+  "specs": {
+   "W04.AS-31": "c060454e7c10d038",
+   "W04.B-36": "fcc8e64e5e4d05f8"
+  }
+ },
+ "fault.clamav.orders-load": {
+  "code": "037a05123c701725",
+  "spec": "e31aeae76dbea0fa",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/orders/infra/models/bis-order.model.ts": "3e535d73bb950429",
+   "packages/backend/libs/domains/orders/infra/models/shop-order.model.ts": "2ff7760550e1e604",
+   "packages/backend/migrations/20260125105527-unnamed-migration.js": "5b056775ce884824",
+   "packages/backend/migrations/20261001150000-checkout-orders-inventory.js": "676b84c22daf1467",
+   "packages/backend/migrations/20261010160000-orders-s10-expand-columns.js": "968fcdb631260142",
+   "packages/backend/migrations/20261012120000-orders-s10-ref-code.js": "5ab8503aa0b764b6",
+   "packages/backend/migrations/20261019000000-orders-j05-attribution-expand.js": "1538cde1ac6a10b5",
+   "packages/web/app/dashboard/seller/[shopId]/orders/page.tsx": "c95755cc233da175"
+  },
+  "specs": {
+   "W04.AS-31": "c060454e7c10d038",
+   "W04.B-36": "fcc8e64e5e4d05f8"
+  }
+ },
+ "fault.clamav.outbox-published": {
+  "code": "b8173a038d6896e2",
+  "spec": "655f0c0142a9aa97",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/infrastructure/outbox/outbox.model.ts": "54077ca4d70b485b",
+   "packages/backend/migrations/20260125105527-unnamed-migration.js": "5b056775ce884824",
+   "packages/backend/migrations/20260425085120-unnamed-migration.js": "b81f453542d4ee49",
+   "packages/backend/migrations/20260809090000-outbox-mailman-fields.js": "fe8b9efa9ed85ae4",
+   "packages/backend/migrations/20261001100000-outbox-domain-events.js": "e9fd4302f322fcf0",
+   "packages/backend/migrations/20261002180000-outbox-extra-error.js": "4c66c4635883141f",
+   "packages/backend/migrations/20261009130000-outbox-row-contract.js": "b96fe4b1c99a3b86"
+  },
+  "specs": {
+   "W04.R-13": "91b32c5778f1aab7"
+  }
+ },
+ "fault.clamav.photo-upload": {
+  "code": "5d04ac0df03b763e",
+  "spec": "65d10667f96f043c",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/asset-library/application/upload.service.ts": "39fefbf155a9f284",
+   "packages/backend/libs/domains/media/api/media.controller.ts": "24acc041bb8e2bcf",
+   "packages/backend/libs/domains/media/application/upload.service.ts": "a925e44c29d1a370",
+   "packages/contracts/src/asset-library/commit.ts": "0a1cfbb2de3a594d",
+   "packages/contracts/src/asset-library/prepare.ts": "7089b3db1a38056a",
+   "packages/contracts/src/media/gallery.ts": "65db2579c6eb82d4",
+   "packages/contracts/src/media/media.ts": "bd0571339629bf2f",
+   "packages/contracts/src/media/video.ts": "b24f3f7006e47042",
+   "packages/web/components/seller/media/gallery-view.tsx": "d4ec94b8d4c7d135",
+   "packages/web/lib/api/client.ts": "0fa4cb70bbc2d203",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/orders.ts": "7631ea19bc997f81",
+   "packages/web/lib/api/parse.ts": "82453dbb70bf149b",
+   "packages/web/lib/api/seller-media.ts": "31b6db808f27ab21",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
+  },
+  "specs": {
+   "S29.B-01": "382b54f922904edd",
+   "S29.R-11": "13636d6b4acaa3f1",
+   "W04.R-13": "91b32c5778f1aab7"
+  }
+ },
+ "fault.clamav.shop-open": {
+  "code": "045932b45b65c06e",
+  "spec": "bbb1391dc472ab05",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/tenancy/api/shop.controller.ts": "be0ce071ac0c848a",
+   "packages/backend/libs/domains/tenancy/api/tenancy.dto.ts": "e1198cdca40b60bd",
+   "packages/backend/libs/domains/tenancy/application/shop.service.ts": "9a312d91c7d681af",
+   "packages/backend/libs/domains/tenancy/infra/models/shop-membership.model.ts": "45533969e65b506e",
+   "packages/backend/libs/domains/tenancy/infra/models/shop.model.ts": "ba1b0987ab3d736f",
+   "packages/backend/libs/infrastructure/outbox/outbox.model.ts": "54077ca4d70b485b",
+   "packages/backend/migrations/20260125105527-unnamed-migration.js": "5b056775ce884824",
+   "packages/backend/migrations/20260425085120-unnamed-migration.js": "b81f453542d4ee49",
+   "packages/backend/migrations/20260809090000-outbox-mailman-fields.js": "fe8b9efa9ed85ae4",
+   "packages/backend/migrations/20261001100000-outbox-domain-events.js": "e9fd4302f322fcf0",
+   "packages/backend/migrations/20261001140000-shops-tenancy-expand.js": "ee553fcdf13e2504",
+   "packages/backend/migrations/20261001160000-ledger-partitioning-payouts-recon.js": "d3581d6c92e577fb",
+   "packages/backend/migrations/20261001290000-public-api.js": "a3df3f97e02853f6",
+   "packages/backend/migrations/20261002170000-seller-onboarding.js": "5182cff5a76e0ca2",
+   "packages/backend/migrations/20261002180000-outbox-extra-error.js": "4c66c4635883141f",
+   "packages/backend/migrations/20261009130000-outbox-row-contract.js": "b96fe4b1c99a3b86",
+   "packages/backend/migrations/20261010140000-tenancy-s03-expand.js": "83c015f426cf7cbe",
+   "packages/backend/migrations/20261010141000-tenancy-s03-contract-fks.js": "be9a026486c0c7f0",
+   "packages/web/app/dashboard/seller/page.tsx": "f118669e0960e48a"
+  },
+  "specs": {
+   "W04.B-01": "13add0d3413bff25",
+   "W04.B-36": "fcc8e64e5e4d05f8",
+   "W04.R-13": "91b32c5778f1aab7"
+  }
+ },
+ "fault.clamav.stock-change": {
+  "code": "5421d0d92d414db0",
+  "spec": "3a2a9001db852821",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/catalog/application/product-command.service.ts": "88c1d095f06a340d",
+   "packages/backend/libs/domains/catalog/infra/models/product.model.ts": "b0656bb99edfec60",
+   "packages/backend/libs/infrastructure/outbox/outbox.model.ts": "54077ca4d70b485b",
+   "packages/backend/migrations/20260125105527-unnamed-migration.js": "5b056775ce884824",
+   "packages/backend/migrations/20260425085120-unnamed-migration.js": "b81f453542d4ee49",
+   "packages/backend/migrations/20260808090000-product-inventory.js": "4a65c08eb15d88a6",
+   "packages/backend/migrations/20260808120000-fold-inventory-into-product.js": "aacef9f21305bdb2",
+   "packages/backend/migrations/20260809090000-outbox-mailman-fields.js": "fe8b9efa9ed85ae4",
+   "packages/backend/migrations/20260925090000-create-chat-tables.js": "358ede1ec6827334",
+   "packages/backend/migrations/20261001100000-outbox-domain-events.js": "e9fd4302f322fcf0",
+   "packages/backend/migrations/20261001120000-product-view-count.js": "99acd29211991504",
+   "packages/backend/migrations/20261001140000-shops-tenancy-expand.js": "ee553fcdf13e2504",
+   "packages/backend/migrations/20261001220000-product-fts.js": "bd3351f7d9ded480",
+   "packages/backend/migrations/20261002100000-catalog-import.js": "2db019d13c68da53",
+   "packages/backend/migrations/20261002180000-outbox-extra-error.js": "4c66c4635883141f",
+   "packages/backend/migrations/20261009130000-outbox-row-contract.js": "b96fe4b1c99a3b86",
+   "packages/backend/migrations/20261010150000-catalog-s05-expand-columns.js": "be62c4c6d364f5cd",
+   "packages/backend/migrations/20261012110000-catalog-s05-contract-fks.js": "2727866f3ef5fc4b",
+   "packages/backend/migrations/20261012110100-catalog-s05-contract-shop-not-null.js": "8a47c2555685c414",
+   "packages/backend/migrations/20261019000200-catalog-s05-restore-shop-not-null.js": "2e65f3b53087f5ee",
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/web/components/seller/inventory/stock-popover.tsx": "eed2b2621e4eba19",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd"
+  },
+  "specs": {
+   "W04.AS-38": "eabea675046ec473",
+   "W04.B-36": "fcc8e64e5e4d05f8",
+   "W04.R-13": "91b32c5778f1aab7"
+  }
+ },
+ "fault.clickhouse.archive-product": {
+  "code": "5b7bbaed30ff4eef",
+  "spec": "0a2963f705bbcab4",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/catalog/api/product.controller.ts": "8e9e10f4f4b368fe",
+   "packages/backend/libs/domains/catalog/api/product.dto.ts": "1ee0842eafbb0cbd",
+   "packages/backend/libs/domains/catalog/application/product-command.service.ts": "88c1d095f06a340d",
+   "packages/backend/libs/domains/catalog/infra/models/product-status-history.model.ts": "20ecdb68a2a2ccab",
+   "packages/backend/libs/domains/catalog/infra/models/product.model.ts": "b0656bb99edfec60",
+   "packages/backend/libs/infrastructure/outbox/outbox.model.ts": "54077ca4d70b485b",
+   "packages/backend/migrations/20260125105527-unnamed-migration.js": "5b056775ce884824",
+   "packages/backend/migrations/20260425085120-unnamed-migration.js": "b81f453542d4ee49",
+   "packages/backend/migrations/20260808090000-product-inventory.js": "4a65c08eb15d88a6",
+   "packages/backend/migrations/20260808120000-fold-inventory-into-product.js": "aacef9f21305bdb2",
+   "packages/backend/migrations/20260809090000-outbox-mailman-fields.js": "fe8b9efa9ed85ae4",
+   "packages/backend/migrations/20260925090000-create-chat-tables.js": "358ede1ec6827334",
+   "packages/backend/migrations/20261001100000-outbox-domain-events.js": "e9fd4302f322fcf0",
+   "packages/backend/migrations/20261001120000-product-view-count.js": "99acd29211991504",
+   "packages/backend/migrations/20261001140000-shops-tenancy-expand.js": "ee553fcdf13e2504",
+   "packages/backend/migrations/20261001220000-product-fts.js": "bd3351f7d9ded480",
+   "packages/backend/migrations/20261002100000-catalog-import.js": "2db019d13c68da53",
+   "packages/backend/migrations/20261002180000-outbox-extra-error.js": "4c66c4635883141f",
+   "packages/backend/migrations/20261009130000-outbox-row-contract.js": "b96fe4b1c99a3b86",
+   "packages/backend/migrations/20261010150000-catalog-s05-expand-columns.js": "be62c4c6d364f5cd",
+   "packages/backend/migrations/20261010151000-catalog-s05-expand-tables.js": "0be6f3e30629dec1",
+   "packages/backend/migrations/20261012110000-catalog-s05-contract-fks.js": "2727866f3ef5fc4b",
+   "packages/backend/migrations/20261012110100-catalog-s05-contract-shop-not-null.js": "8a47c2555685c414",
+   "packages/backend/migrations/20261019000200-catalog-s05-restore-shop-not-null.js": "2e65f3b53087f5ee",
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/web/components/seller/inventory/archive-dialog.tsx": "e26b324fa29d0096",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd"
+  },
+  "specs": {
+   "W04.AS-39": "f1ac75bd7c4d139d",
+   "W04.B-36": "fcc8e64e5e4d05f8",
+   "W04.R-13": "91b32c5778f1aab7"
+  }
+ },
+ "fault.clickhouse.create-product": {
+  "code": "8587b3230d66b3a3",
+  "spec": "e84a3eb1b83b2cb3",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/catalog/api/product.controller.ts": "8e9e10f4f4b368fe",
+   "packages/backend/libs/domains/catalog/api/product.dto.ts": "1ee0842eafbb0cbd",
+   "packages/backend/libs/domains/catalog/application/product-command.service.ts": "88c1d095f06a340d",
+   "packages/backend/libs/domains/catalog/infra/models/product.model.ts": "b0656bb99edfec60",
+   "packages/backend/libs/infrastructure/outbox/outbox.model.ts": "54077ca4d70b485b",
+   "packages/backend/migrations/20260125105527-unnamed-migration.js": "5b056775ce884824",
+   "packages/backend/migrations/20260425085120-unnamed-migration.js": "b81f453542d4ee49",
+   "packages/backend/migrations/20260808090000-product-inventory.js": "4a65c08eb15d88a6",
+   "packages/backend/migrations/20260808120000-fold-inventory-into-product.js": "aacef9f21305bdb2",
+   "packages/backend/migrations/20260809090000-outbox-mailman-fields.js": "fe8b9efa9ed85ae4",
+   "packages/backend/migrations/20260925090000-create-chat-tables.js": "358ede1ec6827334",
+   "packages/backend/migrations/20261001100000-outbox-domain-events.js": "e9fd4302f322fcf0",
+   "packages/backend/migrations/20261001120000-product-view-count.js": "99acd29211991504",
+   "packages/backend/migrations/20261001140000-shops-tenancy-expand.js": "ee553fcdf13e2504",
+   "packages/backend/migrations/20261001220000-product-fts.js": "bd3351f7d9ded480",
+   "packages/backend/migrations/20261002100000-catalog-import.js": "2db019d13c68da53",
+   "packages/backend/migrations/20261002180000-outbox-extra-error.js": "4c66c4635883141f",
+   "packages/backend/migrations/20261009130000-outbox-row-contract.js": "b96fe4b1c99a3b86",
+   "packages/backend/migrations/20261010150000-catalog-s05-expand-columns.js": "be62c4c6d364f5cd",
+   "packages/backend/migrations/20261012110000-catalog-s05-contract-fks.js": "2727866f3ef5fc4b",
+   "packages/backend/migrations/20261012110100-catalog-s05-contract-shop-not-null.js": "8a47c2555685c414",
+   "packages/backend/migrations/20261019000200-catalog-s05-restore-shop-not-null.js": "2e65f3b53087f5ee",
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd"
+  },
+  "specs": {
+   "W04.AS-31": "c060454e7c10d038",
+   "W04.B-36": "fcc8e64e5e4d05f8",
+   "W04.R-13": "91b32c5778f1aab7"
+  }
+ },
+ "fault.clickhouse.edit-product": {
+  "code": "8587b3230d66b3a3",
+  "spec": "a99379dc26f644bf",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/catalog/api/product.controller.ts": "8e9e10f4f4b368fe",
+   "packages/backend/libs/domains/catalog/api/product.dto.ts": "1ee0842eafbb0cbd",
+   "packages/backend/libs/domains/catalog/application/product-command.service.ts": "88c1d095f06a340d",
+   "packages/backend/libs/domains/catalog/infra/models/product.model.ts": "b0656bb99edfec60",
+   "packages/backend/libs/infrastructure/outbox/outbox.model.ts": "54077ca4d70b485b",
+   "packages/backend/migrations/20260125105527-unnamed-migration.js": "5b056775ce884824",
+   "packages/backend/migrations/20260425085120-unnamed-migration.js": "b81f453542d4ee49",
+   "packages/backend/migrations/20260808090000-product-inventory.js": "4a65c08eb15d88a6",
+   "packages/backend/migrations/20260808120000-fold-inventory-into-product.js": "aacef9f21305bdb2",
+   "packages/backend/migrations/20260809090000-outbox-mailman-fields.js": "fe8b9efa9ed85ae4",
+   "packages/backend/migrations/20260925090000-create-chat-tables.js": "358ede1ec6827334",
+   "packages/backend/migrations/20261001100000-outbox-domain-events.js": "e9fd4302f322fcf0",
+   "packages/backend/migrations/20261001120000-product-view-count.js": "99acd29211991504",
+   "packages/backend/migrations/20261001140000-shops-tenancy-expand.js": "ee553fcdf13e2504",
+   "packages/backend/migrations/20261001220000-product-fts.js": "bd3351f7d9ded480",
+   "packages/backend/migrations/20261002100000-catalog-import.js": "2db019d13c68da53",
+   "packages/backend/migrations/20261002180000-outbox-extra-error.js": "4c66c4635883141f",
+   "packages/backend/migrations/20261009130000-outbox-row-contract.js": "b96fe4b1c99a3b86",
+   "packages/backend/migrations/20261010150000-catalog-s05-expand-columns.js": "be62c4c6d364f5cd",
+   "packages/backend/migrations/20261012110000-catalog-s05-contract-fks.js": "2727866f3ef5fc4b",
+   "packages/backend/migrations/20261012110100-catalog-s05-contract-shop-not-null.js": "8a47c2555685c414",
+   "packages/backend/migrations/20261019000200-catalog-s05-restore-shop-not-null.js": "2e65f3b53087f5ee",
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd"
+  },
+  "specs": {
+   "W04.AS-36": "8253b4dd2de7f301",
+   "W04.B-36": "fcc8e64e5e4d05f8",
+   "W04.R-13": "91b32c5778f1aab7"
+  }
+ },
+ "fault.clickhouse.inventory-load": {
+  "code": "fe715c40096a5c97",
+  "spec": "e31aeae76dbea0fa",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/catalog/application/product-command.service.ts": "88c1d095f06a340d",
+   "packages/backend/libs/domains/catalog/infra/models/product.model.ts": "b0656bb99edfec60",
+   "packages/backend/migrations/20260808090000-product-inventory.js": "4a65c08eb15d88a6",
+   "packages/backend/migrations/20260808120000-fold-inventory-into-product.js": "aacef9f21305bdb2",
+   "packages/backend/migrations/20260925090000-create-chat-tables.js": "358ede1ec6827334",
+   "packages/backend/migrations/20261001120000-product-view-count.js": "99acd29211991504",
+   "packages/backend/migrations/20261001140000-shops-tenancy-expand.js": "ee553fcdf13e2504",
+   "packages/backend/migrations/20261001220000-product-fts.js": "bd3351f7d9ded480",
+   "packages/backend/migrations/20261002100000-catalog-import.js": "2db019d13c68da53",
+   "packages/backend/migrations/20261010150000-catalog-s05-expand-columns.js": "be62c4c6d364f5cd",
+   "packages/backend/migrations/20261012110000-catalog-s05-contract-fks.js": "2727866f3ef5fc4b",
+   "packages/backend/migrations/20261012110100-catalog-s05-contract-shop-not-null.js": "8a47c2555685c414",
+   "packages/backend/migrations/20261019000200-catalog-s05-restore-shop-not-null.js": "2e65f3b53087f5ee",
+   "packages/contracts/src/bff/seller-overview.ts": "cf5790c3205c6cf1",
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/contracts/src/developer-platform/keys.ts": "444d734754f9c8e3",
+   "packages/contracts/src/developer-platform/logs.ts": "53ca17bc6a88f8cb",
+   "packages/contracts/src/developer-platform/webhooks.ts": "f8aae4c6f9163cf7",
+   "packages/contracts/src/orders/order.ts": "825d6af4758d3309",
+   "packages/contracts/src/search/shop-product-search.ts": "aed2f677d96f5388",
+   "packages/contracts/src/tenancy/index.ts": "324ccfbe0702f2bf",
+   "packages/web/app/dashboard/seller/[shopId]/inventory/page.tsx": "e9212480fb2b68a8",
+   "packages/web/lib/server/seller.server.ts": "7b2b5295d5ae9ac5"
+  },
+  "specs": {
+   "W04.AS-31": "c060454e7c10d038",
+   "W04.B-36": "fcc8e64e5e4d05f8"
+  }
+ },
+ "fault.clickhouse.orders-load": {
+  "code": "037a05123c701725",
+  "spec": "e31aeae76dbea0fa",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/orders/infra/models/bis-order.model.ts": "3e535d73bb950429",
+   "packages/backend/libs/domains/orders/infra/models/shop-order.model.ts": "2ff7760550e1e604",
+   "packages/backend/migrations/20260125105527-unnamed-migration.js": "5b056775ce884824",
+   "packages/backend/migrations/20261001150000-checkout-orders-inventory.js": "676b84c22daf1467",
+   "packages/backend/migrations/20261010160000-orders-s10-expand-columns.js": "968fcdb631260142",
+   "packages/backend/migrations/20261012120000-orders-s10-ref-code.js": "5ab8503aa0b764b6",
+   "packages/backend/migrations/20261019000000-orders-j05-attribution-expand.js": "1538cde1ac6a10b5",
+   "packages/web/app/dashboard/seller/[shopId]/orders/page.tsx": "c95755cc233da175"
+  },
+  "specs": {
+   "W04.AS-31": "c060454e7c10d038",
+   "W04.B-36": "fcc8e64e5e4d05f8"
+  }
+ },
+ "fault.clickhouse.outbox-published": {
+  "code": "b8173a038d6896e2",
+  "spec": "655f0c0142a9aa97",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/infrastructure/outbox/outbox.model.ts": "54077ca4d70b485b",
+   "packages/backend/migrations/20260125105527-unnamed-migration.js": "5b056775ce884824",
+   "packages/backend/migrations/20260425085120-unnamed-migration.js": "b81f453542d4ee49",
+   "packages/backend/migrations/20260809090000-outbox-mailman-fields.js": "fe8b9efa9ed85ae4",
+   "packages/backend/migrations/20261001100000-outbox-domain-events.js": "e9fd4302f322fcf0",
+   "packages/backend/migrations/20261002180000-outbox-extra-error.js": "4c66c4635883141f",
+   "packages/backend/migrations/20261009130000-outbox-row-contract.js": "b96fe4b1c99a3b86"
+  },
+  "specs": {
+   "W04.R-13": "91b32c5778f1aab7"
+  }
+ },
+ "fault.clickhouse.photo-upload": {
+  "code": "5d04ac0df03b763e",
+  "spec": "65d10667f96f043c",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/asset-library/application/upload.service.ts": "39fefbf155a9f284",
+   "packages/backend/libs/domains/media/api/media.controller.ts": "24acc041bb8e2bcf",
+   "packages/backend/libs/domains/media/application/upload.service.ts": "a925e44c29d1a370",
+   "packages/contracts/src/asset-library/commit.ts": "0a1cfbb2de3a594d",
+   "packages/contracts/src/asset-library/prepare.ts": "7089b3db1a38056a",
+   "packages/contracts/src/media/gallery.ts": "65db2579c6eb82d4",
+   "packages/contracts/src/media/media.ts": "bd0571339629bf2f",
+   "packages/contracts/src/media/video.ts": "b24f3f7006e47042",
+   "packages/web/components/seller/media/gallery-view.tsx": "d4ec94b8d4c7d135",
+   "packages/web/lib/api/client.ts": "0fa4cb70bbc2d203",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/orders.ts": "7631ea19bc997f81",
+   "packages/web/lib/api/parse.ts": "82453dbb70bf149b",
+   "packages/web/lib/api/seller-media.ts": "31b6db808f27ab21",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
+  },
+  "specs": {
+   "S29.B-01": "382b54f922904edd",
+   "S29.R-11": "13636d6b4acaa3f1",
+   "W04.R-13": "91b32c5778f1aab7"
+  }
+ },
+ "fault.clickhouse.shop-open": {
+  "code": "045932b45b65c06e",
+  "spec": "bbb1391dc472ab05",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/tenancy/api/shop.controller.ts": "be0ce071ac0c848a",
+   "packages/backend/libs/domains/tenancy/api/tenancy.dto.ts": "e1198cdca40b60bd",
+   "packages/backend/libs/domains/tenancy/application/shop.service.ts": "9a312d91c7d681af",
+   "packages/backend/libs/domains/tenancy/infra/models/shop-membership.model.ts": "45533969e65b506e",
+   "packages/backend/libs/domains/tenancy/infra/models/shop.model.ts": "ba1b0987ab3d736f",
+   "packages/backend/libs/infrastructure/outbox/outbox.model.ts": "54077ca4d70b485b",
+   "packages/backend/migrations/20260125105527-unnamed-migration.js": "5b056775ce884824",
+   "packages/backend/migrations/20260425085120-unnamed-migration.js": "b81f453542d4ee49",
+   "packages/backend/migrations/20260809090000-outbox-mailman-fields.js": "fe8b9efa9ed85ae4",
+   "packages/backend/migrations/20261001100000-outbox-domain-events.js": "e9fd4302f322fcf0",
+   "packages/backend/migrations/20261001140000-shops-tenancy-expand.js": "ee553fcdf13e2504",
+   "packages/backend/migrations/20261001160000-ledger-partitioning-payouts-recon.js": "d3581d6c92e577fb",
+   "packages/backend/migrations/20261001290000-public-api.js": "a3df3f97e02853f6",
+   "packages/backend/migrations/20261002170000-seller-onboarding.js": "5182cff5a76e0ca2",
+   "packages/backend/migrations/20261002180000-outbox-extra-error.js": "4c66c4635883141f",
+   "packages/backend/migrations/20261009130000-outbox-row-contract.js": "b96fe4b1c99a3b86",
+   "packages/backend/migrations/20261010140000-tenancy-s03-expand.js": "83c015f426cf7cbe",
+   "packages/backend/migrations/20261010141000-tenancy-s03-contract-fks.js": "be9a026486c0c7f0",
+   "packages/web/app/dashboard/seller/page.tsx": "f118669e0960e48a"
+  },
+  "specs": {
+   "W04.B-01": "13add0d3413bff25",
+   "W04.B-36": "fcc8e64e5e4d05f8",
+   "W04.R-13": "91b32c5778f1aab7"
+  }
+ },
+ "fault.clickhouse.stock-change": {
+  "code": "5421d0d92d414db0",
+  "spec": "3a2a9001db852821",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/catalog/application/product-command.service.ts": "88c1d095f06a340d",
+   "packages/backend/libs/domains/catalog/infra/models/product.model.ts": "b0656bb99edfec60",
+   "packages/backend/libs/infrastructure/outbox/outbox.model.ts": "54077ca4d70b485b",
+   "packages/backend/migrations/20260125105527-unnamed-migration.js": "5b056775ce884824",
+   "packages/backend/migrations/20260425085120-unnamed-migration.js": "b81f453542d4ee49",
+   "packages/backend/migrations/20260808090000-product-inventory.js": "4a65c08eb15d88a6",
+   "packages/backend/migrations/20260808120000-fold-inventory-into-product.js": "aacef9f21305bdb2",
+   "packages/backend/migrations/20260809090000-outbox-mailman-fields.js": "fe8b9efa9ed85ae4",
+   "packages/backend/migrations/20260925090000-create-chat-tables.js": "358ede1ec6827334",
+   "packages/backend/migrations/20261001100000-outbox-domain-events.js": "e9fd4302f322fcf0",
+   "packages/backend/migrations/20261001120000-product-view-count.js": "99acd29211991504",
+   "packages/backend/migrations/20261001140000-shops-tenancy-expand.js": "ee553fcdf13e2504",
+   "packages/backend/migrations/20261001220000-product-fts.js": "bd3351f7d9ded480",
+   "packages/backend/migrations/20261002100000-catalog-import.js": "2db019d13c68da53",
+   "packages/backend/migrations/20261002180000-outbox-extra-error.js": "4c66c4635883141f",
+   "packages/backend/migrations/20261009130000-outbox-row-contract.js": "b96fe4b1c99a3b86",
+   "packages/backend/migrations/20261010150000-catalog-s05-expand-columns.js": "be62c4c6d364f5cd",
+   "packages/backend/migrations/20261012110000-catalog-s05-contract-fks.js": "2727866f3ef5fc4b",
+   "packages/backend/migrations/20261012110100-catalog-s05-contract-shop-not-null.js": "8a47c2555685c414",
+   "packages/backend/migrations/20261019000200-catalog-s05-restore-shop-not-null.js": "2e65f3b53087f5ee",
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/web/components/seller/inventory/stock-popover.tsx": "eed2b2621e4eba19",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd"
+  },
+  "specs": {
+   "W04.AS-38": "eabea675046ec473",
+   "W04.B-36": "fcc8e64e5e4d05f8",
+   "W04.R-13": "91b32c5778f1aab7"
+  }
+ },
+ "fault.elasticmq.archive-product": {
+  "code": "5b7bbaed30ff4eef",
+  "spec": "0a2963f705bbcab4",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/catalog/api/product.controller.ts": "8e9e10f4f4b368fe",
+   "packages/backend/libs/domains/catalog/api/product.dto.ts": "1ee0842eafbb0cbd",
+   "packages/backend/libs/domains/catalog/application/product-command.service.ts": "88c1d095f06a340d",
+   "packages/backend/libs/domains/catalog/infra/models/product-status-history.model.ts": "20ecdb68a2a2ccab",
+   "packages/backend/libs/domains/catalog/infra/models/product.model.ts": "b0656bb99edfec60",
+   "packages/backend/libs/infrastructure/outbox/outbox.model.ts": "54077ca4d70b485b",
+   "packages/backend/migrations/20260125105527-unnamed-migration.js": "5b056775ce884824",
+   "packages/backend/migrations/20260425085120-unnamed-migration.js": "b81f453542d4ee49",
+   "packages/backend/migrations/20260808090000-product-inventory.js": "4a65c08eb15d88a6",
+   "packages/backend/migrations/20260808120000-fold-inventory-into-product.js": "aacef9f21305bdb2",
+   "packages/backend/migrations/20260809090000-outbox-mailman-fields.js": "fe8b9efa9ed85ae4",
+   "packages/backend/migrations/20260925090000-create-chat-tables.js": "358ede1ec6827334",
+   "packages/backend/migrations/20261001100000-outbox-domain-events.js": "e9fd4302f322fcf0",
+   "packages/backend/migrations/20261001120000-product-view-count.js": "99acd29211991504",
+   "packages/backend/migrations/20261001140000-shops-tenancy-expand.js": "ee553fcdf13e2504",
+   "packages/backend/migrations/20261001220000-product-fts.js": "bd3351f7d9ded480",
+   "packages/backend/migrations/20261002100000-catalog-import.js": "2db019d13c68da53",
+   "packages/backend/migrations/20261002180000-outbox-extra-error.js": "4c66c4635883141f",
+   "packages/backend/migrations/20261009130000-outbox-row-contract.js": "b96fe4b1c99a3b86",
+   "packages/backend/migrations/20261010150000-catalog-s05-expand-columns.js": "be62c4c6d364f5cd",
+   "packages/backend/migrations/20261010151000-catalog-s05-expand-tables.js": "0be6f3e30629dec1",
+   "packages/backend/migrations/20261012110000-catalog-s05-contract-fks.js": "2727866f3ef5fc4b",
+   "packages/backend/migrations/20261012110100-catalog-s05-contract-shop-not-null.js": "8a47c2555685c414",
+   "packages/backend/migrations/20261019000200-catalog-s05-restore-shop-not-null.js": "2e65f3b53087f5ee",
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/web/components/seller/inventory/archive-dialog.tsx": "e26b324fa29d0096",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd"
+  },
+  "specs": {
+   "W04.AS-39": "f1ac75bd7c4d139d",
+   "W04.B-36": "fcc8e64e5e4d05f8",
+   "W04.R-13": "91b32c5778f1aab7"
+  }
+ },
+ "fault.elasticmq.create-product": {
+  "code": "8587b3230d66b3a3",
+  "spec": "e84a3eb1b83b2cb3",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/catalog/api/product.controller.ts": "8e9e10f4f4b368fe",
+   "packages/backend/libs/domains/catalog/api/product.dto.ts": "1ee0842eafbb0cbd",
+   "packages/backend/libs/domains/catalog/application/product-command.service.ts": "88c1d095f06a340d",
+   "packages/backend/libs/domains/catalog/infra/models/product.model.ts": "b0656bb99edfec60",
+   "packages/backend/libs/infrastructure/outbox/outbox.model.ts": "54077ca4d70b485b",
+   "packages/backend/migrations/20260125105527-unnamed-migration.js": "5b056775ce884824",
+   "packages/backend/migrations/20260425085120-unnamed-migration.js": "b81f453542d4ee49",
+   "packages/backend/migrations/20260808090000-product-inventory.js": "4a65c08eb15d88a6",
+   "packages/backend/migrations/20260808120000-fold-inventory-into-product.js": "aacef9f21305bdb2",
+   "packages/backend/migrations/20260809090000-outbox-mailman-fields.js": "fe8b9efa9ed85ae4",
+   "packages/backend/migrations/20260925090000-create-chat-tables.js": "358ede1ec6827334",
+   "packages/backend/migrations/20261001100000-outbox-domain-events.js": "e9fd4302f322fcf0",
+   "packages/backend/migrations/20261001120000-product-view-count.js": "99acd29211991504",
+   "packages/backend/migrations/20261001140000-shops-tenancy-expand.js": "ee553fcdf13e2504",
+   "packages/backend/migrations/20261001220000-product-fts.js": "bd3351f7d9ded480",
+   "packages/backend/migrations/20261002100000-catalog-import.js": "2db019d13c68da53",
+   "packages/backend/migrations/20261002180000-outbox-extra-error.js": "4c66c4635883141f",
+   "packages/backend/migrations/20261009130000-outbox-row-contract.js": "b96fe4b1c99a3b86",
+   "packages/backend/migrations/20261010150000-catalog-s05-expand-columns.js": "be62c4c6d364f5cd",
+   "packages/backend/migrations/20261012110000-catalog-s05-contract-fks.js": "2727866f3ef5fc4b",
+   "packages/backend/migrations/20261012110100-catalog-s05-contract-shop-not-null.js": "8a47c2555685c414",
+   "packages/backend/migrations/20261019000200-catalog-s05-restore-shop-not-null.js": "2e65f3b53087f5ee",
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd"
+  },
+  "specs": {
+   "W04.AS-31": "c060454e7c10d038",
+   "W04.B-36": "fcc8e64e5e4d05f8",
+   "W04.R-13": "91b32c5778f1aab7"
+  }
+ },
+ "fault.elasticmq.edit-product": {
+  "code": "8587b3230d66b3a3",
+  "spec": "a99379dc26f644bf",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/catalog/api/product.controller.ts": "8e9e10f4f4b368fe",
+   "packages/backend/libs/domains/catalog/api/product.dto.ts": "1ee0842eafbb0cbd",
+   "packages/backend/libs/domains/catalog/application/product-command.service.ts": "88c1d095f06a340d",
+   "packages/backend/libs/domains/catalog/infra/models/product.model.ts": "b0656bb99edfec60",
+   "packages/backend/libs/infrastructure/outbox/outbox.model.ts": "54077ca4d70b485b",
+   "packages/backend/migrations/20260125105527-unnamed-migration.js": "5b056775ce884824",
+   "packages/backend/migrations/20260425085120-unnamed-migration.js": "b81f453542d4ee49",
+   "packages/backend/migrations/20260808090000-product-inventory.js": "4a65c08eb15d88a6",
+   "packages/backend/migrations/20260808120000-fold-inventory-into-product.js": "aacef9f21305bdb2",
+   "packages/backend/migrations/20260809090000-outbox-mailman-fields.js": "fe8b9efa9ed85ae4",
+   "packages/backend/migrations/20260925090000-create-chat-tables.js": "358ede1ec6827334",
+   "packages/backend/migrations/20261001100000-outbox-domain-events.js": "e9fd4302f322fcf0",
+   "packages/backend/migrations/20261001120000-product-view-count.js": "99acd29211991504",
+   "packages/backend/migrations/20261001140000-shops-tenancy-expand.js": "ee553fcdf13e2504",
+   "packages/backend/migrations/20261001220000-product-fts.js": "bd3351f7d9ded480",
+   "packages/backend/migrations/20261002100000-catalog-import.js": "2db019d13c68da53",
+   "packages/backend/migrations/20261002180000-outbox-extra-error.js": "4c66c4635883141f",
+   "packages/backend/migrations/20261009130000-outbox-row-contract.js": "b96fe4b1c99a3b86",
+   "packages/backend/migrations/20261010150000-catalog-s05-expand-columns.js": "be62c4c6d364f5cd",
+   "packages/backend/migrations/20261012110000-catalog-s05-contract-fks.js": "2727866f3ef5fc4b",
+   "packages/backend/migrations/20261012110100-catalog-s05-contract-shop-not-null.js": "8a47c2555685c414",
+   "packages/backend/migrations/20261019000200-catalog-s05-restore-shop-not-null.js": "2e65f3b53087f5ee",
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd"
+  },
+  "specs": {
+   "W04.AS-36": "8253b4dd2de7f301",
+   "W04.B-36": "fcc8e64e5e4d05f8",
+   "W04.R-13": "91b32c5778f1aab7"
+  }
+ },
+ "fault.elasticmq.inventory-load": {
+  "code": "fe715c40096a5c97",
+  "spec": "e31aeae76dbea0fa",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/catalog/application/product-command.service.ts": "88c1d095f06a340d",
+   "packages/backend/libs/domains/catalog/infra/models/product.model.ts": "b0656bb99edfec60",
+   "packages/backend/migrations/20260808090000-product-inventory.js": "4a65c08eb15d88a6",
+   "packages/backend/migrations/20260808120000-fold-inventory-into-product.js": "aacef9f21305bdb2",
+   "packages/backend/migrations/20260925090000-create-chat-tables.js": "358ede1ec6827334",
+   "packages/backend/migrations/20261001120000-product-view-count.js": "99acd29211991504",
+   "packages/backend/migrations/20261001140000-shops-tenancy-expand.js": "ee553fcdf13e2504",
+   "packages/backend/migrations/20261001220000-product-fts.js": "bd3351f7d9ded480",
+   "packages/backend/migrations/20261002100000-catalog-import.js": "2db019d13c68da53",
+   "packages/backend/migrations/20261010150000-catalog-s05-expand-columns.js": "be62c4c6d364f5cd",
+   "packages/backend/migrations/20261012110000-catalog-s05-contract-fks.js": "2727866f3ef5fc4b",
+   "packages/backend/migrations/20261012110100-catalog-s05-contract-shop-not-null.js": "8a47c2555685c414",
+   "packages/backend/migrations/20261019000200-catalog-s05-restore-shop-not-null.js": "2e65f3b53087f5ee",
+   "packages/contracts/src/bff/seller-overview.ts": "cf5790c3205c6cf1",
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/contracts/src/developer-platform/keys.ts": "444d734754f9c8e3",
+   "packages/contracts/src/developer-platform/logs.ts": "53ca17bc6a88f8cb",
+   "packages/contracts/src/developer-platform/webhooks.ts": "f8aae4c6f9163cf7",
+   "packages/contracts/src/orders/order.ts": "825d6af4758d3309",
+   "packages/contracts/src/search/shop-product-search.ts": "aed2f677d96f5388",
+   "packages/contracts/src/tenancy/index.ts": "324ccfbe0702f2bf",
+   "packages/web/app/dashboard/seller/[shopId]/inventory/page.tsx": "e9212480fb2b68a8",
+   "packages/web/lib/server/seller.server.ts": "7b2b5295d5ae9ac5"
+  },
+  "specs": {
+   "W04.AS-31": "c060454e7c10d038",
+   "W04.B-36": "fcc8e64e5e4d05f8"
+  }
+ },
+ "fault.elasticmq.orders-load": {
+  "code": "037a05123c701725",
+  "spec": "e31aeae76dbea0fa",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/orders/infra/models/bis-order.model.ts": "3e535d73bb950429",
+   "packages/backend/libs/domains/orders/infra/models/shop-order.model.ts": "2ff7760550e1e604",
+   "packages/backend/migrations/20260125105527-unnamed-migration.js": "5b056775ce884824",
+   "packages/backend/migrations/20261001150000-checkout-orders-inventory.js": "676b84c22daf1467",
+   "packages/backend/migrations/20261010160000-orders-s10-expand-columns.js": "968fcdb631260142",
+   "packages/backend/migrations/20261012120000-orders-s10-ref-code.js": "5ab8503aa0b764b6",
+   "packages/backend/migrations/20261019000000-orders-j05-attribution-expand.js": "1538cde1ac6a10b5",
+   "packages/web/app/dashboard/seller/[shopId]/orders/page.tsx": "c95755cc233da175"
+  },
+  "specs": {
+   "W04.AS-31": "c060454e7c10d038",
+   "W04.B-36": "fcc8e64e5e4d05f8"
+  }
+ },
+ "fault.elasticmq.outbox-published": {
+  "code": "b8173a038d6896e2",
+  "spec": "655f0c0142a9aa97",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/infrastructure/outbox/outbox.model.ts": "54077ca4d70b485b",
+   "packages/backend/migrations/20260125105527-unnamed-migration.js": "5b056775ce884824",
+   "packages/backend/migrations/20260425085120-unnamed-migration.js": "b81f453542d4ee49",
+   "packages/backend/migrations/20260809090000-outbox-mailman-fields.js": "fe8b9efa9ed85ae4",
+   "packages/backend/migrations/20261001100000-outbox-domain-events.js": "e9fd4302f322fcf0",
+   "packages/backend/migrations/20261002180000-outbox-extra-error.js": "4c66c4635883141f",
+   "packages/backend/migrations/20261009130000-outbox-row-contract.js": "b96fe4b1c99a3b86"
+  },
+  "specs": {
+   "W04.R-13": "91b32c5778f1aab7"
+  }
+ },
+ "fault.elasticmq.photo-upload": {
+  "code": "5d04ac0df03b763e",
+  "spec": "65d10667f96f043c",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/asset-library/application/upload.service.ts": "39fefbf155a9f284",
+   "packages/backend/libs/domains/media/api/media.controller.ts": "24acc041bb8e2bcf",
+   "packages/backend/libs/domains/media/application/upload.service.ts": "a925e44c29d1a370",
+   "packages/contracts/src/asset-library/commit.ts": "0a1cfbb2de3a594d",
+   "packages/contracts/src/asset-library/prepare.ts": "7089b3db1a38056a",
+   "packages/contracts/src/media/gallery.ts": "65db2579c6eb82d4",
+   "packages/contracts/src/media/media.ts": "bd0571339629bf2f",
+   "packages/contracts/src/media/video.ts": "b24f3f7006e47042",
+   "packages/web/components/seller/media/gallery-view.tsx": "d4ec94b8d4c7d135",
+   "packages/web/lib/api/client.ts": "0fa4cb70bbc2d203",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/orders.ts": "7631ea19bc997f81",
+   "packages/web/lib/api/parse.ts": "82453dbb70bf149b",
+   "packages/web/lib/api/seller-media.ts": "31b6db808f27ab21",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
+  },
+  "specs": {
+   "S29.B-01": "382b54f922904edd",
+   "S29.R-11": "13636d6b4acaa3f1",
+   "W04.R-13": "91b32c5778f1aab7"
+  }
+ },
+ "fault.elasticmq.shop-open": {
+  "code": "045932b45b65c06e",
+  "spec": "bbb1391dc472ab05",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/tenancy/api/shop.controller.ts": "be0ce071ac0c848a",
+   "packages/backend/libs/domains/tenancy/api/tenancy.dto.ts": "e1198cdca40b60bd",
+   "packages/backend/libs/domains/tenancy/application/shop.service.ts": "9a312d91c7d681af",
+   "packages/backend/libs/domains/tenancy/infra/models/shop-membership.model.ts": "45533969e65b506e",
+   "packages/backend/libs/domains/tenancy/infra/models/shop.model.ts": "ba1b0987ab3d736f",
+   "packages/backend/libs/infrastructure/outbox/outbox.model.ts": "54077ca4d70b485b",
+   "packages/backend/migrations/20260125105527-unnamed-migration.js": "5b056775ce884824",
+   "packages/backend/migrations/20260425085120-unnamed-migration.js": "b81f453542d4ee49",
+   "packages/backend/migrations/20260809090000-outbox-mailman-fields.js": "fe8b9efa9ed85ae4",
+   "packages/backend/migrations/20261001100000-outbox-domain-events.js": "e9fd4302f322fcf0",
+   "packages/backend/migrations/20261001140000-shops-tenancy-expand.js": "ee553fcdf13e2504",
+   "packages/backend/migrations/20261001160000-ledger-partitioning-payouts-recon.js": "d3581d6c92e577fb",
+   "packages/backend/migrations/20261001290000-public-api.js": "a3df3f97e02853f6",
+   "packages/backend/migrations/20261002170000-seller-onboarding.js": "5182cff5a76e0ca2",
+   "packages/backend/migrations/20261002180000-outbox-extra-error.js": "4c66c4635883141f",
+   "packages/backend/migrations/20261009130000-outbox-row-contract.js": "b96fe4b1c99a3b86",
+   "packages/backend/migrations/20261010140000-tenancy-s03-expand.js": "83c015f426cf7cbe",
+   "packages/backend/migrations/20261010141000-tenancy-s03-contract-fks.js": "be9a026486c0c7f0",
+   "packages/web/app/dashboard/seller/page.tsx": "f118669e0960e48a"
+  },
+  "specs": {
+   "W04.B-01": "13add0d3413bff25",
+   "W04.B-36": "fcc8e64e5e4d05f8",
+   "W04.R-13": "91b32c5778f1aab7"
+  }
+ },
+ "fault.elasticmq.stock-change": {
+  "code": "5421d0d92d414db0",
+  "spec": "3a2a9001db852821",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/catalog/application/product-command.service.ts": "88c1d095f06a340d",
+   "packages/backend/libs/domains/catalog/infra/models/product.model.ts": "b0656bb99edfec60",
+   "packages/backend/libs/infrastructure/outbox/outbox.model.ts": "54077ca4d70b485b",
+   "packages/backend/migrations/20260125105527-unnamed-migration.js": "5b056775ce884824",
+   "packages/backend/migrations/20260425085120-unnamed-migration.js": "b81f453542d4ee49",
+   "packages/backend/migrations/20260808090000-product-inventory.js": "4a65c08eb15d88a6",
+   "packages/backend/migrations/20260808120000-fold-inventory-into-product.js": "aacef9f21305bdb2",
+   "packages/backend/migrations/20260809090000-outbox-mailman-fields.js": "fe8b9efa9ed85ae4",
+   "packages/backend/migrations/20260925090000-create-chat-tables.js": "358ede1ec6827334",
+   "packages/backend/migrations/20261001100000-outbox-domain-events.js": "e9fd4302f322fcf0",
+   "packages/backend/migrations/20261001120000-product-view-count.js": "99acd29211991504",
+   "packages/backend/migrations/20261001140000-shops-tenancy-expand.js": "ee553fcdf13e2504",
+   "packages/backend/migrations/20261001220000-product-fts.js": "bd3351f7d9ded480",
+   "packages/backend/migrations/20261002100000-catalog-import.js": "2db019d13c68da53",
+   "packages/backend/migrations/20261002180000-outbox-extra-error.js": "4c66c4635883141f",
+   "packages/backend/migrations/20261009130000-outbox-row-contract.js": "b96fe4b1c99a3b86",
+   "packages/backend/migrations/20261010150000-catalog-s05-expand-columns.js": "be62c4c6d364f5cd",
+   "packages/backend/migrations/20261012110000-catalog-s05-contract-fks.js": "2727866f3ef5fc4b",
+   "packages/backend/migrations/20261012110100-catalog-s05-contract-shop-not-null.js": "8a47c2555685c414",
+   "packages/backend/migrations/20261019000200-catalog-s05-restore-shop-not-null.js": "2e65f3b53087f5ee",
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/web/components/seller/inventory/stock-popover.tsx": "eed2b2621e4eba19",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd"
+  },
+  "specs": {
+   "W04.AS-38": "eabea675046ec473",
+   "W04.B-36": "fcc8e64e5e4d05f8",
+   "W04.R-13": "91b32c5778f1aab7"
+  }
+ },
+ "fault.elasticsearch.archive-product": {
+  "code": "5b7bbaed30ff4eef",
+  "spec": "0a2963f705bbcab4",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/catalog/api/product.controller.ts": "8e9e10f4f4b368fe",
+   "packages/backend/libs/domains/catalog/api/product.dto.ts": "1ee0842eafbb0cbd",
+   "packages/backend/libs/domains/catalog/application/product-command.service.ts": "88c1d095f06a340d",
+   "packages/backend/libs/domains/catalog/infra/models/product-status-history.model.ts": "20ecdb68a2a2ccab",
+   "packages/backend/libs/domains/catalog/infra/models/product.model.ts": "b0656bb99edfec60",
+   "packages/backend/libs/infrastructure/outbox/outbox.model.ts": "54077ca4d70b485b",
+   "packages/backend/migrations/20260125105527-unnamed-migration.js": "5b056775ce884824",
+   "packages/backend/migrations/20260425085120-unnamed-migration.js": "b81f453542d4ee49",
+   "packages/backend/migrations/20260808090000-product-inventory.js": "4a65c08eb15d88a6",
+   "packages/backend/migrations/20260808120000-fold-inventory-into-product.js": "aacef9f21305bdb2",
+   "packages/backend/migrations/20260809090000-outbox-mailman-fields.js": "fe8b9efa9ed85ae4",
+   "packages/backend/migrations/20260925090000-create-chat-tables.js": "358ede1ec6827334",
+   "packages/backend/migrations/20261001100000-outbox-domain-events.js": "e9fd4302f322fcf0",
+   "packages/backend/migrations/20261001120000-product-view-count.js": "99acd29211991504",
+   "packages/backend/migrations/20261001140000-shops-tenancy-expand.js": "ee553fcdf13e2504",
+   "packages/backend/migrations/20261001220000-product-fts.js": "bd3351f7d9ded480",
+   "packages/backend/migrations/20261002100000-catalog-import.js": "2db019d13c68da53",
+   "packages/backend/migrations/20261002180000-outbox-extra-error.js": "4c66c4635883141f",
+   "packages/backend/migrations/20261009130000-outbox-row-contract.js": "b96fe4b1c99a3b86",
+   "packages/backend/migrations/20261010150000-catalog-s05-expand-columns.js": "be62c4c6d364f5cd",
+   "packages/backend/migrations/20261010151000-catalog-s05-expand-tables.js": "0be6f3e30629dec1",
+   "packages/backend/migrations/20261012110000-catalog-s05-contract-fks.js": "2727866f3ef5fc4b",
+   "packages/backend/migrations/20261012110100-catalog-s05-contract-shop-not-null.js": "8a47c2555685c414",
+   "packages/backend/migrations/20261019000200-catalog-s05-restore-shop-not-null.js": "2e65f3b53087f5ee",
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/web/components/seller/inventory/archive-dialog.tsx": "e26b324fa29d0096",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd"
+  },
+  "specs": {
+   "W04.AS-39": "f1ac75bd7c4d139d",
+   "W04.B-36": "fcc8e64e5e4d05f8",
+   "W04.R-13": "91b32c5778f1aab7"
+  }
+ },
+ "fault.elasticsearch.create-product": {
+  "code": "8587b3230d66b3a3",
+  "spec": "e84a3eb1b83b2cb3",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/catalog/api/product.controller.ts": "8e9e10f4f4b368fe",
+   "packages/backend/libs/domains/catalog/api/product.dto.ts": "1ee0842eafbb0cbd",
+   "packages/backend/libs/domains/catalog/application/product-command.service.ts": "88c1d095f06a340d",
+   "packages/backend/libs/domains/catalog/infra/models/product.model.ts": "b0656bb99edfec60",
+   "packages/backend/libs/infrastructure/outbox/outbox.model.ts": "54077ca4d70b485b",
+   "packages/backend/migrations/20260125105527-unnamed-migration.js": "5b056775ce884824",
+   "packages/backend/migrations/20260425085120-unnamed-migration.js": "b81f453542d4ee49",
+   "packages/backend/migrations/20260808090000-product-inventory.js": "4a65c08eb15d88a6",
+   "packages/backend/migrations/20260808120000-fold-inventory-into-product.js": "aacef9f21305bdb2",
+   "packages/backend/migrations/20260809090000-outbox-mailman-fields.js": "fe8b9efa9ed85ae4",
+   "packages/backend/migrations/20260925090000-create-chat-tables.js": "358ede1ec6827334",
+   "packages/backend/migrations/20261001100000-outbox-domain-events.js": "e9fd4302f322fcf0",
+   "packages/backend/migrations/20261001120000-product-view-count.js": "99acd29211991504",
+   "packages/backend/migrations/20261001140000-shops-tenancy-expand.js": "ee553fcdf13e2504",
+   "packages/backend/migrations/20261001220000-product-fts.js": "bd3351f7d9ded480",
+   "packages/backend/migrations/20261002100000-catalog-import.js": "2db019d13c68da53",
+   "packages/backend/migrations/20261002180000-outbox-extra-error.js": "4c66c4635883141f",
+   "packages/backend/migrations/20261009130000-outbox-row-contract.js": "b96fe4b1c99a3b86",
+   "packages/backend/migrations/20261010150000-catalog-s05-expand-columns.js": "be62c4c6d364f5cd",
+   "packages/backend/migrations/20261012110000-catalog-s05-contract-fks.js": "2727866f3ef5fc4b",
+   "packages/backend/migrations/20261012110100-catalog-s05-contract-shop-not-null.js": "8a47c2555685c414",
+   "packages/backend/migrations/20261019000200-catalog-s05-restore-shop-not-null.js": "2e65f3b53087f5ee",
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd"
+  },
+  "specs": {
+   "W04.AS-31": "c060454e7c10d038",
+   "W04.B-36": "fcc8e64e5e4d05f8",
+   "W04.R-13": "91b32c5778f1aab7"
+  }
+ },
+ "fault.elasticsearch.edit-product": {
+  "code": "8587b3230d66b3a3",
+  "spec": "a99379dc26f644bf",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/catalog/api/product.controller.ts": "8e9e10f4f4b368fe",
+   "packages/backend/libs/domains/catalog/api/product.dto.ts": "1ee0842eafbb0cbd",
+   "packages/backend/libs/domains/catalog/application/product-command.service.ts": "88c1d095f06a340d",
+   "packages/backend/libs/domains/catalog/infra/models/product.model.ts": "b0656bb99edfec60",
+   "packages/backend/libs/infrastructure/outbox/outbox.model.ts": "54077ca4d70b485b",
+   "packages/backend/migrations/20260125105527-unnamed-migration.js": "5b056775ce884824",
+   "packages/backend/migrations/20260425085120-unnamed-migration.js": "b81f453542d4ee49",
+   "packages/backend/migrations/20260808090000-product-inventory.js": "4a65c08eb15d88a6",
+   "packages/backend/migrations/20260808120000-fold-inventory-into-product.js": "aacef9f21305bdb2",
+   "packages/backend/migrations/20260809090000-outbox-mailman-fields.js": "fe8b9efa9ed85ae4",
+   "packages/backend/migrations/20260925090000-create-chat-tables.js": "358ede1ec6827334",
+   "packages/backend/migrations/20261001100000-outbox-domain-events.js": "e9fd4302f322fcf0",
+   "packages/backend/migrations/20261001120000-product-view-count.js": "99acd29211991504",
+   "packages/backend/migrations/20261001140000-shops-tenancy-expand.js": "ee553fcdf13e2504",
+   "packages/backend/migrations/20261001220000-product-fts.js": "bd3351f7d9ded480",
+   "packages/backend/migrations/20261002100000-catalog-import.js": "2db019d13c68da53",
+   "packages/backend/migrations/20261002180000-outbox-extra-error.js": "4c66c4635883141f",
+   "packages/backend/migrations/20261009130000-outbox-row-contract.js": "b96fe4b1c99a3b86",
+   "packages/backend/migrations/20261010150000-catalog-s05-expand-columns.js": "be62c4c6d364f5cd",
+   "packages/backend/migrations/20261012110000-catalog-s05-contract-fks.js": "2727866f3ef5fc4b",
+   "packages/backend/migrations/20261012110100-catalog-s05-contract-shop-not-null.js": "8a47c2555685c414",
+   "packages/backend/migrations/20261019000200-catalog-s05-restore-shop-not-null.js": "2e65f3b53087f5ee",
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd"
+  },
+  "specs": {
+   "W04.AS-36": "8253b4dd2de7f301",
+   "W04.B-36": "fcc8e64e5e4d05f8",
+   "W04.R-13": "91b32c5778f1aab7"
+  }
+ },
+ "fault.elasticsearch.inventory-load": {
+  "code": "fe715c40096a5c97",
+  "spec": "e31aeae76dbea0fa",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/catalog/application/product-command.service.ts": "88c1d095f06a340d",
+   "packages/backend/libs/domains/catalog/infra/models/product.model.ts": "b0656bb99edfec60",
+   "packages/backend/migrations/20260808090000-product-inventory.js": "4a65c08eb15d88a6",
+   "packages/backend/migrations/20260808120000-fold-inventory-into-product.js": "aacef9f21305bdb2",
+   "packages/backend/migrations/20260925090000-create-chat-tables.js": "358ede1ec6827334",
+   "packages/backend/migrations/20261001120000-product-view-count.js": "99acd29211991504",
+   "packages/backend/migrations/20261001140000-shops-tenancy-expand.js": "ee553fcdf13e2504",
+   "packages/backend/migrations/20261001220000-product-fts.js": "bd3351f7d9ded480",
+   "packages/backend/migrations/20261002100000-catalog-import.js": "2db019d13c68da53",
+   "packages/backend/migrations/20261010150000-catalog-s05-expand-columns.js": "be62c4c6d364f5cd",
+   "packages/backend/migrations/20261012110000-catalog-s05-contract-fks.js": "2727866f3ef5fc4b",
+   "packages/backend/migrations/20261012110100-catalog-s05-contract-shop-not-null.js": "8a47c2555685c414",
+   "packages/backend/migrations/20261019000200-catalog-s05-restore-shop-not-null.js": "2e65f3b53087f5ee",
+   "packages/contracts/src/bff/seller-overview.ts": "cf5790c3205c6cf1",
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/contracts/src/developer-platform/keys.ts": "444d734754f9c8e3",
+   "packages/contracts/src/developer-platform/logs.ts": "53ca17bc6a88f8cb",
+   "packages/contracts/src/developer-platform/webhooks.ts": "f8aae4c6f9163cf7",
+   "packages/contracts/src/orders/order.ts": "825d6af4758d3309",
+   "packages/contracts/src/search/shop-product-search.ts": "aed2f677d96f5388",
+   "packages/contracts/src/tenancy/index.ts": "324ccfbe0702f2bf",
+   "packages/web/app/dashboard/seller/[shopId]/inventory/page.tsx": "e9212480fb2b68a8",
+   "packages/web/lib/server/seller.server.ts": "7b2b5295d5ae9ac5"
+  },
+  "specs": {
+   "W04.AS-31": "c060454e7c10d038",
+   "W04.B-36": "fcc8e64e5e4d05f8"
+  }
+ },
+ "fault.elasticsearch.inventory-search": {
+  "code": "cba50ba9c0f5b0ee",
+  "spec": "10e4c7899eb34217",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/discovery/application/shop-product-search.service.ts": "225c24f2703435a0",
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/contracts/src/search/shop-product-search.ts": "aed2f677d96f5388",
+   "packages/web/lib/seller/wire.ts": "c92f8861bcf3babb"
+  },
+  "specs": {
+   "S32": "24edc6d0e14803a3",
+   "W04.AS-30": "ce9b4472d75deda6"
+  }
+ },
+ "fault.elasticsearch.orders-load": {
+  "code": "037a05123c701725",
+  "spec": "e31aeae76dbea0fa",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/orders/infra/models/bis-order.model.ts": "3e535d73bb950429",
+   "packages/backend/libs/domains/orders/infra/models/shop-order.model.ts": "2ff7760550e1e604",
+   "packages/backend/migrations/20260125105527-unnamed-migration.js": "5b056775ce884824",
+   "packages/backend/migrations/20261001150000-checkout-orders-inventory.js": "676b84c22daf1467",
+   "packages/backend/migrations/20261010160000-orders-s10-expand-columns.js": "968fcdb631260142",
+   "packages/backend/migrations/20261012120000-orders-s10-ref-code.js": "5ab8503aa0b764b6",
+   "packages/backend/migrations/20261019000000-orders-j05-attribution-expand.js": "1538cde1ac6a10b5",
+   "packages/web/app/dashboard/seller/[shopId]/orders/page.tsx": "c95755cc233da175"
+  },
+  "specs": {
+   "W04.AS-31": "c060454e7c10d038",
+   "W04.B-36": "fcc8e64e5e4d05f8"
+  }
+ },
+ "fault.elasticsearch.outbox-published": {
+  "code": "b8173a038d6896e2",
+  "spec": "655f0c0142a9aa97",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/infrastructure/outbox/outbox.model.ts": "54077ca4d70b485b",
+   "packages/backend/migrations/20260125105527-unnamed-migration.js": "5b056775ce884824",
+   "packages/backend/migrations/20260425085120-unnamed-migration.js": "b81f453542d4ee49",
+   "packages/backend/migrations/20260809090000-outbox-mailman-fields.js": "fe8b9efa9ed85ae4",
+   "packages/backend/migrations/20261001100000-outbox-domain-events.js": "e9fd4302f322fcf0",
+   "packages/backend/migrations/20261002180000-outbox-extra-error.js": "4c66c4635883141f",
+   "packages/backend/migrations/20261009130000-outbox-row-contract.js": "b96fe4b1c99a3b86"
+  },
+  "specs": {
+   "W04.R-13": "91b32c5778f1aab7"
+  }
+ },
+ "fault.elasticsearch.photo-upload": {
+  "code": "5d04ac0df03b763e",
+  "spec": "65d10667f96f043c",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/asset-library/application/upload.service.ts": "39fefbf155a9f284",
+   "packages/backend/libs/domains/media/api/media.controller.ts": "24acc041bb8e2bcf",
+   "packages/backend/libs/domains/media/application/upload.service.ts": "a925e44c29d1a370",
+   "packages/contracts/src/asset-library/commit.ts": "0a1cfbb2de3a594d",
+   "packages/contracts/src/asset-library/prepare.ts": "7089b3db1a38056a",
+   "packages/contracts/src/media/gallery.ts": "65db2579c6eb82d4",
+   "packages/contracts/src/media/media.ts": "bd0571339629bf2f",
+   "packages/contracts/src/media/video.ts": "b24f3f7006e47042",
+   "packages/web/components/seller/media/gallery-view.tsx": "d4ec94b8d4c7d135",
+   "packages/web/lib/api/client.ts": "0fa4cb70bbc2d203",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/orders.ts": "7631ea19bc997f81",
+   "packages/web/lib/api/parse.ts": "82453dbb70bf149b",
+   "packages/web/lib/api/seller-media.ts": "31b6db808f27ab21",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
+  },
+  "specs": {
+   "S29.B-01": "382b54f922904edd",
+   "S29.R-11": "13636d6b4acaa3f1",
+   "W04.R-13": "91b32c5778f1aab7"
+  }
+ },
+ "fault.elasticsearch.shop-open": {
+  "code": "045932b45b65c06e",
+  "spec": "bbb1391dc472ab05",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/tenancy/api/shop.controller.ts": "be0ce071ac0c848a",
+   "packages/backend/libs/domains/tenancy/api/tenancy.dto.ts": "e1198cdca40b60bd",
+   "packages/backend/libs/domains/tenancy/application/shop.service.ts": "9a312d91c7d681af",
+   "packages/backend/libs/domains/tenancy/infra/models/shop-membership.model.ts": "45533969e65b506e",
+   "packages/backend/libs/domains/tenancy/infra/models/shop.model.ts": "ba1b0987ab3d736f",
+   "packages/backend/libs/infrastructure/outbox/outbox.model.ts": "54077ca4d70b485b",
+   "packages/backend/migrations/20260125105527-unnamed-migration.js": "5b056775ce884824",
+   "packages/backend/migrations/20260425085120-unnamed-migration.js": "b81f453542d4ee49",
+   "packages/backend/migrations/20260809090000-outbox-mailman-fields.js": "fe8b9efa9ed85ae4",
+   "packages/backend/migrations/20261001100000-outbox-domain-events.js": "e9fd4302f322fcf0",
+   "packages/backend/migrations/20261001140000-shops-tenancy-expand.js": "ee553fcdf13e2504",
+   "packages/backend/migrations/20261001160000-ledger-partitioning-payouts-recon.js": "d3581d6c92e577fb",
+   "packages/backend/migrations/20261001290000-public-api.js": "a3df3f97e02853f6",
+   "packages/backend/migrations/20261002170000-seller-onboarding.js": "5182cff5a76e0ca2",
+   "packages/backend/migrations/20261002180000-outbox-extra-error.js": "4c66c4635883141f",
+   "packages/backend/migrations/20261009130000-outbox-row-contract.js": "b96fe4b1c99a3b86",
+   "packages/backend/migrations/20261010140000-tenancy-s03-expand.js": "83c015f426cf7cbe",
+   "packages/backend/migrations/20261010141000-tenancy-s03-contract-fks.js": "be9a026486c0c7f0",
+   "packages/web/app/dashboard/seller/page.tsx": "f118669e0960e48a"
+  },
+  "specs": {
+   "W04.B-01": "13add0d3413bff25",
+   "W04.B-36": "fcc8e64e5e4d05f8",
+   "W04.R-13": "91b32c5778f1aab7"
+  }
+ },
+ "fault.elasticsearch.stock-change": {
+  "code": "5421d0d92d414db0",
+  "spec": "3a2a9001db852821",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/catalog/application/product-command.service.ts": "88c1d095f06a340d",
+   "packages/backend/libs/domains/catalog/infra/models/product.model.ts": "b0656bb99edfec60",
+   "packages/backend/libs/infrastructure/outbox/outbox.model.ts": "54077ca4d70b485b",
+   "packages/backend/migrations/20260125105527-unnamed-migration.js": "5b056775ce884824",
+   "packages/backend/migrations/20260425085120-unnamed-migration.js": "b81f453542d4ee49",
+   "packages/backend/migrations/20260808090000-product-inventory.js": "4a65c08eb15d88a6",
+   "packages/backend/migrations/20260808120000-fold-inventory-into-product.js": "aacef9f21305bdb2",
+   "packages/backend/migrations/20260809090000-outbox-mailman-fields.js": "fe8b9efa9ed85ae4",
+   "packages/backend/migrations/20260925090000-create-chat-tables.js": "358ede1ec6827334",
+   "packages/backend/migrations/20261001100000-outbox-domain-events.js": "e9fd4302f322fcf0",
+   "packages/backend/migrations/20261001120000-product-view-count.js": "99acd29211991504",
+   "packages/backend/migrations/20261001140000-shops-tenancy-expand.js": "ee553fcdf13e2504",
+   "packages/backend/migrations/20261001220000-product-fts.js": "bd3351f7d9ded480",
+   "packages/backend/migrations/20261002100000-catalog-import.js": "2db019d13c68da53",
+   "packages/backend/migrations/20261002180000-outbox-extra-error.js": "4c66c4635883141f",
+   "packages/backend/migrations/20261009130000-outbox-row-contract.js": "b96fe4b1c99a3b86",
+   "packages/backend/migrations/20261010150000-catalog-s05-expand-columns.js": "be62c4c6d364f5cd",
+   "packages/backend/migrations/20261012110000-catalog-s05-contract-fks.js": "2727866f3ef5fc4b",
+   "packages/backend/migrations/20261012110100-catalog-s05-contract-shop-not-null.js": "8a47c2555685c414",
+   "packages/backend/migrations/20261019000200-catalog-s05-restore-shop-not-null.js": "2e65f3b53087f5ee",
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/web/components/seller/inventory/stock-popover.tsx": "eed2b2621e4eba19",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd"
+  },
+  "specs": {
+   "W04.AS-38": "eabea675046ec473",
+   "W04.B-36": "fcc8e64e5e4d05f8",
+   "W04.R-13": "91b32c5778f1aab7"
+  }
+ },
+ "fault.kafka.archive-product": {
+  "code": "5b7bbaed30ff4eef",
+  "spec": "0a2963f705bbcab4",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/catalog/api/product.controller.ts": "8e9e10f4f4b368fe",
+   "packages/backend/libs/domains/catalog/api/product.dto.ts": "1ee0842eafbb0cbd",
+   "packages/backend/libs/domains/catalog/application/product-command.service.ts": "88c1d095f06a340d",
+   "packages/backend/libs/domains/catalog/infra/models/product-status-history.model.ts": "20ecdb68a2a2ccab",
+   "packages/backend/libs/domains/catalog/infra/models/product.model.ts": "b0656bb99edfec60",
+   "packages/backend/libs/infrastructure/outbox/outbox.model.ts": "54077ca4d70b485b",
+   "packages/backend/migrations/20260125105527-unnamed-migration.js": "5b056775ce884824",
+   "packages/backend/migrations/20260425085120-unnamed-migration.js": "b81f453542d4ee49",
+   "packages/backend/migrations/20260808090000-product-inventory.js": "4a65c08eb15d88a6",
+   "packages/backend/migrations/20260808120000-fold-inventory-into-product.js": "aacef9f21305bdb2",
+   "packages/backend/migrations/20260809090000-outbox-mailman-fields.js": "fe8b9efa9ed85ae4",
+   "packages/backend/migrations/20260925090000-create-chat-tables.js": "358ede1ec6827334",
+   "packages/backend/migrations/20261001100000-outbox-domain-events.js": "e9fd4302f322fcf0",
+   "packages/backend/migrations/20261001120000-product-view-count.js": "99acd29211991504",
+   "packages/backend/migrations/20261001140000-shops-tenancy-expand.js": "ee553fcdf13e2504",
+   "packages/backend/migrations/20261001220000-product-fts.js": "bd3351f7d9ded480",
+   "packages/backend/migrations/20261002100000-catalog-import.js": "2db019d13c68da53",
+   "packages/backend/migrations/20261002180000-outbox-extra-error.js": "4c66c4635883141f",
+   "packages/backend/migrations/20261009130000-outbox-row-contract.js": "b96fe4b1c99a3b86",
+   "packages/backend/migrations/20261010150000-catalog-s05-expand-columns.js": "be62c4c6d364f5cd",
+   "packages/backend/migrations/20261010151000-catalog-s05-expand-tables.js": "0be6f3e30629dec1",
+   "packages/backend/migrations/20261012110000-catalog-s05-contract-fks.js": "2727866f3ef5fc4b",
+   "packages/backend/migrations/20261012110100-catalog-s05-contract-shop-not-null.js": "8a47c2555685c414",
+   "packages/backend/migrations/20261019000200-catalog-s05-restore-shop-not-null.js": "2e65f3b53087f5ee",
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/web/components/seller/inventory/archive-dialog.tsx": "e26b324fa29d0096",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd"
+  },
+  "specs": {
+   "W04.AS-39": "f1ac75bd7c4d139d",
+   "W04.B-36": "fcc8e64e5e4d05f8",
+   "W04.R-13": "91b32c5778f1aab7"
+  }
+ },
+ "fault.kafka.create-product": {
+  "code": "8587b3230d66b3a3",
+  "spec": "e84a3eb1b83b2cb3",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/catalog/api/product.controller.ts": "8e9e10f4f4b368fe",
+   "packages/backend/libs/domains/catalog/api/product.dto.ts": "1ee0842eafbb0cbd",
+   "packages/backend/libs/domains/catalog/application/product-command.service.ts": "88c1d095f06a340d",
+   "packages/backend/libs/domains/catalog/infra/models/product.model.ts": "b0656bb99edfec60",
+   "packages/backend/libs/infrastructure/outbox/outbox.model.ts": "54077ca4d70b485b",
+   "packages/backend/migrations/20260125105527-unnamed-migration.js": "5b056775ce884824",
+   "packages/backend/migrations/20260425085120-unnamed-migration.js": "b81f453542d4ee49",
+   "packages/backend/migrations/20260808090000-product-inventory.js": "4a65c08eb15d88a6",
+   "packages/backend/migrations/20260808120000-fold-inventory-into-product.js": "aacef9f21305bdb2",
+   "packages/backend/migrations/20260809090000-outbox-mailman-fields.js": "fe8b9efa9ed85ae4",
+   "packages/backend/migrations/20260925090000-create-chat-tables.js": "358ede1ec6827334",
+   "packages/backend/migrations/20261001100000-outbox-domain-events.js": "e9fd4302f322fcf0",
+   "packages/backend/migrations/20261001120000-product-view-count.js": "99acd29211991504",
+   "packages/backend/migrations/20261001140000-shops-tenancy-expand.js": "ee553fcdf13e2504",
+   "packages/backend/migrations/20261001220000-product-fts.js": "bd3351f7d9ded480",
+   "packages/backend/migrations/20261002100000-catalog-import.js": "2db019d13c68da53",
+   "packages/backend/migrations/20261002180000-outbox-extra-error.js": "4c66c4635883141f",
+   "packages/backend/migrations/20261009130000-outbox-row-contract.js": "b96fe4b1c99a3b86",
+   "packages/backend/migrations/20261010150000-catalog-s05-expand-columns.js": "be62c4c6d364f5cd",
+   "packages/backend/migrations/20261012110000-catalog-s05-contract-fks.js": "2727866f3ef5fc4b",
+   "packages/backend/migrations/20261012110100-catalog-s05-contract-shop-not-null.js": "8a47c2555685c414",
+   "packages/backend/migrations/20261019000200-catalog-s05-restore-shop-not-null.js": "2e65f3b53087f5ee",
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd"
+  },
+  "specs": {
+   "W04.AS-31": "c060454e7c10d038",
+   "W04.B-36": "fcc8e64e5e4d05f8",
+   "W04.R-13": "91b32c5778f1aab7"
+  }
+ },
+ "fault.kafka.edit-product": {
+  "code": "8587b3230d66b3a3",
+  "spec": "a99379dc26f644bf",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/catalog/api/product.controller.ts": "8e9e10f4f4b368fe",
+   "packages/backend/libs/domains/catalog/api/product.dto.ts": "1ee0842eafbb0cbd",
+   "packages/backend/libs/domains/catalog/application/product-command.service.ts": "88c1d095f06a340d",
+   "packages/backend/libs/domains/catalog/infra/models/product.model.ts": "b0656bb99edfec60",
+   "packages/backend/libs/infrastructure/outbox/outbox.model.ts": "54077ca4d70b485b",
+   "packages/backend/migrations/20260125105527-unnamed-migration.js": "5b056775ce884824",
+   "packages/backend/migrations/20260425085120-unnamed-migration.js": "b81f453542d4ee49",
+   "packages/backend/migrations/20260808090000-product-inventory.js": "4a65c08eb15d88a6",
+   "packages/backend/migrations/20260808120000-fold-inventory-into-product.js": "aacef9f21305bdb2",
+   "packages/backend/migrations/20260809090000-outbox-mailman-fields.js": "fe8b9efa9ed85ae4",
+   "packages/backend/migrations/20260925090000-create-chat-tables.js": "358ede1ec6827334",
+   "packages/backend/migrations/20261001100000-outbox-domain-events.js": "e9fd4302f322fcf0",
+   "packages/backend/migrations/20261001120000-product-view-count.js": "99acd29211991504",
+   "packages/backend/migrations/20261001140000-shops-tenancy-expand.js": "ee553fcdf13e2504",
+   "packages/backend/migrations/20261001220000-product-fts.js": "bd3351f7d9ded480",
+   "packages/backend/migrations/20261002100000-catalog-import.js": "2db019d13c68da53",
+   "packages/backend/migrations/20261002180000-outbox-extra-error.js": "4c66c4635883141f",
+   "packages/backend/migrations/20261009130000-outbox-row-contract.js": "b96fe4b1c99a3b86",
+   "packages/backend/migrations/20261010150000-catalog-s05-expand-columns.js": "be62c4c6d364f5cd",
+   "packages/backend/migrations/20261012110000-catalog-s05-contract-fks.js": "2727866f3ef5fc4b",
+   "packages/backend/migrations/20261012110100-catalog-s05-contract-shop-not-null.js": "8a47c2555685c414",
+   "packages/backend/migrations/20261019000200-catalog-s05-restore-shop-not-null.js": "2e65f3b53087f5ee",
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd"
+  },
+  "specs": {
+   "W04.AS-36": "8253b4dd2de7f301",
+   "W04.B-36": "fcc8e64e5e4d05f8",
+   "W04.R-13": "91b32c5778f1aab7"
+  }
+ },
+ "fault.kafka.inventory-load": {
+  "code": "fe715c40096a5c97",
+  "spec": "e31aeae76dbea0fa",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/catalog/application/product-command.service.ts": "88c1d095f06a340d",
+   "packages/backend/libs/domains/catalog/infra/models/product.model.ts": "b0656bb99edfec60",
+   "packages/backend/migrations/20260808090000-product-inventory.js": "4a65c08eb15d88a6",
+   "packages/backend/migrations/20260808120000-fold-inventory-into-product.js": "aacef9f21305bdb2",
+   "packages/backend/migrations/20260925090000-create-chat-tables.js": "358ede1ec6827334",
+   "packages/backend/migrations/20261001120000-product-view-count.js": "99acd29211991504",
+   "packages/backend/migrations/20261001140000-shops-tenancy-expand.js": "ee553fcdf13e2504",
+   "packages/backend/migrations/20261001220000-product-fts.js": "bd3351f7d9ded480",
+   "packages/backend/migrations/20261002100000-catalog-import.js": "2db019d13c68da53",
+   "packages/backend/migrations/20261010150000-catalog-s05-expand-columns.js": "be62c4c6d364f5cd",
+   "packages/backend/migrations/20261012110000-catalog-s05-contract-fks.js": "2727866f3ef5fc4b",
+   "packages/backend/migrations/20261012110100-catalog-s05-contract-shop-not-null.js": "8a47c2555685c414",
+   "packages/backend/migrations/20261019000200-catalog-s05-restore-shop-not-null.js": "2e65f3b53087f5ee",
+   "packages/contracts/src/bff/seller-overview.ts": "cf5790c3205c6cf1",
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/contracts/src/developer-platform/keys.ts": "444d734754f9c8e3",
+   "packages/contracts/src/developer-platform/logs.ts": "53ca17bc6a88f8cb",
+   "packages/contracts/src/developer-platform/webhooks.ts": "f8aae4c6f9163cf7",
+   "packages/contracts/src/orders/order.ts": "825d6af4758d3309",
+   "packages/contracts/src/search/shop-product-search.ts": "aed2f677d96f5388",
+   "packages/contracts/src/tenancy/index.ts": "324ccfbe0702f2bf",
+   "packages/web/app/dashboard/seller/[shopId]/inventory/page.tsx": "e9212480fb2b68a8",
+   "packages/web/lib/server/seller.server.ts": "7b2b5295d5ae9ac5"
+  },
+  "specs": {
+   "W04.AS-31": "c060454e7c10d038",
+   "W04.B-36": "fcc8e64e5e4d05f8"
+  }
+ },
+ "fault.kafka.orders-load": {
+  "code": "037a05123c701725",
+  "spec": "e31aeae76dbea0fa",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/orders/infra/models/bis-order.model.ts": "3e535d73bb950429",
+   "packages/backend/libs/domains/orders/infra/models/shop-order.model.ts": "2ff7760550e1e604",
+   "packages/backend/migrations/20260125105527-unnamed-migration.js": "5b056775ce884824",
+   "packages/backend/migrations/20261001150000-checkout-orders-inventory.js": "676b84c22daf1467",
+   "packages/backend/migrations/20261010160000-orders-s10-expand-columns.js": "968fcdb631260142",
+   "packages/backend/migrations/20261012120000-orders-s10-ref-code.js": "5ab8503aa0b764b6",
+   "packages/backend/migrations/20261019000000-orders-j05-attribution-expand.js": "1538cde1ac6a10b5",
+   "packages/web/app/dashboard/seller/[shopId]/orders/page.tsx": "c95755cc233da175"
+  },
+  "specs": {
+   "W04.AS-31": "c060454e7c10d038",
+   "W04.B-36": "fcc8e64e5e4d05f8"
+  }
+ },
+ "fault.kafka.outbox-backlog-large": {
+  "code": "b8173a038d6896e2",
+  "spec": "655f0c0142a9aa97",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/infrastructure/outbox/outbox.model.ts": "54077ca4d70b485b",
+   "packages/backend/migrations/20260125105527-unnamed-migration.js": "5b056775ce884824",
+   "packages/backend/migrations/20260425085120-unnamed-migration.js": "b81f453542d4ee49",
+   "packages/backend/migrations/20260809090000-outbox-mailman-fields.js": "fe8b9efa9ed85ae4",
+   "packages/backend/migrations/20261001100000-outbox-domain-events.js": "e9fd4302f322fcf0",
+   "packages/backend/migrations/20261002180000-outbox-extra-error.js": "4c66c4635883141f",
+   "packages/backend/migrations/20261009130000-outbox-row-contract.js": "b96fe4b1c99a3b86"
+  },
+  "specs": {
+   "W04.R-13": "91b32c5778f1aab7"
+  }
+ },
+ "fault.kafka.outbox-published": {
+  "code": "b8173a038d6896e2",
+  "spec": "655f0c0142a9aa97",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/infrastructure/outbox/outbox.model.ts": "54077ca4d70b485b",
+   "packages/backend/migrations/20260125105527-unnamed-migration.js": "5b056775ce884824",
+   "packages/backend/migrations/20260425085120-unnamed-migration.js": "b81f453542d4ee49",
+   "packages/backend/migrations/20260809090000-outbox-mailman-fields.js": "fe8b9efa9ed85ae4",
+   "packages/backend/migrations/20261001100000-outbox-domain-events.js": "e9fd4302f322fcf0",
+   "packages/backend/migrations/20261002180000-outbox-extra-error.js": "4c66c4635883141f",
+   "packages/backend/migrations/20261009130000-outbox-row-contract.js": "b96fe4b1c99a3b86"
+  },
+  "specs": {
+   "W04.R-13": "91b32c5778f1aab7"
+  }
+ },
+ "fault.kafka.photo-upload": {
+  "code": "5d04ac0df03b763e",
+  "spec": "65d10667f96f043c",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/asset-library/application/upload.service.ts": "39fefbf155a9f284",
+   "packages/backend/libs/domains/media/api/media.controller.ts": "24acc041bb8e2bcf",
+   "packages/backend/libs/domains/media/application/upload.service.ts": "a925e44c29d1a370",
+   "packages/contracts/src/asset-library/commit.ts": "0a1cfbb2de3a594d",
+   "packages/contracts/src/asset-library/prepare.ts": "7089b3db1a38056a",
+   "packages/contracts/src/media/gallery.ts": "65db2579c6eb82d4",
+   "packages/contracts/src/media/media.ts": "bd0571339629bf2f",
+   "packages/contracts/src/media/video.ts": "b24f3f7006e47042",
+   "packages/web/components/seller/media/gallery-view.tsx": "d4ec94b8d4c7d135",
+   "packages/web/lib/api/client.ts": "0fa4cb70bbc2d203",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/orders.ts": "7631ea19bc997f81",
+   "packages/web/lib/api/parse.ts": "82453dbb70bf149b",
+   "packages/web/lib/api/seller-media.ts": "31b6db808f27ab21",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
+  },
+  "specs": {
+   "S29.B-01": "382b54f922904edd",
+   "S29.R-11": "13636d6b4acaa3f1",
+   "W04.R-13": "91b32c5778f1aab7"
+  }
+ },
+ "fault.kafka.shop-open": {
+  "code": "045932b45b65c06e",
+  "spec": "bbb1391dc472ab05",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/tenancy/api/shop.controller.ts": "be0ce071ac0c848a",
+   "packages/backend/libs/domains/tenancy/api/tenancy.dto.ts": "e1198cdca40b60bd",
+   "packages/backend/libs/domains/tenancy/application/shop.service.ts": "9a312d91c7d681af",
+   "packages/backend/libs/domains/tenancy/infra/models/shop-membership.model.ts": "45533969e65b506e",
+   "packages/backend/libs/domains/tenancy/infra/models/shop.model.ts": "ba1b0987ab3d736f",
+   "packages/backend/libs/infrastructure/outbox/outbox.model.ts": "54077ca4d70b485b",
+   "packages/backend/migrations/20260125105527-unnamed-migration.js": "5b056775ce884824",
+   "packages/backend/migrations/20260425085120-unnamed-migration.js": "b81f453542d4ee49",
+   "packages/backend/migrations/20260809090000-outbox-mailman-fields.js": "fe8b9efa9ed85ae4",
+   "packages/backend/migrations/20261001100000-outbox-domain-events.js": "e9fd4302f322fcf0",
+   "packages/backend/migrations/20261001140000-shops-tenancy-expand.js": "ee553fcdf13e2504",
+   "packages/backend/migrations/20261001160000-ledger-partitioning-payouts-recon.js": "d3581d6c92e577fb",
+   "packages/backend/migrations/20261001290000-public-api.js": "a3df3f97e02853f6",
+   "packages/backend/migrations/20261002170000-seller-onboarding.js": "5182cff5a76e0ca2",
+   "packages/backend/migrations/20261002180000-outbox-extra-error.js": "4c66c4635883141f",
+   "packages/backend/migrations/20261009130000-outbox-row-contract.js": "b96fe4b1c99a3b86",
+   "packages/backend/migrations/20261010140000-tenancy-s03-expand.js": "83c015f426cf7cbe",
+   "packages/backend/migrations/20261010141000-tenancy-s03-contract-fks.js": "be9a026486c0c7f0",
+   "packages/web/app/dashboard/seller/page.tsx": "f118669e0960e48a"
+  },
+  "specs": {
+   "W04.B-01": "13add0d3413bff25",
+   "W04.B-36": "fcc8e64e5e4d05f8",
+   "W04.R-13": "91b32c5778f1aab7"
+  }
+ },
+ "fault.kafka.stock-change": {
+  "code": "5421d0d92d414db0",
+  "spec": "3a2a9001db852821",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/catalog/application/product-command.service.ts": "88c1d095f06a340d",
+   "packages/backend/libs/domains/catalog/infra/models/product.model.ts": "b0656bb99edfec60",
+   "packages/backend/libs/infrastructure/outbox/outbox.model.ts": "54077ca4d70b485b",
+   "packages/backend/migrations/20260125105527-unnamed-migration.js": "5b056775ce884824",
+   "packages/backend/migrations/20260425085120-unnamed-migration.js": "b81f453542d4ee49",
+   "packages/backend/migrations/20260808090000-product-inventory.js": "4a65c08eb15d88a6",
+   "packages/backend/migrations/20260808120000-fold-inventory-into-product.js": "aacef9f21305bdb2",
+   "packages/backend/migrations/20260809090000-outbox-mailman-fields.js": "fe8b9efa9ed85ae4",
+   "packages/backend/migrations/20260925090000-create-chat-tables.js": "358ede1ec6827334",
+   "packages/backend/migrations/20261001100000-outbox-domain-events.js": "e9fd4302f322fcf0",
+   "packages/backend/migrations/20261001120000-product-view-count.js": "99acd29211991504",
+   "packages/backend/migrations/20261001140000-shops-tenancy-expand.js": "ee553fcdf13e2504",
+   "packages/backend/migrations/20261001220000-product-fts.js": "bd3351f7d9ded480",
+   "packages/backend/migrations/20261002100000-catalog-import.js": "2db019d13c68da53",
+   "packages/backend/migrations/20261002180000-outbox-extra-error.js": "4c66c4635883141f",
+   "packages/backend/migrations/20261009130000-outbox-row-contract.js": "b96fe4b1c99a3b86",
+   "packages/backend/migrations/20261010150000-catalog-s05-expand-columns.js": "be62c4c6d364f5cd",
+   "packages/backend/migrations/20261012110000-catalog-s05-contract-fks.js": "2727866f3ef5fc4b",
+   "packages/backend/migrations/20261012110100-catalog-s05-contract-shop-not-null.js": "8a47c2555685c414",
+   "packages/backend/migrations/20261019000200-catalog-s05-restore-shop-not-null.js": "2e65f3b53087f5ee",
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/web/components/seller/inventory/stock-popover.tsx": "eed2b2621e4eba19",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd"
+  },
+  "specs": {
+   "W04.AS-38": "eabea675046ec473",
+   "W04.B-36": "fcc8e64e5e4d05f8",
+   "W04.R-13": "91b32c5778f1aab7"
+  }
+ },
+ "fault.minio.archive-product": {
+  "code": "5b7bbaed30ff4eef",
+  "spec": "0a2963f705bbcab4",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/catalog/api/product.controller.ts": "8e9e10f4f4b368fe",
+   "packages/backend/libs/domains/catalog/api/product.dto.ts": "1ee0842eafbb0cbd",
+   "packages/backend/libs/domains/catalog/application/product-command.service.ts": "88c1d095f06a340d",
+   "packages/backend/libs/domains/catalog/infra/models/product-status-history.model.ts": "20ecdb68a2a2ccab",
+   "packages/backend/libs/domains/catalog/infra/models/product.model.ts": "b0656bb99edfec60",
+   "packages/backend/libs/infrastructure/outbox/outbox.model.ts": "54077ca4d70b485b",
+   "packages/backend/migrations/20260125105527-unnamed-migration.js": "5b056775ce884824",
+   "packages/backend/migrations/20260425085120-unnamed-migration.js": "b81f453542d4ee49",
+   "packages/backend/migrations/20260808090000-product-inventory.js": "4a65c08eb15d88a6",
+   "packages/backend/migrations/20260808120000-fold-inventory-into-product.js": "aacef9f21305bdb2",
+   "packages/backend/migrations/20260809090000-outbox-mailman-fields.js": "fe8b9efa9ed85ae4",
+   "packages/backend/migrations/20260925090000-create-chat-tables.js": "358ede1ec6827334",
+   "packages/backend/migrations/20261001100000-outbox-domain-events.js": "e9fd4302f322fcf0",
+   "packages/backend/migrations/20261001120000-product-view-count.js": "99acd29211991504",
+   "packages/backend/migrations/20261001140000-shops-tenancy-expand.js": "ee553fcdf13e2504",
+   "packages/backend/migrations/20261001220000-product-fts.js": "bd3351f7d9ded480",
+   "packages/backend/migrations/20261002100000-catalog-import.js": "2db019d13c68da53",
+   "packages/backend/migrations/20261002180000-outbox-extra-error.js": "4c66c4635883141f",
+   "packages/backend/migrations/20261009130000-outbox-row-contract.js": "b96fe4b1c99a3b86",
+   "packages/backend/migrations/20261010150000-catalog-s05-expand-columns.js": "be62c4c6d364f5cd",
+   "packages/backend/migrations/20261010151000-catalog-s05-expand-tables.js": "0be6f3e30629dec1",
+   "packages/backend/migrations/20261012110000-catalog-s05-contract-fks.js": "2727866f3ef5fc4b",
+   "packages/backend/migrations/20261012110100-catalog-s05-contract-shop-not-null.js": "8a47c2555685c414",
+   "packages/backend/migrations/20261019000200-catalog-s05-restore-shop-not-null.js": "2e65f3b53087f5ee",
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/web/components/seller/inventory/archive-dialog.tsx": "e26b324fa29d0096",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd"
+  },
+  "specs": {
+   "W04.AS-39": "f1ac75bd7c4d139d",
+   "W04.B-36": "fcc8e64e5e4d05f8",
+   "W04.R-13": "91b32c5778f1aab7"
+  }
+ },
+ "fault.minio.create-product": {
+  "code": "8587b3230d66b3a3",
+  "spec": "e84a3eb1b83b2cb3",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/catalog/api/product.controller.ts": "8e9e10f4f4b368fe",
+   "packages/backend/libs/domains/catalog/api/product.dto.ts": "1ee0842eafbb0cbd",
+   "packages/backend/libs/domains/catalog/application/product-command.service.ts": "88c1d095f06a340d",
+   "packages/backend/libs/domains/catalog/infra/models/product.model.ts": "b0656bb99edfec60",
+   "packages/backend/libs/infrastructure/outbox/outbox.model.ts": "54077ca4d70b485b",
+   "packages/backend/migrations/20260125105527-unnamed-migration.js": "5b056775ce884824",
+   "packages/backend/migrations/20260425085120-unnamed-migration.js": "b81f453542d4ee49",
+   "packages/backend/migrations/20260808090000-product-inventory.js": "4a65c08eb15d88a6",
+   "packages/backend/migrations/20260808120000-fold-inventory-into-product.js": "aacef9f21305bdb2",
+   "packages/backend/migrations/20260809090000-outbox-mailman-fields.js": "fe8b9efa9ed85ae4",
+   "packages/backend/migrations/20260925090000-create-chat-tables.js": "358ede1ec6827334",
+   "packages/backend/migrations/20261001100000-outbox-domain-events.js": "e9fd4302f322fcf0",
+   "packages/backend/migrations/20261001120000-product-view-count.js": "99acd29211991504",
+   "packages/backend/migrations/20261001140000-shops-tenancy-expand.js": "ee553fcdf13e2504",
+   "packages/backend/migrations/20261001220000-product-fts.js": "bd3351f7d9ded480",
+   "packages/backend/migrations/20261002100000-catalog-import.js": "2db019d13c68da53",
+   "packages/backend/migrations/20261002180000-outbox-extra-error.js": "4c66c4635883141f",
+   "packages/backend/migrations/20261009130000-outbox-row-contract.js": "b96fe4b1c99a3b86",
+   "packages/backend/migrations/20261010150000-catalog-s05-expand-columns.js": "be62c4c6d364f5cd",
+   "packages/backend/migrations/20261012110000-catalog-s05-contract-fks.js": "2727866f3ef5fc4b",
+   "packages/backend/migrations/20261012110100-catalog-s05-contract-shop-not-null.js": "8a47c2555685c414",
+   "packages/backend/migrations/20261019000200-catalog-s05-restore-shop-not-null.js": "2e65f3b53087f5ee",
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd"
+  },
+  "specs": {
+   "W04.AS-31": "c060454e7c10d038",
+   "W04.B-36": "fcc8e64e5e4d05f8",
+   "W04.R-13": "91b32c5778f1aab7"
+  }
+ },
+ "fault.minio.edit-product": {
+  "code": "8587b3230d66b3a3",
+  "spec": "a99379dc26f644bf",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/catalog/api/product.controller.ts": "8e9e10f4f4b368fe",
+   "packages/backend/libs/domains/catalog/api/product.dto.ts": "1ee0842eafbb0cbd",
+   "packages/backend/libs/domains/catalog/application/product-command.service.ts": "88c1d095f06a340d",
+   "packages/backend/libs/domains/catalog/infra/models/product.model.ts": "b0656bb99edfec60",
+   "packages/backend/libs/infrastructure/outbox/outbox.model.ts": "54077ca4d70b485b",
+   "packages/backend/migrations/20260125105527-unnamed-migration.js": "5b056775ce884824",
+   "packages/backend/migrations/20260425085120-unnamed-migration.js": "b81f453542d4ee49",
+   "packages/backend/migrations/20260808090000-product-inventory.js": "4a65c08eb15d88a6",
+   "packages/backend/migrations/20260808120000-fold-inventory-into-product.js": "aacef9f21305bdb2",
+   "packages/backend/migrations/20260809090000-outbox-mailman-fields.js": "fe8b9efa9ed85ae4",
+   "packages/backend/migrations/20260925090000-create-chat-tables.js": "358ede1ec6827334",
+   "packages/backend/migrations/20261001100000-outbox-domain-events.js": "e9fd4302f322fcf0",
+   "packages/backend/migrations/20261001120000-product-view-count.js": "99acd29211991504",
+   "packages/backend/migrations/20261001140000-shops-tenancy-expand.js": "ee553fcdf13e2504",
+   "packages/backend/migrations/20261001220000-product-fts.js": "bd3351f7d9ded480",
+   "packages/backend/migrations/20261002100000-catalog-import.js": "2db019d13c68da53",
+   "packages/backend/migrations/20261002180000-outbox-extra-error.js": "4c66c4635883141f",
+   "packages/backend/migrations/20261009130000-outbox-row-contract.js": "b96fe4b1c99a3b86",
+   "packages/backend/migrations/20261010150000-catalog-s05-expand-columns.js": "be62c4c6d364f5cd",
+   "packages/backend/migrations/20261012110000-catalog-s05-contract-fks.js": "2727866f3ef5fc4b",
+   "packages/backend/migrations/20261012110100-catalog-s05-contract-shop-not-null.js": "8a47c2555685c414",
+   "packages/backend/migrations/20261019000200-catalog-s05-restore-shop-not-null.js": "2e65f3b53087f5ee",
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd"
+  },
+  "specs": {
+   "W04.AS-36": "8253b4dd2de7f301",
+   "W04.B-36": "fcc8e64e5e4d05f8",
+   "W04.R-13": "91b32c5778f1aab7"
+  }
+ },
+ "fault.minio.inventory-load": {
+  "code": "fe715c40096a5c97",
+  "spec": "e31aeae76dbea0fa",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/catalog/application/product-command.service.ts": "88c1d095f06a340d",
+   "packages/backend/libs/domains/catalog/infra/models/product.model.ts": "b0656bb99edfec60",
+   "packages/backend/migrations/20260808090000-product-inventory.js": "4a65c08eb15d88a6",
+   "packages/backend/migrations/20260808120000-fold-inventory-into-product.js": "aacef9f21305bdb2",
+   "packages/backend/migrations/20260925090000-create-chat-tables.js": "358ede1ec6827334",
+   "packages/backend/migrations/20261001120000-product-view-count.js": "99acd29211991504",
+   "packages/backend/migrations/20261001140000-shops-tenancy-expand.js": "ee553fcdf13e2504",
+   "packages/backend/migrations/20261001220000-product-fts.js": "bd3351f7d9ded480",
+   "packages/backend/migrations/20261002100000-catalog-import.js": "2db019d13c68da53",
+   "packages/backend/migrations/20261010150000-catalog-s05-expand-columns.js": "be62c4c6d364f5cd",
+   "packages/backend/migrations/20261012110000-catalog-s05-contract-fks.js": "2727866f3ef5fc4b",
+   "packages/backend/migrations/20261012110100-catalog-s05-contract-shop-not-null.js": "8a47c2555685c414",
+   "packages/backend/migrations/20261019000200-catalog-s05-restore-shop-not-null.js": "2e65f3b53087f5ee",
+   "packages/contracts/src/bff/seller-overview.ts": "cf5790c3205c6cf1",
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/contracts/src/developer-platform/keys.ts": "444d734754f9c8e3",
+   "packages/contracts/src/developer-platform/logs.ts": "53ca17bc6a88f8cb",
+   "packages/contracts/src/developer-platform/webhooks.ts": "f8aae4c6f9163cf7",
+   "packages/contracts/src/orders/order.ts": "825d6af4758d3309",
+   "packages/contracts/src/search/shop-product-search.ts": "aed2f677d96f5388",
+   "packages/contracts/src/tenancy/index.ts": "324ccfbe0702f2bf",
+   "packages/web/app/dashboard/seller/[shopId]/inventory/page.tsx": "e9212480fb2b68a8",
+   "packages/web/lib/server/seller.server.ts": "7b2b5295d5ae9ac5"
+  },
+  "specs": {
+   "W04.AS-31": "c060454e7c10d038",
+   "W04.B-36": "fcc8e64e5e4d05f8"
+  }
+ },
+ "fault.minio.orders-load": {
+  "code": "037a05123c701725",
+  "spec": "e31aeae76dbea0fa",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/orders/infra/models/bis-order.model.ts": "3e535d73bb950429",
+   "packages/backend/libs/domains/orders/infra/models/shop-order.model.ts": "2ff7760550e1e604",
+   "packages/backend/migrations/20260125105527-unnamed-migration.js": "5b056775ce884824",
+   "packages/backend/migrations/20261001150000-checkout-orders-inventory.js": "676b84c22daf1467",
+   "packages/backend/migrations/20261010160000-orders-s10-expand-columns.js": "968fcdb631260142",
+   "packages/backend/migrations/20261012120000-orders-s10-ref-code.js": "5ab8503aa0b764b6",
+   "packages/backend/migrations/20261019000000-orders-j05-attribution-expand.js": "1538cde1ac6a10b5",
+   "packages/web/app/dashboard/seller/[shopId]/orders/page.tsx": "c95755cc233da175"
+  },
+  "specs": {
+   "W04.AS-31": "c060454e7c10d038",
+   "W04.B-36": "fcc8e64e5e4d05f8"
+  }
+ },
+ "fault.minio.outbox-published": {
+  "code": "b8173a038d6896e2",
+  "spec": "655f0c0142a9aa97",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/infrastructure/outbox/outbox.model.ts": "54077ca4d70b485b",
+   "packages/backend/migrations/20260125105527-unnamed-migration.js": "5b056775ce884824",
+   "packages/backend/migrations/20260425085120-unnamed-migration.js": "b81f453542d4ee49",
+   "packages/backend/migrations/20260809090000-outbox-mailman-fields.js": "fe8b9efa9ed85ae4",
+   "packages/backend/migrations/20261001100000-outbox-domain-events.js": "e9fd4302f322fcf0",
+   "packages/backend/migrations/20261002180000-outbox-extra-error.js": "4c66c4635883141f",
+   "packages/backend/migrations/20261009130000-outbox-row-contract.js": "b96fe4b1c99a3b86"
+  },
+  "specs": {
+   "W04.R-13": "91b32c5778f1aab7"
+  }
+ },
+ "fault.minio.photo-upload": {
+  "code": "5d04ac0df03b763e",
+  "spec": "65d10667f96f043c",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/asset-library/application/upload.service.ts": "39fefbf155a9f284",
+   "packages/backend/libs/domains/media/api/media.controller.ts": "24acc041bb8e2bcf",
+   "packages/backend/libs/domains/media/application/upload.service.ts": "a925e44c29d1a370",
+   "packages/contracts/src/asset-library/commit.ts": "0a1cfbb2de3a594d",
+   "packages/contracts/src/asset-library/prepare.ts": "7089b3db1a38056a",
+   "packages/contracts/src/media/gallery.ts": "65db2579c6eb82d4",
+   "packages/contracts/src/media/media.ts": "bd0571339629bf2f",
+   "packages/contracts/src/media/video.ts": "b24f3f7006e47042",
+   "packages/web/components/seller/media/gallery-view.tsx": "d4ec94b8d4c7d135",
+   "packages/web/lib/api/client.ts": "0fa4cb70bbc2d203",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/orders.ts": "7631ea19bc997f81",
+   "packages/web/lib/api/parse.ts": "82453dbb70bf149b",
+   "packages/web/lib/api/seller-media.ts": "31b6db808f27ab21",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
+  },
+  "specs": {
+   "S29.B-01": "382b54f922904edd",
+   "S29.R-11": "13636d6b4acaa3f1",
+   "W04.R-13": "91b32c5778f1aab7"
+  }
+ },
+ "fault.minio.shop-open": {
+  "code": "045932b45b65c06e",
+  "spec": "bbb1391dc472ab05",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/tenancy/api/shop.controller.ts": "be0ce071ac0c848a",
+   "packages/backend/libs/domains/tenancy/api/tenancy.dto.ts": "e1198cdca40b60bd",
+   "packages/backend/libs/domains/tenancy/application/shop.service.ts": "9a312d91c7d681af",
+   "packages/backend/libs/domains/tenancy/infra/models/shop-membership.model.ts": "45533969e65b506e",
+   "packages/backend/libs/domains/tenancy/infra/models/shop.model.ts": "ba1b0987ab3d736f",
+   "packages/backend/libs/infrastructure/outbox/outbox.model.ts": "54077ca4d70b485b",
+   "packages/backend/migrations/20260125105527-unnamed-migration.js": "5b056775ce884824",
+   "packages/backend/migrations/20260425085120-unnamed-migration.js": "b81f453542d4ee49",
+   "packages/backend/migrations/20260809090000-outbox-mailman-fields.js": "fe8b9efa9ed85ae4",
+   "packages/backend/migrations/20261001100000-outbox-domain-events.js": "e9fd4302f322fcf0",
+   "packages/backend/migrations/20261001140000-shops-tenancy-expand.js": "ee553fcdf13e2504",
+   "packages/backend/migrations/20261001160000-ledger-partitioning-payouts-recon.js": "d3581d6c92e577fb",
+   "packages/backend/migrations/20261001290000-public-api.js": "a3df3f97e02853f6",
+   "packages/backend/migrations/20261002170000-seller-onboarding.js": "5182cff5a76e0ca2",
+   "packages/backend/migrations/20261002180000-outbox-extra-error.js": "4c66c4635883141f",
+   "packages/backend/migrations/20261009130000-outbox-row-contract.js": "b96fe4b1c99a3b86",
+   "packages/backend/migrations/20261010140000-tenancy-s03-expand.js": "83c015f426cf7cbe",
+   "packages/backend/migrations/20261010141000-tenancy-s03-contract-fks.js": "be9a026486c0c7f0",
+   "packages/web/app/dashboard/seller/page.tsx": "f118669e0960e48a"
+  },
+  "specs": {
+   "W04.B-01": "13add0d3413bff25",
+   "W04.B-36": "fcc8e64e5e4d05f8",
+   "W04.R-13": "91b32c5778f1aab7"
+  }
+ },
+ "fault.minio.stock-change": {
+  "code": "5421d0d92d414db0",
+  "spec": "3a2a9001db852821",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/catalog/application/product-command.service.ts": "88c1d095f06a340d",
+   "packages/backend/libs/domains/catalog/infra/models/product.model.ts": "b0656bb99edfec60",
+   "packages/backend/libs/infrastructure/outbox/outbox.model.ts": "54077ca4d70b485b",
+   "packages/backend/migrations/20260125105527-unnamed-migration.js": "5b056775ce884824",
+   "packages/backend/migrations/20260425085120-unnamed-migration.js": "b81f453542d4ee49",
+   "packages/backend/migrations/20260808090000-product-inventory.js": "4a65c08eb15d88a6",
+   "packages/backend/migrations/20260808120000-fold-inventory-into-product.js": "aacef9f21305bdb2",
+   "packages/backend/migrations/20260809090000-outbox-mailman-fields.js": "fe8b9efa9ed85ae4",
+   "packages/backend/migrations/20260925090000-create-chat-tables.js": "358ede1ec6827334",
+   "packages/backend/migrations/20261001100000-outbox-domain-events.js": "e9fd4302f322fcf0",
+   "packages/backend/migrations/20261001120000-product-view-count.js": "99acd29211991504",
+   "packages/backend/migrations/20261001140000-shops-tenancy-expand.js": "ee553fcdf13e2504",
+   "packages/backend/migrations/20261001220000-product-fts.js": "bd3351f7d9ded480",
+   "packages/backend/migrations/20261002100000-catalog-import.js": "2db019d13c68da53",
+   "packages/backend/migrations/20261002180000-outbox-extra-error.js": "4c66c4635883141f",
+   "packages/backend/migrations/20261009130000-outbox-row-contract.js": "b96fe4b1c99a3b86",
+   "packages/backend/migrations/20261010150000-catalog-s05-expand-columns.js": "be62c4c6d364f5cd",
+   "packages/backend/migrations/20261012110000-catalog-s05-contract-fks.js": "2727866f3ef5fc4b",
+   "packages/backend/migrations/20261012110100-catalog-s05-contract-shop-not-null.js": "8a47c2555685c414",
+   "packages/backend/migrations/20261019000200-catalog-s05-restore-shop-not-null.js": "2e65f3b53087f5ee",
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/web/components/seller/inventory/stock-popover.tsx": "eed2b2621e4eba19",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd"
+  },
+  "specs": {
+   "W04.AS-38": "eabea675046ec473",
+   "W04.B-36": "fcc8e64e5e4d05f8",
+   "W04.R-13": "91b32c5778f1aab7"
+  }
+ },
+ "fault.minio.stop-start-refused-connections": {
+  "code": "97d3eb81f1409d49",
+  "spec": "0fbc72e1767c381f",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/asset-library/application/upload.service.ts": "39fefbf155a9f284",
+   "packages/backend/libs/domains/media/application/upload.service.ts": "a925e44c29d1a370",
+   "packages/contracts/src/asset-library/commit.ts": "0a1cfbb2de3a594d",
+   "packages/contracts/src/asset-library/prepare.ts": "7089b3db1a38056a",
+   "packages/contracts/src/media/media.ts": "bd0571339629bf2f"
+  },
+  "specs": {
+   "S29.R-11": "13636d6b4acaa3f1"
+  }
+ },
+ "fault.postgres.archive-product": {
+  "code": "5b7bbaed30ff4eef",
+  "spec": "0a2963f705bbcab4",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/catalog/api/product.controller.ts": "8e9e10f4f4b368fe",
+   "packages/backend/libs/domains/catalog/api/product.dto.ts": "1ee0842eafbb0cbd",
+   "packages/backend/libs/domains/catalog/application/product-command.service.ts": "88c1d095f06a340d",
+   "packages/backend/libs/domains/catalog/infra/models/product-status-history.model.ts": "20ecdb68a2a2ccab",
+   "packages/backend/libs/domains/catalog/infra/models/product.model.ts": "b0656bb99edfec60",
+   "packages/backend/libs/infrastructure/outbox/outbox.model.ts": "54077ca4d70b485b",
+   "packages/backend/migrations/20260125105527-unnamed-migration.js": "5b056775ce884824",
+   "packages/backend/migrations/20260425085120-unnamed-migration.js": "b81f453542d4ee49",
+   "packages/backend/migrations/20260808090000-product-inventory.js": "4a65c08eb15d88a6",
+   "packages/backend/migrations/20260808120000-fold-inventory-into-product.js": "aacef9f21305bdb2",
+   "packages/backend/migrations/20260809090000-outbox-mailman-fields.js": "fe8b9efa9ed85ae4",
+   "packages/backend/migrations/20260925090000-create-chat-tables.js": "358ede1ec6827334",
+   "packages/backend/migrations/20261001100000-outbox-domain-events.js": "e9fd4302f322fcf0",
+   "packages/backend/migrations/20261001120000-product-view-count.js": "99acd29211991504",
+   "packages/backend/migrations/20261001140000-shops-tenancy-expand.js": "ee553fcdf13e2504",
+   "packages/backend/migrations/20261001220000-product-fts.js": "bd3351f7d9ded480",
+   "packages/backend/migrations/20261002100000-catalog-import.js": "2db019d13c68da53",
+   "packages/backend/migrations/20261002180000-outbox-extra-error.js": "4c66c4635883141f",
+   "packages/backend/migrations/20261009130000-outbox-row-contract.js": "b96fe4b1c99a3b86",
+   "packages/backend/migrations/20261010150000-catalog-s05-expand-columns.js": "be62c4c6d364f5cd",
+   "packages/backend/migrations/20261010151000-catalog-s05-expand-tables.js": "0be6f3e30629dec1",
+   "packages/backend/migrations/20261012110000-catalog-s05-contract-fks.js": "2727866f3ef5fc4b",
+   "packages/backend/migrations/20261012110100-catalog-s05-contract-shop-not-null.js": "8a47c2555685c414",
+   "packages/backend/migrations/20261019000200-catalog-s05-restore-shop-not-null.js": "2e65f3b53087f5ee",
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/web/components/seller/inventory/archive-dialog.tsx": "e26b324fa29d0096",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd"
+  },
+  "specs": {
+   "W04.AS-39": "f1ac75bd7c4d139d",
+   "W04.B-36": "fcc8e64e5e4d05f8",
+   "W04.R-13": "91b32c5778f1aab7"
+  }
+ },
+ "fault.postgres.create-product": {
+  "code": "8587b3230d66b3a3",
+  "spec": "e84a3eb1b83b2cb3",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/catalog/api/product.controller.ts": "8e9e10f4f4b368fe",
+   "packages/backend/libs/domains/catalog/api/product.dto.ts": "1ee0842eafbb0cbd",
+   "packages/backend/libs/domains/catalog/application/product-command.service.ts": "88c1d095f06a340d",
+   "packages/backend/libs/domains/catalog/infra/models/product.model.ts": "b0656bb99edfec60",
+   "packages/backend/libs/infrastructure/outbox/outbox.model.ts": "54077ca4d70b485b",
+   "packages/backend/migrations/20260125105527-unnamed-migration.js": "5b056775ce884824",
+   "packages/backend/migrations/20260425085120-unnamed-migration.js": "b81f453542d4ee49",
+   "packages/backend/migrations/20260808090000-product-inventory.js": "4a65c08eb15d88a6",
+   "packages/backend/migrations/20260808120000-fold-inventory-into-product.js": "aacef9f21305bdb2",
+   "packages/backend/migrations/20260809090000-outbox-mailman-fields.js": "fe8b9efa9ed85ae4",
+   "packages/backend/migrations/20260925090000-create-chat-tables.js": "358ede1ec6827334",
+   "packages/backend/migrations/20261001100000-outbox-domain-events.js": "e9fd4302f322fcf0",
+   "packages/backend/migrations/20261001120000-product-view-count.js": "99acd29211991504",
+   "packages/backend/migrations/20261001140000-shops-tenancy-expand.js": "ee553fcdf13e2504",
+   "packages/backend/migrations/20261001220000-product-fts.js": "bd3351f7d9ded480",
+   "packages/backend/migrations/20261002100000-catalog-import.js": "2db019d13c68da53",
+   "packages/backend/migrations/20261002180000-outbox-extra-error.js": "4c66c4635883141f",
+   "packages/backend/migrations/20261009130000-outbox-row-contract.js": "b96fe4b1c99a3b86",
+   "packages/backend/migrations/20261010150000-catalog-s05-expand-columns.js": "be62c4c6d364f5cd",
+   "packages/backend/migrations/20261012110000-catalog-s05-contract-fks.js": "2727866f3ef5fc4b",
+   "packages/backend/migrations/20261012110100-catalog-s05-contract-shop-not-null.js": "8a47c2555685c414",
+   "packages/backend/migrations/20261019000200-catalog-s05-restore-shop-not-null.js": "2e65f3b53087f5ee",
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd"
+  },
+  "specs": {
+   "W04.AS-31": "c060454e7c10d038",
+   "W04.B-36": "fcc8e64e5e4d05f8",
+   "W04.R-13": "91b32c5778f1aab7"
+  }
+ },
+ "fault.postgres.edit-product": {
+  "code": "8587b3230d66b3a3",
+  "spec": "a99379dc26f644bf",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/catalog/api/product.controller.ts": "8e9e10f4f4b368fe",
+   "packages/backend/libs/domains/catalog/api/product.dto.ts": "1ee0842eafbb0cbd",
+   "packages/backend/libs/domains/catalog/application/product-command.service.ts": "88c1d095f06a340d",
+   "packages/backend/libs/domains/catalog/infra/models/product.model.ts": "b0656bb99edfec60",
+   "packages/backend/libs/infrastructure/outbox/outbox.model.ts": "54077ca4d70b485b",
+   "packages/backend/migrations/20260125105527-unnamed-migration.js": "5b056775ce884824",
+   "packages/backend/migrations/20260425085120-unnamed-migration.js": "b81f453542d4ee49",
+   "packages/backend/migrations/20260808090000-product-inventory.js": "4a65c08eb15d88a6",
+   "packages/backend/migrations/20260808120000-fold-inventory-into-product.js": "aacef9f21305bdb2",
+   "packages/backend/migrations/20260809090000-outbox-mailman-fields.js": "fe8b9efa9ed85ae4",
+   "packages/backend/migrations/20260925090000-create-chat-tables.js": "358ede1ec6827334",
+   "packages/backend/migrations/20261001100000-outbox-domain-events.js": "e9fd4302f322fcf0",
+   "packages/backend/migrations/20261001120000-product-view-count.js": "99acd29211991504",
+   "packages/backend/migrations/20261001140000-shops-tenancy-expand.js": "ee553fcdf13e2504",
+   "packages/backend/migrations/20261001220000-product-fts.js": "bd3351f7d9ded480",
+   "packages/backend/migrations/20261002100000-catalog-import.js": "2db019d13c68da53",
+   "packages/backend/migrations/20261002180000-outbox-extra-error.js": "4c66c4635883141f",
+   "packages/backend/migrations/20261009130000-outbox-row-contract.js": "b96fe4b1c99a3b86",
+   "packages/backend/migrations/20261010150000-catalog-s05-expand-columns.js": "be62c4c6d364f5cd",
+   "packages/backend/migrations/20261012110000-catalog-s05-contract-fks.js": "2727866f3ef5fc4b",
+   "packages/backend/migrations/20261012110100-catalog-s05-contract-shop-not-null.js": "8a47c2555685c414",
+   "packages/backend/migrations/20261019000200-catalog-s05-restore-shop-not-null.js": "2e65f3b53087f5ee",
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd"
+  },
+  "specs": {
+   "W04.AS-36": "8253b4dd2de7f301",
+   "W04.B-36": "fcc8e64e5e4d05f8",
+   "W04.R-13": "91b32c5778f1aab7"
+  }
+ },
+ "fault.postgres.inventory-load": {
+  "code": "fe715c40096a5c97",
+  "spec": "e31aeae76dbea0fa",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/catalog/application/product-command.service.ts": "88c1d095f06a340d",
+   "packages/backend/libs/domains/catalog/infra/models/product.model.ts": "b0656bb99edfec60",
+   "packages/backend/migrations/20260808090000-product-inventory.js": "4a65c08eb15d88a6",
+   "packages/backend/migrations/20260808120000-fold-inventory-into-product.js": "aacef9f21305bdb2",
+   "packages/backend/migrations/20260925090000-create-chat-tables.js": "358ede1ec6827334",
+   "packages/backend/migrations/20261001120000-product-view-count.js": "99acd29211991504",
+   "packages/backend/migrations/20261001140000-shops-tenancy-expand.js": "ee553fcdf13e2504",
+   "packages/backend/migrations/20261001220000-product-fts.js": "bd3351f7d9ded480",
+   "packages/backend/migrations/20261002100000-catalog-import.js": "2db019d13c68da53",
+   "packages/backend/migrations/20261010150000-catalog-s05-expand-columns.js": "be62c4c6d364f5cd",
+   "packages/backend/migrations/20261012110000-catalog-s05-contract-fks.js": "2727866f3ef5fc4b",
+   "packages/backend/migrations/20261012110100-catalog-s05-contract-shop-not-null.js": "8a47c2555685c414",
+   "packages/backend/migrations/20261019000200-catalog-s05-restore-shop-not-null.js": "2e65f3b53087f5ee",
+   "packages/contracts/src/bff/seller-overview.ts": "cf5790c3205c6cf1",
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/contracts/src/developer-platform/keys.ts": "444d734754f9c8e3",
+   "packages/contracts/src/developer-platform/logs.ts": "53ca17bc6a88f8cb",
+   "packages/contracts/src/developer-platform/webhooks.ts": "f8aae4c6f9163cf7",
+   "packages/contracts/src/orders/order.ts": "825d6af4758d3309",
+   "packages/contracts/src/search/shop-product-search.ts": "aed2f677d96f5388",
+   "packages/contracts/src/tenancy/index.ts": "324ccfbe0702f2bf",
+   "packages/web/app/dashboard/seller/[shopId]/inventory/page.tsx": "e9212480fb2b68a8",
+   "packages/web/lib/server/seller.server.ts": "7b2b5295d5ae9ac5"
+  },
+  "specs": {
+   "W04.AS-31": "c060454e7c10d038",
+   "W04.B-36": "fcc8e64e5e4d05f8"
+  }
+ },
+ "fault.postgres.orders-load": {
+  "code": "037a05123c701725",
+  "spec": "e31aeae76dbea0fa",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/orders/infra/models/bis-order.model.ts": "3e535d73bb950429",
+   "packages/backend/libs/domains/orders/infra/models/shop-order.model.ts": "2ff7760550e1e604",
+   "packages/backend/migrations/20260125105527-unnamed-migration.js": "5b056775ce884824",
+   "packages/backend/migrations/20261001150000-checkout-orders-inventory.js": "676b84c22daf1467",
+   "packages/backend/migrations/20261010160000-orders-s10-expand-columns.js": "968fcdb631260142",
+   "packages/backend/migrations/20261012120000-orders-s10-ref-code.js": "5ab8503aa0b764b6",
+   "packages/backend/migrations/20261019000000-orders-j05-attribution-expand.js": "1538cde1ac6a10b5",
+   "packages/web/app/dashboard/seller/[shopId]/orders/page.tsx": "c95755cc233da175"
+  },
+  "specs": {
+   "W04.AS-31": "c060454e7c10d038",
+   "W04.B-36": "fcc8e64e5e4d05f8"
+  }
+ },
+ "fault.postgres.outbox-published": {
+  "code": "b8173a038d6896e2",
+  "spec": "655f0c0142a9aa97",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/infrastructure/outbox/outbox.model.ts": "54077ca4d70b485b",
+   "packages/backend/migrations/20260125105527-unnamed-migration.js": "5b056775ce884824",
+   "packages/backend/migrations/20260425085120-unnamed-migration.js": "b81f453542d4ee49",
+   "packages/backend/migrations/20260809090000-outbox-mailman-fields.js": "fe8b9efa9ed85ae4",
+   "packages/backend/migrations/20261001100000-outbox-domain-events.js": "e9fd4302f322fcf0",
+   "packages/backend/migrations/20261002180000-outbox-extra-error.js": "4c66c4635883141f",
+   "packages/backend/migrations/20261009130000-outbox-row-contract.js": "b96fe4b1c99a3b86"
+  },
+  "specs": {
+   "W04.R-13": "91b32c5778f1aab7"
+  }
+ },
+ "fault.postgres.photo-upload": {
+  "code": "5d04ac0df03b763e",
+  "spec": "65d10667f96f043c",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/asset-library/application/upload.service.ts": "39fefbf155a9f284",
+   "packages/backend/libs/domains/media/api/media.controller.ts": "24acc041bb8e2bcf",
+   "packages/backend/libs/domains/media/application/upload.service.ts": "a925e44c29d1a370",
+   "packages/contracts/src/asset-library/commit.ts": "0a1cfbb2de3a594d",
+   "packages/contracts/src/asset-library/prepare.ts": "7089b3db1a38056a",
+   "packages/contracts/src/media/gallery.ts": "65db2579c6eb82d4",
+   "packages/contracts/src/media/media.ts": "bd0571339629bf2f",
+   "packages/contracts/src/media/video.ts": "b24f3f7006e47042",
+   "packages/web/components/seller/media/gallery-view.tsx": "d4ec94b8d4c7d135",
+   "packages/web/lib/api/client.ts": "0fa4cb70bbc2d203",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/orders.ts": "7631ea19bc997f81",
+   "packages/web/lib/api/parse.ts": "82453dbb70bf149b",
+   "packages/web/lib/api/seller-media.ts": "31b6db808f27ab21",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
+  },
+  "specs": {
+   "S29.B-01": "382b54f922904edd",
+   "S29.R-11": "13636d6b4acaa3f1",
+   "W04.R-13": "91b32c5778f1aab7"
+  }
+ },
+ "fault.postgres.shop-open": {
+  "code": "045932b45b65c06e",
+  "spec": "bbb1391dc472ab05",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/tenancy/api/shop.controller.ts": "be0ce071ac0c848a",
+   "packages/backend/libs/domains/tenancy/api/tenancy.dto.ts": "e1198cdca40b60bd",
+   "packages/backend/libs/domains/tenancy/application/shop.service.ts": "9a312d91c7d681af",
+   "packages/backend/libs/domains/tenancy/infra/models/shop-membership.model.ts": "45533969e65b506e",
+   "packages/backend/libs/domains/tenancy/infra/models/shop.model.ts": "ba1b0987ab3d736f",
+   "packages/backend/libs/infrastructure/outbox/outbox.model.ts": "54077ca4d70b485b",
+   "packages/backend/migrations/20260125105527-unnamed-migration.js": "5b056775ce884824",
+   "packages/backend/migrations/20260425085120-unnamed-migration.js": "b81f453542d4ee49",
+   "packages/backend/migrations/20260809090000-outbox-mailman-fields.js": "fe8b9efa9ed85ae4",
+   "packages/backend/migrations/20261001100000-outbox-domain-events.js": "e9fd4302f322fcf0",
+   "packages/backend/migrations/20261001140000-shops-tenancy-expand.js": "ee553fcdf13e2504",
+   "packages/backend/migrations/20261001160000-ledger-partitioning-payouts-recon.js": "d3581d6c92e577fb",
+   "packages/backend/migrations/20261001290000-public-api.js": "a3df3f97e02853f6",
+   "packages/backend/migrations/20261002170000-seller-onboarding.js": "5182cff5a76e0ca2",
+   "packages/backend/migrations/20261002180000-outbox-extra-error.js": "4c66c4635883141f",
+   "packages/backend/migrations/20261009130000-outbox-row-contract.js": "b96fe4b1c99a3b86",
+   "packages/backend/migrations/20261010140000-tenancy-s03-expand.js": "83c015f426cf7cbe",
+   "packages/backend/migrations/20261010141000-tenancy-s03-contract-fks.js": "be9a026486c0c7f0",
+   "packages/web/app/dashboard/seller/page.tsx": "f118669e0960e48a"
+  },
+  "specs": {
+   "W04.B-01": "13add0d3413bff25",
+   "W04.B-36": "fcc8e64e5e4d05f8",
+   "W04.R-13": "91b32c5778f1aab7"
+  }
+ },
+ "fault.postgres.slow-responses": {
+  "code": "2cc16792a6bb4612",
+  "spec": "d22a3560a94552eb",
+  "at": "2026-10-25",
+  "files": {
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd"
+  },
+  "specs": {
+   "W04.AS-31": "c060454e7c10d038",
+   "W04.R-23": "da8d8279d5f88703"
+  }
+ },
+ "fault.postgres.stock-change": {
+  "code": "5421d0d92d414db0",
+  "spec": "3a2a9001db852821",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/catalog/application/product-command.service.ts": "88c1d095f06a340d",
+   "packages/backend/libs/domains/catalog/infra/models/product.model.ts": "b0656bb99edfec60",
+   "packages/backend/libs/infrastructure/outbox/outbox.model.ts": "54077ca4d70b485b",
+   "packages/backend/migrations/20260125105527-unnamed-migration.js": "5b056775ce884824",
+   "packages/backend/migrations/20260425085120-unnamed-migration.js": "b81f453542d4ee49",
+   "packages/backend/migrations/20260808090000-product-inventory.js": "4a65c08eb15d88a6",
+   "packages/backend/migrations/20260808120000-fold-inventory-into-product.js": "aacef9f21305bdb2",
+   "packages/backend/migrations/20260809090000-outbox-mailman-fields.js": "fe8b9efa9ed85ae4",
+   "packages/backend/migrations/20260925090000-create-chat-tables.js": "358ede1ec6827334",
+   "packages/backend/migrations/20261001100000-outbox-domain-events.js": "e9fd4302f322fcf0",
+   "packages/backend/migrations/20261001120000-product-view-count.js": "99acd29211991504",
+   "packages/backend/migrations/20261001140000-shops-tenancy-expand.js": "ee553fcdf13e2504",
+   "packages/backend/migrations/20261001220000-product-fts.js": "bd3351f7d9ded480",
+   "packages/backend/migrations/20261002100000-catalog-import.js": "2db019d13c68da53",
+   "packages/backend/migrations/20261002180000-outbox-extra-error.js": "4c66c4635883141f",
+   "packages/backend/migrations/20261009130000-outbox-row-contract.js": "b96fe4b1c99a3b86",
+   "packages/backend/migrations/20261010150000-catalog-s05-expand-columns.js": "be62c4c6d364f5cd",
+   "packages/backend/migrations/20261012110000-catalog-s05-contract-fks.js": "2727866f3ef5fc4b",
+   "packages/backend/migrations/20261012110100-catalog-s05-contract-shop-not-null.js": "8a47c2555685c414",
+   "packages/backend/migrations/20261019000200-catalog-s05-restore-shop-not-null.js": "2e65f3b53087f5ee",
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/web/components/seller/inventory/stock-popover.tsx": "eed2b2621e4eba19",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd"
+  },
+  "specs": {
+   "W04.AS-38": "eabea675046ec473",
+   "W04.B-36": "fcc8e64e5e4d05f8",
+   "W04.R-13": "91b32c5778f1aab7"
+  }
+ },
+ "fault.postgres.stop-start-refused-connections": {
+  "code": "44136fa355b3678a",
+  "spec": "d7c83d22d3b72334",
+  "at": "2026-10-25",
+  "files": {},
+  "specs": {
+   "W04.B-36": "fcc8e64e5e4d05f8",
+   "W04.R-13": "91b32c5778f1aab7"
+  }
+ },
+ "fault.redis.archive-product": {
+  "code": "5b7bbaed30ff4eef",
+  "spec": "0a2963f705bbcab4",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/catalog/api/product.controller.ts": "8e9e10f4f4b368fe",
+   "packages/backend/libs/domains/catalog/api/product.dto.ts": "1ee0842eafbb0cbd",
+   "packages/backend/libs/domains/catalog/application/product-command.service.ts": "88c1d095f06a340d",
+   "packages/backend/libs/domains/catalog/infra/models/product-status-history.model.ts": "20ecdb68a2a2ccab",
+   "packages/backend/libs/domains/catalog/infra/models/product.model.ts": "b0656bb99edfec60",
+   "packages/backend/libs/infrastructure/outbox/outbox.model.ts": "54077ca4d70b485b",
+   "packages/backend/migrations/20260125105527-unnamed-migration.js": "5b056775ce884824",
+   "packages/backend/migrations/20260425085120-unnamed-migration.js": "b81f453542d4ee49",
+   "packages/backend/migrations/20260808090000-product-inventory.js": "4a65c08eb15d88a6",
+   "packages/backend/migrations/20260808120000-fold-inventory-into-product.js": "aacef9f21305bdb2",
+   "packages/backend/migrations/20260809090000-outbox-mailman-fields.js": "fe8b9efa9ed85ae4",
+   "packages/backend/migrations/20260925090000-create-chat-tables.js": "358ede1ec6827334",
+   "packages/backend/migrations/20261001100000-outbox-domain-events.js": "e9fd4302f322fcf0",
+   "packages/backend/migrations/20261001120000-product-view-count.js": "99acd29211991504",
+   "packages/backend/migrations/20261001140000-shops-tenancy-expand.js": "ee553fcdf13e2504",
+   "packages/backend/migrations/20261001220000-product-fts.js": "bd3351f7d9ded480",
+   "packages/backend/migrations/20261002100000-catalog-import.js": "2db019d13c68da53",
+   "packages/backend/migrations/20261002180000-outbox-extra-error.js": "4c66c4635883141f",
+   "packages/backend/migrations/20261009130000-outbox-row-contract.js": "b96fe4b1c99a3b86",
+   "packages/backend/migrations/20261010150000-catalog-s05-expand-columns.js": "be62c4c6d364f5cd",
+   "packages/backend/migrations/20261010151000-catalog-s05-expand-tables.js": "0be6f3e30629dec1",
+   "packages/backend/migrations/20261012110000-catalog-s05-contract-fks.js": "2727866f3ef5fc4b",
+   "packages/backend/migrations/20261012110100-catalog-s05-contract-shop-not-null.js": "8a47c2555685c414",
+   "packages/backend/migrations/20261019000200-catalog-s05-restore-shop-not-null.js": "2e65f3b53087f5ee",
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/web/components/seller/inventory/archive-dialog.tsx": "e26b324fa29d0096",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd"
+  },
+  "specs": {
+   "W04.AS-39": "f1ac75bd7c4d139d",
+   "W04.B-36": "fcc8e64e5e4d05f8",
+   "W04.R-13": "91b32c5778f1aab7"
+  }
+ },
+ "fault.redis.create-product": {
+  "code": "8587b3230d66b3a3",
+  "spec": "e84a3eb1b83b2cb3",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/catalog/api/product.controller.ts": "8e9e10f4f4b368fe",
+   "packages/backend/libs/domains/catalog/api/product.dto.ts": "1ee0842eafbb0cbd",
+   "packages/backend/libs/domains/catalog/application/product-command.service.ts": "88c1d095f06a340d",
+   "packages/backend/libs/domains/catalog/infra/models/product.model.ts": "b0656bb99edfec60",
+   "packages/backend/libs/infrastructure/outbox/outbox.model.ts": "54077ca4d70b485b",
+   "packages/backend/migrations/20260125105527-unnamed-migration.js": "5b056775ce884824",
+   "packages/backend/migrations/20260425085120-unnamed-migration.js": "b81f453542d4ee49",
+   "packages/backend/migrations/20260808090000-product-inventory.js": "4a65c08eb15d88a6",
+   "packages/backend/migrations/20260808120000-fold-inventory-into-product.js": "aacef9f21305bdb2",
+   "packages/backend/migrations/20260809090000-outbox-mailman-fields.js": "fe8b9efa9ed85ae4",
+   "packages/backend/migrations/20260925090000-create-chat-tables.js": "358ede1ec6827334",
+   "packages/backend/migrations/20261001100000-outbox-domain-events.js": "e9fd4302f322fcf0",
+   "packages/backend/migrations/20261001120000-product-view-count.js": "99acd29211991504",
+   "packages/backend/migrations/20261001140000-shops-tenancy-expand.js": "ee553fcdf13e2504",
+   "packages/backend/migrations/20261001220000-product-fts.js": "bd3351f7d9ded480",
+   "packages/backend/migrations/20261002100000-catalog-import.js": "2db019d13c68da53",
+   "packages/backend/migrations/20261002180000-outbox-extra-error.js": "4c66c4635883141f",
+   "packages/backend/migrations/20261009130000-outbox-row-contract.js": "b96fe4b1c99a3b86",
+   "packages/backend/migrations/20261010150000-catalog-s05-expand-columns.js": "be62c4c6d364f5cd",
+   "packages/backend/migrations/20261012110000-catalog-s05-contract-fks.js": "2727866f3ef5fc4b",
+   "packages/backend/migrations/20261012110100-catalog-s05-contract-shop-not-null.js": "8a47c2555685c414",
+   "packages/backend/migrations/20261019000200-catalog-s05-restore-shop-not-null.js": "2e65f3b53087f5ee",
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd"
+  },
+  "specs": {
+   "W04.AS-31": "c060454e7c10d038",
+   "W04.B-36": "fcc8e64e5e4d05f8",
+   "W04.R-13": "91b32c5778f1aab7"
+  }
+ },
+ "fault.redis.edit-product": {
+  "code": "8587b3230d66b3a3",
+  "spec": "a99379dc26f644bf",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/catalog/api/product.controller.ts": "8e9e10f4f4b368fe",
+   "packages/backend/libs/domains/catalog/api/product.dto.ts": "1ee0842eafbb0cbd",
+   "packages/backend/libs/domains/catalog/application/product-command.service.ts": "88c1d095f06a340d",
+   "packages/backend/libs/domains/catalog/infra/models/product.model.ts": "b0656bb99edfec60",
+   "packages/backend/libs/infrastructure/outbox/outbox.model.ts": "54077ca4d70b485b",
+   "packages/backend/migrations/20260125105527-unnamed-migration.js": "5b056775ce884824",
+   "packages/backend/migrations/20260425085120-unnamed-migration.js": "b81f453542d4ee49",
+   "packages/backend/migrations/20260808090000-product-inventory.js": "4a65c08eb15d88a6",
+   "packages/backend/migrations/20260808120000-fold-inventory-into-product.js": "aacef9f21305bdb2",
+   "packages/backend/migrations/20260809090000-outbox-mailman-fields.js": "fe8b9efa9ed85ae4",
+   "packages/backend/migrations/20260925090000-create-chat-tables.js": "358ede1ec6827334",
+   "packages/backend/migrations/20261001100000-outbox-domain-events.js": "e9fd4302f322fcf0",
+   "packages/backend/migrations/20261001120000-product-view-count.js": "99acd29211991504",
+   "packages/backend/migrations/20261001140000-shops-tenancy-expand.js": "ee553fcdf13e2504",
+   "packages/backend/migrations/20261001220000-product-fts.js": "bd3351f7d9ded480",
+   "packages/backend/migrations/20261002100000-catalog-import.js": "2db019d13c68da53",
+   "packages/backend/migrations/20261002180000-outbox-extra-error.js": "4c66c4635883141f",
+   "packages/backend/migrations/20261009130000-outbox-row-contract.js": "b96fe4b1c99a3b86",
+   "packages/backend/migrations/20261010150000-catalog-s05-expand-columns.js": "be62c4c6d364f5cd",
+   "packages/backend/migrations/20261012110000-catalog-s05-contract-fks.js": "2727866f3ef5fc4b",
+   "packages/backend/migrations/20261012110100-catalog-s05-contract-shop-not-null.js": "8a47c2555685c414",
+   "packages/backend/migrations/20261019000200-catalog-s05-restore-shop-not-null.js": "2e65f3b53087f5ee",
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd"
+  },
+  "specs": {
+   "W04.AS-36": "8253b4dd2de7f301",
+   "W04.B-36": "fcc8e64e5e4d05f8",
+   "W04.R-13": "91b32c5778f1aab7"
+  }
+ },
+ "fault.redis.inventory-load": {
+  "code": "fe715c40096a5c97",
+  "spec": "e31aeae76dbea0fa",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/catalog/application/product-command.service.ts": "88c1d095f06a340d",
+   "packages/backend/libs/domains/catalog/infra/models/product.model.ts": "b0656bb99edfec60",
+   "packages/backend/migrations/20260808090000-product-inventory.js": "4a65c08eb15d88a6",
+   "packages/backend/migrations/20260808120000-fold-inventory-into-product.js": "aacef9f21305bdb2",
+   "packages/backend/migrations/20260925090000-create-chat-tables.js": "358ede1ec6827334",
+   "packages/backend/migrations/20261001120000-product-view-count.js": "99acd29211991504",
+   "packages/backend/migrations/20261001140000-shops-tenancy-expand.js": "ee553fcdf13e2504",
+   "packages/backend/migrations/20261001220000-product-fts.js": "bd3351f7d9ded480",
+   "packages/backend/migrations/20261002100000-catalog-import.js": "2db019d13c68da53",
+   "packages/backend/migrations/20261010150000-catalog-s05-expand-columns.js": "be62c4c6d364f5cd",
+   "packages/backend/migrations/20261012110000-catalog-s05-contract-fks.js": "2727866f3ef5fc4b",
+   "packages/backend/migrations/20261012110100-catalog-s05-contract-shop-not-null.js": "8a47c2555685c414",
+   "packages/backend/migrations/20261019000200-catalog-s05-restore-shop-not-null.js": "2e65f3b53087f5ee",
+   "packages/contracts/src/bff/seller-overview.ts": "cf5790c3205c6cf1",
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/contracts/src/developer-platform/keys.ts": "444d734754f9c8e3",
+   "packages/contracts/src/developer-platform/logs.ts": "53ca17bc6a88f8cb",
+   "packages/contracts/src/developer-platform/webhooks.ts": "f8aae4c6f9163cf7",
+   "packages/contracts/src/orders/order.ts": "825d6af4758d3309",
+   "packages/contracts/src/search/shop-product-search.ts": "aed2f677d96f5388",
+   "packages/contracts/src/tenancy/index.ts": "324ccfbe0702f2bf",
+   "packages/web/app/dashboard/seller/[shopId]/inventory/page.tsx": "e9212480fb2b68a8",
+   "packages/web/lib/server/seller.server.ts": "7b2b5295d5ae9ac5"
+  },
+  "specs": {
+   "W04.AS-31": "c060454e7c10d038",
+   "W04.B-36": "fcc8e64e5e4d05f8"
+  }
+ },
+ "fault.redis.orders-load": {
+  "code": "037a05123c701725",
+  "spec": "e31aeae76dbea0fa",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/orders/infra/models/bis-order.model.ts": "3e535d73bb950429",
+   "packages/backend/libs/domains/orders/infra/models/shop-order.model.ts": "2ff7760550e1e604",
+   "packages/backend/migrations/20260125105527-unnamed-migration.js": "5b056775ce884824",
+   "packages/backend/migrations/20261001150000-checkout-orders-inventory.js": "676b84c22daf1467",
+   "packages/backend/migrations/20261010160000-orders-s10-expand-columns.js": "968fcdb631260142",
+   "packages/backend/migrations/20261012120000-orders-s10-ref-code.js": "5ab8503aa0b764b6",
+   "packages/backend/migrations/20261019000000-orders-j05-attribution-expand.js": "1538cde1ac6a10b5",
+   "packages/web/app/dashboard/seller/[shopId]/orders/page.tsx": "c95755cc233da175"
+  },
+  "specs": {
+   "W04.AS-31": "c060454e7c10d038",
+   "W04.B-36": "fcc8e64e5e4d05f8"
+  }
+ },
+ "fault.redis.outbox-published": {
+  "code": "b8173a038d6896e2",
+  "spec": "655f0c0142a9aa97",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/infrastructure/outbox/outbox.model.ts": "54077ca4d70b485b",
+   "packages/backend/migrations/20260125105527-unnamed-migration.js": "5b056775ce884824",
+   "packages/backend/migrations/20260425085120-unnamed-migration.js": "b81f453542d4ee49",
+   "packages/backend/migrations/20260809090000-outbox-mailman-fields.js": "fe8b9efa9ed85ae4",
+   "packages/backend/migrations/20261001100000-outbox-domain-events.js": "e9fd4302f322fcf0",
+   "packages/backend/migrations/20261002180000-outbox-extra-error.js": "4c66c4635883141f",
+   "packages/backend/migrations/20261009130000-outbox-row-contract.js": "b96fe4b1c99a3b86"
+  },
+  "specs": {
+   "W04.R-13": "91b32c5778f1aab7"
+  }
+ },
+ "fault.redis.photo-upload": {
+  "code": "5d04ac0df03b763e",
+  "spec": "65d10667f96f043c",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/asset-library/application/upload.service.ts": "39fefbf155a9f284",
+   "packages/backend/libs/domains/media/api/media.controller.ts": "24acc041bb8e2bcf",
+   "packages/backend/libs/domains/media/application/upload.service.ts": "a925e44c29d1a370",
+   "packages/contracts/src/asset-library/commit.ts": "0a1cfbb2de3a594d",
+   "packages/contracts/src/asset-library/prepare.ts": "7089b3db1a38056a",
+   "packages/contracts/src/media/gallery.ts": "65db2579c6eb82d4",
+   "packages/contracts/src/media/media.ts": "bd0571339629bf2f",
+   "packages/contracts/src/media/video.ts": "b24f3f7006e47042",
+   "packages/web/components/seller/media/gallery-view.tsx": "d4ec94b8d4c7d135",
+   "packages/web/lib/api/client.ts": "0fa4cb70bbc2d203",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/orders.ts": "7631ea19bc997f81",
+   "packages/web/lib/api/parse.ts": "82453dbb70bf149b",
+   "packages/web/lib/api/seller-media.ts": "31b6db808f27ab21",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
+  },
+  "specs": {
+   "S29.B-01": "382b54f922904edd",
+   "S29.R-11": "13636d6b4acaa3f1",
+   "W04.R-13": "91b32c5778f1aab7"
+  }
+ },
+ "fault.redis.shop-open": {
+  "code": "045932b45b65c06e",
+  "spec": "bbb1391dc472ab05",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/tenancy/api/shop.controller.ts": "be0ce071ac0c848a",
+   "packages/backend/libs/domains/tenancy/api/tenancy.dto.ts": "e1198cdca40b60bd",
+   "packages/backend/libs/domains/tenancy/application/shop.service.ts": "9a312d91c7d681af",
+   "packages/backend/libs/domains/tenancy/infra/models/shop-membership.model.ts": "45533969e65b506e",
+   "packages/backend/libs/domains/tenancy/infra/models/shop.model.ts": "ba1b0987ab3d736f",
+   "packages/backend/libs/infrastructure/outbox/outbox.model.ts": "54077ca4d70b485b",
+   "packages/backend/migrations/20260125105527-unnamed-migration.js": "5b056775ce884824",
+   "packages/backend/migrations/20260425085120-unnamed-migration.js": "b81f453542d4ee49",
+   "packages/backend/migrations/20260809090000-outbox-mailman-fields.js": "fe8b9efa9ed85ae4",
+   "packages/backend/migrations/20261001100000-outbox-domain-events.js": "e9fd4302f322fcf0",
+   "packages/backend/migrations/20261001140000-shops-tenancy-expand.js": "ee553fcdf13e2504",
+   "packages/backend/migrations/20261001160000-ledger-partitioning-payouts-recon.js": "d3581d6c92e577fb",
+   "packages/backend/migrations/20261001290000-public-api.js": "a3df3f97e02853f6",
+   "packages/backend/migrations/20261002170000-seller-onboarding.js": "5182cff5a76e0ca2",
+   "packages/backend/migrations/20261002180000-outbox-extra-error.js": "4c66c4635883141f",
+   "packages/backend/migrations/20261009130000-outbox-row-contract.js": "b96fe4b1c99a3b86",
+   "packages/backend/migrations/20261010140000-tenancy-s03-expand.js": "83c015f426cf7cbe",
+   "packages/backend/migrations/20261010141000-tenancy-s03-contract-fks.js": "be9a026486c0c7f0",
+   "packages/web/app/dashboard/seller/page.tsx": "f118669e0960e48a"
+  },
+  "specs": {
+   "W04.B-01": "13add0d3413bff25",
+   "W04.B-36": "fcc8e64e5e4d05f8",
+   "W04.R-13": "91b32c5778f1aab7"
+  }
+ },
+ "fault.redis.stock-change": {
+  "code": "5421d0d92d414db0",
+  "spec": "3a2a9001db852821",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/catalog/application/product-command.service.ts": "88c1d095f06a340d",
+   "packages/backend/libs/domains/catalog/infra/models/product.model.ts": "b0656bb99edfec60",
+   "packages/backend/libs/infrastructure/outbox/outbox.model.ts": "54077ca4d70b485b",
+   "packages/backend/migrations/20260125105527-unnamed-migration.js": "5b056775ce884824",
+   "packages/backend/migrations/20260425085120-unnamed-migration.js": "b81f453542d4ee49",
+   "packages/backend/migrations/20260808090000-product-inventory.js": "4a65c08eb15d88a6",
+   "packages/backend/migrations/20260808120000-fold-inventory-into-product.js": "aacef9f21305bdb2",
+   "packages/backend/migrations/20260809090000-outbox-mailman-fields.js": "fe8b9efa9ed85ae4",
+   "packages/backend/migrations/20260925090000-create-chat-tables.js": "358ede1ec6827334",
+   "packages/backend/migrations/20261001100000-outbox-domain-events.js": "e9fd4302f322fcf0",
+   "packages/backend/migrations/20261001120000-product-view-count.js": "99acd29211991504",
+   "packages/backend/migrations/20261001140000-shops-tenancy-expand.js": "ee553fcdf13e2504",
+   "packages/backend/migrations/20261001220000-product-fts.js": "bd3351f7d9ded480",
+   "packages/backend/migrations/20261002100000-catalog-import.js": "2db019d13c68da53",
+   "packages/backend/migrations/20261002180000-outbox-extra-error.js": "4c66c4635883141f",
+   "packages/backend/migrations/20261009130000-outbox-row-contract.js": "b96fe4b1c99a3b86",
+   "packages/backend/migrations/20261010150000-catalog-s05-expand-columns.js": "be62c4c6d364f5cd",
+   "packages/backend/migrations/20261012110000-catalog-s05-contract-fks.js": "2727866f3ef5fc4b",
+   "packages/backend/migrations/20261012110100-catalog-s05-contract-shop-not-null.js": "8a47c2555685c414",
+   "packages/backend/migrations/20261019000200-catalog-s05-restore-shop-not-null.js": "2e65f3b53087f5ee",
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/web/components/seller/inventory/stock-popover.tsx": "eed2b2621e4eba19",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd"
+  },
+  "specs": {
+   "W04.AS-38": "eabea675046ec473",
+   "W04.B-36": "fcc8e64e5e4d05f8",
+   "W04.R-13": "91b32c5778f1aab7"
+  }
+ },
+ "fault.redis.stop-start-refused-connections": {
+  "code": "44136fa355b3678a",
+  "spec": "d7c83d22d3b72334",
+  "at": "2026-10-25",
+  "files": {},
+  "specs": {
+   "W04.B-36": "fcc8e64e5e4d05f8",
+   "W04.R-13": "91b32c5778f1aab7"
+  }
+ },
+ "fault.scylla.archive-product": {
+  "code": "5b7bbaed30ff4eef",
+  "spec": "0a2963f705bbcab4",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/catalog/api/product.controller.ts": "8e9e10f4f4b368fe",
+   "packages/backend/libs/domains/catalog/api/product.dto.ts": "1ee0842eafbb0cbd",
+   "packages/backend/libs/domains/catalog/application/product-command.service.ts": "88c1d095f06a340d",
+   "packages/backend/libs/domains/catalog/infra/models/product-status-history.model.ts": "20ecdb68a2a2ccab",
+   "packages/backend/libs/domains/catalog/infra/models/product.model.ts": "b0656bb99edfec60",
+   "packages/backend/libs/infrastructure/outbox/outbox.model.ts": "54077ca4d70b485b",
+   "packages/backend/migrations/20260125105527-unnamed-migration.js": "5b056775ce884824",
+   "packages/backend/migrations/20260425085120-unnamed-migration.js": "b81f453542d4ee49",
+   "packages/backend/migrations/20260808090000-product-inventory.js": "4a65c08eb15d88a6",
+   "packages/backend/migrations/20260808120000-fold-inventory-into-product.js": "aacef9f21305bdb2",
+   "packages/backend/migrations/20260809090000-outbox-mailman-fields.js": "fe8b9efa9ed85ae4",
+   "packages/backend/migrations/20260925090000-create-chat-tables.js": "358ede1ec6827334",
+   "packages/backend/migrations/20261001100000-outbox-domain-events.js": "e9fd4302f322fcf0",
+   "packages/backend/migrations/20261001120000-product-view-count.js": "99acd29211991504",
+   "packages/backend/migrations/20261001140000-shops-tenancy-expand.js": "ee553fcdf13e2504",
+   "packages/backend/migrations/20261001220000-product-fts.js": "bd3351f7d9ded480",
+   "packages/backend/migrations/20261002100000-catalog-import.js": "2db019d13c68da53",
+   "packages/backend/migrations/20261002180000-outbox-extra-error.js": "4c66c4635883141f",
+   "packages/backend/migrations/20261009130000-outbox-row-contract.js": "b96fe4b1c99a3b86",
+   "packages/backend/migrations/20261010150000-catalog-s05-expand-columns.js": "be62c4c6d364f5cd",
+   "packages/backend/migrations/20261010151000-catalog-s05-expand-tables.js": "0be6f3e30629dec1",
+   "packages/backend/migrations/20261012110000-catalog-s05-contract-fks.js": "2727866f3ef5fc4b",
+   "packages/backend/migrations/20261012110100-catalog-s05-contract-shop-not-null.js": "8a47c2555685c414",
+   "packages/backend/migrations/20261019000200-catalog-s05-restore-shop-not-null.js": "2e65f3b53087f5ee",
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/web/components/seller/inventory/archive-dialog.tsx": "e26b324fa29d0096",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd"
+  },
+  "specs": {
+   "W04.AS-39": "f1ac75bd7c4d139d",
+   "W04.B-36": "fcc8e64e5e4d05f8",
+   "W04.R-13": "91b32c5778f1aab7"
+  }
+ },
+ "fault.scylla.create-product": {
+  "code": "8587b3230d66b3a3",
+  "spec": "e84a3eb1b83b2cb3",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/catalog/api/product.controller.ts": "8e9e10f4f4b368fe",
+   "packages/backend/libs/domains/catalog/api/product.dto.ts": "1ee0842eafbb0cbd",
+   "packages/backend/libs/domains/catalog/application/product-command.service.ts": "88c1d095f06a340d",
+   "packages/backend/libs/domains/catalog/infra/models/product.model.ts": "b0656bb99edfec60",
+   "packages/backend/libs/infrastructure/outbox/outbox.model.ts": "54077ca4d70b485b",
+   "packages/backend/migrations/20260125105527-unnamed-migration.js": "5b056775ce884824",
+   "packages/backend/migrations/20260425085120-unnamed-migration.js": "b81f453542d4ee49",
+   "packages/backend/migrations/20260808090000-product-inventory.js": "4a65c08eb15d88a6",
+   "packages/backend/migrations/20260808120000-fold-inventory-into-product.js": "aacef9f21305bdb2",
+   "packages/backend/migrations/20260809090000-outbox-mailman-fields.js": "fe8b9efa9ed85ae4",
+   "packages/backend/migrations/20260925090000-create-chat-tables.js": "358ede1ec6827334",
+   "packages/backend/migrations/20261001100000-outbox-domain-events.js": "e9fd4302f322fcf0",
+   "packages/backend/migrations/20261001120000-product-view-count.js": "99acd29211991504",
+   "packages/backend/migrations/20261001140000-shops-tenancy-expand.js": "ee553fcdf13e2504",
+   "packages/backend/migrations/20261001220000-product-fts.js": "bd3351f7d9ded480",
+   "packages/backend/migrations/20261002100000-catalog-import.js": "2db019d13c68da53",
+   "packages/backend/migrations/20261002180000-outbox-extra-error.js": "4c66c4635883141f",
+   "packages/backend/migrations/20261009130000-outbox-row-contract.js": "b96fe4b1c99a3b86",
+   "packages/backend/migrations/20261010150000-catalog-s05-expand-columns.js": "be62c4c6d364f5cd",
+   "packages/backend/migrations/20261012110000-catalog-s05-contract-fks.js": "2727866f3ef5fc4b",
+   "packages/backend/migrations/20261012110100-catalog-s05-contract-shop-not-null.js": "8a47c2555685c414",
+   "packages/backend/migrations/20261019000200-catalog-s05-restore-shop-not-null.js": "2e65f3b53087f5ee",
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd"
+  },
+  "specs": {
+   "W04.AS-31": "c060454e7c10d038",
+   "W04.B-36": "fcc8e64e5e4d05f8",
+   "W04.R-13": "91b32c5778f1aab7"
+  }
+ },
+ "fault.scylla.edit-product": {
+  "code": "8587b3230d66b3a3",
+  "spec": "a99379dc26f644bf",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/catalog/api/product.controller.ts": "8e9e10f4f4b368fe",
+   "packages/backend/libs/domains/catalog/api/product.dto.ts": "1ee0842eafbb0cbd",
+   "packages/backend/libs/domains/catalog/application/product-command.service.ts": "88c1d095f06a340d",
+   "packages/backend/libs/domains/catalog/infra/models/product.model.ts": "b0656bb99edfec60",
+   "packages/backend/libs/infrastructure/outbox/outbox.model.ts": "54077ca4d70b485b",
+   "packages/backend/migrations/20260125105527-unnamed-migration.js": "5b056775ce884824",
+   "packages/backend/migrations/20260425085120-unnamed-migration.js": "b81f453542d4ee49",
+   "packages/backend/migrations/20260808090000-product-inventory.js": "4a65c08eb15d88a6",
+   "packages/backend/migrations/20260808120000-fold-inventory-into-product.js": "aacef9f21305bdb2",
+   "packages/backend/migrations/20260809090000-outbox-mailman-fields.js": "fe8b9efa9ed85ae4",
+   "packages/backend/migrations/20260925090000-create-chat-tables.js": "358ede1ec6827334",
+   "packages/backend/migrations/20261001100000-outbox-domain-events.js": "e9fd4302f322fcf0",
+   "packages/backend/migrations/20261001120000-product-view-count.js": "99acd29211991504",
+   "packages/backend/migrations/20261001140000-shops-tenancy-expand.js": "ee553fcdf13e2504",
+   "packages/backend/migrations/20261001220000-product-fts.js": "bd3351f7d9ded480",
+   "packages/backend/migrations/20261002100000-catalog-import.js": "2db019d13c68da53",
+   "packages/backend/migrations/20261002180000-outbox-extra-error.js": "4c66c4635883141f",
+   "packages/backend/migrations/20261009130000-outbox-row-contract.js": "b96fe4b1c99a3b86",
+   "packages/backend/migrations/20261010150000-catalog-s05-expand-columns.js": "be62c4c6d364f5cd",
+   "packages/backend/migrations/20261012110000-catalog-s05-contract-fks.js": "2727866f3ef5fc4b",
+   "packages/backend/migrations/20261012110100-catalog-s05-contract-shop-not-null.js": "8a47c2555685c414",
+   "packages/backend/migrations/20261019000200-catalog-s05-restore-shop-not-null.js": "2e65f3b53087f5ee",
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd"
+  },
+  "specs": {
+   "W04.AS-36": "8253b4dd2de7f301",
+   "W04.B-36": "fcc8e64e5e4d05f8",
+   "W04.R-13": "91b32c5778f1aab7"
+  }
+ },
+ "fault.scylla.inventory-load": {
+  "code": "fe715c40096a5c97",
+  "spec": "e31aeae76dbea0fa",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/catalog/application/product-command.service.ts": "88c1d095f06a340d",
+   "packages/backend/libs/domains/catalog/infra/models/product.model.ts": "b0656bb99edfec60",
+   "packages/backend/migrations/20260808090000-product-inventory.js": "4a65c08eb15d88a6",
+   "packages/backend/migrations/20260808120000-fold-inventory-into-product.js": "aacef9f21305bdb2",
+   "packages/backend/migrations/20260925090000-create-chat-tables.js": "358ede1ec6827334",
+   "packages/backend/migrations/20261001120000-product-view-count.js": "99acd29211991504",
+   "packages/backend/migrations/20261001140000-shops-tenancy-expand.js": "ee553fcdf13e2504",
+   "packages/backend/migrations/20261001220000-product-fts.js": "bd3351f7d9ded480",
+   "packages/backend/migrations/20261002100000-catalog-import.js": "2db019d13c68da53",
+   "packages/backend/migrations/20261010150000-catalog-s05-expand-columns.js": "be62c4c6d364f5cd",
+   "packages/backend/migrations/20261012110000-catalog-s05-contract-fks.js": "2727866f3ef5fc4b",
+   "packages/backend/migrations/20261012110100-catalog-s05-contract-shop-not-null.js": "8a47c2555685c414",
+   "packages/backend/migrations/20261019000200-catalog-s05-restore-shop-not-null.js": "2e65f3b53087f5ee",
+   "packages/contracts/src/bff/seller-overview.ts": "cf5790c3205c6cf1",
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/contracts/src/developer-platform/keys.ts": "444d734754f9c8e3",
+   "packages/contracts/src/developer-platform/logs.ts": "53ca17bc6a88f8cb",
+   "packages/contracts/src/developer-platform/webhooks.ts": "f8aae4c6f9163cf7",
+   "packages/contracts/src/orders/order.ts": "825d6af4758d3309",
+   "packages/contracts/src/search/shop-product-search.ts": "aed2f677d96f5388",
+   "packages/contracts/src/tenancy/index.ts": "324ccfbe0702f2bf",
+   "packages/web/app/dashboard/seller/[shopId]/inventory/page.tsx": "e9212480fb2b68a8",
+   "packages/web/lib/server/seller.server.ts": "7b2b5295d5ae9ac5"
+  },
+  "specs": {
+   "W04.AS-31": "c060454e7c10d038",
+   "W04.B-36": "fcc8e64e5e4d05f8"
+  }
+ },
+ "fault.scylla.orders-load": {
+  "code": "037a05123c701725",
+  "spec": "e31aeae76dbea0fa",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/orders/infra/models/bis-order.model.ts": "3e535d73bb950429",
+   "packages/backend/libs/domains/orders/infra/models/shop-order.model.ts": "2ff7760550e1e604",
+   "packages/backend/migrations/20260125105527-unnamed-migration.js": "5b056775ce884824",
+   "packages/backend/migrations/20261001150000-checkout-orders-inventory.js": "676b84c22daf1467",
+   "packages/backend/migrations/20261010160000-orders-s10-expand-columns.js": "968fcdb631260142",
+   "packages/backend/migrations/20261012120000-orders-s10-ref-code.js": "5ab8503aa0b764b6",
+   "packages/backend/migrations/20261019000000-orders-j05-attribution-expand.js": "1538cde1ac6a10b5",
+   "packages/web/app/dashboard/seller/[shopId]/orders/page.tsx": "c95755cc233da175"
+  },
+  "specs": {
+   "W04.AS-31": "c060454e7c10d038",
+   "W04.B-36": "fcc8e64e5e4d05f8"
+  }
+ },
+ "fault.scylla.outbox-published": {
+  "code": "b8173a038d6896e2",
+  "spec": "655f0c0142a9aa97",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/infrastructure/outbox/outbox.model.ts": "54077ca4d70b485b",
+   "packages/backend/migrations/20260125105527-unnamed-migration.js": "5b056775ce884824",
+   "packages/backend/migrations/20260425085120-unnamed-migration.js": "b81f453542d4ee49",
+   "packages/backend/migrations/20260809090000-outbox-mailman-fields.js": "fe8b9efa9ed85ae4",
+   "packages/backend/migrations/20261001100000-outbox-domain-events.js": "e9fd4302f322fcf0",
+   "packages/backend/migrations/20261002180000-outbox-extra-error.js": "4c66c4635883141f",
+   "packages/backend/migrations/20261009130000-outbox-row-contract.js": "b96fe4b1c99a3b86"
+  },
+  "specs": {
+   "W04.R-13": "91b32c5778f1aab7"
+  }
+ },
+ "fault.scylla.photo-upload": {
+  "code": "5d04ac0df03b763e",
+  "spec": "65d10667f96f043c",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/asset-library/application/upload.service.ts": "39fefbf155a9f284",
+   "packages/backend/libs/domains/media/api/media.controller.ts": "24acc041bb8e2bcf",
+   "packages/backend/libs/domains/media/application/upload.service.ts": "a925e44c29d1a370",
+   "packages/contracts/src/asset-library/commit.ts": "0a1cfbb2de3a594d",
+   "packages/contracts/src/asset-library/prepare.ts": "7089b3db1a38056a",
+   "packages/contracts/src/media/gallery.ts": "65db2579c6eb82d4",
+   "packages/contracts/src/media/media.ts": "bd0571339629bf2f",
+   "packages/contracts/src/media/video.ts": "b24f3f7006e47042",
+   "packages/web/components/seller/media/gallery-view.tsx": "d4ec94b8d4c7d135",
+   "packages/web/lib/api/client.ts": "0fa4cb70bbc2d203",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/orders.ts": "7631ea19bc997f81",
+   "packages/web/lib/api/parse.ts": "82453dbb70bf149b",
+   "packages/web/lib/api/seller-media.ts": "31b6db808f27ab21",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
+  },
+  "specs": {
+   "S29.B-01": "382b54f922904edd",
+   "S29.R-11": "13636d6b4acaa3f1",
+   "W04.R-13": "91b32c5778f1aab7"
+  }
+ },
+ "fault.scylla.shop-open": {
+  "code": "045932b45b65c06e",
+  "spec": "bbb1391dc472ab05",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/tenancy/api/shop.controller.ts": "be0ce071ac0c848a",
+   "packages/backend/libs/domains/tenancy/api/tenancy.dto.ts": "e1198cdca40b60bd",
+   "packages/backend/libs/domains/tenancy/application/shop.service.ts": "9a312d91c7d681af",
+   "packages/backend/libs/domains/tenancy/infra/models/shop-membership.model.ts": "45533969e65b506e",
+   "packages/backend/libs/domains/tenancy/infra/models/shop.model.ts": "ba1b0987ab3d736f",
+   "packages/backend/libs/infrastructure/outbox/outbox.model.ts": "54077ca4d70b485b",
+   "packages/backend/migrations/20260125105527-unnamed-migration.js": "5b056775ce884824",
+   "packages/backend/migrations/20260425085120-unnamed-migration.js": "b81f453542d4ee49",
+   "packages/backend/migrations/20260809090000-outbox-mailman-fields.js": "fe8b9efa9ed85ae4",
+   "packages/backend/migrations/20261001100000-outbox-domain-events.js": "e9fd4302f322fcf0",
+   "packages/backend/migrations/20261001140000-shops-tenancy-expand.js": "ee553fcdf13e2504",
+   "packages/backend/migrations/20261001160000-ledger-partitioning-payouts-recon.js": "d3581d6c92e577fb",
+   "packages/backend/migrations/20261001290000-public-api.js": "a3df3f97e02853f6",
+   "packages/backend/migrations/20261002170000-seller-onboarding.js": "5182cff5a76e0ca2",
+   "packages/backend/migrations/20261002180000-outbox-extra-error.js": "4c66c4635883141f",
+   "packages/backend/migrations/20261009130000-outbox-row-contract.js": "b96fe4b1c99a3b86",
+   "packages/backend/migrations/20261010140000-tenancy-s03-expand.js": "83c015f426cf7cbe",
+   "packages/backend/migrations/20261010141000-tenancy-s03-contract-fks.js": "be9a026486c0c7f0",
+   "packages/web/app/dashboard/seller/page.tsx": "f118669e0960e48a"
+  },
+  "specs": {
+   "W04.B-01": "13add0d3413bff25",
+   "W04.B-36": "fcc8e64e5e4d05f8",
+   "W04.R-13": "91b32c5778f1aab7"
+  }
+ },
+ "fault.scylla.stock-change": {
+  "code": "5421d0d92d414db0",
+  "spec": "3a2a9001db852821",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/catalog/application/product-command.service.ts": "88c1d095f06a340d",
+   "packages/backend/libs/domains/catalog/infra/models/product.model.ts": "b0656bb99edfec60",
+   "packages/backend/libs/infrastructure/outbox/outbox.model.ts": "54077ca4d70b485b",
+   "packages/backend/migrations/20260125105527-unnamed-migration.js": "5b056775ce884824",
+   "packages/backend/migrations/20260425085120-unnamed-migration.js": "b81f453542d4ee49",
+   "packages/backend/migrations/20260808090000-product-inventory.js": "4a65c08eb15d88a6",
+   "packages/backend/migrations/20260808120000-fold-inventory-into-product.js": "aacef9f21305bdb2",
+   "packages/backend/migrations/20260809090000-outbox-mailman-fields.js": "fe8b9efa9ed85ae4",
+   "packages/backend/migrations/20260925090000-create-chat-tables.js": "358ede1ec6827334",
+   "packages/backend/migrations/20261001100000-outbox-domain-events.js": "e9fd4302f322fcf0",
+   "packages/backend/migrations/20261001120000-product-view-count.js": "99acd29211991504",
+   "packages/backend/migrations/20261001140000-shops-tenancy-expand.js": "ee553fcdf13e2504",
+   "packages/backend/migrations/20261001220000-product-fts.js": "bd3351f7d9ded480",
+   "packages/backend/migrations/20261002100000-catalog-import.js": "2db019d13c68da53",
+   "packages/backend/migrations/20261002180000-outbox-extra-error.js": "4c66c4635883141f",
+   "packages/backend/migrations/20261009130000-outbox-row-contract.js": "b96fe4b1c99a3b86",
+   "packages/backend/migrations/20261010150000-catalog-s05-expand-columns.js": "be62c4c6d364f5cd",
+   "packages/backend/migrations/20261012110000-catalog-s05-contract-fks.js": "2727866f3ef5fc4b",
+   "packages/backend/migrations/20261012110100-catalog-s05-contract-shop-not-null.js": "8a47c2555685c414",
+   "packages/backend/migrations/20261019000200-catalog-s05-restore-shop-not-null.js": "2e65f3b53087f5ee",
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/web/components/seller/inventory/stock-popover.tsx": "eed2b2621e4eba19",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd"
+  },
+  "specs": {
+   "W04.AS-38": "eabea675046ec473",
+   "W04.B-36": "fcc8e64e5e4d05f8",
+   "W04.R-13": "91b32c5778f1aab7"
+  }
+ },
+ "fault.serverless-redis.pause": {
+  "code": "44136fa355b3678a",
+  "spec": "655f0c0142a9aa97",
+  "at": "2026-10-25",
+  "files": {},
+  "specs": {
+   "W04.R-13": "91b32c5778f1aab7"
+  }
+ }
+}

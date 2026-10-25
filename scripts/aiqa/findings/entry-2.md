@@ -1,7 +1,7 @@
 # entry, pass 2 (ai-tester, 2026-10-25): findings
 
 Specs added in packages/web/tests/aiqa/: entry-form-more, entry-picker, entry-many, entry-frame, entry-shell, entry-roles (+ entry-support.ts).
-Run: `npx playwright test tests/aiqa/entry- --workers=2` (desktop and mobile 390 px projects; Firefox not run).
+Run: `npx playwright test tests/seller/entry/ --workers=2` (desktop and mobile 390 px projects; Firefox not run).
 VIEWER, STAFF and ADMIN were made through the real invitation mail (dev mailbox), so the menu was checked for all four roles.
 The failing tests named below are left failing on purpose: each one is a finding.
 

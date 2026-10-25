@@ -1,6 +1,6 @@
 # entry, pass 1 (ai-tester, 2026-10-25): findings
 
-Specs: packages/web/tests/aiqa/entry-index.spec.ts and entry-form.spec.ts (run: `npx playwright test tests/aiqa --project=desktop`).
+Specs: packages/web/tests/seller/entry/index.spec.ts and entry-form.spec.ts (run: `npx playwright test tests/aiqa --project=desktop`).
 The failing tests below are left failing on purpose: each one is a finding.
 
 P1F1 [CONFIRMED] medium /dashboard/seller?cursor=<refused by the API> shows the generic "Something went wrong" page

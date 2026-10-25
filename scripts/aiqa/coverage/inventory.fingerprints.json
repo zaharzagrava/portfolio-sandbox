@@ -651,6 +651,29 @@
    "W04.R-23": "da8d8279d5f88703"
   }
  },
+ "inventory.archive.extra-1": {
+  "code": "93a884e86418bc73",
+  "spec": "44136fa355b3678a",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/inventory/archive-dialog.tsx": "e26b324fa29d0096",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd"
+  },
+  "specs": {}
+ },
+ "inventory.archive.extra-2": {
+  "code": "8d3533779f3910fb",
+  "spec": "44136fa355b3678a",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd",
+   "packages/web/lib/api/seller.ts": "267d9b324c265899"
+  },
+  "specs": {}
+ },
  "inventory.archive.last-product-empty": {
   "code": "8d3533779f3910fb",
   "spec": "80ad5c35de6a3639",
@@ -797,6 +820,18 @@
   "specs": {
    "W04.R-23": "da8d8279d5f88703"
   }
+ },
+ "inventory.edit.extra-1": {
+  "code": "2cc16792a6bb4612",
+  "spec": "44136fa355b3678a",
+  "at": "2026-10-25",
+  "files": {
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd"
+  },
+  "specs": {}
  },
  "inventory.edit.fields-rules": {
   "code": "2cc16792a6bb4612",
@@ -2547,6 +2582,17 @@
   "specs": {
    "W04.R-23": "da8d8279d5f88703"
   }
+ },
+ "inventory.stock.extra-1": {
+  "code": "e39b8626f49e8505",
+  "spec": "44136fa355b3678a",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/inventory/stock-popover.tsx": "eed2b2621e4eba19",
+   "packages/web/lib/api/errors.ts": "5665a215c84be3f5",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd"
+  },
+  "specs": {}
  },
  "inventory.stock.low-label-after-change": {
   "code": "91ab95c5ff6d46ea",

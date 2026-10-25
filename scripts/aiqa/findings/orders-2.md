@@ -1,7 +1,7 @@
 # Orders, pass 2 (tester, 2026-10-25)
 
 Proof: permanent specs in `packages/web/tests/aiqa/`: `orders-privacy`, `orders-paging`, `orders-states`, `orders-roles`, `orders-phone-a11y`, `orders-db`, `orders-contract`, `orders-source`, `orders-auction` (helper: `orders-seed.ts`, rows written for shops and buyers the spec made). Each failing test named below is left failing on purpose.
-Run: `npx playwright test tests/aiqa/orders-<name>.spec.ts --project=desktop` (and `--project=mobile`).
+Run: `npx playwright test tests/seller/orders/<name>.spec.ts --project=desktop` (and `--project=mobile`).
 
 ## Re-run of the two pass 1 specs (orders-list, orders-page), desktop and mobile
 
@@ -64,4 +64,6 @@ Other open items of pass 1, re-seen and still true (no new id): P1F4 also with `
 - The sidebar group names ("Shop", "Developers", "Account") are `h2` inside the navigation; the page's own part has the only `h1` (orders.a11y.landmarks passes on that reading).
 - Fixture race seen once in `shopWithOrders` (orders-support.ts): paying right after the slice shows answered 404 `order_not_found` for `/api/payments/intents`; a rerun passed. Not investigated further.
 - The dev server compiled a CSS error from `app/globals.css` (an unrelated class with control characters) during one run and showed the Next.js error overlay on a page; it went away on its own. Not an orders issue.
-- Not testable here: REFUNDED slices (the only route is the signed payment webhook `charge.refunded`; the signing secret is not available to a tester), fulfilment moves (courier flow), shop discounts (needs a deployed shop function), a member without `orders.read` (every role has it; no custom roles).
+- Not testable here: shop discounts (the shop-functions entitlement is in no plan: 403 entitlement_required even on Pro), REFUNDED slices (the only route is the signed payment webhook `charge.refunded`; the signing secret is not available to a tester), fulfilment moves (courier flow), a member without `orders.read` (every role has it; no custom roles).
+- Drop (flash sale) order: the seller list shows it like any other (Pending, the drop price 400 instead of 1000). The link to the sale is on `StockReservation` (source FLASH, flashSaleId); `BisOrderItem.flashSaleId` stays NULL for it (the column is never filled). Harmless for this page, noted for the map's `code` column.
+- Auction order: see the line orders.source.auction-order (needs the Pro plan: the test subscribes the shop through the billing route; the access token lives 15 minutes, so the test reads the end of the auction from the database and signs in again).

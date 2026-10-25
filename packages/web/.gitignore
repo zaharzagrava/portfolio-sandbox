@@ -49,3 +49,7 @@ test-results
 
 # widget checkout bundle (pnpm build:widget)
 /.widget/
+
+# mutation testing (pnpm mutation:web)
+/.stryker-tmp/
+/reports/

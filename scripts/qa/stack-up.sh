@@ -10,6 +10,10 @@ if [[ -n "$(docker ps -q --filter name=payment_system_)" ]]; then
 fi
 QA_DIR="${QA_DIR:-$(mktemp -d)}"; P="sddqa$(date +%H%M%S)"
 echo "$P" > "$QA_DIR/project"
+# QA_COVERAGE=1 (off by default): the API and the web server record which code ran (V8 coverage, folders $QA_DIR/v8-api and $QA_DIR/v8-web);
+# stop them with scripts/aiqa/tracks/code-coverage/flush.sh <QA_DIR> BEFORE stack-down.sh, or nothing is written. See scripts/aiqa/tracks/code-coverage/README.md
+COV_API=(); COV_WEB=()
+if [[ "${QA_COVERAGE:-}" == 1 ]]; then mkdir -p "$QA_DIR/v8-api" "$QA_DIR/v8-web"; COV_API=(env "NODE_V8_COVERAGE=$QA_DIR/v8-api"); COV_WEB=(env "NODE_V8_COVERAGE=$QA_DIR/v8-web"); fi
 docker compose -f docker-compose.test.yaml -p marketplace_test stop >/dev/null 2>&1   # the test and dev stacks cannot both run on one laptop (Scylla)
 stale="$(docker ps -a -q --filter name=payment_system_)"; [[ -n "$stale" ]] && docker rm $stale >/dev/null
 [[ -f packages/backend/.env ]] || bash scripts/infra/make-dev-env.sh >/dev/null
@@ -18,7 +22,7 @@ COMPOSE_PROJECT_NAME="$P" setsid scripts/infra/stack.sh dev setup >"$QA_DIR/stac
 for _ in $(seq 1 180); do grep -q "dev stack is up and migrated" "$QA_DIR/stack.log" && break; kill -0 "$(cat "$QA_DIR/stack.pid")" 2>/dev/null || break; sleep 5; done
 grep -q "dev stack is up and migrated" "$QA_DIR/stack.log" || { echo "the stack did not come up: see $QA_DIR/stack.log" >&2; "$(dirname "$0")/stack-down.sh" "$QA_DIR"; exit 1; }
 [[ -n "${NO_API:-}" ]] && { echo "QA_DIR=$QA_DIR"; exit 0; }   # NO_API=1: only the stack (scripts/infra/boot-check.sh starts and judges the API)
-setsid pnpm --filter api run start:dev:monolith >"$QA_DIR/api.log" 2>&1 & echo $! > "$QA_DIR/api.pid"
+setsid ${COV_API[@]+"${COV_API[@]}"} pnpm --filter api run start:dev:monolith >"$QA_DIR/api.log" 2>&1 & echo $! > "$QA_DIR/api.pid"
 for _ in $(seq 1 120); do curl -sf localhost:8000/health/ready >/dev/null && break; sleep 5; done
 curl -sf localhost:8000/health/ready >/dev/null || { echo "the API did not become ready: see $QA_DIR/api.log" >&2; "$(dirname "$0")/stack-down.sh" "$QA_DIR"; exit 1; }
 # the local stand-in for the document-extractor Lambda: nothing else consumes `onboarding-documents`, so without it no shop is ever verified (J01 G-33);
@@ -33,7 +37,7 @@ sleep 3; grep -qi "video" "$QA_DIR/api.log" || echo "WARNING: the API log does n
 # the seeded accounts and products (a fresh stack has none)
 pnpm --filter api seed:dev >"$QA_DIR/seed.log" 2>&1 || { echo "the seed failed: see $QA_DIR/seed.log" >&2; "$(dirname "$0")/stack-down.sh" "$QA_DIR"; exit 1; }
 if [[ "${WITH_WEB:-}" == 1 ]]; then   # the storefront, for the browser (QA agent, Playwright)
-  (cd packages/web && PLATFORM_CURRENCY=EUR NEXT_PUBLIC_PAYMENTS_SANDBOX=true NEXT_PUBLIC_MAP_TILE_URL='https://tiles.test.local/{z}/{x}/{y}.png' MAP_TILE_HOST='https://tiles.test.local' setsid pnpm run dev >"$QA_DIR/web.log" 2>&1 & echo $! > "$QA_DIR/web.pid")
+  (cd packages/web && PLATFORM_CURRENCY=EUR NEXT_PUBLIC_PAYMENTS_SANDBOX=true NEXT_PUBLIC_MAP_TILE_URL='https://tiles.test.local/{z}/{x}/{y}.png' MAP_TILE_HOST='https://tiles.test.local' setsid ${COV_WEB[@]+"${COV_WEB[@]}"} pnpm run dev >"$QA_DIR/web.log" 2>&1 & echo $! > "$QA_DIR/web.pid")
   for _ in $(seq 1 60); do curl -sf localhost:3000 >/dev/null && break; sleep 3; done
   curl -sf localhost:3000 >/dev/null || { echo "the web server did not answer: see $QA_DIR/web.log" >&2; "$(dirname "$0")/stack-down.sh" "$QA_DIR"; exit 1; }
 fi
