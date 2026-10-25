@@ -233,14 +233,12 @@ describe('Tenant resolution and isolation', () => {
       permission: string,
     ) => t.as(user).get(probe(permission)).set('X-Shop-Id', shopId);
 
-    it('SUSPENDED allows shop.read, members.read, shop.export and refuses the rest with 403 shop_suspended', async () => {
+    it('SUSPENDED allows shop.read, members.read, products.read, orders.read, shop.export and refuses the rest with 403 shop_suspended', async () => {
       const owner = await t.newUser();
       const shop = await createShop(t.app, owner, { status: 'SUSPENDED' });
-      for (const p of ['shop.read', 'members.read', 'shop.export'])
-        await call(owner, shop.id, p).expect(200);
-      for (const p of SHOP_PERMISSIONS.filter(
-        (x) => !['shop.read', 'members.read', 'shop.export'].includes(x),
-      )) {
+      const open = ['shop.read', 'members.read', 'products.read', 'orders.read', 'shop.export'];
+      for (const p of open) await call(owner, shop.id, p).expect(200);
+      for (const p of SHOP_PERMISSIONS.filter((x) => !open.includes(x))) {
         const res = await call(owner, shop.id, p).expect(403);
         expect(res.body.code).toBe('shop_suspended');
       }
@@ -252,6 +250,8 @@ describe('Tenant resolution and isolation', () => {
       for (const p of [
         'shop.read',
         'members.read',
+        'products.read',
+        'orders.read',
         'shop.export',
         'shop.delete',
       ])

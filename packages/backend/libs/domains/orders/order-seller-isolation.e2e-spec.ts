@@ -290,10 +290,10 @@ describe('Seller order isolation', () => {
     });
   });
 
-  describe('closed shops (S03 FR-013: orders.read is not allowed while suspended or closing)', () => {
+  describe('closed shops (S03 FR-013, W04 R-03: orders.read stays allowed while suspended or closing)', () => {
     it.each([
-      ['SUSPENDED', 403, 'shop_suspended'],
-      ['DELETING', 409, 'shop_offboarding'],
+      ['SUSPENDED', 200, undefined],
+      ['DELETING', 200, undefined],
       ['DELETED', 404, 'shop_not_found'],
     ] as const)(
       'S10 AS-61: a %s shop answers its own members %i %s and a stranger the plain 404',
@@ -316,8 +316,10 @@ describe('Seller order isolation', () => {
         for (const member of [owner, viewer]) {
           const res = await list(member, closed.shop.id);
           expect(res.status).toBe(http);
-          expect(res.body.code).toBe(code);
-          expect(JSON.stringify(res.body)).not.toContain('Closed shop item');
+          if (code) {
+            expect(res.body.code).toBe(code);
+            expect(JSON.stringify(res.body)).not.toContain('Closed shop item');
+          }
         }
         const stranger = await list(sellerA, closed.shop.id);
         expect(stranger.status).toBe(404);

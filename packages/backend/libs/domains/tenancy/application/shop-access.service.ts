@@ -28,10 +28,15 @@ import {
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-/** FR-013: what a closed shop still allows. */
+/**
+ * FR-013: what a closed shop still allows. Reads of the shop's own data stay open (W04 R-03: the seller can still see
+ * products, photos and orders); every write is refused.
+ */
 const WHILE_SUSPENDED: readonly ShopPermission[] = [
   'shop.read',
   'members.read',
+  'products.read',
+  'orders.read',
   'shop.export',
 ];
 const WHILE_DELETING: readonly ShopPermission[] = [

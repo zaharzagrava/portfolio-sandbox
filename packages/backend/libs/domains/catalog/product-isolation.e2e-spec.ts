@@ -348,11 +348,11 @@ describe('Product seller isolation', () => {
 
   describe('closed shops (S03 FR-013)', () => {
     it.each([
-      ['SUSPENDED', 403, 'shop_suspended'],
-      ['DELETING', 409, 'shop_offboarding'],
+      ['SUSPENDED', 200, undefined],
+      ['DELETING', 200, undefined],
       ['DELETED', 404, 'shop_not_found'],
     ] as const)(
-      'S05 AS-05: a %s shop refuses the list and the read to its own members (%i %s) and still hides itself from strangers',
+      'S05 AS-05: a %s shop answers the list and the read to its own members (%i %s) and still hides itself from strangers',
       async (status, http, code) => {
         const closed = await createShopWorld(t, { status });
         const product = await createProduct(t.app, closed.shop);
@@ -360,7 +360,7 @@ describe('Product seller isolation', () => {
           for (const url of [base(closed.shop.id), `${base(closed.shop.id)}/${product.id}`]) {
             const res = await t.as(user).get(url);
             expect(res.status).toBe(http);
-            expect(res.body.code).toBe(code);
+            if (code) expect(res.body.code).toBe(code);
           }
         }
         // a stranger learns nothing more: the same 404 as for an unknown shop
