@@ -33,6 +33,7 @@ Other results are counted separately: **candidate** (not confirmed yet), **false
 | 2d | 2026-10-25 | AI agent, charter seller-orders (explore only, 6 min) | orders | 2 (B-035 buyerId exposure, verified by hand; B-036 reference column nearly identical on every row) | 0 | 0 | CSP noise seen again | 0 | Clean: money totals, paging, statuses, export, permissions |
 | 3a | 2026-10-25 | Map-driven pass 1, entry area (40 of 182 lines, as permanent Playwright specs) | entry | 5 new (B-037 to B-040 confirmed; B-023 re-confirmed, known) | 2 (B-041, B-042) | 3 wrong claims in the mapper's gap list | B-023 | 0 | 29 pass, 7 bug, 3 blocked, 8 new lines added |
 | 3b | 2026-10-25 | Map-driven pass 1, media area (40 of 163 lines + 4 new, permanent specs) | photos | 3 new (B-043, B-044, B-045); B-002 and B-023 re-confirmed (known); B-026 confirmed on dev | 2 (B-046, B-047) | 0 | B-002, B-023, B-026 | 0 | 31 pass, 6 bug, 1 n/a |
+| 3c | 2026-10-25 | Map-driven pass 1, orders area (40 of 131 lines, permanent specs) | orders | 5 new (B-048 to B-051 confirmed, B-049 medium); B-035, B-036, B-023 re-confirmed | 1 (B-052) | 0 | B-023, B-035, B-036 | 0 | 31 pass, 7 bug, 2 blocked (unreachable) |
 
 ## How to read it
 
