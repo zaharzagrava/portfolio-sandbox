@@ -68,6 +68,7 @@ Subtle points:
 - When the business writes are in the same DB, **store the key in the same transaction**, so the key and the side effects commit together.
 - When the side effect is **external** (calling the bank), you need the external system to be idempotent too: pass your own ID as their idempotency/reference key. Otherwise you need a reconciliation step for the "did the bank execute it before we crashed?" window.
 - Natural idempotency is even better: `UNIQUE(external_reference)`, or `PUT /payments/{clientGeneratedId}`.
+- As middleware: read the `Idempotency-Key` header, scope it per user, fingerprint the request (hash of method + path + body), claim, run the handler, capture status and body, store them, replay on repeats. The claim must be a single atomic insert-if-absent (`ON CONFLICT DO NOTHING`, Redis `SET NX`), so two concurrent retries can't both run the handler. Drill: [node-42](../practice/live-coding/02-nodejs.md#node-42).
 
 <!-- theory-links:start -->
 > [!TIP] In this codebase
@@ -88,6 +89,7 @@ Subtle points:
 - Make cursors **opaque** (base64-encoded JSON, ideally signed/HMAC'd so clients can't tamper with or depend on the internals).
 - Sort must be **deterministic**: always add a unique tiebreaker (`ORDER BY created_at DESC, id DESC`).
 - Response shape: `{ data: [...], nextCursor: "...", hasMore: true }`. Avoid `totalCount` on huge tables or make it approximate.
+- Client side, hide the cursor loop behind an async generator so callers just `for await` over items: [async generators](../01-javascript-typescript/04-fetch-axios-async.md#10-async-generators-and-for-await).
 - For syncing ("give me everything changed since X"), use an `updated_since` cursor with care: clock skew and long-running transactions can commit rows with older timestamps **after** you've read past them. Use an overlap window or a monotonic sequence (a change log table with a bigserial).
 
 <!-- theory-links:start -->
@@ -109,6 +111,33 @@ Subtle points:
 | **Token bucket** | capacity B, refill R/s; allows bursts up to B, average R | most common for APIs (AWS API Gateway, Stripe) |
 | Leaky bucket | queue drained at constant rate | smooths output; adds latency |
 | Concurrency limiter | max in-flight requests per client | protects against slow expensive calls |
+
+**Token bucket implementation**: no timer; refill lazily from elapsed time on each call (a `setInterval` per bucket wastes CPU and drifts). O(1) time and memory per key.
+```js
+class TokenBucket {
+  constructor(capacity, refillPerSec, now = Date.now) {
+    Object.assign(this, { capacity, refillPerSec, now, tokens: capacity, last: now() });   // starts full
+  }
+  tryRemove(cost = 1) {
+    const t = this.now();
+    this.tokens = Math.min(this.capacity, this.tokens + ((t - this.last) / 1000) * this.refillPerSec);
+    this.last = t;
+    if (this.tokens < cost) return false;     // 429, Retry-After = (cost - tokens) / refillPerSec seconds
+    this.tokens -= cost;
+    return true;
+  }
+}
+```
+**Sliding window log**: per key, keep timestamps of accepted requests, drop those older than the window, allow if fewer than `limit` remain. Exact, but O(limit) memory per key:
+```js
+const recent = (log.get(key) ?? []).filter((ts) => ts > now - windowMs);
+const allowed = recent.length < limit;
+if (allowed) recent.push(now);
+log.set(key, recent);
+```
+**Sliding window counter**: keep only the counts of the current and previous fixed windows and estimate `prev × (share of the previous window still inside the sliding window) + current`. In Redis that is two `INCR` keys with a TTL instead of a list per user.
+
+Per-key state lives in a `Map` in one process (evict idle keys, or it grows forever) or in Redis with a Lua script across instances, so read-and-update is atomic. Drills: [node-27](../practice/live-coding/02-nodejs.md#node-27), [node-28](../practice/live-coding/02-nodejs.md#node-28). Throttle and debounce are different tools: [async patterns §11](../01-javascript-typescript/04-fetch-axios-async.md#11-debounce-and-throttle).
 
 <!-- theory-links:start -->
 > [!TIP] In this codebase
@@ -311,7 +340,8 @@ On **our** side, processing must be one-at-a-time per ordering scope too (row lo
 
 **Why not Cassandra for the event log**: the write load is small. Even thousands of webhooks per minute is tens of inserts per second; one Postgres instance handles thousands of inserts per second. Keeping the log in Postgres lets the dedupe insert, raw log and business write share one transaction. Cassandra adds a second datastore, no cross-store transactions and ops cost, worth it only at sustained very high write volumes (hundreds of thousands per second) or multi-region writes. Scale Postgres first with monthly partitions (drop or archive old ones to S3). Numbers: [datastore estimates](../10-system-design/01-system-design-framework.md#2-back-of-the-envelope-numbers).
 
-- Verify the signature over the **raw body** (parsing then re-serializing changes the bytes; in Nest, `rawBody: true`), with `crypto.timingSafeEqual` and a timestamp tolerance.
+- Verify the signature over the **raw body** (parsing then re-serializing changes whitespace and key order, so the bytes differ). In Express, `express.json()` has already consumed the body: use `express.raw({ type: 'application/json' })` on the webhook route (or `express.json({ verify })` to keep the buffer), verify, then parse. In Nest, `rawBody: true`.
+- Compare with `crypto.timingSafeEqual` ([why](../05-security/02-authentication-authorization.md#0-crypto-building-blocks-hash-hmac-signature-encryption)). It throws if lengths differ, so check lengths first. The timestamp is part of the signed data, so it can't be changed, and the tolerance window blocks replays. Drill: [node-43](../practice/live-coding/02-nodejs.md#node-43).
 - HMAC with a shared secret proves the payload came from someone holding the secret, but both sides hold it. For true non-repudiation you need **asymmetric signatures** (partner signs with a private key). In practice, raw log + HMAC + partner's own delivery logs settle disputes. HMAC vs signatures: [crypto building blocks](../05-security/02-authentication-authorization.md#0-crypto-building-blocks-hash-hmac-signature-encryption).
 - Don't trust the payload for critical actions (payments, balances): re-fetch the object from the provider's API.
 - If you do add SQS: **standard**, not FIFO. The consumer is idempotent and version-guarded anyway; FIFO (group = lease ID) only helps if the *source* order is trustworthy.
@@ -320,7 +350,7 @@ On **our** side, processing must be one-at-a-time per ordering scope too (row lo
 function verify(rawBody: Buffer, header: string, secret: string) {
   const { t, v1 } = Object.fromEntries(header.split(',').map(kv => kv.split('=')));
   if (Math.abs(Date.now() / 1000 - Number(t)) > 300) throw new Error('stale');
-  const expected = createHmac('sha256', secret).update(`${t}.${rawBody}`).digest('hex');
+  const expected = createHmac('sha256', secret).update(`${t}.`).update(rawBody).digest('hex'); // bytes, not re-decoded text
   const a = Buffer.from(expected), b = Buffer.from(v1 ?? '');
   if (a.length !== b.length || !timingSafeEqual(a, b)) throw new Error('bad signature');
 }
@@ -356,6 +386,9 @@ Thin receiver: verify the HMAC on the raw body, persist the raw event to an appe
 
 **Q: What if events must be applied in order, e.g. "update lease" arrives before "create lease"?**
 A consumer can't reconstruct an order the producer never recorded, so first ask what the partner stamps on events. Strict order needs a gapless counter per ordering scope; events touch several entities, so the scope is usually the partner account. Best: pull from their ordered event feed with a stored cursor (the webhook is just a wake-up). Otherwise a resequencer: cursor row per account, apply only `last+1`, drop `≤ last`, hold later ones, fill gaps from their event API after a timeout, else alert and resync. Serial per account, parallel across accounts. Full rehearsal: [practice/01](../practice/01-pms-webhook-ingestion.md).
+
+**Q: Token bucket or sliding window?**
+Token bucket when bursts are fine as long as the average holds (most public APIs): O(1) per key, refilled lazily from elapsed time. A sliding window log when the limit must be exact over any window (e.g. login attempts); it costs one timestamp per request. The sliding window counter approximates it with two counters. Plain fixed windows let a client send twice the limit around a window boundary.
 
 **Q: How do you handle third-party rate limits when syncing data?**
 A shared distributed limiter (Redis-backed) so every worker respects one budget, honoring `Retry-After`, exponential backoff with jitter for retryable errors, queue-based work distribution with checkpointed cursors, bulk and incremental endpoints to cut call volume, and metrics and alerts on 429 rate and sync lag.

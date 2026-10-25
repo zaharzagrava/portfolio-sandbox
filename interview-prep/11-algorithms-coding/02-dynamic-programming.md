@@ -2,7 +2,7 @@
 
 > **Covers:** the non-adjacent index rule, the dynamic programming approach, and testing against all samples and edge cases.
 
-All code in this doc was run and fuzz-tested against brute force (Node 24, native TS).
+All code in this doc was run and fuzz-tested against brute force (Node 22+, native type stripping). Each pattern ends with **Drills**: problems from the live-coding set that use it.
 
 ---
 
@@ -140,6 +140,8 @@ function robTree(root?: TreeNode): number {
 ### Variant F: "Delete and Earn" reduces to the same problem
 Taking value v deletes v−1 and v+1. Bucket the points per value (`points[v] = v × count(v)`), then run `rob(points)`, because adjacent *values* behave like adjacent indices.
 
+Drills: [algo-082](../practice/live-coding/03-algorithms.md#algo-082), [algo-083](../practice/live-coding/03-algorithms.md#algo-083) (Variant C)
+
 ---
 
 ## 2. DP methodology (applies to every DP problem)
@@ -162,16 +164,34 @@ Taking value v deletes v−1 and v+1. Bucket the points per value (`points[v] = 
 ## 3. Pattern catalog (all verified)
 
 ### 3.1 1D linear DP
+**Recognize:** the answer for a prefix (or for amount/step i) depends on a few smaller indices: "how many ways to reach i", "best up to i", "can the prefix be split".
 ```ts
-// Coin change: min coins to make amount (unbounded items)
-function coinChange(coins: number[], amount: number): number {
-  const dp = new Array<number>(amount + 1).fill(Infinity); dp[0] = 0;
-  for (let a = 1; a <= amount; a++)
-    for (const c of coins) if (c <= a && dp[a - c] + 1 < dp[a]) dp[a] = dp[a - c] + 1;
-  return dp[amount] === Infinity ? -1 : dp[amount];      // ([1,2,5], 11) → 3
+// Climbing stairs: the last move came from i-1 or i-2 → Fibonacci. ways(0) = 1 (one way to do nothing)
+function climbStairs(n: number): number {
+  let a = 1, b = 1;                                       // ways(i-2), ways(i-1)
+  for (let i = 2; i <= n; i++) [a, b] = [b, a + b];
+  return b;                                               // 5 → 8
 }
 
-// Word break
+// Decode ways: climbing stairs with validity checks on the 1- and 2-digit steps
+function numDecodings(s: string): number {
+  let prev2 = 1, prev1 = s[0] === '0' ? 0 : 1;            // ways for prefixes of length i-2, i-1
+  for (let i = 2; i <= s.length; i++) {
+    const two = Number(s.slice(i - 2, i));
+    const cur = (s[i - 1] !== '0' ? prev1 : 0) + (two >= 10 && two <= 26 ? prev2 : 0); // '05' is not a code
+    prev2 = prev1; prev1 = cur;
+  }
+  return prev1;                                           // '226' → 3, '06' → 0
+}
+
+// Kadane (max subarray): the best subarray ending at i extends the one ending at i-1 or starts fresh
+function maxSubarray(nums: number[]): number {
+  let cur = nums[0], best = nums[0];                      // not 0: all-negative input
+  for (let i = 1; i < nums.length; i++) { cur = Math.max(nums[i], cur + nums[i]); best = Math.max(best, cur); }
+  return best;                                            // [-2,1,-3,4,-1,2,1,-5,4] → 6
+}
+
+// Word break: dp[i] = some split j with dp[j] true and s[j..i) a word
 function wordBreak(s: string, dict: string[]): boolean {
   const words = new Set(dict); const dp = new Array<boolean>(s.length + 1).fill(false); dp[0] = true;
   for (let i = 1; i <= s.length; i++)
@@ -179,7 +199,10 @@ function wordBreak(s: string, dict: string[]): boolean {
   return dp[s.length];
 }
 ```
-Others: climbing stairs, decode ways, house robber, max subarray (Kadane: `cur = max(x, cur + x)`).
+Generalizations: any step set S → `ways[i] = Σ ways[i − s]`. Kadane with indices: reset a tentative start when starting fresh, record it when `best` improves.
+**Cost:** O(n) time, O(1) space with rolling variables (word break O(n²) substring checks, or O(n·L) when `j` is limited to the longest word length L).
+**Trap:** decode ways: `'0'`, `'06'`, `'100'` have no valid single-digit step at the zero; Kadane initialised with 0 returns 0 for all-negative input; greedy longest-word matching fails in word break (`'cats'` vs `'cat' + 'sand'`).
+Drills: [algo-081](../practice/live-coding/03-algorithms.md#algo-081), [algo-087](../practice/live-coding/03-algorithms.md#algo-087), [algo-091](../practice/live-coding/03-algorithms.md#algo-091), [algo-092](../practice/live-coding/03-algorithms.md#algo-092) (house robber: section 1)
 
 ### 3.2 LIS in O(n log n) (patience sorting)
 ```ts
@@ -193,6 +216,9 @@ function lengthOfLIS(nums: number[]): number {
   return tails.length;                           // [10,9,2,5,3,7,101,18] → 4
 }
 ```
+The O(n²) DP is `dp[i] = 1 + max(dp[j])` over `j < i` with `nums[j] < nums[i]`; say it first, then improve. `tails` stays sorted, which is what makes the binary search (lower bound) valid.
+**Trap:** `tails` is not itself a subsequence, only its length is meaningful (rebuilding the sequence needs parent pointers); use lower bound (`<`) for strictly increasing, upper bound for non-decreasing.
+Drills: [algo-085](../practice/live-coding/03-algorithms.md#algo-085)
 
 ### 3.3 Grid DP
 ```ts
@@ -202,7 +228,9 @@ function uniquePaths(m: number, n: number): number {   // 1D rolling row
   return row[n - 1];                                    // (3,7) → 28
 }
 ```
-Variants: obstacles (set the cell to 0), min path sum, dungeon game (compute backwards).
+Variants: obstacles (set the cell to 0), min path sum, dungeon game (compute backwards). Closed form for the plain grid: C(m + n − 2, m − 1).
+**Cost:** O(m·n) time, O(n) space with one rolling row. **Trap:** with obstacles, the first row/column stops being all 1s after an obstacle.
+Drills: [algo-088](../practice/live-coding/03-algorithms.md#algo-088)
 
 ### 3.4 Two-sequence DP (strings)
 ```ts
@@ -225,6 +253,9 @@ function editDistance(a: string, b: string): number {    // Levenshtein, O(m) sp
   return prev[b.length];                                 // ('horse','ros') → 3
 }
 ```
+**Recognize:** two strings, "longest common…", "min operations to turn a into b". State `dp[i][j]` = answer for prefixes `a[0..i)` and `b[0..j)`; compare the last characters.
+**Cost:** O(m·n) time, O(n) space with two rows. **Trap:** the extra zero row/column (empty prefix) shifts indices by one: compare `a[i − 1]`, `b[j − 1]`; edit distance base cases are `dp[i][0] = i`, `dp[0][j] = j`. Only inserts/deletes allowed → `m + n − 2·LCS`. Printing the LCS needs the full table and a walk back from `dp[m][n]`.
+Drills: [algo-086](../practice/live-coding/03-algorithms.md#algo-086), [algo-089](../practice/live-coding/03-algorithms.md#algo-089)
 
 ### 3.5 Knapsack
 ```ts
@@ -235,9 +266,26 @@ function knapsack01(weights: number[], values: number[], cap: number): number {
     for (let w = cap; w >= weights[i]; w--) dp[w] = Math.max(dp[w], dp[w - weights[i]] + values[i]);
   return dp[cap];
 }
-// Unbounded (items reusable) → iterate capacity UPWARD (like coin change)
+// Subset sum (0/1, boolean): can some subset reach `target`?
+function canPartition(nums: number[]): boolean {
+  const total = nums.reduce((a, b) => a + b, 0);
+  if (total % 2) return false;                           // odd total → impossible
+  const target = total / 2, can = new Array<boolean>(target + 1).fill(false); can[0] = true;
+  for (const x of nums) for (let s = target; s >= x; s--) if (can[s - x]) can[s] = true;
+  return can[target];                                    // [1,5,11,5] → true
+}
+
+// Unbounded (items reusable) → iterate capacity UPWARD. Coin change: min coins to make amount
+function coinChange(coins: number[], amount: number): number {
+  const dp = new Array<number>(amount + 1).fill(Infinity); dp[0] = 0;
+  for (let a = 1; a <= amount; a++)
+    for (const c of coins) if (c <= a && dp[a - c] + 1 < dp[a]) dp[a] = dp[a - c] + 1;
+  return dp[amount] === Infinity ? -1 : dp[amount];      // ([1,2,5], 11) → 3
+}
 ```
-Recognize the disguises: "partition equal subset sum" (0/1 subset sum), "target sum" (count subsets), "coin change II" (count combinations: loop coins on the outside, amounts on the inside).
+Recognize the disguises: "partition equal subset sum" (0/1 subset sum), "target sum" (count subsets), "minimize the difference of two subset sums" (largest reachable `s ≤ total/2`, answer `total − 2s`), "coin change II" (count combinations: loop coins on the outside, amounts on the inside; amounts outside counts permutations).
+**Cost:** O(items × capacity) time, O(capacity) space. **Trap:** wrong loop direction (0/1 going upward reuses an item in the same round); initialising min-DP with 0 instead of Infinity; greedy coin choice (`[1,3,4]`, amount 6 → 3 coins instead of 2).
+Drills: [algo-084](../practice/live-coding/03-algorithms.md#algo-084), [algo-090](../practice/live-coding/03-algorithms.md#algo-090)
 
 <!-- theory-links:start -->
 > [!TIP] In this codebase
@@ -258,11 +306,14 @@ function maxProfitCooldown(prices: number[]): number {
   return Math.max(sold, rest);         // [1,2,3,0,2] → 3
 }
 ```
+One state variable per situation (holding / not holding / cooling down), all updated per day from the previous day's values. Transaction fee: `cash = max(cash, hold + p − fee)`, `hold = max(hold, cash − p)`. With no fee and no cooldown the DP collapses to the greedy "sum every rise".
+Drills: [algo-095](../practice/live-coding/03-algorithms.md#algo-095) (and [algo-016](../practice/live-coding/03-algorithms.md#algo-016), the one-transaction case, is a running minimum)
 
 ### 3.7 Others to recognize
 - **Interval DP**: `dp[i][j]` over subarrays (burst balloons, matrix chain, palindrome partitioning). O(n³).
 - **Bitmask DP**: n ≤ 20, `dp[mask]` over subsets (TSP, assignment).
-- **Tree DP**: return tuples from children (House Robber III, diameter, max path sum).
+- **Tree DP**: return tuples from children (House Robber III, diameter, max path sum). Drills: [algo-059](../practice/live-coding/03-algorithms.md#algo-059)
+- **DP over integers**: `bits[i] = bits[i >> 1] + (i & 1)` reuses i without its last bit. Drills: [algo-099](../practice/live-coding/03-algorithms.md#algo-099)
 - **Digit DP**: counting numbers with properties up to N.
 
 ---

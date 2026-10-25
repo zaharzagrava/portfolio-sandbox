@@ -415,6 +415,10 @@ outbox ─► relay (Debezium CDC reading the WAL in commit order, or a polling 
 
 **Wouldn't Kafka handle failures automatically, so we need fewer jobs?** No, it moves the work. Kafka's "automatic" part is redelivery after a consumer crash (re-read from the last committed offset), and our design already gets that for free: a crashed worker's transaction rolls back and the event is still "next" (no reaper needed here; a reaper only exists for claim-then-work jobs with leases). For an event that **always** fails, Kafka has no retry/backoff/DLQ: the consumer either retries forever, blocking the whole partition, or you build retry and DLQ topics yourself. And the nightly **reconciliation** is a business check against the PMS's data (did we miss or corrupt anything?), not failed-job cleanup; it's needed whatever the transport.
 
+**What changes at 100,000+ events/s?** One Postgres (thousands/s) is no longer enough. Two routes: **shard Postgres by account** (each shard keeps the same per-account cursor design; Citus or N databases), or **Kafka keyed by account + key-level isolation** (a parallel consumer or the parking-lot pattern), idempotent consumers, and per-key state ("last seq applied", gap buffering in a Kafka Streams state store). If we control the producer (our own outbox → Kafka), there are no gaps to wait for, which removes most of the resequencing work.
+
+**Are `inbound_events` and the domain tables separate databases?** No: one Postgres database (separate schemas are fine). The worker's transaction must cover reading the event, advancing the cursor, upserting domain rows and writing the outbox; two instances would make that a dual write.
+
 **Why not SQS FIFO with group = account?** FIFO preserves *enqueue* order, can't fix the partner's reordering; its dedup window is 5 minutes, partner retries span hours.
 
 **A malformed event in the middle of the stream?** Can't skip it: `failed`, stall that account, alert; fix the mapper or get a corrected event, resume. Stalling beats applying later events on top of a missing one.

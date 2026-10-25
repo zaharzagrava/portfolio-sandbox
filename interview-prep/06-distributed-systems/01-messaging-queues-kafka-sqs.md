@@ -474,47 +474,195 @@ Alternatives: **naturally idempotent operations** (upsert by business key, `SET 
 - **EventBridge**: an event bus with content-based routing rules, schema discovery, SaaS integrations, archive and replay. Higher latency than SNS.
 - **Kafka (MSK / Confluent)**: high-throughput streams, replay, multiple independent consumer groups, stream processing, CDC. More operational effort.
 
-### Postgres table vs SQS vs Kafka for a piece of work
+### Three ways to build a queue: Postgres, SQS, Kafka
 
-**Two questions first**
-1. **Command or fact?** A command ("charge payment 9": one handler does it) → a **queue** (Postgres table or SQS). A fact ("PaymentCompleted": many listeners each react at their own pace) → **Kafka** (or SNS → several SQS queues).
-2. **For a command**, walk the table: needs where only Postgres says a clean "yes" (scheduling far ahead, querying/editing single items, hard per-tenant caps, ordering by an external sequence with waiting for gaps) point to a table. Volume, spikes, cross-team consumers and wanting managed retries point to SQS. Often both: **Postgres is the source of truth, the broker is transport** (outbox → relay → SQS/Kafka).
+Everything below can be built on all three; what differs is **how much you build yourself** and **how coarse the blocking is**. Rent-payments examples throughout.
 
-| Need | Postgres table (pg-boss, graphile-worker, own `claimJobs`) | SQS | Kafka |
+#### 1. Postgres table as a queue ("transactional inbox" / jobs table)
+**How it's built:** a table (`jobs` or `inbound_events` + a cursor table). Workers loop (~1 s when idle) and claim rows with `SELECT … FOR UPDATE SKIP LOCKED` (see [locks §5](../03-databases/02-transactions-isolation-locking.md#5-row-level-locks)). Libraries: pg-boss, graphile-worker, or your own (`claimJobs` in this repo). Two styles:
+- **hold the lock for the transaction** (short DB-only work, e.g. applying ordered events): crash → rollback → the work is still there. No reaper.
+- **claim, commit, then work** (slow work, external calls like Stripe): set `status = RUNNING, locked_until = now + lease`, commit, do the work, mark `DONE`. A dead worker's job is re-claimed when its lease expires, either inside the claim query (`OR (status = 'RUNNING' AND locked_until < now())`) or by a separate reaper that also counts attempts and marks `DEAD`.
+
+**Properties**
+- **Created in the same transaction as business data**: yes, directly ("payment row created ⇒ charge job exists", one INSERT).
+- **Retries, backoff, dead letter**: you write them (`attempts`, `retry_after`, `status = failed/DEAD`), or a library does. A few columns and one `WHERE`.
+- **Scheduled far ahead**: any `run_at` (autopay on the 1st of next month, retry in 6 h).
+- **Query / edit / cancel single items**: plain SQL: "why wasn't tenant X charged?", cancel a tenant's pending charge, reschedule, "jobs stuck > 1 h by customer", "pause everything for customer Y", "is a charge for this lease already pending?".
+- **Fairness**: hard caps in the claim query (e.g. ≤ 20 running per tenant; this repo caps per shop and per type), so a 50k-unit customer on rent day gets its share, not everything.
+- **Strict order**: by any column, including the **partner's sequence**, and it can **wait for a missing #41** (it's just "is row #41 here yet?").
+- **Stop on failure**: per **entity** (account): its cursor doesn't move, the claim query skips it, everyone else keeps flowing. Visible in SQL, lasts until a human resumes it.
+- **Volume**: roughly 1k–few k jobs/s per database; beyond that polling and row churn (dead tuples, VACUUM) hurt. Can shard by account later.
+- **Spikes**: fine for moderate bursts.
+- **Many consumers of the same item**: no (one claimer per row). Fan out by publishing from an outbox to SNS/Kafka.
+- **Retention / replay**: kept until you delete it.
+- **Costs**: polling load on the DB; you own the code or library; jobs share the business DB's capacity.
+**Pick it when** jobs must be born with business data, scheduled far ahead, inspected/edited, fairly shared, or **strictly ordered with per-entity stop-on-failure** (PMS event ingestion), at moderate volume.
+
+#### 2. SQS queue
+**How it's built:** the producer sends a message (in practice: an **outbox** row in the business transaction + a relay that sends it, since your DB and SQS can't share a transaction). Consumers long-poll; a received message becomes invisible for the **visibility timeout** (a lease); the consumer deletes it when done. Standard queue: near-unlimited throughput, at-least-once, rough order. FIFO queue: order per `MessageGroupId`.
+
+**Properties**
+- **Created in the same transaction**: in two stages (outbox + relay).
+- **Lease / crash recovery**: built in: the visibility timeout expires and the message reappears. No reaper.
+- **Retries, dead letter**: built in: `maxReceiveCount` → DLQ, redrive later.
+- **Scheduled far ahead**: no: `DelaySeconds` max 15 min (use EventBridge Scheduler or a table for longer).
+- **Query / edit single items**: no: only approximate counts; you can't find, change or delete one message.
+- **Fairness**: **fair queues** (since 2025): standard queue + `MessageGroupId = tenant`; while one tenant has a backlog, others are served first. Best-effort, no hard caps.
+- **Strict order**: FIFO only, per `MessageGroupId`, **arrival** order; it can't wait for a missing message.
+- **Stop on failure**: no real stop. FIFO blocks the group while retrying, then the DLQ takes the message and the group **continues** (skips). Without a DLQ it retries until retention runs out and the message is **deleted**. No "pause one group" API.
+- **Retention**: **4 days by default, max 14**: a buffer, never a store.
+- **Volume / spikes**: standard is near-unlimited; FIFO 300 calls/s per action by default (high-throughput mode far more). Absorbs rent-day spikes; autoscale workers on queue depth.
+- **Many consumers**: one consumer group per queue; fan out with SNS → several queues.
+- **Costs**: outbox + relay for transactional creation; no visibility into individual items; managed, cheap.
+**Pick it when** work items are **independent** (order doesn't matter), you want managed retries/DLQ/autoscaling, volume is high or spiky, or another team's service does the work. Example: "charge payment 9", "send receipt email", "post payment back to the PMS".
+
+#### 3. Kafka topic
+**How it's built:** a log split into partitions; a message's key picks the partition (`hash(key) % N`). Each partition is read **in order** by exactly one consumer in a group, which remembers its position (committed offset). Producers publish from an outbox via a relay or Debezium (CDC), with the idempotent producer on. Many consumer groups can each read everything.
+
+**Properties**
+- **Created in the same transaction**: in two stages (outbox/CDC + relay). Kafka transactions cover Kafka only, not your DB.
+- **Lease / crash recovery**: a crashed consumer's partitions are reassigned; the new owner re-reads from the last committed offset.
+- **Retries, dead letter**: not built in for classic consumer groups. Your consumer code chooses: retry in a loop (blocks the partition), skip (commit: the message is lost to this consumer), or copy it to retry/DLQ topics you build (easy with an outbox, but for an ordered stream moving on = skipping).
+- **Scheduled far ahead**: no.
+- **Query / edit single items**: no (scan only; index via ksqlDB or a DB sink).
+- **Fairness**: no caps. Keys are **hashed into a fixed set of shared partitions** (say 24), so a heavy tenant slows every tenant in its partition.
+- **Strict order**: per partition (= per key), **arrival** order, **only if every message carries a key**: the producer sends `key = account` to partition `hash(key) % N`, so all of account A's events land in one partition and are read by one consumer, in order. Without a key the producer spreads messages across partitions and order is lost. There is no order *across* partitions (account A vs account B), which you don't need. Waiting for a missing #41 needs consumer-side state (Kafka Streams state store).
+- **Stop on failure / head-of-line blocking**: each partition holds a **mix** of accounts read strictly in order, so one stuck account blocks **every account in its partition**. One partition per account isn't practical: partition counts are fixed and costly (files, replication, rebalances), adding partitions remaps `hash(key) % N` for all keys, and they can't be removed. Dedicated topics/partitions work only for a few "whale" tenants.
+- **Retention / replay**: configurable, hours to forever; new consumers can replay history (build a new read model, reprocess after a bug).
+- **Volume**: 100k–millions of messages/s.
+- **Many consumers**: yes, the main strength: each consumer group reads everything at its own pace.
+- **Costs**: a cluster (MSK/Confluent), relay or CDC, lag monitoring, partition planning.
+**Pick it when** many consumers need the same **facts** (`PaymentCompleted` → ledger, analytics, notifications, search), you need replay, or volume is huge, and per-partition head-of-line blocking is acceptable (failures are rare and can be parked or skipped: analytics, logs, CDC, projections).
+
+### Why is there no "perfect" broker? The trade-off underneath
+
+**Kafka is fast because the partition is the only unit it tracks**: one committed offset per partition per consumer group, sequential disk reads, no per-message state on the broker. Every feature we want beyond that needs **state per message or per key**: per-message ack and redelivery (queues), per-key progress (isolation), per-tenant counters (fairness). That state costs memory, disk writes and coordination, so something must hold it: the **broker** (SQS, Service Bus, Pulsar, Pub/Sub, Kafka share groups), a **consumer-side layer** (Parallel Consumer, uForwarder), or **your database** (a Postgres queue). It can be moved, not removed. That's why no broker has Kafka's raw throughput *and* per-key isolation for free.
+
+**1. Unordered, log-based, with history, without HTTP: these exist**
+| System | What it is |
+|---|---|
+| **Kafka share groups** ("Queues for Kafka", KIP-932; production-ready in 4.2) | the Kafka log + queue semantics: per-message accept/release/reject, redelivery after a lock timeout, delivery-count limit, consumers beyond the partition count. No ordering, no built-in DLQ yet |
+| **Apache Pulsar**, `Shared` subscription | log storage (BookKeeper) with retention/replay, per-message ack, built-in retry and dead-letter topics, delayed delivery |
+| **RabbitMQ** quorum queues / **Streams** | AMQP over TCP; Streams are an append-only log with replay |
+| **NATS JetStream** | persisted streams over TCP; consumers with per-message ack, max deliveries, backoff; work-queue or keep-history retention |
+| **Redis Streams** | append-only log; consumer groups with per-message `XACK`, a pending list, `XAUTOCLAIM` to take over a dead consumer's messages |
+| **Google Pub/Sub** | gRPC, per-message ack, retention with replay (`seek`) |
+SQS's HTTP overhead is mostly amortized (long polling, batches of 10, keep-alive); its real limits are ~10–50 ms per call and deleting messages after processing, which rarely matter for jobs.
+
+**2. Ordered with per-key isolation: also exists, natively or as a layer**
+| Option | How | Catch |
+|---|---|---|
+| **Azure Service Bus sessions** | messages with the same `SessionId` are processed in order by one receiver holding the session lock; other sessions are independent | per-session throughput is one consumer; Azure-specific |
+| **SQS FIFO message groups** | order per `MessageGroupId`; a stuck group blocks only itself | DLQ skips; ≤ 14 days retention; arrival order only |
+| **Google Pub/Sub ordering keys** | order per key; a redelivery replays that key's later messages | 1 MB/s publish per key; an unacked key can still delay others; DLQ breaks order |
+| **Pulsar `Key_Shared`** | same key → same consumer, keys spread dynamically across consumers (not tied to partitions) | known stall cases around redelivery; operational complexity |
+| **Kafka + Confluent Parallel Consumer** (Java, open source) | processes different keys of one partition concurrently, in order per key; a slow or failing key only holds itself | per-key bookkeeping in the consumer; Java |
+| **Kafka + Uber uForwarder** (open source push proxy) | pushes each message to services over gRPC, per-message retries, DLQ, detects and clears head-of-line blocking | built for throughput and isolation, not strict per-key order |
+| **Kafka + parking lot / retry topics** | on failure record "key parked", divert its later messages to a parking topic, others continue, replay when fixed | you own the parked-keys store and the replay tooling |
+| **Postgres per-entity cursor** | each account is a row; claim with `SKIP LOCKED` | thousands/s per DB; shard beyond |
+| **Workflow engines** (Temporal) | one workflow per account serializes its steps natively | a different programming model and a cluster to run |
+
+**The three Kafka isolation layers compared** (all isolate, each with its own cost):
+| | Confluent Parallel Consumer | Uber uForwarder | Parking lot / retry topics |
 |---|---|---|---|
-| **Create the work atomically with business data** | direct: one INSERT in the business transaction | yes, in **two stages**: outbox row in the tx + a relay that sends it (no shared tx with your DB) | same via outbox or CDC (Debezium); Kafka transactions cover Kafka only, not your DB |
-| "Taken" / lease | `status = RUNNING` + `locked_until` (build it or use a library) | **visibility timeout**, built in | no per-message lease: a consumer owns a partition, progress = committed offset |
-| Retries, backoff, dead letter | build it or use a library | **built in**: `maxReceiveCount` → DLQ, redrive | by hand: retry topics + DLQ topic, or pause the partition |
-| **Scheduled far ahead** (autopay on the 1st of next month, retry in 6 h) | any `run_at` | `DelaySeconds` max **15 min** (longer: EventBridge Scheduler or a table) | no |
-| **Query / edit / cancel single items** | plain SQL | only aggregate counts; can't find, change or delete one message | can scan a topic, but not by field without an external index (ksqlDB, a DB sink); can't edit or delete |
-| **Fairness** (one tenant can't hog the workers) | hard caps per tenant in the claim query | **fair queues** (2025): standard queue + `MessageGroupId = tenant`; other tenants are served first while one has a backlog. Best-effort, no hard cap | per partition: a heavy tenant slows everyone hashed to its partition |
-| **Strict order** | by any column, incl. the partner's sequence; can **wait for a missing #41** | FIFO: arrival order per `MessageGroupId`; can't wait for a missing message | per partition (key = account), arrival order; waiting for gaps needs consumer-side state (Kafka Streams store) |
-| **Stop on failure** (never skip) | stall exactly **one account** (cursor doesn't move), indefinitely, visible in SQL | FIFO blocks its group, then after `maxReceiveCount` → DLQ and the group **continues** (skips); without a DLQ it retries until retention (≤ 14 days), then the message is gone | stop committing / pause → blocks the **whole partition** (every account hashed into it) |
-| Volume | ~1k–few k jobs/s per DB; polling + dead tuples hurt beyond | near-unlimited (standard) | 100k–millions msg/s |
-| Spiky load (rent day: 100× on the 1st) | moderate bursts; heavy bursts → row churn | absorbs; autoscale workers on queue depth | absorbs; consumers lag, then catch up |
-| Many independent consumers of the same item | no (one claimer) | one per queue; SNS fan-out to a few queues | **yes**: each consumer group reads everything |
-| Replay history | if you keep the rows | no: deleted once processed | **yes**, within retention |
-| How long data is kept | until you delete it | **4 days by default, max 14**, then unprocessed messages are deleted: a buffer, never a store | configurable: hours to forever (time or size based; compacted topics keep the latest per key) |
-| Failure handling "for free" | crash → tx rolls back → work is still there (lock-held style); lease + reaper for claim-then-work jobs | crash/timeout → redelivery; retries + DLQ built in | crash → re-read from the last committed offset; **no** per-message retry/backoff/DLQ (retry topics by hand) |
-| Another team's service does the work | shared schema couples teams | **yes**: the queue is the contract | yes |
-| Load on your DB | polling queries | none | none |
-| Idempotent handlers needed | yes | yes (at-least-once) | yes |
+| Isolates | slow and failing keys: a key retries with backoff on its own; other keys keep processing | slow and failing messages: per-message retries, DLQ, automatic clearing of head-of-line blocking | a failed key is **stopped completely**; its later messages wait in the parking topic, others continue |
+| Order per key | yes (`KEY` mode) | not guaranteed | yes, if replay drains the parked messages before the key goes live again |
+| Costs | Java only; per-key queues in memory; the committed offset can't pass the oldest unfinished record (it stores finished offsets in commit metadata), so a key failing for long pins the partition's offset: memory grows and the record risks outliving topic **retention** | another component to run (a push proxy calling services over gRPC); ordering given up | you build it: a store of parked keys checked on **every** message, extra topics, replay tooling, and a race-free hand-over from "parked" back to "live" |
+| Fits | high-throughput ordered streams where failures are rare and transient | async job processing on Kafka where ordering doesn't matter | money streams where one entity must stop and wait for a human |
+| Solves the **noisy neighbour** (one account's 50k backlog delaying others)? | **no**: one key's records are processed one at a time and fill the look-ahead buffer, so fetching further stalls | **no** (and unordered) | **no**: it reacts to *failures*, not to *volume*; a healthy 50k backlog is never parked |
 
-**Examples for "query / edit single items"** (why a table is often worth it): support asks "why wasn't tenant X charged?" (find the job by tenant); a tenant cancels autopay (cancel their pending charge); a manager moves the rent date (reschedule); an ops dashboard "jobs stuck > 1 h by type and customer"; "pause everything for customer Y"; a dedupe check "is a charge for this lease already pending?" before enqueueing.
+**Fairness by key in Kafka: nothing built in.** Two kinds of fairness:
+- **Throughput share**: a heavy tenant can't take all the workers. Achievable: Parallel Consumer in `KEY` mode runs at most one record per key at a time, so a hot key can't occupy more than one thread; or a consumer-side per-tenant concurrency/rate limit (token bucket per tenant).
+- **Latency isolation**: a small tenant's message doesn't wait behind a heavy tenant's backlog. **This is the hard one**: a partition is fetched in offset order, so if 50,000 heavy-tenant records sit ahead of one small-tenant record, the consumer can only process the small one once it has fetched that far. Parallel processing helps only within its look-ahead buffer.
+**Why none of the add-ons fix the noisy neighbour:** they solve *failure* isolation (a broken key stops only itself). A 50k backlog from a healthy account is a *volume* problem: in a log, **position = priority**, so the small account's message is behind the 50k no matter how cleverly you process. Fairness needs picking work **by tenant**, not by position: a scheduler. With Kafka that means separating heavy traffic *before* it shares a partition, or not using a log for this.
+Workarounds, all topology or scheduling you build: **hot-key rerouting** (the producer sends known-heavy or currently-bursting accounts to a separate "bulk" topic with its own consumers; moving a key between topics mid-stream must drain the old topic first to keep order), **dedicated topics for "whale" tenants**, **per-tenant rate limits at ingestion** (throttle or 429 the noisy producer), **priority lanes** (separate topics per tier, consumed with weights), throttle-and-defer (over-budget tenants' messages go to a delay topic; breaks order unless the whole key is parked). Kafka's broker **quotas** limit bytes/s per *client*, not per key, so they don't help with tenant data inside one topic.
+Systems where per-key fairness *is* native: **SQS fair queues** (best-effort, unordered), RabbitMQ with a queue per tenant (consumers round-robin across queues), and a **Postgres jobs table** (hard caps per tenant in the claim query; jobs are claimed by condition, not by position, so there's nothing to fetch past).
 
-**Fairness, concretely:** on rent day a 50k-unit customer enqueues 50k charges and a 20-unit customer enqueues 20. Processed in arrival order, the small customer waits hours. Fair processing interleaves them or caps the big one.
+**Are the Kafka layers "hacks"? No.** They're the documented, production-proven way to add per-key isolation to a partition-based log: Confluent ships Parallel Consumer and documents retry/DLQ topic patterns, Uber runs uForwarder at scale. In an interview this is a strong answer if you **frame the trade-off**:
+> "Kafka orders per partition, and a partition holds many accounts, so one stuck account would block its neighbours. At our volume I'd keep ordering in Postgres with a per-account cursor. If we outgrew that, I'd key Kafka by account and add key-level isolation, either a key-ordered parallel consumer or a parking-lot topic with a store of parked accounts, accepting that we then own per-key state in the consumer. If we were on Azure or GCP, sessions or ordering keys give that natively at lower per-key throughput."
+What would get pushback: claiming plain consumer groups isolate accounts, or proposing one partition (or topic) per account for thousands of accounts.
 
-**Why only a table can "wait for a missing #41":** a broker hands out messages in the order they were **put in** (arrival order). If the partner sent #41 then #42, but #42 reached us first, the broker delivers #42 first and has no idea #41 exists. To wait, the consumer must hold #42 somewhere without acknowledging it (memory is lost on a crash; not committing the offset also blocks everything behind it), so you end up building a store keyed by sequence (a Kafka Streams state store): a table again. In Postgres, #42 is simply a row, and "is #41 here yet?" is an indexed query.
+### Industry-standard answers for "ordered + isolated" and "ordered + isolated + fair"
 
-**Can SQS FIFO stop instead of skipping?** Only partly. The DLQ is optional: without a redrive policy a failing message keeps retrying and blocks its group, but only until the queue's **retention period** (default 4 days, max 14) runs out, then it is **deleted**: a time bomb. There is no "pause this one group" API (you can only stop consumers, which stops every group), and you can't see which group is stuck without your own bookkeeping. To really stop one account you record "account paused" in your DB, which brings the state back to a table.
+**Temporal** (open source, from Uber's Cadence; self-hosted or Temporal Cloud): a **durable execution** engine, not a queue. You write a workflow as ordinary code (TypeScript, Go, Java, Python); the server records every step in its database, so after a crash the workflow continues exactly where it stopped. Built in: retries, timers ("wait 30 days"), and **signals** (events sent to a running workflow). Each workflow has an ID (e.g. `account-77`), and its signals are handled one at a time, in order: per-key serialization out of the box. Cost: a server cluster (plus its DB), low throughput per single workflow, and a different programming model (workflow code must be deterministic).
 
-**Why not one Kafka partition per tenant (or per account)?** Partition counts are fixed per topic and costly: each partition is files, replication, leader election and metadata; consumer-group rebalances slow down as they grow; adding a tenant means adding partitions, which **changes `hash(key) % N` for every existing key** (breaking per-key order during the change) unless you write a custom partitioner; partitions can't be removed. So the normal setup is `key = tenantId` hashed into a modest N (12–48), and **many tenants share a partition**:
-- a heavy tenant (rent day, 50k charges) delays every tenant hashed next to it;
-- inside one tenant everything is **serial** (one partition = one consumer), so the 50k charges can't run in parallel even though they're independent.
-"Partitioned by account" therefore means *hashed by account into N shared partitions*: strict order per account ✓; fairness ✗ (no caps, neighbours share a partition); stop-on-failure stops the **whole partition** unless the consumer parks the account in its own state store.
-A Postgres jobs table can do what fairness actually needs: run independent jobs in parallel **and** cap each tenant (e.g. ≤ 20 running per tenant), so the big tenant gets its share, not everything and not just one worker. Common Kafka workaround: dedicated topics/partitions for the few "whale" tenants.
+**The concept:** "ordered + isolated" = **per-key serialization**: at most one in-flight item per key (account), and keys never wait for each other. "Fair" = a **scheduler across keys or tenants**. The standard tools are the ones where per-key serialization is a **first-class concept**, so you don't build it yourself.
 
-**Kafka is not a task queue:** no per-message ack, retry or delay; one slow message blocks its partition; parallelism is capped by the partition count.
+**1. Ordered + isolated**
+| Context | Standard choice | Why / catch |
+|---|---|---|
+| Moderate volume (up to thousands/s), money | **Database-backed queue**: per-entity cursor + `SKIP LOCKED` (transactional inbox) | same transaction as business data, per-entity stop, inspectable in SQL; scale by sharding the DB |
+| Long, multi-step processes (onboarding, payouts, sagas) | **Workflow engine** (Temporal): one workflow per entity, events sent as signals | ordered, isolated, durable retries and timers, visible state; per-workflow throughput is low (tens of events/s), history size limits (continue-as-new), a cluster to run or pay for |
+| Managed broker on AWS | **SQS FIFO**, `MessageGroupId = entity` | per-group order and isolation. Throughput: 300 calls/s per action by default (3,000 msg/s batched), high-throughput mode up to 70,000 calls/s in the biggest regions, but **one in-flight batch per group**. No history: deleted after processing, ≤ 14 days retention; the DLQ skips |
+| Managed broker on Azure | **Service Bus sessions**, `SessionId = entity` | session lock, session state, manual dead-lettering, default message TTL unlimited, so a stuck session can genuinely wait |
+| Managed broker on GCP | **Pub/Sub ordering keys** | 1 MB/s per key; an unacked key can delay others |
+| Very high volume (100k+/s) | **Kafka keyed by entity** + one isolation add-on: a key-level parallel consumer, a consumer proxy (uForwarder) or parking-lot/retry topics | nothing else does this volume with ordering, so at this scale those add-ons *are* the standard practice; you accept owning per-key state |
+
+**2. Ordered + isolated + fair**
+Two levels of fairness:
+- **Across keys**: every option above already gives it, because per-key serialization means one key can never use more than one worker.
+- **Across tenants who own many keys** (a customer with 50k accounts vs one with 20): needs a scheduler with per-tenant weights or caps:
+| Option | How | Catch |
+|---|---|---|
+| **Database-backed queue** | per-tenant cap or round-robin in the claim query (`… AND running_for_tenant < 20`, or order by the tenant's least-recently-served) | the standard at moderate scale; you write ~one query |
+| **Temporal task queue fairness** | a **fairness key** per tenant (each gets a virtual queue, dispatched round-robin) + **weights** + priority levels 1–5 | paid in Temporal Cloud; enforced per task-queue partition; accuracy degrades with very many keys |
+| SQS | FIFO groups are fair per key; **fair queues** are fair per tenant but **unordered** | no native ordered + fair-by-tenant combination; workaround: a queue per tier |
+| Kafka | nothing native | whale topics, priority lanes, consumer-side scheduling |
+
+**Throughput: the law that applies to every ordered queue.** Strict order per key means one item per key at a time, so **one key's throughput ≈ 1 / processing time** (× batch size if you apply several events at once). 10 ms per event ⇒ ~100 events/s for that account, on *any* broker. Brokers differ in **total** throughput across keys, isolation and fairness, never in this. One account faster ⇒ faster processing, batching, or a smaller ordering scope (per lease instead of per account, if events never cross leases).
+| Option | Total throughput (rough) | One key / tenant |
+|---|---|---|
+| **Postgres** per-entity queue | ~1k–few k events/s per DB; shard for more | serial; ~100–500 events/s with ms-level transactions |
+| **SQS FIFO** | per queue: 300 calls/s (3,000 msg/s batched) by default; high-throughput mode up to 70,000 calls/s (700k msg/s) in the biggest regions, as SQS adds partitions | a group hashes to **one partition**: max 300 calls/s (3,000 msg/s batched), and in practice one in-flight batch at a time, so ≈ batch size / processing time |
+| **Temporal** | per namespace: Temporal Cloud default 500 actions/s (raised on demand); self-hosted depends on its DB | one workflow is serial and limited (10,000 signals, 51,200 history events or 50 MB, then continue-as-new): for business processes, not high-rate streams |
+| **RabbitMQ**, queue per tenant | a cluster: 100k+ msg/s spread over many queues; one queue: roughly 10k–50k msg/s (one Erlang process per queue) | ordered only with **one active consumer** per queue (single active consumer), so serial |
+| **Kafka** keyed by account | 100k–millions msg/s, scales with partitions | one partition = one leader broker + one consumer, so serial |
+
+**"One queue per key" (key = account/customer): ordered inside the key, no head-of-line blocking across keys, a busy key doesn't slow others.**
+Isolation and fairness come from the same fact: an ordered key uses **at most one worker at a time**, so customer A's 100,000-event burst occupies one worker while customer B always gets another one.
+**Throughput per key** = min(the broker's per-key ceiling, **batch size / time to process one batch**). The second term is almost always the real limit.
+- **Broker ceiling**: what the broker allows for one key. SQS FIFO and Pub/Sub: a hard quota set by the cloud provider. RabbitMQ and Kafka: a physical limit (one queue = one Erlang process on one CPU core; one partition = one leader's disk and network), not a quota.
+- **Processing speed**: your code (DB writes, API calls); unrelated to the queue. If it handles 200 events/s, SQS's 3,000 ceiling never matters; a higher broker ceiling only helps if your processing is faster than the lower one.
+| Broker (per-key unit) | Isolated + fair across keys | Broker ceiling per key | Latency |
+|---|---|---|---|
+| **SQS FIFO** (message group) | ✓ | 300 calls/s = **3,000 msg/s** with batches of 10; one in-flight batch per group | ~10–50 ms per call |
+| **Google Pub/Sub** (ordering key) | ✓ (an unacked key can delay others) | **1 MB/s** publish per key (~1,000 msg/s of 1 KB); delivery one callback at a time | tens of ms |
+| **Azure Service Bus** (session) | ✓ | one receiver per session; no published per-session number | tens of ms |
+| **RabbitMQ** (queue + single active consumer) | ✓ | **~10k–50k msg/s** per queue (broker side); prefetch lets the consumer pull batches | **~1 ms** |
+| **Postgres** (cursor row) | ✓ | ~200–1,000 events/s with one transaction per event; several thousand/s applying a batch per transaction | ~1 s polling, ms with `LISTEN/NOTIFY` |
+| **Temporal** (workflow) | ✓ | low: a workflow isn't built for high-rate events (10,000 signals per run, then continue-as-new) | tens–hundreds of ms |
+| **Kafka** (partition) | ✗ (partition shared by many keys) | ~10 MB/s per partition | ms |
+Highest per-key ceiling with isolation: **RabbitMQ** (then SQS FIFO at 3,000 msg/s). **Google Pub/Sub** = Google Cloud's managed messaging service (roughly SNS + SQS in one). Azure Service Bus and Temporal aren't bad, just Azure-only / built for long multi-step processes rather than high-rate events. Kafka works only with a dedicated topic per key, fine for a handful of big customers, too heavy for thousands (every partition is files, replication and metadata; consumers subscribe to all of them). Other brokers with per-key groups: **ActiveMQ Artemis message groups** (`JMSXGroupID`), **Pulsar `Key_Shared`**, a **Redis Stream per key**, **NATS JetStream** subjects per key. Example: customer A sends 100,000 events, processing takes 50 ms per batch of 10 → ~200 events/s → A drains in ~8 min; customer B is unaffected throughout.
+Faster per key: **batch** (apply several consecutive events in one transaction or call, order kept), make processing faster, or **split the ordering key** (per lease instead of per account, if events never cross leases), so one customer gets parallelism across its leases.
+
+**Fastest option per combination of needs** (total throughput; one key is always ~1 / processing time):
+- **Ordered + isolated per key**: **SQS FIFO high-throughput** (managed, up to 700k msg/s per queue in the biggest regions, ≤ 3,000 msg/s per group) or **Kafka** keyed by entity (millions/s, but head-of-line blocking per partition).
+- **+ fair, when the fairness unit = the ordering unit** (fair between accounts): every per-key option already is (one account can't use more than one worker); RabbitMQ queue-per-key with round-robin consumers also fits.
+- **+ fair per tenant while ordering per account** (a customer with 50k accounts vs one with 20): needs a **two-level scheduler** (order per account, share per tenant). Native only in **Temporal** (workflow per account, fairness key per tenant; scales with what you provision or pay for) and a **Postgres queue** (per-account cursor + per-tenant cap in the claim query; ~1k–few k events/s per DB, shard for more). RabbitMQ queue-per-tenant serializes the whole tenant; queue-per-account loses tenant fairness. Beyond that: Kafka + your own scheduling topology.
+
+**For this kind of role** (AWS, Node, fintech, moderate volume): a Postgres per-account cursor + per-tenant caps; Temporal when the processes are long and multi-step. Interview line:
+> "For ordered, isolated and fair processing at our scale, the standard answer is a database-backed queue with per-entity serialization and per-tenant caps, or a workflow engine like Temporal with fairness keys. Managed brokers with native per-key serialization, SQS FIFO groups or Service Bus sessions, cover ordered + isolated. Kafka needs extra layers for that and is worth it only at very high volume."
+
+### "SNS + SQS + an S3 archive" instead of Kafka?
+A legitimate AWS pattern: **SNS** fans out to one **SQS** queue per consumer, and a **Firehose** subscription writes every message to **S3** (or use **SNS FIFO archiving & replay**: up to 365 days, a subscriber replays a time window; EventBridge has archive & replay too). It covers fan-out, work queues and history, and is often the right "no Kafka" choice at moderate scale.
+What you give up compared with Kafka:
+| | Kafka | SNS + SQS + S3 |
+|---|---|---|
+| New consumer reads history then continues live | one consumer, starts at offset 0, seamlessly reaches live | replay the archive, then switch to a live queue: overlap/gap at the hand-over, needs dedupe |
+| Replay | native: reset the offset | a job that reads S3 files and republishes (SNS FIFO: replay a time window) |
+| Order in history | per partition, exact | Firehose writes buffered batch files (time/size windows), not a per-key ordered log |
+| Archive freshness | immediate | Firehose buffers ~60 s+ before writing |
+| Latest state per key | compacted topics | build it yourself |
+| Stream processing (joins, windows) | Kafka Streams, Flink | not built in |
+| Cost at very high volume | cheap per message | per-request pricing grows linearly |
+Rule of thumb: few consumers, replay rare, moderate volume → SNS + SQS (+ archive). Many consumers joining over time, replay as a routine tool, stream processing or 100k+ msg/s → Kafka.
+
+### Choosing: the decision in order
+1. **Command or fact?** A fact many services react to (`PaymentCompleted`) → **Kafka** (or SNS → SQS). A command one handler executes ("charge payment 9") → a queue: steps 2–4.
+2. **Does order matter?** No → **SQS** (standard, fair queues), unless you need far-ahead scheduling, querying/editing items, hard per-tenant caps or creation in the business transaction → **Postgres table**.
+3. **Order matters, and head-of-line blocking per partition is acceptable** (failures rare, a stall may hit neighbours, or you add key-level isolation) and volume is high → **Kafka** keyed by entity.
+4. **Order matters and one entity's failure must not block others, or you must wait for gaps in a partner's sequence** → **Postgres** (per-entity cursor). It isn't "slow" at this scale: thousands of events/s against tens/s needed. Move to Kafka (+ key-level isolation) only when volume proves it necessary.
+Often combined: **Postgres is the source of truth and does the ordering; SQS/Kafka are transport** (outbox → relay).
 
 This repo uses both: `payments-charge` goes outbox → SQS (independent commands, managed retries); charge retries and resolver checks are Postgres jobs (`jobs.enqueue` with `runAt`), and `claimJobs` enforces per-shop caps.
 

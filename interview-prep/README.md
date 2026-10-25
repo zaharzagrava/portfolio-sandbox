@@ -95,6 +95,14 @@ Many sections also carry an **In this codebase** block that links the idea to th
 
 ### Practice: rehearsal answers (one question = one file: landed design + spoken script + follow-up drill)
 - [01 PMS integration](practice/01-pms-webhook-ingestion.md): reliable webhook ingestion (dedupe, strict per-account ordering, gaps, downtime, audit) + structure for many PMSs (ports & adapters, canonical model, mapping, isolation, workers and side effects)
+- [Architecture tasks (50)](practice/architecture/README.md): one file per task (question, then folded model answer: clarify, design, deep dives, traps, 60–90 s spoken script, follow-ups). Payments (ACH, cards, payouts, ledger, reconciliation, disputes), integrations (open banking, polling PMS, outbound webhooks), data (migrations, multi-tenancy, search, reporting), reliability, security, debugging.
+
+**Daily session** (in the drills page): 1 TypeScript → 1 Node.js → 2 Algorithms → 1 Architecture, looping until each is marked "got it". Timebox: 10–15 min TS/Node, 25 min per algorithm (brute force by minute 15 if stuck), 30 min architecture out loud.
+
+### Practice: live coding (200 problems, every solution run against its tests; try first, solutions folded)
+- [TypeScript (50)](practice/live-coding/01-typescript.md): type-level puzzles (mapped/conditional/infer/template literal types, branded IDs, Result), closures, `this`, output puzzles, deep clone/equal/merge, typed pipe, mini-zod
+- [Node.js (50)](practice/live-coding/02-nodejs.md): event-loop order puzzles, Promise.all/any/race, retry, concurrency limit, mutex/semaphore, debounce/throttle, rate limiters, EventEmitter, streams + backpressure, HTTP, middleware, idempotency, HMAC, graceful shutdown, circuit breaker, worker_threads, AsyncLocalStorage
+- [Algorithms (100)](practice/live-coding/03-algorithms.md): hashing, two pointers, sliding window, stack, binary search, linked lists, intervals, prefix sums, trees, heaps, graphs, backtracking, DP, greedy, tries, bits, LRU
 
 ---
 

@@ -58,7 +58,7 @@ A **pragmatic hybrid** is common: short-lived JWT access tokens (5–15 min) plu
 - **Validate everything**: signature, `alg` (pin the expected algorithm and never trust the header's), `exp`/`nbf` (with small clock skew), `iss`, `aud` (otherwise a token for service A works at service B), and `typ` if you use several token types.
 - **`alg: none`** and **algorithm confusion**: with RS256, an attacker signs an HS256 token using your **public key** as the HMAC secret. Libraries that pick the algorithm from the header are vulnerable. Use `jose` and pass the algorithm list explicitly.
 - `kid` header injection (path traversal or SQL injection in key lookup). Fetch keys from a **JWKS** with caching and an allowlist.
-- JWTs are **signed, not encrypted**: anyone can base64-decode the payload, so no PII or secrets in it.
+- JWTs are **signed, not encrypted**: anyone can base64url-decode the payload, so no PII or secrets in it. Decoding is one line, `JSON.parse(Buffer.from(token.split('.')[1], 'base64url').toString('utf8'))` ([encodings](../02-nodejs/02-streams-and-backpressure.md#5-buffers)), and it is **not verification**: never trust claims you decoded without checking the signature. Drill: [node-47](../practice/live-coding/02-nodejs.md#node-47).
 - **Don't put permissions that change often** into long-lived tokens.
 - Refresh token **rotation with reuse detection**: each refresh returns a new refresh token and invalidates the old one. If an old one gets reused, assume theft and revoke the whole token family.
 
@@ -120,7 +120,27 @@ const { payload } = await jwtVerify(token, JWKS, {
 
 ## 5. Password storage and authentication hardening
 
-- Hash with **Argon2id** (memory-hard; for example m=19 MiB, t=2, p=1 per OWASP), or bcrypt (cost ≥ 12, inputs truncated at 72 bytes), or scrypt. **Never** SHA-256 alone.
+- Hash with **Argon2id** (memory-hard; for example m=19 MiB, t=2, p=1 per OWASP), or bcrypt (cost ≥ 12, inputs truncated at 72 bytes), or scrypt. **Never** SHA-256 alone: a fast hash makes brute-forcing leaked hashes cheap. These are **KDFs** (key derivation functions): deliberately slow, and Argon2/scrypt are also memory-hard, which hurts GPU attacks.
+- A random **salt** per password makes identical passwords hash differently and defeats precomputed tables. Store it next to the hash, together with the cost parameters, so you can raise them later and rehash on the next login.
+- With Node's built-in `scrypt` (use the async version: it runs on the libuv thread pool, while `scryptSync` blocks the event loop for tens of ms per login):
+  ```js
+  import { scrypt, randomBytes, timingSafeEqual } from 'node:crypto';
+  import { promisify } from 'node:util';
+  const scryptAsync = promisify(scrypt);
+
+  async function hashPassword(password) {
+    const salt = randomBytes(16);
+    const hash = await scryptAsync(password, salt, 64);
+    return `${salt.toString('hex')}:${hash.toString('hex')}`;
+  }
+  async function verifyPassword(password, stored) {
+    const [saltHex, hashHex] = stored.split(':');
+    const expected = Buffer.from(hashHex, 'hex');
+    const actual = await scryptAsync(password, Buffer.from(saltHex, 'hex'), expected.length);
+    return actual.length === expected.length && timingSafeEqual(actual, expected);
+  }
+  ```
+  Many concurrent logins can fill the 4-thread pool and slow unrelated `fs` work ([thread pool](../02-nodejs/01-event-loop-and-runtime.md#1-architecture-in-one-picture)). Drill: [node-44](../practice/live-coding/02-nodejs.md#node-44).
 - Brute force: rate limit per account **and** per IP, progressive delays, CAPTCHA after failures, breached-password checks (HIBP k-anonymity API).
 - MFA: TOTP, WebAuthn/**passkeys** (phishing-resistant). SMS is weak (SIM swap).
 - Session fixation: **regenerate the session ID on login** and on privilege change.
@@ -298,6 +318,9 @@ A central policy module turns the user's roles and attributes into composable Se
 
 **Q: How do services authenticate to each other?**
 Workload identity: mTLS through a mesh, or short-lived client-credential JWTs with a specific `aud`. The receiver validates issuer, audience, and an allowlist of callers per endpoint. Combine with network policies for default-deny. User context goes through token exchange, never through trusted plain headers.
+
+**Q: How should passwords be stored?**
+With a slow, salted KDF: Argon2id, bcrypt or scrypt, never a plain fast hash. Random salt per password, cost parameters stored with the hash so they can be raised, the async API so hashing doesn't block the event loop, and a constant-time comparison on verify. Add rate limiting on login.
 
 **Q: JWT or sessions for a web app?**
 For a first-party web app: server sessions in an HttpOnly, Secure, SameSite cookie, through a BFF if it's an SPA, because they're easy to revoke. JWTs for service-to-service and third-party API access, short-lived, with refresh rotation.

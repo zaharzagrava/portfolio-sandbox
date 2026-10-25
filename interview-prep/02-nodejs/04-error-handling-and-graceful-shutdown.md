@@ -36,10 +36,21 @@ catch (e) { throw new UpstreamUnavailableError('BANK_DOWN', 'Bank API unavailabl
 
 ## 2. Async error propagation rules
 
-- A rejected promise with no handler raises `unhandledRejection`. **Since Node 15 the default is `--unhandled-rejections=throw`**, so the process crashes.
+- A rejected promise with no handler raises `unhandledRejection`. **Since Node 15 the default is `--unhandled-rejections=throw`**, so the process crashes. Node checks after the microtask queue drains, so a handler attached "later" (after an `await` elsewhere) is too late:
+  ```js
+  // Bad
+  const userP = getUser(id);
+  const ordersP = getOrders(id);   // rejects while we are still suspended on userP → unhandled → crash
+  const user = await userP;        // a try/catch around these lines doesn't help
+  const orders = await ordersP;
+
+  // Good: Promise.all subscribes to both immediately and rejects on the first failure
+  const [user, orders] = await Promise.all([getUser(id), getOrders(id)]);
+  ```
+  Same root cause: `forEach(async ...)` ([async patterns §5](../01-javascript-typescript/04-fetch-axios-async.md#5-sequential-vs-parallel)). Drill: [node-22](../practice/live-coding/02-nodejs.md#node-22).
 - A thrown error that nothing catches raises `uncaughtException`. The process state is **undefined**, so log and exit.
 - An `EventEmitter` `'error'` with no listener throws.
-- Express 4 doesn't catch async handler rejections (you need `express-async-errors` or wrappers). **Express 5** forwards rejected promises to the error middleware. NestJS handles async errors natively through exception filters.
+- Express 4 doesn't catch async handler rejections (you need `express-async-errors` or wrappers). **Express 5** forwards rejected promises to the error middleware. NestJS handles async errors natively through exception filters. How the chain routes errors: [middleware chains](01-event-loop-and-runtime.md#middleware-chains).
 
 ```ts
 process.on('unhandledRejection', (reason) => {
@@ -146,6 +157,13 @@ async function shutdown(code = 0) {
 process.once('SIGTERM', () => shutdown(0));
 process.once('SIGINT', () => shutdown(0));
 ```
+- **Idempotent**: the `shuttingDown` guard makes SIGTERM followed by SIGINT run the sequence once.
+- **In-flight requests**: `server.close(cb)` calls back only when every connection has closed. To know when requests are done (or to answer new ones with 503 while draining), count them: `+1` on request, `-1` on `res.on('close')`, and wait until zero, within the hard timeout.
+- **Close in reverse order of startup**, and flush anything buffered in memory first (batch writers, debounced saves, log transports).
+- Calling `process.exit()` straight away drops in-flight requests and unflushed logs.
+- For tests, inject `server`, the resources and `exit` instead of using globals.
+
+Drill: [node-40](../practice/live-coding/02-nodejs.md#node-40).
 
 K8s side:
 ```yaml
@@ -200,6 +218,9 @@ Readiness probe, a preStop sleep (or an in-app delay) so endpoint removal propag
 
 **Q: Should you catch `uncaughtException` and continue?**
 No. Log with full context, flush, and exit non-zero. The state is unknown, and a supervisor (K8s) will restart the process. Recovering is for *operational* errors handled where they happen.
+
+**Q: Two promises are started, then awaited one after the other inside try/catch, and the process crashes. Why?**
+While the function is suspended on the first `await`, the second promise rejects with no handler attached. Node reports an unhandled rejection after the microtask queue drains and, by default, crashes. Use `Promise.all` (or `allSettled`), which attaches handlers to every promise immediately.
 
 **Q: How do you avoid leaking internal errors to clients?**
 A global exception filter maps known domain errors to specific 4xx codes. Everything else becomes a generic 500 body with a request/correlation ID, and the full error with stack and cause is logged server-side.

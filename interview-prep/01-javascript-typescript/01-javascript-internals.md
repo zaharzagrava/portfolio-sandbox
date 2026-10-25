@@ -603,9 +603,30 @@ Tasks are host callbacks (script, timers, I/O, events). After each one finishes,
 
 ---
 
-## 2. Closures and their memory implications
+## 2. Scope, hoisting and closures
 
-A closure is a function together with its **lexical environment** (a reference to the scope record it was created in, not a copy of it).
+### 2.1 Hoisting and the temporal dead zone (TDZ)
+
+Before a scope runs, the engine registers every declaration in it (**hoisting**). What you see before the declaration line depends on the kind:
+
+| Declaration | Scope | Before its line |
+|---|---|---|
+| `function f() {}` | function/block | **fully usable**: hoisted with its body |
+| `var x` | function | exists, value `undefined` |
+| `let` / `const` / `class` | block | exists but **uninitialized**: reading it throws `ReferenceError` (the TDZ) |
+| `var f = function () {}` / arrow | function | `f` is `undefined`, so `f()` throws `TypeError: f is not a function` |
+
+- `typeof neverDeclared` returns `'undefined'`, but `typeof` on a variable in its TDZ throws.
+- Why the TDZ exists: you can't observe a `const` before it has its value, and use-before-declaration becomes a loud error instead of a silent `undefined`.
+
+Drill: [ts-33](../practice/live-coding/01-typescript.md#ts-33).
+
+### 2.2 Closures
+
+A closure is a function together with its **lexical environment** (a reference to the scope record it was created in, not a copy of it). The function keeps access to those variables after the outer function has returned.
+
+- **Private state**: each call of a factory creates fresh variables that only the returned functions can reach (`createCounter()` → `{ increment, get }`). This was the encapsulation pattern before `#private` fields. TS's `private` keyword is compile-time only; `#field` is enforced at runtime.
+- Hooks, `once`, memoization, debounce (§6) all keep their state in a closure.
 
 V8 detail that leads to leaks: **every closure created in the same scope shares one context object**. If one closure references a large variable, that variable stays alive for as long as **any** sibling closure is alive.
 
@@ -618,12 +639,16 @@ function attach() {
 setInterval(attach(), 1000);                 // huge is retained (V8 shared context)
 ```
 
-Classic interview question: `var` in loops.
+Drill: [ts-27](../practice/live-coding/01-typescript.md#ts-27).
+
+### 2.3 `var` vs `let` in loops
 
 ```js
 for (var i = 0; i < 3; i++) setTimeout(() => console.log(i)); // 3 3 3
 for (let i = 0; i < 3; i++) setTimeout(() => console.log(i)); // 0 1 2 (fresh binding per iteration)
 ```
+
+`var` is function-scoped: there is **one** `i`, shared by all closures, and they read it after the loop ended (it's also still visible after the loop). `let` creates a new binding per iteration. Old fix without `let`: capture the value with an IIFE, `((n) => () => n)(i)`. Drill: [ts-29](../practice/live-coding/01-typescript.md#ts-29).
 
 <!-- theory-links:start -->
 > [!TIP] In this codebase
@@ -640,22 +665,116 @@ for (let i = 0; i < 3; i++) setTimeout(() => console.log(i)); // 0 1 2 (fresh bi
 4. **Default**: `undefined` in strict mode (which includes ES modules and classes), `globalThis` in sloppy mode.
 5. **Arrow functions** have no `this` of their own. They capture it lexically, ignore `call`/`bind`, and can't be used with `new`.
 
-Practical consequence: class methods passed as callbacks (`emitter.on('x', this.handle)`) lose `this`. Fix it with arrow class fields (`handle = () => {}`). Note that this creates **one function per instance** instead of one on the prototype, a small memory trade-off.
+`this` is decided by **how the function is called**, not where it's defined:
+
+```js
+'use strict';
+const user = { name: 'Ada', greet() { return this.name; } };
+const f = user.greet;
+f();                                   // TypeError: this is undefined (strict)
+f.call({ name: 'Bob' });               // 'Bob'
+user.greet.bind({ name: 'Cy' }).call({ name: 'Dee' });   // 'Cy': bind wins over a later call
+```
+
+- An arrow inside a method (`[1].map(() => this.name)`) uses the method's `this`.
+- `new` on a bound function ignores the bound `this` and constructs a new instance (rule 1 beats rule 2).
+- `call(thisArg, a, b)` passes arguments one by one, `apply(thisArg, [a, b])` as an array, `bind(thisArg, a)` returns a new function with `this` and leading arguments fixed (**partial application**).
+- Implementing `bind`: a closure over `fn`, `thisArg` and the bound args that returns `function (...rest) { return fn.apply(thisArg, [...bound, ...rest]) }`. The inner function ignores its own `this`, which is why a later `call` can't change it. The TS typing uses variadic tuples (see `02-advanced-typescript.md` §8).
+
+Practical consequence: class methods passed as callbacks (`emitter.on('x', this.handle)`) lose `this`. Fix it with `.bind(this)`, a wrapper (`() => this.handle()`), or arrow class fields (`handle = () => {}`). Arrow fields create **one function per instance** instead of one on the prototype, a small memory trade-off.
+
+Drills: [ts-30](../practice/live-coding/01-typescript.md#ts-30), [ts-31](../practice/live-coding/01-typescript.md#ts-31).
 
 ---
 
-## 4. Prototypes and classes
+## 4. Equality: `==`, `===`, `Object.is`
+
+| Algorithm | Used by | `NaN` vs `NaN` | `0` vs `-0` | Coerces types |
+|---|---|---|---|---|
+| `==` (loose) | `==` | false | true | **yes** |
+| `===` (strict) | `===`, `indexOf`, `switch` | false | true | no |
+| SameValueZero | `includes`, `Set`, `Map` keys | **true** | true | no |
+| SameValue | `Object.is` | **true** | **false** | no |
+
+- `==` converts to a common type: `'' == 0`, `'1' == 1`, `[1] == '1'` are all `true` (the array becomes its string). Exception: `null` and `undefined` are loosely equal only to each other, so `null == 0` is `false`.
+- Legit use of `==`: `x == null` checks "null or undefined" in one go (lint rule `eqeqeq` with `null: 'ignore'`). Otherwise use `===`.
+- So `[NaN].includes(NaN)` is `true` but `[NaN].indexOf(NaN)` is `-1`. Use `Number.isNaN`, not `x === NaN`.
+- Objects (arrays, functions) are compared **by reference** in all four. Structural comparison needs a deep-equal (§7).
+
+Drill: [ts-32](../practice/live-coding/01-typescript.md#ts-32).
+
+---
+
+## 5. Prototypes and classes
 
 - Every object has `[[Prototype]]`. Property lookup walks the chain.
 - `class` is mostly syntactic sugar over constructor functions and prototypes, but there are real differences:
   - Class bodies are always strict, and classes are not hoisted the same way (they sit in the TDZ until declared).
   - `#private` fields are **truly private** (brand-checked, not just a naming convention). `#x in obj` is an ergonomic brand check.
   - `static` blocks run once at class evaluation.
-- **Prototype pollution** (security): `merge(target, JSON.parse('{"__proto__":{"isAdmin":true}}'))` adds `isAdmin` to **every** object. Mitigations: `Object.create(null)` for dictionaries, use `Map`, reject `__proto__`/`constructor`/`prototype` keys, `--disable-proto=delete`, schema validation.
+- **Prototype pollution** (security): `merge(target, JSON.parse('{"__proto__":{"isAdmin":true}}'))` adds `isAdmin` to **every** object. Why: `JSON.parse` creates an **own** key named `__proto__` (harmless by itself), but a naive recursive merge then reads `target['__proto__']`, which is `Object.prototype`, and writes into it. Mitigations: skip `__proto__`/`constructor`/`prototype` keys, `Object.create(null)` for dictionaries, use `Map`, `--disable-proto=delete`, schema validation. Drill: [ts-43](../practice/live-coding/01-typescript.md#ts-43).
 
 ---
 
-## 5. Promises in depth
+## 6. Higher-order function patterns
+
+Small utilities built from closures (§2.2). Typing them generically (`<A extends unknown[], R>(fn: (...args: A) => R)`) keeps the wrapped function's exact signature.
+
+- **`once(fn)`**: keep a `called` flag and the cached result. Use a separate flag, not `result === undefined`, because `fn` may return `undefined`. Return a regular `function` and call `fn.apply(this, args)` so it also works as a method. Decide what happens if the first call throws (cached as "called", or allow a retry). Drill: [ts-28](../practice/live-coding/01-typescript.md#ts-28).
+- **`memoize(fn, keyFn)`**: a `Map` from key to result. Check `cache.has(key)`, not `get(key) !== undefined`. `JSON.stringify(args)` is a fine default key for primitives but is slow on big objects and ignores Maps and functions. Only memoize pure functions, and bound the cache (LRU or TTL) or it grows forever. For async functions, cache the **promise** (concurrent callers share one request) and delete the key on rejection. Drill: [ts-48](../practice/live-coding/01-typescript.md#ts-48).
+- **Debounce vs throttle**: debounce waits for a quiet period of `wait` ms, then fires once with the last arguments (search box, autosave): every call `clearTimeout`s and restarts the timer. Throttle fires at most once per interval during continuous calls (scroll, resize). Useful extras: `cancel()` and `flush()`. Type the timer as `ReturnType<typeof setTimeout>` (an object in Node, a number in browsers). Drill: [ts-47](../practice/live-coding/01-typescript.md#ts-47).
+- **`pipe` / `compose`**: `pipe(f, g, h)(x)` is `h(g(f(x)))`, left to right: `fns.reduce((acc, fn) => fn(acc), x)`. `compose` is the same with `reduceRight`. Typing a heterogeneous pipe needs overloads (`02-advanced-typescript.md` §7). Drill: [ts-49](../practice/live-coding/01-typescript.md#ts-49).
+
+---
+
+## 7. Working with objects and arrays
+
+### 7.1 Building blocks
+
+- **Plain-object check**: `Object.getPrototypeOf(v) === Object.prototype` (or `null`). `typeof v === 'object'` is also true for `null`, arrays, `Date`, `Map` and class instances; treating a `Date` as a plain object turns it into `{}`.
+- **Own key check**: `Object.hasOwn(obj, key)`, not `obj[key] !== undefined` (a key can exist with value `undefined`) and not `key in obj` (sees inherited keys like `toString`).
+- `{ ...obj }` and `Object.assign` are **shallow**: nested objects are still shared.
+- Use a `Map` instead of an object for user-provided keys (no inherited keys, no `__proto__` trap).
+
+### 7.2 Deep clone
+
+`JSON.parse(JSON.stringify(x))` breaks on:
+- `Date` → string; `Map`/`Set` → `{}`; `NaN`/`Infinity` → `null`
+- `undefined`, functions and symbol keys → dropped
+- circular references → throws `TypeError`
+
+**`structuredClone`** (built in) handles `Date`, `Map`, `Set`, `RegExp`, typed arrays and cycles. Limits: functions and DOM nodes throw `DataCloneError`, and class instances come back as plain objects (the prototype is lost). The same algorithm copies `postMessage` data (§1.2).
+
+A hand-written clone recurses per type and keeps a `WeakMap` from original to copy. **Register the copy before recursing**, so a cycle finds the copy in progress instead of looping forever; this also preserves shared references. Drill: [ts-41](../practice/live-coding/01-typescript.md#ts-41).
+
+### 7.3 Deep equal, deep merge, diff
+
+- **Deep equal**: `Object.is` first; reject non-objects; require the same prototype (so `[]` ≠ `{}`); special-case types whose state isn't in own keys (`Date` by `getTime()`, `Map`, `Set`); then compare key counts and recurse with `Object.hasOwn`. Cycles need a `WeakMap` of pairs being compared. Drill: [ts-42](../practice/live-coding/01-typescript.md#ts-42).
+- **Deep merge** (defaults + overrides): copy the target, recurse only when **both** sides are plain objects, otherwise the source value wins. Don't mutate inputs, and skip dangerous keys (prototype pollution, §5). Arrays are usually replaced, not merged. Drill: [ts-43](../practice/live-coding/01-typescript.md#ts-43).
+- **Diff**: walk the union of both key sets: only in `after` = added, only in `before` = removed, both plain objects = recurse with the path, else compare. Diff arrays of entities by a stable id, not by index. Drill: [ts-44](../practice/live-coding/01-typescript.md#ts-44).
+
+### 7.4 Paths and nesting
+
+- **Flatten an object to dot paths** (`{ a: { b: 1 } }` → `{ 'a.b': 1 }`): depth-first recursion carrying the path prefix; plain objects and arrays recurse, everything else (including `Date`) is a leaf. Drill: [ts-39](../practice/live-coding/01-typescript.md#ts-39).
+- **Get by path** (`lodash.get`): split the path into keys (`a[0].b` → `a`, `0`, `b`), walk them, stop at `null`/`undefined`. For static paths, optional chaining (`obj?.a?.[0]?.b ?? fallback`) is clearer and type-checked; note `??` replaces `null` too, `get`'s default only `undefined`. Drill: [ts-40](../practice/live-coding/01-typescript.md#ts-40).
+- **Flatten an array to a depth** (`arr.flat(depth)`): recurse into arrays while depth remains. Push items in a loop: `out.push(...huge)` passes every element as an argument and can throw `RangeError`. For unbounded depth, an explicit stack avoids recursion limits. Drill: [ts-38](../practice/live-coding/01-typescript.md#ts-38).
+
+### 7.5 Array utilities
+
+- `map`/`filter`/`reduce` don't mutate. `reduce` without an initial value starts from the first element and **throws on an empty array**, so pass an initial value. `filter` has a type-guard overload that narrows the result. Drill: [ts-34](../practice/live-coding/01-typescript.md#ts-34).
+- `sort`, `reverse` and `splice` mutate **in place** (`sort` returns the same array). Use the copying versions `toSorted`, `toReversed`, `toSpliced` (ES2023), or `[...arr].sort()`.
+- **groupBy**: one pass with `(groups[key] ??= []).push(item)`. Built-ins: `Object.groupBy` (returns a null-prototype object) and `Map.groupBy` (for non-string keys) in Node 21+. Drill: [ts-35](../practice/live-coding/01-typescript.md#ts-35).
+- **Dedupe**: a `Set` of seen keys is O(n), versus O(n²) for `filter` + `findIndex`. `Set` uses SameValueZero (§4): primitives by value, objects by reference, so pass a key function for objects. To keep the last occurrence, fill a `Map` key → item. Drill: [ts-37](../practice/live-coding/01-typescript.md#ts-37).
+- **Chunk**: step `size` at a time with `slice` (it clamps the end). Validate `size > 0`, or the loop never advances. Process batches sequentially with `for...of` + `await`; `Promise.all` would start them all at once. Drill: [ts-36](../practice/live-coding/01-typescript.md#ts-36).
+
+### 7.6 Parsing and transforming payloads
+
+- **Query strings**: use `URLSearchParams` (`getAll` for repeated keys). By hand: split each pair on the **first** `=` only, replace `+` with a space before `decodeURIComponent` (it doesn't), and catch the `URIError` it throws on malformed input like `%E0%A4%A`. Drill: [ts-46](../practice/live-coding/01-typescript.md#ts-46).
+- **snake_case ↔ camelCase keys**: one recursive walker that rebuilds plain objects with converted keys and leaves `Date`s and other non-plain values alone. Do it once at the boundary (DB layer or one middleware), not in every handler. Acronyms (`userID`) don't round-trip. Drill: [ts-45](../practice/live-coding/01-typescript.md#ts-45).
+
+---
+
+## 8. Promises in depth
 
 ### States and guarantees
 - A promise is pending, then fulfilled or rejected, and it settles **once**. `then` callbacks are **always asynchronous** (microtasks), even when the promise is already resolved.
@@ -718,7 +837,7 @@ async function mapLimit<T, R>(items: T[], limit: number, fn: (t: T) => Promise<R
 
 ---
 
-## 6. Iterators, generators, async iteration
+## 9. Iterators, generators, async iteration
 
 - Iterator protocol: `{ next(): { value, done } }`. Iterable: `[Symbol.iterator]()`.
 - Generators are **lazy** and **pausable**. They work well for pagination and streaming:
@@ -746,11 +865,11 @@ for await (const item of paginate(api)) { /* constant memory */ }
 
 ---
 
-## 7. Memory-related built-ins
+## 10. Memory-related built-ins
 
 - `WeakMap`/`WeakSet`: keys are held weakly. Good for attaching metadata to objects you don't own, such as caches keyed by request objects.
 - `WeakRef` + `FinalizationRegistry`: non-deterministic. **Never** use them for correctness, only for caches and diagnostics.
-- `structuredClone` deep-copies and supports Map, Set, Date, cycles, and typed arrays. It does **not** copy functions, class prototypes, or DOM nodes.
+- `structuredClone` deep-copies, including cycles; what it can't copy is in §7.2.
 
 <!-- theory-links:start -->
 > [!TIP] In this codebase
@@ -759,7 +878,7 @@ for await (const item of paginate(api)) { /* constant memory */ }
 
 ---
 
-## 8. ESM vs CommonJS
+## 11. ESM vs CommonJS
 
 | | CommonJS | ES Modules |
 |---|---|---|
@@ -780,7 +899,7 @@ for await (const item of paginate(api)) { /* constant memory */ }
 
 ---
 
-## 9. Numbers and money
+## 12. Numbers and money
 
 - Every JS number is an IEEE-754 double. `0.1 + 0.2 !== 0.3`. Safe integers stop at `2^53 - 1` (`Number.MAX_SAFE_INTEGER`).
 - **Never store money as a float.** Options:
@@ -809,7 +928,7 @@ function allocate(totalCents: bigint, weights: number[]): bigint[] {
 
 ---
 
-## 10. Dates and time zones
+## 13. Dates and time zones
 
 - `Date` is a UTC timestamp. Its *display* follows local time. Store `timestamptz` in Postgres and work in UTC.
 - Business logic like "end of month for the client in Kyiv" needs a **time-zone-aware** library (`date-fns-tz`, `Luxon`) or **Temporal** (now shipping in modern engines; polyfill elsewhere).
@@ -824,7 +943,7 @@ function allocate(totalCents: bigint, weights: number[]): bigint[] {
 
 ---
 
-## 11. Proxy/Reflect, Symbols
+## 14. Proxy/Reflect, Symbols
 
 - `Proxy` intercepts operations. ORMs, MobX/Immer-style libraries, and validation layers use it. Immer (which Redux Toolkit uses) relies on Proxies to turn "mutations" into immutable updates.
 - Well-known symbols: `Symbol.iterator`, `Symbol.asyncIterator`, `Symbol.toPrimitive`. `Symbol.dispose`/`Symbol.asyncDispose` work with `using` (explicit resource management, TS 5.2+, now in V8).
@@ -848,3 +967,27 @@ Macrotasks are host callbacks: timers, I/O, `setImmediate`. Microtasks are promi
 
 **Q: How do you represent money in JS?**
 As integer minor units (or `bigint`), or with a decimal library that has explicit rounding, stored as Postgres `numeric`. Don't use floats. Use largest-remainder allocation for splits.
+
+**Q: What does `for (var i = 0; i < 3; i++) setTimeout(() => console.log(i))` print, and why?**
+`3 3 3`. `var` gives one function-scoped `i` shared by all callbacks, which run after the loop ends. With `let` each iteration gets its own binding, so it prints `0 1 2`.
+
+**Q: What is the temporal dead zone?**
+`let`, `const` and `class` are hoisted but not initialized, so touching them before their declaration throws `ReferenceError`. `var` is initialized to `undefined`, and function declarations are hoisted with their body.
+
+**Q: How is `this` decided?**
+By the call site, in order: `new`, then explicit `call`/`apply`/`bind` (a bound function can't be rebound), then `obj.method()`, then the default (`undefined` in strict mode). Arrow functions take `this` from the enclosing scope.
+
+**Q: `==` vs `===` vs `Object.is`?**
+`==` coerces types (`'' == 0` is true; `null` only equals `undefined`). `===` doesn't coerce, but `NaN !== NaN` and `0 === -0`. `Object.is` fixes both. Use `===`, plus `x == null` for "null or undefined".
+
+**Q: Why not deep-clone with `JSON.parse(JSON.stringify(x))`?**
+It turns Dates into strings and Maps/Sets into `{}`, drops `undefined` and functions, turns `NaN` into `null`, and throws on cycles. Use `structuredClone`, which still loses class prototypes and rejects functions.
+
+**Q: How can a deep merge become a security bug?**
+Prototype pollution: `JSON.parse` can produce an own `__proto__` key, and a naive merge writes through `target['__proto__']` into `Object.prototype`, affecting every object. Skip `__proto__`/`constructor`/`prototype`, or merge into `Object.create(null)` or a `Map`.
+
+**Q: Debounce vs throttle?**
+Debounce fires once after calls stop for `wait` ms (last call wins): search inputs, autosave. Throttle fires at most once per interval while calls continue: scroll, resize.
+
+**Q: What can go wrong with `memoize`?**
+Unbounded cache growth (add LRU or TTL), bad keys (`JSON.stringify` is slow and ignores Maps), caching impure functions, and treating a cached `undefined` as a miss. For async functions, cache the promise and evict it on rejection.

@@ -255,6 +255,9 @@ Modifiers:
   ```
   Without `SKIP LOCKED`, B would *wait* for A's lock and then find J no longer matches: still correct, just slower. `SKIP LOCKED` = "don't wait, take the next one".
 
+  **The reaper doesn't have to be a separate process**: put lease expiry into the claim query itself, `WHERE status = 'QUEUED' OR (status = 'RUNNING' AND locked_until < now())`, so any worker re-claims a job whose owner died (graphile-worker works like this). A separate reaper is still handy for counting attempts and moving jobs to `DEAD` (this repo's `JobReaper`).
+  **Brokers have this built in**: SQS's visibility timeout is a lease that expires on its own; in Kafka a crashed consumer's partitions are reassigned and the new owner re-reads from the last committed offset. For **claim-then-work jobs** (slow, independent, external calls like Stripe) SQS is the better broker: per-message lease, retries and DLQ. Kafka is a poor fit: one slow call holds up the whole partition. Either way the job must be safe to run twice (a crash after the Stripe call but before the ack means it runs again → idempotency key).
+
   Two styles of Postgres queue:
   | | **Claim, commit, then work** (above) | **Hold the lock for the whole transaction** |
   |---|---|---|

@@ -28,7 +28,7 @@ Generic checklist:
 Compute the expected output of **each provided sample** yourself before coding. That's where you discover a misunderstood rule (e.g. "oh, sample 2 shows picking zero elements is allowed").
 
 ### Step 4: Brute force first, then optimize (3–5 min)
-State the brute force and its complexity ("try all subsets: O(2^n)"). Then look for structure: **overlapping subproblems → DP**, sorted → two pointers / binary search, "top k" → heap, "next greater" → monotonic stack.
+State the brute force and its complexity ("try all subsets: O(2^n)"). Then look for structure: **overlapping subproblems → DP**, sorted → two pointers / binary search, "top k" → heap, "next greater" → monotonic stack, an inner loop that only searches → hash map. The full signal → pattern table is at the top of the [patterns cheat sheet](03-patterns-cheatsheet.md).
 
 Say the plan and the complexity **before** coding, and get a nod from the interviewer.
 
@@ -84,15 +84,18 @@ Math.max(...hugeArray);                  // RangeError: max call stack for ~100k
 -7 % 3;                                  // -1 (not 2): normalize ((x % m) + m) % m
 0.1 + 0.2 === 0.3;                       // false
 Number.MAX_SAFE_INTEGER;                 // 2^53-1; use BigInt for big products/mod arithmetic carefully
-'abc'[1] = 'x';                          // strings immutable; use arrays of chars
+'abc'[1] = 'x';                          // strings are immutable: silently ignored in sloppy mode, TypeError in strict mode/ES modules; build an array of chars instead
 new Array(n).fill(0).map(() => new Array(m).fill(0));  // 2D grid correctly
 const m = new Map<number, number>(); m.get(k) ?? 0;    // default values
 for (const [k, v] of map) {}             // iterate Map entries
 Math.floor(a / b);                       // integer division (for negatives: Math.trunc vs floor differ)
 arr.at(-1);                              // last element
+(2 ** 31) | 0;                           // -2147483648: bitwise ops are 32-bit signed; x >>> 0 reads it unsigned
+'😀'.length;                             // 2 (UTF-16 units); [...'😀'].length is 1 (code points, what for...of yields)
 ```
 - JS has no built-in heap or deque. Know how to write a binary heap quickly (see the patterns doc), or say "I'll assume a priority queue helper" if allowed.
 - `shift()` is O(n). For BFS queues, use an index pointer (`let head = 0; while (head < q.length) q[head++]`).
+- Recursion depth is limited (~10k frames by default). A recursive DFS over a 10^5-node linked list or skewed tree throws `RangeError`; switch to an explicit stack or BFS.
 
 ---
 
@@ -110,7 +113,7 @@ arr.at(-1);                              // last element
 |---|---|---|
 | 1 | arrays, hashing, two pointers, sliding window, prefix sums, stack | 2–3 |
 | 2 | binary search, heap, intervals, linked lists, trees (DFS/BFS) | 2–3 |
-| 3 | **DP** (1D → 2D → knapsack → strings), backtracking | 2 |
-| 4 | graphs (BFS, topo sort, union-find, Dijkstra), mixed timed mocks | 2 + 2 mocks |
+| 3 | **DP** (1D → 2D → knapsack → strings), backtracking, greedy | 2 |
+| 4 | graphs (BFS, topo sort, union-find, Dijkstra), tries, bit tricks, LRU, mixed timed mocks | 2 + 2 mocks |
 
-Use NeetCode 150 / Blind 75 as the list. For each problem, **write tests first from the samples**, then code, then add edge-case tests. Build that habit so it carries into interviews. (Your `Algorithms/practice.ts` is a good place for this; see the DP doc for a test harness.)
+Use the 100 [live-coding drills](../practice/live-coding/03-algorithms.md) (same order as this plan) or NeetCode 150 / Blind 75 as the list; each pattern in the cheat sheet and the DP doc links its drills. For each problem, **write tests first from the samples**, then code, then add edge-case tests. Build that habit so it carries into interviews. (Your `Algorithms/practice.ts` is a good place for this; see the DP doc for a test harness.)

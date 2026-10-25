@@ -17,6 +17,7 @@ const res = await fetch(url, { signal: AbortSignal.any([req.signal, AbortSignal.
 // ioredis: commandTimeout
 ```
 - Choose timeouts from **measured latency distributions**, not guesses, and revisit them.
+- A timeout must **cancel** the work, not just stop waiting for it: abort the signal passed to the call. Implementation: [withTimeout and AbortSignal](../01-javascript-typescript/04-fetch-axios-async.md#6-cancellation-and-timeouts-abortcontroller).
 
 <!-- theory-links:start -->
 > [!TIP] In this codebase
@@ -39,6 +40,20 @@ const res = await fetch(url, { signal: AbortSignal.any([req.signal, AbortSignal.
 - **Cap attempts** (2–3 for synchronous user requests; more for async jobs).
 - **Retry amplification**: when each of 4 layers retries 3 times, one failure turns into 3^4 = 81 calls to the bottom service. Retry at **one layer** (usually the closest to the failing dependency, or the edge), and use **retry budgets**: retries limited to, say, 10% of the request volume (Envoy, Finagle).
 - Don't retry when the dependency is overloaded, because that makes it worse. Combine retries with a circuit breaker.
+
+```ts
+async function retry(fn, { retries = 3, baseMs = 100, capMs = 5_000, isRetryable = (_e) => true } = {}) {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await fn(attempt);      // without `await`, a rejection escapes the catch
+    } catch (err) {
+      if (attempt >= retries || !isRetryable(err)) throw err;
+      await sleep(Math.random() * Math.min(capMs, baseMs * 2 ** attempt));   // full jitter
+    }
+  }
+}
+```
+Exponential backoff gives the dependency time to recover, the cap bounds the wait, jitter spreads clients out. `sleep` should accept an `AbortSignal` so a cancelled request stops retrying ([abortable sleep](../01-javascript-typescript/04-fetch-axios-async.md#6-cancellation-and-timeouts-abortcontroller)). Drill: [node-14](../practice/live-coding/02-nodejs.md#node-14).
 
 <!-- theory-links:start -->
 > [!TIP] In this codebase
@@ -72,6 +87,41 @@ breaker.fallback(() => ({ status: 'queued' }));       // degrade: queue the oper
 breaker.on('open', () => metrics.inc('cb_open', { dep: 'bank' }));
 ```
 - Keep breakers **per dependency** (and sometimes per endpoint or host). Breaker state is per pod, which is fine.
+- Count only failures that mean "the dependency is unhealthy" (timeouts, 5xx, connection errors), not 400/404.
+- **Stacking order** for one call: timeout innermost (each attempt is bounded), then the breaker (each attempt counts), then retry outermost. When the breaker is open, don't retry; return the fallback or 503.
+
+Hand-written version (consecutive-failure threshold, one trial call in half-open):
+```ts
+class CircuitBreaker {
+  state = 'closed'; #failures = 0; #openedAt = 0; #trial = false;
+  constructor(fn, { threshold = 5, cooldownMs = 30_000, now = Date.now } = {}) {   // injectable clock for tests
+    Object.assign(this, { fn, threshold, cooldownMs, now });
+  }
+  async call(...args) {
+    if (this.state === 'open') {
+      if (this.now() - this.#openedAt < this.cooldownMs) throw new Error('circuit open');   // fail fast
+      this.state = 'half-open';
+    }
+    const isTrial = this.state === 'half-open';
+    if (isTrial) {
+      if (this.#trial) throw new Error('circuit open');   // one probe at a time, don't flood a recovering service
+      this.#trial = true;
+    }
+    try {
+      const result = await this.fn(...args);
+      this.#failures = 0;
+      this.state = 'closed';
+      return result;
+    } catch (err) {
+      if (isTrial || ++this.#failures >= this.threshold) { this.state = 'open'; this.#openedAt = this.now(); }
+      throw err;
+    } finally {
+      if (isTrial) this.#trial = false;
+    }
+  }
+}
+```
+Drill: [node-41](../practice/live-coding/02-nodejs.md#node-41).
 
 <!-- theory-links:start -->
 > [!TIP] In this codebase
@@ -87,7 +137,7 @@ Isolate resources so one failing area can't use up everything:
 - **Separate connection pools / concurrency limits per dependency**: the slow reporting DB can't take the connections the payments path needs.
 - **Separate deployments** for different workloads: API pods vs worker pods vs report pods, each with its own scaling and resource limits.
 - **Separate queues** per priority or tenant, so a big tenant's backfill doesn't starve everyone else.
-- In Node: a `p-limit` style semaphore per dependency.
+- In Node: a `p-limit` style semaphore per dependency ([semaphore](../01-javascript-typescript/04-fetch-axios-async.md#7-limiting-concurrency)).
 
 <!-- theory-links:start -->
 > [!TIP] In this codebase
@@ -169,3 +219,9 @@ They multiply load during an incident, especially across layers (amplification),
 > - [`StripeService`](../../packages/backend/libs/infrastructure/stripe/stripe.service.ts#L16): StripeService wraps the third-party Stripe API with a circuit breaker and resilience patterns. _(stripe.service.ts)_ · [stripe](../../docs/humans/concepts/platform-stripe/stripe.md)
 > - [UNKNOWN status: provider call timed out](../../docs/humans/concepts/domain-payments/unknown-status.md): The UNKNOWN payment status handles a timed-out Stripe call, resolved later by querying Stripe by idempotency key. [`PaymentStatus`](../../packages/backend/libs/domains/payments/infra/models/payment.model.ts#L33), [`Payment`](../../packages/backend/libs/domains/payments/infra/models/payment.model.ts#L23)
 <!-- theory-links:end -->
+
+**Q: How do timeouts, retries and a circuit breaker fit together?**
+Timeout innermost so every attempt is bounded, the breaker around each attempt so failures are counted, retry with jittered backoff outermost. If the breaker is open, skip retrying and return a fallback (cached value, degraded response) or 503.
+
+**Q: Walk through the circuit breaker states.**
+Closed: calls pass and failures are counted. Past the threshold it opens: calls fail fast for a cooldown. After the cooldown it is half-open: one trial call goes through; success closes it, failure reopens it and restarts the cooldown.
