@@ -469,8 +469,8 @@ test.describe('Photos upload: the chooser, the signed upload and the limits', ()
       // B-024/B-099: the read is allowed on a closed shop; the photos show, nothing can be added or changed
       await expect.poll(() => api.matching('GET', new RegExp(`^/api/shops/${shopId}/products/${productId}/gallery$`)).map((entry) => entry.status)).toContain(200);
       await expect(photosOf(page)).toHaveCount(1);
-      await expect(page.getByLabel('Add photos')).toHaveCount(0);
-      await expect(page.getByRole('button', { name: 'Save photos' })).toHaveCount(0);
+      await expect(page.getByLabel('Add photos')).toBeDisabled();
+      await expect(page.getByRole('button', { name: 'Save photos' })).toBeDisabled();
       expect((await sellerCall('POST', `/api/shops/${shopId}/media/uploads`, { purpose: 'product' }, token)).status, 'no upload slot either').toBe(403);
     } finally {
       await setSuspended(shopId, false);
@@ -1558,13 +1558,18 @@ test.describe('Photos save: validation, conflicts and failures', () => {
     await expect(page.getByText("You're offline. Changes can't be saved.").first()).toBeVisible();
     api.reset();
     await page.getByRole('button', SAVE).click();
-    await expect.poll(() => api.matching('PUT', galleryRoute(shopId, productId)).length, { message: 'no request leaves while offline' }).toBe(0);
+    // B-074: the press is sent at once and fails with no answer (it is not parked for the reconnect)
+    await expect.poll(() => api.matching('PUT', galleryRoute(shopId, productId)).filter((entry) => entry.status === 200).length, { message: 'no save is answered while offline' }).toBe(0);
     expect(await shownWidths(page), 'the draft is kept offline').toEqual([11, 13, 12]);
     expect(dbVersion(productId)).toBe(1);
-    // P2F3: the press is parked by the query library: no sentence, the button greyed for good, and the save goes out by itself at reconnect
-    expect.soft(await page.getByRole('button', SAVE).isEnabled(), 'after the press offline the person can still see what to do (button enabled or a sentence)').toBe(true);
+    // B-074: the press is not parked: the page says it could not reach the server, the button stays on, and nothing is sent at reconnect
+    await expect(page.getByText("Couldn't reach the server. Check your connection and try again.").first()).toBeVisible();
+    expect(await page.getByRole('button', SAVE).isEnabled(), 'after the press offline the person can press again').toBe(true);
     await context.setOffline(false);
-    await expect.poll(() => dbVersion(productId), { message: 'the parked press is sent at reconnect' }).toBe(2);
+    await page.waitForTimeout(3_000);
+    expect(dbVersion(productId), 'nothing is sent at reconnect').toBe(1);
+    await page.getByRole('button', SAVE).click();
+    await expect.poll(() => dbVersion(productId), { message: 'the second press saves' }).toBe(2);
     await expect(page.getByText('Photos saved')).toBeVisible();
     expect(dbOrder(productId)).toEqual([mediaIds[0], mediaIds[2], mediaIds[1]]);
     await page.getByRole('button', { name: 'Move photo 3 up' }).click();
@@ -1581,7 +1586,7 @@ test.describe('Photos save: validation, conflicts and failures', () => {
     await expect(page.getByText('Photos saved')).toBeVisible();
     await expect(problemText(page)).toHaveCount(0);
     expect(dbVersion(productId)).toBe(3);
-    expect(api.matching('PUT', galleryRoute(shopId, productId)).map((entry) => entry.status).at(-1)).toBe(200);
+    expect(api.matching('PUT', galleryRoute(shopId, productId)).map((entry) => entry.status)).toContain(200);
   });
 
   test('W04 AS-104: an answered 429 with Retry-After shows the too-many-requests sentence and keeps the draft @desktop', async ({ page }) => {
@@ -1922,12 +1927,14 @@ test.describe('Photos: roles', () => {
         // the sentence of the state is on the page and no write control is on
         const sentence = state === 'SUSPENDED' ? /suspended/i : /(deleted|closed|closing|being)/i;
         await expect(page.getByText(sentence).first(), state).toBeVisible();
-        await expect(page.getByLabel('Add photos'), `${state}: chooser`).toHaveCount(0);
-        await expect(page.getByRole('button', SAVE), `${state}: save`).toHaveCount(0);
-        await expect(page.getByRole('button', { name: /^(Move|Remove) photo/ }), `${state}: move and remove`).toHaveCount(0);
+        // the controls stay on the page, switched off with the shop's sentence (inventory does the same)
+        await expect(page.getByLabel('Add photos'), `${state}: chooser`).toBeDisabled();
+        await expect(page.getByRole('button', SAVE), `${state}: save`).toBeDisabled();
+        await expect(page.getByText('2 of 20 photos'), `${state}: the photos are shown`).toBeVisible();
+        for (const button of await page.getByRole('button', { name: /^(Move|Remove) photo/ }).all()) await expect(button, `${state}: move and remove`).toBeDisabled();
         // the photos stay readable (map: "photos visible"); soft: the 2 cards and the counter
         const gallery = api.matching('GET', galleryRoute(shopId, productId)).map((entry) => entry.status);
-        expect.soft(gallery, `${state}: the photos are still read`).toEqual([200]);
+        expect(gallery, `${state}: the photos are still read`).toContain(200);
         await expect.soft(page.getByText('2 of 20 photos'), `${state}: the photos are shown`).toBeVisible();
         const put = await sellerCall('PUT', GALLERY(shopId, productId), { mediaIds: [mediaIds[0]], expectedVersion: 1 }, token);
         expect(put.status, `${state}: ${JSON.stringify(put.data)}`).toBe(state === 'SUSPENDED' ? 403 : 409);

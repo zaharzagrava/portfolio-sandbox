@@ -19,12 +19,34 @@ export function currentOpener(): HTMLElement | null {
   return active instanceof HTMLElement && active !== document.body ? active : null;
 }
 
-/** Hand focus back after the closing dialog has finished its own focus work (Radix restores in a later task). */
+/**
+ * Hand focus back after the closing dialog has finished its own focus work (Radix restores in a later task). When the list
+ * re-rendered meanwhile (a refetch, a re-sort) the opener node may have been replaced: the control with the same accessible
+ * name is used instead, for a short while.
+ */
 export function restoreFocus(element: HTMLElement | null): void {
   if (!element) return;
-  const apply = () => {
-    if (element.isConnected) element.focus();
+  const label = element.getAttribute('aria-label');
+  const apply = (): boolean => {
+    const target = element.isConnected
+      ? element
+      : label
+        ? Array.from(document.querySelectorAll<HTMLElement>('[aria-label]')).find((node) => node.getAttribute('aria-label') === label)
+        : undefined;
+    if (!target) return false;
+    if (document.activeElement !== target) target.focus();
+    return true;
   };
   apply();
   setTimeout(apply, 0);
+  let tries = 0;
+  const retry = window.setInterval(() => {
+    tries += 1;
+    const active = document.activeElement;
+    if (tries > 10 || (active && active !== document.body && !active.closest('[role="dialog"]') && active.getAttribute('aria-label') === label)) {
+      window.clearInterval(retry);
+      return;
+    }
+    apply();
+  }, 50);
 }
