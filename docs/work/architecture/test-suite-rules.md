@@ -3,6 +3,7 @@
 Owner rules, 2026-10-25. Every agent that writes or changes a test follows them.
 
 ## 1. One suite
+- The SDD flow (specs to code) and the AI QA flow (testing built code) both result in the SAME suite, one per side. Tests an SDD agent writes and tests an AI QA agent writes live side by side, follow the same naming, and share the same time budget. Any new standard, prompt or script for either flow must carry this rule.
 - One front-end suite (`npx playwright test` plus the unit tests next to the code) and one backend suite (e2e next to the code, unit tests). No second suite, no parallel folder, no "AI QA suite" on top.
 - Before writing a test, look for an existing test of the same behaviour. Reuse it, extend it, or fix it. Never add a duplicate.
 - New tests go into the existing feature file, or into one file per feature in the normal place. Not one file per section, not 15 files per page.
