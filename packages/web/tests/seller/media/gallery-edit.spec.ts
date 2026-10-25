@@ -71,7 +71,7 @@ test.describe('Photos draft: order, cover and remove', () => {
     await expect(page.getByText('2 of 20 photos')).toBeVisible();
   });
 
-  test('media.order.drag-drop, media.order.live-announce: dragging does nothing and a move is not announced', async ({ page }) => {
+  test('media.order.drag-drop, media.order.live-announce: dragging does nothing and a move is announced', async ({ page }) => {
     covers('media.order.drag-drop', 'media.order.live-announce');
     test.setTimeout(120_000);
     await openGallery(page, 3);
@@ -79,7 +79,7 @@ test.describe('Photos draft: order, cover and remove', () => {
     await images.nth(2).dragTo(images.nth(0));
     expect(await shownWidths(page), 'a drag does not reorder').toEqual([11, 12, 13]);
     await expect(page.getByRole('button', { name: 'Save photos' })).toBeDisabled();
-    // nothing around the list is a live region, so a screen reader hears nothing when a photo moves
+    // the list itself is not a live region; a separate status region next to it speaks
     const live = await page.getByRole('list', { name: 'Photos' }).evaluate((list) => {
       const regions: string[] = [];
       for (let node: Element | null = list; node && node !== document.body; node = node.parentElement) if (node.matches('[aria-live], [role=status], [role=alert], [role=log]')) regions.push(node.tagName);
@@ -87,9 +87,8 @@ test.describe('Photos draft: order, cover and remove', () => {
     });
     expect(live).toEqual({ ancestors: [], inside: 0 });
     await page.getByRole('button', { name: 'Move photo 2 up' }).click();
-    // KNOWN GAP (documented): no announcement. The check below passes only while the page stays silent.
-    const spoken = await page.locator('[aria-live], [role=status]:not([aria-label])').evaluateAll((nodes) => nodes.map((node) => (node as HTMLElement).innerText.trim()).filter(Boolean));
-    expect(spoken, 'the shell has an empty live region; no text may appear in it after a move').toEqual([]);
+    // S29 / W04.R-24: a move is announced with the new place
+    await expect(page.locator('#main-content [role=status]:not([aria-label])').filter({ hasText: 'Photo moved to position 1 of 3.' })).toHaveCount(1);
   });
 
   test('media.remove.button, media.cover.after-remove-first, media.remove.save: remove photo 1, save, and the old second photo is the cover', async ({ page }) => {

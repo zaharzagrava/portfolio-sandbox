@@ -188,7 +188,7 @@ test.describe('Photo service: reading, deleting, processing and limits (API and 
     expect(second.rejectCode).toBe('malware_detected');
     const originalKey = scalar(`select "originalKey" from "Media" where id='${second.id}'`);
     await expect(stored(originalKey), 'AS-18: the original is deleted at once').rejects.toBeTruthy();
-    expect(scalar(`select count(*) from "Outbox" where type='media.rejected' and "aggregateId"='${second.id}' and payload->'payload'->>'rejectCode'='malware_detected'`)).toBe('1');
+    expect(scalar(`select count(*) from "Outbox" where type='media.rejected' and "aggregateId"='${second.id}' and payload->'payload'->>'code'='malware_detected'`)).toBe('1');
     expect(scalar(`select variants is null from "Media" where id='${second.id}'`), 'no variant written').toBe('t');
   });
 

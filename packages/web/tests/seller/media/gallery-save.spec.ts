@@ -122,7 +122,7 @@ test.describe('Photos save: validation, conflicts and failures', () => {
     await tabB.getByRole('button', SAVE).click();
     await expect(problemText(tabB)).toBeVisible();
     expect(api.matching('PUT', galleryRoute(shopId, productId)).map((entry) => entry.status)).toEqual([409]);
-    expect(await problemText(tabB).innerText(), 'the conflict sentence (it says "product", the thing edited is the photos)').toContain('This product changed since you opened it.');
+    expect(await problemText(tabB).innerText(), 'the conflict sentence (it names the photos)').toContain('The photos changed since you opened this page.');
     expect(dbOrder(productId), 'B changed nothing').toEqual(afterA);
     expect(dbVersion(productId)).toBe(2);
     // the draft is still there, and "Load latest" is offered

@@ -19,7 +19,7 @@ export type SellerProblemContext = {
   /** Who is waiting in a `429` sentence ("Too many {subject}"). */
   subject?: 'requests' | 'attempts' | 'test events';
   /** What the call acted on, for codes whose words depend on it (`invalid_transition`). */
-  resource?: 'campaign' | 'document' | 'draft';
+  resource?: 'campaign' | 'document' | 'draft' | 'photos';
   /** The API's `detail`; used for `endpoint_url_rejected` only. */
   detail?: string;
 };
@@ -208,6 +208,7 @@ function entryFor(problem: Problem, context: SellerProblemContext): Entry {
     const subject = context.subject ?? 'requests';
     return { form: 'countdown', message: `Too many ${subject}. ${seconds ? `Try again in ${seconds} s.` : 'Try again later.'}` };
   }
+  if (code === 'version_conflict' && context.resource === 'photos') return alert('The photos changed since you opened this page.', { action: 'load-latest' });
   if (code === 'invalid_transition' && context.resource) return alert(TRANSITION_COPY[context.resource] ?? FALLBACK_4XX, { refetch: true });
   const fixed = code && Object.hasOwn(FIXED, code) ? FIXED[code] : undefined;
   if (fixed) return fixed;

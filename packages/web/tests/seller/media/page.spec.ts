@@ -14,6 +14,7 @@ import { fillGallery, photosOf } from './support';
 
 const mediaPath = (shopId: string, productId: string) => `${shopPath(shopId, 'products')}/${productId}/media`;
 const NOT_FOUND = "We couldn't find that shop.";
+const PRODUCT_NOT_FOUND = "We couldn't find that product.";
 const galleryRoute = (shopId: string, productId: string) => new RegExp(`^/api/shops/${shopId}/products/${productId}/gallery$`);
 
 function covers(...ids: string[]) {
@@ -113,7 +114,7 @@ test.describe('Photos page: address, states and layout', () => {
     const { shopId } = await ownerWithShop(page, []);
     const api = watchApi(page);
     await page.goto(mediaPath(shopId, 'not-a-uuid'));
-    await expect(page.getByText(NOT_FOUND)).toBeVisible();
+    await expect(page.getByText(PRODUCT_NOT_FOUND)).toBeVisible();
     expect(api.seen.filter((entry) => /\/gallery$/.test(entry.path))).toEqual([]);
   });
 
@@ -151,7 +152,8 @@ test.describe('Photos page: address, states and layout', () => {
     for (const productId of [UNKNOWN_ID, foreignId]) {
       api.reset();
       await page.goto(mediaPath(first.shopId, productId));
-      await expect(page.getByRole('button', { name: 'Try again' })).toBeVisible();
+      await expect(page.getByText(PRODUCT_NOT_FOUND)).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Try again' }), 'a 404 cannot succeed on retry').toHaveCount(0);
       seen.push(await page.locator('#main-content').innerText());
       expect(api.matching('GET', galleryRoute(first.shopId, productId)).map((entry) => entry.status), 'one read, answered 404 (no retry on a client error)').toEqual([404]);
       await expect(page.getByRole('list', { name: 'Photos' })).toHaveCount(0);

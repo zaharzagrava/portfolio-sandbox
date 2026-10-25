@@ -207,11 +207,11 @@ describe('W04 F6 photo gallery', () => {
     await screen.findByRole('list', { name: 'Photos' });
     await user.click(screen.getByRole('button', { name: 'Move photo 1 down' }));
     await user.click(screen.getByRole('button', { name: 'Save photos' }));
-    expect(await screen.findByText('This product changed since you opened it.')).toBeInTheDocument();
+    expect(await screen.findByText('The photos changed since you opened this page.')).toBeInTheDocument();
     expect(screen.queryByText('Never shown detail')).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Load latest' }));
     await waitFor(() => expect(screen.getAllByRole('img')).toHaveLength(2));
-    expect(screen.queryByText('This product changed since you opened it.')).not.toBeInTheDocument();
+    expect(screen.queryByText('The photos changed since you opened this page.')).not.toBeInTheDocument();
   });
 
   it('W04 F6-8: 422 media_not_attachable and 409 product_archived read as sentences', async () => {
@@ -249,5 +249,62 @@ describe('W04 F6 photo gallery', () => {
     await screen.findByRole('list', { name: 'Photos' });
     expect(screen.getByLabelText('Add photos')).toBeDisabled();
     expect(screen.getByText(/This shop is suspended/)).toBeInTheDocument();
+  });
+  it('B-100: Save sends the version the draft started from, not a newer one read in the background', async () => {
+    let reads = 0;
+    server.use(http.get(galleryUrl, () => HttpResponse.json(++reads === 1 ? gallery() : gallery([ids[2], ids[1], ids[0]], 4))));
+    let body: unknown;
+    server.use(http.put(galleryUrl, async ({ request }) => ((body = await request.json()), problem(409, 'version_conflict'))));
+    const user = userEvent.setup();
+    show();
+    await screen.findByRole('list', { name: 'Photos' });
+    await user.click(screen.getByRole('button', { name: 'Move photo 1 down' }));
+    await client.refetchQueries({ queryKey: queryKeys.seller.gallery(SELLER_SHOP_ID, SELLER_PRODUCT_ID) });
+    await user.click(screen.getByRole('button', { name: 'Save photos' }));
+    expect(await screen.findByText('The photos changed since you opened this page.')).toBeInTheDocument();
+    expect(body).toEqual({ mediaIds: [ids[1], ids[0], ids[2]], expectedVersion: 3 });
+  });
+
+  it('B-073, B-076: after a move to the top the focus stays on a working button of that photo and the move is announced', async () => {
+    serve();
+    const user = userEvent.setup();
+    show();
+    await screen.findByRole('list', { name: 'Photos' });
+    await user.click(screen.getByRole('button', { name: 'Move photo 2 up' }));
+    expect(screen.getByRole('button', { name: 'Move photo 1 down' })).toHaveFocus();
+    expect(screen.getByText('Photo moved to position 1 of 3.')).toBeInTheDocument();
+  });
+
+  it('B-045: files that do not fit are named in a message', async () => {
+    const eighteen = Array.from({ length: 18 }, (_, i) => `00000000-0000-4000-8000-${String(i).padStart(12, '0')}`);
+    serve(gallery(eighteen));
+    server.use(http.post(`${shopApi}/media/uploads`, () => HttpResponse.json({}, { status: 500 })));
+    const user = userEvent.setup();
+    show();
+    await screen.findByRole('list', { name: 'Photos' });
+    await user.upload(screen.getByLabelText('Add photos'), [png('1.png'), png('2.png'), png('3.png'), png('4.png'), png('5.png')]);
+    expect(await screen.findByText("3 photos weren't added: the gallery holds up to 20 photos.")).toBeInTheDocument();
+  });
+
+  it('B-043: a refused save of an archived product reads the list again, drops the draft and turns the controls off', async () => {
+    let reads = 0;
+    server.use(http.get(galleryUrl, () => (reads += 1, HttpResponse.json(gallery()))));
+    server.use(http.put(galleryUrl, () => problem(409, 'product_archived')));
+    const user = userEvent.setup();
+    show();
+    await screen.findByRole('list', { name: 'Photos' });
+    await user.click(screen.getByRole('button', { name: 'Remove photo 3' }));
+    await user.click(screen.getByRole('button', { name: 'Save photos' }));
+    await waitFor(() => expect(reads).toBeGreaterThanOrEqual(2));
+    await waitFor(() => expect(screen.getByLabelText('Add photos')).toBeDisabled());
+    expect(screen.getByText('3 of 20 photos')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Remove photo/ })).not.toBeInTheDocument();
+  });
+
+  it('B-046: an unknown product reads as not found, without "Try again"', async () => {
+    server.use(http.get(galleryUrl, () => problem(404, 'product_not_found')));
+    show();
+    expect(await screen.findByText("We couldn't find that product.")).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Try again' })).not.toBeInTheDocument();
   });
 });
