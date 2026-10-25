@@ -15,7 +15,7 @@ import { openShopByApi } from './seller-setup';
 const KEY_NAME = 'E2E pipeline';
 const HOOK_URL = process.env.WEBHOOK_E2E_URL ?? 'https://example.com/hooks/e2e';
 
-test.describe('Seller developers', () => {
+test.describe('Seller developers @desktop', () => {
   test('owner creates and revokes a key, adds an endpoint and sends a test event', async ({ page }) => {
     await page.context().grantPermissions(['clipboard-read', 'clipboard-write']); // "Copy" counts as copied only when the browser allows the write
     const member = await register(page);

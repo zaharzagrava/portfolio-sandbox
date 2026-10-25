@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 import { login, register } from './helpers';
 
 /** JS (W01 AS-54..AS-56): see my devices, sign one out, sign out everywhere. */
-test.describe('Active sessions', () => {
+test.describe('Active sessions @desktop', () => {
   test('see my devices, sign one out, sign out everywhere', async ({ page, browser }) => {
     const { email, password } = await register(page);
 

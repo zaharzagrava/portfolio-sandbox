@@ -9,7 +9,7 @@ import { createIsolatedProduct } from './helpers';
  * running encoder; gaps G8/H6) and the product page aggregate carries its `videos` section. The unit tests
  * (`components/product/video-section.test.tsx`) cover the behaviour against the contract meanwhile.
  */
-test.describe('Product video', () => {
+test.describe('Product video @desktop', () => {
   test.fixme('play a product video', async ({ page }) => {
     // Needs: a READY public video attached to the product (S30 seed), `VIDEO_HOST` in the CSP `media-src`/`connect-src`.
     const product = await createIsolatedProduct();

@@ -7,7 +7,7 @@ import { createIsolatedProduct, register, sellerCall, sellerSession } from './he
  * timeouts (L-007). Answers come from the dev stack's scripted model: the journey proves the stream reaches the page and
  * the sources are the document's, not the wording of the answer.
  */
-test.describe('Ask this product and help documents', () => {
+test.describe('Ask this product and help documents @desktop', () => {
   test('a buyer asks on the product page; the answer streams in with the source chips of the manual', async ({ page }) => {
     const product = await createIsolatedProduct();
     const session = await sellerSession();

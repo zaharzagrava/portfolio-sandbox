@@ -3,7 +3,7 @@ import { payWithSandboxCard, register, seedProduct, shopPath } from './helpers';
 import { openShopByApi } from './seller-setup';
 
 /** W04 AS-19 (and S40 AS-50): a paid order of the shop moves the live numbers without a reload. Own member, shop and product. */
-test.describe('Seller live numbers', () => {
+test.describe('Seller live numbers @desktop', () => {
   test.describe.configure({ timeout: 120_000 });
 
   test('W04 AS-19: a sandbox-paid order moves Orders and Revenue of the last 60 seconds within 2 seconds', async ({ browser }) => {

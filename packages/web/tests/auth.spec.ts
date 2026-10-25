@@ -20,7 +20,7 @@ async function expectSignedInAs(page: Page, email: string) {
 }
 
 /** W01 AS-01/06/19/21/24/27/29: the happy path against the real backend (edge cases live in the unit and API specs). */
-test.describe('Authentication', () => {
+test.describe('Authentication @desktop', () => {
   test('register, sign in, stay signed in, sign out', async ({ page, context }) => {
     const email = uniqueEmail();
     const authorizationHeaders: string[] = [];

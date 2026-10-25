@@ -196,7 +196,7 @@ test.describe('W07 app shell', () => {
     expect(hydrationProblems(), 'member').toEqual([]);
   });
 
-  test('W07 AS-34: titles follow the pattern and robots lists private areas', async ({ page, request }) => {
+  test('W07 AS-34: titles follow the pattern and robots lists private areas @desktop', async ({ page, request }) => {
     await page.goto('/');
     await expect(page).toHaveTitle('Marketplace');
     await page.goto('/privacy');
@@ -225,7 +225,7 @@ test.describe('W07 app shell', () => {
     expect(publicPage.headers()['x-robots-tag']).toBeUndefined();
   });
 
-  test('W07 AS-35: navigating the site reports page names, never addresses', async ({ page }) => {
+  test('W07 AS-35: navigating the site reports page names, never addresses @desktop', async ({ page }) => {
     test.setTimeout(120_000); // five batches, each leaves on the 5 s timer
     const pages: string[] = [];
     await page.route('**/api/events', async (route) => {

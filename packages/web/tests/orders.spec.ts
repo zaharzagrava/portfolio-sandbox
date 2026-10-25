@@ -5,7 +5,7 @@ import { createIsolatedProduct, register } from './helpers';
  * W03 journey JO-1 against the real dev stack: a member places an order without paying, finds it in Your orders with Pay now
  * and Cancel, opens its detail and cancels it.
  */
-test.describe('Orders', () => {
+test.describe('Orders @desktop', () => {
   test.beforeEach(async ({ page }) => {
     // Real `add_to_cart` events would fill the shared dev stack's trending ranking (W02's layout specs assume it is empty).
     await page.addInitScript(() => {

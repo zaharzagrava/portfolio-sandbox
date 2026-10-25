@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 import { register, signOut, totp, waitForForm } from './helpers';
 
 /** JM (W01 AS-32, AS-46, AS-47): turn two-step verification on, save the codes, sign out, sign in with a code. */
-test.describe('Two-step verification', () => {
+test.describe('Two-step verification @desktop', () => {
   test('enable two-step verification, save recovery codes, sign in with a code', async ({ page }) => {
     const { email, password } = await register(page);
 

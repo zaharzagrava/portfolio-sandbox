@@ -10,7 +10,7 @@ import { openShopByApi } from './seller-setup';
  * Needs the collaboration endpoint of the dev stack (`wss` on the API host) to be reachable from the browser; the page's
  * connect-src must allow it (W07, see gaps.md "Sibling-spec follow-ups").
  */
-test.describe('Seller listing editor', () => {
+test.describe('Seller listing editor @desktop', () => {
   test('owner edits a draft live, saves a version and publishes it', async ({ page }) => {
     const member = await register(page);
     const { shopId } = await openShopByApi(member);

@@ -17,7 +17,7 @@ async function openShare(page: Page) {
   return dialog;
 }
 
-test.describe('Share link', () => {
+test.describe('Share link @desktop', () => {
   test('share a product, copy the link and open it as a visitor', async ({ page, browser }) => {
     test.setTimeout(120_000);
     const product = await createIsolatedProduct();

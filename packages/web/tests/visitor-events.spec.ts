@@ -7,7 +7,7 @@ import { createIsolatedProduct } from './helpers';
  * controller (a `202` proves the forwarding reaches it). Nothing is mocked. The signed-in path is a known follow-up
  * (gaps.md, S48: `sendBeacon` cannot carry the CSRF header).
  */
-test.describe('Visitor events', () => {
+test.describe('Visitor events @desktop', () => {
   test('a product view reaches ingestion', async ({ page }) => {
     test.setTimeout(60_000);
     const product = await createIsolatedProduct();

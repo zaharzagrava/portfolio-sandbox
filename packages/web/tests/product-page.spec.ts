@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 import { SEED, productId } from './helpers';
 
 /** The product page against the seeded catalogue (S48 aggregate through the BFF, S05 public view). */
-test.describe('Product page', () => {
+test.describe('Product page @desktop', () => {
   test('product page shows price, stock and stays purchasable without its optional sections', async ({ page }) => {
     const id = await productId();
     await page.goto(`/products/${id}`);

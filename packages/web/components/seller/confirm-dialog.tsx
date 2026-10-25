@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useState, type ReactNode } from 'react';
-import { currentOpener } from '@/lib/focus-opener';
+import { currentOpener, restoreFocus } from '@/lib/focus-opener';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
@@ -73,7 +73,7 @@ export function ConfirmDialog({
         }}
         onCloseAutoFocus={(event) => {
           event.preventDefault();
-          if (opener.current?.isConnected) opener.current.focus();
+          restoreFocus(opener.current);
         }}
       >
         <DialogHeader>

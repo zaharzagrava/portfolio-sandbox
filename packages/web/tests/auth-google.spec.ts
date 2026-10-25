@@ -5,7 +5,7 @@ import { test } from '@playwright/test';
  * create the BFF session and the federated second step must end at `POST /api/bff/session/mfa`; see gaps.md D4). The UI is
  * built and unit-tested behind `AUTH_OIDC_ENABLED` (login-form.test.tsx, sign-in-methods-panel.test.tsx).
  */
-test.describe('Google sign-in', () => {
+test.describe('Google sign-in @desktop', () => {
   test.fixme('continue with Google', async () => {
     // AS-58, AS-59: Continue with Google starts, the provider approves, the callback lands signed in on the page we came from.
   });

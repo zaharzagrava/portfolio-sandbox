@@ -9,7 +9,7 @@ import { expect, test } from '@playwright/test';
  * (backend-endpoints.md: "not built"; gaps.md, Sibling-spec follow-ups). `components/search/sponsored-slot.test.tsx`
  * covers the behaviour against the contract meanwhile.
  */
-test.describe('Sponsored listing', () => {
+test.describe('Sponsored listing @desktop', () => {
   test.fixme('sponsored cards above results', async ({ page }) => {
     await page.goto('/search');
     const slot = page.getByRole('region', { name: 'Sponsored' });

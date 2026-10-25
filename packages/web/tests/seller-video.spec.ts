@@ -35,7 +35,7 @@ function realVideoOfAtLeast(bytes: number): Buffer {
   }
 }
 
-test.describe('Seller video', () => {
+test.describe('Seller video @desktop', () => {
   test('owner uploads a video; a failed part is sent again; the page shows it processing', async ({ page }) => {
     const member = await register(page);
     const { shopId } = await openShopByApi(member);

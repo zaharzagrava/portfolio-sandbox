@@ -6,7 +6,7 @@ import { API_URL, productId } from './helpers';
  * ingestion, so the journey sends a few and waits for the rail's API to show them. When the stack's trending window does
  * not fill (no S35 on-demand dataset hook yet, gaps B-6 / H5), the journey is marked fixme instead of failing.
  */
-test.describe('Home trending', () => {
+test.describe('Home trending @desktop', () => {
   test('trending card links to the product, prices are formatted, no implementation note', async ({ page, request }) => {
     test.setTimeout(180_000);
     const id = await productId();

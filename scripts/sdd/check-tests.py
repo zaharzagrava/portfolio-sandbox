@@ -90,6 +90,15 @@ def scenarios(kind, plan, spec_id, scopes):
 COUNT = re.compile(r'\b(?:it|test)(?:\.each\([^)]*\))?\s*\(|\bexpect\s*\(')
 WEAK = re.compile(r'\b(?:it|test|describe)\.skip\b|\bxit\s*\(|\bxdescribe\s*\(|\b(?:it|test)\.todo\b')
 
+# An env-gated skip (`test.skip(!process.env.SOMETHING, 'reason')`: first argument a negated process.env, second a string) is a switch for a slow
+# or special run, not a disabled test: it does not count as an added skip.
+ENV_GATED_SKIP = re.compile(r"\b(?:it|test)\.skip\(\s*!\s*process\.env\.\w+\s*,\s*['\"`]")
+
+
+def weak_count(text):
+    return len(WEAK.findall(ENV_GATED_SKIP.sub('', text)))
+
+
 def git_show(path):
     r = subprocess.run(['git', 'show', f'HEAD:{path}'], capture_output=True, text=True)
     return r.stdout if r.returncode == 0 else None
@@ -130,7 +139,7 @@ def integrity(scopes):
     for f in test_files(scopes):
         now = f.read_text(errors='ignore')
         before = git_show(str(f))
-        if WEAK.search(now) and not (before and len(WEAK.findall(before)) >= len(WEAK.findall(now))):
+        if weak_count(now) and not (before and weak_count(before) >= weak_count(now)):
             bad.append(f'{f}: skipped/todo test added')
         if before is None:
             continue

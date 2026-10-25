@@ -10,11 +10,21 @@ export function rememberOpener(element: HTMLElement | null): void {
   remembered = element ? { element, at: Date.now() } : null;
 }
 
-/** The focused control, or (when focus is on the body) the opener a menu has just left. */
+/** The opener a menu has just left (fresh), else the focused control. */
 export function currentOpener(): HTMLElement | null {
-  const active = document.activeElement;
-  if (active instanceof HTMLElement && active !== document.body) return active;
   const found = remembered && Date.now() - remembered.at < FRESH_MS && remembered.element.isConnected ? remembered.element : null;
   remembered = null;
-  return found;
+  if (found) return found;
+  const active = document.activeElement;
+  return active instanceof HTMLElement && active !== document.body ? active : null;
+}
+
+/** Hand focus back after the closing dialog has finished its own focus work (Radix restores in a later task). */
+export function restoreFocus(element: HTMLElement | null): void {
+  if (!element) return;
+  const apply = () => {
+    if (element.isConnected) element.focus();
+  };
+  apply();
+  setTimeout(apply, 0);
 }

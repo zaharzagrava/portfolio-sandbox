@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 import { SEED, ensureCatalogueSize, openFiltersIfCollapsed, productId } from './helpers';
 
 /** Home → search → product page, against the seeded catalogue (S32 search, S33 suggestions, S35 trending fallback). */
-test.describe('Catalog & search', () => {
+test.describe('Catalog & search @desktop', () => {
   test('home lists products', async ({ page }) => {
     await productId(); // indexed
     await page.goto('/');

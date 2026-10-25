@@ -666,7 +666,7 @@ test.describe('Photo upload rows: states, polling and failures', () => {
     expect(gaps.length).toBeGreaterThanOrEqual(3);
     for (const gap of gaps) expect(gap, `gaps between reads: ${gaps.join(', ')} ms`).toBeGreaterThan(1200);
     const reads = times.length;
-    await page.waitForTimeout(4000); // asserted absence: no read may follow after READY (a poll would come within 1.5 s)
+    await page.waitForTimeout(2800); // asserted absence: no read may follow after READY (a poll would come within 1.5 s)
     expect(times.length, 'no read after READY').toBe(reads);
     // URLs on the media origin, ending in .webp
     const src = (await photosOf(page).first().getAttribute('src')) ?? '';
@@ -694,7 +694,7 @@ test.describe('Photo upload rows: states, polling and failures', () => {
     await expect.poll(async () => (await sellerCall('GET', `/api/media/${mediaId}`, undefined, token)).data.status, { timeout: 60_000 }).toBe('READY');
     expect(scalar(`select count(*) from "ProductMedia" where "mediaId"='${mediaId}'`)).toBe('0');
     api.reset();
-    await page.waitForTimeout(3500); // asserted absence: a poll would have come within 1.5 s
+    await page.waitForTimeout(2800); // asserted absence: a poll would have come within 1.5 s
     expect(api.seen.filter((entry) => /^\/api\/media\/[0-9a-f-]{36}$/.test(entry.path)), 'no read of the photo after leaving').toEqual([]);
 
     // coming back: only saved photos are listed, nothing resumes
@@ -724,12 +724,13 @@ test.describe('Photo upload rows: states, polling and failures', () => {
     expect(await page.getByRole('alert').filter({ hasText: /\S/ }).count()).toBe(0);
   });
 
-  test('W04 AS-102: five photos waiting at once make about five reads every 1.5 seconds, not more @desktop', async ({ page }) => {
-    covers('media.proc.poll');
+  test('W04 AS-102: five photos waiting at once make about five reads every 1.5 seconds, not more; a worker that never answers leaves "Waiting to process" for good, with no timeout and no message @desktop', async ({ page }) => {
+    covers('media.proc.poll', 'media.proc.stuck');
     test.setTimeout(120_000);
     await openGallery(page, 0);
     const times = await fakeStatuses(page, () => ({ status: 'UPLOADED' }));
     await page.getByLabel('Add photos').setInputFiles([pixel('a.png'), pixel('b.png'), pixel('c.png'), pixel('d.png'), pixel('e.png')]);
+    await expect(rowText(page).first().getByRole('status')).toHaveText('Waiting to process');
     await expect.poll(() => times.length, { timeout: 30_000 }).toBeGreaterThanOrEqual(10);
     const start = times[0];
     await expect.poll(() => Date.now() - start, { timeout: 30_000 }).toBeGreaterThan(9000);
@@ -738,6 +739,11 @@ test.describe('Photo upload rows: states, polling and failures', () => {
     // 9 s = six rounds of five photos at most (the first round plus one every 1.5 s)
     expect(inWindow, `reads in 9 s: ${inWindow}`).toBeLessThanOrEqual(5 * 7);
     expect(inWindow).toBeGreaterThanOrEqual(5 * 5);
+    // stuck for good: after many rounds every row still waits, with no alert (the old single-photo "never answers" test)
+    await expect(rowText(page).first().getByRole('status')).toHaveText('Waiting to process');
+    await expect(rowText(page).first().getByRole('alert')).toHaveCount(0);
+    await expect(uploadsOf(page).getByRole('alert')).toHaveCount(0);
+    await page.unrouteAll({ behavior: 'ignoreErrors' });
   });
 
   test('W04 AS-102: every refusal code has its own words, an unknown code the generic ones, and Dismiss removes only its row @desktop', async ({ page }) => {
@@ -796,7 +802,7 @@ test.describe('Photo upload rows: states, polling and failures', () => {
     });
     await page.getByLabel('Add photos').setInputFiles(pixel('empty.png'));
     await expect(rowText(page).first().getByRole('alert')).toHaveText('That file is empty or over 15 MB.');
-    await page.waitForTimeout(3200); // asserted absence: polling would start within 1.5 s
+    await page.waitForTimeout(2800); // asserted absence: polling would start within 1.5 s
     expect(api.seen.filter((entry) => MEDIA_GET.test(entry.path)), 'no read of the photo').toEqual([]);
   });
 
@@ -809,19 +815,6 @@ test.describe('Photo upload rows: states, polling and failures', () => {
     await expect(rowText(page).first().getByRole('alert')).toHaveText('This upload expired. Add the photo again.');
     await rowText(page).first().getByRole('button', { name: 'Dismiss' }).click();
     await expect(uploadsOf(page)).toHaveCount(0);
-  });
-
-  test('W04 AS-102: a worker that never answers leaves "Waiting to process" for good, with no timeout and no message @desktop', async ({ page }) => {
-    covers('media.proc.stuck');
-    test.setTimeout(120_000);
-    await openGallery(page, 0);
-    const times = await fakeStatuses(page, () => ({ status: 'UPLOADED' }));
-    await page.getByLabel('Add photos').setInputFiles(pixel('stuck.png'));
-    await expect(rowText(page).first().getByRole('status')).toHaveText('Waiting to process');
-    await expect.poll(() => times.length, { timeout: 30_000 }).toBeGreaterThanOrEqual(8);
-    await expect(rowText(page).first().getByRole('status')).toHaveText('Waiting to process');
-    await expect(rowText(page).first().getByRole('alert')).toHaveCount(0);
-    await page.unrouteAll({ behavior: 'ignoreErrors' });
   });
 
   test('W04 AS-102: a failed read of the photo shows a sentence in an alert, with no retry button @desktop', async ({ page }) => {

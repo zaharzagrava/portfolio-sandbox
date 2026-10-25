@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 import { createPickupSeed, FAKE_LOCATION, productWithRecommendations } from './helpers';
 
 /** Journeys of the storefront that cross capabilities (S19 pickup, S34 recommendations). */
-test.describe('Storefront discovery', () => {
+test.describe('Storefront discovery @desktop', () => {
   test.describe('pickup', () => {
     test.use({ geolocation: FAKE_LOCATION, permissions: ['geolocation'] });
 

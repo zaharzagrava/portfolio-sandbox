@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 import { register, resetRateLimits, sellerMenu } from './helpers';
 
 /** W04 seller entry smoke: a new member opens a shop and lands on its overview. The detailed journeys are in seller-shop.spec.ts and the other seller-*.spec.ts files. */
-test.describe('Seller', () => {
+test.describe('Seller @desktop', () => {
   test('W04 AS-01: a buyer opens a shop and sees its name on the overview', async ({ page }) => {
     await register(page);
     await resetRateLimits();

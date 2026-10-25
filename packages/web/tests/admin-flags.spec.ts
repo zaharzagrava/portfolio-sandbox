@@ -21,7 +21,7 @@ async function newFlag(page: Page, description?: string) {
   return key;
 }
 
-test.describe('Admin feature flags', () => {
+test.describe('Admin feature flags @desktop', () => {
   test('W06 AS-09 AS-11 admin creates a dark flag', async ({ page }) => {
     const key = await newFlag(page);
     await expect(page.locator('header').filter({ hasText: key })).toContainText('Disabled');

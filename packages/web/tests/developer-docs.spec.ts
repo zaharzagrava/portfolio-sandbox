@@ -14,7 +14,7 @@ async function scriptsLoadedBy(page: Page, path: string): Promise<string[]> {
   return [...urls];
 }
 
-test.describe('W07 developer docs', () => {
+test.describe('W07 developer docs @desktop', () => {
   test('W07 AS-27: operations are listed, expand and collapse', async ({ page }) => {
     await page.goto('/developers/docs');
     await expect(page.getByRole('heading', { level: 1, name: 'API documentation' })).toBeVisible();

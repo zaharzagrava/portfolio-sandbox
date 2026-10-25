@@ -8,7 +8,7 @@ test.use({ baseURL: `http://localhost:${PROD_PORT}` });
 
 const nonceOf = (policy: string | undefined) => /'nonce-([^']+)'/.exec(policy ?? '')?.[1];
 
-test.describe('W07 security headers', () => {
+test.describe('W07 security headers @desktop', () => {
   test('W07 AS-16: every document response carries a nonce policy (pages, 404, error page; 100 distinct nonces)', async ({ request }) => {
     const nonces = new Set<string>();
     for (const path of ['/', '/privacy', '/terms', '/search', '/does-not-exist', '/products/not-a-real-product']) {

@@ -9,7 +9,7 @@ import { openShopByApi } from './seller-setup';
  */
 const TITLE = 'Sponsored Walnut Spoon';
 
-test.describe('Seller campaigns', () => {
+test.describe('Seller campaigns @desktop', () => {
   test('owner creates a campaign and pauses it', async ({ page }) => {
     const member = await register(page);
     const { shopId } = await openShopByApi(member);

@@ -20,7 +20,7 @@ async function devMailboxLists(): Promise<boolean> {
   }
 }
 
-test.describe('Seller team', () => {
+test.describe('Seller team @desktop', () => {
   test('invitee accepts an invitation from the e-mailed link', async ({ page, browser }) => {
     test.fixme(!(await devMailboxLists()), 'blocked: no dev outbox at /api/dev/mailbox, so the invitation link cannot be read (L-003)');
 

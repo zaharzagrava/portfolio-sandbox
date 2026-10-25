@@ -5,7 +5,7 @@ import { SEED, createIsolatedProduct, login, payWithSandboxCard, productId, regi
  * W03 journeys JC-1 to JC-4 against the real dev stack: a guest adds to the cart, signs up and keeps it; the purchase path; the
  * sign-in redirects of every guarded URL and the way back; the last line is removed.
  */
-test.describe('Cart & checkout', () => {
+test.describe('Cart & checkout @desktop', () => {
   // The journeys really add to the cart, so the browser sends `add_to_cart`. The request is still made (and observed below),
   // but it is answered here: real events would fill the shared dev stack's trending ranking for an hour, and W02's page
   // layout specs assume that ranking is empty.

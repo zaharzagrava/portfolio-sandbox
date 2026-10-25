@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 import { NEW_USER_PASSWORD, getResetLink, register, resetRateLimits, signOut, waitForForm } from './helpers';
 
 /** JR (W01 AS-39, AS-41, AS-64): request a reset link, open it from the dev mailbox, set a password, sign in with it. */
-test.describe('Password reset', () => {
+test.describe('Password reset @desktop', () => {
   test('request a reset link, set a new password, sign in with it', async ({ page }) => {
     const { email } = await register(page);
     await signOut(page);

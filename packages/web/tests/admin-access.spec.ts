@@ -3,7 +3,7 @@ import { SEED, login, register } from './helpers';
 import { adminLoginByApi } from './seller-setup';
 
 /** W06 AS-47, AS-48: only admins get into the console; a visitor signs in and comes back, a member sees only the no-access panel. */
-test.describe('Admin console access', () => {
+test.describe('Admin console access @desktop', () => {
   test('W06 AS-47 an anonymous visitor is sent to sign in and returns to the console', async ({ page }) => {
     await page.goto('/admin/feature-flags?status=killed');
     await expect(page).toHaveURL(/\/login\?returnTo=%2Fadmin%2Ffeature-flags%3Fstatus%3Dkilled/);

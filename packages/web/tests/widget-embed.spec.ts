@@ -88,7 +88,7 @@ const hostAnswers =(page: Page, token: string | null) =>
     };
   }, token);
 
-test.describe('W07 widget checkout application', () => {
+test.describe('W07 widget checkout application @desktop', () => {
   test('W07 AS-39: bundle is served cross-origin with correct headers', async ({ request }) => {
     const response = await request.get('/widget/v1/app.js');
     expect(response.status()).toBe(200);

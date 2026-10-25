@@ -10,7 +10,7 @@ import { bellCount, createIsolatedProduct, payWithSandboxCard, register } from '
 
 const bell = (page: Page, name: string | RegExp) => page.getByRole('button', { name });
 
-test.describe('Notification bell', () => {
+test.describe('Notification bell @desktop', () => {
   test('a new account gets a live item, and Mark all read takes the badge away', async ({ page }) => {
     await register(page);
     await expect(bell(page, 'Notifications, 1 unread')).toBeVisible({ timeout: 20_000 });
@@ -30,7 +30,7 @@ test.describe('Notification bell', () => {
   });
 });
 
-test.describe('Notifications after an order (W03 JN-1)', () => {
+test.describe('Notifications after an order (W03 JN-1) @desktop', () => {
   test.beforeEach(async ({ page }) => {
     await page.addInitScript(() => {
       navigator.sendBeacon = () => false;
@@ -87,7 +87,7 @@ test.describe('Notifications after an order (W03 JN-1)', () => {
   });
 });
 
-test.describe('Notification preferences', () => {
+test.describe('Notification preferences @desktop', () => {
   test('a switch is saved and survives a reload; locked cells and text messages are guarded', async ({ page }) => {
     await register(page);
     await page.goto('/account/notifications');
@@ -147,7 +147,7 @@ function unsubscribeToken(userId: string, category: string, secret: string): str
   return `${payload}.${mac}`;
 }
 
-test.describe('Unsubscribe', () => {
+test.describe('Unsubscribe @desktop', () => {
   test('a link that is not valid shows the friendly state and no button', async ({ page }) => {
     // `main` only: Next's own route announcer is also a `role="alert"` once the page has hydrated.
     const alert = page.getByRole('main').getByRole('alert');

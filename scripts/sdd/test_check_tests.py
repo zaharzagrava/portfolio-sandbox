@@ -51,5 +51,13 @@ class Integrity(unittest.TestCase):
         self.write('packages/x/other.spec.ts', "it.skip('S34 AS-05: other', () => { expect(1).toBe(1); });\n")
         r = self.check(); self.assertEqual(r.returncode, 1); self.assertIn('skipped', r.stdout)
 
+    def test_an_env_gated_skip_is_not_an_added_skip(self):
+        self.write('packages/x/other.spec.ts', "it('S34 AS-05: other', () => { test.skip(!process.env.SLOW_RUN, 'slow run only'); expect(1).toBe(1); });\n")
+        r = self.check(); self.assertEqual(r.returncode, 0, r.stdout)
+
+    def test_a_skip_with_another_condition_is_still_a_finding(self):
+        self.write('packages/x/other.spec.ts', "it('S34 AS-05: other', () => { test.skip(true, 'off'); expect(1).toBe(1); });\n")
+        r = self.check(); self.assertEqual(r.returncode, 1); self.assertIn('skipped', r.stdout)
+
 
 if __name__ == '__main__': unittest.main()

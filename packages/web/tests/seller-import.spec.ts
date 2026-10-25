@@ -7,7 +7,7 @@ import { openShopByApi } from './seller-setup';
  * start answer, the progress follows `import:<importId>`, the import ends Done and the error-report link downloads the
  * refused rows. The page is `/dashboard/seller/{shopId}/imports`.
  */
-test.describe('Seller bulk import', () => {
+test.describe('Seller bulk import @desktop', () => {
   test('a seller imports a CSV, watches the progress and downloads the report of the refused rows', async ({ page }) => {
     const member = await register(page);
     const { shopId } = await openShopByApi(member);

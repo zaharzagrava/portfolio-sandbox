@@ -6,7 +6,7 @@ import { SEED, login, resetRateLimits, signOut } from './helpers';
  * CSRF cookie; a forwarded call works with the cookie alone; a state-changing request without the CSRF proof is refused;
  * sign-out clears both cookies. Happy paths only; the guard rules are proven in the backend specs.
  */
-test.describe('BFF session', () => {
+test.describe('BFF session @desktop', () => {
   test('sign in sets the cookies, forwarded calls work, CSRF is enforced, sign out clears them', async ({ page, context }) => {
     await resetRateLimits();
     await login(page, SEED.seller, SEED.password);

@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 import { PRODUCT_LIMITS, type ProductCreateRequest, type ProductUpdateRequest } from '@marketplace-sandbox/contracts';
 import { ProblemPanel } from '@/components/seller/problem-states';
 import { Button } from '@/components/ui/button';
-import { currentOpener } from '@/lib/focus-opener';
+import { currentOpener, restoreFocus } from '@/lib/focus-opener';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -412,7 +412,7 @@ export function ProductDialog({
         }}
         onCloseAutoFocus={(event) => {
           event.preventDefault();
-          if (opener.current?.isConnected) opener.current.focus();
+          restoreFocus(opener.current);
         }}
       >
         <DialogHeader>

@@ -8,7 +8,7 @@ import { ASK_DOCUMENT_TITLE, ASK_QUESTION, addAskDocument, createIsolatedProduct
  * seller API (B-6) and answered by the dev stack's scripted embedder and model; when the document never becomes READY the
  * step is skipped and annotated `fixme` (questions.md Q-W02-7).
  */
-test.describe('Product community', () => {
+test.describe('Product community @desktop', () => {
   test('discussions deep link opens the tab', async ({ page }) => {
     const product = await createIsolatedProduct();
     await page.goto(`/products/${product.id}?tab=discussions`);

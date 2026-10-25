@@ -7,7 +7,7 @@ import { expect, test } from '@playwright/test';
  * `test.fixme` until a web capability owns the follow button and the home feed (J05 spec, Screens; gaps.md G-19). The API
  * side of the same path is proven by `J05 AS-01` in `test/journeys/engagement-loop.journey-spec.ts`.
  */
-test.describe('Engagement loop', () => {
+test.describe('Engagement loop @desktop', () => {
   test.fixme('J05 AS-34: follow a shop, see its new product in the home feed', async ({
     page,
   }) => {

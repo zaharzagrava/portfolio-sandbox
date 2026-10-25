@@ -36,7 +36,7 @@ const backToList = async (page: Page) => {
   if (await back.isVisible()) await back.click();
 };
 
-test.describe('Product chat', () => {
+test.describe('Product chat @desktop', () => {
   test('buyer and seller exchange messages on a product chat', async ({ browser }) => {
     const { id, title, buyer, close } = await startChat(browser);
 
