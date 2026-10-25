@@ -1,0 +1,1510 @@
+{
+ "orders.a11y.axe": {
+  "code": "36c38590991e568d",
+  "spec": "8f846e0a8c3ab4a3",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/tests/visual/seller-team.spec.ts": "0d4c2d05affeb45c"
+  },
+  "specs": {
+   "W04.AS-95": "399a29cff5b75f0a"
+  }
+ },
+ "orders.a11y.dark-mode": {
+  "code": "20e8d2681455adc4",
+  "spec": "de01a22c6a555587",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e",
+   "packages/web/components/seller/problem-states.tsx": "b8ff53d2297a93b6"
+  },
+  "specs": {
+   "W04.AS-97": "fd6c85bbcba690d5"
+  }
+ },
+ "orders.a11y.focus": {
+  "code": "1bd594ea6cea8ae8",
+  "spec": "8f846e0a8c3ab4a3",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e"
+  },
+  "specs": {
+   "W04.AS-95": "399a29cff5b75f0a"
+  }
+ },
+ "orders.a11y.landmarks": {
+  "code": "1bd594ea6cea8ae8",
+  "spec": "8f846e0a8c3ab4a3",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e"
+  },
+  "specs": {
+   "W04.AS-95": "399a29cff5b75f0a"
+  }
+ },
+ "orders.api.contract": {
+  "code": "e2201a466e24e921",
+  "spec": "ae663bcfa0330515",
+  "at": "2026-10-25",
+  "files": {
+   "packages/contracts/src/orders/order.ts": "825d6af4758d3309"
+  },
+  "specs": {
+   "S10.R-39": "d2d6893ae3e7b3ed"
+  }
+ },
+ "orders.api.json-error-shape": {
+  "code": "44136fa355b3678a",
+  "spec": "304677b023de82d3",
+  "at": "2026-10-25",
+  "files": {},
+  "specs": {
+   "W04.AS-89": "12a7e5fe8b821d1f"
+  }
+ },
+ "orders.api.limit-bounds": {
+  "code": "44136fa355b3678a",
+  "spec": "f8cef7331970db2a",
+  "at": "2026-10-25",
+  "files": {},
+  "specs": {
+   "S10.R-37": "35e61017cd853e8b",
+   "S10.R-39": "d2d6893ae3e7b3ed"
+  }
+ },
+ "orders.api.proxy-no-token": {
+  "code": "d603a6a32fe325fb",
+  "spec": "0d1b945614f810f3",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/next.config.ts": "2b9b2e0de0bbe822"
+  },
+  "specs": {
+   "W01": "9d05bb0d0f73d2b0"
+  }
+ },
+ "orders.api.shop-id-validation": {
+  "code": "44136fa355b3678a",
+  "spec": "ae663bcfa0330515",
+  "at": "2026-10-25",
+  "files": {},
+  "specs": {
+   "S10.R-39": "d2d6893ae3e7b3ed"
+  }
+ },
+ "orders.api.status-validation": {
+  "code": "44136fa355b3678a",
+  "spec": "ae663bcfa0330515",
+  "at": "2026-10-25",
+  "files": {},
+  "specs": {
+   "S10.R-39": "d2d6893ae3e7b3ed"
+  }
+ },
+ "orders.db.index-use": {
+  "code": "44136fa355b3678a",
+  "spec": "658031d1fe5e3dc6",
+  "at": "2026-10-25",
+  "files": {},
+  "specs": {
+   "S10.R-38": "896057ef681bedcd"
+  }
+ },
+ "orders.db.join-bisorder": {
+  "code": "44136fa355b3678a",
+  "spec": "708467ffb3b2a2eb",
+  "at": "2026-10-25",
+  "files": {},
+  "specs": {
+   "S10.R-14": "2073e7c53c67310a"
+  }
+ },
+ "orders.db.keyset-index": {
+  "code": "44244bf83ee6dc4d",
+  "spec": "658031d1fe5e3dc6",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/orders/infra/shop-order.repository.ts": "fbff1ae6dfd0f4b2"
+  },
+  "specs": {
+   "S10.R-38": "896057ef681bedcd"
+  }
+ },
+ "orders.db.line-title-null": {
+  "code": "8584c40e5adfd589",
+  "spec": "eaa688f414c0633a",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/orders/application/item-backfill.service.ts": "1a724e3f79ab5b96"
+  },
+  "specs": {
+   "S10.R-15": "ecd9f77a3a95d74d"
+  }
+ },
+ "orders.db.lines-join": {
+  "code": "44136fa355b3678a",
+  "spec": "f567808398940689",
+  "at": "2026-10-25",
+  "files": {},
+  "specs": {
+   "S10.R-14": "2073e7c53c67310a",
+   "S10.R-39": "d2d6893ae3e7b3ed"
+  }
+ },
+ "orders.db.null-shopid": {
+  "code": "716868976524acf6",
+  "spec": "708467ffb3b2a2eb",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/orders/infra/models/shop-order.model.ts": "2ff7760550e1e604"
+  },
+  "specs": {
+   "S10.R-14": "2073e7c53c67310a"
+  }
+ },
+ "orders.db.read-only": {
+  "code": "44136fa355b3678a",
+  "spec": "cade40eb2c2512aa",
+  "at": "2026-10-25",
+  "files": {},
+  "specs": {
+   "W04.B-32": "a80f2e33156235ce"
+  }
+ },
+ "orders.db.slice-order-link": {
+  "code": "4191ed23fc3f4b4a",
+  "spec": "bc9aab1fe42dffee",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/fulfilment/application/order-lifecycle.service.ts": "3ccfcdab1c8f7c3e",
+   "packages/backend/libs/domains/orders/application/order-lifecycle.service.ts": "f7e7d1244884fcb0"
+  },
+  "specs": {
+   "S10.R-33": "d3cd67b75e7b34b8",
+   "S13": "811f0d5c562a9c0f"
+  }
+ },
+ "orders.filter.address-restore": {
+  "code": "5a0d514c913040c3",
+  "spec": "44160e96f2ce6a4d",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e",
+   "packages/web/lib/seller/search-params.ts": "b0323b8c4ae21191"
+  },
+  "specs": {
+   "W04.R-10": "8cd48a8baeb758a6"
+  }
+ },
+ "orders.filter.back-to-all": {
+  "code": "5a0d514c913040c3",
+  "spec": "44160e96f2ce6a4d",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e",
+   "packages/web/lib/seller/search-params.ts": "b0323b8c4ae21191"
+  },
+  "specs": {
+   "W04.R-10": "8cd48a8baeb758a6"
+  }
+ },
+ "orders.filter.bad-upper-status-ui": {
+  "code": "9aa0f045f3c39e01",
+  "spec": "550b8b3cc67dc9d4",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e",
+   "packages/web/lib/seller/problem-copy.ts": "4ef1088a69dc32f7"
+  },
+  "specs": {
+   "W04.AS-89": "12a7e5fe8b821d1f",
+   "W04.R-10": "8cd48a8baeb758a6"
+  }
+ },
+ "orders.filter.choose-status": {
+  "code": "1bd594ea6cea8ae8",
+  "spec": "5fae6fd91459508b",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e"
+  },
+  "specs": {
+   "W04.AS-83": "46feb960bd365676",
+   "W04.R-10": "8cd48a8baeb758a6"
+  }
+ },
+ "orders.filter.drops-cursor": {
+  "code": "1bd594ea6cea8ae8",
+  "spec": "44160e96f2ce6a4d",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e"
+  },
+  "specs": {
+   "W04.R-10": "8cd48a8baeb758a6"
+  }
+ },
+ "orders.filter.invalid-value-select-blank": {
+  "code": "5a0d514c913040c3",
+  "spec": "44160e96f2ce6a4d",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e",
+   "packages/web/lib/seller/search-params.ts": "b0323b8c4ae21191"
+  },
+  "specs": {
+   "W04.R-10": "8cd48a8baeb758a6"
+  }
+ },
+ "orders.filter.keyboard": {
+  "code": "1bd594ea6cea8ae8",
+  "spec": "fae922b2e8e23c4d",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e"
+  },
+  "specs": {
+   "W04.R-25": "ceeb7a73996519d8"
+  }
+ },
+ "orders.filter.label": {
+  "code": "1bd594ea6cea8ae8",
+  "spec": "fae922b2e8e23c4d",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e"
+  },
+  "specs": {
+   "W04.R-25": "ceeb7a73996519d8"
+  }
+ },
+ "orders.filter.repeated-status": {
+  "code": "3eedb9fbf23504ff",
+  "spec": "44160e96f2ce6a4d",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/lib/seller/search-params.ts": "b0323b8c4ae21191"
+  },
+  "specs": {
+   "W04.R-10": "8cd48a8baeb758a6"
+  }
+ },
+ "orders.filter.select-options": {
+  "code": "b600f584b9b83432",
+  "spec": "96edeae8edd61d2e",
+  "at": "2026-10-25",
+  "files": {
+   "packages/contracts/src/orders/order.ts": "825d6af4758d3309",
+   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e"
+  },
+  "specs": {
+   "S10.R-39": "d2d6893ae3e7b3ed",
+   "W04.B-32": "a80f2e33156235ce"
+  }
+ },
+ "orders.filter.select-size-phone": {
+  "code": "1bd594ea6cea8ae8",
+  "spec": "fae922b2e8e23c4d",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e"
+  },
+  "specs": {
+   "W04.R-25": "ceeb7a73996519d8"
+  }
+ },
+ "orders.filter.status-cancelled": {
+  "code": "1bd594ea6cea8ae8",
+  "spec": "67e7f7894bf9aeba",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e"
+  },
+  "specs": {
+   "S10.R-22": "fe4fdcf010649cc7",
+   "W04.AS-83": "46feb960bd365676"
+  }
+ },
+ "orders.filter.status-pending": {
+  "code": "1bd594ea6cea8ae8",
+  "spec": "fa19bac0f8351eed",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e"
+  },
+  "specs": {
+   "S10.R-14": "2073e7c53c67310a",
+   "W04.AS-83": "46feb960bd365676"
+  }
+ },
+ "orders.filter.status-refunded": {
+  "code": "1bd594ea6cea8ae8",
+  "spec": "39ed57087fab0870",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e"
+  },
+  "specs": {
+   "S10.R-33": "d3cd67b75e7b34b8",
+   "W04.AS-83": "46feb960bd365676"
+  }
+ },
+ "orders.filter.unknown-status-in-address": {
+  "code": "3eedb9fbf23504ff",
+  "spec": "44160e96f2ce6a4d",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/lib/seller/search-params.ts": "b0323b8c4ae21191"
+  },
+  "specs": {
+   "W04.R-10": "8cd48a8baeb758a6"
+  }
+ },
+ "orders.neighbor.export-link": {
+  "code": "6063d8b5a9a789b4",
+  "spec": "5e0d974f44e69ac3",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/lib/seller/nav.ts": "d05b59bcd2efc52a"
+  },
+  "specs": {
+   "S12": "19813cacc08ee78c"
+  }
+ },
+ "orders.page.forbidden-overview-button": {
+  "code": "c381a079dbfbbf35",
+  "spec": "44c6c2b3bfcb6ec3",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/forbidden-panel.tsx": "593ff8c8e9726203"
+  },
+  "specs": {
+   "W04.AS-54": "b665cc840f027891"
+  }
+ },
+ "orders.page.heading": {
+  "code": "1bd594ea6cea8ae8",
+  "spec": "2c67428fa8e919a0",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e"
+  },
+  "specs": {
+   "W04.B-32": "a80f2e33156235ce",
+   "W04.R-28": "bcbeea3991272441"
+  }
+ },
+ "orders.page.no-live-update": {
+  "code": "6eca4e750d76fa09",
+  "spec": "7bcc403d67741df5",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/lib/api/seller-orders.ts": "486eb16218364ac5"
+  },
+  "specs": {
+   "W04.R-34": "38399af6a6ad90d9"
+  }
+ },
+ "orders.page.permission-gate": {
+  "code": "0287afab41cb71d9",
+  "spec": "c07f53dec8e4a4ea",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/app/dashboard/seller/[shopId]/orders/page.tsx": "c95755cc233da175",
+   "packages/web/components/dashboard/shop-frame.tsx": "04ebc512219b394f",
+   "packages/web/components/seller/forbidden-panel.tsx": "593ff8c8e9726203"
+  },
+  "specs": {
+   "W04.AS-54": "b665cc840f027891",
+   "W04.R-02": "b665cc840f027891"
+  }
+ },
+ "orders.page.refetch-on-mount": {
+  "code": "6eca4e750d76fa09",
+  "spec": "9ea56bfc92f2e6cc",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/lib/api/seller-orders.ts": "486eb16218364ac5"
+  },
+  "specs": {
+   "W04.AS-83": "46feb960bd365676"
+  }
+ },
+ "orders.page.route-and-nav": {
+  "code": "33aa552b65353a3b",
+  "spec": "7f19de622036a998",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/dashboard/mobile-drawer.tsx": "fae05477f0e60c92",
+   "packages/web/components/dashboard/seller-nav.tsx": "3fe3854905dd347b",
+   "packages/web/lib/seller/nav.ts": "d05b59bcd2efc52a"
+  },
+  "specs": {
+   "W04.B-32": "a80f2e33156235ce",
+   "W04.R-02": "b665cc840f027891"
+  }
+ },
+ "orders.page.server-first-read": {
+  "code": "c383350ecd3df350",
+  "spec": "9ea56bfc92f2e6cc",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/app/dashboard/seller/[shopId]/orders/page.tsx": "c95755cc233da175",
+   "packages/web/lib/server/seller.server.ts": "7b2b5295d5ae9ac5"
+  },
+  "specs": {
+   "W04.AS-83": "46feb960bd365676"
+  }
+ },
+ "orders.page.session-guard": {
+  "code": "bf3764049a7680a4",
+  "spec": "75ba3eebf8e1f150",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/app/dashboard/seller/[shopId]/orders/page.tsx": "c95755cc233da175",
+   "packages/web/components/dashboard/shop-frame.tsx": "04ebc512219b394f"
+  },
+  "specs": {
+   "W01": "9d05bb0d0f73d2b0",
+   "W04.AS-84": "3f501d830040b391"
+  }
+ },
+ "orders.page.shop-not-found": {
+  "code": "bf3764049a7680a4",
+  "spec": "ade07013daacf559",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/app/dashboard/seller/[shopId]/orders/page.tsx": "c95755cc233da175",
+   "packages/web/components/dashboard/shop-frame.tsx": "04ebc512219b394f"
+  },
+  "specs": {
+   "S03": "516b2d0fe923a967",
+   "S10.R-39": "d2d6893ae3e7b3ed",
+   "W04.AS-85": "dab82e9523887b3c"
+  }
+ },
+ "orders.page.skeleton-shape": {
+  "code": "6e06c4252f469a0e",
+  "spec": "35774734954c7aed",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/page-skeletons.tsx": "6d8169b1609f5520"
+  },
+  "specs": {
+   "W04.AS-91": "92d2478a25820073"
+  }
+ },
+ "orders.page.suspense-skeleton": {
+  "code": "5eb725cc8c15626e",
+  "spec": "2acfc38394942547",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/app/dashboard/seller/[shopId]/orders/loading.tsx": "a866645427352b2f",
+   "packages/web/app/dashboard/seller/[shopId]/orders/page.tsx": "c95755cc233da175",
+   "packages/web/components/seller/page-skeletons.tsx": "6d8169b1609f5520"
+  },
+  "specs": {
+   "W04.AS-91": "92d2478a25820073",
+   "W04.R-27": "99db29fc4b785569"
+  }
+ },
+ "orders.paging.back-button": {
+  "code": "1bd594ea6cea8ae8",
+  "spec": "44160e96f2ce6a4d",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e"
+  },
+  "specs": {
+   "W04.R-10": "8cd48a8baeb758a6"
+  }
+ },
+ "orders.paging.cursor-after-new-orders": {
+  "code": "44136fa355b3678a",
+  "spec": "ade894b3fa20f467",
+  "at": "2026-10-25",
+  "files": {},
+  "specs": {
+   "S10.R-37": "35e61017cd853e8b"
+  }
+ },
+ "orders.paging.cursor-bound-to-shop": {
+  "code": "402a700d40afc3c5",
+  "spec": "2631cd751b1d074c",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/orders/domain/order-cursor.ts": "b799a1f101369af7"
+  },
+  "specs": {
+   "S10.D-10": "bfdf0e3960714b46",
+   "S10.R-39": "d2d6893ae3e7b3ed",
+   "W04.AS-89": "12a7e5fe8b821d1f"
+  }
+ },
+ "orders.paging.cursor-same-timestamp": {
+  "code": "44136fa355b3678a",
+  "spec": "ade894b3fa20f467",
+  "at": "2026-10-25",
+  "files": {},
+  "specs": {
+   "S10.R-37": "35e61017cd853e8b"
+  }
+ },
+ "orders.paging.cursor-tampered": {
+  "code": "3eedb9fbf23504ff",
+  "spec": "550b8b3cc67dc9d4",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/lib/seller/search-params.ts": "b0323b8c4ae21191"
+  },
+  "specs": {
+   "W04.AS-89": "12a7e5fe8b821d1f",
+   "W04.R-10": "8cd48a8baeb758a6"
+  }
+ },
+ "orders.paging.exactly-page-size": {
+  "code": "44136fa355b3678a",
+  "spec": "ade894b3fa20f467",
+  "at": "2026-10-25",
+  "files": {},
+  "specs": {
+   "S10.R-37": "35e61017cd853e8b"
+  }
+ },
+ "orders.paging.first-page-link": {
+  "code": "1bd594ea6cea8ae8",
+  "spec": "44160e96f2ce6a4d",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e"
+  },
+  "specs": {
+   "W04.R-10": "8cd48a8baeb758a6"
+  }
+ },
+ "orders.paging.go-to-first-page-button": {
+  "code": "80f1c7bfa965a94b",
+  "spec": "304677b023de82d3",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/problem-states.tsx": "b8ff53d2297a93b6"
+  },
+  "specs": {
+   "W04.AS-89": "12a7e5fe8b821d1f"
+  }
+ },
+ "orders.paging.hidden-while-busy": {
+  "code": "1bd594ea6cea8ae8",
+  "spec": "d92cbbc0a3633b92",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e"
+  },
+  "specs": {
+   "W04.R-26": "c060454e7c10d038"
+  }
+ },
+ "orders.paging.last-page": {
+  "code": "1bd594ea6cea8ae8",
+  "spec": "9ea56bfc92f2e6cc",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e"
+  },
+  "specs": {
+   "W04.AS-83": "46feb960bd365676"
+  }
+ },
+ "orders.paging.next-link": {
+  "code": "1bd594ea6cea8ae8",
+  "spec": "7fceca681eb76a2f",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e"
+  },
+  "specs": {
+   "S10.R-37": "35e61017cd853e8b",
+   "W04.AS-83": "46feb960bd365676",
+   "W04.R-10": "8cd48a8baeb758a6"
+  }
+ },
+ "orders.paging.no-nav-when-single": {
+  "code": "1bd594ea6cea8ae8",
+  "spec": "9ea56bfc92f2e6cc",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e"
+  },
+  "specs": {
+   "W04.AS-83": "46feb960bd365676"
+  }
+ },
+ "orders.phone.layout-390": {
+  "code": "1bd594ea6cea8ae8",
+  "spec": "f226ffa14d46d840",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e"
+  },
+  "specs": {
+   "W04.AS-97": "fd6c85bbcba690d5",
+   "W04.R-25": "ceeb7a73996519d8"
+  }
+ },
+ "orders.phone.paging-buttons": {
+  "code": "1bd594ea6cea8ae8",
+  "spec": "fae922b2e8e23c4d",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e"
+  },
+  "specs": {
+   "W04.R-25": "ceeb7a73996519d8"
+  }
+ },
+ "orders.role.admin": {
+  "code": "838f3f480a9a60ee",
+  "spec": "e163725fadd09050",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/shop-functions/api/permissions.ts": "72f6532b00f4f9d8",
+   "packages/backend/libs/domains/tenancy/domain/permissions.ts": "62031a52bc431e77",
+   "packages/web/lib/seller/permissions.ts": "e938842e33042b83"
+  },
+  "specs": {
+   "W04.R-02": "b665cc840f027891"
+  }
+ },
+ "orders.role.api-no-permission": {
+  "code": "44136fa355b3678a",
+  "spec": "a6e47974bbf68f5b",
+  "at": "2026-10-25",
+  "files": {},
+  "specs": {
+   "S10.R-39": "d2d6893ae3e7b3ed",
+   "W04.R-02": "b665cc840f027891"
+  }
+ },
+ "orders.role.foreign-shop-member": {
+  "code": "44136fa355b3678a",
+  "spec": "46516d9ca1ecb3b8",
+  "at": "2026-10-25",
+  "files": {},
+  "specs": {
+   "S10.R-39": "d2d6893ae3e7b3ed",
+   "W04.AS-85": "dab82e9523887b3c"
+  }
+ },
+ "orders.role.owner": {
+  "code": "f515b244574b2c40",
+  "spec": "d196dbbf0d28488c",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/tenancy/domain/permissions.ts": "62031a52bc431e77"
+  },
+  "specs": {
+   "S03.FR-020": "82778140dd5f3a8b",
+   "W04.R-02": "b665cc840f027891"
+  }
+ },
+ "orders.role.permission-change-live": {
+  "code": "838f3f480a9a60ee",
+  "spec": "383b0e9de5dd0cc5",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/shop-functions/api/permissions.ts": "72f6532b00f4f9d8",
+   "packages/backend/libs/domains/tenancy/domain/permissions.ts": "62031a52bc431e77",
+   "packages/web/lib/seller/permissions.ts": "e938842e33042b83"
+  },
+  "specs": {
+   "S03.FR-015": "516b2d0fe923a967"
+  }
+ },
+ "orders.role.staff": {
+  "code": "838f3f480a9a60ee",
+  "spec": "e163725fadd09050",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/shop-functions/api/permissions.ts": "72f6532b00f4f9d8",
+   "packages/backend/libs/domains/tenancy/domain/permissions.ts": "62031a52bc431e77",
+   "packages/web/lib/seller/permissions.ts": "e938842e33042b83"
+  },
+  "specs": {
+   "W04.R-02": "b665cc840f027891"
+  }
+ },
+ "orders.role.viewer": {
+  "code": "838f3f480a9a60ee",
+  "spec": "e163725fadd09050",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/shop-functions/api/permissions.ts": "72f6532b00f4f9d8",
+   "packages/backend/libs/domains/tenancy/domain/permissions.ts": "62031a52bc431e77",
+   "packages/web/lib/seller/permissions.ts": "e938842e33042b83"
+  },
+  "specs": {
+   "W04.R-02": "b665cc840f027891"
+  }
+ },
+ "orders.security.cache-per-user": {
+  "code": "1cef9a45fce3f48a",
+  "spec": "0d1b945614f810f3",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/lib/query-keys.ts": "0da0b77363058008"
+  },
+  "specs": {
+   "W01": "9d05bb0d0f73d2b0"
+  }
+ },
+ "orders.security.idor-shop-order": {
+  "code": "44136fa355b3678a",
+  "spec": "ae663bcfa0330515",
+  "at": "2026-10-25",
+  "files": {},
+  "specs": {
+   "S10.R-39": "d2d6893ae3e7b3ed"
+  }
+ },
+ "orders.security.xss-fields": {
+  "code": "1bd594ea6cea8ae8",
+  "spec": "74b06185be28d453",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e"
+  },
+  "specs": {
+   "W04.R-28": "bcbeea3991272441"
+  }
+ },
+ "orders.shop.active": {
+  "code": "502da4c3e1b22874",
+  "spec": "32e44dddd6dd7c26",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/shop-status-banner.tsx": "2e011c86faa2ae74"
+  },
+  "specs": {
+   "W04.R-03": "3d83ff66a103db87"
+  }
+ },
+ "orders.shop.deleted": {
+  "code": "44136fa355b3678a",
+  "spec": "0402ec2a3e91189e",
+  "at": "2026-10-25",
+  "files": {},
+  "specs": {
+   "W04.AS-85": "dab82e9523887b3c"
+  }
+ },
+ "orders.shop.deleting": {
+  "code": "44136fa355b3678a",
+  "spec": "70353983f3eb1f96",
+  "at": "2026-10-25",
+  "files": {},
+  "specs": {
+   "W04.AS-86": "87f5c7cbdb80abff",
+   "W04.R-03": "3d83ff66a103db87"
+  }
+ },
+ "orders.shop.status-change-while-open": {
+  "code": "44136fa355b3678a",
+  "spec": "8f597af95f0c8a6c",
+  "at": "2026-10-25",
+  "files": {},
+  "specs": {
+   "W04.AS-86": "87f5c7cbdb80abff"
+  }
+ },
+ "orders.shop.suspended-banner": {
+  "code": "91275a9ce7c96071",
+  "spec": "70353983f3eb1f96",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/shop-functions/api/permissions.ts": "72f6532b00f4f9d8",
+   "packages/backend/libs/domains/tenancy/domain/permissions.ts": "62031a52bc431e77",
+   "packages/web/components/seller/shop-status-banner.tsx": "2e011c86faa2ae74",
+   "packages/web/lib/seller/permissions.ts": "e938842e33042b83"
+  },
+  "specs": {
+   "W04.AS-86": "87f5c7cbdb80abff",
+   "W04.R-03": "3d83ff66a103db87"
+  }
+ },
+ "orders.shop.suspended-banner-vs-list": {
+  "code": "80f1c7bfa965a94b",
+  "spec": "70353983f3eb1f96",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/problem-states.tsx": "b8ff53d2297a93b6"
+  },
+  "specs": {
+   "W04.AS-86": "87f5c7cbdb80abff",
+   "W04.R-03": "3d83ff66a103db87"
+  }
+ },
+ "orders.shop.suspended-read": {
+  "code": "44136fa355b3678a",
+  "spec": "e0f84a20e59f4f67",
+  "at": "2026-10-25",
+  "files": {},
+  "specs": {
+   "S03": "516b2d0fe923a967",
+   "S10.R-39": "d2d6893ae3e7b3ed",
+   "W04.AS-86": "87f5c7cbdb80abff",
+   "W04.R-03": "3d83ff66a103db87"
+  }
+ },
+ "orders.source.auction-order": {
+  "code": "2fb8f9d79a950501",
+  "spec": "6b32f5faac021b04",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/orders/application/order-command.service.ts": "ad8abad320ffd529"
+  },
+  "specs": {
+   "S10.R-48": "d8a05985817c4ef7",
+   "S21": "74e97f22bda542de"
+  }
+ },
+ "orders.source.cancel-marks-cancelled": {
+  "code": "c6d4b56743501665",
+  "spec": "aca9c1a97ad15d18",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/fulfilment/application/order-lifecycle.service.ts": "3ccfcdab1c8f7c3e",
+   "packages/backend/libs/domains/orders/application/order-cancellation.service.ts": "70149d509df24b1f",
+   "packages/backend/libs/domains/orders/application/order-lifecycle.service.ts": "f7e7d1244884fcb0"
+  },
+  "specs": {
+   "S10.R-22": "fe4fdcf010649cc7",
+   "S10.R-35": "d76002a6900cf230"
+  }
+ },
+ "orders.source.cart-not-in-list": {
+  "code": "047d6bab104977b4",
+  "spec": "5e067bd35004e571",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/orders/application/cart.service.ts": "dda56dddba96a4c7"
+  },
+  "specs": {
+   "S10": "bfdf0e3960714b46"
+  }
+ },
+ "orders.source.checkout-creates-slices": {
+  "code": "5321f23dd1f6242a",
+  "spec": "087e80a0fd0ba0b8",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/orders/api/checkout.controller.ts": "80db042a75839e73",
+   "packages/backend/libs/domains/orders/infra/order.repository.ts": "1a65f497cfc1ee18"
+  },
+  "specs": {
+   "S10.B-05": "322baac8747d9c66",
+   "S10.R-14": "2073e7c53c67310a",
+   "W03": "e7be0ce32877ae4c"
+  }
+ },
+ "orders.source.discount": {
+  "code": "6d5a9f2cd58ba8fd",
+  "spec": "264b299e57bc23b3",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/orders/domain/money-allocation.ts": "275b70f6c86f4718",
+   "packages/backend/libs/domains/orders/infra/discounts.adapter.ts": "354c88439f0f9f56"
+  },
+  "specs": {
+   "S10.R-15": "ecd9f77a3a95d74d",
+   "S45": "8a8af704312ff416"
+  }
+ },
+ "orders.source.flash-sale-order": {
+  "code": "5f153a704424d985",
+  "spec": "eba649d1f4128ce9",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/orders/application/checkout.service.ts": "6a6fed663e24f073"
+  },
+  "specs": {
+   "S10": "bfdf0e3960714b46",
+   "S11": "0803ffc93926a896"
+  }
+ },
+ "orders.source.fulfilment-no-effect": {
+  "code": "cbcadedc4491906a",
+  "spec": "ea93387d683a374b",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/orders/application/order-fulfilment.service.ts": "2d3d9f7ed7cb10e6"
+  },
+  "specs": {
+   "S10.R-34": "d1bd843c6a431883"
+  }
+ },
+ "orders.source.ledger-not-read": {
+  "code": "44136fa355b3678a",
+  "spec": "32cee0c2577461eb",
+  "at": "2026-10-25",
+  "files": {},
+  "specs": {
+   "S13": "811f0d5c562a9c0f",
+   "S14": "5fc5ff731442d454"
+  }
+ },
+ "orders.source.out-of-stock-cancel": {
+  "code": "44136fa355b3678a",
+  "spec": "ade894b3fa20f467",
+  "at": "2026-10-25",
+  "files": {},
+  "specs": {
+   "S10.R-37": "35e61017cd853e8b"
+  }
+ },
+ "orders.source.payment-marks-paid": {
+  "code": "d74e890df292cd32",
+  "spec": "bc9aab1fe42dffee",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/fulfilment/application/order-lifecycle.service.ts": "3ccfcdab1c8f7c3e",
+   "packages/backend/libs/domains/orders/api/stripe-webhook.controller.ts": "22d6698b15a55725",
+   "packages/backend/libs/domains/orders/application/order-lifecycle.service.ts": "f7e7d1244884fcb0",
+   "packages/backend/libs/domains/orders/application/payment-result.service.ts": "8b56b93befa839b1",
+   "packages/backend/libs/domains/orders/infra/payments-events.consumer.ts": "9942e339ede1b287"
+  },
+  "specs": {
+   "S10.R-33": "d3cd67b75e7b34b8",
+   "S13": "811f0d5c562a9c0f"
+  }
+ },
+ "orders.source.refund-marks-refunded": {
+  "code": "fc653eb9b0688853",
+  "spec": "01071b573b4bbac8",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/fulfilment/application/order-lifecycle.service.ts": "3ccfcdab1c8f7c3e",
+   "packages/backend/libs/domains/orders/application/order-lifecycle.service.ts": "f7e7d1244884fcb0",
+   "packages/backend/libs/domains/orders/infra/refund-command.adapter.ts": "32ff931f76e8094c"
+  },
+  "specs": {
+   "S10.R-33": "d3cd67b75e7b34b8"
+  }
+ },
+ "orders.source.rls-or-tenancy": {
+  "code": "44136fa355b3678a",
+  "spec": "ae663bcfa0330515",
+  "at": "2026-10-25",
+  "files": {},
+  "specs": {
+   "S10.R-39": "d2d6893ae3e7b3ed"
+  }
+ },
+ "orders.source.two-shops-one-order": {
+  "code": "71828afcec4e8ab7",
+  "spec": "936119e150903df5",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/orders/domain/money-allocation.ts": "275b70f6c86f4718"
+  },
+  "specs": {
+   "S10.B-05": "322baac8747d9c66",
+   "S10.R-14": "2073e7c53c67310a"
+  }
+ },
+ "orders.state.empty-filter": {
+  "code": "1bd594ea6cea8ae8",
+  "spec": "9ea56bfc92f2e6cc",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e"
+  },
+  "specs": {
+   "W04.AS-83": "46feb960bd365676"
+  }
+ },
+ "orders.state.empty-no-flash": {
+  "code": "1bd594ea6cea8ae8",
+  "spec": "d92cbbc0a3633b92",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e"
+  },
+  "specs": {
+   "W04.R-26": "c060454e7c10d038"
+  }
+ },
+ "orders.state.empty-no-orders": {
+  "code": "1bd594ea6cea8ae8",
+  "spec": "9ea56bfc92f2e6cc",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e"
+  },
+  "specs": {
+   "W04.AS-83": "46feb960bd365676"
+  }
+ },
+ "orders.state.empty-page": {
+  "code": "1bd594ea6cea8ae8",
+  "spec": "9ea56bfc92f2e6cc",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e"
+  },
+  "specs": {
+   "W04.AS-83": "46feb960bd365676"
+  }
+ },
+ "orders.state.error-4xx-no-retry": {
+  "code": "96a36160ab3d7c92",
+  "spec": "304677b023de82d3",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/lib/api/orders.ts": "7631ea19bc997f81",
+   "packages/web/lib/api/seller-orders.ts": "486eb16218364ac5"
+  },
+  "specs": {
+   "W04.AS-89": "12a7e5fe8b821d1f"
+  }
+ },
+ "orders.state.error-bad-body": {
+  "code": "6eca4e750d76fa09",
+  "spec": "304677b023de82d3",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/lib/api/seller-orders.ts": "486eb16218364ac5"
+  },
+  "specs": {
+   "W04.AS-89": "12a7e5fe8b821d1f"
+  }
+ },
+ "orders.state.error-copy-reference": {
+  "code": "a02df7ff30e618e7",
+  "spec": "147f78d08066042d",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/copy-button.tsx": "71efd6c2ee07cf5d"
+  },
+  "specs": {
+   "W04.AS-47": "cde8d7873dd42854",
+   "W04.AS-89": "12a7e5fe8b821d1f"
+  }
+ },
+ "orders.state.error-read": {
+  "code": "9ac22dd525608f0d",
+  "spec": "19a600927765b316",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e",
+   "packages/web/components/seller/problem-states.tsx": "b8ff53d2297a93b6",
+   "packages/web/lib/api/problem-copy.ts": "fee92af3f30afb8c",
+   "packages/web/lib/assistant/problem-copy.ts": "7901b9fda9cb5675",
+   "packages/web/lib/seller/problem-copy.ts": "4ef1088a69dc32f7"
+  },
+  "specs": {
+   "W04.AS-89": "12a7e5fe8b821d1f",
+   "W04.FR-043": "eabea675046ec473"
+  }
+ },
+ "orders.state.error-try-again": {
+  "code": "1bd594ea6cea8ae8",
+  "spec": "304677b023de82d3",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e"
+  },
+  "specs": {
+   "W04.AS-89": "12a7e5fe8b821d1f"
+  }
+ },
+ "orders.state.loading-first": {
+  "code": "95eda8eb6ce828bd",
+  "spec": "2acfc38394942547",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e",
+   "packages/web/components/seller/page-skeletons.tsx": "6d8169b1609f5520"
+  },
+  "specs": {
+   "W04.AS-91": "92d2478a25820073",
+   "W04.R-27": "99db29fc4b785569"
+  }
+ },
+ "orders.state.offline": {
+  "code": "80f1c7bfa965a94b",
+  "spec": "d8cb92d2d2d9213e",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/problem-states.tsx": "b8ff53d2297a93b6"
+  },
+  "specs": {
+   "W04.AS-88": "3f501d830040b391"
+  }
+ },
+ "orders.state.rate-limited": {
+  "code": "cf906a51071fd43a",
+  "spec": "f85ca6d5e8d0b923",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/orders/rate-limit-policies.ts": "f1a70dcd7f89d1c4",
+   "packages/web/components/seller/problem-states.tsx": "b8ff53d2297a93b6"
+  },
+  "specs": {
+   "W04.AS-90": "b866c136e97e7ae7"
+  }
+ },
+ "orders.state.rate-limited-text": {
+  "code": "b72b17f008008b3d",
+  "spec": "f85ca6d5e8d0b923",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/problem-states.tsx": "b8ff53d2297a93b6",
+   "packages/web/lib/seller/countdown.ts": "948ccd86aea00fcb"
+  },
+  "specs": {
+   "W04.AS-90": "b866c136e97e7ae7"
+  }
+ },
+ "orders.state.session-ended": {
+  "code": "80f1c7bfa965a94b",
+  "spec": "1e61fb9bc1cd9d1f",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/problem-states.tsx": "b8ff53d2297a93b6"
+  },
+  "specs": {
+   "W01": "9d05bb0d0f73d2b0",
+   "W04.AS-87": "1a95828b4c1b5684"
+  }
+ },
+ "orders.state.shop-deleted-while-open": {
+  "code": "084dc3e8b54a4604",
+  "spec": "0402ec2a3e91189e",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/lib/api/problem-copy.ts": "fee92af3f30afb8c",
+   "packages/web/lib/assistant/problem-copy.ts": "7901b9fda9cb5675",
+   "packages/web/lib/seller/problem-copy.ts": "4ef1088a69dc32f7"
+  },
+  "specs": {
+   "W04.AS-85": "dab82e9523887b3c"
+  }
+ },
+ "orders.table.big-number": {
+  "code": "f01f713ade89f2ee",
+  "spec": "5478743d3b85b594",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/orders/infra/safe-number.ts": "1cff8a972a3e9bc1"
+  },
+  "specs": {
+   "W04.R-07": "fe836bf9fe8a3c07"
+  }
+ },
+ "orders.table.busy-keeps-rows": {
+  "code": "b9bda09dfb342e1e",
+  "spec": "7f50ba02a0bfa1fd",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e",
+   "packages/web/components/seller/responsive-table.tsx": "296ce71c11d48740"
+  },
+  "specs": {
+   "W04.AS-31": "c060454e7c10d038",
+   "W04.R-26": "c060454e7c10d038"
+  }
+ },
+ "orders.table.currency-invalid-crash": {
+  "code": "f700573c5f6fb652",
+  "spec": "5478743d3b85b594",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e",
+   "packages/web/lib/utils.ts": "13dbc56570cb6305"
+  },
+  "specs": {
+   "W04.R-07": "fe836bf9fe8a3c07"
+  }
+ },
+ "orders.table.currency-unknown-code": {
+  "code": "9b99af03652d20ba",
+  "spec": "5478743d3b85b594",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/lib/utils.ts": "13dbc56570cb6305"
+  },
+  "specs": {
+   "W04.R-07": "fe836bf9fe8a3c07"
+  }
+ },
+ "orders.table.currency-zero-decimal": {
+  "code": "9b99af03652d20ba",
+  "spec": "5478743d3b85b594",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/lib/utils.ts": "13dbc56570cb6305"
+  },
+  "specs": {
+   "W04.R-07": "fe836bf9fe8a3c07"
+  }
+ },
+ "orders.table.date": {
+  "code": "4e60db2096d5c136",
+  "spec": "0f69adb971a77403",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e",
+   "packages/web/lib/seller/format-date.ts": "7e9348066a935023"
+  },
+  "specs": {
+   "W04": "eabea675046ec473",
+   "W04.B-32": "a80f2e33156235ce"
+  }
+ },
+ "orders.table.date-invalid": {
+  "code": "e0d080a333de9b5d",
+  "spec": "cade40eb2c2512aa",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/lib/seller/format-date.ts": "7e9348066a935023"
+  },
+  "specs": {
+   "W04.B-32": "a80f2e33156235ce"
+  }
+ },
+ "orders.table.header-cells": {
+  "code": "d7f76645c5b43d63",
+  "spec": "bce66203b3c2cf03",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/responsive-table.tsx": "296ce71c11d48740"
+  },
+  "specs": {
+   "W04.AS-95": "399a29cff5b75f0a",
+   "W04.R-25": "ceeb7a73996519d8"
+  }
+ },
+ "orders.table.items-count": {
+  "code": "1bd594ea6cea8ae8",
+  "spec": "cade40eb2c2512aa",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e"
+  },
+  "specs": {
+   "W04.B-32": "a80f2e33156235ce"
+  }
+ },
+ "orders.table.items-only-this-shop": {
+  "code": "44136fa355b3678a",
+  "spec": "f567808398940689",
+  "at": "2026-10-25",
+  "files": {},
+  "specs": {
+   "S10.R-14": "2073e7c53c67310a",
+   "S10.R-39": "d2d6893ae3e7b3ed"
+  }
+ },
+ "orders.table.long-values": {
+  "code": "d7f76645c5b43d63",
+  "spec": "fae922b2e8e23c4d",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/responsive-table.tsx": "296ce71c11d48740"
+  },
+  "specs": {
+   "W04.R-25": "ceeb7a73996519d8"
+  }
+ },
+ "orders.table.no-buyer-api-and-html": {
+  "code": "a8844fe53646c8ab",
+  "spec": "d1bfa169ec204892",
+  "at": "2026-10-25",
+  "files": {
+   "packages/contracts/src/orders/order.ts": "825d6af4758d3309",
+   "packages/web/app/dashboard/seller/[shopId]/orders/page.tsx": "c95755cc233da175"
+  },
+  "specs": {
+   "S10.R-39": "d2d6893ae3e7b3ed",
+   "W04.AS-83": "46feb960bd365676",
+   "W04.B-32": "a80f2e33156235ce"
+  }
+ },
+ "orders.table.no-buyer-ui": {
+  "code": "1bd594ea6cea8ae8",
+  "spec": "12388945adacdce5",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e"
+  },
+  "specs": {
+   "W04.AS-83": "46feb960bd365676",
+   "W04.B-32": "a80f2e33156235ce"
+  }
+ },
+ "orders.table.no-default-currency": {
+  "code": "1bd594ea6cea8ae8",
+  "spec": "5478743d3b85b594",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e"
+  },
+  "specs": {
+   "W04.R-07": "fe836bf9fe8a3c07"
+  }
+ },
+ "orders.table.no-line-detail-ui": {
+  "code": "1bd594ea6cea8ae8",
+  "spec": "cade40eb2c2512aa",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e"
+  },
+  "specs": {
+   "W04.B-32": "a80f2e33156235ce"
+  }
+ },
+ "orders.table.order-newest-first": {
+  "code": "44136fa355b3678a",
+  "spec": "cade40eb2c2512aa",
+  "at": "2026-10-25",
+  "files": {},
+  "specs": {
+   "W04.B-32": "a80f2e33156235ce"
+  }
+ },
+ "orders.table.page-size": {
+  "code": "b88f2e45a789bb38",
+  "spec": "af5fe4e41250a49a",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/lib/seller/wire.ts": "c92f8861bcf3babb",
+   "packages/web/lib/server/seller.server.ts": "7b2b5295d5ae9ac5"
+  },
+  "specs": {
+   "S10.R-37": "35e61017cd853e8b",
+   "W04.AS-83": "46feb960bd365676"
+  }
+ },
+ "orders.table.phone-cards": {
+  "code": "d7f76645c5b43d63",
+  "spec": "a6b6562bcb139298",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/responsive-table.tsx": "296ce71c11d48740"
+  },
+  "specs": {
+   "W04.AS-95": "399a29cff5b75f0a",
+   "W04.AS-97": "fd6c85bbcba690d5",
+   "W04.R-25": "ceeb7a73996519d8"
+  }
+ },
+ "orders.table.reference": {
+  "code": "1bd594ea6cea8ae8",
+  "spec": "cade40eb2c2512aa",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e"
+  },
+  "specs": {
+   "W04.B-32": "a80f2e33156235ce"
+  }
+ },
+ "orders.table.reference-collision": {
+  "code": "1bd594ea6cea8ae8",
+  "spec": "cade40eb2c2512aa",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e"
+  },
+  "specs": {
+   "W04.B-32": "a80f2e33156235ce"
+  }
+ },
+ "orders.table.region": {
+  "code": "b9bda09dfb342e1e",
+  "spec": "fae922b2e8e23c4d",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e",
+   "packages/web/components/seller/responsive-table.tsx": "296ce71c11d48740"
+  },
+  "specs": {
+   "W04.R-25": "ceeb7a73996519d8"
+  }
+ },
+ "orders.table.row-not-link": {
+  "code": "1bd594ea6cea8ae8",
+  "spec": "cade40eb2c2512aa",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e"
+  },
+  "specs": {
+   "W04.B-32": "a80f2e33156235ce"
+  }
+ },
+ "orders.table.status-badge": {
+  "code": "1bd594ea6cea8ae8",
+  "spec": "cade40eb2c2512aa",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e"
+  },
+  "specs": {
+   "W04.B-32": "a80f2e33156235ce"
+  }
+ },
+ "orders.table.status-unknown": {
+  "code": "8ed25514f0c5c2b2",
+  "spec": "cade40eb2c2512aa",
+  "at": "2026-10-25",
+  "files": {
+   "packages/contracts/src/orders/order.ts": "825d6af4758d3309",
+   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e",
+   "packages/web/lib/api/seller-orders.ts": "486eb16218364ac5"
+  },
+  "specs": {
+   "W04.B-32": "a80f2e33156235ce"
+  }
+ },
+ "orders.table.subtotal": {
+  "code": "f700573c5f6fb652",
+  "spec": "9f6eb1041b2b1539",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e",
+   "packages/web/lib/utils.ts": "13dbc56570cb6305"
+  },
+  "specs": {
+   "W04.B-32": "a80f2e33156235ce",
+   "W04.R-07": "fe836bf9fe8a3c07"
+  }
+ },
+ "orders.table.subtotal-vs-lines": {
+  "code": "2b3d6605d21e25fe",
+  "spec": "d50ffbe553ce2c72",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/orders/api/shop-orders.controller.ts": "505589b438d1ad9e",
+   "packages/backend/libs/domains/orders/domain/money-allocation.ts": "275b70f6c86f4718"
+  },
+  "specs": {
+   "S10.R-14": "2073e7c53c67310a",
+   "S10.R-15": "ecd9f77a3a95d74d"
+  }
+ },
+ "orders.table.text-as-text": {
+  "code": "1bd594ea6cea8ae8",
+  "spec": "74b06185be28d453",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/orders/orders-view.tsx": "673c60fa4758632e"
+  },
+  "specs": {
+   "W04.R-28": "bcbeea3991272441"
+  }
+ }
+}

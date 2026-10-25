@@ -1,0 +1,98 @@
+# Project-specific Semgrep rules for the four seller areas (catalog, media, orders, tenancy + the seller web code).
+# Each rule comes from a rule the specs state: a seller route must go through the shop-access guard, the shop comes from
+# the path (never the body), buyer private data does not leave through a seller view, and no raw HTML is injected.
+rules:
+  - id: aiqa-shop-route-without-shop-guard
+    languages: [typescript]
+    severity: ERROR
+    message: >-
+      Route handler under a controller with a :shopId path has no @ShopScoped(...) guard. Every /shops/:shopId route must
+      resolve the member and the permission through the shop-access guard (spec S03/S05: non-members get 404).
+    patterns:
+      - pattern: |
+          @$HTTP(...)
+          $F(...) { ... }
+      - pattern-not: |
+          @ShopScoped(...)
+          @$HTTP(...)
+          $F(...) { ... }
+      - pattern-not: |
+          @$HTTP(...)
+          @ShopScoped(...)
+          $F(...) { ... }
+      - pattern-inside: |
+          @Controller("=~/.*:shopId.*/")
+          class $C { ... }
+      - metavariable-regex:
+          metavariable: $HTTP
+          regex: ^(Get|Post|Put|Patch|Delete)$
+    paths:
+      include: ["**/packages/backend/libs/domains/**/api/*.controller.ts"]
+  - id: aiqa-shop-route-method-path-without-shop-guard
+    languages: [typescript]
+    severity: ERROR
+    message: >-
+      A method path that contains shops/:shopId has no @ShopScoped(...) guard (controller path is empty, the shop is in the method path).
+    patterns:
+      - pattern: |
+          @$HTTP("=~/^shops\/:shopId.*/")
+          $F(...) { ... }
+      - pattern-not: |
+          @ShopScoped(...)
+          @$HTTP(...)
+          $F(...) { ... }
+      - pattern-not: |
+          @$HTTP(...)
+          @ShopScoped(...)
+          $F(...) { ... }
+      - metavariable-regex:
+          metavariable: $HTTP
+          regex: ^(Get|Post|Put|Patch|Delete)$
+    paths:
+      include: ["**/packages/backend/libs/domains/**/api/*.controller.ts"]
+  - id: aiqa-shop-id-read-from-body
+    languages: [typescript]
+    severity: WARNING
+    message: >-
+      The shop is read from a request body or query. The tenant must come from the route :shopId (or X-Shop-Id) that the guard
+      checked, never from the body: a seller could name another seller's shop.
+    patterns:
+      - pattern-inside: |
+          $F(..., @Body() $B, ...) { ... }
+      - pattern-either:
+          - pattern: $B.shopId
+          - pattern: $B["shopId"]
+    paths:
+      include: ["**/packages/backend/libs/domains/**/api/*.ts"]
+  - id: aiqa-buyer-private-data-in-view
+    languages: [typescript]
+    severity: WARNING
+    message: >-
+      An object literal that carries buyerId / buyerEmail / email / phone in the seller or public view code. Seller screens may show
+      what the spec allows (order privacy rule); check that this field is allowed before it leaves the API.
+    patterns:
+      - pattern-either:
+          - pattern: "{ ..., buyerId: $X, ... }"
+          - pattern: "{ ..., buyerEmail: $X, ... }"
+          - pattern: "{ ..., email: $X, ... }"
+          - pattern: "{ ..., phone: $X, ... }"
+    paths:
+      include:
+        - "**/packages/backend/libs/domains/orders/api/**"
+        - "**/packages/backend/libs/domains/orders/application/order-query*"
+        - "**/packages/backend/libs/domains/orders/domain/*view*"
+        - "**/packages/backend/libs/domains/orders/domain/*mapper*"
+        - "**/packages/backend/libs/domains/catalog/domain/*view*"
+        - "**/packages/backend/libs/domains/catalog/domain/*mapper*"
+      exclude: ["**/*.spec.ts", "**/*.e2e-spec.ts"]
+  - id: aiqa-raw-html-in-seller-web
+    languages: [typescript, javascript]
+    severity: ERROR
+    message: Raw HTML is injected (dangerouslySetInnerHTML / innerHTML). Seller-typed text (product names, descriptions) would run as script.
+    pattern-either:
+      - pattern: <$EL dangerouslySetInnerHTML={...} />
+      - pattern: $X.innerHTML = $Y
+      - pattern: $X.outerHTML = $Y
+    paths:
+      include: ["**/packages/web/**"]
+      exclude: ["**/*.test.ts", "**/*.test.tsx", "**/*.spec.ts"]

@@ -1,0 +1,2077 @@
+{
+ "inventory.add.button": {
+  "code": "cc9bd97d187e90e2",
+  "spec": "78bdb547bf3a0363",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62",
+   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e"
+  },
+  "specs": {
+   "W04.B-12": "27238a60ce5077ff",
+   "W04.B-15": "df273249d9a1a84f",
+   "W04.R-01": "1f540d546d2b8bff"
+  }
+ },
+ "inventory.add.button-no-currency": {
+  "code": "5e7927b68926a3a2",
+  "spec": "8f9b3d16186068d9",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62",
+   "packages/web/lib/config.ts": "d08df08a4c1e2242"
+  },
+  "specs": {
+   "W04.R-06": "39a693bbb932413b"
+  }
+ },
+ "inventory.add.button-suspended-closing": {
+  "code": "bc5d64db49986faf",
+  "spec": "70353983f3eb1f96",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62",
+   "packages/web/lib/seller/permissions.ts": "e938842e33042b83"
+  },
+  "specs": {
+   "W04.AS-86": "87f5c7cbdb80abff",
+   "W04.R-03": "3d83ff66a103db87"
+  }
+ },
+ "inventory.add.button-viewer": {
+  "code": "bc5d64db49986faf",
+  "spec": "d9f05fad057de3a0",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62",
+   "packages/web/lib/seller/permissions.ts": "e938842e33042b83"
+  },
+  "specs": {
+   "S05.R-04": "21bc016af2fd002b",
+   "W04.AS-42": "65391888e7557615",
+   "W04.B-15": "df273249d9a1a84f"
+  }
+ },
+ "inventory.add.cancel": {
+  "code": "f6fce6eb834d4cb9",
+  "spec": "2cae3e137e0ef0b1",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e"
+  },
+  "specs": {
+   "W04.AS-94": "fda763c08f1ae4d8"
+  }
+ },
+ "inventory.add.create-button": {
+  "code": "913e90c1df2deda0",
+  "spec": "b505bfdbd6e6e3b9",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/catalog/api/product.controller.ts": "8e9e10f4f4b368fe",
+   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e"
+  },
+  "specs": {
+   "S05.B-01": "38d1efc7e38fe3bb",
+   "W04.AS-33": "27238a60ce5077ff",
+   "W04.B-12": "27238a60ce5077ff"
+  }
+ },
+ "inventory.add.create-db-row": {
+  "code": "7dea08dc25d4c93a",
+  "spec": "4567cf3282e91f4d",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/catalog/application/product-command.service.ts": "88c1d095f06a340d",
+   "packages/backend/libs/domains/catalog/infra/product.repository.ts": "e16b828599363cf9"
+  },
+  "specs": {
+   "S05.R-01": "acd20e042fdd68b7",
+   "S05.R-20": "deb39d57b506ec77",
+   "S05.R-26": "2a40356e5584604d"
+  }
+ },
+ "inventory.add.csrf-header": {
+  "code": "8c37aa6b041fb11a",
+  "spec": "f72ca0e7811020bb",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/lib/api/client.ts": "0fa4cb70bbc2d203"
+  },
+  "specs": {
+   "W04.AS-93": "2dc4bd824f07d87b",
+   "W04.R-12": "2dc4bd824f07d87b"
+  }
+ },
+ "inventory.add.dialog-keyboard": {
+  "code": "f6fce6eb834d4cb9",
+  "spec": "bc239ff020cd5b7d",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e"
+  },
+  "specs": {
+   "W04.AS-94": "fda763c08f1ae4d8",
+   "W04.R-24": "b9ee5bc57cf1e574"
+  }
+ },
+ "inventory.add.dialog-open": {
+  "code": "f6fce6eb834d4cb9",
+  "spec": "bc239ff020cd5b7d",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e"
+  },
+  "specs": {
+   "W04.AS-94": "fda763c08f1ae4d8",
+   "W04.R-24": "b9ee5bc57cf1e574"
+  }
+ },
+ "inventory.add.double-press": {
+  "code": "f6fce6eb834d4cb9",
+  "spec": "65469c1320ff2368",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e"
+  },
+  "specs": {
+   "W04.R-23": "da8d8279d5f88703"
+  }
+ },
+ "inventory.add.enter-key": {
+  "code": "f6fce6eb834d4cb9",
+  "spec": "a35bfe03f247cbc3",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e"
+  },
+  "specs": {
+   "W04.AS-34": "eabea675046ec473"
+  }
+ },
+ "inventory.add.field-brand": {
+  "code": "f6fce6eb834d4cb9",
+  "spec": "d396d4c0d99ef8b9",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e"
+  },
+  "specs": {
+   "S05.R-02": "274f1d3a47afc616"
+  }
+ },
+ "inventory.add.field-category": {
+  "code": "f6fce6eb834d4cb9",
+  "spec": "d396d4c0d99ef8b9",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e"
+  },
+  "specs": {
+   "S05.R-02": "274f1d3a47afc616"
+  }
+ },
+ "inventory.add.field-description": {
+  "code": "f6fce6eb834d4cb9",
+  "spec": "d396d4c0d99ef8b9",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e"
+  },
+  "specs": {
+   "S05.R-02": "274f1d3a47afc616"
+  }
+ },
+ "inventory.add.field-price": {
+  "code": "9db9e48a2c3db94d",
+  "spec": "944326aaa33de83c",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e",
+   "packages/web/lib/seller/money-input.ts": "a06b37dd9c97195a"
+  },
+  "specs": {
+   "W04.AS-35": "d898a88b145b82b4",
+   "W04.R-05": "64d916eeba5e0ef2"
+  }
+ },
+ "inventory.add.field-stock": {
+  "code": "f6fce6eb834d4cb9",
+  "spec": "5b8ab6f6c5ea1d2e",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e"
+  },
+  "specs": {
+   "S05.R-19": "57c4aec5657946ea",
+   "W04.AS-34": "eabea675046ec473"
+  }
+ },
+ "inventory.add.field-title": {
+  "code": "f6fce6eb834d4cb9",
+  "spec": "6f5163d5084ff95e",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e"
+  },
+  "specs": {
+   "S05.R-02": "274f1d3a47afc616",
+   "W04.AS-34": "eabea675046ec473"
+  }
+ },
+ "inventory.add.fields-readonly-while-saving": {
+  "code": "f6fce6eb834d4cb9",
+  "spec": "8f846e0a8c3ab4a3",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e"
+  },
+  "specs": {
+   "W04.AS-95": "399a29cff5b75f0a"
+  }
+ },
+ "inventory.add.idempotency-key": {
+  "code": "2e72efa35cd2aadd",
+  "spec": "44136fa355b3678a",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/catalog/api/product.controller.ts": "8e9e10f4f4b368fe",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd"
+  },
+  "specs": {}
+ },
+ "inventory.add.invalid-submit": {
+  "code": "f6fce6eb834d4cb9",
+  "spec": "3c0eab6f4d05b4c9",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e"
+  },
+  "specs": {
+   "W04.AS-34": "eabea675046ec473",
+   "W04.AS-95": "399a29cff5b75f0a"
+  }
+ },
+ "inventory.add.leading-trailing-spaces": {
+  "code": "f6fce6eb834d4cb9",
+  "spec": "d396d4c0d99ef8b9",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e"
+  },
+  "specs": {
+   "S05.R-02": "274f1d3a47afc616"
+  }
+ },
+ "inventory.add.plan-limit": {
+  "code": "bfc2a8a10051ee2a",
+  "spec": "dfc139a26338f05d",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/catalog/application/product-command.service.ts": "88c1d095f06a340d",
+   "packages/web/lib/seller/problem-copy.ts": "4ef1088a69dc32f7"
+  },
+  "specs": {
+   "S05.R-27": "824ad7d5c979e536"
+  }
+ },
+ "inventory.add.price-edge-values": {
+  "code": "d8fe180176aeaca0",
+  "spec": "f319e961fb472aa4",
+  "at": "2026-10-25",
+  "files": {
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/web/lib/seller/money-input.ts": "a06b37dd9c97195a"
+  },
+  "specs": {
+   "W04.R-05": "64d916eeba5e0ef2"
+  }
+ },
+ "inventory.add.price-errors": {
+  "code": "9db9e48a2c3db94d",
+  "spec": "3e601a69ada02ee5",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e",
+   "packages/web/lib/seller/money-input.ts": "a06b37dd9c97195a"
+  },
+  "specs": {
+   "S05.R-02": "274f1d3a47afc616",
+   "W04.AS-35": "d898a88b145b82b4",
+   "W04.R-05": "64d916eeba5e0ef2"
+  }
+ },
+ "inventory.add.price-zero-decimal-currency": {
+  "code": "424016b03ac602e6",
+  "spec": "aa3999586f224412",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/lib/seller/money-input.ts": "a06b37dd9c97195a"
+  },
+  "specs": {
+   "W04.R-05": "64d916eeba5e0ef2",
+   "W04.R-06": "39a693bbb932413b"
+  }
+ },
+ "inventory.add.rate-limit": {
+  "code": "45815723201f0f6f",
+  "spec": "83721bde12828e39",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/catalog/rate-limit-policies.ts": "38f933bd4d90f5e0"
+  },
+  "specs": {
+   "S05.R-11": "db5680f6becec1dc",
+   "W04.R-14": "d962cd3e4a75fa40"
+  }
+ },
+ "inventory.add.server-validation": {
+  "code": "f6fce6eb834d4cb9",
+  "spec": "6f5163d5084ff95e",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e"
+  },
+  "specs": {
+   "S05.R-02": "274f1d3a47afc616",
+   "W04.AS-34": "eabea675046ec473"
+  }
+ },
+ "inventory.add.stock-edge-values": {
+  "code": "f6fce6eb834d4cb9",
+  "spec": "d396d4c0d99ef8b9",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e"
+  },
+  "specs": {
+   "S05.R-02": "274f1d3a47afc616"
+  }
+ },
+ "inventory.add.suspended-api": {
+  "code": "bfc2a8a10051ee2a",
+  "spec": "8611940302f0baca",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/catalog/application/product-command.service.ts": "88c1d095f06a340d",
+   "packages/web/lib/seller/problem-copy.ts": "4ef1088a69dc32f7"
+  },
+  "specs": {
+   "S05.R-05": "821f7dce9e7813c9",
+   "W04.R-03": "3d83ff66a103db87"
+  }
+ },
+ "inventory.add.unicode-emoji-html": {
+  "code": "59fd57e31af576c5",
+  "spec": "0e36ce90f9e6ebbc",
+  "at": "2026-10-25",
+  "files": {
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62"
+  },
+  "specs": {
+   "S05.R-02": "274f1d3a47afc616",
+   "W04.R-28": "bcbeea3991272441"
+  }
+ },
+ "inventory.add.viewer-api": {
+  "code": "39745627bf76ef05",
+  "spec": "5caed9318fb07b75",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/catalog/api/product.controller.ts": "8e9e10f4f4b368fe"
+  },
+  "specs": {
+   "S03": "516b2d0fe923a967",
+   "S05.R-04": "21bc016af2fd002b"
+  }
+ },
+ "inventory.archive.cancel": {
+  "code": "6a39b20b03ff1a94",
+  "spec": "7eba6d191b3fe25e",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/confirm-dialog.tsx": "1980bb9e05cfd45b"
+  },
+  "specs": {
+   "W04.R-24": "b9ee5bc57cf1e574"
+  }
+ },
+ "inventory.archive.confirm": {
+  "code": "019ff7e229de4109",
+  "spec": "b032f5c91a68ed44",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/catalog/api/product.controller.ts": "8e9e10f4f4b368fe",
+   "packages/web/components/seller/inventory/archive-dialog.tsx": "e26b324fa29d0096"
+  },
+  "specs": {
+   "S05.B-05": "e750186ff1ce2d1d",
+   "S05.R-20": "deb39d57b506ec77",
+   "W04.AS-40": "eabea675046ec473"
+  }
+ },
+ "inventory.archive.dialog-open": {
+  "code": "597c1169ba62ed04",
+  "spec": "969042da90c84faf",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/confirm-dialog.tsx": "1980bb9e05cfd45b",
+   "packages/web/components/seller/inventory/archive-dialog.tsx": "e26b324fa29d0096"
+  },
+  "specs": {
+   "W04.AS-40": "eabea675046ec473",
+   "W04.AS-94": "fda763c08f1ae4d8",
+   "W04.R-23": "da8d8279d5f88703"
+  }
+ },
+ "inventory.archive.double-press": {
+  "code": "6a39b20b03ff1a94",
+  "spec": "695407b7991b84c0",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/confirm-dialog.tsx": "1980bb9e05cfd45b"
+  },
+  "specs": {
+   "W04.AS-53": "894296ed10bf7eee",
+   "W04.R-23": "da8d8279d5f88703"
+  }
+ },
+ "inventory.archive.last-product-empty": {
+  "code": "f8e21a9ec32c353f",
+  "spec": "80ad5c35de6a3639",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62"
+  },
+  "specs": {
+   "W04.AS-32": "eabea675046ec473"
+  }
+ },
+ "inventory.archive.other-errors": {
+  "code": "302a8793bcb75429",
+  "spec": "655f0c0142a9aa97",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/inventory/archive-dialog.tsx": "e26b324fa29d0096"
+  },
+  "specs": {
+   "W04.R-13": "91b32c5778f1aab7"
+  }
+ },
+ "inventory.archive.stale": {
+  "code": "302a8793bcb75429",
+  "spec": "7cea8b94a2e6792c",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/inventory/archive-dialog.tsx": "e26b324fa29d0096"
+  },
+  "specs": {
+   "S05.R-09": "4fdc6c2cade60e16",
+   "W04.AS-41": "b1e4306c8993a29c",
+   "W04.B-14": "b1e4306c8993a29c"
+  }
+ },
+ "inventory.archive.storefront-hidden": {
+  "code": "5742602b7e5df471",
+  "spec": "edec0d9d5b0cbfa5",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/catalog/domain/visibility.ts": "1b59dcc9d0f67443"
+  },
+  "specs": {
+   "S05.B-07": "578230d74440b4a0",
+   "S05.R-12": "20d24f0105918f6b"
+  }
+ },
+ "inventory.archive.version-conflict": {
+  "code": "a930e0d0bcd7d7a4",
+  "spec": "0b8c758dae51c443",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/inventory/archive-dialog.tsx": "e26b324fa29d0096",
+   "packages/web/lib/seller/problem-copy.ts": "4ef1088a69dc32f7"
+  },
+  "specs": {
+   "S05.R-07": "858321e7603689d8",
+   "W04.R-13": "91b32c5778f1aab7"
+  }
+ },
+ "inventory.edit.archived-meanwhile": {
+  "code": "f6ede5000dbc67d9",
+  "spec": "222f2f3e6bdc2fa0",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e",
+   "packages/web/lib/seller/problem-copy.ts": "4ef1088a69dc32f7"
+  },
+  "specs": {
+   "S05.R-09": "4fdc6c2cade60e16",
+   "W04.B-14": "b1e4306c8993a29c"
+  }
+ },
+ "inventory.edit.cancel-escape": {
+  "code": "f6fce6eb834d4cb9",
+  "spec": "2cae3e137e0ef0b1",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e"
+  },
+  "specs": {
+   "W04.AS-94": "fda763c08f1ae4d8"
+  }
+ },
+ "inventory.edit.currency-readonly": {
+  "code": "f6fce6eb834d4cb9",
+  "spec": "3491c010f97619a7",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e"
+  },
+  "specs": {
+   "S05.R-03": "befb86cf91442744"
+  }
+ },
+ "inventory.edit.dialog-open": {
+  "code": "f6fce6eb834d4cb9",
+  "spec": "39051fdcf4b09fd1",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e"
+  },
+  "specs": {
+   "W04.AS-36": "8253b4dd2de7f301",
+   "W04.AS-94": "fda763c08f1ae4d8"
+  }
+ },
+ "inventory.edit.double-press": {
+  "code": "f6fce6eb834d4cb9",
+  "spec": "65469c1320ff2368",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e"
+  },
+  "specs": {
+   "W04.R-23": "da8d8279d5f88703"
+  }
+ },
+ "inventory.edit.fields-rules": {
+  "code": "f6fce6eb834d4cb9",
+  "spec": "e10931dc513f586e",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e"
+  },
+  "specs": {
+   "W04.AS-34": "eabea675046ec473",
+   "W04.R-05": "64d916eeba5e0ef2"
+  }
+ },
+ "inventory.edit.load-error": {
+  "code": "f6fce6eb834d4cb9",
+  "spec": "52e38c010edd645e",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e"
+  },
+  "specs": {
+   "W04.B-14": "b1e4306c8993a29c"
+  }
+ },
+ "inventory.edit.load-latest": {
+  "code": "f6fce6eb834d4cb9",
+  "spec": "391ebd37f023c7e0",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e"
+  },
+  "specs": {
+   "W04.AS-37": "eabea675046ec473",
+   "W04.B-13": "00293c99c847013f"
+  }
+ },
+ "inventory.edit.open-from-search": {
+  "code": "f6fce6eb834d4cb9",
+  "spec": "a0ac4ba3ba1dd2e0",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e"
+  },
+  "specs": {
+   "W04.R-29": "8253b4dd2de7f301"
+  }
+ },
+ "inventory.edit.price-legacy-column": {
+  "code": "da271207b52cb9e2",
+  "spec": "4aaf65b37b3f7161",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/catalog/infra/product.repository.ts": "e16b828599363cf9"
+  },
+  "specs": {
+   "S05": "1c3a69378d1ddf23"
+  }
+ },
+ "inventory.edit.price-roundtrip": {
+  "code": "f6fce6eb834d4cb9",
+  "spec": "f319e961fb472aa4",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e"
+  },
+  "specs": {
+   "W04.R-05": "64d916eeba5e0ef2"
+  }
+ },
+ "inventory.edit.save-changed-only": {
+  "code": "f6fce6eb834d4cb9",
+  "spec": "c6b573fb21697687",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e"
+  },
+  "specs": {
+   "S05.B-02": "d89b50c34c873390",
+   "S05.R-20": "deb39d57b506ec77",
+   "W04.AS-36": "8253b4dd2de7f301",
+   "W04.R-29": "8253b4dd2de7f301"
+  }
+ },
+ "inventory.edit.save-disabled-unchanged": {
+  "code": "f6fce6eb834d4cb9",
+  "spec": "382b301bcf9c9dec",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e"
+  },
+  "specs": {
+   "W04.AS-36": "8253b4dd2de7f301"
+  }
+ },
+ "inventory.edit.server-validation": {
+  "code": "f6fce6eb834d4cb9",
+  "spec": "d396d4c0d99ef8b9",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e"
+  },
+  "specs": {
+   "S05.R-02": "274f1d3a47afc616"
+  }
+ },
+ "inventory.edit.stock-via-form": {
+  "code": "f6fce6eb834d4cb9",
+  "spec": "1d409cdadf0e31d4",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e"
+  },
+  "specs": {
+   "S05.B-02": "d89b50c34c873390"
+  }
+ },
+ "inventory.edit.tags-not-editable": {
+  "code": "d8830e1d03082ee5",
+  "spec": "44136fa355b3678a",
+  "at": "2026-10-25",
+  "files": {
+   "packages/contracts/src/catalog/index.ts": "7c0392dd88f5c64f",
+   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e"
+  },
+  "specs": {}
+ },
+ "inventory.edit.version-conflict": {
+  "code": "e73eb94eaec1f628",
+  "spec": "678f0a4fb504b463",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/catalog/application/product-command.service.ts": "88c1d095f06a340d",
+   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e"
+  },
+  "specs": {
+   "S05.R-07": "858321e7603689d8",
+   "W04.AS-37": "eabea675046ec473",
+   "W04.B-13": "00293c99c847013f"
+  }
+ },
+ "inventory.empty.no-flash": {
+  "code": "f8e21a9ec32c353f",
+  "spec": "d92cbbc0a3633b92",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62"
+  },
+  "specs": {
+   "W04.R-26": "c060454e7c10d038"
+  }
+ },
+ "inventory.empty.none": {
+  "code": "f8e21a9ec32c353f",
+  "spec": "7824cc9946dee0ef",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62"
+  },
+  "specs": {
+   "W04.AS-32": "eabea675046ec473",
+   "W04.B-15": "df273249d9a1a84f"
+  }
+ },
+ "inventory.error.401": {
+  "code": "8c37aa6b041fb11a",
+  "spec": "fd597e82bb19e058",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/lib/api/client.ts": "0fa4cb70bbc2d203"
+  },
+  "specs": {
+   "W04.AS-87": "1a95828b4c1b5684",
+   "W04.B-34": "21c58835339a1097"
+  }
+ },
+ "inventory.error.5xx-reference": {
+  "code": "b490ba440760cfa5",
+  "spec": "d7c83d22d3b72334",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/problem-states.tsx": "b8ff53d2297a93b6",
+   "packages/web/lib/seller/problem-copy.ts": "4ef1088a69dc32f7"
+  },
+  "specs": {
+   "W04.B-36": "fcc8e64e5e4d05f8",
+   "W04.R-13": "91b32c5778f1aab7"
+  }
+ },
+ "inventory.error.offline": {
+  "code": "44136fa355b3678a",
+  "spec": "30c6abef762640af",
+  "at": "2026-10-25",
+  "files": {},
+  "specs": {
+   "W04.B-35": "2be9201b0ff215fd"
+  }
+ },
+ "inventory.error.read-fail": {
+  "code": "e078b2a5f1199004",
+  "spec": "e31aeae76dbea0fa",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62",
+   "packages/web/components/seller/problem-states.tsx": "b8ff53d2297a93b6",
+   "packages/web/lib/api/orders.ts": "7631ea19bc997f81"
+  },
+  "specs": {
+   "W04.AS-31": "c060454e7c10d038",
+   "W04.B-36": "fcc8e64e5e4d05f8"
+  }
+ },
+ "inventory.filter.clear-filters": {
+  "code": "830f291960556a8b",
+  "spec": "44160e96f2ce6a4d",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/filters-sheet.tsx": "1c0252f5f2bf94c4",
+   "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62"
+  },
+  "specs": {
+   "W04.R-10": "8cd48a8baeb758a6"
+  }
+ },
+ "inventory.filter.desktop-inline": {
+  "code": "b90456df94597119",
+  "spec": "de01a22c6a555587",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/filters-sheet.tsx": "1c0252f5f2bf94c4"
+  },
+  "specs": {
+   "W04.AS-97": "fd6c85bbcba690d5"
+  }
+ },
+ "inventory.filter.empty-result": {
+  "code": "f8e21a9ec32c353f",
+  "spec": "80ad5c35de6a3639",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62"
+  },
+  "specs": {
+   "W04.AS-32": "eabea675046ec473"
+  }
+ },
+ "inventory.filter.in-stock": {
+  "code": "da271207b52cb9e2",
+  "spec": "de7cdd4a0b401cf2",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/catalog/infra/product.repository.ts": "e16b828599363cf9"
+  },
+  "specs": {
+   "S05": "1c3a69378d1ddf23",
+   "W04.AS-29": "8cd48a8baeb758a6"
+  }
+ },
+ "inventory.filter.invalid-url-values": {
+  "code": "3eedb9fbf23504ff",
+  "spec": "44160e96f2ce6a4d",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/lib/seller/search-params.ts": "b0323b8c4ae21191"
+  },
+  "specs": {
+   "W04.R-10": "8cd48a8baeb758a6"
+  }
+ },
+ "inventory.filter.out-of-stock": {
+  "code": "da271207b52cb9e2",
+  "spec": "f2cd73ca611e09f3",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/catalog/infra/product.repository.ts": "e16b828599363cf9"
+  },
+  "specs": {
+   "W04.AS-29": "8cd48a8baeb758a6"
+  }
+ },
+ "inventory.filter.phone-sheet": {
+  "code": "b90456df94597119",
+  "spec": "f4a96e1029fe144d",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/filters-sheet.tsx": "1c0252f5f2bf94c4"
+  },
+  "specs": {
+   "W04.AS-95": "399a29cff5b75f0a",
+   "W04.AS-97": "fd6c85bbcba690d5"
+  }
+ },
+ "inventory.filter.sheet-keyboard": {
+  "code": "b90456df94597119",
+  "spec": "2cae3e137e0ef0b1",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/filters-sheet.tsx": "1c0252f5f2bf94c4"
+  },
+  "specs": {
+   "W04.AS-94": "fda763c08f1ae4d8"
+  }
+ },
+ "inventory.filter.status-and-stock": {
+  "code": "da271207b52cb9e2",
+  "spec": "44160e96f2ce6a4d",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/catalog/infra/product.repository.ts": "e16b828599363cf9"
+  },
+  "specs": {
+   "W04.R-10": "8cd48a8baeb758a6"
+  }
+ },
+ "inventory.filter.stock-select": {
+  "code": "3cea07a5924cf181",
+  "spec": "a385b437e5abd6e4",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/inventory/inventory-toolbar.tsx": "36a0c0fc5f84e547",
+   "packages/web/lib/seller/search-params.ts": "b0323b8c4ae21191"
+  },
+  "specs": {
+   "W04.AS-29": "8cd48a8baeb758a6",
+   "W04.R-10": "8cd48a8baeb758a6"
+  }
+ },
+ "inventory.filter.url-reload": {
+  "code": "f8e21a9ec32c353f",
+  "spec": "44160e96f2ce6a4d",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62"
+  },
+  "specs": {
+   "W04.R-10": "8cd48a8baeb758a6"
+  }
+ },
+ "inventory.list.only-own-shop": {
+  "code": "39745627bf76ef05",
+  "spec": "82b88a06f1825031",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/catalog/api/product.controller.ts": "8e9e10f4f4b368fe"
+  },
+  "specs": {
+   "S05.R-04": "21bc016af2fd002b",
+   "S05.R-06": "9e46baf21afddbed"
+  }
+ },
+ "inventory.list.order-newest-first": {
+  "code": "da271207b52cb9e2",
+  "spec": "d649fd116a327976",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/catalog/infra/product.repository.ts": "e16b828599363cf9"
+  },
+  "specs": {
+   "S05.R-10": "079fe2dcce47d26b",
+   "W04.AS-28": "023ab9cbf8dea9b7",
+   "W04.B-12": "27238a60ce5077ff"
+  }
+ },
+ "inventory.list.page-size-20": {
+  "code": "b48aef4d5cf1ff60",
+  "spec": "daf4825c7ab24065",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/catalog/api/product.controller.ts": "8e9e10f4f4b368fe",
+   "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62"
+  },
+  "specs": {
+   "S05.B-04": "52816a61cb9f9438",
+   "W04.AS-28": "023ab9cbf8dea9b7",
+   "W04.B-10": "acef1a418be63a6b"
+  }
+ },
+ "inventory.list.row-name": {
+  "code": "b48aef4d5cf1ff60",
+  "spec": "8959cbbfd8ee1717",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/catalog/api/product.controller.ts": "8e9e10f4f4b368fe",
+   "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62"
+  },
+  "specs": {
+   "W04.AS-43": "c0a284bc37d23a8d",
+   "W04.R-28": "bcbeea3991272441"
+  }
+ },
+ "inventory.list.row-price": {
+  "code": "61cd8b7ee83cd486",
+  "spec": "8570ffe9e3452149",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62",
+   "packages/web/lib/utils.ts": "13dbc56570cb6305"
+  },
+  "specs": {
+   "W04.R-05": "64d916eeba5e0ef2",
+   "W04.R-07": "fe836bf9fe8a3c07"
+  }
+ },
+ "inventory.list.row-status-label": {
+  "code": "e46c5490e027170c",
+  "spec": "8ca73213b11531db",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62",
+   "packages/web/lib/seller/stock.ts": "b032a294f57b62bb"
+  },
+  "specs": {
+   "W04.AS-39": "f1ac75bd7c4d139d",
+   "W04.R-08": "f1ac75bd7c4d139d"
+  }
+ },
+ "inventory.list.row-stock-number": {
+  "code": "6550cbc76c7bd3eb",
+  "spec": "4f301d8ce86cc908",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62",
+   "packages/web/components/seller/inventory/stock-popover.tsx": "eed2b2621e4eba19"
+  },
+  "specs": {
+   "W04.AS-38": "eabea675046ec473"
+  }
+ },
+ "inventory.list.search-active-badge": {
+  "code": "f8e21a9ec32c353f",
+  "spec": "44136fa355b3678a",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62"
+  },
+  "specs": {}
+ },
+ "inventory.list.stock-boundaries": {
+  "code": "91ab95c5ff6d46ea",
+  "spec": "ab7f3be91fa76e46",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/lib/seller/stock.ts": "b032a294f57b62bb"
+  },
+  "specs": {
+   "S05.R-19": "57c4aec5657946ea",
+   "W04.R-08": "f1ac75bd7c4d139d"
+  }
+ },
+ "inventory.menu.active-items": {
+  "code": "f8e21a9ec32c353f",
+  "spec": "1c1ce486a2e12915",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62"
+  },
+  "specs": {
+   "W04.AS-40": "eabea675046ec473"
+  }
+ },
+ "inventory.menu.adjust-item": {
+  "code": "6550cbc76c7bd3eb",
+  "spec": "4f301d8ce86cc908",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62",
+   "packages/web/components/seller/inventory/stock-popover.tsx": "eed2b2621e4eba19"
+  },
+  "specs": {
+   "W04.AS-38": "eabea675046ec473"
+  }
+ },
+ "inventory.menu.archived-items": {
+  "code": "f8e21a9ec32c353f",
+  "spec": "1c1ce486a2e12915",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62"
+  },
+  "specs": {
+   "W04.AS-40": "eabea675046ec473"
+  }
+ },
+ "inventory.menu.draft-item": {
+  "code": "f8e21a9ec32c353f",
+  "spec": "72bd446c8d9b8c0a",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62"
+  },
+  "specs": {
+   "S06": "76429f3a2906e91c"
+  }
+ },
+ "inventory.menu.edit-item": {
+  "code": "f8e21a9ec32c353f",
+  "spec": "382b301bcf9c9dec",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62"
+  },
+  "specs": {
+   "W04.AS-36": "8253b4dd2de7f301"
+  }
+ },
+ "inventory.menu.photos-item": {
+  "code": "f8e21a9ec32c353f",
+  "spec": "44136fa355b3678a",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62"
+  },
+  "specs": {}
+ },
+ "inventory.menu.problem-cleared": {
+  "code": "f8e21a9ec32c353f",
+  "spec": "268ef6fe1beaaa47",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62"
+  },
+  "specs": {
+   "W04.AS-41": "b1e4306c8993a29c"
+  }
+ },
+ "inventory.menu.restore-double-press": {
+  "code": "f8e21a9ec32c353f",
+  "spec": "65469c1320ff2368",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62"
+  },
+  "specs": {
+   "W04.R-23": "da8d8279d5f88703"
+  }
+ },
+ "inventory.menu.restore-failure": {
+  "code": "71c6df4789cf41ff",
+  "spec": "8605fa7d7ec7c440",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62",
+   "packages/web/lib/seller/problem-copy.ts": "4ef1088a69dc32f7"
+  },
+  "specs": {
+   "W04.AS-41": "b1e4306c8993a29c",
+   "W04.B-14": "b1e4306c8993a29c"
+  }
+ },
+ "inventory.menu.restore-item": {
+  "code": "b48aef4d5cf1ff60",
+  "spec": "02d1bb35baba7267",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/catalog/api/product.controller.ts": "8e9e10f4f4b368fe",
+   "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62"
+  },
+  "specs": {
+   "S05.B-05": "e750186ff1ce2d1d",
+   "W04.AS-40": "eabea675046ec473"
+  }
+ },
+ "inventory.menu.suspended": {
+  "code": "de7e61f2b3fe5bc3",
+  "spec": "70353983f3eb1f96",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/row-menu.tsx": "a26b0b31ec2887d6"
+  },
+  "specs": {
+   "W04.AS-86": "87f5c7cbdb80abff",
+   "W04.R-03": "3d83ff66a103db87"
+  }
+ },
+ "inventory.menu.trigger": {
+  "code": "de7e61f2b3fe5bc3",
+  "spec": "bc239ff020cd5b7d",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/row-menu.tsx": "a26b0b31ec2887d6"
+  },
+  "specs": {
+   "W04.AS-94": "fda763c08f1ae4d8",
+   "W04.R-24": "b9ee5bc57cf1e574"
+  }
+ },
+ "inventory.menu.viewer-hidden": {
+  "code": "de7e61f2b3fe5bc3",
+  "spec": "734caaed72e5a0d8",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/row-menu.tsx": "a26b0b31ec2887d6"
+  },
+  "specs": {
+   "W04.B-15": "df273249d9a1a84f",
+   "W04.R-01": "1f540d546d2b8bff"
+  }
+ },
+ "inventory.page.bad-shop-id": {
+  "code": "8f02356bc730d329",
+  "spec": "9fc4dcfe5b3fd4b7",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/lib/server/seller.server.ts": "7b2b5295d5ae9ac5"
+  },
+  "specs": {
+   "S05.R-04": "21bc016af2fd002b",
+   "W04.AS-85": "dab82e9523887b3c",
+   "W04.R-04": "c537cfa9fd118e3a"
+  }
+ },
+ "inventory.page.first-page-error-retry": {
+  "code": "a6efdfb38155bf86",
+  "spec": "0470ec69060ef0e6",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62",
+   "packages/web/components/seller/problem-states.tsx": "b8ff53d2297a93b6"
+  },
+  "specs": {
+   "W04.AS-31": "c060454e7c10d038"
+  }
+ },
+ "inventory.page.forbidden-panel": {
+  "code": "561e2d9886efedb3",
+  "spec": "c07f53dec8e4a4ea",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/forbidden-panel.tsx": "593ff8c8e9726203",
+   "packages/web/lib/seller/permissions.ts": "e938842e33042b83"
+  },
+  "specs": {
+   "W04.AS-54": "b665cc840f027891",
+   "W04.R-02": "b665cc840f027891"
+  }
+ },
+ "inventory.page.heading-caption": {
+  "code": "dd782b71dc8e0070",
+  "spec": "bce66203b3c2cf03",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62",
+   "packages/web/components/seller/responsive-table.tsx": "296ce71c11d48740"
+  },
+  "specs": {
+   "W04.AS-95": "399a29cff5b75f0a",
+   "W04.R-25": "ceeb7a73996519d8"
+  }
+ },
+ "inventory.page.legacy-redirect": {
+  "code": "d16608a8feb331dd",
+  "spec": "47770390396a99ab",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/app/dashboard/seller/inventory/page.tsx": "e5af6d59363cffe6",
+   "packages/web/lib/seller/nav.ts": "d05b59bcd2efc52a"
+  },
+  "specs": {
+   "W04.AS-08": "a32257010d4bdb1e",
+   "W04.FR-013": "eabea675046ec473"
+  }
+ },
+ "inventory.page.loading-skeleton": {
+  "code": "4322f56dc62f09a3",
+  "spec": "2acfc38394942547",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/app/dashboard/seller/[shopId]/inventory/loading.tsx": "a866645427352b2f",
+   "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62",
+   "packages/web/components/seller/page-skeletons.tsx": "6d8169b1609f5520"
+  },
+  "specs": {
+   "W04.AS-91": "92d2478a25820073",
+   "W04.R-27": "99db29fc4b785569"
+  }
+ },
+ "inventory.page.menu-entry": {
+  "code": "6063d8b5a9a789b4",
+  "spec": "c6a2406c44b6afaf",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/lib/seller/nav.ts": "d05b59bcd2efc52a"
+  },
+  "specs": {
+   "W04.B-37": "fd6c85bbcba690d5",
+   "W04.R-01": "1f540d546d2b8bff"
+  }
+ },
+ "inventory.page.phone-layout": {
+  "code": "c12fc25a91e62500",
+  "spec": "330a52cb9c50aed3",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/inventory/inventory-toolbar.tsx": "36a0c0fc5f84e547",
+   "packages/web/components/seller/responsive-table.tsx": "296ce71c11d48740",
+   "packages/web/tests/visual/seller-inventory.spec.ts": "351ad61a8f70ecc1"
+  },
+  "specs": {
+   "W04.AS-95": "399a29cff5b75f0a",
+   "W04.AS-97": "fd6c85bbcba690d5",
+   "W04.B-37": "fd6c85bbcba690d5",
+   "W04.R-25": "ceeb7a73996519d8"
+  }
+ },
+ "inventory.page.route-open": {
+  "code": "9108bb397a44f274",
+  "spec": "2bdb7f102509e85a",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/catalog/api/product.controller.ts": "8e9e10f4f4b368fe",
+   "packages/web/app/dashboard/seller/[shopId]/inventory/page.tsx": "e9212480fb2b68a8",
+   "packages/web/lib/server/seller.server.ts": "7b2b5295d5ae9ac5"
+  },
+  "specs": {
+   "W04.B-10": "acef1a418be63a6b",
+   "W04.R-02": "b665cc840f027891"
+  }
+ },
+ "inventory.page.signed-out": {
+  "code": "41f2f8cf80a447d5",
+  "spec": "769949034c2fcca6",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/app/dashboard/seller/[shopId]/inventory/page.tsx": "e9212480fb2b68a8",
+   "packages/web/components/dashboard/shop-frame.tsx": "04ebc512219b394f"
+  },
+  "specs": {
+   "W04.AS-84": "3f501d830040b391",
+   "W04.B-33": "3a2845c45f76de31"
+  }
+ },
+ "inventory.paging.busy-dimmed": {
+  "code": "5393f32d551f142a",
+  "spec": "7f50ba02a0bfa1fd",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd"
+  },
+  "specs": {
+   "W04.AS-31": "c060454e7c10d038",
+   "W04.R-26": "c060454e7c10d038"
+  }
+ },
+ "inventory.paging.cursor-other-filter": {
+  "code": "399638d4baa72a67",
+  "spec": "ab8a322934ec015f",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/catalog/domain/product-cursor.ts": "c19272665677546a"
+  },
+  "specs": {
+   "S05.R-10": "079fe2dcce47d26b"
+  }
+ },
+ "inventory.paging.empty-last-page": {
+  "code": "f8e21a9ec32c353f",
+  "spec": "44136fa355b3678a",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62"
+  },
+  "specs": {}
+ },
+ "inventory.paging.first-page": {
+  "code": "f8e21a9ec32c353f",
+  "spec": "35ee75c74b6a3976",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62"
+  },
+  "specs": {
+   "W04.AS-28": "023ab9cbf8dea9b7",
+   "W04.R-10": "8cd48a8baeb758a6"
+  }
+ },
+ "inventory.paging.invalid-cursor": {
+  "code": "f4a8f90ad6488e40",
+  "spec": "cdf831c781fcfd76",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/catalog/domain/product-cursor.ts": "c19272665677546a",
+   "packages/web/components/seller/problem-states.tsx": "b8ff53d2297a93b6",
+   "packages/web/lib/seller/search-params.ts": "b0323b8c4ae21191"
+  },
+  "specs": {
+   "W04.B-36": "fcc8e64e5e4d05f8",
+   "W04.R-10": "8cd48a8baeb758a6"
+  }
+ },
+ "inventory.paging.last-page-no-next": {
+  "code": "8fb5cdc4b1978a9e",
+  "spec": "13b0c52689241b31",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/catalog/application/product-command.service.ts": "88c1d095f06a340d"
+  },
+  "specs": {
+   "S05.B-04": "52816a61cb9f9438"
+  }
+ },
+ "inventory.paging.next-page": {
+  "code": "24a8cd31a57edf3a",
+  "spec": "7a0b626a3790c121",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62",
+   "packages/web/lib/seller/search-params.ts": "b0323b8c4ae21191"
+  },
+  "specs": {
+   "W04.B-10": "acef1a418be63a6b",
+   "W04.R-10": "8cd48a8baeb758a6"
+  }
+ },
+ "inventory.roles.admin": {
+  "code": "f515b244574b2c40",
+  "spec": "ea059a5609e89ccc",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/tenancy/domain/permissions.ts": "62031a52bc431e77"
+  },
+  "specs": {
+   "S03": "516b2d0fe923a967",
+   "W04.R-01": "1f540d546d2b8bff"
+  }
+ },
+ "inventory.roles.non-member": {
+  "code": "c877b9948ab688cf",
+  "spec": "6928eafaf74ec375",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/tenancy/api/shop.guard.ts": "d0836b3019ac98bf"
+  },
+  "specs": {
+   "S03": "516b2d0fe923a967",
+   "S05.R-04": "21bc016af2fd002b",
+   "W04.R-04": "c537cfa9fd118e3a"
+  }
+ },
+ "inventory.roles.owner": {
+  "code": "5b265aaf78d4a1f9",
+  "spec": "ea059a5609e89ccc",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/tenancy/domain/permissions.ts": "62031a52bc431e77",
+   "packages/web/lib/seller/permissions.ts": "e938842e33042b83"
+  },
+  "specs": {
+   "S03": "516b2d0fe923a967",
+   "W04.R-01": "1f540d546d2b8bff"
+  }
+ },
+ "inventory.roles.permission-from-shop-answer": {
+  "code": "8edb3979a0b9af99",
+  "spec": "967f3d028845b6f3",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/lib/seller/permissions.ts": "e938842e33042b83"
+  },
+  "specs": {
+   "W04.R-01": "1f540d546d2b8bff"
+  }
+ },
+ "inventory.roles.role-change-live": {
+  "code": "af1e45f18ba901f2",
+  "spec": "9e666b97388b3005",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/tenancy/api/shop.guard.ts": "d0836b3019ac98bf",
+   "packages/web/lib/seller/problem-copy.ts": "4ef1088a69dc32f7"
+  },
+  "specs": {
+   "S03": "516b2d0fe923a967",
+   "W04.R-13": "91b32c5778f1aab7"
+  }
+ },
+ "inventory.roles.staff": {
+  "code": "f515b244574b2c40",
+  "spec": "627921abe460f407",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/tenancy/domain/permissions.ts": "62031a52bc431e77"
+  },
+  "specs": {
+   "S05.B-01": "38d1efc7e38fe3bb",
+   "W04.R-01": "1f540d546d2b8bff"
+  }
+ },
+ "inventory.roles.viewer": {
+  "code": "fd78ffbb336e362a",
+  "spec": "0573727e38968d80",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/tenancy/domain/permissions.ts": "62031a52bc431e77",
+   "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62"
+  },
+  "specs": {
+   "W04.AS-42": "65391888e7557615",
+   "W04.B-15": "df273249d9a1a84f"
+  }
+ },
+ "inventory.roles.viewer-direct-api": {
+  "code": "39745627bf76ef05",
+  "spec": "5caed9318fb07b75",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/catalog/api/product.controller.ts": "8e9e10f4f4b368fe"
+  },
+  "specs": {
+   "S03": "516b2d0fe923a967",
+   "S05.R-04": "21bc016af2fd002b"
+  }
+ },
+ "inventory.rules.cache-invalidation": {
+  "code": "c39a626b812f50af",
+  "spec": "2dc5568d4bdf2328",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/catalog/application/product-cache-invalidation.service.ts": "e475447b4fcc8915"
+  },
+  "specs": {
+   "S05.R-17": "e921d5502cab0e0c"
+  }
+ },
+ "inventory.rules.contract-parse": {
+  "code": "59afd9232c6ac978",
+  "spec": "ef409481d9f6fb3f",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/lib/api/parse.ts": "82453dbb70bf149b",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd"
+  },
+  "specs": {
+   "W04.R-12": "2dc4bd824f07d87b"
+  }
+ },
+ "inventory.rules.dark-and-contrast": {
+  "code": "f8e21a9ec32c353f",
+  "spec": "a1957403eca07eaf",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62"
+  },
+  "specs": {
+   "W04.AS-39": "f1ac75bd7c4d139d"
+  }
+ },
+ "inventory.rules.focus-return": {
+  "code": "901256b30827b392",
+  "spec": "bc239ff020cd5b7d",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/confirm-dialog.tsx": "1980bb9e05cfd45b",
+   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e",
+   "packages/web/components/seller/inventory/stock-popover.tsx": "eed2b2621e4eba19"
+  },
+  "specs": {
+   "W04.AS-94": "fda763c08f1ae4d8",
+   "W04.R-24": "b9ee5bc57cf1e574"
+  }
+ },
+ "inventory.rules.invalidate-after-write": {
+  "code": "7067dd38adef7786",
+  "spec": "c13df2644d76a512",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd"
+  },
+  "specs": {
+   "W04.R-11": "1cff245f1e5862b4"
+  }
+ },
+ "inventory.rules.no-js-injection-search": {
+  "code": "f8e21a9ec32c353f",
+  "spec": "74b06185be28d453",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62"
+  },
+  "specs": {
+   "W04.R-28": "bcbeea3991272441"
+  }
+ },
+ "inventory.rules.outbox-event-per-write": {
+  "code": "8fb5cdc4b1978a9e",
+  "spec": "0f0ebc1b492daca0",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/catalog/application/product-command.service.ts": "88c1d095f06a340d"
+  },
+  "specs": {
+   "S05.R-08": "e38cb28bf93a017e",
+   "S05.R-20": "deb39d57b506ec77"
+  }
+ },
+ "inventory.rules.problem-copy-by-code": {
+  "code": "487b82365a27118a",
+  "spec": "2552cb8d936dd0dd",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/lib/seller/problem-copy.ts": "4ef1088a69dc32f7"
+  },
+  "specs": {
+   "S05.R-03": "befb86cf91442744",
+   "W04.R-13": "91b32c5778f1aab7"
+  }
+ },
+ "inventory.rules.rate-limit-countdown": {
+  "code": "b72b17f008008b3d",
+  "spec": "83721bde12828e39",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/problem-states.tsx": "b8ff53d2297a93b6",
+   "packages/web/lib/seller/countdown.ts": "948ccd86aea00fcb"
+  },
+  "specs": {
+   "S05.R-11": "db5680f6becec1dc",
+   "W04.R-14": "d962cd3e4a75fa40"
+  }
+ },
+ "inventory.rules.search-index-follows": {
+  "code": "58f2ab4abfed4009",
+  "spec": "19340bdb91fffb1a",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/discovery/infra/projectors/product-index.projector.ts": "762ba0a89060053d"
+  },
+  "specs": {
+   "W04.AS-30": "ce9b4472d75deda6"
+  }
+ },
+ "inventory.rules.stock-vs-sales": {
+  "code": "2acb2f327c1e7bbe",
+  "spec": "8b13c3aed5d77933",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/catalog/application/product-stock.service.ts": "37b5a1131d1f0eae"
+  },
+  "specs": {
+   "S05.R-19": "57c4aec5657946ea",
+   "W04.AS-38": "eabea675046ec473"
+  }
+ },
+ "inventory.rules.text-as-text": {
+  "code": "f8e21a9ec32c353f",
+  "spec": "8959cbbfd8ee1717",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62"
+  },
+  "specs": {
+   "W04.AS-43": "c0a284bc37d23a8d",
+   "W04.R-28": "bcbeea3991272441"
+  }
+ },
+ "inventory.rules.version-sent": {
+  "code": "3ff0d3cfecd5f991",
+  "spec": "9b7a30a277e3ff7f",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/catalog/infra/product.repository.ts": "e16b828599363cf9",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd"
+  },
+  "specs": {
+   "S05.R-07": "858321e7603689d8",
+   "W04.R-29": "8253b4dd2de7f301"
+  }
+ },
+ "inventory.search.api-call": {
+  "code": "de6ce7b391ec6f87",
+  "spec": "73204ff7081bffd9",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/discovery/api/shop-product-search.controller.ts": "2a82faa722c131f3",
+   "packages/web/lib/seller/wire.ts": "c92f8861bcf3babb"
+  },
+  "specs": {
+   "S32.FR-046": "24edc6d0e14803a3",
+   "W04.AS-30": "ce9b4472d75deda6"
+  }
+ },
+ "inventory.search.back-button": {
+  "code": "1884ef8e6c0312af",
+  "spec": "44160e96f2ce6a4d",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/inventory/inventory-toolbar.tsx": "36a0c0fc5f84e547"
+  },
+  "specs": {
+   "W04.R-10": "8cd48a8baeb758a6"
+  }
+ },
+ "inventory.search.box": {
+  "code": "1884ef8e6c0312af",
+  "spec": "ac640f1ae2fe5e48",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/inventory/inventory-toolbar.tsx": "36a0c0fc5f84e547"
+  },
+  "specs": {
+   "W04.AS-30": "ce9b4472d75deda6",
+   "W04.B-11": "ce9b4472d75deda6"
+  }
+ },
+ "inventory.search.clear-box": {
+  "code": "1884ef8e6c0312af",
+  "spec": "44160e96f2ce6a4d",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/inventory/inventory-toolbar.tsx": "36a0c0fc5f84e547"
+  },
+  "specs": {
+   "W04.R-10": "8cd48a8baeb758a6"
+  }
+ },
+ "inventory.search.empty-result": {
+  "code": "f8e21a9ec32c353f",
+  "spec": "80ad5c35de6a3639",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62"
+  },
+  "specs": {
+   "W04.AS-32": "eabea675046ec473"
+  }
+ },
+ "inventory.search.lag-hint": {
+  "code": "1884ef8e6c0312af",
+  "spec": "19340bdb91fffb1a",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/inventory/inventory-toolbar.tsx": "36a0c0fc5f84e547"
+  },
+  "specs": {
+   "W04.AS-30": "ce9b4472d75deda6"
+  }
+ },
+ "inventory.search.long-text": {
+  "code": "26927a1bc693d000",
+  "spec": "5a476d55cba26c13",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/discovery/domain/query-text.ts": "d964c5c6a3e39cb2",
+   "packages/web/lib/seller/search-params.ts": "b0323b8c4ae21191"
+  },
+  "specs": {
+   "S32": "24edc6d0e14803a3"
+  }
+ },
+ "inventory.search.new-product-lag": {
+  "code": "0b8befdf0ac1b636",
+  "spec": "10e4c7899eb34217",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/discovery/infra/projectors/product-index.projector.ts": "762ba0a89060053d",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd"
+  },
+  "specs": {
+   "S32": "24edc6d0e14803a3",
+   "W04.AS-30": "ce9b4472d75deda6"
+  }
+ },
+ "inventory.search.only-own-shop": {
+  "code": "a7c76b30252f069a",
+  "spec": "dabef66aaa13155d",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/discovery/api/shop-product-search.controller.ts": "2a82faa722c131f3"
+  },
+  "specs": {
+   "S32.FR-046": "24edc6d0e14803a3"
+  }
+ },
+ "inventory.search.paging": {
+  "code": "a7c76b30252f069a",
+  "spec": "5a476d55cba26c13",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/discovery/api/shop-product-search.controller.ts": "2a82faa722c131f3"
+  },
+  "specs": {
+   "S32": "24edc6d0e14803a3"
+  }
+ },
+ "inventory.search.rate-limit": {
+  "code": "799fcf03f17e98fa",
+  "spec": "da0eefb266e5a299",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/discovery/api/shop-product-search.controller.ts": "2a82faa722c131f3",
+   "packages/web/components/seller/problem-states.tsx": "b8ff53d2297a93b6"
+  },
+  "specs": {
+   "W04.AS-90": "b866c136e97e7ae7",
+   "W04.R-14": "d962cd3e4a75fa40"
+  }
+ },
+ "inventory.search.row-actions": {
+  "code": "5393f32d551f142a",
+  "spec": "a0ac4ba3ba1dd2e0",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62",
+   "packages/web/lib/api/seller-products.ts": "43378eaeb92b2fbd"
+  },
+  "specs": {
+   "W04.R-29": "8253b4dd2de7f301"
+  }
+ },
+ "inventory.search.special-characters": {
+  "code": "40ff97fd19416233",
+  "spec": "74b06185be28d453",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/discovery/infra/repositories/shop-search.repository.ts": "7ab69c9ee583b875"
+  },
+  "specs": {
+   "W04.R-28": "bcbeea3991272441"
+  }
+ },
+ "inventory.search.tabs-stock-disabled": {
+  "code": "1884ef8e6c0312af",
+  "spec": "ac640f1ae2fe5e48",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/inventory/inventory-toolbar.tsx": "36a0c0fc5f84e547"
+  },
+  "specs": {
+   "W04.AS-30": "ce9b4472d75deda6",
+   "W04.B-11": "ce9b4472d75deda6"
+  }
+ },
+ "inventory.search.typo-match": {
+  "code": "40ff97fd19416233",
+  "spec": "b3dd6785748e144c",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/discovery/infra/repositories/shop-search.repository.ts": "7ab69c9ee583b875"
+  },
+  "specs": {
+   "S32.AS-62": "5f7a663e12459c11",
+   "W04.AS-30": "ce9b4472d75deda6",
+   "W04.B-11": "ce9b4472d75deda6"
+  }
+ },
+ "inventory.search.url-write": {
+  "code": "f8e21a9ec32c353f",
+  "spec": "4a57ab42ad775fb5",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/inventory/inventory-view.tsx": "c170b05137a5fd62"
+  },
+  "specs": {
+   "W04.B-11": "ce9b4472d75deda6",
+   "W04.R-10": "8cd48a8baeb758a6"
+  }
+ },
+ "inventory.search.whitespace-only": {
+  "code": "b7b307bd9b3c821b",
+  "spec": "44160e96f2ce6a4d",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/inventory/inventory-toolbar.tsx": "36a0c0fc5f84e547",
+   "packages/web/lib/seller/wire.ts": "c92f8861bcf3babb"
+  },
+  "specs": {
+   "W04.R-10": "8cd48a8baeb758a6"
+  }
+ },
+ "inventory.shop.closing": {
+  "code": "8fb5cdc4b1978a9e",
+  "spec": "8611940302f0baca",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/catalog/application/product-command.service.ts": "88c1d095f06a340d"
+  },
+  "specs": {
+   "S05.R-05": "821f7dce9e7813c9",
+   "W04.R-03": "3d83ff66a103db87"
+  }
+ },
+ "inventory.shop.suspended": {
+  "code": "7ac803ae149657a3",
+  "spec": "71addc610279ddc8",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/shop-status-banner.tsx": "2e011c86faa2ae74",
+   "packages/web/lib/seller/permissions.ts": "e938842e33042b83"
+  },
+  "specs": {
+   "S05.R-05": "821f7dce9e7813c9",
+   "W04.AS-86": "87f5c7cbdb80abff",
+   "W04.R-03": "3d83ff66a103db87"
+  }
+ },
+ "inventory.shop.suspended-api-writes": {
+  "code": "8fb5cdc4b1978a9e",
+  "spec": "a68c80a39311becc",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/catalog/application/product-command.service.ts": "88c1d095f06a340d"
+  },
+  "specs": {
+   "S05.R-05": "821f7dce9e7813c9"
+  }
+ },
+ "inventory.shop.suspended-reads": {
+  "code": "39745627bf76ef05",
+  "spec": "761ab8293d685a9b",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/catalog/api/product.controller.ts": "8e9e10f4f4b368fe"
+  },
+  "specs": {
+   "S03.R-05": "504d946ad792f572",
+   "S05.R-05": "821f7dce9e7813c9",
+   "W04.R-03": "3d83ff66a103db87"
+  }
+ },
+ "inventory.shop.switch-shop": {
+  "code": "3999e51d4e9b1b5d",
+  "spec": "7a208f568e102ccc",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/shop-switcher.tsx": "2711e51c0dbe994e"
+  },
+  "specs": {
+   "W04.AS-09": "e225a2c8b8acf88a",
+   "W04.R-32": "87499b9da52c3bc4"
+  }
+ },
+ "inventory.stock.archived-product-api": {
+  "code": "8fb5cdc4b1978a9e",
+  "spec": "1b72c5b21e7b3daa",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/catalog/application/product-command.service.ts": "88c1d095f06a340d"
+  },
+  "specs": {
+   "S05.R-09": "4fdc6c2cade60e16"
+  }
+ },
+ "inventory.stock.cancel": {
+  "code": "d89fcfe8dca2973a",
+  "spec": "2cae3e137e0ef0b1",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/inventory/stock-popover.tsx": "eed2b2621e4eba19"
+  },
+  "specs": {
+   "W04.AS-94": "fda763c08f1ae4d8"
+  }
+ },
+ "inventory.stock.double-press": {
+  "code": "d89fcfe8dca2973a",
+  "spec": "65469c1320ff2368",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/inventory/stock-popover.tsx": "eed2b2621e4eba19"
+  },
+  "specs": {
+   "W04.R-23": "da8d8279d5f88703"
+  }
+ },
+ "inventory.stock.low-label-after-change": {
+  "code": "91ab95c5ff6d46ea",
+  "spec": "ce227eb90015fdef",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/lib/seller/stock.ts": "b032a294f57b62bb"
+  },
+  "specs": {
+   "W04.R-08": "f1ac75bd7c4d139d"
+  }
+ },
+ "inventory.stock.other-errors": {
+  "code": "d89fcfe8dca2973a",
+  "spec": "48fda3ddb9957ffe",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/inventory/stock-popover.tsx": "eed2b2621e4eba19"
+  },
+  "specs": {
+   "W04.R-13": "91b32c5778f1aab7",
+   "W04.R-14": "d962cd3e4a75fa40"
+  }
+ },
+ "inventory.stock.popover-open": {
+  "code": "d89fcfe8dca2973a",
+  "spec": "a2389b1666788b25",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/inventory/stock-popover.tsx": "eed2b2621e4eba19"
+  },
+  "specs": {
+   "W04.AS-38": "eabea675046ec473",
+   "W04.AS-94": "fda763c08f1ae4d8"
+  }
+ },
+ "inventory.stock.same-value": {
+  "code": "c990639cb6023e3b",
+  "spec": "1db92b474e4c8ab2",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/catalog/application/product-command.service.ts": "88c1d095f06a340d",
+   "packages/web/components/seller/inventory/stock-popover.tsx": "eed2b2621e4eba19"
+  },
+  "specs": {
+   "S05.R-08": "e38cb28bf93a017e"
+  }
+ },
+ "inventory.stock.search-row-version": {
+  "code": "d89fcfe8dca2973a",
+  "spec": "a0ac4ba3ba1dd2e0",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/inventory/stock-popover.tsx": "eed2b2621e4eba19"
+  },
+  "specs": {
+   "W04.R-29": "8253b4dd2de7f301"
+  }
+ },
+ "inventory.stock.stale-row": {
+  "code": "d89fcfe8dca2973a",
+  "spec": "8605fa7d7ec7c440",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/inventory/stock-popover.tsx": "eed2b2621e4eba19"
+  },
+  "specs": {
+   "W04.AS-41": "b1e4306c8993a29c",
+   "W04.B-14": "b1e4306c8993a29c"
+  }
+ },
+ "inventory.stock.update-button": {
+  "code": "31eadda612144f9f",
+  "spec": "d8e8f39728d912d2",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/catalog/api/product.controller.ts": "8e9e10f4f4b368fe",
+   "packages/web/components/seller/inventory/stock-popover.tsx": "eed2b2621e4eba19"
+  },
+  "specs": {
+   "S05.B-02": "d89b50c34c873390",
+   "W04.AS-38": "eabea675046ec473",
+   "W04.R-29": "8253b4dd2de7f301"
+  }
+ },
+ "inventory.stock.validation": {
+  "code": "132848a868d34825",
+  "spec": "11b647653f606518",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/inventory/product-form.tsx": "bcb88593ff24922e",
+   "packages/web/components/seller/inventory/stock-popover.tsx": "eed2b2621e4eba19"
+  },
+  "specs": {
+   "S05.R-02": "274f1d3a47afc616",
+   "W04.AS-38": "eabea675046ec473"
+  }
+ },
+ "inventory.stock.version-conflict": {
+  "code": "c990639cb6023e3b",
+  "spec": "b2f756ab3381fb53",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/catalog/application/product-command.service.ts": "88c1d095f06a340d",
+   "packages/web/components/seller/inventory/stock-popover.tsx": "eed2b2621e4eba19"
+  },
+  "specs": {
+   "S05.R-07": "858321e7603689d8",
+   "W04.AS-38": "eabea675046ec473"
+  }
+ },
+ "inventory.tabs.active": {
+  "code": "b8a142dc3e60d620",
+  "spec": "44160e96f2ce6a4d",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/catalog/api/product.controller.ts": "8e9e10f4f4b368fe",
+   "packages/web/components/seller/inventory/inventory-toolbar.tsx": "36a0c0fc5f84e547"
+  },
+  "specs": {
+   "W04.R-10": "8cd48a8baeb758a6"
+  }
+ },
+ "inventory.tabs.archived": {
+  "code": "b8a142dc3e60d620",
+  "spec": "a385b437e5abd6e4",
+  "at": "2026-10-25",
+  "files": {
+   "packages/backend/libs/domains/catalog/api/product.controller.ts": "8e9e10f4f4b368fe",
+   "packages/web/components/seller/inventory/inventory-toolbar.tsx": "36a0c0fc5f84e547"
+  },
+  "specs": {
+   "W04.AS-29": "8cd48a8baeb758a6",
+   "W04.R-10": "8cd48a8baeb758a6"
+  }
+ },
+ "inventory.tabs.aria": {
+  "code": "1884ef8e6c0312af",
+  "spec": "8f846e0a8c3ab4a3",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/inventory/inventory-toolbar.tsx": "36a0c0fc5f84e547"
+  },
+  "specs": {
+   "W04.AS-95": "399a29cff5b75f0a"
+  }
+ },
+ "inventory.tabs.keyboard": {
+  "code": "1884ef8e6c0312af",
+  "spec": "2cae3e137e0ef0b1",
+  "at": "2026-10-25",
+  "files": {
+   "packages/web/components/seller/inventory/inventory-toolbar.tsx": "36a0c0fc5f84e547"
+  },
+  "specs": {
+   "W04.AS-94": "fda763c08f1ae4d8"
+  }
+ }
+}

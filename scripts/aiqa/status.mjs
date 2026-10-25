@@ -3,8 +3,9 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { diffFp, fingerprintOf, loadMap, readFps } from './lib.mjs';
 
-const dir = join(dirname(fileURLToPath(import.meta.url)), 'coverage');
+const dir = process.env.AIQA_COVERAGE_DIR || join(dirname(fileURLToPath(import.meta.url)), 'coverage');
 const only = process.argv[2];
 const COLS = ['id', 'what', 'spec', 'code', 'layers', 'status', 'date', 'by', 'bugs', 'note'];
 const STATUSES = ['untested', 'pass', 'bug', 'blocked', 'n/a'];
@@ -29,5 +30,11 @@ for (const f of files) {
   console.log(`${f.replace('.tsv', '').padEnd(12)} ${String(rows.length).padStart(4)} lines  checked ${String(done).padStart(4)} (${rows.length ? Math.round((100 * done) / rows.length) : 0}%)  pass ${n.pass}  bug ${n.bug}  blocked ${n.blocked}  untested ${n.untested}`);
   if (only) for (const r of rows.filter((x) => x.status === 'untested' || x.status === 'blocked')) console.log(`  ${r.status.padEnd(9)} ${r.id}  ${r.what}`);
 }
+let stale = 0;
+for (const f of files) {
+  const area = f.replace('.tsv', ''), stored = readFps(area);
+  for (const r of loadMap(area)) if ((r.status === 'pass' || r.status === 'bug') && stored[r.id] && diffFp(stored[r.id], fingerprintOf(r).fp).length) stale++;
+}
+console.log(`stale: ${stale} lines changed since last check${stale ? ' (node scripts/aiqa/recheck.mjs <area>|all)' : ''}`);
 console.log(`TOTAL ${total} lines, checked ${checked}${total ? ` (${Math.round((100 * checked) / total)}%)` : ''}`);
 process.exit(problems ? 1 : 0);

@@ -1,0 +1,277 @@
+{
+ "url": "/dashboard/seller/{shopId}/inventory",
+ "at": "2026-10-25",
+ "variants": {
+  "owner@390": {
+   "parts": {
+    "landmark:header:": {
+     "kind": "landmark",
+     "role": "header",
+     "label": "",
+     "hash": "f007950f40c23785",
+     "text": "Marketplace Browse Developers Search 1 SE"
+    },
+    "landmark:status:": {
+     "kind": "landmark",
+     "role": "status",
+     "label": "",
+     "hash": "f7c2a65142256a10",
+     "text": ""
+    },
+    "landmark:main:Shop": {
+     "kind": "landmark",
+     "role": "main",
+     "label": "Shop",
+     "hash": "62eeafb96bf41117",
+     "text": "Demo Shop Shop Overview Inventory Orders Team Payouts Statements Import Order export Integ"
+    },
+    "landmark:region:Shop bar": {
+     "kind": "landmark",
+     "role": "region",
+     "label": "Shop bar",
+     "hash": "80e32c7b24ab34f0",
+     "text": "Demo Shop Inventory"
+    },
+    "heading:h1:Inventory": {
+     "kind": "heading",
+     "role": "h1",
+     "label": "Inventory",
+     "hash": "db9029c5b9fa580a",
+     "text": "Inventory"
+    },
+    "landmark:region:Products": {
+     "kind": "landmark",
+     "role": "region",
+     "label": "Products",
+     "hash": "91535629ecc2b23f",
+     "text": "Products of Demo Shop Name Price Stock Status Actions Isolated Lantern {rnd} €19.99 5 Low "
+    },
+    "landmark:table:": {
+     "kind": "landmark",
+     "role": "table",
+     "label": "",
+     "hash": "04095e37e8e78dc9",
+     "text": "Products of Demo Shop Name Price Stock Status Actions Isolated Lantern {rnd} €19.99 5 Low "
+    },
+    "landmark:footer:": {
+     "kind": "landmark",
+     "role": "footer",
+     "label": "",
+     "hash": "9c562b70291e65f6",
+     "text": "Marketplace is a portfolio project: no real goods are sold and no real payments are taken."
+    },
+    "landmark:nav:Footer": {
+     "kind": "landmark",
+     "role": "nav",
+     "label": "Footer",
+     "hash": "db4a8f2179b1097a",
+     "text": "Browse API docs Terms Privacy"
+    },
+    "control:link:Skip to main content": {
+     "kind": "control",
+     "role": "link",
+     "label": "Skip to main content",
+     "hash": "81a11e945293313b",
+     "text": "Skip to main content"
+    },
+    "control:button:Open menu": {
+     "kind": "control",
+     "role": "button",
+     "label": "Open menu",
+     "hash": "bbc5f44470fad6c6",
+     "text": ""
+    },
+    "control:link:Marketplace home": {
+     "kind": "control",
+     "role": "link",
+     "label": "Marketplace home",
+     "hash": "4d5aea33a1d80680",
+     "text": "Marketplace"
+    },
+    "control:button:Search": {
+     "kind": "control",
+     "role": "button",
+     "label": "Search",
+     "hash": "81036c580a241420",
+     "text": ""
+    },
+    "control:button:Theme": {
+     "kind": "control",
+     "role": "button",
+     "label": "Theme",
+     "hash": "fce6dd3cb68184a6",
+     "text": ""
+    },
+    "control:link:Cart": {
+     "kind": "control",
+     "role": "link",
+     "label": "Cart",
+     "hash": "0aad2101fe953097",
+     "text": ""
+    },
+    "control:button:Notifications, {n} unread": {
+     "kind": "control",
+     "role": "button",
+     "label": "Notifications, 1 unread",
+     "hash": "bc00013d093cabf8",
+     "text": "1"
+    },
+    "control:button:Open menu#2": {
+     "kind": "control",
+     "role": "button",
+     "label": "Open menu",
+     "hash": "3a3fdc69ccbe62b5",
+     "text": ""
+    },
+    "control:button:Add product": {
+     "kind": "control",
+     "role": "button",
+     "label": "Add product",
+     "hash": "0cbeb80dfbdd8c51",
+     "text": "Add product"
+    },
+    "control:textbox:Search your products": {
+     "kind": "control",
+     "role": "textbox",
+     "label": "Search your products",
+     "hash": "49560f96f3918d57",
+     "text": ""
+    },
+    "control:button:Filters": {
+     "kind": "control",
+     "role": "button",
+     "label": "Filters",
+     "hash": "1986c874c86a520d",
+     "text": "Filters"
+    },
+    "control:button:Actions for Isolated Lantern {rnd}": {
+     "kind": "control",
+     "role": "button",
+     "label": "Actions for Isolated Lantern mvni4g314051",
+     "hash": "34de44312fe4768d",
+     "text": ""
+    },
+    "control:button:Actions for Isolated Lantern {rnd}#2": {
+     "kind": "control",
+     "role": "button",
+     "label": "Actions for Isolated Lantern mvni4fw78985",
+     "hash": "34de44312fe4768d",
+     "text": ""
+    },
+    "control:button:Actions for Vintage Leather Notebook": {
+     "kind": "control",
+     "role": "button",
+     "label": "Actions for Vintage Leather Notebook",
+     "hash": "1477d8b703cec174",
+     "text": ""
+    },
+    "control:button:Actions for Smart Home Hub Pro": {
+     "kind": "control",
+     "role": "button",
+     "label": "Actions for Smart Home Hub Pro",
+     "hash": "f395fb0ff38c6b75",
+     "text": ""
+    },
+    "control:button:Actions for Waterproof Trail Jacket": {
+     "kind": "control",
+     "role": "button",
+     "label": "Actions for Waterproof Trail Jacket",
+     "hash": "4f8535f3f5bc4c3c",
+     "text": ""
+    },
+    "control:button:Actions for Running Shoes Carbon Plate": {
+     "kind": "control",
+     "role": "button",
+     "label": "Actions for Running Shoes Carbon Plate",
+     "hash": "45ce138cae57d8b2",
+     "text": ""
+    },
+    "control:button:Actions for Burr Coffee Grinder": {
+     "kind": "control",
+     "role": "button",
+     "label": "Actions for Burr Coffee Grinder",
+     "hash": "1f0accb9b8592aad",
+     "text": ""
+    },
+    "control:button:Actions for Espresso Machine Titanium": {
+     "kind": "control",
+     "role": "button",
+     "label": "Actions for Espresso Machine Titanium",
+     "hash": "8242c28971906445",
+     "text": ""
+    },
+    "control:button:Actions for Mesh Office Chair": {
+     "kind": "control",
+     "role": "button",
+     "label": "Actions for Mesh Office Chair",
+     "hash": "d6514670bd80cb54",
+     "text": ""
+    },
+    "control:button:Actions for Ergonomic Standing Desk": {
+     "kind": "control",
+     "role": "button",
+     "label": "Actions for Ergonomic Standing Desk",
+     "hash": "1a06c25ebd2a7626",
+     "text": ""
+    },
+    "control:button:Actions for Portable SSD 2TB": {
+     "kind": "control",
+     "role": "button",
+     "label": "Actions for Portable SSD 2TB",
+     "hash": "8a49115d552b9b2f",
+     "text": ""
+    },
+    "control:button:Actions for Ultra-Wide Curved Monitor 34 inch": {
+     "kind": "control",
+     "role": "button",
+     "label": "Actions for Ultra-Wide Curved Monitor 34 inch",
+     "hash": "0ad720b35a353a89",
+     "text": ""
+    },
+    "control:button:Actions for Mechanical Keyboard Cherry MX Brown": {
+     "kind": "control",
+     "role": "button",
+     "label": "Actions for Mechanical Keyboard Cherry MX Brown",
+     "hash": "ef19b954095ae4c9",
+     "text": ""
+    },
+    "control:button:Actions for Wireless Noise-Cancelling Headphones": {
+     "kind": "control",
+     "role": "button",
+     "label": "Actions for Wireless Noise-Cancelling Headphones",
+     "hash": "627be42d4e03acc2",
+     "text": ""
+    },
+    "control:link:Browse": {
+     "kind": "control",
+     "role": "link",
+     "label": "Browse",
+     "hash": "a2898cee8547aba3",
+     "text": "Browse"
+    },
+    "control:link:API docs": {
+     "kind": "control",
+     "role": "link",
+     "label": "API docs",
+     "hash": "c0acc9df2457128d",
+     "text": "API docs"
+    },
+    "control:link:Terms": {
+     "kind": "control",
+     "role": "link",
+     "label": "Terms",
+     "hash": "dca560c191f27a43",
+     "text": "Terms"
+    },
+    "control:link:Privacy": {
+     "kind": "control",
+     "role": "link",
+     "label": "Privacy",
+     "hash": "fffed0cc845d93f2",
+     "text": "Privacy"
+    }
+   },
+   "finalPath": "/dashboard/seller/{uuid}/inventory"
+  }
+ }
+}

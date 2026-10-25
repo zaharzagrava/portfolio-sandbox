@@ -4,11 +4,12 @@
 import { readFileSync, writeFileSync, mkdirSync, rmdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { fingerprintOf, loadMap, readFps, writeFps } from './lib.mjs';
 
 const [area, id, status, layers, bugs, note = ''] = process.argv.slice(2);
 if (!area || !id || !status) { console.error('usage: mark.mjs <area> <id> <status> <layers> <bugs|-> "<note>"'); process.exit(2); }
 if (!['untested', 'pass', 'bug', 'blocked', 'n/a'].includes(status)) { console.error(`bad status ${status}`); process.exit(2); }
-const dir = join(dirname(fileURLToPath(import.meta.url)), 'coverage');
+const dir = process.env.AIQA_COVERAGE_DIR || join(dirname(fileURLToPath(import.meta.url)), 'coverage');
 const file = join(dir, `${area}.tsv`);
 const lock = `${file}.lock`;
 for (let i = 0; ; i++) {
@@ -23,5 +24,10 @@ try {
   c[8] = bugs === '-' ? '' : bugs; c[9] = note.replace(/[\t\n]/g, ' ');
   lines[at] = c.join('\t');
   writeFileSync(file, lines.join('\n'));
+  // cache: a line that is now pass (or bug) remembers the code and spec it was checked against (see recheck.mjs)
+  if (status === 'pass' || status === 'bug') {
+    const row = loadMap(area).find((r) => r.id === id);
+    const fps = readFps(area); fps[id] = fingerprintOf(row).fp; writeFps(area, fps);
+  }
   console.log(`${id}: ${status}`);
 } finally { rmdirSync(lock); }

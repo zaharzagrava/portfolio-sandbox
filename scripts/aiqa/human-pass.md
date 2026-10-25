@@ -86,4 +86,4 @@ How to read the marks: [ ] not looked at yet, [x] fine, [!] not fine (write why)
 - [ ] Keyboard only: Tab through the page. Can you see where you are (a clear outline), and can you reach everything and leave every window with Escape?
 - [ ] Zoom the browser to 200%: is anything cut off or on top of something else?
 - [ ] Read all messages out loud once: any word that sounds technical, rude, or unclear? Write the exact text.
-- [ ] Different browsers: look at the inventory and photos pages once in Safari or Firefox if you can. Anything looks odd?
+- [ ] Different browsers: look at the inventory and photos pages once in Firefox if you can. Anything looks odd?
