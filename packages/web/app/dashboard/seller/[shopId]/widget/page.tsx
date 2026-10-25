@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import { Suspense } from 'react';
 import { notFound } from 'next/navigation';
 import { PageAccess, requireSellerSession } from '@/components/dashboard/shop-frame';
@@ -6,6 +7,8 @@ import { WidgetView } from '@/components/seller/widget/widget-view';
 import { shopCan } from '@/lib/seller/permissions';
 import type { RawSearchParams } from '@/lib/seller/search-params';
 import { readShop } from '@/lib/server/seller.server';
+
+export const metadata: Metadata = { title: 'Widget' };
 
 type Props = { params: Promise<{ shopId: string }>; searchParams: Promise<RawSearchParams> };
 

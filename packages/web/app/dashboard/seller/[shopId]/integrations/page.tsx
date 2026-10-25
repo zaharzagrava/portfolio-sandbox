@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import { Suspense } from 'react';
 import { notFound } from 'next/navigation';
 import { PageAccess, requireSellerSession } from '@/components/dashboard/shop-frame';
@@ -5,6 +6,8 @@ import { IntegrationsView } from '@/components/seller/integrations/integrations-
 import { ListPageSkeleton } from '@/components/seller/page-skeletons';
 import type { RawSearchParams } from '@/lib/seller/search-params';
 import { readShop } from '@/lib/server/seller.server';
+
+export const metadata: Metadata = { title: 'Integrations' };
 
 type Props = { params: Promise<{ shopId: string }>; searchParams: Promise<RawSearchParams> };
 

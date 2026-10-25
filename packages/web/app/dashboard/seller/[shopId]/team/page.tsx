@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import { Suspense } from 'react';
 import { notFound } from 'next/navigation';
 import { PageAccess, requireSellerSession } from '@/components/dashboard/shop-frame';
@@ -6,6 +7,8 @@ import { TeamView } from '@/components/seller/team/team-view';
 import { shopCan } from '@/lib/seller/permissions';
 import { readTeamParams, type RawSearchParams } from '@/lib/seller/search-params';
 import { readInvites, readMembers, readShop } from '@/lib/server/seller.server';
+
+export const metadata: Metadata = { title: 'Team' };
 
 type Props = { params: Promise<{ shopId: string }>; searchParams: Promise<RawSearchParams> };
 

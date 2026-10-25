@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import { Suspense } from 'react';
 import { notFound } from 'next/navigation';
 import { PageAccess, requireSellerSession } from '@/components/dashboard/shop-frame';
@@ -7,6 +8,8 @@ import { config } from '@/lib/config';
 import { shopCan } from '@/lib/seller/permissions';
 import { readInventoryParams, type RawSearchParams } from '@/lib/seller/search-params';
 import { readInventoryFirstPage, readShop } from '@/lib/server/seller.server';
+
+export const metadata: Metadata = { title: 'Inventory' };
 
 type Props = { params: Promise<{ shopId: string }>; searchParams: Promise<RawSearchParams> };
 
