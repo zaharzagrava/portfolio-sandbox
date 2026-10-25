@@ -69,3 +69,10 @@ Corrections to the mapper's gap list (entry pass 1): the site-wide offline banne
 | B-023 | 2026-10-25 | A (orders pass 1, P1F1) | login / returnTo | Also on the orders page; cause found: the layout guard in `shop-frame.tsx` runs before the page guard and cuts returnTo to the shop root | confirmed (medium), cause known | |
 
 Orders: the two lines `orders.page.permission-gate` and `orders.page.forbidden-overview-button` cannot be reached: all four built-in roles hold `orders.read` and there are no custom roles.
+| B-053 | 2026-10-25 | A (inventory pass 1, P1F2) | shell / a11y | The site header's "Open menu" and the Shop bar's "Open menu" (the seller menu) have the same accessible name | confirmed (low) | spec inventory-page.spec.ts |
+| B-030 | 2026-10-25 | A (inventory pass 1, P1F3) | inventory search | Confirmed as a permanent failing spec: a search of 101 to 200 characters is accepted by the page, the API answers 400, the screen says only "Check this field." | confirmed (low), was candidate | |
+| B-054 | 2026-10-25 | A (inventory pass 1, P1F4) | inventory paging | W04.R-26 promises old rows stay dimmed with `aria-busy` while the next page loads; in practice the next page is rendered by the server so `aria-busy` never turns true and nothing dims | confirmed (low) | |
+| B-055 | 2026-10-25 | A (inventory pass 1, P1F5) | outbox / search index | About 1,900 outbox rows were pending at one point and the product search index lagged by minutes (specs poll up to 90 s). Likely the load of many agents on the dev stack, but the relay's throughput is unproven | candidate | check relay throughput in the fault/odd-data tracks |
+| B-023 | 2026-10-25 | A (inventory pass 1, P1F1) | login / returnTo | Reproduced twice for inventory with a permanent failing spec; cause: `components/dashboard/shop-frame.tsx` redirects before the page guard | confirmed | |
+
+Also seen: the inventory page re-fetches the first list from the browser although the server already supplied it (a wasted request, not a bug in the spec).
