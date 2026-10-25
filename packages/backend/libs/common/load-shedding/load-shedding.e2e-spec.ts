@@ -170,9 +170,12 @@ describe('load shedding (SHED)', () => {
     const source = new FakeLagSource();
     const app = await boot({ source, options: { thresholdMs: 200 } });
     source.emit(50);
+    // The gauge is one process-wide series: an app another spec file left running keeps writing its real lag to it
+    // between awaits (the e2e files share one process). Read it in the same tick as the window, before any await.
+    expect(MetricsRegistry.value('nodejs_eventloop_lag_p99_ms')).toBe(50);
     for (const path of ['/s/background', '/s/default', '/s/critical'])
       await get(app, path).expect(200);
-    expect(MetricsRegistry.value('nodejs_eventloop_lag_p99_ms')).toBe(50);
+    expect(app.get(EventLoopMonitor).p99Ms()).toBe(50);
   });
 
   it('S54 AS-74: a shed answers 503 service_overloaded with Retry-After 1-3, a request id, the handler never runs and the metric counts it', async () => {
