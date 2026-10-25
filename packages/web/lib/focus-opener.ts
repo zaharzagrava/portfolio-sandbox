@@ -40,11 +40,18 @@ export function restoreFocus(element: HTMLElement | null): void {
   apply();
   setTimeout(apply, 0);
   let tries = 0;
+  // A press on the page after the dialog closed means the user moved on (another row's menu, say): focus is never taken back then.
+  let moved = false;
+  const onPress = () => {
+    moved = true;
+  };
+  document.addEventListener('pointerdown', onPress, true);
   const retry = window.setInterval(() => {
     tries += 1;
     const active = document.activeElement;
-    if (tries > 10 || (active && active !== document.body && !active.closest('[role="dialog"]') && active.getAttribute('aria-label') === label)) {
+    if (moved || tries > 10 || (active && active !== document.body && !active.closest('[role="dialog"]') && active.getAttribute('aria-label') === label)) {
       window.clearInterval(retry);
+      document.removeEventListener('pointerdown', onPress, true);
       return;
     }
     apply();
