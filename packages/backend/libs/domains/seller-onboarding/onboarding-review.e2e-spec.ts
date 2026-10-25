@@ -744,7 +744,11 @@ describe('Seller onboarding: human review (e2e)', () => {
         shopId: s.shopId,
       });
     expect(lines.filter((l) => l.event === 'review.file_link')).toHaveLength(1);
-    const text = JSON.stringify(lines);
+    // Ids are allowed in the audit and are random hex: a short forbidden digit string can occur inside one by chance.
+    const text = JSON.stringify(lines).replace(
+      /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/g,
+      '<id>',
+    );
     for (const forbidden of [
       'secret reason',
       '3704',

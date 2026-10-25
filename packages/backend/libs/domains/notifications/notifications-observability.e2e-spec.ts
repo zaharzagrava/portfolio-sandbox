@@ -228,15 +228,19 @@ describe('Notifications: logs and metrics', () => {
       [user.email],
       `550 mailbox ${user.email} unavailable`,
     );
+    // The counter is process-wide: earlier files in the same process may already have raised it, so wait for one more failure.
+    const failedLabels = {
+      channel: 'email',
+      line: 'transactional',
+      status: 'failed',
+    };
+    const failedBefore = metric('notifications_delivery_total', failedLabels);
     const { logged } = await capturingLogs(async () => {
       await consume(t, [orderPaidEnvelope({ userId: user.id })]);
       await waitFor(
         async () =>
-          metric('notifications_delivery_total', {
-            channel: 'email',
-            line: 'transactional',
-            status: 'failed',
-          }) >= 1,
+          metric('notifications_delivery_total', failedLabels) >=
+          failedBefore + 1,
       );
     });
     expect(logged).not.toContain(user.email);
