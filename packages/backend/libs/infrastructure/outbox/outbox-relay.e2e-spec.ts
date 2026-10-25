@@ -117,7 +117,9 @@ describe('Outbox relay (poller) publishing to the log', () => {
     proxy.delayMs = 0;
     nextRandom = 0.5;
     clock.set(new Date('2026-10-09T10:00:00.000Z'));
-    await sequelize.query(`DELETE FROM "Outbox" WHERE "topic" LIKE 'rly%'`);
+    // The relay drains every pending row of the shard's database, not only its own topics: pending rows an earlier file left behind
+    // (files share the database in one process) would be claimed too and change the counts.
+    await sequelize.query(`DELETE FROM "Outbox" WHERE "topic" LIKE 'rly%' OR "status" = 'pending'`);
     config.set('outbox_relay_batch', 100);
     config.set('outbox_relay_max_attempts', 10);
   });
