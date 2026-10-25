@@ -925,8 +925,14 @@ test('W04 AS-87 @desktop: a 401 while on the page shows the polite "session ende
     calls += 1;
     await problem(route, 401, { code: 'invalid_token', requestId: 'req-aiqa-401' });
   });
-  await expect(page.getByRole('status').filter({ hasText: 'Your session ended. Sign in again to continue.' }).first()).toBeVisible();
-  expect(calls).toBe(1);
+  const ended = page.getByRole('status').filter({ hasText: 'Your session ended. Sign in again to continue.' });
+  await expect(ended.first()).toBeVisible();
+  // W04.B-34: the session-ended flow runs once. Its page refresh makes the mounted list ask again (and the 401 repeats), but the
+  // flow is latched: still one status after the second answer, and a 401 is never retried by the query itself (at most refresh + 1).
+  await expect.poll(() => calls).toBeLessThanOrEqual(2);
+  await page.waitForLoadState('networkidle');
+  await expect(ended).toHaveCount(1);
+  expect(calls).toBeLessThanOrEqual(2);
 });
 
 test('W04 AS-90 @desktop: a 429 shows a countdown and no Try again; both texts agree and it ends at "You can try again now."', async ({ page }) => {
@@ -1212,7 +1218,7 @@ test.describe('shop status', () => {
     }
     // the status is cached for a short while: once the API reads again, a reload shows the list
     await expect.poll(async () => (await sellerCall('GET', `/api/shops/${shopId}/orders`, undefined, token)).status, { timeout: 90_000, intervals: [2_000] }).toBe(200);
-    await page.reload();
+    await page.goto(ordersPath()); // not reload: the address still carries the PAID filter chosen above
     await expect(rowsOf(page)).toHaveCount(5);
     await expect(page.getByText('This shop is suspended.')).toHaveCount(0);
   });
@@ -1814,7 +1820,8 @@ test('W04 AS-97 @phone: very wide values and a long shop name wrap and do not wi
     await page.goto(ordersPath());
     await expect(rowsOf(page)).toHaveCount(20);
     await expect(page.getByText(`The orders placed with ${name}, newest first.`)).toBeVisible();
-    const wide = await page.evaluate(() => [...document.querySelectorAll('body *')].filter((node) => node.scrollWidth > node.clientWidth + 1 && node.clientWidth > 0 && getComputedStyle(node).display !== 'inline').map((node) => `${node.tagName}.${(node as HTMLElement).className.toString().slice(0, 40)}: ${node.textContent?.slice(0, 30)} (${node.scrollWidth} > ${node.clientWidth})`).slice(0, 6));
+    // an element that clips its own overflow (the visually hidden labels, the truncated shop name with its ellipsis) cannot widen the page
+    const wide = await page.evaluate(() => [...document.querySelectorAll('body *')].filter((node) => node.scrollWidth > node.clientWidth + 1 && node.clientWidth > 0 && getComputedStyle(node).display !== 'inline' && getComputedStyle(node).overflowX === 'visible').map((node) => `${node.tagName}.${(node as HTMLElement).className.toString().slice(0, 40)}: ${node.textContent?.slice(0, 30)} (${node.scrollWidth} > ${node.clientWidth})`).slice(0, 6));
     expect(wide, 'elements wider than the 390 px screen').toEqual([]);
     expect(await noSideScroll(page)).toBe(true);
     const box = await rowsOf(page).first().boundingBox();

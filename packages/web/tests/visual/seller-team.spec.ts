@@ -26,7 +26,6 @@ const slice = (n: number, status: string) => ({
   status,
   subtotalMinor: 2450 * n,
   currency: 'EUR',
-  buyerId: `buyer-${n}`,
   createdAt: `2026-10-1${n}T09:30:00.000Z`,
   items: Array.from({ length: n }, (_, index) => ({ productId: '3f2b8c1e-5a4d-4e6f-9a7b-1c2d3e4f5a6b', shopId: null, title: `Mug ${index}`, quantity: 1, unitPriceMinor: 2450, discountMinor: 0, lineTotalMinor: 2450 })),
 });
@@ -63,7 +62,7 @@ test.describe('Seller orders layout', () => {
     );
     await page.goto(shopPath(shopId, 'orders'));
     await expect(page.getByRole('heading', { level: 1, name: 'Orders' })).toBeVisible();
-    await expect(page.getByRole('row').filter({ hasText: 'abcdef03' })).toContainText('Paid');
+    await expect(page.getByRole('row').filter({ hasText: '00000003' })).toContainText('Paid');
     await expect(page.getByText('buyer-3')).toHaveCount(0);
     await expect(page.getByRole('link', { name: 'Next page' })).toBeVisible();
     await expect(content(page)).toHaveScreenshot('orders.png', { stylePath });
