@@ -65,3 +65,20 @@ Later: overview-live, team, developers (keys, webhooks, logs, usage, API version
 4. Merge `findings/<area>.md` into the register and scoreboard; verify each bug by hand.
 5. Fixer step for confirmed bugs, then rerun the touched lines.
 6. Extra methods from `IDEAS.md`.
+
+## More decisions (2026-10-25)
+
+- No hard time limit on mapper agents: completeness over speed. Tester passes are sized by number of lines; a pass may run over its minutes to finish the line it is on.
+- Independent grader: the agent that fixes a bug must not be the one that judges the fix. Use a different model (another Claude tier at least; another vendor's model if the owner has a CLI for it) for a review after every fix and for re-checking `pass` lines on a sample.
+- From `IDEAS.md`, for the four areas first: (1) cross-model review and the "no weakened tests" guard; (2) double-click and parallel-request tests with a database check for impossible rows; (3) random-input / "must always hold" tests for money, stock, filters and paging; (4) mutation testing on money, stock and permission files; (5) security basics: seller A must not read seller B's data. Plant 5 known bugs once to measure how many the flow finds.
+- Scope stays on the four areas until their maps are fully checked.
+
+## Cache (re-map only what changed)
+
+Idea from the owner: start each page with fixed seed data, save its HTML, and compare with the last saved copy; re-run mapping only for the parts that changed. Design:
+
+- Every map line gets a `fingerprint`: a hash of (the page part's HTML with ids, dates and random strings removed) plus the hash of the code files in its `code` column.
+- A snapshot script (`snapshot.mjs`, to build) opens each page with the fixed demo seed at 1280 and 390 px for each role and state, splits the HTML into parts (one per control or region), and stores `coverage/snapshots/<area>/<page>.json`.
+- On the next run it compares: unchanged parts keep their status and date; changed or new parts become `untested` and go to the mapper again; parts that vanished are marked `removed`.
+- A spec file change (hash of the spec id's file) also marks the lines that cite it as `untested`.
+- Limit: HTML only shows what a page shows in its first state. Dialogs, error states and states after actions are only seen by driving the page, so snapshots must include scripted states (open each dialog, trigger each error), and the code hash covers the rest.
