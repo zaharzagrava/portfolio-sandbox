@@ -69,10 +69,19 @@ export class InviteListQueryDto extends PageQueryDto {
   status?: 'pending' | 'accepted' | 'revoked' | 'expired';
 }
 
+/** Text without a lone UTF-16 surrogate (every surrogate is half of a valid pair). */
+const WELL_FORMED = /^(?:[^\uD800-\uDFFF]|[\uD800-\uDBFF][\uDC00-\uDFFF])*$/;
+
 export class InviteMemberDto {
   @ApiProperty()
+  // A lone UTF-16 surrogate is not storable text: the e-mail validator throws on it and the API answered 500 (B-060).
+  // Such a value becomes "" here, so the ordinary 400 "email must be an email" answers it.
   @Transform(({ value }) =>
-    typeof value === 'string' ? value.trim().toLowerCase() : value,
+    typeof value === 'string'
+      ? WELL_FORMED.test(value)
+        ? value.trim().toLowerCase()
+        : ''
+      : value,
   )
   @IsEmail()
   @MaxLength(254)
