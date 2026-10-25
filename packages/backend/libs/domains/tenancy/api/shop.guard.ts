@@ -102,6 +102,9 @@ export const ShopScoped = (
   applyDecorators(
     Firewall(),
     SetMetadata(SHOP_PERMISSION_METADATA, permission),
-    SetMetadata(SHOP_READ_WHILE_CLOSED_METADATA, options.readWhileClosed === true),
+    SetMetadata(
+      SHOP_READ_WHILE_CLOSED_METADATA,
+      options.readWhileClosed === true,
+    ),
     UseGuards(ShopGuard),
   );

@@ -133,7 +133,9 @@ export class PgMediaRepository implements MediaRepository {
     originalKey: string;
     now: Date;
     limit: number;
-  }): Promise<{ ok: true; media: MediaRecord } | { ok: false; current: number }> {
+  }): Promise<
+    { ok: true; media: MediaRecord } | { ok: false; current: number }
+  > {
     await this.sql(
       `SELECT pg_advisory_xact_lock(hashtextextended('media-pending:' || $1::text || ':' || COALESCE($2::text, ''), 0))`,
       [input.uploaderId, input.shopId],
