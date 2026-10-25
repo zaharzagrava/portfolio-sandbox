@@ -14,7 +14,7 @@ Decided with the owner on 2026-10-25. First built and run on the four areas (ent
 
 8. `code-coverage`: turn on code-coverage recording in the running app (web: V8 coverage through Playwright / `NODE_V8_COVERAGE` on the server; backend: V8 coverage of the API process) while the testers and the permanent tests run, then list the code of the four areas that nothing ever executed. Each unexecuted piece becomes a new map line (or a justified `n/a`). Answers "did we really test everything".
 9. `stateful`: rule-based random tests (fast-check model/command testing for the backend and for pure logic; for screens a small random-action runner on top of Playwright). The rules are written once ("stock never below 0", "an archived product is never shown to buyers", "a version only goes up by 1", "totals equal the sum of the lines"); the tool runs thousands of random action sequences and checks the rules after every step, and shrinks a failure to the shortest sequence.
-10. `fresh-seed-pass`: after a round is clean, run the whole map pass again with a different seed (different data, different random choices, different tester agents). The number of new findings compared with the first pass shows how much a single pass misses. A round is only closed when the fresh-seed pass finds nothing new.
+10. `fresh-seed-pass`: DROPPED on 2026-10-25 (see order of a full round).
 11. `security`: scanners on the four areas: Semgrep (code rules, run from Docker), Schemathesis (API fuzz from the OpenAPI document `GET /v1/openapi.json`, run from Docker against the production-build stack), OWASP ZAP baseline scan against the production build (Docker), plus dependency audit (`pnpm audit`) and a secrets scan (gitleaks). Findings go to the register like any bug; real ones are fixed with a test.
 
 12. `fault-injection`: freeze ONE helper service (database, Redis, Kafka, search, storage, queue ...) for under 5 minutes while the spec presses real buttons, then unfreeze and check: an honest message within 25 seconds, no fake success, one clean retry, data consistent, outbox published. Runner `scripts/aiqa/tracks/fault-injection/run.mjs`; map `coverage/fault-injection.tsv`; spec `packages/web/tests/aiqa/fault-injection.spec.ts` (skips itself unless the runner sets `AIQA_FAULT=1`).
@@ -52,15 +52,17 @@ See "Adding a new feature to the flow" in `README.md`. Short form: map -> specs 
 
 - Dev-server-only findings are accepted as duplicates of production questions until `prod-build` has re-checked them.
 
-## Order of a full round (revised 2026-10-25, owner asked to remove double work)
+## Order of a full round (revised again 2026-10-25, owner: no double work)
 
 1. Map-driven passes finish (testers). Specs move to the final layout `packages/web/tests/seller/<area>/`.
-2. Triage the findings, then FIX in one batch (`prompts/fixer.md`): cross-cutting fixes first, then one fixer per area in parallel. The unfinished backend race, isolation and stateful specs are finished here.
-3. Usual suites green twice in a row, with ONE stack swap: test stack up, backend suite twice (includes the new backend specs); swap to the dev stack, front-end suite twice on both projects (includes every spec of the testers). Running the suites IS the re-check: there is no separate re-check step. The cache (`run-specs.mjs`, `recheck.mjs`, `snapshot-diff.mjs`) is for partial runs while fixing.
-4. Final checks on the dev stack, in parallel: fresh-seed pass over the maps, production build with monkey tester and fuzzer, security scanners, odd-data and fault-injection maps re-run.
-5. Measurements: backend mutation testing (test stack, so after step 4), planted-bugs round in its own checkout, code coverage read-out (new map lines for unexecuted code).
+2. Triage the findings, then FIX in one batch (`prompts/fixer.md`): cross-cutting fixes first, then one fixer per area in parallel. Fixers write ALL the code (and the missing backend race, isolation and stateful specs) and run only the type check and lint: no spec run after each change.
+3. Usual suites in a loop until green twice in a row, with ONE stack swap: test stack up, backend suite (includes the new backend specs); swap to the dev stack, front-end suite on both projects (includes every tester spec and the odd-data spec); then the fault-injection runner once (it pauses containers in short windows). Running the suites IS the re-check; the cache is for partial runs while fixing.
+4. Production build: monkey tester, API fuzzer, security scanners (Semgrep, Schemathesis, ZAP), recheck of dev-only findings.
+5. Measurements: code-coverage read-out (code nobody executed becomes new map lines, tested), backend mutation testing (test stack), planted-bugs round in its own checkout.
 6. Human pass by the owner (`human-pass.md`).
 7. If steps 4 or 5 find something new: small fix round, back to step 3. Done when a full round finds nothing new.
+
+Dropped: the "fresh-seed pass" (owner doubted it; the coverage read-out, monkey/fuzzer with new seeds and the planted-bugs round cover its purpose).
 
 ## The only things that keep this flow from being perfect (owner's list, 2026-10-25)
 
