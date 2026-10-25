@@ -4,7 +4,9 @@ Your work list is scripts/aiqa/coverage/{{AREA}}.tsv: the lines with status `unt
 
 Trace down to the root: for every line also confirm the trace in the `code` column is true (the component calls that route, the service does what the spec says, the database row ends up as expected). If you find a button or state that is not in the map, investigate what it is for and how it maps to spec, backend and database, add a line, and test it.
 
-For EVERY line you take:
+METHOD (owner decision 2026-10-25): do not test lines one script at a time. Explore the page once, group the lines by what they do together (control + its state + the API call + the database row), and write ONE Playwright spec per group in packages/web/tests/aiqa/<area>-<group>.spec.ts. One test per behavior covers several lines: name it with the line ids, add test.info().annotations.push({type:'aiqa-lines', description:'id1,id2'}), and check every layer the lines name (screen, API calls with counts and bodies, database or API read-back; helpers in tests/seller-support.ts and seller-setup.ts). Run the file (seconds), mark lines from the RESULTS with scripts/aiqa/mark.mjs. A failing test is a finding: keep it unskipped and failing and write the finding; use test.fixme only for lines you cannot automate (mark them blocked). The specs are permanent regression tests: match neighbouring seller specs, no sleeps, never weaken a check. Use hand exploration only to discover behavior, for judgment items, and for controls the map lacks (add lines). Fingerprints (scripts/aiqa/fingerprint.mjs, recheck.mjs, run-specs.mjs) decide which lines need new work: unchanged passed lines are never re-examined.
+
+For EVERY line you take (applied through the specs above):
 1. Do the action as a person would (click the real control; do not skip to the API).
 2. Check the screen (text, state, focus, disabled state, toast, address bar).
 3. Check the API call it made (status code, body, headers) with the browser's network log.
