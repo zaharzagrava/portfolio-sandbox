@@ -100,7 +100,7 @@ export function OpenShopForm() {
       {
         onSuccess: (shop) => {
           toast.success('Your shop is open');
-          router.push(`/dashboard/seller/${shop.id}`);
+          router.replace(`/dashboard/seller/${shop.id}`); // replace: Back must not return to the form (B-101)
           void refreshUntilSeller(() => refreshSession.mutateAsync());
         },
         onError: (error) => {

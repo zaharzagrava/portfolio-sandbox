@@ -30,14 +30,21 @@ function persistErrorsAndActions() {
 }
 persistErrorsAndActions()
 
-/** Sonner marks no role: errors are announced assertively, everything else politely. */
+/**
+ * Sonner marks no role: errors are announced assertively, everything else politely. The role goes on the content inside the
+ * `<li>`, never on the `<li>` itself: a list item with another role breaks the list structure (axe "list", B-102).
+ */
 function useToastPoliteness() {
   useEffect(() => {
     const apply = () => {
       for (const item of document.querySelectorAll<HTMLElement>("li[data-sonner-toast]")) {
         const error = item.dataset.type === "error"
-        item.setAttribute("role", error ? "alert" : "status")
-        item.setAttribute("aria-live", error ? "assertive" : "polite")
+        item.removeAttribute("role")
+        item.removeAttribute("aria-live")
+        const content = item.querySelector<HTMLElement>("[data-content]")
+        if (!content) continue
+        content.setAttribute("role", error ? "alert" : "status")
+        content.setAttribute("aria-live", error ? "assertive" : "polite")
       }
     }
     apply()

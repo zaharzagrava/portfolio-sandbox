@@ -49,7 +49,9 @@ describe('W07 toaster (AS-15)', () => {
       toast.error('Failed');
     });
     await flush(50);
-    const byText = (text: string) => items().find((li) => li.textContent?.includes(text))!;
+    // B-102: the role sits on the content inside the list item, so the list keeps only list items
+    const byText = (text: string) => items().find((li) => li.textContent?.includes(text))!.querySelector<HTMLElement>('[data-content]')!;
+    expect(items().every((li) => !li.hasAttribute('role'))).toBe(true);
     expect(byText('Saved')).toHaveAttribute('role', 'status');
     expect(byText('FYI')).toHaveAttribute('role', 'status');
     expect(byText('Failed')).toHaveAttribute('role', 'alert');
