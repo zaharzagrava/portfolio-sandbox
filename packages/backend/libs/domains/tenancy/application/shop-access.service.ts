@@ -36,7 +36,7 @@ const WHILE_SUSPENDED: readonly ShopPermission[] = [
 ];
 /**
  * W04 R-03: the seller can still see products, photos and orders of a closed shop. Only the routes that opt in with
- * `ShopScoped(permission, { readWhileClosed: true })` get these two permissions through the gate; drafts, sync, search,
+ * `ShopScoped(permission, { readWhileClosed: true })` get these two permissions through the gate; drafts, sync,
  * collaboration and the other `products.read` routes stay refused.
  */
 const READ_WHILE_CLOSED: readonly ShopPermission[] = [

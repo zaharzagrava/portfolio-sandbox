@@ -18,7 +18,7 @@ const userAndShop = (req: Request): string | undefined => {
 export class ShopProductSearchController {
   constructor(private readonly search: ShopProductSearchService) {}
 
-  @ShopScoped('products.read')
+  @ShopScoped('products.read', { readWhileClosed: true })
   @RateLimit({ policy: 'discovery.shop-search', subject: userAndShop })
   @Get('shops/:shopId/products/search')
   shopProducts(
