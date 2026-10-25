@@ -2,6 +2,8 @@
 
 Started 2026-10-25. One question: how many real bugs do independent methods still find in the seller dashboard, and does the number fall to zero?
 
+Every single finding, with its status and where it was fixed, is in `docs/work/qa-bug-register.md` (B-001 and up). This file keeps the counts.
+
 ## What counts as a "new actual bug"
 
 A finding counts only if all four are true:
