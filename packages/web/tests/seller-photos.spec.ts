@@ -458,7 +458,7 @@ test.describe('Photos upload: the chooser, the signed upload and the limits', ()
     await expect(photosOf(page)).toHaveCount(20);
   });
 
-  test('W04 AS-102: a suspended shop answers 403 shop_suspended to the gallery read (S29.R-21), so the page shows the suspended panel and no controls @desktop', async ({ page }) => {
+  test('W04 AS-102: a suspended shop still answers 200 to the gallery read (W04.R-03), so the page shows the photos read-only and no controls @desktop', async ({ page }) => {
     covers('media.upload.input.disabled-suspended');
     const { shopId, productId, token } = await openPhotos(page, 1);
     await setSuspended(shopId, true);
@@ -466,11 +466,11 @@ test.describe('Photos upload: the chooser, the signed upload and the limits', ()
       const api = watchApi(page);
       await page.reload();
       await expect(page.getByText('This shop is suspended. You can view data but not make changes.').first()).toBeVisible();
-      // the read itself is refused, as for the inventory and the orders of a suspended shop; nothing can be added or changed
-      await expect.poll(() => api.matching('GET', new RegExp(`^/api/shops/${shopId}/products/${productId}/gallery$`)).map((entry) => entry.status)).toContain(403);
+      // B-024/B-099: the read is allowed on a closed shop; the photos show, nothing can be added or changed
+      await expect.poll(() => api.matching('GET', new RegExp(`^/api/shops/${shopId}/products/${productId}/gallery$`)).map((entry) => entry.status)).toContain(200);
+      await expect(photosOf(page)).toHaveCount(1);
       await expect(page.getByLabel('Add photos')).toHaveCount(0);
       await expect(page.getByRole('button', { name: 'Save photos' })).toHaveCount(0);
-      await expect(photosOf(page)).toHaveCount(0);
       expect((await sellerCall('POST', `/api/shops/${shopId}/media/uploads`, { purpose: 'product' }, token)).status, 'no upload slot either').toBe(403);
     } finally {
       await setSuspended(shopId, false);

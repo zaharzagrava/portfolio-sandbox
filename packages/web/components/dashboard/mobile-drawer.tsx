@@ -35,12 +35,22 @@ export function MobileDrawer({ shop, shops, nextCursor }: { shop: SidebarShop; s
   useEffect(() => {
     if (!open) return;
     const marked: Element[] = [];
+    const hidden: Element[] = [];
     for (const landmark of document.querySelectorAll('body header, body main, body footer')) {
       if (landmark.hasAttribute('inert') || landmark.closest('[role="dialog"]') || landmark.querySelector('[role="dialog"]')) continue;
+      // `inert` takes the page out of the tab order; `aria-hidden` out of the accessibility tree even for a landmark that holds
+      // a live region (the sheet's own aria-hidden pass skips those, so `<main>` stayed reachable).
       landmark.setAttribute('inert', '');
+      if (!landmark.hasAttribute('aria-hidden')) {
+        landmark.setAttribute('aria-hidden', 'true');
+        hidden.push(landmark);
+      }
       marked.push(landmark);
     }
-    return () => marked.forEach((landmark) => landmark.removeAttribute('inert'));
+    return () => {
+      marked.forEach((landmark) => landmark.removeAttribute('inert'));
+      hidden.forEach((landmark) => landmark.removeAttribute('aria-hidden'));
+    };
   }, [open]);
 
   return (
